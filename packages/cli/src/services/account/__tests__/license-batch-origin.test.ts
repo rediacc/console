@@ -192,4 +192,60 @@ describe('refreshRepoLicensesBatch and a foreign-origin licence', () => {
     expect(new Set(writeMock.mock.calls.map((c) => c[1]))).toEqual(new Set([OLD, FRESH]));
     expect(warnMock).not.toHaveBeenCalled();
   });
+
+  describe('a FREE licence from another production region', () => {
+    const EU = 'https://eu.rediacc.cloud';
+    const US = 'https://us.rediacc.cloud';
+    const BENCH = 'https://bench.rediacc.cloud';
+    const entry = (guid: string, origin: string, subscriptionId: string) => ({
+      repositoryGuid: guid,
+      requestedSizeGb: 1,
+      ...DATES,
+      currentRenewalUrl: `${origin}/account/api/v1/licenses/renew`,
+      currentSubscriptionId: subscriptionId,
+    });
+
+    async function refreshUnder(configOrigin: string, repo: ReturnType<typeof entry>) {
+      server.url = configOrigin;
+      try {
+        return await refresh([repo]);
+      } finally {
+        server.url = NEW_ORIGIN;
+      }
+    }
+
+    it('is reissued under a us production config without the flag, dropping its current dates', async () => {
+      const { sent } = await refreshUnder(US, entry(OLD, EU, 'free:0123abcd'));
+      expect(sent.has(OLD)).toBe(true);
+      expect(sent.get(OLD)?.currentHardExpiresAt).toBeUndefined();
+      expect(writeMock.mock.calls.map((c) => c[1])).toEqual([OLD]);
+      expect(warnMock).not.toHaveBeenCalled();
+    });
+
+    it('control: a paid licence from the same eu origin is still skipped', async () => {
+      const { sent } = await refreshUnder(US, entry(OLD, EU, 'sub_paid_1'));
+      expect(sent.size).toBe(0);
+      expect(writeMock).not.toHaveBeenCalled();
+      expect(warnMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('control: a bench-origin FREE licence under a production config is still skipped', async () => {
+      const { sent } = await refreshUnder(US, entry(OLD, BENCH, 'free:0123abcd'));
+      expect(sent.size).toBe(0);
+      expect(writeMock).not.toHaveBeenCalled();
+      expect(warnMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('control: a FREE licence under a bench config is still skipped', async () => {
+      const { sent } = await refreshUnder(BENCH, entry(OLD, EU, 'free:0123abcd'));
+      expect(sent.size).toBe(0);
+      expect(warnMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('control: a licence whose scan entry reports no subscription id is not taken for FREE', async () => {
+      const { currentSubscriptionId: _omit, ...bare } = entry(OLD, EU, 'free:0123abcd');
+      const { sent } = await refreshUnder(US, bare as ReturnType<typeof entry>);
+      expect(sent.size).toBe(0);
+    });
+  });
 });

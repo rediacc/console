@@ -20,6 +20,8 @@ export interface RemoteRepoLicenseScanEntry {
   currentHardExpiresAt?: string;
   /** The `renewalUrl` of the installed licence: the account server that issued it. Absent on a licence that predates it. */
   currentRenewalUrl?: string;
+  /** The subscription id of the installed licence; `free:<hash>` marks a FREE licence. Absent when the scan does not report it. */
+  currentSubscriptionId?: string;
 }
 
 /** The persistent marker renet's backup gate writes when licensing refuses a backup. */

@@ -8,7 +8,7 @@ import { outputService } from '../core/output.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { telemetryService } from '../telemetry/telemetry.js';
 import { accountServerFetch } from './account-client.js';
-import { reposWithForeignLicenseOrigin } from './license-batch.js';
+import { freeLicensesToAdopt, reposWithForeignLicenseOrigin } from './license-batch.js';
 import {
   clusterIdFor,
   DEFAULT_DATASTORE,
@@ -211,6 +211,7 @@ async function readRepoLicenseInputs(
   datastorePath?: string;
   requestedSizeGb?: number;
   currentRenewalUrl?: string;
+  currentSubscriptionId?: string;
 }> {
   let scanned: Awaited<ReturnType<typeof scanRemoteRepoLicenses>>;
   try {
@@ -240,6 +241,7 @@ async function readRepoLicenseInputs(
     requestedSizeGb: entry.requestedSizeGb,
     // The account server that issued the installed licence, read from the same scan entry, so the foreign-origin check costs no second scan.
     currentRenewalUrl: entry.currentRenewalUrl,
+    currentSubscriptionId: entry.currentSubscriptionId,
   };
 }
 
@@ -252,14 +254,16 @@ function assertRepoLicenseOriginAllowed(
   machineName: string,
   repositoryGuid: string,
   currentRenewalUrl: string | undefined,
+  currentSubscriptionId: string | undefined,
   adoptOrigin: boolean
 ): void {
   if (adoptOrigin || !currentRenewalUrl) return;
-  const foreign = reposWithForeignLicenseOrigin(
-    [{ repositoryGuid, requestedSizeGb: 0, currentRenewalUrl }],
-    machineName
-  );
+  const entries = [
+    { repositoryGuid, requestedSizeGb: 0, currentRenewalUrl, currentSubscriptionId },
+  ];
+  const foreign = reposWithForeignLicenseOrigin(entries, machineName);
   if (!foreign.has(repositoryGuid)) return;
+  if (freeLicensesToAdopt(entries, foreign, machineName).has(repositoryGuid)) return;
   let licenseOrigin = currentRenewalUrl;
   try {
     licenseOrigin = new URL(currentRenewalUrl).origin;
@@ -359,6 +363,7 @@ export function refreshRepoLicenseIdentity(
         machineName,
         params.repositoryGuid,
         scanned.currentRenewalUrl,
+        scanned.currentSubscriptionId,
         params.adoptOrigin === true
       );
       const { datastoreMount, adoptOrigin: _adoptOrigin, ...issueParams } = params;

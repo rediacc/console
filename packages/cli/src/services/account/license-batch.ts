@@ -5,6 +5,7 @@
  */
 
 import { DEFAULTS } from '@rediacc/shared/config';
+import { BAKED_IN_REGIONS } from '@rediacc/shared/regions';
 import { t } from '../../i18n/index.js';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
@@ -263,12 +264,47 @@ export function reposWithForeignLicenseOrigin(
 }
 
 // `identity_mismatch` joins it: after `backup snapshot --accept-identity-change` the image's UUID is new, an unexpired licence answers `unchanged` to a plain refresh, and the repository stays unmountable until the refresh window opens. Only a forced GUID is reissued.
+/** The prefix of a FREE licence's subscription id (private/account free-license.service.ts). */
+const FREE_SUBSCRIPTION_ID_PREFIX = 'free:';
+
+/** A production account server: one of the regions in regions.json. Bench and every other server are not. */
+function isProductionOrigin(origin: string): boolean {
+  return BAKED_IN_REGIONS.some((region) => `https://${region.domain}` === origin);
+}
+
+/**
+ * The foreign-origin repos whose licence is a FREE one that moves without `--adopt-origin`: an unregistered machine
+ * takes FREE licences from the default region, and the user who later subscribes in another region must not be left
+ * with them guarded. Only production to production counts: a bench-issued FREE licence, or a config that is not a
+ * production region, keeps the guard, since bench shares the production signing key. A paid licence is never in it.
+ * The scan entry's `currentSubscriptionId` decides FREE; an entry without it is not FREE.
+ */
+export function freeLicensesToAdopt(
+  remoteRepos: RemoteRepoLicenseScanEntry[],
+  foreignOrigin: Set<string>,
+  machineName: string
+): Set<string> {
+  const guids = new Set<string>();
+  if (!isProductionOrigin(configAccountOrigin(machineName))) return guids;
+  for (const repo of remoteRepos) {
+    if (
+      foreignOrigin.has(repo.repositoryGuid) &&
+      repo.currentSubscriptionId?.startsWith(FREE_SUBSCRIPTION_ID_PREFIX) &&
+      repo.currentRenewalUrl &&
+      isProductionOrigin(renewalOrigin(repo.currentRenewalUrl))
+    ) {
+      guids.add(repo.repositoryGuid);
+    }
+  }
+  return guids;
+}
+
 // machine_mismatch force-reissues (the documented remedy the guidance points users at). invalid_signature no longer triggers a reissue: with the per-signer license layout a foreign-universe file is simply never selected, so a genuine invalid_signature means the machine's OWN key can't validate its own file, that must fail fast, not loop reissuing (matches subscription-licensing.md).
 // A foreign-origin licence joins only under `adoptOrigin`: its dates are fresh, so the server would answer `unchanged` unless the request drops them.
 function forceReissueSet(
   licenseStatuses: { repositoryGuid: string; status: string }[],
   foreignOrigin: Set<string>,
-  adoptOrigin: boolean
+  adopted: Set<string>
 ): Set<string> {
   const guids = new Set(
     licenseStatuses
@@ -277,7 +313,7 @@ function forceReissueSet(
   );
   // Without it a foreign-origin licence is skipped whole, so it is no pending reissue either, whatever its status.
   for (const guid of foreignOrigin) {
-    if (adoptOrigin) guids.add(guid);
+    if (adopted.has(guid)) guids.add(guid);
     else guids.delete(guid);
   }
   return guids;
@@ -338,7 +374,12 @@ function selectBatchRepos(
   forceReissueGuids: Set<string>;
 } {
   const foreignOrigin = reposWithForeignLicenseOrigin(remoteRepos, machineName);
-  const forceReissueGuids = forceReissueSet(licenseStatuses, foreignOrigin, adoptOrigin);
+  const freeAdopted = freeLicensesToAdopt(remoteRepos, foreignOrigin, machineName);
+  const forceReissueGuids = forceReissueSet(
+    licenseStatuses,
+    foreignOrigin,
+    adoptOrigin ? foreignOrigin : freeAdopted
+  );
   const repoByGuid = new Map(
     localRepos.map((entry) => [entry.config.repositoryGuid, { grandGuid: entry.config.grandGuid }])
   );
@@ -357,7 +398,7 @@ function selectBatchRepos(
   const { kept, skipped } = skipForeignOrigin(
     machineName,
     resolvedRepos,
-    foreignOrigin,
+    new Set([...foreignOrigin].filter((guid) => !freeAdopted.has(guid))),
     new Map(localRepos.map((entry) => [entry.config.repositoryGuid, entry.name]))
   );
   return { knownRemoteRepos: kept, unknownRepoFailures, foreignSkips: skipped, forceReissueGuids };
