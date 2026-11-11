@@ -601,7 +601,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 61 | 0 | 0 | 4171 |
 | `agent/plans/PLAN-sync-remote-file-ownership.md` | approved | 135 | 0 | 7 | 21408 |
 | `agent/plans/PLAN-telemetry-export.md` | approved | 208 | 0 | 19 | 51300 |
-| `agent/plans/PLAN-terms-acceptance.md` | approved | 274 | 8 | 17 | 53152 |
+| `agent/plans/PLAN-terms-acceptance.md` | approved | 279 | 3 | 22 | 54194 |
 | `agent/plans/PLAN-test-advisor.md` | compacted | 39 | 0 | 0 | 2731 |
 | `agent/plans/PLAN-tested-on-bench.md` | approved | 336 | 4 | 16 | 48532 |
 | `agent/plans/PLAN-testing-surface-audit.md` | compacted | 38 | 0 | 0 | 3684 |
