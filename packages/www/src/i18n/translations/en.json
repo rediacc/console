@@ -1225,7 +1225,7 @@
     "termsOfService": {
       "meta": {
         "title": "Terms of Service - Legal Agreement | Rediacc",
-        "description": "The terms that govern the Rediacc CLI, the Renet Agent, the account portal and the related services, including the software license, fees, liability and dispute resolution.",
+        "description": "The terms for the Rediacc CLI, Renet Agent, account portal and related services, covering the software license, fees, liability and dispute resolution.",
         "keywords": "terms of service, customer agreement, software license, Rediacc, infrastructure platform, SaaS terms, CLI license, arbitration"
       },
       "hero": {
@@ -2234,7 +2234,7 @@
     },
     "acceptableUsePolicy": {
       "meta": {
-        "title": "Acceptable Use Policy | Rediacc",
+        "title": "Acceptable Use Policy: Prohibited Uses | Rediacc",
         "description": "The rules for using the Rediacc CLI, Renet Agent, account portal and hosted services: prohibited content, prohibited activities, reporting and enforcement.",
         "keywords": "acceptable use policy, AUP, prohibited use, abuse, Rediacc"
       },
@@ -2332,8 +2332,8 @@
     },
     "dataProcessingAgreement": {
       "meta": {
-        "title": "Data Processing Agreement | Rediacc",
-        "description": "The data processing terms under GDPR Article 28 for business customers of Rediacc: processing instructions, security, subprocessors, international transfers, breach notice and deletion.",
+        "title": "Data Processing Agreement (GDPR Art. 28) | Rediacc",
+        "description": "GDPR Article 28 data processing terms for Rediacc business customers: instructions, security, subprocessors, transfers, breach notice and deletion.",
         "keywords": "data processing agreement, DPA, GDPR, Article 28, subprocessors, standard contractual clauses, Rediacc"
       },
       "hero": {
@@ -2481,7 +2481,7 @@
     },
     "serviceLevelAgreement": {
       "meta": {
-        "title": "Service Level Agreement | Rediacc",
+        "title": "Service Level Agreement: Uptime and Credits | Rediacc",
         "description": "The monthly availability commitment for the Rediacc account portal and API on paid Subscriptions, and the service credits that apply when it is missed.",
         "keywords": "service level agreement, SLA, uptime, availability, service credits, Rediacc"
       },
@@ -2577,8 +2577,8 @@
     },
     "enterpriseLicense": {
       "meta": {
-        "title": "Enterprise Software License | Rediacc",
-        "description": "The license terms for Rediacc Enterprise Subscriptions sold on an Order Form, including self-hosted account servers, activation ceilings, support and verification.",
+        "title": "Enterprise License Terms for Self-Hosting | Rediacc",
+        "description": "License terms for Rediacc Enterprise Subscriptions sold on an Order Form: self-hosted account servers, activation ceilings, support and verification.",
         "keywords": "enterprise license, software license agreement, on-premise, order form, Rediacc Enterprise"
       },
       "hero": {
