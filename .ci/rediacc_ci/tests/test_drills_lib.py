@@ -626,6 +626,8 @@ def test_the_shim_forwards_retargets_and_refuses_when_stopped() -> None:
 class _Account(http.server.BaseHTTPRequestHandler):
     seen: typing.ClassVar[list[tuple[str, str, str]]] = []
     twofa: typing.ClassVar[bool] = False
+    terms_accepted: typing.ClassVar[bool] = True
+    refuse_accept: typing.ClassVar[bool] = False
 
     def _body(self) -> str:
         length = int(self.headers.get("Content-Length") or 0)
