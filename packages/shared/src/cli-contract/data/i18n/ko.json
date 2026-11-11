@@ -2174,6 +2174,7 @@
   "commands.vscode.serve.stop.description": "브라우저용 VS Code 서버를 중지합니다",
   "commands.vscode.serve.stop.notRunning": "{{provider}}이 실행 중이지 않았습니다",
   "commands.vscode.serve.stop.stopped": "{{provider}}이 중지되었습니다",
+  "options.acceptTerms": "무료 라이선스의 서비스 약관을 묻지 않고 동의합니다(RDC_ACCEPT_TERMS=1로도 설정 가능)",
   "options.apiToken": "API 토큰 (rdt_...). 프로세스 목록에 노출되지 않도록 `-`를 전달하여 stdin에서 읽으십시오.",
   "options.artifactRef": "백업 아티팩트 참조 (repo[:tag][@place])",
   "options.background": "머신에서 분리된 작업으로 실행합니다: ID를 출력하고 종료합니다",

@@ -2174,6 +2174,7 @@
   "commands.vscode.serve.stop.description": "Detener el servidor VS Code del navegador",
   "commands.vscode.serve.stop.notRunning": "{{provider}} no estaba en ejecución",
   "commands.vscode.serve.stop.stopped": "{{provider}} detenido",
+  "options.acceptTerms": "Aceptar los Términos del Servicio para una licencia gratuita sin preguntar (o definir RDC_ACCEPT_TERMS=1)",
   "options.apiToken": "Token API (rdt_...). Pasa `-` para leerlo desde stdin (lo mantiene fuera de la lista de procesos).",
   "options.artifactRef": "Referencia de artefacto de copia de seguridad (repo[:tag][@lugar])",
   "options.background": "Ejecutar como trabajo desacoplado en la máquina: imprime su id y termina",

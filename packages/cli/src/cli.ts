@@ -22,6 +22,7 @@ import { registerUpdateCommand } from './commands/update.js';
 import { registerVSCodeCommands } from './commands/vscode.js';
 import { changeLanguage, initI18n, SUPPORTED_LANGUAGES, t } from './i18n/index.js';
 import { setFreeLicenseRegion } from './services/account/free-license.js';
+import { setAcceptTermsFlag } from './services/account/terms.js';
 import { getSubscriptionTokenState } from './services/account/subscription-auth.js';
 import { configService } from './services/config/config-resources.js';
 import { setInvocationCommand } from './services/config/push-visibility.js';
@@ -217,6 +218,7 @@ export function createCli(): Command {
     .option('--fields <fields>', t('options.fields'))
     .option('--proxy <url>', t('options.proxy'))
     .option('--license-region <id>', t('options.licenseRegion'))
+    .option('--accept-terms', t('options.acceptTerms'))
     .option('-b, --background', t('options.background'))
     .hook('preAction', async (thisCommand, actionCommand) => {
       const opts = thisCommand.opts();
@@ -245,6 +247,10 @@ export function createCli(): Command {
       // Pick the account region a FREE licence is issued by (`--region` is taken by machine provisioning)
       if (opts.licenseRegion) {
         setFreeLicenseRegion(opts.licenseRegion as string);
+      }
+      // Accept the Terms of Service for the anonymous Free License without asking (`RDC_ACCEPT_TERMS=1` is the env form)
+      if (opts.acceptTerms) {
+        setAcceptTermsFlag(true);
       }
       // Set runtime config override if --config flag is provided
       if (opts.config) {

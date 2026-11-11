@@ -30,6 +30,7 @@ const m = vi.hoisted(() => ({
   configured: vi.fn(),
   promptRegion: vi.fn(),
   update: vi.fn(),
+  terms: vi.fn(),
   exists: vi.fn(),
   community: {
     maxRepositorySizeGb: 10,
@@ -44,6 +45,8 @@ vi.mock('../../../i18n/index.js', () => ({
   t: (key: string, vars?: Record<string, unknown>) =>
     vars ? `${key} ${JSON.stringify(vars)}` : key,
 }));
+// The Terms flow has its own file (terms.test.ts); here it only has to run and hand its acceptance on.
+vi.mock('../terms.js', () => ({ ensureTermsAcceptance: m.terms }));
 vi.mock('../account-client.js', () => ({ accountServerFetch: m.fetch }));
 vi.mock('../subscription-auth.js', () => ({
   getSubscriptionTokenState: m.tokenState,
@@ -83,6 +86,7 @@ import {
 
 const MACHINE = { ip: '10.0.0.1', user: 'root' } as never;
 const GUID = '11111111-2222-4333-8444-555555555555';
+const ACCEPTANCE = { version: '2026-03-15', sha256: 'f'.repeat(64), locale: 'en', method: 'cli-flag-unattended' };
 const BLOB = { payload: 'p', signature: 's', publicKeyId: '0123456789abcdef' };
 
 const stdinTty = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY');
@@ -102,6 +106,7 @@ beforeEach(() => {
   setTty(false);
   m.configured.mockReturnValue(undefined);
   m.exists.mockResolvedValue(true);
+  m.terms.mockResolvedValue(ACCEPTANCE);
   m.update.mockResolvedValue(undefined);
   m.promptRegion.mockResolvedValue({ region: {}, domain: EU_DOMAIN });
   m.community.maxRepositorySizeGb = 10;
@@ -230,6 +235,7 @@ describe('issueFreeRepoLicense', () => {
         kind: 'grand',
         requestedSizeGb: 2,
         datastoreId: 'ds-1',
+        termsAcceptance: ACCEPTANCE,
       },
     });
     expect(m.writeRepoLicense).toHaveBeenCalledWith('m1', GUID, BLOB, 'ds-1');

@@ -2174,6 +2174,7 @@
   "commands.vscode.serve.stop.description": "Остановить браузерный VS Code-сервер",
   "commands.vscode.serve.stop.notRunning": "{{provider}} не был запущен",
   "commands.vscode.serve.stop.stopped": "{{provider}} остановлен",
+  "options.acceptTerms": "Принять Условия использования для бесплатной лицензии без запроса (или задать RDC_ACCEPT_TERMS=1)",
   "options.apiToken": "API-токен (rdt_...). Передайте `-`, чтобы прочитать его из stdin (так он не попадёт в список процессов).",
   "options.artifactRef": "Ссылка на артефакт резервной копии (repo[:tag][@place])",
   "options.background": "Запустить как отсоединённую задачу на машине: вывести её id и завершиться",

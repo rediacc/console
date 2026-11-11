@@ -2174,6 +2174,7 @@
   "commands.vscode.serve.stop.description": "Ferma il server VS Code nel browser",
   "commands.vscode.serve.stop.notRunning": "{{provider}} non era in esecuzione",
   "commands.vscode.serve.stop.stopped": "{{provider}} fermato",
+  "options.acceptTerms": "Accetta i Termini di servizio per una licenza gratuita senza chiedere (oppure imposta RDC_ACCEPT_TERMS=1)",
   "options.apiToken": "Token API (rdt_...). Passa `-` per leggerlo da stdin (resta fuori dall'elenco dei processi).",
   "options.artifactRef": "Riferimento all'artefatto di backup (repo[:tag][@luogo])",
   "options.background": "Esegui come job disconnesso sulla macchina: stampa il suo id ed esci",

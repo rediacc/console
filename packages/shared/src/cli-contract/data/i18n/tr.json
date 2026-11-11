@@ -2174,6 +2174,7 @@
   "commands.vscode.serve.stop.description": "Tarayıcı VS Code sunucusunu durdur",
   "commands.vscode.serve.stop.notRunning": "{{provider}} zaten çalışmıyordu",
   "commands.vscode.serve.stop.stopped": "{{provider}} durduruldu",
+  "options.acceptTerms": "Ücretsiz lisans için Hizmet Şartları'nı sormadan kabul et (veya RDC_ACCEPT_TERMS=1 ayarla)",
   "options.apiToken": "API belirteci (rdt_...). stdin'den okumak için `-` geçin (belirteç süreç listesinde görünmez).",
   "options.artifactRef": "Yedek artefakt referansı (repo[:tag][@place])",
   "options.background": "Makinede ayrık bir görev olarak çalıştır: kimliğini yazdır ve çık",

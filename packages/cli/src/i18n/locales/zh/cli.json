@@ -3141,6 +3141,9 @@
       "sshExitCode": "SSH 退出代码 {{code}}",
       "secretStagingFailed": "无法在机器上准备仓库密钥（ssh 退出码 {{code}}）。"
     },
+    "terms": {
+      "declined": "未接受服务条款，因此没有获取免费许可证。"
+    },
     "unknownCommand": "未知命令 \"{{command}}\"。可用命令：{{available}}。",
     "unknownRegion": "未知区域: {{region}}",
     "unknownSubcommand": "未知子命令 \"{{command}}\"。可用的 {{parent}} 子命令：{{available}}。",
@@ -3280,6 +3283,7 @@
     }
   },
   "options": {
+    "acceptTerms": "无需询问，直接接受免费许可证的服务条款（也可设置 RDC_ACCEPT_TERMS=1）",
     "apiToken": "API令牌 (rdt_...)。传递 `-` 以从 stdin 读取（令牌不会出现在进程列表中）。",
     "artifactRef": "备份产物引用（repo[:tag][@place]）",
     "background": "作为分离的任务在机器上运行：打印其 id 并退出",

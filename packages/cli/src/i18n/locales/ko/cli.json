@@ -3141,6 +3141,9 @@
       "sshExitCode": "SSH가 코드 {{code}}로 종료되었습니다",
       "secretStagingFailed": "머신에 저장소 시크릿을 준비하지 못했습니다(ssh 종료 코드 {{code}})."
     },
+    "terms": {
+      "declined": "서비스 약관에 동의하지 않아 무료 라이선스를 받지 않았습니다."
+    },
     "unknownCommand": "알 수 없는 명령 \"{{command}}\"입니다. 사용 가능한 명령: {{available}}.",
     "unknownRegion": "알 수 없는 리전: {{region}}",
     "unknownSubcommand": "알 수 없는 서브커맨드 \"{{command}}\"입니다. 사용 가능한 {{parent}} 서브커맨드: {{available}}.",
@@ -3280,6 +3283,7 @@
     }
   },
   "options": {
+    "acceptTerms": "무료 라이선스의 서비스 약관을 묻지 않고 동의합니다(RDC_ACCEPT_TERMS=1로도 설정 가능)",
     "apiToken": "API 토큰 (rdt_...). 프로세스 목록에 노출되지 않도록 `-`를 전달하여 stdin에서 읽으십시오.",
     "artifactRef": "백업 아티팩트 참조 (repo[:tag][@place])",
     "background": "머신에서 분리된 작업으로 실행합니다: ID를 출력하고 종료합니다",

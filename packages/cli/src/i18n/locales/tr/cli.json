@@ -3141,6 +3141,9 @@
       "sshExitCode": "SSH {{code}} koduyla çıktı",
       "secretStagingFailed": "Depo gizli değerleri makineye hazırlanamadı (ssh çıkış kodu {{code}})."
     },
+    "terms": {
+      "declined": "Hizmet Şartları kabul edilmedi, bu yüzden ücretsiz lisans alınmadı."
+    },
     "unknownCommand": "Bilinmeyen komut \"{{command}}\". Kullanılabilir komutlar: {{available}}.",
     "unknownRegion": "Bilinmeyen bölge: {{region}}",
     "unknownSubcommand": "Bilinmeyen alt komut \"{{command}}\". Kullanılabilir {{parent}} alt komutları: {{available}}.",
@@ -3280,6 +3283,7 @@
     }
   },
   "options": {
+    "acceptTerms": "Ücretsiz lisans için Hizmet Şartları'nı sormadan kabul et (veya RDC_ACCEPT_TERMS=1 ayarla)",
     "apiToken": "API belirteci (rdt_...). stdin'den okumak için `-` geçin (belirteç süreç listesinde görünmez).",
     "artifactRef": "Yedek artefakt referansı (repo[:tag][@place])",
     "background": "Makinede ayrık bir görev olarak çalıştır: kimliğini yazdır ve çık",

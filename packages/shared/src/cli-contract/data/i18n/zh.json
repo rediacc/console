@@ -2174,6 +2174,7 @@
   "commands.vscode.serve.stop.description": "停止浏览器 VS Code 服务器",
   "commands.vscode.serve.stop.notRunning": "{{provider}} 本来就未在运行",
   "commands.vscode.serve.stop.stopped": "{{provider}} 已停止",
+  "options.acceptTerms": "无需询问，直接接受免费许可证的服务条款（也可设置 RDC_ACCEPT_TERMS=1）",
   "options.apiToken": "API令牌 (rdt_...)。传递 `-` 以从 stdin 读取（令牌不会出现在进程列表中）。",
   "options.artifactRef": "备份产物引用（repo[:tag][@place]）",
   "options.background": "作为分离的任务在机器上运行：打印其 id 并退出",

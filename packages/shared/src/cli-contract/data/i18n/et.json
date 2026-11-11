@@ -2174,6 +2174,7 @@
   "commands.vscode.serve.stop.description": "Peata brauseri VS Code server",
   "commands.vscode.serve.stop.notRunning": "{{provider}} ei töötanud",
   "commands.vscode.serve.stop.stopped": "{{provider}} peatatud",
+  "options.acceptTerms": "Nõustu tasuta litsentsi kasutustingimustega küsimata (või määra RDC_ACCEPT_TERMS=1)",
   "options.apiToken": "API-token (rdt_...). Anna `-`, et lugeda see stdin-ist (nii ei satu see protsesside loendisse).",
   "options.artifactRef": "Varukoopia artefakti viide (repo[:tag][@place])",
   "options.background": "Käivita masinal eraldiseisva tööna: prindi selle ID ja välju",

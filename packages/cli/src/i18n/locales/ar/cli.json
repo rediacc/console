@@ -3141,6 +3141,9 @@
       "sshExitCode": "خرج SSH برمز {{code}}",
       "secretStagingFailed": "تعذّر تجهيز أسرار المستودع على الجهاز (رمز خروج ssh هو {{code}})."
     },
+    "terms": {
+      "declined": "لم تُقبل شروط الخدمة، لذلك لم يُجلب أي ترخيص مجاني."
+    },
     "unknownCommand": "أمر غير معروف \"{{command}}\". الأوامر المتاحة: {{available}}.",
     "unknownRegion": "منطقة غير معروفة: {{region}}",
     "unknownSubcommand": "أمر فرعي غير معروف \"{{command}}\". الأوامر الفرعية المتاحة لـ {{parent}}: {{available}}.",
@@ -3280,6 +3283,7 @@
     }
   },
   "options": {
+    "acceptTerms": "قبول شروط الخدمة للحصول على ترخيص مجاني دون سؤال (أو عيّن RDC_ACCEPT_TERMS=1)",
     "apiToken": "رمز API (rdt_...). مرر `-` لقراءته من stdin (يبقيه خارج قائمة العمليات).",
     "artifactRef": "مرجع عنصر النسخة الاحتياطية (repo[:tag][@place])",
     "background": "التشغيل كمهمة منفصلة على الجهاز: طباعة معرّفها ثم الخروج",

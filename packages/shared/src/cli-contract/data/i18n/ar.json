@@ -2174,6 +2174,7 @@
   "commands.vscode.serve.stop.description": "إيقاف خادم VS Code المتصفح",
   "commands.vscode.serve.stop.notRunning": "{{provider}} لم يكن يعمل",
   "commands.vscode.serve.stop.stopped": "تم إيقاف {{provider}}",
+  "options.acceptTerms": "قبول شروط الخدمة للحصول على ترخيص مجاني دون سؤال (أو عيّن RDC_ACCEPT_TERMS=1)",
   "options.apiToken": "رمز API (rdt_...). مرر `-` لقراءته من stdin (يبقيه خارج قائمة العمليات).",
   "options.artifactRef": "مرجع عنصر النسخة الاحتياطية (repo[:tag][@place])",
   "options.background": "التشغيل كمهمة منفصلة على الجهاز: طباعة معرّفها ثم الخروج",

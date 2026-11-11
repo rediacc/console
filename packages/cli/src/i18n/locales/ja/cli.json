@@ -3141,6 +3141,9 @@
       "sshExitCode": "SSH が終了コード {{code}} で終了しました",
       "secretStagingFailed": "マシン上にリポジトリのシークレットを準備できませんでした（ssh の終了コード {{code}}）。"
     },
+    "terms": {
+      "declined": "利用規約が承諾されなかったため、無料ライセンスは取得されませんでした。"
+    },
     "unknownCommand": "不明なコマンド \"{{command}}\" です。利用可能なコマンド: {{available}}",
     "unknownRegion": "不明なリージョン: {{region}}",
     "unknownSubcommand": "不明なサブコマンド \"{{command}}\" です。利用可能な {{parent}} サブコマンド: {{available}}",
@@ -3280,6 +3283,7 @@
     }
   },
   "options": {
+    "acceptTerms": "無料ライセンスの利用規約を確認なしで承諾します（RDC_ACCEPT_TERMS=1 でも指定できます）",
     "apiToken": "APIトークン (rdt_...)。`-` を渡すと stdin から読み取ります（プロセス一覧に表示されません）。",
     "artifactRef": "バックアップアーティファクトの参照（repo[:tag][@place]）",
     "background": "マシン上でデタッチジョブとして実行する: ID を出力して終了する",

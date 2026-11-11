@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2601,
-    "sourceCommit": "73768c2d6307891fc5e17a261e16701d567a0250"
+    "keyCount": 2603,
+    "sourceCommit": "66a7b285fd13b0cb3abbd94db963c7d5aa19be3b"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2447,6 +2447,7 @@
     "errors.term.sshCode130": "b67ee9cd",
     "errors.term.sshCode255": "d4e55f99",
     "errors.term.sshExitCode": "6e05061d",
+    "errors.terms.declined": "a16da339",
     "errors.tofu.belowFloor": "2cad673f",
     "errors.tofu.noConfig": "65d0de2b",
     "errors.tofu.notInstalled": "6e0e3eb0",
@@ -2496,6 +2497,7 @@
     "help.vscode.fork": "d194f96a",
     "help.vscode.machine": "3448f8c4",
     "help.vscode.repo": "9bed1387",
+    "options.acceptTerms": "2f1166d0",
     "options.apiToken": "4dd97801",
     "options.artifactRef": "0964c582",
     "options.background": "6ff6b311",

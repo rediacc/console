@@ -3141,6 +3141,9 @@
       "sshExitCode": "SSH salió con código {{code}}",
       "secretStagingFailed": "No se pudieron preparar los secretos del repositorio en la máquina (código de salida de ssh {{code}})."
     },
+    "terms": {
+      "declined": "No se aceptaron los Términos del Servicio, así que no se obtuvo ninguna licencia gratuita."
+    },
     "unknownCommand": "Comando desconocido \"{{command}}\". Comandos disponibles: {{available}}.",
     "unknownRegion": "Región desconocida: {{region}}",
     "unknownSubcommand": "Subcomando desconocido \"{{command}}\". Subcomandos {{parent}} disponibles: {{available}}.",
@@ -3280,6 +3283,7 @@
     }
   },
   "options": {
+    "acceptTerms": "Aceptar los Términos del Servicio para una licencia gratuita sin preguntar (o definir RDC_ACCEPT_TERMS=1)",
     "apiToken": "Token API (rdt_...). Pasa `-` para leerlo desde stdin (lo mantiene fuera de la lista de procesos).",
     "artifactRef": "Referencia de artefacto de copia de seguridad (repo[:tag][@lugar])",
     "background": "Ejecutar como trabajo desacoplado en la máquina: imprime su id y termina",

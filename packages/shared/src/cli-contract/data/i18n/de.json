@@ -2174,6 +2174,7 @@
   "commands.vscode.serve.stop.description": "Browser-VS-Code-Server stoppen",
   "commands.vscode.serve.stop.notRunning": "{{provider}} lief nicht",
   "commands.vscode.serve.stop.stopped": "{{provider}} gestoppt",
+  "options.acceptTerms": "Nutzungsbedingungen für eine kostenlose Lizenz ohne Rückfrage akzeptieren (oder RDC_ACCEPT_TERMS=1 setzen)",
   "options.apiToken": "API-Token (rdt_...). `-` übergeben, um ihn von stdin zu lesen (hält ihn aus der Prozessliste heraus).",
   "options.artifactRef": "Referenz auf ein Backup-Artefakt (repo[:tag][@place])",
   "options.background": "Als entkoppelten Job auf der Maschine ausführen: dessen ID ausgeben und beenden",

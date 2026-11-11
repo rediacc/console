@@ -34,6 +34,7 @@ import { updateConfigAtPointer } from '../config/synced-write.js';
 import { outputService } from '../core/output.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { accountServerFetch } from './account-client.js';
+import { ensureTermsAcceptance } from './terms.js';
 import { readLocalMachineId, readRemoteMachineId, writeRepoLicense } from './license-machine.js';
 import {
   getConfiguredServerUrl,
@@ -108,9 +109,10 @@ function autoTakesFree(): boolean {
  *
  * - A ready token: `token`, nothing is asked.
  * - An agent or `--yes` (REDIACC_YES=1): `free`, with a warning naming the cap
- *   and the signup link (R11).
+ *   and the signup link (R11), but only with `--accept-terms` or `RDC_ACCEPT_TERMS=1`
+ *   (`ensureTermsAcceptance` refuses before any network call otherwise).
  * - A terminal: the operator picks a login (`login` runs, then `token`) or a
- *   free licence.
+ *   free licence, which asks the Terms y/N first.
  * - Neither: `login` runs non-interactively (it prints the device-code URL),
  *   which is what this path did before FREE existed.
  */
@@ -122,6 +124,8 @@ export async function resolveLicenseAuthority(
   if (chosenAuthority === 'free') return 'free';
 
   if (autoTakesFree()) {
+    // The terms come first: an unattended run without `--accept-terms` refuses before any network call.
+    await ensureTermsAcceptance();
     await chooseFreeLicenseRegion(options.region ?? requestedRegion, false);
     outputService.warn(
       t('errors.freeLicense.autoTaken', {
@@ -143,6 +147,7 @@ export async function resolveLicenseAuthority(
       },
     ]);
     if (choice === 'free') {
+      await ensureTermsAcceptance();
       await chooseFreeLicenseRegion(options.region ?? requestedRegion, true);
       chosenAuthority = 'free';
       return 'free';
@@ -216,7 +221,7 @@ export interface FreeLicenseParams {
  * (the per-address window, the per-machine cap, a reused GUID, a size above
  * 3 GB) propagates with its own message, which names the signup link.
  */
-export function issueFreeRepoLicense(
+export async function issueFreeRepoLicense(
   machineName: string,
   machine: MachineConfig,
   sshPrivateKey: string,
@@ -224,6 +229,8 @@ export function issueFreeRepoLicense(
   remoteRenetPath?: string,
   sharedSftp?: SFTPClient
 ): Promise<void> {
+  // Settled before any machine or network read: an unattended run without the flag stops here.
+  const termsAcceptance = await ensureTermsAcceptance();
   return withSharedOrPooledSftp(
     sharedSftp,
     sftpConfigForMachine(machine, sshPrivateKey),
@@ -247,6 +254,7 @@ export function issueFreeRepoLicense(
           kind: params.kind,
           requestedSizeGb: params.requestedSizeGb,
           datastoreId: params.datastoreId,
+          termsAcceptance,
         },
       });
       if (signupUrl) serverSignupUrl = signupUrl;

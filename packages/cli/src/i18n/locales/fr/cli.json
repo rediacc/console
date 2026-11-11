@@ -3141,6 +3141,9 @@
       "sshExitCode": "SSH s'est terminé avec le code {{code}}",
       "secretStagingFailed": "Impossible de déposer les secrets du dépôt sur la machine (code de sortie ssh {{code}})."
     },
+    "terms": {
+      "declined": "Les Conditions d'utilisation n'ont pas été acceptées, aucune licence gratuite n'a donc été récupérée."
+    },
     "unknownCommand": "Commande inconnue \"{{command}}\". Commandes disponibles : {{available}}.",
     "unknownRegion": "Région inconnue : {{region}}",
     "unknownSubcommand": "Sous-commande inconnue \"{{command}}\". Sous-commandes {{parent}} disponibles : {{available}}.",
@@ -3280,6 +3283,7 @@
     }
   },
   "options": {
+    "acceptTerms": "Accepter les Conditions d'utilisation pour une licence gratuite sans demander (ou définir RDC_ACCEPT_TERMS=1)",
     "apiToken": "Jeton API (rdt_...). Passez `-` pour le lire depuis stdin (il reste alors hors de la liste des processus).",
     "artifactRef": "Référence d'artefact de sauvegarde (repo[:tag][@place])",
     "background": "Exécuter en tant que job détaché sur la machine : afficher son id et quitter",

@@ -39,6 +39,12 @@
       "defaultValue": null
     },
     {
+      "flags": "--accept-terms",
+      "descriptionKey": "options.acceptTerms",
+      "mandatory": false,
+      "defaultValue": null
+    },
+    {
       "flags": "-b, --background",
       "descriptionKey": "options.background",
       "mandatory": false,

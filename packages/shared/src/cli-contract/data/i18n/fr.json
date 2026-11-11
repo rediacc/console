@@ -2174,6 +2174,7 @@
   "commands.vscode.serve.stop.description": "Arrêter le serveur VS Code navigateur",
   "commands.vscode.serve.stop.notRunning": "{{provider}} n'était pas en cours d'exécution",
   "commands.vscode.serve.stop.stopped": "{{provider}} arrêté",
+  "options.acceptTerms": "Accepter les Conditions d'utilisation pour une licence gratuite sans demander (ou définir RDC_ACCEPT_TERMS=1)",
   "options.apiToken": "Jeton API (rdt_...). Passez `-` pour le lire depuis stdin (il reste alors hors de la liste des processus).",
   "options.artifactRef": "Référence d'artefact de sauvegarde (repo[:tag][@place])",
   "options.background": "Exécuter en tant que job détaché sur la machine : afficher son id et quitter",

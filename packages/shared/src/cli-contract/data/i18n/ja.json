@@ -2174,6 +2174,7 @@
   "commands.vscode.serve.stop.description": "ブラウザ VS Code サーバーを停止する",
   "commands.vscode.serve.stop.notRunning": "{{provider}} は起動していませんでした",
   "commands.vscode.serve.stop.stopped": "{{provider}} を停止しました",
+  "options.acceptTerms": "無料ライセンスの利用規約を確認なしで承諾します（RDC_ACCEPT_TERMS=1 でも指定できます）",
   "options.apiToken": "APIトークン (rdt_...)。`-` を渡すと stdin から読み取ります（プロセス一覧に表示されません）。",
   "options.artifactRef": "バックアップアーティファクトの参照（repo[:tag][@place]）",
   "options.background": "マシン上でデタッチジョブとして実行する: ID を出力して終了する",

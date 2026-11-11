@@ -3141,6 +3141,9 @@
       "sshExitCode": "SSH lõpetas koodiga {{code}}",
       "secretStagingFailed": "Hoidla saladusi ei õnnestunud masinasse ette valmistada (ssh väljumiskood {{code}})."
     },
+    "terms": {
+      "declined": "Kasutustingimustega ei nõustutud, seega tasuta litsentsi ei laaditud."
+    },
     "unknownCommand": "Tundmatu käsk \"{{command}}\". Saadaval olevad käsud: {{available}}.",
     "unknownRegion": "Tundmatu regioon: {{region}}",
     "unknownSubcommand": "Tundmatu alamkäsk \"{{command}}\". Saadaval olevad {{parent}} alamkäsud: {{available}}.",
@@ -3280,6 +3283,7 @@
     }
   },
   "options": {
+    "acceptTerms": "Nõustu tasuta litsentsi kasutustingimustega küsimata (või määra RDC_ACCEPT_TERMS=1)",
     "apiToken": "API-token (rdt_...). Anna `-`, et lugeda see stdin-ist (nii ei satu see protsesside loendisse).",
     "artifactRef": "Varukoopia artefakti viide (repo[:tag][@place])",
     "background": "Käivita masinal eraldiseisva tööna: prindi selle ID ja välju",

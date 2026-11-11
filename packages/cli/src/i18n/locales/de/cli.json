@@ -3141,6 +3141,9 @@
       "sshExitCode": "SSH mit Code {{code}} beendet",
       "secretStagingFailed": "Die Repository-Secrets konnten nicht auf der Maschine bereitgestellt werden (SSH-Exitcode {{code}})."
     },
+    "terms": {
+      "declined": "Die Nutzungsbedingungen wurden nicht akzeptiert, daher wurde keine kostenlose Lizenz abgerufen."
+    },
     "unknownCommand": "Unbekannter Befehl \"{{command}}\". Verfügbare Befehle: {{available}}.",
     "unknownRegion": "Unbekannte Region: {{region}}",
     "unknownSubcommand": "Unbekannter Unterbefehl \"{{command}}\". Verfügbare {{parent}}-Unterbefehle: {{available}}.",
@@ -3280,6 +3283,7 @@
     }
   },
   "options": {
+    "acceptTerms": "Nutzungsbedingungen für eine kostenlose Lizenz ohne Rückfrage akzeptieren (oder RDC_ACCEPT_TERMS=1 setzen)",
     "apiToken": "API-Token (rdt_...). `-` übergeben, um ihn von stdin zu lesen (hält ihn aus der Prozessliste heraus).",
     "artifactRef": "Referenz auf ein Backup-Artefakt (repo[:tag][@place])",
     "background": "Als entkoppelten Job auf der Maschine ausführen: dessen ID ausgeben und beenden",

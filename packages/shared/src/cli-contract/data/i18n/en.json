@@ -2174,6 +2174,7 @@
   "commands.vscode.serve.stop.description": "Stop the browser VS Code server",
   "commands.vscode.serve.stop.notRunning": "{{provider}} was not running",
   "commands.vscode.serve.stop.stopped": "{{provider}} stopped",
+  "options.acceptTerms": "Accept the Terms of Service for a free license without asking (or set RDC_ACCEPT_TERMS=1)",
   "options.apiToken": "API token (rdt_...). Pass `-` to read it from stdin (keeps it out of the process list).",
   "options.artifactRef": "Backup artifact reference (repo[:tag][@place])",
   "options.background": "Run as a detached job on the machine: print its id and exit",

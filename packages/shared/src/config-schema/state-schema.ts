@@ -208,6 +208,21 @@ export const StateSchema = z.object({
   certCache: z.record(z.string(), AcmeCertCacheSchema).optional(),
 
   /**
+   * The Terms of Service acceptance the CLI gave for the anonymous Free License
+   * (PLAN-terms-acceptance Design 5). Host-local like `networkIds`: written via
+   * `updateState`, never pushed. Later FREE fetches send it again and the CLI asks
+   * once more only when a newer material version is declared.
+   */
+  terms: z
+    .object({
+      version: z.string(),
+      sha256: z.string(),
+      acceptedAt: z.string(),
+      method: z.enum(['cli-prompt', 'cli-flag-unattended']),
+    })
+    .optional(),
+
+  /**
    * Host-local record of the last chunk-store backup activity per repo (keyed by
    * repo name). Written via `configFileStorage.updateState` so it never bumps the
    * version counter and is stripped from any push (R2-F2) — a scheduled run has no
