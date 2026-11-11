@@ -29,6 +29,10 @@
       "types": "./dist/regions/index.d.ts",
       "default": "./dist/regions/index.js"
     },
+    "./legal/*": {
+      "types": "./dist/legal/*.d.ts",
+      "default": "./dist/legal/*.js"
+    },
     "./subscription": {
       "types": "./dist/subscription/index.d.ts",
       "default": "./dist/subscription/index.js"

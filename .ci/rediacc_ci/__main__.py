@@ -86,6 +86,11 @@ VERBS: tuple[Verb, ...] = (
         module="rediacc_ci.dev.backup_ref",
     ),
     Verb(
+        name="legal-entity",
+        summary="sync | verify the contracting entity projection against the SELLER_* vault entries",
+        module="rediacc_ci.legal.entity",
+    ),
+    Verb(
         name="devbox",
         summary="up | status | url | stop | proxy | remove | shell | exec | doctor | logs",
         module="rediacc_ci.core.run_verbs",

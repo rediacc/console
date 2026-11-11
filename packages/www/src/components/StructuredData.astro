@@ -1,10 +1,7 @@
 ---
+import { LEGAL_ENTITY } from '@rediacc/shared/legal/entity.generated';
 import {
-  COMPANY_LEGAL_NAME,
   COMPANY_REGISTERED_ADDRESS,
-  COMPANY_REGISTRY_CODE,
-  COMPANY_REGISTER_NAME,
-  COMPANY_VAT_NUMBER,
   CONTACT_EMAIL,
   SITE_URL
 } from '../config/constants';
@@ -29,7 +26,7 @@ const getStructuredData = (type: string, customData: any = {}) => {
         ...commonData,
         '@type': 'Organization',
         name: 'Rediacc',
-        legalName: COMPANY_LEGAL_NAME,
+        legalName: LEGAL_ENTITY.legalName,
         url: baseUrl,
         description: 'Infrastructure Automation Platform designed for accelerated development operations',
         logo: `${baseUrl}/favicon.svg`,
@@ -46,13 +43,13 @@ const getStructuredData = (type: string, customData: any = {}) => {
         address: {
           '@type': 'PostalAddress',
           streetAddress: COMPANY_REGISTERED_ADDRESS,
-          addressCountry: 'EE'
+          addressCountry: LEGAL_ENTITY.countryCode
         },
-        vatID: COMPANY_VAT_NUMBER,
+        vatID: LEGAL_ENTITY.vatNumber,
         identifier: {
           '@type': 'PropertyValue',
-          propertyID: COMPANY_REGISTER_NAME,
-          value: COMPANY_REGISTRY_CODE
+          propertyID: LEGAL_ENTITY.registerName,
+          value: LEGAL_ENTITY.registryCode
         },
         foundingDate: '2024',
         ...customData

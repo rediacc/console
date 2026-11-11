@@ -204,6 +204,28 @@ def test_workers_only_builds_seals_and_publishes_nothing() -> None:
     assert not any(s.id.endswith(("-us", "-asia")) for s in one)
 
 
+@pytest.mark.parametrize("steps", [EDGE, WORKERS], ids=["release", "workers-only"])
+def test_the_legal_entity_is_verified_before_the_packages_build(steps: list[local.Step]) -> None:
+    """PLAN-terms-acceptance Design 1: no release or Worker deploy goes out while the committed entity projection trails the vault, so `legal-entity-verify` runs under the `legal-entity` profile before `packages`, on `--workers-only` too."""
+    order = ids(steps)
+    assert "legal-entity-verify" in order
+    assert order.index("legal-entity-verify") < order.index("packages")
+    step = next(s for s in steps if s.id == "legal-entity-verify")
+    assert step.section == "builds"
+    assert step.profiles == ("legal-entity",)
+    assert step.argv[-2:] == ("rediacc_ci.legal.entity", "verify")
+    ctx = local.Context(version="9.9.9", sha="a" * 40, channel="edge", outcomes={})
+    argv = local.child_argv(step, ctx)
+    assert argv[:6] == [
+        "python3",
+        "-m",
+        "rediacc_ci.core.bws_env",
+        "exec",
+        "--profile",
+        "legal-entity",
+    ]
+
+
 def test_every_module_and_profile_named_exists() -> None:
     supply = json.loads((ROOT / ".ci/config/secret-supply.json").read_text(encoding="utf-8"))[
         "consumers"

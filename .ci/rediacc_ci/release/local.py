@@ -230,6 +230,14 @@ def _table() -> tuple[Step, ...]:
         # ---- 3. builds, in the release clone
         Step("deps", "builds", ("npm", "ci"), **w),
         Step("natives", "builds", ("npm", "run", "install:natives"), **w),
+        # PLAN-terms-acceptance Design 1: the committed entity projection must equal the vault before anything is built from it, on --workers-only too. It prints field names only and exits 1 on drift or an unreachable vault.
+        Step(
+            "legal-entity-verify",
+            "builds",
+            (*PY, "rediacc_ci.legal.entity", "verify"),
+            profiles=("legal-entity",),
+            **w,
+        ),
         Step("packages", "builds", ("npm", "run", "build:packages"), **w),
         Step(
             "account-deps",

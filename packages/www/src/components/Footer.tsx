@@ -1,7 +1,7 @@
 declare const __APP_VERSION__: string;
 
+import { LEGAL_ENTITY } from '@rediacc/shared/legal/entity.generated';
 import React from 'react';
-import { COMPANY_LEGAL_NAME, COMPANY_REGISTRY_CODE, COMPANY_VAT_NUMBER } from '../config/constants';
 import { useLanguage } from '../hooks/useLanguage';
 import { SUPPORTED_LANGUAGES } from '../i18n/language-utils';
 import { useTranslation } from '../i18n/react';
@@ -364,9 +364,9 @@ const Footer: React.FC<FooterProps> = ({ lang }) => {
         <div className="footer-legal-disclosure">
           <p>
             {t('footer.legalDisclosure.summary', {
-              companyName: COMPANY_LEGAL_NAME,
-              registryCode: COMPANY_REGISTRY_CODE,
-              vatNumber: COMPANY_VAT_NUMBER,
+              companyName: LEGAL_ENTITY.legalName,
+              registryCode: LEGAL_ENTITY.registryCode,
+              vatNumber: LEGAL_ENTITY.vatNumber,
             })}{' '}
             <a
               href={`/${currentLang}/legal-information`}

@@ -7,6 +7,7 @@ import {
   WK_CONTACT_EMAIL,
   WK_GH_REPO,
 } from '@rediacc/shared/config/well-known.generated';
+import { LEGAL_ENTITY } from '@rediacc/shared/legal/entity.generated';
 
 /**
  * Primary contact email for Rediacc
@@ -21,14 +22,14 @@ export const CONTACT_EMAIL = WK_CONTACT_EMAIL;
 export const SITE_URL = import.meta.env.PUBLIC_SITE_URL ?? PROTOCOL_DEFAULTS.SITE_URL;
 
 /**
- * Legal company details for mandatory website disclosures in Estonia.
+ * The registered address for mandatory website disclosures in Estonia, with the country named in English.
+ * Every other legal company detail is read straight from `LEGAL_ENTITY` (@rediacc/shared/legal/entity.generated),
+ * which `./run.sh legal-entity sync` projects from the vault.
  */
-export const COMPANY_LEGAL_NAME = 'Rediacc OÜ';
-export const COMPANY_REGISTRY_CODE = '17363830';
-export const COMPANY_REGISTER_NAME = 'Estonian Commercial Register (Äriregister)';
-export const COMPANY_VAT_NUMBER = 'EE102920091';
-export const COMPANY_REGISTERED_ADDRESS =
-  'Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Estonia';
+export const COMPANY_REGISTERED_ADDRESS = `${LEGAL_ENTITY.registeredAddress}, ${
+  new Intl.DisplayNames(['en'], { type: 'region' }).of(LEGAL_ENTITY.countryCode) ??
+  LEGAL_ENTITY.countryCode
+}`;
 
 /**
  * GitHub repository path for fetching releases

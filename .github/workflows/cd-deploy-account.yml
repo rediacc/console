@@ -401,6 +401,25 @@ jobs:
         run: npm install && npm run install:natives && cd ../.. && npm run install:natives
         working-directory: private/account
 
+      - name: Legal entity projection matches Bitwarden
+        # PLAN-terms-acceptance Design 1: no Worker deploy goes out while
+        # packages/shared/src/legal/entity.generated.* trails the vault. The ten
+        # SELLER_* values come from the fetch above, and REDIACC_BWS_PROFILES tells
+        # rediacc_ci.legal.entity they are already bound. It prints field names only.
+        env:
+          REDIACC_BWS_PROFILES: legal-entity
+          SELLER_ADDRESS_LINE1: ${{ env.BWS_SELLER_ADDRESS_LINE1 }}
+          SELLER_ADDRESS_LINE2: ${{ env.BWS_SELLER_ADDRESS_LINE2 }}
+          SELLER_CITY: ${{ env.BWS_SELLER_CITY }}
+          SELLER_COUNTRY: ${{ env.BWS_SELLER_COUNTRY }}
+          SELLER_EMAIL: ${{ env.BWS_SELLER_EMAIL }}
+          SELLER_NAME: ${{ env.BWS_SELLER_NAME }}
+          SELLER_POSTAL_CODE: ${{ env.BWS_SELLER_POSTAL_CODE }}
+          SELLER_REGISTER_NAME: ${{ env.BWS_SELLER_REGISTER_NAME }}
+          SELLER_REGISTRATION_NUMBER: ${{ env.BWS_SELLER_REGISTRATION_NUMBER }}
+          SELLER_VAT_NUMBER: ${{ env.BWS_SELLER_VAT_NUMBER }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.legal.entity verify
+
       - name: Build shared packages
         run: npm run build:packages
 
