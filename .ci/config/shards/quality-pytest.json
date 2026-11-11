@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-11T16:16:22.330Z",
+  "generatedAt": "2026-11-11T23:36:17.046Z",
   "legs": [
     {
       "index": 1,
@@ -557,6 +557,7 @@
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_greenlight.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_housekeeping_phases.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_installmethods_container_version.py",
+        "pytest:.ci/rediacc_ci/tests/gates/test_gate_job_timeout_headroom_skip.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_media_args.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_media_bridge.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_media_entry.py",

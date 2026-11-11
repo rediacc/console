@@ -23,14 +23,16 @@ ERR_502 = "gh: Server Error (HTTP 502)"
 
 
 def _load():
-    spec = importlib.util.spec_from_file_location("headroom_under_test", SCRIPT)
-    mod = importlib.util.module_from_spec(spec)
-    sys.path.insert(0, str(SCRIPT.parent))
+    hop = paths.on_sys_path(SCRIPT.parent)
     try:
+        spec = importlib.util.spec_from_file_location("headroom_under_test", SCRIPT)
+        assert spec is not None
+        assert spec.loader is not None
+        mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
+        return mod
     finally:
-        sys.path.remove(str(SCRIPT.parent))
-    return mod
+        sys.path.remove(hop)
 
 
 def _baseline(tmp_path: Path) -> Path:
