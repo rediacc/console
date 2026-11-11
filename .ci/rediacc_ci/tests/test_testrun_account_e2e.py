@@ -585,7 +585,7 @@ class _Fake:
         self.dry, self.installed, self.apt = dry, installed, apt
         self.calls: list[list[str]] = []
 
-    def __call__(self, argv: list[str], **kw: typing.Any) -> subprocess.CompletedProcess[str]:
+    def __call__(self, argv: list[str], **_kw: typing.Any) -> subprocess.CompletedProcess[str]:
         self.calls.append(argv)
         if argv[0] == "dpkg-query":
             ok = argv[-1] in self.installed
@@ -596,7 +596,7 @@ class _Fake:
             return subprocess.CompletedProcess(argv, 0, self.dry, "")
         if isinstance(self.apt, BaseException):
             raise self.apt
-        return subprocess.CompletedProcess(argv, int(typing.cast(int, self.apt)), "", "")
+        return subprocess.CompletedProcess(argv, int(typing.cast("int", self.apt)), "", "")
 
 
 DRY = "apt-get install -y --no-install-recommends libnss3 libatk1.0-0 libgbm1\n"
