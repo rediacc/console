@@ -5,8 +5,8 @@
  */
 
 import { DEFAULTS } from '@rediacc/shared/config';
-import type { SFTPClient } from '../../remote/sftp/index.js';
 import { t } from '../../i18n/index.js';
+import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
 import { expectedAccountServerOrigin } from '../backup/backup-store-universe.js';
 import { configService } from '../config/config-resources.js';
@@ -275,7 +275,11 @@ function forceReissueSet(
       .filter((s) => s.status === 'machine_mismatch' || s.status === 'identity_mismatch')
       .map((s) => s.repositoryGuid)
   );
-  if (adoptOrigin) for (const guid of foreignOrigin) guids.add(guid);
+  // Without it a foreign-origin licence is skipped whole, so it is no pending reissue either, whatever its status.
+  for (const guid of foreignOrigin) {
+    if (adoptOrigin) guids.add(guid);
+    else guids.delete(guid);
+  }
   return guids;
 }
 
@@ -317,6 +321,73 @@ function skipForeignOrigin<T extends RemoteRepoLicenseScanEntry>(
   return { kept, skipped };
 }
 
+/**
+ * The repos a batch sends: the scanned ones the config tracks, minus every foreign-origin licence unless `adoptOrigin`,
+ * and the GUIDs whose current dates the request drops.
+ */
+function selectBatchRepos(
+  machineName: string,
+  remoteRepos: RemoteRepoLicenseScanEntry[],
+  localRepos: { name: string; config: { repositoryGuid: string; grandGuid?: string } }[],
+  licenseStatuses: { repositoryGuid: string; status: string }[],
+  adoptOrigin: boolean
+): {
+  knownRemoteRepos: ReturnType<typeof resolveKnownRemoteRepos>['knownRemoteRepos'];
+  unknownRepoFailures: { repositoryGuid: string; error: string }[];
+  foreignSkips: { repositoryGuid: string; error: string }[];
+  forceReissueGuids: Set<string>;
+} {
+  const foreignOrigin = reposWithForeignLicenseOrigin(remoteRepos, machineName);
+  const forceReissueGuids = forceReissueSet(licenseStatuses, foreignOrigin, adoptOrigin);
+  const repoByGuid = new Map(
+    localRepos.map((entry) => [entry.config.repositoryGuid, { grandGuid: entry.config.grandGuid }])
+  );
+  const { knownRemoteRepos: resolvedRepos, unknownRepoFailures } = resolveKnownRemoteRepos(
+    remoteRepos,
+    repoByGuid
+  );
+  if (adoptOrigin) {
+    return {
+      knownRemoteRepos: resolvedRepos,
+      unknownRepoFailures,
+      foreignSkips: [],
+      forceReissueGuids,
+    };
+  }
+  const { kept, skipped } = skipForeignOrigin(
+    machineName,
+    resolvedRepos,
+    foreignOrigin,
+    new Map(localRepos.map((entry) => [entry.config.repositoryGuid, entry.name]))
+  );
+  return { knownRemoteRepos: kept, unknownRepoFailures, foreignSkips: skipped, forceReissueGuids };
+}
+
+/** The answer of a batch that sends nothing: no tracked repo, or every tracked repo licensed by another server. */
+function emptyBatchResult(
+  scanned: number,
+  unknownRepoFailures: { repositoryGuid: string; error: string }[],
+  foreignSkips: { repositoryGuid: string; error: string }[],
+  invalidSignatureDetected: number,
+  requiredGuid: string | undefined
+): RepoBatchRefreshResult {
+  const failures = [...unknownRepoFailures, ...foreignSkips];
+  const recoveryFailureMode: RepoBatchRecoveryFailureMode =
+    foreignSkips.length === 0 && scanned > 0 ? 'no_known_repos' : 'server_rejected_all';
+  return {
+    scanned,
+    issued: 0,
+    refreshed: 0,
+    unchanged: 0,
+    failed: failures.length,
+    valid: 0,
+    invalidSignatureDetected,
+    failures,
+    recoveryFailureMode,
+    serverErrorSample: foreignSkipSample(failures, foreignSkips, requiredGuid),
+  };
+}
+
 /** The caller's `license-scan` answer when it holds one, else a scan job of its own. */
 function remoteScan(
   machineName: string,
@@ -356,41 +427,17 @@ async function runRepoLicenseBatch(
     scanRemoteLicenseStatuses(machineName, datastore).catch(() => []),
   ]);
 
-  const foreignOrigin = reposWithForeignLicenseOrigin(remoteRepos, machineName);
-  const forceReissueGuids = forceReissueSet(licenseStatuses, foreignOrigin, adoptOrigin);
-
-  const repoByGuid = new Map(
-    localRepos.map((entry) => [entry.config.repositoryGuid, { grandGuid: entry.config.grandGuid }])
-  );
-  const { knownRemoteRepos: resolvedRepos, unknownRepoFailures } = resolveKnownRemoteRepos(
-    remoteRepos,
-    repoByGuid
-  );
-  const { kept: knownRemoteRepos, skipped: foreignSkips } = adoptOrigin
-    ? { kept: resolvedRepos, skipped: [] }
-    : skipForeignOrigin(
-        machineName,
-        resolvedRepos,
-        foreignOrigin,
-        new Map(localRepos.map((entry) => [entry.config.repositoryGuid, entry.name]))
-      );
+  const { knownRemoteRepos, unknownRepoFailures, foreignSkips, forceReissueGuids } =
+    selectBatchRepos(machineName, remoteRepos, localRepos, licenseStatuses, adoptOrigin);
 
   if (knownRemoteRepos.length === 0) {
-    const failures = [...unknownRepoFailures, ...foreignSkips];
-    const recoveryFailureMode: RepoBatchRecoveryFailureMode =
-      foreignSkips.length === 0 && remoteRepos.length > 0 ? 'no_known_repos' : 'server_rejected_all';
-    return {
-      scanned: remoteRepos.length,
-      issued: 0,
-      refreshed: 0,
-      unchanged: 0,
-      failed: failures.length,
-      valid: 0,
-      invalidSignatureDetected: forceReissueGuids.size,
-      failures,
-      recoveryFailureMode,
-      serverErrorSample: foreignSkipSample(failures, foreignSkips, requiredGuid),
-    };
+    return emptyBatchResult(
+      remoteRepos.length,
+      unknownRepoFailures,
+      foreignSkips,
+      forceReissueGuids.size,
+      requiredGuid
+    );
   }
 
   const body = await accountServerFetch<{

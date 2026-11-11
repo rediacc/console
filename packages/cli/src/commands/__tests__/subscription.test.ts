@@ -171,6 +171,7 @@ const {
 const { Command } = await import('commander');
 
 const { renderRepoBatchRefreshSummary } = await import('../subscription-output.js');
+const { executeSubscriptionRefresh } = await import('../subscription-actions.js');
 
 describe('subscription command helpers', () => {
   let restoreJobDeps: () => void;
@@ -712,7 +713,7 @@ describe('subscription command helpers', () => {
     expect(mockOutputWarn).toHaveBeenCalledWith('repo-bad: quota reached');
   });
 
-  it('plain refresh -m never asks the batch to adopt another account server\'s licences', async () => {
+  it("plain refresh -m never asks the batch to adopt another account server's licences", async () => {
     await executeMachineRefresh('hostinger');
     expect(mockRefreshRepoLicensesBatch.mock.calls[0][7]).toEqual({ adoptOrigin: false });
   });
@@ -720,6 +721,15 @@ describe('subscription command helpers', () => {
   it('refresh -m --adopt-origin carries the flag through the job step into the batch', async () => {
     await executeMachineRefresh('hostinger', { adoptOrigin: true });
     expect(mockRefreshRepoLicensesBatch.mock.calls[0][7]).toEqual({ adoptOrigin: true });
+  });
+
+  it('--adopt-origin without -m refuses before touching the account or a machine', async () => {
+    for (const options of [{ adoptOrigin: true }, { adoptOrigin: true, repo: 'mail' }]) {
+      await expect(executeSubscriptionRefresh(options)).rejects.toThrow(
+        'commands.subscription.refresh.adoptOriginNeedsTarget'
+      );
+    }
+    expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
   });
 
   it('refresh -m --adopt-origin with no login refuses instead of renewing in place', async () => {

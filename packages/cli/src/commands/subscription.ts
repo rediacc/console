@@ -29,10 +29,8 @@ import { promptRegionSelection } from '../utils/region-prompt.js';
 import { withSpinner } from '../utils/spinner.js';
 import { readStdinValue } from '../utils/stdin.js';
 import {
-  executeAccountRefresh,
-  executeMachineRefresh,
   executeMachineStatus,
-  executeRepoLicenseRefresh,
+  executeSubscriptionRefresh,
   executeSubscriptionStatus,
 } from './subscription-actions.js';
 import { outputSubscriptionScope } from './subscription-output.js';
@@ -423,24 +421,7 @@ export function registerSubscriptionCommands(program: Command): void {
     .option('--adopt-origin', t('commands.subscription.refresh.adoptOrigin'))
     .action(async (options) => {
       try {
-        if (options.machine && options.repo) {
-          throw new ValidationError(t('commands.subscription.refresh.targetExclusive'));
-        }
-        const adoptOrigin = options.adoptOrigin === true;
-        // --adopt-origin moves a machine's licences in one batch; --repo reissues through its own path.
-        if (adoptOrigin && !options.machine) {
-          throw new ValidationError(t('commands.subscription.refresh.adoptOriginNeedsTarget'));
-        }
-        if (options.repo) {
-          // --repo derives its own machine from the ref, so it never needs -m.
-          await executeRepoLicenseRefresh(options.repo);
-          return;
-        }
-        if (options.machine) {
-          await executeMachineRefresh(options.machine, { adoptOrigin });
-          return;
-        }
-        await executeAccountRefresh();
+        await executeSubscriptionRefresh(options);
       } catch (error) {
         handleError(error);
       }

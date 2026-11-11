@@ -425,6 +425,34 @@ function runRepoBatchRefresh(
   );
 }
 
+/**
+ * `subscription refresh`, routed by its flags: none = account, -m = machine, --repo = one repo. `--adopt-origin` moves a
+ * machine's licences in one batch, so it rides -m only; --repo reissues through its own path.
+ */
+export async function executeSubscriptionRefresh(options: {
+  machine?: string;
+  repo?: string;
+  adoptOrigin?: boolean;
+}): Promise<void> {
+  if (options.machine && options.repo) {
+    throw new ValidationError(t('commands.subscription.refresh.targetExclusive'));
+  }
+  const adoptOrigin = options.adoptOrigin === true;
+  if (adoptOrigin && !options.machine) {
+    throw new ValidationError(t('commands.subscription.refresh.adoptOriginNeedsTarget'));
+  }
+  if (options.repo) {
+    // --repo derives its own machine from the ref, so it never needs -m.
+    await executeRepoLicenseRefresh(options.repo);
+    return;
+  }
+  if (options.machine) {
+    await executeMachineRefresh(options.machine, { adoptOrigin });
+    return;
+  }
+  await executeAccountRefresh();
+}
+
 /** `subscription refresh` with no flags: re-read the account state from the server. */
 export async function executeAccountRefresh(): Promise<void> {
   const tokenState = getSubscriptionTokenState();

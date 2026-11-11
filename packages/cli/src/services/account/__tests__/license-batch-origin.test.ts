@@ -5,6 +5,7 @@ const fetchMock = vi.hoisted(() => vi.fn());
 const scanMock = vi.hoisted(() => vi.fn());
 const writeMock = vi.hoisted(() => vi.fn());
 const warnMock = vi.hoisted(() => vi.fn());
+const statusMock = vi.hoisted(() => vi.fn(() => Promise.resolve([] as unknown[])));
 const GUIDS = vi.hoisted(() => [
   '11111111-1111-4111-8111-111111111111',
   '22222222-2222-4222-8222-222222222222',
@@ -16,7 +17,7 @@ vi.mock('../license-machine.js', () => ({
   clusterIdFor: () => undefined,
   readLocalMachineId: () => Promise.resolve('client'),
   readRemoteMachineId: () => Promise.resolve('machine'),
-  scanRemoteLicenseStatuses: () => Promise.resolve([]),
+  scanRemoteLicenseStatuses: statusMock,
   scanRemoteRepoLicenses: scanMock,
   writeRepoLicense: writeMock,
 }));
@@ -117,14 +118,15 @@ describe('refreshRepoLicensesBatch and a foreign-origin licence', () => {
   }> {
     scanMock.mockResolvedValue(scanned);
     // The server answers `refreshed` with a blob for every repo it is sent, so every repo sent is a licence written.
-    fetchMock.mockImplementation((_path: string, init: { body: { repos: { repositoryGuid: string }[] } }) =>
-      Promise.resolve({
-        results: init.body.repos.map((r) => ({
-          repositoryGuid: r.repositoryGuid,
-          status: 'refreshed',
-          license: { blob: r.repositoryGuid },
-        })),
-      })
+    fetchMock.mockImplementation(
+      (_path: string, init: { body: { repos: { repositoryGuid: string }[] } }) =>
+        Promise.resolve({
+          results: init.body.repos.map((r) => ({
+            repositoryGuid: r.repositoryGuid,
+            status: 'refreshed',
+            license: { blob: r.repositoryGuid },
+          })),
+        })
     );
     const result = await refreshRepoLicensesBatch(
       'hostinger',
@@ -175,13 +177,19 @@ describe('refreshRepoLicensesBatch and a foreign-origin licence', () => {
     expect(result.refreshed).toBe(1);
   });
 
+  it('does not count a skipped foreign licence as a pending reissue, whatever renet says of it', async () => {
+    statusMock.mockResolvedValueOnce([{ repositoryGuid: OLD, status: 'machine_mismatch' }]);
+    const { result } = await refresh(scan.slice(0, 2));
+    expect(result.invalidSignatureDetected).toBe(0);
+  });
+
   it('with adoptOrigin reissues the foreign licence, dropping its current dates', async () => {
     const { sent } = await refresh(scan.slice(0, 2), { adoptOrigin: true });
     expect(sent.has(OLD)).toBe(true);
     expect(sent.get(OLD)?.currentHardExpiresAt).toBeUndefined();
     expect(sent.get(OLD)?.currentRefreshRecommendedAt).toBeUndefined();
     expect(sent.get(FRESH)?.currentHardExpiresAt).toBe('2099-02-01');
-    expect(writeMock.mock.calls.map((c) => c[1]).sort()).toEqual([OLD, FRESH].sort());
+    expect(new Set(writeMock.mock.calls.map((c) => c[1]))).toEqual(new Set([OLD, FRESH]));
     expect(warnMock).not.toHaveBeenCalled();
   });
 });
