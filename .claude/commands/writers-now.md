@@ -23,12 +23,14 @@ The round is every Promoted plan whose row is not `done`, in table order, narrow
 
 | Group | Meaning | Who takes it |
 |---|---|---|
-| G1 bench-rewordable | names edge or stable only as where it runs | a recorded correction to bench, then the live queue |
-| G2 run now | a live run that can start today | the live queue (step 7) |
-| G3 pipeline | proves CD, cd-release-stable, a nightly or a merge itself | nobody yet; named in the report |
-| G4 time | needs a soak or a data window | nobody yet; named in the report |
+| G1 bench-rewordable | names edge or stable only as where it runs, including a GitHub wait with no `GitHub-only:` tag that names edge or stable | a recorded correction to bench, then the live queue |
+| G2 run now | a live run that can start today, including every other GitHub wait with no `GitHub-only:` tag: it runs on its local route | the live queue (step 7) |
+| G3 pipeline | tagged `GitHub-only: CD`, `CI parity`, `native-runner` or `preview`: it proves the pipeline, CI or a preview itself | nobody yet; named in the report |
+| G4 time | tagged `GitHub-only: soak`, or needs a data window | nobody yet; named in the report |
 | G5 code | real code or tests still to write | writers (step 2) |
 | G6 operator | a decision or access only the operator has | the batched ask (step 7) |
+
+**A GitHub wait is G2 until a tag says otherwise** (operator ruling R2 of 2026-11-11: "The planner should really find no way to test/deploy locally to go with github."). A box names a GitHub wait when its text matches a phrase of `tiers.live.github_waits` in `.ci/config/proof-tiers.json` ("released", "after the merge", "CD", "nightly", a CI or ct-tests run), read through `wl_plandeps.box_github_wait`. With no valid `GitHub-only:` tag on its line or in a `(corrected ...)` line, it is G2 and runs on a local route of its surface (`surfaces.<name>.local`: vm:check, hostinger, deploy_bench, the D1 clones, the e2e-local fleet), or G1 when it names edge or stable. A valid `Local-route:` correction makes it G2 on the runners it names. A valid `GitHub-only: <kind> -- <why>` tag decides the group by its kind alone: G4 for `soak`, G3 for `CD`, `CI parity`, `native-runner` and `preview`. "Waits for the merge" or "a CI run" is therefore never a reason the survey gives for G3 on an untagged box. The tag grammar and LP8 are in docs/agent-reference/plan-records.md.
 
 `LP-<target> [live]` boxes are read mechanically, through `wl_liveproof.lp_boxes` and `parse_accept` (`.claude/hooks/stop/wl_liveproof.py`), which are exact. Every other tag is a hint. A writer's report overrides the survey: code it finds already present moves that box to G2, or closes it when the code was the whole box.
 
@@ -119,7 +121,7 @@ G3 and G4 boxes stay open and are named once in the report. A G6 question goes i
 
 A round often stalls on boxes no writer or runner can move without a wider permit: a gate the recorder will not pass (no VERIFIED `vm:check`), a soak window, a production or destructive step, an external send, or a decision parked as G6. Steps 1 and 2 below run on every round, right after the survey returns, since the report (step 8) names their top reasons. Steps 3 and 4 run only when the arguments carry the word `ask` (any position; it is removed from the filter), and they run before the writers of step 4 start, so the answers shape the round; the runs a permit unlocks then join the queues of steps 3 and 7 as those steps run.
 
-1. **Group the stuck boxes by the reason they cannot move**, from the survey's G3, G4 and G6 lines and the live boxes blocked on a gate, window or permit. Skip the reasons a merge or a CI run settles. Count boxes per reason and keep the top ten.
+1. **Group the stuck boxes by the reason they cannot move**, from the survey's G3, G4 and G6 lines and the live boxes blocked on a gate, window or permit. Skip the reasons a merge or a CI run settles, which only a box tagged `GitHub-only:` may give. Count boxes per reason and keep the top ten.
 2. **Turn each reason into the permit that would move it**, phrased as the action the session would then take, with its consequence: for example a recorder waiver marked `--vm-waived ASKED:<minute>` that a later VERIFIED run confirms, a 2-hour window in place of a day, a production run on a named region, a destructive cleanup after its archive step, a real mail to a named address, or a parked decision taken now. A reason that a ruling or `feedback` memory already settles is acted on, not asked.
 3. **Ask in batches of up to four** with `AskUserQuestion`, the riskier permit first and labelled with its consequence, the conservative option beside it, and a free-text answer always possible. More than four reasons go in the next batch after the first is answered.
 4. **Record each answer before acting on it**: one round-log DECISIONS line with the operator's words and `ASKED:<minute>Z`, and one worklist item per permit granted naming the boxes it moves. Then start the runs the permits unlock, in the queues of steps 3 and 7.
