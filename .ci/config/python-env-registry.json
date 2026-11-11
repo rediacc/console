@@ -2483,9 +2483,6 @@
       "PYTHONPYCACHEPREFIX",
       "PYTHONSAFEPATH"
     ],
-    ".claude/rediacc_hooks/guards/_repo_scope.py": [
-      "*name"
-    ],
     ".claude/rediacc_hooks/guards/block_host_toolchain_run.py": [
       "AWS_BIN"
     ],
@@ -2546,6 +2543,9 @@
     ],
     ".claude/rediacc_hooks/run_tests.py": [
       "PYTEST_BIN"
+    ],
+    ".claude/rediacc_hooks/shellscan.py": [
+      "*n"
     ],
     ".claude/rediacc_hooks/tests/hooklabels.py": [
       "HOOK_LABEL_DIR"
