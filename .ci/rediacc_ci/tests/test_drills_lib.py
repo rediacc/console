@@ -922,6 +922,21 @@ def test_no_gateway_before_the_restart_means_teardown_kills_ours(
     assert {pid for pid, _sig in killed} == {424242}
 
 
+def test_a_second_restart_does_not_mistake_the_drills_own_gateway_for_an_earlier_one(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review 59b334fd.3: on a second restart_gateway the healthy gateway is the drill's own, so teardown still kills it."""
+    drill, killed = _fake_gateway_drill(tmp_path, monkeypatch)
+    monkeypatch.setattr(drill, "gateway_alive", lambda: False)
+    drill.restart_gateway()
+    monkeypatch.setattr(drill, "gateway_alive", lambda: True)
+    monkeypatch.setattr(drill, "stop_worktree_stack", lambda: None)
+    drill.restart_gateway()
+    assert not drill.gateway_preexisted
+    drill.teardown()
+    assert killed, "the drill's own gateway must be killed at exit"
+
+
 @pytest.mark.parametrize(
     ("state", "healthy", "expect_stop"),
     [(True, True, True), (True, False, False), (False, True, False)],
