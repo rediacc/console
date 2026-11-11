@@ -147,3 +147,22 @@ Every touched surface must be covered by one declared target that the surface ad
 **The ladder.** For a row surface with a VM phase (renet, cli-remote, account) the recorder first requires `vm_tier.admit` to admit the head tree, so a VERIFIED `npm run vm:check -- --changed` receipt on the same tree comes before any live run, and the row records its run id in `ladder.vm`. CI cannot read the VM cache, so this is a recorder refusal and not a gate rule. The recorder also applies `receipt.identity_refusal` (dirty-tree, checkout-mismatch, modified-checkout, build-mismatch, modified-build, not-live) and refuses a secret shape in the row.
 
 **The LP rules.** LP1 (a required plan has no valid `Live-Proof:` line) and LP2 (a `none` whose ruling does not resolve) are implemented in `wl_plandeps.live_proof_findings`, which the pre-edit guard `block_plan_without_depends` shares. The gate `npm run check:ci-plan-live-proof` (`.ci/scripts/quality/check_plan_live_proof.py`, lane `quality-branch`) judges all seven, LP2 also covering a declared target no touched surface admits and a touched surface left uncovered: LP3 (a missing or Accept-less `LP-<target>` box), LP4 (an LP box ticked with no matching VERIFIED, clean receipt), LP5 (an invalid receipt: head not an ancestor of the tick, inputs digest changed, deploy not at head or not confirmed live, bad version id or row id, secret shape), LP6 (a required plan finished without a valid receipt per target) and LP7 (vacuity: an empty map, zero required plans, an unregistered check id). LP4 to LP6 judge only transitions committed after `tiers.live.baseline_at` in `.ci/config/proof-tiers.json`. Zero parsed plans is CANNOT RUN (exit 77), never green.
+
+## Local first: a box that waits on GitHub
+
+Operator ruling R2 of 2026-11-11 (`agent/plans/PLAN-local-first-delivery.md` Design L): "The planner should really find no way to test/deploy locally to go with github." A plan box is proved from this machine first, and waits on a GitHub run only when no local path exists, saying why.
+
+**The local routes.** `.ci/config/proof-tiers.json` names them in `tiers.live.local_runners` (`vm-check`, `hostinger`, `e2e-local`, `bench-cli`, `deploy-bench`, `d1-migrations`, `deploy-proxy-bench`, `www-local`, each with its commands), and every surface lists the ones that prove it in `surfaces.<name>.local`. `rediacc_ci.proof.surfaces` refuses a surface with no local route.
+
+**The phrases.** `tiers.live.github_waits` is the one list of words that mark a GitHub wait ("released", "after the merge", "CD", "nightly", "preview deploy", "CI run", "ct-tests run", "run id", "ci-trace"). A phrase matches as a whole word; one with a capital letter matches case-sensitively, so `CD` never matches the shell's `cd`.
+
+**The two tags.** An OPEN box whose text (its line and its continuation lines) names a phrase carries one of these, on the box line or in an indented `(corrected ...)` line under it, so the box line itself can stay byte-identical:
+
+    GitHub-only: <CD|CI parity|native-runner|soak|preview> -- <why no local path, 20+ chars>
+    Local-route: <runner>[, <runner>...] -- <how the branch proves it, 20+ chars>
+
+`GitHub-only:` keeps the wait and names its kind: `CD` (only the release pipeline deploys it), `CI parity` (the proof is that CI agrees), `native-runner` (a platform no local machine has), `soak` (calendar time on a released channel) or `preview` (a per-PR preview no local deploy reproduces). `Local-route:` moves the box onto local runners, each an id of `tiers.live.local_runners`. A tag inside a later `(corrected ...)` line supersedes an earlier one, and the value of a tag is not searched for phrases.
+
+**The rule.** LP8 (`wl_plandeps.github_wait_findings`) refuses an open box that names a phrase and carries neither tag, and any malformed tag (an unknown kind, an unknown runner, a why under 20 characters). A ticked box is history and is not judged. `npm run check:ci-plan-live-proof` judges every live plan; until box L4 of PLAN-local-first-delivery (the corpus sweep) lands, `LP8_ENFORCED` is False and each finding prints as `ADVISORY LP8 <plan>: ...` with the exit code unchanged, and `--lp8-enforce` judges them for one run. `wl_plandeps.github_wait_introduced` is the pre-edit reading: the LP8 findings an edit adds.
+
+**Survey routing.** `/writers-now` reads an untagged GitHub wait as G2 (run it now, locally; G1 when it names edge or stable) and a tagged box by its kind: G4 for `soak`, G3 for every other kind.

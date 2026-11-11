@@ -48,7 +48,20 @@ THE RULES, EACH WITH A PLANTED CONTROL IN `--selftest`:
         registry check covers, an Accept line names a check the registry lacks, or
         zero required plans are derived while live plans' Owns plainly name surface
         paths, or LP4 to LP6 cannot run (no merge-base, or plan-boxes.json
-        unreadable at HEAD or at the base). ZERO parsed plans is CANNOT RUN (exit 77), never green.
+        unreadable at HEAD or at the base), or `tiers.live.github_waits` is empty
+        (LP8 would judge nothing). ZERO parsed plans is CANNOT RUN (exit 77), never green.
+    LP8 an open box of a live plan names a `tiers.live.github_waits` phrase (it waits
+        on GitHub: "released", "after the merge", "CD", "nightly", ...) and carries
+        neither `GitHub-only: <CD|CI parity|native-runner|soak|preview> -- <why, 20+
+        chars>` nor `Local-route: <runner>[, ...] -- <how, 20+ chars>` (runners from
+        `tiers.live.local_runners`), on its line or in an indented `(corrected ...)`
+        line under it; a malformed tag or route is LP8 too. A ticked box is not
+        judged. The rule is `wl_plandeps.github_wait_findings`, which the pre-edit
+        guard shares (agent/plans/PLAN-local-first-delivery.md Design L, operator
+        ruling R2: "The planner should really find no way to test/deploy locally to
+        go with github.").
+
+LP8 IS ADVISORY UNTIL THE SWEEP LANDS. `LP8_ENFORCED` is False while box L4 of PLAN-local-first-delivery (the `(corrected ...)` sweep of the live corpus) is open: each LP8 finding then prints as `ADVISORY LP8 <plan>: ...` every run and the summary counts them, so the sweep's worklist is visible, and the exit code ignores them. `--lp8-enforce` judges them as findings for one run (the lead's check before flipping the constant); the commit that lands L4 flips `LP8_ENFORCED` to True and deletes this paragraph.
 
 ADVISORY, printed every run, red or green: every `Live-Proof: none` on a required plan, the PENDING (V7) set, and every WAIVED VM LADDER still owed a confirmation.
 
@@ -66,6 +79,7 @@ Exit codes: 0 green, 1 findings, 2 a control failed or bad usage, 77 cannot run.
     --proof-map <path>    read baseline_at and the registry for LP7 from another map
                           (what-if; the surfaces themselves are the committed map's)
     --baseline-at <date>  override baseline_at (what-if)
+    --lp8-enforce         judge LP8 as findings for this run (default: LP8_ENFORCED)
     --owed <rel>          the LP6 half alone for one plan: print `owed <rel> <target>` per
                           declared target with no valid receipt. Exit 0 with lines, 1 when
                           nothing is owed, 77 when LP6 cannot run (no merge-base, or
@@ -134,6 +148,8 @@ LIVE_MARK = "[live]"
 # A Ruling line that waives the live proof names it in so many words.
 WAIVER_WORD_RE = re.compile(r"live[- ]proof", re.IGNORECASE)
 FINISHED_FOLDERS = ("agent/plans/_done",)
+# See the module docstring: False until PLAN-local-first-delivery box L4 lands, then True.
+LP8_ENFORCED = False
 
 
 class CannotRunError(RuntimeError):
@@ -200,6 +216,9 @@ class MapView:
     checks: dict[str, LT.Check]
     registry_error: str
     baseline_at: object
+    # LP8's inputs: `tiers.live.github_waits` and the ids of `tiers.live.local_runners`.
+    github_waits: tuple[str, ...] = ()
+    local_runners: tuple[str, ...] = ()
 
 
 def map_view(raw: object) -> MapView:
@@ -219,9 +238,17 @@ def map_view(raw: object) -> MapView:
         checks = LT.parse_checks(live)
     except LT.RegistryError as exc:
         error = str(exc)
+    waits: tuple[str, ...] = ()
+    runners: tuple[str, ...] = ()
     if isinstance(live, dict):
         baseline = live.get("baseline_at")
-    return MapView(live_of, checks, error, baseline)
+        raw_waits = live.get("github_waits")
+        if isinstance(raw_waits, list):
+            waits = tuple(w for w in raw_waits if isinstance(w, str) and w.strip())
+        raw_runners = live.get("local_runners")
+        if isinstance(raw_runners, dict):
+            runners = tuple(raw_runners)
+    return MapView(live_of, checks, error, baseline, waits, runners)
 
 
 def parse_baseline(value: object) -> dt.date | None:
@@ -248,6 +275,15 @@ def map_findings(view: MapView) -> list[Finding]:
                 MAP_REL,
                 "tiers.live.baseline_at is %r, not a YYYY-MM-DD date, so LP4 to LP6 have no "
                 "forward-only cut. Set it to the landing date." % (view.baseline_at,),
+            )
+        )
+    if not view.github_waits:
+        out.append(
+            Finding(
+                "LP7",
+                MAP_REL,
+                "tiers.live.github_waits is empty or missing, so LP8 judges no box; it is the "
+                "phrase list of a box that waits on GitHub (PLAN-local-first-delivery Design L)",
             )
         )
     out.extend(
@@ -1155,8 +1191,26 @@ def transitions(ctx: Context, base_override: str | None) -> tuple[list[Finding],
     return found, line
 
 
+def github_wait_judged(
+    plans: Iterable[Plan], view: MapView, enforce: bool
+) -> tuple[list[Finding], list[str], int]:
+    """(findings, advisories, count) of LP8 over every live plan's open boxes. With `enforce` False each finding is an `ADVISORY LP8` line instead (see the module docstring)."""
+    found = [
+        Finding(code, plan.rel, msg)
+        for plan in plans
+        if plan.live
+        for code, msg in D.github_wait_findings(plan.text, view.github_waits, view.local_runners)
+    ]
+    if enforce:
+        return found, [], len(found)
+    return [], ["ADVISORY %s" % f for f in found], len(found)
+
+
 def evaluate(
-    root: pathlib.Path, view: MapView, base_override: str | None
+    root: pathlib.Path,
+    view: MapView,
+    base_override: str | None,
+    enforce_lp8: bool = LP8_ENFORCED,
 ) -> tuple[list[Finding], list[str], dict[str, Any]]:
     plans = load_plans(root, PF.FINISHED_STATES)
     live = [p for p in plans.values() if p.live]
@@ -1188,6 +1242,9 @@ def evaluate(
         findings.extend(found)
         notes.extend(more)
         findings.extend(box_findings(plan, view.checks, view.live_of))
+    lp8_found, lp8_notes, lp8_count = github_wait_judged(live, view, enforce_lp8)
+    findings.extend(lp8_found)
+    notes.extend(lp8_notes)
     moved, line = transitions(ctx, base_override)
     findings.extend(moved)
     base = base_of(root, base_override)
@@ -1209,6 +1266,8 @@ def evaluate(
         "baseline_at": view.baseline_at,
         "pending": sum(n.startswith("PENDING") for n in notes),
         "transitions": line,
+        "lp8": lp8_count,
+        "lp8_mode": "enforced" if enforce_lp8 else "advisory until PLAN-local-first-delivery L4",
         **waived,
     }
     return findings, notes, stats
@@ -1360,6 +1419,62 @@ class _Suite:
         c.truthy("surface prefixes are derived from the map", "private/renet/cmd/" in pre)
         c.check("plainly_hit counts a surface-path Owns", plainly_hit([_fixture()], pre), 1)
         c.check("plainly_hit ignores docs Owns", plainly_hit([_fixture(owns="docs/x.md")], pre), 0)
+
+    def lp8(self) -> None:
+        c = self.c
+        raw = _complete_map()
+        del raw["tiers"]["live"]["github_waits"]
+        c.truthy(
+            "a map with no github_waits is LP7",
+            any("github_waits" in f.message for f in map_findings(map_view(raw))),
+        )
+
+        def judged(boxes: str, enforce: bool = True) -> tuple[list[str], int]:
+            plan = _fixture(owns="docs/x.md", proof=None, boxes=boxes)
+            found, notes, count = github_wait_judged([plan], self.full, enforce)
+            return (_codes(found) if enforce else notes), count
+
+        wait = "- [ ] T9 the edge check after the merge\n"
+        why = " -- only the CD pipeline deploys the edge channel"
+        c.check("an untagged after-the-merge box is LP8", judged(wait), (["LP8"], 1))
+        c.check(
+            "the same box tagged in a (corrected ...) line passes",
+            judged(wait + "  (corrected 2026-11-12, R2) GitHub-only: CD" + why + ")\n"),
+            ([], 0),
+        )
+        c.check(
+            "a Local-route correction naming a runner passes",
+            judged(wait + "  (corrected 2026-11-12, R2) Local-route: deploy-bench" + why + "\n"),
+            ([], 0),
+        )
+        c.check(
+            "a route naming no known runner is LP8",
+            judged(wait + "  (corrected 2026-11-12) Local-route: nowhere" + why + "\n"),
+            (["LP8"], 1),
+        )
+        c.check(
+            "a why under 20 characters is LP8",
+            judged(wait + "  (corrected 2026-11-12) GitHub-only: CD -- edge only\n"),
+            (["LP8"], 1),
+        )
+        c.check(
+            "an unknown kind is LP8",
+            judged(wait + "  (corrected) GitHub-only: later" + why + "\n"),
+            (["LP8"], 1),
+        )
+        c.check(
+            "a tag on a plain continuation line does not count",
+            judged(wait + "  GitHub-only: CD" + why + "\n"),
+            (["LP8"], 1),
+        )
+        c.check("a ticked box is not judged", judged(wait.replace("[ ]", "[x]")), ([], 0))
+        c.check("a box with no phrase passes", judged("- [ ] T9 deploy to bench\n"), ([], 0))
+        c.check("`cd` in a command is not CD", judged("- [ ] T9 `cd packages/www`\n"), ([], 0))
+        notes, count = judged(wait, enforce=False)
+        c.check("advisory mode: no finding, one ADVISORY LP8 note", (count, len(notes)), (1, 1))
+        c.truthy(
+            "the advisory note names LP8", bool(notes) and notes[0].startswith("ADVISORY LP8 ")
+        )
 
     def required_rules(self) -> None:
         c = self.c
@@ -1933,6 +2048,7 @@ class _Suite:
             self.owed_door,
             self.forward_only,
             self.waivers,
+            self.lp8,
         ):
             part()
         return self.c.report()
@@ -1975,6 +2091,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--proof-map", default=None)
     ap.add_argument("--baseline-at", default=None)
     ap.add_argument("--owed", default=None, metavar="REL")
+    ap.add_argument("--lp8-enforce", action="store_true")
     args = ap.parse_args(argv)
 
     if controls.controls_first("plan live proof", lambda: not selftest()):
@@ -1995,7 +2112,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.owed is not None:
         return _owed_main(root, view, args.base, args.owed)
     try:
-        findings, notes, stats = evaluate(root, view, args.base)
+        findings, notes, stats = evaluate(
+            root, view, args.base, enforce_lp8=LP8_ENFORCED or args.lp8_enforce
+        )
     except CannotRunError as exc:
         print("CANNOT RUN: %s" % exc, file=sys.stderr)
         return CANNOT_RUN
@@ -2007,6 +2126,7 @@ def main(argv: list[str] | None = None) -> int:
         "baseline_at %(baseline_at)s" % stats
     )
     print("  transitions: %s" % stats["transitions"])
+    print("  github waits (LP8, %(lp8_mode)s): %(lp8)d open box finding(s)" % stats)
     print(
         "  waived VM ladders: %(waived)d row(s), %(confirmed)d confirmed, %(owed_vm)d owed "
         "(%(vm_receipts)d VERIFIED vm:check receipt(s) read on this machine)" % stats

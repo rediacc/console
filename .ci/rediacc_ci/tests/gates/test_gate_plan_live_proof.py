@@ -598,3 +598,78 @@ def test_lp5_names_a_malformed_waiver_on_a_ticked_receipt(gate, tmp_path):
         bad.err, "ladder.waived 'ASKED:today' is not ASKED:<YYYY-MM-DDTHH:MM>Z", "LP5 names it"
     )
     gate.log_pass("LP5 judges a waived ladder's shape")
+
+
+# --------------------------------------------------------------------------- LP8, a box that waits on GitHub (PLAN-local-first-delivery L2)
+
+GH_WAIT = "- [ ] T2 the edge check after the merge\n"
+GH_WHY = " -- only the CD pipeline deploys the edge channel"
+
+
+def _gh_tree(tmp_path: pathlib.Path, box: str) -> pathlib.Path:
+    """The seeded tree plus a docs-only plan carrying `box`, committed on the work branch."""
+    root = _seed(tmp_path)
+    _write(root, "agent/plans/PLAN-gh.md", _plan("gh", owns="docs/gh/**", line=None, box=box))
+    _commit(root, "a plan with a GitHub wait", AFTER)
+    return root
+
+
+def test_an_untagged_after_the_merge_box_is_lp8(gate, tmp_path):
+    """CONTROL: before LP8 the gate printed nothing for this box and exited 0 under --lp8-enforce too."""
+    root = _gh_tree(tmp_path, GH_WAIT)
+    result = _gate(root, _map(tmp_path), "--lp8-enforce")
+    gate.assert_exit(1, result, "an untagged GitHub wait is red when LP8 is enforced")
+    gate.assert_contains(result.err, "LP8 agent/plans/PLAN-gh.md: box T2", "LP8 names the box")
+    gate.assert_contains(result.err, "'after the merge'", "and the phrase it matched")
+    gate.log_pass("an untagged after-the-merge box is LP8")
+
+
+def test_lp8_is_advisory_until_the_sweep(gate, tmp_path):
+    root = _gh_tree(tmp_path, GH_WAIT)
+    result = _gate(root, _map(tmp_path))
+    gate.assert_exit(0, result, "LP8_ENFORCED is False until PLAN-local-first-delivery L4")
+    gate.assert_contains(result.out, "ADVISORY LP8 agent/plans/PLAN-gh.md: box T2", "printed")
+    gate.assert_contains(result.out, "github waits (LP8, advisory", "the summary names the mode")
+    gate.log_pass("LP8 prints as an advisory and keeps the exit code")
+
+
+def test_the_same_box_tagged_in_a_corrected_line_passes(gate, tmp_path):
+    box = GH_WAIT + "  (corrected 2026-11-12, R2) GitHub-only: CD" + GH_WHY + ")\n"
+    result = _gate(_gh_tree(tmp_path, box), _map(tmp_path), "--lp8-enforce")
+    gate.assert_exit(0, result, "a valid GitHub-only tag clears the wait")
+    gate.assert_contains(result.out, "github waits (LP8, enforced): 0", "and LP8 counted none")
+    gate.log_pass("a GitHub-only tag in a (corrected ...) line passes")
+
+
+def test_a_local_route_correction_passes(gate, tmp_path):
+    box = GH_WAIT + "  (corrected 2026-11-12, R2) Local-route: deploy-bench" + GH_WHY + "\n"
+    result = _gate(_gh_tree(tmp_path, box), _map(tmp_path), "--lp8-enforce")
+    gate.assert_exit(0, result, "a Local-route naming a runner of the map clears the wait")
+    gate.log_pass("a Local-route correction passes")
+
+
+def test_a_why_under_twenty_characters_is_lp8(gate, tmp_path):
+    box = GH_WAIT + "  (corrected 2026-11-12) GitHub-only: CD -- edge only\n"
+    result = _gate(_gh_tree(tmp_path, box), _map(tmp_path), "--lp8-enforce")
+    gate.assert_exit(1, result, "a short why does not clear the wait")
+    gate.assert_contains(result.err, "under 20 characters", "LP8 says why")
+    gate.log_pass("a why under 20 characters is LP8")
+
+
+def test_a_ticked_box_is_not_judged(gate, tmp_path):
+    root = _gh_tree(tmp_path, GH_WAIT.replace("- [ ]", "- [x]"))
+    result = _gate(root, _map(tmp_path), "--lp8-enforce")
+    gate.assert_exit(0, result, "a ticked box is history")
+    gate.assert_not_contains(result.err, "LP8", "and LP8 is silent")
+    gate.log_pass("a ticked box is not judged")
+
+
+def test_a_map_without_github_waits_is_lp7(gate, tmp_path):
+    raw = json.loads(_map(tmp_path).read_text(encoding="utf-8"))
+    del raw["tiers"]["live"]["github_waits"]
+    bare = tmp_path / "map-no-waits.json"
+    bare.write_text(json.dumps(raw), encoding="utf-8")
+    result = _gate(_seed(tmp_path), bare)
+    gate.assert_exit(1, result, "an empty phrase list makes LP8 judge nothing")
+    gate.assert_contains(result.err, "github_waits", "LP7 names the field")
+    gate.log_pass("a map with no github_waits is LP7")
