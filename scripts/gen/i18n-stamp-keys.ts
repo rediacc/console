@@ -43,7 +43,7 @@ import { isEntryPoint } from '../lib/entry-point.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_TRANSLATIONS_DIR = path.join(HERE, '../../packages/www/src/i18n/translations');
-const LEDGER_NAME = '.naturalized-hashes.json';
+const LEDGER_NAME ='.naturalized-hashes.json';
 
 type Json = Record<string, unknown>;
 export type Ledger = Json & { languages?: Record<string, Record<string, string>> };
@@ -171,7 +171,7 @@ export function parseArgs(argv: readonly string[]): Args {
   return args;
 }
 
-export function run(argv: readonly string[], dir = DEFAULT_TRANSLATIONS_DIR): number {
+export function run(argv: readonly string[], dir: string): number {
   let args: Args;
   try {
     args = parseArgs(argv);
@@ -232,6 +232,7 @@ export function run(argv: readonly string[], dir = DEFAULT_TRANSLATIONS_DIR): nu
   if (args.write) {
     applyStamps(ledger, plans);
     const next = serializeLedger(ledger);
+    // tree-write: safe the target is the caller's ledger; check:ci-i18n-sync enters this module through i18n-stamp-keys.control.ts, which points it at a file under mkdtemp (os.tmpdir()), never the repo ledger
     if (next !== ledgerRaw) fs.writeFileSync(ledgerPath, next);
   } else {
     process.stdout.write('dry run: nothing written (pass --write to stamp)\n');
@@ -246,4 +247,9 @@ export function run(argv: readonly string[], dir = DEFAULT_TRANSLATIONS_DIR): nu
   return 0;
 }
 
-if (isEntryPoint(import.meta.filename)) process.exitCode = run(process.argv.slice(2));
+// The CLI runs against every translations dir listed here (one today), the same shape sync-translations.ts uses for its locale dirs; run() takes the dir as a parameter so the control can hand it a mkdtemp fixture.
+const TRANSLATIONS_DIRS = [DEFAULT_TRANSLATIONS_DIR];
+
+if (isEntryPoint(import.meta.filename)) {
+  for (const d of TRANSLATIONS_DIRS) process.exitCode = run(process.argv.slice(2), d);
+}

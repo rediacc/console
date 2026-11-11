@@ -297,7 +297,9 @@ function fixtureCatalog(
 
 function writeFixture(dir: string, opts: { consent: boolean; page: boolean }): void {
   const put = (rel: string, content: string) => {
+    // tree-write: safe dir is the fixture dir run() made with mkdtemp under os.tmpdir()
     fs.mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true });
+    // tree-write: safe dir is the fixture dir run() made with mkdtemp under os.tmpdir()
     fs.writeFileSync(path.join(dir, rel), content);
   };
   put(
@@ -373,6 +375,7 @@ function selftest(): number {
   const has = (v: Verdict, prefix: string) => v.findings.some((f) => f.startsWith(prefix));
   const edit = (dir: string, rel: string, fn: (s: string) => string) => {
     const file = path.join(dir, rel);
+    // tree-write: safe dir is the fixture dir run() made with mkdtemp under os.tmpdir()
     fs.writeFileSync(file, fn(fs.readFileSync(file, 'utf8')));
   };
   const archive = archiveRel('terms-of-service', '2026-01-01');
@@ -458,6 +461,7 @@ function selftest(): number {
     'an empty manifest cannot run (77)',
     (d) => {
       writeFixture(d, { consent: false, page: false });
+      // tree-write: safe d is the fixture dir run() made with mkdtemp under os.tmpdir()
       fs.writeFileSync(path.join(d, MANIFEST_REL), '{"documents": {}}\n');
     },
     (_v, rc) => rc === 77

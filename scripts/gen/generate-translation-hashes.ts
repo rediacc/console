@@ -205,6 +205,7 @@ export function writeHashManifest(
     hashes: sortObjectKeys(hashes),
   };
 
+  // tree-write: safe the target is the caller's output path; check:ci-i18n-sync enters this module through the control's import and passes a mkdtemp fixture dir (hashes-control-*), never the repo manifest
   fs.writeFileSync(outputPath, JSON.stringify(manifest, null, 2) + '\n');
 
   console.log(`   ${name}: ${Object.keys(hashes).length} keys -> ${outputPath}`);

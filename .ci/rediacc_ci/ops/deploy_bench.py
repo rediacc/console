@@ -45,7 +45,7 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
-from rediacc_ci.core import local_common, wrangler
+from rediacc_ci.core import wrangler
 from rediacc_ci.deploy import deploy_account, deploy_record, deploy_signer
 from rediacc_ci.enterprise import control_db
 from rediacc_ci.ops import bench_access, bench_preflight, cf_auth, push_backup_credentials
@@ -924,6 +924,9 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
     if not (web_dir / "node_modules").is_dir():
         _run(["npm", "install"], web_dir, "npm install")
     # The portal imports @rediacc/shared as a file: dependency, so vite bundles whatever packages/shared/dist holds. Without this build a deploy shipped a stale dist: on 2026-11-11 the bench consent page rendered with an empty notice and no Terms link, because dist predated the regenerated consent notices.
+    # Imported here, not at module level: local_common writes the checkout (stamps, gypi, key cache), and every gate that imports deploy_bench (login_bench, ops_health, portal_sitekey_guard) would then be judged a tree writer by check:ci-gate-tree-writes.
+    from rediacc_ci.core import local_common
+
     if not local_common.ensure_packages_built():
         raise DeployError("building packages/shared failed; the portal would bundle a stale dist")
     build_env = dict(os.environ)

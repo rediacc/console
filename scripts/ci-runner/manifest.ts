@@ -227,6 +227,7 @@ export const GATES: readonly GateSpec[] = [
     leaves: [
       'scripts/__tests__/sync-translations.control.ts',
       'scripts/__tests__/generate-translation-hashes.control.ts',
+      'scripts/__tests__/i18n-stamp-keys.control.ts',
     ],
     ci: {
       kind: 'step',

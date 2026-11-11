@@ -69,6 +69,7 @@ try {
   // Control: the pre-fix writer (always restamp) must trip the idempotence assertion.
   const preFix: typeof writeHashManifest = (dir, hashes, _n, _c, resolve) => {
     const p = path.join(dir, '.translation-hashes.json');
+    // tree-write: safe p is under a dir the control's own mkdtemp (os.tmpdir()) root handed in, never the tree
     fs.writeFileSync(p, JSON.stringify({ $meta: { sourceCommit: resolve?.(dir) }, hashes }));
     return p;
   };
