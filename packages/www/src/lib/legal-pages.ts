@@ -5,15 +5,15 @@
  * the type check instead of rendering a bare key at build time.
  */
 export const LEGAL_PAGES = [
-  "termsOfService",
-  "privacyPolicy",
-  "acceptableUsePolicy",
-  "dataProcessingAgreement",
-  "serviceLevelAgreement",
-  "enterpriseLicense",
-  "refundPolicy",
-  "cookiePolicy",
-  "telemetryPolicy",
+  'termsOfService',
+  'privacyPolicy',
+  'acceptableUsePolicy',
+  'dataProcessingAgreement',
+  'serviceLevelAgreement',
+  'enterpriseLicense',
+  'refundPolicy',
+  'cookiePolicy',
+  'telemetryPolicy',
 ] as const;
 
 export type LegalPage = (typeof LEGAL_PAGES)[number];
@@ -23,11 +23,9 @@ export type LegalPageKey = `pages.${LegalPage}`;
 
 /** `pages.termsOfService` becomes `termsOfService`; a key outside the list throws. */
 export function legalPageName(key: LegalPageKey): LegalPage {
-  const name = key.slice("pages.".length);
+  const name = key.slice('pages.'.length);
   if (!(LEGAL_PAGES as readonly string[]).includes(name)) {
-    throw new Error(
-      `${key} is not a legal page; add it to LEGAL_PAGES in legal-pages.ts`,
-    );
+    throw new Error(`${key} is not a legal page; add it to LEGAL_PAGES in legal-pages.ts`);
   }
   return name as LegalPage;
 }
