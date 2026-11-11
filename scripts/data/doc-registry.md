@@ -743,6 +743,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_dispatch.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_gh_flag_spellings.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_githook_backup_receipt.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_githook_backup_ref.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_githook_gen_docs.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_githook_generated_artifacts.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_githook_plan_box.py | (none) | via pytest (testpaths) | py |

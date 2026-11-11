@@ -7,7 +7,7 @@ WHAT EACH HOOK REFUSES (the rules are `commit_policy`'s, shared with the pre-bas
   commit-msg              a CI skip token; a commit on `main` that is not a well-formed `[hotfix]`; `[hotfix]` off `main`; `[no-review]` on a non-writing path or on a `[hotfix]`; a commit from a lease tree without a valid `Plan-Box:` trailer (`lease_plan_box_refusal` below).
   reference-transaction   in the `prepared` state, a new `refs/heads/*` (old oid all zeros AND the name not yet resolving: a forced move of an existing branch also arrives with zeros, and is not a creation) that breaks the one-branch rule: outside a submodule, only from `main`, with no other live branch and an `MMDD-N` name; in a submodule, only the console's current branch name. LOCAL FACTS ONLY: no `gh`, so a branch counts as live until its upstream is gone.
   pre-commit              a commit from a lease tree (`commit_policy.lease_root`) that stages a gitlink or a path under `agent/`; a commit that stages a gen-docs provider input and leaves a generated doc region drifted in the COMMITTED tree (the section above `gen_docs_pre_commit` says how it stays fast), and a commit that stages an input of a generated artifact enrolled in `.ci/config/generated-artifacts.json` and leaves that artifact stale in the committed tree (`artifacts.py` beside this file).
-  pre-push                a push sending or naming a pin under `refs/worktrees/`, from every repository; any push from a lease tree; a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one; a push of the backup paths that no VERIFIED backup receipt covers (box J10 of PLAN-backup-program, `backup_receipt_refusal` below). A line a live release run lists is admitted instead (box W1-D of PLAN-local-release, `_release_admitted` below).
+  pre-push                a push sending or naming a pin under `refs/worktrees/`, from every repository; any push from a lease tree; a push to `main` other than the fast-forward fallback (one ref, a real commit, the live branch's pushed tip, the remote `main` its ancestor; box M2 of PLAN-plan-per-pr-loop, operator ruling 2026-10-02) or the GitLab mirror push (below), a delete of `main` included; a push creating a remote branch that is not the current one; a push of the backup paths that no VERIFIED backup receipt covers (box J10 of PLAN-backup-program, `backup_receipt_refusal` below). A line a live release run lists is admitted instead (box W1-D of PLAN-local-release, `_release_admitted` below). A push naming `refs/backup/**` meets the backup-ref rules instead of all of these (Design G of PLAN-local-first-delivery, `backup_push` below): the repository's pinned GitLab project only, nothing else in the push, create or fast-forward, immutable snapshots, and incremental session-link and secret scans.
 
 `post-commit` REFUSES NOTHING. In a lease tree it runs the `pin` verb of `.ci/rediacc_ci/dev/worktree_lease.py`, which moves `refs/worktrees/<id>` forward to HEAD, so a commit outlives its tree until it lands (agent/plans/PLAN-worktree-lease.md, Design 3). It runs under the override too.
 
@@ -22,7 +22,9 @@ LOADED BY FILE, NOT BY PACKAGE. Git runs a hook as a plain executable with no pa
 
 from __future__ import annotations
 
+import datetime
 import hashlib
+import importlib
 import importlib.util
 import json
 import os
@@ -341,20 +343,20 @@ MIRROR_HOST = "gitlab.rediacc.io"
 MIRROR_PATH = "/rediacc-org/github/console.git"
 
 
-def mirror_url_refusal(url: str) -> str:
-    """ "" when `url` is the console's GitLab mirror, else why not. Credentials in the URL are never echoed."""
+def _pinned_url_refusal(url: str, path: str, what: str) -> str:
+    """ "" when `url` is exactly `https://<MIRROR_HOST><path>`, else why not, naming `what` the pin is. Credentials in the URL are never echoed."""
     try:
         parts = urllib.parse.urlsplit(url or "")
         port = parts.port
         host = parts.hostname
     except ValueError:
         return "the `%s` URL cannot be parsed" % MIRROR_REMOTE
-    want = "https://%s%s" % (MIRROR_HOST, MIRROR_PATH)
+    want = "https://%s%s" % (MIRROR_HOST, path)
     if (
         parts.scheme != "https"
         or host != MIRROR_HOST
         or port is not None
-        or parts.path != MIRROR_PATH
+        or parts.path != path
         or parts.query
         or parts.fragment
     ):
@@ -363,8 +365,13 @@ def mirror_url_refusal(url: str) -> str:
             if parts.scheme
             else "(a local path)"
         )
-        return "`%s` points at %s, not the console mirror %s" % (MIRROR_REMOTE, shown, want)
+        return "`%s` points at %s, not %s %s" % (MIRROR_REMOTE, shown, what, want)
     return ""
+
+
+def mirror_url_refusal(url: str) -> str:
+    """ "" when `url` is the console's GitLab mirror, else why not. Credentials in the URL are never echoed."""
+    return _pinned_url_refusal(url, MIRROR_PATH, "the console mirror")
 
 
 def mirror_main_refusal(repo: str, sha: str) -> str:
@@ -426,6 +433,259 @@ def _mirror_push_refusal(repo: str, url: str, lines: list[list[str]]) -> str:
     return mirror_main_refusal(repo, local_oid)
 
 
+# THE BACKUP REFS (Design G of agent/plans/PLAN-local-first-delivery.md, operator ruling R1 2026-11-11). Unpushed work gets an off-machine copy under `refs/backup/<branch>/` on the repository's own GitLab project: `live` fast-forwarded on every commit, an immutable `daily-<YYYY-MM-DD>` per UTC day, and an immutable `pre-rewrite-<YYYYMMDDTHHMMZ>` keeping the old `live` tip when history is rewritten. Never a force push.
+#
+# THE PINS. `BACKUP_PATHS` maps a repository, by its path below the console root ("" for the console itself), to its project path on `MIRROR_HOST`: the console's backup refs go to the mirror project, each submodule's to a project of the same group named after it. `refs/backup/**` to any other URL, `origin` (public GitHub) included, is refused; before this, pre-push judged only `refs/heads/*`, and a backup ref to any remote passed unjudged. `.ci/rediacc_ci/setup/backup_remotes.py` adds the submodule remotes from this map.
+#
+# THE RULES (`backup_ref_refusal`). A backup push carries nothing but `refs/backup/**`. `live`: a create, a fast-forward, or a delete in a push that creates a `pre-rewrite-*` at the same old oid. The worker pushes that pair with `--atomic`; the flag is not visible to a pre-push hook, so the pairing is what is checked. `daily-*` and `pre-rewrite-*`: create only, deleted only once the stamp in the name is past `BACKUP_RETENTION_DAYS`. No receipt is asked (R1).
+#
+# THE SCANS ARE INCREMENTAL. The session-link scan and a secret-shape scan judge `<tips> --not --remotes <each line's remote old oid>`, so a sync that moves `live` reads only the commits after the old `live` tip. The secret scan reads the ADDED lines of each commit's patch with `wl_store.secret_shapes_in`, the scanner every tracked worklist write passes, and names the shape, never the match.
+#
+# NEVER `refs/remotes/*`. Every "is it published" question here (`--not --remotes`, `_published`, `block_unpushed_submodule_pin`) reads a remote-tracking ref as published, so the worker reads the remote with `git ls-remote` and never fetches a backup ref into `refs/remotes/`.
+BACKUP_SPACE = "refs/backup/"
+BACKUP_PATHS = {
+    "": MIRROR_PATH,
+    "private/renet": "/rediacc-org/github/renet.git",
+    "private/account": "/rediacc-org/github/account.git",
+    "private/elite": "/rediacc-org/github/elite.git",
+}
+BACKUP_RETENTION_DAYS = {"daily": 90, "pre-rewrite": 30}
+_BACKUP_SNAPSHOT_RE = re.compile(r"^(?:(daily)-(\d{4}-\d{2}-\d{2})|(pre-rewrite)-(\d{8}T\d{4}Z))$")
+BACKUP_SCAN_TIMEOUT = 600
+
+
+def _utcnow() -> datetime.datetime:
+    return datetime.datetime.now(datetime.UTC)
+
+
+def backup_repo_key(repo: str) -> str | None:
+    """The `BACKUP_PATHS` key of `repo`: "" for the console, the submodule's path below its superproject for a pinned submodule, None otherwise."""
+    if not repo:
+        return None
+    sup = cp.superproject(repo)
+    if not sup:
+        return ""
+    rel = os.path.relpath(os.path.realpath(repo), os.path.realpath(sup))
+    return rel if rel in BACKUP_PATHS else None
+
+
+def backup_url_refusal(repo: str, url: str) -> str:
+    """ "" when `url` is the pinned GitLab project for `repo`'s backup refs, else why not."""
+    key = backup_repo_key(repo)
+    if key is None:
+        return "this repository has no pinned GitLab project for backup refs (BACKUP_PATHS)"
+    return _pinned_url_refusal(url, BACKUP_PATHS[key], "the pinned backup project")
+
+
+def is_backup_push(lines: list[list[str]]) -> bool:
+    """Whether any pushed line updates a ref under `refs/backup/`."""
+    return any(line[2].startswith(BACKUP_SPACE) for line in lines)
+
+
+def backup_snapshot(leaf: str) -> tuple[str, datetime.datetime] | None:
+    """`(kind, stamp)` for a `daily-<YYYY-MM-DD>` or `pre-rewrite-<YYYYMMDDTHHMMZ>` leaf, None for any other name."""
+    m = _BACKUP_SNAPSHOT_RE.match(leaf)
+    if not m:
+        return None
+    try:
+        if m.group(1):
+            return "daily", datetime.datetime.strptime(m.group(2) + "+0000", "%Y-%m-%d%z")
+        stamp = datetime.datetime.strptime(m.group(4)[:-1] + "+0000", "%Y%m%dT%H%M%z")
+        return "pre-rewrite", stamp
+    except ValueError:
+        return None
+
+
+def _split_backup_ref(ref: str) -> tuple[str, str]:
+    """`(branch, leaf)` of `refs/backup/<branch>/<leaf>`; the branch is "" when the ref has no leaf below a branch."""
+    branch, _sep, leaf = ref[len(BACKUP_SPACE) :].rpartition("/")
+    return branch, leaf
+
+
+def backup_ref_refusal(repo: str, url: str, lines: list[list[str]]) -> str:
+    """ "" when this push is an admitted backup-ref update (the rules above), else why not."""
+    why = backup_url_refusal(repo, url)
+    if why:
+        return why
+    others = [line[2] for line in lines if not line[2].startswith(BACKUP_SPACE)]
+    if others:
+        return "a push to `%s**` carries no other ref, and this one also sends %s" % (
+            BACKUP_SPACE,
+            ", ".join("`%s`" % ref for ref in others[:5]),
+        )
+    kept: dict[str, set[str]] = {}
+    for _local_ref, new, remote_ref, old in lines:
+        branch, leaf = _split_backup_ref(remote_ref)
+        snap = backup_snapshot(leaf)
+        if branch and snap and snap[0] == "pre-rewrite" and old == cp.ZERO_OID:
+            kept.setdefault(branch, set()).add(new)
+    now = _utcnow()
+    for _local_ref, new, remote_ref, old in lines:
+        branch, leaf = _split_backup_ref(remote_ref)
+        if not branch:
+            return "`%s` is not `%s<branch>/<live|daily-...|pre-rewrite-...>`" % (
+                remote_ref,
+                BACKUP_SPACE,
+            )
+        if leaf == "live":
+            if new == cp.ZERO_OID:
+                if old not in kept.get(branch, set()):
+                    return (
+                        "this deletes `%s` without creating `%s%s/pre-rewrite-<stamp>` at its old tip `%s` in the same push"
+                        % (remote_ref, BACKUP_SPACE, branch, old[:12])
+                    )
+                continue
+            if old == cp.ZERO_OID:
+                continue
+            if cp.git(["merge-base", "--is-ancestor", old, new], cwd=repo) is None:
+                return (
+                    "`%s` moves from `%s` to `%s`, which is no fast-forward (or the old tip is not here); "
+                    "a rewrite keeps the old tip as a `pre-rewrite-*` ref and restarts live, never a force"
+                    % (remote_ref, old[:12], new[:12])
+                )
+            continue
+        snap = backup_snapshot(leaf)
+        if snap is None:
+            return (
+                "`%s` is not `live`, `daily-<YYYY-MM-DD>` or `pre-rewrite-<YYYYMMDDTHHMMZ>`"
+                % remote_ref
+            )
+        kind, stamp = snap
+        if new == cp.ZERO_OID:
+            days = BACKUP_RETENTION_DAYS[kind]
+            if now - stamp <= datetime.timedelta(days=days):
+                return "`%s` is inside its %d-day retention and may not be deleted" % (
+                    remote_ref,
+                    days,
+                )
+            continue
+        if old != cp.ZERO_OID:
+            return "`%s` already exists at `%s`; a `%s-*` ref is created once and never moved" % (
+                remote_ref,
+                old[:12],
+                kind,
+            )
+    return ""
+
+
+def _secret_scanner():
+    """`wl_store.secret_shapes_in`, imported with `.claude/hooks/stop` on sys.path for the import only."""
+    stop = str(sp.STOP_DIR)
+    inserted = sp.on_sys_path(stop)
+    try:
+        return importlib.import_module("wl_store").secret_shapes_in
+    finally:
+        if inserted and stop in sys.path:
+            sys.path.remove(stop)
+
+
+def backup_exclusions(repo: str, lines: list[list[str]]) -> list[str]:
+    """Each line's remote old oid that is a commit here: the history the remote already holds under these refs. An old oid missing here is left out, which only widens the scan."""
+    out: list[str] = []
+    for line in lines:
+        old = line[3]
+        if old == cp.ZERO_OID or old in out:
+            continue
+        if cp.git(["cat-file", "-e", "%s^{commit}" % old], cwd=repo) is not None:
+            out.append(old)
+    return out
+
+
+def outgoing_secret_shapes(
+    repo: str, lines: list[list[str]], exclude: list[str]
+) -> tuple[list[str], str]:
+    """`(offenders, unchecked)`: each new commit (`<tips> --not --remotes <exclude>`) whose patch ADDS a line carrying a secret shape, as `<sha12> <subject>: <shape>`, and a non-empty `unchecked` when the range or the scanner could not be read. Streamed, so a long first sync never holds its whole patch in memory."""
+    tips = [line[1] for line in lines if line[1] != cp.ZERO_OID]
+    if not tips:
+        return [], ""
+    try:
+        shapes_in = _secret_scanner()
+    except ImportError as exc:
+        return [], "wl_store.secret_shapes_in cannot be imported (%s)" % exc
+    argv = [
+        "git",
+        "log",
+        "-p",
+        "--no-color",
+        "--no-ext-diff",
+        "--no-textconv",
+        "--format=%x1e%H%x1f%s",
+        *tips,
+        "--not",
+        "--remotes",
+        *exclude,
+    ]
+    offenders: list[str] = []
+    seen: set[tuple[str, str]] = set()
+    sha = subject = ""
+    try:
+        proc = subprocess.Popen(argv, cwd=repo, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    except OSError as exc:
+        return [], "`git log -p` did not start (%s)" % exc
+    deadline = time.monotonic() + BACKUP_SCAN_TIMEOUT
+    stream = proc.stdout
+    if stream is None:
+        proc.kill()
+        proc.wait()
+        return [], "`git log -p` gave no output stream"
+    with stream:
+        for raw in stream:
+            if time.monotonic() > deadline:
+                proc.kill()
+                proc.wait()
+                return [], "`git log -p` ran past %ds" % BACKUP_SCAN_TIMEOUT
+            text = raw.decode("utf-8", "replace").rstrip("\n")
+            if text.startswith("\x1e"):
+                sha, _sep, subject = text[1:].partition("\x1f")
+                continue
+            if not text.startswith("+") or text.startswith("+++ "):
+                continue
+            for shape in shapes_in(text[1:]):
+                if (sha, shape) in seen:
+                    continue
+                seen.add((sha, shape))
+                offenders.append("%s %s: %s" % (sha[:12], subject[:60], shape))
+    if proc.wait() != 0:
+        return [], "`git log -p <tips> --not --remotes <old tips>` exited %d" % proc.returncode
+    return offenders, ""
+
+
+def backup_push(repo: str, url: str, lines: list[list[str]]) -> int:
+    """The whole pre-push verdict of a push naming `refs/backup/**`: the ref rules, then the incremental session-link and secret scans."""
+    reason = backup_ref_refusal(repo, url, lines)
+    if reason:
+        return _refuse(
+            "this push names `%s**` and is not an admitted backup-ref update (%s).\n"
+            "Backup refs go only to the repository's pinned GitLab project, alone in their push,\n"
+            "created or fast-forwarded and never forced (agent/plans/PLAN-local-first-delivery.md,\n"
+            "Design G); `./run.sh backup-ref sync` pushes them." % (BACKUP_SPACE, reason)
+        )
+    exclude = backup_exclusions(repo, lines)
+    leaks, unchecked = outgoing_session_leaks(repo, lines, exclude)
+    secrets: list[str] = []
+    if not unchecked and not leaks:
+        secrets, unchecked = outgoing_secret_shapes(repo, lines, exclude)
+    if unchecked:
+        return _refuse(
+            "UNCHECKED: the new commits of this backup push could not be scanned (%s).\n"
+            "An unknown is not a pass." % unchecked
+        )
+    if leaks:
+        return _refuse(
+            "%d new commit(s) in this backup push carry a Claude session link, Claude-Session\n"
+            "trailer or Claude Code footer:\n  %s\n%s"
+            % (len(leaks), "\n  ".join(leaks[:20]), SESSION_ADVICE)
+        )
+    if secrets:
+        return _refuse(
+            "%d new commit(s) in this backup push add a line carrying a secret shape (the shape is\n"
+            "named, never the value):\n  %s\n"
+            "Remove the secret and rotate it; a history rewrite of the unpushed range is the\n"
+            "operator's call." % (len(secrets), "\n  ".join(secrets[:20]))
+        )
+    return 0
+
+
 # THE RELEASE RUN (box W1-D of agent/plans/PLAN-local-release.md). A local release, `python3 -m rediacc_ci.release.local`, pushes what CD pushed: the tap repository's formula commit and the like, some of them to `main`. A line is admitted only when `REDIACC_RELEASE_RUN` names a record under `.ci/cache/release/` of the console root whose pid is a live ancestor of this hook with a matching start time and argv, that provably ran the console's tracked, unmodified entry, whose tree is the console's `HEAD^{tree}`, and which lists that exact `(toplevel, remote, remote_ref, oid)`, `remote` being the first argument git hands this hook; `release_run.py` beside this file is the record format, its writer and its reader. An admitted line skips the branch rules and the backup check (the release gates judged both before any push); every other line meets the rules below unchanged. When the variable is set, a failed record says why on stderr at once, and a line the record does not list says so beside the refusal of that line, and only then: a tag or an ordinary branch push the rules admit anyway prints no release-run noise.
 def _release_admitted(
     repo: str, remote: str, lines: list[list[str]]
@@ -459,10 +719,12 @@ def _refuse_lines(notes: dict[int, str], refused: list[list[str]], message: str)
     return _refuse(message)
 
 
-def outgoing_session_leaks(repo: str, lines: list[list[str]]) -> tuple[list[str], str]:
+def outgoing_session_leaks(
+    repo: str, lines: list[list[str]], exclude: list[str] | None = None
+) -> tuple[list[str], str]:
     """`(offenders, unchecked)`: each outgoing commit or annotated tag whose message carries a session link, a session trailer or the footer (`session_leak`), as `<sha12> <subject>: <line>`, and a non-empty `unchecked` when the range could not be read.
 
-    OUTGOING MEANS NO REMOTE HAS IT YET: each pushed tip's commits `--not --remotes`, so a commit some remote-tracking ref already holds (the four that reached GitHub before this hook existed) does not block every later push, while every NEW one does, whichever remote it is going to. A deleted ref sends nothing. An unreadable range is UNCHECKED and refused by the caller: an unknown is not a pass.
+    OUTGOING MEANS NO REMOTE HAS IT YET: each pushed tip's commits `--not --remotes`, so a commit some remote-tracking ref already holds (the four that reached GitHub before this hook existed) does not block every later push, while every NEW one does, whichever remote it is going to. `exclude` adds oids the remote already holds under the pushed refs (the backup path's old tips), so a backup sync reads only its new commits. A deleted ref sends nothing. An unreadable range is UNCHECKED and refused by the caller: an unknown is not a pass.
     """
     if not repo:
         return [], "the repository cannot be read"
@@ -484,7 +746,10 @@ def outgoing_session_leaks(repo: str, lines: list[list[str]]) -> tuple[list[str]
         tips.append(local_oid)
     if not tips:
         return offenders, ""
-    log = cp.git(["log", "--format=%H%x1f%s%x1f%B%x1e", *tips, "--not", "--remotes"], cwd=repo)
+    log = cp.git(
+        ["log", "--format=%H%x1f%s%x1f%B%x1e", *tips, "--not", "--remotes", *(exclude or [])],
+        cwd=repo,
+    )
     if log is None:
         return [], "`git log <tips> --not --remotes` failed"
     for record in log.split("\x1e"):
@@ -523,6 +788,9 @@ def pre_push(argv: list[str], stdin: str) -> int:
     lease = cp.lease_root(repo)
     if lease:
         return _refuse("this pushes from the lease tree %s.\n%s" % (lease, cp.LEASE_ADVICE))
+    # A push naming `refs/backup/**` is judged whole by the backup rules, its own incremental scans included (Design G of PLAN-local-first-delivery); before them it reached no rule at all.
+    if is_backup_push(lines):
+        return backup_push(repo, argv[1] if len(argv) > 1 else "", lines)
     # FIRST of the rest (the mirror push, a release run): none of them makes a session link fit to publish.
     leaks, unchecked = outgoing_session_leaks(repo, lines)
     if unchecked:
