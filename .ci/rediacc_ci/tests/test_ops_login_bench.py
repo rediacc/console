@@ -15,6 +15,7 @@ VALUES = {
     login_bench.TOTP_SEED_ENV: SEED,
     login_bench.MASTER_PW_ENV: "store-Secret-4242",
 }
+NEW_SEED = base64.b32encode(b"enrolled-seed-9876543").decode().rstrip("=")
 FIXED_NOW = 1_800_000_010.0  # 20 s left in the window
 
 
@@ -48,7 +49,33 @@ def _env(**overrides):
     return env
 
 
-def _login(runner, argv=(), env=None):
+class FakeApi:
+    """The account's /auth routes: a TOTP challenge by default, `challenge=False` for an account with TOTP off."""
+
+    def __init__(self, challenge: bool = True, verify: int = 200, fail: dict | None = None):
+        self.calls: list[tuple[str, dict]] = []
+        self.challenge = challenge
+        self.verify = verify
+        self.fail = fail or {}
+
+    def post(self, route, body=None):
+        self.calls.append((route, dict(body or {})))
+        if route in self.fail:
+            return self.fail[route], {}
+        if route == "login":
+            if self.challenge:
+                return 200, {"requiresTwoFactor": True, "challengeToken": "chal-1"}
+            return 200, {"user": {"id": "u"}}
+        if route == "2fa/verify":
+            return self.verify, {}
+        if route == "2fa/setup":
+            return 200, {"secret": NEW_SEED, "uri": "otpauth://x"}
+        if route == "2fa/enable":
+            return 200, {"enabled": True, "backupCodes": ["bk-1111"]}
+        return 200, {}
+
+
+def _login(runner, argv=(), env=None, api=None):
     login_bench.login(
         list(argv),
         env or _env(),
@@ -56,6 +83,7 @@ def _login(runner, argv=(), env=None):
         now=lambda: FIXED_NOW,
         sleep=lambda _s: None,
         capture=runner.capture,
+        api=api or FakeApi(),
     )
 
 
@@ -210,7 +238,8 @@ def test_each_child_gets_only_its_own_values_by_name():
     runner = FakeRunner()
     _login(runner)
     access, login, enable, status = (child_env for _argv, child_env in runner.calls)
-    code = totp.code(SEED, at=FIXED_NOW)
+    # The probe spent the code of this window, so the CLI gets the next window's.
+    code = totp.code(SEED, at=FIXED_NOW + 20.5)
     assert login["REDIACC_LOGIN_EMAIL"] == VALUES[login_bench.EMAIL_ENV]
     assert login["REDIACC_LOGIN_PASSWORD"] == VALUES[login_bench.PW_ENV]
     assert login["REDIACC_LOGIN_TOTP"] == code
@@ -382,3 +411,176 @@ def test_the_remedy_is_the_npm_script():
         (login_bench.paths.repo_root() / "package.json").read_text(encoding="utf-8")
     )["scripts"]
     assert "rediacc_ci.ops.login_bench" in scripts["login:bench"]
+
+
+# ---- the two-factor probe and the re-enrolment -------------------------------------
+
+
+class EnrolCapture:
+    """capture() for a run that re-enrols: the mail-token child and the bws writer, recorded, plus the enable answer."""
+
+    def __init__(self, runner, mail_value="tok-reauth-1", write_rc=0):
+        self.runner = runner
+        self.mail_value = mail_value
+        self.write_rc = write_rc
+        self.order: list[str] = []
+        self.envs: list[dict] = []
+
+    def __call__(self, argv, env):
+        argv = list(argv)
+        if "store-from-env" in argv:
+            self.order.append("bws")
+            self.envs.append(dict(env))
+            return self.write_rc, "REDIACC_BENCH_TOTP_SEED MATCH\n"
+        if login_bench.MAIL_MODE in argv:
+            self.order.append("mail")
+            self.envs.append(dict(env))
+            return 0, self.mail_value + "\n"
+        return self.runner.capture(argv, env)
+
+
+def _enrol_login(api, cap=None, env=None, runner=None):
+    runner = runner or (cap.runner if cap else FakeRunner())
+    cap = cap or EnrolCapture(runner)
+    login_bench.login(
+        [],
+        env or _env(),
+        runner,
+        now=lambda: FIXED_NOW,
+        sleep=lambda _s: None,
+        capture=cap,
+        api=api,
+    )
+    return runner, cap
+
+
+def test_a_challenge_takes_the_normal_path_and_never_enrols():
+    api = FakeApi(challenge=True)
+    runner, cap = _enrol_login(api)
+    assert [r for r, _b in api.calls] == ["login", "2fa/verify"]
+    assert api.calls[1][1] == {"challengeToken": "chal-1", "code": totp.code(SEED, at=FIXED_NOW)}
+    assert cap.order == []
+    assert len(runner.calls) == 4
+
+
+def test_no_challenge_enrols_through_setup_store_and_enable_in_order():
+    api = FakeApi(challenge=False)
+    runner, cap = _enrol_login(api)
+    assert [r for r, _b in api.calls] == [
+        "login",
+        "reauth",
+        "reauth/verify",
+        "2fa/setup",
+        "2fa/enable",
+    ]
+    assert api.calls[2][1] == {"token": "tok-reauth-1"}
+    assert api.calls[4][1] == {"code": totp.code(NEW_SEED, at=FIXED_NOW)}
+    assert cap.order == ["mail", "bws"]
+    assert cap.envs[1][login_bench.TOTP_SEED_NEW_ENV] == NEW_SEED
+    # The CLI login uses the NEW seed, from a window after the one enable spent.
+    login_env = runner.calls[1][1]
+    assert login_env["REDIACC_LOGIN_TOTP"] == totp.code(NEW_SEED, at=FIXED_NOW + 20.5)
+
+
+def test_the_seed_is_stored_before_it_is_enabled():
+    seen: list[str] = []
+
+    class Api(FakeApi):
+        def post(self, route, body=None):
+            seen.append(route)
+            return super().post(route, body)
+
+    runner = FakeRunner()
+    cap = EnrolCapture(runner)
+    inner = cap.__call__
+
+    def capture(argv, env):
+        if "store-from-env" in argv:
+            seen.append("bws")
+        return inner(argv, env)
+
+    login_bench.login(
+        [],
+        _env(),
+        runner,
+        now=lambda: FIXED_NOW,
+        sleep=lambda _s: None,
+        capture=capture,
+        api=Api(challenge=False),
+    )
+    assert seen.index("2fa/setup") < seen.index("bws") < seen.index("2fa/enable")
+
+
+def test_a_failed_bws_write_stops_before_enable():
+    api = FakeApi(challenge=False)
+    runner = FakeRunner()
+    cap = EnrolCapture(runner, write_rc=1)
+    with pytest.raises(login_bench.LoginError) as caught:
+        _enrol_login(api, cap)
+    assert "TOTP stays off" in str(caught.value)
+    assert "2fa/enable" not in [r for r, _b in api.calls]
+
+
+def test_the_writer_argv_carries_names_never_the_seed(capsys):
+    api = FakeApi(challenge=False)
+    captured: list[list[str]] = []
+    runner = FakeRunner()
+    cap = EnrolCapture(runner)
+
+    def capture(argv, env):
+        captured.append(list(argv))
+        return cap(argv, env)
+
+    login_bench.login(
+        [],
+        _env(),
+        runner,
+        now=lambda: FIXED_NOW,
+        sleep=lambda _s: None,
+        capture=capture,
+        api=api,
+    )
+    write = next(a for a in captured if "store-from-env" in a)
+    assert write[-1] == "REDIACC_BENCH_TOTP_SEED > REDIACC_BENCH_TOTP_SEED_NEW"
+    out, err = capsys.readouterr()
+    for secret in (NEW_SEED, SEED, "bk-1111", "tok-reauth-1", VALUES[login_bench.PW_ENV]):
+        assert secret not in out + err
+        assert all(secret not in "\0".join(a) for a in captured)
+        assert all(secret not in "\0".join(a) for a, _e in runner.calls)
+
+
+def test_a_refused_code_is_the_stale_seed_refusal_and_does_not_loop():
+    api = FakeApi(challenge=True, verify=400)
+    runner = FakeRunner()
+    with pytest.raises(login_bench.LoginError) as caught:
+        _enrol_login(api, EnrolCapture(runner))
+    message = str(caught.value)
+    assert "stale" in message
+    assert "REDIACC_BENCH_TOTP_SEED" in message
+    assert SEED not in message
+    assert [r for r, _b in api.calls] == ["login", "2fa/verify"]
+    assert [a[-1] for a, _e in runner.calls] == ["add-current"]
+
+
+def test_a_refused_password_stops_before_any_cli_login():
+    api = FakeApi(fail={"login": 401})
+    runner = FakeRunner()
+    with pytest.raises(login_bench.LoginError) as caught:
+        _enrol_login(api, EnrolCapture(runner))
+    assert "401" in str(caught.value)
+    assert len(runner.calls) == 1
+
+
+def test_the_mail_mode_reads_only_a_reauth_token(monkeypatch, capsys):
+    rows = [{"text_body": "open https://bench/account/reauth/verify?token=abc_DEF-1 now"}]
+    seen: list[str] = []
+
+    def fake_rows(sql):
+        seen.append(sql)
+        return rows
+
+    monkeypatch.setattr(login_bench, "_d1_rows", fake_rows)
+    assert login_bench.mail_token_main("o'x@example.invalid", "2026-11-11T10:00:00") == 0
+    assert capsys.readouterr().out == "abc_DEF-1\n"
+    assert "kind = 'reauth'" in seen[0]
+    assert "'o''x@example.invalid'" in seen[0]

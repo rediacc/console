@@ -773,8 +773,55 @@ def test_case_a_copies_the_operator_with_the_same_id(dbs) -> None:
     apply_sql(dst, sql)
     _assert_mirrored(src, dst, OWNER)
     (u,) = rows(dst, "SELECT * FROM users")
-    assert u == rows(src, "SELECT * FROM users WHERE id = ?", OWNER)[0]
+    expected = rows(src, "SELECT * FROM users WHERE id = ?", OWNER)[0]
+    assert u == {**expected, **mod.TOTP_CLEARED}
     mod.verify(plan, Sqlite(dst), set())
+
+
+def _enable_totp(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        "UPDATE users SET totp_secret = ?, totp_backup_hashes = ?, totp_enabled = 1 WHERE id = ?",
+        ("tsk1.abc.xxx", '["h1","h2"]', OWNER),
+    )
+    conn.commit()
+
+
+def test_case_a_clears_totp_on_the_copied_operator_and_says_so(dbs) -> None:
+    src, dst = dbs
+    _enable_totp(src)
+    plan = plan_for(src, dst)
+    assert plan.case == "A"
+    assert any(line.startswith("identity: TOTP cleared") for line in plan.lines)
+    assert "tsk1.abc.xxx" not in "\n".join(plan.lines)
+    apply_sql(dst, mod.plan_sql(plan))
+    (u,) = rows(dst, "SELECT * FROM users")
+    assert u["totp_secret"] is None
+    assert u["totp_backup_hashes"] is None
+    assert u["totp_enabled"] == 0
+    source_row = rows(src, "SELECT * FROM users WHERE id = ?", OWNER)[0]
+    assert source_row["totp_enabled"] == 1
+    for col, value in source_row.items():
+        if col not in mod.TOTP_CLEARED:
+            assert u[col] == value, col
+    assert count(dst, "config_key_slots") == 2
+    assert count(dst, "organizations") == 1
+
+
+def test_case_b_leaves_the_bench_users_totp_alone(dbs) -> None:
+    src, dst = dbs
+    _enable_totp(src)
+    user(dst, BENCH_USER, EMAIL)
+    dst.execute(
+        "UPDATE users SET totp_secret = 'tsk1.bench.own', totp_enabled = 1 WHERE id = ?",
+        (BENCH_USER,),
+    )
+    dst.commit()
+    plan = plan_for(src, dst)
+    assert plan.case == "B"
+    assert not any("TOTP cleared" in line for line in plan.lines)
+    apply_sql(dst, mod.plan_sql(plan))
+    (u,) = rows(dst, "SELECT totp_secret, totp_enabled FROM users")
+    assert u == {"totp_secret": "tsk1.bench.own", "totp_enabled": 1}
 
 
 def test_case_b_remaps_the_operator_to_the_bench_user(dbs) -> None:

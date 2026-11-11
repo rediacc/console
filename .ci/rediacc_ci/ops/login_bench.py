@@ -10,6 +10,9 @@ THE STEPS, in order:
   1. Re-execute under the `bench-login` Bitwarden profile (`rediacc_ci.core.bws_env exec`), unless it is already bound. The profile binds REDIACC_BENCH_EMAIL, REDIACC_BENCH_PASSWORD, REDIACC_BENCH_TOTP_SEED and REDIACC_BENCH_MASTER_PASSWORD.
   2. Refuse a value that is unset or still the placeholder `PLACEHOLDER-operator-fills`, naming its Bitwarden entry, before anything else runs.
   3. Refresh the bench IP allowlist (`rediacc_ci.ops.bench_access add-current`, which binds its own `bench-access` profile). The four bench values are removed from that child's environment.
+  3b. Probe the account with its own password login (`POST /auth/login`, the same route the CLI uses). Three outcomes:
+      - A TOTP challenge: the code from the seed is spent on `POST /auth/2fa/verify`; a refusal is the STALE-SEED refusal (TOTP is on but the seed in `REDIACC_BENCH_TOTP_SEED` is not the one the account holds, because the mirror cleared it and it was re-enrolled elsewhere), a LoginError that names the remedy and never retries.
+      - No challenge, because TOTP is off (`mirror_config_store` copies the operator row with TOTP cleared, since `users.totp_secret` is sealed per Worker): the run RE-ENROLS through the account's own API with the session the probe just opened. `POST /auth/2fa/setup` and `/auth/2fa/enable` need an elevated session, and the only headless elevation is the reauth mail: `POST /auth/reauth`, the link read from the bench D1 `captured_emails` (kind `reauth`, a child under `bws_env exec --profile deploy-bench` that prints only the token to this process), `POST /auth/reauth/verify`. The new seed is written to Bitwarden as `REDIACC_BENCH_TOTP_SEED` (`bws_env store-from-env`, the value on the writer's stdin, never argv) BEFORE `/auth/2fa/enable`, so a failed write leaves TOTP off and the next run enrols again, never an enabled account whose seed was lost. The backup codes the enable answers are dropped unread.
   4. Compute the six-digit TOTP code in memory (`rediacc_ci.ops.totp`), waiting for the next 30 s window when fewer than `MIN_WINDOW_LEFT` seconds remain, then run `./rdc.sh --config eu-bench subscription login --server <BENCH_ORIGIN>` with REDIACC_LOGIN_EMAIL, REDIACC_LOGIN_PASSWORD and REDIACC_LOGIN_TOTP in the child environment.
   5. Always run `./rdc.sh --config eu-bench config remote enable --master-password --config-id <CONFIG_ID> --api-url <BENCH_ORIGIN>` with REDIACC_STORE_MASTER_PASSWORD in the child environment; `config remote status` is not consulted, because it reports "connected" even when this device has lost its key for the store (the Linux kernel keyring is empty after a restart; measured 2026-11-10). Exit 0 is done: a first link, or this device enrolled again against the same store. Exit 2 is done only when the output says the config is linked and this device can already open it (the CLI's "this device can open it, so there is nothing to enable" refusal); any other failure exits 1 naming the step.
   6. Print `./rdc.sh --config eu-bench config remote status`.
@@ -21,6 +24,7 @@ SECRETS. Every value travels by name in a child's environment: never on argv, ne
 
 from __future__ import annotations
 
+import http.client
 import json
 import os
 import re
@@ -28,9 +32,13 @@ import subprocess
 import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
+from datetime import UTC, datetime, timedelta
+from typing import Protocol
+from urllib.parse import urlsplit
 
 from rediacc_ci import log, paths
-from rediacc_ci.ops import totp
+from rediacc_ci.core import wrangler
+from rediacc_ci.ops import deploy_bench, totp
 from rediacc_ci.well_known import BENCH_ORIGIN
 
 PROFILE = "bench-login"
@@ -70,6 +78,22 @@ CHILD_SECRET_NAMES = (
 )
 # Inherited selections that would point `./rdc.sh` somewhere other than eu-bench on bench.
 SCRUBBED_SELECTORS = ("RDC_DEV", "REDIACC_CONFIG", "REDIACC_TOKEN", "REDIACC_ACCOUNT_SERVER")
+
+TOTP_SEED_NEW_ENV = "REDIACC_BENCH_TOTP_SEED_NEW"
+API_PATH = "/account/api/v1/auth/"
+HTTP_TIMEOUT_S = 30
+# `<base>/account/reauth/verify?token=<raw>` (AuthService.createReauthToken).
+REAUTH_TOKEN = re.compile(r"reauth/verify\?token=([A-Za-z0-9_\-]+)")
+TOKEN_SHAPE = re.compile(r"[A-Za-z0-9_\-]+")
+MAIL_ATTEMPTS = 6
+MAIL_WAIT_S = 3.0
+CLOCK_SKEW = timedelta(seconds=60)
+MAIL_MODE = "--mail-token"
+MAIL_QUERY = (
+    "SELECT text_body FROM captured_emails WHERE recipient = %s AND kind = 'reauth' "
+    "AND created_at >= %s ORDER BY created_at DESC LIMIT 1"
+)
+D1_PROFILE = "deploy-bench"
 
 USAGE = "usage: login_bench [--server %s] [--config %s]" % (SERVER, CONFIG)
 
@@ -195,6 +219,209 @@ def fresh_code(
     return totp.code(seed, at=now())
 
 
+class Poster(Protocol):
+    def post(self, route: str, body: dict | None = None) -> tuple[int, dict]: ...
+
+
+class AccountApi:
+    """The bench account's `/auth` routes under one cookie store: the probe login opens the session the enrolment then uses. `post` returns (HTTP status, decoded object); the passwords, tokens and seeds it carries are never printed."""
+
+    def __init__(self, server: str):
+        parts = urlsplit(server)
+        self.host = parts.netloc
+        self.base = API_PATH
+        self.cookies: dict[str, str] = {}
+
+    def post(self, route: str, body: dict | None = None) -> tuple[int, dict]:
+        headers = {"Content-Type": "application/json"}
+        if self.cookies:
+            headers["Cookie"] = "; ".join("%s=%s" % kv for kv in self.cookies.items())
+        conn = http.client.HTTPSConnection(self.host, timeout=HTTP_TIMEOUT_S)
+        try:
+            conn.request("POST", self.base + route, json.dumps(body or {}), headers)
+            resp = conn.getresponse()
+            status, raw = resp.status, resp.read()
+            for header in resp.headers.get_all("Set-Cookie") or []:
+                name, _, rest = header.partition("=")
+                self.cookies[name.strip()] = rest.partition(";")[0]
+        except OSError as exc:
+            raise LoginError(
+                "POST /auth/%s reached no answer (%s)" % (route, type(exc).__name__)
+            ) from None
+        finally:
+            conn.close()
+        try:
+            decoded = json.loads(raw)
+        except ValueError:
+            decoded = {}
+        return status, decoded if isinstance(decoded, dict) else {}
+
+
+def _sql_literal(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
+
+
+def _d1_rows(sql: str) -> list[dict]:
+    """`wrangler d1 execute` against the bench D1 with the Global API Key pair the deploy-bench profile binds; stdout is never printed (it holds live links)."""
+    key, mail = os.environ.get("CF_GLOBAL_API_KEY"), os.environ.get("CF_EMAIL")
+    if not (key and mail):
+        raise LoginError("CF_GLOBAL_API_KEY and CF_EMAIL are required to read the captured email")
+    env = dict(os.environ)
+    for name in ("CLOUDFLARE_API_TOKEN", "CF_API_KEY"):
+        env.pop(name, None)
+    env["CLOUDFLARE_API_KEY"], env["CLOUDFLARE_EMAIL"] = key, mail
+    env["CLOUDFLARE_ACCOUNT_ID"] = deploy_bench.ACCOUNT_ID
+    argv = [
+        *wrangler.ARGV,
+        "d1",
+        "execute",
+        deploy_bench.DB_NAME,
+        "--remote",
+        "--config",
+        deploy_bench.CONFIG,
+        "--json",
+        "--command",
+        sql,
+    ]
+    proc = subprocess.run(
+        argv,
+        cwd=str(paths.repo_root() / "workers" / "account"),
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if proc.returncode != 0:
+        raise LoginError("wrangler d1 execute failed (exit %d)" % proc.returncode)
+    try:
+        rows = json.loads(proc.stdout)[0]["results"]
+    except (ValueError, LookupError, TypeError):
+        raise LoginError("wrangler d1 execute printed no result rows") from None
+    return [r for r in rows if isinstance(r, dict)]
+
+
+def mail_token_main(email: str, since: str) -> int:
+    """`--mail-token`, run under the deploy-bench profile: print the newest reauth token mailed to `email` since `since` (and nothing else), or exit 1. The stdout is read by the parent process only."""
+    sql = MAIL_QUERY % (_sql_literal(email), _sql_literal(since))
+    for attempt in range(MAIL_ATTEMPTS):
+        if attempt:
+            time.sleep(MAIL_WAIT_S)
+        for row in _d1_rows(sql):
+            found = REAUTH_TOKEN.search(str(row.get("text_body") or ""))
+            if found:
+                print(found.group(1))
+                return 0
+    return 1
+
+
+def _with_ci_path(env: Mapping[str, str]) -> dict[str, str]:
+    child = dict(env)
+    ci = str(paths.repo_root() / ".ci")
+    child["PYTHONPATH"] = ci + (os.pathsep + child["PYTHONPATH"] if child.get("PYTHONPATH") else "")
+    return child
+
+
+def _mail_token(email: str, since: str, env: Mapping[str, str], capture: Capture) -> str:
+    """The reauth token from bench's captured mail, through a child under the deploy-bench profile."""
+    child = _with_ci_path(env)
+    child[EMAIL_ENV] = email
+    rc, out = capture(
+        [
+            sys.executable,
+            "-m",
+            "rediacc_ci.core.bws_env",
+            "exec",
+            "--profile",
+            D1_PROFILE,
+            "--",
+            sys.executable,
+            "-m",
+            "rediacc_ci.ops.login_bench",
+            MAIL_MODE,
+            since,
+        ],
+        child,
+    )
+    token = out.strip()
+    if rc != 0 or not TOKEN_SHAPE.fullmatch(token):
+        raise LoginError(
+            "no reauth mail for the bench account reached captured_emails (exit %d)" % rc
+        )
+    return token
+
+
+def distinct_code(
+    seed: str,
+    avoid: str | None,
+    now: Callable[[], float] = time.time,
+    sleep: Callable[[float], None] = time.sleep,
+) -> str:
+    """The current code, taken from a later window when it equals `avoid` (the account refuses a spent code)."""
+    started = now()
+    code = fresh_code(seed, now, sleep)
+    if avoid is None or code != avoid:
+        return code
+    left = totp.STEP - (started % totp.STEP)
+    sleep(left + 0.5)
+    return totp.code(seed, at=started + left + 0.5)
+
+
+def reenrol(
+    api: Poster,
+    email: str,
+    env: Mapping[str, str],
+    capture: Capture,
+    now: Callable[[], float] = time.time,
+    sleep: Callable[[float], None] = time.sleep,
+) -> tuple[str, str]:
+    """Turn TOTP on for the bench account and store the new seed. Returns (seed, the code `enable` spent). The session in `api` is the one the probe login opened."""
+    since = (datetime.fromtimestamp(now(), UTC) - CLOCK_SKEW).strftime("%Y-%m-%dT%H:%M:%S")
+    status, _ = api.post("reauth")
+    if status != 200:
+        raise LoginError("POST /auth/reauth answered HTTP %d" % status)
+    token = _mail_token(email, since, env, capture)
+    status, _ = api.post("reauth/verify", {"token": token})
+    if status != 200:
+        raise LoginError("POST /auth/reauth/verify answered HTTP %d" % status)
+    status, answer = api.post("2fa/setup")
+    secret = answer.get("secret")
+    if status != 200 or not isinstance(secret, str) or not secret:
+        raise LoginError("POST /auth/2fa/setup answered HTTP %d with no secret" % status)
+    try:
+        totp.decode_seed(secret)
+    except totp.TotpError as exc:
+        raise LoginError("POST /auth/2fa/setup answered an unusable secret: %s" % exc) from None
+    # Stored first: a failed write leaves TOTP off, so the next run enrols again.
+    write_env = _with_ci_path(env)
+    write_env[TOTP_SEED_NEW_ENV] = secret
+    log.step("Storing the new TOTP seed as %s (bws_env store-from-env)" % TOTP_SEED_ENV)
+    rc, out = capture(
+        [
+            sys.executable,
+            "-m",
+            "rediacc_ci.core.bws_env",
+            "store-from-env",
+            "%s > %s" % (TOTP_SEED_ENV, TOTP_SEED_NEW_ENV),
+        ],
+        write_env,
+    )
+    if rc != 0:
+        raise LoginError(
+            "writing %s to Bitwarden failed (exit %d); TOTP stays off on the account"
+            % (_bws_entry(TOTP_SEED_ENV), rc)
+        )
+    if out:
+        print(out, end="" if out.endswith("\n") else "\n")
+    code = fresh_code(secret, now, sleep)
+    status, _ = api.post("2fa/enable", {"code": code})
+    if status != 200:
+        raise LoginError(
+            "POST /auth/2fa/enable answered HTTP %d; the new seed is already stored, so a rerun "
+            "enrols again" % status
+        )
+    return secret, code
+
+
 def _subprocess_runner(argv: Sequence[str], env: Mapping[str, str]) -> int:
     return subprocess.run(
         list(argv), env=dict(env), cwd=str(paths.repo_root()), check=False
@@ -258,6 +485,7 @@ def login(
     now: Callable[[], float] = time.time,
     sleep: Callable[[float], None] = time.sleep,
     capture: Capture = _subprocess_capture,
+    api: Poster | None = None,
 ) -> None:
     """Steps 2-6 of the module docstring, with the profile already bound. Raises LoginError."""
     server, config = parse_args(argv)
@@ -276,10 +504,34 @@ def login(
         access_env,
     )
 
+    log.step("Probing the bench account's two-factor state (POST /auth/login)")
+    account = api if api is not None else AccountApi(server)
+    status, answer = account.post("login", {"email": values[EMAIL_ENV], "password": values[PW_ENV]})
+    if status != 200:
+        raise LoginError(
+            "POST /auth/login answered HTTP %d: the bench password was refused" % status
+        )
+    seed = values[TOTP_SEED_ENV]
+    challenge = answer.get("challengeToken")
+    if answer.get("requiresTwoFactor") and isinstance(challenge, str):
+        spent = fresh_code(seed, now, sleep)
+        status, _ = account.post("2fa/verify", {"challengeToken": challenge, "code": spent})
+        if status != 200:
+            raise LoginError(
+                "TOTP is on for the bench account but the code from %s was refused (HTTP %d): the "
+                "seed is stale, most likely because the mirror cleared TOTP and it was enrolled "
+                "again elsewhere. Clear totp_secret, totp_backup_hashes and totp_enabled on the bench "
+                "user (or disable 2FA with a backup code) and rerun to enrol a fresh seed; not "
+                "retrying." % (_bws_entry(TOTP_SEED_ENV), status)
+            )
+    else:
+        log.step("TOTP is off on the bench account: enrolling a new seed")
+        seed, spent = reenrol(account, values[EMAIL_ENV], clean, capture, now, sleep)
+
     login_env = dict(clean)
     login_env[LOGIN_EMAIL_ENV] = values[EMAIL_ENV]
     login_env[LOGIN_PW_ENV] = values[PW_ENV]
-    login_env[LOGIN_TOTP_ENV] = fresh_code(values[TOTP_SEED_ENV], now, sleep)
+    login_env[LOGIN_TOTP_ENV] = distinct_code(seed, spent, now, sleep)
     _step(
         run,
         "Logging %s in to %s (subscription login)" % (config, server),
@@ -355,6 +607,9 @@ def _reexec_under_profile(argv: Sequence[str], run: Runner) -> int | None:
 
 def main(argv: Sequence[str] | None = None, run: Runner = _subprocess_runner) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
+    if len(args) == 2 and args[0] == MAIL_MODE:
+        email = os.environ.get(EMAIL_ENV) or ""
+        return mail_token_main(email, args[1]) if email else 2
     if args and args[0] in ("-h", "--help"):
         print((__doc__ or "").strip())
         return 0

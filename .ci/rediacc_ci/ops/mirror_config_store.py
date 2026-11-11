@@ -14,7 +14,7 @@ THE MIRROR IS A FORK. Nothing syncs afterwards: a push to either side diverges t
 
 WHAT IS COPIED. Verbatim: `config_stores` (but `require_passkey` is written 0 on bench, operator answer ASKED:2026-10-27T10:35Z), `config_entries` and `config_versions`. Filtered: the operator's `config_key_slots` of method password and recovery, and the operator's `config_user_identities` with every passkey column cleared. PASSKEYS DO NOT CARRY OVER: the WebAuthn RP ID is each end's own host (`WEBAUTHN_RP_ID` of its wrangler config: the source region's host, or bench.rediacc.cloud), so a stable passkey can never sign in on the target; the plan prints both RP IDs. Identity rows: the organization, its live subscriptions (status active, grace or inactive and not expired), the operator's org membership, the teams the entries use and the operator's memberships of them. The OPERATOR is the org owner; no other member's user row, slots or identity is copied, and the plan names them by count only. Never copied: `config_tokens`, `config_executor_grants`, `config_cek_handoffs`, `config_cek_rotations`. A `config_versions.created_by_user_id` that names another member is written NULL.
 
-IDENTITY. Case A: no bench user has the operator's `email_hash`, so the user row is copied with the same id. Case B: bench user X has it, so the operator's id is rewritten to X in `config_key_slots.user_id`, `config_user_identities.user_id`, `config_versions.created_by_user_id`, `org_memberships.user_id`, `team_memberships.user_id` and `organizations.owner_user_id`.
+IDENTITY. Case A: no bench user has the operator's `email_hash`, so the user row is copied with the same id, with `totp_secret` and `totp_backup_hashes` NULL and `totp_enabled` 0 (`TOTP_CLEARED`: the secret is encrypted at rest with a key each Worker holds for itself, so a stable one cannot be opened on bench; `npm run login:bench` enrols a new seed afterwards, and the plan prints an `identity:` line saying so). Case B: bench user X has it, so the operator's id is rewritten to X in `config_key_slots.user_id`, `config_user_identities.user_id`, `config_versions.created_by_user_id`, `org_memberships.user_id`, `team_memberships.user_id` and `organizations.owner_user_id`.
 
 REUSE ON MATCH, REFUSE ON CONFLICT (the identity tables). A bench D1 once cloned from stable already holds the operator's org, subscription and memberships under the same ids. A bench row of `organizations`, `subscriptions`, `org_memberships`, `teams`, `team_memberships` or `users` with the plan's id is REUSED, never updated, when its identity columns match (`IDENTITY_MATCH`; user ids compared after the case-B remap; a user matches on `email_hash`), and the run refuses, naming the table and column, when one differs. A unique key (`IDENTITY_UNIQUE`) held under another id refuses too. A reused subscription that is not live on bench is printed as a note. `customer_id` is never compared: it is a per-environment Stripe id (bench bills through a separate Stripe account and bench runs with Stripe disabled), so a reused org carrying its own is printed as a note and an inserted org keeps the stable id as an inert label. The store's own rows (`config_stores`, `config_entries`, `config_versions`, `config_key_slots`, `config_user_identities`) refuse on any collision.
 
@@ -89,6 +89,12 @@ PASSKEY_CLEARED = {
     "passkey_transports": None,
     "passkey_device_type": None,
     "passkey_backed_up": 0,
+}
+# `users.totp_secret` is sealed with a key each Worker holds for itself, so a secret copied from stable cannot be opened on bench and TOTP verify would answer 500. Case A therefore copies the operator row with TOTP off; `rediacc_ci.ops.login_bench` enrols a new seed through the account's own API.
+TOTP_CLEARED = {
+    "totp_secret": None,
+    "totp_backup_hashes": None,
+    "totp_enabled": 0,
 }
 # Insert order, parents first: D1 enforces foreign keys.
 TABLE_ORDER = (
@@ -1124,7 +1130,7 @@ def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_i
     inserts: list[tuple[str, dict]] = []
     reused: list[tuple[str, str]] = []
     if case == "A":
-        inserts.append(("users", dict(operator)))
+        inserts.append(("users", {**operator, **TOTP_CLEARED}))
     else:
         reused.append(("users", target_user))
     inserts += identity_rows
@@ -1191,6 +1197,15 @@ def build_plan(source: dict, target: dict, src: End, dst: End, now: str, event_i
             if case == "A"
             else "identity: case B, operator %s remapped to %s user %s"
             % (prefix(op), dst.channel, prefix(target_user))
+        ),
+        *(
+            [
+                "identity: TOTP cleared on the copied operator row (totp_secret and totp_backup_hashes NULL, totp_enabled 0): "
+                "the secret is sealed per Worker and cannot be opened on %s; "
+                "`npm run login:bench` enrols a new seed" % dst.channel
+            ]
+            if case == "A"
+            else []
         ),
         "copy: "
         + ", ".join(

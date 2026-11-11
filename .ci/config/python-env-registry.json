@@ -805,6 +805,9 @@
       "WORKLIST_SESSION_ID"
     ],
     ".ci/rediacc_ci/ops/login_bench.py": [
+      "CF_EMAIL",
+      "CF_GLOBAL_API_KEY",
+      "REDIACC_BENCH_EMAIL",
       "REDIACC_BWS_PROFILES"
     ],
     ".ci/rediacc_ci/ops/mirror_config_store.py": [
