@@ -934,7 +934,7 @@ def test_a_second_restart_does_not_mistake_the_drills_own_gateway_for_an_earlier
     drill.restart_gateway()
     assert not drill.gateway_preexisted
     drill.teardown()
-    assert killed, "the drill's own gateway must be killed at exit"
+    assert {pid for pid, _sig in killed} == {424242}, "the drill's own gateway must be killed at exit"
 
 
 @pytest.mark.parametrize(

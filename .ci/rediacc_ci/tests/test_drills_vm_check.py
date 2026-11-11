@@ -2905,9 +2905,18 @@ def test_every_rdc_call_lifts_the_development_renet_hold(tmp_path: pathlib.Path)
     world = make_world(tmp_path)
     rc, out, _receipt = run_check(tmp_path, world)
     assert rc == vm_check.EXIT_VERIFIED, out
-    forks = [e for c, e in zip(world.calls, world.envs, strict=True) if c[1:3] == ["repo", "fork"]]
-    assert forks, "no fork call recorded"
-    assert all(e.get("REDIACC_NO_PROVISION") == "0" for e in forks), forks
+    calls = [(c, e) for c, e in zip(world.calls, world.envs, strict=True) if c[0] == world.rdc_path]
+    assert any(c[1:3] == ["repo", "fork"] for c, _e in calls), "no fork call recorded"
+    held = [c for c, e in calls if e.get("REDIACC_NO_PROVISION") != "0"]
+    assert not held, held
+
+
+def test_an_explicit_no_provision_from_the_caller_is_kept(tmp_path: pathlib.Path) -> None:
+    """Review 33cb8381.1: the run lifts only the default hold; a caller's REDIACC_NO_PROVISION=1 reaches every rdc call."""
+    world = make_world(tmp_path)
+    run_check(tmp_path, world, env={"REDIACC_NO_PROVISION": "1"})
+    envs = [e for c, e in zip(world.calls, world.envs, strict=True) if c[0] == world.rdc_path]
+    assert envs and all(e.get("REDIACC_NO_PROVISION") == "1" for e in envs)
 
 
 def test_an_ambiguous_forget_deletes_each_ref_and_never_reruns_the_bare_forget(
