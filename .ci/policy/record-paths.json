@@ -217,6 +217,10 @@
         {
           "id": "check:ci-plan-bindings",
           "reason": "It imports wl_planbind.py and the hook modules it reaches; the *.md glob the derivation cites at wl_agents.py:245 walks the agent-hint docs, not agent/reviews/, and no file under agent/reviews/ is read: the verdict is computed over agent/plans and agent/worklist."
+        },
+        {
+          "id": "check:ci-ops-health",
+          "reason": "Its closure imports rediacc_ci.ops.login_bench (ops_health.py:43), which imports rediacc_ci.ops.deploy_bench for the bench D1 helper (login_bench.py _d1_rows); deploy_bench reaches proof/surfaces.py, which loads .ci/config/proof-tiers.json at import, and the **/*.md the derivation cites there is an entry of that map's exclude list. The gate runs gate_main, one GET of the Worker's /v1/status, and opens no file under agent/reviews/."
         }
       ]
     },
