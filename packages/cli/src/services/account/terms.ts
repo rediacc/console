@@ -26,7 +26,7 @@ import { getEffectiveConfigName } from '../config/config-name.js';
 import { configService } from '../config/config-resources.js';
 
 /** The two methods the CLI gives an acceptance by. */
-export type CliTermsMethod = 'cli-prompt' | 'cli-flag-unattended';
+type CliTermsMethod = 'cli-prompt' | 'cli-flag-unattended';
 
 /** The acceptance a FREE request carries (`termsAcceptance` in the POST /licenses/free body). */
 export interface TermsAcceptance {
@@ -37,7 +37,7 @@ export interface TermsAcceptance {
 }
 
 /** The cached acceptance, as stored in `state.terms`. */
-export interface StoredTermsAcceptance {
+interface StoredTermsAcceptance {
   version: string;
   sha256: string;
   acceptedAt: string;
@@ -63,7 +63,7 @@ export function resetTermsStateForTests(): void {
 }
 
 /** Whether `--accept-terms` or `RDC_ACCEPT_TERMS=1` is set. `--yes` is deliberately not consulted. */
-export function acceptsTermsUnattended(): boolean {
+function acceptsTermsUnattended(): boolean {
   return acceptTermsFlag || process.env.RDC_ACCEPT_TERMS === '1';
 }
 
@@ -92,7 +92,7 @@ function noticeFor(method: CliTermsMethod): string {
 }
 
 /** The refusal an unattended run without the flag gets: it names the flag, the env var and the URL. */
-export function termsRefusalMessage(): string {
+function termsRefusalMessage(): string {
   return noticeFor('cli-flag-unattended');
 }
 

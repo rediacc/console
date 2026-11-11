@@ -10,7 +10,7 @@ import { VERSION } from '../version.js';
 const LICENSE_STATUS_PATH = '/account/api/v1/licenses/status';
 
 /** How the active licence was determined: a plan from the account server, no login at all, or a login whose server could not be asked. */
-export type LicenseKind = 'account' | 'anonymous' | 'unknown';
+type LicenseKind = 'account' | 'anonymous' | 'unknown';
 
 export interface VersionInfo {
   version: string;
@@ -48,7 +48,7 @@ function licenseText(license: VersionInfo['license']): string {
     : t('commands.version.license.unknown');
 }
 
-export function renderVersion(info: VersionInfo): string {
+function renderVersion(info: VersionInfo): string {
   return [
     `rdc ${info.version}`,
     t('commands.version.platform', { platform: info.platform, arch: info.arch }),

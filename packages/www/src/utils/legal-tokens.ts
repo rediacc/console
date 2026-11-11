@@ -11,15 +11,13 @@ import { LEGAL_ENTITY } from '@rediacc/shared/legal/entity.generated';
 import { LEGAL_URLS } from '@rediacc/shared/legal';
 import type { Language } from '../i18n/types';
 
-export type LegalTokens = Record<string, string>;
-
 /** The locale's name for a region code ("EE" -> "Estonia", "Estland", ...). */
-export function countryName(code: string, lang: string): string {
+function countryName(code: string, lang: string): string {
   return new Intl.DisplayNames([lang], { type: 'region' }).of(code) ?? code;
 }
 
 /** Every token a legal text may carry, for one language. */
-export function legalTokens(lang: Language): LegalTokens {
+export function legalTokens(lang: Language): Record<string, string> {
   return {
     legalName: LEGAL_ENTITY.legalName,
     registryCode: LEGAL_ENTITY.registryCode,
@@ -33,7 +31,7 @@ export function legalTokens(lang: Language): LegalTokens {
 }
 
 /** `value` with every `{{token}}` in every string replaced; arrays and objects are copied. */
-export function interpolateTree<T>(value: T, tokens: LegalTokens): T {
+export function interpolateTree<T>(value: T, tokens: Record<string, string>): T {
   if (typeof value === 'string') {
     return value.replace(/\{\{(\w+)\}\}/g, (m, name: string) => tokens[name] ?? m) as T;
   }

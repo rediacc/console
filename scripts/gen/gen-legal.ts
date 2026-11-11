@@ -66,18 +66,6 @@ export const CONSENT_KEYS = {
 } as const;
 export type AcceptanceMethod = keyof typeof CONSENT_KEYS;
 
-/** The entity tokens a legal text may carry. `country` is the locale's name for `countryCode`. */
-export const ENTITY_TOKENS = [
-  'legalName',
-  'registryCode',
-  'registerName',
-  'vatNumber',
-  'registeredAddress',
-  'country',
-] as const;
-/** The URL tokens a consent notice may carry, on top of the entity tokens. */
-export const URL_TOKENS = ['termsUrl', 'privacyUrl'] as const;
-
 export interface ManifestVersion {
   version: string;
   effective: string;

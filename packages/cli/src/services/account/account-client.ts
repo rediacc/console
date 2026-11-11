@@ -471,15 +471,22 @@ async function accountServerFetchOnce<T>(
 
   // Check the inner HTTP status
   if (status >= 400) {
-    if (status === 403 && (parsed as { code?: string }).code === TERMS_ACCEPTANCE_REQUIRED) {
-      throw termsRequiredError(parsed as { details?: Record<string, unknown> });
-    }
-    const msg = (parsed as { error?: string }).error ?? `Account server returned HTTP ${status}`;
-    const code = (parsed as { code?: string }).code;
-    throw createAccountError(msg, status, code, parsed);
+    throwInnerStatusError(parsed, status);
   }
 
   return parsed;
+}
+
+/** Throws the typed error for a failed inner response (a Terms refusal gets its own error). */
+function throwInnerStatusError(
+  parsed: { error?: string; code?: string; details?: Record<string, unknown> },
+  status: number
+): never {
+  if (status === 403 && parsed.code === TERMS_ACCEPTANCE_REQUIRED) {
+    throw termsRequiredError(parsed);
+  }
+  const msg = parsed.error ?? `Account server returned HTTP ${status}`;
+  throw createAccountError(msg, status, parsed.code, parsed);
 }
 
 /** The server's refusal code when the account (or an anonymous FREE request) has not accepted the current Terms. */

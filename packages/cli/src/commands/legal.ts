@@ -19,7 +19,7 @@ const TERMS_STATUS_PATH = '/account/api/v1/terms/status';
 /** Where third-party notices live; `rdc legal` only points at it. */
 const CREDITS_COMMAND = 'rdc credits --licenses';
 
-export interface AcceptedTerms {
+interface AcceptedTerms {
   version: string;
   acceptedAt: string | null;
   method: string | null;
