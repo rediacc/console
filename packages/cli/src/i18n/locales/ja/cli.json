@@ -3039,10 +3039,11 @@
       "offerPrompt": "このコマンドにはライセンスが必要ですが、ログインしていません。ログインしますか、それとも無料ライセンスで続けますか？",
       "offerLogin": "アカウントにログインする",
       "offerFree": "無料ライセンスで続ける（最大 {{maxGb}} GB）",
-      "autoTaken": "ログインしていないため、無料ライセンス（最大 {{maxGb}} GB、ホスト型バックアップなし）を使用します。無料アカウントを登録すると、Communityの上限とホスト型バックアップを利用できます: {{url}}",
+      "autoTaken": "ログインしていないため、無料ライセンス（最大 {{maxGb}} GB、ホスト型バックアップなし）を使用します。無料アカウントを登録すると Community の上限 (リポジトリあたり {{repoGb}} GB、月 {{issuances}} 件のライセンス、ホスト型バックアップ {{backupGb}} GB) が使えます：{{url}}",
       "defaultRegion": "リージョンが選択されていないため、無料ライセンスは {{server}} から発行されます。別のリージョンを選ぶには、--license-region <id> を指定するか、REDIACC_ACCOUNT_SERVER を設定してください。",
       "regionIgnored": "この設定はすでに {{server}} を使用しているため、--license-region は無視されます。",
       "issued": "このリポジトリに無料ライセンスをインストールしました（最大 {{maxGb}} GB）。",
+      "registerHint": "この無料ライセンスにはホスト型バックアップがありません。無料アカウントを登録すると Community の上限 (リポジトリあたり {{repoGb}} GB、月 {{issuances}} 件のライセンス、ホスト型バックアップ {{backupGb}} GB) が使えます：{{url}}",
       "noHostedBackup": "無料ライセンスにはホスト型バックアップが含まれません。無料アカウントを登録するとCommunityのホスト型バックアップを利用できます。さらに必要な場合は有料プランを選んでください: {{url}}"
     },
     "machineNotFound": "マシン \"{{name}}\" が見つかりません",

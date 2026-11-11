@@ -17,7 +17,9 @@
  */
 
 import { DEFAULTS } from '@rediacc/shared/config';
+import { WK_BENCH_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import { BAKED_IN_REGIONS } from '@rediacc/shared/regions';
+import { PLAN_LIMITS } from '@rediacc/shared/subscription';
 import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { t } from '../../i18n/index.js';
 import type { SFTPClient } from '../../remote/sftp/index.js';
@@ -58,8 +60,25 @@ let chosenServerUrl: string | undefined;
 /** The `--license-region` id set by the command layer for this process. */
 let requestedRegion: string | undefined;
 
+/** The CLI-only region id that maps to the bench account server. Never listed anywhere. */
+const HIDDEN_BENCH_REGION_ID = 'bench';
+/** Whether this process already told the user what registering gives. */
+let registerHintShown = false;
+
+/** The Community numbers, read from PLAN_LIMITS so they follow the plan table. */
+function communityHintVars(): Record<string, string | number> {
+  const community = PLAN_LIMITS.COMMUNITY;
+  return {
+    repoGb: community.maxRepositorySizeGb,
+    issuances: community.maxRepoLicenseIssuancesPerMonth,
+    backupGb: community.storageQuotaBytes / 1024 ** 3,
+    url: freeLicenseSignupUrl(),
+  };
+}
+
 /** Test seam: forget the process-wide choice and signup link. */
 export function resetFreeLicenseStateForTests(): void {
+  registerHintShown = false;
   chosenAuthority = undefined;
   serverSignupUrl = undefined;
   chosenServerUrl = undefined;
@@ -107,10 +126,11 @@ export async function resolveLicenseAuthority(
     await chooseFreeLicenseRegion(options.region ?? requestedRegion, false);
     outputService.warn(
       t('errors.freeLicense.autoTaken', {
-        url: freeLicenseSignupUrl(),
+        ...communityHintVars(),
         maxGb: FREE_LICENSE_MAX_SIZE_GB,
       })
     );
+    registerHintShown = true;
     chosenAuthority = 'free';
     return 'free';
   }
@@ -158,7 +178,7 @@ async function chooseFreeLicenseRegion(
   const named = regionId === undefined ? undefined : findRegion(regionId);
   const configured = getConfiguredServerUrl();
   if (configured) {
-    if (named && `https://${named.domain}` !== configured) {
+    if (named && named.origin !== configured) {
       outputService.warn(t('errors.freeLicense.regionIgnored', { server: configured }));
     }
     return;
@@ -169,16 +189,18 @@ async function chooseFreeLicenseRegion(
     outputService.info(t('errors.freeLicense.defaultRegion', { server: freeLicenseServerUrl() }));
     return;
   }
-  const domain = named ? named.domain : (await promptRegionSelection(BAKED_IN_REGIONS)).domain;
-  chosenServerUrl = `https://${domain}`;
+  chosenServerUrl = named
+    ? named.origin
+    : `https://${(await promptRegionSelection(BAKED_IN_REGIONS)).domain}`;
   await saveAccountServer(chosenServerUrl);
 }
 
-/** The built-in region with this id; an unknown id is refused. */
-function findRegion(regionId: string): (typeof BAKED_IN_REGIONS)[number] {
+/** The region with this id (the hidden `bench` id included); an unknown id is refused. */
+function findRegion(regionId: string): { origin: string } {
+  if (regionId === HIDDEN_BENCH_REGION_ID) return { origin: WK_BENCH_ORIGIN };
   const region = BAKED_IN_REGIONS.find((r) => r.id === regionId);
   if (!region) throw new ValidationError(t('errors.unknownRegion', { region: regionId }));
-  return region;
+  return { origin: `https://${region.domain}` };
 }
 
 export interface FreeLicenseParams {
@@ -231,6 +253,10 @@ export function issueFreeRepoLicense(
       if (signupUrl) serverSignupUrl = signupUrl;
       await writeRepoLicense(machineName, params.repositoryGuid, license, params.datastoreId);
       outputService.info(t('errors.freeLicense.issued', { maxGb: FREE_LICENSE_MAX_SIZE_GB }));
+      if (!registerHintShown) {
+        registerHintShown = true;
+        outputService.info(t('errors.freeLicense.registerHint', communityHintVars()));
+      }
     }
   );
 }

@@ -3039,10 +3039,11 @@
       "offerPrompt": "此命令需要许可证，但尚未登录。要登录，还是使用免费许可证继续？",
       "offerLogin": "登录账户",
       "offerFree": "使用免费许可证继续（最多 {{maxGb}} GB）",
-      "autoTaken": "未登录，因此使用免费许可证（最多 {{maxGb}} GB，不含托管备份）。注册免费账户即可获得 Community 的限额和托管备份：{{url}}",
+      "autoTaken": "未登录，因此使用免费许可证（最多 {{maxGb}} GB，不含托管备份）。注册免费账户即可获得 Community 额度（每个仓库 {{repoGb}} GB，每月 {{issuances}} 个许可证，{{backupGb}} GB 托管备份）：{{url}}",
       "defaultRegion": "未选择区域,因此免费许可证来自 {{server}}。要选择其他区域,请传入 --license-region <id> 或设置 REDIACC_ACCOUNT_SERVER。",
       "regionIgnored": "此配置已使用 {{server}},因此会忽略 --license-region。",
       "issued": "已为此仓库安装免费许可证（最多 {{maxGb}} GB）。",
+      "registerHint": "此免费许可证不含托管备份。注册免费账户即可获得 Community 额度（每个仓库 {{repoGb}} GB，每月 {{issuances}} 个许可证，{{backupGb}} GB 托管备份）：{{url}}",
       "noHostedBackup": "免费许可证不含托管备份。注册免费账户即可使用 Community 的托管备份，需要更多请选择付费套餐：{{url}}"
     },
     "machineNotFound": "机器 \"{{name}}\" 未找到",

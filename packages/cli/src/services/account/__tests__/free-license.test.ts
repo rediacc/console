@@ -7,7 +7,10 @@
  * instead of failing on a missing token (R13).
  */
 
-import { WK_ACCOUNT_DEFAULT_ORIGIN } from '@rediacc/shared/config/well-known.generated';
+import {
+  WK_ACCOUNT_DEFAULT_ORIGIN,
+  WK_BENCH_ORIGIN,
+} from '@rediacc/shared/config/well-known.generated';
 import { BAKED_IN_REGIONS } from '@rediacc/shared/regions';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -28,7 +31,10 @@ const m = vi.hoisted(() => ({
   promptRegion: vi.fn(),
   update: vi.fn(),
   exists: vi.fn(),
+  community: { maxRepositorySizeGb: 10, maxRepoLicenseIssuancesPerMonth: 100, storageQuotaBytes: 10 * 1024 ** 3 },
 }));
+
+vi.mock('@rediacc/shared/subscription', () => ({ PLAN_LIMITS: { COMMUNITY: m.community } }));
 
 vi.mock('../../../i18n/index.js', () => ({
   t: (key: string, vars?: Record<string, unknown>) =>
@@ -94,6 +100,9 @@ beforeEach(() => {
   m.exists.mockResolvedValue(true);
   m.update.mockResolvedValue(undefined);
   m.promptRegion.mockResolvedValue({ region: {}, domain: EU_DOMAIN });
+  m.community.maxRepositorySizeGb = 10;
+  m.community.maxRepoLicenseIssuancesPerMonth = 100;
+  m.community.storageQuotaBytes = 10 * 1024 ** 3;
 });
 
 afterEach(() => {
@@ -357,5 +366,101 @@ describe('free licence region pick', () => {
     await expect(resolveLicenseAuthority(vi.fn(), { region: 'mars' })).rejects.toThrow(
       'errors.unknownRegion'
     );
+  });
+});
+
+describe('hidden bench licence region', () => {
+  it('bench resolves to the bench account server and is saved like any region', async () => {
+    m.isAgent.mockReturnValue(true);
+    await resolveLicenseAuthority(vi.fn(), { region: 'bench' });
+    expect(m.promptRegion).not.toHaveBeenCalled();
+    expect(m.update.mock.calls[0][2]({}).account.accountServer).toBe(WK_BENCH_ORIGIN);
+    m.fetch.mockResolvedValue({ license: BLOB });
+    await issueFreeRepoLicense('m', MACHINE, 'key', { repositoryGuid: GUID, kind: 'grand' });
+    expect(m.fetch.mock.calls[0][1].serverUrl).toBe(WK_BENCH_ORIGIN);
+  });
+
+  it('control: a lookalike id is still refused, and the message does not name bench', async () => {
+    m.isAgent.mockReturnValue(true);
+    await expect(resolveLicenseAuthority(vi.fn(), { region: 'bench2' })).rejects.toThrow(
+      'errors.unknownRegion'
+    );
+    const en = (await import('../../../i18n/locales/en/cli.json')).default as {
+      errors: { unknownRegion: string };
+    };
+    expect(en.errors.unknownRegion).not.toMatch(/bench/i);
+  });
+
+  it('bench is not in the picker list and not in the baked-in regions', async () => {
+    setTty(true);
+    m.askChoice.mockResolvedValueOnce('free');
+    await resolveLicenseAuthority(vi.fn());
+    const offered = m.promptRegion.mock.calls[0][0] as { id: string }[];
+    expect(offered.length).toBeGreaterThan(0);
+    expect(offered.map((r) => r.id)).not.toContain('bench');
+    expect(BAKED_IN_REGIONS.map((r) => r.id)).toContain('us');
+  });
+});
+
+describe('registration hint on a free licence', () => {
+  const hints = () =>
+    m.info.mock.calls.map((c) => String(c[0])).filter((x) => x.includes('registerHint'));
+
+  it('a terminal prints it once across repos, with the numbers and the signup URL', async () => {
+    setTty(true);
+    m.askChoice.mockResolvedValueOnce('free');
+    await resolveLicenseAuthority(vi.fn());
+    m.fetch.mockResolvedValue({ license: BLOB });
+    await issueFreeRepoLicense('m', MACHINE, 'key', { repositoryGuid: GUID, kind: 'grand' });
+    await issueFreeRepoLicense('m', MACHINE, 'key', { repositoryGuid: GUID, kind: 'fork' });
+    expect(hints()).toHaveLength(1);
+    expect(hints()[0]).toContain('"repoGb":10');
+    expect(hints()[0]).toContain('"issuances":100');
+    expect(hints()[0]).toContain('"backupGb":10');
+    expect(hints()[0]).toContain('/account/login');
+  });
+
+  it('the numbers are read from PLAN_LIMITS, not typed', async () => {
+    m.community.maxRepositorySizeGb = 77;
+    m.community.maxRepoLicenseIssuancesPerMonth = 555;
+    m.community.storageQuotaBytes = 33 * 1024 ** 3;
+    setTty(true);
+    m.fetch.mockResolvedValue({ license: BLOB });
+    await issueFreeRepoLicense('m', MACHINE, 'key', { repositoryGuid: GUID, kind: 'grand' });
+    expect(hints()[0]).toContain('"repoGb":77');
+    expect(hints()[0]).toContain('"issuances":555');
+    expect(hints()[0]).toContain('"backupGb":33');
+    expect(hints()[0]).not.toContain('"repoGb":10');
+  });
+
+  it('under an agent the warning carries the numbers and no second hint follows', async () => {
+    m.isAgent.mockReturnValue(true);
+    m.community.maxRepoLicenseIssuancesPerMonth = 555;
+    await resolveLicenseAuthority(vi.fn());
+    expect(m.warn).toHaveBeenCalledWith(expect.stringContaining('"issuances":555'));
+    m.fetch.mockResolvedValue({ license: BLOB });
+    await issueFreeRepoLicense('m', MACHINE, 'key', { repositoryGuid: GUID, kind: 'grand' });
+    expect(hints()).toHaveLength(0);
+  });
+
+  it('a subscription licence prints no hint', async () => {
+    m.tokenState.mockReturnValue({ kind: 'ready', token: {}, serverUrl: 'x' });
+    await resolveLicenseAuthority(vi.fn());
+    expect(m.warn).not.toHaveBeenCalled();
+    expect(hints()).toHaveLength(0);
+    expect(m.info).not.toHaveBeenCalled();
+  });
+});
+
+describe('autoTaken locale text', () => {
+  it('names the Community numbers through placeholders in every locale', async () => {
+    const en = (await import('../../../i18n/locales/en/cli.json')).default as {
+      errors: { freeLicense: Record<string, string> };
+    };
+    for (const key of ['autoTaken', 'registerHint']) {
+      for (const v of ['{{repoGb}}', '{{issuances}}', '{{backupGb}}', '{{url}}']) {
+        expect(en.errors.freeLicense[key]).toContain(v);
+      }
+    }
   });
 });

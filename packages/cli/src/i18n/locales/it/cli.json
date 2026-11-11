@@ -3039,10 +3039,11 @@
       "offerPrompt": "Questo comando richiede una licenza e non risulta alcun accesso. Accedere o continuare con una licenza gratuita?",
       "offerLogin": "Accedi a un account",
       "offerFree": "Continua con una licenza gratuita (fino a {{maxGb}} GB)",
-      "autoTaken": "Nessun accesso trovato, quindi viene usata una licenza gratuita (fino a {{maxGb}} GB, senza backup ospitati). Con un account gratuito si ottengono i limiti di Community e il backup ospitato: {{url}}",
+      "autoTaken": "Nessun accesso trovato, quindi viene usata una licenza gratuita (fino a {{maxGb}} GB, senza backup ospitati). Con un account gratuito valgono i limiti Community ({{repoGb}} GB per repository, {{issuances}} licenze al mese, {{backupGb}} GB di backup ospitato): {{url}}",
       "defaultRegion": "Nessuna regione scelta, quindi la licenza gratuita proviene da {{server}}. Per sceglierne un'altra, passa --license-region <id> o imposta REDIACC_ACCOUNT_SERVER.",
       "regionIgnored": "Questa configurazione usa già {{server}}, quindi --license-region viene ignorato.",
       "issued": "Licenza gratuita installata per questo repository (fino a {{maxGb}} GB).",
+      "registerHint": "Questa licenza gratuita non include backup ospitati. Con un account gratuito valgono i limiti Community ({{repoGb}} GB per repository, {{issuances}} licenze al mese, {{backupGb}} GB di backup ospitato): {{url}}",
       "noHostedBackup": "Una licenza gratuita non include backup ospitati. Crea un account gratuito per usare il backup ospitato di Community, oppure scegli un piano a pagamento per avere di più: {{url}}"
     },
     "machineNotFound": "Macchina \"{{name}}\" non trovata",

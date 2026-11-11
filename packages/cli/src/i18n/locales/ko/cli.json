@@ -3039,10 +3039,11 @@
       "offerPrompt": "이 명령에는 라이선스가 필요한데 로그인되어 있지 않습니다. 로그인할까요, 아니면 무료 라이선스로 계속할까요?",
       "offerLogin": "계정에 로그인",
       "offerFree": "무료 라이선스로 계속 (최대 {{maxGb}} GB)",
-      "autoTaken": "로그인되어 있지 않아 무료 라이선스를 사용합니다 (최대 {{maxGb}} GB, 호스팅 백업 없음). 무료 계정을 만들면 Community 한도와 호스팅 백업을 쓸 수 있습니다: {{url}}",
+      "autoTaken": "로그인되어 있지 않아 무료 라이선스를 사용합니다 (최대 {{maxGb}} GB, 호스팅 백업 없음). 무료 계정을 등록하면 Community 한도(저장소당 {{repoGb}}GB, 월 {{issuances}}건의 라이선스, 호스팅 백업 {{backupGb}}GB)를 쓸 수 있습니다: {{url}}",
       "defaultRegion": "리전을 선택하지 않았으므로 무료 라이선스는 {{server}}에서 발급됩니다. 다른 리전을 선택하려면 --license-region <id>를 지정하거나 REDIACC_ACCOUNT_SERVER를 설정하세요.",
       "regionIgnored": "이 구성은 이미 {{server}}를 사용하므로 --license-region은 무시됩니다.",
       "issued": "이 저장소에 무료 라이선스를 설치했습니다 (최대 {{maxGb}} GB).",
+      "registerHint": "이 무료 라이선스에는 호스팅 백업이 없습니다. 무료 계정을 등록하면 Community 한도(저장소당 {{repoGb}}GB, 월 {{issuances}}건의 라이선스, 호스팅 백업 {{backupGb}}GB)를 쓸 수 있습니다: {{url}}",
       "noHostedBackup": "무료 라이선스에는 호스팅 백업이 없습니다. 무료 계정을 만들면 Community의 호스팅 백업을 쓸 수 있고, 더 필요하면 유료 플랜을 선택하세요: {{url}}"
     },
     "machineNotFound": "머신 \"{{name}}\"을(를) 찾을 수 없습니다",

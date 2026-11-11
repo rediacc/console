@@ -3039,10 +3039,11 @@
       "offerPrompt": "See käsk vajab litsentsi, kuid sisselogimist ei leitud. Kas logida sisse või jätkata tasuta litsentsiga?",
       "offerLogin": "Logi kontole sisse",
       "offerFree": "Jätka tasuta litsentsiga (kuni {{maxGb}} GB)",
-      "autoTaken": "Sisselogimist ei leitud, seega kasutatakse tasuta litsentsi (kuni {{maxGb}} GB, ilma majutatud varukoopiateta). Tasuta konto annab Community piirangud ja majutatud varukoopiad: {{url}}",
+      "autoTaken": "Sisselogimist ei leitud, seega kasutatakse tasuta litsentsi (kuni {{maxGb}} GB, ilma majutatud varukoopiateta). Tasuta konto annab Community piirangud ({{repoGb}} GB hoidla kohta, {{issuances}} litsentsi kuus, {{backupGb}} GB hostitud varukoopiat): {{url}}",
       "defaultRegion": "Piirkonda pole valitud, seega pärineb tasuta litsents serverist {{server}}. Teise valimiseks lisa --license-region <id> või sea REDIACC_ACCOUNT_SERVER.",
       "regionIgnored": "See konfiguratsioon kasutab juba serverit {{server}}, seega --license-region jäetakse tähelepanuta.",
       "issued": "Selle hoidla tasuta litsents on paigaldatud (kuni {{maxGb}} GB).",
+      "registerHint": "Sellel tasuta litsentsil pole hostitud varukoopiaid. Tasuta konto annab Community piirangud ({{repoGb}} GB hoidla kohta, {{issuances}} litsentsi kuus, {{backupGb}} GB hostitud varukoopiat): {{url}}",
       "noHostedBackup": "Tasuta litsentsiga ei kaasne majutatud varukoopiaid. Loo tasuta konto, et kasutada Community majutatud varukoopiaid, või vali rohkema jaoks tasuline pakett: {{url}}"
     },
     "machineNotFound": "Masina \"{{name}}\" ei leitud",
