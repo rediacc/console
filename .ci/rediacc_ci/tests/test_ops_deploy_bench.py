@@ -3,6 +3,7 @@
 A real local HTTP server stands in for the account Worker's POST /account/api/v1/auth/register (and 404s any other path), so the curl the module runs is the curl under test.
 """
 
+import inspect
 import json
 import subprocess
 import threading
@@ -659,3 +660,13 @@ def test_the_payload_carries_the_whole_legal_entity(monkeypatch):
     )
     assert payload["SELLER_REGISTER_NAME"] == "Register X"
     assert set(_deploy_bench_profile()["optional"]) >= entity
+
+
+def test_portal_build_rebuilds_shared_packages_first():
+    """The portal bundles @rediacc/shared from packages/shared/dist, so the deploy builds it before vite runs; a stale dist shipped an empty consent notice to bench on 2026-11-11."""
+    src = inspect.getsource(deploy_bench)
+    build = src.index("local_common.ensure_packages_built()")
+    vite = src.index('"vite build",')
+    assert build < vite
+    # Control: the vite step is the one the portal build runs, so the order above is the order at run time.
+    assert src.count('"vite build",') == 1
