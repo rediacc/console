@@ -42,6 +42,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 
+import { SITE_LOCALES } from '@rediacc/locales';
+
 import { orderedKeys } from '../../packages/www/src/utils/legal-order.ts';
 
 export const MANIFEST_REL = '.ci/config/legal-documents.json';
@@ -52,22 +54,8 @@ export const DOCUMENTS_TS_REL = 'packages/shared/src/legal/documents.generated.t
 export const CONSENT_TS_REL = 'packages/shared/src/legal/consent.generated.ts';
 export const WELL_KNOWN_REL = 'packages/shared/src/config/well-known.generated.ts';
 
-/** The site locales, in `SUPPORTED_LANGUAGES` order (packages/shared/src/i18n/types.ts). */
-export const LOCALES = [
-  'en',
-  'de',
-  'es',
-  'fr',
-  'ja',
-  'ar',
-  'ru',
-  'tr',
-  'zh',
-  'et',
-  'ko',
-  'pt',
-  'it',
-] as const;
+/** The site locales, from the single source in packages/locales. */
+export const LOCALES = SITE_LOCALES;
 
 /** Acceptance method -> its notice key under `legal.consent` of every catalog. The unattended flag's notice is the refusal text that names the flag. */
 export const CONSENT_KEYS = {
