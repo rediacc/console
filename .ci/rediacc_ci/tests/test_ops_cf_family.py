@@ -747,6 +747,9 @@ def _port_deploy_env(env: dict[str, str]) -> dict[str, str]:
     bound["ACCOUNT_AE_READ_TOKEN"] = "fake-ae-read-token-for-tests"
     # PLAN-terms-acceptance E2: the port pushes the commercial register's name with the other SELLER_* fields; the retired bash never held it. A fake value.
     bound["SELLER_REGISTER_NAME"] = "fake-register-name-for-tests"
+    # f4fbdece81 / 0360a85606: the port binds the Stripe sandbox pair as the Worker's STRIPE_SANDBOX_* secrets (a test-prefixed key, or the push is refused); the retired bash never held them. Fake values, never real keys.
+    bound["STRIPE_SANDBOX_SECRET_KEY"] = "sk_test_fake-stripe-sandbox-key-for-tests"
+    bound["STRIPE_SANDBOX_WEBHOOK_SECRET"] = "whsec_fake-stripe-sandbox-hook-for-tests"
     return bound
 
 
@@ -758,6 +761,8 @@ PORT_ONLY_SECRETS = (
     "ACCOUNT_AE_READ_TOKEN",
     "CLOUDFLARE_ACCOUNT_ID",
     "SELLER_REGISTER_NAME",
+    "STRIPE_SANDBOX_SECRET_KEY",
+    "STRIPE_SANDBOX_WEBHOOK_SECRET",
 )
 
 # The bench sender the retired bash golden recorded, and the one the port defaults to since 71f25f3e8f.
@@ -844,6 +849,10 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
         "  ./rdc.sh --config eu-bench repo create": "  ./rdc.sh --config bench repo create",
     }
     out_mapped = out_p.replace(version_line, "", 1)
+    # DECLARED DELTA (f4fbdece81): the port announces the Stripe sandbox pair it binds, a line the retired bash never printed; asserted once, then dropped.
+    stripe_line = "Stripe sandbox pair bound as the bench Worker's STRIPE_SANDBOX_SECRET_KEY / STRIPE_SANDBOX_WEBHOOK_SECRET\n"
+    assert out_mapped.count(stripe_line) == 1
+    out_mapped = out_mapped.replace(stripe_line, "", 1)
     # DECLARED DELTA (finding 87f7acb9): the secret-name listing that precedes the retired-key deletion is echoed (the fake prints an empty list); asserted once, then dropped.
     assert out_mapped.count("[]\n") == 1
     out_mapped = out_mapped.replace("[]\n", "", 1)
