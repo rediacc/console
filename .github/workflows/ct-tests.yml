@@ -2787,6 +2787,17 @@ jobs:
         run: |
           for t in mkfs.btrfs losetup; do command -v "$t" >/dev/null || { echo "::error::$t is missing, so the BTRFS tier would be skipped"; exit 1; }; done
 
+      # The real-sandbox tests drop privileges to the universal OS user by name;
+      # requireSandboxUser (cmd/renet) fails under CI=true when it is absent.
+      # Same uid, gid and flags as `renet setup` (ensureUniversalUser).
+      - name: Create the rediacc OS user
+        run: |
+          id rediacc >/dev/null 2>&1 || {
+            sudo groupadd --gid 7111 rediacc
+            sudo useradd --system --uid 7111 --gid 7111 --no-create-home --shell /sbin/nologin rediacc
+          }
+          id rediacc
+
       # Unit tests
       - name: Run renet tests
         env:
