@@ -898,6 +898,30 @@ def test_purge_refuses_anything_but_a_lowercase_guid(bad: str) -> None:
         lib.purge_license_state_script([PURGE_A, bad])
 
 
+def test_a_gateway_running_before_the_restart_is_left_running_after_teardown(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """2026-11-11: `drill backup` stopped a running dev gateway and killed its own at exit, so a later `vm:check --changed` found none."""
+    drill, killed = _fake_gateway_drill(tmp_path, monkeypatch)
+    monkeypatch.setattr(drill, "gateway_alive", lambda: True)
+    monkeypatch.setattr(drill, "stop_worktree_stack", lambda: None)
+    drill.restart_gateway()
+    assert drill.gateway_preexisted
+    drill.teardown()
+    assert killed == []
+
+
+def test_no_gateway_before_the_restart_means_teardown_kills_ours(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    drill, killed = _fake_gateway_drill(tmp_path, monkeypatch)
+    monkeypatch.setattr(drill, "gateway_alive", lambda: False)
+    drill.restart_gateway()
+    assert not drill.gateway_preexisted
+    drill.teardown()
+    assert {pid for pid, _sig in killed} == {424242}
+
+
 @pytest.mark.parametrize(
     ("state", "healthy", "expect_stop"),
     [(True, True, True), (True, False, False), (False, True, False)],

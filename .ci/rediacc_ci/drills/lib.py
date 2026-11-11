@@ -16,7 +16,7 @@ RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in 
   1. THE GATEWAY DOES NOT INHERIT THE SANDBOX. `universe.sh` exported its throwaway `XDG_CONFIG_HOME` before restarting the gateway, and the gateway's secret loader (`bws_env`) looks for the Bitwarden bootstrap token under `${XDG_CONFIG_HOME}/rediacc/`: it found none and the drill died with "The dev gateway exited during startup" on every run since secrets moved to Bitwarden (run live 2026-10-01; the bash passes only when `BWS_ACCESS_TOKEN` happens to be exported). The sandbox applies to the `rdc` commands under test (`Drill.cli_env`); the gateway is started with the environment the drill itself was started with (`Drill.gateway_env`).
   2. JSON EXPRESSIONS ARE PATHS, NOT EVALUATED CODE. `drill_json` ran the caller's expression through node's `new Function`, and every failure inside it (a parse error, a typo) collapsed to an empty string indistinguishable from an absent field. `json_get` takes a path (`data.name`, `errors[0].code`) and distinguishes "absent" (empty string, the bash's answer) from "unparseable input" (`<unparseable>`), which an assertion reports as such.
   3. THE TEARDOWN REPORTS WHAT IT COULD NOT STOP. The bash swallowed every failure (`|| true`) so a surviving gateway left no trace; each step now records its failure on stderr and the teardown still completes.
-  4. GATEWAY IS NEVER KILLED. `drill_gateway_stop` swept `lsof -ti:<port>` .. `<port>+2` with `kill -9` whenever `DRILL_GATEWAY_PORT` was set, and the `--no-restart` path sets it for a gateway the operator started: every `--no-restart` drill ended by SIGKILLing the gateway it had been told to reuse (or whatever else listened on those ports). The sweep now runs only after this run stopped a process group of its own.
+  4. A GATEWAY THE DRILL DID NOT START IS NEVER KILLED, AND ONE THAT WAS RUNNING BEFORE IS PUT BACK. `drill_gateway_stop` swept `lsof -ti:<port>` .. `<port>+2` with `kill -9` whenever `DRILL_GATEWAY_PORT` was set, and the `--no-restart` path sets it for a gateway the operator started: every `--no-restart` drill ended by SIGKILLing the gateway it had been told to reuse (or whatever else listened on those ports). The sweep now runs only after this run stopped a process group of its own. When `restart_gateway` replaced a gateway that was already healthy, the teardown detaches the drill's own gateway and leaves it running, so a later consumer that skips a restart still finds one.
   5. STAYS OUT OF THE FAILURE REPORT. `drill_run env REDIACC_TOKEN=<token> REDIACC_STORE_MASTER_PASSWORD=<password> rdc ...` recorded the whole `env` line as the command, and every failed assertion printed it ("command : ...") to stderr, which in CI is a log: the account token and the store password landed there. `run_with` passes the variables through the child's environment and records only the command.
   6. `urllib`, NOT `curl` AND `node`. The API helpers, the port probe (`free_port`) and the offline shim (`Shim`, an in-process threaded TCP forwarder) no longer need curl, node or a generated `proxy.js`.
 """
@@ -236,6 +236,8 @@ class Drill:
         self.active_gateway_log: pathlib.Path | None = None
         self.gateway_proc: subprocess.Popen | None = None
         self.gateway_port_cached = ""
+        # True once `restart_gateway` found a healthy gateway this run had not started: the teardown then leaves the drill's own gateway running instead of killing it.
+        self.gateway_preexisted = False
         self.shim: Shim | None = None
         self.shim_port = 0
         self.code = 0
@@ -279,6 +281,9 @@ class Drill:
 
     def teardown(self) -> None:
         """Best-effort cleanup, every step reported if it fails: shim, gateway, work directory."""
+        if self.gateway_preexisted:
+            # A gateway was running before this run replaced it: put one back by leaving ours up (as vm_check does).
+            self.detach_gateway()
         for label, action in (("shim", self.stop_shim), ("gateway", self.stop_gateway)):
             try:
                 action()
@@ -544,6 +549,9 @@ class Drill:
         # Append mode: opening is the writability check, and nothing is truncated while the old gateway may still write to this same file.
         log_file = target.open("ab")
         self.active_gateway_log = target
+        # Only a gateway this run did not start counts: a second restart would see the drill's own.
+        if self.gateway_proc is None and self.gateway_alive():
+            self.gateway_preexisted = True
         self.stop_gateway()
         self.stop_worktree_stack()
         log_file.truncate(0)
