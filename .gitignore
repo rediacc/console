@@ -5,6 +5,7 @@ node_modules/
 dist/
 bin/
 packages/*/dist
+packages/*/dist.build-*
 packages/*/dist-typecheck
 *.tsbuildinfo
 
