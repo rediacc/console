@@ -1,0 +1,227 @@
+Terms & Conditions
+Effective Date: March 15, 2026
+
+1. Definitions
+
+The following definitions apply throughout these Terms of Service:
+
+- "Account" means the user account you create to access the Platform and manage your Subscription.
+- "Authorized User" means any individual granted access to the Services under your Account, including team members, employees, and contractors acting on your behalf.
+- "Renet Agent" means the Rediacc server-side agent that runs on your Machines to manage encrypted storage, container orchestration, and infrastructure operations.
+- "CLI" means the Rediacc command-line interface (rdc) installed on your workstation.
+- "Configuration" means the local configuration files stored on your workstation that contain Machine connection details, encryption credentials, and other operational settings.
+- "Customer Data" means any data, content, files, containers, configurations, and applications you deploy, store, or process on your Machines using the Services. Customer Data does not include Account information or Telemetry Data.
+- "Machine" means a server or virtual machine that you own or control on which the Renet Agent is installed.
+- "On-Premise Software" means the software components installed on your infrastructure, including the CLI and the Renet Agent.
+- "Platform" means the Rediacc account portal and any cloud-hosted services provided by Rediacc.
+- "Repository" means an isolated application deployment managed by the Renet Agent, consisting of an encrypted disk image, a dedicated Docker daemon, and associated containers.
+- "Services" means, collectively, the On-Premise Software, the Platform, documentation, and any related professional services provided by Rediacc.
+- "Subscription" means the plan tier you have selected (Community, Professional, Business, or Enterprise), which determines your access to features and resource limits.
+- "Telemetry Data" means anonymized usage data collected by the Services as described in our Telemetry Policy <https://www.rediacc.com/en/telemetry-policy>.
+
+2. Acceptance of Terms
+
+By accessing or using any part of the Services (including downloading the CLI, installing the Renet Agent on a Machine, creating an Account, or using the Platform), you agree to be bound by these Terms of Service ("Terms"). If you are using the Services on behalf of an organization, you represent and warrant that you have the authority to bind that organization to these Terms, and references to "you" or "Customer" include that organization.
+
+If you do not agree to these Terms, you must not access or use the Services. These Terms constitute a legally binding agreement between you and Rediacc OÜ (registry code 17363830), a company registered in Estonia with its office at Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Estonia ("Rediacc", "we", "us", or "our").
+
+3. Description of Services
+
+Rediacc provides an infrastructure automation platform for managing self-hosted server environments. The Services consist of:
+
+- On-Premise Software: The CLI (rdc) and the Renet Agent, installed on your workstations and Machines to orchestrate encrypted, isolated container deployments
+- Platform: The account portal for subscription management, team collaboration, and (where available) cloud-based infrastructure management
+- Professional Services: Optional consulting, migration assistance, and implementation support, subject to separate service agreements
+
+The specific features, resource limits, and capabilities available to you depend on your Subscription tier. Feature descriptions on our website and documentation describe the intended functionality of each tier but do not constitute binding performance guarantees.
+
+4. Accounts and Registration
+
+To access the Platform and manage Subscriptions, you must create an Account. You agree to provide accurate, current, and complete information during registration and to keep it updated. You are solely responsible for:
+
+- Safeguarding your Account credentials, API tokens, and access keys
+- All activities that occur under your Account or through your Authorized Users
+- Ensuring that Authorized Users comply with these Terms
+- Maintaining the confidentiality of your Configuration files, including SSH private keys and encryption credentials
+
+You must notify us immediately at contact@rediacc.com <mailto:contact@rediacc.com> if you suspect unauthorized access to your Account. We reserve the right to suspend or delete Accounts that remain inactive for more than twelve (12) months or that we reasonably believe are being used in violation of these Terms.
+
+5. Subscriptions, Billing, and Payment
+
+Rediacc offers multiple Subscription tiers:
+
+- Community (free): 1 Machine activation, core features, community support. This is the fallback plan your account returns to after a trial or paid Subscription ends.
+- Professional: 1 Machine activation, audit logging, priority support, custom branding
+- Business: 1 Machine activation, distributed storage, advanced analytics, dedicated success manager
+- Enterprise: dedicated infrastructure, custom integrations, 24/7 support, and a Machine activation ceiling set in your order. Where no ceiling is negotiated, 25 Machine activations apply. Enterprise is sold through our partners.
+
+5.1 Billing
+
+Paid Subscriptions (Professional and Business) begin with a 14-day free trial. You provide a payment method at signup, and the first charge is placed when the trial ends. You may cancel before the trial ends at no charge. If you cancel during the trial, cancel a paid Subscription later, or a payment fails, your account returns to the free Community tier.
+
+Paid Subscriptions are billed monthly or annually in advance. Annual billing is offered at a 15% discount off twelve (12) months of the monthly price. All fees are stated in US dollars. Payment is processed by our third-party payment processor (Stripe); we do not store full payment card details.
+
+We reserve the right to change our pricing with thirty (30) days' notice. Price changes will not affect your current billing cycle. If you do not agree to a price change, you may cancel your Subscription before the next billing cycle.
+
+5.2 Taxes
+
+All fees are exclusive of applicable taxes. You are responsible for all taxes, duties, and levies imposed by taxing authorities on your Subscription, excluding taxes based on Rediacc's net income. Where required by law, Rediacc will collect and remit applicable taxes (including EU VAT) and these will be itemized on your invoice.
+
+5.3 Renewal and Cancellation
+
+Paid Subscriptions renew automatically at the end of each billing cycle at the then-current price unless you cancel before the renewal date. By subscribing to a paid tier, you authorize recurring charges to your payment method until you cancel. You may cancel at any time through the account portal or by contacting us at contact@rediacc.com <mailto:contact@rediacc.com>. Upon cancellation, you retain access to paid features until the end of your current billing period. No prorated refunds are issued for partial billing periods except as described in our Refund Policy <https://www.rediacc.com/en/refund-policy>. We will send a renewal reminder to your Account email before each annual renewal.
+
+5.4 License Validation and Grace Period
+
+The On-Premise Software periodically validates your Subscription status. If validation fails (due to network issues, expired Subscription, or non-payment), a three (3) day grace period applies. After the grace period, the On-Premise Software will operate at the Community tier feature level until Subscription status is restored.
+
+5.5 Machine Activations, Clusters, and Nodes
+
+A "Cluster" means two or more Machines that you operate together as a single pool of storage or compute using the Services. A "Node" means one Machine that is a member of a Cluster. A Node is a Machine for all purposes under these Terms, and each Node consumes one Machine activation. Clusters are not pooled or discounted: a Cluster of five Nodes consumes five Machine activations.
+
+Your Machine activation ceiling is the maximum number of Machines that may hold an activation at one time. It is recorded on your Subscription and is governed by your order. The tier figures listed above are the standard, non-negotiated defaults; a ceiling agreed in an order or partner agreement replaces the default for that Subscription. Clustering is available under Enterprise and partner agreements only.
+
+A Machine activation is consumed when a Repository is created, copied, or placed on a Machine, and is released automatically after a period of inactivity. Building infrastructure alone, including creating a Cluster and joining Nodes to it, does not consume an activation.
+
+Where every activation is already in use, Rediacc may refuse to activate an additional Machine. Machines that already hold an activation continue to operate and may renew their existing licenses, and Rediacc may record such renewals as exceeding your ceiling. Rediacc may contact you to reconcile your Subscription where a Machine activation ceiling is persistently exceeded.
+
+6. On-Premise Software License
+
+Subject to these Terms and your active Subscription, Rediacc grants you a limited, non-exclusive, non-sublicensable, non-transferable, revocable license to install and use the On-Premise Software (CLI and Renet Agent) solely for your internal business purposes during your Subscription term.
+
+6.1 Installation and Machine Access
+
+The Renet Agent operates with elevated (root) privileges on your Machines to manage encrypted volumes, container runtimes, and system services. You are solely responsible for the security of your Machines, including SSH access, firewall configuration, operating system updates, and physical security. Rediacc does not remotely access your Machines unless explicitly requested by you for support purposes.
+
+6.2 Restrictions
+
+You shall not:
+
+- Reverse engineer, decompile, disassemble, or otherwise attempt to derive the source code of the Renet Agent binary or any non-open-source component of the On-Premise Software
+- Redistribute, sublicense, rent, lease, or lend the On-Premise Software to any third party
+- Remove, alter, or obscure any proprietary notices, labels, or marks on the On-Premise Software
+- Use the On-Premise Software to build a competing product or service
+- Circumvent or disable any license validation, telemetry, or security mechanisms in the On-Premise Software
+- Exceed the Machine activation limits of your Subscription tier
+
+6.3 Encryption and Credentials
+
+The On-Premise Software uses LUKS full-disk encryption for Repository data. Encryption credentials are generated locally and stored exclusively in your Configuration files on your workstation. Rediacc does not have access to your encryption credentials and cannot recover your data if you lose them. You are solely responsible for backing up your Configuration files and encryption credentials.
+
+7. Platform License
+
+Subject to these Terms and your active Subscription, Rediacc grants you a limited, non-exclusive, non-transferable license to access and use the Platform during your Subscription term. You may grant access to Authorized Users within your organization.
+
+We reserve the right to modify, update, or discontinue features of the Platform at any time. Where practical, we will provide advance notice of material changes. Modifications will not materially reduce the core functionality of your current Subscription tier during an active paid billing period.
+
+We strive to maintain high availability of the Platform but do not guarantee uninterrupted access. The Platform may be temporarily unavailable due to maintenance, updates, or circumstances beyond our control.
+
+8. Experimental Features
+
+Certain features of the Services may be designated as "experimental", "beta", or "preview" (collectively, "Experimental Features"). Experimental Features are provided for evaluation purposes and may be incomplete, unstable, or subject to change without notice.
+
+Experimental Features are provided "AS IS" without warranty of any kind. We may modify or discontinue Experimental Features at any time without prior notice, and we are not liable for any loss or damage arising from your use of or reliance on Experimental Features.
+
+9. Use Restrictions
+
+You agree that you and your Authorized Users will not use the Services to:
+
+- Deploy, host, or distribute malware, viruses, ransomware, or any other harmful code
+- Operate cryptocurrency mining, peer-to-peer file sharing networks, or open proxy services
+- Infringe or misappropriate any third-party intellectual property, privacy, or other rights
+- Send unsolicited commercial communications (spam) or conduct phishing attacks
+- Perform unauthorized vulnerability scanning, penetration testing, or load testing against Rediacc infrastructure
+- Impersonate any person or entity, or misrepresent your affiliation
+- Violate any applicable law, regulation, or third-party rights
+- Resell, redistribute, or make the Services available to third parties as part of a managed service offering without our prior written consent
+
+You are solely responsible for the content and applications you deploy on your Machines using the Services. We reserve the right to suspend or terminate access to the Platform if we reasonably believe a violation of these restrictions has occurred.
+
+10. Telemetry and Data Collection
+
+The On-Premise Software and Platform collect anonymized Telemetry Data to improve product quality, diagnose errors, and understand usage patterns. Telemetry is privacy-preserving by design: personal identifiers are anonymized before transmission, and all Telemetry Data is processed on infrastructure within the European Union.
+
+Telemetry is enabled by default in the CLI. You may disable telemetry before any data is transmitted using the product-specific mechanisms described in our Telemetry Policy <https://www.rediacc.com/en/telemetry-policy>, which details exactly what data each product collects and how to disable collection. Telemetry is automatically disabled in CI environments.
+
+In jurisdictions that require explicit consent for telemetry collection on terminal equipment (including under the ePrivacy Directive as implemented in your jurisdiction), you should configure your telemetry preferences before first use of the On-Premise Software. Your continued use of the Services with telemetry enabled constitutes your consent to the collection described in the Telemetry Policy <https://www.rediacc.com/en/telemetry-policy>.
+
+11. Your Data and Encryption
+
+You own your Customer Data. Because the On-Premise Software stores Customer Data on Machines you control, encrypted with credentials only you possess, Rediacc does not have access to your Customer Data at rest. We do not access, use, or share your Customer Data except as strictly necessary to provide the Services (for example, processing Platform API requests you initiate).
+
+Account information (email, organization name, billing details) is processed in accordance with our Privacy Policy <https://www.rediacc.com/en/privacy-policy>. Upon termination of your Account, you may export your Account data within thirty (30) days. After thirty (30) days, we will delete your Account data from our active systems. Customer Data on your Machines is unaffected by Account termination; it remains on your infrastructure under your control.
+
+In accordance with the EU Data Act (Regulation 2023/2854), if you use the Platform's cloud features, you have the right to switch providers or migrate to a self-hosted setup. Your Customer Data is stored on your own Machines and is always under your control. Any Account data and configuration stored on the Platform can be exported in standard, machine-readable formats. We will provide reasonable assistance during any transition period of up to thirty (30) days following your request.
+
+12. Intellectual Property
+
+The Services (including the On-Premise Software, Platform, documentation, APIs, designs, and all content provided by Rediacc) are owned by Rediacc OÜ and protected by intellectual property laws of Estonia, the European Union, and applicable international treaties. Except for the licenses expressly granted in these Terms, no other rights or licenses are implied or granted.
+
+You retain all rights, title, and interest in your Customer Data and any content or applications you create using the Services. By using the Platform, you grant Rediacc a limited, worldwide, royalty-free license to host, process, and display your Account information solely to provide the Services to you. This license terminates when you delete your Account.
+
+We may collect and use anonymized, aggregated data derived from your use of the Services (including Telemetry Data) for product improvement, analytics, and benchmarking purposes. Such aggregated data does not identify you or any individual user.
+
+13. Third-Party Components
+
+The On-Premise Software may install, configure, or interact with third-party open-source software on your Machines, including Docker, container runtimes, and storage synchronization tools. These third-party components are governed by their own respective licenses and are provided "AS IS" without warranty from Rediacc.
+
+Rediacc does not assume liability for the functionality, security, or availability of third-party components. You are responsible for reviewing and complying with the licenses of any third-party software deployed on your infrastructure.
+
+14. Disclaimer of Warranties
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, THE SERVICES ARE PROVIDED "AS IS" AND "AS AVAILABLE." REDIACC DISCLAIMS ALL WARRANTIES, WHETHER EXPRESS, IMPLIED, OR STATUTORY, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND ANY WARRANTIES ARISING FROM COURSE OF DEALING OR USAGE OF TRADE.
+
+WITHOUT LIMITING THE FOREGOING, REDIACC DOES NOT WARRANT THAT: (A) THE SERVICES WILL MEET YOUR REQUIREMENTS OR EXPECTATIONS; (B) THE SERVICES WILL BE UNINTERRUPTED, TIMELY, SECURE, OR ERROR-FREE; (C) THE RESULTS OBTAINED FROM THE SERVICES WILL BE ACCURATE OR RELIABLE; OR (D) ANY DEFECTS IN THE SERVICES WILL BE CORRECTED.
+
+NOTHING IN THESE TERMS EXCLUDES OR LIMITS LIABILITY FOR: (A) DEATH OR PERSONAL INJURY CAUSED BY NEGLIGENCE; (B) FRAUD OR FRAUDULENT MISREPRESENTATION; OR (C) ANY LIABILITY THAT CANNOT BE EXCLUDED OR LIMITED UNDER THE ESTONIAN LAW OF OBLIGATIONS ACT (VÕLAÕIGUSSEADUS), INCLUDING LIABILITY FOR INTENTIONAL MISCONDUCT OR GROSS NEGLIGENCE.
+
+You acknowledge that the On-Premise Software operates with elevated privileges on your Machines and that you assume all risks associated with its installation and operation on your infrastructure. Feature descriptions, performance metrics, and recovery time estimates in our documentation and marketing materials describe intended functionality and are not binding performance guarantees.
+
+15. Limitation of Liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT SHALL REDIACC, ITS AFFILIATES, OFFICERS, DIRECTORS, EMPLOYEES, OR AGENTS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS, REVENUE, DATA, USE, OR GOODWILL, ARISING OUT OF OR IN CONNECTION WITH THESE TERMS OR YOUR USE OF THE SERVICES, REGARDLESS OF THE THEORY OF LIABILITY AND WHETHER OR NOT REDIACC HAS BEEN ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+REDIACC'S TOTAL AGGREGATE LIABILITY FOR ALL CLAIMS ARISING OUT OF OR RELATED TO THESE TERMS OR THE SERVICES SHALL NOT EXCEED THE GREATER OF: (A) THE TOTAL AMOUNT YOU PAID TO REDIACC DURING THE TWELVE (12) MONTHS PRECEDING THE EVENT GIVING RISE TO THE CLAIM; OR (B) ONE HUNDRED US DOLLARS ($100).
+
+THE LIMITATIONS AND EXCLUSIONS IN SECTIONS 14 AND 15 DO NOT APPLY TO: (A) LIABILITY FOR DEATH OR PERSONAL INJURY CAUSED BY NEGLIGENCE; (B) LIABILITY FOR FRAUD OR FRAUDULENT MISREPRESENTATION; (C) LIABILITY FOR INTENTIONAL MISCONDUCT (TAHTLIK RIKKUMINE) OR GROSS NEGLIGENCE (RASKE HOOLETUS) UNDER THE ESTONIAN LAW OF OBLIGATIONS ACT; OR (D) ANY OTHER LIABILITY THAT CANNOT BE EXCLUDED OR LIMITED UNDER APPLICABLE LAW.
+
+16. Indemnification
+
+16.1 By You
+
+You agree to indemnify, defend, and hold harmless Rediacc and its officers, directors, employees, and agents from any third-party claims, damages, losses, or expenses (including reasonable attorneys' fees) arising from: (a) your use of the Services; (b) content or applications you deploy using the Services; (c) your violation of these Terms; or (d) your violation of any applicable law or third-party rights.
+
+16.2 By Rediacc
+
+Rediacc will indemnify, defend, and hold you harmless from any third-party claim that the On-Premise Software or Platform, as provided by Rediacc, infringes a valid intellectual property right of a third party, provided that you: (a) promptly notify Rediacc of the claim; (b) grant Rediacc sole control of the defense and settlement; and (c) provide reasonable cooperation at Rediacc's expense.
+
+If the Services become, or in Rediacc's opinion are likely to become, the subject of an infringement claim, Rediacc may at its option: (i) procure the right for you to continue using the Services; (ii) replace or modify the affected component to make it non-infringing; or (iii) if neither (i) nor (ii) is commercially practicable, terminate the affected Subscription and refund any prepaid, unused fees.
+
+Rediacc has no obligation under this section for claims arising from: modifications you make to the Services, use of the Services in combination with third-party software not provided by Rediacc, or use of the Services in violation of these Terms.
+
+17. Termination
+
+You may cancel your Subscription at any time through the account portal or by contacting us at contact@rediacc.com <mailto:contact@rediacc.com>. We may suspend or terminate your access to the Services if you materially breach these Terms, subject to thirty (30) days' written notice and opportunity to cure, except where the breach poses an immediate security risk or involves illegal activity.
+
+Upon termination:
+
+- Your license to use the On-Premise Software and Platform ceases at the end of your current billing period (or immediately in case of breach)
+- Customer Data on your Machines remains under your control; Rediacc has no ability to access or delete it
+- Account data will be retained for thirty (30) days to allow export, then deleted from our active systems
+- Sections 1 (Definitions), 11 (Your Data), 12 (Intellectual Property), 14 (Warranties), 15 (Liability), 16 (Indemnification), and 18 (Governing Law) survive termination
+
+18. Governing Law and Disputes
+
+These Terms are governed by and construed in accordance with the laws of the Republic of Estonia, without regard to conflict of law principles. Any disputes arising under or in connection with these Terms shall be submitted to the exclusive jurisdiction of the Harju County Court (Harju Maakohus) in Tallinn, Estonia.
+
+Notwithstanding the foregoing, either party may seek injunctive or other equitable relief in any court of competent jurisdiction to prevent the actual or threatened infringement, misappropriation, or violation of intellectual property rights or confidentiality obligations.
+
+19. Changes to These Terms
+
+We may update these Terms from time to time. We will notify you of material changes by posting the updated Terms on our website with a new effective date and, for changes that materially affect your rights, by email to the address associated with your Account at least thirty (30) days before they take effect.
+
+Your continued use of the Services after the updated Terms take effect constitutes acceptance of the revised Terms. If you do not agree to the updated Terms, you must stop using the Services and cancel your Subscription before the changes take effect.
+
+Questions?
+
+If you have questions about these Terms of Service, contact us at contact@rediacc.com <mailto:contact@rediacc.com>.

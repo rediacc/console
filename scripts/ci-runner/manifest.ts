@@ -4409,6 +4409,18 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    id: 'check:ci-terms-version',
+    run: 'npm run check:ci-terms-version',
+    gate: true,
+    leaves: ['scripts/gates/check-terms-version.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'Terms version',
+    },
+  },
+  {
     id: 'check:ci-dead-css',
     run: 'npm run check:ci-dead-css',
     gate: true,

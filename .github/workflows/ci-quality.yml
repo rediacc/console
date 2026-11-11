@@ -1609,6 +1609,9 @@ jobs:
       - name: SVG theme reach
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-svg-theme-reach
+      - name: Terms version
+        if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
+        run: npm run check:ci-terms-version
       - name: Test-gate wiring
         if: ${{ !cancelled() && steps.setup.outcome == 'success' }}
         run: npm run check:ci-test-gate-wiring

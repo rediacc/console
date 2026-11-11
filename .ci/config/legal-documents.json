@@ -1,0 +1,22 @@
+{
+  "$comment": [
+    "Hand-edited: the published versions of each legal document (agent/plans/PLAN-terms-acceptance.md Design 2).",
+    "Per document: `page` (the www slug), `catalogKey` (the key under `pages.` of en.json) and `versions`, oldest first.",
+    "A version is {version, effective, material, sha256}; both dates are UTC YYYY-MM-DD and increase. A typo fix is a new version with material false; a material change is a new version effective at least 30 days later.",
+    "Declare a version without `sha256`: `npx tsx scripts/gen/gen-legal.ts --write` archives its canonical text under packages/www/public/legal/archive/ and fills the hash. An archive is immutable, and check:ci-terms-version holds the text, this file, the archives and the generated modules in step."
+  ],
+  "documents": {
+    "terms-of-service": {
+      "page": "terms-of-service",
+      "catalogKey": "termsOfService",
+      "versions": [
+        {
+          "version": "2026-03-15",
+          "effective": "2026-03-15",
+          "material": true,
+          "sha256": "85b367874e7b706011dd2feed96d1e7841c050b50c319633a9b1e2173f0d932b"
+        }
+      ]
+    }
+  }
+}
