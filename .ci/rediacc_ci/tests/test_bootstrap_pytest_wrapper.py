@@ -74,3 +74,37 @@ def test_outside_a_checkout_the_installed_lease_is_the_fallback(tmp_path):
     bare = tmp_path / "bare"
     bare.mkdir()
     assert _run(wrapper, bare) == "LEASE=%s" % baked
+
+
+def _owner_paths(root: pathlib.Path) -> dict[str, str]:
+    source = BOOTSTRAP.read_text(encoding="utf-8")
+    match = re.search(
+        r'^TOOL_OWNER_ROOT="\$ROOT"\n.*?^LEASE_PY=.*?\n', source, re.MULTILINE | re.DOTALL
+    )
+    assert match, "the toolchain-owner block left bootstrap.sh"
+    script = 'ROOT="$1"\n' + match.group(0) + 'printf "%s\\n%s\\n" "$REAL_PYTEST" "$LEASE_PY"\n'
+    done = subprocess.run(
+        ["bash", "-c", script, "bash", str(root)], capture_output=True, text=True, check=True
+    )
+    real, lease = done.stdout.splitlines()
+    return {"real": real, "lease": lease}
+
+
+def test_a_lease_writes_the_owning_checkouts_paths_into_the_shared_wrapper(tmp_path):
+    """A lease's .ci/cache/toolchain is a symlink to the main checkout's, so the wrapper is one shared file: its pytest path must name the owner, or collecting the lease breaks pytest for every tree (2026-11-11)."""
+    main = tmp_path / "main"
+    (main / ".ci" / "cache" / "toolchain").mkdir(parents=True)
+    lease = tmp_path / "lease"
+    (lease / ".ci" / "cache").mkdir(parents=True)
+    (lease / ".ci" / "cache" / "toolchain").symlink_to(main / ".ci" / "cache" / "toolchain")
+    got = _owner_paths(lease)
+    assert got["real"] == str(main.resolve() / ".ci/cache/toolchain/uv-tools/pytest/bin/pytest")
+    assert got["lease"] == str(main.resolve() / ".ci/rediacc_ci/core_lease.py")
+
+
+def test_the_main_checkout_keeps_its_own_paths(tmp_path):
+    """Control: a checkout that owns its toolchain directory writes its own paths."""
+    main = tmp_path / "main"
+    (main / ".ci" / "cache" / "toolchain").mkdir(parents=True)
+    got = _owner_paths(main)
+    assert got["real"] == str(main.resolve() / ".ci/cache/toolchain/uv-tools/pytest/bin/pytest")

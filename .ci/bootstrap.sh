@@ -134,9 +134,20 @@ COSIGN_CACHE_BIN="$COSIGN_DIR/cosign"
 # and the lease module itself. Absolute, because a session runs the wrapper from
 # any directory. The marker line is how a wrapper is told from uv's symlink: only
 # a file carrying it is ever removed or overwritten here.
-REAL_PYTEST="$TOOL_DIR/pytest/bin/pytest"
-REAL_PYTHON="$TOOL_DIR/pytest/bin/python"
-LEASE_PY="$ROOT/.ci/rediacc_ci/core_lease.py"
+#
+# A lease tree's .ci/cache/toolchain is a symlink to the main checkout's, so the
+# wrapper written here is the SAME file every tree runs. Its paths are therefore
+# rooted at the checkout that physically owns the toolchain, never at $ROOT: a
+# bootstrap inside a lease used to write the lease's own path into the shared
+# wrapper, and pytest broke everywhere once that lease was collected
+# (2026-11-11, `pytest wrapper: .../worktrees/agent-.../pytest is missing`).
+TOOL_OWNER_ROOT="$ROOT"
+if [ -d "$ROOT/.ci/cache/toolchain" ]; then
+    TOOL_OWNER_ROOT="$(CDPATH='' cd -- "$(readlink -f "$ROOT/.ci/cache/toolchain")/../../.." && pwd -P)"
+fi
+REAL_PYTEST="$TOOL_OWNER_ROOT/.ci/cache/toolchain/uv-tools/pytest/bin/pytest"
+REAL_PYTHON="$TOOL_OWNER_ROOT/.ci/cache/toolchain/uv-tools/pytest/bin/python"
+LEASE_PY="$TOOL_OWNER_ROOT/.ci/rediacc_ci/core_lease.py"
 WRAPPER_MARK="# rediacc core-lease pytest wrapper"
 
 # The platform, derived. Same two-axis mapping .ci/scripts/lib/toolchain.sh uses
