@@ -29,6 +29,8 @@ import os
 import shutil
 import subprocess
 import sys
+import threading
+import time
 import typing
 
 from rediacc_ci import paths
@@ -37,6 +39,8 @@ from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
+
+    import pytest
 
 ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/setup/build-packages.sh"
@@ -60,24 +64,29 @@ PATH_MINIMUM = ("dirname", "uname", "tr", "rm")
 FAKE_NPM = """#!{python}
 import os
 import pathlib
+import re
 import shlex
 import sys
+import time
 
 argv = sys.argv[1:]
+# The stage directory carries the builder's pid and the tree's absolute path; both are masked so the recorded call is stable.
+shown = [re.sub(r"^.*/(packages/shared/dist\\.build-)\\d+", r"<tree>/\\1<pid>", a) for a in argv]
 with open(os.environ["FAKE_CALL_LOG"], "a") as fh:
-    fh.write("npm\\t" + "\\t".join(argv) + "\\n")
+    fh.write("npm\\t" + "\\t".join(shown) + "\\n")
 
 # THE LEDGER LINE. A `→ `/`✓ ` line can never become a shadow-gate finding, so
 # the fake echoes its own argv under a prefix nothing classifies as chatter.
-sys.stdout.write("call: npm " + " ".join(shlex.quote(a) for a in argv) + "\\n")
+sys.stdout.write("call: npm " + " ".join(shlex.quote(a) for a in shown) + "\\n")
 
-# A real `npm run build:packages` emits packages/shared/dist. The fixture decides
-# whether this run does, because "the build succeeded and emitted nothing" is the
-# case the twin calls `(may be expected)`.
-if os.environ.get("FAKE_NPM_EMIT"):
-    out = pathlib.Path(os.environ["FAKE_NPM_EMIT"])
+# The shared build is the call that carries `--outDir`. A real one emits there. The fixture decides
+# whether this run does, because "the build succeeded and emitted nothing" is the case the twin calls
+# `(may be expected)`.
+if os.environ.get("FAKE_NPM_EMIT") and "--outDir" in argv:
+    out = pathlib.Path(argv[argv.index("--outDir") + 1])
     out.mkdir(parents=True, exist_ok=True)
     (out / "index.js").write_text("// built\\n", encoding="utf-8")
+    time.sleep(float(os.environ.get("FAKE_NPM_SLEEP") or 0))
 
 sys.exit(int(os.environ.get("FAKE_NPM_RC") or 0))
 """
@@ -177,6 +186,12 @@ def _run(subject: str, tree: pathlib.Path, args: list[str], **extra: str):
     return proc, calls, _snapshot(tree)
 
 
+SHARED_CALL = (
+    "npm\trun\tbuild\t-w\t@rediacc/shared\t--\t--outDir\t<tree>/packages/shared/dist.build-<pid>"
+    "\t--tsBuildInfoFile\t<tree>/packages/shared/dist.build-<pid>/tsconfig.tsbuildinfo"
+)
+PROVISIONING_CALL = "npm\trun\tbuild\t-w\t@rediacc/provisioning"
+
 DEFAULT_SPEC = {
     "packages/shared/dist": "dir",
     "packages/shared/dist/stale.js": "file",
@@ -196,7 +211,7 @@ def run_both(tmp_path: pathlib.Path, args: list[str] = (), *, spec=None, **kw):
         str(emit),
     ]
     if emit:
-        kw["FAKE_NPM_EMIT"] = str(tree / "packages/shared/dist")
+        kw["FAKE_NPM_EMIT"] = "1"
 
     def twin():
         raise RuntimeError(
@@ -204,7 +219,11 @@ def run_both(tmp_path: pathlib.Path, args: list[str] = (), *, spec=None, **kw):
             % (TWIN_REL, diff.REGOLDEN_VERB, TWIN_REL)
         )
 
-    old3 = diff.twin_result(TWIN_REL, parts, twin, work=(tmp_path,))
+    def from_port():
+        _layout(tree, layout)
+        return _run(PORT_REL, tree, list(args), **kw)
+
+    old3 = diff.twin_result(TWIN_REL, parts, twin, port=from_port, work=(tmp_path,))
     _layout(tree, layout)
     new3 = _run(PORT_REL, tree, list(args), **kw)
     return old3, new3
@@ -236,8 +255,14 @@ def test_the_default_run_wipes_builds_and_verifies(tmp_path: pathlib.Path) -> No
     old3, new3 = run_both(tmp_path)
     old, old_calls, old_fs = old3
     assert old.returncode == 0
-    assert old_calls == ["npm\trun\tbuild:packages"]
-    assert old.stdout == "call: npm run build:packages\n"
+    assert old_calls == [SHARED_CALL, PROVISIONING_CALL]
+    assert old.stdout == (
+        "call: npm run build -w @rediacc/shared -- --outDir "
+        "'<tree>/packages/shared/dist.build-<pid>' --tsBuildInfoFile "
+        "'<tree>/packages/shared/dist.build-<pid>/tsconfig.tsbuildinfo'\n"
+        "call: npm run build -w @rediacc/provisioning\n"
+    )
+    assert not [p for p in old_fs if "dist.build-" in p]
     assert old.stderr == (
         "→ Building shared packages...\n"
         "✓ Shared packages built successfully\n"
@@ -269,28 +294,32 @@ def test_debug_1_is_not_debug_true(tmp_path: pathlib.Path) -> None:
 # --------------------------------------------------------------------------- The vacuity, and the failure ---------------------------------------------------------------------------
 
 
-def test_a_build_that_emits_nothing_warns_and_exits_zero(tmp_path: pathlib.Path) -> None:
-    """THE VACUITY CLASS, IN THE SCRIPT WHOSE JOB IS TO BUILD. The script deletes `packages/shared/dist`, runs a build that produces nothing, finds the directory gone, calls that `(may be expected)` and exits 0. That is exactly the tsbuildinfo no-op the wipe eleven lines above exists to prevent, and it is reported as a warning nobody greps for."""
+def test_a_build_that_emits_nothing_warns_and_keeps_the_old_dist(tmp_path: pathlib.Path) -> None:
+    """THE VACUITY CLASS, IN THE SCRIPT WHOSE JOB IS TO BUILD. A build that produces nothing exits 0 (the tsbuildinfo no-op the wipe exists to prevent). The twin deleted `dist` first, so it reported `(may be expected)` over an empty tree; this port warns that nothing was emitted and leaves the old `dist` as it was."""
     old3, new3 = run_both(tmp_path, emit=False)
     old = old3[0]
     assert old.returncode == 0
     assert old.stderr == (
         "→ Building shared packages...\n"
+        "⚠ Shared build emitted nothing; keeping the existing packages/shared/dist\n"
         "✓ Shared packages built successfully\n"
-        "⚠ Package directory packages/shared/dist not found (may be expected)\n"
+        "✓ Verified: packages/shared/dist exists\n"
     )
-    assert old3[2] == ["dir  packages", "dir  packages/shared"]
+    assert "file packages/shared/dist/stale.js" in old3[2]
     _assert_agree(old3, new3, "emitted-nothing")
 
 
 def test_a_failing_build_stops_before_the_verification(tmp_path: pathlib.Path) -> None:
-    """Exit 1, and the `Verified:`/`not found` line never prints -- so a reader cannot tell from the output whether `dist` survived. It did not."""
+    """Exit 1, and the `Verified:`/`not found` line never prints. The old `dist` survives untouched (the twin had already deleted it) and no staging directory is left."""
     old3, new3 = run_both(tmp_path, emit=False, FAKE_NPM_RC="3")
     old = old3[0]
     assert old.returncode == 1, "the twin normalises npm's 3 to its own 1"
     assert old.stderr == ("→ Building shared packages...\n✗ Failed to build shared packages\n")
     assert "Verified" not in old.stderr
     assert "may be expected" not in old.stderr
+    assert "file packages/shared/dist/stale.js" in old3[2]
+    assert not [p for p in old3[2] if "dist.build-" in p]
+    assert "file packages/shared/dist/index.js" not in old3[2]
     _assert_agree(old3, new3, "build-fails")
 
 
@@ -354,7 +383,6 @@ def test_dist_as_a_symlink_loses_the_link_and_keeps_the_target(
     """A stale `dist` symlink into another worktree is a real state in a repo that uses git worktrees. `rm -rf` unlinks it and never touches what it points at; a port that resolved the link first would silently delete somebody else's build output, with byte-identical stdout and stderr. The snapshot includes `keepsake/` precisely so that deletion would be visible here."""
     old3, new3 = run_both(
         tmp_path,
-        emit=False,
         spec={
             "keepsake/real-dist": "dir",
             "keepsake/real-dist/precious.js": "file",
@@ -363,7 +391,8 @@ def test_dist_as_a_symlink_loses_the_link_and_keeps_the_target(
     )
     survivors = old3[2]
     assert "file keepsake/real-dist/precious.js" in survivors
-    assert not [s for s in survivors if s.endswith("packages/shared/dist")]
+    assert "link packages/shared/dist" not in survivors
+    assert "file packages/shared/dist/index.js" in survivors
     _assert_agree(old3, new3, "dist-is-a-symlink")
 
 
@@ -374,7 +403,7 @@ def test_arguments_are_ignored_including_help(tmp_path: pathlib.Path) -> None:
     """The twin has no `parse_args` and no `case`, so `--help` builds the packages. An argparse in the port would exit 2 with a usage block instead."""
     old3, new3 = run_both(tmp_path, ["--help", "nonsense"])
     assert old3[0].returncode == 0
-    assert old3[1] == ["npm\trun\tbuild:packages"]
+    assert old3[1] == [SHARED_CALL, PROVISIONING_CALL]
     _assert_agree(old3, new3, "--help")
 
 
@@ -401,3 +430,110 @@ def test_clean_targets_on_an_empty_tree_is_just_dist(tmp_path: pathlib.Path) -> 
 def test_remove_path_is_a_no_op_on_something_absent(tmp_path: pathlib.Path) -> None:
     """`-f`. A port that raised here would fail every run on a fresh checkout."""
     port.remove_path(str(tmp_path / "nothing-here"))
+
+
+# --------------------------------------------------------------------------- The swap: no reader ever sees dist missing ---------------------------------------------------------------------------
+
+LIVE_SPEC = {
+    "packages/shared/dist": "dir",
+    "packages/shared/dist/index.js": "file",
+}
+
+
+def _gaps(tree: pathlib.Path, work: typing.Callable[[], object]) -> tuple[int, int]:
+    """Run `work` in a thread while polling `dist/index.js`; return (samples, samples that found it missing)."""
+    probe = tree / "packages/shared/dist/index.js"
+    thread = threading.Thread(target=work)
+    samples = missing = 0
+    thread.start()
+    while thread.is_alive():
+        samples += 1
+        if not probe.exists():
+            missing += 1
+    thread.join()
+    return samples, missing
+
+
+def test_a_reader_polling_dist_during_the_build_never_sees_it_missing(
+    tmp_path: pathlib.Path,
+) -> None:
+    """The build takes 0.6 s (the fake sleeps after emitting); a reader polls `dist/index.js` the whole time. The control below shows the same poller catches the delete-first flow."""
+    tree = _tree(tmp_path)
+    _layout(tree, LIVE_SPEC)
+    result: list[object] = []
+    samples, missing = _gaps(
+        tree,
+        lambda: result.append(_run(PORT_REL, tree, [], FAKE_NPM_EMIT="1", FAKE_NPM_SLEEP="0.6")),
+    )
+    proc, _calls, snapshot = result[0]
+    assert proc.returncode == 0, proc.stderr
+    assert samples > 100, "the poller must have run for the whole build"
+    assert missing == 0
+    assert "file packages/shared/dist/index.js" in snapshot
+    assert not [p for p in snapshot if "dist.build-" in p]
+
+
+def test_control_the_delete_first_flow_shows_the_gap(tmp_path: pathlib.Path) -> None:
+    """THE CONTROL. The retired flow (remove `dist`, build for 0.6 s, write it again) under the same poller: the gap is there, so `missing == 0` above means something."""
+    tree = _tree(tmp_path)
+    _layout(tree, LIVE_SPEC)
+    dist = tree / "packages/shared/dist"
+
+    def delete_first() -> None:
+        port.remove_path(str(dist))
+        time.sleep(0.6)
+        dist.mkdir()
+        (dist / "index.js").write_text("// built\n", encoding="utf-8")
+
+    samples, missing = _gaps(tree, delete_first)
+    assert samples > 100
+    assert missing > 0
+
+
+def test_a_failed_build_leaves_the_old_dist_and_no_stage(tmp_path: pathlib.Path) -> None:
+    """The shared build emits into the stage and then exits 3: `dist` keeps its old content and the stage is removed."""
+    tree = _tree(tmp_path)
+    _layout(tree, {**LIVE_SPEC, "packages/shared/dist/old-only.js": "file"})
+    proc, _calls, snapshot = _run(PORT_REL, tree, [], FAKE_NPM_EMIT="1", FAKE_NPM_RC="3")
+    assert proc.returncode == 1
+    assert (tree / "packages/shared/dist/index.js").read_text(encoding="utf-8") == "x\n"
+    assert "file packages/shared/dist/old-only.js" in snapshot
+    assert not [p for p in snapshot if "dist.build-" in p]
+
+
+def test_dead_stages_are_swept_and_live_ones_kept(tmp_path: pathlib.Path) -> None:
+    """A `dist.build-<pid>` left by a killed build goes; one whose pid is alive (this test's own) stays."""
+    shared = tmp_path / "packages" / "shared"
+    shared.mkdir(parents=True)
+    dead = subprocess.Popen([sys.executable, "-c", "pass"])
+    dead.wait()
+    (shared / ("dist.build-%d" % dead.pid)).mkdir()
+    (shared / ("dist.build-%d" % os.getpid())).mkdir()
+    (shared / "dist.build-notapid").mkdir()
+    port.remove_dead_stages(tmp_path)
+    left = sorted(p.name for p in shared.iterdir())
+    assert left == ["dist.build-%d" % os.getpid(), "dist.build-notapid"]
+
+
+def test_swap_without_the_exchange_still_replaces(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The two-rename fallback, taken where `renameat2` is unavailable: the new content is in place and nothing is left beside it."""
+    monkeypatch.setattr(port, "_exchange", lambda _a, _b: False)
+    target = tmp_path / "dist"
+    staged = tmp_path / "dist.build-1"
+    target.mkdir()
+    (target / "old.js").write_text("old", encoding="utf-8")
+    staged.mkdir()
+    (staged / "new.js").write_text("new", encoding="utf-8")
+    port.swap_into_place(str(staged), str(target))
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["dist"]
+    assert [p.name for p in target.iterdir()] == ["new.js"]
+
+
+def test_swap_onto_an_absent_target_is_one_rename(tmp_path: pathlib.Path) -> None:
+    staged = tmp_path / "dist.build-1"
+    staged.mkdir()
+    (staged / "new.js").write_text("new", encoding="utf-8")
+    port.swap_into_place(str(staged), str(tmp_path / "dist"))
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["dist"]
