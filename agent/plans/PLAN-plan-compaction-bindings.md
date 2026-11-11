@@ -47,7 +47,8 @@ One function decides, every path asks it, and a gate re-checks the tree so a han
     (ticked) 2026-11-09T07:57:41Z by d778be9d: commit:b09832e20b; python3 .ci/scripts/quality/check_plan_bindings.py rc 0 (nothing binds any closed plan); npm run check:ci-plan-boxes and check:ci-plan-record rc 0
 - [x] CB6 Docs: CLAUDE.md's plan lifecycle sentence (a plan with live bindings cannot be compacted, moved or swept), and a TRAPS.md entry for the 2026-10-03 orphans. Files: `CLAUDE.md`, `docs/agent-reference/TRAPS.md`. Depends on: CB2-CB4. Acceptance: `npm run check:ci-prose-style && npm run check:ci-trap-registry` rc 0.
     (ticked) 2026-11-09T03:59:05Z by d778be9d: commit:41293295a3; npm run check:ci-prose-style rc 0 and npm run check:ci-trap-registry rc 0 (112 entries, floor 112)
-- [ ] CB7 Real run: `worklist.py --plan-compact d778be9d <a live plan with an open citing item> --write` is refused naming the item, and `check_plan_folders --move` on the same plan is refused. Files: none owned (evidence only). Depends on: CB2, CB3. Acceptance: both refusals quoted in the round log.
+- [x] CB7 Real run: `worklist.py --plan-compact d778be9d <a live plan with an open citing item> --write` is refused naming the item, and `check_plan_folders --move` on the same plan is refused. Files: none owned (evidence only). Depends on: CB2, CB3. Acceptance: both refusals quoted in the round log.
+    (ticked) 2026-11-11T03:44:59Z by d778be9d: nocommit:research --plan-compact d778be9d agent/plans/PLAN-backup-program.md --write rc=2 "bound by 31 thing(s)" naming open items such as #08c887b8; check_plan_folders.py --move on the superseded guard plan rc=1 "bound by 4 thing(s)" naming item #f4e407db, "Nothing was moved"; a live plan --move is a no-op by design (.ci/scripts/quality/check_plan_folders.py:1033); both quoted in the round log
 
 ## Verification
 

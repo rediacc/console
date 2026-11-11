@@ -61,7 +61,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/PLAN-backup-program.md -- 184 of 192 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-backup-restore-path.md -- 7 of 10 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-stop-hook-retro-20261110.md -- 8 of 8 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
-  - agent/plans/PLAN-submodule-branch-coordination-guard.md -- 5 of 8 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/_done/PLAN-submodule-branch-coordination-guard.md -- 5 of 8 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-proxy-cd-six-targets.md -- 27 of 31 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-repo-docker-storage-prune.md -- 11 of 14 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
 - Work outside the PR's plans (17 epic(s)):
@@ -80,17 +80,17 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 373 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
-  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 93 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
+  - epic 79b7e92e, no plan, 377 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 95 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
 - Writers: 0 live of writer_cap 25 (session d778be9d).
-- Leased items: 2: #51089172 (worker:b9mip829z, d778be9d), #8d576362 (worker:b9sax74nt, d778be9d).
+- Leased items: 3: #8d576362 (worker:b9sax74nt, d778be9d), #e828801f (worker:a4a09f35c4f0759fd, d778be9d), #f18e18a0 (worker:bptmceo7v, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 18 of 64 plans done, 1008 of 1187 boxes done (84%).
+Promoted: 19 of 64 plans done, 1010 of 1187 boxes done (85%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -137,7 +137,7 @@ Promoted: 18 of 64 plans done, 1008 of 1187 boxes done (84%).
 | 41 | PLAN-tick-tracking.md | 13/15 | 2 open |
 | 42 | PLAN-renet-down-before-kill.md | 12/15 | 3 open |
 | 43 | PLAN-repo-resource-limits.md | 9/13 | 4 open |
-| 44 | PLAN-health-checks-local.md | 60/81 | 21 open |
+| 44 | PLAN-health-checks-local.md | 61/81 | 20 open |
 | 45 | PLAN-backup-multi-target.md | 17/21 | 4 open |
 | 46 | PLAN-ciquick-reds-1023-1.md | 10/12 | 2 open |
 | 47 | PLAN-docker-pin-digest.md | 9/9 | done |
@@ -151,7 +151,7 @@ Promoted: 18 of 64 plans done, 1008 of 1187 boxes done (84%).
 | 55 | PLAN-renet-restart-cycle-defects.md | 5/7 | 2 open |
 | 56 | PLAN-drop-free-license-ip-prefix-hash.md | 5/6 | 1 open |
 | 57 | PLAN-stop-hook-retro-20261101.md | 4/4 | done |
-| 58 | PLAN-plan-compaction-bindings.md | 6/7 | 1 open |
+| 58 | PLAN-plan-compaction-bindings.md | 7/7 | done |
 | 59 | PLAN-ciquick-green-then-batch.md | 6/7 | 1 open |
 | 60 | PLAN-vmcheck-incremental.md | 2/3 | 1 open |
 | 61 | PLAN-ci-vm-image-followups.md | 0/2 | 2 open |

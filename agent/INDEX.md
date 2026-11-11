@@ -533,7 +533,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-gpu-device-grants.md` | approved | 83 | 2 | 12 | 29663 |
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
 | `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30400 |
-| `agent/plans/PLAN-health-checks-local.md` | approved | 701 | 21 | 60 | 129620 |
+| `agent/plans/PLAN-health-checks-local.md` | approved | 702 | 20 | 61 | 130142 |
 | `agent/plans/PLAN-idle-writer-capacity.md` | approved | 65 | 0 | 5 | 12586 |
 | `agent/plans/PLAN-jobs-backup-real-machine-tests.md` | approved | 55 | 1 | 10 | 12683 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
@@ -545,7 +545,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
 | `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3252 |
 | `agent/plans/PLAN-org-executor-connect-timeout-relocate.md` | executing | 356 | 1 | 16 | 54693 |
-| `agent/plans/PLAN-plan-compaction-bindings.md` | approved | 59 | 1 | 6 | 9702 |
+| `agent/plans/PLAN-plan-compaction-bindings.md` | approved | 60 | 0 | 7 | 10147 |
 | `agent/plans/PLAN-plan-preflight.md` | approved | 190 | 0 | 8 | 29710 |
 | `agent/plans/PLAN-plan-verbs.md` | draft | 35 | 3 | 0 | 3779 |
 | `agent/plans/PLAN-printf-echo-pipefail-sweep.md` | compacted | 103 | 0 | 33 | 10281 |
