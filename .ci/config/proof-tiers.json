@@ -15,6 +15,7 @@
         "private/renet/embed-assets.lock.json"
       ],
       "live": ["hostinger"],
+      "local": ["vm-check", "hostinger", "e2e-local"],
       "renet_build": true
     },
     "cli-remote": {
@@ -23,11 +24,13 @@
         "packages/cli/src/services/repo/repo-key-deployment.ts"
       ],
       "live": ["hostinger"],
+      "local": ["vm-check", "hostinger", "e2e-local"],
       "renet_build": true
     },
     "cli": {
       "globs": ["packages/cli/src/**"],
       "live": ["bench", "hostinger"],
+      "local": ["bench-cli", "hostinger"],
       "renet_build": false
     },
     "account": {
@@ -37,21 +40,25 @@
         "packages/shared/src/**"
       ],
       "live": ["bench"],
+      "local": ["deploy-bench", "d1-migrations"],
       "renet_build": false
     },
     "account-worker": {
       "globs": ["workers/account/**"],
       "live": ["bench"],
+      "local": ["deploy-bench"],
       "renet_build": false
     },
     "proxy": {
       "globs": ["workers/proxy/src/**", "workers/proxy/wrangler*.toml", "workers/proxy/Dockerfile"],
       "live": ["bench"],
+      "local": ["deploy-proxy-bench"],
       "renet_build": false
     },
     "www": {
       "globs": ["packages/www/src/**", "workers/www/**"],
       "live": ["bench"],
+      "local": ["www-local"],
       "renet_build": false
     }
   },
@@ -360,6 +367,62 @@
     },
     "live": {
       "baseline_at": "2026-10-28",
+      "local_about": [
+        "agent/plans/PLAN-local-first-delivery.md Design L, operator ruling R2: \"The planner should really find no way to test/deploy locally to go with github.\"",
+        "`local_runners` names each way to prove a change from this machine, with no GitHub run: `run` is the command list, `what` what it proves. Every surface's `local` names at least one of them (rediacc_ci.proof.surfaces refuses a surface with none).",
+        "`github_waits` is the one phrase list a plan box that waits on GitHub matches. An open box that matches carries `GitHub-only: <CD|CI parity|native-runner|soak|preview> -- <why no local path, 20+ chars>` on its line or in an indented `(corrected ...)` line under it (LP8, wl_plandeps.github_wait_findings; docs/agent-reference/plan-records.md)."
+      ],
+      "local_runners": {
+        "vm-check": {
+          "what": "the renet and account VM battery on the local KVM fleet, plus the touched areas' legs",
+          "run": ["npm run vm:check -- --changed"]
+        },
+        "hostinger": {
+          "what": "the branch build on the hostinger machine (renet provisioned from this tree, the CLI run against it)",
+          "run": ["./rdc.sh --config eu-remote machine status hostinger -o json"]
+        },
+        "e2e-local": {
+          "what": "an e2e suite on the local KVM fleet (.claude/agents/e2e-local.md), never a CI ct-tests run",
+          "run": [
+            "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env",
+            "PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test <suite>"
+          ]
+        },
+        "bench-cli": {
+          "what": "the CLI built from this tree against the bench account server",
+          "run": ["./rdc.sh --config eu-bench subscription status"]
+        },
+        "deploy-bench": {
+          "what": "the account Worker and its D1 migrations deployed from this tree to bench",
+          "run": ["PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench"]
+        },
+        "d1-migrations": {
+          "what": "the account D1 migrations applied to ephemeral clones of every regional production database",
+          "run": ["PYTHONPATH=.ci python3 -m rediacc_ci.deploy.test_d1_migrations"]
+        },
+        "deploy-proxy-bench": {
+          "what": "the proxy Worker and executor image deployed from this tree to bench, then its smoke",
+          "run": [
+            "PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target bench",
+            "PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target bench --smoke-only"
+          ]
+        },
+        "www-local": {
+          "what": "the site built and served from this tree (no bench www Worker exists yet; see tiers.live.checks.www-smoke)",
+          "run": ["cd packages/www && npm run build && npm run preview"]
+        }
+      },
+      "github_waits": [
+        "released",
+        "after the merge",
+        "CD",
+        "nightly",
+        "preview deploy",
+        "CI run",
+        "ct-tests run",
+        "run id",
+        "ci-trace"
+      ],
       "targets": {
         "bench": {"origin_wk": "WK_BENCH_ORIGIN"},
         "hostinger": {"config": "eu-bench", "machines": ["hostinger"]}
