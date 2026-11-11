@@ -163,6 +163,7 @@ const escapeRegex = (str: string): string => str.replace(/[.*+?^${}()|[\]\\]/g, 
  */
 function buildDetectionRegex(commandPath: string): RegExp {
   const segments = commandPath.trim().split(/\s+/).map(escapeRegex).join('\\s+');
+  // An optional-flag usage marker (`[--json]`) is not positional either: `[` counts only when no `-` follows it.
   // After the command path + whitespace, the next token must start with one of these characters to count as "positional":
   //   <  {  [  "  '  alphanumeric
   // Prose separators (em-dash, en-dash, ampersand) and flags (`-`, `--`) are NOT positional tokens — those match the negative universe.
@@ -172,7 +173,7 @@ function buildDetectionRegex(commandPath: string): RegExp {
   // strings is a placeholder (<name>, {{name}}), a quoted value, or value-shaped
   // (prod-1, s3-main) — never a bare run of letters immediately followed by sentence punctuation. Dutch and the Nordic languages split verbs the same way, so this is a class fix, not a one-off. Guarded by the fixtures in scripts/lib/__tests__/positional-cli-detector.test.ts.
   return new RegExp(
-    `(?:^|[\\s\`($:'"])(?:rdc\\s+)${segments}\\s+(?![\\p{L}]+[.,;:!?])(?=[<{\\["'a-zA-Z0-9])`,
+    `(?:^|[\\s\`($:'"])(?:rdc\\s+)${segments}\\s+(?![\\p{L}]+[.,;:!?])(?=\\[(?!-)|[<{"'a-zA-Z0-9])`,
     'u'
   );
 }
