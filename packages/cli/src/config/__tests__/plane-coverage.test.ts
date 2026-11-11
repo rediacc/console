@@ -146,8 +146,10 @@ describe('command plane coverage', () => {
     // 207 -> 209, machine 113 -> 115: `repo repair` and `machine repair` (PLAN-health-checks-local X2, X4) run renet functions on the machine.
     //
     // 209 -> 210, machine 115 -> 116: `job dismiss` (PLAN-renet-restart-cycle-defects D4) forgets local job tickets; it carries the machine plane of the job domain.
-    expect(COMMANDS.length).toBe(210);
-    expect(counts).toEqual({ config: 57, machine: 116, other: 37 });
+    //
+    // 210 -> 212, other 37 -> 39: `version` (build, channel and licence facts) and `legal` (the entity and the accepted Terms, read from the local state or the account server) never reach a machine.
+    expect(COMMANDS.length).toBe(212);
+    expect(counts).toEqual({ config: 57, machine: 116, other: 39 });
   });
 
   it('records the interactive commands', () => {

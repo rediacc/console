@@ -61,6 +61,8 @@ export const COMMAND_REGISTRY: readonly CommandDef[] = [
   { name: 'vscode', domain: 'TOOLS' },
   { name: 'mcp', domain: 'TOOLS' },
   { name: 'credits', domain: 'TOOLS' },
+  { name: 'version', domain: 'TOOLS' },
+  { name: 'legal', domain: 'TOOLS' },
   // The enterprise proxy executor daemon.
   { name: 'serve', domain: 'TOOLS' },
 ] as const;

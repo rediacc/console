@@ -296,6 +296,11 @@ const RAW_REGISTRY: Record<PointerTemplate, SensitivityMeta> = {
   '/state/repos/*/*/reflog/*/at': { kind: 'public' },
   '/state/repos/*/*/reflog/*/message': { kind: 'public' },
   '/state/networkIds/next': { kind: 'public' },
+  // The Terms acceptance the CLI recorded for the anonymous Free License: a version, the text's hash, a timestamp and the method. No secret, so all four leaves are public.
+  '/state/terms/version': { kind: 'public' },
+  '/state/terms/sha256': { kind: 'public' },
+  '/state/terms/acceptedAt': { kind: 'public' },
+  '/state/terms/method': { kind: 'public' },
   // Last-backup-activity record per repo (state). All leaves are runtime observations keyed by a repo name the config already lists in the clear — registered public, so nothing here is committed.
   '/state/backupRuns/*/lastRunAt': { kind: 'public' },
   '/state/backupRuns/*/kind': { kind: 'public' },

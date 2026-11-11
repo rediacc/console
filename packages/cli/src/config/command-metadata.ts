@@ -630,6 +630,13 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
 
+  version: {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  legal: {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+
   'cluster rehearse': {
     mcpExcludeReason:
       'Boots an entire throwaway k3s control plane to dry-run a migration; expensive, and gated behind REDIACC_ALLOW_CLUSTER_OPS.',
