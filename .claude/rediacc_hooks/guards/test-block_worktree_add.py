@@ -861,7 +861,7 @@ subprocess.run(["git", "init", "-q", WORK], check=True)
 os.symlink(ROOT, os.path.join(SCRATCH, "link"))
 SUBMODULE = os.path.join(ROOT, "private", "renet")
 VERB = "worktree add"
-SCOPE_ADMITTED = [
+SCOPE_ADMITTED: list[tuple[str, str, str | None]] = [
     (
         "scratch by -C (the backup-ref recipe)",
         "git -C %s %s --detach %s/r refs/backup-restored/x" % (WORK, VERB, SCRATCH),
@@ -871,7 +871,7 @@ SCOPE_ADMITTED = [
     ("scratch by cd", "cd %s && git %s --detach ../r HEAD" % (WORK, VERB), ROOT),
     ("scratch inside sh -c", "sh -c 'git -C %s %s %s/r'" % (WORK, VERB, SCRATCH), "/tmp"),
 ]
-SCOPE_REFUSED = [
+SCOPE_REFUSED: list[tuple[str, str, str | None]] = [
     ("this checkout by the event cwd", "git %s /tmp/wt HEAD" % VERB, ROOT),
     ("this checkout by -C", "git -C %s %s /tmp/wt" % (ROOT, VERB), "/tmp"),
     ("this checkout through a symlink", "git -C %s/link %s /tmp/wt" % (SCRATCH, VERB), "/tmp"),
@@ -960,7 +960,7 @@ OURS_ROWS = [
         "a submodule by relative -C",
     )
 ]
-for label, pair, rows, want in (
+for scope_label, scope_pair, scope_rows, scope_want in (
     (
         "the scope taken out",
         ("base and _foreign_adds(cmd, scan, base)", "False"),
@@ -974,14 +974,17 @@ for label, pair, rows, want in (
         0,
     ),
 ):
-    flipped = [n for n, c, d in rows if run_guard(c, defect=pair, cwd=d)[0] == want]
-    if not rows or len(flipped) != len(rows):
-        failures.append("scope plant: %s" % label)
+    flipped = [
+        n for n, c, d in scope_rows if run_guard(c, defect=scope_pair, cwd=d)[0] == scope_want
+    ]
+    if not scope_rows or len(flipped) != len(scope_rows):
+        failures.append("scope plant: %s" % scope_label)
         print(
-            "*** FAIL *** with %s planted, %d of %d rows flipped" % (label, len(flipped), len(rows))
+            "*** FAIL *** with %s planted, %d of %d rows flipped"
+            % (scope_label, len(flipped), len(scope_rows))
         )
     else:
-        print("%s: all %d rows flipped" % (label, len(rows)))
+        print("%s: all %d rows flipped" % (scope_label, len(scope_rows)))
 
 if failures:
     print("\n%d FAILED: %s" % (len(failures), ", ".join(failures[:25])))
