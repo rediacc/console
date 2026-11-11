@@ -2914,7 +2914,8 @@ def test_every_rdc_call_lifts_the_development_renet_hold(tmp_path: pathlib.Path)
 def test_an_explicit_no_provision_from_the_caller_is_kept(tmp_path: pathlib.Path) -> None:
     """Review 33cb8381.1: the run lifts only the default hold; a caller's REDIACC_NO_PROVISION=1 reaches every rdc call."""
     world = make_world(tmp_path)
-    run_check(tmp_path, world, env={"REDIACC_NO_PROVISION": "1"})
+    rc, out, _receipt = run_check(tmp_path, world, env={"REDIACC_NO_PROVISION": "1"})
+    assert rc == vm_check.EXIT_VERIFIED, out
     envs = [e for c, e in zip(world.calls, world.envs, strict=True) if c[0] == world.rdc_path]
     assert envs and all(e.get("REDIACC_NO_PROVISION") == "1" for e in envs)
 
