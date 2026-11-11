@@ -58,7 +58,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Phase: merge on PR #602 (branch 1023-1, session 45048a90, since 2026-11-03T09:46:12Z, past its 24-hour limit).
 - Branch: 1104-1, no PR yet.
 - Plans on the PR (6):
-  - agent/plans/PLAN-backup-program.md -- 184 of 192 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
+  - agent/plans/PLAN-backup-program.md -- 185 of 192 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-backup-restore-path.md -- 7 of 10 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/PLAN-stop-hook-retro-20261110.md -- 8 of 8 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
   - agent/plans/_done/PLAN-submodule-branch-coordination-guard.md -- 5 of 8 boxes ticked, the queue head, standing in while the PR body names no `Plan:` line
@@ -80,17 +80,17 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 383 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
-  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 95 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
-- Writers: 0 live of writer_cap 25 (session d778be9d).
-- Leased items: 3: #8d576362 (worker:b9sax74nt, d778be9d), #b4211531 (worker:btczsatrr, d778be9d), #f18e18a0 (worker:btczsatrr, d778be9d).
+  - epic 79b7e92e, no plan, 393 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 98 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
+- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a3f855ee262d9c02f.
+- Leased items: 3: #17f399eb (worker:a3f855ee262d9c02f, d778be9d), #8d576362 (worker:b9sax74nt, d778be9d), #caa837d4 (worker:b8jlnnnwi, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 19 of 64 plans done, 1011 of 1187 boxes done (85%).
+Promoted: 19 of 64 plans done, 1012 of 1187 boxes done (85%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -131,7 +131,7 @@ Promoted: 19 of 64 plans done, 1011 of 1187 boxes done (85%).
 | 35 | PLAN-settings-set-verb.md | 4/4 | done |
 | 36 | PLAN-free-license.md | 10/13 | 3 open |
 | 37 | PLAN-backup-integrity.md | 44/56 | 12 open |
-| 38 | PLAN-backup-critical-tier.md | 46/51 | 5 open |
+| 38 | PLAN-backup-critical-tier.md | 47/51 | 4 open |
 | 39 | PLAN-rediaccfile-unprivileged.md | 16/23 | 7 open |
 | 40 | PLAN-worktree-lease.md | 15/16 | 1 open |
 | 41 | PLAN-tick-tracking.md | 13/15 | 2 open |
