@@ -71,9 +71,6 @@ WHAT v2 ADDED, AND WHY `cache-to` IS NOT THE EMITTER THIS MODULE REFUSES
   ALIAS GRAMMAR `NAME > LOCAL`. v1 specified it, the retired twin never had it,
   and without it the `AWS_SES_ACCESS_KEY_ID_EU -> AWS_SES_ACCESS_KEY_ID` collapse that `.github/workflows/ci.yml` already performs is inexpressible here. The parse is the SAME rule as `check_bws_map.parse_requests`, asserted as an equality by the gate test, because two parsers for one grammar is how a block comes to mean different things to the gate and to the fetch.
 
-  `json NAME`. One store entry whose value is an object, expanded into one
-  variable per key. Nine `SELLER_*` fields are one company record; nine entries are nine things that can disagree, and a half-updated address ships an invoice with a blank city. So the expansion REFUSES a partial record by name rather than binding what it found.
-
   `cache-to FILE NAME...`. The one verb that puts a value on disk, and the
   reason it does not contradict the rule above is worth stating. The forbidden thing is an EVAL-ABLE EMITTER: a verb printing values to stdout for a shell to consume, which puts every secret into a shell trace and a CI log. This writes a NAMED FILE, never a stream, and `CACHEABLE` is a hardcoded three-name allowlist of PUBLIC keys already published in every built artefact.
 
@@ -246,27 +243,21 @@ SUPPLY_REL = os.path.join(".ci", "config", "secret-supply.json")
 # The profiles an `exec` has already hydrated, comma-separated. A nested `./run.sh` inherits its parent's environment, so a profile listed here is skipped instead of fetched twice.
 PROFILES_ENV = "REDIACC_BWS_PROFILES"
 
-# Store entries whose value is a JSON OBJECT, with the keys that must ALL be present.
+# The contracting entity: ten SEPARATE store entries, the nine invoice fields plus SELLER_REGISTER_NAME.
 #
-# DECLARED HERE AND RE-DERIVED ELSEWHERE, which is the split that keeps it honest.
-# This module states the requirement so a fetch cannot silently bind eight of nine fields; `.ci/scripts/quality/check_bws_map.py` assertion 14d re-derives the nine against the `SELLER_*` names the `account-dev` profile in `.ci/config/secret-supply.json` binds, so adding a tenth field to the profile without adding it here is a red rather than a blank line on an invoice.
-# Neither side alone is sufficient: a constant nobody checks rots, and a derivation with no declared subject has nothing to check.
-#
-# THE VAULT HOLDS NO `SELLER_PROFILE_JSON` ENTRY (checked 2026-11-11: `bws_env json SELLER_PROFILE_JSON` reports it absent). The contracting entity is ten SEPARATE entries, the nine invoice fields plus SELLER_REGISTER_NAME, and the `legal-entity` profile requires all ten. No fetch reads this record; the tuple below survives only as the declared side of assertion 14d, which lives in check_bws_map.py and has not yet been moved onto the `legal-entity` profile. Its ten names are the ten separate entries.
-JSON_REQUIRED = {
-    "SELLER_PROFILE_JSON": (
-        "SELLER_ADDRESS_LINE1",
-        "SELLER_ADDRESS_LINE2",
-        "SELLER_CITY",
-        "SELLER_COUNTRY",
-        "SELLER_EMAIL",
-        "SELLER_NAME",
-        "SELLER_POSTAL_CODE",
-        "SELLER_REGISTER_NAME",
-        "SELLER_REGISTRATION_NUMBER",
-        "SELLER_VAT_NUMBER",
-    ),
-}
+# DECLARED HERE AND RE-DERIVED ELSEWHERE, which is the split that keeps it honest. `.ci/scripts/quality/check_bws_map.py` assertion 14d compares this tuple with the `SELLER_*` names the `account-dev` and `legal-entity` profiles in `.ci/config/secret-supply.json` bind, so adding or dropping a field in one place and not the other is a red rather than a blank line on an invoice. Neither side alone is sufficient: a constant nobody checks rots, and a derivation with no declared subject has nothing to check.
+SELLER_FIELDS = (
+    "SELLER_ADDRESS_LINE1",
+    "SELLER_ADDRESS_LINE2",
+    "SELLER_CITY",
+    "SELLER_COUNTRY",
+    "SELLER_EMAIL",
+    "SELLER_NAME",
+    "SELLER_POSTAL_CODE",
+    "SELLER_REGISTER_NAME",
+    "SELLER_REGISTRATION_NUMBER",
+    "SELLER_VAT_NUMBER",
+)
 
 USAGE = """bws_env -- the `bws-env.sh` fetch, without the shell mutation.
 
@@ -281,11 +272,6 @@ USAGE = """bws_env -- the `bws-env.sh` fetch, without the shell mutation.
 
   PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env map
       The names the map knows, sorted. No store access.
-
-  PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env json NAME
-      NAME's value is a JSON object. Print the sorted KEYS it binds, one per
-      line. Refuses a non-object, a key that is not a legal identifier, and a
-      record missing any key JSON_REQUIRED demands for NAME.
 
   PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env cache-to FILE SPEC [SPEC ...]
       Write `LOCAL=value` lines to FILE, mode 0644. Every LOCAL must be on the
@@ -493,70 +479,6 @@ def parked_refusal(specs: list[tuple[str, str]], verb: str) -> list[str] | None:
         "  A `__` name is a retired store entry kept only for recovery; it is never",
         "  mapped, bound or fetched. Bind the live, unsuffixed entry instead.",
     ]
-
-
-def expand_json(name: str, value: str, required: tuple[str, ...] | None = None) -> dict[str, str]:
-    """A store entry whose value is a JSON object -> one binding per key.
-
-    Raises `RefusalError` on every way this can go wrong, and they are not interchangeable -- each one ships a different broken thing:
-
-      NOT AN OBJECT. A JSON string iterates as characters and a list as
-      integers, so a naive expansion of `"abc"` binds nothing, or binds three
-      names of one character. Refusing names what was found instead.
-
-      A KEY THAT IS NOT AN IDENTIFIER. `not-an-identifier` cannot be exported by
-      any shell and cannot be read by any consumer, so binding it produces a
-      variable that exists and is unreachable. That is worse than absent,
-      because absent is loud.
-
-      A MISSING REQUIRED KEY, NAMED. The partial-company-record failure: bind
-      the eight that are there, return 0, and the invoice ships with a blank
-      city. The name of the missing key is in the message because "the record is
-      incomplete" sends a reader to read nine values by hand.
-
-    An empty string value is NOT refused here. The object's own keys are fields of one record, not separate store entries, and a legitimately blank `SELLER_ADDRESS_LINE2` is a second address line that does not exist. The absent-or-empty rule applies to the ENTRY, which `load` has already applied before this is reached.
-    """
-    try:
-        doc = json.loads(value)
-    except json.JSONDecodeError as exc:
-        raise RefusalError(
-            [
-                "rediacc_ci.core.bws_env: %s does not parse as JSON, so it cannot be expanded."
-                % name,
-                "  The store entry's value must be a JSON object; fix the store entry.",
-            ]
-        ) from exc
-    if not isinstance(doc, dict):
-        raise RefusalError(
-            [
-                "rediacc_ci.core.bws_env: %s is a JSON %s, not an object; there is nothing to bind."
-                % (name, type(doc).__name__),
-                "  Expanding a string would iterate its characters and a list its indices,",
-                "  so this refuses rather than binding something that looks like a result.",
-            ]
-        )
-    bad = sorted(k for k in doc if not IDENT_RE.match(str(k)))
-    if bad:
-        raise RefusalError(
-            [
-                "rediacc_ci.core.bws_env: %s has %d key(s) that are not legal identifiers: %s"
-                % (name, len(bad), " ".join(bad)),
-                "  No shell can export such a name and no consumer can read it, so binding",
-                "  it would create a variable that exists and is unreachable.",
-            ]
-        )
-    want = JSON_REQUIRED.get(name, ()) if required is None else required
-    absent = sorted(k for k in want if k not in doc)
-    if absent:
-        raise RefusalError(
-            [
-                "rediacc_ci.core.bws_env: %s is missing %d required key(s): %s"
-                % (name, len(absent), " ".join(absent)),
-                "  A partial record binds what it found and returns 0, which is how an",
-                "  invoice ships with a blank field. Fix the store entry; do not bind a subset.",
-            ]
-        )
-    return {str(k): "" if v is None else str(v) for k, v in doc.items()}
 
 
 def cache_refusal(names: list[str]) -> list[str] | None:
@@ -823,11 +745,6 @@ def main(argv: list[str]) -> int:
         for name in names:
             print(name)
         return 0
-    if verb == "json":
-        if len(rest) != 1:
-            print("rediacc_ci.core.bws_env: json takes exactly one NAME", file=sys.stderr)
-            return 2
-        return _json_verb(rest[0])
     if verb == "cache-to":
         if len(rest) < 2:
             print(
@@ -928,29 +845,6 @@ def _names_specs(argv: list[str]) -> list[str]:
             name if name == local else "%s > %s" % (name, local) for name, local in required
         )
     return specs
-
-
-def _json_verb(name: str) -> int:
-    """`json NAME`: fetch one entry, expand it, print the KEYS it bound.
-
-    The keys and not the values, for the same reason `names` prints names: this module has no verb that puts a value on a stream. A caller that needs the values is a Python caller and uses `expand_json` directly, which is route 2 of the three in the module docstring.
-    """
-    try:
-        resolved, missing, _rc = load([name])
-        if missing:
-            return 1
-        bound = expand_json(name, resolved[name])
-    except RefusalError as refusal:
-        for line in refusal.lines:
-            print(line, file=sys.stderr)
-        return 1
-    for key in sorted(bound):
-        print(key)
-    print(
-        "rediacc_ci.core.bws_env: %s expanded to %d binding(s)" % (name, len(bound)),
-        file=sys.stderr,
-    )
-    return 0
 
 
 def _cache_verb(target: str, names: list[str]) -> int:

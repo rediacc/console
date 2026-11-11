@@ -68,13 +68,12 @@ nothing would have noticed a nineteenth that was a real omission. Three more ass
      every one of them, and nothing said so. secret-rename.py now refuses a
      `secrets.` context the way it already refused a `vars.` one.
 
- 14. THE SELLER RECORD'S FIELDS. `SELLER_PROFILE_JSON` is one vault entry
-     that the fetch expands into nine SELLER_* variables, so the map and
-     `check:ci-secret-supply` both see one name and neither sees the nine.
-     The fields `rediacc_ci.core.bws_env.JSON_REQUIRED` promises must equal the
-     SELLER_* LOCAL names the `account-dev` profile in
-     .ci/config/secret-supply.json binds, parsed with bws_env's own
-     `parse_spec`. Either side empty refuses rather than passing.
+ 14. THE SELLER ENTITY'S FIELDS. The contracting entity is ten separate vault
+     entries. The ten names `rediacc_ci.core.bws_env.SELLER_FIELDS` declares
+     must equal the SELLER_* LOCAL names each of the `account-dev` and
+     `legal-entity` profiles in .ci/config/secret-supply.json binds, parsed
+     with bws_env's own `parse_spec`. Either side empty refuses rather than
+     passing.
 
  15. NO ARCHIVE CLONE IS MAPPED, AND THE PATTERN HAS ONE MEANING. A rotation
      copies the pre-rotation value to `<NAME>__ROTATED_<UTC stamp>` and deletes
@@ -121,10 +120,10 @@ from pathlib import Path
 import _cipath
 from rediacc_ci import workflows
 
-# IMPORTED, NOT RE-TYPED. Assertion 14d asks whether the fields the FETCH promises to bind are the fields the `account-dev` profile actually binds, and a second copy of the nine names (or of the `STORE > LOCAL` grammar) here would make that question compare this file against itself. `bws_env` declares; this re-derives.
+# IMPORTED, NOT RE-TYPED. Assertion 14d asks whether the fields `bws_env` declares are the fields the `account-dev` and `legal-entity` profiles actually bind, and a second copy of the ten names (or of the `STORE > LOCAL` grammar) here would make that question compare this file against itself. `bws_env` declares; this re-derives.
 from rediacc_ci.core.bws_env import ARCHIVE_PATTERN as BWS_ENV_ARCHIVE_PATTERN
-from rediacc_ci.core.bws_env import JSON_REQUIRED as BWS_ENV_JSON_REQUIRED
 from rediacc_ci.core.bws_env import PARKED_PATTERN as BWS_ENV_PARKED_PATTERN
+from rediacc_ci.core.bws_env import SELLER_FIELDS as BWS_ENV_SELLER_FIELDS
 from rediacc_ci.core.bws_env import parse_spec as bws_parse_spec
 
 # Overridable so a gate-test can drive the REAL scan against a fixture tree instead of only the pure-logic selftest. This is not an escape hatch: every anti-vacuity clause below (MIN_MAP_ENTRIES, MIN_CALLERS, the blind-corpus and blind-suffix refusals) FAILS on a tree that holds nothing, so pointing this at an empty directory reds rather than passes.
@@ -790,12 +789,11 @@ def read_order_in(lines: list[str], label: str) -> tuple[list[str], int]:
     return problems, n
 
 
-# --------------------------------------------------------------------------- Assertion 14: the seller record's fields. `private/account/.env` is retired; every local secret now arrives through a named profile in `.ci/config/secret-supply.json`, and `check:ci-secret-supply` proves each profile's specs resolve in the map. What that gate cannot see is a JSON record whose fields the fetch expands. ---------------------------------------------------------------------------
+# --------------------------------------------------------------------------- Assertion 14: the seller entity's fields. Every local secret arrives through a named profile in `.ci/config/secret-supply.json`, and `check:ci-secret-supply` proves each profile's specs resolve in the map. What that gate cannot see is whether the profiles that carry the contracting entity bind the same ten fields `bws_env` declares. ---------------------------------------------------------------------------
 
 SUPPLY = ROOT / ".ci" / "config" / "secret-supply.json"
 # The profile `./run.sh account dev` runs under, and the only one that binds the invoice seller's identity.
-SELLER_PROFILE = "account-dev"
-SELLER_RECORD = "SELLER_PROFILE_JSON"
+SELLER_PROFILES = ("account-dev", "legal-entity")
 
 
 def seller_field_problems(
@@ -803,44 +801,45 @@ def seller_field_problems(
 ) -> tuple[list[str], int]:
     """Assertion 14d. (problems, SELLER_* fields compared).
 
-    The nine SELLER_* fields `bws_env.JSON_REQUIRED[SELLER_PROFILE_JSON]` promises to bind must be exactly the SELLER_* LOCAL names the `account-dev` profile binds. A tenth field added to the profile without being added there would bind a partial record and return 0; a field dropped from the profile would leave a promised line blank on an invoice.
+    The ten names `bws_env.SELLER_FIELDS` declares must be exactly the SELLER_* LOCAL names each profile in SELLER_PROFILES binds. A field added to a profile without being declared there, or dropped from a profile, leaves the entity partial: a blank line on an invoice or a projection that omits a field.
 
     Specs are parsed with `bws_env.parse_spec`, imported rather than re-typed, so the `STORE > LOCAL` grammar this compares is the one the fetch applies. `supply` and `declared` are injectable so selftest() drives the real function against fixtures.
     """
     src = SUPPLY if supply is None else supply
-    want = set(BWS_ENV_JSON_REQUIRED.get(SELLER_RECORD, ())) if declared is None else set(declared)
+    want = set(BWS_ENV_SELLER_FIELDS) if declared is None else set(declared)
     try:
         doc = json.loads(src.read_text(encoding="utf-8"))
-        profile = doc["consumers"][SELLER_PROFILE]
-        specs = list(profile.get("required") or []) + list(profile.get("optional") or [])
+        consumers = doc["consumers"]
+        per_profile = {
+            name: list(consumers[name].get("required") or [])
+            + list(consumers[name].get("optional") or [])
+            for name in SELLER_PROFILES
+        }
     except (OSError, ValueError, KeyError, TypeError, AttributeError) as exc:
         return [
-            f"cannot read the {SELLER_PROFILE!r} profile from {src} ({exc}); assertion 14 is blind, which is not a pass"
+            f"cannot read the {' and '.join(map(repr, SELLER_PROFILES))} profiles from {src} ({exc}); assertion 14 is blind, which is not a pass"
         ], 0
-    bound = set()
-    for raw in specs:
-        spec = bws_parse_spec(str(raw))
-        if spec and spec[1].startswith("SELLER_"):
-            bound.add(spec[1])
-    # ANTI-VACUITY. Two empty sets are equal, so a profile that lost every SELLER field and a declaration that lost the record would agree perfectly and pass. Either side empty means the comparison has no subject.
-    if not want or not bound:
-        return [
-            (
-                f"bws_env.JSON_REQUIRED[{SELLER_RECORD!r}] declares {len(want)} field(s) and the "
-                f"{SELLER_PROFILE!r} profile binds {len(bound)} SELLER_* name(s) -- an empty side "
-                f"makes the comparison vacuous, so it refuses rather than passes"
+    problems: list[str] = []
+    for name, specs in per_profile.items():
+        bound = set()
+        for raw in specs:
+            spec = bws_parse_spec(str(raw))
+            if spec and spec[1].startswith("SELLER_"):
+                bound.add(spec[1])
+        # ANTI-VACUITY. Two empty sets are equal, so a profile that lost every SELLER field and a declaration that lost the constant would agree perfectly and pass. Either side empty means the comparison has no subject.
+        if not want or not bound:
+            problems.append(
+                f"bws_env.SELLER_FIELDS declares {len(want)} field(s) and the {name!r} profile binds "
+                f"{len(bound)} SELLER_* name(s) -- an empty side makes the comparison vacuous, so it "
+                f"refuses rather than passes"
             )
-        ], 0
-    if want != bound:
-        return [
-            (
-                f"bws_env.JSON_REQUIRED[{SELLER_RECORD!r}] and the {SELLER_PROFILE!r} profile in "
-                f"{src.name} disagree about the record's fields "
-                f"(profile-only: {sorted(bound - want) or 'none'}; declared-only: "
-                f"{sorted(want - bound) or 'none'}) -- the fetch would bind a partial record and return 0"
+        elif want != bound:
+            problems.append(
+                f"bws_env.SELLER_FIELDS and the {name!r} profile in {src.name} disagree about the "
+                f"entity's fields (profile-only: {sorted(bound - want) or 'none'}; declared-only: "
+                f"{sorted(want - bound) or 'none'}) -- the entity would be a partial record"
             )
-        ], len(want)
-    return [], len(want)
+    return problems, len(want)
 
 
 ARCHIVE_PIN_FILES = (
@@ -1458,7 +1457,7 @@ jobs:
     if not ok4:
         bad += 1
 
-    # ---- assertion 14: the seller record's fields, both directions plus vacuity ----
+    # ---- assertion 14: the seller entity's fields, both directions plus vacuity ----
     #
     # Driven through the REAL function against a synthetic supply file, so each probe exercises the code path the live run takes.
     fields = [f"SELLER_F{i}" for i in range(9)]
@@ -1468,7 +1467,7 @@ jobs:
             sup = Path(d) / "secret-supply.json"
             specs = ["AWS_SES_ACCESS_KEY_ID_EU > AWS_SES_ACCESS_KEY_ID", *bound]
             sup.write_text(
-                json.dumps({"consumers": {SELLER_PROFILE: {"optional": specs}}}),
+                json.dumps({"consumers": {name: {"optional": specs} for name in SELLER_PROFILES}}),
                 encoding="utf-8",
             )
             return seller_field_problems(sup, set(declared))[0]
@@ -1819,7 +1818,7 @@ def main() -> int:
         exp_problems, n_ledger, n_excusing = expected_mismatch_problems()
         problems += exp_problems
 
-    # 14. The seller record's fields agree. Deliberately OUTSIDE the block above: that block is skipped when the map itself is unusable, and 14d compares `bws_env` against `secret-supply.json`, neither of which depends on the map being readable today.
+    # 14. The seller entity's fields agree. Deliberately OUTSIDE the block above: that block is skipped when the map itself is unusable, and 14d compares `bws_env` against `secret-supply.json`, neither of which depends on the map being readable today.
     seller_problems, n_seller = seller_field_problems()
     problems += seller_problems
 
@@ -1875,9 +1874,8 @@ def main() -> int:
             f"door -- none is a blanket exemption"
         )
     print(
-        f"✓ seller record: the {n_seller} SELLER_* field(s) bws_env promises to bind for "
-        f"{SELLER_RECORD} are exactly the ones the {SELLER_PROFILE!r} profile in "
-        f"secret-supply.json binds"
+        f"✓ seller entity: the {n_seller} SELLER_* field(s) bws_env declares are exactly the "
+        f"ones the {' and '.join(map(repr, SELLER_PROFILES))} profiles in secret-supply.json bind"
     )
     print(
         f"✓ archive clones: no mapped name matches {BWS_ENV_ARCHIVE_PATTERN}, and "

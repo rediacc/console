@@ -48,21 +48,6 @@ def load_gate_module(name: str):
 
 SUBJECT = paths.from_root(".ci", "rediacc_ci", "core", "bws_env.py")
 
-# The nine fields of one company record, and the one deliberately left out of the fixture in B8. Named here rather than inline so the "which key is missing" assertion cannot accidentally assert the presence of the key it removed.
-SELLER_FIELDS = (
-    "SELLER_ADDRESS_LINE1",
-    "SELLER_ADDRESS_LINE2",
-    "SELLER_CITY",
-    "SELLER_COUNTRY",
-    "SELLER_EMAIL",
-    "SELLER_NAME",
-    "SELLER_POSTAL_CODE",
-    "SELLER_REGISTER_NAME",
-    "SELLER_REGISTRATION_NUMBER",
-    "SELLER_VAT_NUMBER",
-)
-OMITTED_FIELD = "SELLER_CITY"
-
 BOTH = json.dumps(
     [{"key": "ALPHA_TOKEN", "value": "a-val"}, {"key": "BETA_TOKEN", "value": "b-val"}]
 )
@@ -370,52 +355,6 @@ def test_b7_grammar_parity_with_the_gate_that_reads_the_same_blocks(gate):
     gate.assert_eq(len(ours), 5, "the fixture stopped reaching the parsers; parity proves nothing")
     gate.assert_contains(str(ours), "LOCAL_GAMMA", "ragged spacing around `>` is still an alias")
     gate.log_pass("both parsers agree on all 8 fixture lines, and 5 of them are real requests")
-
-
-def test_b8_json_expansion_refuses_a_partial_record_by_name(gate, tmp_path):
-    """B8. Ten `SELLER_*` bind from one object; a record missing one fails, naming it.
-
-    THE PLANTED DEFECT IS A HELPER THAT BINDS THE EIGHT IT FOUND AND RETURNS 0. That is not a hypothetical shape, it is the natural one: iterate the object, bind each key, report success. It ships an invoice with a blank city, and nothing anywhere is red.
-    """
-    record = {k: "v-%s" % k for k in SELLER_FIELDS}
-    one_name_fixture(tmp_path, "SELLER_PROFILE_JSON", json.dumps(record))
-    out = run_verb(gate, tmp_path, "json", "SELLER_PROFILE_JSON")
-    gate.assert_contains(out, "expanded to 10 binding(s)", "a whole record binds all ten fields")
-    gate.assert_contains(out, "rc=0", "and succeeds")
-    for field in SELLER_FIELDS:
-        gate.assert_contains(out, field, "%s was not bound" % field)
-    gate.assert_not_contains(out, "v-SELLER_CITY", "and no VALUE reaches the stream")
-
-    partial = {k: v for k, v in record.items() if k != OMITTED_FIELD}
-    one_name_fixture(tmp_path, "SELLER_PROFILE_JSON", json.dumps(partial))
-    out = run_verb(gate, tmp_path, "json", "SELLER_PROFILE_JSON")
-    gate.assert_contains(out, OMITTED_FIELD, "the refusal must NAME the missing field")
-    gate.assert_contains(out, "rc=1", "a partial company record is a failure, not nine bindings")
-    gate.log_pass("a whole record expands to ten; a record missing one fails naming it")
-
-
-def test_b9_json_refuses_a_non_object_and_an_illegal_key(gate, tmp_path):
-    """B9. A JSON string, a JSON list and a key with a dash are each refused.
-
-    Two different planted defects, and they fail differently. A helper that iterates a STRING binds one variable per character; one that iterates a LIST binds integers. A helper that `declare -g`s `not-an-identifier` creates a variable no shell can export and no consumer can read, which is strictly worse than absent because absent is loud.
-    """
-    for label, payload in (
-        ("a JSON string", json.dumps("just-a-string")),
-        ("a JSON list", json.dumps(["a", "b"])),
-        ("a JSON number", json.dumps(42)),
-    ):
-        one_name_fixture(tmp_path, "BLOB", payload)
-        out = run_verb(gate, tmp_path, "json", "BLOB")
-        gate.assert_contains(out, "not an object", "%s was not refused as a non-object" % label)
-        gate.assert_contains(out, "rc=1", "%s must fail" % label)
-        gate.ok("refused %s" % label)
-
-    one_name_fixture(tmp_path, "BLOB", json.dumps({"ok_key": "1", "not-an-identifier": "2"}))
-    out = run_verb(gate, tmp_path, "json", "BLOB")
-    gate.assert_contains(out, "not-an-identifier", "the illegal key must be NAMED")
-    gate.assert_contains(out, "rc=1", "an illegal key must fail the whole expansion")
-    gate.assert_not_contains(out, "expanded to", "and must not report a partial success")
-    gate.log_pass("a non-object and an illegal key are each refused, by name")
 
 
 def test_b10_cache_to_refuses_a_private_key_and_writes_no_file(gate, tmp_path):
