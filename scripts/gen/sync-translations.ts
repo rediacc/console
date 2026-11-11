@@ -19,6 +19,8 @@ import { countLeaves, extraPaths, type JsonValue, spliceMissing } from '../lib/i
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SOURCE_LANG = 'en';
 const TARGET_LANGS = SITE_LOCALES.filter((l) => l !== SOURCE_LANG);
+/** A directory-layout locale tree with no English namespace file is not being seen; refuse rather than report a clean sync. */
+const MIN_NAMESPACES = 1;
 
 export interface LocaleConfig {
   name: string;
@@ -67,13 +69,16 @@ function syncFile(
   source: JsonValue
 ): { added: number; extras: string[]; written: boolean } {
   if (!fs.existsSync(langFile)) {
+    // tree-write: safe the target is the caller's locale file; check:ci-i18n-sync enters this module through the control's import and calls syncLocaleDir only with a mkdtemp fixture dir, never the repo locales
     fs.mkdirSync(path.dirname(langFile), { recursive: true });
+    // tree-write: safe the target is the caller's locale file; check:ci-i18n-sync enters this module through the control's import and calls syncLocaleDir only with a mkdtemp fixture dir, never the repo locales
     fs.writeFileSync(langFile, JSON.stringify(source, null, 2) + '\n');
     return { added: countLeaves(source), extras: [], written: true };
   }
   const text = fs.readFileSync(langFile, 'utf-8');
   const result = spliceMissing(text, source);
   const extras = extraPaths(JSON.parse(text) as JsonValue, source);
+  // tree-write: safe the target is the caller's locale file; check:ci-i18n-sync enters this module through the control's import and calls syncLocaleDir only with a mkdtemp fixture dir, never the repo locales
   if (result.text !== text) fs.writeFileSync(langFile, result.text);
   return { added: result.added, extras, written: result.text !== text };
 }
@@ -123,6 +128,11 @@ export function syncLocaleDir(config: LocaleConfig): { added: number; extras: nu
     .readdirSync(englishDir)
     .filter((f) => f.endsWith('.json'))
     .map((f) => f.replace('.json', ''));
+  if (namespaces.length < MIN_NAMESPACES) {
+    throw new Error(
+      `[${name}] VACUOUS: ${englishDir} lists ${namespaces.length} namespace file(s), floor ${MIN_NAMESPACES}; a sync over nothing would print success and sync nothing`
+    );
+  }
   for (const namespace of namespaces) {
     const english = JSON.parse(
       fs.readFileSync(path.join(englishDir, `${namespace}.json`), 'utf-8')

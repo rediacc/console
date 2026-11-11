@@ -102,6 +102,7 @@ const legacySync: Sync = (root) => {
   };
   const one = (file: string, en: Record<string, unknown>) => {
     const t = JSON.parse(fs.readFileSync(file, 'utf-8')) as Record<string, unknown>;
+    // tree-write: safe the file is under the mkdtemp fixture root that build() made; every caller of one() joins that root
     fs.writeFileSync(file, JSON.stringify(sortKeys(merge(t, en)), null, 2) + '\n');
   };
   for (const l of TARGETS) {
