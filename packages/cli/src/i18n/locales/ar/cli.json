@@ -2616,6 +2616,9 @@
           "refreshing": "جارٍ تجديد تراخيص المستودعات..."
         },
         "success": "تم تحديث وتثبيت الترخيص",
+        "adoptOrigin": "أعد إصدار التراخيص التي أصدرها خادم حساب آخر من خادم الحساب في هذا التكوين، لنقلها إليه. بدون هذا الخيار تُترك هذه التراخيص دون تغيير.",
+        "adoptOriginNeedsTarget": "--adopt-origin ينقل تراخيص جهاز كامل: مرّره مع -m <machine>.",
+        "adoptOriginNeedsLogin": "--adopt-origin يعيد إصدار التراخيص من خادم الحساب في هذا التكوين، وهذا يتطلب تسجيل الدخول: شغّل \"rdc subscription login\" أولًا.",
         "targetExclusive": "مرّر واحدًا فقط من -m أو --repo. --repo يشتق جهازه الخاص من المرجع.",
         "noLogin": {
           "renewing": "جارٍ تجديد التراخيص بالاعتماد على بياناتها الخاصة...",
@@ -3028,6 +3031,7 @@
       "partialPlacement": "توقّف التوضّع في منتصف الطريق: اكتمل {{placed}} من الأجهزة ({{placedNames}}) ولم يبدأ {{remaining}} منها ({{remainingNames}}). لم يتم التراجع عن شيء، لذا تحتفظ الأجهزة المكتملة بمستودعاتها وحصصها. حرّر حصة أو ارفع الحد، ثم أعد التشغيل: {{command}}",
       "preflightTokenNotReady": "رمز اشتراكك غير جاهز. شغّل: rdc subscription login. تم تخطي النشر على {{machine}}.",
       "recoveryFailedNoKnownRepos": "تم العثور على مستودعات على {{machine}} لكن لا يوجد أي منها في إعداداتك المحلية. راجع مستودعاتك المتابَعة باستخدام `rdc repo list`، ثم أعد المحاولة.",
+      "foreignOriginSkipped": "تم التخطي: أصدره {{licenseOrigin}} وليس خادم الحساب في هذا التكوين {{configOrigin}} (الخيار --adopt-origin ينقله)",
       "recoveryFailedServerRejected": "رفض خادم الحساب إصدار الترخيص للمستودع على \"{{machine}}\". الخطأ الأول: {{error}}. شغّل: rdc subscription refresh --repo <repo-ref> للمزيد من التفاصيل.",
       "recoveryFailedTokenNotReady": "رمز اشتراكك غير جاهز. شغّل: rdc subscription login، ثم أعد المحاولة."
     },
@@ -3394,6 +3398,7 @@
   "warnings": {
     "licenseSignatureRefreshed": "تم تحديث {{count}} ترخيص(تراخيص) مستودع بتوقيعات غير صالحة بعد تحديث renet",
     "licenseSignatureRefreshFailed": "{{count}} ترخيص(تراخيص) مستودع بتوقيعات غير صالحة بعد تحديث renet. قم بتشغيل: rdc subscription refresh -m <machine>",
+    "licenseForeignOriginSkipped": "تُرك ترخيص {{repo}} على {{machine}} دون تغيير: أصدره {{licenseOrigin}}، بينما خادم الحساب في هذا التكوين هو {{configOrigin}}. الكتابة فوقه من هنا تكسر سلسلة تجديده. لنقل تراخيص الجهاز إلى {{configOrigin}}، شغّل: rdc subscription refresh -m {{machine}} --adopt-origin",
     "secretNameSkipped": "اسم السر {{name}} ليس اسم متغير بيئة صالحًا؛ تبدأ الجلسة من دونه."
   }
 }

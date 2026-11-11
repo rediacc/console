@@ -2616,6 +2616,9 @@
           "refreshing": "A atualizar licenças de repositório..."
         },
         "success": "Licenças de repositório processadas",
+        "adoptOrigin": "Reemite, a partir do servidor de conta desta configuração, as licenças emitidas por outro servidor de conta, movendo-as. Sem esta opção, essas licenças ficam intactas.",
+        "adoptOriginNeedsTarget": "--adopt-origin move as licenças de uma máquina inteira: passe-o com -m <machine>.",
+        "adoptOriginNeedsLogin": "--adopt-origin reemite as licenças a partir do servidor de conta desta configuração, o que exige início de sessão: execute primeiro \"rdc subscription login\".",
         "targetExclusive": "Passe no máximo um de -m ou --repo. --repo já deriva a sua própria máquina a partir da ref.",
         "noLogin": {
           "renewing": "Renovando as licenças com as próprias credenciais...",
@@ -3028,6 +3031,7 @@
       "partialPlacement": "A colocação parou a meio caminho: {{placed}} máquina(s) concluída(s) ({{placedNames}}) e {{remaining}} nunca iniciada(s) ({{remainingNames}}). Nada foi revertido, pelo que as máquinas concluídas mantêm os seus repositórios e vagas. Liberte uma vaga ou aumente o limite e volte a executar: {{command}}",
       "preflightTokenNotReady": "O token de subscrição não está pronto. Execute: rdc subscription login. A implementação em {{machine}} foi ignorada.",
       "recoveryFailedNoKnownRepos": "Foram encontrados repositórios em {{machine}}, mas nenhum está registado na sua configuração local. Liste os seus repositórios rastreados com `rdc repo list`, depois tente novamente.",
+      "foreignOriginSkipped": "ignorada: emitida por {{licenseOrigin}}, e não pelo servidor de conta {{configOrigin}} desta configuração (--adopt-origin move-a)",
       "recoveryFailedServerRejected": "O servidor de conta rejeitou a emissão de licença para o repositório em \"{{machine}}\". Primeiro erro: {{error}}. Execute: rdc subscription refresh --repo <repo-ref> para obter detalhes.",
       "recoveryFailedTokenNotReady": "O seu token de subscrição não está pronto. Execute: rdc subscription login, depois tente novamente."
     },
@@ -3394,6 +3398,7 @@
   "warnings": {
     "licenseSignatureRefreshed": "{{count}} licença(s) de repositório com assinaturas inválidas renovadas após atualização do renet",
     "licenseSignatureRefreshFailed": "{{count}} licença(s) de repositório têm assinaturas inválidas após atualização do renet. Execute: rdc subscription refresh -m <machine>",
+    "licenseForeignOriginSkipped": "A licença de {{repo}} em {{machine}} foi deixada intacta: foi emitida por {{licenseOrigin}}, e o servidor de conta desta configuração é {{configOrigin}}. Substituí-la a partir daqui quebra a sua cadeia de renovação. Para mover as licenças da máquina para {{configOrigin}}, execute: rdc subscription refresh -m {{machine}} --adopt-origin",
     "secretNameSkipped": "O segredo {{name}} não tem um nome de variável de ambiente válido; a sessão inicia sem ele."
   }
 }

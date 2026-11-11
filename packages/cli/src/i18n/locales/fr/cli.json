@@ -2616,6 +2616,9 @@
           "refreshing": "Actualisation des licences des dépôts..."
         },
         "success": "Licence renouvelée et installée",
+        "adoptOrigin": "Réémet depuis le serveur de compte de cette configuration les licences émises par un autre serveur de compte, et les y transfère. Sans cette option, ces licences restent intactes.",
+        "adoptOriginNeedsTarget": "--adopt-origin transfère les licences d'une machine entière : passez-le avec -m <machine>.",
+        "adoptOriginNeedsLogin": "--adopt-origin réémet les licences depuis le serveur de compte de cette configuration, ce qui exige une connexion : exécutez d'abord \"rdc subscription login\".",
         "targetExclusive": "Passez au plus l'un de -m ou --repo. --repo dérive sa propre machine depuis la réf.",
         "noLogin": {
           "renewing": "Renouvellement des licences avec leurs propres identifiants...",
@@ -3028,6 +3031,7 @@
       "partialPlacement": "Le placement s'est arrêté en cours de route : {{placed}} machine(s) terminée(s) ({{placedNames}}) et {{remaining}} jamais démarrée(s) ({{remainingNames}}). Rien n'a été annulé, donc les machines terminées conservent leurs dépôts et leurs emplacements. Libérez un emplacement ou augmentez la limite, puis relancez : {{command}}",
       "preflightTokenNotReady": "Le token d'abonnement n'est pas prêt. Exécutez : rdc subscription login. Déploiement sur {{machine}} ignoré.",
       "recoveryFailedNoKnownRepos": "Des dépôts ont été trouvés sur {{machine}} mais aucun n'est suivi dans votre configuration locale. Listez vos dépôts suivis avec `rdc repo list`, puis réessayez.",
+      "foreignOriginSkipped": "ignorée : émise par {{licenseOrigin}} et non par le serveur de compte {{configOrigin}} de cette configuration (--adopt-origin la transfère)",
       "recoveryFailedServerRejected": "Le serveur de compte a refusé l'émission de la licence pour le dépôt sur \"{{machine}}\". Première erreur : {{error}}. Exécutez : rdc subscription refresh --repo <repo-ref> pour plus de détails.",
       "recoveryFailedTokenNotReady": "Votre jeton d'abonnement n'est pas prêt. Exécutez : rdc subscription login, puis réessayez."
     },
@@ -3394,6 +3398,7 @@
   "warnings": {
     "licenseSignatureRefreshed": "{{count}} licence(s) de dépôt avec des signatures invalides actualisée(s) après la mise à jour de renet",
     "licenseSignatureRefreshFailed": "{{count}} licence(s) de dépôt ont des signatures invalides après la mise à jour de renet. Exécutez : rdc subscription refresh -m <machine>",
+    "licenseForeignOriginSkipped": "La licence de {{repo}} sur {{machine}} est laissée intacte : elle a été émise par {{licenseOrigin}}, alors que le serveur de compte de cette configuration est {{configOrigin}}. L'écraser depuis ici rompt sa chaîne de renouvellement. Pour transférer les licences de la machine vers {{configOrigin}}, exécutez : rdc subscription refresh -m {{machine}} --adopt-origin",
     "secretNameSkipped": "Le secret {{name}} n'a pas un nom de variable d'environnement valide ; la session démarre sans lui."
   }
 }

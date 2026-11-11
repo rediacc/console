@@ -2616,6 +2616,9 @@
           "refreshing": "リポジトリライセンスを更新中..."
         },
         "success": "ライセンスが更新・インストールされました",
+        "adoptOrigin": "別のアカウントサーバーが発行したライセンスを、この設定のアカウントサーバーから再発行して移行します。指定しない場合、そうしたライセンスは変更されません",
+        "adoptOriginNeedsTarget": "--adopt-origin はマシン全体のライセンスを移行します。-m <machine> と一緒に指定してください",
+        "adoptOriginNeedsLogin": "--adopt-origin はこの設定のアカウントサーバーからライセンスを再発行するため、ログインが必要です。先に \"rdc subscription login\" を実行してください",
         "targetExclusive": "-m または --repo のどちらか一方のみを指定してください。--repo は ref から自動的にマシンを決定します",
         "noLogin": {
           "renewing": "ライセンス自身の認証情報で更新しています...",
@@ -3028,6 +3031,7 @@
       "partialPlacement": "配置は途中で停止しました: {{placed}} 台のマシンが完了し（{{placedNames}}）、{{remaining}} 台は開始されませんでした（{{remainingNames}}）。ロールバックは行われていないため、完了したマシンはそのリポジトリとスロットを保持します。スロットを解放するか上限を引き上げてから、再実行してください: {{command}}",
       "preflightTokenNotReady": "サブスクリプショントークンの準備ができていません。実行してください: rdc subscription login。{{machine}} へのデプロイはスキップされました。",
       "recoveryFailedNoKnownRepos": "{{machine}} でリポジトリが見つかりましたが、ローカル設定で追跡されているものはありません。追跡中のリポジトリを確認するには `rdc repo list` を実行してから再試行してください。",
+      "foreignOriginSkipped": "スキップしました: 発行元は {{licenseOrigin}} で、この設定のアカウントサーバー {{configOrigin}} ではありません (--adopt-origin で移行できます)",
       "recoveryFailedServerRejected": "アカウントサーバーが \"{{machine}}\" 上のリポジトリのライセンス発行を拒否しました。最初のエラー: {{error}}。詳細は次を実行してください: rdc subscription refresh --repo <repo-ref>",
       "recoveryFailedTokenNotReady": "サブスクリプショントークンが準備できていません。実行してください: rdc subscription login、その後再試行してください。"
     },
@@ -3394,6 +3398,7 @@
   "warnings": {
     "licenseSignatureRefreshed": "renet更新後、無効な署名を持つ{{count}}個のリポジトリライセンスを更新しました",
     "licenseSignatureRefreshFailed": "renet更新後、{{count}}個のリポジトリライセンスの署名が無効です。実行してください: rdc subscription refresh -m <machine>",
+    "licenseForeignOriginSkipped": "{{machine}} 上の {{repo}} のライセンスは変更していません。発行元は {{licenseOrigin}} ですが、この設定のアカウントサーバーは {{configOrigin}} です。ここで上書きすると更新の連鎖が壊れます。このマシンのライセンスを {{configOrigin}} に移すには、次を実行してください: rdc subscription refresh -m {{machine}} --adopt-origin",
     "secretNameSkipped": "シークレット {{name}} は環境変数名として無効なため、このシークレットなしでセッションを開始します。"
   }
 }

@@ -2616,6 +2616,9 @@
           "refreshing": "Repo-Lizenzen werden aktualisiert..."
         },
         "success": "Lizenz erneuert und installiert",
+        "adoptOrigin": "Lizenzen, die ein anderer Account-Server ausgestellt hat, werden vom Account-Server dieser Konfiguration neu ausgestellt und damit übernommen. Ohne diese Option bleiben solche Lizenzen unverändert.",
+        "adoptOriginNeedsTarget": "--adopt-origin übernimmt die Lizenzen einer ganzen Maschine: Geben Sie es zusammen mit -m <machine> an.",
+        "adoptOriginNeedsLogin": "--adopt-origin stellt Lizenzen über den Account-Server dieser Konfiguration neu aus und erfordert eine Anmeldung: Führen Sie zuerst \"rdc subscription login\" aus.",
         "targetExclusive": "Geben Sie höchstens eines von -m oder --repo an. --repo leitet seine eigene Maschine aus der Referenz ab.",
         "noLogin": {
           "renewing": "Lizenzen werden mit ihren eigenen Zugangsdaten erneuert...",
@@ -3028,6 +3031,7 @@
       "partialPlacement": "Die Platzierung wurde auf halbem Weg abgebrochen: {{placed}} Maschine(n) abgeschlossen ({{placedNames}}), {{remaining}} nie gestartet ({{remainingNames}}). Es wurde nichts zurückgerollt, daher behalten die abgeschlossenen Maschinen ihre Repositories und Slots. Geben Sie einen Slot frei oder erhöhen Sie das Limit, und führen Sie dann erneut aus: {{command}}",
       "preflightTokenNotReady": "Abonnement-Token ist nicht bereit. Ausführen: rdc subscription login. Bereitstellung auf {{machine}} übersprungen.",
       "recoveryFailedNoKnownRepos": "Es wurden Repositories auf {{machine}} gefunden, aber keines ist in Ihrer lokalen Konfiguration eingetragen. Listen Sie Ihre verfolgten Repos mit `rdc repo list` auf, und versuchen Sie es erneut.",
+      "foreignOriginSkipped": "übersprungen: ausgestellt von {{licenseOrigin}}, nicht vom Account-Server {{configOrigin}} dieser Konfiguration (--adopt-origin übernimmt sie)",
       "recoveryFailedServerRejected": "Der Account-Server hat die Lizenzausstellung für das Repository auf \"{{machine}}\" abgelehnt. Erster Fehler: {{error}}. Ausführen: rdc subscription refresh --repo <repo-ref> für Details.",
       "recoveryFailedTokenNotReady": "Das Subscription-Token ist noch nicht bereit. Ausführen: rdc subscription login, dann erneut versuchen."
     },
@@ -3394,6 +3398,7 @@
   "warnings": {
     "licenseSignatureRefreshed": "{{count}} Repo-Lizenz(en) mit ungültigen Signaturen nach renet-Update aktualisiert",
     "licenseSignatureRefreshFailed": "{{count}} Repo-Lizenz(en) haben ungültige Signaturen nach renet-Update. Ausführen: rdc subscription refresh -m <machine>",
+    "licenseForeignOriginSkipped": "Lizenz von {{repo}} auf {{machine}} bleibt unverändert: Sie wurde von {{licenseOrigin}} ausgestellt, der Account-Server dieser Konfiguration ist jedoch {{configOrigin}}. Ein Überschreiben von hier aus unterbricht die Verlängerungskette. Um die Lizenzen der Maschine auf {{configOrigin}} umzuziehen, führen Sie aus: rdc subscription refresh -m {{machine}} --adopt-origin",
     "secretNameSkipped": "Das Secret {{name}} hat keinen gültigen Namen für eine Umgebungsvariable; die Sitzung startet ohne es."
   }
 }

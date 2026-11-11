@@ -2616,6 +2616,9 @@
           "refreshing": "正在刷新仓库许可证..."
         },
         "success": "许可证已刷新并安装",
+        "adoptOrigin": "由此配置的账户服务器重新签发其他账户服务器签发的许可证，并将其迁移过来。不使用该选项时，这类许可证保持不变。",
+        "adoptOriginNeedsTarget": "--adopt-origin 会迁移整台机器的许可证：请与 -m <machine> 一起使用。",
+        "adoptOriginNeedsLogin": "--adopt-origin 通过此配置的账户服务器重新签发许可证，需要先登录：请先运行 \"rdc subscription login\"。",
         "targetExclusive": "最多只能传入 -m 或 --repo 中的一个。--repo 会从引用中自行推导出所在机器。",
         "noLogin": {
           "renewing": "正在使用许可证自带的凭据续期...",
@@ -3028,6 +3031,7 @@
       "partialPlacement": "部署中途停止：已完成 {{placed}} 台机器（{{placedNames}}），{{remaining}} 台从未启动（{{remainingNames}}）。没有执行任何回滚，因此已完成的机器保留其仓库和名额。请释放名额或提高限制，然后重新运行：{{command}}",
       "preflightTokenNotReady": "订阅令牌尚未就绪。请运行：rdc subscription login。已跳过部署到 {{machine}}。",
       "recoveryFailedNoKnownRepos": "在 {{machine}} 上发现了仓库，但本地配置中未追踪任何仓库。请运行 `rdc repo list` 列出已追踪的仓库，然后重试。",
+      "foreignOriginSkipped": "已跳过：由 {{licenseOrigin}} 签发，而非此配置的账户服务器 {{configOrigin}}（--adopt-origin 可迁移）",
       "recoveryFailedServerRejected": "账户服务器拒绝为 \"{{machine}}\" 上的仓库签发许可证。首个错误：{{error}}。请运行：rdc subscription refresh --repo <repo-ref> 获取详情。",
       "recoveryFailedTokenNotReady": "订阅令牌尚未就绪。请运行：rdc subscription login，然后重试。"
     },
@@ -3394,6 +3398,7 @@
   "warnings": {
     "licenseSignatureRefreshed": "renet 更新后，已刷新 {{count}} 个签名无效的仓库许可证",
     "licenseSignatureRefreshFailed": "renet 更新后，{{count}} 个仓库许可证签名无效。请运行：rdc subscription refresh -m <machine>",
+    "licenseForeignOriginSkipped": "{{machine}} 上 {{repo}} 的许可证保持不变：它由 {{licenseOrigin}} 签发，而此配置的账户服务器是 {{configOrigin}}。从这里覆盖会破坏其续期链。要把该机器的许可证迁移到 {{configOrigin}}，请运行：rdc subscription refresh -m {{machine}} --adopt-origin",
     "secretNameSkipped": "密钥 {{name}} 不是有效的环境变量名，会话将在没有它的情况下启动。"
   }
 }

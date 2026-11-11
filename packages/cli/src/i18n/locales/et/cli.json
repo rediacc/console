@@ -2616,6 +2616,9 @@
           "refreshing": "Repositooriumi litsentse uuendatakse..."
         },
         "success": "Repositooriumi litsentsid töödeldud",
+        "adoptOrigin": "Väljasta teise kontoserveri antud litsentsid uuesti selle konfiguratsiooni kontoserverist ja vii need sinna üle. Ilma selle valikuta jäävad sellised litsentsid puutumata.",
+        "adoptOriginNeedsTarget": "--adopt-origin viib üle terve masina litsentsid: lisa -m <machine>.",
+        "adoptOriginNeedsLogin": "--adopt-origin väljastab litsentsid uuesti selle konfiguratsiooni kontoserverist, mis nõuab sisselogimist: käivita esmalt \"rdc subscription login\".",
         "targetExclusive": "Anna kõige rohkem üks: -m või --repo. --repo tuletab oma masina viitest.",
         "noLogin": {
           "renewing": "Litsentse uuendatakse nende enda mandaatidega...",
@@ -3028,6 +3031,7 @@
       "partialPlacement": "Paigutus katkes poole peal: {{placed}} masin(at) lõpetatud ({{placedNames}}) ja {{remaining}} jäi käivitamata ({{remainingNames}}). Midagi ei võetud tagasi, seega lõpetatud masinad säilitavad oma repositooriumid ja kohad. Vabasta koht või tõsta limiiti ning käivita uuesti: {{command}}",
       "preflightTokenNotReady": "Sinu tellimuse token ei ole valmis. Käivita: rdc subscription login. Juurutamine masinale {{machine}} jäeti vahele.",
       "recoveryFailedNoKnownRepos": "Masinal {{machine}} leiti hoidlaid, kuid ükski neist ei ole sinu kohalikus konfiguratsioonis jälgitud. Kuva jälgitavad hoidlad käsuga `rdc repo list`, seejärel proovi uuesti.",
+      "foreignOriginSkipped": "vahele jäetud: väljastas {{licenseOrigin}}, mitte selle konfiguratsiooni kontoserver {{configOrigin}} (--adopt-origin viib selle üle)",
       "recoveryFailedServerRejected": "Kontoserver lükkas hoidla litsentsi väljastamise tagasi masinal \"{{machine}}\". Esimene viga: {{error}}. Käivita: rdc subscription refresh --repo <repo-ref> üksikasjade saamiseks.",
       "recoveryFailedTokenNotReady": "Sinu tellimuse token ei ole valmis. Käivita: rdc subscription login, seejärel proovi uuesti."
     },
@@ -3394,6 +3398,7 @@
   "warnings": {
     "licenseSignatureRefreshed": "Uuendati {{count}} hoidla litsentsi(de) kehtetud allkirjad pärast reneti uuendamist",
     "licenseSignatureRefreshFailed": "{{count}} hoidla litsentsil(-itsentsidel) on pärast reneti uuendamist kehtetud allkirjad. Käivita: rdc subscription refresh -m <machine>",
+    "licenseForeignOriginSkipped": "Masina {{machine}} hoidla {{repo}} litsents jäi puutumata: selle väljastas {{licenseOrigin}}, aga selle konfiguratsiooni kontoserver on {{configOrigin}}. Siit ülekirjutamine katkestab litsentsi uuendusahela. Masina litsentside üleviimiseks serverisse {{configOrigin}} käivita: rdc subscription refresh -m {{machine}} --adopt-origin",
     "secretNameSkipped": "Saladuse {{name}} nimi ei ole kehtiv keskkonnamuutuja nimi; seanss algab ilma selleta."
   }
 }

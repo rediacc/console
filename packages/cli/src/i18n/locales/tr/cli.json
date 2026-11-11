@@ -2616,6 +2616,9 @@
           "refreshing": "Depo lisansları yenileniyor..."
         },
         "success": "Lisans yenilendi ve yüklendi",
+        "adoptOrigin": "Başka bir hesap sunucusunun verdiği lisansları bu yapılandırmanın hesap sunucusundan yeniden verip taşır. Bu seçenek olmadan bu lisanslara dokunulmaz.",
+        "adoptOriginNeedsTarget": "--adopt-origin bir makinenin tüm lisanslarını taşır: -m <machine> ile birlikte verin.",
+        "adoptOriginNeedsLogin": "--adopt-origin lisansları bu yapılandırmanın hesap sunucusundan yeniden verir, bunun için oturum açmak gerekir: önce \"rdc subscription login\" komutunu çalıştırın.",
         "targetExclusive": "-m veya --repo seçeneklerinden en fazla birini geçirin. --repo kendi makinesini referanstan kendisi belirler.",
         "noLogin": {
           "renewing": "Lisanslar kendi kimlik bilgileriyle yenileniyor...",
@@ -3028,6 +3031,7 @@
       "partialPlacement": "Yerleştirme yarıda durdu: {{placed}} makine tamamlandı ({{placedNames}}) ve {{remaining}} makine hiç başlatılmadı ({{remainingNames}}). Hiçbir şey geri alınmadı, bu yüzden tamamlanan makineler depolarını ve slotlarını korur. Bir slot boşaltın veya sınırı artırın, ardından yeniden çalıştırın: {{command}}",
       "preflightTokenNotReady": "Abonelik jetonu hazır değil. Çalıştırın: rdc subscription login. {{machine}} üzerindeki dağıtım atlandı.",
       "recoveryFailedNoKnownRepos": "{{machine}} üzerinde depolar bulundu ancak hiçbiri yerel yapılandırmanızda kayıtlı değil. İzlenen depolarınızı `rdc repo list` ile listeleyin, ardından yeniden deneyin.",
+      "foreignOriginSkipped": "atlandı: lisansı veren {{licenseOrigin}}, bu yapılandırmanın hesap sunucusu ({{configOrigin}}) değil (--adopt-origin taşır)",
       "recoveryFailedServerRejected": "Hesap sunucusu \"{{machine}}\" üzerindeki depo için lisans verilmesini reddetti. İlk hata: {{error}}. Ayrıntılar için çalıştırın: rdc subscription refresh --repo <repo-ref>",
       "recoveryFailedTokenNotReady": "Abonelik jetonunuz hazır değil. Çalıştırın: rdc subscription login, ardından yeniden deneyin."
     },
@@ -3394,6 +3398,7 @@
   "warnings": {
     "licenseSignatureRefreshed": "renet güncellemesinden sonra geçersiz imzalı {{count}} depo lisansı yenilendi",
     "licenseSignatureRefreshFailed": "renet güncellemesinden sonra {{count}} depo lisansının imzası geçersiz. Çalıştırın: rdc subscription refresh -m <machine>",
+    "licenseForeignOriginSkipped": "{{machine}} üzerindeki {{repo}} lisansına dokunulmadı: lisansı {{licenseOrigin}} verdi, bu yapılandırmanın hesap sunucusu ise {{configOrigin}}. Buradan üzerine yazmak yenileme zincirini bozar. Makinenin lisanslarını {{configOrigin}} hesap sunucusuna taşımak için şunu çalıştırın: rdc subscription refresh -m {{machine}} --adopt-origin",
     "secretNameSkipped": "{{name}} gizli değerinin adı geçerli bir ortam değişkeni adı değil; oturum onsuz başlıyor."
   }
 }

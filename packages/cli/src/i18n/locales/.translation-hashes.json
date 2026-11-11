@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2591,
-    "sourceCommit": "b9b6118a2eacd999b837783d415af0cd11d0e422"
+    "keyCount": 2596,
+    "sourceCommit": "fe5c5c32c713a638fe06ba39ddf65d6d6a2f1467"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1985,6 +1985,9 @@
     "commands.subscription.refresh.account.failed": "a6825d73",
     "commands.subscription.refresh.account.refreshed": "ce330e1a",
     "commands.subscription.refresh.account.refreshing": "698e6fe1",
+    "commands.subscription.refresh.adoptOrigin": "f6181199",
+    "commands.subscription.refresh.adoptOriginNeedsLogin": "38ef00d6",
+    "commands.subscription.refresh.adoptOriginNeedsTarget": "450ece75",
     "commands.subscription.refresh.description": "3f220309",
     "commands.subscription.refresh.noLogin.failed": "0137969d",
     "commands.subscription.refresh.noLogin.none": "ec54b5d9",
@@ -2364,6 +2367,7 @@
     "errors.jobs.refused": "3cf7f09f",
     "errors.license.backupStoreMismatch": "8bb1db50",
     "errors.license.backupStoreUnreadable": "7632b3e1",
+    "errors.license.foreignOriginSkipped": "4d5aef3f",
     "errors.license.machineSlotLimit": "4364dd2e",
     "errors.license.nothingProvisioned": "9c165bf2",
     "errors.license.partialPlacement": "eb0dd784",
@@ -2594,6 +2598,7 @@
     "timing.step.provisioning": "b9fcb5ef",
     "timing.step.renetProvisioned": "4b3aca91",
     "timing.step.verifying": "aa28f3f9",
+    "warnings.licenseForeignOriginSkipped": "1c4e7ede",
     "warnings.licenseSignatureRefreshed": "11180a3e",
     "warnings.licenseSignatureRefreshFailed": "4a53cb5d",
     "warnings.secretNameSkipped": "ab4b64ef"
