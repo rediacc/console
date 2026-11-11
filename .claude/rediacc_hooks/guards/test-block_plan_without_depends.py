@@ -185,6 +185,11 @@ def tree():
                 live="Live-Proof: bench -- the cli against the bench origin",
             ),
         ),
+        "agent/plans/PLAN-lpwait.md": plan(
+            dep=DEP,
+            x=xlp(live="Live-Proof: none -- tooling only, ruled in #%s" % CLOSED_ITEM),
+            body="- [ ] T1 a box\n" + LP8_WAIT,
+        ),
         QUOTE_FILE: "The operator answered: %s.\n" % QUOTE,
         "agent/worklist/cafe0000.jsonl": "".join(json.dumps(e) + "\n" for e in STORE_EVENTS),
     }
@@ -235,7 +240,29 @@ def edit(rel, old, new, replace_all=False):
 
 NEW = "agent/plans/PLAN-new.md"
 
+# PLAN-local-first-delivery L2: an open box this edit adds that waits on GitHub (a phrase of proof-tiers.json `github_waits`) needs a `GitHub-only:` tag or a `Local-route:` correction; a box already waiting is the gate's, not the edit's.
+LP8_WAIT = "- [ ] T2 runs once the change is released\n"
+LP8_TAGGED = (
+    "- [ ] T2 runs once the change is released "
+    "GitHub-only: soak -- needs seven days of real traffic on the channel\n"
+)
+
 CASES = [
+    (
+        "LP8: an edit adds an untagged GitHub wait",
+        edit("agent/plans/PLAN-lpok.md", "- [ ] T1 a box\n", "- [ ] T1 a box\n" + LP8_WAIT),
+        True,
+    ),
+    (
+        "LP8 allow twin: the added wait carries a GitHub-only tag",
+        edit("agent/plans/PLAN-lpok.md", "- [ ] T1 a box\n", "- [ ] T1 a box\n" + LP8_TAGGED),
+        False,
+    ),
+    (
+        "LP8 allow twin: an edit beside an existing untagged wait",
+        edit("agent/plans/PLAN-lpwait.md", "T1 a box", "T1 the box"),
+        False,
+    ),
     # ---- refusals ----
     ("a Write without the field", write(NEW, plan()), True),
     # Judged where the write LANDS (#bc7d998c): each refusal was allowed (rc 0) before.
