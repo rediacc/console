@@ -124,7 +124,7 @@ Hetzner üzerinde Rediacc'a geçildikten sonra:
 
 | Alan | Sonra |
 |---|---|
-| Tedarikçiler | (1) Rediacc OÜ, yazılım lisansı; (2) Hetzner, IaaS |
+| Tedarikçiler | (1) [Rediacc](/tr/legal-information), yazılım lisansı; (2) Hetzner, IaaS |
 | Katman | (1) Kritik olmayan (veri katmanı yok); (2) Kritik (veri katmanı, müşteri kontrolünde) |
 | İşlenen veri | (1) Hiçbiri; (2) Şifreli birimler, anahtarları müşteri tutar |
 | Alt işlemciler | (1) Self-hosted için hiçbiri; (2) Yalnızca Hetzner dahili, kendi DPA'larında listelenmiş |

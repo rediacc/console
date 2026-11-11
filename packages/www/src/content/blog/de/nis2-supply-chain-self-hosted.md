@@ -123,7 +123,7 @@ Nach dem Wechsel zu Rediacc auf Hetzner:
 
 | Feld | Nachher |
 |---|---|
-| Anbieter | (1) Rediacc OÜ, Softwarelizenz; (2) Hetzner, IaaS |
+| Anbieter | (1) [Rediacc](/de/legal-information), Softwarelizenz; (2) Hetzner, IaaS |
 | Tier | (1) Nicht kritisch (keine Datenebene); (2) Kritisch (Datenebene, aber kundenkontrolliert) |
 | Verarbeitete Daten | (1) Keine; (2) Verschlüsselte Volumes, Kunde hält Schlüssel |
 | Unterauftragsverarbeiter | (1) Keine für Self-Hosted; (2) Nur Hetzner-intern, im Hetzner-AVV aufgelistet |

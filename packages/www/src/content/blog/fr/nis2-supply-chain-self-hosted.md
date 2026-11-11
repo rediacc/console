@@ -123,7 +123,7 @@ Après migration vers Rediacc sur Hetzner :
 
 | Champ | Après |
 |---|---|
-| Fournisseurs | (1) Rediacc OÜ, licence logicielle ; (2) Hetzner, IaaS |
+| Fournisseurs | (1) [Rediacc](/fr/legal-information), licence logicielle ; (2) Hetzner, IaaS |
 | Criticité | (1) Non critique (pas de plan de données) ; (2) Critique (plan de données, mais contrôlé par le client) |
 | Données traitées | (1) Aucune ; (2) Volumes chiffrés, client détient les clés |
 | Sous-traitants | (1) Aucun pour l'auto-hébergé ; (2) Interne Hetzner uniquement, listé dans leur DPA |
