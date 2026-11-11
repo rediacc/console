@@ -18,6 +18,7 @@ import signal
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import uuid
 from types import SimpleNamespace
@@ -245,6 +246,12 @@ class World(vm_check.Host):
         self.deleted_any = False
         self.crash_on = over.pop("crash_on", "")
         self.signal_on = over.pop("signal_on", "")
+        # A1's worker thread holds `suite_gate_step` until `suite_gate` opens (3 s at most), so a test can see A1 in flight.
+        self.suite_gate: threading.Event | None = over.pop("suite_gate", None)
+        self.suite_gate_step = over.pop("suite_gate_step", "A1.1")
+        self.suite_started = threading.Event()
+        self.suite_held_done = threading.Event()
+        self.killed_suites = 0
         # None: sftp-server's real answer to a refused leg, the bare `Failure` status line naming the path (2026-10-15 live run); a string replaces it.
         self.sftp_refusal = over.pop("sftp_refusal", None)
         # The live ops VM image: the CLI's file-write guard refuses `echo x > f` through `term connect` unless REDIACC_SKIP_FILE_WRITE_GUARD=1 (False: a CLI that no longer honours the variable), vi is absent, and the grand holds no compose file.
@@ -350,6 +357,18 @@ class World(vm_check.Host):
     def sleep(self, seconds: float) -> None:
         self.mono += seconds
 
+    def kill_suites(self) -> None:
+        self.killed_suites += 1
+
+    def run_suite(self, argv, env=None, timeout=None) -> vm_check.Result:
+        """The A1 worker thread's entry: the same answers as `run`, with `suite_gate` (when set) held until it opens or 3 s pass."""
+        step = next((s for s, script, _p in vm_check.ACCOUNT_SUITES if script == list(argv)[4]), "")
+        if self.suite_gate is not None and step == self.suite_gate_step:
+            self.suite_started.set()
+            self.suite_gate.wait(3)
+            self.suite_held_done.set()
+        return self.run(argv, env, timeout)
+
     def run(self, argv, env=None, timeout=None) -> vm_check.Result:
         del timeout
         argv = list(argv)
@@ -375,6 +394,9 @@ class World(vm_check.Host):
             rc, out = self.drills.get(name, drill_passed(name))
             return vm_check.Result(rc, out, "", 42000)
         if argv[0] == "go":
+            # P1 runs after P0: a held A1 suite opens here.
+            if self.suite_gate is not None:
+                self.suite_gate.set()
             text = "\tbuild\tvcs.revision=%s\n\tbuild\tvcs.modified=%s\n" % (
                 self.built,
                 "true" if self.modified else "false",
@@ -1464,9 +1486,27 @@ def test_a_clean_run_is_verified_and_its_receipt_admits_the_tree(tmp_path: pathl
         assert receipt_mod.admit(world.root, TREE, DIGEST, sides).ok, sides
     ids = _ids(receipt)
     assert {"P0", "P1", "P2", "P3", "P4", *A_STEPS, *V_STEPS, "T"} <= set(ids)
-    # Run order: A1 before P0, A0 after P1 and before P4, A2 after P3 and before P5.
-    order = [ids.index(s) for s in ("A1.4", "P0", "P1", "A0", "P4", "P2", "P3", "A2.3", "P5")]
+    # Run order: A0 after P1 and before P4; A1's rows are recorded after P3 and before A2 (the suites themselves run beside P0-P3); A2 before P5.
+    order = [
+        ids.index(s)
+        for s in (
+            "P0",
+            "P1",
+            "A0",
+            "P4",
+            "P2",
+            "P3",
+            "A1.1",
+            "A1.2",
+            "A1.3",
+            "A1.4",
+            "A2.1",
+            "A2.3",
+            "P5",
+        )
+    ]
     assert order == sorted(order), ids
+    assert receipt["phases"]["account"]["ran"] is True
     # P5 swept only the parent's stale fork; the fresh one, the other parent's and a non-vmc tag stay.
     deleted = [c[2] for c in world.rdc_calls() if c[:2] == ["repo", "delete"]]
     assert deleted[0] == "%s:vmc-10141500-abcdef-a" % PARENT
@@ -2358,8 +2398,10 @@ def test_an_account_only_change_is_verified_with_the_account_phase_alone(
     scenario_account_only_runs_the_account_phase_and_no_renet_step(vm_check, tmp_path)
 
 
-def test_a_red_suite_stops_the_run_before_any_vm_is_touched(tmp_path: pathlib.Path) -> None:
-    """Case 4."""
+def test_a_red_suite_ends_the_run_failed_at_the_join_and_t_still_tears_down(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Case 4, restated for R3: the suites run beside P0-P3, so the fleet steps ran before the red result was read; the run ends FAILED at the join, with no A2 or P5 row, and T tears the forks down."""
     world = make_world(
         tmp_path, suites={"A1.1": (1, "running 412 tests\nFAIL src/licenses.test.ts\n3 failed\n")}
     )
@@ -2369,19 +2411,100 @@ def test_a_red_suite_stops_the_run_before_any_vm_is_touched(tmp_path: pathlib.Pa
     detail = receipt["reason"]["detail"]
     assert detail.startswith("A1.1: npm run check:ci-account-server (61 s)"), detail
     assert "rc=1: running 412 tests | FAIL src/licenses.test.ts | 3 failed" in detail, detail
-    # All four suites ran, then nothing else: no lock row, no fleet, no drill.
-    assert [r["verdict"] for r in receipt["steps"] if r["id"].startswith("A1")] == [
-        "FAIL",
-        "ok",
-        "ok",
-        "ok",
-    ]
-    assert world.rdc_calls() == []
-    assert ["ops", "status", "-o", "json"] not in world.rdc_calls()
+    # All four suites ran and are recorded in order; the fleet steps P0-P3 ran before the join; nothing after it ran.
+    a1 = [r for r in receipt["steps"] if r["id"].startswith("A1")]
+    assert [r["id"] for r in a1] == ["A1.1", "A1.2", "A1.3", "A1.4"]
+    assert [r["verdict"] for r in a1] == ["FAIL", "ok", "ok", "ok"]
+    ids = _ids(receipt)
+    assert {"P0", "P1", "P2", "P3"} <= set(ids)
+    assert ids.index("P3") < ids.index("A1.1")
     assert world.drill_calls() == []
-    assert "P0" not in _ids(receipt)
+    assert not {"A2.1", "A2.2", "A2.3", "P5"} & set(ids)
+    assert "T" in ids
+    assert world.forks_left() == []
     assert receipt["phases"]["account"]["ran"] is False
     assert lock_is_free(tmp_path)
+
+
+def test_a1_starts_before_p0_returns_and_is_still_running_when_it_does(
+    tmp_path: pathlib.Path,
+) -> None:
+    """V2's control: on the serial order A1 had finished before P0 began, so no suite was in flight when the lock was taken; on the thread, A1.1 is still held open at that moment and P1's first call opens it."""
+    gate = threading.Event()
+    world = make_world(tmp_path, suite_gate=gate)
+    seen: dict[str, bool] = {}
+
+    class WatchedLock(vm_check.Lock):
+        def acquire(self, host: Any, wait_s: float, session: str) -> float:
+            seen["started"] = world.suite_started.wait(3)
+            seen["in_flight"] = not world.suite_held_done.is_set()
+            return super().acquire(host, wait_s, session)
+
+    out = io.StringIO()
+    rc = vm_check.main(
+        ["--keep-work", "--wait", "0"],
+        root=world.root,
+        host=world,
+        account=FakeAccount(),
+        lock=WatchedLock(tmp_path / "vm-check.lock"),
+        out=out,
+        environ={
+            "HOME": str(tmp_path / "home"),
+            "PATH": os.environ.get("PATH", ""),
+            "VM_NET_BASE": NET,
+        },
+        inputs_fn=lambda _root: DIGEST,
+        account_modified_fn=lambda _root: False,
+        dirty_fn=lambda _root, _surfaces: False,
+        renet_modified_fn=lambda _root: False,
+        account_digest_fn=lambda _root: ADIGEST,
+        u1_fn=stub_u1,
+        extra_fns=STUB_EXTRA,
+    )
+    assert rc == vm_check.EXIT_VERIFIED, out.getvalue()
+    assert seen == {"started": True, "in_flight": True}
+
+
+def test_a_signal_during_the_run_kills_the_suites_and_still_tears_down(
+    tmp_path: pathlib.Path,
+) -> None:
+    # The signal lands in P2, before A1 is joined: the suites' groups are killed, no A1 row is recorded.
+    world = make_world(tmp_path, signal_on="ops status")
+    rc, _out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED
+    assert receipt["reason"]["class"] == "interrupted"
+    assert world.killed_suites == 1
+    assert not [i for i in _ids(receipt) if i.startswith("A1")]
+    assert "T" in _ids(receipt)
+
+
+def test_the_real_host_kills_a_suites_whole_process_group(tmp_path: pathlib.Path) -> None:
+    """A suite that spawns a child (as npm does) loses both when `kill_suites` runs, not just the leader."""
+    host = vm_check.Host()
+    pidfile = tmp_path / "child.pid"
+    script = "sleep 60 & echo $! > %s; wait" % shlex.quote(str(pidfile))
+    box: list[vm_check.Result] = []
+    thread = threading.Thread(
+        target=lambda: box.append(host.run_suite(["bash", "-c", script], timeout=60))
+    )
+    thread.start()
+    deadline = time.monotonic() + 10
+    while not pidfile.exists() and time.monotonic() < deadline:
+        time.sleep(0.02)
+    assert pidfile.exists()
+    child = int(pidfile.read_text())
+    host.kill_suites()
+    thread.join(10)
+    assert not thread.is_alive()
+    assert box[0].rc != 0
+    for _ in range(100):
+        try:
+            os.kill(child, 0)
+        except ProcessLookupError:
+            break
+        time.sleep(0.05)
+    else:
+        pytest.fail("the suite's child outlived kill_suites")
 
 
 def test_the_suites_run_from_their_packages(tmp_path: pathlib.Path) -> None:
@@ -4742,10 +4865,10 @@ def test_a_failure_that_stopped_the_battery_never_merges_to_verified(
     assert not receipt_mod.admit(world.root, TREE, DIGEST, {"renet"}).ok
 
 
-def test_a_run_that_stopped_before_the_build_identity_is_never_merged(
+def test_a_red_a1_run_ends_at_the_join_so_a_green_only_leaves_the_ledger_incomplete(
     tmp_path: pathlib.Path,
 ) -> None:
-    """A red A1 suite ends the run before P1 read the renet pointer and build, so that receipt has no identity a --only run can match: refused, and the FAILED receipt stays."""
+    """A red A1 suite ends the run at the join, after P1 read the renet identity and before A2 and the renet steps, so a green `--only A1.1` merges into a ledger with no row for them: NOT_VERIFIED, nothing written, and the FAILED receipt stays."""
     red = make_world(tmp_path, suites={"A1.1": (1, "FAIL x\n1 failed\n")})
     rc, out = run_merge(tmp_path, red)
     assert rc == vm_check.EXIT_FAILED, out
@@ -4753,7 +4876,7 @@ def test_a_run_that_stopped_before_the_build_identity_is_never_merged(
     before = archived(world)
     rc, out = run_merge(tmp_path, world, "--only", "A1.1")
     assert rc == vm_check.EXIT_NOT_VERIFIED, out
-    assert "--only merge refused: the --only run's submodule pointers" in out, out
+    assert "--only merge not written: the merged ledger would be NOT_VERIFIED" in out, out
     assert archived(world) == before
     assert not receipt_mod.admit(world.root, TREE, DIGEST, {"account"}).ok
 

@@ -12,7 +12,7 @@ Design 2 of agent/plans/PLAN-vm-check.md and Design 3 of agent/plans/PLAN-accoun
 
 PHASES. There are two sides, the trigger's `renet` and `account` (`rediacc_ci.proof.surfaces.SIDES`, the VM phases of `.ci/config/proof-tiers.json`). With `--changed` the sides of `Changed.sides` are required; with no `--changed`, or a push base that cannot be resolved, both are. The renet phase is P5 and V1.1-V1.7; the account phase is A1.1-A1.4, A0 and A2.1-A2.3. P0-P4 and T run on every run, P1 included, because the license drill deploys renet too and the receipt check needs `renet.built == renet.pointer` even on an account-only receipt. `phases.<side>.ran` is true only when every step of that phase recorded a row and every such row is ok. The steps, in run order:
 
-  A1  account only, before P0, so the fleet lock is not held for the suites: A1.1 `npm run check:ci-account-server`, A1.2 `npm run check:ci-test-account-web`, A1.3 `npm --prefix private/account run typecheck`, A1.4 `npm --prefix private/account run typecheck:web`. Each is one assertion row with its rc and ms; a non-zero rc is a failed row carrying the last three output lines. All four run, and any failure ends the run FAILED before any VM is touched.
+  A1  account only. A worker thread starts the suites before P0 and they run beside P0-P3, which need no suite result; the thread is joined after P3 and before A2, and the main thread then records the rows in the order below, so a red suite no longer stops the run before a VM is touched: it ends the run FAILED at the join, and T tears down what P0-P3 made. SIGINT and SIGTERM kill the suites' process group. A1.1 `npm run check:ci-account-server`, A1.2 `npm run check:ci-test-account-web`, A1.3 `npm --prefix private/account run typecheck`, A1.4 `npm --prefix private/account run typecheck:web`. Each is one assertion row with its rc and ms; a non-zero rc is a failed row carrying the last three output lines. All four run, and any failure ends the run FAILED at the join.
   P0  an exclusive flock on `rediacc-vm-check.lock` in the per-user runtime directory, waited for up to `--wait` seconds (`fleet-busy`). A run that gives up there judged nothing while a holder may still be running, so it writes neither `receipt.json` nor the tree archive: its record goes to `runs/<run id>/receipt.json` (`vm_tier.write_run_record`), and the summary prints where.
   P1  `go version -m private/renet/bin/renet` must carry the submodule HEAD as `vcs.revision` and `vcs.modified=false`; one `./rdc.sh --version` rebuild is tried before `renet-build-mismatch`.
   A0  account only. The dev gateway does not hot-reload, so it is reused only when it is healthy, the `started=` and `gateway_port=` of `.account-state` equal the record `.ci/cache/vm-check/gateway.json` this runner wrote when it last started one, and that record's `account` equals `rediacc_ci.proof.surfaces.account_worktree_digest`. Otherwise `lib.Drill.restart_gateway` starts it with its log at `.ci/cache/vm-check/gateway.log`, the record is rewritten (mode `started`, or `restarted` when a gateway was already answering), and `detach_gateway` leaves it running after the run for the next one to reuse. A restart rotates every dev password and may move the port, and the run says so. A start that fails, or a gateway still unhealthy after it, is `account-gateway` with the log tail.
@@ -57,6 +57,7 @@ import shutil
 import signal
 import subprocess
 import sys
+import threading
 import time
 import traceback
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol
@@ -1061,6 +1062,9 @@ def prior_receipt(root: pathlib.Path) -> dict[str, Any] | None:
 class Host:
     """Every effect the check has outside this process. The tests replace it whole."""
 
+    _suite_lock = threading.Lock()
+    _suite_groups: ClassVar[set[int]] = set()
+
     def run(
         self,
         argv: Sequence[str],
@@ -1083,6 +1087,52 @@ class Host:
             err = exc.stderr if isinstance(exc.stderr, str) else ""
             return Result(124, "", err + "\ntimed out after %ss" % timeout, self._ms(started))
         return Result(proc.returncode, proc.stdout, proc.stderr, self._ms(started))
+
+    def run_suite(
+        self,
+        argv: Sequence[str],
+        env: Mapping[str, str] | None = None,
+        timeout: float | None = None,
+    ) -> Result:
+        """`run` for an A1 suite that runs on a worker thread: the child leads its own process group, which `kill_suites` can end from the main thread (npm and the test runners under it die with it, not just npm)."""
+        started = time.monotonic()
+        try:
+            proc = subprocess.Popen(
+                list(argv),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                env=dict(env) if env is not None else None,
+                start_new_session=True,
+            )
+        except OSError as exc:
+            return Result(127, "", "%s: %s" % (argv[0], exc.strerror or exc), self._ms(started))
+        with self._suite_lock:
+            self._suite_groups.add(proc.pid)
+        try:
+            out, err = proc.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            self._kill_group(proc.pid)
+            out, err = proc.communicate()
+            return Result(
+                124, out or "", (err or "") + "\ntimed out after %ss" % timeout, self._ms(started)
+            )
+        finally:
+            with self._suite_lock:
+                self._suite_groups.discard(proc.pid)
+        return Result(proc.returncode, out, err, self._ms(started))
+
+    def kill_suites(self) -> None:
+        """SIGKILL the process group of every suite `run_suite` still has running."""
+        with self._suite_lock:
+            groups = list(self._suite_groups)
+        for pid in groups:
+            self._kill_group(pid)
+
+    @staticmethod
+    def _kill_group(pid: int) -> None:
+        with contextlib.suppress(OSError):
+            os.killpg(pid, signal.SIGKILL)
 
     @staticmethod
     def _ms(started: float) -> int:
@@ -1709,6 +1759,10 @@ class VmCheck:
         # The areas of `tiers.vm.areas` the change touches (always evaluated against the push base, with or without `--changed`, so a full run cannot skip an area's legs), and their legs' verdicts after the run.
         self.areas: frozenset[str] = frozenset()
         self.area_results: dict[str, dict[str, Any]] = {}
+        # The A1 suites run on a worker thread beside P0-P3 (`a1_start`); it only collects results, and the main thread records them at `a1_join`.
+        self.a1_thread: threading.Thread | None = None
+        self.a1_results: list[tuple[str, str, str | None, Result]] = []
+        self.a1_error: Exception | None = None
         # Both phases unless `--changed` narrows them.
         self.phases: dict[str, dict[str, bool]] = {
             side: {"required": True, "ran": False} for side in trigger.SIDES
@@ -2176,9 +2230,9 @@ class VmCheck:
                 "vm:check: area legs run here: %s"
                 % (", ".join(sorted(wanted)) if wanted else "none beyond the phases")
             )
-        # A1 before P0: the suites hold no fleet lock, and a red suite stops the run before any VM is touched.
-        if account and not self.a1_suites():
-            return
+        # A1 starts before P0 on a worker thread and runs beside P0-P3: the suites need no fleet, so their 97 s hide behind fleet setup. A red suite no longer stops the run before a VM is touched; it ends the run FAILED at `a1_join`, after P3 and before A2, and T tears down what P0-P3 made.
+        if account:
+            self.a1_start()
         self.p0_lock()
         self.p1_renet()
         # An external leg's e2e global setup licenses its repositories on the local dev gateway (packages/e2e-tests/src/utils/licence.ts ensureAccountToken reads .account-state), so A0 runs for it too, and before P4: a restart rotates the dev passwords the minted token depends on.
@@ -2190,6 +2244,8 @@ class VmCheck:
         self.p4_rebind()
         self.p3_keys()
         self.p3_leftovers()
+        if account and not self.a1_join():
+            return
         # A2 before P5: the license drill deploys bin/renet and P5 re-uploads the same binary; neither rebuilds it.
         if account and not self.a2_drills():
             return
@@ -3078,24 +3134,72 @@ class VmCheck:
         for step_id, script, package in ACCOUNT_SUITES:
             if self.opts.only and not self._only_wants(step_id):
                 continue
-            prefix = self.root / package if package else self.root
-            res = self.host.run(
-                ["npm", "--prefix", str(prefix), "run", script], env=env, timeout=SUITE_TIMEOUT_S
-            )
-            ok = res.rc == 0
-            spelled = "npm %srun %s" % ("--prefix %s " % package if package else "", script)
-            self.check(
-                step_id,
-                "%s (%d s)" % (spelled, res.ms // 1000),
-                ok,
-                res,
-                "" if ok else "rc=%d: %s" % (res.rc, last_lines(res.text())),
-                log_path=self.keep_log(step_id, script, ["npm", "run", script], res),
-            )
-            green = green and ok
+            res = self.host.run(self._suite_argv(script, package), env=env, timeout=SUITE_TIMEOUT_S)
+            green = self._record_suite(step_id, script, package, res) and green
         if not green:
-            self.say("        an account suite is red; no VM is touched")
+            self.say("        an account suite is red")
         return green
+
+    def _suite_argv(self, script: str, package: str | None) -> list[str]:
+        prefix = self.root / package if package else self.root
+        return ["npm", "--prefix", str(prefix), "run", script]
+
+    def _record_suite(self, step_id: str, script: str, package: str | None, res: Result) -> bool:
+        ok = res.rc == 0
+        spelled = "npm %srun %s" % ("--prefix %s " % package if package else "", script)
+        self.check(
+            step_id,
+            "%s (%d s)" % (spelled, res.ms // 1000),
+            ok,
+            res,
+            "" if ok else "rc=%d: %s" % (res.rc, last_lines(res.text())),
+            log_path=self.keep_log(step_id, script, ["npm", "run", script], res),
+        )
+        return ok
+
+    def a1_start(self) -> None:
+        """Start the four account suites on a worker thread. The thread only runs them and keeps each result; every row is recorded by `a1_join` on the main thread, so the ledger is never written from two threads."""
+        env = self.drill_env()
+
+        def collect() -> None:
+            try:
+                for step_id, script, package in ACCOUNT_SUITES:
+                    res = self.host.run_suite(
+                        self._suite_argv(script, package), env=env, timeout=SUITE_TIMEOUT_S
+                    )
+                    self.a1_results.append((step_id, script, package, res))
+            except CRASHES as exc:  # reported at the join, never lost in the thread
+                self.a1_error = exc
+
+        self.a1_thread = threading.Thread(target=collect, name="vm-check-a1", daemon=True)
+        self.a1_thread.start()
+
+    def a1_join(self) -> bool:
+        """Wait for the A1 thread and record its rows in ACCOUNT_SUITES order, with the ids and fields of the serial run; True when all four exited 0. A thread that crashed re-raises here."""
+        thread, self.a1_thread = self.a1_thread, None
+        if thread is None:
+            return True
+        thread.join()
+        if self.a1_error is not None:
+            raise RuntimeError(
+                "the A1 suite thread crashed: %s: %s"
+                % (type(self.a1_error).__name__, self.a1_error)
+            )
+        green = True
+        for step_id, script, package, res in self.a1_results:
+            green = self._record_suite(step_id, script, package, res) and green
+        self.a1_results = []
+        if not green:
+            self.say("        an account suite is red; the run ends here, before A2")
+        return green
+
+    def a1_stop(self) -> None:
+        """An early end (a signal, a crash, a step that could not judge): kill the suites' process groups and wait for the thread. Nothing is recorded, since the run judged nothing about A1."""
+        thread, self.a1_thread = self.a1_thread, None
+        if thread is None:
+            return
+        self.host.kill_suites()
+        thread.join(timeout=30)
 
     def _gateway_paths(self) -> tuple[pathlib.Path, pathlib.Path]:
         folder = receipt_mod.receipt_dir(self.root)
@@ -3775,6 +3879,7 @@ class VmCheck:
                 signal.signal(sig, old)
 
     def _teardown(self) -> None:
+        self.a1_stop()
         leftovers: list[str] = list(self.sweep_leftovers)
         try:
             leftovers.extend(self._teardown_steps())
