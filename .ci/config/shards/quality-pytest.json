@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-11T04:59:44.550Z",
+  "generatedAt": "2026-11-11T11:40:02.943Z",
   "legs": [
     {
       "index": 1,
@@ -150,6 +150,7 @@
         "pytest:.ci/rediacc_ci/tests/test_testrun_unit.py",
         "pytest:.ci/rediacc_ci/tests/test_tmp_capacity.py",
         "pytest:.ci/rediacc_ci/tests/test_version_detect_bump_type.py",
+        "pytest:.claude/rediacc_hooks/tests/test_backup_push_predicate.py",
         "pytest:.claude/rediacc_hooks/tests/test_block_settled_questions.py",
         "pytest:.claude/rediacc_hooks/tests/test_githook_gen_docs.py",
         "pytest:.claude/rediacc_hooks/tests/test_hooks_delegates.py",
@@ -331,6 +332,7 @@
         "pytest:.ci/rediacc_ci/tests/test_xdist_groups.py",
         "pytest:.claude/rediacc_hooks/tests/test_bulk_review_records.py",
         "pytest:.claude/rediacc_hooks/tests/test_gh_flag_spellings.py",
+        "pytest:.claude/rediacc_hooks/tests/test_githook_backup_ref.py",
         "pytest:.claude/rediacc_hooks/tests/test_golden_drift.py",
         "pytest:.claude/rediacc_hooks/tests/test_guard_stdin_procfs_seams.py",
         "pytest:.claude/rediacc_hooks/tests/test_guards_process_table.py",
@@ -530,7 +532,8 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_plandeps_box_edges.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_reviewclass.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_workflow_sudo_env_drops.py",
-        "pytest:.claude/rediacc_hooks/tests/test_wl_judge_receipt_inflight.py"
+        "pytest:.claude/rediacc_hooks/tests/test_wl_judge_receipt_inflight.py",
+        "pytest:.ci/rediacc_ci/tests/test_proof_tiers_local.py"
       ]
     },
     {
@@ -674,6 +677,7 @@
         "pytest:.ci/rediacc_ci/tests/test_run_bare.py",
         "pytest:.ci/rediacc_ci/tests/test_runtmp.py",
         "pytest:.ci/rediacc_ci/tests/test_security_ci_workflow_invariants.py",
+        "pytest:.ci/rediacc_ci/tests/test_setup_backup_remotes.py",
         "pytest:.ci/rediacc_ci/tests/test_shape_probe_agreement.py",
         "pytest:.ci/rediacc_ci/tests/test_shapedup_corpus_sig.py",
         "pytest:.ci/rediacc_ci/tests/test_sibling_agreement.py",
@@ -885,7 +889,9 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_boxready.py",
         "pytest:.ci/rediacc_ci/tests/test_gate_hint_corpus_enforced_by.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_workflow_sudo_preserve_env.py",
-        "pytest:.claude/rediacc_hooks/tests/test_wl_judge_local_batch.py"
+        "pytest:.claude/rediacc_hooks/tests/test_wl_judge_local_batch.py",
+        "pytest:.ci/rediacc_ci/tests/test_dev_backup_ref.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_checks_backup_lag.py"
       ]
     }
   ]
