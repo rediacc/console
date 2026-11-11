@@ -1169,15 +1169,25 @@ def _filled_sequences(sequences, mentions):
                 yield [fill if e is None else e for e in seq]
 
 
+# A LEASE PATH IS NOT A MENTION OF THE VERB (#7d3a5939). `.claude/worktrees/agent-x/f` holds the substring `worktree`, and that alone licensed `_filled` to complete any unknown piece of the program with `add`/`worktree`: `subprocess.run(['git','-C',d,'add','f'])` plus a print of a lease path was refused as `git worktree add`, with no worktree verb anywhere. The lease root is dropped before the reading; a bare `worktree` word, `worktree.py` and `alias.wt=worktree` are untouched, and a path that is the verb's own operand (`git worktree add .claude/worktrees/x`) still names the word `worktree` outside the path.
+LEASE_ROOT_TEXT = re.compile(r"\.claude/worktrees(?![\w-])(?:/[^\s'\"`]*)?")
+
+
+def _mentions_worktree(text):
+    """Does `text` name `worktree` outside a lease path (`.claude/worktrees[/...]`)?"""
+    return "worktree" in LEASE_ROOT_TEXT.sub(" ", text)
+
+
 def _code_mentions(code):
     """Does Python `code` name `worktree` outside a comment (a string, a name, an attribute)? A comment runs nothing, so it does not license filling an unknown argv element with the verb (#a904d9f4: `# ... worktree ...` above `g(root, "add", "-A")` filled `["git", *args]` into `git worktree add`). Code that does not tokenize reads as naming it, the over-reading direction."""
-    if "worktree" not in code:
+    if not _mentions_worktree(code):
         return False
     # A file name is masked inside a string only: a Python NAME or attribute spelled like one (`worktree.lock(...)`, `worktree.log`) is still a mention of the module (review 599bc50b.2).
     try:
         return any(
-            "worktree"
-            in (tok.string if tok.type == tokenize.NAME else _mask_file_names(tok.string))
+            _mentions_worktree(
+                tok.string if tok.type == tokenize.NAME else _mask_file_names(tok.string)
+            )
             for tok in tokenize.generate_tokens(io.StringIO(code).readline)
             if tok.type != tokenize.COMMENT
         )
@@ -1251,7 +1261,7 @@ TEXT_INTERPOLATION = re.compile(r"\$\{[^{}]*\}|#\{[^{}]*\}|[$@]\w+")
 def _text_literals(code, mentions=None):
     """Every literal the regex reading finds, a built one also as the commands `_filled` reads it to spell. `mentions` says whether the code names `worktree` outside a comment, the license to fill an unknown piece with the verb; None reads the raw text, comments included."""
     if mentions is None:
-        mentions = "worktree" in code
+        mentions = _mentions_worktree(code)
     for m in itertools.chain(LITERAL.finditer(code), QUOTE_LIKE.finditer(code)):
         literal = " ".join(next(g for g in m.groups() if g is not None).split())
         yield literal
@@ -1305,7 +1315,9 @@ def _code_verdict(family, code, depth):
         return shell_verdict(code, depth)
     if family in SLASH_FAMILIES:
         # A comment does not license filling a built string's hole with the verb, as `_code_mentions` reads it for Python (#1ecd3fec: check-deps.ts's comment `worktree` filled a `${name}` hole into `worktree add`).
-        return _text_verdict(code, depth, "worktree" in _slash_code_text(_mask_file_names(code)))
+        return _text_verdict(
+            code, depth, _mentions_worktree(_slash_code_text(_mask_file_names(code)))
+        )
     return _text_verdict(code, depth)
 
 

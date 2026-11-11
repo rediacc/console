@@ -304,6 +304,22 @@ FALSE_POSITIVES = [
             "python3 $CLAUDE_PROJECT_DIR/.claude/hooks/stop/worklist.py --tick abcd1234 1f2e removed"
         ),
     ),
+    # #7d3a5939: a lease path in a program is not a mention of the verb, so it licenses no argv or string fill.
+    ("a program printing a lease path", "python3 -c \"print('.claude/worktrees/agent-x/file')\""),
+    (
+        "a lease path beside an argv with a variable git operand",
+        (
+            "python3 -c \"import subprocess,sys; print('.claude/worktrees/agent-x/f'); "
+            "subprocess.run(['git','-C',sys.argv[1],'add','f'])\""
+        ),
+    ),
+    (
+        "a lease path beside a built git command",
+        (
+            "python3 -c \"import os; x=input(); print('.claude/worktrees/agent-x/f'); "
+            "os.system('git ' + x)\""
+        ),
+    ),
 ]
 
 # #3dc774ff: this file's own NAME holds `worktree` beside `add`, and three commands were refused on 2026-11-06 for naming it. The `$R` rows reach the `$`-path arm whatever the environment holds; the `$CLAUDE_PROJECT_DIR` rows are the spelling the lead types, resolved from the hook's own environment.
@@ -686,6 +702,22 @@ REVERSE = [
         FALSE_POSITIVES[0],
     ),
     (
+        "a lease path licenses the argv fill",
+        (
+            'return "worktree" in LEASE_ROOT_TEXT.sub(" ", text)',
+            'return "worktree" in text',
+        ),
+        FALSE_POSITIVES[-1],
+    ),
+    (
+        "a lease path licenses the argv fill (argv shape)",
+        (
+            'return "worktree" in LEASE_ROOT_TEXT.sub(" ", text)',
+            'return "worktree" in text',
+        ),
+        FALSE_POSITIVES[-2],
+    ),
+    (
         "a comment licenses the argv fill",
         ("mentions = _code_mentions(code)", 'mentions = "worktree" in code'),
         FALSE_POSITIVES[0],
@@ -744,7 +776,7 @@ REVERSE = [
     ),
     (
         "a comment licenses the JS hole fill",
-        ('"worktree" in _slash_code_text(_mask_file_names(code))', "None"),
+        ("_mentions_worktree(_slash_code_text(_mask_file_names(code)))", "None"),
         DEPS_LIKE_ROW,
     ),
     # #90988086: with prose literals kept, the gen-docs shape and its Python twin are refused again, so each is allowed BY the prose drop.
