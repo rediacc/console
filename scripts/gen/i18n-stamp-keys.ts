@@ -43,7 +43,7 @@ import { isEntryPoint } from '../lib/entry-point.js';
 
 const HERE = path.dirname(fileURLToPath(import.meta.url));
 export const DEFAULT_TRANSLATIONS_DIR = path.join(HERE, '../../packages/www/src/i18n/translations');
-const LEDGER_NAME ='.naturalized-hashes.json';
+const LEDGER_NAME = '.naturalized-hashes.json';
 
 type Json = Record<string, unknown>;
 export type Ledger = Json & { languages?: Record<string, Record<string, string>> };

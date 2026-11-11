@@ -4710,7 +4710,10 @@ export const GATES: readonly GateSpec[] = [
     run: 'npm run check:cli-examples',
     slow: true, // 22.7s measured
     gate: true,
-    leaves: ['scripts/__tests__/positional-cli-detector.control.ts', 'scripts/gen/validate-cli-examples.ts'],
+    leaves: [
+      'scripts/__tests__/positional-cli-detector.control.ts',
+      'scripts/gen/validate-cli-examples.ts',
+    ],
     ci: {
       kind: 'step',
       workflow: '.github/workflows/ci-quality.yml',

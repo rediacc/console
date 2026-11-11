@@ -20,7 +20,10 @@ function check(label: string, ok: boolean): void {
 }
 
 check('`rdc legal [--json]` is not positional syntax', scanText('rdc legal [--json]').length === 0);
-check('`rdc version [--json]` is not positional syntax', scanText('rdc version [--json]').length === 0);
+check(
+  '`rdc version [--json]` is not positional syntax',
+  scanText('rdc version [--json]').length === 0
+);
 check(
   'CONTROL: `rdc legal [name]` after a zero-positional command is still reported',
   scanText('rdc legal [name]').length > 0
