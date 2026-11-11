@@ -54,7 +54,7 @@
         "@opentelemetry/exporter-trace-otlp-http",
         "@opentelemetry/sdk-node"
       ],
-      "pinVersion": "^0.301.0"
+      "pinVersion": "^0.301.1"
     },
     {
       "label": "Pin the OpenTelemetry 3.x line in lockstep",
@@ -67,7 +67,7 @@
         "@opentelemetry/sdk-logs",
         "@opentelemetry/sdk-metrics"
       ],
-      "pinVersion": "^3.1.0"
+      "pinVersion": "^3.1.1"
     },
     {
       "label": "Pin i18next for CLI",
