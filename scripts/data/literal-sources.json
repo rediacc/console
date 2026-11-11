@@ -117,6 +117,25 @@
   "exact_stem": [
     { "key": "WK_GH_ORIGIN", "reason": "github.com hosts every project's pages, downloads and test fixtures; this entry is only the bare origin a repository path is composed onto, so other github.com URLs are not copies of it" }
   ],
+  "entity": {
+    "$comment": "R6: the contracting entity's identifying values (read from `source` at run time) in CODE or PROSE anywhere outside its projection. Translations, docs and markdown count; only the files no rule reads (the history exemptions above) and the rows below are out. Every row carries its reason, and R3 fails on an exemption that suppresses no finding.",
+    "source": "packages/shared/src/legal/entity.generated.json",
+    "projections": [
+      {"path": "packages/shared/src/legal/entity.generated.ts", "reason": "the TypeScript projection of the same vault record, written by ./run.sh legal-entity sync beside the JSON and held equal to it by legal-entity verify"}
+    ],
+    "skip_fields": [
+      {"field": "countryCode", "reason": "a two-letter ISO country code is an ordinary word in every locale and identifies no company"},
+      {"field": "postalCode", "reason": "five digits alone are not evidence of the entity; registeredAddress catches the postal code where it sits in the address"},
+      {"field": "sourceSha256", "reason": "a hash of the vault record, metadata about the projection rather than a fact about the company"}
+    ],
+    "extra_spellings": [
+      {"value": "Rediacc OÜ", "reason": "the bare legal-form spelling stays a finding even after a rename moves legalName on, so the old name cannot linger in copy"}
+    ],
+    "exemptions": [
+      {"glob": "packages/www/public/legal/archive/**", "reason": "immutable archives of past legal texts, rendered by scripts/gen/gen-legal.ts with the entity substituted; check:ci-terms-version holds each byte-equal to its manifest sha256"},
+      {"glob": "docs/code-signing-guide.md", "reason": "procurement notes about this specific entity's code-signing eligibility, where the legal name is the subject of the sentence"}
+    ]
+  },
   "region_mirrors": {
     "WK_ACCOUNT_DEFAULT_ORIGIN": "default.domain"
   }

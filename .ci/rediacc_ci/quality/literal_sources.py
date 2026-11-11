@@ -63,6 +63,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import unicodedata
 from typing import Any
 
 from rediacc_ci import core_lease, log, paths, well_known
@@ -600,6 +601,36 @@ class Policy:
     symbols: dict[str, str]
     mirrors: dict[str, str]
     exact_stem: dict[str, str]
+    entity: EntityPolicy
+
+
+@dataclasses.dataclass
+class EntityPolicy:
+    """R6's slice of the policy: where the projection is, which of its fields are not identifying, and the few files that may carry the values."""
+
+    source: str
+    projections: dict[str, str]
+    skip_fields: dict[str, str]
+    extra_spellings: dict[str, str]
+    exemptions: list[dict[str, Any]]
+
+
+def load_entity_policy(raw: dict[str, Any]) -> EntityPolicy:
+    ent = raw["entity"]
+    exemptions = []
+    for row in ent["exemptions"]:
+        if len(str(row.get("reason", ""))) < 20:
+            raise RefusalError(
+                "entity exemption %r needs a reason of at least 20 characters" % row.get("glob")
+            )
+        exemptions.append({**row, "_re": glob_regex(row["glob"])})
+    return EntityPolicy(
+        source=str(ent["source"]),
+        projections=_reasoned(ent["projections"], "path", "entity projection"),
+        skip_fields=_reasoned(ent["skip_fields"], "field", "entity skip_field"),
+        extra_spellings=_reasoned(ent.get("extra_spellings", []), "value", "entity spelling"),
+        exemptions=exemptions,
+    )
 
 
 def _reasoned(rows: list[dict[str, Any]], field: str, what: str) -> dict[str, str]:
@@ -661,6 +692,7 @@ def load_policy(root: pathlib.Path) -> Policy:
             symbols=dict(raw["symbols"]),
             mirrors=dict(raw.get("region_mirrors", {})),
             exact_stem=_reasoned(raw.get("exact_stem", []), "key", "exact_stem"),
+            entity=load_entity_policy(raw),
         )
     except (KeyError, TypeError, ValueError, re.error) as exc:
         raise RefusalError("%s is malformed: %r" % (POLICY_REL, exc)) from None
@@ -1172,6 +1204,194 @@ def reader_findings(reader: str, values: dict[str, str]) -> list[Finding]:
     return out
 
 
+# --------------------------------------------------------------------------- R6: the contracting entity ---------------------------------------------------------------------------
+#
+# The values are READ from the projection at run time and never written here: a gate that typed out the registry code to look for it would be one more copy of it.
+
+# Under this length a value is too short to be evidence on its own (a country code, a bare postal code); it must be listed in `entity.skip_fields` with a reason.
+ENTITY_MIN_LEN = 5
+# The fields a projection must yield, or the rule is not looking for the contracting entity at all.
+ENTITY_REQUIRED = ("legalName", "registryCode")
+# ASCII transliterations of the Estonian letters a legal name or register name carries: `OÜ` is written `OU` or `OUe` by keyboards and by German copy, and each spelling is the same copy.
+_TRANSLIT = {
+    "Ü": ("U", "Ue"),
+    "ü": ("u", "ue"),
+    "Ö": ("O", "Oe"),
+    "ö": ("o", "oe"),
+    "Ä": ("A", "Ae"),
+    "ä": ("a", "ae"),
+    "Õ": ("O",),
+    "õ": ("o",),
+}
+
+
+@dataclasses.dataclass(frozen=True)
+class EntityNeedle:
+    field: str
+    value: str
+    spellings: tuple[str, ...]
+    pattern: re.Pattern[str]
+
+
+def _transliterations(value: str) -> set[str]:
+    out = {value}
+    for ch, subs in _TRANSLIT.items():
+        out |= {v.replace(ch, sub) for v in out for sub in subs}
+    return out
+
+
+def entity_spellings(value: str) -> tuple[str, ...]:
+    """Every way the same value is written down: NFC and NFD, its ASCII transliterations, and its JSON backslash-u escape (lower and upper hex)."""
+    found: set[str] = set()
+    for form in ("NFC", "NFD"):
+        found |= _transliterations(unicodedata.normalize(form, value))
+    escaped = json.dumps(value, ensure_ascii=True)[1:-1]
+    found.add(escaped)
+    found.add(re.sub(r"\\u([0-9a-f]{4})", lambda m: "\\u" + m.group(1).upper(), escaped))
+    return tuple(sorted(found, key=lambda x: (-len(x), x)))
+
+
+def _bounded(spelling: str) -> str:
+    """A spelling as a regex that does not match inside a longer ASCII word or number (a code `90817263` is not inside `1908172634`). The bounds are ASCII on purpose: CJK prose writes a name flush against its neighbours, and those are Unicode word characters."""
+    head = r"(?<!\w)" if re.match(r"\w", spelling) else ""
+    tail = r"(?!\w)" if re.search(r"\w$", spelling) else ""
+    return head + re.escape(spelling) + tail
+
+
+def entity_needles(entity: dict[str, Any], policy: EntityPolicy) -> list[EntityNeedle]:
+    """One needle per identifying field of the projection, plus each extra spelling. Refuses a projection R6 cannot trust."""
+    missing = [f for f in ENTITY_REQUIRED if not str(entity.get(f, "")).strip()]
+    if missing:
+        raise RefusalError(
+            "%s has no %s; R6 would not be looking for the contracting entity"
+            % (policy.source, ", ".join(missing))
+        )
+    unknown = sorted(set(policy.skip_fields) - set(entity))
+    if unknown:
+        raise RefusalError(
+            "entity skip_fields names %s, which %s does not have; delete the row"
+            % (", ".join(unknown), policy.source)
+        )
+    rows: list[tuple[str, str]] = []
+    for field, value in sorted(entity.items()):
+        if field in policy.skip_fields:
+            continue
+        if not isinstance(value, str):
+            raise RefusalError("%s field %s is not a string" % (policy.source, field))
+        if len(value.strip()) < ENTITY_MIN_LEN:
+            raise RefusalError(
+                "%s field %s is under %d characters, too short to be evidence; list it in entity.skip_fields with a reason"
+                % (policy.source, field, ENTITY_MIN_LEN)
+            )
+        rows.append((field, value))
+    rows += [("spelling", v) for v in policy.extra_spellings if v not in {r[1] for r in rows}]
+    out = []
+    for field, value in rows:
+        spellings = entity_spellings(value)
+        # Case-sensitive on purpose: these are proper nouns and codes, and folding case would make an ASCII transliteration such as `Fixtureco OU` match `Fixtureco ou` in French and Portuguese prose, where `ou` is "or".
+        pattern = re.compile("|".join(_bounded(sp) for sp in spellings), re.ASCII)
+        out.append(EntityNeedle(field, value, spellings, pattern))
+    return out
+
+
+def entity_fields_in(line: str, needles: list[EntityNeedle]) -> list[str]:
+    """The fields whose value appears in one line, in projection order."""
+    return [n.field for n in needles if n.pattern.search(line)]
+
+
+def load_entity(root: pathlib.Path, policy: EntityPolicy) -> dict[str, Any]:
+    try:
+        data = json.loads((root / policy.source).read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        raise RefusalError(
+            "%s is missing; R6 has no contracting entity to look for (./run.sh legal-entity sync writes it)"
+            % policy.source
+        ) from None
+    except json.JSONDecodeError as exc:
+        raise RefusalError("%s is not JSON: %s" % (policy.source, exc)) from None
+    if not isinstance(data, dict):
+        raise RefusalError("%s is not a JSON object" % policy.source)
+    return data
+
+
+def entity_findings(
+    root: pathlib.Path,
+    policy: Policy,
+    tracked_set: set[str],
+    skipped: set[str],
+    excludes: list[str],
+) -> tuple[list[Finding], dict[str, int]]:
+    """R6: an identifying value of the contracting entity, in CODE or PROSE, in any tracked file outside its projection.
+
+    `skipped` are the files no rule reads (the registry sources and the history exemptions); the `prose_checked` exemptions (docs, translations) are read, because a legal name in a translation is exactly the copy that drifts.
+    """
+    ep = policy.entity
+    needles = entity_needles(load_entity(root, ep), ep)
+    own = {ep.source, *ep.projections}
+    findings = [
+        Finding("R3", POLICY_REL, 0, "entity file %s is not tracked" % rel)
+        for rel in sorted(own)
+        if rel not in tracked_set
+    ]
+    args = ["grep", "-z", "-n", "-I", "-F"]
+    for n in needles:
+        for sp in n.spellings:
+            args += ["-e", sp]
+    raw = GitCall(root, *args, "--", ".", *excludes).result()
+    used: collections.Counter[str] = collections.Counter()
+    lines = exempted = 0
+    files: set[str] = set()
+    for record in raw.split(b"\n"):
+        parts = record.split(b"\0", 2)
+        if len(parts) != 3:
+            continue
+        path = parts[0].decode("utf-8", "replace")
+        if path in own or path in skipped:
+            continue
+        lines += 1
+        fields = entity_fields_in(parts[2].decode("utf-8", "replace")[:20000], needles)
+        if not fields:
+            continue
+        row = next((r for r in ep.exemptions if r["_re"].match(path)), None)
+        if row is not None:
+            used[row["glob"]] += 1
+            exempted += 1
+            continue
+        files.add(path)
+        findings.append(
+            Finding(
+                "R6",
+                path,
+                int(parts[1]),
+                "carries the contracting entity's %s; read LEGAL_ENTITY from '@rediacc/shared/legal' in code, write a {{%s}} token in a translation or page, or link to the legal-information page in prose. Do not exempt the file to get past this."
+                % (", ".join(fields), "legalName" if fields[0] == "spelling" else fields[0]),
+                fields[0],
+            )
+        )
+    if lines == 0:
+        raise RefusalError(
+            "the entity prefilter matched no line, not even in its exempt files; R6 is not seeing the tree"
+        )
+    findings.extend(
+        Finding(
+            "R3",
+            POLICY_REL,
+            0,
+            "entity exemption %s suppresses no R6 finding (dead, or shadowed by an earlier row); delete it"
+            % row["glob"],
+        )
+        for row in ep.exemptions
+        if not used[row["glob"]]
+    )
+    stats = {
+        "entity_needles": len(needles),
+        "entity_lines": lines,
+        "entity_exempted": exempted,
+        "entity_files": len(files),
+    }
+    return findings, stats
+
+
 def run(root: pathlib.Path) -> Result:
     started = time.monotonic()
     policy = load_policy(root)
@@ -1501,7 +1721,17 @@ def run(root: pathlib.Path) -> Result:
                 )
             )
 
+    # R6: the contracting entity, in code and prose alike.
+    unread: set[str] = set()
+    for p in tracked:
+        row = exempt_of[p]
+        if p in source_keys or (row is not None and not row.get("prose_checked")):
+            unread.add(p)
+    r6, entity_stats = entity_findings(root, policy, tracked_set, unread, excludes)
+    findings.extend(r6)
+
     stats = {
+        **entity_stats,
         "tracked": len(tracked),
         "scope": len(scope),
         "candidate_lines": candidate_lines,
@@ -1526,7 +1756,8 @@ def shape(stats: dict[str, int]) -> str:
     return (
         "%(scope)d in-scope files of %(tracked)d tracked, %(candidate_lines)d candidate lines in %(files_with_hits)d files, "
         "%(lexed)d lexed, %(code_hits)d CODE / %(prose_hits)d PROSE hits, %(entries)d registry + %(region_entries)d region entries, "
-        "%(consumers)d consumer files, %(carriers)d carriers, %(exemptions)d exemptions, %(ms)d ms"
+        "%(consumers)d consumer files, %(carriers)d carriers, %(exemptions)d exemptions, "
+        "R6: %(entity_needles)d entity values in %(entity_lines)d lines (%(entity_exempted)d exempt), %(ms)d ms"
         % stats
     )
 
@@ -1671,10 +1902,29 @@ _FX_REGIONS = json.dumps(
 )
 
 
+# A fictional contracting entity: the controls never carry the real one's values, which R6 reads from the projection.
+_FX_ENTITY_REL = "shared/legal/entity.generated.json"
+_FX_ENTITY_TS_REL = "shared/legal/entity.generated.ts"
+_FX_ENTITY = {
+    "addressLine1": "Fixture mnt 1/2-3b",
+    "addressLine2": "Fixturena linnaosa",
+    "city": "Fixture maakond, Fixtown",
+    "countryCode": "EE",
+    "legalName": "Fixtureco OÜ",
+    "postalCode": "10999",
+    "registerName": "Fixture Commercial Register (Ärifix)",
+    "registeredAddress": "Fixture maakond, Fixtown, Fixturena linnaosa, Fixture mnt 1/2-3b, 10999",
+    "registryCode": "90817263",
+    "sourceSha256": "0" * 64,
+    "vatNumber": "EE900817263",
+}
+
+
 def _fx_policy(
     extra_exemptions: list[dict[str, Any]] | None = None,
     extra_carriers: list[dict[str, Any]] | None = None,
     floor: int = 10,
+    extra_entity_exemptions: list[dict[str, Any]] | None = None,
 ) -> str:
     return json.dumps(
         {
@@ -1710,8 +1960,36 @@ def _fx_policy(
                     "reason": "vendored tree whose one edit point stays in scope",
                     "prose_checked": False,
                 },
+                {
+                    "glob": "docs/**",
+                    "reason": "documentation is prose; R5 and R6 still read it",
+                    "prose_checked": True,
+                },
+                {
+                    "glob": "**/i18n/**",
+                    "reason": "translations are prose; R5 and R6 still read them",
+                    "prose_checked": True,
+                },
             ]
             + (extra_exemptions or []),
+            "entity": {
+                "source": _FX_ENTITY_REL,
+                "projections": [
+                    {"path": _FX_ENTITY_TS_REL, "reason": "the TypeScript projection of the record"}
+                ],
+                "skip_fields": [
+                    {"field": "countryCode", "reason": "two letters identify no company"},
+                    {"field": "postalCode", "reason": "five digits alone are no evidence"},
+                    {"field": "sourceSha256", "reason": "metadata about the projection itself"},
+                ],
+                "extra_spellings": [
+                    {"value": "Fixtureco OÜ", "reason": "the legal-form spelling outlives a rename"}
+                ],
+                "exemptions": [
+                    {"glob": "legal/archive/**", "reason": "immutable archives of past legal text"}
+                ]
+                + (extra_entity_exemptions or []),
+            },
             "carriers": [
                 {
                     "path": "public/install.sh",
@@ -1803,6 +2081,15 @@ def _fx_clean() -> dict[str, str]:
         "agent/history.py": "X = 'https://releases.fixtureco.com'\n",
         "vendored/lib.sh": "U=https://releases.fixtureco.com\n",
         "vendored/edit.sh": "# the edit point\n",
+        # R6: the projection and its TS twin are the source; an archive is exempt by name
+        _FX_ENTITY_REL: json.dumps(_FX_ENTITY, indent=2, ensure_ascii=False) + "\n",
+        _FX_ENTITY_TS_REL: "export const LEGAL_ENTITY = %s as const;\n"
+        % json.dumps(_FX_ENTITY, ensure_ascii=False),
+        "legal/archive/tos-2026-01-01.txt": "An agreement with Fixtureco OÜ (registry code 90817263).\n",
+        # R6 negatives: tokens, the code inside a longer number, a word that only starts like the name, a skipped field, and French `ou` ("or")
+        "docs/readme.md": "Operated by {{legalName}} ({{registryCode}}); postcode 10999, country EE.\n",
+        "web/i18n/translations/en.json": '{"legal": {"party": "{{legalName}}, registry code {{registryCode}}"}}\n',
+        "neg/entity_near.ts": "export const n = '1908172634';\nexport const o = 'Fixtureco OUTPUT';\nexport const p = 'Fixtureco ou Hetzner';\n",
     }
     # (6) a reserved name in ten files is silent
     for i in range(10):
@@ -1833,9 +2120,22 @@ def _fx_plants(clean: dict[str, str]) -> dict[str, str]:
                 "reason": "a planted carrier that has drifted",
             }
         ],
+        extra_entity_exemptions=[
+            {"glob": "nothing-entity/**", "reason": "a planted dead entity exemption"}
+        ],
     )
     files.update(
         {
+            # R6: the registry code in a translation, a markdown post and a .ts string; then each other spelling and field
+            "web/i18n/translations/fr.json": '{"legal": {"party": "code registre 90817263"}}\n',
+            "web/content/blog/en/post.md": "| Vendors | (1) registry 90817263, software licence |\n",
+            "pos/entity.ts": "export const code = '90817263';\n",
+            "web/i18n/translations/de.json": '{"legal": {"party": "der Fixtureco OUe"}}\n',
+            "pos/entity_nfd.md": "Sold by %s.\n" % unicodedata.normalize("NFD", "Fixtureco OÜ"),
+            "pos/entity_escaped.json": '{"seller": "Fixtureco O\\u00dc"}\n',
+            "pos/entity_address.astro": "<p>Fixture maakond, Fixtown, Fixturena linnaosa, Fixture mnt 1/2-3b, 10999</p>\n",
+            "pos/entity_comment.py": "# invoices name Fixtureco OÜ, VAT EE900817263\nX = 1\n",
+            "pos/entity_register.ts": "export const r = 'Fixture Commercial Register (Ärifix)';\n",
             # (1)
             "pos/py_code.py": "URL = 'https://releases.fixtureco.com/cli'\n",
             # (2) a string and a template with a marker
@@ -1992,6 +2292,27 @@ def selftest() -> bool:
             for f in r1.findings:
                 print("      unexpected: %s" % f.render(), file=sys.stderr)
         check("clean tree: the scan saw candidate lines", r1.stats["candidate_lines"] > 0)
+        sp = entity_spellings(_FX_ENTITY["legalName"])
+        check(
+            "R6 spellings: the value itself, NFD, OU and OUe are all kept",
+            {
+                _FX_ENTITY["legalName"],
+                unicodedata.normalize("NFD", _FX_ENTITY["legalName"]),
+                "Fixtureco OU",
+                "Fixtureco OUe",
+            }
+            <= set(sp),
+        )
+        fx_needles = entity_needles(_FX_ENTITY, load_policy(clean).entity)
+        check(
+            "R6 bounds: the code inside a longer number is silent, beside punctuation it fires",
+            entity_fields_in("id 1908172634", fx_needles) == []
+            and entity_fields_in("(90817263)", fx_needles) == ["registryCode"],
+        )
+        check(
+            "R6 bounds: a name flush against CJK text fires",
+            entity_fields_in("とFixtureco OÜ（", fx_needles) == ["legalName"],
+        )
 
         planted = _fx_tree(_fx_plants(clean_files))
         roots.append(planted)
@@ -2087,6 +2408,64 @@ def selftest() -> bool:
             "the rest of that exempt tree is not", not any(f.path == "vendored/lib.sh" for f in f2)
         )
         check("(9) a dead exemption fires", _has(f2, "R3", POLICY_REL, 0, "nothing-here/**"))
+        check(
+            "R6: a registry code in a translation fires",
+            _has(f2, "R6", "web/i18n/translations/fr.json", 1, "registryCode"),
+        )
+        check(
+            "R6: a registry code in a markdown post fires",
+            _has(f2, "R6", "web/content/blog/en/post.md", 1, "registryCode"),
+        )
+        check(
+            "R6: a registry code in a .ts string fires",
+            _has(f2, "R6", "pos/entity.ts", 1, "registryCode"),
+        )
+        check(
+            "R6: the ASCII spelling OUe of the legal name fires",
+            _has(f2, "R6", "web/i18n/translations/de.json", 1, "legalName"),
+        )
+        check(
+            "R6: the NFD spelling of the legal name fires",
+            _has(f2, "R6", "pos/entity_nfd.md", 1, "legalName"),
+        )
+        check(
+            "R6: the JSON-escaped spelling of the legal name fires",
+            _has(f2, "R6", "pos/entity_escaped.json", 1, "legalName"),
+        )
+        check(
+            "R6: the registered address fires, naming each line of it",
+            _has(f2, "R6", "pos/entity_address.astro", 1, "addressLine1")
+            and _has(f2, "R6", "pos/entity_address.astro", 1, "registeredAddress"),
+        )
+        check(
+            "R6: a comment is prose, and prose counts (legal name and VAT number)",
+            _has(f2, "R6", "pos/entity_comment.py", 1, "legalName")
+            and _has(f2, "R6", "pos/entity_comment.py", 1, "vatNumber"),
+        )
+        check(
+            "R6: the register name fires",
+            _has(f2, "R6", "pos/entity_register.ts", 1, "registerName"),
+        )
+        check(
+            "R6: a dead entity exemption fires",
+            _has(f2, "R3", POLICY_REL, 0, "nothing-entity/**"),
+        )
+        r6_silent = (
+            "neg/entity_near.ts",
+            "docs/readme.md",
+            "web/i18n/translations/en.json",
+            "legal/archive/tos-2026-01-01.txt",
+            _FX_ENTITY_REL,
+            _FX_ENTITY_TS_REL,
+            POLICY_REL,
+        )
+        stray6 = [f for f in f2 if f.rule == "R6" and f.path in r6_silent]
+        check(
+            "R6: tokens, longer numbers, OUTPUT, French `ou`, skipped fields, the exempt archive and the projection are silent",
+            not stray6,
+        )
+        for f in stray6:
+            print("      unexpected: %s" % f.render(), file=sys.stderr)
         check("(9) a dead registry entry fires", _has(f2, "R3", REGISTRY_REL, 0, "WK_DEAD_ORIGIN"))
         check("(9) a reader missing a name fires", _has(f2, "R4", READER_REL, 0, "WK_DEAD_ORIGIN"))
         negatives = [
@@ -2121,6 +2500,38 @@ def selftest() -> bool:
         except RefusalError as exc:
             refused = REGISTRY_REL in str(exc)
         check("a missing registry: a refusal naming the file", refused)
+
+        # R6 refusals: no projection, a value too short to be evidence, and a prefilter that sees nothing.
+        short = dict(_FX_ENTITY, vatNumber="EE1")
+        for label, files, needle in (
+            (
+                "R6: a missing entity projection: a refusal naming the file",
+                {k: v for k, v in clean_files.items() if k != _FX_ENTITY_REL},
+                _FX_ENTITY_REL,
+            ),
+            (
+                "R6: an unskipped value under the minimum length: a refusal naming the field",
+                {**clean_files, _FX_ENTITY_REL: json.dumps(short, ensure_ascii=False)},
+                "vatNumber",
+            ),
+            (
+                "R6: no line in the tree carries a value (not even the exempt archive): a refusal",
+                {
+                    k: v
+                    for k, v in clean_files.items()
+                    if not k.startswith("legal/archive/") and k != "neg/entity_near.ts"
+                },
+                "not seeing the tree",
+            ),
+        ):
+            r6_root = _fx_tree(files)
+            roots.append(r6_root)
+            try:
+                run(r6_root)
+                refused = False
+            except RefusalError as exc:
+                refused = needle in str(exc)
+            check(label, refused)
     except (
         RefusalError,
         OSError,
