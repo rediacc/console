@@ -781,7 +781,9 @@
       "SELLER_POSTAL_CODE",
       "SELLER_REGISTER_NAME",
       "SELLER_REGISTRATION_NUMBER",
-      "SELLER_VAT_NUMBER"
+      "SELLER_VAT_NUMBER",
+      "STRIPE_SANDBOX_SECRET_KEY",
+      "STRIPE_SANDBOX_WEBHOOK_SECRET"
     ],
     ".ci/rediacc_ci/ops/derive_shadow_pass_list.py": [
       "BRANCH"
@@ -2481,6 +2483,9 @@
       "PYTHONPYCACHEPREFIX",
       "PYTHONSAFEPATH"
     ],
+    ".claude/rediacc_hooks/guards/_repo_scope.py": [
+      "*name"
+    ],
     ".claude/rediacc_hooks/guards/block_host_toolchain_run.py": [
       "AWS_BIN"
     ],
@@ -2497,7 +2502,6 @@
       "REDIACC_PID_WAIT_PROCFS"
     ],
     ".claude/rediacc_hooks/guards/block_worktree_add.py": [
-      "*name",
       "CLAUDE_PROJECT_DIR",
       "REDIACC_WORKTREE_STDIN_PROCFS"
     ],
