@@ -522,6 +522,7 @@ class EliteCompose:
         creds = {"email": email, "password": LOGIN_PHRASE}
         api.call("POST", "/auth/register", creds)
         api.call("POST", "/auth/login", creds)
+        api.accept_terms()
         sub = str(api.call("GET", "/portal/subscription").get("id", ""))
         d.last_cmd = "GET /portal/subscription on the box"
         d.assert_equal(

@@ -152,6 +152,28 @@ class Api:
         except ValueError as exc:
             raise StepError("%s %s -> not JSON: %s" % (method, path, raw[:80])) from exc
 
+    def accept_terms(self) -> bool:
+        """Accept the current Terms for the logged-in throwaway account, as the portal checkbox does; every `/portal` route answers 403 TERMS_ACCEPTANCE_REQUIRED until then. True when it accepted, False when already satisfied. Any other answer raises StepError."""
+        status = self.call("GET", "/portal/terms")
+        if status.get("satisfied") is True:
+            return False
+        current = status.get("current") or {}
+        if not current.get("version") or not current.get("sha256"):
+            raise StepError("the Terms status names no current version: %r" % (status,))
+        answer = self.call(
+            "POST",
+            "/portal/terms/accept",
+            {
+                "version": current["version"],
+                "sha256": current["sha256"],
+                "locale": "en",
+                "method": "web-checkbox",
+            },
+        )
+        if answer.get("accepted") is not True:
+            raise StepError("the Terms acceptance was refused: %r" % (answer,))
+        return True
+
     def healthy(self) -> bool:
         try:
             status, _ = self._request("GET", "/health", None, 5)
@@ -222,6 +244,7 @@ class Roundtrip:
             "POST", "/test/ensure-subscription", {"email": email, "planCode": "PROFESSIONAL"}
         )["subscriptionId"]
         self.api.call("POST", "/auth/login", creds)
+        self.api.accept_terms()
         token = self.api.call(
             "POST",
             "/api-tokens",

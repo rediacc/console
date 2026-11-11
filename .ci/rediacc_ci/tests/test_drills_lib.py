@@ -650,6 +650,12 @@ class _Account(http.server.BaseHTTPRequestHandler):
                 self._reply({"user": {"id": "u1"}}, "session=abc; Path=/")
         elif self.path.endswith("/auth/2fa/verify"):
             self._reply({"user": {"id": "u1"}}, "session=abc; Path=/")
+        elif self.path.endswith("/portal/terms/accept"):
+            if self.refuse_accept:
+                self._reply({"error": "TERMS_ACCEPTANCE_INVALID"})
+            else:
+                type(self).terms_accepted = True
+                self._reply({"accepted": True, "version": "2026-01-01"})
         elif self.path.endswith("/api-tokens"):
             ok = bool(self.headers.get("Cookie"))
             self._reply({"token": "rdt_xyz"} if ok else {"error": "no session"})
@@ -660,8 +666,18 @@ class _Account(http.server.BaseHTTPRequestHandler):
         self.seen.append(("GET", self.path, self.headers.get("Cookie") or ""))
         if "totp-code" in self.path:
             self._reply({"code": "123456"})
+        elif self.path.endswith("/portal/terms"):
+            if self.terms_accepted:
+                self._reply({"satisfied": True})
+            else:
+                self._reply(
+                    {"satisfied": False, "current": {"version": "2026-01-01", "sha256": "a" * 64}}
+                )
         elif self.path.endswith("/portal/subscription"):
-            self._reply({"id": "sub-1"})
+            if not self.terms_accepted:
+                self._reply({"code": "TERMS_ACCEPTANCE_REQUIRED"})
+            else:
+                self._reply({"id": "sub-1"})
         else:
             self._reply({})
 
@@ -679,6 +695,8 @@ def account(
 ) -> typing.Iterator[tuple[lib.Drill, http.cookiejar.CookieJar]]:
     _Account.seen = []
     _Account.twofa = False
+    _Account.terms_accepted = True
+    _Account.refuse_accept = False
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _Account)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     (tmp_path / ".account-state").write_text(
@@ -717,6 +735,52 @@ def test_the_headless_login_chain_completes_a_two_factor_challenge(
     assert drill.twofa_used is True
     verify = next(body for _m, path, body in _Account.seen if path.endswith("/auth/2fa/verify"))
     assert json.loads(verify) == {"challengeToken": "chal", "code": "123456"}
+
+
+def _accept_calls() -> list[str]:
+    return [body for _m, path, body in _Account.seen if path.endswith("/portal/terms/accept")]
+
+
+def test_a_session_with_unaccepted_terms_accepts_once_then_reads_the_subscription(
+    account: tuple[lib.Drill, http.cookiejar.CookieJar],
+) -> None:
+    drill, jar = account
+    _Account.terms_accepted = False
+    assert drill.account_session("a@b.c", "pw", jar)
+    assert [json.loads(b) for b in _accept_calls()] == [
+        {"version": "2026-01-01", "sha256": "a" * 64, "locale": "en", "method": "web-checkbox"}
+    ]
+    assert drill.account_subscription_id(jar) == "sub-1"
+
+
+def test_a_session_with_accepted_terms_makes_no_accept_call(
+    account: tuple[lib.Drill, http.cookiejar.CookieJar],
+) -> None:
+    drill, jar = account
+    assert drill.account_session("a@b.c", "pw", jar)
+    assert _accept_calls() == []
+
+
+def test_a_refused_terms_acceptance_fails_by_name(
+    account: tuple[lib.Drill, http.cookiejar.CookieJar],
+) -> None:
+    drill, jar = account
+    _Account.terms_accepted = False
+    _Account.refuse_accept = True
+    with pytest.raises(lib.GatewayError, match="Terms acceptance was refused"):
+        drill.account_session("a@b.c", "pw", jar)
+
+
+def test_a_terms_status_read_that_is_refused_fails_by_name(
+    account: tuple[lib.Drill, http.cookiejar.CookieJar],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    drill, jar = account
+    monkeypatch.setattr(
+        drill, "_request", lambda *_a, **_k: '{"code": "TERMS_ACCEPTANCE_REQUIRED"}'
+    )
+    with pytest.raises(lib.GatewayError, match="Terms status read was refused"):
+        drill.account_accept_terms(jar)
 
 
 def test_a_token_mint_without_a_session_raises(

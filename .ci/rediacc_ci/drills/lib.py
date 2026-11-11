@@ -784,6 +784,33 @@ class Drill:
         if not json_get(body, "user.id"):
             log.error("Headless login failed for %s: %s" % (email, body))
             return False
+        self.account_accept_terms(jar)
+        return True
+
+    def account_accept_terms(self, jar: http.cookiejar.CookieJar) -> bool:
+        """Accept the current Terms for the logged-in drill account, as the portal checkbox does. Returns True when it accepted, False when the account already satisfied them. The account gates every `/portal` route behind the Terms (403 TERMS_ACCEPTANCE_REQUIRED), and a drill account is a throwaway that has never seen them. A status or accept answer that is not the documented shape raises by name instead of being swallowed."""
+        raw = self._request("GET", self.api_base() + "/portal/terms", None, jar)
+        status = json_obj(raw)
+        if not isinstance(status.get("satisfied"), bool):
+            raise GatewayError("the Terms status read was refused: %s" % raw[:300])
+        if status["satisfied"]:
+            return False
+        current = status.get("current")
+        if not isinstance(current, dict) or not current.get("version") or not current.get("sha256"):
+            raise GatewayError("the Terms status names no current version: %s" % raw[:300])
+        answer = self.api_post(
+            "/portal/terms/accept",
+            {
+                "version": current["version"],
+                "sha256": current["sha256"],
+                "locale": "en",
+                "method": "web-checkbox",
+            },
+            jar,
+        )
+        if json_obj(answer).get("accepted") is not True:
+            raise GatewayError("the Terms acceptance was refused: %s" % answer[:300])
+        self.note("accepted Terms %s for the drill account" % current["version"])
         return True
 
     def account_subscription_id(self, jar: http.cookiejar.CookieJar) -> str:
@@ -823,6 +850,15 @@ class Drill:
             json.dumps(patch).encode(),
             jar,
         )
+
+
+def json_obj(text: str) -> dict:
+    """The body as a JSON object; anything else is an empty one."""
+    try:
+        value = json.loads(text)
+    except ValueError:
+        return {}
+    return value if isinstance(value, dict) else {}
 
 
 class GatewayError(RuntimeError):

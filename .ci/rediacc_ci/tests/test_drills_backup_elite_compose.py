@@ -160,6 +160,9 @@ class FakeApi:
         self.cookies: dict[str, str] = {"session": "x"}
         self.calls: list[tuple[str, str]] = []
 
+    def accept_terms(self) -> bool:
+        return False
+
     def call(self, method: str, path: str, body: dict | None = None, timeout: int = 30) -> dict:
         del body, timeout
         self.calls.append((method, path))

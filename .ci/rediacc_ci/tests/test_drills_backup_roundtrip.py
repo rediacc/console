@@ -102,12 +102,20 @@ class FakeApi(rt.Api):
         super().__init__("http://127.0.0.1:1")
         self.fail_path = fail_path
         self.consistency = consistency
+        self.terms_accepted = False
         self.calls: list[tuple[str, str, dict | None]] = []
 
     def call(self, method: str, path: str, body: dict | None = None, *_ignored: object) -> dict:
         self.calls.append((method, path, body))
         if self.fail_path and path == self.fail_path:
             raise rt.StepError("%s %s -> HTTP 500" % (method, path))
+        if path == "/portal/terms":
+            if self.terms_accepted:
+                return {"satisfied": True}
+            return {"satisfied": False, "current": {"version": "2026-01-01", "sha256": "a" * 64}}
+        if path == "/portal/terms/accept":
+            self.terms_accepted = True
+            return {"accepted": True}
         if path == "/test/ensure-subscription":
             return {"subscriptionId": "sub-1"}
         if path == "/api-tokens":
@@ -420,3 +428,22 @@ def test_an_ssh_failure_is_not_reported_as_renet_missing() -> None:
     missing = rt.preflight_vm(lambda _c, _s: rt.VmResult(1), "192.168.111.11", "alice", "/k")
     assert missing.startswith("renet missing on 192.168.111.11")
     assert rt.preflight_vm(lambda _c, _s: rt.VmResult(0), "h", "u", "k") == ""
+
+
+def test_accept_terms_accepts_once_when_unaccepted_and_not_when_satisfied() -> None:
+    api = FakeApi()
+    assert api.accept_terms() is True
+    assert api.calls[-1] == (
+        "POST",
+        "/portal/terms/accept",
+        {"version": "2026-01-01", "sha256": "a" * 64, "locale": "en", "method": "web-checkbox"},
+    )
+    before = len(api.calls)
+    assert api.accept_terms() is False
+    assert [c[1] for c in api.calls[before:]] == ["/portal/terms"]
+
+
+def test_accept_terms_fails_by_name_when_the_acceptance_is_refused() -> None:
+    api = FakeApi(fail_path="/portal/terms/accept")
+    with pytest.raises(rt.StepError, match="portal/terms/accept"):
+        api.accept_terms()
