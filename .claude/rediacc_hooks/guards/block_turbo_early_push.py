@@ -116,7 +116,7 @@ def world(
     (path / QUEUE_REL).write_text(queue, encoding="utf-8")
     (path / "agent/plans/PLAN-fx-a.md").write_text(FIXTURE_PLAN % box, encoding="utf-8")
     _git(path, "init", "-q", "--initial-branch=main")
-    _git(path, "remote", "add", "origin", "https://github.com/fixture/console.git")
+    _git(path, "remote", "add", "origin", _backup_push.OTHER_ORIGIN)
     _git(path, "commit", "-q", "--allow-empty", "-m", "seed", env_date=date)
     _git(path, "update-ref", "refs/remotes/origin/main", "HEAD")
     _git(path, "checkout", "-q", "-b", "1008-1")

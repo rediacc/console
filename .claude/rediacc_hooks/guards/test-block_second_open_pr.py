@@ -29,6 +29,17 @@ runtmp = importlib.util.module_from_spec(_RUNTMP)
 _RUNTMP.loader.exec_module(runtmp)
 RUN_TMP = runtmp.run_dir("guard-second-open-pr-")
 
+# The well-known repo slugs and origin, read from .ci/config/well-known.env by the CI reader, loaded by file like runtmp above (check:ci-literal-sources forbids spelling them).
+_WK = importlib.util.spec_from_file_location(
+    "well_known_for_second_open_pr", HERE.parents[2] / ".ci" / "rediacc_ci" / "well_known.py"
+)
+if _WK is None or _WK.loader is None:
+    raise SystemExit("%s: .ci/rediacc_ci/well_known.py is missing" % __file__)
+well_known = importlib.util.module_from_spec(_WK)
+_WK.loader.exec_module(well_known)
+GH_ORIGIN, GH_REPO = well_known.GH_ORIGIN, well_known.GH_REPO
+RENET_REPO, ELITE_REPO = well_known.RENET_REPO, well_known.ELITE_REPO
+
 _GIT_ENV = dict(os.environ, GIT_CONFIG_GLOBAL="/dev/null", GIT_CONFIG_SYSTEM="/dev/null")
 
 
@@ -37,17 +48,15 @@ def checkout(path, origin):
     path.mkdir(parents=True)
     for argv in (
         ["init", "-q", "--initial-branch=main"],
-        ["remote", "add", "origin", "https://github.com/%s.git" % origin],
+        ["remote", "add", "origin", "%s/%s.git" % (GH_ORIGIN, origin)],
     ):
         subprocess.run(["git", *argv], cwd=path, check=True, capture_output=True, env=_GIT_ENV)
     return path
 
 
-ROOT = checkout(
-    pathlib.Path(tempfile.mkdtemp(prefix="console-", dir=RUN_TMP)) / "console", "rediacc/console"
-)
-checkout(ROOT / "private" / "renet", "rediacc/renet")
-OTHER = checkout(ROOT / "work" / "elite-co", "rediacc/elite")
+ROOT = checkout(pathlib.Path(tempfile.mkdtemp(prefix="console-", dir=RUN_TMP)) / "console", GH_REPO)
+checkout(ROOT / "private" / "renet", RENET_REPO)
+OTHER = checkout(ROOT / "work" / "elite-co", ELITE_REPO)
 
 _OPEN = '[{"number":%d,"title":"t","headRefName":"%s","isDraft":true}]'
 _STUB = (
@@ -55,8 +64,8 @@ _STUB = (
     'repo=""\n'
     'while [ $# -gt 0 ]; do [ "$1" = --repo ] && repo="$2"; shift; done\n'
     'case "$repo" in\n'
-    "  rediacc/console) echo '%s' ;;\n"
-    "  rediacc/renet) echo '%s' ;;\n"
+    "  %s) echo '%s' ;;\n"
+    "  %s) echo '%s' ;;\n"
     "  *) echo '[]' ;;\n"
     "esac\n"
 )
@@ -69,8 +78,8 @@ def stub(body):
     return str(d)
 
 
-GH_CONSOLE_OPEN = stub(_STUB % (_OPEN % (605, "1104-1"), "[]"))
-GH_RENET_OPEN = stub(_STUB % (_OPEN % (605, "1104-1"), _OPEN % (77, "1031-2")))
+GH_CONSOLE_OPEN = stub(_STUB % (GH_REPO, _OPEN % (605, "1104-1"), RENET_REPO, "[]"))
+GH_RENET_OPEN = stub(_STUB % (GH_REPO, _OPEN % (605, "1104-1"), RENET_REPO, _OPEN % (77, "1031-2")))
 GH_DOWN = stub("#!/bin/sh\necho 'gh: could not connect'\nexit 1\n")
 
 CREATE = "gh pr create --draft --base main --head 1104-1 -t x -b y"
@@ -101,14 +110,14 @@ CASES = [
         False,
         "",
     ),
-    ("--repo names the submodule", CREATE + " --repo rediacc/renet", GH_CONSOLE_OPEN, False, ""),
-    ("-R names the submodule", CREATE + " -R rediacc/renet", GH_CONSOLE_OPEN, False, ""),
+    ("--repo names the submodule", CREATE + " --repo " + RENET_REPO, GH_CONSOLE_OPEN, False, ""),
+    ("-R names the submodule", CREATE + " -R " + RENET_REPO, GH_CONSOLE_OPEN, False, ""),
     (
         "--repo beats the cd",
-        "cd private/renet && %s --repo rediacc/console" % CREATE,
+        "cd private/renet && %s --repo %s" % (CREATE, GH_REPO),
         GH_CONSOLE_OPEN,
         True,
-        ALREADY % "rediacc/console",
+        ALREADY % GH_REPO,
     ),
     # The live 2026-11-11 shape: the directory is a loop variable, so the repo is unknown, never the console.
     (
@@ -132,21 +141,21 @@ CASES = [
         CREATE,
         GH_CONSOLE_OPEN,
         True,
-        ALREADY % "rediacc/console",
+        ALREADY % GH_REPO,
     ),
     (
         "a submodule that already has an open PR on another branch",
         "cd private/renet && " + CREATE,
         GH_RENET_OPEN,
         True,
-        ALREADY % "rediacc/renet",
+        ALREADY % RENET_REPO,
     ),
     (
         "a cd into a missing directory leaves the shell in the console",
         "cd private/missing; " + CREATE,
         GH_CONSOLE_OPEN,
         True,
-        ALREADY % "rediacc/console",
+        ALREADY % GH_REPO,
     ),
     ("gh down fails closed", "cd private/renet && " + CREATE, GH_DOWN, True, UNVERIFIED),
 ]

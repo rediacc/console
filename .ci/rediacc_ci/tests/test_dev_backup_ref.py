@@ -466,7 +466,7 @@ def test_prune_agrees_with_the_pre_push_hook_on_every_boundary(monkeypatch):
     monkey_now = DAY
     monkeypatch.setattr(gh, "_utcnow", lambda: monkey_now)
     repo = str(pathlib.Path(__file__).resolve().parents[3])
-    url = "https://gitlab.rediacc.io" + gh.BACKUP_PATHS[""]
+    url = "https://" + gh.MIRROR_HOST + gh.BACKUP_PATHS[""]
     oid = "a" * 40
     for leaf in (
         "daily-2026-08-12",

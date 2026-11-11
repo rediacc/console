@@ -18,6 +18,7 @@ import subprocess
 import sys
 
 from rediacc_hooks import commit_policy, hookio, shellscan
+from rediacc_hooks.wellknown import GH_ORIGIN, GH_REPO
 
 _GITHOOKS_NAME = "rediacc_hooks._githooks"
 _GITHOOKS_FILE = os.path.join(
@@ -152,7 +153,9 @@ def admitted(ev, cmd):
 # --------------------------------------------------------------------------- the harness fixture ---------------------------------------------------------------------------
 #
 # THE SHARED CASES (box G5). Every push guard's harness plants these remotes into one of its own worlds where an ordinary push is refused, and runs `CASES` through its own driver: the admitted case must be allowed, and every other one judged as before, which in that world is a refusal. `pinned` names the world: True is `plant(repo)`, False is `plant(repo, pinned=False)`, a `gitlab` remote whose URL is NOT the pin.
-FIXTURE_ORIGIN = "https://github.com/rediacc/console.git"
+FIXTURE_ORIGIN = "%s/%s.git" % (GH_ORIGIN, GH_REPO)
+# An origin that is not the console, shared by every fixture repository that needs a remote the pin does not match.
+OTHER_ORIGIN = "%s/fixture/console.git" % GH_ORIGIN
 NOT_PIN_PATH = "/rediacc-org/github/not-console.git"
 BACKUP_PUSH = "git push gitlab HEAD:refs/backup/1104-1/live"
 CASES = (

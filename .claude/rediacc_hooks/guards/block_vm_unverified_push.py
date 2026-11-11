@@ -184,7 +184,7 @@ def world(
         ),
     )
     _git(root, "init", "-q", "--initial-branch=main")
-    _git(root, "remote", "add", "origin", "https://github.com/fixture/console.git")
+    _git(root, "remote", "add", "origin", _backup_push.OTHER_ORIGIN)
     _put(root, ".gitignore", ".ci/cache/\nagent/ledgers/\n")
     _put(root, "docs/guide.md", "guide\n")
     _put(root, CLI_FILE, "export const sftp = 1;\n")

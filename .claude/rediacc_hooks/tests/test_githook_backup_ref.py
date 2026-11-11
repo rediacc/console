@@ -15,6 +15,8 @@ import signal
 import subprocess
 import sys
 
+from rediacc_hooks.guards import _backup_push
+
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
 HOOKS = REPO_ROOT / ".claude" / "rediacc_hooks" / "git"
 ENV = {
@@ -28,9 +30,6 @@ ENV = {
     "HOME": "/nonexistent",
 }
 ZERO = "0" * 40
-CONSOLE_URL = "https://gitlab.rediacc.io/rediacc-org/github/console.git"
-RENET_URL = "https://gitlab.rediacc.io/rediacc-org/github/renet.git"
-ORIGIN_URL = "https://github.com/fixture/console.git"
 LIVE = "refs/backup/1104-1/live"
 # Assembled, never literal: this file is itself pushed through the scans it tests.
 SECRET = "gh" + "p_" + "Q7" * 18
@@ -48,6 +47,10 @@ def _load(name: str, path: pathlib.Path):
 
 
 GH = _load("githooks_backup_ref_under_test", HOOKS / "githooks.py")
+# The mirror host is read from the hook layer, not spelled again here.
+CONSOLE_URL = "https://%s/rediacc-org/github/console.git" % GH.MIRROR_HOST
+RENET_URL = "https://%s/rediacc-org/github/renet.git" % GH.MIRROR_HOST
+ORIGIN_URL = _backup_push.OTHER_ORIGIN
 SETUP = _load(
     "setup_githooks_backup_ref", REPO_ROOT / ".ci" / "rediacc_ci" / "setup" / "githooks.py"
 )

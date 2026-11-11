@@ -17,6 +17,8 @@ import types
 
 import pytest
 
+from rediacc_hooks.guards import _backup_push
+
 REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
 HOOKS = REPO_ROOT / ".claude" / "rediacc_hooks" / "git"
 ENV = {
@@ -118,7 +120,7 @@ def _push(monkeypatch, capsys, world: World, tip: str, remote_oid: str = ZERO, r
     monkeypatch.chdir(world.root)
     monkeypatch.delenv("COMMIT_POLICY_OK", raising=False)
     line = "refs/heads/%s %s refs/heads/%s %s\n" % (ref, tip, ref, remote_oid)
-    rc = GH.pre_push(["origin", "https://github.com/fixture/console.git"], line)
+    rc = GH.pre_push(["origin", _backup_push.OTHER_ORIGIN], line)
     return rc, capsys.readouterr().err
 
 
