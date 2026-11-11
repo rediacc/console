@@ -57,7 +57,7 @@ import tempfile
 import threading
 
 from rediacc_ci import log
-from rediacc_ci.core import account, env, local_common, ports
+from rediacc_ci.core import account, env, local_common, ports, prepare_lock
 from rediacc_ci.well_known import DEV_USER_EMAIL as WK_DEV_USER_EMAIL
 
 # `ACCOUNT_PIDS`, `.ci/lib/account.sh:39`: every background process `account_dev` starts, killed by `account_cleanup`.
@@ -1007,7 +1007,9 @@ def test(args: list[str]) -> int:
     log.step("Running account tests")
     directory = account.account_dir()
     _cd_or_die(directory)
-    status = _run(["npx", "--no-install", "vitest", "run", *args], cwd=directory)
+    # Shared for the whole run: the suites import `@rediacc/shared` from `packages/shared/dist`, which a concurrent `ensure_packages_built` would otherwise delete under them (worklist #6fbf7fa3).
+    with prepare_lock.held(local_common.local_root_dir(), shared=True):
+        status = _run(["npx", "--no-install", "vitest", "run", *args], cwd=directory)
     if status != 0:
         raise ErrexitError(status, "vitest exited %d" % status)
     return 0

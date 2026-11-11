@@ -63,7 +63,7 @@ import sys
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths, proc
-from rediacc_ci.core import bws_env, devbox, toolchain
+from rediacc_ci.core import bws_env, devbox, prepare_lock, toolchain
 from rediacc_ci.release import renet_key_gate
 from rediacc_ci.well_known import GO_DL_BASE
 
@@ -763,14 +763,19 @@ def ensure_deps(env: dict[str, str] | None = None) -> bool:
     if deps_are_current(env):
         log.debug("Dependencies are up-to-date (stamp matched)")
         return True
-    log.step("Installing dependencies...")
-    _must(["npm", "install"], cwd=root)
-    if not ensure_cpu_features_gypi(node_modules):
-        return False
-    log.step("Compiling native modules (blocked at install by ignore-scripts)...")
-    _must(["npm", "run", "install:natives"], cwd=root)
-    # Hashed AFTER the install, as the twin's `$(_deps_hash)` is: `npm install` may rewrite the lockfile.
-    write_stamp_hash(stamp, deps_hash(env))
+    # Exclusive, and the stamp read again under it: a second preparer that waited here finds the install done, and a reader holding the lock shared (`prepare_lock`) never has `node_modules` rewritten under it.
+    with prepare_lock.held(root, shared=False):
+        if deps_are_current(env):
+            log.debug("Dependencies are up-to-date (stamp matched)")
+            return True
+        log.step("Installing dependencies...")
+        _must(["npm", "install"], cwd=root)
+        if not ensure_cpu_features_gypi(node_modules):
+            return False
+        log.step("Compiling native modules (blocked at install by ignore-scripts)...")
+        _must(["npm", "run", "install:natives"], cwd=root)
+        # Hashed AFTER the install, as the twin's `$(_deps_hash)` is: `npm install` may rewrite the lockfile.
+        write_stamp_hash(stamp, deps_hash(env))
     return True
 
 
@@ -786,20 +791,32 @@ def ensure_packages_built(env: dict[str, str] | None = None) -> bool:
     """`ensure_packages_built`, `.ci/lib/local-common.sh:278`."""
     root = local_root_dir(env)
     stamp = os.path.join(root, ".ci", "cache", "build-packages.stamp")
+    if _packages_state(root, stamp)[1]:
+        log.debug("Shared packages are up-to-date (stamp matched)")
+        return True
+    # The build deletes `packages/shared/dist` before `tsc` writes it again, so it runs exclusive, after any reader holding the lock shared has finished, and the stamp is read again under the lock: a second builder that waited here finds the build done and deletes nothing (worklist #6fbf7fa3, `prepare_lock`).
+    with prepare_lock.held(root, shared=False):
+        current, built = _packages_state(root, stamp)
+        if built:
+            log.debug("Shared packages are up-to-date (stamp matched)")
+            return True
+        log.step("Building shared packages...")
+        child_env = dict(os.environ if env is None else env, PYTHONPATH=local_ci_dir(env))
+        _must(["python3", "-m", "rediacc_ci.setup.build_packages"], env=child_env)
+        write_stamp_hash(stamp, current)
+    return True
+
+
+def _packages_state(root: str, stamp: str) -> tuple[str, bool]:
+    """The tree hash of `packages/shared` and `packages/provisioning`, and whether both outputs exist with the stamp holding that hash."""
     current = _subst(_tree_hash_or_die(root, ["packages/shared", "packages/provisioning"]))
     saved = _subst(read_stamp_hash(stamp))
-    if (
+    built = (
         os.path.isdir(os.path.join(root, "packages", "shared", "dist"))
         and os.path.isdir(os.path.join(root, "packages", "provisioning", "dist"))
         and saved == current
-    ):
-        log.debug("Shared packages are up-to-date (stamp matched)")
-        return True
-    log.step("Building shared packages...")
-    child_env = dict(os.environ if env is None else env, PYTHONPATH=local_ci_dir(env))
-    _must(["python3", "-m", "rediacc_ci.setup.build_packages"], env=child_env)
-    write_stamp_hash(stamp, current)
-    return True
+    )
+    return current, built
 
 
 def ensure_cli_built(env: dict[str, str] | None = None) -> bool:

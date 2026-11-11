@@ -63,6 +63,7 @@ import traceback
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol
 
 from rediacc_ci import log, paths
+from rediacc_ci.core import prepare_lock
 from rediacc_ci.drills import (
     backup_check_trigger,
     converge_preflight,
@@ -3140,6 +3141,15 @@ class VmCheck:
             self.say("        an account suite is red")
         return green
 
+    def _prepare_argv(self) -> list[str]:
+        """The A1 thread's first call: the node floor, `ensure_deps` and `ensure_packages_built` of this checkout, each a no-op when its stamp holds."""
+        return [
+            sys.executable or "python3",
+            "-m",
+            "rediacc_ci.core.local_common",
+            "prepare-node-deps-packages",
+        ]
+
     def _suite_argv(self, script: str, package: str | None) -> list[str]:
         prefix = self.root / package if package else self.root
         return ["npm", "--prefix", str(prefix), "run", script]
@@ -3163,11 +3173,19 @@ class VmCheck:
 
         def collect() -> None:
             try:
-                for step_id, script, package in ACCOUNT_SUITES:
-                    res = self.host.run_suite(
-                        self._suite_argv(script, package), env=env, timeout=SUITE_TIMEOUT_S
+                # The dependencies and the shared packages are prepared FIRST, and the suites then run holding the checkout's preparation lock shared: A0's `./run.sh account dev`, running beside them, finds the stamps current, and a rebuild it still needs waits until the suites are done instead of deleting `packages/shared/dist` under a running vitest (worklist #6fbf7fa3, `core.prepare_lock`).
+                prep = self.host.run_suite(self._prepare_argv(), env=env, timeout=SUITE_TIMEOUT_S)
+                if prep.rc != 0:
+                    raise RuntimeError(
+                        "preparing the dependencies and shared packages exited %d: %s"
+                        % (prep.rc, last_lines(prep.text()))
                     )
-                    self.a1_results.append((step_id, script, package, res))
+                with prepare_lock.held(str(self.root), shared=True):
+                    for step_id, script, package in ACCOUNT_SUITES:
+                        res = self.host.run_suite(
+                            self._suite_argv(script, package), env=env, timeout=SUITE_TIMEOUT_S
+                        )
+                        self.a1_results.append((step_id, script, package, res))
             except CRASHES as exc:  # reported at the join, never lost in the thread
                 self.a1_error = exc
 

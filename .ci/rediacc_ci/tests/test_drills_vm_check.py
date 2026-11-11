@@ -27,7 +27,7 @@ from typing import TYPE_CHECKING, Any, cast
 import pytest
 
 from rediacc_ci import paths, well_known
-from rediacc_ci.core import run_verbs
+from rediacc_ci.core import prepare_lock, run_verbs
 from rediacc_ci.drills import vm_check
 from rediacc_ci.proof import vm_tier as receipt_mod
 from rediacc_ci.well_known import DATASTORE_PATH
@@ -252,6 +252,8 @@ class World(vm_check.Host):
         self.suite_started = threading.Event()
         self.suite_held_done = threading.Event()
         self.killed_suites = 0
+        # The exit of the A1 thread's preparation call (`_prepare_argv`).
+        self.prepare_rc = over.pop("prepare_rc", 0)
         # None: sftp-server's real answer to a refused leg, the bare `Failure` status line naming the path (2026-10-15 live run); a string replaces it.
         self.sftp_refusal = over.pop("sftp_refusal", None)
         # The live ops VM image: the CLI's file-write guard refuses `echo x > f` through `term connect` unless REDIACC_SKIP_FILE_WRITE_GUARD=1 (False: a CLI that no longer honours the variable), vi is absent, and the grand holds no compose file.
@@ -362,7 +364,8 @@ class World(vm_check.Host):
 
     def run_suite(self, argv, env=None, timeout=None) -> vm_check.Result:
         """The A1 worker thread's entry: the same answers as `run`, with `suite_gate` (when set) held until it opens or 3 s pass."""
-        step = next((s for s, script, _p in vm_check.ACCOUNT_SUITES if script == list(argv)[4]), "")
+        argv = list(argv)
+        step = next((s for s, script, _p in vm_check.ACCOUNT_SUITES if argv[4:5] == [script]), "")
         if self.suite_gate is not None and step == self.suite_gate_step:
             self.suite_started.set()
             self.suite_gate.wait(3)
@@ -389,6 +392,11 @@ class World(vm_check.Host):
             step = next(s for s, script, _p in vm_check.ACCOUNT_SUITES if script == argv[4])
             rc, out = self.suites.get(step, (0, "suite %s green\n" % argv[4]))
             return vm_check.Result(rc, out, "", 61000)
+        if argv[1:3] == ["-m", "rediacc_ci.core.local_common"]:
+            # The A1 thread's preparation (`_prepare_argv`).
+            return vm_check.Result(
+                self.prepare_rc, "", "prepare failed\n" if self.prepare_rc else ""
+            )
         if argv[1:2] == ["-m"] and argv[2].startswith("rediacc_ci.drills."):
             name = argv[2].rsplit(".", 1)[1]
             rc, out = self.drills.get(name, drill_passed(name))
@@ -2463,6 +2471,63 @@ def test_a1_starts_before_p0_returns_and_is_still_running_when_it_does(
     )
     assert rc == vm_check.EXIT_VERIFIED, out.getvalue()
     assert seen == {"started": True, "in_flight": True}
+
+
+class PrepareLockProbeWorld(World):
+    """A world whose A1.1 call tries the checkout's preparation lock exclusive without waiting, the way a builder beside A1 would, and records whether it got in."""
+
+    def __init__(self, root: pathlib.Path, **over: Any) -> None:
+        super().__init__(root, **over)
+        self.builder_got_in: list[bool] = []
+
+    def run_suite(self, argv, env=None, timeout=None) -> vm_check.Result:
+        if list(argv)[4:5] == ["check:ci-account-server"]:
+            fd = os.open(prepare_lock.lock_path(str(self.root)), os.O_RDWR | os.O_CREAT, 0o600)
+            try:
+                fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                self.builder_got_in.append(True)
+            except BlockingIOError:
+                self.builder_got_in.append(False)
+            finally:
+                os.close(fd)
+        return super().run_suite(argv, env, timeout)
+
+
+def test_a1_prepares_the_checkout_first_and_runs_the_suites_holding_the_prepare_lock_shared(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Worklist #6fbf7fa3: A0's `./run.sh account dev` rebuilt `packages/shared/dist` while A1.1's vitest imported it. The thread now prepares first, then holds `core.prepare_lock` shared across the suites, so an exclusive builder cannot get in while a suite runs. CONTROL: once A1 is done, the same lock is free."""
+    root = tmp_path / "repo"
+    root.mkdir()
+    world = PrepareLockProbeWorld(root)
+    rc, out, _receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    a1_calls = [
+        c
+        for c in world.calls
+        if c[1:3] == ["-m", "rediacc_ci.core.local_common"] or c[:1] == ["npm"]
+    ]
+    assert a1_calls[0][1:] == [
+        "-m",
+        "rediacc_ci.core.local_common",
+        "prepare-node-deps-packages",
+    ], a1_calls
+    assert [c[4] for c in a1_calls[1:]] == [script for _s, script, _p in vm_check.ACCOUNT_SUITES]
+    assert world.builder_got_in == [False], "an exclusive builder got the lock while A1.1 ran"
+    with prepare_lock.held(str(world.root), shared=False, wait_s=1):
+        pass
+
+
+def test_a1_preparation_that_fails_runs_no_suite_and_ends_the_run_crashed(
+    tmp_path: pathlib.Path,
+) -> None:
+    world = make_world(tmp_path, prepare_rc=1)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_NOT_VERIFIED, out
+    assert receipt["reason"]["class"] == "crashed", receipt["reason"]
+    assert "preparing the dependencies and shared packages exited 1" in out + json.dumps(receipt)
+    assert not [c for c in world.calls if c[:1] == ["npm"]], "a suite ran on an unprepared checkout"
+    assert lock_is_free(tmp_path)
 
 
 def test_a_signal_during_the_run_kills_the_suites_and_still_tears_down(
