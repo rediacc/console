@@ -628,6 +628,8 @@ class _Account(http.server.BaseHTTPRequestHandler):
     twofa: typing.ClassVar[bool] = False
     terms_accepted: typing.ClassVar[bool] = True
     refuse_accept: typing.ClassVar[bool] = False
+    enrolled: typing.ClassVar[bool] = False
+    refuse_enable: typing.ClassVar[bool] = False
 
     def _body(self) -> str:
         length = int(self.headers.get("Content-Length") or 0)
@@ -658,9 +660,21 @@ class _Account(http.server.BaseHTTPRequestHandler):
             else:
                 type(self).terms_accepted = True
                 self._reply({"accepted": True, "version": "2026-01-01"})
+        elif self.path.endswith("/auth/2fa/setup"):
+            self._reply({"secret": "JBSWY3DPEHPK3PXP", "uri": "otpauth://x"})
+        elif self.path.endswith("/auth/2fa/enable"):
+            if self.refuse_enable:
+                self._reply({"error": "Invalid code"})
+            else:
+                type(self).enrolled = True
+                self._reply({"enabled": True, "backupCodes": []})
         elif self.path.endswith("/api-tokens"):
             ok = bool(self.headers.get("Cookie"))
-            self._reply({"token": "rdt_xyz"} if ok else {"error": "no session"})
+            wants_2fa = any(s in body for s in ("backup:manage", "backup:restore"))
+            if wants_2fa and not (self.enrolled or self.twofa):
+                self._reply({"code": "TWO_FACTOR_REQUIRED"})
+            else:
+                self._reply({"token": "rdt_xyz"} if ok else {"error": "no session"})
         else:
             self._reply({"ok": True})
 
@@ -668,6 +682,8 @@ class _Account(http.server.BaseHTTPRequestHandler):
         self.seen.append(("GET", self.path, self.headers.get("Cookie") or ""))
         if "totp-code" in self.path:
             self._reply({"code": "123456"})
+        elif self.path.endswith("/auth/2fa/status"):
+            self._reply({"enabled": self.enrolled or self.twofa})
         elif self.path.endswith("/portal/terms"):
             if self.terms_accepted:
                 self._reply({"satisfied": True})
@@ -697,6 +713,8 @@ def account(
 ) -> typing.Iterator[tuple[lib.Drill, http.cookiejar.CookieJar]]:
     _Account.seen = []
     _Account.twofa = False
+    _Account.enrolled = False
+    _Account.refuse_enable = False
     _Account.terms_accepted = True
     _Account.refuse_accept = False
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _Account)
@@ -783,6 +801,52 @@ def test_a_terms_status_read_that_is_refused_fails_by_name(
     )
     with pytest.raises(lib.GatewayError, match="Terms status read was refused"):
         drill.account_accept_terms(jar)
+
+
+def _enable_calls() -> list[str]:
+    return [body for _m, path, body in _Account.seen if path.endswith("/auth/2fa/enable")]
+
+
+def test_a_backup_scope_mint_enrols_two_factor_once_then_succeeds(
+    account: tuple[lib.Drill, http.cookiejar.CookieJar],
+) -> None:
+    drill, jar = account
+    assert drill.account_session("a@b.c", "pw", jar)
+    scopes = ["backup:read", "backup:manage"]
+    assert drill.account_mint_token(jar, "sub-1", "tok", scopes) == "rdt_xyz"
+    assert drill.account_mint_token(jar, "sub-1", "tok2", scopes) == "rdt_xyz"
+    assert len(_enable_calls()) == 1
+    assert any(p.endswith("/test/elevate") for _m, p, _b in _Account.seen)
+
+
+def test_an_already_enrolled_account_does_not_enrol_again(
+    account: tuple[lib.Drill, http.cookiejar.CookieJar],
+) -> None:
+    drill, jar = account
+    _Account.enrolled = True
+    assert drill.account_session("a@b.c", "pw", jar)
+    assert drill.account_mint_token(jar, "sub-1", "tok", ["backup:restore"]) == "rdt_xyz"
+    assert _enable_calls() == []
+    assert not any(p.endswith("/auth/2fa/setup") for _m, p, _b in _Account.seen)
+
+
+def test_a_non_backup_mint_does_not_touch_two_factor(
+    account: tuple[lib.Drill, http.cookiejar.CookieJar],
+) -> None:
+    drill, jar = account
+    assert drill.account_session("a@b.c", "pw", jar)
+    drill.account_mint_token(jar, "sub-1", "tok", ["backup:read"])
+    assert not any("/auth/2fa/" in p for _m, p, _b in _Account.seen)
+
+
+def test_a_refused_two_factor_enable_fails_by_name(
+    account: tuple[lib.Drill, http.cookiejar.CookieJar],
+) -> None:
+    drill, jar = account
+    _Account.refuse_enable = True
+    assert drill.account_session("a@b.c", "pw", jar)
+    with pytest.raises(lib.GatewayError, match="2FA enable was refused"):
+        drill.account_mint_token(jar, "sub-1", "tok", ["backup:manage"])
 
 
 def test_a_token_mint_without_a_session_raises(

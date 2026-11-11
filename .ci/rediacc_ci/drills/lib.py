@@ -46,6 +46,7 @@ from typing import TYPE_CHECKING
 from rediacc_ci import log, paths
 from rediacc_ci.core import https
 from rediacc_ci.drills import wire
+from rediacc_ci.ops import totp
 
 if TYPE_CHECKING:
     import http.cookiejar
@@ -156,6 +157,10 @@ def free_port() -> int:
         return int(sock.getsockname()[1])
 
 
+# Scopes the account refuses to mint for a session without 2FA (private/account/src/middleware/require-2fa.ts).
+TWO_FACTOR_TOKEN_SCOPES = frozenset({"backup:manage", "backup:restore"})
+
+
 class Shim:
     """An in-process TCP forwarder in front of the gateway.
 
@@ -247,6 +252,7 @@ class Drill:
         self.last_cmd = ""
         self.started_at = 0
         self.twofa_used = False
+        self.session_emails: dict[int, str] = {}
         self.extra_env: dict[str, str] = {}
         self.green, self.red, self.yellow, self.nc = _colours(sys.stderr)
 
@@ -766,6 +772,7 @@ class Drill:
     def account_session(self, email: str, password: str, jar: http.cookiejar.CookieJar) -> bool:
         """The headless auth chain: login, and when TOTP is enabled complete the challenge from the dev-only `/test/totp-code`. Sets `twofa_used`."""
         self.twofa_used = False
+        self.session_emails[id(jar)] = email
         body = self.api_post("/auth/login", {"email": email, "password": password}, jar)
         challenge = json_get(body, "challengeToken")
         if challenge:
@@ -818,10 +825,35 @@ class Drill:
             self._request("GET", self.api_base() + "/portal/subscription", None, jar), "id"
         )
 
+    def account_ensure_two_factor(self, jar: http.cookiejar.CookieJar, email: str) -> bool:
+        """Enrol TOTP 2FA for the logged-in drill account the way a user does: setup returns a secret, enable verifies a code computed from it. Returns True when it enrolled, False when the account already had 2FA. The account refuses to mint a token with backup-storage scopes without it, and that refusal stays in force. Setup and enable need an elevated session, which the dev-only `/test/elevate` grants. A refused step raises by name."""
+        status = json_obj(self._request("GET", self.api_base() + "/auth/2fa/status", None, jar))
+        if not isinstance(status.get("enabled"), bool):
+            raise GatewayError("the 2FA status read was refused: %s" % json.dumps(status)[:300])
+        if status["enabled"]:
+            return False
+        self.api_post("/test/elevate", {"email": email})
+        setup = json_obj(self.api_post("/auth/2fa/setup", {}, jar))
+        secret = setup.get("secret")
+        if not isinstance(secret, str) or not secret:
+            raise GatewayError("the 2FA setup was refused: %s" % json.dumps(setup)[:300])
+        answer = json_obj(self.api_post("/auth/2fa/enable", {"code": totp.code(secret)}, jar))
+        if answer.get("enabled") is not True:
+            raise GatewayError("the 2FA enable was refused: %s" % json.dumps(answer)[:300])
+        self.note("enrolled 2FA for the drill account %s" % email)
+        return True
+
     def account_mint_token(
         self, jar: http.cookiejar.CookieJar, subscription_id: str, name: str, scopes: list[str]
     ) -> str:
-        """Mint an API token and return it; an empty answer raises."""
+        """Mint an API token and return it; an empty answer raises. A token with a backup-storage scope first enrols 2FA for the session's account (idempotent), because the account requires it."""
+        if TWO_FACTOR_TOKEN_SCOPES.intersection(scopes):
+            email = self.session_emails.get(id(jar))
+            if not email:
+                raise GatewayError(
+                    "a backup-scope token needs a jar that account_session logged in"
+                )
+            self.account_ensure_two_factor(jar, email)
         body = self.api_post(
             "/api-tokens",
             {"subscriptionId": subscription_id, "name": name, "scopes": scopes},
