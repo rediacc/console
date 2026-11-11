@@ -7,7 +7,7 @@ order: 2
 language: ko
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ko/cli.json
-sourceHash: "c090202120f76c2e"
+sourceHash: "d5ec478545b372cb"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -3279,8 +3279,23 @@ rdc subscription login [options]
 | `--server <url>` | {{t:cli.options.serverUrl}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
+<a id="cli-local-subscription-register"></a>
+### 12.2 register
+
+{{t:cli.commands.subscription.register.description}}
+
+```bash
+rdc subscription register [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--email <address>` | {{t:cli.commands.subscription.register.optionEmail}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--server <url>` | {{t:cli.options.serverUrl}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 <a id="cli-local-subscription-logout"></a>
-### 12.2 logout
+### 12.3 logout
 
 {{t:cli.commands.subscription.logout.description}}
 
@@ -3289,7 +3304,7 @@ rdc subscription logout
 ```
 
 <a id="cli-local-subscription-proxy-token"></a>
-### 12.3 proxy-token
+### 12.4 proxy-token
 
 {{t:cli.commands.subscription.proxyToken.description}}
 
@@ -3303,7 +3318,7 @@ rdc subscription proxy-token [options]
 
 
 <a id="cli-local-subscription-status"></a>
-### 12.4 status
+### 12.5 status
 
 {{t:cli.commands.subscription.status.description}}
 
@@ -3317,7 +3332,7 @@ rdc subscription status [options]
 
 
 <a id="cli-local-subscription-refresh"></a>
-### 12.5 refresh
+### 12.6 refresh
 
 {{t:cli.commands.subscription.refresh.description}}
 
