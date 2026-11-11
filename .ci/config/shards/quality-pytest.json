@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-11T12:09:32.124Z",
+  "generatedAt": "2026-11-11T16:16:22.330Z",
   "legs": [
     {
       "index": 1,
@@ -106,6 +106,7 @@
         "pytest:.ci/rediacc_ci/tests/test_infra_renet_embed_cache.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_verify_ssh.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_wait_for_vm_ssh.py",
+        "pytest:.ci/rediacc_ci/tests/test_legal_entity.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_apply_cf_waf_rules.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_enterprise_lookup.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_health_post.py",
@@ -294,6 +295,7 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_greenlight_closures.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_hook_integrity.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_inner_timeout_reachable.py",
+        "pytest:.ci/rediacc_ci/tests/test_quality_literal_sources_entity.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_no_app_admin_perm.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_no_otlp_creds.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_npmrc.py",
