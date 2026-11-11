@@ -2585,6 +2585,7 @@
         "success": "登录成功",
         "termsAccepted": "已接受的服务条款：版本 {{version}}",
         "termsPending": "尚未接受服务条款。请在 {{url}} 接受",
+        "termsPendingAccept": "请在 {{url}} 阅读条款，并在 {{acceptUrl}} 接受",
         "tokenAndPassword": "--token 和 --password-stdin 不能同时使用。",
         "totpRequired": "此账户需要双重身份验证。请将 {{field}} 设置为当前验证码。",
         "validated": "令牌已验证",
@@ -3171,6 +3172,7 @@
     "terms": {
       "declined": "未接受服务条款，因此没有获取免费许可证。",
       "required": "此账户尚未接受服务条款。请在 {{url}} 接受后重新运行命令。",
+      "requiredAccept": "请在 {{url}} 阅读条款，在 {{acceptUrl}} 接受后重新运行命令。",
       "requiredFree": "此免费许可证尚未接受服务条款。请在 {{url}} 阅读后，传入 {{flag}} 或设置 {{env}}。",
       "upcoming": "新的服务条款 {{version}} 将于 {{effective}} 生效。请在 {{url}} 阅读。"
     },

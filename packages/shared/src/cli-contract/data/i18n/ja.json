@@ -1977,6 +1977,7 @@
   "commands.subscription.login.success": "ログイン成功",
   "commands.subscription.login.termsAccepted": "承諾済みの利用規約: バージョン {{version}}",
   "commands.subscription.login.termsPending": "利用規約はまだ承諾されていません。{{url}} で承諾してください",
+  "commands.subscription.login.termsPendingAccept": "規約は {{url}} で確認し、{{acceptUrl}} で承諾してください",
   "commands.subscription.login.tokenAndPassword": "--token と --password-stdin は同時に指定できません。",
   "commands.subscription.login.totpRequired": "このアカウントでは二要素認証が必要です。{{field}} に現在のコードを設定してください。",
   "commands.subscription.login.validated": "トークン検証済み",

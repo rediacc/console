@@ -2585,6 +2585,7 @@
         "success": "Sisselogimine õnnestus",
         "termsAccepted": "Kasutustingimustega on nõustutud: versioon {{version}}",
         "termsPending": "Kasutustingimustega pole veel nõustutud. Nõustu nendega aadressil {{url}}",
+        "termsPendingAccept": "Loe neid aadressil {{url}} ja nõustu nendega aadressil {{acceptUrl}}",
         "tokenAndPassword": "Valikuid --token ja --password-stdin ei saa koos kasutada.",
         "totpRequired": "See konto nõuab kaheastmelist autentimist. Määra {{field}} kehtivaks koodiks.",
         "validated": "Token valideeritud",
@@ -3171,6 +3172,7 @@
     "terms": {
       "declined": "Kasutustingimustega ei nõustutud, seega tasuta litsentsi ei laaditud.",
       "required": "Selle konto kasutustingimustega pole nõustutud. Nõustu nendega aadressil {{url}} ja käivita käsk uuesti.",
+      "requiredAccept": "Loe neid aadressil {{url}}, nõustu nendega aadressil {{acceptUrl}} ja käivita käsk uuesti.",
       "requiredFree": "Selle tasuta litsentsi kasutustingimustega ei nõustutud. Loe neid aadressil {{url}}, seejärel anna {{flag}} või määra {{env}}.",
       "upcoming": "Uued kasutustingimused {{version}} jõustuvad {{effective}}. Loe neid aadressil {{url}}."
     },

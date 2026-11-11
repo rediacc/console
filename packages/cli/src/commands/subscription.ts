@@ -224,7 +224,12 @@ function renderLoginSummary(
     outputService.info(
       terms.accepted
         ? t('commands.subscription.login.termsAccepted', { version: terms.accepted })
-        : t('commands.subscription.login.termsPending', { url: terms.url })
+        : terms.acceptUrl
+          ? t('commands.subscription.login.termsPendingAccept', {
+              url: terms.url,
+              acceptUrl: terms.acceptUrl,
+            })
+          : t('commands.subscription.login.termsPending', { url: terms.url })
     );
   }
   // Soft-claimed slots: renewals still succeed, but new repositories cannot be licensed, so say it at login rather than at the next `repo create`.

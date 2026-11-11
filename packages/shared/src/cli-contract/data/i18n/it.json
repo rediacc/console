@@ -1977,6 +1977,7 @@
   "commands.subscription.login.success": "Accesso effettuato con successo",
   "commands.subscription.login.termsAccepted": "Termini di servizio accettati: versione {{version}}",
   "commands.subscription.login.termsPending": "I Termini di servizio non sono ancora stati accettati. Accettali su {{url}}",
+  "commands.subscription.login.termsPendingAccept": "Leggili su {{url}} e accettali su {{acceptUrl}}",
   "commands.subscription.login.tokenAndPassword": "--token e --password-stdin non possono essere usati insieme.",
   "commands.subscription.login.totpRequired": "Questo account richiede l'autenticazione a due fattori. Imposta {{field}} con un codice valido.",
   "commands.subscription.login.validated": "Token validato",

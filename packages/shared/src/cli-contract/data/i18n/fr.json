@@ -1977,6 +1977,7 @@
   "commands.subscription.login.success": "Connexion réussie",
   "commands.subscription.login.termsAccepted": "Conditions d'utilisation acceptées : version {{version}}",
   "commands.subscription.login.termsPending": "Les Conditions d'utilisation ne sont pas encore acceptées. Acceptez-les sur {{url}}",
+  "commands.subscription.login.termsPendingAccept": "Lisez-les sur {{url}} et acceptez-les sur {{acceptUrl}}",
   "commands.subscription.login.tokenAndPassword": "--token et --password-stdin ne peuvent pas être combinés.",
   "commands.subscription.login.totpRequired": "Ce compte exige l'authentification à deux facteurs. Définissez {{field}} avec un code valide.",
   "commands.subscription.login.validated": "Jeton validé",

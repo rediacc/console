@@ -2501,7 +2501,8 @@
         "serverChanged": "Server changed. Previous session cleared.",
         "machinesOverLimit": "  {{count}} machine slot(s) are over the limit.",
         "termsAccepted": "Terms of Service accepted: version {{version}}",
-        "termsPending": "Terms of Service not accepted yet. Accept them at {{url}}"
+        "termsPending": "Terms of Service not accepted yet. Accept them at {{url}}",
+        "termsPendingAccept": "Read them at {{url}} and accept them at {{acceptUrl}}"
       },
       "logout": {
         "description": "Clear stored subscription token",
@@ -3169,6 +3170,7 @@
     "terms": {
       "declined": "The Terms of Service were not accepted, so no free license was fetched.",
       "required": "The Terms of Service have not been accepted for this account. Accept them at {{url}}, then run the command again.",
+      "requiredAccept": "Read them at {{url}} and accept them at {{acceptUrl}}, then run the command again.",
       "requiredFree": "The Terms of Service were not accepted for this free license. Read them at {{url}}, then pass {{flag}} or set {{env}}.",
       "upcoming": "New Terms of Service {{version}} take effect on {{effective}}. Read them at {{url}}."
     },

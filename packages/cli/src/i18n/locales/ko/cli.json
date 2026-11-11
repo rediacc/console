@@ -2585,6 +2585,7 @@
         "success": "성공적으로 로그인되었습니다",
         "termsAccepted": "동의한 서비스 약관: 버전 {{version}}",
         "termsPending": "서비스 약관에 아직 동의하지 않았습니다. {{url}}에서 동의하세요",
+        "termsPendingAccept": "약관은 {{url}}에서 읽고 {{acceptUrl}}에서 동의하세요",
         "tokenAndPassword": "--token과 --password-stdin은 함께 사용할 수 없습니다.",
         "totpRequired": "이 계정은 2단계 인증이 필요합니다. {{field}}에 현재 코드를 설정하세요.",
         "validated": "토큰이 검증되었습니다",
@@ -3171,6 +3172,7 @@
     "terms": {
       "declined": "서비스 약관에 동의하지 않아 무료 라이선스를 받지 않았습니다.",
       "required": "이 계정은 서비스 약관에 동의하지 않았습니다. {{url}}에서 동의한 뒤 명령을 다시 실행하세요.",
+      "requiredAccept": "약관은 {{url}}에서 읽고 {{acceptUrl}}에서 동의한 뒤 명령을 다시 실행하세요.",
       "requiredFree": "이 무료 라이선스는 서비스 약관에 동의하지 않았습니다. {{url}}에서 약관을 읽은 뒤 {{flag}}를 지정하거나 {{env}}를 설정하세요.",
       "upcoming": "새 서비스 약관 {{version}}은(는) {{effective}}부터 적용됩니다. {{url}}에서 확인하세요."
     },

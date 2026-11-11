@@ -2585,6 +2585,7 @@
         "success": "Giriş başarılı",
         "termsAccepted": "Kabul edilen Hizmet Şartları: sürüm {{version}}",
         "termsPending": "Hizmet Şartları henüz kabul edilmedi. {{url}} adresinden kabul edin",
+        "termsPendingAccept": "Şartları {{url}} adresinde okuyun ve {{acceptUrl}} adresinden kabul edin",
         "tokenAndPassword": "--token ve --password-stdin birlikte kullanılamaz.",
         "totpRequired": "Bu hesap iki adımlı doğrulama gerektiriyor. {{field}} değerini güncel bir kodla ayarla.",
         "validated": "Belirteç doğrulandı",
@@ -3171,6 +3172,7 @@
     "terms": {
       "declined": "Hizmet Şartları kabul edilmedi, bu yüzden ücretsiz lisans alınmadı.",
       "required": "Bu hesap için Hizmet Şartları kabul edilmedi. {{url}} adresinden kabul edin, ardından komutu yeniden çalıştırın.",
+      "requiredAccept": "Şartları {{url}} adresinde okuyun, {{acceptUrl}} adresinden kabul edin, ardından komutu yeniden çalıştırın.",
       "requiredFree": "Bu ücretsiz lisans için Hizmet Şartları kabul edilmedi. {{url}} adresinde okuyun, ardından {{flag}} verin veya {{env}} ayarlayın.",
       "upcoming": "Yeni Hizmet Şartları {{version}}, {{effective}} tarihinde yürürlüğe girer. Şartları {{url}} adresinde okuyabilirsiniz."
     },

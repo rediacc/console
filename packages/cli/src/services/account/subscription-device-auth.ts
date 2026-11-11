@@ -28,6 +28,8 @@ export interface ClaimTerms {
   accepted: string | null;
   latest: string;
   url: string;
+  /** The portal page where the account accepts; absent from an older server. */
+  acceptUrl?: string;
 }
 
 export interface DeviceCodeAuthorizationResult {

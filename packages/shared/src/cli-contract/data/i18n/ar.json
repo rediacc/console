@@ -1977,6 +1977,7 @@
   "commands.subscription.login.success": "تم تسجيل الدخول بنجاح",
   "commands.subscription.login.termsAccepted": "شروط الخدمة المقبولة: الإصدار {{version}}",
   "commands.subscription.login.termsPending": "لم تُقبل شروط الخدمة بعد. اقبلها من {{url}}",
+  "commands.subscription.login.termsPendingAccept": "اقرأها من {{url}} واقبلها من {{acceptUrl}}",
   "commands.subscription.login.tokenAndPassword": "لا يمكن الجمع بين --token و --password-stdin.",
   "commands.subscription.login.totpRequired": "يتطلب هذا الحساب المصادقة الثنائية. عيّن {{field}} برمز حالي.",
   "commands.subscription.login.validated": "تم التحقق من الرمز",

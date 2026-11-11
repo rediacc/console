@@ -80,6 +80,22 @@ describe('403 TERMS_ACCEPTANCE_REQUIRED', () => {
     expect(m.askInput).not.toHaveBeenCalled();
   });
 
+  it('prints both the accept page and the document when the server sends acceptUrl', async () => {
+    const acceptUrl = 'https://account.example.test/account/terms';
+    const t = await tunnel(403, {
+      code: 'TERMS_ACCEPTANCE_REQUIRED',
+      details: { url: 'https://example.test/t', acceptUrl },
+    });
+    const error = (await accountServerFetch('/x', {
+      ...OPTIONS,
+      fetchImpl: t.fetchImpl,
+      serverKey: t.serverKey,
+    }).catch((e: unknown) => e)) as Error;
+    expect(error.message).toContain('errors.terms.requiredAccept');
+    expect(error.message).toContain(acceptUrl);
+    expect(error.message).toContain('https://example.test/t');
+  });
+
   it('a FREE refusal names the flag and the env var next to the URL', async () => {
     const t = await tunnel(403, {
       code: 'TERMS_ACCEPTANCE_REQUIRED',

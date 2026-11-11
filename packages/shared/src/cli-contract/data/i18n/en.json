@@ -1977,6 +1977,7 @@
   "commands.subscription.login.success": "Logged in successfully",
   "commands.subscription.login.termsAccepted": "Terms of Service accepted: version {{version}}",
   "commands.subscription.login.termsPending": "Terms of Service not accepted yet. Accept them at {{url}}",
+  "commands.subscription.login.termsPendingAccept": "Read them at {{url}} and accept them at {{acceptUrl}}",
   "commands.subscription.login.tokenAndPassword": "--token and --password-stdin cannot be combined.",
   "commands.subscription.login.totpRequired": "This account requires two-factor authentication. Set {{field}} to a current code.",
   "commands.subscription.login.validated": "Token validated",

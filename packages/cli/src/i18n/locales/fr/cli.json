@@ -2585,6 +2585,7 @@
         "success": "Connexion réussie",
         "termsAccepted": "Conditions d'utilisation acceptées : version {{version}}",
         "termsPending": "Les Conditions d'utilisation ne sont pas encore acceptées. Acceptez-les sur {{url}}",
+        "termsPendingAccept": "Lisez-les sur {{url}} et acceptez-les sur {{acceptUrl}}",
         "tokenAndPassword": "--token et --password-stdin ne peuvent pas être combinés.",
         "totpRequired": "Ce compte exige l'authentification à deux facteurs. Définissez {{field}} avec un code valide.",
         "validated": "Jeton validé",
@@ -3171,6 +3172,7 @@
     "terms": {
       "declined": "Les Conditions d'utilisation n'ont pas été acceptées, aucune licence gratuite n'a donc été récupérée.",
       "required": "Les Conditions d'utilisation n'ont pas été acceptées pour ce compte. Acceptez-les sur {{url}}, puis relancez la commande.",
+      "requiredAccept": "Lisez-les sur {{url}}, acceptez-les sur {{acceptUrl}}, puis relancez la commande.",
       "requiredFree": "Les Conditions d'utilisation n'ont pas été acceptées pour cette licence gratuite. Lisez-les sur {{url}}, puis passez {{flag}} ou définissez {{env}}.",
       "upcoming": "Les nouvelles Conditions d'utilisation {{version}} entrent en vigueur le {{effective}}. Consultez-les sur {{url}}."
     },

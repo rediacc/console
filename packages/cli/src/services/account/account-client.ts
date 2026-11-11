@@ -524,12 +524,15 @@ function warnUpcomingTerms(header: string | null): void {
 function termsRequiredError(parsed: { details?: Record<string, unknown> }): ValidationError {
   const details = parsed.details ?? (parsed as Record<string, unknown>);
   const url = typeof details.url === 'string' ? details.url : '';
+  const acceptUrl = typeof details.acceptUrl === 'string' ? details.acceptUrl : '';
   const flag = typeof details.flag === 'string' ? details.flag : undefined;
   const env = typeof details.env === 'string' ? details.env : undefined;
   const message =
     flag && env
       ? t('errors.terms.requiredFree', { url, flag, env })
-      : t('errors.terms.required', { url });
+      : acceptUrl
+        ? t('errors.terms.requiredAccept', { url, acceptUrl })
+        : t('errors.terms.required', { url });
   return Object.assign(new ValidationError(message), {
     status: 403,
     code: TERMS_ACCEPTANCE_REQUIRED,

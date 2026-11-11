@@ -1977,6 +1977,7 @@
   "commands.subscription.login.success": "Sisselogimine õnnestus",
   "commands.subscription.login.termsAccepted": "Kasutustingimustega on nõustutud: versioon {{version}}",
   "commands.subscription.login.termsPending": "Kasutustingimustega pole veel nõustutud. Nõustu nendega aadressil {{url}}",
+  "commands.subscription.login.termsPendingAccept": "Loe neid aadressil {{url}} ja nõustu nendega aadressil {{acceptUrl}}",
   "commands.subscription.login.tokenAndPassword": "Valikuid --token ja --password-stdin ei saa koos kasutada.",
   "commands.subscription.login.totpRequired": "See konto nõuab kaheastmelist autentimist. Määra {{field}} kehtivaks koodiks.",
   "commands.subscription.login.validated": "Token valideeritud",

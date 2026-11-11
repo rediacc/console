@@ -2585,6 +2585,7 @@
         "success": "Sessão iniciada com sucesso",
         "termsAccepted": "Termos de Serviço aceitos: versão {{version}}",
         "termsPending": "Os Termos de Serviço ainda não foram aceitos. Aceite-os em {{url}}",
+        "termsPendingAccept": "Leia-os em {{url}} e aceite-os em {{acceptUrl}}",
         "tokenAndPassword": "--token e --password-stdin não podem ser combinados.",
         "totpRequired": "Esta conta exige autenticação em dois fatores. Defina {{field}} com um código atual.",
         "validated": "Token validado",
@@ -3171,6 +3172,7 @@
     "terms": {
       "declined": "Os Termos de Serviço não foram aceitos, por isso nenhuma licença gratuita foi obtida.",
       "required": "Os Termos de Serviço não foram aceitos para esta conta. Aceite-os em {{url}} e execute o comando novamente.",
+      "requiredAccept": "Leia-os em {{url}}, aceite-os em {{acceptUrl}} e execute o comando novamente.",
       "requiredFree": "Os Termos de Serviço não foram aceitos para esta licença gratuita. Leia-os em {{url}} e passe {{flag}} ou defina {{env}}.",
       "upcoming": "Os novos Termos de Serviço {{version}} entram em vigor em {{effective}}. Leia-os em {{url}}."
     },

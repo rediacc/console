@@ -1977,6 +1977,7 @@
   "commands.subscription.login.success": "성공적으로 로그인되었습니다",
   "commands.subscription.login.termsAccepted": "동의한 서비스 약관: 버전 {{version}}",
   "commands.subscription.login.termsPending": "서비스 약관에 아직 동의하지 않았습니다. {{url}}에서 동의하세요",
+  "commands.subscription.login.termsPendingAccept": "약관은 {{url}}에서 읽고 {{acceptUrl}}에서 동의하세요",
   "commands.subscription.login.tokenAndPassword": "--token과 --password-stdin은 함께 사용할 수 없습니다.",
   "commands.subscription.login.totpRequired": "이 계정은 2단계 인증이 필요합니다. {{field}}에 현재 코드를 설정하세요.",
   "commands.subscription.login.validated": "토큰이 검증되었습니다",

@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2628,
-    "sourceCommit": "8305fd0656f47e388b2ad18a75bc6e320ee95500"
+    "keyCount": 2630,
+    "sourceCommit": "65c5b7e0246af8de09d2695399b3db85eb37c811"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1985,6 +1985,7 @@
     "commands.subscription.login.success": "33b15f97",
     "commands.subscription.login.termsAccepted": "f50f1537",
     "commands.subscription.login.termsPending": "029d306f",
+    "commands.subscription.login.termsPendingAccept": "27a1b712",
     "commands.subscription.login.tokenAndPassword": "7e1f9b34",
     "commands.subscription.login.totpRequired": "f41a1072",
     "commands.subscription.login.validated": "0fdba0df",
@@ -2470,6 +2471,7 @@
     "errors.term.sshExitCode": "6e05061d",
     "errors.terms.declined": "a16da339",
     "errors.terms.required": "bc211d4f",
+    "errors.terms.requiredAccept": "4a034f5d",
     "errors.terms.requiredFree": "97d13365",
     "errors.terms.upcoming": "7bc0d27b",
     "errors.tofu.belowFloor": "2cad673f",

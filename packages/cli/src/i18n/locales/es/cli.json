@@ -2585,6 +2585,7 @@
         "success": "Inicio de sesión exitoso",
         "termsAccepted": "Términos del Servicio aceptados: versión {{version}}",
         "termsPending": "Los Términos del Servicio aún no se han aceptado. Acéptelos en {{url}}",
+        "termsPendingAccept": "Léalos en {{url}} y acéptelos en {{acceptUrl}}",
         "tokenAndPassword": "--token y --password-stdin no se pueden combinar.",
         "totpRequired": "Esta cuenta requiere autenticación en dos pasos. Define {{field}} con un código vigente.",
         "validated": "Token validado",
@@ -3171,6 +3172,7 @@
     "terms": {
       "declined": "No se aceptaron los Términos del Servicio, así que no se obtuvo ninguna licencia gratuita.",
       "required": "Los Términos del Servicio no se han aceptado para esta cuenta. Acéptelos en {{url}} y vuelva a ejecutar el comando.",
+      "requiredAccept": "Léalos en {{url}}, acéptelos en {{acceptUrl}} y vuelva a ejecutar el comando.",
       "requiredFree": "No se aceptaron los Términos del Servicio para esta licencia gratuita. Léalos en {{url}} y pase {{flag}} o defina {{env}}.",
       "upcoming": "Los nuevos Términos del Servicio {{version}} entran en vigor el {{effective}}. Léalos en {{url}}."
     },
