@@ -255,7 +255,7 @@ export interface DatastoreSizeOps {
 }
 
 /** A filesystem reports slightly less than its image; a shortfall below this is not a smaller store. */
-export const DATASTORE_SIZE_SLACK_BYTES = 256 * 1024 * 1024;
+const DATASTORE_SIZE_SLACK_BYTES = 256 * 1024 * 1024;
 
 const SIZE_UNITS: Record<string, number> = { K: 1024, M: 1024 ** 2, G: 1024 ** 3, T: 1024 ** 4 };
 

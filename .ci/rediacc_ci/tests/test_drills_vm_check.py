@@ -560,9 +560,15 @@ class World(vm_check.Host):
             if self.forget_rc:
                 return vm_check.Result(self.forget_rc, "", "forget refused")
             if self.stale_fork_refs and args[2] == PARENT:
-                listing = "" if self.stale_refs_unlisted else "".join("\n  - %s" % r for r in self.stale_fork_refs)
+                listing = (
+                    ""
+                    if self.stale_refs_unlisted
+                    else "".join("\n  - %s" % r for r in self.stale_fork_refs)
+                )
                 msg = 'Repository "%s" is ambiguous:%s' % (PARENT, listing)
-                return vm_check.Result(1, json.dumps({"success": False, "errors": [{"message": msg}]}))
+                return vm_check.Result(
+                    1, json.dumps({"success": False, "errors": [{"message": msg}]})
+                )
             if args[2] in self.stale_fork_refs:
                 self.stale_fork_refs.remove(args[2])
                 self.config_has_parent = False
@@ -2917,7 +2923,8 @@ def test_an_explicit_no_provision_from_the_caller_is_kept(tmp_path: pathlib.Path
     rc, out, _receipt = run_check(tmp_path, world, env={"REDIACC_NO_PROVISION": "1"})
     assert rc == vm_check.EXIT_VERIFIED, out
     envs = [e for c, e in zip(world.calls, world.envs, strict=True) if c[0] == world.rdc_path]
-    assert envs and all(e.get("REDIACC_NO_PROVISION") == "1" for e in envs)
+    assert envs
+    assert all(e.get("REDIACC_NO_PROVISION") == "1" for e in envs)
 
 
 def test_an_ambiguous_forget_deletes_each_ref_and_never_reruns_the_bare_forget(

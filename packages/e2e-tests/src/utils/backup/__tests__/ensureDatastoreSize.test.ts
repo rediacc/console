@@ -1,3 +1,4 @@
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it } from 'vitest';
 import type { ExecResult } from '../../renet-functions/types';
 import { type DatastoreSizeOps, ensureDatastoreSize, parseSizeBytes } from '../chunkCliHarness';
@@ -69,10 +70,10 @@ describe('ensureDatastoreSize', () => {
 
   it('fails loudly and never expands when the size probe prints no number', async () => {
     const t = fake({
-      sizeBytes: () => Promise.resolve(res(1, '', 'df: /mnt/rediacc: No such file')),
+      sizeBytes: () => Promise.resolve(res(1, '', `df: ${WK_DATASTORE_PATH}: No such file`)),
     });
     await expect(ensureDatastoreSize(t.ops, 'w1', '32G')).rejects.toThrow(
-      /could not read the size of the existing datastore on w1: df: \/mnt\/rediacc: No such file/
+      `could not read the size of the existing datastore on w1: df: ${WK_DATASTORE_PATH}: No such file`
     );
     expect(t.calls).toEqual(['init']);
   });
