@@ -189,7 +189,7 @@ function checkH1Presence() {
 
   // Components known to render an H1 (directly or via SPHero) Components that render the page's <h1> themselves. `SPHomeHero` is the homepage's own hero, split out of the shared `SPHero` so the homepage could
   // drop `min-height: 100dvh`; `SPWhyNow` is a section that became its own route
-  // and whose title is that route's subject.
+  // and whose title is that route's subject. `LegalDocument` renders the h1 for every legal page.
   const h1Components = [
     'SPHero',
     'SPHomeHero',
@@ -200,6 +200,7 @@ function checkH1Presence() {
     'DocsLayout',
     'ResourceBriefPage',
     'SPWhyNow',
+    'LegalDocument',
   ];
 
   const pageFiles = globSync(`${PAGES_DIR}/\\[lang\\]/**/*.astro`);
