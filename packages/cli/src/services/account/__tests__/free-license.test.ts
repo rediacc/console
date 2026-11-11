@@ -31,7 +31,11 @@ const m = vi.hoisted(() => ({
   promptRegion: vi.fn(),
   update: vi.fn(),
   exists: vi.fn(),
-  community: { maxRepositorySizeGb: 10, maxRepoLicenseIssuancesPerMonth: 100, storageQuotaBytes: 10 * 1024 ** 3 },
+  community: {
+    maxRepositorySizeGb: 10,
+    maxRepoLicenseIssuancesPerMonth: 100,
+    storageQuotaBytes: 10 * 1024 ** 3,
+  },
 }));
 
 vi.mock('@rediacc/shared/subscription', () => ({ PLAN_LIMITS: { COMMUNITY: m.community } }));

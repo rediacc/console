@@ -67,11 +67,10 @@ let registerHintShown = false;
 
 /** The Community numbers, read from PLAN_LIMITS so they follow the plan table. */
 function communityHintVars(): Record<string, string | number> {
-  const community = PLAN_LIMITS.COMMUNITY;
   return {
-    repoGb: community.maxRepositorySizeGb,
-    issuances: community.maxRepoLicenseIssuancesPerMonth,
-    backupGb: community.storageQuotaBytes / 1024 ** 3,
+    repoGb: PLAN_LIMITS.COMMUNITY.maxRepositorySizeGb,
+    issuances: PLAN_LIMITS.COMMUNITY.maxRepoLicenseIssuancesPerMonth,
+    backupGb: PLAN_LIMITS.COMMUNITY.storageQuotaBytes / 1024 ** 3,
     url: freeLicenseSignupUrl(),
   };
 }
