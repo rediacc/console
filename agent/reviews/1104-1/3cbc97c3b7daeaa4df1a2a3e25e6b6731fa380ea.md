@@ -22,10 +22,10 @@ Body-Sig: 861442195591a965
 Anchor: in-diff
 Claim: If `remote add` succeeds but the following `config --unset-all remote.gitlab.fetch` or `skipFetchAll` step fails, the remote is left with its default fetch refspec. Every later run takes `have == want` and continues silently, so the refspec is never removed and `git fetch gitlab` can write refs/remotes/gitlab/*, which the docstring says cannot happen.
 Class: other
-Resolution: open
+Resolution: fixed 18716f609c833922ed1d61caab3234cd5a9cc7af | d778be9d 2026-11-11T09:58:02Z
 
 ### 3cbc97c3.2 [low] .ci/rediacc_ci/tests/test_setup_backup_remotes.py:1
 Anchor: in-diff
 Claim: No test exercises the `failed` branch of install (a git command returning non-zero), so the partial-add case above, and the return value of 1 that setup relies on, are untested.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed 18716f609c833922ed1d61caab3234cd5a9cc7af | d778be9d 2026-11-11T09:58:02Z
