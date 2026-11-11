@@ -210,7 +210,11 @@ SCOPES = (
     ),
     Scope(
         name="review-stdin-anchor",
-        files=(".claude/rediacc_hooks/guards/block_review_file_shell_write.py",),
+        files=(
+            ".claude/rediacc_hooks/guards/block_review_file_shell_write.py",
+            # Its test names the default /proc spelling on purpose: pinning that default, and its override, is what it checks.
+            ".claude/rediacc_hooks/tests/test_guard_stdin_procfs_seams.py",
+        ),
         classes=("procfs",),
         env="REDIACC_REVIEW_STDIN_PROCFS",
         why=(
