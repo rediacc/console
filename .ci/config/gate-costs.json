@@ -11,7 +11,7 @@
     "stamped with when they were measured (gate_costs.py docstring, TWO KINDS OF GATE).",
     "Do not hand-edit: the next --refresh overwrites every figure."
   ],
-  "refreshed_at": "2026-11-11T16:19:02Z",
+  "refreshed_at": "2026-11-11T21:13:55Z",
   "source": {
     "runner": "ubuntu-latest",
     "cores": 4,

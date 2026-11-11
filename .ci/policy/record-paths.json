@@ -893,6 +893,14 @@
         {
           "id": "check:ci-plan-bindings",
           "reason": "It imports wl_planbind.py and the hook modules it reaches; the .ci/config/carried-reds.json the derivation cites at wl_checks.py:4913 is a comment on the Stop hook's carried-CI branch, and this gate never calls that branch: the verdict is computed over agent/plans and agent/worklist."
+        },
+        {
+          "id": "check:ci-env-manifest",
+          "reason": "Its only citation of this record is the opaque env-read key '*n' it loads from .ci/config/python-env-registry.json (the shellscan.py entry for a computed variable name, added in ba94848d61), which the derivation reads as a glob ending in n; env_manifest.py:98 reads the registry for env names, and no file under this record is read."
+        },
+        {
+          "id": "check:ci-python-env-registry",
+          "reason": "Its only citation of this record is the opaque env-read key '*n' in the .ci/config/python-env-registry.json it owns (the shellscan.py entry for a computed variable name, added in ba94848d61), which the derivation reads as a glob ending in n; python_env_registry.py:96 compares env reads against that registry, and no file under this record is read."
         }
       ]
     }
