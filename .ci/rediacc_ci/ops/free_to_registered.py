@@ -12,7 +12,10 @@ THE STEPS, each printing one evidence line `STEP <n> <name> rc=<rc> <detail>`:
   4. register   `POST /auth/register` with a throwaway `ftr+<stamp>@rediacc.io` address (the bench email allowlist is `ALLOWED_EMAIL_DOMAINS`, rediacc.com and rediacc.io) and a random password. A password registration opens a session at once and sends NO verification email: the server has no verify-email step for it.
   5. email      The email loop is proved with the magic link instead: `POST /auth/magic-link`, the `magic-link` mail read from the D1 `captured_emails` table (an absent mail refuses), then `POST /auth/magic-link/verify` with its token. The token never reaches output.
   6. login      `subscription login --server <bench>` under the throwaway config with REDIACC_LOGIN_EMAIL and REDIACC_LOGIN_PASSWORD in the child environment, then `subscription status -o json`: the plan is COMMUNITY and the reported monthly repo-licence limit equals `PLAN_LIMITS.COMMUNITY` (parsed from packages/shared/src/subscription/constants.ts). The D1 subscription row is read as well: plan COMMUNITY and every non-null override equal to the plan's limits.
-  7. cleanup    Always runs. Deletes the rows of that one user, its organizations and subscriptions (found by the user id of the exact email) and the captured emails of that exact recipient, then proves the user is gone. The throwaway config is deleted. No account-deletion API exists, so the rows go through D1.
+  3b. free-refused  A direct `POST /licenses/free` with no `termsAcceptance`. It must answer 403 `TERMS_ACCEPTANCE_REQUIRED` whose details name `--accept-terms`, and the count of `free_license_ip_window` rows of the last minute must not change.
+  3c. free-accepted The same request with `termsAcceptance{method: cli-flag-unattended}` (the manifest's version and sha256), fresh UUIDs and `x-cli-version`. It must be issued, and exactly one `terms_acceptances` row must exist for the `free:` subject with that version and sha256, `client_ip IS NULL`, a non-empty `cli_version` and a non-empty `notice_text`.
+  4b. terms-gate    After the register, a login with a cookie jar, then with those cookies `GET /portal/terms` reports not satisfied, a gated read (`GET /portal/subscription`) returns 403 `TERMS_ACCEPTANCE_REQUIRED`, `POST /portal/terms/accept` returns 201, and the row has method `web-checkbox` and a non-empty `client_ip` and `user_agent`.
+  7. cleanup    Always runs. Deletes the rows of that one user, its organizations and subscriptions (found by the user id of the exact email), the acceptance rows of the user and of the 3c `free:` subject, the 3c issuance and its window row (same `issued_at`, so the IP quota is restored), and the captured emails of that exact recipient, then proves the user is gone. The throwaway config is deleted. No account-deletion API exists, so the rows go through D1.
 
 The password and every token travel only in a child environment or a request body, never on argv and never printed. Exit 0 only when every step held; cleanup failing is a failure.
 """
@@ -27,7 +30,9 @@ import secrets
 import string
 import subprocess
 import sys
+import tempfile
 import time
+import uuid
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -49,9 +54,28 @@ CONSTANTS_REL = ("packages", "shared", "src", "subscription", "constants.ts")
 LOGIN_EMAIL_ENV = "REDIACC_LOGIN_EMAIL"
 LOGIN_PW_ENV = "REDIACC_LOGIN_PASSWORD"
 SCRUBBED = ("RDC_DEV", "REDIACC_CONFIG", "REDIACC_TOKEN", "REDIACC_ACCOUNT_SERVER")
-STEP_NAMES = ("allowlist", "config", "anonymous", "register", "email", "login", "cleanup")
+STEPS = (
+    ("1", "allowlist"),
+    ("2", "config"),
+    ("3", "anonymous"),
+    ("3b", "free-refused"),
+    ("3c", "free-accepted"),
+    ("4", "register"),
+    ("4b", "terms-gate"),
+    ("5", "email"),
+    ("6", "login"),
+    ("7", "cleanup"),
+)
+LEGAL_MANIFEST_REL = (".ci", "config", "legal-documents.json")
+TERMS_DOCUMENT = "terms-of-service"
+TERMS_REQUIRED = "TERMS_ACCEPTANCE_REQUIRED"
+CLI_VERSION = "0.0.0-drill"
+FREE_SUBJECT = re.compile(r"^free:[0-9a-f]{32}$")
+WINDOW_S = 60
 
 Http = Callable[[str, dict], "tuple[int, dict]"]
+# method, path, body (or None), extra headers, cookie jar path (or None) -> (status, decoded object)
+Call = Callable[[str, str, "dict | None", Mapping[str, str], "str | None"], "tuple[int, dict]"]
 Rows = Callable[[str], "list[dict]"]
 Rdc = Callable[[Sequence[str], Mapping[str, str]], "tuple[int, str]"]
 
@@ -94,6 +118,16 @@ def community_limits(root=None) -> dict[str, int]:
         if need not in out:
             raise DrillError("PLAN_LIMITS.COMMUNITY has no %s in %s" % (need, path))
     return out
+
+
+def terms_manifest(root=None) -> dict[str, str]:
+    """{version, sha256} of the newest terms-of-service version in .ci/config/legal-documents.json."""
+    path = (root or paths.repo_root()).joinpath(*LEGAL_MANIFEST_REL)
+    versions = json.loads(path.read_text(encoding="utf-8"))["documents"][TERMS_DOCUMENT]["versions"]
+    if not versions:
+        raise DrillError("no %s version in %s" % (TERMS_DOCUMENT, path))
+    newest = versions[-1]
+    return {"version": str(newest["version"]), "sha256": str(newest["sha256"])}
 
 
 def extract_magic_token(body: str) -> str:
@@ -146,6 +180,7 @@ def cleanup_sql(
         q("DELETE FROM password_resets WHERE user_id = $u", u=uid),
         q("DELETE FROM elevated_sessions WHERE user_id = $u", u=uid),
         q("DELETE FROM user_communication_preferences WHERE user_id = $u", u=uid),
+        q("DELETE FROM terms_acceptances WHERE subject_id = $u", u=uid),
         q("DELETE FROM team_memberships WHERE user_id = $u OR team_id IN ($t)", u=uid, t=teams),
         q("DELETE FROM teams WHERE org_id IN ($o)", o=orgs),
         q("DELETE FROM org_memberships WHERE org_id IN ($o) OR user_id = $u", o=orgs, u=uid),
@@ -157,14 +192,82 @@ def cleanup_sql(
 
 
 @dataclass
+class FreeIssued:
+    """What the 3c issuance wrote, so the cleanup can remove exactly it."""
+
+    repository_guid: str
+    subject: str = ""
+    issued_at: str = ""
+
+
+def free_cleanup_sql(item: FreeIssued) -> list[str]:
+    """Deletes scoped to the 3c issuance: its acceptance rows, its window row (same `issued_at`) and the issuance itself."""
+    if not UUID.match(item.repository_guid):
+        raise DrillError(
+            "refusing a non-UUID repository guid in a delete: %r" % item.repository_guid
+        )
+    out: list[str] = []
+    if item.subject:
+        if not FREE_SUBJECT.match(item.subject):
+            raise DrillError("refusing a malformed free subject in a delete: %r" % item.subject)
+        out.append(
+            q("DELETE FROM terms_acceptances WHERE subject_id = $s", s=sql_literal(item.subject))
+        )
+    if item.issued_at:
+        out.append(
+            q(
+                "DELETE FROM free_license_ip_window WHERE issued_at = $t",
+                t=sql_literal(item.issued_at),
+            )
+        )
+    out.append(
+        q(
+            "DELETE FROM free_license_issuances WHERE repository_guid = $g",
+            g=sql_literal(item.repository_guid),
+        )
+    )
+    return out
+
+
+def cleanup_free(item: FreeIssued, rows: Rows, log: Callable[[str], None]) -> None:
+    """Fill in the subject and `issued_at` from the issuance row, delete, and prove nothing is left. DrillError on a leftover."""
+    guid = sql_literal(item.repository_guid)
+    found = rows(
+        q(
+            "SELECT free_subscription_id, issued_at FROM free_license_issuances "
+            "WHERE repository_guid = $g",
+            g=guid,
+        )
+    )
+    if found:
+        item.subject = str(found[0].get("free_subscription_id") or item.subject)
+        item.issued_at = str(found[0].get("issued_at") or item.issued_at)
+    log("free issuance %s subject=%s" % (item.repository_guid, item.subject or "?"))
+    for sql in free_cleanup_sql(item):
+        rows(sql)
+    left = rows(q("SELECT id FROM free_license_issuances WHERE repository_guid = $g", g=guid))
+    if item.subject:
+        left += rows(
+            q(
+                "SELECT id FROM terms_acceptances WHERE subject_id = $s",
+                s=sql_literal(item.subject),
+            )
+        )
+    if left:
+        raise DrillError(
+            "the free issuance or its acceptance row is still present after the delete"
+        )
+
+
+@dataclass
 class Evidence:
     lines: list[str] = field(default_factory=list)
     failed: bool = False
 
-    def add(self, number: int, name: str, rc: int, detail: str = "") -> None:
+    def add(self, number: int | str, name: str, rc: int, detail: str = "") -> None:
         if rc != 0:
             self.failed = True
-        line = "STEP %d %s rc=%d%s" % (number, name, rc, (" " + detail) if detail else "")
+        line = "STEP %s %s rc=%d%s" % (number, name, rc, (" " + detail) if detail else "")
         self.lines.append(line)
         print(line, flush=True)
 
@@ -174,6 +277,38 @@ def _http(path: str, body: dict) -> tuple[int, dict]:
     if status == 0:
         raise DrillError("no HTTP answer from %s%s" % (BENCH_ORIGIN, path))
     return status, answer
+
+
+def _call(
+    method: str, path: str, body: dict | None, headers: Mapping[str, str], jar: str | None
+) -> tuple[int, dict]:
+    """curl with optional headers and a cookie jar (read and written). The body travels on stdin."""
+    argv = ["curl", "-sS", "--connect-timeout", "20", "--max-time", "60", "-X", method]
+    argv.append(BENCH_ORIGIN + path)
+    argv += ["-H", "Content-Type: application/json", "-w", "\n%{http_code}"]
+    for name, value in headers.items():
+        argv += ["-H", "%s: %s" % (name, value)]
+    if jar:
+        argv += ["-b", jar, "-c", jar]
+    if body is not None:
+        argv += ["--data", "@-"]
+    proc = subprocess.run(
+        argv,
+        input=json.dumps(body) if body is not None else None,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    text, _, status = (proc.stdout or "").rpartition("\n")
+    try:
+        code = int(status)
+    except ValueError:
+        raise DrillError("no HTTP answer from %s%s" % (BENCH_ORIGIN, path)) from None
+    try:
+        decoded = json.loads(text) if text.strip() else {}
+    except ValueError:
+        decoded = {}
+    return code, decoded if isinstance(decoded, dict) else {}
 
 
 def _rdc(argv: Sequence[str], env: Mapping[str, str]) -> tuple[int, str]:
@@ -285,6 +420,12 @@ def _drop_token_file(config: str) -> bool:
 @dataclass
 class Deps:
     http: Http = _http
+    call: Call = _call
+    new_uuid: Callable[[], str] = lambda: str(uuid.uuid4())
+    jar_path: Callable[[str], str] = lambda stamp: str(
+        pathlib.Path(tempfile.gettempdir()) / ("ftr-jar-%s-%s.txt" % (stamp, secrets.token_hex(4)))
+    )
+    unlink: Callable[[str], None] = lambda path: pathlib.Path(path).unlink(missing_ok=True)
     rows: Rows = deploy_bench._d1_rows
     rdc: Rdc = _rdc
     drop_token_file: Callable[[str], bool] = _drop_token_file
@@ -307,6 +448,203 @@ def _step_anonymous(d: Deps, ev: Evidence, base: Mapping[str, str], config: str)
     )
     if not ok:
         raise DrillError("anonymous status did not refuse with Not logged in")
+
+
+def _window_count(d: Deps, now: datetime) -> int:
+    since = datetime.fromtimestamp(now.timestamp() - WINDOW_S, UTC).strftime("%Y-%m-%dT%H:%M:%S")
+    got = d.rows(
+        q(
+            "SELECT count(*) AS window_rows FROM free_license_ip_window WHERE issued_at >= $t",
+            t=sql_literal(since),
+        )
+    )
+    return int(got[0].get("window_rows") or 0) if got else -1
+
+
+def _free_body(item: FreeIssued, stamp: str, extra: dict | None = None) -> dict:
+    body: dict = {
+        "machineId": "ftr-%s-m" % stamp,
+        "clientMachineId": "ftr-%s-c" % stamp,
+        "repositoryGuid": item.repository_guid,
+        "kind": "grand",
+    }
+    body.update(extra or {})
+    return body
+
+
+def _step_free_refused(d: Deps, ev: Evidence, item: FreeIssued, stamp: str) -> None:
+    before = _window_count(d, d.now())
+    status, answer = d.call(
+        "POST",
+        API + "/licenses/free",
+        _free_body(item, stamp),
+        {"x-cli-version": CLI_VERSION},
+        None,
+    )
+    after = _window_count(d, d.now())
+    err = answer.get("error") if isinstance(answer.get("error"), dict) else answer
+    details = err.get("details") if isinstance(err, dict) else None
+    details = details if isinstance(details, dict) else {}
+    code = err.get("code") if isinstance(err, dict) else None
+    bad: list[str] = []
+    if status != 403:
+        bad.append("http=%d want 403" % status)
+    if code != TERMS_REQUIRED:
+        bad.append("code=%r want %s" % (code, TERMS_REQUIRED))
+    if details.get("flag") != "--accept-terms":
+        bad.append("details.flag=%r want --accept-terms" % details.get("flag"))
+    if before != after or before < 0:
+        bad.append("window rows %d -> %d" % (before, after))
+    ev.add(
+        "3b",
+        "free-refused",
+        1 if bad else 0,
+        "http=%d code=%s window_rows=%d->%d%s"
+        % (status, code, before, after, ("; " + "; ".join(bad)) if bad else ""),
+    )
+    if bad:
+        raise DrillError("a free licence without terms acceptance was not refused cleanly")
+
+
+def terms_row_check(row: dict, version: str, sha256: str, method: str) -> list[str]:
+    """Reasons an acceptance row differs from the one the step expects."""
+    bad: list[str] = []
+    if row.get("version") != version:
+        bad.append("version=%r want %s" % (row.get("version"), version))
+    if row.get("text_sha256") != sha256:
+        bad.append("text_sha256 differs from the manifest")
+    if row.get("method") != method:
+        bad.append("method=%r want %s" % (row.get("method"), method))
+    return bad
+
+
+def _step_free_accepted(
+    d: Deps, ev: Evidence, item: FreeIssued, stamp: str, manifest: dict[str, str]
+) -> None:
+    acceptance = {
+        "version": manifest["version"],
+        "sha256": manifest["sha256"],
+        "locale": "en",
+        "method": "cli-flag-unattended",
+    }
+    status, answer = d.call(
+        "POST",
+        API + "/licenses/free",
+        _free_body(item, stamp, {"termsAcceptance": acceptance}),
+        {"x-cli-version": CLI_VERSION},
+        None,
+    )
+    if status != 200 or not answer.get("license"):
+        ev.add("3c", "free-accepted", 1, "http=%d no licence issued" % status)
+        raise DrillError("the accepted free licence was not issued")
+    issued = d.rows(
+        q(
+            "SELECT free_subscription_id, issued_at FROM free_license_issuances "
+            "WHERE repository_guid = $g",
+            g=sql_literal(item.repository_guid),
+        )
+    )
+    if len(issued) != 1:
+        ev.add("3c", "free-accepted", 1, "issuance rows=%d" % len(issued))
+        raise DrillError("the free issuance row is missing")
+    item.subject = str(issued[0].get("free_subscription_id") or "")
+    item.issued_at = str(issued[0].get("issued_at") or "")
+    if not FREE_SUBJECT.match(item.subject):
+        ev.add("3c", "free-accepted", 1, "subject=%r is not free:<hmac>" % item.subject)
+        raise DrillError("the free subject is malformed")
+    found = d.rows(
+        q(
+            "SELECT version, text_sha256, method, client_ip, cli_version, notice_text "
+            "FROM terms_acceptances WHERE subject_id = $s",
+            s=sql_literal(item.subject),
+        )
+    )
+    bad: list[str] = []
+    if len(found) != 1:
+        bad.append("acceptance rows=%d want 1" % len(found))
+    else:
+        row = found[0]
+        bad += terms_row_check(row, manifest["version"], manifest["sha256"], "cli-flag-unattended")
+        if row.get("client_ip") is not None:
+            bad.append("client_ip is not NULL")
+        if not str(row.get("cli_version") or ""):
+            bad.append("cli_version empty")
+        if not str(row.get("notice_text") or ""):
+            bad.append("notice_text empty")
+    ev.add(
+        "3c",
+        "free-accepted",
+        1 if bad else 0,
+        "issued subject=%s version=%s%s"
+        % (item.subject, manifest["version"], ("; " + "; ".join(bad)) if bad else ""),
+    )
+    if bad:
+        raise DrillError("the free acceptance row is wrong")
+
+
+def _step_terms_gate(d: Deps, ev: Evidence, creds: tuple[str, str], stamp: str) -> None:
+    jar = d.jar_path(stamp)
+    bad: list[str] = []
+    detail = ""
+    try:
+        status, _ = d.call(
+            "POST", API + "/auth/login", {"email": creds[0], "password": creds[1]}, {}, jar
+        )
+        if status != 200:
+            bad.append("login http=%d" % status)
+        else:
+            _, state = d.call("GET", API + "/portal/terms", None, {}, jar)
+            if state.get("satisfied") is not False:
+                bad.append("terms.satisfied=%r want False" % state.get("satisfied"))
+            gstatus, gate = d.call("GET", API + "/portal/subscription", None, {}, jar)
+            err = gate.get("error") if isinstance(gate.get("error"), dict) else gate
+            gcode = err.get("code") if isinstance(err, dict) else None
+            if gstatus != 403 or gcode != TERMS_REQUIRED:
+                bad.append("gated read http=%d code=%r" % (gstatus, gcode))
+            manifest = terms_manifest()
+            astatus, _ = d.call(
+                "POST",
+                API + "/portal/terms/accept",
+                {
+                    "version": manifest["version"],
+                    "sha256": manifest["sha256"],
+                    "locale": "en",
+                    "method": "web-checkbox",
+                },
+                {},
+                jar,
+            )
+            if astatus != 201:
+                bad.append("accept http=%d want 201" % astatus)
+            rows = d.rows(
+                q(
+                    "SELECT t.version, t.text_sha256, t.method, t.client_ip, t.user_agent "
+                    "FROM terms_acceptances t JOIN users u ON u.id = t.subject_id "
+                    "WHERE u.email = $e",
+                    e=sql_literal(creds[0]),
+                )
+            )
+            if len(rows) != 1:
+                bad.append("acceptance rows=%d want 1" % len(rows))
+            else:
+                bad += terms_row_check(
+                    rows[0], manifest["version"], manifest["sha256"], "web-checkbox"
+                )
+                if not str(rows[0].get("client_ip") or ""):
+                    bad.append("client_ip empty")
+                if not str(rows[0].get("user_agent") or ""):
+                    bad.append("user_agent empty")
+            detail = "gate=%s accept=%d" % (gstatus, astatus)
+    finally:
+        d.unlink(jar)
+    ev.add(
+        "4b",
+        "terms-gate",
+        1 if bad else 0,
+        (detail + "; " if detail else "") + "; ".join(bad) if bad else detail,
+    )
+    if bad:
+        raise DrillError("the portal terms gate did not hold")
 
 
 def _step_email(d: Deps, ev: Evidence, email: str, since_iso: str) -> None:
@@ -385,8 +723,8 @@ def run(dry_run: bool, deps: Deps | None = None, env: Mapping[str, str] | None =
     email = address_for(stamp)
     config = "ftr-" + stamp
     if dry_run:
-        for n, name in enumerate(STEP_NAMES, 1):
-            print("DRY-RUN STEP %d %s config=%s email=%s" % (n, name, config, email))
+        for label, name in STEPS:
+            print("DRY-RUN STEP %s %s config=%s email=%s" % (label, name, config, email))
         return 0
     limits = community_limits()
     password = d.password()
@@ -394,6 +732,8 @@ def run(dry_run: bool, deps: Deps | None = None, env: Mapping[str, str] | None =
         "%Y-%m-%dT%H:%M:%S"
     )
     config_made = registered = False
+    free_item = FreeIssued(repository_guid=d.new_uuid())
+    free_started = False
     try:
         rc = d.allowlist()
         ev.add(1, "allowlist", rc)
@@ -407,6 +747,10 @@ def run(dry_run: bool, deps: Deps | None = None, env: Mapping[str, str] | None =
             raise DrillError("config init failed")
 
         _step_anonymous(d, ev, base, config)
+        manifest = terms_manifest()
+        _step_free_refused(d, ev, free_item, stamp)
+        free_started = True
+        _step_free_accepted(d, ev, free_item, stamp, manifest)
 
         status, answer = d.http(API + "/auth/register", {"email": email, "password": password})
         registered = status in (201, 409)
@@ -422,6 +766,7 @@ def run(dry_run: bool, deps: Deps | None = None, env: Mapping[str, str] | None =
         if not ok:
             raise DrillError("registration did not return 201 with COMMUNITY")
 
+        _step_terms_gate(d, ev, (email, password), stamp)
         _step_email(d, ev, email, since_iso)
         _step_login(d, ev, base, config, (email, password), limits)
     except DrillError as exc:
@@ -431,6 +776,12 @@ def run(dry_run: bool, deps: Deps | None = None, env: Mapping[str, str] | None =
     finally:
         notes: list[str] = []
         crc = 0
+        if free_started:
+            try:
+                cleanup_free(free_item, d.rows, notes.append)
+            except DrillError as exc:
+                crc = 1
+                notes.append(str(exc))
         if registered:
             try:
                 cleanup(email, d.rows, notes.append)

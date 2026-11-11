@@ -9,6 +9,10 @@ import pytest
 from rediacc_ci.ops import free_to_registered as ftr
 
 NOW = datetime(2026, 11, 11, 10, 30, 0, tzinfo=UTC)
+FREE_GUID = "44444444-4444-4444-8444-444444444444"
+FREE_SUBJECT = "free:" + "ab" * 16
+ISSUED_AT = "2026-11-11T10:30:05.123Z"
+MANIFEST = ftr.terms_manifest()
 USER = "11111111-1111-4111-8111-111111111111"
 ORG = "22222222-2222-4222-8222-222222222222"
 SUB = "33333333-3333-4333-8333-333333333333"
@@ -45,6 +49,14 @@ class Fake:
         self.login_env: dict[str, str] = {}
         self.argvs: list[list[str]] = []
         self.dropped: list[str] = []
+        self.window_n = 4
+        self.bump_window_on_refusal = False
+        self.free_acceptance_rows = 1
+        self.free_row_override: dict = {}
+        self.web_rows = 1
+        self.issued = False
+        self.free_deleted = False
+        self.gate_status = 403
 
     def allowlist(self):
         self.calls.append("allowlist")
@@ -79,8 +91,70 @@ class Fake:
 
     email = ""
 
+    def call(self, method, path, body, headers, jar):
+        tail = path.split("/api/v1", 1)[1]
+        self.calls.append("%s %s" % (method, tail))
+        if tail == "/licenses/free":
+            assert headers.get("x-cli-version")
+            if "termsAcceptance" not in body:
+                if self.bump_window_on_refusal:
+                    self.window_n += 1
+                return 403, {
+                    "error": {
+                        "code": "TERMS_ACCEPTANCE_REQUIRED",
+                        "details": {"flag": "--accept-terms", "env": "RDC_ACCEPT_TERMS=1"},
+                    }
+                }
+            assert body["termsAcceptance"]["method"] == "cli-flag-unattended"
+            assert body["termsAcceptance"]["sha256"] == MANIFEST["sha256"]
+            self.issued = True
+            self.window_n += 1
+            return 200, {"license": {"payload": "x"}, "signupUrl": "u"}
+        if tail == "/auth/login":
+            assert jar
+            return 200, {}
+        if tail == "/portal/terms":
+            return 200, {"satisfied": False}
+        if tail == "/portal/subscription":
+            return self.gate_status, {"error": {"code": "TERMS_ACCEPTANCE_REQUIRED"}}
+        if tail == "/portal/terms/accept":
+            return 201, {}
+        raise AssertionError(tail)
+
     def rows(self, sql):
         self.sql.append(sql)
+        if sql.startswith("SELECT count(*) AS window_rows"):
+            return [{"n": 0, "window_rows": self.window_n}]
+        if sql.startswith("SELECT free_subscription_id"):
+            if not self.issued or self.free_deleted:
+                return []
+            return [{"free_subscription_id": FREE_SUBJECT, "issued_at": ISSUED_AT}]
+        if sql.startswith("SELECT version, text_sha256"):
+            row = {
+                "version": MANIFEST["version"],
+                "text_sha256": MANIFEST["sha256"],
+                "method": "cli-flag-unattended",
+                "client_ip": None,
+                "cli_version": "0.0.0-drill",
+                "notice_text": "I accept",
+            }
+            row.update(self.free_row_override)
+            return [row] * self.free_acceptance_rows
+        if sql.startswith("SELECT t.version"):
+            row = {
+                "version": MANIFEST["version"],
+                "text_sha256": MANIFEST["sha256"],
+                "method": "web-checkbox",
+                "client_ip": "203.0.113.9",
+                "user_agent": "curl/8",
+            }
+            return [row] * self.web_rows
+        if sql.startswith(
+            ("SELECT id FROM free_license_issuances", "SELECT id FROM terms_acceptances")
+        ):
+            return [] if self.free_deleted else [{"id": "x"}]
+        if sql.startswith("DELETE FROM free_license_issuances"):
+            self.free_deleted = True
         if "FROM captured_emails WHERE recipient" in sql and sql.startswith("SELECT text_body"):
             return (
                 [{"text_body": "open https://x/account/magic-link/verify?token=abc_DEF-1"}]
@@ -115,6 +189,10 @@ class Fake:
     def deps(self):
         return ftr.Deps(
             http=self.http,
+            call=self.call,
+            new_uuid=lambda: FREE_GUID,
+            jar_path=lambda stamp: "/tmp/jar-" + stamp,
+            unlink=lambda _p: None,
             rows=self.rows,
             rdc=self.rdc,
             drop_token_file=self._drop,
@@ -137,7 +215,13 @@ def test_happy_path_order_and_evidence(capsys):
         "allowlist",
         "config-init",
         "status",
+        "POST /licenses/free",
+        "POST /licenses/free",
         "register",
+        "POST /auth/login",
+        "GET /portal/terms",
+        "GET /portal/subscription",
+        "POST /portal/terms/accept",
         "magic-link",
         "verify",
         "login",
@@ -149,7 +233,10 @@ def test_happy_path_order_and_evidence(capsys):
         ["1", "allowlist"],
         ["2", "config"],
         ["3", "anonymous"],
+        ["3b", "free-refused"],
+        ["3c", "free-accepted"],
         ["4", "register"],
+        ["4b", "terms-gate"],
         ["5", "email"],
         ["6", "login"],
         ["7", "cleanup"],
@@ -258,7 +345,7 @@ def test_dry_run_touches_nothing(capsys):
     fake = Fake()
     assert ftr.run(True, fake.deps(), env={}) == 0
     assert fake.calls == []
-    assert capsys.readouterr().out.count("DRY-RUN STEP") == 7
+    assert capsys.readouterr().out.count("DRY-RUN STEP") == 10
 
 
 def test_community_limits_parse_the_shared_constants():
@@ -287,3 +374,96 @@ def test_a_refusal_raised_before_its_step_line_still_fails_the_run(capsys, monke
     monkeypatch.setattr(fake, "http", no_answer)
     assert go(fake) == 1
     assert "no HTTP answer" in capsys.readouterr().err
+
+
+def test_dry_run_lists_the_terms_steps(capsys):
+    assert ftr.run(True, Fake().deps(), env={}) == 0
+    out = capsys.readouterr().out
+    for label, name in (("3b", "free-refused"), ("3c", "free-accepted"), ("4b", "terms-gate")):
+        assert "DRY-RUN STEP %s %s " % (label, name) in out
+
+
+def test_a_window_count_change_on_the_refusal_fails_the_run(capsys):
+    fake = Fake()
+    fake.bump_window_on_refusal = True
+    assert go(fake) == 1
+    out = capsys.readouterr().out
+    assert re.search(r"STEP 3b free-refused rc=1 .*window rows 4 -> 5", out)
+    assert fake.calls.count("POST /licenses/free") == 1  # 3c never ran
+    assert "STEP 7 cleanup rc=0" in out
+
+
+def test_a_missing_free_acceptance_row_fails_the_run(capsys):
+    fake = Fake()
+    fake.free_acceptance_rows = 0
+    assert go(fake) == 1
+    out = capsys.readouterr().out
+    assert "STEP 3c free-accepted rc=1" in out
+    assert "acceptance rows=0 want 1" in out
+    assert "register" not in fake.calls
+    # the issuance that did happen is still removed
+    assert any(s.startswith("DELETE FROM free_license_issuances") for s in fake.sql)
+
+
+def test_a_free_acceptance_row_with_a_client_ip_fails(capsys):
+    fake = Fake()
+    fake.free_row_override = {"client_ip": "203.0.113.9", "notice_text": ""}
+    assert go(fake) == 1
+    out = capsys.readouterr().out
+    assert "client_ip is not NULL" in out
+    assert "notice_text empty" in out
+
+
+def test_a_missing_web_acceptance_row_fails_the_run(capsys):
+    fake = Fake()
+    fake.web_rows = 0
+    assert go(fake) == 1
+    assert "STEP 4b terms-gate rc=1" in capsys.readouterr().out
+    assert "magic-link" not in fake.calls
+    assert any(s.startswith("DELETE FROM users") for s in fake.sql)
+
+
+def test_an_ungated_portal_read_fails_the_gate(capsys):
+    fake = Fake()
+    fake.gate_status = 200
+    assert go(fake) == 1
+    assert "gated read http=200" in capsys.readouterr().out
+
+
+def test_free_cleanup_deletes_only_the_free_rows():
+    item = ftr.FreeIssued(FREE_GUID, FREE_SUBJECT, ISSUED_AT)
+    sql = ftr.free_cleanup_sql(item)
+    assert sorted(s.split(" WHERE ")[0] for s in sql) == [
+        "DELETE FROM free_license_ip_window",
+        "DELETE FROM free_license_issuances",
+        "DELETE FROM terms_acceptances",
+    ]
+    joined = "\n".join(sql)
+    assert FREE_SUBJECT in joined
+    assert ISSUED_AT in joined
+    assert FREE_GUID in joined
+    assert USER not in joined
+
+
+def test_free_cleanup_refuses_malformed_ids():
+    with pytest.raises(ftr.DrillError):
+        ftr.free_cleanup_sql(ftr.FreeIssued("x' OR '1'='1"))
+    with pytest.raises(ftr.DrillError):
+        ftr.free_cleanup_sql(ftr.FreeIssued(FREE_GUID, "free:x' OR 1=1 --"))
+
+
+def test_both_subjects_acceptance_rows_are_deleted_in_a_full_run():
+    fake = Fake()
+    assert go(fake) == 0
+    deletes = [s for s in fake.sql if s.startswith("DELETE FROM terms_acceptances")]
+    assert len(deletes) == 2
+    assert any(FREE_SUBJECT in s for s in deletes)
+    assert any(USER in s for s in deletes)
+    assert any(
+        s.startswith("DELETE FROM free_license_ip_window") and ISSUED_AT in s for s in fake.sql
+    )
+
+
+def test_user_cleanup_sql_includes_the_user_acceptance_rows():
+    sql = ftr.cleanup_sql("ftr+20261111103000@rediacc.io", USER, [ORG], [SUB])
+    assert any(s.startswith("DELETE FROM terms_acceptances") and USER in s for s in sql)
