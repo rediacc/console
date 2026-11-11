@@ -24,6 +24,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import typing
 import urllib.error
 import urllib.request
 
@@ -60,6 +61,78 @@ class UsageError(Exception):
 
 class RefusedError(Exception):
     """The run cannot proceed; the message is the diagnostic. Exit 1."""
+
+
+# `playwright install-deps` runs `apt-get update` as root. On 2026-11-11 (run 43043942649, job 130614077193) the ubuntu 26.04 runner image could not resolve security.ubuntu.com and the step sat on 20 s `Ign:` lines for about 10 minutes before global-setup began, with stderr discarded. The runner image already carries the libraries, so apt is skipped when every package Playwright would install is present, and otherwise it is bounded and fails by name.
+SYSTEM_DEPS_TIMEOUT_S = 120
+
+
+def dry_run_packages(dry_run_output: str) -> list[str]:
+    """Package names from the `apt-get install ... <pkgs>` line(s) `playwright install-deps --dry-run` prints; empty when it prints none."""
+    packages: list[str] = []
+    for line in dry_run_output.splitlines():
+        if "apt-get" in line and " install" in line:
+            tokens = line.split(" install", 1)[1].split()
+            packages += [t for t in tokens if not t.startswith("-") and t != "&&"]
+    return packages
+
+
+def packages_missing(packages: list[str], runner: typing.Callable[..., typing.Any]) -> list[str]:
+    """The subset of `packages` dpkg does not report installed."""
+    missing = []
+    for package in packages:
+        result = runner(
+            ["dpkg-query", "-W", "-f=${Status}", package],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode != 0 or "install ok installed" not in (result.stdout or ""):
+            missing.append(package)
+    return missing
+
+
+def install_system_deps(
+    browser: str,
+    cwd: pathlib.Path | str,
+    runner: typing.Callable[..., typing.Any] = subprocess.run,
+) -> bool:
+    """True when apt ran, False when every system package was already installed. Raises RefusedError naming the step when the dry run is unreadable or apt fails or passes SYSTEM_DEPS_TIMEOUT_S."""
+    base = ["npx", "--no-install", "playwright", "install-deps", browser]
+    try:
+        dry = runner(
+            [*base, "--dry-run"],
+            cwd=cwd,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=SYSTEM_DEPS_TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise RefusedError(
+            f"playwright install-deps --dry-run {browser} timed out after {SYSTEM_DEPS_TIMEOUT_S}s"
+        ) from exc
+    if dry.returncode != 0:
+        raise RefusedError(
+            f"playwright install-deps --dry-run {browser} failed (rc={dry.returncode}): {(dry.stderr or '').strip()[-300:]}"
+        )
+    packages = dry_run_packages(dry.stdout or "")
+    missing = packages_missing(packages, runner) if packages else []
+    if not missing:
+        log.info(
+            f"Playwright system deps for {browser} already present ({len(packages)} packages); skipping apt"
+        )
+        return False
+    log.info(f"Installing Playwright system deps for {browser}; missing: {' '.join(missing)}")
+    try:
+        done = runner(base, cwd=cwd, check=False, timeout=SYSTEM_DEPS_TIMEOUT_S)
+    except subprocess.TimeoutExpired as exc:
+        raise RefusedError(
+            f"playwright install-deps {browser} timed out after {SYSTEM_DEPS_TIMEOUT_S}s (apt mirror outage?)"
+        ) from exc
+    if done.returncode != 0:
+        raise RefusedError(f"playwright install-deps {browser} failed (rc={done.returncode})")
+    return True
 
 
 @dataclasses.dataclass
@@ -411,12 +484,7 @@ class Run:
             ):
                 raise RefusedError(f"npx playwright install {browser} failed")
             if common.is_ci():
-                subprocess.run(
-                    ["npx", "--no-install", "playwright", "install-deps", browser],
-                    cwd=self.e2e_dir,
-                    stderr=subprocess.DEVNULL,
-                    check=False,
-                )
+                install_system_deps(browser, self.e2e_dir)
 
     def run_tests(self, projects: list[str], files: list[str]) -> bool:
         log.step("Running Account Portal E2E tests...")

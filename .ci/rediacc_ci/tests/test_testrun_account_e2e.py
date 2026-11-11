@@ -573,3 +573,60 @@ def test_delta_a_grep_that_excludes_the_real_provider_spec_owes_no_proof(
     )
     assert new.out.code == 0, new.out.err
     assert "Real-provider" not in new.out.out + new.out.err
+
+
+# --- install_system_deps: a mirror outage must not stall the lane (run 43043942649) ---
+
+
+class _Fake:
+    """Records calls; `dry` is the dry-run stdout, `installed` the dpkg-known packages, `apt` the real install-deps result."""
+
+    def __init__(self, dry: str, installed: set[str], apt: object = 0) -> None:
+        self.dry, self.installed, self.apt = dry, installed, apt
+        self.calls: list[list[str]] = []
+
+    def __call__(self, argv: list[str], **kw: typing.Any) -> subprocess.CompletedProcess[str]:
+        self.calls.append(argv)
+        if argv[0] == "dpkg-query":
+            ok = argv[-1] in self.installed
+            return subprocess.CompletedProcess(
+                argv, 0 if ok else 1, "install ok installed" if ok else "", ""
+            )
+        if "--dry-run" in argv:
+            return subprocess.CompletedProcess(argv, 0, self.dry, "")
+        if isinstance(self.apt, BaseException):
+            raise self.apt
+        return subprocess.CompletedProcess(argv, int(typing.cast(int, self.apt)), "", "")
+
+
+DRY = "apt-get install -y --no-install-recommends libnss3 libatk1.0-0 libgbm1\n"
+
+
+def test_dry_run_packages_parse() -> None:
+    assert account_e2e.dry_run_packages(DRY) == ["libnss3", "libatk1.0-0", "libgbm1"]
+    assert account_e2e.dry_run_packages("nothing to do\n") == []
+
+
+def test_system_deps_present_skips_apt() -> None:
+    fake = _Fake(DRY, {"libnss3", "libatk1.0-0", "libgbm1"})
+    assert account_e2e.install_system_deps("chromium", ".", fake) is False
+    assert not any(c[0] == "npx" and "--dry-run" not in c for c in fake.calls)
+
+
+def test_system_deps_missing_runs_apt_bounded() -> None:
+    # control: the skip is conditional, a missing package still reaches apt
+    fake = _Fake(DRY, {"libnss3"})
+    assert account_e2e.install_system_deps("chromium", ".", fake) is True
+    assert any(c[0] == "npx" and "--dry-run" not in c for c in fake.calls)
+
+
+def test_system_deps_timeout_fails_by_name() -> None:
+    fake = _Fake(DRY, set(), apt=subprocess.TimeoutExpired("npx", 120))
+    with pytest.raises(account_e2e.RefusedError, match="install-deps chromium timed out"):
+        account_e2e.install_system_deps("chromium", ".", fake)
+
+
+def test_system_deps_apt_failure_fails_by_name() -> None:
+    fake = _Fake(DRY, set(), apt=100)
+    with pytest.raises(account_e2e.RefusedError, match="install-deps chromium failed"):
+        account_e2e.install_system_deps("chromium", ".", fake)
