@@ -17,18 +17,27 @@
  */
 
 import { DEFAULTS } from '@rediacc/shared/config';
+import { BAKED_IN_REGIONS } from '@rediacc/shared/regions';
+import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { t } from '../../i18n/index.js';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
 import { isAgentEnvironment } from '../../utils/agent-guard.js';
 import { ValidationError } from '../../utils/errors.js';
 import { askChoice } from '../../utils/prompt.js';
+import { promptRegionSelection } from '../../utils/region-prompt.js';
 import { shellQuote } from '../../utils/shell-quote.js';
+import { getEffectiveConfigName } from '../config/config-name.js';
+import { updateConfigAtPointer } from '../config/synced-write.js';
 import { outputService } from '../core/output.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { accountServerFetch } from './account-client.js';
 import { readLocalMachineId, readRemoteMachineId, writeRepoLicense } from './license-machine.js';
-import { getSubscriptionServerUrl, getSubscriptionTokenState } from './subscription-auth.js';
+import {
+  getConfiguredServerUrl,
+  getSubscriptionServerUrl,
+  getSubscriptionTokenState,
+} from './subscription-auth.js';
 
 export const FREE_LICENSE_PATH = '/account/api/v1/licenses/free';
 /** The account server's refusal code when a FREE blob asks for a backup session. */
@@ -44,15 +53,32 @@ let chosenAuthority: LicenseAuthority | undefined;
 /** The signup link the server returned with the last FREE licence. */
 let serverSignupUrl: string | undefined;
 
+/** The server picked for this run when the config named none (a region pick or the default). */
+let chosenServerUrl: string | undefined;
+/** The `--region` id set by the command layer for this process. */
+let requestedRegion: string | undefined;
+
 /** Test seam: forget the process-wide choice and signup link. */
 export function resetFreeLicenseStateForTests(): void {
   chosenAuthority = undefined;
   serverSignupUrl = undefined;
+  chosenServerUrl = undefined;
+  requestedRegion = undefined;
+}
+
+/** Record the `--region <id>` flag so the free path honours it without every caller threading it. */
+export function setFreeLicenseRegion(regionId: string | undefined): void {
+  requestedRegion = regionId;
+}
+
+/** The account server a FREE licence is issued by and renews at: the run's pick, else the configured one. */
+function freeLicenseServerUrl(): string {
+  return getSubscriptionServerUrl(chosenServerUrl);
 }
 
 /** The account page a FREE user signs up at: the server's own answer, else the configured server's login page. */
 function freeLicenseSignupUrl(): string {
-  return serverSignupUrl ?? `${getSubscriptionServerUrl()}/account/login`;
+  return serverSignupUrl ?? `${freeLicenseServerUrl()}/account/login`;
 }
 
 function autoTakesFree(): boolean {
@@ -71,12 +97,14 @@ function autoTakesFree(): boolean {
  *   which is what this path did before FREE existed.
  */
 export async function resolveLicenseAuthority(
-  login: () => Promise<unknown>
+  login: () => Promise<unknown>,
+  options: { region?: string } = {}
 ): Promise<LicenseAuthority> {
   if (getSubscriptionTokenState().kind === 'ready') return 'token';
   if (chosenAuthority === 'free') return 'free';
 
   if (autoTakesFree()) {
+    await chooseFreeLicenseRegion(options.region ?? requestedRegion, false);
     outputService.warn(
       t('errors.freeLicense.autoTaken', {
         url: freeLicenseSignupUrl(),
@@ -96,6 +124,7 @@ export async function resolveLicenseAuthority(
       },
     ]);
     if (choice === 'free') {
+      await chooseFreeLicenseRegion(options.region ?? requestedRegion, true);
       chosenAuthority = 'free';
       return 'free';
     }
@@ -104,6 +133,52 @@ export async function resolveLicenseAuthority(
   await login();
   chosenAuthority = 'token';
   return 'token';
+}
+
+/** Persist the picked server as the active config's account server, so renewals and a later login agree. */
+async function saveAccountServer(serverUrl: string): Promise<void> {
+  const configName = getEffectiveConfigName();
+  if (!(await configFileStorage.exists(configName))) return;
+  await updateConfigAtPointer(configName, '/account/accountServer', (cfg) => ({
+    ...cfg,
+    account: { ...(cfg.account ?? {}), accountServer: serverUrl },
+  }));
+}
+
+/**
+ * Pick the region a FREE licence comes from, only when no server is configured (flag, env, config,
+ * or a stored login): `--region <id>` names it, a terminal is asked (timezone suggestion as the
+ * default), anything else keeps the default and says how to choose. A configured server is never
+ * asked about and never overwritten.
+ */
+async function chooseFreeLicenseRegion(
+  regionId: string | undefined,
+  interactive: boolean
+): Promise<void> {
+  const named = regionId === undefined ? undefined : findRegion(regionId);
+  const configured = getConfiguredServerUrl();
+  if (configured) {
+    if (named && `https://${named.domain}` !== configured) {
+      outputService.warn(t('errors.freeLicense.regionIgnored', { server: configured }));
+    }
+    return;
+  }
+  const canAsk = interactive && process.stdin.isTTY === true && process.stdout.isTTY === true;
+  if (!named && !canAsk) {
+    chosenServerUrl = undefined;
+    outputService.info(t('errors.freeLicense.defaultRegion', { server: freeLicenseServerUrl() }));
+    return;
+  }
+  const domain = named ? named.domain : (await promptRegionSelection(BAKED_IN_REGIONS)).domain;
+  chosenServerUrl = `https://${domain}`;
+  await saveAccountServer(chosenServerUrl);
+}
+
+/** The built-in region with this id; an unknown id is refused. */
+function findRegion(regionId: string): (typeof BAKED_IN_REGIONS)[number] {
+  const region = BAKED_IN_REGIONS.find((r) => r.id === regionId);
+  if (!region) throw new ValidationError(t('errors.unknownRegion', { region: regionId }));
+  return region;
 }
 
 export interface FreeLicenseParams {
@@ -142,7 +217,7 @@ export function issueFreeRepoLicense(
       }>(FREE_LICENSE_PATH, {
         method: 'POST',
         noAuth: true,
-        serverUrl: getSubscriptionServerUrl(),
+        serverUrl: freeLicenseServerUrl(),
         body: {
           machineId,
           clientMachineId,

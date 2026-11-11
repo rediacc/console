@@ -17,6 +17,10 @@ const m = vi.hoisted(() => ({
   warn: vi.fn(),
   info: vi.fn(),
   writeRepoLicense: vi.fn(),
+  configured: vi.fn(),
+  promptRegion: vi.fn(),
+  update: vi.fn(),
+  exists: vi.fn(),
 }));
 
 vi.mock('../../../i18n/index.js', () => ({
@@ -26,7 +30,14 @@ vi.mock('../../../i18n/index.js', () => ({
 vi.mock('../account-client.js', () => ({ accountServerFetch: m.fetch }));
 vi.mock('../subscription-auth.js', () => ({
   getSubscriptionTokenState: m.tokenState,
-  getSubscriptionServerUrl: () => 'https://acct.example',
+  getSubscriptionServerUrl: (preferred?: string) => preferred ?? 'https://acct.example',
+  getConfiguredServerUrl: m.configured,
+}));
+vi.mock('../../../utils/region-prompt.js', () => ({ promptRegionSelection: m.promptRegion }));
+vi.mock('../../config/synced-write.js', () => ({ updateConfigAtPointer: m.update }));
+vi.mock('../../config/config-name.js', () => ({ getEffectiveConfigName: () => 'cfg' }));
+vi.mock('../../../adapters/config-file-storage.js', () => ({
+  configFileStorage: { exists: m.exists },
 }));
 vi.mock('../../../utils/agent-guard.js', () => ({ isAgentEnvironment: m.isAgent }));
 vi.mock('../../../utils/prompt.js', () => ({ askChoice: m.askChoice }));
@@ -72,6 +83,10 @@ beforeEach(() => {
   m.isAgent.mockReturnValue(false);
   delete process.env.REDIACC_YES;
   setTty(false);
+  m.configured.mockReturnValue(undefined);
+  m.exists.mockResolvedValue(true);
+  m.update.mockResolvedValue(undefined);
+  m.promptRegion.mockResolvedValue({ region: {}, domain: 'eu.rediacc.cloud' });
 });
 
 afterEach(() => {
@@ -268,5 +283,72 @@ describe('hosted backups on a Free License', () => {
     expect(isFreeLicenseBackupRefusal({ error: refusal })).toBe(true);
     expect(isFreeLicenseBackupRefusal({ stdout: refusal })).toBe(true);
     expect(isFreeLicenseBackupRefusal({ error: 'quota refused', stderr: '' })).toBe(false);
+  });
+});
+
+describe('free licence region pick', () => {
+  const US = { id: 'us', label: 'United States', domain: 'us.rediacc.cloud', default: false };
+
+  it('a terminal with no server asks, uses the pick and saves it', async () => {
+    setTty(true);
+    m.askChoice.mockResolvedValueOnce('free');
+    m.promptRegion.mockResolvedValue({ region: US, domain: US.domain });
+    await resolveLicenseAuthority(vi.fn());
+    expect(m.promptRegion).toHaveBeenCalledTimes(1);
+    expect(m.update).toHaveBeenCalledTimes(1);
+    expect(m.update.mock.calls[0][1]).toBe('/account/accountServer');
+    const saved = m.update.mock.calls[0][2]({ account: { e2ePublicKey: 'k' } });
+    expect(saved.account.accountServer).toBe('https://us.rediacc.cloud');
+    m.fetch.mockResolvedValue({ license: BLOB });
+    await issueFreeRepoLicense('m', MACHINE, 'key', { repositoryGuid: GUID, kind: 'grand' });
+    expect(m.fetch.mock.calls[0][1].serverUrl).toBe('https://us.rediacc.cloud');
+  });
+
+  it('no terminal keeps the default and prints one line naming it', async () => {
+    m.isAgent.mockReturnValue(true);
+    await resolveLicenseAuthority(vi.fn());
+    expect(m.promptRegion).not.toHaveBeenCalled();
+    expect(m.update).not.toHaveBeenCalled();
+    expect(m.info).toHaveBeenCalledTimes(1);
+    expect(m.info).toHaveBeenCalledWith(
+      expect.stringContaining('errors.freeLicense.defaultRegion')
+    );
+    expect(m.info).toHaveBeenCalledWith(expect.stringContaining('https://acct.example'));
+  });
+
+  it('a configured server is never prompted or overwritten', async () => {
+    setTty(true);
+    m.configured.mockReturnValue('https://eu.rediacc.cloud');
+    m.askChoice.mockResolvedValueOnce('free');
+    await resolveLicenseAuthority(vi.fn());
+    expect(m.promptRegion).not.toHaveBeenCalled();
+    expect(m.update).not.toHaveBeenCalled();
+    expect(m.info).not.toHaveBeenCalled();
+  });
+
+  it('--region us uses us without asking, and a configured server wins over it', async () => {
+    m.isAgent.mockReturnValue(true);
+    await resolveLicenseAuthority(vi.fn(), { region: 'us' });
+    expect(m.promptRegion).not.toHaveBeenCalled();
+    expect(m.update.mock.calls[0][2]({}).account.accountServer).toBe('https://us.rediacc.cloud');
+    m.fetch.mockResolvedValue({ license: BLOB });
+    await issueFreeRepoLicense('m', MACHINE, 'key', { repositoryGuid: GUID, kind: 'grand' });
+    expect(m.fetch.mock.calls[0][1].serverUrl).toBe('https://us.rediacc.cloud');
+
+    resetFreeLicenseStateForTests();
+    m.update.mockClear();
+    m.configured.mockReturnValue('https://eu.rediacc.cloud');
+    await resolveLicenseAuthority(vi.fn(), { region: 'us' });
+    expect(m.update).not.toHaveBeenCalled();
+    expect(m.warn).toHaveBeenCalledWith(
+      expect.stringContaining('errors.freeLicense.regionIgnored')
+    );
+  });
+
+  it('an unknown --region id is refused', async () => {
+    m.isAgent.mockReturnValue(true);
+    await expect(resolveLicenseAuthority(vi.fn(), { region: 'mars' })).rejects.toThrow(
+      'errors.unknownRegion'
+    );
   });
 });

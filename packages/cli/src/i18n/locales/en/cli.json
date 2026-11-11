@@ -3022,6 +3022,8 @@
       "offerLogin": "Log in to an account",
       "offerFree": "Continue with a free license (up to {{maxGb}} GB)",
       "autoTaken": "No login found, so a free license is used (up to {{maxGb}} GB, no hosted backups). Register a free account for Community limits and hosted backup: {{url}}",
+      "defaultRegion": "No region chosen, so the free license comes from {{server}}. To choose another, pass --region <id> or set REDIACC_ACCOUNT_SERVER.",
+      "regionIgnored": "This config already uses {{server}}, so --region is ignored.",
       "issued": "Free license installed for this repository (up to {{maxGb}} GB).",
       "noHostedBackup": "A free license has no hosted backups. Register a free account to get Community's hosted backup, or choose a paid plan for more: {{url}}"
     },
