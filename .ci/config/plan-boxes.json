@@ -2798,27 +2798,6 @@
       "open_sigs": [],
       "done_sigs": []
     },
-    "agent/plans/PLAN-submodule-branch-coordination-guard.md": {
-      "status": "superseded",
-      "owner": "d778be9d",
-      "folder": "agent/plans",
-      "moved_at": "",
-      "open": 3,
-      "done": 5,
-      "open_sigs": [
-        "01580b54",
-        "166f81b3",
-        "ab41ac98"
-      ],
-      "done_sigs": [
-        "07636674",
-        "33fa94fa",
-        "7d554983",
-        "c053d7f5",
-        "f1981d10"
-      ],
-      "ruling": "#dcea1f9b"
-    },
     "agent/plans/PLAN-sync-docker-latest-tag-with-releases.md": {
       "status": "compacted",
       "owner": "e6500e92",
@@ -3952,28 +3931,6 @@
         "b903a441"
       ]
     },
-    "agent/plans/_done/PLAN-major-upgrade-age-clock.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-10-01",
-      "open": 0,
-      "done": 11,
-      "open_sigs": [],
-      "done_sigs": [
-        "16f2e50e",
-        "190c5d98",
-        "2d823424",
-        "3329361f",
-        "4619bdca",
-        "944f7703",
-        "b364251a",
-        "bf306dcd",
-        "c546e233",
-        "f46036b1",
-        "fc5f438e"
-      ]
-    },
     "agent/plans/_done/PLAN-parallel-writer-roster.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -4788,6 +4745,27 @@
         "db9249f9",
         "e1648399"
       ]
+    },
+    "agent/plans/_done/PLAN-submodule-branch-coordination-guard.md": {
+      "status": "superseded",
+      "owner": "d778be9d",
+      "folder": "agent/plans/_done",
+      "moved_at": "2026-11-11",
+      "open": 3,
+      "done": 5,
+      "open_sigs": [
+        "01580b54",
+        "166f81b3",
+        "ab41ac98"
+      ],
+      "done_sigs": [
+        "07636674",
+        "33fa94fa",
+        "7d554983",
+        "c053d7f5",
+        "f1981d10"
+      ],
+      "ruling": "#dcea1f9b"
     },
     "agent/plans/_done/PLAN-tooling-transformation.md": {
       "status": "done",

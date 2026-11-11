@@ -460,7 +460,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 230 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 229 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -470,7 +470,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-agent-hints-in-stop-hook.md` | compacted | 51 | 0 | 0 | 3640 |
 | `agent/plans/PLAN-agent-tree-lifecycle.md` | mostly-done | 74 | 1 | 6 | 12129 |
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
-| `agent/plans/PLAN-backup-critical-tier.md` | approved | 792 | 5 | 46 | 112548 |
+| `agent/plans/PLAN-backup-critical-tier.md` | approved | 793 | 5 | 46 | 112802 |
 | `agent/plans/PLAN-backup-download-from-store.md` | approved | 57 | 2 | 7 | 12292 |
 | `agent/plans/PLAN-backup-integrity.md` | approved | 497 | 12 | 44 | 77849 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
@@ -597,7 +597,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-hook-retro-20261110.md` | ready | 234 | 0 | 8 | 27053 |
 | `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-subagent-idle-detection.md` | compacted | 39 | 0 | 0 | 2696 |
-| `agent/plans/PLAN-submodule-branch-coordination-guard.md` | superseded | 115 | 3 | 5 | 20118 |
 | `agent/plans/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 61 | 0 | 0 | 4171 |
 | `agent/plans/PLAN-sync-remote-file-ownership.md` | approved | 135 | 0 | 7 | 21408 |
 | `agent/plans/PLAN-telemetry-export.md` | approved | 208 | 0 | 19 | 51300 |
@@ -652,7 +651,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-lessons-registry-followups.md` | done | 22 | 1 | 1 | 2105 |
 | `agent/plans/_done/PLAN-lessons-registry.md` | done | 186 | 0 | 9 | 21416 |
 | `agent/plans/_done/PLAN-locale-techdiff-resync.md` | done | 86 | 0 | 5 | 7099 |
-| `agent/plans/_done/PLAN-major-upgrade-age-clock.md` | done | 145 | 0 | 11 | 19768 |
 | `agent/plans/_done/PLAN-parallel-writer-roster.md` | done | 304 | 0 | 28 | 40550 |
 | `agent/plans/_done/PLAN-per-commit-review.md` | done | 400 | 0 | 17 | 52582 |
 | `agent/plans/_done/PLAN-per-flavor-renet-binary-paths.md` | done | 158 | 0 | 8 | 27063 |
@@ -686,6 +684,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-stop-hook-retro-20260925.md` | done | 259 | 0 | 10 | 25162 |
 | `agent/plans/_done/PLAN-stop-hook-rulings-campaign.md` | done | 132 | 0 | 17 | 14083 |
 | `agent/plans/_done/PLAN-stop-hook-turbo.md` | done | 191 | 0 | 23 | 31391 |
+| `agent/plans/_done/PLAN-submodule-branch-coordination-guard.md` | superseded | 119 | 3 | 5 | 20600 |
 | `agent/plans/_done/PLAN-tooling-transformation.md` | done | 7511 | 0 | 154 | 754149 |
 | `agent/plans/_done/PLAN-trap-enforcement.md` | done | 547 | 0 | 7 | 61243 |
 | `agent/plans/_done/PLAN-turbo-local-first.md` | done | 124 | 0 | 6 | 15349 |
@@ -695,7 +694,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 | `agent/plans/_removed/PLAN-uncommitted-work-exposure-check.md` | removed | 107 | 0 | 0 | 15888 |
 
-230 plan(s), 167 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+229 plan(s), 166 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
 
 ## Expired plans
 
@@ -729,6 +728,7 @@ A plan whose retention ran out. The FILE is gone and the full text is the blob b
 | `agent/plans/_done/PLAN-fixture-env-example-validation-entries.md` | PLAN: give test_gate_bws_map.py's clean-fixture test a synthetic .env.example | 2026-09-23 | 2026-11-03 | `9a738cf49706d10a73e065a33c1e2fd7deafa94a` |
 | `agent/plans/_done/PLAN-github-actions-to-bitwarden.md` | PLAN: the GitHub Actions variable namespace moves to Bitwarden, and a gate holds it there | 2026-09-22 | 2026-11-04 | `fd194dddc41205ef70828a319b03483b3581f8ae` |
 | `agent/plans/_done/PLAN-hint-corpus-ci-assertions.md` | PLAN: check_hint_corpus.py, the control-first liveness gate for the behavioral-hint corpus | 2026-09-22 | 2026-11-03 | `63cef320cfdc127f3b134ae0cedb8e87be837c4e` |
+| `agent/plans/_done/PLAN-major-upgrade-age-clock.md` | PLAN: Held majors age out of the blocklist | 2026-10-01 | 2026-11-11 | `25fb22796c2da85ffa2f484a1d49ce812d7eaafe` |
 | `agent/plans/_done/PLAN-migrate-plan-doc-discovery.md` | Plan-document discovery in /migrate and the Stop hook's handoff block | 2026-09-17 | 2026-11-03 | `e36ee9241f35231d53a6471810d1ab3001c0e4b7` |
 | `agent/plans/_done/PLAN-npm-global-install-release-age.md` | PLAN: every npm install -g honours the release-age window | 2026-09-30 | 2026-11-10 | `4daee019dad8c1a44ed954b50db4778e8e99e532` |
 | `agent/plans/_done/PLAN-npm11-everywhere.md` | PLAN: npm 11 is the only npm, in console and in private/account, locally and in CI | 2026-09-24 | 2026-11-04 | `81bb3d8281b0897f1c4a3ec6782270332cd28b3a` |
@@ -754,4 +754,4 @@ A plan whose retention ran out. The FILE is gone and the full text is the blob b
 | `agent/plans/_done/PLAN-w9p2-script-relocation.md` | PLAN: W9 P2 script relocation, remaining legs (scripts/gen, scripts/ops) | 2026-09-17 | 2026-11-04 | `03cc02f95dd3d0ea1dfb67a9275b929f561c80f3` |
 | `agent/plans/_done/PLAN-wl-wait-duplicate-listener.md` | PLAN: wl_wait duplicate listeners -- `--timeout 60` is SIXTY MINUTES and nothing refuses a second instance | 2026-09-23 | 2026-11-03 | `d95c15b4c60f39f75ab14f3e9e294745e280071a` |
 
-50 expired plan(s). The row is the receipt; the blob is the text.
+51 expired plan(s). The row is the receipt; the blob is the text.
