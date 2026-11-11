@@ -168,16 +168,14 @@ TEST_KEY_PREFIXES = ("sk_test_", "rk_test_")
 
 
 def stripe_pair() -> tuple[str, str]:
-    """The (secret key, webhook secret) bound as the bench Worker's Stripe pair, or ("", "") when the sandbox pair is absent.
+    """The (secret key, webhook secret) bound as the bench Worker's STRIPE_SANDBOX_* pair, or ("", "") when the pair is absent.
 
-    The deploy-bench profile aliases STRIPE_SANDBOX_SECRET_KEY / STRIPE_SANDBOX_WEBHOOK_SECRET to the Worker names. Bench never takes a live key: a key without a test prefix is refused by name, and no value is ever printed. One half without the other is refused too, since a key with no webhook secret (or the reverse) would boot a half-working billing path.
+    The deploy-bench profile binds STRIPE_SANDBOX_SECRET_KEY and STRIPE_SANDBOX_WEBHOOK_SECRET under their own names, the ones the account app reads as its sandbox pair, so bench never presents itself as live billing. A key without a test prefix is refused by name and no value is ever printed. One half without the other is refused too, since a key with no webhook secret (or the reverse) would boot a half-working billing path.
     """
-    key = os.environ.get("STRIPE_SECRET_KEY") or ""
-    hook = os.environ.get("STRIPE_WEBHOOK_SECRET") or ""
+    key = os.environ.get("STRIPE_SANDBOX_SECRET_KEY") or ""
+    hook = os.environ.get("STRIPE_SANDBOX_WEBHOOK_SECRET") or ""
     if not key and not hook:
-        print(
-            "Stripe sandbox pair absent: bench keeps STRIPE_SECRET_KEY and STRIPE_WEBHOOK_SECRET blank"
-        )
+        print("Stripe sandbox pair absent: bench keeps the Stripe secrets blank")
         return "", ""
     if not key or not hook:
         missing = "STRIPE_SANDBOX_WEBHOOK_SECRET" if key else "STRIPE_SANDBOX_SECRET_KEY"
@@ -190,7 +188,7 @@ def stripe_pair() -> tuple[str, str]:
             "prefix): bench never takes a live key"
         )
     print(
-        "Stripe sandbox pair bound as the bench Worker's STRIPE_SECRET_KEY / STRIPE_WEBHOOK_SECRET"
+        "Stripe sandbox pair bound as the bench Worker's STRIPE_SANDBOX_SECRET_KEY / STRIPE_SANDBOX_WEBHOOK_SECRET"
     )
     return key, hook
 
@@ -241,9 +239,11 @@ def secrets_payload() -> dict[str, str]:
         "CLOUDFLARE_ACCOUNT_ID": ACCOUNT_ID,
         "ACCOUNT_CONFIG_SERVER_KEY": signing["ACCOUNT_CONFIG_SERVER_KEY"],
         "ACCOUNT_BACKUP_STORE_KEK": signing["ACCOUNT_BACKUP_STORE_KEK"],
-        # The Stripe SANDBOX pair (test keys only, checked in stripe_pair) when the vault holds it, else empty strings so the worker boots without billing, as edge does.
-        "STRIPE_SECRET_KEY": stripe_key,
-        "STRIPE_WEBHOOK_SECRET": stripe_hook,
+        # The live Stripe names stay empty so the worker never presents itself as live billing, as edge does; the sandbox pair (test keys only, checked in stripe_pair) rides the names the app reads for a sandbox, empty when the vault holds none.
+        "STRIPE_SECRET_KEY": "",
+        "STRIPE_WEBHOOK_SECRET": "",
+        "STRIPE_SANDBOX_SECRET_KEY": stripe_key,
+        "STRIPE_SANDBOX_WEBHOOK_SECRET": stripe_hook,
         "ROOT_EMAIL": os.environ.get("ROOT_EMAIL") or "",
         "AWS_SES_ACCESS_KEY_ID": os.environ.get("AWS_SES_ACCESS_KEY_ID") or "",
         "AWS_SES_SECRET_ACCESS_KEY": os.environ.get("AWS_SES_SECRET_ACCESS_KEY") or "",
