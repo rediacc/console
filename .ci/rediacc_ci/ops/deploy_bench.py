@@ -227,6 +227,7 @@ def secrets_payload() -> dict[str, str]:
         "SELLER_NAME": os.environ.get("SELLER_NAME") or "",
         "SELLER_VAT_NUMBER": os.environ.get("SELLER_VAT_NUMBER") or "",
         "SELLER_REGISTRATION_NUMBER": os.environ.get("SELLER_REGISTRATION_NUMBER") or "",
+        "SELLER_REGISTER_NAME": os.environ.get("SELLER_REGISTER_NAME") or "",
         "SELLER_ADDRESS_LINE1": os.environ.get("SELLER_ADDRESS_LINE1") or "",
         "SELLER_ADDRESS_LINE2": os.environ.get("SELLER_ADDRESS_LINE2") or "",
         "SELLER_CITY": os.environ.get("SELLER_CITY") or "",

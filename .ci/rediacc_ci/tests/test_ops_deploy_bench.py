@@ -639,3 +639,23 @@ def test_the_payload_carries_the_cloudflare_account_id(monkeypatch):
     """The AE SQL reads need the account id the regional pusher also sends; the region-consistency gate compares the two key sets (review c5be449f.2)."""
     _bench_env(monkeypatch)
     assert deploy_bench.secrets_payload()["CLOUDFLARE_ACCOUNT_ID"] == deploy_bench.ACCOUNT_ID
+
+
+def _legal_entity_names() -> set[str]:
+    supply = json.loads(paths.from_root(".ci", "config", "secret-supply.json").read_text("utf-8"))
+    return set(supply["consumers"]["legal-entity"]["required"])
+
+
+def test_the_payload_carries_the_whole_legal_entity(monkeypatch):
+    """PLAN-terms-acceptance E2: the bench Worker gets every one of the ten separate SELLER_* entries the `legal-entity` profile requires, the commercial register's name among them, so bench renders the same contracting party as production. A seller map one name short is red here, by that name."""
+    _bench_env(monkeypatch, SELLER_REGISTER_NAME="Register X")
+    payload = deploy_bench.secrets_payload()
+    entity = _legal_entity_names()
+    assert len(entity) == 10
+    seller = {k for k in payload if k.startswith("SELLER_")}
+    assert seller == entity, "missing: %s, extra: %s" % (
+        sorted(entity - seller),
+        sorted(seller - entity),
+    )
+    assert payload["SELLER_REGISTER_NAME"] == "Register X"
+    assert set(_deploy_bench_profile()["optional"]) >= entity

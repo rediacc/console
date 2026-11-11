@@ -57,6 +57,7 @@ SELLER_FIELDS = (
     "SELLER_EMAIL",
     "SELLER_NAME",
     "SELLER_POSTAL_CODE",
+    "SELLER_REGISTER_NAME",
     "SELLER_REGISTRATION_NUMBER",
     "SELLER_VAT_NUMBER",
 )
@@ -372,14 +373,14 @@ def test_b7_grammar_parity_with_the_gate_that_reads_the_same_blocks(gate):
 
 
 def test_b8_json_expansion_refuses_a_partial_record_by_name(gate, tmp_path):
-    """B8. Nine `SELLER_*` bind from one object; a record missing one fails, naming it.
+    """B8. Ten `SELLER_*` bind from one object; a record missing one fails, naming it.
 
     THE PLANTED DEFECT IS A HELPER THAT BINDS THE EIGHT IT FOUND AND RETURNS 0. That is not a hypothetical shape, it is the natural one: iterate the object, bind each key, report success. It ships an invoice with a blank city, and nothing anywhere is red.
     """
     record = {k: "v-%s" % k for k in SELLER_FIELDS}
     one_name_fixture(tmp_path, "SELLER_PROFILE_JSON", json.dumps(record))
     out = run_verb(gate, tmp_path, "json", "SELLER_PROFILE_JSON")
-    gate.assert_contains(out, "expanded to 9 binding(s)", "a whole record binds all nine fields")
+    gate.assert_contains(out, "expanded to 10 binding(s)", "a whole record binds all ten fields")
     gate.assert_contains(out, "rc=0", "and succeeds")
     for field in SELLER_FIELDS:
         gate.assert_contains(out, field, "%s was not bound" % field)
@@ -389,8 +390,8 @@ def test_b8_json_expansion_refuses_a_partial_record_by_name(gate, tmp_path):
     one_name_fixture(tmp_path, "SELLER_PROFILE_JSON", json.dumps(partial))
     out = run_verb(gate, tmp_path, "json", "SELLER_PROFILE_JSON")
     gate.assert_contains(out, OMITTED_FIELD, "the refusal must NAME the missing field")
-    gate.assert_contains(out, "rc=1", "a partial company record is a failure, not eight bindings")
-    gate.log_pass("a whole record expands to nine; a record missing one fails naming it")
+    gate.assert_contains(out, "rc=1", "a partial company record is a failure, not nine bindings")
+    gate.log_pass("a whole record expands to ten; a record missing one fails naming it")
 
 
 def test_b9_json_refuses_a_non_object_and_an_illegal_key(gate, tmp_path):

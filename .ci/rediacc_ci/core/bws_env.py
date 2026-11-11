@@ -251,6 +251,8 @@ PROFILES_ENV = "REDIACC_BWS_PROFILES"
 # DECLARED HERE AND RE-DERIVED ELSEWHERE, which is the split that keeps it honest.
 # This module states the requirement so a fetch cannot silently bind eight of nine fields; `.ci/scripts/quality/check_bws_map.py` assertion 14d re-derives the nine against the `SELLER_*` names the `account-dev` profile in `.ci/config/secret-supply.json` binds, so adding a tenth field to the profile without adding it here is a red rather than a blank line on an invoice.
 # Neither side alone is sufficient: a constant nobody checks rots, and a derivation with no declared subject has nothing to check.
+#
+# THE VAULT HOLDS NO `SELLER_PROFILE_JSON` ENTRY (checked 2026-11-11: `bws_env json SELLER_PROFILE_JSON` reports it absent). The contracting entity is ten SEPARATE entries, the nine invoice fields plus SELLER_REGISTER_NAME, and the `legal-entity` profile requires all ten. No fetch reads this record; the tuple below survives only as the declared side of assertion 14d, which lives in check_bws_map.py and has not yet been moved onto the `legal-entity` profile. Its ten names are the ten separate entries.
 JSON_REQUIRED = {
     "SELLER_PROFILE_JSON": (
         "SELLER_ADDRESS_LINE1",
@@ -260,6 +262,7 @@ JSON_REQUIRED = {
         "SELLER_EMAIL",
         "SELLER_NAME",
         "SELLER_POSTAL_CODE",
+        "SELLER_REGISTER_NAME",
         "SELLER_REGISTRATION_NUMBER",
         "SELLER_VAT_NUMBER",
     ),

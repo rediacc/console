@@ -745,6 +745,8 @@ def _port_deploy_env(env: dict[str, str]) -> dict[str, str]:
     bound["FREE_LICENSE_HMAC_KEY"] = "fake-free-license-hmac-key-for-tests"
     # PLAN-d1-scaling W2: the port pushes the Analytics Engine read token; the retired bash never held it. A fake value.
     bound["ACCOUNT_AE_READ_TOKEN"] = "fake-ae-read-token-for-tests"
+    # PLAN-terms-acceptance E2: the port pushes the commercial register's name with the other SELLER_* fields; the retired bash never held it. A fake value.
+    bound["SELLER_REGISTER_NAME"] = "fake-register-name-for-tests"
     return bound
 
 
@@ -755,6 +757,7 @@ PORT_ONLY_SECRETS = (
     "FREE_LICENSE_HMAC_KEY",
     "ACCOUNT_AE_READ_TOKEN",
     "CLOUDFLARE_ACCOUNT_ID",
+    "SELLER_REGISTER_NAME",
 )
 
 # The bench sender the retired bash golden recorded, and the one the port defaults to since 71f25f3e8f.

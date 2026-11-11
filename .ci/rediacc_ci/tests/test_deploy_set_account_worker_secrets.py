@@ -195,7 +195,8 @@ def _as_port_env(env: dict[str, str]) -> dict[str, str]:
 
 
 def _without_config_key(calls: str) -> str:
-    """The recorded call with the document lines the twin never had removed: the free-licence HMAC key, the AE read token, the Cloudflare account id, the backup store KEK and the config server key."""
+    """The recorded call with the document lines the twin never had removed: the free-licence HMAC key, the AE read token, the Cloudflare account id, the backup store KEK, the config server key and the commercial register's name."""
+    calls = calls.replace('  "SELLER_REGISTER_NAME": "",\n', "")
     calls = calls.replace('  "FREE_LICENSE_HMAC_KEY": "hm",\n', "")
     calls = calls.replace('  "ACCOUNT_AE_READ_TOKEN": "ae",\n', "")
     calls = calls.replace('  "CLOUDFLARE_ACCOUNT_ID": "acct",\n', "")
@@ -648,7 +649,7 @@ def test_a_non_ascii_secret_is_byte_identical_through_both(tmp_path: pathlib.Pat
 
 def test_the_three_sibling_scripts_are_not_the_same_script() -> None:
     """THE ASSUMPTION THAT WOULD PORT THIS ONE WRONG, refuted in one place. This is the only member of the family that decides anything, and every difference below is driven by a test above."""
-    assert len(port.KEYS) == 33
+    assert len(port.KEYS) == 34
     assert len(www.KEYS) == 24
     assert len(preview.KEYS) == 14
     assert len(port.REQUIRED_NONEMPTY) == 19
@@ -1186,3 +1187,25 @@ def test_wrangler_starts_in_the_worker_directory(monkeypatch: pytest.MonkeyPatch
     assert (port.paths.repo_root() / "workers" / "account").is_dir()
     # THE CONTROL: jq, the left half of the pipe, still runs where the caller stands.
     assert cwds["jq"] is None
+
+
+def test_the_seller_map_is_the_whole_legal_entity() -> None:
+    """PLAN-terms-acceptance E2: the regional pusher sends every one of the ten separate SELLER_* entries the `legal-entity` profile requires, and each regional profile requires all ten, so an account Worker never renders a partial contracting party. A map or profile one name short is red here, by that name."""
+    supply = json.loads((ROOT / ".ci" / "config" / "secret-supply.json").read_text("utf-8"))
+    entity = set(supply["consumers"]["legal-entity"]["required"])
+    assert len(entity) == 10
+    assert "SELLER_REGISTER_NAME" in entity
+    seller = {key for key, _var, _source in port.KEYS if key.startswith("SELLER_")}
+    assert seller == entity, "missing: %s, extra: %s" % (
+        sorted(entity - seller),
+        sorted(seller - entity),
+    )
+    for key, _var, source in port.KEYS:
+        if key.startswith("SELLER_"):
+            assert source == key, "%s is read under its own name" % key
+    for region in ("eu", "us", "asia"):
+        required = set(supply["consumers"]["account-secrets-%s" % region]["required"])
+        assert entity <= required, "account-secrets-%s lacks %s" % (
+            region,
+            sorted(entity - required),
+        )
