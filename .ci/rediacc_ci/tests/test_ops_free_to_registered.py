@@ -2,6 +2,7 @@
 
 import json
 import re
+import urllib.parse
 from datetime import UTC, datetime
 
 import pytest
@@ -18,6 +19,8 @@ ORG = "22222222-2222-4222-8222-222222222222"
 SUB = "33333333-3333-4333-8333-333333333333"
 OTHER_USER = "99999999-9999-4999-8999-999999999999"
 LIMITS = ftr.community_limits()
+USER_CODE = "ABCD-EFGH-JK"
+DEVICE_DELETE = "DELETE FROM device_codes WHERE user_code = 'ABCD-EFGH-JK'"
 
 
 def envelope(data=None, errors=None):
@@ -33,6 +36,22 @@ GOOD_STATUS = envelope(
 NOT_LOGGED_IN = envelope(
     errors=[{"message": "Not logged in. Humans should run `rdc subscription login`."}]
 )
+
+
+class FakeJob(ftr.Background):
+    def __init__(self, fake):
+        self.fake = fake
+        self.killed = False
+
+    def read_url(self):
+        return self.fake.handoff_url()
+
+    def finish(self, _timeout):
+        self.fake.calls.append("register-finish")
+        return self.fake.register_rc
+
+    def kill(self):
+        self.killed = True
 
 
 class Fake:
@@ -57,6 +76,28 @@ class Fake:
         self.issued = False
         self.free_deleted = False
         self.gate_status = 403
+        self.terms_accepted = False
+        self.register_rc = 0
+        self.approve_status = 200
+        self.url_has_email = True
+        self.mail_carries_next = True
+        self.last_next = None
+        self.device_deleted = False
+        self.spawned: list[list[str]] = []
+        self.jobs: list[FakeJob] = []
+
+    def handoff_url(self):
+        url = "https://bench.example/account/authorize?code=" + USER_CODE
+        if self.url_has_email:
+            url += "&email=" + urllib.parse.quote(self.email, safe="")
+        return url
+
+    def spawn(self, argv, _env):
+        self.spawned.append(list(argv))
+        self.calls.append("register-spawn")
+        job = FakeJob(self)
+        self.jobs.append(job)
+        return job
 
     def allowlist(self):
         self.calls.append("allowlist")
@@ -86,13 +127,27 @@ class Fake:
             self.user_present = True
             return 201, {"subscription": {"planCode": "COMMUNITY"}}
         if path.endswith("/magic-link"):
+            self.last_next = _body.get("next")
             return 200, {}
         return 200, {"user": {"email": self.email}}
 
     email = ""
 
     def call(self, method, path, body, headers, jar):
+        if path.startswith("/account/authorize"):
+            assert jar is None  # anonymous: no session
+            self.calls.append("GET authorize")
+            return 200, {}
         tail = path.split("/api/v1", 1)[1]
+        if tail == "/auth/magic-link/verify":
+            assert jar
+            assert body["token"]
+            self.calls.append("POST verify")
+            return 200, {}
+        if tail == "/device-codes/%s/approve" % USER_CODE:
+            assert jar
+            self.calls.append("POST approve")
+            return self.approve_status, {"approved": self.approve_status == 200}
         self.calls.append("%s %s" % (method, tail))
         if tail == "/licenses/free":
             assert headers.get("x-cli-version")
@@ -114,10 +169,11 @@ class Fake:
             assert jar
             return 200, {}
         if tail == "/portal/terms":
-            return 200, {"satisfied": False}
+            return 200, {"satisfied": self.terms_accepted}
         if tail == "/portal/subscription":
             return self.gate_status, {"error": {"code": "TERMS_ACCEPTANCE_REQUIRED"}}
         if tail == "/portal/terms/accept":
+            self.terms_accepted = True
             return 201, {}
         raise AssertionError(tail)
 
@@ -155,12 +211,15 @@ class Fake:
             return [] if self.free_deleted else [{"id": "x"}]
         if sql.startswith("DELETE FROM free_license_issuances"):
             self.free_deleted = True
+        if sql.startswith("SELECT device_code FROM device_codes"):
+            return [] if self.device_deleted else [{"device_code": "dc"}]
+        if sql.startswith("DELETE FROM device_codes"):
+            self.device_deleted = True
         if "FROM captured_emails WHERE recipient" in sql and sql.startswith("SELECT text_body"):
-            return (
-                [{"text_body": "open https://x/account/magic-link/verify?token=abc_DEF-1"}]
-                if self.mail
-                else []
-            )
+            link = "open https://x/account/magic-link/verify?token=abc_DEF-1"
+            if self.last_next and self.mail_carries_next:
+                link += "&next=" + urllib.parse.quote(self.last_next, safe="")
+            return [{"text_body": link}] if self.mail else []
         if sql.startswith("SELECT count(*)"):
             return [{"n": 2}]
         if sql.startswith("SELECT id FROM users"):
@@ -188,6 +247,7 @@ class Fake:
 
     def deps(self):
         return ftr.Deps(
+            spawn=self.spawn,
             http=self.http,
             call=self.call,
             new_uuid=lambda: FREE_GUID,
@@ -226,6 +286,14 @@ def test_happy_path_order_and_evidence(capsys):
         "verify",
         "login",
         "status",
+        "register-spawn",
+        "GET authorize",
+        "magic-link",
+        "POST verify",
+        "GET /portal/terms",
+        "POST approve",
+        "register-finish",
+        "status",
         "config-delete",
     ]
     out = capsys.readouterr().out.splitlines()
@@ -239,6 +307,7 @@ def test_happy_path_order_and_evidence(capsys):
         ["4b", "terms-gate"],
         ["5", "email"],
         ["6", "login"],
+        ["6b", "handoff"],
         ["7", "cleanup"],
     ]
     assert all(" rc=0" in line for line in out)
@@ -345,7 +414,7 @@ def test_dry_run_touches_nothing(capsys):
     fake = Fake()
     assert ftr.run(True, fake.deps(), env={}) == 0
     assert fake.calls == []
-    assert capsys.readouterr().out.count("DRY-RUN STEP") == 10
+    assert capsys.readouterr().out.count("DRY-RUN STEP") == 11
 
 
 def test_community_limits_parse_the_shared_constants():
@@ -467,3 +536,105 @@ def test_both_subjects_acceptance_rows_are_deleted_in_a_full_run():
 def test_user_cleanup_sql_includes_the_user_acceptance_rows():
     sql = ftr.cleanup_sql("ftr+20261111103000@rediacc.io", USER, [ORG], [SUB])
     assert any(s.startswith("DELETE FROM terms_acceptances") and USER in s for s in sql)
+
+
+def test_dry_run_lists_the_handoff_step_and_spawns_nothing(capsys):
+    fake = Fake()
+    assert ftr.run(True, fake.deps(), env={}) == 0
+    assert "DRY-RUN STEP 6b handoff " in capsys.readouterr().out
+    assert fake.spawned == []
+    assert fake.sql == []
+    assert fake.calls == []
+
+
+def test_handoff_runs_register_under_the_throwaway_config_with_the_email():
+    fake = Fake()
+    assert go(fake) == 0
+    argv = fake.spawned[0]
+    assert argv[:2] == ["--config", "ftr-20261111103000"]
+    assert argv[2:6] == ["subscription", "register", "--email", fake.email]
+    assert argv[-2:] == ["--server", ftr.BENCH_ORIGIN]
+    assert fake.last_next == "/account/authorize?code=%s&email=%s" % (
+        USER_CODE,
+        urllib.parse.quote(fake.email, safe=""),
+    )
+    assert fake.jobs[0].killed
+
+
+def test_a_url_without_the_email_fails_the_step(capsys):
+    fake = Fake()
+    fake.url_has_email = False
+    assert go(fake) == 1
+    out = capsys.readouterr().out
+    assert re.search(r"STEP 6b handoff rc=1 .*email param is not", out)
+    assert "POST approve" not in fake.calls
+    assert fake.jobs[0].killed
+    assert re.search(r"STEP 7 cleanup rc=0", out)
+
+
+def test_a_url_with_an_unencoded_email_fails_the_check():
+    email = "ftr+20261111103000@rediacc.io"
+    plain = "https://b/account/authorize?code=%s&email=%s" % (USER_CODE, email)
+    # a raw '+' parses back as a space, so the email no longer matches
+    assert ftr.handoff_url_check(plain, email)
+    good = "https://b/account/authorize?code=%s&email=%s" % (
+        USER_CODE,
+        urllib.parse.quote(email, safe=""),
+    )
+    assert ftr.handoff_url_check(good, email) == []
+    assert ftr.handoff_url_check(good.replace(USER_CODE, "nope"), email)
+
+
+def test_a_magic_link_without_next_fails_the_step(capsys):
+    fake = Fake()
+    fake.mail_carries_next = False
+    assert go(fake) == 1
+    out = capsys.readouterr().out
+    assert re.search(r"STEP 6b handoff rc=1 .*magic link next=''", out)
+    assert "POST verify" not in fake.calls
+
+
+def test_a_register_process_that_fails_fails_the_step(capsys):
+    fake = Fake()
+    fake.register_rc = 1
+    assert go(fake) == 1
+    assert "register exit=1 want 0" in capsys.readouterr().out
+
+
+def test_an_approve_refusal_fails_the_step(capsys):
+    fake = Fake()
+    fake.approve_status = 404
+    assert go(fake) == 1
+    assert "approve http=404" in capsys.readouterr().out
+
+
+def test_terms_are_accepted_in_the_handoff_only_when_not_already_accepted():
+    fake = Fake()
+    assert go(fake) == 0
+    assert fake.calls.count("POST /portal/terms/accept") == 1  # 4b's; 6b saw it satisfied
+
+
+def test_the_device_code_row_is_deleted_by_its_exact_code_in_a_full_run():
+    fake = Fake()
+    assert go(fake) == 0
+    deletes = [s for s in fake.sql if s.startswith("DELETE FROM device_codes")]
+    assert deletes == [DEVICE_DELETE]
+
+
+def test_device_code_cleanup_deletes_only_the_captured_codes():
+    sql = ftr.device_code_cleanup_sql([USER_CODE])
+    assert sql == [DEVICE_DELETE]
+    assert ftr.device_code_cleanup_sql([]) == []
+    with pytest.raises(ftr.DrillError):
+        ftr.device_code_cleanup_sql(["x' OR '1'='1"])
+
+
+def test_cleanup_fails_when_the_device_code_row_remains():
+    class Stuck(Fake):
+        def rows(self, sql):
+            if sql.startswith("DELETE FROM device_codes"):
+                return []
+            return super().rows(sql)
+
+    with pytest.raises(ftr.DrillError):
+        ftr.cleanup("ftr+20261111103000@rediacc.io", Stuck().rows, lambda _m: None, [USER_CODE])

@@ -15,7 +15,8 @@ THE STEPS, each printing one evidence line `STEP <n> <name> rc=<rc> <detail>`:
   3b. free-refused  A direct `POST /licenses/free` with no `termsAcceptance`. It must answer 403 `TERMS_ACCEPTANCE_REQUIRED` whose details name `--accept-terms`, and the count of `free_license_ip_window` rows of the last minute must not change.
   3c. free-accepted The same request with `termsAcceptance{method: cli-flag-unattended}` (the manifest's version and sha256), fresh UUIDs and `x-cli-version`. It must be issued, and exactly one `terms_acceptances` row must exist for the `free:` subject with that version and sha256, `client_ip IS NULL`, a non-empty `cli_version` and a non-empty `notice_text`.
   4b. terms-gate    After the register, a login with a cookie jar, then with those cookies `GET /portal/terms` reports not satisfied, a gated read (`GET /portal/subscription`) returns 403 `TERMS_ACCEPTANCE_REQUIRED`, `POST /portal/terms/accept` returns 201, and the row has method `web-checkbox` and a non-empty `client_ip` and `user_agent`.
-  7. cleanup    Always runs. Deletes the rows of that one user, its organizations and subscriptions (found by the user id of the exact email), the acceptance rows of the user and of the 3c `free:` subject, the 3c issuance and its window row (same `issued_at`, so the IP quota is restored), and the captured emails of that exact recipient, then proves the user is gone. The throwaway config is deleted. No account-deletion API exists, so the rows go through D1.
+  6b. handoff   The browser handoff of `rdc subscription register --email <addr>`: the command runs in the background under the throwaway config and its printed verification URL is captured. The URL must carry the device code and the URL-encoded email; the anonymous `/account/authorize?code=..&email=..` route must answer 200 (the SPA then sends the visitor to `/account/login?email=..`, a client-side redirect that the portal's vitest suite covers). Sign-up is completed through a magic-link mail requested with `next` set to that authorize path, and the captured link must carry the same `next`. With that session the Terms are accepted if not yet, the device code is approved (`POST /device-codes/<code>/approve`), the register process must exit 0 and `subscription status` must report COMMUNITY.
+  7. cleanup    Always runs. Deletes the device-code row of 6b by its exact user code, the rows of that one user, its organizations and subscriptions (found by the user id of the exact email), the acceptance rows of the user and of the 3c `free:` subject, the 3c issuance and its window row (same `issued_at`, so the IP quota is restored), and the captured emails of that exact recipient, then proves the user is gone. The throwaway config is deleted. No account-deletion API exists, so the rows go through D1.
 
 The password and every token travel only in a child environment or a request body, never on argv and never printed. Exit 0 only when every step held; cleanup failing is a failure.
 """
@@ -32,6 +33,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.parse
 import uuid
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -64,8 +66,15 @@ STEPS = (
     ("4b", "terms-gate"),
     ("5", "email"),
     ("6", "login"),
+    ("6b", "handoff"),
     ("7", "cleanup"),
 )
+USER_CODE = re.compile(r"^[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{4}-[A-HJ-NP-Z2-9]{2}$")
+AUTHORIZE_PATH = "/account/authorize"
+VERIFY_URL = re.compile(r"https?://\S+" + re.escape(AUTHORIZE_PATH) + r"\S*")
+MAGIC_LINK = re.compile(r"magic-link/verify\?token=([A-Za-z0-9_\-]+)(?:&next=([^\s&]+))?")
+URL_WAIT_S = 90.0
+REGISTER_WAIT_S = 120.0
 LEGAL_MANIFEST_REL = (".ci", "config", "legal-documents.json")
 TERMS_DOCUMENT = "terms-of-service"
 TERMS_REQUIRED = "TERMS_ACCEPTANCE_REQUIRED"
@@ -78,6 +87,22 @@ Http = Callable[[str, dict], "tuple[int, dict]"]
 Call = Callable[[str, str, "dict | None", Mapping[str, str], "str | None"], "tuple[int, dict]"]
 Rows = Callable[[str], "list[dict]"]
 Rdc = Callable[[Sequence[str], Mapping[str, str]], "tuple[int, str]"]
+
+
+class Background:
+    """A command running in the background whose stdout carries one URL line the drill needs."""
+
+    def read_url(self) -> str:
+        raise NotImplementedError
+
+    def finish(self, timeout: float) -> int:
+        raise NotImplementedError
+
+    def kill(self) -> None:
+        raise NotImplementedError
+
+
+Spawn = Callable[[Sequence[str], Mapping[str, str]], Background]
 
 
 class DrillError(RuntimeError):
@@ -135,6 +160,31 @@ def extract_magic_token(body: str) -> str:
     return found.group(1) if found else ""
 
 
+def extract_magic_link(body: str) -> tuple[str, str]:
+    """(token, next) of the magic link in a mail body; next is URL-decoded, empty when the link carries none."""
+    found = MAGIC_LINK.search(body)
+    if not found:
+        return "", ""
+    return found.group(1), urllib.parse.unquote(found.group(2) or "")
+
+
+def handoff_url_check(url: str, email: str) -> list[str]:
+    """Reasons a printed verification URL is not the registration handoff for `email`; empty when it holds."""
+    bad: list[str] = []
+    parsed = urllib.parse.urlsplit(url)
+    if parsed.path != AUTHORIZE_PATH:
+        bad.append("path=%r want %s" % (parsed.path, AUTHORIZE_PATH))
+    query = urllib.parse.parse_qs(parsed.query)
+    code = (query.get("code") or [""])[0]
+    if not USER_CODE.match(code):
+        bad.append("device code %r is not a user code" % code)
+    if (query.get("email") or [""])[0] != email:
+        bad.append("email param is not %s" % email)
+    if "email=" + urllib.parse.quote(email, safe="") not in parsed.query:
+        bad.append("email is not URL-encoded in the query")
+    return bad
+
+
 def mail_query(email: str, since: str) -> str:
     return q(
         "SELECT text_body FROM captured_emails WHERE recipient = $r AND kind = 'magic-link' "
@@ -189,6 +239,16 @@ def cleanup_sql(
         q("DELETE FROM users WHERE id = $u AND email = $e", u=uid, e=sql_literal(email)),
         q("DELETE FROM captured_emails WHERE recipient = $e", e=sql_literal(email)),
     ]
+
+
+def device_code_cleanup_sql(user_codes: Sequence[str]) -> list[str]:
+    """One delete per captured device user code, by exact code. A malformed code is refused."""
+    out: list[str] = []
+    for code in user_codes:
+        if not USER_CODE.match(code):
+            raise DrillError("refusing a malformed device user code in a delete: %r" % code)
+        out.append(q("DELETE FROM device_codes WHERE user_code = $c", c=sql_literal(code)))
+    return out
 
 
 @dataclass
@@ -372,9 +432,21 @@ def row_check(row: dict, limits: dict[str, int]) -> list[str]:
     return bad
 
 
-def cleanup(email: str, rows: Rows, log: Callable[[str], None]) -> None:
-    """Delete the rows of `email` only and prove the user is gone. DrillError on a leftover."""
+def cleanup(
+    email: str,
+    rows: Rows,
+    log: Callable[[str], None],
+    device_codes: Sequence[str] = (),
+) -> None:
+    """Delete the rows of `email` and of the captured device codes only, and prove the user is gone. DrillError on a leftover."""
     lit = sql_literal(email)
+    for sql in device_code_cleanup_sql(device_codes):
+        rows(sql)
+    for code in device_codes:
+        if rows(
+            q("SELECT device_code FROM device_codes WHERE user_code = $c", c=sql_literal(code))
+        ):
+            raise DrillError("the device-code row %s is still present after the delete" % code)
     mails = rows(q("SELECT count(*) AS n FROM captured_emails WHERE recipient = $e", e=lit))
     log("captured emails of the address: %s" % (mails[0].get("n") if mails else "?"))
     user_ids = [str(u["id"]) for u in rows(q("SELECT id FROM users WHERE email = $e", e=lit))]
@@ -417,8 +489,50 @@ def _drop_token_file(config: str) -> bool:
     return True
 
 
+class _Process(Background):
+    def __init__(self, argv: Sequence[str], env: Mapping[str, str]) -> None:
+        self.proc = subprocess.Popen(
+            [str(paths.repo_root() / "rdc.sh"), *argv],
+            env=dict(env),
+            cwd=str(paths.repo_root()),
+            stdout=subprocess.PIPE,
+            text=True,
+        )
+
+    def read_url(self) -> str:
+        stream = self.proc.stdout
+        if stream is None:
+            raise DrillError("the register command has no stdout")
+        deadline = time.monotonic() + URL_WAIT_S
+        for line in stream:
+            found = VERIFY_URL.search(line)
+            if found:
+                return found.group(0)
+            if time.monotonic() > deadline:
+                break
+        raise DrillError("the register command printed no verification URL")
+
+    def finish(self, timeout: float) -> int:
+        try:
+            self.proc.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            self.kill()
+            raise DrillError("the register command did not finish in %ds" % timeout) from None
+        return self.proc.returncode
+
+    def kill(self) -> None:
+        if self.proc.poll() is None:
+            self.proc.kill()
+            self.proc.wait()
+
+
+def _spawn(argv: Sequence[str], env: Mapping[str, str]) -> Background:
+    return _Process(argv, env)
+
+
 @dataclass
 class Deps:
+    spawn: Spawn = _spawn
     http: Http = _http
     call: Call = _call
     new_uuid: Callable[[], str] = lambda: str(uuid.uuid4())
@@ -714,6 +828,116 @@ def _step_login(
         raise DrillError("COMMUNITY assertions failed")
 
 
+def _step_handoff(
+    d: Deps,
+    ev: Evidence,
+    base: Mapping[str, str],
+    config: str,
+    email: str,
+    stamp: str,
+    limits: dict[str, int],
+    codes: list[str],
+) -> None:
+    bad: list[str] = []
+    job = d.spawn(
+        [
+            "--config",
+            config,
+            "subscription",
+            "register",
+            "--email",
+            email,
+            "--server",
+            BENCH_ORIGIN,
+        ],
+        base,
+    )
+    jar = d.jar_path(stamp)
+    detail = ""
+    try:
+        url = job.read_url()
+        bad += handoff_url_check(url, email)
+        parsed = urllib.parse.urlsplit(url)
+        code = (urllib.parse.parse_qs(parsed.query).get("code") or [""])[0]
+        if USER_CODE.match(code):
+            codes.append(code)
+        if bad:
+            raise DrillError("the printed handoff URL is wrong")
+        route = parsed.path + "?" + parsed.query
+        rstatus, _ = d.call("GET", route, None, {}, None)
+        if rstatus != 200:
+            bad.append("anonymous authorize route http=%d want 200" % rstatus)
+        since = datetime.fromtimestamp(d.now().timestamp() - CLOCK_SKEW_S, UTC).strftime(
+            "%Y-%m-%dT%H:%M:%S"
+        )
+        mstatus, _ = d.http(API + "/auth/magic-link", {"email": email, "next": route})
+        if mstatus != 200:
+            bad.append("magic-link request http=%d" % mstatus)
+        token, got_next = "", ""
+        for attempt in range(MAIL_ATTEMPTS):
+            if token or bad:
+                break
+            if attempt:
+                d.sleep(MAIL_WAIT_S)
+            for row in d.rows(mail_query(email, since)):
+                token, got_next = extract_magic_link(str(row.get("text_body") or ""))
+                if token:
+                    break
+        if not token:
+            bad.append("no magic-link mail reached captured_emails")
+        elif got_next != route:
+            bad.append("magic link next=%r want %r" % (got_next, route))
+        if bad:
+            raise DrillError("the sign-up handoff did not hold")
+        vstatus, _ = d.call("POST", API + "/auth/magic-link/verify", {"token": token}, {}, jar)
+        if vstatus != 200:
+            bad.append("magic-link verify http=%d" % vstatus)
+            raise DrillError("the handoff sign-up did not open a session")
+        _, state = d.call("GET", API + "/portal/terms", None, {}, jar)
+        accepted = "already"
+        if state.get("satisfied") is not True:
+            manifest = terms_manifest()
+            astatus, _ = d.call(
+                "POST",
+                API + "/portal/terms/accept",
+                {
+                    "version": manifest["version"],
+                    "sha256": manifest["sha256"],
+                    "locale": "en",
+                    "method": "web-checkbox",
+                },
+                {},
+                jar,
+            )
+            accepted = "http=%d" % astatus
+            if astatus != 201:
+                bad.append("terms accept http=%d want 201" % astatus)
+        pstatus, approved = d.call("POST", API + "/device-codes/%s/approve" % code, None, {}, jar)
+        if pstatus != 200 or approved.get("approved") is not True:
+            bad.append("approve http=%d approved=%r" % (pstatus, approved.get("approved")))
+        rc = job.finish(REGISTER_WAIT_S)
+        if rc != 0:
+            bad.append("register exit=%d want 0" % rc)
+        src, out = d.rdc(["--config", config, "subscription", "status", "-o", "json"], base)
+        report = _envelope(out).get("data") or {}
+        bad += plan_check(report, limits) if src == 0 else ["status exit=%d" % src]
+        detail = "url ok route=200 next ok terms=%s approve=%d register exit=%d plan=%s" % (
+            accepted,
+            pstatus,
+            rc,
+            report.get("plan"),
+        )
+    except DrillError as exc:
+        if str(exc) not in "; ".join(bad):
+            bad.append(str(exc))
+    finally:
+        job.kill()
+        d.unlink(jar)
+    ev.add("6b", "handoff", 1 if bad else 0, (detail + "; " if detail else "") + "; ".join(bad))
+    if bad:
+        raise DrillError("the browser handoff failed")
+
+
 def run(dry_run: bool, deps: Deps | None = None, env: Mapping[str, str] | None = None) -> int:
     d = deps or Deps()
     base = {k: v for k, v in (os.environ if env is None else env).items() if k not in SCRUBBED}
@@ -734,6 +958,7 @@ def run(dry_run: bool, deps: Deps | None = None, env: Mapping[str, str] | None =
     config_made = registered = False
     free_item = FreeIssued(repository_guid=d.new_uuid())
     free_started = False
+    handoff_codes: list[str] = []
     try:
         rc = d.allowlist()
         ev.add(1, "allowlist", rc)
@@ -769,6 +994,7 @@ def run(dry_run: bool, deps: Deps | None = None, env: Mapping[str, str] | None =
         _step_terms_gate(d, ev, (email, password), stamp)
         _step_email(d, ev, email, since_iso)
         _step_login(d, ev, base, config, (email, password), limits)
+        _step_handoff(d, ev, base, config, email, stamp, limits, handoff_codes)
     except DrillError as exc:
         # A refusal raised before its STEP line (no HTTP answer, a missing config) must still fail the run (review 23c783db.1).
         ev.failed = True
@@ -782,9 +1008,9 @@ def run(dry_run: bool, deps: Deps | None = None, env: Mapping[str, str] | None =
             except DrillError as exc:
                 crc = 1
                 notes.append(str(exc))
-        if registered:
+        if registered or handoff_codes:
             try:
-                cleanup(email, d.rows, notes.append)
+                cleanup(email, d.rows, notes.append, handoff_codes)
             except DrillError as exc:
                 crc = 1
                 notes.append(str(exc))
