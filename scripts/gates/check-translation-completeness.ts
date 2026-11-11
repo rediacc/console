@@ -353,6 +353,8 @@ const ALLOWED_IDENTICAL = new Set([
   'Communications',
   // tr/admin.json already keeps "Lead Magnet" as an English loanword elsewhere in the same leadMagnets block (pageTitle: "Lead Magnet İndirmeleri", failedError: "Lead magnet indirmeleri yüklenemedi."), so the short magnetLabel column header ("Magnet") follows the same established convention rather than introducing a different Turkish term.
   'Magnet',
+  // French cognate: "Introduction" is spelled identically in French and English, so the numbered legal-page section title "1. Introduction" is correct French (privacyPolicy/cookiePolicy/telemetryPolicy). Allowlisted by exact value rather than by a numbered-title pattern, so "1. Definitions" and every other untranslated numbered title is still reported.
+  '1. Introduction',
 ]);
 
 // Patterns for strings that should not be translated (placeholders, format strings)
@@ -428,7 +430,7 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
   /\(64-bit\)$/, // Architecture labels like "x64 (64-bit)"
   /\.subsections\.\w+\.title$/, // Legal subsection titles (often kept in English)
   /\.badgeLabels\./, // Badge labels (often identical: "Standard", "Priority")
-  /^\d+\.\s+\w+$/, // Numbered section titles like "1. Introduction", "1. Overview"
+  /^[\d.\s]+$/, // Pure numbering like "1.", "2.4", "10.2.1" (no words to translate)
   /^~?\d+\s+minutes?$/, // Time durations like "~15 minutes", "30 minutes"
   /\.(rpo|rto)$/, // Recovery point/time objective values (technical metrics)
   /\.cardClass$/, // CSS class identifiers (sealed, restored, verified, down, config, compliant)
@@ -897,6 +899,44 @@ function controlMissingAndOrphanKeys(): void {
   }
 }
 
+/**
+ * CONTROL for numbered section titles. A blanket `/^\d+\.\s+\w+$/` skip once hid
+ * "1. Definitions" in de/es/fr/ja/ar/ru/tr/zh. Asserts: the old pattern would have skipped
+ * it (so the plant reproduces the defect), an English-identical numbered title is now
+ * reported, a translated one and pure numbering stay silent.
+ */
+function controlNumberedTitles(): void {
+  const failures: string[] = [];
+  const oldSkip = /^\d+\.\s+\w+$/;
+  if (!oldSkip.test('1. Definitions')) {
+    failures.push('the plant no longer reproduces the old blanket numbered-title skip');
+  }
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'completeness-numbered-control-'));
+  const en = { title: '1. Definitions', num: '2.4', sub: '10.2.1' };
+  fs.writeFileSync(path.join(tmp, 'en.json'), JSON.stringify(en));
+  fs.writeFileSync(path.join(tmp, 'de.json'), JSON.stringify(en));
+  const planted = checkLocaleDir('control', tmp, true).stats?.de;
+  if (planted?.untranslated !== 1 || planted.untranslatedKeys[0] !== 'title') {
+    failures.push(
+      `expected exactly "1. Definitions" reported (pure numbering skipped), got ${planted?.untranslated} (${planted?.untranslatedKeys.join(',')})`
+    );
+  }
+  fs.writeFileSync(
+    path.join(tmp, 'de.json'),
+    JSON.stringify({ ...en, title: '1. Begriffsbestimmungen' })
+  );
+  const clean = checkLocaleDir('control', tmp, true).stats?.de;
+  if (clean?.untranslated !== 0) {
+    failures.push('a translated numbered title was reported as untranslated');
+  }
+  fs.rmSync(tmp, { recursive: true, force: true });
+  if (failures.length > 0) {
+    console.error('\x1b[31m✗\x1b[0m CONTROL FAILED: numbered section titles are not checked.');
+    for (const f of failures) console.error(`    ${f}`);
+    process.exit(1);
+  }
+}
+
 function main(): void {
   console.log('Translation Completeness Check');
   console.log('============================================================\n');
@@ -904,6 +944,7 @@ function main(): void {
   // CONTROL FIRST. Nothing below is evidence if the threshold cannot fire.
   controlUntranslatedThreshold();
   controlMissingAndOrphanKeys();
+  controlNumberedTitles();
 
   const allErrors: string[] = [];
   const allWarnings: string[] = [];

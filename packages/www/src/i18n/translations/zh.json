@@ -10067,7 +10067,7 @@
             "<strong>\"订阅\"</strong>是指为账户选择的计划（Community、Professional、Business 或 Enterprise），它决定可用的功能和资源限制。",
             "<strong>\"遥测数据\"</strong>是指服务按照<a href=\"telemetry-policy\">遥测政策</a>所述收集的使用数据。"
           ],
-          "title": "1. Definitions"
+          "title": "1. 定义"
         },
         "eligibility": {
           "content": [

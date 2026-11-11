@@ -2576,7 +2576,8 @@
       "legal.consent.webCheckbox": "f35392ee",
       "legal.consent.cliPrompt": "e11f253a",
       "legal.consent.cliRefusal": "f8b1958d",
-      "legal.consent.stripeCheckout": "1aafb30c"
+      "legal.consent.stripeCheckout": "1aafb30c",
+      "pages.termsOfService.sections.definitions.title": "c8bedb41"
     },
     "de": {
       "announcement.text": "6a7bf2ae",
@@ -5128,7 +5129,8 @@
       "legal.consent.webCheckbox": "f35392ee",
       "legal.consent.cliPrompt": "e11f253a",
       "legal.consent.cliRefusal": "f8b1958d",
-      "legal.consent.stripeCheckout": "1aafb30c"
+      "legal.consent.stripeCheckout": "1aafb30c",
+      "pages.termsOfService.sections.definitions.title": "c8bedb41"
     },
     "es": {
       "announcement.text": "6a7bf2ae",
@@ -7678,7 +7680,8 @@
       "legal.consent.webCheckbox": "f35392ee",
       "legal.consent.cliPrompt": "e11f253a",
       "legal.consent.cliRefusal": "f8b1958d",
-      "legal.consent.stripeCheckout": "1aafb30c"
+      "legal.consent.stripeCheckout": "1aafb30c",
+      "pages.termsOfService.sections.definitions.title": "c8bedb41"
     },
     "fr": {
       "announcement.text": "6a7bf2ae",
@@ -10229,7 +10232,8 @@
       "legal.consent.webCheckbox": "f35392ee",
       "legal.consent.cliPrompt": "e11f253a",
       "legal.consent.cliRefusal": "f8b1958d",
-      "legal.consent.stripeCheckout": "1aafb30c"
+      "legal.consent.stripeCheckout": "1aafb30c",
+      "pages.termsOfService.sections.definitions.title": "c8bedb41"
     },
     "it": {
       "announcement.text": "6a7bf2ae",
@@ -17887,7 +17891,8 @@
       "legal.consent.webCheckbox": "f35392ee",
       "legal.consent.cliPrompt": "e11f253a",
       "legal.consent.cliRefusal": "f8b1958d",
-      "legal.consent.stripeCheckout": "1aafb30c"
+      "legal.consent.stripeCheckout": "1aafb30c",
+      "pages.termsOfService.sections.definitions.title": "c8bedb41"
     },
     "ru": {
       "announcement.text": "6a7bf2ae",
@@ -20439,7 +20444,8 @@
       "legal.consent.webCheckbox": "f35392ee",
       "legal.consent.cliPrompt": "e11f253a",
       "legal.consent.cliRefusal": "f8b1958d",
-      "legal.consent.stripeCheckout": "1aafb30c"
+      "legal.consent.stripeCheckout": "1aafb30c",
+      "pages.termsOfService.sections.definitions.title": "c8bedb41"
     },
     "zh": {
       "announcement.text": "6a7bf2ae",
@@ -22991,7 +22997,8 @@
       "legal.consent.webCheckbox": "f35392ee",
       "legal.consent.cliPrompt": "e11f253a",
       "legal.consent.cliRefusal": "f8b1958d",
-      "legal.consent.stripeCheckout": "1aafb30c"
+      "legal.consent.stripeCheckout": "1aafb30c",
+      "pages.termsOfService.sections.definitions.title": "c8bedb41"
     },
     "ja": {
       "announcement.text": "6a7bf2ae",
@@ -25544,7 +25551,8 @@
       "legal.consent.webCheckbox": "f35392ee",
       "legal.consent.cliPrompt": "e11f253a",
       "legal.consent.cliRefusal": "f8b1958d",
-      "legal.consent.stripeCheckout": "1aafb30c"
+      "legal.consent.stripeCheckout": "1aafb30c",
+      "pages.termsOfService.sections.definitions.title": "c8bedb41"
     },
     "ko": {
       "announcement.text": "6a7bf2ae",
