@@ -695,6 +695,9 @@
       "USER",
       "VM_NET_BASE"
     ],
+    ".ci/rediacc_ci/legal/entity.py": [
+      "PYTHONPATH"
+    ],
     ".ci/rediacc_ci/log.py": [
       "CI",
       "NO_COLOR"
@@ -813,7 +816,9 @@
       "REDIACC_BWS_PROFILES"
     ],
     ".ci/rediacc_ci/ops/mirror_config_store.py": [
+      "*dst_name",
       "*name",
+      "*src_name",
       "CF_EMAIL",
       "CF_GLOBAL_API_KEY",
       "CF_MANAGEMENT_TOKEN"
@@ -1895,6 +1900,8 @@
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_ops_mirror_config_store.py": [
+      "*names[0]",
+      "*names[1]",
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_private_renet_build_vcs_stamp.py": [
@@ -2490,6 +2497,7 @@
       "REDIACC_PID_WAIT_PROCFS"
     ],
     ".claude/rediacc_hooks/guards/block_worktree_add.py": [
+      "*name",
       "CLAUDE_PROJECT_DIR",
       "REDIACC_WORKTREE_STDIN_PROCFS"
     ],
