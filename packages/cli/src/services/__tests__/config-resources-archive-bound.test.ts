@@ -125,13 +125,38 @@ describe('archive writes keep the archive bounded', () => {
   it('caps forks per name independently and preserves order', () => {
     const now = Date.parse('2026-11-11T00:00:00.000Z');
     const g = guid();
-    const records = Array.from({ length: ARCHIVED_FORKS_PER_NAME + 2 }, (_, i) => ({
-      name: i % 2 === 0 ? 'a' : 'b',
+    // Name `a` is two over the cap and `b` well under it, interleaved so order is observable.
+    const names = [...Array(ARCHIVED_FORKS_PER_NAME + 2).fill('a'), 'b', 'b', 'b'];
+    const records = names.map((name, i) => ({
+      name,
       repositoryGuid: guid(),
       grandGuid: g,
       deletedAt: new Date(now - (100 - i) * 60_000).toISOString(),
     }));
+    records.sort((x, y) => (x.repositoryGuid < y.repositoryGuid ? -1 : 1));
     const out = boundArchive(records, now);
-    expect(out).toEqual(records);
+    const aNewest = records
+      .filter((r) => r.name === 'a')
+      .sort((x, y) => Date.parse(y.deletedAt) - Date.parse(x.deletedAt))
+      .slice(0, ARCHIVED_FORKS_PER_NAME);
+    expect(out).toEqual(records.filter((r) => r.name === 'b' || aNewest.includes(r)));
+    expect(out.filter((r) => r.name === 'a')).toHaveLength(ARCHIVED_FORKS_PER_NAME);
+    expect(out.filter((r) => r.name === 'b')).toHaveLength(3);
+  });
+
+  it('keeps a fork record with an unparseable deletedAt even past the cap', () => {
+    const now = Date.parse('2026-11-11T00:00:00.000Z');
+    const g = guid();
+    const dated = Array.from({ length: ARCHIVED_FORKS_PER_NAME + 1 }, (_, i) => ({
+      name: 'a',
+      repositoryGuid: guid(),
+      grandGuid: g,
+      deletedAt: new Date(now - (100 - i) * 60_000).toISOString(),
+    }));
+    const odd = { name: 'a', repositoryGuid: guid(), grandGuid: g, deletedAt: 'not-a-date' };
+    const out = boundArchive([odd, ...dated], now);
+    expect(out).toContain(odd);
+    expect(out).toHaveLength(ARCHIVED_FORKS_PER_NAME + 1);
+    expect(out).not.toContain(dated[0]);
   });
 });

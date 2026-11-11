@@ -72,7 +72,8 @@ export function boundArchive(
   const fresh = records.filter((r) => !(Date.parse(r.deletedAt) < cutoff));
   const forksByName = new Map<string, ArchivedRepository[]>();
   for (const record of fresh) {
-    if (!isForkRecord(record)) continue;
+    // An unparseable deletedAt has no age to rank by, so the record is kept rather than counted toward the cap.
+    if (!isForkRecord(record) || Number.isNaN(Date.parse(record.deletedAt))) continue;
     const list = forksByName.get(record.name) ?? [];
     list.push(record);
     forksByName.set(record.name, list);
@@ -81,7 +82,7 @@ export function boundArchive(
   for (const list of forksByName.values()) {
     // Newest first; records archived in the same millisecond rank by list position, later appended being newer.
     const newestFirst = list
-      .map((record, index) => ({ record, index, at: Date.parse(record.deletedAt) || 0 }))
+      .map((record, index) => ({ record, index, at: Date.parse(record.deletedAt) }))
       .sort((a, b) => b.at - a.at || b.index - a.index)
       .map((entry) => entry.record);
     for (const record of newestFirst.slice(ARCHIVED_FORKS_PER_NAME)) dropped.add(record);
