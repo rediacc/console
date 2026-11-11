@@ -332,7 +332,7 @@ function tsString(value: string): string {
   return `'${value.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n')}'`;
 }
 
-export function renderDocumentsTs(manifest: Manifest, siteOrigin: string): string {
+export function renderDocumentsTs(manifest: Manifest, _siteOrigin: string): string {
   const docs = Object.entries(manifest.documents);
   let body = '';
   for (const [id, doc] of docs) {
@@ -344,14 +344,15 @@ export function renderDocumentsTs(manifest: Manifest, siteOrigin: string): strin
         `        effective: '${v.effective}',\n` +
         `        material: ${v.material},\n` +
         `        sha256: '${v.sha256 ?? ''}',\n` +
-        `        archiveUrl: ${tsString(archiveUrl(siteOrigin, id, v.version))},\n` +
+        `        archiveUrl: \`\${WK_SITE_ORIGIN}${archiveUrl('', id, v.version)}\`,\n` +
         '      },\n';
     }
     body += '    ],\n  },\n';
   }
   return (
     BANNER(`${MANIFEST_REL} and the English text of each document`) +
-    "\nimport type { LegalDocument, LegalDocumentId } from './types.js';\n\n" +
+    "\nimport { WK_SITE_ORIGIN } from '../config/well-known.generated.js';\n" +
+    "import type { LegalDocument, LegalDocumentId } from './types.js';\n\n" +
     'export const LEGAL_DOCUMENTS: Readonly<Partial<Record<LegalDocumentId, LegalDocument>>> = {\n' +
     body +
     '};\n'
@@ -380,7 +381,21 @@ export function consentNotices(src: Sources): Record<string, Record<AcceptanceMe
   return out;
 }
 
-export function renderConsentTs(notices: Record<string, Record<AcceptanceMethod, string>>): string {
+/** A notice as source text: the site origin becomes WK_SITE_ORIGIN, so no literal origin is generated. */
+function tsNotice(value: string, siteOrigin: string): string {
+  if (!value || !value.includes(siteOrigin)) return tsString(value);
+  const escaped = value
+    .replace(/\\/g, '\\\\')
+    .replace(/`/g, '\\`')
+    .replace(/\$\{/g, '\\${')
+    .replace(/\n/g, '\\n');
+  return `\`${escaped.split(siteOrigin).join('${WK_SITE_ORIGIN}')}\``;
+}
+
+export function renderConsentTs(
+  notices: Record<string, Record<AcceptanceMethod, string>>,
+  siteOrigin: string
+): string {
   const methods = Object.keys(CONSENT_KEYS) as AcceptanceMethod[];
   const block = (fn: (text: string) => string) =>
     Object.entries(notices)
@@ -393,10 +408,11 @@ export function renderConsentTs(notices: Record<string, Record<AcceptanceMethod,
     BANNER(
       'the legal.consent.* keys of packages/www/src/i18n/translations/<locale>.json, entity and URL tokens substituted'
     ) +
-    "\nimport type { ConsentNotices } from './types.js';\n\n" +
+    "\nimport { WK_SITE_ORIGIN } from '../config/well-known.generated.js';\n" +
+    "import type { ConsentNotices } from './types.js';\n\n" +
     '/** The canonical consent notice per locale and method. An empty string is a notice no catalog carries yet. */\n' +
     'export const CONSENT_NOTICES: ConsentNotices = {\n' +
-    block(tsString) +
+    block((t) => tsNotice(t, siteOrigin)) +
     '};\n\n' +
     '/** sha256 of each notice above (UTF-8); empty where the notice is empty. */\n' +
     'export const CONSENT_NOTICE_SHA256: ConsentNotices = {\n' +
@@ -455,7 +471,7 @@ export function buildOutputs(src: Sources): Outputs {
   }
   files.set(MANIFEST_REL, `${JSON.stringify(manifest, null, 2)}\n`);
   files.set(DOCUMENTS_TS_REL, renderDocumentsTs(manifest, src.siteOrigin));
-  files.set(CONSENT_TS_REL, renderConsentTs(consentNotices(src)));
+  files.set(CONSENT_TS_REL, renderConsentTs(consentNotices(src), src.siteOrigin));
   return { manifest, files, renders };
 }
 
