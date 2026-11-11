@@ -865,12 +865,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 1,
-      "open_sigs": [
-        "55ead55d"
-      ],
+      "open": 0,
+      "done": 2,
+      "open_sigs": [],
       "done_sigs": [
+        "55ead55d",
         "b00bc9df"
       ]
     },
