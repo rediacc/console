@@ -109,7 +109,11 @@
       "cookiePolicy": "Политика использования файлов cookie",
       "refundPolicy": "Политика возврата средств",
       "telemetryPolicy": "Политика телеметрии",
-      "legalInformation": "Юридическая информация"
+      "legalInformation": "Юридическая информация",
+      "acceptableUsePolicy": "Политика допустимого использования",
+      "dataProcessingAgreement": "Соглашение об обработке данных",
+      "serviceLevelAgreement": "Соглашение об уровне обслуживания",
+      "enterpriseLicense": "Лицензия Enterprise"
     },
     "legalDisclosure": {
       "summary": "{{companyName}} | Регистрационный код {{registryCode}} | НДС {{vatNumber}} |",

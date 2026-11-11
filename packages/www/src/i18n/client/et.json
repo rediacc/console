@@ -109,7 +109,11 @@
       "cookiePolicy": "Küpsiste poliitika",
       "refundPolicy": "Tagastuspoliitika",
       "telemetryPolicy": "Telemetria poliitika",
-      "legalInformation": "Õiguslik teave"
+      "legalInformation": "Õiguslik teave",
+      "acceptableUsePolicy": "Lubatud kasutuse poliitika",
+      "dataProcessingAgreement": "Andmetöötluslepe",
+      "serviceLevelAgreement": "Teenusetaseme leping",
+      "enterpriseLicense": "Enterprise-litsents"
     },
     "legalDisclosure": {
       "summary": "{{companyName}} | Registrikood {{registryCode}} | KM-number {{vatNumber}} |",

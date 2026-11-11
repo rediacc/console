@@ -109,7 +109,11 @@
       "cookiePolicy": "Cookieポリシー",
       "refundPolicy": "返金ポリシー",
       "telemetryPolicy": "テレメトリポリシー",
-      "legalInformation": "法的情報"
+      "legalInformation": "法的情報",
+      "acceptableUsePolicy": "利用規定（AUP）",
+      "dataProcessingAgreement": "データ処理契約（DPA）",
+      "serviceLevelAgreement": "サービスレベル契約（SLA）",
+      "enterpriseLicense": "Enterpriseライセンス"
     },
     "legalDisclosure": {
       "summary": "{{companyName}} | 登録番号 {{registryCode}} | VAT {{vatNumber}} |",

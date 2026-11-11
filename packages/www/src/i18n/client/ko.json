@@ -109,7 +109,11 @@
       "cookiePolicy": "쿠키 정책",
       "refundPolicy": "환불 정책",
       "telemetryPolicy": "텔레메트리 정책",
-      "legalInformation": "법적 정보"
+      "legalInformation": "법적 정보",
+      "acceptableUsePolicy": "허용 가능한 사용 정책",
+      "dataProcessingAgreement": "데이터 처리 계약",
+      "serviceLevelAgreement": "서비스 수준 계약",
+      "enterpriseLicense": "Enterprise 라이선스"
     },
     "legalDisclosure": {
       "summary": "{{companyName}} | 등록 코드 {{registryCode}} | 부가세 번호 {{vatNumber}} |",

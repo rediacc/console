@@ -109,7 +109,11 @@
       "cookiePolicy": "Çerez Politikası",
       "refundPolicy": "İade Politikası",
       "telemetryPolicy": "Telemetri Politikası",
-      "legalInformation": "Yasal Bilgiler"
+      "legalInformation": "Yasal Bilgiler",
+      "acceptableUsePolicy": "Kabul Edilebilir Kullanım Politikası",
+      "dataProcessingAgreement": "Veri İşleme Sözleşmesi",
+      "serviceLevelAgreement": "Hizmet Seviyesi Sözleşmesi",
+      "enterpriseLicense": "Kurumsal Lisans"
     },
     "legalDisclosure": {
       "summary": "{{companyName}} | Sicil kodu {{registryCode}} | KDV {{vatNumber}} |",

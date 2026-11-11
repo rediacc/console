@@ -109,7 +109,11 @@
       "cookiePolicy": "Cookie 政策",
       "refundPolicy": "退款政策",
       "telemetryPolicy": "遥测政策",
-      "legalInformation": "法律信息"
+      "legalInformation": "法律信息",
+      "acceptableUsePolicy": "可接受使用政策",
+      "dataProcessingAgreement": "数据处理协议",
+      "serviceLevelAgreement": "服务级别协议",
+      "enterpriseLicense": "Enterprise 许可证"
     },
     "legalDisclosure": {
       "summary": "{{companyName}} | 注册号 {{registryCode}} | 增值税号 {{vatNumber}} |",

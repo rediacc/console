@@ -109,7 +109,11 @@
       "cookiePolicy": "Cookie-Richtlinie",
       "refundPolicy": "Erstattungsrichtlinie",
       "telemetryPolicy": "Telemetrie-Richtlinie",
-      "legalInformation": "Rechtliche Informationen"
+      "legalInformation": "Rechtliche Informationen",
+      "acceptableUsePolicy": "Richtlinie zur akzeptablen Nutzung",
+      "dataProcessingAgreement": "Auftragsverarbeitungsvertrag",
+      "serviceLevelAgreement": "Service-Level-Vereinbarung",
+      "enterpriseLicense": "Enterprise-Lizenz"
     },
     "legalDisclosure": {
       "summary": "{{companyName}} | Registernummer {{registryCode}} | USt-IdNr. {{vatNumber}} |",

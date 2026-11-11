@@ -109,7 +109,11 @@
       "cookiePolicy": "سياسة ملفات تعريف الارتباط",
       "refundPolicy": "سياسة الاسترداد",
       "telemetryPolicy": "سياسة جمع بيانات الاستخدام",
-      "legalInformation": "المعلومات القانونية"
+      "legalInformation": "المعلومات القانونية",
+      "acceptableUsePolicy": "سياسة الاستخدام المقبول",
+      "dataProcessingAgreement": "اتفاقية معالجة البيانات",
+      "serviceLevelAgreement": "اتفاقية مستوى الخدمة",
+      "enterpriseLicense": "ترخيص Enterprise"
     },
     "legalDisclosure": {
       "summary": "{{companyName}} | رقم السجل {{registryCode}} | ضريبة القيمة المضافة {{vatNumber}} |",
