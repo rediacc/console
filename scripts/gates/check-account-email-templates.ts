@@ -28,6 +28,7 @@ const TEMPLATE_FILES = [
   // Added 2026-09-07. Both were on disk and NOT in this list, so this gate was checking 11 of the 13 real templates and saying nothing about the other two.
   'delegation-cert-renewal-alert.ts',
   'lead-magnet.ts',
+  'legal.ts',
 ];
 
 /**
