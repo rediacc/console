@@ -1,4 +1,8 @@
-import { WK_ACCOUNT_DEFAULT_ORIGIN } from '@rediacc/shared/config/well-known.generated';
+import {
+  WK_ACCOUNT_DEFAULT_ORIGIN,
+  WK_BENCH_ORIGIN,
+} from '@rediacc/shared/config/well-known.generated';
+import { BAKED_IN_REGIONS } from '@rediacc/shared/regions';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const fetchMock = vi.hoisted(() => vi.fn());
@@ -194,9 +198,9 @@ describe('refreshRepoLicensesBatch and a foreign-origin licence', () => {
   });
 
   describe('a FREE licence from another production region', () => {
-    const EU = 'https://eu.rediacc.cloud';
-    const US = 'https://us.rediacc.cloud';
-    const BENCH = 'https://bench.rediacc.cloud';
+    const EU = WK_ACCOUNT_DEFAULT_ORIGIN;
+    const US = `https://${BAKED_IN_REGIONS.find((r) => r.id === 'us')?.domain}`;
+    const BENCH = WK_BENCH_ORIGIN;
     const entry = (guid: string, origin: string, subscriptionId: string) => ({
       repositoryGuid: guid,
       requestedSizeGb: 1,

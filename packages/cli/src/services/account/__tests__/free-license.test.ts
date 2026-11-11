@@ -7,7 +7,14 @@
  * instead of failing on a missing token (R13).
  */
 
+import { WK_ACCOUNT_DEFAULT_ORIGIN } from '@rediacc/shared/config/well-known.generated';
+import { BAKED_IN_REGIONS } from '@rediacc/shared/regions';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const EU_ORIGIN = WK_ACCOUNT_DEFAULT_ORIGIN;
+const US_DOMAIN = BAKED_IN_REGIONS.find((r) => r.id === 'us')?.domain ?? '';
+const US_ORIGIN = `https://${US_DOMAIN}`;
+const EU_DOMAIN = new URL(EU_ORIGIN).host;
 
 const m = vi.hoisted(() => ({
   fetch: vi.fn(),
@@ -86,7 +93,7 @@ beforeEach(() => {
   m.configured.mockReturnValue(undefined);
   m.exists.mockResolvedValue(true);
   m.update.mockResolvedValue(undefined);
-  m.promptRegion.mockResolvedValue({ region: {}, domain: 'eu.rediacc.cloud' });
+  m.promptRegion.mockResolvedValue({ region: {}, domain: EU_DOMAIN });
 });
 
 afterEach(() => {
@@ -287,7 +294,7 @@ describe('hosted backups on a Free License', () => {
 });
 
 describe('free licence region pick', () => {
-  const US = { id: 'us', label: 'United States', domain: 'us.rediacc.cloud', default: false };
+  const US = { id: 'us', label: 'United States', domain: US_DOMAIN, default: false };
 
   it('a terminal with no server asks, uses the pick and saves it', async () => {
     setTty(true);
@@ -298,10 +305,10 @@ describe('free licence region pick', () => {
     expect(m.update).toHaveBeenCalledTimes(1);
     expect(m.update.mock.calls[0][1]).toBe('/account/accountServer');
     const saved = m.update.mock.calls[0][2]({ account: { e2ePublicKey: 'k' } });
-    expect(saved.account.accountServer).toBe('https://us.rediacc.cloud');
+    expect(saved.account.accountServer).toBe(US_ORIGIN);
     m.fetch.mockResolvedValue({ license: BLOB });
     await issueFreeRepoLicense('m', MACHINE, 'key', { repositoryGuid: GUID, kind: 'grand' });
-    expect(m.fetch.mock.calls[0][1].serverUrl).toBe('https://us.rediacc.cloud');
+    expect(m.fetch.mock.calls[0][1].serverUrl).toBe(US_ORIGIN);
   });
 
   it('no terminal keeps the default and prints one line naming it', async () => {
@@ -318,7 +325,7 @@ describe('free licence region pick', () => {
 
   it('a configured server is never prompted or overwritten', async () => {
     setTty(true);
-    m.configured.mockReturnValue('https://eu.rediacc.cloud');
+    m.configured.mockReturnValue(EU_ORIGIN);
     m.askChoice.mockResolvedValueOnce('free');
     await resolveLicenseAuthority(vi.fn());
     expect(m.promptRegion).not.toHaveBeenCalled();
@@ -330,14 +337,14 @@ describe('free licence region pick', () => {
     m.isAgent.mockReturnValue(true);
     await resolveLicenseAuthority(vi.fn(), { region: 'us' });
     expect(m.promptRegion).not.toHaveBeenCalled();
-    expect(m.update.mock.calls[0][2]({}).account.accountServer).toBe('https://us.rediacc.cloud');
+    expect(m.update.mock.calls[0][2]({}).account.accountServer).toBe(US_ORIGIN);
     m.fetch.mockResolvedValue({ license: BLOB });
     await issueFreeRepoLicense('m', MACHINE, 'key', { repositoryGuid: GUID, kind: 'grand' });
-    expect(m.fetch.mock.calls[0][1].serverUrl).toBe('https://us.rediacc.cloud');
+    expect(m.fetch.mock.calls[0][1].serverUrl).toBe(US_ORIGIN);
 
     resetFreeLicenseStateForTests();
     m.update.mockClear();
-    m.configured.mockReturnValue('https://eu.rediacc.cloud');
+    m.configured.mockReturnValue(EU_ORIGIN);
     await resolveLicenseAuthority(vi.fn(), { region: 'us' });
     expect(m.update).not.toHaveBeenCalled();
     expect(m.warn).toHaveBeenCalledWith(
