@@ -28,6 +28,15 @@ interface RestartServicesOptions {
   json?: boolean;
 }
 
+/**
+ * The restart report in a job's stdout. The daemons-restart job prints one NDJSON progress line per
+ * unit before the report, so the report is the last non-empty line.
+ */
+function parseRestartOutput(stdout: string | undefined): ReturnType<typeof parseDaemonUpgradeJson> {
+  const lines = (stdout ?? '').split('\n').filter((line) => line.trim() !== '');
+  return parseDaemonUpgradeJson(lines.length > 0 ? lines[lines.length - 1] : '');
+}
+
 /** The refusal of a renet that predates `--network-id`: cobra's unknown flag naming it, or the job builder's closed argument list. */
 function isScopeUnsupported(text: string): boolean {
   return (
@@ -39,7 +48,7 @@ function isScopeUnsupported(text: string): boolean {
 /** Whether the job's stdout is the restart report of a run that started, which no refusal ever prints. */
 function isRestartReport(stdout: string | undefined): boolean {
   try {
-    parseDaemonUpgradeJson(stdout ?? '');
+    parseRestartOutput(stdout);
     return true;
   } catch {
     return false;
@@ -129,7 +138,7 @@ function renderRestartReport(
 
 bindStepHandler('renderRestartServices', ({ machine, output, params }) => {
   const format: OutputFormat = params.json === true ? 'json' : getOutputFormat();
-  renderRestartReport(machine, parseDaemonUpgradeJson(output ?? ''), format);
+  renderRestartReport(machine, parseRestartOutput(output), format);
   return Promise.resolve();
 });
 
@@ -180,7 +189,7 @@ function renderRestartFailure(
   format: OutputFormat
 ): void {
   try {
-    renderRestartReport(machineName, parseDaemonUpgradeJson(result.stdout ?? ''), format);
+    renderRestartReport(machineName, parseRestartOutput(result.stdout), format);
     setExitCode(result.exitCode && result.exitCode > 0 ? result.exitCode : 1);
   } catch {
     renderLocalExecutionFailure(result, `Restarting the renet daemons on '${machineName}' failed`);

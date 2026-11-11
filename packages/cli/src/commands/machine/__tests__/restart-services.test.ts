@@ -166,6 +166,22 @@ describe('machine restart-services --repo', () => {
     expect(mocks.error.mock.calls.join(' ')).not.toContain('repoRenetTooOld');
   });
 
+  it('reads the report after the per-unit progress lines of a daemons-restart job', async () => {
+    const progress = (action: string) =>
+      JSON.stringify({ event: 'progress', unit: 'rediacc-hub.service', action, elapsed_ms: 0 });
+    answer = {
+      ...OK,
+      stdout: [
+        progress('starting'),
+        progress('restarted'),
+        JSON.stringify({ processes: [], repos: [] }),
+      ].join('\n'),
+    };
+    await run('--include-docker');
+    expect(mocks.success).toHaveBeenCalledTimes(1);
+    expect(mocks.setExitCode).not.toHaveBeenCalled();
+  });
+
   it('does not call another unknown flag a renet that predates --repo', async () => {
     answer = {
       success: false,
