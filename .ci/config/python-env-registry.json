@@ -2499,6 +2499,9 @@
     ".claude/rediacc_hooks/guards/test-block_second_branch.py": [
       "PATH"
     ],
+    ".claude/rediacc_hooks/guards/test-block_second_open_pr.py": [
+      "PATH"
+    ],
     ".claude/rediacc_hooks/guards/test-block_turbo_early_push.py": [
       "PATH"
     ],

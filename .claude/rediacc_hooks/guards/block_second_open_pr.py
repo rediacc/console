@@ -17,6 +17,8 @@ zero, by a different route.
 """
 
 import json
+import os
+import re
 import subprocess
 
 from rediacc_hooks import hookio, shellscan
@@ -59,6 +61,14 @@ UNRESOLVED_REASON = (
     "(not asked: the repository is named through a variable or a substitution this hook "
     "cannot evaluate; name it literally)"
 )
+
+# What UNVERIFIABLE says for a create whose `cd` target carries an expansion the walk keeps unexpanded (`for s in ...; do (cd private/$s && gh pr create); done`): the directory, and so the repository, is unknown.
+UNRESOLVED_DIR_REASON = (
+    "(not asked: the command runs in a directory named through a variable or a substitution "
+    "(`cd %s`) this hook cannot evaluate; cd into a literal path, or pass --repo)"
+)
+# A `cd` target the walk left unexpanded: a parameter, a command substitution or arithmetic.
+_UNEXPANDED = re.compile(r"[$`]")
 
 ALREADY_OPEN = (
     "❌ BLOCKED: you already have %s open PR(s) in %s. One at a time.\n"
@@ -165,6 +175,27 @@ def _rows(text):
     return shellscan._command_substitution("".join(row + "\n" for row in out))
 
 
+def _create_repo(run_, cwd, inherited):
+    """The repository one walked `gh pr create` targets, read as gh reads it: `--repo`/`-R`/`GH_REPO` (`shellscan.gh_named_repo`), else the directory the call really runs in after its `cd`s, else the session `cwd`.
+
+    `shellscan.gh_run_repo` alone reads the cd only when it names `private/<submodule>` and otherwise asks the SESSION cwd's origin, so `(cd private/$s && gh pr create)` from the console counted console's open PR (worklist #29531257, console PR 605, 2026-11-11), and a cd into any other checkout did the same. The effective directory is handed to `gh_run_repo` as its cwd, so its own order still applies there. A cd target with an unexpanded `$` or backquote is `UNRESOLVED_REPO`; a cd into a missing directory leaves the shell where it was, so the session cwd stands.
+    """
+    if shellscan.gh_named_repo(run_, inherited):
+        return shellscan.gh_run_repo(run_, cwd, inherited)
+    rel = run_.cwd or ""
+    if rel in ("", "."):
+        return shellscan.gh_run_repo(run_, cwd, inherited)
+    if _UNEXPANDED.search(rel):
+        return shellscan.UNRESOLVED_REPO
+    target = os.path.expanduser(rel)
+    if not os.path.isabs(target):
+        target = os.path.join(cwd or os.getcwd(), target)
+    target = os.path.normpath(target)
+    if os.path.isdir(target):
+        return shellscan.gh_run_repo(run_, target, inherited)
+    return shellscan.gh_run_repo(run_, cwd, inherited)
+
+
 def run(ev):
     cmd = ev.field("tool_input", "command")
     cwd = ev.field("cwd")
@@ -172,7 +203,7 @@ def run(ev):
         return hookio.ALLOW
 
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
-    # Each create's repo is read from its own walked call (`shellscan.gh_run_repo`), so `-R=x`, `-Rx` and `--repo 'x'` count the open PRs of the repo they name: measured 2026-10-07, `gh pr create -R=rediacc/renet` listed console's. Only a command the walk finds no create in keeps the text reader.
+    # Each create's repo is read from its own walked call (`_create_repo`, over `shellscan.gh_run_repo`), so `-R=x`, `-Rx` and `--repo 'x'` count the open PRs of the repo they name: measured 2026-10-07, `gh pr create -R=rediacc/renet` listed console's. Only a command the walk finds no create in keeps the text reader.
     runs = shellscan.gh_pr_runs(cmd, "create")
     if runs:
         repos = []
@@ -180,10 +211,12 @@ def run(ev):
             # `--help` prints the usage and creates nothing.
             if shellscan.gh_args(run_.argv).on("help"):
                 continue
-            repo = shellscan.gh_run_repo(run_, cwd, ev.env("GH_REPO"))
-            # A repo the walk cannot evaluate (`-R $R`, `GH_REPO=$(...)`) has no open-PR list to read: refused as unverifiable, never listed under a made-up name (#9de9a8e9).
+            repo = _create_repo(run_, cwd, ev.env("GH_REPO"))
+            # A repo the walk cannot evaluate (`-R $R`, `GH_REPO=$(...)`, `cd private/$s`) has no open-PR list to read: refused as unverifiable, never listed under a made-up name (#9de9a8e9).
             if repo == shellscan.UNRESOLVED_REPO:
-                ev.warn_raw(UNVERIFIABLE % ("the repository this command names", UNRESOLVED_REASON))
+                named = shellscan.gh_named_repo(run_, ev.env("GH_REPO"))
+                why = UNRESOLVED_REASON if named else UNRESOLVED_DIR_REASON % run_.cwd
+                ev.warn_raw(UNVERIFIABLE % ("the repository this command names", why))
                 return hookio.DENY
             if repo not in repos:
                 repos.append(repo)

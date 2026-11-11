@@ -103,6 +103,21 @@ UNREADABLE = world()
 # A submodule-shaped nested repository under private/.
 WITH_SUB = world()
 G.world(WITH_SUB / "private" / "renet")
+# A real console submodule: `.gitmodules` names private/renet, so red-fix there may lean on the console's open PR for the same branch (worklist #29531257).
+SUB_LISTED = world()
+G.world(SUB_LISTED / "private" / "renet")
+(SUB_LISTED / ".gitmodules").write_text(
+    '[submodule "private/renet"]\n\tpath = private/renet\n'
+    "\turl = https://github.com/fixture/renet.git\n",
+    encoding="utf-8",
+)
+# `gh pr list` answers an open PR only in the console checkout: the submodule has none yet, the live case of console PR 605.
+GH_CONSOLE_ONLY = stub(
+    "#!/bin/sh\n"
+    'if [ "$1" = api ]; then echo \'{"data":{"repository":{"pullRequests":{"nodes":[]}}}}\'; '
+    "exit 0; fi\n"
+    'case "$PWD" in */private/*) exit 0;; esac\necho 605\n'
+)
 # A repository outside the console.
 OUTSIDE = world()
 
@@ -247,6 +262,51 @@ CASES = [
         GH_DOWN,
         False,
         "UNVERIFIED",
+    ),
+    # ---- red-fix in a submodule (worklist #29531257): the console's open PR on the same branch is the live PR
+    (
+        "red-fix submodule push, console PR open",
+        "cd private/renet && " + (R % "red-fix: console PR 605 needs the submodule half") + PUSH,
+        SUB_LISTED,
+        GH_CONSOLE_ONLY,
+        False,
+        "",
+    ),
+    (
+        "red-fix first submodule PR, console PR open",
+        "cd private/renet && "
+        + (R % "red-fix: console PR 605 needs the submodule half")
+        + "gh pr create --repo fixture/renet --head 1008-1 -t x -b y",
+        SUB_LISTED,
+        GH_CONSOLE_ONLY,
+        False,
+        "",
+    ),
+    (
+        "red-fix submodule PR, no open PR anywhere",
+        "cd private/renet && "
+        + (R % "red-fix: console PR 605 needs the submodule half")
+        + "gh pr create --repo fixture/renet --head 1008-1 -t x -b y",
+        SUB_LISTED,
+        GH_NONE,
+        True,
+        "has no open PR here or in the console",
+    ),
+    (
+        "red-fix nested repo not in .gitmodules, console PR open",
+        "cd private/renet && " + (R % "red-fix: console PR 605 needs the submodule half") + PUSH,
+        WITH_SUB,
+        GH_CONSOLE_ONLY,
+        True,
+        "has no open PR, so",
+    ),
+    (
+        "red-fix in the console with no open PR",
+        (R % "red-fix: lint red on the live PR, fixed here") + PUSH,
+        SUB_LISTED,
+        GH_NONE,
+        True,
+        "has no open PR, so",
     ),
     # ---- deadline
     (
