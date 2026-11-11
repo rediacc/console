@@ -148,8 +148,9 @@ describe('command plane coverage', () => {
     // 209 -> 210, machine 115 -> 116: `job dismiss` (PLAN-renet-restart-cycle-defects D4) forgets local job tickets; it carries the machine plane of the job domain.
     //
     // 210 -> 212, other 37 -> 39: `version` (build, channel and licence facts) and `legal` (the entity and the accepted Terms, read from the local state or the account server) never reach a machine.
-    expect(COMMANDS.length).toBe(212);
-    expect(counts).toEqual({ config: 57, machine: 116, other: 39 });
+    // 212 -> 213, other 39 -> 40: `subscription register` starts the device-code authorisation against the account server, never a machine, so it inherits `subscription`'s `other` plane.
+    expect(COMMANDS.length).toBe(213);
+    expect(counts).toEqual({ config: 57, machine: 116, other: 40 });
   });
 
   it('records the interactive commands', () => {
