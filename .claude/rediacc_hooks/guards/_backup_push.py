@@ -129,7 +129,8 @@ def admitted(ev, cmd):
     for run in commit_policy.runs(cmd):
         if not _literal(run):
             return False
-        name = os.path.basename(run.name or "")
+        # The bare program names only (review 2577b833.1): `./git` or `/tmp/x/git` is another program, never git.
+        name = run.name or ""
         if name == "cd":
             continue
         if name == "git" and run.git_sub == "push":
