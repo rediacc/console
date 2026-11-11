@@ -80,17 +80,17 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 496 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 525 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 117 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
-- Writers: 0 live of writer_cap 25 (session d778be9d).
-- Leased items: 4: #1c40e1d9 (worker:bkodw5jbo, d778be9d), #35eda180 (worker:bkodw5jbo, d778be9d), #9cb71958 (worker:bkodw5jbo, d778be9d), #df6143bb (worker:bkodw5jbo, d778be9d).
+- Writers: 1 live of writer_cap 25 (session d778be9d): worker:ac5569ade4ad4bdb1.
+- Leased items: 5: #1c40e1d9 (worker:bkodw5jbo, d778be9d), #35eda180 (worker:bkodw5jbo, d778be9d), #3bba95eb (worker:ac5569ade4ad4bdb1, d778be9d), #9cb71958 (worker:bkodw5jbo, d778be9d), #df6143bb (worker:bkodw5jbo, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 23 of 66 plans done, 1052 of 1227 boxes done (85%).
+Promoted: 23 of 66 plans done, 1069 of 1227 boxes done (87%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -159,7 +159,7 @@ Promoted: 23 of 66 plans done, 1052 of 1227 boxes done (85%).
 | 63 | PLAN-d1-scaling.md | 17/31 | 14 open |
 | 64 | PLAN-experience-feedback.md | 12/16 | 4 open |
 | 65 | PLAN-local-first-delivery.md | 13/15 | 2 open |
-| 66 | PLAN-terms-acceptance.md | 0/25 | 25 open |
+| 66 | PLAN-terms-acceptance.md | 17/25 | 8 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
