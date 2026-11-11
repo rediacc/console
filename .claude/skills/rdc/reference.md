@@ -2307,6 +2307,7 @@ Refresh licenses from the account server.
 
 - `-m, --machine <name>`: Machine name
 - `--repo <ref>`: Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)
+- `--adopt-origin`: Reissue licenses another account server issued from this config's account server, moving them over. Without it such licenses are left untouched.
 
 ### rdc mcp serve
 
