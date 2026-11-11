@@ -1965,6 +1965,8 @@
   "commands.subscription.login.regionSelected": "Регион данных: {{region}} ({{domain}})",
   "commands.subscription.login.serverChanged": "Сервер изменен. Предыдущая сессия очищена.",
   "commands.subscription.login.success": "Вход выполнен успешно",
+  "commands.subscription.login.termsAccepted": "Условия использования приняты: версия {{version}}",
+  "commands.subscription.login.termsPending": "Условия использования ещё не приняты. Примите их на {{url}}",
   "commands.subscription.login.tokenAndPassword": "Параметры --token и --password-stdin нельзя использовать вместе.",
   "commands.subscription.login.totpRequired": "Для этой учётной записи требуется двухфакторная аутентификация. Задайте в {{field}} действующий код.",
   "commands.subscription.login.validated": "Токен проверен",

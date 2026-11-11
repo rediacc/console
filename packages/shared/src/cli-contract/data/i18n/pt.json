@@ -1965,6 +1965,8 @@
   "commands.subscription.login.regionSelected": "Região de dados: {{region}} ({{domain}})",
   "commands.subscription.login.serverChanged": "Servidor alterado. Sessão anterior apagada.",
   "commands.subscription.login.success": "Sessão iniciada com sucesso",
+  "commands.subscription.login.termsAccepted": "Termos de Serviço aceitos: versão {{version}}",
+  "commands.subscription.login.termsPending": "Os Termos de Serviço ainda não foram aceitos. Aceite-os em {{url}}",
   "commands.subscription.login.tokenAndPassword": "--token e --password-stdin não podem ser combinados.",
   "commands.subscription.login.totpRequired": "Esta conta exige autenticação em dois fatores. Defina {{field}} com um código atual.",
   "commands.subscription.login.validated": "Token validado",

@@ -12,7 +12,10 @@ import {
   normalizeServerUrl,
   saveStoredSubscriptionToken,
 } from '../services/account/subscription-auth.js';
-import { authorizeSubscriptionViaDeviceCode } from '../services/account/subscription-device-auth.js';
+import {
+  authorizeSubscriptionViaDeviceCode,
+  type ClaimTerms,
+} from '../services/account/subscription-device-auth.js';
 import {
   loginWithPassword,
   resolvePasswordLoginInput,
@@ -201,7 +204,8 @@ function renderLoginSummary(
     overLimitCount?: number;
   },
   teamName: string | undefined,
-  serverUrl: string
+  serverUrl: string,
+  terms?: ClaimTerms
 ): void {
   outputService.success(t('commands.subscription.login.success'));
   outputSubscriptionScope({ orgName: status.orgName, teamName, serverUrl });
@@ -216,6 +220,13 @@ function renderLoginSummary(
       max: status.maxMachines ?? SUBSCRIPTION_DEFAULTS.UNKNOWN_QUOTA,
     })
   );
+  if (terms) {
+    outputService.info(
+      terms.accepted
+        ? t('commands.subscription.login.termsAccepted', { version: terms.accepted })
+        : t('commands.subscription.login.termsPending', { url: terms.url })
+    );
+  }
   // Soft-claimed slots: renewals still succeed, but new repositories cannot be licensed, so say it at login rather than at the next `repo create`.
   if ((status.overLimitCount ?? 0) > 0) {
     outputService.warn(
@@ -328,7 +339,7 @@ export function registerSubscriptionCommands(program: Command): void {
         }
 
         if (token === undefined) {
-          const { status } = await authorizeSubscriptionViaDeviceCode(serverUrl, {
+          const { status, terms } = await authorizeSubscriptionViaDeviceCode(serverUrl, {
             interactive: true,
             teamName: await configService.getTeam(),
           });
@@ -337,7 +348,7 @@ export function registerSubscriptionCommands(program: Command): void {
             planCode: status.planCode,
             source: TELEMETRY_SUBSCRIPTION_SOURCES.storedToken,
           });
-          renderLoginSummary(status, status.teamName, serverUrl);
+          renderLoginSummary(status, status.teamName, serverUrl, terms);
         } else {
           await loginWithToken(token, serverUrl);
         }

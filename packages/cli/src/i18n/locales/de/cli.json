@@ -2583,6 +2583,8 @@
         "regionSelected": "Datenregion: {{region}} ({{domain}})",
         "serverChanged": "Server geändert. Vorherige Sitzung gelöscht.",
         "success": "Erfolgreich angemeldet",
+        "termsAccepted": "Nutzungsbedingungen akzeptiert: Version {{version}}",
+        "termsPending": "Die Nutzungsbedingungen sind noch nicht akzeptiert. Akzeptieren Sie sie unter {{url}}",
         "tokenAndPassword": "--token und --password-stdin lassen sich nicht kombinieren.",
         "totpRequired": "Dieses Konto erfordert Zwei-Faktor-Authentifizierung. Setze {{field}} auf einen aktuellen Code.",
         "validated": "Token überprüft",
@@ -3142,7 +3144,10 @@
       "secretStagingFailed": "Die Repository-Secrets konnten nicht auf der Maschine bereitgestellt werden (SSH-Exitcode {{code}})."
     },
     "terms": {
-      "declined": "Die Nutzungsbedingungen wurden nicht akzeptiert, daher wurde keine kostenlose Lizenz abgerufen."
+      "declined": "Die Nutzungsbedingungen wurden nicht akzeptiert, daher wurde keine kostenlose Lizenz abgerufen.",
+      "required": "Die Nutzungsbedingungen wurden für dieses Konto noch nicht akzeptiert. Akzeptieren Sie sie unter {{url}} und führen Sie den Befehl danach erneut aus.",
+      "requiredFree": "Die Nutzungsbedingungen wurden für diese kostenlose Lizenz nicht akzeptiert. Lesen Sie sie unter {{url}} und übergeben Sie dann {{flag}} oder setzen Sie {{env}}.",
+      "upcoming": "Die neuen Nutzungsbedingungen {{version}} gelten ab dem {{effective}}. Sie finden sie unter {{url}}."
     },
     "unknownCommand": "Unbekannter Befehl \"{{command}}\". Verfügbare Befehle: {{available}}.",
     "unknownRegion": "Unbekannte Region: {{region}}",

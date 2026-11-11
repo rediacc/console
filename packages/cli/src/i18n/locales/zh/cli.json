@@ -2583,6 +2583,8 @@
         "regionSelected": "数据区域: {{region}} ({{domain}})",
         "serverChanged": "服务器已更改。之前的会话已清除。",
         "success": "登录成功",
+        "termsAccepted": "已接受的服务条款：版本 {{version}}",
+        "termsPending": "尚未接受服务条款。请在 {{url}} 接受",
         "tokenAndPassword": "--token 和 --password-stdin 不能同时使用。",
         "totpRequired": "此账户需要双重身份验证。请将 {{field}} 设置为当前验证码。",
         "validated": "令牌已验证",
@@ -3142,7 +3144,10 @@
       "secretStagingFailed": "无法在机器上准备仓库密钥（ssh 退出码 {{code}}）。"
     },
     "terms": {
-      "declined": "未接受服务条款，因此没有获取免费许可证。"
+      "declined": "未接受服务条款，因此没有获取免费许可证。",
+      "required": "此账户尚未接受服务条款。请在 {{url}} 接受后重新运行命令。",
+      "requiredFree": "此免费许可证尚未接受服务条款。请在 {{url}} 阅读后，传入 {{flag}} 或设置 {{env}}。",
+      "upcoming": "新的服务条款 {{version}} 将于 {{effective}} 生效。请在 {{url}} 阅读。"
     },
     "unknownCommand": "未知命令 \"{{command}}\"。可用命令：{{available}}。",
     "unknownRegion": "未知区域: {{region}}",

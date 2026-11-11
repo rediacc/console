@@ -2583,6 +2583,8 @@
         "regionSelected": "Região de dados: {{region}} ({{domain}})",
         "serverChanged": "Servidor alterado. Sessão anterior apagada.",
         "success": "Sessão iniciada com sucesso",
+        "termsAccepted": "Termos de Serviço aceitos: versão {{version}}",
+        "termsPending": "Os Termos de Serviço ainda não foram aceitos. Aceite-os em {{url}}",
         "tokenAndPassword": "--token e --password-stdin não podem ser combinados.",
         "totpRequired": "Esta conta exige autenticação em dois fatores. Defina {{field}} com um código atual.",
         "validated": "Token validado",
@@ -3142,7 +3144,10 @@
       "secretStagingFailed": "Não foi possível preparar os segredos do repositório na máquina (código de saída do ssh {{code}})."
     },
     "terms": {
-      "declined": "Os Termos de Serviço não foram aceitos, por isso nenhuma licença gratuita foi obtida."
+      "declined": "Os Termos de Serviço não foram aceitos, por isso nenhuma licença gratuita foi obtida.",
+      "required": "Os Termos de Serviço não foram aceitos para esta conta. Aceite-os em {{url}} e execute o comando novamente.",
+      "requiredFree": "Os Termos de Serviço não foram aceitos para esta licença gratuita. Leia-os em {{url}} e passe {{flag}} ou defina {{env}}.",
+      "upcoming": "Os novos Termos de Serviço {{version}} entram em vigor em {{effective}}. Leia-os em {{url}}."
     },
     "unknownCommand": "Comando desconhecido \"{{command}}\". Comandos disponíveis: {{available}}.",
     "unknownRegion": "Região desconhecida: {{region}}",

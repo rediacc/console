@@ -1965,6 +1965,8 @@
   "commands.subscription.login.regionSelected": "数据区域: {{region}} ({{domain}})",
   "commands.subscription.login.serverChanged": "服务器已更改。之前的会话已清除。",
   "commands.subscription.login.success": "登录成功",
+  "commands.subscription.login.termsAccepted": "已接受的服务条款：版本 {{version}}",
+  "commands.subscription.login.termsPending": "尚未接受服务条款。请在 {{url}} 接受",
   "commands.subscription.login.tokenAndPassword": "--token 和 --password-stdin 不能同时使用。",
   "commands.subscription.login.totpRequired": "此账户需要双重身份验证。请将 {{field}} 设置为当前验证码。",
   "commands.subscription.login.validated": "令牌已验证",

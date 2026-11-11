@@ -2583,6 +2583,8 @@
         "regionSelected": "データリージョン: {{region}} ({{domain}})",
         "serverChanged": "サーバーが変更されました。以前のセッションはクリアされました。",
         "success": "ログイン成功",
+        "termsAccepted": "承諾済みの利用規約: バージョン {{version}}",
+        "termsPending": "利用規約はまだ承諾されていません。{{url}} で承諾してください",
         "tokenAndPassword": "--token と --password-stdin は同時に指定できません。",
         "totpRequired": "このアカウントでは二要素認証が必要です。{{field}} に現在のコードを設定してください。",
         "validated": "トークン検証済み",
@@ -3142,7 +3144,10 @@
       "secretStagingFailed": "マシン上にリポジトリのシークレットを準備できませんでした（ssh の終了コード {{code}}）。"
     },
     "terms": {
-      "declined": "利用規約が承諾されなかったため、無料ライセンスは取得されませんでした。"
+      "declined": "利用規約が承諾されなかったため、無料ライセンスは取得されませんでした。",
+      "required": "このアカウントでは利用規約が承諾されていません。{{url}} で承諾してから、もう一度コマンドを実行してください。",
+      "requiredFree": "この無料ライセンスでは利用規約が承諾されていません。{{url}} で内容を確認し、{{flag}} を付けるか {{env}} を設定してください。",
+      "upcoming": "新しい利用規約 {{version}} は {{effective}} に発効します。内容は {{url}} で確認できます。"
     },
     "unknownCommand": "不明なコマンド \"{{command}}\" です。利用可能なコマンド: {{available}}",
     "unknownRegion": "不明なリージョン: {{region}}",

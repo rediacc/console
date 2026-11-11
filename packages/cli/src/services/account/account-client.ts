@@ -467,14 +467,74 @@ async function accountServerFetchOnce<T>(
     handle426Response(parsed, getInstallMethod());
   }
 
+  warnUpcomingTerms(resp.headers?.get(TERMS_NOTICE_HEADER) ?? null);
+
   // Check the inner HTTP status
   if (status >= 400) {
+    if (status === 403 && (parsed as { code?: string }).code === TERMS_ACCEPTANCE_REQUIRED) {
+      throw termsRequiredError(parsed as { details?: Record<string, unknown> });
+    }
     const msg = (parsed as { error?: string }).error ?? `Account server returned HTTP ${status}`;
     const code = (parsed as { code?: string }).code;
     throw createAccountError(msg, status, code, parsed);
   }
 
   return parsed;
+}
+
+/** The server's refusal code when the account (or an anonymous FREE request) has not accepted the current Terms. */
+const TERMS_ACCEPTANCE_REQUIRED = 'TERMS_ACCEPTANCE_REQUIRED';
+/** The response header a server adds while a newer Terms version is announced but not yet in force. */
+const TERMS_NOTICE_HEADER = 'x-rediacc-terms';
+
+/** Whether this process already printed the upcoming-Terms notice. */
+let termsNoticeShown = false;
+
+/** Test seam: forget that the upcoming-Terms notice was printed. */
+export function resetTermsNoticeForTests(): void {
+  termsNoticeShown = false;
+}
+
+/** Parse `upcoming=<v>; effective=<d>; url=<u>` into its fields. */
+function parseTermsNotice(header: string): { upcoming?: string; effective?: string; url?: string } {
+  const fields: Record<string, string> = {};
+  for (const part of header.split(';')) {
+    const eq = part.indexOf('=');
+    if (eq > 0) fields[part.slice(0, eq).trim()] = part.slice(eq + 1).trim();
+  }
+  return fields;
+}
+
+/** Print the upcoming-Terms notice on stderr, once per process. It never refuses anything. */
+function warnUpcomingTerms(header: string | null): void {
+  if (termsNoticeShown || !header) return;
+  const { upcoming, effective, url } = parseTermsNotice(header);
+  if (!upcoming) return;
+  termsNoticeShown = true;
+  writeStderr(
+    `${t('errors.terms.upcoming', { version: upcoming, effective: effective ?? '', url: url ?? '' })}\n`
+  );
+}
+
+/**
+ * The refusal as one validation-class line with the URL to accept at. No prompt is ever opened:
+ * a token call cannot accept for the account, and an anonymous FREE call is answered by the
+ * acceptance flow before the request, so a refusal here means the cached acceptance went stale.
+ */
+function termsRequiredError(parsed: { details?: Record<string, unknown> }): ValidationError {
+  const details = parsed.details ?? (parsed as Record<string, unknown>);
+  const url = typeof details.url === 'string' ? details.url : '';
+  const flag = typeof details.flag === 'string' ? details.flag : undefined;
+  const env = typeof details.env === 'string' ? details.env : undefined;
+  const message =
+    flag && env
+      ? t('errors.terms.requiredFree', { url, flag, env })
+      : t('errors.terms.required', { url });
+  return Object.assign(new ValidationError(message), {
+    status: 403,
+    code: TERMS_ACCEPTANCE_REQUIRED,
+    details,
+  });
 }
 
 const NON_JSON_SNIPPET_MAX = 120;

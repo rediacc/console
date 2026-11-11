@@ -2583,6 +2583,8 @@
         "regionSelected": "Veri bölgesi: {{region}} ({{domain}})",
         "serverChanged": "Sunucu değiştirildi. Önceki oturum temizlendi.",
         "success": "Giriş başarılı",
+        "termsAccepted": "Kabul edilen Hizmet Şartları: sürüm {{version}}",
+        "termsPending": "Hizmet Şartları henüz kabul edilmedi. {{url}} adresinden kabul edin",
         "tokenAndPassword": "--token ve --password-stdin birlikte kullanılamaz.",
         "totpRequired": "Bu hesap iki adımlı doğrulama gerektiriyor. {{field}} değerini güncel bir kodla ayarla.",
         "validated": "Belirteç doğrulandı",
@@ -3142,7 +3144,10 @@
       "secretStagingFailed": "Depo gizli değerleri makineye hazırlanamadı (ssh çıkış kodu {{code}})."
     },
     "terms": {
-      "declined": "Hizmet Şartları kabul edilmedi, bu yüzden ücretsiz lisans alınmadı."
+      "declined": "Hizmet Şartları kabul edilmedi, bu yüzden ücretsiz lisans alınmadı.",
+      "required": "Bu hesap için Hizmet Şartları kabul edilmedi. {{url}} adresinden kabul edin, ardından komutu yeniden çalıştırın.",
+      "requiredFree": "Bu ücretsiz lisans için Hizmet Şartları kabul edilmedi. {{url}} adresinde okuyun, ardından {{flag}} verin veya {{env}} ayarlayın.",
+      "upcoming": "Yeni Hizmet Şartları {{version}}, {{effective}} tarihinde yürürlüğe girer. Şartları {{url}} adresinde okuyabilirsiniz."
     },
     "unknownCommand": "Bilinmeyen komut \"{{command}}\". Kullanılabilir komutlar: {{available}}.",
     "unknownRegion": "Bilinmeyen bölge: {{region}}",

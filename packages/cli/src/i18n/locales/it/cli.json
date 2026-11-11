@@ -2583,6 +2583,8 @@
         "regionSelected": "Regione dati: {{region}} ({{domain}})",
         "serverChanged": "Server modificato. Sessione precedente cancellata.",
         "success": "Accesso effettuato con successo",
+        "termsAccepted": "Termini di servizio accettati: versione {{version}}",
+        "termsPending": "I Termini di servizio non sono ancora stati accettati. Accettali su {{url}}",
         "tokenAndPassword": "--token e --password-stdin non possono essere usati insieme.",
         "totpRequired": "Questo account richiede l'autenticazione a due fattori. Imposta {{field}} con un codice valido.",
         "validated": "Token validato",
@@ -3142,7 +3144,10 @@
       "secretStagingFailed": "Impossibile preparare i segreti del repository sulla macchina (codice di uscita ssh {{code}})."
     },
     "terms": {
-      "declined": "I Termini di servizio non sono stati accettati, quindi nessuna licenza gratuita è stata richiesta."
+      "declined": "I Termini di servizio non sono stati accettati, quindi nessuna licenza gratuita è stata richiesta.",
+      "required": "I Termini di servizio non sono stati accettati per questo account. Accettali su {{url}}, poi esegui di nuovo il comando.",
+      "requiredFree": "I Termini di servizio non sono stati accettati per questa licenza gratuita. Leggili su {{url}}, poi passa {{flag}} oppure imposta {{env}}.",
+      "upcoming": "I nuovi Termini di servizio {{version}} entrano in vigore il {{effective}}. Leggili su {{url}}."
     },
     "unknownCommand": "Comando sconosciuto \"{{command}}\". Comandi disponibili: {{available}}.",
     "unknownRegion": "Regione sconosciuta: {{region}}",

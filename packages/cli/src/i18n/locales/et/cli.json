@@ -2583,6 +2583,8 @@
         "regionSelected": "Andmepiirkond: {{region}} ({{domain}})",
         "serverChanged": "Server muutus. Eelmine seanss kustutatud.",
         "success": "Sisselogimine õnnestus",
+        "termsAccepted": "Kasutustingimustega on nõustutud: versioon {{version}}",
+        "termsPending": "Kasutustingimustega pole veel nõustutud. Nõustu nendega aadressil {{url}}",
         "tokenAndPassword": "Valikuid --token ja --password-stdin ei saa koos kasutada.",
         "totpRequired": "See konto nõuab kaheastmelist autentimist. Määra {{field}} kehtivaks koodiks.",
         "validated": "Token valideeritud",
@@ -3142,7 +3144,10 @@
       "secretStagingFailed": "Hoidla saladusi ei õnnestunud masinasse ette valmistada (ssh väljumiskood {{code}})."
     },
     "terms": {
-      "declined": "Kasutustingimustega ei nõustutud, seega tasuta litsentsi ei laaditud."
+      "declined": "Kasutustingimustega ei nõustutud, seega tasuta litsentsi ei laaditud.",
+      "required": "Selle konto kasutustingimustega pole nõustutud. Nõustu nendega aadressil {{url}} ja käivita käsk uuesti.",
+      "requiredFree": "Selle tasuta litsentsi kasutustingimustega ei nõustutud. Loe neid aadressil {{url}}, seejärel anna {{flag}} või määra {{env}}.",
+      "upcoming": "Uued kasutustingimused {{version}} jõustuvad {{effective}}. Loe neid aadressil {{url}}."
     },
     "unknownCommand": "Tundmatu käsk \"{{command}}\". Saadaval olevad käsud: {{available}}.",
     "unknownRegion": "Tundmatu regioon: {{region}}",

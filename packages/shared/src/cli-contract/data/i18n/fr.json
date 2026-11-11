@@ -1965,6 +1965,8 @@
   "commands.subscription.login.regionSelected": "Région de données : {{region}} ({{domain}})",
   "commands.subscription.login.serverChanged": "Serveur modifié. Session précédente effacée.",
   "commands.subscription.login.success": "Connexion réussie",
+  "commands.subscription.login.termsAccepted": "Conditions d'utilisation acceptées : version {{version}}",
+  "commands.subscription.login.termsPending": "Les Conditions d'utilisation ne sont pas encore acceptées. Acceptez-les sur {{url}}",
   "commands.subscription.login.tokenAndPassword": "--token et --password-stdin ne peuvent pas être combinés.",
   "commands.subscription.login.totpRequired": "Ce compte exige l'authentification à deux facteurs. Définissez {{field}} avec un code valide.",
   "commands.subscription.login.validated": "Jeton validé",

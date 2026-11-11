@@ -1965,6 +1965,8 @@
   "commands.subscription.login.regionSelected": "Veri bölgesi: {{region}} ({{domain}})",
   "commands.subscription.login.serverChanged": "Sunucu değiştirildi. Önceki oturum temizlendi.",
   "commands.subscription.login.success": "Giriş başarılı",
+  "commands.subscription.login.termsAccepted": "Kabul edilen Hizmet Şartları: sürüm {{version}}",
+  "commands.subscription.login.termsPending": "Hizmet Şartları henüz kabul edilmedi. {{url}} adresinden kabul edin",
   "commands.subscription.login.tokenAndPassword": "--token ve --password-stdin birlikte kullanılamaz.",
   "commands.subscription.login.totpRequired": "Bu hesap iki adımlı doğrulama gerektiriyor. {{field}} değerini güncel bir kodla ayarla.",
   "commands.subscription.login.validated": "Belirteç doğrulandı",

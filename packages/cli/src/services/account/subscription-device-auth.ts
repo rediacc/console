@@ -23,9 +23,23 @@ interface LicenseStatusResponse {
   teamName?: string;
 }
 
+/** The Terms standing the device-code claim reports: the accepted version (null when none), the latest version and where to read it. */
+export interface ClaimTerms {
+  accepted: string | null;
+  latest: string;
+  url: string;
+}
+
 export interface DeviceCodeAuthorizationResult {
   storedToken: StoredSubscriptionToken;
   status: LicenseStatusResponse;
+  /** From the claim response; absent when the server sent none. */
+  terms?: ClaimTerms;
+}
+
+interface PolledClaim {
+  token: string;
+  terms?: ClaimTerms;
 }
 
 interface DeviceCodeLoginOptions {
@@ -68,7 +82,7 @@ export async function authorizeSubscriptionViaDeviceCode(
 
   outputService.info(t('commands.subscription.login.polling'));
 
-  const token = await pollForDeviceCodeToken(serverUrl, deviceCode, interval, expiresIn);
+  const { token, terms } = await pollForDeviceCodeToken(serverUrl, deviceCode, interval, expiresIn);
   const status = await fetchLicenseStatus(serverUrl, token);
   const storedToken: StoredSubscriptionToken = {
     token,
@@ -85,20 +99,22 @@ export async function authorizeSubscriptionViaDeviceCode(
   }
   saveStoredSubscriptionToken(storedToken);
 
-  return { storedToken, status };
+  return { storedToken, status, terms };
 }
 
 /** Single poll attempt. Returns token string on success, null to continue polling. */
 async function attemptDeviceCodePoll(
   serverUrl: string,
   deviceCode: string
-): Promise<string | null> {
+): Promise<PolledClaim | null> {
   try {
-    const result = await accountServerFetch<{ status: string; token?: string }>(
+    const result = await accountServerFetch<{ status: string; token?: string; terms?: ClaimTerms }>(
       `/account/api/v1/device-codes/${deviceCode}`,
       { noAuth: true, serverUrl }
     );
-    if (result.status === 'complete' && result.token) return result.token;
+    if (result.status === 'complete' && result.token) {
+      return { token: result.token, terms: result.terms };
+    }
     if (result.status === 'expired') {
       throw authorizationExpired(
         t('commands.subscription.login.expired'),
@@ -117,14 +133,14 @@ async function pollForDeviceCodeToken(
   deviceCode: string,
   interval: number,
   expiresIn: number
-): Promise<string> {
+): Promise<PolledClaim> {
   const pollInterval = interval * 1000;
   const maxAttempts = Math.ceil(expiresIn / interval);
 
   for (let i = 0; i < maxAttempts; i++) {
     await new Promise((resolve) => setTimeout(resolve, pollInterval));
-    const token = await attemptDeviceCodePoll(serverUrl, deviceCode);
-    if (token) return token;
+    const claim = await attemptDeviceCodePoll(serverUrl, deviceCode);
+    if (claim) return claim;
   }
 
   throw authorizationExpired(t('commands.subscription.login.expired'), 'rdc subscription login');

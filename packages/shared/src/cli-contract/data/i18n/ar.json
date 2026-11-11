@@ -1965,6 +1965,8 @@
   "commands.subscription.login.regionSelected": "منطقة البيانات: {{region}} ({{domain}})",
   "commands.subscription.login.serverChanged": "تم تغيير الخادم. تم مسح الجلسة السابقة.",
   "commands.subscription.login.success": "تم تسجيل الدخول بنجاح",
+  "commands.subscription.login.termsAccepted": "شروط الخدمة المقبولة: الإصدار {{version}}",
+  "commands.subscription.login.termsPending": "لم تُقبل شروط الخدمة بعد. اقبلها من {{url}}",
   "commands.subscription.login.tokenAndPassword": "لا يمكن الجمع بين --token و --password-stdin.",
   "commands.subscription.login.totpRequired": "يتطلب هذا الحساب المصادقة الثنائية. عيّن {{field}} برمز حالي.",
   "commands.subscription.login.validated": "تم التحقق من الرمز",

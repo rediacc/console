@@ -2583,6 +2583,8 @@
         "regionSelected": "Région de données : {{region}} ({{domain}})",
         "serverChanged": "Serveur modifié. Session précédente effacée.",
         "success": "Connexion réussie",
+        "termsAccepted": "Conditions d'utilisation acceptées : version {{version}}",
+        "termsPending": "Les Conditions d'utilisation ne sont pas encore acceptées. Acceptez-les sur {{url}}",
         "tokenAndPassword": "--token et --password-stdin ne peuvent pas être combinés.",
         "totpRequired": "Ce compte exige l'authentification à deux facteurs. Définissez {{field}} avec un code valide.",
         "validated": "Jeton validé",
@@ -3142,7 +3144,10 @@
       "secretStagingFailed": "Impossible de déposer les secrets du dépôt sur la machine (code de sortie ssh {{code}})."
     },
     "terms": {
-      "declined": "Les Conditions d'utilisation n'ont pas été acceptées, aucune licence gratuite n'a donc été récupérée."
+      "declined": "Les Conditions d'utilisation n'ont pas été acceptées, aucune licence gratuite n'a donc été récupérée.",
+      "required": "Les Conditions d'utilisation n'ont pas été acceptées pour ce compte. Acceptez-les sur {{url}}, puis relancez la commande.",
+      "requiredFree": "Les Conditions d'utilisation n'ont pas été acceptées pour cette licence gratuite. Lisez-les sur {{url}}, puis passez {{flag}} ou définissez {{env}}.",
+      "upcoming": "Les nouvelles Conditions d'utilisation {{version}} entrent en vigueur le {{effective}}. Consultez-les sur {{url}}."
     },
     "unknownCommand": "Commande inconnue \"{{command}}\". Commandes disponibles : {{available}}.",
     "unknownRegion": "Région inconnue : {{region}}",
