@@ -80,17 +80,17 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 540 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 546 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 118 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
-- Writers: 3 live of writer_cap 25 (session d778be9d): worker:ad59f515fe98cf593, worker:aea9ee7752db9adbb, worker:a88303e5c4ceab972.
-- Leased items: 5: #35eda180 (worker:acd58d5ec54041958, d778be9d), #90e05ca6 (worker:ad59f515fe98cf593, d778be9d), #9cb71958 (worker:acd58d5ec54041958, d778be9d), #a8ae93bd (worker:a88303e5c4ceab972, d778be9d), #df6143bb (worker:aea9ee7752db9adbb, d778be9d).
+- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a88303e5c4ceab972.
+- Leased items: 2: #9cb71958 (worker:a88303e5c4ceab972, d778be9d), #a8ae93bd (worker:a88303e5c4ceab972, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 23 of 66 plans done, 1074 of 1227 boxes done (87%).
+Promoted: 23 of 66 plans done, 1075 of 1227 boxes done (87%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -158,7 +158,7 @@ Promoted: 23 of 66 plans done, 1074 of 1227 boxes done (87%).
 | 62 | PLAN-idle-writer-capacity.md | 5/5 | done |
 | 63 | PLAN-d1-scaling.md | 17/31 | 14 open |
 | 64 | PLAN-experience-feedback.md | 12/16 | 4 open |
-| 65 | PLAN-local-first-delivery.md | 13/15 | 2 open |
+| 65 | PLAN-local-first-delivery.md | 14/15 | 1 open |
 | 66 | PLAN-terms-acceptance.md | 22/25 | 3 open |
 <!-- queue:progress:end -->
 
