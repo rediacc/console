@@ -34,10 +34,10 @@ from datetime import UTC, datetime
 
 from rediacc_ci import paths
 from rediacc_ci.ops import deploy_bench
-from rediacc_ci.well_known import BENCH_ORIGIN
+from rediacc_ci.well_known import BENCH_ORIGIN, INFRA_DOMAIN
 
 PROFILE = "deploy-bench"
-EMAIL_DOMAIN = "rediacc.io"
+EMAIL_DOMAIN = INFRA_DOMAIN
 ADDRESS = re.compile(r"^ftr\+\d{14}@" + re.escape(EMAIL_DOMAIN) + "$")
 API = "/account/api/v1"
 MAIL_ATTEMPTS = 6

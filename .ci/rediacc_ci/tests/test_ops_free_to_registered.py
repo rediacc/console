@@ -108,12 +108,16 @@ class Fake:
             self.user_present = False
         return []
 
+    def _drop(self, config):
+        self.dropped.append(config)
+        return True
+
     def deps(self):
         return ftr.Deps(
             http=self.http,
             rows=self.rows,
             rdc=self.rdc,
-            drop_token_file=lambda config: self.dropped.append(config) or True,
+            drop_token_file=self._drop,
             allowlist=self.allowlist,
             sleep=lambda _s: None,
             now=lambda: NOW,
@@ -273,13 +277,13 @@ def test_token_file_path_names_only_that_config(monkeypatch, tmp_path):
     assert ftr.token_file("ftr-1") == tmp_path / "rediacc" / "api-token-ftr-1.json"
 
 
-def test_a_refusal_raised_before_its_step_line_still_fails_the_run(capsys):
+def test_a_refusal_raised_before_its_step_line_still_fails_the_run(capsys, monkeypatch):
     """Review 23c783db.1: _http raises DrillError on no HTTP answer before step 4 prints its line; the run must exit 1, not 0."""
     fake = Fake()
 
     def no_answer(path, _body):
         raise ftr.DrillError("no HTTP answer from the bench origin%s" % path)
 
-    fake.http = no_answer
+    monkeypatch.setattr(fake, "http", no_answer)
     assert go(fake) == 1
     assert "no HTTP answer" in capsys.readouterr().err

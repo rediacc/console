@@ -460,7 +460,7 @@ def test_a_reader_polling_dist_during_the_build_never_sees_it_missing(
     """The build takes 0.6 s (the fake sleeps after emitting); a reader polls `dist/index.js` the whole time. The control below shows the same poller catches the delete-first flow."""
     tree = _tree(tmp_path)
     _layout(tree, LIVE_SPEC)
-    result: list[object] = []
+    result: list[typing.Any] = []
     samples, missing = _gaps(
         tree,
         lambda: result.append(_run(PORT_REL, tree, [], FAKE_NPM_EMIT="1", FAKE_NPM_SLEEP="0.6")),
