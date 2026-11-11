@@ -184,7 +184,8 @@ def test_refresher_machine_health_runs_under_no_provision(tmp_path):
     run_refresh(tmp_path, runner, Web(status_doc()), env={**ENV, "REDIACC_NO_PROVISION": "0"})
     rdc_calls = [(a, e) for a, e in runner.calls if "rediacc_ci.ops." not in " ".join(a)]
     health = [a for a, _e in rdc_calls if "machine" in a and "health" in a]
-    assert health and all(["--config", "prod"] == a[1:3] for a in health)
+    assert health
+    assert all(a[1:3] == ["--config", "prod"] for a in health)
     assert all(e.get("REDIACC_NO_PROVISION") == "1" for _a, e in rdc_calls)
 
 
