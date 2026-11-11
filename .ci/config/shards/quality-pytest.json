@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-10T22:54:22.131Z",
+  "generatedAt": "2026-11-11T04:59:44.550Z",
   "legs": [
     {
       "index": 1,
@@ -332,6 +332,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_bulk_review_records.py",
         "pytest:.claude/rediacc_hooks/tests/test_gh_flag_spellings.py",
         "pytest:.claude/rediacc_hooks/tests/test_golden_drift.py",
+        "pytest:.claude/rediacc_hooks/tests/test_guard_stdin_procfs_seams.py",
         "pytest:.claude/rediacc_hooks/tests/test_guards_process_table.py",
         "pytest:.claude/rediacc_hooks/tests/test_hooks_procs.py",
         "pytest:.claude/rediacc_hooks/tests/test_plan_gate_ceiling.py",
