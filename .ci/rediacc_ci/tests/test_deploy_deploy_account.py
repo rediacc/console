@@ -952,7 +952,10 @@ def test_the_stub_uploads_a_routeless_worker_under_the_configs_name(tmp_path: pa
     assert argv[1:5] == ["--no-install", "wrangler", "deploy", "--config"], argv
     assert argv[5].endswith("/wrangler.toml")
     assert "wrangler.eu.toml" not in argv[5]
-    assert "d1" not in calls, "a stub runs no migration"
+    # `d1` as a WHOLE argv word, never a substring: the log carries random temp paths and URLs, and a name like /tmp/tmpd1x9q2/wrangler.toml holds the two characters without any migration.
+    assert not any("d1" in line.split("\t") for line in calls.splitlines()), (
+        "a stub runs no migration"
+    )
     assert "Account stub deployed: account-eu" in new.stderr
 
 
