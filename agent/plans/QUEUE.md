@@ -80,10 +80,10 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 481 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 496 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 117 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
-- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a4cea4032c6374e0d, worker:a0dc668b467ee0ab9.
-- Leased items: 2: #35eda180 (worker:a4cea4032c6374e0d, d778be9d), #9cb71958 (worker:boxnml876, d778be9d).
+- Writers: 0 live of writer_cap 25 (session d778be9d).
+- Leased items: 4: #1c40e1d9 (worker:bkodw5jbo, d778be9d), #35eda180 (worker:bkodw5jbo, d778be9d), #9cb71958 (worker:bkodw5jbo, d778be9d), #df6143bb (worker:bkodw5jbo, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
