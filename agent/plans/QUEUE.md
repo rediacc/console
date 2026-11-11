@@ -90,7 +90,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 18 of 64 plans done, 1006 of 1187 boxes done (84%).
+Promoted: 18 of 64 plans done, 1008 of 1187 boxes done (84%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -131,7 +131,7 @@ Promoted: 18 of 64 plans done, 1006 of 1187 boxes done (84%).
 | 35 | PLAN-settings-set-verb.md | 4/4 | done |
 | 36 | PLAN-free-license.md | 10/13 | 3 open |
 | 37 | PLAN-backup-integrity.md | 44/56 | 12 open |
-| 38 | PLAN-backup-critical-tier.md | 44/51 | 7 open |
+| 38 | PLAN-backup-critical-tier.md | 46/51 | 5 open |
 | 39 | PLAN-rediaccfile-unprivileged.md | 16/23 | 7 open |
 | 40 | PLAN-worktree-lease.md | 15/16 | 1 open |
 | 41 | PLAN-tick-tracking.md | 13/15 | 2 open |
