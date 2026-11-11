@@ -2877,6 +2877,42 @@
         "f4d97e1f"
       ]
     },
+    "agent/plans/PLAN-terms-acceptance.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 25,
+      "done": 0,
+      "open_sigs": [
+        "070750a1",
+        "0ef5d82f",
+        "2ee4b694",
+        "386e2bb4",
+        "3e99b9cd",
+        "40738358",
+        "546c067c",
+        "55feadf5",
+        "6c7a004c",
+        "7403d634",
+        "7937e2ed",
+        "938739f5",
+        "93a53f49",
+        "96c4fd47",
+        "98f16549",
+        "a1f6c1b7",
+        "a623eca0",
+        "a64ad5d9",
+        "da22f2aa",
+        "e67cb94e",
+        "e7ea165e",
+        "e8a7ed10",
+        "f8baf81f",
+        "fce2ee8b",
+        "fdf13952"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-test-advisor.md": {
       "status": "compacted",
       "owner": "b7baf3ee",
