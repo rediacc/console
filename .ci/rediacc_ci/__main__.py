@@ -81,6 +81,11 @@ VERBS: tuple[Verb, ...] = (
         entry="worktree_main",
     ),
     Verb(
+        name="backup-ref",
+        summary="sync the checked-out branch to refs/backup/<branch>/ on the GitLab remote",
+        module="rediacc_ci.dev.backup_ref",
+    ),
+    Verb(
         name="devbox",
         summary="up | status | url | stop | proxy | remove | shell | exec | doctor | logs",
         module="rediacc_ci.core.run_verbs",

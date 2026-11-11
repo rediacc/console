@@ -187,6 +187,7 @@ DEVELOPMENT COMMANDS:
   dev                 Start the www (marketing site) development server
   (rdc)               Use ./rdc.sh instead (standalone CLI runner)
   worktree <cmd>      Manage git worktrees (create, switch, prune, list)
+  backup-ref sync     Back up the checked-out branch to refs/backup/ on GitLab
   setup [--check]     Prepare this machine: INSTALL the toolchain (node, gcc, Go,
                       gh, jq), set the git identity and credentials, then docker,
                       the devcontainer image, and a browser VS Code for THIS
