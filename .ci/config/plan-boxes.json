@@ -1747,26 +1747,27 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 15,
-      "done": 0,
+      "open": 10,
+      "done": 5,
       "open_sigs": [
         "1176b189",
         "1280e823",
         "47d4c1c8",
         "63c0d119",
-        "7011e622",
         "8bb0ea2a",
         "970eab9a",
         "a144851f",
         "aba512fd",
         "b19147f2",
+        "dc3979e9"
+      ],
+      "done_sigs": [
+        "7011e622",
         "b6e162ff",
-        "dc3979e9",
         "e922b56c",
         "f1046c3a",
         "fe1a59af"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-local-release.md": {
       "status": "approved",
