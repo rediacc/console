@@ -146,5 +146,4 @@ One order carries over: multi-org ML5 reaches the three stable targets before du
 
 ## Moved from PLAN-hostinger-upgrade-followups.md
 
-- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
-  - Accept: `live-proof hostinger renet-live`
+(moved 2026-11-11 back to agent/plans/_done/PLAN-hostinger-upgrade-followups.md) LP-hostinger

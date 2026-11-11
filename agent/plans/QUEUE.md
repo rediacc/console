@@ -80,10 +80,10 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 399 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 400 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 99 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
 - Writers: 1 live of writer_cap 25 (session d778be9d): worker:ae5f34e5cfd526a31.
-- Leased items: 4: #5f6d277d (worker:ae5f34e5cfd526a31, d778be9d), #8d576362 (worker:bdocaxfhn, d778be9d), #caa837d4 (worker:bdocaxfhn, d778be9d), #e6a4b1a4 (worker:bdocaxfhn, d778be9d).
+- Leased items: 4: #5f6d277d (worker:ae5f34e5cfd526a31, d778be9d), #8d576362 (worker:bdocaxfhn, d778be9d), #caa837d4 (worker:ae5f34e5cfd526a31, d778be9d), #e6a4b1a4 (worker:ae5f34e5cfd526a31, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 

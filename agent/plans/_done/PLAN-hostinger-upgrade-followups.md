@@ -35,4 +35,6 @@ During the hostinger upgrade (PHP php2shell, Node.js, GitLab CVE-2026-110264, NG
     (ticked) 2026-11-08T15:06:00Z by d778be9d: 50796610a: heartbeat node:24-alpine (packages/json/templates/monitoring/heartbeat/docker-compose.yaml:24), nextcloud-aio DOCKER_SOCKET (packages/json/templates/platforms/nextcloud-aio/docker-compose.yaml:11)
 - [x] T3 [lead] Write `agent/plans/PLAN-renet-run-docker-sock-isolation.md` (write-up only, no fix; operator decision 2026-10-23).
     (ticked) 2026-11-08T15:05:47Z by d778be9d: c3cffbe284 added agent/plans/PLAN-renet-run-docker-sock-isolation.md, write-up only
-(moved 2026-11-08 to agent/plans/PLAN-first-release-checks.md) LP-hostinger
+- [x] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+  - Accept: `live-proof hostinger renet-live`
+    (ticked) 2026-11-11T06:55:07Z by d778be9d: live-proof lp-7aa1c34db6ce hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13

@@ -519,7 +519,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-executor-durable-object-policy.md` | approved | 483 | 3 | 15 | 64699 |
 | `agent/plans/PLAN-experience-feedback.md` | approved | 87 | 4 | 12 | 18415 |
 | `agent/plans/PLAN-extension-shaped-matchers.md` | compacted | 37 | 0 | 0 | 3104 |
-| `agent/plans/PLAN-first-release-checks.md` | approved | 150 | 31 | 0 | 17463 |
+| `agent/plans/PLAN-first-release-checks.md` | approved | 149 | 30 | 0 | 17244 |
 | `agent/plans/PLAN-fix-ci-contention-aware-timeouts.md` | compacted | 38 | 0 | 0 | 3425 |
 | `agent/plans/PLAN-fix-german-translation-artifacts.md` | compacted | 50 | 0 | 0 | 3117 |
 | `agent/plans/PLAN-fix-in-session-rule.md` | compacted | 55 | 0 | 0 | 3577 |
@@ -645,7 +645,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-gate-scheduling-learned.md` | done | 292 | 0 | 12 | 22988 |
 | `agent/plans/_done/PLAN-gh-retry.md` | done | 52 | 0 | 14 | 8376 |
 | `agent/plans/_done/PLAN-github-pr-review-restore.md` | done | 129 | 0 | 13 | 36107 |
-| `agent/plans/_done/PLAN-hostinger-upgrade-followups.md` | done | 38 | 0 | 3 | 4280 |
+| `agent/plans/_done/PLAN-hostinger-upgrade-followups.md` | done | 40 | 0 | 4 | 4697 |
 | `agent/plans/_done/PLAN-inline-suppressions.md` | done | 319 | 0 | 11 | 42100 |
 | `agent/plans/_done/PLAN-k3s-137-and-pr-conditions.md` | done | 112 | 0 | 5 | 9257 |
 | `agent/plans/_done/PLAN-lessons-registry-followups.md` | done | 22 | 1 | 1 | 2105 |
