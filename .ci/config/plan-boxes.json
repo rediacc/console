@@ -2799,7 +2799,7 @@
       "done_sigs": []
     },
     "agent/plans/PLAN-submodule-branch-coordination-guard.md": {
-      "status": "proposed",
+      "status": "superseded",
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
@@ -2816,7 +2816,8 @@
         "7d554983",
         "c053d7f5",
         "f1981d10"
-      ]
+      ],
+      "ruling": "#dcea1f9b"
     },
     "agent/plans/PLAN-sync-docker-latest-tag-with-releases.md": {
       "status": "compacted",

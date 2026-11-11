@@ -1,9 +1,10 @@
 # PLAN: submodule branch-name divergence -- diagnosis, immediate action, and a pre-commit guard
 
-Status: proposed -- hold lifted 2026-10-04: the 2026-09-26 ruling held it until CI is green; main CI is green (59ba0c756) and the operator asked for parallel turbo
+Status: superseded -- operator /ask ASKED:2026-11-11T03:00Z "Retire as superseded": the CI Submodule Branches job (.ci/rediacc_ci/quality/submodule_branches.py) already refuses an uncoordinated submodule PR, so the commit-time guard is not built
+Ruling: #dcea1f9b
 Depends-On: no-dep -- cites no other plan
 Owner: d778be9d
-Updated: 2026-09-23
+Updated: 2026-11-11
 Priority: P3 -- the guard it proposes is parked for a retire-or-redesign ruling (#dcea1f9b); nothing ships from it before that answer
 Concurrency: parallel -- the 2026-09-26 run-alone ruling (limited token budget) is lifted: operator 2026-10-04 asked for parallel turbo with writer_cap 10; Owns: decides overlaps
 Owns: private/renet, private/account, .claude/rediacc_hooks/guards/block_uncoordinated_submodule_pointer.py, .claude/rediacc_hooks/guards/block_prose_style_commit.py, .claude/rediacc_hooks/guards/test-block_uncoordinated_submodule_pointer.py, .claude/agents/pr-babysitter.md, .claude/commands/pr-babysit.md

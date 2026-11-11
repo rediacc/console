@@ -80,10 +80,10 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 344 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
-  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 66 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
+  - epic 79b7e92e, no plan, 373 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 93 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
 - Writers: 0 live of writer_cap 25 (session d778be9d).
-- Leased items: 1: #caa837d4 (worker:lead, d778be9d).
+- Leased items: 2: #51089172 (worker:b9mip829z, d778be9d), #8d576362 (worker:b9sax74nt, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; starts after this branch's PR merges.
 <!-- queue:inflight:end -->
 
@@ -234,11 +234,10 @@ Promoted: 18 of 64 plans done, 1006 of 1187 boxes done (84%).
 4. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
 5. agent/plans/PLAN-config-mirror-reseal.md -- P2, proposed, in progress (1 of 2 boxes ticked)
 6. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (1 of 10 boxes ticked)
-7. agent/plans/PLAN-submodule-branch-coordination-guard.md -- P3, proposed, in progress (5 of 8 boxes ticked)
-8. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-9. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
-10. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
-11. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+7. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
+8. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
+9. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
+10. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
 
 ### Not queued
 
