@@ -39,6 +39,7 @@ import {
   RENET_LICENSE_REQUIRED_EXIT_CODE,
   type RenetLicenseFailure,
 } from '../renet/renet-license-contract.js';
+import { renetHold } from '../renet/renet-upload-decision.js';
 import { telemetryService } from '../telemetry/telemetry.js';
 import { resolveLicenseRecoveryGuidance } from './license-recovery-guidance.js';
 import {
@@ -271,6 +272,10 @@ async function renewWithoutToken(
  * only verifies them; issuance is CLI-side), so this is the only proactive
  * path, but it can only run where the operator's subscription token lives,
  * and it stays silent when there is none.
+ *
+ * REDIACC_NO_PROVISION=1 skips it whole, the same explicit hold that keeps the machine's renet in place
+ * ({@link renetHold}): a run under that hold (ops health reads, a pinned machine) never writes the machine,
+ * licences included. The development-build default hold does not skip it: only the explicit setting does.
  */
 export async function maybeRefreshRepoLicenses(
   machine: Awaited<ReturnType<typeof configService.getLocalMachine>>,
@@ -280,6 +285,7 @@ export async function maybeRefreshRepoLicenses(
   sftp: SFTPClient
 ): Promise<void> {
   // The ENTIRE body is best-effort. This runs on every machine-touching command as a side-effect of doing something else, so nothing in here, token lookup, local state IO, the network call, may surface as a failure of the command the operator actually asked for.
+  if (renetHold() === 'env') return;
   try {
     if (!(await isRefreshDue(machineName))) return;
     // Marked before the attempt, not after: a refresh that throws must still consume its cooldown slot, or an unreachable machine would be retried on every single command.

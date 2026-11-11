@@ -712,6 +712,24 @@ describe('subscription command helpers', () => {
     expect(mockOutputWarn).toHaveBeenCalledWith('repo-bad: quota reached');
   });
 
+  it('plain refresh -m never asks the batch to adopt another account server\'s licences', async () => {
+    await executeMachineRefresh('hostinger');
+    expect(mockRefreshRepoLicensesBatch.mock.calls[0][7]).toEqual({ adoptOrigin: false });
+  });
+
+  it('refresh -m --adopt-origin carries the flag through the job step into the batch', async () => {
+    await executeMachineRefresh('hostinger', { adoptOrigin: true });
+    expect(mockRefreshRepoLicensesBatch.mock.calls[0][7]).toEqual({ adoptOrigin: true });
+  });
+
+  it('refresh -m --adopt-origin with no login refuses instead of renewing in place', async () => {
+    mockGetSubscriptionTokenState.mockReturnValue({ kind: 'missing' });
+    await expect(executeMachineRefresh('hostinger', { adoptOrigin: true })).rejects.toThrow(
+      'commands.subscription.refresh.adoptOriginNeedsLogin'
+    );
+    expect(mockRenewInstalledLicenses).not.toHaveBeenCalled();
+  });
+
   it('refresh --repo derives the machine from the ref and refreshes one license', async () => {
     await executeRepoLicenseRefresh('shop:test');
 

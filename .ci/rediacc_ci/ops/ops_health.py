@@ -5,7 +5,7 @@
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.ops_health offbox [--json]
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.ops_health gate
 
-MACHINES (D-verdict). The configs come from RDC_HEALTH_CONFIGS (a comma list in the operator's environment; unset means the rdc default config) and the machines from `rdc machine list -o json` in each config, so no machine or config name is written here. Per machine, every rdc call runs with REDIACC_NO_PROVISION=1 forced into the child environment (a health read must never install renet and restart daemons, F5):
+MACHINES (D-verdict). The configs come from RDC_HEALTH_CONFIGS (a comma list in the operator's environment; unset means the rdc default config) and the machines from `rdc machine list -o json` in each config, so no machine or config name is written here. Per machine, every rdc call runs with REDIACC_NO_PROVISION=1 forced into the child environment (a health read must never install renet, restart daemons or write licences: the CLI skips its background licence refresh under it too, F5):
   1. `machine health <m> -o json`: exit 1 or higher is red, so warnings fail;
   2. `machine status <m> --containers --health-check`: non-zero is red;
   3. `machine status <m> --services --stability-check`: non-zero is red;

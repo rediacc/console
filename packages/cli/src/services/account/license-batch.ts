@@ -6,9 +6,11 @@
 
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { SFTPClient } from '../../remote/sftp/index.js';
+import { t } from '../../i18n/index.js';
 import type { MachineConfig } from '../../types/index.js';
 import { expectedAccountServerOrigin } from '../backup/backup-store-universe.js';
 import { configService } from '../config/config-resources.js';
+import { outputService } from '../core/output.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { telemetryService } from '../telemetry/telemetry.js';
 import { accountServerFetch } from './account-client.js';
@@ -160,6 +162,26 @@ function requiredRepoErrorSample(
   );
 }
 
+/** How a batch treats licences another account server issued. */
+export interface RepoBatchRefreshOptions {
+  /**
+   * Reissue licences whose `renewalUrl` names another account server from this config's server, moving them over.
+   * Only `subscription refresh --adopt-origin` sets it; every other batch leaves such a licence untouched and warns.
+   */
+  adoptOrigin?: boolean;
+}
+
+/** The refusal a batch that sent nothing reports: the foreign-origin skip, the required repo's own when it was one. */
+function foreignSkipSample(
+  failures: { repositoryGuid: string; error: string }[],
+  foreignSkips: { repositoryGuid: string; error: string }[],
+  requiredGuid: string | undefined
+): string | undefined {
+  if (foreignSkips.length === 0) return undefined;
+  if (requiredGuid) return requiredRepoErrorSample(failures, requiredGuid);
+  return foreignSkips[0].error.slice(0, 200);
+}
+
 export function refreshRepoLicensesBatch(
   machineName: string,
   machine: MachineConfig,
@@ -167,7 +189,8 @@ export function refreshRepoLicensesBatch(
   remoteRenetPath?: string,
   sharedSftp?: SFTPClient,
   requiredGuid?: string,
-  scanned?: RemoteRepoLicenseScanEntry[]
+  scanned?: RemoteRepoLicenseScanEntry[],
+  options: RepoBatchRefreshOptions = {}
 ): Promise<RepoBatchRefreshResult> {
   const tokenState = getSubscriptionTokenState();
   if (tokenState.kind !== 'ready') {
@@ -186,7 +209,15 @@ export function refreshRepoLicensesBatch(
   }
 
   return withSharedOrPooledSftp(sharedSftp, sftpConfigForMachine(machine, sshPrivateKey), (sftp) =>
-    runRepoLicenseBatch(sftp, machineName, machine, remoteRenetPath, requiredGuid, scanned)
+    runRepoLicenseBatch(
+      sftp,
+      machineName,
+      machine,
+      remoteRenetPath,
+      requiredGuid,
+      scanned,
+      options.adoptOrigin === true
+    )
   );
 }
 
@@ -233,19 +264,57 @@ export function reposWithForeignLicenseOrigin(
 
 // `identity_mismatch` joins it: after `backup snapshot --accept-identity-change` the image's UUID is new, an unexpired licence answers `unchanged` to a plain refresh, and the repository stays unmountable until the refresh window opens. Only a forced GUID is reissued.
 // machine_mismatch force-reissues (the documented remedy the guidance points users at). invalid_signature no longer triggers a reissue: with the per-signer license layout a foreign-universe file is simply never selected, so a genuine invalid_signature means the machine's OWN key can't validate its own file, that must fail fast, not loop reissuing (matches subscription-licensing.md).
+// A foreign-origin licence joins only under `adoptOrigin`: its dates are fresh, so the server would answer `unchanged` unless the request drops them.
 function forceReissueSet(
   licenseStatuses: { repositoryGuid: string; status: string }[],
-  remoteRepos: RemoteRepoLicenseScanEntry[],
-  machineName: string
+  foreignOrigin: Set<string>,
+  adoptOrigin: boolean
 ): Set<string> {
   const guids = new Set(
     licenseStatuses
       .filter((s) => s.status === 'machine_mismatch' || s.status === 'identity_mismatch')
       .map((s) => s.repositoryGuid)
   );
-  // A licence issued by another account server (the config's server moved) is reissued here too: its dates are fresh, so the server would answer `unchanged`.
-  for (const guid of reposWithForeignLicenseOrigin(remoteRepos, machineName)) guids.add(guid);
+  if (adoptOrigin) for (const guid of foreignOrigin) guids.add(guid);
   return guids;
+}
+
+/**
+ * Leave every foreign-origin licence out of the batch, warning once per repository with both servers named.
+ *
+ * Bench and production sign with one key, so renet accepts either server's blob and keeps one chain per
+ * (key, subscription, repo): a bench blob written over a production one carries a lower sequence and renet then refuses
+ * the repository as `sequence_regression` (2026-11-11: eleven hostinger licences, mail backups refused for two hours,
+ * written by the background refresh of a health read under `--config eu-bench`). Moving licences between account
+ * servers is `subscription refresh --adopt-origin`, never a side effect.
+ */
+function skipForeignOrigin<T extends RemoteRepoLicenseScanEntry>(
+  machineName: string,
+  repos: T[],
+  foreignOrigin: Set<string>,
+  nameByGuid: Map<string, string>
+): { kept: T[]; skipped: { repositoryGuid: string; error: string }[] } {
+  const configOrigin = configAccountOrigin(machineName);
+  const skipped: { repositoryGuid: string; error: string }[] = [];
+  const warned = new Set<string>();
+  const kept = repos.filter((repo) => {
+    if (!foreignOrigin.has(repo.repositoryGuid)) return true;
+    if (warned.has(repo.repositoryGuid)) return false;
+    warned.add(repo.repositoryGuid);
+    const vars = {
+      repo: nameByGuid.get(repo.repositoryGuid) ?? repo.repositoryGuid,
+      machine: machineName,
+      licenseOrigin: renewalOrigin(repo.currentRenewalUrl ?? ''),
+      configOrigin,
+    };
+    outputService.warn(t('warnings.licenseForeignOriginSkipped', vars));
+    skipped.push({
+      repositoryGuid: repo.repositoryGuid,
+      error: t('errors.license.foreignOriginSkipped', vars),
+    });
+    return false;
+  });
+  return { kept, skipped };
 }
 
 /** The caller's `license-scan` answer when it holds one, else a scan job of its own. */
@@ -268,9 +337,10 @@ async function runRepoLicenseBatch(
   sftp: SFTPClient,
   machineName: string,
   machine: MachineConfig,
-  remoteRenetPath?: string,
-  requiredGuid?: string,
-  scanned?: RemoteRepoLicenseScanEntry[]
+  remoteRenetPath: string | undefined,
+  requiredGuid: string | undefined,
+  scanned: RemoteRepoLicenseScanEntry[] | undefined,
+  adoptOrigin: boolean
 ): Promise<RepoBatchRefreshResult> {
   const datastore = machine.datastore ?? DEFAULT_DATASTORE;
   const [machineId, clientMachineId, remoteRepos, localRepos, licenseStatuses] = await Promise.all([
@@ -286,28 +356,40 @@ async function runRepoLicenseBatch(
     scanRemoteLicenseStatuses(machineName, datastore).catch(() => []),
   ]);
 
-  const forceReissueGuids = forceReissueSet(licenseStatuses, remoteRepos, machineName);
+  const foreignOrigin = reposWithForeignLicenseOrigin(remoteRepos, machineName);
+  const forceReissueGuids = forceReissueSet(licenseStatuses, foreignOrigin, adoptOrigin);
 
   const repoByGuid = new Map(
     localRepos.map((entry) => [entry.config.repositoryGuid, { grandGuid: entry.config.grandGuid }])
   );
-  const { knownRemoteRepos, unknownRepoFailures } = resolveKnownRemoteRepos(
+  const { knownRemoteRepos: resolvedRepos, unknownRepoFailures } = resolveKnownRemoteRepos(
     remoteRepos,
     repoByGuid
   );
+  const { kept: knownRemoteRepos, skipped: foreignSkips } = adoptOrigin
+    ? { kept: resolvedRepos, skipped: [] }
+    : skipForeignOrigin(
+        machineName,
+        resolvedRepos,
+        foreignOrigin,
+        new Map(localRepos.map((entry) => [entry.config.repositoryGuid, entry.name]))
+      );
 
   if (knownRemoteRepos.length === 0) {
+    const failures = [...unknownRepoFailures, ...foreignSkips];
+    const recoveryFailureMode: RepoBatchRecoveryFailureMode =
+      foreignSkips.length === 0 && remoteRepos.length > 0 ? 'no_known_repos' : 'server_rejected_all';
     return {
       scanned: remoteRepos.length,
       issued: 0,
       refreshed: 0,
       unchanged: 0,
-      failed: unknownRepoFailures.length,
+      failed: failures.length,
       valid: 0,
       invalidSignatureDetected: forceReissueGuids.size,
-      failures: unknownRepoFailures,
-      recoveryFailureMode: remoteRepos.length > 0 ? 'no_known_repos' : 'server_rejected_all',
-      serverErrorSample: undefined,
+      failures,
+      recoveryFailureMode,
+      serverErrorSample: foreignSkipSample(failures, foreignSkips, requiredGuid),
     };
   }
 
@@ -349,7 +431,10 @@ async function runRepoLicenseBatch(
     knownRemoteRepos.map((repo) => [repo.repositoryGuid, repo.datastoreId])
   );
 
-  const failures: { repositoryGuid: string; error: string }[] = [...unknownRepoFailures];
+  const failures: { repositoryGuid: string; error: string }[] = [
+    ...unknownRepoFailures,
+    ...foreignSkips,
+  ];
   const serverFailuresBefore = failures.length;
   const { issued, refreshed, unchanged, failed } = await applyBatchRefreshResults(
     machineName,

@@ -176,6 +176,18 @@ def test_no_provision_forced_even_when_caller_unset_it():
     assert all(env.get("REDIACC_NO_PROVISION") == "1" for _argv, env in fleet2.calls)
 
 
+def test_refresher_machine_health_runs_under_no_provision(tmp_path):
+    """The path of the 2026-11-11 incident: the refresher's `machine health` under a named config. The CLI's background
+    licence refresh rides every machine-touching command and skips only under REDIACC_NO_PROVISION=1, so each rdc call
+    the refresher makes, the health read included, must carry it even when the caller's environment lifts it."""
+    runner = Combined()
+    run_refresh(tmp_path, runner, Web(status_doc()), env={**ENV, "REDIACC_NO_PROVISION": "0"})
+    rdc_calls = [(a, e) for a, e in runner.calls if "rediacc_ci.ops." not in " ".join(a)]
+    health = [a for a, _e in rdc_calls if "machine" in a and "health" in a]
+    assert health and all(["--config", "prod"] == a[1:3] for a in health)
+    assert all(e.get("REDIACC_NO_PROVISION") == "1" for _a, e in rdc_calls)
+
+
 def test_configs_from_env_and_the_default_config():
     assert oh.configs_from_env({}) == [None]
     assert oh.configs_from_env({"RDC_HEALTH_CONFIGS": " a, b ,"}) == ["a", "b"]

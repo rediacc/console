@@ -15077,6 +15077,17 @@
           "tier": "common",
           "descriptionKey": "options.repoRef",
           "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        {
+          "flags": "--adopt-origin",
+          "long": "adopt-origin",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.subscription.refresh.adoptOrigin",
+          "label": "Reissue licenses another account server issued from this config's account server, moving them over. Without it such licenses are left untouched."
         }
       ],
       "positionals": [],

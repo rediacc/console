@@ -405,7 +405,8 @@ bindStepHandler('renderSubscriptionStatus', async ({ machine, output }) => {
 function runRepoBatchRefresh(
   machineName: string,
   context: SubscriptionCommandContext,
-  scanned: RemoteRepoLicenseScanEntry[]
+  scanned: RemoteRepoLicenseScanEntry[],
+  adoptOrigin: boolean
 ): Promise<RepoBatchRefreshResult> {
   return withSpinner(
     t('commands.subscription.refresh.repos.refreshing'),
@@ -417,7 +418,8 @@ function runRepoBatchRefresh(
         context.remoteRenetPath,
         undefined,
         undefined,
-        scanned
+        scanned,
+        { adoptOrigin }
       ),
     t('commands.subscription.refresh.repos.refreshed')
   );
@@ -447,9 +449,17 @@ export async function executeAccountRefresh(): Promise<void> {
  * come first, outside the job. The machine read is one `license-scan` job; the account call and the license writes are
  * its `renderSubscriptionRefresh` step, so a ticket handed back early issues nothing.
  */
-export async function executeMachineRefresh(machineName: string): Promise<void> {
+export async function executeMachineRefresh(
+  machineName: string,
+  options: { adoptOrigin?: boolean } = {}
+): Promise<void> {
+  const adoptOrigin = options.adoptOrigin === true;
   // No login: a FREE licence is issued and renewed without one, so the refresh runs renet's blob-authenticated renewal instead of failing on the missing token.
   if (getSubscriptionTokenState().kind === 'missing') {
+    // That renewal goes to each blob's own renewalUrl, so it can never move a licence to this config's server.
+    if (adoptOrigin) {
+      throw new ValidationError(t('commands.subscription.refresh.adoptOriginNeedsLogin'));
+    }
     await executeTokenFreeMachineRefresh(machineName);
     return;
   }
@@ -465,7 +475,7 @@ export async function executeMachineRefresh(machineName: string): Promise<void> 
       },
       captureOutput: true,
     },
-    [planStep('renderSubscriptionRefresh', { machine: machineName })]
+    [planStep('renderSubscriptionRefresh', { machine: machineName, adoptOrigin })]
   );
   if (outcome.kind === 'pending') {
     const code = pendingExitCode(outcome);
@@ -534,12 +544,13 @@ function reportTokenFreeRenewal(
   }
 }
 
-bindStepHandler('renderSubscriptionRefresh', async ({ machine, output }) => {
+bindStepHandler('renderSubscriptionRefresh', async ({ machine, output, params }) => {
   const context = await resolveSubscriptionCommandContext(machine);
   const batchSummary = await runRepoBatchRefresh(
     machine,
     context,
-    parseJsonArray<RemoteRepoLicenseScanEntry>('license-scan', output)
+    parseJsonArray<RemoteRepoLicenseScanEntry>('license-scan', output),
+    params.adoptOrigin === true
   );
   outputService.success(t('commands.subscription.refresh.success'));
   renderRepoBatchRefreshSummary(batchSummary);

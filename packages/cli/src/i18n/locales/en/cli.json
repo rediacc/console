@@ -19,6 +19,7 @@
   "warnings": {
     "licenseSignatureRefreshed": "Refreshed {{count}} repo license(s) with invalid signatures after renet update",
     "licenseSignatureRefreshFailed": "{{count}} repo license(s) have invalid signatures after renet update. Run: rdc subscription refresh -m <machine>",
+    "licenseForeignOriginSkipped": "License of {{repo}} on {{machine}} left untouched: it was issued by {{licenseOrigin}}, and this config's account server is {{configOrigin}}. Overwriting it from here breaks its renewal chain. To move the machine's licenses to {{configOrigin}}, run: rdc subscription refresh -m {{machine}} --adopt-origin",
     "secretNameSkipped": "Secret {{name}} is not a valid environment variable name; the session starts without it."
   },
   "commands": {
@@ -2568,6 +2569,9 @@
           "refreshed": "Account state refreshed",
           "failed": "Could not read account state from the account server."
         },
+        "adoptOrigin": "Reissue licenses another account server issued from this config's account server, moving them over. Without it such licenses are left untouched.",
+        "adoptOriginNeedsTarget": "--adopt-origin moves the licenses of a whole machine: pass it with -m <machine>.",
+        "adoptOriginNeedsLogin": "--adopt-origin reissues licenses from this config's account server, which needs a login: run \"rdc subscription login\" first.",
         "targetExclusive": "Pass at most one of -m or --repo. --repo derives its own machine from the ref.",
         "noLogin": {
           "renewing": "Renewing licenses with the licenses' own credentials...",
@@ -3004,6 +3008,7 @@
     "license": {
       "recoveryFailedTokenNotReady": "Your subscription token is not ready. Run: rdc subscription login, then retry.",
       "recoveryFailedNoKnownRepos": "Repositories were found on {{machine}} but none are tracked in your local config. List your tracked repos with `rdc repo list`, then retry.",
+      "foreignOriginSkipped": "skipped: issued by {{licenseOrigin}}, not this config's account server {{configOrigin}} (--adopt-origin moves it)",
       "recoveryFailedServerRejected": "The account server rejected license issuance for the repository on \"{{machine}}\". First error: {{error}}. Run: rdc subscription refresh --repo <repo-ref> for details.",
       "preflightTokenNotReady": "Subscription token is not ready. Run: rdc subscription login. Deploy to {{machine}} skipped.",
       "machineSlotLimit": "This placement needs {{needed}} more machine slot(s), and the subscription has {{free}} free ({{active}} of {{max}} in use). A slot is released automatically 5 hours after that machine's last activity, or immediately when the machine is removed. Raise the ceiling by upgrading the plan, or contact sales for a negotiated Enterprise or partner machine ceiling.",

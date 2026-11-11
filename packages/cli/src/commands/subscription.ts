@@ -420,10 +420,16 @@ export function registerSubscriptionCommands(program: Command): void {
     .description(t('commands.subscription.refresh.description'))
     .option('-m, --machine <name>', t('options.machine'))
     .option('--repo <ref>', t('options.repoRef'))
+    .option('--adopt-origin', t('commands.subscription.refresh.adoptOrigin'))
     .action(async (options) => {
       try {
         if (options.machine && options.repo) {
           throw new ValidationError(t('commands.subscription.refresh.targetExclusive'));
+        }
+        const adoptOrigin = options.adoptOrigin === true;
+        // --adopt-origin moves a machine's licences in one batch; --repo reissues through its own path.
+        if (adoptOrigin && !options.machine) {
+          throw new ValidationError(t('commands.subscription.refresh.adoptOriginNeedsTarget'));
         }
         if (options.repo) {
           // --repo derives its own machine from the ref, so it never needs -m.
@@ -431,7 +437,7 @@ export function registerSubscriptionCommands(program: Command): void {
           return;
         }
         if (options.machine) {
-          await executeMachineRefresh(options.machine);
+          await executeMachineRefresh(options.machine, { adoptOrigin });
           return;
         }
         await executeAccountRefresh();
