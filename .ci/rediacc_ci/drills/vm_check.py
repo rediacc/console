@@ -2987,12 +2987,11 @@ class VmCheck:
                     rdc_failure(forget),
                     re.MULTILINE,
                 )
+                # The per-ref deletes clear the whole family, so a bare forget after them finds nothing ("is not in this config") and must not run: the last per-ref result is the verdict.
                 for ref in refs:
                     forget = self.rdc("repo", "delete", ref, "--archive-config", "-y", timeout=600)
                     if forget.rc != 0:
                         break
-                else:
-                    forget = self.rdc(*forget_args, timeout=600)
             if forget.rc != 0:
                 raise NotVerifiedError(
                     "parent-grand-missing",

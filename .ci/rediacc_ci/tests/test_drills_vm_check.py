@@ -272,6 +272,8 @@ class World(vm_check.Host):
         self.config_has_parent = over.pop("config_has_parent", False)
         self.forget_rc = over.pop("forget_rc", 0)
         self.forget_keeps = over.pop("forget_keeps", False)
+        # Stale fork entries sharing the grand's name: a bare forget is refused as ambiguous while any remains, and finds nothing ("is not in this config") once the family is gone.
+        self.stale_fork_refs = list(over.pop("stale_fork_refs", ()))
         # False: the worker has no BTRFS datastore until `machine setup` runs; `setup_rc` is that command's answer.
         self.datastore = over.pop("datastore", True)
         self.setup_rc = over.pop("setup_rc", 0)
@@ -555,6 +557,16 @@ class World(vm_check.Host):
         if head == ("repo", "delete") and "--archive-config" in args:
             if self.forget_rc:
                 return vm_check.Result(self.forget_rc, "", "forget refused")
+            if self.stale_fork_refs and args[2] == PARENT:
+                listing = "".join("\n  - %s" % r for r in self.stale_fork_refs)
+                msg = 'Repository "%s" is ambiguous:%s' % (PARENT, listing)
+                return vm_check.Result(1, json.dumps({"success": False, "errors": [{"message": msg}]}))
+            if args[2] in self.stale_fork_refs:
+                self.stale_fork_refs.remove(args[2])
+                self.config_has_parent = False
+                return ok
+            if args[2] == PARENT and not self.config_has_parent:
+                return vm_check.Result(1, "", 'Repository "%s" is not in this config' % PARENT)
             self.config_has_parent = self.forget_keeps
             return ok
         if head == ("repo", "delete"):
@@ -2884,6 +2896,18 @@ def test_a_grand_only_in_config_is_forgotten_then_created(tmp_path: pathlib.Path
     row = next(r for r in receipt["steps"] if r["id"] == "P5")
     assert row["verdict"] == "ok"
     assert "stale config entry forgotten" in row["evidence"], row
+
+
+def test_an_ambiguous_forget_deletes_each_ref_and_never_reruns_the_bare_forget(
+    tmp_path: pathlib.Path,
+) -> None:
+    """2026-11-10: the per-ref deletes cleared the family, then a for-else reran the bare forget, which answered 'is not in this config' and failed P5."""
+    refs = ["%s:vmc-a" % PARENT, "%s:vmc-b" % PARENT]
+    world = make_world(tmp_path, grands=(), config_has_parent=True, stale_fork_refs=refs)
+    rc, out, _receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    assert [c[2] for c in _forgets(world)] == [PARENT, *refs]
+    assert PARENT in world.repos
 
 
 def test_a_grand_present_on_the_worker_is_never_forgotten(tmp_path: pathlib.Path) -> None:
