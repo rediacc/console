@@ -5049,7 +5049,6 @@
     "slow": true,
     "gate": true,
     "leaves": [
-      "scripts/__tests__/positional-cli-detector.control.ts",
       "scripts/gen/validate-cli-examples.ts"
     ],
     "ci": {
