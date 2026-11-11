@@ -7,18 +7,19 @@ from __future__ import annotations
 
 import importlib.util
 import pathlib
-import sys
+from typing import TYPE_CHECKING
 
-import pytest
+if TYPE_CHECKING:
+    import pytest
 
 HOOKS = pathlib.Path(__file__).resolve().parents[1]
 REVIEW = HOOKS / "guards" / "block_review_file_shell_write.py"
 WORKTREE = HOOKS / "guards" / "block_worktree_add.py"
 
 
-def _load(path: pathlib.Path, alias: str):
-    if str(HOOKS) not in sys.path:
-        sys.path.insert(0, str(HOOKS))
+def _load(path: pathlib.Path, alias: str, monkeypatch: pytest.MonkeyPatch):
+    # syspath_prepend is undone at teardown, so the guard's sibling imports leave no trace on later tests.
+    monkeypatch.syspath_prepend(str(HOOKS))
     spec = importlib.util.spec_from_file_location(alias, path)
     if spec is None or spec.loader is None:
         raise SystemExit("cannot load %s" % path)
@@ -29,14 +30,14 @@ def _load(path: pathlib.Path, alias: str):
 
 def test_review_guard_default_root_is_proc(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("REDIACC_REVIEW_STDIN_PROCFS", raising=False)
-    g = _load(REVIEW, "review_stdin_default")
+    g = _load(REVIEW, "review_stdin_default", monkeypatch)
     assert "/proc/self/fd/0" in g._STDIN_DEVICES
     assert g._may_be_stdin("/proc/self/fd/0")
 
 
 def test_review_guard_override_moves_the_spelling(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("REDIACC_REVIEW_STDIN_PROCFS", "/altproc/")
-    g = _load(REVIEW, "review_stdin_override")
+    g = _load(REVIEW, "review_stdin_override", monkeypatch)
     assert "/altproc/self/fd/0" in g._STDIN_DEVICES
     assert "/proc/self/fd/0" not in g._STDIN_DEVICES
     assert g._may_be_stdin("/altproc/self/fd/0")
@@ -44,13 +45,13 @@ def test_review_guard_override_moves_the_spelling(monkeypatch: pytest.MonkeyPatc
 
 def test_worktree_guard_default_root_is_proc(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("REDIACC_WORKTREE_STDIN_PROCFS", raising=False)
-    g = _load(WORKTREE, "worktree_stdin_default")
+    g = _load(WORKTREE, "worktree_stdin_default", monkeypatch)
     assert g.PROC_STDIN == "/proc/self/fd/0"
     assert "/proc/self/fd/0" in g.STDIN_PATHS
 
 
 def test_worktree_guard_override_moves_the_spelling(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("REDIACC_WORKTREE_STDIN_PROCFS", "/altproc")
-    g = _load(WORKTREE, "worktree_stdin_override")
+    g = _load(WORKTREE, "worktree_stdin_override", monkeypatch)
     assert g.PROC_STDIN == "/altproc/self/fd/0"
     assert "/proc/self/fd/0" not in g.STDIN_PATHS
