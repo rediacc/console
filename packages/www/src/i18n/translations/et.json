@@ -5036,7 +5036,7 @@
           },
           "steps": [
             {
-              "description": "Juurutage oma riistvaras, oma EL-i IaaS-i teenusepakkujas või mis tahes kombinatsioonis. Rediacc OÜ on asutatud Eestis; USA emaettevõte puudub, USA juhtimistasand puudub, CLOUD Act-i kokkupuutepind puudub.",
+              "description": "Juurutage oma riistvaras, oma EL-i IaaS-i teenusepakkujas või mis tahes kombinatsioonis. Rediacc on Eesti ettevõte; USA emaettevõte puudub, USA juhtimistasand puudub, CLOUD Act-i kokkupuutepind puudub.",
               "icon": "server",
               "title": "Hostib"
             },
