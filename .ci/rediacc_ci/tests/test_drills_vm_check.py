@@ -2900,6 +2900,16 @@ def test_a_grand_only_in_config_is_forgotten_then_created(tmp_path: pathlib.Path
     assert "stale config entry forgotten" in row["evidence"], row
 
 
+def test_every_rdc_call_lifts_the_development_renet_hold(tmp_path: pathlib.Path) -> None:
+    """2026-11-11: a development CLI holds the machine's renet, so `repo fork --up` left the worker on an older build and V1.1 failed; the run lifts the hold for its own calls."""
+    world = make_world(tmp_path)
+    rc, out, _receipt = run_check(tmp_path, world)
+    assert rc == vm_check.EXIT_VERIFIED, out
+    forks = [e for c, e in zip(world.calls, world.envs, strict=True) if c[1:3] == ["repo", "fork"]]
+    assert forks, "no fork call recorded"
+    assert all(e.get("REDIACC_NO_PROVISION") == "0" for e in forks), forks
+
+
 def test_an_ambiguous_forget_deletes_each_ref_and_never_reruns_the_bare_forget(
     tmp_path: pathlib.Path,
 ) -> None:

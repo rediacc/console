@@ -1842,6 +1842,8 @@ class VmCheck:
             env["REDIACC_ACCOUNT_SERVER"] = self.account_server
         if self.dev_config:
             env["RDC_DEV"] = "1"
+        # A development CLI holds the machine's renet by default (renetHold 'dev', since 2026-11-05), so `repo fork --up` no longer uploads the branch build and V1.1 found the worker on an older renet (2026-11-11). The worker is a development-only ops VM, so the run lifts the hold for its own calls.
+        env["REDIACC_NO_PROVISION"] = "0"
         return env
 
     def drill_env(self) -> dict[str, str]:
