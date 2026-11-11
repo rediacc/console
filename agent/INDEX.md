@@ -597,7 +597,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-stop-hook-retro-20261110.md` | ready | 234 | 0 | 8 | 27053 |
 | `agent/plans/PLAN-stop-report-queue.md` | compacted | 38 | 0 | 0 | 2532 |
 | `agent/plans/PLAN-subagent-idle-detection.md` | compacted | 39 | 0 | 0 | 2696 |
-| `agent/plans/PLAN-submodule-branch-coordination-guard.md` | superseded | 115 | 3 | 5 | 20185 |
+| `agent/plans/PLAN-submodule-branch-coordination-guard.md` | superseded | 115 | 3 | 5 | 20118 |
 | `agent/plans/PLAN-sync-docker-latest-tag-with-releases.md` | compacted | 61 | 0 | 0 | 4171 |
 | `agent/plans/PLAN-sync-remote-file-ownership.md` | approved | 135 | 0 | 7 | 21408 |
 | `agent/plans/PLAN-telemetry-export.md` | approved | 208 | 0 | 19 | 51300 |
