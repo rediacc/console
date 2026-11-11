@@ -28,13 +28,5 @@
     "so carrying cannot become a second way to launder a partial lane."
   ],
   "version": 2,
-  "carried": [
-    {
-      "gate": "check:ci-external-links",
-      "findings": [
-        "link:www.ppc.go.jp"
-      ],
-      "reason": "www.ppc.go.jp (Japan's Personal Information Protection Commission, cited in legal-data-sovereignty.md in every locale) answered HTTP 503 to every request on 2026-11-06, the site root included, with and without a browser user agent, from one machine on that one day; the cause (an outage or a block of this address) is not established, and a moved page is ruled out because the root fails too. The URL is the regulator's canonical English legal page and stays. CI still judges it, and the push guard refuses this entry the first time the link answers (a carry cannot outlive its failure), so no retest date is needed: the next push after the site recovers removes it."
-    }
-  ]
+  "carried": []
 }
