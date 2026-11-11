@@ -221,7 +221,7 @@ def _acts(cmd, root, base):
         _, _, args = commit_policy.git_split(run.argv)
         if _skipped(args):
             continue
-        repo = commit_policy.scoped_repo(run, base, root, created)
+        repo = commit_policy.scoped_repo(run, base, root, created, cmd)
         if repo and not commit_policy.is_inside(repo, root):
             continue
         out.append(

@@ -296,7 +296,7 @@ def run(ev):
     created = commit_policy.created_dirs(cmd, cwd)
     found: dict[str, tuple] = {}
     for commit in commits:
-        repo = commit_policy.run_repo(commit, cwd, created)
+        repo = commit_policy.run_repo(commit, cwd, created, root)
         # A commit resolving to no repository is one git refuses; one outside this checkout takes no file a writer of it edited.
         if not repo or not commit_policy.is_inside(repo, root):
             continue

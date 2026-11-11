@@ -35,7 +35,7 @@ PROTECTED_PATHS = (".claude/settings.json", "scripts/pre-commit-check.sh")
 # (`sudo`, `xargs`, `time`, an assignment, `if ... then`) reach it through `shellscan.lifted_commands`, and so does `find ... -exec`, a launcher shellscan walks (`shellscan._launched`, #ec63ff8c): every `-exec` lands on a line of its own, so `find . -exec true {} \; -exec rm .claude/settings.json \;`, allowed before, is refused with the single `-exec` spelling.
 VERB_AND_PATH = (
     hookio.rx(
-        r"(^|[;&|(`{!])[{S}]*([^{S};|&()`]*/)?(git([{S}]+-[A-Za-z-]+([{S}]+[^{S};&|-][^{S};&|]*)?)*[{S}]+(restore|checkout)[{S}]|rm[{S}])[^;&|]*"
+        r"(^|[;&|(`{!])[{S}]*([^{S};|&()`]*/)?(git([{S}]+-[A-Za-z-]+(=[^{S};&|]*|[{S}]+[^{S};&|-][^{S};&|]*)?)*[{S}]+(restore|checkout)[{S}]|rm[{S}])[^;&|]*"
     )
     + PROTECTED
 )

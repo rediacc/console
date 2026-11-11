@@ -297,7 +297,7 @@ def run(ev):
     pushes = [
         r
         for r in commit_policy.git_runs(cmd, "push")
-        if commit_policy.run_repo(r, this_root) == this_root
+        if commit_policy.run_repo(r, this_root, root=this_root) == this_root
     ]
     if not pushes:
         return hookio.ALLOW

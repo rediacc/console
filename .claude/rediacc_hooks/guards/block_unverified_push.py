@@ -50,7 +50,7 @@ ORDER = 39
 DEFECT = ("confined = not outside", "confined = True")
 
 PUSH_AT_COMMAND_POS = hookio.rx(
-    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+push([{S}]|$)"
+    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+(=[^ ;&|]*|[{S}]+[^ ;&|]+)?)*[{S}]+push([{S}]|$)"
 )
 
 
@@ -1884,7 +1884,7 @@ def run(ev):
 
     # ANOTHER REPO'S PUSH IS NOT THIS TREE'S BUSINESS, and it was being refused as though it were. Reproduced 2026-09-01: `git -C <scratch-repo> push origin main` exited 2 here, because the gate-run stamp compared below belongs to CONSOLE and the scratch tree can never match it. The message then reads as "your gates are stale" about a repo the gates were never run against. Same
     # class as block-untagged-commit.sh:52-69; the resolution now lives in lib/command-scan.sh rather than being written a third time.
-    if shellscan.target_root(scan, root, verb="push") != "":
+    if shellscan.target_root(scan, root, verb="push", cmd=cmd) != "":
         return hookio.ALLOW
 
     # THE SHELL'S OWN WORKING DIRECTORY NAMES THE REPO TOO, not only `-C`/`cd` in the command. A plain `git push origin 0923-1` run with the tool's cwd already inside private/account was judged against the CONSOLE receipt and refused as "a different tree" (#e83d9ba9, 2026-09-25). A payload cwd whose top level is not this root's is another repository's push.

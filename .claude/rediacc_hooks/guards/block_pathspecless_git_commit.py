@@ -50,7 +50,7 @@ DEFECT = (r'r"(^|[{S}])--[{S}]+[^{S};&|<>]"', r'r"(^|[{S}])--"')
 
 # Command position: line start, or after ; & | ( $( or a backtick.
 GIT_COMMIT = hookio.rx(
-    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+commit([{S}]|$)"
+    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+(=[^ ;&|]*|[{S}]+[^ ;&|]+)?)*[{S}]+commit([{S}]|$)"
 )
 
 # THROWAWAY FIXTURE REPOS ARE EXEMPT, and this was a defect in the guard's first hour rather than a concession. The shadow-differential recipe every port agent follows REQUIRES `git init` plus a sealing commit inside a disposable repo under the session scratchpad, because a ledger row records `HEAD^{tree}` and a dirty tree is refused. Blocking that would have stopped the wave
@@ -118,7 +118,11 @@ def run(ev):
     ):
         return hookio.ALLOW
 
-    for exempt in (GIT_INIT, CD_TMP, GIT_C_TMP, AMEND, DDASH_PATHSPEC):
+    # The /tmp and `git init` markers place a commit by the directory the text names, which a repository variable or a moving global option overrides: `GIT_DIR=<this checkout>/.git git -C /tmp/x commit -m x` commits here (#f2e3507a, `shellscan.git_scope_doubt`). The two commit-form exemptions stand either way.
+    markers = [AMEND, DDASH_PATHSPEC]
+    if not shellscan.git_scope_doubt(cmd):
+        markers = [GIT_INIT, CD_TMP, GIT_C_TMP, *markers]
+    for exempt in markers:
         if hookio.grep_q(exempt, scan):
             return hookio.ALLOW
 

@@ -4,7 +4,7 @@ WHY. Guards refused a throwaway `git init` under /tmp as if it were the console 
 
 ONE QUESTION, `git_targets`. It answers the directories the judged git runs of a command act on, or None when any part of that answer is unknown, and None is the caller's cue to judge the command as this checkout. `elsewhere` then asks git for each directory's common dir (`common_dir`) and compares it with this checkout's; block_worktree_add keeps its own stricter comparison (a directory naming no repository is a doubt there), in its own file where its own plant reaches it. None for every doubt:
 
-  - a `GIT_*` repository variable (`GIT_REPO_ENV`) named anywhere in the command or present in the hook's own environment, or any `GIT_*` variable but an author or committer identity (`GIT_IDENTITY_ENV`) set on a judged run: `GIT_DIR` and its kin move git elsewhere whatever `-C` says;
+  - a `GIT_*` repository variable (`GIT_REPO_ENV`) named anywhere in the command or present in the hook's own environment, or any `GIT_*` variable but an author or committer identity (`GIT_IDENTITY_ENV`) or a prompt, pager, editor or trace variable (`GIT_NEUTRAL_ENV`) set on a judged run: `GIT_DIR` and its kin move git elsewhere whatever `-C` says;
   - any git run whose verb is a word the walk cannot know (`$v`, a substitution) or an alias the run sets for itself (`-c alias.X=V`, `GIT_CONFIG_KEY_n`);
   - a judged run with any global option before its verb but `-C <dir>` and `-c <key>=<value>` (`--git-dir`, `--work-tree`, an attached `-C<dir>`, `--namespace`), or a `-c alias.*` there;
   - a `cd` or `-C` directory holding an unresolved word or a leading `~`, a relative one with no absolute event `cwd` to anchor it, or one that does not exist and that the same command does not create (`created=True` only);
@@ -17,27 +17,11 @@ import re
 
 from rediacc_hooks import commit_policy, hookio, shellscan
 
-GIT_REPO_ENV = (
-    "GIT_DIR",
-    "GIT_COMMON_DIR",
-    "GIT_WORK_TREE",
-    "GIT_CEILING_DIRECTORIES",
-    "GIT_DISCOVERY_ACROSS_FILESYSTEM",
-)
-GIT_REPO_ENV_TEXT = re.compile(
-    r"GIT_(?:DIR|COMMON_DIR|WORK_TREE|CEILING_DIRECTORIES|DISCOVERY_ACROSS_FILESYSTEM)\b"
-)
-# A commit's identity, which says who wrote it and nothing about which repository it lands in. Every other `GIT_*` on a run is a doubt: the repository variables above, the index and object stores, and `GIT_CONFIG_*`, which can carry an alias or a `core.worktree`.
-GIT_IDENTITY_ENV = frozenset(
-    (
-        "GIT_AUTHOR_NAME",
-        "GIT_AUTHOR_EMAIL",
-        "GIT_AUTHOR_DATE",
-        "GIT_COMMITTER_NAME",
-        "GIT_COMMITTER_EMAIL",
-        "GIT_COMMITTER_DATE",
-    )
-)
+# The repository variables, the identity and neutral variables that are no doubt (`GIT_IDENTITY_ENV`, `GIT_NEUTRAL_ENV`), and the global-option rule live in shellscan, beside `_git_verb_at`, so `commit_policy.scoped_repo`, `run_repo`, `foreign_only` and `shellscan.target_root` read the same set (#f2e3507a: eleven guards scoped by those helpers admitted `GIT_DIR=<this checkout>/.git git -C <scratch>`). Every other `GIT_*` on a run is a doubt: the repository variables, the index and object stores, and `GIT_CONFIG_*`, which can carry an alias or a `core.worktree`.
+GIT_REPO_ENV = shellscan.GIT_REPO_ENV
+GIT_REPO_ENV_TEXT = shellscan.GIT_REPO_ENV_TEXT
+GIT_IDENTITY_ENV = shellscan.GIT_IDENTITY_ENV
+GIT_NEUTRAL_ENV = shellscan.GIT_NEUTRAL_ENV
 GIT_ALIAS = re.compile(r"^alias\.([^=]+)=(.*)$", re.DOTALL)
 GIT_CONFIG_KEY = re.compile(r"^GIT_CONFIG_KEY_(\d+)$")
 
@@ -72,14 +56,7 @@ def git_aliases(run_, argv, at):
     return found
 
 
-def common_dir(directory):
-    """The absolute, resolved git common dir of the repository `directory` sits in, "" when git cannot say (no repository, no directory, git not answering)."""
-    if not directory or not os.path.isdir(directory):
-        return ""
-    got = commit_policy.git(
-        ["rev-parse", "--path-format=absolute", "--git-common-dir"], cwd=directory, foreign=True
-    )
-    return os.path.realpath(got) if got else ""
+common_dir = commit_policy.common_dir
 
 
 def text_matches(pattern, scan):
@@ -100,15 +77,8 @@ def run_target(run_, argv, at, base, created=frozenset()):
 
     Only `-C <dir>` and `-c <key>=<value>` may precede the verb, and `-c alias.*` may not. The run's persisted `cd` and its `-C` directories compose onto `base`, which is needed only when they leave the path relative. The directory must exist, or be one `created` names (made by the same command before the run).
     """
-    k = 0
-    while k < at:
-        word = argv[k]
-        if word in ("-C", "-c") and k + 1 < at:
-            if word == "-c" and argv[k + 1].lower().startswith("alias."):
-                return None
-            k += 2
-            continue
-        # `--git-dir`, `--work-tree`, `--namespace`, an attached `-C<dir>`, `-calias...`: each could move git elsewhere or rename the verb, and none is needed for a scratch repository.
+    # `--git-dir`, `--work-tree`, `--namespace`, an attached `-C<dir>`, `-calias...`: each could move git elsewhere or rename the verb, and none is needed for a scratch repository.
+    if shellscan.git_globals_doubt(argv, at):
         return None
     _, where = shellscan._git_verb_at(argv)
     parts = [run_.cwd or "", where]
@@ -130,7 +100,7 @@ def git_targets(cmd, base, pick, expected, created=False):
 
     `pick(verb, rest)` answers True to judge the run, False to pass over it, None for a doubt. `expected` is how many runs the caller's own text pattern matched; more matches than judged runs is a doubt. `base` is the event's `cwd`. `created=True` admits a directory the same command makes before the run (`git init <dir>`, `mkdir`), which a caller resolving such a directory to "no repository" must then judge itself.
     """
-    if GIT_REPO_ENV_TEXT.search(cmd) or any(os.environ.get(name) for name in GIT_REPO_ENV):
+    if shellscan.git_scope_doubt_text(cmd):
         return None
     made: frozenset[str] = frozenset()
     if created:
@@ -157,7 +127,7 @@ def git_targets(cmd, base, pick, expected, created=False):
             return None
         if not chosen:
             continue
-        if any(n.startswith("GIT_") and n not in GIT_IDENTITY_ENV for n in (run_.env or {})):
+        if shellscan.git_run_scope_doubt(run_):
             return None
         target = run_target(run_, argv, at, base, made)
         if target is None:

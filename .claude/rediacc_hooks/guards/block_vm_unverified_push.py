@@ -519,7 +519,7 @@ def _pushes(cmd, root, base):
         _, _, args = commit_policy.git_split(run.argv)
         if _skipped(args):
             continue
-        repo = commit_policy.scoped_repo(run, base, root, created) or root
+        repo = commit_policy.scoped_repo(run, base, root, created, cmd) or root
         if pathlib.Path(repo).resolve() != pathlib.Path(root).resolve():
             # A submodule (its pointer push carries the range) or another repository.
             continue

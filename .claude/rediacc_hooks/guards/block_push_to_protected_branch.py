@@ -87,7 +87,9 @@ ENVS = [
     ("this-worktree", {"CLAUDE_PROJECT_DIR": "{FIXTURE:this-worktree-snapshot}"}, {}),
 ]
 
-GIT_AT_CMD = hookio.rx(r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+")
+GIT_AT_CMD = hookio.rx(
+    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+(=[^ ;&|]*|[{S}]+[^ ;&|]+)?)*[{S}]+"
+)
 GIT_PUSH_AT_CMD = GIT_AT_CMD + hookio.rx(r"push([{S}]|$)")
 
 
@@ -473,7 +475,7 @@ def run(ev):
     # `cd "${CLAUDE_PROJECT_DIR:-.}"`, same convention as block_merge_with_unpushed.py, then
     # resolve any `-C <dir>` / `cd <dir>` hint the command itself carries (a chained dispatcher runs several guards in one interpreter, so this reads cwd rather than changing it).
     root = ev.project_dir
-    target = shellscan.target_root(scan, root, verb="push")
+    target = shellscan.target_root(scan, root, verb="push", cmd=cmd)
     git_root = target if target != "" else root
 
     branch = hookio.git_out(["symbolic-ref", "--short", "-q", "HEAD"], cwd=git_root, want_rc=True)

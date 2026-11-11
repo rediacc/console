@@ -537,7 +537,7 @@ def run(ev):
     cfg = commit_policy.load_config(root)
     hints: dict[str, str] = {}
     for commit in commits:
-        repo = commit_policy.run_repo(commit, base, created)
+        repo = commit_policy.run_repo(commit, base, created, root)
         if not repo or not commit_policy.is_inside(repo, root):
             continue
         # A `-F <file>` this same command writes first holds an earlier command's bytes: judging it admitted a stale `[hotfix]` onto `main` (#9888de00).

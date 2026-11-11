@@ -48,7 +48,7 @@ ORDER = 5
 DEFECT = ("if override:", "if False:")
 
 COMMIT_AT_COMMAND_POS = hookio.rx(
-    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+commit([{S}]|$)"
+    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+(=[^ ;&|]*|[{S}]+[^ ;&|]+)?)*[{S}]+commit([{S}]|$)"
 )
 
 C_FLAG = hookio.rx(r'\-c[{S}]+"?user\.email=[^"{S}]+')
@@ -191,7 +191,7 @@ def run(ev):
     # target outside the root is no longer let through by its path alone: `GIT_DIR=<this checkout>/.git git -C <scratch> commit` was (measured 2026-11-11, rc 0), and `_elsewhere` reads that `GIT_DIR` as a doubt.
     if _elsewhere(ev, cmd, scan, root):
         return hookio.ALLOW
-    target = shellscan.target_root(scan, root, verb="commit") or root
+    target = shellscan.target_root(scan, root, verb="commit", cmd=cmd) or root
 
     identity_file = ev.env("COMMIT_IDENTITY_FILE") or "%s/.ci/config/commit-identity.json" % root
     if not os.access(identity_file, os.R_OK):

@@ -48,7 +48,7 @@ ORDER = 37
 DEFECT = ("if known and not _grep_qx(found, known):", "if False:")
 
 COMMIT_AT_COMMAND_POS = hookio.rx(
-    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+commit([{S}]|$)"
+    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+(=[^ ;&|]*|[{S}]+[^ ;&|]+)?)*[{S}]+commit([{S}]|$)"
 )
 
 FILE_ARGS = hookio.rx(r"(-F|--file)([{S}]+|=)[^{S};|&]+")
@@ -280,14 +280,15 @@ def run(ev):
     # (one that cannot possibly name an epic for a repo it has never heard of), so every such commit was refused for a trailer no epic file could ever supply. Detect a `cd`/`git -C` into another repo anywhere on the line -- a cd applies to every later segment, so this is deliberately line-wide, matching hook_target_repo's convention in lib/command-scan.sh -- and if the git root
     # THAT resolves to is a real repo distinct from this one, this guard has nothing to check: that repo's commits are not this repo's epics' business. THE RESOLUTION MOVED TO lib/command-scan.sh when a third guard needed it. Two siblings had the same defect -- block-unverified-push.sh refused a foreign repo's push against THIS tree's gate stamp (reproduced live), and
     # warn-remote-drift.sh has the same shape latently -- so the walk this file pioneered is now shared rather than copied twice more.
-    if shellscan.target_root(scan, root, verb="commit") != "":
+    if shellscan.target_root(scan, root, verb="commit", cmd=cmd) != "":
         return hookio.ALLOW
 
     # THE TOOL CALL'S OWN `cwd` IS A SECOND, MORE RELIABLE SIGNAL than the text-parsed `cd`/`-C` hint above -- reproduced live 2026-09-23: a session ran `git commit` with the Bash tool's `cwd` field pointed at an independent local clone (`/home/developer/console-ci-fix-scratch`, cloned to keep a risky change out of this shared tree), with no `cd`/`-C` anywhere in the command text
     # itself, so `target_root` found no hint at all and this guard judged the commit against THIS repo's stale index and its `agent/pr/<this-branch>.md` epic snapshot -- the exact wrong-tree failure the comment above already fixed for the text-hint case, reachable from a second direction the fix never covered. `ev.field("cwd") or root` is the same fallback
     # `block_unproven_bulk_transform.py:262` already uses for this exact field.
+    # A repository variable or a moving global option outranks the cwd: `GIT_DIR=<this checkout>/.git git commit` from a scratch cwd commits here (#f2e3507a, `shellscan.git_scope_doubt`).
     _cwd = ev.field("cwd")
-    if _cwd and _cwd != root:
+    if _cwd and _cwd != root and not shellscan.git_scope_doubt(cmd):
         _cwd_root = hookio.git_out(["-C", _cwd, "rev-parse", "--show-toplevel"], want_rc=True)
         if _cwd_root is not None and _cwd_root.strip() not in ("", root):
             return hookio.ALLOW

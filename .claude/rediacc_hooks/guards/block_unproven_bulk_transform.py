@@ -839,7 +839,7 @@ def run(ev):
     # ANOTHER REPO'S STAGED COUNT IS NOT THIS GUARD'S BUSINESS.
     # Same class of defect as block_untagged_commit / block_unverified_push / block_blanket_git_add (see shellscan.target_root's own docstring): reproduced live 2026-09-23, a writer's `git -C <scratchpad fixture> commit` (equally: a leading `cd <fixture> &&`) was refused citing 255 staged files, which was CONSOLE's own count, never the fixture's.
     # `root`/CLAUDE_PROJECT_DIR is only the right tree to judge when the command does not name a different one itself. `target_root` returns "" for an unresolvable hint, so a bogus `-C` path does NOT exempt a command: the guard falls through and keeps judging `root`.
-    if shellscan.target_root(scan, root, verb="commit") != "":
+    if shellscan.target_root(scan, root, verb="commit", cmd=cmd) != "":
         return hookio.ALLOW
     # The event's `cwd` names a target too when the command names none (#381462dc): measured 2026-11-11, a 30-path commit with `cwd` in a `/tmp` `git init` was refused, since `target_root` reads only `cd` and `-C`. `_repo_scope.elsewhere` admits only when every `git commit` lands in a repository with a git common dir of its own (or in no repository, outside this tree).
     expected = _repo_scope.text_matches(PSC.GIT_COMMIT, scan)

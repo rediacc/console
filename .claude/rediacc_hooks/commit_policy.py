@@ -444,8 +444,15 @@ def effective_dir(run, base: str, created=frozenset()) -> str:
     return os.path.normpath(shellscan._git_invocation(run.argv, base)[1])
 
 
-def run_repo(run, base: str, created=frozenset()) -> str:
-    """The toplevel of the repository a walked command acts on, "" when it resolves to none (see `effective_dir` for a failed `cd`)."""
+def run_repo(run, base: str, created=frozenset(), root: str = "") -> str:
+    """The toplevel of the repository a walked command acts on, "" when it resolves to none (see `effective_dir` for a failed `cd`).
+
+    A run whose landing a repository variable or a moving global option leaves unknown (`shellscan.git_run_scope_doubt`) answers `toplevel(root)`, this checkout, when the caller passes `root`, and "" otherwise. A caller that skips a repository outside this checkout passes `root`, so the doubt is judged here; a caller that ADMITS only a run it placed inside this checkout (a lease push, the mirror push) passes none, so a doubt never reaches its admission.
+    """
+    from rediacc_hooks import shellscan
+
+    if shellscan.git_run_scope_doubt(run):
+        return toplevel(root) if root else ""
     return toplevel(effective_dir(run, base, created))
 
 
@@ -456,20 +463,183 @@ def created_dirs(cmd: str, base: str) -> frozenset:
     return frozenset(shellscan._created_dirs(runs(cmd), base))
 
 
-def scoped_repo(run, base: str, root: str, created=frozenset()) -> str:
+def common_dir(directory: str) -> str:
+    """The absolute, resolved git common dir of the repository `directory` sits in, "" when git cannot say (no repository, no directory, git not answering)."""
+    if not directory or not os.path.isdir(directory):
+        return ""
+    got = git(
+        ["rev-parse", "--path-format=absolute", "--git-common-dir"], cwd=directory, foreign=True
+    )
+    return os.path.realpath(got) if got else ""
+
+
+# A PUSH PUBLISHES TO ITS PUSH URL, not to the directory it runs in (#f2e3507a, measured 2026-11-11): a scratch repository whose `origin` is this checkout's GitHub repository force-pushed `main` past block_git_force_push and block_push_to_protected_branch, which placed it by its directory, while a push to a local bare remote publishes nothing anyone else reads. A verb that can repoint a remote earlier in the same command makes the destination read at hook time stale.
+_REMOTE_EDIT_VERBS = ("remote", "config", "clone")
+_SCP_LIKE = re.compile(r"^[^/]*:")
+
+
+def _edits_remotes(cmd: str) -> bool:
+    """Does `cmd` run a git verb that can add or repoint a remote (`remote`, `config`, `clone`) anywhere, so a push in it may go where the hook-time config does not say?"""
+    from rediacc_hooks import shellscan
+
+    for r in shellscan.every_run(cmd):
+        if _base(r.name) != "git":
+            continue
+        _, sub, _args = git_split(list(r.xargv if r.xargv is not None else r.argv))
+        if sub in _REMOTE_EDIT_VERBS:
+            return True
+    return False
+
+
+def _config_get(directory: str, *args: str) -> str:
+    return git(["config", *args], cwd=directory, foreign=True) or ""
+
+
+def _default_push_remote(directory: str) -> str:
+    """The remote a `git push` with no repository operand sends to, in git's order: `branch.<b>.pushRemote`, `remote.pushDefault`, `branch.<b>.remote`, then `origin`."""
+    branch = current_branch(directory, foreign=True)
+    keys = ["remote.pushDefault"]
+    if branch:
+        keys = ["branch.%s.pushRemote" % branch, "remote.pushDefault", "branch.%s.remote" % branch]
+    for key in keys:
+        got = _config_get(directory, "--get", key)
+        if got:
+            return got
+    return "origin"
+
+
+_UNRESOLVED_MARKS = ("$", "`", "\0")
+_SCP_URL = re.compile(r"^(?:[^@/]+@)?[^:/]+:(.*)$")
+
+
+def _url_key(url: str) -> str:
+    """The repository path a network URL names, lowercased, with no host, user, port, leading or trailing slash or `.git`: `https://github.com/o/r.git`, `git@github.com:o/r` and `ssh://git@gh-alias:22/o/r/` all key `o/r`. The host is left out on purpose, so an ssh host alias (`git@gh:o/r`) still matches. "" when none can be read."""
+    if any(m in url for m in _UNRESOLVED_MARKS):
+        return ""
+    if "://" in url:
+        path = url.split("://", 1)[1].partition("/")[2]
+    else:
+        m = _SCP_URL.match(url)
+        path = m.group(1) if m else ""
+    path = path.strip("/").lower()
+    return path.removesuffix(".git")
+
+
+def _our_url_keys(root: str) -> set[str]:
+    """The `_url_key` of every repository a push from this checkout could publish to: each `url`/`pushurl` of this checkout's remotes, each submodule's `.gitmodules` URL and its own remotes, and the console's GitHub repository (`wellknown.GH_REPO`), which stands even when the config cannot be read."""
+    from rediacc_hooks import wellknown
+
+    remote_rx = r"^remote\..*\.(url|pushurl)$"
+    urls = [s.partition(" ")[2] for s in _config_get(root, "--get-regexp", remote_rx).split("\n")]
+    modules = os.path.join(root, ".gitmodules")
+    if os.path.isfile(modules):
+        listing = _config_get(root, "-f", modules, "--get-regexp", r"^submodule\..*\.(url|path)$")
+        for line in listing.split("\n"):
+            key, _, value = line.partition(" ")
+            if key.endswith(".url"):
+                urls.append(value)
+            elif key.endswith(".path") and os.path.isdir(os.path.join(root, value)):
+                sub = _config_get(os.path.join(root, value), "--get-regexp", remote_rx)
+                urls.extend(s.partition(" ")[2] for s in sub.split("\n"))
+    keys = {_url_key(u) for u in urls if u}
+    keys.add(str(wellknown.GH_REPO).lower())
+    keys.discard("")
+    return keys
+
+
+def _url_elsewhere(url: str, directory: str, root: str, ours: set[str]) -> bool:
+    """Does a push to `url` from `directory` publish nothing this checkout's policy reads?
+
+    A path on this machine (plain, relative to `directory`, or `file://`) answers True unless it is inside `root` or a repository sharing this checkout's git store. A network URL answers True only when its repository path (`_url_key`) is none of `ours`. A `~`, an unexpanded word and a URL no key can be read from answer False.
+    """
+    if any(m in url for m in _UNRESOLVED_MARKS):
+        return False
+    if url.startswith("file://"):
+        path = url[len("file://") :]
+    elif "://" in url or _SCP_LIKE.match(url):
+        key = _url_key(url)
+        return bool(key) and key not in ours
+    else:
+        path = url
+    if not path or path.startswith("~"):
+        return False
+    path = os.path.normpath(os.path.join(directory, path))
+    if is_inside(path, root):
+        return False
+    store = common_dir(root)
+    theirs = common_dir(path)
+    return not (theirs and (not store or is_inside(theirs, store)))
+
+
+def push_elsewhere(run, directory: str, root: str, cmd: str | None = None) -> bool:
+    """Does the walked `git push` `run`, running in `directory`, send only to repositories this checkout's policy does not read: a local repository outside this checkout's store, or a network repository that is none of this checkout's own (`_our_url_keys`)?
+
+    False on every doubt: a global option but `-C` (`-c remote.<r>.pushurl=...` repoints the push), a `remote`/`config`/`clone` run in the same `cmd`, a `url.*.insteadOf`/`pushInsteadOf` rewrite, an option git itself refuses, a configured remote whose push URL git cannot read, and any URL `_url_elsewhere` does not place. `cmd` is the whole command; without it the same-command check is skipped, so every guard caller passes it.
+    """
+    argv = list(run.xargv if run.xargv is not None else run.argv)
+    globs, _sub, args = git_split(argv)
+    k = 0
+    while k < len(globs):
+        if globs[k] == "-C" and k + 1 < len(globs):
+            k += 2
+            continue
+        return False
+    if cmd is not None and _edits_remotes(cmd):
+        return False
+    from rediacc_hooks import shellscan
+
+    parsed = shellscan.git_push_args(args)
+    if parsed.problems:
+        return False
+    exists = os.path.isdir(directory)
+    if exists and _config_get(directory, "--get-regexp", r"^url\..*insteadof$"):
+        return False
+    dest = parsed.operands[0] if parsed.operands else (parsed.last("repo") or "")
+    if not dest:
+        dest = _default_push_remote(directory) if exists else "origin"
+    remotes = (git(["remote"], cwd=directory, foreign=True) or "").split("\n") if exists else []
+    if dest in remotes:
+        got = git(["remote", "get-url", "--push", "--all", dest], cwd=directory, foreign=True)
+        urls = [u for u in (got or "").split("\n") if u.strip()]
+        if not urls:
+            return False
+    else:
+        # Not a configured remote, so git reads the word as a URL or a path: a fresh `git init` has no `origin`, and `git push origin` there names a directory `origin` that holds nothing.
+        urls = [dest]
+    ours = _our_url_keys(root)
+    return all(_url_elsewhere(u, directory, root, ours) for u in urls)
+
+
+def scoped_repo(
+    run, base: str, root: str, created=frozenset(), cmd: str | None = None, judged: str = ""
+) -> str:
     """Where a walked command acts, for a guard that judges only this checkout and its submodules.
 
     The toplevel when the directory is a repository; else the directory ITSELF when it lies outside `root`; else "" (a directory inside `root` that names no repository, which git refuses and a guard keeps judging as this checkout). WHY THE SECOND ARM: `git init -q /tmp/x && cd /tmp/x && git branch feat` is one command, so at hook time `/tmp/x` is no repository yet and `toplevel` answers "", which every caller read as "judge this checkout" and refused a fixture it has no business with (finding #5810a9f3). Callers test `is_inside(result, root)`, and a directory outside `root` fails it, so the fixture is let through.
+
+    THE DOUBTS JUDGE THIS CHECKOUT, answering `judged`: "" by default, which every caller of the `not repo or is_inside(repo, root)` shape judges as this checkout, and this checkout's toplevel for a caller that reads "" as a directory git refuses (`branch_creations`). A repository variable or a moving global option (`shellscan.git_run_scope_doubt`): `GIT_DIR=<this checkout>/.git git -C <scratch> commit` commits here. And a `git push` outside `root` that `push_elsewhere` cannot place on this machine: a push publishes to its URL, so a scratch clone whose `origin` is this checkout's repository publishes as surely as this checkout would. `cmd`, the whole command, feeds that check its same-command remote edits.
     """
+    from rediacc_hooks import shellscan
+
+    if shellscan.git_run_scope_doubt(run):
+        return judged
     directory = run_dir(run, base)
     top = toplevel(directory)
-    if top:
-        return top
-    if is_inside(directory, root):
-        return ""
-    # An outside directory that does not exist and that this command does not create is a `cd` bash cannot perform: after `cd /nonexistent; git push --force origin main` git runs in THIS checkout, so it is judged as this checkout (shellscan._resolve_root keeps the same rule).
-    made = any(directory == c or directory.startswith(c.rstrip("/") + "/") for c in created)
-    return directory if (os.path.isdir(directory) or made) else ""
+    if not top:
+        if is_inside(directory, root):
+            return ""
+        # An outside directory that does not exist and that this command does not create is a `cd` bash cannot perform: after `cd /nonexistent; git push --force origin main` git runs in THIS checkout, so it is judged as this checkout (shellscan._resolve_root keeps the same rule).
+        made = any(directory == c or directory.startswith(c.rstrip("/") + "/") for c in created)
+        if not (os.path.isdir(directory) or made):
+            return ""
+        top = directory
+    if (
+        run.git_sub == "push"
+        and not is_inside(top, root)
+        and not push_elsewhere(run, directory, root, cmd)
+    ):
+        return judged
+    return top
 
 
 def foreign_only(ev, cmd: str, subs: tuple[str, ...] | None = None) -> bool:
@@ -480,17 +650,20 @@ def foreign_only(ev, cmd: str, subs: tuple[str, ...] | None = None) -> bool:
     root = ev.env("CLAUDE_PROJECT_DIR") or git(["rev-parse", "--show-toplevel"]) or ""
     if not root:
         return False
+    from rediacc_hooks import shellscan
+
+    # A repository variable spelled anywhere, or carried by the hook's own environment, can send every git of the line to this checkout; `scoped_repo` reads each run's own variables and options.
+    if shellscan.git_scope_doubt_text(cmd):
+        return False
     base = ev.field("cwd") or root
     picked = [r for r in git_runs(cmd) if subs is None or r.git_sub in subs]
     # The line's own `git init <dir>` / `git clone` setup reads as this checkout's directory and is never what the guard judges, unless nothing else runs.
     picked = [r for r in picked if r.git_sub not in ("init", "clone")] or picked
     if not picked:
         return False
-    from rediacc_hooks import shellscan
-
     created = shellscan._created_dirs(runs(cmd), base)
     for run in picked:
-        repo = scoped_repo(run, base, root, created)
+        repo = scoped_repo(run, base, root, created, cmd)
         if not repo or is_inside(repo, root):
             return False
     return True
@@ -563,7 +736,14 @@ def push_destinations(args: list[str]) -> list[tuple[str, str]]:
     return out
 
 
-def _git_creations(run, start: str, root: str, created=frozenset()) -> list[Creation]:
+def _creation_repo(run, start: str, root: str, created=frozenset(), cmd: str | None = None) -> str:
+    """`scoped_repo` for a creation, with a doubt placed in this checkout rather than in "": block_second_branch skips a creation whose repository is "" (a directory git refuses), so `GIT_DIR=<this checkout>/.git git -C <scratch> branch x` and a scratch clone's push to this checkout's `origin` were let through (#f2e3507a)."""
+    return scoped_repo(run, start, root, created, cmd, judged=toplevel(root) or root)
+
+
+def _git_creations(
+    run, start: str, root: str, created=frozenset(), cmd: str | None = None
+) -> list[Creation]:
     _, sub, args = git_split(run.argv)
     found: list[tuple[str, str]] = []
     if sub in ("checkout", "switch"):
@@ -590,7 +770,7 @@ def _git_creations(run, start: str, root: str, created=frozenset()) -> list[Crea
         if value:
             found.append((value, "worktree"))
     elif sub == "push":
-        repo = scoped_repo(run, start, root, created)
+        repo = _creation_repo(run, start, root, created, cmd)
         heads = set(local_branches(repo)) if repo else set()
         for src, dst in push_destinations(args):
             # `git push origin v1.2` pushes a TAG, and so does `v1.2:v1.2`: a destination is a branch being named only when its source is not a tag, and a bare refspec only when it IS a local branch (anything else is a tag, a sha, or a refspec git itself will refuse).
@@ -605,11 +785,13 @@ def _git_creations(run, start: str, root: str, created=frozenset()) -> list[Crea
         return [Creation(repo, name, kind) for name, kind in found]
     if not found:
         return []
-    repo = scoped_repo(run, start, root, created)
+    repo = _creation_repo(run, start, root, created, cmd)
     return [Creation(repo, name, kind) for name, kind in found]
 
 
-def _gh_creations(run, start: str, root: str, created=frozenset()) -> list[Creation]:
+def _gh_creations(
+    run, start: str, root: str, created=frozenset(), cmd: str | None = None
+) -> list[Creation]:
     """The branch a walked `gh` call creates: `gh pr create --head <name>` or a `gh api .../git/refs` POST.
 
     Read through `shellscan.gh_args`, the one pflag reader the gh guards share (#d2d5f89d), so every spelling gh accepts is the branch it names: `-H x`, `-Hx`, `-H=x` (`x`, never `=x`), `--head=x`, a bundle ending in it (`-dH x`), a `pr`-level flag before the verb (`gh pr -R r create -H x`), and a value-taking flag's value is never a flag (`-t --head` titles a PR "--head"). The REST form's method is `shellscan.gh_api_method` (`-XPOST`, `--method=POST`, `-X=POST`, or a field with no `-X`) and its endpoint the call's own operand, so a `git/refs` in a header or a `--jq` is no endpoint. Measured 2026-10-07 through dispatch.py, before this: `gh pr create -dH 0229-7` was admitted (rc=0) where `--head 0229-7` is refused, and `-H=0101-1` was refused as a branch called `=0101-1`.
@@ -624,7 +806,9 @@ def _gh_creations(run, start: str, root: str, created=frozenset()) -> list[Creat
         if value:
             return [
                 Creation(
-                    scoped_repo(run, start, root, created), value.rsplit(":", 1)[-1], "gh-pr-create"
+                    _creation_repo(run, start, root, created, cmd),
+                    value.rsplit(":", 1)[-1],
+                    "gh-pr-create",
                 )
             ]
         return []
@@ -636,7 +820,7 @@ def _gh_creations(run, start: str, root: str, created=frozenset()) -> list[Creat
         fields = [v for n, v in parsed.flags if n in ("field", "raw-field")]
         ref = next((f.split("=", 1)[1] for f in fields if f.startswith("ref=")), "")
         name = ref.removeprefix("refs/heads/")
-        return [Creation(scoped_repo(run, start, root, created), name, "gh-api-ref")]
+        return [Creation(_creation_repo(run, start, root, created, cmd), name, "gh-api-ref")]
     return []
 
 
@@ -653,9 +837,9 @@ def branch_creations(cmd: str, root: str, base: str | None = None) -> list[Creat
     for run in runs(cmd):
         name = _base(run.name)
         if name == "git":
-            out.extend(_git_creations(run, start, root, created))
+            out.extend(_git_creations(run, start, root, created, cmd))
         elif name == "gh":
-            out.extend(_gh_creations(run, start, root, created))
+            out.extend(_gh_creations(run, start, root, created, cmd))
     return out
 
 

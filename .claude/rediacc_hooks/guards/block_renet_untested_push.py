@@ -233,7 +233,7 @@ def _pushes(cmd, root, base):
         _, _, args = commit_policy.git_split(run.argv)
         if VM._skipped(args):
             continue
-        repo = commit_policy.scoped_repo(run, base, root, created) or root
+        repo = commit_policy.scoped_repo(run, base, root, created, cmd) or root
         top = pathlib.Path(repo).resolve()
         line = " ".join(["git", "push", *args])
         if top == renet_root:

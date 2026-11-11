@@ -160,7 +160,7 @@ def rows_for(stem):
             ),
         ]
     if "G" in families:
-        # COMMIT_AT_COMMAND_POS reads a global option as `-x [value]`, so `--git-dir=<dir>` ended the match and the commit was not a commit at all; the walk places it.
+        # COMMIT_AT_COMMAND_POS read a global option as `-x [value]`, so `--git-dir=<dir>` ended the match and the commit was not a commit at all; the walk placed it, and since #f2e3507a the pattern also takes an attached `=value`. Two lines hold the row, so its plant (WALK_OFF) takes out both.
         out.append(
             (
                 "WALK",
@@ -286,7 +286,10 @@ WALK_OFF = {
         ('_repo_scope.walked_commit_flag(cmd, "allow-empty")', "False"),
     ],
     "block_git_amend": [('_repo_scope.walked_commit_flag(cmd, "amend", adjacent=False)', "False")],
-    "block_unlinked_commit_author": [('or commit_policy.git_runs(cmd, "commit")', "or False")],
+    "block_unlinked_commit_author": [
+        ('or commit_policy.git_runs(cmd, "commit")', "or False"),
+        ("(=[^ ;&|]*|[{S}]+[^ ;&|]+)?)*[{S}]+commit", "([{S}]+[^ ;&|]+)?)*[{S}]+commit"),
+    ],
 }
 # The ADMITTED rows each guard admits ONLY through the scope: block_blanket_git_add and block_unproven_bulk_transform still admit a `-C`/`cd` outside this tree by `target_root`, and block_pathspecless_git_commit admits `-C /tmp/...`, `cd /tmp/...` and a line with `git init` by its text markers, so for those three only the event `cwd` row is the scope's alone.
 SCOPE_ONLY = {

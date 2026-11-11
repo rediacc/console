@@ -233,7 +233,7 @@ def deletion_refusal(ev, cmd):
         names, prunes = _deleted_refs(run)
         if not names and not prunes:
             continue
-        repo = commit_policy.scoped_repo(run, base, root, created)
+        repo = commit_policy.scoped_repo(run, base, root, created, cmd)
         if repo and not commit_policy.is_inside(repo, root):
             continue
         if prunes:

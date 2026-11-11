@@ -525,7 +525,7 @@ def pr_selector(seg, verb):
 # Measured 2026-09-01, the same defect was live in a sibling: `git -C <scratch> push` was refused by block-unverified-push.sh because it compared the SCRATCH repo's push to the CONSOLE tree's gate-run stamp (reproduced: exit 2). warn-remote-drift.sh has the identical shape and is latent -- quiet today only because console's remote happens not to be ahead.
 #
 # A `cd` applies to every later segment of the SAME shell; until the Rule T fix in the docstring below this scan was line-wide, matching target_repo's convention, and that is exactly what A0 L12 measured failing. Prints "" when the command targets THIS root, when no hint is present, or when the hint does not resolve to a git repo -- so a caller can treat empty as "this repo, proceed" and never has to distinguish absent from same.
-def target_root(scan, this_root, verb=None):
+def target_root(scan, this_root, verb=None, cmd=None):
     """Rule T (A0 L12, and the tab defect PLAN-retire-bash-oracles A4 names at block_untagged_commit.py:142).
 
     The line-wide grep this replaces took the LAST `cd`/`-C` hint anywhere, so `(cd private/renet && git fetch); git status`, `cd private/renet | true; git status` and `git -C private/renet fetch; git status` all resolved to renet while bash ran `git status` in THIS tree, and a guard that stands down for another repo then stood down for a command in this one. Its `-C` strip also demanded a literal space, so `git -C<TAB>private/renet` resolved to nothing and the guard judged the wrong tree the other way.
@@ -538,6 +538,11 @@ def target_root(scan, this_root, verb=None):
         gits = [r for r in gits if r.git_sub == verb] or gits
     # `git init -q /tmp/x && cd /tmp/x && git checkout -- .`: the `init` acts on `/tmp/x` while its own directory reads as this root, so it disagreed with every later invocation and sent the whole line back to this checkout (finding #5810a9f3). An `init` or `clone` is the line's own setup, never the command being judged, unless nothing else runs.
     gits = [r for r in gits if r.git_sub not in ("init", "clone")] or gits
+    # A repository variable or a global option that moves git (`git_run_scope_doubt`) leaves the directory a guess, and a guess judges this root: `GIT_DIR=<this checkout>/.git git -C <scratch> add -A` adds to this checkout's index. `scan_target` drops a leading `GIT_DIR=...` from the text it builds, so a caller passing that text also passes the raw `cmd`, whose runs keep the variable (#f2e3507a).
+    if git_scope_doubt_text(scan) or any(git_run_scope_doubt(r) for r in gits):
+        return ""
+    if cmd is not None and git_scope_doubt(cmd):
+        return ""
     if gits:
         dirs = [r.git_dir for r in gits]
     elif runs:
@@ -5285,6 +5290,92 @@ def _git_verb_at(argv):
         else:
             return k, here
     return None, ""
+
+
+# WHERE A GIT RUN LANDS IS UNKNOWN beside a repository variable or a global option that moves it, and every scope reader judges such a run as this checkout. One set of rules, read by `guards/_repo_scope.git_targets`, `commit_policy.scoped_repo`/`run_repo`/`foreign_only` and `target_root`: measured 2026-11-11, `GIT_DIR=<this checkout>/.git git -C <scratch> commit --amend` and `git -C <scratch> --git-dir=<this checkout>/.git branch x` were admitted by eleven guards whose scope read only the `-C`.
+#
+# `GIT_REPO_ENV` is checked in the hook's own environment (an exported `GIT_DIR` moves every git the command runs) and spelled anywhere in the command text, a backstop for a walk that did not place the assignment; on a walked run every `GIT_*` but a commit identity or a neutral prompt, pager, editor or trace variable (`GIT_NEUTRAL_ENV`) is a doubt, since the index, the object store and `GIT_CONFIG_*` (an alias, a `core.worktree`) move git as surely.
+GIT_REPO_ENV = (
+    "GIT_DIR",
+    "GIT_COMMON_DIR",
+    "GIT_WORK_TREE",
+    "GIT_CEILING_DIRECTORIES",
+    "GIT_DISCOVERY_ACROSS_FILESYSTEM",
+)
+GIT_REPO_ENV_TEXT = re.compile(
+    r"GIT_(?:DIR|COMMON_DIR|WORK_TREE|CEILING_DIRECTORIES|DISCOVERY_ACROSS_FILESYSTEM)\b"
+)
+# A commit's identity, which says who wrote it and nothing about which repository it lands in.
+GIT_IDENTITY_ENV = frozenset(
+    (
+        "GIT_AUTHOR_NAME",
+        "GIT_AUTHOR_EMAIL",
+        "GIT_AUTHOR_DATE",
+        "GIT_COMMITTER_NAME",
+        "GIT_COMMITTER_EMAIL",
+        "GIT_COMMITTER_DATE",
+    )
+)
+# Variables that steer a prompt, a pager, an editor or a trace and never which repository git opens: `.claude/commands/pr-merge.md` step 6b runs the mirror push under `GIT_TERMINAL_PROMPT=0`, and reading that as a doubt refused it (test-block_push_to_protected_branch.py, "the 6b spelling inside its timeout wrapper"). A name not listed here or in `GIT_IDENTITY_ENV` stays a doubt.
+GIT_NEUTRAL_ENV = frozenset(
+    (
+        "GIT_TERMINAL_PROMPT",
+        "GIT_ASKPASS",
+        "GIT_PAGER",
+        "GIT_EDITOR",
+        "GIT_SEQUENCE_EDITOR",
+        "GIT_MERGE_AUTOEDIT",
+        "GIT_PROGRESS_DELAY",
+        "GIT_FLUSH",
+        "GIT_ADVICE",
+    )
+)
+
+
+def _git_env_doubt(name):
+    """Is `name`, set on a walked run, a `GIT_*` variable that can move git or rename its verb?"""
+    if not name.startswith("GIT_") or name in GIT_IDENTITY_ENV or name in GIT_NEUTRAL_ENV:
+        return False
+    return not name.startswith("GIT_TRACE")
+
+
+def git_scope_doubt_text(cmd):
+    """Does `cmd` name a git repository variable anywhere, or does the hook's own environment carry one?"""
+    return bool(GIT_REPO_ENV_TEXT.search(cmd)) or any(os.environ.get(n) for n in GIT_REPO_ENV)
+
+
+def git_globals_doubt(argv, at):
+    """Does a global option before the verb at `at` of the git `argv` make where the run lands unknown? Only `-C <dir>` and `-c <key>=<value>` may stand there, and `-c alias.*` may not: `--git-dir`, `--work-tree`, `--namespace`, an attached `-C<dir>` and `-calias...` each move git elsewhere or rename the verb."""
+    k = 0
+    while k < at:
+        word = argv[k]
+        if word in ("-C", "-c") and k + 1 < at:
+            if word == "-c" and argv[k + 1].lower().startswith("alias."):
+                return True
+            k += 2
+            continue
+        return True
+    return False
+
+
+def git_run_scope_doubt(run):
+    """Is where the walked `run` lands unknown from its `cd` and `-C` alone? True for a repository variable in the hook's environment, any `GIT_*` in the run's own that `_git_env_doubt` does not pass, and, on a git run, a global option `git_globals_doubt` refuses."""
+    if any(os.environ.get(n) for n in GIT_REPO_ENV):
+        return True
+    if any(_git_env_doubt(n) for n in (run.env or {})):
+        return True
+    if _base(run.name) != "git":
+        return False
+    argv = list(run.xargv if run.xargv is not None else run.argv)
+    at, _ = _git_verb_at(argv)
+    return at is not None and git_globals_doubt(argv, at)
+
+
+def git_scope_doubt(cmd):
+    """`git_scope_doubt_text`, or any git run of `cmd` whose landing `git_run_scope_doubt` cannot place: for a guard that resolves a command to a repository by some other signal (the event's `cwd`) and must not take that signal over a variable naming another."""
+    if git_scope_doubt_text(cmd):
+        return True
+    return any(git_run_scope_doubt(r) for r in every_run(cmd) if _base(r.name) == "git")
 
 
 def _judged_elsewhere(run, base, argv):

@@ -40,7 +40,7 @@ DEFECT = (r"($|[;&|<>]|[0-9]*>)", r"($|[;&|])")
 # between `git` and `add` (-C <path>, -c k=v) stay matched, since they change
 # where the command runs, not what it stages.
 GIT_ADD = hookio.rx(
-    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+add[{S}]+"
+    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+(=[^ ;&|]*|[{S}]+[^ ;&|]+)?)*[{S}]+add[{S}]+"
 )
 
 # What counts as "nothing followed it". End of line, another command, OR a REDIRECTION: `git add -A > /dev/null` and `git add -A 2>&1` stage the entire tree exactly like the bare form, and an earlier version of this guard let both through because `>` was not in the terminator set. Caught in review of PR #566 and confirmed by running the guard: all three shapes exited 0.
@@ -128,7 +128,7 @@ def run(ev):
         cmd, ev.field("cwd") or None, root, _repo_scope.verb_is("add"), expected
     ):
         return hookio.ALLOW
-    _target = shellscan.target_root(scan, shellscan.repo_root_env(ev), verb="add")
+    _target = shellscan.target_root(scan, shellscan.repo_root_env(ev), verb="add", cmd=cmd)
     if _target != "" and not _is_inside(_target, shellscan.repo_root_env(ev)):
         return hookio.ALLOW
 

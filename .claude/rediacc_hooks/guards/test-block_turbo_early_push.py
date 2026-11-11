@@ -127,8 +127,10 @@ GH_CONSOLE_ONLY = stub(
     "exit 0; fi\n"
     'case "$PWD" in */private/*) exit 0;; esac\necho 605\n'
 )
-# A repository outside the console.
+# A repository outside the console. A push publishes to its URL (#f2e3507a), so the admitted one sends to a repository none of the judged world's remotes name, and OUTSIDE_SAME keeps the fixture's own origin, the judged world's too, which is this checkout's push.
 OUTSIDE = world()
+G._git(OUTSIDE, "remote", "set-url", "origin", "https://example.invalid/outside/scratch.git")
+OUTSIDE_SAME = world()
 
 # ---- THE BATCH (operator ruling ASKED:2026-10-08T10:25Z): PLAN-fx-a is the queue head, so it is the branch's local batch; PLAN-fx-b is a later Promoted plan, still open, so condition (b) holds in every world below.
 TICKED = "- [x] FX1 a ticked box\n"
@@ -182,6 +184,14 @@ CASES = [
         OPEN_OLD,
         GH_NONE,
         False,
+        "",
+    ),
+    (
+        "a repository outside whose origin is this checkout's",
+        "git -C %s push origin 1008-1" % OUTSIDE_SAME,
+        OPEN_OLD,
+        GH_NONE,
+        True,
         "",
     ),
     ("an empty command", "", OPEN_OLD, GH_NONE, False, ""),

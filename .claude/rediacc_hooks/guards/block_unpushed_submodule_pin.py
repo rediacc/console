@@ -248,7 +248,9 @@ def run(ev):
 
     missing = []
     for run_ in commit_policy.git_runs(cmd, "push"):
-        repo = commit_policy.run_repo(run_, base_dir, commit_policy.created_dirs(cmd, base_dir))
+        repo = commit_policy.run_repo(
+            run_, base_dir, commit_policy.created_dirs(cmd, base_dir), root
+        )
         if not repo or not _same(repo, root):
             continue
         _, _, args = commit_policy.git_split(run_.argv)

@@ -77,7 +77,10 @@ MISMATCH = G.plant_receipt(G.world(new_dir("mismatch-"), cli=True), built=G.FAKE
 ESC_NR = built("vmc-cli-none")
 ESC_DL = built("vmc-cli-none")
 ESC_NV = built("vmc-cli-not-verified")
+# A push publishes to its URL (#f2e3507a), so the admitted outside push sends to a repository none of the judged world's remotes name, and OUTSIDE_SAME keeps the fixture's own origin, the judged world's too, which is this checkout's push.
 OUTSIDE = built("vmc-docs-only")
+G._git(OUTSIDE, "remote", "set-url", "origin", "https://example.invalid/outside/scratch.git")
+OUTSIDE_SAME = built("vmc-docs-only")
 # HEAD reverts the CLI change that `G.TIP_BRANCH` still carries: a command pushing both commits is judged on each.
 REVERTED = built("vmc-reverted")
 REVERTED_VERIFIED = built("vmc-reverted")
@@ -643,6 +646,15 @@ CASES = [
         None,
         None,
         False,
+        "",
+    ),
+    (
+        "a repository outside whose origin is this checkout's",
+        "git -C %s push origin 1008-1" % OUTSIDE_SAME,
+        CLI_NONE,
+        None,
+        None,
+        True,
         "",
     ),
     ("an empty command", "", CLI_NONE, None, None, False, ""),

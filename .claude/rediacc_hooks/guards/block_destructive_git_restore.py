@@ -66,7 +66,7 @@ DEFECT = (
 # Command position: line start, or after ; & | ( $( or a backtick. Flags between
 # `git` and the verb (-C <path>, -c k=v) stay matched: they change where the
 # command runs, not what it destroys.
-GIT = hookio.rx(r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+")
+GIT = hookio.rx(r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+(=[^ ;&|]*|[{S}]+[^ ;&|]+)?)*[{S}]+")
 
 # `git restore ...` always discards (worktree by default, index with --staged).
 RESTORE = GIT + hookio.rx(r"restore([{S}]|$)")
@@ -984,7 +984,7 @@ def _judge(cmd, root, base, depth=0):
     # RESOLVED FROM `base`, THE DIRECTORY THE COMMAND RUNS IN, as `_walked_refusal` already does. For a `foreach` payload that is the submodule, and a relative `-C` there is relative to it: `git submodule foreach git -C ../.. reset --hard` resets THIS checkout from private/renet. Resolved from the root instead, `../..` landed outside the project and the guard stood down (review 9849764b.1). At the top level `base` is the event's cwd, which this harness keeps at the project root.
     #
     # A STAND-DOWN YIELDS TO THE WALK (review fae7c16a.1). `_walked_refusal` resolves every invocation, a `foreach` payload's included, from its own directory, so a refusal it found is about this checkout whatever the top level's target is: `git submodule foreach 'git -C <this checkout> reset --hard'` from a foreign repository was allowed when both stand-downs below answered None.
-    _target = shellscan.target_root(scan, base or root)
+    _target = shellscan.target_root(scan, base or root, cmd=cmd)
     if _target != "" and not _is_inside(_target, root):
         return walked
     # FROM A CWD OUTSIDE THE PROJECT, "" IS AMBIGUOUS (review 30573c81.2): `target_root` answers "" both for the cwd's own repository and for a directory it cannot resolve. Resolving from the cwd is right, since bash runs a relative `-C` there; so the guard stands down only when EVERY git invocation resolves outside this checkout through `scoped_repo`, the rule `commit_policy.foreign_only` applies elsewhere. An outside path that neither exists nor is created by the command (an unexpanded `cd "$X"`) resolves to "" there and keeps guarding.
