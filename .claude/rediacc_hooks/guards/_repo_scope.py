@@ -180,11 +180,11 @@ def elsewhere(cmd, base, root, pick, expected):
         return False
     ours = common_dir(root)
     for target in targets:
+        # Inside this tree is this checkout, whatever repository the directory holds: a nested independent repo (a gitignored sibling under private/) is still work in this tree, and the guards judge it as ours.
+        if commit_policy.is_inside(target, root):
+            return False
         common = common_dir(target)
-        if common:
-            if not ours or commit_policy.is_inside(common, ours):
-                return False
-        elif commit_policy.is_inside(target, root):
+        if common and (not ours or commit_policy.is_inside(common, ours)):
             return False
     return True
 

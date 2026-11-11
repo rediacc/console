@@ -46,6 +46,9 @@ WORK = os.path.join(SCRATCH, "work")
 NEW = os.path.join(SCRATCH, "new")
 LINK = os.path.join(SCRATCH, "link")
 SUB = os.path.join(ROOT, "private", "renet")
+# A tree holding an independent repository of its own (as a gitignored sibling under private/ does): built in the scratch dir, never in this checkout.
+NEST_ROOT = os.path.join(SCRATCH, "nest-root")
+NESTED = os.path.join(NEST_ROOT, "private", "sibling")
 
 
 def _git(*args):
@@ -54,6 +57,8 @@ def _git(*args):
 
 _git("init", "-q", "--bare", os.path.join(SCRATCH, "remote.git"))
 _git("init", "-q", WORK)
+_git("init", "-q", NEST_ROOT)
+_git("init", "-q", NESTED)
 _git("-C", WORK, "remote", "add", "origin", os.path.join(SCRATCH, "remote.git"))
 for i in range(30):
     pathlib.Path(WORK, "f%d.txt" % i).write_text("a\n", encoding="utf-8")
@@ -265,7 +270,17 @@ for stem in GUARDS:
 
 # THE PLANTS. Each must flip every row it names, or the rows are not held by the line it plants on.
 SCOPE_OFF = [("_repo_scope.elsewhere(", "False and _repo_scope.elsewhere(")]
-COMPARE_OFF = [("if not ours or commit_policy.is_inside(common, ours):", "if not ours:")]
+# Both scope checks come out together: the in-tree check (any target inside this tree is ours) and the common-dir comparison (a repository sharing this checkout's common dir is ours). Either alone still refuses this checkout and the submodule, so the plant must take both to flip those rows.
+COMPARE_OFF = [
+    (
+        "if commit_policy.is_inside(target, root):",
+        "if False and commit_policy.is_inside(target, root):",
+    ),
+    (
+        "if common and (not ours or commit_policy.is_inside(common, ours)):",
+        "if common and not ours:",
+    ),
+]
 WALK_OFF = {
     "block_git_empty_commit": [
         ('_repo_scope.walked_commit_flag(cmd, "allow-empty")', "False"),
@@ -363,6 +378,10 @@ helper = [
         scope.elsewhere("git commit", SCRATCH, ROOT, everything, 0),
     ),
     ("no root is never elsewhere", not scope.elsewhere("git commit", WORK, "", everything, 0)),
+    (
+        "an independent repository nested inside the tree is not elsewhere",
+        not scope.elsewhere("git commit", NESTED, NEST_ROOT, everything, 0),
+    ),
     (
         "the walk reads -C",
         scope.walked_commit_flag("git -C x commit --allow-empty -m y", "allow-empty"),
