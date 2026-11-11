@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import pathlib
 import re
@@ -1075,25 +1076,136 @@ def test_k1_6_cleanup_reverts_a_worker_left_on_the_main_renet(
     assert not _cfg_path(live).exists()
 
 
+class _Builder:
+    """The host side of `_main_binary`: git, go and the build script, with a build counter and a settable key component each."""
+
+    def __init__(self, ctx: FakeCtx) -> None:
+        self.commit = "feedface"
+        self.go = "go version go1.24.1 linux/amd64"
+        self.lock = '{"assets": 1}'
+        self.stamp: str | None = None
+        self.builds = 0
+        self.seen: list[tuple[list[str], dict[str, str]]] = []
+        ctx.host_hook = self.hook
+
+    def hook(self, argv: list[str], **kw: Any) -> _Res:
+        self.seen.append((argv, dict(kw.get("env") or {})))
+        if argv[:2] == ["git", "rev-parse"]:
+            return _Res(out=self.commit + "\n")
+        if argv == ["go", "version"]:
+            return _Res(out=self.go + "\n")
+        if argv[:2] == ["git", "-C"]:
+            return _Res(out=self.lock)
+        if argv[:3] == ["go", "version", "-m"]:
+            rev = self.commit if self.stamp is None else self.stamp
+            return _Res(out="%s: go1.24\n\tbuild\tvcs.revision=%s\n" % (argv[3], rev))
+        if argv[:2] == ["bash", "-c"]:
+            self.builds += 1
+            m = re.search(r"install -m 0755 \S+ (\S+)", argv[2])
+            assert m
+            pathlib.Path(m.group(1).strip("'")).write_bytes(b"renet-" + self.commit.encode())
+            return _Res()
+        return _Res()
+
+
+def _cache_dir(ctx: FakeCtx) -> pathlib.Path:
+    return pathlib.Path(ctx.root) / k.RENET_CACHE_DIR
+
+
 def test_k1_6_main_binary_builds_the_main_pointer_with_the_key(tmp_path: pathlib.Path) -> None:
     worker = FakeWorker()
     live, ctx = _ready(tmp_path, worker)
-    seen: list[tuple[list[str], dict[str, str]]] = []
-
-    def host_hook(argv: list[str], **kw: Any) -> _Res:
-        seen.append((argv, dict(kw.get("env") or {})))
-        if argv[:2] == ["git", "rev-parse"]:
-            return _Res(out="feedface\n")
-        return _Res()
-
-    ctx.host_hook = host_hook
+    b = _Builder(ctx)
     out = live._main_binary()
-    assert out == tmp_path / ("k1-%s" % ctx.run_id) / "renet-main"
-    assert seen[0][0] == ["git", "rev-parse", k.MAIN_POINTER]
-    assert seen[1][0][:2] == ["bash", "-c"]
-    assert "checkout --quiet feedface" in seen[1][0][2]
-    assert seen[1][1]["ACCOUNT_ED25519_PUBLIC_KEY"] == "pub"
+    assert out is not None
+    assert out.name == "renet"
+    assert out.is_file()
+    assert out.parent.parent == _cache_dir(ctx)
+    assert b.seen[0][0] == ["git", "rev-parse", k.MAIN_POINTER]
+    builds = [(a, e) for a, e in b.seen if a[:2] == ["bash", "-c"]]
+    assert len(builds) == 1
+    assert "checkout --quiet feedface" in builds[0][0][2]
+    assert builds[0][1]["ACCOUNT_ED25519_PUBLIC_KEY"] == "pub"
     assert all(ok for _d, ok, _e in ctx.rows)
+    assert not list(_cache_dir(ctx).glob(".tmp-*"))
+
+
+def test_k1_6_second_main_binary_with_the_same_key_runs_no_build(tmp_path: pathlib.Path) -> None:
+    # CONTROL: before the cache every call built, so `builds` was 2.
+    live, ctx = _ready(tmp_path, FakeWorker())
+    b = _Builder(ctx)
+    first = live._main_binary()
+    second = live._main_binary()
+    assert first == second
+    assert b.builds == 1
+    assert any("cache hit" in d for d, ok, _e in ctx.rows if ok)
+
+
+@pytest.mark.parametrize("part", ["commit", "key", "go", "lock"])
+def test_k1_6_a_changed_key_component_rebuilds(tmp_path: pathlib.Path, part: str) -> None:
+    live, ctx = _ready(tmp_path, FakeWorker())
+    b = _Builder(ctx)
+    live._main_binary()
+    if part == "commit":
+        b.commit = "cafebabe"
+    elif part == "key":
+        ctx.environ["ACCOUNT_ED25519_PUBLIC_KEY"] = "other"
+    elif part == "go":
+        b.go = "go version go1.25.0 linux/amd64"
+    else:
+        b.lock = '{"assets": 2}'
+    live._main_binary()
+    assert b.builds == 2
+
+
+def test_k1_6_a_vcs_revision_mismatch_rebuilds(tmp_path: pathlib.Path) -> None:
+    live, ctx = _ready(tmp_path, FakeWorker())
+    b = _Builder(ctx)
+    live._main_binary()
+    b.stamp = "0123abcd"
+    live._main_binary()
+    assert b.builds == 2
+
+
+def test_k1_6_a_truncated_binary_rebuilds(tmp_path: pathlib.Path) -> None:
+    live, ctx = _ready(tmp_path, FakeWorker())
+    b = _Builder(ctx)
+    out = live._main_binary()
+    assert out is not None
+    out.write_bytes(b"ren")
+    again = live._main_binary()
+    assert b.builds == 2
+    assert again is not None
+    assert again.read_bytes() == b"renet-feedface"
+
+
+def test_k1_6_the_cache_keeps_the_three_newest_keys(tmp_path: pathlib.Path) -> None:
+    live, ctx = _ready(tmp_path, FakeWorker())
+    b = _Builder(ctx)
+    for i, commit in enumerate(["c1", "c2", "c3", "c4"]):
+        b.commit = commit
+        out = live._main_binary()
+        assert out is not None
+        os.utime(out.parent / "manifest.json", (1000 + i, 1000 + i))
+    slots = [p for p in _cache_dir(ctx).iterdir() if p.is_dir()]
+    assert len(slots) == 3
+    commits = {json.loads((p / "manifest.json").read_text())["commit"] for p in slots}
+    assert commits == {"c2", "c3", "c4"}
+
+
+def test_k1_6_a_failed_build_leaves_no_slot(tmp_path: pathlib.Path) -> None:
+    live, ctx = _ready(tmp_path, FakeWorker())
+    b = _Builder(ctx)
+    hook = b.hook
+
+    def failing(argv: list[str], **kw: Any) -> _Res:
+        if argv[:2] == ["bash", "-c"]:
+            return _Res(rc=1, err="boom")
+        return hook(argv, **kw)
+
+    ctx.host_hook = failing
+    assert live._main_binary() is None
+    assert list(_cache_dir(ctx).iterdir()) == []
 
 
 def test_k1_8_job_timeout(tmp_path: pathlib.Path) -> None:

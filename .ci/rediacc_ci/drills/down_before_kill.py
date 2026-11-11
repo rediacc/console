@@ -4,7 +4,7 @@
 
 THE PROBE. Repository A is a grand of its own (autostart is refused on a fork), with autostart on; repository B is a fork of A (`A:<tag>`), with autostart off. Both carry the probe Rediaccfile: `up()` appends `up <epoch>` to `downproof.log` in the mount, and `down()` appends `down <epoch>` and then sleeps `DOWN_SLEEP_S` seconds. The line is written at the START of `down()`, so a `down` line at least `DOWN_SLEEP_S` before the daemon's next `ExecMainStartTimestamp` proves the stop waited for the whole `down()` (a stop that killed it part way restarts sooner). Every epoch comes from the worker's own clock: the probe's `date +%s`, `systemctl show` and `uptime -s` read through `date -d`.
 
-THE ROWS. K1.0 A (autostart on) and B (autostart off) are up and each wrote an `up` line; K1.1 A's docker unit carries an `ExecStop` that runs `renet daemon stop-hook --network-id=<N>` and both `After=` lines (`rediacc-repo-shutdown.service` and the systemd-escaped mount unit); then the autostart-reconcile timer is paused until K1.7 (a tick recovers A, which runs no container, on every pass and rewrote its unit under K1.3; K1.4 and K1.6 run their own tick); K1.2 a raw `systemctl restart` of A's unit writes a `down` line at least `DOWN_SLEEP_S` before the new start; K1.3 A's unit loses its first `Environment=` line, `daemon-reload`, then `rdc repo up`: a `down` line before the restart and an `up` line after it; K1.4 the stop side drifts (ExecStop and TimeoutStopSec removed), one `renet repository reconcile` tick restores it and MainPID is unchanged; K1.5 A's runtime stamp is removed and `rdc machine converge` restarts A with a `down` line before the restart; K1.9 A's daemon is made SKEWED (its live socket renamed to the old-layout path, so it answers only there, as a daemon an older-layout renet started does), then `rdc machine converge` restarts it with a `down` line at least `DOWN_SLEEP_S` before the new start (down() through the old socket before the heal, renet b63746a), and the same again through `renet daemon restart` (the stop hook's old-socket fallback) with an `up` line after the restart; K1.10 A's unit loses its first `Environment=` line again, then the mount-only `rdc repo up --no-start` (renet's MountWithDocker): a `down` line before the restart and an `up` line after it; K1.6 the main-pointer renet is installed on the worker (`upgrade_converge.install_current_renet_script`), A is upped under it through a throwaway config, `rdc machine setup` installs the branch renet back, neither daemon restarts, and after one reconcile tick both units carry the new stop side; K1.8 `reboot.target`'s `JobTimeoutUSec` is 30 min or more; K1.7 `systemctl reboot`, then both A and B have a `down` line timestamped at least `DOWN_SLEEP_S` before `uptime -s`, and A is back up with an `up` line after the boot. K1.8 runs before K1.7 so a worker that does not come back still leaves its read.
+THE ROWS. K1.0 A (autostart on) and B (autostart off) are up and each wrote an `up` line; K1.1 A's docker unit carries an `ExecStop` that runs `renet daemon stop-hook --network-id=<N>` and both `After=` lines (`rediacc-repo-shutdown.service` and the systemd-escaped mount unit); then the autostart-reconcile timer is paused until K1.7 (a tick recovers A, which runs no container, on every pass and rewrote its unit under K1.3; K1.4 and K1.6 run their own tick); K1.2 a raw `systemctl restart` of A's unit writes a `down` line at least `DOWN_SLEEP_S` before the new start; K1.3 A's unit loses its first `Environment=` line, `daemon-reload`, then `rdc repo up`: a `down` line before the restart and an `up` line after it; K1.4 the stop side drifts (ExecStop and TimeoutStopSec removed), one `renet repository reconcile` tick restores it and MainPID is unchanged; K1.5 A's runtime stamp is removed and `rdc machine converge` restarts A with a `down` line before the restart; K1.9 A's daemon is made SKEWED (its live socket renamed to the old-layout path, so it answers only there, as a daemon an older-layout renet started does), then `rdc machine converge` restarts it with a `down` line at least `DOWN_SLEEP_S` before the new start (down() through the old socket before the heal, renet b63746a), and the same again through `renet daemon restart` (the stop hook's old-socket fallback) with an `up` line after the restart; K1.10 A's unit loses its first `Environment=` line again, then the mount-only `rdc repo up --no-start` (renet's MountWithDocker): a `down` line before the restart and an `up` line after it; K1.6 the main-pointer renet (built once per commit, licence key, `go version` and embed-assets lock, and cached under `.ci/cache/vm-check/renet-main/`) is installed on the worker (`upgrade_converge.install_current_renet_script`), A is upped under it through a throwaway config, `rdc machine setup` installs the branch renet back, neither daemon restarts, and after one reconcile tick both units carry the new stop side; K1.8 `reboot.target`'s `JobTimeoutUSec` is 30 min or more; K1.7 `systemctl reboot`, then both A and B have a `down` line timestamped at least `DOWN_SLEEP_S` before `uptime -s`, and A is back up with an `up` line after the boot. K1.8 runs before K1.7 so a worker that does not come back still leaves its read.
 
 TEARDOWN. B then A are deleted (A's autostart disabled first), the throwaway config files are removed, and a run that installed the main-pointer renet reverts the worker with `rdc machine setup`; anything that stays rides `ctx.sweep_leftovers`.
 
@@ -13,6 +13,7 @@ The CLI-free pieces (the probe text, the root scripts, the systemd path escape, 
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import pathlib
@@ -50,6 +51,10 @@ BACK_UP_WAIT_S = 600
 POLL_S = 10
 # The renet commit the console's main branch points at; K1.6 builds and installs it.
 MAIN_POINTER = "origin/main:private/renet"
+# K1.6's build cache: `<root>/.ci/cache/vm-check/renet-main/<key>/{renet,manifest.json}`; the 3 newest keys stay.
+RENET_CACHE_DIR = ".ci/cache/vm-check/renet-main"
+RENET_CACHE_KEEP = 3
+RENET_LOCK_FILE = "embed-assets.lock.json"
 
 
 # --------------------------------------------------------------------------- probe and scripts
@@ -235,6 +240,37 @@ def build_main_renet_script(src_dir: str, out_binary: str, commit: str) -> str:
         "install -m 0755 %(src)s/bin/renet %(out)s\n"
         % {"src": src, "out": shlex.quote(out_binary), "sha": shlex.quote(commit)}
     )
+
+
+def renet_cache_key(commit: str, account_key: str, go_version: str, lock_text: str) -> str:
+    """The K1.6 cache key: sha256 over the main-pointer commit, the sha256 of the licence key, `go version` and the sha256 of the commit's embed-assets lock."""
+    parts = (
+        commit,
+        hashlib.sha256(account_key.encode()).hexdigest(),
+        go_version,
+        hashlib.sha256(lock_text.encode()).hexdigest(),
+    )
+    return hashlib.sha256("\n".join(parts).encode()).hexdigest()
+
+
+def vcs_revision(go_version_m: str) -> str:
+    """The `vcs.revision` of `go version -m <binary>` output, empty when the build did not stamp one."""
+    m = re.search(r"^\s*build\s+vcs\.revision=(\S+)\s*$", go_version_m, re.MULTILINE)
+    return m.group(1) if m else ""
+
+
+def prune_renet_cache(cache: pathlib.Path, keep: int) -> None:
+    """Remove every key directory under `cache` but the `keep` newest by manifest mtime; unfinished `.tmp-*` stages are left to their writer."""
+    slots = [p for p in cache.iterdir() if p.is_dir() and not p.name.startswith(".tmp-")]
+
+    def age(p: pathlib.Path) -> float:
+        try:
+            return (p / "manifest.json").stat().st_mtime
+        except OSError:
+            return 0.0
+
+    for old in sorted(slots, key=age, reverse=True)[keep:]:
+        shutil.rmtree(old, ignore_errors=True)
 
 
 # --------------------------------------------------------------------------- parsers
@@ -780,14 +816,65 @@ class _LiveK1:
         except local_common.LocalCommonError as exc:
             self.check("K1.6 the renet licence key resolves", False, evidence=_clip(str(exc)))
             return None
-        out = self.tmp / "renet-main"
-        script = build_main_renet_script(str(self.tmp / "src-main"), str(out), commit)
+        return self._cached_or_built(commit, env)
+
+    def _cached_or_built(self, commit: str, env: dict[str, str]) -> pathlib.Path | None:
+        """The main-pointer renet from the cache when its key matches and the binary still reports `vcs.revision == commit`; otherwise a fresh build, written beside the key and renamed into place."""
+        go = self.ctx.host_run(["go", "version"], env=env, timeout=60)
+        lock = self.ctx.host_run(
+            ["git", "-C", "private/renet", "show", "%s:%s" % (commit, RENET_LOCK_FILE)],
+            env=env,
+            timeout=60,
+        )
+        if not self.check(
+            "K1.6 read the toolchain and the embed-assets lock of %s" % commit[:12],
+            go.rc == 0 and lock.rc == 0,
+            go if go.rc != 0 else lock,
+        ):
+            return None
+        go_line = go.out.strip()
+        key = renet_cache_key(commit, env[local_common.ACCOUNT_KEY_NAME], go_line, lock.out)
+        cache = pathlib.Path(self.ctx.root) / RENET_CACHE_DIR
+        slot = cache / key
+        if self._cache_hit(slot, commit, env):
+            self.check("K1.6 the main-pointer renet (%s) is a cache hit" % commit[:12], True)
+            os.utime(slot / "manifest.json")
+            return slot / "renet"
+        cache.mkdir(parents=True, exist_ok=True)
+        stage = cache / (".tmp-%s-%s" % (key[:12], uuid.uuid4().hex[:8]))
+        stage.mkdir()
+        script = build_main_renet_script(str(self.tmp / "src-main"), str(stage / "renet"), commit)
         built = self.ctx.host_run(["bash", "-c", script], env=env, timeout=1800)
         if not self.check(
             "K1.6 build the main-pointer renet (%s)" % commit[:12], built.rc == 0, built
         ):
+            shutil.rmtree(stage, ignore_errors=True)
             return None
-        return out
+        manifest = {
+            "commit": commit,
+            "sha256": upgrade_converge.file_sha256(stage / "renet"),
+            "goVersion": go_line,
+        }
+        (stage / "manifest.json").write_text(json.dumps(manifest, sort_keys=True))
+        if slot.exists():
+            shutil.rmtree(slot, ignore_errors=True)
+        os.replace(stage, slot)
+        prune_renet_cache(cache, RENET_CACHE_KEEP)
+        return slot / "renet"
+
+    def _cache_hit(self, slot: pathlib.Path, commit: str, env: dict[str, str]) -> bool:
+        """A slot is reusable only with an intact manifest, a binary whose sha256 matches it, and `go version -m` reporting the main-pointer commit as `vcs.revision`."""
+        binary = slot / "renet"
+        try:
+            manifest = json.loads((slot / "manifest.json").read_text())
+            if manifest.get("commit") != commit:
+                return False
+            if manifest.get("sha256") != upgrade_converge.file_sha256(binary):
+                return False
+        except (OSError, ValueError):
+            return False
+        info = self.ctx.host_run(["go", "version", "-m", str(binary)], env=env, timeout=60)
+        return info.rc == 0 and vcs_revision(info.out) == commit
 
     def _install(self, binary: pathlib.Path) -> bool:
         staged = upgrade_converge.staged_renet_path(self.ctx.run_id, STEP_ID)
