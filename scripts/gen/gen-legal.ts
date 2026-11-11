@@ -381,22 +381,57 @@ export function consentNotices(src: Sources): Record<string, Record<AcceptanceMe
   return out;
 }
 
-/** A notice as source text: the site origin becomes WK_SITE_ORIGIN, so no literal origin is generated. */
-function tsNotice(value: string, siteOrigin: string): string {
-  if (!value || !value.includes(siteOrigin)) return tsString(value);
-  const escaped = value
-    .replace(/\\/g, '\\\\')
-    .replace(/`/g, '\\`')
-    .replace(/\$\{/g, '\\${')
-    .replace(/\n/g, '\\n');
-  return `\`${escaped.split(siteOrigin).join('${WK_SITE_ORIGIN}')}\``;
+/** The entity fields a notice may substitute, each emitted as its LEGAL_ENTITY field. `country` is locale-derived, not a LEGAL_ENTITY field. */
+const ENTITY_SOURCE_FIELDS = [
+  'legalName',
+  'registryCode',
+  'registerName',
+  'vatNumber',
+  'registeredAddress',
+] as const;
+
+/** Literal value -> the source expression that yields it, longest value first so no value is cut inside a longer one. */
+export function noticeSubstitutions(
+  siteOrigin: string,
+  entity: Record<string, string>
+): [string, string][] {
+  const subs: [string, string][] = [[siteOrigin, 'WK_SITE_ORIGIN']];
+  for (const field of ENTITY_SOURCE_FIELDS) {
+    const value = entity[field];
+    if (value) subs.push([value, `LEGAL_ENTITY.${field}`]);
+  }
+  return subs.sort((a, b) => b[0].length - a[0].length);
+}
+
+/**
+ * A notice as source text: the site origin becomes WK_SITE_ORIGIN and each entity value its
+ * LEGAL_ENTITY field, so no literal origin or entity value is generated.
+ */
+function tsNotice(value: string, subs: [string, string][]): string {
+  if (!value || !subs.some(([lit]) => value.includes(lit))) return tsString(value);
+  let parts: (string | { expr: string })[] = [value];
+  for (const [lit, expr] of subs) {
+    parts = parts.flatMap((part) => {
+      if (typeof part !== 'string' || !part.includes(lit)) return [part];
+      return part.split(lit).flatMap((piece, i) => (i === 0 ? [piece] : [{ expr }, piece]));
+    });
+  }
+  const escape = (text: string) =>
+    text
+      .replace(/\\/g, '\\\\')
+      .replace(/`/g, '\\`')
+      .replace(/\$\{/g, '\\${')
+      .replace(/\n/g, '\\n');
+  return `\`${parts.map((p) => (typeof p === 'string' ? escape(p) : `\${${p.expr}}`)).join('')}\``;
 }
 
 export function renderConsentTs(
   notices: Record<string, Record<AcceptanceMethod, string>>,
-  siteOrigin: string
+  siteOrigin: string,
+  entity: Record<string, string>
 ): string {
   const methods = Object.keys(CONSENT_KEYS) as AcceptanceMethod[];
+  const subs = noticeSubstitutions(siteOrigin, entity);
   const block = (fn: (text: string) => string) =>
     Object.entries(notices)
       .map(
@@ -404,15 +439,20 @@ export function renderConsentTs(
           `  ${locale}: {\n${methods.map((m) => `    '${m}': ${fn(n[m])},\n`).join('')}  },\n`
       )
       .join('');
+  const source = block((t) => tsNotice(t, subs));
+  const entityImport = source.includes('${LEGAL_ENTITY.')
+    ? "import { LEGAL_ENTITY } from './entity.generated.js';\n"
+    : '';
   return (
     BANNER(
       'the legal.consent.* keys of packages/www/src/i18n/translations/<locale>.json, entity and URL tokens substituted'
     ) +
     "\nimport { WK_SITE_ORIGIN } from '../config/well-known.generated.js';\n" +
+    entityImport +
     "import type { ConsentNotices } from './types.js';\n\n" +
     '/** The canonical consent notice per locale and method. An empty string is a notice no catalog carries yet. */\n' +
     'export const CONSENT_NOTICES: ConsentNotices = {\n' +
-    block((t) => tsNotice(t, siteOrigin)) +
+    source +
     '};\n\n' +
     '/** sha256 of each notice above (UTF-8); empty where the notice is empty. */\n' +
     'export const CONSENT_NOTICE_SHA256: ConsentNotices = {\n' +
@@ -471,7 +511,7 @@ export function buildOutputs(src: Sources): Outputs {
   }
   files.set(MANIFEST_REL, `${JSON.stringify(manifest, null, 2)}\n`);
   files.set(DOCUMENTS_TS_REL, renderDocumentsTs(manifest, src.siteOrigin));
-  files.set(CONSENT_TS_REL, renderConsentTs(consentNotices(src), src.siteOrigin));
+  files.set(CONSENT_TS_REL, renderConsentTs(consentNotices(src), src.siteOrigin, src.entity));
   return { manifest, files, renders };
 }
 

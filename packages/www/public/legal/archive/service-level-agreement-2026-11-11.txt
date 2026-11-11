@@ -1,0 +1,55 @@
+Service Level Agreement
+Effective Date: November 11, 2026
+
+1. Scope
+
+This Service Level Agreement ("SLA") forms part of the Terms of Service <https://www.rediacc.com/en/terms-of-service> between Rediacc OÜ ("Rediacc") and Customers with a paid Subscription (Professional, Business, or Enterprise unless the Order Form sets other terms). It does not apply to the Free License, the Community plan, trials or experimental features.
+
+The SLA covers the availability of the account portal and the account API in the Customer's region (the "Covered Service"). It never covers the Customer's Machines, Repositories, networks or the On-Premise Software running on them, which operate independently of the Covered Service: running Repositories keep working while the Covered Service is unavailable.
+
+2. Definitions
+
+- "Downtime" means a period of at least five (5) consecutive minutes during which the Covered Service returns server errors to, or does not respond to, at least five percent of valid requests, as measured by Rediacc's monitoring.
+- "Monthly Uptime Percentage" means the total minutes in a calendar month minus the minutes of Downtime, divided by the total minutes in that month, excluding the minutes of the events in Section 5.
+- "Monthly Fee" means the fee paid for the Subscription for the affected month (for annual billing, one twelfth of the annual fee).
+- "Service Credit" means a credit, calculated as a percentage of the Monthly Fee, applied against future fees.
+
+3. Availability Commitment
+
+Rediacc will use commercially reasonable efforts to make the Covered Service available with a Monthly Uptime Percentage of at least 99.5%.
+
+4. Service Credits
+
+If the Monthly Uptime Percentage falls below the commitment, the Customer is eligible for the following Service Credit:
+
+- below 99.5% but at least 99.0%: 10% of the Monthly Fee
+- below 99.0%: 25% of the Monthly Fee
+
+The total Service Credits for a month will not exceed 25% of the Monthly Fee. Service Credits are applied to future invoices, are not paid in cash, cannot be transferred, and expire if the Subscription ends.
+
+5. Exclusions
+
+Downtime does not include unavailability caused by:
+
+- scheduled maintenance announced at least forty-eight (48) hours in advance, up to four (4) hours a month
+- emergency maintenance needed to address a security vulnerability or an active attack
+- events beyond Rediacc's reasonable control, including failures of the internet, of third-party networks or of providers not engaged by Rediacc
+- the Customer's Machines, networks, software, configuration or credentials, or any act or omission of the Customer or its Authorized Users
+- suspension or termination under the Terms of Service, or use in breach of the Acceptable Use Policy
+- experimental features, or the Customer's use of an unsupported version of the On-Premise Software
+
+6. Claiming a Service Credit
+
+To receive a Service Credit, the Customer must send a request to contact@rediacc.com <mailto:contact@rediacc.com> with the subject "SLA credit" within thirty (30) days after the end of the affected month, stating the dates and times of the Downtime and the affected requests. Rediacc confirms or declines the request based on its monitoring within thirty (30) days. A Customer with overdue fees is not eligible for Service Credits.
+
+7. Sole Remedy
+
+Service Credits are the Customer's sole and exclusive remedy, and Rediacc's entire liability, for any failure to meet the availability commitment. Repeated failures do not change this, except that a Customer whose Monthly Uptime Percentage falls below 99.0% in three (3) consecutive months may terminate the Subscription and receive a refund of prepaid fees for the remaining term.
+
+8. Source of This SLA
+
+Portions of this SLA are adapted from the Common Paper Service Level Agreement Standard Terms Version 2.0 (commonpaper.com/standards/service-level-agreement/2.0 <https://commonpaper.com/standards/service-level-agreement/2.0>), published by Common Paper, Inc. under the Creative Commons Attribution 4.0 International license (CC BY 4.0 <https://creativecommons.org/licenses/by/4.0/>). The text has been modified: it is restructured, shortened and adapted to the Services. Common Paper, Inc. does not endorse this SLA.
+
+Questions?
+
+For questions about this Service Level Agreement, or to claim a Service Credit, contact us at contact@rediacc.com <mailto:contact@rediacc.com>.
