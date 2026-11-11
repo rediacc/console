@@ -2748,7 +2748,7 @@ jobs:
         # already rotated out of the Ubuntu pool, causing
         # `linux-headers-generic` to 404 on the matching versioned headers
         # package. Refresh metadata first, then install.
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang-18 llvm-18 libbpf-dev linux-headers-generic
 
       # natives: the account test stage and the shared build both need the
       # compiled ssh2/cpu-features bindings. account: the integration tests run

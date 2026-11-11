@@ -258,7 +258,7 @@ jobs:
         uses: ./.github/actions/apt-mirror
 
       - name: Install clang for BPF compilation
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang-18 llvm-18 libbpf-dev linux-headers-generic
       # The per-run account server (agent/plans/PLAN-production-key-only.md
       # D6). It mints this run's ED25519 pair and exports the PUBLIC half as
       # ACCOUNT_ED25519_PUBLIC_KEY, with REDIACC_ACCOUNT_SERVER and

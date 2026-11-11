@@ -119,7 +119,7 @@ jobs:
         # already rotated out of the Ubuntu pool, causing
         # `linux-headers-generic` to 404 on the matching versioned headers
         # package. Refresh metadata first, then install.
-        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang llvm libbpf-dev linux-headers-generic
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq clang-18 llvm-18 libbpf-dev linux-headers-generic
 
       - name: Generate BPF bindings
         run: |

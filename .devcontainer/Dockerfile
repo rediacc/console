@@ -154,8 +154,10 @@ RUN find /etc/apt -name 'ubuntu.sources' -o -name 'sources.list' 2>/dev/null \
                 # falling back to a file when keyctl is missing (REDIACC_SECRET_STORE=file is
                 # the explicit opt-in). Without it every devbox would hit that refusal.
                 keyutils \
-                clang \
-                llvm \
+                # clang-18/llvm-18 pinned: renet's committed BPF objects (pkg/ebpf/*_bpfel.o)
+                # are byte-compared in CI against a clang 18 rebuild; a newer clang changes them.
+                clang-18 \
+                llvm-18 \
                 libbpf-dev \
                 linux-headers-generic \
                 # zstd: renet's build STAGES EMBEDDED ASSETS through it and refuses to
