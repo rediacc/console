@@ -1404,6 +1404,23 @@ async function fileAppears(file: string, ms: number): Promise<boolean> {
   return false;
 }
 
+/** A gate normally dies within well under a second of its runner being SIGKILLed; a host at load 15 has been seen to miss a fixed 3 s. The bound is generous on purpose: the control still fails when the gate truly survives, only later. */
+const RUNNER_DEATH_BOUND_MS = 20_000;
+
+/** Poll until `pid` is gone; the elapsed ms when it went, or null when it was still alive at `boundMs`. */
+export async function waitGone(
+  pid: number,
+  boundMs: number,
+  alive: (pid: number) => boolean
+): Promise<number | null> {
+  const start = Date.now();
+  while (Date.now() - start < boundMs) {
+    if (!alive(pid)) return Date.now() - start;
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  return alive(pid) ? null : Date.now() - start;
+}
+
 /** SIGKILL the pid a planted gate wrote, so a broken check never leaves its plant running. */
 function killPidFile(file: string): void {
   try {
@@ -1590,12 +1607,24 @@ async function runnerProcessSelftest(): Promise<{ assertions: number; failures: 
     );
     killed9.child.kill('SIGKILL');
     await killed9.done;
-    const kDeadline = Date.now() + 3_000;
-    while (pidAlive(kGate) && Date.now() < kDeadline) await new Promise((r) => setTimeout(r, 50));
+    const goneAfter = await waitGone(kGate, RUNNER_DEATH_BOUND_MS, pidAlive);
     require_(
-      Number.isInteger(kGate) && !pidAlive(kGate),
-      `a gate must die within 3 s of its runner being SIGKILLed, pid ${kGate} is still alive`
+      Number.isInteger(kGate) && goneAfter !== null,
+      `a gate must die within ${RUNNER_DEATH_BOUND_MS / 1000} s of its runner being SIGKILLed (it normally takes well under 1 s; the bound only absorbs host load), pid ${kGate} was still alive after ${RUNNER_DEATH_BOUND_MS} ms`
     );
+    // THE PLANT: a gate that survives its runner (here a process in its own session, outside the watcher's group) must make waitGone report null, or the control above could never go red. Short bound; the plant is killed at once.
+    const survivor = spawn('tail', ['-f', '/dev/null'], { stdio: 'ignore', detached: true });
+    const survivorPid = survivor.pid ?? Number.NaN;
+    const survivorGone = await waitGone(survivorPid, 600, pidAlive);
+    require_(
+      survivorGone === null,
+      `CONTROL: waitGone must report null for a gate that survives (plant pid ${survivorPid}), got ${survivorGone}`
+    );
+    try {
+      survivor.kill('SIGKILL');
+    } catch {
+      /* gone */
+    }
     killPidFile(kPid);
 
     const [t, sig] = await Promise.all([timed.done, signalled.done]);
