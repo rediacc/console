@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-11T11:40:02.943Z",
+  "generatedAt": "2026-11-11T12:09:32.124Z",
   "legs": [
     {
       "index": 1,
@@ -533,7 +533,8 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_reviewclass.py",
         "pytest:.ci/rediacc_ci/tests/gates/test_gate_workflow_sudo_env_drops.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_judge_receipt_inflight.py",
-        "pytest:.ci/rediacc_ci/tests/test_proof_tiers_local.py"
+        "pytest:.ci/rediacc_ci/tests/test_proof_tiers_local.py",
+        "pytest:.ci/rediacc_ci/tests/test_core_prepare_lock.py"
       ]
     },
     {
@@ -635,6 +636,7 @@
         "pytest:.ci/rediacc_ci/tests/test_native.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_apply_cf_redirect_rules.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_cf_usage_report.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_free_to_registered.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_health_deploy.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_job_latency.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_login_bench.py",

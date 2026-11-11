@@ -784,6 +784,10 @@
     ".ci/rediacc_ci/ops/enterprise_lookup.py": [
       "ENTERPRISE_LOOKUP_PEPPER"
     ],
+    ".ci/rediacc_ci/ops/free_to_registered.py": [
+      "REDIACC_BWS_PROFILES",
+      "XDG_CONFIG_HOME"
+    ],
     ".ci/rediacc_ci/ops/linode_cluster_validation.py": [
       "CLUSTER_NAME",
       "CLUSTER_POOLS",
