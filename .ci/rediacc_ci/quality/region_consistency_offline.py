@@ -86,6 +86,11 @@ SHAPE_EXCEPTIONS: dict[tuple[str, str], str] = {
         "stable (wrangler.bench.toml, 2026-10-28 incident)"
     ),
 }
+# Payload keys only bench pushes, with the reason: the regional Workers run live billing, so they get no sandbox pair.
+BENCH_ONLY_PAYLOAD: dict[str, str] = {
+    "STRIPE_SANDBOX_SECRET_KEY": "bench bills against the Stripe sandbox, never the live account",
+    "STRIPE_SANDBOX_WEBHOOK_SECRET": "bench bills against the Stripe sandbox, never the live account",
+}
 
 
 @dataclasses.dataclass(frozen=True)
@@ -486,7 +491,7 @@ def check_profiles(
             "profile",
             "deploy_bench.secrets_payload() pushes %s, which no regional Worker gets" % n,
         )
-        for n in sorted(payload - pushed)
+        for n in sorted(payload - pushed - BENCH_ONLY_PAYLOAD.keys())
     )
     return f
 

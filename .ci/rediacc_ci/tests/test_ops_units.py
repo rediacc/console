@@ -92,7 +92,7 @@ def test_the_secret_payload_reads_the_environment_and_never_logs_it(
     monkeypatch.setenv("OBS_OTLP_CREDENTIALS", json.dumps({"user": "u", "pass": "p"}))
     monkeypatch.delenv("ACCOUNT_BACKUP_S3_BUCKET", raising=False)
     payload = deploy_bench.secrets_payload()
-    assert len(payload) == 33
+    assert len(payload) == 36
     assert payload["ACCOUNT_BACKUP_S3_ENDPOINT"] == "https://r2.invalid"
     assert payload["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID"] == "bench-id"
     assert payload["ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"] == "bench-secret"
