@@ -407,6 +407,28 @@ def test_status_exits_1_at_51_commits_behind_and_0_at_50(world):
     assert br.status(work, "gitlab", False, io.StringIO()) == 0
 
 
+@pytest.mark.parametrize(("hours", "minutes", "code"), [(5, 59, 0), (6, 1, 1)])
+def test_status_judges_the_oldest_unbacked_commit_against_six_hours(world, hours, minutes, code):
+    work, _bare = world
+    _commit(work, "one")
+    assert br.sync(work) == 0
+    stamp = int(DAY.timestamp()) - (hours * 60 + minutes) * 60
+    env = {
+        **os.environ,
+        **ENV,
+        "GIT_COMMITTER_DATE": "%d +0000" % stamp,
+        "GIT_AUTHOR_DATE": "%d +0000" % stamp,
+    }
+    subprocess.run(
+        ["git", "-C", str(work), "commit", "-q", "--allow-empty", "-m", "old"], check=True, env=env
+    )
+    _ahead(work, 1)
+    for cached in (False, True):
+        out = io.StringIO()
+        assert br.status(work, "gitlab", cached, out) == code
+        assert ("%dh%02dm old" % (hours, minutes) in out.getvalue()) == bool(code)
+
+
 def test_status_has_nothing_to_judge_on_main_or_without_a_remote(world):
     work, _bare = world
     _ahead(work, 51)

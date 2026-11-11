@@ -89,17 +89,19 @@ Each repository's `gitlab` remote is pinned to `https://gitlab.rediacc.io<path>`
 
 Every "is it published" question in the tree (`--not --remotes`, the pre-push session scan, `block_unpushed_submodule_pin`) reads a remote-tracking ref as published. A fetched backup ref would make unpushed commits look published. The remote is therefore added with `--no-tags`, no fetch refspec and `skipFetchAll`, and the worker reads the remote with `ls-remote`.
 
-### Restore
+### The `backup-ref` verbs
 
-The `restore` verb arrives with box G6. Until then, the ref is fetched into a private namespace and checked out detached:
+`./run.sh backup-ref <verb>` acts on the repository the current directory sits in, or on each `--repo console|renet|account|elite` (`--all` takes every one).
 
-```bash
-git ls-remote gitlab 'refs/backup/<branch>/*'
-git fetch gitlab refs/backup/<branch>/<ref>:refs/backup-restored/<ref>
-git worktree add --detach <path> refs/backup-restored/<ref>
-```
+| Verb | Does |
+|---|---|
+| `sync` | Runs the worker the hooks start |
+| `list` | Prints every backup ref as `<branch>/<leaf>`, its kind, age and short oid |
+| `restore <branch>/<leaf>` | Fetches the ref into `refs/backup-restored/<branch>/<leaf>` and prints the detached checkout command for it. It never writes `refs/heads/*` or `refs/remotes/*` |
+| `prune [--write]` | Lists the `daily-*` and `pre-rewrite-*` refs past retention; `--write` deletes them in one atomic push. `live` is never deleted |
+| `status [--cached]` | Exit 1 when `live` trails HEAD by more than 50 commits, or when the oldest commit it lacks is more than 6 h old. `--cached` reads the oid the last sync recorded, with no network |
 
-A checkout in the operator's own tree works the same way from `refs/backup-restored/<ref>`. An agent's second tree comes from a lease, never from `git worktree add`.
+A restore is checked out in the operator's own tree, and an agent's second tree comes from a lease. The Stop hook's `backup-lag` advisory runs `status --cached`.
 
 ### Leases
 

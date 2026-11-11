@@ -82,7 +82,7 @@ VERBS: tuple[Verb, ...] = (
     ),
     Verb(
         name="backup-ref",
-        summary="sync the checked-out branch to refs/backup/<branch>/ on the GitLab remote",
+        summary="sync | list | restore | prune | status of refs/backup/<branch>/ on the GitLab remote",
         module="rediacc_ci.dev.backup_ref",
     ),
     Verb(

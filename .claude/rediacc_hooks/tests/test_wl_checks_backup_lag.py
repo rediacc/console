@@ -1,4 +1,4 @@
-"""The `backup-lag` Stop advisory (box G6 of agent/plans/PLAN-local-first-delivery.md): `wl_checks.backup_lag` asks `backup_ref status --cached` and speaks only at exit 1 (more than 50 commits ahead of the live backup ref), and the check sits in the effort table at advise level, never a block.
+"""The `backup-lag` Stop advisory (box G6 of agent/plans/PLAN-local-first-delivery.md): `wl_checks.backup_lag` asks `backup_ref status --cached` and speaks only at exit 1 (more than 50 commits or 6 h ahead of the live backup ref), and the check sits in the effort table at advise level, never a block.
 
 REAL GIT: each case builds a throwaway repository on a feature branch whose `.ci` is a link to this tree's `.ci`, records the oid the last sync left in `rediacc-backup/last-live`, and runs the function the Stop hook runs. Controls: 50 commits ahead is silent, 51 speaks, `main` and a repository with no record are silent.
 """
@@ -10,6 +10,7 @@ import os
 import pathlib
 import re
 import subprocess
+import time
 
 import pytest
 import wl_checks
@@ -60,6 +61,21 @@ def make_repo(tmp_path: pathlib.Path, ahead: int, record: bool = True, branch: s
 
 def test_fifty_commits_ahead_is_silent(tmp_path):
     assert wl_checks.backup_lag(make_repo(tmp_path, 50)) is None
+
+
+@pytest.mark.parametrize(("age_h", "speaks"), [(5.9, False), (6.1, True)])
+def test_the_oldest_unbacked_commit_is_judged_against_six_hours(
+    tmp_path, monkeypatch, age_h, speaks
+):
+    root = make_repo(tmp_path, 0)
+    stamp = int(time.time() - age_h * 3600)
+    monkeypatch.setenv("GIT_COMMITTER_DATE", "%d +0000" % stamp)
+    git(root, "commit", "-q", "--allow-empty", "-m", "old")
+    monkeypatch.delenv("GIT_COMMITTER_DATE")
+    text = wl_checks.backup_lag(root)
+    assert (text is not None) == speaks
+    if speaks:
+        assert text.startswith("BACKUP LAG: 1104-1 is 1 commits ahead")
 
 
 def test_fifty_one_commits_ahead_speaks(tmp_path):

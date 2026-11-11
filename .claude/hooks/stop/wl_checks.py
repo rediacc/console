@@ -104,7 +104,7 @@ PROGRAM_SURFACE = os.environ.get("WORKLIST_PROGRAM_SURFACE", ".ci .github .claud
 
 
 def backup_lag(root):
-    """The `backup-lag` advisory text, or None. Asks `backup_ref status --cached` (the live oid the last sync recorded, so no network at a stop): exit 1 means the branch is more than 50 commits ahead of its live backup (agent/plans/PLAN-local-first-delivery.md G6). Any other exit, a timeout or a missing module is silence."""
+    """The `backup-lag` advisory text, or None. Asks `backup_ref status --cached` (the live oid the last sync recorded, so no network at a stop): exit 1 means the branch is more than 50 commits ahead of its live backup, or its oldest unbacked commit is more than 6 h old (agent/plans/PLAN-local-first-delivery.md G6). Any other exit, a timeout or a missing module is silence."""
     env = dict(os.environ)
     env["PYTHONPATH"] = os.path.join(str(root), ".ci") + os.pathsep + env.get("PYTHONPATH", "")
     try:
@@ -5198,7 +5198,7 @@ def run_stop(event, event_ok, worklist, hook_file):
             )
     except Exception:
         pass
-    #   backup-lag      the branch is more than 50 commits ahead of its live backup ref (`backup_ref status --cached`, advise level only).
+    #   backup-lag      the branch is more than 50 commits or 6 h ahead of its live backup ref (`backup_ref status --cached`, advise level only).
     try:
         _bl = backup_lag(root)
         if _bl:

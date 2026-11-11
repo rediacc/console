@@ -39,6 +39,7 @@ RESTORED = "refs/backup-restored/"
 # Mirrors BACKUP_RETENTION_DAYS and backup_snapshot in the pre-push hook module: prune may delete only what that hook admits deleting.
 RETENTION_DAYS = {"daily": 90, "pre-rewrite": 30}
 MAX_LAG_COMMITS = 50
+MAX_LAG_AGE = datetime.timedelta(hours=6)
 LAST_LIVE = "last-live"
 _SNAPSHOT_RE = re.compile(r"^(?:(daily)-(\d{4}-\d{2}-\d{2})|(pre-rewrite)-(\d{8}T\d{4}Z))$")
 # The repositories `--repo` names, by their path below the console root.
@@ -64,7 +65,7 @@ USAGE = """\
 Usage: ./run.sh backup-ref <sync|list|restore|prune|status> [--repo console|renet|account|elite]... [--all] [--remote <name>]
        ./run.sh backup-ref restore <refs/backup/<branch>/<leaf> | <branch>/<leaf>>
        ./run.sh backup-ref prune [--write]     (default: list what is past retention)
-       ./run.sh backup-ref status [--cached]   (exit 1 when live trails HEAD by more than 50 commits)
+       ./run.sh backup-ref status [--cached]   (exit 1 when live trails HEAD by more than 50 commits or 6 h)
 
 Back up the checked-out branch of each repository as refs/backup/<branch>/live
 (plus a daily-<YYYY-MM-DD> once per UTC day, and a pre-rewrite-<stamp> after a
@@ -355,37 +356,52 @@ def _remember_live(repo: pathlib.Path, tip: str) -> None:
         _live_file(repo).write_text(tip + "\n", encoding="utf-8")
 
 
-def lag(repo: pathlib.Path, remote: str, cached: bool) -> tuple[int | None, str]:
-    """`(commits HEAD holds that live does not, branch)`; None when there is nothing to judge (detached, main, no remote, or `cached` with no recorded live). A rewritten live counts the commits HEAD holds that live does not."""
+def lag(
+    repo: pathlib.Path, remote: str, cached: bool
+) -> tuple[int | None, str, datetime.datetime | None]:
+    """`(commits HEAD holds that live does not, branch, commit time of the oldest of them)`; the count is None when there is nothing to judge (detached, main, no remote, or `cached` with no recorded live), and the time is None when nothing is unbacked. A rewritten live counts the commits HEAD holds that live does not."""
     branch = _git(repo, ["symbolic-ref", "--short", "-q", "HEAD"], check=False).stdout.strip()
     if not branch or branch == "main":
-        return None, branch
+        return None, branch, None
     if cached:
         try:
             live = _live_file(repo).read_text(encoding="utf-8").strip()
         except (OSError, StepError):
-            return None, branch
+            return None, branch, None
     else:
         if _git(repo, ["remote", "get-url", remote], check=False).returncode != 0:
-            return None, branch
+            return None, branch, None
         live = remote_refs(repo, remote, branch).get("live", "")
         if live and not _has_commit(repo, live):
             _git(repo, ["fetch", "--no-tags", "--refmap=", remote, "%s%s/live" % (SPACE, branch)])
-    if live and _has_commit(repo, live):
-        return int(_out(repo, ["rev-list", "--count", "HEAD", "--not", live])), branch
     # Never backed up: everything HEAD holds that no remote holds.
-    return int(_out(repo, ["rev-list", "--count", "HEAD", "--not", "--remotes"])), branch
+    held = ["--not", live] if live and _has_commit(repo, live) else ["--not", "--remotes"]
+    count = int(_out(repo, ["rev-list", "--count", "HEAD", *held]))
+    oldest = None
+    if count:
+        stamp = _out(repo, ["log", "--format=%ct", "--reverse", "HEAD", *held]).splitlines()[0]
+        oldest = datetime.datetime.fromtimestamp(int(stamp), datetime.UTC)
+    return count, branch, oldest
 
 
 def status(repo: pathlib.Path, remote: str, cached: bool, out) -> int:
-    behind, branch = lag(repo, remote, cached)
+    """Exit 1 when live trails HEAD by more than MAX_LAG_COMMITS commits, or when the oldest commit it lacks is more than MAX_LAG_AGE old (the plan's "50 commits or 6 h": the time a commit has gone unbacked, since the newest-commit reading would let a long-lived gap hide behind one fresh commit)."""
+    behind, branch, oldest = lag(repo, remote, cached)
     if behind is None:
         out.write("backup-ref: nothing to judge for %s\n" % (branch or "a detached HEAD"))
         return 0
-    if behind > MAX_LAG_COMMITS:
+    age = _utcnow() - oldest if oldest else datetime.timedelta(0)
+    if behind > MAX_LAG_COMMITS or age > MAX_LAG_AGE:
         out.write(
-            "backup-ref: %s is %d commits ahead of its live backup (limit %d); run `./run.sh backup-ref sync`\n"
-            % (branch, behind, MAX_LAG_COMMITS)
+            "backup-ref: %s is %d commits ahead of its live backup, the oldest unbacked %dh%02dm old (limits %d commits, %d h); run `./run.sh backup-ref sync`\n"
+            % (
+                branch,
+                behind,
+                age // datetime.timedelta(hours=1),
+                age.seconds // 60 % 60,
+                MAX_LAG_COMMITS,
+                MAX_LAG_AGE.total_seconds() // 3600,
+            )
         )
         return 1
     out.write("backup-ref: %s is %d commits ahead of its live backup\n" % (branch, behind))
