@@ -27,7 +27,7 @@
  * It refuses an empty prefix: there is no whole-catalog mode.
  *
  * Usage:
- *   npm run i18n:stamp-keys -- --prefix <key-prefix> [--prefix ...] [--lang <l> ...] [--write]
+ *   npx tsx scripts/gen/i18n-stamp-keys.ts --prefix <key-prefix> [--prefix ...] [--lang <l> ...] [--write]
  *
  * Without --write it lists what would be stamped and writes nothing.
  *

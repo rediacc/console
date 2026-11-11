@@ -1,5 +1,5 @@
 /**
- * Control for scripts/gen/i18n-stamp-keys.ts (`npm run i18n:stamp-keys`).
+ * Control for scripts/gen/i18n-stamp-keys.ts (`npx tsx scripts/gen/i18n-stamp-keys.ts`).
  *
  * Pinned: (1) stamping a prefix touches only keys under it, appends after the existing
  * entries, and leaves every existing entry (a stale one under the prefix included)
