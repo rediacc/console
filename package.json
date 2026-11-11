@@ -331,7 +331,7 @@
     "check:ci-account-backup": "cd private/account && npx vitest run tests/integration/backup-*.test.ts --reporter=dot",
     "check:ci-subscription-schema": ".ci/scripts/quality/check_subscription_schema.py",
     "check:ci-pricing-consistency": "tsx scripts/gates/check-pricing-consistency.ts",
-    "check:cli-examples": "tsx scripts/gen/validate-cli-examples.ts",
+    "check:cli-examples": "tsx scripts/__tests__/positional-cli-detector.control.ts && tsx scripts/gen/validate-cli-examples.ts",
     "check:ci-account-onboarding": "tsx scripts/gates/check-account-onboarding.ts",
     "check:ci-max-lines": "tsx scripts/gates/check-max-lines.ts --selftest && tsx scripts/gates/check-max-lines.ts",
     "check:ci-source-rules": "tsx scripts/gates/check-source-rules.ts --selftest && tsx scripts/gates/check-source-rules.ts",
