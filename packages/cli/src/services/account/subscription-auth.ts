@@ -26,8 +26,11 @@ export function normalizeServerUrl(serverUrl: string): string {
  * Always per-config: `api-token-{name}.json` (default config included, so
  * `api-token-rediacc.json`). Defaults to the effective config name.
  */
-export function getSubscriptionTokenFile(configName = getEffectiveConfigName()): string {
-  return join(getConfigDir(), `api-token-${configName}.json`);
+export function getSubscriptionTokenFile(
+  configName = getEffectiveConfigName(),
+  configDir = getConfigDir()
+): string {
+  return join(configDir, `api-token-${configName}.json`);
 }
 
 /** A server URL that names something: an empty or blank value (`REDIACC_ACCOUNT_SERVER=`) counts as unset. */

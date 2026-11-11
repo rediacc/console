@@ -14,6 +14,7 @@ import {
 } from '@rediacc/shared/config-schema';
 import { getConfigDir } from '@rediacc/shared/paths';
 import lockfile from 'proper-lockfile';
+import { getSubscriptionTokenFile } from '../services/account/subscription-auth.js';
 import { currentRequestConfig, type RequestConfigScope } from '../services/core/request-context.js';
 import {
   decryptConfigFields,
@@ -526,6 +527,13 @@ export class ConfigFileStorage {
     }
     try {
       await fs.unlink(this.getBackupPath(name));
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        throw error;
+      }
+    }
+    try {
+      await fs.unlink(getSubscriptionTokenFile(name, this.configDir));
     } catch (error) {
       if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
         throw error;
