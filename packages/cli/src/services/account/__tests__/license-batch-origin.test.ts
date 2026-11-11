@@ -209,7 +209,12 @@ describe('refreshRepoLicensesBatch and a foreign-origin licence', () => {
       currentSubscriptionId: subscriptionId,
     });
 
-    async function refreshUnder(configOrigin: string, repo: ReturnType<typeof entry>) {
+    async function refreshUnder(
+      configOrigin: string,
+      repo: Omit<ReturnType<typeof entry>, 'currentSubscriptionId'> & {
+        currentSubscriptionId?: string;
+      }
+    ) {
       server.url = configOrigin;
       try {
         return await refresh([repo]);
@@ -247,7 +252,8 @@ describe('refreshRepoLicensesBatch and a foreign-origin licence', () => {
     });
 
     it('control: a licence whose scan entry reports no subscription id is not taken for FREE', async () => {
-      const bare = { ...entry(OLD, EU, 'free:0123abcd'), currentSubscriptionId: undefined };
+      const { currentSubscriptionId: _dropped, ...bare } = entry(OLD, EU, 'free:0123abcd');
+      expect(_dropped).toBe('free:0123abcd');
       const { sent } = await refreshUnder(US, bare);
       expect(sent.size).toBe(0);
     });
