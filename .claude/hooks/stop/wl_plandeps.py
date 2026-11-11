@@ -1034,7 +1034,7 @@ def box_github_wait(
                     errs.insert(
                         0,
                         "`%s:` runner(s) %s are not in tiers.live.local_runners (%s)"
-                        % (tag, ", ".join(unknown), ", ".join(runners)),
+                        % (tag, ", ".join(unknown), ", ".join(runners or ())),
                     )
                 errors[tag] = errs
                 route = () if errs else names

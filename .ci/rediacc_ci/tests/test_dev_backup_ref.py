@@ -429,7 +429,7 @@ def test_main_dispatches_the_new_verbs(world, monkeypatch, capsys):
     assert br.main(["bogus"]) == 2
 
 
-def test_prune_agrees_with_the_pre_push_hook_on_every_boundary():
+def test_prune_agrees_with_the_pre_push_hook_on_every_boundary(monkeypatch):
     """Whatever `prune` deletes, `backup_ref_refusal` admits; whatever it keeps inside retention, the hook refuses to delete (so the two never drift)."""
     root = pathlib.Path(__file__).resolve().parents[3]
     spec = importlib.util.spec_from_file_location(
@@ -442,7 +442,7 @@ def test_prune_agrees_with_the_pre_push_hook_on_every_boundary():
     spec.loader.exec_module(gh)
     assert br.RETENTION_DAYS == gh.BACKUP_RETENTION_DAYS
     monkey_now = DAY
-    gh._utcnow = lambda: monkey_now
+    monkeypatch.setattr(gh, "_utcnow", lambda: monkey_now)
     repo = str(pathlib.Path(__file__).resolve().parents[3])
     url = "https://gitlab.rediacc.io" + gh.BACKUP_PATHS[""]
     oid = "a" * 40
