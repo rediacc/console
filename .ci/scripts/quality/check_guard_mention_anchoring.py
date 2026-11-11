@@ -127,6 +127,10 @@ FRAGMENTS: dict[tuple[str, str], str] = {
         "BLOCKER: extracts the `name.ext` tail from REDIR_TARGET and ASSIGN_TARGET matches; a file-name shape with no literal "
         "word, applied to text the anchored harvest already selected."
     ),
+    ("block_roundlog_truncate.py", "_QUOTED"): (
+        "BLOCKER: an extractor of quoted string literals, run only over program text the guard's walk already chose "
+        "(`_quoted_literals`, the reading for a program the parser cannot read); a quote shape with no literal word."
+    ),
     ("block_blanket_git_add.py", "END"): (
         "BLOCKER: the end-of-clause tail (`$`, a separator or a redirect) concatenated after the anchored GIT_ADD prefix; "
         "only the composed BLANKET_* patterns are matchers, and they are anchored."

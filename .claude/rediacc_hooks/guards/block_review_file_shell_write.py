@@ -1435,7 +1435,10 @@ def _reads_files(name, argv):
     return bool(operands) and not any(_may_be_stdin(o) for o in operands)
 
 
-_STDIN_DEVICES = frozenset(("-", "/dev/stdin", "/dev/fd/0", "/proc/self/fd/0"))
+# The procfs spelling is a RECOGNISED path, never read (the worktree-stdin-anchor precedent in .ci/rediacc_ci/quality/hook_cross_os.py): the root is named once, from REDIACC_REVIEW_STDIN_PROCFS, so a machine whose procfs is not at /proc still recognises its own spelling of stdin.
+_PROCFS_ENV = "REDIACC_REVIEW_STDIN_PROCFS"
+_PROCFS_ROOT = (os.environ.get(_PROCFS_ENV) or "/proc").rstrip("/") or "/proc"
+_STDIN_DEVICES = frozenset(("-", "/dev/stdin", "/dev/fd/0", _PROCFS_ROOT + "/self/fd/0"))
 
 
 def _may_be_stdin(operand):
