@@ -288,6 +288,50 @@ const Footer: React.FC<FooterProps> = ({ lang }) => {
               </li>
               <li>
                 <a
+                  href={`/${currentLang}/acceptable-use-policy`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-legal"
+                  data-track-dest="aup"
+                >
+                  {t('footer.legalLinks.acceptableUsePolicy')}
+                </a>
+              </li>
+              <li>
+                <a
+                  href={`/${currentLang}/data-processing-agreement`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-legal"
+                  data-track-dest="dpa"
+                >
+                  {t('footer.legalLinks.dataProcessingAgreement')}
+                </a>
+              </li>
+              <li>
+                <a
+                  href={`/${currentLang}/service-level-agreement`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-legal"
+                  data-track-dest="sla"
+                >
+                  {t('footer.legalLinks.serviceLevelAgreement')}
+                </a>
+              </li>
+              <li>
+                <a
+                  href={`/${currentLang}/enterprise-license`}
+                  className="footer-link"
+                  data-track="cta_click"
+                  data-track-label="footer-legal"
+                  data-track-dest="enterprise-license"
+                >
+                  {t('footer.legalLinks.enterpriseLicense')}
+                </a>
+              </li>
+              <li>
+                <a
                   href={`/${currentLang}/legal-information`}
                   className="footer-link"
                   data-track="cta_click"

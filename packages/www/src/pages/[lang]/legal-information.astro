@@ -15,6 +15,9 @@ export const getStaticPaths = getLanguagePaths;
 
 const { lang } = Astro.params as { lang: Language };
 const { t } = createTranslator(lang);
+
+// The Estonian register's page for this company, built from the projected entity.
+const registerEntryUrl = `https://ariregister.rik.ee/eng/company/${LEGAL_ENTITY.registryCode}/${encodeURIComponent(LEGAL_ENTITY.legalName.replace(/\s+/g, '-'))}`;
 ---
 
 <BaseLayout
@@ -69,7 +72,7 @@ const { t } = createTranslator(lang);
             <p class="legal-note">
               {t('pages.legalInformation.sections.companyDetails.registerEntryPrefix')}
               <a
-                href="https://ariregister.rik.ee/eng/company/17363830/Rediacc-O%C3%9C"
+                href={registerEntryUrl}
                 target="_blank"
                 rel="noopener noreferrer"
               >
