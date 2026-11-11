@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """wl_epic.render keeps the PR epic block under GitHub's PR body limit (65,536 characters).
 
-2026-11-11: branch 1104-1 carried 313 open backlog items and the published block was 66,965 bytes, so no PR body could hold the block check:ci-pr-epic-block demands. The backlog now stops at BLOCK_BUDGET and names how many it left out. A small backlog renders whole (the control).
+2026-11-11: branch 1104-1 carried 314 open backlog items and the published block was 66,965 bytes, so no PR body could hold the block check:ci-pr-epic-block demands. The backlog now stops at BLOCK_BUDGET and names how many it left out. A small backlog renders whole (the control).
 
 Runs as `python3 .claude/hooks/stop/test-epic-budget.py`; exit 0 when every check holds.
 """
@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import importlib.util
 import pathlib
+import re
 import sys
 import types
 
@@ -53,6 +54,13 @@ check(
 )
 check("and stays under GitHub's 65,536-character body limit", len(big) < 65536)
 check("and names how many items it left out", "more open item(s) not listed here" in big)
+m_head = re.search(r"^### Open system backlog \((\d+)\)", big, re.MULTILINE)
+m_more = re.search(r"^_\+(\d+) more open item\(s\) ", big, re.MULTILINE)
+listed = len(re.findall(r"^- \[.\] `#[0-9a-f]+`", big, re.MULTILINE))
+check(
+    "the heading N equals the listed items plus the +K more line (the gate's rule)",
+    bool(m_head and m_more) and int(m_head.group(1)) == listed + int(m_more.group(1)) == 2000,
+)
 small = render_with(5)
 check("CONTROL: a 5-item backlog lists all five", all(("#%08x" % i) in small for i in range(5)))
 check("CONTROL: and prints no left-out line", "more open item(s) not listed here" not in small)
