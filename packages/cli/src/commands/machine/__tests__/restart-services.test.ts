@@ -13,6 +13,7 @@ const mocks = vi.hoisted(() => ({
   success: vi.fn(),
   print: vi.fn(),
   warn: vi.fn(),
+  renderFailure: vi.fn(),
   setExitCode: vi.fn(),
   repos: {} as Record<string, { networkId?: number }>,
   format: 'table',
@@ -49,7 +50,7 @@ vi.mock('../../../services/config/config-resources.js', () => ({
   configService: { getRepository: async (ref: string) => mocks.repos[ref] },
 }));
 vi.mock('../../../utils/local-execution-failures.js', () => ({
-  renderLocalExecutionFailure: vi.fn(),
+  renderLocalExecutionFailure: mocks.renderFailure,
 }));
 
 const { registerRestartServicesCommand } = await import('../restart-services.js');
@@ -180,6 +181,45 @@ describe('machine restart-services --repo', () => {
     await run('--include-docker');
     expect(mocks.success).toHaveBeenCalledTimes(1);
     expect(mocks.setExitCode).not.toHaveBeenCalled();
+  });
+
+  describe('a FAILED daemons-restart job with progress lines on stdout', () => {
+    const progress = (action: string) =>
+      JSON.stringify({ event: 'progress', unit: 'rediacc-hub.service', action, elapsed_ms: 0 });
+    const failedRun = (stdout: string) => ({
+      success: false,
+      exitCode: 1,
+      durationMs: 1,
+      state: 'failed' as const,
+      stdout,
+      stderr: '',
+    });
+
+    it('prints the report that follows the progress lines and exits non-zero', async () => {
+      mocks.format = 'json';
+      const report = {
+        processes: [{ unit: 'rediacc-hub.service', action: 'failed', error: 'stop timed out' }],
+        repos: [],
+      };
+      answer = failedRun(
+        [progress('starting'), progress('failed'), JSON.stringify(report)].join('\n')
+      );
+      await run('--include-docker', '--json');
+      expect(mocks.renderFailure).not.toHaveBeenCalled();
+      expect(mocks.print).toHaveBeenCalledTimes(1);
+      const printed = mocks.print.mock.calls[0][0] as { failed: { error?: string }[] };
+      expect(printed.failed).toHaveLength(1);
+      expect(printed.failed[0].error).toBe('stop timed out');
+      expect(mocks.setExitCode).toHaveBeenCalledWith(1);
+    });
+
+    it('falls back to the generic failure when stdout holds progress lines only', async () => {
+      mocks.format = 'json';
+      answer = failedRun([progress('starting'), progress('restarted')].join('\n'));
+      await run('--include-docker', '--json');
+      expect(mocks.print).not.toHaveBeenCalled();
+      expect(mocks.renderFailure).toHaveBeenCalledTimes(1);
+    });
   });
 
   it('does not call another unknown flag a renet that predates --repo', async () => {

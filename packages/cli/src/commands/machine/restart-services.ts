@@ -28,13 +28,32 @@ interface RestartServicesOptions {
   json?: boolean;
 }
 
+/** Whether a stdout line is one of the per-unit NDJSON progress lines of the daemons-restart job. */
+function isProgressLine(line: string): boolean {
+  try {
+    const parsed: unknown = JSON.parse(line);
+    return (
+      typeof parsed === 'object' &&
+      parsed !== null &&
+      (parsed as { event?: unknown }).event === 'progress'
+    );
+  } catch {
+    return false;
+  }
+}
+
 /**
  * The restart report in a job's stdout. The daemons-restart job prints one NDJSON progress line per
  * unit before the report, so the report is the last non-empty line.
  */
 function parseRestartOutput(stdout: string | undefined): ReturnType<typeof parseDaemonUpgradeJson> {
   const lines = (stdout ?? '').split('\n').filter((line) => line.trim() !== '');
-  return parseDaemonUpgradeJson(lines.length > 0 ? lines[lines.length - 1] : '');
+  const last = lines.length > 0 ? lines[lines.length - 1] : '';
+  // A run killed mid-way leaves only progress lines; one of them is valid JSON but is not the report.
+  if (isProgressLine(last)) {
+    throw new Error('daemons-restart output ends in a progress line, not the report');
+  }
+  return parseDaemonUpgradeJson(last);
 }
 
 /** The refusal of a renet that predates `--network-id`: cobra's unknown flag naming it, or the job builder's closed argument list. */
