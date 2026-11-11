@@ -61,8 +61,6 @@ THE RULES, EACH WITH A PLANTED CONTROL IN `--selftest`:
         ruling R2: "The planner should really find no way to test/deploy locally to
         go with github.").
 
-LP8 IS ADVISORY UNTIL THE SWEEP LANDS. `LP8_ENFORCED` is False while box L4 of PLAN-local-first-delivery (the `(corrected ...)` sweep of the live corpus) is open: each LP8 finding then prints as `ADVISORY LP8 <plan>: ...` every run and the summary counts them, so the sweep's worklist is visible, and the exit code ignores them. `--lp8-enforce` judges them as findings for one run (the lead's check before flipping the constant); the commit that lands L4 flips `LP8_ENFORCED` to True and deletes this paragraph.
-
 ADVISORY, printed every run, red or green: every `Live-Proof: none` on a required plan, the PENDING (V7) set, and every WAIVED VM LADDER still owed a confirmation.
 
 WAIVED VM LADDERS (operator ruling 2026-11-10, `live_proof record --vm-waived ASKED:<minute>Z`). A ledger row whose `ladder` carries `waived` was recorded with no VM receipt admitting its head tree. It is CONFIRMED when a VERIFIED `vm:check` receipt that ran every VM phase the row's surfaces need (`live_tier.ladder_phases`) has the row's `ladder.head_tree` as its tree, or a head that descends from the row's head (through the rebase successor map); until then it prints `OWED-VM <row id> <plan> <target>` with the receipt count it searched. ADVISORY, not a finding, for two reasons: the VM receipts live in the gitignored `.ci/cache/vm-check/`, so CI's fresh clone reads zero of them and a finding there could never clear, while the same tree would read green on the one machine that ran vm:check; and the ruling keeps a box ticked on a waived receipt tickable, so the owed confirmation is what stays visible, every run, never folded into green. The summary line counts waived, confirmed and owed rows and the receipts read, so "0 receipt(s) read" says the confirmation was not judgeable here rather than that nothing is owed. LP5 still judges a waived row's shape (`validate_row`: the minute form, `head_tree` equal to the row's tree, no run id beside the waiver, a VM phase to waive).
@@ -149,7 +147,7 @@ LIVE_MARK = "[live]"
 WAIVER_WORD_RE = re.compile(r"live[- ]proof", re.IGNORECASE)
 FINISHED_FOLDERS = ("agent/plans/_done",)
 # See the module docstring: False until PLAN-local-first-delivery box L4 lands, then True.
-LP8_ENFORCED = False
+LP8_ENFORCED = True
 
 
 class CannotRunError(RuntimeError):

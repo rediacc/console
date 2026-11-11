@@ -624,13 +624,13 @@ def test_an_untagged_after_the_merge_box_is_lp8(gate, tmp_path):
     gate.log_pass("an untagged after-the-merge box is LP8")
 
 
-def test_lp8_is_advisory_until_the_sweep(gate, tmp_path):
+def test_lp8_is_enforced_by_default(gate, tmp_path):
     root = _gh_tree(tmp_path, GH_WAIT)
     result = _gate(root, _map(tmp_path))
-    gate.assert_exit(0, result, "LP8_ENFORCED is False until PLAN-local-first-delivery L4")
-    gate.assert_contains(result.out, "ADVISORY LP8 agent/plans/PLAN-gh.md: box T2", "printed")
-    gate.assert_contains(result.out, "github waits (LP8, advisory", "the summary names the mode")
-    gate.log_pass("LP8 prints as an advisory and keeps the exit code")
+    gate.assert_exit(1, result, "LP8_ENFORCED is True since PLAN-local-first-delivery L4 landed")
+    gate.assert_contains(result.err, "LP8 agent/plans/PLAN-gh.md: box T2", "named as a finding")
+    gate.assert_contains(result.out, "github waits (LP8, enforced", "the summary names the mode")
+    gate.log_pass("an untagged GitHub wait reds the gate without --lp8-enforce")
 
 
 def test_the_same_box_tagged_in_a_corrected_line_passes(gate, tmp_path):
