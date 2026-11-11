@@ -31,6 +31,7 @@ import zipfile
 from typing import Any
 
 from rediacc_hooks import commit_policy, hookio, shellscan
+from rediacc_hooks.guards import _repo_scope
 
 CHAIN = "pre-bash"
 ORDER = 28
@@ -208,38 +209,9 @@ def runs_lease_verb(cmd):
 
 # THE REGEX ARM READS TEXT, AND A WORD BASH EXPANDS IS NOT TEXT (#3dc774ff). Measured 2026-11-06 through the dispatcher, each rc 0 before this arm: `w=worktree; git $w add x` (the verb in a variable), `git -c alias.wt=worktree wt add x` and its `GIT_CONFIG_KEY_0=alias.wt` twin (the verb behind an alias), and `f(){ git worktree "$@"; }; f add x` (the sub-verb from a function's arguments). The script arm already refused every one of them inside a file; typed at the prompt they ran.
 # So the git runs bash executes are walked: a variable the walk knows a literal for is put back, an alias set on the run (`-c alias.X=V`, the GIT_CONFIG_KEY_n/VALUE_n env pair) is expanded, and `worktree add` is refused. A verb, or a sub-verb after `worktree`, whose value the walk cannot know (a `$(...)`, an unresolved `$x`, `"$@"`) is refused when the command names `worktree` and a judged verb anywhere (`_could_spell`, the broad reading, file names included), so a word built at run time from text the command holds stays refused. `read w; git $w add x` names neither and stays out of reach, as any value only known at run time is.
-GIT_ALIAS = re.compile(r"^alias\.([^=]+)=(.*)$", re.DOTALL)
-GIT_CONFIG_KEY = re.compile(r"^GIT_CONFIG_KEY_(\d+)$")
-
-
-def _unknown_word(word):
-    """Does `word` hold a part bash fills in at run time that the walk could not resolve?"""
-    return any(mark in word for mark in ("$", "`", "\0"))
-
-
-def _git_aliases(run_, argv, at):
-    """`{name: value}` for every alias the git run `run_` sets for itself before its verb at `at`: `-c alias.X=V` (also attached, `-calias.X=V`) and the GIT_CONFIG_KEY_n/VALUE_n pair in its environment."""
-    found: dict[str, str] = {}
-    k = 0
-    while k < at:
-        word = argv[k]
-        setting = argv[k + 1] if word == "-c" and k + 1 < at else word[2:]
-        if word.startswith("-c"):
-            m = GIT_ALIAS.match(setting)
-            if m:
-                found[m.group(1)] = m.group(2)
-            k += 2 if word == "-c" else 1
-            continue
-        k += 1
-    env = getattr(run_, "env", None) or {}
-    for name, key in env.items():
-        m = GIT_CONFIG_KEY.match(name)
-        if not m:
-            continue
-        alias = GIT_ALIAS.match("%s=%s" % (key, env.get("GIT_CONFIG_VALUE_%s" % m.group(1), "")))
-        if alias:
-            found[alias.group(1)] = alias.group(2)
-    return found
+# The two word readers live in `_repo_scope`, which the scope resolver below shares with two other guards.
+_unknown_word = _repo_scope.unknown_word
+_git_aliases = _repo_scope.git_aliases
 
 
 def runs_worktree_add(cmd, depth=0):
@@ -277,88 +249,30 @@ def runs_worktree_add(cmd, depth=0):
 
 
 # A SCRATCH REPOSITORY IS NOT A SECOND CHECKOUT OF THIS ONE (#a8ae93bd). Measured 2026-11-11: `git -C /tmp/tmp.X/work worktree add --detach /tmp/tmp.X/restored refs/backup-restored/...`, in a `git init` under /tmp with a local bare remote, was refused, and that is the exact command `./run.sh backup-ref restore` prints. The rule is about the console and its submodules, so the git arm is
-# scoped to the repository each `git worktree add` acts on: its git common dir, asked of git in the directory the run's `cd` and `-C` compose. That dir being this checkout's common dir, or under it (`modules/<path>` is a submodule's store), keeps the refusal. Everything this helper cannot know keeps it too.
-GIT_REPO_ENV = (
-    "GIT_DIR",
-    "GIT_COMMON_DIR",
-    "GIT_WORK_TREE",
-    "GIT_CEILING_DIRECTORIES",
-    "GIT_DISCOVERY_ACROSS_FILESYSTEM",
-)
-GIT_REPO_ENV_TEXT = re.compile(
-    r"GIT_(?:DIR|COMMON_DIR|WORK_TREE|CEILING_DIRECTORIES|DISCOVERY_ACROSS_FILESYSTEM)\b"
-)
-
-
-def _common_dir(directory):
-    """The absolute, resolved git common dir of the repository `directory` sits in, "" when git cannot say."""
-    got = commit_policy.git(
-        ["rev-parse", "--path-format=absolute", "--git-common-dir"], cwd=directory, foreign=True
-    )
-    return os.path.realpath(got) if got else ""
-
-
-def _add_target(run_, argv, at, base):
-    """The directory the `git worktree add` run `run_` acts on, or None when it cannot be known exactly."""
-    k = 0
-    while k < at:
-        word = argv[k]
-        if word in ("-C", "-c") and k + 1 < at:
-            if word == "-c" and argv[k + 1].lower().startswith("alias."):
-                return None
-            k += 2
-            continue
-        # `--git-dir`, `--work-tree`, `--namespace`, an attached `-C<dir>`, `-calias...`: each could move git elsewhere or rename the verb, and none is needed for a scratch repository.
+# scoped to the repository each `git worktree add` acts on: its git common dir, asked of git in the directory the run's `cd` and `-C` compose (`_repo_scope.git_targets`, which block_git_empty_commit and block_unlinked_commit_author share). That dir being this checkout's common dir, or under it (`modules/<path>` is a submodule's store), keeps the refusal. Everything the resolver cannot know keeps it too.
+def _pick_add(verb, rest):
+    """`_repo_scope.git_targets`'s pick: judge `worktree add`, doubt a sub-verb the walk cannot know."""
+    if verb != "worktree" or not rest:
+        return False
+    if _unknown_word(rest[0]):
         return None
-    _, where = shellscan._git_verb_at(argv)
-    parts = [run_.cwd or "", where]
-    if any(_unknown_word(p) or p.startswith("~") for p in parts):
-        return None
-    directory = os.path.normpath(os.path.join(base, *parts))
-    return directory if os.path.isdir(directory) else None
+    return rest[0] == "add"
 
 
 def _foreign_adds(cmd, scan, base):
     """Is every `git worktree add` the shell command `cmd` runs aimed at a repository that is neither this checkout nor one of its submodules? `scan` is the text the regex arm read; `base` is the directory the command starts in, from the event. False whenever any part of the answer is unknown."""
     if not base or not os.path.isabs(base) or not os.path.isdir(base):
         return False
-    if GIT_REPO_ENV_TEXT.search(cmd) or any(os.environ.get(name) for name in GIT_REPO_ENV):
+    # The regex reads text the walk may not have turned into a run; a match the walk did not account for is one the resolver never judged.
+    matched = _repo_scope.text_matches(WORKTREE_ADD, scan)
+    targets = _repo_scope.git_targets(cmd, base, _pick_add, matched)
+    if targets is None:
         return False
-    adds = 0
-    targets = []
-    for run_ in shellscan.every_run(cmd):
-        if run_.name.rsplit("/", 1)[-1] != "git":
-            continue
-        argv = list(run_.xargv if run_.xargv is not None else run_.argv)
-        at, _ = shellscan._git_verb_at(argv)
-        if at is None:
-            continue
-        verb, rest = argv[at], argv[at + 1 :]
-        if _unknown_word(verb) or _git_aliases(run_, argv, at).get(verb) is not None:
-            return False
-        if verb != "worktree" or not rest:
-            continue
-        if _unknown_word(rest[0]):
-            return False
-        if rest[0] != "add":
-            continue
-        if any(name.startswith("GIT_") for name in (run_.env or {})):
-            return False
-        target = _add_target(run_, argv, at, base)
-        if target is None:
-            return False
-        adds += 1
-        targets.append(target)
-    # The regex reads text the walk may not have turned into a run; a match the walk did not account for is one this helper never judged.
-    records, _ = hookio._records(scan)
-    matched = sum(len(list(re.finditer(WORKTREE_ADD, record))) for record in records)
-    if adds == 0 or matched > adds:
-        return False
-    ours = _common_dir(str(hookio.repo_root()))
+    ours = _repo_scope.common_dir(str(hookio.repo_root()))
     if not ours:
         return False
     for target in targets:
-        common = _common_dir(target)
+        common = _repo_scope.common_dir(target)
         if not common or commit_policy.is_inside(common, ours):
             return False
     return True

@@ -39,6 +39,7 @@ unreachable rather than dropped, and the differential drives both sides with the
 """
 
 from rediacc_hooks import hookio, shellscan
+from rediacc_hooks.guards import _repo_scope
 
 CHAIN = "pre-bash"
 # Re-keyed from 43 to 44 on 2026-09-22 by the insertion of block_push_to_protected_branch.py at 39.
@@ -106,6 +107,15 @@ def run(ev):
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
 
     if not hookio.grep_q(GIT_COMMIT, scan):
+        return hookio.ALLOW
+
+    # A SCRATCH REPOSITORY ANYWHERE, not only under /tmp and not only when the command spells its path (#381462dc): measured 2026-11-11, `git commit -m x` with the event's `cwd` in a `/tmp` `git init` was refused, since none of the text markers below reads the `cwd`. `_repo_scope.elsewhere` resolves each `git commit` from the event's `cwd`, its `cd` and its `-C`, and admits only when every one lands in a
+    # repository with a git common dir of its own (or in no repository, outside this tree); every doubt leaves the command to the markers.
+    root = shellscan.repo_root_env(ev)
+    expected = _repo_scope.text_matches(GIT_COMMIT, scan)
+    if _repo_scope.elsewhere(
+        cmd, ev.field("cwd") or None, root, _repo_scope.verb_is("commit"), expected
+    ):
         return hookio.ALLOW
 
     for exempt in (GIT_INIT, CD_TMP, GIT_C_TMP, AMEND, DDASH_PATHSPEC):

@@ -28,6 +28,7 @@ NO CROSS-TALK with block-worktree-add.sh: `git worktree add x` has `worktree` be
 import pathlib
 
 from rediacc_hooks import hookio, shellscan
+from rediacc_hooks.guards import _repo_scope
 
 CHAIN = "pre-bash"
 ORDER = 29
@@ -117,6 +118,16 @@ def run(ev):
     # which repos the new predicate had just stopped protecting.
     #
     # Empty target means "this root, or unresolvable", so the guard keeps guarding by default; a resolvable target under the project directory keeps guarding too.
+    #
+    # THE EVENT'S CWD IS STILL A TARGET when the command names no directory (#381462dc). The reset above holds for an agent thread and for a main session's `cd` out of its working directories, not for a main session's `cd` inside them, so a scratch repository the event's `cwd` sits in was judged as this checkout: measured 2026-11-11, `git add -A` with `cwd` in a `/tmp` `git init` was refused. `_repo_scope.elsewhere`
+    # resolves each `git add` from the event's `cwd`, its `cd` and its `-C`, and admits only when every one lands in a repository with a git common dir of its own (or in no repository, outside this tree); every doubt leaves the command to the test below and the patterns.
+    root = shellscan.repo_root_env(ev)
+    pats = (BLANKET_ALL, BLANKET_DOT, BLANKET_ROOT)
+    expected = max(_repo_scope.text_matches(pat, scan) for pat in pats)
+    if _repo_scope.elsewhere(
+        cmd, ev.field("cwd") or None, root, _repo_scope.verb_is("add"), expected
+    ):
+        return hookio.ALLOW
     _target = shellscan.target_root(scan, shellscan.repo_root_env(ev), verb="add")
     if _target != "" and not _is_inside(_target, shellscan.repo_root_env(ev)):
         return hookio.ALLOW
