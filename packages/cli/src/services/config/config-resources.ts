@@ -46,6 +46,7 @@ import {
   writeClusterToStore,
 } from './config-cluster-logic.js';
 import { allocateNetworkIdInStore } from './config-network-id.js';
+import { boundArchive, takeArchivedRepository } from './config-resources-archive.js';
 import {
   assertNoCredentialCollision,
   buildArchivedRecord,
@@ -57,7 +58,6 @@ import {
   withGpuDevices,
   withLifecycleGrant,
 } from './config-resources-resolve.js';
-import { takeArchivedRepository } from './config-resources-archive.js';
 import type { ResourceState } from './resource-state.js';
 import { updateSyncedConfig } from './synced-write.js';
 
@@ -473,7 +473,7 @@ class ConfigService extends ConfigAccessService {
 
     const deletedRepos = state.getDeletedRepositories();
     deletedRepos.push(buildArchivedRecord(repoName, repos[repoName]));
-    await state.setDeletedRepositories(deletedRepos);
+    await state.setDeletedRepositories(boundArchive(deletedRepos));
 
     delete repos[repoName];
     await state.setRepositories(repos);
@@ -493,7 +493,7 @@ class ConfigService extends ConfigAccessService {
 
     const deletedRepos = state.getDeletedRepositories();
     for (const key of archived) deletedRepos.push(buildArchivedRecord(key, repos[key]));
-    await state.setDeletedRepositories(deletedRepos);
+    await state.setDeletedRepositories(boundArchive(deletedRepos));
 
     for (const key of archived) delete repos[key];
     await state.setRepositories(repos);
