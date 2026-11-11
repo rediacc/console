@@ -234,6 +234,17 @@ CASES = [
     ),
 ]
 
+# BOX G5 OF PLAN-local-first-delivery: the shared backup-ref cases (`_backup_push.CASES`), in a world whose range touches a mapped renet licence file with no receipt, so every push it does not admit is refused here.
+BP = importlib.import_module("rediacc_hooks.guards._backup_push")
+BACKUP_WORLDS = {
+    True: BP.plant(built("rnt-license")),
+    False: BP.plant(built("rnt-license"), pinned=False),
+}
+CASES += [
+    (label, command, BACKUP_WORLDS[pinned], None, not admitted, "")
+    for label, command, pinned, admitted in BP.CASES
+]
+
 # The cases that run with the payload's cwd somewhere other than the world's root.
 CWD = {
     "renet cwd: licence file, no receipt": "private/renet",

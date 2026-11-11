@@ -2268,6 +2268,37 @@ test_v1_receipt_refused()
 test_v2_whole_tree_carry()
 test_v2_helpers()
 
+
+def test_backup_refs():
+    """BOX G5 OF PLAN-local-first-delivery: the shared backup-ref cases (`_backup_push.CASES`), each in a console-shaped checkout with no receipt, so every push the predicate does not admit is refused here."""
+    bp = importlib.import_module("rediacc_hooks.guards._backup_push")
+    worlds = {}
+    for pinned in (True, False):
+        root = tempfile.mkdtemp(dir=RUN_TMP)
+        for argv in (
+            ["init", "-q", "-b", "0827-1"],
+            ["config", "user.email", "p@example.invalid"],
+            ["config", "user.name", "p"],
+            ["commit", "-q", "--allow-empty", "-m", "base"],
+        ):
+            subprocess.run(["git", "-C", root, *argv], capture_output=True, check=True)
+        worlds[pinned] = bp.plant(root, pinned=pinned)
+    for label, command, pinned, admitted in bp.CASES:
+        root = worlds[pinned]
+        rc = subprocess.run(
+            GUARD_ARGV,
+            input=json.dumps({"tool_input": {"command": command}}),
+            capture_output=True,
+            text=True,
+            cwd=root,
+            env=dict(os.environ, CLAUDE_PROJECT_DIR=root),
+            check=False,
+        ).returncode
+        cases.append((0 if admitted else 2, rc, label))
+
+
+test_backup_refs()
+
 shutil.rmtree(d, ignore_errors=True)
 
 bad = 0

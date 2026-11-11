@@ -25,6 +25,10 @@ import sys
 import tempfile
 import typing
 
+import _hookpath
+
+from rediacc_hooks.guards import _backup_push as BP
+
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 
 # ONE PID-STAMPED RUN DIRECTORY holds both fixture repos, and the next run sweeps it when this one was killed before `atexit` could fire: 114 `guard-push-main-*` repos had leaked into /tmp by 2026-09-24. See `rediacc_ci.runtmp`, loaded BY FILE rather than through a `sys.path` hop, which test_canonical_sys_path_hop.py freezes; it is stdlib-only for exactly this reason.
@@ -720,6 +724,17 @@ CASES = [
         True,
     ),
 ]
+
+# BOX G5 OF PLAN-local-first-delivery: the shared backup-ref cases (`_backup_push.CASES`) in checkouts ON main. This guard judges only a push reaching main, and none of the shared commands names it, so each is allowed before G5 and after. The same commands with `HEAD:main` added are the ones that matter here: the predicate admits only a push whose EVERY destination is under `refs/backup/`, so each must still be refused.
+BACKUP_WORLDS = {
+    True: BP.plant(_make_repo(MAIN)),
+    False: BP.plant(_make_repo(MAIN), pinned=False),
+}
+for _label, _command, _pinned, _admitted in BP.CASES:
+    CASES.append((_label, _command, BACKUP_WORLDS[_pinned], False))
+    CASES.append(
+        (_label + ", plus HEAD:main", "%s HEAD:%s" % (_command, MAIN), BACKUP_WORLDS[_pinned], True)
+    )
 
 
 def run(command, cwd, extra=None):

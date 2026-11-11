@@ -573,6 +573,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/git/githooks.py | (none) | via .claude/rediacc_hooks/commit_policy.py | py |
 | .claude/rediacc_hooks/git/release_run.py | (none) | via .claude/rediacc_hooks/git/githooks.py | py |
 | .claude/rediacc_hooks/guards/__init__.py | (none) | via .claude/hooks/context/stop-hook-edit-check.py | py |
+| .claude/rediacc_hooks/guards/_backup_push.py | (none) | via .claude/rediacc_hooks/guards/block_backup_unverified_push.py | py |
 | .claude/rediacc_hooks/guards/_hookpath.py | (none) | via .claude/rediacc_hooks/guards/test-block_host_toolchain_run.py | py |
 | .claude/rediacc_hooks/guards/block_adhoc_sanctioned.py | (none) | via dispatch.py (glob) | py |
 | .claude/rediacc_hooks/guards/block_admin_merge.py | (none) | via dispatch.py (glob) | py |

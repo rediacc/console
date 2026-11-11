@@ -40,6 +40,7 @@ import sys
 from typing import Any
 
 from rediacc_hooks import commit_policy, hookio, shellscan, syspath
+from rediacc_hooks.guards import _backup_push
 
 CHAIN = "pre-bash"
 # Re-keyed from 39 to 40 on 2026-09-22 to make room for block_push_to_protected_branch.py at 39: "this branch may not be pushed to at all" is checked before "is this tree gate-verified".
@@ -1859,6 +1860,10 @@ def run(ev):
     if state is None:
         return hookio.ALLOW
     cmd, scan = state
+
+    # A push of nothing but `refs/backup/**` to its repository's pin is the git-level pre-push hook's to judge (box G5 of PLAN-local-first-delivery, `_backup_push`).
+    if _backup_push.admitted(ev, cmd):
+        return hookio.ALLOW
 
     # Command position, so prose about pushing is not a push. Same anchor as block-untagged-commit.sh; see lib/command-scan.sh for why the raw string is never matched directly.
     if not hookio.grep_q(PUSH_AT_COMMAND_POS, scan):

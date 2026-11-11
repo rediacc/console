@@ -360,6 +360,17 @@ CASES = [
     ),
 ]
 
+# BOX G5 OF PLAN-local-first-delivery: the shared backup-ref cases (`_backup_push.CASES`), in a world whose range touches the console backup paths, so every push it does not admit is refused here.
+BP = importlib.import_module("rediacc_hooks.guards._backup_push")
+BACKUP_WORLDS = {
+    True: BP.plant(built("bck-console-none")),
+    False: BP.plant(built("bck-console-none"), pinned=False),
+}
+CASES += [
+    (label, command, BACKUP_WORLDS[pinned], None, not admitted, "")
+    for label, command, pinned, admitted in BP.CASES
+]
+
 BROKEN_RUNNER = (
     "import sys; sys.path.insert(0, %r)\n"
     "from rediacc_hooks import hookio\n"

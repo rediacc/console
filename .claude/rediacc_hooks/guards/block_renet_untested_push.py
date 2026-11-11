@@ -32,6 +32,7 @@ import json
 import pathlib
 
 from rediacc_hooks import commit_policy, hookio, plan_gate, syspath
+from rediacc_hooks.guards import _backup_push
 from rediacc_hooks.guards import block_unverified_push as PUSH
 from rediacc_hooks.guards import block_vm_unverified_push as VM
 
@@ -429,6 +430,9 @@ the operator decide, naming the minute of that answer:
 def run(ev):
     cmd = ev.raw("tool_input", "command")
     if cmd in ("", "null"):
+        return hookio.ALLOW
+    # A push of nothing but `refs/backup/**` to its repository's pin is the git-level pre-push hook's to judge (box G5 of PLAN-local-first-delivery, `_backup_push`).
+    if _backup_push.admitted(ev, cmd):
         return hookio.ALLOW
     root = ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(["rev-parse", "--show-toplevel"])
     if not root:

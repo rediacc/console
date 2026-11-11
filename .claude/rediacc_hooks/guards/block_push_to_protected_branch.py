@@ -67,6 +67,7 @@ import subprocess
 import sys
 
 from rediacc_hooks import commit_policy, hookio, plan_gate, shellscan
+from rediacc_hooks.guards import _backup_push
 from rediacc_hooks.wellknown import GH_REPO
 
 CHAIN = "pre-bash"
@@ -429,6 +430,9 @@ def _pr_refusal(repo, branch, sha):
 def run(ev):
     cmd = ev.raw("tool_input", "command")
     if cmd in ("", "null"):
+        return hookio.ALLOW
+    # A push of nothing but `refs/backup/**` to its repository's pin is the git-level pre-push hook's to judge (box G5 of PLAN-local-first-delivery, `_backup_push`).
+    if _backup_push.admitted(ev, cmd):
         return hookio.ALLOW
 
     # SCOPE: this policy is about THIS checkout and its submodules. A push in a repository outside it (a `/tmp` fixture, even one the same command `git init`s) is not its business (finding #5810a9f3).
