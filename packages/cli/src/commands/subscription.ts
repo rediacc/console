@@ -190,6 +190,20 @@ function setSubscriptionTelemetryContext(input: {
   });
 }
 
+/** The one terms line of the login summary: accepted, pending with an accept URL, or pending. */
+function termsSummaryLine(terms: ClaimTerms): string {
+  if (terms.accepted) {
+    return t('commands.subscription.login.termsAccepted', { version: terms.accepted });
+  }
+  if (terms.acceptUrl) {
+    return t('commands.subscription.login.termsPendingAccept', {
+      url: terms.url,
+      acceptUrl: terms.acceptUrl,
+    });
+  }
+  return t('commands.subscription.login.termsPending', { url: terms.url });
+}
+
 /**
  * The post-login summary. One renderer for both login paths (an explicit
  * `--token` and the device-code flow), which had drifted into two copies of the
@@ -221,16 +235,7 @@ function renderLoginSummary(
     })
   );
   if (terms) {
-    outputService.info(
-      terms.accepted
-        ? t('commands.subscription.login.termsAccepted', { version: terms.accepted })
-        : terms.acceptUrl
-          ? t('commands.subscription.login.termsPendingAccept', {
-              url: terms.url,
-              acceptUrl: terms.acceptUrl,
-            })
-          : t('commands.subscription.login.termsPending', { url: terms.url })
-    );
+    outputService.info(termsSummaryLine(terms));
   }
   // Soft-claimed slots: renewals still succeed, but new repositories cannot be licensed, so say it at login rather than at the next `repo create`.
   if ((status.overLimitCount ?? 0) > 0) {

@@ -534,12 +534,14 @@ function termsRequiredError(parsed: { details?: Record<string, unknown> }): Vali
   const acceptUrl = typeof details.acceptUrl === 'string' ? details.acceptUrl : '';
   const flag = typeof details.flag === 'string' ? details.flag : undefined;
   const env = typeof details.env === 'string' ? details.env : undefined;
-  const message =
-    flag && env
-      ? t('errors.terms.requiredFree', { url, flag, env })
-      : acceptUrl
-        ? t('errors.terms.requiredAccept', { url, acceptUrl })
-        : t('errors.terms.required', { url });
+  let message: string;
+  if (flag && env) {
+    message = t('errors.terms.requiredFree', { url, flag, env });
+  } else if (acceptUrl) {
+    message = t('errors.terms.requiredAccept', { url, acceptUrl });
+  } else {
+    message = t('errors.terms.required', { url });
+  }
   return Object.assign(new ValidationError(message), {
     status: 403,
     code: TERMS_ACCEPTANCE_REQUIRED,
