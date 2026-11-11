@@ -1046,7 +1046,7 @@ def reseal_server_key(
     Nothing to do (the value returned as is, no line) when the store has no row, the row is not csk1 (`check_server_key` refuses it), the target's key is not in the environment (`check_server_key` refuses that too), or the row is already sealed under the target's kid. Both keys come from the environment under the names `key_env_name` gives (bws, `bws_env exec`); neither key nor the passphrase is printed or held here, since the plaintext stays inside the script.
     """
     match = CSK_VALUE.match(value) if isinstance(value, str) else None
-    if match is None:
+    if match is None or not isinstance(value, str):
         return value, None
     dst_name, want = key_kid(root, dst)
     if want is None or match.group(1) == want:
