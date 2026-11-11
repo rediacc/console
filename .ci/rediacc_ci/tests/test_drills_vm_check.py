@@ -274,7 +274,7 @@ class World(vm_check.Host):
         self.forget_keeps = over.pop("forget_keeps", False)
         # Stale fork entries sharing the grand's name: a bare forget is refused as ambiguous while any remains, and finds nothing ("is not in this config") once the family is gone.
         self.stale_fork_refs = list(over.pop("stale_fork_refs", ()))
-        # True: the ambiguity refusal lists no `<name>:<tag>` refs the harness can parse.
+        # True: the ambiguity refusal lists no refs at all.
         self.stale_refs_unlisted = over.pop("stale_refs_unlisted", False)
         # False: the worker has no BTRFS datastore until `machine setup` runs; `setup_rc` is that command's answer.
         self.datastore = over.pop("datastore", True)
