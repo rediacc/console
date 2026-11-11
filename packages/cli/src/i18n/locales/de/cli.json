@@ -2560,6 +2560,7 @@
       "description": "Lizenzierung und Abonnement-Tokens verwalten. Anmelden mit login, prüfen mit status, Lizenzen mit refresh neu ausstellen.",
       "descriptionShort": "Maschinenlizenzierung und Abonnement verwalten",
       "login": {
+        "backupNeedsTwoFactor": "Angemeldet, aber ohne Verwaltung des Backup-Speichers. Zwei-Faktor-Authentifizierung in den Einstellungen unter {{url}} aktivieren und danach erneut anmelden.",
         "channelSynced": "Update-Kanal auf {{channel}} gesetzt.",
         "description": "Mit einem API-Token aus dem Webportal authentifizieren",
         "discoveringRegions": "Verfügbare Regionen werden ermittelt...",

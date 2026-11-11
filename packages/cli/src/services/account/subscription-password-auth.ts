@@ -1,6 +1,7 @@
 import { t } from '../../i18n/index.js';
 import { ValidationError } from '../../utils/errors.js';
 import { readStdinValue } from '../../utils/stdin.js';
+import { outputService } from '../core/output.js';
 
 /** Environment names of the headless login. Secrets are read from the environment or stdin, never argv. */
 export const LOGIN_EMAIL_ENV = 'REDIACC_LOGIN_EMAIL';
@@ -140,6 +141,7 @@ interface MintReply {
   token?: string;
   error?: string;
   code?: string;
+  twoFactorRequired?: boolean;
 }
 
 /**
@@ -173,6 +175,16 @@ export async function loginWithPassword(
   let minted = await mint([...BASE_SCOPES, ...PRIVILEGED_SCOPES]);
   if (minted.status === 403 && minted.body.code === 'INSUFFICIENT_ORG_ROLE') {
     minted = await mint(BASE_SCOPES);
+  } else if (minted.status === 403 && minted.body.twoFactorRequired) {
+    // backup:manage needs 2FA on the account: sign in without it and say how to get it.
+    minted = await mint([...BASE_SCOPES, 'audit:write']);
+    if (minted.status < 400) {
+      outputService.warn(
+        t('commands.subscription.login.backupNeedsTwoFactor', {
+          url: `${serverUrl.replace(/\/+$/, '')}/account/settings`,
+        })
+      );
+    }
   }
   if (minted.status >= 400) throw refusal('token', minted);
   if (!minted.body.token) throw new ValidationError(t('commands.subscription.login.noSession'));

@@ -1942,6 +1942,7 @@
   "commands.subscription.activation.status.unavailable": "  التفعيل: تعذّر الاستعلام عن حالة الحساب",
   "commands.subscription.description": "إدارة التراخيص ورموز الاشتراك. سجّل الدخول بـ login، وافحص الحالة بـ status، وأعد إصدار التراخيص بـ refresh.",
   "commands.subscription.descriptionShort": "إدارة تراخيص الجهاز والاشتراك",
+  "commands.subscription.login.backupNeedsTwoFactor": "تم تسجيل الدخول بدون إدارة تخزين النسخ الاحتياطي. فعّل المصادقة الثنائية من الإعدادات على {{url}} ثم سجّل الدخول مجددًا.",
   "commands.subscription.login.channelSynced": "تم تعيين قناة التحديث إلى {{channel}}.",
   "commands.subscription.login.description": "المصادقة باستخدام رمز API من بوابة الويب",
   "commands.subscription.login.discoveringRegions": "جارٍ اكتشاف المناطق المتاحة...",

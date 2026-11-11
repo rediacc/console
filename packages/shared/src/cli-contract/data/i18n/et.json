@@ -1942,6 +1942,7 @@
   "commands.subscription.activation.status.unavailable": "  Aktiveerimine: konto olekut ei õnnestunud pärida",
   "commands.subscription.description": "Halda litsentsimist ja tellimuse tokeneid. Logi sisse käsuga login, uuri olekut käsuga status, väljasta litsentsid uuesti käsuga refresh.",
   "commands.subscription.descriptionShort": "Haldab masina litsentsimist ja tellimust",
+  "commands.subscription.login.backupNeedsTwoFactor": "Sisse logitud ilma varundusruumi haldamiseta. Lülita seadetes aadressil {{url}} sisse kaheastmeline autentimine ja logi uuesti sisse.",
   "commands.subscription.login.channelSynced": "Uuenduskanal seatud väärtusele {{channel}}.",
   "commands.subscription.login.description": "Autentimine brauseri või API tokeni kaudu",
   "commands.subscription.login.discoveringRegions": "Saadaolevaid piirkondi tuvastatakse...",

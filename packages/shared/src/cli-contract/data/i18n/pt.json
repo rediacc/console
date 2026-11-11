@@ -1942,6 +1942,7 @@
   "commands.subscription.activation.status.unavailable": "  Ativação: não foi possível consultar o estado da conta",
   "commands.subscription.description": "Gerir licenciamento e tokens de subscrição. Inicie sessão com login, inspecione com status, reemita licenças com refresh.",
   "commands.subscription.descriptionShort": "Gerir licenciamento e subscrição de máquinas",
+  "commands.subscription.login.backupNeedsTwoFactor": "Sessão iniciada sem a gestão do armazenamento de backups. Ative a autenticação de dois fatores nas Configurações, em {{url}}, e entre novamente.",
   "commands.subscription.login.channelSynced": "Canal de atualização definido para {{channel}}.",
   "commands.subscription.login.description": "Autenticar via browser ou token de API",
   "commands.subscription.login.discoveringRegions": "A descobrir regiões disponíveis...",

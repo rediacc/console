@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2600,
-    "sourceCommit": "75f26a529050410e4c534bbc3c0351570cd2eeac"
+    "keyCount": 2601,
+    "sourceCommit": "73768c2d6307891fc5e17a261e16701d567a0250"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1950,6 +1950,7 @@
     "commands.subscription.activation.status.unavailable": "5e58bee4",
     "commands.subscription.description": "330bc516",
     "commands.subscription.descriptionShort": "d22519b2",
+    "commands.subscription.login.backupNeedsTwoFactor": "fec31c9a",
     "commands.subscription.login.channelSynced": "6bcee7f1",
     "commands.subscription.login.description": "7ce10966",
     "commands.subscription.login.discoveringRegions": "e205214f",

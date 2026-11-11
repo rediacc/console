@@ -2560,6 +2560,7 @@
       "description": "Gérer les licences et les jetons d'abonnement. Connectez-vous avec login, inspectez avec status, réémettez les licences avec refresh.",
       "descriptionShort": "Gérer les licences machine et l’abonnement",
       "login": {
+        "backupNeedsTwoFactor": "Connexion établie sans gestion du stockage de sauvegarde. Activez l'authentification à deux facteurs dans les paramètres sur {{url}}, puis reconnectez-vous.",
         "channelSynced": "Canal de mise à jour défini sur {{channel}}.",
         "description": "S’authentifier avec un jeton API du portail web",
         "discoveringRegions": "Recherche des régions disponibles...",

@@ -2560,6 +2560,7 @@
       "description": "Lisanslama ve abonelik jetonlarını yönet. login ile giriş yapın, status ile inceleyin, refresh ile lisansları yeniden verin.",
       "descriptionShort": "Makine lisanslama ve abonelik yönetimi",
       "login": {
+        "backupNeedsTwoFactor": "Yedekleme depolama yönetimi olmadan oturum açıldı. {{url}} adresindeki Ayarlar'dan iki adımlı doğrulamayı açın, ardından yeniden oturum açın.",
         "channelSynced": "Güncelleme kanalı {{channel}} olarak ayarlandı.",
         "description": "Web portaldan alınan API belirteci ile kimlik doğrulama",
         "discoveringRegions": "Kullanılabilir bölgeler keşfediliyor...",

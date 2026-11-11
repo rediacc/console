@@ -1942,6 +1942,7 @@
   "commands.subscription.activation.status.unavailable": "  Активация: не удалось запросить состояние аккаунта",
   "commands.subscription.description": "Управление лицензированием и токенами подписки. Войдите с помощью login, проверяйте с помощью status, переиздавайте лицензии с помощью refresh.",
   "commands.subscription.descriptionShort": "Управление лицензиями машин и подпиской",
+  "commands.subscription.login.backupNeedsTwoFactor": "Вход выполнен без управления хранилищем резервных копий. Включите двухфакторную аутентификацию в настройках по адресу {{url}} и войдите снова.",
   "commands.subscription.login.channelSynced": "Канал обновления установлен на {{channel}}.",
   "commands.subscription.login.description": "Аутентификация с помощью API-токена из веб-портала",
   "commands.subscription.login.discoveringRegions": "Обнаружение доступных регионов...",

@@ -2560,6 +2560,7 @@
       "description": "Gestionar licencias y tokens de suscripción. Inicia sesión con login, inspecciona con status, reemite licencias con refresh.",
       "descriptionShort": "Gestionar licencias de máquina y suscripción",
       "login": {
+        "backupNeedsTwoFactor": "Sesión iniciada sin gestión del almacenamiento de copias de seguridad. Activa la autenticación en dos pasos en Ajustes, en {{url}}, y vuelve a iniciar sesión.",
         "channelSynced": "Canal de actualización establecido en {{channel}}.",
         "description": "Autenticarse con un token API del portal web",
         "discoveringRegions": "Descubriendo regiones disponibles...",

@@ -1942,6 +1942,7 @@
   "commands.subscription.activation.status.unavailable": "  활성화: 계정 상태를 조회할 수 없습니다",
   "commands.subscription.description": "라이선스와 구독 토큰을 관리합니다. login으로 로그인하고, status로 확인하고, refresh로 라이선스를 재발급합니다",
   "commands.subscription.descriptionShort": "머신 라이선스 및 구독 관리",
+  "commands.subscription.login.backupNeedsTwoFactor": "백업 스토리지 관리 권한 없이 로그인했습니다. {{url}} 설정에서 2단계 인증을 켠 뒤 다시 로그인하세요.",
   "commands.subscription.login.channelSynced": "업데이트 채널이 {{channel}}으로 설정되었습니다.",
   "commands.subscription.login.description": "브라우저 또는 API 토큰으로 인증합니다",
   "commands.subscription.login.discoveringRegions": "사용 가능한 지역 검색 중...",

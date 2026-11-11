@@ -1942,6 +1942,7 @@
   "commands.subscription.activation.status.unavailable": "  Aktivierung: Kontostatus konnte nicht abgefragt werden",
   "commands.subscription.description": "Lizenzierung und Abonnement-Tokens verwalten. Anmelden mit login, prüfen mit status, Lizenzen mit refresh neu ausstellen.",
   "commands.subscription.descriptionShort": "Maschinenlizenzierung und Abonnement verwalten",
+  "commands.subscription.login.backupNeedsTwoFactor": "Angemeldet, aber ohne Verwaltung des Backup-Speichers. Zwei-Faktor-Authentifizierung in den Einstellungen unter {{url}} aktivieren und danach erneut anmelden.",
   "commands.subscription.login.channelSynced": "Update-Kanal auf {{channel}} gesetzt.",
   "commands.subscription.login.description": "Mit einem API-Token aus dem Webportal authentifizieren",
   "commands.subscription.login.discoveringRegions": "Verfügbare Regionen werden ermittelt...",

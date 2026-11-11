@@ -1942,6 +1942,7 @@
   "commands.subscription.activation.status.unavailable": "  Etkinleştirme: hesap durumu sorgulanamadı",
   "commands.subscription.description": "Lisanslama ve abonelik jetonlarını yönet. login ile giriş yapın, status ile inceleyin, refresh ile lisansları yeniden verin.",
   "commands.subscription.descriptionShort": "Makine lisanslama ve abonelik yönetimi",
+  "commands.subscription.login.backupNeedsTwoFactor": "Yedekleme depolama yönetimi olmadan oturum açıldı. {{url}} adresindeki Ayarlar'dan iki adımlı doğrulamayı açın, ardından yeniden oturum açın.",
   "commands.subscription.login.channelSynced": "Güncelleme kanalı {{channel}} olarak ayarlandı.",
   "commands.subscription.login.description": "Web portaldan alınan API belirteci ile kimlik doğrulama",
   "commands.subscription.login.discoveringRegions": "Kullanılabilir bölgeler keşfediliyor...",

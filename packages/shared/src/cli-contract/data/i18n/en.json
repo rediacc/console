@@ -1942,6 +1942,7 @@
   "commands.subscription.activation.status.unavailable": "  Activation: could not query account state",
   "commands.subscription.description": "Manage licensing and subscription tokens. Sign in with login, inspect with status, reissue licenses with refresh.",
   "commands.subscription.descriptionShort": "Manage machine licensing and subscription",
+  "commands.subscription.login.backupNeedsTwoFactor": "Signed in without backup storage management. Turn on two-factor authentication in Settings at {{url}}, then sign in again.",
   "commands.subscription.login.channelSynced": "Update channel set to {{channel}}.",
   "commands.subscription.login.description": "Authenticate via browser or API token",
   "commands.subscription.login.discoveringRegions": "Discovering available regions...",

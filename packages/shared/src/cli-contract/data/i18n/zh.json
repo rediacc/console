@@ -1942,6 +1942,7 @@
   "commands.subscription.activation.status.unavailable": "  激活：无法查询账户状态",
   "commands.subscription.description": "管理许可证和订阅令牌。使用 login 登录，使用 status 查看，使用 refresh 重新签发许可证。",
   "commands.subscription.descriptionShort": "管理机器许可证和订阅",
+  "commands.subscription.login.backupNeedsTwoFactor": "已登录，但没有备份存储管理权限。请在 {{url}} 的设置中开启双重身份验证，然后重新登录。",
   "commands.subscription.login.channelSynced": "更新频道已设置为{{channel}}。",
   "commands.subscription.login.description": "使用Web门户的API令牌进行认证",
   "commands.subscription.login.discoveringRegions": "正在发现可用区域...",

@@ -1942,6 +1942,7 @@
   "commands.subscription.activation.status.unavailable": "  Activation : impossible de consulter l'état du compte",
   "commands.subscription.description": "Gérer les licences et les jetons d'abonnement. Connectez-vous avec login, inspectez avec status, réémettez les licences avec refresh.",
   "commands.subscription.descriptionShort": "Gérer les licences machine et l’abonnement",
+  "commands.subscription.login.backupNeedsTwoFactor": "Connexion établie sans gestion du stockage de sauvegarde. Activez l'authentification à deux facteurs dans les paramètres sur {{url}}, puis reconnectez-vous.",
   "commands.subscription.login.channelSynced": "Canal de mise à jour défini sur {{channel}}.",
   "commands.subscription.login.description": "S’authentifier avec un jeton API du portail web",
   "commands.subscription.login.discoveringRegions": "Recherche des régions disponibles...",

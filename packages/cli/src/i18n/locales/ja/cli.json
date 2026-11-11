@@ -2560,6 +2560,7 @@
       "description": "ライセンスとサブスクリプショントークンを管理する。login でサインインし、status で確認し、refresh でライセンスを再発行する",
       "descriptionShort": "マシンライセンスとサブスクリプションの管理",
       "login": {
+        "backupNeedsTwoFactor": "バックアップストレージの管理権限なしでサインインしました。{{url}} の設定で二要素認証を有効にしてから、もう一度サインインしてください。",
         "channelSynced": "更新チャンネルを{{channel}}に設定しました。",
         "description": "WebポータルのAPIトークンで認証",
         "discoveringRegions": "利用可能なリージョンを検出中...",

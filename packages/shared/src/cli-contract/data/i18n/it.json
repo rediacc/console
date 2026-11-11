@@ -1942,6 +1942,7 @@
   "commands.subscription.activation.status.unavailable": "  Attivazione: impossibile interrogare lo stato dell'account",
   "commands.subscription.description": "Gestisci le licenze e i token di abbonamento. Accedi con login, ispeziona con status, riemetti le licenze con refresh.",
   "commands.subscription.descriptionShort": "Gestisci le licenze e l'abbonamento delle macchine",
+  "commands.subscription.login.backupNeedsTwoFactor": "Accesso eseguito senza la gestione dell'archiviazione dei backup. Attiva l'autenticazione a due fattori nelle impostazioni su {{url}}, poi accedi di nuovo.",
   "commands.subscription.login.channelSynced": "Canale di aggiornamento impostato su {{channel}}.",
   "commands.subscription.login.description": "Autentica tramite browser o token API",
   "commands.subscription.login.discoveringRegions": "Rilevamento delle regioni disponibili in corso...",

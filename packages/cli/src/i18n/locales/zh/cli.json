@@ -2560,6 +2560,7 @@
       "description": "管理许可证和订阅令牌。使用 login 登录，使用 status 查看，使用 refresh 重新签发许可证。",
       "descriptionShort": "管理机器许可证和订阅",
       "login": {
+        "backupNeedsTwoFactor": "已登录，但没有备份存储管理权限。请在 {{url}} 的设置中开启双重身份验证，然后重新登录。",
         "channelSynced": "更新频道已设置为{{channel}}。",
         "description": "使用Web门户的API令牌进行认证",
         "discoveringRegions": "正在发现可用区域...",

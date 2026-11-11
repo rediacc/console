@@ -2560,6 +2560,7 @@
       "description": "Halda litsentsimist ja tellimuse tokeneid. Logi sisse käsuga login, uuri olekut käsuga status, väljasta litsentsid uuesti käsuga refresh.",
       "descriptionShort": "Haldab masina litsentsimist ja tellimust",
       "login": {
+        "backupNeedsTwoFactor": "Sisse logitud ilma varundusruumi haldamiseta. Lülita seadetes aadressil {{url}} sisse kaheastmeline autentimine ja logi uuesti sisse.",
         "channelSynced": "Uuenduskanal seatud väärtusele {{channel}}.",
         "description": "Autentimine brauseri või API tokeni kaudu",
         "discoveringRegions": "Saadaolevaid piirkondi tuvastatakse...",

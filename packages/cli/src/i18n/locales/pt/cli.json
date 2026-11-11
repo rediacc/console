@@ -2560,6 +2560,7 @@
       "description": "Gerir licenciamento e tokens de subscrição. Inicie sessão com login, inspecione com status, reemita licenças com refresh.",
       "descriptionShort": "Gerir licenciamento e subscrição de máquinas",
       "login": {
+        "backupNeedsTwoFactor": "Sessão iniciada sem a gestão do armazenamento de backups. Ative a autenticação de dois fatores nas Configurações, em {{url}}, e entre novamente.",
         "channelSynced": "Canal de atualização definido para {{channel}}.",
         "description": "Autenticar via browser ou token de API",
         "discoveringRegions": "A descobrir regiões disponíveis...",

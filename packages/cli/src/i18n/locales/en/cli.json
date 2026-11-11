@@ -2483,6 +2483,7 @@
         "passwordRefused": "Headless login refused at {{step}} (HTTP {{status}}): {{error}}",
         "noSession": "The account server returned no session for the headless login.",
         "noSubscription": "The account has no subscription to mint a CLI token for.",
+        "backupNeedsTwoFactor": "Signed in without backup storage management. Turn on two-factor authentication in Settings at {{url}}, then sign in again.",
         "passwordSigningIn": "Signing in...",
         "passwordSignedIn": "Signed in",
         "success": "Logged in successfully",

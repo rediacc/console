@@ -1942,6 +1942,7 @@
   "commands.subscription.activation.status.unavailable": "  アクティベーション: アカウント状態を照会できませんでした",
   "commands.subscription.description": "ライセンスとサブスクリプショントークンを管理する。login でサインインし、status で確認し、refresh でライセンスを再発行する",
   "commands.subscription.descriptionShort": "マシンライセンスとサブスクリプションの管理",
+  "commands.subscription.login.backupNeedsTwoFactor": "バックアップストレージの管理権限なしでサインインしました。{{url}} の設定で二要素認証を有効にしてから、もう一度サインインしてください。",
   "commands.subscription.login.channelSynced": "更新チャンネルを{{channel}}に設定しました。",
   "commands.subscription.login.description": "WebポータルのAPIトークンで認証",
   "commands.subscription.login.discoveringRegions": "利用可能なリージョンを検出中...",
