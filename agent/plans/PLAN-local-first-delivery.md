@@ -73,8 +73,9 @@ Hook facts the design depends on:
 - [x] G5 [writer] The pre-bash guards admit a push whose every destination is `refs/backup/**` on the pinned remote, through the shared predicate, and judge every other ref as before.
   Owns: the seven guards and their test-*.py in the header Owns. Accept: each `python3 .claude/rediacc_hooks/guards/test-<guard>.py` rc 0 with three new cases per guard: `git push gitlab HEAD:refs/backup/1104-1/live` admitted, `git push origin HEAD:refs/backup/1104-1/live` refused, `git push gitlab HEAD:refs/heads/x` still refused (the last two are controls that pass today and must keep passing).
     (ticked) 2026-11-11T10:44:57Z by d778be9d: commit:2577b83398 seven push guards admit a pinned refs/backup push through one predicate; all seven guard suites rc=0, test-block_git_hook_bypass rc=0
-- [ ] G6 [writer] `backup-ref list|restore|prune|status` and the Stop-hook `backup-lag` check.
+- [x] G6 [writer] `backup-ref list|restore|prune|status` and the Stop-hook `backup-lag` check.
   Owns: .ci/rediacc_ci/dev/backup_ref.py, .ci/rediacc_ci/tests/test_dev_backup_ref.py, .claude/hooks/stop/wl_checks.py. Accept: pytest rc 0: restore writes only `refs/backup-restored/*` (no `refs/heads` change), prune deletes a 91-day daily and a 31-day pre-rewrite and keeps an 89-day daily, and status exits 1 at 51 commits behind and 0 at 50.
+    (ticked) 2026-11-11T11:32:39Z by d778be9d: commit:bb501355f4 6 h lag clause, restore docs and verb summary on top of a5b7c90910 (list, restore, prune, status, backup-lag); pytest test_dev_backup_ref and test_wl_checks_backup_lag rc=0
 - [x] G7 [writer] Docs: a backup-refs section in docs/agent-reference (restore recipe, retention, why never `refs/remotes`).
   Owns: docs/agent-reference/plan-records.md is NOT touched here; the new section goes in the doc the lead names. Accept: `npm run check:ci-doc-region-parity` rc 0.
     (ticked) 2026-11-11T09:55:05Z by d778be9d: commit:4a91c835a4 backup refs section in docs/agent-reference/local-env.md; check:ci-doc-region-parity rc=0
