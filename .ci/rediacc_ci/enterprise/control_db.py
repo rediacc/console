@@ -71,7 +71,7 @@ def require_token(environ: Mapping[str, str] | None = None) -> None:
     if not (os.environ if environ is None else environ).get(AUTH_ENV):
         raise ControlDbError(
             "%s is not set: wrangler needs it non-interactively; run under "
-            "`python3 -m rediacc_ci.core.bws_env exec --profile %s -- <command>`"
+            "`PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile %s -- <command>`"
             % (AUTH_ENV, PROFILE)
         )
 

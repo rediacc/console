@@ -892,6 +892,7 @@ def main():
 
     # b403757f.1: the same skip through the REAL reader. A root with no proof-tiers.json makes `github_wait_config` itself answer None (it catches the read failure); the repo's own root, which has the map, makes it answer a config (the control).
     _sp_spec = importlib.util.spec_from_file_location("_bpwd_syspath", HERE.parent / "syspath.py")
+    assert _sp_spec is not None and _sp_spec.loader is not None
     _syspath = importlib.util.module_from_spec(_sp_spec)
     _sp_spec.loader.exec_module(_syspath)
     _stop_dir = str(_syspath.STOP_DIR)

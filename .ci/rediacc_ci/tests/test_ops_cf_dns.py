@@ -55,7 +55,16 @@ def ensure(http, **kw):
         "comment": "originless",
     }
     args.update(kw)
-    return cf_dns.ensure_record(http=http, **args)
+    return cf_dns.ensure_record(
+        http=http,
+        zone=str(args["zone"]),
+        name=str(args["name"]),
+        rtype=str(args["rtype"]),
+        content=str(args["content"]),
+        proxied=bool(args["proxied"]),
+        comment=str(args["comment"]),
+        dry_run=bool(args.get("dry_run", False)),
+    )
 
 
 def test_create_posts_one_record():
@@ -94,7 +103,8 @@ def test_update_in_place_on_content_change():
 def test_proxied_flag_change_updates():
     http = Rec([rec(proxied=False)])
     assert ensure(http).action == "updated"
-    assert http.writes()[0][2]["proxied"] is True
+    body = http.writes()[0][2]
+    assert body is not None and body["proxied"] is True
     http = Rec([rec(proxied=False)])
     assert ensure(http, proxied=False).action == "unchanged"
 

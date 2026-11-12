@@ -1667,7 +1667,7 @@ def test_an_exec_refused_by_the_worker_is_refused_with_its_status():
             return acct._json(200, {"ok": True})
         return StoreV6._console(acct, path, headers, doc)
 
-    acct._console = no_grant
+    setattr(acct, "_console", no_grant)
     assert console_v7(acct, FakeCrypto()) == proof.Answer(False, "HTTP 404")
 
 
