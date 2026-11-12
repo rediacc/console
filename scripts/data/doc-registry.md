@@ -747,6 +747,7 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_block_settled_questions.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_block_turbo_early_push_merge_phase.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_bulk_review_records.py | (none) | via pytest (testpaths) | py |
+| .claude/rediacc_hooks/tests/test_conftest_no_ambient_git_config.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_dispatch.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_gh_flag_spellings.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_githook_backup_receipt.py | (none) | via pytest (testpaths) | py |
@@ -770,7 +771,6 @@ Scans: the `hooks` wiring in .claude/settings.json, closed transitively over the
 | .claude/rediacc_hooks/tests/test_hooks_trapguard.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_hooks_wiring.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_landing.py | (none) | via pytest (testpaths) | py |
-| .claude/rediacc_hooks/tests/test_no_ambient_git_config.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_output_landings.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_plan_gate.py | (none) | via pytest (testpaths) | py |
 | .claude/rediacc_hooks/tests/test_plan_gate_ceiling.py | (none) | via pytest (testpaths) | py |
