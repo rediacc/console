@@ -25,3 +25,4 @@
 {"at": "2026-11-10T14:57:49Z", "band": "early", "epoch": 21, "ev": "ordered", "from_off": 238604947, "session": "d778be9d", "state_md_at": "2026-11-10T14:57:48Z", "threshold": 967000, "to_off": 1517665944, "transcript": "/home/developer/.claude/projects/-home-developer-console/d778be9d-a8e6-4b88-a419-e8a03e7e9888.jsonl", "usage": 732287}
 {"at": "2026-11-10T14:57:56Z", "band": "early", "ev": "tracked", "item": "cb6c78eb", "session": "d778be9d"}
 {"agent": "a3e8877d1c647e3cb", "at": "2026-11-10T15:05:30Z", "band": "early", "ev": "dispatched", "item": "cb6c78eb", "session": "d778be9d"}
+{"at": "2026-11-10T15:20:37Z", "band": "early", "ev": "saved", "item": "cb6c78eb", "plan": "agent/plans/PLAN-stop-hook-retro-20261110.md", "session": "d778be9d", "tasks_open": 8, "tasks_total": 8}
