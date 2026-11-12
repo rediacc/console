@@ -686,9 +686,11 @@ RUN ARCH=$(dpkg --print-architecture) \
 # devbox defeats the reason agent-browser is in this image, and a session probing a
 # CI failure locally reads three failures that are the PIN talking, not the code.
 #
-# Both sides are pinned now: the workflow names a version instead of `@latest`, and
-# this ARG names the same one. They must move together -- a devbox that disagrees
-# with CI is worse than one that is merely behind, because it answers confidently.
+# CI cannot drift from this ARG: the Install agent-browser step of ci-quality.yml reads
+# the pin from this file (`rediacc_ci.ci.agent_browser_pin read`) instead of naming a
+# version of its own, so a bump here moves the devbox and CI together. A devbox that
+# disagreed with CI would be worse than one that is merely behind, because it answers
+# confidently.
 ARG AGENT_BROWSER_VERSION=0.42.0
 RUN npm install -g agent-browser@${AGENT_BROWSER_VERSION} --before "${NPM_BEFORE}" \
     && npm cache clean --force

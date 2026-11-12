@@ -101,6 +101,12 @@ describe('rdc legal --json', () => {
     expect(out).not.toContain('commands.legal.notAccepted');
   });
 
+  it('a server that answers 500 surfaces its error instead of being flagged unreachable', async () => {
+    m.tokenState.mockReturnValue({ kind: 'ready', token: {}, serverUrl: 'x' });
+    m.fetch.mockRejectedValue(Object.assign(new Error('boom'), { status: 500 }));
+    await expect(collectLegalInfo()).rejects.toMatchObject({ status: 500 });
+  });
+
   it('a reachable server with no acceptance on record is plainly not accepted', async () => {
     m.tokenState.mockReturnValue({ kind: 'ready', token: {}, serverUrl: 'x' });
     m.fetch.mockResolvedValue({ accepted: null });

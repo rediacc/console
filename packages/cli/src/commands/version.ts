@@ -26,7 +26,9 @@ async function activeLicense(): Promise<VersionInfo['license']> {
   try {
     const status = await accountServerFetch<{ planCode?: string }>(LICENSE_STATUS_PATH);
     return status.planCode ? { kind: 'account', tier: status.planCode } : { kind: 'unknown' };
-  } catch {
+  } catch (error) {
+    // A server that ANSWERED with an error status (an expired login's 401, a 500) is not unreachable: surface its refusal instead of labelling it a network failure.
+    if (typeof (error as { status?: unknown } | null)?.status === 'number') throw error;
     return { kind: 'unreachable' };
   }
 }

@@ -57,24 +57,31 @@ interface TermsStatusResponse {
   accepted?: { version?: string; acceptedAt?: string; method?: string } | null;
 }
 
+/** True for a failure carrying an HTTP status: the server answered, so the network was reachable. */
+function answeredWithStatus(error: unknown): boolean {
+  return typeof (error as { status?: unknown } | null)?.status === 'number';
+}
+
+/** The acceptance the account server holds, or null when it holds none. */
+async function accountAcceptance(): Promise<AcceptedTerms | null> {
+  const { accepted } = await accountServerFetch<TermsStatusResponse>(TERMS_STATUS_PATH);
+  if (!accepted?.version) return null;
+  return {
+    version: accepted.version,
+    acceptedAt: accepted.acceptedAt ?? null,
+    method: accepted.method ?? null,
+    source: 'account',
+  };
+}
+
 /** The acceptance on record: the account server's answer when logged in, this config's state when anonymous. A server that cannot answer leaves it unknown, flagged `unreachable`. */
 async function acceptedTerms(): Promise<{ accepted: AcceptedTerms | null; unreachable: boolean }> {
   if (getSubscriptionTokenState().kind === 'ready') {
     try {
-      const status = await accountServerFetch<TermsStatusResponse>(TERMS_STATUS_PATH);
-      const accepted = status.accepted;
-      return {
-        accepted: accepted?.version
-          ? {
-              version: accepted.version,
-              acceptedAt: accepted.acceptedAt ?? null,
-              method: accepted.method ?? null,
-              source: 'account',
-            }
-          : null,
-        unreachable: false,
-      };
-    } catch {
+      return { accepted: await accountAcceptance(), unreachable: false };
+    } catch (error) {
+      // A server that ANSWERED with an error status (401, 500) is not unreachable: surface its refusal instead of labelling it a network failure.
+      if (answeredWithStatus(error)) throw error;
       return { accepted: null, unreachable: true };
     }
   }

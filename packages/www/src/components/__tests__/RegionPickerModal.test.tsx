@@ -1,9 +1,12 @@
 import { BAKED_IN_REGIONS } from '@rediacc/shared/regions';
+import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Region } from '../../config/regions';
+import en from '../../i18n/translations/en.json';
 import {
   createPickTracker,
   extractDomain,
+  LookupPrivacyNote,
   lookupTarget,
   modeFromPath,
   openPhase,
@@ -213,5 +216,26 @@ describe('lookupTarget', () => {
     expect(lookupTarget('')).toBeNull();
     expect(lookupTarget('jane@')).toBeNull();
     expect(lookupTarget('acme')).toBeNull();
+  });
+});
+
+describe('LookupPrivacyNote', () => {
+  const privacy = (en as unknown as { regionPicker: { lookup: { privacy: string } } }).regionPicker
+    .lookup.privacy;
+
+  it('wraps each sentence of the real privacy note in its own .sentence span', () => {
+    const html = renderToStaticMarkup(<LookupPrivacyNote text={privacy} lang="en" />);
+    expect(html.startsWith('<p class="region-picker-footer-note">')).toBe(true);
+    expect(html.match(/<span class="sentence">/g)).toHaveLength(2);
+    expect(html).toContain(
+      '<span class="sentence">Only the domain is sent to find your region.</span>'
+    );
+  });
+
+  it('renders a one-sentence note as plain text with no span (control)', () => {
+    const html = renderToStaticMarkup(
+      <LookupPrivacyNote text="Only the domain is sent." lang="en" />
+    );
+    expect(html).toBe('<p class="region-picker-footer-note">Only the domain is sent.</p>');
   });
 });

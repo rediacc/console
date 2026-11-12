@@ -50,12 +50,13 @@ vi.mock('../renet/provision-state.js', () => ({
 const CONFIG = { renetPath: process.execPath };
 const MACHINE = { ip: '10.0.0.5', user: 'root', port: 22 };
 
-/** A renet source tree on disk: the guard only reads a work tree that holds renet's `build.sh`. */
+// Trees made by renetTree(), removed after each test.
 const renetTrees: string[] = [];
 afterEach(() => {
   for (const dir of renetTrees.splice(0)) fs.rmSync(dir, { recursive: true, force: true });
 });
 
+/** A renet source tree on disk: the guard only reads a work tree that holds renet's `build.sh`. */
 function renetTree(): string {
   const top = fs.mkdtempSync(path.join(os.tmpdir(), 'renet-access-'));
   renetTrees.push(top);

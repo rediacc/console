@@ -1273,7 +1273,7 @@ function selftest(): number {
     couldAffect(ROOT, www, [anyPath]).length === www.length
   );
   const globbed = execFileSync(
-    'node',
+    process.execPath,
     [path.join(ROOT, 'scripts/gen/gen-docs.ts'), '--could-affect', '.ci/config/env-manifes?.json'],
     { cwd: ROOT }
   ).toString('utf-8');
@@ -1285,7 +1285,7 @@ function selftest(): number {
   );
   const bracketed = JSON.parse(
     execFileSync(
-      'node',
+      process.execPath,
       [
         path.join(ROOT, 'scripts/gen/gen-docs.ts'),
         '--could-affect',
@@ -1304,7 +1304,7 @@ function selftest(): number {
   try {
     const un = JSON.parse(
       execFileSync(
-        'node',
+        process.execPath,
         [
           path.join(ROOT, 'scripts/gen/gen-docs.ts'),
           '--could-affect',
@@ -1319,7 +1319,7 @@ function selftest(): number {
   }
   // The zero-hit branch: a glob matching nothing names itself on stderr, and with no other path the answer is refused (64), never an empty verdict.
   const zero = spawnSync(
-    'node',
+    process.execPath,
     [path.join(ROOT, 'scripts/gen/gen-docs.ts'), '--could-affect', 'scripts/gen/no-such-fil?.json'],
     { cwd: ROOT, encoding: 'utf-8' }
   );

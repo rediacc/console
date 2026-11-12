@@ -58,7 +58,7 @@ Unpushed work gets an off-machine copy under `refs/backup/<branch>/` on the repo
 
 | Ref | Written | Mutability |
 |---|---|---|
-| `live` | Created at HEAD by the first sync of a branch, then fast-forwarded by every later sync | Moves forward only |
+| `live` | Created at HEAD by the first sync of a branch, then fast-forwarded by every later sync | Moves forward only, except that a rewrite deletes it and recreates it at HEAD |
 | `daily-<YYYY-MM-DD>` | Created at HEAD by the first sync of each UTC day | Immutable |
 | `pre-rewrite-<YYYYMMDDTHHMMZ>` | When HEAD no longer descends from `live` (amend, rebase): keeps the old `live` tip, then `live` restarts at HEAD | Immutable |
 

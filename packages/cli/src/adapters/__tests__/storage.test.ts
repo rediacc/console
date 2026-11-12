@@ -1022,7 +1022,9 @@ describe('ConfigFileStorage', () => {
       expect((await storage.load('test')).machine).toBe('cached-marker');
       // A directory where the token file belongs: unlink fails with a non-ENOENT error.
       await fs.mkdir(join(testDir, 'api-token-test.json'));
-      await expect(storage.delete('test')).rejects.toThrow();
+      await expect(storage.delete('test')).rejects.toMatchObject({
+        code: expect.stringMatching(/^(EISDIR|EPERM)$/),
+      });
       expect(await fileExists(join(testDir, 'test.json'))).toBe(false);
       expect((await storage.load('test')).machine).not.toBe('cached-marker');
     });

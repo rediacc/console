@@ -51,8 +51,8 @@ ARG NPM_VERSION=11.21.0
 # into an ESM bundle that __dirname is undefined (Node 24 refuses the module
 # with ERR_AMBIGUOUS_MODULE_SYNTAX, since the bundle also holds top-level
 # await), and no .node file would sit beside it anyway. The package ships
-# N-API prebuilds for every platform, so no compile is needed: the stage
-# below stages the package's lib/ plus the one prebuild this platform loads,
+# N-API prebuilds for the platforms it supports, so no compile is needed (the
+# stage fails the build if none matches): the stage below stages the package's lib/ plus the one prebuild this platform loads,
 # and the runtime stage puts it at /app/account/node_modules next to the
 # bundle, where Node resolves the external import.
 # =============================================================================

@@ -49,6 +49,14 @@ describe('rdc version', () => {
     expect(out).not.toContain('commands.version.license.unknown');
   });
 
+  it('a server that answers 401 is reported as its error, not as unreachable', async () => {
+    m.tokenState.mockReturnValue({ kind: 'ready', token: {}, serverUrl: 'x' });
+    m.fetch.mockRejectedValue(Object.assign(new Error('Unauthorized'), { status: 401 }));
+    await run([]);
+    expect(m.handleError).toHaveBeenCalledTimes(1);
+    expect(m.print).not.toHaveBeenCalled();
+  });
+
   it('a reachable server that names no plan stays unknown, not unreachable', async () => {
     m.tokenState.mockReturnValue({ kind: 'ready', token: {}, serverUrl: 'x' });
     m.fetch.mockResolvedValue({});

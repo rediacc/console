@@ -1614,13 +1614,13 @@ async function runnerProcessSelftest(): Promise<{ assertions: number; failures: 
     );
     // THE PLANT: a gate that survives its runner (here a process in its own session, outside the watcher's group) must make waitGone report null, or the control above could never go red. Short bound; the plant is killed at once.
     const survivor = spawn('tail', ['-f', '/dev/null'], { stdio: 'ignore', detached: true });
-    // An 'error' listener, or a missing `tail` binary is an unhandled event that aborts the selftest instead of failing this assertion.
-    let survivorSpawnError: Error | null = null;
-    survivor.on('error', (e) => {
-      survivorSpawnError = e;
+    // Node reports a failed spawn (ENOENT for a missing `tail`) asynchronously, as an 'error' event; wait for 'spawn' or 'error' before reading the outcome, or the message below would always say "nothing". The listener also keeps a missing binary from aborting the selftest as an unhandled event.
+    const survivorSpawnError = await new Promise<Error | null>((resolve) => {
+      survivor.once('error', (e) => resolve(e));
+      survivor.once('spawn', () => resolve(null));
     });
     require_(
-      survivor.pid !== undefined,
+      survivorSpawnError === null && survivor.pid !== undefined,
       `CONTROL: the plant needs the tail binary, spawn said ${String(survivorSpawnError ?? 'nothing')}`
     );
     const survivorPid = survivor.pid ?? Number.NaN;

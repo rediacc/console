@@ -126,6 +126,13 @@ const LOOKUP_MESSAGE_KEY: Record<LookupError, string> = {
   error: 'regionPicker.lookup.error',
 };
 
+/** The lookup footer: each sentence of the privacy note is its own `.sentence` line-breaking unit. */
+export const LookupPrivacyNote: React.FC<{ text: string; lang: Language }> = ({ text, lang }) => (
+  <p className="region-picker-footer-note">
+    <Sentences text={text} lang={lang} />
+  </p>
+);
+
 /** Work-email form. Only the domain is looked up; the answer is a host or a neutral miss, the same for every address at a domain. The address itself only pre-fills the sign-in page, via a URL fragment. */
 const LookupForm: React.FC<LookupFormProps> = ({ t, lang, targetPath, onBack }) => {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -176,9 +183,7 @@ const LookupForm: React.FC<LookupFormProps> = ({ t, lang, targetPath, onBack }) 
         ref={inputRef}
         disabled={loading}
       />
-      <p className="region-picker-footer-note">
-        <Sentences text={t('regionPicker.lookup.privacy')} lang={lang} />
-      </p>
+      <LookupPrivacyNote text={t('regionPicker.lookup.privacy')} lang={lang} />
       {messageKey && !(lookupError === 'captcha' && captcha.failed) && (
         <p className="form-error" role="alert">
           {t(messageKey)}
