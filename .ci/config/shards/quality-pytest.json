@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-12T09:04:25.524Z",
+  "generatedAt": "2026-11-12T10:52:39.675Z",
   "legs": [
     {
       "index": 1,
@@ -643,6 +643,7 @@
         "pytest:.ci/rediacc_ci/tests/test_named_paths.py",
         "pytest:.ci/rediacc_ci/tests/test_native.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_apply_cf_redirect_rules.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_cf_dns.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_cf_usage_report.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_free_to_registered.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_health_deploy.py",
