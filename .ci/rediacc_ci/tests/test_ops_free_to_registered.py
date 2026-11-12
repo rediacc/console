@@ -640,3 +640,36 @@ def test_cleanup_fails_when_the_device_code_row_remains():
 
     with pytest.raises(ftr.DrillError):
         ftr.cleanup("ftr+20261111103000@rediacc.io", Stuck().rows, lambda _m: None, [USER_CODE])
+
+
+def _stub(tmp_path, body):
+    script = tmp_path / "stub.sh"
+    script.write_text("#!/bin/sh\n" + body)
+    script.chmod(0o755)
+    return script
+
+
+URL_LINE = "  https://bench.example/account/authorize?code=ABCD-EFGH-JK&email=a%40b.co"
+
+
+def test_the_process_reads_the_url_the_cli_prints_on_stderr(tmp_path):
+    # The CLI writes the verification URL through outputService.info, which is stderr.
+    script = _stub(tmp_path, 'echo "Open this URL:" >&2\necho "%s" >&2\n' % URL_LINE)
+    job = ftr._Process(["x"], {}, program=script)
+    assert job.read_url() == URL_LINE.strip()
+    assert job.finish(10) == 0
+
+
+def test_the_process_still_reads_a_url_printed_on_stdout(tmp_path):
+    script = _stub(tmp_path, 'echo "%s"\n' % URL_LINE)
+    job = ftr._Process(["x"], {}, program=script)
+    assert job.read_url() == URL_LINE.strip()
+    job.finish(10)
+
+
+def test_the_process_without_a_url_line_is_refused(tmp_path):
+    script = _stub(tmp_path, "echo nothing here >&2\necho nor here\n")
+    job = ftr._Process(["x"], {}, program=script)
+    with pytest.raises(ftr.DrillError, match="no verification URL"):
+        job.read_url()
+    job.finish(10)

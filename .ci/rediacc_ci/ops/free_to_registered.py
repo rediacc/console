@@ -90,7 +90,7 @@ Rdc = Callable[[Sequence[str], Mapping[str, str]], "tuple[int, str]"]
 
 
 class Background:
-    """A command running in the background whose stdout carries one URL line the drill needs."""
+    """A command running in the background whose output carries one URL line the drill needs."""
 
     def read_url(self) -> str:
         raise NotImplementedError
@@ -490,19 +490,24 @@ def _drop_token_file(config: str) -> bool:
 
 
 class _Process(Background):
-    def __init__(self, argv: Sequence[str], env: Mapping[str, str]) -> None:
+    """The CLI prints the verification URL as a human line, which it writes to stderr (outputService.info), so stderr is merged into the stream read here."""
+
+    def __init__(
+        self, argv: Sequence[str], env: Mapping[str, str], program: pathlib.Path | None = None
+    ) -> None:
         self.proc = subprocess.Popen(
-            [str(paths.repo_root() / "rdc.sh"), *argv],
+            [str(program or paths.repo_root() / "rdc.sh"), *argv],
             env=dict(env),
             cwd=str(paths.repo_root()),
             stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
             text=True,
         )
 
     def read_url(self) -> str:
         stream = self.proc.stdout
         if stream is None:
-            raise DrillError("the register command has no stdout")
+            raise DrillError("the register command has no output stream")
         deadline = time.monotonic() + URL_WAIT_S
         for line in stream:
             found = VERIFY_URL.search(line)
