@@ -12,7 +12,7 @@
   "exceptions": {
     "@types/node": {
       "owner": "d778be9d",
-      "reason": "the engines.node floor is Node 24 (>=24.11.0 in root, packages/cli and private/account), so types for Node 25+ APIs would describe a runtime this code does not require; line 25 first released 2025-12-10, 295 days on 2026-10-01",
+      "reason": "the engines.node floor is Node 24 (>=24.15.0 in root, packages/cli and private/account), so types for Node 25+ APIs would describe a runtime this code does not require; line 25 first released 2025-12-10, 295 days on 2026-10-01",
       "blocker": {
         "kind": "engine-floor",
         "engine": "node"
