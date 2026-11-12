@@ -150,13 +150,17 @@ async function resolvePurgeTarget(repoRef: string): Promise<PurgeTarget> {
 }
 
 /**
- * The `--lineage` target: the id itself, refused while a config repository still owns it (that
- * repository's purge goes through its ref) and checked against the agent policy like any purge.
+ * The `--lineage` target: the id itself, refused while a repository in this config still owns it
+ * (that repository's purge goes through its ref) and checked against the agent policy like any
+ * purge. The owner check reads this config only; the server's delayed purge window is what a
+ * purge from another config falls back on. A `--cancel` skips the owner check: cancelling deletes
+ * nothing, and the cancel `repo delete --purge-backups` prints must run while a fork of the
+ * deleted repository still holds the lineage.
  */
-async function resolveLineageTarget(lineage: string): Promise<PurgeTarget> {
-  const owner = (await configService.listRepositories()).find(
-    (r) => lineageOf(r.config) === lineage
-  );
+async function resolveLineageTarget(lineage: string, cancel: boolean): Promise<PurgeTarget> {
+  const owner = cancel
+    ? undefined
+    : (await configService.listRepositories()).find((r) => lineageOf(r.config) === lineage);
   if (owner) {
     throw new ValidationError(
       t('commands.backup.purge.lineageOwned', { lineage, name: owner.name })
@@ -172,7 +176,7 @@ function purgeTarget(repoRef: string | undefined, options: PurgeOptions): Promis
     throw new ValidationError(t('commands.backup.purge.targetRequired'));
   }
   return options.lineage
-    ? resolveLineageTarget(options.lineage)
+    ? resolveLineageTarget(options.lineage, Boolean(options.cancel))
     : resolvePurgeTarget(repoRef ?? '');
 }
 

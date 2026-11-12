@@ -474,6 +474,16 @@ describe('backup purge', () => {
       );
     });
 
+    it('--cancel runs while a fork of the deleted repository still holds the lineage', async () => {
+      repos.set('shop:fork', { repositoryGuid: 'fork-guid', grandGuid: LINEAGE });
+      mockFetch.mockResolvedValue({ lineageGuid: LINEAGE, cancelled: true });
+      await run(['--lineage', LINEAGE, '--cancel']);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch.mock.calls[0][0]).toBe(
+        `/account/api/v1/backups/lineages/${LINEAGE}/purge/cancel`
+      );
+    });
+
     it('neither a ref nor --lineage, or both, is refused before any account call', async () => {
       await expect(run(['-y'])).rejects.toThrow('commands.backup.purge.targetRequired');
       await expect(run(['shop', '--lineage', LINEAGE, '-y'])).rejects.toThrow(
