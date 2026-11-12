@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2664,
-    "sourceCommit": "cb6ff124f97af42702561b1559f59b4a066c28ef"
+    "keyCount": 2666,
+    "sourceCommit": "83195801ae0eb403593643fe1a782a9abcaa8285"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1005,6 +1005,7 @@
     "commands.job.wait.timedOut": "3a113c25",
     "commands.job.wait.timeoutOption": "2f5a026d",
     "commands.legal.accepted": "3e9e2d9e",
+    "commands.legal.acceptedUnreachable": "e773e06d",
     "commands.legal.binding": "53563725",
     "commands.legal.credits": "d2b5a7b1",
     "commands.legal.description": "d9626ba9",
@@ -2171,11 +2172,12 @@
     "commands.update.success": "95aaffc9",
     "commands.update.upToDate": "d74455ca",
     "commands.version.channel": "7fc75619",
-    "commands.version.description": "3fc089b3",
+    "commands.version.description": "ea0fbc4c",
     "commands.version.descriptionShort": "f7afdf6a",
     "commands.version.license.anonymous": "f2778923",
     "commands.version.license.label": "14d6baab",
     "commands.version.license.unknown": "aba08c71",
+    "commands.version.license.unreachable": "ceea525c",
     "commands.version.platform": "0fd6f07a",
     "commands.vscode.check.activeConnections": "a9df2bc4",
     "commands.vscode.check.configuration": "a01fec03",
