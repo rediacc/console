@@ -102,6 +102,9 @@ class Rig:
     def _http(self, method: str, path: str, body: str | None = None, extra: Any = ()) -> dict:
         del body, extra
         self.http_calls.append((method, path))
+        # The teardown reads the rediacc.cloud zone before it lists the company's routes (2f9bee93c0).
+        if path.startswith("/zones?name="):
+            return {"success": True, "result": [{"id": "z1"}]}
         return {"success": True, "result": [], "result_info": {"total_pages": 1}}
 
     def _rows(self) -> list[dict]:
