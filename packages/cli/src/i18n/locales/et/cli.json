@@ -2575,7 +2575,9 @@
         }
       },
       "status": {
-        "description": "Näita paigaldatud serveri tervist, taset, sertifikaati ja kujutist"
+        "description": "Näita paigaldatud serveri tervist, taset, sertifikaati ja kujutist",
+        "certRefused": "KEELATUD ({{reason}}) kell {{at}}",
+        "certRefusedRun": "käivita: rdc server licence {{domain}}"
       },
       "backup": {
         "description": "Prindi paigaldatud serveri taastepakett (võtmed) või kirjuta see faili",
@@ -2615,7 +2617,11 @@
         "noResult": "Server ei vastanud üleantud sertifikaadile {{seconds}} sekundi jooksul; kontrolli, kas see töötab",
         "inboxBusy": "Serveri sertifikaatide sisendkaustas ootab juba teine sertifikaat; proovi uuesti, kui selle kohta on otsus tehtud",
         "confirmMismatch": "Server teatab sertifikaadist {{actual}}, mitte {{expected}}, seega uus sertifikaat ei kehti",
-        "confirmSkipped": "Salvestatud omaniku sisselogimist pole ({{ownerFile}}), nii et serveri sertifikaati ei saanud kinnitada; aluseks võetakse sisendkausta vastus"
+        "confirmSkipped": "Salvestatud omaniku sisselogimist pole ({{ownerFile}}), nii et serveri sertifikaati ei saanud kinnitada; aluseks võetakse sisendkausta vastus",
+        "bootRefused": "Server keeldus käivitusel oma sertifikaadist ({{reason}}): {{detail}}",
+        "droppedCert": "Sertifikaat {{certId}} paigutati sissekasti",
+        "noUpstreamKey": "Serveril puudub UPSTREAM_PUBLIC_KEY, seega ta ei saa ühtegi sertifikaati kontrollida ja uus sertifikaat ei aita. Määra UPSTREAM_PUBLIC_KEY domeeni {{domain}} saladustes ning käivita `rdc server upgrade {{domain}}`.",
+        "bootRefusalStays": "Sertifikaat rakendati, kuid server teatab endiselt käivituse keeldumisest ({{reason}}); kontrolli serveri logisid"
       },
       "bundle": {
         "header": "Domeeni {{domain}} taastepakett. Hoia seda võrguühenduseta; see taastab serveri võtmed.",
@@ -3488,7 +3494,8 @@
       "holderJob": "töö {{id}}",
       "holderOther": "teine töö",
       "orStopIt": "  Või peata see: rdc job cancel {{id}} -m {{machine}}"
-    }
+    },
+    "delegationCertRefused": "Serveri litsentsisertifikaat on keelatud ({{code}}); palu operaatoril käivitada: rdc server licence"
   },
   "help": {
     "agentMode": "\n  Agendirežiim\n    • Ainult forkimine: loo fork enne muudatuste tegemist mis tahes repositooriumis\n    • Pearepos (mitte-forkid) on agentidele kirjutuskaitstud\n    • Töövoog: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Hoidla viide (repo[:tag]) tuletab oma masina ise, seega -m ei ole vajalik\n    • JSON-väljund on automaatne: kõik käsud tagastavad { success, data, errors, metrics }\n    • Parsi alati täielikku JSON-i, ära kasuta tail/head/grep JSON-väljundil\n    • Kasuta filtrilipukesi (nt --repositories, --containers) vastuse mahu vähendamiseks\n\n",

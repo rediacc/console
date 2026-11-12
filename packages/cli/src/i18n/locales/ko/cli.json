@@ -2575,7 +2575,9 @@
         }
       },
       "status": {
-        "description": "설치된 서버의 상태, 등급, 인증서, 이미지를 표시"
+        "description": "설치된 서버의 상태, 등급, 인증서, 이미지를 표시",
+        "certRefused": "거부됨 ({{reason}}) {{at}}",
+        "certRefusedRun": "실행: rdc server licence {{domain}}"
       },
       "backup": {
         "description": "설치된 서버의 복구 번들(키)을 출력하거나 파일에 저장",
@@ -2615,7 +2617,11 @@
         "noResult": "넣어 둔 인증서에 서버가 {{seconds}}초 안에 응답하지 않았습니다. 서버가 실행 중인지 확인하세요",
         "inboxBusy": "서버의 인증서 수신함에 다른 인증서가 처리를 기다리고 있습니다. 처리가 끝난 뒤 다시 시도하세요",
         "confirmMismatch": "서버가 {{expected}} 대신 인증서 {{actual}}을(를) 보고하므로 새 인증서는 적용되지 않았습니다",
-        "confirmSkipped": "저장된 소유자 로그인 정보({{ownerFile}})가 없어 서버의 인증서를 확인하지 못했습니다. 수신함의 응답을 그대로 따릅니다"
+        "confirmSkipped": "저장된 소유자 로그인 정보({{ownerFile}})가 없어 서버의 인증서를 확인하지 못했습니다. 수신함의 응답을 그대로 따릅니다",
+        "bootRefused": "서버가 부팅 시 인증서를 거부했습니다 ({{reason}}): {{detail}}",
+        "droppedCert": "인증서 {{certId}}를 인박스에 넣었습니다",
+        "noUpstreamKey": "서버에 UPSTREAM_PUBLIC_KEY가 없어 어떤 인증서도 검증할 수 없으며, 새 인증서로는 해결되지 않습니다. {{domain}}의 시크릿에 UPSTREAM_PUBLIC_KEY를 설정한 뒤 `rdc server upgrade {{domain}}`을 실행하세요.",
+        "bootRefusalStays": "인증서는 적용되었지만 서버가 여전히 부팅 시 거부({{reason}})를 보고합니다. 서버 로그를 확인하세요"
       },
       "bundle": {
         "header": "{{domain}} 의 복구 번들. 서버의 키를 복원할 수 있으니 오프라인으로 보관하세요.",
@@ -3488,7 +3494,8 @@
       "holderJob": "작업 {{id}}",
       "holderOther": "다른 작업",
       "orStopIt": "  또는 중지: rdc job cancel {{id}} -m {{machine}}"
-    }
+    },
+    "delegationCertRefused": "서버의 라이선스 인증서가 거부되었습니다 ({{code}}). 운영자에게 다음 명령을 실행하도록 요청하세요: rdc server licence"
   },
   "help": {
     "agentMode": "\n  에이전트 모드\n    • 포크 전용: 어떤 저장소든 변경하기 전에 포크를 생성\n    • Grand(비포크) 저장소는 에이전트에게 읽기 전용\n    • 워크플로: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • 저장소 참조(repo[:tag])는 그 자체로 머신을 결정하므로 -m이 필요 없음\n    • JSON 출력이 자동으로 활성화됨: 모든 명령이 { success, data, errors, metrics }를 반환\n    • 항상 전체 JSON을 파싱하고, JSON 출력에는 tail/head/grep을 사용하지 마세요\n    • 응답 크기를 줄이려면 필터 플래그 사용 (예: --repositories, --containers)\n\n",

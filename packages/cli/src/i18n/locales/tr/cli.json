@@ -2575,7 +2575,9 @@
         }
       },
       "status": {
-        "description": "Kurulu bir sunucunun sağlığını, katmanını, sertifikasını ve imajını göster"
+        "description": "Kurulu bir sunucunun sağlığını, katmanını, sertifikasını ve imajını göster",
+        "certRefused": "REDDEDİLDİ ({{reason}}) {{at}}",
+        "certRefusedRun": "çalıştırın: rdc server licence {{domain}}"
       },
       "backup": {
         "description": "Kurulu bir sunucunun kurtarma paketini (anahtarları) yazdır veya bir dosyaya yaz",
@@ -2615,7 +2617,11 @@
         "noResult": "Sunucu bırakılan sertifikaya {{seconds}} saniye içinde yanıt vermedi; çalıştığını kontrol edin",
         "inboxBusy": "Sunucunun sertifika gelen kutusunda bekleyen başka bir sertifika var; o karara bağlandıktan sonra yeniden deneyin",
         "confirmMismatch": "Sunucu {{expected}} yerine {{actual}} sertifikasını bildiriyor; yani yeni sertifika yürürlükte değil",
-        "confirmSkipped": "Kayıtlı sahip girişi yok ({{ownerFile}}), bu yüzden sunucunun sertifikası doğrulanamadı; gelen kutusunun yanıtı esas alındı"
+        "confirmSkipped": "Kayıtlı sahip girişi yok ({{ownerFile}}), bu yüzden sunucunun sertifikası doğrulanamadı; gelen kutusunun yanıtı esas alındı",
+        "bootRefused": "Sunucu açılışta sertifikasını reddetti ({{reason}}): {{detail}}",
+        "droppedCert": "{{certId}} sertifikası gelen kutusuna bırakıldı",
+        "noUpstreamKey": "Sunucuda UPSTREAM_PUBLIC_KEY yok; bu yüzden hiçbir sertifikayı doğrulayamaz ve yeni bir sertifika işe yaramaz. {{domain}} sırlarında UPSTREAM_PUBLIC_KEY değerini ayarlayın, ardından `rdc server upgrade {{domain}}` çalıştırın.",
+        "bootRefusalStays": "Sertifika uygulandı, ancak sunucu hâlâ açılışta bir ret bildiriyor ({{reason}}); sunucu günlüklerine bakın"
       },
       "bundle": {
         "header": "{{domain}} için kurtarma paketi. Çevrimdışı saklayın; sunucunun anahtarlarını geri yükler.",
@@ -3488,7 +3494,8 @@
       "holderJob": "{{id}} numaralı iş",
       "holderOther": "başka bir iş",
       "orStopIt": "  Ya da durdurun: rdc job cancel {{id}} -m {{machine}}"
-    }
+    },
+    "delegationCertRefused": "Sunucunun lisans sertifikası reddedildi ({{code}}); operatörden şunu çalıştırmasını isteyin: rdc server licence"
   },
   "help": {
     "agentMode": "\n  Ajan Modu\n    • Yalnızca fork: herhangi bir depoda değişiklik yapmadan önce bir fork oluşturun\n    • Grand (fork olmayan) depolar ajanlar için salt okunurdur\n    • İş akışı: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Bir depo referansı (repo[:tag]) kendi makinesini kendisi belirler, bu yüzden -m gerekmez\n    • JSON çıktısı otomatiktir: tüm komutlar { success, data, errors, metrics } döndürür\n    • Her zaman JSON'ın tamamını ayrıştırın, JSON çıktısında asla tail/head/grep kullanmayın\n    • Yanıt boyutunu azaltmak için filtre bayraklarını kullanın (ör. --repositories, --containers)\n\n",

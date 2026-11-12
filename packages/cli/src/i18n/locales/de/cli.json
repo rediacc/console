@@ -2575,7 +2575,9 @@
         }
       },
       "status": {
-        "description": "Zustand, Stufe, Zertifikat und Image eines installierten Servers anzeigen"
+        "description": "Zustand, Stufe, Zertifikat und Image eines installierten Servers anzeigen",
+        "certRefused": "ABGELEHNT ({{reason}}) um {{at}}",
+        "certRefusedRun": "ausführen: rdc server licence {{domain}}"
       },
       "backup": {
         "description": "Das Recovery-Bundle (die Schlüssel) eines installierten Servers ausgeben oder in eine Datei schreiben",
@@ -2615,7 +2617,11 @@
         "noResult": "Der Server hat innerhalb von {{seconds}} Sekunden nicht auf das abgelegte Zertifikat reagiert. Prüfen Sie, ob er läuft.",
         "inboxBusy": "Im Zertifikatseingang des Servers wartet bereits ein anderes Zertifikat. Versuchen Sie es erneut, sobald darüber entschieden ist.",
         "confirmMismatch": "Der Server meldet das Zertifikat {{actual}} statt {{expected}}; das neue Zertifikat ist also nicht in Kraft",
-        "confirmSkipped": "Kein gespeicherter Owner-Login ({{ownerFile}}), daher ließ sich das Zertifikat des Servers nicht bestätigen; die Antwort aus dem Eingang gilt"
+        "confirmSkipped": "Kein gespeicherter Owner-Login ({{ownerFile}}), daher ließ sich das Zertifikat des Servers nicht bestätigen; die Antwort aus dem Eingang gilt",
+        "bootRefused": "Der Server hat sein Zertifikat beim Start abgelehnt ({{reason}}): {{detail}}",
+        "droppedCert": "Zertifikat {{certId}} im Posteingang abgelegt",
+        "noUpstreamKey": "Der Server hat keinen UPSTREAM_PUBLIC_KEY und kann kein Zertifikat prüfen; ein neues Zertifikat hilft nicht. UPSTREAM_PUBLIC_KEY in den Secrets von {{domain}} setzen und dann `rdc server upgrade {{domain}}` ausführen.",
+        "bootRefusalStays": "Das Zertifikat wurde angewendet, aber der Server meldet weiterhin eine Ablehnung beim Start ({{reason}}); Server-Logs prüfen"
       },
       "bundle": {
         "header": "Recovery-Bundle für {{domain}}. Offline aufbewahren; es stellt die Schlüssel des Servers wieder her.",
@@ -3488,7 +3494,8 @@
       "holderJob": "Job {{id}}",
       "holderOther": "ein anderer Job",
       "orStopIt": "  Oder beenden: rdc job cancel {{id}} -m {{machine}}"
-    }
+    },
+    "delegationCertRefused": "Das Lizenzzertifikat des Servers wird abgelehnt ({{code}}); den Betreiber bitten, Folgendes auszuführen: rdc server licence"
   },
   "help": {
     "agentMode": "\n  Agenten-Modus\n    • Nur Forks: Erstellen Sie einen Fork, bevor Sie Änderungen an einem Repository vornehmen\n    • Grand-Repositorys (keine Forks) sind für Agenten schreibgeschützt\n    • Arbeitsablauf: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Eine Repository-Referenz (repo[:tag]) leitet ihre eigene Maschine ab, -m ist daher nicht nötig\n    • JSON-Ausgabe erfolgt automatisch: Alle Befehle liefern { success, data, errors, metrics }\n    • Parsen Sie immer das vollständige JSON, verwenden Sie niemals tail/head/grep auf JSON-Ausgaben\n    • Verwenden Sie Filter-Flags (z.B. --repositories, --containers), um die Antwortgröße zu reduzieren\n\n",

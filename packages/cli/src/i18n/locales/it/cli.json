@@ -2575,7 +2575,9 @@
         }
       },
       "status": {
-        "description": "Mostrare stato di salute, livello, certificato e immagine di un server installato"
+        "description": "Mostrare stato di salute, livello, certificato e immagine di un server installato",
+        "certRefused": "RIFIUTATO ({{reason}}) alle {{at}}",
+        "certRefusedRun": "esegui: rdc server licence {{domain}}"
       },
       "backup": {
         "description": "Mostrare il pacchetto di ripristino (le chiavi) di un server installato oppure scriverlo in un file",
@@ -2615,7 +2617,11 @@
         "noResult": "Il server non ha risposto al certificato depositato entro {{seconds}} secondi; controlla che sia in esecuzione",
         "inboxBusy": "Nella casella dei certificati del server c’è già un altro certificato in attesa; riprova quando sarà stato deciso",
         "confirmMismatch": "Il server riporta il certificato {{actual}} invece di {{expected}}, quindi il nuovo certificato non è in vigore",
-        "confirmSkipped": "Nessun accesso del proprietario salvato ({{ownerFile}}): il certificato del server non è stato confermato e si accetta la risposta della casella"
+        "confirmSkipped": "Nessun accesso del proprietario salvato ({{ownerFile}}): il certificato del server non è stato confermato e si accetta la risposta della casella",
+        "bootRefused": "Il server ha rifiutato il proprio certificato all'avvio ({{reason}}): {{detail}}",
+        "droppedCert": "Certificato {{certId}} depositato nella casella",
+        "noUpstreamKey": "Il server non ha UPSTREAM_PUBLIC_KEY, quindi non può verificare alcun certificato e uno nuovo non serve. Imposta UPSTREAM_PUBLIC_KEY nei segreti di {{domain}}, poi esegui `rdc server upgrade {{domain}}`.",
+        "bootRefusalStays": "Il certificato è stato applicato, ma il server segnala ancora un rifiuto all'avvio ({{reason}}); controlla i log del server"
       },
       "bundle": {
         "header": "Pacchetto di ripristino per {{domain}}. Conservarlo offline; ripristina le chiavi del server.",
@@ -3488,7 +3494,8 @@
       "holderJob": "il job {{id}}",
       "holderOther": "un altro job",
       "orStopIt": "  Oppure fermalo: rdc job cancel {{id}} -m {{machine}}"
-    }
+    },
+    "delegationCertRefused": "Il certificato di licenza del server è rifiutato ({{code}}); chiedi all'operatore di eseguire: rdc server licence"
   },
   "help": {
     "agentMode": "\n  Modalità Agente\n    • Solo fork: crea un fork prima di apportare modifiche a qualsiasi repository\n    • I repository grand (non fork) sono in sola lettura per gli agenti\n    • Flusso di lavoro: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Un riferimento di repository (repo[:tag]) determina da sé la propria macchina, quindi -m non è necessario\n    • L'output JSON è automatico: tutti i comandi restituiscono { success, data, errors, metrics }\n    • Analizza sempre il JSON completo, non usare tail/head/grep sull'output JSON\n    • Usa i flag di filtro (es. --repositories, --containers) per ridurre la dimensione della risposta\n\n",

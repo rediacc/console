@@ -2846,7 +2846,9 @@
         }
       },
       "status": {
-        "description": "Show the health, tier, certificate and image of an installed server"
+        "description": "Show the health, tier, certificate and image of an installed server",
+        "certRefused": "REFUSED ({{reason}}) at {{at}}",
+        "certRefusedRun": "run: rdc server licence {{domain}}"
       },
       "backup": {
         "description": "Print the recovery bundle (the keys) of an installed server, or write it to a file",
@@ -2886,7 +2888,11 @@
         "noResult": "The server did not answer the certificate drop within {{seconds}} seconds; check that it is running",
         "inboxBusy": "Another certificate is waiting in the server's cert inbox; try again once it is decided",
         "confirmMismatch": "The server reports certificate {{actual}} instead of {{expected}}, so the new certificate is not in force",
-        "confirmSkipped": "No saved owner login ({{ownerFile}}), so the server's certificate could not be confirmed; its inbox answer is trusted"
+        "confirmSkipped": "No saved owner login ({{ownerFile}}), so the server's certificate could not be confirmed; its inbox answer is trusted",
+        "bootRefused": "The server refused its cert at boot ({{reason}}): {{detail}}",
+        "droppedCert": "Dropped cert {{certId}} into the inbox",
+        "noUpstreamKey": "The server has no UPSTREAM_PUBLIC_KEY, so it cannot check any cert and a new cert cannot help. Set UPSTREAM_PUBLIC_KEY in the secrets of {{domain}}, then run `rdc server upgrade {{domain}}`.",
+        "bootRefusalStays": "The cert was applied, but the server still reports a boot refusal ({{reason}}); check the server logs"
       },
       "bundle": {
         "header": "Recovery bundle for {{domain}}. Keep it offline; it restores the server's keys.",
@@ -3467,7 +3473,8 @@
       "noConfig": "No tofu configuration (main.tf.json) in {{path}}; the provision step that writes it did not run.",
       "belowFloor": "{{engine}} {{version}} at {{path}} is older than the minimum {{floor}}. Install the pinned OpenTofu with: rdc tools install tofu",
       "overrideUnusable": "REDIACC_TOFU is set to {{path}}, which does not run as OpenTofu or Terraform. Fix or unset it, or install the pinned OpenTofu with: rdc tools install tofu"
-    }
+    },
+    "delegationCertRefused": "The server's licence cert is refused ({{code}}); ask the operator to run: rdc server licence"
   },
   "options": {
     "acceptTerms": "Accept the Terms of Service for a free license without asking (or set RDC_ACCEPT_TERMS=1)",

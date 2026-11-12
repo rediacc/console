@@ -2575,7 +2575,9 @@
         }
       },
       "status": {
-        "description": "显示已安装服务器的健康状况、版本等级、证书和镜像"
+        "description": "显示已安装服务器的健康状况、版本等级、证书和镜像",
+        "certRefused": "已拒绝 ({{reason}})，时间 {{at}}",
+        "certRefusedRun": "请运行：rdc server licence {{domain}}"
       },
       "backup": {
         "description": "打印已安装服务器的恢复包（密钥），或将其写入文件",
@@ -2615,7 +2617,11 @@
         "noResult": "服务器在 {{seconds}} 秒内未响应放入的证书；请检查它是否在运行",
         "inboxBusy": "服务器的证书收件目录中已有另一份证书在等待处理；请在其处理完成后重试",
         "confirmMismatch": "服务器报告的证书是 {{actual}} 而不是 {{expected}}，因此新证书并未生效",
-        "confirmSkipped": "没有保存的所有者登录信息（{{ownerFile}}），因此无法确认服务器的证书；以收件目录的应答为准"
+        "confirmSkipped": "没有保存的所有者登录信息（{{ownerFile}}），因此无法确认服务器的证书；以收件目录的应答为准",
+        "bootRefused": "服务器在启动时拒绝了其证书 ({{reason}})：{{detail}}",
+        "droppedCert": "证书 {{certId}} 已放入收件箱",
+        "noUpstreamKey": "服务器没有 UPSTREAM_PUBLIC_KEY，无法校验任何证书，新证书也无济于事。请在 {{domain}} 的密钥中设置 UPSTREAM_PUBLIC_KEY，然后运行 `rdc server upgrade {{domain}}`。",
+        "bootRefusalStays": "证书已应用，但服务器仍报告启动时被拒绝 ({{reason}})；请检查服务器日志"
       },
       "bundle": {
         "header": "{{domain}} 的恢复包。请离线保存；它可恢复服务器的密钥。",
@@ -3488,7 +3494,8 @@
       "holderJob": "作业 {{id}}",
       "holderOther": "另一个作业",
       "orStopIt": "  或停止它:rdc job cancel {{id}} -m {{machine}}"
-    }
+    },
+    "delegationCertRefused": "服务器的许可证书被拒绝 ({{code}})；请让运维人员运行：rdc server licence"
   },
   "help": {
     "agentMode": "\n  代理模式\n    • 仅限 fork：在对任何仓库进行更改之前先创建 fork\n    • Grand（非 fork）仓库对代理为只读\n    • 工作流：repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • 仓库引用（repo[:tag]）会自行推导出所在机器，因此不需要 -m\n    • JSON 输出是自动的：所有命令都返回 { success, data, errors, metrics }\n    • 始终解析完整的 JSON，切勿对 JSON 输出使用 tail/head/grep\n    • 使用过滤标志（例如 --repositories、--containers）以减小响应体积\n\n",

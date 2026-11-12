@@ -2575,7 +2575,9 @@
         }
       },
       "status": {
-        "description": "インストール済みサーバーのヘルス、プラン、証明書、イメージを表示する"
+        "description": "インストール済みサーバーのヘルス、プラン、証明書、イメージを表示する",
+        "certRefused": "拒否 ({{reason}}) {{at}}",
+        "certRefusedRun": "実行: rdc server licence {{domain}}"
       },
       "backup": {
         "description": "インストール済みサーバーのリカバリーバンドル (キー) を表示、またはファイルに書き出す",
@@ -2615,7 +2617,11 @@
         "noResult": "配置した証明書に {{seconds}} 秒以内にサーバーが応答しませんでした。サーバーが動作しているか確認してください",
         "inboxBusy": "サーバーの証明書の受け取りフォルダーで別の証明書が処理待ちです。その結果が出てから再試行してください",
         "confirmMismatch": "サーバーが報告している証明書は {{expected}} ではなく {{actual}} です。新しい証明書は有効になっていません",
-        "confirmSkipped": "保存済みのオーナーのログイン情報がない ({{ownerFile}}) ため、サーバーの証明書を確認できませんでした。受け取りフォルダーの応答を採用します"
+        "confirmSkipped": "保存済みのオーナーのログイン情報がない ({{ownerFile}}) ため、サーバーの証明書を確認できませんでした。受け取りフォルダーの応答を採用します",
+        "bootRefused": "サーバーは起動時に証明書を拒否しました ({{reason}}): {{detail}}",
+        "droppedCert": "証明書 {{certId}} をインボックスに置きました",
+        "noUpstreamKey": "サーバーに UPSTREAM_PUBLIC_KEY がないため、証明書を検証できず、新しい証明書でも解決しません。{{domain}} のシークレットに UPSTREAM_PUBLIC_KEY を設定し、`rdc server upgrade {{domain}}` を実行してください。",
+        "bootRefusalStays": "証明書は適用されましたが、サーバーはまだ起動時の拒否 ({{reason}}) を報告しています。サーバーのログを確認してください"
       },
       "bundle": {
         "header": "{{domain}} のリカバリーバンドル。サーバーのキーを復元できるため、オフラインで保管してください。",
@@ -3488,7 +3494,8 @@
       "holderJob": "ジョブ {{id}}",
       "holderOther": "別のジョブ",
       "orStopIt": "  停止するには: rdc job cancel {{id}} -m {{machine}}"
-    }
+    },
+    "delegationCertRefused": "サーバーのライセンス証明書が拒否されています ({{code}})。運用担当者に次のコマンドの実行を依頼してください: rdc server licence"
   },
   "help": {
     "agentMode": "\n  エージェントモード\n    • フォークのみ: リポジトリに変更を加える前にフォークを作成する\n    • Grand（非フォーク）リポジトリはエージェントに対して読み取り専用\n    • ワークフロー: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • リポジトリ ref（repo[:tag]）はそれ自体でマシンを決定するため、-m は不要\n    • JSON 出力は自動: すべてのコマンドが { success, data, errors, metrics } を返す\n    • 常に完全な JSON をパースし、JSON 出力に tail/head/grep を使わない\n    • フィルタフラグ（例: --repositories, --containers）でレスポンスサイズを削減する\n\n",
