@@ -756,18 +756,33 @@ def test_a_half_set_stripe_pair_is_refused_by_name(monkeypatch, key, hook, missi
         deploy_bench.secrets_payload()
 
 
-def test_bench_turns_stripe_consent_collection_on_and_no_other_config_does():
-    """Bench bills only the STRIPE_SANDBOX_* pair, so it is where Checkout first asks for Terms consent (PLAN-terms-acceptance X2); a live account config that sets it has skipped that proof."""
-    configs = sorted(paths.from_root("workers", "account").glob("wrangler*.toml"))
-    assert configs, "no account wrangler config found"
+def _consent_switches(directory):
+    """{config or config#env: STRIPE_CONSENT_COLLECTION} over every account wrangler config in `directory`, each `[env.<name>.vars]` table read as a config of its own, since wrangler deploys it with --env."""
     seen = {}
-    for config in configs:
+    for config in sorted(directory.glob("wrangler*.toml")):
         doc = tomllib.loads(config.read_text(encoding="utf-8"))
         seen[config.name] = (doc.get("vars") or {}).get("STRIPE_CONSENT_COLLECTION")
-        # A [env.<name>.vars] table is a config of its own that wrangler deploys with --env.
         for env_name, env in (doc.get("env") or {}).items():
             seen["%s#%s" % (config.name, env_name)] = (env.get("vars") or {}).get(
                 "STRIPE_CONSENT_COLLECTION"
             )
+    return seen
+
+
+def test_bench_turns_stripe_consent_collection_on_and_no_other_config_does():
+    """Bench bills only the STRIPE_SANDBOX_* pair, so it is where Checkout first asks for Terms consent (PLAN-terms-acceptance X2); a live account config that sets it has skipped that proof."""
+    seen = _consent_switches(paths.from_root("workers", "account"))
+    assert seen, "no account wrangler config found"
     assert seen.get(deploy_bench.CONFIG) == "1", seen
     assert [name for name, value in seen.items() if value == "1"] == [deploy_bench.CONFIG], seen
+
+
+def test_control_an_env_table_switch_is_seen(tmp_path):
+    (tmp_path / "wrangler.eu.toml").write_text(
+        '[vars]\nREGION = "eu"\n\n[env.preview.vars]\nSTRIPE_CONSENT_COLLECTION = "1"\n',
+        encoding="utf-8",
+    )
+    assert _consent_switches(tmp_path) == {
+        "wrangler.eu.toml": None,
+        "wrangler.eu.toml#preview": "1",
+    }

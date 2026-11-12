@@ -155,6 +155,9 @@ def test_an_unbuilt_locale_or_an_own_path_list_stays_broken(gate, tmp_path):
     gate.assert_exit(1, own, "a page without the shared locale generator is a break")
     gate.assert_contains(own.err, "BROKEN [404]: %s/en/new-policy" % stub.base, "own is BROKEN")
     gate.assert_exit(1, quoted, "the generator line only quoted in a comment is a break")
+    gate.assert_contains(
+        quoted.err, "BROKEN [404]: %s/en/new-policy" % stub.base, "quoted is BROKEN"
+    )
     gate.log_pass("only a built locale and the shared generator earn the exemption")
 
 
