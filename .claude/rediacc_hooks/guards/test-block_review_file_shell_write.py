@@ -972,6 +972,41 @@ OWN_CASES = [
         True,
     ),
     (
+        "a listing piped through cat /proc/self/fd/0, fed to sed -i (c797f428.2)",
+        "grep -rl x agent/ | cat /proc/self/fd/0 | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing piped through cat /proc/thread-self/fd/0, fed to sed -i (c797f428.1)",
+        "grep -rl x agent/ | cat /proc/thread-self/fd/0 | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing piped through cat //dev/stdin, fed to sed -i (c797f428.1)",
+        "grep -rl x agent/ | cat //dev/stdin | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing piped through cat /dev/./stdin, fed to sed -i (c797f428.1)",
+        "grep -rl x agent/ | cat /dev/./stdin | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing piped through cat /dev/stdin/, fed to sed -i (c797f428.1)",
+        "grep -rl x agent/ | cat /dev/stdin/ | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "a listing piped through cat of a backtick operand, fed to sed -i (c797f428.2)",
+        "grep -rl x agent/ | cat `echo x` | xargs sed -i s/a/b/",
+        True,
+    ),
+    (
+        "control: a listing piped into a cat of /dev/null stays a stdin-ignoring stage",
+        "grep -rl x agent/ | cat /dev/null | xargs sed -i s/a/b/",
+        False,
+    ),
+    (
         "control: a listing piped into a cat of a named file stays a stdin-ignoring stage",
         "grep -rl x agent/ | cat README.md | xargs sed -i s/a/b/",
         False,
@@ -1077,8 +1112,22 @@ MUTANTS = [
     (
         "a stdin device read as a named file (b3ef7ca3.1)",
         (
-            'return operand in _STDIN_DEVICES or "$" in operand or "`" in operand',
-            'return operand == "-"',
+            "return spelled in _STDIN_DEVICES",
+            'return spelled == "-"',
+        ),
+    ),
+    (
+        "a stdin spelling read as typed, no slash or dot folding (c797f428.1)",
+        (
+            'spelled = posixpath.normpath(re.sub(r"/+", "/", operand))',
+            "spelled = operand",
+        ),
+    ),
+    (
+        "a backtick operand read as a named file (c797f428.2)",
+        (
+            'if "$" in operand or "`" in operand:',
+            'if "$" in operand:',
         ),
     ),
     (

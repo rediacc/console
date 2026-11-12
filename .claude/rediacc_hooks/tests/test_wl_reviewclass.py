@@ -206,10 +206,14 @@ def test_an_in_place_same_size_rewrite_rebuilds_the_fold(tmp_path):
     assert C.brief_lines(again, ["a/**"]) == []
 
 
-def test_an_untouched_store_keeps_its_cache_across_a_stat(tmp_path):
-    _record(tmp_path, [("medium", "a/x.py", DOC, FIXED)] * 3)
+def test_an_atime_only_change_keeps_the_cache(tmp_path):
+    """A read moves the access time and nothing else, so the store's signature (size and mtime) holds."""
+    path = _record(tmp_path, [("medium", "a/x.py", DOC, FIXED)] * 3)
     C.index(tmp_path)
     assert C.index(tmp_path)["cached"] is True
+    for target in (path, path.parent):
+        st = os.stat(target)
+        os.utime(target, ns=(st.st_atime_ns + 10_000_000, st.st_mtime_ns))
     assert C.index(tmp_path)["cached"] is True
 
 

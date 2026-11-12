@@ -316,9 +316,8 @@ def every_run_import_error():
     """The ImportError `_every_run` raises when `rediacc_hooks` is unimportable and syspath.py has no loader, else None."""
     real_spec = importlib.util.spec_from_file_location
     saved = {k: sys.modules.pop(k) for k in list(sys.modules) if k.split(".")[0] == "rediacc_hooks"}
-    sys.modules["rediacc_hooks"] = typing.cast(
-        "typing.Any", None
-    )  # makes `from rediacc_hooks import ...` raise ImportError
+    # A None entry makes `from rediacc_hooks import ...` raise ImportError.
+    sys.modules["rediacc_hooks"] = typing.cast("typing.Any", None)
     importlib.util.spec_from_file_location = lambda *_a, **_k: None
     try:
         _shapes._every_run()

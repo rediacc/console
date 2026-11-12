@@ -18,7 +18,7 @@ WORKTREE = HOOKS / "guards" / "block_worktree_add.py"
 
 
 def _load(path: pathlib.Path, alias: str, monkeypatch: pytest.MonkeyPatch):
-    # syspath_prepend is undone at teardown, so the guard's sibling imports leave no trace on later tests.
+    # syspath_prepend undoes only the sys.path change at teardown. The guard itself is never put in sys.modules (each case gets a fresh copy), and the sibling modules it imports stay cached there: they are the same canonical `rediacc_hooks` modules every other test imports, which hold no state this test sets.
     monkeypatch.syspath_prepend(str(HOOKS))
     spec = importlib.util.spec_from_file_location(alias, path)
     if spec is None or spec.loader is None:

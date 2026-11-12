@@ -890,6 +890,33 @@ def main():
     else:
         print("ok: an unreadable proof-tiers.json warns once and skips LP8")
 
+    # b403757f.1: the same skip through the REAL reader. A root with no proof-tiers.json makes `github_wait_config` itself answer None (it catches the read failure); the repo's own root, which has the map, makes it answer a config (the control).
+    _stop_dir = str(HERE.parent.parent / "hooks" / "stop")
+    sys.path.insert(0, _stop_dir)
+    try:
+        _real_deps, _ = _good_ns["_grammar"]()
+    finally:
+        sys.path.remove(_stop_dir)
+    _real_root = _good_ns["REPO_ROOT"]
+    _empty_root = BASE / "no-proof-map"
+    _empty_root.mkdir(parents=True, exist_ok=True)
+    try:
+        _good_ns["REPO_ROOT"] = _empty_root
+        _ev_real = _Ev()
+        _got_real = _good_ns["_github_wait_findings"](
+            _real_deps, None, LP8_WAIT, "agent/plans/PLAN-x.md", _ev_real
+        )
+    finally:
+        _good_ns["REPO_ROOT"] = _real_root
+    if _got_real != [] or len(_ev_real.warned) != 1:
+        print("*** FAIL *** the real reader on a root with no map must warn once and skip")
+        fails += 1
+    elif _real_deps.github_wait_config(_real_root) is None:
+        print("*** FAIL *** control: the real reader must read the repo's own map")
+        fails += 1
+    else:
+        print("ok: the real reader skips LP8 on a root with no map and reads the repo's own")
+
     for label in ("DEFECT", "VERDICT_DEFECT", "LIVE_DEFECT"):
         old, new = _good_ns[label]
         if old not in _outside_defect(SOURCE, "DEFECT", "VERDICT_DEFECT", "LIVE_DEFECT"):

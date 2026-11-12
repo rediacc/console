@@ -566,6 +566,16 @@ def _assigned(run_, word):
     return None if "$" in out else out
 
 
+def _unset_ref(run_, word):
+    """Is `word` a lone `$NAME`/`${NAME}` the walk knows is unset (`unset NAME` earlier in the command)? Bash drops such a word from the expanded argv, as it drops an empty one, so it holds no position in `xargv` (an unknown name keeps one, as an unresolved placeholder)."""
+    m = _PLAIN_REF.fullmatch(word)
+    if not m:
+        return False
+    name = m.group(1) or m.group(2)
+    held = (run_.vars or {}).get(name)
+    return name not in run_.loop_vars and isinstance(held, tuple) and held[0] is None
+
+
 def _operand_words(run_):
     """Every word an operand of `run_` could be: the quote-removed argv (a word whose variables this command assigned, as that value: `_assigned`), the expanded argv where the walk could evaluate it, and each word of a `for` list a `$NAME` in it names."""
     # A typed word is read as its assigned value only when bash's own expansion of it (`xargv`, aligned by position) IS that value: `'$D/..'` stays `$D/..` there and `"\$D/.."` is unresolved, and both name a literal `$D` directory, so they keep the typed text (review acc34f73.1).
@@ -581,7 +591,7 @@ def _operand_words(run_):
             if j < len(xargv) and value is not None and value == xargv[j]:
                 seen = True
                 j += 1
-            elif value != "":
+            elif value != "" and not _unset_ref(run_, a):
                 j += 1
         words.append((seen and value) or a)
     # An expanded word the walk could not finish keeps its unknown part as a backtick span, which `_wildcarded` reads as "any text". The typed word alone loses the boundary bash sees: `"$D"settings*` is `$Dsettings*` after quote removal, a variable called `Dsettings` (review 094dea3b.4).

@@ -1438,12 +1438,25 @@ def _reads_files(name, argv):
 # The procfs spelling is a RECOGNISED path, never read (the worktree-stdin-anchor precedent in .ci/rediacc_ci/quality/hook_cross_os.py): the root is named once, from REDIACC_REVIEW_STDIN_PROCFS, so a machine whose procfs is not at /proc still recognises its own spelling of stdin.
 _PROCFS_ENV = "REDIACC_REVIEW_STDIN_PROCFS"
 _PROCFS_ROOT = (os.environ.get(_PROCFS_ENV) or "/proc").rstrip("/") or "/proc"
-_STDIN_DEVICES = frozenset(("-", "/dev/stdin", "/dev/fd/0", _PROCFS_ROOT + "/self/fd/0"))
+_STDIN_DEVICES = frozenset(
+    (
+        "-",
+        "/dev/stdin",
+        "/dev/fd/0",
+        _PROCFS_ROOT + "/self/fd/0",
+        _PROCFS_ROOT + "/thread-self/fd/0",
+    )
+)
 
 
 def _may_be_stdin(operand):
-    """An operand that is, or may expand to, the run's stdin."""
-    return operand in _STDIN_DEVICES or "$" in operand or "`" in operand
+    """An operand that is, or may expand to, the run's stdin: one of `_STDIN_DEVICES` under any spelling the kernel resolves to it (repeated slashes, a `.` segment, a trailing slash), or a word the shell still expands."""
+    if "$" in operand or "`" in operand:
+        return True
+    if not operand.startswith("/"):
+        return operand in _STDIN_DEVICES
+    spelled = posixpath.normpath(re.sub(r"/+", "/", operand))
+    return spelled in _STDIN_DEVICES
 
 
 def _ignores_stdin(text):
