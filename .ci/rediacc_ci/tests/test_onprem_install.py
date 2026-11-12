@@ -96,6 +96,26 @@ def keys() -> types.SimpleNamespace:
     )
 
 
+class FakeBws:
+    """The bws store: entries by name, every write recorded. Values live only here."""
+
+    def __init__(self, held=None) -> None:
+        self.entries: dict[str, str] = dict(held or {})
+        self.writes: list[tuple[str, str]] = []
+        self.project = ""
+
+    def read(self, names):
+        return {n: self.entries[n] for n in names if n in self.entries}
+
+    def create(self, name, value):
+        self.writes.append(("create", name))
+        self.entries[name] = value
+
+    def edit(self, name, value):
+        self.writes.append(("edit", name))
+        self.entries[name] = value
+
+
 class Harness:
     def __init__(self, tmp_path, **kw) -> None:
         self.rdc = FakeRdc(**{k: kw.pop(k) for k in ("machine_out", "repo_exists") if k in kw})
@@ -106,6 +126,8 @@ class Harness:
         self.health = kw.pop("health", (200, ["*.rediacc.io"]))
         self.cf_calls: list[tuple] = []
         self.keygen_calls = 0
+        self.bws = FakeBws(kw.pop("held", None))
+        kw.setdefault("bws_project", "proj-1")
         self.options = ob.Options(
             config=kw.pop("config", "eu-bench"),
             machine="hostinger",
@@ -120,6 +142,7 @@ class Harness:
             local=self.local,
             resolve=lambda _host: set(self.resolved),
             cf=lambda: self.cf_calls.append(("cf",)) or (lambda *_a, **_k: {}),
+            bws=self.open_bws,
             portal=lambda: self.portal,
             box_api=lambda _domain: self.box,
             health=lambda _domain: self.health,
@@ -129,6 +152,10 @@ class Harness:
             now=lambda: 1_700_000_000.0,
         )
         self.said: list[str] = []
+
+    def open_bws(self, project):
+        self.bws.project = project
+        return self.bws
 
     def local(self, argv):
         self.local_calls.append(list(argv))
@@ -367,3 +394,71 @@ def test_usage_errors_exit_2_and_a_failed_step_exits_1(tmp_path, capsys):
     ]
     assert ob.main(argv, h.deps) == 1
     assert "eu-remote" in capsys.readouterr().err
+
+
+def _names() -> dict[str, str]:
+    return {ob.backup_name(DOMAIN, key): field for field, key in ob.BACKUP_KEYS.items()}
+
+
+def test_backup_stores_every_secret_once_under_opaque_names(tmp_path, capsys):
+    h = Harness(tmp_path)
+    h.install().run()
+    assert sorted(n for _, n in h.bws.writes) == sorted(_names())
+    assert {op for op, _ in h.bws.writes} == {"create"}
+    assert h.bws.project == "proj-1"
+    held = keys().__dict__
+    for name, field in _names().items():
+        if field in held:
+            assert h.bws.entries[name] == held[field]
+        assert ob.BACKUP_NAME.fullmatch(name)
+        assert "acme" not in name.lower()
+    assert h.bws.entries[ob.backup_name(DOMAIN, "ACCOUNT_ED25519_PUBLIC_KEY")] == KEY
+    seen = capsys.readouterr()
+    for secret in ("edpriv", "xpriv", "jwtsecret", "apikey", "t" * 20):
+        assert secret not in seen.out + seen.err + " ".join(h.said)
+
+
+def test_backup_rerun_is_a_no_op_and_a_changed_value_is_refused(tmp_path):
+    h = Harness(tmp_path)
+    inst = h.install()
+    inst.step_keys()
+    inst.step_backup()
+    first = len(h.bws.writes)
+    inst.step_backup()
+    assert len(h.bws.writes) == first
+    target = ob.backup_name(DOMAIN, "ACCOUNT_CONFIG_SERVER_KEY")
+    h.bws.entries[target] = "someone-elses-value"
+    with pytest.raises(ob.InstallError, match=r"ACCOUNT_CONFIG_SERVER_KEY.*--rotate") as err:
+        inst.step_backup()
+    assert "someone-elses-value" not in str(err.value)
+    assert h.bws.entries[target] == "someone-elses-value"
+    # control: with --rotate the same entry is replaced
+    h.options.rotate = True
+    inst.step_backup()
+    assert h.bws.entries[target] != "someone-elses-value"
+    assert ("edit", target) in h.bws.writes
+
+
+def test_no_bws_skips_the_step_and_a_missing_project_is_refused_up_front(tmp_path):
+    h = Harness(tmp_path, no_bws=True, bws_project="")
+    h.install().run()
+    assert h.bws.writes == []
+    assert any("skipped (--no-bws)" in line for line in h.said)
+    assert (tmp_path / "state" / "keys.json").is_file()
+    bare = Harness(tmp_path / "b", bws_project="")
+    with pytest.raises(ob.InstallError, match="--bws-project"):
+        bare.install().run()
+    assert bare.rdc.calls == []
+
+
+def test_the_command_line_takes_the_bws_flags():
+    verb, values = ob.parse(
+        [
+            *("install", "--config", "c", "--machine", "m", "--domain", DOMAIN),
+            *("--owner", "o@x.test", "--bws-project", "p1", "--rotate", "--no-bws"),
+        ]
+    )
+    assert verb == "install"
+    assert values["bws_project"] == "p1"
+    assert values["rotate"] is True
+    assert values["no_bws"] is True
