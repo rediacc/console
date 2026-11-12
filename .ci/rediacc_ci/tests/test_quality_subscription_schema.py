@@ -74,3 +74,31 @@ def test_a_formatter_that_cannot_run_leaves_a_comparable_file(
     monkeypatch.undo()
     assert formatted.read_text(encoding="utf-8") == '{"generated":true}\n'
     assert mod.files_differ(fresh, formatted) is False
+
+
+def test_the_printed_remedy_is_the_command_the_gate_compares(
+    tmp_path: pathlib.Path, monkeypatch
+) -> None:
+    """The gate rules on biome-formatted generator output, so the remedy it prints must run the generator and then biome on the committed file.
+
+    The generator alone left the file unformatted and the gate red. The formatter the gate actually spawns is captured and its path and subcommand are checked against the remedy's own text, so the two cannot drift apart.
+    """
+    seen: list[list[str]] = []
+
+    class _Done:
+        returncode = 0
+
+    def fake_run(argv, **_kw):
+        seen.append(list(argv))
+        return _Done()
+
+    fresh = tmp_path / "fresh.json"
+    fresh.write_text("{}\n", encoding="utf-8")
+    monkeypatch.setattr(mod.subprocess, "run", fake_run)
+    mod.format_through_stdin(tmp_path, fresh, tmp_path / "formatted.json")
+    (argv,) = seen
+    assert argv[argv.index("biome") + 1] == "format"
+    assert "--stdin-file-path=%s" % mod.SCHEMA_REL in argv
+    first, second = mod.REMEDY.split(" && ")
+    assert first == "npx tsx %s" % mod.GENERATOR
+    assert second == "npx biome format --write %s" % mod.SCHEMA_REL
