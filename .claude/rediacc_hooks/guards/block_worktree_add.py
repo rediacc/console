@@ -1153,6 +1153,9 @@ def _filled(text, mentions):
     text = PLACEHOLDER.sub(UNKNOWN, text)
     if UNKNOWN not in text:
         return [text]
+    # A lease path in the built string itself, with an unknown piece standing as a word of its own after it, is a command aimed at a lease whose verb is unknown (`'git -C .claude/worktrees/x ' + v + ' add'`): that licenses the fill though the file names `worktree` nowhere else (e59de231.1). A piece inside the path (`.claude/worktrees/{x}`) does not.
+    if not mentions and LEASE_ROOT_TEXT.search(text):
+        mentions = UNKNOWN in LEASE_ROOT_TEXT.sub(" ", text)
     if not mentions:
         return [text.replace(UNKNOWN, " ")]
     return [text.replace(UNKNOWN, " %s " % fill) for fill in FILLS]
@@ -1179,13 +1182,15 @@ def _filled_sequences(sequences, mentions):
     """An argv list with an element the text does not hold, filled from FILLS when the file names `worktree`: `["git", "worktree", verb]` with `verb` bound by a loop."""
     for seq in sequences:
         yield seq
-        if mentions and None in seq:
+        # An element that is a lease path licenses the fill for its own argv, as `_filled` does for a string (e59de231.1).
+        leased = any(e is not None and LEASE_ROOT_TEXT.search(e) for e in seq)
+        if (mentions or leased) and None in seq:
             for fill in FILLS:
                 yield [fill if e is None else e for e in seq]
 
 
 # A LEASE PATH IS NOT A MENTION OF THE VERB (#7d3a5939). `.claude/worktrees/agent-x/f` holds the substring `worktree`, and that alone licensed `_filled` to complete any unknown piece of the program with `add`/`worktree`: `subprocess.run(['git','-C',d,'add','f'])` plus a print of a lease path was refused as `git worktree add`, with no worktree verb anywhere. The lease root is dropped before the reading; a bare `worktree` word, `worktree.py` and `alias.wt=worktree` are untouched, and a path that is the verb's own operand (`git worktree add .claude/worktrees/x`) still names the word `worktree` outside the path.
-LEASE_ROOT_TEXT = re.compile(r"\.claude/worktrees(?![\w-])(?:/[^\s'\"`]*)?")
+LEASE_ROOT_TEXT = re.compile(r"\.claude/worktrees(?![\w-]|\.\w)(?:/[^\s'\"`]*)?")
 
 
 def _mentions_worktree(text):

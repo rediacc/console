@@ -87,6 +87,20 @@ REFUSED = [
     ("the wrapper's create", "./run.sh worktree create 0901-1"),
     ("the wrapper by path", "%s/run.sh worktree create x" % ROOT),
     ("the port's create", "python3 -m rediacc_ci.dev.worktree create x"),
+    # e59de231.1: a lease path inside the built command itself, an unknown verb after it.
+    (
+        "a built command aimed at a lease, the verb unknown",
+        "python3 -c \"import os; v=input(); os.system('git -C .claude/worktrees/x ' + v + ' add')\"",
+    ),
+    (
+        "an argv aimed at a lease, the verb unknown",
+        "python3 -c \"import subprocess; v=input(); subprocess.run(['git','-C','.claude/worktrees/x',v,'add'])\"",
+    ),
+    # e59de231.2: `.claude/worktrees.py` is a file that names the word, not a lease root.
+    (
+        "a file named worktrees.py beside a built command",
+        "python3 -c \"import os; x=input(); print('.claude/worktrees.py'); os.system('git ' + x)\"",
+    ),
 ]
 
 # A script path the shell expands, with the words in the command's text. The second row is the hole itself: the fixture names the phrase and is untracked, so the literal path is refused and the variable must be too.
@@ -319,6 +333,11 @@ FALSE_POSITIVES = [
             "python3 -c \"import os; x=input(); print('.claude/worktrees/agent-x/f'); "
             "os.system('git ' + x)\""
         ),
+    ),
+    # e59de231.1 control: an unknown piece inside the lease path is no unknown verb.
+    (
+        "an unknown piece inside the lease path",
+        "python3 -c \"import os; x=input(); os.system(f'git -C .claude/worktrees/{x} add f')\"",
     ),
 ]
 
