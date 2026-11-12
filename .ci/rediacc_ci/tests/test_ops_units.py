@@ -91,6 +91,9 @@ def test_the_secret_payload_reads_the_environment_and_never_logs_it(
     monkeypatch.setenv("ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY", "bench-secret")
     monkeypatch.setenv("OBS_OTLP_CREDENTIALS", json.dumps({"user": "u", "pass": "p"}))
     monkeypatch.delenv("ACCOUNT_BACKUP_S3_BUCKET", raising=False)
+    # The sandbox pair is pinned empty so a value left in the process environment by an earlier test cannot make it half-set.
+    monkeypatch.setenv("STRIPE_SANDBOX_SECRET_KEY", "")
+    monkeypatch.setenv("STRIPE_SANDBOX_WEBHOOK_SECRET", "")
     payload = deploy_bench.secrets_payload()
     assert len(payload) == 36
     assert payload["ACCOUNT_BACKUP_S3_ENDPOINT"] == "https://r2.invalid"
