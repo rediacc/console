@@ -512,7 +512,10 @@ def _step_plant(d: Deps, ev: Evidence, st: State) -> None:
     # customer_id), and the real repo_license_issued log writes that null, so the planted rows do too.
     st.sub_id, sub_org = str(subs[0]["id"]), str(subs[0].get("org_id") or "") or None
     orgs = d.rows(q("SELECT id FROM organizations WHERE customer_id = $u", u=sql_literal(user_id)))
-    org_id = sub_org or (str(orgs[0]["id"]) if len(orgs) == 1 else "")
+    if not sub_org and len(orgs) != 1:
+        ev.add(5, "plant", 1, "organization rows=%d" % len(orgs))
+        raise DrillError("the throwaway user's organization is not exactly one row")
+    org_id = sub_org or str(orgs[0]["id"])
     refusal = shard_check(
         d.rows(
             q(
