@@ -6,27 +6,28 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 16,
-      "done": 0,
+      "open": 9,
+      "done": 7,
       "open_sigs": [
         "1a6e78ea",
         "1c252d1d",
         "1d112f39",
         "3dfe85b9",
         "4c40f768",
-        "4e629ad2",
-        "649c9c10",
         "67d24b86",
         "6c3c1965",
+        "e86f36be",
+        "ec915c2d"
+      ],
+      "done_sigs": [
+        "4e629ad2",
+        "649c9c10",
         "8ceadad6",
         "be2bf9ec",
-        "e86f36be",
         "eb97d321",
-        "ec915c2d",
         "f4ed8356",
         "fab77f5b"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-add-chunkstore-backup-verb.md": {
       "status": "compacted",
