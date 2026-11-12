@@ -451,6 +451,67 @@ def test_main_dispatches_the_new_verbs(world, monkeypatch, capsys):
     assert br.main(["bogus"]) == 2
 
 
+def test_a_second_restore_after_the_remote_live_was_rewritten_succeeds(world):
+    """a5b7c909.2: the old restored ref is dropped first, so a moved remote ref does not make the second restore fail."""
+    work, _bare = world
+    _commit(work, "one")
+    assert br.sync(work) == 0
+    name = "1104-1/live"
+    assert br.restore(work, "gitlab", name, io.StringIO()) == 0
+    first = _git(work, "rev-parse", "refs/backup-restored/" + name)
+    _git(work, "commit", "-q", "--amend", "-m", "one, reworded")
+    assert br.sync(work) == 0
+    assert br.restore(work, "gitlab", name, io.StringIO()) == 0
+    assert _git(work, "rev-parse", "refs/backup-restored/" + name) != first
+
+
+def test_the_cached_lag_is_not_judged_on_another_branch(world):
+    """a5b7c909.1: the recorded oid names its branch; another branch has nothing to judge offline."""
+    work, _bare = world
+    _commit(work, "one")
+    assert br.sync(work) == 0
+    _git(work, "switch", "-q", "-c", "other")
+    _ahead(work, 60)
+    out = io.StringIO()
+    assert br.status(work, "gitlab", True, out) == 0
+    assert "nothing to judge" in out.getvalue()
+    # Control: the branch the oid was recorded on is still judged.
+    _git(work, "switch", "-q", "1104-1")
+    _ahead(work, 60)
+    assert br.status(work, "gitlab", True, io.StringIO()) == 1
+
+
+def test_a_failed_live_record_is_logged(world, capsys):
+    """a5b7c909.3: an unwritable record is not swallowed."""
+    work, _bare = world
+    _commit(work, "one")
+    git_dir = pathlib.Path(_git(work, "rev-parse", "--absolute-git-dir"))
+    state = git_dir / "rediacc-backup"
+    state.mkdir(exist_ok=True)
+    (state / br.LAST_LIVE).mkdir()
+    br._remember_live(work, "a" * 40)
+    assert "could not record the last live oid" in capsys.readouterr().err
+
+
+def test_the_oldest_unbacked_commit_is_the_minimum_timestamp_not_the_first_walked(world):
+    """bb501355.1: a commit with an older timestamp later in the walk still sets the age."""
+    work, _bare = world
+    _commit(work, "one")
+    assert br.sync(work) == 0
+    newer = int(DAY.timestamp()) - 3600
+    older = int(DAY.timestamp()) - 20 * 3600
+    for stamp in (newer, older - 60):  # clock skew: the tip carries the oldest stamp
+        env = {**os.environ, **ENV, "GIT_COMMITTER_DATE": "%d +0000" % stamp}
+        subprocess.run(
+            ["git", "-C", str(work), "commit", "-q", "--allow-empty", "-m", "c%d" % stamp],
+            check=True,
+            env=env,
+        )
+    _behind, _branch, oldest = br.lag(work, "gitlab", False)
+    assert oldest is not None
+    assert int(oldest.timestamp()) == older - 60
+
+
 def test_prune_agrees_with_the_pre_push_hook_on_every_boundary(monkeypatch):
     """Whatever `prune` deletes, `backup_ref_refusal` admits; whatever it keeps inside retention, the hook refuses to delete (so the two never drift)."""
     root = pathlib.Path(__file__).resolve().parents[3]
@@ -460,7 +521,7 @@ def test_prune_agrees_with_the_pre_push_hook_on_every_boundary(monkeypatch):
     assert spec is not None
     assert spec.loader is not None
     gh = importlib.util.module_from_spec(spec)
-    sys.modules["githooks_prune_parity"] = gh
+    monkeypatch.setitem(sys.modules, "githooks_prune_parity", gh)
     spec.loader.exec_module(gh)
     assert br.RETENTION_DAYS == gh.BACKUP_RETENTION_DAYS
     monkey_now = DAY

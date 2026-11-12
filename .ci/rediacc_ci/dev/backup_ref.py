@@ -338,6 +338,8 @@ def restore(repo: pathlib.Path, remote: str, name: str, out) -> int:
     if not name or name.startswith("/") or ".." in name or "/" not in name:
         raise StepError("`%s` is not <branch>/<leaf> or refs/backup/<branch>/<leaf>" % name)
     local = RESTORED + name
+    # The module refuses forced refspecs, so a restore of a name that moved on the remote (a rewritten `live`) drops the old local ref first instead of force-updating it.
+    _git(repo, ["update-ref", "-d", local], check=False)
     _git(repo, ["fetch", "--no-tags", "--refmap=", remote, "%s%s:%s" % (SPACE, name, local)])
     top = pathlib.Path(_out(repo, ["rev-parse", "--show-toplevel"]))
     target = top.parent / ("%s-restored-%s" % (top.name, name.replace("/", "-")))
@@ -351,9 +353,12 @@ def _live_file(repo: pathlib.Path) -> pathlib.Path:
 
 
 def _remember_live(repo: pathlib.Path, tip: str) -> None:
-    """The oid `live` held after the last successful sync, so the Stop hook can read the lag without the network."""
-    with contextlib.suppress(OSError, StepError):
-        _live_file(repo).write_text(tip + "\n", encoding="utf-8")
+    """`<branch> <oid>`: the oid `live` held after the last successful sync and the branch it belongs to, so the Stop hook can read the lag without the network and a different branch is never judged against it. A failed write is logged, since a stale record keeps reporting a lag the sync already cleared."""
+    try:
+        branch = _git(repo, ["symbolic-ref", "--short", "-q", "HEAD"], check=False).stdout.strip()
+        _live_file(repo).write_text("%s %s\n" % (branch, tip), encoding="utf-8")
+    except (OSError, StepError) as exc:
+        sys.stderr.write("backup-ref: could not record the last live oid (%s)\n" % exc)
 
 
 def lag(
@@ -365,8 +370,11 @@ def lag(
         return None, branch, None
     if cached:
         try:
-            live = _live_file(repo).read_text(encoding="utf-8").strip()
+            recorded, _, live = _live_file(repo).read_text(encoding="utf-8").strip().rpartition(" ")
         except (OSError, StepError):
+            return None, branch, None
+        if recorded != branch or not live:
+            # The record belongs to another branch (or is unreadable): nothing honest to judge offline.
             return None, branch, None
     else:
         if _git(repo, ["remote", "get-url", remote], check=False).returncode != 0:
@@ -379,8 +387,9 @@ def lag(
     count = int(_out(repo, ["rev-list", "--count", "HEAD", *held]))
     oldest = None
     if count:
-        stamp = _out(repo, ["log", "--format=%ct", "--reverse", "HEAD", *held]).splitlines()[0]
-        oldest = datetime.datetime.fromtimestamp(int(stamp), datetime.UTC)
+        # The minimum timestamp, not the first line of the walk: a merge can bring in an older side-branch commit, and the default order does not put the oldest first.
+        stamps = _out(repo, ["log", "--format=%ct", "HEAD", *held]).splitlines()
+        oldest = datetime.datetime.fromtimestamp(min(int(s) for s in stamps), datetime.UTC)
     return count, branch, oldest
 
 
