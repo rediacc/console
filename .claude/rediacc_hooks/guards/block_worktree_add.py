@@ -1153,7 +1153,7 @@ def _filled(text, mentions):
     text = PLACEHOLDER.sub(UNKNOWN, text)
     if UNKNOWN not in text:
         return [text]
-    # A lease path in the built string itself, with an unknown piece standing as a word of its own after it, is a command aimed at a lease whose verb is unknown (`'git -C .claude/worktrees/x ' + v + ' add'`): that licenses the fill though the file names `worktree` nowhere else (e59de231.1). A piece inside the path (`.claude/worktrees/{x}`) does not.
+    # A lease path in the built string itself, with an unknown piece standing as a word of its own outside the path (before or after it), is a command aimed at a lease whose verb is unknown (`'git -C .claude/worktrees/x ' + v + ' add'`): that licenses the fill though the file names `worktree` nowhere else (e59de231.1). A piece inside or glued to the end of the path (`.claude/worktrees/{x}`, `'.claude/worktrees/x' + v`) is path text and does not.
     if not mentions and LEASE_ROOT_TEXT.search(text):
         mentions = UNKNOWN in LEASE_ROOT_TEXT.sub(" ", text)
     if not mentions:

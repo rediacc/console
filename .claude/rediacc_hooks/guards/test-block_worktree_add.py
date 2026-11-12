@@ -96,6 +96,11 @@ REFUSED = [
         "an argv aimed at a lease, the verb unknown",
         "python3 -c \"import subprocess; v=input(); subprocess.run(['git','-C','.claude/worktrees/x',v,'add'])\"",
     ),
+    # e5ff36fc.1 (restores e59de231.2): `.claude/worktrees.py` is a file that names the word, not a lease root, so an unknown built command beside it is still filled.
+    (
+        "a file named worktrees.py beside a built command",
+        "python3 -c \"import os; x=input(); print('.claude/worktrees.py'); os.system('git ' + x)\"",
+    ),
 ]
 
 # A script path the shell expands, with the words in the command's text. The second row is the hole itself: the fixture names the phrase and is untracked, so the literal path is refused and the variable must be too.
@@ -333,6 +338,20 @@ FALSE_POSITIVES = [
     (
         "an unknown piece inside the lease path",
         "python3 -c \"import os; x=input(); os.system(f'git -C .claude/worktrees/{x} add f')\"",
+    ),
+    # aeea89c4.3 controls: a known verb before the unknown piece names a command that is not the worktree verb, whatever the piece fills.
+    (
+        "a built command aimed at a lease, a known verb then an unknown argument",
+        "python3 -c \"import os; v=input(); os.system('git -C .claude/worktrees/x status ' + v)\"",
+    ),
+    (
+        "an argv aimed at a lease, a known verb then an unknown argument",
+        "python3 -c \"import subprocess; v=input(); subprocess.run(['git','-C','.claude/worktrees/x','status',v])\"",
+    ),
+    # aeea89c4.1: a piece glued to the end of the path is path text (`'.claude/worktrees/' + name`), not a verb.
+    (
+        "an unknown piece glued to the lease path",
+        "python3 -c \"import os; v=input(); os.system('git -C .claude/worktrees/x' + v + ' add f')\"",
     ),
 ]
 
@@ -965,6 +984,11 @@ SCOPE_REFUSED: list[tuple[str, str, str | None]] = [
     (
         "scratch, the new tree inside a submodule path",
         "git -C %s %s --detach %s/x HEAD" % (WORK, VERB, SUBMODULE),
+        "/tmp",
+    ),
+    (
+        "scratch, the new tree behind a symlink into this checkout (388ab363.2)",
+        "git -C %s %s --detach %s/link/.claude/worktrees/x HEAD" % (WORK, VERB, SCRATCH),
         "/tmp",
     ),
     (

@@ -433,7 +433,7 @@ def _in_process_in_scratch(sc: Scratch, monkeypatch) -> None:
 
 
 def test_r8_4_a_value_error_from_armed_monitors_costs_only_the_interim(sc, monkeypatch):
-    """The capture hook never wedges a stop on an unreadable transcript."""
+    """The capture hook never wedges a stop on a transcript the scan cannot decode: a ValueError from `armed_monitors` (an embedded null byte) costs only the interim mark."""
     tx = monitor_transcript(sc, "waiting", shell=False)
     _in_process_in_scratch(sc, monkeypatch)
 

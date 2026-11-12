@@ -1450,7 +1450,7 @@ _STDIN_DEVICES = frozenset(
 
 
 def _may_be_stdin(operand):
-    """An operand that is, or may expand to, the run's stdin: one of `_STDIN_DEVICES` under any spelling the kernel resolves to it (repeated slashes, a `.` segment, a trailing slash), or a word the shell still expands."""
+    """An operand that is, or may expand to, the run's stdin: one of `_STDIN_DEVICES` under any spelling the kernel resolves to it (repeated slashes, a `.` segment), a trailing slash too (the kernel answers ENOTDIR for `/dev/stdin/`, but `normpath` strips it and the read stays the over-reading, blocking direction), or a word the shell still expands."""
     if "$" in operand or "`" in operand:
         return True
     if not operand.startswith("/"):
