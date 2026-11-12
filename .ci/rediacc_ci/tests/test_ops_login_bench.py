@@ -55,7 +55,7 @@ class FakeApi:
     def __init__(
         self,
         challenge: bool = True,
-        verify: int = 200,
+        verify: int | list[int] = 200,
         fail: dict | None = None,
         satisfied: bool = True,
         accept_records: bool = True,
@@ -71,7 +71,7 @@ class FakeApi:
         self.reread_status = reread_status
         self.reread_body = reread_body
         self.challenge = challenge
-        self.verify = verify
+        self.verify = list(verify) if isinstance(verify, list) else [verify]
         self.fail = fail or {}
 
     def get(self, route):
@@ -98,7 +98,8 @@ class FakeApi:
                 return 200, {"requiresTwoFactor": True, "challengeToken": "chal-1"}
             return 200, {"user": {"id": "u"}}
         if route == "2fa/verify":
-            return self.verify, {}
+            index = sum(1 for r, _b in self.calls if r == "2fa/verify") - 1
+            return self.verify[min(index, len(self.verify) - 1)], {}
         if route == "2fa/setup":
             return 200, {"secret": NEW_SEED, "uri": "otpauth://x"}
         if route == "/account/api/v1/portal/terms/accept":
@@ -583,16 +584,50 @@ def test_the_writer_argv_carries_names_never_the_seed(capsys):
         assert all(secret not in "\0".join(a) for a, _e in runner.calls)
 
 
-def test_a_refused_code_is_the_stale_seed_refusal_and_does_not_loop():
+def _ticking_login(api, runner):
+    clock = [FIXED_NOW]
+
+    def sleep(seconds):
+        clock[0] += seconds
+
+    login_bench.login(
+        [],
+        _env(),
+        runner,
+        now=lambda: clock[0],
+        sleep=sleep,
+        capture=EnrolCapture(runner),
+        api=api,
+    )
+
+
+def test_a_refused_code_is_retried_once_in_the_next_window():
+    api = FakeApi(challenge=True, verify=[400, 200])
+    runner = FakeRunner()
+    _ticking_login(api, runner)
+    assert [r for r, _b in api.calls if r in ("login", "2fa/verify")] == [
+        "login",
+        "2fa/verify",
+        "2fa/verify",
+    ]
+    first, second = [b for r, b in api.calls if r == "2fa/verify"]
+    assert first["challengeToken"] == second["challengeToken"] == "chal-1"
+    assert first["code"] == totp.code(SEED, at=FIXED_NOW)
+    assert second["code"] == totp.code(SEED, at=FIXED_NOW + 30)
+    assert first["code"] != second["code"]
+
+
+def test_two_refused_windows_are_the_stale_seed_refusal_and_do_not_loop():
     api = FakeApi(challenge=True, verify=400)
     runner = FakeRunner()
     with pytest.raises(login_bench.LoginError) as caught:
-        _enrol_login(api, EnrolCapture(runner))
+        _ticking_login(api, runner)
     message = str(caught.value)
     assert "stale" in message
+    assert "two consecutive 30 s windows" in message
     assert "REDIACC_BENCH_TOTP_SEED" in message
     assert SEED not in message
-    assert [r for r, _b in api.calls] == ["login", "2fa/verify"]
+    assert [r for r, _b in api.calls] == ["login", "2fa/verify", "2fa/verify"]
     assert [a[-1] for a, _e in runner.calls] == ["add-current"]
 
 

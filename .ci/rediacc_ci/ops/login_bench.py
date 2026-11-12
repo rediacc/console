@@ -11,7 +11,7 @@ THE STEPS, in order:
   2. Refuse a value that is unset or still the placeholder `PLACEHOLDER-operator-fills`, naming its Bitwarden entry, before anything else runs.
   3. Refresh the bench IP allowlist (`rediacc_ci.ops.bench_access add-current`, which binds its own `bench-access` profile). The four bench values are removed from that child's environment.
   3b. Probe the account with its own password login (`POST /auth/login`, the same route the CLI uses). Three outcomes:
-      - A TOTP challenge: the code from the seed is spent on `POST /auth/2fa/verify`; a refusal is the STALE-SEED refusal (TOTP is on but the seed in `REDIACC_BENCH_TOTP_SEED` is not the one the account holds, because the mirror cleared it and it was re-enrolled elsewhere), a LoginError that names the remedy and never retries.
+      - A TOTP challenge: the code from the seed is spent on `POST /auth/2fa/verify`; a first refusal is retried once with the next window's code (the account refuses a code already spent, so a second run inside one window is refused with a good seed), and a second refusal is the STALE-SEED refusal (TOTP is on but the seed in `REDIACC_BENCH_TOTP_SEED` is not the one the account holds, because the mirror cleared it and it was re-enrolled elsewhere), a LoginError that names the remedy and does not retry again.
       - No challenge, because TOTP is off (`mirror_config_store` copies the operator row with TOTP cleared, since `users.totp_secret` is sealed per Worker): the run RE-ENROLS through the account's own API with the session the probe just opened. `POST /auth/2fa/setup` and `/auth/2fa/enable` need an elevated session, and the only headless elevation is the reauth mail: `POST /auth/reauth`, the link read from the bench D1 `captured_emails` (kind `reauth`, a child under `bws_env exec --profile deploy-bench` that prints only the token to this process), `POST /auth/reauth/verify`. The new seed is written to Bitwarden as `REDIACC_BENCH_TOTP_SEED` (`bws_env store-from-env`, the value on the writer's stdin, never argv) BEFORE `/auth/2fa/enable`, so a failed write leaves TOTP off and the next run enrols again, never an enabled account whose seed was lost. The backup codes the enable answers are dropped unread.
   3c. In the same session, accept the current Terms of Service when the account's acceptance does not satisfy them (`GET`/`POST /portal/terms[/accept]`, the version and digest the server reports; operator ruling ASKED:2026-11-11T17:38Z, bench only).
   4. Compute the six-digit TOTP code in memory (`rediacc_ci.ops.totp`), waiting for the next 30 s window when fewer than `MIN_WINDOW_LEFT` seconds remain, then run `./rdc.sh --config eu-bench subscription login --server <BENCH_ORIGIN>` with REDIACC_LOGIN_EMAIL, REDIACC_LOGIN_PASSWORD and REDIACC_LOGIN_TOTP in the child environment.
@@ -582,12 +582,27 @@ def login(
         spent = fresh_code(seed, now, sleep)
         status, _ = account.post("2fa/verify", {"challengeToken": challenge, "code": spent})
         if status != 200:
+            # The account refuses a code it already spent (replay protection), so a run inside
+            # the window of an earlier run is refused with a good seed. The challenge survives a
+            # refused verify (it only counts an attempt), so wait for the next window and retry once.
+            refused = status
+            asked = now()
+            left = totp.STEP - (asked % totp.STEP)
+            log.step(
+                "The code was refused (HTTP %d); retrying once with the next window's code"
+                % refused
+            )
+            sleep(left + 0.5)
+            spent = totp.code(seed, at=asked + left + 0.5)
+            status, _ = account.post("2fa/verify", {"challengeToken": challenge, "code": spent})
+        if status != 200:
             raise LoginError(
-                "TOTP is on for the bench account but the code from %s was refused (HTTP %d): the "
-                "seed is stale, most likely because the mirror cleared TOTP and it was enrolled "
-                "again elsewhere. Clear totp_secret, totp_backup_hashes and totp_enabled on the bench "
-                "user (or disable 2FA with a backup code) and rerun to enrol a fresh seed; not "
-                "retrying." % (_bws_entry(TOTP_SEED_ENV), status)
+                "TOTP is on for the bench account but the code from %s was refused in two "
+                "consecutive 30 s windows (HTTP %d, then HTTP %d): the seed is stale, most likely "
+                "because the mirror cleared TOTP and it was enrolled again elsewhere. Clear "
+                "totp_secret, totp_backup_hashes and totp_enabled on the bench user (or disable 2FA "
+                "with a backup code) and rerun to enrol a fresh seed; not retrying."
+                % (_bws_entry(TOTP_SEED_ENV), refused, status)
             )
     else:
         log.step("TOTP is off on the bench account: enrolling a new seed")
