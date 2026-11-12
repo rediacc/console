@@ -5,6 +5,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
+import { clickWithRetry as clickWithRetryPolicy } from './lib/click-retry.js';
 import { createDevServer, pickFreePort, resourceSnapshot } from './lib/dev-server-process.js';
 import {
   captureNavigationEvidence,
@@ -201,32 +202,6 @@ function clickSelector(selector) {
 }
 
 /**
- * A click that THREW never reached the page: agent-browser resolves the element and checks it is
- * actionable BEFORE dispatching any input, so these refusals leave the player exactly as it was.
- * Only that class is retried. A click that succeeded and did nothing is a real dropped click, and
- * the scenario's own state assertion still fails on it -- the retry cannot hide that.
- */
-const REFUSED_BEFORE_DISPATCH =
-  /not found|not visible|not attached|detached|intercept|obscured|covered by|not stable/i;
-const CLICK_ATTEMPTS = 4;
-const CLICK_RETRY_GAP_MS = 400;
-
-function clickWithRetry(selector) {
-  let result = clickSelector(selector);
-  for (let attempt = 1; !result.ok && attempt < CLICK_ATTEMPTS; attempt += 1) {
-    if (!REFUSED_BEFORE_DISPATCH.test(result.reason)) break;
-    log(
-      `→ click on ${selector} refused (attempt ${attempt}), retrying: ${result.reason.slice(0, 300)}`
-    );
-    wait(CLICK_RETRY_GAP_MS);
-    result = clickSelector(selector);
-  }
-  // The refusal text is the only evidence of WHY a click failed, and it used to be dropped.
-  if (!result.ok) log(`→ click on ${selector} FAILED: ${result.reason.slice(0, 600)}`);
-  return result;
-}
-
-/**
  * Video.js hides the control bar 2 s after the last pointer activity while the video plays
  * (IDLE_DELAY in @videojs/core controls.js). Nothing moves the pointer between the poster press and
  * the first playback click, so on a loaded host that click landed on a hidden bar and agent-browser
@@ -239,6 +214,14 @@ function revealControls() {
   } catch (error) {
     log(`→ hover over the player to reveal its controls failed: ${String(error).slice(0, 300)}`);
   }
+}
+
+/** The retry policy and its tests live in lib/click-retry.js; this binds it to the page. */
+function clickWithRetry(selector) {
+  return clickWithRetryPolicy(
+    { click: clickSelector, reveal: revealControls, wait, log },
+    selector
+  );
 }
 
 function clickPlaybackButton() {

@@ -66,6 +66,16 @@ describe('repoNamesByGuid', () => {
     expect(names.has('99999999-9999-4999-8999-999999999999')).toBe(false);
   });
 
+  it('a GUID that is both live and in deletedRepositories stays live', () => {
+    const both = {
+      resources: {
+        ...config.resources,
+        deletedRepositories: [{ name: 'mail', tag: 'prod', repositoryGuid: GRAND }],
+      },
+    } as unknown as RdcConfig;
+    expect(repoNamesByGuid(both).get(GRAND)).toMatchObject({ ref: 'mail', deleted: false });
+  });
+
   it('shortGuid keeps the first 8 characters', () => {
     expect(shortGuid(GRAND)).toBe('11111111');
   });
@@ -73,5 +83,12 @@ describe('repoNamesByGuid', () => {
   it('machineOfPlacement resolves a machine placement directly', () => {
     expect(machineOfPlacement({ machine: 'm' }, {})).toEqual({ machine: 'm', datastore: null });
     expect(machineOfPlacement(undefined, {})).toEqual({ machine: null, datastore: null });
+  });
+
+  it('machineOfPlacement names no machine for a datastore the config does not list', () => {
+    expect(machineOfPlacement({ datastore: 'ghost' }, {})).toEqual({
+      machine: null,
+      datastore: 'ghost',
+    });
   });
 });

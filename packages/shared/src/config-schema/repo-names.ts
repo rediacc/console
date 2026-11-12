@@ -28,8 +28,8 @@ export interface RepoNameEntry {
  *
  * A `machine` placement names the machine directly; a `datastore` placement
  * resolves through the named datastore: a local datastore is anchored to a
- * machine, an RBD datastore is mobile and names none (so the repo's machine is
- * `null`).
+ * machine; any other datastore (an RBD datastore, which is mobile, or a name the
+ * config does not list) names none, so the repo's machine is `null`.
  */
 export function machineOfPlacement(
   placement: Placement,
