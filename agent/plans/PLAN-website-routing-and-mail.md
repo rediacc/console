@@ -117,6 +117,7 @@ The zone is on Cloudflare with null MX, `v=spf1 -all` and `_dmarc` reject with s
   Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.portal_health bench.rediacc.cloud` rc 0, and the received headers recorded here.
     (result 2026-11-09T08:55Z, d778be9d) Blocked. Bench sends with bws `AWS_SES_FROM`, which still names `notify.rediacc.com` (M2), so a bench mail today would not prove the `.cloud` sender. Waits on M2's sender switch and a bench account redeploy (rename-runner resource).
     (ticked) 2026-11-10T14:09:36Z by d778be9d: commit:bf8134cbb1 live 2026-11-10: bench through the product (POST /auth/reauth 200) and one per region with each region key, read in the operator mailbox on hostinger; rspamd X-Spamd-Result shows DKIM, SPF and DMARC pass for notify.rediacc.cloud; per-region sends are direct SES with the region key because eu/us/asia login needs Turnstile
+  (corrected 2026-11-12T09:20Z) M3 Accept clause 1 run 2026-11-12T09:20Z: the command as written (`python3 -m rediacc_ci.ops.portal_health bench.rediacc.cloud`) is refused (rc 2, `--target` is required and no positional host is taken); the working form `PYTHONPATH=.ci python3 -m rediacc_ci.ops.portal_health --target bench` rc 0 (GREEN, 1 host, 7 URL, 0 red). That checks the portal, not mail; the mail evidence stays the headers in the tick above.
 
 ### Routing, live
 

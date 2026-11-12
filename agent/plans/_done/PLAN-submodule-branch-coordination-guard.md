@@ -105,6 +105,7 @@ Proposed guard: **`.claude/rediacc_hooks/guards/block_uncoordinated_submodule_po
     (ticked) 2026-11-10T19:59:08Z by d778be9d: nocommit: nothing touched; #6f6c87e0 closed 2026-09-23T17:25:43Z on its default; git submodule status rc 0 shows every submodule at its gitlink; rule at .claude/agents/pr-babysitter.md:128
 - [x] File the CI-gate-lookup-gap (section 5's companion note) as its own future consideration, explicitly not as a box in this plan, since it changes an already-enforced gate and needs its own scoping.
     (ticked) 2026-11-10T19:59:39Z by d778be9d: nocommit: reported, not filed: .ci/rediacc_ci/quality/submodule_branches.py:622 looks the submodule branch up by the console branch name, the policy block_second_branch enforces and .claude/agents/pr-babysitter.md:128 states
+  (corrected 2026-11-12T09:20Z) The box is ticked although nothing was filed: no issue, plan or worklist item exists for the lookup gap. It was closed by reporting, because the gap is the stated same-name policy (the `branch_exists_in_remote` fallback at .ci/rediacc_ci/quality/submodule_branches.py:622 and the rule at .claude/agents/pr-babysitter.md:128), and the plan itself was retired by ruling #dcea1f9b. Read the tick as 'reported, not filed'.
 
 ## Critical files
 

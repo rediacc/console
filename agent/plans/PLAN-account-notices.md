@@ -1,6 +1,6 @@
 # PLAN: account notices -- one notices store behind a portal bell, a history page and `rdc subscription notices`; one reminder mail per recipient listing every item, on a GUID-set cadence; names joined client-side only
 Status: approved -- operator rulings ASKED:2026-11-12T05:57Z and ASKED:2026-11-12T06:01Z (quoted under Rulings); promoted on the operator's order of 2026-11-12 ("Please promote the new plans after planning finishes. Then start to implement them")
-Depends-On: no-dep -- builds on landed code only; PLAN-terms-acceptance's open boxes (X1, X2, LP-bench) are live boxes that edit no file this plan owns
+Depends-On: no-dep -- builds on landed code only; PLAN-terms-acceptance's open boxes (X1 and LP-bench; X2 is ticked) are live boxes that edit no file this plan owns
 Owner: d778be9d
 Updated: 2026-11-12
 Priority: P1 -- a hard-expired licence of a deleted repository mails every org admin and team admin every day with no end, and the mail cuts the list at 5
