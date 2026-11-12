@@ -94,6 +94,22 @@ describe('status', () => {
     expect(status.certId).toBeUndefined();
   });
 
+  it('reports certRefused and the free tier, and no live cert, when the box refused its cert at boot', async () => {
+    const fake = makeFake({
+      liveCert: certFor(BOX_KEY, 'sub-9', 'ELITE'),
+      bootRejected: { reason: 'bad-signature', detail: 'x', at: '2026-11-12T19:58:00Z' },
+    });
+    const status = await serverStatus(fake.deps, LOC);
+    expect(status).toMatchObject({
+      tier: 'free',
+      bootstrapMode: true,
+      certRefused: { reason: 'bad-signature', detail: 'x', at: '2026-11-12T19:58:00Z' },
+    });
+    expect(status.certId).toBeUndefined();
+    expect(status.planCode).toBeUndefined();
+    expect(fake.calls).not.toContain('ssh m1 read-live-cert');
+  });
+
   it('refuses a domain with no record and no --machine', async () => {
     await expect(serverStatus(makeFake().deps, { domain: 'nowhere.example' })).rejects.toThrow(
       /noRecord/
@@ -289,6 +305,40 @@ describe('licence', () => {
     expect(outputService.info).toHaveBeenCalledWith(
       `commands.server.licence.alreadyCurrent ${JSON.stringify({ certId: result.certId })}`
     );
+  });
+
+  describe('a box that refused its cert at boot', () => {
+    const marker = { reason: 'bad-signature', detail: 'sig does not verify' };
+
+    it('warns with the reason, skips already-current, drops, confirms, and sees the marker gone', async () => {
+      const fake = makeFake({ liveCert: certFor(BOX_KEY), bootRejected: marker });
+      const result = await serverLicence(fake.deps, LOC);
+      expect(result.via).toBe('inbox');
+      expect(outputService.warn).toHaveBeenCalledWith(
+        expect.stringMatching(/^commands\.server\.licence\.bootRefused .*bad-signature/)
+      );
+      expect(fake.drops).toHaveLength(1);
+      expect(fake.calls.filter((c) => c === 'ssh m1 read-boot-rejected')).toHaveLength(2);
+      expect(fake.calls.indexOf(`https GET ${STATUS}`)).toBeLessThan(
+        fake.calls.lastIndexOf('ssh m1 read-boot-rejected')
+      );
+      expect(outputService.info).not.toHaveBeenCalledWith(expect.stringMatching(/alreadyCurrent/));
+    });
+
+    it('fails when the marker is still there after the apply, and writes no record', async () => {
+      const fake = makeFake({ bootRejected: marker, markerSticks: true });
+      await expect(serverLicence(fake.deps, LOC)).rejects.toThrow(
+        /bootRefusalStays.*bad-signature/
+      );
+      expect(Object.values(fake.written).some((v) => v.includes('"licence": "cert"'))).toBe(false);
+    });
+
+    it('refuses no-upstream-key without minting or dropping a cert', async () => {
+      const fake = makeFake({ bootRejected: { reason: 'no-upstream-key' } });
+      await expect(serverLicence(fake.deps, LOC)).rejects.toThrow(/noUpstreamKey/);
+      expect(fake.drops).toHaveLength(0);
+      expect(fake.calls).not.toContain('issue');
+    });
   });
 
   it('surfaces a busy inbox', async () => {

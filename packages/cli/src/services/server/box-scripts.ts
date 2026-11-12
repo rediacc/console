@@ -141,6 +141,15 @@ if [ -f "$f" ]; then cat "$f"; fi
 `;
 
 /**
+ * The boot-refusal marker (`cert-inbox/boot-rejected.json`, `{reason, detail, certId, at}`): the box
+ * refused its cert at boot and runs on the free tier. Printed when present; nothing otherwise.
+ */
+export const READ_BOOT_REJECTED = `
+f="$1/data/web/cert-inbox/boot-rejected.json"
+if [ -f "$f" ]; then cat "$f"; fi
+`;
+
+/**
  * Drop the body on stdin (`{"requestId", "cert"}`) as the inbox's `new.json`, through `new.json.tmp`
  * and a rename, under a lock. Prints `inbox=busy` and drops nothing while another drop is waiting
  * or being decided, else `inbox=dropped`.

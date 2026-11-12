@@ -486,9 +486,18 @@ function throwInnerStatusError(
   if (status === 403 && parsed.code === TERMS_ACCEPTANCE_REQUIRED) {
     throw termsRequiredError(parsed);
   }
+  if (status === 503 && parsed.code === DELEGATION_CERT_REFUSED) {
+    throw Object.assign(
+      new ValidationError(t('errors.delegationCertRefused', { code: DELEGATION_CERT_REFUSED })),
+      { status, code: DELEGATION_CERT_REFUSED }
+    );
+  }
   const msg = parsed.error ?? `Account server returned HTTP ${status}`;
   throw createAccountError(msg, status, parsed.code, parsed);
 }
+
+/** The code an on-prem server answers with (503) while it runs on the free tier after refusing its cert at boot. */
+const DELEGATION_CERT_REFUSED = 'DELEGATION_CERT_REFUSED';
 
 /** The server's refusal code when the account (or an anonymous FREE request) has not accepted the current Terms. */
 const TERMS_ACCEPTANCE_REQUIRED = 'TERMS_ACCEPTANCE_REQUIRED';

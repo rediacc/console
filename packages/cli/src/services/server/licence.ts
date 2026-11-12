@@ -32,6 +32,7 @@ import {
   INBOX_RESULT_SECONDS,
   MIGRATE_ENV_CERT,
   parseEnvLines,
+  READ_BOOT_REJECTED,
   READ_LIVE_CERT,
 } from './box-scripts.js';
 import { assertCertKey, CertError, decodeCert, parseSignedCert } from './cert.js';
@@ -165,6 +166,35 @@ export async function readLiveCert(
   } catch {
     return undefined;
   }
+}
+
+/** Why the box refused its cert at boot (the server's `boot-rejected.json`). */
+export interface BootRejected {
+  reason: string;
+  detail: string;
+  certId: string | null;
+  at: string;
+}
+
+/** The boot-refusal marker, or undefined when the box holds none. An unreadable marker still counts as a refusal. */
+export async function readBootRejected(
+  deps: ServerDeps,
+  where: RepoOnBox
+): Promise<BootRejected | undefined> {
+  const text = (await runOnBox(deps, where, READ_BOOT_REJECTED)).stdout.trim();
+  if (!text) return undefined;
+  let raw: Record<string, unknown> = {};
+  try {
+    raw = JSON.parse(text) as Record<string, unknown>;
+  } catch {
+    raw = {};
+  }
+  return {
+    reason: typeof raw.reason === 'string' ? raw.reason : 'unknown',
+    detail: typeof raw.detail === 'string' ? raw.detail : '',
+    certId: typeof raw.certId === 'string' ? raw.certId : null,
+    at: typeof raw.at === 'string' ? raw.at : '',
+  };
 }
 
 /** A drop waiting for its answer: the request id the answer names, and the cert id it carries. */

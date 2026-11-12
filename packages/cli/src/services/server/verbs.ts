@@ -24,12 +24,15 @@ import {
   dropCert,
   migrateEnvCert,
   obtainLicence,
+  readBootRejected,
   readLiveCert,
 } from './licence.js';
 import { recordFile } from './state.js';
 import type { ServerDeps } from './types.js';
 
 const DEFAULT_TIER = 'licensed';
+/** The boot-refusal reason a new cert cannot fix: the box has no key to check certs by. */
+const NO_UPSTREAM_KEY = 'no-upstream-key';
 
 export interface StatusResult {
   domain: string;
@@ -46,6 +49,8 @@ export interface StatusResult {
   certIssuedAt?: string;
   certValidUntil?: string;
   freeTierRelay?: boolean;
+  /** Set when the box refused its cert at boot: it runs on the free tier and holds no live cert. */
+  certRefused?: { reason: string; detail: string; at: string };
   image?: string;
   templateVersion: number;
   builtinTemplateVersion: number;
@@ -56,7 +61,8 @@ export async function serverStatus(deps: ServerDeps, loc: Locator): Promise<Stat
   const record = requireRecord(loc);
   const where = await locateRepo(record.repo, record.machine);
   const facts = await readPublicFacts(deps, where);
-  const live = await readLiveCert(deps, where);
+  const refused = await readBootRejected(deps, where);
+  const live = refused ? undefined : await readLiveCert(deps, where);
   const cert = live?.decoded;
   const target = await boxTarget(deps, record);
   const health = await deps.box(target, 'GET', '/health');
@@ -77,6 +83,9 @@ export async function serverStatus(deps: ServerDeps, loc: Locator): Promise<Stat
           certIssuedAt: cert.issuedAt,
           certValidUntil: cert.validUntil,
         }
+      : {}),
+    ...(refused
+      ? { certRefused: { reason: refused.reason, detail: refused.detail, at: refused.at } }
       : {}),
     ...(relay === undefined ? {} : { freeTierRelay: relay }),
     ...(facts.values.ELITE_IMAGE ? { image: facts.values.ELITE_IMAGE } : {}),
@@ -208,6 +217,15 @@ export async function serverLicence(
   const boxKey = facts.values.ACCOUNT_ED25519_PUBLIC_KEY;
   if (!boxKey) throw new ServerError(t('commands.server.errors.keygenNoKey'));
 
+  const refused = await readBootRejected(deps, where);
+  if (refused?.reason === NO_UPSTREAM_KEY) {
+    throw new ServerError(t('commands.server.licence.noUpstreamKey', { domain: record.domain }));
+  }
+  if (refused) {
+    outputService.warn(
+      t('commands.server.licence.bootRefused', { reason: refused.reason, detail: refused.detail })
+    );
+  }
   const live = await readLiveCert(deps, where);
   const result = await obtainLicence(deps, {
     mode: 'auto',
@@ -221,7 +239,7 @@ export async function serverLicence(
   const tier = (cert: { planCode?: string } | undefined) => cert?.planCode ?? DEFAULT_TIER;
 
   const certId = await delegationCertId(result.signed);
-  if (live?.certId === certId) {
+  if (!refused && live?.certId === certId) {
     outputService.info(t('commands.server.licence.alreadyCurrent', { certId }));
     return {
       domain: record.domain,
@@ -233,8 +251,17 @@ export async function serverLicence(
   }
 
   const drop = await dropCert(deps, where, result.signed);
+  outputService.info(t('commands.server.licence.droppedCert', { certId: drop.certId }));
   await awaitInboxResult(deps, where, drop.requestId);
   await confirmCertId(deps, await boxTarget(deps, record), record.domain, drop.certId);
+  if (refused) {
+    const still = await readBootRejected(deps, where);
+    if (still) {
+      throw new ServerError(
+        t('commands.server.licence.bootRefusalStays', { reason: still.reason })
+      );
+    }
+  }
   if (Object.keys(result.env).length > 0) await setBoxEnv(deps, where, result.env);
   outputService.info(t('commands.server.licence.viaInbox'));
 

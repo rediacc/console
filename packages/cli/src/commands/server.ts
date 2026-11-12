@@ -14,6 +14,7 @@ import { liveServerDeps } from '../services/server/deps.js';
 import { type InstallOptions, ServerInstall } from '../services/server/install.js';
 import { LICENCE_MODES, TLS_METHODS } from '../services/server/types.js';
 import {
+  type StatusResult,
   serverBackup,
   serverLicence,
   serverStatus,
@@ -90,6 +91,22 @@ function locatorOptions(command: Command): Command {
     .option('--repo <name>', t('commands.server.optionRepo'));
 }
 
+/** The status lines; a refused cert prints as one `cert` line plus the command that fixes it. */
+function reportStatus(result: StatusResult, domain: string): void {
+  for (const [key, value] of Object.entries(result)) {
+    if (key !== 'certRefused') outputService.report(`${key.padEnd(24)} ${String(value)}`);
+  }
+  if (!result.certRefused) return;
+  const { reason } = result.certRefused;
+  const at = result.certRefused.at.replace('T', ' ').replace(/:\d\d(\.\d+)?Z$/, 'Z');
+  outputService.report(
+    `${'cert'.padEnd(24)} ${t('commands.server.status.certRefused', { reason, at })}`
+  );
+  outputService.report(
+    `${''.padEnd(24)} ${t('commands.server.status.certRefusedRun', { domain })}`
+  );
+}
+
 function registerStatus(server: Command): void {
   locatorOptions(
     server
@@ -102,9 +119,7 @@ function registerStatus(server: Command): void {
       if (isMachineReadable()) {
         outputService.print(result, 'json');
       } else {
-        for (const [key, value] of Object.entries(result)) {
-          outputService.report(`${key.padEnd(24)} ${String(value)}`);
-        }
+        reportStatus(result, domain);
       }
       if (result.health !== 200) setExitCode(1);
     } catch (error) {

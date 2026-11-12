@@ -66,6 +66,10 @@ export interface FakeOptions {
    * the drop.
    */
   inbox?: 'apply' | 'none' | 'busy' | { reason: string; detail?: string };
+  /** The box's `cert-inbox/boot-rejected.json`: present until an applied drop clears it (unless `markerSticks`). */
+  bootRejected?: { reason: string; detail?: string; certId?: string | null; at?: string };
+  /** The marker survives an applied drop (a server that did not clear it). */
+  markerSticks?: boolean;
 }
 
 export interface Fake {
@@ -138,6 +142,7 @@ export function makeFake(opts: FakeOptions = {}): Fake {
       return `result=rejected\n${JSON.stringify(answer, null, 2)}\n`;
     }
     live = JSON.stringify(decided.cert);
+    if (!opts.markerSticks) marker = undefined;
     await refreshLiveId();
     const payload = JSON.parse(Buffer.from(decided.cert.payload, 'base64').toString()) as {
       issuedAt: string;
@@ -160,6 +165,11 @@ export function makeFake(opts: FakeOptions = {}): Fake {
     delete secrets.DELEGATION_CERT_BASE64;
     return `migrate=${state}\n`;
   };
+  let marker = opts.bootRejected;
+  const readMarker = () =>
+    marker
+      ? JSON.stringify({ detail: '', certId: null, at: '2026-11-12T19:58:00Z', ...marker })
+      : '';
   let now = Date.parse('2026-11-12T12:00:00Z');
 
   const preflight = {
@@ -202,6 +212,7 @@ export function makeFake(opts: FakeOptions = {}): Fake {
     ['inbox=dropped', 'inbox-drop', inboxDrop],
     ['result=none', 'inbox-result', inboxResult],
     ['migrate=$state', 'migrate-cert', migrate],
+    ['boot-rejected.json', 'read-boot-rejected', readMarker],
     ['then cat "$f"', 'read-live-cert', () => live ?? ''],
     ['ss -ltnpH', 'preflight', () => preflightText],
     [
