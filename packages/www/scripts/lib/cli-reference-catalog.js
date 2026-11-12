@@ -17,6 +17,7 @@ const LOCAL_GROUPS = [
   'term',
   'shortcuts',
   'subscription',
+  'server',
   'update',
   'credits',
   'legal',

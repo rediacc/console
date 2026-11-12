@@ -7,7 +7,7 @@ order: 2
 language: ja
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ja/cli.json
-sourceHash: "c64ecf5f9ca1dc60"
+sourceHash: "2f4e7adf6fd26fcd"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -3379,8 +3379,118 @@ rdc subscription notices [options]
 
 ---
 
+<a id="cli-local-group-server"></a>
+## 13. {{t:cli.docs.sectionTitles.server}}
+
+{{t:cli.commands.server.description}}
+
+<a id="cli-local-server-install"></a>
+### 13.1 install
+
+{{t:cli.commands.server.install.description}}
+
+```bash
+rdc server install [machine] [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--ip <address>` | {{t:cli.commands.server.install.optionIp}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--user <name>` | {{t:cli.commands.server.install.optionUser}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--port <port>` | {{t:cli.commands.server.install.optionPort}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--name <name>` | {{t:cli.commands.server.install.optionName}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--domain <host>` | {{t:cli.commands.server.install.optionDomain}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--store-domain <host>` | {{t:cli.commands.server.install.optionStoreDomain}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--repo <name>` | {{t:cli.commands.server.install.optionRepo}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--size <size>` | {{t:cli.commands.server.install.optionSize}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--owner <email>` | {{t:cli.commands.server.install.optionOwner}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--tls <method>` | {{t:cli.commands.server.install.optionTls}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--cf-token <token>` | {{t:cli.commands.server.install.optionCfToken}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--cert-email <email>` | {{t:cli.commands.server.install.optionCertEmail}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--tls-cert <file>` | {{t:cli.commands.server.install.optionTlsCert}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--tls-key <file>` | {{t:cli.commands.server.install.optionTlsKey}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--tls-ca <file>` | {{t:cli.commands.server.install.optionTlsCa}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--licence <mode>` | {{t:cli.commands.server.install.optionLicence}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--cert <file>` | {{t:cli.commands.server.install.optionCert}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--image <ref>` | {{t:cli.commands.server.install.optionImage}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--image-file <tar>` | {{t:cli.commands.server.install.optionImageFile}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--local-image` | {{t:cli.commands.server.install.optionLocalImage}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--no-dns-wait` | {{t:cli.commands.server.install.optionNoDnsWait}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--bws-project <id>` | {{t:cli.commands.server.install.optionBwsProject}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--rotate` | {{t:cli.commands.server.install.optionRotate}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-y, --yes` | {{t:cli.commands.server.install.optionYes}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-server-status"></a>
+### 13.2 status
+
+{{t:cli.commands.server.status.description}}
+
+```bash
+rdc server status <domain> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `-m, --machine <name>` | {{t:cli.commands.server.optionMachine}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--repo <name>` | {{t:cli.commands.server.optionRepo}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-server-backup"></a>
+### 13.3 backup
+
+{{t:cli.commands.server.backup.description}}
+
+```bash
+rdc server backup <domain> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--out <file>` | {{t:cli.commands.server.backup.optionOut}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-m, --machine <name>` | {{t:cli.commands.server.optionMachine}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--repo <name>` | {{t:cli.commands.server.optionRepo}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-server-upgrade"></a>
+### 13.4 upgrade
+
+{{t:cli.commands.server.upgrade.description}}
+
+```bash
+rdc server upgrade <domain> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--image <ref>` | {{t:cli.commands.server.install.optionImage}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--image-file <tar>` | {{t:cli.commands.server.install.optionImageFile}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--local-image` | {{t:cli.commands.server.install.optionLocalImage}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-y, --yes` | {{t:cli.commands.server.install.optionYes}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-m, --machine <name>` | {{t:cli.commands.server.optionMachine}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--repo <name>` | {{t:cli.commands.server.optionRepo}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-server-licence"></a>
+### 13.5 licence
+
+{{t:cli.commands.server.licence.description}}
+
+```bash
+rdc server licence <domain> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--cert <file>` | {{t:cli.commands.server.install.optionCert}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-m, --machine <name>` | {{t:cli.commands.server.optionMachine}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--repo <name>` | {{t:cli.commands.server.optionRepo}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+---
+
 <a id="cli-local-group-update"></a>
-## 13. {{t:cli.docs.sectionTitles.update}}
+## 14. {{t:cli.docs.sectionTitles.update}}
 
 {{t:cli.commands.update.description}}
 
@@ -3401,7 +3511,7 @@ rdc update [options]
 ---
 
 <a id="cli-local-group-credits"></a>
-## 14. {{t:cli.docs.sectionTitles.credits}}
+## 15. {{t:cli.docs.sectionTitles.credits}}
 
 {{t:cli.commands.credits.description}}
 
@@ -3418,7 +3528,7 @@ rdc credits [options]
 ---
 
 <a id="cli-local-group-legal"></a>
-## 15. {{t:cli.docs.sectionTitles.legal}}
+## 16. {{t:cli.docs.sectionTitles.legal}}
 
 {{t:cli.commands.legal.description}}
 
@@ -3435,7 +3545,7 @@ rdc legal [options]
 ---
 
 <a id="cli-local-group-version"></a>
-## 16. {{t:cli.docs.sectionTitles.version}}
+## 17. {{t:cli.docs.sectionTitles.version}}
 
 {{t:cli.commands.version.description}}
 
@@ -3452,7 +3562,7 @@ rdc version [options]
 ---
 
 <a id="cli-local-group-doctor"></a>
-## 17. {{t:cli.docs.sectionTitles.doctor}}
+## 18. {{t:cli.docs.sectionTitles.doctor}}
 
 {{t:cli.commands.doctor.description}}
 
@@ -3464,12 +3574,12 @@ rdc doctor
 ---
 
 <a id="cli-local-group-tools"></a>
-## 18. {{t:cli.docs.sectionTitles.tools}}
+## 19. {{t:cli.docs.sectionTitles.tools}}
 
 {{t:cli.commands.tools.description}}
 
 <a id="cli-local-tools-install"></a>
-### 18.1 install
+### 19.1 install
 
 {{t:cli.commands.tools.install.description}}
 
@@ -3483,7 +3593,7 @@ rdc tools install <tool> [options]
 
 
 <a id="cli-local-tools-list"></a>
-### 18.2 list
+### 19.2 list
 
 {{t:cli.commands.tools.list.description}}
 
@@ -3494,12 +3604,12 @@ rdc tools list
 ---
 
 <a id="cli-local-group-ops"></a>
-## 19. {{t:cli.docs.sectionTitles.ops}}
+## 20. {{t:cli.docs.sectionTitles.ops}}
 
 {{t:cli.commands.ops.description}}
 
 <a id="cli-local-ops-up"></a>
-### 19.1 up
+### 20.1 up
 
 {{t:cli.commands.ops.up.description}}
 
@@ -3520,7 +3630,7 @@ rdc ops up [options]
 
 
 <a id="cli-local-ops-down"></a>
-### 19.2 down
+### 20.2 down
 
 {{t:cli.commands.ops.down.description}}
 
@@ -3535,7 +3645,7 @@ rdc ops down [options]
 
 
 <a id="cli-local-ops-status"></a>
-### 19.3 status
+### 20.3 status
 
 {{t:cli.commands.ops.status.description}}
 
@@ -3549,7 +3659,7 @@ rdc ops status [options]
 
 
 <a id="cli-local-ops-ssh"></a>
-### 19.4 ssh
+### 20.4 ssh
 
 {{t:cli.commands.ops.ssh.description}}
 
@@ -3566,7 +3676,7 @@ rdc ops ssh [options]
 
 
 <a id="cli-local-ops-setup"></a>
-### 19.5 setup
+### 20.5 setup
 
 {{t:cli.commands.ops.setup.description}}
 
@@ -3580,7 +3690,7 @@ rdc ops setup [options]
 
 
 <a id="cli-local-ops-check"></a>
-### 19.6 check
+### 20.6 check
 
 {{t:cli.commands.ops.check.description}}
 
@@ -3591,7 +3701,7 @@ rdc ops check
 ---
 
 <a id="cli-local-group-serve"></a>
-## 20. {{t:cli.docs.sectionTitles.serve}}
+## 21. {{t:cli.docs.sectionTitles.serve}}
 
 {{t:cli.commands.serve.description}}
 
