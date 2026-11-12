@@ -76,6 +76,8 @@ CHANNEL_VARS: dict[str, dict[str, str | None]] = {
         "ALLOWED_EMAIL_DOMAINS": None,
         "TURNSTILE_ENABLED": "false",
         "EMAIL_CAPTURE_D1": "true",
+        # Checkout asks for Terms consent on bench first, where only the sandbox pair bills (PLAN-terms-acceptance X2).
+        "STRIPE_CONSENT_COLLECTION": "1",
     },
 }
 PROXY_ENVIRONMENT = {SHARED: "edge", BENCH: "bench"}
