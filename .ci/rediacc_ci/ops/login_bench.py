@@ -599,9 +599,7 @@ def login(
         spent = fresh_code(seed, now, sleep)
         status, _ = account.post("2fa/verify", {"challengeToken": challenge, "code": spent})
         if status != 200:
-            # The account refuses a code it already spent (replay protection), so a run inside
-            # the window of an earlier run is refused with a good seed. The challenge survives a
-            # refused verify (it only counts an attempt), so wait for the next window and retry once.
+            # The account refuses a code it already spent (replay protection), so a run inside the window of an earlier run is refused with a good seed. The challenge survives a refused verify (it only counts an attempt), so wait for the next window and retry once.
             refused = status
             if _is_fault(refused):
                 raise LoginError(_fault_message(refused))

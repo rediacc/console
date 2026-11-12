@@ -149,6 +149,7 @@ describe('command plane coverage', () => {
     //
     // 210 -> 212, other 37 -> 39: `version` (build, channel and licence facts) and `legal` (the entity and the accepted Terms, read from the local state or the account server) never reach a machine.
     // 212 -> 213, other 39 -> 40: `subscription register` starts the device-code authorisation against the account server, never a machine, so it inherits `subscription`'s `other` plane.
+    //
     // 213 -> 215, other 40 -> 42: `subscription notices` and `subscription retire` (PLAN-account-notices) go through the account server, so they take `subscription`'s `other` plane.
     expect(COMMANDS.length).toBe(215);
     expect(counts).toEqual({ config: 57, machine: 116, other: 42 });
