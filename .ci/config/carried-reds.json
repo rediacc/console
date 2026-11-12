@@ -28,11 +28,5 @@
     "so carrying cannot become a second way to launder a partial lane."
   ],
   "version": 2,
-  "carried": [
-    {
-      "gate": "check:ci-lane-budget",
-      "findings": "*",
-      "reason": "test-account-e2e leg 4/4 p90 13.5m (budget 12m) comes from ONE sample: run 43043942649 job 130614077193 took 14m19s because the Playwright --with-deps apt step stalled 15:20-15:30Z on an Ubuntu mirror DNS outage (tests themselves 3.2m; the other samples 5m11s-6m10s). The refresh in 1eb8707a1f pulled it into lane-durations.json. The stall is bounded in 4150dcf8b1. No sanctioned outlier exclusion exists (budget_report keeps success jobs only, no reason-carrying drop), so this push supplies the fresh normal sample; remove this carry with the lane-durations --refresh that follows it (worklist #1dcc5437)."
-    }
-  ]
+  "carried": []
 }
