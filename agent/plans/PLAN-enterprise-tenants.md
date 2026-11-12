@@ -5,7 +5,7 @@ Updated: 2026-11-12
 Depends-On: PLAN-enterprise-isolation.md, PLAN-product-domain-rename.md, PLAN-website-routing-and-mail.md#W1, PLAN-website-routing-and-mail.md#W8, PLAN-website-routing-and-mail.md#M3
 Priority: P1 -- the Enterprise offer is unproven until a real tenant answers on each delivery form
 Concurrency: parallel -- writers in each wave own disjoint files. PLAN-enterprise-isolation.md owns .ci/rediacc_ci/enterprise/** and .ci/rediacc_ci/__main__.py / core/run_verbs.py, but it has no open writer box, so block_plan_concurrency sees no live holder. Its Owns line should be narrowed to its live boxes when this plan is promoted.
-Owns: agent/plans/PLAN-enterprise-tenants.md, .ci/rediacc_ci/ops/cf_dns.py, .ci/rediacc_ci/tests/test_ops_cf_dns.py, .ci/rediacc_ci/enterprise/cli.py, .ci/rediacc_ci/enterprise/onboarding.py, .ci/rediacc_ci/enterprise/dns.py, .ci/rediacc_ci/enterprise/lab.py, .ci/rediacc_ci/enterprise/lifecycle_adapters.py, .ci/rediacc_ci/tests/test_enterprise_dns.py, .ci/rediacc_ci/tests/test_enterprise_add.py, .ci/rediacc_ci/tests/test_enterprise_cli_wiring.py, .ci/rediacc_ci/tests/test_enterprise_lab.py, .ci/rediacc_ci/tests/test_enterprise_lifecycle_adapters.py, .ci/rediacc_ci/onprem/**, .ci/rediacc_ci/tests/test_onprem_*.py, .ci/rediacc_ci/__main__.py, .ci/rediacc_ci/core/run_verbs.py, .ci/rediacc_ci/tests/test_core_run_verbs.py, packages/cli/templates/elite/**, packages/cli/src/templates/embedded.generated.ts, packages/cli/src/commands/onprem.ts, packages/cli/src/services/onprem/**, packages/cli/src/config/command-planes.ts, packages/shared/src/cli-contract/data/i18n/*.json, packages/www/src/content/docs/en/on-premise.md, private/account/docs/enterprise.md, private/elite/BACKUP.md, private/renet/pkg/proxy/infra.go, private/renet/pkg/proxy/infra_test.go, private/account (gitlink bump only), private/elite (gitlink bump only), private/renet (gitlink bump only), packages/cli/src/commands/server.ts, packages/cli/src/services/server/**, packages/cli/src/utils/server-prompts.ts, packages/cli/src/commands/__tests__/server*.test.ts, packages/cli/src/services/account/subscription-password-auth.ts, private/account/src/routes/delegation.ts, private/account/src/routes/portal-delegation-certs.ts, private/account/src/types/api-token.ts, private/account/src/services/device-code.service.ts, private/account/src/services/onprem-free-tier.service.ts, private/account/src/routes/on-premise-status.ts, private/account/tests/integration/delegation-issue*.test.ts, private/account/tests/integration/onprem-free-tier*.test.ts, private/account/docs/runtime/on-premise-licensing.md, packages/shared/src/subscription/types.ts, packages/shared/src/subscription/constants.ts, packages/shared/src/subscription/onprem-free-tier.ts, private/renet/pkg/router/routes.go, private/renet/pkg/router/routes_test.go, private/renet/pkg/proxy/usercert.go, private/renet/pkg/proxy/usercert_test.go, private/renet/cmd/renet/proxy_cert.go, private/renet/cmd/renet/proxy_cert_test.go
+Owns: agent/plans/PLAN-enterprise-tenants.md, .ci/rediacc_ci/ops/cf_dns.py, .ci/rediacc_ci/tests/test_ops_cf_dns.py, .ci/rediacc_ci/enterprise/cli.py, .ci/rediacc_ci/enterprise/onboarding.py, .ci/rediacc_ci/enterprise/dns.py, .ci/rediacc_ci/enterprise/lab.py, .ci/rediacc_ci/enterprise/lifecycle_adapters.py, .ci/rediacc_ci/tests/test_enterprise_dns.py, .ci/rediacc_ci/tests/test_enterprise_add.py, .ci/rediacc_ci/tests/test_enterprise_cli_wiring.py, .ci/rediacc_ci/tests/test_enterprise_lab.py, .ci/rediacc_ci/tests/test_enterprise_lifecycle_adapters.py, .ci/rediacc_ci/onprem/**, .ci/rediacc_ci/tests/test_onprem_*.py, .ci/rediacc_ci/__main__.py, .ci/rediacc_ci/core/run_verbs.py, .ci/rediacc_ci/tests/test_core_run_verbs.py, packages/cli/templates/elite/**, packages/cli/src/templates/embedded.generated.ts, packages/cli/src/commands/onprem.ts, packages/cli/src/services/onprem/**, packages/cli/src/config/command-planes.ts, packages/shared/src/cli-contract/data/i18n/*.json, packages/www/src/content/docs/en/on-premise.md, private/account/docs/enterprise.md, private/elite/BACKUP.md, private/renet/pkg/proxy/infra.go, private/renet/pkg/proxy/infra_test.go, private/account (gitlink bump only), private/elite (gitlink bump only), private/renet (gitlink bump only), packages/cli/src/commands/server.ts, packages/cli/src/services/server/**, packages/cli/src/utils/server-prompts.ts, packages/cli/src/commands/__tests__/server*.test.ts, packages/cli/src/services/account/subscription-password-auth.ts, private/account/src/routes/delegation.ts, private/account/src/routes/portal-delegation-certs.ts, private/account/src/types/api-token.ts, private/account/src/services/device-code.service.ts, private/account/src/services/onprem-free-tier.service.ts, private/account/src/routes/on-premise-status.ts, private/account/tests/integration/delegation-issue*.test.ts, private/account/tests/integration/onprem-free-tier*.test.ts, private/account/docs/runtime/on-premise-licensing.md, packages/shared/src/subscription/types.ts, packages/shared/src/subscription/constants.ts, packages/shared/src/subscription/onprem-free-tier.ts, private/renet/pkg/router/routes.go, private/renet/pkg/router/routes_test.go, private/renet/pkg/proxy/usercert.go, private/renet/pkg/proxy/usercert_test.go, private/renet/cmd/renet/proxy_cert.go, private/renet/cmd/renet/proxy_cert_test.go, private/renet/cmd/renet/setup_command.go, private/renet/cmd/renet/pkg_install_retry.go, private/renet/cmd/renet/job_commands.go, private/renet/cmd/renet/setup_offline_test.go, private/renet/pkg/i18n/locales/*.go, .ci/rediacc_ci/onprem/airgap.py, .ci/rediacc_ci/onprem/testca.py, .ci/rediacc_ci/tests/test_onprem_airgap.py, packages/cli/src/commands/machine/register.ts, packages/cli/src/services/machine/add-existing.ts
 Live-Proof: bench, hostinger -- bench proves the signers, routing and the acme company. Hostinger proves the Elite repo acme-onprem behind its proxy with a bench-issued delegation cert. Production (X1/H1/X2) runs only on the operator's go.
 First-Seen: 2026-11-12
 
@@ -244,6 +244,11 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - Owns: packages/www/src/content/docs/en/on-premise.md.
   - Accept: `npm run -s check:ci-prose-style` rc 0.
   (corrected 2026-11-12T12:3xZ) The section documents `rdc server install|status|upgrade|backup|licence`, the prompts, the three TLS methods, the free tier and its upgrade, and saving the recovery bundle. It runs after C7.
+  (corrected 2026-11-12T13:5xZ) Also documents:
+      - existing machines first;
+      - the air-gapped flow: bundle, prerequisites (Q14), the two-trip licence, BYO TLS/CA, LAN DNS, time sync;
+      - updates: CLI, renet, template VERSION, image, and air-gapped via a new bundle.
+      Runs after C11.
 - [x] C3 [writer] Only if Q7 is ruled yes: an HTTP-01 resolver when `CF_DNS_API_TOKEN` is empty.
   - Owns: private/renet/pkg/proxy/infra.go, private/renet/pkg/proxy/infra_test.go.
   - Accept: `(cd private/renet && go test ./pkg/proxy/...)` rc 0.
@@ -252,6 +257,10 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
 - [ ] CL1 [live] On a fresh local ops VM, run `rdc machine setup <vm>` and then `rdc onprem install <vm> --domain <ops-vm test name> --cert <file>`.
   - Accept: the same health and status checks as HO1.
   (corrected 2026-11-12T12:3xZ) After C7 and the C3/C6 renet release, the command is `rdc server install <vm> --domain <name> --cert <file> --tls byo --tls-cert <crt> --tls-key <key> --owner <mail> --yes`, which proves the offline path and bring-your-own TLS. Accept: `rdc server status <domain>` rc 0 with bootstrapMode=false and the subscription equal to the cert's, and `curl --cacert <ca> -sf https://<domain>/health` rc 0.
+  (corrected 2026-11-12T13:5xZ) Proves the brought machine, online, on ops VM .11, which is absent from the `onprem-lab` config.
+      - Run `./rdc.sh --config onprem-lab server install --ip 192.168.111.11 --user $USER --name lab-brought --domain elite-lab.ops.test --store-domain elite-lab-store.ops.test --tls byo --tls-cert <crt> --tls-key <key> --tls-ca <ca> --licence free --owner <mail> --no-dns-wait --yes` (certs from C12 testca).
+      - Accept: `./rdc.sh --config onprem-lab machine list -o json` names lab-brought at 192.168.111.11; `grep -ci tofu <install log>` prints 0; `server status elite-lab.ops.test` rc 0 reporting `tier: free`; `curl --cacert <ca> --resolve elite-lab.ops.test:443:192.168.111.11 -sf https://elite-lab.ops.test/health` rc 0.
+      - The offline `--cert` claim moves to CL4.
 
 - [x] C4 [writer] Token-scoped delegation issue (R6). Today every portal route is session-only (private/account/src/routes/portal-delegation-certs.ts:42) and token auth exists only for `/delegation/renew` (private/account/src/routes/delegation.ts:25).
   - Add a new privileged scope `delegation:issue` to types/api-token.ts. Owners and admins only, granted by the device login next to backup:manage (private/account/src/services/device-code.service.ts:358). `delegation:renew` stays unmintable (private/account/src/types/api-token.ts:78).
@@ -288,10 +297,19 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - i18n keys go in every locale. Watch the near-name of the existing `rdc serve` (packages/cli/src/commands/serve.ts:51).
   - Owns: packages/cli/src/commands/server.ts (new), packages/cli/src/services/server/** (new), packages/cli/src/utils/server-prompts.ts (new), packages/cli/src/services/account/subscription-password-auth.ts, packages/cli/src/config/command-planes.ts, packages/shared/src/cli-contract/data/i18n/*.json, packages/cli/src/commands/__tests__/server*.test.ts (new).
   - Accept: `(cd packages/cli && npx vitest run src/commands/__tests__/server)` rc 0, and `npm run check:ci-cli-contract` rc 0.
+  (corrected 2026-11-12T13:5xZ) The machine step is existing-machine first.
+      - `[machine]` names a configured machine. Otherwise `--ip --user [--port] [--name]` registers it through a helper pulled out of packages/cli/src/commands/machine/register.ts:148-178 (config write plus keyscan) and shared with `machine add`.
+      - The prompt offers "existing server or LAN device (IP/user)" first. It only mentions `rdc machine provision --provider` (packages/cli/src/commands/machine/provision.ts:50-53, tofu) as a hint and never calls it.
+      - Before setup, a preflight runs: sudo -n, arch, ports 80/443 free, disk, clock skew.
+      - The image step is explicit: pull on the box, or ship a tar. compose `pull_policy: never` means nothing pulls otherwise (C9).
+      - `--cert` must match the box-generated key (Q13).
+      - `upgrade` = fork, new image, template re-apply per Q19, TAG update, `repo up`.
+      - Owns += packages/cli/src/commands/machine/register.ts, packages/cli/src/services/machine/add-existing.ts (new). Runs together with C9 and C10 (disjoint). C11 extends it afterwards.
 - [ ] C8 [writer] Gitlink bumps for private/account (C4, C5) and private/renet (C3, C6) after their submodule PRs merge, plus a renet release for the live boxes.
   - Owns: private/account (gitlink bump only), private/renet (gitlink bump only).
   - Accept: `git submodule status private/account private/renet` shows the merged C3-C6 commits, and `./rdc.sh --config eu-bench machine status hostinger` reports the released renet version.
   (corrected 2026-11-12T12:4xZ) Local-route: hostinger -- the C3-C6 submodule commits ride the 1104-1 branch and land as gitlink commits here (no merge needed); the renet build reaches hostinger through `npm run release:local -- --channel edge` and then `./rdc.sh --config eu-bench machine setup hostinger`, so nothing waits on GitHub.
+  (corrected 2026-11-12T13:5xZ) The renet bump and release also carry C10.
 - [ ] CL2 [live] On hostinger after C7 and C8: the free tier, licence upgrade and recovery bundle.
   - Run `rdc server install hostinger --config eu-bench --repo acme-free --domain acme-free.rediacc.io --licence free --yes`, then `rdc server licence acme-free.rediacc.io`.
   - The upgrade needs a bench subscription with no active cert. Each subscription allows one (packages/shared/src/subscription/constants.ts:388), and HO1 holds the operator's. Use a second bench subscription, or revoke after HO2.
@@ -305,9 +323,75 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
 - 3a writers run together: C3, C4, C5, C6.
 - 3b: C7 and C2, after C4 and C5 land, then C8.
 - Live: CL1, CL2, CL3 after C8. C1 is not run.
+- (corrected 2026-11-12T13:5xZ) 3a += C12. 3b = C7, C9, C10 (disjoint), then C2. 3c = C11. Live: CL1, CL2, CL3, then CL4, CL5 after C8.
 - [ ] G3 [writer] Wave-3 Owns are disjoint per writer wave.
   - Owns: none.
   - Accept: `grep -c "Owns:" agent/plans/PLAN-enterprise-tenants.md` is unchanged by any 3a/3b box, and the plan-concurrency check rc 0.
+
+- [ ] C9 [writer] elite template v2: versioned, local-first images, health check that works offline.
+  - Add a `VERSION` file (integer), which lands in the repo, so an install can be read back with repo cat.
+  - Rediaccfile up(): `docker load` every images/*.tar whose ref (from images/manifest.txt) is absent.
+    When no tar exists and the server image is absent, `docker pull` it (fixes pull_policy:never, packages/cli/templates/elite/docker-compose.yml:4), unless ELITE_OFFLINE=1, which refuses and names the missing ref.
+  - health(): `curl --resolve ${ELITE_DOMAIN}:443:127.0.0.1`, plus `--cacert ${ELITE_CA_FILE}` when set (Rediaccfile:63-66 today needs public DNS and a public CA).
+  - The parity test also asserts that every non-server image in the compose is digest-pinned.
+  - Owns: packages/cli/templates/elite/**, packages/cli/src/templates/embedded.generated.ts, .ci/rediacc_ci/tests/test_onprem_template_parity.py
+  - Accept: `(cd packages/cli && npx tsx scripts/embed-templates.ts) && git diff --exit-code packages/cli/src/templates/embedded.generated.ts` rc 0, `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_onprem_template_parity.py` rc 0, `bash -n packages/cli/templates/elite/Rediaccfile` rc 0, `grep -c 'images/\*.tar\|ELITE_OFFLINE' packages/cli/templates/elite/Rediaccfile` >= 2.
+
+- [ ] C10 [writer] renet `setup --offline`.
+  - A bool flag sets setupOffline without the baked marker (private/renet/cmd/renet/pkg_install_retry.go:211-219).
+  - It skips the apt mirror swap and the update (private/renet/cmd/renet/setup_command.go:1238-1274), forces docker-source=manual, and fails up front listing the missing pkgset.Essentials, docker engine and compose plugin.
+  - Add `offline` to setupStringArgs (private/renet/cmd/renet/job_commands.go:945-950).
+  - Owns: private/renet/cmd/renet/setup_command.go, private/renet/cmd/renet/pkg_install_retry.go, private/renet/cmd/renet/job_commands.go, private/renet/cmd/renet/setup_offline_test.go (new), private/renet/pkg/i18n/locales/*.go
+  - Accept: `(cd private/renet && go test ./cmd/renet/ -run 'Offline|BuildCommandArgv' && go test ./pkg/i18n/...)` rc 0. A test asserts that offline mode with all tools present prints `[setup] pkg-calls 0`, and with cryptsetup missing names it.
+  - Rides C8's renet release (add these commits to C8's bump).
+
+- [ ] C11 [writer] Offline bundle and install. Extends C7; runs after C7, C9 and C10.
+  - `rdc machine setup --offline` passes `offline:true` (packages/cli/src/commands/machine/register.ts:405).
+  - `rdc server bundle --out <dir> [--arch amd64|arm64] [--tag <t> | --image <local ref>] [--with-cli <plat,...>]`, run online, writes:
+    - images/server.tar, images/rustfs.tar and images/traefik.tar, each saved with `--platform linux/<arch>`;
+    - images/manifest.txt;
+    - renet/renet-linux-<arch> from the SEA assets;
+    - manifest.json: {schema, cliVersion, template:{name, version, sha256}, renet:{version, arch, sha256}, images:[{ref, digest, file, sha256}], createdAt};
+    - SHA256SUMS.
+    The Traefik ref is a constant in services/server/bundle/images.ts, pinned by a vitest that reads private/renet/proxy/docker-compose.yml:21.
+  - `rdc server install --offline --bundle <dir>`:
+    - verifies the sums and the CLI/renet match (Q16);
+    - runs the preflight: sudo -n, arch, ports 80/443 free, disk, clock skew (Q18), essentials (Q14);
+    - runs `machine setup --offline`;
+    - streams images/traefik.tar into `docker load` before the proxy converge;
+    - calls no upstream (`--licence free` is refused offline);
+    - stops at `cert` with delegation-request.json (Q13), and resumes with `--cert`;
+    - uploads `images/` via repo sync and writes ELITE_OFFLINE=1 in secrets.env;
+    - replaces the DNS wait with printed LAN records plus `--no-dns-wait`; `--tls-ca` is recorded for health checks.
+  - `rdc server licence mint --request <f> --out <f>`, run online.
+  - `rdc server upgrade <domain> [--bundle <dir>]`: fork, new image (pull, or bundle tar), template re-apply per Q19, update TAG/ELITE_IMAGE, `repo up`.
+  - Owns: packages/cli/src/commands/server.ts, packages/cli/src/services/server/**, packages/cli/src/commands/machine/register.ts, packages/cli/src/commands/__tests__/server*.test.ts, packages/shared/src/cli-contract/data/i18n/*.json
+  - Accept: `(cd packages/cli && npx vitest run src/commands/__tests__/server src/services/server)` rc 0 (cases: checksum tamper refused, CLI mismatch refused, offline + free refused, cert key mismatch refused, upgrade re-applies only on a newer VERSION, local-edit refusal), and `npm run check:ci-cli-contract` rc 0.
+
+- [ ] C12 [writer] Lab helpers: air-gap a VM and a throwaway CA.
+  - `python -m rediacc_ci.onprem.airgap apply|remove|check --vm <ip>`, ops network only, refusing anything outside 192.168.111.0/24 (.ci/rediacc_ci/drills/vm_check.py:119):
+    - iptables and ip6tables OUTPUT policy DROP, allowing only lo and ESTABLISHED,RELATED, so SSH from the host gateway .254 (private/renet/pkg/infra/opsconfig/config.go:233-235) still works;
+    - the same DROP in DOCKER-USER; not persistent, so a reboot clears it;
+    - `check` runs on the VM and requires that `curl -m5` to ghcr.io, registry-1.docker.io, archive.ubuntu.com and download.docker.com, and a DNS query to 1.1.1.1, all fail while ssh answers. It prints the OUTPUT DROP counter as evidence.
+  - `python -m rediacc_ci.onprem.testca <dir> <host>...` writes ca.crt and a host cert/key with openssl.
+  - Owns: .ci/rediacc_ci/onprem/airgap.py (new), .ci/rediacc_ci/onprem/testca.py (new), .ci/rediacc_ci/tests/test_onprem_airgap.py (new)
+  - Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_onprem_airgap.py` rc 0 (recorded ssh transport; rules text; refuses a non-ops IP).
+  - Can run now (wave 3a).
+
+- [ ] CL4 [live] Air-gapped install on ops VM .12, after C8 (with C10), C11 and C12.
+  - Fleet: `VM_WORKERS='11 12' VM_CEPH_NODES='' ./rdc.sh ops up` (private/renet/pkg/infra/opsconfig/config.go:699-713).
+  - Then:
+    1. `PYTHONPATH=.ci python3 -m rediacc_ci.onprem.airgap apply --vm 192.168.111.12`
+    2. Online: `./rdc.sh server bundle --out <B1> --image rediacc-server-onprem:dev`
+    3. Clear the setup marker so setup takes the full path.
+    4. `./rdc.sh --config onprem-lab server install --ip 192.168.111.12 --user $USER --name lab-airgap --offline --bundle <B1> --domain elite-air.ops.test --store-domain elite-air-store.ops.test --tls byo --tls-cert <crt> --tls-key <key> --tls-ca <ca> --owner <mail> --no-dns-wait --yes` (exits 75 with the request)
+    5. `./rdc.sh --config onprem-lab server licence mint --request <req> --out <cert>`
+    6. Re-run step 4 with `--cert <cert>`.
+  - Accept: `airgap check --vm 192.168.111.12` rc 0 before and after; the setup log contains `[setup] pkg-calls 0`; `./rdc.sh --config onprem-lab server status elite-air.ops.test` rc 0 with bootstrapMode=false and the subscription equal to the cert's; `curl --cacert <ca> --resolve elite-air.ops.test:443:192.168.111.12 -sf https://elite-air.ops.test/health` rc 0.
+
+- [ ] CL5 [live] Air-gapped upgrade, after CL4.
+  - Run `./rdc.sh server bundle --out <B2> --image <newer local tag>`, then `./rdc.sh --config onprem-lab server upgrade elite-air.ops.test --bundle <B2> --yes`.
+  - Accept: `airgap check --vm 192.168.111.12` rc 0; `server status` rc 0 reporting the new image digest and `template: <built-in VERSION>`; `./rdc.sh --config onprem-lab repo list -m lab-airgap` shows the fork rollback point; the health curl from CL4 rc 0.
 
 - [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke
