@@ -73,4 +73,4 @@ This plan moves every cert source onto one validator and one apply service, adds
   Accept: each step's CLI output and `GET /onprem/cert-status` read back on the box (`certId`, `bootRejected`), the audit row and the owner mail for each applied and rejected cert, and the final state back on the original licence with no leftover quarantine file.
 - [ ] LP-hostinger [live] The live-proof record for the Live-Proof header.
   Owns: none (runs only)
-  Accept: live-proof hostinger
+  Accept: live-proof hostinger renet-live machine=hostinger
