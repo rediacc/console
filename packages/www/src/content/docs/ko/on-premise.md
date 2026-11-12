@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 5
 language: ko
-sourceHash: "5c93a7291bd8c558"
-sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
+sourceHash: "37f3874a9cf58a5d"
+sourceCommit: "430ec2c17cba9a80d3e5ed83da35d149ccd90d65"
 ---
 
 Rediacc는 자체 인프라에서 완전히 실행할 수 있습니다. 독립 실행형 Docker 이미지에는 계정 서버, 웹 포털, 마케팅 사이트, CLI 배포 엔드포인트가 포함되어 있습니다. Rediacc의 호스팅 서비스에 대한 외부 의존성은 필요하지 않습니다.
@@ -170,19 +170,19 @@ ON_PREMISE_PUBLIC_KEY=$(openssl pkey -in onprem-private.pem -pubout -outform DER
 
 ### 3. 온프레미스 서버에 인증서 설치
 
-다운로드한 `.json`을 알려진 경로에 저장하고 온프레미스가 이를 가리키도록 합니다.
+서버는 위임 인증서를 데이터 볼륨의 파일 하나, `/data/delegation-cert.json`(`DELEGATION_CERT_PATH`)에서 읽습니다. 인증서를 전달하는 다른 수단은 없으며 이를 위한 환경 변수도 없습니다. `rdc server install`은 다운로드한 인증서를 그 위치에 넣고, `rdc server licence`는 이후에 그것을 교체합니다.
 
 ```bash
-DELEGATION_CERT_PATH=/etc/rediacc/delegation-cert.json
+rdc server install <domain> --cert delegation-cert.json
+rdc server licence <domain> --cert delegation-cert.json
+rdc server status <domain>
 ```
 
-임시 또는 Docker 시크릿 워크플로의 경우, 인증서를 환경 변수에 base64로 포함합니다.
+두 명령 모두 인증서 인박스(`data/web/cert-inbox/new.json`)를 통해 실행 중인 서버에 인증서를 전달합니다. 서버는 인증서를 검증하고 `applied.json` 또는 `rejected.json`으로 응답하며, 명령은 새 인증서 ID를 `rdc server status`로 확인합니다(6단계의 `cert-status`와 같은 데이터입니다). `rdc server upgrade`도 같은 인박스를 사용합니다. 업그레이드 단계 하나가 `secrets.env`에 남아 있던 `DELEGATION_CERT_BASE64`를 인박스로 옮기므로, 인박스가 생기기 전에 설치한 박스도 인증서를 유지합니다.
 
-```bash
-DELEGATION_CERT_BASE64=$(base64 -w 0 < delegation-cert.json)
-```
+서버는 부팅 시 인증서를 로드하고 라이선스 서명에 쓰는 키와 대조합니다. 서명 키의 지문이 인증서의 `delegatedPublicKey` 지문과 같아야 합니다. 인증서가 승인하지 않은 키로 서명한 라이선스는 어느 머신에서도 검증할 수 없기 때문입니다. 서명 키 쌍과 인증서의 `delegatedPublicKey`를 항상 일치시키세요.
 
-부팅 시, 로드된 인증서가 서버가 실제로 라이선스 서명에 사용하는 키와 다른 키에 위임되어 있으면 서버는 시작을 거부합니다(FATAL 로그와 0이 아닌 종료 코드). 서버는 서명 키의 지문을 인증서의 `delegatedPublicKey` 지문과 비교하며, 일치하지 않으면 중단합니다. 인증서가 승인하지 않은 키로 서명된 라이선스는 모든 머신에서 검증할 수 없게 되기 때문입니다. 서명 키 쌍과 인증서의 `delegatedPublicKey`는 항상 동기화된 상태로 유지하세요.
+부팅 시 서버가 거부한 인증서(잘못된 서명, 다른 키, `UPSTREAM_PUBLIC_KEY` 누락, 손상된 파일)가 있어도 서버는 멈추지 않습니다. 서버는 무료 등급으로 시작하고, 문제가 된 파일을 원본 옆의 `delegation-cert.rejected.json`으로 옮깁니다. 유효한 인증서가 들어올 때까지 리포지토리 라이선스 서명은 `503 DELEGATION_CERT_REFUSED`로 응답하고, `rdc server status`에는 `cert REFUSED (reason)`이 표시됩니다. 유효한 인증서로 `rdc server licence`를 실행하면 복구됩니다. 만료된 인증서는 계속 로드되며, 거부되지 않고 점진적으로 기능이 축소됩니다.
 
 ### 4. 업스트림 검증 및 자동 갱신 구성 (선택 사항이지만 권장)
 
@@ -270,8 +270,7 @@ curl https://onprem.example.com/account/api/v1/onprem/cert-status \
 | `ON_PREMISE_MODE` | 예 | 온프레미스 경로 서브셋을 활성화하려면 `true`로 설정합니다. |
 | `ON_PREMISE_PRIVATE_KEY` | 예 | 위임된 서명을 위한 Base64 PKCS8 Ed25519 개인 키 |
 | `ON_PREMISE_PUBLIC_KEY` | 예 | Base64 SPKI Ed25519 공개 키 (인증서의 `delegatedPublicKey`와 일치해야 함) |
-| `DELEGATION_CERT_PATH` | 둘 중 하나 | 서명된 인증서 JSON의 파일 시스템 경로 |
-| `DELEGATION_CERT_BASE64` | 둘 중 하나 | Base64로 인코딩된 인증서 JSON (파일 경로의 대안) |
+| `DELEGATION_CERT_PATH` | 선택 사항 | 서명된 인증서 JSON의 파일 시스템 경로. 기본값은 데이터 볼륨의 `/data/delegation-cert.json`입니다. 인증서는 직접 고치지 말고 `rdc server licence`로 교체하세요. |
 | `UPSTREAM_PUBLIC_KEY` | `UPSTREAM_API_KEY`가 설정된 경우 또는 `/onprem/cert-upload` 작동을 위해 필요 | 업스트림 마스터 공개 키의 Base64 SPKI. 누락된 경우 부팅 시 빠르게 실패합니다. |
 | `UPSTREAM_URL` | 자동 갱신을 위해 | 업스트림 계정 서버 기본 URL, 예: `https://www.rediacc.com` |
 | `UPSTREAM_API_KEY` | 자동 갱신을 위해 | `delegation:renew` 범위의 api 토큰. 포털을 통해 발급합니다 - 4단계를 참조하세요. |

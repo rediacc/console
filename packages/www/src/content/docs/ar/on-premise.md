@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 5
 language: ar
-sourceHash: "5c93a7291bd8c558"
-sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
+sourceHash: "37f3874a9cf58a5d"
+sourceCommit: "430ec2c17cba9a80d3e5ed83da35d149ccd90d65"
 ---
 
 يمكن تشغيل Rediacc بالكامل على بنيتك التحتية الخاصة. تتضمن صورة Docker المستقلة خادم الحساب وبوابة الويب وموقع التسويق ونقطة توزيع CLI. لا تتطلب أي اعتماديات خارجية على خدمات Rediacc المستضافة.
@@ -170,19 +170,19 @@ ON_PREMISE_PUBLIC_KEY=$(openssl pkey -in onprem-private.pem -pubout -outform DER
 
 ### 3. تثبيت الشهادة على الخادم المحلي
 
-احفظ ملف `.json` الذي نزّلته في مسار معروف وأشر الخادم المحلي إليه:
+يقرأ الخادم شهادة التفويض من ملف واحد على وحدة بياناته، هو `/data/delegation-cert.json` (`DELEGATION_CERT_PATH`). لا شيء آخر يحمل الشهادة: لا يوجد متغير بيئة لذلك. يضع `rdc server install` الشهادة التي نزّلتها هناك، ثم يستبدلها `rdc server licence` لاحقًا:
 
 ```bash
-DELEGATION_CERT_PATH=/etc/rediacc/delegation-cert.json
+rdc server install <domain> --cert delegation-cert.json
+rdc server licence <domain> --cert delegation-cert.json
+rdc server status <domain>
 ```
 
-أو، لسير عمل الحاويات المؤقتة أو Docker secrets، ادمج الشهادة كـ base64 في متغير بيئة:
+يسلّم الأمران الشهادة إلى الخادم العامل عبر صندوق وارد الشهادات (`data/web/cert-inbox/new.json`). يتحقق الخادم منها ويردّ بالملف `applied.json` أو `rejected.json`، ويؤكد الأمر معرّف الشهادة الجديدة عبر `rdc server status` (وهي بيانات `cert-status` نفسها في الخطوة 6). يستخدم `rdc server upgrade` صندوق الوارد نفسه. وتنقل إحدى خطوات الترقية قيمة `DELEGATION_CERT_BASE64` المتبقية في `secrets.env` إلى صندوق الوارد، فيحتفظ الجهاز المثبّت قبل وجود الصندوق بشهادته.
 
-```bash
-DELEGATION_CERT_BASE64=$(base64 -w 0 < delegation-cert.json)
-```
+يحمّل الخادم الشهادة عند الإقلاع ويطابقها مع المفتاح الذي يوقّع به التراخيص: يجب أن تساوي بصمة مفتاح التوقيع بصمة `delegatedPublicKey` في الشهادة، لأن التراخيص الموقّعة بمفتاح لا تفوّضه الشهادة لا يمكن التحقق منها على أي جهاز. أبقِ زوج مفاتيح التوقيع و`delegatedPublicKey` في الشهادة متطابقين.
 
-عند الإقلاع، يرفض الخادم البدء (سجل FATAL وخروج غير صفري) إذا كانت الشهادة المحمَّلة تُفوِّض إلى مفتاح مختلف عن ذلك الذي يوقّع به الخادم التراخيص: فهو يقارن بصمة مفتاح التوقيع مع بصمة `delegatedPublicKey` الخاصة بالشهادة ويتوقف عند عدم التطابق، لأن التراخيص الموقَّعة بمفتاح لا تُخوِّله الشهادة ستكون غير قابلة للتحقق على كل جهاز. حافظ على تزامن زوج مفاتيح التوقيع مع `delegatedPublicKey` الخاص بالشهادة.
+الشهادة التي يرفضها الخادم عند الإقلاع (توقيع غير صالح، أو مفتاح خاطئ، أو غياب `UPSTREAM_PUBLIC_KEY`، أو ملف مشوّه) لا توقفه. يبدأ الخادم على الفئة المجانية وينقل الملف المعيب إلى `delegation-cert.rejected.json` بجانب الأصل. يردّ توقيع تراخيص المستودعات بالرمز `503 DELEGATION_CERT_REFUSED` إلى أن توضع شهادة صالحة، ويعرض `rdc server status` الحالة `cert REFUSED (reason)`. شغّل `rdc server licence` بشهادة صالحة لإصلاح ذلك. أما الشهادة المنتهية فتُحمَّل كالمعتاد: تتراجع وظائفها تدريجيًا بدل أن تُرفض.
 
 ### 4. تكوين التحقق الأعلى والتجديد التلقائي (اختياري لكن موصى به)
 
@@ -270,8 +270,7 @@ curl https://onprem.example.com/account/api/v1/onprem/cert-status \
 | `ON_PREMISE_MODE` | نعم | اضبطه على `true` لتمكين مجموعة مسارات الخادم المحلي |
 | `ON_PREMISE_PRIVATE_KEY` | نعم | مفتاح خاص Ed25519 بتنسيق PKCS8 base64 للتوقيع المفوَّض |
 | `ON_PREMISE_PUBLIC_KEY` | نعم | مفتاح عام Ed25519 بتنسيق SPKI base64 (يجب أن يتطابق مع `delegatedPublicKey` في الشهادة) |
-| `DELEGATION_CERT_PATH` | أحد هذين | مسار نظام الملفات لملف JSON للشهادة الموقّعة |
-| `DELEGATION_CERT_BASE64` | أحد هذين | ملف JSON للشهادة بترميز base64 (بديل لمسار الملف) |
+| `DELEGATION_CERT_PATH` | اختياري | مسار نظام الملفات لملف JSON للشهادة الموقّعة. الافتراضي `/data/delegation-cert.json` على وحدة البيانات. استبدل الشهادة بالأمر `rdc server licence` لا يدويًا. |
 | `UPSTREAM_PUBLIC_KEY` | مطلوب إذا ضُبط `UPSTREAM_API_KEY`، أو لعمل `/onprem/cert-upload` | بتنسيق SPKI base64 للمفتاح العام الرئيسي للخادم الأعلى. إيقاف سريع عند الإقلاع إذا كان مفقوداً. |
 | `UPSTREAM_URL` | للتجديد التلقائي | عنوان URL الأساسي لخادم الحساب الأعلى، مثل `https://www.rediacc.com` |
 | `UPSTREAM_API_KEY` | للتجديد التلقائي | رمز API بنطاق `delegation:renew`. احصل عليه عبر البوابة - انظر الخطوة 4. |

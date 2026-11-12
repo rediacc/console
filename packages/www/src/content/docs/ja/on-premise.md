@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 5
 language: ja
-sourceHash: "5c93a7291bd8c558"
-sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
+sourceHash: "37f3874a9cf58a5d"
+sourceCommit: "430ec2c17cba9a80d3e5ed83da35d149ccd90d65"
 ---
 
 Rediaccは完全に独自インフラ上で運用できます。スタンドアロンDockerイメージには、アカウントサーバー、ウェブポータル、マーケティングサイト、およびCLIディストリビューションエンドポイントが含まれます。Rediaccのホスト型サービスへの外部依存は不要です。
@@ -170,19 +170,19 @@ ON_PREMISE_PUBLIC_KEY=$(openssl pkey -in onprem-private.pem -pubout -outform DER
 
 ### 3. オンプレミスサーバーへの証明書のインストール
 
-ダウンロードした`.json`を既知のパスに保存し、オンプレミスから参照します：
+サーバーは委任証明書を、データボリューム上の1つのファイル`/data/delegation-cert.json`（`DELEGATION_CERT_PATH`）から読み込みます。ほかに証明書を渡す手段はなく、そのための環境変数もありません。`rdc server install`はダウンロードした証明書をそこに置き、`rdc server licence`は後からそれを差し替えます。
 
 ```bash
-DELEGATION_CERT_PATH=/etc/rediacc/delegation-cert.json
+rdc server install <domain> --cert delegation-cert.json
+rdc server licence <domain> --cert delegation-cert.json
+rdc server status <domain>
 ```
 
-または、一時的なコンテナ/Dockerシークレットのワークフローでは、証明書をbase64で環境変数に埋め込みます：
+どちらのコマンドも、証明書を証明書インボックス（`data/web/cert-inbox/new.json`）経由で稼働中のサーバーに渡します。サーバーは証明書を検証し、`applied.json`または`rejected.json`で応答します。コマンドは新しい証明書IDを`rdc server status`で確認します（ステップ6の`cert-status`と同じデータです）。`rdc server upgrade`も同じインボックスを使います。アップグレードの1ステップが、`secrets.env`に残っていた`DELEGATION_CERT_BASE64`をインボックスへ移すため、インボックス導入前にインストールしたボックスでも証明書は保持されます。
 
-```bash
-DELEGATION_CERT_BASE64=$(base64 -w 0 < delegation-cert.json)
-```
+サーバーは起動時に証明書を読み込み、ライセンスの署名に使う鍵と照合します。署名鍵のフィンガープリントが証明書の`delegatedPublicKey`のフィンガープリントと一致している必要があります。証明書が認めていない鍵で署名したライセンスは、どのマシンでも検証できないためです。署名鍵ペアと証明書の`delegatedPublicKey`は常に一致させてください。
 
-起動時に、ロードされた証明書が実際にサーバーがライセンスの署名に使用している鍵とは異なる鍵に委任している場合、サーバーは起動を拒否します（FATALログと非ゼロの終了コード）：署名鍵のフィンガープリントと証明書の`delegatedPublicKey`のフィンガープリントを比較し、一致しない場合は処理を中断します。これは、証明書が認可していない鍵で署名されたライセンスがすべてのマシンで検証不能になってしまうためです。署名用のキーペアと証明書の`delegatedPublicKey`は常に同期させてください。
+起動時にサーバーが拒否した証明書（署名不正、鍵の不一致、`UPSTREAM_PUBLIC_KEY`の欠如、ファイルの破損）があっても、サーバーは停止しません。サーバーは無料プランで起動し、問題のファイルを元のファイルの隣の`delegation-cert.rejected.json`に移します。有効な証明書が入るまで、リポジトリのライセンス署名は`503 DELEGATION_CERT_REFUSED`を返し、`rdc server status`には`cert REFUSED (reason)`と表示されます。有効な証明書を指定して`rdc server licence`を実行すると復旧できます。期限切れの証明書は引き続き読み込まれ、拒否されずに段階的に機能が縮退します。
 
 ### 4. 上流検証と自動更新の設定（オプション、推奨）
 
@@ -270,8 +270,7 @@ curl https://onprem.example.com/account/api/v1/onprem/cert-status \
 | `ON_PREMISE_MODE` | はい | `true`に設定するとオンプレミスのルートサブセットが有効になる |
 | `ON_PREMISE_PRIVATE_KEY` | はい | 委任署名用のBase64 PKCS8 Ed25519秘密鍵 |
 | `ON_PREMISE_PUBLIC_KEY` | はい | Base64 SPKI Ed25519公開鍵（証明書の`delegatedPublicKey`と一致する必要がある） |
-| `DELEGATION_CERT_PATH` | いずれか一方 | 署名済み証明書JSONのファイルシステムパス |
-| `DELEGATION_CERT_BASE64` | いずれか一方 | Base64エンコードされた証明書JSON（ファイルパスの代替） |
+| `DELEGATION_CERT_PATH` | オプション | 署名済み証明書JSONのファイルシステムパス。デフォルトはデータボリューム上の`/data/delegation-cert.json`。証明書は手作業ではなく`rdc server licence`で差し替えます。 |
 | `UPSTREAM_PUBLIC_KEY` | `UPSTREAM_API_KEY`が設定されている場合、または`/onprem/cert-upload`が機能するために必須 | 上流マスター公開鍵のBase64 SPKI。欠如している場合は起動時にfail-fast。 |
 | `UPSTREAM_URL` | 自動更新に必要 | 上流アカウントサーバーのベースURL（例：`https://www.rediacc.com`） |
 | `UPSTREAM_API_KEY` | 自動更新に必要 | `delegation:renew`スコープのAPIトークン。ポータルから取得 - ステップ4を参照。 |

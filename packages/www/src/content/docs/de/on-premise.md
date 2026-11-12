@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 5
 language: de
-sourceHash: "5c93a7291bd8c558"
-sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
+sourceHash: "37f3874a9cf58a5d"
+sourceCommit: "430ec2c17cba9a80d3e5ed83da35d149ccd90d65"
 ---
 
 Rediacc kann vollständig auf eigener Infrastruktur betrieben werden. Das Standalone-Docker-Image enthält den Account-Server, das Webportal, die Marketing-Website und den CLI-Distributionsendpunkt. Externe Abhängigkeiten von Rediacccs gehosteten Diensten sind nicht erforderlich.
@@ -170,19 +170,19 @@ Die Gültigkeit des Zertifikats wird durch die Gültigkeitsrichtlinie bestimmt (
 
 ### 3. Zertifikat auf dem On-Premise-Server installieren
 
-Die heruntergeladene `.json`-Datei an einem bekannten Pfad speichern und den On-Premise-Server darauf hinweisen:
+Der Server liest sein Delegationszertifikat aus einer einzigen Datei auf seinem Datenvolume, `/data/delegation-cert.json` (`DELEGATION_CERT_PATH`). Sonst trägt nichts ein Zertifikat: Es gibt dafür keine Umgebungsvariable. `rdc server install` legt das heruntergeladene Zertifikat dort ab, und `rdc server licence` ersetzt es später:
 
 ```bash
-DELEGATION_CERT_PATH=/etc/rediacc/delegation-cert.json
+rdc server install <domain> --cert delegation-cert.json
+rdc server licence <domain> --cert delegation-cert.json
+rdc server status <domain>
 ```
 
-Für ephemere/Docker-Secrets-Workflows kann das Zertifikat auch als base64 in einer Umgebungsvariable eingebettet werden:
+Beide Befehle übergeben das Zertifikat über den Zertifikat-Posteingang (`data/web/cert-inbox/new.json`) an den laufenden Server. Der Server prüft es und antwortet mit `applied.json` oder `rejected.json`; der Befehl bestätigt die neue Zertifikat-ID mit `rdc server status` (dieselben `cert-status`-Daten wie in Schritt 6). `rdc server upgrade` nutzt denselben Posteingang. Ein Upgrade-Schritt verschiebt ein übrig gebliebenes `DELEGATION_CERT_BASE64` aus `secrets.env` in den Posteingang, sodass eine vor dem Posteingang installierte Box ihr Zertifikat behält.
 
-```bash
-DELEGATION_CERT_BASE64=$(base64 -w 0 < delegation-cert.json)
-```
+Der Server lädt das Zertifikat beim Start und gleicht es mit dem Schlüssel ab, mit dem er Lizenzen signiert: Der Fingerabdruck des Signaturschlüssels muss dem Fingerabdruck des `delegatedPublicKey` im Zertifikat entsprechen, weil unter einem vom Zertifikat nicht autorisierten Schlüssel signierte Lizenzen auf keiner Maschine validierbar wären. Signaturschlüsselpaar und `delegatedPublicKey` des Zertifikats müssen übereinstimmen.
 
-Beim Start verweigert der Server den Start (ein FATAL-Log-Eintrag und ein von null verschiedener Exit-Code), wenn das geladene Zertifikat an einen anderen Schlüssel delegiert als den, mit dem der Server Lizenzen signiert: Er vergleicht den Fingerabdruck des Signierschlüssels mit dem Fingerabdruck des `delegatedPublicKey` des Zertifikats und bricht bei einer Abweichung ab, weil Lizenzen, die mit einem vom Zertifikat nicht autorisierten Schlüssel signiert wurden, auf jeder Maschine nicht validierbar wären. Halten Sie das Signierschlüsselpaar und den `delegatedPublicKey` des Zertifikats synchron.
+Ein Zertifikat, das der Server beim Start ablehnt (ungültige Signatur, falscher Schlüssel, fehlender `UPSTREAM_PUBLIC_KEY` oder fehlerhafte Datei), stoppt ihn nicht. Der Server startet im Free-Tarif und verschiebt die fehlerhafte Datei nach `delegation-cert.rejected.json` neben dem Original. Die Repo-Lizenzsignierung antwortet mit `503 DELEGATION_CERT_REFUSED`, bis ein gültiges Zertifikat vorliegt, und `rdc server status` zeigt `cert REFUSED (reason)`. Mit `rdc server licence` und einem gültigen Zertifikat lässt sich das beheben. Ein abgelaufenes Zertifikat wird weiterhin geladen: Es wird weich herabgestuft statt abgelehnt.
 
 ### 4. Vorgelagerte Verifizierung und automatische Erneuerung konfigurieren (optional, aber empfohlen)
 
@@ -270,8 +270,7 @@ Für Backup und Audit kann der On-Premise-Admin das aktuell geladene signierte Z
 | `ON_PREMISE_MODE` | Ja | Auf `true` setzen, um die On-Premise-Route-Teilmenge zu aktivieren |
 | `ON_PREMISE_PRIVATE_KEY` | Ja | Base64 PKCS8 Ed25519-Privatschlüssel für delegiertes Signieren |
 | `ON_PREMISE_PUBLIC_KEY` | Ja | Base64 SPKI Ed25519-Öffentlichschlüssel (muss mit `delegatedPublicKey` des Zertifikats übereinstimmen) |
-| `DELEGATION_CERT_PATH` | Eines davon | Dateisystempfad zur signierten Zertifikat-JSON-Datei |
-| `DELEGATION_CERT_BASE64` | Eines davon | Base64-kodiertes Zertifikat-JSON (Alternative zum Dateipfad) |
+| `DELEGATION_CERT_PATH` | Optional | Dateisystempfad zur signierten Zertifikat-JSON-Datei. Standard `/data/delegation-cert.json` auf dem Datenvolume. Das Zertifikat mit `rdc server licence` ersetzen, nicht von Hand. |
 | `UPSTREAM_PUBLIC_KEY` | Erforderlich, wenn `UPSTREAM_API_KEY` gesetzt ist, oder damit `/onprem/cert-upload` funktioniert | Base64 SPKI des vorgelagerten Master-Public-Keys. Fail-Fast beim Start, wenn fehlend. |
 | `UPSTREAM_URL` | Für automatische Erneuerung | Basis-URL des vorgelagerten Account-Servers, z. B. `https://www.rediacc.com` |
 | `UPSTREAM_API_KEY` | Für automatische Erneuerung | Ein `delegation:renew`-bezogener API-Token. Über das Portal erstellen - siehe Schritt 4. |

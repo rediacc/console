@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 5
 language: pt
-sourceHash: "5c93a7291bd8c558"
-sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
+sourceHash: "37f3874a9cf58a5d"
+sourceCommit: "430ec2c17cba9a80d3e5ed83da35d149ccd90d65"
 ---
 
 O Rediacc pode funcionar inteiramente na sua própria infraestrutura. A imagem Docker autónoma inclui o servidor de conta, o portal web, o site de marketing e o endpoint de distribuição do CLI. Não existem dependências externas dos serviços alojados pelo Rediacc.
@@ -170,19 +170,19 @@ A validade do certificado é regida pela política de validade (predefinições 
 
 ### 3. Instalar o certificado no servidor on-premise
 
-Guarde o `.json` transferido num caminho conhecido e aponte o on-premise para ele:
+O servidor lê o seu certificado de delegação de um único ficheiro no volume de dados, `/data/delegation-cert.json` (`DELEGATION_CERT_PATH`). Mais nada transporta um certificado: não existe uma variável de ambiente para isso. `rdc server install` coloca lá o certificado transferido, e `rdc server licence` substitui-o mais tarde:
 
 ```bash
-DELEGATION_CERT_PATH=/etc/rediacc/delegation-cert.json
+rdc server install <domain> --cert delegation-cert.json
+rdc server licence <domain> --cert delegation-cert.json
+rdc server status <domain>
 ```
 
-Ou, para fluxos de trabalho efémeros / Docker secrets, incorpore o certificado como base64 numa variável de ambiente:
+Ambos os comandos entregam o certificado ao servidor em execução através da sua caixa de entrada de certificados (`data/web/cert-inbox/new.json`). O servidor verifica-o e responde com `applied.json` ou `rejected.json`, e o comando confirma o id do novo certificado com `rdc server status` (os mesmos dados de `cert-status` do passo 6). `rdc server upgrade` usa a mesma caixa. Um passo da atualização move um `DELEGATION_CERT_BASE64` deixado em `secrets.env` para a caixa, de modo que uma máquina instalada antes de a caixa existir mantém o seu certificado.
 
-```bash
-DELEGATION_CERT_BASE64=$(base64 -w 0 < delegation-cert.json)
-```
+O servidor carrega o certificado no arranque e compara-o com a chave com que assina licenças: a impressão digital da chave de assinatura tem de ser igual à do `delegatedPublicKey` do certificado, porque licenças assinadas com uma chave que o certificado não autoriza não seriam validáveis em nenhuma máquina. Mantenha sincronizados o par de chaves de assinatura e o `delegatedPublicKey` do certificado.
 
-No arranque, o servidor recusa-se a iniciar (um log FATAL e saída com código diferente de zero) se o certificado carregado delegar numa chave diferente daquela com que o servidor assina licenças: compara a impressão digital da chave de assinatura com a impressão digital do `delegatedPublicKey` do certificado e aborta em caso de incompatibilidade, porque licenças assinadas com uma chave que o certificado não autoriza seriam impossíveis de validar em qualquer máquina. Mantenha o par de chaves de assinatura e o `delegatedPublicKey` do certificado sincronizados.
+Um certificado que o servidor recusa no arranque (assinatura inválida, chave errada, `UPSTREAM_PUBLIC_KEY` em falta ou ficheiro malformado) não o impede de arrancar. O servidor inicia no nível gratuito e move o ficheiro defeituoso para `delegation-cert.rejected.json`, junto ao original. A assinatura de licenças de repositórios responde `503 DELEGATION_CERT_REFUSED` até haver um certificado válido, e `rdc server status` mostra `cert REFUSED (reason)`. Execute `rdc server licence` com um certificado válido para reparar. Um certificado expirado continua a ser carregado: degrada-se de forma suave em vez de ser recusado.
 
 ### 4. Configurar a verificação upstream e a renovação automática (opcional mas recomendado)
 
@@ -270,8 +270,7 @@ Para backup e auditoria, o administrador on-premise também pode transferir o ce
 | `ON_PREMISE_MODE` | Sim | Definir como `true` para ativar o subconjunto de rotas on-premise |
 | `ON_PREMISE_PRIVATE_KEY` | Sim | Chave privada Ed25519 PKCS8 em Base64 para assinatura delegada |
 | `ON_PREMISE_PUBLIC_KEY` | Sim | Chave pública Ed25519 SPKI em Base64 (deve corresponder à `delegatedPublicKey` do certificado) |
-| `DELEGATION_CERT_PATH` | Uma destas | Caminho do sistema de ficheiros para o JSON do certificado assinado |
-| `DELEGATION_CERT_BASE64` | Uma destas | JSON do certificado codificado em Base64 (alternativa ao caminho do ficheiro) |
+| `DELEGATION_CERT_PATH` | Opcional | Caminho do sistema de ficheiros para o JSON do certificado assinado. Predefinição `/data/delegation-cert.json` no volume de dados. Substitua o certificado com `rdc server licence`, não à mão. |
 | `UPSTREAM_PUBLIC_KEY` | Obrigatório se `UPSTREAM_API_KEY` estiver definido, ou para `/onprem/cert-upload` funcionar | SPKI Base64 da chave pública mestre do upstream. Falha imediatamente no arranque se estiver em falta. |
 | `UPSTREAM_URL` | Para renovação automática | URL base do servidor de conta upstream, p. ex. `https://www.rediacc.com` |
 | `UPSTREAM_API_KEY` | Para renovação automática | Um token de API com âmbito `delegation:renew`. Obtenha via portal - consulte o Passo 4. |

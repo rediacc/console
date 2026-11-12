@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 5
 language: tr
-sourceHash: "5c93a7291bd8c558"
-sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
+sourceHash: "37f3874a9cf58a5d"
+sourceCommit: "430ec2c17cba9a80d3e5ed83da35d149ccd90d65"
 ---
 
 Rediacc tamamen kendi altyapınızda çalışabilir. Bağımsız Docker imajı hesap sunucusunu, web portalını, pazarlama sitesini ve CLI dağıtım uç noktasını içerir. Rediacc'ın barındırılan servislerine harici bağımlılık gerekmez.
@@ -170,19 +170,19 @@ Sertifikanın geçerliliği, geçerlilik politikası tarafından yönetilir (pla
 
 ### 3. Sertifikayı yerinde sunucuya kurma
 
-İndirilen `.json` dosyasını bilinen bir yola kaydedin ve yerinde sunucuyu buna yönlendirin:
+Sunucu, devretme sertifikasını veri biriminin üzerindeki tek bir dosyadan okur: `/data/delegation-cert.json` (`DELEGATION_CERT_PATH`). Sertifikayı başka hiçbir şey taşımaz: bunun için bir ortam değişkeni yoktur. `rdc server install` indirilen sertifikayı oraya bırakır, `rdc server licence` ise sonradan değiştirir:
 
 ```bash
-DELEGATION_CERT_PATH=/etc/rediacc/delegation-cert.json
+rdc server install <domain> --cert delegation-cert.json
+rdc server licence <domain> --cert delegation-cert.json
+rdc server status <domain>
 ```
 
-Veya geçici / Docker-secrets iş akışları için sertifikayı env var'da base64 olarak gömün:
+Her iki komut da sertifikayı çalışan sunucuya sertifika gelen kutusu (`data/web/cert-inbox/new.json`) üzerinden iletir. Sunucu sertifikayı doğrular ve `applied.json` veya `rejected.json` ile yanıt verir; komut yeni sertifika kimliğini `rdc server status` ile doğrular (6. adımdaki `cert-status` verisinin aynısı). `rdc server upgrade` aynı gelen kutusunu kullanır. Yükseltmenin bir adımı, `secrets.env` içinde kalmış bir `DELEGATION_CERT_BASE64` değerini gelen kutusuna taşır; böylece gelen kutusundan önce kurulmuş bir makine sertifikasını korur.
 
-```bash
-DELEGATION_CERT_BASE64=$(base64 -w 0 < delegation-cert.json)
-```
+Sunucu sertifikayı açılışta yükler ve lisansları imzaladığı anahtarla karşılaştırır: imzalama anahtarının parmak izi, sertifikanın `delegatedPublicKey` parmak izine eşit olmalıdır; çünkü sertifikanın yetkilendirmediği bir anahtarla imzalanan lisanslar hiçbir makinede doğrulanamaz. İmzalama anahtar çiftini ve sertifikanın `delegatedPublicKey` değerini uyumlu tutun.
 
-Açılışta, yüklenen sertifika sunucunun lisansları imzalamak için kullandığı anahtardan farklı bir anahtara yetki devrediyorsa sunucu başlamayı reddeder (bir FATAL log ve sıfır olmayan çıkış kodu): imzalama anahtarının parmak izini sertifikanın `delegatedPublicKey` parmak iziyle karşılaştırır ve uyuşmazlık durumunda durur; çünkü sertifikanın yetkilendirmediği bir anahtarla imzalanan lisanslar her makinede doğrulanamaz hale gelirdi. İmzalama anahtar çiftini ve sertifikanın `delegatedPublicKey`'ini senkronize tutun.
+Sunucunun açılışta reddettiği bir sertifika (geçersiz imza, yanlış anahtar, eksik `UPSTREAM_PUBLIC_KEY` veya bozuk dosya) sunucuyu durdurmaz. Sunucu ücretsiz katmanda başlar ve hatalı dosyayı orijinalin yanına `delegation-cert.rejected.json` olarak taşır. Geçerli bir sertifika yerine konana kadar depo lisans imzalama `503 DELEGATION_CERT_REFUSED` yanıtı verir ve `rdc server status` `cert REFUSED (reason)` gösterir. Onarmak için geçerli bir sertifikayla `rdc server licence` çalıştırın. Süresi dolmuş bir sertifika yine yüklenir: reddedilmek yerine yumuşak biçimde düşürülür.
 
 ### 4. Yukarı akış doğrulaması ve otomatik yenileme yapılandırması (isteğe bağlı ancak önerilir)
 
@@ -270,8 +270,7 @@ Yedekleme ve denetim için, yerinde yönetici `GET /onprem/cert-current` aracıl
 | `ON_PREMISE_MODE` | Evet | Yerinde rota alt kümesini etkinleştirmek için `true` olarak ayarlayın |
 | `ON_PREMISE_PRIVATE_KEY` | Evet | Yetkilendirilmiş imzalama için Base64 PKCS8 Ed25519 özel anahtarı |
 | `ON_PREMISE_PUBLIC_KEY` | Evet | Base64 SPKI Ed25519 genel anahtarı (sertifikanın `delegatedPublicKey`'iyle eşleşmeli) |
-| `DELEGATION_CERT_PATH` | Bunlardan biri | İmzalı sertifika JSON'una dosya sistemi yolu |
-| `DELEGATION_CERT_BASE64` | Bunlardan biri | Base64 kodlu sertifika JSON'u (dosya yoluna alternatif) |
+| `DELEGATION_CERT_PATH` | İsteğe bağlı | İmzalı sertifika JSON'una dosya sistemi yolu. Varsayılan: veri biriminde `/data/delegation-cert.json`. Sertifikayı elle değil, `rdc server licence` ile değiştirin. |
 | `UPSTREAM_PUBLIC_KEY` | `UPSTREAM_API_KEY` ayarlanmışsa veya `/onprem/cert-upload`'ın çalışması için gerekli | Yukarı akış ana genel anahtarının Base64 SPKI'si. Eksikse önyüklemede hızla başarısız olur. |
 | `UPSTREAM_URL` | Otomatik yenileme için | Yukarı akış hesap sunucusu temel URL'si, örn. `https://www.rediacc.com` |
 | `UPSTREAM_API_KEY` | Otomatik yenileme için | `delegation:renew` kapsamlı api tokeni. Portal aracılığıyla oluşturun - bkz. Adım 4. |

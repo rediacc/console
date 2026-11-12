@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 5
 language: zh
-sourceHash: "5c93a7291bd8c558"
-sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
+sourceHash: "37f3874a9cf58a5d"
+sourceCommit: "430ec2c17cba9a80d3e5ed83da35d149ccd90d65"
 ---
 
 Rediacc 可以完全运行在您自己的基础设施上。独立 Docker 镜像包含账户服务器、Web 管理门户、营销网站和 CLI 分发端点，无需依赖 Rediacc 托管服务。
@@ -170,19 +170,19 @@ ON_PREMISE_PUBLIC_KEY=$(openssl pkey -in onprem-private.pem -pubout -outform DER
 
 ### 3. 在本地部署服务器上安装证书
 
-将下载的 `.json` 保存到已知路径，并在本地部署中指向该文件：
+服务器只从数据卷上的一个文件读取委托证书：`/data/delegation-cert.json`（`DELEGATION_CERT_PATH`）。没有其他途径可以传入证书，也没有对应的环境变量。`rdc server install` 会把下载的证书放到该位置，之后可用 `rdc server licence` 替换：
 
 ```bash
-DELEGATION_CERT_PATH=/etc/rediacc/delegation-cert.json
+rdc server install <domain> --cert delegation-cert.json
+rdc server licence <domain> --cert delegation-cert.json
+rdc server status <domain>
 ```
 
-或者，对于临时容器 / Docker secrets 工作流，可将证书以 base64 形式嵌入环境变量：
+两条命令都通过证书收件箱（`data/web/cert-inbox/new.json`）把证书交给运行中的服务器。服务器验证证书后，以 `applied.json` 或 `rejected.json` 作答，命令再用 `rdc server status` 确认新证书的 id（与第 6 步的 `cert-status` 数据相同）。`rdc server upgrade` 使用同一个收件箱。升级中有一步会把遗留在 `secrets.env` 里的 `DELEGATION_CERT_BASE64` 移入收件箱，因此在收件箱出现之前安装的机器也能保留其证书。
 
-```bash
-DELEGATION_CERT_BASE64=$(base64 -w 0 < delegation-cert.json)
-```
+服务器在启动时加载证书，并与它签署许可证所用的密钥核对：签名密钥的指纹必须与证书中 `delegatedPublicKey` 的指纹一致，因为用证书未授权的密钥签署的许可证无法在任何机器上通过验证。请保持签名密钥对与证书的 `delegatedPublicKey` 一致。
 
-启动时，如果加载的证书所委托的密钥与服务器实际用于签署许可证的密钥不同，服务器将拒绝启动（记录 FATAL 日志并以非零状态退出）：它会比较签名密钥的指纹与证书 `delegatedPublicKey` 的指纹，一旦不匹配就中止，因为使用证书未授权的密钥签署的许可证在任何机器上都将无法通过验证。请始终保持签名密钥对与证书的 `delegatedPublicKey` 同步。
+服务器在启动时拒绝的证书（签名无效、密钥不符、缺少 `UPSTREAM_PUBLIC_KEY` 或文件格式错误）不会使其停止。服务器会以免费版启动，并把有问题的文件移到原文件旁的 `delegation-cert.rejected.json`。在有效证书就位之前，仓库许可证签署会返回 `503 DELEGATION_CERT_REFUSED`，`rdc server status` 会显示 `cert REFUSED (reason)`。用有效证书运行 `rdc server licence` 即可修复。已过期的证书仍会加载：它会平滑降级，而不是被拒绝。
 
 ### 4. 配置上游验证与自动续期（可选但推荐）
 
@@ -270,8 +270,7 @@ curl https://onprem.example.com/account/api/v1/onprem/cert-status \
 | `ON_PREMISE_MODE` | 是 | 设为 `true` 以启用本地部署路由子集 |
 | `ON_PREMISE_PRIVATE_KEY` | 是 | Base64 PKCS8 Ed25519 私钥，用于委托签名 |
 | `ON_PREMISE_PUBLIC_KEY` | 是 | Base64 SPKI Ed25519 公钥（须与证书的 `delegatedPublicKey` 匹配） |
-| `DELEGATION_CERT_PATH` | 二选一 | 已签名证书 JSON 文件的文件系统路径 |
-| `DELEGATION_CERT_BASE64` | 二选一 | Base64 编码的证书 JSON（文件路径的替代方案） |
+| `DELEGATION_CERT_PATH` | 可选 | 已签名证书 JSON 文件的文件系统路径。默认为数据卷上的 `/data/delegation-cert.json`。请用 `rdc server licence` 替换证书，不要手动改动。 |
 | `UPSTREAM_PUBLIC_KEY` | 若设置了 `UPSTREAM_API_KEY` 或需要 `/onprem/cert-upload` 正常工作则必填 | 上游主公钥的 Base64 SPKI，缺失时启动快速失败 |
 | `UPSTREAM_URL` | 用于自动续期 | 上游账户服务器基础 URL，例如 `https://www.rediacc.com` |
 | `UPSTREAM_API_KEY` | 用于自动续期 | `delegation:renew` 范围的 API 令牌，通过门户获取，见第 4 步 |
