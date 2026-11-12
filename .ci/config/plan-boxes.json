@@ -3011,13 +3011,12 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 1,
-      "done": 24,
-      "open_sigs": [
-        "0ef5d82f"
-      ],
+      "open": 0,
+      "done": 25,
+      "open_sigs": [],
       "done_sigs": [
         "070750a1",
+        "0ef5d82f",
         "2ee4b694",
         "386e2bb4",
         "3e99b9cd",
