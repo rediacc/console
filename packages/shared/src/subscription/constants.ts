@@ -423,13 +423,20 @@ export const DELEGATION_CERT_CREATE_RATE_LIMIT = {
 export const RENEWAL_MANIFEST_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
- * Upstream API path for the delegation cert renewal endpoint. Defined here
+ * Mount prefix of the account API on an upstream origin. The portal hands out
+ * UPSTREAM_URL as a bare origin, so the client appends the full path below.
+ */
+export const ACCOUNT_API_BASE_PATH = '/account/api/v1' as const;
+
+/**
+ * Full upstream API path (under the account API mount) for the delegation
+ * cert renewal endpoint. Defined here
  * (rather than hard-coded inside the on-prem CertAutoRenewService) so the
  * upstream router and the on-prem auto-renew client agree on the same path.
  * Both ends import this constant; changing one without the other is a
  * compile-time error in the consumer that uses it.
  */
-export const DELEGATION_RENEW_PATH = '/api/v1/delegation/renew' as const;
+export const DELEGATION_RENEW_PATH = `${ACCOUNT_API_BASE_PATH}/delegation/renew` as const;
 
 /**
  * API path (relative to the account server's base URL) of the repo-license
