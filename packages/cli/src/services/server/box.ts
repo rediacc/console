@@ -4,6 +4,7 @@
  */
 
 import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
+import { WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
 import { t } from '../../i18n/index.js';
 import { recordedDatastoreMount } from '../../utils/repo-executor.js';
 import { configService } from '../config/config-resources.js';
@@ -48,7 +49,7 @@ export async function locateRepo(repo: string, machine: string): Promise<RepoOnB
     dir: `${datastore}/mounts/${config.repositoryGuid}`,
     ...(config.networkId === undefined
       ? {}
-      : { dockerSocket: `/var/run/rediacc/docker-${config.networkId}.sock` }),
+      : { dockerSocket: `${WK_RUNTIME_DIR}/docker-${config.networkId}.sock` }),
   };
 }
 

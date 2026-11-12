@@ -6,6 +6,7 @@ import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { WK_IMAGE_REGISTRY } from '@rediacc/shared/config/well-known.generated';
 
 const m = vi.hoisted(() => ({
   builtinVersion: '' as string,
@@ -120,12 +121,17 @@ describe('upgrade', () => {
   it('forks first, and leaves the template alone when the built-in one is not newer', async () => {
     m.builtinVersion = '';
     const fake = makeFake({ templateVersion: 0 });
-    const result = await serverUpgrade(fake.deps, LOC, { image: 'ghcr.io/rediacc/server:2.0' });
+    const result = await serverUpgrade(fake.deps, LOC, {
+      image: `${WK_IMAGE_REGISTRY}/server:2.0`,
+    });
     const rdc = fake.calls.filter((c) => c.startsWith('rdc '));
     expect(rdc[0]).toMatch(/^rdc repo fork elite@m1 --tag pre-upgrade-\d{8}t\d{6}$/);
     expect(rdc.some((c) => c.includes('template apply'))).toBe(false);
     expect(rdc.at(-1)).toBe('rdc repo up elite@m1');
-    expect(fake.setEnv.at(-1)).toEqual({ ELITE_IMAGE: 'ghcr.io/rediacc/server:2.0', TAG: '2.0' });
+    expect(fake.setEnv.at(-1)).toEqual({
+      ELITE_IMAGE: `${WK_IMAGE_REGISTRY}/server:2.0`,
+      TAG: '2.0',
+    });
     expect(result.templateReapplied).toBe(false);
     expect(fake.calls.indexOf('ssh m1 pull')).toBeGreaterThan(
       fake.calls.findIndex((c) => c.startsWith('rdc repo fork'))

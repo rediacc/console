@@ -7,6 +7,7 @@
  */
 
 import { t } from '../i18n/index.js';
+import { writeStderr } from '../services/core/request-context.js';
 import type { TlsMethod } from '../services/server/types.js';
 import { TLS_METHODS } from '../services/server/types.js';
 import { ValidationError } from './errors.js';
@@ -68,7 +69,7 @@ export function inquirerPrompts(): ServerPrompts {
         default: ADD_EXISTING,
       });
       if (picked !== ADD_EXISTING) return { kind: 'existing', name: picked };
-      process.stderr.write(`${t('commands.server.prompts.provisionHint')}\n`);
+      writeStderr(`${t('commands.server.prompts.provisionHint')}\n`);
       const ip = await ask<string>({
         type: 'input',
         message: t('commands.server.prompts.machineIp'),

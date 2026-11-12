@@ -5,6 +5,7 @@
 
 import { isIPv4 } from 'node:net';
 import { join } from 'node:path';
+import { WK_IMAGE_REGISTRY } from '@rediacc/shared/config/well-known.generated';
 import { t } from '../../i18n/index.js';
 import { type EmbeddedTemplate, TEMPLATES } from '../../templates/embedded.generated.js';
 import type { MachineConfig } from '../../types/index.js';
@@ -17,7 +18,7 @@ import type { BoxTarget, ServerDeps } from './types.js';
 export const TEMPLATE_NAME = 'elite';
 export const DEFAULT_REPO = 'elite';
 export const DEFAULT_SIZE = '10G';
-export const DEFAULT_IMAGE = 'ghcr.io/rediacc/server:latest';
+export const DEFAULT_IMAGE = `${WK_IMAGE_REGISTRY}/server:latest`;
 
 /** `acme.example.com` -> `acme-store.example.com`. */
 export function storeDomainOf(domain: string): string {

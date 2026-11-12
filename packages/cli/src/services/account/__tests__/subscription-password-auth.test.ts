@@ -29,7 +29,7 @@ function stubServer(refusal?: { status: number; body: unknown }): Call[] {
   let mints = 0;
   vi.stubGlobal(
     'fetch',
-    vi.fn(async (url: string, init?: { body?: string }) => {
+    vi.fn((url: string, init?: { body?: string }) => {
       const body = init?.body ? (JSON.parse(init.body) as { scopes?: string[] }) : {};
       calls.push({ url, scopes: body.scopes });
       if (url.endsWith('/auth/login')) return reply(200, {}, 'sess');

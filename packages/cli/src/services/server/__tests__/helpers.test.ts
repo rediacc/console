@@ -9,6 +9,11 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
+import {
+  WK_IMAGE_REGISTRY,
+  WK_INFRA_DOMAIN,
+  WK_PRODUCT_DOMAIN,
+} from '@rediacc/shared/config/well-known.generated';
 
 vi.mock('../../../i18n/index.js', () => ({
   t: (key: string, vars?: Record<string, unknown>) =>
@@ -86,16 +91,16 @@ describe('preflight', () => {
 describe('names', () => {
   it('derives the store domain and the image tag', () => {
     expect(storeDomainOf('acme.example.com')).toBe('acme-store.example.com');
-    expect(imageTag('ghcr.io/rediacc/server:2.1')).toBe('2.1');
+    expect(imageTag(`${WK_IMAGE_REGISTRY}/server:2.1`)).toBe('2.1');
     expect(imageTag('localhost:5000/server')).toBe('latest');
     expect(imageTag('ghcr.io/x@sha256:ab')).toBe('latest');
   });
 
   it('knows which zones Rediacc owns, and no other', () => {
-    expect(ownedZoneOf('acme.rediacc.io')).toBe('rediacc.io');
-    expect(ownedZoneOf('acme.rediacc.cloud')).toBe('rediacc.cloud');
+    expect(ownedZoneOf(`acme.${WK_INFRA_DOMAIN}`)).toBe(WK_INFRA_DOMAIN);
+    expect(ownedZoneOf(`acme.${WK_PRODUCT_DOMAIN}`)).toBe(WK_PRODUCT_DOMAIN);
     expect(ownedZoneOf('acme.notrediacc.io')).toBeUndefined();
-    expect(ownedZoneOf('rediacc.io.example.com')).toBeUndefined();
+    expect(ownedZoneOf(`${WK_INFRA_DOMAIN}.example.com`)).toBeUndefined();
   });
 
   it('matches certificate names exactly or by a one-label wildcard', () => {

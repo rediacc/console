@@ -6,6 +6,7 @@
 
 import { rmSync } from 'node:fs';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
 
 const m = vi.hoisted(() => ({
   machines: [] as { name: string; config: { ip: string; user: string; datastore?: string } }[],
@@ -215,15 +216,15 @@ describe('dns', () => {
     const { fake, result } = run(
       {
         machine: 'm1',
-        domain: 'acme.rediacc.io',
+        domain: `acme.${WK_INFRA_DOMAIN}`,
         dnsWait: false,
       },
-      { zoneToken: 'cf', resolveSequence: [[]], sans: ['acme.rediacc.io'] }
+      { zoneToken: 'cf', resolveSequence: [[]], sans: [`acme.${WK_INFRA_DOMAIN}`] }
     );
     await result;
     expect(fake.dnsWrites).toEqual([
-      'rediacc.io A acme.rediacc.io 203.0.113.10',
-      'rediacc.io A acme-store.rediacc.io 203.0.113.10',
+      `${WK_INFRA_DOMAIN} A acme.${WK_INFRA_DOMAIN} 203.0.113.10`,
+      `${WK_INFRA_DOMAIN} A acme-store.${WK_INFRA_DOMAIN} 203.0.113.10`,
     ]);
   });
 });
