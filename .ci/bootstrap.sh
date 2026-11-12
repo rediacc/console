@@ -137,10 +137,12 @@ COSIGN_CACHE_BIN="$COSIGN_DIR/cosign"
 #
 # A lease tree's .ci/cache/toolchain is a symlink to the main checkout's, so the
 # wrapper written here is the SAME file every tree runs. Its paths are therefore
-# rooted at the checkout that physically owns the toolchain, never at $ROOT: a
-# bootstrap inside a lease used to write the lease's own path into the shared
-# wrapper, and pytest broke everywhere once that lease was collected
+# rooted at the checkout that physically owns the toolchain, not at a lease's
+# $ROOT: a bootstrap inside a lease used to write the lease's own path into the
+# shared wrapper, and pytest broke everywhere once that lease was collected
 # (2026-11-11, `pytest wrapper: .../worktrees/agent-.../pytest is missing`).
+# When the owner cannot be derived (no `readlink -f`, or a shared cache outside
+# any checkout's .ci/cache), the paths fall back to $ROOT (c473373f.1).
 TOOL_OWNER_ROOT="$ROOT"
 if [ -d "$ROOT/.ci/cache/toolchain" ]; then
     # The owner is the checkout three levels above the physical toolchain directory, and only when

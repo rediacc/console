@@ -1170,6 +1170,9 @@ check:ci-pytest -- run the Python test corpus and refuse a partial pass.
   check_pytest.py --selftest   run this gate's own controls and exit
   check_pytest.py --help       this text
 
+Any other argument (a test path, a pytest option) is refused: a named test runs
+as `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q <files>`.
+
 Environment:
   PYTEST_RUN_TIMEOUT_S   kill timer, for a leg or the whole suite alike when
                          set (default %d seconds per --shard leg, which must
@@ -1187,6 +1190,23 @@ def wants_help(argv: list[str]) -> bool:
     The obvious control -- `c.check(main(["--help"]), EXIT_OK)` -- is a trap, and it caught me: with the early return planted away, that call falls through and runs the ENTIRE suite, so the plant produces a thirty-minute hang instead of a red. A control must fail fast or it is not usable as a control.
     """
     return "--help" in argv or "-h" in argv
+
+
+FLAGS_ALONE = ("--help", "-h", "--selftest")
+FLAGS_WITH_VALUE = ("--shard-manifest", "--shard")
+
+
+def unknown_args(argv: list[str]) -> list[str]:
+    """The arguments this gate does not read. A test path used to be dropped without a word, so `npm run check:ci-pytest -- <file>` ran the WHOLE suite and its verdict passed for a run of the named file; any such argument is now refused before anything runs."""
+    out, skip = [], False
+    for arg in argv:
+        if skip:
+            skip = False
+        elif arg in FLAGS_WITH_VALUE:
+            skip = True
+        elif arg not in FLAGS_ALONE:
+            out.append(arg)
+    return out
 
 
 def help_precedes_resolution() -> bool:
@@ -1227,6 +1247,17 @@ def main(argv: list[str]) -> int:
     if wants_help(argv):
         print(USAGE % (RUN_TIMEOUT_S, whole_corpus_timeout_s()))
         return EXIT_OK
+
+    extra = unknown_args(argv)
+    if extra:
+        print(
+            "%s✗%s check:ci-pytest judges the whole suite or one --shard leg and takes no test\n"
+            "  paths or pytest options; refused: %s\n"
+            "  A named test runs as: PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest -q <files>"
+            % (RED, NC, " ".join(extra)),
+            file=sys.stderr,
+        )
+        return EXIT_FAIL
 
     root = paths.repo_root()
 

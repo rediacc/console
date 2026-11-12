@@ -2691,10 +2691,47 @@ def test_gc_superseded_by_refuses_a_landed_commit_that_shares_no_path_with_the_l
         "--reason", "same test fix landed as the named commit",
     )  # fmt: skip
     assert done.returncode == 1
-    assert "shares no changed path" in done.stderr
+    assert "does not change dup.txt" in done.stderr
     assert tree.exists()
     ledger = gc_repo.root / ".git" / lease.RECORD_DIR / "superseded.jsonl"
     assert not ledger.exists() or sha not in ledger.read_text()
+
+
+def test_gc_superseded_by_refuses_a_landed_commit_sharing_only_some_paths(gc_repo):
+    """747e14b4.3: a landed commit that changes one of the lease commit's paths (a lockfile, a changelog) and misses another is no duplicate of it."""
+    tree = make_tree(gc_repo, "sup10")
+    for name in ("dup.txt", "feature.txt"):
+        spike.write(tree / name, "tree variant\n")
+    spike.must(tree, "add", "--", "dup.txt", "feature.txt")
+    done = spike.git(tree, "commit", "--no-gpg-sign", "-m", "feat: two paths\n\n%s" % TRAILERS)
+    assert done.returncode == 0, done.stderr
+    sha = spike.must(tree, "rev-parse", "HEAD")
+    assert run_pin_verb(tree).returncode == 0
+    shared_only = committed(gc_repo.root, "dup.txt")
+    refused = run_gc(
+        gc_repo.root, "--write", "--id", "sup10", "--superseded-by", "%s=%s" % (sha, shared_only),
+        "--reason", "same test fix landed as the named commit",
+    )  # fmt: skip
+    assert refused.returncode == 1
+    assert "does not change feature.txt" in refused.stderr
+    assert tree.exists()
+    ledger = gc_repo.root / ".git" / lease.RECORD_DIR / "superseded.jsonl"
+    assert not ledger.exists() or sha not in ledger.read_text()
+    # The control: a landed commit changing every path, its content a different variant, is admitted.
+    for name in ("dup.txt", "feature.txt"):
+        spike.write(gc_repo.root / name, "landed variant\n")
+    spike.must(gc_repo.root, "add", "--", "dup.txt", "feature.txt")
+    both = spike.git(
+        gc_repo.root, "commit", "--no-gpg-sign", "-m", "feat: both paths\n\n%s" % TRAILERS
+    )
+    assert both.returncode == 0, both.stderr
+    covering = spike.must(gc_repo.root, "rev-parse", "HEAD")
+    admitted = run_gc(
+        gc_repo.root, "--write", "--id", "sup10", "--superseded-by", "%s=%s" % (sha, covering),
+        "--reason", "same test fix landed as the named commit",
+    )  # fmt: skip
+    assert admitted.returncode == 0, admitted.stdout + admitted.stderr
+    assert not tree.exists()
 
 
 def test_gc_superseded_by_retracts_the_waiver_of_a_tree_another_rule_keeps(gc_repo):
@@ -2768,7 +2805,58 @@ def test_gc_superseded_by_without_write_records_no_waiver(gc_repo, monkeypatch):
     assert not ledger.exists()
 
 
-def test_ledger_retract_reports_a_ledger_it_cannot_rewrite(tmp_path, capsys):
+def test_ledger_retract_reports_a_ledger_it_cannot_read(tmp_path, capsys):
     (tmp_path / ".git" / lease.RECORD_DIR).mkdir(parents=True)
     lease._ledger_retract(tmp_path, [{"sha": "a"}])
     assert "could not retract" in capsys.readouterr().err
+
+
+def test_ledger_retract_reports_a_ledger_it_cannot_rewrite(tmp_path, capsys, monkeypatch):
+    """747e14b4.2: the ledger exists and reads, and the rewrite itself fails."""
+    row = {"sha": "a"}
+    lease._ledger_write(tmp_path, [row])
+    ledger = lease._ledger_file(tmp_path)
+    real_read = pathlib.Path.read_text
+
+    def refuse_write(_self, *_a, **_k):
+        raise OSError("read-only ledger")
+
+    monkeypatch.setattr(pathlib.Path, "write_text", refuse_write)
+    lease._ledger_retract(tmp_path, [row])
+    err = capsys.readouterr().err
+    assert "could not retract" in err
+    assert "read-only ledger" in err
+    assert '"sha": "a"' in real_read(ledger)
+
+
+def test_control_ledger_retract_drops_its_rows_and_keeps_the_others(tmp_path):
+    mine, other = {"sha": "a"}, {"sha": "b"}
+    lease._ledger_write(tmp_path, [other, mine])
+    lease._ledger_retract(tmp_path, [mine])
+    assert lease._ledger_file(tmp_path).read_text() == json.dumps(other) + "\n"
+
+
+def test_gc_superseded_by_retracts_a_ledger_write_that_fails_partway(gc_repo, monkeypatch):
+    """747e14b4.1: the waiver write tears after part of a row, and that torn row is retracted, not left active."""
+    tree, sha, landed = superseded_fixture(gc_repo, "sup11")
+    gc_in_process(monkeypatch, gc_repo.root)
+    ledger = gc_repo.root / ".git" / lease.RECORD_DIR / "superseded.jsonl"
+
+    def torn(_root, rows):
+        whole = json.dumps(rows[0], sort_keys=True)
+        ledger.parent.mkdir(parents=True, exist_ok=True)
+        with ledger.open("a", encoding="utf-8") as handle:
+            handle.write(whole[: len(whole) // 2])
+        raise OSError("disk full")
+
+    monkeypatch.setattr(lease, "_ledger_write", torn)
+    with pytest.raises(OSError, match="disk full"):
+        lease.run_gc(
+            gc_repo.root,
+            write=True,
+            only="sup11",
+            superseded=[(sha, landed)],
+            reason="same test fix landed as the named commit",
+        )
+    assert ledger.read_text() == ""
+    assert tree.exists()

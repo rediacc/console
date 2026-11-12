@@ -895,7 +895,8 @@ commits are landed. `--write --id <id>` exits 1 when that lease was kept.
      name an unlanded commit of that lease whose change already landed through
      another commit (a duplicate fix whose pick conflicts). One flag per commit, or a
      bare <landed-sha> when the lease holds exactly one. Each landed sha must be an
-     ancestor of the live tip, every unlanded commit must be named, and the reason
+     ancestor of the live tip and change every path its lease commit changes, every
+     unlanded commit must be named, and the reason
      needs at least 20 characters. The waiver is recorded in
      .git/rediacc-worktrees/superseded.jsonl, which the Stop hook reads as landed.
 """
@@ -1505,9 +1506,9 @@ def _unlanded_of(world, lease_id):
 
 
 def _touched(repo, sha):
-    """The set of paths a commit changes (empty when git cannot say)."""
-    done = _quiet(repo, "diff-tree", "--no-commit-id", "--name-only", "-r", "--root", sha)
-    return set((done or "").split())
+    """The set of paths a commit changes, read verbatim from `-z` output (empty when git cannot say)."""
+    done = _quiet(repo, "diff-tree", "--no-commit-id", "--name-only", "-z", "-r", "--root", sha)
+    return {path for path in (done or "").split("\0") if path}
 
 
 def _resolve_superseded(world, lease_id, pairs, reason):
@@ -1534,10 +1535,13 @@ def _resolve_superseded(world, lease_id, pairs, reason):
             problems.append(
                 "%s is not an ancestor of the live tip of %s" % (landed[:SHA_SHOWN], key)
             )
-        elif not _touched(repo, sha) & _touched(repo, full.strip()):
+        elif not (lease_paths := _touched(repo, sha)):
+            problems.append("the changed paths of %s could not be read" % sha[:SHA_SHOWN])
+        elif uncovered := sorted(lease_paths - _touched(repo, full.strip())):
+            # 747e14b4.3: one shared path (a lockfile, a changelog) is too weak a proof, so the landed commit must change EVERY path the lease commit changes. The content may differ, because a duplicate whose pick conflicts is the case this waiver exists for.
             problems.append(
-                "%s shares no changed path with %s, so it is not a duplicate of it"
-                % (landed[:SHA_SHOWN], sha[:SHA_SHOWN])
+                "%s does not change %s, which %s changes, so it is not a duplicate of it"
+                % (landed[:SHA_SHOWN], ", ".join(uncovered), sha[:SHA_SHOWN])
             )
         else:
             named.add(sha)
@@ -1568,10 +1572,15 @@ def _ledger_write(root, rows):
 
 
 def _ledger_retract(root, rows):
+    """Drop `rows` from the ledger, and a torn line a failed `_ledger_write` left (a non-empty prefix of one of them, 747e14b4.1)."""
     path = _ledger_file(root)
     drop = {json.dumps(row, sort_keys=True) for row in rows}
     try:
-        kept = [ln for ln in path.read_text(encoding="utf-8").splitlines() if ln not in drop]
+        kept = [
+            ln
+            for ln in path.read_text(encoding="utf-8").splitlines()
+            if not (ln and any(whole.startswith(ln) for whole in drop))
+        ]
         path.write_text("".join(ln + "\n" for ln in kept), encoding="utf-8")
     except OSError as err:
         log.error(
@@ -1598,8 +1607,10 @@ def run_gc(root, *, write=False, only="", discard_dirty="", superseded=(), reaso
                 for problem in bad:
                     log.error("--superseded-by refused: %s" % problem)
                 return 1, []
-            _ledger_write(root, recorded)
         try:
+            # Inside the try (747e14b4.1): a write that fails partway is retracted like a failed removal, so no torn waiver stays active.
+            if recorded:
+                _ledger_write(root, recorded)
             for judged in _gc_rows(world, live, only):
                 row = judged
                 waive_line = ""

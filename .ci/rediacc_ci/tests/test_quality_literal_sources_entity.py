@@ -112,3 +112,32 @@ def test_a_value_past_column_20000_of_a_long_line_is_found(
     assert "registryCode" in ls.entity_fields_in_record(raw, needles)
     # Control: the same line without the value is clean.
     assert ls.entity_fields_in_record(b"x" * 30000, needles) == []
+
+
+class _Grep:
+    """A stand-in for the consumer grep: one `-z -n` record, path NUL line NUL text."""
+
+    record = b""
+
+    def __init__(self, _root: pathlib.Path, *_args: str) -> None:
+        pass
+
+    def result(self) -> bytes:
+        return self.record
+
+
+@pytest.mark.parametrize("carries", [True, False])
+def test_entity_findings_reads_a_long_line_whole_at_the_call_site(
+    monkeypatch: pytest.MonkeyPatch, entity: dict[str, str], carries: bool
+) -> None:
+    """c473373f.2: driven through `entity_findings`, so a `[:20000]` cut put back at its call site fails here. The control line, without the value, stays silent."""
+    tail = (" registry %s " % entity["registryCode"]) if carries else " registry none "
+    _Grep.record = b"src/minified.js\x001\x00" + ("x" * 30000 + tail).encode() + b"\n"
+    monkeypatch.setattr(ls, "GitCall", _Grep)
+    policy = ls.load_policy(ROOT)
+    own = {policy.entity.source, *policy.entity.projections}
+    findings, _stats = ls.entity_findings(ROOT, policy, own, set(), [])
+    r6 = [f for f in findings if f.rule == "R6" and f.path == "src/minified.js"]
+    assert bool(r6) is carries
+    if carries:
+        assert "registryCode" in r6[0].message

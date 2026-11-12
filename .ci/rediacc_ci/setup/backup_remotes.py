@@ -127,7 +127,7 @@ def install(root: pathlib.Path, say=print) -> int:
 
 
 def check_row(root: pathlib.Path) -> tuple[str, bool]:
-    """`(row, is_pending)` for `./run.sh setup --check`, which mutates nothing. A foreign remote is named but not pending: setup leaves it alone."""
+    """`(row, is_pending)` for `./run.sh setup --check`, which mutates nothing. A foreign remote is named in every run, beside the pending rows too (97a4bd32.1), but is not pending itself: setup leaves it alone."""
     rows = plan(root)
     missing = [rel for rel, _repo, _want, have in rows if not have]
     foreign = [rel for rel, _repo, want, have in rows if have and have != want]
@@ -137,8 +137,9 @@ def check_row(root: pathlib.Path) -> tuple[str, bool]:
         pending.append("keep a fetch refspec in %s (setup removes it)" % ", ".join(unlocked))
     if missing:
         pending.append("NOT added in %s (setup adds `%s`)" % (", ".join(missing), REMOTE))
+    elsewhere = "%s point elsewhere (left alone)" % ", ".join(foreign) if foreign else ""
     if pending:
-        return "  backup remotes " + "; ".join(pending), True
+        return "  backup remotes " + "; ".join([*pending, *filter(None, [elsewhere])]), True
     if foreign:
-        return "  backup remotes %s point elsewhere (left alone)" % ", ".join(foreign), False
+        return "  backup remotes %s" % elsewhere, False
     return "  backup remotes pinned (`%s` in %d submodule(s))" % (REMOTE, len(rows)), False

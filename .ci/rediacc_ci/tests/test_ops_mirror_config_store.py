@@ -1892,7 +1892,8 @@ def test_the_real_reseal_script_round_trips_under_the_workers_crypto(tmp_path, m
         mod.config_server_key_id(DST_KEY_VALUE),
         seal("SOME-OTHER-KEY", "x").split(".", 2)[2],
     )
-    with pytest.raises(mod.RefusedError):
+    # 707bbb8f.1: pinned to the open failure, so a refusal for another reason (a parse failure, a kid mismatch) does not pass for it.
+    with pytest.raises(mod.RefusedError, match="does not open under the source key"):
         mod.reseal_server_key(ROOT, SRC, DST, STORE, wrong_body)
     monkeypatch.setenv(SRC_KEY_ENV, SRC_KEY_VALUE)
     monkeypatch.setenv(BENCH_KEY_ENV, DST_KEY_VALUE)

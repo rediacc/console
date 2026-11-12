@@ -217,3 +217,27 @@ def test_check_row_names_both_the_unlocked_and_the_missing_repositories(tmp_path
     assert pending
     assert "fetch refspec in private/renet" in row
     assert "NOT added in private/account" in row
+
+
+def test_check_row_names_a_foreign_remote_beside_a_missing_one(tmp_path):
+    """97a4bd32.1: a pending row no longer hides the foreign remote, which stays named and not pending itself."""
+    root = _console(tmp_path)
+    _git(
+        root / "private" / "renet",
+        "remote",
+        "add",
+        "gitlab",
+        "https://user:secret@example.invalid/x.git",
+    )
+    row, pending = br.check_row(root)
+    assert pending
+    assert "NOT added in private/account" in row
+    assert "private/renet point elsewhere (left alone)" in row
+    assert "secret" not in row
+
+
+def test_control_check_row_names_no_foreign_remote_when_there_is_none(tmp_path):
+    root = _console(tmp_path)
+    row, pending = br.check_row(root)
+    assert pending
+    assert "elsewhere" not in row
