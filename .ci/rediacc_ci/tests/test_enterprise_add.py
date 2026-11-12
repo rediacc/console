@@ -17,7 +17,7 @@ import pytest
 from rediacc_ci import __main__ as entry
 from rediacc_ci import paths
 from rediacc_ci.core import run_verbs, wrangler
-from rediacc_ci.enterprise import cli, onboarding, registry
+from rediacc_ci.enterprise import cli, dns, onboarding, registry
 
 T0 = "2026-11-09T00:00:00Z"
 IDS = iter("c%016x" % n for n in range(1, 10_000))
@@ -513,6 +513,83 @@ def test_live_smoke_step_requires_both_hosts_to_answer():
     assert len(seen) == 2
 
 
+class RouteWorld:
+    """The route step's two seams: the wildcard ensure and the Worker a host routes to."""
+
+    def __init__(self, routes: dict[str, str], dns_error: Exception | None = None):
+        self.routes = routes
+        self.dns_error = dns_error
+        self.ensured: list[bool] = []
+
+    def ensure(self, check_only):
+        self.ensured.append(check_only)
+        if self.dns_error:
+            raise self.dns_error
+        return "ok"
+
+    def actions(self):
+        return onboarding.live_actions(
+            runner=None, ensure_dns=self.ensure, route_of=lambda host: self.routes.get(host, "")
+        )
+
+
+def _route_ctx():
+    ctx = _ctx(World())
+    return ctx, ctx.plan.hosts, ctx.plan.name
+
+
+def test_live_route_step_passes_when_both_hosts_route_to_the_company_workers():
+    ctx, (account, proxy), name = _route_ctx()
+    rw = RouteWorld({account: "account-%s" % name, proxy: "proxy-%s" % name})
+    assert rw.actions()["route"](ctx) == ""
+    assert rw.ensured == [False]
+
+
+@pytest.mark.parametrize("missing", [0, 1])
+def test_live_route_step_refuses_a_host_without_its_route(missing):
+    ctx, hosts, name = _route_ctx()
+    routes = {hosts[0]: "account-%s" % name, hosts[1]: "proxy-%s" % name}
+    del routes[hosts[missing]]
+    with pytest.raises(onboarding.OnboardingError, match="no Worker"):
+        RouteWorld(routes).actions()["route"](ctx)
+
+
+def test_live_route_step_refuses_a_host_routed_to_another_worker():
+    ctx, (account, proxy), name = _route_ctx()
+    rw = RouteWorld({account: "account-%s" % name, proxy: "proxy-eu"})
+    with pytest.raises(onboarding.OnboardingError, match="not proxy-%s" % name):
+        rw.actions()["route"](ctx)
+
+
+def test_live_route_step_refuses_when_the_wildcard_claim_fails_before_reading_routes():
+    ctx, _hosts, _name = _route_ctx()
+
+    def never(_host):
+        raise AssertionError("routes were read")
+
+    actions = onboarding.live_actions(
+        runner=None,
+        ensure_dns=RouteWorld({}, dns.DnsClaimError("Universal SSL is not enabled")).ensure,
+        route_of=never,
+    )
+    with pytest.raises(onboarding.OnboardingError, match="Universal SSL is not enabled"):
+        actions["route"](ctx)
+
+
+def test_a_company_onboarded_before_the_route_step_reruns_only_route():
+    world = World()
+    out = _run(world, _req(), Recorder())
+    database = registry.control_database("eu", False)
+    world.dbs[database].execute(
+        "DELETE FROM onboarding WHERE company_id = ? AND step = 'route'", (out.company_id,)
+    )
+    world.dbs[database].commit()
+    rec = Recorder()
+    again = _run(world, _req(), rec)
+    assert rec.calls == ["route"]
+    assert again.changed == ("route",)
+
+
 def test_live_secrets_step_hands_the_company_to_the_provisioner():
     got = []
 
@@ -847,6 +924,13 @@ def test_cli_control_ensure_hands_off(monkeypatch):
     monkeypatch.setattr(cli.control_db, "main", lambda argv: _note(seen, argv, 0))
     assert cli.main(["control", "ensure", "--bench"]) == 0
     assert seen == [["ensure", "--bench"]]
+
+
+def test_cli_dns_hands_off(monkeypatch):
+    seen: list[Any] = []
+    monkeypatch.setattr(cli.dns, "main", lambda argv: _note(seen, argv, 0))
+    assert cli.main(["dns", "ensure", "--check"]) == 0
+    assert seen == [["ensure", "--check"]]
 
 
 def test_the_run_sh_verb_is_registered():

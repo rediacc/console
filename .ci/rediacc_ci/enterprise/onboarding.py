@@ -1,6 +1,6 @@
 """`enterprise add`, resumable from the control database's `onboarding` table (agent/plans/PLAN-enterprise-isolation.md box C1, *Company lifecycle*).
 
-THE STEPS, in order: `control-row` (the `companies` row in the company's own region), `d1` (create `account-<company>`), `configs` (the two gitignored tomls, which need the D1 id), `migrate` (the account schema through the company's own config), `buckets` (both buckets and the backup queue pair the template binds), `secrets` (box D2's provisioner), `deploy` (box D1's `--company` deploy of the proxy, then the account Worker), `bootstrap` (the org and an active ENTERPRISE subscription with limits: one POST to the company Worker under ACCOUNT_SERVER_API_KEY, a 200 rerun counting as success), `smoke` (both hosts answer), `lookup` (the www lookup entry through `ops.enterprise_lookup`, skipped and recorded for an unlisted company), `invite` (the owner invitation, sent by the company Worker through box A1) and `audit` (state `active` and one audit row). The Design lists `configs` after `buckets` and `secrets`; it runs straight after `d1` here because `migrate` reads the generated account config.
+THE STEPS, in order: `control-row` (the `companies` row in the company's own region), `d1` (create `account-<company>`), `configs` (the two gitignored tomls, which need the D1 id), `migrate` (the account schema through the company's own config), `buckets` (both buckets and the backup queue pair the template binds), `secrets` (box D2's provisioner), `deploy` (box D1's `--company` deploy of the proxy, then the account Worker), `route` (the shared wildcard record through `dns.ensure`, then both hosts routed to the company's Workers), `bootstrap` (the org and an active ENTERPRISE subscription with limits: one POST to the company Worker under ACCOUNT_SERVER_API_KEY, a 200 rerun counting as success), `smoke` (both hosts answer), `lookup` (the www lookup entry through `ops.enterprise_lookup`, skipped and recorded for an unlisted company), `invite` (the owner invitation, sent by the company Worker through box A1) and `audit` (state `active` and one audit row). The Design lists `configs` after `buckets` and `secrets`; it runs straight after `d1` here because `migrate` reads the generated account config.
 
 VALIDATION RUNS EVERY TIME, before any step: the name (`names.check`), the region of the environment, the owner address, the storage, the allowlist (`proxy_configs.allow_ips_refusal`) and, unless unlisted, the lookup domain against the free-mail list (`enterprise_lookup.refuse_free_mail`). Then every region's control database is read through the registry; an unreachable region refuses the add by name, and a name held in another region is refused.
 
@@ -18,6 +18,7 @@ from __future__ import annotations
 import dataclasses
 import datetime
 import http.client
+import importlib
 import json
 import os
 import re
@@ -32,7 +33,7 @@ from rediacc_ci import paths
 from rediacc_ci.core import https, wrangler
 from rediacc_ci.deploy import console_executor
 from rediacc_ci.deploy import proxy_configs as pc
-from rediacc_ci.enterprise import configs, control_db, names, registry, secrets
+from rediacc_ci.enterprise import configs, control_db, dns, names, proof, registry, secrets
 from rediacc_ci.ops import enterprise_lookup
 from rediacc_ci.well_known import PRODUCT_DOMAIN
 
@@ -47,6 +48,7 @@ STEPS: tuple[str, ...] = (
     "buckets",
     "secrets",
     "deploy",
+    "route",
     "bootstrap",
     "smoke",
     "lookup",
@@ -432,6 +434,8 @@ def live_actions(
     root: pathlib.Path | None = None,
     deploy: Callable[[str, list[str]], int] | None = None,
     fetch: Callable[[str], int] | None = None,
+    ensure_dns: Callable[[bool], str] | None = None,
+    route_of: Callable[[str], str] | None = None,
     provision: Callable[[secrets.Company], Any] | None = None,
     lookup_put: Callable[[str, str, str], int] | None = None,
     lookup_namespace: str = enterprise_lookup.NAMESPACE_ID,
@@ -443,6 +447,7 @@ def live_actions(
     control = control_runner or control_db.run_wrangler
     deploy_run = deploy or run_module
     get = fetch or http_status
+    wildcard = ensure_dns or dns.ensure
     put = lookup_put or enterprise_lookup.put
     send = post or account_post
 
@@ -601,6 +606,27 @@ def live_actions(
                 )
         return ""
 
+    def route(ctx: Context) -> str:
+        plan = ctx.plan
+        try:
+            wildcard(False)
+        except dns.DnsClaimError as exc:
+            raise OnboardingError("company %s: %s" % (plan.company_id, exc)) from None
+        # `lab` imports this module, so the one shared route matcher is bound on first use.
+        worker_of = route_of or importlib.import_module("rediacc_ci.enterprise.lab").routed_worker
+        bad = []
+        for host, script in zip(plan.hosts, ("account-%s", "proxy-%s"), strict=True):
+            want = script % plan.name
+            try:
+                got = worker_of(host)
+            except proof.LabError as exc:
+                raise OnboardingError("company %s: %s" % (plan.company_id, exc)) from None
+            if got != want:
+                bad.append("%s routes to %s, not %s" % (host, got or "no Worker", want))
+        if bad:
+            raise OnboardingError("company %s: %s" % (plan.company_id, "; ".join(bad)))
+        return ""
+
     def smoke(ctx: Context) -> str:
         plan = ctx.plan
         bad = []
@@ -630,6 +656,7 @@ def live_actions(
         "buckets": buckets,
         "secrets": provision_secrets,
         "deploy": deploy_both,
+        "route": route,
         "bootstrap": bootstrap,
         "smoke": smoke,
         "lookup": lookup,

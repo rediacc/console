@@ -13,6 +13,7 @@
     ./run.sh enterprise release ...          (box K2, rediacc_ci.release.rings_run)
     ./run.sh enterprise proof <verb> [--bench]
     ./run.sh enterprise control ensure [--bench] [--region <r>]
+    ./run.sh enterprise dns ensure [--check]
 
 `add` (box C1) is `onboarding.run` over the live steps, after `control_db.ensure_all` has made sure every control database of the environment exists with its schema. `list`, `update`, `suspend`, `export` and `remove` are box C2's `lifecycle` verbs over one `lifecycle.Context`; the context binds the production Exporter and Teardown (`lifecycle_adapters`) lazily, so `list`, `update` and `suspend` need no Cloudflare credentials, while `export` and `remove` read CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (plus the R2 S3 pair, and `--bws-project` for `remove`) from the environment, as `bws_env exec --profile <p>` provides them, and refuse naming the one that is missing. A verb whose module has not landed refuses with `not built yet: <box>` and exit 2, rather than claiming anything.
 
@@ -35,7 +36,7 @@ from rediacc_ci import paths
 from rediacc_ci.core import bws_env
 from rediacc_ci.core import wrangler as wrangler_mod
 from rediacc_ci.deploy import proxy_configs as pc
-from rediacc_ci.enterprise import control_db, onboarding, proof, registry, secrets
+from rediacc_ci.enterprise import control_db, dns, onboarding, proof, registry, secrets
 from rediacc_ci.enterprise import lifecycle_adapters as la
 from rediacc_ci.ops import enterprise_lookup
 
@@ -420,6 +421,8 @@ def main(
         return int(proof.main(rest))
     if verb == "control":
         return int(control_db.main(rest))
+    if verb == "dns":
+        return int(dns.main(rest))
     print("%s: unknown enterprise verb: %s" % (SELF, verb), file=sys.stderr)
     print(USAGE, file=sys.stderr)
     return EXIT_USAGE

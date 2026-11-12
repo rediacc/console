@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-12T11:17:34.212Z",
+  "generatedAt": "2026-11-12T11:30:26.748Z",
   "legs": [
     {
       "index": 1,
@@ -87,6 +87,7 @@
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_local_plane.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_swap_order.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_converge_preflight.py",
+        "pytest:.ci/rediacc_ci/tests/test_enterprise_dns.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_lab.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_secrets.py",
         "pytest:.ci/rediacc_ci/tests/test_env_create_e2e_env.py",
