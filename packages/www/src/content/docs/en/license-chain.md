@@ -320,8 +320,8 @@ A renewal request manifest captures the chain head at the moment of generation. 
 
 When the new cert is uploaded back to the on-premise, `/onprem/cert-upload` validates that the new cert's `genesisSequence` still links to a known entry in the local issuance ledger:
 
-- If `cert.genesisSequence > localHead.sequence` → returns `409 CHAIN_HEAD_BEHIND` (upstream is on a forked chain).
-- If `cert.genesisSequence > 0` and the local ledger entry at that sequence has a different `chainHash` than `cert.genesisHash` → returns `409 CHAIN_FORK_ON_UPLOAD` (local chain has diverged).
+- If `cert.genesisSequence > localHead.sequence` → returns `409` with code `chain-ahead`.
+- If `cert.genesisSequence > 0` and the local ledger entry at that sequence has a different `chainHash` than `cert.genesisHash` → returns `409` with code `chain-fork`.
 - Otherwise, the cert is accepted. Future issuances continue from `localHead.sequence + 1`.
 
 This means **no write freeze is required during transit**. The chain extends naturally on both sides. Matches how X.509 cert renewal handles in-flight serial numbers.

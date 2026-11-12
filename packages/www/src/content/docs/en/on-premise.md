@@ -230,11 +230,23 @@ This entire loop never requires network egress from the on-premise.
 
 #### Cert upload failure modes
 
-| Code | Cause | Fix |
+`POST /onprem/cert-upload` answers `{uploaded: true, bootstrap, certId}` on success. A refused cert answers `{error, code}`, where `error` carries the detail and `code` is one of the reasons below. Every applied or rejected cert is logged and mailed to the box owner.
+
+`rdc server licence` drops the cert into the box's inbox (`data/web/cert-inbox`) over SSH and reads `applied.json` or `rejected.json` back, then confirms the new cert id through `cert-status`. A rejection carries the same reasons, plus `not-a-regular-file` and `too-large` from the inbox itself.
+
+| Code | HTTP | Cause |
 |---|---|---|
-| `CHAIN_HEAD_BEHIND` | New cert's `genesisSequence` is ahead of local chain head | Upstream is on a forked chain - investigate |
-| `CHAIN_FORK_ON_UPLOAD` | Chain hash at the cert's `genesisSequence` doesn't match local ledger | Local chain has diverged from upstream - investigate |
-| `Signature verification failed` | Cert isn't signed by the configured `UPSTREAM_PUBLIC_KEY` | Check that `UPSTREAM_PUBLIC_KEY` matches the upstream master public key |
+| `malformed` | 400 | The upload is not a valid cert |
+| `bad-signature` | 400 | The cert isn't signed by the configured `UPSTREAM_PUBLIC_KEY` |
+| `wrong-key` | 400 | The cert was issued for a different key than this on-premise's |
+| `expired` | 400 | The cert is already past its `validUntil` |
+| `not-newer` | 409 | The cert is not newer than the one in force |
+| `other-subscription` | 409 | The cert belongs to a different subscription |
+| `chain-ahead` | 409 | The cert's `genesisSequence` is ahead of the local chain head |
+| `chain-fork` | 409 | The chain hash at the cert's `genesisSequence` doesn't match the local ledger |
+| `no-upstream-key` | 500 | `UPSTREAM_PUBLIC_KEY` is not configured |
+| `write-failed` | 500 | The cert could not be written to disk |
+| `adoption-failed` | 500 | The server could not load the written cert |
 
 ### 6. Status and monitoring
 
