@@ -179,9 +179,10 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
 
 ### Wave 2: writers, after E1 and P1 land
 
-- [ ] E3 [writer] `enterprise/dns.py` and the `./run.sh enterprise dns ensure [--check]` dispatch in cli.py. The onboarding `route` step goes between `deploy` and `smoke`, using `cf_dns` and lab's route matcher.
+- [x] E3 [writer] `enterprise/dns.py` and the `./run.sh enterprise dns ensure [--check]` dispatch in cli.py. The onboarding `route` step goes between `deploy` and `smoke`, using `cf_dns` and lab's route matcher.
   - Owns: .ci/rediacc_ci/enterprise/dns.py (new), .ci/rediacc_ci/enterprise/cli.py, .ci/rediacc_ci/enterprise/onboarding.py, .ci/rediacc_ci/tests/test_enterprise_dns.py (new), .ci/rediacc_ci/tests/test_enterprise_add.py, .ci/rediacc_ci/tests/test_enterprise_cli_wiring.py.
   - Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_enterprise_dns.py .ci/rediacc_ci/tests/test_enterprise_add.py .ci/rediacc_ci/tests/test_enterprise_cli_wiring.py` rc 0.
+    (ticked) 2026-11-12T11:59:28Z by d778be9d: commit:51f22f73d1 enterprise dns verb and route step; pytest enterprise suites 440 passed rc 0; live LD1 owed
 - [ ] P2 [writer] `./run.sh onprem install|status`:
   - The resumable steps as described in Design, importing `elite_env`, `cert_base64`, `ship_image`, `generate_crypto_keys` and `login_bench.login` rather than copying them.
   - The `onprem` row in `__main__.py`, with `dns` added to the `enterprise` summary at `.ci/rediacc_ci/__main__.py:106-110`, and help in run_verbs.py.
