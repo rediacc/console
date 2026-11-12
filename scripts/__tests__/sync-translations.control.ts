@@ -17,8 +17,14 @@ import { SITE_LOCALES } from '@rediacc/locales';
 import { syncLocaleDir } from '../gen/sync-translations.ts';
 
 const TARGETS = SITE_LOCALES.filter((l) => l !== 'en');
+const roots: string[] = [];
+const cleanup = () => {
+  // tree-write: safe every entry of roots is a mkdtemp directory that build() created under os.tmpdir()
+  for (const r of roots.splice(0)) fs.rmSync(r, { recursive: true, force: true });
+};
 const fail = (m: string): never => {
   console.error(`FAIL: ${m}`);
+  cleanup();
   process.exit(1);
 };
 
@@ -38,6 +44,7 @@ interface Fixture {
 
 function build(): Fixture {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), 'sync-control-'));
+  roots.push(root);
   const files = new Map<string, string>();
   const put = (rel: string, text: string) => {
     const p = path.join(root, rel);
@@ -212,6 +219,39 @@ if (mutant.length === 0)
   fail(
     'CONTROL VACUOUS: the pre-fix algorithm passed every assertion, so they cannot see the defect'
   );
+
+// 4. A zero-namespace tree is refused, not reported as a clean sync.
+const vacuous = build();
+for (const f of fs.readdirSync(path.join(vacuous.root, 'dir/en'))) {
+  fs.rmSync(path.join(vacuous.root, 'dir/en', f));
+}
+const quietLog = console.log;
+console.log = () => undefined;
+let vacuousError = '';
+try {
+  syncLocaleDir({ name: 'dir', dir: path.join(vacuous.root, 'dir') });
+} catch (e) {
+  vacuousError = e instanceof Error ? e.message : String(e);
+} finally {
+  console.log = quietLog;
+}
+if (!vacuousError.includes('VACUOUS')) fail('an English tree with no namespace files was synced');
+
+// 5. The one documented rewrite: a locale leaf whose English counterpart became a container
+// follows English's shape; every other existing value stays.
+const shape = build();
+fs.writeFileSync(
+  path.join(shape.root, 'flat/en.json'),
+  JSON.stringify({ zeta: { nested: 'N' }, greeting: 'hello' }, null, 2) + '\n'
+);
+realSync(shape.root);
+const shaped = JSON.parse(fs.readFileSync(path.join(shape.root, 'flat/de.json'), 'utf-8')) as {
+  zeta?: { nested?: string };
+  greeting?: string;
+};
+if (shaped.zeta?.nested !== 'N') fail('a leaf that became a container in English was not reshaped');
+if (shaped.greeting !== 'hi-de') fail('an unrelated existing translation was rewritten');
+cleanup();
 
 console.log(
   `sync-translations control ok: fixed sync clean; pre-fix algorithm tripped ${mutant.length} violation(s)`

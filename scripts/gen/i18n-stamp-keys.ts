@@ -101,7 +101,7 @@ export function planStamps(input: {
     const loc = input.localeValues[lang] ?? {};
     const plan: LangPlan = { stamp: [], refused: [], alreadyStamped: 0 };
     for (const key of keys) {
-      if (key in stamped) {
+      if (Object.hasOwn(stamped, key)) {
         plan.alreadyStamped++;
         continue;
       }
@@ -137,7 +137,7 @@ export function applyStamps(ledger: Ledger, plans: Record<string, LangPlan>): vo
   for (const [lang, plan] of Object.entries(plans)) {
     const entries = (ledger.languages[lang] ??= {});
     for (const [key, crc] of plan.stamp) {
-      if (!(key in entries)) entries[key] = crc;
+      if (!Object.hasOwn(entries, key)) entries[key] = crc;
     }
   }
 }
@@ -251,5 +251,7 @@ export function run(argv: readonly string[], dir: string): number {
 const TRANSLATIONS_DIRS = [DEFAULT_TRANSLATIONS_DIR];
 
 if (isEntryPoint(import.meta.filename)) {
-  for (const d of TRANSLATIONS_DIRS) process.exitCode = run(process.argv.slice(2), d);
+  for (const d of TRANSLATIONS_DIRS) {
+    process.exitCode = Math.max(process.exitCode ?? 0, run(process.argv.slice(2), d));
+  }
 }

@@ -7,7 +7,9 @@
  * fingerprint written is the one check-i18n-naturalization.ts compares (flattenAndHash);
  * (3) an empty prefix is refused; (4) a dry run writes nothing; (5) a missing locale value
  * and a disallowed English-identical value are refused, an `.id` anchor is not; (6) the
- * control: an unscoped planner (every key matches) MUST fail assertion 1.
+ * control: the planner scope assertion rejects the pre-dot matcher `k.startsWith(p)`;
+ * (7) a {{placeholder}} set that differs from English is refused; (8) own-property
+ * lookups: a key named `constructor` is stamped, not mistaken for stamped.
  */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -16,9 +18,9 @@ import { NON_ENGLISH_LOCALES } from '@rediacc/locales';
 import { type Ledger, planStamps, run, serializeLedger } from '../gen/i18n-stamp-keys.ts';
 import { flattenAndHash } from '../lib/crc32.ts';
 
+// Throws so the finally block below still removes the mkdtemp fixture; the catch exits 1.
 const fail = (m: string): never => {
-  console.error(`FAIL: ${m}`);
-  process.exit(1);
+  throw new Error(m);
 };
 
 const en = {
@@ -26,12 +28,16 @@ const en = {
   legalNotes: { c: 'Sibling outside the prefix' },
   pages: { tos: { sections: { s1: { id: 'scope', title: '1. Definitions' } } } },
   old: { d: 'Changed English' },
+  ph: { a: 'Hello {{name}}' },
+  constructor: 'Own property',
 };
 const tr = {
   legal: { consent: { a: 'Übersetzt {{doc}}', b: 'Ablehnen' } },
   legalNotes: { c: 'Geschwister' },
   pages: { tos: { sections: { s1: { id: 'scope', title: '1. Definitions' } } } },
   old: { d: 'Alt' },
+  ph: { a: 'Hallo {{who}}' },
+  constructor: 'Eigenschaft',
 };
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'stamp-keys-control-'));
@@ -74,6 +80,8 @@ try {
     root
   );
   const tosRc = run(['--prefix', 'pages.tos', '--lang', 'de', '--write'], root);
+  const phRc = run(['--prefix', 'ph', '--lang', 'de', '--write'], root);
+  const ctorRc = run(['--prefix', 'constructor', '--lang', 'de', '--write'], root);
   unmute();
 
   // (4) dry run writes nothing; (3) empty / absent prefix refused before any read
@@ -85,7 +93,13 @@ try {
   const de = after.languages?.de ?? {};
   // (1) scope, order, existing entries untouched
   const deKeys = Object.keys(de);
-  const want = ['old.d', 'legal.consent.a', 'legal.consent.b', 'pages.tos.sections.s1.id'];
+  const want = [
+    'old.d',
+    'legal.consent.a',
+    'legal.consent.b',
+    'pages.tos.sections.s1.id',
+    'constructor',
+  ];
   if (JSON.stringify(deKeys) !== JSON.stringify(want)) {
     fail(`de keys ${JSON.stringify(deKeys)}, want ${JSON.stringify(want)}`);
   }
@@ -100,6 +114,11 @@ try {
   if ('legal.consent.b' in (after.languages?.it ?? {})) fail('a missing locale value was stamped');
   if (tosRc !== 1) fail(`identical title rc ${tosRc}, want 1`);
   if ('pages.tos.sections.s1.title' in de) fail('an English-identical title was stamped');
+  // (7) placeholder mismatch refused; (8) `constructor` is a real key, stamped
+  if (phRc !== 1) fail(`placeholder mismatch rc ${phRc}, want 1`);
+  if ('ph.a' in de) fail('a value with a different placeholder set was stamped');
+  if (ctorRc !== 0 || !Object.hasOwn(de, 'constructor'))
+    fail('a key named constructor was not stamped');
   if (!readLedger().includes('é kept unescaped')) fail('non-ASCII was escaped on write');
   if (before === readLedger()) fail('a --write run changed nothing');
 
@@ -122,8 +141,13 @@ try {
   }
   const mutant = Object.keys(enHashes).filter((k) => k.startsWith('legal'));
   if (scopedTo(mutant, 'legal')) fail('control: the scope assertion passes an unscoped stamp');
+} catch (e) {
+  unmute();
+  console.error(`FAIL: ${e instanceof Error ? e.message : String(e)}`);
+  process.exitCode = 1;
 } finally {
   unmute();
   fs.rmSync(root, { recursive: true, force: true });
 }
-console.log('OK: prefix-scoped append-only stamps with the gate fingerprint; refusals hold');
+if (!process.exitCode)
+  console.log('OK: prefix-scoped append-only stamps with the gate fingerprint; refusals hold');

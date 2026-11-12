@@ -6,7 +6,9 @@
  * It is insertion-only and byte-preserving: a file with nothing missing is not written,
  * and a file with a delta gets only the missing members spliced in, at the position its
  * own order convention dictates (see scripts/lib/i18n/json-splice.ts). Existing values,
- * key order, indentation and escaping are never rewritten. Keys a locale has and English
+ * key order, indentation and escaping are never rewritten, with one exception: a locale
+ * leaf whose English counterpart became an object or array takes English's shape, because
+ * a string cannot stand where English now has a container. Keys a locale has and English
  * lacks are reported, never deleted: removal is the documented manual procedure.
  */
 
@@ -63,23 +65,31 @@ function assertLocaleSet(name: string, found: string[]): void {
   }
 }
 
+/**
+ * The single write site. The target is whatever locale file the caller's config names, so a
+ * run against the repo tree rewrites the repo locales; the control calls syncLocaleDir only
+ * with a mkdtemp fixture.
+ */
+function writeLocaleFile(file: string, text: string): void {
+  // tree-write: safe the target is the caller's locale file: the repo locales only when syncLocaleDir is given a repo config, as main() does; the check:ci-i18n-sync control gives it a mkdtemp fixture
+  fs.mkdirSync(path.dirname(file), { recursive: true });
+  // tree-write: safe same target as the mkdir above: the caller's locale file, a mkdtemp fixture under the control
+  fs.writeFileSync(file, text);
+}
+
 /** Sync one target file; returns leaves added and extra paths. Writes only on a real delta. */
 function syncFile(
   langFile: string,
   source: JsonValue
 ): { added: number; extras: string[]; written: boolean } {
   if (!fs.existsSync(langFile)) {
-    // tree-write: safe the target is the caller's locale file; check:ci-i18n-sync enters this module through the control's import and calls syncLocaleDir only with a mkdtemp fixture dir, never the repo locales
-    fs.mkdirSync(path.dirname(langFile), { recursive: true });
-    // tree-write: safe the target is the caller's locale file; check:ci-i18n-sync enters this module through the control's import and calls syncLocaleDir only with a mkdtemp fixture dir, never the repo locales
-    fs.writeFileSync(langFile, JSON.stringify(source, null, 2) + '\n');
+    writeLocaleFile(langFile, JSON.stringify(source, null, 2) + '\n');
     return { added: countLeaves(source), extras: [], written: true };
   }
   const text = fs.readFileSync(langFile, 'utf-8');
   const result = spliceMissing(text, source);
   const extras = extraPaths(JSON.parse(text) as JsonValue, source);
-  // tree-write: safe the target is the caller's locale file; check:ci-i18n-sync enters this module through the control's import and calls syncLocaleDir only with a mkdtemp fixture dir, never the repo locales
-  if (result.text !== text) fs.writeFileSync(langFile, result.text);
+  if (result.text !== text) writeLocaleFile(langFile, result.text);
   return { added: result.added, extras, written: result.text !== text };
 }
 
