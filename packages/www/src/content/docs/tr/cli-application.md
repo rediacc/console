@@ -7,7 +7,7 @@ order: 2
 language: tr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/tr/cli.json
-sourceHash: "2f4e7adf6fd26fcd"
+sourceHash: "0d66fc5749e8dc8b"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -2983,11 +2983,12 @@ rdc backup upload <image-file> [options]
 {{t:cli.commands.backup.purge.description}}
 
 ```bash
-rdc backup purge <repo-ref> [options]
+rdc backup purge [repo-ref] [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
+| `--lineage <guid>` | {{t:cli.commands.backup.purge.optionLineage}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--dry-run` | {{t:cli.options.dryRun}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-y, --yes` | {{t:cli.options.yes}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--cancel` | {{t:cli.commands.backup.purge.optionCancel}} | {{t:cli.docs.optionLabels.no}} | - |

@@ -2445,6 +2445,12 @@
           "descriptionKey": "commands.backup.purge.description",
           "options": [
             {
+              "flags": "--lineage <guid>",
+              "descriptionKey": "commands.backup.purge.optionLineage",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--dry-run",
               "descriptionKey": "options.dryRun",
               "mandatory": false,
@@ -2466,7 +2472,7 @@
           "arguments": [
             {
               "name": "repo-ref",
-              "required": true,
+              "required": false,
               "variadic": false,
               "defaultValue": null
             }

@@ -791,12 +791,13 @@ Turn a backup artifact into a live repository. Placement is stated here.
 
 > MCP tool | agent: fork-only
 
-### rdc backup purge <repo-ref>
+### rdc backup purge [repo-ref]
 
 Delete every stored backup snapshot of a repository from the chunk store at once. The repository itself is kept.
 
 **Options:**
 
+- `--lineage <guid>`: Purge a backup lineage by its id (as `rdc backup usage` lists it) when its repository is no longer in this config
 - `--dry-run`: Show what would be done without making changes
 - `-y, --yes`: Skip confirmation prompt
 - `--cancel`: Cancel a delayed purge before it takes effect
@@ -2179,6 +2180,26 @@ Print the third-party components bundled with rdc: the binaries renet embeds and
 
 > MCP tool
 
+### rdc legal
+
+Print the legal document links in the CLI language with the binding English links, the current Terms of Service version with its checksum and archive URL, the acceptance on record (from the account server when logged in, from this config when anonymous), and the contracting entity. Third-party notices are under rdc credits --licenses.
+
+**Options:**
+
+- `--json`: Print machine-readable JSON
+
+> MCP tool
+
+### rdc version
+
+Print the CLI version, platform, update channel and the active license: the plan when logged in, "anonymous (FREE per repository)" without a login, and "unknown (server unreachable)" when the account server cannot be reached. The --version flag still prints the bare version.
+
+**Options:**
+
+- `--json`: Print machine-readable JSON
+
+> MCP tool
+
 ### rdc vscode connect <target>
 
 Open VS Code on a machine or inside a repository.
@@ -2279,6 +2300,15 @@ Authenticate via browser or API token
 - `--password-stdin`: Sign in headlessly with the account password read from stdin (REDIACC_LOGIN_EMAIL required)
 - `--server <url>`: Account server URL
 
+### rdc subscription register
+
+Create an account in the browser (email pre-filled) and log in
+
+**Options:**
+
+- `--email <address>`: Email address to pre-fill on the sign-up page
+- `--server <url>`: Account server URL
+
 ### rdc subscription logout
 
 Clear stored subscription token
@@ -2298,6 +2328,24 @@ Show subscription, and license state for a machine.
 **Options:**
 
 - `-m, --machine <name>`: Machine name
+
+### rdc subscription notices
+
+List the account's notices: license expiry, backup health, renewals, certificates and Terms.
+
+**Options:**
+
+- `--all`: Include dismissed notices and every page, not only the last 30 days
+- `--unread`: Only notices not yet read
+- `--mark-read`: Mark the listed notices as read
+
+### rdc subscription retire <guid>
+
+Retire the license of a repository that is gone, so it leaves the license counts and notices.
+
+**Options:**
+
+- `--force`: Retire a license whose repository is still in this config and not hard-expired
 
 ### rdc subscription refresh
 
@@ -2330,20 +2378,85 @@ Run this process as an executor so clients can run commands through it instead o
 
 > MCP excluded: Runs the executor daemon in the foreground until SIGINT; it never returns.
 
-## Other
+### rdc server install [machine]
 
-### rdc legal
-
-Print the legal document links in the CLI language with the binding English links, the current Terms of Service version with its checksum and archive URL, the acceptance on record (from the account server when logged in, from this config when anonymous), and the contracting entity. Third-party notices are under rdc credits --licenses.
+Install the self-hosted account server on an existing machine: check the machine, set up renet when it is missing, wait for DNS, configure TLS, create the repository, generate its keys on the machine, license it, start it and create the owner account. Every value has a flag; on a terminal a missing value is asked for. A rerun skips the steps that are already done.
 
 **Options:**
 
-- `--json`: Print machine-readable JSON
+- `--ip <address>`: Address of an existing server or LAN device to register first
+- `--user <name>`: SSH user on that machine
+- `--port <port>`: SSH port on that machine (default: 22)
+- `--name <name>`: Name to register that machine under (default: server-<ip>)
+- `--domain <host>`: Public domain of the server, for example accounts.example.com
+- `--store-domain <host>`: Public domain of its backup store (default: <name>-store.<rest of the domain>)
+- `--repo <name>`: Repository name (default: elite)
+- `--size <size>`: Repository size (default: 10G)
+- `--owner <email>`: Email of the owner account, created during the install (default: the logged-in account)
+- `--tls <method>`: How the certificate is obtained: letsencrypt (HTTP-01), cloudflare (DNS-01) or byo (an existing certificate)
+- `--cf-token <token>`: Cloudflare API token for DNS-01 (with --tls cloudflare)
+- `--cert-email <email>`: Email Let's Encrypt sends expiry notices to (default: the owner)
+- `--tls-cert <file>`: Certificate file in PEM form (with --tls byo), covering both domains
+- `--tls-key <file>`: Private key file of that certificate (with --tls byo)
+- `--tls-ca <file>`: CA certificate the server's certificate chains to, used for the health check
+- `--licence <mode>`: auto: a certificate from the logged-in account, or the free tier when there is none; free: start on the free tier
+- `--cert <file>`: Delegation certificate file for an offline install; it must name the key generated on the machine
+- `--image <ref>`: Server image to run (default: ghcr.io/rediacc/server:latest)
+- `--image-file <tar>`: Saved image archive (docker save) to ship instead of pulling
+- `--local-image`: Save the --image from the local Docker and ship it instead of pulling
+- `--no-dns-wait`: Print the DNS records without waiting for them to resolve
+- `--bws-project <id>`: Also copy the generated keys to this Bitwarden Secrets Manager project; without it no key leaves the machine
+- `--rotate`: With --bws-project, replace a stored value that differs instead of refusing
+- `-y, --yes`: Ask nothing: take the defaults and refuse a missing value
 
-### rdc version
+> MCP excluded: Long interactive install that registers machines, mints a licence and prints a one-time key bundle; use the CLI.
 
-Print the CLI version, platform, update channel and the active license: the plan when logged in, "anonymous (FREE per repository)" without a login, and "unknown (offline)" when the account server cannot be reached. The --version flag still prints the bare version.
+### rdc server status <domain>
+
+Show the health, tier, certificate and image of an installed server
 
 **Options:**
 
-- `--json`: Print machine-readable JSON
+- `-m, --machine <name>`: Machine the server runs on, when this device holds no install record for the domain
+- `--repo <name>`: Repository the server runs in (default: elite)
+
+> MCP tool
+
+### rdc server upgrade <domain>
+
+Upgrade an installed server: fork its repository as a rollback point, place the new image, apply the template again when the built-in one is newer, and restart
+
+**Options:**
+
+- `--image <ref>`: Server image to run (default: ghcr.io/rediacc/server:latest)
+- `--image-file <tar>`: Saved image archive (docker save) to ship instead of pulling
+- `--local-image`: Save the --image from the local Docker and ship it instead of pulling
+- `-y, --yes`: Ask nothing: take the defaults and refuse a missing value
+- `-m, --machine <name>`: Machine the server runs on, when this device holds no install record for the domain
+- `--repo <name>`: Repository the server runs in (default: elite)
+
+> MCP excluded: Forks, replaces the image and restarts the account server; use the CLI.
+
+### rdc server backup <domain>
+
+Print the recovery bundle (the keys) of an installed server, or write it to a file
+
+**Options:**
+
+- `--out <file>`: Write the bundle to this file (mode 0600) instead of stdout
+- `-m, --machine <name>`: Machine the server runs on, when this device holds no install record for the domain
+- `--repo <name>`: Repository the server runs in (default: elite)
+
+> MCP excluded: Prints the server's private keys; they must not land in an agent transcript.
+
+### rdc server licence <domain>
+
+Move a free-tier server to a delegation certificate from the logged-in account, or from --cert
+
+**Options:**
+
+- `--cert <file>`: Delegation certificate file for an offline install; it must name the key generated on the machine
+- `-m, --machine <name>`: Machine the server runs on, when this device holds no install record for the domain
+- `--repo <name>`: Repository the server runs in (default: elite)
+
+> MCP excluded: Mints a delegation certificate and restarts the account server; use the CLI.
