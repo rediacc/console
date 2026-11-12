@@ -599,6 +599,60 @@ function shouldSkipValue(value: TranslationValue, key = ''): boolean {
   return false;
 }
 
+/** The CLDR plural categories `Intl.PluralRules` can select. */
+const PLURAL_CATEGORIES = new Set(['zero', 'one', 'two', 'few', 'many', 'other']);
+
+/**
+ * PLURAL GROUPS (the account emails' `tCount`, PLAN-account-notices E1): an English parent whose
+ * direct leaves are all CLDR categories, `other` among them, and which holds nothing else. Each
+ * language holds the categories ITS plural rules select (en one/other, ru one/few/many/other,
+ * ja other), so a group's leaves are not mirrored key for key. Which categories a language
+ * must hold is check-account-email-templates.ts's job; this gate only stops calling a
+ * language-specific category an orphan, or a category the language never selects missing.
+ */
+function pluralGroupsOf(keys: string[]): Set<string> {
+  const leaves = new Map<string, string[]>();
+  const descendants = new Map<string, number>();
+  for (const key of keys) {
+    const cut = key.lastIndexOf('.');
+    if (cut < 0) continue;
+    const parent = key.slice(0, cut);
+    leaves.set(parent, [...(leaves.get(parent) ?? []), key.slice(cut + 1)]);
+    for (let i = key.indexOf('.'); i >= 0; i = key.indexOf('.', i + 1)) {
+      const ancestor = key.slice(0, i);
+      descendants.set(ancestor, (descendants.get(ancestor) ?? 0) + 1);
+    }
+  }
+  const groups = new Set<string>();
+  for (const [parent, names] of leaves) {
+    if (
+      names.includes('other') &&
+      names.every((n) => PLURAL_CATEGORIES.has(n)) &&
+      descendants.get(parent) === names.length
+    ) {
+      groups.add(parent);
+    }
+  }
+  return groups;
+}
+
+function leafOf(key: string): string {
+  return key.slice(key.lastIndexOf('.') + 1);
+}
+
+function isPluralLeaf(key: string, groups: Set<string>): boolean {
+  const cut = key.lastIndexOf('.');
+  return cut > 0 && groups.has(key.slice(0, cut)) && PLURAL_CATEGORIES.has(key.slice(cut + 1));
+}
+
+function pluralCategoriesOf(lang: string): Set<string> {
+  try {
+    return new Set(new Intl.PluralRules(lang).resolvedOptions().pluralCategories);
+  } catch {
+    return new Set(['other']);
+  }
+}
+
 function checkLocaleDir(name: string, localeDir: string, flatFiles = false): CheckResult {
   const errors: string[] = [];
   const warnings: string[] = [];
@@ -649,6 +703,7 @@ function checkLocaleDir(name: string, localeDir: string, flatFiles = false): Che
   }
 
   const totalEnKeys = Object.keys(enKeys).length;
+  const enPluralGroups = pluralGroupsOf(Object.keys(enKeys));
   const stats: Record<string, LanguageStats> = {};
 
   for (const lang of languages) {
@@ -687,8 +742,11 @@ function checkLocaleDir(name: string, localeDir: string, flatFiles = false): Che
 
     // Check for untranslated strings
     const untranslatedKeys: string[] = [];
+    const langCategories = pluralCategoriesOf(lang);
     for (const [key, enValue] of Object.entries(enKeys)) {
       if (!(key in langKeys)) {
+        // A plural category this language's rules never select is not owed (ja has no `one`).
+        if (isPluralLeaf(key, enPluralGroups) && !langCategories.has(leafOf(key))) continue;
         missing++;
       } else if (langKeys[key] === enValue && !shouldSkipValue(enValue, key)) {
         untranslated++;
@@ -709,7 +767,13 @@ function checkLocaleDir(name: string, localeDir: string, flatFiles = false): Che
     // English is the source of truth and lookups resolve against its key set,
     // so a key absent from English is unreachable by definition. Deleting it is
     // always safe; keeping it is always dead weight.
-    const orphanKeys = Object.keys(langKeys).filter((key) => !(key in enKeys));
+    //
+    // One exception, plural groups: a category English lacks but this language's rules select
+    // (ru `few`, ar `two`) is reachable through tCount, so it is not an orphan.
+    const orphanKeys = Object.keys(langKeys).filter(
+      (key) =>
+        !(key in enKeys) && !(isPluralLeaf(key, enPluralGroups) && langCategories.has(leafOf(key)))
+    );
 
     const total = totalEnKeys;
     const untranslatedRatio = total > 0 ? (untranslated / total) * 100 : 0;
