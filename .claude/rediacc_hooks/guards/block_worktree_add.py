@@ -282,7 +282,7 @@ def _foreign_adds(cmd, scan, base):
     ours = _repo_scope.common_dir(root)
     if not ours:
         return False
-    for target, words in zip(targets, operands):
+    for target, words in zip(targets, operands, strict=True):
         common = _repo_scope.common_dir(target)
         if not common or commit_policy.is_inside(common, ours):
             return False
