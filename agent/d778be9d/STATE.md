@@ -1,25 +1,22 @@
-## SESSION d778be9d 2026-11-12T00:02:59Z
+## SESSION d778be9d 2026-11-12T13:21:49Z
 
-# STATE d778be9d (2026-11-12 ~00:10Z, branch 1104-1, PR #605)
-
-## Where things stand
-Submodules pushed: renet fa1aa08d..d11b44d0, account 09a5e54..52e87d2. Console push (124 commits, head a382b24d1) refused only because the VERIFIED vm:check receipt (tree 15a53d0289dd) predates bd78842b78 (drills/lib.py is a trigger input). Receipts otherwise ready: ci:quick red only on check:ci-lane-budget, carried in .ci/config/carried-reds.json (4c247727); backup receipt VERIFIED (drill backup 427/427, onprem 17/17, tree 01c8d99b4990); per-commit reviews clean.
-
-## Delegated
-- blyolo084 (shell, lead's): vm:check --changed on the push tree; log /tmp/vmcheck-push3.log; accept "vm:check VERIFIED".
-- 8538c92835 in lease agent-a71c0258d7f97bc86 (#10caccc2, runner selftest waitGone 20 s + survivor plant): ready, land right after the push, accept npm run check:ci-runner-selftest rc0.
-
-## Next action
-1. When blyolo084 reports VERIFIED: `TURBO_PUSH_REASON='red-fix: PR 605 CI red on 10 jobs; carries the Renet go, CLI key-material, Submodule Branches and cost-table fixes plus the batch landed since' git push origin 1104-1`. If the backup guard objects, rerun ./run.sh drill backup and drill backup-onprem first.
-2. Then land 8538c92835 (#10caccc2); watch PR 605 CI with .ci/scripts/ci/ci-trace.py --wait.
-3. After the CI run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.freshness --refresh .ci/config/lane-durations.json, drop the carry in the same commit, npm run check:ci-lane-budget rc0 (#1dcc5437).
-4. deploy_bench (builds shared first; binds STRIPE_SANDBOX_*), accept the Terms for eu-bench via the portal (operator ASKED 17:38Z; drill helper does it for drill accounts), then B1 #5f6d277d, TOTP npm run login:bench x2 #cc9117a1, X1/X2/LP-bench #e3b3ba33, drill 6b #443ba017, V3 two base vm:check runs #df6143bb.
-
-## Rulings today
-Autonomy incl. production; production Terms rollout: enforce on deploy; agents may accept Terms on bench; Stripe ToS URL set in test and live by the operator; G8 tick kept; CLI signup design 1 built.
+# STATE d778be9d (2026-11-12, context epoch 27 hand-over)
 
 ## Big pieces
-PLAN-terms-acceptance (X1/X2/LP-bench live); PLAN-local-first-delivery (V3 wall clause); PLAN-enterprise-isolation; PLAN-health-checks-local; PLAN-d1-scaling.
+- PR 605 (branch 1104-1): ~166 unpushed commits, all review rounds and ci:quick repairs landed. vm:check bvys7h857 running on tree with the portal scope fix (last VERIFIED earlier at 7bcb3e070fc5; the 1112n run failed only A1.2 api-tokens-scopes, since fixed in d47b337710). Before the push: run `npm run ci:quick` (last reds all fixed on the tip; cli-examples green after P2 removal; lane-budget green), then `worklist.py --review-commit d778be9d`, then `TURBO_PUSH_REASON='red-fix: ci reds and review waves' git push origin 1104-1`, then `.ci/scripts/ci/ci-trace.py --wait`.
+- PLAN-enterprise-tenants.md (QUEUE entry 68, epic c01fbf97): ticked Q0 E1 E2 E3 P1 L1 C3 C4 C5 C6 C9 C10 C12 P2(superseded by C7). Rulings in plan: R5-R8, single install path (rdc server install only), offline licence request/response + long cert (ASKED:2026-11-12T13:07Z), prerequisites-only packages + template re-apply refusing local edits + dedicated bench lab subscription (ASKED:2026-11-12T13:00Z), every plan may self-host (gates removed c167e0ddc9).
+- Production fixes landed, deploy owed: delegation renew path /account/api/v1/delegation/renew (8ddacdc79a) -> deploy account Workers eu/us/asia via the deploy skill; signer probe + template LICENSE_SIGNER binding -> deploy signer-bench-eu then deploy_bench, then V1.
 
 ## Owed ticks
-#9cb71958 push; #1dcc5437 carry removal; #10caccc2 land; #e3b3ba33; #df6143bb; #5f6d277d; #cc9117a1; #443ba017 drill 6b; #928ba562 X2.
+- C7 c3e44c99 when its writer lands (lease agent-ae96292538e907a06): land with `./run.sh worktree land <id>`, then `--ticks`, investigate (40+ char note, two pointer kinds: commit + fileline with an extension) and plan-tick.
+- V1 49c93654 after the bench deploy and rerun.
+
+## Delegated
+- ae96292538e907a06 | #af61285a, #1ff32880 | packages/cli/src/commands/server.ts, services/server/**, utils/server-prompts.ts, machine/register.ts, services/machine/add-existing.ts, CLI locales | accept: `cd packages/cli && npx vitest run src/commands/__tests__/server src/services/server`, `npx tsc --noEmit -p packages/cli/tsconfig.json`, `npm run check:ci-cli-contract`, `npm run check:ci-i18n-hashes`, `npm run check:cli-examples`, `./rdc.sh server install --help`. Brief: C7 rdc server install|status|upgrade|backup|licence, existing-machine first, prompts, licence via POST /delegation/issue / --licence free / --cert, optional --bws-project (ours), owned-zone DNS only, recovery bundle.
+
+## Next action
+1. When C7 reports: spot-check, land, run its accept commands on the landed tree, tick C7, collect the tree.
+2. Run ci:quick + vm:check --changed; fix any red with lease writers; then review-commit and push PR 605; ci-trace --wait.
+3. After the push: `bws_env exec --profile deploy-signer -- python3 -m rediacc_ci.deploy.deploy_signer --target bench-eu`, `python3 -m rediacc_ci.ops.deploy_bench`, then `bws_env exec --profile enterprise -- ./run.sh enterprise proof signer --bench` (V1); deploy account Workers for the renew fix (deploy skill; eu/us/asia allowed by operator rulings).
+4. Next enterprise boxes: C11 (bundle/offline install, after C7), C8 (renet release via release:local then machine setup hostinger), LD1, V3, V4, T1 (acme.rediacc.cloud --unlisted, owner muhammed@rediacc.com, 10 GB, bws enterprise project must be created first), HO1 via `./rdc.sh --config eu-bench server install hostinger ...`.
+5. Open operator questions to ask when their boxes come up: a public VPS for CL3, whether the ghcr on-prem image is public (Q11).
