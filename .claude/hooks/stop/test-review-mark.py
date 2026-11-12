@@ -9,6 +9,7 @@ THE DEFECT. On 2026-11-12 seven `--review-mark ... fixed commit:edd459ffbc` runs
 """
 
 import atexit
+import os
 import pathlib
 import shutil
 import subprocess
@@ -19,6 +20,9 @@ import wl_review as R
 
 _SCRATCH = pathlib.Path(tempfile.mkdtemp(prefix="review-mark-"))
 atexit.register(shutil.rmtree, _SCRATCH, True)
+# ONE PRIVATE TMPDIR: wl_review's locks live under `$TMPDIR/claude-worklist`, read at call time, and test_hooks_delegates fails a standalone suite that leaves an entry in the shared one.
+os.environ["TMPDIR"] = str(_SCRATCH)
+tempfile.tempdir = str(_SCRATCH)
 
 
 class Tally:

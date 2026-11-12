@@ -4956,6 +4956,7 @@ export const GATES: readonly GateSpec[] = [
       GITHUB_TOKEN: '${{ github.token }}',
     },
     run: 'npm run check:ci-pin-freshness',
+    slow: true,
     gate: true,
     leaves: ['scripts/gates/check-pin-freshness.ts'],
     ci: {

@@ -237,7 +237,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-paths-origin | quality-code / Paths-origin provenance | yes | no |
 | check:ci-pathspec-scope | quality-static / Pathspec scope | yes | no |
 | check:ci-peer-deps | quality-code / Verify no peer dependency conflicts | yes | no |
-| check:ci-pin-freshness | quality-code / Pin upstream freshness | yes | no |
+| check:ci-pin-freshness | quality-code / Pin upstream freshness | yes | yes |
 | check:ci-pin-registry | quality-code / Pin registry covers every pin | yes | no |
 | check:ci-pipefail-grep-q | quality-code / No racing pipefail/grep -q detectors | yes | no |
 | check:ci-plan-bindings | quality-static / Plan bindings | yes | yes |
