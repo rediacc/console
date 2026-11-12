@@ -560,5 +560,3 @@ def test_with_docker_group_scopes_the_entrypoint_variable_to_the_call(root, monk
     rv._with_docker_group(["devbox", "status"])
     assert inside == [str(root / "run.sh")]
     assert "SCRIPT_ENTRYPOINT" not in os.environ
-
-

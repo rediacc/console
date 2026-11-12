@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-12T12:59:37.417Z",
+  "generatedAt": "2026-11-12T15:31:48.030Z",
   "legs": [
     {
       "index": 1,
@@ -430,6 +430,7 @@
         "pytest:.ci/rediacc_ci/tests/test_core_xml_trusted.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_account_secrets_local.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_arg_refusal.py",
+        "pytest:.ci/rediacc_ci/tests/test_deploy_bench_sales_notify.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_company_target.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_executor_artifacts.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_promote_r2_to_stable.py",

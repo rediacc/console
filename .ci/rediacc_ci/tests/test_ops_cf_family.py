@@ -747,6 +747,7 @@ def _port_deploy_env(env: dict[str, str]) -> dict[str, str]:
     bound["ACCOUNT_AE_READ_TOKEN"] = "fake-ae-read-token-for-tests"
     # PLAN-terms-acceptance E2: the port pushes the commercial register's name with the other SELLER_* fields; the retired bash never held it. A fake value.
     bound["SELLER_REGISTER_NAME"] = "fake-register-name-for-tests"
+    bound["SALES_NOTIFY_EMAIL"] = "sales@example.invalid"
     # f4fbdece81 / 0360a85606: the port binds the Stripe sandbox pair as the Worker's STRIPE_SANDBOX_* secrets (a test-prefixed key, or the push is refused); the retired bash never held them. Fake values, never real keys.
     bound["STRIPE_SANDBOX_SECRET_KEY"] = "sk_test_fake-stripe-sandbox-key-for-tests"
     bound["STRIPE_SANDBOX_WEBHOOK_SECRET"] = "whsec_fake-stripe-sandbox-hook-for-tests"
@@ -761,6 +762,7 @@ PORT_ONLY_SECRETS = (
     "ACCOUNT_AE_READ_TOKEN",
     "CLOUDFLARE_ACCOUNT_ID",
     "SELLER_REGISTER_NAME",
+    "SALES_NOTIFY_EMAIL",
     "STRIPE_SANDBOX_SECRET_KEY",
     "STRIPE_SANDBOX_WEBHOOK_SECRET",
 )

@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-USAGE = "usage: python -m rediacc_ci.lab.testca <dir> <host>..."
+USAGE = "usage: PYTHONPATH=.ci python3 -m rediacc_ci.lab.testca <dir> <host>..."
 DAYS = "30"
 
 

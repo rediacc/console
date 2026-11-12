@@ -26,7 +26,7 @@ TOOLS = ("iptables", "ip6tables")
 HOSTS = ("ghcr.io", "registry-1.docker.io", "archive.ubuntu.com", "download.docker.com")
 DNS_SERVER = "1.1.1.1"
 SSH_MARK = "SSH-ANSWERS"
-USAGE = "usage: python -m rediacc_ci.lab.airgap apply|remove|check --vm <ip>"
+USAGE = "usage: PYTHONPATH=.ci python3 -m rediacc_ci.lab.airgap apply|remove|check --vm <ip>"
 
 # One shell command's transport: argv in, (exit code, stdout+stderr) out.
 Transport = Callable[[Sequence[str]], tuple[int, str]]
