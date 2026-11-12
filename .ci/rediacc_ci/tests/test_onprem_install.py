@@ -141,7 +141,7 @@ class Harness:
             rdc=self.rdc,
             local=self.local,
             resolve=lambda _host: set(self.resolved),
-            cf=lambda: self.cf_calls.append(("cf",)) or (lambda *_a, **_k: {}),
+            cf=self.open_cf,
             bws=self.open_bws,
             portal=lambda: self.portal,
             box_api=lambda _domain: self.box,
@@ -152,6 +152,10 @@ class Harness:
             now=lambda: 1_700_000_000.0,
         )
         self.said: list[str] = []
+
+    def open_cf(self):
+        self.cf_calls.append(("cf",))
+        return lambda *_a, **_k: {}
 
     def open_bws(self, project):
         self.bws.project = project

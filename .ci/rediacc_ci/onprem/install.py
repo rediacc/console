@@ -41,7 +41,7 @@ import subprocess
 import sys
 import time
 import uuid
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Protocol
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import account
@@ -186,6 +186,22 @@ class HttpsApi(rt.Api):
             conn.close()
 
 
+class Portal(Protocol):
+    """The portal seam: what the cert step needs of the bench portal."""
+
+    def call(self, method: str, path: str, body: dict | None = None) -> dict: ...
+
+
+class SecretStore(Protocol):
+    """The backup-key store seam: what the backup step needs of the bws store."""
+
+    def read(self, names: Sequence[str]) -> dict[str, str]: ...
+
+    def create(self, name: str, value: str) -> None: ...
+
+    def edit(self, name: str, value: str) -> None: ...
+
+
 class BenchPortal:
     """The bench portal under the cookie session `login_bench.login` opened. `call` returns the decoded object, or raises `InstallError` on a non-2xx."""
 
@@ -221,6 +237,13 @@ class BackupStore(ent_secrets.BwsStore):
             raise ent_secrets.SecretsError("writing %s failed (%s)" % (name, failure))
 
 
+def live_bws(project: str) -> BackupStore:
+    store = BackupStore.from_env(project)
+    if not isinstance(store, BackupStore):
+        raise InstallError("the bws store opened is not the backup store")
+    return store
+
+
 def backup_name(domain: str, key: str) -> str:
     return "ONPREM_%s_%s" % (hashlib.sha256(domain.encode()).hexdigest()[:12], key)
 
@@ -244,7 +267,16 @@ def live_health(domain: str) -> tuple[int, list[str]]:
         return 0, []
     finally:
         conn.close()
-    sans = [v for k, v in (cert or {}).get("subjectAltName", ()) if k == "DNS"]
+    entries = (cert or {}).get("subjectAltName", ())
+    sans = (
+        []
+        if isinstance(entries, str)
+        else [
+            str(entry[1])
+            for entry in entries
+            if isinstance(entry, tuple) and len(entry) == 2 and entry[0] == "DNS"
+        ]
+    )
     return status, sans
 
 
@@ -289,8 +321,8 @@ class Deps:
     local: Callable[[Sequence[str]], int] = live_local
     resolve: Callable[[str], set[str]] = live_resolve
     cf: Callable[[], cf_dns.Http] = live_cf
-    bws: Callable[[str], BackupStore] = BackupStore.from_env
-    portal: Callable[[], BenchPortal] = live_portal
+    bws: Callable[[str], SecretStore] = live_bws
+    portal: Callable[[], Portal] = live_portal
     box_api: Callable[[str], Any] = HttpsApi
     health: Callable[[str], tuple[int, list[str]]] = live_health
     keygen: Callable[[], account.CryptoKeys] = live_keygen
@@ -575,7 +607,8 @@ class Install:
         self.must("repo", "up", self.ref())
 
     def step_wait(self) -> None:
-        status, sans = 0, []
+        status = 0
+        sans: list[str] = []
         for attempt in range(HEALTH_TRIES):
             status, sans = self.deps.health(self.o.domain)
             if status == 200:
@@ -634,7 +667,7 @@ def status_lines(
 ) -> list[str]:
     """The ledger of one domain and the live health answer; reads only."""
     directory = state_dir or state_root() / domain
-    lines = []
+    lines: list[str] = []
     ledger_path = directory / "ledger.json"
     if ledger_path.is_file():
         done = json.loads(ledger_path.read_text(encoding="utf-8")).get("steps", {})
