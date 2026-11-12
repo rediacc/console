@@ -231,6 +231,24 @@ describe('licence', () => {
     expect(Object.values(fake.written).some((v) => v.includes('"licence": "cert"'))).toBe(false);
   });
 
+  it('names the last answer: free then indeterminate is certUnconfirmed, not stillFree', async () => {
+    const fake = makeFake({
+      freeProbe: 503,
+      freeProbeSequence: [400],
+      boxReplies: { '/auth/login': { cookie: 'access_token=own' } },
+    });
+    await expect(serverLicence(fake.deps, LOC)).rejects.toThrow(/certUnconfirmed/);
+  });
+
+  it('names the last answer: indeterminate then free is stillFree', async () => {
+    const fake = makeFake({
+      freeProbe: 400,
+      freeProbeSequence: [503],
+      boxReplies: { '/auth/login': { cookie: 'access_token=own' } },
+    });
+    await expect(serverLicence(fake.deps, LOC)).rejects.toThrow(/stillFree/);
+  });
+
   it.each([
     ['401', { [UPLOAD]: { status: 401 } }],
     ['404', { [UPLOAD]: { status: 404 } }],
