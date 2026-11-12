@@ -9,7 +9,7 @@
 export const REFUSED_BEFORE_DISPATCH =
   /not found|not visible|not attached|detached|intercept|obscured|covered by|not stable/i;
 export const CLICK_ATTEMPTS = 4;
-export const CLICK_RETRY_GAP_MS = 400;
+const CLICK_RETRY_GAP_MS = 400;
 
 /**
  * `click(selector)` answers `{ ok: true }` or `{ ok: false, reason }`. `reveal()` brings the
