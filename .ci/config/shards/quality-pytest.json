@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-12T06:30:46.330Z",
+  "generatedAt": "2026-11-12T09:04:25.524Z",
   "legs": [
     {
       "index": 1,
@@ -107,6 +107,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ops_enterprise_lookup.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_health_post.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_probe_receipt_stability.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_repair_org_customer_ids.py",
         "pytest:.ci/rediacc_ci/tests/test_private_concurrent_fork_isolation_test.py",
         "pytest:.ci/rediacc_ci/tests/test_private_license_e2e.py",
         "pytest:.ci/rediacc_ci/tests/test_proc.py",
@@ -342,6 +343,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_hooks_procs.py",
         "pytest:.claude/rediacc_hooks/tests/test_plan_gate_ceiling.py",
         "pytest:.claude/rediacc_hooks/tests/test_project_dir_containment.py",
+        "pytest:.claude/rediacc_hooks/tests/test_push_elsewhere.py",
         "pytest:.claude/rediacc_hooks/tests/test_review_commit_hook.py",
         "pytest:.claude/rediacc_hooks/tests/test_settings_collapse.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_advisories_rotation.py",
@@ -513,6 +515,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_hooks_trapguard.py",
         "pytest:.claude/rediacc_hooks/tests/test_output_landings.py",
         "pytest:.claude/rediacc_hooks/tests/test_pr_body_reader.py",
+        "pytest:.claude/rediacc_hooks/tests/test_protected_files_unset_word.py",
         "pytest:.claude/rediacc_hooks/tests/test_regolden_bootstrap.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_agent_session_archival.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_effort_tune.py",
