@@ -472,7 +472,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
 | `agent/plans/PLAN-backup-critical-tier.md` | approved | 797 | 3 | 48 | 115203 |
 | `agent/plans/PLAN-backup-download-from-store.md` | approved | 58 | 1 | 8 | 12672 |
-| `agent/plans/PLAN-backup-integrity.md` | approved | 502 | 11 | 45 | 78642 |
+| `agent/plans/PLAN-backup-integrity.md` | approved | 503 | 10 | 46 | 79052 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
 | `agent/plans/PLAN-backup-local-image.md` | approved | 458 | 3 | 11 | 58086 |
 | `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 274 | 0 | 8 | 36927 |
@@ -533,7 +533,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-gpu-device-grants.md` | approved | 85 | 1 | 13 | 30200 |
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
 | `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30400 |
-| `agent/plans/PLAN-health-checks-local.md` | approved | 704 | 19 | 62 | 130511 |
+| `agent/plans/PLAN-health-checks-local.md` | approved | 705 | 19 | 62 | 131235 |
 | `agent/plans/PLAN-idle-writer-capacity.md` | approved | 65 | 0 | 5 | 12586 |
 | `agent/plans/PLAN-jobs-backup-real-machine-tests.md` | approved | 55 | 1 | 10 | 12683 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
@@ -560,14 +560,14 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-reggate-effort-cap.md` | compacted | 38 | 0 | 0 | 2586 |
 | `agent/plans/PLAN-remove-autopilot.md` | compacted | 97 | 0 | 30 | 9220 |
 | `agent/plans/PLAN-renet-bridge-leftovers.md` | approved | 121 | 0 | 16 | 30497 |
-| `agent/plans/PLAN-renet-docker-running-semantics.md` | executing | 77 | 2 | 13 | 16080 |
+| `agent/plans/PLAN-renet-docker-running-semantics.md` | executing | 78 | 2 | 13 | 16442 |
 | `agent/plans/PLAN-renet-down-before-kill.md` | approved | 155 | 2 | 13 | 32170 |
 | `agent/plans/PLAN-renet-executor-tiered-license-check.md` | executing | 57 | 1 | 3 | 12661 |
 | `agent/plans/PLAN-renet-fetch-retries.md` | approved | 55 | 0 | 3 | 7190 |
 | `agent/plans/PLAN-renet-restart-cycle-defects.md` | approved | 40 | 1 | 6 | 6087 |
 | `agent/plans/PLAN-renet-run-docker-sock-isolation.md` | draft | 101 | 0 | 4 | 11627 |
 | `agent/plans/PLAN-renet-runtime-converge.md` | approved | 63 | 0 | 5 | 10310 |
-| `agent/plans/PLAN-repo-docker-storage-prune.md` | executing | 138 | 2 | 12 | 34714 |
+| `agent/plans/PLAN-repo-docker-storage-prune.md` | executing | 154 | 2 | 12 | 35955 |
 | `agent/plans/PLAN-repo-resource-limits.md` | approved | 189 | 3 | 10 | 28058 |
 | `agent/plans/PLAN-require-testid-sweep.md` | compacted | 39 | 0 | 0 | 2511 |
 | `agent/plans/PLAN-resprofile-wave2.md` | compacted | 39 | 0 | 0 | 3076 |

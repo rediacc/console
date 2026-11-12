@@ -421,8 +421,9 @@ Every H box uses the branch-built `rdc` and renet while edge and stable are on h
   (note) Runs through `eu-bench`, not `eu-remote`: PLAN-tested-on-bench ruling 1 as extended on 2026-11-04. The text above keeps the old name because a box's first 120 characters are its identity.
   - Accept: `rdc --version` shows a release newer than 2.4.0, and `rdc --config eu-bench backup strategy list -o json` rc 0 with rows on stdout.
   (corrected 2026-11-11, R2) Local-route: bench-cli -- build the branch CLI and run backup strategy list through eu-bench; a release is not needed to read it.
-- [ ] H2: Read first: for each of the 10 mounted repositories, the CLI-computed key equals the machine's key where one exists. A mismatch stops the box and is reported, with no overwrite.
+- [x] H2: Read first: for each of the 10 mounted repositories, the CLI-computed key equals the machine's key where one exists. A mismatch stops the box and is reported, with no overwrite.
   - Accept: `rdc --config eu-bench backup toc-key sync <repo> --dry-run -o json` rc 0 for each, results recorded.
+    (ticked) 2026-11-12T04:15:47Z by d778be9d: 2026-11-12 hostinger via eu-bench (bench/hostinger-only proof): rdc backup toc-key sync <repo>@hostinger --dry-run -o json rc 0 for all 11 repos (mautic demo-heartbeat mail hermes marketing observability erpnext gitlab nextcloud demo-stackoverflow miscellaneous; miscellaneous rc 1 ECONNRESET once then rc 0), machineKeyEqual true outcome unchanged, no overwrite
 - [ ] H3: Re-deploy the schedule; public keys are installed, and units show verify and `OnFailure=`.
   (corrected ASKED:2026-11-05T07:06Z) `backup schedule` runs through `eu-remote`, which the operator rebound for this session, and never through `eu-bench`.
   - Accept: `rdc --config eu-remote backup schedule -m hostinger` rc 0, and `backup status -m hostinger` rc 0.

@@ -116,6 +116,22 @@ On hostinger the repo `hermes` held 277 overlay2 directories, 20.5 GB of them re
   | miscellaneous | 2816 | 2 / 9466.2 | 0 | 0 | 0 | 7 / 2411.9 | 0 | 0 | 0 | 0 | 0 | 7138.5 |
   | nextcloud | 2880 | 0 | 0 | 0 | 0 | 135 / 2526.2 | 0 | 0 | 0 | 0 | 0 | 2526.2 |
   | observability | 3136 | 0 | 0 | 0 | 0 | 138 / 14.2 | 0 | 0 | 0 | 0 | 0 | 14.2 |
+  (corrected 2026-11-12T04:44Z, measured) L2 re-survey, `rdc repo prune -m hostinger --output json` (dry run, 2026-11-12, rc=0; no `--apply`, no write on the machine); each cell is count / MiB, and class E is 0 on every repository:
+
+  | Repository | network | A | B | C | D | E | F1 | F2 | G | L | Q | estimate MiB |
+  |---|---|---|---|---|---|---|---|---|---|---|---|---|
+  | miscellaneous | 2816 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.0 |
+  | nextcloud | 2880 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.0 |
+  | gitlab | 2944 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.0 |
+  | erpnext | 3008 | 0 | 0 | 2 / 6.2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 6.2 |
+  | observability | 3136 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.0 |
+  | marketing | 3200 | 1 / 256.1 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.0 |
+  | mail | 3264 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.0 |
+  | demo-stackoverflow | 10176 | 3 / 438.6 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.0 |
+  | hermes | 22912 | 6 / 4171.4 | 0 | 0 | 0 | 0 | 18 / 9.3 | 87 / 1.3 | 0 | 233 / 0.8 | 0 | 11.4 |
+  | mautic | 23168 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.0 |
+  | (unnamed in eu-bench, 152807f6, modified 2026-11-12 02:41) | 33472 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.0 |
+
 - [x] L3 [live] Hostinger `--apply`, OPERATOR APPROVAL REQUIRED. DEFAULT: not run. Ask with the L2 table attached (repositories, reclaimable bytes, expected downtime each); on approval run `rdc repo prune <ref> --apply` online first, then `--offline -y` only for the repositories the operator names, in the window the operator chooses. Owns: none. Accept: the operator's ASKED ruling quoted here; for each approved repository a post-run dry run shows D, E, F1, F2, G and L at 0 and its services answer their health checks.
     (ticked) 2026-10-28T20:42:23Z by d778be9d: commit:5f438b728 live: demo-stackoverflow offline prune rc=0 after the reconcile-lock fix; post-run dry run D/E/F1/F2/G/L 0 on all 9 approved repos; 40/40 containers running, 0 unhealthy; ASKED 2026-10-28 "Apply to all safe repos now"
 - [ ] R7 [writer] Close: move this plan to agent/plans/_done/, citing the commits of R1-R6 and F1 and the L1 and L2 proof rows. Owns: agent/plans/PLAN-repo-docker-storage-prune.md. Accept: `python3 .ci/scripts/quality/check_plan_deps.py` rc 0.
