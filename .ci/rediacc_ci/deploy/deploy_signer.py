@@ -568,7 +568,8 @@ def certificate_audited(
         rows = control_db.query(
             database,
             # instr, not LIKE: D1 refuses a LIKE pattern over 50 bytes ("LIKE or GLOB pattern too
-            # complex"), which a quoted subscription id passes, and instr takes the id literally.
+            # complex"), which a quoted subscription id passes. instr matches the id exactly, case
+            # included, where LIKE folded ASCII case: an id is an exact token.
             "SELECT COUNT(*) AS n FROM audit WHERE action = ? AND instr(detail, ?) > 0",
             ["delegation_cert.signed", '"subscriptionId":%s' % json.dumps(certificate_id)],
             runner=run,
@@ -604,9 +605,10 @@ def stop_signer(
 ) -> None:
     """Delete a bench signer Worker (`--force`, since callers bind it); `start_signer` redeploys it. Bench only.
 
-    Refused before the delete unless the restart could run: on 2026-11-12 `proof signer --bench` without the deploy-signer profile stopped signer-bench-eu, failed the restart on the missing key and left bench signing down (SIGNER_UNAVAILABLE)."""
+    Refused before the delete unless every name the redeploy refuses without (`deploy`'s check: CLOUDFLARE_API_TOKEN and both key names) is bound: on 2026-11-12 `proof signer --bench` without the deploy-signer profile stopped signer-bench-eu, failed the restart on the missing key and left bench signing down (SIGNER_UNAVAILABLE). A restart can still fail on Cloudflare's side; this refuses only what is knowable before the delete."""
     _require_bench_signer(signer)
-    missing = [n for n in SECRET_NAMES if not (os.environ if env is None else env).get(n)]
+    source = os.environ if env is None else env
+    missing = [n for n in ("CLOUDFLARE_API_TOKEN", *SECRET_NAMES) if not source.get(n)]
     if missing:
         raise proof.LabError(
             "%s is not stopped: its restart needs %s set (bind with bws_env exec --profile %s)"

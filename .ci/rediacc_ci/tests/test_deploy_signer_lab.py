@@ -11,7 +11,11 @@ import pytest
 from rediacc_ci.deploy import deploy_signer as ds
 from rediacc_ci.enterprise import lab, proof
 
-KEYS = {"ACCOUNT_ED25519_PRIVATE_KEY": "k", "ACCOUNT_ED25519_PUBLIC_KEY": "p"}
+KEYS = {
+    "CLOUDFLARE_API_TOKEN": "t",
+    "ACCOUNT_ED25519_PRIVATE_KEY": "k",
+    "ACCOUNT_ED25519_PUBLIC_KEY": "p",
+}
 
 
 def _protocol_signature(name: str) -> inspect.Signature:
@@ -171,6 +175,9 @@ def test_stop_signer_refuses_before_the_delete_when_the_restart_key_is_unbound()
         ds.stop_signer("signer-bench-eu", run=run, env={"ACCOUNT_ED25519_PUBLIC_KEY": "p"})
     with pytest.raises(proof.LabError, match="not stopped"):
         ds.cut_region("eu", run=run, env={})
+    without_token = {k: v for k, v in KEYS.items() if k != "CLOUDFLARE_API_TOKEN"}
+    with pytest.raises(proof.LabError, match="CLOUDFLARE_API_TOKEN"):
+        ds.stop_signer("signer-bench-eu", run=run, env=without_token)
     assert run.calls == []
 
 
@@ -231,6 +238,9 @@ def test_certificate_audited_matches_the_id_literally_without_a_like_pattern(mon
     assert "LIKE" not in seen["sql"].upper()
     assert "instr(detail, ?)" in seen["sql"]
     assert seen["params"][1] == '"subscriptionId":"a%b_c"'
+    ds.certificate_audited("signer-eu", "Sub-AbC")
+    # The needle keeps the id's case: instr is an exact, case-sensitive match.
+    assert seen["params"][1] == '"subscriptionId":"Sub-AbC"'
 
 
 def test_cut_region_stops_the_bench_signer_and_refuses_other_regions():
