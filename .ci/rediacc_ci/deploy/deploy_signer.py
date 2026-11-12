@@ -15,7 +15,7 @@ THE WRANGLER. Every call runs from `workers/signer`, whose own lockfile pins wra
 
 A DRY RUN (`--dry-run`) renders with a placeholder control id and runs `wrangler deploy --dry-run`, which bundles the Worker and needs no credential or key.
 
-THE LAB READERS AND DRIVERS (box S2's group in `rediacc_ci.enterprise.lab`, the `Lab` protocol of `rediacc_ci.enterprise.proof`). Fifteen module functions that `LiveLab` binds by name at call time. Each live call goes through an injectable seam, a keyword-only argument that defaults to the production transport: `run` (the wrangler `Runner` above), `api` (a Cloudflare account GET, `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` from the environment), `companies` (the registry's rows) and `probe`. `bench=True` selects `signer-bench-<r>` and `account-bench`; `callers` and `account_workers` also list each non-removed company's `account-<name>` Worker. `secret_names` is `wrangler secret list`; `signer_of` and `signer_props` read the caller's `LICENSE_SIGNER` service binding from the Workers settings API; `expected_props` is what S4's binding must carry (`{tier: shared, region}` from the account config's `vars.REGION`, `{tier: enterprise, companyId, region}` from the control row); `certificate_audited` reads the signer region's control `audit` table. A signer is stopped by `wrangler delete --force` (what the plan's V2 text calls removing a bench signer) and started by this module's own `deploy`, which re-pushes the key; `cut_region` stops that region's bench signer and does NOT delete or detach its control database, because D1 offers no unreachable state short of destroying the data, and the signer is the only Worker that reads it for signing. `issue`, `renew` and `current_licence_works` need the caller Worker to ask its signer, and no caller-side probe route exists yet (box S4 binds `LICENSE_SIGNER`); their default `probe` raises `LabError("not built yet: ...")`, never an answer, so a refused claim cannot pass on a missing route.
+THE LAB READERS AND DRIVERS (box S2's group in `rediacc_ci.enterprise.lab`, the `Lab` protocol of `rediacc_ci.enterprise.proof`). Fifteen module functions that `LiveLab` binds by name at call time. Each live call goes through an injectable seam, a keyword-only argument that defaults to the production transport: `run` (the wrangler `Runner` above), `api` (a Cloudflare account GET, `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` from the environment), `companies` (the registry's rows) and `probe`. `bench=True` selects `signer-bench-<r>` and `account-bench`; `callers` and `account_workers` also list each non-removed company's `account-<name>` Worker. `secret_names` is `wrangler secret list`; `signer_of` and `signer_props` read the caller's `LICENSE_SIGNER` service binding from the Workers settings API; `expected_props` is what S4's binding must carry (`{tier: shared, region}` from the account config's `vars.REGION`, `{tier: enterprise, companyId, region}` from the control row); `certificate_audited` reads the signer region's control `audit` table. A signer is stopped by `wrangler secret delete ACCOUNT_ED25519_PRIVATE_KEY` (the Worker and every caller's `LICENSE_SIGNER` binding stay; a signer without its private key refuses every signing call, which its callers answer as SIGNER_UNAVAILABLE) and started by this module's own `deploy`, which re-pushes the key. Deleting the Worker instead (`wrangler delete --force`) left account-bench's binding detached from the recreated Worker on 2026-11-12, so bench answered SIGNER_UNAVAILABLE after the restart until a full deploy_bench. `cut_region` stops that region's bench signer and does NOT delete or detach its control database, because D1 offers no unreachable state short of destroying the data, and the signer is the only Worker that reads it for signing. `issue`, `renew` and `current_licence_works` need the caller Worker to ask its signer, and no caller-side probe route exists yet (box S4 binds `LICENSE_SIGNER`); their default `probe` raises `LabError("not built yet: ...")`, never an answer, so a refused claim cannot pass on a missing route.
 
 THE RECORD. `--record PATH` writes JSON: target, worker, region, config, version id, the previous version id, whether it could be read (`previous_known`), the secret names seen, and the rollback command (`wrangler rollback <previous>`, or null). The record is written, and the rollback line printed, right after `wrangler deploy` succeeds, with empty `secret_names`; it is rewritten once the secret list is verified, so a failure of the key push still leaves the way back on disk.
 """
@@ -469,13 +469,13 @@ def default_companies(bench: bool) -> list[dict]:
     return [r for r in rows if r.get("state") != "removed"]
 
 
-def _wrangler(run: Runner, argv: list[str]) -> Result:
+def _wrangler(run: Runner, argv: list[str], stdin: str | None = None) -> Result:
     cwd = _signer_dir()
     try:
         wrangler.require(cwd, control_db.wrangler_env(os.environ))
     except wrangler.WranglerNotInstalledError as exc:
         raise proof.LabError(str(exc)) from None
-    return run(argv, cwd, None)
+    return run(argv, cwd, stdin)
 
 
 def account_workers(*, bench: bool, companies: Companies = default_companies) -> list[str]:
@@ -601,7 +601,9 @@ def _require_bench_signer(signer: str) -> None:
 def stop_signer(
     signer: str, *, run: Runner = run_process, env: typing.Mapping[str, str] | None = None
 ) -> None:
-    """Delete a bench signer Worker (`--force`, since callers bind it); `start_signer` redeploys it. Bench only.
+    """Stop a bench signer by deleting its private-key secret; `start_signer` redeploys it, which re-pushes the key. Bench only.
+
+    The Worker is not deleted: a caller's `LICENSE_SIGNER` service binding does not reattach to a recreated Worker (account-bench answered SIGNER_UNAVAILABLE after the 2026-11-12 restart until a full deploy_bench). A signer without its private key refuses with SIGNER_KEY_UNSET, which its callers read as SIGNER_UNAVAILABLE. The secret list is read back after the delete, and a list still naming the key is a LabError.
 
     Refused before the delete unless every name the redeploy refuses without (`deploy`'s check: CLOUDFLARE_API_TOKEN and both key names) is bound: on 2026-11-12 `proof signer --bench` without the deploy-signer profile stopped signer-bench-eu, failed the restart on the missing key and left bench signing down (SIGNER_UNAVAILABLE). A restart can still fail on Cloudflare's side; this refuses only what is knowable before the delete."""
     _require_bench_signer(signer)
@@ -612,9 +614,17 @@ def stop_signer(
             "%s is not stopped: its restart needs %s set (bind with bws_env exec --profile %s)"
             % (signer, ", ".join(missing), PROFILE)
         )
-    res = _wrangler(run, [*wrangler.ARGV, "delete", "--name", signer, "--force"])
+    res = _wrangler(
+        run, [*wrangler.ARGV, "secret", "delete", PRIVATE_KEY, "--name", signer], stdin="y\n"
+    )
     if res.rc != 0:
-        raise proof.LabError("wrangler delete %s exited %d" % (signer, res.rc))
+        raise proof.LabError(
+            "wrangler secret delete %s --name %s exited %d" % (PRIVATE_KEY, signer, res.rc)
+        )
+    if PRIVATE_KEY in secret_names(signer, run=run):
+        raise proof.LabError(
+            "%s still holds %s after wrangler secret delete" % (signer, PRIVATE_KEY)
+        )
 
 
 def start_signer(

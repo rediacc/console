@@ -49,10 +49,12 @@ def test_the_group_list_and_the_protocol_signer_section_agree():
 class FakeRun:
     def __init__(self, stdout: str = "[]", rc: int = 0):
         self.calls: list[list[str]] = []
+        self.stdins: list[str | None] = []
         self.stdout, self.rc = stdout, rc
 
-    def __call__(self, argv, _cwd, _stdin):
+    def __call__(self, argv, _cwd, stdin):
         self.calls.append(list(argv))
+        self.stdins.append(stdin)
         return ds.Result(self.rc, self.stdout, "")
 
 
@@ -160,13 +162,31 @@ def test_issue_renew_and_current_go_through_the_probe():
     ]
 
 
-def test_stop_signer_deletes_only_a_known_signer():
-    run = FakeRun()
+SECRET_DELETE = ["secret", "delete", "ACCOUNT_ED25519_PRIVATE_KEY", "--name", "signer-bench-eu"]
+
+
+def test_stop_signer_deletes_the_private_key_secret_not_the_worker():
+    """Deleting the Worker detached account-bench's LICENSE_SIGNER binding on 2026-11-12; the stop deletes the key."""
+    run = FakeRun(json.dumps([{"name": "ACCOUNT_ED25519_PUBLIC_KEY"}]))
     ds.stop_signer("signer-bench-eu", run=run, env=KEYS)
-    assert run.calls[0][-4:] == ["delete", "--name", "signer-bench-eu", "--force"]
+    assert run.calls[0][len(ds.wrangler.ARGV) :] == SECRET_DELETE
+    assert run.stdins[0] == "y\n"
+    assert "--force" not in run.calls[0]
+    assert run.calls[0][len(ds.wrangler.ARGV) : len(ds.wrangler.ARGV) + 2] != ["delete", "--name"]
+    # The secret list is read back by name after the delete.
+    assert run.calls[1][-6:] == ["secret", "list", "--format", "json", "--name", "signer-bench-eu"]
+    assert len(run.calls) == 2
     with pytest.raises(proof.LabError):
         ds.stop_signer("account-bench", run=run, env=KEYS)
-    assert len(run.calls) == 1
+    assert len(run.calls) == 2
+
+
+def test_stop_signer_refuses_a_signer_that_still_lists_its_private_key():
+    run = FakeRun(json.dumps([{"name": "ACCOUNT_ED25519_PRIVATE_KEY"}]))
+    with pytest.raises(
+        proof.LabError, match="signer-bench-eu still holds ACCOUNT_ED25519_PRIVATE_KEY"
+    ):
+        ds.stop_signer("signer-bench-eu", run=run, env=KEYS)
 
 
 def test_stop_signer_refuses_before_the_delete_when_the_restart_key_is_unbound():
@@ -246,14 +266,16 @@ def test_certificate_audited_matches_the_id_literally_without_a_like_pattern(mon
 def test_cut_region_stops_the_bench_signer_and_refuses_other_regions():
     run = FakeRun()
     ds.cut_region("eu", run=run, env=KEYS)
-    assert run.calls[0][-2:] == ["signer-bench-eu", "--force"]
+    assert run.calls[0][len(ds.wrangler.ARGV) :] == SECRET_DELETE
     with pytest.raises(proof.LabError):
         ds.cut_region("asia", run=run, env=KEYS)
 
 
-def test_a_failed_delete_is_a_lab_error():
-    with pytest.raises(proof.LabError):
-        ds.stop_signer("signer-bench-us", run=FakeRun(rc=1), env=KEYS)
+def test_a_failed_secret_delete_is_a_lab_error_and_reads_nothing_back():
+    run = FakeRun(rc=1)
+    with pytest.raises(proof.LabError, match="secret delete ACCOUNT_ED25519_PRIVATE_KEY"):
+        ds.stop_signer("signer-bench-us", run=run, env=KEYS)
+    assert len(run.calls) == 1
 
 
 def test_certificate_audited_queries_the_signer_regions_control_database(monkeypatch):
