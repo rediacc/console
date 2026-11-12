@@ -13,6 +13,7 @@ import pytest
 CP = importlib.import_module("rediacc_hooks.commit_policy")
 SS = importlib.import_module("rediacc_hooks.shellscan")
 WK = importlib.import_module("rediacc_hooks.wellknown")
+OWN_URL = "%s/%s.git" % (WK.GH_ORIGIN, WK.GH_REPO)
 
 
 def _git(directory, *args) -> None:
@@ -66,19 +67,19 @@ def test_a_repository_sharing_the_checkouts_store_is_not_elsewhere(world):
 
 def test_a_network_url_is_elsewhere_unless_it_is_the_consoles_own(world):
     assert _judge(world, "git push https://example.org/someone/else.git main") is True
-    assert _judge(world, "git push https://github.com/%s.git main" % WK.GH_REPO) is False
+    assert _judge(world, "git push %s main" % OWN_URL) is False
     assert _judge(world, "git push git@github.com:%s main" % WK.GH_REPO) is False
 
 
 def test_a_pushurl_set_on_the_command_line_is_a_doubt(world):
-    cmd = "git -c remote.origin.pushurl=https://github.com/%s.git push origin main" % WK.GH_REPO
+    cmd = "git -c remote.origin.pushurl=%s push origin main" % OWN_URL
     assert _judge(world, cmd) is False
 
 
 def test_a_remote_edited_in_the_same_command_is_a_doubt(world):
     for edit in (
-        "git remote set-url origin https://github.com/%s.git" % WK.GH_REPO,
-        "git config remote.origin.pushurl https://github.com/%s.git" % WK.GH_REPO,
+        "git remote set-url origin %s" % OWN_URL,
+        "git config remote.origin.pushurl %s" % OWN_URL,
     ):
         assert _judge(world, "%s && git push origin main" % edit) is False
 
@@ -87,7 +88,7 @@ def test_an_insteadof_rewrite_is_a_doubt(world):
     _git(
         world["scratch"],
         "config",
-        "url.https://github.com/%s.git.insteadOf" % WK.GH_REPO,
+        "url.%s/%s.git.insteadOf" % WK.GH_REPO,
         str(world["bare"]),
     )
     assert _judge(world, "git push origin main") is False

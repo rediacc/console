@@ -454,10 +454,10 @@ def test_accept_terms_refuses_a_status_without_a_boolean_satisfied(shape: dict) 
     """85d9bad6.1: a wrong-shape answer is named, never read as "unsatisfied, so accept"."""
 
     class Odd(FakeApi):
-        def call(self, method: str, path: str, body: dict | None = None, timeout: int = 30) -> dict:
+        def call(self, method: str, path: str, body: dict | None = None, *ignored: object) -> dict:
             if path == "/portal/terms":
                 return {**shape, "current": {"version": "2026-01-01", "sha256": "a" * 64}}
-            return super().call(method, path, body, timeout)
+            return super().call(method, path, body, *ignored)
 
     api = Odd()
     with pytest.raises(rt.StepError, match="boolean `satisfied`"):

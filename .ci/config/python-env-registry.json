@@ -1710,6 +1710,10 @@
       "HOME",
       "PATH"
     ],
+    ".ci/rediacc_ci/tests/test_conftest_duration_order.py": [
+      "ABAD_KEPT",
+      "ABAD_NEW"
+    ],
     ".ci/rediacc_ci/tests/test_controls.py": [
       "GIT_DIR",
       "GIT_INDEX_FILE"

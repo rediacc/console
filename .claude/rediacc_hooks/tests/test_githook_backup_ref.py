@@ -509,7 +509,7 @@ def test_a_scan_that_finishes_in_time_reports_no_stall(tmp_path):
 def test_the_mirror_host_is_the_pinned_literal():
     """The tests build their URLs from MIRROR_HOST, so the host is pinned here as a literal the constant cannot move with (7298ce2b.1)."""
     assert GH.MIRROR_HOST == "gitlab.rediacc.io"
-    assert CONSOLE_URL == "https://gitlab.rediacc.io/rediacc-org/github/console.git"
+    assert CONSOLE_URL == "https://%s/rediacc-org/github/console.git" % GH.MIRROR_HOST
 
 
 def test_a_standalone_repository_is_not_the_console(tmp_path):
