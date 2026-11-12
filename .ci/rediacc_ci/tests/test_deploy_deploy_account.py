@@ -942,6 +942,19 @@ def _run_stub(tmp_path: pathlib.Path, root: pathlib.Path, *args: str, **extra: t
     )
 
 
+def _has_d1_word(calls: str) -> bool:
+    """True when some logged argv carries `d1` as a whole tab-separated word."""
+    return any("d1" in line.split("\t") for line in calls.splitlines())
+
+
+def test_the_d1_word_check_is_whole_word_only() -> None:
+    """2d18108b.1: a migration argv trips it; a temp path or a longer word holding the two characters does not."""
+    assert _has_d1_word("npx\t--no-install\twrangler\td1\tmigrations\tapply\n")
+    assert not _has_d1_word("npx\t--config\t/tmp/tmpd1x9q2/wrangler.toml\n")
+    assert not _has_d1_word("npx\tfoo\td1x\tbar\n")
+    assert not _has_d1_word("")
+
+
 def test_the_stub_uploads_a_routeless_worker_under_the_configs_name(tmp_path: pathlib.Path) -> None:
     root = _fixture_root(tmp_path, configs={"wrangler.eu.toml": STUB_TOML})
     new, calls = _run_stub(tmp_path, root, FAKE_CF_WORKERS="proxy-eu")
@@ -953,9 +966,7 @@ def test_the_stub_uploads_a_routeless_worker_under_the_configs_name(tmp_path: pa
     assert argv[5].endswith("/wrangler.toml")
     assert "wrangler.eu.toml" not in argv[5]
     # `d1` as a WHOLE argv word, never a substring: the log carries random temp paths and URLs, and a name like /tmp/tmpd1x9q2/wrangler.toml holds the two characters without any migration.
-    assert not any("d1" in line.split("\t") for line in calls.splitlines()), (
-        "a stub runs no migration"
-    )
+    assert not _has_d1_word(calls), "a stub runs no migration"
     assert "Account stub deployed: account-eu" in new.stderr
 
 

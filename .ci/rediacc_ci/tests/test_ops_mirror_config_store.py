@@ -1882,6 +1882,20 @@ def test_the_real_reseal_script_round_trips_under_the_workers_crypto(tmp_path, m
     assert value.startswith("csk1.%s." % mod.config_server_key_id(DST_KEY_VALUE))
     assert line is not None
     assert "org-passphrase-plaintext" not in line
+    # 15e396bf.1: the body opens under the TARGET key, not just the right kid prefix: resealing it back (target as source) succeeds, and a body sealed under a wrong key under the right kid is refused.
+    monkeypatch.setenv(SRC_KEY_ENV, DST_KEY_VALUE)
+    monkeypatch.setenv(BENCH_KEY_ENV, SRC_KEY_VALUE)
+    back, _ = mod.reseal_server_key(ROOT, SRC, DST, STORE, value)
+    assert isinstance(back, str)
+    assert back.startswith("csk1.%s." % mod.config_server_key_id(SRC_KEY_VALUE))
+    wrong_body = "csk1.%s.%s" % (
+        mod.config_server_key_id(DST_KEY_VALUE),
+        seal("SOME-OTHER-KEY", "x").split(".", 2)[2],
+    )
+    with pytest.raises(mod.RefusedError):
+        mod.reseal_server_key(ROOT, SRC, DST, STORE, wrong_body)
+    monkeypatch.setenv(SRC_KEY_ENV, SRC_KEY_VALUE)
+    monkeypatch.setenv(BENCH_KEY_ENV, DST_KEY_VALUE)
     forged = "csk1.%s.%s" % (
         mod.config_server_key_id(SRC_KEY_VALUE),
         seal("SOME-OTHER-KEY", "x").split(".", 2)[2],
