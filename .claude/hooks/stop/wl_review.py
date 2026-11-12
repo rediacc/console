@@ -3311,9 +3311,14 @@ def related_test(test_path, anchored):
     """Whether `test_path` is the test of the anchored file: its basename carries the anchored file's stem (`wl_roster.py` is tested by `test_wl_roster.py` or `test_wl_roster_plans.py`). A test of some other module never closes this finding."""
     stem = _norm_stem(anchored)
     name = pathlib.PurePosixPath(test_path).name.lower().replace("-", "_")
+    # The repo names a private module's test without its leading `_` (`test_x_predicate.py` for a private `_x.py`) and a stop-hook module's without `wl_` (`test-x.py` for `wl_x.py`); a stripped stem shorter than 4 characters is not read, so `wl_io.py` does not claim `test_io_x.py`.
+    bare = stem.lstrip("_")
+    bare = bare.removeprefix("wl_")
+    stems = {stem} | ({bare} if len(bare) >= 4 else set())
     # The stem stands as a whole token of the test's name: `io` is not in `test_radio.py`.
-    return (
-        bool(stem) and re.search(r"(?<![a-z0-9])%s(?![a-z0-9])" % re.escape(stem), name) is not None
+    return any(
+        s and re.search(r"(?<![a-z0-9])%s(?![a-z0-9])" % re.escape(s), name) is not None
+        for s in stems
     )
 
 

@@ -125,5 +125,35 @@ control(
 )
 control("nothing was marked by a refusal", resolution(repo, reviewed), "Resolution: open")
 
+# ---- 4. related_test reads the repo's test naming: a private module's leading `_`, a stop-hook `wl_` --
+control(
+    "a private module's test: test_sample_push_predicate.py tests _sample_push.py",
+    R.related_test(
+        "fixture/tests/test_sample_push_predicate.py",
+        "fixture/guards/_sample_push.py",
+    ),
+    True,
+)
+control(
+    "a stop-hook module's test: test-samplerec.py tests wl_samplerec.py",
+    R.related_test("fixture/stop/test-samplerec.py", "fixture/stop/wl_samplerec.py"),
+    True,
+)
+control(
+    "CONTROL: the stem stays a whole token (test_radio.py does not test io.py)",
+    R.related_test("tests/test_radio.py", "src/io.py"),
+    False,
+)
+control(
+    "CONTROL: a short stripped stem is not read loosely (test_io_x.py does not test wl_io.py)",
+    R.related_test("tests/test_io_x.py", "hooks/wl_io.py"),
+    False,
+)
+control(
+    "CONTROL: another module's test still does not close it",
+    R.related_test("fixture/stop/test-samplerec.py", "fixture/stop/wl_sampleroster.py"),
+    False,
+)
+
 print("%d control(s), %d failed" % (Tally.count, Tally.fails))
 sys.exit(1 if Tally.fails else 0)
