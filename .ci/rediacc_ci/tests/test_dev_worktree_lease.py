@@ -2586,8 +2586,14 @@ def test_a_failed_restore_of_one_signal_still_restores_the_later_ones(monkeypatc
 def superseded_fixture(repo, name):
     """A tree whose one commit never lands by pick, and a different commit already on the live tip standing for it."""
     tree = make_tree(repo, name)
-    sha = gc_commit(tree, "dup.txt")
-    landed = committed(repo.root, "dup-landed.txt")
+    spike.write(tree / "dup.txt", "tree variant\n")
+    spike.must(tree, "add", "--", "dup.txt")
+    done = spike.git(tree, "commit", "--no-gpg-sign", "-m", "feat: dup variant\n\n%s" % TRAILERS)
+    assert done.returncode == 0, done.stderr
+    sha = spike.must(tree, "rev-parse", "HEAD")
+    pinned = run_pin_verb(tree)
+    assert pinned.returncode == 0, pinned.stderr
+    landed = committed(repo.root, "dup.txt")
     return tree, sha, landed
 
 
@@ -2673,3 +2679,96 @@ def test_gc_superseded_by_refuses_a_short_reason_a_sweep_and_an_unnamed_commit(g
     assert "is not named" in partial.stderr
     assert extra[:12] in partial.stderr
     assert tree.exists()
+
+
+def test_gc_superseded_by_refuses_a_landed_commit_that_shares_no_path_with_the_lease_commit(
+    gc_repo,
+):
+    tree, sha, _landed = superseded_fixture(gc_repo, "sup5")
+    unrelated = committed(gc_repo.root, "unrelated.txt")
+    done = run_gc(
+        gc_repo.root, "--write", "--id", "sup5", "--superseded-by", "%s=%s" % (sha, unrelated),
+        "--reason", "same test fix landed as the named commit",
+    )  # fmt: skip
+    assert done.returncode == 1
+    assert "shares no changed path" in done.stderr
+    assert tree.exists()
+    ledger = gc_repo.root / ".git" / lease.RECORD_DIR / "superseded.jsonl"
+    assert not ledger.exists() or sha not in ledger.read_text()
+
+
+def test_gc_superseded_by_retracts_the_waiver_of_a_tree_another_rule_keeps(gc_repo):
+    tree, sha, landed = superseded_fixture(gc_repo, "sup6")
+    spike.write(tree / "scratch.txt", "uncommitted\n")
+    done = run_gc(
+        gc_repo.root, "--write", "--id", "sup6", "--superseded-by", "%s=%s" % (sha, landed),
+        "--reason", "same test fix landed as the named commit",
+    )  # fmt: skip
+    assert done.returncode == 1, done.stdout
+    assert tree.exists()
+    assert row_of(done.stdout, "sup6").split()[:1] == ["KEEP"]
+    ledger = gc_repo.root / ".git" / lease.RECORD_DIR / "superseded.jsonl"
+    assert sha not in ledger.read_text()
+
+
+def test_gc_superseded_by_retracts_the_waiver_when_the_removal_leaves_survivors_or_raises(
+    gc_repo, monkeypatch
+):
+    tree, sha, landed = superseded_fixture(gc_repo, "sup7")
+    gc_in_process(monkeypatch, gc_repo.root)
+    ledger = gc_repo.root / ".git" / lease.RECORD_DIR / "superseded.jsonl"
+    pairs = [(sha, landed)]
+    reason = "same test fix landed as the named commit"
+    monkeypatch.setattr(lease, "_remove_row", lambda _world, _row: ["left-behind"])
+    code, _lines = lease.run_gc(
+        gc_repo.root, write=True, only="sup7", superseded=pairs, reason=reason
+    )
+    assert code == 1
+    assert sha not in ledger.read_text()
+
+    def explode(_world, _row):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(lease, "_remove_row", explode)
+    with pytest.raises(RuntimeError, match="boom"):
+        lease.run_gc(gc_repo.root, write=True, only="sup7", superseded=pairs, reason=reason)
+    assert sha not in ledger.read_text()
+    assert tree.exists()
+
+
+def test_control_gc_superseded_by_keeps_the_waiver_when_the_tree_is_removed(gc_repo, monkeypatch):
+    tree, sha, landed = superseded_fixture(gc_repo, "sup8")
+    gc_in_process(monkeypatch, gc_repo.root)
+    code, _lines = lease.run_gc(
+        gc_repo.root,
+        write=True,
+        only="sup8",
+        superseded=[(sha, landed)],
+        reason="same test fix landed as the named commit",
+    )
+    assert code == 0
+    assert not tree.exists()
+    ledger = gc_repo.root / ".git" / lease.RECORD_DIR / "superseded.jsonl"
+    assert sha in ledger.read_text()
+
+
+def test_gc_superseded_by_without_write_records_no_waiver(gc_repo, monkeypatch):
+    _tree, sha, landed = superseded_fixture(gc_repo, "sup9")
+    gc_in_process(monkeypatch, gc_repo.root)
+    code, lines = lease.run_gc(
+        gc_repo.root,
+        write=False,
+        only="sup9",
+        superseded=[(sha, landed)],
+        reason="same test fix landed as the named commit",
+    )
+    assert code == 1
+    assert lines == []
+    ledger = gc_repo.root / ".git" / lease.RECORD_DIR / "superseded.jsonl"
+    assert not ledger.exists()
+
+
+def test_ledger_retract_reports_a_ledger_it_cannot_rewrite(tmp_path, capsys):
+    (tmp_path / ".git" / lease.RECORD_DIR).mkdir(parents=True)
+    lease._ledger_retract(tmp_path, [{"sha": "a"}])
+    assert "could not retract" in capsys.readouterr().err

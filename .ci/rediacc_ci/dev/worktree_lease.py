@@ -1504,6 +1504,12 @@ def _unlanded_of(world, lease_id):
     return {key: list(row["commits"]) for key, row in facts.repos.items() if row["commits"]}
 
 
+def _touched(repo, sha):
+    """The set of paths a commit changes (empty when git cannot say)."""
+    done = _quiet(repo, "diff-tree", "--no-commit-id", "--name-only", "-r", "--root", sha)
+    return set((done or "").split())
+
+
 def _resolve_superseded(world, lease_id, pairs, reason):
     """([ledger rows], problems) for the named commits of `lease_id`: every unlanded commit named once, each landed sha an ancestor of its repo's live tip."""
     unlanded = _unlanded_of(world, lease_id)
@@ -1527,6 +1533,11 @@ def _resolve_superseded(world, lease_id, pairs, reason):
         elif spike.git(repo, "merge-base", "--is-ancestor", full.strip(), tip).returncode != 0:
             problems.append(
                 "%s is not an ancestor of the live tip of %s" % (landed[:SHA_SHOWN], key)
+            )
+        elif not _touched(repo, sha) & _touched(repo, full.strip()):
+            problems.append(
+                "%s shares no changed path with %s, so it is not a duplicate of it"
+                % (landed[:SHA_SHOWN], sha[:SHA_SHOWN])
             )
         else:
             named.add(sha)
@@ -1561,9 +1572,12 @@ def _ledger_retract(root, rows):
     drop = {json.dumps(row, sort_keys=True) for row in rows}
     try:
         kept = [ln for ln in path.read_text(encoding="utf-8").splitlines() if ln not in drop]
-    except OSError:
-        return
-    path.write_text("".join(ln + "\n" for ln in kept), encoding="utf-8")
+        path.write_text("".join(ln + "\n" for ln in kept), encoding="utf-8")
+    except OSError as err:
+        log.error(
+            "could not retract the superseded waiver from %s (%s); remove those rows by hand"
+            " or the Stop hook reads their commits as landed" % (path, err)
+        )
 
 
 def run_gc(root, *, write=False, only="", discard_dirty="", superseded=(), reason=""):
@@ -1575,6 +1589,9 @@ def run_gc(root, *, write=False, only="", discard_dirty="", superseded=(), reaso
         world = _read_world(root)
         live = _read_live(root, named=bool(only))
         recorded = []
+        if superseded and not write:
+            log.error("--superseded-by records a waiver, so it needs --write")
+            return 1, []
         if superseded:
             recorded, bad = _resolve_superseded(world, only, list(superseded), reason)
             if bad:
@@ -1582,55 +1599,66 @@ def run_gc(root, *, write=False, only="", discard_dirty="", superseded=(), reaso
                     log.error("--superseded-by refused: %s" % problem)
                 return 1, []
             _ledger_write(root, recorded)
-        for judged in _gc_rows(world, live, only):
-            row = judged
-            waive_line = ""
-            if discard_dirty and judged.lease_id == only:
-                waived = [w for w in judged.why if _is_dirty_problem(w)]
-                if waived:
-                    row = judged._replace(why=[w for w in judged.why if not _is_dirty_problem(w)])
-                    # Printed only when the waiver lets the tree go: another problem (an unlanded commit, a failed status) keeps it, and a discard that did not happen is not audited as one.
-                    waive_line = "  %-6s  %-24s %s; discarded by the lead: %s" % (
-                        "WAIVE",
-                        row.lease_id,
-                        "; ".join(waived),
-                        discard_dirty,
-                    )
-            if row.why:
-                if recorded:
+        try:
+            for judged in _gc_rows(world, live, only):
+                row = judged
+                waive_line = ""
+                if discard_dirty and judged.lease_id == only:
+                    waived = [w for w in judged.why if _is_dirty_problem(w)]
+                    if waived:
+                        row = judged._replace(
+                            why=[w for w in judged.why if not _is_dirty_problem(w)]
+                        )
+                        # Printed only when the waiver lets the tree go: another problem (an unlanded commit, a failed status) keeps it, and a discard that did not happen is not audited as one.
+                        waive_line = "  %-6s  %-24s %s; discarded by the lead: %s" % (
+                            "WAIVE",
+                            row.lease_id,
+                            "; ".join(waived),
+                            discard_dirty,
+                        )
+                if row.why:
+                    if recorded:
+                        _ledger_retract(root, recorded)
+                        recorded = []
+                    kept += 1
+                    lines.append("  %-6s  %-24s %s" % ("KEEP", row.lease_id, "; ".join(row.why)))
+                    continue
+                survived = _remove_row(world, row) if write else []
+                if survived and recorded:
                     _ledger_retract(root, recorded)
                     recorded = []
-                kept += 1
-                lines.append("  %-6s  %-24s %s" % ("KEEP", row.lease_id, "; ".join(row.why)))
-                continue
-            survived = _remove_row(world, row) if write else []
-            # A removal that left survivors may still have removed part of the dirty work, so it is audited too, marked incomplete.
-            if waive_line:
-                lines.append(
-                    waive_line
-                    + ("; removal incomplete, part of the tree may be gone" if survived else "")
-                )
-            if recorded:
-                lines.append(
-                    "  %-6s  %-24s %d commit(s) superseded: %s"
-                    % (
-                        "WAIVE",
-                        row.lease_id,
-                        len(recorded),
-                        "; ".join(
-                            "%s by %s" % (r["sha"][:SHA_SHOWN], r["landed"][:SHA_SHOWN])
-                            for r in recorded
-                        )
-                        + "; "
-                        + reason,
+                # A removal that left survivors may still have removed part of the dirty work, so it is audited too, marked incomplete.
+                if waive_line:
+                    lines.append(
+                        waive_line
+                        + ("; removal incomplete, part of the tree may be gone" if survived else "")
                     )
-                )
-            lines.append("  %-6s  %-24s every rule holds" % ("DELETE", row.lease_id))
-            if survived:
-                failed += 1
-                log.error("%s not fully removed: %s" % (row.lease_id, ", ".join(survived)))
-            else:
-                deletable += 1
+                if recorded:
+                    lines.append(
+                        "  %-6s  %-24s %d commit(s) superseded: %s"
+                        % (
+                            "WAIVE",
+                            row.lease_id,
+                            len(recorded),
+                            "; ".join(
+                                "%s by %s" % (r["sha"][:SHA_SHOWN], r["landed"][:SHA_SHOWN])
+                                for r in recorded
+                            )
+                            + "; "
+                            + reason,
+                        )
+                    )
+                lines.append("  %-6s  %-24s every rule holds" % ("DELETE", row.lease_id))
+                if survived:
+                    failed += 1
+                    log.error("%s not fully removed: %s" % (row.lease_id, ", ".join(survived)))
+                else:
+                    deletable += 1
+        except BaseException:
+            # A waiver whose tree was not removed must not stay active: the Stop hook would read the commit as landed.
+            if recorded:
+                _ledger_retract(root, recorded)
+            raise
     tail = "deleted %d" % deletable if write else "listing only, rerun with --write to delete"
     stuck = ", %d not fully removed" % failed if failed else ""
     lines.append(
