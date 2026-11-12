@@ -260,6 +260,97 @@ function hasRenderedEmailContract(content: string): boolean {
   return literalEnvelope || delegatedEnvelope;
 }
 
+/**
+ * Findings for one locale: every English key outside a plural group exists, and each plural
+ * group holds the categories the locale's rules select. The plural call lives here, not in
+ * main(), so the control below fails if it is dropped.
+ */
+function localeFindings(lang: string, englishTree: unknown, localeTree: unknown): string[] {
+  const englishPluralGroups = new Set(pluralGroups(englishTree));
+  const inPluralGroup = (key: string) => englishPluralGroups.has(key.replace(/\.[^.]+$/, ''));
+  const localeKeys = new Set(flattenKeys(localeTree));
+  const out: string[] = [];
+  for (const key of flattenKeys(englishTree)) {
+    if (inPluralGroup(key)) continue;
+    if (!localeKeys.has(key)) out.push(`${lang}/emails.json: missing key "${key}"`);
+  }
+  out.push(...pluralFindings(lang, englishTree, localeTree));
+  return out;
+}
+
+/**
+ * Findings for the key names one template names outside t(): the plural fields (tCount's
+ * first argument, and `subjectKey` / `headingKey` in ANY template file, reserved for plural
+ * groups) and the plain fields (`fixedSubjectKey`, `titleKey`, `leadKey`, `consequenceKey`,
+ * `manageNoteKey`, `key`).
+ */
+function templateKeyFindings(
+  fileName: string,
+  content: string,
+  englishKeys: ReadonlySet<string>,
+  englishPluralGroups: ReadonlySet<string>
+): string[] {
+  const errors: string[] = [];
+  // A dotted value only: `key: 'passwordReset' | ...` in auth.ts is a type, not a lookup.
+  for (const match of content.matchAll(
+    /(?:(?<![A-Za-z0-9_$])tCount\(\s*|\b(?:subject|heading)Key:\s*)'([^'.]+\.[^']+)'/g
+  )) {
+    if (!englishPluralGroups.has(match[1])) {
+      errors.push(`${fileName}: "${match[1]}" is used as a plural group but en has none`);
+    }
+  }
+  for (const match of content.matchAll(
+    /\b(?:fixedSubject|title|lead|consequence|manageNote)Key:\s*'([^'.]+\.[^']+)'|\bkey:\s*'([^'.]+\.[^']+)'/g
+  )) {
+    const key = match[1] ?? match[2];
+    if (!englishKeys.has(key)) {
+      errors.push(`${fileName}: references missing email locale key "${key}"`);
+    }
+  }
+
+  return errors;
+}
+
+/** Plants for the key-name checks and the plural wiring; each must be reported or stay silent. */
+function keyControlFailures(): string[] {
+  const out: string[] = [];
+  const keys = new Set(['a.title', 'a.lead']);
+  const groups = new Set(['n.items']);
+  const run = (src: string) => templateKeyFindings('t.ts', src, keys, groups);
+  if (!run("const x = { fixedSubjectKey: 'a.missing' };").some((f) => f.includes('a.missing'))) {
+    out.push('CONTROL: a fixedSubjectKey naming no English key was not reported');
+  }
+  if (!run("const x = { titleKey: 'a.nope' };").some((f) => f.includes('a.nope'))) {
+    out.push('CONTROL: a titleKey naming no English key was not reported');
+  }
+  if (!run("const x = { subjectKey: 'a.title' };").some((f) => f.includes('plural group'))) {
+    out.push('CONTROL: a subjectKey naming a non-plural key was not reported');
+  }
+  if (!run("tCount('a.title', 2)").some((f) => f.includes('plural group'))) {
+    out.push('CONTROL: a tCount of a non-plural key was not reported');
+  }
+  const clean = run(
+    "const x = { fixedSubjectKey: 'a.title', subjectKey: 'n.items', key: 'a.lead' };"
+  );
+  if (clean.length > 0) out.push(`CONTROL: valid key names were reported: ${clean.join('; ')}`);
+  const english = { a: { title: 'T' }, n: { items: { one: '1', other: 'n' } } };
+  if (
+    !localeFindings('de', english, { a: { title: 'T' }, n: { items: { other: 'n' } } }).some((f) =>
+      f.includes('lacks "one"')
+    )
+  ) {
+    out.push('CONTROL: localeFindings no longer applies the plural check');
+  }
+  if (
+    !localeFindings('de', english, { n: { items: { one: '1', other: 'n' } } }).some((f) =>
+      f.includes('missing key "a.title"')
+    )
+  ) {
+    out.push('CONTROL: localeFindings no longer reports a missing key');
+  }
+  return out;
+}
+
 function main(): void {
   console.log('Account Email Template Validation');
   console.log('============================================================\n');
@@ -277,24 +368,15 @@ function main(): void {
   errors.push(...refuseIfListDrifted());
 
   errors.push(...pluralControlFailures());
+  errors.push(...keyControlFailures());
 
   const englishTree = readJson(path.join(LOCALES_DIR, 'en', 'emails.json'));
   const englishKeys = new Set(flattenKeys(englishTree));
   const englishPluralGroups = new Set(pluralGroups(englishTree));
-  const inPluralGroup = (key: string) => englishPluralGroups.has(key.replace(/\.[^.]+$/, ''));
 
   for (const lang of LANGUAGES) {
-    const localePath = path.join(LOCALES_DIR, lang, 'emails.json');
-    const localeTree = readJson(localePath);
-    const localeKeys = new Set(flattenKeys(localeTree));
-
-    for (const key of englishKeys) {
-      if (inPluralGroup(key)) continue;
-      if (!localeKeys.has(key)) {
-        errors.push(`${lang}/emails.json: missing key "${key}"`);
-      }
-    }
-    errors.push(...pluralFindings(lang, englishTree, localeTree));
+    const localeTree = readJson(path.join(LOCALES_DIR, lang, 'emails.json'));
+    errors.push(...localeFindings(lang, englishTree, localeTree));
   }
 
   for (const fileName of TEMPLATE_FILES) {
@@ -330,25 +412,7 @@ function main(): void {
       }
     }
 
-    // tCount('<group>', n) and the digest's plural fields (subjectKey, headingKey) name plural
-    // groups; its plain fields (fixedSubjectKey, titleKey, leadKey, consequenceKey, manageNoteKey,
-    // key) name keys.
-    // A dotted value only: `key: 'passwordReset' | ...` in auth.ts is a type, not a lookup.
-    for (const match of content.matchAll(
-      /(?:(?<![A-Za-z0-9_$])tCount\(\s*|\b(?:subject|heading)Key:\s*)'([^'.]+\.[^']+)'/g
-    )) {
-      if (!englishPluralGroups.has(match[1])) {
-        errors.push(`${fileName}: "${match[1]}" is used as a plural group but en has none`);
-      }
-    }
-    for (const match of content.matchAll(
-      /\b(?:fixedSubject|title|lead|consequence|manageNote)Key:\s*'([^'.]+\.[^']+)'|\bkey:\s*'([^'.]+\.[^']+)'/g
-    )) {
-      const key = match[1] ?? match[2];
-      if (!englishKeys.has(key)) {
-        errors.push(`${fileName}: references missing email locale key "${key}"`);
-      }
-    }
+    errors.push(...templateKeyFindings(fileName, content, englishKeys, englishPluralGroups));
   }
 
   if (errors.length > 0) {
