@@ -33,6 +33,9 @@ TURNSTILE_ENABLED = "false"
 # ruling 2026-10-13, "Bench-only email capture in D1"). No route exposes the table. The account
 # server refuses to start with this switch unless ENVIRONMENT is "bench". Never add to a production config.
 EMAIL_CAPTURE_D1 = "true"
+# Stripe Checkout asks for Terms of Service consent on bench, which bills only the sandbox pair
+# (STRIPE_SANDBOX_*); proves PLAN-terms-acceptance X2 before any live config turns it on.
+STRIPE_CONSENT_COLLECTION = "1"
 
 # Nightly maintenance at 03:00 UTC (off-peak): audit retention sweep + backup GC.
 # Handled by `scheduled` in src/index.ts, which forwards to the account app in
