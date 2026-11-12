@@ -369,10 +369,6 @@
       "path": ".ci/rediacc_ci/ci/publish_ci_verdict.py",
       "sha": "f92f55e63"
     },
-    "b99142c83759ec2f": {
-      "path": "agent/plans/_done/PLAN-per-commit-review.md",
-      "sha": "3f9a1c2e7d0b"
-    },
     "ba3085e54bb05105": {
       "path": ".ci/scripts/quality/check_release_bump_skip.py",
       "sha": "056fe87b6"
