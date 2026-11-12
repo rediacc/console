@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: pt
-sourceHash: "0e25e85428482d31"
-sourceCommit: "c167e0ddc973d6cf9b5732a200c2c0006a7e8548"
+sourceHash: "78e880294cc0bf15"
+sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
 ---
 
 # Cadeia de Licenças e Delegação
@@ -322,8 +322,8 @@ Um manifesto de pedido de renovação captura o cabeçalho da cadeia no momento 
 
 Quando o novo certificado é carregado de volta para o on-premise, `/onprem/cert-upload` valida que o `genesisSequence` do novo certificado ainda se liga a uma entrada conhecida no livro-razão de emissão local:
 
-- Se `cert.genesisSequence > localHead.sequence` devolve `409 CHAIN_HEAD_BEHIND` (o upstream está numa cadeia em fork).
-- Se `cert.genesisSequence > 0` e a entrada do livro-razão local nessa sequência tiver um `chainHash` diferente de `cert.genesisHash` devolve `409 CHAIN_FORK_ON_UPLOAD` (a cadeia local divergiu).
+- Se `cert.genesisSequence > localHead.sequence` devolve `409` com o código `chain-ahead`.
+- Se `cert.genesisSequence > 0` e a entrada do livro-razão local nessa sequência tiver um `chainHash` diferente de `cert.genesisHash` devolve `409` com o código `chain-fork`.
 - Caso contrário, o certificado é aceite. As emissões futuras continuam a partir de `localHead.sequence + 1`.
 
 Isto significa que **não é necessário nenhum bloqueio de escrita durante o trânsito**. A cadeia estende-se naturalmente em ambos os lados. Corresponde a como a renovação de certificados X.509 lida com números de série em trânsito.

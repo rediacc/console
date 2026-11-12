@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: es
-sourceHash: "0e25e85428482d31"
-sourceCommit: "c167e0ddc973d6cf9b5732a200c2c0006a7e8548"
+sourceHash: "78e880294cc0bf15"
+sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
 ---
 
 # Cadena de Licencias y Delegación
@@ -322,8 +322,8 @@ Un manifiesto de solicitud de renovación captura el encabezado de la cadena en 
 
 Cuando el nuevo certificado se sube de vuelta al on-premise, `/onprem/cert-upload` valida que el `genesisSequence` del nuevo certificado todavía enlaza con una entrada conocida en el libro de contabilidad de emisión local:
 
-- Si `cert.genesisSequence > localHead.sequence` devuelve `409 CHAIN_HEAD_BEHIND` (el upstream está en una cadena bifurcada).
-- Si `cert.genesisSequence > 0` y la entrada del libro de contabilidad local en esa secuencia tiene un `chainHash` diferente al `cert.genesisHash` devuelve `409 CHAIN_FORK_ON_UPLOAD` (la cadena local ha divergido).
+- Si `cert.genesisSequence > localHead.sequence` devuelve `409` con el código `chain-ahead`.
+- Si `cert.genesisSequence > 0` y la entrada del libro de contabilidad local en esa secuencia tiene un `chainHash` diferente al `cert.genesisHash` devuelve `409` con el código `chain-fork`.
 - En caso contrario, el certificado se acepta. Las emisiones futuras continúan desde `localHead.sequence + 1`.
 
 Esto significa que **no se requiere congelación de escritura durante el tránsito**. La cadena se extiende naturalmente en ambos lados. Es análogo a cómo la renovación de certificados X.509 maneja números de serie en vuelo.

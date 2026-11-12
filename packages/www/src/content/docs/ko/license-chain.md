@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: ko
-sourceHash: "0e25e85428482d31"
-sourceCommit: "c167e0ddc973d6cf9b5732a200c2c0006a7e8548"
+sourceHash: "78e880294cc0bf15"
+sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
 ---
 
 # 라이선스 체인 및 위임
@@ -322,8 +322,8 @@ Retry-After: 78234
 
 새 인증서가 온프레미스에 다시 업로드되면 `/onprem/cert-upload`가 새 인증서의 `genesisSequence`가 여전히 로컬 발급 원장의 알려진 항목과 연결되는지 검증합니다.
 
-- `cert.genesisSequence > localHead.sequence`인 경우 - `409 CHAIN_HEAD_BEHIND` 반환(업스트림이 포크된 체인에 있음).
-- `cert.genesisSequence > 0`이고 해당 시퀀스의 로컬 원장 항목의 `chainHash`가 `cert.genesisHash`와 다른 경우 - `409 CHAIN_FORK_ON_UPLOAD` 반환(로컬 체인이 분기됨).
+- `cert.genesisSequence > localHead.sequence`인 경우 - 코드 `chain-ahead`와 함께 `409`를 반환합니다.
+- `cert.genesisSequence > 0`이고 해당 시퀀스의 로컬 원장 항목의 `chainHash`가 `cert.genesisHash`와 다른 경우 - 코드 `chain-fork`와 함께 `409`를 반환합니다.
 - 그렇지 않으면 인증서가 수락됩니다. 향후 발급은 `localHead.sequence + 1`에서 계속됩니다.
 
 이는 **전송 중 쓰기 동결이 필요하지 않음**을 의미합니다. 체인은 양측에서 자연스럽게 확장됩니다. X.509 인증서 갱신이 진행 중인 일련 번호를 처리하는 방식과 동일합니다.

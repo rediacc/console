@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: fr
-sourceHash: "0e25e85428482d31"
-sourceCommit: "c167e0ddc973d6cf9b5732a200c2c0006a7e8548"
+sourceHash: "78e880294cc0bf15"
+sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
 ---
 
 # Chaîne de licence et délégation
@@ -322,8 +322,8 @@ Un manifeste de demande de renouvellement capture la tête de chaîne au moment 
 
 Lorsque le nouveau certificat est uploadé en retour vers l'on-premise, `/onprem/cert-upload` valide que le `genesisSequence` du nouveau certificat lie toujours à une entrée connue dans le registre d'émission local :
 
-- Si `cert.genesisSequence > localHead.sequence` → retourne `409 CHAIN_HEAD_BEHIND` (l'amont est sur une chaîne forkée).
-- Si `cert.genesisSequence > 0` et l'entrée du registre local à cette séquence a un `chainHash` différent de `cert.genesisHash` → retourne `409 CHAIN_FORK_ON_UPLOAD` (la chaîne locale a divergé).
+- Si `cert.genesisSequence > localHead.sequence`, retourne `409` avec le code `chain-ahead`.
+- Si `cert.genesisSequence > 0` et que l'entrée du registre local à cette séquence a un `chainHash` différent de `cert.genesisHash`, retourne `409` avec le code `chain-fork`.
 - Sinon, le certificat est accepté. Les futures émissions continuent depuis `localHead.sequence + 1`.
 
 Cela signifie **qu'aucun gel d'écriture n'est requis pendant le transit**. La chaîne s'étend naturellement des deux côtés. Analogue à la façon dont le renouvellement de certificat X.509 gère les numéros de série en vol.

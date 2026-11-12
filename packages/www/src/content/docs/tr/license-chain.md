@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: tr
-sourceHash: "0e25e85428482d31"
-sourceCommit: "c167e0ddc973d6cf9b5732a200c2c0006a7e8548"
+sourceHash: "78e880294cc0bf15"
+sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
 ---
 
 # Lisans Zinciri ve Yetkilendirme
@@ -322,8 +322,8 @@ Bir yenileme isteği manifestosu, oluşturulduğu andaki zincir başını yakala
 
 Yeni sertifika yerinde sunucuya geri yüklendiğinde, `/onprem/cert-upload` yeni sertifikanın `genesisSequence`'ının yerel düzenleme defterindeki bilinen bir girdiye hala bağlandığını doğrular:
 
-- `cert.genesisSequence > localHead.sequence` ise `409 CHAIN_HEAD_BEHIND` döndürür (yukarı akış çatallanmış bir zincirde).
-- `cert.genesisSequence > 0` ve o sıradaki yerel defter girdisi `cert.genesisHash`'ten farklı bir `chainHash`'e sahipse `409 CHAIN_FORK_ON_UPLOAD` döndürür (yerel zincir ayrışmış).
+- `cert.genesisSequence > localHead.sequence` ise `chain-ahead` koduyla `409` döndürür.
+- `cert.genesisSequence > 0` ve o sıradaki yerel defter girdisi `cert.genesisHash`'ten farklı bir `chainHash`'e sahipse `chain-fork` koduyla `409` döndürür.
 - Aksi takdirde sertifika kabul edilir. Gelecekteki düzenlemeler `localHead.sequence + 1`'den devam eder.
 
 Bu, **transit sırasında yazma dondurması gerekmediği** anlamına gelir. Zincir her iki tarafta da doğal olarak genişler. X.509 sertifika yenilemenin yürütme halindeki seri numaralarını nasıl ele aldığıyla aynı.

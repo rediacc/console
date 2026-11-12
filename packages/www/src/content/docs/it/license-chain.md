@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: it
-sourceHash: "0e25e85428482d31"
-sourceCommit: "c167e0ddc973d6cf9b5732a200c2c0006a7e8548"
+sourceHash: "78e880294cc0bf15"
+sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
 ---
 
 # Catena di Licenze e Delega
@@ -322,8 +322,8 @@ Un manifest di richiesta di rinnovo cattura la testa della catena nel momento de
 
 Quando il nuovo certificato viene caricato sull'on-premise, `/onprem/cert-upload` valida che il `genesisSequence` del nuovo certificato si colleghi ancora a una voce nota nel registro di emissione locale:
 
-- Se `cert.genesisSequence > localHead.sequence` restituisce `409 CHAIN_HEAD_BEHIND` (l'upstream è su una catena biforcata).
-- Se `cert.genesisSequence > 0` e la voce del registro locale a quella sequenza ha un `chainHash` diverso da `cert.genesisHash` restituisce `409 CHAIN_FORK_ON_UPLOAD` (la catena locale è divergita).
+- Se `cert.genesisSequence > localHead.sequence` restituisce `409` con il codice `chain-ahead`.
+- Se `cert.genesisSequence > 0` e la voce del registro locale a quella sequenza ha un `chainHash` diverso da `cert.genesisHash` restituisce `409` con il codice `chain-fork`.
 - Altrimenti, il certificato viene accettato. Le future emissioni continuano da `localHead.sequence + 1`.
 
 Ciò significa che **non è necessario alcun blocco delle scritture durante il transito**. La catena si estende naturalmente su entrambi i lati. Corrisponde a come il rinnovo del certificato X.509 gestisce i numeri seriali in volo.
