@@ -2592,7 +2592,8 @@
         "forking": "Creazione del fork del repository come punto di rollback {{tag}}",
         "template": "Riapplicazione del template elite (versione {{from}} a {{to}})",
         "templateCurrent": "Il template distribuito (versione {{version}}) è aggiornato",
-        "done": "{{domain}} aggiornato. Punto di rollback: {{rollback}}"
+        "done": "{{domain}} aggiornato. Punto di rollback: {{rollback}}",
+        "migratingCert": "Spostamento del certificato da secrets.env alla casella dei certificati; il server lo applica all’avvio"
       },
       "licence": {
         "description": "Passare un server dal livello gratuito a un certificato di delega dell'account connesso, oppure da --cert",
@@ -2607,12 +2608,14 @@
         "missingScope": "Questo accesso non può emettere un certificato di delega. Rieseguire `rdc subscription login` come proprietario o amministratore con 2FA, oppure installare con --licence free.",
         "offerFree": "Avviare invece il server con il livello gratuito?",
         "noCertForUpgrade": "Nessun certificato di delega disponibile: accedere con `rdc subscription login` come proprietario o amministratore con 2FA, oppure passare --cert <file>",
-        "stillFree": "{{domain}} risponde ancora come livello gratuito dopo il riavvio",
-        "certUnconfirmed": "{{domain}} non ha mai confermato il certificato (ultima risposta: HTTP {{status}})",
-        "viaUpload": "Il server in esecuzione ha accettato il certificato; non è servito alcun riavvio",
-        "viaRestart": "Il certificato è stato scritto in secrets.env e il server si riavvia per adottarlo",
-        "uploadRefused": "Il server in esecuzione ha rifiutato il caricamento del certificato (stato {{status}}); viene invece riavviato con il certificato",
-        "freeProbeHoldsCert": "Il server risponde come se avesse un certificato, benché non ne sia stato installato alcuno"
+        "freeProbeHoldsCert": "Il server risponde come se avesse un certificato, benché non ne sia stato installato alcuno",
+        "viaInbox": "Il server ha applicato il certificato dalla sua casella dei certificati; non è servito alcun riavvio",
+        "alreadyCurrent": "Il server ha già questo certificato ({{certId}}); non c’è niente da applicare",
+        "rejected": "Il server ha rifiutato il certificato ({{reason}}): {{detail}}",
+        "noResult": "Il server non ha risposto al certificato depositato entro {{seconds}} secondi; controlla che sia in esecuzione",
+        "inboxBusy": "Nella casella dei certificati del server c’è già un altro certificato in attesa; riprova quando sarà stato deciso",
+        "confirmMismatch": "Il server riporta il certificato {{actual}} invece di {{expected}}, quindi il nuovo certificato non è in vigore",
+        "confirmSkipped": "Nessun accesso del proprietario salvato ({{ownerFile}}): il certificato del server non è stato confermato e si accetta la risposta della casella"
       },
       "bundle": {
         "header": "Pacchetto di ripristino per {{domain}}. Conservarlo offline; ripristina le chiavi del server.",

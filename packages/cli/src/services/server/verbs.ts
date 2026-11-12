@@ -2,10 +2,11 @@
  * `rdc server status|backup|upgrade|licence`, each against an installed domain.
  */
 
+import { delegationCertId } from '@rediacc/shared/subscription';
 import { t } from '../../i18n/index.js';
 import { outputService } from '../core/output.js';
 import { locateRepo, rdcMust, readBundle, readPublicFacts, ServerError, setBoxEnv } from './box.js';
-import { decodeCertBase64, parseSignedCert } from './cert.js';
+import { decodeCert } from './cert.js';
 import {
   boxTarget,
   builtinTemplateVersion,
@@ -16,10 +17,17 @@ import {
   requireRecord,
   TEMPLATE_NAME,
 } from './common.js';
-import { API, covers, loginOwner, probeFreeTier, waitCertTier, waitHealthy } from './http.js';
-import { obtainLicence } from './licence.js';
-import { loadOwner, recordFile } from './state.js';
-import type { BoxTarget, ServerDeps } from './types.js';
+import { covers, probeFreeTier, waitHealthy } from './http.js';
+import {
+  awaitInboxResult,
+  confirmCertId,
+  dropCert,
+  migrateEnvCert,
+  obtainLicence,
+  readLiveCert,
+} from './licence.js';
+import { recordFile } from './state.js';
+import type { ServerDeps } from './types.js';
 
 const DEFAULT_TIER = 'licensed';
 
@@ -31,8 +39,11 @@ export interface StatusResult {
   certificateCoversDomain: boolean;
   tier: string;
   bootstrapMode: boolean;
+  /** The live cert's id (`delegationCertId`), as `GET /onprem/cert-status` reports it. */
+  certId?: string;
   subscriptionId?: string;
   planCode?: string;
+  certIssuedAt?: string;
   certValidUntil?: string;
   freeTierRelay?: boolean;
   image?: string;
@@ -40,12 +51,13 @@ export interface StatusResult {
   builtinTemplateVersion: number;
 }
 
-/** Reads only: the box's public facts, one health answer and the free-tier relay. */
+/** Reads only: the box's public facts, its live cert file, one health answer and the free-tier relay. */
 export async function serverStatus(deps: ServerDeps, loc: Locator): Promise<StatusResult> {
   const record = requireRecord(loc);
   const where = await locateRepo(record.repo, record.machine);
   const facts = await readPublicFacts(deps, where);
-  const cert = decodeCertBase64(facts.values.DELEGATION_CERT_BASE64);
+  const live = await readLiveCert(deps, where);
+  const cert = live?.decoded;
   const target = await boxTarget(deps, record);
   const health = await deps.box(target, 'GET', '/health');
   const relay = health.status === 200 ? await probeFreeTier(deps, target) : undefined;
@@ -57,10 +69,12 @@ export async function serverStatus(deps: ServerDeps, loc: Locator): Promise<Stat
     certificateCoversDomain: covers(health.sans, record.domain),
     tier: cert ? cert.planCode : 'free',
     bootstrapMode: !cert,
-    ...(cert
+    ...(live && cert
       ? {
+          certId: live.certId,
           subscriptionId: cert.subscriptionId,
           planCode: cert.planCode,
+          certIssuedAt: cert.issuedAt,
           certValidUntil: cert.validUntil,
         }
       : {}),
@@ -149,8 +163,14 @@ export async function serverUpgrade(
   }
 
   await setBoxEnv(deps, where, { ELITE_IMAGE: image, TAG: imageTag(image) });
+  // One-time move off DELEGATION_CERT_BASE64, which the server no longer reads: its cert goes into
+  // the inbox before the restart and the boot decides it. Delete this (and MIGRATE_ENV_CERT) once
+  // no deployed box predates template VERSION 4.
+  const migrated = await migrateEnvCert(deps, where);
+  if (migrated) outputService.info(t('commands.server.upgrade.migratingCert'));
   await rdcMust(deps, ['repo', 'up', repoRef]);
   await waitHealthy(deps, await boxTarget(deps, record));
+  if (migrated) await awaitInboxResult(deps, where, migrated.requestId);
   return {
     domain: record.domain,
     rollback: `${record.repo}:${tag}`,
@@ -164,44 +184,18 @@ export interface LicenceUpgradeResult {
   domain: string;
   subscriptionId: string;
   tier: string;
-  /** `upload`: the running server took the cert through its root-only route; `restart`: secrets.env and `repo up`. */
-  via: 'upload' | 'restart';
+  /** The applied cert's id (`delegationCertId`). */
+  certId: string;
+  /** `inbox`: the server took the cert through its cert inbox; `already-current`: it already held it. */
+  via: 'inbox' | 'already-current';
 }
 
 /**
- * The cert through the server's own `POST /onprem/cert-upload`, as the owner. Moving from the
- * free tier counts as bootstrap, so no elevation is asked. False when anything refuses (no saved
- * owner, a login that fails, a server without the route or without a root user): the caller
- * then takes the restart path.
- */
-async function uploadCert(
-  deps: ServerDeps,
-  target: BoxTarget,
-  domain: string,
-  certBase64: string | undefined
-): Promise<boolean> {
-  const owner = loadOwner(domain);
-  if (!owner || !certBase64) return false;
-  const cookie = await loginOwner(deps, target, owner);
-  if (!cookie) return false;
-  const { payload, signature, publicKeyId } = parseSignedCert(certBase64);
-  const reply = await deps.box(
-    target,
-    'POST',
-    `${API}/onprem/cert-upload`,
-    { payload, signature, publicKeyId },
-    cookie
-  );
-  if (reply.status === 200) return true;
-  outputService.warn(t('commands.server.licence.uploadRefused', { status: reply.status || '-' }));
-  return false;
-}
-
-/**
- * From the free tier to a cert: the logged-in config mints one for the box's key (or `--cert`
- * brings it). The running server takes it through `POST /onprem/cert-upload` as the owner; when
- * that is refused, it goes into secrets.env and `repo up` restarts the server, which adopts it
- * at boot.
+ * From the free tier to a cert, or to a newer one: the logged-in config mints one for the box's key
+ * (or `--cert` brings it), it goes into the box's cert inbox, and the running server validates and
+ * applies it. Success needs the server's `applied.json` for this request and then the owner's
+ * `GET /onprem/cert-status` reporting the new cert's id. Nothing restarts, and secrets.env only
+ * takes the auto-renew settings.
  */
 export async function serverLicence(
   deps: ServerDeps,
@@ -214,6 +208,7 @@ export async function serverLicence(
   const boxKey = facts.values.ACCOUNT_ED25519_PUBLIC_KEY;
   if (!boxKey) throw new ServerError(t('commands.server.errors.keygenNoKey'));
 
+  const live = await readLiveCert(deps, where);
   const result = await obtainLicence(deps, {
     mode: 'auto',
     certFile,
@@ -223,25 +218,33 @@ export async function serverLicence(
   if (result.kind !== 'cert') {
     throw new ServerError(t('commands.server.licence.noCertForUpgrade'));
   }
-  const target = await boxTarget(deps, record);
-  const uploaded = await uploadCert(deps, target, record.domain, result.env.DELEGATION_CERT_BASE64);
-  // Written either way, so the next restart or upgrade carries the cert and its renewal token.
-  await setBoxEnv(deps, where, result.env);
-  if (!uploaded) {
-    outputService.info(t('commands.server.licence.viaRestart'));
-    await rdcMust(deps, ['repo', 'up', `${record.repo}@${record.machine}`]);
-    await waitHealthy(deps, target);
+  const tier = (cert: { planCode?: string } | undefined) => cert?.planCode ?? DEFAULT_TIER;
+
+  const certId = await delegationCertId(result.signed);
+  if (live?.certId === certId) {
+    outputService.info(t('commands.server.licence.alreadyCurrent', { certId }));
+    return {
+      domain: record.domain,
+      subscriptionId: result.subscriptionId,
+      tier: tier(live.decoded),
+      certId,
+      via: 'already-current',
+    };
   }
-  // An upload takes effect asynchronously: success is reported only once the server shows the cert.
-  await waitCertTier(deps, target);
-  if (uploaded) outputService.info(t('commands.server.licence.viaUpload'));
+
+  const drop = await dropCert(deps, where, result.signed);
+  await awaitInboxResult(deps, where, drop.requestId);
+  await confirmCertId(deps, await boxTarget(deps, record), record.domain, drop.certId);
+  if (Object.keys(result.env).length > 0) await setBoxEnv(deps, where, result.env);
+  outputService.info(t('commands.server.licence.viaInbox'));
+
   const stored = { ...record, licence: 'cert' as const, subscriptionId: result.subscriptionId };
   await deps.writePrivate(recordFile(record.domain), `${JSON.stringify(stored, null, 2)}\n`);
-  const cert = decodeCertBase64(result.env.DELEGATION_CERT_BASE64);
   return {
     domain: record.domain,
     subscriptionId: result.subscriptionId,
-    tier: cert?.planCode ?? DEFAULT_TIER,
-    via: uploaded ? 'upload' : 'restart',
+    tier: tier(decodeCert(result.signed)),
+    certId: drop.certId,
+    via: 'inbox',
   };
 }

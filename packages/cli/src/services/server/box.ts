@@ -53,7 +53,7 @@ export async function locateRepo(repo: string, machine: string): Promise<RepoOnB
   };
 }
 
-async function runOnBox(
+export async function runOnBox(
   deps: ServerDeps,
   where: RepoOnBox,
   script: string,

@@ -2592,7 +2592,8 @@
         "forking": "저장소를 롤백 지점 {{tag}} (으)로 포크하는 중",
         "template": "elite 템플릿을 다시 적용하는 중 (버전 {{from}}에서 {{to}}로)",
         "templateCurrent": "배포된 템플릿(버전 {{version}})이 최신입니다",
-        "done": "{{domain}} 업그레이드 완료. 롤백 지점: {{rollback}}"
+        "done": "{{domain}} 업그레이드 완료. 롤백 지점: {{rollback}}",
+        "migratingCert": "인증서를 secrets.env에서 인증서 수신함으로 옮기는 중입니다. 서버가 시작할 때 적용합니다"
       },
       "licence": {
         "description": "무료 등급 서버를 로그인한 계정 또는 --cert의 위임 인증서로 전환",
@@ -2607,12 +2608,14 @@
         "missingScope": "이 로그인으로는 위임 인증서를 발급할 수 없습니다. 소유자 또는 관리자로서 2FA와 함께 `rdc subscription login` 을 다시 실행하거나, --licence free 로 설치하세요.",
         "offerFree": "대신 무료 등급으로 서버를 시작할까요?",
         "noCertForUpgrade": "사용할 수 있는 위임 인증서가 없습니다: 소유자 또는 관리자로서 2FA와 함께 `rdc subscription login` 으로 로그인하거나 --cert <file> 을 지정하세요",
-        "stillFree": "재시작 후에도 {{domain}} 이(가) 무료 등급으로 응답합니다",
-        "certUnconfirmed": "{{domain}}에서 인증서를 끝내 확인하지 못했습니다 (마지막 응답: HTTP {{status}})",
-        "viaUpload": "실행 중인 서버가 인증서를 받아들였습니다. 재시작은 필요하지 않았습니다",
-        "viaRestart": "인증서를 secrets.env에 기록했고, 서버를 다시 시작해 적용하는 중입니다",
-        "uploadRefused": "실행 중인 서버가 인증서 업로드를 거부했습니다(상태 {{status}}). 대신 인증서를 적용해 서버를 다시 시작합니다",
-        "freeProbeHoldsCert": "설치된 인증서가 없는데도 서버가 인증서를 보유한 것처럼 응답합니다"
+        "freeProbeHoldsCert": "설치된 인증서가 없는데도 서버가 인증서를 보유한 것처럼 응답합니다",
+        "viaInbox": "서버가 인증서 수신함에서 인증서를 적용했습니다. 재시작은 필요하지 않았습니다",
+        "alreadyCurrent": "서버에 이미 이 인증서({{certId}})가 있어 적용할 것이 없습니다",
+        "rejected": "서버가 인증서를 거부했습니다({{reason}}): {{detail}}",
+        "noResult": "넣어 둔 인증서에 서버가 {{seconds}}초 안에 응답하지 않았습니다. 서버가 실행 중인지 확인하세요",
+        "inboxBusy": "서버의 인증서 수신함에 다른 인증서가 처리를 기다리고 있습니다. 처리가 끝난 뒤 다시 시도하세요",
+        "confirmMismatch": "서버가 {{expected}} 대신 인증서 {{actual}}을(를) 보고하므로 새 인증서는 적용되지 않았습니다",
+        "confirmSkipped": "저장된 소유자 로그인 정보({{ownerFile}})가 없어 서버의 인증서를 확인하지 못했습니다. 수신함의 응답을 그대로 따릅니다"
       },
       "bundle": {
         "header": "{{domain}} 의 복구 번들. 서버의 키를 복원할 수 있으니 오프라인으로 보관하세요.",

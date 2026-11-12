@@ -186,7 +186,7 @@ function registerLicence(server: Command): void {
       const result = await serverLicence(liveServerDeps(), { domain, ...flags }, flags.cert);
       if (isMachineReadable()) {
         outputService.print(result, 'json');
-      } else {
+      } else if (result.via === 'inbox') {
         outputService.success(
           t('commands.server.licence.done', { domain, subscription: result.subscriptionId })
         );

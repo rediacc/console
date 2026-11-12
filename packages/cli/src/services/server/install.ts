@@ -21,13 +21,15 @@
  *   bws        only with `--bws-project <id>` (Rediacc's own installs): the secrets copied to that
  *              Bitwarden Secrets Manager project under opaque names; otherwise nothing leaves the box.
  *   licence    `--cert <file>` (must name the box's key), else the logged-in config's
- *              `POST /delegation/issue`, else the free tier.
- *   settings   the domains and the image ref into secrets.env.
+ *              `POST /delegation/issue`, else the free tier. A cert is dropped into the box's cert
+ *              inbox; the server decides it at its first boot, before `/health` answers.
+ *   settings   the domains, the image ref, ROOT_EMAIL and ON_PREMISE_MODE into secrets.env.
  *   image      pull inside the repo's daemon, or ship `--image-file` into images/.
  *   up         `repo up`.
- *   wait       `/health` answers 200 over a certificate covering the domain.
+ *   wait       `/health` answers 200 over a certificate covering the domain, then the inbox's
+ *              answer to the licence step's drop is read (a rejection fails the step).
  *   owner      the owner account, created in this run; with a cert, its subscription must be the
- *              cert's.
+ *              cert's, and its `GET /onprem/cert-status` must report the cert's id.
  *
  * On a terminal the one-time recovery bundle is printed at the end; it is never logged and never
  * part of `--output json`. Without a terminal the closing line names `rdc server backup`.
@@ -66,7 +68,15 @@ import {
 } from './common.js';
 import { dnsRecords, printDnsRecords, waitForDns, writeOwnedRecords } from './dns.js';
 import { createOwner, probeFreeTier, waitHealthy } from './http.js';
-import { type LicenceResult, obtainLicence } from './licence.js';
+import {
+  awaitInboxResult,
+  confirmCertId,
+  dropCert,
+  type LicenceResult,
+  obtainLicence,
+  type PendingDrop,
+  readLiveCert,
+} from './licence.js';
 import { runPreflight } from './preflight.js';
 import {
   ensureStateDir,
@@ -175,6 +185,8 @@ export class ServerInstall {
   private where?: RepoOnBox;
   private boxKey = '';
   private licenceResult?: LicenceResult;
+  /** The licence step's inbox drop, read back by the wait step. Unset on a rerun that skipped it. */
+  private pendingDrop?: PendingDrop;
   /** Set by the preflight; the setup step runs `machine setup` only when it is true. */
   private renetMissing: boolean | undefined;
 
@@ -483,7 +495,10 @@ export class ServerInstall {
         prompts: this.prompts,
       });
       if (this.licenceResult.kind === 'cert') {
-        await setBoxEnv(this.deps, await this.box(), this.licenceResult.env);
+        this.pendingDrop = await dropCert(this.deps, await this.box(), this.licenceResult.signed);
+        if (Object.keys(this.licenceResult.env).length > 0) {
+          await setBoxEnv(this.deps, await this.box(), this.licenceResult.env);
+        }
         this.record.licence = 'cert';
         this.record.subscriptionId = this.licenceResult.subscriptionId;
       } else {
@@ -518,6 +533,9 @@ export class ServerInstall {
     },
     wait: async () => {
       await waitHealthy(this.deps, await this.target());
+      if (this.pendingDrop) {
+        await awaitInboxResult(this.deps, await this.box(), this.pendingDrop.requestId);
+      }
     },
     owner: async () => {
       const saved = loadOwner(this.plan.domain);
@@ -529,7 +547,17 @@ export class ServerInstall {
       await this.deps.writePrivate(ownerFile(this.plan.domain), `${JSON.stringify(creds)}\n`);
       const target = await this.target();
       await createOwner(this.deps, target, creds, this.record.subscriptionId);
-      if (this.record.licence === 'free' && (await probeFreeTier(this.deps, target)) === false) {
+      if (this.record.licence === 'cert') {
+        // A rerun that skipped the licence step confirms the cert the box holds on disk.
+        const certId =
+          this.pendingDrop?.certId ?? (await readLiveCert(this.deps, await this.box()))?.certId;
+        if (!certId) {
+          throw new ServerError(
+            t('commands.server.licence.confirmMismatch', { expected: '-', actual: '-' })
+          );
+        }
+        await confirmCertId(this.deps, target, this.plan.domain, certId);
+      } else if ((await probeFreeTier(this.deps, target)) === false) {
         outputService.warn(t('commands.server.licence.freeProbeHoldsCert'));
       }
     },

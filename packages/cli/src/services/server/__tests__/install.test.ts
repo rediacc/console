@@ -250,21 +250,53 @@ describe('settings', () => {
 });
 
 describe('licence', () => {
-  it('auto: the logged-in config issues a cert for the box key, written to secrets.env', async () => {
+  it('auto: the issued cert is dropped into the inbox before up, decided in wait, confirmed in owner', async () => {
     const { fake, result } = run({ machine: 'm1' });
     const out = await result;
-    const env = fake.setEnv.find((e) => e.DELEGATION_CERT_BASE64);
-    expect(env?.DELEGATION_CERT_BASE64).toBe(certFor(BOX_KEY));
-    expect(env?.UPSTREAM_API_KEY).toBe('renew-token');
+    expect(fake.drops).toHaveLength(1);
+    expect(fake.drops[0].cert).toEqual(
+      JSON.parse(Buffer.from(certFor(BOX_KEY), 'base64').toString())
+    );
+    const order = [
+      'ssh m1 inbox-drop',
+      'rdc repo up elite@m1',
+      'https GET /health',
+      'ssh m1 inbox-result',
+      'https GET /account/api/v1/onprem/cert-status',
+    ];
+    const at = order.map((c) => fake.calls.indexOf(c));
+    expect(at.every((i) => i >= 0)).toBe(true);
+    expect([...at].sort((a, b) => a - b)).toEqual(at);
+    // secrets.env never carries the cert, only the auto-renew settings.
+    expect(fake.setEnv.some((e) => 'DELEGATION_CERT_BASE64' in e)).toBe(false);
+    expect(fake.setEnv.find((e) => e.UPSTREAM_API_KEY)?.UPSTREAM_API_KEY).toBe('renew-token');
     expect(out.tier).toBe('licensed');
     expect(out.subscriptionId).toBe('sub-1');
   });
 
-  it('auto with no login starts on the free tier', async () => {
+  it('fails the wait step when the server rejects the dropped cert', async () => {
+    const { result } = run(
+      { machine: 'm1' },
+      { inbox: { reason: 'wrong-key', detail: 'other key' } }
+    );
+    await expect(result).rejects.toThrow(/^wait: .*licence\.rejected.*wrong-key/);
+  });
+
+  it('fails the owner step when cert-status does not report the dropped cert', async () => {
+    const { result } = run(
+      { machine: 'm1' },
+      { boxReplies: { '/onprem/cert-status': { body: { cert: null } } } }
+    );
+    await expect(result).rejects.toThrow(/^owner: .*confirmMismatch/);
+  });
+
+  it('auto with no login starts on the free tier and drops nothing', async () => {
     const { fake, result } = run({ machine: 'm1' }, { issue: { kind: 'no-login' } });
     const out = await result;
     expect(out.tier).toBe('free');
-    expect(fake.setEnv.some((e) => e.DELEGATION_CERT_BASE64)).toBe(false);
+    expect(fake.drops).toHaveLength(0);
+    expect(fake.calls).not.toContain('ssh m1 inbox-result');
+    expect(fake.setEnv.some((e) => 'DELEGATION_CERT_BASE64' in e)).toBe(false);
   });
 
   it('auto with a login lacking the scope refuses off a terminal, naming the relogin', async () => {
@@ -285,11 +317,12 @@ describe('licence', () => {
     await expect(result).rejects.toThrow(/keyMismatch/);
   });
 
-  it('--cert for the box key is installed without the account server', async () => {
+  it('--cert for the box key is installed through the inbox without the account server', async () => {
     const files = { '/c.json': certFor(BOX_KEY, 'sub-1') };
     const { fake, result } = run({ machine: 'm1', cert: '/c.json' }, { files });
     const out = await result;
     expect(fake.calls).not.toContain('issue');
+    expect(fake.drops).toHaveLength(1);
     expect(out.subscriptionId).toBe('sub-1');
   });
 

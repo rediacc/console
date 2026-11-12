@@ -2592,7 +2592,8 @@
         "forking": "Hoidlast tehakse fork tagasipöördepunktiks {{tag}}",
         "template": "Elite malli rakendatakse uuesti (versioon {{from}} -> {{to}})",
         "templateCurrent": "Juurutatud mall (versioon {{version}}) on ajakohane",
-        "done": "{{domain}} uuendatud. Tagasipöördepunkt: {{rollback}}"
+        "done": "{{domain}} uuendatud. Tagasipöördepunkt: {{rollback}}",
+        "migratingCert": "Sertifikaat viiakse secrets.env-ist sertifikaatide sisendkausta; server rakendab selle käivitumisel"
       },
       "licence": {
         "description": "Vii tasuta taseme server üle delegeerimissertifikaadile, mis pärineb sisse logitud kontolt või valikust --cert",
@@ -2607,12 +2608,14 @@
         "missingScope": "See sisselogimine ei saa delegeerimissertifikaati välja anda. Käivita `rdc subscription login` uuesti omaniku või administraatorina koos 2FA-ga või paigalda valikuga --licence free.",
         "offerFree": "Kas käivitada server hoopis tasuta tasemel?",
         "noCertForUpgrade": "Delegeerimissertifikaati pole saadaval: logi sisse käsuga `rdc subscription login` omaniku või administraatorina koos 2FA-ga või anna --cert <file>",
-        "stillFree": "{{domain}} vastab pärast taaskäivitust endiselt tasuta tasemena",
-        "certUnconfirmed": "{{domain}} ei kinnitanud sertifikaati (viimane vastus: HTTP {{status}})",
-        "viaUpload": "Töötav server võttis sertifikaadi vastu; taaskäivitust ei vajatud",
-        "viaRestart": "Sertifikaat kirjutati faili secrets.env ja server taaskäivitub selle kasutusele võtmiseks",
-        "uploadRefused": "Töötav server keeldus sertifikaadi üleslaadimisest (olek {{status}}); selle asemel taaskäivitatakse see sertifikaadiga",
-        "freeProbeHoldsCert": "Server vastab nii, nagu tal oleks sertifikaat, kuigi ühtegi pole paigaldatud"
+        "freeProbeHoldsCert": "Server vastab nii, nagu tal oleks sertifikaat, kuigi ühtegi pole paigaldatud",
+        "viaInbox": "Server võttis sertifikaadi kasutusele oma sertifikaatide sisendkaustast; taaskäivitust polnud vaja",
+        "alreadyCurrent": "Serveril on see sertifikaat juba olemas ({{certId}}); midagi pole rakendada",
+        "rejected": "Server lükkas sertifikaadi tagasi ({{reason}}): {{detail}}",
+        "noResult": "Server ei vastanud üleantud sertifikaadile {{seconds}} sekundi jooksul; kontrolli, kas see töötab",
+        "inboxBusy": "Serveri sertifikaatide sisendkaustas ootab juba teine sertifikaat; proovi uuesti, kui selle kohta on otsus tehtud",
+        "confirmMismatch": "Server teatab sertifikaadist {{actual}}, mitte {{expected}}, seega uus sertifikaat ei kehti",
+        "confirmSkipped": "Salvestatud omaniku sisselogimist pole ({{ownerFile}}), nii et serveri sertifikaati ei saanud kinnitada; aluseks võetakse sisendkausta vastus"
       },
       "bundle": {
         "header": "Domeeni {{domain}} taastepakett. Hoia seda võrguühenduseta; see taastab serveri võtmed.",

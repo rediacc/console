@@ -2592,7 +2592,8 @@
         "forking": "Bifurcando el repositorio como punto de reversión {{tag}}",
         "template": "Volviendo a aplicar la plantilla elite (versión {{from}} a {{to}})",
         "templateCurrent": "La plantilla desplegada (versión {{version}}) está al día",
-        "done": "{{domain}} actualizado. Punto de reversión: {{rollback}}"
+        "done": "{{domain}} actualizado. Punto de reversión: {{rollback}}",
+        "migratingCert": "Pasando el certificado de secrets.env a la bandeja de certificados; el servidor lo aplica al arrancar"
       },
       "licence": {
         "description": "Pasar un servidor del nivel gratuito a un certificado de delegación de la cuenta con sesión iniciada o de --cert",
@@ -2607,12 +2608,14 @@
         "missingScope": "Esta sesión no puede emitir un certificado de delegación. Ejecute `rdc subscription login` de nuevo como propietario o administrador con 2FA, o instale con --licence free.",
         "offerFree": "¿Iniciar el servidor con el nivel gratuito en su lugar?",
         "noCertForUpgrade": "No hay ningún certificado de delegación disponible: inicie sesión con `rdc subscription login` como propietario o administrador con 2FA, o indique --cert <file>",
-        "stillFree": "{{domain}} sigue respondiendo como nivel gratuito tras el reinicio",
-        "certUnconfirmed": "{{domain}} no llegó a confirmar el certificado (última respuesta: HTTP {{status}})",
-        "viaUpload": "El servidor en ejecución aceptó el certificado; no hizo falta reiniciar",
-        "viaRestart": "El certificado se guardó en secrets.env y el servidor se reinicia para adoptarlo",
-        "uploadRefused": "El servidor en ejecución rechazó la subida del certificado (estado {{status}}); se reinicia con el certificado en su lugar",
-        "freeProbeHoldsCert": "El servidor responde como si tuviera un certificado, aunque no se instaló ninguno"
+        "freeProbeHoldsCert": "El servidor responde como si tuviera un certificado, aunque no se instaló ninguno",
+        "viaInbox": "El servidor aplicó el certificado desde su bandeja de certificados; no hizo falta reiniciar",
+        "alreadyCurrent": "El servidor ya tiene este certificado ({{certId}}); no hay nada que aplicar",
+        "rejected": "El servidor rechazó el certificado ({{reason}}): {{detail}}",
+        "noResult": "El servidor no respondió al certificado depositado en {{seconds}} segundos; comprueba que esté en marcha",
+        "inboxBusy": "Ya hay otro certificado esperando en la bandeja de certificados del servidor; vuelve a intentarlo cuando se resuelva",
+        "confirmMismatch": "El servidor indica el certificado {{actual}} en lugar de {{expected}}, así que el nuevo certificado no está en vigor",
+        "confirmSkipped": "No hay un inicio de sesión del propietario guardado ({{ownerFile}}), así que no se pudo confirmar el certificado del servidor; se da por buena la respuesta de la bandeja"
       },
       "bundle": {
         "header": "Paquete de recuperación de {{domain}}. Guárdelo sin conexión; restaura las claves del servidor.",

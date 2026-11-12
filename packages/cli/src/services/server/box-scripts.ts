@@ -25,7 +25,6 @@ export const BUNDLE_KEYS = [
 /** The public facts `status` and `upgrade` read back from the box. */
 export const PUBLIC_KEYS = [
   'ACCOUNT_ED25519_PUBLIC_KEY',
-  'DELEGATION_CERT_BASE64',
   'ELITE_DOMAIN',
   'ELITE_STORE_DOMAIN',
   'ELITE_IMAGE',
@@ -122,6 +121,96 @@ awk -v d="$t" 'BEGIN {o = d "/cert.pem"} /^--RDC-SPLIT--$/ {o = d "/key.pem"; ne
 `;
 
 export const BYO_SPLIT = '--RDC-SPLIT--';
+
+/*
+ * The cert inbox (private/account/src/services/cert-inbox.service.ts). The compose bind
+ * `./data/web:/data` and `DELEGATION_CERT_PATH=/data/delegation-cert.json` put the live cert at
+ * `$1/data/web/delegation-cert.json` and the inbox at `$1/data/web/cert-inbox/` on the box. The
+ * server claims `new.json`, then answers `applied.json` `{requestId, certId, issuedAt}` or
+ * `rejected.json` `{requestId, reason, detail}`; a running server within about 2 s, a stopped one at
+ * its next boot, before `/health` answers 200.
+ */
+
+/** Seconds `INBOX_RESULT` waits on the box for an answer naming its request. */
+export const INBOX_RESULT_SECONDS = 60;
+
+/** The live cert file, printed when present; nothing when the box holds none. */
+export const READ_LIVE_CERT = `
+f="$1/data/web/delegation-cert.json"
+if [ -f "$f" ]; then cat "$f"; fi
+`;
+
+/**
+ * Drop the body on stdin (`{"requestId", "cert"}`) as the inbox's `new.json`, through `new.json.tmp`
+ * and a rename, under a lock. Prints `inbox=busy` and drops nothing while another drop is waiting
+ * or being decided, else `inbox=dropped`.
+ */
+export const INBOX_DROP = `
+set -eu
+d="$1/data/web/cert-inbox"
+mkdir -p "$1/data/web"
+mkdir -p -m 0700 "$d"
+chmod 0700 "$d"
+umask 077
+exec 9>"$d/.lock"
+if ! flock -n 9; then echo inbox=busy; exit 0; fi
+if [ -e "$d/new.json" ] || [ -e "$d/processing.json" ]; then echo inbox=busy; exit 0; fi
+cat > "$d/new.json.tmp"
+mv "$d/new.json.tmp" "$d/new.json"
+echo inbox=dropped
+`;
+
+/**
+ * Wait up to ${INBOX_RESULT_SECONDS} s for the answer to the request id on stdin. Prints
+ * `result=applied` or `result=rejected` followed by the answer file, or `result=none`.
+ */
+export const INBOX_RESULT = `
+set -eu
+d="$1/data/web/cert-inbox"
+IFS= read -r id
+i=0
+while [ "$i" -lt ${INBOX_RESULT_SECONDS} ]; do
+  for r in applied rejected; do
+    p="$d/$r.json"
+    if [ -f "$p" ] && grep -q "\\"requestId\\": *\\"$id\\"" "$p"; then echo "result=$r"; cat "$p"; exit 0; fi
+  done
+  sleep 1
+  i=$((i + 1))
+done
+echo result=none
+`;
+
+/**
+ * One-time move off `DELEGATION_CERT_BASE64` (`rdc server upgrade`; delete this script and its
+ * call once no deployed box predates template VERSION 4). With the key set and no live cert, its
+ * cert is dropped into the inbox under the request id on stdin (`migrate=dropped`); a waiting
+ * drop leaves everything as it is (`migrate=busy`). Otherwise the key is removed from
+ * `secrets.env` (`migrate=none` when there was nothing to drop).
+ */
+export const MIGRATE_ENV_CERT = `
+set -eu
+f="$1/secrets.env"
+d="$1/data/web/cert-inbox"
+IFS= read -r id
+umask 077
+v=$(grep '^DELEGATION_CERT_BASE64=' "$f" 2>/dev/null | tail -n 1 | cut -d= -f2- | tr -d '"' || true)
+state=none
+if [ -n "$v" ] && [ ! -f "$1/data/web/delegation-cert.json" ]; then
+  mkdir -p "$1/data/web"
+  mkdir -p -m 0700 "$d"
+  chmod 0700 "$d"
+  if [ -e "$d/new.json" ] || [ -e "$d/processing.json" ]; then echo migrate=busy; exit 0; fi
+  printf '{"requestId":"%s","cert":%s}\\n' "$id" "$(printf '%s' "$v" | base64 -d)" > "$d/new.json.tmp"
+  mv "$d/new.json.tmp" "$d/new.json"
+  state=dropped
+fi
+if [ -f "$f" ]; then
+  { grep -v '^DELEGATION_CERT_BASE64=' "$f" || true; } > "$f.tmp"
+  mv "$f.tmp" "$f"
+  chmod 600 "$f"
+fi
+echo "migrate=$state"
+`;
 
 /** `docker pull` inside the repo's own daemon. `$1` is the daemon socket, `$2` the image ref. */
 export const PULL_IMAGE = `

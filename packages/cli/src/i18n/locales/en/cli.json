@@ -2863,7 +2863,8 @@
         "forking": "Forking the repository as rollback point {{tag}}",
         "template": "Applying the elite template again (version {{from}} to {{to}})",
         "templateCurrent": "The deployed template (version {{version}}) is current",
-        "done": "{{domain}} upgraded. Rollback point: {{rollback}}"
+        "done": "{{domain}} upgraded. Rollback point: {{rollback}}",
+        "migratingCert": "Moving the certificate from secrets.env into the cert inbox; the server applies it as it starts"
       },
       "licence": {
         "description": "Move a free-tier server to a delegation certificate from the logged-in account, or from --cert",
@@ -2878,12 +2879,14 @@
         "missingScope": "This login cannot issue a delegation certificate. Run `rdc subscription login` again as an owner or admin with 2FA, or install with --licence free.",
         "offerFree": "Start the server on the free tier instead?",
         "noCertForUpgrade": "No delegation certificate is available: log in with `rdc subscription login` as an owner or admin with 2FA, or pass --cert <file>",
-        "stillFree": "{{domain}} still answers as the free tier after the restart",
-        "certUnconfirmed": "{{domain}} never confirmed the cert (last answer: HTTP {{status}})",
-        "viaUpload": "The running server accepted the certificate; no restart was needed",
-        "viaRestart": "The certificate went into secrets.env and the server is restarting to adopt it",
-        "uploadRefused": "The running server refused the certificate upload (status {{status}}); restarting it with the certificate instead",
-        "freeProbeHoldsCert": "The server answers as holding a certificate although none was installed"
+        "freeProbeHoldsCert": "The server answers as holding a certificate although none was installed",
+        "viaInbox": "The server applied the certificate from its cert inbox; no restart was needed",
+        "alreadyCurrent": "The server already holds this certificate ({{certId}}); nothing to apply",
+        "rejected": "The server rejected the certificate ({{reason}}): {{detail}}",
+        "noResult": "The server did not answer the certificate drop within {{seconds}} seconds; check that it is running",
+        "inboxBusy": "Another certificate is waiting in the server's cert inbox; try again once it is decided",
+        "confirmMismatch": "The server reports certificate {{actual}} instead of {{expected}}, so the new certificate is not in force",
+        "confirmSkipped": "No saved owner login ({{ownerFile}}), so the server's certificate could not be confirmed; its inbox answer is trusted"
       },
       "bundle": {
         "header": "Recovery bundle for {{domain}}. Keep it offline; it restores the server's keys.",

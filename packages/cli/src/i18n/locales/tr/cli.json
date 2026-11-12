@@ -2592,7 +2592,8 @@
         "forking": "Depo, {{tag}} geri alma noktası olarak fork ediliyor",
         "template": "elite şablonu yeniden uygulanıyor (sürüm {{from}} -> {{to}})",
         "templateCurrent": "Dağıtılmış şablon (sürüm {{version}}) güncel",
-        "done": "{{domain}} yükseltildi. Geri alma noktası: {{rollback}}"
+        "done": "{{domain}} yükseltildi. Geri alma noktası: {{rollback}}",
+        "migratingCert": "Sertifika secrets.env dosyasından sertifika gelen kutusuna taşınıyor; sunucu açılırken uygular"
       },
       "licence": {
         "description": "Ücretsiz katmandaki bir sunucuyu, oturum açmış hesaptan veya --cert ile alınan yetki devri sertifikasına taşı",
@@ -2607,12 +2608,14 @@
         "missingScope": "Bu oturum bir yetki devri sertifikası veremez. `rdc subscription login` komutunu 2FA'lı bir sahip veya yönetici olarak yeniden çalıştırın ya da --licence free ile kurun.",
         "offerFree": "Sunucu bunun yerine ücretsiz katmanda başlatılsın mı?",
         "noCertForUpgrade": "Kullanılabilir yetki devri sertifikası yok: `rdc subscription login` ile 2FA'lı bir sahip veya yönetici olarak oturum açın ya da --cert <file> verin",
-        "stillFree": "{{domain}}, yeniden başlatmadan sonra hâlâ ücretsiz katman olarak yanıt veriyor",
-        "certUnconfirmed": "{{domain}} sertifikayı hiç onaylamadı (son yanıt: HTTP {{status}})",
-        "viaUpload": "Çalışan sunucu sertifikayı kabul etti; yeniden başlatmaya gerek kalmadı",
-        "viaRestart": "Sertifika secrets.env dosyasına yazıldı ve sunucu onu almak için yeniden başlatılıyor",
-        "uploadRefused": "Çalışan sunucu sertifika yüklemesini reddetti (durum {{status}}); bunun yerine sertifikayla yeniden başlatılıyor",
-        "freeProbeHoldsCert": "Hiçbir sertifika kurulmamasına rağmen sunucu sertifika taşıyormuş gibi yanıt veriyor"
+        "freeProbeHoldsCert": "Hiçbir sertifika kurulmamasına rağmen sunucu sertifika taşıyormuş gibi yanıt veriyor",
+        "viaInbox": "Sunucu sertifikayı sertifika gelen kutusundan uyguladı; yeniden başlatma gerekmedi",
+        "alreadyCurrent": "Sunucuda bu sertifika zaten var ({{certId}}); uygulanacak bir şey yok",
+        "rejected": "Sunucu sertifikayı reddetti ({{reason}}): {{detail}}",
+        "noResult": "Sunucu bırakılan sertifikaya {{seconds}} saniye içinde yanıt vermedi; çalıştığını kontrol edin",
+        "inboxBusy": "Sunucunun sertifika gelen kutusunda bekleyen başka bir sertifika var; o karara bağlandıktan sonra yeniden deneyin",
+        "confirmMismatch": "Sunucu {{expected}} yerine {{actual}} sertifikasını bildiriyor; yani yeni sertifika yürürlükte değil",
+        "confirmSkipped": "Kayıtlı sahip girişi yok ({{ownerFile}}), bu yüzden sunucunun sertifikası doğrulanamadı; gelen kutusunun yanıtı esas alındı"
       },
       "bundle": {
         "header": "{{domain}} için kurtarma paketi. Çevrimdışı saklayın; sunucunun anahtarlarını geri yükler.",

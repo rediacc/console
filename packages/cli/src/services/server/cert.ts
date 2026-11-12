@@ -1,6 +1,7 @@
 /**
- * Delegation certificates as the box reads them: `DELEGATION_CERT_BASE64` is the base64 of the
- * signed cert JSON `{payload, signature, publicKeyId}`, whose `payload` is itself base64 JSON.
+ * Delegation certificates: the signed cert JSON `{payload, signature, publicKeyId}`, whose `payload`
+ * is itself base64 JSON. The box holds it as `data/web/delegation-cert.json`; the account server's
+ * `POST /delegation/issue` answers carry its base64.
  */
 
 import type { DelegationCert, SignedDelegationCert } from '@rediacc/shared/subscription';
@@ -61,16 +62,6 @@ export function decodeCert(cert: SignedDelegationCert): DelegationCert {
   } catch (error) {
     if (error instanceof CertError) throw error;
     throw new CertError('the certificate payload is not readable JSON');
-  }
-}
-
-/** The payload of a `DELEGATION_CERT_BASE64` value; undefined when empty or unreadable. */
-export function decodeCertBase64(value: string | undefined): DelegationCert | undefined {
-  if (!value) return undefined;
-  try {
-    return decodeCert(parseSignedCert(value));
-  } catch {
-    return undefined;
   }
 }
 

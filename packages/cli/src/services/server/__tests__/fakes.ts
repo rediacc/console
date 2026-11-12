@@ -5,6 +5,7 @@
 
 import { existsSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { delegationCertId } from '@rediacc/shared/subscription';
 import type {
   BoxReply,
   BwsRow,
@@ -17,15 +18,21 @@ import type {
 export const BOX_KEY = 'MCowBQYDK2VwAyEAboxkey0000000000000000000000000000000=';
 
 /** A signed cert whose payload names `key` and `sub`, as base64 of its JSON. */
-export function certFor(key: string, sub = 'sub-1', planCode = 'ENTERPRISE'): string {
+export function certFor(
+  key: string,
+  sub = 'sub-1',
+  planCode = 'ENTERPRISE',
+  issuedAt = '2026-11-12T00:00:00Z'
+): string {
   const payload = Buffer.from(
     JSON.stringify({
       version: 1,
       subscriptionId: sub,
       planCode,
       delegatedPublicKey: key,
-      validFrom: '2026-11-12T00:00:00Z',
+      validFrom: issuedAt,
       validUntil: '2027-11-12T00:00:00Z',
+      issuedAt,
     })
   ).toString('base64');
   return Buffer.from(JSON.stringify({ payload, signature: 'sig', publicKeyId: 'k1' })).toString(
@@ -51,6 +58,14 @@ export interface FakeOptions {
   rdcFail?: string;
   /** Per-path-suffix answers that win over the defaults (a refused login, a 404 route). */
   boxReplies?: Record<string, Partial<BoxReply>>;
+  /** The box's live `data/web/delegation-cert.json`, as `certFor` gives it (base64 of the JSON). */
+  liveCert?: string;
+  /**
+   * How the server answers an inbox drop: `apply` (the default) makes the dropped cert live and
+   * answers applied; `reject` answers rejected with `reason`; `none` never answers; `busy` refuses
+   * the drop.
+   */
+  inbox?: 'apply' | 'none' | 'busy' | { reason: string; detail?: string };
 }
 
 export interface Fake {
@@ -64,6 +79,10 @@ export interface Fake {
   secrets: Record<string, string>;
   /** Every HTTPS request to the box, with its body and the cookie it carried. */
   boxRequests: { method: string; path: string; body?: unknown; cookie?: string }[];
+  /** Every body dropped into the inbox (`new.json`), parsed. */
+  drops: { requestId: string; cert: { payload: string; signature: string; publicKeyId: string } }[];
+  /** The box's live cert JSON after the run, or undefined. */
+  live(): string | undefined;
 }
 
 const DEFAULT_SECRETS: Record<string, string> = {
@@ -92,6 +111,55 @@ export function makeFake(opts: FakeOptions = {}): Fake {
   const boxRequests: Fake['boxRequests'] = [];
   const secrets: Record<string, string> = { ...DEFAULT_SECRETS, ...opts.secrets };
   const resolves = [...(opts.resolveSequence ?? [['203.0.113.10']])];
+  const drops: Fake['drops'] = [];
+  let live: string | undefined = opts.liveCert
+    ? Buffer.from(opts.liveCert, 'base64').toString('utf-8')
+    : undefined;
+  let liveCertId: string | undefined;
+  const refreshLiveId = async () => {
+    liveCertId = live ? await delegationCertId(JSON.parse(live) as { payload: string }) : undefined;
+  };
+  /** The inbox file waiting for the server, as the box would hold it. */
+  let pending: Fake['drops'][number] | undefined;
+  const inboxDrop = (_command: string, stdin?: string) => {
+    if (opts.inbox === 'busy' || pending) return 'inbox=busy\n';
+    pending = JSON.parse(stdin ?? '{}') as Fake['drops'][number];
+    drops.push(pending);
+    return 'inbox=dropped\n';
+  };
+  const inboxResult = async (_command: string, stdin?: string) => {
+    const id = (stdin ?? '').trim();
+    const decided = pending;
+    if (!decided || decided.requestId !== id || opts.inbox === 'none') return 'result=none\n';
+    pending = undefined;
+    const certId = await delegationCertId(decided.cert);
+    if (typeof opts.inbox === 'object') {
+      const answer = { requestId: id, reason: opts.inbox.reason, detail: opts.inbox.detail ?? '' };
+      return `result=rejected\n${JSON.stringify(answer, null, 2)}\n`;
+    }
+    live = JSON.stringify(decided.cert);
+    await refreshLiveId();
+    const payload = JSON.parse(Buffer.from(decided.cert.payload, 'base64').toString()) as {
+      issuedAt: string;
+    };
+    const answer = { requestId: id, certId, issuedAt: payload.issuedAt };
+    return `result=applied\n${JSON.stringify(answer, null, 2)}\n`;
+  };
+  const migrate = (_command: string, stdin?: string) => {
+    const value = secrets.DELEGATION_CERT_BASE64;
+    let state = 'none';
+    if (value && !live) {
+      if (pending) return 'migrate=busy\n';
+      pending = {
+        requestId: (stdin ?? '').trim(),
+        cert: JSON.parse(Buffer.from(value, 'base64').toString()) as Fake['drops'][number]['cert'],
+      };
+      drops.push(pending);
+      state = 'dropped';
+    }
+    delete secrets.DELEGATION_CERT_BASE64;
+    return `migrate=${state}\n`;
+  };
   let now = Date.parse('2026-11-12T12:00:00Z');
 
   const preflight = {
@@ -126,7 +194,15 @@ export function makeFake(opts: FakeOptions = {}): Fake {
     return Object.keys(values).join(',');
   };
   /** Marker in the script, the name recorded in `calls`, and the stdout it answers. */
-  const SSH_HANDLERS: [string, string, (command: string, stdin?: string) => string][] = [
+  const SSH_HANDLERS: [
+    string,
+    string,
+    (command: string, stdin?: string) => string | Promise<string>,
+  ][] = [
+    ['inbox=dropped', 'inbox-drop', inboxDrop],
+    ['result=none', 'inbox-result', inboxResult],
+    ['migrate=$state', 'migrate-cert', migrate],
+    ['then cat "$f"', 'read-live-cert', () => live ?? ''],
     ['ss -ltnpH', 'preflight', () => preflightText],
     [
       'openssl genpkey',
@@ -147,6 +223,17 @@ export function makeFake(opts: FakeOptions = {}): Fake {
     ['/portal/subscription', { body: { id: 'sub-1' } }],
   ];
 
+  /** Answers that follow the fake's state: the live cert's id, and the scripted free-probe queue. */
+  const certStatusBody = async () => {
+    await refreshLiveId();
+    return { cert: liveCertId ? { certId: liveCertId } : null };
+  };
+  const stateReply = async (path: string, base: BoxReply): Promise<BoxReply | undefined> => {
+    if (path.endsWith('/onprem/cert-status')) return { ...base, body: await certStatusBody() };
+    const queued = path.endsWith('/onprem/free-license') ? probeQueue.shift() : undefined;
+    return queued === undefined ? undefined : { ...base, status: queued };
+  };
+
   const deps: ServerDeps = {
     rdc(argv) {
       calls.push(`rdc ${argv.join(' ')}`);
@@ -155,30 +242,29 @@ export function makeFake(opts: FakeOptions = {}): Fake {
       }
       return Promise.resolve(ok());
     },
-    ssh(machine, command, stdin) {
+    async ssh(machine, command, stdin) {
       const handler = SSH_HANDLERS.find(([marker]) => command.includes(marker));
       if (!handler) {
         calls.push(`ssh ${machine} ?`);
-        return Promise.resolve({ code: 9, stdout: '', stderr: 'unknown script' });
+        return { code: 9, stdout: '', stderr: 'unknown script' };
       }
       const [, name, answer] = handler;
-      const out = answer(command, stdin);
+      const out = await answer(command, stdin);
       calls.push(name === 'setenv' ? `ssh ${machine} setenv ${out}` : `ssh ${machine} ${name}`);
-      return Promise.resolve(ok(name === 'setenv' ? '' : out));
+      return ok(name === 'setenv' ? '' : out);
     },
-    box(_target, method, path, body, cookie) {
+    async box(_target, method, path, body, cookie) {
       calls.push(`https ${method} ${path}`);
       boxRequests.push({ method, path, body, cookie });
       const base: BoxReply = { status: 200, body: {}, sans: opts.sans ?? ['acme.example.com'] };
       const override = Object.entries(opts.boxReplies ?? {}).find(([suffix]) =>
         path.endsWith(suffix)
       );
-      if (override) return Promise.resolve({ ...base, ...override[1] });
-      if (path.endsWith('/onprem/free-license') && probeQueue.length > 0) {
-        return Promise.resolve({ ...base, status: probeQueue.shift() ?? 400 });
-      }
+      if (override) return { ...base, ...override[1] };
+      const live = await stateReply(path, base);
+      if (live) return live;
       const tweak = BOX_REPLIES.find(([suffix]) => path.endsWith(suffix));
-      return Promise.resolve(tweak ? { ...base, ...tweak[1] } : base);
+      return tweak ? { ...base, ...tweak[1] } : base;
     },
     resolve(host) {
       calls.push(`resolve ${host}`);
@@ -234,5 +320,17 @@ export function makeFake(opts: FakeOptions = {}): Fake {
     now: () => now,
     secret: () => 'Secret123A1!',
   };
-  return { deps, calls, stdout, setEnv, written, bwsWrites, dnsWrites, secrets, boxRequests };
+  return {
+    deps,
+    calls,
+    stdout,
+    setEnv,
+    written,
+    bwsWrites,
+    dnsWrites,
+    secrets,
+    boxRequests,
+    drops,
+    live: () => live,
+  };
 }

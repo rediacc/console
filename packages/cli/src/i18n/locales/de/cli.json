@@ -2592,7 +2592,8 @@
         "forking": "Das Repository wird als Rollback-Punkt {{tag}} geforkt",
         "template": "Das elite-Template wird erneut angewendet (Version {{from}} auf {{to}})",
         "templateCurrent": "Das bereitgestellte Template (Version {{version}}) ist aktuell",
-        "done": "{{domain}} aktualisiert. Rollback-Punkt: {{rollback}}"
+        "done": "{{domain}} aktualisiert. Rollback-Punkt: {{rollback}}",
+        "migratingCert": "Das Zertifikat wandert aus secrets.env in den Zertifikatseingang; der Server übernimmt es beim Start"
       },
       "licence": {
         "description": "Einen Server der kostenlosen Stufe auf ein Delegationszertifikat des angemeldeten Kontos oder aus --cert umstellen",
@@ -2607,12 +2608,14 @@
         "missingScope": "Mit dieser Anmeldung lässt sich kein Delegationszertifikat ausstellen. `rdc subscription login` erneut als Owner oder Admin mit 2FA ausführen oder mit --licence free installieren.",
         "offerFree": "Den Server stattdessen auf der kostenlosen Stufe starten?",
         "noCertForUpgrade": "Kein Delegationszertifikat verfügbar: mit `rdc subscription login` als Owner oder Admin mit 2FA anmelden oder --cert <file> angeben",
-        "stillFree": "{{domain}} meldet sich nach dem Neustart weiterhin als kostenlose Stufe",
-        "certUnconfirmed": "{{domain}} hat das Zertifikat nie bestätigt (letzte Antwort: HTTP {{status}})",
-        "viaUpload": "Der laufende Server hat das Zertifikat angenommen; ein Neustart war nicht nötig",
-        "viaRestart": "Das Zertifikat wurde in secrets.env geschrieben und der Server startet neu, um es zu übernehmen",
-        "uploadRefused": "Der laufende Server hat den Zertifikat-Upload abgelehnt (Status {{status}}); er wird stattdessen mit dem Zertifikat neu gestartet",
-        "freeProbeHoldsCert": "Der Server meldet, ein Zertifikat zu halten, obwohl keines installiert wurde"
+        "freeProbeHoldsCert": "Der Server meldet, ein Zertifikat zu halten, obwohl keines installiert wurde",
+        "viaInbox": "Der Server hat das Zertifikat aus seinem Zertifikatseingang übernommen; ein Neustart war nicht nötig",
+        "alreadyCurrent": "Der Server hat dieses Zertifikat bereits ({{certId}}); es gibt nichts zu übernehmen",
+        "rejected": "Der Server hat das Zertifikat abgelehnt ({{reason}}): {{detail}}",
+        "noResult": "Der Server hat innerhalb von {{seconds}} Sekunden nicht auf das abgelegte Zertifikat reagiert. Prüfen Sie, ob er läuft.",
+        "inboxBusy": "Im Zertifikatseingang des Servers wartet bereits ein anderes Zertifikat. Versuchen Sie es erneut, sobald darüber entschieden ist.",
+        "confirmMismatch": "Der Server meldet das Zertifikat {{actual}} statt {{expected}}; das neue Zertifikat ist also nicht in Kraft",
+        "confirmSkipped": "Kein gespeicherter Owner-Login ({{ownerFile}}), daher ließ sich das Zertifikat des Servers nicht bestätigen; die Antwort aus dem Eingang gilt"
       },
       "bundle": {
         "header": "Recovery-Bundle für {{domain}}. Offline aufbewahren; es stellt die Schlüssel des Servers wieder her.",

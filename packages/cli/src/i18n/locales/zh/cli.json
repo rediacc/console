@@ -2592,7 +2592,8 @@
         "forking": "正在将仓库派生为回滚点 {{tag}}",
         "template": "正在重新应用 elite 模板（版本 {{from}} 到 {{to}}）",
         "templateCurrent": "已部署的模板（版本 {{version}}）已是最新",
-        "done": "{{domain}} 已升级。回滚点：{{rollback}}"
+        "done": "{{domain}} 已升级。回滚点：{{rollback}}",
+        "migratingCert": "正在把证书从 secrets.env 移到证书收件目录；服务器启动时会应用它"
       },
       "licence": {
         "description": "将免费版服务器切换为来自当前登录账户或 --cert 的委托证书",
@@ -2607,12 +2608,14 @@
         "missingScope": "此登录无法签发委托证书。请以所有者或管理员身份并通过 2FA 重新运行 `rdc subscription login`，或使用 --licence free 安装。",
         "offerFree": "是否改为以免费版启动服务器？",
         "noCertForUpgrade": "没有可用的委托证书：请以所有者或管理员身份并通过 2FA 使用 `rdc subscription login` 登录，或传入 --cert <file>",
-        "stillFree": "重启后 {{domain}} 仍以免费版响应",
-        "certUnconfirmed": "{{domain}} 始终未确认证书（最后响应：HTTP {{status}}）",
-        "viaUpload": "运行中的服务器已接受该证书，无需重启",
-        "viaRestart": "证书已写入 secrets.env，服务器正在重启以加载它",
-        "uploadRefused": "运行中的服务器拒绝了证书上传（状态 {{status}}），改为带证书重启服务器",
-        "freeProbeHoldsCert": "尽管未安装任何证书，服务器仍响应为持有证书"
+        "freeProbeHoldsCert": "尽管未安装任何证书，服务器仍响应为持有证书",
+        "viaInbox": "服务器已从证书收件目录应用该证书，无需重启",
+        "alreadyCurrent": "服务器已持有此证书（{{certId}}），无需应用",
+        "rejected": "服务器拒绝了该证书（{{reason}}）：{{detail}}",
+        "noResult": "服务器在 {{seconds}} 秒内未响应放入的证书；请检查它是否在运行",
+        "inboxBusy": "服务器的证书收件目录中已有另一份证书在等待处理；请在其处理完成后重试",
+        "confirmMismatch": "服务器报告的证书是 {{actual}} 而不是 {{expected}}，因此新证书并未生效",
+        "confirmSkipped": "没有保存的所有者登录信息（{{ownerFile}}），因此无法确认服务器的证书；以收件目录的应答为准"
       },
       "bundle": {
         "header": "{{domain}} 的恢复包。请离线保存；它可恢复服务器的密钥。",
