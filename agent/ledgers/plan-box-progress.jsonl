@@ -76,3 +76,4 @@
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-licence-expiry-notices.md","sig":"be499a0a","clause":"all","state":"landed","ref":"64ce43779d74e091c5647dd7ebbbfcfb487cd012","at":"2026-11-12T13:57:53Z"}
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-licence-expiry-notices.md","sig":"2556f2e9","clause":"all","state":"landed","ref":"7dde0009448737a8d6d83664fc7dfdaa0eb8f587","at":"2026-11-12T13:57:53Z"}
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-licence-expiry-notices.md","sig":"9a772925","clause":"all","state":"landed","ref":"3ae80e6949c8f6a8e85d2410880b9426ec9b5e6f","at":"2026-11-12T13:57:53Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-enterprise-tenants.md","sig":"c3e44c99","clause":"all","state":"landed","ref":"6c48953db00a1ef4725d3ccdda87f0cad5a32787","at":"2026-11-12T14:29:12Z"}

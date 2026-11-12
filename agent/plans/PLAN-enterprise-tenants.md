@@ -238,10 +238,11 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
 
 ### Wave 3: customer-grade flow, after HO1 is green and Q6-Q12 are answered
 
-- [ ] C1 [writer] `rdc onprem install|status|upgrade|cert` in TS, porting P2's steps. Keys are generated on the box. `--cert` and `--upstream` per Q9. Customer DNS is printed and verified, never written. i18n keys in every locale.
+- [x] C1 [writer] `rdc onprem install|status|upgrade|cert` in TS, porting P2's steps. Keys are generated on the box. `--cert` and `--upstream` per Q9. Customer DNS is printed and verified, never written. i18n keys in every locale.
   - Owns: packages/cli/src/commands/onprem.ts (new), packages/cli/src/services/onprem/** (new), packages/cli/src/config/command-planes.ts, packages/shared/src/cli-contract/data/i18n/*.json, packages/cli/src/commands/__tests__/onprem*.test.ts (new).
   - Accept: `(cd packages/cli && npx vitest run src/commands/__tests__/onprem)` rc 0, and `npm run check:ci-cli-contract` rc 0.
   (corrected 2026-11-12T11:58Z) Superseded by C7 (R5): the verb is `rdc server`, so onprem.ts and services/onprem/** are never created. Do not run C1; tick it as superseded when C7 ticks. Its shared Owns (command-planes.ts, i18n) pass to C7.
+    (ticked) 2026-11-12T14:30:29Z by d778be9d: superseded by C7 (correction 2026-11-12T11:58Z): commit:6c48953db0 rdc server install|status|upgrade|backup|licence, server vitest rc=0, cli-contract rc=0
 - [ ] C2 [writer] Public docs: an "Install with rdc" section in on-premise.md.
   - Owns: packages/www/src/content/docs/en/on-premise.md.
   - Accept: `npm run -s check:ci-prose-style` rc 0.
@@ -289,7 +290,7 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - Owns: private/renet/pkg/router/routes.go, private/renet/pkg/router/routes_test.go, private/renet/pkg/proxy/usercert.go (new), private/renet/pkg/proxy/usercert_test.go (new), private/renet/cmd/renet/proxy_cert.go (new), private/renet/cmd/renet/proxy_cert_test.go (new).
   - Accept: `(cd private/renet && go test ./pkg/router/... ./pkg/proxy/... ./cmd/renet/...)` rc 0, and `grep -c '"\*\." + domainBase' private/renet/pkg/router/routes.go` unchanged only on the base-domain path (a test asserts no wildcard SAN for an FQDN custom domain).
     (ticked) 2026-11-12T12:32:30Z by d778be9d: commit:012193560e renet d2d92844 per-host certs and BYO; go test pkg/router pkg/proxy pkg/i18n rc 0
-- [ ] C7 [writer] `rdc server install|status|upgrade|backup|licence` in TS, porting P2's steps. Runs after C4 and C5 (wire shapes); supersedes C1.
+- [x] C7 [writer] `rdc server install|status|upgrade|backup|licence` in TS, porting P2's steps. Runs after C4 and C5 (wire shapes); supersedes C1.
   - install takes `[machine] --domain --store-domain --repo --size --owner --tls letsencrypt|cloudflare|byo --cf-token --tls-cert --tls-key --cert <file> --licence auto|free --image --yes`.
   - Interactive prompts live in utils/server-prompts.ts. They load inquirer lazily and exit with the region-prompt TTY error when not on a TTY (packages/cli/src/utils/region-prompt.ts:17-24). Machine pick-or-add reuses `machine add --ip --user` (packages/cli/src/commands/machine/register.ts:141-147), and `machine setup` runs when renet is missing.
   - DNS: print the A and AAAA records, then wait until both resolve to the machine. No zone is ever written.
@@ -309,6 +310,7 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
       - `upgrade` = fork, new image, template re-apply per Q19, TAG update, `repo up`.
       - Owns += packages/cli/src/commands/machine/register.ts, packages/cli/src/services/machine/add-existing.ts (new). Runs together with C9 and C10 (disjoint). C11 extends it afterwards.
   (corrected 2026-11-12T13:15Z) (operator rulings 2026-11-12) Single install path: C7 also carries the P2 extras (licence via /delegation/issue, optional --bws-project, owned-zone DNS write); upgrade re-applies a newer template and refuses on local edits unless --force (ASKED:2026-11-12T13:00Z).
+    (ticked) 2026-11-12T14:29:26Z by d778be9d: commit:6c48953db0 rdc server install|status|upgrade|backup|licence; server vitest rc=0 (54), tsc rc=0, check:ci-cli-contract, check:ci-i18n-hashes, check:cli-examples, check:ci-command-tree rc=0; ./rdc.sh server install --help lists the steps
 - [ ] C8 [writer] Gitlink bumps for private/account (C4, C5) and private/renet (C3, C6) after their submodule PRs merge, plus a renet release for the live boxes.
   - Owns: private/account (gitlink bump only), private/renet (gitlink bump only).
   - Accept: `git submodule status private/account private/renet` shows the merged C3-C6 commits, and `./rdc.sh --config eu-bench machine status hostinger` reports the released renet version.
