@@ -222,20 +222,17 @@ describe('lookupTarget', () => {
 describe('LookupPrivacyNote', () => {
   const privacy = (en as unknown as { regionPicker: { lookup: { privacy: string } } }).regionPicker
     .lookup.privacy;
+  const firstSentence = `${privacy.split('. ')[0]}.`;
 
   it('wraps each sentence of the real privacy note in its own .sentence span', () => {
     const html = renderToStaticMarkup(<LookupPrivacyNote text={privacy} lang="en" />);
     expect(html.startsWith('<p class="region-picker-footer-note">')).toBe(true);
     expect(html.match(/<span class="sentence">/g)).toHaveLength(2);
-    expect(html).toContain(
-      '<span class="sentence">Only the domain is sent to find your region.</span>'
-    );
+    expect(html).toContain(`<span class="sentence">${firstSentence}</span>`);
   });
 
   it('renders a one-sentence note as plain text with no span (control)', () => {
-    const html = renderToStaticMarkup(
-      <LookupPrivacyNote text="Only the domain is sent." lang="en" />
-    );
-    expect(html).toBe('<p class="region-picker-footer-note">Only the domain is sent.</p>');
+    const html = renderToStaticMarkup(<LookupPrivacyNote text={firstSentence} lang="en" />);
+    expect(html).toBe(`<p class="region-picker-footer-note">${firstSentence}</p>`);
   });
 });

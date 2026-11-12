@@ -47,6 +47,8 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
+import { LEGAL_ENTITY } from '@rediacc/shared/legal';
+
 import {
   archiveRel,
   buildOutputs,
@@ -512,10 +514,12 @@ function selftest(): number {
   const evalNotice = (src: string) =>
     new Function('WK_SITE_ORIGIN', 'LEGAL_ENTITY', `return ${src};`)(
       'https://www.example.invalid',
-      { legalName: 'Rediacc OÜ' }
+      { legalName: LEGAL_ENTITY.legalName }
     ) as string;
-  const subs = noticeSubstitutions('https://www.example.invalid', { legalName: 'Rediacc OÜ' });
-  const tricky = 'Rediacc OÜ at https://www.example.invalid/x \\ `tick` ${not} line\nnext';
+  const subs = noticeSubstitutions('https://www.example.invalid', {
+    legalName: LEGAL_ENTITY.legalName,
+  });
+  const tricky = `${LEGAL_ENTITY.legalName} at https://www.example.invalid/x \\ \`tick\` \${not} line\nnext`;
   const trickySrc = tsNotice(tricky, subs);
   control(
     'a notice with backslash, backtick, ${ and a newline round-trips through tsNotice',
@@ -535,14 +539,14 @@ function selftest(): number {
   const rendered = renderConsentTs(
     {
       en: {
-        'web-checkbox': 'Terms of Rediacc OÜ',
+        'web-checkbox': `Terms of ${LEGAL_ENTITY.legalName}`,
         'cli-prompt': '',
         'cli-flag-unattended': '',
         'stripe-checkout': '',
       },
     },
     'https://www.example.invalid',
-    { legalName: 'Rediacc OÜ' }
+    { legalName: LEGAL_ENTITY.legalName }
   );
   control(
     'the entity is emitted as a LEGAL_ENTITY reference with its import',

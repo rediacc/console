@@ -2791,18 +2791,7 @@ jobs:
       # requireSandboxUser (cmd/renet) fails under CI=true when it is absent.
       # Same uid, gid and flags as `renet setup` (ensureUniversalUser).
       - name: Create the rediacc OS user
-        run: |
-          id rediacc >/dev/null 2>&1 || {
-            sudo groupadd --gid 7111 rediacc
-            sudo useradd --system --uid 7111 --gid 7111 --no-create-home --shell /sbin/nologin rediacc
-          }
-          # A pre-existing rediacc user with another uid or gid would run the tests
-          # under the wrong identity, so refuse it instead of passing silently.
-          [ "$(id -u rediacc)" = 7111 ] && [ "$(id -g rediacc)" = 7111 ] || {
-            echo "::error::the rediacc user exists but is not uid/gid 7111: $(id rediacc)"
-            exit 1
-          }
-          id rediacc
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.ensure_rediacc_user
 
       # Unit tests
       - name: Run renet tests

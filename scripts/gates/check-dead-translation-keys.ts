@@ -565,7 +565,6 @@ const body = (content as any).problem;`;
   const consumerRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dead-keys-consumers-'));
   try {
     const present = path.join(consumerRoot, 'present.ts');
-    // tree-write: safe present is under consumerRoot, a mkdtemp directory in os.tmpdir()
     fs.writeFileSync(present, '');
     const gone = missingConsumers(consumerRoot, [
       { file: 'present.ts', why: 'exists' },
@@ -576,7 +575,6 @@ const body = (content as any).problem;`;
       gone.length === 1 && gone[0].file === 'absent.ts'
     );
   } finally {
-    // tree-write: safe consumerRoot is the mkdtemp directory created above
     fs.rmSync(consumerRoot, { recursive: true, force: true });
   }
   check(

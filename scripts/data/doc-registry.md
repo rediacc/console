@@ -990,7 +990,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci | 17 | .py 17 |
 | .ci/rediacc_ci/build | 18 | .py 18 |
 | .ci/rediacc_ci/catalog | 3 | .py 3 |
-| .ci/rediacc_ci/ci | 34 | .py 34 |
+| .ci/rediacc_ci/ci | 35 | .py 35 |
 | .ci/rediacc_ci/ci_signal | 2 | .py 2 |
 | .ci/rediacc_ci/core | 45 | .py 45 |
 | .ci/rediacc_ci/deploy | 41 | .py 41 |
