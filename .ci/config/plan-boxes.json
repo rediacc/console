@@ -1808,6 +1808,24 @@
         "f06b6846"
       ]
     },
+    "agent/plans/PLAN-licence-expiry-notices.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 7,
+      "done": 0,
+      "open_sigs": [
+        "185b202a",
+        "2556f2e9",
+        "67e0500b",
+        "9a772925",
+        "9c610a87",
+        "bac0a9c4",
+        "be499a0a"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-lint-css-ci-wiring.md": {
       "status": "compacted",
       "owner": "e6500e92",
