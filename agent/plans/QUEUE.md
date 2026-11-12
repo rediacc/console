@@ -64,7 +64,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/_done/PLAN-submodule-branch-coordination-guard.md -- 5 of 8 boxes ticked, the PR body's `Plan:` line
   - agent/plans/PLAN-proxy-cd-six-targets.md -- 27 of 31 boxes ticked, the PR body's `Plan:` line
   - agent/plans/PLAN-repo-docker-storage-prune.md -- 12 of 14 boxes ticked, the PR body's `Plan:` line
-- Work outside the PR's plans (17 epic(s)):
+- Work outside the PR's plans (18 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 26 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
   - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 48 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
@@ -80,10 +80,11 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 624 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 638 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
-- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a888e3c54c57df97d, worker:a15587079924dd0ed.
-- Leased items: 13: #04b4a244 (worker:a888e3c54c57df97d, d778be9d), #0d605233 (worker:blfcpi0x2, d778be9d), #1dcc5437 (worker:blfcpi0x2, d778be9d), #443ba017 (worker:blfcpi0x2, d778be9d), #5ac354e6 (worker:a15587079924dd0ed, d778be9d), #8030611c (worker:blfcpi0x2, d778be9d), #9cb71958 (worker:blfcpi0x2, d778be9d), #a1ecc191 (worker:blfcpi0x2, d778be9d), #bb081378 (worker:blfcpi0x2, d778be9d), #bf47a483 (worker:blfcpi0x2, d778be9d), #d2fcce23 (worker:blfcpi0x2, d778be9d), #e3b3ba33 (worker:blfcpi0x2, d778be9d), and 1 more.
+  - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 16 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
+- Writers: 6 live of writer_cap 25 (session d778be9d): worker:a2a9daba8fa4c2235, worker:a00e8ec9db568d0ea, worker:a432aea8a394fbee9, worker:a1060684317c34948, worker:a8999137ae8e0190c, worker:a965a212450c0d96a.
+- Leased items: 11: #04b4a244 (worker:bstkc6qs0, d778be9d), #1dcc5437 (worker:bstkc6qs0, d778be9d), #443ba017 (worker:bstkc6qs0, d778be9d), #5ac354e6 (worker:bstkc6qs0, d778be9d), #5d0ebda8 (worker:a8999137ae8e0190c, d778be9d), #9cb71958 (worker:a8999137ae8e0190c, d778be9d), #a1ecc191 (worker:bstkc6qs0, d778be9d), #abad8983 (worker:a2a9daba8fa4c2235, d778be9d), #bb081378 (worker:bstkc6qs0, d778be9d), #bf47a483 (worker:bstkc6qs0, d778be9d), #e3b3ba33 (worker:bstkc6qs0, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
