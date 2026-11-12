@@ -623,14 +623,21 @@ def outgoing_secret_shapes(
     try:
         proc = subprocess.Popen(argv, cwd=repo, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
     except OSError as exc:
-        return [], "`git log -p` did not start (%s)" % exc
+        return [], "`git log --cc` did not start (%s)" % exc
     stream = proc.stdout
     if stream is None:
         proc.kill()
         proc.wait()
-        return [], "`git log -p` gave no output stream"
+        return [], "`git log --cc` gave no output stream"
     # A watchdog, not a clock read per line: a git that stalls without writing would block the read below for ever.
-    timer = threading.Timer(BACKUP_SCAN_TIMEOUT, proc.kill)
+    # The watchdog records that it fired before it kills, so the verdict below does not depend on whether the Timer thread has exited by the time the closed pipe is read (18716f60.1).
+    expired = threading.Event()
+
+    def _expire() -> None:
+        expired.set()
+        proc.kill()
+
+    timer = threading.Timer(BACKUP_SCAN_TIMEOUT, _expire)
     timer.daemon = True
     timer.start()
     # Hunk lines carry one prefix column per parent (`--cc` on a merge shows only what no parent had). A line is ADDED when every column is `+`. Header lines (`+++ b/path`) are told apart from content by position: only a line outside a hunk is a header, so an added line `++ x` is scanned.
@@ -657,13 +664,12 @@ def outgoing_secret_shapes(
                     seen.add((sha, shape))
                     offenders.append("%s %s: %s" % (sha[:12], subject[:60], shape))
     finally:
-        fired = not timer.is_alive()
         timer.cancel()
-    if fired:
+    if expired.is_set():
         proc.wait()
-        return [], "`git log -p` ran past %ds" % BACKUP_SCAN_TIMEOUT
+        return [], "`git log --cc` ran past %ds" % BACKUP_SCAN_TIMEOUT
     if proc.wait() != 0:
-        return [], "`git log -p <tips> --not --remotes <old tips>` exited %d" % proc.returncode
+        return [], "`git log --cc <tips> --not --remotes <old tips>` exited %d" % proc.returncode
     return offenders, ""
 
 

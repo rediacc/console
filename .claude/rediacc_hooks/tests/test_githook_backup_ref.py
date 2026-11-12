@@ -14,6 +14,7 @@ import pathlib
 import signal
 import subprocess
 import sys
+import threading
 
 from rediacc_hooks.guards import _backup_push
 
@@ -475,6 +476,40 @@ def test_a_git_log_that_stalls_without_output_trips_the_scan_timeout(tmp_path, m
     offenders, unchecked = GH.outgoing_secret_shapes(str(w.root), [[tip, tip, LIVE, ZERO]], [])
     assert offenders == []
     assert "ran past 1s" in unchecked
+
+
+def test_the_stall_verdict_does_not_wait_for_the_timer_thread_to_exit(tmp_path, monkeypatch):
+    """The kill is read as the watchdog's own, whether or not its Timer thread has finished by then (18716f60.1)."""
+
+    class Lingering(threading.Timer):
+        def is_alive(self):
+            return True
+
+    w = World(tmp_path / "c")
+    tip = w.commit("work")
+    fake = tmp_path / "bin"
+    fake.mkdir()
+    (fake / "git").write_text("#!/bin/sh\nexec sleep 20\n", encoding="utf-8")
+    (fake / "git").chmod(0o755)
+    monkeypatch.setenv("PATH", "%s:%s" % (fake, os.environ.get("PATH", "")))
+    monkeypatch.setattr(GH, "BACKUP_SCAN_TIMEOUT", 1)
+    monkeypatch.setattr(GH.threading, "Timer", Lingering)
+    _, unchecked = GH.outgoing_secret_shapes(str(w.root), [[tip, tip, LIVE, ZERO]], [])
+    assert "ran past 1s" in unchecked
+
+
+def test_a_scan_that_finishes_in_time_reports_no_stall(tmp_path):
+    """Control: a real range scan inside the limit names no timeout and reads clean (18716f60.1)."""
+    w = World(tmp_path / "c")
+    tip = w.commit("work")
+    offenders, unchecked = GH.outgoing_secret_shapes(str(w.root), [[tip, tip, LIVE, ZERO]], [])
+    assert (offenders, unchecked) == ([], "")
+
+
+def test_the_mirror_host_is_the_pinned_literal():
+    """The tests build their URLs from MIRROR_HOST, so the host is pinned here as a literal the constant cannot move with (7298ce2b.1)."""
+    assert GH.MIRROR_HOST == "gitlab.rediacc.io"
+    assert CONSOLE_URL == "https://gitlab.rediacc.io/rediacc-org/github/console.git"
 
 
 def test_a_standalone_repository_is_not_the_console(tmp_path):
