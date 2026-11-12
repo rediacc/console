@@ -891,12 +891,16 @@ def main():
         print("ok: an unreadable proof-tiers.json warns once and skips LP8")
 
     # b403757f.1: the same skip through the REAL reader. A root with no proof-tiers.json makes `github_wait_config` itself answer None (it catches the read failure); the repo's own root, which has the map, makes it answer a config (the control).
-    _stop_dir = str(HERE.parent.parent / "hooks" / "stop")
-    sys.path.insert(0, _stop_dir)
+    _sp_spec = importlib.util.spec_from_file_location("_bpwd_syspath", HERE.parent / "syspath.py")
+    _syspath = importlib.util.module_from_spec(_sp_spec)
+    _sp_spec.loader.exec_module(_syspath)
+    _stop_dir = str(_syspath.STOP_DIR)
+    _added = _syspath.on_sys_path(_stop_dir)
     try:
         _real_deps, _ = _good_ns["_grammar"]()
     finally:
-        sys.path.remove(_stop_dir)
+        if _added:
+            sys.path.remove(_stop_dir)
     _real_root = _good_ns["REPO_ROOT"]
     _empty_root = BASE / "no-proof-map"
     _empty_root.mkdir(parents=True, exist_ok=True)
