@@ -37,10 +37,14 @@ TWIN_REL = ".ci/scripts/deploy/deploy-www.sh"
 PORT_FILE = ROOT / ".ci" / "rediacc_ci" / "deploy" / "deploy_www.py"
 BASH = shutil.which("bash") or "/bin/bash"
 
-BASE_ENV = {
+# The production lane refuses a www dist without this key (`www_sitekey_refusal`); the fixture builds one that carries it, so the twin's goldens, recorded before the refusal existed, still describe every keyed run.
+SITE_KEY = "0x4AAAAAAAwwwfixturekey"
+
+CREDENTIALS = {
     "CLOUDFLARE_API_TOKEN": "tok-fixture",
     "CLOUDFLARE_ACCOUNT_ID": "acct-fixture",
 }
+BASE_ENV = {**CREDENTIALS, "TURNSTILE_SITE_KEY": SITE_KEY}
 
 # A MODEL of `wrangler d1`, not wrangler. Serves and mutates a JSON state file mapping database name to uuid, so "does this database exist" is a real question with a real answer that a delete and a create both change.
 #
@@ -187,8 +191,9 @@ def fixture(
     worker_files: tuple[str, ...] = ("wrangler.toml",),
     node_modules: bool = True,
     databases: dict[str, str] | None = None,
+    www_bundle: str | None = "const k='%s';" % SITE_KEY,
 ) -> pathlib.Path:
-    """A throwaway repository holding the twin, common.sh and a workers/www."""
+    """A throwaway repository holding the twin, common.sh and a workers/www whose `dist/assets` holds one bundle (`www_bundle`, none when None)."""
     root = tmp_path / "repo"
     (root / ".ci" / "scripts" / "deploy").mkdir(parents=True, exist_ok=True)
     (root / ".ci" / "scripts" / "lib").mkdir(parents=True, exist_ok=True)
@@ -209,6 +214,9 @@ def fixture(
         (worker / name).write_text('name = "rediacc-www"\n', encoding="utf-8")
     if node_modules:
         (worker / "node_modules").mkdir(exist_ok=True)
+    if www_bundle is not None:
+        (worker / "dist" / "assets").mkdir(parents=True, exist_ok=True)
+        (worker / "dist" / "assets" / "index.js").write_text(www_bundle, encoding="utf-8")
 
     for side in ("old", "new"):
         # The twin's golden names its databases `account-db-pr-<n>`; the port's are `account-pr-<n>` (PLAN-product-domain-rename), so the port's side starts from the same state under its own names.
@@ -236,7 +244,8 @@ def _run(
         "--",
         "drop=%s" % drop,
         "drop_env=%s" % ",".join(drop_env),
-        "worker_files=%s" % ",".join(sorted(p.name for p in worker.iterdir())),
+        # `dist` is the port's keyed build, which the twin never read, so it stays out of the golden key.
+        "worker_files=%s" % ",".join(sorted(p.name for p in worker.iterdir() if p.name != "dist")),
         "d1=%s" % (root / "old-d1.json").read_text(encoding="utf-8"),
         *("%s=%s" % kv for kv in sorted(extra.items())),
     ]
@@ -394,6 +403,57 @@ def test_a_failed_pepper_push_fails_the_run(tmp_path) -> None:
     assert proc.returncode != 0
 
 
+# --------------------------------------------------------------------------- the keyless-dist refusal (2026-11-12)
+
+
+@pytest.mark.parametrize(
+    ("label", "fixture_kw", "env", "needle"),
+    [
+        ("unbound key", {}, {"TURNSTILE_SITE_KEY": ""}, "TURNSTILE_SITE_KEY is not bound"),
+        ("malformed key", {}, {"TURNSTILE_SITE_KEY": "not-a-key"}, "does not look like"),
+        ("no built pages", {"www_bundle": None}, {}, "no built www pages at"),
+        (
+            "the 2026-11-12 keyless build",
+            {"www_bundle": "const k='';"},
+            {},
+            "carry no Turnstile site key",
+        ),
+    ],
+)
+def test_production_refuses_a_keyless_www_dist_before_any_deploy(
+    tmp_path, label, fixture_kw, env, needle
+) -> None:
+    root = fixture(tmp_path, **fixture_kw)
+    proc, calls, _config = _run_live(root, "new", **env)
+    assert proc.returncode == 1, (label, proc.stderr)
+    assert needle in proc.stderr, (label, proc.stderr)
+    assert "wrangler" not in " ".join(_calls(calls)), (label, calls)
+    assert "Deploying www production worker" not in proc.stderr, label
+
+
+def test_the_refusal_reads_only_the_pages_bundles_not_the_portals(tmp_path) -> None:
+    """A key that sits only in `dist/account/assets` (the portal) does not vouch for the www pages."""
+    root = fixture(tmp_path, www_bundle="const k='';")
+    portal = root / "workers" / "www" / "dist" / "account" / "assets"
+    portal.mkdir(parents=True)
+    (portal / "portal.js").write_text("const k='%s';" % SITE_KEY, encoding="utf-8")
+    proc, calls, _config = _run_live(root, "new")
+    assert proc.returncode == 1, proc.stderr
+    assert "carry no Turnstile site key" in proc.stderr
+    assert _calls(calls) == []
+
+
+def test_a_keyed_www_dist_deploys_and_the_preview_lane_needs_no_key(tmp_path) -> None:
+    root = fixture(tmp_path)
+    proc, calls, _config = _run_live(root, "new")
+    assert proc.returncode == 0, proc.stderr
+    assert _calls(calls) == ["npx --no-install wrangler deploy"]
+    preview_root = fixture(tmp_path / "p", www_bundle=None)
+    proc, calls, _config = _run_live(preview_root, "new", "--name", "pr-7", TURNSTILE_SITE_KEY="")
+    assert proc.returncode == 0, proc.stderr
+    assert "npx --no-install wrangler deploy --config wrangler.preview.toml" in _calls(calls)
+
+
 def test_preview_mints_a_database_and_the_generated_toml_is_byte_identical(tmp_path) -> None:
     _root, old, new = run_both(tmp_path, "--name", "pr-379")
     _agree(old, new, "preview-fresh")
@@ -535,8 +595,8 @@ def test_fact_the_production_database_guard_cannot_fire() -> None:
 def test_a_missing_wrangler_toml_refuses_before_anything_else(tmp_path) -> None:
     """AND IT REFUSES BEFORE `require_var`, so a run with no credentials at all still reports the missing worker rather than the missing token."""
     root = fixture(tmp_path, worker_files=())
-    old = _run(root, "old", drop_env=tuple(BASE_ENV))
-    new = _run(root, "new", drop_env=tuple(BASE_ENV))
+    old = _run(root, "old", drop_env=tuple(CREDENTIALS))
+    new = _run(root, "new", drop_env=tuple(CREDENTIALS))
     _agree(old, new, "no-worker")
 
     proc, calls, _config = old

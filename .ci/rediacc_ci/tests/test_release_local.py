@@ -283,6 +283,36 @@ def test_the_www_steps_deploy_and_bind_the_worker_the_wrangler_config_names() ->
     assert dict(secrets.env)["WORKER_NAME"] == name.group(1)
 
 
+def test_the_www_pages_build_binds_the_turnstile_site_key_through_a_keyed_profile() -> None:
+    """Seven www forms read PUBLIC_TURNSTILE_SITE_KEY at build time; a keyless build refused every visitor (2026-11-12)."""
+    pages = next(s for s in EDGE if s.id == "www-pages")
+    deploy = next(s for s in EDGE if s.id == "www-deploy")
+    assert "TURNSTILE_SITE_KEY > PUBLIC_TURNSTILE_SITE_KEY" in pages.binds
+    assert "deploy-workers" in pages.profiles
+    assert "GITHUB_TOKEN" in pages.gh_env
+    assert "deploy-workers" in deploy.profiles, "deploy_www's keyless-dist refusal needs the key"
+    argv = local.child_argv(pages, {"version": "1.2.3", "media_origin": "https://m"})
+    assert argv[:4] == ["python3", "-m", "rediacc_ci.core.bws_env", "exec"]
+    assert ["--spec", "TURNSTILE_SITE_KEY > PUBLIC_TURNSTILE_SITE_KEY"] == argv[
+        argv.index("--spec") : argv.index("--spec") + 2
+    ]
+
+
+def test_an_empty_turnstile_site_key_refuses_the_www_bind() -> None:
+    env = {
+        "REDIACC_BWS_PROFILES": "deploy-workers",
+        "TURNSTILE_SITE_KEY": "",
+    }
+    (why,) = [
+        line
+        for line in local.bind_refusals(["TURNSTILE_SITE_KEY > PUBLIC_TURNSTILE_SITE_KEY"], env)
+        if "TURNSTILE_SITE_KEY" in line
+    ]
+    assert "empty" in why
+    env["TURNSTILE_SITE_KEY"] = "0x4AAAAAAAfixturefixture"
+    assert local.bind_refusals(["TURNSTILE_SITE_KEY > PUBLIC_TURNSTILE_SITE_KEY"], env) == []
+
+
 def test_every_push_uses_the_session_github_token() -> None:
     order = ids(EDGE)
     cred = EDGE[order.index("clone-credential")]

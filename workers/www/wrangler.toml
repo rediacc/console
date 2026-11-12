@@ -52,6 +52,14 @@ service = "account-eu"
 binding = "ENTERPRISE_LOOKUP"
 id = "7bbf3025c29349f5b4f833c1d47d8eb5"
 
+# Per-client cap on POST /api/enterprise-lookup (src/enterprise-lookup.ts reads LOOKUP_RATE_LIMIT,
+# keyed on cf-connecting-ip, and answers 429 rate_limited past it). Approximate per location.
+# namespace_id 1301 is unused by every other Worker's [[ratelimits]] (account: 1101-1104, 1201-1204).
+[[ratelimits]]
+name = "LOOKUP_RATE_LIMIT"
+namespace_id = "1301"
+simple = { limit = 10, period = 60 }
+
 # All account env vars set via `wrangler secret put` in CI.
 # See org secrets: ACCOUNT_*, AWS_SES_*, STRIPE_*
 # See Bitwarden secrets (ci-shared): AWS_SES_FROM, CLOUDFLARE_ACCOUNT_ID

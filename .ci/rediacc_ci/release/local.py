@@ -163,6 +163,8 @@ WWW_BINDS = (
     "STRIPE_WEBHOOK_SECRET_EU > STRIPE_WEBHOOK_SECRET",
 )
 TURNSTILE = ("TURNSTILE_SITE_KEY > VITE_TURNSTILE_SITE_KEY",)
+# The www pages build reads the same widget's site key under Astro's public spelling; seven www forms render no widget without it (production 2026-11-12).
+WWW_TURNSTILE = ("TURNSTILE_SITE_KEY > PUBLIC_TURNSTILE_SITE_KEY",)
 LOCK_CHECK = (*PY, SELF, "_lock-check", "--version", "{version}")
 
 
@@ -777,6 +779,8 @@ def _table() -> tuple[Step, ...]:
                 ("NODE_OPTIONS", "--max-old-space-size=4096"),
                 ("PUBLIC_VIDEO_CDN_BASE_URL", "{media_origin}"),
             ),
+            profiles=("deploy-workers",),
+            binds=WWW_TURNSTILE,
             gh_env=("GITHUB_TOKEN",),
             **w,
         ),
@@ -1754,7 +1758,7 @@ def bind_main(argv: list[str]) -> int:
 def bind_refusals(specs: Sequence[str], env: dict[str, str]) -> list[str]:
     """Why the specs cannot be bound from `env`: a STORE no carried profile declares, or one the profile left empty. Names only.
 
-    No spec, nothing to refuse: a row that only takes the GitHub token (`gh_env` with no profile: cleanup-channel-tags, www-pages, tag-submodules, github-release) reads no store, so it needs no carried profile.
+    No spec, nothing to refuse: a row that only takes the GitHub token (`gh_env` with no profile: cleanup-channel-tags, tag-submodules, github-release) reads no store, so it needs no carried profile.
     """
     if not specs:
         return []

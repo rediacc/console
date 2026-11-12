@@ -151,6 +151,17 @@ jobs:
           # Single global CDN domain for tutorial/solution videos -- same value
           # for edge, stable, and PR previews. See .ci/docs/r2-media-setup.md.
           PUBLIC_VIDEO_CDN_BASE_URL: ${{ env.WK_MEDIA_ORIGIN }}
+          # The same widget the portal uses. Seven www forms read it at build time,
+          # and the servers verify every token, so a keyless build refuses every
+          # visitor (contact, newsletter, region lookup: production 2026-11-12).
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ env.BWS_TURNSTILE_SITE_KEY }}
+
+      - name: Pages carry the Turnstile site key
+        run: |
+          test -n "$PUBLIC_TURNSTILE_SITE_KEY" || { echo "::error::TURNSTILE_SITE_KEY resolved empty; refusing to deploy www forms nobody can submit"; exit 1; }
+          grep -rqF -- "$PUBLIC_TURNSTILE_SITE_KEY" packages/www/dist/assets || { echo "::error::packages/www/dist/assets does not contain the Turnstile site key"; exit 1; }
+        env:
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ env.BWS_TURNSTILE_SITE_KEY }}
 
       - name: Copy pages to www worker assets
         run: |
@@ -207,6 +218,8 @@ jobs:
           DEPLOY_SCRIPT: ${{ steps.target.outputs.script }}
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+          # deploy_www refuses a www dist that lacks this key (www_sitekey_refusal).
+          TURNSTILE_SITE_KEY: ${{ env.BWS_TURNSTILE_SITE_KEY }}
 
       # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
       # fetch serves the next step only, and the scrub after it blanks the key.

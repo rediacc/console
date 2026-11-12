@@ -6,6 +6,9 @@ Deploys the www marketing Worker to Cloudflare. Two lanes, chosen by whether `--
   * PRODUCTION (no `--name`): one `npx wrangler deploy` against
     `workers/www/wrangler.toml` as it stands. No D1 is involved; the account API
     on www.rediacc.com is served by the regional `account-<region>` workers.
+    Before it, `www_sitekey_refusal` refuses a `workers/www/dist` whose pages do
+    not carry the bound `TURNSTILE_SITE_KEY` (2026-11-12, every www form refused
+    every visitor). The twin had no such refusal; its goldens cover only keyed runs.
   * PREVIEW (`--name pr-379`): mint a per-PR D1 database `account-pr-379`,
     DELETING any existing one first for a clean slate, write a generated
     `wrangler.preview.toml` naming that database, apply the account migrations
@@ -84,6 +87,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import re
 import subprocess
 import sys
 import typing
@@ -319,6 +323,40 @@ def get_d1_uuid(db_name: str) -> str:
 
 PEPPER_ENV = "ENTERPRISE_LOOKUP_PEPPER"
 
+# The www pages' client bundles, relative to the worker directory: Astro writes them to `dist/assets` (packages/www astro.config build.assets) and the deploy copies `packages/www/dist` into `workers/www/dist`. The portal's own bundles sit under `dist/account/assets`, which a non-recursive glob here does not read.
+WWW_ASSETS = ("dist", "assets")
+SITEKEY_SHAPE = re.compile(r"^0x[0-9A-Za-z_-]{16,}$")
+WWW_REBUILD_HINT = (
+    'rebuild with PUBLIC_TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" npm run build -w @rediacc/www'
+    " and copy packages/www/dist into workers/www/dist"
+)
+
+
+def www_sitekey_refusal(worker_dir: pathlib.Path, env: typing.Mapping[str, str]) -> str | None:
+    """None when the built www pages under `dist/assets` carry the Turnstile site key the environment binds, else the refusal line.
+
+    Seven www forms (contact, newsletter, lead magnet, partner application, ROI calculator, region lookup) read `PUBLIC_TURNSTILE_SITE_KEY` at build time, and the servers behind them verify every token, so a keyless build refuses every visitor (production 2026-11-12). Only the production lane calls this: a PR preview's pages come from the keyless `build-www` artifact on purpose.
+    """
+    key = (env.get("TURNSTILE_SITE_KEY") or "").strip()
+    if not key:
+        return (
+            "TURNSTILE_SITE_KEY is not bound, so the www pages cannot be checked for the captcha"
+            " widget; run under the deploy-workers profile"
+        )
+    if not SITEKEY_SHAPE.match(key):
+        return "TURNSTILE_SITE_KEY does not look like a Turnstile sitekey (0x...)"
+    assets = worker_dir.joinpath(*WWW_ASSETS)
+    bundles = sorted(assets.glob("*.js")) if assets.is_dir() else []
+    if not bundles:
+        return "no built www pages at %s; %s" % (assets, WWW_REBUILD_HINT)
+    for bundle in bundles:
+        if key in bundle.read_text(encoding="utf-8", errors="replace"):
+            return None
+    return (
+        "the built www pages at %s (%d bundles) carry no Turnstile site key, so every www form"
+        " would refuse every visitor; %s" % (assets, len(bundles), WWW_REBUILD_HINT)
+    )
+
 
 def pepper_put_argv() -> list[str]:
     """`npx wrangler secret put ENTERPRISE_LOOKUP_PEPPER`: the value arrives on stdin, never on argv."""
@@ -458,6 +496,14 @@ def main(argv: list[str]) -> int:
     worker_name = args.get("ARG_NAME", "")
     if worker_name:
         return _preview(worker_name, worker_dir)
+
+    # Before the production deploy, never after: a keyless www dist refuses every form submission.
+    refusal = www_sitekey_refusal(
+        worker_dir, {"TURNSTILE_SITE_KEY": os.environ.get("TURNSTILE_SITE_KEY", "")}
+    )
+    if refusal:
+        log.error(refusal)
+        return 1
 
     log.step("Deploying www production worker...")
     return deploy_record.record_www_deploy(
