@@ -5,7 +5,16 @@
 
 import { LEGAL_ENTITY, termsAt } from '@rediacc/shared/legal';
 import { Command } from 'commander';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type MockInstance,
+  vi,
+} from 'vitest';
 
 const m = vi.hoisted(() => ({
   tokenState: vi.fn(),
@@ -48,14 +57,26 @@ async function run(args: string[]): Promise<void> {
   await program.parseAsync(['node', 'rdc', 'legal', ...args]);
 }
 
+const realExit = process.exit;
+let exitSpy: MockInstance<typeof process.exit>;
+
 beforeEach(() => {
   vi.clearAllMocks();
-  vi.spyOn(process, 'exit').mockImplementation(((code?: number) => {
+  exitSpy = vi.spyOn(process, 'exit').mockImplementation(((code?: number) => {
     m.exit(code);
     return undefined as never;
   }) as typeof process.exit);
   m.tokenState.mockReturnValue({ kind: 'missing' });
   m.getCurrent.mockResolvedValue({ state: {} });
+});
+
+afterEach(() => {
+  exitSpy.mockRestore();
+});
+
+// The spy is per test: a process.exit left replaced would swallow every later exit in the worker.
+afterAll(() => {
+  expect(process.exit).toBe(realExit);
 });
 
 describe('rdc legal --json', () => {

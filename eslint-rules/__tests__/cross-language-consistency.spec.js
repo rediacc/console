@@ -24,11 +24,11 @@ export default async ({ jsonRuleTester, runCases, withFixture }) => {
   const { crossLanguageConsistency } = await import('../i18n/cross-language-consistency.js');
   const results = [];
 
-  const run = (label, locale, cases) =>
-    withFixture({ 'en/emails.json': EN_GROUP, 'xx/emails.json': locale }, (root) => {
+  const run = (label, locale, cases, en = EN_GROUP) =>
+    withFixture({ 'en/emails.json': en, 'xx/emails.json': locale }, (root) => {
       const filename = path.join(root, 'en', 'emails.json');
       const options = [{ localesDir: root, sourceLanguage: 'en' }];
-      const withCtx = (list) => list.map((c) => ({ ...c, code: EN_GROUP, filename, options }));
+      const withCtx = (list) => list.map((c) => ({ ...c, code: en, filename, options }));
       results.push(
         runCases(jsonRuleTester(), `${ruleId} (${label})`, crossLanguageConsistency, {
           valid: withCtx(cases.valid ?? []),
@@ -69,14 +69,9 @@ export default async ({ jsonRuleTester, runCases, withFixture }) => {
   run('plain string where en holds a plural group', JSON.stringify({ title: 'x', count: 'y' }), {
     invalid: [{ errors: [{ messageId: 'shapeMismatch' }] }],
   });
-  // CONTROL: the same shape on both sides stays silent.
-  run(
-    'control: plain string on both sides',
-    JSON.stringify({ title: 'x', count: { other: 'b' } }),
-    {
-      valid: [{}],
-    }
-  );
+  // CONTROL: a plain string on both sides stays silent, so the shape check fires on the mismatch alone.
+  const PLAIN = JSON.stringify({ title: 'x', count: 'y' });
+  run('control: plain string on both sides', PLAIN, { valid: [{}] }, PLAIN);
 
   return results;
 };
