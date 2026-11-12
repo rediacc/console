@@ -61,8 +61,32 @@ def stderr_tail(text: str) -> str:
     return " | ".join(kept[-TAIL_LINES:])
 
 
+DEPRECATION = re.compile(r"^Using \"[A-Z_]+\" environment variable\. This is deprecated")
+
+
+def stdout_error(text: str) -> str:
+    """The error wrangler's `--json` mode prints on stdout (`{"error": {"text", "notes"}}`), joined by ` | `; empty when stdout holds none.
+
+    A failed `d1 execute --json` writes its cause there, so a stderr holding only the CF_EMAIL deprecation notice hid it (2026-11-12, `proof signer --bench`)."""
+    try:
+        doc = parse_json(text)
+    except ControlDbError:
+        return ""
+    err = doc.get("error") if isinstance(doc, dict) else None
+    if not isinstance(err, dict):
+        return ""
+    parts = [str(err.get("text") or "")]
+    parts += [str(n.get("text") or "") for n in err.get("notes") or [] if isinstance(n, dict)]
+    return " | ".join(p[:TAIL_WIDTH] for p in parts if p)
+
+
 def _failure(what: str, done: Completed) -> ControlDbError:
-    tail = stderr_tail(done.stderr)
+    kept = "\n".join(
+        line
+        for line in done.stderr.splitlines()
+        if not DEPRECATION.match(ANSI.sub("", line).strip())
+    )
+    tail = " | ".join(t for t in (stdout_error(done.stdout), stderr_tail(kept)) if t)
     return ControlDbError("%s exited %d%s" % (what, done.rc, ": " + tail if tail else ""))
 
 

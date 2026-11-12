@@ -259,6 +259,22 @@ def test_wrangler_failure_exits_one(monkeypatch) -> None:
     assert _run("list", "--target", "stable", "--region", "us") == 1
 
 
+@pytest.mark.usefixtures("fake")
+def test_wrangler_failure_names_the_json_mode_error_from_stdout(monkeypatch, capsys) -> None:
+    monkeypatch.setenv("FAKE_NPX_RC", "1")
+    monkeypatch.setenv(
+        "FAKE_NPX_OUT", json.dumps({"error": {"text": "D1_ERROR: no such table: organizations"}})
+    )
+    assert _run("list", "--target", "stable", "--region", "us") == 1
+    text = capsys.readouterr()
+    assert "no such table: organizations" in text.out + text.err
+
+
+def test_d1_cause_is_empty_without_a_json_error() -> None:
+    assert mod.d1_cause("[]") == ""
+    assert mod.d1_cause("") == ""
+
+
 def test_bad_target_is_refused_before_any_call(fake) -> None:
     assert _run("list", "--target", "bench", "--region", "us") == 1
     assert _calls(fake) == []

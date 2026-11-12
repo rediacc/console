@@ -105,7 +105,10 @@ def wrangler_runner(worker_dir: pathlib.Path, config: str) -> Runner:
         if proc.stderr:
             print(proc.stderr, end="", file=sys.stderr)
         if proc.returncode != 0:
-            raise RefusedError("wrangler d1 execute on %s exited %d" % (database, proc.returncode))
+            raise RefusedError(
+                "wrangler d1 execute on %s exited %d%s"
+                % (database, proc.returncode, executor_orgs.d1_cause(proc.stdout))
+            )
         rows = executor_orgs.parse_rows(proc.stdout)
         if rows is None:
             raise RefusedError(

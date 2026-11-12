@@ -287,3 +287,27 @@ def test_the_enterprise_profile_binds_the_token_the_guard_names():
     profile = spec["consumers"][control_db.PROFILE]
     assert control_db.AUTH_ENV in profile["required"]
     assert "CLOUDFLARE_ACCOUNT_ID" in profile["required"]
+
+
+def test_a_json_mode_error_on_stdout_is_named_and_the_deprecation_notice_dropped():
+    body = {
+        "error": {
+            "text": "A request to the Cloudflare API failed.",
+            "notes": [{"text": "no such table: audit [code: 7500]"}],
+        }
+    }
+
+    def run(argv, *, cwd=None):
+        del argv, cwd
+        return control_db.Completed(
+            1,
+            json.dumps(body),
+            'Using "CF_EMAIL" environment variable. This is deprecated. Please use "CLOUDFLARE_EMAIL", instead.\n',
+        )
+
+    with pytest.raises(control_db.ControlDbError) as err:
+        control_db.query("control-eu", "SELECT 1", [], runner=run)
+    text = str(err.value)
+    assert "no such table: audit" in text
+    assert "A request to the Cloudflare API failed." in text
+    assert "CF_EMAIL" not in text
