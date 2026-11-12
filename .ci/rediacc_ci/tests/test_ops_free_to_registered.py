@@ -394,6 +394,17 @@ def test_cleanup_removes_only_the_looked_up_user():
     assert any(USER in n for n in notes)
 
 
+def test_cleanup_finds_a_purchased_subscription_through_the_organization():
+    """A paid checkout moves the subscription to a Stripe customer id, so the user id no longer finds it."""
+    fake = Fake()
+    fake.user_present = True
+    ftr.cleanup("ftr+20261111103000@rediacc.io", fake.rows, lambda _m: None)
+    lookup = [s for s in fake.sql if s.startswith("SELECT id FROM subscriptions")]
+    assert len(lookup) == 1
+    assert "FROM organizations WHERE owner_user_id = '%s'" % USER in lookup[0]
+    assert "customer_id = '%s'" % USER in lookup[0]
+
+
 def test_cleanup_refuses_a_non_uuid_id():
     with pytest.raises(ftr.DrillError):
         ftr.cleanup_sql("a@rediacc.io", "1' OR '1'='1", [], [])

@@ -463,7 +463,13 @@ def cleanup(
         ]
         sub_ids = [
             str(r["id"])
-            for r in rows(q("SELECT id FROM subscriptions WHERE customer_id = $u", u=uid))
+            for r in rows(
+                q(
+                    "SELECT id FROM subscriptions WHERE customer_id = $u OR customer_id IN "
+                    "(SELECT customer_id FROM organizations WHERE owner_user_id = $u)",
+                    u=uid,
+                )
+            )
         ]
         log(
             "deleted user %s, %d organization(s) %s, %d subscription(s) %s"
