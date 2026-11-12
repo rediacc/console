@@ -904,7 +904,7 @@ SCOPE_ADMITTED: list[tuple[str, str, str | None]] = [
     ("scratch inside sh -c", "sh -c 'git -C %s %s %s/r'" % (WORK, VERB, SCRATCH), "/tmp"),
 ]
 SCOPE_REFUSED: list[tuple[str, str, str | None]] = [
-    ("this checkout by the event cwd", "git %s /tmp/wt HEAD" % VERB, ROOT),
+    ("this checkout by the event cwd", "git %s /tmp/wt" % VERB, ROOT),
     ("this checkout by -C", "git -C %s %s /tmp/wt" % (ROOT, VERB), "/tmp"),
     ("this checkout through a symlink", "git -C %s/link %s /tmp/wt" % (SCRATCH, VERB), "/tmp"),
     ("a submodule by -C", "git -C %s %s /tmp/wt" % (SUBMODULE, VERB), "/tmp"),
