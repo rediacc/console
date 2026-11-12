@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 5
 language: de
-sourceHash: "2c3ac4a96a028b3f"
-sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
+sourceHash: "5c93a7291bd8c558"
+sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
 ---
 
 Rediacc kann vollständig auf eigener Infrastruktur betrieben werden. Das Standalone-Docker-Image enthält den Account-Server, das Webportal, die Marketing-Website und den CLI-Distributionsendpunkt. Externe Abhängigkeiten von Rediacccs gehosteten Diensten sind nicht erforderlich.
@@ -232,11 +232,23 @@ Diese gesamte Schleife erfordert keinen Netzwerkabgang vom On-Premise-Server.
 
 #### Zertifikat-Upload-Fehlermodi
 
-| Code | Ursache | Behebung |
+`POST /onprem/cert-upload` antwortet bei Erfolg mit `{uploaded: true, bootstrap, certId}`. Ein abgelehntes Zertifikat liefert `{error, code}`; `error` enthält die Details, `code` ist einer der unten genannten Gründe. Jedes angewendete oder abgelehnte Zertifikat wird protokolliert und per E-Mail an den Eigentümer der Box gesendet.
+
+`rdc server licence` legt das Zertifikat per SSH im Posteingang der Box (`data/web/cert-inbox`) ab und liest anschließend `applied.json` oder `rejected.json` zurück. Es bestätigt die neue Zertifikats-ID über `cert-status`. Eine Ablehnung nennt dieselben Gründe, dazu `not-a-regular-file` und `too-large` vom Posteingang selbst.
+
+| Code | HTTP | Ursache |
 |---|---|---|
-| `CHAIN_HEAD_BEHIND` | `genesisSequence` des neuen Zertifikats liegt vor dem lokalen Kettenkopf | Das vorgelagerte System befindet sich auf einer abgezweigten Kette - untersuchen |
-| `CHAIN_FORK_ON_UPLOAD` | Chain-Hash an `genesisSequence` des Zertifikats stimmt nicht mit dem lokalen Ledger überein | Die lokale Kette hat sich vom vorgelagerten System abgezweigt - untersuchen |
-| `Signature verification failed` | Zertifikat ist nicht vom konfigurierten `UPSTREAM_PUBLIC_KEY` signiert | Prüfung, ob `UPSTREAM_PUBLIC_KEY` mit dem vorgelagerten Master-Public-Key übereinstimmt |
+| `malformed` | 400 | Der Upload ist kein gültiges Zertifikat |
+| `bad-signature` | 400 | Das Zertifikat ist nicht mit dem konfigurierten `UPSTREAM_PUBLIC_KEY` signiert |
+| `wrong-key` | 400 | Das Zertifikat wurde für einen anderen Schlüssel ausgestellt als den dieser On-Premise-Installation |
+| `expired` | 400 | Das Zertifikat ist bereits über sein `validUntil` hinaus abgelaufen |
+| `not-newer` | 409 | Das Zertifikat ist nicht neuer als das aktuell gültige |
+| `other-subscription` | 409 | Das Zertifikat gehört zu einem anderen Abonnement |
+| `chain-ahead` | 409 | `genesisSequence` des Zertifikats liegt vor dem lokalen Kettenkopf |
+| `chain-fork` | 409 | Der Chain-Hash an `genesisSequence` des Zertifikats stimmt nicht mit dem lokalen Ledger überein |
+| `no-upstream-key` | 500 | `UPSTREAM_PUBLIC_KEY` ist nicht konfiguriert |
+| `write-failed` | 500 | Das Zertifikat konnte nicht auf die Festplatte geschrieben werden |
+| `adoption-failed` | 500 | Der Server konnte das geschriebene Zertifikat nicht laden |
 
 ### 6. Status und Monitoring
 

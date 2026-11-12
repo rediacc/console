@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 5
 language: et
-sourceHash: "2c3ac4a96a028b3f"
-sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
+sourceHash: "5c93a7291bd8c558"
+sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
 ---
 
 Rediacc saab töötada täielikult sinu enda infrastruktuuris. Eraldiseisev Dockeri pilt sisaldab konto-serverit, veebiportaali, turunduslehte ja CLI jaotuse lõpp-punkti. Rediacc hostitud teenustele pole väliseid sõltuvusi.
@@ -232,11 +232,23 @@ See kogu silmus ei nõua kohapealselt kunagi võrguegress-ühendust.
 
 #### Serdi üleslaadimise ebaõnnestumisrežiimid
 
-| Kood | Põhjus | Lahendus |
+`POST /onprem/cert-upload` tagastab edu korral `{uploaded: true, bootstrap, certId}`. Tagasilükatud serdi korral tuleb `{error, code}`: `error` kannab üksikasju ja `code` on üks allpool toodud põhjustest. Iga rakendatud või tagasilükatud sert logitakse ja saadetakse e-postiga masina omanikule.
+
+`rdc server licence` paneb serdi SSH kaudu masina postkasti (`data/web/cert-inbox`) ja loeb seejärel tagasi faili `applied.json` või `rejected.json`. Seejärel kinnitab ta uue serdi ID `cert-status` kaudu. Tagasilükkamisel on samad põhjused, lisaks `not-a-regular-file` ja `too-large`, mille annab postkast ise.
+
+| Kood | HTTP | Põhjus |
 |---|---|---|
-| `CHAIN_HEAD_BEHIND` | Uue serdi `genesisSequence` on kohaliku ahela otsa ees | Ülesvool on hargnenud ahelal -- uuri |
-| `CHAIN_FORK_ON_UPLOAD` | Ahela räsi serdi `genesisSequence`'il ei vasta kohalikule raamatule | Kohalik ahel on ülesvoolust hargnenud -- uuri |
-| `Signature verification failed` | Sert pole seadistatud `UPSTREAM_PUBLIC_KEY` allkirjastatud | Kontrolli, et `UPSTREAM_PUBLIC_KEY` vastab ülesvoolu peaserveri avalikule võtmele |
+| `malformed` | 400 | Üleslaaditu pole kehtiv sert |
+| `bad-signature` | 400 | Sertile pole alla kirjutanud seadistatud `UPSTREAM_PUBLIC_KEY` |
+| `wrong-key` | 400 | Sert on välja antud teisele võtmele kui selle kohaliku paigalduse oma |
+| `expired` | 400 | Serdi `validUntil` on juba möödas |
+| `not-newer` | 409 | Sert ei ole kehtivast uuem |
+| `other-subscription` | 409 | Sert kuulub teisele tellimusele |
+| `chain-ahead` | 409 | Serdi `genesisSequence` on kohaliku ahela otsa ees |
+| `chain-fork` | 409 | Ahela räsi serdi `genesisSequence`'il ei vasta kohalikule raamatule |
+| `no-upstream-key` | 500 | `UPSTREAM_PUBLIC_KEY` pole seadistatud |
+| `write-failed` | 500 | Serti ei õnnestunud kettale kirjutada |
+| `adoption-failed` | 500 | Server ei suutnud kirjutatud serti laadida |
 
 ### 6. Olek ja seire
 

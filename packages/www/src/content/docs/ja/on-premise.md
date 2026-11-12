@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 5
 language: ja
-sourceHash: "2c3ac4a96a028b3f"
-sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
+sourceHash: "5c93a7291bd8c558"
+sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
 ---
 
 Rediaccは完全に独自インフラ上で運用できます。スタンドアロンDockerイメージには、アカウントサーバー、ウェブポータル、マーケティングサイト、およびCLIディストリビューションエンドポイントが含まれます。Rediaccのホスト型サービスへの外部依存は不要です。
@@ -232,11 +232,23 @@ RENEW_THRESHOLD_DAYS=14
 
 #### 証明書アップロードの失敗モード
 
-| コード | 原因 | 修正方法 |
+`POST /onprem/cert-upload`は成功すると`{uploaded: true, bootstrap, certId}`を返します。拒否された証明書には`{error, code}`が返り、`error`に詳細、`code`に下表の理由のいずれかが入ります。適用または拒否された証明書はすべてログに記録され、ボックスの所有者にメールで通知されます。
+
+`rdc server licence`は、SSHで証明書をボックスのインボックス（`data/web/cert-inbox`）に置き、`applied.json`または`rejected.json`を読み戻します。その後、`cert-status`で新しい証明書IDを確認します。拒否の理由は同じ表のものに加え、インボックス自身が返す`not-a-regular-file`と`too-large`があります。
+
+| コード | HTTP | 原因 |
 |---|---|---|
-| `CHAIN_HEAD_BEHIND` | 新しい証明書の`genesisSequence`がローカルチェーンヘッドより進んでいる | 上流がフォークしたチェーンにある - 調査が必要 |
-| `CHAIN_FORK_ON_UPLOAD` | 証明書の`genesisSequence`でのローカル台帳エントリがローカル台帳と一致しない | ローカルチェーンが上流から分岐している - 調査が必要 |
-| `Signature verification failed` | 証明書が設定済みの`UPSTREAM_PUBLIC_KEY`で署名されていない | `UPSTREAM_PUBLIC_KEY`が上流マスター公開鍵と一致しているか確認する |
+| `malformed` | 400 | アップロードされたものが有効な証明書ではない |
+| `bad-signature` | 400 | 証明書が設定済みの`UPSTREAM_PUBLIC_KEY`で署名されていない |
+| `wrong-key` | 400 | 証明書がこのオンプレミスとは別の鍵向けに発行されている |
+| `expired` | 400 | 証明書がすでに`validUntil`を過ぎている |
+| `not-newer` | 409 | 証明書が現在有効なものより新しくない |
+| `other-subscription` | 409 | 証明書が別のサブスクリプションのものである |
+| `chain-ahead` | 409 | 証明書の`genesisSequence`がローカルチェーンヘッドより進んでいる |
+| `chain-fork` | 409 | 証明書の`genesisSequence`でのチェーンハッシュがローカル台帳と一致しない |
+| `no-upstream-key` | 500 | `UPSTREAM_PUBLIC_KEY`が設定されていない |
+| `write-failed` | 500 | 証明書をディスクに書き込めなかった |
+| `adoption-failed` | 500 | 書き込んだ証明書をサーバーが読み込めなかった |
 
 ### 6. ステータスとモニタリング
 

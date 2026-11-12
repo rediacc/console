@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 5
 language: zh
-sourceHash: "2c3ac4a96a028b3f"
-sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
+sourceHash: "5c93a7291bd8c558"
+sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
 ---
 
 Rediacc 可以完全运行在您自己的基础设施上。独立 Docker 镜像包含账户服务器、Web 管理门户、营销网站和 CLI 分发端点，无需依赖 Rediacc 托管服务。
@@ -232,11 +232,23 @@ RENEW_THRESHOLD_DAYS=14
 
 #### 证书上传失败代码
 
-| 代码 | 原因 | 解决方法 |
+`POST /onprem/cert-upload` 成功时返回 `{uploaded: true, bootstrap, certId}`。证书被拒绝时返回 `{error, code}`，其中 `error` 为详细信息，`code` 为下表中的某个原因。每张已应用或被拒绝的证书都会记入日志，并通过邮件通知该机器的所有者。
+
+`rdc server licence` 通过 SSH 把证书放入机器的收件箱（`data/web/cert-inbox`），再读回 `applied.json` 或 `rejected.json`，然后通过 `cert-status` 确认新的证书 ID。被拒绝时的原因与下表相同，另外还有收件箱自身给出的 `not-a-regular-file` 和 `too-large`。
+
+| 代码 | HTTP | 原因 |
 |---|---|---|
-| `CHAIN_HEAD_BEHIND` | 新证书的 `genesisSequence` 超过本地链头 | 上游处于分叉链上，请调查 |
-| `CHAIN_FORK_ON_UPLOAD` | 证书 `genesisSequence` 处的链哈希与本地账本不匹配 | 本地链已与上游分叉，请调查 |
-| `Signature verification failed` | 证书未由配置的 `UPSTREAM_PUBLIC_KEY` 签名 | 检查 `UPSTREAM_PUBLIC_KEY` 是否与上游主公钥匹配 |
+| `malformed` | 400 | 上传的内容不是有效证书 |
+| `bad-signature` | 400 | 证书不是由已配置的 `UPSTREAM_PUBLIC_KEY` 签名的 |
+| `wrong-key` | 400 | 证书是为另一把密钥签发的，不属于这个本地部署 |
+| `expired` | 400 | 证书已超过其 `validUntil` |
+| `not-newer` | 409 | 证书并不比当前生效的证书更新 |
+| `other-subscription` | 409 | 证书属于另一个订阅 |
+| `chain-ahead` | 409 | 证书的 `genesisSequence` 超过本地链头 |
+| `chain-fork` | 409 | 证书 `genesisSequence` 处的链哈希与本地账本不匹配 |
+| `no-upstream-key` | 500 | 未配置 `UPSTREAM_PUBLIC_KEY` |
+| `write-failed` | 500 | 无法将证书写入磁盘 |
+| `adoption-failed` | 500 | 服务器无法加载已写入的证书 |
 
 ### 6. 状态与监控
 

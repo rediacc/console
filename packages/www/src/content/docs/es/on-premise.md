@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 5
 language: es
-sourceHash: "2c3ac4a96a028b3f"
-sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
+sourceHash: "5c93a7291bd8c558"
+sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
 ---
 
 Rediacc puede ejecutarse completamente en tu propia infraestructura. La imagen Docker independiente incluye el servidor de cuentas, el portal web, el sitio de marketing y el endpoint de distribución del CLI. No se requieren dependencias externas de los servicios alojados de Rediacc.
@@ -232,11 +232,23 @@ Todo este ciclo nunca requiere salida de red desde el on-premise.
 
 #### Modos de fallo de subida del certificado
 
-| Código | Causa | Solución |
+`POST /onprem/cert-upload` responde `{uploaded: true, bootstrap, certId}` si todo va bien. Un certificado rechazado devuelve `{error, code}`: `error` lleva el detalle y `code` es uno de los motivos de la tabla. Cada certificado aplicado o rechazado se registra en el log y se envía por correo al propietario de la caja.
+
+`rdc server licence` deposita el certificado por SSH en la bandeja de entrada de la caja (`data/web/cert-inbox`) y lee de vuelta `applied.json` o `rejected.json`. Después confirma el nuevo id del certificado con `cert-status`. Un rechazo trae los mismos motivos, más `not-a-regular-file` y `too-large`, que genera la propia bandeja.
+
+| Código | HTTP | Causa |
 |---|---|---|
-| `CHAIN_HEAD_BEHIND` | El `genesisSequence` del nuevo certificado está por delante del encabezado de la cadena local | El upstream está en una cadena bifurcada - investiga |
-| `CHAIN_FORK_ON_UPLOAD` | El hash de la cadena en el `genesisSequence` del certificado no coincide con el registro local | La cadena local ha divergido del upstream - investiga |
-| `Signature verification failed` | El certificado no está firmado por el `UPSTREAM_PUBLIC_KEY` configurado | Verifica que `UPSTREAM_PUBLIC_KEY` coincida con la clave pública maestra upstream |
+| `malformed` | 400 | La subida no es un certificado válido |
+| `bad-signature` | 400 | El certificado no está firmado con la `UPSTREAM_PUBLIC_KEY` configurada |
+| `wrong-key` | 400 | El certificado se emitió para una clave distinta de la de esta instalación on-premise |
+| `expired` | 400 | El certificado ya superó su `validUntil` |
+| `not-newer` | 409 | El certificado no es más reciente que el que está en vigor |
+| `other-subscription` | 409 | El certificado pertenece a otra suscripción |
+| `chain-ahead` | 409 | El `genesisSequence` del certificado está por delante del encabezado de la cadena local |
+| `chain-fork` | 409 | El hash de la cadena en el `genesisSequence` del certificado no coincide con el registro local |
+| `no-upstream-key` | 500 | `UPSTREAM_PUBLIC_KEY` no está configurada |
+| `write-failed` | 500 | No se pudo escribir el certificado en disco |
+| `adoption-failed` | 500 | El servidor no pudo cargar el certificado escrito |
 
 ### 6. Estado y monitoreo
 

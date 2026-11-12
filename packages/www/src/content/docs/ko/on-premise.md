@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 5
 language: ko
-sourceHash: "2c3ac4a96a028b3f"
-sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
+sourceHash: "5c93a7291bd8c558"
+sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
 ---
 
 Rediacc는 자체 인프라에서 완전히 실행할 수 있습니다. 독립 실행형 Docker 이미지에는 계정 서버, 웹 포털, 마케팅 사이트, CLI 배포 엔드포인트가 포함되어 있습니다. Rediacc의 호스팅 서비스에 대한 외부 의존성은 필요하지 않습니다.
@@ -232,11 +232,23 @@ RENEW_THRESHOLD_DAYS=14
 
 #### 인증서 업로드 오류 모드
 
-| 코드 | 원인 | 해결 방법 |
+`POST /onprem/cert-upload`는 성공하면 `{uploaded: true, bootstrap, certId}`를 반환합니다. 거부된 인증서에는 `{error, code}`가 반환되며, `error`에는 상세 내용이, `code`에는 아래 표의 사유 중 하나가 담깁니다. 적용되거나 거부된 모든 인증서는 로그에 기록되고 박스 소유자에게 메일로 전송됩니다.
+
+`rdc server licence`는 SSH로 인증서를 박스의 인박스(`data/web/cert-inbox`)에 넣은 뒤 `applied.json` 또는 `rejected.json`을 다시 읽어 옵니다. 이어서 `cert-status`로 새 인증서 ID를 확인합니다. 거부 사유는 아래 표와 같고, 인박스 자체에서 발생하는 `not-a-regular-file`과 `too-large`가 추가됩니다.
+
+| 코드 | HTTP | 원인 |
 |---|---|---|
-| `CHAIN_HEAD_BEHIND` | 새 인증서의 `genesisSequence`가 로컬 체인 헤드보다 앞에 있습니다. | 업스트림이 포크된 체인에 있습니다 - 조사하세요. |
-| `CHAIN_FORK_ON_UPLOAD` | 인증서의 `genesisSequence`에서의 체인 해시가 로컬 원장과 일치하지 않습니다. | 로컬 체인이 업스트림에서 분기되었습니다 - 조사하세요. |
-| `Signature verification failed` | 인증서가 구성된 `UPSTREAM_PUBLIC_KEY`로 서명되지 않았습니다. | `UPSTREAM_PUBLIC_KEY`가 업스트림 마스터 공개 키와 일치하는지 확인하세요. |
+| `malformed` | 400 | 업로드한 파일이 올바른 인증서가 아닙니다. |
+| `bad-signature` | 400 | 인증서가 설정된 `UPSTREAM_PUBLIC_KEY`로 서명되지 않았습니다. |
+| `wrong-key` | 400 | 인증서가 이 온프레미스와 다른 키용으로 발급되었습니다. |
+| `expired` | 400 | 인증서가 이미 `validUntil`을 지났습니다. |
+| `not-newer` | 409 | 인증서가 현재 적용 중인 인증서보다 최신이 아닙니다. |
+| `other-subscription` | 409 | 인증서가 다른 구독에 속합니다. |
+| `chain-ahead` | 409 | 인증서의 `genesisSequence`가 로컬 체인 헤드보다 앞에 있습니다. |
+| `chain-fork` | 409 | 인증서의 `genesisSequence`에서의 체인 해시가 로컬 원장과 일치하지 않습니다. |
+| `no-upstream-key` | 500 | `UPSTREAM_PUBLIC_KEY`가 구성되지 않았습니다. |
+| `write-failed` | 500 | 인증서를 디스크에 쓰지 못했습니다. |
+| `adoption-failed` | 500 | 서버가 기록된 인증서를 불러오지 못했습니다. |
 
 ### 6. 상태 및 모니터링
 

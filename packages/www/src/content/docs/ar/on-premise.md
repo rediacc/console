@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 5
 language: ar
-sourceHash: "2c3ac4a96a028b3f"
-sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
+sourceHash: "5c93a7291bd8c558"
+sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
 ---
 
 يمكن تشغيل Rediacc بالكامل على بنيتك التحتية الخاصة. تتضمن صورة Docker المستقلة خادم الحساب وبوابة الويب وموقع التسويق ونقطة توزيع CLI. لا تتطلب أي اعتماديات خارجية على خدمات Rediacc المستضافة.
@@ -232,11 +232,23 @@ RENEW_THRESHOLD_DAYS=14
 
 #### أوضاع فشل رفع الشهادة
 
-| الكود | السبب | الإصلاح |
+يُعيد `POST /onprem/cert-upload` عند النجاح `{uploaded: true, bootstrap, certId}`. أما الشهادة المرفوضة فيُعاد لها `{error, code}`، حيث يحمل `error` التفاصيل ويكون `code` أحد الأسباب المذكورة في الجدول أدناه. تُسجَّل كل شهادة مطبَّقة أو مرفوضة في السجل وتُرسل بالبريد إلى مالك الجهاز.
+
+يضع `rdc server licence` الشهادة عبر SSH في صندوق الوارد الخاص بالجهاز (`data/web/cert-inbox`) ثم يقرأ `applied.json` أو `rejected.json`. بعد ذلك يؤكد معرّف الشهادة الجديدة عبر `cert-status`. وتحمل حالة الرفض الأسباب نفسها، إضافةً إلى `not-a-regular-file` و`too-large` اللذين يصدران عن صندوق الوارد نفسه.
+
+| الرمز | HTTP | السبب |
 |---|---|---|
-| `CHAIN_HEAD_BEHIND` | `genesisSequence` للشهادة الجديدة متقدم على رأس السلسلة المحلية | الخادم الأعلى على سلسلة متفرعة - تحقق من الأمر |
-| `CHAIN_FORK_ON_UPLOAD` | تجزئة السلسلة عند `genesisSequence` للشهادة لا تتطابق مع دفتر الأستاذ المحلي | السلسلة المحلية تباعدت عن الخادم الأعلى - تحقق من الأمر |
-| `Signature verification failed` | الشهادة غير موقّعة بواسطة `UPSTREAM_PUBLIC_KEY` المكوَّن | تحقق من أن `UPSTREAM_PUBLIC_KEY` يتطابق مع المفتاح العام الرئيسي للخادم الأعلى |
+| `malformed` | 400 | الملف المرفوع ليس شهادة صالحة |
+| `bad-signature` | 400 | الشهادة غير موقَّعة بـ `UPSTREAM_PUBLIC_KEY` المُعدّ |
+| `wrong-key` | 400 | صدرت الشهادة لمفتاح مختلف عن مفتاح هذا النشر المحلي |
+| `expired` | 400 | تجاوزت الشهادة تاريخ `validUntil` الخاص بها |
+| `not-newer` | 409 | الشهادة ليست أحدث من الشهادة السارية |
+| `other-subscription` | 409 | الشهادة تخص اشتراكًا آخر |
+| `chain-ahead` | 409 | `genesisSequence` للشهادة متقدم على رأس السلسلة المحلية |
+| `chain-fork` | 409 | تجزئة السلسلة عند `genesisSequence` للشهادة لا تتطابق مع دفتر الأستاذ المحلي |
+| `no-upstream-key` | 500 | `UPSTREAM_PUBLIC_KEY` غير مُعدّ |
+| `write-failed` | 500 | تعذّرت كتابة الشهادة على القرص |
+| `adoption-failed` | 500 | تعذّر على الخادم تحميل الشهادة المكتوبة |
 
 ### 6. الحالة والمراقبة
 

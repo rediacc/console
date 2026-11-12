@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 5
 language: tr
-sourceHash: "2c3ac4a96a028b3f"
-sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
+sourceHash: "5c93a7291bd8c558"
+sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
 ---
 
 Rediacc tamamen kendi altyapınızda çalışabilir. Bağımsız Docker imajı hesap sunucusunu, web portalını, pazarlama sitesini ve CLI dağıtım uç noktasını içerir. Rediacc'ın barındırılan servislerine harici bağımlılık gerekmez.
@@ -232,11 +232,23 @@ Bu akış hiçbir zaman yerinde sunucudan ağ çıkışı gerektirmez.
 
 #### Sertifika yükleme hata modları
 
-| Kod | Neden | Düzeltme |
+`POST /onprem/cert-upload` başarılı olursa `{uploaded: true, bootstrap, certId}` döndürür. Reddedilen bir sertifika için `{error, code}` döner: `error` ayrıntıyı taşır, `code` ise aşağıdaki nedenlerden biridir. Uygulanan veya reddedilen her sertifika günlüğe yazılır ve kutunun sahibine e-postayla gönderilir.
+
+`rdc server licence` sertifikayı SSH ile kutunun gelen kutusuna (`data/web/cert-inbox`) bırakır ve `applied.json` ya da `rejected.json` dosyasını geri okur. Ardından yeni sertifika kimliğini `cert-status` ile doğrular. Ret nedenleri aynıdır; ayrıca gelen kutusunun kendisinden gelen `not-a-regular-file` ve `too-large` da görülebilir.
+
+| Kod | HTTP | Neden |
 |---|---|---|
-| `CHAIN_HEAD_BEHIND` | Yeni sertifikanın `genesisSequence`'ı yerel zincir başının önünde | Yukarı akış çatallanmış bir zincirde - araştırın |
-| `CHAIN_FORK_ON_UPLOAD` | Sertifikanın `genesisSequence`'ındaki zincir hash'i yerel deftere uymuyor | Yerel zincir yukarı akıştan ayrıştı - araştırın |
-| `Signature verification failed` | Sertifika yapılandırılmış `UPSTREAM_PUBLIC_KEY` tarafından imzalanmamış | `UPSTREAM_PUBLIC_KEY`'in yukarı akış ana genel anahtarıyla eşleştiğini kontrol edin |
+| `malformed` | 400 | Yüklenen dosya geçerli bir sertifika değil |
+| `bad-signature` | 400 | Sertifika, yapılandırılmış `UPSTREAM_PUBLIC_KEY` ile imzalanmamış |
+| `wrong-key` | 400 | Sertifika bu şirket içi kurulumdan farklı bir anahtar için düzenlenmiş |
+| `expired` | 400 | Sertifikanın `validUntil` tarihi geçmiş |
+| `not-newer` | 409 | Sertifika, yürürlükteki sertifikadan daha yeni değil |
+| `other-subscription` | 409 | Sertifika başka bir aboneliğe ait |
+| `chain-ahead` | 409 | Sertifikanın `genesisSequence` değeri yerel zincir başının önünde |
+| `chain-fork` | 409 | Sertifikanın `genesisSequence` değerindeki zincir hash'i yerel deftere uymuyor |
+| `no-upstream-key` | 500 | `UPSTREAM_PUBLIC_KEY` yapılandırılmamış |
+| `write-failed` | 500 | Sertifika diske yazılamadı |
+| `adoption-failed` | 500 | Sunucu yazılan sertifikayı yükleyemedi |
 
 ### 6. Durum ve izleme
 
