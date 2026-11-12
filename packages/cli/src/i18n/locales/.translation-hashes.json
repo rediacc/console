@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2805,
-    "sourceCommit": "4b08f6f1806c3de55fa5ddb9d5ddd2b765438068"
+    "keyCount": 2806,
+    "sourceCommit": "b1ab42cd2fb68b02e22fb8556f228535b97d0a4e"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2414,6 +2414,7 @@
     "docs.sectionTitles.ops": "1e7834d0",
     "docs.sectionTitles.repo": "12349d83",
     "docs.sectionTitles.serve": "8c9f5c1b",
+    "docs.sectionTitles.server": "aec20549",
     "docs.sectionTitles.shortcuts": "0d9199d7",
     "docs.sectionTitles.storage": "e4d88e14",
     "docs.sectionTitles.subscription": "e9c97c57",

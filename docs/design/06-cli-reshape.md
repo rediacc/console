@@ -46,6 +46,7 @@ rdc repo:       create up down status list delete fork push pull migrate promote
 rdc cluster:    create scale join evict destroy status kubeconfig snapshot {create list}
                 fork migrate rehearse
 rdc backup:     strategy {set remove list show bind unbind}  retention {set clear preview}  snapshots {delete}  schedule  run  status  cancel  list  snapshot  restore  verify  manifests  usage  browse  download  upload  purge  reconcile  check  repair  toc-key {sync}  immutability {show set}  undelete  churn
+rdc server:     install status upgrade backup licence
 rdc term:       connect
 rdc vscode:     connect list cleanup check serve {status stop}
 rdc ops:        up down status ssh setup check
@@ -57,7 +58,7 @@ rdc doctor | credits | update | version | legal | serve | mcp serve | run (hidde
 
 ### 1.1 Where the shipped tree differs from the tree this section used to draw
 
-Thirty differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the rest are later additions.
+Thirty-one differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the rest are later additions.
 
 | Was drawn as | Shipped as | Why |
 |---|---|---|
@@ -81,6 +82,7 @@ Thirty differences. The first six are deliberate and each is traceable to a ruli
 | `config` with no `access` | `config access {add remove ranges list}` | PLAN-ssh-key-source-ranges: the config-wide registry of SSH keys and their allowed IPv4 and IPv6 source ranges. `add --hosted-executor` attaches the ranges of the hosted executor; `ranges` edits a key's ranges and `list` reads them. |
 | `machine` with no `access` | `machine access {set remove show push}` | PLAN-ssh-key-source-ranges: assigns a key to a machine with per-machine range overrides, shows the access lines in effect, and `push` writes them to the machine (`--dry-run` previews; a push that would lock out the current session is refused). All four run on the machine side or edit the config, so they are machine-plane. |
 | `repo` with no `prune` | `repo prune` | PLAN-repo-docker-storage-prune: classifies a repository's Docker storage (unused images, build cache, stopped containers, orphan overlay2 directories) and reclaims it. It is a dry run unless `--apply`, and `--apply --offline` also stops the repository's daemon for the run. It runs on the machine, so it is machine-plane and proxy-capable. |
+| no `server` noun | `server {install status upgrade backup licence}` | Installs the self-hosted account server (Elite) as a repository on a machine, then checks, upgrades (forking a rollback point first), backs up and licenses it. A whole program landing after this transcript was drawn; `rdc serve` (the executor) is a different thing. |
 | `repo` with no `permission` | `repo permission {grant revoke show}` | A repository's Rediaccfile `up()` and `down()` run as the unprivileged universal user; `grant` widens what they may reach (a path with `--path`, or root with `--root`), `revoke` narrows it and `show` prints the grant in effect. Each runs a repository_permission_* renet function on the machine holding the repository, so all three are machine-plane and proxy-capable. |
 | `config remote` with no `master-password` | `config remote master-password change` | Config storage: re-wraps the config key from the device's enrollment under a new password slot, after a re-authentication step, and verifies that the new password unlocks the store. |
 | `backup` with no image transfer | `backup {download upload purge reconcile}` | The backup-local-image work: `download` copies a repository's image from a machine to a local directory or external drive (rsync delta, resumable, sha256-verified) and `upload` sends such an image to a machine and registers it as a new repository. `purge` deletes every stored snapshot of a repository from the chunk store while keeping the repository, and `reconcile` resets the repository's stored-bytes ledger to what the store holds, never deleting a chunk. All four postdate this transcript. |

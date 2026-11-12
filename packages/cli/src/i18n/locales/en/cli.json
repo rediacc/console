@@ -3621,6 +3621,7 @@
       "datastore": "Datastore Management",
       "sync": "File Sync",
       "backup": "Backup & Restore",
+      "server": "Server Installation",
       "job": "Detached Jobs",
       "serve": "Executor Service",
       "tools": "Local Tools",

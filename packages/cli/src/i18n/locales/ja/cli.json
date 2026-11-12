@@ -3153,6 +3153,7 @@
     "pageTitle": "Rediacc CLIリファレンス",
     "sectionTitles": {
       "backup": "バックアップと復元",
+      "server": "サーバーのインストール",
       "cluster": "クラスター管理",
       "config": "設定管理",
       "credits": "サードパーティクレジット",

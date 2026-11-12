@@ -3153,6 +3153,7 @@
     "pageTitle": "Referencia de la CLI de Rediacc",
     "sectionTitles": {
       "backup": "Copia de seguridad y restauración",
+      "server": "Instalación del servidor",
       "cluster": "Gestión de Clústeres",
       "config": "Gestión de Configuración",
       "credits": "Créditos de Terceros",

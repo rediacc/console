@@ -3153,6 +3153,7 @@
     "pageTitle": "Rediacc CLI Referansı",
     "sectionTitles": {
       "backup": "Yedekleme ve Geri Yükleme",
+      "server": "Sunucu Kurulumu",
       "cluster": "Küme Yönetimi",
       "config": "Yapılandırma Yönetimi",
       "credits": "Üçüncü Taraf Katkıları",

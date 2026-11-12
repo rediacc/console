@@ -3153,6 +3153,7 @@
     "pageTitle": "Rediacc CLI viide",
     "sectionTitles": {
       "backup": "Varundamine ja taastamine",
+      "server": "Serveri paigaldamine",
       "cluster": "Klastrite haldus",
       "config": "Konfiguratsiooni haldus",
       "credits": "Kolmandate osapoolte autorlus",

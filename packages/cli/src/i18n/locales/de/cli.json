@@ -3153,6 +3153,7 @@
     "pageTitle": "Rediacc CLI-Referenz",
     "sectionTitles": {
       "backup": "Sicherung & Wiederherstellung",
+      "server": "Server-Installation",
       "cluster": "Clusterverwaltung",
       "config": "Konfigurationsverwaltung",
       "credits": "Danksagungen an Dritte",

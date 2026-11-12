@@ -3153,6 +3153,7 @@
     "pageTitle": "Rediacc CLI 참조",
     "sectionTitles": {
       "backup": "백업 및 복원",
+      "server": "서버 설치",
       "cluster": "클러스터 관리",
       "config": "구성 관리",
       "credits": "서드파티 크레딧",

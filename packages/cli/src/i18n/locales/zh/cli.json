@@ -3153,6 +3153,7 @@
     "pageTitle": "Rediacc CLI 参考",
     "sectionTitles": {
       "backup": "备份与恢复",
+      "server": "服务器安装",
       "cluster": "集群管理",
       "config": "配置管理",
       "credits": "第三方致谢",
