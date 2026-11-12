@@ -1661,7 +1661,7 @@ def test_a_command_that_did_not_succeed_is_refused_never_admitted(lines, detail)
     assert console_v7(acct, FakeCrypto()) == proof.Answer(False, detail)
 
 
-def test_an_exec_refused_by_the_worker_is_refused_with_its_status():
+def test_an_exec_refused_by_the_worker_is_refused_with_its_status(monkeypatch):
     acct = StoreV6()
     acct.granted = None
 
@@ -1670,7 +1670,7 @@ def test_an_exec_refused_by_the_worker_is_refused_with_its_status():
             return acct._json(200, {"ok": True})
         return StoreV6._console(acct, path, headers, doc)
 
-    setattr(acct, "_console", no_grant)
+    monkeypatch.setattr(acct, "_console", no_grant)
     assert console_v7(acct, FakeCrypto()) == proof.Answer(False, "HTTP 404")
 
 

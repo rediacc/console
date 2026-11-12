@@ -104,7 +104,8 @@ def test_proxied_flag_change_updates():
     http = Rec([rec(proxied=False)])
     assert ensure(http).action == "updated"
     body = http.writes()[0][2]
-    assert body is not None and body["proxied"] is True
+    assert body is not None
+    assert body["proxied"] is True
     http = Rec([rec(proxied=False)])
     assert ensure(http, proxied=False).action == "unchanged"
 
