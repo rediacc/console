@@ -249,7 +249,7 @@ info() {
       - SMTP_PASSWORD=\${SMTP_PASSWORD:-}
       - SMTP_FROM=\${SMTP_FROM:-}
       - ROOT_EMAIL=\${ROOT_EMAIL:-}
-      - ON_PREMISE_MODE=\${ON_PREMISE_MODE:-false}
+      - ON_PREMISE_MODE=\${ON_PREMISE_MODE:-true}
       - ON_PREMISE_PRIVATE_KEY=\${ON_PREMISE_PRIVATE_KEY:-}
       - ON_PREMISE_PUBLIC_KEY=\${ON_PREMISE_PUBLIC_KEY:-}
     volumes:
@@ -469,8 +469,8 @@ DELEGATION_CERT_BASE64=
 ROOT_EMAIL=
 # Set to "provided" when the router certificates were installed by hand (\`rdc server install --tls byo\`).
 ELITE_TLS=
-# On-premise mode: "true" turns off the terms gate and serves the on-prem licence route; the default is false.
-ON_PREMISE_MODE=false
+# On-premise mode: "true" turns off the terms gate and serves the on-prem licence route; \`rdc server install\` writes true and the default is true.
+ON_PREMISE_MODE=true
 # Optional: the key pair auto-renew signs with (the delegated pair); empty leaves auto-renew off.
 # Like ACCOUNT_ED25519_PRIVATE_KEY, it reaches the server as an environment variable, so anyone with docker access on the box can read it.
 ON_PREMISE_PRIVATE_KEY=
@@ -488,7 +488,7 @@ SMTP_USER=
 SMTP_PASSWORD=
 SMTP_FROM=
 `,
-      'VERSION': `2
+      'VERSION': `3
 `,
     },
   },

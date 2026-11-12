@@ -235,6 +235,7 @@ describe('settings', () => {
     await result;
     const env = fake.setEnv.find((e) => e.ELITE_DOMAIN);
     expect(env?.ROOT_EMAIL).toBe('owner@example.com');
+    expect(env?.ON_PREMISE_MODE).toBe('true');
     expect(env).not.toHaveProperty('ELITE_TLS');
   });
 

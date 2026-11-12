@@ -142,5 +142,6 @@ describe('the elite template', () => {
     ]) {
       expect(text).toContain(`- ${key}=\${${key}:-`);
     }
+    expect(text).toContain('- ON_PREMISE_MODE=${ON_PREMISE_MODE:-true}');
   });
 });

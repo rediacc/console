@@ -498,6 +498,8 @@ export class ServerInstall {
         ELITE_IMAGE: this.plan.image,
         TAG: imageTag(this.plan.image),
         ROOT_EMAIL: this.plan.owner,
+        // Every installed box is an on-premise server: terms gate off, on-prem licence route.
+        ON_PREMISE_MODE: 'true',
         // byo: the pair is installed per host, so the labels tell the router to skip its resolver.
         ...(this.plan.tls === 'byo' ? { ELITE_TLS: 'provided' } : {}),
       });
