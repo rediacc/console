@@ -117,7 +117,12 @@ def install_system_deps(
             f"playwright install-deps --dry-run {browser} failed (rc={dry.returncode}): {(dry.stderr or '').strip()[-300:]}"
         )
     packages = dry_run_packages(dry.stdout or "")
-    missing = packages_missing(packages, runner) if packages else []
+    if not packages:
+        # An unparseable dry run (an output-format change) must not read as "nothing missing": the libraries would then be found absent only at browser launch.
+        raise RefusedError(
+            f"playwright install-deps --dry-run {browser} printed no `apt-get install` line; cannot tell which system packages are missing"
+        )
+    missing = packages_missing(packages, runner)
     if not missing:
         log.info(
             f"Playwright system deps for {browser} already present ({len(packages)} packages); skipping apt"

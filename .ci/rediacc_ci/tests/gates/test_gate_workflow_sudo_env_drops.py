@@ -4,7 +4,9 @@ THE BUG IT GUARDS. `sudo env NAME=value cmd` passes the command ONLY the names i
 """
 
 import pathlib
+import time
 
+from rediacc_ci.quality import workflows
 from rediacc_ci.tests.gates import harness, workflow_rule
 
 
@@ -233,3 +235,26 @@ def test_second_sudo_env_line_is_reported(gate):
         gate.assert_exit(1, result, "second line drops the variable")
         gate.assert_contains(result.combined, "bad.yml:9", "cites the second sudo line")
     gate.log_pass("first offending line reported")
+
+
+def test_flow_env_names_ignore_an_apostrophe_in_a_plain_value():
+    """bb215962.1: `it's` is not a quote, so the comma after it still ends the entry."""
+    assert workflows.flow_env_names("env: {A: it's, B: 2}") == ["A", "B"]
+    # Control: a real quoted value with a comma and a colon inside stays one entry.
+    assert workflows.flow_env_names("env: {A: 'x, y: z', B: 2}") == ["A", "B"]
+
+
+def test_flow_env_names_keep_the_last_entry_of_an_unclosed_mapping():
+    """bb215962.2: a mapping that opens on the `env:` line and closes later still yields its entries."""
+    assert workflows.flow_env_names("env: {VM_BRIDGE: '1'") == ["VM_BRIDGE"]
+    assert workflows.flow_env_names("env: {A: 1, VM_BRIDGE: '1'") == ["A", "VM_BRIDGE"]
+    assert workflows.flow_env_names("env: {A: 1}") == ["A"]
+
+
+def test_the_sudo_env_pattern_does_not_backtrack_on_adjacent_quotes():
+    """bb215962.3: adjacent quoted segments with no sudo env after them answer at once."""
+    line = "X=" + '"a"' * 40 + " echo hi"
+    started = time.monotonic()
+    assert workflows.SUDO_ENV_RE.search(line) is None
+    assert time.monotonic() - started < 1.0
+    assert workflows.SUDO_ENV_RE.search('X="a b" sudo env PATH=$PATH cmd') is not None

@@ -559,7 +559,7 @@ def check_sudo_preserve_env(errors: Errors, root: pathlib.Path, workflow_dir: st
 
 
 SUDO_ENV_RE = re.compile(
-    r"(^|[;&|(`]|\$\()[ \t]*(?:[A-Za-z_][A-Za-z0-9_]*=(?:\"[^\"]*\"|'[^']*'|\S)*[ \t]+)*sudo[ \t]+env([ \t]|$)"
+    r"(^|[;&|(`]|\$\()[ \t]*(?:[A-Za-z_][A-Za-z0-9_]*=(?:\"[^\"]*\"|'[^']*'|[^\s\"'])*[ \t]+)*sudo[ \t]+env([ \t]|$)"
 )
 STEP_START_RE = re.compile(
     r"^([ \t]*)-([ \t]+)(name|run|uses|env|with|if|id|shell|working-directory|timeout-minutes):"
@@ -580,7 +580,7 @@ def flow_env_names(text: str) -> list[str]:
         if quote:
             if char == quote:
                 quote = ""
-        elif char in "\"'":
+        elif char in "\"'" and _opens_scalar(text, index):
             quote = char
         elif char in "{[":
             depth += 1
@@ -591,9 +591,17 @@ def flow_env_names(text: str) -> list[str]:
         elif char == "," and depth == 1:
             names.extend(_flow_key(text[start:index]))
             start = index + 1
-    if depth <= 0 and start:
-        names.extend(_flow_key(text[start : text.rfind("}")]))
+    if start:
+        # A mapping that opens on this line and closes on a later one leaves depth above 0: its last entry runs to the end of the text.
+        closing = text.rfind("}") if depth <= 0 else -1
+        names.extend(_flow_key(text[start : closing if closing > start else len(text)]))
     return names
+
+
+def _opens_scalar(text: str, index: int) -> bool:
+    """A quote starts a quoted scalar only at the start of a value or key (after `{`, `[`, `,` or `:` and blanks); an apostrophe inside a plain value such as `it's` does not."""
+    before = text[:index].rstrip(" \t")
+    return not before or before[-1] in "{[,:"
 
 
 def _flow_key(entry: str) -> list[str]:

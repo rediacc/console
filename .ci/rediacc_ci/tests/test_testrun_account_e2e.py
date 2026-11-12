@@ -630,3 +630,26 @@ def test_system_deps_apt_failure_fails_by_name() -> None:
     fake = _Fake(DRY, set(), apt=100)
     with pytest.raises(account_e2e.RefusedError, match="install-deps chromium failed"):
         account_e2e.install_system_deps("chromium", ".", fake)
+
+
+def test_a_dry_run_that_prints_no_apt_line_is_refused_not_skipped() -> None:
+    fake = _Fake("Playwright changed its output\n", set())
+    with pytest.raises(account_e2e.RefusedError, match="printed no `apt-get install` line"):
+        account_e2e.install_system_deps("chromium", ".", fake)
+    assert not any(c[0] == "npx" and "--dry-run" not in c for c in fake.calls)
+
+
+def test_a_dry_run_that_fails_is_refused_by_name() -> None:
+    def failing(argv: list[str], **_kw: typing.Any) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(argv, 3, "", "boom")
+
+    with pytest.raises(account_e2e.RefusedError, match=r"--dry-run chromium failed \(rc=3\): boom"):
+        account_e2e.install_system_deps("chromium", ".", failing)
+
+
+def test_a_dry_run_that_times_out_is_refused_by_name() -> None:
+    def hanging(argv: list[str], **_kw: typing.Any) -> subprocess.CompletedProcess[str]:
+        raise subprocess.TimeoutExpired(argv, 120)
+
+    with pytest.raises(account_e2e.RefusedError, match=r"--dry-run chromium timed out"):
+        account_e2e.install_system_deps("chromium", ".", hanging)
