@@ -517,7 +517,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-duplication-angle.md` | compacted | 37 | 0 | 0 | 2630 |
 | `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
 | `agent/plans/PLAN-enterprise-isolation.md` | executing | 208 | 14 | 20 | 38773 |
-| `agent/plans/PLAN-enterprise-tenants.md` | approved | 290 | 27 | 4 | 31144 |
+| `agent/plans/PLAN-enterprise-tenants.md` | approved | 291 | 26 | 5 | 31369 |
 | `agent/plans/PLAN-executor-durable-object-policy.md` | approved | 483 | 3 | 15 | 64699 |
 | `agent/plans/PLAN-experience-feedback.md` | approved | 87 | 4 | 12 | 18415 |
 | `agent/plans/PLAN-extension-shaped-matchers.md` | compacted | 37 | 0 | 0 | 3104 |

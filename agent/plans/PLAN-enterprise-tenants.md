@@ -142,7 +142,7 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
 
 ### Wave 0
 
-- [ ] Q0 [live] Read-only survey. Changes nothing; each finding is recorded under this box.
+- [x] Q0 [live] Read-only survey. Changes nothing; each finding is recorded under this box.
   - Cloudflare, rediacc.cloud: `python -m rediacc_ci.ops.apply_cf_redirect_rules --dry-run --zone rediacc.cloud` reaches the zone. Then use the API (under `bws_env exec --profile deploy-bench`) to list `*` records, `/workers/routes`, Universal SSL settings and cert packs.
   - Cloudflare, rediacc.io: records for `acme`, `acme-store` and `gitlab`.
   - TLS: `openssl s_client -connect gitlab.rediacc.io:443` issuer.
@@ -151,6 +151,7 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - Bench: `npm run login:bench`, then the operator subscription's plan and active delegation certs.
   - Owns: none.
   - Accept: `./rdc.sh --config eu-bench machine status hostinger` rc 0, and the findings recorded here.
+    (ticked) 2026-11-12T11:23:18Z by d778be9d: read-only survey by agent a96b35961c3384251, findings in its investigation row; machine status hostinger rc 0. DEPS-WAIVED: read-only survey that reads state and changes nothing
 
 ### Wave 1: writers, disjoint
 
