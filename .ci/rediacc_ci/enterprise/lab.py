@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import dataclasses
 import datetime
+import hashlib
+import hmac
 import importlib
 import json
 import os
@@ -20,6 +22,7 @@ import socket
 import ssl
 import subprocess
 import sys
+import tempfile
 import time
 import tomllib
 import urllib.error
@@ -42,7 +45,7 @@ from rediacc_ci.enterprise import (
     secrets,
 )
 from rediacc_ci.housekeeping import cf_leftovers
-from rediacc_ci.ops import bench_access, cf_usage_report, enterprise_lookup
+from rediacc_ci.ops import bench_access, cf_usage_report, enterprise_lookup, login_bench, totp
 from rediacc_ci.ops import observability_volume as ov
 from rediacc_ci.release import local
 from rediacc_ci.well_known import CF_API_BASE, PRODUCT_DOMAIN
@@ -788,9 +791,15 @@ def turnstile_domains(*, listing: Listing = cf_list) -> list[str]:
 #
 # SIGNING IN AS A FAKE OWNER. `owner_session(company)` is the owner's first sign-in, the one company mode designs: the owner account is passwordless (private/account/src/services/enterprise-bootstrap.service.ts `ensureOwner`), and `POST /account/api/v1/subscriptions/enterprise/owner-mail` under the company's own `ACCOUNT_SERVER_API_KEY` mails it a magic link (`authService.sendCompanyOwnerMail`). That route carries no captcha, unlike the public `POST /auth/magic-link`. A bench company captures every mail in its own D1 (`captured_emails`, `kind = 'magic-link'`), so the link is read back from `account-<name>`, the one mail body the owner did not hold before the request (a set difference, so neither clock nor row order is read; two new bodies mean another sign-in raced this one and are a `LabError`), and `POST /account/api/v1/auth/magic-link/verify` answers the session as its `access_token` cookie. The owner has no TOTP; a verify answering `requiresTwoFactor` is a `LabError`. The owner address is read from the company D1 (`company_orgs` -> `organizations.owner_user_id` -> `users.email`) and the key from the enterprise bws project (`secrets.store_name(<id>, "ACCOUNT_SERVER_API_KEY")`, project id in `ENTERPRISE_PROOF_BWS_PROJECT`). The link's token is never put into an error.
 #
-# `mint(company, kind)`: a `session` is that cookie; an `api-token` (scope `license:read`) and a `proxy-token` (scope `proxy:exec`) are `POST /account/api/v1/api-tokens` under the session for the subscription the company's control row names (`scope.subscription_id`). A `config-token` needs the company's config store, whose setup takes a TOTP-verified, elevated session and client-wrapped CEK slots (`POST /configs/setup`), and an `e2e-envelope` needs a request sealed to the company's X25519 key (`POST /account/api/v1/tunnel`); neither driver is written, so both raise `LabError("not built yet: V6 ...")` naming what is missing, never an artifact.
+# `mint(company, kind)`: a `session` is that cookie; an `api-token` (scope `license:read`) and a `proxy-token` (scope `proxy:exec`) are `POST /account/api/v1/api-tokens` under the session for the subscription the company's control row names (`scope.subscription_id`).
 #
-# `present(company, kind, artifact)` sends one artifact to the company's own account host and maps the answer: 2xx is admitted, 401 or 403 is refused with the status, anything else is a `LabError` (a 5xx or a 404 says the probe is wrong, not that the artifact was refused). Each kind has one probe that changes nothing it reads: a `session` is the `access_token` cookie on `GET /account/api/v1/portal/me` (private/account/src/middleware/session.ts); an `api-token` is the bearer of `GET /account/api/v1/licenses/status` (scope `license:read`, private/account/src/routes/license.ts); a `proxy-token` is the bearer of `POST /account/api/v1/proxy/introspect` with `{"token": "self", "self": true}` (scope `proxy:exec`, private/account/src/routes/proxy.ts), the lookup the company's proxy makes through its own account Worker's `ExecutorIssuer`, over the same D1. The api-token middleware binds a first-use token to the presenting address, which is this machine for both companies, so a refusal by the other company is never an address mismatch. A `config-token` rotates on every use and an `e2e-envelope` has no presenter: both raise `LabError("not built yet: V6 ...")`.
+# A `config-token` is a rotating token of the company's config store (`X-Config-Token`, private/account/src/middleware/config-token.ts). `ensure_store` sets the store up the first time the way the portal does. Setup sits behind `requireTwoFactor` and `requireElevated` (`POST /configs/setup`), so the owner is elevated through the reauth mail (`POST /auth/reauth`, the link read back from `captured_emails` kind `reauth` by the same set difference as the magic link, then `POST /auth/reauth/verify`). A second factor is enrolled for the length of the setup only (`/auth/2fa/setup` and `/enable`, the code from `ops.totp`), the store is created with one master-password slot, and the second factor is disabled again with a later code, because the owner's magic-link sign-in has no second factor to answer. A store already there is opened through `POST /configs/bootstrap-session` with method `password`. Either answer carries a fresh config token, and that token is the artifact. The slot password is never stored: it is an HMAC of the company's `ACCOUNT_SERVER_API_KEY` under a fixed label (`store_password`), so a later run derives it again and a removed company leaves nothing behind for it.
+#
+# An `e2e-envelope` is a request sealed to the company's X25519 key, as the CLI's tunnel seals every request (packages/cli/src/services/account/account-client.ts). The key is the one `GET /account/api/v1/.well-known/server-info` publishes, and the sealed request is `GET /account/api/v1/licenses/status` under a fresh `license:read` token of the same company.
+#
+# THE CRYPTOGRAPHY IS THE PRODUCT'S OWN. The slot wrap, the CEK unwrap, the config push payload, the CEK handoff to an executor and the request seal are the TypeScript functions of `@rediacc/shared` (`config-crypto`, `config-schema`, `e2e`, `cli-contract`), imported from packages/shared/src by `ts_crypto` and run through the repository's `tsx`, one JSON request on stdin and one JSON answer on stdout. Nothing is ported to Python, a password or a CEK never reaches argv, and the helper's stderr is never put into an error.
+#
+# `present(company, kind, artifact)` sends one artifact to the company's own account host and maps the answer: 2xx is admitted, 401 or 403 is refused with the status, anything else is a `LabError` (a 5xx or a 404 says the probe is wrong, not that the artifact was refused). Each kind has one probe: a `session` is the `access_token` cookie on `GET /account/api/v1/portal/me` (private/account/src/middleware/session.ts); an `api-token` is the bearer of `GET /account/api/v1/licenses/status` (scope `license:read`, private/account/src/routes/license.ts); a `proxy-token` is the bearer of `POST /account/api/v1/proxy/introspect` with `{"token": "self", "self": true}` (scope `proxy:exec`, private/account/src/routes/proxy.ts), the lookup the company's proxy makes through its own account Worker's `ExecutorIssuer`, over the same D1. The api-token middleware binds a first-use token to the presenting address, which is this machine for both companies, so a refusal by the other company is never an address mismatch. A `config-token` is the `X-Config-Token` of `POST /configs/session`; the token rotates on use but stays good for three, so the other company refuses a live token. An `e2e-envelope` is posted to `POST /account/api/v1/tunnel`: the company that holds the key opens it and answers 200 with the inner status in the clear (`E2eResponseEnvelope.status`), which is then the verdict, and a company that does not answers 400 `Decryption failed`, the refusal.
 
 
 ME_PATH = "/account/api/v1/portal/me"
@@ -823,6 +832,100 @@ MAIL_SKEW_S = 30.0
 SUBSCRIPTION_SQL = "SELECT subscription_id FROM scope WHERE company_id = ?"
 MAGIC_TOKEN = re.compile(r"/account/magic-link/verify\?token=([^&\s\"'<>]+)")
 ACCESS_COOKIE = re.compile(r"(?:^|[;,]\s*)access_token=([^;,\s]+)")
+# Every kind `mint` and `present` handle.
+MINTED_KINDS = ("session", "api-token", "proxy-token", "config-token", "e2e-envelope")
+CONFIGS_PATH = "/account/api/v1/configs"
+STORE_INFO_PATH = CONFIGS_PATH + "/store-info"
+SETUP_PATH = CONFIGS_PATH + "/setup"
+BOOTSTRAP_PATH = CONFIGS_PATH + "/bootstrap-session"
+CONFIG_SESSION_PATH = CONFIGS_PATH + "/session"
+AUTH_PATH = "/account/api/v1/auth"
+REAUTH_PATH = AUTH_PATH + "/reauth"
+REAUTH_VERIFY_PATH = AUTH_PATH + "/reauth/verify"
+TFA_STATUS_PATH = AUTH_PATH + "/2fa/status"
+TFA_SETUP_PATH = AUTH_PATH + "/2fa/setup"
+TFA_ENABLE_PATH = AUTH_PATH + "/2fa/enable"
+TFA_DISABLE_PATH = AUTH_PATH + "/2fa/disable"
+SERVER_INFO_PATH = "/account/api/v1/.well-known/server-info"
+TUNNEL_PATH = "/account/api/v1/tunnel"
+# private/account/src/app.ts, the tunnel's answer to an envelope its key does not open.
+TUNNEL_SEALED_FAILURE = "Decryption failed"
+REAUTH_SQL = (
+    "SELECT text_body, created_at FROM captured_emails WHERE recipient = ? AND kind = 'reauth' "
+    "ORDER BY created_at DESC LIMIT 50"
+)
+REAUTH_TOKEN = login_bench.REAUTH_TOKEN
+STORE_PASSWORD_LABEL = b"rediacc-enterprise-proof-config-store-v1"
+CRYPTO_TIMEOUT_S = 120
+# The crypto helper `ts_crypto` runs: `@rediacc/shared` imported from packages/shared/src (argv[2], a file URL), one
+# JSON request on stdin, one JSON answer on stdout. Every operation is a call into the shared package.
+CRYPTO_TS = r"""
+const shared = process.argv[2];
+const cc = await import(`${shared}/config-crypto/index.ts`);
+const cs = await import(`${shared}/config-schema/index.ts`);
+const e2e = await import(`${shared}/e2e/index.ts`);
+const contract = await import(`${shared}/cli-contract/index.ts`);
+const chunks = [];
+for await (const chunk of process.stdin) chunks.push(chunk);
+const req = JSON.parse(Buffer.concat(chunks).toString('utf8'));
+const b64 = cc.toBase64;
+const rawCek = async (key) => b64(await cc.exportAesKey(key));
+const x25519 = (spki) =>
+  crypto.subtle.importKey('spki', cc.fromBase64(spki), { name: 'X25519' }, false, []);
+let out;
+if (req.op === 'setup') {
+  const cek = await cc.generateCek();
+  const serverSecret = cc.generateServerSecret();
+  const params = cc.newPasswordSlotParams();
+  const secret = await cc.derivePasswordSlotSecret(req.password, params);
+  const pair = await crypto.subtle.generateKey({ name: 'X25519' }, true, ['deriveBits']);
+  const spki = new Uint8Array(await crypto.subtle.exportKey('spki', pair.publicKey));
+  out = {
+    cek: await rawCek(cek),
+    body: {
+      orgId: '',
+      sdkMaster: b64(cc.generateSdkMaster()),
+      serverSecret: b64(serverSecret),
+      orgPassphrase: b64(cc.randomBytes(32)),
+      slots: [
+        {
+          method: 'password',
+          kdfParams: params,
+          wrappedCek: await cc.wrapCekForSlot(cek, secret, serverSecret),
+        },
+      ],
+      requirePasskey: false,
+      x25519PublicKey: b64(spki),
+    },
+  };
+} else if (req.op === 'unwrap') {
+  const secret = await cc.derivePasswordSlotSecret(req.password, req.kdfParams);
+  const cek = await cc.unwrapCekForSlot(req.wrappedCek, secret, cc.fromBase64(req.serverSecret));
+  out = { cek: await rawCek(cek) };
+} else if (req.op === 'push') {
+  const config = cs.RdcConfigSchema.parse(req.config);
+  const payload = await cs.buildConfigPushPayload(config, {
+    version: req.version,
+    sdkEpoch: req.sdkEpoch,
+    sdkDerived: await cc.importAesKey(cc.fromBase64(req.sdkDerived)),
+    cek: await cc.importAesKey(cc.fromBase64(req.cek)),
+    storeId: req.storeId,
+  });
+  out = { encryptedBlob: payload.encryptedBlob, envelope: payload.envelope };
+} else if (req.op === 'seal-cek') {
+  out = await cc.cekHandoffEncrypt(cc.fromBase64(req.cek), await x25519(req.publicKey));
+} else if (req.op === 'seal-request') {
+  const key = await x25519(req.publicKey);
+  const sealed = await e2e.sealRequest(key, req.keyId, req.method, req.path, req.headers, req.body ?? null);
+  out = sealed.envelope;
+} else if (req.op === 'contract') {
+  const command = contract.CLI_CONTRACT.commands.find((c) => c.pathKey === req.pathKey);
+  out = { version: contract.CLI_CONTRACT_VERSION, proxyCapable: command?.proxyCapable === true };
+} else {
+  throw new Error('unknown operation');
+}
+process.stdout.write(JSON.stringify(out));
+"""
 
 
 @dataclasses.dataclass(frozen=True)
@@ -848,6 +951,45 @@ Send = Callable[[str, dict[str, str]], int]
 Call = Callable[[str, str, dict[str, str], "bytes | None"], HttpAnswer]
 Minter = Callable[[str, str], str]
 ApiKey = Callable[[str], str]
+# One request to the shared package's crypto (`CRYPTO_TS`) -> its JSON answer.
+Crypto = Callable[[dict], dict]
+
+
+def ts_crypto(request: dict, *, base: pathlib.Path | None = None) -> dict:
+    """Run one `CRYPTO_TS` operation through the repository's `tsx`; the request rides stdin, and the helper's stderr is withheld because a parse error can quote its input."""
+    top = base or root()
+    op = str(request.get("op", ""))
+    with tempfile.TemporaryDirectory(prefix="enterprise-lab-") as tmp:
+        script = pathlib.Path(tmp) / "crypto.mts"
+        script.write_text(CRYPTO_TS, encoding="utf-8")
+        argv = [
+            str(top / "node_modules" / ".bin" / "tsx"),
+            str(script),
+            (top / "packages" / "shared" / "src").as_uri(),
+        ]
+        try:
+            done = subprocess.run(
+                argv,
+                cwd=str(top),
+                input=json.dumps(request),
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=CRYPTO_TIMEOUT_S,
+            )
+        except (OSError, subprocess.TimeoutExpired) as exc:
+            raise proof.LabError(
+                "the crypto helper (%s) could not run: %s" % (op, type(exc).__name__)
+            ) from None
+    if done.returncode != 0:
+        raise proof.LabError("the crypto helper (%s) exited %d" % (op, done.returncode))
+    try:
+        answer = json.loads(done.stdout)
+    except ValueError:
+        answer = None
+    if not isinstance(answer, dict):
+        raise proof.LabError("the crypto helper (%s) printed no JSON object" % op)
+    return answer
 
 
 def _send(url: str, headers: dict[str, str]) -> int:
@@ -930,6 +1072,45 @@ def _captured_at(row: dict) -> float:
     return stamp.timestamp()
 
 
+@dataclasses.dataclass(frozen=True)
+class Mailbox:
+    """One kind of captured mail for one owner: where it is read, how its token is cut out, and what it is called in an error."""
+
+    database: str
+    owner: str
+    sql: str
+    pattern: re.Pattern[str]
+    what: str
+
+
+def _await_token(
+    company: str,
+    box: Mailbox,
+    *,
+    before: set[str],
+    asked: float,
+    query: Query,
+    sleep: Callable[[float], None],
+) -> str:
+    """The token of the one mail of `box` captured after `asked` that was not in `before`, polled up to `MAIL_TRIES` times."""
+    for attempt in range(MAIL_TRIES):
+        # A mail this request added is a body the owner did not hold before it and that was captured after it was asked.
+        fresh = sorted(_links(query(box.database, box.sql, [box.owner]), asked) - before)
+        tokens = {m.group(1) for m in (box.pattern.search(t) for t in fresh) if m}
+        if len(tokens) > 1:
+            # Another request captured a mail in the same window: which one is this request's cannot be told.
+            raise proof.LabError(
+                "company %s: %d new %ss were captured for its owner, not 1; "
+                "another sign-in raced this one" % (company, len(tokens), box.what)
+            )
+        if tokens:
+            (token,) = tokens
+            return token
+        if attempt + 1 < MAIL_TRIES:
+            sleep(MAIL_POLL_S)
+    raise proof.LabError("company %s: no %s was captured for its owner" % (company, box.what))
+
+
 def owner_session(
     company: str,
     *,
@@ -955,24 +1136,14 @@ def owner_session(
     status, _payload = post(url, api_key(company), {"companyId": company, "ownerEmail": owner})
     if not 200 <= status < 300:
         raise proof.LabError("company %s: the owner-mail call answered HTTP %d" % (company, status))
-    token = ""
-    for attempt in range(MAIL_TRIES):
-        # A link this request added is a body the owner did not hold before it and that was captured after it was asked.
-        fresh = sorted(_links(query(database, LINK_SQL, [owner]), asked) - before)
-        tokens = {m.group(1) for m in (MAGIC_TOKEN.search(t) for t in fresh) if m}
-        if len(tokens) > 1:
-            # Another sign-in captured a link in the same window: which one is this request's cannot be told.
-            raise proof.LabError(
-                "company %s: %d new magic links were captured for its owner, not 1; "
-                "another sign-in raced this one" % (company, len(tokens))
-            )
-        if tokens:
-            (token,) = tokens
-            break
-        if attempt + 1 < MAIL_TRIES:
-            sleep(MAIL_POLL_S)
-    if not token:
-        raise proof.LabError("company %s: no magic link was captured for its owner" % company)
+    token = _await_token(
+        company,
+        Mailbox(database, owner, LINK_SQL, MAGIC_TOKEN, "magic link"),
+        before=before,
+        asked=asked,
+        query=query,
+        sleep=sleep,
+    )
     answer = call(
         "POST",
         "https://%s%s" % (host, VERIFY_PATH),
@@ -1019,31 +1190,49 @@ def live_minter(
     query: Query = d1_query,
     call: Call = http_call,
     sessions: dict[str, str] = _SESSIONS,
+    crypto: Crypto = ts_crypto,
+    api_key: ApiKey = store_api_key,
+    sleep: Callable[[float], None] = time.sleep,
+    clock: Callable[[], float] = time.time,
 ) -> str:
-    """One token of `kind`, minted under the owner's session; the session is signed in once per company and shared by every kind (`sessions`)."""
-    if kind == "config-token":
-        raise proof.LabError(
-            "not built yet: V6 (a config token of company %s needs its config store, whose setup takes a "
-            "TOTP-verified elevated session and client-wrapped CEK slots; nothing was minted)"
-            % company
-        )
-    if kind == "e2e-envelope":
-        raise proof.LabError(
-            "not built yet: V6 (an E2E envelope of company %s needs a request sealed to its X25519 key; "
-            "nothing was minted)" % company
-        )
-    if kind != "session" and kind not in TOKEN_SCOPES:
+    """One artifact of `kind`, minted under the owner's session; the session is signed in once per company and shared by every kind (`sessions`)."""
+    if kind not in MINTED_KINDS:
         raise proof.LabError("no minter for a %s" % kind)
-    if session is None:
-
-        def session(c: str) -> str:
-            if c not in sessions:
-                sessions[c] = owner_session(c, companies=companies, query=query, call=call)
-            return sessions[c]
-
-    cookie = session(company)
+    cookie = _session_for(
+        company, session=session, sessions=sessions, companies=companies, query=query, call=call
+    )
     if kind == "session":
         return cookie
+    if kind == "config-token":
+        world = Owner(company, cookie, companies, query, call, crypto, api_key, sleep, clock)
+        return ensure_store(world).token
+    if kind == "e2e-envelope":
+        bearer = _api_token(
+            company, "api-token", cookie, companies=companies, query=query, call=call
+        )
+        return e2e_envelope(company, bearer, companies=companies, call=call, crypto=crypto)
+    return _api_token(company, kind, cookie, companies=companies, query=query, call=call)
+
+
+def _session_for(
+    company: str,
+    *,
+    session: Callable[[str], str] | None,
+    sessions: dict[str, str],
+    companies: Companies,
+    query: Query,
+    call: Call,
+) -> str:
+    if session is not None:
+        return session(company)
+    if company not in sessions:
+        sessions[company] = owner_session(company, companies=companies, query=query, call=call)
+    return sessions[company]
+
+
+def _api_token(
+    company: str, kind: str, cookie: str, *, companies: Companies, query: Query, call: Call
+) -> str:
     body = {
         "subscriptionId": _subscription(company, companies=companies, query=query),
         "name": "%s-%s" % (LABEL_PREFIX, kind),
@@ -1084,13 +1273,29 @@ def present(
     call: Call = http_call,
     companies: Companies = all_companies,
 ) -> proof.Answer:
-    if kind not in ("session", "api-token", "proxy-token"):
-        raise proof.LabError("not built yet: V6 (no probe presents a %s)" % kind)
+    if kind not in MINTED_KINDS:
+        raise proof.LabError("no probe presents a %s" % kind)
     host = _host(company, companies)
     if kind == "session":
         return _verdict(
             kind, send("https://%s%s" % (host, ME_PATH), {"Cookie": "access_token=%s" % artifact})
         )
+    if kind == "config-token":
+        answer = call(
+            "POST",
+            "https://%s%s" % (host, CONFIG_SESSION_PATH),
+            {"X-Config-Token": artifact, "Content-Type": "application/json"},
+            b"{}",
+        )
+        return _verdict(kind, answer.status)
+    if kind == "e2e-envelope":
+        answer = call(
+            "POST",
+            "https://%s%s" % (host, TUNNEL_PATH),
+            {"Content-Type": "application/json"},
+            artifact.encode(),
+        )
+        return _tunnel_verdict(answer)
     bearer = {"Authorization": "Bearer %s" % artifact}
     if kind == "api-token":
         return _verdict(kind, send("https://%s%s" % (host, STATUS_PATH), bearer))
@@ -1103,6 +1308,241 @@ def present(
     return _verdict(kind, answer.status)
 
 
+def _tunnel_verdict(answer: HttpAnswer) -> proof.Answer:
+    """An envelope the company opened is judged by its inner status; one it could not open is refused."""
+    if answer.status == 200:
+        inner = answer.json().get("status")
+        if not isinstance(inner, int) or isinstance(inner, bool):
+            raise proof.LabError("the tunnel answered 200 with no inner status")
+        return _verdict("e2e-envelope (inner)", inner)
+    if answer.status == 400 and answer.json().get("error") == TUNNEL_SEALED_FAILURE:
+        return proof.Answer(False, "HTTP 400 (%s)" % TUNNEL_SEALED_FAILURE)
+    raise proof.LabError("the e2e-envelope probe answered HTTP %d" % answer.status)
+
+
+# ---- the config store and the sealed request (`config-token`, `e2e-envelope`, and V7's console command)
+
+
+@dataclasses.dataclass(frozen=True)
+class Owner:
+    """A company owner's signed-in world: the session cookie and the seams every store call takes."""
+
+    company: str
+    cookie: str
+    companies: Companies
+    query: Query
+    call: Call
+    crypto: Crypto
+    api_key: ApiKey
+    sleep: Callable[[float], None]
+    clock: Callable[[], float]
+
+    def host(self) -> str:
+        return _host(self.company, self.companies)
+
+    def send(
+        self, method: str, path: str, doc: object = None, headers: dict[str, str] | None = None
+    ) -> HttpAnswer:
+        """One request to the company's account host under the owner's session cookie."""
+        sent = {"Cookie": "access_token=%s" % self.cookie, **(headers or {})}
+        body = None
+        if doc is not None:
+            sent["Content-Type"] = "application/json"
+            body = json.dumps(doc).encode()
+        return self.call(method, "https://%s%s" % (self.host(), path), sent, body)
+
+
+@dataclasses.dataclass(frozen=True)
+class StoreKeys:
+    store_id: str
+    cek: str  # base64, held in memory for one proof run
+    token: str  # a fresh config token
+    configs: int
+
+
+def store_password(company: str, *, api_key: ApiKey = store_api_key) -> str:
+    """The master password of the store's proof slot: an HMAC of the company's server key, derived again on every run and stored nowhere."""
+    key = api_key(company).encode()
+    return hmac.new(key, STORE_PASSWORD_LABEL, hashlib.sha256).hexdigest()
+
+
+def _expect(answer: HttpAnswer, statuses: tuple[int, ...], company: str, what: str) -> dict:
+    if answer.status not in statuses:
+        raise proof.LabError("company %s: %s answered HTTP %d" % (company, what, answer.status))
+    return answer.json()
+
+
+def _owner_address(world: Owner) -> tuple[str, str]:
+    name = str(company_row(world.company, companies=world.companies)["name"])
+    database = "account-%s" % name
+    owner = _one(
+        world.query(database, OWNER_SQL, [world.company]),
+        "email",
+        "the owner of company %s" % world.company,
+    )
+    return database, owner
+
+
+def elevate(world: Owner) -> None:
+    """Elevate the owner's session through the reauth mail, the one headless step-up (ops/login_bench.py `reenrol`)."""
+    database, owner = _owner_address(world)
+    box = Mailbox(database, owner, REAUTH_SQL, REAUTH_TOKEN, "reauth link")
+    before = _links(world.query(database, REAUTH_SQL, [owner]))
+    asked = world.clock() - MAIL_SKEW_S
+    _expect(world.send("POST", REAUTH_PATH, {}), (200,), world.company, "the reauth mail call")
+    token = _await_token(
+        world.company, box, before=before, asked=asked, query=world.query, sleep=world.sleep
+    )
+    done = _expect(
+        world.send("POST", REAUTH_VERIFY_PATH, {"token": token}),
+        (200,),
+        world.company,
+        "the reauth verify",
+    )
+    if done.get("elevated") is not True:
+        raise proof.LabError("company %s: the reauth verify did not elevate" % world.company)
+
+
+def _enrol_second_factor(world: Owner) -> tuple[str, str]:
+    """Turn TOTP on for the owner; returns (seed, the code `enable` spent)."""
+    status = _expect(world.send("GET", TFA_STATUS_PATH), (200,), world.company, "the 2FA status")
+    if status.get("enabled"):
+        raise proof.LabError(
+            "company %s: its owner already has a second factor the proof does not hold"
+            % world.company
+        )
+    seed = _expect(world.send("POST", TFA_SETUP_PATH, {}), (200,), world.company, "the 2FA setup")
+    secret = seed.get("secret")
+    try:
+        totp.decode_seed(secret if isinstance(secret, str) else "")
+    except totp.TotpError:
+        raise proof.LabError(
+            "company %s: the 2FA setup answered no usable seed" % world.company
+        ) from None
+    code = login_bench.fresh_code(str(secret), world.clock, world.sleep)
+    _expect(
+        world.send("POST", TFA_ENABLE_PATH, {"code": code}), (200,), world.company, "the 2FA enable"
+    )
+    return str(secret), code
+
+
+def _drop_second_factor(world: Owner, seed: str, spent: str) -> None:
+    code = login_bench.distinct_code(seed, spent, world.clock, world.sleep)
+    _expect(
+        world.send("POST", TFA_DISABLE_PATH, {"code": code}),
+        (200,),
+        world.company,
+        "the 2FA disable",
+    )
+
+
+def _setup_store(world: Owner, password: str) -> StoreKeys:
+    """Create the store with one master-password slot, under a second factor that lives only as long as the setup."""
+    elevate(world)
+    seed, spent = _enrol_second_factor(world)
+    try:
+        material = world.crypto({"op": "setup", "password": password})
+        made = _expect(
+            world.send("POST", SETUP_PATH, material.get("body")),
+            (201,),
+            world.company,
+            "the config store setup",
+        )
+        store = made.get("store")
+        store_id = str(store.get("id") or "") if isinstance(store, dict) else ""
+        token = made.get("initialToken")
+        if not store_id or not isinstance(token, str) or not token:
+            raise proof.LabError(
+                "company %s: the store setup answered no store or token" % world.company
+            )
+        keys = StoreKeys(store_id, str(material.get("cek") or ""), token, 0)
+    except (
+        Exception
+    ) as exc:  # disable the factor again, then re-raise; an interrupt or exit is never repaired
+        try:
+            _restore(
+                lambda: _drop_second_factor(world, seed, spent),
+                "disabling the owner's second factor of company %s failed (its magic-link sign-in now asks "
+                "for one)" % world.company,
+            )
+        except _RestoreError as back:
+            exc.add_note(str(back))
+        raise
+    _drop_second_factor(world, seed, spent)
+    return keys
+
+
+def _open_store(world: Owner, store_id: str, configs: int, password: str) -> StoreKeys:
+    """Open an existing store through its password slot: a fresh config token and the CEK."""
+    slot = _expect(
+        world.send("POST", BOOTSTRAP_PATH, {"storeId": store_id, "method": "password"}),
+        (200,),
+        world.company,
+        "the store bootstrap",
+    )
+    token = slot.get("token")
+    if not isinstance(token, str) or not token:
+        raise proof.LabError("company %s: the store bootstrap answered no token" % world.company)
+    opened = world.crypto(
+        {
+            "op": "unwrap",
+            "password": password,
+            "kdfParams": slot.get("kdfParams"),
+            "wrappedCek": slot.get("wrappedCek"),
+            "serverSecret": slot.get("serverSecret"),
+        }
+    )
+    return StoreKeys(store_id, str(opened.get("cek") or ""), token, configs)
+
+
+def ensure_store(world: Owner) -> StoreKeys:
+    """The company's config store, set up on first use and opened after that."""
+    info = _expect(world.send("GET", STORE_INFO_PATH), (200,), world.company, "the store info")
+    password = store_password(world.company, api_key=world.api_key)
+    if info.get("configured") is True:
+        store_id = str(info.get("storeId") or "")
+        if not store_id:
+            raise proof.LabError("company %s: a configured store names no id" % world.company)
+        return _open_store(world, store_id, int(info.get("configCount") or 0), password)
+    return _setup_store(world, password)
+
+
+def e2e_envelope(
+    company: str,
+    bearer: str,
+    *,
+    companies: Companies = all_companies,
+    call: Call = http_call,
+    crypto: Crypto = ts_crypto,
+) -> str:
+    """`GET /licenses/status` under `bearer`, sealed to the X25519 key the company's server-info publishes."""
+    host = _host(company, companies)
+    info = _expect(
+        call("GET", "https://%s%s" % (host, SERVER_INFO_PATH), {}, None),
+        (200,),
+        company,
+        "the server-info read",
+    )
+    keys = (info.get("e2e") or {}).get("keys") if isinstance(info.get("e2e"), dict) else None
+    usable = [
+        k for k in keys or [] if isinstance(k, dict) and k.get("keyId") and k.get("publicKeySpki")
+    ]
+    if len(usable) != 1:
+        raise proof.LabError("company %s publishes %d E2E keys, not 1" % (company, len(usable)))
+    envelope = crypto(
+        {
+            "op": "seal-request",
+            "publicKey": usable[0]["publicKeySpki"],
+            "keyId": usable[0]["keyId"],
+            "method": "GET",
+            "path": STATUS_PATH,
+            "headers": {"Authorization": "Bearer %s" % bearer},
+            "body": None,
+        }
+    )
+    return json.dumps(envelope, sort_keys=True)
+
+
 # ==== box V7: the proxy and executor (`proof proxy`)
 #
 # The `enterprise proof proxy` readers (agent/plans/PLAN-enterprise-isolation.md, box V7). SEAMS binds them by name; the proxy token's `mint` and `present` are box V6's.
@@ -1113,7 +1553,7 @@ def present(
 #
 # `set_allowlist(company, ips)` writes the control row's `scope.allow_ips` (box C2's `lifecycle.update`), regenerates the company's two configs with `ALLOW_IPS` (onboarding's `configs` step, against the company's existing `account-<name>` D1, never creating one), redeploys both Workers (onboarding's `deploy` step) and waits `ALLOWLIST_SETTLE_S` for the new version to serve. An empty list clears it. Any failure puts the previous `scope.allow_ips` back and deploys that list again, so the control row and the Workers agree; when either of those two repairs fails too, the error carries a note saying so. `request_from(company, method=, path=)` sends one request from this machine to the company's account host and answers the status; a 403 whose body is not the allowlist's own refusal (workers/proxy/src/ip-allowlist.ts) is a `LabError`, so a WAF or a token refusal never reads as the allowlist blocking.
 #
-# NOT BUILT HERE. `console_command` runs a machine command through the company's proxy, which needs the company's config store and an executor CEK grant; it raises `LabError("not built yet: V7 ...")` naming that, and `proof proxy` records it broken and still checks the allowlist.
+# A CONSOLE COMMAND, AS THE PORTAL RUNS ONE. `console_command(company)` drives the web console's three legs headlessly (private/account/src/routes/console.ts) as the owner. First it gets the company's config store and its CEK from box V6's `ensure_store`. It pushes one org-wide config when the store holds none, because the executor decrypts the org's shared config before it runs anything (packages/cli/src/services/serve/container-config.ts `pickConfig`). Then `POST /console/session` opens an executor session, the CEK is sealed to the session's X25519 key (`cekHandoffEncrypt`) and granted through `POST /console/session/:id/cek`, and `POST /console/exec` runs `CONSOLE_PATH_KEY` with the session in `X-Config-Session`. `datastore list` is proxy-capable (checked against the contract before anything is sent) and reads only the decrypted config, so it reaches no machine. The answer is the stream's final `result` line: success with exit code 0 is admitted, anything else is refused with its exit code, and a stream with no `result` line is refused as such. The contract version is the executor's own: when the executor answers 409 `contract_version_mismatch`, the one retry carries the `executorContractVersion` it named, since a source-tree contract version (`dev`) never matches a released executor.
 
 
 EXECUTOR_CLASS = "OrgExecutor"
@@ -1168,12 +1608,149 @@ def container_app(
     return found[0]
 
 
-def console_command(company: str) -> proof.Answer:
-    raise proof.LabError(
-        "not built yet: V7 (a console command for company %s runs a machine command through its proxy, "
-        "which needs the company's config store and an executor CEK grant; nothing was run)"
-        % company
+CONSOLE_PATH = "/account/api/v1/console"
+CONSOLE_PATH_KEY = "datastore list"
+CONTRACT_MISMATCH = "contract_version_mismatch"
+
+
+def proof_config(config_id: str) -> dict:
+    """The one org-wide config the proof pushes into an empty store: no machine, no secret."""
+    return {
+        "schemaVersion": 3,
+        "id": config_id,
+        "version": 1,
+        "resources": {},
+        "encryption": {"mode": "plaintext"},
+    }
+
+
+def _push_proof_config(world: Owner, keys: StoreKeys) -> None:
+    """Push `proof_config` as version 1 through the config-token plane, as the portal's first save does."""
+    session = _expect(
+        world.call(
+            "POST",
+            "https://%s%s" % (world.host(), CONFIG_SESSION_PATH),
+            {"X-Config-Token": keys.token, "Content-Type": "application/json"},
+            b"{}",
+        ),
+        (200,),
+        world.company,
+        "the config session",
     )
+    rotated = session.get("newServerToken")
+    if not isinstance(rotated, str) or not rotated:
+        raise proof.LabError("company %s: the config session rotated no token" % world.company)
+    config_id = str(uuid.uuid4())
+    payload = world.crypto(
+        {
+            "op": "push",
+            "config": proof_config(config_id),
+            "version": 1,
+            "sdkEpoch": session.get("sdkEpoch"),
+            "sdkDerived": session.get("sdk_derived"),
+            "cek": keys.cek,
+            "storeId": keys.store_id,
+        }
+    )
+    body = {
+        "version": 1,
+        "encryptedBlob": payload.get("encryptedBlob"),
+        "sdkEpoch": session.get("sdkEpoch"),
+        "envelope": payload.get("envelope"),
+    }
+    _expect(
+        world.call(
+            "PUT",
+            "https://%s%s/%s" % (world.host(), CONFIGS_PATH, config_id),
+            {"X-Config-Token": rotated, "Content-Type": "application/json"},
+            json.dumps(body).encode(),
+        ),
+        (200, 201),
+        world.company,
+        "the config push",
+    )
+
+
+def _exec_result(body: bytes) -> proof.Answer:
+    """The verdict of an NDJSON exec stream: its last `result` line (packages/shared/src/cli-contract/wire.ts `StreamLine`)."""
+    result: object = None
+    for line in body.decode("utf-8", "replace").splitlines():
+        try:
+            doc = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(doc, dict) and doc.get("kind") == "result":
+            result = doc.get("result")
+    if not isinstance(result, dict):
+        return proof.Answer(False, "the exec stream ended without a result")
+    code = result.get("exitCode")
+    if result.get("success") is True and code == 0:
+        return proof.Answer(True)
+    return proof.Answer(False, "exit code %s" % code)
+
+
+def console_command(
+    company: str,
+    *,
+    session: Callable[[str], str] | None = None,
+    companies: Companies = all_companies,
+    query: Query = d1_query,
+    call: Call = http_call,
+    sessions: dict[str, str] = _SESSIONS,
+    crypto: Crypto = ts_crypto,
+    api_key: ApiKey = store_api_key,
+    sleep: Callable[[float], None] = time.sleep,
+    clock: Callable[[], float] = time.time,
+) -> proof.Answer:
+    contract = crypto({"op": "contract", "pathKey": CONSOLE_PATH_KEY})
+    if contract.get("proxyCapable") is not True:
+        raise proof.LabError("%r is not a proxy-capable command in the contract" % CONSOLE_PATH_KEY)
+    cookie = _session_for(
+        company, session=session, sessions=sessions, companies=companies, query=query, call=call
+    )
+    world = Owner(company, cookie, companies, query, call, crypto, api_key, sleep, clock)
+    keys = ensure_store(world)
+    if keys.configs == 0:
+        _push_proof_config(world, keys)
+    opened = _expect(
+        world.send("POST", CONSOLE_PATH + "/session", {}),
+        (200, 201),
+        company,
+        "the console session",
+    )
+    session_id, public_key = opened.get("sessionId"), opened.get("publicKey")
+    if not isinstance(session_id, str) or not session_id or not isinstance(public_key, str):
+        raise proof.LabError("company %s: the console session answered no session key" % company)
+    sealed = crypto({"op": "seal-cek", "cek": keys.cek, "publicKey": public_key})
+    _expect(
+        world.send(
+            "POST", "%s/session/%s/cek" % (CONSOLE_PATH, urllib.parse.quote(session_id)), sealed
+        ),
+        (200, 201),
+        company,
+        "the console CEK grant",
+    )
+    version = str(contract.get("version") or "")
+    for _attempt in range(2):
+        request = {
+            "contractVersion": version,
+            "pathKey": CONSOLE_PATH_KEY,
+            "params": {},
+            "positionals": {},
+        }
+        ran = world.send("POST", CONSOLE_PATH + "/exec", request, {"X-Config-Session": session_id})
+        named = ran.json().get("executorContractVersion") if ran.status == 409 else None
+        if (
+            ran.json().get("error") == CONTRACT_MISMATCH
+            and isinstance(named, str)
+            and named != version
+        ):
+            version = named
+            continue
+        if not 200 <= ran.status < 300:
+            return proof.Answer(False, "HTTP %d" % ran.status)
+        return _exec_result(ran.body)
+    return proof.Answer(False, "the executor refused its own contract version")
 
 
 AllowUpdate = Callable[[str, Sequence[str]], None]
@@ -1917,7 +2494,7 @@ def run_surfaces(run_id: str, *, run: Runner = run_process) -> dict[str, str]:
 #
 # The `enterprise proof remove` reader (agent/plans/PLAN-enterprise-isolation.md, box V11): what a company still holds on Cloudflare and in its control row. SEAMS binds it by name.
 #
-# `leftovers(company)` resolves the opaque id through the bench control databases (a removed row included) and lists, by KIND only, each piece `enterprise remove --delete-data` deletes that is still there: the account and proxy Workers (`account-<name>`, `proxy-<name>`), the D1 database `account-<name>`, the configs and backups buckets (listed under the region's R2 jurisdiction header, since a bucket in a jurisdiction is invisible to a plain listing), the bucket-scoped backup token (`enterprise-<id>-backups`, a user token), and a control row whose state is not `removed`. Kinds and never names, because the proof prints the list on a broken claim and a company's name is its Workers' and buckets' name. An empty list means nothing is left; a read that fails is a `LabError`, never an empty list.
+# `leftovers(company)` resolves the opaque id through the bench control databases (a removed row included) and lists, by KIND only, each piece `enterprise remove --delete-data` deletes that is still there: the account and proxy Workers (`account-<name>`, `proxy-<name>`), a Worker Route of the product zone whose script is one of those Workers (`zone route`), the D1 database `account-<name>`, the configs and backups buckets (listed under the region's R2 jurisdiction header, since a bucket in a jurisdiction is invisible to a plain listing), the bucket-scoped backup token (`enterprise-<id>-backups`, a user token), and a control row whose state is not `removed`. Kinds and never names, because the proof prints the list on a broken claim and a company's name is its Workers' and buckets' name. An empty list means nothing is left; a read that fails is a `LabError`, never an empty list.
 
 
 def _names(rows: object, key: str) -> set[str]:
@@ -1933,6 +2510,7 @@ def leftovers(
     *,
     companies: Companies = all_companies,
     listing: Listing = cf_list,
+    api: Api = cf_get,
     buckets: Callable[[str | None], set[str]] = r2_bucket_names,
 ) -> list[str]:
     row = company_row(company, companies=companies)
@@ -1941,12 +2519,15 @@ def leftovers(
     if row.get("state") != "removed":
         left.append("control row (state %s)" % row.get("state"))
     scripts = _names(listing(account_path("/workers/scripts")), "id")
-    for kind, worker in (
-        ("account Worker", "account-%s" % name),
-        ("proxy Worker", "proxy-%s" % name),
-    ):
+    workers = (("account Worker", "account-%s" % name), ("proxy Worker", "proxy-%s" % name))
+    for kind, worker in workers:
         if worker in scripts:
             left.append(kind)
+    routes = api("/zones/%s/workers/routes" % _zone_id(api))
+    if not isinstance(routes, list):
+        raise proof.LabError("the zone route listing is not a list")
+    if _names(routes, "script") & {w for _k, w in workers}:
+        left.append("zone route")
     d1 = "account-%s" % name
     found = listing(account_path("/d1/database?name=%s" % urllib.parse.quote(d1)))
     if d1 in _names(found, "name"):

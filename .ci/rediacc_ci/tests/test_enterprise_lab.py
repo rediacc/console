@@ -24,6 +24,7 @@ from rediacc_ci.well_known import BENCH_ORIGIN, GH_API_BASE, PRODUCT_DOMAIN
 
 REAL_URLOPEN = https.urlopen
 REAL_CREATE_CONNECTION = socket.create_connection
+REAL_RUN = subprocess.run
 
 
 @pytest.fixture(autouse=True)
@@ -796,10 +797,11 @@ def test_a_probe_that_is_not_a_yes_or_a_no_is_a_lab_error(status):
         lab.present("c0000000a", "session", "x", send=Server({}, status), companies=companies_proxy)
 
 
-@pytest.mark.parametrize("kind", ["config-token", "e2e-envelope"])
-def test_kinds_without_a_probe_are_not_built(kind):
-    with pytest.raises(proof.LabError, match="not built yet: V6"):
-        lab.present("c0000000a", kind, "x", send=Server({}), companies=companies_proxy)
+def test_a_kind_with_no_probe_is_a_lab_error():
+    with pytest.raises(proof.LabError, match="no probe presents a cookie-jar"):
+        lab.present("c0000000a", "cookie-jar", "x", send=Server({}), companies=companies_proxy)
+    with pytest.raises(proof.LabError, match="no minter for a cookie-jar"):
+        lab.live_minter("c0000000a", "cookie-jar", session=lambda _c: "s")
 
 
 HOST_A = "proof-a.%s" % PRODUCT_DOMAIN
@@ -1043,14 +1045,6 @@ def test_tokens_are_minted_under_the_owner_session_for_the_control_subscription(
     assert ("control-bench-eu", lab.SUBSCRIPTION_SQL, ["c0000000a"]) in acct.queries
 
 
-@pytest.mark.parametrize("kind", ["config-token", "e2e-envelope"])
-def test_the_unbuilt_kinds_are_named_before_anyone_signs_in(kind):
-    acct = AccountV6()
-    with pytest.raises(proof.LabError, match="not built yet: V6"):
-        lab.mint("c0000000a", kind, minter=minter_v6(acct))
-    assert acct.posts == []
-
-
 @pytest.mark.parametrize("kind", ["api-token", "proxy-token"])
 def test_a_token_is_admitted_by_its_own_company_and_refused_by_the_other(kind):
     acct = AccountV6()
@@ -1217,8 +1211,338 @@ def test_the_api_key_needs_the_enterprise_project():
         lab.store_api_key("c0123456789abcdef", env={})
 
 
-def test_the_replay_proof_holds_for_the_built_kinds_and_names_the_unbuilt_ones():
-    acct = AccountV6()
+# The config store, the sealed request and the console command (V6 `config-token` and `e2e-envelope`, V7 `console_command`), over a fake of both company Workers and a fake of the shared package's crypto; the real crypto helper is driven at the end of this block, with no network.
+
+HOST_B = "proof-b.%s" % PRODUCT_DOMAIN
+SEED = "JBSWY3DPEHPK3PXP"
+CEK = "cek-a"
+EXEC_VERSION = "1.2.3"
+
+
+class FakeCrypto:
+    """The shared package's crypto, as `ts_crypto` answers it: every operation recorded, nothing encrypted."""
+
+    def __init__(self, *, proxy_capable=True):
+        self.proxy_capable = proxy_capable
+        self.ops: list[dict] = []
+
+    def __call__(self, request):
+        self.ops.append(request)
+        op = request["op"]
+        if op == "setup":
+            return {
+                "cek": CEK,
+                "body": {"slots": [{"method": "password"}], "pw": request["password"]},
+            }
+        if op == "unwrap":
+            if request["wrappedCek"] != "wrapped:%s" % request["password"]:
+                raise proof.LabError("the crypto helper (unwrap) exited 1")
+            return {"cek": CEK}
+        if op == "push":
+            return {"encryptedBlob": "blob", "envelope": {"v": 3}}
+        if op == "seal-cek":
+            return {"v": 1, "sealed": request["cek"], "to": request["publicKey"]}
+        if op == "seal-request":
+            return {"v": 1, "to": request["publicKey"], "inner": request["headers"]}
+        if op == "contract":
+            return {"version": "dev", "proxyCapable": self.proxy_capable}
+        raise AssertionError(op)
+
+
+class StoreV6(AccountV6):
+    """AccountV6 plus each company's config store, second factor, tunnel and console."""
+
+    def __init__(
+        self, *, configured=False, configs=0, tfa=False, setup_status=201, exec_lines=None, **kw
+    ):
+        super().__init__(**kw)
+        self.configured = configured
+        self.configs = configs
+        self.tfa = tfa
+        self.setup_status = setup_status
+        self.elevated = False
+        self.reauth_mailed = False
+        self.enable_code = ""
+        self.disabled_with = ""
+        self.config_tokens = {HOST_A: {"rct-old"}, HOST_B: set()}
+        self.password = ""
+        self.pushed: list[dict] = []
+        self.granted: dict | None = None
+        self.execs: list[dict] = []
+        result = {"kind": "result", "result": {"success": True, "exitCode": 0, "stdout": ""}}
+        self.exec_lines = exec_lines if exec_lines is not None else [{"kind": "heartbeat"}, result]
+
+    def query(self, database, sql, params):
+        if sql == lab.REAUTH_SQL:
+            self.queries.append((database, sql, list(params)))
+            if not self.reauth_mailed:
+                return []
+            body = "Confirm: https://%s/account/reauth/verify?token=re-1\n" % HOST_A
+            return [{"text_body": body, "created_at": NEW_AT}]
+        return super().query(database, sql, params)
+
+    def _json(self, status, doc):
+        return lab.HttpAnswer(status, (), json.dumps(doc).encode())
+
+    def call(self, method, url, headers, body):
+        host, path = url.split("/")[2], "/" + url.split("/", 3)[3]
+        signed_in = headers.get("Cookie") == "access_token=sess-a" and host == HOST_A
+        doc = json.loads(body or b"{}")
+        if path == lab.SERVER_INFO_PATH:
+            return self._json(
+                200, {"e2e": {"keys": [{"keyId": "v1", "publicKeySpki": "pk-%s" % host}]}}
+            )
+        if path == lab.TUNNEL_PATH:
+            if doc.get("to") != "pk-%s" % host:
+                return self._json(400, {"error": "Decryption failed"})
+            bearer = doc["inner"].get("Authorization", "")[7:]
+            inner = 200 if self.minted.get(bearer) == host else 401
+            return self._json(200, {"v": 1, "iv": "x", "ct": "y", "status": inner})
+        if path == lab.CONFIG_SESSION_PATH:
+            token = headers.get("X-Config-Token", "")
+            if token not in self.config_tokens[host]:
+                return self._json(401, {"error": "Config auth failed"})
+            self.config_tokens[host].add("rct-next")
+            return self._json(
+                200, {"newServerToken": "rct-next", "sdk_derived": "sd", "sdkEpoch": 7}
+            )
+        if method == "PUT" and path.startswith(lab.CONFIGS_PATH + "/"):
+            assert headers.get("X-Config-Token") in self.config_tokens[host]
+            self.pushed.append(doc)
+            self.configs += 1
+            return self._json(201, {"version": 1})
+        own = (
+            lab.STORE_INFO_PATH,
+            lab.REAUTH_PATH,
+            lab.REAUTH_VERIFY_PATH,
+            lab.TFA_STATUS_PATH,
+            lab.TFA_SETUP_PATH,
+            lab.TFA_ENABLE_PATH,
+            lab.TFA_DISABLE_PATH,
+            lab.SETUP_PATH,
+            lab.BOOTSTRAP_PATH,
+        )
+        if path in own or path.startswith(lab.CONSOLE_PATH):
+            self.calls.append((method, url, headers, doc))
+            if not signed_in:
+                return lab.HttpAnswer(401)
+            return self._owned(path, headers, doc)
+        return super().call(method, url, headers, body)
+
+    def _owned(self, path, headers, doc):
+        if path == lab.STORE_INFO_PATH:
+            if not self.configured:
+                return self._json(200, {"configured": False})
+            return self._json(
+                200, {"configured": True, "storeId": "st-a", "configCount": self.configs}
+            )
+        if path == lab.REAUTH_PATH:
+            self.reauth_mailed = True
+            return self._json(200, {"sent": True})
+        if path == lab.REAUTH_VERIFY_PATH:
+            self.elevated = doc.get("token") == "re-1"
+            return self._json(200 if self.elevated else 400, {"elevated": self.elevated})
+        if path == lab.TFA_STATUS_PATH:
+            return self._json(200, {"enabled": self.tfa})
+        if (
+            path in (lab.TFA_SETUP_PATH, lab.TFA_ENABLE_PATH, lab.TFA_DISABLE_PATH)
+            and not self.elevated
+        ):
+            return self._json(403, {"reauthRequired": True})
+        if path == lab.TFA_SETUP_PATH:
+            return self._json(200, {"secret": SEED})
+        if path == lab.TFA_ENABLE_PATH:
+            self.tfa, self.enable_code = True, doc["code"]
+            return self._json(200, {"enabled": True})
+        if path == lab.TFA_DISABLE_PATH:
+            if doc["code"] == self.enable_code:
+                return self._json(400, {"error": "spent"})
+            self.tfa, self.disabled_with = False, doc["code"]
+            return self._json(200, {"disabled": True})
+        if path == lab.SETUP_PATH:
+            assert self.tfa, "setup is 2FA gated"
+            assert self.elevated, "setup is elevated gated"
+            if self.setup_status != 201:
+                return self._json(self.setup_status, {"error": "boom"})
+            self.configured, self.password = True, doc["pw"]
+            self.config_tokens[HOST_A].add("rct-init")
+            return self._json(201, {"store": {"id": "st-a"}, "initialToken": "rct-init"})
+        if path == lab.BOOTSTRAP_PATH:
+            assert doc == {"storeId": "st-a", "method": "password"}
+            self.config_tokens[HOST_A].add("rct-boot")
+            slot = {"token": "rct-boot", "serverSecret": "ss", "kdfParams": {"method": "password"}}
+            return self._json(200, {**slot, "wrappedCek": "wrapped:%s" % self.password})
+        return self._console(path, headers, doc)
+
+    def _console(self, path, headers, doc):
+        if path == lab.CONSOLE_PATH + "/session":
+            return self._json(201, {"sessionId": "es-1", "publicKey": "epk"})
+        if path == lab.CONSOLE_PATH + "/session/es-1/cek":
+            self.granted = doc
+            return self._json(200, {"ok": True})
+        if path == lab.CONSOLE_PATH + "/exec":
+            self.execs.append(doc)
+            if doc["contractVersion"] != EXEC_VERSION:
+                return self._json(
+                    409,
+                    {"error": "contract_version_mismatch", "executorContractVersion": EXEC_VERSION},
+                )
+            ready = (
+                headers.get("X-Config-Session") == "es-1"
+                and self.granted == {"v": 1, "sealed": CEK, "to": "epk"}
+                and self.configs > 0
+            )
+            if not ready:
+                return self._json(404, {"code": "EXECUTOR_SESSION_UNKNOWN"})
+            stream = "\n".join(json.dumps(line) for line in self.exec_lines) + "\n"
+            return lab.HttpAnswer(200, (), stream.encode())
+        raise AssertionError(path)
+
+
+def store_minter(acct: StoreV6, crypto: FakeCrypto):
+    def minter(company, kind):
+        return lab.live_minter(
+            company,
+            kind,
+            session=lambda _c: session_v6(acct),
+            companies=companies_proxy,
+            query=acct.query,
+            call=acct.call,
+            crypto=crypto,
+            api_key=lambda c: "key-%s" % c,
+            sleep=acct.sleep,
+            clock=ASKED_AT.timestamp,
+        )
+
+    return minter
+
+
+def store_present(acct: StoreV6):
+    return functools.partial(lab.present, send=acct.send, call=acct.call, companies=companies_proxy)
+
+
+def test_a_config_token_sets_the_store_up_under_a_second_factor_that_is_dropped_again():
+    acct, crypto = StoreV6(), FakeCrypto()
+    token = lab.mint("c0000000a", "config-token", minter=store_minter(acct, crypto))
+    assert token == "rct-init"
+    order = [c[1].split(PRODUCT_DOMAIN, 1)[1] for c in acct.calls if "magic-link" not in c[1]]
+    assert order == [
+        lab.STORE_INFO_PATH,
+        lab.REAUTH_PATH,
+        lab.REAUTH_VERIFY_PATH,
+        lab.TFA_STATUS_PATH,
+        lab.TFA_SETUP_PATH,
+        lab.TFA_ENABLE_PATH,
+        lab.SETUP_PATH,
+        lab.TFA_DISABLE_PATH,
+    ]
+    assert acct.tfa is False, (
+        "the owner's magic-link sign-in must not be left asking for a second factor"
+    )
+    assert acct.disabled_with
+    assert acct.enable_code not in ("", acct.disabled_with)
+    assert acct.password == lab.store_password("c0000000a", api_key=lambda c: "key-%s" % c)
+    assert ("account-proof-a", lab.REAUTH_SQL, ["owner@proof-a.example"]) in acct.queries
+
+
+def test_an_existing_store_is_opened_through_its_password_slot_with_no_second_factor():
+    acct, crypto = StoreV6(configured=True), FakeCrypto()
+    acct.password = lab.store_password("c0000000a", api_key=lambda c: "key-%s" % c)
+    token = lab.mint("c0000000a", "config-token", minter=store_minter(acct, crypto))
+    assert token == "rct-boot"
+    paths = [c[1].split(PRODUCT_DOMAIN, 1)[1] for c in acct.calls]
+    assert lab.TFA_ENABLE_PATH not in paths
+    assert lab.SETUP_PATH not in paths
+    assert [o["op"] for o in crypto.ops] == ["unwrap"]
+
+
+def test_a_store_whose_slot_the_proof_cannot_open_is_a_lab_error():
+    """Control: a store set up by someone else (another password) never yields a token."""
+    acct, crypto = StoreV6(configured=True), FakeCrypto()
+    acct.password = "someone-elses"
+    with pytest.raises(proof.LabError, match="unwrap"):
+        lab.mint("c0000000a", "config-token", minter=store_minter(acct, crypto))
+
+
+def test_an_owner_with_a_second_factor_already_is_refused_before_setup():
+    acct = StoreV6(tfa=True)
+    with pytest.raises(proof.LabError, match="already has a second factor"):
+        lab.mint("c0000000a", "config-token", minter=store_minter(acct, FakeCrypto()))
+    assert not acct.configured
+
+
+def test_a_failed_setup_still_drops_the_second_factor():
+    acct = StoreV6(setup_status=500)
+    with pytest.raises(proof.LabError, match="config store setup answered HTTP 500"):
+        lab.mint("c0000000a", "config-token", minter=store_minter(acct, FakeCrypto()))
+    assert acct.tfa is False
+
+
+def test_the_store_password_is_derived_from_the_server_key_and_differs_per_company():
+    first = lab.store_password("c0000000a", api_key=lambda _c: "key-1")
+    assert first == lab.store_password("c0000000a", api_key=lambda _c: "key-1")
+    assert first != lab.store_password("c0000000b", api_key=lambda _c: "key-2")
+    assert "key-1" not in first
+
+
+def test_a_config_token_is_admitted_by_its_own_company_and_refused_by_the_other():
+    acct = StoreV6()
+    token = lab.mint("c0000000a", "config-token", minter=store_minter(acct, FakeCrypto()))
+    present = store_present(acct)
+    assert present("c0000000a", "config-token", token) == proof.Answer(True)
+    assert present("c0000000b", "config-token", token) == proof.Answer(False, "HTTP 401")
+
+
+def test_an_envelope_is_sealed_to_the_companys_published_key_under_a_fresh_token():
+    acct, crypto = StoreV6(), FakeCrypto()
+    envelope = json.loads(lab.mint("c0000000a", "e2e-envelope", minter=store_minter(acct, crypto)))
+    assert envelope["to"] == "pk-%s" % HOST_A
+    (sealed,) = [o for o in crypto.ops if o["op"] == "seal-request"]
+    assert (sealed["method"], sealed["path"], sealed["keyId"]) == ("GET", lab.STATUS_PATH, "v1")
+    assert sealed["headers"] == {"Authorization": "Bearer rdt_license:read"}
+
+
+def test_an_envelope_opens_on_its_own_company_and_does_not_open_on_the_other():
+    acct = StoreV6()
+    envelope = lab.mint("c0000000a", "e2e-envelope", minter=store_minter(acct, FakeCrypto()))
+    present = store_present(acct)
+    assert present("c0000000a", "e2e-envelope", envelope) == proof.Answer(True)
+    assert present("c0000000b", "e2e-envelope", envelope) == proof.Answer(
+        False, "HTTP 400 (Decryption failed)"
+    )
+
+
+@pytest.mark.parametrize(
+    ("status", "doc", "match"),
+    [
+        (500, {}, "e2e-envelope probe answered HTTP 500"),
+        (400, {"error": "Invalid encrypted envelope"}, "HTTP 400"),
+        (200, {"v": 1}, "no inner status"),
+        (200, {"status": 404}, r"e2e-envelope \(inner\) probe answered HTTP 404"),
+    ],
+)
+def test_a_tunnel_answer_that_is_not_a_yes_or_a_no_is_a_lab_error(status, doc, match):
+    """Control: neither a broken tunnel nor a malformed envelope ever reads as the other company's refusal."""
+
+    def call(_method, _url, _headers, _body):
+        return lab.HttpAnswer(status, (), json.dumps(doc).encode())
+
+    with pytest.raises(proof.LabError, match=match):
+        lab.present("c0000000a", "e2e-envelope", "{}", call=call, companies=companies_proxy)
+
+
+def test_a_company_publishing_no_e2e_key_is_a_lab_error():
+    def call(_method, _url, _headers, _body):
+        return lab.HttpAnswer(200, (), b'{"e2e": {"keys": []}}')
+
+    with pytest.raises(proof.LabError, match="0 E2E keys"):
+        lab.e2e_envelope(
+            "c0000000a", "t", companies=companies_proxy, call=call, crypto=FakeCrypto()
+        )
+
+
+def test_the_replay_proof_holds_for_every_kind():
+    acct, crypto = StoreV6(), FakeCrypto()
 
     class Lab:
         def ensure_company(self, label, region, *, ring=None):
@@ -1226,20 +1550,31 @@ def test_the_replay_proof_holds_for_the_built_kinds_and_names_the_unbuilt_ones()
             return {"proof-replay-a": "c0000000a", "proof-replay-b": "c0000000b"}[label]
 
         def mint(self, company, kind):
-            return lab.mint(company, kind, minter=minter_v6(acct))
+            return lab.mint(company, kind, minter=store_minter(acct, crypto))
 
         def present(self, company, kind, artifact):
-            return lab.present(
-                company, kind, artifact, send=acct.send, call=acct.call, companies=companies_proxy
-            )
+            return store_present(acct)(company, kind, artifact)
 
     lines: list[str] = []
-    assert run_partial_verb("replay", Lab(), lines) == 1
-    assert any("not built yet: V6" in line and "config token" in line for line in lines)
+    assert run_partial_verb("replay", Lab(), lines) == 0, lines
     held = [line for line in lines if line.startswith("ok")]
-    for kind in ("session", "api-token"):
+    for kind in proof.REPLAY_KINDS:
         assert "ok      %s: accepted by its own company" % kind in held
         assert "ok      %s: refused by the other company" % kind in held
+
+
+def console_v7(acct: StoreV6, crypto: FakeCrypto) -> proof.Answer:
+    return lab.console_command(
+        "c0000000a",
+        session=lambda _c: session_v6(acct),
+        companies=companies_proxy,
+        query=acct.query,
+        call=acct.call,
+        crypto=crypto,
+        api_key=lambda c: "key-%s" % c,
+        sleep=acct.sleep,
+        clock=ASKED_AT.timestamp,
+    )
 
 
 NAMESPACES_PROXY = [
@@ -1289,9 +1624,146 @@ def test_two_apps_on_one_namespace_are_a_lab_error():
         )
 
 
-def test_the_unbuilt_console_command_refuses_by_name():
-    with pytest.raises(proof.LabError, match="not built yet: V7"):
-        lab.console_command("c0000000a")
+def test_a_console_command_runs_through_a_granted_executor_session():
+    acct, crypto = StoreV6(), FakeCrypto()
+    assert console_v7(acct, crypto) == proof.Answer(True)
+    (pushed,) = acct.pushed
+    assert (pushed["version"], pushed["sdkEpoch"]) == (1, 7)
+    push = next(o for o in crypto.ops if o["op"] == "push")
+    assert (push["config"]["resources"], push["storeId"], push["cek"]) == ({}, "st-a", CEK)
+    assert acct.granted == {"v": 1, "sealed": CEK, "to": "epk"}
+    # The source tree's contract version is refused once, and the executor's own is sent again.
+    assert [e["contractVersion"] for e in acct.execs] == ["dev", EXEC_VERSION]
+    assert acct.execs[-1]["pathKey"] == lab.CONSOLE_PATH_KEY
+
+
+def test_a_store_that_holds_a_config_is_not_pushed_to_again():
+    acct, crypto = StoreV6(configured=True, configs=1), FakeCrypto()
+    acct.password = lab.store_password("c0000000a", api_key=lambda c: "key-%s" % c)
+    assert console_v7(acct, crypto) == proof.Answer(True)
+    assert acct.pushed == []
+
+
+@pytest.mark.parametrize(
+    ("lines", "detail"),
+    [
+        ([{"kind": "result", "result": {"success": False, "exitCode": 2}}], "exit code 2"),
+        ([{"kind": "heartbeat"}], "the exec stream ended without a result"),
+        ([{"kind": "result", "result": {"success": True, "exitCode": 1}}], "exit code 1"),
+    ],
+)
+def test_a_command_that_did_not_succeed_is_refused_never_admitted(lines, detail):
+    """Control: only a result line with success and exit code 0 is a command that ran."""
+    acct = StoreV6(exec_lines=lines)
+    assert console_v7(acct, FakeCrypto()) == proof.Answer(False, detail)
+
+
+def test_an_exec_refused_by_the_worker_is_refused_with_its_status():
+    acct = StoreV6()
+    acct.granted = None
+
+    def no_grant(path, headers, doc):
+        if path.endswith("/cek"):
+            return acct._json(200, {"ok": True})
+        return StoreV6._console(acct, path, headers, doc)
+
+    acct._console = no_grant
+    assert console_v7(acct, FakeCrypto()) == proof.Answer(False, "HTTP 404")
+
+
+def test_a_command_the_contract_does_not_proxy_is_never_sent():
+    acct = StoreV6()
+    with pytest.raises(proof.LabError, match="not a proxy-capable command"):
+        console_v7(acct, FakeCrypto(proxy_capable=False))
+    assert acct.calls == []
+
+
+TSX = paths.repo_root() / "node_modules" / ".bin" / "tsx"
+
+
+@pytest.fixture
+def tsx_only(monkeypatch):
+    """The one child process these tests may start is the repository's tsx running the crypto helper, which makes no network call."""
+
+    def run(argv, *args, **kwargs):
+        assert argv[0] == str(TSX), argv
+        return REAL_RUN(argv, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", run)
+
+
+@pytest.mark.usefixtures("tsx_only")
+@pytest.mark.skipif(not TSX.exists(), reason="the repository's tsx is not installed")
+def test_the_real_crypto_helper_wraps_unwraps_seals_and_reads_the_contract():
+    """The shared package's own functions, driven through `ts_crypto` with no network."""
+    made = lab.ts_crypto({"op": "setup", "password": "pw-proof-1"})
+    slot = made["body"]["slots"][0]
+    assert (slot["method"], made["body"]["requirePasskey"]) == ("password", False)
+    opened = lab.ts_crypto(
+        {
+            "op": "unwrap",
+            "password": "pw-proof-1",
+            "kdfParams": slot["kdfParams"],
+            "wrappedCek": slot["wrappedCek"],
+            "serverSecret": made["body"]["serverSecret"],
+        }
+    )
+    assert opened["cek"] == made["cek"]
+    key = made["body"]["x25519PublicKey"]
+    sealed = lab.ts_crypto(
+        {
+            "op": "seal-request",
+            "publicKey": key,
+            "keyId": "v1",
+            "method": "GET",
+            "path": lab.STATUS_PATH,
+            "headers": {},
+            "body": None,
+        }
+    )
+    assert sorted(sealed) == ["ct", "eph", "iv", "kid", "salt", "v"]
+    assert sorted(lab.ts_crypto({"op": "seal-cek", "cek": made["cek"], "publicKey": key})) == [
+        "ct",
+        "eph",
+        "iv",
+        "salt",
+        "v",
+    ]
+    contract = lab.ts_crypto({"op": "contract", "pathKey": lab.CONSOLE_PATH_KEY})
+    assert contract["proxyCapable"] is True
+    pushed = lab.ts_crypto(
+        {
+            "op": "push",
+            "config": lab.proof_config("b58c2f1a-9d34-4e6b-8f21-6c0d94a7c0f1"),
+            "version": 1,
+            "sdkEpoch": 1,
+            "sdkDerived": made["body"]["serverSecret"],
+            "cek": made["cek"],
+            "storeId": "st-1",
+        }
+    )
+    assert pushed["encryptedBlob"]
+    assert isinstance(pushed["envelope"], dict)
+
+
+@pytest.mark.usefixtures("tsx_only")
+@pytest.mark.skipif(not TSX.exists(), reason="the repository's tsx is not installed")
+def test_a_failing_crypto_operation_is_a_lab_error_that_quotes_no_input():
+    """Control: a wrong password fails the unwrap, and the error carries neither the password nor stderr."""
+    made = lab.ts_crypto({"op": "setup", "password": "pw-right"})
+    slot = made["body"]["slots"][0]
+    with pytest.raises(proof.LabError) as raised:
+        lab.ts_crypto(
+            {
+                "op": "unwrap",
+                "password": "pw-wrong-never-shown",
+                "kdfParams": slot["kdfParams"],
+                "wrappedCek": slot["wrappedCek"],
+                "serverSecret": made["body"]["serverSecret"],
+            }
+        )
+    assert str(raised.value).startswith("the crypto helper (unwrap) exited ")
+    assert "pw-wrong" not in str(raised.value)
 
 
 def test_egress_ips_read_cloudflares_view_of_each_family():
@@ -2324,6 +2796,21 @@ class Account:
         self.jurisdictions.append(jurisdiction)
         return {"configs-proof-remove", "backups-proof-remove"} if self.present else set()
 
+    def api(self, path):
+        if path == "/zones?name=%s" % PRODUCT_DOMAIN:
+            return [{"id": "zone-1"}]
+        if path == "/zones/zone-1/workers/routes":
+            other = [{"pattern": "eu.%s/*" % PRODUCT_DOMAIN, "script": "account-eu"}]
+            mine = [
+                {"pattern": "proof-remove.%s/*" % PRODUCT_DOMAIN, "script": "proxy-proof-remove"}
+            ]
+            return other + (mine if self.present else [])
+        raise AssertionError(path)
+
+
+def no_routes(path):
+    return [{"id": "zone-1"}] if path.startswith("/zones?name=") else []
+
 
 def rows_left(state):
     return lambda _b: [
@@ -2334,12 +2821,17 @@ def rows_left(state):
 def test_a_kept_company_lists_every_piece_by_kind():
     acct = Account(present=True)
     got = lab.leftovers(
-        "c00000001", companies=rows_left("active"), listing=acct.listing, buckets=acct.buckets
+        "c00000001",
+        companies=rows_left("active"),
+        listing=acct.listing,
+        api=acct.api,
+        buckets=acct.buckets,
     )
     assert got == [
         "control row (state active)",
         "account Worker",
         "proxy Worker",
+        "zone route",
         "D1 database",
         "configs bucket",
         "backups bucket",
@@ -2352,12 +2844,41 @@ def test_a_kept_company_lists_every_piece_by_kind():
 def test_a_removed_company_with_nothing_left_answers_an_empty_list():
     """Control: the list above is not what every company gets."""
     acct = Account(present=False)
-    assert (
-        lab.leftovers(
-            "c00000001", companies=rows_left("removed"), listing=acct.listing, buckets=acct.buckets
-        )
-        == []
+    got = lab.leftovers(
+        "c00000001",
+        companies=rows_left("removed"),
+        listing=acct.listing,
+        api=acct.api,
+        buckets=acct.buckets,
     )
+    assert got == [], "another Worker's route is not this company's"
+
+
+def test_a_route_left_alone_is_reported_by_kind():
+    """A removed company whose Workers are gone but whose route survived still leaves something."""
+    acct = Account(present=True)
+    got = lab.leftovers(
+        "c00000001",
+        companies=rows_left("removed"),
+        listing=lambda _p: [],
+        api=acct.api,
+        buckets=lambda _j: set(),
+    )
+    assert got == ["zone route"]
+
+
+def test_an_unreadable_route_listing_is_a_lab_error_not_an_empty_list():
+    def api(path):
+        return [{"id": "zone-1"}] if path.startswith("/zones?name=") else None
+
+    with pytest.raises(proof.LabError, match="zone route listing"):
+        lab.leftovers(
+            "c00000001",
+            companies=rows_left("removed"),
+            listing=lambda _p: [],
+            api=api,
+            buckets=lambda _j: set(),
+        )
 
 
 def test_a_similar_database_name_is_not_this_companys():
@@ -2367,7 +2888,11 @@ def test_a_similar_database_name_is_not_this_companys():
         return []
 
     got = lab.leftovers(
-        "c00000001", companies=rows_left("removed"), listing=listing, buckets=lambda _j: set()
+        "c00000001",
+        companies=rows_left("removed"),
+        listing=listing,
+        api=no_routes,
+        buckets=lambda _j: set(),
     )
     assert got == []
 

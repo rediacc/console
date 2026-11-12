@@ -19,8 +19,10 @@ from rediacc_ci.core import wrangler
 from rediacc_ci.enterprise import lifecycle, registry, secrets
 from rediacc_ci.enterprise import lifecycle_adapters as la
 from rediacc_ci.ops import cf_auth, enterprise_lookup
+from rediacc_ci.well_known import PRODUCT_DOMAIN
 
 NOW = "2026-11-09T10:00:00Z"
+ZONE = "z" * 32
 ACME = "c0123456789abcdef"
 ACCOUNT = "a" * 32
 SECRET_VALUE = "s3cr3t-value-never-shown"
@@ -87,6 +89,18 @@ class FakeCloudflare:
     def __init__(self, s3: FakeS3) -> None:
         self.s3 = s3
         self.workers = {"proxy-acme", "account-acme", "account-eu"}
+        # The product zone's Worker Routes: two of the company's, one of another Worker's, one scriptless.
+        self.zones = [{"id": ZONE, "name": PRODUCT_DOMAIN}]
+        self.routes = [
+            {"id": "r-acct", "pattern": "acme.%s/*" % PRODUCT_DOMAIN, "script": "account-acme"},
+            {
+                "id": "r-proxy",
+                "pattern": "acme-proxy.%s/*" % PRODUCT_DOMAIN,
+                "script": "proxy-acme",
+            },
+            {"id": "r-eu", "pattern": "eu.%s/*" % PRODUCT_DOMAIN, "script": "account-eu"},
+            {"id": "r-none", "pattern": "x.%s/*" % PRODUCT_DOMAIN},
+        ]
         self.d1 = {"account-acme": "1111-uuid", "account-eu": "2222-uuid"}
         self.tokens = [
             {"id": "t-own", "name": "enterprise-%s-backups" % ACME},
@@ -106,6 +120,15 @@ class FakeCloudflare:
             if m == method and fragment in path:
                 return {"success": False, "errors": [{"code": 7003, "message": "boom acme"}]}
         base = "/accounts/%s" % ACCOUNT
+        if method == "GET" and path == "/zones?name=%s" % PRODUCT_DOMAIN:
+            return {"success": True, "result": self.zones}
+        routes = "/zones/%s/workers/routes" % ZONE
+        if method == "GET" and path == routes:
+            return {"success": True, "result": list(self.routes)}
+        if method == "DELETE" and path.startswith(routes + "/"):
+            rid = path.rsplit("/", 1)[1]
+            self.routes = [r for r in self.routes if r["id"] != rid]
+            return {"success": True, "result": {"id": rid}}
         if method == "GET" and path == base + "/workers/scripts":
             return {"success": True, "result": [{"id": w} for w in sorted(self.workers)]}
         if method == "DELETE" and path.startswith(base + "/workers/scripts/"):
@@ -378,14 +401,47 @@ def test_token_name_matches_the_minter():
 def test_undeploy_deletes_proxy_then_account_and_skips_an_absent_worker(monkeypatch):
     rig = Rig(monkeypatch)
     rig.cf.workers.discard("proxy-acme")
+    rig.cf.routes = [r for r in rig.cf.routes if not str(r.get("script", "")).endswith("-acme")]
     rig.teardown.undeploy(_company())
     deletes = [c[1] for c in rig.cf.calls if c[0] == "DELETE"]
     assert deletes == ["/accounts/%s/workers/scripts/account-acme?force=true" % ACCOUNT]
     assert rig.cf.workers == {"account-eu"}
     assert rig.teardown.done == [
+        "undeploy zone routes (already gone)",
         "undeploy proxy worker (already gone)",
         "undeploy account worker",
     ]
+
+
+def test_undeploy_deletes_only_the_companys_zone_routes_before_its_workers(monkeypatch):
+    rig = Rig(monkeypatch)
+    rig.teardown.undeploy(_company())
+    deletes = [c[1] for c in rig.cf.calls if c[0] == "DELETE"]
+    routes = "/zones/%s/workers/routes/" % ZONE
+    assert deletes[:2] == [routes + "r-acct", routes + "r-proxy"]
+    assert all("/workers/scripts/" in d for d in deletes[2:])
+    assert [r["id"] for r in rig.cf.routes] == ["r-eu", "r-none"]
+    assert rig.teardown.done[0] == "undeploy zone routes"
+
+
+def test_a_missing_product_zone_stops_undeploy_before_any_delete(monkeypatch):
+    """Control: an unreadable zone is a refusal, never 'no routes left'."""
+    rig = Rig(monkeypatch)
+    rig.cf.zones = []
+    with pytest.raises(lifecycle.LifecycleError, match="undeploy zone routes failed"):
+        rig.teardown.undeploy(_company())
+    assert [c for c in rig.cf.calls if c[0] == "DELETE"] == []
+    assert len(rig.cf.routes) == 4
+
+
+def test_a_refused_route_delete_names_its_codes_and_keeps_the_workers(monkeypatch):
+    rig = Rig(monkeypatch)
+    rig.cf.fail.add(("DELETE", "/workers/routes/"))
+    with pytest.raises(lifecycle.LifecycleError) as caught:
+        rig.teardown.undeploy(_company())
+    assert "7003" in str(caught.value)
+    assert "acme" not in str(caught.value).replace(ACME, "")
+    assert {"proxy-acme", "account-acme"} <= rig.cf.workers
 
 
 def test_drop_lookup_deletes_the_hmac_key_and_puts_neither_domain_nor_pepper_in_argv(monkeypatch):
@@ -593,7 +649,9 @@ def test_full_remove_with_delete_data_tears_down_everything(tmp_path, monkeypatc
     assert [r["id"] for r in rig.bws.rows] == ["id-foreign"]
     assert len(rig.kv) == 1
     assert _state(conn) == "removed"
-    assert rig.teardown.done[:3] == [
+    assert [r["id"] for r in rig.cf.routes] == ["r-eu", "r-none"]
+    assert rig.teardown.done[:4] == [
+        "undeploy zone routes",
         "undeploy proxy worker",
         "undeploy account worker",
         "drop lookup",
@@ -654,7 +712,8 @@ def test_a_failing_step_stops_the_rest_names_what_ran_and_a_rerun_resumes(tmp_pa
     before = len(rig.cf.calls)
     lifecycle.remove(ctx, "acme", delete_data=True, confirm="acme")
     assert _state(conn) == "removed"
-    assert rig2.done[:2] == [
+    assert rig2.done[:3] == [
+        "undeploy zone routes (already gone)",
         "undeploy proxy worker (already gone)",
         "undeploy account worker (already gone)",
     ]
