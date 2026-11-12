@@ -266,6 +266,7 @@ def secrets_payload() -> dict[str, str]:
         "SELLER_POSTAL_CODE": os.environ.get("SELLER_POSTAL_CODE") or "",
         "SELLER_COUNTRY": os.environ.get("SELLER_COUNTRY") or "",
         "SELLER_EMAIL": os.environ.get("SELLER_EMAIL") or "",
+        "SALES_NOTIFY_EMAIL": os.environ.get("SALES_NOTIFY_EMAIL") or "",
     }
 
 

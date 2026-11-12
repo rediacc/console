@@ -68,7 +68,7 @@ Every deploy credential comes from Bitwarden Secrets Manager. **Without it nothi
 
 The `deploy-workers` profile does NOT carry the Worker runtime secrets (`ACCOUNT_*` keys, `AWS_SES_*`, `STRIPE_*`, `OBS_OTLP_*`, `SELLER_*`). A code deploy keeps the secrets already on the Worker; only a secrets push changes them.
 
-**The secrets step.** `release:local` pushes the 29 runtime secrets to each account Worker through `rediacc_ci.deploy.account_secrets_local`, with the profile `account-secrets-<region>` (one per shared Worker, in `.ci/config/secret-supply.json`). `--dry-run` on the entry prints the profile and key names only, reads no credential and contacts no service.
+**The secrets step.** `release:local` pushes the 35 runtime secrets to each account Worker through `rediacc_ci.deploy.account_secrets_local`, with the profile `account-secrets-<region>` (one per shared Worker, in `.ci/config/secret-supply.json`). `--dry-run` on the entry prints the profile and key names only, reads no credential and contacts no service.
 
 The step derives the Worker name, suffix, buckets, R2 jurisdiction and SES region from `regions.json`, refuses unless the wrangler pin agrees (`wrangler_pin`, section 4), then hydrates the profile, runs the Turnstile drift preflight and refuses on drift or on no verdict, and only then runs `set_account_worker_secrets` (one `wrangler secret bulk`, so the assets binding survives). CI's own `set_account_worker_secrets` step is the other path (section 2). Exit codes: 0 pushed (or dry run complete), 1 a refusal, 2 a usage error.
 
