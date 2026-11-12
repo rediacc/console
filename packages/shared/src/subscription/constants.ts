@@ -373,6 +373,20 @@ export const PLAN_DELEGATION_CERT_MAX_DAYS: Record<PlanCode, number> = {
 } as const;
 
 /**
+ * Whether a plan may hold a delegation cert at all (an on-premise signer).
+ * Checked where a customer or a CLI token asks for one (the portal create route
+ * and POST /delegation/issue); the root admin route stays an explicit override.
+ * FREE is refused: its on-premise path is the built-in free tier, not a signer.
+ */
+export const PLAN_ALLOWS_DELEGATION_CERT: Record<PlanCode, boolean> = {
+  FREE: false,
+  COMMUNITY: true,
+  PROFESSIONAL: true,
+  BUSINESS: true,
+  ENTERPRISE: true,
+} as const;
+
+/**
  * Maximum simultaneously-active delegation certs per subscription. Hard cap = 1.
  *
  * Each on-premise install enforces `maxRepoLicenseIssuancesPerMonth`,

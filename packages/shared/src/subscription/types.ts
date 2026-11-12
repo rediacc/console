@@ -227,6 +227,8 @@ export type ApiTokenScope =
   | 'subscription:read'
   | 'audit:write'
   | 'delegation:renew'
+  // `delegation:issue` mints the subscription's delegation cert and its auto-renew token in one call (POST /delegation/issue), the licence step of `rdc server install`. Privileged (owner/admin, checked again at use) and granted by the CLI login of an owner or admin; a token holding it can stand up an on-premise signer for the subscription.
+  | 'delegation:issue'
   // Proxy plane (rdc serve): `proxy:exec` lets a client submit commands to an executor, `proxy:admin` lets it manage the executor itself. `proxy:admin` is privileged (owner/admin only); `proxy:exec` is creatable by any member.
   | 'proxy:exec'
   | 'proxy:admin'
