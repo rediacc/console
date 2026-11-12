@@ -7019,6 +7019,53 @@
           "subcommands": []
         },
         {
+          "name": "notices",
+          "descriptionKey": "commands.subscription.notices.description",
+          "options": [
+            {
+              "flags": "--all",
+              "descriptionKey": "commands.subscription.notices.optionAll",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--unread",
+              "descriptionKey": "commands.subscription.notices.optionUnread",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--mark-read",
+              "descriptionKey": "commands.subscription.notices.optionMarkRead",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "retire",
+          "descriptionKey": "commands.subscription.retire.description",
+          "options": [
+            {
+              "flags": "--force",
+              "descriptionKey": "commands.subscription.retire.optionForce",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "guid",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
           "name": "refresh",
           "descriptionKey": "commands.subscription.refresh.description",
           "options": [

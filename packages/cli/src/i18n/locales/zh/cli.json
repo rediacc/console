@@ -2670,7 +2670,46 @@
         "remoteRepoLicensesInConfig": "  此配置中的仓库许可证: 已跟踪 {{totalTrackedRepos}},有效 {{validCount}},建议刷新 {{refreshRecommendedCount}},彻底过期 {{hardExpiredCount}}",
         "remoteRepoLicensesNotInConfig": "  不在此配置中的仓库许可证(已删除、分叉或其他配置): {{count}}",
         "remoteStatus": "  状态:     {{status}}",
-        "serverWouldUse": "将使用的账户服务器：{{server}}"
+        "serverWouldUse": "将使用的账户服务器：{{server}}",
+        "licencesHeader": "  许可证:",
+        "licenceRow": "    {{name}}  {{kind}},{{state}},请在 {{refreshBy}} 前刷新,彻底过期日 {{hardExpiry}}",
+        "licenceFix": "      处理方式: {{fix}}",
+        "licenceNotInConfig": "{{guid}}(不在此配置中)",
+        "licenceDeleted": "{{name}}(已删除)"
+      },
+      "licenceState": {
+        "valid": "有效",
+        "refreshRecommended": "建议刷新",
+        "hardExpired": "已彻底过期"
+      },
+      "retire": {
+        "tooShort": "请至少输入仓库 GUID 的前 8 个字符: {{guid}}",
+        "notFound": "此账户的许可证报告中没有“{{guid}}”的许可证。",
+        "ambiguous": "“{{guid}}”匹配到 {{count}} 个许可证: {{matches}}。请输入更多字符。",
+        "inConfig": "{{name}} 仍在此配置中,其许可证状态为“{{state}}”。已退还的许可证无法恢复,因为续期不会让仓库回来。如仍要退还,请加上 --force。",
+        "needsYes": "退还许可证需要确认,但 stdin 不是终端。请加上 --yes 来确认。",
+        "confirm": "要退还 {{name}}({{guid}},{{state}})的许可证吗?续期不会让它恢复。",
+        "success": "许可证已退还: {{name}}",
+        "description": "退还已不存在的仓库的许可证,使其从许可证统计和通知中消失。",
+        "argGuid": "仓库 GUID,或账户报告中某个许可证的至少前 8 个字符",
+        "optionForce": "退还其仓库仍在此配置中且尚未彻底过期的许可证"
+      },
+      "notices": {
+        "description": "列出账户通知:许可证到期、备份状况、续期、证书和条款。",
+        "optionAll": "包含已关闭的通知和所有分页,而不只是最近 30 天",
+        "optionUnread": "仅显示未读通知",
+        "optionMarkRead": "将列出的通知标为已读",
+        "empty": "没有通知。",
+        "markedRead": "已将 {{count}} 条通知标为已读。",
+        "more": "另有 {{count}} 项",
+        "summary": {
+          "repoLicence": "彻底过期 {{hardExpired}} 个,建议刷新 {{refreshRecommended}} 个: {{names}}",
+          "backupHealth": "{{count}} 项备份状况",
+          "licenceRenewal": "{{planCode}} 将于 {{date}} 续期",
+          "certExpiry": "{{track}} 证书 {{number}} 将于 {{date}} 到期",
+          "evalExpiry": "{{planCode}} 试用将于 {{date}} 结束",
+          "termsNotice": "条款 {{version}} 将于 {{date}} 生效"
+        }
       }
     },
     "sync": {

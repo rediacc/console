@@ -2670,7 +2670,46 @@
         "remoteRepoLicensesInConfig": "  Licences de dépôt dans cette configuration : {{totalTrackedRepos}} suivies, {{validCount}} valides, {{refreshRecommendedCount}} actualisation recommandée, {{hardExpiredCount}} expirées définitivement",
         "remoteRepoLicensesNotInConfig": "  Licences de dépôt absentes de cette configuration (supprimées, forks ou autre configuration) : {{count}}",
         "remoteStatus": "  État :       {{status}}",
-        "serverWouldUse": "Utiliserait le serveur de compte : {{server}}"
+        "serverWouldUse": "Utiliserait le serveur de compte : {{server}}",
+        "licencesHeader": "  Licences :",
+        "licenceRow": "    {{name}}  {{kind}}, {{state}}, à renouveler avant le {{refreshBy}}, expiration définitive le {{hardExpiry}}",
+        "licenceFix": "      correctif : {{fix}}",
+        "licenceNotInConfig": "{{guid}} (absent de cette configuration)",
+        "licenceDeleted": "{{name}} (supprimé)"
+      },
+      "licenceState": {
+        "valid": "valide",
+        "refreshRecommended": "renouvellement conseillé",
+        "hardExpired": "expirée définitivement"
+      },
+      "retire": {
+        "tooShort": "Indiquez au moins 8 caractères du GUID du dépôt : {{guid}}",
+        "notFound": "Aucune licence pour « {{guid}} » dans le rapport de licences de ce compte.",
+        "ambiguous": "« {{guid}} » correspond à {{count}} licences : {{matches}}. Indiquez plus de caractères.",
+        "inConfig": "{{name}} figure encore dans cette configuration et sa licence est {{state}}. Une licence retirée le reste, car un renouvellement ne ramène pas le dépôt. Utilisez --force pour la retirer quand même.",
+        "needsYes": "Retirer une licence demande une confirmation, et stdin n'est pas un terminal. Ajoutez --yes pour confirmer.",
+        "confirm": "Retirer la licence de {{name}} ({{guid}}, {{state}}) ? Un renouvellement ne la ramènera pas.",
+        "success": "Licence retirée : {{name}}",
+        "description": "Retire la licence d'un dépôt qui n'existe plus, pour qu'elle disparaisse des totaux de licences et des avis.",
+        "argGuid": "GUID du dépôt, ou au moins 8 caractères d'une licence du rapport du compte",
+        "optionForce": "Retire une licence dont le dépôt figure encore dans cette configuration et n'a pas expiré définitivement"
+      },
+      "notices": {
+        "description": "Liste les avis du compte : expiration des licences, état des sauvegardes, renouvellements, certificats et conditions.",
+        "optionAll": "Inclut les avis écartés et toutes les pages, pas seulement les 30 derniers jours",
+        "optionUnread": "Seulement les avis non lus",
+        "optionMarkRead": "Marque les avis listés comme lus",
+        "empty": "Aucun avis.",
+        "markedRead": "{{count}} avis marqué(s) comme lu(s).",
+        "more": "+{{count}} autres",
+        "summary": {
+          "repoLicence": "{{hardExpired}} expirées définitivement, {{refreshRecommended}} à renouveler : {{names}}",
+          "backupHealth": "{{count}} élément(s) d'état des sauvegardes",
+          "licenceRenewal": "{{planCode}} se renouvelle le {{date}}",
+          "certExpiry": "Le certificat {{track}} {{number}} expire le {{date}}",
+          "evalExpiry": "L'évaluation de {{planCode}} se termine le {{date}}",
+          "termsNotice": "Les conditions {{version}} entrent en vigueur le {{date}}"
+        }
       }
     },
     "sync": {

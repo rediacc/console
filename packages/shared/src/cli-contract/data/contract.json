@@ -15043,6 +15043,63 @@
     {
       "path": [
         "subscription",
+        "notices"
+      ],
+      "pathKey": "subscription notices",
+      "domain": "subscription",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.subscription.notices.description",
+      "label": "List the account's notices: license expiry, backup health, renewals, certificates and Terms.",
+      "options": [
+        {
+          "flags": "--all",
+          "long": "all",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.subscription.notices.optionAll",
+          "label": "Include dismissed notices and every page, not only the last 30 days"
+        },
+        {
+          "flags": "--unread",
+          "long": "unread",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.subscription.notices.optionUnread",
+          "label": "Only notices not yet read"
+        },
+        {
+          "flags": "--mark-read",
+          "long": "mark-read",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.subscription.notices.optionMarkRead",
+          "label": "Mark the listed notices as read"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "subscription",
         "proxy-token"
       ],
       "pathKey": "subscription proxy-token",
@@ -15175,6 +15232,50 @@
         }
       ],
       "positionals": [],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "subscription",
+        "retire"
+      ],
+      "pathKey": "subscription retire",
+      "domain": "subscription",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.subscription.retire.description",
+      "label": "Retire the license of a repository that is gone, so it leaves the license counts and notices.",
+      "options": [
+        {
+          "flags": "--force",
+          "long": "force",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.subscription.retire.optionForce",
+          "label": "Retire a license whose repository is still in this config and not hard-expired"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "guid",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.subscription.retire.argGuid",
+          "label": "Repository GUID, or at least 8 characters of one license in the account report"
+        }
+      ],
       "hasSubcommands": false,
       "interactive": false,
       "proxyCapable": false,

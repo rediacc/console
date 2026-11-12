@@ -7,7 +7,7 @@ order: 2
 language: ru
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ru/cli.json
-sourceHash: "d5ec478545b372cb"
+sourceHash: "c64ecf5f9ca1dc60"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -3345,6 +3345,36 @@ rdc subscription refresh [options]
 | `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--repo <ref>` | {{t:cli.options.repoRef}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--adopt-origin` | {{t:cli.commands.subscription.refresh.adoptOrigin}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-subscription-retire"></a>
+### 12.7 retire
+
+{{t:cli.commands.subscription.retire.description}}
+
+```bash
+rdc subscription retire <guid> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--force` | {{t:cli.commands.subscription.retire.optionForce}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
+<a id="cli-local-subscription-notices"></a>
+### 12.8 notices
+
+{{t:cli.commands.subscription.notices.description}}
+
+```bash
+rdc subscription notices [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--all` | {{t:cli.commands.subscription.notices.optionAll}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--unread` | {{t:cli.commands.subscription.notices.optionUnread}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--mark-read` | {{t:cli.commands.subscription.notices.optionMarkRead}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ---

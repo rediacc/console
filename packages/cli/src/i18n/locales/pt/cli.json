@@ -2670,7 +2670,46 @@
         "remoteRepoLicensesInConfig": "  Licenças de repositório nesta configuração: {{totalTrackedRepos}} rastreadas, {{validCount}} válidas, {{refreshRecommendedCount}} com atualização recomendada, {{hardExpiredCount}} expiradas definitivamente",
         "remoteRepoLicensesNotInConfig": "  Licenças de repositório que não estão nesta configuração (excluídas, forks ou outra configuração): {{count}}",
         "remoteStatus": "  Estado:   {{status}}",
-        "serverWouldUse": "Usaria o servidor de conta: {{server}}"
+        "serverWouldUse": "Usaria o servidor de conta: {{server}}",
+        "licencesHeader": "  Licenças:",
+        "licenceRow": "    {{name}}  {{kind}}, {{state}}, renovar até {{refreshBy}}, expira de vez em {{hardExpiry}}",
+        "licenceFix": "      correção: {{fix}}",
+        "licenceNotInConfig": "{{guid}} (não está nesta configuração)",
+        "licenceDeleted": "{{name}} (excluído)"
+      },
+      "licenceState": {
+        "valid": "válida",
+        "refreshRecommended": "renovação recomendada",
+        "hardExpired": "expirada de vez"
+      },
+      "retire": {
+        "tooShort": "Informe pelo menos 8 caracteres do GUID do repositório: {{guid}}",
+        "notFound": "Não há licença para \"{{guid}}\" no relatório de licenças desta conta.",
+        "ambiguous": "\"{{guid}}\" corresponde a {{count}} licenças: {{matches}}. Informe mais caracteres.",
+        "inConfig": "{{name}} ainda está nesta configuração e a licença está {{state}}. Uma licença retirada continua retirada, porque renovar não traz o repositório de volta. Use --force para retirá-la mesmo assim.",
+        "needsYes": "Retirar uma licença exige confirmação, e o stdin não é um terminal. Passe --yes para confirmar.",
+        "confirm": "Retirar a licença de {{name}} ({{guid}}, {{state}})? Renovar não a traz de volta.",
+        "success": "Licença retirada: {{name}}",
+        "description": "Retira a licença de um repositório que já não existe, para que saia das contagens de licenças e dos avisos.",
+        "argGuid": "GUID do repositório, ou pelo menos 8 caracteres de uma licença do relatório da conta",
+        "optionForce": "Retira uma licença cujo repositório ainda está nesta configuração e não expirou de vez"
+      },
+      "notices": {
+        "description": "Lista os avisos da conta: validade das licenças, estado dos backups, renovações, certificados e termos.",
+        "optionAll": "Inclui avisos dispensados e todas as páginas, não só os últimos 30 dias",
+        "optionUnread": "Só os avisos ainda não lidos",
+        "optionMarkRead": "Marca os avisos listados como lidos",
+        "empty": "Nenhum aviso.",
+        "markedRead": "{{count}} aviso(s) marcado(s) como lido(s).",
+        "more": "+{{count}} mais",
+        "summary": {
+          "repoLicence": "{{hardExpired}} expiradas de vez, {{refreshRecommended}} com renovação recomendada: {{names}}",
+          "backupHealth": "{{count}} item(ns) de estado dos backups",
+          "licenceRenewal": "{{planCode}} renova em {{date}}",
+          "certExpiry": "O certificado {{track}} {{number}} expira em {{date}}",
+          "evalExpiry": "A avaliação de {{planCode}} termina em {{date}}",
+          "termsNotice": "Os termos {{version}} entram em vigor em {{date}}"
+        }
       }
     },
     "sync": {

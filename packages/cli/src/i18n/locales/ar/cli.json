@@ -2670,7 +2670,46 @@
         "remoteRepoLicensesInConfig": "  تراخيص المستودعات في هذا الإعداد: {{totalTrackedRepos}} متتبعة، {{validCount}} صالحة، {{refreshRecommendedCount}} تحتاج تحديثًا، {{hardExpiredCount}} منتهية بالكامل",
         "remoteRepoLicensesNotInConfig": "  تراخيص المستودعات غير الموجودة في هذا الإعداد (محذوفة أو تفرّعات أو إعداد آخر): {{count}}",
         "remoteStatus": "  الحالة:   {{status}}",
-        "serverWouldUse": "سيتم استخدام خادم الحساب: {{server}}"
+        "serverWouldUse": "سيتم استخدام خادم الحساب: {{server}}",
+        "licencesHeader": "  التراخيص:",
+        "licenceRow": "    {{name}}  {{kind}}، {{state}}، التجديد قبل {{refreshBy}}، الانتهاء النهائي {{hardExpiry}}",
+        "licenceFix": "      الحل: {{fix}}",
+        "licenceNotInConfig": "{{guid}} (ليس في هذا الإعداد)",
+        "licenceDeleted": "{{name}} (محذوف)"
+      },
+      "licenceState": {
+        "valid": "صالح",
+        "refreshRecommended": "يُنصح بالتجديد",
+        "hardExpired": "منتهي نهائيًا"
+      },
+      "retire": {
+        "tooShort": "أدخل 8 أحرف على الأقل من GUID المستودع: {{guid}}",
+        "notFound": "لا يوجد ترخيص لـ \"{{guid}}\" في تقرير تراخيص هذا الحساب.",
+        "ambiguous": "\"{{guid}}\" يطابق {{count}} من التراخيص: {{matches}}. أدخل أحرفًا أكثر.",
+        "inConfig": "{{name}} لا يزال في هذا الإعداد وحالة ترخيصه: {{state}}. السحب لا رجعة فيه، لأن التجديد لا يعيد المستودع. استخدم --force لسحبه رغم ذلك.",
+        "needsYes": "سحب الترخيص يحتاج إلى تأكيد، والإدخال القياسي ليس طرفية. مرّر --yes للتأكيد.",
+        "confirm": "هل تريد سحب ترخيص {{name}} ({{guid}}، {{state}})؟ لن يعيده التجديد.",
+        "success": "تم سحب الترخيص: {{name}}",
+        "description": "سحب ترخيص مستودع لم يعد موجودًا، ليخرج من أعداد التراخيص والإشعارات.",
+        "argGuid": "GUID المستودع، أو 8 أحرف على الأقل من أحد التراخيص في تقرير الحساب",
+        "optionForce": "سحب ترخيص مستودعه ما زال في هذا الإعداد ولم ينتهِ نهائيًا"
+      },
+      "notices": {
+        "description": "عرض إشعارات الحساب: انتهاء التراخيص وسلامة النسخ الاحتياطي والتجديدات والشهادات والشروط.",
+        "optionAll": "تضمين الإشعارات المُغلقة وكل الصفحات، لا آخر 30 يومًا فقط",
+        "optionUnread": "الإشعارات غير المقروءة فقط",
+        "optionMarkRead": "تعليم الإشعارات المعروضة كمقروءة",
+        "empty": "لا توجد إشعارات.",
+        "markedRead": "تم تعليم {{count}} من الإشعارات كمقروءة.",
+        "more": "+{{count}} أخرى",
+        "summary": {
+          "repoLicence": "{{hardExpired}} منتهٍ نهائيًا، {{refreshRecommended}} يُنصح بتجديده: {{names}}",
+          "backupHealth": "{{count}} من بنود سلامة النسخ الاحتياطي",
+          "licenceRenewal": "يُجدَّد {{planCode}} في {{date}}",
+          "certExpiry": "تنتهي شهادة {{track}} رقم {{number}} في {{date}}",
+          "evalExpiry": "تنتهي فترة تجربة {{planCode}} في {{date}}",
+          "termsNotice": "تسري الشروط {{version}} اعتبارًا من {{date}}"
+        }
       }
     },
     "sync": {

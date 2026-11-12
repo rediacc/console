@@ -2670,7 +2670,46 @@
         "remoteRepoLicensesInConfig": "  この構成のリポジトリライセンス: 追跡 {{totalTrackedRepos}}、有効 {{validCount}}、更新推奨 {{refreshRecommendedCount}}、完全失効 {{hardExpiredCount}}",
         "remoteRepoLicensesNotInConfig": "  この構成にないリポジトリライセンス(削除済み、フォーク、または別の構成): {{count}}",
         "remoteStatus": "  ステータス: {{status}}",
-        "serverWouldUse": "使用するアカウントサーバー: {{server}}"
+        "serverWouldUse": "使用するアカウントサーバー: {{server}}",
+        "licencesHeader": "  ライセンス:",
+        "licenceRow": "    {{name}}  {{kind}}、{{state}}、更新期限 {{refreshBy}}、完全失効日 {{hardExpiry}}",
+        "licenceFix": "      対処: {{fix}}",
+        "licenceNotInConfig": "{{guid}}(この構成にはありません)",
+        "licenceDeleted": "{{name}}(削除済み)"
+      },
+      "licenceState": {
+        "valid": "有効",
+        "refreshRecommended": "更新を推奨",
+        "hardExpired": "完全に失効"
+      },
+      "retire": {
+        "tooShort": "リポジトリの GUID を 8 文字以上指定してください: {{guid}}",
+        "notFound": "このアカウントのライセンスレポートに「{{guid}}」のライセンスはありません。",
+        "ambiguous": "「{{guid}}」は {{count}} 件のライセンスに一致します: {{matches}}。もう少し長く指定してください。",
+        "inConfig": "{{name}} はこの構成にまだ存在し、ライセンスの状態は「{{state}}」です。返却したライセンスは更新しても元に戻らないため、そのままです。それでも返却するには --force を付けてください。",
+        "needsYes": "ライセンスの返却には確認が必要ですが、標準入力が端末ではありません。確認するには --yes を付けてください。",
+        "confirm": "{{name}}({{guid}}、{{state}})のライセンスを返却しますか?更新しても元には戻りません。",
+        "success": "ライセンスを返却しました: {{name}}",
+        "description": "存在しなくなったリポジトリのライセンスを返却し、ライセンス数とお知らせから外します。",
+        "argGuid": "リポジトリの GUID、またはアカウントレポートにあるライセンスの先頭 8 文字以上",
+        "optionForce": "リポジトリがこの構成に残っていて、完全失効していないライセンスも返却します"
+      },
+      "notices": {
+        "description": "アカウントのお知らせを一覧表示します。ライセンスの期限、バックアップの状態、更新、証明書、利用規約が対象です。",
+        "optionAll": "非表示にしたお知らせと全ページを含めます(既定は直近 30 日分のみ)",
+        "optionUnread": "未読のお知らせのみ",
+        "optionMarkRead": "一覧に出したお知らせを既読にします",
+        "empty": "お知らせはありません。",
+        "markedRead": "{{count}} 件のお知らせを既読にしました。",
+        "more": "ほか {{count}} 件",
+        "summary": {
+          "repoLicence": "完全失効 {{hardExpired}} 件、更新推奨 {{refreshRecommended}} 件: {{names}}",
+          "backupHealth": "バックアップの状態に関する項目 {{count}} 件",
+          "licenceRenewal": "{{planCode}} は {{date}} に更新されます",
+          "certExpiry": "{{track}} 証明書 {{number}} は {{date}} に失効します",
+          "evalExpiry": "{{planCode}} の試用は {{date}} に終了します",
+          "termsNotice": "利用規約 {{version}} は {{date}} に発効します"
+        }
       }
     },
     "sync": {

@@ -2670,7 +2670,46 @@
         "remoteRepoLicensesInConfig": "  Licenze repository in questa configurazione: {{totalTrackedRepos}} tracciate, {{validCount}} valide, {{refreshRecommendedCount}} da aggiornare, {{hardExpiredCount}} scadute definitivamente",
         "remoteRepoLicensesNotInConfig": "  Licenze repository non presenti in questa configurazione (eliminate, fork o un'altra configurazione): {{count}}",
         "remoteStatus": "  Stato:     {{status}}",
-        "serverWouldUse": "Userebbe il server dell'account: {{server}}"
+        "serverWouldUse": "Userebbe il server dell'account: {{server}}",
+        "licencesHeader": "  Licenze:",
+        "licenceRow": "    {{name}}  {{kind}}, {{state}}, rinnovare entro il {{refreshBy}}, scadenza definitiva il {{hardExpiry}}",
+        "licenceFix": "      soluzione: {{fix}}",
+        "licenceNotInConfig": "{{guid}} (non presente in questa configurazione)",
+        "licenceDeleted": "{{name}} (eliminato)"
+      },
+      "licenceState": {
+        "valid": "valida",
+        "refreshRecommended": "rinnovo consigliato",
+        "hardExpired": "scaduta definitivamente"
+      },
+      "retire": {
+        "tooShort": "Indica almeno 8 caratteri del GUID del repository: {{guid}}",
+        "notFound": "Nessuna licenza per \"{{guid}}\" nel report delle licenze di questo account.",
+        "ambiguous": "\"{{guid}}\" corrisponde a {{count}} licenze: {{matches}}. Indica più caratteri.",
+        "inConfig": "{{name}} è ancora in questa configurazione e la sua licenza è {{state}}. Una licenza ritirata resta ritirata, perché un rinnovo non riporta il repository. Usa --force per ritirarla comunque.",
+        "needsYes": "Ritirare una licenza richiede conferma e stdin non è un terminale. Passa --yes per confermare.",
+        "confirm": "Ritirare la licenza di {{name}} ({{guid}}, {{state}})? Un rinnovo non la riporta indietro.",
+        "success": "Licenza ritirata: {{name}}",
+        "description": "Ritira la licenza di un repository che non esiste più, così esce dai conteggi delle licenze e dagli avvisi.",
+        "argGuid": "GUID del repository, o almeno 8 caratteri di una licenza del report dell'account",
+        "optionForce": "Ritira una licenza il cui repository è ancora in questa configurazione e non è scaduta definitivamente"
+      },
+      "notices": {
+        "description": "Elenca gli avvisi dell'account: scadenza delle licenze, stato dei backup, rinnovi, certificati e termini.",
+        "optionAll": "Include gli avvisi ignorati e tutte le pagine, non solo gli ultimi 30 giorni",
+        "optionUnread": "Solo gli avvisi non ancora letti",
+        "optionMarkRead": "Segna come letti gli avvisi elencati",
+        "empty": "Nessun avviso.",
+        "markedRead": "{{count}} avviso/i segnato/i come letto/i.",
+        "more": "+{{count}} altri",
+        "summary": {
+          "repoLicence": "{{hardExpired}} scadute definitivamente, {{refreshRecommended}} con rinnovo consigliato: {{names}}",
+          "backupHealth": "{{count}} elemento/i sullo stato dei backup",
+          "licenceRenewal": "{{planCode}} si rinnova il {{date}}",
+          "certExpiry": "Il certificato {{track}} {{number}} scade il {{date}}",
+          "evalExpiry": "La prova di {{planCode}} termina il {{date}}",
+          "termsNotice": "I termini {{version}} entrano in vigore il {{date}}"
+        }
       }
     },
     "sync": {

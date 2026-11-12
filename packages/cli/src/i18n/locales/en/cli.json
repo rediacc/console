@@ -2535,7 +2535,12 @@
         "issuanceUsageHigh95": "Monthly repo license issuances are above 95% of the current UTC limit.",
         "issuanceUsageHigh80": "Monthly repo license issuances are above 80% of the current UTC limit.",
         "remoteMachineOverLimit": "    - {{id}}... (last seen: {{lastSeen}}) OVER LIMIT",
-        "overLimitSummary": "  {{count}} machine(s) are soft-claimed beyond the machine-slot limit. Renewals still succeed; NEW repositories cannot be licensed until you free a slot or raise the limit."
+        "overLimitSummary": "  {{count}} machine(s) are soft-claimed beyond the machine-slot limit. Renewals still succeed; NEW repositories cannot be licensed until you free a slot or raise the limit.",
+        "licencesHeader": "  Licenses:",
+        "licenceRow": "    {{name}}  {{kind}}, {{state}}, refresh by {{refreshBy}}, hard expiry {{hardExpiry}}",
+        "licenceFix": "      fix: {{fix}}",
+        "licenceNotInConfig": "{{guid}} (not in this config)",
+        "licenceDeleted": "{{name}} (deleted)"
       },
       "activation": {
         "status": {
@@ -2592,6 +2597,40 @@
           "repoFailed": "{{repositoryGuid}}: could not be renewed ({{detail}})",
           "failed": "{{count}} license(s) could not be renewed; see the lines above. Logging in does not change this.",
           "paidNote": "Without a login only licenses that renew on their own are renewed (FREE licenses); paid licenses need \"rdc subscription login\"."
+        }
+      },
+      "licenceState": {
+        "valid": "valid",
+        "refreshRecommended": "refresh recommended",
+        "hardExpired": "hard expired"
+      },
+      "retire": {
+        "tooShort": "Give at least 8 characters of the repository GUID: {{guid}}",
+        "notFound": "No license for \"{{guid}}\" in this account's license report.",
+        "ambiguous": "\"{{guid}}\" matches {{count}} licenses: {{matches}}. Give more characters.",
+        "inConfig": "{{name}} is still in this config and its license is {{state}}. A retired license stays retired, because a renewal does not bring the repository back. Use --force to retire it anyway.",
+        "needsYes": "Retiring a license needs confirmation, and stdin is not a terminal. Pass --yes to confirm.",
+        "confirm": "Retire the license of {{name}} ({{guid}}, {{state}})? A renewal will not bring it back.",
+        "success": "License retired: {{name}}",
+        "description": "Retire the license of a repository that is gone, so it leaves the license counts and notices.",
+        "argGuid": "Repository GUID, or at least 8 characters of one license in the account report",
+        "optionForce": "Retire a license whose repository is still in this config and not hard-expired"
+      },
+      "notices": {
+        "description": "List the account's notices: license expiry, backup health, renewals, certificates and Terms.",
+        "optionAll": "Include dismissed notices and every page, not only the last 30 days",
+        "optionUnread": "Only notices not yet read",
+        "optionMarkRead": "Mark the listed notices as read",
+        "empty": "No notices.",
+        "markedRead": "Marked {{count}} notice(s) as read.",
+        "more": "+{{count}} more",
+        "summary": {
+          "repoLicence": "{{hardExpired}} hard expired, {{refreshRecommended}} refresh recommended: {{names}}",
+          "backupHealth": "{{count}} backup health item(s)",
+          "licenceRenewal": "{{planCode}} renews on {{date}}",
+          "certExpiry": "{{track}} certificate {{number}} expires on {{date}}",
+          "evalExpiry": "{{planCode}} evaluation expires on {{date}}",
+          "termsNotice": "Terms {{version}} take effect on {{date}}"
         }
       }
     },

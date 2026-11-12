@@ -2670,7 +2670,46 @@
         "remoteRepoLicensesInConfig": "  Bu yapılandırmadaki depo lisansları: {{totalTrackedRepos}} izleniyor, {{validCount}} geçerli, {{refreshRecommendedCount}} yenileme öneriliyor, {{hardExpiredCount}} tamamen süresi dolmuş",
         "remoteRepoLicensesNotInConfig": "  Bu yapılandırmada olmayan depo lisansları (silinmiş, çatallar veya başka bir yapılandırma): {{count}}",
         "remoteStatus": "  Durum:     {{status}}",
-        "serverWouldUse": "Kullanılacak hesap sunucusu: {{server}}"
+        "serverWouldUse": "Kullanılacak hesap sunucusu: {{server}}",
+        "licencesHeader": "  Lisanslar:",
+        "licenceRow": "    {{name}}  {{kind}}, {{state}}, {{refreshBy}} tarihine kadar yenileyin, kesin bitiş {{hardExpiry}}",
+        "licenceFix": "      çözüm: {{fix}}",
+        "licenceNotInConfig": "{{guid}} (bu yapılandırmada yok)",
+        "licenceDeleted": "{{name}} (silinmiş)"
+      },
+      "licenceState": {
+        "valid": "geçerli",
+        "refreshRecommended": "yenileme önerilir",
+        "hardExpired": "kesin olarak süresi dolmuş"
+      },
+      "retire": {
+        "tooShort": "Deponun GUID değerinden en az 8 karakter girin: {{guid}}",
+        "notFound": "Bu hesabın lisans raporunda \"{{guid}}\" için lisans yok.",
+        "ambiguous": "\"{{guid}}\" {{count}} lisansla eşleşiyor: {{matches}}. Daha fazla karakter girin.",
+        "inConfig": "{{name}} hâlâ bu yapılandırmada ve lisansı {{state}}. İade edilen lisans iade edilmiş kalır, çünkü yenileme depoyu geri getirmez. Yine de iade etmek için --force kullanın.",
+        "needsYes": "Lisansı iade etmek onay gerektirir ve stdin bir terminal değil. Onaylamak için --yes verin.",
+        "confirm": "{{name}} lisansı iade edilsin mi ({{guid}}, {{state}})? Yenileme onu geri getirmez.",
+        "success": "Lisans iade edildi: {{name}}",
+        "description": "Artık var olmayan bir deponun lisansını iade eder; lisans sayımlarından ve bildirimlerden çıkar.",
+        "argGuid": "Deponun GUID değeri ya da hesap raporundaki bir lisansın en az 8 karakteri",
+        "optionForce": "Deposu hâlâ bu yapılandırmada olan ve kesin olarak süresi dolmamış bir lisansı iade eder"
+      },
+      "notices": {
+        "description": "Hesabın bildirimlerini listeler: lisans süreleri, yedekleme durumu, yenilemeler, sertifikalar ve koşullar.",
+        "optionAll": "Kapatılan bildirimleri ve tüm sayfaları dahil eder, yalnızca son 30 günü değil",
+        "optionUnread": "Yalnızca henüz okunmamış bildirimler",
+        "optionMarkRead": "Listelenen bildirimleri okundu olarak işaretler",
+        "empty": "Bildirim yok.",
+        "markedRead": "{{count}} bildirim okundu olarak işaretlendi.",
+        "more": "+{{count}} tane daha",
+        "summary": {
+          "repoLicence": "{{hardExpired}} kesin olarak süresi dolmuş, {{refreshRecommended}} yenileme önerilen: {{names}}",
+          "backupHealth": "{{count}} yedekleme durumu öğesi",
+          "licenceRenewal": "{{planCode}} {{date}} tarihinde yenilenir",
+          "certExpiry": "{{track}} sertifikası {{number}} {{date}} tarihinde sona erer",
+          "evalExpiry": "{{planCode}} deneme süresi {{date}} tarihinde biter",
+          "termsNotice": "{{version}} koşulları {{date}} tarihinde yürürlüğe girer"
+        }
       }
     },
     "sync": {

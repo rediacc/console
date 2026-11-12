@@ -36,8 +36,10 @@ import {
   executeSubscriptionRefresh,
   executeSubscriptionStatus,
 } from './subscription-actions.js';
+import { executeSubscriptionNotices } from './subscription-notices.js';
 import { outputSubscriptionScope } from './subscription-output.js';
 import { executeProxyToken } from './subscription-proxy-token.js';
+import { executeSubscriptionRetire } from './subscription-retire.js';
 
 /** Clear session and notify when the server URL has changed. */
 function handleServerChange(currentServer: string | undefined, newServer: string): void {
@@ -479,6 +481,35 @@ export function registerSubscriptionCommands(program: Command): void {
           return;
         }
         await executeSubscriptionStatus();
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // subscription notices [--all] [--unread] [--mark-read]
+  sub
+    .command('notices')
+    .description(t('commands.subscription.notices.description'))
+    .option('--all', t('commands.subscription.notices.optionAll'))
+    .option('--unread', t('commands.subscription.notices.optionUnread'))
+    .option('--mark-read', t('commands.subscription.notices.optionMarkRead'))
+    .action(async (options) => {
+      try {
+        await executeSubscriptionNotices(options);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // subscription retire <guid> [--force]; -y/--yes is the global option.
+  sub
+    .command('retire')
+    .description(t('commands.subscription.retire.description'))
+    .argument('<guid>', t('commands.subscription.retire.argGuid'))
+    .option('--force', t('commands.subscription.retire.optionForce'))
+    .action(async (guid: string, options) => {
+      try {
+        await executeSubscriptionRetire(guid, options);
       } catch (error) {
         handleError(error);
       }

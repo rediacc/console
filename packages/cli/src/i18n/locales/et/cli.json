@@ -2670,7 +2670,46 @@
         "remoteRepoLicensesInConfig": "  Repositooriumi litsentsid selles konfiguratsioonis: {{totalTrackedRepos}} jälgitavad, {{validCount}} kehtivad, {{refreshRecommendedCount}} soovitav uuendada, {{hardExpiredCount}} lõplikult aegunud",
         "remoteRepoLicensesNotInConfig": "  Repositooriumi litsentsid, mis ei kuulu sellesse konfiguratsiooni (kustutatud, haruteed või muu konfiguratsioon): {{count}}",
         "remoteStatus": "  Olek:     {{status}}",
-        "serverWouldUse": "Kasutaks kontoserverit: {{server}}"
+        "serverWouldUse": "Kasutaks kontoserverit: {{server}}",
+        "licencesHeader": "  Litsentsid:",
+        "licenceRow": "    {{name}}  {{kind}}, {{state}}, uuenda enne {{refreshBy}}, lõplik aegumine {{hardExpiry}}",
+        "licenceFix": "      lahendus: {{fix}}",
+        "licenceNotInConfig": "{{guid}} (pole selles konfiguratsioonis)",
+        "licenceDeleted": "{{name}} (kustutatud)"
+      },
+      "licenceState": {
+        "valid": "kehtiv",
+        "refreshRecommended": "soovitatav uuendada",
+        "hardExpired": "lõplikult aegunud"
+      },
+      "retire": {
+        "tooShort": "Sisesta hoidla GUID-ist vähemalt 8 märki: {{guid}}",
+        "notFound": "Selle konto litsentsiaruandes pole \"{{guid}}\" litsentsi.",
+        "ambiguous": "\"{{guid}}\" sobib {{count}} litsentsiga: {{matches}}. Sisesta rohkem märke.",
+        "inConfig": "{{name}} on selles konfiguratsioonis alles ja selle litsents on {{state}}. Tagastatud litsents jääb tagastatuks, sest uuendamine ei too hoidlat tagasi. Tagastamiseks siiski kasuta --force.",
+        "needsYes": "Litsentsi tagastamine nõuab kinnitust ja stdin ei ole terminal. Kinnitamiseks lisa --yes.",
+        "confirm": "Kas tagastada hoidla {{name}} litsents ({{guid}}, {{state}})? Uuendamine ei too seda tagasi.",
+        "success": "Litsents tagastatud: {{name}}",
+        "description": "Tagastab kadunud hoidla litsentsi, et see kaoks litsentside kogusummast ja teadetest.",
+        "argGuid": "Hoidla GUID või vähemalt 8 märki konto aruandes olevast litsentsist",
+        "optionForce": "Tagastab litsentsi, mille hoidla on selles konfiguratsioonis alles ja mis pole lõplikult aegunud"
+      },
+      "notices": {
+        "description": "Näitab konto teateid: litsentside aegumine, varukoopiate seisukord, pikendused, sertifikaadid ja tingimused.",
+        "optionAll": "Kaasab suletud teated ja kõik leheküljed, mitte ainult viimased 30 päeva",
+        "optionUnread": "Ainult lugemata teated",
+        "optionMarkRead": "Märgib loetletud teated loetuks",
+        "empty": "Teateid pole.",
+        "markedRead": "{{count}} teade(t) märgiti loetuks.",
+        "more": "+{{count}} veel",
+        "summary": {
+          "repoLicence": "{{hardExpired}} lõplikult aegunud, {{refreshRecommended}} soovitatav uuendada: {{names}}",
+          "backupHealth": "{{count}} varukoopia seisukorra kirjet",
+          "licenceRenewal": "{{planCode}} uueneb {{date}}",
+          "certExpiry": "{{track}} sertifikaat {{number}} aegub {{date}}",
+          "evalExpiry": "{{planCode}} prooviperiood lõpeb {{date}}",
+          "termsNotice": "Tingimused {{version}} jõustuvad {{date}}"
+        }
       }
     },
     "sync": {

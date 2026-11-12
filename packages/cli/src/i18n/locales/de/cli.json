@@ -2670,7 +2670,46 @@
         "remoteRepoLicensesInConfig": "  Repo-Lizenzen in dieser Konfiguration: {{totalTrackedRepos}} verfolgt, {{validCount}} gültig, {{refreshRecommendedCount}} Aktualisierung empfohlen, {{hardExpiredCount}} hart abgelaufen",
         "remoteRepoLicensesNotInConfig": "  Repo-Lizenzen, die nicht in dieser Konfiguration liegen (gelöscht, Forks oder andere Konfiguration): {{count}}",
         "remoteStatus": "  Zustand:  {{status}}",
-        "serverWouldUse": "Würde Account-Server verwenden: {{server}}"
+        "serverWouldUse": "Würde Account-Server verwenden: {{server}}",
+        "licencesHeader": "  Lizenzen:",
+        "licenceRow": "    {{name}}  {{kind}}, {{state}}, erneuern bis {{refreshBy}}, endgültiger Ablauf {{hardExpiry}}",
+        "licenceFix": "      Lösung: {{fix}}",
+        "licenceNotInConfig": "{{guid}} (nicht in dieser Konfiguration)",
+        "licenceDeleted": "{{name}} (gelöscht)"
+      },
+      "licenceState": {
+        "valid": "gültig",
+        "refreshRecommended": "Erneuerung empfohlen",
+        "hardExpired": "endgültig abgelaufen"
+      },
+      "retire": {
+        "tooShort": "Gib mindestens 8 Zeichen der Repository-GUID an: {{guid}}",
+        "notFound": "Im Lizenzbericht dieses Kontos gibt es keine Lizenz für „{{guid}}“.",
+        "ambiguous": "„{{guid}}“ passt auf {{count}} Lizenzen: {{matches}}. Gib mehr Zeichen an.",
+        "inConfig": "{{name}} liegt noch in dieser Konfiguration, die Lizenz ist {{state}}. Eine zurückgegebene Lizenz bleibt zurückgegeben, denn eine Erneuerung holt das Repository nicht zurück. Mit --force wird sie trotzdem zurückgegeben.",
+        "needsYes": "Das Zurückgeben einer Lizenz braucht eine Bestätigung, und stdin ist kein Terminal. Bestätige mit --yes.",
+        "confirm": "Lizenz von {{name}} zurückgeben ({{guid}}, {{state}})? Eine Erneuerung holt sie nicht zurück.",
+        "success": "Lizenz zurückgegeben: {{name}}",
+        "description": "Die Lizenz eines nicht mehr vorhandenen Repositorys zurückgeben, damit sie aus Lizenzsummen und Hinweisen verschwindet.",
+        "argGuid": "Repository-GUID oder mindestens 8 Zeichen einer Lizenz aus dem Kontobericht",
+        "optionForce": "Eine Lizenz zurückgeben, deren Repository noch in dieser Konfiguration liegt und nicht endgültig abgelaufen ist"
+      },
+      "notices": {
+        "description": "Die Hinweise des Kontos auflisten: Lizenzablauf, Backup-Zustand, Verlängerungen, Zertifikate und Nutzungsbedingungen.",
+        "optionAll": "Auch verworfene Hinweise und alle Seiten zeigen, nicht nur die letzten 30 Tage",
+        "optionUnread": "Nur Hinweise, die noch nicht gelesen sind",
+        "optionMarkRead": "Die aufgelisteten Hinweise als gelesen markieren",
+        "empty": "Keine Hinweise.",
+        "markedRead": "{{count}} Hinweis(e) als gelesen markiert.",
+        "more": "+{{count}} weitere",
+        "summary": {
+          "repoLicence": "{{hardExpired}} endgültig abgelaufen, {{refreshRecommended}} Erneuerung empfohlen: {{names}}",
+          "backupHealth": "{{count}} Backup-Zustandsmeldung(en)",
+          "licenceRenewal": "{{planCode}} verlängert sich am {{date}}",
+          "certExpiry": "Das {{track}}-Zertifikat {{number}} läuft am {{date}} ab",
+          "evalExpiry": "Die Testphase von {{planCode}} endet am {{date}}",
+          "termsNotice": "Die Bedingungen {{version}} gelten ab {{date}}"
+        }
       }
     },
     "sync": {
