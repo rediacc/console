@@ -131,16 +131,17 @@ def test_ensure_all_covers_every_region_of_the_environment():
     assert [r.database for r in prod] == ["control-%s" % r for r in registry.region_ids()]
 
 
-def test_a_failed_create_is_named_without_its_output():
+def test_a_failed_create_is_named_with_its_stderr_and_never_its_stdout():
     def runner(argv, *, cwd=None):
         del cwd
         if "list" in argv:
             return control_db.Completed(0, "[]", "")
-        return control_db.Completed(1, "", "token secret-ish text")
+        return control_db.Completed(1, "stdout-secret-ish", "token rejected")
 
     with pytest.raises(control_db.ControlDbError) as err:
         control_db.ensure_database("control-eu", "eu", runner=runner)
     assert "control-eu" in str(err.value)
+    assert "token rejected" in str(err.value)
     assert "secret-ish" not in str(err.value)
 
 
@@ -201,3 +202,88 @@ def test_main_usage_is_rc_2():
 
 def test_main_refuses_a_region_outside_bench():
     assert control_db.main(["ensure", "--bench", "--region", "asia"], runner=FakeWrangler()) == 2
+
+
+def _failing(stderr: str, rc: int = 1):
+    def run(argv, *, cwd=None):
+        del argv, cwd
+        return control_db.Completed(rc, "STDOUT-ROW-acme", stderr)
+
+    return run
+
+
+NO_TOKEN = (
+    "\x1b[31m\u2718 ERROR\x1b[0m In a non-interactive environment, it's necessary to set a "
+    "CLOUDFLARE_API_TOKEN environment variable"
+)
+
+
+def test_a_failed_list_carries_wrangler_stderr_without_ansi_or_stdout():
+    with pytest.raises(control_db.ControlDbError) as err:
+        control_db.database_ids(_failing("banner\n\n" + NO_TOKEN + "\n\n"))
+    text = str(err.value)
+    assert "wrangler d1 list exited 1" in text
+    assert "CLOUDFLARE_API_TOKEN environment variable" in text
+    assert "\x1b" not in text
+    assert "STDOUT-ROW" not in text
+
+
+def test_every_wrangler_failure_site_carries_the_stderr_tail():
+    run = _failing("l1\nl2\nl3\nreason four")
+    calls = [
+        lambda: control_db.query("control-eu", "SELECT 1", [], runner=run),
+        lambda: control_db.apply_migration("control-eu", runner=run),
+    ]
+    for call in calls:
+        with pytest.raises(control_db.ControlDbError, match="reason four") as err:
+            call()
+        assert "l1" not in str(err.value)
+
+
+def test_a_failed_create_carries_the_stderr_tail():
+    state = {"n": 0}
+
+    def run(argv, *, cwd=None):
+        del cwd
+        if argv[len(wrangler.ARGV) : len(wrangler.ARGV) + 2] == ["d1", "list"]:
+            return control_db.Completed(0, "[]", "")
+        state["n"] += 1
+        return control_db.Completed(1, "", "quota exceeded")
+
+    with pytest.raises(control_db.ControlDbError, match="quota exceeded"):
+        control_db.ensure_database("control-eu", "eu", runner=run)
+
+
+def test_a_silent_failure_keeps_the_bare_message():
+    with pytest.raises(control_db.ControlDbError) as err:
+        control_db.database_ids(_failing(""))
+    assert str(err.value) == "wrangler d1 list exited 1"
+
+
+def test_stderr_tail_is_trimmed():
+    assert control_db.stderr_tail("a\n\n  b  \nc\nd") == "b | c | d"
+    assert len(control_db.stderr_tail("x" * 900)) == control_db.TAIL_WIDTH
+
+
+def test_a_missing_token_is_refused_up_front_naming_the_profile(monkeypatch, capsys):
+    monkeypatch.delenv("CLOUDFLARE_API_TOKEN", raising=False)
+    with pytest.raises(control_db.ControlDbError, match="--profile enterprise"):
+        control_db.transport()
+    with pytest.raises(control_db.ControlDbError, match="--profile enterprise"):
+        control_db.ensure("eu", bench=True)
+    assert control_db.main(["ensure", "--bench"]) == 1
+    assert "--profile enterprise" in capsys.readouterr().err
+
+
+def test_a_present_token_passes_the_guard(monkeypatch):
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "t")
+    control_db.require_token()
+    assert callable(control_db.transport())
+
+
+def test_the_enterprise_profile_binds_the_token_the_guard_names():
+    root = pathlib.Path(__file__).resolve().parents[3]
+    spec = json.loads((root / ".ci/config/secret-supply.json").read_text(encoding="utf-8"))
+    profile = spec["consumers"][control_db.PROFILE]
+    assert control_db.AUTH_ENV in profile["required"]
+    assert "CLOUDFLARE_ACCOUNT_ID" in profile["required"]

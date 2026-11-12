@@ -8,7 +8,9 @@ IDEMPOTENT. `ensure` lists the account's databases first and creates only a miss
 
 THE QUERY TRANSPORT. `transport(runner)` is the `registry.Query` the registry and `enterprise add` read and write through: `wrangler d1 execute <db> --remote --json --command <sql>`. wrangler binds no parameters, so `bind` inlines each `?` as a quoted literal (single quotes doubled), counting placeholders outside string literals only and refusing a count mismatch.
 
-WRANGLER'S OUTPUT IS NEVER QUOTED IN AN ERROR, because it can name a company label or echo a token. An error names the database, the operation and the exit code.
+A FAILED CALL CARRIES WRANGLER'S LAST STDERR LINES (`stderr_tail`): ANSI stripped, blank lines dropped, the last three lines, each cut to 200 characters. Stdout is never quoted, because it holds query rows (company labels); stderr is where wrangler states why it refused (a missing CLOUDFLARE_API_TOKEN, an authentication error).
+
+THE TOKEN IS CHECKED UP FRONT. wrangler refuses the Global API Key non-interactively, so `require_token` refuses a missing CLOUDFLARE_API_TOKEN naming the `enterprise` profile of .ci/config/secret-supply.json, before the first call (`main`, `ensure` and `transport` when they run over the production runner, which covers `add`, `control` and the proof readers).
 """
 
 from __future__ import annotations
@@ -17,6 +19,7 @@ import argparse
 import json
 import os
 import pathlib
+import re
 import subprocess
 import sys
 import tempfile
@@ -42,6 +45,35 @@ Runner = Callable[..., Completed]
 
 class ControlDbError(RuntimeError):
     """A control database step failed; the message names the database and never quotes wrangler."""
+
+
+AUTH_ENV = "CLOUDFLARE_API_TOKEN"
+PROFILE = "enterprise"
+TAIL_LINES = 3
+TAIL_WIDTH = 200
+ANSI = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
+
+
+def stderr_tail(text: str) -> str:
+    """The last meaningful lines of wrangler's stderr, ANSI stripped, joined by ` | `; empty when there are none."""
+    lines = [ANSI.sub("", raw).strip() for raw in text.splitlines()]
+    kept = [line[:TAIL_WIDTH] for line in lines if line]
+    return " | ".join(kept[-TAIL_LINES:])
+
+
+def _failure(what: str, done: Completed) -> ControlDbError:
+    tail = stderr_tail(done.stderr)
+    return ControlDbError("%s exited %d%s" % (what, done.rc, ": " + tail if tail else ""))
+
+
+def require_token(environ: Mapping[str, str] | None = None) -> None:
+    """Refuse up front, naming the profile, when CLOUDFLARE_API_TOKEN is absent: wrangler cannot authenticate non-interactively without it."""
+    if not (os.environ if environ is None else environ).get(AUTH_ENV):
+        raise ControlDbError(
+            "%s is not set: wrangler needs it non-interactively; run under "
+            "`python3 -m rediacc_ci.core.bws_env exec --profile %s -- <command>`"
+            % (AUTH_ENV, PROFILE)
+        )
 
 
 class Ensured(NamedTuple):
@@ -179,7 +211,7 @@ def database_ids(runner: Runner) -> dict[str, str]:
     """Every D1 database of the account: name -> uuid."""
     done = _call(runner, list_argv())
     if done.rc != 0:
-        raise ControlDbError("wrangler d1 list exited %d" % done.rc)
+        raise _failure("wrangler d1 list", done)
     rows = parse_json(done.stdout)
     if not isinstance(rows, list):
         raise ControlDbError("wrangler d1 list did not print a list")
@@ -193,7 +225,7 @@ def ensure_database(name: str, region: str, *, runner: Runner) -> tuple[str, boo
         return known[name], False
     done = _call(runner, create_argv(name, location(region)))
     if done.rc != 0:
-        raise ControlDbError("wrangler d1 create %s exited %d" % (name, done.rc))
+        raise _failure("wrangler d1 create %s" % name, done)
     uuid = database_ids(runner).get(name)
     if not uuid:
         raise ControlDbError("%s was created but is not listed afterwards" % name)
@@ -204,7 +236,7 @@ def query(database: str, sql: str, params: Sequence[object], *, runner: Runner) 
     """The rows of one statement on a remote D1 database. Raises ControlDbError (a RuntimeError, so the registry names the region)."""
     done = _call(runner, execute_argv(database, sql=bind(sql, list(params))))
     if done.rc != 0:
-        raise ControlDbError("wrangler d1 execute on %s exited %d" % (database, done.rc))
+        raise _failure("wrangler d1 execute on %s" % database, done)
     answer = parse_json(done.stdout)
     rows: list[dict] = []
     for part in answer if isinstance(answer, list) else [answer]:
@@ -214,7 +246,9 @@ def query(database: str, sql: str, params: Sequence[object], *, runner: Runner) 
 
 
 def transport(runner: Runner = run_wrangler) -> registry.Query:
-    """The registry's `Query` over wrangler."""
+    """The registry's `Query` over wrangler. Over the production runner it refuses a missing token before returning."""
+    if runner is run_wrangler:
+        require_token()
 
     def run(database: str, sql: str, params: list) -> list[dict]:
         return query(database, sql, params, runner=runner)
@@ -230,11 +264,13 @@ def apply_migration(database: str, *, runner: Runner, root: pathlib.Path | None 
     path = (root or paths.repo_root()) / registry.MIGRATION_REL
     done = _call(runner, execute_argv(database, file=str(path)))
     if done.rc != 0:
-        raise ControlDbError("applying the control migration to %s exited %d" % (database, done.rc))
+        raise _failure("applying the control migration to %s" % database, done)
 
 
 def ensure(region: str, *, bench: bool, runner: Runner = run_wrangler) -> Ensured:
     """Create the region's control database when missing, and migrate it when it has no schema."""
+    if runner is run_wrangler:
+        require_token()
     database = registry.control_database(region, bench)
     uuid, created = ensure_database(database, region, runner=runner)
     applied = False
@@ -260,6 +296,12 @@ def main(argv: Sequence[str], *, runner: Runner = run_wrangler) -> int:
         args = ap.parse_args(list(argv))
     except SystemExit as exc:
         return 0 if exc.code == 0 else 2
+    if runner is run_wrangler:
+        try:
+            require_token()
+        except ControlDbError as exc:
+            print("%s: %s" % (SELF, exc), file=sys.stderr)
+            return 1
     regions = list(registry.databases(args.bench))
     if args.region is not None and args.region not in regions:
         print(
