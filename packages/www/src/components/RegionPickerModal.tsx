@@ -7,7 +7,6 @@ import { useTranslation } from '../i18n/react';
 import type { Language } from '../i18n/types';
 import { buildPortalRedirectUrl } from '../utils/marketing-host';
 import Overlay from './Overlay';
-import Sentences from './Sentences';
 import {
   createPickTracker,
   detectLikelyRegion,
@@ -17,6 +16,7 @@ import {
   preselectFromGeo,
 } from './region-picker/geo';
 import { getStoredRegion, REGION_META, REGION_STORAGE_KEY } from './region-picker/regionStore';
+import Sentences from './Sentences';
 
 const DEFAULT_TARGET_PATH = '/account/';
 const COUNTDOWN_SECONDS = 5;
@@ -57,8 +57,16 @@ function capturedUtm(): Record<string, string> {
 }
 
 /** Cross-origin handoff to a portal host; captured utm_* params ride along. */
-function forwardToHost(host: string, targetPath: string): void {
-  window.location.href = buildPortalRedirectUrl(host, targetPath, capturedUtm());
+function forwardToHost(host: string, targetPath: string, email?: string): void {
+  window.location.href = buildPortalRedirectUrl(host, targetPath, capturedUtm(), email);
+}
+
+/** What the lookup form does with one input: the domain to look up, and the address only when the visitor typed one. */
+export function lookupTarget(raw: string): { domain: string; email?: string } | null {
+  const domain = extractDomain(raw);
+  if (!domain) return null;
+  const value = raw.trim();
+  return value.includes('@') ? { domain, email: value } : { domain };
 }
 
 /** Whole seconds left, ticking once a second while `active`; calls `onDone` at zero. */
@@ -117,7 +125,7 @@ const LOOKUP_MESSAGE_KEY: Record<LookupError, string> = {
   error: 'regionPicker.lookup.error',
 };
 
-/** Company-domain form. The answer is a host or a neutral miss, the same for every address at a domain. */
+/** Work-email form. Only the domain is looked up; the answer is a host or a neutral miss, the same for every address at a domain. The address itself only pre-fills the sign-in page, via a URL fragment. */
 const LookupForm: React.FC<LookupFormProps> = ({ t, targetPath, onBack }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
@@ -126,18 +134,18 @@ const LookupForm: React.FC<LookupFormProps> = ({ t, targetPath, onBack }) => {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const domain = extractDomain(inputRef.current?.value ?? '');
-    if (!domain) return setLookupError('invalid');
+    const target = lookupTarget(inputRef.current?.value ?? '');
+    if (!target) return setLookupError('invalid');
     if (captchaEnabled && !captcha.token) return setLookupError('captcha');
     setLookupError(null);
     setLoading(true);
     try {
-      const host = await lookupCompanyHost(domain, captcha.token);
+      const host = await lookupCompanyHost(target.domain, captcha.token);
       if (host) {
         window.plausible?.('region_selected', {
           props: { region: 'enterprise', source: 'lookup' },
         });
-        return forwardToHost(host, targetPath);
+        return forwardToHost(host, targetPath, target.email);
       }
       setLookupError('miss');
     } catch {
@@ -159,9 +167,8 @@ const LookupForm: React.FC<LookupFormProps> = ({ t, targetPath, onBack }) => {
       <input
         id="region-picker-domain"
         className="form-input"
-        type="text"
-        inputMode="url"
-        autoComplete="off"
+        type="email"
+        autoComplete="email"
         autoCapitalize="none"
         spellCheck={false}
         placeholder={t('regionPicker.lookup.placeholder')}

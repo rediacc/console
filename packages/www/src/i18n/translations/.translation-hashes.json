@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 6013,
-    "sourceCommit": "a50ed3167233893d6fc1bcea67a9fcf14d2e901a"
+    "sourceCommit": "6a049fc810d7851a621d0735df35f8add6cb2369"
   },
   "hashes": {
     "announcement.link": "767605c6",
@@ -5978,13 +5978,13 @@
     "regionPicker.footerNote": "1bd30e8e",
     "regionPicker.lookup.back": "721cf959",
     "regionPicker.lookup.checking": "6d36c627",
-    "regionPicker.lookup.description": "39962bac",
+    "regionPicker.lookup.description": "27a9dbc6",
     "regionPicker.lookup.error": "1a93c927",
     "regionPicker.lookup.invalid": "785e4c67",
-    "regionPicker.lookup.label": "b9a65e4d",
+    "regionPicker.lookup.label": "7a40bb9f",
     "regionPicker.lookup.miss": "f7235d03",
-    "regionPicker.lookup.placeholder": "b3c68577",
-    "regionPicker.lookup.privacy": "371f5c9c",
+    "regionPicker.lookup.placeholder": "324db907",
+    "regionPicker.lookup.privacy": "f713f82a",
     "regionPicker.lookup.submit": "ea954889",
     "regionPicker.reassurance": "d6e3f953",
     "regionPicker.resolving": "26960933",

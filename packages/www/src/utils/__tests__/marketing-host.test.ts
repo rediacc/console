@@ -98,3 +98,30 @@ describe('buildPortalRedirectUrl', () => {
     expect([...url.searchParams.keys()]).toEqual([]);
   });
 });
+
+describe('buildPortalRedirectUrl email hand-off', () => {
+  it('carries the address as a fragment, encoded, and never as a query parameter', () => {
+    const url = new URL(buildPortalRedirectUrl(EU_HOST, '/account/', undefined, 'a+b.c@x.com'));
+    expect(url.hash).toBe('#email=a%2Bb.c%40x.com');
+    expect(new URLSearchParams(url.hash.slice(1)).get('email')).toBe('a+b.c@x.com');
+    expect(url.search).toBe('');
+    expect(url.searchParams.has('email')).toBe(false);
+  });
+
+  it('keeps the target query and utm beside the fragment', () => {
+    const url = new URL(
+      buildPortalRedirectUrl(EU_HOST, '/account/?checkout=PRO', { utm_source: 'x' }, 'a@x.com')
+    );
+    expect(url.searchParams.get('checkout')).toBe('PRO');
+    expect(url.searchParams.get('utm_source')).toBe('x');
+    expect(url.hash).toBe('#email=a%40x.com');
+  });
+
+  it('adds no fragment when there is no address (control)', () => {
+    expect(new URL(buildPortalRedirectUrl(EU_HOST, '/account/')).hash).toBe('');
+    expect(new URL(buildPortalRedirectUrl(EU_HOST, '/account/', undefined, undefined)).hash).toBe(
+      ''
+    );
+    expect(new URL(buildPortalRedirectUrl(EU_HOST, '/account/', undefined, '')).hash).toBe('');
+  });
+});

@@ -55,11 +55,15 @@ export function isMarketingHost(hostname: string): boolean {
  * the visitor's captured utm_* params so attribution survives the hop.
  * Pure function so it can be unit-tested; the card select, the countdown and the
  * company lookup all go through it.
+ * `email` (a visitor's work address from the company lookup) travels only as the
+ * `#email=` fragment, which a browser never sends to a server, so it cannot reach
+ * a request line or a log. The portal's sign-in page reads it and pre-fills.
  */
 export function buildPortalRedirectUrl(
   portalHost: string,
   targetPath: string,
-  utmParams?: Record<string, string>
+  utmParams?: Record<string, string>,
+  email?: string
 ): string {
   const url = new URL(targetPath, `https://${portalHost}`);
   for (const [key, value] of Object.entries(utmParams ?? {})) {
@@ -67,5 +71,6 @@ export function buildPortalRedirectUrl(
       url.searchParams.set(key, value);
     }
   }
+  if (email) url.hash = `email=${encodeURIComponent(email)}`;
   return url.toString();
 }

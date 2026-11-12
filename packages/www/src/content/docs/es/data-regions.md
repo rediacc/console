@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 3
 language: es
-sourceHash: "271ee8a4a502eb02"
-sourceCommit: "abc292b1b7ca5096423e098c12a9b23bdabda16b"
+sourceHash: "30205685897b43b5"
+sourceCommit: "1c88d0973e4d058c26b33fe8b3058eddea9feed2"
 ---
 
 Al crear una cuenta en Rediacc, eliges una región de datos. Todos tus datos permanecen en esa región. Esta elección es permanente: no puedes cambiarla después del registro. No existe una ruta de migración. Elige según dónde tus datos deben residir legalmente, no según dónde estén tus servidores hoy.
@@ -24,7 +24,7 @@ Al crear una cuenta en Rediacc, eliges una región de datos. Todos tus datos per
 
 El producto funciona en estos dominios `rediacc.cloud`. Toda la documentación y el sitio de marketing están en `www.rediacc.com`, que te lleva a la región correcta desde su selector de región.
 
-Al registrarte, el selector sugiere una región según tu ubicación y puedes confirmarla o cambiarla. Al iniciar sesión, te redirige a tu región tras una breve cuenta atrás que puedes cancelar o cambiar. Si tu empresa tiene su propio despliegue, la opción «¿Cliente Enterprise?» te lleva allí a partir del dominio de correo de tu empresa. Solo se envía el dominio, nunca tu dirección completa.
+Al registrarte, el selector sugiere una región según tu ubicación y puedes confirmarla o cambiarla. Al iniciar sesión, te redirige a tu región tras una breve cuenta atrás que puedes cancelar o cambiar. Si tu empresa tiene su propio despliegue, la opción «¿Cliente Enterprise?» te lleva allí a partir de tu correo de trabajo. Solo se envía el dominio para encontrar la región; el correo solo rellena de antemano la página de inicio de sesión.
 
 ## Qué Permanece en tu Región
 

@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 3
 language: de
-sourceHash: "271ee8a4a502eb02"
-sourceCommit: "abc292b1b7ca5096423e098c12a9b23bdabda16b"
+sourceHash: "30205685897b43b5"
+sourceCommit: "1c88d0973e4d058c26b33fe8b3058eddea9feed2"
 ---
 
 Bei der Anmeldung für Rediacc wählen Sie eine Datenregion. Alle Daten verbleiben in dieser Region. Diese Entscheidung ist dauerhaft und kann nach der Registrierung nicht mehr geändert werden. Es gibt keinen Migrationspfad. Wählen Sie die Region basierend darauf, wo Ihre Daten rechtlich ansässig sein müssen, nicht wo Ihre Server heute sind.
@@ -24,7 +24,7 @@ Bei der Anmeldung für Rediacc wählen Sie eine Datenregion. Alle Daten verbleib
 
 Das Produkt läuft auf diesen `rediacc.cloud`-Domains. Die gesamte Dokumentation und die Marketing-Website liegen auf `www.rediacc.com`, das Sie über die Regionsauswahl zur passenden Region weiterleitet.
 
-Bei der Registrierung schlägt die Auswahl anhand Ihres Standorts eine Region vor, die Sie bestätigen oder ändern. Beim Login leitet sie Sie nach einem kurzen Countdown, den Sie abbrechen oder ändern können, in Ihre Region weiter. Hat Ihr Unternehmen eine eigene Bereitstellung, führt die Option „Enterprise-Kunde?“ Sie anhand der E-Mail-Domain Ihres Unternehmens dorthin. Übertragen wird nur die Domain, nie Ihre vollständige Adresse.
+Bei der Registrierung schlägt die Auswahl anhand Ihres Standorts eine Region vor, die Sie bestätigen oder ändern. Beim Login leitet sie Sie nach einem kurzen Countdown, den Sie abbrechen oder ändern können, in Ihre Region weiter. Hat Ihr Unternehmen eine eigene Bereitstellung, führt die Option „Enterprise-Kunde?“ Sie anhand Ihrer geschäftlichen E-Mail-Adresse dorthin. Zur Suche der Region wird nur die Domain gesendet; die E-Mail-Adresse füllt lediglich die Anmeldeseite vor.
 
 ## Was in der Region verbleibt
 

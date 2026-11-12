@@ -10490,13 +10490,13 @@
     "lookup": {
       "back": "Torna alle regioni",
       "checking": "Verifica in corso...",
-      "description": "Inserisci il dominio email della tua azienda per trovare l'accesso della tua organizzazione.",
+      "description": "Inserisci la tua email di lavoro per trovare l'accesso della tua organizzazione.",
       "error": "La ricerca non è disponibile al momento. Scegli invece una regione.",
       "invalid": "Inserisci un dominio aziendale, ad esempio company.com.",
-      "label": "Dominio email aziendale",
+      "label": "Email di lavoro",
       "miss": "Nessun accesso aziendale trovato per questo dominio. Scegli invece una regione.",
-      "placeholder": "company.com",
-      "privacy": "Viene inviato solo il dominio, mai un indirizzo email.",
+      "placeholder": "tu@azienda.com",
+      "privacy": "Per trovare la tua regione viene inviato solo il dominio. La tua email serve solo a precompilare la pagina di accesso.",
       "submit": "Continua"
     },
     "reassurance": "I dati dei tuoi server e i backup restano sulla tua infrastruttura.",

@@ -10483,13 +10483,13 @@
     "lookup": {
       "back": "Voltar às regiões",
       "checking": "A verificar...",
-      "description": "Introduza o domínio de e-mail da sua empresa para encontrar o início de sessão da sua organização.",
+      "description": "Introduza o seu e-mail profissional para encontrar o início de sessão da sua organização.",
       "error": "A pesquisa não está disponível neste momento. Escolha antes uma região.",
       "invalid": "Introduza um domínio de empresa, como company.com.",
-      "label": "Domínio de e-mail da empresa",
+      "label": "E-mail profissional",
       "miss": "Não foi encontrado nenhum início de sessão de empresa para esse domínio. Escolha antes uma região.",
-      "placeholder": "company.com",
-      "privacy": "Só o domínio é enviado, nunca um endereço de e-mail.",
+      "placeholder": "voce@empresa.com",
+      "privacy": "Só o domínio é enviado para encontrar a sua região. O seu e-mail serve apenas para preencher previamente a página de início de sessão.",
       "submit": "Continuar"
     },
     "reassurance": "Os dados dos seus servidores e backups permanecem na sua própria infraestrutura.",

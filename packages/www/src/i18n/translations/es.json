@@ -10472,13 +10472,13 @@
     "lookup": {
       "back": "Volver a las regiones",
       "checking": "Comprobando...",
-      "description": "Introduce el dominio de correo de tu empresa para encontrar el inicio de sesión de tu organización.",
+      "description": "Introduce tu correo de trabajo para encontrar el inicio de sesión de tu organización.",
       "error": "La búsqueda no está disponible ahora mismo. Elige una región.",
       "invalid": "Introduce un dominio de empresa, como company.com.",
-      "label": "Dominio de correo de la empresa",
+      "label": "Correo de trabajo",
       "miss": "No se encontró un inicio de sesión de empresa para ese dominio. Elige una región.",
-      "placeholder": "company.com",
-      "privacy": "Solo se envía el dominio, nunca una dirección de correo.",
+      "placeholder": "tu@empresa.com",
+      "privacy": "Solo se envía el dominio para encontrar tu región. Tu correo solo rellena de antemano la página de inicio de sesión.",
       "submit": "Continuar"
     },
     "reassurance": "Los datos de tus servidores y copias de seguridad permanecen en tu propia infraestructura.",

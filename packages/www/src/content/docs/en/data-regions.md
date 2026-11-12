@@ -22,7 +22,7 @@ When you sign up for Rediacc, you pick a data region. All your data stays there.
 
 The product runs on these `rediacc.cloud` domains. All documentation and the marketing site live on `www.rediacc.com`, which sends visitors to the right region from its region picker.
 
-At sign-up, the picker suggests a region from the visitor's location, which can be confirmed or changed. At login, it forwards the visitor to the right region after a short countdown that can be cancelled or changed. If a company has its own deployment, the picker's "Enterprise customer?" option leads there from the company's email domain. Only the domain is sent, never the full address.
+At sign-up, the picker suggests a region from the visitor's location, which can be confirmed or changed. At login, it forwards the visitor to the right region after a short countdown that can be cancelled or changed. If a company has its own deployment, the picker's "Enterprise customer?" option leads there from the visitor's work email. Only the domain is sent to find the region; the email only pre-fills the sign-in page.
 
 ## What Stays in Your Region
 

@@ -10476,13 +10476,13 @@
     "lookup": {
       "back": "Retour aux régions",
       "checking": "Vérification...",
-      "description": "Saisissez le domaine e-mail de votre entreprise pour retrouver la connexion de votre organisation.",
+      "description": "Saisissez votre adresse e-mail professionnelle pour trouver la connexion de votre organisation.",
       "error": "La recherche est indisponible pour le moment. Choisissez plutôt une région.",
       "invalid": "Saisissez un domaine d'entreprise, par exemple company.com.",
-      "label": "Domaine e-mail de l'entreprise",
+      "label": "E-mail professionnel",
       "miss": "Aucune connexion d'entreprise n'a été trouvée pour ce domaine. Choisissez plutôt une région.",
-      "placeholder": "company.com",
-      "privacy": "Seul le domaine est envoyé, jamais une adresse e-mail.",
+      "placeholder": "vous@entreprise.com",
+      "privacy": "Seul le domaine est envoyé pour trouver votre région. Votre e-mail sert uniquement à préremplir la page de connexion.",
       "submit": "Continuer"
     },
     "reassurance": "Les données de vos serveurs et sauvegardes restent sur votre propre infrastructure.",

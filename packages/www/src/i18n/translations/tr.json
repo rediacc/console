@@ -10454,13 +10454,13 @@
     "lookup": {
       "back": "Bölgelere geri dön",
       "checking": "Kontrol ediliyor...",
-      "description": "Kuruluşunuzun oturum açma sayfasını bulmak için şirketinizin e-posta alan adını girin.",
+      "description": "Kuruluşunuzun oturum açma sayfasını bulmak için iş e-posta adresinizi girin.",
       "error": "Arama şu anda kullanılamıyor. Bunun yerine bir bölge seçin.",
       "invalid": "company.com gibi bir şirket alan adı girin.",
-      "label": "Şirket e-posta alan adı",
+      "label": "İş e-postası",
       "miss": "Bu alan adı için şirket girişi bulunamadı. Bunun yerine bir bölge seçin.",
-      "placeholder": "company.com",
-      "privacy": "Yalnızca alan adı gönderilir, e-posta adresi asla gönderilmez.",
+      "placeholder": "siz@sirket.com",
+      "privacy": "Bölgenizi bulmak için yalnızca alan adı gönderilir. E-posta adresiniz yalnızca oturum açma sayfasını önceden doldurur.",
       "submit": "Devam"
     },
     "reassurance": "Sunucu verileriniz ve yedekleriniz kendi altyapınızda kalır.",

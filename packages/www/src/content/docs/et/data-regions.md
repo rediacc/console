@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 3
 language: et
-sourceHash: "271ee8a4a502eb02"
-sourceCommit: "abc292b1b7ca5096423e098c12a9b23bdabda16b"
+sourceHash: "30205685897b43b5"
+sourceCommit: "1c88d0973e4d058c26b33fe8b3058eddea9feed2"
 ---
 
 Rediacci konto loomisel valite andmeregiooni. Kõik teie andmed jäävad sellesse regiooni. See valik on püsiv ega ole pärast registreerumist muudetav. Migratsiooniviis puudub. Valige regioon selle alusel, kus teie andmed seaduslikult asuda peavad, mitte kus teie serverid täna asuvad.
@@ -24,7 +24,7 @@ Rediacci konto loomisel valite andmeregiooni. Kõik teie andmed jäävad selless
 
 Toode töötab nendel `rediacc.cloud` domeenidel. Kogu dokumentatsioon ja turundusveebisait asuvad aadressil `www.rediacc.com`, mis suunab sind regioonivalija kaudu õigesse regiooni.
 
-Registreerimisel pakub valija sinu asukoha põhjal regiooni, mille saad kinnitada või muuta. Sisselogimisel suunab see sind pärast lühikest tagasiloendust, mille saad tühistada või muuta, sinu regiooni. Kui sinu ettevõttel on oma juurutus, viib valija valik „Enterprise'i klient?“ sind sinna ettevõtte e-posti domeeni alusel. Saadetakse ainult domeen, mitte kunagi täielik aadress.
+Registreerimisel pakub valija sinu asukoha põhjal regiooni, mille saad kinnitada või muuta. Sisselogimisel suunab see sind pärast lühikest tagasiloendust, mille saad tühistada või muuta, sinu regiooni. Kui sinu ettevõttel on oma juurutus, viib valija valik „Enterprise'i klient?“ sind sinna sinu töö e-posti aadressi alusel. Regiooni leidmiseks saadetakse ainult domeen; e-posti aadress täidab ainult sisselogimislehe ette.
 
 ## Mis jääb teie regiooni
 

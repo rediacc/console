@@ -10474,13 +10474,13 @@
     "lookup": {
       "back": "Zurück zu den Regionen",
       "checking": "Wird geprüft...",
-      "description": "Geben Sie die E-Mail-Domain Ihres Unternehmens ein, um den Login Ihrer Organisation zu finden.",
+      "description": "Geben Sie Ihre geschäftliche E-Mail-Adresse ein, um den Login Ihrer Organisation zu finden.",
       "error": "Die Suche ist gerade nicht verfügbar. Wählen Sie stattdessen eine Region.",
       "invalid": "Geben Sie eine Unternehmensdomain ein, z. B. company.com.",
-      "label": "E-Mail-Domain des Unternehmens",
+      "label": "Geschäftliche E-Mail-Adresse",
       "miss": "Für diese Domain wurde kein Unternehmens-Login gefunden. Wählen Sie stattdessen eine Region.",
-      "placeholder": "company.com",
-      "privacy": "Es wird nur die Domain gesendet, nie eine E-Mail-Adresse.",
+      "placeholder": "sie@firma.de",
+      "privacy": "Zur Suche Ihrer Region wird nur die Domain gesendet. Ihre E-Mail-Adresse füllt lediglich die Anmeldeseite vor.",
       "submit": "Weiter"
     },
     "reassurance": "Ihre Serverdaten und Backups verbleiben auf Ihrer eigenen Infrastruktur.",

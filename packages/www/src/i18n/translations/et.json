@@ -10475,13 +10475,13 @@
     "lookup": {
       "back": "Tagasi piirkondade juurde",
       "checking": "Kontrollin...",
-      "description": "Sisesta oma ettevõtte e-posti domeen, et leida oma organisatsiooni sisselogimine.",
+      "description": "Sisesta oma töö e-posti aadress, et leida oma organisatsiooni sisselogimine.",
       "error": "Otsing pole praegu saadaval. Vali hoopis piirkond.",
       "invalid": "Sisesta ettevõtte domeen, näiteks company.com.",
-      "label": "Ettevõtte e-posti domeen",
+      "label": "Töö e-posti aadress",
       "miss": "Selle domeeni jaoks ei leitud ettevõtte sisselogimist. Vali hoopis piirkond.",
-      "placeholder": "company.com",
-      "privacy": "Saadetakse ainult domeen, mitte kunagi e-posti aadressi.",
+      "placeholder": "sina@firma.ee",
+      "privacy": "Piirkonna leidmiseks saadetakse ainult domeen. Sinu e-posti aadress täidab ainult sisselogimislehe ette.",
       "submit": "Jätka"
     },
     "reassurance": "Sinu serverite andmed ja varukoopiad jäävad sinu enda infrastruktuuri.",

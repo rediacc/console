@@ -4,6 +4,7 @@ import type { Region } from '../../config/regions';
 import {
   createPickTracker,
   extractDomain,
+  lookupTarget,
   modeFromPath,
   openPhase,
   parseLookupHost,
@@ -191,5 +192,26 @@ describe('createPickTracker', () => {
     preselectFromGeo(true, () => tracker.isFree(), select);
     await settle();
     expect(select).toHaveBeenCalledWith('eu');
+  });
+});
+
+describe('lookupTarget', () => {
+  it('sends the domain and keeps the typed address for the fragment', () => {
+    expect(lookupTarget(' Jane+x@Acme.Example ')).toEqual({
+      domain: 'acme.example',
+      email: 'Jane+x@Acme.Example',
+    });
+  });
+
+  it('a bare domain yields no address, so no fragment (control)', () => {
+    const target = lookupTarget('acme.example');
+    expect(target).toEqual({ domain: 'acme.example' });
+    expect(target && 'email' in target).toBe(false);
+  });
+
+  it('refuses input with no usable domain', () => {
+    expect(lookupTarget('')).toBeNull();
+    expect(lookupTarget('jane@')).toBeNull();
+    expect(lookupTarget('acme')).toBeNull();
   });
 });

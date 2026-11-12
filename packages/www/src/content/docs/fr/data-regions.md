@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 3
 language: fr
-sourceHash: "271ee8a4a502eb02"
-sourceCommit: "abc292b1b7ca5096423e098c12a9b23bdabda16b"
+sourceHash: "30205685897b43b5"
+sourceCommit: "1c88d0973e4d058c26b33fe8b3058eddea9feed2"
 ---
 
 Lorsque vous créez un compte Rediacc, vous choisissez une région de données. Toutes vos données restent dans cette région. Ce choix est permanent et ne peut pas être modifié après l'inscription. Aucune migration n'est possible. Choisissez votre région en fonction de l'endroit où vos données doivent résider légalement, et non en fonction de l'emplacement actuel de vos serveurs.
@@ -24,7 +24,7 @@ Lorsque vous créez un compte Rediacc, vous choisissez une région de données. 
 
 Le produit fonctionne sur ces domaines `rediacc.cloud`. Toute la documentation et le site marketing se trouvent sur `www.rediacc.com`, qui vous dirige vers la bonne région depuis son sélecteur de région.
 
-À l'inscription, le sélecteur propose une région d'après votre localisation, que vous confirmez ou modifiez. À la connexion, il vous redirige vers votre région après un court compte à rebours que vous pouvez annuler ou modifier. Si votre entreprise dispose de son propre déploiement, l'option « Client Enterprise ? » vous y conduit à partir du domaine de messagerie de votre entreprise. Seul le domaine est envoyé, jamais votre adresse complète.
+À l'inscription, le sélecteur propose une région d'après votre localisation, que vous confirmez ou modifiez. À la connexion, il vous redirige vers votre région après un court compte à rebours que vous pouvez annuler ou modifier. Si votre entreprise dispose de son propre déploiement, l'option « Client Enterprise ? » vous y conduit à partir de votre e-mail professionnel. Seul le domaine est envoyé pour trouver la région ; l'e-mail sert uniquement à préremplir la page de connexion.
 
 ## Ce qui reste dans votre région
 

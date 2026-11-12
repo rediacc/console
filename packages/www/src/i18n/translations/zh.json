@@ -10407,13 +10407,13 @@
     "lookup": {
       "back": "返回区域选择",
       "checking": "正在检查...",
-      "description": "输入贵公司的邮箱域名，即可找到贵组织的登录入口。",
+      "description": "输入你的工作邮箱，查找所属组织的登录入口。",
       "error": "查询暂时不可用，请改为选择区域。",
       "invalid": "请输入公司域名，例如 company.com。",
-      "label": "公司邮箱域名",
+      "label": "工作邮箱",
       "miss": "未找到该域名对应的公司登录入口，请改为选择区域。",
-      "placeholder": "company.com",
-      "privacy": "仅发送域名，绝不发送邮箱地址。",
+      "placeholder": "you@company.com",
+      "privacy": "查找所在区域时只发送域名。你的邮箱仅用于预先填入登录页面。",
       "submit": "继续"
     },
     "reassurance": "您的服务器数据和备份保留在您自己的基础设施中。",

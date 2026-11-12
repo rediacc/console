@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 3
 language: tr
-sourceHash: "271ee8a4a502eb02"
-sourceCommit: "abc292b1b7ca5096423e098c12a9b23bdabda16b"
+sourceHash: "30205685897b43b5"
+sourceCommit: "1c88d0973e4d058c26b33fe8b3058eddea9feed2"
 ---
 
 Bir Rediacc hesabı oluşturduğunuzda bir veri bölgesi seçersiniz. Tüm verileriniz o bölgede kalır. Bu seçim kalıcıdır ve kayıt sonrasında değiştirilemez. Geçiş yolu yoktur. Verilerinizin yasal olarak nerede bulunması gerektiğine göre seçin, bugün sunucularınızın nerede olduğuna göre değil.
@@ -24,7 +24,7 @@ Bir Rediacc hesabı oluşturduğunuzda bir veri bölgesi seçersiniz. Tüm veril
 
 Ürün bu `rediacc.cloud` etki alanlarında çalışır. Tüm dokümantasyon ve pazarlama sitesi `www.rediacc.com` üzerindedir; site, bölge seçicisiyle sizi doğru bölgeye yönlendirir.
 
-Kayıt sırasında seçici, konumunuza göre bir bölge önerir; onaylayabilir veya değiştirebilirsiniz. Girişte ise iptal edebileceğiniz ya da değiştirebileceğiniz kısa bir geri sayımın ardından sizi bölgenize yönlendirir. Şirketinizin kendi dağıtımı varsa seçicideki "Enterprise müşterisi misiniz?" seçeneği sizi şirketinizin e-posta etki alanından yola çıkarak oraya götürür. Yalnızca etki alanı gönderilir, tam adresiniz asla gönderilmez.
+Kayıt sırasında seçici, konumunuza göre bir bölge önerir; onaylayabilir veya değiştirebilirsiniz. Girişte ise iptal edebileceğiniz ya da değiştirebileceğiniz kısa bir geri sayımın ardından sizi bölgenize yönlendirir. Şirketinizin kendi dağıtımı varsa seçicideki "Enterprise müşterisi misiniz?" seçeneği sizi iş e-posta adresinizden yola çıkarak oraya götürür. Bölgeyi bulmak için yalnızca etki alanı gönderilir; e-posta adresi yalnızca oturum açma sayfasını önceden doldurur.
 
 ## Bölgenizde Kalan Veriler
 
