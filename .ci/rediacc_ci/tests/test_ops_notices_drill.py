@@ -425,3 +425,109 @@ def test_the_root_jar_is_unlinked_when_the_reminder_run_raises(tmp_path, capsys)
     capsys.readouterr()
     assert rc == 1
     assert any(p.endswith("-root") for p in unlinked), unlinked
+
+
+def test_a_409_register_does_not_clean_up_the_foreign_account(tmp_path, capsys):
+    """192841da.3: an address that already exists is not this run's account, so no by-email delete runs."""
+    fake = Fake(tmp_path)
+    deps = fake.deps()
+    deps.http = lambda _path, _body: (409, {})
+    rc = nd.run(False, deps, env={})
+    capsys.readouterr()
+    assert rc == 1
+    assert not any(s.startswith("DELETE FROM users") for s in fake.sql)
+
+
+def test_a_register_that_gets_no_answer_still_cleans_up_the_user(tmp_path, capsys):
+    fake = Fake(tmp_path)
+    deps = fake.deps()
+
+    def lost(path, _body):
+        fake.user_present = True
+        raise nd.DrillError("no HTTP answer from " + path)
+
+    deps.http = lost
+    rc = nd.run(False, deps, env={})
+    capsys.readouterr()
+    assert rc == 1
+    assert fake.user_present is False
+
+
+def test_cleanup_without_a_user_row_still_deletes_reminder_and_event_rows():
+    """192841da.2: the empty-user branch used to skip every delete and every leftover check."""
+    rows_seen: list[str] = []
+    state = {"log": True}
+
+    def rows(sql):
+        rows_seen.append(sql)
+        if sql.startswith("SELECT id FROM users"):
+            return []
+        if sql.startswith("DELETE FROM notification_reminder_log"):
+            state["log"] = False
+        if sql.startswith("SELECT id FROM notification_reminder_log"):
+            return [{"id": "l"}] if state["log"] else []
+        return []
+
+    notes: list[str] = []
+    nd.cleanup_notices("ntc+1@rediacc.io", planted(), rows, notes.append)
+    assert any(s.startswith("DELETE FROM notification_reminder_log") for s in rows_seen)
+    assert any(s.startswith("DELETE FROM event_log WHERE id IN") for s in rows_seen)
+
+    def stuck(sql):
+        return [] if sql.startswith(("SELECT id FROM users", "DELETE")) else [{"id": "l"}]
+
+    with pytest.raises(nd.DrillError, match="remain"):
+        nd.cleanup_notices("ntc+1@rediacc.io", planted(), stuck, lambda _m: None)
+
+
+def test_a_plant_that_refuses_a_malformed_id_prints_its_step_line(tmp_path, capsys):
+    """192841da.6: event_rows raising DrillError still leaves step 5's evidence line."""
+    fake = Fake(tmp_path)
+    fake.uuids = iter(["not-a-uuid"] * 6)
+    deps = fake.deps()
+    deps.new_uuid = lambda: next(fake.uuids)
+    rc = nd.run(False, deps, env={})
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert "STEP 5 plant rc=1" in out
+
+
+def test_the_reminder_run_accepts_the_terms_and_retries(tmp_path, capsys):
+    """192841da.5: a 403 TERMS_ACCEPTANCE_REQUIRED on reminders/run is followed by an accept and one retry."""
+    fake = Fake(tmp_path)
+    deps = fake.deps()
+    orig = deps.call
+    seen = {"n": 0}
+
+    def call(method, path, body, headers, jar):
+        if path.endswith("/admin/reminders/run") and seen["n"] == 0:
+            seen["n"] += 1
+            return 403, {"code": nd.ftr.TERMS_REQUIRED}
+        return orig(method, path, body, headers, jar)
+
+    deps.call = call
+    rc = nd.run(False, deps, env={})
+    capsys.readouterr()
+    assert rc == 0
+    assert fake.calls.count("POST " + nd.API + "/portal/terms/accept") >= 2
+
+
+def test_a_root_login_that_is_not_200_fails_the_step_and_unlinks_the_jar(tmp_path, capsys):
+    """192841da.5: the non-200 root login branch."""
+    fake = Fake(tmp_path)
+    deps = fake.deps()
+    unlinked: list[str] = []
+    deps.unlink = unlinked.append
+    orig = deps.call
+
+    def call(method, path, body, headers, jar):
+        if path.endswith("/auth/login") and body["email"].startswith("root"):
+            return 401, {}
+        return orig(method, path, body, headers, jar)
+
+    deps.call = call
+    rc = nd.run(False, deps, env={})
+    out = capsys.readouterr()
+    assert rc == 1
+    assert "root login http=401" in out.out
+    assert any(p.endswith("-root") for p in unlinked)

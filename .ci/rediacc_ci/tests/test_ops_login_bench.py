@@ -2,6 +2,7 @@
 
 import base64
 import json
+from typing import ClassVar
 
 import pytest
 
@@ -718,3 +719,113 @@ def test_a_reread_satisfied_for_another_version_stops_the_run():
     )
     with pytest.raises(login_bench.LoginError, match="it reports '2026-12-01'"):
         _login(FakeRunner(), api=api)
+
+
+def test_a_server_fault_on_verify_is_not_called_a_stale_seed():
+    """38201847.1 and a316d763.2: 5xx and 429 name a fault, never the stale-seed refusal."""
+    for status in (500, 429):
+        api = FakeApi(challenge=True, verify=status)
+        with pytest.raises(login_bench.LoginError) as caught:
+            _ticking_login(api, FakeRunner())
+        assert "stale" not in str(caught.value)
+        assert "fault" in str(caught.value)
+        assert [r for r, _b in api.calls].count("2fa/verify") == 1
+    # A fault on the retry is reported as a fault too.
+    api = FakeApi(challenge=True, verify=[400, 503])
+    with pytest.raises(login_bench.LoginError, match="HTTP 503: a rate-limit or server fault"):
+        _ticking_login(api, FakeRunner())
+
+
+def test_a_two_factor_answer_without_a_challenge_never_re_enrols():
+    """a316d763.1: requiresTwoFactor with no challengeToken is refused before reauth or 2fa/setup."""
+
+    class Odd(FakeApi):
+        def post(self, route, body=None):
+            if route == "login":
+                self.calls.append((route, {}))
+                return 200, {"requiresTwoFactor": True}
+            return super().post(route, body)
+
+    api = Odd()
+    with pytest.raises(login_bench.LoginError, match="named no challengeToken"):
+        _enrol_login(api)
+    assert [r for r, _b in api.calls] == ["login"]
+
+
+@pytest.mark.parametrize("route", ["reauth", "reauth/verify", "2fa/setup", "2fa/enable"])
+def test_a_non_200_on_each_enrolment_route_stops_the_run(route):
+    """a316d763.3: the failure path of every enrolment call."""
+    api = FakeApi(challenge=False, fail={route: 500})
+    with pytest.raises(login_bench.LoginError, match="HTTP 500"):
+        _enrol_login(api)
+
+
+class _Headers:
+    def get_all(self, _name):
+        return ["sid=abc; Path=/; HttpOnly"]
+
+
+class _Resp:
+    status = 200
+    headers = _Headers()
+
+    def read(self):
+        return b'{"ok": true}'
+
+
+class _Conn:
+    seen: ClassVar[list[tuple]] = []
+
+    def __init__(self, host, **_kw):
+        self.host = host
+
+    def request(self, method, path, payload, headers):
+        _Conn.seen.append((method, path, payload, dict(headers)))
+
+    def getresponse(self):
+        return _Resp()
+
+    def close(self):
+        pass
+
+
+def test_the_account_api_sends_the_cookie_it_was_given_and_reads_json(monkeypatch):
+    """a316d763.3: the real AccountApi over a recorded connection."""
+    _Conn.seen = []
+    monkeypatch.setattr(login_bench.http.client, "HTTPSConnection", _Conn)
+    api = login_bench.AccountApi("https://bench.example")
+    assert api.post("login", {"a": 1}) == (200, {"ok": True})
+    assert api.get("/account/api/v1/portal/terms") == (200, {"ok": True})
+    assert "Cookie" not in _Conn.seen[0][3]
+    assert _Conn.seen[1][3]["Cookie"] == "sid=abc"
+    assert _Conn.seen[1][1] == "/account/api/v1/portal/terms"
+    assert _Conn.seen[0][1].endswith("login")
+
+
+def test_the_account_api_names_a_transport_failure(monkeypatch):
+    class Dead(_Conn):
+        def request(self, *_a):
+            raise OSError("down")
+
+    monkeypatch.setattr(login_bench.http.client, "HTTPSConnection", Dead)
+    with pytest.raises(login_bench.LoginError, match="reached no answer"):
+        login_bench.AccountApi("https://bench.example").post("login")
+
+
+def test_the_d1_reader_needs_the_key_pair_and_parses_the_results(monkeypatch):
+    monkeypatch.delenv("CF_GLOBAL_API_KEY", raising=False)
+    monkeypatch.delenv("CF_EMAIL", raising=False)
+    with pytest.raises(login_bench.LoginError, match="CF_GLOBAL_API_KEY"):
+        login_bench._d1_rows("SELECT 1")
+    monkeypatch.setenv("CF_GLOBAL_API_KEY", "k")
+    monkeypatch.setenv("CF_EMAIL", "e@example.invalid")
+
+    class Done:
+        returncode = 0
+        stdout = '[{"results": [{"text_body": "x"}, 5]}]'
+
+    monkeypatch.setattr(login_bench.subprocess, "run", lambda *_a, **_k: Done())
+    assert login_bench._d1_rows("SELECT 1") == [{"text_body": "x"}]
+    Done.returncode = 1
+    with pytest.raises(login_bench.LoginError, match="exit 1"):
+        login_bench._d1_rows("SELECT 1")

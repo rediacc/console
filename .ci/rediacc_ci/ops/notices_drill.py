@@ -278,10 +278,25 @@ def notice_cleanup_sql(
     ]
 
 
+NO_USER_ID = "00000000-0000-0000-0000-000000000000"
+
+
 def cleanup_notices(email: str, planted: Planted, rows: Rows, log: Callable[[str], None]) -> None:
     """Delete the notice-side rows of `email`'s user. DrillError when any is still present."""
     lit = sql_literal(email)
-    for user in rows(q("SELECT id FROM users WHERE email = $e", e=lit)):
+    found = rows(q("SELECT id FROM users WHERE email = $e", e=lit))
+    if not found:
+        # No user row (a registration that never landed, or an already-deleted user) still leaves reminder-log and planted event rows keyed by the address and the ids.
+        for sql in notice_cleanup_sql(email, NO_USER_ID, [], planted.event_ids)[1:]:
+            rows(sql)
+        left = rows(q("SELECT id FROM notification_reminder_log WHERE recipient_email = $e", e=lit))
+        if planted.event_ids:
+            ids = ", ".join(sql_literal(i) for i in planted.event_ids)
+            left += rows(q("SELECT id FROM event_log WHERE id IN ($i)", i=ids))
+        log("no user row for the address; reminder-log and planted event rows deleted")
+        if left:
+            raise DrillError("reminder-log or planted event rows remain after the delete")
+    for user in found:
         user_id = str(user["id"])
         if not UUID.match(user_id):
             raise DrillError("refusing a non-UUID user id %r" % user_id)
@@ -406,8 +421,13 @@ def _accept_terms(d: Deps, jar: str) -> str:
 
 
 def _step_register(d: Deps, ev: Evidence, st: State, password: str) -> None:
-    status, answer = d.http(API + "/auth/register", {"email": st.email, "password": password})
-    st.registered = status in (201, 409)
+    try:
+        status, answer = d.http(API + "/auth/register", {"email": st.email, "password": password})
+    except DrillError:
+        st.registered = True  # no answer: the server may still have created the user
+        raise
+    # A 409 means the address already belongs to an account this run did not create, so only a created account (or a 5xx that may have created one) is cleaned by email.
+    st.registered = status == 201 or status >= 500
     plan = (answer.get("subscription") or {}).get("planCode")
     ok = status == 201 and plan == "COMMUNITY"
     ev.add(2, "register", 0 if ok else 1, "http=%d email=%s plan=%s" % (status, st.email, plan))
@@ -502,7 +522,11 @@ def _step_plant(d: Deps, ev: Evidence, st: State) -> None:
     teams = d.rows(q("SELECT id FROM teams WHERE org_id = $o", o=sql_literal(org_id)))
     team_id = str(teams[0]["id"]) if teams else None
     ids = [d.new_uuid(), d.new_uuid()]
-    statements = event_rows(st.planted, ids, st.sub_id, user_id, org_id, team_id, d.now())
+    try:
+        statements = event_rows(st.planted, ids, st.sub_id, user_id, org_id, team_id, d.now())
+    except DrillError as exc:
+        ev.add(5, "plant", 1, str(exc))
+        raise
     st.planted.event_ids = ids
     for sql in statements:
         d.rows(sql)
@@ -527,7 +551,7 @@ def _run_reminders(d: Deps, jar: str) -> tuple[int, dict]:
 
 
 def _step_root_run(d: Deps, ev: Evidence, st: State, wait_cron: bool) -> tuple[str, str] | None:
-    """Open the root session and trigger the repo reminders; returns the root jar and creds for the rerun, or None with `--wait-cron`."""
+    """Open the root session and trigger the repo reminders; returns the root jar and the root email for the rerun, or None with `--wait-cron`."""
     if wait_cron:
         deadline = WAIT_CRON_S
         waited = 0.0
