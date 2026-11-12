@@ -239,7 +239,6 @@ info() {
       - ACCOUNT_X25519_PUBLIC_KEY=\${ACCOUNT_X25519_PUBLIC_KEY:-}
       - ACCOUNT_SERVER_API_KEY=\${ACCOUNT_SERVER_API_KEY:-}
       - ACCOUNT_JWT_SECRET=\${ACCOUNT_JWT_SECRET:-}
-      - DELEGATION_CERT_BASE64=\${DELEGATION_CERT_BASE64:-}
       - UPSTREAM_PUBLIC_KEY=\${UPSTREAM_PUBLIC_KEY:-}
       - UPSTREAM_URL=\${UPSTREAM_URL:-}
       - UPSTREAM_API_KEY=\${UPSTREAM_API_KEY:-}
@@ -379,8 +378,8 @@ load_secrets() {
     fi
   done
   # No cert is the free tier: the server boots without one and serves each repo licence
-  # through its /onprem/free-license relay until a cert is uploaded or set.
-  if [[ -z "\${DELEGATION_CERT_BASE64:-}" && ! -f data/web/delegation-cert.json ]]; then
+  # through its /onprem/free-license relay until a cert arrives in data/web/cert-inbox/.
+  if [[ ! -f data/web/delegation-cert.json ]]; then
     echo "no delegation cert: starting the free tier" >&2
   fi
 }
@@ -416,6 +415,9 @@ load_images() {
 up() {
   load_secrets || return 1
   mkdir -p data/web data/rustfs
+  # The cert inbox the server reads new certs from (rdc server licence drops them here).
+  mkdir -p -m 0700 data/web/cert-inbox
+  chmod 0700 data/web/cert-inbox
   load_images || return 1
 
   renet compose -- up -d
@@ -455,15 +457,15 @@ RUSTFS_ACCESS_KEY=
 RUSTFS_SECRET_KEY=
 ACCOUNT_CONFIG_SERVER_KEY=
 
-# Enrolment: the licence-signing pairs, API key, JWT secret and the delegation cert.
+# Enrolment: the licence-signing pairs, API key and JWT secret. The delegation cert is not set here:
+# it lives at data/web/delegation-cert.json, and a new one goes into data/web/cert-inbox/
+# (\`rdc server licence\`). With none, the server runs the free tier.
 ACCOUNT_ED25519_PRIVATE_KEY=
 ACCOUNT_ED25519_PUBLIC_KEY=
 ACCOUNT_X25519_PRIVATE_KEY=
 ACCOUNT_X25519_PUBLIC_KEY=
 ACCOUNT_SERVER_API_KEY=
 ACCOUNT_JWT_SECRET=
-# DELEGATION_CERT_BASE64 stays empty on the free tier.
-DELEGATION_CERT_BASE64=
 
 # Owner account email: the user registered with it is promoted to root, which \`rdc server licence\` needs.
 ROOT_EMAIL=
@@ -488,7 +490,7 @@ SMTP_USER=
 SMTP_PASSWORD=
 SMTP_FROM=
 `,
-      'VERSION': `3
+      'VERSION': `4
 `,
     },
   },

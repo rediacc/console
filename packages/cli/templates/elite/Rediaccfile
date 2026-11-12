@@ -32,8 +32,8 @@ load_secrets() {
     fi
   done
   # No cert is the free tier: the server boots without one and serves each repo licence
-  # through its /onprem/free-license relay until a cert is uploaded or set.
-  if [[ -z "${DELEGATION_CERT_BASE64:-}" && ! -f data/web/delegation-cert.json ]]; then
+  # through its /onprem/free-license relay until a cert arrives in data/web/cert-inbox/.
+  if [[ ! -f data/web/delegation-cert.json ]]; then
     echo "no delegation cert: starting the free tier" >&2
   fi
 }
@@ -69,6 +69,9 @@ load_images() {
 up() {
   load_secrets || return 1
   mkdir -p data/web data/rustfs
+  # The cert inbox the server reads new certs from (rdc server licence drops them here).
+  mkdir -p -m 0700 data/web/cert-inbox
+  chmod 0700 data/web/cert-inbox
   load_images || return 1
 
   renet compose -- up -d

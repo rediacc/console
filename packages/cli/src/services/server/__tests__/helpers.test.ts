@@ -4,7 +4,7 @@
  */
 
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,7 +20,14 @@ vi.mock('../../../i18n/index.js', () => ({
     vars ? `${key} ${JSON.stringify(vars)}` : key,
 }));
 
-import { envStdin, parseEnvLines } from '../box-scripts.js';
+import {
+  envStdin,
+  INBOX_DROP,
+  INBOX_RESULT,
+  MIGRATE_ENV_CERT,
+  parseEnvLines,
+  READ_LIVE_CERT,
+} from '../box-scripts.js';
 import { assertCertKey, CertError, decodeCert, parseSignedCert } from '../cert.js';
 import { imageTag, storeDomainOf } from '../common.js';
 import { ownedZoneOf } from '../dns.js';
@@ -115,17 +122,56 @@ describe('the elite template', () => {
   const dir = new URL('../../../../templates/elite/', import.meta.url);
   const read = (name: string) => readFileSync(new URL(name, dir), 'utf8');
 
-  it('Rediaccfile starts the free tier when no delegation cert is present', () => {
+  const rediaccfile = (work: string, script: string) =>
+    spawnSync('bash', ['-c', script, 'x', work, fileURLToPath(new URL('Rediaccfile', dir))], {
+      encoding: 'utf8',
+    });
+
+  it('Rediaccfile starts the free tier when no live cert file is present', () => {
     const work = mkdtempSync(join(tmpdir(), 'elite-'));
     writeFileSync(join(work, 'secrets.env'), 'ELITE_DOMAIN=a\n');
-    const script = `cd "$1"; source "$2"; REQUIRED_VARS=(ELITE_DOMAIN); load_secrets`;
-    const result = spawnSync(
-      'bash',
-      ['-c', script, 'x', work, fileURLToPath(new URL('Rediaccfile', dir))],
-      { encoding: 'utf8' }
+    const result = rediaccfile(
+      work,
+      'cd "$1"; source "$2"; REQUIRED_VARS=(ELITE_DOMAIN); load_secrets'
     );
     expect(result.status).toBe(0);
     expect(result.stderr).toContain('free tier');
+  });
+
+  it('Rediaccfile reads only the live file: a DELEGATION_CERT_BASE64 left in secrets.env is the free tier', () => {
+    const work = mkdtempSync(join(tmpdir(), 'elite-'));
+    writeFileSync(join(work, 'secrets.env'), 'ELITE_DOMAIN=a\nDELEGATION_CERT_BASE64=abc\n');
+    const free = rediaccfile(
+      work,
+      'cd "$1"; source "$2"; REQUIRED_VARS=(ELITE_DOMAIN); load_secrets'
+    );
+    expect(free.stderr).toContain('free tier');
+    mkdirSync(join(work, 'data/web'), { recursive: true });
+    writeFileSync(join(work, 'data/web/delegation-cert.json'), '{}');
+    const held = rediaccfile(
+      work,
+      'cd "$1"; source "$2"; REQUIRED_VARS=(ELITE_DOMAIN); load_secrets'
+    );
+    expect(held.status).toBe(0);
+    expect(held.stderr).not.toContain('free tier');
+  });
+
+  it('up creates data/web/cert-inbox at mode 0700', () => {
+    const work = mkdtempSync(join(tmpdir(), 'elite-'));
+    writeFileSync(join(work, 'secrets.env'), 'ELITE_DOMAIN=a\n');
+    const script =
+      'cd "$1"; source "$2"; REQUIRED_VARS=(ELITE_DOMAIN); load_images() { :; }; renet() { :; }; up';
+    const result = rediaccfile(work, script);
+    expect(result.status).toBe(0);
+    expect(statSync(join(work, 'data/web/cert-inbox')).mode & 0o777).toBe(0o700);
+  });
+
+  it('the compose file carries no DELEGATION_CERT_BASE64, and ON_PREMISE_MODE defaults to true', () => {
+    const text = read('docker-compose.yml');
+    expect(text).not.toContain('DELEGATION_CERT_BASE64');
+    expect(text).toContain('- ON_PREMISE_MODE=${ON_PREMISE_MODE:-true}');
+    expect(read('secrets.env.example')).not.toContain('DELEGATION_CERT_BASE64');
+    expect(read('VERSION').trim()).toBe('4');
   });
 
   it('labels both routed services with the ELITE_TLS value, empty by default', () => {
@@ -143,5 +189,87 @@ describe('the elite template', () => {
       expect(text).toContain(`- ${key}=\${${key}:-`);
     }
     expect(text).toContain('- ON_PREMISE_MODE=${ON_PREMISE_MODE:-true}');
+  });
+});
+
+describe('the cert inbox scripts, run in a real shell', () => {
+  const run = (script: string, work: string, stdin = '') =>
+    spawnSync('sh', ['-c', script, 'server', work], { input: stdin, encoding: 'utf8' });
+  const inbox = (work: string, name = '') => join(work, 'data/web/cert-inbox', name);
+  const cert = { payload: 'cA==', signature: 'cw==', publicKeyId: 'k' };
+
+  it('INBOX_DROP writes new.json through a .tmp in a 0700 inbox, and refuses while a drop waits', () => {
+    const work = mkdtempSync(join(tmpdir(), 'inbox-'));
+    const body = `${JSON.stringify({ requestId: 'r1', cert })}\n`;
+    const first = run(INBOX_DROP, work, body);
+    expect(first.status).toBe(0);
+    expect(first.stdout.trim()).toBe('inbox=dropped');
+    expect(statSync(inbox(work)).mode & 0o777).toBe(0o700);
+    expect(statSync(inbox(work, 'new.json')).mode & 0o777).toBe(0o600);
+    expect(readFileSync(inbox(work, 'new.json'), 'utf8')).toBe(body);
+    expect(existsSync(inbox(work, 'new.json.tmp'))).toBe(false);
+
+    const second = run(INBOX_DROP, work, '{"requestId":"r2"}\n');
+    expect(second.stdout.trim()).toBe('inbox=busy');
+    expect(readFileSync(inbox(work, 'new.json'), 'utf8')).toBe(body);
+  });
+
+  it('INBOX_DROP refuses while the server holds processing.json', () => {
+    const work = mkdtempSync(join(tmpdir(), 'inbox-'));
+    mkdirSync(inbox(work), { recursive: true });
+    writeFileSync(inbox(work, 'processing.json'), '{}');
+    expect(run(INBOX_DROP, work, '{}\n').stdout.trim()).toBe('inbox=busy');
+    expect(existsSync(inbox(work, 'new.json'))).toBe(false);
+  });
+
+  it('INBOX_RESULT answers only for its own request id', () => {
+    const work = mkdtempSync(join(tmpdir(), 'inbox-'));
+    mkdirSync(inbox(work), { recursive: true });
+    const applied = { requestId: 'mine', certId: 'abcd', issuedAt: '2026-11-12T00:00:00Z' };
+    writeFileSync(inbox(work, 'applied.json'), `${JSON.stringify(applied, null, 2)}\n`);
+    const out = run(INBOX_RESULT, work, 'mine\n');
+    expect(out.status).toBe(0);
+    const [head, ...rest] = out.stdout.split('\n');
+    expect(head).toBe('result=applied');
+    expect(JSON.parse(rest.join('\n'))).toEqual(applied);
+    const rejected = { requestId: 'theirs', reason: 'not-newer', detail: 'x' };
+    writeFileSync(inbox(work, 'rejected.json'), JSON.stringify(rejected, null, 2));
+    expect(run(INBOX_RESULT, work, 'theirs\n').stdout.split('\n')[0]).toBe('result=rejected');
+  });
+
+  it('MIGRATE_ENV_CERT drops the env cert when no live file exists, and removes the key', () => {
+    const work = mkdtempSync(join(tmpdir(), 'inbox-'));
+    const b64 = Buffer.from(JSON.stringify(cert)).toString('base64');
+    writeFileSync(
+      join(work, 'secrets.env'),
+      `TAG=1\nDELEGATION_CERT_BASE64=${b64}\nROOT_EMAIL=a@b\n`
+    );
+    const out = run(MIGRATE_ENV_CERT, work, 'req-9\n');
+    expect(out.status).toBe(0);
+    expect(out.stdout.trim()).toBe('migrate=dropped');
+    expect(JSON.parse(readFileSync(inbox(work, 'new.json'), 'utf8'))).toEqual({
+      requestId: 'req-9',
+      cert,
+    });
+    expect(readFileSync(join(work, 'secrets.env'), 'utf8')).toBe('TAG=1\nROOT_EMAIL=a@b\n');
+    expect(statSync(join(work, 'secrets.env')).mode & 0o777).toBe(0o600);
+  });
+
+  it('MIGRATE_ENV_CERT only removes the key when a live file exists', () => {
+    const work = mkdtempSync(join(tmpdir(), 'inbox-'));
+    mkdirSync(join(work, 'data/web'), { recursive: true });
+    writeFileSync(join(work, 'data/web/delegation-cert.json'), '{}');
+    writeFileSync(join(work, 'secrets.env'), 'DELEGATION_CERT_BASE64=eA==\n');
+    expect(run(MIGRATE_ENV_CERT, work, 'r\n').stdout.trim()).toBe('migrate=none');
+    expect(existsSync(inbox(work, 'new.json'))).toBe(false);
+    expect(readFileSync(join(work, 'secrets.env'), 'utf8')).toBe('');
+  });
+
+  it('READ_LIVE_CERT prints the live file, and nothing without one', () => {
+    const work = mkdtempSync(join(tmpdir(), 'inbox-'));
+    expect(run(READ_LIVE_CERT, work).stdout).toBe('');
+    mkdirSync(join(work, 'data/web'), { recursive: true });
+    writeFileSync(join(work, 'data/web/delegation-cert.json'), JSON.stringify(cert));
+    expect(JSON.parse(run(READ_LIVE_CERT, work).stdout)).toEqual(cert);
   });
 });
