@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: ko
-sourceHash: "d6d980d721be2373"
-sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
+sourceHash: "0e25e85428482d31"
+sourceCommit: "c167e0ddc973d6cf9b5732a200c2c0006a7e8548"
 ---
 
 # 라이선스 체인 및 위임
