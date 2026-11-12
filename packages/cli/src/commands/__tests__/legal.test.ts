@@ -12,7 +12,8 @@ const m = vi.hoisted(() => ({
   fetch: vi.fn(),
   getCurrent: vi.fn(),
   print: vi.fn(),
-  handleError: vi.fn(),
+  printError: vi.fn(),
+  exit: vi.fn(),
 }));
 
 vi.mock('../../i18n/index.js', () => ({
@@ -26,8 +27,18 @@ vi.mock('../../services/account/subscription-auth.js', () => ({
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: { getCurrent: m.getCurrent },
 }));
-vi.mock('../../services/core/output.js', () => ({ outputService: { print: m.print } }));
-vi.mock('../../utils/errors.js', () => ({ handleError: m.handleError }));
+vi.mock('../../services/core/output.js', () => ({
+  outputService: {
+    print: m.print,
+    error: m.printError,
+    getCommandName: () => 'legal',
+    getWarnings: () => [],
+    getDurationMs: () => 0,
+  },
+}));
+vi.mock('../../services/telemetry/telemetry.js', () => ({
+  telemetryService: { trackError: vi.fn(), shutdown: () => Promise.resolve() },
+}));
 
 import { collectLegalInfo, registerLegalCommand, renderLegal } from '../legal.js';
 
@@ -39,6 +50,10 @@ async function run(args: string[]): Promise<void> {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  vi.spyOn(process, 'exit').mockImplementation(((code?: number) => {
+    m.exit(code);
+    return undefined as never;
+  }) as typeof process.exit);
   m.tokenState.mockReturnValue({ kind: 'missing' });
   m.getCurrent.mockResolvedValue({ state: {} });
 });
@@ -105,6 +120,32 @@ describe('rdc legal --json', () => {
     m.tokenState.mockReturnValue({ kind: 'ready', token: {}, serverUrl: 'x' });
     m.fetch.mockRejectedValue(Object.assign(new Error('boom'), { status: 500 }));
     await expect(collectLegalInfo()).rejects.toMatchObject({ status: 500 });
+  });
+
+  it.each([
+    [401, 'unauthorized'],
+    [500, 'boom'],
+  ])(
+    'the legal command given a %i prints the error and exits non-zero, with nothing on stdout',
+    async (status, message) => {
+      m.tokenState.mockReturnValue({ kind: 'ready', token: {}, serverUrl: 'x' });
+      m.fetch.mockRejectedValue(Object.assign(new Error(message), { status }));
+      await run([]);
+      expect(m.printError).toHaveBeenCalledWith(expect.stringContaining(message));
+      expect(m.exit).toHaveBeenCalledTimes(1);
+      expect(m.exit.mock.calls[0][0]).not.toBe(0);
+      expect(m.print).not.toHaveBeenCalled();
+    }
+  );
+
+  it('control: the legal command given an unreachable server prints the document and exits cleanly', async () => {
+    m.tokenState.mockReturnValue({ kind: 'ready', token: {}, serverUrl: 'x' });
+    m.fetch.mockRejectedValue(new Error('offline'));
+    await run([]);
+    expect(m.print).toHaveBeenCalledTimes(1);
+    expect(m.print.mock.calls[0][0]).toContain('commands.legal.acceptedUnreachable');
+    expect(m.printError).not.toHaveBeenCalled();
+    expect(m.exit).not.toHaveBeenCalled();
   });
 
   it('a reachable server with no acceptance on record is plainly not accepted', async () => {

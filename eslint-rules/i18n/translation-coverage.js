@@ -33,7 +33,7 @@ const countKeys = (obj, prefix = '') => {
     const fullPath = prefix ? `${prefix}.${key}` : key;
 
     if (isPluralGroup(value)) {
-      // A plural group counts once, by its `other` key: locales hold different CLDR category sets by design.
+      // A plural group counts once as a whole (isPluralGroup decides what is a group): locales hold different CLDR category sets by design.
       count += 1;
     } else if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
       count += countKeys(value, fullPath);

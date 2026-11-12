@@ -250,36 +250,56 @@ export function h1AllowlistProblems(
   return problems;
 }
 
-/** Controls for h1AllowlistProblems: each plant must be refused and the clean control must stay silent. */
+/** Controls for h1AllowlistProblems: each plant must be refused for its own reason, naming its component, and the clean control must stay silent. */
 function h1AllowlistSelftest(): string[] {
   const failures: string[] = [];
-  const expectCount = (name: string, got: string[], want: number) => {
-    if (got.length !== want) failures.push(`${name}: wanted ${want} problem(s), got ${got.length}`);
-  };
   const srcs = (o: Record<string, string | undefined>) => new Map(Object.entries(o));
-  expectCount(
+  /** `want` is one [component, reason fragment] per expected problem, in any order. */
+  const expectProblems = (name: string, got: string[], want: [string, string][]) => {
+    if (got.length !== want.length) {
+      failures.push(
+        `${name}: wanted ${want.length} problem(s), got ${got.length}: ${got.join(' | ')}`
+      );
+      return;
+    }
+    for (const [comp, reason] of want) {
+      if (!got.some((p) => p.startsWith(`${comp} `) && p.includes(reason))) {
+        failures.push(`${name}: no problem naming ${comp} with "${reason}" in: ${got.join(' | ')}`);
+      }
+    }
+  };
+  expectProblems(
     'control: direct h1 and clean delegation',
     h1AllowlistProblems(['A', 'B'], srcs({ A: '<h1>x</h1>', B: '<A />' })),
-    0
+    []
   );
-  expectCount('plant: missing file', h1AllowlistProblems(['A'], srcs({ A: undefined })), 1);
-  expectCount(
+  expectProblems('plant: missing file', h1AllowlistProblems(['A'], srcs({ A: undefined })), [
+    ['A', 'exists under'],
+  ]);
+  expectProblems(
     'plant: commented-out h1',
     h1AllowlistProblems(
       ['A', 'B', 'C'],
       srcs({ A: '<!-- <h1>x</h1> -->', B: '/* <h1> */', C: '// <h1>' })
     ),
-    3
+    [
+      ['A', 'renders no <h1>'],
+      ['B', 'renders no <h1>'],
+      ['C', 'renders no <h1>'],
+    ]
   );
-  expectCount(
+  expectProblems(
     'plant: mutual delegation with no h1',
     h1AllowlistProblems(['A', 'B'], srcs({ A: '<B />', B: '<A />' })),
-    2
+    [
+      ['A', 'renders no <h1>'],
+      ['B', 'renders no <h1>'],
+    ]
   );
-  expectCount(
+  expectProblems(
     'plant: prefix of another component name',
     h1AllowlistProblems(['A', 'B'], srcs({ A: '<h1>x</h1>', B: '<AWrapper />' })),
-    1
+    [['B', 'renders no <h1>']]
   );
   return failures;
 }

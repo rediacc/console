@@ -49,11 +49,10 @@ import {
   renderRepoBatchRefreshSummary,
 } from './subscription-output.js';
 import { executeRepoLicenseRefresh } from './subscription-repo-refresh.js';
-
-export { executeRepoLicenseRefresh };
-
 import { renderRepoLicenseTable } from './subscription-repo-table.js';
 import { executeTokenFreeMachineRefresh } from './subscription-token-free.js';
+
+export { executeRepoLicenseRefresh };
 
 export interface SubscriptionCommandContext {
   machine: Awaited<ReturnType<typeof configService.getLocalMachine>>;

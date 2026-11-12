@@ -65,5 +65,18 @@ export default async ({ jsonRuleTester, runCases, withFixture }) => {
     { invalid: [{ errors: [missing, extra, extra, extra] }] }
   );
 
+  // Fails before the shape check: a plain string where en holds a plural group flattened to the same leaf and passed.
+  run('plain string where en holds a plural group', JSON.stringify({ title: 'x', count: 'y' }), {
+    invalid: [{ errors: [{ messageId: 'shapeMismatch' }] }],
+  });
+  // CONTROL: the same shape on both sides stays silent.
+  run(
+    'control: plain string on both sides',
+    JSON.stringify({ title: 'x', count: { other: 'b' } }),
+    {
+      valid: [{}],
+    }
+  );
+
   return results;
 };
