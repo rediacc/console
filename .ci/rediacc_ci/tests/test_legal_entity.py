@@ -148,6 +148,8 @@ def test_verify_exits_1_when_the_vault_cannot_be_reached(
     assert seen[0][-3:] == ["-m", "rediacc_ci.legal.entity", "verify"]
     out = capsys.readouterr()
     assert "never a pass" in out.err
+    # e78253d1.1: the message does not claim the vault was the cause; the child's own lines name it.
+    assert "the child's own lines above name the cause" in out.err
 
 
 def test_a_reachable_vault_passes_the_child_verdict_through(tmp_path: pathlib.Path) -> None:
@@ -174,6 +176,12 @@ def test_a_single_quote_value_renders_as_valid_typescript() -> None:
     assert entity._ts_string("O'Brien OU") == '"O\'Brien OU"'
     assert entity._ts_string("plain") == "'plain'"
     assert entity._ts_string("both ' and \"") == "'both \\' and \"'"
+
+
+def test_a_carriage_return_is_escaped_in_the_single_quote_branch() -> None:
+    """e78253d1.2: a raw CR would end the TypeScript literal."""
+    assert entity._ts_string("a\rb") == "'a\\rb'"
+    assert entity._ts_string("a\r\nb") == "'a\\r\\nb'"
 
 
 def test_the_committed_projection_matches_its_own_render() -> None:

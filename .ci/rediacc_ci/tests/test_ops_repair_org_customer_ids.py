@@ -161,3 +161,65 @@ def test_unsafe_id_never_reaches_sql() -> None:
     }
     with pytest.raises(mod.RefusedError):
         mod.update_sql(bad)
+
+
+def test_a_write_that_matches_nothing_records_no_bookmark() -> None:
+    """fc64dc9f.2: the docstring promises the bookmark only before a real UPDATE."""
+    d1 = FakeD1()
+    rc = mod.run(
+        _args("stable", "eu", write=True, confirm_stable=True),
+        runner=d1.run,
+        bookmarker=d1.bookmark,
+    )
+    assert rc == 0
+    assert "BOOKMARK" not in d1.events
+    assert d1.writes() == []
+
+
+@pytest.mark.parametrize("missing", ["old_customer_id", "new_customer_id", "owner_id", "sub_id"])
+def test_a_row_missing_a_required_field_is_refused(missing: str) -> None:
+    """fc64dc9f.3: a shape change in the SELECT output stops the run instead of building an UPDATE from a blank."""
+    row = {
+        "org_id": "o",
+        "owner_id": "u",
+        "old_customer_id": "u",
+        "new_customer_id": "cus_X",
+        "sub_id": "s",
+    }
+    row[missing] = ""
+    with pytest.raises(mod.RefusedError, match="UNVERIFIED"):
+        mod.matches([row])
+    del row[missing]
+    with pytest.raises(mod.RefusedError, match="UNVERIFIED"):
+        mod.matches([row])
+
+
+def test_unbound_without_the_cloudflare_env_it_reexecutes_under_the_profile(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """fc64dc9f.1: the re-exec branch (argv given, profile unbound, env missing) runs the tool under bws_env with the package environment."""
+    seen: list[tuple[list[str], dict[str, str]]] = []
+
+    class Done:
+        returncode = 7
+
+    def fake_run(argv, env=None, **_kw):
+        seen.append((list(argv), dict(env or {})))
+        return Done()
+
+    monkeypatch.setattr(mod.target_mod, "missing_env", lambda: ["CLOUDFLARE_API_TOKEN"])
+    monkeypatch.setattr(mod.target_mod, "profile_bound", lambda _p: False)
+    monkeypatch.setattr(mod.subprocess, "run", fake_run)
+    args = _args()
+    rc = mod.run(args, argv=["--target", "bench"])
+    assert rc == 7
+    assert len(seen) == 1
+    argv, env = seen[0]
+    assert argv[1:5] == ["-m", "rediacc_ci.core.bws_env", "exec", "--profile"]
+    assert argv[5] == mod.target_mod.profile_for("bench")
+    assert "PYTHONPATH" in env
+    # Control: with the profile already bound the missing env is an error, not another re-exec.
+    seen.clear()
+    monkeypatch.setattr(mod.target_mod, "profile_bound", lambda _p: True)
+    assert mod.run(_args(), argv=["--target", "bench"]) == 1
+    assert seen == []

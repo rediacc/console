@@ -119,7 +119,9 @@ def _ts_string(value: str) -> str:
     """A TypeScript string literal in the formatter's preferred quote: single, unless the value holds a single quote and no double quote."""
     if "'" in value and '"' not in value:
         return json.dumps(value, ensure_ascii=False)
-    escaped = value.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n")
+    escaped = (
+        value.replace("\\", "\\\\").replace("'", "\\'").replace("\n", "\\n").replace("\r", "\\r")
+    )
     return "'%s'" % escaped
 
 
@@ -251,7 +253,7 @@ def main(
         rc = run_child(reexec_argv(sub), environ)
         if rc != 0:
             print(
-                "%s: %s failed under profile %s (exit %d): the vault was not reached or an entry is absent, which is a failure and never a pass"
+                "%s: %s failed under profile %s (exit %d): the child's own lines above name the cause (drifted fields, or a vault that was not reached or an entry that is absent); either way it is a failure and never a pass"
                 % (NAME, sub, PROFILE, rc),
                 file=sys.stderr,
             )
