@@ -31,6 +31,8 @@ const TEMPLATE_FILES = [
   'legal.ts',
   // Added 2026-11-12 (PLAN-account-notices E1): the one digest shape, plural-aware through tCount.
   'digest.ts',
+  // Added 2026-11-12 (PLAN-licence-expiry-notices N1): the delegation cert countdown mail.
+  'delegation-expiry.ts',
 ];
 
 /** The CLDR plural categories `Intl.PluralRules` can select. */
