@@ -64,7 +64,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/_done/PLAN-submodule-branch-coordination-guard.md -- 5 of 8 boxes ticked, the PR body's `Plan:` line
   - agent/plans/PLAN-proxy-cd-six-targets.md -- 27 of 31 boxes ticked, the PR body's `Plan:` line
   - agent/plans/PLAN-repo-docker-storage-prune.md -- 12 of 14 boxes ticked, the PR body's `Plan:` line
-- Work outside the PR's plans (19 epic(s)):
+- Work outside the PR's plans (20 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 26 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
   - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 48 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
@@ -84,15 +84,16 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 18 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 36 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:ae96292538e907a06.
-- Leased items: 15: #04b4a244 (worker:ae96292538e907a06, d778be9d), #1ff32880 (worker:ae96292538e907a06, d778be9d), #21767292 (worker:a2a1fcf609f8c263c, d778be9d), #443ba017 (worker:ae96292538e907a06, d778be9d), #55cce973 (worker:ae96292538e907a06, d778be9d), #5ac354e6 (worker:ae96292538e907a06, d778be9d), #5d0ebda8 (worker:ae96292538e907a06, d778be9d), #9cb71958 (worker:ae96292538e907a06, d778be9d), #a1ecc191 (worker:ae96292538e907a06, d778be9d), #af61285a (worker:ae96292538e907a06, d778be9d), #bb081378 (worker:ae96292538e907a06, d778be9d), #bf47a483 (worker:ae96292538e907a06, d778be9d), and 3 more.
+  - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 1 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
+- Writers: 4 live of writer_cap 25 (session d778be9d): worker:ae96292538e907a06, worker:afde1883e9ebae7a9, worker:aa1ca057a56c637ac, worker:ae8446a9428f96f0e.
+- Leased items: 17: #04b4a244 (worker:ae96292538e907a06, d778be9d), #1ff32880 (worker:ae96292538e907a06, d778be9d), #40e3fe1b (worker:afde1883e9ebae7a9, d778be9d), #443ba017 (worker:ae96292538e907a06, d778be9d), #55cce973 (worker:ae96292538e907a06, d778be9d), #5ac354e6 (worker:ae96292538e907a06, d778be9d), #5d0ebda8 (worker:ae96292538e907a06, d778be9d), #69063ead (worker:aa1ca057a56c637ac, d778be9d), #9cb71958 (worker:ae96292538e907a06, d778be9d), #a1ecc191 (worker:ae96292538e907a06, d778be9d), #af61285a (worker:ae96292538e907a06, d778be9d), #b238e4a4 (worker:ae8446a9428f96f0e, d778be9d), and 5 more.
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 23 of 69 plans done, 1104 of 1297 boxes done (85%).
+Promoted: 23 of 69 plans done, 1107 of 1297 boxes done (85%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -164,7 +165,7 @@ Promoted: 23 of 69 plans done, 1104 of 1297 boxes done (85%).
 | 66 | PLAN-terms-acceptance.md | 23/25 | 2 open |
 | 67 | PLAN-account-notices.md | 12/16 | 4 open |
 | 68 | PLAN-enterprise-tenants.md | 14/47 | 33 open |
-| 69 | PLAN-licence-expiry-notices.md | 0/7 | 7 open |
+| 69 | PLAN-licence-expiry-notices.md | 3/7 | 4 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")

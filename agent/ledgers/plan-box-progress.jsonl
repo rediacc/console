@@ -68,3 +68,11 @@
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-terms-acceptance.md","sig":"546c067c","clause":"all","state":"landed","ref":"9d27b9abc2b3c73cd565fe9c66ff2c53e3303a00","at":"2026-11-11T16:17:40Z"}
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-terms-acceptance.md","sig":"96c4fd47","clause":"all","state":"landed","ref":"238d88403002e810c935a58b7282e804fe802dd6","at":"2026-11-11T16:17:40Z"}
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-terms-acceptance.md","sig":"070750a1","clause":"all","state":"landed","ref":"b99481e33ff8b9fc21b443c861156940b398e90b","at":"2026-11-11T16:20:59Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-enterprise-tenants.md","sig":"e79d1ae2","clause":"all","state":"landed","ref":"8d3cf5eafcc855dd5bd3d7bf37c5300111376cc7","at":"2026-11-12T11:19:57Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-enterprise-tenants.md","sig":"1ee537d1","clause":"all","state":"landed","ref":"2f9bee93c0628108aeb2f381990207e9c3af1fa2","at":"2026-11-12T11:19:58Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-enterprise-tenants.md","sig":"4eee1c0d","clause":"all","state":"landed","ref":"4db510a659f15c52f5378e31d67411fc252beb4a","at":"2026-11-12T11:19:58Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-enterprise-tenants.md","sig":"cccedc64","clause":"all","state":"landed","ref":"2675ee0251f543418e1a6ca2fc213346223771e6","at":"2026-11-12T11:19:58Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-enterprise-tenants.md","sig":"cccedc64","clause":"all","state":"landed","ref":"0bd569436a4071a0e2ec94e466a7649480833e09","at":"2026-11-12T11:19:58Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-licence-expiry-notices.md","sig":"be499a0a","clause":"all","state":"landed","ref":"64ce43779d74e091c5647dd7ebbbfcfb487cd012","at":"2026-11-12T13:57:53Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-licence-expiry-notices.md","sig":"2556f2e9","clause":"all","state":"landed","ref":"7dde0009448737a8d6d83664fc7dfdaa0eb8f587","at":"2026-11-12T13:57:53Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-licence-expiry-notices.md","sig":"9a772925","clause":"all","state":"landed","ref":"3ae80e6949c8f6a8e85d2410880b9426ec9b5e6f","at":"2026-11-12T13:57:53Z"}

@@ -1813,18 +1813,19 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 7,
-      "done": 0,
+      "open": 4,
+      "done": 3,
       "open_sigs": [
         "185b202a",
-        "2556f2e9",
         "67e0500b",
-        "9a772925",
         "9c610a87",
-        "bac0a9c4",
-        "be499a0a"
+        "bac0a9c4"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "2556f2e9",
+        "9a772925",
+        "be499a0a"
+      ]
     },
     "agent/plans/PLAN-lint-css-ci-wiring.md": {
       "status": "compacted",
