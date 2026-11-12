@@ -168,7 +168,7 @@ async function issueCert(delegatedPublicKey: string): Promise<IssueOutcome> {
 }
 
 /** The refusals `install` and `licence` know how to answer; anything else is rethrown. */
-export function issueRefusal(error: AccountFetchError): IssueOutcome {
+function issueRefusal(error: AccountFetchError): IssueOutcome {
   if (error.status === 403 && /Missing required scope/i.test(error.message)) {
     return { kind: 'missing-scope' };
   }

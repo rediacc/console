@@ -13,7 +13,16 @@ TEMPLATE = ROOT / "packages/cli/templates/elite/docker-compose.yml"
 
 # Elite names the host through SYSTEM_DOMAIN; the template names it ELITE_DOMAIN and lets Traefik terminate TLS.
 ELITE_ONLY = {"SYSTEM_DOMAIN"}
-TEMPLATE_ONLY = {"ENABLE_HTTPS", "UPSTREAM_URL", "UPSTREAM_API_KEY"}
+TEMPLATE_ONLY = {
+    "ENABLE_HTTPS",
+    "UPSTREAM_URL",
+    "UPSTREAM_API_KEY",
+    # The template runs the on-prem server itself (rdc server install), so it seeds the root user and the on-prem keys; elite is the hosted image and takes them elsewhere.
+    "ROOT_EMAIL",
+    "ON_PREMISE_MODE",
+    "ON_PREMISE_PRIVATE_KEY",
+    "ON_PREMISE_PUBLIC_KEY",
+}
 
 
 def _web_env_keys(text: str) -> set[str]:

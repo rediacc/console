@@ -7,9 +7,9 @@ import { t } from '../../i18n/index.js';
 import { ServerError } from './box.js';
 import type { BoxTarget, ServerDeps } from './types.js';
 
-export const API = '/account/api/v1';
-export const HEALTH_TRIES = 60;
-export const HEALTH_INTERVAL_MS = 5_000;
+const API = '/account/api/v1';
+const HEALTH_TRIES = 60;
+const HEALTH_INTERVAL_MS = 5_000;
 
 /** Whether a certificate's names cover `host` (exactly, or by a one-label wildcard). */
 export function covers(sans: string[], host: string): boolean {

@@ -16,9 +16,9 @@ import { outputService } from '../core/output.js';
 import { ServerError } from './box.js';
 import type { ServerDeps } from './types.js';
 
-export const DNS_POLL_MS = 10_000;
-export const DNS_TIMEOUT_MS = 30 * 60_000;
-export const OWNED_ZONES = [WK_INFRA_DOMAIN, WK_APEX_DOMAIN, WK_PRODUCT_DOMAIN] as const;
+const DNS_POLL_MS = 10_000;
+const DNS_TIMEOUT_MS = 30 * 60_000;
+const OWNED_ZONES = [WK_INFRA_DOMAIN, WK_APEX_DOMAIN, WK_PRODUCT_DOMAIN] as const;
 
 /** The Rediacc-owned zone `host` sits in; undefined for any other (a customer's) zone. */
 export function ownedZoneOf(host: string): string | undefined {
@@ -48,7 +48,7 @@ export function printDnsRecords(records: DnsRecord[]): void {
 }
 
 /** The records that do not resolve to their value yet. */
-export async function unresolved(deps: ServerDeps, records: DnsRecord[]): Promise<DnsRecord[]> {
+async function unresolved(deps: ServerDeps, records: DnsRecord[]): Promise<DnsRecord[]> {
   const answers = new Map<string, string[]>();
   for (const name of new Set(records.map((r) => r.name))) {
     answers.set(name, await deps.resolve(name));

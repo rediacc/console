@@ -9,11 +9,11 @@ import { RENET_PATH, ServerError } from './box.js';
 import { PREFLIGHT, parseEnvLines, shCommand } from './box-scripts.js';
 import type { ServerDeps } from './types.js';
 
-export const SUPPORTED_ARCH = ['x86_64', 'amd64', 'aarch64', 'arm64'] as const;
+const SUPPORTED_ARCH = ['x86_64', 'amd64', 'aarch64', 'arm64'] as const;
 /** Largest clock difference tolerated, in seconds: certificates, licences and 2FA codes all carry times. */
-export const MAX_CLOCK_SKEW_S = 120;
+const MAX_CLOCK_SKEW_S = 120;
 /** Room kept beside the repo for images and the stack's own data, in GiB. */
-export const DISK_HEADROOM_GIB = 2;
+const DISK_HEADROOM_GIB = 2;
 /** Port holders that are renet's own proxy, which routes the new repo instead of colliding with it. */
 const PROXY_HOLDERS = ['traefik', 'docker-proxy'];
 

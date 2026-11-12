@@ -79,7 +79,7 @@ import {
 import { applyTls } from './tls.js';
 import type { LicenceMode, ServerDeps, TlsMethod } from './types.js';
 
-export const INSTALL_STEPS = [
+const INSTALL_STEPS = [
   'preflight',
   'setup',
   'dns',

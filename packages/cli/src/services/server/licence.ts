@@ -31,7 +31,7 @@ export interface LicenceOptions {
 }
 
 /** A cert from a file, checked against the box's key. */
-export async function certFromFile(
+async function certFromFile(
   deps: ServerDeps,
   file: string,
   boxPublicKey: string

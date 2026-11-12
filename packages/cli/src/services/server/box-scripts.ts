@@ -10,8 +10,8 @@
 import { shellQuote } from '../../utils/shell-quote.js';
 
 /** What a value written into `secrets.env` may carry: neither compose's env reader nor `source` reads any of it specially. */
-export const ENV_SAFE = /^[A-Za-z0-9._~@%+=:,/-]*$/;
-export const ENV_KEY = /^[A-Z][A-Z0-9_]*$/;
+const ENV_SAFE = /^[A-Za-z0-9._~@%+=:,/-]*$/;
+const ENV_KEY = /^[A-Z][A-Z0-9_]*$/;
 
 /** The recovery bundle: what restoring the box needs that the box alone holds (private/elite/BACKUP.md). */
 export const BUNDLE_KEYS = [
