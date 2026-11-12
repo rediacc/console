@@ -65,9 +65,9 @@ export const ALLOWED_NON_MANIFEST_TARGETS: ReadonlySet<string> = new Set(
  * matched (caller falls through to ASSETS).
  *
  * Exact lookup wins over pattern match — order is load-bearing. For example:
- *   /terms-of-service/acceptable-use-policy
- * matches BOTH the legal-concat pattern (→ $2 = dead /acceptable-use-policy)
- * AND an explicit 410 override in exact. Exact wins, so we correctly 410.
+ *   /contact
+ * matches BOTH its exact self-map and the ^/[a-z]+ntact$ typo pattern. Exact
+ * wins, so the request falls through to the live page instead of a 301.
  */
 export function applyRedirect(pathWithoutLang: string): {
   to: string | null;

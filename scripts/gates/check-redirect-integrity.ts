@@ -9,6 +9,8 @@
  *      (self-maps A -> A are legal — they trigger lang-prefix addition
  *      when the request has no lang; the Worker's self-redirect guard
  *      prevents loops when lang is already present).
+ *   2b. No exact key names a live page, unless it maps to itself: the Worker reads
+ *      this table before ASSETS, so such a key hides the page.
  *   3. Every pattern `from` compiles as `new RegExp()`.
  *
  * Run via: `npm run check:ci-redirects`
@@ -122,6 +124,26 @@ if (chains.length > 0) {
   );
 }
 ok('no redirect chains');
+
+// --- Check 2b: No rule shadows a live page ---------------------------------
+// The Worker consults this table BEFORE serving ASSETS (workers/www/src/index.ts), so a key naming a live page answers its 410 or 301 and the page is never served. A self-map (A -> A) is the one key a live page may carry: the Worker's self-redirect guard falls through to ASSETS. Measured 2026-11-12: `/acceptable-use-policy` kept its 410 from when the page was deleted, and the page the new Terms of Service cite came back in the build behind it.
+
+const shadowed: Array<{ from: string; rule: Rule }> = [];
+for (const [from, rule] of Object.entries(redirects.exact)) {
+  if (livePaths.has(from) && rule.to !== from) shadowed.push({ from, rule });
+}
+if (shadowed.length > 0) {
+  const lines = shadowed
+    .map(
+      (s) => `  ${s.from}  ->  ${s.rule.to ?? '(gone)'} ${s.rule.status}  (source is a live page)`
+    )
+    .join('\n');
+  fail(
+    `${shadowed.length} exact rule(s) shadow a live page:\n${lines}\n\n` +
+      `Fix: delete the rule, since the page now exists and the Worker serves it once no rule matches.`
+  );
+}
+ok('no exact rule shadows a live page');
 
 // --- Check 3: Pattern regex compiles ---------------------------------------
 

@@ -198,9 +198,10 @@ describe('fetch handler — 404 recovery integration', () => {
     expect(res.headers.get('Location')).toBe(`${WK_SITE_ORIGIN}/en/telemetry-policy`);
   });
 
-  test('EXACT wins over PATTERN: /en/terms-of-service/acceptable-use-policy -> 410 (not /en/acceptable-use-policy)', async () => {
+  test('legal-concat pattern: /en/terms-of-service/acceptable-use-policy -> 301 /en/acceptable-use-policy', async () => {
     const res = await hit('/en/terms-of-service/acceptable-use-policy', env);
-    expect(res.status).toBe(410);
+    expect(res.status).toBe(301);
+    expect(res.headers.get('Location')).toBe(`${WK_SITE_ORIGIN}/en/acceptable-use-policy`);
   });
 
   test('self-redirect guard: /en/checkout/success does NOT infinite-loop', async () => {
