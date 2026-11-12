@@ -16,7 +16,7 @@ const MAX_CLOCK_SKEW_S = 120;
 const DISK_HEADROOM_GIB = 2;
 const ZERO = '0';
 /** Port holders that are renet's own proxy, which routes the new repo instead of colliding with it. */
-const PROXY_HOLDERS = ['traefik', 'docker-proxy'] as const;
+const PROXY_HOLDERS: ReadonlySet<string> = new Set(['traefik', 'docker-proxy']);
 
 export interface PreflightFacts {
   sudo: boolean;
@@ -61,10 +61,7 @@ function portProblems(facts: PreflightFacts): string[] {
     const line = facts.ports[port];
     if (!line) continue;
     const names = holders(line);
-    const proxy =
-      facts.renet &&
-      names.length > 0 &&
-      names.every((n) => (PROXY_HOLDERS as readonly string[]).includes(n));
+    const proxy = facts.renet && names.length > 0 && names.every((n) => PROXY_HOLDERS.has(n));
     if (!proxy) {
       problems.push(
         t('commands.server.preflight.portBusy', { port, holder: names.join(', ') || line })

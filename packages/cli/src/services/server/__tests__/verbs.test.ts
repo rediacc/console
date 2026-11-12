@@ -5,8 +5,8 @@
 import { mkdtempSync, readFileSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WK_IMAGE_REGISTRY } from '@rediacc/shared/config/well-known.generated';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const m = vi.hoisted(() => ({
   builtinVersion: '' as string,
@@ -45,6 +45,7 @@ vi.mock('../../../templates/embedded.generated.js', () => ({
   },
 }));
 
+import { outputService } from '../../core/output.js';
 import { liveServerDeps } from '../deps.js';
 import { serverBackup, serverLicence, serverStatus, serverUpgrade } from '../verbs.js';
 import { BOX_KEY, certFor, makeFake } from './fakes.js';
@@ -183,6 +184,29 @@ describe('licence', () => {
     });
     expect(fake.calls).not.toContain('rdc repo up elite@m1');
     expect(fake.setEnv[0].DELEGATION_CERT_BASE64).toBe(certFor(BOX_KEY));
+  });
+
+  it('waits for the cert tier after an upload and reports success only then', async () => {
+    const fake = makeFake({
+      freeProbe: 409,
+      freeProbeSequence: [400, 400, 400],
+      boxReplies: { '/auth/login': { cookie: 'access_token=own' } },
+    });
+    const result = await serverLicence(fake.deps, LOC);
+    expect(result.via).toBe('upload');
+    expect(fake.calls.filter((c) => c.endsWith('/onprem/free-license'))).toHaveLength(4);
+    expect(outputService.info).toHaveBeenCalledWith('commands.server.licence.viaUpload');
+    expect(Object.values(fake.written).some((v) => v.includes('"licence": "cert"'))).toBe(true);
+  });
+
+  it('fails without reporting success when the server never leaves the free tier', async () => {
+    const fake = makeFake({
+      freeProbe: 400,
+      boxReplies: { '/auth/login': { cookie: 'access_token=own' } },
+    });
+    await expect(serverLicence(fake.deps, LOC)).rejects.toThrow(/stillFree/);
+    expect(outputService.info).not.toHaveBeenCalledWith('commands.server.licence.viaUpload');
+    expect(Object.values(fake.written).some((v) => v.includes('"licence": "cert"'))).toBe(false);
   });
 
   it.each([

@@ -8,12 +8,12 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { describe, expect, it, vi } from 'vitest';
 import {
   WK_IMAGE_REGISTRY,
   WK_INFRA_DOMAIN,
   WK_PRODUCT_DOMAIN,
 } from '@rediacc/shared/config/well-known.generated';
+import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../../i18n/index.js', () => ({
   t: (key: string, vars?: Record<string, unknown>) =>

@@ -5,8 +5,8 @@
  */
 
 import { rmSync } from 'node:fs';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WK_INFRA_DOMAIN } from '@rediacc/shared/config/well-known.generated';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const m = vi.hoisted(() => ({
   machines: [] as { name: string; config: { ip: string; user: string; datastore?: string } }[],

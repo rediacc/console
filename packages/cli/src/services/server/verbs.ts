@@ -16,7 +16,7 @@ import {
   requireRecord,
   TEMPLATE_NAME,
 } from './common.js';
-import { API, covers, loginOwner, probeFreeTier, waitHealthy } from './http.js';
+import { API, covers, loginOwner, probeFreeTier, waitCertTier, waitHealthy } from './http.js';
 import { obtainLicence } from './licence.js';
 import { loadOwner, recordFile } from './state.js';
 import type { BoxTarget, ServerDeps } from './types.js';
@@ -227,16 +227,14 @@ export async function serverLicence(
   const uploaded = await uploadCert(deps, target, record.domain, result.env.DELEGATION_CERT_BASE64);
   // Written either way, so the next restart or upgrade carries the cert and its renewal token.
   await setBoxEnv(deps, where, result.env);
-  if (uploaded) {
-    outputService.info(t('commands.server.licence.viaUpload'));
-  } else {
+  if (!uploaded) {
     outputService.info(t('commands.server.licence.viaRestart'));
     await rdcMust(deps, ['repo', 'up', `${record.repo}@${record.machine}`]);
     await waitHealthy(deps, target);
   }
-  if ((await probeFreeTier(deps, target)) === true) {
-    throw new ServerError(t('commands.server.licence.stillFree', { domain: record.domain }));
-  }
+  // An upload takes effect asynchronously: success is reported only once the server shows the cert.
+  await waitCertTier(deps, target);
+  if (uploaded) outputService.info(t('commands.server.licence.viaUpload'));
   const stored = { ...record, licence: 'cert' as const, subscriptionId: result.subscriptionId };
   await deps.writePrivate(recordFile(record.domain), `${JSON.stringify(stored, null, 2)}\n`);
   const cert = decodeCertBase64(result.env.DELEGATION_CERT_BASE64);

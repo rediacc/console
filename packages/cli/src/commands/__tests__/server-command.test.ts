@@ -83,6 +83,12 @@ describe('rdc server', () => {
     ]);
   });
 
+  it('registers the upgrade summary from its short description key', () => {
+    const server = program().commands.find((c) => c.name() === 'server');
+    const upgrade = server?.commands.find((c) => c.name() === 'upgrade');
+    expect(upgrade?.summary()).toBe('commands.server.upgrade.descriptionShort');
+  });
+
   it('hands the install flags and the positional machine to the engine', async () => {
     await program().parseAsync(
       [

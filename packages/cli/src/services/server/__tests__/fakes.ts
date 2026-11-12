@@ -43,6 +43,8 @@ export interface FakeOptions {
   health?: number;
   sans?: string[];
   freeProbe?: number;
+  /** Free-probe statuses answered in order before `freeProbe` takes over. */
+  freeProbeSequence?: number[];
   bwsRows?: BwsRow[];
   zoneToken?: string;
   files?: Record<string, string>;
@@ -136,6 +138,7 @@ export function makeFake(opts: FakeOptions = {}): Fake {
     ['proxy cert install', 'byo', () => ''],
     ['docker pull', 'pull', () => ''],
   ];
+  const probeQueue = [...(opts.freeProbeSequence ?? [])];
   const BOX_REPLIES: [string, Partial<BoxReply>][] = [
     ['/health', { status: opts.health ?? 200 }],
     ['/onprem/free-license', { status: opts.freeProbe ?? 400 }],
@@ -171,6 +174,9 @@ export function makeFake(opts: FakeOptions = {}): Fake {
         path.endsWith(suffix)
       );
       if (override) return Promise.resolve({ ...base, ...override[1] });
+      if (path.endsWith('/onprem/free-license') && probeQueue.length > 0) {
+        return Promise.resolve({ ...base, status: probeQueue.shift() ?? 400 });
+      }
       const tweak = BOX_REPLIES.find(([suffix]) => path.endsWith(suffix));
       return Promise.resolve(tweak ? { ...base, ...tweak[1] } : base);
     },
