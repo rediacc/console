@@ -39,7 +39,13 @@ def git(root: pathlib.Path, *args: str) -> str:
     ).stdout.strip()
 
 
-def make_repo(tmp_path: pathlib.Path, ahead: int, record: bool = True, branch: str = "1104-1"):
+def make_repo(
+    tmp_path: pathlib.Path,
+    ahead: int,
+    record: bool = True,
+    branch: str = "1104-1",
+    record_branch: str | None = None,
+):
     root = tmp_path / "repo"
     root.mkdir()
     git(root, "init", "-q", "-b", "main")
@@ -54,7 +60,10 @@ def make_repo(tmp_path: pathlib.Path, ahead: int, record: bool = True, branch: s
     if record:
         state = pathlib.Path(git(root, "rev-parse", "--absolute-git-dir")) / "rediacc-backup"
         state.mkdir()
-        (state / "last-live").write_text(live + "\n", encoding="utf-8")
+        # The record names its branch (5936542865): "<branch> <oid>".
+        (state / "last-live").write_text(
+            "%s %s\n" % (record_branch or branch, live), encoding="utf-8"
+        )
     (root / ".ci").symlink_to(REAL_ROOT / ".ci")
     return root
 
@@ -109,3 +118,8 @@ def test_the_advisory_rides_the_allow_queue_at_advise_level():
     assert table["checks"]["backup-lag"] == {"advise": "low"}
     assert "block" not in table["checks"]["backup-lag"]
     assert "backup-lag" not in wl_standdown.CORE
+
+
+def test_a_record_naming_another_branch_is_silent(tmp_path):
+    """CONTROL: a cached live oid recorded for another branch says nothing about this one."""
+    assert wl_checks.backup_lag(make_repo(tmp_path, 51, record_branch="0101-1")) is None
