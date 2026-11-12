@@ -825,6 +825,10 @@
       "CF_GLOBAL_API_KEY",
       "CF_MANAGEMENT_TOKEN"
     ],
+    ".ci/rediacc_ci/ops/notices_drill.py": [
+      "REDIACC_BWS_PROFILES",
+      "ROOT_EMAIL"
+    ],
     ".ci/rediacc_ci/ops/ops_health.py": [
       "OPS_HEALTH_LOCK_HANDOFF"
     ],

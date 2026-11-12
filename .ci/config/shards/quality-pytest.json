@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-12T04:08:28.907Z",
+  "generatedAt": "2026-11-12T06:30:46.330Z",
   "legs": [
     {
       "index": 1,
@@ -819,6 +819,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ops_cf_family.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_linode_cluster_validation.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_mirror_config_store.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_notices_drill.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_observability_volume.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_push_backup_credentials.py",
         "pytest:.ci/rediacc_ci/tests/test_paths.py",
