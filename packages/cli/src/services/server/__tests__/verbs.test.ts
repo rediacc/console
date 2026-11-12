@@ -226,7 +226,7 @@ describe('licence', () => {
       freeProbe: 503,
       boxReplies: { '/auth/login': { cookie: 'access_token=own' } },
     });
-    await expect(serverLicence(fake.deps, LOC)).rejects.toThrow(/stillFree/);
+    await expect(serverLicence(fake.deps, LOC)).rejects.toThrow(/certUnconfirmed/);
     expect(outputService.info).not.toHaveBeenCalledWith('commands.server.licence.viaUpload');
     expect(Object.values(fake.written).some((v) => v.includes('"licence": "cert"'))).toBe(false);
   });

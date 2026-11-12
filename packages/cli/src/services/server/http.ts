@@ -67,19 +67,33 @@ export async function probeFreeTier(
 
 /**
  * Wait until the server answers as a cert holder (409), so a cert that was just handed over has
- * taken effect. An indeterminate reply (a 503 during a restart) keeps polling. Throws `stillFree`
- * when no definite cert answer arrives within the health wait's bounds.
+ * taken effect. An indeterminate reply (a 503 during a restart) keeps polling. When no definite cert
+ * answer arrives within the health wait's bounds it throws `stillFree` if the server answered as the
+ * free tier at least once, and `certUnconfirmed` naming the last status otherwise.
  */
 export async function waitCertTier(
   deps: ServerDeps,
   target: BoxTarget,
   tries = HEALTH_TRIES
 ): Promise<void> {
+  let sawFree = false;
+  let lastStatus = 0;
   for (let attempt = 0; attempt < tries; attempt++) {
-    if ((await probeFreeTier(deps, target)) === false) return;
+    const reply = await deps.box(target, 'POST', `${API}${ONPREM_FREE_TIER_LOCAL_PATH}`, {});
+    if (reply.status === 409) return;
+    if (reply.status === 400) sawFree = true;
+    lastStatus = reply.status;
     if (attempt + 1 < tries) await deps.sleep(HEALTH_INTERVAL_MS);
   }
-  throw new ServerError(t('commands.server.licence.stillFree', { domain: target.domain }));
+  if (sawFree) {
+    throw new ServerError(t('commands.server.licence.stillFree', { domain: target.domain }));
+  }
+  throw new ServerError(
+    t('commands.server.licence.certUnconfirmed', {
+      domain: target.domain,
+      status: String(lastStatus),
+    })
+  );
 }
 
 /** The owner's session cookie, or undefined when the box does not log them in. */

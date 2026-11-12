@@ -2019,6 +2019,7 @@
   "commands.server.install.step": "Step: {{step}}",
   "commands.server.install.summary": "Install the account server on a machine",
   "commands.server.licence.certInvalid": "{{file}} is not a usable delegation certificate: {{error}}",
+  "commands.server.licence.certUnconfirmed": "{{domain}} never confirmed the cert (last answer: HTTP {{status}})",
   "commands.server.licence.certUnreadable": "Cannot read the certificate file {{file}}",
   "commands.server.licence.description": "Move a free-tier server to a delegation certificate from the logged-in account, or from --cert",
   "commands.server.licence.done": "{{domain}} is licensed under subscription {{subscription}}",

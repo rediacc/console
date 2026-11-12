@@ -2019,6 +2019,7 @@
   "commands.server.install.step": "ステップ: {{step}}",
   "commands.server.install.summary": "マシンにアカウントサーバーをインストールする",
   "commands.server.licence.certInvalid": "{{file}} は使用可能な委任証明書ではありません: {{error}}",
+  "commands.server.licence.certUnconfirmed": "{{domain}} は証明書を確認できませんでした (最後の応答: HTTP {{status}})",
   "commands.server.licence.certUnreadable": "証明書ファイル {{file}} を読み取れません",
   "commands.server.licence.description": "無料プランのサーバーを、ログイン中のアカウントまたは --cert の委任証明書に切り替える",
   "commands.server.licence.done": "{{domain}} はサブスクリプション {{subscription}} でライセンス付与されました",

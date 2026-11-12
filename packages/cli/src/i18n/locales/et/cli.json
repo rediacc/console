@@ -2608,6 +2608,7 @@
         "offerFree": "Kas käivitada server hoopis tasuta tasemel?",
         "noCertForUpgrade": "Delegeerimissertifikaati pole saadaval: logi sisse käsuga `rdc subscription login` omaniku või administraatorina koos 2FA-ga või anna --cert <file>",
         "stillFree": "{{domain}} vastab pärast taaskäivitust endiselt tasuta tasemena",
+        "certUnconfirmed": "{{domain}} ei kinnitanud sertifikaati (viimane vastus: HTTP {{status}})",
         "viaUpload": "Töötav server võttis sertifikaadi vastu; taaskäivitust ei vajatud",
         "viaRestart": "Sertifikaat kirjutati faili secrets.env ja server taaskäivitub selle kasutusele võtmiseks",
         "uploadRefused": "Töötav server keeldus sertifikaadi üleslaadimisest (olek {{status}}); selle asemel taaskäivitatakse see sertifikaadiga",

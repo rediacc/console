@@ -2019,6 +2019,7 @@
   "commands.server.install.step": "Schritt: {{step}}",
   "commands.server.install.summary": "Den Account-Server auf einer Maschine installieren",
   "commands.server.licence.certInvalid": "{{file}} ist kein verwendbares Delegationszertifikat: {{error}}",
+  "commands.server.licence.certUnconfirmed": "{{domain}} hat das Zertifikat nie bestätigt (letzte Antwort: HTTP {{status}})",
   "commands.server.licence.certUnreadable": "Die Zertifikatsdatei {{file}} lässt sich nicht lesen",
   "commands.server.licence.description": "Einen Server der kostenlosen Stufe auf ein Delegationszertifikat des angemeldeten Kontos oder aus --cert umstellen",
   "commands.server.licence.done": "{{domain}} ist unter dem Abonnement {{subscription}} lizenziert",

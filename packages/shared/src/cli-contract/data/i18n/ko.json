@@ -2019,6 +2019,7 @@
   "commands.server.install.step": "단계: {{step}}",
   "commands.server.install.summary": "머신에 계정 서버 설치",
   "commands.server.licence.certInvalid": "{{file}} 은(는) 사용할 수 있는 위임 인증서가 아닙니다: {{error}}",
+  "commands.server.licence.certUnconfirmed": "{{domain}}에서 인증서를 끝내 확인하지 못했습니다 (마지막 응답: HTTP {{status}})",
   "commands.server.licence.certUnreadable": "인증서 파일 {{file}} 을(를) 읽을 수 없습니다",
   "commands.server.licence.description": "무료 등급 서버를 로그인한 계정 또는 --cert의 위임 인증서로 전환",
   "commands.server.licence.done": "{{domain}} 은(는) 구독 {{subscription}} 으로 라이선스가 발급되었습니다",

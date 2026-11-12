@@ -2019,6 +2019,7 @@
   "commands.server.install.step": "步骤：{{step}}",
   "commands.server.install.summary": "在机器上安装账户服务器",
   "commands.server.licence.certInvalid": "{{file}} 不是可用的委托证书：{{error}}",
+  "commands.server.licence.certUnconfirmed": "{{domain}} 始终未确认证书（最后响应：HTTP {{status}}）",
   "commands.server.licence.certUnreadable": "无法读取证书文件 {{file}}",
   "commands.server.licence.description": "将免费版服务器切换为来自当前登录账户或 --cert 的委托证书",
   "commands.server.licence.done": "{{domain}} 已通过订阅 {{subscription}} 获得授权",

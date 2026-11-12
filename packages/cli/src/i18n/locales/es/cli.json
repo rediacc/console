@@ -2608,6 +2608,7 @@
         "offerFree": "¿Iniciar el servidor con el nivel gratuito en su lugar?",
         "noCertForUpgrade": "No hay ningún certificado de delegación disponible: inicie sesión con `rdc subscription login` como propietario o administrador con 2FA, o indique --cert <file>",
         "stillFree": "{{domain}} sigue respondiendo como nivel gratuito tras el reinicio",
+        "certUnconfirmed": "{{domain}} no llegó a confirmar el certificado (última respuesta: HTTP {{status}})",
         "viaUpload": "El servidor en ejecución aceptó el certificado; no hizo falta reiniciar",
         "viaRestart": "El certificado se guardó en secrets.env y el servidor se reinicia para adoptarlo",
         "uploadRefused": "El servidor en ejecución rechazó la subida del certificado (estado {{status}}); se reinicia con el certificado en su lugar",

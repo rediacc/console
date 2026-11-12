@@ -2019,6 +2019,7 @@
   "commands.server.install.step": "Шаг: {{step}}",
   "commands.server.install.summary": "Установить сервер учётных записей на машину",
   "commands.server.licence.certInvalid": "{{file}} не является пригодным сертификатом делегирования: {{error}}",
+  "commands.server.licence.certUnconfirmed": "{{domain}} так и не подтвердил сертификат (последний ответ: HTTP {{status}})",
   "commands.server.licence.certUnreadable": "Не удаётся прочитать файл сертификата {{file}}",
   "commands.server.licence.description": "Перевести сервер с бесплатного тарифа на сертификат делегирования текущей учётной записи или из --cert",
   "commands.server.licence.done": "{{domain}} лицензирован по подписке {{subscription}}",

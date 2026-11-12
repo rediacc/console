@@ -2019,6 +2019,7 @@
   "commands.server.install.step": "Adım: {{step}}",
   "commands.server.install.summary": "Hesap sunucusunu bir makineye kur",
   "commands.server.licence.certInvalid": "{{file}} kullanılabilir bir yetki devri sertifikası değil: {{error}}",
+  "commands.server.licence.certUnconfirmed": "{{domain}} sertifikayı hiç onaylamadı (son yanıt: HTTP {{status}})",
   "commands.server.licence.certUnreadable": "{{file}} sertifika dosyası okunamıyor",
   "commands.server.licence.description": "Ücretsiz katmandaki bir sunucuyu, oturum açmış hesaptan veya --cert ile alınan yetki devri sertifikasına taşı",
   "commands.server.licence.done": "{{domain}}, {{subscription}} aboneliği altında lisanslandı",

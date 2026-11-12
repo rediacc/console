@@ -2019,6 +2019,7 @@
   "commands.server.install.step": "Étape : {{step}}",
   "commands.server.install.summary": "Installer le serveur de comptes sur une machine",
   "commands.server.licence.certInvalid": "{{file}} n'est pas un certificat de délégation utilisable : {{error}}",
+  "commands.server.licence.certUnconfirmed": "{{domain}} n'a jamais confirmé le certificat (dernière réponse : HTTP {{status}})",
   "commands.server.licence.certUnreadable": "Impossible de lire le fichier de certificat {{file}}",
   "commands.server.licence.description": "Faire passer un serveur du niveau gratuit à un certificat de délégation du compte connecté, ou issu de --cert",
   "commands.server.licence.done": "{{domain}} est licencié sous l'abonnement {{subscription}}",

@@ -2608,6 +2608,7 @@
         "offerFree": "Den Server stattdessen auf der kostenlosen Stufe starten?",
         "noCertForUpgrade": "Kein Delegationszertifikat verfügbar: mit `rdc subscription login` als Owner oder Admin mit 2FA anmelden oder --cert <file> angeben",
         "stillFree": "{{domain}} meldet sich nach dem Neustart weiterhin als kostenlose Stufe",
+        "certUnconfirmed": "{{domain}} hat das Zertifikat nie bestätigt (letzte Antwort: HTTP {{status}})",
         "viaUpload": "Der laufende Server hat das Zertifikat angenommen; ein Neustart war nicht nötig",
         "viaRestart": "Das Zertifikat wurde in secrets.env geschrieben und der Server startet neu, um es zu übernehmen",
         "uploadRefused": "Der laufende Server hat den Zertifikat-Upload abgelehnt (Status {{status}}); er wird stattdessen mit dem Zertifikat neu gestartet",

@@ -2019,6 +2019,7 @@
   "commands.server.install.step": "الخطوة: {{step}}",
   "commands.server.install.summary": "تثبيت خادم الحسابات على جهاز",
   "commands.server.licence.certInvalid": "{{file}} ليس شهادة تفويض صالحة للاستخدام: {{error}}",
+  "commands.server.licence.certUnconfirmed": "لم يؤكد {{domain}} الشهادة قط (آخر استجابة: HTTP {{status}})",
   "commands.server.licence.certUnreadable": "تعذّرت قراءة ملف الشهادة {{file}}",
   "commands.server.licence.description": "نقل خادم الفئة المجانية إلى شهادة تفويض من الحساب المسجَّل دخوله، أو من --cert",
   "commands.server.licence.done": "{{domain}} مرخَّص بموجب الاشتراك {{subscription}}",

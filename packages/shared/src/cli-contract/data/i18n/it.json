@@ -2019,6 +2019,7 @@
   "commands.server.install.step": "Passaggio: {{step}}",
   "commands.server.install.summary": "Installare il server di account su una macchina",
   "commands.server.licence.certInvalid": "{{file}} non è un certificato di delega utilizzabile: {{error}}",
+  "commands.server.licence.certUnconfirmed": "{{domain}} non ha mai confermato il certificato (ultima risposta: HTTP {{status}})",
   "commands.server.licence.certUnreadable": "Impossibile leggere il file del certificato {{file}}",
   "commands.server.licence.description": "Passare un server dal livello gratuito a un certificato di delega dell'account connesso, oppure da --cert",
   "commands.server.licence.done": "{{domain}} ha la licenza dell'abbonamento {{subscription}}",

@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2806,
-    "sourceCommit": "b1ab42cd2fb68b02e22fb8556f228535b97d0a4e"
+    "keyCount": 2807,
+    "sourceCommit": "0355bcb89502e7af0eb230c09744ab19e11775bb"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2027,6 +2027,7 @@
     "commands.server.install.step": "31f20d06",
     "commands.server.install.summary": "14ba4c48",
     "commands.server.licence.certInvalid": "9388f71a",
+    "commands.server.licence.certUnconfirmed": "fc73d052",
     "commands.server.licence.certUnreadable": "fc55dc29",
     "commands.server.licence.description": "65d729de",
     "commands.server.licence.done": "dc7ec992",

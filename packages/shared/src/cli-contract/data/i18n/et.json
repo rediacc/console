@@ -2019,6 +2019,7 @@
   "commands.server.install.step": "Samm: {{step}}",
   "commands.server.install.summary": "Paigalda kontoserver masinasse",
   "commands.server.licence.certInvalid": "{{file}} ei ole kasutatav delegeerimissertifikaat: {{error}}",
+  "commands.server.licence.certUnconfirmed": "{{domain}} ei kinnitanud sertifikaati (viimane vastus: HTTP {{status}})",
   "commands.server.licence.certUnreadable": "Sertifikaadifaili {{file}} ei saa lugeda",
   "commands.server.licence.description": "Vii tasuta taseme server üle delegeerimissertifikaadile, mis pärineb sisse logitud kontolt või valikust --cert",
   "commands.server.licence.done": "{{domain}} on litsentsitud tellimuse {{subscription}} alusel",
