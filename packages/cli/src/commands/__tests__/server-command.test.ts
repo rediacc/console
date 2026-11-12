@@ -163,11 +163,21 @@ describe('rdc server', () => {
     });
     expect(m.status).toHaveBeenCalledWith({}, { domain: 'acme.example.com', machine: 'm1' });
   });
-  it('upgrade asks for confirmation without --yes, whether or not stdin is a terminal', async () => {
-    await program().parseAsync(['server', 'upgrade', 'acme.example.com'], { from: 'user' });
-    expect(m.confirm).toHaveBeenCalledTimes(1);
-    expect(m.upgrade).toHaveBeenCalledTimes(1);
-  });
+  it.each([true, false])(
+    'upgrade asks for confirmation without --yes when stdin.isTTY is %s',
+    async (tty) => {
+      const saved = Object.getOwnPropertyDescriptor(process.stdin, 'isTTY');
+      Object.defineProperty(process.stdin, 'isTTY', { value: tty, configurable: true });
+      try {
+        await program().parseAsync(['server', 'upgrade', 'acme.example.com'], { from: 'user' });
+      } finally {
+        if (saved) Object.defineProperty(process.stdin, 'isTTY', saved);
+        else delete (process.stdin as { isTTY?: boolean }).isTTY;
+      }
+      expect(m.confirm).toHaveBeenCalledTimes(1);
+      expect(m.upgrade).toHaveBeenCalledTimes(1);
+    }
+  );
 
   it('upgrade stops when the confirmation is declined', async () => {
     m.confirm.mockResolvedValue(false);
