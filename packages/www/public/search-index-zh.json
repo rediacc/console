@@ -5637,8 +5637,8 @@
   {
     "id": "search-20076",
     "content": "8.18 purge",
-    "body": "一次性从分块存储中删除仓库所有已存储的备份快照,仓库本身保留。 rdc backup purge <repo-ref> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --dry-run | 显示将执行的操作但不进行实际更改 | 否 | - | | -y, --yes | 跳过确认提示 | 否 | - | | --cancel | 在生效前取消延迟的整体清除 | 否 | - | <a id=\"cli-local-backup-check\"></a>",
-    "excerpt": "一次性从分块存储中删除仓库所有已存储的备份快照,仓库本身保留。 rdc backup purge <repo-ref> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --dry-run |...",
+    "body": "一次性从分块存储中删除仓库所有已存储的备份快照,仓库本身保留。 rdc backup purge [repo-ref] [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --lineage <guid> | 当仓库已不在此配置中时,按 ID(即 rdc backup usage 列出的值)清除其备份谱系 | 否 | - | | --dry-run | 显示将执行的操作但不进行实际更改 | 否 | - | | -y, --yes | 跳过确认提示 | 否 | - | | --cancel | 在生效前取消延迟的整体清除 | 否 | - | <a id=\"cli-local-backup-check\"></a>",
+    "excerpt": "一次性从分块存储中删除仓库所有已存储的备份快照,仓库本身保留。 rdc backup purge [repo-ref] [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --lineage <...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",
     "fragment": "818-purge",

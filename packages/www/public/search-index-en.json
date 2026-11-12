@@ -5792,8 +5792,8 @@
   {
     "id": "search-4773",
     "content": "8.18 purge",
-    "body": "Delete every stored backup snapshot of a repository from the chunk store at once. The repository itself is kept. rdc backup purge <repo-ref> [options] | Flag | Description | Required | Default | |------|-------------|----------|---------| | --dry-run | Show what would be done without making changes | No | - | | -y, --yes | Skip confirmation prompt | No | - | | --cancel | Cancel a delayed purge before it takes effect | No | - | <a id=\"cli-local-backup-check\"></a>",
-    "excerpt": "Delete every stored backup snapshot of a repository from the chunk store at once. The repository itself is kept. rdc backup purge <repo-ref> [options]...",
+    "body": "Delete every stored backup snapshot of a repository from the chunk store at once. The repository itself is kept. rdc backup purge [repo-ref] [options] | Flag | Description | Required | Default | |------|-------------|----------|---------| | --lineage <guid> | Purge a backup lineage by its id (as rdc backup usage lists it) when its repository is no longer in this config | No | - | | --dry-run | Show what would be done without making changes | No | - | | -y, --yes | Skip confirmation prompt | No | - | | --cancel | Cancel a delayed purge before it takes effect | No | - | <a id=\"cli-local-backup-check\"></a>",
+    "excerpt": "Delete every stored backup snapshot of a repository from the chunk store at once. The repository itself is kept. rdc backup purge [repo-ref] [options]...",
     "category": "Documentation",
     "page": "/en/docs/cli-application",
     "fragment": "818-purge",

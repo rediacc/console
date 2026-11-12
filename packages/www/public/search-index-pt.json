@@ -5637,7 +5637,7 @@
   {
     "id": "search-15489",
     "content": "8.18 purge",
-    "body": "Apaga de uma vez todos os snapshots de backup armazenados de um repositório no armazenamento de blocos. O repositório em si é mantido. rdc backup purge <repo-ref> [options] | Flag | Descrição | Obrigatório | Predefinição | |------|-------------|----------|---------| | --dry-run | Mostrar o que seria feito sem efetuar alterações | Não | - | | -y, --yes | Ignorar pedido de confirmação | Não | - | | --cancel | Cancelar uma remoção total adiada antes de ter efeito | Não | - | <a id=\"cli-local-backup-check\"></a>",
+    "body": "Apaga de uma vez todos os snapshots de backup armazenados de um repositório no armazenamento de blocos. O repositório em si é mantido. rdc backup purge [repo-ref] [options] | Flag | Descrição | Obrigatório | Predefinição | |------|-------------|----------|---------| | --lineage <guid> | Limpa uma linhagem de backups pelo id (como rdc backup usage a lista) quando o repositório dela não está mais nesta configuração | Não | - | | --dry-run | Mostrar o que seria feito sem efetuar alterações | Não | - | | -y, --yes | Ignorar pedido de confirmação | Não | - | | --cancel | Cancelar uma remoção total adiada antes de ter efeito | Não | - | <a id=\"cli-local-backup-check\"></a>",
     "excerpt": "Apaga de uma vez todos os snapshots de backup armazenados de um repositório no armazenamento de blocos. O repositório em si é mantido. rdc backup purg...",
     "category": "Documentation",
     "page": "/pt/docs/cli-application",

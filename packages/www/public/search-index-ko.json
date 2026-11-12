@@ -5637,8 +5637,8 @@
   {
     "id": "search-13960",
     "content": "8.18 purge",
-    "body": "저장소에 저장된 백업 스냅샷을 청크 저장소에서 한 번에 모두 삭제합니다. 저장소 자체는 유지됩니다. rdc backup purge <repo-ref> [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --dry-run | 변경 없이 수행될 작업 표시 | 아니오 | - | | -y, --yes | 확인 프롬프트 건너뜀 | 아니오 | - | | --cancel | 지연된 전체 제거를 적용되기 전에 취소 | 아니오 | - | <a id=\"cli-local-backup-check\"></a>",
-    "excerpt": "저장소에 저장된 백업 스냅샷을 청크 저장소에서 한 번에 모두 삭제합니다. 저장소 자체는 유지됩니다. rdc backup purge <repo-ref> [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------...",
+    "body": "저장소에 저장된 백업 스냅샷을 청크 저장소에서 한 번에 모두 삭제합니다. 저장소 자체는 유지됩니다. rdc backup purge [repo-ref] [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --lineage <guid> | 저장소가 더 이상 이 설정에 없는 백업 계보를 ID(rdc backup usage에 표시되는 값)로 퍼지합니다 | 아니오 | - | | --dry-run | 변경 없이 수행될 작업 표시 | 아니오 | - | | -y, --yes | 확인 프롬프트 건너뜀 | 아니오 | - | | --cancel | 지연된 전체 제거를 적용되기 전에 취소 | 아니오 | - | <a id=\"cli-local-backup-check\"></a>",
+    "excerpt": "저장소에 저장된 백업 스냅샷을 청크 저장소에서 한 번에 모두 삭제합니다. 저장소 자체는 유지됩니다. rdc backup purge [repo-ref] [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------...",
     "category": "Documentation",
     "page": "/ko/docs/cli-application",
     "fragment": "818-purge",

@@ -5637,8 +5637,8 @@
   {
     "id": "search-6315",
     "content": "8.18 purge",
-    "body": "Borra de una vez todas las instantáneas de copia guardadas de un repositorio del almacén de fragmentos. El repositorio se conserva. rdc backup purge <repo-ref> [options] | Opción | Descripción | Obligatorio | Predeterminado | |------|-------------|----------|---------| | --dry-run | Mostrar lo que se haría sin realizar cambios | No | - | | -y, --yes | Omitir indicador de confirmación | No | - | | --cancel | Cancelar una purga diferida antes de que surta efecto | No | - | <a id=\"cli-local-backup-check\"></a>",
-    "excerpt": "Borra de una vez todas las instantáneas de copia guardadas de un repositorio del almacén de fragmentos. El repositorio se conserva. rdc backup purge <...",
+    "body": "Borra de una vez todas las instantáneas de copia guardadas de un repositorio del almacén de fragmentos. El repositorio se conserva. rdc backup purge [repo-ref] [options] | Opción | Descripción | Obligatorio | Predeterminado | |------|-------------|----------|---------| | --lineage <guid> | Purga un linaje de copias por su id (tal como lo lista rdc backup usage) cuando su repositorio ya no está en esta configuración | No | - | | --dry-run | Mostrar lo que se haría sin realizar cambios | No | - | | -y, --yes | Omitir indicador de confirmación | No | - | | --cancel | Cancelar una purga diferida antes de que surta efecto | No | - | <a id=\"cli-local-backup-check\"></a>",
+    "excerpt": "Borra de una vez todas las instantáneas de copia guardadas de un repositorio del almacén de fragmentos. El repositorio se conserva. rdc backup purge [...",
     "category": "Documentation",
     "page": "/es/docs/cli-application",
     "fragment": "818-purge",

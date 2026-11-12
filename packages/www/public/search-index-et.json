@@ -5637,8 +5637,8 @@
   {
     "id": "search-7844",
     "content": "8.18 purge",
-    "body": "Kustutab hoidla kõik salvestatud varunduse hetktõmmised tükihoidlast korraga. Hoidla ise jääb alles. rdc backup purge <repo-ref> [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|----------|---------| | --dry-run | Kuva, mida tehaks, ilma muudatusi tegemata | Ei | - | | -y, --yes | Jäta kinnitusviip vahele | Ei | - | | --cancel | Tühista edasilükatud täielik eemaldus enne jõustumist | Ei | - | <a id=\"cli-local-backup-check\"></a>",
-    "excerpt": "Kustutab hoidla kõik salvestatud varunduse hetktõmmised tükihoidlast korraga. Hoidla ise jääb alles. rdc backup purge <repo-ref> [options] | Lipuke |...",
+    "body": "Kustutab hoidla kõik salvestatud varunduse hetktõmmised tükihoidlast korraga. Hoidla ise jääb alles. rdc backup purge [repo-ref] [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|----------|---------| | --lineage <guid> | Puhasta varunduse liin selle ID järgi (nagu rdc backup usage seda näitab), kui selle hoidlat selles konfiguratsioonis enam pole | Ei | - | | --dry-run | Kuva, mida tehaks, ilma muudatusi tegemata | Ei | - | | -y, --yes | Jäta kinnitusviip vahele | Ei | - | | --cancel | Tühista edasilükatud täielik eemaldus enne jõustumist | Ei | - | <a id=\"cli-local-backup-check\"></a>",
+    "excerpt": "Kustutab hoidla kõik salvestatud varunduse hetktõmmised tükihoidlast korraga. Hoidla ise jääb alles. rdc backup purge [repo-ref] [options] | Lipuke |...",
     "category": "Documentation",
     "page": "/et/docs/cli-application",
     "fragment": "818-purge",

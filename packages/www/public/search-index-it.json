@@ -5637,7 +5637,7 @@
   {
     "id": "search-10902",
     "content": "8.18 purge",
-    "body": "Elimina in un colpo solo tutti gli snapshot di backup archiviati di un repository dall'archivio a chunk. Il repository resta intatto. rdc backup purge <repo-ref> [options] | Flag | Descrizione | Obbligatorio | Predefinito | |------|-------------|----------|---------| | --dry-run | Mostra cosa verrebbe fatto senza apportare modifiche | No | - | | -y, --yes | Salta la richiesta di conferma | No | - | | --cancel | Annullare una rimozione totale ritardata prima che abbia effetto | No | - | <a id=\"cli-local-backup-check\"></a>",
+    "body": "Elimina in un colpo solo tutti gli snapshot di backup archiviati di un repository dall'archivio a chunk. Il repository resta intatto. rdc backup purge [repo-ref] [options] | Flag | Descrizione | Obbligatorio | Predefinito | |------|-------------|----------|---------| | --lineage <guid> | Elimina una linea di backup tramite il suo id (come lo mostra rdc backup usage) quando il suo repository non è più in questa configurazione | No | - | | --dry-run | Mostra cosa verrebbe fatto senza apportare modifiche | No | - | | -y, --yes | Salta la richiesta di conferma | No | - | | --cancel | Annullare una rimozione totale ritardata prima che abbia effetto | No | - | <a id=\"cli-local-backup-check\"></a>",
     "excerpt": "Elimina in un colpo solo tutti gli snapshot di backup archiviati di un repository dall'archivio a chunk. Il repository resta intatto. rdc backup purge...",
     "category": "Documentation",
     "page": "/it/docs/cli-application",

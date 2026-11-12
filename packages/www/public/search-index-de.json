@@ -5637,7 +5637,7 @@
   {
     "id": "search-3244",
     "content": "8.18 purge",
-    "body": "Löscht alle gespeicherten Backup-Snapshots eines Repositorys auf einmal aus dem Chunk-Speicher. Das Repository selbst bleibt erhalten. rdc backup purge <repo-ref> [options] | Option | Beschreibung | Erforderlich | Standard | |------|-------------|----------|---------| | --dry-run | Zeigen, was ausgeführt würde, ohne Änderungen vorzunehmen | Nein | - | | -y, --yes | Bestätigungsaufforderung überspringen | Nein | - | | --cancel | Ein verzögertes Entfernen abbrechen, bevor es wirksam wird | Nein | - | <a id=\"cli-local-backup-check\"></a>",
+    "body": "Löscht alle gespeicherten Backup-Snapshots eines Repositorys auf einmal aus dem Chunk-Speicher. Das Repository selbst bleibt erhalten. rdc backup purge [repo-ref] [options] | Option | Beschreibung | Erforderlich | Standard | |------|-------------|----------|---------| | --lineage <guid> | Eine Backup-Linie über ihre ID (wie rdc backup usage sie auflistet) entfernen, wenn ihr Repository nicht mehr in dieser Konfiguration steht | Nein | - | | --dry-run | Zeigen, was ausgeführt würde, ohne Änderungen vorzunehmen | Nein | - | | -y, --yes | Bestätigungsaufforderung überspringen | Nein | - | | --cancel | Ein verzögertes Entfernen abbrechen, bevor es wirksam wird | Nein | - | <a id=\"cli-local-backup-check\"></a>",
     "excerpt": "Löscht alle gespeicherten Backup-Snapshots eines Repositorys auf einmal aus dem Chunk-Speicher. Das Repository selbst bleibt erhalten. rdc backup purg...",
     "category": "Documentation",
     "page": "/de/docs/cli-application",

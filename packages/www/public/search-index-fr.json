@@ -5637,8 +5637,8 @@
   {
     "id": "search-9373",
     "content": "8.18 purge",
-    "body": "Supprime d'un coup tous les instantanés de sauvegarde stockés d'un dépôt dans le magasin de blocs. Le dépôt lui-même est conservé. rdc backup purge <repo-ref> [options] | Option | Libellé | Requis | Défaut | |------|-------------|----------|---------| | --dry-run | Afficher les actions prévues sans effectuer de modifications | Non | - | | -y, --yes | Ignorer l'invite de confirmation | Non | - | | --cancel | Annuler une purge différée avant son effet | Non | - | <a id=\"cli-local-backup-check\"></a>",
-    "excerpt": "Supprime d'un coup tous les instantanés de sauvegarde stockés d'un dépôt dans le magasin de blocs. Le dépôt lui-même est conservé. rdc backup purge <r...",
+    "body": "Supprime d'un coup tous les instantanés de sauvegarde stockés d'un dépôt dans le magasin de blocs. Le dépôt lui-même est conservé. rdc backup purge [repo-ref] [options] | Option | Libellé | Requis | Défaut | |------|-------------|----------|---------| | --lineage <guid> | Purger une lignée de sauvegardes par son identifiant (tel que rdc backup usage l'affiche) quand son dépôt ne figure plus dans cette configuration | Non | - | | --dry-run | Afficher les actions prévues sans effectuer de modifications | Non | - | | -y, --yes | Ignorer l'invite de confirmation | Non | - | | --cancel | Annuler une purge différée avant son effet | Non | - | <a id=\"cli-local-backup-check\"></a>",
+    "excerpt": "Supprime d'un coup tous les instantanés de sauvegarde stockés d'un dépôt dans le magasin de blocs. Le dépôt lui-même est conservé. rdc backup purge [r...",
     "category": "Documentation",
     "page": "/fr/docs/cli-application",
     "fragment": "818-purge",

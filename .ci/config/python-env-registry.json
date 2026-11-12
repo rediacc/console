@@ -2564,6 +2564,9 @@
     ".claude/rediacc_hooks/tests/test_block_turbo_early_push_merge_phase.py": [
       "PATH"
     ],
+    ".claude/rediacc_hooks/tests/test_conftest_no_ambient_git_config.py": [
+      "GIT_CONFIG_NOSYSTEM"
+    ],
     ".claude/rediacc_hooks/tests/test_githook_backup_ref.py": [
       "PATH"
     ],
