@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/set-account-worker-secrets.sh`.
 
-Pushes thirty runtime secrets into ONE regional account Worker in a single `wrangler secret bulk` call. The twin's header carries the reason the call is bulk and not thirty `secret put`s: each `put` mints a new Worker version, and on an assets-bound Worker a new version disassociates the static assets the deploy just uploaded.
+Pushes thirty-five runtime secrets into ONE regional account Worker in a single `wrangler secret bulk` call. The twin's header carries the reason the call is bulk and not thirty-five `secret put`s: each `put` mints a new Worker version, and on an assets-bound Worker a new version disassociates the static assets the deploy just uploaded.
 
 THIS IS THE THIRD AND LARGEST MEMBER OF A FAMILY, and the differences from the other two are the whole content of the port. `set-preview-worker-secrets.sh` (15 keys) and `set-www-worker-secrets.sh` (24 keys) MARSHAL: they read a name, they write that name. This one DECIDES, four times over, and every decision is a place a port can be quietly wrong:
 
@@ -199,7 +199,7 @@ GUARD_EXPLANATION: tuple[str, ...] = (
     "  drives, so this refuses to deploy instead. Check the secret store for that name.",
 )
 
-# The thirty `--arg <var> <value>` pairs (the twin's twenty-nine at :219-247, plus the config server key) in the twin's ORDER, which is also the key order of the object it builds (:248-277). ORDER IS OBSERVABLE: it is the byte order of the document on wrangler's stdin, and the differential re-derives this list from the twin's source and compares.
+# The thirty-five `--arg <var> <value>` pairs (the twin's at :219-247, plus the port's own additions: the config server key, the register name and the sales-digest recipient) in the twin's ORDER, which is also the key order of the object it builds (:248-277). ORDER IS OBSERVABLE: it is the byte order of the document on wrangler's stdin, and the differential re-derives this list from the twin's source and compares.
 #
 # (Worker key, jq variable, environment variable read for it). The third field is EMPTY for the ten values this script COMPUTES rather than reads, and those ten are the whole difference between this script and its two siblings: `resolve` is where each one is decided. ACCOUNT_BACKUP_S3_BUCKET and the backup key pair come from the channel, so none of the three is read under its own name; ACCOUNT_CONFIG_SERVER_KEY comes from the region and the channel.
 KEYS: tuple[tuple[str, str, str], ...] = (
@@ -237,6 +237,7 @@ KEYS: tuple[tuple[str, str, str], ...] = (
     ("SELLER_POSTAL_CODE", "seller_postal", "SELLER_POSTAL_CODE"),
     ("SELLER_COUNTRY", "seller_country", "SELLER_COUNTRY"),
     ("SELLER_EMAIL", "seller_email", "SELLER_EMAIL"),
+    ("SALES_NOTIFY_EMAIL", "sales_notify", "SALES_NOTIFY_EMAIL"),
 )
 
 # The sixteen unconditional `_require_nonempty` calls (the twin's fifteen at :198-212, plus the config server key last), in order. The FIRST empty one ends the run, so the order is observable in the message.
@@ -326,7 +327,7 @@ class GuardError(ScriptRefusalError):
 def read_env() -> dict[str, str]:
     """Every variable the twin reads, ONE EXPLICIT `os.environ.get` PER NAME.
 
-    NO `dict(os.environ)` ALIAS, deliberately. The AST scanner behind `.ci/config/python-env-registry.json` records the literal NAME at the call site and cannot see through an alias, so a wholesale copy would register this module as reading nothing at all while it reads thirty-two names by hand plus six it constructs.
+    NO `dict(os.environ)` ALIAS, deliberately. The AST scanner behind `.ci/config/python-env-registry.json` records the literal NAME at the call site and cannot see through an alias, so a wholesale copy would register this module as reading nothing at all while it reads thirty-seven names by hand plus the eight it constructs.
 
     UNSET AND EMPTY ARE THE SAME CASE THROUGHOUT, so a plain `str` per name is
     faithful: every read in the twin is `"${NAME:-}"`, `"${NAME:?...}"` or a
@@ -381,6 +382,8 @@ def read_env() -> dict[str, str]:
         "SELLER_POSTAL_CODE": os.environ.get("SELLER_POSTAL_CODE", ""),
         "SELLER_COUNTRY": os.environ.get("SELLER_COUNTRY", ""),
         "SELLER_EMAIL": os.environ.get("SELLER_EMAIL", ""),
+        # The sales digest recipient (PLAN-licence-expiry-notices N2); optional, the digest skips with a warning when it is empty.
+        "SALES_NOTIFY_EMAIL": os.environ.get("SALES_NOTIFY_EMAIL", ""),
     }
     # THE FOUR REGION FAN-INS. The name is constructed, so the registry records
     # the EXPRESSION rather than a literal, exactly as the twin's `${!var}` is

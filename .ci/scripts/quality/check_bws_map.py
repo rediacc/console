@@ -1561,8 +1561,8 @@ jobs:
                 )
                 for body in (
                     f"RX = re.compile(r'__ROTATED_\\d+')  # {pat}",
-                    f'"""\n    {good_pins["b.py"]}\n"""',
-                    f'"""\n{good_pins["b.py"]}\n"""',
+                    f'r"""\n    {good_pins["b.py"]}\n"""',
+                    f'r"""\n{good_pins["b.py"]}\n"""',
                 )
             ),
         ),

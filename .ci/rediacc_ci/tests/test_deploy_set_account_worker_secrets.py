@@ -195,13 +195,14 @@ def _as_port_env(env: dict[str, str]) -> dict[str, str]:
 
 
 def _without_config_key(calls: str) -> str:
-    """The recorded call with the document lines the twin never had removed: the free-licence HMAC key, the AE read token, the Cloudflare account id, the backup store KEK, the config server key and the commercial register's name."""
+    """The recorded call with the document lines the twin never had removed: the free-licence HMAC key, the AE read token, the Cloudflare account id, the backup store KEK, the config server key, the commercial register's name and the sales-digest recipient (the document's last key, so its line and the comma before it go)."""
     calls = calls.replace('  "SELLER_REGISTER_NAME": "",\n', "")
     calls = calls.replace('  "FREE_LICENSE_HMAC_KEY": "hm",\n', "")
     calls = calls.replace('  "ACCOUNT_AE_READ_TOKEN": "ae",\n', "")
     calls = calls.replace('  "CLOUDFLARE_ACCOUNT_ID": "acct",\n', "")
     calls = calls.replace('  "ACCOUNT_BACKUP_STORE_KEK": "%s",\n' % KEK_VALUE, "")
-    return calls.replace('  "ACCOUNT_CONFIG_SERVER_KEY": "%s",\n' % CONFIG_KEY, "")
+    calls = calls.replace('  "ACCOUNT_CONFIG_SERVER_KEY": "%s",\n' % CONFIG_KEY, "")
+    return re.sub(r',\n  "SALES_NOTIFY_EMAIL": "[^\n]*"\n\}', "\n}", calls)
 
 
 def _run_live(
@@ -649,7 +650,7 @@ def test_a_non_ascii_secret_is_byte_identical_through_both(tmp_path: pathlib.Pat
 
 def test_the_three_sibling_scripts_are_not_the_same_script() -> None:
     """THE ASSUMPTION THAT WOULD PORT THIS ONE WRONG, refuted in one place. This is the only member of the family that decides anything, and every difference below is driven by a test above."""
-    assert len(port.KEYS) == 34
+    assert len(port.KEYS) == 35
     assert len(www.KEYS) == 24
     assert len(preview.KEYS) == 14
     assert len(port.REQUIRED_NONEMPTY) == 19
@@ -710,7 +711,7 @@ def test_pure_helpers() -> None:
     assert argv[0] == "jq"
     assert len(argv) == 2, "the program only; the values travel on stdin"
     assert argv[-1].startswith("{ACCOUNT_ED25519_PUBLIC_KEY: .ed25519_pub")
-    assert argv[-1].endswith("SELLER_EMAIL: .seller_email}")
+    assert argv[-1].endswith("SALES_NOTIFY_EMAIL: .sales_notify}")
     document = json.loads(port.jq_input({"seller_city": "Delft"}))
     assert list(document) == [var for _key, var, _source in port.KEYS]
     assert document["seller_city"] == "Delft"
