@@ -1513,6 +1513,9 @@ jobs:
         "a.ts": archive_pin_declaration("a.ts", pat) + ";",
         "b.py": archive_pin_declaration("b.py", pat),
     }
+    # The pin inside a NON-raw docstring: each backslash doubled, so the fixture parses without an
+    # invalid-escape SyntaxWarning and its docstring value is still the pinned text.
+    escaped_pin = good_pins["b.py"].replace("\\", "\\\\")
     checks15 = [
         (
             "CONTROL: a map without clones and with verbatim pins is silent",
@@ -1561,6 +1564,8 @@ jobs:
                 )
                 for body in (
                     f"RX = re.compile(r'__ROTATED_\\d+')  # {pat}",
+                    f'"""\n    {escaped_pin}\n"""',
+                    f'"""\n{escaped_pin}\n"""',
                     f'r"""\n    {good_pins["b.py"]}\n"""',
                     f'r"""\n{good_pins["b.py"]}\n"""',
                 )
