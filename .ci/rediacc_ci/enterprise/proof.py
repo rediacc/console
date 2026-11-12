@@ -6,7 +6,7 @@ EVERY REFUSAL HAS A CONTROL. A claim that something is refused is paired with th
 
 WHAT IS BROKEN IS PUT BACK. `signer` stops a signer, `region-loss` cuts a region and `proxy` sets an allowlist; each restores in a `finally`, and a restore that fails is itself a broken claim, so a run never leaves bench quietly degraded. `signer` and `region-loss` restore through `_restore`: start the signer (or restore the region), settle until the caller is signed for again, start once more if it is not, and claim `<caller>: bench signing is restored`; a broken one names the `deploy_signer --target` run that puts bench back.
 
-A STATE CHANGE IS SETTLED, NOT SAMPLED. Cloudflare propagates a signer's stop and start over seconds: on 2026-11-12 one issue call right after the stop was still admitted. A claim judged right after a stop, a cut or a restart therefore goes through `settle`, which asks again every `SETTLE_INTERVAL_S` until the answer is the one claimed or `SETTLE_S` pass, and judges the last answer; a broken one names the wait.
+A STATE CHANGE IS SETTLED, NOT SAMPLED. Cloudflare propagates a signer's stop and start over seconds: on 2026-11-12 one issue call right after the stop was still admitted. A claim whose answer a stop, a cut or a restart changes therefore goes through `settle`, which asks again every `SETTLE_INTERVAL_S` until the answer is the one claimed or `SETTLE_S` pass, and judges the last answer; a broken one names the wait. A claim the change must not move (the us company issuing and renewing with eu cut) is sampled once, so a refusal there is judged as it comes.
 
 A LAB ERROR IS A BROKEN CLAIM, NOT A TRACEBACK. A lab raises `LabError` (or an OS, value, lookup or timeout error) when a live step fails; the verb records it as broken under the claim it was serving and still restores. Any other exception is a defect in the proof or the lab and propagates.
 
@@ -321,7 +321,11 @@ def _restore(lab: Lab, p: Proof, signer: str, caller: str, *, region: str = "") 
         action = "issuance"
     answer = _start_and_settle(start, probe)
     if not answer.ok:
+        first = answer
         answer = _start_and_settle(start, probe)
+        if answer.ok:
+            # The restore held on the second start; the first one's failure stays on record.
+            p.notes.append(f"{caller}: the first start did not restore {action} ({first.error})")
     target = signer.removeprefix("signer-")
     p.check(
         f"{caller}: bench signing is restored",

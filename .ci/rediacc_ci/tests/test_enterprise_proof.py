@@ -594,6 +594,30 @@ def test_a_failed_restore_is_a_broken_claim() -> None:
     assert lab.calls.count("start_signer") == 2
 
 
+def test_a_restore_that_holds_on_the_second_start_keeps_the_first_failure_on_record() -> None:
+    """Review 08c6fde4.2: a passing restore still says the first start failed."""
+
+    class FirstStartFails(FakeLab):
+        def start_signer(self, signer: str) -> None:
+            if self.calls.count("start_signer") == 0:
+                self._rec("start_signer")
+                raise LabError("first start failed")
+            super().start_signer(signer)
+
+    lab = FirstStartFails()
+    rc, lines = run("signer", lab)
+    assert rc == 0, lines
+    assert lab.calls.count("start_signer") == 2
+    notes = [
+        line for line in lines if line.startswith("note") and "first start did not restore" in line
+    ]
+    assert len(notes) == 1, lines
+    assert "first start failed" in notes[0]
+    # control: a restore that holds on the first start leaves no such note
+    _rc, clean = run("signer", FakeLab())
+    assert not [line for line in clean if "first start did not restore" in line]
+
+
 # -- a judged state change is settled, not sampled -------------------------------
 
 
