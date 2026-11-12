@@ -118,7 +118,7 @@ Un certificato di delega contiene:
 
 ### Come funziona la delega
 
-1. L'amministratore aziendale genera una coppia di chiavi Ed25519 sul server on-premise.
+1. L'amministratore genera una coppia di chiavi Ed25519 sul server on-premise.
 2. L'amministratore richiede un certificato di delega dall'upstream:
    ```
    POST /admin/delegation-certs

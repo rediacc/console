@@ -118,7 +118,7 @@ Renetを実行する各マシンは`{licenseDir}/chain-state.json`（つまり`/
 
 ### 委任の仕組み
 
-1. EnterpriseアドミンがオンプレミスサーバーでEd25519キーペアを生成します。
+1. 管理者がオンプレミスサーバーでEd25519キーペアを生成します。
 2. アドミンが上流に委任証明書をリクエストします：
    ```
    POST /admin/delegation-certs

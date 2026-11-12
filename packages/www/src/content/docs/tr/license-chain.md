@@ -118,7 +118,7 @@ Bir yetkilendirme sertifikası şunları içerir:
 
 ### Yetkilendirme nasıl çalışır
 
-1. Enterprise yöneticisi yerinde sunucuda bir Ed25519 anahtar çifti oluşturur.
+1. Yönetici yerinde sunucuda bir Ed25519 anahtar çifti oluşturur.
 2. Yönetici yukarı akıştan yetkilendirme sertifikası talep eder:
    ```
    POST /admin/delegation-certs

@@ -118,7 +118,7 @@ Um certificado de delegação contém:
 
 ### Como funciona a delegação
 
-1. O administrador empresarial gera um par de chaves Ed25519 no servidor on-premise.
+1. O administrador gera um par de chaves Ed25519 no servidor on-premise.
 2. O administrador solicita um certificado de delegação ao upstream:
    ```
    POST /admin/delegation-certs

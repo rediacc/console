@@ -118,7 +118,7 @@ Un certificat de délégation contient :
 
 ### Comment fonctionne la délégation
 
-1. L'administrateur Enterprise génère une paire de clés Ed25519 sur le serveur on-premise.
+1. L'administrateur génère une paire de clés Ed25519 sur le serveur on-premise.
 2. L'administrateur demande un certificat de délégation à l'amont :
    ```
    POST /admin/delegation-certs

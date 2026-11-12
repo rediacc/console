@@ -47,10 +47,6 @@
         "dedicatedAccount": {
           "type": "boolean",
           "jsonKey": "dedicatedAccount"
-        },
-        "delegationCerts": {
-          "type": "boolean",
-          "jsonKey": "delegationCerts"
         }
       }
     },
@@ -258,8 +254,7 @@
         "auditLog": false,
         "advancedQueue": false,
         "customBranding": false,
-        "dedicatedAccount": false,
-        "delegationCerts": false
+        "dedicatedAccount": false
       },
       "COMMUNITY": {
         "permissionGroups": false,
@@ -270,8 +265,7 @@
         "auditLog": false,
         "advancedQueue": false,
         "customBranding": false,
-        "dedicatedAccount": false,
-        "delegationCerts": false
+        "dedicatedAccount": false
       },
       "PROFESSIONAL": {
         "permissionGroups": true,
@@ -282,8 +276,7 @@
         "auditLog": true,
         "advancedQueue": false,
         "customBranding": true,
-        "dedicatedAccount": false,
-        "delegationCerts": true
+        "dedicatedAccount": false
       },
       "BUSINESS": {
         "permissionGroups": true,
@@ -294,8 +287,7 @@
         "auditLog": true,
         "advancedQueue": true,
         "customBranding": true,
-        "dedicatedAccount": false,
-        "delegationCerts": true
+        "dedicatedAccount": false
       },
       "ENTERPRISE": {
         "permissionGroups": true,
@@ -306,8 +298,7 @@
         "auditLog": true,
         "advancedQueue": true,
         "customBranding": true,
-        "dedicatedAccount": true,
-        "delegationCerts": true
+        "dedicatedAccount": true
       }
     }
   }

@@ -118,7 +118,7 @@ POST /licenses/renew
 
 ### 委托工作原理
 
-1. 企业管理员在本地部署服务器上生成 Ed25519 密钥对。
+1. 管理员在本地部署服务器上生成 Ed25519 密钥对。
 2. 管理员从上游申请委托证书：
    ```
    POST /admin/delegation-certs

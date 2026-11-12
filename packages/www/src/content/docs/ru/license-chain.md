@@ -118,7 +118,7 @@ POST /licenses/renew
 
 ### Как работает делегирование
 
-1. Admin Enterprise генерирует пару ключей Ed25519 на on-premise сервере.
+1. Админ генерирует пару ключей Ed25519 на on-premise сервере.
 2. Admin запрашивает сертификат делегирования у вышестоящего сервера:
    ```
    POST /admin/delegation-certs

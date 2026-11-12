@@ -116,7 +116,7 @@ A delegation cert contains:
 
 ### How delegation works
 
-1. Enterprise admin generates an Ed25519 key pair on the on-premise server.
+1. The admin generates an Ed25519 key pair on the on-premise server.
 2. Admin requests a delegation cert from the upstream:
    ```
    POST /admin/delegation-certs

@@ -250,7 +250,6 @@ export const PLAN_FEATURES: Record<PlanCode, FeatureFlags> = {
     advancedQueue: false,
     customBranding: false,
     dedicatedAccount: false,
-    delegationCerts: false,
   },
   COMMUNITY: {
     permissionGroups: false,
@@ -262,7 +261,6 @@ export const PLAN_FEATURES: Record<PlanCode, FeatureFlags> = {
     advancedQueue: false,
     customBranding: false,
     dedicatedAccount: false,
-    delegationCerts: false,
   },
   PROFESSIONAL: {
     permissionGroups: true,
@@ -274,7 +272,6 @@ export const PLAN_FEATURES: Record<PlanCode, FeatureFlags> = {
     advancedQueue: false,
     customBranding: true,
     dedicatedAccount: false,
-    delegationCerts: true,
   },
   BUSINESS: {
     permissionGroups: true,
@@ -286,7 +283,6 @@ export const PLAN_FEATURES: Record<PlanCode, FeatureFlags> = {
     advancedQueue: true,
     customBranding: true,
     dedicatedAccount: false,
-    delegationCerts: true,
   },
   ENTERPRISE: {
     permissionGroups: true,
@@ -298,7 +294,6 @@ export const PLAN_FEATURES: Record<PlanCode, FeatureFlags> = {
     advancedQueue: true,
     customBranding: true,
     dedicatedAccount: true,
-    delegationCerts: true,
   },
 } as const;
 
@@ -370,20 +365,6 @@ export const PLAN_DELEGATION_CERT_MAX_DAYS: Record<PlanCode, number> = {
   PROFESSIONAL: 120,
   BUSINESS: 180,
   ENTERPRISE: 365,
-} as const;
-
-/**
- * Whether a plan may hold a delegation cert at all (an on-premise signer).
- * Checked where a customer or a CLI token asks for one (the portal create route
- * and POST /delegation/issue); the root admin route stays an explicit override.
- * FREE is refused: its on-premise path is the built-in free tier, not a signer.
- */
-export const PLAN_ALLOWS_DELEGATION_CERT: Record<PlanCode, boolean> = {
-  FREE: false,
-  COMMUNITY: true,
-  PROFESSIONAL: true,
-  BUSINESS: true,
-  ENTERPRISE: true,
 } as const;
 
 /**

@@ -118,7 +118,7 @@ Delegeerimissertifikaat sisaldab järgmist:
 
 ### Kuidas delegeerimine toimib
 
-1. Ettevõtte administraator genereerib Ed25519 võtmepaari kohapealsel serveril.
+1. Administraator genereerib Ed25519 võtmepaari kohapealsel serveril.
 2. Administraator taotleb delegeerimissertifikaati ülesvoolu serverilt:
    ```
    POST /admin/delegation-certs

@@ -118,7 +118,7 @@ Renet을 실행하는 각 머신은 `{licenseDir}/chain-state.json`(즉 `/var/li
 
 ### 위임 작동 방식
 
-1. 엔터프라이즈 관리자가 온프레미스 서버에서 Ed25519 키 쌍을 생성합니다.
+1. 관리자가 온프레미스 서버에서 Ed25519 키 쌍을 생성합니다.
 2. 관리자가 업스트림에 위임 인증서를 요청합니다.
    ```
    POST /admin/delegation-certs

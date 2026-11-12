@@ -118,7 +118,7 @@ Ein Delegierungszertifikat enthält:
 
 ### Wie Delegation funktioniert
 
-1. Enterprise-Admin generiert ein Ed25519-Schlüsselpaar auf dem On-Premise-Server.
+1. Der Admin generiert ein Ed25519-Schlüsselpaar auf dem On-Premise-Server.
 2. Admin fordert ein Delegierungszertifikat vom vorgelagerten System an:
    ```
    POST /admin/delegation-certs
