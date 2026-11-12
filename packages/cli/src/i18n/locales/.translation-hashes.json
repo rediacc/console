@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2804,
-    "sourceCommit": "6c48953db00a1ef4725d3ccdda87f0cad5a32787"
+    "keyCount": 2805,
+    "sourceCommit": "4b08f6f1806c3de55fa5ddb9d5ddd2b765438068"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2078,6 +2078,7 @@
     "commands.server.tls.cloudflareNeedsToken": "83b5dbf6",
     "commands.server.upgrade.confirm": "38366510",
     "commands.server.upgrade.description": "40d1e3ad",
+    "commands.server.upgrade.descriptionShort": "895f35c1",
     "commands.server.upgrade.done": "c68eae73",
     "commands.server.upgrade.forking": "dd4e92b4",
     "commands.server.upgrade.template": "0625f954",

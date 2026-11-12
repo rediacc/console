@@ -2587,6 +2587,7 @@
       },
       "upgrade": {
         "description": "Aggiornare un server installato: creare un fork del suo repository come punto di rollback, collocare la nuova immagine, riapplicare il template quando quello integrato è più recente e riavviare",
+        "descriptionShort": "Aggiornare un server installato, con un fork di rollback",
         "confirm": "Aggiornare il server di account su {{domain}}?",
         "forking": "Creazione del fork del repository come punto di rollback {{tag}}",
         "template": "Riapplicazione del template elite (versione {{from}} a {{to}})",

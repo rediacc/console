@@ -2587,6 +2587,7 @@
       },
       "upgrade": {
         "description": "Kurulu bir sunucuyu yükselt: deponun geri alma noktası olarak fork'unu oluştur, yeni imajı yerleştir, yerleşik şablon daha yeniyse şablonu yeniden uygula ve yeniden başlat",
+        "descriptionShort": "Kurulu bir sunucuyu geri alma çatalıyla yükselt",
         "confirm": "{{domain}} üzerindeki hesap sunucusu yükseltilsin mi?",
         "forking": "Depo, {{tag}} geri alma noktası olarak fork ediliyor",
         "template": "elite şablonu yeniden uygulanıyor (sürüm {{from}} -> {{to}})",

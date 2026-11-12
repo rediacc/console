@@ -2070,6 +2070,7 @@
   "commands.server.tls.cloudflareNeedsToken": "--tls cloudflare için --cf-token gerekir",
   "commands.server.upgrade.confirm": "{{domain}} üzerindeki hesap sunucusu yükseltilsin mi?",
   "commands.server.upgrade.description": "Kurulu bir sunucuyu yükselt: deponun geri alma noktası olarak fork'unu oluştur, yeni imajı yerleştir, yerleşik şablon daha yeniyse şablonu yeniden uygula ve yeniden başlat",
+  "commands.server.upgrade.descriptionShort": "Kurulu bir sunucuyu geri alma çatalıyla yükselt",
   "commands.server.upgrade.done": "{{domain}} yükseltildi. Geri alma noktası: {{rollback}}",
   "commands.server.upgrade.forking": "Depo, {{tag}} geri alma noktası olarak fork ediliyor",
   "commands.server.upgrade.template": "elite şablonu yeniden uygulanıyor (sürüm {{from}} -> {{to}})",

@@ -14,8 +14,9 @@ const SUPPORTED_ARCH = ['x86_64', 'amd64', 'aarch64', 'arm64'] as const;
 const MAX_CLOCK_SKEW_S = 120;
 /** Room kept beside the repo for images and the stack's own data, in GiB. */
 const DISK_HEADROOM_GIB = 2;
+const ZERO = '0';
 /** Port holders that are renet's own proxy, which routes the new repo instead of colliding with it. */
-const PROXY_HOLDERS = ['traefik', 'docker-proxy'];
+const PROXY_HOLDERS = ['traefik', 'docker-proxy'] as const;
 
 export interface PreflightFacts {
   sudo: boolean;
@@ -31,9 +32,9 @@ export function parsePreflight(stdout: string): PreflightFacts {
   return {
     sudo: v.sudo === '1',
     arch: v.arch ?? '',
-    epoch: Number.parseInt(v.epoch ?? '0', 10),
+    epoch: Number.parseInt(v.epoch ?? ZERO, 10),
     renet: v.renet === '1',
-    freeKb: Number.parseInt(v.free_kb ?? '0', 10),
+    freeKb: Number.parseInt(v.free_kb ?? ZERO, 10),
     ports: { '80': (v.port80 ?? '').trim(), '443': (v.port443 ?? '').trim() },
   };
 }
@@ -60,7 +61,10 @@ function portProblems(facts: PreflightFacts): string[] {
     const line = facts.ports[port];
     if (!line) continue;
     const names = holders(line);
-    const proxy = facts.renet && names.length > 0 && names.every((n) => PROXY_HOLDERS.includes(n));
+    const proxy =
+      facts.renet &&
+      names.length > 0 &&
+      names.every((n) => (PROXY_HOLDERS as readonly string[]).includes(n));
     if (!proxy) {
       problems.push(
         t('commands.server.preflight.portBusy', { port, holder: names.join(', ') || line })

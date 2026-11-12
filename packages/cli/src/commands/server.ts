@@ -133,6 +133,7 @@ function registerUpgrade(server: Command): void {
   locatorOptions(
     server
       .command('upgrade')
+      .summary(t('commands.server.upgrade.descriptionShort'))
       .description(t('commands.server.upgrade.description'))
       .argument('<domain>', t('commands.server.domainArgument'))
       .option('--image <ref>', t('commands.server.install.optionImage'))

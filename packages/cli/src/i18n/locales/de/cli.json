@@ -2587,6 +2587,7 @@
       },
       "upgrade": {
         "description": "Einen installierten Server aktualisieren: sein Repository als Rollback-Punkt forken, das neue Image bereitstellen, das Template erneut anwenden, wenn das integrierte neuer ist, und neu starten",
+        "descriptionShort": "Einen installierten Server aktualisieren, mit Rollback-Fork",
         "confirm": "Den Account-Server unter {{domain}} aktualisieren?",
         "forking": "Das Repository wird als Rollback-Punkt {{tag}} geforkt",
         "template": "Das elite-Template wird erneut angewendet (Version {{from}} auf {{to}})",

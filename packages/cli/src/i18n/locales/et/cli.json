@@ -2587,6 +2587,7 @@
       },
       "upgrade": {
         "description": "Uuenda paigaldatud server: tee hoidlast fork tagasipöördepunktiks, paiguta uus kujutis, rakenda mall uuesti, kui sisseehitatud mall on uuem, ja taaskäivita",
+        "descriptionShort": "Uuenda paigaldatud server tagasipööramise haruga",
         "confirm": "Kas uuendada kontoserver aadressil {{domain}}?",
         "forking": "Hoidlast tehakse fork tagasipöördepunktiks {{tag}}",
         "template": "Elite malli rakendatakse uuesti (versioon {{from}} -> {{to}})",

@@ -2070,6 +2070,7 @@
   "commands.server.tls.cloudflareNeedsToken": "--tls cloudflare vajab valikut --cf-token",
   "commands.server.upgrade.confirm": "Kas uuendada kontoserver aadressil {{domain}}?",
   "commands.server.upgrade.description": "Uuenda paigaldatud server: tee hoidlast fork tagasipöördepunktiks, paiguta uus kujutis, rakenda mall uuesti, kui sisseehitatud mall on uuem, ja taaskäivita",
+  "commands.server.upgrade.descriptionShort": "Uuenda paigaldatud server tagasipööramise haruga",
   "commands.server.upgrade.done": "{{domain}} uuendatud. Tagasipöördepunkt: {{rollback}}",
   "commands.server.upgrade.forking": "Hoidlast tehakse fork tagasipöördepunktiks {{tag}}",
   "commands.server.upgrade.template": "Elite malli rakendatakse uuesti (versioon {{from}} -> {{to}})",

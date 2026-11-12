@@ -2587,6 +2587,7 @@
       },
       "upgrade": {
         "description": "Actualizar un servidor instalado: bifurcar su repositorio como punto de reversión, colocar la imagen nueva, volver a aplicar la plantilla cuando la integrada sea más reciente y reiniciar",
+        "descriptionShort": "Actualizar un servidor instalado, con un fork de reversión",
         "confirm": "¿Actualizar el servidor de cuentas en {{domain}}?",
         "forking": "Bifurcando el repositorio como punto de reversión {{tag}}",
         "template": "Volviendo a aplicar la plantilla elite (versión {{from}} a {{to}})",

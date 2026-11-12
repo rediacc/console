@@ -79,6 +79,8 @@ import {
 import { applyTls } from './tls.js';
 import type { LicenceMode, ServerDeps, TlsMethod } from './types.js';
 
+const DEFAULT_LICENCE: LicenceMode = 'auto';
+
 const INSTALL_STEPS = [
   'preflight',
   'setup',
@@ -275,7 +277,7 @@ export class ServerInstall {
       size: this.opts.size ?? DEFAULT_SIZE,
       owner,
       tls,
-      licence: this.opts.licence ?? 'auto',
+      licence: this.opts.licence ?? DEFAULT_LICENCE,
       image: this.opts.image ?? DEFAULT_IMAGE,
     };
   }

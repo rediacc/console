@@ -2070,6 +2070,7 @@
   "commands.server.tls.cloudflareNeedsToken": "--tls cloudflare richiede --cf-token",
   "commands.server.upgrade.confirm": "Aggiornare il server di account su {{domain}}?",
   "commands.server.upgrade.description": "Aggiornare un server installato: creare un fork del suo repository come punto di rollback, collocare la nuova immagine, riapplicare il template quando quello integrato è più recente e riavviare",
+  "commands.server.upgrade.descriptionShort": "Aggiornare un server installato, con un fork di rollback",
   "commands.server.upgrade.done": "{{domain}} aggiornato. Punto di rollback: {{rollback}}",
   "commands.server.upgrade.forking": "Creazione del fork del repository come punto di rollback {{tag}}",
   "commands.server.upgrade.template": "Riapplicazione del template elite (versione {{from}} a {{to}})",

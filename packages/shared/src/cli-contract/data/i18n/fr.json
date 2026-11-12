@@ -2070,6 +2070,7 @@
   "commands.server.tls.cloudflareNeedsToken": "--tls cloudflare nécessite --cf-token",
   "commands.server.upgrade.confirm": "Mettre à niveau le serveur de comptes sur {{domain}} ?",
   "commands.server.upgrade.description": "Mettre à niveau un serveur installé : forker son dépôt comme point de retour arrière, placer la nouvelle image, réappliquer le modèle quand celui intégré est plus récent, puis redémarrer",
+  "commands.server.upgrade.descriptionShort": "Mettre à jour un serveur installé, avec un fork de retour arrière",
   "commands.server.upgrade.done": "{{domain}} mis à niveau. Point de retour arrière : {{rollback}}",
   "commands.server.upgrade.forking": "Fork du dépôt comme point de retour arrière {{tag}}",
   "commands.server.upgrade.template": "Réapplication du modèle elite (version {{from}} vers {{to}})",

@@ -2070,6 +2070,7 @@
   "commands.server.tls.cloudflareNeedsToken": "--tls cloudflare требует --cf-token",
   "commands.server.upgrade.confirm": "Обновить сервер учётных записей на {{domain}}?",
   "commands.server.upgrade.description": "Обновить установленный сервер: создать fork репозитория как точку отката, разместить новый образ, повторно применить шаблон, если встроенный новее, и перезапустить",
+  "commands.server.upgrade.descriptionShort": "Обновить установленный сервер с форком для отката",
   "commands.server.upgrade.done": "{{domain}} обновлён. Точка отката: {{rollback}}",
   "commands.server.upgrade.forking": "Создаётся fork репозитория как точка отката {{tag}}",
   "commands.server.upgrade.template": "Повторное применение шаблона elite (версия {{from}} на {{to}})",

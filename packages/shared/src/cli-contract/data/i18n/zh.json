@@ -2070,6 +2070,7 @@
   "commands.server.tls.cloudflareNeedsToken": "--tls cloudflare 需要 --cf-token",
   "commands.server.upgrade.confirm": "要升级 {{domain}} 上的账户服务器吗？",
   "commands.server.upgrade.description": "升级已安装的服务器：将其仓库派生为回滚点，放置新镜像，内置模板较新时重新应用模板，然后重启",
+  "commands.server.upgrade.descriptionShort": "升级已安装的服务器，并创建回滚分叉",
   "commands.server.upgrade.done": "{{domain}} 已升级。回滚点：{{rollback}}",
   "commands.server.upgrade.forking": "正在将仓库派生为回滚点 {{tag}}",
   "commands.server.upgrade.template": "正在重新应用 elite 模板（版本 {{from}} 到 {{to}}）",

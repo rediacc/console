@@ -2070,6 +2070,7 @@
   "commands.server.tls.cloudflareNeedsToken": "--tls cloudflare necesita --cf-token",
   "commands.server.upgrade.confirm": "¿Actualizar el servidor de cuentas en {{domain}}?",
   "commands.server.upgrade.description": "Actualizar un servidor instalado: bifurcar su repositorio como punto de reversión, colocar la imagen nueva, volver a aplicar la plantilla cuando la integrada sea más reciente y reiniciar",
+  "commands.server.upgrade.descriptionShort": "Actualizar un servidor instalado, con un fork de reversión",
   "commands.server.upgrade.done": "{{domain}} actualizado. Punto de reversión: {{rollback}}",
   "commands.server.upgrade.forking": "Bifurcando el repositorio como punto de reversión {{tag}}",
   "commands.server.upgrade.template": "Volviendo a aplicar la plantilla elite (versión {{from}} a {{to}})",

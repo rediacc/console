@@ -2587,6 +2587,7 @@
       },
       "upgrade": {
         "description": "Atualizar um servidor instalado: fazer um fork do repositório como ponto de rollback, colocar a nova imagem, reaplicar o template quando o embutido é mais novo e reiniciar",
+        "descriptionShort": "Atualizar um servidor instalado, com um fork de reversão",
         "confirm": "Atualizar o servidor de contas em {{domain}}?",
         "forking": "Criando um fork do repositório como ponto de rollback {{tag}}",
         "template": "Reaplicando o template elite (versão {{from}} para {{to}})",

@@ -21,6 +21,8 @@ import { obtainLicence } from './licence.js';
 import { loadOwner, recordFile } from './state.js';
 import type { BoxTarget, ServerDeps } from './types.js';
 
+const DEFAULT_TIER = 'licensed';
+
 export interface StatusResult {
   domain: string;
   machine: string;
@@ -241,7 +243,7 @@ export async function serverLicence(
   return {
     domain: record.domain,
     subscriptionId: result.subscriptionId,
-    tier: cert?.planCode ?? 'licensed',
+    tier: cert?.planCode ?? DEFAULT_TIER,
     via: uploaded ? 'upload' : 'restart',
   };
 }

@@ -2858,6 +2858,7 @@
       },
       "upgrade": {
         "description": "Upgrade an installed server: fork its repository as a rollback point, place the new image, apply the template again when the built-in one is newer, and restart",
+        "descriptionShort": "Upgrade an installed server, with a rollback fork",
         "confirm": "Upgrade the account server at {{domain}}?",
         "forking": "Forking the repository as rollback point {{tag}}",
         "template": "Applying the elite template again (version {{from}} to {{to}})",

@@ -2587,6 +2587,7 @@
       },
       "upgrade": {
         "description": "Mettre à niveau un serveur installé : forker son dépôt comme point de retour arrière, placer la nouvelle image, réappliquer le modèle quand celui intégré est plus récent, puis redémarrer",
+        "descriptionShort": "Mettre à jour un serveur installé, avec un fork de retour arrière",
         "confirm": "Mettre à niveau le serveur de comptes sur {{domain}} ?",
         "forking": "Fork du dépôt comme point de retour arrière {{tag}}",
         "template": "Réapplication du modèle elite (version {{from}} vers {{to}})",

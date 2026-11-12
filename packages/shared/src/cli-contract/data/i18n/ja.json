@@ -2070,6 +2070,7 @@
   "commands.server.tls.cloudflareNeedsToken": "--tls cloudflare には --cf-token が必要です",
   "commands.server.upgrade.confirm": "{{domain}} のアカウントサーバーをアップグレードしますか?",
   "commands.server.upgrade.description": "インストール済みサーバーをアップグレードする: リポジトリをロールバックポイントとしてフォークし、新しいイメージを配置し、組み込みテンプレートが新しければ再適用して、再起動します",
+  "commands.server.upgrade.descriptionShort": "インストール済みサーバーをロールバック用フォーク付きでアップグレード",
   "commands.server.upgrade.done": "{{domain}} をアップグレードしました。ロールバックポイント: {{rollback}}",
   "commands.server.upgrade.forking": "リポジトリをロールバックポイント {{tag}} としてフォークしています",
   "commands.server.upgrade.template": "elite テンプレートを再適用しています (バージョン {{from}} から {{to}})",

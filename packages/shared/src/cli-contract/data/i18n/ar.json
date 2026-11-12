@@ -2070,6 +2070,7 @@
   "commands.server.tls.cloudflareNeedsToken": "يحتاج --tls cloudflare إلى --cf-token",
   "commands.server.upgrade.confirm": "هل تريد ترقية خادم الحسابات على {{domain}}؟",
   "commands.server.upgrade.description": "ترقية خادم مثبّت: تفريع مستودعه كنقطة استرجاع، ووضع الصورة الجديدة، وإعادة تطبيق القالب عندما يكون المضمَّن أحدث، ثم إعادة التشغيل",
+  "commands.server.upgrade.descriptionShort": "ترقية خادم مثبّت مع فرع للتراجع",
   "commands.server.upgrade.done": "تمت ترقية {{domain}}. نقطة الاسترجاع: {{rollback}}",
   "commands.server.upgrade.forking": "تفريع المستودع كنقطة استرجاع {{tag}}",
   "commands.server.upgrade.template": "إعادة تطبيق قالب elite (الإصدار {{from}} إلى {{to}})",

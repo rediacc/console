@@ -9,8 +9,8 @@
 export type TlsMethod = 'letsencrypt' | 'cloudflare' | 'byo';
 export type LicenceMode = 'auto' | 'free';
 
-export const TLS_METHODS: readonly TlsMethod[] = ['letsencrypt', 'cloudflare', 'byo'];
-export const LICENCE_MODES: readonly LicenceMode[] = ['auto', 'free'];
+export const TLS_METHODS: readonly TlsMethod[] = ['letsencrypt', 'cloudflare', 'byo'] as const;
+export const LICENCE_MODES: readonly LicenceMode[] = ['auto', 'free'] as const;
 
 export interface ProcResult {
   code: number;

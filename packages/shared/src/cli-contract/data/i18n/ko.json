@@ -2070,6 +2070,7 @@
   "commands.server.tls.cloudflareNeedsToken": "--tls cloudflare에는 --cf-token이 필요합니다",
   "commands.server.upgrade.confirm": "{{domain}} 의 계정 서버를 업그레이드할까요?",
   "commands.server.upgrade.description": "설치된 서버 업그레이드: 저장소를 롤백 지점으로 포크하고, 새 이미지를 배치하고, 내장 템플릿이 더 최신이면 다시 적용한 뒤 재시작",
+  "commands.server.upgrade.descriptionShort": "설치된 서버를 롤백용 포크와 함께 업그레이드",
   "commands.server.upgrade.done": "{{domain}} 업그레이드 완료. 롤백 지점: {{rollback}}",
   "commands.server.upgrade.forking": "저장소를 롤백 지점 {{tag}} (으)로 포크하는 중",
   "commands.server.upgrade.template": "elite 템플릿을 다시 적용하는 중 (버전 {{from}}에서 {{to}}로)",
