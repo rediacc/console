@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-12T12:18:47.907Z",
+  "generatedAt": "2026-11-12T12:59:37.417Z",
   "legs": [
     {
       "index": 1,
@@ -271,6 +271,7 @@
         "pytest:.ci/rediacc_ci/tests/test_infra_docker_pull_ghcr.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_obs_mirror.py",
         "pytest:.ci/rediacc_ci/tests/test_log.py",
+        "pytest:.ci/rediacc_ci/tests/test_onprem_airgap.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_backup_cutover_preflight.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_derive_shadow_pass_list.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_live_proof.py",
