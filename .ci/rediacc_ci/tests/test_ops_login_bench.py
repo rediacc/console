@@ -52,11 +52,28 @@ def _env(**overrides):
 class FakeApi:
     """The account's /auth routes: a TOTP challenge by default, `challenge=False` for an account with TOTP off."""
 
-    def __init__(self, challenge: bool = True, verify: int = 200, fail: dict | None = None):
+    def __init__(
+        self,
+        challenge: bool = True,
+        verify: int = 200,
+        fail: dict | None = None,
+        satisfied: bool = True,
+    ):
         self.calls: list[tuple[str, dict]] = []
+        self.gets: list[str] = []
+        self.satisfied = satisfied
         self.challenge = challenge
         self.verify = verify
         self.fail = fail or {}
+
+    def get(self, route):
+        self.gets.append(route)
+        if route in self.fail:
+            return self.fail[route], {}
+        return 200, {
+            "satisfied": self.satisfied,
+            "current": {"version": "2026-11-11", "sha256": "a" * 64},
+        }
 
     def post(self, route, body=None):
         self.calls.append((route, dict(body or {})))
@@ -70,6 +87,8 @@ class FakeApi:
             return self.verify, {}
         if route == "2fa/setup":
             return 200, {"secret": NEW_SEED, "uri": "otpauth://x"}
+        if route == "/account/api/v1/portal/terms/accept":
+            return 201, {}
         if route == "2fa/enable":
             return 200, {"enabled": True, "backupCodes": ["bk-1111"]}
         return 200, {}
@@ -584,3 +603,37 @@ def test_the_mail_mode_reads_only_a_reauth_token(monkeypatch, capsys):
     assert capsys.readouterr().out == "abc_DEF-1\n"
     assert "kind = 'reauth'" in seen[0]
     assert "'o''x@example.invalid'" in seen[0]
+
+
+def test_control_a_satisfied_account_accepts_nothing():
+    api = FakeApi(satisfied=True)
+    _login(FakeRunner(), api=api)
+    assert api.gets == [login_bench.TERMS_STATUS]
+    assert login_bench.TERMS_ACCEPT not in [route for route, _ in api.calls]
+
+
+def test_an_unaccepted_bench_account_accepts_the_version_the_server_reports():
+    api = FakeApi(satisfied=False)
+    runner = FakeRunner()
+    _login(runner, api=api)
+    routes = [route for route, _ in api.calls]
+    assert routes.index("2fa/verify") < routes.index(login_bench.TERMS_ACCEPT)
+    body = dict(api.calls)[login_bench.TERMS_ACCEPT]
+    assert body == {
+        "version": "2026-11-11",
+        "sha256": "a" * 64,
+        "locale": "en",
+        "method": "web-checkbox",
+    }
+    # The CLI login runs only after the acceptance.
+    assert any("login" in call[0] for call in runner.calls)
+
+
+def test_an_unreadable_terms_status_or_a_refused_accept_stops_the_run():
+    with pytest.raises(login_bench.LoginError, match="Terms status is unreadable"):
+        _login(FakeRunner(), api=FakeApi(fail={login_bench.TERMS_STATUS: 500}))
+    with pytest.raises(login_bench.LoginError, match="acceptance was refused"):
+        _login(
+            FakeRunner(),
+            api=FakeApi(satisfied=False, fail={login_bench.TERMS_ACCEPT: 403}),
+        )

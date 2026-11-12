@@ -13,6 +13,7 @@ THE STEPS, in order:
   3b. Probe the account with its own password login (`POST /auth/login`, the same route the CLI uses). Three outcomes:
       - A TOTP challenge: the code from the seed is spent on `POST /auth/2fa/verify`; a refusal is the STALE-SEED refusal (TOTP is on but the seed in `REDIACC_BENCH_TOTP_SEED` is not the one the account holds, because the mirror cleared it and it was re-enrolled elsewhere), a LoginError that names the remedy and never retries.
       - No challenge, because TOTP is off (`mirror_config_store` copies the operator row with TOTP cleared, since `users.totp_secret` is sealed per Worker): the run RE-ENROLS through the account's own API with the session the probe just opened. `POST /auth/2fa/setup` and `/auth/2fa/enable` need an elevated session, and the only headless elevation is the reauth mail: `POST /auth/reauth`, the link read from the bench D1 `captured_emails` (kind `reauth`, a child under `bws_env exec --profile deploy-bench` that prints only the token to this process), `POST /auth/reauth/verify`. The new seed is written to Bitwarden as `REDIACC_BENCH_TOTP_SEED` (`bws_env store-from-env`, the value on the writer's stdin, never argv) BEFORE `/auth/2fa/enable`, so a failed write leaves TOTP off and the next run enrols again, never an enabled account whose seed was lost. The backup codes the enable answers are dropped unread.
+  3c. In the same session, accept the current Terms of Service when the account's acceptance does not satisfy them (`GET`/`POST /portal/terms[/accept]`, the version and digest the server reports; operator ruling ASKED:2026-11-11T17:38Z, bench only).
   4. Compute the six-digit TOTP code in memory (`rediacc_ci.ops.totp`), waiting for the next 30 s window when fewer than `MIN_WINDOW_LEFT` seconds remain, then run `./rdc.sh --config eu-bench subscription login --server <BENCH_ORIGIN>` with REDIACC_LOGIN_EMAIL, REDIACC_LOGIN_PASSWORD and REDIACC_LOGIN_TOTP in the child environment.
   5. Always run `./rdc.sh --config eu-bench config remote enable --master-password --config-id <CONFIG_ID> --api-url <BENCH_ORIGIN>` with REDIACC_STORE_MASTER_PASSWORD in the child environment; `config remote status` is not consulted, because it reports "connected" even when this device has lost its key for the store (the Linux kernel keyring is empty after a restart; measured 2026-11-10). Exit 0 is done: a first link, or this device enrolled again against the same store. Exit 2 is done only when the output says the config is linked and this device can already open it (the CLI's "this device can open it, so there is nothing to enable" refusal); any other failure exits 1 naming the step.
   6. Print `./rdc.sh --config eu-bench config remote status`.
@@ -222,6 +223,8 @@ def fresh_code(
 class Poster(Protocol):
     def post(self, route: str, body: dict | None = None) -> tuple[int, dict]: ...
 
+    def get(self, route: str) -> tuple[int, dict]: ...
+
 
 class AccountApi:
     """The bench account's `/auth` routes under one cookie store: the probe login opens the session the enrolment then uses. `post` returns (HTTP status, decoded object); the passwords, tokens and seeds it carries are never printed."""
@@ -233,12 +236,20 @@ class AccountApi:
         self.cookies: dict[str, str] = {}
 
     def post(self, route: str, body: dict | None = None) -> tuple[int, dict]:
+        return self._call("POST", route, json.dumps(body or {}))
+
+    def get(self, route: str) -> tuple[int, dict]:
+        return self._call("GET", route, None)
+
+    def _call(self, method: str, route: str, payload: str | None) -> tuple[int, dict]:
+        """`route` is under `/auth/`, or an absolute API path when it starts with `/` (the portal Terms routes)."""
         headers = {"Content-Type": "application/json"}
         if self.cookies:
             headers["Cookie"] = "; ".join("%s=%s" % kv for kv in self.cookies.items())
+        path = route if route.startswith("/") else self.base + route
         conn = http.client.HTTPSConnection(self.host, timeout=HTTP_TIMEOUT_S)
         try:
-            conn.request("POST", self.base + route, json.dumps(body or {}), headers)
+            conn.request(method, path, payload, headers)
             resp = conn.getresponse()
             status, raw = resp.status, resp.read()
             for header in resp.headers.get_all("Set-Cookie") or []:
@@ -246,7 +257,7 @@ class AccountApi:
                 self.cookies[name.strip()] = rest.partition(";")[0]
         except OSError as exc:
             raise LoginError(
-                "POST /auth/%s reached no answer (%s)" % (route, type(exc).__name__)
+                "%s %s reached no answer (%s)" % (method, path, type(exc).__name__)
             ) from None
         finally:
             conn.close()
@@ -478,6 +489,42 @@ def _step(run: Runner, label: str, argv: Sequence[str], env: Mapping[str, str]) 
         raise LoginError("%s failed (exit %d)" % (label, rc), rc=1)
 
 
+TERMS_STATUS = "/account/api/v1/portal/terms"
+TERMS_ACCEPT = "/account/api/v1/portal/terms/accept"
+
+
+def accept_terms(account: Poster) -> None:
+    """Accept the current Terms of Service for the bench account when its acceptance does not satisfy them, in the session the probe opened.
+
+    Operator ruling ASKED:2026-11-11T17:38Z, "Agents use the flag on bench": agents accept the Terms on bench only, and this module refuses every other server before it reads a credential. A registered account accepts only through the portal route (`RDC_ACCEPT_TERMS=1` does not reach `repo create`), and the mirror and a fresh version both leave the bench account unaccepted, after which every eu-bench `repo create` is refused. The acceptance names the version and digest the server itself reports as current, so it never accepts a text the server does not publish.
+    """
+    status, answer = account.get(TERMS_STATUS)
+    if status != 200:
+        raise LoginError(
+            "GET %s answered HTTP %d: the Terms status is unreadable" % (TERMS_STATUS, status)
+        )
+    if answer.get("satisfied") is True:
+        log.step("The bench account's Terms acceptance satisfies the current version")
+        return
+    current = answer.get("current") or {}
+    version, digest = current.get("version"), current.get("sha256")
+    if not isinstance(version, str) or not isinstance(digest, str):
+        raise LoginError("GET %s named no current version and digest" % TERMS_STATUS)
+    log.step(
+        "Accepting the Terms of Service %s for the bench account (operator ruling 2026-11-11)"
+        % version
+    )
+    status, _ = account.post(
+        TERMS_ACCEPT,
+        {"version": version, "sha256": digest, "locale": "en", "method": "web-checkbox"},
+    )
+    # The route answers 201 Created for a recorded acceptance (measured on bench 2026-11-12).
+    if status not in (200, 201):
+        raise LoginError(
+            "POST %s answered HTTP %d: the acceptance was refused" % (TERMS_ACCEPT, status)
+        )
+
+
 def login(
     argv: Sequence[str],
     env: Mapping[str, str],
@@ -527,6 +574,8 @@ def login(
     else:
         log.step("TOTP is off on the bench account: enrolling a new seed")
         seed, spent = reenrol(account, values[EMAIL_ENV], clean, capture, now, sleep)
+
+    accept_terms(account)
 
     login_env = dict(clean)
     login_env[LOGIN_EMAIL_ENV] = values[EMAIL_ENV]
