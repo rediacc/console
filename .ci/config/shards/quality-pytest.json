@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-12T19:11:22.775Z",
+  "generatedAt": "2026-11-12T23:17:38.575Z",
   "legs": [
     {
       "index": 1,
@@ -879,6 +879,7 @@
         "pytest:.ci/rediacc_ci/tests/test_workflow_start_account_tree.py",
         "pytest:.claude/rediacc_hooks/tests/test_bash_semantics.py",
         "pytest:.claude/rediacc_hooks/tests/test_binary_deploy_recursive.py",
+        "pytest:.claude/rediacc_hooks/tests/test_conftest_no_ambient_git_config.py",
         "pytest:.claude/rediacc_hooks/tests/test_guard_event_cwd.py",
         "pytest:.claude/rediacc_hooks/tests/test_hookio_world_symlink.py",
         "pytest:.claude/rediacc_hooks/tests/test_plan_gate.py",

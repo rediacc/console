@@ -567,9 +567,7 @@ def certificate_audited(
     try:
         rows = control_db.query(
             database,
-            # instr, not LIKE: D1 refuses a LIKE pattern over 50 bytes ("LIKE or GLOB pattern too
-            # complex"), which a quoted subscription id passes. instr matches the id exactly, case
-            # included, where LIKE folded ASCII case: an id is an exact token.
+            # instr, not LIKE: D1 refuses a LIKE pattern over 50 bytes ("LIKE or GLOB pattern too complex"), which a quoted subscription id passes. instr matches the id exactly, case included, where LIKE folded ASCII case: an id is an exact token.
             "SELECT COUNT(*) AS n FROM audit WHERE action = ? AND instr(detail, ?) > 0",
             ["delegation_cert.signed", '"subscriptionId":%s' % json.dumps(certificate_id)],
             runner=run,
