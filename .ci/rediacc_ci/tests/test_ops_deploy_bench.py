@@ -764,5 +764,10 @@ def test_bench_turns_stripe_consent_collection_on_and_no_other_config_does():
     for config in configs:
         doc = tomllib.loads(config.read_text(encoding="utf-8"))
         seen[config.name] = (doc.get("vars") or {}).get("STRIPE_CONSENT_COLLECTION")
+        # A [env.<name>.vars] table is a config of its own that wrangler deploys with --env.
+        for env_name, env in (doc.get("env") or {}).items():
+            seen["%s#%s" % (config.name, env_name)] = (env.get("vars") or {}).get(
+                "STRIPE_CONSENT_COLLECTION"
+            )
     assert seen.get(deploy_bench.CONFIG) == "1", seen
     assert [name for name, value in seen.items() if value == "1"] == [deploy_bench.CONFIG], seen

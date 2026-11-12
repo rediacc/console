@@ -80,7 +80,7 @@ const FIXTURE_ROOT = process.env.EXTERNAL_LINKS_FIXTURE_ROOT || undefined;
 // UNRELEASED SITE PAGES. A `${WK_SITE_ORIGIN}/<lang>/<path>` link that production answers 404 or 410, while `packages/www/src/pages/[lang]/<path>.astro` exists in this tree, cites a page the next release ships, not a dead one: measured 2026-11-12, docs/legal/enterprise-order-form.md cited four legal pages the same branch added, and run 43143370918 failed on all four. Such a link is named under its own heading and never fails the run. Only a static page file counts (no dynamic segment, no content collection), in a locale the site builds and with the shared `getLanguagePaths` generator, and a fixture run keeps every 404 a break unless the gate test names a stub site origin. check:ci-redirects separately refuses a redirect rule that would shadow that page once it ships.
 const SITE_PAGES_DIR = 'packages/www/src/pages/[lang]';
 const SITE_LOCALES_DIR = 'packages/www/src/i18n/translations';
-const SHARED_LOCALE_PATHS = /export const getStaticPaths = getLanguagePaths;/;
+const SHARED_LOCALE_PATHS = /^export const getStaticPaths = getLanguagePaths;\s*$/m;
 
 // A fixture run resolves the page in its own tree, and only when the gate test names the stub that stands in for the site; unset, every fixture 404 stays a break.
 const SITE_ORIGIN = FIXTURE_ROOT ? process.env.EXTERNAL_LINKS_SITE_ORIGIN || null : WK_SITE_ORIGIN;
