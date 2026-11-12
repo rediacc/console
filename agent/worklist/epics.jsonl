@@ -130,3 +130,4 @@
 {"at":"2026-11-09T11:23:22Z","by":"d778be9d","id":"79b7e92e","title":"D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention","covers":[],"order":null}
 {"at":"2026-11-10T06:42:08Z","by":"d778be9d","id":"562ef6c3","title":"experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire","covers":[],"order":null,"plan":"agent/plans/PLAN-experience-feedback.md"}
 {"at":"2026-11-12T06:22:53Z","by":"d778be9d","id":"f32615b6","title":"account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign","covers":[],"order":null,"plan":"agent/plans/PLAN-account-notices.md"}
+{"at":"2026-11-12T10:49:20Z","by":"d778be9d","id":"c01fbf97","title":"enterprise tenants: acme.rediacc.cloud and acme.rediacc.io","covers":[],"order":null,"plan":"agent/plans/PLAN-enterprise-tenants.md"}
