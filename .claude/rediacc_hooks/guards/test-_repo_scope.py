@@ -45,6 +45,7 @@ atexit.register(shutil.rmtree, SCRATCH, True)
 WORK = os.path.join(SCRATCH, "work")
 NEW = os.path.join(SCRATCH, "new")
 LINK = os.path.join(SCRATCH, "link")
+GITFILE = os.path.join(SCRATCH, "gitfile")
 SUB = os.path.join(ROOT, "private", "renet")
 # A tree holding an independent repository of its own (as a gitignored sibling under private/ does): built in the scratch dir, never in this checkout.
 NEST_ROOT = os.path.join(SCRATCH, "nest-root")
@@ -69,6 +70,10 @@ for i in range(30):
     pathlib.Path(WORK, "f%d.txt" % i).write_text("b\n", encoding="utf-8")
 _git("-C", WORK, "add", "-A")
 os.symlink(ROOT, LINK)
+# A directory outside the tree whose `.git` file names this checkout's git common dir: no path of it is inside the tree, so only the common-dir comparison places it as ours.
+_common = scope.common_dir(ROOT)
+os.makedirs(GITFILE)
+pathlib.Path(GITFILE, ".git").write_text("gitdir: %s\n" % _common, encoding="utf-8")
 if not os.path.exists(os.path.join(SUB, ".git")):
     failures.append("setup: private/renet is not checked out")
     print("*** FAIL *** %s is not a checked-out submodule; the submodule rows judge nothing" % SUB)
@@ -132,6 +137,16 @@ def rows_for(stem):
                     "/",
                 )
             )
+            # block_blanket_git_add admits a `-C` outside the tree by `target_root`'s path arm, which does not read the `.git` file.
+            if stem != "block_blanket_git_add":
+                out.append(
+                    (
+                        "OURS",
+                        "this checkout's git dir from outside the tree",
+                        "git -C %s %s%s" % (GITFILE, pre, verb),
+                        "/",
+                    )
+                )
     if "W" in families:
         out += [
             ("WALK", "-C this checkout", "git -C %s %s%s" % (ROOT, pre, verb), "/"),
@@ -281,6 +296,8 @@ COMPARE_OFF = [
         "if common and not ours:",
     ),
 ]
+# The common-dir comparison alone: a target the in-tree check does not place (a directory outside the tree whose `.git` file names this checkout's common dir) is ours only by its common dir, so only that row flips.
+COMMON_OFF = [COMPARE_OFF[1]]
 WALK_OFF = {
     "block_git_empty_commit": [
         ('_repo_scope.walked_commit_flag(cmd, "allow-empty")', "False"),
@@ -309,6 +326,14 @@ for stem in GUARDS:
             COMPARE_OFF,
             "OURS",
             ("this checkout by -C", "a submodule by -C"),
+            0,
+        ),
+        (
+            "the common-dir comparison alone taken out",
+            None,
+            COMMON_OFF,
+            "OURS",
+            ("this checkout's git dir from outside the tree",),
             0,
         ),
     ]
@@ -400,6 +425,18 @@ helper = [
     (
         "adjacent=False still reads -C",
         scope.walked_commit_flag("git -C x commit --amend", "amend", adjacent=False),
+    ),
+    (
+        "a shell alias for commit amend is read",
+        scope.walked_commit_flag("git -c alias.ci='!git commit --amend' ci", "amend"),
+    ),
+    (
+        "a shell alias for another verb is not an amend",
+        not scope.walked_commit_flag("git -c alias.st='!git status' st", "amend"),
+    ),
+    (
+        "a second -C composes onto the first",
+        scope.walked_commit_flag("git -C /nowhere-a -C /nowhere-b commit --amend", "amend"),
     ),
     (
         "allow-empty-message is another option",

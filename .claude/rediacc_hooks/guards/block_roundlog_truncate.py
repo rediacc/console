@@ -1397,7 +1397,7 @@ def _builtins_aliases(tree):
 
 
 def _runs_code(tree):
-    """Does a python tree name `exec`, `eval` or `compile`, bare, imported from builtins under any name, or as an attribute of the builtins module however it is reached (`builtins.exec`, `b.exec` after `import builtins as b`, `__import__('builtins').exec`, `getattr(importlib.import_module('builtins'), 'exec')`)? A name, not a call: `f = exec; f(prog)` runs code too.
+    """Does a python tree name `exec`, `eval` or `compile`, bare, imported from builtins under any name, or as an attribute of the builtins module reached by one of the forms read here (`builtins.exec`, `b.exec` after `import builtins as b`, `__import__('builtins').exec`, `getattr(importlib.import_module('builtins'), 'exec')`)? A module reached any other way (`sys.modules['builtins'].exec`, a second name copied from an alias: `c = b; c.exec(...)`) is the named residual. A name, not a call: `f = exec; f(prog)` runs code too.
 
     AN ALIAS OF THE MODULE RUNS CODE TOO (ffbd9211.4). Only the names `builtins` and `__builtins__` were read, so `import builtins as b; b.exec('''...glob.glob('agent/*.md')...''')` and `__import__('builtins').exec(...)` left the held program unread (rc 0, measured 2026-11-10). A runner's name given to `getattr` or a subscript as a literal (`vars(b)['exec']`) is read as naming it; one assembled at runtime stays the named residual.
     """

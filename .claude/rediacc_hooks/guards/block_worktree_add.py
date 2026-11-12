@@ -252,31 +252,46 @@ def runs_worktree_add(cmd, depth=0):
 
 # A SCRATCH REPOSITORY IS NOT A SECOND CHECKOUT OF THIS ONE (#a8ae93bd). Measured 2026-11-11: `git -C /tmp/tmp.X/work worktree add --detach /tmp/tmp.X/restored refs/backup-restored/...`, in a `git init` under /tmp with a local bare remote, was refused, and that is the exact command `./run.sh backup-ref restore` prints. The rule is about the console and its submodules, so the git arm is
 # scoped to the repository each `git worktree add` acts on: its git common dir, asked of git in the directory the run's `cd` and `-C` compose (`_repo_scope.git_targets`, which block_git_empty_commit and block_unlinked_commit_author share). That dir being this checkout's common dir, or under it (`modules/<path>` is a submodule's store), keeps the refusal. Everything the resolver cannot know keeps it too.
-def _pick_add(verb, rest):
-    """`_repo_scope.git_targets`'s pick: judge `worktree add`, doubt a sub-verb the walk cannot know."""
-    if verb != "worktree" or not rest:
-        return False
-    if _unknown_word(rest[0]):
-        return None
-    return rest[0] == "add"
+def _pick_add(operands):
+    """`_repo_scope.git_targets`'s pick: judge `worktree add`, doubt a sub-verb the walk cannot know. The words after `add` are appended to `operands`, one list per judged run, in the order `git_targets` returns the targets."""
+
+    def pick(verb, rest):
+        if verb != "worktree" or not rest:
+            return False
+        if _unknown_word(rest[0]):
+            return None
+        if rest[0] != "add":
+            return False
+        operands.append(rest[1:])
+        return True
+
+    return pick
 
 
 def _foreign_adds(cmd, scan, base):
-    """Is every `git worktree add` the shell command `cmd` runs aimed at a repository that is neither this checkout nor one of its submodules? `scan` is the text the regex arm read; `base` is the directory the command starts in, from the event. False whenever any part of the answer is unknown."""
+    """Is every `git worktree add` the shell command `cmd` runs aimed at a repository that is neither this checkout nor one of its submodules, and creating its tree outside this checkout? `scan` is the text the regex arm read; `base` is the directory the command starts in, from the event. False whenever any part of the answer is unknown."""
     if not base or not os.path.isabs(base) or not os.path.isdir(base):
         return False
     # The regex reads text the walk may not have turned into a run; a match the walk did not account for is one the resolver never judged.
     matched = _repo_scope.text_matches(WORKTREE_ADD, scan)
-    targets = _repo_scope.git_targets(cmd, base, _pick_add, matched)
-    if targets is None:
+    operands: list[list[str]] = []
+    targets = _repo_scope.git_targets(cmd, base, _pick_add(operands), matched)
+    if targets is None or len(targets) != len(operands):
         return False
-    ours = _repo_scope.common_dir(str(hookio.repo_root()))
+    root = str(hookio.repo_root())
+    ours = _repo_scope.common_dir(root)
     if not ours:
         return False
-    for target in targets:
+    for target, words in zip(targets, operands):
         common = _repo_scope.common_dir(target)
         if not common or commit_policy.is_inside(common, ours):
             return False
+        # The new tree's path is an operand of the add, and a scratch repository may place it inside this checkout (`.claude/worktrees`, a submodule path): a word of the add that resolves into this tree keeps the refusal, an option or a branch name included, since the walk does not tell the path from them.
+        for word in words:
+            if _unknown_word(word) or word.startswith("~"):
+                return False
+            if commit_policy.is_inside(os.path.normpath(os.path.join(target, word)), root):
+                return False
     return True
 
 

@@ -943,6 +943,21 @@ SCOPE_REFUSED: list[tuple[str, str, str | None]] = [
     ),
     ("no cwd on the event", "git %s /tmp/wt" % VERB, None),
     ("a relative cwd on the event", "git %s /tmp/wt" % VERB, "work"),
+    (
+        "scratch, the new tree inside this checkout",
+        "git -C %s %s --detach %s/.claude/worktrees/x HEAD" % (WORK, VERB, ROOT),
+        "/tmp",
+    ),
+    (
+        "scratch, the new tree inside a submodule path",
+        "git -C %s %s --detach %s/x HEAD" % (WORK, VERB, SUBMODULE),
+        "/tmp",
+    ),
+    (
+        "scratch, the new tree reached by a relative path",
+        "git -C %s %s --detach %s HEAD" % (WORK, VERB, os.path.relpath(ROOT, WORK)),
+        "/tmp",
+    ),
 ]
 if not os.path.isdir(os.path.join(SUBMODULE, ".git")) and not os.path.isfile(
     os.path.join(SUBMODULE, ".git")
@@ -992,7 +1007,17 @@ OURS_ROWS = [
         "a submodule by relative -C",
     )
 ]
+PATH_ROWS = [r for r in SCOPE_REFUSED if r[0].startswith("scratch, the new tree")]
 for scope_label, scope_pair, scope_rows, scope_want in (
+    (
+        "the new-tree path check taken out",
+        (
+            "if commit_policy.is_inside(os.path.normpath(os.path.join(target, word)), root):",
+            "if False:",
+        ),
+        PATH_ROWS,
+        0,
+    ),
     (
         "the scope taken out",
         ("base and _foreign_adds(cmd, scan, base)", "False"),

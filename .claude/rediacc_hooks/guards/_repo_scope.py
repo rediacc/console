@@ -14,6 +14,7 @@ ONE QUESTION, `git_targets`. It answers the directories the judged git runs of a
 
 import os
 import re
+import shlex
 
 from rediacc_hooks import commit_policy, hookio, shellscan
 
@@ -160,7 +161,7 @@ def elsewhere(cmd, base, root, pick, expected):
 
 
 def walked_commit_flag(cmd, flag, adjacent=True):
-    """Does a `git commit` bash would run in `cmd` set the boolean option `flag` (a long name: "allow-empty", "amend"), read by git's own option parse? A text pattern anchored on `git commit` does not read past `git -C <dir> commit`, `git -c k=v commit` or `git -c alias.ci=commit ci`; the walk places each of them, and an alias the run sets for itself is expanded first.
+    """Does a `git commit` bash would run in `cmd` set the boolean option `flag` (a long name: "allow-empty", "amend"), read by git's own option parse? A text pattern anchored on `git commit` does not read past `git -C <dir> commit`, `git -c k=v commit` or `git -c alias.ci=commit ci`; the walk places each of them, and an alias the run sets for itself is expanded first (a `!` alias as the command it runs, with the rest of the line appended).
 
     `adjacent=False` passes over a run spelled `git commit` with nothing between the two words, for a caller whose own text arms already read that spelling everywhere bash runs it (block_git_amend's lifted commands), so its declared defect on those arms still changes an answer.
     """
@@ -173,7 +174,12 @@ def walked_commit_flag(cmd, flag, adjacent=True):
         alias = git_aliases(r, argv, at).get(verb)
         if not adjacent and at == 0 and alias is None:
             continue
-        if alias and not alias.startswith("!") and alias.split():
+        if alias and alias.startswith("!"):
+            # A shell alias runs its text with the rest appended; that command is read by the same walk, and carries no alias of its own to expand again.
+            if walked_commit_flag("%s %s" % (alias[1:], shlex.join(rest)), flag, adjacent):
+                return True
+            continue
+        if alias and alias.split():
             words = alias.split()
             verb, rest = words[0], words[1:] + rest
         if verb == "commit" and shellscan.git_commit_args(rest).on(flag):
