@@ -329,11 +329,20 @@ export interface UnresolvableSite {
   pattern: string;
 }
 
+/**
+ * The calls that carry a translation key: t(), to(), ta() and the component-local `text()`
+ * wrapper LegalDocument.astro routes every key through (`text(key)` is `t(key, en.t(key))`).
+ * `text` must not be a method (`res.text(`), hence the lookbehind.
+ */
+const KEY_CALL = String.raw`(?:\bt[ao]?|(?<![\w$.])text)\(\s*`;
+const KEY_CALL_LITERAL = new RegExp(`${KEY_CALL}['"]([^'"]+)['"]`, 'g');
+const KEY_CALL_TEMPLATE = new RegExp(`${KEY_CALL}\`([^\`]+)\``, 'g');
+
 /** Key calls in `src` whose key resolves to an opaque pattern, with 1-based line numbers. */
 export function unresolvableSites(src: string): UnresolvableSite[] {
   const ns = namespaceVars(src);
   const out: UnresolvableSite[] = [];
-  for (const m of src.matchAll(/\bt[ao]?\(\s*`([^`]+)`/g)) {
+  for (const m of src.matchAll(KEY_CALL_TEMPLATE)) {
     const pattern = resolveTemplate(m[1], ns);
     if (!isOpaquePattern(pattern)) continue;
     out.push({
@@ -349,8 +358,8 @@ export function referencePatterns(src: string): string[] {
   const pats: string[] = [];
   const ns = namespaceVars(src);
 
-  for (const m of src.matchAll(/\bt[ao]?\(\s*['"]([^'"]+)['"]/g)) pats.push(m[1]);
-  for (const m of src.matchAll(/\bt[ao]?\(\s*`([^`]+)`/g)) pats.push(resolveTemplate(m[1], ns));
+  for (const m of src.matchAll(KEY_CALL_LITERAL)) pats.push(m[1]);
+  for (const m of src.matchAll(KEY_CALL_TEMPLATE)) pats.push(resolveTemplate(m[1], ns));
   for (const m of src.matchAll(/\{\{t:([^}\s]+)\}\}/g)) pats.push(m[1]);
   // Key paths carried as DATA in a config table, and template key paths built inline.
   for (const m of src.matchAll(/['"]([a-zA-Z][\w]*(?:\.[a-zA-Z][\w]*){2,})['"]/g)) pats.push(m[1]);
@@ -401,6 +410,16 @@ export function buildMatcher(patterns: Iterable<string>): (key: string) => boole
 }
 
 const escapeRe = (s: string): string => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** The CATALOG_CONSUMERS entries whose file does not exist under `base`. */
+export function missingConsumers(
+  base: string,
+  consumers: ReadonlyArray<{ file: string; why: string }>
+): Array<{ file: string; why: string; abs: string }> {
+  return consumers
+    .map((c) => ({ ...c, abs: path.join(base, c.file) }))
+    .filter((c) => !fs.existsSync(c.abs));
+}
 
 function selftest(): boolean {
   const failures: string[] = [];
@@ -531,6 +550,35 @@ const body = (content as any).problem;`;
       ]),
     JSON.stringify(unresolvableSites(OPAQUE))
   );
+  // The same fully dynamic key, passed through a component-local `text()` wrapper.
+  const OPAQUE_TEXT = 'const x = text(`${a}.${b}`);';
+  check(
+    'a fully dynamic key inside text() is reported, like one inside t()',
+    unresolvableSites(OPAQUE_TEXT).length === 1 &&
+      unresolvableSites(OPAQUE_TEXT)[0].pattern === '*.*'
+  );
+  check(
+    'a literal-root key inside text() is reachable, and a .text( method call is not a key site',
+    reach('const x = text(`pages.${legalPage}.meta.title`);', 'pages.termsOfService.meta.title') &&
+      unresolvableSites('const body = await res.text(`${a}.${b}`);').length === 0
+  );
+  const consumerRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'dead-keys-consumers-'));
+  try {
+    const present = path.join(consumerRoot, 'present.ts');
+    // tree-write: safe present is under consumerRoot, a mkdtemp directory in os.tmpdir()
+    fs.writeFileSync(present, '');
+    const gone = missingConsumers(consumerRoot, [
+      { file: 'present.ts', why: 'exists' },
+      { file: 'absent.ts', why: 'removed' },
+    ]);
+    check(
+      'a CATALOG_CONSUMERS entry whose file is gone is reported, a present one is not',
+      gone.length === 1 && gone[0].file === 'absent.ts'
+    );
+  } finally {
+    // tree-write: safe consumerRoot is the mkdtemp directory created above
+    fs.rmSync(consumerRoot, { recursive: true, force: true });
+  }
   check(
     'a namespace that resolves to a literal root is NOT reported (control)',
     unresolvableSites('const ns = `pages.${page}`;\nconst x = t(`${ns}.meta.title`);').length ===
@@ -616,7 +664,7 @@ function main(): void {
     ...c,
     abs: path.join(base, c.file),
   }));
-  const missing = consumers.filter((c) => !fs.existsSync(c.abs));
+  const missing = missingConsumers(base, CATALOG_CONSUMERS);
   if (missing.length > 0) {
     console.error(
       `✗ Refusing to run: ${missing.length} catalog consumer(s) in CATALOG_CONSUMERS no longer exist:\n` +

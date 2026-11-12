@@ -23,7 +23,7 @@ export type LegalPageKey = `pages.${LegalPage}`;
 
 /** `pages.termsOfService` becomes `termsOfService`; a key outside the list throws. */
 export function legalPageName(key: LegalPageKey): LegalPage {
-  const name = key.slice('pages.'.length);
+  const name = key.startsWith('pages.') ? key.slice('pages.'.length) : '';
   if (!(LEGAL_PAGES as readonly string[]).includes(name)) {
     throw new Error(`${key} is not a legal page; add it to LEGAL_PAGES in legal-pages.ts`);
   }

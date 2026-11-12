@@ -36,7 +36,8 @@ const tokens = legalTokens(lang);
 const legalPage = legalPageName(pageKey);
 
 // Every key is spelled in full, `pages.${legalPage}.<path>`, at its call: a key assembled from a
-// prop and a parameter resolves to no branch, and check:ci-dead-translation-keys refuses it.
+// prop and a parameter resolves to no branch, and check:ci-dead-translation-keys refuses it
+// inside t(), to() or text().
 const text = (key: string) => interpolateTree(t(key, en.t(key)), tokens);
 const sections = interpolateTree(
   (to(`pages.${legalPage}.sections` as any) ??
@@ -48,7 +49,7 @@ const enSections = en.to(`pages.${legalPage}.sections` as any) as Record<string,
 const sectionKeys = orderedKeys(sections, enSections);
 const relatedPages = related.map(({ page, labelKey }) => ({
   href: `/${lang}/${page}`,
-  label: t(labelKey),
+  label: t(labelKey, en.t(labelKey)),
 }));
 ---
 
