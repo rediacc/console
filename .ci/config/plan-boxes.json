@@ -1929,6 +1929,30 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-onprem-relicence-inbox.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 2,
+      "done": 10,
+      "open_sigs": [
+        "55b64aa8",
+        "bb774974"
+      ],
+      "done_sigs": [
+        "0e4a8be7",
+        "26e1b1f8",
+        "4eda9a51",
+        "64777bda",
+        "78b9f2f1",
+        "a549a3e8",
+        "b13f1694",
+        "b9869455",
+        "d2fc213f",
+        "f96c33f6"
+      ]
+    },
     "agent/plans/PLAN-org-executor-connect-timeout-relocate.md": {
       "status": "executing",
       "owner": "d778be9d",
