@@ -4,7 +4,9 @@ ONE VERB PER LIVE BOX. `signer` (V1), `region-loss` (V2), `add` (V3), `routing` 
 
 EVERY REFUSAL HAS A CONTROL. A claim that something is refused is paired with the same request admitted where it should be: a token refused by the other company's Worker is first accepted by its own, a scope case refused by a signer sits beside a legitimate licence that signer issues. Without the control, a dead signer or a wrong host would pass every refusal claim.
 
-WHAT IS BROKEN IS PUT BACK. `signer` stops a signer, `region-loss` cuts a region and `proxy` sets an allowlist; each restores in a `finally`, and a restore that fails is itself a broken claim, so a run never leaves bench quietly degraded.
+WHAT IS BROKEN IS PUT BACK. `signer` stops a signer, `region-loss` cuts a region and `proxy` sets an allowlist; each restores in a `finally`, and a restore that fails is itself a broken claim, so a run never leaves bench quietly degraded. `signer` and `region-loss` restore through `_restore`: start the signer (or restore the region), settle until the caller is signed for again, start once more if it is not, and claim `<caller>: bench signing is restored`; a broken one names the `deploy_signer --target` run that puts bench back.
+
+A STATE CHANGE IS SETTLED, NOT SAMPLED. Cloudflare propagates a signer's stop and start over seconds: on 2026-11-12 one issue call right after the stop was still admitted. A claim judged right after a stop, a cut or a restart therefore goes through `settle`, which asks again every `SETTLE_INTERVAL_S` until the answer is the one claimed or `SETTLE_S` pass, and judges the last answer; a broken one names the wait.
 
 A LAB ERROR IS A BROKEN CLAIM, NOT A TRACEBACK. A lab raises `LabError` (or an OS, value, lookup or timeout error) when a live step fails; the verb records it as broken under the claim it was serving and still restores. Any other exception is a defect in the proof or the lab and propagates.
 
@@ -19,10 +21,12 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import functools
 import importlib
 import pathlib
 import re
 import sys
+import time
 from typing import TYPE_CHECKING, Protocol
 
 if TYPE_CHECKING:
@@ -65,6 +69,12 @@ NOT_PROVEN_ON_BENCH: tuple[str, ...] = (
 WORKFLOW_REMOVE = re.compile(r"enterprise\s+remove\b|enterprise\.lifecycle\b[^\n]*\bremove\b")
 MASK = "***"
 FREE_MAIL_DOMAIN = "gmail.com"
+# How long a judged state change may take to propagate, and how often `settle` asks again.
+SETTLE_S = 90
+SETTLE_INTERVAL_S = 5
+# The seams `settle` waits and reads time through; the tests swap both for a fake clock.
+sleep = time.sleep
+clock = time.monotonic
 
 
 class LabError(RuntimeError):
@@ -231,14 +241,18 @@ class Proof:
     def admitted(self, claim: str, answer: Answer) -> bool:
         return self.check(claim, ok=answer.ok, detail=f"refused: {answer.error or '(no error)'}")
 
-    def refused(self, claim: str, answer: Answer, *, naming: str = "") -> bool:
+    def refused(
+        self, claim: str, answer: Answer, *, naming: str = "", waited: float | None = None
+    ) -> bool:
+        """`waited`: the answer is the last of a `settle` of that many seconds, which a broken detail names."""
+        tail = "" if waited is None else f" (still so after a {waited:g} s wait)"
         if answer.ok:
-            return self.check(claim, ok=False, detail="admitted")
+            return self.check(claim, ok=False, detail="admitted" + tail)
         if not answer.error.strip():
-            return self.check(claim, ok=False, detail="refused with no error text")
+            return self.check(claim, ok=False, detail="refused with no error text" + tail)
         if naming and naming not in answer.error:
             return self.check(
-                claim, ok=False, detail=f"error does not name {naming}: {answer.error}"
+                claim, ok=False, detail=f"error does not name {naming}: {answer.error}{tail}"
             )
         return self.check(claim, ok=True)
 
@@ -259,6 +273,64 @@ class Proof:
         return [o for o in self.outcomes if o.ok and not o.skipped]
 
 
+def settle[T](
+    probe: Callable[[], T],
+    done: Callable[[T], bool],
+    *,
+    timeout: float = SETTLE_S,
+    interval: float = SETTLE_INTERVAL_S,
+) -> T:
+    """Ask `probe` until `done` holds for its answer or `timeout` seconds pass, `interval` apart; return the last answer. An exception from `probe` propagates."""
+    deadline = clock() + timeout
+    answer = probe()
+    while not done(answer) and clock() < deadline:
+        sleep(interval)
+        answer = probe()
+    return answer
+
+
+def _names_unavailable(answer: Answer) -> bool:
+    return not answer.ok and SIGNER_UNAVAILABLE in answer.error
+
+
+def _start_and_settle(start: Callable[[], object], probe: Callable[[], Answer]) -> Answer:
+    """Run `start`, then settle `probe` until admitted. A lab error from either is a refused answer, never a raise: this runs in a `finally`."""
+    try:
+        start()
+    except LAB_ERRORS as exc:
+        return Answer(ok=False, error=f"start failed: {type(exc).__name__}: {exc}")
+
+    def asked() -> Answer:
+        try:
+            return probe()
+        except LAB_ERRORS as exc:
+            return Answer(ok=False, error=f"{type(exc).__name__}: {exc}")
+
+    return settle(asked, lambda a: a.ok)
+
+
+def _restore(lab: Lab, p: Proof, signer: str, caller: str, *, region: str = "") -> None:
+    """Put bench signing back after a stop (or, with `region`, a cut): start, settle until `caller` is issued a licence (renewed, for a region), start once more if not, and claim the result."""
+    if region:
+        start = functools.partial(lab.restore_region, region)
+        probe = functools.partial(lab.renew, caller)
+        action = "renewal"
+    else:
+        start = functools.partial(lab.start_signer, signer)
+        probe = functools.partial(lab.issue, caller, "licence")
+        action = "issuance"
+    answer = _start_and_settle(start, probe)
+    if not answer.ok:
+        answer = _start_and_settle(start, probe)
+    target = signer.removeprefix("signer-")
+    p.check(
+        f"{caller}: bench signing is restored",
+        ok=answer.ok,
+        detail=f"{action} still refused after two starts, each settled for {SETTLE_S} s "
+        f"({answer.error or '(no error)'}); run deploy_signer --target {target}",
+    )
+
+
 # -- the verbs --------------------------------------------------------------------
 
 
@@ -276,7 +348,7 @@ def _no_key_on_account(lab: Lab, p: Proof, *, bench: bool) -> None:
 
 
 def verb_signer(lab: Lab, p: Proof, *, bench: bool) -> None:
-    """V1: the binding across Workers, props honoured, scope refused, no key on any account Worker, certificates through the signer, a stopped signer named while a current licence works."""
+    """V1: the binding across Workers, props honoured, scope refused, no key on any account Worker, certificates through the signer, a stopped signer named (settled) while a current licence works, and signing restored."""
     _no_key_on_account(lab, p, bench=bench)
     callers = lab.callers(bench=bench)
     if not p.check("signer callers are listed", ok=callers, detail="no caller found"):
@@ -296,13 +368,14 @@ def verb_signer(lab: Lab, p: Proof, *, bench: bool) -> None:
     caller = callers[0]
     signer = lab.signer_of(caller)
     if not p.attempt(f"{signer} stops", lambda: lab.stop_signer(signer)):
-        p.attempt(f"{signer} restarts", lambda: lab.start_signer(signer))
+        _restore(lab, p, signer, caller)
         return
     try:
         p.refused(
             f"{caller}: a stopped signer is named",
-            lab.issue(caller, "licence"),
+            settle(lambda: lab.issue(caller, "licence"), _names_unavailable),
             naming=SIGNER_UNAVAILABLE,
+            waited=SETTLE_S,
         )
         p.check(
             f"{caller}: the current licence works with the signer stopped",
@@ -310,31 +383,36 @@ def verb_signer(lab: Lab, p: Proof, *, bench: bool) -> None:
             detail="current licence refused",
         )
     finally:
-        p.attempt(f"{signer} restarts", lambda: lab.start_signer(signer))
-    p.admitted(f"{caller}: issues again after the restart", lab.issue(caller, "licence"))
+        _restore(lab, p, signer, caller)
 
 
 def verb_region_loss(lab: Lab, p: Proof, *, bench: bool) -> None:
-    """V2: with eu's signer and control database cut, the us company issues and renews, the eu company gets the named error and keeps its licence, and restoring eu renews it."""
+    """V2: with eu's bench signer cut (its control database stays, see deploy_signer), the us company issues and renews, the eu company gets the named error (settled) and keeps its licence, and restoring eu renews it again."""
     del bench
     eu = lab.caller_of(lab.ensure_company("proof-loss-eu", "eu"))
     us = lab.caller_of(lab.ensure_company("proof-loss-us", "us"))
+    # Only bench runs this verb, and the lab cuts a region by stopping its bench signer.
+    eu_signer = "signer-bench-eu"
     p.admitted("eu company renews before the cut", lab.renew(eu))
-    if not p.attempt("eu signer and control are cut", lambda: lab.cut_region("eu")):
-        p.attempt("eu is restored", lambda: lab.restore_region("eu"))
+    if not p.attempt("eu signer is cut", lambda: lab.cut_region("eu")):
+        _restore(lab, p, eu_signer, eu, region="eu")
         return
     try:
         p.admitted("us company issues with eu cut", lab.issue(us, "licence"))
         p.admitted("us company renews with eu cut", lab.renew(us))
-        p.refused("eu company gets the named error", lab.renew(eu), naming=SIGNER_UNAVAILABLE)
+        p.refused(
+            "eu company gets the named error",
+            settle(lambda: lab.renew(eu), _names_unavailable),
+            naming=SIGNER_UNAVAILABLE,
+            waited=SETTLE_S,
+        )
         p.check(
             "eu company's current licence works with eu cut",
             ok=lab.current_licence_works(eu),
             detail="current licence refused",
         )
     finally:
-        p.attempt("eu is restored", lambda: lab.restore_region("eu"))
-    p.admitted("eu company renews after the restore", lab.renew(eu))
+        _restore(lab, p, eu_signer, eu, region="eu")
     p.notes.extend(f"not proven on bench: {n}" for n in NOT_PROVEN_ON_BENCH)
 
 

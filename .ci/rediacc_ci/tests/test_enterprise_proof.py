@@ -39,6 +39,12 @@ class FakeLab:
     raise_on: str = ""
     stopped_error_names_signer: bool = True
     wrong_codes: dict[str, str] = dataclasses.field(default_factory=dict)
+    # Propagation: after a stop, start, cut or restore, this many issue calls still answer the old state.
+    lag: int = 0
+    # A start (or restore) that runs without error and leaves the signer refusing.
+    restart_breaks: bool = False
+    _lag_left: int = 0
+    _old: tuple[frozenset[str], frozenset[str]] = (frozenset(), frozenset())
     # add
     added: dict[str, str] = dataclasses.field(default_factory=dict)
     rerun_changes: tuple[str, ...] = ()
@@ -121,10 +127,19 @@ class FakeLab:
     def expected_props(self, caller: str) -> dict[str, str]:
         return {"tier": "enterprise" if caller.endswith("cabc123") else "shared", "caller": caller}
 
+    def _transition(self) -> None:
+        """Remember the state before a stop, start, cut or restore, which the next `lag` issue calls still see."""
+        self._old = (frozenset(self.stopped), frozenset(self.cut))
+        self._lag_left = self.lag
+
     def issue(self, caller: str, kind: str) -> Answer:
         self._rec(f"issue:{kind}")
         signer = self.signer_of(caller)
-        if signer in self.stopped or ("eu" in signer and "eu" in self.cut and "us" not in signer):
+        stopped, cut = self.stopped, self.cut
+        if self._lag_left > 0:
+            self._lag_left -= 1
+            stopped, cut = set(self._old[0]), set(self._old[1])
+        if signer in stopped or ("eu" in signer and "eu" in cut and "us" not in signer):
             if self.stopped_error_names_signer:
                 return refused(f"{proof.SIGNER_UNAVAILABLE}: {signer}")
             return refused("upstream is unreachable")
@@ -151,19 +166,25 @@ class FakeLab:
 
     def stop_signer(self, signer: str) -> None:
         self._rec("stop_signer")
+        self._transition()
         self.stopped.add(signer)
 
     def start_signer(self, signer: str) -> None:
         self._rec("start_signer")
-        self.stopped.discard(signer)
+        self._transition()
+        if not self.restart_breaks:
+            self.stopped.discard(signer)
 
     def cut_region(self, region: str) -> None:
         self._rec("cut_region")
+        self._transition()
         self.cut.add(region)
 
     def restore_region(self, region: str) -> None:
         self._rec("restore_region")
-        self.cut.discard(region)
+        self._transition()
+        if not self.restart_breaks:
+            self.cut.discard(region)
 
     # -- companies
     def ensure_company(self, label: str, region: str, *, ring: str | None = None) -> str:
@@ -392,6 +413,19 @@ class FakeLab:
         return out
 
 
+@pytest.fixture(autouse=True)
+def fake_clock(monkeypatch: pytest.MonkeyPatch) -> list[float]:
+    """`settle` waits on a fake clock: no test sleeps, and a sleep moves the clock by its length."""
+    now = [0.0]
+
+    def fake_sleep(seconds: float) -> None:
+        now[0] += seconds
+
+    monkeypatch.setattr(proof, "sleep", fake_sleep)
+    monkeypatch.setattr(proof, "clock", lambda: now[0])
+    return now
+
+
 def run(verb: str, lab: FakeLab, *, bench: bool = True) -> tuple[int, list[str]]:
     lines: list[str] = []
     rc = proof.run_verb(verb, cast("proof.Lab", lab), bench=bench, out=lines.append)
@@ -554,7 +588,81 @@ def test_a_failed_restore_is_a_broken_claim() -> None:
     lab = FakeLab(raise_on="start_signer")
     rc, lines = run("signer", lab)
     assert rc == 1
-    assert any("restarts" in line for line in broken(lines))
+    restored = [line for line in broken(lines) if "bench signing is restored" in line]
+    assert len(restored) == 1, broken(lines)
+    assert "start failed: LabError: start_signer failed" in restored[0]
+    assert lab.calls.count("start_signer") == 2
+
+
+# -- a judged state change is settled, not sampled -------------------------------
+
+
+@pytest.mark.parametrize("verb", ["signer", "region-loss"])
+def test_a_lagging_lab_passes_once_the_state_settles(verb: str, fake_clock: list[float]) -> None:
+    """On 2026-11-12 one issue call right after the stop was still admitted; three such calls pass."""
+    lab = FakeLab(lag=3)
+    rc, lines = run(verb, lab)
+    assert broken(lines) == []
+    assert rc == 0, lines
+    assert any("bench signing is restored" in line and line.startswith("ok") for line in lines)
+    assert fake_clock[0] > 0
+    assert lab.stopped == set()
+    assert lab.cut == set()
+
+
+def test_a_clean_lab_never_waits(fake_clock: list[float]) -> None:
+    for verb in ("signer", "region-loss"):
+        rc, _ = run(verb, FakeLab())
+        assert rc == 0
+    assert fake_clock[0] == 0
+
+
+@pytest.mark.parametrize("verb", ["signer", "region-loss"])
+def test_a_restart_that_leaves_signing_refused_is_broken_and_names_the_deploy(verb: str) -> None:
+    lab = FakeLab(restart_breaks=True)
+    rc, lines = run(verb, lab)
+    assert rc == 1
+    restored = [line for line in broken(lines) if "bench signing is restored" in line]
+    assert len(restored) == 1, broken(lines)
+    assert "deploy_signer --target bench-eu" in restored[0]
+    start = "start_signer" if verb == "signer" else "restore_region"
+    assert lab.calls.count(start) == 2
+
+
+def test_lag_beyond_the_settle_window_breaks_the_stopped_claim_naming_the_wait() -> None:
+    lab = FakeLab(lag=10 * proof.SETTLE_S)
+    rc, lines = run("signer", lab)
+    assert rc == 1
+    named = [line for line in broken(lines) if "a stopped signer is named" in line]
+    assert len(named) == 1, broken(lines)
+    assert f"after a {proof.SETTLE_S} s wait" in named[0]
+
+
+def test_settle_returns_the_first_answer_done_holds_for(fake_clock: list[float]) -> None:
+    answers = iter([1, 2, 3, 4])
+    assert proof.settle(lambda: next(answers), lambda a: a == 3) == 3
+    assert fake_clock[0] == 2 * proof.SETTLE_INTERVAL_S
+
+
+def test_settle_gives_up_after_the_timeout_with_the_last_answer(fake_clock: list[float]) -> None:
+    calls: list[int] = []
+
+    def probe() -> int:
+        calls.append(1)
+        return len(calls)
+
+    last = proof.settle(probe, lambda _a: False, timeout=20, interval=5)
+    assert last == len(calls) == 5
+    assert fake_clock[0] == 20
+
+
+def test_settle_lets_a_probe_error_propagate() -> None:
+    def probe() -> int:
+        msg = "probe failed"
+        raise LabError(msg)
+
+    with pytest.raises(LabError, match="probe failed"):
+        proof.settle(probe, lambda _a: True)
 
 
 def test_a_failed_stop_restores_and_claims_nothing_about_the_stopped_state() -> None:
