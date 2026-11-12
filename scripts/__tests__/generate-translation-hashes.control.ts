@@ -4,7 +4,8 @@
  * The generator restamped `$meta.sourceCommit` in manifests whose hashes had not changed.
  * Pinned here: (1) a second run with no source change leaves every manifest byte-identical,
  * even when the latest commit moved; (2) changing one www string rewrites only the www manifest;
- * (3) the control: the pre-fix behaviour (always write) is run through assertion 1 and MUST fail it.
+ * (3) the control: a local `preFix` writer that restamps every time (a stand-in for the old
+ * logic, not the old function itself) is run against the same idempotence check and MUST fail it.
  */
 import fs from 'node:fs';
 import os from 'node:os';
@@ -15,9 +16,9 @@ import {
   writeHashManifest,
 } from '../gen/generate-translation-hashes.ts';
 
+// Throws so the finally block below still removes the mkdtemp root; the catch exits 1.
 const fail = (m: string): never => {
-  console.error(`FAIL: ${m}`);
-  process.exit(1);
+  throw new Error(m);
 };
 
 const root = fs.mkdtempSync(path.join(os.tmpdir(), 'hashes-control-'));
@@ -77,8 +78,13 @@ try {
   const before = snapshot();
   run(preFix);
   if (same(before, snapshot())) fail('control did not detect restamping: the test cannot fail');
+} catch (e) {
+  console.log = quiet;
+  console.error(`FAIL: ${e instanceof Error ? e.message : String(e)}`);
+  process.exitCode = 1;
 } finally {
   console.log = quiet;
   fs.rmSync(root, { recursive: true, force: true });
 }
-console.log('OK: unchanged manifests stay byte-identical; control detects the pre-fix restamp');
+if (!process.exitCode)
+  console.log('OK: unchanged manifests stay byte-identical; control detects the pre-fix restamp');

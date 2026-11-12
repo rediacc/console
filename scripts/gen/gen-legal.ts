@@ -371,6 +371,11 @@ export function noticeSubstitutions(
   siteOrigin: string,
   entity: Record<string, string>
 ): [string, string][] {
+  if (!siteOrigin) {
+    throw new LegalError(
+      'the site origin is empty: every notice would be split between its characters'
+    );
+  }
   const subs: [string, string][] = [[siteOrigin, 'WK_SITE_ORIGIN']];
   for (const field of ENTITY_SOURCE_FIELDS) {
     const value = entity[field];
@@ -380,10 +385,11 @@ export function noticeSubstitutions(
 }
 
 /**
- * A notice as source text: the site origin becomes WK_SITE_ORIGIN and each entity value its
- * LEGAL_ENTITY field, so no literal origin or entity value is generated.
+ * A notice as source text: each exact occurrence of the site origin becomes WK_SITE_ORIGIN and
+ * of an entity value its LEGAL_ENTITY field. A host spelled any other way (for example without
+ * `www`) is not an occurrence and stays literal.
  */
-function tsNotice(value: string, subs: [string, string][]): string {
+export function tsNotice(value: string, subs: [string, string][]): string {
   if (!value || !subs.some(([lit]) => value.includes(lit))) return tsString(value);
   let parts: (string | { expr: string })[] = [value];
   for (const [lit, expr] of subs) {
@@ -417,7 +423,7 @@ export function renderConsentTs(
     : '';
   return (
     BANNER(
-      'the legal.consent.* keys of packages/www/src/i18n/translations/<locale>.json, entity and URL tokens substituted'
+      'the legal.consent.* keys of packages/www/src/i18n/translations/<locale>.json; the site origin and entity tokens are emitted as references to WK_SITE_ORIGIN and LEGAL_ENTITY'
     ) +
     "\nimport { WK_SITE_ORIGIN } from '../config/well-known.generated.js';\n" +
     entityImport +

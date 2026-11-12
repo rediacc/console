@@ -16,6 +16,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { flattenAndHash } from '../lib/crc32.js';
+import { isEntryPoint } from '../lib/entry-point.js';
 import { getLatestCommitForFile } from '../lib/translation-diff.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -243,7 +244,7 @@ async function main(): Promise<void> {
   console.log('Commit these files along with your translation changes.');
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isEntryPoint(import.meta.filename)) {
   main().catch((err: unknown) => {
     console.error('Error generating hashes:', err);
     process.exit(1);
