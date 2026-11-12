@@ -3204,6 +3204,12 @@ class VmCheck:
                 "the A1 suite thread crashed: %s: %s"
                 % (type(self.a1_error).__name__, self.a1_error)
             )
+        if len(self.a1_results) != len(ACCOUNT_SUITES):
+            # The thread died on something CRASHES does not name, with suites still to run: recording the rows that exist would let A2 and P5 proceed with A1 incomplete.
+            raise RuntimeError(
+                "the A1 suite thread ended after %d of %d suites without reporting an error"
+                % (len(self.a1_results), len(ACCOUNT_SUITES))
+            )
         green = True
         for step_id, script, package, res in self.a1_results:
             green = self._record_suite(step_id, script, package, res) and green

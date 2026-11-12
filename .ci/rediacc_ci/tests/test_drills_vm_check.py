@@ -5215,3 +5215,37 @@ def test_an_unrelated_list_refusal_never_runs_machine_setup(tmp_path: pathlib.Pa
     assert rc == vm_check.EXIT_NOT_VERIFIED, out
     assert not [c for c in world.rdc_calls() if c[:2] == ["machine", "setup"]]
     assert "state.json" in receipt["reason"]["detail"]
+
+
+class _UnlistedError(Exception):
+    """An exception the collector's CRASHES tuple does not name."""
+
+
+class DyingSuiteWorld(World):
+    def run_suite(self, argv, env=None, timeout=None) -> vm_check.Result:
+        if list(argv)[4:5] == ["check:ci-account-server"]:
+            raise _UnlistedError("planted")
+        return super().run_suite(argv, env, timeout)
+
+
+@pytest.mark.filterwarnings("ignore::pytest.PytestUnhandledThreadExceptionWarning")
+def test_an_a1_thread_that_dies_on_an_unlisted_exception_does_not_let_a2_and_p5_proceed(
+    tmp_path: pathlib.Path,
+) -> None:
+    """f28c7b8f.2: the join sees fewer results than suites and no recorded error, and fails instead of reporting only the rows that exist."""
+    root = tmp_path / "repo"
+    root.mkdir()
+    world = DyingSuiteWorld(root)
+    rc, out, receipt = run_check(tmp_path, world)
+    assert rc != vm_check.EXIT_VERIFIED, out
+    assert "the A1 suite thread ended after 0 of 4 suites" in out
+    assert "P5" not in _ids(receipt)
+
+
+def test_only_a1_runs_just_the_named_suite_on_the_serial_path(tmp_path: pathlib.Path) -> None:
+    """f28c7b8f.3: `--only A1.2` goes through `a1_suites`, which filters, and starts no A1 thread."""
+    world = make_world(tmp_path)
+    _run_only(tmp_path, world, "A1.2")
+    wanted = [script for step, script, _p in vm_check.ACCOUNT_SUITES if step == "A1.2"]
+    assert [c[4] for c in world.npm_calls()] == wanted
+    assert len(world.npm_calls()) == 1

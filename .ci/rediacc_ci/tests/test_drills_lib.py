@@ -7,6 +7,7 @@ Nothing here starts a real gateway: the gateway cases use a fake `run.sh` and a 
 
 from __future__ import annotations
 
+import gc
 import http.cookiejar
 import http.server
 import io
@@ -630,6 +631,7 @@ class _Account(http.server.BaseHTTPRequestHandler):
     refuse_accept: typing.ClassVar[bool] = False
     enrolled: typing.ClassVar[bool] = False
     refuse_enable: typing.ClassVar[bool] = False
+    refuse_elevate: typing.ClassVar[bool] = False
 
     def _body(self) -> str:
         length = int(self.headers.get("Content-Length") or 0)
@@ -660,6 +662,8 @@ class _Account(http.server.BaseHTTPRequestHandler):
             else:
                 type(self).terms_accepted = True
                 self._reply({"accepted": True, "version": "2026-01-01"})
+        elif self.path.endswith("/test/elevate"):
+            self._reply({"error": "User not found"} if self.refuse_elevate else {"elevated": True})
         elif self.path.endswith("/auth/2fa/setup"):
             self._reply({"secret": "JBSWY3DPEHPK3PXP", "uri": "otpauth://x"})
         elif self.path.endswith("/auth/2fa/enable"):
@@ -715,6 +719,7 @@ def account(
     _Account.twofa = False
     _Account.enrolled = False
     _Account.refuse_enable = False
+    _Account.refuse_elevate = False
     _Account.terms_accepted = True
     _Account.refuse_accept = False
     server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), _Account)
@@ -1114,3 +1119,37 @@ def test_a_stop_that_leaves_the_stack_answering_is_an_error_not_a_reuse(
         )
     with pytest.raises(lib.GatewayError, match="did not stop"):
         drill.stop_worktree_stack()
+
+
+def test_a_refused_elevate_fails_at_its_own_step(
+    account: tuple[lib.Drill, http.cookiejar.CookieJar],
+) -> None:
+    """bd78842b.2: the elevate answer is read, so a refusal is named at the step."""
+    drill, jar = account
+    assert drill.account_session("a@b.c", "pw", jar)
+    _Account.refuse_elevate = True
+    with pytest.raises(lib.GatewayError, match="/test/elevate step was refused"):
+        drill.account_mint_token(jar, "sub-1", "tok", ["backup:manage"])
+    assert not any(p.endswith("/auth/2fa/setup") for _m, p, _b in _Account.seen)
+    with pytest.raises(lib.GatewayError, match="/test/elevate step was refused"):
+        drill.account_admin_session("a@b.c", "pw", jar)
+
+
+def test_a_backup_scope_mint_needs_a_jar_account_session_logged_in(
+    account: tuple[lib.Drill, http.cookiejar.CookieJar],
+) -> None:
+    """bd78842b.3: a jar that never went through account_session is refused, and a collected jar's record does not leak to a new one."""
+    drill, jar = account
+    assert drill.account_session("a@b.c", "pw", jar)
+    stranger = http.cookiejar.CookieJar()
+    with pytest.raises(lib.GatewayError, match="needs a jar that account_session logged in"):
+        drill.account_mint_token(stranger, "sub-1", "tok", ["backup:manage"])
+    assert not any("/test/elevate" in p for _m, p, _b in _Account.seen)
+    # The record is keyed by the jar object, so it goes away with the jar.
+    second = http.cookiejar.CookieJar()
+    assert drill.account_session("c@d.e", "pw", second)
+    assert second in drill.session_emails
+    before = len(drill.session_emails)
+    del second
+    gc.collect()
+    assert len(drill.session_emails) == before - 1

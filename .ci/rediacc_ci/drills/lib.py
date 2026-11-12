@@ -41,6 +41,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import weakref
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
@@ -252,7 +253,10 @@ class Drill:
         self.last_cmd = ""
         self.started_at = 0
         self.twofa_used = False
-        self.session_emails: dict[int, str] = {}
+        # Keyed by the jar object itself, weakly: an id() key could be reused by a later jar once the first was collected, and that jar would resolve to a stale email.
+        self.session_emails: weakref.WeakKeyDictionary[http.cookiejar.CookieJar, str] = (
+            weakref.WeakKeyDictionary()
+        )
         self.extra_env: dict[str, str] = {}
         self.green, self.red, self.yellow, self.nc = _colours(sys.stderr)
 
@@ -772,7 +776,7 @@ class Drill:
     def account_session(self, email: str, password: str, jar: http.cookiejar.CookieJar) -> bool:
         """The headless auth chain: login, and when TOTP is enabled complete the challenge from the dev-only `/test/totp-code`. Sets `twofa_used`."""
         self.twofa_used = False
-        self.session_emails[id(jar)] = email
+        self.session_emails[jar] = email
         body = self.api_post("/auth/login", {"email": email, "password": password}, jar)
         challenge = json_get(body, "challengeToken")
         if challenge:
@@ -825,6 +829,12 @@ class Drill:
             self._request("GET", self.api_base() + "/portal/subscription", None, jar), "id"
         )
 
+    def _elevate(self, email: str) -> None:
+        """The dev-only elevation of `email`'s session; a refused or unreadable answer raises here, at the step, instead of surfacing later as an unrelated 403."""
+        answer = json_obj(self.api_post("/test/elevate", {"email": email}))
+        if answer.get("elevated") is not True:
+            raise GatewayError("the /test/elevate step was refused: %s" % json.dumps(answer)[:300])
+
     def account_ensure_two_factor(self, jar: http.cookiejar.CookieJar, email: str) -> bool:
         """Enrol TOTP 2FA for the logged-in drill account the way a user does: setup returns a secret, enable verifies a code computed from it. Returns True when it enrolled, False when the account already had 2FA. The account refuses to mint a token with backup-storage scopes without it, and that refusal stays in force. Setup and enable need an elevated session, which the dev-only `/test/elevate` grants. A refused step raises by name."""
         status = json_obj(self._request("GET", self.api_base() + "/auth/2fa/status", None, jar))
@@ -832,7 +842,7 @@ class Drill:
             raise GatewayError("the 2FA status read was refused: %s" % json.dumps(status)[:300])
         if status["enabled"]:
             return False
-        self.api_post("/test/elevate", {"email": email})
+        self._elevate(email)
         setup = json_obj(self.api_post("/auth/2fa/setup", {}, jar))
         secret = setup.get("secret")
         if not isinstance(secret, str) or not secret:
@@ -848,7 +858,7 @@ class Drill:
     ) -> str:
         """Mint an API token and return it; an empty answer raises. A token with a backup-storage scope first enrols 2FA for the session's account (idempotent), because the account requires it."""
         if TWO_FACTOR_TOKEN_SCOPES.intersection(scopes):
-            email = self.session_emails.get(id(jar))
+            email = self.session_emails.get(jar)
             if not email:
                 raise GatewayError(
                     "a backup-scope token needs a jar that account_session logged in"
@@ -870,7 +880,7 @@ class Drill:
     ) -> bool:
         """A root session with an elevated window, which the admin subscription routes require."""
         self.api_post("/test/promote-admin", {"email": email})
-        self.api_post("/test/elevate", {"email": email})
+        self._elevate(email)
         return self.account_session(email, password, jar)
 
     def account_patch_subscription(
