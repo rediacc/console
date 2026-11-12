@@ -154,22 +154,26 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
 
 ### Wave 1: writers, disjoint
 
-- [ ] E1 [writer] `ops/cf_dns.py`: `ensure_record`, `records`, `universal_ssl`, and its CLI, tested with a recording transport. Tests cover create, no-op, update, conflict refused, proxied flag, and a comment carrying no label.
+- [x] E1 [writer] `ops/cf_dns.py`: `ensure_record`, `records`, `universal_ssl`, and its CLI, tested with a recording transport. Tests cover create, no-op, update, conflict refused, proxied flag, and a comment carrying no label.
   - Owns: .ci/rediacc_ci/ops/cf_dns.py (new), .ci/rediacc_ci/tests/test_ops_cf_dns.py (new).
   - Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_ops_cf_dns.py` rc 0.
-- [ ] E2 [writer] Lab and teardown gaps:
+    (ticked) 2026-11-12T11:21:02Z by d778be9d: commit:8d3cf5eafc cf_dns client; pytest test_ops_cf_dns.py 16 passed rc 0
+- [x] E2 [writer] Lab and teardown gaps:
   - Teardown deletes the company's zone routes, and `leftovers` reports `zone route`.
   - V6 `config-token` driver (store setup with elevated session and CEK slots) and `e2e-envelope` driver (a request sealed to the company's X25519 key through `POST /account/api/v1/tunnel`).
   - V7 `console_command`.
   - The three `not built yet` raises (lab.py:1026, 1032, 1173) are gone.
   - Owns: .ci/rediacc_ci/enterprise/lab.py, .ci/rediacc_ci/enterprise/lifecycle_adapters.py, .ci/rediacc_ci/tests/test_enterprise_lab.py, .ci/rediacc_ci/tests/test_enterprise_lifecycle_adapters.py.
   - Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_enterprise_lab.py .ci/rediacc_ci/tests/test_enterprise_lifecycle_adapters.py` rc 0, and `grep -c "not built yet: V[67]" .ci/rediacc_ci/enterprise/lab.py` prints 0.
-- [ ] P1 [writer] The `elite` template as described in Design, the regenerated embedded catalog, and the parity test against private/elite/docker-compose.yml.
+    (ticked) 2026-11-12T11:21:03Z by d778be9d: commit:2f9bee93c0 + 4fa93b832f; enterprise suites 296 passed rc 0; no "not built yet: V[67]" left; bench proof owed in V6/V7
+- [x] P1 [writer] The `elite` template as described in Design, the regenerated embedded catalog, and the parity test against private/elite/docker-compose.yml.
   - Owns: packages/cli/templates/elite/** (new), packages/cli/src/templates/embedded.generated.ts, .ci/rediacc_ci/tests/test_onprem_template_parity.py (new).
   - Accept: `(cd packages/cli && npx tsx scripts/embed-templates.ts) && git diff --exit-code packages/cli/src/templates/embedded.generated.ts` rc 0 after the commit, and `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_onprem_template_parity.py` rc 0, and `bash -n packages/cli/templates/elite/Rediaccfile` rc 0.
-- [ ] L1 [writer] The doc fix as described in Design: enterprise.md line 21, the `dns` and `route` rows, the onprem pointer, and the BACKUP.md pointer.
+    (ticked) 2026-11-12T11:21:23Z by d778be9d: commit:4db510a659 elite template; parity test 2 passed rc 0; catalog regenerates with no diff; machine run owed in HO1
+- [x] L1 [writer] The doc fix as described in Design: enterprise.md line 21, the `dns` and `route` rows, the onprem pointer, and the BACKUP.md pointer.
   - Owns: private/account/docs/enterprise.md, private/elite/BACKUP.md.
   - Accept: `grep -c "Unbound" private/account/docs/enterprise.md` prints 0, and `npm run -s check:ci-prose-style` rc 0.
+    (ticked) 2026-11-12T11:21:05Z by d778be9d: commit:125b737065 (account 2675ee0, elite 0bd5694); grep -c Unbound prints 0; prose-style rc 0
 
 ### Wave 2: writers, after E1 and P1 land
 

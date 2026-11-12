@@ -1275,6 +1275,49 @@
         "e74848b6"
       ]
     },
+    "agent/plans/PLAN-enterprise-tenants.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 27,
+      "done": 4,
+      "open_sigs": [
+        "1820379b",
+        "20b452fc",
+        "37b50100",
+        "4080fe25",
+        "412e9087",
+        "49c93654",
+        "502fb3f5",
+        "5f5ca7ff",
+        "623a5a05",
+        "639f303a",
+        "640ffad5",
+        "7adc0235",
+        "7dd8d0d5",
+        "966c5266",
+        "99d7a3df",
+        "99e29212",
+        "9ca6d32f",
+        "af2cf2be",
+        "ba4760bb",
+        "ba9e6172",
+        "bb372ae9",
+        "cb2df67e",
+        "cbb8a648",
+        "d2520b71",
+        "e7400ae7",
+        "f2291749",
+        "f3e412cc"
+      ],
+      "done_sigs": [
+        "1ee537d1",
+        "4eee1c0d",
+        "cccedc64",
+        "e79d1ae2"
+      ]
+    },
     "agent/plans/PLAN-executor-durable-object-policy.md": {
       "status": "approved",
       "owner": "d778be9d",
