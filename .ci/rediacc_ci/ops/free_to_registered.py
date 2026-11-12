@@ -528,7 +528,8 @@ class _Process(Background):
                 # The pump is the only reader, so it closes the pipe at EOF; a pipe left to the garbage collector raises ResourceWarning in whichever test runs then.
                 stream.close()
 
-        threading.Thread(target=pump, daemon=True).start()
+        self._pump = threading.Thread(target=pump, daemon=True)
+        self._pump.start()
         deadline = time.monotonic() + URL_WAIT_S
         while True:
             remaining = deadline - time.monotonic()
@@ -546,8 +547,14 @@ class _Process(Background):
         raise DrillError("the register command printed no verification URL")
 
     def finish(self, timeout: float) -> int:
+        # Once read_url started the pump, it alone reads and closes stdout; communicate() would read the same pipe and hit the descriptor the pump closed (EBADF), so wait for the process and the pump instead.
+        pump = getattr(self, "_pump", None)
         try:
-            self.proc.communicate(timeout=timeout)
+            if pump is None:
+                self.proc.communicate(timeout=timeout)
+            else:
+                self.proc.wait(timeout=timeout)
+                pump.join(timeout=timeout)
         except subprocess.TimeoutExpired:
             self.kill()
             raise DrillError("the register command did not finish in %ds" % timeout) from None
