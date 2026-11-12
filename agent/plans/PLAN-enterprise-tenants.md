@@ -183,12 +183,13 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - Owns: .ci/rediacc_ci/enterprise/dns.py (new), .ci/rediacc_ci/enterprise/cli.py, .ci/rediacc_ci/enterprise/onboarding.py, .ci/rediacc_ci/tests/test_enterprise_dns.py (new), .ci/rediacc_ci/tests/test_enterprise_add.py, .ci/rediacc_ci/tests/test_enterprise_cli_wiring.py.
   - Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_enterprise_dns.py .ci/rediacc_ci/tests/test_enterprise_add.py .ci/rediacc_ci/tests/test_enterprise_cli_wiring.py` rc 0.
     (ticked) 2026-11-12T11:59:28Z by d778be9d: commit:51f22f73d1 enterprise dns verb and route step; pytest enterprise suites 440 passed rc 0; live LD1 owed
-- [ ] P2 [writer] `./run.sh onprem install|status`:
+- [x] P2 [writer] `./run.sh onprem install|status`:
   - The resumable steps as described in Design, importing `elite_env`, `cert_base64`, `ship_image`, `generate_crypto_keys` and `login_bench.login` rather than copying them.
   - The `onprem` row in `__main__.py`, with `dns` added to the `enterprise` summary at `.ci/rediacc_ci/__main__.py:106-110`, and help in run_verbs.py.
   - Refuses mutating calls through `eu-remote`.
   - Owns: .ci/rediacc_ci/onprem/** (new), .ci/rediacc_ci/tests/test_onprem_install.py (new), .ci/rediacc_ci/__main__.py, .ci/rediacc_ci/core/run_verbs.py, .ci/rediacc_ci/tests/test_core_run_verbs.py.
   - Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_onprem_install.py .ci/rediacc_ci/tests/test_core_run_verbs.py .ci/rediacc_ci/tests/gates/test_gate_run_sh.py` rc 0.
+    (ticked) 2026-11-12T12:32:08Z by d778be9d: commit:8b7ae80a62 onprem install + bws backup; pytest rc 0; live HO1 owed
 
 ### Bench queue: one sequential runner, starting after Q0
 
@@ -243,22 +244,24 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - Owns: packages/www/src/content/docs/en/on-premise.md.
   - Accept: `npm run -s check:ci-prose-style` rc 0.
   (corrected 2026-11-12T12:3xZ) The section documents `rdc server install|status|upgrade|backup|licence`, the prompts, the three TLS methods, the free tier and its upgrade, and saving the recovery bundle. It runs after C7.
-- [ ] C3 [writer] Only if Q7 is ruled yes: an HTTP-01 resolver when `CF_DNS_API_TOKEN` is empty.
+- [x] C3 [writer] Only if Q7 is ruled yes: an HTTP-01 resolver when `CF_DNS_API_TOKEN` is empty.
   - Owns: private/renet/pkg/proxy/infra.go, private/renet/pkg/proxy/infra_test.go.
   - Accept: `(cd private/renet && go test ./pkg/proxy/...)` rc 0.
   (corrected 2026-11-12T12:3xZ) Unconditional (R7). With `CF_DNS_API_TOKEN` set, keep DNS-01 (private/renet/pkg/proxy/infra.go:205-215). Otherwise configure the `letsencrypt` resolver with HTTP-01. The IPv6 entrypoints are separate (private/renet/pkg/proxy/infra.go:197-199), so the test must show the challenge answering on IPv6 too; if one httpChallenge entrypoint cannot cover both, use TLS-ALPN-01. The cases at private/renet/pkg/proxy/infra_test.go:307-334 that assert "no resolver without token" flip. Ships in the same renet release as C6, because routes.go still asks for wildcard SANs.
+    (ticked) 2026-11-12T12:32:29Z by d778be9d: commit:012193560e renet 9e612a4b 7aace2ca TLS-ALPN-01 + router hint; go test pkg/proxy rc 0
 - [ ] CL1 [live] On a fresh local ops VM, run `rdc machine setup <vm>` and then `rdc onprem install <vm> --domain <ops-vm test name> --cert <file>`.
   - Accept: the same health and status checks as HO1.
   (corrected 2026-11-12T12:3xZ) After C7 and the C3/C6 renet release, the command is `rdc server install <vm> --domain <name> --cert <file> --tls byo --tls-cert <crt> --tls-key <key> --owner <mail> --yes`, which proves the offline path and bring-your-own TLS. Accept: `rdc server status <domain>` rc 0 with bootstrapMode=false and the subscription equal to the cert's, and `curl --cacert <ca> -sf https://<domain>/health` rc 0.
 
-- [ ] C4 [writer] Token-scoped delegation issue (R6). Today every portal route is session-only (private/account/src/routes/portal-delegation-certs.ts:42) and token auth exists only for `/delegation/renew` (private/account/src/routes/delegation.ts:25).
+- [x] C4 [writer] Token-scoped delegation issue (R6). Today every portal route is session-only (private/account/src/routes/portal-delegation-certs.ts:42) and token auth exists only for `/delegation/renew` (private/account/src/routes/delegation.ts:25).
   - Add a new privileged scope `delegation:issue` to types/api-token.ts. Owners and admins only, granted by the device login next to backup:manage (private/account/src/services/device-code.service.ts:358). `delegation:renew` stays unmintable (private/account/src/types/api-token.ts:78).
   - Add `POST /delegation/issue` in delegation.ts behind `apiTokenAuth('delegation:issue')`, taking `{subscriptionId, delegatedPublicKey, validDays?}`. It returns `{cert, id, effectiveDays, autoRenewToken}` in one call, sharing a helper pulled out of the auto-renew-token handler (private/account/src/routes/portal-delegation-certs.ts:258).
   - An active cert for the same key is returned again (idempotent). One for another key gives 409, naming the cert id to revoke.
   - Add a plan gate: `PLAN_ALLOWS_DELEGATION_CERT` in constants.ts, with FREE false by default. Today no plan is refused (private/account/src/services/delegation-cert.service.ts:202; packages/shared/src/subscription/constants.ts:354-371).
   - Owns: private/account/src/routes/delegation.ts, private/account/src/routes/portal-delegation-certs.ts, private/account/src/types/api-token.ts, private/account/src/services/device-code.service.ts, packages/shared/src/subscription/types.ts, packages/shared/src/subscription/constants.ts, private/account/tests/integration/delegation-issue*.test.ts (new).
   - Accept: `(cd private/account && npx vitest run tests/integration/delegation-issue)` rc 0. The cases cover: token without the scope 403, member 403, FREE plan 402/403, same key idempotent, other key 409, and a session cookie alone rejected.
-- [ ] C5 [writer] The anonymous on-prem free tier: design, then build (R6).
+    (ticked) 2026-11-12T12:32:06Z by d778be9d: commit:22695c1cfd delegation:issue route with 2FA; account vitest 4340 rc 0
+- [x] C5 [writer] The anonymous on-prem free tier: design, then build (R6).
   - Design first, as a new "Free tier (no certificate)" section in private/account/docs/runtime/on-premise-licensing.md covering quotas, abuse limits and the upgrade path.
   - Reuse PLAN-free-license and its code where possible: packages/cli/src/services/account/free-license.ts (BAKED_IN_REGIONS region pick :201-208), PLAN_LIMITS.FREE (packages/shared/src/subscription/constants.ts:35-39, 3 GB, no hosted backup), and the per-IP window in private/account/src/services/free-license.service.ts:238-292. Note that PLAN-drop-free-license-ip-prefix-hash is moving that window.
   - Default design, logged for veto: a server with no cert (bootstrapMode, private/account/src/routes/on-premise-status.ts:55-56) reports `tier: free` and gets each repo licence from the public `POST /licenses/free` (private/account/src/routes/license.ts:268-278) on the caller's behalf. Abuse limits stay those of the upstream FREE route, and renet is unchanged. The alternative, a box signing its own licences under built-in caps, is rejected unless the doc proves renet can bound it.
@@ -266,12 +269,14 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - Offline with no cert means no free tier: the server refuses and names `--cert`.
   - Owns: private/account/docs/runtime/on-premise-licensing.md, private/account/src/services/onprem-free-tier.service.ts (new), private/account/src/routes/on-premise-status.ts, packages/shared/src/subscription/onprem-free-tier.ts (new), private/account/tests/integration/onprem-free-tier*.test.ts (new).
   - Accept: `(cd private/account && npx vitest run tests/integration/onprem-free-tier)` rc 0, `grep -c "## Free tier (no certificate)" private/account/docs/runtime/on-premise-licensing.md` prints 1, and `npm run -s check:ci-prose-style` rc 0.
-- [ ] C6 [writer] renet: per-host certificates and bring-your-own (R7).
+    (ticked) 2026-11-12T12:32:07Z by d778be9d: commit:a3c61197b5 on-prem free tier; account vitest rc 0
+- [x] C6 [writer] renet: per-host certificates and bring-your-own (R7).
   - A custom FQDN domain today gets `*.<baseDomain>` SANs (private/renet/pkg/router/routes.go:244-246 into wildcardTLSConfig :110-122), and certResolver is auto-added at :433-447. Instead, a router for a custom domain or an explicit Host label gets `domains: [{main: <host>}]` with no wildcard.
   - In HTTP-01 mode, renet's own base-domain auto-routes get no resolver, so no wildcard order is ever placed.
   - Bring-your-own: the label `rediacc.tls=provided` skips the certResolver. A new `renet proxy cert install --domain <h> --cert <f> --key <f>` (usercert.go) writes a 0600 tls.certificates file into the file-provider directory /etc/traefik/static (private/renet/pkg/proxy/infra.go:182), and `... cert remove` deletes it.
   - Owns: private/renet/pkg/router/routes.go, private/renet/pkg/router/routes_test.go, private/renet/pkg/proxy/usercert.go (new), private/renet/pkg/proxy/usercert_test.go (new), private/renet/cmd/renet/proxy_cert.go (new), private/renet/cmd/renet/proxy_cert_test.go (new).
   - Accept: `(cd private/renet && go test ./pkg/router/... ./pkg/proxy/... ./cmd/renet/...)` rc 0, and `grep -c '"\*\." + domainBase' private/renet/pkg/router/routes.go` unchanged only on the base-domain path (a test asserts no wildcard SAN for an FQDN custom domain).
+    (ticked) 2026-11-12T12:32:30Z by d778be9d: commit:012193560e renet d2d92844 per-host certs and BYO; go test pkg/router pkg/proxy pkg/i18n rc 0
 - [ ] C7 [writer] `rdc server install|status|upgrade|backup|licence` in TS, porting P2's steps. Runs after C4 and C5 (wire shapes); supersedes C1.
   - install takes `[machine] --domain --store-domain --repo --size --owner --tls letsencrypt|cloudflare|byo --cf-token --tls-cert --tls-key --cert <file> --licence auto|free --image --yes`.
   - Interactive prompts live in utils/server-prompts.ts. They load inquirer lazily and exit with the region-prompt TTY error when not on a TTY (packages/cli/src/utils/region-prompt.ts:17-24). Machine pick-or-add reuses `machine add --ip --user` (packages/cli/src/commands/machine/register.ts:141-147), and `machine setup` runs when renet is missing.
