@@ -429,7 +429,11 @@
         "cancelExclusive": "--cancel は --dry-run と併用できません",
         "cancelled": "\"{{name}}\" の遅延全消去を取り消しました。",
         "nothingWaiting": "\"{{name}}\" の待機中の全消去はありませんでした。",
-        "delayed": "\"{{name}}\" の全消去は遅延されています: 何も削除されておらず、{{when}} (UTC) に実行されます。それまでに取り消すには: rdc backup purge {{name}} --cancel"
+        "delayed": "\"{{name}}\" の全消去は遅延されています: 何も削除されておらず、{{when}} (UTC) に実行されます。それまでに取り消すには: {{cancel}}",
+        "optionLineage": "リポジトリがこの設定にもう無いバックアップ系列を、ID (`rdc backup usage` に表示されるもの) で全消去する",
+        "targetRequired": "対象を 1 つだけ指定してください: リポジトリ参照、またはリポジトリが既に無い系列の場合は --lineage <guid>。",
+        "lineageOwned": "系列 {{lineage}} はこの設定の「{{name}}」のものです。全消去するには: rdc backup purge {{name}}",
+        "confirmLineage": "系列 {{name}} の保存済みスナップショット {{count}} 件 ({{bytes}}) をすべて削除します。この操作は元に戻せません。確認のため系列 ID を入力してください:"
       },
       "check": {
         "description": "1つのファイルを復元して、スナップショットがパスフレーズで開くことを証明します",

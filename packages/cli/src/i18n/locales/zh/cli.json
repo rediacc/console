@@ -429,7 +429,11 @@
         "cancelExclusive": "--cancel 不能与 --dry-run 同时使用",
         "cancelled": "已取消 \"{{name}}\" 的延迟整体清除。",
         "nothingWaiting": "没有等待中的 \"{{name}}\" 整体清除。",
-        "delayed": "\"{{name}}\" 的整体清除已延迟:未删除任何内容,将于 {{when}}(UTC)执行。在此之前可取消:rdc backup purge {{name}} --cancel"
+        "delayed": "\"{{name}}\" 的整体清除已延迟:未删除任何内容,将于 {{when}}(UTC)执行。在此之前可取消:{{cancel}}",
+        "optionLineage": "当仓库已不在此配置中时,按 ID(即 `rdc backup usage` 列出的值)清除其备份谱系",
+        "targetRequired": "只能指定一个目标:仓库引用,或针对仓库已不存在的谱系使用 --lineage <guid>。",
+        "lineageOwned": "谱系 {{lineage}} 属于此配置中的“{{name}}”。请用以下命令清除:rdc backup purge {{name}}",
+        "confirmLineage": "此操作将删除谱系 {{name}} 的全部 {{count}} 个已存储快照({{bytes}}),且无法撤销。输入谱系 ID 以确认:"
       },
       "check": {
         "description": "通过恢复一个文件,证明已存储的快照可以用口令打开",

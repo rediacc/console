@@ -429,7 +429,11 @@
         "cancelExclusive": "--cancel não pode ser combinado com --dry-run",
         "cancelled": "A remoção total adiada de \"{{name}}\" foi cancelada.",
         "nothingWaiting": "Nenhuma remoção total de \"{{name}}\" estava em espera.",
-        "delayed": "A remoção total de \"{{name}}\" está adiada: nada foi excluído e ela roda em {{when}} (UTC). Cancele antes com: rdc backup purge {{name}} --cancel"
+        "delayed": "A remoção total de \"{{name}}\" está adiada: nada foi excluído e ela roda em {{when}} (UTC). Cancele antes com: {{cancel}}",
+        "optionLineage": "Limpa uma linhagem de backups pelo id (como `rdc backup usage` a lista) quando o repositório dela não está mais nesta configuração",
+        "targetRequired": "Indique um único alvo: uma referência de repositório, ou --lineage <guid> para uma linhagem cujo repositório não existe mais.",
+        "lineageOwned": "A linhagem {{lineage}} pertence a \"{{name}}\" nesta configuração. Limpe-a com: rdc backup purge {{name}}",
+        "confirmLineage": "Isto apaga todos os {{count}} snapshot(s) armazenados da linhagem {{name}} ({{bytes}}) e não pode ser desfeito. Digite o id da linhagem para confirmar:"
       },
       "check": {
         "description": "Comprova que um snapshot abre com a frase secreta restaurando um ficheiro",

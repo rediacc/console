@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2817,
-    "sourceCommit": "c8be2b24dc5299b8b5792e789628daaf25efd147"
+    "keyCount": 2821,
+    "sourceCommit": "781a29e2f22e04456e268a82439f0297443a0139"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -111,17 +111,21 @@
     "commands.backup.purge.cancelExclusive": "13f5aae2",
     "commands.backup.purge.cancelled": "95623aaa",
     "commands.backup.purge.confirm": "a7e956f1",
-    "commands.backup.purge.delayed": "96c5a4fe",
+    "commands.backup.purge.confirmLineage": "a57f1e77",
+    "commands.backup.purge.delayed": "b9bc4681",
     "commands.backup.purge.description": "ad367947",
     "commands.backup.purge.descriptionShort": "e50c708e",
     "commands.backup.purge.dryRun": "5f48c659",
     "commands.backup.purge.forkRefused": "24fe1559",
+    "commands.backup.purge.lineageOwned": "8ef9fbbe",
     "commands.backup.purge.notFound": "89e2e8dc",
     "commands.backup.purge.nothingStored": "99d836d5",
     "commands.backup.purge.nothingWaiting": "98f92634",
     "commands.backup.purge.optionCancel": "28299c70",
+    "commands.backup.purge.optionLineage": "f4971ec0",
     "commands.backup.purge.progress": "7e3a32e7",
     "commands.backup.purge.success": "96e8724d",
+    "commands.backup.purge.targetRequired": "340fa749",
     "commands.backup.purge.tooManyRounds": "ae66599d",
     "commands.backup.purge.usageDelta": "07467548",
     "commands.backup.purge.usageUnavailable": "e41ca6d7",

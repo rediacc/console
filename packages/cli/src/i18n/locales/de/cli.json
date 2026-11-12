@@ -429,7 +429,11 @@
         "cancelExclusive": "--cancel lässt sich nicht mit --dry-run kombinieren",
         "cancelled": "Das verzögerte Entfernen von \"{{name}}\" wurde abgebrochen.",
         "nothingWaiting": "Es wartete kein Entfernen von \"{{name}}\".",
-        "delayed": "Das Entfernen von \"{{name}}\" ist verzögert: Nichts wurde gelöscht, es läuft am {{when}} (UTC). Bis dahin abbrechen mit: rdc backup purge {{name}} --cancel"
+        "delayed": "Das Entfernen von \"{{name}}\" ist verzögert: Nichts wurde gelöscht, es läuft am {{when}} (UTC). Bis dahin abbrechen mit: {{cancel}}",
+        "optionLineage": "Eine Backup-Linie über ihre ID (wie `rdc backup usage` sie auflistet) entfernen, wenn ihr Repository nicht mehr in dieser Konfiguration steht",
+        "targetRequired": "Genau ein Ziel angeben: eine Repository-Referenz oder --lineage <guid> für eine Linie, deren Repository nicht mehr existiert.",
+        "lineageOwned": "Die Linie {{lineage}} gehört in dieser Konfiguration zu „{{name}}“. Entfernen mit: rdc backup purge {{name}}",
+        "confirmLineage": "Dadurch werden alle {{count}} gespeicherten Snapshot(s) der Linie {{name}} ({{bytes}}) unwiderruflich gelöscht. Zur Bestätigung die Linien-ID eingeben:"
       },
       "check": {
         "description": "Beweist per Wiederherstellung einer Datei, dass sich ein Snapshot mit der Passphrase öffnen lässt",

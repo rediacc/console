@@ -429,7 +429,11 @@
         "cancelExclusive": "--cancel non può essere combinato con --dry-run",
         "cancelled": "La rimozione totale ritardata di \"{{name}}\" è stata annullata.",
         "nothingWaiting": "Nessuna rimozione totale di \"{{name}}\" era in attesa.",
-        "delayed": "La rimozione totale di \"{{name}}\" è ritardata: non è stato eliminato nulla e verrà eseguita il {{when}} (UTC). Annullala prima con: rdc backup purge {{name}} --cancel"
+        "delayed": "La rimozione totale di \"{{name}}\" è ritardata: non è stato eliminato nulla e verrà eseguita il {{when}} (UTC). Annullala prima con: {{cancel}}",
+        "optionLineage": "Elimina una linea di backup tramite il suo id (come lo mostra `rdc backup usage`) quando il suo repository non è più in questa configurazione",
+        "targetRequired": "Indica un solo obiettivo: un riferimento al repository, oppure --lineage <guid> per una linea il cui repository non esiste più.",
+        "lineageOwned": "La linea {{lineage}} appartiene a \"{{name}}\" in questa configurazione. Eliminala con: rdc backup purge {{name}}",
+        "confirmLineage": "Verranno eliminati tutti i {{count}} snapshot archiviati della linea {{name}} ({{bytes}}) e l'operazione è irreversibile. Digita l'id della linea per confermare:"
       },
       "check": {
         "description": "Verifica che uno snapshot si apra con la passphrase ripristinando un file",

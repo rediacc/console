@@ -742,6 +742,17 @@ export const CLI_CONTRACT: CliContract = {
       "label": "Delete every stored backup snapshot of a repository from the chunk store at once. The repository itself is kept.",
       "options": [
         {
+          "flags": "--lineage <guid>",
+          "long": "lineage",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.purge.optionLineage",
+          "label": "Purge a backup lineage by its id (as `rdc backup usage` lists it) when its repository is no longer in this config"
+        },
+        {
           "flags": "--dry-run",
           "long": "dry-run",
           "valueTaking": false,
@@ -780,7 +791,7 @@ export const CLI_CONTRACT: CliContract = {
         {
           "name": "repo-ref",
           "kind": "repo-ref",
-          "required": true,
+          "required": false,
           "variadic": false,
           "descriptionKey": "options.repoRef",
           "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"

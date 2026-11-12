@@ -429,7 +429,11 @@
         "cancelExclusive": "--cancel 은 --dry-run 과 함께 쓸 수 없습니다",
         "cancelled": "\"{{name}}\"의 지연된 전체 제거를 취소했습니다.",
         "nothingWaiting": "\"{{name}}\"의 대기 중인 전체 제거가 없었습니다.",
-        "delayed": "\"{{name}}\"의 전체 제거가 지연되었습니다: 아무것도 삭제되지 않았고 {{when}} (UTC)에 실행됩니다. 그 전에 취소하려면: rdc backup purge {{name}} --cancel"
+        "delayed": "\"{{name}}\"의 전체 제거가 지연되었습니다: 아무것도 삭제되지 않았고 {{when}} (UTC)에 실행됩니다. 그 전에 취소하려면: {{cancel}}",
+        "optionLineage": "저장소가 더 이상 이 설정에 없는 백업 계보를 ID(`rdc backup usage`에 표시되는 값)로 퍼지합니다",
+        "targetRequired": "대상을 하나만 지정하세요: 저장소 참조, 또는 저장소가 사라진 계보라면 --lineage <guid>.",
+        "lineageOwned": "계보 {{lineage}}은(는) 이 설정의 \"{{name}}\"에 속합니다. 다음으로 퍼지하세요: rdc backup purge {{name}}",
+        "confirmLineage": "계보 {{name}}에 저장된 스냅샷 {{count}}개({{bytes}})를 모두 삭제하며 되돌릴 수 없습니다. 확인하려면 계보 ID를 입력하세요:"
       },
       "check": {
         "description": "파일 하나를 복원해 스냅샷이 암호로 열리는지 증명합니다",

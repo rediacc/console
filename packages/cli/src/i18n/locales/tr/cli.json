@@ -429,7 +429,11 @@
         "cancelExclusive": "--cancel, --dry-run ile birlikte kullanılamaz",
         "cancelled": "\"{{name}}\" için ertelenmiş tam temizleme iptal edildi.",
         "nothingWaiting": "\"{{name}}\" için bekleyen bir temizleme yoktu.",
-        "delayed": "\"{{name}}\" temizlemesi ertelendi: hiçbir şey silinmedi ve {{when}} (UTC) tarihinde çalışır. Öncesinde şununla iptal edin: rdc backup purge {{name}} --cancel"
+        "delayed": "\"{{name}}\" temizlemesi ertelendi: hiçbir şey silinmedi ve {{when}} (UTC) tarihinde çalışır. Öncesinde şununla iptal edin: {{cancel}}",
+        "optionLineage": "Deposu artık bu yapılandırmada olmayan bir yedek soyunu kimliğiyle (`rdc backup usage` çıktısındaki haliyle) temizle",
+        "targetRequired": "Tam olarak bir hedef belirtin: bir depo referansı ya da deposu artık olmayan bir soy için --lineage <guid>.",
+        "lineageOwned": "{{lineage}} soyu bu yapılandırmada \"{{name}}\" deposuna ait. Şununla temizleyin: rdc backup purge {{name}}",
+        "confirmLineage": "Bu işlem {{name}} soyunun depolanan {{count}} anlık görüntüsünün tamamını ({{bytes}}) siler ve geri alınamaz. Onaylamak için soy kimliğini yazın:"
       },
       "check": {
         "description": "Bir dosyayı geri yükleyerek anlık görüntünün parola ile açıldığını kanıtlar",

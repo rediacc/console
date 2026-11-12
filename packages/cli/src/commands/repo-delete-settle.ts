@@ -85,10 +85,12 @@ export async function settleCloudBackups(
     const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
     const purged = await purgeLineageRounds(name, lineage, formatSizeBytes);
     if (purged.delayed) {
+      // The repository is gone from the config once this delete settles, so the cancel names the lineage.
       outputService.warn(
         t('commands.backup.purge.delayed', {
           name,
           when: purged.purgeAfter?.replace('T', ' ').slice(0, 16) ?? '-',
+          cancel: `rdc backup purge --lineage ${lineage} --cancel`,
         })
       );
       return;

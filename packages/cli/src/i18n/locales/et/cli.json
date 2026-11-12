@@ -429,7 +429,11 @@
         "cancelExclusive": "--cancel ei saa kasutada koos --dry-run'iga",
         "cancelled": "Hoidla \"{{name}}\" edasilükatud täielik eemaldus tühistati.",
         "nothingWaiting": "Hoidla \"{{name}}\" täielikku eemaldust ei oodatud.",
-        "delayed": "Hoidla \"{{name}}\" täielik eemaldus on edasi lükatud: midagi ei kustutatud ja see käivitub {{when}} (UTC). Tühistage see enne käsuga: rdc backup purge {{name}} --cancel"
+        "delayed": "Hoidla \"{{name}}\" täielik eemaldus on edasi lükatud: midagi ei kustutatud ja see käivitub {{when}} (UTC). Tühistage see enne käsuga: {{cancel}}",
+        "optionLineage": "Puhasta varunduse liin selle ID järgi (nagu `rdc backup usage` seda näitab), kui selle hoidlat selles konfiguratsioonis enam pole",
+        "targetRequired": "Anna täpselt üks sihtmärk: hoidla viide või --lineage <guid> liini jaoks, mille hoidlat enam pole.",
+        "lineageOwned": "Liin {{lineage}} kuulub selles konfiguratsioonis hoidlale \"{{name}}\". Puhasta see käsuga: rdc backup purge {{name}}",
+        "confirmLineage": "See kustutab liini {{name}} kõik {{count}} salvestatud hetktõmmist ({{bytes}}) ja seda ei saa tagasi võtta. Kinnitamiseks sisesta liini ID:"
       },
       "check": {
         "description": "Tõendab, et hetktõmmis avaneb parooliga, taastades ühe faili",

@@ -2361,7 +2361,11 @@
         "cancelExclusive": "--cancel cannot be combined with --dry-run",
         "cancelled": "The delayed purge of \"{{name}}\" was cancelled.",
         "nothingWaiting": "No purge of \"{{name}}\" was waiting.",
-        "delayed": "The purge of \"{{name}}\" is delayed: nothing was deleted, and it runs on {{when}} (UTC). Cancel it before then with: rdc backup purge {{name}} --cancel"
+        "delayed": "The purge of \"{{name}}\" is delayed: nothing was deleted, and it runs on {{when}} (UTC). Cancel it before then with: {{cancel}}",
+        "optionLineage": "Purge a backup lineage by its id (as `rdc backup usage` lists it) when its repository is no longer in this config",
+        "targetRequired": "Name exactly one target: a repository ref, or --lineage <guid> for a lineage whose repository is gone.",
+        "lineageOwned": "Lineage {{lineage}} belongs to \"{{name}}\" in this config. Purge it with: rdc backup purge {{name}}",
+        "confirmLineage": "This deletes all {{count}} stored snapshot(s) of lineage {{name}} ({{bytes}}) and cannot be undone. Type the lineage id to confirm:"
       },
       "check": {
         "description": "Prove a stored snapshot opens with the passphrase by restoring one file",

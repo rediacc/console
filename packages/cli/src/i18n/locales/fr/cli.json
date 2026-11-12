@@ -429,7 +429,11 @@
         "cancelExclusive": "--cancel ne peut pas être combiné avec --dry-run",
         "cancelled": "La purge différée de \"{{name}}\" a été annulée.",
         "nothingWaiting": "Aucune purge de \"{{name}}\" n'était en attente.",
-        "delayed": "La purge de \"{{name}}\" est différée : rien n'a été supprimé, elle s'exécute le {{when}} (UTC). Annulez-la avant avec : rdc backup purge {{name}} --cancel"
+        "delayed": "La purge de \"{{name}}\" est différée : rien n'a été supprimé, elle s'exécute le {{when}} (UTC). Annulez-la avant avec : {{cancel}}",
+        "optionLineage": "Purger une lignée de sauvegardes par son identifiant (tel que `rdc backup usage` l'affiche) quand son dépôt ne figure plus dans cette configuration",
+        "targetRequired": "Indiquez une seule cible : une référence de dépôt, ou --lineage <guid> pour une lignée dont le dépôt n'existe plus.",
+        "lineageOwned": "La lignée {{lineage}} appartient à « {{name}} » dans cette configuration. Purgez-la avec : rdc backup purge {{name}}",
+        "confirmLineage": "Cette opération supprime définitivement les {{count}} instantané(s) stockés de la lignée {{name}} ({{bytes}}). Saisissez l'identifiant de la lignée pour confirmer :"
       },
       "check": {
         "description": "Prouve qu'un snapshot s'ouvre avec la phrase secrète en restaurant un fichier",
