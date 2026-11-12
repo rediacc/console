@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-12T23:17:38.575Z",
+  "generatedAt": "2026-11-12T23:23:44.600Z",
   "legs": [
     {
       "index": 1,
@@ -107,6 +107,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ops_apply_cf_waf_rules.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_enterprise_lookup.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_health_post.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_licence_expiry_drill.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_probe_receipt_stability.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_repair_org_customer_ids.py",
         "pytest:.ci/rediacc_ci/tests/test_private_concurrent_fork_isolation_test.py",
