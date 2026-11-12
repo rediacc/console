@@ -1,4 +1,4 @@
-"""`python -m rediacc_ci.onprem.airgap apply|remove|check --vm <ip>` (PLAN-enterprise-tenants box C12): cut an ops VM off from the internet for an air-gapped install drill.
+"""`python -m rediacc_ci.lab.airgap apply|remove|check --vm <ip>` (PLAN-enterprise-tenants box C12): cut an ops VM off from the internet for an air-gapped install drill.
 
     apply   iptables and ip6tables: OUTPUT policy DROP, with only `lo` and ESTABLISHED,RELATED allowed out, so ssh from the host gateway (.254) keeps answering; the same DROP in DOCKER-USER, so containers are cut off too. Nothing is persisted: a reboot clears it.
     remove  the policies go back to ACCEPT and the rules this module added are deleted.
@@ -26,7 +26,7 @@ TOOLS = ("iptables", "ip6tables")
 HOSTS = ("ghcr.io", "registry-1.docker.io", "archive.ubuntu.com", "download.docker.com")
 DNS_SERVER = "1.1.1.1"
 SSH_MARK = "SSH-ANSWERS"
-USAGE = "usage: python -m rediacc_ci.onprem.airgap apply|remove|check --vm <ip>"
+USAGE = "usage: python -m rediacc_ci.lab.airgap apply|remove|check --vm <ip>"
 
 # One shell command's transport: argv in, (exit code, stdout+stderr) out.
 Transport = Callable[[Sequence[str]], tuple[int, str]]

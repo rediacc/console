@@ -109,12 +109,6 @@ VERBS: tuple[Verb, ...] = (
         entry="enterprise_main",
     ),
     Verb(
-        name="onprem",
-        summary="install | status (Elite as a renet repo on one machine)",
-        module="rediacc_ci.core.run_verbs",
-        entry="onprem_main",
-    ),
-    Verb(
         name="quality",
         summary="run the quality checks (lint, format, types, ..., all)",
         module="rediacc_ci.core.run_verbs",

@@ -1,4 +1,4 @@
-"""`onprem.airgap` over a recorded ssh transport (no live VM) and `onprem.testca` with the local openssl (PLAN-enterprise-tenants box C12).
+"""`lab.airgap` over a recorded ssh transport (no live VM) and `lab.testca` with the local openssl (PLAN-enterprise-tenants box C12).
 
 Each failing check has a CONTROL that runs the same scenario with the one fault removed.
 """
@@ -9,7 +9,7 @@ import subprocess
 
 import pytest
 
-from rediacc_ci.onprem import airgap, testca
+from rediacc_ci.lab import airgap, testca
 
 GOOD = "\n".join(
     [

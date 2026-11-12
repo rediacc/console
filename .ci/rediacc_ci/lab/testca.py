@@ -1,4 +1,4 @@
-"""`python -m rediacc_ci.onprem.testca <dir> <host>...` (PLAN-enterprise-tenants box C12): a throwaway CA and one certificate per host for the bring-your-own-TLS drills.
+"""`python -m rediacc_ci.lab.testca <dir> <host>...` (PLAN-enterprise-tenants box C12): a throwaway CA and one certificate per host for the bring-your-own-TLS drills.
 
 Writes `ca.crt`, `ca.key`, and for each host `<host>.crt` and `<host>.key`. Each certificate's subjectAltName is exactly its own host (an IP literal as an IP entry, a name as a DNS entry), never a wildcard: a host starting with `*` is refused. Needs `openssl`. Test material only; the keys are not protected.
 
@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-USAGE = "usage: python -m rediacc_ci.onprem.testca <dir> <host>..."
+USAGE = "usage: python -m rediacc_ci.lab.testca <dir> <host>..."
 DAYS = "30"
 
 
