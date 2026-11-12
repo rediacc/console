@@ -96,6 +96,19 @@ REFUSED = [
         "an argv aimed at a lease, the verb unknown",
         "python3 -c \"import subprocess; v=input(); subprocess.run(['git','-C','.claude/worktrees/x',v,'add'])\"",
     ),
+    # 8ca1d8ca.1: a piece glued to the end of the lease path, after a character other than the separator, can close the path and spell the verb (`v = " worktree"`), in each reading.
+    (
+        "an unknown piece glued to the end of the lease path",
+        "python3 -c \"import os; v=input(); os.system('git -C .claude/worktrees/x' + v + ' add f')\"",
+    ),
+    (
+        "an f-string piece glued to the end of the lease path",
+        "python3 -c \"import os; v=input(); os.system(f'git -C .claude/worktrees/x{v} add f')\"",
+    ),
+    (
+        "a node piece glued to the end of the lease path",
+        "node -e \"const v=process.argv[1]; require('child_process').execSync('git -C .claude/worktrees/x' + v + ' add f')\"",
+    ),
 ]
 
 # A script path the shell expands, with the words in the command's text. The second row is the hole itself: the fixture names the phrase and is untracked, so the literal path is refused and the variable must be too.
@@ -322,10 +335,18 @@ FALSE_POSITIVES = [
         "an argv aimed at a lease, a known verb then an unknown argument",
         "python3 -c \"import subprocess; v=input(); subprocess.run(['git','-C','.claude/worktrees/x','status',v])\"",
     ),
-    # aeea89c4.1: a piece glued to the end of the path is path text (`'.claude/worktrees/' + name`), not a verb.
+    # 8ca1d8ca.1 controls: a piece after the path's separator is its next component, and a piece followed by more of the path is inside it; neither is a verb slot (#7d3a5939 stays closed).
     (
-        "an unknown piece glued to the lease path",
-        "python3 -c \"import os; v=input(); os.system('git -C .claude/worktrees/x' + v + ' add f')\"",
+        "an unknown lease name after the separator",
+        "python3 -c \"import os; name=input(); os.system('git -C .claude/worktrees/' + name + ' add f')\"",
+    ),
+    (
+        "a node lease name after the separator",
+        "node -e \"const n=process.argv[1]; require('child_process').execSync('git -C .claude/worktrees/' + n + ' add f')\"",
+    ),
+    (
+        "an unknown piece inside a lease name, the path going on",
+        "python3 -c \"import os; x=input(); os.system(f'git -C .claude/worktrees/agent-{x}/sub add f')\"",
     ),
     # e5ff36fc.1: `.claude/worktrees.py` is a file name, read as neither a lease root nor a mention of the verb, so an unknown built command beside it is not filled.
     (
@@ -724,6 +745,15 @@ for label, pair, rows in (
         failures.append("plant refused an allowed row: %s" % label)
         print("*** FAIL *** with %s planted, refused %r" % (label, kept[:3]))
 
+
+def _row(rows, name):
+    """The row named `name`, so a plant keeps driving the row it was written for when a list is reordered (6534bdcc.1: index-based picks moved onto other rows)."""
+    hits = [row for row in rows if row[0] == name]
+    if len(hits) != 1:
+        raise SystemExit("plant row %r matched %d rows" % (name, len(hits)))
+    return hits[0]
+
+
 # THE REVERSE PLANTS (#a904d9f4): each puts back one piece of the old two-words-anywhere reading, and the false positive it caused must be refused again, so the allowed rows above cannot be green because the rows stopped reaching the arm.
 REVERSE = [
     (
@@ -732,7 +762,7 @@ REVERSE = [
             "    if _spells_invocation(masked) or _names_phrase(_code_text(family, masked)):\n",
             "    if _names_phrase(text):\n",
         ),
-        FALSE_POSITIVES[0],
+        _row(FALSE_POSITIVES, "a comment naming the tree beside git add"),
     ),
     (
         "a lease path licenses the argv fill",
@@ -740,7 +770,7 @@ REVERSE = [
             'return "worktree" in LEASE_ROOT_TEXT.sub(" ", text)',
             'return "worktree" in text',
         ),
-        FALSE_POSITIVES[-1],
+        _row(FALSE_POSITIVES, "a lease path beside a built git command"),
     ),
     (
         "a lease path licenses the argv fill (argv shape)",
@@ -748,24 +778,40 @@ REVERSE = [
             'return "worktree" in LEASE_ROOT_TEXT.sub(" ", text)',
             'return "worktree" in text',
         ),
-        FALSE_POSITIVES[-2],
+        _row(FALSE_POSITIVES, "a lease path beside an argv with a variable git operand"),
+    ),
+    # 8ca1d8ca.1: with the separator check dropped, any piece ending the path is a verb slot, and the lease-name builders are refused again; with the tail check dropped, so is a piece the path goes on after.
+    (
+        "a piece after the separator is a verb slot",
+        ('if head != m.group(0) and not head.endswith("/"):', "if head != m.group(0):"),
+        _row(FALSE_POSITIVES, "an unknown lease name after the separator"),
+    ),
+    (
+        "a piece after the separator is a verb slot (node)",
+        ('if head != m.group(0) and not head.endswith("/"):', "if head != m.group(0):"),
+        _row(FALSE_POSITIVES, "a node lease name after the separator"),
+    ),
+    (
+        "a piece inside the path is a verb slot",
+        ("head = m.group(0).rstrip(UNKNOWN)", 'head = m.group(0).replace(UNKNOWN, "")'),
+        _row(FALSE_POSITIVES, "an unknown piece inside a lease name, the path going on"),
     ),
     (
         "a comment licenses the argv fill",
         ("mentions = _code_mentions(code)", 'mentions = "worktree" in code'),
-        FALSE_POSITIVES[0],
+        _row(FALSE_POSITIVES, "a comment naming the tree beside git add"),
     ),
     # #3dc774ff: a `$CLAUDE_PROJECT_DIR` path now resolves to the literal one, so these plants drive the `$R` twins, which still reach the narrowed line.
     (
         "the unjudgeable arm reads two words anywhere",
         ("_spells_invocation(_mask_file_names(cmd), lease=True)", "_could_spell(cmd)"),
-        DOLLAR_FALSE_POSITIVES[0],
+        _row(DOLLAR_FALSE_POSITIVES, "gc beside a $R worklist --add"),
     ),
     # Review 52a0dd31.3: this row is refused under the restored `_could_spell` through the `move` verb inside `removed` (the row names no verb word of its own), so the plant pins that substring branch of the tuple, not a second copy of the row above.
     (
         "the unjudgeable arm reads two words anywhere (tick, the `move` in `removed`)",
         ("_spells_invocation(_mask_file_names(cmd), lease=True)", "_could_spell(cmd)"),
-        DOLLAR_FALSE_POSITIVES[1],
+        _row(DOLLAR_FALSE_POSITIVES, "gc beside a $R worklist tick"),
     ),
     # #3dc774ff: with file names read as the phrase again, each row naming this file is refused again; with no session variable, prose handed to worklist.py behind `$CLAUDE_PROJECT_DIR` is.
     *(
@@ -785,18 +831,18 @@ REVERSE = [
             'SESSION_VARIABLES = {\n    "CLAUDE_PROJECT_DIR": lambda: os.environ.get("CLAUDE_PROJECT_DIR"),\n}',
             "SESSION_VARIABLES = {}",
         ),
-        SESSION_ROWS[2],
+        _row(SESSION_ROWS, "prose naming the phrase, to worklist"),
     ),
     # The scanners always keeping the raw text refuse the whole-line comment rows again, so those rows reach the arm and are allowed BY the scanners.
     (
         "the scanners read nothing",
         ('    return "".join(out)\n', "    return text\n"),
-        COMMENTED_ROWS[0],
+        _row(COMMENTED_ROWS, "whole-line comment: commented.sh"),
     ),
     (
         "the scanners read nothing (js)",
         ('    return "".join(out)\n', "    return text\n"),
-        COMMENTED_ROWS[1],
+        _row(COMMENTED_ROWS, "whole-line comment: commented.js"),
     ),
     # #1ecd3fec: the JS scanner giving up at a construct again, or a comment licensing the hole fill again, refuses the check-deps-shaped row again, so it is allowed BY those two lines.
     (
@@ -816,7 +862,7 @@ REVERSE = [
     (
         "the JS scanner keeps a prose literal",
         ("    if _prose_literal(literal[head : len(literal) - tail]):\n", "    if False:\n"),
-        PROSE_ROWS[0],
+        _row(PROSE_ROWS, "a prose literal: gendocs_like.ts"),
     ),
     (
         "the Python reading keeps a prose literal",
@@ -824,7 +870,7 @@ REVERSE = [
             "'\"\"' if tok.type in PY_LITERAL_TOKENS and _prose_literal(tok.string) else tok.string",
             "tok.string",
         ),
-        PROSE_ROWS[1],
+        _row(PROSE_ROWS, "a prose literal: prose.py"),
     ),
 ]
 for label, pair, (row_name, row_command) in REVERSE:

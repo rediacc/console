@@ -1148,14 +1148,27 @@ def _pieces(node):
     return [None]
 
 
+def _lease_verb_slot(text):
+    """Does a lease path in built `text` leave an unknown piece where a verb can stand? That licenses `_filled` though the file names `worktree` nowhere else.
+
+    A piece standing as a word of its own outside the path, before or after it, is a command aimed at a lease whose verb is unknown (`'git -C .claude/worktrees/x ' + v + ' add'`, e59de231.1). So is a piece that ENDS the path glued to a character other than its separator (`'git -C .claude/worktrees/x' + v + ' add f'`, 8ca1d8ca.1): `v = " worktree"` closes the path and spells the verb, a hole the round-2 reading admitted as path text. A piece after the separator (`'.claude/worktrees/' + name`) is the next component, and a piece followed by more of the path (`.claude/worktrees/agent-{x}/f`) is inside it; both are path text and license nothing (#7d3a5939). A piece after the separator can still carry a space at run time, as can `'git ' + v` with no lease path at all: no static reading tells those from the legitimate builders, and the guard admits them by design.
+    """
+    if UNKNOWN in LEASE_ROOT_TEXT.sub(" ", text):
+        return True
+    for m in LEASE_ROOT_TEXT.finditer(text):
+        head = m.group(0).rstrip(UNKNOWN)
+        if head != m.group(0) and not head.endswith("/"):
+            return True
+    return False
+
+
 def _filled(text, mentions):
     """The commands a built string can spell: its known text, and with each unknown piece or placeholder filled from FILLS when the file names `worktree` anywhere (`mentions`)."""
     text = PLACEHOLDER.sub(UNKNOWN, text)
     if UNKNOWN not in text:
         return [text]
-    # A lease path in the built string itself, with an unknown piece standing as a word of its own outside the path (before or after it), is a command aimed at a lease whose verb is unknown (`'git -C .claude/worktrees/x ' + v + ' add'`): that licenses the fill though the file names `worktree` nowhere else (e59de231.1). A piece inside or glued to the end of the path (`.claude/worktrees/{x}`, `'.claude/worktrees/x' + v`) is path text and does not.
     if not mentions and LEASE_ROOT_TEXT.search(text):
-        mentions = UNKNOWN in LEASE_ROOT_TEXT.sub(" ", text)
+        mentions = _lease_verb_slot(text)
     if not mentions:
         return [text.replace(UNKNOWN, " ")]
     return [text.replace(UNKNOWN, " %s " % fill) for fill in FILLS]
@@ -1288,7 +1301,8 @@ def _text_literals(code, mentions=None):
         built = TEXT_INTERPOLATION.sub(UNKNOWN, literal)
         if UNKNOWN in built:
             yield from _filled(built, mentions)
-        if mentions and TEXT_JOIN_AFTER.match(code, m.end()):
+        # A literal holding a lease path, joined to a piece after it, is read with that piece as `_filled` reads a built string, so the regex reading licenses a verb slot beside a lease path as the `ast` reading does (8ca1d8ca.1).
+        if (mentions or LEASE_ROOT_TEXT.search(built)) and TEXT_JOIN_AFTER.match(code, m.end()):
             yield from _filled(built + UNKNOWN, mentions)
         if mentions and TEXT_JOIN_BEFORE.search(code[max(0, m.start() - 16) : m.start()]):
             yield from _filled(UNKNOWN + built, mentions)
