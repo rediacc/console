@@ -2697,6 +2697,47 @@ def test_gc_superseded_by_refuses_a_landed_commit_that_shares_no_path_with_the_l
     assert not ledger.exists() or sha not in ledger.read_text()
 
 
+def test_gc_superseded_by_names_an_empty_lease_commit_as_empty_not_unreadable(gc_repo):
+    """97b56dda.2: an --allow-empty lease commit changes no path; the refusal says so instead of calling the diff unreadable."""
+    tree = make_tree(gc_repo, "sup12")
+    done = spike.git(
+        tree, "commit", "--no-gpg-sign", "--allow-empty", "-m", "chore: empty\n\n%s" % TRAILERS
+    )
+    assert done.returncode == 0, done.stderr
+    sha = spike.must(tree, "rev-parse", "HEAD")
+    pinned = run_pin_verb(tree)
+    assert pinned.returncode == 0, pinned.stderr
+    landed = committed(gc_repo.root, "dup.txt")
+    done = run_gc(
+        gc_repo.root, "--write", "--id", "sup12", "--superseded-by", "%s=%s" % (sha, landed),
+        "--reason", "same test fix landed as the named commit",
+    )  # fmt: skip
+    assert done.returncode == 1
+    assert "%s changes no path" % sha[: lease.SHA_SHOWN] in done.stderr
+    assert "could not be read" not in done.stderr
+    assert tree.exists()
+
+
+def test_control_gc_superseded_by_names_an_unreadable_landed_diff_as_unreadable(
+    gc_repo, monkeypatch, capsys
+):
+    """The other half of 97b56dda.2: git failing on the diff still reads as unreadable, not as empty."""
+    _tree, sha, landed = superseded_fixture(gc_repo, "sup13")
+    gc_in_process(monkeypatch, gc_repo.root)
+    monkeypatch.setattr(lease, "_touched", lambda _repo, _sha: None)
+    rc, _lines = lease.run_gc(
+        gc_repo.root,
+        write=True,
+        only="sup13",
+        superseded=[(sha, landed)],
+        reason="same test fix landed as the named commit",
+    )
+    assert rc == 1
+    err = capsys.readouterr().err
+    assert "could not be read" in err
+    assert "changes no path" not in err
+
+
 def test_gc_superseded_by_refuses_a_landed_commit_sharing_only_some_paths(gc_repo):
     """747e14b4.3: a landed commit that changes one of the lease commit's paths (a lockfile, a changelog) and misses another is no duplicate of it."""
     tree = make_tree(gc_repo, "sup10")
@@ -2834,6 +2875,29 @@ def test_control_ledger_retract_drops_its_rows_and_keeps_the_others(tmp_path):
     lease._ledger_write(tmp_path, [other, mine])
     lease._ledger_retract(tmp_path, [mine])
     assert lease._ledger_file(tmp_path).read_text() == json.dumps(other) + "\n"
+
+
+def test_ledger_write_starts_on_a_fresh_line_after_a_torn_fragment(tmp_path):
+    """97b56dda.1: a torn fragment a failed retract left has no newline; the next row must not glue onto it, so both still retract."""
+    torn_row, row = {"sha": "torn"}, {"sha": "next"}
+    ledger = lease._ledger_file(tmp_path)
+    ledger.parent.mkdir(parents=True)
+    whole = json.dumps(torn_row, sort_keys=True)
+    ledger.write_text(whole[: len(whole) // 2], encoding="utf-8")
+    lease._ledger_write(tmp_path, [row])
+    lines = ledger.read_text(encoding="utf-8").splitlines()
+    assert lines[-1] == json.dumps(row, sort_keys=True)
+    lease._ledger_retract(tmp_path, [torn_row, row])
+    assert ledger.read_text(encoding="utf-8") == ""
+
+
+def test_control_ledger_write_adds_no_blank_line_after_a_whole_row(tmp_path):
+    first, second = {"sha": "a"}, {"sha": "b"}
+    lease._ledger_write(tmp_path, [first])
+    lease._ledger_write(tmp_path, [second])
+    assert lease._ledger_file(tmp_path).read_text(encoding="utf-8") == "".join(
+        json.dumps(r, sort_keys=True) + "\n" for r in (first, second)
+    )
 
 
 def test_gc_superseded_by_retracts_a_ledger_write_that_fails_partway(gc_repo, monkeypatch):

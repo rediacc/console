@@ -1506,9 +1506,11 @@ def _unlanded_of(world, lease_id):
 
 
 def _touched(repo, sha):
-    """The set of paths a commit changes, read verbatim from `-z` output (empty when git cannot say)."""
+    """The set of paths a commit changes, read verbatim from `-z` output; None when git cannot say, so an empty diff stays distinct from an unreadable one (97b56dda.2)."""
     done = _quiet(repo, "diff-tree", "--no-commit-id", "--name-only", "-z", "-r", "--root", sha)
-    return {path for path in (done or "").split("\0") if path}
+    if done is None:
+        return None
+    return {path for path in done.split("\0") if path}
 
 
 def _resolve_superseded(world, lease_id, pairs, reason):
@@ -1535,9 +1537,19 @@ def _resolve_superseded(world, lease_id, pairs, reason):
             problems.append(
                 "%s is not an ancestor of the live tip of %s" % (landed[:SHA_SHOWN], key)
             )
-        elif not (lease_paths := _touched(repo, sha)):
-            problems.append("the changed paths of %s could not be read" % sha[:SHA_SHOWN])
-        elif uncovered := sorted(lease_paths - _touched(repo, full.strip())):
+        elif (lease_paths := _touched(repo, sha)) is None or (
+            landed_paths := _touched(repo, full.strip())
+        ) is None:
+            problems.append(
+                "the changed paths of %s or %s could not be read"
+                % (sha[:SHA_SHOWN], landed[:SHA_SHOWN])
+            )
+        elif not lease_paths:
+            problems.append(
+                "%s changes no path, so no landed commit can stand for it; collect the tree"
+                " without --superseded-by once it holds nothing else" % sha[:SHA_SHOWN]
+            )
+        elif uncovered := sorted(lease_paths - landed_paths):
             # 747e14b4.3: one shared path (a lockfile, a changelog) is too weak a proof, so the landed commit must change EVERY path the lease commit changes. The content may differ, because a duplicate whose pick conflicts is the case this waiver exists for.
             problems.append(
                 "%s does not change %s, which %s changes, so it is not a duplicate of it"
@@ -1565,10 +1577,17 @@ def _ledger_file(root):
 
 
 def _ledger_write(root, rows):
+    """Append `rows`, each on a fresh line: a torn fragment a failed retract left without its newline would otherwise glue onto the first row, which then neither parses nor retracts (97b56dda.1)."""
     path = _ledger_file(root)
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a", encoding="utf-8") as handle:
-        handle.writelines(json.dumps(row, sort_keys=True) + "\n" for row in rows)
+    with path.open("a+b") as handle:
+        handle.seek(0, os.SEEK_END)
+        lead = b""
+        if handle.tell():
+            handle.seek(-1, os.SEEK_END)
+            lead = b"" if handle.read(1) == b"\n" else b"\n"
+        body = "".join(json.dumps(row, sort_keys=True) + "\n" for row in rows)
+        handle.write(lead + body.encode("utf-8"))
 
 
 def _ledger_retract(root, rows):
