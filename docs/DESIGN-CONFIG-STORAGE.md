@@ -379,14 +379,15 @@ CLI                           Account server                 Browser (any machin
  │                              │                              │
  ├─ POST /device-codes ────────►│  row bound to the CLI's user │
  │  purpose=config-handoff      │  stores H(key), H(S)         │
- │  keyHash, pollVerifier       │                              │
+ │  keyHash, pollVerifier,      │  and H(N)                    │
+ │  nonceHash = H(N)            │                              │
  │◄──────── device code D ──────┤                              │
  │                              │                              │
  ├─ Print link + pairing code P │                              │
  │  <portal>/config-remote      │                              │
- │   #code=D&key=...&nonce=N    │   (the fragment is never     │
- │  P = first 60 bits of        │    sent to any server)       │
- │      SHA-256(key)            │                              │
+ │   #code=D&key=...&nonce=N    │   (the fragment itself is    │
+ │  P = first 60 bits of        │    never sent; the server    │
+ │      SHA-256(key)            │    holds only H(N))          │
  │                              │                              │
  ├─ POST /device-codes/D/claim ►│  the CLI polls with S        │
  │                              │                              │
@@ -437,6 +438,7 @@ What each value is for:
 | Bound user | server row | another account completing the request |
 | Pairing code P, typed by the user | terminal to keyboard | a swapped whole link: P derives from the CLI's key, so an attacker's key never matches |
 | Nonce N, sealed inside the blob | fragment and sealed plaintext only | a forged blob written by a relay or database insider |
+| `nonceHash` = SHA-256(N) stored at creation | server row, returned by `GET /device-codes/D/handoff-request` | a link whose nonce was altered: the page refuses it before any unlock, instead of the CLI refusing the finished handoff |
 | Poll secret S | CLI to server, never in the link | a third party racing the claim to consume the blob |
 
 The request lives for 10 minutes (`DEVICE_CODE_TTL_MS`). The blob is deleted on the first successful claim, so it rests on the server for at most that long. A user holds at most 5 pending requests.
