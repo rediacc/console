@@ -36,6 +36,8 @@ PICKED_LINE = "(cherry picked from commit %s)"
 LANDED_AS_LINE = "Lease-Landed-As: %s "
 # A gitlink row whose commit moved with nothing else changed: submodule-first landing leaves it behind, and the submodule is judged on its own.
 GITLINK_MOVED = "SC.."
+# Waivers `gc --superseded-by` records, one JSON row per lease commit, beside the lease records (the `.jsonl` name keeps the `*.json` record glob off it).
+SUPERSEDED_LEDGER = "superseded.jsonl"
 ORPHAN_TREE = "a tree with no record"
 ORPHAN_RECORD = "a record with no tree"
 ORPHAN_PIN = "a pin with neither a record nor a tree"
@@ -277,7 +279,49 @@ def unlanded_commits(tree, head, pin, tip, base):
         and _git(tree, "merge-base", "--is-ancestor", pair[1] + "^{commit}", tip) is not None
     }
     left = [sha for sha in found if PICKED_LINE % sha not in text and sha not in recorded]
+    if left:
+        waived = superseded_commits(tree, set(left), tip)
+        left = [sha for sha in left if sha not in waived]
     return _drop_revert_pairs(tree, left)
+
+
+def ledger_path(tree):
+    """The ledger file of the console's store as seen from `tree` (a console tree, or a submodule tree whose store sits below it), or None."""
+    common = _git(tree, "rev-parse", "--path-format=absolute", "--git-common-dir")
+    if not common or not common.strip():
+        return None
+    here = pathlib.Path(common.strip())
+    for candidate in (here, *here.parents):
+        if (candidate / RECORD_DIR).is_dir():
+            return candidate / RECORD_DIR / SUPERSEDED_LEDGER
+    return None
+
+
+def superseded_commits(tree, shas, tip):
+    """The members of `shas` the ledger waives, each only while its landed sha is still an ancestor of `tip`."""
+    path = ledger_path(tree)
+    if path is None or not tip:
+        return set()
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return set()
+    out = set()
+    for line in text.splitlines():
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(row, dict):
+            continue
+        sha, landed = str(row.get("sha") or ""), str(row.get("landed") or "")
+        if (
+            sha in shas
+            and landed
+            and _git(tree, "merge-base", "--is-ancestor", landed + "^{commit}", tip) is not None
+        ):
+            out.add(sha)
+    return out
 
 
 def _patch_id(tree, *diff_args):

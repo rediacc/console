@@ -762,6 +762,18 @@ def control_landed(tmp):
         [],
     )
 
+    # A gc --superseded-by waiver in the ledger reads the commit landed, while its landed sha stays an ancestor of the live tip.
+    main = lease_main_repo(tmp, "ledger")
+    lease = new_lease(tmp, main, "w1")
+    sha = commit_in(tmp, lease, "a.txt", "lease wording\n")
+    other = commit_in(tmp, main, "a.txt", "landed wording\n")
+    check("a ledger-less duplicate reads unlanded", ids(read(tmp, main)["unlanded"]), ["w1"])
+    ledger = pathlib.Path(main) / ".git" / "rediacc-worktrees" / "superseded.jsonl"
+    ledger.write_text(json.dumps({"sha": sha, "landed": other}) + "\n")
+    check("a ledger row reads it landed", read(tmp, main)["unlanded"], [])
+    ledger.write_text(json.dumps({"sha": sha, "landed": "0" * 40}) + "\n")
+    check("a ledger row naming no commit waives nothing", ids(read(tmp, main)["unlanded"]), ["w1"])
+
     main = lease_main_repo(tmp, "pinned")
     lease = new_lease(tmp, main, "w1")
     base = git(tmp, main, "rev-parse", "HEAD")

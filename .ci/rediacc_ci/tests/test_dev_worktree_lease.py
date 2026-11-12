@@ -2581,3 +2581,95 @@ def test_a_failed_restore_of_one_signal_still_restores_the_later_ones(monkeypatc
     finally:
         for signum, handler in saved.items():
             real(signum, handler)
+
+
+def superseded_fixture(repo, name):
+    """A tree whose one commit never lands by pick, and a different commit already on the live tip standing for it."""
+    tree = make_tree(repo, name)
+    sha = gc_commit(tree, "dup.txt")
+    landed = committed(repo.root, "dup-landed.txt")
+    return tree, sha, landed
+
+
+def test_control_gc_keeps_a_tree_whose_unlanded_commit_is_not_named_superseded(gc_repo):
+    tree, sha, _landed = superseded_fixture(gc_repo, "sup0")
+    done = run_gc(gc_repo.root, "--write", "--id", "sup0")
+    assert done.returncode == 1, done.stdout
+    assert tree.exists()
+    assert sha[:12] in row_of(done.stdout, "sup0")
+
+
+def test_gc_superseded_by_removes_the_tree_prints_the_reason_and_the_stop_check_reads_it_landed(
+    gc_repo,
+):
+    tree, sha, landed = superseded_fixture(gc_repo, "sup1")
+    reason = "same test fix landed as the named commit"
+    done = run_gc(
+        gc_repo.root, "--write", "--id", "sup1", "--superseded-by", "%s=%s" % (sha, landed),
+        "--reason", reason,
+    )  # fmt: skip
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert not tree.exists()
+    assert reason in done.stdout
+    assert "WAIVE" in done.stdout
+    ledger = gc_repo.root / ".git" / lease.RECORD_DIR / "superseded.jsonl"
+    assert sha in ledger.read_text()
+    tip = spike.must(gc_repo.root, "rev-parse", "HEAD")
+    watch = lease._hook_module("wl_worktrees")
+    assert watch.superseded_commits(gc_repo.root, {sha}, tip) == {sha}
+
+
+def test_gc_superseded_by_bare_sha_names_the_single_unlanded_commit(gc_repo):
+    tree, _sha, landed = superseded_fixture(gc_repo, "sup2")
+    done = run_gc(
+        gc_repo.root, "--write", "--id", "sup2", "--superseded-by", landed,
+        "--reason", "same test fix landed as the named commit",
+    )  # fmt: skip
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert not tree.exists()
+
+
+def test_gc_superseded_by_refuses_a_landed_sha_off_the_live_branch(gc_repo):
+    tree, sha, _landed = superseded_fixture(gc_repo, "sup3")
+    side = spike.must(
+        gc_repo.root, "commit-tree", "HEAD^{tree}", "-p", "HEAD~1", "-m", "side"
+    ).strip()
+    spike.must(gc_repo.root, "branch", "side-work", side)
+    done = run_gc(
+        gc_repo.root, "--write", "--id", "sup3", "--superseded-by", "%s=%s" % (sha, side),
+        "--reason", "same test fix landed as the named commit",
+    )  # fmt: skip
+    assert done.returncode == 1
+    assert "not an ancestor" in done.stderr
+    assert tree.exists()
+    ledger = gc_repo.root / ".git" / lease.RECORD_DIR / "superseded.jsonl"
+    assert not ledger.exists() or sha not in ledger.read_text()
+
+
+def test_gc_superseded_by_refuses_a_short_reason_a_sweep_and_an_unnamed_commit(gc_repo):
+    tree, sha, landed = superseded_fixture(gc_repo, "sup4")
+    pair = "%s=%s" % (sha, landed)
+    short = run_gc(
+        gc_repo.root, "--write", "--id", "sup4", "--superseded-by", pair, "--reason", "dup"
+    )
+    assert short.returncode == 1
+    assert "at least 20 characters" in short.stderr
+    sweep = run_gc(
+        gc_repo.root,
+        "--write",
+        "--superseded-by",
+        pair,
+        "--reason",
+        "same test fix landed as named",
+    )
+    assert sweep.returncode == 1
+    assert "needs --write and --id" in sweep.stderr
+    extra = gc_commit(tree, "second.txt")
+    partial = run_gc(
+        gc_repo.root, "--write", "--id", "sup4", "--superseded-by", pair,
+        "--reason", "same test fix landed as the named commit",
+    )  # fmt: skip
+    assert partial.returncode == 1
+    assert "is not named" in partial.stderr
+    assert extra[:12] in partial.stderr
+    assert tree.exists()

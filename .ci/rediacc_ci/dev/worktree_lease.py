@@ -891,6 +891,13 @@ commits are landed. `--write --id <id>` exits 1 when that lease was kept.
      paths for that one tree, after the lead has shown they are already on the
      live tip or superseded there (the reason, at least 20 characters, is printed
      with the deletion). Every other rule still applies, unlanded commits included.
+  --superseded-by <lease-sha>=<landed-sha> --reason '<why>'  with --write --id only:
+     name an unlanded commit of that lease whose change already landed through
+     another commit (a duplicate fix whose pick conflicts). One flag per commit, or a
+     bare <landed-sha> when the lease holds exactly one. Each landed sha must be an
+     ancestor of the live tip, every unlanded commit must be named, and the reason
+     needs at least 20 characters. The waiver is recorded in
+     .git/rediacc-worktrees/superseded.jsonl, which the Stop hook reads as landed.
 """
 RULE_PLACE = "rule 1"
 RULE_LIVE = "rule 2"
@@ -1490,14 +1497,91 @@ def _is_dirty_problem(why):
     return why.startswith(RULE_CLEAN + ":") and "uncommitted path(s)" in why
 
 
-def run_gc(root, *, write=False, only="", discard_dirty=""):
-    """(rc, lines): the listing, and with `write` the deletion. `discard_dirty` waives the uncommitted paths of the one tree `only` names."""
+def _unlanded_of(world, lease_id):
+    """{repo key: [unlanded shas]} of one lease."""
+    path = world.root / spike.HOLDER / lease_id
+    facts = _lease_facts(world, lease_id, path, world.records.get(lease_id))
+    return {key: list(row["commits"]) for key, row in facts.repos.items() if row["commits"]}
+
+
+def _resolve_superseded(world, lease_id, pairs, reason):
+    """([ledger rows], problems) for the named commits of `lease_id`: every unlanded commit named once, each landed sha an ancestor of its repo's live tip."""
+    unlanded = _unlanded_of(world, lease_id)
+    flat = [(key, sha) for key, shas in sorted(unlanded.items()) for sha in shas]
+    if not flat:
+        return [], ["%s holds no unlanded commit, so nothing is superseded" % lease_id]
+    problems, rows, named = [], [], set()
+    if len(pairs) == 1 and not pairs[0][0] and len(flat) > 1:
+        return [], ["a bare landed sha names one commit, but %s holds %d" % (lease_id, len(flat))]
+    for given, landed in pairs:
+        hits = [(k, s) for k, s in flat if (given and s.startswith(given)) or not given]
+        if len(hits) != 1:
+            problems.append("%r names %d unlanded commits of %s" % (given, len(hits), lease_id))
+            continue
+        key, sha = hits[0]
+        repo = world.root / key
+        tip = world.tip if key == CONSOLE else spike.out(repo, "rev-parse", "HEAD")
+        full = _quiet(repo, "rev-parse", "--verify", landed + "^{commit}")
+        if not full or not tip:
+            problems.append("%s is no commit of %s" % (landed, key))
+        elif spike.git(repo, "merge-base", "--is-ancestor", full.strip(), tip).returncode != 0:
+            problems.append(
+                "%s is not an ancestor of the live tip of %s" % (landed[:SHA_SHOWN], key)
+            )
+        else:
+            named.add(sha)
+            rows.append(
+                {
+                    "sha": sha,
+                    "landed": full.strip(),
+                    "lease": lease_id,
+                    "reason": reason,
+                    "at": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+                }
+            )
+    for _key, sha in flat:
+        if sha not in named:
+            problems.append("unlanded commit %s is not named" % sha[:SHA_SHOWN])
+    return ([] if problems else rows), problems
+
+
+def _ledger_file(root):
+    return root / ".git" / RECORD_DIR / _hook_module("wl_worktrees").SUPERSEDED_LEDGER
+
+
+def _ledger_write(root, rows):
+    path = _ledger_file(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("a", encoding="utf-8") as handle:
+        handle.writelines(json.dumps(row, sort_keys=True) + "\n" for row in rows)
+
+
+def _ledger_retract(root, rows):
+    path = _ledger_file(root)
+    drop = {json.dumps(row, sort_keys=True) for row in rows}
+    try:
+        kept = [ln for ln in path.read_text(encoding="utf-8").splitlines() if ln not in drop]
+    except OSError:
+        return
+    path.write_text("".join(ln + "\n" for ln in kept), encoding="utf-8")
+
+
+def run_gc(root, *, write=False, only="", discard_dirty="", superseded=(), reason=""):
+    """(rc, lines): the listing, and with `write` the deletion. `discard_dirty` waives the uncommitted paths of the one tree `only` names. `superseded` is [(lease sha or "", landed sha)] naming every unlanded commit of that tree as already landed through another."""
     root = _main_checkout(root)
     lines = []
     deletable, kept, failed = 0, 0, 0
     with _project_env(root):
         world = _read_world(root)
         live = _read_live(root, named=bool(only))
+        recorded = []
+        if superseded:
+            recorded, bad = _resolve_superseded(world, only, list(superseded), reason)
+            if bad:
+                for problem in bad:
+                    log.error("--superseded-by refused: %s" % problem)
+                return 1, []
+            _ledger_write(root, recorded)
         for judged in _gc_rows(world, live, only):
             row = judged
             waive_line = ""
@@ -1513,6 +1597,9 @@ def run_gc(root, *, write=False, only="", discard_dirty=""):
                         discard_dirty,
                     )
             if row.why:
+                if recorded:
+                    _ledger_retract(root, recorded)
+                    recorded = []
                 kept += 1
                 lines.append("  %-6s  %-24s %s" % ("KEEP", row.lease_id, "; ".join(row.why)))
                 continue
@@ -1522,6 +1609,21 @@ def run_gc(root, *, write=False, only="", discard_dirty=""):
                 lines.append(
                     waive_line
                     + ("; removal incomplete, part of the tree may be gone" if survived else "")
+                )
+            if recorded:
+                lines.append(
+                    "  %-6s  %-24s %d commit(s) superseded: %s"
+                    % (
+                        "WAIVE",
+                        row.lease_id,
+                        len(recorded),
+                        "; ".join(
+                            "%s by %s" % (r["sha"][:SHA_SHOWN], r["landed"][:SHA_SHOWN])
+                            for r in recorded
+                        )
+                        + "; "
+                        + reason,
+                    )
                 )
             lines.append("  %-6s  %-24s every rule holds" % ("DELETE", row.lease_id))
             if survived:
@@ -1539,8 +1641,9 @@ def run_gc(root, *, write=False, only="", discard_dirty=""):
 
 
 def _parse_gc(args):
-    """`(write, id, discard_reason)`, or None after an error line."""
+    """`(write, id, discard_reason, superseded, reason)`, or None after an error line."""
     write, only, discard = False, "", None
+    superseded, reason = [], None
     rest = list(args)
     while rest:
         arg = rest.pop(0)
@@ -1550,6 +1653,14 @@ def _parse_gc(args):
             only = rest.pop(0)
         elif arg == "--discard-dirty" and rest:
             discard = rest.pop(0).strip()
+        elif arg == "--superseded-by" and rest:
+            given, _, landed = rest.pop(0).strip().rpartition("=")
+            if not landed:
+                log.error("--superseded-by needs <lease-sha>=<landed-sha> or a bare <landed-sha>")
+                return None
+            superseded.append((given, landed))
+        elif arg == "--reason" and rest:
+            reason = rest.pop(0).strip()
         else:
             log.error("Unknown or incomplete option: %s" % arg)
             return None
@@ -1564,7 +1675,21 @@ def _parse_gc(args):
             % DISCARD_REASON_MIN
         )
         return None
-    return write, only, discard or ""
+    if reason is not None and not superseded:
+        log.error("--reason belongs to --superseded-by")
+        return None
+    if superseded and not (write and only):
+        log.error(
+            "--superseded-by needs --write and --id <id>: it waives one named tree, never a sweep"
+        )
+        return None
+    if superseded and len(reason or "") < DISCARD_REASON_MIN:
+        log.error(
+            "--superseded-by needs --reason of at least %d characters naming the landed commit"
+            % DISCARD_REASON_MIN
+        )
+        return None
+    return write, only, discard or "", superseded, reason or ""
 
 
 def _hook_input():
@@ -1627,7 +1752,12 @@ def cmd_gc(args):
         return 1
     try:
         code, lines = run_gc(
-            paths.repo_root(), write=parsed[0], only=parsed[1], discard_dirty=parsed[2]
+            paths.repo_root(),
+            write=parsed[0],
+            only=parsed[1],
+            discard_dirty=parsed[2],
+            superseded=parsed[3],
+            reason=parsed[4],
         )
     except (OSError, RuntimeError, ValueError, subprocess.SubprocessError) as exc:
         log.error("refused: %s" % exc)
