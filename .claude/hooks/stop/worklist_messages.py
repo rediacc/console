@@ -3483,6 +3483,12 @@ N_WORKTREE_CIQUICK = (
     "tree. Land these once it ends:\n%s"
 )
 
+N_WORKTREE_RECEIPT = (
+    "UNLANDED LEASE, held for the push: the pre-push receipt passed for exactly HEAD and HEAD is "
+    "not on its upstream yet, so landing now would move HEAD and void the receipt the push needs. "
+    "Land these once the push is out:\n%s"
+)
+
 CLI_STATUS_NONE = (
     "--status: no live subagent matched %r. The roster reads the last Stop event plus every "
     "agent started since it; an id that finished its turn is not live."

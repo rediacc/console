@@ -2748,6 +2748,42 @@ def _same_checkout(pid, words, root, proc):
     )
 
 
+def green_receipt_on_unpushed_head(root, receipt_path=None):
+    """True only when the pre-push receipt passed (`exitCode` 0) for exactly the commit HEAD names, and HEAD is not yet on its upstream: the push that receipt buys is still owed, and landing a lease now would move HEAD and void it. A missing or malformed receipt, a red one, a receipt for another commit, a HEAD git cannot read, or a HEAD its upstream already contains reads False, so a blind reading never stands the unlanded-lease block down."""
+    path = pathlib.Path(
+        receipt_path or pathlib.Path(root) / ".ci" / "cache" / "prepush-receipt.json"
+    )
+    try:
+        receipt = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    if not isinstance(receipt, dict) or receipt.get("exitCode") != 0:
+        return False
+    try:
+        head = subprocess.run(
+            ["git", "-C", str(root), "rev-parse", "HEAD"],
+            capture_output=True,
+            text=True,
+            check=True,
+            timeout=20,
+        ).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        return False
+    if not head or receipt.get("head") != head:
+        return False
+    try:
+        pushed = subprocess.run(
+            ["git", "-C", str(root), "merge-base", "--is-ancestor", "HEAD", "@{upstream}"],
+            check=False,
+            capture_output=True,
+            timeout=20,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return False
+    # rc 0: the upstream holds HEAD (pushed); rc 1: it does not; anything else (no upstream) is a doubt.
+    return pushed.returncode == 1
+
+
 def ci_quick_running(root, path=None, proc="/proc", now=None):
     """True only when the ci:quick lock of `root` exists and names a live pid whose argv is a ci:quick run of THIS checkout, taken within CI_QUICK_MAX_AGE_S (`acquireLock` writes `{"pid", "at"}` with one `wx` create and removes the file in its `finally`). A missing file, a malformed owner, a dead pid (the stale file a killed run leaves), a pid reused by another program, a ci:quick of another checkout, or an `at` that is missing, unparseable or older than twice the lock wait reads False, so a blind reading never stands the unlanded-lease block down."""
     path = path or ci_quick_lock_path(root)
@@ -2804,6 +2840,16 @@ def worktree_check(worklist, session_id, state_doc, fold, roster, event, vadd):
             state_doc,
             "worktree-orphan",
             M.N_WORKTREE_CIQUICK % wl_worktrees.unlanded_lines(got),
+            3,
+        )
+    elif got["unlanded"] and green_receipt_on_unpushed_head(root):
+        # A passing ci:quick receipt for exactly HEAD, not yet pushed: landing now moves HEAD and voids the receipt the push needs, another full run. The lease waits for the push: reported, not blocked.
+        outq_add(
+            worklist,
+            session_id,
+            state_doc,
+            "worktree-orphan",
+            M.N_WORKTREE_RECEIPT % wl_worktrees.unlanded_lines(got),
             3,
         )
     elif got["unlanded"]:

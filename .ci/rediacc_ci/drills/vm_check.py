@@ -1497,7 +1497,9 @@ def remote_evidence(res: Result) -> str:
 
 def _renet_binary_missing(why: str) -> bool:
     """Whether an `rdc` failure says the worker has no renet binary at all (a freshly recreated ops VM), as opposed to any other refusal."""
-    return re.search(r"/renet'?: No such file or directory", why) is not None
+    # GNU env quotes the path with ASCII ' in the C locale and with U+2018/U+2019 in a UTF-8 one
+    # (a recreated fleet, 2026-11-12: "env: ‘/usr/lib/rediacc/renet/0.0.0-dev/renet’: No such file").
+    return re.search(r"/renet['’]?: No such file or directory", why) is not None
 
 
 def rdc_failure(res: Result) -> str:
