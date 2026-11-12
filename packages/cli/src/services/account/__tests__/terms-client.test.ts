@@ -5,6 +5,7 @@
  */
 
 import { type E2eRequestEnvelope, openRequest, sealResponse } from '@rediacc/shared/e2e';
+import { LEGAL_URLS } from '@rediacc/shared/legal';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const m = vi.hoisted(() => ({
@@ -116,6 +117,17 @@ describe('403 TERMS_ACCEPTANCE_REQUIRED', () => {
     expect(error.message).toContain('--accept-terms');
     expect(error.message).toContain('RDC_ACCEPT_TERMS=1');
     expect(error.message).toContain('https://example.test/t');
+  });
+
+  it('names the Terms page when the refusal carries no url', async () => {
+    const t = await tunnel(403, { code: 'TERMS_ACCEPTANCE_REQUIRED', details: {} });
+    const error = (await accountServerFetch('/x', {
+      ...OPTIONS,
+      fetchImpl: t.fetchImpl,
+      serverKey: t.serverKey,
+    }).catch((e: unknown) => e)) as Error;
+    expect(error.message).toContain(LEGAL_URLS.terms);
+    expect(error.message).not.toContain('"url":""');
   });
 
   it('any other 403 keeps its own message', async () => {

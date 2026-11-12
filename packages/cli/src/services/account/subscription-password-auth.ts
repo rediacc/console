@@ -144,6 +144,33 @@ interface MintReply {
   twoFactorRequired?: boolean;
 }
 
+type Mint = (scopes: readonly string[]) => Promise<{ status: number; body: MintReply }>;
+
+const isMemberRefusal = (reply: { status: number; body: MintReply }) =>
+  reply.status === 403 && reply.body.code === 'INSUFFICIENT_ORG_ROLE';
+
+/** Mint with the privileged scopes, falling back as the account allows (plain member, no 2FA). */
+async function mintWithScopeFallback(
+  mint: Mint,
+  serverUrl: string
+): Promise<{ status: number; body: MintReply }> {
+  const first = await mint([...BASE_SCOPES, ...PRIVILEGED_SCOPES]);
+  if (isMemberRefusal(first)) return mint(BASE_SCOPES);
+  if (!(first.status === 403 && first.body.twoFactorRequired)) return first;
+  // backup:manage needs 2FA on the account: sign in without it and say how to get it.
+  let minted = await mint([...BASE_SCOPES, 'audit:write']);
+  // A plain member is refused audit:write as well: fall back to the base scopes alone.
+  if (isMemberRefusal(minted)) minted = await mint(BASE_SCOPES);
+  if (minted.status < 400) {
+    outputService.warn(
+      t('commands.subscription.login.backupNeedsTwoFactor', {
+        url: `${serverUrl.replace(/\/+$/, '')}/account/settings`,
+      })
+    );
+  }
+  return minted;
+}
+
 /**
  * Mint the CLI api token the way a device-code approval does: a session cookie, the primary
  * subscription from /portal/me, then POST /api-tokens with the device flow's scopes. A plain member
@@ -172,20 +199,7 @@ export async function loginWithPassword(
       { subscriptionId, name: 'CLI (headless login)', scopes, ...(teamId ? { teamId } : {}) },
       cookie
     );
-  let minted = await mint([...BASE_SCOPES, ...PRIVILEGED_SCOPES]);
-  if (minted.status === 403 && minted.body.code === 'INSUFFICIENT_ORG_ROLE') {
-    minted = await mint(BASE_SCOPES);
-  } else if (minted.status === 403 && minted.body.twoFactorRequired) {
-    // backup:manage needs 2FA on the account: sign in without it and say how to get it.
-    minted = await mint([...BASE_SCOPES, 'audit:write']);
-    if (minted.status < 400) {
-      outputService.warn(
-        t('commands.subscription.login.backupNeedsTwoFactor', {
-          url: `${serverUrl.replace(/\/+$/, '')}/account/settings`,
-        })
-      );
-    }
-  }
+  const minted = await mintWithScopeFallback(mint, serverUrl);
   if (minted.status >= 400) throw refusal('token', minted);
   if (!minted.body.token) throw new ValidationError(t('commands.subscription.login.noSession'));
   return minted.body.token;

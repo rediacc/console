@@ -91,6 +91,10 @@ describe('registration handoff URL', () => {
     expect(printed).toContain('email=a%2Bb%40example.com');
   });
 
+  it('leaves a verification URL that is not absolute as the server sent it', () => {
+    expect(withEmailPrefill('/verify?code=X', 'a@example.com')).toBe('/verify?code=X');
+  });
+
   it('leaves the URL unchanged without an email', () => {
     expect(withEmailPrefill('https://example.com/a?code=X', undefined)).toBe(
       'https://example.com/a?code=X'

@@ -180,6 +180,15 @@ describe('subscription notices', () => {
     await expect(executeSubscriptionNotices()).rejects.toThrow('cursor c1 twice');
   });
 
+  it('refuses a server that cycles through two cursors (A, B, A), instead of looping', async () => {
+    respondWith([
+      { notices: [notice('a', 2)], nextCursor: 'c1' },
+      { notices: [notice('b', 3)], nextCursor: 'c2' },
+      { notices: [notice('c', 4)], nextCursor: 'c1' },
+    ]);
+    await expect(executeSubscriptionNotices()).rejects.toThrow('cursor c1 twice');
+  });
+
   it('adds name and machine to every licence item under -o json', async () => {
     respondWith([{ notices: [notice('n1', 1)], nextCursor: null }]);
     setOutputFormat('json');

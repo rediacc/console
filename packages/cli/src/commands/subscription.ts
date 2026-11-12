@@ -80,6 +80,18 @@ function withAccountField<C extends { account?: Record<string, unknown> }>(
   return { ...cfg, account };
 }
 
+/** The active config's name, or undefined (with a warning when a channel write is lost) when it does not exist yet. */
+async function existingActiveConfigName(
+  fields: Partial<Record<AccountField, string>>
+): Promise<string | undefined> {
+  const configName = getEffectiveConfigName();
+  if (await configFileStorage.exists(configName)) return configName;
+  if (fields.updateChannel !== undefined) {
+    outputService.warn(`update channel not saved: config "${configName}" does not exist yet`);
+  }
+  return undefined;
+}
+
 /**
  * Write account fields into the active config. A config that does not exist yet is skipped; any
  * other write failure throws, because a lost `e2ePublicKey` leaves every later request to discover
@@ -88,8 +100,8 @@ function withAccountField<C extends { account?: Record<string, unknown> }>(
  * written only when it changes, so a login does not push an unchanged channel.
  */
 async function patchActiveAccount(fields: Partial<Record<AccountField, string>>): Promise<boolean> {
-  const configName = getEffectiveConfigName();
-  if (!(await configFileStorage.exists(configName))) return false;
+  const configName = await existingActiveConfigName(fields);
+  if (configName === undefined) return false;
   let saved = true;
   for (const [field, value] of Object.entries(fields) as [AccountField, string | undefined][]) {
     if (value === undefined) continue;

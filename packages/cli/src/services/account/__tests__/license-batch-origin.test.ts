@@ -85,7 +85,7 @@ describe('reposWithForeignLicenseOrigin', () => {
     expect([...reposWithForeignLicenseOrigin(odd, 'hostinger')]).toEqual([OLD]);
   });
 
-  it('compares origins when the configured server URL carries a path', () => {
+  it('control: compares origins when the configured server URL carries a path', () => {
     server.url = `${NEW_ORIGIN}/account/api/v1`;
     try {
       expect([...reposWithForeignLicenseOrigin(scan, 'hostinger')]).toEqual([OLD]);
@@ -181,10 +181,23 @@ describe('refreshRepoLicensesBatch and a foreign-origin licence', () => {
     expect(result.refreshed).toBe(1);
   });
 
-  it('does not count a skipped foreign licence as a pending reissue, whatever renet says of it', async () => {
-    statusMock.mockResolvedValueOnce([{ repositoryGuid: OLD, status: 'machine_mismatch' }]);
-    const { result } = await refresh(scan.slice(0, 2));
-    expect(result.invalidSignatureDetected).toBe(0);
+  it.each(['machine_mismatch', 'identity_mismatch'])(
+    'does not count a skipped foreign licence as a pending reissue when renet says %s',
+    async (status) => {
+      statusMock.mockResolvedValueOnce([{ repositoryGuid: OLD, status }]);
+      const { result } = await refresh(scan.slice(0, 2));
+      expect(result.invalidSignatureDetected).toBe(0);
+    }
+  );
+
+  it('keeps a same-origin copy of a guid beside its foreign sibling, warning once for the foreign one', async () => {
+    const sibling = {
+      ...scan[0],
+      currentRenewalUrl: `${NEW_ORIGIN}/account/api/v1/licenses/renew`,
+    };
+    const { sent } = await refresh([scan[0], sibling]);
+    expect(sent.has(OLD)).toBe(true);
+    expect(warnMock).toHaveBeenCalledTimes(1);
   });
 
   it('with adoptOrigin reissues the foreign licence, dropping its current dates', async () => {

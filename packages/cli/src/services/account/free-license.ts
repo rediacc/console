@@ -34,13 +34,13 @@ import { updateConfigAtPointer } from '../config/synced-write.js';
 import { outputService } from '../core/output.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { accountServerFetch } from './account-client.js';
-import { ensureTermsAcceptance } from './terms.js';
 import { readLocalMachineId, readRemoteMachineId, writeRepoLicense } from './license-machine.js';
 import {
   getConfiguredServerUrl,
   getSubscriptionServerUrl,
   getSubscriptionTokenState,
 } from './subscription-auth.js';
+import { ensureTermsAcceptance } from './terms.js';
 
 export const FREE_LICENSE_PATH = '/account/api/v1/licenses/free';
 /** The account server's refusal code when a FREE blob asks for a backup session. */
@@ -170,9 +170,9 @@ async function saveAccountServer(serverUrl: string): Promise<void> {
 }
 
 /**
- * Pick the region a FREE licence comes from, only when no server is configured (flag, env, config,
- * or a stored login): `--license-region <id>` names it, a terminal is asked (timezone suggestion as the
- * default), anything else keeps the default and says how to choose. A configured server is never
+ * Pick the region a FREE licence comes from, only when no server is configured (env, config,
+ * or a stored login; `--license-region` is the pick itself, so it never counts as configured): `--license-region <id>` names it, a terminal is
+ * asked (timezone suggestion as the default), anything else keeps the default and says how to choose. A configured server is never
  * asked about and never overwritten.
  */
 async function chooseFreeLicenseRegion(

@@ -14,6 +14,7 @@ import {
   openResponse,
   sealRequest,
 } from '@rediacc/shared/e2e';
+import { LEGAL_URLS } from '@rediacc/shared/legal';
 import { BAKED_IN_REGIONS } from '@rediacc/shared/regions';
 import {
   API_TOKEN_IP_REBIND_PATH,
@@ -530,7 +531,8 @@ function warnUpcomingTerms(header: string | null): void {
  */
 function termsRequiredError(parsed: { details?: Record<string, unknown> }): ValidationError {
   const details = parsed.details ?? (parsed as Record<string, unknown>);
-  const url = typeof details.url === 'string' ? details.url : '';
+  // A refusal without a document URL still names where the Terms are.
+  const url = typeof details.url === 'string' && details.url ? details.url : LEGAL_URLS.terms;
   const acceptUrl = typeof details.acceptUrl === 'string' ? details.acceptUrl : '';
   const flag = typeof details.flag === 'string' ? details.flag : undefined;
   const env = typeof details.env === 'string' ? details.env : undefined;

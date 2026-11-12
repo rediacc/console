@@ -73,6 +73,7 @@ async function fetchNotices(
   const cutoff = now - RECENT_WINDOW_MS;
   const collected: NoticeWire[] = [];
   let cursor: string | null = null;
+  const seen = new Set<string>();
   do {
     const page: NoticePage = await fetchNoticePage(options.all, cursor);
     const kept = options.all
@@ -80,8 +81,11 @@ async function fetchNotices(
       : page.notices.filter((n) => Date.parse(n.updatedAt) >= cutoff);
     collected.push(...kept);
     if (kept.length < page.notices.length) break;
-    if (page.nextCursor !== null && page.nextCursor === cursor) {
-      throw new Error(`The notices listing returned the cursor ${cursor} twice`);
+    if (page.nextCursor !== null) {
+      if (seen.has(page.nextCursor)) {
+        throw new Error(`The notices listing returned the cursor ${page.nextCursor} twice`);
+      }
+      seen.add(page.nextCursor);
     }
     cursor = page.nextCursor;
   } while (cursor);

@@ -94,6 +94,7 @@ describe('headless subscription login', () => {
     }
   });
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
     for (const k of ENV_KEYS) {
       if (saved[k] === undefined) delete process.env[k];
@@ -162,19 +163,31 @@ describe('headless subscription login', () => {
     expect(warn).toHaveBeenCalledWith(
       `commands.subscription.login.backupNeedsTwoFactor:${SERVER}/account/settings`
     );
-    warn.mockRestore();
   });
 
   it('mints once and stays quiet when the account has 2FA (control)', async () => {
     process.env.REDIACC_LOGIN_EMAIL = 'a@b.co';
     process.env.REDIACC_LOGIN_PASSWORD = PASSWORD;
+    process.env.REDIACC_LOGIN_TOTP = CODE;
     const warn = vi.spyOn(outputService, 'warn').mockImplementation(() => undefined);
-    const calls = stubServer({});
+    const calls = stubServer({ twoFactor: true });
     const input = await resolvePasswordLoginInput(false);
     await loginWithPassword(SERVER, input);
+    expect(calls.map((c) => c.url)).toContain('/auth/2fa/verify');
     expect(calls.filter((c) => c.url === '/api-tokens')).toHaveLength(1);
     expect(warn).not.toHaveBeenCalled();
-    warn.mockRestore();
+  });
+
+  it('a plain member on a no-2FA account falls back to the base scopes after the 2FA refusal', async () => {
+    process.env.REDIACC_LOGIN_EMAIL = 'a@b.co';
+    process.env.REDIACC_LOGIN_PASSWORD = PASSWORD;
+    const calls = stubServer({ backupNeedsTwoFactor: true, memberRefusedPrivileged: true });
+    const input = await resolvePasswordLoginInput(false);
+    await expect(loginWithPassword(SERVER, input)).resolves.toBe('rdt_minted');
+    const mints = calls.filter((c) => c.url === '/api-tokens');
+    expect(mints).toHaveLength(3);
+    expect(mints[2].body?.scopes).not.toContain('audit:write');
+    expect(mints[2].body?.scopes).toContain('config:enroll');
   });
 
   it('retries the mint without privileged scopes for a plain member', async () => {

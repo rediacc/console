@@ -731,6 +731,32 @@ describe('subscription command helpers', () => {
     expect(mockRefreshRepoLicenseIdentity).not.toHaveBeenCalled();
   });
 
+  it('refresh with both -m and --repo refuses first, even with --adopt-origin', async () => {
+    await expect(
+      executeSubscriptionRefresh({ machine: 'hostinger', repo: 'shop:test', adoptOrigin: true })
+    ).rejects.toThrow('commands.subscription.refresh.targetExclusive');
+    expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
+    expect(mockRefreshRepoLicenseIdentity).not.toHaveBeenCalled();
+  });
+
+  it('refresh -m routes to the machine batch and no flag routes to the account refresh', async () => {
+    await executeSubscriptionRefresh({ machine: 'hostinger' });
+    expect(mockRefreshRepoLicensesBatch).toHaveBeenCalledTimes(1);
+    expect(mockFetchLicenseReportOrThrow).not.toHaveBeenCalled();
+    mockRefreshRepoLicensesBatch.mockClear();
+    mockFetchLicenseReportOrThrow.mockResolvedValue({
+      planCode: 'COMMUNITY',
+      status: 'active',
+      machineSlots: { active: 0, max: 1, machines: [] },
+      repoLicenseIssuances: { used: 0, limit: 10 },
+      repoLicenses: { recent: [], totalTrackedRepos: 0 },
+    });
+    await executeSubscriptionRefresh({});
+    expect(mockFetchLicenseReportOrThrow).toHaveBeenCalledTimes(1);
+    expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
+    expect(mockRefreshRepoLicenseIdentity).not.toHaveBeenCalled();
+  });
+
   it('refresh --repo --adopt-origin hands the flag to the repo reissue; a plain --repo hands none', async () => {
     await executeSubscriptionRefresh({ repo: 'shop:test', adoptOrigin: true });
     expect(mockRefreshRepoLicenseIdentity.mock.calls[0][3]).toEqual(

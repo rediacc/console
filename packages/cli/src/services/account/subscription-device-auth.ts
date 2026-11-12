@@ -55,7 +55,13 @@ interface DeviceCodeLoginOptions {
 /** The verification URL with the registration email pre-filled (URL-encoded); the portal never trusts it as verified. */
 export function withEmailPrefill(verificationUrl: string, email: string | undefined): string {
   if (!email) return verificationUrl;
-  const url = new URL(verificationUrl);
+  let url: URL;
+  try {
+    url = new URL(verificationUrl);
+  } catch {
+    // A relative or malformed URL is printed as the server sent it; the pre-fill is a convenience.
+    return verificationUrl;
+  }
   url.searchParams.set('email', email);
   return url.toString();
 }

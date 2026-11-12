@@ -15,7 +15,8 @@ import { BAKED_IN_REGIONS } from '@rediacc/shared/regions';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const EU_ORIGIN = WK_ACCOUNT_DEFAULT_ORIGIN;
-const US_DOMAIN = BAKED_IN_REGIONS.find((r) => r.id === 'us')?.domain ?? '';
+const US_DOMAIN = BAKED_IN_REGIONS.find((r) => r.id === 'us')?.domain;
+if (!US_DOMAIN) throw new Error('regions.json lost its us region; the region-pick tests need it');
 const US_ORIGIN = `https://${US_DOMAIN}`;
 const EU_DOMAIN = new URL(EU_ORIGIN).host;
 
@@ -335,6 +336,18 @@ describe('free licence region pick', () => {
     expect(m.fetch.mock.calls[0][1].serverUrl).toBe(US_ORIGIN);
   });
 
+  it('a config file that does not exist yet still uses the pick for the run but writes nothing', async () => {
+    setTty(true);
+    m.exists.mockResolvedValue(false);
+    m.askChoice.mockResolvedValueOnce('free');
+    m.promptRegion.mockResolvedValue({ region: US, domain: US.domain });
+    await resolveLicenseAuthority(vi.fn());
+    expect(m.update).not.toHaveBeenCalled();
+    m.fetch.mockResolvedValue({ license: BLOB });
+    await issueFreeRepoLicense('m', MACHINE, 'key', { repositoryGuid: GUID, kind: 'grand' });
+    expect(m.fetch.mock.calls[0][1].serverUrl).toBe(US_ORIGIN);
+  });
+
   it('no terminal keeps the default and prints one line naming it', async () => {
     m.isAgent.mockReturnValue(true);
     await resolveLicenseAuthority(vi.fn());
@@ -413,7 +426,7 @@ describe('hidden bench licence region', () => {
     const offered = m.promptRegion.mock.calls[0][0] as { id: string }[];
     expect(offered.length).toBeGreaterThan(0);
     expect(offered.map((r) => r.id)).not.toContain('bench');
-    expect(BAKED_IN_REGIONS.map((r) => r.id)).toContain('us');
+    expect(BAKED_IN_REGIONS.map((r) => r.id)).not.toContain('bench');
   });
 });
 

@@ -34,7 +34,10 @@ const mockConfig = vi.hoisted(() => ({ value: null as unknown }));
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getTeam: vi.fn().mockResolvedValue(undefined),
-    getCurrent: () => Promise.resolve(mockConfig.value),
+    getCurrent: () =>
+      mockConfig.value instanceof Error
+        ? Promise.reject(mockConfig.value)
+        : Promise.resolve(mockConfig.value),
   },
 }));
 
@@ -244,6 +247,12 @@ describe('subscription status names every licence', () => {
   it('prints no licence section when the account tracks no licence', async () => {
     mockReport.mockResolvedValue(statusReport([]));
     await executeSubscriptionStatus();
+    expect(reports.join('\n')).not.toContain('licencesHeader');
+  });
+
+  it('a config that cannot be read fails the status instead of printing it without names', async () => {
+    mockConfig.value = new Error('config unreadable');
+    await expect(executeSubscriptionStatus()).rejects.toThrow('config unreadable');
     expect(reports.join('\n')).not.toContain('licencesHeader');
   });
 });

@@ -8,6 +8,7 @@
  */
 
 import { WK_ACCOUNT_DEFAULT_ORIGIN } from '@rediacc/shared/config/well-known.generated';
+import { BAKED_IN_REGIONS } from '@rediacc/shared/regions';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { SFTPClient } from '../../../remote/sftp/index.js';
 import type { MachineConfig } from '../../../types/index.js';
@@ -15,6 +16,11 @@ import type { MachineConfig } from '../../../types/index.js';
 const REPO_GUID = '550e8400-e29b-41d4-a716-446655440000';
 const MACHINE_ID = '3a62c0cf8d150bed7ca40e9d6de237eb26b96dee26d7a20eb866e09bd1aca09b';
 const FOREIGN_URL = 'https://eu.example.invalid/account/api/v1/licenses/renew';
+const OTHER_REGION = BAKED_IN_REGIONS.find(
+  (r) => `https://${r.domain}` !== WK_ACCOUNT_DEFAULT_ORIGIN
+);
+if (!OTHER_REGION) throw new Error('regions.json needs a second production region for this test');
+const OTHER_REGION_URL = `https://${OTHER_REGION.domain}/account/api/v1/licenses/renew`;
 const SAME_URL = `${WK_ACCOUNT_DEFAULT_ORIGIN}/account/api/v1/licenses/renew`;
 
 const { mockExecute } = vi.hoisted(() => ({ mockExecute: vi.fn() }));
@@ -49,7 +55,10 @@ const { refreshRepoLicenseIdentity } = await import('../license.js');
 
 const machine: MachineConfig = { ip: '127.0.0.1', user: 'root', port: 22 };
 
-function fakeMachine(currentRenewalUrl: string | undefined): SFTPClient {
+function fakeMachine(
+  currentRenewalUrl: string | undefined,
+  currentSubscriptionId?: string
+): SFTPClient {
   mockExecute.mockImplementation((opts: { commandKind: { name: string } }) =>
     Promise.resolve({
       success: true,
@@ -62,6 +71,7 @@ function fakeMachine(currentRenewalUrl: string | undefined): SFTPClient {
                 luksUuid: 'luks-1',
                 requestedSizeGb: 2,
                 ...(currentRenewalUrl !== undefined && { currentRenewalUrl }),
+                ...(currentSubscriptionId !== undefined && { currentSubscriptionId }),
               },
             ])
           : '[]',
@@ -124,5 +134,18 @@ describe('refreshRepoLicenseIdentity and the licence origin', () => {
   it('a licence with no renewalUrl names no origin and still reissues', async () => {
     await expect(run(fakeMachine(undefined))).resolves.toBe(true);
     expect(mockAccountServerFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('a FREE licence from another production region reissues without the flag', async () => {
+    await expect(run(fakeMachine(OTHER_REGION_URL, 'free:0123abcd'))).resolves.toBe(true);
+    expect(mockAccountServerFetch).toHaveBeenCalledTimes(1);
+    expect(names()).toContain('license-write');
+  });
+
+  it('control: a paid licence from that same region is still refused', async () => {
+    await expect(run(fakeMachine(OTHER_REGION_URL, 'sub_paid_1'))).rejects.toThrow(
+      'errors.license.foreignOriginSkipped'
+    );
+    expect(mockAccountServerFetch).not.toHaveBeenCalled();
   });
 });

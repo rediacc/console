@@ -263,7 +263,6 @@ export function reposWithForeignLicenseOrigin(
   return guids;
 }
 
-// `identity_mismatch` joins it: after `backup snapshot --accept-identity-change` the image's UUID is new, an unexpired licence answers `unchanged` to a plain refresh, and the repository stays unmountable until the refresh window opens. Only a forced GUID is reissued.
 /** The prefix of a FREE licence's subscription id (private/account free-license.service.ts). */
 const FREE_SUBSCRIPTION_ID_PREFIX = 'free:';
 
@@ -299,8 +298,9 @@ export function freeLicensesToAdopt(
   return guids;
 }
 
+// `identity_mismatch` joins `machine_mismatch`: after `backup snapshot --accept-identity-change` the image's UUID is new, an unexpired licence answers `unchanged` to a plain refresh, and the repository stays unmountable until the refresh window opens. Only a forced GUID is reissued.
 // machine_mismatch force-reissues (the documented remedy the guidance points users at). invalid_signature no longer triggers a reissue: with the per-signer license layout a foreign-universe file is simply never selected, so a genuine invalid_signature means the machine's OWN key can't validate its own file, that must fail fast, not loop reissuing (matches subscription-licensing.md).
-// A foreign-origin licence joins only under `adoptOrigin`: its dates are fresh, so the server would answer `unchanged` unless the request drops them.
+// A foreign-origin licence joins only when `adopted` names it (all of them under `adoptOrigin`, else just the FREE ones freeLicensesToAdopt moves): its dates are fresh, so the server would answer `unchanged` unless the request drops them.
 function forceReissueSet(
   licenseStatuses: { repositoryGuid: string; status: string }[],
   foreignOrigin: Set<string>,
@@ -311,7 +311,7 @@ function forceReissueSet(
       .filter((s) => s.status === 'machine_mismatch' || s.status === 'identity_mismatch')
       .map((s) => s.repositoryGuid)
   );
-  // Without it a foreign-origin licence is skipped whole, so it is no pending reissue either, whatever its status.
+  // A foreign-origin licence that is not adopted is skipped whole, so it is no pending reissue either, whatever its status.
   for (const guid of foreignOrigin) {
     if (adopted.has(guid)) guids.add(guid);
     else guids.delete(guid);
@@ -339,6 +339,10 @@ function skipForeignOrigin<T extends RemoteRepoLicenseScanEntry>(
   const warned = new Set<string>();
   const kept = repos.filter((repo) => {
     if (!foreignOrigin.has(repo.repositoryGuid)) return true;
+    // Entry by entry: a same-origin copy of a guid (another datastore) is kept beside its foreign sibling.
+    if (!repo.currentRenewalUrl || renewalOrigin(repo.currentRenewalUrl) === configOrigin) {
+      return true;
+    }
     if (warned.has(repo.repositoryGuid)) return false;
     warned.add(repo.repositoryGuid);
     const vars = {
