@@ -88,7 +88,7 @@ def test_an_insteadof_rewrite_is_a_doubt(world):
     _git(
         world["scratch"],
         "config",
-        "url.%s/%s.git.insteadOf" % WK.GH_REPO,
+        "url.%s/%s.git.insteadOf" % (WK.GH_ORIGIN, WK.GH_REPO),
         str(world["bare"]),
     )
     assert _judge(world, "git push origin main") is False
