@@ -4,7 +4,7 @@
  * The list types the component's `pageKey` prop, so a page passing a key that is not here fails
  * the type check instead of rendering a bare key at build time.
  */
-const LEGAL_PAGES = [
+export const LEGAL_PAGES = [
   'termsOfService',
   'privacyPolicy',
   'acceptableUsePolicy',
