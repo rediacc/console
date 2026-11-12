@@ -222,7 +222,9 @@ def cleanup_licence(
 ) -> None:
     """Delete the cert, notice, reminder-log and sales-mail rows of `email`'s user. DrillError when any is still present."""
     found = rows(q("SELECT id FROM users WHERE email = $e", e=sql_literal(email)))
-    targets = [(str(u["id"]), None) for u in found] or [(NO_USER_ID, "no user row")]
+    targets: list[tuple[str, str | None]] = [(str(u["id"]), None) for u in found] or [
+        (NO_USER_ID, "no user row")
+    ]
     for user_id, note in targets:
         if not UUID.match(user_id):
             raise DrillError("refusing a non-UUID user id %r" % user_id)

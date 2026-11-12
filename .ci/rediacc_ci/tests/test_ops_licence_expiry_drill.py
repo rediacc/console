@@ -317,7 +317,7 @@ def test_cleanup_runs_after_a_failed_step_and_scopes_the_sales_delete(capsys):
     assert "created_at >=" in sales_delete[0]
 
 
-def test_a_leftover_after_the_delete_fails_the_cleanup(capsys):
+def test_a_leftover_after_the_delete_fails_the_cleanup(capsys, monkeypatch):
     fake = Fake()
     real = fake.rows
 
@@ -326,7 +326,7 @@ def test_a_leftover_after_the_delete_fails_the_cleanup(capsys):
             return []
         return real(sql)
 
-    fake.rows = sticky
+    monkeypatch.setattr(fake, "rows", sticky)
     # the sticky fake keeps the cert on delete, so the proof read finds it
     fake.cert = True
     rc = led.run(False, fake.deps(), env={"SALES_NOTIFY_EMAIL": SALES})
@@ -341,9 +341,9 @@ def test_cleanup_refuses_a_non_uuid_id():
         led.cleanup_sql("a@b.c", SALES, USER, ["not-a-uuid"], led.Planted(CERT), "2026")
 
 
-def test_a_409_register_does_not_clean_up_the_foreign_account(capsys):
+def test_a_409_register_does_not_clean_up_the_foreign_account(capsys, monkeypatch):
     fake = Fake()
-    fake.http = lambda _path, _body: (409, {})
+    monkeypatch.setattr(fake, "http", lambda _path, _body: (409, {}))
     rc = led.run(False, fake.deps(), env={"SALES_NOTIFY_EMAIL": SALES})
     out = capsys.readouterr().out
     assert rc == 1

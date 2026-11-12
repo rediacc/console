@@ -798,6 +798,11 @@
       "REDIACC_BWS_PROFILES",
       "XDG_CONFIG_HOME"
     ],
+    ".ci/rediacc_ci/ops/licence_expiry_drill.py": [
+      "REDIACC_BWS_PROFILES",
+      "ROOT_EMAIL",
+      "SALES_NOTIFY_EMAIL"
+    ],
     ".ci/rediacc_ci/ops/linode_cluster_validation.py": [
       "CLUSTER_NAME",
       "CLUSTER_POOLS",
