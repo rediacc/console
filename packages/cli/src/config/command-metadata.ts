@@ -646,6 +646,26 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpExcludeReason: 'Runs the executor daemon in the foreground until SIGINT; it never returns.',
   },
 
+  // rdc server (PLAN-enterprise-tenants C7): status is a read; the rest install, restart or print the server's keys.
+  'server status': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  'server install': {
+    mcpExcludeReason:
+      'Long interactive install that registers machines, mints a licence and prints a one-time key bundle; use the CLI.',
+  },
+  'server upgrade': {
+    mcpExcludeReason: 'Forks, replaces the image and restarts the account server; use the CLI.',
+  },
+  'server backup': {
+    mcpExcludeReason:
+      "Prints the server's private keys; they must not land in an agent transcript.",
+  },
+  'server licence': {
+    mcpExcludeReason:
+      'Mints a delegation certificate and restarts the account server; use the CLI.',
+  },
+
   'config set': {
     mcpExcludeReason: 'Config value mutation: use CLI directly',
   },

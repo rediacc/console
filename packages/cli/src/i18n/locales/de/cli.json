@@ -2528,6 +2528,176 @@
       "optionPort": "Port, auf dem gelauscht werden soll",
       "summary": "Als Executor für Remote-Clients ausführen"
     },
+    "server": {
+      "summary": "Den selbst gehosteten Rediacc-Account-Server installieren und betreiben",
+      "description": "Den selbst gehosteten Rediacc-Account-Server (Elite) als Repository auf einer Maschine installieren, anschließend prüfen, aktualisieren, sichern und lizenzieren. Nicht zu verwechseln mit `rdc serve`, das diese CLI als Executor ausführt.",
+      "domainArgument": "Öffentliche Domain des installierten Servers",
+      "optionMachine": "Maschine, auf der der Server läuft, falls dieses Gerät keinen Installationseintrag für die Domain hat",
+      "optionRepo": "Repository, in dem der Server läuft (Standard: elite)",
+      "install": {
+        "summary": "Den Account-Server auf einer Maschine installieren",
+        "description": "Den selbst gehosteten Account-Server auf einer vorhandenen Maschine installieren: Maschine prüfen, renet einrichten, falls es fehlt, auf DNS warten, TLS konfigurieren, das Repository anlegen, dessen Schlüssel auf der Maschine erzeugen, lizenzieren, starten und das Owner-Konto anlegen. Jeder Wert hat ein Flag; im Terminal wird ein fehlender Wert abgefragt. Ein erneuter Lauf überspringt bereits erledigte Schritte.",
+        "machineArgument": "Konfigurierte Maschine für die Installation (oder eine mit --ip und --user registrieren)",
+        "optionIp": "Adresse eines vorhandenen Servers oder LAN-Geräts, das zuerst registriert wird",
+        "optionUser": "SSH-Benutzer auf dieser Maschine",
+        "optionPort": "SSH-Port auf dieser Maschine (Standard: 22)",
+        "optionName": "Name, unter dem die Maschine registriert wird (Standard: server-<ip>)",
+        "optionDomain": "Öffentliche Domain des Servers, zum Beispiel accounts.example.com",
+        "optionStoreDomain": "Öffentliche Domain des zugehörigen Backup-Speichers (Standard: <name>-store.<Rest der Domain>)",
+        "optionRepo": "Name des Repositorys (Standard: elite)",
+        "optionSize": "Größe des Repositorys (Standard: 10G)",
+        "optionOwner": "E-Mail-Adresse des Owner-Kontos, das bei der Installation angelegt wird (Standard: das angemeldete Konto)",
+        "optionTls": "Bezug des Zertifikats: letsencrypt (HTTP-01), cloudflare (DNS-01) oder byo (ein vorhandenes Zertifikat)",
+        "optionCfToken": "Cloudflare-API-Token für DNS-01 (mit --tls cloudflare)",
+        "optionCertEmail": "E-Mail-Adresse, an die Let's Encrypt Ablaufhinweise sendet (Standard: der Owner)",
+        "optionTlsCert": "Zertifikatsdatei im PEM-Format (mit --tls byo), die beide Domains abdeckt",
+        "optionTlsKey": "Datei mit dem privaten Schlüssel dieses Zertifikats (mit --tls byo)",
+        "optionTlsCa": "CA-Zertifikat, auf das das Serverzertifikat zurückgeht, für die Integritätsprüfung",
+        "optionLicence": "auto: ein Zertifikat des angemeldeten Kontos, sonst die kostenlose Stufe; free: mit der kostenlosen Stufe starten",
+        "optionCert": "Delegationszertifikat für eine Offline-Installation; es muss den auf der Maschine erzeugten Schlüssel benennen",
+        "optionImage": "Auszuführendes Server-Image (Standard: ghcr.io/rediacc/server:latest)",
+        "optionImageFile": "Gespeichertes Image-Archiv (docker save), das statt eines Pulls übertragen wird",
+        "optionLocalImage": "Das --image aus dem lokalen Docker speichern und übertragen, statt es zu pullen",
+        "optionNoDnsWait": "Die DNS-Einträge ausgeben, ohne auf ihre Auflösung zu warten",
+        "optionBwsProject": "Die erzeugten Schlüssel zusätzlich in dieses Bitwarden-Secrets-Manager-Projekt kopieren; ohne diese Angabe verlässt kein Schlüssel die Maschine",
+        "optionRotate": "Mit --bws-project einen abweichenden gespeicherten Wert ersetzen, statt abzubrechen",
+        "optionYes": "Nichts abfragen: Standardwerte übernehmen und bei fehlendem Wert abbrechen",
+        "help": "Schritte in der Reihenfolge (jeder wird festgehalten, ein erneuter Lauf überspringt Erledigtes):\n  preflight  sudo -n, Architektur, Ports 80 und 443, Speicherplatz und Zeitabweichung\n  setup      rdc machine setup, falls renet fehlt\n  dns        die A- und AAAA-Einträge ausgeben, dann warten, bis beide Domains auf die Maschine auflösen\n  tls        Let's Encrypt, Cloudflare DNS-01 oder ein vorhandenes Zertifikat\n  repo       das Repository anlegen und das elite-Template anwenden\n  keys       alle Schlüssel auf der Maschine in die secrets.env des Repositorys erzeugen\n  licence    --cert, sonst ein Zertifikat des angemeldeten Kontos, sonst die kostenlose Stufe\n  image      das Image auf der Maschine pullen oder --image-file übertragen\n  up         den Server starten und auf https://<domain>/health warten\n  owner      das Owner-Konto anlegen\n\nEine noch nicht registrierte Maschine wird mit --ip und --user hinzugefügt. Eine Cloud-VM wird zuvor mit rdc machine provision erstellt.\nDie DNS-Einträge werden ausgegeben und nie in eine Kundenzone geschrieben.\nIm Terminal endet die Installation mit einem einmaligen Recovery-Bundle. Es an einem sicheren Ort aufbewahren: Es wird nie protokolliert und ist nie Teil von --output json; rdc server backup gibt es später erneut aus.",
+        "step": "Schritt: {{step}}",
+        "skipped": "Schritt {{step}}: bereits erledigt, übersprungen",
+        "done": "Der Account-Server läuft unter https://{{domain}}",
+        "freeTier": "{{domain}} läuft auf der kostenlosen Stufe. `rdc server licence {{domain}}` ausführen, um ihn zu lizenzieren.",
+        "backupHint": "Das Recovery-Bundle mit `rdc server backup {{domain}} --out <file>` sichern. Das erste Passwort des Owners steht in {{ownerFile}}.",
+        "examples": {
+          "brought": "Einen vorhandenen Server über seine Adresse registrieren und darauf installieren.",
+          "configured": "Ohne Rückfragen auf einer konfigurierten Maschine installieren.",
+          "lan": "Auf einer LAN-Maschine mit vorhandenem Zertifikat auf der kostenlosen Stufe installieren."
+        }
+      },
+      "status": {
+        "description": "Zustand, Stufe, Zertifikat und Image eines installierten Servers anzeigen"
+      },
+      "backup": {
+        "description": "Das Recovery-Bundle (die Schlüssel) eines installierten Servers ausgeben oder in eine Datei schreiben",
+        "optionOut": "Das Bundle in diese Datei schreiben (Modus 0600), statt nach stdout",
+        "written": "Recovery-Bundle nach {{file}} geschrieben (Modus 0600)",
+        "examples": {
+          "out": "Das Recovery-Bundle in einer Datei speichern, die nur ihr Besitzer lesen kann."
+        }
+      },
+      "upgrade": {
+        "description": "Einen installierten Server aktualisieren: sein Repository als Rollback-Punkt forken, das neue Image bereitstellen, das Template erneut anwenden, wenn das integrierte neuer ist, und neu starten",
+        "confirm": "Den Account-Server unter {{domain}} aktualisieren?",
+        "forking": "Das Repository wird als Rollback-Punkt {{tag}} geforkt",
+        "template": "Das elite-Template wird erneut angewendet (Version {{from}} auf {{to}})",
+        "templateCurrent": "Das bereitgestellte Template (Version {{version}}) ist aktuell",
+        "done": "{{domain}} aktualisiert. Rollback-Punkt: {{rollback}}"
+      },
+      "licence": {
+        "description": "Einen Server der kostenlosen Stufe auf ein Delegationszertifikat des angemeldeten Kontos oder aus --cert umstellen",
+        "done": "{{domain}} ist unter dem Abonnement {{subscription}} lizenziert",
+        "certUnreadable": "Die Zertifikatsdatei {{file}} lässt sich nicht lesen",
+        "certInvalid": "{{file}} ist kein verwendbares Delegationszertifikat: {{error}}",
+        "keyMismatch": "{{file}} wurde für einen anderen Schlüssel ausgestellt als den auf der Maschine erzeugten. Ein Zertifikat für den Schlüssel der Maschine ausstellen.",
+        "issuedKeyMismatch": "Der Account-Server hat ein Zertifikat für einen anderen Schlüssel ausgestellt als den auf der Maschine erzeugten",
+        "noLogin": "Kein angemeldetes Konto: Der Server startet auf der kostenlosen Stufe",
+        "planDisallows": "Das Abonnement kann kein Delegationszertifikat enthalten ({{error}}); der Server startet auf der kostenlosen Stufe",
+        "otherKey": "Das Abonnement enthält bereits ein aktives Delegationszertifikat für einen anderen Schlüssel ({{certId}}). Es im Portal widerrufen und die Installation erneut ausführen. {{error}}",
+        "missingScope": "Mit dieser Anmeldung lässt sich kein Delegationszertifikat ausstellen. `rdc subscription login` erneut als Owner oder Admin mit 2FA ausführen oder mit --licence free installieren.",
+        "offerFree": "Den Server stattdessen auf der kostenlosen Stufe starten?",
+        "noCertForUpgrade": "Kein Delegationszertifikat verfügbar: mit `rdc subscription login` als Owner oder Admin mit 2FA anmelden oder --cert <file> angeben",
+        "stillFree": "{{domain}} meldet sich nach dem Neustart weiterhin als kostenlose Stufe",
+        "freeProbeHoldsCert": "Der Server meldet, ein Zertifikat zu halten, obwohl keines installiert wurde"
+      },
+      "bundle": {
+        "header": "Recovery-Bundle für {{domain}}. Offline aufbewahren; es stellt die Schlüssel des Servers wieder her.",
+        "once": "Dieses Recovery-Bundle wird nur einmal angezeigt. Jetzt an einem sicheren Ort speichern:",
+        "owner": "Owner-Konto: {{email}}, erstes Passwort: {{password}}"
+      },
+      "bws": {
+        "skipped": "Kein --bws-project: Die Schlüssel bleiben nur auf der Maschine",
+        "done": "Schlüssel in Bitwarden Secrets Manager gesichert: {{created}} erstellt, {{unchanged}} unverändert, {{rotated}} ersetzt",
+        "noToken": "Kein Bitwarden-Secrets-Manager-Token: BWS_ACCESS_TOKEN setzen oder ihn in die Datei bws-access-token im Konfigurationsverzeichnis schreiben",
+        "listFailed": "bws secret list fehlgeschlagen",
+        "noWriter": "--bws-project benötigt einen Console-Checkout: Der Schreibvorgang läuft über private/account/scripts/rotation/bws-write.ts, das den Wert von der Kommandozeile fernhält",
+        "writeFailed": "Schreiben von {{key}} in Bitwarden Secrets Manager fehlgeschlagen",
+        "readFailed": "Lesen der Schlüssel von der Maschine fehlgeschlagen",
+        "badName": "Ein nicht opaker Speichername wird abgelehnt",
+        "differs": "{{key}} ist bereits mit einem anderen Wert gespeichert; mit --rotate ersetzen"
+      },
+      "dns": {
+        "create": "Diese DNS-Einträge beim DNS-Anbieter anlegen:",
+        "waiting": "Warten, bis die Einträge aufgelöst werden...",
+        "resolved": "DNS wird auf die Maschine aufgelöst",
+        "notWaiting": "Es wird nicht auf DNS gewartet",
+        "timeout": "Diese Einträge werden weiterhin nicht aufgelöst: {{records}}",
+        "resolvesElsewhere": "{{name}} wird zu {{found}} aufgelöst, nicht zu {{want}}; zuerst den Eintrag korrigieren",
+        "written": "{{type}} {{name}} -> {{value}} geschrieben"
+      },
+      "health": {
+        "failed": "https://{{domain}}/health antwortete mit {{status}}, nicht mit 200",
+        "noAnswer": "keine Antwort",
+        "certMismatch": "Das Zertifikat für {{domain}} deckt {{sans}} ab, nicht {{domain}}"
+      },
+      "image": {
+        "pulling": "{{image}} wird auf der Maschine gepullt",
+        "pullFailed": "Pull von {{image}} fehlgeschlagen: {{detail}}",
+        "saving": "{{image}} wird aus dem lokalen Docker gespeichert",
+        "saveFailed": "docker save {{image}} fehlgeschlagen"
+      },
+      "owner": {
+        "stepFailed": "{{step}} antwortete mit {{status}} {{error}}",
+        "raced": "Das Abonnement {{box}} des Servers ist nicht das des Zertifikats {{cert}}: Ein anderes Konto hat sich zuerst registriert"
+      },
+      "preflight": {
+        "refused": "{{machine}} ist nicht bereit:",
+        "noAnswer": "{{machine}} hat den Preflight per SSH nicht beantwortet",
+        "noSudo": "sudo -n schlägt auf {{machine}} fehl; der SSH-Benutzer braucht passwortloses sudo",
+        "arch": "Die Architektur {{arch}} wird nicht unterstützt (x86_64 oder aarch64)",
+        "portBusy": "Port {{port}} wird von {{holder}} belegt",
+        "disk": "{{free}} GiB frei im Datenspeicher, {{need}} GiB erforderlich",
+        "clock": "Die Uhr der Maschine weicht um {{skew}} s ab (höchstens {{max}} s); die Zeitsynchronisierung aktivieren"
+      },
+      "tls": {
+        "byoNeedsPair": "--tls byo benötigt --tls-cert und --tls-key",
+        "byoFailed": "Installation des Zertifikats für {{host}} fehlgeschlagen: {{detail}}",
+        "byoInstalled": "Zertifikat für {{host}} installiert",
+        "cloudflareNeedsToken": "--tls cloudflare benötigt --cf-token"
+      },
+      "prompts": {
+        "machine": "Maschine für die Installation",
+        "machineAddExisting": "Vorhandener Server oder LAN-Gerät (IP und Benutzer)",
+        "provisionHint": "Eine Cloud-VM wird zuvor mit rdc machine provision erstellt.",
+        "machineIp": "IP-Adresse",
+        "machineUser": "SSH-Benutzer",
+        "machinePort": "SSH-Port",
+        "machineName": "Name dieser Maschine",
+        "domain": "Öffentliche Domain des Servers",
+        "storeDomain": "Öffentliche Domain des zugehörigen Backup-Speichers",
+        "tls": "Zertifikat",
+        "tlsLetsencrypt": "Let's Encrypt (die Maschine antwortet auf Port 80)",
+        "tlsCloudflare": "Cloudflare DNS (API-Token)",
+        "tlsByo": "Ein vorhandenes Zertifikat samt Schlüssel",
+        "cfToken": "Cloudflare-API-Token",
+        "owner": "E-Mail-Adresse des Owner-Kontos",
+        "required": "Ein Wert ist erforderlich"
+      },
+      "errors": {
+        "needsTTY": "{{flag}} ist erforderlich, wenn kein Terminal vorhanden ist",
+        "machineUnknown": "Die Maschine {{machine}} ist nicht in dieser Konfiguration. Zum Registrieren --ip und --user angeben.",
+        "machineNameTaken": "Eine Maschine namens {{machine}} ist bereits unter {{ip}} registriert; einen anderen --name wählen",
+        "otherMachine": "{{domain}} wurde von diesem Gerät aus auf {{machine}} installiert",
+        "repoExists": "Das Repository {{repo}} existiert bereits auf {{machine}} und wurde nicht von dieser Installation angelegt; --repo <name> angeben",
+        "repoUnknown": "Das Repository {{repo}} ist nicht in dieser Konfiguration",
+        "noRecord": "Kein Installationseintrag für {{domain}} auf diesem Gerät; --machine angeben (und --repo, wenn es nicht elite ist)",
+        "noDaemon": "Für das Repository {{repo}} ist noch kein Docker-Daemon verzeichnet",
+        "keygenNoKey": "Die Maschine hat keinen öffentlichen Ed25519-Schlüssel gemeldet",
+        "bundleIncomplete": "In secrets.env auf der Maschine fehlen {{keys}}",
+        "boxScriptFailed": "Der Befehl auf {{machine}} endete mit {{code}}: {{detail}}",
+        "rdcFailed": "{{command}} fehlgeschlagen (Exit-Code {{code}})",
+        "certAndFree": "--cert und --licence free lassen sich nicht kombinieren"
+      }
+    },
     "shortcuts": {
       "cancel": {
         "description": "Eine Aufgabe abbrechen (Kurzbefehl für: queue cancel)"

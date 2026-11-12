@@ -2528,6 +2528,176 @@
       "optionPort": "监听端口",
       "summary": "作为执行器运行，供远程客户端使用"
     },
+    "server": {
+      "summary": "安装并运行自托管的 Rediacc 账户服务器",
+      "description": "将自托管的 Rediacc 账户服务器（Elite）作为仓库安装到机器上，并支持检查、升级、备份和授权。请勿与 `rdc serve` 混淆，后者将此 CLI 作为执行器运行。",
+      "domainArgument": "已安装服务器的公开域名",
+      "optionMachine": "服务器所在的机器（当此设备没有该域名的安装记录时）",
+      "optionRepo": "服务器运行所在的仓库（默认：elite）",
+      "install": {
+        "summary": "在机器上安装账户服务器",
+        "description": "在现有机器上安装自托管账户服务器：检查机器，缺少 renet 时进行设置，等待 DNS，配置 TLS，创建仓库，在机器上生成密钥，授权，启动，并创建所有者账户。每个值都有对应的标志，在终端中缺失的值会被询问。重新运行会跳过已完成的步骤。",
+        "machineArgument": "要安装的已配置机器（或使用 --ip 和 --user 注册一台）",
+        "optionIp": "要先注册的现有服务器或 LAN 设备的地址",
+        "optionUser": "该机器上的 SSH 用户",
+        "optionPort": "该机器上的 SSH 端口（默认：22）",
+        "optionName": "注册该机器时使用的名称（默认：server-<ip>）",
+        "optionDomain": "服务器的公开域名，例如 accounts.example.com",
+        "optionStoreDomain": "其备份存储的公开域名（默认：<name>-store.<域名其余部分>）",
+        "optionRepo": "仓库名称（默认：elite）",
+        "optionSize": "仓库大小（默认：10G）",
+        "optionOwner": "安装期间创建的所有者账户的邮箱（默认：当前登录的账户）",
+        "optionTls": "获取证书的方式：letsencrypt（HTTP-01）、cloudflare（DNS-01）或 byo（使用现有证书）",
+        "optionCfToken": "用于 DNS-01 的 Cloudflare API 令牌（配合 --tls cloudflare）",
+        "optionCertEmail": "Let's Encrypt 发送到期通知的邮箱（默认：所有者）",
+        "optionTlsCert": "PEM 格式的证书文件（配合 --tls byo），需覆盖两个域名",
+        "optionTlsKey": "该证书的私钥文件（配合 --tls byo）",
+        "optionTlsCa": "服务器证书所链接的 CA 证书，用于健康检查",
+        "optionLicence": "auto：使用当前登录账户的证书，没有则使用免费版；free：以免费版启动",
+        "optionCert": "用于离线安装的委托证书文件，必须指明机器上生成的密钥",
+        "optionImage": "要运行的服务器镜像（默认：ghcr.io/rediacc/server:latest）",
+        "optionImageFile": "已保存的镜像归档（docker save），用于传输而不是拉取",
+        "optionLocalImage": "从本地 Docker 保存 --image 并传输，而不是拉取",
+        "optionNoDnsWait": "只打印 DNS 记录，不等待其解析生效",
+        "optionBwsProject": "同时将生成的密钥复制到此 Bitwarden Secrets Manager 项目；不指定则密钥不会离开机器",
+        "optionRotate": "配合 --bws-project，替换值不同的已存储项，而不是拒绝",
+        "optionYes": "不询问任何内容：采用默认值，缺失的值直接拒绝",
+        "help": "步骤，按顺序（每一步都会被记录，重新运行时会跳过已完成的步骤）：\n  preflight  sudo -n、架构、80 和 443 端口、磁盘空间和时钟偏差\n  setup      缺少 renet 时执行 rdc machine setup\n  dns        打印 A 和 AAAA 记录，然后等待两个域名都解析到该机器\n  tls        Let's Encrypt、Cloudflare DNS-01 或现有证书\n  repo       创建仓库并应用 elite 模板\n  keys       在机器上生成所有密钥，写入仓库的 secrets.env\n  licence    --cert，否则使用当前登录账户的证书，再否则使用免费版\n  image      在机器上拉取镜像，或传输 --image-file\n  up         启动服务器并等待 https://<domain>/health\n  owner      创建所有者账户\n\n尚未注册的机器可用 --ip 和 --user 添加。云 VM 需先用 rdc machine provision 创建。\nDNS 记录只会打印，绝不会写入客户的区域。\n在终端中，安装结束时会显示一次性的恢复包。请妥善保存：它不会被记录到日志，也不会出现在 --output json 中，之后可用 rdc server backup 再次打印。",
+        "step": "步骤：{{step}}",
+        "skipped": "步骤 {{step}}：此前已完成，已跳过",
+        "done": "账户服务器已在 https://{{domain}} 运行",
+        "freeTier": "{{domain}} 正在以免费版运行。运行 `rdc server licence {{domain}}` 为其授权。",
+        "backupHint": "使用 `rdc server backup {{domain}} --out <file>` 保存恢复包。所有者的初始密码在 {{ownerFile}} 中。",
+        "examples": {
+          "brought": "按地址注册现有服务器并在其上安装。",
+          "configured": "在已配置的机器上无提示安装。",
+          "lan": "使用现有证书，在 LAN 机器上以免费版安装。"
+        }
+      },
+      "status": {
+        "description": "显示已安装服务器的健康状况、版本等级、证书和镜像"
+      },
+      "backup": {
+        "description": "打印已安装服务器的恢复包（密钥），或将其写入文件",
+        "optionOut": "将恢复包写入此文件（权限 0600），而不是 stdout",
+        "written": "恢复包已写入 {{file}}（权限 0600）",
+        "examples": {
+          "out": "将恢复包保存到仅所有者可读的文件。"
+        }
+      },
+      "upgrade": {
+        "description": "升级已安装的服务器：将其仓库派生为回滚点，放置新镜像，内置模板较新时重新应用模板，然后重启",
+        "confirm": "要升级 {{domain}} 上的账户服务器吗？",
+        "forking": "正在将仓库派生为回滚点 {{tag}}",
+        "template": "正在重新应用 elite 模板（版本 {{from}} 到 {{to}}）",
+        "templateCurrent": "已部署的模板（版本 {{version}}）已是最新",
+        "done": "{{domain}} 已升级。回滚点：{{rollback}}"
+      },
+      "licence": {
+        "description": "将免费版服务器切换为来自当前登录账户或 --cert 的委托证书",
+        "done": "{{domain}} 已通过订阅 {{subscription}} 获得授权",
+        "certUnreadable": "无法读取证书文件 {{file}}",
+        "certInvalid": "{{file}} 不是可用的委托证书：{{error}}",
+        "keyMismatch": "{{file}} 是为另一个密钥签发的，并非机器上生成的密钥。请为该机器的密钥签发证书。",
+        "issuedKeyMismatch": "账户服务器签发的证书对应另一个密钥，并非机器上生成的密钥",
+        "noLogin": "没有已登录的账户：服务器将以免费版启动",
+        "planDisallows": "该订阅无法持有委托证书（{{error}}）；服务器将以免费版启动",
+        "otherKey": "该订阅已持有针对另一个密钥的有效委托证书（{{certId}}）。请在门户中吊销，然后重新运行安装。{{error}}",
+        "missingScope": "此登录无法签发委托证书。请以所有者或管理员身份并通过 2FA 重新运行 `rdc subscription login`，或使用 --licence free 安装。",
+        "offerFree": "是否改为以免费版启动服务器？",
+        "noCertForUpgrade": "没有可用的委托证书：请以所有者或管理员身份并通过 2FA 使用 `rdc subscription login` 登录，或传入 --cert <file>",
+        "stillFree": "重启后 {{domain}} 仍以免费版响应",
+        "freeProbeHoldsCert": "尽管未安装任何证书，服务器仍响应为持有证书"
+      },
+      "bundle": {
+        "header": "{{domain}} 的恢复包。请离线保存；它可恢复服务器的密钥。",
+        "once": "此恢复包仅显示一次。请立即妥善保存：",
+        "owner": "所有者账户：{{email}}，初始密码：{{password}}"
+      },
+      "bws": {
+        "skipped": "未指定 --bws-project：密钥仅保留在机器上",
+        "done": "密钥已备份到 Bitwarden Secrets Manager：新建 {{created}} 个，未变 {{unchanged}} 个，替换 {{rotated}} 个",
+        "noToken": "没有 Bitwarden Secrets Manager 令牌：请设置 BWS_ACCESS_TOKEN，或将其写入配置目录中的 bws-access-token 文件",
+        "listFailed": "bws secret list 失败",
+        "noWriter": "--bws-project 需要 console 检出：写入经由 private/account/scripts/rotation/bws-write.ts 完成，以避免值出现在命令行中",
+        "writeFailed": "将 {{key}} 写入 Bitwarden Secrets Manager 失败",
+        "readFailed": "从机器读取密钥失败",
+        "badName": "拒绝非不透明的存储名称",
+        "differs": "{{key}} 已用不同的值存储；传入 --rotate 以替换"
+      },
+      "dns": {
+        "create": "请在 DNS 提供商处创建以下 DNS 记录：",
+        "waiting": "正在等待记录解析...",
+        "resolved": "DNS 已解析到该机器",
+        "notWaiting": "不等待 DNS",
+        "timeout": "以下记录仍未解析：{{records}}",
+        "resolvesElsewhere": "{{name}} 解析到 {{found}}，而不是 {{want}}；请先修正记录",
+        "written": "已写入 {{type}} {{name}} -> {{value}}"
+      },
+      "health": {
+        "failed": "https://{{domain}}/health 返回 {{status}}，而不是 200",
+        "noAnswer": "无响应",
+        "certMismatch": "{{domain}} 的证书覆盖 {{sans}}，不包含 {{domain}}"
+      },
+      "image": {
+        "pulling": "正在机器上拉取 {{image}}",
+        "pullFailed": "拉取 {{image}} 失败：{{detail}}",
+        "saving": "正在从本地 Docker 保存 {{image}}",
+        "saveFailed": "docker save {{image}} 失败"
+      },
+      "owner": {
+        "stepFailed": "{{step}} 返回 {{status}} {{error}}",
+        "raced": "服务器的订阅 {{box}} 与证书的订阅 {{cert}} 不一致：另一个账户抢先注册了"
+      },
+      "preflight": {
+        "refused": "{{machine}} 尚未就绪：",
+        "noAnswer": "{{machine}} 未通过 SSH 响应预检",
+        "noSudo": "{{machine}} 上 sudo -n 失败；SSH 用户需要免密 sudo",
+        "arch": "不支持架构 {{arch}}（仅支持 x86_64 或 aarch64）",
+        "portBusy": "端口 {{port}} 被 {{holder}} 占用",
+        "disk": "数据存储可用 {{free}} GiB，需要 {{need}} GiB",
+        "clock": "机器时钟偏差 {{skew}} 秒（最多允许 {{max}} 秒）；请启用时间同步"
+      },
+      "tls": {
+        "byoNeedsPair": "--tls byo 需要同时提供 --tls-cert 和 --tls-key",
+        "byoFailed": "为 {{host}} 安装证书失败：{{detail}}",
+        "byoInstalled": "已为 {{host}} 安装证书",
+        "cloudflareNeedsToken": "--tls cloudflare 需要 --cf-token"
+      },
+      "prompts": {
+        "machine": "要安装的机器",
+        "machineAddExisting": "现有服务器或 LAN 设备（IP 和用户）",
+        "provisionHint": "云 VM 需先用 rdc machine provision 创建。",
+        "machineIp": "IP 地址",
+        "machineUser": "SSH 用户",
+        "machinePort": "SSH 端口",
+        "machineName": "此机器的名称",
+        "domain": "服务器的公开域名",
+        "storeDomain": "其备份存储的公开域名",
+        "tls": "证书",
+        "tlsLetsencrypt": "Let's Encrypt（机器在 80 端口响应）",
+        "tlsCloudflare": "Cloudflare DNS（API 令牌）",
+        "tlsByo": "现有的证书和密钥",
+        "cfToken": "Cloudflare API 令牌",
+        "owner": "所有者账户邮箱",
+        "required": "必须提供值"
+      },
+      "errors": {
+        "needsTTY": "不在终端中运行时，必须提供 {{flag}}",
+        "machineUnknown": "机器 {{machine}} 不在此配置中。请传入 --ip 和 --user 进行注册。",
+        "machineNameTaken": "名为 {{machine}} 的机器已注册在 {{ip}}；请换一个 --name",
+        "otherMachine": "{{domain}} 已从此设备安装在 {{machine}} 上",
+        "repoExists": "仓库 {{repo}} 已存在于 {{machine}}，且不是由本次安装创建的；请传入 --repo <name>",
+        "repoUnknown": "仓库 {{repo}} 不在此配置中",
+        "noRecord": "此设备上没有 {{domain}} 的安装记录；请传入 --machine（仓库不是 elite 时还需 --repo）",
+        "noDaemon": "仓库 {{repo}} 尚未记录 Docker 守护进程",
+        "keygenNoKey": "机器未报告 Ed25519 公钥",
+        "bundleIncomplete": "机器上的 secrets.env 缺少 {{keys}}",
+        "boxScriptFailed": "{{machine}} 上的命令退出码为 {{code}}：{{detail}}",
+        "rdcFailed": "{{command}} 失败（退出码 {{code}}）",
+        "certAndFree": "--cert 和 --licence free 不能同时使用"
+      }
+    },
     "shortcuts": {
       "cancel": {
         "description": "取消任务 (queue cancel 的快捷方式)"

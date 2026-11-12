@@ -2528,6 +2528,176 @@
       "optionPort": "Porta su cui restare in ascolto",
       "summary": "Esegui come esecutore per client remoti"
     },
+    "server": {
+      "summary": "Installare ed eseguire il server di account Rediacc self-hosted",
+      "description": "Installare il server di account Rediacc self-hosted (Elite) come repository su una macchina, quindi controllarlo, aggiornarlo, eseguirne il backup e assegnargli la licenza. Da non confondere con `rdc serve`, che esegue questa CLI come executor.",
+      "domainArgument": "Dominio pubblico del server installato",
+      "optionMachine": "Macchina su cui gira il server, quando questo dispositivo non ha un record di installazione per il dominio",
+      "optionRepo": "Repository in cui gira il server (predefinito: elite)",
+      "install": {
+        "summary": "Installare il server di account su una macchina",
+        "description": "Installare il server di account self-hosted su una macchina esistente: controllare la macchina, configurare renet se manca, attendere il DNS, configurare TLS, creare il repository, generarne le chiavi sulla macchina, assegnargli la licenza, avviarlo e creare l'account del proprietario. Ogni valore ha un'opzione; in un terminale i valori mancanti vengono richiesti. Una nuova esecuzione salta i passaggi già completati.",
+        "machineArgument": "Macchina configurata su cui installare (oppure registrarne una con --ip e --user)",
+        "optionIp": "Indirizzo di un server o dispositivo LAN esistente da registrare per primo",
+        "optionUser": "Utente SSH su quella macchina",
+        "optionPort": "Porta SSH su quella macchina (predefinito: 22)",
+        "optionName": "Nome con cui registrare quella macchina (predefinito: server-<ip>)",
+        "optionDomain": "Dominio pubblico del server, ad esempio accounts.example.com",
+        "optionStoreDomain": "Dominio pubblico del suo archivio di backup (predefinito: <name>-store.<resto del dominio>)",
+        "optionRepo": "Nome del repository (predefinito: elite)",
+        "optionSize": "Dimensione del repository (predefinito: 10G)",
+        "optionOwner": "Email dell'account del proprietario, creato durante l'installazione (predefinito: l'account connesso)",
+        "optionTls": "Come si ottiene il certificato: letsencrypt (HTTP-01), cloudflare (DNS-01) o byo (un certificato esistente)",
+        "optionCfToken": "Token API di Cloudflare per DNS-01 (con --tls cloudflare)",
+        "optionCertEmail": "Email a cui Let's Encrypt invia gli avvisi di scadenza (predefinito: il proprietario)",
+        "optionTlsCert": "File del certificato in formato PEM (con --tls byo), che copra entrambi i domini",
+        "optionTlsKey": "File della chiave privata di quel certificato (con --tls byo)",
+        "optionTlsCa": "Certificato CA da cui discende il certificato del server, usato per il controllo di integrità",
+        "optionLicence": "auto: un certificato dell'account connesso oppure, se manca, il livello gratuito; free: avviare con il livello gratuito",
+        "optionCert": "File del certificato di delega per un'installazione offline; deve indicare la chiave generata sulla macchina",
+        "optionImage": "Immagine del server da eseguire (predefinito: ghcr.io/rediacc/server:latest)",
+        "optionImageFile": "Archivio di immagine salvato (docker save) da trasferire invece di scaricarla",
+        "optionLocalImage": "Salvare l'--image dal Docker locale e trasferirla invece di scaricarla",
+        "optionNoDnsWait": "Mostrare i record DNS senza attendere che si risolvano",
+        "optionBwsProject": "Copiare anche le chiavi generate in questo progetto di Bitwarden Secrets Manager; senza questa opzione nessuna chiave lascia la macchina",
+        "optionRotate": "Con --bws-project, sostituire un valore memorizzato diverso invece di rifiutare",
+        "optionYes": "Non chiedere nulla: usare i valori predefiniti e rifiutare un valore mancante",
+        "help": "Passaggi, in ordine (ciascuno viene registrato, quindi una nuova esecuzione salta ciò che è fatto):\n  preflight  sudo -n, architettura, porte 80 e 443, spazio su disco e sfasamento dell'orologio\n  setup      rdc machine setup, quando renet manca\n  dns        mostrare i record A e AAAA, poi attendere che entrambi i domini si risolvano verso la macchina\n  tls        Let's Encrypt, Cloudflare DNS-01 o un certificato esistente\n  repo       creare il repository e applicare il template elite\n  keys       generare tutte le chiavi sulla macchina, nel secrets.env del repository\n  licence    --cert, altrimenti un certificato dell'account connesso, altrimenti il livello gratuito\n  image      scaricare l'immagine sulla macchina oppure trasferire --image-file\n  up         avviare il server e attendere https://<domain>/health\n  owner      creare l'account del proprietario\n\nUna macchina non ancora registrata si aggiunge con --ip e --user. Una VM cloud viene creata prima con rdc machine provision.\nI record DNS vengono mostrati e mai scritti in una zona del cliente.\nIn un terminale l'installazione termina con un pacchetto di ripristino monouso. Conservarlo in un luogo sicuro: non viene mai registrato nei log né incluso in --output json, e rdc server backup lo mostra di nuovo in seguito.",
+        "step": "Passaggio: {{step}}",
+        "skipped": "Passaggio {{step}}: già completato, saltato",
+        "done": "Il server di account è in esecuzione su https://{{domain}}",
+        "freeTier": "{{domain}} funziona con il livello gratuito. Eseguire `rdc server licence {{domain}}` per assegnargli la licenza.",
+        "backupHint": "Salvare il pacchetto di ripristino con `rdc server backup {{domain}} --out <file>`. La prima password del proprietario è in {{ownerFile}}.",
+        "examples": {
+          "brought": "Registrare un server esistente tramite il suo indirizzo e installarvi.",
+          "configured": "Installare su una macchina configurata senza alcuna richiesta.",
+          "lan": "Installare su una macchina della LAN con un certificato esistente, con il livello gratuito."
+        }
+      },
+      "status": {
+        "description": "Mostrare stato di salute, livello, certificato e immagine di un server installato"
+      },
+      "backup": {
+        "description": "Mostrare il pacchetto di ripristino (le chiavi) di un server installato oppure scriverlo in un file",
+        "optionOut": "Scrivere il pacchetto in questo file (modalità 0600) invece che su stdout",
+        "written": "Pacchetto di ripristino scritto in {{file}} (modalità 0600)",
+        "examples": {
+          "out": "Salvare il pacchetto di ripristino in un file leggibile solo dal suo proprietario."
+        }
+      },
+      "upgrade": {
+        "description": "Aggiornare un server installato: creare un fork del suo repository come punto di rollback, collocare la nuova immagine, riapplicare il template quando quello integrato è più recente e riavviare",
+        "confirm": "Aggiornare il server di account su {{domain}}?",
+        "forking": "Creazione del fork del repository come punto di rollback {{tag}}",
+        "template": "Riapplicazione del template elite (versione {{from}} a {{to}})",
+        "templateCurrent": "Il template distribuito (versione {{version}}) è aggiornato",
+        "done": "{{domain}} aggiornato. Punto di rollback: {{rollback}}"
+      },
+      "licence": {
+        "description": "Passare un server dal livello gratuito a un certificato di delega dell'account connesso, oppure da --cert",
+        "done": "{{domain}} ha la licenza dell'abbonamento {{subscription}}",
+        "certUnreadable": "Impossibile leggere il file del certificato {{file}}",
+        "certInvalid": "{{file}} non è un certificato di delega utilizzabile: {{error}}",
+        "keyMismatch": "{{file}} è stato emesso per una chiave diversa da quella generata sulla macchina. Emettere un certificato per la chiave della macchina.",
+        "issuedKeyMismatch": "Il server di account ha emesso un certificato per una chiave diversa da quella generata sulla macchina",
+        "noLogin": "Nessun account connesso: il server si avvia con il livello gratuito",
+        "planDisallows": "L'abbonamento non può contenere un certificato di delega ({{error}}); il server si avvia con il livello gratuito",
+        "otherKey": "L'abbonamento contiene già un certificato di delega attivo per un'altra chiave ({{certId}}). Revocarlo nel portale, quindi rieseguire l'installazione. {{error}}",
+        "missingScope": "Questo accesso non può emettere un certificato di delega. Rieseguire `rdc subscription login` come proprietario o amministratore con 2FA, oppure installare con --licence free.",
+        "offerFree": "Avviare invece il server con il livello gratuito?",
+        "noCertForUpgrade": "Nessun certificato di delega disponibile: accedere con `rdc subscription login` come proprietario o amministratore con 2FA, oppure passare --cert <file>",
+        "stillFree": "{{domain}} risponde ancora come livello gratuito dopo il riavvio",
+        "freeProbeHoldsCert": "Il server risponde come se avesse un certificato, benché non ne sia stato installato alcuno"
+      },
+      "bundle": {
+        "header": "Pacchetto di ripristino per {{domain}}. Conservarlo offline; ripristina le chiavi del server.",
+        "once": "Questo pacchetto di ripristino viene mostrato una sola volta. Conservarlo ora in un luogo sicuro:",
+        "owner": "Account del proprietario: {{email}}, prima password: {{password}}"
+      },
+      "bws": {
+        "skipped": "Nessun --bws-project: le chiavi restano solo sulla macchina",
+        "done": "Chiavi salvate in Bitwarden Secrets Manager: {{created}} create, {{unchanged}} invariate, {{rotated}} sostituite",
+        "noToken": "Nessun token di Bitwarden Secrets Manager: impostare BWS_ACCESS_TOKEN oppure scriverlo nel file bws-access-token della directory di configurazione",
+        "listFailed": "bws secret list non riuscito",
+        "noWriter": "--bws-project richiede un checkout di console: la scrittura passa da private/account/scripts/rotation/bws-write.ts, che tiene il valore fuori dalla riga di comando",
+        "writeFailed": "Scrittura di {{key}} in Bitwarden Secrets Manager non riuscita",
+        "readFailed": "Lettura delle chiavi dalla macchina non riuscita",
+        "badName": "Rifiuto di un nome di archivio non opaco",
+        "differs": "{{key}} è già memorizzata con un valore diverso; passare --rotate per sostituirla"
+      },
+      "dns": {
+        "create": "Creare questi record DNS presso il provider DNS:",
+        "waiting": "In attesa che i record si risolvano...",
+        "resolved": "Il DNS si risolve verso la macchina",
+        "notWaiting": "Nessuna attesa del DNS",
+        "timeout": "Questi record non si risolvono ancora: {{records}}",
+        "resolvesElsewhere": "{{name}} si risolve in {{found}}, non in {{want}}; correggere prima il record",
+        "written": "Scritto {{type}} {{name}} -> {{value}}"
+      },
+      "health": {
+        "failed": "https://{{domain}}/health ha risposto {{status}}, non 200",
+        "noAnswer": "nulla",
+        "certMismatch": "Il certificato per {{domain}} copre {{sans}}, non {{domain}}"
+      },
+      "image": {
+        "pulling": "Download di {{image}} sulla macchina",
+        "pullFailed": "Download di {{image}} non riuscito: {{detail}}",
+        "saving": "Salvataggio di {{image}} dal Docker locale",
+        "saveFailed": "docker save {{image}} non riuscito"
+      },
+      "owner": {
+        "stepFailed": "{{step}} ha risposto {{status}} {{error}}",
+        "raced": "L'abbonamento {{box}} del server non è quello del certificato {{cert}}: un altro account si è registrato per primo"
+      },
+      "preflight": {
+        "refused": "{{machine}} non è pronta:",
+        "noAnswer": "{{machine}} non ha risposto al preflight via SSH",
+        "noSudo": "sudo -n non riesce su {{machine}}; l'utente SSH richiede sudo senza password",
+        "arch": "L'architettura {{arch}} non è supportata (x86_64 o aarch64)",
+        "portBusy": "La porta {{port}} è occupata da {{holder}}",
+        "disk": "{{free}} GiB liberi nel datastore, {{need}} GiB necessari",
+        "clock": "L'orologio della macchina è sfasato di {{skew}} s (al massimo {{max}} s); attivare la sincronizzazione dell'ora"
+      },
+      "tls": {
+        "byoNeedsPair": "--tls byo richiede --tls-cert e --tls-key",
+        "byoFailed": "Installazione del certificato per {{host}} non riuscita: {{detail}}",
+        "byoInstalled": "Certificato installato per {{host}}",
+        "cloudflareNeedsToken": "--tls cloudflare richiede --cf-token"
+      },
+      "prompts": {
+        "machine": "Macchina su cui installare",
+        "machineAddExisting": "Server o dispositivo LAN esistente (IP e utente)",
+        "provisionHint": "Una VM cloud viene creata prima con rdc machine provision.",
+        "machineIp": "Indirizzo IP",
+        "machineUser": "Utente SSH",
+        "machinePort": "Porta SSH",
+        "machineName": "Nome di questa macchina",
+        "domain": "Dominio pubblico del server",
+        "storeDomain": "Dominio pubblico del suo archivio di backup",
+        "tls": "Certificato",
+        "tlsLetsencrypt": "Let's Encrypt (la macchina risponde sulla porta 80)",
+        "tlsCloudflare": "DNS Cloudflare (token API)",
+        "tlsByo": "Un certificato e una chiave esistenti",
+        "cfToken": "Token API di Cloudflare",
+        "owner": "Email dell'account del proprietario",
+        "required": "È richiesto un valore"
+      },
+      "errors": {
+        "needsTTY": "{{flag}} è obbligatorio quando non si esegue in un terminale",
+        "machineUnknown": "La macchina {{machine}} non è in questa configurazione. Passare --ip e --user per registrarla.",
+        "machineNameTaken": "Una macchina di nome {{machine}} è già registrata su {{ip}}; scegliere un altro --name",
+        "otherMachine": "{{domain}} è stato installato su {{machine}} da questo dispositivo",
+        "repoExists": "Il repository {{repo}} esiste già su {{machine}} e non è stato creato da questa installazione; passare --repo <name>",
+        "repoUnknown": "Il repository {{repo}} non è in questa configurazione",
+        "noRecord": "Nessun record di installazione per {{domain}} su questo dispositivo; passare --machine (e --repo quando non è elite)",
+        "noDaemon": "Per il repository {{repo}} non risulta ancora alcun daemon Docker",
+        "keygenNoKey": "La macchina non ha riportato alcuna chiave pubblica Ed25519",
+        "bundleIncomplete": "In secrets.env sulla macchina mancano {{keys}}",
+        "boxScriptFailed": "Il comando su {{machine}} è terminato con {{code}}: {{detail}}",
+        "rdcFailed": "{{command}} non riuscito (codice di uscita {{code}})",
+        "certAndFree": "--cert e --licence free non possono essere combinati"
+      }
+    },
     "shortcuts": {
       "cancel": {
         "description": "Annulla un task (scorciatoia per: queue cancel)"

@@ -2528,6 +2528,176 @@
       "optionPort": "待ち受けるポート",
       "summary": "リモートクライアント向けのエグゼキューターとして実行"
     },
+    "server": {
+      "summary": "セルフホストの Rediacc アカウントサーバーをインストールして実行する",
+      "description": "セルフホストの Rediacc アカウントサーバー (Elite) をマシン上のリポジトリとしてインストールし、確認、アップグレード、バックアップ、ライセンス付与を行います。この CLI をエグゼキューターとして動かす `rdc serve` とは別のものです。",
+      "domainArgument": "インストール済みサーバーの公開ドメイン",
+      "optionMachine": "サーバーが動作するマシン (このデバイスにそのドメインのインストール記録がない場合)",
+      "optionRepo": "サーバーが動作するリポジトリ (既定: elite)",
+      "install": {
+        "summary": "マシンにアカウントサーバーをインストールする",
+        "description": "既存のマシンにセルフホストのアカウントサーバーをインストールします。マシンの確認、renet がない場合のセットアップ、DNS の待機、TLS の設定、リポジトリの作成、マシン上でのキー生成、ライセンス付与、起動、オーナーアカウントの作成まで行います。すべての値にフラグがあり、ターミナルでは未指定の値を尋ねます。再実行すると完了済みのステップはスキップされます。",
+        "machineArgument": "インストール先の設定済みマシン (または --ip と --user で登録)",
+        "optionIp": "先に登録する既存サーバーまたは LAN デバイスのアドレス",
+        "optionUser": "そのマシンの SSH ユーザー",
+        "optionPort": "そのマシンの SSH ポート (既定: 22)",
+        "optionName": "そのマシンを登録する名前 (既定: server-<ip>)",
+        "optionDomain": "サーバーの公開ドメイン (例: accounts.example.com)",
+        "optionStoreDomain": "バックアップストアの公開ドメイン (既定: <name>-store.<ドメインの残り>)",
+        "optionRepo": "リポジトリ名 (既定: elite)",
+        "optionSize": "リポジトリのサイズ (既定: 10G)",
+        "optionOwner": "インストール中に作成するオーナーアカウントのメールアドレス (既定: ログイン中のアカウント)",
+        "optionTls": "証明書の取得方法: letsencrypt (HTTP-01)、cloudflare (DNS-01)、byo (既存の証明書)",
+        "optionCfToken": "DNS-01 用の Cloudflare API トークン (--tls cloudflare 指定時)",
+        "optionCertEmail": "Let's Encrypt が期限通知を送るメールアドレス (既定: オーナー)",
+        "optionTlsCert": "PEM 形式の証明書ファイル (--tls byo 指定時)。両方のドメインをカバーすること",
+        "optionTlsKey": "その証明書の秘密鍵ファイル (--tls byo 指定時)",
+        "optionTlsCa": "サーバー証明書のチェーン先の CA 証明書。ヘルスチェックに使用",
+        "optionLicence": "auto: ログイン中のアカウントの証明書、なければ無料プラン。free: 無料プランで開始",
+        "optionCert": "オフラインインストール用の委任証明書ファイル。マシン上で生成したキーを指定している必要があります",
+        "optionImage": "実行するサーバーイメージ (既定: ghcr.io/rediacc/server:latest)",
+        "optionImageFile": "pull せずに転送する保存済みイメージアーカイブ (docker save)",
+        "optionLocalImage": "ローカルの Docker から --image を保存し、pull せずに転送する",
+        "optionNoDnsWait": "名前解決を待たずに DNS レコードを表示する",
+        "optionBwsProject": "生成したキーをこの Bitwarden Secrets Manager プロジェクトにもコピーする。指定しなければキーはマシンの外に出ません",
+        "optionRotate": "--bws-project と併用し、値が異なる保存済みの項目を拒否せず置き換える",
+        "optionYes": "何も尋ねない: 既定値を使い、不足している値は拒否する",
+        "help": "ステップ (順番どおり。各ステップは記録されるため、再実行では完了済みがスキップされます):\n  preflight  sudo -n、アーキテクチャ、ポート 80 と 443、ディスク容量、時計のずれ\n  setup      renet がない場合の rdc machine setup\n  dns        A と AAAA レコードを表示し、両ドメインがマシンに解決されるまで待機\n  tls        Let's Encrypt、Cloudflare DNS-01、または既存の証明書\n  repo       リポジトリを作成し、elite テンプレートを適用\n  keys       すべてのキーをマシン上で生成し、リポジトリの secrets.env に保存\n  licence    --cert、なければログイン中のアカウントの証明書、なければ無料プラン\n  image      マシン上でイメージを pull、または --image-file を転送\n  up         サーバーを起動し、https://<domain>/health を待機\n  owner      オーナーアカウントを作成\n\n未登録のマシンは --ip と --user で追加します。クラウド VM は先に rdc machine provision で作成します。\nDNS レコードは表示のみで、お客様のゾーンには書き込みません。\nターミナルでは、インストールの最後にワンタイムのリカバリーバンドルが表示されます。安全な場所に保管してください。ログには残らず、--output json にも含まれません。後から rdc server backup で再表示できます。",
+        "step": "ステップ: {{step}}",
+        "skipped": "ステップ {{step}}: 以前に完了済みのためスキップ",
+        "done": "アカウントサーバーが https://{{domain}} で稼働しています",
+        "freeTier": "{{domain}} は無料プランで動作しています。`rdc server licence {{domain}}` を実行してライセンスを付与してください。",
+        "backupHint": "`rdc server backup {{domain}} --out <file>` でリカバリーバンドルを保存してください。オーナーの初期パスワードは {{ownerFile}} にあります。",
+        "examples": {
+          "brought": "既存のサーバーをアドレスで登録し、そこにインストールします。",
+          "configured": "設定済みのマシンにプロンプトなしでインストールします。",
+          "lan": "既存の証明書を使い、無料プランで LAN マシンにインストールします。"
+        }
+      },
+      "status": {
+        "description": "インストール済みサーバーのヘルス、プラン、証明書、イメージを表示する"
+      },
+      "backup": {
+        "description": "インストール済みサーバーのリカバリーバンドル (キー) を表示、またはファイルに書き出す",
+        "optionOut": "stdout ではなく、このファイルにバンドルを書き出す (モード 0600)",
+        "written": "リカバリーバンドルを {{file}} に書き出しました (モード 0600)",
+        "examples": {
+          "out": "所有者だけが読めるファイルにリカバリーバンドルを保存します。"
+        }
+      },
+      "upgrade": {
+        "description": "インストール済みサーバーをアップグレードする: リポジトリをロールバックポイントとしてフォークし、新しいイメージを配置し、組み込みテンプレートが新しければ再適用して、再起動します",
+        "confirm": "{{domain}} のアカウントサーバーをアップグレードしますか?",
+        "forking": "リポジトリをロールバックポイント {{tag}} としてフォークしています",
+        "template": "elite テンプレートを再適用しています (バージョン {{from}} から {{to}})",
+        "templateCurrent": "デプロイ済みのテンプレート (バージョン {{version}}) は最新です",
+        "done": "{{domain}} をアップグレードしました。ロールバックポイント: {{rollback}}"
+      },
+      "licence": {
+        "description": "無料プランのサーバーを、ログイン中のアカウントまたは --cert の委任証明書に切り替える",
+        "done": "{{domain}} はサブスクリプション {{subscription}} でライセンス付与されました",
+        "certUnreadable": "証明書ファイル {{file}} を読み取れません",
+        "certInvalid": "{{file}} は使用可能な委任証明書ではありません: {{error}}",
+        "keyMismatch": "{{file}} は、マシン上で生成されたキーとは別のキー用に発行されています。マシンのキー用の証明書を発行してください。",
+        "issuedKeyMismatch": "アカウントサーバーが、マシン上で生成されたキーとは別のキー用の証明書を発行しました",
+        "noLogin": "ログイン中のアカウントがありません: サーバーは無料プランで起動します",
+        "planDisallows": "このサブスクリプションでは委任証明書を保持できません ({{error}})。サーバーは無料プランで起動します",
+        "otherKey": "このサブスクリプションには、別のキー用の有効な委任証明書 ({{certId}}) がすでにあります。ポータルで失効させてから、インストールを再実行してください。{{error}}",
+        "missingScope": "このログインでは委任証明書を発行できません。オーナーまたは管理者として 2FA で `rdc subscription login` をやり直すか、--licence free でインストールしてください。",
+        "offerFree": "代わりに無料プランでサーバーを起動しますか?",
+        "noCertForUpgrade": "利用できる委任証明書がありません: オーナーまたは管理者として 2FA で `rdc subscription login` にログインするか、--cert <file> を指定してください",
+        "stillFree": "再起動後も {{domain}} は無料プランとして応答しています",
+        "freeProbeHoldsCert": "証明書をインストールしていないのに、サーバーが証明書を保持しているかのように応答しています"
+      },
+      "bundle": {
+        "header": "{{domain}} のリカバリーバンドル。サーバーのキーを復元できるため、オフラインで保管してください。",
+        "once": "このリカバリーバンドルは一度だけ表示されます。今すぐ安全な場所に保管してください:",
+        "owner": "オーナーアカウント: {{email}}、初期パスワード: {{password}}"
+      },
+      "bws": {
+        "skipped": "--bws-project なし: キーはマシン上にのみ保持されます",
+        "done": "キーを Bitwarden Secrets Manager にバックアップしました: 作成 {{created}}、変更なし {{unchanged}}、置き換え {{rotated}}",
+        "noToken": "Bitwarden Secrets Manager のトークンがありません: BWS_ACCESS_TOKEN を設定するか、設定ディレクトリの bws-access-token ファイルに書き込んでください",
+        "listFailed": "bws secret list に失敗しました",
+        "noWriter": "--bws-project には console のチェックアウトが必要です: 書き込みは private/account/scripts/rotation/bws-write.ts を経由し、値をコマンドラインに出さないようにします",
+        "writeFailed": "{{key}} を Bitwarden Secrets Manager に書き込めませんでした",
+        "readFailed": "マシンからキーを読み取れませんでした",
+        "badName": "不透明でないストア名を拒否しました",
+        "differs": "{{key}} はすでに別の値で保存されています。置き換えるには --rotate を指定してください"
+      },
+      "dns": {
+        "create": "DNS プロバイダーで次の DNS レコードを作成してください:",
+        "waiting": "レコードが解決されるのを待っています...",
+        "resolved": "DNS がマシンに解決されました",
+        "notWaiting": "DNS を待機しません",
+        "timeout": "次のレコードはまだ解決されません: {{records}}",
+        "resolvesElsewhere": "{{name}} は {{want}} ではなく {{found}} に解決されます。先にレコードを修正してください",
+        "written": "{{type}} {{name}} -> {{value}} を書き込みました"
+      },
+      "health": {
+        "failed": "https://{{domain}}/health が 200 ではなく {{status}} を返しました",
+        "noAnswer": "応答なし",
+        "certMismatch": "{{domain}} の証明書は {{sans}} をカバーしていますが、{{domain}} はカバーしていません"
+      },
+      "image": {
+        "pulling": "マシン上で {{image}} を pull しています",
+        "pullFailed": "{{image}} の pull に失敗しました: {{detail}}",
+        "saving": "ローカルの Docker から {{image}} を保存しています",
+        "saveFailed": "docker save {{image}} に失敗しました"
+      },
+      "owner": {
+        "stepFailed": "{{step}} が {{status}} {{error}} を返しました",
+        "raced": "サーバーのサブスクリプション {{box}} が証明書のもの ({{cert}}) と一致しません: 別のアカウントが先に登録しました"
+      },
+      "preflight": {
+        "refused": "{{machine}} は準備ができていません:",
+        "noAnswer": "{{machine}} が SSH 経由の事前チェックに応答しませんでした",
+        "noSudo": "{{machine}} で sudo -n が失敗します。SSH ユーザーにはパスワードなしの sudo が必要です",
+        "arch": "アーキテクチャ {{arch}} は未対応です (x86_64 または aarch64)",
+        "portBusy": "ポート {{port}} は {{holder}} が使用中です",
+        "disk": "データストアの空き容量は {{free}} GiB で、{{need}} GiB が必要です",
+        "clock": "マシンの時計が {{skew}} 秒ずれています (許容は最大 {{max}} 秒)。時刻同期を有効にしてください"
+      },
+      "tls": {
+        "byoNeedsPair": "--tls byo には --tls-cert と --tls-key が必要です",
+        "byoFailed": "{{host}} の証明書のインストールに失敗しました: {{detail}}",
+        "byoInstalled": "{{host}} の証明書をインストールしました",
+        "cloudflareNeedsToken": "--tls cloudflare には --cf-token が必要です"
+      },
+      "prompts": {
+        "machine": "インストール先のマシン",
+        "machineAddExisting": "既存のサーバーまたは LAN デバイス (IP とユーザー)",
+        "provisionHint": "クラウド VM は先に rdc machine provision で作成します。",
+        "machineIp": "IP アドレス",
+        "machineUser": "SSH ユーザー",
+        "machinePort": "SSH ポート",
+        "machineName": "このマシンの名前",
+        "domain": "サーバーの公開ドメイン",
+        "storeDomain": "バックアップストアの公開ドメイン",
+        "tls": "証明書",
+        "tlsLetsencrypt": "Let's Encrypt (マシンがポート 80 で応答)",
+        "tlsCloudflare": "Cloudflare DNS (API トークン)",
+        "tlsByo": "既存の証明書とキー",
+        "cfToken": "Cloudflare API トークン",
+        "owner": "オーナーアカウントのメールアドレス",
+        "required": "値が必要です"
+      },
+      "errors": {
+        "needsTTY": "ターミナル以外で実行する場合は {{flag}} が必要です",
+        "machineUnknown": "マシン {{machine}} はこの設定にありません。登録するには --ip と --user を指定してください。",
+        "machineNameTaken": "{{machine}} という名前のマシンはすでに {{ip}} で登録されています。別の --name を指定してください",
+        "otherMachine": "{{domain}} はこのデバイスから {{machine}} にインストールされました",
+        "repoExists": "リポジトリ {{repo}} はすでに {{machine}} に存在し、このインストールで作成されたものではありません。--repo <name> を指定してください",
+        "repoUnknown": "リポジトリ {{repo}} はこの設定にありません",
+        "noRecord": "このデバイスに {{domain}} のインストール記録がありません。--machine を指定してください (elite 以外なら --repo も)",
+        "noDaemon": "リポジトリ {{repo}} には Docker デーモンがまだ記録されていません",
+        "keygenNoKey": "マシンから Ed25519 公開鍵が報告されませんでした",
+        "bundleIncomplete": "マシン上の secrets.env に {{keys}} がありません",
+        "boxScriptFailed": "{{machine}} 上のコマンドが {{code}} で終了しました: {{detail}}",
+        "rdcFailed": "{{command}} に失敗しました (終了コード {{code}})",
+        "certAndFree": "--cert と --licence free は併用できません"
+      }
+    },
     "shortcuts": {
       "cancel": {
         "description": "タスクをキャンセルする (queue cancel のショートカット)"

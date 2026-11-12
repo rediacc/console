@@ -7146,6 +7146,317 @@
       ],
       "arguments": [],
       "subcommands": []
+    },
+    {
+      "name": "server",
+      "descriptionKey": "commands.server.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "install",
+          "descriptionKey": "commands.server.install.description",
+          "options": [
+            {
+              "flags": "--ip <address>",
+              "descriptionKey": "commands.server.install.optionIp",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--user <name>",
+              "descriptionKey": "commands.server.install.optionUser",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--port <port>",
+              "descriptionKey": "commands.server.install.optionPort",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "commands.server.install.optionName",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--domain <host>",
+              "descriptionKey": "commands.server.install.optionDomain",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--store-domain <host>",
+              "descriptionKey": "commands.server.install.optionStoreDomain",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--repo <name>",
+              "descriptionKey": "commands.server.install.optionRepo",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--size <size>",
+              "descriptionKey": "commands.server.install.optionSize",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--owner <email>",
+              "descriptionKey": "commands.server.install.optionOwner",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--tls <method>",
+              "descriptionKey": "commands.server.install.optionTls",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cf-token <token>",
+              "descriptionKey": "commands.server.install.optionCfToken",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cert-email <email>",
+              "descriptionKey": "commands.server.install.optionCertEmail",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--tls-cert <file>",
+              "descriptionKey": "commands.server.install.optionTlsCert",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--tls-key <file>",
+              "descriptionKey": "commands.server.install.optionTlsKey",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--tls-ca <file>",
+              "descriptionKey": "commands.server.install.optionTlsCa",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--licence <mode>",
+              "descriptionKey": "commands.server.install.optionLicence",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cert <file>",
+              "descriptionKey": "commands.server.install.optionCert",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--image <ref>",
+              "descriptionKey": "commands.server.install.optionImage",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--image-file <tar>",
+              "descriptionKey": "commands.server.install.optionImageFile",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--local-image",
+              "descriptionKey": "commands.server.install.optionLocalImage",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--no-dns-wait",
+              "descriptionKey": "commands.server.install.optionNoDnsWait",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--bws-project <id>",
+              "descriptionKey": "commands.server.install.optionBwsProject",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--rotate",
+              "descriptionKey": "commands.server.install.optionRotate",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-y, --yes",
+              "descriptionKey": "commands.server.install.optionYes",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "machine",
+              "required": false,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "status",
+          "descriptionKey": "commands.server.status.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.server.optionMachine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--repo <name>",
+              "descriptionKey": "commands.server.optionRepo",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "domain",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "upgrade",
+          "descriptionKey": "commands.server.upgrade.description",
+          "options": [
+            {
+              "flags": "--image <ref>",
+              "descriptionKey": "commands.server.install.optionImage",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--image-file <tar>",
+              "descriptionKey": "commands.server.install.optionImageFile",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--local-image",
+              "descriptionKey": "commands.server.install.optionLocalImage",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-y, --yes",
+              "descriptionKey": "commands.server.install.optionYes",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.server.optionMachine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--repo <name>",
+              "descriptionKey": "commands.server.optionRepo",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "domain",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "backup",
+          "descriptionKey": "commands.server.backup.description",
+          "options": [
+            {
+              "flags": "--out <file>",
+              "descriptionKey": "commands.server.backup.optionOut",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.server.optionMachine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--repo <name>",
+              "descriptionKey": "commands.server.optionRepo",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "domain",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "licence",
+          "descriptionKey": "commands.server.licence.description",
+          "options": [
+            {
+              "flags": "--cert <file>",
+              "descriptionKey": "commands.server.install.optionCert",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.server.optionMachine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--repo <name>",
+              "descriptionKey": "commands.server.optionRepo",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "domain",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        }
+      ]
     }
   ],
   "globalOptions": [

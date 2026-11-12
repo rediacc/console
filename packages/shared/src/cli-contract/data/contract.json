@@ -14941,7 +14941,6 @@
         }
       ],
       "keywords": [
-        "server",
         "daemon",
         "executor",
         "host",
@@ -14954,6 +14953,697 @@
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "server",
+        "backup"
+      ],
+      "pathKey": "server backup",
+      "domain": "server",
+      "group": "TOOLS",
+      "plane": "machine",
+      "descriptionKey": "commands.server.backup.description",
+      "label": "Print the recovery bundle (the keys) of an installed server, or write it to a file",
+      "options": [
+        {
+          "flags": "--out <file>",
+          "long": "out",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.backup.optionOut",
+          "label": "Write the bundle to this file (mode 0600) instead of stdout"
+        },
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.optionMachine",
+          "label": "Machine the server runs on, when this device holds no install record for the domain"
+        },
+        {
+          "flags": "--repo <name>",
+          "long": "repo",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "repo"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.optionRepo",
+          "label": "Repository the server runs in (default: elite)"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "domain",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.server.domainArgument",
+          "label": "Public domain of the installed server"
+        }
+      ],
+      "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc server backup accounts.example.com --out elite-recovery.env",
+          "values": {
+            "domain": "accounts.example.com",
+            "out": "elite-recovery.env"
+          },
+          "descriptionKey": "commands.server.backup.examples.out",
+          "label": "Save the recovery bundle to a file only its owner can read."
+        }
+      ],
+      "mcpExcludeReason": "Prints the server's private keys; they must not land in an agent transcript.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Writes the recovery bundle (the server's keys) to the caller's terminal or file; through an executor the keys would cross another machine. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": "machine",
+      "repoOption": "repo",
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "server",
+        "install"
+      ],
+      "pathKey": "server install",
+      "domain": "server",
+      "group": "TOOLS",
+      "plane": "machine",
+      "descriptionKey": "commands.server.install.description",
+      "label": "Install the self-hosted account server on an existing machine: check the machine, set up renet when it is missing, wait for DNS, configure TLS, create the repository, generate its keys on the machine, license it, start it and create the owner account. Every value has a flag; on a terminal a missing value is asked for. A rerun skips the steps that are already done.",
+      "options": [
+        {
+          "flags": "--ip <address>",
+          "long": "ip",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionIp",
+          "label": "Address of an existing server or LAN device to register first"
+        },
+        {
+          "flags": "--user <name>",
+          "long": "user",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionUser",
+          "label": "SSH user on that machine"
+        },
+        {
+          "flags": "--port <port>",
+          "long": "port",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "format": "port",
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionPort",
+          "label": "SSH port on that machine (default: 22)"
+        },
+        {
+          "flags": "--name <name>",
+          "long": "name",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionName",
+          "label": "Name to register that machine under (default: server-<ip>)"
+        },
+        {
+          "flags": "--domain <host>",
+          "long": "domain",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionDomain",
+          "label": "Public domain of the server, for example accounts.example.com"
+        },
+        {
+          "flags": "--store-domain <host>",
+          "long": "store-domain",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionStoreDomain",
+          "label": "Public domain of its backup store (default: <name>-store.<rest of the domain>)"
+        },
+        {
+          "flags": "--repo <name>",
+          "long": "repo",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "repo"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.install.optionRepo",
+          "label": "Repository name (default: elite)"
+        },
+        {
+          "flags": "--size <size>",
+          "long": "size",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "format": "size",
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionSize",
+          "label": "Repository size (default: 10G)"
+        },
+        {
+          "flags": "--owner <email>",
+          "long": "owner",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionOwner",
+          "label": "Email of the owner account, created during the install (default: the logged-in account)"
+        },
+        {
+          "flags": "--tls <method>",
+          "long": "tls",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "choices": [
+            "letsencrypt",
+            "cloudflare",
+            "byo"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.install.optionTls",
+          "label": "How the certificate is obtained: letsencrypt (HTTP-01), cloudflare (DNS-01) or byo (an existing certificate)"
+        },
+        {
+          "flags": "--cf-token <token>",
+          "long": "cf-token",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionCfToken",
+          "label": "Cloudflare API token for DNS-01 (with --tls cloudflare)"
+        },
+        {
+          "flags": "--cert-email <email>",
+          "long": "cert-email",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionCertEmail",
+          "label": "Email Let's Encrypt sends expiry notices to (default: the owner)"
+        },
+        {
+          "flags": "--tls-cert <file>",
+          "long": "tls-cert",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionTlsCert",
+          "label": "Certificate file in PEM form (with --tls byo), covering both domains"
+        },
+        {
+          "flags": "--tls-key <file>",
+          "long": "tls-key",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionTlsKey",
+          "label": "Private key file of that certificate (with --tls byo)"
+        },
+        {
+          "flags": "--tls-ca <file>",
+          "long": "tls-ca",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionTlsCa",
+          "label": "CA certificate the server's certificate chains to, used for the health check"
+        },
+        {
+          "flags": "--licence <mode>",
+          "long": "licence",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "choices": [
+            "auto",
+            "free"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.install.optionLicence",
+          "label": "auto: a certificate from the logged-in account, or the free tier when there is none; free: start on the free tier"
+        },
+        {
+          "flags": "--cert <file>",
+          "long": "cert",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionCert",
+          "label": "Delegation certificate file for an offline install; it must name the key generated on the machine"
+        },
+        {
+          "flags": "--image <ref>",
+          "long": "image",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionImage",
+          "label": "Server image to run (default: ghcr.io/rediacc/server:latest)"
+        },
+        {
+          "flags": "--image-file <tar>",
+          "long": "image-file",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionImageFile",
+          "label": "Saved image archive (docker save) to ship instead of pulling"
+        },
+        {
+          "flags": "--local-image",
+          "long": "local-image",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionLocalImage",
+          "label": "Save the --image from the local Docker and ship it instead of pulling"
+        },
+        {
+          "flags": "--no-dns-wait",
+          "long": "no-dns-wait",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionNoDnsWait",
+          "label": "Print the DNS records without waiting for them to resolve"
+        },
+        {
+          "flags": "--bws-project <id>",
+          "long": "bws-project",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionBwsProject",
+          "label": "Also copy the generated keys to this Bitwarden Secrets Manager project; without it no key leaves the machine"
+        },
+        {
+          "flags": "--rotate",
+          "long": "rotate",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionRotate",
+          "label": "With --bws-project, replace a stored value that differs instead of refusing"
+        },
+        {
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionYes",
+          "label": "Ask nothing: take the defaults and refuse a missing value"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "machine",
+          "kind": "machine",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "commands.server.install.machineArgument",
+          "label": "Configured machine to install on (or register one with --ip and --user)"
+        }
+      ],
+      "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc server install --ip 203.0.113.10 --user admin --domain accounts.example.com",
+          "values": {
+            "ip": "203.0.113.10",
+            "user": "admin",
+            "domain": "accounts.example.com"
+          },
+          "descriptionKey": "commands.server.install.examples.brought",
+          "label": "Register an existing server by its address and install on it."
+        },
+        {
+          "command": "rdc server install server-1 --domain accounts.example.com --owner owner@example.com --yes",
+          "values": {
+            "machine": "server-1",
+            "domain": "accounts.example.com",
+            "owner": "owner@example.com",
+            "yes": "true"
+          },
+          "descriptionKey": "commands.server.install.examples.configured",
+          "label": "Install on a configured machine without any prompt."
+        },
+        {
+          "command": "rdc server install lab --domain lab.example.internal --tls byo --tls-cert host.crt --tls-key host.key --tls-ca ca.crt --licence free --no-dns-wait --yes",
+          "values": {
+            "machine": "lab",
+            "domain": "lab.example.internal",
+            "tls": "byo",
+            "tls-cert": "host.crt",
+            "tls-key": "host.key",
+            "tls-ca": "ca.crt",
+            "licence": "free",
+            "no-dns-wait": "true",
+            "yes": "true"
+          },
+          "descriptionKey": "commands.server.install.examples.lan",
+          "label": "Install on a LAN machine with an existing certificate, on the free tier."
+        }
+      ],
+      "keywords": [
+        "elite",
+        "self-hosted",
+        "on-premise",
+        "onprem"
+      ],
+      "mcpExcludeReason": "Long interactive install that registers machines, mints a licence and prints a one-time key bundle; use the CLI.",
+      "interactive": true,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": "repo",
+      "machinePositional": "machine",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "server",
+        "licence"
+      ],
+      "pathKey": "server licence",
+      "domain": "server",
+      "group": "TOOLS",
+      "plane": "machine",
+      "descriptionKey": "commands.server.licence.description",
+      "label": "Move a free-tier server to a delegation certificate from the logged-in account, or from --cert",
+      "options": [
+        {
+          "flags": "--cert <file>",
+          "long": "cert",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionCert",
+          "label": "Delegation certificate file for an offline install; it must name the key generated on the machine"
+        },
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.optionMachine",
+          "label": "Machine the server runs on, when this device holds no install record for the domain"
+        },
+        {
+          "flags": "--repo <name>",
+          "long": "repo",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "repo"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.optionRepo",
+          "label": "Repository the server runs in (default: elite)"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "domain",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.server.domainArgument",
+          "label": "Public domain of the installed server"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Mints a delegation certificate and restarts the account server; use the CLI.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Mints the certificate with the caller's login and records it in the caller's local install record; a remote executor holds neither. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": "machine",
+      "repoOption": "repo",
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "server",
+        "status"
+      ],
+      "pathKey": "server status",
+      "domain": "server",
+      "group": "TOOLS",
+      "plane": "machine",
+      "descriptionKey": "commands.server.status.description",
+      "label": "Show the health, tier, certificate and image of an installed server",
+      "options": [
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.optionMachine",
+          "label": "Machine the server runs on, when this device holds no install record for the domain"
+        },
+        {
+          "flags": "--repo <name>",
+          "long": "repo",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "repo"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.optionRepo",
+          "label": "Repository the server runs in (default: elite)"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "domain",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.server.domainArgument",
+          "label": "Public domain of the installed server"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Finds the server through the caller's local install record; a remote executor holds none. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": "machine",
+      "repoOption": "repo",
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "server",
+        "upgrade"
+      ],
+      "pathKey": "server upgrade",
+      "domain": "server",
+      "group": "TOOLS",
+      "plane": "machine",
+      "descriptionKey": "commands.server.upgrade.description",
+      "label": "Upgrade an installed server: fork its repository as a rollback point, place the new image, apply the template again when the built-in one is newer, and restart",
+      "options": [
+        {
+          "flags": "--image <ref>",
+          "long": "image",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionImage",
+          "label": "Server image to run (default: ghcr.io/rediacc/server:latest)"
+        },
+        {
+          "flags": "--image-file <tar>",
+          "long": "image-file",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionImageFile",
+          "label": "Saved image archive (docker save) to ship instead of pulling"
+        },
+        {
+          "flags": "--local-image",
+          "long": "local-image",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionLocalImage",
+          "label": "Save the --image from the local Docker and ship it instead of pulling"
+        },
+        {
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionYes",
+          "label": "Ask nothing: take the defaults and refuse a missing value"
+        },
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.optionMachine",
+          "label": "Machine the server runs on, when this device holds no install record for the domain"
+        },
+        {
+          "flags": "--repo <name>",
+          "long": "repo",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "repo"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.optionRepo",
+          "label": "Repository the server runs in (default: elite)"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "domain",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.server.domainArgument",
+          "label": "Public domain of the installed server"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Forks, replaces the image and restarts the account server; use the CLI.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Drives child commands and the caller's local install record (and --local-image, the caller's Docker); a remote executor would act from its own. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": "machine",
+      "repoOption": "repo",
       "machinePositional": null,
       "repoPositional": null
     },

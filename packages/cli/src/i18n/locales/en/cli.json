@@ -2799,6 +2799,176 @@
         "container": "Start the executor server in container mode."
       }
     },
+    "server": {
+      "summary": "Install and run the self-hosted Rediacc account server",
+      "description": "Install the self-hosted Rediacc account server (Elite) as a repository on a machine, then check, upgrade, back up and license it. Not to be confused with `rdc serve`, which runs this CLI as an executor.",
+      "domainArgument": "Public domain of the installed server",
+      "optionMachine": "Machine the server runs on, when this device holds no install record for the domain",
+      "optionRepo": "Repository the server runs in (default: elite)",
+      "install": {
+        "summary": "Install the account server on a machine",
+        "description": "Install the self-hosted account server on an existing machine: check the machine, set up renet when it is missing, wait for DNS, configure TLS, create the repository, generate its keys on the machine, license it, start it and create the owner account. Every value has a flag; on a terminal a missing value is asked for. A rerun skips the steps that are already done.",
+        "machineArgument": "Configured machine to install on (or register one with --ip and --user)",
+        "optionIp": "Address of an existing server or LAN device to register first",
+        "optionUser": "SSH user on that machine",
+        "optionPort": "SSH port on that machine (default: 22)",
+        "optionName": "Name to register that machine under (default: server-<ip>)",
+        "optionDomain": "Public domain of the server, for example accounts.example.com",
+        "optionStoreDomain": "Public domain of its backup store (default: <name>-store.<rest of the domain>)",
+        "optionRepo": "Repository name (default: elite)",
+        "optionSize": "Repository size (default: 10G)",
+        "optionOwner": "Email of the owner account, created during the install (default: the logged-in account)",
+        "optionTls": "How the certificate is obtained: letsencrypt (HTTP-01), cloudflare (DNS-01) or byo (an existing certificate)",
+        "optionCfToken": "Cloudflare API token for DNS-01 (with --tls cloudflare)",
+        "optionCertEmail": "Email Let's Encrypt sends expiry notices to (default: the owner)",
+        "optionTlsCert": "Certificate file in PEM form (with --tls byo), covering both domains",
+        "optionTlsKey": "Private key file of that certificate (with --tls byo)",
+        "optionTlsCa": "CA certificate the server's certificate chains to, used for the health check",
+        "optionLicence": "auto: a certificate from the logged-in account, or the free tier when there is none; free: start on the free tier",
+        "optionCert": "Delegation certificate file for an offline install; it must name the key generated on the machine",
+        "optionImage": "Server image to run (default: ghcr.io/rediacc/server:latest)",
+        "optionImageFile": "Saved image archive (docker save) to ship instead of pulling",
+        "optionLocalImage": "Save the --image from the local Docker and ship it instead of pulling",
+        "optionNoDnsWait": "Print the DNS records without waiting for them to resolve",
+        "optionBwsProject": "Also copy the generated keys to this Bitwarden Secrets Manager project; without it no key leaves the machine",
+        "optionRotate": "With --bws-project, replace a stored value that differs instead of refusing",
+        "optionYes": "Ask nothing: take the defaults and refuse a missing value",
+        "help": "Steps, in order (each one is recorded, so a rerun skips what is done):\n  preflight  sudo -n, architecture, ports 80 and 443, disk space and clock skew\n  setup      rdc machine setup, when renet is missing\n  dns        print the A and AAAA records, then wait until both domains resolve to the machine\n  tls        Let's Encrypt, Cloudflare DNS-01, or an existing certificate\n  repo       create the repository and apply the elite template\n  keys       generate every key on the machine, into the repository's secrets.env\n  licence    --cert, else a certificate from the logged-in account, else the free tier\n  image      pull the image on the machine, or ship --image-file\n  up         start the server and wait for https://<domain>/health\n  owner      create the owner account\n\nA machine that is not registered yet is added with --ip and --user. A cloud VM is created first with rdc machine provision.\nThe DNS records are printed and never written to a customer zone.\nOn a terminal the install ends with a one-time recovery bundle. Store it somewhere safe: it is never logged and never part of --output json, and rdc server backup prints it again later.",
+        "step": "Step: {{step}}",
+        "skipped": "Step {{step}}: done earlier, skipped",
+        "done": "The account server is running at https://{{domain}}",
+        "freeTier": "{{domain}} runs on the free tier. Run `rdc server licence {{domain}}` to license it.",
+        "backupHint": "Save the recovery bundle with `rdc server backup {{domain}} --out <file>`. The owner's first password is in {{ownerFile}}.",
+        "examples": {
+          "brought": "Register an existing server by its address and install on it.",
+          "configured": "Install on a configured machine without any prompt.",
+          "lan": "Install on a LAN machine with an existing certificate, on the free tier."
+        }
+      },
+      "status": {
+        "description": "Show the health, tier, certificate and image of an installed server"
+      },
+      "backup": {
+        "description": "Print the recovery bundle (the keys) of an installed server, or write it to a file",
+        "optionOut": "Write the bundle to this file (mode 0600) instead of stdout",
+        "written": "Recovery bundle written to {{file}} (mode 0600)",
+        "examples": {
+          "out": "Save the recovery bundle to a file only its owner can read."
+        }
+      },
+      "upgrade": {
+        "description": "Upgrade an installed server: fork its repository as a rollback point, place the new image, apply the template again when the built-in one is newer, and restart",
+        "confirm": "Upgrade the account server at {{domain}}?",
+        "forking": "Forking the repository as rollback point {{tag}}",
+        "template": "Applying the elite template again (version {{from}} to {{to}})",
+        "templateCurrent": "The deployed template (version {{version}}) is current",
+        "done": "{{domain}} upgraded. Rollback point: {{rollback}}"
+      },
+      "licence": {
+        "description": "Move a free-tier server to a delegation certificate from the logged-in account, or from --cert",
+        "done": "{{domain}} is licensed under subscription {{subscription}}",
+        "certUnreadable": "Cannot read the certificate file {{file}}",
+        "certInvalid": "{{file}} is not a usable delegation certificate: {{error}}",
+        "keyMismatch": "{{file}} was issued for another key than the one generated on the machine. Issue a certificate for the machine's key.",
+        "issuedKeyMismatch": "The account server issued a certificate for another key than the one generated on the machine",
+        "noLogin": "No logged-in account: the server starts on the free tier",
+        "planDisallows": "The subscription cannot hold a delegation certificate ({{error}}); the server starts on the free tier",
+        "otherKey": "The subscription already holds an active delegation certificate for another key ({{certId}}). Revoke it in the portal, then run the install again. {{error}}",
+        "missingScope": "This login cannot issue a delegation certificate. Run `rdc subscription login` again as an owner or admin with 2FA, or install with --licence free.",
+        "offerFree": "Start the server on the free tier instead?",
+        "noCertForUpgrade": "No delegation certificate is available: log in with `rdc subscription login` as an owner or admin with 2FA, or pass --cert <file>",
+        "stillFree": "{{domain}} still answers as the free tier after the restart",
+        "freeProbeHoldsCert": "The server answers as holding a certificate although none was installed"
+      },
+      "bundle": {
+        "header": "Recovery bundle for {{domain}}. Keep it offline; it restores the server's keys.",
+        "once": "This recovery bundle is shown once. Store it somewhere safe now:",
+        "owner": "Owner account: {{email}}, first password: {{password}}"
+      },
+      "bws": {
+        "skipped": "No --bws-project: the keys stay on the machine only",
+        "done": "Keys backed up to Bitwarden Secrets Manager: {{created}} created, {{unchanged}} unchanged, {{rotated}} replaced",
+        "noToken": "No Bitwarden Secrets Manager token: set BWS_ACCESS_TOKEN or write it to the bws-access-token file in the config directory",
+        "listFailed": "bws secret list failed",
+        "noWriter": "--bws-project needs a console checkout: the write goes through private/account/scripts/rotation/bws-write.ts, which keeps the value off the command line",
+        "writeFailed": "Writing {{key}} to Bitwarden Secrets Manager failed",
+        "readFailed": "Reading the keys from the machine failed",
+        "badName": "Refusing a store name that is not opaque",
+        "differs": "{{key}} is already stored with a different value; pass --rotate to replace it"
+      },
+      "dns": {
+        "create": "Create these DNS records at the DNS provider:",
+        "waiting": "Waiting for the records to resolve...",
+        "resolved": "DNS resolves to the machine",
+        "notWaiting": "Not waiting for DNS",
+        "timeout": "These records still do not resolve: {{records}}",
+        "resolvesElsewhere": "{{name}} resolves to {{found}}, not {{want}}; fix the record first",
+        "written": "Wrote {{type}} {{name}} -> {{value}}"
+      },
+      "health": {
+        "failed": "https://{{domain}}/health answered {{status}}, not 200",
+        "noAnswer": "nothing",
+        "certMismatch": "The certificate for {{domain}} covers {{sans}}, not {{domain}}"
+      },
+      "image": {
+        "pulling": "Pulling {{image}} on the machine",
+        "pullFailed": "Pulling {{image}} failed: {{detail}}",
+        "saving": "Saving {{image}} from the local Docker",
+        "saveFailed": "docker save {{image}} failed"
+      },
+      "owner": {
+        "stepFailed": "{{step}} answered {{status}} {{error}}",
+        "raced": "The server's subscription {{box}} is not the certificate's {{cert}}: another account registered first"
+      },
+      "preflight": {
+        "refused": "{{machine}} is not ready:",
+        "noAnswer": "{{machine}} did not answer the preflight over SSH",
+        "noSudo": "sudo -n fails on {{machine}}; the SSH user needs passwordless sudo",
+        "arch": "Architecture {{arch}} is not supported (x86_64 or aarch64)",
+        "portBusy": "Port {{port}} is held by {{holder}}",
+        "disk": "{{free}} GiB free on the datastore, {{need}} GiB needed",
+        "clock": "The machine's clock is {{skew}} s off (at most {{max}} s); enable time sync"
+      },
+      "tls": {
+        "byoNeedsPair": "--tls byo needs --tls-cert and --tls-key",
+        "byoFailed": "Installing the certificate for {{host}} failed: {{detail}}",
+        "byoInstalled": "Certificate installed for {{host}}",
+        "cloudflareNeedsToken": "--tls cloudflare needs --cf-token"
+      },
+      "prompts": {
+        "machine": "Machine to install on",
+        "machineAddExisting": "Existing server or LAN device (IP and user)",
+        "provisionHint": "A cloud VM is created first with rdc machine provision.",
+        "machineIp": "IP address",
+        "machineUser": "SSH user",
+        "machinePort": "SSH port",
+        "machineName": "Name for this machine",
+        "domain": "Public domain of the server",
+        "storeDomain": "Public domain of its backup store",
+        "tls": "Certificate",
+        "tlsLetsencrypt": "Let's Encrypt (the machine answers on port 80)",
+        "tlsCloudflare": "Cloudflare DNS (API token)",
+        "tlsByo": "An existing certificate and key",
+        "cfToken": "Cloudflare API token",
+        "owner": "Owner account email",
+        "required": "A value is required"
+      },
+      "errors": {
+        "needsTTY": "{{flag}} is required when not running on a terminal",
+        "machineUnknown": "Machine {{machine}} is not in this config. Pass --ip and --user to register it.",
+        "machineNameTaken": "A machine named {{machine}} is already registered at {{ip}}; pick another --name",
+        "otherMachine": "{{domain}} was installed on {{machine}} from this device",
+        "repoExists": "Repository {{repo}} already exists on {{machine}} and was not created by this install; pass --repo <name>",
+        "repoUnknown": "Repository {{repo}} is not in this config",
+        "noRecord": "No install record for {{domain}} on this device; pass --machine (and --repo when it is not elite)",
+        "noDaemon": "Repository {{repo}} has no Docker daemon recorded yet",
+        "keygenNoKey": "The machine reported no Ed25519 public key",
+        "bundleIncomplete": "secrets.env on the machine lacks {{keys}}",
+        "boxScriptFailed": "The command on {{machine}} exited {{code}}: {{detail}}",
+        "rdcFailed": "{{command}} failed (exit {{code}})",
+        "certAndFree": "--cert and --licence free cannot be combined"
+      }
+    },
     "job": {
       "description": "Manage detached jobs on a machine: list them, check status, replay or follow their event logs, cancel one, or garbage-collect finished ones. A detached job runs under systemd on the machine, so it survives a dropped connection and can be re-attached to later.",
       "summary": "Manage detached jobs on a machine",

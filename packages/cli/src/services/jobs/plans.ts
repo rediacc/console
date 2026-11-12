@@ -36,6 +36,8 @@ const INTERACTIVE = 'interactive: needs the local terminal (section 24)';
 const LOCAL_SYNC = 'client rsync between the local filesystem and the machine (section 24)';
 const OPERATOR_CREDENTIAL =
   'several renet calls driven from the operator side with a credential or token the config holds, so there is no single machine job (section 24)';
+const SERVER_STEPS =
+  'runs each step as a separate child command and job, around short SSH steps (PLAN-enterprise-tenants C7)';
 const NO_RENET =
   'makes no renet call, so there is nothing to run as a job (section 24 not-proxyable row)';
 
@@ -76,6 +78,12 @@ export const JOB_EXCEPTIONS: Readonly<Record<string, string>> = {
   'machine scan-keys':
     'local ssh-keyscan; the config write is the command (section 24 not-proxyable row)',
   'datastore list': 'reads config and state only, with no machine call',
+  // The server verbs (PLAN-enterprise-tenants C7) orchestrate: each step is a child command (repo create, repo up, ...) that is its own job, or a short SSH read.
+  'server install': INTERACTIVE,
+  'server status': 'reads the box over SSH and HTTPS, with no renet call',
+  'server backup': 'reads the recovery bundle over SSH, with no renet call',
+  'server upgrade': SERVER_STEPS,
+  'server licence': SERVER_STEPS,
 };
 
 /**

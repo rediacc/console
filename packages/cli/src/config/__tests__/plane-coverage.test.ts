@@ -151,8 +151,10 @@ describe('command plane coverage', () => {
     // 212 -> 213, other 39 -> 40: `subscription register` starts the device-code authorisation against the account server, never a machine, so it inherits `subscription`'s `other` plane.
     //
     // 213 -> 215, other 40 -> 42: `subscription notices` and `subscription retire` (PLAN-account-notices) go through the account server, so they take `subscription`'s `other` plane.
-    expect(COMMANDS.length).toBe(215);
-    expect(counts).toEqual({ config: 57, machine: 116, other: 42 });
+    //
+    // 215 -> 220, machine 116 -> 121: `rdc server install|status|upgrade|backup|licence` (PLAN-enterprise-tenants C7) all reach the machine over SSH.
+    expect(COMMANDS.length).toBe(220);
+    expect(counts).toEqual({ config: 57, machine: 121, other: 42 });
   });
 
   it('records the interactive commands', () => {
@@ -169,6 +171,7 @@ describe('command plane coverage', () => {
       'ops ssh',
       'repo tunnel',
       'serve',
+      'server install',
       'term connect',
       'vscode connect',
     ]);
@@ -209,7 +212,8 @@ describe('command plane coverage', () => {
     // 108 -> 109: `repo health` is machine-plane and non-interactive.
     // 109 -> 111: `repo repair` and `machine repair` are machine-plane and non-interactive.
     // 111 -> 112: `job dismiss` is machine-plane and non-interactive (it confirms only without --yes).
-    expect(machineNonInteractive.length).toBe(112);
+    // 112 -> 116: `server status|upgrade|backup|licence` are machine-plane and non-interactive; PROXY_EXCLUSIONS keeps them local (the caller's install record and keys).
+    expect(machineNonInteractive.length).toBe(116);
   });
 
   it('plane and interactive entries all point at real commands', () => {

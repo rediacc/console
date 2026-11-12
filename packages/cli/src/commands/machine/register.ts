@@ -7,14 +7,14 @@ import { outputService } from '../../services/core/output.js';
 import { setExitCode } from '../../services/core/request-context.js';
 import { pendingExitCode, runCommandJob } from '../../services/jobs/command-job.js';
 import { bindStepHandler, planStep } from '../../services/jobs/steps.js';
+import { addExistingMachine } from '../../services/machine/add-existing.js';
 import { machineConnections } from '../../services/machine/machine-connection.js';
 import { guardMachineRemoval } from '../../services/machine/machine-remove-guard.js';
 import { pushInfraConfig } from '../../services/provision/infra-provision.js';
 import { acquireRemoteRenet, readSSHKey } from '../../services/renet/renet-execution.js';
 import { REMOTE_RENET_PATH } from '../../services/renet/renet-provisioner.js';
 import { deployAllRepoKeys } from '../../services/repo/repo-key-deployment.js';
-import type { MachineConfig, OutputFormat } from '../../types/index.js';
-import { assertResourceName, MachineConfigSchema, parseConfig } from '../../utils/config-schema.js';
+import type { OutputFormat } from '../../types/index.js';
 import { handleError } from '../../utils/errors.js';
 import { classifyKeyChange, scanHostKeys, shortFingerprint } from '../../utils/host-keys.js';
 import { convergeAfterSetup } from './converge.js';
@@ -145,37 +145,9 @@ function registerAdd(machine: Command): void {
     .requiredOption('--ip <address>', t('options.machineIp'))
     .requiredOption('--user <username>', t('options.sshUser'))
     .option('--port <port>', t('options.sshPort'), '22')
-    .action(async (name: string, options) => {
+    .action(async (name: string, options: { ip: string; user: string; port: string }) => {
       try {
-        assertResourceName(name);
-        const machineConfig = parseConfig(
-          MachineConfigSchema,
-          {
-            ip: options.ip.trim(),
-            user: options.user.trim(),
-            port: Number.parseInt(options.port, 10),
-          },
-          'machine config'
-        ) as MachineConfig;
-
-        await configService.addMachine(name, machineConfig);
-        outputService.success(
-          t('commands.machine.add.success', {
-            name,
-            user: machineConfig.user,
-            ip: machineConfig.ip,
-          })
-        );
-
-        try {
-          const keyscan = scanHostKeys(machineConfig.ip, machineConfig.port ?? DEFAULTS.SSH.PORT);
-          if (keyscan) {
-            await configService.updateMachine(name, { knownHosts: keyscan });
-            outputService.info(t('commands.machine.scanKeys.keysScanned', { name }));
-          }
-        } catch {
-          /* non-fatal */
-        }
+        await addExistingMachine(name, options);
       } catch (error) {
         handleError(error);
       }

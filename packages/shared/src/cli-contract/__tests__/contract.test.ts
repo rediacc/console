@@ -193,6 +193,8 @@ describe('CLI contract', () => {
     excluded.push('backup download', 'backup upload');
     // The operator's credential or token drives them: the listing key, the passphrase checks and the repair's account calls (PLAN-backup-integrity C3 to C5, S2).
     excluded.push('backup check', 'backup churn', 'backup repair', 'backup toc-key sync');
+    // `rdc server` finds the box through the caller's install record, drives child commands and prints the server's keys; `server install` is interactive (PLAN-enterprise-tenants C7).
+    excluded.push('server status', 'server upgrade', 'server backup', 'server licence');
 
     for (const pathKey of excluded) {
       const cmd = getCommand(pathKey);
@@ -278,6 +280,8 @@ describe('CLI contract', () => {
       'repo push --strategy=auto|physical|shared',
       'repo secret set --mode=env|file',
       'serve --mode=daemon|container',
+      'server install --licence=auto|free',
+      'server install --tls=letsencrypt|cloudflare|byo',
       'vscode connect --server-provider=openvscode|code-server',
       'vscode serve status --server-provider=openvscode|code-server',
       'vscode serve stop --server-provider=openvscode|code-server',

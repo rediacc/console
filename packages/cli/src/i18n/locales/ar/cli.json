@@ -2528,6 +2528,176 @@
       "optionPort": "المنفذ الذي يتم الاستماع عليه",
       "summary": "التشغيل كمنفّذ للعملاء عن بُعد"
     },
+    "server": {
+      "summary": "تثبيت خادم حسابات Rediacc المستضاف ذاتيًا وتشغيله",
+      "description": "ثبّت خادم حسابات Rediacc المستضاف ذاتيًا (Elite) كمستودع على جهاز، ثم افحصه وحدّثه وانسخه احتياطيًا وأصدر ترخيصه. لا يُخلط مع `rdc serve` الذي يشغّل واجهة سطر الأوامر هذه كمنفّذ.",
+      "domainArgument": "النطاق العام للخادم المثبّت",
+      "optionMachine": "الجهاز الذي يعمل عليه الخادم، عندما لا يحتفظ هذا الجهاز بسجل تثبيت لهذا النطاق",
+      "optionRepo": "المستودع الذي يعمل فيه الخادم (الافتراضي: elite)",
+      "install": {
+        "summary": "تثبيت خادم الحسابات على جهاز",
+        "description": "ثبّت خادم الحسابات المستضاف ذاتيًا على جهاز موجود: فحص الجهاز، وإعداد renet إن لم يكن موجودًا، وانتظار DNS، وضبط TLS، وإنشاء المستودع، وتوليد مفاتيحه على الجهاز، وترخيصه، وتشغيله، وإنشاء حساب المالك. لكل قيمة خيار خاص بها، وفي الطرفية تُطلب القيمة الناقصة. تتخطى إعادة التشغيل الخطوات المنجزة سابقًا.",
+        "machineArgument": "الجهاز المُعدّ للتثبيت عليه (أو سجّل جهازًا بـ --ip و --user)",
+        "optionIp": "عنوان خادم قائم أو جهاز LAN لتسجيله أولًا",
+        "optionUser": "مستخدم SSH على ذلك الجهاز",
+        "optionPort": "منفذ SSH على ذلك الجهاز (الافتراضي: 22)",
+        "optionName": "الاسم الذي يُسجَّل به ذلك الجهاز (الافتراضي: server-<ip>)",
+        "optionDomain": "النطاق العام للخادم، مثل accounts.example.com",
+        "optionStoreDomain": "النطاق العام لمخزن النسخ الاحتياطي الخاص به (الافتراضي: <name>-store.<باقي النطاق>)",
+        "optionRepo": "اسم المستودع (الافتراضي: elite)",
+        "optionSize": "حجم المستودع (الافتراضي: 10G)",
+        "optionOwner": "البريد الإلكتروني لحساب المالك الذي يُنشأ أثناء التثبيت (الافتراضي: الحساب المسجَّل دخوله)",
+        "optionTls": "طريقة الحصول على الشهادة: letsencrypt (HTTP-01) أو cloudflare (DNS-01) أو byo (شهادة موجودة)",
+        "optionCfToken": "رمز Cloudflare API لـ DNS-01 (مع --tls cloudflare)",
+        "optionCertEmail": "البريد الإلكتروني الذي يرسل إليه Let's Encrypt إشعارات انتهاء الصلاحية (الافتراضي: المالك)",
+        "optionTlsCert": "ملف الشهادة بصيغة PEM (مع --tls byo)، يغطي النطاقين معًا",
+        "optionTlsKey": "ملف المفتاح الخاص بتلك الشهادة (مع --tls byo)",
+        "optionTlsCa": "شهادة CA التي ترتبط بها شهادة الخادم، وتُستخدم لفحص السلامة",
+        "optionLicence": "auto: شهادة من الحساب المسجَّل دخوله، أو الفئة المجانية إن لم توجد؛ free: البدء على الفئة المجانية",
+        "optionCert": "ملف شهادة التفويض لتثبيت دون اتصال؛ يجب أن يسمّي المفتاح المولَّد على الجهاز",
+        "optionImage": "صورة الخادم المراد تشغيلها (الافتراضي: ghcr.io/rediacc/server:latest)",
+        "optionImageFile": "أرشيف صورة محفوظ (docker save) يُشحن بدل السحب",
+        "optionLocalImage": "احفظ --image من Docker المحلي واشحنها بدل السحب",
+        "optionNoDnsWait": "اطبع سجلات DNS دون انتظار تحليلها",
+        "optionBwsProject": "انسخ المفاتيح المولَّدة أيضًا إلى مشروع Bitwarden Secrets Manager هذا؛ وبدونه لا يغادر أي مفتاح الجهاز",
+        "optionRotate": "مع --bws-project، استبدل القيمة المخزَّنة المختلفة بدل الرفض",
+        "optionYes": "لا تسأل عن شيء: خذ القيم الافتراضية وارفض أي قيمة ناقصة",
+        "help": "الخطوات بالترتيب (تُسجَّل كل خطوة، فتتخطى إعادة التشغيل ما أُنجز):\n  preflight  sudo -n والمعمارية والمنفذان 80 و443 ومساحة القرص وانحراف الساعة\n  setup      rdc machine setup، عند غياب renet\n  dns        طباعة سجلات A وAAAA، ثم الانتظار حتى يُحلَّل النطاقان إلى الجهاز\n  tls        Let's Encrypt أو Cloudflare DNS-01 أو شهادة موجودة\n  repo       إنشاء المستودع وتطبيق قالب elite\n  keys       توليد كل مفتاح على الجهاز داخل secrets.env الخاص بالمستودع\n  licence    --cert، وإلا شهادة من الحساب المسجَّل دخوله، وإلا الفئة المجانية\n  image      سحب الصورة على الجهاز، أو شحن --image-file\n  up         تشغيل الخادم وانتظار https://<domain>/health\n  owner      إنشاء حساب المالك\n\nيُضاف الجهاز غير المسجَّل بعد بالخيارين --ip و --user. تُنشأ الآلة السحابية VM أولًا بالأمر rdc machine provision.\nتُطبع سجلات DNS ولا تُكتب أبدًا في نطاق العميل.\nفي الطرفية ينتهي التثبيت بحزمة استرداد تُعرض مرة واحدة. احفظها في مكان آمن: لا تُسجَّل أبدًا ولا تدخل في --output json، ويطبعها rdc server backup مجددًا لاحقًا.",
+        "step": "الخطوة: {{step}}",
+        "skipped": "الخطوة {{step}}: أُنجزت سابقًا، تم تخطيها",
+        "done": "خادم الحسابات يعمل على https://{{domain}}",
+        "freeTier": "يعمل {{domain}} على الفئة المجانية. نفّذ `rdc server licence {{domain}}` لترخيصه.",
+        "backupHint": "احفظ حزمة الاسترداد بالأمر `rdc server backup {{domain}} --out <file>`. كلمة المرور الأولى للمالك في {{ownerFile}}.",
+        "examples": {
+          "brought": "سجّل خادمًا قائمًا بعنوانه ثم ثبّت عليه.",
+          "configured": "ثبّت على جهاز مُعدّ دون أي سؤال.",
+          "lan": "ثبّت على جهاز LAN بشهادة موجودة وعلى الفئة المجانية."
+        }
+      },
+      "status": {
+        "description": "عرض سلامة الخادم المثبّت وفئته وشهادته وصورته"
+      },
+      "backup": {
+        "description": "اطبع حزمة الاسترداد (المفاتيح) لخادم مثبّت، أو اكتبها في ملف",
+        "optionOut": "اكتب الحزمة في هذا الملف (الوضع 0600) بدل stdout",
+        "written": "كُتبت حزمة الاسترداد في {{file}} (الوضع 0600)",
+        "examples": {
+          "out": "احفظ حزمة الاسترداد في ملف لا يقرأه سوى مالكه."
+        }
+      },
+      "upgrade": {
+        "description": "ترقية خادم مثبّت: تفريع مستودعه كنقطة استرجاع، ووضع الصورة الجديدة، وإعادة تطبيق القالب عندما يكون المضمَّن أحدث، ثم إعادة التشغيل",
+        "confirm": "هل تريد ترقية خادم الحسابات على {{domain}}؟",
+        "forking": "تفريع المستودع كنقطة استرجاع {{tag}}",
+        "template": "إعادة تطبيق قالب elite (الإصدار {{from}} إلى {{to}})",
+        "templateCurrent": "القالب المنشور (الإصدار {{version}}) هو الأحدث",
+        "done": "تمت ترقية {{domain}}. نقطة الاسترجاع: {{rollback}}"
+      },
+      "licence": {
+        "description": "نقل خادم الفئة المجانية إلى شهادة تفويض من الحساب المسجَّل دخوله، أو من --cert",
+        "done": "{{domain}} مرخَّص بموجب الاشتراك {{subscription}}",
+        "certUnreadable": "تعذّرت قراءة ملف الشهادة {{file}}",
+        "certInvalid": "{{file}} ليس شهادة تفويض صالحة للاستخدام: {{error}}",
+        "keyMismatch": "صدر {{file}} لمفتاح غير المفتاح المولَّد على الجهاز. أصدر شهادة لمفتاح الجهاز.",
+        "issuedKeyMismatch": "أصدر خادم الحسابات شهادة لمفتاح غير المفتاح المولَّد على الجهاز",
+        "noLogin": "لا يوجد حساب مسجَّل دخوله: سيبدأ الخادم على الفئة المجانية",
+        "planDisallows": "لا يمكن للاشتراك أن يحتوي على شهادة تفويض ({{error}})؛ سيبدأ الخادم على الفئة المجانية",
+        "otherKey": "يحتوي الاشتراك أصلًا على شهادة تفويض نشطة لمفتاح آخر ({{certId}}). ألغِها من البوابة، ثم شغّل التثبيت مجددًا. {{error}}",
+        "missingScope": "لا يستطيع تسجيل الدخول هذا إصدار شهادة تفويض. نفّذ `rdc subscription login` مجددًا بصفة مالك أو مسؤول مع 2FA، أو ثبّت باستخدام --licence free.",
+        "offerFree": "هل تريد تشغيل الخادم على الفئة المجانية بدلًا من ذلك؟",
+        "noCertForUpgrade": "لا توجد شهادة تفويض متاحة: سجّل الدخول بـ `rdc subscription login` بصفة مالك أو مسؤول مع 2FA، أو مرّر --cert <file>",
+        "stillFree": "ما زال {{domain}} يستجيب كفئة مجانية بعد إعادة التشغيل",
+        "freeProbeHoldsCert": "يستجيب الخادم كأنه يحمل شهادة رغم عدم تثبيت أي شهادة"
+      },
+      "bundle": {
+        "header": "حزمة الاسترداد لـ {{domain}}. احتفظ بها دون اتصال؛ فهي تستعيد مفاتيح الخادم.",
+        "once": "تُعرض حزمة الاسترداد هذه مرة واحدة. احفظها الآن في مكان آمن:",
+        "owner": "حساب المالك: {{email}}، كلمة المرور الأولى: {{password}}"
+      },
+      "bws": {
+        "skipped": "لا يوجد --bws-project: تبقى المفاتيح على الجهاز فقط",
+        "done": "تم نسخ المفاتيح احتياطيًا إلى Bitwarden Secrets Manager: {{created}} أُنشئ، {{unchanged}} دون تغيير، {{rotated}} استُبدل",
+        "noToken": "لا يوجد رمز Bitwarden Secrets Manager: عيّن BWS_ACCESS_TOKEN أو اكتبه في الملف bws-access-token داخل مجلد الإعدادات",
+        "listFailed": "فشل bws secret list",
+        "noWriter": "يحتاج --bws-project إلى نسخة console: تمر الكتابة عبر private/account/scripts/rotation/bws-write.ts الذي يُبقي القيمة خارج سطر الأوامر",
+        "writeFailed": "فشلت كتابة {{key}} في Bitwarden Secrets Manager",
+        "readFailed": "فشلت قراءة المفاتيح من الجهاز",
+        "badName": "رفض اسم مخزن غير معتّم",
+        "differs": "{{key}} مخزَّن أصلًا بقيمة مختلفة؛ مرّر --rotate لاستبداله"
+      },
+      "dns": {
+        "create": "أنشئ سجلات DNS هذه لدى مزوّد DNS:",
+        "waiting": "جارٍ انتظار تحليل السجلات...",
+        "resolved": "يُحلَّل DNS إلى الجهاز",
+        "notWaiting": "لن ينتظر DNS",
+        "timeout": "ما زالت هذه السجلات لا تُحلَّل: {{records}}",
+        "resolvesElsewhere": "يُحلَّل {{name}} إلى {{found}} وليس {{want}}؛ أصلح السجل أولًا",
+        "written": "تمت كتابة {{type}} {{name}} -> {{value}}"
+      },
+      "health": {
+        "failed": "ردّ https://{{domain}}/health بالحالة {{status}} بدل 200",
+        "noAnswer": "لا شيء",
+        "certMismatch": "تغطي شهادة {{domain}} النطاقات {{sans}} وليس {{domain}}"
+      },
+      "image": {
+        "pulling": "جارٍ سحب {{image}} على الجهاز",
+        "pullFailed": "فشل سحب {{image}}: {{detail}}",
+        "saving": "جارٍ حفظ {{image}} من Docker المحلي",
+        "saveFailed": "فشل docker save {{image}}"
+      },
+      "owner": {
+        "stepFailed": "ردّ {{step}} بالحالة {{status}} {{error}}",
+        "raced": "اشتراك الخادم {{box}} ليس اشتراك الشهادة {{cert}}: سبقه حساب آخر إلى التسجيل"
+      },
+      "preflight": {
+        "refused": "{{machine}} غير جاهز:",
+        "noAnswer": "لم يردّ {{machine}} على الفحص المسبق عبر SSH",
+        "noSudo": "يفشل sudo -n على {{machine}}؛ يحتاج مستخدم SSH إلى sudo دون كلمة مرور",
+        "arch": "المعمارية {{arch}} غير مدعومة (x86_64 أو aarch64)",
+        "portBusy": "المنفذ {{port}} مشغول بواسطة {{holder}}",
+        "disk": "المتاح {{free}} GiB في مخزن البيانات، والمطلوب {{need}} GiB",
+        "clock": "ساعة الجهاز منحرفة بمقدار {{skew}} ث (الحد الأقصى {{max}} ث)؛ فعّل مزامنة الوقت"
+      },
+      "tls": {
+        "byoNeedsPair": "يحتاج --tls byo إلى --tls-cert و --tls-key",
+        "byoFailed": "فشل تثبيت الشهادة لـ {{host}}: {{detail}}",
+        "byoInstalled": "تم تثبيت الشهادة لـ {{host}}",
+        "cloudflareNeedsToken": "يحتاج --tls cloudflare إلى --cf-token"
+      },
+      "prompts": {
+        "machine": "الجهاز المراد التثبيت عليه",
+        "machineAddExisting": "خادم قائم أو جهاز LAN (IP والمستخدم)",
+        "provisionHint": "تُنشأ الآلة السحابية VM أولًا بالأمر rdc machine provision.",
+        "machineIp": "عنوان IP",
+        "machineUser": "مستخدم SSH",
+        "machinePort": "منفذ SSH",
+        "machineName": "اسم لهذا الجهاز",
+        "domain": "النطاق العام للخادم",
+        "storeDomain": "النطاق العام لمخزن النسخ الاحتياطي الخاص به",
+        "tls": "الشهادة",
+        "tlsLetsencrypt": "Let's Encrypt (يستجيب الجهاز على المنفذ 80)",
+        "tlsCloudflare": "Cloudflare DNS (رمز API)",
+        "tlsByo": "شهادة ومفتاح موجودان",
+        "cfToken": "رمز Cloudflare API",
+        "owner": "البريد الإلكتروني لحساب المالك",
+        "required": "القيمة مطلوبة"
+      },
+      "errors": {
+        "needsTTY": "{{flag}} مطلوب عند التشغيل خارج الطرفية",
+        "machineUnknown": "الجهاز {{machine}} غير موجود في هذا الإعداد. مرّر --ip و --user لتسجيله.",
+        "machineNameTaken": "يوجد جهاز باسم {{machine}} مسجَّل أصلًا على {{ip}}؛ اختر --name آخر",
+        "otherMachine": "ثُبّت {{domain}} على {{machine}} من هذا الجهاز",
+        "repoExists": "المستودع {{repo}} موجود أصلًا على {{machine}} ولم يُنشأ بواسطة هذا التثبيت؛ مرّر --repo <name>",
+        "repoUnknown": "المستودع {{repo}} غير موجود في هذا الإعداد",
+        "noRecord": "لا يوجد سجل تثبيت لـ {{domain}} على هذا الجهاز؛ مرّر --machine (و --repo إن لم يكن elite)",
+        "noDaemon": "لم يُسجَّل بعد أي Docker daemon للمستودع {{repo}}",
+        "keygenNoKey": "لم يُبلغ الجهاز عن أي مفتاح عام Ed25519",
+        "bundleIncomplete": "ينقص secrets.env على الجهاز: {{keys}}",
+        "boxScriptFailed": "انتهى الأمر على {{machine}} بالرمز {{code}}: {{detail}}",
+        "rdcFailed": "فشل {{command}} (رمز الخروج {{code}})",
+        "certAndFree": "لا يمكن الجمع بين --cert و --licence free"
+      }
+    },
     "shortcuts": {
       "cancel": {
         "description": "إلغاء مهمة (اختصار لـ: queue cancel)"

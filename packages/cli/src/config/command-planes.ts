@@ -158,6 +158,10 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   // ── serve ───────────────────────────────────────────────────────────── The executor daemon. `plane: machine` is honest, running machine operations on a caller's behalf is its entire job, and it imports local-executor to do it. `interactive` because it listens until SIGINT and never returns, which is also what keeps it out of the proxy: forwarding `rdc serve` to an executor
   // would ask the executor to start another one.
   serve: { plane: 'machine', interactive: true },
+
+  // ── server ──────────────────────────────────────────────────────────── The self-hosted account server as a repo: every verb reaches the machine over SSH (services/server/box.ts). `install` is interactive: it asks for missing values on a TTY, prints the one-time recovery bundle only there, and drives child `rdc` and local `docker`, none of which an executor could do on the caller's behalf.
+  server: { plane: 'machine' },
+  'server install': { plane: 'machine', interactive: true },
 };
 
 /** Indexed for lookup: a Map.get() is honestly optional, a Record index is not. */

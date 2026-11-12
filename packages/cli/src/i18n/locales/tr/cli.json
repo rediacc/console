@@ -2528,6 +2528,176 @@
       "optionPort": "Dinlenecek port",
       "summary": "Uzak istemciler için yürütücü olarak çalıştır"
     },
+    "server": {
+      "summary": "Kendi sunucunuzda barındırılan Rediacc hesap sunucusunu kurun ve çalıştırın",
+      "description": "Kendi sunucunuzda barındırılan Rediacc hesap sunucusunu (Elite) bir makineye depo olarak kurar; ardından denetleme, yükseltme, yedekleme ve lisanslama sağlar. Bu CLI'yi yürütücü olarak çalıştıran `rdc serve` ile karıştırılmamalıdır.",
+      "domainArgument": "Kurulu sunucunun genel alan adı",
+      "optionMachine": "Bu cihazda alan adı için kurulum kaydı yoksa sunucunun çalıştığı makine",
+      "optionRepo": "Sunucunun çalıştığı depo (varsayılan: elite)",
+      "install": {
+        "summary": "Hesap sunucusunu bir makineye kur",
+        "description": "Kendi sunucunuzda barındırılan hesap sunucusunu mevcut bir makineye kurar: makineyi denetler, eksikse renet'i kurar, DNS'i bekler, TLS'i yapılandırır, depoyu oluşturur, anahtarları makinede üretir, lisanslar, sunucuyu başlatır ve sahip hesabını oluşturur. Her değerin bir bayrağı vardır; terminalde eksik değer sorulur. Yeniden çalıştırma, tamamlanmış adımları atlar.",
+        "machineArgument": "Kurulum yapılacak yapılandırılmış makine (veya --ip ve --user ile bir tane kaydedin)",
+        "optionIp": "Önce kaydedilecek mevcut bir sunucunun veya LAN cihazının adresi",
+        "optionUser": "O makinedeki SSH kullanıcısı",
+        "optionPort": "O makinedeki SSH bağlantı noktası (varsayılan: 22)",
+        "optionName": "O makinenin kaydedileceği ad (varsayılan: server-<ip>)",
+        "optionDomain": "Sunucunun genel alan adı, örneğin accounts.example.com",
+        "optionStoreDomain": "Yedek deposunun genel alan adı (varsayılan: <name>-store.<alan adının geri kalanı>)",
+        "optionRepo": "Depo adı (varsayılan: elite)",
+        "optionSize": "Depo boyutu (varsayılan: 10G)",
+        "optionOwner": "Kurulum sırasında oluşturulan sahip hesabının e-postası (varsayılan: oturum açmış hesap)",
+        "optionTls": "Sertifikanın nasıl alınacağı: letsencrypt (HTTP-01), cloudflare (DNS-01) veya byo (mevcut bir sertifika)",
+        "optionCfToken": "DNS-01 için Cloudflare API belirteci (--tls cloudflare ile)",
+        "optionCertEmail": "Let's Encrypt'in süre bitimi bildirimlerini göndereceği e-posta (varsayılan: sahip)",
+        "optionTlsCert": "PEM biçiminde sertifika dosyası (--tls byo ile), her iki alan adını da kapsamalıdır",
+        "optionTlsKey": "O sertifikanın özel anahtar dosyası (--tls byo ile)",
+        "optionTlsCa": "Sunucu sertifikasının zincirlendiği CA sertifikası, sağlık denetiminde kullanılır",
+        "optionLicence": "auto: oturum açmış hesaptan bir sertifika, yoksa ücretsiz katman; free: ücretsiz katmanda başlat",
+        "optionCert": "Çevrimdışı kurulum için yetki devri sertifikası dosyası; makinede üretilen anahtarı belirtmelidir",
+        "optionImage": "Çalıştırılacak sunucu imajı (varsayılan: ghcr.io/rediacc/server:latest)",
+        "optionImageFile": "Çekmek yerine gönderilecek kayıtlı imaj arşivi (docker save)",
+        "optionLocalImage": "--image imajını yerel Docker'dan kaydet ve çekmek yerine gönder",
+        "optionNoDnsWait": "DNS kayıtlarını çözümlenmelerini beklemeden yazdır",
+        "optionBwsProject": "Üretilen anahtarları ayrıca bu Bitwarden Secrets Manager projesine kopyala; bu olmadan hiçbir anahtar makineden çıkmaz",
+        "optionRotate": "--bws-project ile, farklı olan kayıtlı bir değeri reddetmek yerine değiştir",
+        "optionYes": "Hiçbir şey sorma: varsayılanları al ve eksik değeri reddet",
+        "help": "Adımlar, sırayla (her biri kaydedilir, bu yüzden yeniden çalıştırma tamamlananları atlar):\n  preflight  sudo -n, mimari, 80 ve 443 numaralı bağlantı noktaları, disk alanı ve saat kayması\n  setup      renet eksikse rdc machine setup\n  dns        A ve AAAA kayıtlarını yazdırır, ardından her iki alan adı da makineye çözümlenene kadar bekler\n  tls        Let's Encrypt, Cloudflare DNS-01 veya mevcut bir sertifika\n  repo       depoyu oluşturur ve elite şablonunu uygular\n  keys       tüm anahtarları makinede, deponun secrets.env dosyasına üretir\n  licence    --cert, yoksa oturum açmış hesaptan bir sertifika, o da yoksa ücretsiz katman\n  image      imajı makinede çeker veya --image-file gönderir\n  up         sunucuyu başlatır ve https://<domain>/health yanıtını bekler\n  owner      sahip hesabını oluşturur\n\nHenüz kaydedilmemiş bir makine --ip ve --user ile eklenir. Bulut VM'si önce rdc machine provision ile oluşturulur.\nDNS kayıtları yazdırılır, hiçbir zaman müşteri bölgesine yazılmaz.\nTerminalde kurulum, tek seferlik bir kurtarma paketiyle biter. Güvenli bir yerde saklayın: günlüğe hiç yazılmaz, --output json çıktısına girmez ve rdc server backup onu daha sonra yeniden yazdırır.",
+        "step": "Adım: {{step}}",
+        "skipped": "Adım {{step}}: daha önce tamamlandı, atlandı",
+        "done": "Hesap sunucusu https://{{domain}} adresinde çalışıyor",
+        "freeTier": "{{domain}} ücretsiz katmanda çalışıyor. Lisanslamak için `rdc server licence {{domain}}` komutunu çalıştırın.",
+        "backupHint": "Kurtarma paketini `rdc server backup {{domain}} --out <file>` ile kaydedin. Sahibin ilk parolası {{ownerFile}} içindedir.",
+        "examples": {
+          "brought": "Mevcut bir sunucuyu adresiyle kaydedip üzerine kurulum yap.",
+          "configured": "Yapılandırılmış bir makineye hiçbir soru sormadan kurulum yap.",
+          "lan": "Bir LAN makinesine mevcut sertifikayla, ücretsiz katmanda kurulum yap."
+        }
+      },
+      "status": {
+        "description": "Kurulu bir sunucunun sağlığını, katmanını, sertifikasını ve imajını göster"
+      },
+      "backup": {
+        "description": "Kurulu bir sunucunun kurtarma paketini (anahtarları) yazdır veya bir dosyaya yaz",
+        "optionOut": "Paketi stdout yerine bu dosyaya yaz (kip 0600)",
+        "written": "Kurtarma paketi {{file}} dosyasına yazıldı (kip 0600)",
+        "examples": {
+          "out": "Kurtarma paketini yalnızca sahibinin okuyabileceği bir dosyaya kaydet."
+        }
+      },
+      "upgrade": {
+        "description": "Kurulu bir sunucuyu yükselt: deponun geri alma noktası olarak fork'unu oluştur, yeni imajı yerleştir, yerleşik şablon daha yeniyse şablonu yeniden uygula ve yeniden başlat",
+        "confirm": "{{domain}} üzerindeki hesap sunucusu yükseltilsin mi?",
+        "forking": "Depo, {{tag}} geri alma noktası olarak fork ediliyor",
+        "template": "elite şablonu yeniden uygulanıyor (sürüm {{from}} -> {{to}})",
+        "templateCurrent": "Dağıtılmış şablon (sürüm {{version}}) güncel",
+        "done": "{{domain}} yükseltildi. Geri alma noktası: {{rollback}}"
+      },
+      "licence": {
+        "description": "Ücretsiz katmandaki bir sunucuyu, oturum açmış hesaptan veya --cert ile alınan yetki devri sertifikasına taşı",
+        "done": "{{domain}}, {{subscription}} aboneliği altında lisanslandı",
+        "certUnreadable": "{{file}} sertifika dosyası okunamıyor",
+        "certInvalid": "{{file}} kullanılabilir bir yetki devri sertifikası değil: {{error}}",
+        "keyMismatch": "{{file}}, makinede üretilen anahtardan farklı bir anahtar için verilmiş. Makinenin anahtarı için bir sertifika alın.",
+        "issuedKeyMismatch": "Hesap sunucusu, makinede üretilen anahtardan farklı bir anahtar için sertifika verdi",
+        "noLogin": "Oturum açmış hesap yok: sunucu ücretsiz katmanda başlar",
+        "planDisallows": "Abonelik bir yetki devri sertifikası barındıramaz ({{error}}); sunucu ücretsiz katmanda başlar",
+        "otherKey": "Abonelikte başka bir anahtar ({{certId}}) için etkin bir yetki devri sertifikası zaten var. Portalda iptal edin, sonra kurulumu yeniden çalıştırın. {{error}}",
+        "missingScope": "Bu oturum bir yetki devri sertifikası veremez. `rdc subscription login` komutunu 2FA'lı bir sahip veya yönetici olarak yeniden çalıştırın ya da --licence free ile kurun.",
+        "offerFree": "Sunucu bunun yerine ücretsiz katmanda başlatılsın mı?",
+        "noCertForUpgrade": "Kullanılabilir yetki devri sertifikası yok: `rdc subscription login` ile 2FA'lı bir sahip veya yönetici olarak oturum açın ya da --cert <file> verin",
+        "stillFree": "{{domain}}, yeniden başlatmadan sonra hâlâ ücretsiz katman olarak yanıt veriyor",
+        "freeProbeHoldsCert": "Hiçbir sertifika kurulmamasına rağmen sunucu sertifika taşıyormuş gibi yanıt veriyor"
+      },
+      "bundle": {
+        "header": "{{domain}} için kurtarma paketi. Çevrimdışı saklayın; sunucunun anahtarlarını geri yükler.",
+        "once": "Bu kurtarma paketi yalnızca bir kez gösterilir. Şimdi güvenli bir yerde saklayın:",
+        "owner": "Sahip hesabı: {{email}}, ilk parola: {{password}}"
+      },
+      "bws": {
+        "skipped": "--bws-project yok: anahtarlar yalnızca makinede kalır",
+        "done": "Anahtarlar Bitwarden Secrets Manager'a yedeklendi: {{created}} oluşturuldu, {{unchanged}} değişmedi, {{rotated}} değiştirildi",
+        "noToken": "Bitwarden Secrets Manager belirteci yok: BWS_ACCESS_TOKEN ayarlayın veya yapılandırma dizinindeki bws-access-token dosyasına yazın",
+        "listFailed": "bws secret list başarısız oldu",
+        "noWriter": "--bws-project bir console checkout'u gerektirir: yazma, değeri komut satırı dışında tutan private/account/scripts/rotation/bws-write.ts üzerinden yapılır",
+        "writeFailed": "{{key}} değerinin Bitwarden Secrets Manager'a yazılması başarısız oldu",
+        "readFailed": "Anahtarların makineden okunması başarısız oldu",
+        "badName": "Opak olmayan bir depo adı reddediliyor",
+        "differs": "{{key}} zaten farklı bir değerle kayıtlı; değiştirmek için --rotate verin"
+      },
+      "dns": {
+        "create": "Bu DNS kayıtlarını DNS sağlayıcısında oluşturun:",
+        "waiting": "Kayıtların çözümlenmesi bekleniyor...",
+        "resolved": "DNS makineye çözümleniyor",
+        "notWaiting": "DNS beklenmiyor",
+        "timeout": "Bu kayıtlar hâlâ çözümlenmiyor: {{records}}",
+        "resolvesElsewhere": "{{name}}, {{want}} yerine {{found}} adresine çözümleniyor; önce kaydı düzeltin",
+        "written": "Yazıldı: {{type}} {{name}} -> {{value}}"
+      },
+      "health": {
+        "failed": "https://{{domain}}/health, 200 yerine {{status}} yanıtı verdi",
+        "noAnswer": "yanıt yok",
+        "certMismatch": "{{domain}} için sertifika {{sans}} adlarını kapsıyor, {{domain}} adını kapsamıyor"
+      },
+      "image": {
+        "pulling": "{{image}} makinede çekiliyor",
+        "pullFailed": "{{image}} çekilemedi: {{detail}}",
+        "saving": "{{image}} yerel Docker'dan kaydediliyor",
+        "saveFailed": "docker save {{image}} başarısız oldu"
+      },
+      "owner": {
+        "stepFailed": "{{step}} {{status}} {{error}} yanıtı verdi",
+        "raced": "Sunucunun aboneliği {{box}}, sertifikanın aboneliği {{cert}} ile aynı değil: başka bir hesap önce kaydoldu"
+      },
+      "preflight": {
+        "refused": "{{machine}} hazır değil:",
+        "noAnswer": "{{machine}} SSH üzerinden ön denetime yanıt vermedi",
+        "noSudo": "sudo -n {{machine}} üzerinde başarısız; SSH kullanıcısının parolasız sudo yetkisi olmalı",
+        "arch": "{{arch}} mimarisi desteklenmiyor (x86_64 veya aarch64)",
+        "portBusy": "{{port}} numaralı bağlantı noktasını {{holder}} kullanıyor",
+        "disk": "Veri deposunda {{free}} GiB boş alan var, {{need}} GiB gerekli",
+        "clock": "Makinenin saati {{skew}} sn sapmış (en fazla {{max}} sn); zaman eşitlemesini etkinleştirin"
+      },
+      "tls": {
+        "byoNeedsPair": "--tls byo için --tls-cert ve --tls-key gerekir",
+        "byoFailed": "{{host}} için sertifika kurulumu başarısız oldu: {{detail}}",
+        "byoInstalled": "{{host}} için sertifika kuruldu",
+        "cloudflareNeedsToken": "--tls cloudflare için --cf-token gerekir"
+      },
+      "prompts": {
+        "machine": "Kurulum yapılacak makine",
+        "machineAddExisting": "Mevcut sunucu veya LAN cihazı (IP ve kullanıcı)",
+        "provisionHint": "Bulut VM'si önce rdc machine provision ile oluşturulur.",
+        "machineIp": "IP adresi",
+        "machineUser": "SSH kullanıcısı",
+        "machinePort": "SSH bağlantı noktası",
+        "machineName": "Bu makinenin adı",
+        "domain": "Sunucunun genel alan adı",
+        "storeDomain": "Yedek deposunun genel alan adı",
+        "tls": "Sertifika",
+        "tlsLetsencrypt": "Let's Encrypt (makine 80 numaralı bağlantı noktasında yanıt verir)",
+        "tlsCloudflare": "Cloudflare DNS (API belirteci)",
+        "tlsByo": "Mevcut bir sertifika ve anahtar",
+        "cfToken": "Cloudflare API belirteci",
+        "owner": "Sahip hesabının e-postası",
+        "required": "Bir değer gerekli"
+      },
+      "errors": {
+        "needsTTY": "Terminalde çalışmıyorken {{flag}} gereklidir",
+        "machineUnknown": "{{machine}} makinesi bu yapılandırmada yok. Kaydetmek için --ip ve --user verin.",
+        "machineNameTaken": "{{machine}} adlı bir makine zaten {{ip}} adresinde kayıtlı; başka bir --name seçin",
+        "otherMachine": "{{domain}}, bu cihazdan {{machine}} makinesine kurulmuştu",
+        "repoExists": "{{repo}} deposu {{machine}} üzerinde zaten var ve bu kurulum tarafından oluşturulmadı; --repo <name> verin",
+        "repoUnknown": "{{repo}} deposu bu yapılandırmada yok",
+        "noRecord": "Bu cihazda {{domain}} için kurulum kaydı yok; --machine verin (elite değilse --repo da)",
+        "noDaemon": "{{repo}} deposu için henüz kaydedilmiş bir Docker daemon'u yok",
+        "keygenNoKey": "Makine bir Ed25519 genel anahtarı bildirmedi",
+        "bundleIncomplete": "Makinedeki secrets.env dosyasında {{keys}} eksik",
+        "boxScriptFailed": "{{machine}} üzerindeki komut {{code}} koduyla çıktı: {{detail}}",
+        "rdcFailed": "{{command}} başarısız oldu (çıkış kodu {{code}})",
+        "certAndFree": "--cert ve --licence free birlikte kullanılamaz"
+      }
+    },
     "shortcuts": {
       "cancel": {
         "description": "Bir görevi iptal et (kısayol: queue cancel)"

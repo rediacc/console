@@ -19,7 +19,8 @@ const BASE_SCOPES = [
   'backup:read',
   'config:enroll',
 ] as const;
-const PRIVILEGED_SCOPES = ['audit:write', 'backup:manage'] as const;
+// delegation:issue lets `rdc server install` mint the subscription's delegation cert (POST /delegation/issue). Like backup:manage it needs 2FA, so the fallback below drops both together.
+const PRIVILEGED_SCOPES = ['audit:write', 'backup:manage', 'delegation:issue'] as const;
 
 export interface PasswordLoginInput {
   email: string;

@@ -2528,6 +2528,176 @@
       "optionPort": "Port, mida kuulata",
       "summary": "Käivita täiturina kaugklientide jaoks"
     },
+    "server": {
+      "summary": "Paigalda ja käivita ise majutatav Rediacci kontoserver",
+      "description": "Paigaldab ise majutatava Rediacci kontoserveri (Elite) masinasse hoidlana ning võimaldab seda seejärel kontrollida, uuendada, varundada ja litsentsida. Mitte segi ajada käsuga `rdc serve`, mis käivitab selle CLI täitjana.",
+      "domainArgument": "Paigaldatud serveri avalik domeen",
+      "optionMachine": "Masin, millel server töötab, kui sellel seadmel pole domeeni paigalduskirjet",
+      "optionRepo": "Hoidla, milles server töötab (vaikimisi: elite)",
+      "install": {
+        "summary": "Paigalda kontoserver masinasse",
+        "description": "Paigaldab ise majutatava kontoserveri olemasolevasse masinasse: kontrollib masinat, seadistab renet'i, kui see puudub, ootab DNS-i, seadistab TLS-i, loob hoidla, genereerib võtmed masinas, litsentsib, käivitab serveri ja loob omaniku konto. Igal väärtusel on lipp; terminalis küsitakse puuduvat väärtust. Uuesti käivitamine jätab tehtud sammud vahele.",
+        "machineArgument": "Seadistatud masin, millele paigaldada (või registreeri uus valikutega --ip ja --user)",
+        "optionIp": "Olemasoleva serveri või LAN-seadme aadress, mis tuleb enne registreerida",
+        "optionUser": "SSH-kasutaja sellel masinal",
+        "optionPort": "SSH-port sellel masinal (vaikimisi: 22)",
+        "optionName": "Nimi, mille all masin registreeritakse (vaikimisi: server-<ip>)",
+        "optionDomain": "Serveri avalik domeen, näiteks accounts.example.com",
+        "optionStoreDomain": "Selle varundushoidla avalik domeen (vaikimisi: <name>-store.<domeeni ülejäänud osa>)",
+        "optionRepo": "Hoidla nimi (vaikimisi: elite)",
+        "optionSize": "Hoidla suurus (vaikimisi: 10G)",
+        "optionOwner": "Paigalduse käigus loodava omaniku konto e-post (vaikimisi: sisse logitud konto)",
+        "optionTls": "Kuidas sertifikaat hangitakse: letsencrypt (HTTP-01), cloudflare (DNS-01) või byo (olemasolev sertifikaat)",
+        "optionCfToken": "Cloudflare'i API-tunnus DNS-01 jaoks (koos --tls cloudflare)",
+        "optionCertEmail": "E-post, kuhu Let's Encrypt saadab aegumisteated (vaikimisi: omanik)",
+        "optionTlsCert": "PEM-vormingus sertifikaadifail (koos --tls byo), mis katab mõlemad domeenid",
+        "optionTlsKey": "Selle sertifikaadi privaatvõtme fail (koos --tls byo)",
+        "optionTlsCa": "CA sertifikaat, millega serveri sertifikaat aheldub, kasutatakse tervisekontrollis",
+        "optionLicence": "auto: sisse logitud konto sertifikaat või selle puudumisel tasuta tase; free: alusta tasuta tasemel",
+        "optionCert": "Delegeerimissertifikaadi fail võrguta paigalduseks; selles peab olema nimetatud masinas genereeritud võti",
+        "optionImage": "Käivitatav serveri kujutis (vaikimisi: ghcr.io/rediacc/server:latest)",
+        "optionImageFile": "Salvestatud kujutise arhiiv (docker save), mis saadetakse tõmbamise asemel",
+        "optionLocalImage": "Salvesta --image kohalikust Dockerist ja saada see tõmbamise asemel",
+        "optionNoDnsWait": "Prindi DNS-kirjed, ootamata nende lahendumist",
+        "optionBwsProject": "Kopeeri genereeritud võtmed ka sellesse Bitwarden Secrets Manageri projekti; ilma selleta ei lahku ükski võti masinast",
+        "optionRotate": "Koos --bws-project asenda erinev salvestatud väärtus keeldumise asemel",
+        "optionYes": "Ära küsi midagi: võta vaikeväärtused ja keeldu puuduvast väärtusest",
+        "help": "Sammud järjekorras (iga samm salvestatakse, nii et uuesti käivitamine jätab tehtu vahele):\n  preflight  sudo -n, arhitektuur, pordid 80 ja 443, kettaruum ja kella nihe\n  setup      rdc machine setup, kui renet puudub\n  dns        prindib A- ja AAAA-kirjed, seejärel ootab, kuni mõlemad domeenid lahenduvad masinale\n  tls        Let's Encrypt, Cloudflare DNS-01 või olemasolev sertifikaat\n  repo       loob hoidla ja rakendab elite malli\n  keys       genereerib kõik võtmed masinas hoidla secrets.env faili\n  licence    --cert, muidu sisse logitud konto sertifikaat, muidu tasuta tase\n  image      tõmbab kujutise masinas või saadab --image-file\n  up         käivitab serveri ja ootab vastust aadressilt https://<domain>/health\n  owner      loob omaniku konto\n\nVeel registreerimata masin lisatakse valikutega --ip ja --user. Pilve-VM luuakse enne käsuga rdc machine provision.\nDNS-kirjeid prinditakse, kuid kunagi ei kirjutata kliendi tsooni.\nTerminalis lõpeb paigaldus ühekordse taastepaketiga. Hoia seda turvalises kohas: seda ei logita kunagi ja see ei kuulu valiku --output json väljundisse, kuid rdc server backup prindib selle hiljem uuesti.",
+        "step": "Samm: {{step}}",
+        "skipped": "Samm {{step}}: tehtud varem, jäetud vahele",
+        "done": "Kontoserver töötab aadressil https://{{domain}}",
+        "freeTier": "{{domain}} töötab tasuta tasemel. Litsentsimiseks käivita `rdc server licence {{domain}}`.",
+        "backupHint": "Salvesta taastepakett käsuga `rdc server backup {{domain}} --out <file>`. Omaniku esimene parool on failis {{ownerFile}}.",
+        "examples": {
+          "brought": "Registreeri olemasolev server aadressi järgi ja paigalda sellele.",
+          "configured": "Paigalda seadistatud masinale ilma ühegi küsimuseta.",
+          "lan": "Paigalda LAN-masinale olemasoleva sertifikaadiga tasuta tasemel."
+        }
+      },
+      "status": {
+        "description": "Näita paigaldatud serveri tervist, taset, sertifikaati ja kujutist"
+      },
+      "backup": {
+        "description": "Prindi paigaldatud serveri taastepakett (võtmed) või kirjuta see faili",
+        "optionOut": "Kirjuta pakett stdout'i asemel sellesse faili (režiim 0600)",
+        "written": "Taastepakett kirjutati faili {{file}} (režiim 0600)",
+        "examples": {
+          "out": "Salvesta taastepakett faili, mida saab lugeda ainult omanik."
+        }
+      },
+      "upgrade": {
+        "description": "Uuenda paigaldatud server: tee hoidlast fork tagasipöördepunktiks, paiguta uus kujutis, rakenda mall uuesti, kui sisseehitatud mall on uuem, ja taaskäivita",
+        "confirm": "Kas uuendada kontoserver aadressil {{domain}}?",
+        "forking": "Hoidlast tehakse fork tagasipöördepunktiks {{tag}}",
+        "template": "Elite malli rakendatakse uuesti (versioon {{from}} -> {{to}})",
+        "templateCurrent": "Juurutatud mall (versioon {{version}}) on ajakohane",
+        "done": "{{domain}} uuendatud. Tagasipöördepunkt: {{rollback}}"
+      },
+      "licence": {
+        "description": "Vii tasuta taseme server üle delegeerimissertifikaadile, mis pärineb sisse logitud kontolt või valikust --cert",
+        "done": "{{domain}} on litsentsitud tellimuse {{subscription}} alusel",
+        "certUnreadable": "Sertifikaadifaili {{file}} ei saa lugeda",
+        "certInvalid": "{{file}} ei ole kasutatav delegeerimissertifikaat: {{error}}",
+        "keyMismatch": "{{file}} on välja antud muule võtmele kui masinas genereeritud võti. Anna välja sertifikaat masina võtmele.",
+        "issuedKeyMismatch": "Kontoserver andis sertifikaadi välja muule võtmele kui masinas genereeritud võti",
+        "noLogin": "Sisse logitud kontot pole: server käivitub tasuta tasemel",
+        "planDisallows": "Tellimus ei saa sisaldada delegeerimissertifikaati ({{error}}); server käivitub tasuta tasemel",
+        "otherKey": "Tellimusel on juba aktiivne delegeerimissertifikaat teisele võtmele ({{certId}}). Tühista see portaalis ja käivita paigaldus uuesti. {{error}}",
+        "missingScope": "See sisselogimine ei saa delegeerimissertifikaati välja anda. Käivita `rdc subscription login` uuesti omaniku või administraatorina koos 2FA-ga või paigalda valikuga --licence free.",
+        "offerFree": "Kas käivitada server hoopis tasuta tasemel?",
+        "noCertForUpgrade": "Delegeerimissertifikaati pole saadaval: logi sisse käsuga `rdc subscription login` omaniku või administraatorina koos 2FA-ga või anna --cert <file>",
+        "stillFree": "{{domain}} vastab pärast taaskäivitust endiselt tasuta tasemena",
+        "freeProbeHoldsCert": "Server vastab nii, nagu tal oleks sertifikaat, kuigi ühtegi pole paigaldatud"
+      },
+      "bundle": {
+        "header": "Domeeni {{domain}} taastepakett. Hoia seda võrguühenduseta; see taastab serveri võtmed.",
+        "once": "See taastepakett kuvatakse ainult üks kord. Salvesta see kohe turvalisse kohta:",
+        "owner": "Omaniku konto: {{email}}, esimene parool: {{password}}"
+      },
+      "bws": {
+        "skipped": "Valikut --bws-project pole: võtmed jäävad ainult masinasse",
+        "done": "Võtmed varundati Bitwarden Secrets Manageri: {{created}} loodud, {{unchanged}} muutmata, {{rotated}} asendatud",
+        "noToken": "Bitwarden Secrets Manageri tunnust pole: sea BWS_ACCESS_TOKEN või kirjuta see seadistuskataloogi faili bws-access-token",
+        "listFailed": "bws secret list nurjus",
+        "noWriter": "--bws-project vajab console'i checkout'i: kirjutamine käib läbi faili private/account/scripts/rotation/bws-write.ts, mis hoiab väärtuse käsureast väljas",
+        "writeFailed": "Võtme {{key}} kirjutamine Bitwarden Secrets Manageri nurjus",
+        "readFailed": "Võtmete lugemine masinast nurjus",
+        "badName": "Keeldutakse hoidla nimest, mis pole läbipaistmatu",
+        "differs": "{{key}} on juba salvestatud teise väärtusega; asendamiseks anna --rotate"
+      },
+      "dns": {
+        "create": "Loo need DNS-kirjed DNS-teenusepakkuja juures:",
+        "waiting": "Oodatakse kirjete lahendumist...",
+        "resolved": "DNS lahendub masinale",
+        "notWaiting": "DNS-i ei oodata",
+        "timeout": "Need kirjed ei lahendu endiselt: {{records}}",
+        "resolvesElsewhere": "{{name}} lahendub aadressile {{found}}, mitte {{want}}; paranda kõigepealt kirje",
+        "written": "Kirjutatud {{type}} {{name}} -> {{value}}"
+      },
+      "health": {
+        "failed": "https://{{domain}}/health vastas {{status}}, mitte 200",
+        "noAnswer": "vastust pole",
+        "certMismatch": "Domeeni {{domain}} sertifikaat katab nimed {{sans}}, kuid mitte {{domain}}"
+      },
+      "image": {
+        "pulling": "Tõmmatakse {{image}} masinas",
+        "pullFailed": "Kujutise {{image}} tõmbamine nurjus: {{detail}}",
+        "saving": "Salvestatakse {{image}} kohalikust Dockerist",
+        "saveFailed": "docker save {{image}} nurjus"
+      },
+      "owner": {
+        "stepFailed": "{{step}} vastas {{status}} {{error}}",
+        "raced": "Serveri tellimus {{box}} ei ole sama, mis sertifikaadi tellimus {{cert}}: mõni teine konto registreeris end enne"
+      },
+      "preflight": {
+        "refused": "{{machine}} ei ole valmis:",
+        "noAnswer": "{{machine}} ei vastanud eelkontrollile SSH kaudu",
+        "noSudo": "sudo -n ebaõnnestub masinas {{machine}}; SSH-kasutaja vajab paroolita sudo-õigust",
+        "arch": "Arhitektuur {{arch}} ei ole toetatud (x86_64 või aarch64)",
+        "portBusy": "Pordi {{port}} hoiab kinni {{holder}}",
+        "disk": "Andmehoidlas on vaba {{free}} GiB, vaja on {{need}} GiB",
+        "clock": "Masina kell on {{skew}} s nihkes (lubatud kuni {{max}} s); luba ajasünkroonimine"
+      },
+      "tls": {
+        "byoNeedsPair": "--tls byo vajab valikuid --tls-cert ja --tls-key",
+        "byoFailed": "Hosti {{host}} sertifikaadi paigaldamine nurjus: {{detail}}",
+        "byoInstalled": "Hosti {{host}} sertifikaat paigaldatud",
+        "cloudflareNeedsToken": "--tls cloudflare vajab valikut --cf-token"
+      },
+      "prompts": {
+        "machine": "Masin, millele paigaldada",
+        "machineAddExisting": "Olemasolev server või LAN-seade (IP ja kasutaja)",
+        "provisionHint": "Pilve-VM luuakse enne käsuga rdc machine provision.",
+        "machineIp": "IP-aadress",
+        "machineUser": "SSH-kasutaja",
+        "machinePort": "SSH-port",
+        "machineName": "Selle masina nimi",
+        "domain": "Serveri avalik domeen",
+        "storeDomain": "Selle varundushoidla avalik domeen",
+        "tls": "Sertifikaat",
+        "tlsLetsencrypt": "Let's Encrypt (masin vastab pordil 80)",
+        "tlsCloudflare": "Cloudflare DNS (API-tunnus)",
+        "tlsByo": "Olemasolev sertifikaat ja võti",
+        "cfToken": "Cloudflare'i API-tunnus",
+        "owner": "Omaniku konto e-post",
+        "required": "Väärtus on kohustuslik"
+      },
+      "errors": {
+        "needsTTY": "{{flag}} on kohustuslik, kui ei töötata terminalis",
+        "machineUnknown": "Masin {{machine}} ei ole selles seadistuses. Registreerimiseks anna --ip ja --user.",
+        "machineNameTaken": "Masin nimega {{machine}} on juba registreeritud aadressil {{ip}}; vali mõni muu --name",
+        "otherMachine": "{{domain}} paigaldati sellelt seadmelt masinasse {{machine}}",
+        "repoExists": "Hoidla {{repo}} on masinas {{machine}} juba olemas ja seda ei loonud see paigaldus; anna --repo <name>",
+        "repoUnknown": "Hoidla {{repo}} ei ole selles seadistuses",
+        "noRecord": "Sellel seadmel pole domeeni {{domain}} paigalduskirjet; anna --machine (ja --repo, kui see pole elite)",
+        "noDaemon": "Hoidlale {{repo}} pole veel Dockeri deemonit registreeritud",
+        "keygenNoKey": "Masin ei teatanud ühtegi Ed25519 avalikku võtit",
+        "bundleIncomplete": "Masina secrets.env failis puuduvad {{keys}}",
+        "boxScriptFailed": "Käsk masinas {{machine}} lõppes koodiga {{code}}: {{detail}}",
+        "rdcFailed": "{{command}} nurjus (väljumiskood {{code}})",
+        "certAndFree": "--cert ja --licence free ei saa koos kasutada"
+      }
+    },
     "shortcuts": {
       "cancel": {
         "description": "Katkestab ülesande (otsetee: queue cancel)"

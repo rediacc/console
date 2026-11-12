@@ -15,6 +15,7 @@ import { registerMcpCommands } from './commands/mcp/index.js';
 import { registerOpsCommands } from './commands/ops/index.js';
 import { registerRepoCommands } from './commands/repo.js';
 import { registerServeCommand } from './commands/serve.js';
+import { registerServerCommands } from './commands/server.js';
 import { registerShortcuts } from './commands/shortcuts.js';
 import { registerSubscriptionCommands } from './commands/subscription.js';
 import { registerTermCommands } from './commands/term.js';
@@ -429,6 +430,7 @@ export function createCli(): Command {
   registerSubscriptionCommands(cli);
   registerMcpCommands(cli);
   registerServeCommand(cli);
+  registerServerCommands(cli);
   registerExecutorDaemonCommands(cli);
   registerShortcuts(cli);
 
