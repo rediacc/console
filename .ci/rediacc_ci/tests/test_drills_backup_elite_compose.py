@@ -161,6 +161,7 @@ class FakeApi:
         self.calls: list[tuple[str, str]] = []
 
     def accept_terms(self) -> bool:
+        self.calls.append(("ACCEPT", "/portal/terms/accept"))
         return False
 
     def call(self, method: str, path: str, body: dict | None = None, timeout: int = 30) -> dict:
@@ -513,3 +514,13 @@ def test_teardown_removes_the_licence_from_the_root_renet_reads(
     removals = [c for c, _ in vm.calls if "rm -rf" in c]
     assert removals
     assert all(root in c for c in removals)
+
+
+def test_the_registration_accepts_the_terms_before_reading_the_subscription(harness) -> None:
+    """85d9bad6.2: removing the accept_terms call from register() fails here."""
+    run = harness()
+    calls = run.apis[0].calls
+    assert ("ACCEPT", "/portal/terms/accept") in calls
+    assert calls.index(("ACCEPT", "/portal/terms/accept")) < calls.index(
+        ("GET", "/portal/subscription")
+    )

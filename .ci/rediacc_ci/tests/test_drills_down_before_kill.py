@@ -1544,3 +1544,17 @@ def test_k1_6_a_lost_rename_with_no_valid_slot_is_a_failed_check(
     assert ("K1.6 move the built renet into the cache", False) in [
         (d, ok) for d, ok, _e in ctx.rows
     ]
+
+
+def test_k1_6_a_prune_that_leaves_a_slot_is_a_failed_check(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """c14835ff.1: leftovers from the prune are a failed row naming them, and the built binary is still returned."""
+    live, ctx = _ready(tmp_path, FakeWorker())
+    _Builder(ctx)
+    monkeypatch.setattr(k, "prune_renet_cache", lambda _cache, _keep: ["old-slot"])
+    assert live._main_binary() is not None
+    rows = [(d, ok, e) for d, ok, e in ctx.rows if d.startswith("K1.6 the renet cache prunes to")]
+    assert len(rows) == 1
+    assert rows[0][1] is False
+    assert "old-slot" in rows[0][2]

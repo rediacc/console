@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from rediacc_ci.core import local_common, prepare_lock
+from rediacc_ci.core import account_lifecycle, local_common, prepare_lock
 
 if TYPE_CHECKING:
     import pathlib
@@ -171,3 +171,82 @@ def test_the_lock_file_is_outside_the_checkout_and_one_per_real_path(
     assert path == prepare_lock.lock_path(str(tmp_path / "link"))
     assert not path.startswith(str(tmp_path))
     assert path != prepare_lock.lock_path(str(tmp_path))
+
+
+class _Held:
+    """Stands in for `prepare_lock.held`, recording the order of enter, exit and the work done between them."""
+
+    def __init__(self) -> None:
+        self.events: list[str] = []
+
+    def __call__(self, _root: str, *, shared: bool, **_kw: Any):
+        events = self.events
+
+        @contextlib.contextmanager
+        def cm():
+            events.append("enter shared" if shared else "enter exclusive")
+            try:
+                yield
+            finally:
+                events.append("exit")
+
+        return cm()
+
+
+def test_ensure_deps_takes_the_exclusive_lock_and_rechecks_the_stamp_under_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """20fdede2.1: a preparer that waited on the lock finds the install done under it and installs nothing."""
+    held = _Held()
+    answers = iter([False, True])  # stale before the lock, current once it is held
+    monkeypatch.setattr(local_common.prepare_lock, "held", held)
+    monkeypatch.setattr(local_common, "deps_are_current", lambda _env=None: next(answers))
+
+    def no_install(*_a: Any, **_k: Any) -> None:
+        raise AssertionError(
+            "the install must not run when the stamp became current under the lock"
+        )
+
+    monkeypatch.setattr(local_common, "_must", no_install)
+    assert local_common.ensure_deps({}) is True
+    assert held.events == ["enter exclusive", "exit"]
+
+
+def test_ensure_deps_installs_under_the_exclusive_lock_when_still_stale(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    held = _Held()
+    ran: list[tuple[str, ...]] = []
+    monkeypatch.setattr(local_common.prepare_lock, "held", held)
+    monkeypatch.setattr(local_common, "deps_are_current", lambda _env=None: False)
+    monkeypatch.setattr(
+        local_common, "_must", lambda argv, **_k: ran.append((*argv, *held.events[-1:]))
+    )
+    monkeypatch.setattr(local_common, "ensure_cpu_features_gypi", lambda _nm: True)
+    monkeypatch.setattr(local_common, "write_stamp_hash", lambda *_a: None)
+    monkeypatch.setattr(local_common, "deps_hash", lambda _env=None: "h")
+    assert local_common.ensure_deps({}) is True
+    assert held.events == ["enter exclusive", "exit"]
+    assert ran
+    assert all(call[-1] == "enter exclusive" for call in ran)
+
+
+def test_the_account_test_run_holds_the_prepare_lock_shared_around_vitest(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """20fdede2.2: the lock is taken before vitest starts and released after it ends."""
+    held = _Held()
+    monkeypatch.setattr(account_lifecycle.prepare_lock, "held", held)
+    monkeypatch.setattr(account_lifecycle, "_check_node", lambda: None)
+    monkeypatch.setattr(account_lifecycle.local_common, "ensure_packages_built", lambda: True)
+    monkeypatch.setattr(account_lifecycle.account, "account_dir", lambda: ".")
+    monkeypatch.setattr(account_lifecycle, "_cd_or_die", lambda _d: None)
+    monkeypatch.setattr(account_lifecycle.local_common, "local_root_dir", lambda *_a: ".")
+
+    def fake_run(_argv: list[str], **_k: Any) -> int:
+        held.events.append("vitest")
+        return 0
+
+    monkeypatch.setattr(account_lifecycle, "_run", fake_run)
+    assert account_lifecycle.test([]) == 0
+    assert held.events == ["enter shared", "vitest", "exit"]

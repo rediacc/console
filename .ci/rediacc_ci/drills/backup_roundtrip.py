@@ -155,7 +155,9 @@ class Api:
     def accept_terms(self) -> bool:
         """Accept the current Terms for the logged-in throwaway account, as the portal checkbox does; every `/portal` route answers 403 TERMS_ACCEPTANCE_REQUIRED until then. True when it accepted, False when already satisfied. Any other answer raises StepError."""
         status = self.call("GET", "/portal/terms")
-        if status.get("satisfied") is True:
+        if not isinstance(status.get("satisfied"), bool):
+            raise StepError("the Terms status carries no boolean `satisfied`: %r" % (status,))
+        if status["satisfied"]:
             return False
         current = status.get("current") or {}
         if not current.get("version") or not current.get("sha256"):

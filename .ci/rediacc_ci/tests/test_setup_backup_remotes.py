@@ -207,3 +207,13 @@ def test_check_row_reports_a_remote_that_kept_its_refspec_as_pending(tmp_path):
     assert "fetch refspec" in row
     br.install(root, say=lambda _line: None)
     assert br.check_row(root)[1] is False
+
+
+def test_check_row_names_both_the_unlocked_and_the_missing_repositories(tmp_path):
+    """18716f60.2: a mixed run shows the refspec row and the repositories that have no remote at all."""
+    root = _console(tmp_path)
+    _git(root / "private" / "renet", "remote", "add", "gitlab", br.pins()["private/renet"])
+    row, pending = br.check_row(root)
+    assert pending
+    assert "fetch refspec in private/renet" in row
+    assert "NOT added in private/account" in row

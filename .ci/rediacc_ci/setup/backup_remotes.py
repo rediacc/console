@@ -132,15 +132,13 @@ def check_row(root: pathlib.Path) -> tuple[str, bool]:
     missing = [rel for rel, _repo, _want, have in rows if not have]
     foreign = [rel for rel, _repo, want, have in rows if have and have != want]
     unlocked = [rel for rel, repo, want, have in rows if have == want and fetchable(repo)]
+    pending = []
     if unlocked:
-        return "  backup remotes keep a fetch refspec in %s (setup removes it)" % ", ".join(
-            unlocked
-        ), True
+        pending.append("keep a fetch refspec in %s (setup removes it)" % ", ".join(unlocked))
     if missing:
-        return "  backup remotes NOT added in %s (setup adds `%s`)" % (
-            ", ".join(missing),
-            REMOTE,
-        ), True
+        pending.append("NOT added in %s (setup adds `%s`)" % (", ".join(missing), REMOTE))
+    if pending:
+        return "  backup remotes " + "; ".join(pending), True
     if foreign:
         return "  backup remotes %s point elsewhere (left alone)" % ", ".join(foreign), False
     return "  backup remotes pinned (`%s` in %d submodule(s))" % (REMOTE, len(rows)), False

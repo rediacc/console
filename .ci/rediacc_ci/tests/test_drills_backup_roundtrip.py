@@ -447,3 +447,18 @@ def test_accept_terms_fails_by_name_when_the_acceptance_is_refused() -> None:
     api = FakeApi(fail_path="/portal/terms/accept")
     with pytest.raises(rt.StepError, match="portal/terms/accept"):
         api.accept_terms()
+
+
+@pytest.mark.parametrize("shape", [{}, {"satisfied": "true"}, {"satisfied": None}])
+def test_accept_terms_refuses_a_status_without_a_boolean_satisfied(shape: dict) -> None:
+    """85d9bad6.1: a wrong-shape answer is named, never read as "unsatisfied, so accept"."""
+
+    class Odd(FakeApi):
+        def call(self, method: str, path: str, body: dict | None = None, timeout: int = 30) -> dict:
+            if path == "/portal/terms":
+                return {**shape, "current": {"version": "2026-01-01", "sha256": "a" * 64}}
+            return super().call(method, path, body, timeout)
+
+    api = Odd()
+    with pytest.raises(rt.StepError, match="boolean `satisfied`"):
+        api.accept_terms()
