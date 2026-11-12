@@ -353,9 +353,17 @@ const ALLOWED_IDENTICAL = new Set([
   'Communications',
   // tr/admin.json already keeps "Lead Magnet" as an English loanword elsewhere in the same leadMagnets block (pageTitle: "Lead Magnet İndirmeleri", failedError: "Lead magnet indirmeleri yüklenemedi."), so the short magnetLabel column header ("Magnet") follows the same established convention rather than introducing a different Turkish term.
   'Magnet',
-  // French cognate: "Introduction" is spelled identically in French and English, so the numbered legal-page section title "1. Introduction" is correct French (privacyPolicy/cookiePolicy/telemetryPolicy). Allowlisted by exact value rather than by a numbered-title pattern, so "1. Definitions" and every other untranslated numbered title is still reported.
-  '1. Introduction',
 ]);
+
+/**
+ * Values that may stay English-identical in ONE locale only. "1. Introduction" is correct French
+ * (the numbered legal-page section title of privacyPolicy/cookiePolicy/telemetryPolicy); in any
+ * other locale the same value is an untranslated title. Matched by exact value, so
+ * "1. Definitions" and every other numbered title is still reported.
+ */
+const ALLOWED_IDENTICAL_BY_LOCALE: Readonly<Record<string, ReadonlySet<string>>> = {
+  fr: new Set(['1. Introduction']),
+};
 
 // Patterns for strings that should not be translated (placeholders, format strings)
 const PLACEHOLDER_PATTERNS: RegExp[] = [
@@ -430,7 +438,7 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
   /\(64-bit\)$/, // Architecture labels like "x64 (64-bit)"
   /\.subsections\.\w+\.title$/, // Legal subsection titles (often kept in English)
   /\.badgeLabels\./, // Badge labels (often identical: "Standard", "Priority")
-  /^[\d.\s]+$/, // Pure numbering like "1.", "2.4", "10.2.1" (no words to translate)
+  /^(?=.*\d)[\d.\s]+$/, // Pure numbering like "1.", "2.4", "10.2.1" (no words to translate); at least one digit, so "..." or blanks are not skipped
   /^~?\d+\s+minutes?$/, // Time durations like "~15 minutes", "30 minutes"
   /\.(rpo|rto)$/, // Recovery point/time objective values (technical metrics)
   /\.cardClass$/, // CSS class identifiers (sealed, restored, verified, down, config, compliant)
@@ -588,10 +596,11 @@ function flatten(obj: TranslationObject, prefix = ''): Record<string, Translatio
   return result;
 }
 
-function shouldSkipValue(value: TranslationValue, key = ''): boolean {
+function shouldSkipValue(value: TranslationValue, key = '', lang = ''): boolean {
   if (typeof value !== 'string') return true;
   if (value.length <= MIN_STRING_LENGTH) return true;
   if (ALLOWED_IDENTICAL.has(value)) return true;
+  if (ALLOWED_IDENTICAL_BY_LOCALE[lang]?.has(value)) return true;
   // Check placeholder patterns
   for (const pattern of PLACEHOLDER_PATTERNS) {
     if (pattern.test(key) || pattern.test(value)) return true;
@@ -645,11 +654,13 @@ function isPluralLeaf(key: string, groups: Set<string>): boolean {
   return cut > 0 && groups.has(key.slice(0, cut)) && PLURAL_CATEGORIES.has(key.slice(cut + 1));
 }
 
-function pluralCategoriesOf(lang: string): Set<string> {
+/** The categories `lang` selects, or null when `lang` is not a valid BCP 47 tag (`pt_BR`). */
+function pluralCategoriesOf(lang: string): Set<string> | null {
   try {
     return new Set(new Intl.PluralRules(lang).resolvedOptions().pluralCategories);
-  } catch {
-    return new Set(['other']);
+  } catch (e) {
+    if (e instanceof RangeError) return null;
+    throw e;
   }
 }
 
@@ -742,13 +753,19 @@ function checkLocaleDir(name: string, localeDir: string, flatFiles = false): Che
 
     // Check for untranslated strings
     const untranslatedKeys: string[] = [];
-    const langCategories = pluralCategoriesOf(lang);
+    const resolvedCategories = pluralCategoriesOf(lang);
+    if (resolvedCategories === null) {
+      errors.push(
+        `[${name}/${lang}] locale name is not a valid BCP 47 tag, so its plural categories cannot be resolved (rename it, e.g. pt_BR -> pt-BR)`
+      );
+    }
+    const langCategories = resolvedCategories ?? new Set(['other']);
     for (const [key, enValue] of Object.entries(enKeys)) {
       if (!(key in langKeys)) {
         // A plural category this language's rules never select is not owed (ja has no `one`).
         if (isPluralLeaf(key, enPluralGroups) && !langCategories.has(leafOf(key))) continue;
         missing++;
-      } else if (langKeys[key] === enValue && !shouldSkipValue(enValue, key)) {
+      } else if (langKeys[key] === enValue && !shouldSkipValue(enValue, key, lang)) {
         untranslated++;
         untranslatedKeys.push(key);
       }
@@ -954,6 +971,34 @@ function controlMissingAndOrphanKeys(): void {
     );
   }
 
+  // Plural groups: a category the language never selects is not owed (ja has no `one`), one it
+  // does select is (de needs `one`); a category English lacks but the language selects (ru `few`)
+  // is not an orphan; a locale directory that is no BCP 47 tag is an error, not silently exempt.
+  const plural = {
+    items: { one: 'one item', other: 'many items' },
+  };
+  fs.writeFileSync(path.join(tmp, 'en.json'), JSON.stringify(plural));
+  fs.writeFileSync(path.join(tmp, 'ja.json'), JSON.stringify({ items: { other: 'ja items' } }));
+  fs.writeFileSync(path.join(tmp, 'de.json'), JSON.stringify({ items: { other: 'de items' } }));
+  fs.writeFileSync(
+    path.join(tmp, 'ru.json'),
+    JSON.stringify({ items: { one: 'ru one', few: 'ru few', many: 'ru many', other: 'ru other' } })
+  );
+  fs.writeFileSync(path.join(tmp, 'pt_BR.json'), JSON.stringify({ items: { other: 'x items' } }));
+  const pluralRun = checkLocaleDir('control', tmp, true);
+  if (pluralRun.stats?.ja?.missing !== 0) {
+    failures.push('ja lacks `one`, a category it never selects, but was counted missing');
+  }
+  if (pluralRun.stats?.de?.missing !== 1) {
+    failures.push('de lacks `one`, a category it selects, and was not counted missing');
+  }
+  if (pluralRun.errors.some((e) => e.includes('[control/ru]'))) {
+    failures.push('ru `few`/`many` (selected by ru, absent from English) were reported');
+  }
+  if (!pluralRun.errors.some((e) => e.includes('pt_BR') && e.includes('BCP 47'))) {
+    failures.push('a locale directory name that is not a BCP 47 tag was not reported');
+  }
+
   fs.rmSync(tmp, { recursive: true, force: true });
   if (failures.length > 0) {
     console.error('\x1b[31m✗\x1b[0m CONTROL FAILED: this gate cannot detect a missing or');
@@ -971,9 +1016,12 @@ function controlMissingAndOrphanKeys(): void {
  */
 function controlNumberedTitles(): void {
   const failures: string[] = [];
-  const oldSkip = /^\d+\.\s+\w+$/;
-  if (!oldSkip.test('1. Definitions')) {
-    failures.push('the plant no longer reproduces the old blanket numbered-title skip');
+  // The gate's own patterns must not skip a numbered title or a punctuation-only value.
+  if (PLACEHOLDER_PATTERNS.some((p) => p.test('1. Definitions'))) {
+    failures.push('a PLACEHOLDER_PATTERNS entry skips the numbered title "1. Definitions"');
+  }
+  if (PLACEHOLDER_PATTERNS.some((p) => p.test('...') || p.test('   '))) {
+    failures.push('a PLACEHOLDER_PATTERNS entry skips a value with no digit or letter');
   }
   const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'completeness-numbered-control-'));
   const en = { title: '1. Definitions', num: '2.4', sub: '10.2.1' };
@@ -985,6 +1033,20 @@ function controlNumberedTitles(): void {
       `expected exactly "1. Definitions" reported (pure numbering skipped), got ${planted?.untranslated} (${planted?.untranslatedKeys.join(',')})`
     );
   }
+  // "1. Introduction" is an allowed cognate in fr only.
+  const intro = { intro: '1. Introduction' };
+  fs.writeFileSync(path.join(tmp, 'en.json'), JSON.stringify(intro));
+  fs.writeFileSync(path.join(tmp, 'de.json'), JSON.stringify(intro));
+  fs.writeFileSync(path.join(tmp, 'fr.json'), JSON.stringify(intro));
+  const introRun = checkLocaleDir('control', tmp, true).stats;
+  if (introRun?.de?.untranslated !== 1) {
+    failures.push('"1. Introduction" identical to English in de was not reported');
+  }
+  if (introRun?.fr?.untranslated !== 0) {
+    failures.push('"1. Introduction" in fr was reported, but it is a French cognate');
+  }
+  fs.rmSync(path.join(tmp, 'fr.json'));
+  fs.writeFileSync(path.join(tmp, 'en.json'), JSON.stringify(en));
   fs.writeFileSync(
     path.join(tmp, 'de.json'),
     JSON.stringify({ ...en, title: '1. Begriffsbestimmungen' })
