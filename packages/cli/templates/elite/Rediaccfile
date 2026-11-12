@@ -37,15 +37,38 @@ load_secrets() {
   fi
 }
 
+# Local-first image path. images/manifest.txt lists one "<tar file> <image ref>" pair per line.
+load_images() {
+  local image="${ELITE_IMAGE:-ghcr.io/rediacc/server:${TAG}}"
+  local tar ref served=0
+  for tar in images/*.tar; do
+    [[ -f "$tar" ]] || continue
+    ref=$(awk -v f="$(basename "$tar")" '$1 == f { print $2; exit }' images/manifest.txt 2>/dev/null)
+    if [[ -z "$ref" ]]; then
+      echo "images/manifest.txt has no ref for ${tar}" >&2
+      return 1
+    fi
+    if ! docker image inspect "$ref" >/dev/null 2>&1; then
+      docker load -i "$tar" || return 1
+    fi
+    if [[ "$ref" == "$image" ]]; then
+      served=1
+    fi
+  done
+
+  if [[ "$served" -eq 0 ]] && ! docker image inspect "$image" >/dev/null 2>&1; then
+    if [[ "${ELITE_OFFLINE:-}" == "1" ]]; then
+      echo "ELITE_OFFLINE=1: image ${image} is absent and no images/*.tar provides it" >&2
+      return 1
+    fi
+    docker pull "$image" || return 1
+  fi
+}
+
 up() {
   load_secrets || return 1
   mkdir -p data/web data/rustfs
-
-  # Local-first image path: load the shipped tarball when the image is not present yet.
-  local image="${ELITE_IMAGE:-ghcr.io/rediacc/server:${TAG}}"
-  if [[ -f images/server.tar ]] && ! docker image inspect "$image" >/dev/null 2>&1; then
-    docker load -i images/server.tar || return 1
-  fi
+  load_images || return 1
 
   renet compose -- up -d
 }
@@ -62,5 +85,9 @@ info() {
 
 health() {
   load_secrets || return 1
-  curl -fsS --max-time 10 "https://${ELITE_DOMAIN}/health" >/dev/null
+  local args=(-fsS --max-time 10 --resolve "${ELITE_DOMAIN}:443:127.0.0.1")
+  if [[ -n "${ELITE_CA_FILE:-}" ]]; then
+    args+=(--cacert "${ELITE_CA_FILE}")
+  fi
+  curl "${args[@]}" "https://${ELITE_DOMAIN}/health" >/dev/null
 }

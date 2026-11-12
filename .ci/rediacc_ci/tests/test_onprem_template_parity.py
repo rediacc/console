@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import yaml
@@ -32,6 +33,25 @@ def test_template_web_env_matches_elite():
     missing, extra = _diff(ELITE.read_text(), TEMPLATE.read_text())
     assert missing == set(), f"Elite has web variables the template lacks: {sorted(missing)}"
     assert extra == set(), f"template-only web variables: {sorted(extra)}"
+
+
+def _non_server_images(text: str) -> dict[str, str]:
+    services = yaml.safe_load(text)["services"]
+    return {name: svc["image"] for name, svc in services.items() if name != "web"}
+
+
+def _unpinned(images: dict[str, str]) -> dict[str, str]:
+    return {name: image for name, image in images.items() if "@sha256:" not in image}
+
+
+def test_non_server_images_are_digest_pinned():
+    assert _unpinned(_non_server_images(TEMPLATE.read_text())) == {}
+
+
+def test_control_unpinned_image_is_detected():
+    text = TEMPLATE.read_text()
+    text = re.sub(r"(image: rustfs/rustfs)@sha256:[0-9a-f]+", r"\1:latest", text, count=1)
+    assert "rustfs" in _unpinned(_non_server_images(text))
 
 
 def test_control_new_elite_variable_is_detected():
