@@ -93,7 +93,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 24 of 70 plans done, 1123 of 1309 boxes done (85%).
+Promoted: 24 of 71 plans done, 1123 of 1312 boxes done (85%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -167,6 +167,7 @@ Promoted: 24 of 70 plans done, 1123 of 1309 boxes done (85%).
 | 68 | PLAN-enterprise-tenants.md | 16/47 | 31 open |
 | 69 | PLAN-licence-expiry-notices.md | 5/7 | 2 open |
 | 70 | PLAN-onprem-relicence-inbox.md | 10/12 | 2 open |
+| 71 | PLAN-signer-bench-stop-binding-reattach.md | 0/3 | 3 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
@@ -239,6 +240,7 @@ Promoted: 24 of 70 plans done, 1123 of 1309 boxes done (85%).
 68. agent/plans/PLAN-enterprise-tenants.md -- operator 2026-11-12: "employ a parallel agent to complete the gaps in agent/plans/PLAN-enterprise-isolation.md ASAP"; rulings ASKED 2026-11-12T11:3xZ
 69. agent/plans/PLAN-licence-expiry-notices.md -- operator 2026-11-12: "do we have any mechanism to notify sales team and the client for delegation cert exprie dates"; sales inbox sales@rediacc.com, "new plan, start now"
 70. agent/plans/PLAN-onprem-relicence-inbox.md -- operator rulings ASKED:2026-11-12T16:30Z, 16:56Z, 19:34Z ("C + banner for all box members"): SSH inbox relicence, strict freshness, boot quarantine; R1-R11 and D1 landed, L1 and LP-hostinger open; P1
+71. agent/plans/PLAN-signer-bench-stop-binding-reattach.md -- finding 2026-11-12 proof signer --bench: a signer stop by delete breaks the caller binding and leaves bench signing down; triage PLAN+SUBAGENT on #ffca9706; P1
 
 ## Generated
 

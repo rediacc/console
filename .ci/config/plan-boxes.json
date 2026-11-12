@@ -2703,6 +2703,20 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-signer-bench-stop-binding-reattach.md": {
+      "status": "executing",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 3,
+      "done": 0,
+      "open_sigs": [
+        "46c3de93",
+        "89d70106",
+        "b86ddfc4"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-skip-release-gates-r2-manifest.md": {
       "status": "compacted",
       "owner": "854ac1c6",
