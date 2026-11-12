@@ -325,7 +325,9 @@ def _restore(lab: Lab, p: Proof, signer: str, caller: str, *, region: str = "") 
         answer = _start_and_settle(start, probe)
         if answer.ok:
             # The restore held on the second start; the first one's failure stays on record.
-            p.notes.append(f"{caller}: the first start did not restore {action} ({first.error})")
+            p.notes.append(
+                f"{caller}: the first start did not restore {action} ({first.error or '(no error)'})"
+            )
     target = signer.removeprefix("signer-")
     p.check(
         f"{caller}: bench signing is restored",

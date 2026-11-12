@@ -256,7 +256,10 @@ def test_a_second_owner_mail_on_the_rerun_fails_step_ten(capsys):
     """Review b1b05295.1: the rerun recounts the owner's mail, so a second reminder send is caught."""
     _, rc, out = drill(capsys, second_owner_mails=1)
     assert rc == 1
-    assert "STEP 10 rerun rc=1" in out.out
+    rerun = [ln for ln in out.out.splitlines() if ln.startswith("STEP 10 rerun rc=1")]
+    assert len(rerun) == 1
+    assert "2 owner mails name" in rerun[0]
+    assert "want exactly 1" in rerun[0]
     # control: the clean rerun holds
     _, rc0, out0 = drill(capsys)
     assert rc0 == 0

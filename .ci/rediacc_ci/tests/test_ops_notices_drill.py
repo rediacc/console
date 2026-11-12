@@ -261,18 +261,21 @@ def test_a_registered_subscription_without_an_org_id_plants_null_like_the_real_l
     assert any(s.startswith("SELECT id FROM teams") and ORG in s for s in fake.sql)
 
 
-def test_no_org_id_and_no_single_organization_refuses_the_plant(tmp_path, capsys, monkeypatch):
+@pytest.mark.parametrize("orgs", [0, 2])
+def test_no_org_id_and_no_single_organization_refuses_the_plant(
+    tmp_path, capsys, monkeypatch, orgs
+):
     real_rows = Fake.rows
 
     def rows(self, sql):
         if sql.startswith("SELECT id FROM organizations"):
-            return []
+            return [{"id": ORG}] * orgs
         return real_rows(self, sql)
 
     monkeypatch.setattr(Fake, "rows", rows)
     fake, rc, out = drill(tmp_path, capsys, sub_org=None)
     assert rc == 1
-    assert "STEP 5 plant rc=1 organization rows=0" in out.out
+    assert "STEP 5 plant rc=1 organization rows=%d" % orgs in out.out
     assert not [s for s in fake.sql if s.startswith("INSERT INTO event_log")]
 
 
