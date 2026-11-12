@@ -331,7 +331,8 @@ function main(): void {
     }
 
     // tCount('<group>', n) and the digest's plural fields (subjectKey, headingKey) name plural
-    // groups; its plain fields (titleKey, leadKey, consequenceKey, manageNoteKey, key) name keys.
+    // groups; its plain fields (fixedSubjectKey, titleKey, leadKey, consequenceKey, manageNoteKey,
+    // key) name keys.
     // A dotted value only: `key: 'passwordReset' | ...` in auth.ts is a type, not a lookup.
     for (const match of content.matchAll(
       /(?:(?<![A-Za-z0-9_$])tCount\(\s*|\b(?:subject|heading)Key:\s*)'([^'.]+\.[^']+)'/g
@@ -341,7 +342,7 @@ function main(): void {
       }
     }
     for (const match of content.matchAll(
-      /\b(?:title|lead|consequence|manageNote)Key:\s*'([^'.]+\.[^']+)'|\bkey:\s*'([^'.]+\.[^']+)'/g
+      /\b(?:fixedSubject|title|lead|consequence|manageNote)Key:\s*'([^'.]+\.[^']+)'|\bkey:\s*'([^'.]+\.[^']+)'/g
     )) {
       const key = match[1] ?? match[2];
       if (!englishKeys.has(key)) {
