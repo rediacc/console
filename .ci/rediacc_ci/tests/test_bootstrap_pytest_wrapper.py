@@ -108,3 +108,40 @@ def test_the_main_checkout_keeps_its_own_paths(tmp_path):
     (main / ".ci" / "cache" / "toolchain").mkdir(parents=True)
     got = _owner_paths(main)
     assert got["real"] == str(main.resolve() / ".ci/cache/toolchain/uv-tools/pytest/bin/pytest")
+
+
+def test_a_toolchain_that_resolves_outside_any_checkout_falls_back_to_the_root(tmp_path):
+    """e4487ff5.1: a shared cache that is not under a `.ci/cache` of an owning checkout must not send the wrapper to a wrong directory."""
+    shared = tmp_path / "shared-cache" / "tc"
+    shared.mkdir(parents=True)
+    checkout = tmp_path / "checkout"
+    (checkout / ".ci" / "cache").mkdir(parents=True)
+    (checkout / ".ci" / "cache" / "toolchain").symlink_to(shared)
+    got = _owner_paths(checkout)
+    assert got["real"] == str(checkout.resolve() / ".ci/cache/toolchain/uv-tools/pytest/bin/pytest")
+    assert got["lease"] == str(checkout.resolve() / ".ci/rediacc_ci/core_lease.py")
+
+
+def test_a_readlink_that_prints_nothing_does_not_climb_to_the_filesystem_root(tmp_path):
+    """e4487ff5.2: with no `readlink -f` (a stub that fails) the owner stays the checkout, never `/`."""
+    stub_bin = tmp_path / "bin"
+    stub_bin.mkdir()
+    stub = stub_bin / "readlink"
+    stub.write_text("#!/bin/sh\nexit 1\n", encoding="utf-8")
+    stub.chmod(0o755)
+    main = tmp_path / "main"
+    (main / ".ci" / "cache" / "toolchain").mkdir(parents=True)
+    source = BOOTSTRAP.read_text(encoding="utf-8")
+    match = re.search(
+        r'^TOOL_OWNER_ROOT="\$ROOT"\n.*?^LEASE_PY=.*?\n', source, re.MULTILINE | re.DOTALL
+    )
+    assert match
+    script = 'ROOT="$1"\nPATH="$2:$PATH"\n' + match.group(0) + 'printf "%s\\n" "$LEASE_PY"\n'
+    done = subprocess.run(
+        ["bash", "-c", script, "bash", str(main), str(stub_bin)],
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert done.stdout.strip() == str(main / ".ci/rediacc_ci/core_lease.py")
+    assert not done.stdout.startswith("/.ci")

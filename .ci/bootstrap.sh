@@ -143,7 +143,18 @@ COSIGN_CACHE_BIN="$COSIGN_DIR/cosign"
 # (2026-11-11, `pytest wrapper: .../worktrees/agent-.../pytest is missing`).
 TOOL_OWNER_ROOT="$ROOT"
 if [ -d "$ROOT/.ci/cache/toolchain" ]; then
-    TOOL_OWNER_ROOT="$(CDPATH='' cd -- "$(readlink -f "$ROOT/.ci/cache/toolchain")/../../.." && pwd -P)"
+    # The owner is the checkout three levels above the physical toolchain directory, and only when
+    # that guess holds (it names a .ci/cache/toolchain of its own). A `readlink` without `-f` (BSD
+    # before 12.3) prints nothing, and a shared cache outside any checkout's .ci/cache breaks the
+    # climb: both leave $ROOT as the owner instead of climbing to `/` or to a directory that
+    # does not hold the toolchain.
+    tool_real="$(readlink -f "$ROOT/.ci/cache/toolchain" 2>/dev/null || true)"
+    if [ -n "$tool_real" ]; then
+        owner_guess="$(CDPATH='' cd -- "$tool_real/../../.." 2>/dev/null && pwd -P || true)"
+        if [ -n "$owner_guess" ] && [ -d "$owner_guess/.ci/cache/toolchain" ]; then
+            TOOL_OWNER_ROOT="$owner_guess"
+        fi
+    fi
 fi
 REAL_PYTEST="$TOOL_OWNER_ROOT/.ci/cache/toolchain/uv-tools/pytest/bin/pytest"
 REAL_PYTHON="$TOOL_OWNER_ROOT/.ci/cache/toolchain/uv-tools/pytest/bin/python"

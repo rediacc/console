@@ -10,6 +10,7 @@ import sys
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.quality import region_consistency_offline as rco
 from rediacc_ci.tests.gates import harness
 
 ROOT = paths.repo_root()
@@ -181,3 +182,13 @@ def test_live_without_a_credential_is_unchecked_not_green(tmp_path, monkeypatch)
     assert result.rc == 2, result.combined
     assert "UNCHECKED r2" in result.err
     assert "consistent" not in result.out
+
+
+def test_the_bench_only_payload_keys_are_exempt_and_an_unknown_one_is_not():
+    """594bf5b2.1: the sandbox pair is the bench-only exemption; any other payload key no regional Worker gets is a finding."""
+    pushed = sorted({k for k, _var, _src in rco.pusher.KEYS})
+    base = [*pushed, *rco.BENCH_ONLY_PAYLOAD]
+    assert rco.BENCH_ONLY_PAYLOAD
+    assert not [f for f in rco.check_profiles([], {}, base) if "pushes" in f.message]
+    extra = rco.check_profiles([], {}, [*base, "ZZZ_UNKNOWN_KEY"])
+    assert [f.message for f in extra if "ZZZ_UNKNOWN_KEY" in f.message]

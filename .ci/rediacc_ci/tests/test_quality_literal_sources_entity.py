@@ -101,3 +101,14 @@ def test_the_gate_source_carries_no_entity_value(needles: list[ls.EntityNeedle])
 
 def test_controls_pass() -> None:
     assert ls.selftest() is False
+
+
+def test_a_value_past_column_20000_of_a_long_line_is_found(
+    entity: dict[str, str], needles: list[ls.EntityNeedle]
+) -> None:
+    """238d8840.1: the record is scanned whole, so a minified bundle cannot hide the entity after a cut."""
+    value = entity["registryCode"]
+    raw = ("x" * 30000 + " registry %s " % value).encode()
+    assert "registryCode" in ls.entity_fields_in_record(raw, needles)
+    # Control: the same line without the value is clean.
+    assert ls.entity_fields_in_record(b"x" * 30000, needles) == []

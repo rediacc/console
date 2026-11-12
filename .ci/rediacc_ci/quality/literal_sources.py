@@ -1299,6 +1299,11 @@ def entity_fields_in(line: str, needles: list[EntityNeedle]) -> list[str]:
     return [n.field for n in needles if n.pattern.search(line)]
 
 
+def entity_fields_in_record(raw: bytes, needles: list[EntityNeedle]) -> list[str]:
+    """`entity_fields_in` over a whole grep record. Never truncated: a value past column 20000 of a minified line is still a finding, and a cut that dropped it would leave the file counted as scanned."""
+    return entity_fields_in(raw.decode("utf-8", "replace"), needles)
+
+
 def load_entity(root: pathlib.Path, policy: EntityPolicy) -> dict[str, Any]:
     try:
         data = json.loads((root / policy.source).read_text(encoding="utf-8"))
@@ -1349,7 +1354,7 @@ def entity_findings(
         if path in own or path in skipped:
             continue
         lines += 1
-        fields = entity_fields_in(parts[2].decode("utf-8", "replace")[:20000], needles)
+        fields = entity_fields_in_record(parts[2], needles)
         if not fields:
             continue
         row = next((r for r in ep.exemptions if r["_re"].match(path)), None)
