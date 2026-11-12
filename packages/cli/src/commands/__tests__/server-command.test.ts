@@ -11,6 +11,9 @@ const m = vi.hoisted(() => ({
   run: vi.fn(),
   status: vi.fn(),
   backup: vi.fn(),
+  upgrade: vi.fn(),
+  licence: vi.fn(),
+  confirm: vi.fn(),
   print: vi.fn(),
 }));
 
@@ -39,9 +42,10 @@ vi.mock('../../services/server/install.js', () => ({
 vi.mock('../../services/server/verbs.js', () => ({
   serverStatus: m.status,
   serverBackup: m.backup,
-  serverUpgrade: vi.fn(),
-  serverLicence: vi.fn(),
+  serverUpgrade: m.upgrade,
+  serverLicence: m.licence,
 }));
+vi.mock('../../utils/prompt.js', () => ({ askConfirm: m.confirm }));
 vi.mock('../../utils/errors.js', () => ({
   handleError: (error: unknown) => {
     throw error;
@@ -62,6 +66,9 @@ beforeEach(() => {
   m.installOpts = undefined;
   m.run.mockResolvedValue({ domain: 'acme.example.com' });
   m.status.mockResolvedValue({ health: 200 });
+  m.upgrade.mockResolvedValue({ rollback: 'acme:rollback' });
+  m.licence.mockResolvedValue({ subscriptionId: 'sub-1' });
+  m.confirm.mockResolvedValue(true);
 });
 
 describe('rdc server', () => {
@@ -155,5 +162,58 @@ describe('rdc server', () => {
       from: 'user',
     });
     expect(m.status).toHaveBeenCalledWith({}, { domain: 'acme.example.com', machine: 'm1' });
+  });
+  it('upgrade asks for confirmation without --yes, whether or not stdin is a terminal', async () => {
+    await program().parseAsync(['server', 'upgrade', 'acme.example.com'], { from: 'user' });
+    expect(m.confirm).toHaveBeenCalledTimes(1);
+    expect(m.upgrade).toHaveBeenCalledTimes(1);
+  });
+
+  it('upgrade stops when the confirmation is declined', async () => {
+    m.confirm.mockResolvedValue(false);
+    await program().parseAsync(['server', 'upgrade', 'acme.example.com'], { from: 'user' });
+    expect(m.upgrade).not.toHaveBeenCalled();
+  });
+
+  it('upgrade with --yes skips the prompt and hands the parsed options to the verb', async () => {
+    await program().parseAsync(
+      ['server', 'upgrade', 'acme.example.com', '--image', 'img:2', '--local-image', '--yes'],
+      { from: 'user' }
+    );
+    expect(m.confirm).not.toHaveBeenCalled();
+    expect(m.upgrade).toHaveBeenCalledTimes(1);
+    const [, loc, opts] = m.upgrade.mock.calls[0];
+    expect(loc).toMatchObject({ domain: 'acme.example.com' });
+    expect(opts).toMatchObject({ image: 'img:2', localImage: true, yes: true });
+    expect(m.print).toHaveBeenCalledWith({ rollback: 'acme:rollback' }, 'json');
+  });
+
+  it('upgrade passes --image-file through', async () => {
+    await program().parseAsync(
+      ['server', 'upgrade', 'acme.example.com', '--image-file', 'a.tar', '-y'],
+      { from: 'user' }
+    );
+    expect(m.upgrade.mock.calls[0][2]).toMatchObject({ imageFile: 'a.tar' });
+  });
+
+  it('backup hands the domain and --out to the verb', async () => {
+    await program().parseAsync(['server', 'backup', 'acme.example.com', '--out', 'b.json'], {
+      from: 'user',
+    });
+    expect(m.backup).toHaveBeenCalledTimes(1);
+    const [, loc, out] = m.backup.mock.calls[0];
+    expect(loc).toMatchObject({ domain: 'acme.example.com' });
+    expect(out).toBe('b.json');
+  });
+
+  it('licence hands the domain and --cert to the verb', async () => {
+    await program().parseAsync(['server', 'licence', 'acme.example.com', '--cert', 'c.json'], {
+      from: 'user',
+    });
+    expect(m.licence).toHaveBeenCalledTimes(1);
+    const [, loc, cert] = m.licence.mock.calls[0];
+    expect(loc).toMatchObject({ domain: 'acme.example.com' });
+    expect(cert).toBe('c.json');
+    expect(m.print).toHaveBeenCalledWith({ subscriptionId: 'sub-1' }, 'json');
   });
 });

@@ -159,7 +159,7 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   // would ask the executor to start another one.
   serve: { plane: 'machine', interactive: true },
 
-  // ── server ──────────────────────────────────────────────────────────── The self-hosted account server as a repo: every verb reaches the machine over SSH (services/server/box.ts). `install` is interactive: it asks for missing values on a TTY, prints the one-time recovery bundle only there, and drives child `rdc` and local `docker`, none of which an executor could do on the caller's behalf.
+  // ── server ──────────────────────────────────────────────────────────── The self-hosted account server as a repo: every verb reaches the machine over SSH (services/server/box.ts); `status` also probes the server's HTTPS health endpoint and `licence` mints its cert through the account server (`delegation/issue`), with `repo up` run as a child `rdc`. `install` is interactive: it asks for missing values on a TTY, prints the one-time recovery bundle only there, and drives child `rdc` and local `docker`, none of which an executor could do on the caller's behalf.
   server: { plane: 'machine' },
   'server install': { plane: 'machine', interactive: true },
 };

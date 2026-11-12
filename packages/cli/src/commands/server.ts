@@ -150,7 +150,8 @@ function registerUpgrade(server: Command): void {
       }
     ) => {
       try {
-        if (!flags.yes && process.stdin.isTTY === true) {
+        // askConfirm refuses a stdin that is no terminal with an error naming --yes (REDIACC_YES=1 confirms), so a non-interactive run never restarts the server unprompted.
+        if (!flags.yes) {
           const { askConfirm } = await import('../utils/prompt.js');
           if (!(await askConfirm(t('commands.server.upgrade.confirm', { domain })))) {
             outputService.info(t('status.cancelled'));
