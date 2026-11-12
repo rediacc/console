@@ -96,11 +96,6 @@ REFUSED = [
         "an argv aimed at a lease, the verb unknown",
         "python3 -c \"import subprocess; v=input(); subprocess.run(['git','-C','.claude/worktrees/x',v,'add'])\"",
     ),
-    # e5ff36fc.1 (restores e59de231.2): `.claude/worktrees.py` is a file that names the word, not a lease root, so an unknown built command beside it is still filled.
-    (
-        "a file named worktrees.py beside a built command",
-        "python3 -c \"import os; x=input(); print('.claude/worktrees.py'); os.system('git ' + x)\"",
-    ),
 ]
 
 # A script path the shell expands, with the words in the command's text. The second row is the hole itself: the fixture names the phrase and is untracked, so the literal path is refused and the variable must be too.
@@ -318,6 +313,25 @@ FALSE_POSITIVES = [
             "python3 $CLAUDE_PROJECT_DIR/.claude/hooks/stop/worklist.py --tick abcd1234 1f2e removed"
         ),
     ),
+    # aeea89c4.3 controls: a known verb before the unknown piece names a command that is not the worktree verb, whatever the piece fills.
+    (
+        "a built command aimed at a lease, a known verb then an unknown argument",
+        "python3 -c \"import os; v=input(); os.system('git -C .claude/worktrees/x status ' + v)\"",
+    ),
+    (
+        "an argv aimed at a lease, a known verb then an unknown argument",
+        "python3 -c \"import subprocess; v=input(); subprocess.run(['git','-C','.claude/worktrees/x','status',v])\"",
+    ),
+    # aeea89c4.1: a piece glued to the end of the path is path text (`'.claude/worktrees/' + name`), not a verb.
+    (
+        "an unknown piece glued to the lease path",
+        "python3 -c \"import os; v=input(); os.system('git -C .claude/worktrees/x' + v + ' add f')\"",
+    ),
+    # e5ff36fc.1: `.claude/worktrees.py` is a file name, read as neither a lease root nor a mention of the verb, so an unknown built command beside it is not filled.
+    (
+        "a file named worktrees.py beside a built command",
+        "python3 -c \"import os; x=input(); print('.claude/worktrees.py'); os.system('git ' + x)\"",
+    ),
     # #7d3a5939: a lease path in a program is not a mention of the verb, so it licenses no argv or string fill.
     ("a program printing a lease path", "python3 -c \"print('.claude/worktrees/agent-x/file')\""),
     (
@@ -338,20 +352,6 @@ FALSE_POSITIVES = [
     (
         "an unknown piece inside the lease path",
         "python3 -c \"import os; x=input(); os.system(f'git -C .claude/worktrees/{x} add f')\"",
-    ),
-    # aeea89c4.3 controls: a known verb before the unknown piece names a command that is not the worktree verb, whatever the piece fills.
-    (
-        "a built command aimed at a lease, a known verb then an unknown argument",
-        "python3 -c \"import os; v=input(); os.system('git -C .claude/worktrees/x status ' + v)\"",
-    ),
-    (
-        "an argv aimed at a lease, a known verb then an unknown argument",
-        "python3 -c \"import subprocess; v=input(); subprocess.run(['git','-C','.claude/worktrees/x','status',v])\"",
-    ),
-    # aeea89c4.1: a piece glued to the end of the path is path text (`'.claude/worktrees/' + name`), not a verb.
-    (
-        "an unknown piece glued to the lease path",
-        "python3 -c \"import os; v=input(); os.system('git -C .claude/worktrees/x' + v + ' add f')\"",
     ),
 ]
 
