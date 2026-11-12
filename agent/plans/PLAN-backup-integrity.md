@@ -432,8 +432,9 @@ Every H box uses the branch-built `rdc` and renet while edge and stable are on h
   - Accept: `rdc --config eu-bench backup restore <repo> --at <snapshot> --path <file> --to <scratch>` rc 0, with the checksum equal to a read of the live file taken for comparison.
 - [ ] H6: A deep verify of one mid-size repo under the sampler: scope usage stays at one core (CPUQuota=100%), and machine-wide busy CPU is recorded before and during.
   - Accept: `rdc --config eu-bench backup verify <repo> --deep` rc 0, figures recorded here.
-- [ ] H7: A restore test of demo-heartbeat (2 GB): only the `-rt` copy is deleted.
+- [x] H7: A restore test of demo-heartbeat (2 GB): only the `-rt` copy is deleted.
   - Accept: `rdc --config eu-bench backup verify demo-heartbeat --restore-test` rc 0, then `repo list -m hostinger` shows the original with its GUID unchanged and no copy.
+    (ticked) 2026-11-12T05:12:26Z by d778be9d: 2026-11-12 hostinger via eu-remote (hostinger-only proof, remote renet unchanged): rdc backup verify demo-heartbeat@hostinger --restore-test -o json rc 0, status proven, compare identical (sha256 2788bb37 both sides), cleanup deleted (copy restoretest-b092d2c4 deleted by the tool). repo list -m hostinger before and after identical (13 repos, GUIDs unchanged, original 1b8e6a28 present, no copy). Files /tmp/hostinger-run/r2-h7.json r2-before-repos.json r2-after-h7-repos.json
 - [ ] H8: `rdc backup check` on one listed repo marks a snapshot `proven`, and `backup verify demo-heartbeat --store` runs one real full pass on the smallest lineage.
   - Accept: both rc 0; `backup manifests` shows the states.
 - [ ] H9: The alert path through a harmless planted failure: `renet backup report --test` from the released binary, with no repository involved.

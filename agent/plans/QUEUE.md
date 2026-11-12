@@ -80,17 +80,17 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 618 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 622 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a63351898f2bbd269.
-- Leased items: 7: #1dcc5437 (worker:bvdzl1fy5, d778be9d), #443ba017 (worker:bvdzl1fy5, d778be9d), #928ba562 (worker:bg22fuo10, d778be9d), #9cb71958 (worker:bjlaw6oki, d778be9d), #bb081378 (worker:bvdzl1fy5, d778be9d), #c3cd68eb (worker:bvdzl1fy5, d778be9d), #fec9f1b5 (worker:a63351898f2bbd269, d778be9d).
+- Writers: 3 live of writer_cap 25 (session d778be9d): worker:ab45f7cbd39ac59b6, worker:adf4f862998ad2bda, worker:a142398e66d17cbdc.
+- Leased items: 10: #0d605233 (worker:b5zm3pxva, d778be9d), #1dcc5437 (worker:b5zm3pxva, d778be9d), #443ba017 (worker:b5zm3pxva, d778be9d), #8030611c (worker:adf4f862998ad2bda, d778be9d), #928ba562 (worker:a142398e66d17cbdc, d778be9d), #9cb71958 (worker:b5zm3pxva, d778be9d), #a1ecc191 (worker:ab45f7cbd39ac59b6, d778be9d), #bb081378 (worker:b5zm3pxva, d778be9d), #e3b3ba33 (worker:b5zm3pxva, d778be9d), #fec9f1b5 (worker:b5zm3pxva, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 23 of 66 plans done, 1076 of 1227 boxes done (87%).
+Promoted: 23 of 66 plans done, 1077 of 1227 boxes done (87%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -130,7 +130,7 @@ Promoted: 23 of 66 plans done, 1076 of 1227 boxes done (87%).
 | 34 | PLAN-backup-download-from-store.md | 8/9 | 1 open |
 | 35 | PLAN-settings-set-verb.md | 4/4 | done |
 | 36 | PLAN-free-license.md | 10/13 | 3 open |
-| 37 | PLAN-backup-integrity.md | 46/56 | 10 open |
+| 37 | PLAN-backup-integrity.md | 47/56 | 9 open |
 | 38 | PLAN-backup-critical-tier.md | 48/51 | 3 open |
 | 39 | PLAN-rediaccfile-unprivileged.md | 18/23 | 5 open |
 | 40 | PLAN-worktree-lease.md | 15/16 | 1 open |
