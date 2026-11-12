@@ -495,6 +495,9 @@ export class ServerInstall {
         ELITE_STORE_DOMAIN: this.plan.storeDomain,
         ELITE_IMAGE: this.plan.image,
         TAG: imageTag(this.plan.image),
+        ROOT_EMAIL: this.plan.owner,
+        // byo: the pair is installed per host, so the labels tell the router to skip its resolver.
+        ...(this.plan.tls === 'byo' ? { ELITE_TLS: 'provided' } : {}),
       });
     },
     image: async () => {

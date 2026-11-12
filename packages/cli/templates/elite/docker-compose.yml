@@ -37,6 +37,10 @@ services:
       - SMTP_USER=${SMTP_USER:-}
       - SMTP_PASSWORD=${SMTP_PASSWORD:-}
       - SMTP_FROM=${SMTP_FROM:-}
+      - ROOT_EMAIL=${ROOT_EMAIL:-}
+      - ON_PREMISE_MODE=${ON_PREMISE_MODE:-false}
+      - ON_PREMISE_PRIVATE_KEY=${ON_PREMISE_PRIVATE_KEY:-}
+      - ON_PREMISE_PUBLIC_KEY=${ON_PREMISE_PUBLIC_KEY:-}
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./data/web:/data
@@ -51,6 +55,7 @@ services:
       - "rediacc.service_name=web"
       - "rediacc.service_port=80"
       - "rediacc.domain=${ELITE_DOMAIN}"
+      - "rediacc.tls=${ELITE_TLS:-}"
 
   # Pinned by digest: this holds customer data, so an unattended pull must not swap the engine.
   rustfs:
@@ -76,6 +81,7 @@ services:
       - "rediacc.service_name=rustfs"
       - "rediacc.service_port=9000"
       - "rediacc.domain=${ELITE_STORE_DOMAIN}"
+      - "rediacc.tls=${ELITE_TLS:-}"
 
   # Creates both buckets once the store is up; 200, 204 and 409 count as success.
   rustfs-init:

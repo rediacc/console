@@ -248,6 +248,10 @@ info() {
       - SMTP_USER=\${SMTP_USER:-}
       - SMTP_PASSWORD=\${SMTP_PASSWORD:-}
       - SMTP_FROM=\${SMTP_FROM:-}
+      - ROOT_EMAIL=\${ROOT_EMAIL:-}
+      - ON_PREMISE_MODE=\${ON_PREMISE_MODE:-false}
+      - ON_PREMISE_PRIVATE_KEY=\${ON_PREMISE_PRIVATE_KEY:-}
+      - ON_PREMISE_PUBLIC_KEY=\${ON_PREMISE_PUBLIC_KEY:-}
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./data/web:/data
@@ -262,6 +266,7 @@ info() {
       - "rediacc.service_name=web"
       - "rediacc.service_port=80"
       - "rediacc.domain=\${ELITE_DOMAIN}"
+      - "rediacc.tls=\${ELITE_TLS:-}"
 
   # Pinned by digest: this holds customer data, so an unattended pull must not swap the engine.
   rustfs:
@@ -287,6 +292,7 @@ info() {
       - "rediacc.service_name=rustfs"
       - "rediacc.service_port=9000"
       - "rediacc.domain=\${ELITE_STORE_DOMAIN}"
+      - "rediacc.tls=\${ELITE_TLS:-}"
 
   # Creates both buckets once the store is up; 200, 204 and 409 count as success.
   rustfs-init:
@@ -372,9 +378,10 @@ load_secrets() {
       return 1
     fi
   done
+  # No cert is the free tier: the server boots without one and serves each repo licence
+  # through its /onprem/free-license relay until a cert is uploaded or set.
   if [[ -z "\${DELEGATION_CERT_BASE64:-}" && ! -f data/web/delegation-cert.json ]]; then
-    echo "secrets.env: DELEGATION_CERT_BASE64 is not set and data/web/delegation-cert.json is absent" >&2
-    return 1
+    echo "no delegation cert: starting the free tier" >&2
   fi
 }
 
@@ -455,7 +462,16 @@ ACCOUNT_X25519_PRIVATE_KEY=
 ACCOUNT_X25519_PUBLIC_KEY=
 ACCOUNT_SERVER_API_KEY=
 ACCOUNT_JWT_SECRET=
+# DELEGATION_CERT_BASE64 stays empty on the free tier.
 DELEGATION_CERT_BASE64=
+
+# Owner account email: the user registered with it is promoted to root, which \`rdc server licence\` needs.
+ROOT_EMAIL=
+# Set to "provided" when the router certificates were installed by hand (\`rdc server install --tls byo\`).
+ELITE_TLS=
+# Optional: the key pair auto-renew signs with (the delegated pair); empty leaves auto-renew off.
+ON_PREMISE_PRIVATE_KEY=
+ON_PREMISE_PUBLIC_KEY=
 
 # Optional: connected renewal against the upstream account server.
 UPSTREAM_URL=
@@ -469,7 +485,7 @@ SMTP_USER=
 SMTP_PASSWORD=
 SMTP_FROM=
 `,
-      'VERSION': `1
+      'VERSION': `2
 `,
     },
   },

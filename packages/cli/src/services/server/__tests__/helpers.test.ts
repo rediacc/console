@@ -3,6 +3,11 @@
  * store domains, image tags and certificate coverage.
  */
 
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('../../../i18n/index.js', () => ({
@@ -98,5 +103,34 @@ describe('names', () => {
     expect(covers(['*.example.com'], 'acme.example.com')).toBe(true);
     expect(covers(['*.example.com'], 'a.b.example.com')).toBe(false);
     expect(covers([], 'acme.example.com')).toBe(false);
+  });
+});
+
+describe('the elite template', () => {
+  const dir = new URL('../../../../templates/elite/', import.meta.url);
+  const read = (name: string) => readFileSync(new URL(name, dir), 'utf8');
+
+  it('Rediaccfile starts the free tier when no delegation cert is present', () => {
+    const work = mkdtempSync(join(tmpdir(), 'elite-'));
+    writeFileSync(join(work, 'secrets.env'), 'ELITE_DOMAIN=a\n');
+    const script = `cd "$1"; source "$2"; REQUIRED_VARS=(ELITE_DOMAIN); load_secrets`;
+    const result = spawnSync(
+      'bash',
+      ['-c', script, 'x', work, fileURLToPath(new URL('Rediaccfile', dir))],
+      { encoding: 'utf8' }
+    );
+    expect(result.status).toBe(0);
+    expect(result.stderr).toContain('free tier');
+  });
+
+  it('labels both routed services with the ELITE_TLS value, empty by default', () => {
+    expect(read('docker-compose.yml').match(/"rediacc\.tls=\$\{ELITE_TLS:-\}"/g)).toHaveLength(2);
+  });
+
+  it('passes ROOT_EMAIL and the ON_PREMISE_* variables through to the web service', () => {
+    const text = read('docker-compose.yml');
+    for (const key of ['ROOT_EMAIL', 'ON_PREMISE_MODE', 'ON_PREMISE_PRIVATE_KEY', 'ON_PREMISE_PUBLIC_KEY']) {
+      expect(text).toContain(`- ${key}=\${${key}:-`);
+    }
   });
 });

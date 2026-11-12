@@ -228,6 +228,25 @@ describe('dns', () => {
   });
 });
 
+describe('settings', () => {
+  it('writes ROOT_EMAIL from the owner and no ELITE_TLS for the acme methods', async () => {
+    const { fake, result } = run({ machine: 'm1' });
+    await result;
+    const env = fake.setEnv.find((e) => e.ELITE_DOMAIN);
+    expect(env?.ROOT_EMAIL).toBe('owner@example.com');
+    expect(env).not.toHaveProperty('ELITE_TLS');
+  });
+
+  it('byo writes ELITE_TLS=provided so the compose labels skip the router resolver', async () => {
+    const { fake, result } = run(
+      { machine: 'm1', tls: 'byo', tlsCert: '/c.pem', tlsKey: '/k.pem' },
+      { files: { '/c.pem': 'CERT', '/k.pem': 'KEY' } }
+    );
+    await result;
+    expect(fake.setEnv.find((e) => e.ELITE_DOMAIN)?.ELITE_TLS).toBe('provided');
+  });
+});
+
 describe('licence', () => {
   it('auto: the logged-in config issues a cert for the box key, written to secrets.env', async () => {
     const { fake, result } = run({ machine: 'm1' });

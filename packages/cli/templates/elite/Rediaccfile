@@ -31,9 +31,10 @@ load_secrets() {
       return 1
     fi
   done
+  # No cert is the free tier: the server boots without one and serves each repo licence
+  # through its /onprem/free-license relay until a cert is uploaded or set.
   if [[ -z "${DELEGATION_CERT_BASE64:-}" && ! -f data/web/delegation-cert.json ]]; then
-    echo "secrets.env: DELEGATION_CERT_BASE64 is not set and data/web/delegation-cert.json is absent" >&2
-    return 1
+    echo "no delegation cert: starting the free tier" >&2
   fi
 }
 
