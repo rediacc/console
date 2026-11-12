@@ -2,7 +2,7 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2666,
+    "keyCount": 2667,
     "sourceCommit": "83195801ae0eb403593643fe1a782a9abcaa8285"
   },
   "hashes": {
@@ -2383,6 +2383,7 @@
     "errors.cluster.targetRequired": "eb0192f5",
     "errors.config.invalidEmail": "56bf9fbc",
     "errors.config.machineNotFound": "e70ec0f7",
+    "errors.config.missingNamed": "14213910",
     "errors.config.noActiveConfig": "6772a589",
     "errors.config.pointerNotFound": "d38375e5",
     "errors.config.retiredKey": "2cd6bc26",

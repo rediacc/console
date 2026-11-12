@@ -3068,6 +3068,7 @@
       "targetRequired": "Vajalik on sihtmasin (-m) või klaster (--cluster)"
     },
     "config": {
+      "missingNamed": "Konfiguratsiooni \"{{name}}\" pole olemas, seega midagi ei muudetud. Loo see esmalt käsuga: rdc config init {{name}}",
       "invalidEmail": "Vigane e-posti aadress: \"{{value}}\".",
       "machineNotFound": "Masina \"{{name}}\" ei leitud konfiguratsioonist. Saadaval: {{available}}.",
       "noActiveConfig": "Aktiivset konfiguratsiooni ei ole",

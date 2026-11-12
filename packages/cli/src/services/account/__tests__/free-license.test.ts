@@ -336,16 +336,13 @@ describe('free licence region pick', () => {
     expect(m.fetch.mock.calls[0][1].serverUrl).toBe(US_ORIGIN);
   });
 
-  it('a config file that does not exist yet still uses the pick for the run but writes nothing', async () => {
+  it('a named config that does not exist refuses before the region prompt and writes nothing', async () => {
     setTty(true);
     m.exists.mockResolvedValue(false);
     m.askChoice.mockResolvedValueOnce('free');
-    m.promptRegion.mockResolvedValue({ region: US, domain: US.domain });
-    await resolveLicenseAuthority(vi.fn());
+    await expect(resolveLicenseAuthority(vi.fn())).rejects.toThrow('missingNamed');
+    expect(m.promptRegion).not.toHaveBeenCalled();
     expect(m.update).not.toHaveBeenCalled();
-    m.fetch.mockResolvedValue({ license: BLOB });
-    await issueFreeRepoLicense('m', MACHINE, 'key', { repositoryGuid: GUID, kind: 'grand' });
-    expect(m.fetch.mock.calls[0][1].serverUrl).toBe(US_ORIGIN);
   });
 
   it('no terminal keeps the default and prints one line naming it', async () => {

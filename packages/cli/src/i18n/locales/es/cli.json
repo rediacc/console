@@ -3068,6 +3068,7 @@
       "targetRequired": "Se requiere una máquina de destino (-m) o un clúster (--cluster)"
     },
     "config": {
+      "missingNamed": "La config «{{name}}» no existe, así que no se cambió nada. Créala primero con: rdc config init {{name}}",
       "invalidEmail": "Dirección de correo electrónico no válida: \"{{value}}\".",
       "machineNotFound": "Máquina \"{{name}}\" no encontrada en la configuración. Disponibles: {{available}}.",
       "noActiveConfig": "No hay configuración activa",

@@ -5,6 +5,7 @@ import { configFileStorage } from '../adapters/config-file-storage.js';
 import { t } from '../i18n/index.js';
 import { accountServerFetch, fetchServerInfo } from '../services/account/account-client.js';
 import { readAccountPointer } from '../services/account/account-pointer.js';
+import { assertActiveConfigExists } from '../services/account/active-config-guard.js';
 import {
   deleteStoredSubscriptionToken,
   getSubscriptionScopeMismatch,
@@ -359,6 +360,7 @@ export function registerSubscriptionCommands(program: Command): void {
     .option('--server <url>', t('options.serverUrl'))
     .action(async (options) => {
       try {
+        await assertActiveConfigExists();
         const passwordLogin = await readPasswordLoginInput(options);
         // Read and validate the token FIRST: a refused token (empty stdin, whitespace) must not leave a region prompt or a server rewrite behind it. `--token ""` is a token given and refused, not the device-code flow.
         let token =
@@ -408,6 +410,7 @@ export function registerSubscriptionCommands(program: Command): void {
     .option('--server <url>', t('options.serverUrl'))
     .action(async (options) => {
       try {
+        await assertActiveConfigExists();
         const email = String(options.email).trim();
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
           throw new ValidationError(t('commands.subscription.register.invalidEmail'));

@@ -3,6 +3,7 @@ import { authorizationExpired, CliExitError } from '../../utils/cli-exit-error.j
 import { ValidationError } from '../../utils/errors.js';
 import { outputService } from '../core/output.js';
 import { accountServerFetch } from './account-client.js';
+import { assertActiveConfigExists } from './active-config-guard.js';
 import {
   getSubscriptionScopeMismatch,
   getSubscriptionServerUrl,
@@ -70,6 +71,7 @@ export async function authorizeSubscriptionViaDeviceCode(
   preferredServerUrl?: string,
   options: DeviceCodeLoginOptions = {}
 ): Promise<DeviceCodeAuthorizationResult> {
+  await assertActiveConfigExists();
   const serverUrl = getSubscriptionServerUrl(preferredServerUrl);
 
   const initResult = await accountServerFetch<{

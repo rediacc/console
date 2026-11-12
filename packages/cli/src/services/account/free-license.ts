@@ -34,6 +34,7 @@ import { updateConfigAtPointer } from '../config/synced-write.js';
 import { outputService } from '../core/output.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { accountServerFetch } from './account-client.js';
+import { assertActiveConfigExists } from './active-config-guard.js';
 import { readLocalMachineId, readRemoteMachineId, writeRepoLicense } from './license-machine.js';
 import {
   getConfiguredServerUrl,
@@ -193,6 +194,8 @@ async function chooseFreeLicenseRegion(
     outputService.info(t('errors.freeLicense.defaultRegion', { server: freeLicenseServerUrl() }));
     return;
   }
+  // The pick is saved into the active config below: refuse before the prompt when there is none to save into.
+  await assertActiveConfigExists();
   chosenServerUrl = named
     ? named.origin
     : `https://${(await promptRegionSelection(BAKED_IN_REGIONS)).domain}`;

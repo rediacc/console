@@ -3068,6 +3068,7 @@
       "targetRequired": "대상 머신(-m) 또는 클러스터(--cluster)가 필요합니다"
     },
     "config": {
+      "missingNamed": "config \"{{name}}\"이(가) 없어 아무것도 변경하지 않았습니다. 먼저 다음 명령으로 만드세요: rdc config init {{name}}",
       "invalidEmail": "유효하지 않은 이메일 주소: \"{{value}}\".",
       "machineNotFound": "설정에서 머신 \"{{name}}\"을(를) 찾을 수 없습니다. 사용 가능한 항목: {{available}}.",
       "noActiveConfig": "활성 설정이 없습니다",

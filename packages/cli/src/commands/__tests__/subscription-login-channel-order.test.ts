@@ -117,13 +117,12 @@ describe('subscription login: the update channel is written after the new token'
     expect(channelAnnouncements()).toBe(0);
   });
 
-  it('says so when the channel is not saved because the config does not exist yet', async () => {
+  it('refuses up front when the config does not exist, before any server work', async () => {
     h.exists.mockResolvedValue(false);
-    await runLogin();
-    expect(h.warn).toHaveBeenCalledWith(
-      'update channel not saved: config "drill" does not exist yet'
-    );
-    expect(channelAnnouncements()).toBe(0);
+    await expect(runLogin()).rejects.toThrow('errors.config.missingNamed');
+    expect(h.fetchServerInfo).not.toHaveBeenCalled();
+    expect(h.authorize).not.toHaveBeenCalled();
+    expect(h.update).not.toHaveBeenCalled();
   });
 
   it('register refuses a malformed email before any server work', async () => {

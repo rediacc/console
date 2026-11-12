@@ -3068,6 +3068,7 @@
       "targetRequired": "Bir hedef makine (-m) veya küme (--cluster) gereklidir"
     },
     "config": {
+      "missingNamed": "\"{{name}}\" yapılandırması yok, bu yüzden hiçbir şey değiştirilmedi. Önce şununla oluşturun: rdc config init {{name}}",
       "invalidEmail": "Geçersiz e-posta adresi: \"{{value}}\".",
       "machineNotFound": "\"{{name}}\" makinesi yapılandırmada bulunamadı. Mevcut: {{available}}.",
       "noActiveConfig": "Aktif yapılandırma yok",

@@ -3068,6 +3068,7 @@
       "targetRequired": "مطلوب جهاز هدف (-m) أو عنقود (--cluster)"
     },
     "config": {
+      "missingNamed": "الإعداد \"{{name}}\" غير موجود، لذا لم يتم تغيير أي شيء. أنشئه أولاً باستخدام: rdc config init {{name}}",
       "invalidEmail": "عنوان بريد إلكتروني غير صالح: \"{{value}}\".",
       "machineNotFound": "الآلة \"{{name}}\" غير موجودة في التكوين. المتاحة: {{available}}.",
       "noActiveConfig": "لا يوجد تكوين نشط",

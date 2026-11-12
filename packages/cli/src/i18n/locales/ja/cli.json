@@ -3068,6 +3068,7 @@
       "targetRequired": "対象のマシン（-m）またはクラスター（--cluster）のいずれかが必要です"
     },
     "config": {
+      "missingNamed": "config「{{name}}」が存在しないため、何も変更していません。先に次のコマンドで作成してください: rdc config init {{name}}",
       "invalidEmail": "無効なメールアドレス: \"{{value}}\"。",
       "machineNotFound": "マシン \"{{name}}\" が設定に見つかりません。利用可能: {{available}}。",
       "noActiveConfig": "アクティブな設定がありません",

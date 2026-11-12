@@ -3048,6 +3048,7 @@
       "declareNeedsProvider": "--declare-only records a cluster without provisioning it, so it needs --provider and --pool."
     },
     "config": {
+      "missingNamed": "Config \"{{name}}\" does not exist, so nothing was changed. Create it first with: rdc config init {{name}}",
       "machineNotFound": "Machine \"{{name}}\" not found in config. Available: {{available}}.",
       "invalidEmail": "Invalid email address: \"{{value}}\".",
       "noActiveConfig": "No active config",

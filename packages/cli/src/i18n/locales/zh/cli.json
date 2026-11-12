@@ -3068,6 +3068,7 @@
       "targetRequired": "需要目标机器（-m）或集群（--cluster）"
     },
     "config": {
+      "missingNamed": "配置 \"{{name}}\" 不存在，因此未做任何更改。请先创建：rdc config init {{name}}",
       "invalidEmail": "无效的电子邮件地址: \"{{value}}\"。",
       "machineNotFound": "机器 \"{{name}}\" 在配置中未找到。可用: {{available}}。",
       "noActiveConfig": "没有激活的配置",
