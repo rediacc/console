@@ -654,6 +654,11 @@ def test_the_three_sibling_scripts_are_not_the_same_script() -> None:
     assert len(preview.KEYS) == 14
     assert len(port.REQUIRED_NONEMPTY) == 19
     assert len(port.REQUIRED_NONEMPTY_STABLE) == 2
+    # 8c715164.2: the ten SELLER_* entries (the register name included) are optional here by design: the legal-entity profile and check_bws_map own their completeness, so none is in a non-empty guard list.
+    assert not [
+        n for n in port.REQUIRED_NONEMPTY + port.REQUIRED_NONEMPTY_STABLE if n.startswith("SELLER_")
+    ]
+    assert "SELLER_REGISTER_NAME" in {key for key, _var, _src in port.KEYS}
     # Neither sibling has a conditional guard list, a channel, or a fan-in.
     assert not hasattr(www, "REQUIRED_NONEMPTY_STABLE")
     assert not hasattr(preview, "REQUIRED_NONEMPTY_STABLE")

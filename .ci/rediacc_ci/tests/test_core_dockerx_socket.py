@@ -337,3 +337,16 @@ def test_a_backlog_that_drains_is_not_a_hang(monkeypatch: pytest.MonkeyPatch) ->
 
     monkeypatch.setattr(dockerx, "_ping_once", once)
     assert dockerx._ping_answers("/nonexistent", 1.0) is True
+
+
+def test_a_backlog_full_to_the_deadline_is_no_answer(monkeypatch: pytest.MonkeyPatch) -> None:
+    # 4cebc06f.1: a backlog that never drains must end at the timeout with False, not loop or answer True.
+    attempts: list[float] = []
+
+    def once(_path: str, timeout: float) -> bool | None:
+        attempts.append(timeout)
+        raise BlockingIOError(11, "full")
+
+    monkeypatch.setattr(dockerx, "_ping_once", once)
+    assert dockerx._ping_answers("/nonexistent", 0.3) is False
+    assert len(attempts) >= 2

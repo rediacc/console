@@ -110,8 +110,12 @@ def test_a_runner_naming_a_machine_uses_the_live_target_config() -> None:
     """a0287d35.1: the hostinger local route reads through the same config as `tiers.live.targets.hostinger`."""
     raw = _raw()
     targets = raw["tiers"]["live"]["targets"]
+    named = 0
     for machine, target in targets.items():
         for rid, runner in S.MAP.local_runners.items():
             for cmd in runner.run:
                 if re.search(rf"machine \w+ {machine}\b", cmd):
+                    named += 1
                     assert f"--config {target['config']} " in cmd, (rid, cmd)
+    # Control: the assertion above ran at least once, so a removed route or a changed command shape cannot leave this test passing with no assertion.
+    assert named > 0

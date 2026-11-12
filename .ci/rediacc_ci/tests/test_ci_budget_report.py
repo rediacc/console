@@ -3600,3 +3600,45 @@ def test_jobs_or_skip_skips_a_502_names_it_and_still_raises_a_401(monkeypatch, c
 
     monkeypatch.setattr(br, "fetch_jobs", lambda _r, _i: [{"id": 1}])
     assert br._jobs_or_skip("o/r", 2) == [{"id": 1}]
+
+
+def _sample(monkeypatch, pr_jobs, main_jobs):
+    """compute_lane_durations over one PR run and one main-push run whose job reads answer `pr_jobs` / `main_jobs` (None is a skipped, unreadable run)."""
+    runs = {
+        "pull_request": [{"id": 1, "created_at": "2026-09-28T13:19:13Z", "head_branch": "b"}],
+        "push": [{"id": 2, "created_at": "2026-09-28T13:19:13Z", "head_branch": "main"}],
+    }
+    answers = {1: pr_jobs, 2: main_jobs}
+    monkeypatch.setattr(br, "fetch_runs", lambda _r, _w, event, *_a, **_k: runs[event])
+    monkeypatch.setattr(br, "_jobs_or_skip", lambda _repo, run_id: answers[run_id])
+    monkeypatch.setattr(br, "lane_display_patterns", lambda *_a: {})
+    monkeypatch.setattr(br, "collect_unit_durations", lambda *_a, **_k: ({}, []))
+
+
+def test_compute_lane_durations_refuses_when_every_pr_run_is_unreadable(monkeypatch, tmp_path):
+    """81670a34.1: the new all-unreadable raise on the PR sample."""
+    _sample(monkeypatch, None, [])
+    with pytest.raises(br.ghx.GhError, match="every sampled PR run's jobs were unreadable"):
+        br.compute_lane_durations(
+            root=tmp_path, list_artifacts=lambda *_a: [], download=lambda *_a: b""
+        )
+
+
+def test_compute_lane_durations_refuses_when_every_main_push_run_is_unreadable(
+    monkeypatch, tmp_path
+):
+    """81670a34.2: the same raise on the main-push sample; a readable PR run alone does not excuse it."""
+    _sample(monkeypatch, [], None)
+    with pytest.raises(br.ghx.GhError, match="every sampled main-push run's jobs were unreadable"):
+        br.compute_lane_durations(
+            root=tmp_path, list_artifacts=lambda *_a: [], download=lambda *_a: b""
+        )
+
+
+def test_compute_lane_durations_keeps_the_readable_runs_when_one_is_skipped(monkeypatch, tmp_path):
+    """CONTROL: with both samples readable nothing raises and the PR run read is the one sampled."""
+    _sample(monkeypatch, [], [])
+    computed = br.compute_lane_durations(
+        root=tmp_path, list_artifacts=lambda *_a: [], download=lambda *_a: b""
+    )
+    assert [r["id"] for r in computed["sampled_runs"]][:1] == [1]
