@@ -49,7 +49,7 @@ rdc backup:     strategy {set remove list show bind unbind}  retention {set clea
 rdc term:       connect
 rdc vscode:     connect list cleanup check serve {status stop}
 rdc ops:        up down status ssh setup check
-rdc subscription: login register logout status refresh proxy-token
+rdc subscription: login register logout status notices retire refresh proxy-token
 rdc job:        list status logs cancel gc wait dismiss   (see §9)
 rdc tools:      install list
 rdc doctor | credits | update | version | legal | serve | mcp serve | run (hidden)
@@ -57,7 +57,7 @@ rdc doctor | credits | update | version | legal | serve | mcp serve | run (hidde
 
 ### 1.1 Where the shipped tree differs from the tree this section used to draw
 
-Twenty-nine differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the rest are later additions.
+Thirty differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the rest are later additions.
 
 | Was drawn as | Shipped as | Why |
 |---|---|---|
@@ -90,6 +90,7 @@ Twenty-nine differences. The first six are deliberate and each is traceable to a
 | `job {list,status,logs,cancel,gc,wait}` | `job {list,status,logs,cancel,gc,wait,dismiss}` | PLAN-renet-restart-cycle-defects D4: `dismiss <id...>` or `dismiss --stale [--older-than]` gives up local job tickets (an `expired` event with reason dismissed), with no machine call, so a ticket whose job is gone stops printing "steps pending" on every command. Not drift: the verb landed with the ticket-expiry fix (e573d1e0d) after this transcript. |
 | no `version` or `legal` commands | `version` + `legal` | PLAN-terms-acceptance Design 7: `version` prints the CLI version, platform, update channel and the active licence; `legal` prints the document URLs for the user's language, the current terms version and the accepted version, and the licensor and contracting entity. Both take only `--json`, so they are leaves with no noun of their own. `--version` is unchanged. |
 | no `subscription register` | `subscription register --email <address> [--server <url>]` | A first-time user without an account starts from the CLI: `register` validates the address, picks the region, and runs the same device-code authorisation as `login` with the email attached, then prints the login summary. A leaf under the existing `subscription` noun. |
+| no `subscription notices` or `subscription retire` | `subscription notices` + `subscription retire <guid>` | PLAN-account-notices: `notices` lists the account's notices (licence expiry, backup health and the like) without opening the portal, and `retire` retires a repository's licence by GUID on the account server. Both are leaves under the existing `subscription` noun. |
 
 Four families were built by operator commits AFTER this tree was drawn. They exist in the live CLI today, so P4 recontracts them; it does not invent them. **All four were ruled on 2026-07-13** (spec/03 §9) and are folded into the §1 tree above:
 
