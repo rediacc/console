@@ -1,23 +1,25 @@
-## SESSION d778be9d 2026-11-11T19:53:23Z
+## SESSION d778be9d 2026-11-12T00:02:59Z
 
-# STATE d778be9d (2026-11-11 ~20:45Z, branch 1104-1, PR #605)
+# STATE d778be9d (2026-11-12 ~00:10Z, branch 1104-1, PR #605)
 
 ## Where things stand
-All terms-acceptance code landed (22/25 boxes ticked; X1, X2, LP-bench live, item #e3b3ba33). The 19 ci:quick reds of 18:11Z are fixed and landed (groups A/B/C, knock-ons 7345b8041c..17d3d6f9f3, pytest 594bf5b2d1). Guards: shared resolver 5aed43f32d + nested-repo fix 9d5c800d + GIT_DIR/push-URL class 3f1e18bf72. Lane budget leg 4/4 carried in .ci/config/carried-reds.json (4c247727): one outage sample; remove with `PYTHONPATH=.ci python3 -m rediacc_ci.ci.freshness --refresh .ci/config/lane-durations.json` after the push's CI run.
-
-## Next action
-1. #caba96f7: browser-probe investigator af315d0ce5455ec61 bisecting check:test:tutorial-player (play button covered by video; passed 18:32Z). Land its fix.
-2. ci:quick (one run), then vm:check --changed, drill backup + backup-onprem, push PR 605 with TURBO_PUSH_REASON='red-fix: ...'.
-3. After push: refresh lane durations + drop the carry; deploy_bench (shared build + Stripe sandbox pair now bound); accept Terms for eu-bench in the portal (operator ASKED 17:38Z, agents may accept on bench); then B1 #5f6d277d, TOTP #cc9117a1 (npm run login:bench x2), X1/X2/LP-bench #e3b3ba33, drill 6b #443ba017; two base vm:check runs for V3 #df6143bb.
+Submodules pushed: renet fa1aa08d..d11b44d0, account 09a5e54..52e87d2. Console push (124 commits, head a382b24d1) refused only because the VERIFIED vm:check receipt (tree 15a53d0289dd) predates bd78842b78 (drills/lib.py is a trigger input). Receipts otherwise ready: ci:quick red only on check:ci-lane-budget, carried in .ci/config/carried-reds.json (4c247727); backup receipt VERIFIED (drill backup 427/427, onprem 17/17, tree 01c8d99b4990); per-commit reviews clean.
 
 ## Delegated
-- af315d0ce5455ec61 (browser-probe, read-only): #caba96f7 tutorial-player bisect; reports the fix, edits nothing.
+- blyolo084 (shell, lead's): vm:check --changed on the push tree; log /tmp/vmcheck-push3.log; accept "vm:check VERIFIED".
+- 8538c92835 in lease agent-a71c0258d7f97bc86 (#10caccc2, runner selftest waitGone 20 s + survivor plant): ready, land right after the push, accept npm run check:ci-runner-selftest rc0.
+
+## Next action
+1. When blyolo084 reports VERIFIED: `TURBO_PUSH_REASON='red-fix: PR 605 CI red on 10 jobs; carries the Renet go, CLI key-material, Submodule Branches and cost-table fixes plus the batch landed since' git push origin 1104-1`. If the backup guard objects, rerun ./run.sh drill backup and drill backup-onprem first.
+2. Then land 8538c92835 (#10caccc2); watch PR 605 CI with .ci/scripts/ci/ci-trace.py --wait.
+3. After the CI run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.freshness --refresh .ci/config/lane-durations.json, drop the carry in the same commit, npm run check:ci-lane-budget rc0 (#1dcc5437).
+4. deploy_bench (builds shared first; binds STRIPE_SANDBOX_*), accept the Terms for eu-bench via the portal (operator ASKED 17:38Z; drill helper does it for drill accounts), then B1 #5f6d277d, TOTP npm run login:bench x2 #cc9117a1, X1/X2/LP-bench #e3b3ba33, drill 6b #443ba017, V3 two base vm:check runs #df6143bb.
 
 ## Rulings today
-Autonomy incl. production (operator 17:4xZ); production Terms rollout: enforce on deploy; bench Terms accept by agents allowed; Stripe ToS URL set by the operator in test and live; X2 via sandbox pair; G8 tick kept; CLI signup design 1 built (design 6 later).
+Autonomy incl. production; production Terms rollout: enforce on deploy; agents may accept Terms on bench; Stripe ToS URL set in test and live by the operator; G8 tick kept; CLI signup design 1 built.
 
 ## Big pieces
-PLAN-terms-acceptance (live boxes left); PLAN-local-first-delivery (V3 wall clause); PLAN-enterprise-isolation; PLAN-health-checks-local; PLAN-d1-scaling.
+PLAN-terms-acceptance (X1/X2/LP-bench live); PLAN-local-first-delivery (V3 wall clause); PLAN-enterprise-isolation; PLAN-health-checks-local; PLAN-d1-scaling.
 
 ## Owed ticks
-#e3b3ba33 X1/X2/LP-bench; #df6143bb V3; #5f6d277d B1; #cc9117a1 TOTP; #1dcc5437 carry removal; #7d3a5939 worktree-guard false positive.
+#9cb71958 push; #1dcc5437 carry removal; #10caccc2 land; #e3b3ba33; #df6143bb; #5f6d277d; #cc9117a1; #443ba017 drill 6b; #928ba562 X2.
