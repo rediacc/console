@@ -102,6 +102,9 @@ export interface SubscriptionLicenseReport {
     recent?: {
       repositoryGuid: string;
       freshness: 'valid' | 'refresh_recommended' | 'hard_expired';
+      kind?: string;
+      refreshRecommendedAt?: string;
+      hardExpiresAt?: string;
     }[];
   };
 }

@@ -5,6 +5,7 @@
 
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
+import { retireRepoLicense } from '../services/account/license-retire.js';
 import { getSubscriptionTokenState } from '../services/account/subscription-auth.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
@@ -134,10 +135,7 @@ export async function settleRepoLicense(
   // No account token means no license was ever issued from this config: nothing to retire, nothing to say.
   if (getSubscriptionTokenState().kind !== 'ready') return;
   try {
-    await accountServerFetch(
-      `/account/api/v1/licenses/repos/${encodeURIComponent(repoConfig.repositoryGuid)}/retire`,
-      { method: 'POST' }
-    );
+    await retireRepoLicense(repoConfig.repositoryGuid);
   } catch (error) {
     outputService.warn(
       t('commands.repo.delete.licenseRetireFailed', {

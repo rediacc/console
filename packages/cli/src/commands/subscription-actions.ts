@@ -7,6 +7,8 @@
  * status or a refresh is chosen here by which function the leaf dispatches to.
  */
 
+import type { RepoNameEntry } from '@rediacc/shared/config-schema';
+import { repoNamesByGuid } from '@rediacc/shared/config-schema';
 import { t } from '../i18n/index.js';
 import {
   fetchSubscriptionLicenseReportOrThrow,
@@ -17,6 +19,11 @@ import {
   refreshRepoLicensesBatch,
 } from '../services/account/license.js';
 import { DEFAULT_DATASTORE } from '../services/account/license-machine.js';
+import {
+  LICENCE_STATE_KEYS,
+  type LicenceRow,
+  licenceRows,
+} from '../services/account/license-retire.js';
 import type { RemoteRepoLicenseScanEntry } from '../services/account/license-types.js';
 import {
   getSubscriptionScopeMismatch,
@@ -71,7 +78,7 @@ const UNREADY_TOKEN_DIAGNOSTICS: Record<UnreadyTokenState['kind'], () => string>
  * The one diagnostic for a token that is not ready, which a failing verb throws and the best-effort activation section prints (review 8b3374e0.1: the status verb had bypassed it, so every non-ready kind read as "not logged in").
  * A kind with no entry is a programming error, never reported as "not logged in".
  */
-function unreadyTokenDiagnostic(tokenState: UnreadyTokenState): string {
+export function unreadyTokenDiagnostic(tokenState: UnreadyTokenState): string {
   const diagnostic = Object.hasOwn(UNREADY_TOKEN_DIAGNOSTICS, tokenState.kind)
     ? UNREADY_TOKEN_DIAGNOSTICS[tokenState.kind]
     : undefined;
@@ -81,7 +88,7 @@ function unreadyTokenDiagnostic(tokenState: UnreadyTokenState): string {
   return diagnostic();
 }
 
-async function assertSubscriptionScopeMatchesConfig(tokenState: {
+export async function assertSubscriptionScopeMatchesConfig(tokenState: {
   teamName?: string;
 }): Promise<void> {
   const configTeamName = await configService.getTeam();
@@ -145,19 +152,23 @@ export async function executeSubscriptionStatus(): Promise<void> {
   if (!status) {
     throw new ValidationError(t('errors.subscription.notLoggedIn'));
   }
-  const configGuids = await readConfigRepoGuids();
+  const config = await readConfigNames();
+  const rows = status.repoLicenses.recent
+    ? licenceRows(status.repoLicenses.recent, config?.names ?? new Map())
+    : undefined;
   const format = getOutputFormat();
   if (format !== 'table') {
-    outputService.print(subscriptionStatusData(status, configGuids), format);
+    outputService.print(subscriptionStatusData(status, config?.liveGuids, rows), format);
     return;
   }
-  outputRemoteStatus(status, configGuids);
+  outputRemoteStatus(status, config?.liveGuids, rows);
 }
 
 /** The structured form of the account view, for `-o json|yaml|csv`: the same facts the table prints. */
 function subscriptionStatusData(
   status: NonNullable<Awaited<ReturnType<typeof fetchSubscriptionLicenseReportOrThrow>>>,
-  configGuids?: Set<string>
+  configGuids?: Set<string>,
+  rows?: LicenceRow[]
 ): Record<string, unknown> {
   const recent = status.repoLicenses.recent;
   return {
@@ -172,17 +183,33 @@ function subscriptionStatusData(
         ? { ...splitRepoLicensesByConfig(recent, configGuids), scope: 'config' }
         : { ...status.repoLicenses, scope: 'account' },
     overLimitCount: status.machineSlots.machines.filter((m) => m.overLimit).length,
+    ...(rows && {
+      licences: rows.map((row) => ({
+        guid: row.guid,
+        name: row.name,
+        machine: row.machine,
+        kind: row.kind,
+        freshness: row.freshness,
+        refreshRecommendedAt: row.refreshRecommendedAt,
+        hardExpiresAt: row.hardExpiresAt,
+        fix: row.fix,
+      })),
+    }),
   };
 }
 
-/** The repository GUIDs this config holds, or undefined when the config cannot be read. */
-async function readConfigRepoGuids(): Promise<Set<string> | undefined> {
-  try {
-    const repos = await configService.listRepositories();
-    return new Set(repos.map((r) => r.config.repositoryGuid).filter((g): g is string => !!g));
-  } catch {
-    return undefined;
-  }
+/**
+ * What the active config knows about repository GUIDs: every name (live or deleted) and the live
+ * GUIDs alone. Undefined when there is no config; a config that cannot be read throws.
+ */
+async function readConfigNames(): Promise<
+  { names: Map<string, RepoNameEntry>; liveGuids: Set<string> } | undefined
+> {
+  const config = await configService.getCurrent();
+  if (!config) return undefined;
+  const names = repoNamesByGuid(config);
+  const liveGuids = new Set([...names].filter(([, entry]) => !entry.deleted).map(([guid]) => guid));
+  return { names, liveGuids };
 }
 
 type TrackedRepo = { repositoryGuid: string; freshness: string };
@@ -226,9 +253,41 @@ function outputRepoLicenseCounts(
   }
 }
 
+/** The per-licence lines under the counts: the joined name, state and dates, and the command that settles it. */
+function outputLicenceRows(rows: LicenceRow[]): void {
+  if (rows.length === 0) return;
+  outputService.report(t('commands.subscription.status.licencesHeader'));
+  for (const row of rows) {
+    outputService.report(
+      t('commands.subscription.status.licenceRow', {
+        name: licenceRowName(row),
+        kind: row.kind ?? '-',
+        state: t(LICENCE_STATE_KEYS[row.freshness]),
+        refreshBy: row.refreshRecommendedAt?.slice(0, 10) ?? '-',
+        hardExpiry: row.hardExpiresAt?.slice(0, 10) ?? '-',
+      })
+    );
+    if (row.fix) {
+      outputService.report(t('commands.subscription.status.licenceFix', { fix: row.fix }));
+    }
+  }
+}
+
+/** `ref@machine`; `ref (deleted)` for an archived repository; the 8-character GUID and "not in this config" when the config does not know it. */
+function licenceRowName(row: LicenceRow): string {
+  if (row.presence === 'absent') {
+    return t('commands.subscription.status.licenceNotInConfig', { guid: row.guid.slice(0, 8) });
+  }
+  const name = row.machine ? `${row.name}@${row.machine}` : String(row.name);
+  return row.presence === 'deleted'
+    ? t('commands.subscription.status.licenceDeleted', { name })
+    : name;
+}
+
 function outputRemoteStatus(
   status: Awaited<ReturnType<typeof fetchSubscriptionLicenseReportOrThrow>>,
-  configGuids?: Set<string>
+  configGuids?: Set<string>,
+  rows?: LicenceRow[]
 ) {
   if (!status) return;
   outputService.report(t('commands.subscription.status.remote'));
@@ -262,6 +321,7 @@ function outputRemoteStatus(
     outputService.warn(t('commands.subscription.status.issuanceUsageHigh80'));
   }
   outputRepoLicenseCounts(status.repoLicenses, configGuids);
+  if (rows) outputLicenceRows(rows);
   for (const machine of status.machineSlots.machines) {
     const key = machine.overLimit
       ? 'commands.subscription.status.remoteMachineOverLimit'

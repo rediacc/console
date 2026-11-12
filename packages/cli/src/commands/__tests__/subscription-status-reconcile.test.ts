@@ -37,7 +37,19 @@ const mockListRepos = vi.hoisted(() => vi.fn());
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getTeam: vi.fn().mockResolvedValue(undefined),
-    listRepositories: mockListRepos,
+    // The status verb reads the config's GUIDs through getCurrent; the repos a test lists become its resources.
+    getCurrent: async () => ({
+      resources: {
+        repositories: Object.fromEntries(
+          ((await mockListRepos()) as { name: string; config: { repositoryGuid: string } }[]).map(
+            (r) => [
+              r.name,
+              { grand: 'main', tags: { main: { repositoryGuid: r.config.repositoryGuid } } },
+            ]
+          )
+        ),
+      },
+    }),
   },
 }));
 const mockFetch = vi.hoisted(() => vi.fn());
