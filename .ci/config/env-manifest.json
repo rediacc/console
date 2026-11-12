@@ -996,7 +996,6 @@
       "CURSOR_TRACE_ID",
       "DB_HOST",
       "DB_PORT",
-      "DELEGATION_CERT_BASE64",
       "DOCKER_REGISTRY",
       "ELITE_DOMAIN",
       "ELITE_STORE_DOMAIN",

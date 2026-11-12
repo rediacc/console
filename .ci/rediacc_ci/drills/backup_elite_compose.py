@@ -7,8 +7,8 @@ WHAT IT IS FOR. `rediacc_ci.drills.backup_onprem` boots `src/entry/on-premise.ts
 
 WHAT IT DOES, one claim per row:
   1. An upstream (the dev gateway, `./run.sh account dev`) issues a delegation cert for a throwaway Ed25519 pair over `POST /portal/delegation-certs`.
-  2. The elite VM runs `docker compose -f docker-compose.yml -f docker-compose.standalone.yml up -d` over the tree's own `private/elite` files, with a `.env` that enrols the box with that pair and cert, sets `SYSTEM_DOMAIN` and `RUSTFS_BIND` to the elite VM's address and `PUBLIC_SITE_URL` to its HTTP port. The server image is the one `PYTHONPATH=.ci python3 -m rediacc_ci.ops.build_server onprem` built on this host (`rediacc-server-onprem:dev`), shipped with `docker save` and `docker load` and tagged on the VM only; nothing is pulled from or pushed to a registry.
-  3. From the machine VM: the account server answers `server-info` through nginx (so the enrolment variables reached it), and the published store answers 403 (up, wants credentials). Controls: a closed port on the same host answers nothing, and the machine cannot resolve `rediacc-rustfs`, so it really is outside the docker network and the internal endpoint could not have served it.
+  2. The elite VM runs `docker compose -f docker-compose.yml -f docker-compose.standalone.yml up -d` over the tree's own `private/elite` files, with a `.env` that enrols the box with that pair, sets `SYSTEM_DOMAIN` and `RUSTFS_BIND` to the elite VM's address and `PUBLIC_SITE_URL` to its HTTP port. The server image is the one `PYTHONPATH=.ci python3 -m rediacc_ci.ops.build_server onprem` built on this host (`rediacc-server-onprem:dev`), shipped with `docker save` and `docker load` and tagged on the VM only; nothing is pulled from or pushed to a registry. Before the first boot a one-shot web container drops the cert as `cert-inbox/new.json` on the stack's `data` volume, so the server's boot scan applies it.
+  3. From the machine VM: the account server answers `server-info` through nginx (so the enrolment variables reached it) after its boot scan answered the seeded drop with `applied.json`, and the published store answers 403 (up, wants credentials). Controls: a closed port on the same host answers nothing, and the machine cannot resolve `rediacc-rustfs`, so it really is outside the docker network and the internal endpoint could not have served it.
   4. The first registration on the box adopts the cert's subscription (the subscription id read back equals the cert's).
   5. The machine VM snapshots a fresh repository into the box, the manifest index lists it, the quota ledger equals the bytes uploaded, and the snapshot restores into a different repository byte for byte (`backup_roundtrip.Roundtrip`, with its account step replaced by the registration above, since the box has no `/test` seam).
 
@@ -134,7 +134,6 @@ def elite_env(
     elite_vm: str,
     *,
     keys: dict[str, str],
-    cert_b64: str,
     store_access: str,
     store_secret: str,
     config_key: str,
@@ -160,7 +159,6 @@ def elite_env(
         "ACCOUNT_X25519_PUBLIC_KEY": keys["x25519_pub"],
         "ACCOUNT_SERVER_API_KEY": keys["api_key"],
         "ACCOUNT_JWT_SECRET": keys["jwt"],
-        "DELEGATION_CERT_BASE64": cert_b64,
         "BACKUP_MAINTENANCE_INTERVAL_MS": "0",
     }
 
@@ -173,6 +171,36 @@ def compose_command(stack_dir: str, *verb: str) -> str:
         files,
         " ".join(shlex.quote(v) for v in verb),
     )
+
+
+# The request id the drill's seeded inbox drop carries, so the server's applied.json can be told apart from any other.
+INBOX_REQUEST_ID = "backup-elite-compose"
+# Where the elite compose's named `data` volume puts the cert inbox inside the web container
+# (dirname of DELEGATION_CERT_PATH=/data/delegation-cert.json, private/account cert-inbox.service.ts).
+INBOX_DIR = "/data/cert-inbox"
+
+
+def inbox_seed(cert_b64: str) -> str:
+    """The `new.json` the drill drops before boot: `{requestId, cert}`, the cert being the signed JSON `cert_b64` encodes."""
+    cert = json.loads(base64.b64decode(cert_b64))
+    return json.dumps({"requestId": INBOX_REQUEST_ID, "cert": cert}, separators=(",", ":")) + "\n"
+
+
+def seed_inbox_command(stack_dir: str) -> str:
+    """A one-shot web container on the stack's `data` volume that writes stdin as the inbox's `new.json` (through `.tmp`, in a 0700 directory) before the server first boots, so its boot scan decides it."""
+    script = (
+        "mkdir -p %(d)s && chmod 700 %(d)s && umask 077 && cat > %(d)s/new.json.tmp "
+        "&& mv %(d)s/new.json.tmp %(d)s/new.json" % {"d": INBOX_DIR}
+    )
+    return compose_command(
+        stack_dir, "run", "--rm", "--no-deps", "-T", "--entrypoint", "sh", "web", "-c", script
+    )
+
+
+def inbox_answer_command(stack_dir: str) -> str:
+    """The server's answer files from inside the running web container; an absent file prints nothing."""
+    script = "cat %(d)s/applied.json %(d)s/rejected.json 2>/dev/null || true" % {"d": INBOX_DIR}
+    return compose_command(stack_dir, "exec", "-T", "web", "sh", "-c", script)
 
 
 def curl_status_command(url: str) -> str:
@@ -448,6 +476,18 @@ class EliteCompose:
         d.last_cmd = "docker tag on the elite VM"
         d.assert_equal("0", str(tag.returncode), "the image carries the tag the compose file names")
         self.stack_up = True
+        seed = seed_inbox_command(self.stack_dir)
+        seeded = self.elite(seed, inbox_seed(self.cert_b64))
+        d.last_cmd = seed
+        if seeded.returncode != 0:
+            log.error(seeded.stderr.strip()[-2000:])
+        d.assert_equal(
+            "0",
+            str(seeded.returncode),
+            "the delegation cert is dropped into the box's cert inbox before the first boot",
+        )
+        if seeded.returncode != 0:
+            raise SystemExit(1)
         command = compose_command(self.stack_dir, "up", "-d")
         up = self.elite(command, None)
         d.last_cmd = command
@@ -485,6 +525,8 @@ class EliteCompose:
         if status != "200":
             logs = self.elite(compose_command(self.stack_dir, "logs", "--tail", "60", "web"), None)
             log.error(logs.stdout.strip()[-4000:])
+        else:
+            self.inbox_row()
         store = "http://%s:%d/" % (o.elite_vm, STORE_PORT)
         got = self.machine(curl_status_command(store), None).stdout.strip()
         d.last_cmd = "machine: curl %s" % store
@@ -510,6 +552,25 @@ class EliteCompose:
             "the public endpoint can serve it" % INTERNAL_STORE_HOST,
         )
         return status == "200"
+
+    def inbox_row(self) -> None:
+        """The boot scan decided the seeded drop before the server answered: applied.json names the drill's request."""
+        d = self.d
+        command = inbox_answer_command(self.stack_dir)
+        answer = self.elite(command, None).stdout
+        d.last_cmd = command
+        verdict = ""
+        try:
+            doc = json.loads(answer) if answer.strip() else {}
+        except ValueError:
+            doc = {}
+        if isinstance(doc, dict) and doc.get("requestId") == INBOX_REQUEST_ID:
+            verdict = "applied" if doc.get("certId") else "rejected: %s" % doc.get("reason", "?")
+        d.assert_equal(
+            "applied",
+            verdict,
+            "the server's boot scan applied the cert from its inbox (applied.json names the drill's request)",
+        )
 
     # ------------------------------------------------------------------ rows 4 and 5: register, snapshot
 
@@ -596,7 +657,6 @@ class EliteCompose:
         env = elite_env(
             self.o.elite_vm,
             keys=keys,
-            cert_b64=self.cert_b64,
             store_access=secrets.token_hex(16),
             store_secret=secrets.token_hex(32),
             config_key=base64.b64encode(secrets.token_bytes(32)).decode("ascii"),

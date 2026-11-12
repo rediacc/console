@@ -33,6 +33,11 @@ KEYS = {
 }
 
 
+APPLIED = json.dumps(
+    {"requestId": "backup-elite-compose", "certId": "0123456789abcdef", "issuedAt": "x"}, indent=2
+)
+
+
 def signed_cert(sub: str = SUB) -> dict[str, str]:
     payload = base64.b64encode(json.dumps({"subscriptionId": sub}).encode()).decode()
     return {"payload": payload, "signature": "sig", "publicKeyId": "kid"}
@@ -58,7 +63,6 @@ def test_the_env_publishes_the_store_on_the_elite_address_and_enrols_the_box() -
     env = ec.elite_env(
         ELITE,
         keys=KEYS,
-        cert_b64="Y2VydA==",
         store_access="a" * 32,
         store_secret="s" * 64,
         config_key="c=",
@@ -67,7 +71,8 @@ def test_the_env_publishes_the_store_on_the_elite_address_and_enrols_the_box() -
     assert env["RUSTFS_BIND"] == ELITE
     assert env["PUBLIC_SITE_URL"] == "http://%s:%d" % (ELITE, ec.HTTP_PORT)
     assert env["ACCOUNT_ED25519_PRIVATE_KEY"] == "ep"
-    assert env["DELEGATION_CERT_BASE64"] == "Y2VydA=="
+    # The cert reaches the box through its cert inbox, never the environment (the server no longer reads one).
+    assert not any(key.startswith("DELEGATION_CERT") for key in env)
     assert env["ENABLE_HTTPS"] == "false"
     # The standalone default of the public endpoint is the claim under test, so the drill never sets it.
     assert "ACCOUNT_BACKUP_S3_PUBLIC_ENDPOINT" not in env
@@ -80,14 +85,23 @@ def test_the_env_publishes_the_store_on_the_elite_address_and_enrols_the_box() -
 def test_every_key_the_drill_sets_reaches_the_rendered_web_service() -> None:
     """The compose file passes only what it names: a drill key it drops would silently never reach the server."""
     both = "".join((REAL_ELITE / name).read_text(encoding="utf-8") for name in ec.COMPOSE_FILES)
-    env = ec.elite_env(
-        ELITE, keys=KEYS, cert_b64="x", store_access="a", store_secret="s", config_key="c"
-    )
+    env = ec.elite_env(ELITE, keys=KEYS, store_access="a", store_secret="s", config_key="c")
     missing = [key for key in env if "${%s" % key not in both]
     assert missing == []
     # Control: the same check names a key the files do not read. The box needs none: the cert embeds in every licence from the cert alone, and the ON_PREMISE_* pair only turns on auto-renew (private/account/src/services/onprem-extras.ts).
     assert "${ON_PREMISE_PRIVATE_KEY" not in both
     assert "${ON_PREMISE_PUBLIC_KEY" not in both
+
+
+def test_the_inbox_seed_carries_the_drill_request_id_and_the_signed_cert() -> None:
+    cert = signed_cert()
+    seed = ec.inbox_seed(base64.b64encode(json.dumps(cert).encode()).decode())
+    assert seed.endswith("\n")
+    assert json.loads(seed) == {"requestId": ec.INBOX_REQUEST_ID, "cert": cert}
+    command = ec.seed_inbox_command("/tmp/stack")
+    assert "run --rm --no-deps -T --entrypoint sh web -c" in command
+    assert "/data/cert-inbox/new.json.tmp" in command
+    assert "chmod 700 /data/cert-inbox" in command
 
 
 def test_the_env_text_is_quoted_and_refuses_a_value_it_cannot_hold() -> None:
@@ -239,7 +253,8 @@ def harness(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch):
             return json.dumps({"cert": signed_cert(cert_sub)})
 
         drill.api_post = api_post
-        elite = FakeVm(elite_answers or [])
+        # Explicit answers win (first match); a healthy box's boot scan answers the drill's drop.
+        elite = FakeVm([*(elite_answers or []), ("applied.json", ok(APPLIED))])
         machine = FakeVm(
             machine_answers
             if machine_answers is not None
@@ -307,7 +322,16 @@ def test_a_healthy_stack_and_a_completed_snapshot_pass_every_row(harness) -> Non
     # The .env went over stdin, never on a command line, and enrols the box with that cert.
     env_writes = [stdin for cmd, stdin in run.elite.calls if cmd.endswith(("/.env'", "/.env"))]
     assert len(env_writes) == 1
-    assert 'DELEGATION_CERT_BASE64="' in env_writes[0]
+    assert "DELEGATION_CERT" not in env_writes[0]
+    # The cert goes into the inbox on the data volume over stdin, before the stack's first boot.
+    commands = [cmd for cmd, _ in run.elite.calls]
+    seed_at = next(i for i, cmd in enumerate(commands) if "--entrypoint sh web" in cmd)
+    up_at = next(i for i, cmd in enumerate(commands) if cmd.endswith(" up -d"))
+    assert seed_at < up_at
+    assert json.loads(run.elite.calls[seed_at][1]) == {
+        "requestId": ec.INBOX_REQUEST_ID,
+        "cert": signed_cert(),
+    }
     assert all("ep" not in cmd.split() for cmd, _ in run.elite.calls)
     # Both compose files are the tree's own, byte for byte.
     shipped = {
@@ -524,3 +548,15 @@ def test_the_registration_accepts_the_terms_before_reading_the_subscription(harn
     assert calls.index(("ACCEPT", "/portal/terms/accept")) < calls.index(
         ("GET", "/portal/subscription")
     )
+
+
+def test_a_rejected_inbox_drop_fails_its_row(harness) -> None:
+    rejected = json.dumps({"requestId": ec.INBOX_REQUEST_ID, "reason": "wrong-key", "detail": "x"})
+    run = harness(elite_answers=[("applied.json", ok(rejected))])
+    assert any("boot scan applied the cert" in desc for desc in failed(run))
+
+
+def test_a_failed_inbox_seed_stops_before_compose_up(harness) -> None:
+    run = harness(elite_answers=[("--entrypoint sh web", rt.VmResult(1, "", "no such volume"))])
+    assert any("dropped into the box's cert inbox" in desc for desc in failed(run))
+    assert not any(cmd.endswith(" up -d") for cmd, _ in run.elite.calls)
