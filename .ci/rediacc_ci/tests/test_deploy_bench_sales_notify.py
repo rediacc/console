@@ -1,4 +1,4 @@
-"""The bench secret document carries SALES_NOTIFY_EMAIL, the optional sales digest recipient the deploy-bench profile binds: a profile entry with no key in the pushed document (or the reverse) fails here."""
+"""The bench secret document carries SALES_NOTIFY_EMAIL, the optional sales digest recipient the deploy-bench profile binds: dropping the key from either side fails here. Only this one key is checked; other deploy-bench keys are not compared."""
 
 import json
 
