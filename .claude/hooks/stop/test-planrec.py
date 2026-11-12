@@ -1433,6 +1433,19 @@ raises(
     "scripts/ci-runner/run.ts:9999",
 )
 control("CONTROL: prose with no citation is silent", _plain(ROOT, "nothing cited here", "x"), None)
+# 910aa507.1: the hint follows the kind of refusal. A dead sha gets the landed-sha hint and not the path hint; a bad path gets the path hint and not the sha hint; both kinds get both.
+_DEAD_SHA = "0123456789abcdef0123456789abcdef01234567"
+_sha_only = _refusal(lambda: _plain(ROOT, "landed in %s" % _DEAD_SHA, "x"))
+truthy("a dead sha refusal carries the landed-sha hint", "cite the landed sha" in _sha_only)
+falsy("...and not the repo-relative path hint", "full repo-relative path" in _sha_only)
+_path_only = _refusal(lambda: _plain(ROOT, "see run.ts:352", "x"))
+truthy("a bad path refusal carries the path hint", "full repo-relative path" in _path_only)
+falsy("...and not the landed-sha hint", "cite the landed sha" in _path_only)
+_both = _refusal(lambda: _plain(ROOT, "see run.ts:352 and %s" % _DEAD_SHA, "x"))
+truthy(
+    "a refusal of both kinds carries both hints",
+    "full repo-relative path" in _both and "cite the landed sha" in _both,
+)
 
 _CIT_PLAN = "agent/PLAN-citation-fixture.md"
 _CIT_OPEN = "Wire the citation resolver into the tick verb of this fixture plan"

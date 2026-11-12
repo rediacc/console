@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import pathlib
 import time
 
 import pytest
@@ -136,7 +137,7 @@ def test_transcript_waiting_names_the_shell_for_a_fresh_idle_transcript(sc):
 
 
 def test_transcript_waiting_is_empty_for_a_missing_or_stale_transcript(sc):
-    """last_record runs before the mtime horizon check, and a missing path reads as no record, so neither shape raises."""
+    """A stale transcript and a missing one both answer "not waiting", and neither raises."""
 
     roster = _roster_module()
     path = transcript(sc)
@@ -353,6 +354,43 @@ def test_r8_2_inverse_a_line_that_only_names_task_id_is_not_a_launch(tmp_path):
     assert wl_report.armed_monitors(tx, time.time()) == []
 
 
+def test_r8_2_a_result_with_a_task_id_but_no_monitor_flag_is_not_a_launch(tmp_path):
+    """FIRE: a workflow run's result carries a `taskId` beside `status`, `runId` and `summary`, and armed an interim entry (8a7f7ac1.2). The Monitor launch beside it stays armed."""
+    tx = tmp_path / "agent.jsonl"
+    _write_line(
+        tx,
+        {
+            "type": "user",
+            "toolUseResult": {
+                "status": "started",
+                "taskId": "wf0001",
+                "runId": "r1",
+                "summary": "s",
+            },
+        },
+    )
+    assert wl_report.armed_monitors(tx, time.time()) == []
+    _write_line(tx, _launch(timeout_ms=600000))
+    assert wl_report.armed_monitors(tx, time.time()) == [MONITOR]
+
+
+def test_r8_3_a_notice_before_a_launch_with_the_same_id_does_not_end_it(tmp_path):
+    """FIRE: the ended set came from the whole transcript, so an earlier notice ended a later launch (8a7f7ac1.3). A notice after the launch still ends it."""
+    tx = tmp_path / "agent.jsonl"
+    _write_line(tx, _rec_notice(MONITOR))
+    _write_line(tx, _launch(timeout_ms=600000))
+    assert wl_report.armed_monitors(tx, time.time()) == [MONITOR]
+    _write_line(tx, _rec_notice(MONITOR))
+    assert wl_report.armed_monitors(tx, time.time()) == []
+
+
+def test_r8_4_the_value_error_a_nul_path_raises_is_the_one_that_reaches_the_call_site(tmp_path):
+    """armed_monitors answers [] for an unreadable path (OSError) and lets a NUL-byte path's ValueError through, which the capture site suppresses (8a7f7ac1.1)."""
+    assert wl_report.armed_monitors(tmp_path / "gone.jsonl", time.time()) == []
+    with pytest.raises(ValueError, match="null"):
+        wl_report.armed_monitors(pathlib.Path("a\0b"), time.time())
+
+
 def test_r8_3_an_api_request_tail_after_the_resume_is_held_until_superseded(sc):
     """The mid-turn reading of an api-request tail is intended: the shell's notification resumed the agent, so the tail is a turn in flight, and its own SubagentStop capture supersedes the entry."""
     path = transcript(sc, flushed=False)
@@ -394,13 +432,13 @@ def _in_process_in_scratch(sc: Scratch, monkeypatch) -> None:
     )
 
 
-def test_r8_4_a_filesystem_error_from_armed_monitors_costs_only_the_interim(sc, monkeypatch):
+def test_r8_4_a_value_error_from_armed_monitors_costs_only_the_interim(sc, monkeypatch):
     """The capture hook never wedges a stop on an unreadable transcript."""
     tx = monitor_transcript(sc, "waiting", shell=False)
     _in_process_in_scratch(sc, monkeypatch)
 
     def boom(*_a, **_k):
-        raise OSError("unreadable")
+        raise ValueError("embedded null byte")
 
     monkeypatch.setattr(wl_report, "armed_monitors", boom)
     wl_report.handle_subagent_stop(_stop_event(sc, tx))

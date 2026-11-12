@@ -1163,7 +1163,7 @@ def _boxaudit_cli(argv):
 def _liveproof_cli(argv):
     """--live-proof <me> [<plan> <LP-box-sig> [--write] [--tick]] (agent/plans/PLAN-tested-on-bench.md, "Agent verb").
 
-    The logic is wl_liveproof's. This arm parses and checks `<me>` like every other verb, lists the open LP boxes when no plan is given (the --plan-tick listing shape), and hands wl_liveproof a `tick` that IS `_plantick_cli`, so a live-proof tick runs the same dependency gate, `wl_planrec.plan_tick` and paired plan-plus-ledger write as `--plan-tick`, never a second copy of them. A run that records (a plan and a box given) is refused from a lease tree, as the recorder itself refuses one: `root` is the main checkout there, so the recorder would otherwise run from the main tree's code and ledger. The listing stays allowed.
+    The logic is wl_liveproof's. This arm parses and checks `<me>` like every other verb, lists the open LP boxes when no plan is given (the --plan-tick listing shape), and hands wl_liveproof a `tick` that IS `_plantick_cli`, so a live-proof tick runs the same dependency gate, `wl_planrec.plan_tick` and paired plan-plus-ledger write as `--plan-tick`, never a second copy of them. A run that passes anything after `<me>` (a plan, with or without a box and flags) is refused from a lease tree, as the recorder itself refuses one: `root` is the main checkout there, so the recorder would otherwise run from the main tree's code and ledger. Only the bare open-box listing stays allowed.
     """
 
     def die(msg):

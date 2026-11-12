@@ -403,6 +403,9 @@ def _monitor_launch(line):
     tid = res.get("taskId")
     if not isinstance(tid, str) or not _TASK_ID.match(tid):
         return None
+    # A Monitor's launch record carries its own `persistent` flag; another tool's result with a `taskId` (a workflow run: `status`, `runId`, `summary`) does not, and arms nothing (8a7f7ac1.2).
+    if not isinstance(res.get("persistent"), bool):
+        return None
     timeout = res.get("timeoutMs")
     horizon: float = wl_roster.WAIT_HORIZON_MIN * 60
     if (
@@ -424,13 +427,19 @@ def armed_monitors(jsonl, now):
         data = jsonl.read_bytes()
     except (OSError, AttributeError):
         return []
-    ended = {m.group(1) for m in _MONITOR_END.finditer(data)}
+    # The offset of each id's last terminal notification: only one written AFTER a launch ends that launch, so a notice that precedes a launch carrying the same id ends nothing (8a7f7ac1.3).
+    ended_at: dict[bytes, int] = {}
+    for m in _MONITOR_END.finditer(data):
+        ended_at[m.group(1)] = m.end()
     out = []
-    for line in data.splitlines():
+    pos = 0
+    for line in data.split(b"\n"):
+        start = pos
+        pos += len(line) + 1
         if b'"taskId"' not in line:
             continue
         launch = _monitor_launch(line)
-        if launch is None or launch[0].encode() in ended or silence > launch[1]:
+        if launch is None or ended_at.get(launch[0].encode(), -1) > start or silence > launch[1]:
             continue
         if launch[0] not in out:
             out.append(launch[0])
@@ -1033,8 +1042,8 @@ def handle_subagent_stop(event):
             # The SubagentStop event proves the turn ended, so the transcript's last record (often an `api-request`) is not asked to say so.
             interim = wl_roster.transcript_armed(pathlib.Path(transcript), time.time())
         if not interim:
-            # `armed_monitors` reports an unreadable transcript as [] itself; only a filesystem or decode error can still reach here, and anything else is a bug that must surface.
-            with contextlib.suppress(OSError, ValueError):
+            # `armed_monitors` reports an unreadable transcript (OSError on the stat or the read) as [] itself; the one error that still reaches here is the ValueError a path holding a NUL byte raises from `stat`, and anything else is a bug that must surface.
+            with contextlib.suppress(ValueError):
                 # An agent that ended its turn to wait on a Monitor alone is interim too.
                 mons = armed_monitors(pathlib.Path(transcript), time.time())
                 interim = mons[-1] if mons else ""

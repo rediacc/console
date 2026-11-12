@@ -1260,7 +1260,7 @@ def settle_batch_no_local(out, local_batch, tracked_ids=None):
     return out
 
 
-# ---- A CONTENT-FREE VERDICT (R20261110.7). On 2026-11-09T21:21:05Z the judge returned continue with reason "Duplicate call ignored." and next action "Ignore.", which blocked the stop and drew a restated Remaining list. A continue carries an order or a reason that names something; one with neither is read as stop and reported as the `judge-contentless` advisory.
+# ---- A CONTENT-FREE VERDICT (R20261110.7). On 2026-11-09T21:21:05Z the judge returned continue with reason "Duplicate call ignored." and next action "Ignore.", which blocked the stop and drew a restated Remaining list. A continue carries an order. One whose order is empty or a non-order word (CONTENTLESS_ORDERS) is read as stop whatever its reason names, and so is one with a short reason and a short order that both name nothing; either is reported as the `judge-contentless` advisory.
 CONTENTLESS_ORDERS = frozenset({"", "ignore", "none", "n/a", "na", "nothing"})
 CONTENTLESS_REASON_MAX = 40
 # The short-reason arm also needs an order of at most this many words that names nothing. The plan's arm read every reason under 40 characters naming nothing as content-free, which also caught deliberate controls such as reason "a test is red" with order "Fix the failing test in foo.py" (stop/test-judge-schema.py): a short reason beside a real order is a real verdict.
