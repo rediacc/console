@@ -618,6 +618,23 @@ def test_a_restore_that_holds_on_the_second_start_keeps_the_first_failure_on_rec
     assert not [line for line in clean if "first start did not restore" in line]
 
 
+def test_a_first_start_refused_with_no_error_text_notes_no_error() -> None:
+    """Review 2bd4e400.1: an empty refusal on the first start is noted as '(no error)', never blank."""
+
+    class SilentUntilSecondStart(FakeLab):
+        def issue(self, caller: str, kind: str) -> Answer:
+            if 0 < self.calls.count("start_signer") < 2:
+                return Answer(ok=False, error="")
+            return super().issue(caller, kind)
+
+    lab = SilentUntilSecondStart()
+    rc, lines = run("signer", lab)
+    assert rc == 0, lines
+    notes = [line for line in lines if "first start did not restore" in line]
+    assert len(notes) == 1, lines
+    assert notes[0].endswith("(no error))")
+
+
 # -- a judged state change is settled, not sampled -------------------------------
 
 
