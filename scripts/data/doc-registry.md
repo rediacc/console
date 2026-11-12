@@ -1987,7 +1987,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `OBS_READER_SSH_TARGET` | secret | - |
 | `ONBOARD_NOTICE` | harness | - |
 | `ON_PREMISE_MODE` | product-runtime | - |
-| `ON_PREMISE_PRIVATE_KEY` | product-runtime | - |
+| `ON_PREMISE_PRIVATE_KEY` | secret | - |
 | `ON_PREMISE_PUBLIC_KEY` | product-runtime | - |
 | `OPS_ALERT_EMAILS` | secret | - |
 | `OPS_HEALTH_INGEST_TOKEN` | secret | - |
