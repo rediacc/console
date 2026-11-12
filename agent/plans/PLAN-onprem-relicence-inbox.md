@@ -1,5 +1,5 @@
 # PLAN: on-prem relicence through the SSH cert inbox -- one validator for every cert source, strict freshness, a boot quarantine instead of a crash, and the live proof on hostinger
-Status: approved -- operator rulings ASKED:2026-11-12T16:30Z, ASKED:2026-11-12T16:56Z and ASKED:2026-11-12T19:34Z (see Rulings); R1-R11 and D1 are landed, L1 and the hostinger proof are open
+Status: approved -- operator rulings ASKED:2026-11-12T16:30Z, ASKED:2026-11-12T16:56Z and ASKED:2026-11-12T19:34Z (see Rulings); R1-R6, R9-R11 and D1 are landed (R7 and R8 were never boxes), L1 and the hostinger proof are open
 Depends-On: no-dep -- builds on landed code
 Owner: d778be9d
 Updated: 2026-11-12
