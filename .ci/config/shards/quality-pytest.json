@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-12T15:31:48.030Z",
+  "generatedAt": "2026-11-12T19:11:22.775Z",
   "legs": [
     {
       "index": 1,
@@ -716,6 +716,7 @@
         "pytest:.claude/rediacc_hooks/tests/test_wl_leases.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_lkg.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_plan_fidelity.py",
+        "pytest:.claude/rediacc_hooks/tests/test_wl_receipt_hold.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_remaining_bank.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_report_queue.py",
         "pytest:.claude/rediacc_hooks/tests/test_wl_review_history.py",
