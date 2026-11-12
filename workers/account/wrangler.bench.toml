@@ -34,7 +34,8 @@ TURNSTILE_ENABLED = "false"
 # server refuses to start with this switch unless ENVIRONMENT is "bench". Never add to a production config.
 EMAIL_CAPTURE_D1 = "true"
 # Stripe Checkout asks for Terms of Service consent on bench, which bills only the sandbox pair
-# (STRIPE_SANDBOX_*); proves PLAN-terms-acceptance X2 before any live config turns it on.
+# (STRIPE_SANDBOX_*), so the PLAN-terms-acceptance X2 checkout reads it here first. Pinned by
+# test_ops_deploy_bench.py, which also refuses the switch in any other account config.
 STRIPE_CONSENT_COLLECTION = "1"
 
 # Nightly maintenance at 03:00 UTC (off-peak): audit retention sweep + backup GC.

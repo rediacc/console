@@ -87,11 +87,18 @@ def test_a_404_is_a_broken_link_not_an_outage(gate, tmp_path):
 PAGE = "packages/www/src/pages/[lang]/new-policy.astro"
 
 
-def site_fixture(tmp: pathlib.Path, urls: list[str], page: bool) -> pathlib.Path:
+SHARED = "---\nexport const getStaticPaths = getLanguagePaths;\n---\n"
+
+
+def site_fixture(tmp: pathlib.Path, urls: list[str], page: str | None) -> pathlib.Path:
+    """`page` is the page file's text, or None for no page; the tree builds the `en` locale."""
     root = fixture(tmp, urls)
-    if page:
+    locale = root / "packages/www/src/i18n/translations/en.json"
+    locale.parent.mkdir(parents=True, exist_ok=True)
+    locale.write_text("{}\n", encoding="utf-8")
+    if page is not None:
         (root / PAGE).parent.mkdir(parents=True, exist_ok=True)
-        (root / PAGE).write_text("---\n---\n", encoding="utf-8")
+        (root / PAGE).write_text(page, encoding="utf-8")
     return root
 
 
@@ -99,17 +106,46 @@ def test_a_site_page_this_tree_adds_is_unreleased_not_broken(gate, tmp_path):
     """Control first: the same 404 with no page file in the tree is BROKEN, so the green below comes from the page file and nothing else."""
     with stub_upstream({}) as stub:
         url = stub.base + "/en/new-policy"
-        red = run_gate(gate, site_fixture(tmp_path / "red", [url], False), stub.base)
-        green = run_gate(gate, site_fixture(tmp_path / "green", [url], True), stub.base)
-        other = run_gate(gate, site_fixture(tmp_path / "other", [url], True))
+        red = run_gate(gate, site_fixture(tmp_path / "red", [url], None), stub.base)
+        green = run_gate(gate, site_fixture(tmp_path / "green", [url], SHARED), stub.base)
+        other = run_gate(gate, site_fixture(tmp_path / "other", [url], SHARED))
     gate.assert_exit(1, red, "control: a site 404 with no page in the tree fails")
     gate.assert_contains(red.err, "BROKEN [404]: %s" % url, "control: it is BROKEN")
     gate.assert_exit(0, green, "a site 404 whose page the tree adds passes")
     gate.assert_contains(green.out, "not live until the next release", "it is named")
-    gate.assert_contains(green.out, "%s  (%s; cited at %s)" % (url, PAGE, CITED), "url, page, citation")
+    gate.assert_contains(
+        green.out, "%s  (%s; cited at %s)" % (url, PAGE, CITED), "url, page, citation"
+    )
     gate.assert_not_contains(green.err, "BROKEN [", "it is not a dead link")
     gate.assert_exit(1, other, "with no site origin named, a fixture 404 stays a break")
     gate.log_pass("an unreleased site page is named and passes; a missing one still fails")
+
+
+def test_a_410_for_a_tree_page_is_unreleased_too(gate, tmp_path):
+    """Production answers 410 where a curated rule from a deleted page still stands; check:ci-redirects refuses that rule once the page is back."""
+    with stub_upstream({"/en/new-policy": [status(410)] * 4}) as stub:
+        url = stub.base + "/en/new-policy"
+        result = run_gate(gate, site_fixture(tmp_path, [url], SHARED), stub.base)
+    gate.assert_exit(0, result, "a 410 whose page the tree adds passes")
+    gate.assert_contains(result.out, "not live until the next release", "it is named")
+    gate.log_pass("a 410 is treated like a 404 for a page the tree adds")
+
+
+def test_an_unbuilt_locale_or_an_own_path_list_stays_broken(gate, tmp_path):
+    with stub_upstream({}) as stub:
+        zz = run_gate(
+            gate, site_fixture(tmp_path / "zz", [stub.base + "/zz/new-policy"], SHARED), stub.base
+        )
+        own = run_gate(
+            gate,
+            site_fixture(tmp_path / "own", [stub.base + "/en/new-policy"], "---\n---\n"),
+            stub.base,
+        )
+    gate.assert_exit(1, zz, "a locale the site does not build is a break")
+    gate.assert_contains(zz.err, "BROKEN [404]: %s/zz/new-policy" % stub.base, "zz is BROKEN")
+    gate.assert_exit(1, own, "a page without the shared locale generator is a break")
+    gate.assert_contains(own.err, "BROKEN [404]: %s/en/new-policy" % stub.base, "own is BROKEN")
+    gate.log_pass("only a built locale and the shared generator earn the exemption")
 
 
 def test_an_unreachable_host_is_red_and_named_as_an_outage(gate, tmp_path):

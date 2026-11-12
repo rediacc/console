@@ -7,6 +7,7 @@ import inspect
 import json
 import subprocess
 import threading
+import tomllib
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any
 
@@ -753,3 +754,15 @@ def test_a_half_set_stripe_pair_is_refused_by_name(monkeypatch, key, hook, missi
     _bench_env(monkeypatch, STRIPE_SANDBOX_SECRET_KEY=key, STRIPE_SANDBOX_WEBHOOK_SECRET=hook)
     with pytest.raises(deploy_bench.DeployError, match=missing):
         deploy_bench.secrets_payload()
+
+
+def test_bench_turns_stripe_consent_collection_on_and_no_other_config_does():
+    """Bench bills only the STRIPE_SANDBOX_* pair, so it is where Checkout first asks for Terms consent (PLAN-terms-acceptance X2); a live account config that sets it has skipped that proof."""
+    configs = sorted(paths.from_root("workers", "account").glob("wrangler*.toml"))
+    assert configs, "no account wrangler config found"
+    seen = {}
+    for config in configs:
+        doc = tomllib.loads(config.read_text(encoding="utf-8"))
+        seen[config.name] = (doc.get("vars") or {}).get("STRIPE_CONSENT_COLLECTION")
+    assert seen.get(deploy_bench.CONFIG) == "1", seen
+    assert [name for name, value in seen.items() if value == "1"] == [deploy_bench.CONFIG], seen
