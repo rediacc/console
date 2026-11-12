@@ -66,7 +66,7 @@ AN EMPTY VALUE IS ABSENT. Not a stylistic choice: `.ci/lib/bws-env.sh:100-104` r
 --------------------------------------------------------------------------
 WHAT v2 ADDED, AND WHY `cache-to` IS NOT THE EMITTER THIS MODULE REFUSES
 --------------------------------------------------------------------------
-`agent/plans/PLAN-env-to-bitwarden-v2.md` Part 4 asks the fetch for three things v1 did not need, and all three land here rather than in a resurrected `.ci/lib/bws-env.sh`: that helper was retired on 2026-09-21 and re-creating it would be the second implementation this programme exists to remove.
+`agent/plans/PLAN-env-to-bitwarden-v2.md` Part 4 asks the fetch for things v1 did not need (the `json` verb it also named has since been removed, so two remain), and both land here rather than in a resurrected `.ci/lib/bws-env.sh`: that helper was retired on 2026-09-21 and re-creating it would be the second implementation this programme exists to remove.
 
   ALIAS GRAMMAR `NAME > LOCAL`. v1 specified it, the retired twin never had it,
   and without it the `AWS_SES_ACCESS_KEY_ID_EU -> AWS_SES_ACCESS_KEY_ID` collapse that `.github/workflows/ci.yml` already performs is inexpressible here. The parse is the SAME rule as `check_bws_map.parse_requests`, asserted as an equality by the gate test, because two parsers for one grammar is how a block comes to mean different things to the gate and to the fetch.

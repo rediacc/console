@@ -85,6 +85,8 @@ class Fake:
         self.device_deleted = False
         self.spawned: list[list[str]] = []
         self.jobs: list[FakeJob] = []
+        self.authorize_paths: list[str] = []
+        self.reopen_terms_at_handoff = False
 
     def handoff_url(self):
         url = "https://bench.example/account/authorize?code=" + USER_CODE
@@ -136,6 +138,7 @@ class Fake:
     def call(self, method, path, body, headers, jar):
         if path.startswith("/account/authorize"):
             assert jar is None  # anonymous: no session
+            self.authorize_paths.append(path)
             self.calls.append("GET authorize")
             return 200, {}
         tail = path.split("/api/v1", 1)[1]
@@ -143,6 +146,8 @@ class Fake:
             assert jar
             assert body["token"]
             self.calls.append("POST verify")
+            if self.reopen_terms_at_handoff:
+                self.terms_accepted = False
             return 200, {}
         if tail == "/device-codes/%s/approve" % USER_CODE:
             assert jar
@@ -684,3 +689,110 @@ def test_the_process_without_a_url_line_is_refused(tmp_path):
     with pytest.raises(ftr.DrillError, match="no verification URL"):
         job.read_url()
     job.finish(10)
+
+
+def test_a_purchased_subscription_found_through_the_organization_is_deleted():
+    """610039cd.1: the id the customer_id lookup returns reaches the DELETE statements."""
+    fake = Fake()
+    fake.user_present = True
+    ftr.cleanup("ftr+20261111103000@rediacc.io", fake.rows, lambda _m: None)
+    deletes = [s for s in fake.sql if s.startswith("DELETE")]
+    assert any(SUB in s and "subscriptions" in s for s in deletes)
+    # Control: a different subscription id is in none of them.
+    assert not any("55555555-5555-4555-8555-555555555555" in s for s in deletes)
+
+
+def test_the_handoff_accepts_the_terms_when_they_are_still_open():
+    """b591d340.2: 6b sees satisfied=false and posts the acceptance a second time."""
+    fake = Fake()
+    fake.reopen_terms_at_handoff = True
+    assert go(fake) == 0
+    assert fake.calls.count("POST /portal/terms/accept") == 2
+
+
+def test_the_anonymous_authorize_get_uses_the_origin_relative_route():
+    """b591d340.3: the route is the printed URL's path and query, which d.call prefixes with the origin."""
+    fake = Fake()
+    assert go(fake) == 0
+    assert fake.authorize_paths
+    assert all(p.startswith("/account/authorize?code=" + USER_CODE) for p in fake.authorize_paths)
+
+
+def test_a_drill_error_from_the_http_layer_still_cleans_the_user_up(monkeypatch):
+    """23c783db.2/.3: a register that raises after the server created the user is cleaned by email."""
+    fake = Fake()
+    original = fake.http
+
+    def created_then_lost(path, body):
+        if path.endswith("/register"):
+            fake.user_present = True
+            raise ftr.DrillError("no HTTP answer from the bench origin" + path)
+        return original(path, body)
+
+    monkeypatch.setattr(fake, "http", created_then_lost)
+    assert go(fake) == 1
+    assert fake.user_present is False
+    assert any(s.startswith("DELETE FROM users") for s in fake.sql)
+
+
+def test_a_free_licence_issued_without_terms_is_cleaned_up():
+    """9d27b9ab.1: a server that issues in 3b leaves rows that cleanup_free removes."""
+
+    class Lax(Fake):
+        def call(self, method, path, body, headers, jar):
+            if path.endswith("/licenses/free") and "termsAcceptance" not in body:
+                self.issued = True
+                self.window_n += 1
+                return 200, {"license": {"payload": "x"}}
+            return super().call(method, path, body, headers, jar)
+
+    fake = Lax()
+    assert go(fake) == 1
+    assert fake.free_deleted
+
+
+def test_the_real_call_parses_the_status_line_and_refuses_a_missing_one(monkeypatch):
+    """9d27b9ab.3: the curl seam, with subprocess.run replaced by a recorded answer."""
+    seen: list[list[str]] = []
+
+    class Done:
+        def __init__(self, out):
+            self.stdout = out
+
+    def answer(out):
+        def run(argv, **_kw):
+            seen.append(argv)
+            return Done(out)
+
+        return run
+
+    monkeypatch.setattr(ftr.subprocess, "run", answer('{"a": 1}\n201'))
+    assert ftr._call("POST", "/x", {"k": 1}, {"h": "v"}, "/tmp/jar") == (201, {"a": 1})
+    assert "-b" in seen[0]
+    assert "/tmp/jar" in seen[0]
+    assert "h: v" in seen[0]
+    monkeypatch.setattr(ftr.subprocess, "run", answer("not json\n500"))
+    assert ftr._call("GET", "/x", None, {}, None) == (500, {})
+    monkeypatch.setattr(ftr.subprocess, "run", answer(""))
+    with pytest.raises(ftr.DrillError, match="no HTTP answer"):
+        ftr._call("GET", "/x", None, {}, None)
+
+
+def test_the_default_cookie_jar_is_private():
+    path = ftr._private_jar("20261111103000")
+    try:
+        assert ftr.os.stat(path).st_mode & 0o777 == 0o600
+    finally:
+        ftr.os.unlink(path)
+
+
+def test_a_silent_register_command_times_out_instead_of_hanging(tmp_path, monkeypatch):
+    """b591d340.1: no output at all, and the deadline still fires."""
+    monkeypatch.setattr(ftr, "URL_WAIT_S", 0.3)
+    script = _stub(tmp_path, "sleep 5\n")
+    job = ftr._Process(["x"], {}, program=script)
+    try:
+        with pytest.raises(ftr.DrillError, match="no verification URL"):
+            job.read_url()
+    finally:
+        job.kill()

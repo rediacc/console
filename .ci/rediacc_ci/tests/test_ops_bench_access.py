@@ -691,7 +691,7 @@ def test_the_rule_admits_only_a_post_of_the_exact_stripe_webhook_path():
     )
 
 
-def test_an_allowlisted_ip_still_passes_everything():
+def test_an_allowlisted_ip_passes_login_root_and_the_stripe_webhook():
     expr = ba.expression(HOSTS, ["198.51.100.7"])
     for method, path in (
         ("POST", "/account/api/v1/auth/login"),

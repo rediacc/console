@@ -466,7 +466,7 @@ def _bench_env(monkeypatch, **overrides):
         "OBS_OTLP_CREDENTIALS": '{"user":"u","pass":"p"}',
         **overrides,
     }
-    # The Stripe pair is the runner's own when the lane carries one: a half-set pair there (a webhook secret with no key) failed the whole-payload tests in the ci:quick clone, so a case that wants the pair passes both halves in `overrides`.
+    # Both Stripe variables are cleared here, never inherited from the runner: a half-set pair on a lane (a webhook secret with no key) failed the whole-payload tests in the ci:quick clone, so a case that wants the pair passes both halves in `overrides`.
     for name in ("STRIPE_SANDBOX_SECRET_KEY", "STRIPE_SANDBOX_WEBHOOK_SECRET"):
         monkeypatch.delenv(name, raising=False)
     for name, value in values.items():
@@ -668,12 +668,22 @@ def test_the_payload_carries_the_whole_legal_entity(monkeypatch):
 
 def test_portal_build_rebuilds_shared_packages_first():
     """The portal bundles @rediacc/shared from packages/shared/dist, so the deploy builds it before vite runs; a stale dist shipped an empty consent notice to bench on 2026-11-11."""
-    src = inspect.getsource(deploy_bench)
+    src = inspect.getsource(deploy_bench._deploy)
     build = src.index("local_common.ensure_packages_built()")
     vite = src.index('"vite build",')
     assert build < vite
     # Control: the vite step is the one the portal build runs, so the order above is the order at run time.
     assert src.count('"vite build",') == 1
+    assert src.count("local_common.ensure_packages_built()") == 1
+
+
+def test_a_failed_shared_build_refuses_the_deploy_before_vite():
+    """A False from the shared build raises DeployError ahead of the vite step, so a stale packages/shared/dist is never bundled."""
+    src = inspect.getsource(deploy_bench._deploy)
+    guard = src.index("if not local_common.ensure_packages_built():")
+    refusal = src.index("raise DeployError(", guard)
+    assert refusal < src.index('"vite build",')
+    assert "stale dist" in src[guard : refusal + 160]
 
 
 def _clear_stripe(monkeypatch):

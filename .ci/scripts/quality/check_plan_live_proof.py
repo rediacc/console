@@ -146,7 +146,7 @@ LIVE_MARK = "[live]"
 # A Ruling line that waives the live proof names it in so many words.
 WAIVER_WORD_RE = re.compile(r"live[- ]proof", re.IGNORECASE)
 FINISHED_FOLDERS = ("agent/plans/_done",)
-# See the module docstring: False until PLAN-local-first-delivery box L4 lands, then True.
+# See the module docstring: box L4 of PLAN-local-first-delivery has landed, so LP8 is enforced; False would restore the advisory print path.
 LP8_ENFORCED = True
 
 

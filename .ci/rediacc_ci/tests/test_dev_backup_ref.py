@@ -361,7 +361,7 @@ def test_prune_deletes_past_retention_and_keeps_the_rest(world):
     assert br.prune(work, "gitlab", False, io.StringIO()) == 0
     assert set(_backup(bare)) == set(keep + gone)
     assert br.prune(work, "gitlab", True, io.StringIO()) == 0
-    assert set(_backup(bare)) == set(keep)  # the 89-day daily and the 21-day pre-rewrite stay
+    assert set(_backup(bare)) == set(keep)  # the 89-day daily and the 22-day pre-rewrite stay
     assert br.prune(work, "gitlab", True, io.StringIO()) == 0  # second run: nothing left
 
 

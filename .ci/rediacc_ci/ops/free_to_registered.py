@@ -13,7 +13,7 @@ THE STEPS, each printing one evidence line `STEP <n> <name> rc=<rc> <detail>`:
   5. email      The email loop is proved with the magic link instead: `POST /auth/magic-link`, the `magic-link` mail read from the D1 `captured_emails` table (an absent mail refuses), then `POST /auth/magic-link/verify` with its token. The token never reaches output.
   6. login      `subscription login --server <bench>` under the throwaway config with REDIACC_LOGIN_EMAIL and REDIACC_LOGIN_PASSWORD in the child environment, then `subscription status -o json`: the plan is COMMUNITY and the reported monthly repo-licence limit equals `PLAN_LIMITS.COMMUNITY` (parsed from packages/shared/src/subscription/constants.ts). The D1 subscription row is read as well: plan COMMUNITY and every non-null override equal to the plan's limits.
   3b. free-refused  A direct `POST /licenses/free` with no `termsAcceptance`. It must answer 403 `TERMS_ACCEPTANCE_REQUIRED` whose details name `--accept-terms`, and the count of `free_license_ip_window` rows of the last minute must not change.
-  3c. free-accepted The same request with `termsAcceptance{method: cli-flag-unattended}` (the manifest's version and sha256), fresh UUIDs and `x-cli-version`. It must be issued, and exactly one `terms_acceptances` row must exist for the `free:` subject with that version and sha256, `client_ip IS NULL`, a non-empty `cli_version` and a non-empty `notice_text`.
+  3c. free-accepted The same request with `termsAcceptance{method: cli-flag-unattended}` (the manifest's version and sha256), the same repository GUID as 3b, and `x-cli-version`. It must be issued, and exactly one `terms_acceptances` row must exist for the `free:` subject with that version and sha256, `client_ip IS NULL`, a non-empty `cli_version` and a non-empty `notice_text`.
   4b. terms-gate    After the register, a login with a cookie jar, then with those cookies `GET /portal/terms` reports not satisfied, a gated read (`GET /portal/subscription`) returns 403 `TERMS_ACCEPTANCE_REQUIRED`, `POST /portal/terms/accept` returns 201, and the row has method `web-checkbox` and a non-empty `client_ip` and `user_agent`.
   6b. handoff   The browser handoff of `rdc subscription register --email <addr>`: the command runs in the background under the throwaway config and its printed verification URL is captured. The URL must carry the device code and the URL-encoded email; the anonymous `/account/authorize?code=..&email=..` route must answer 200 (the SPA then sends the visitor to `/account/login?email=..`, a client-side redirect that the portal's vitest suite covers). Sign-up is completed through a magic-link mail requested with `next` set to that authorize path, and the captured link must carry the same `next`. With that session the Terms are accepted if not yet, the device code is approved (`POST /device-codes/<code>/approve`), the register process must exit 0 and `subscription status` must report COMMUNITY.
   7. cleanup    Always runs. Deletes the device-code row of 6b by its exact user code, the rows of that one user, its organizations and subscriptions (found by the user id of the exact email), the acceptance rows of the user and of the 3c `free:` subject, the 3c issuance and its window row (same `issued_at`, so the IP quota is restored), and the captured emails of that exact recipient, then proves the user is gone. The throwaway config is deleted. No account-deletion API exists, so the rows go through D1.
@@ -26,12 +26,14 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import queue
 import re
 import secrets
 import string
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import urllib.parse
 import uuid
@@ -514,13 +516,31 @@ class _Process(Background):
         stream = self.proc.stdout
         if stream is None:
             raise DrillError("the register command has no output stream")
+        # A blocking `for line in stream` checks the deadline only when a line arrives, so a silent command would hang the drill; a reader thread feeds a queue that is waited on with the deadline.
+        lines: queue.Queue[str | None] = queue.Queue()
+
+        def pump() -> None:
+            try:
+                for text in stream:
+                    lines.put(text)
+            finally:
+                lines.put(None)
+
+        threading.Thread(target=pump, daemon=True).start()
         deadline = time.monotonic() + URL_WAIT_S
-        for line in stream:
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            try:
+                line = lines.get(timeout=remaining)
+            except queue.Empty:
+                break
+            if line is None:
+                break
             found = VERIFY_URL.search(line)
             if found:
                 return found.group(0)
-            if time.monotonic() > deadline:
-                break
         raise DrillError("the register command printed no verification URL")
 
     def finish(self, timeout: float) -> int:
@@ -541,15 +561,22 @@ def _spawn(argv: Sequence[str], env: Mapping[str, str]) -> Background:
     return _Process(argv, env)
 
 
+def _private_jar(stamp: str) -> str:
+    """A new cookie-jar file created 0600, so the session cookies are not readable by other users of a shared host."""
+    path = pathlib.Path(tempfile.gettempdir()) / (
+        "ftr-jar-%s-%s.txt" % (stamp, secrets.token_hex(4))
+    )
+    os.close(os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600))
+    return str(path)
+
+
 @dataclass
 class Deps:
     spawn: Spawn = _spawn
     http: Http = _http
     call: Call = _call
     new_uuid: Callable[[], str] = lambda: str(uuid.uuid4())
-    jar_path: Callable[[str], str] = lambda stamp: str(
-        pathlib.Path(tempfile.gettempdir()) / ("ftr-jar-%s-%s.txt" % (stamp, secrets.token_hex(4)))
-    )
+    jar_path: Callable[[str], str] = _private_jar
     unlink: Callable[[str], None] = lambda path: pathlib.Path(path).unlink(missing_ok=True)
     rows: Rows = deploy_bench._d1_rows
     rdc: Rdc = _rdc
@@ -983,12 +1010,14 @@ def run(dry_run: bool, deps: Deps | None = None, env: Mapping[str, str] | None =
 
         _step_anonymous(d, ev, base, config)
         manifest = terms_manifest()
-        _step_free_refused(d, ev, free_item, stamp)
+        # Set before the refusal step: a server that wrongly issues a licence in 3b leaves a row that cleanup_free must remove.
         free_started = True
+        _step_free_refused(d, ev, free_item, stamp)
         _step_free_accepted(d, ev, free_item, stamp, manifest)
 
+        # Set before the request: a register that raises, or answers 5xx after the server created the user, still leaves rows that the by-email cleanup must remove.
+        registered = True
         status, answer = d.http(API + "/auth/register", {"email": email, "password": password})
-        registered = status in (201, 409)
         plan = (answer.get("subscription") or {}).get("planCode")
         ok = status == 201 and plan == "COMMUNITY"
         hint = "; " + deploy_bench._blocked_hint(status).lstrip("; ") if status == 403 else ""
