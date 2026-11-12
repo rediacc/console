@@ -3550,6 +3550,8 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
             del args[i : i + 2]
         if len(args) != 1:
             raise ValueError("fixed takes exactly one sha (and optionally --test <path>)")
+        # `commit:<sha>` is the --tick evidence form, and a session closing a finding with the sha it just ticked reaches for it (2026-11-12): the prefix names the same commit.
+        args[0] = args[0].removeprefix("commit:")
         fix = git_out(repo, "rev-parse", "-q", "--verify", "%s^{commit}" % args[0])
         if not fix:
             raise ValueError("%s does not resolve to a commit in %s" % (args[0], review.repo))
