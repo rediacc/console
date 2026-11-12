@@ -31,6 +31,7 @@ class Fake:
         sales_mails=1,
         digest_lines=1,
         second_digest_lines=0,
+        second_owner_mails=0,
         shard=None,
         two_factor=False,
         sales_text=SALES_MAIL,
@@ -42,6 +43,7 @@ class Fake:
         self.sales_mails_n = sales_mails
         self.digest_lines = digest_lines
         self.second_digest_lines = second_digest_lines
+        self.second_owner_mails = second_owner_mails
         self.shard = shard
         self.two_factor = two_factor
         self.sales_text = sales_text
@@ -89,6 +91,11 @@ class Fake:
                 ]
                 self.notices = True
                 self.log_rows = True
+            else:
+                self.owner += [
+                    {"kind": "delegation-expiry", "subject": "s", "text_body": OWNER_MAIL}
+                    for _ in range(self.second_owner_mails)
+                ]
             return 200, {"kinds": ["delegation"], "counts": {"delegation": 1}}
         if path.endswith("/admin/sales-digest/run"):
             self.digest_runs += 1
@@ -243,6 +250,17 @@ def test_a_second_run_that_mails_again_fails(capsys):
     assert rc == 1
     assert "STEP 10 rerun rc=1" in out.out
     assert "want 0" in out.out
+
+
+def test_a_second_owner_mail_on_the_rerun_fails_step_ten(capsys):
+    """Review b1b05295.1: the rerun recounts the owner's mail, so a second reminder send is caught."""
+    _, rc, out = drill(capsys, second_owner_mails=1)
+    assert rc == 1
+    assert "STEP 10 rerun rc=1" in out.out
+    # control: the clean rerun holds
+    _, rc0, out0 = drill(capsys)
+    assert rc0 == 0
+    assert "STEP 10 rerun rc=0" in out0.out
 
 
 def test_a_tenant_shard_other_than_zero_is_refused_and_nothing_is_planted(capsys):
