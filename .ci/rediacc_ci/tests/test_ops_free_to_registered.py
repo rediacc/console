@@ -154,11 +154,13 @@ class Fake:
             if "termsAcceptance" not in body:
                 if self.bump_window_on_refusal:
                     self.window_n += 1
+                # The wire shape private/account/src/middleware/error-handler.ts writes: the
+                # AppError details spread beside `error` and `code` (measured on bench 2026-11-12).
                 return 403, {
-                    "error": {
-                        "code": "TERMS_ACCEPTANCE_REQUIRED",
-                        "details": {"flag": "--accept-terms", "env": "RDC_ACCEPT_TERMS=1"},
-                    }
+                    "error": "Accept the Terms of Service (version 2026-11-11) to continue",
+                    "code": "TERMS_ACCEPTANCE_REQUIRED",
+                    "flag": "--accept-terms",
+                    "env": "RDC_ACCEPT_TERMS=1",
                 }
             assert body["termsAcceptance"]["method"] == "cli-flag-unattended"
             assert body["termsAcceptance"]["sha256"] == MANIFEST["sha256"]

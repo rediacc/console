@@ -597,8 +597,10 @@ def _step_free_refused(d: Deps, ev: Evidence, item: FreeIssued, stamp: str) -> N
     )
     after = _window_count(d, d.now())
     err = answer.get("error") if isinstance(answer.get("error"), dict) else answer
+    # error-handler.ts spreads an AppError's details beside `error` and `code`, and the CLI reads
+    # them the same way (account-client.ts termsRequiredError: `parsed.details ?? parsed`).
     details = err.get("details") if isinstance(err, dict) else None
-    details = details if isinstance(details, dict) else {}
+    details = details if isinstance(details, dict) else (err if isinstance(err, dict) else {})
     code = err.get("code") if isinstance(err, dict) else None
     bad: list[str] = []
     if status != 403:
