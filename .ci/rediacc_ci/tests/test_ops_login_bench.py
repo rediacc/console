@@ -60,18 +60,22 @@ class FakeApi:
         satisfied: bool = True,
         accept_records: bool = True,
         status_body: dict | None = None,
+        reread_status: int = 0,
     ):
         self.calls: list[tuple[str, dict]] = []
         self.gets: list[str] = []
         self.satisfied = satisfied
         self.accept_records = accept_records
         self.status_body = status_body
+        self.reread_status = reread_status
         self.challenge = challenge
         self.verify = verify
         self.fail = fail or {}
 
     def get(self, route):
         self.gets.append(route)
+        if self.reread_status and len(self.gets) > 1:
+            return self.reread_status, {}
         if route in self.fail:
             return self.fail[route], {}
         if self.status_body is not None:
@@ -656,7 +660,13 @@ def test_a_status_without_a_boolean_satisfied_accepts_nothing():
 def test_an_accept_the_status_does_not_reflect_stops_the_run():
     api = FakeApi(satisfied=False, accept_records=False)
     with pytest.raises(
-        login_bench.LoginError, match="does not report the current version satisfied"
+        login_bench.LoginError, match="does not report version 2026-11-11 satisfied"
     ):
         _login(FakeRunner(), api=api)
     assert api.gets == [login_bench.TERMS_STATUS, login_bench.TERMS_STATUS]
+
+
+def test_a_failed_reread_after_the_accept_stops_the_run_and_says_so():
+    api = FakeApi(satisfied=False, reread_status=503)
+    with pytest.raises(login_bench.LoginError, match=r"re-read GET .* answered HTTP 503"):
+        _login(FakeRunner(), api=api)

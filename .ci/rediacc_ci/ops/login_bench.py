@@ -530,10 +530,16 @@ def accept_terms(account: Poster) -> None:
         )
     # The status is read again, so an answer that recorded nothing never passes as an acceptance.
     status, answer = account.get(TERMS_STATUS)
-    if status != 200 or answer.get("satisfied") is not True:
+    if status != 200:
         raise LoginError(
-            "POST %s answered but GET %s does not report the current version satisfied"
-            % (TERMS_ACCEPT, TERMS_STATUS)
+            "POST %s answered but the re-read GET %s answered HTTP %d"
+            % (TERMS_ACCEPT, TERMS_STATUS, status)
+        )
+    reread = (answer.get("current") or {}).get("version")
+    if answer.get("satisfied") is not True or reread != version:
+        raise LoginError(
+            "POST %s answered but GET %s does not report version %s satisfied (it reports %r)"
+            % (TERMS_ACCEPT, TERMS_STATUS, version, reread)
         )
 
 
