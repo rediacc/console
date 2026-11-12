@@ -600,7 +600,7 @@ def flow_env_names(text: str) -> list[str]:
 
 def _opens_scalar(text: str, index: int) -> bool:
     """A quote starts a quoted scalar only at the start of a value or key (after `{`, `[`, `,` or `:` and blanks); an apostrophe inside a plain value such as `it's` does not."""
-    before = text[:index].rstrip(" \t")
+    before = text[:index].rstrip(" \t\r\n")
     return not before or before[-1] in "{[,:"
 
 

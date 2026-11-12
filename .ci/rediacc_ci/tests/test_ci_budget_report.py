@@ -3635,7 +3635,7 @@ def test_compute_lane_durations_refuses_when_every_main_push_run_is_unreadable(
         )
 
 
-def test_compute_lane_durations_keeps_the_readable_runs_when_one_is_skipped(monkeypatch, tmp_path):
+def test_compute_lane_durations_accepts_two_readable_samples(monkeypatch, tmp_path):
     """CONTROL: with both samples readable nothing raises and the PR run read is the one sampled."""
     _sample(monkeypatch, [], [])
     computed = br.compute_lane_durations(

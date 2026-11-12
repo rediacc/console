@@ -353,7 +353,7 @@ def test_main_retries_a_server_that_exits_and_gives_up_after_three_attempts(
     monkeypatch: pytest.MonkeyPatch,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
-    """748cdf09.1/.2: three attempts in all (two retries), each on a fresh port, and the last exit is reported with rc=1."""
+    """748cdf09.1/.2: three attempts in all (two retries), each picking a port, and the last exit is reported with rc=1."""
     ports: list[int] = []
     real = mpd.pick_port
 

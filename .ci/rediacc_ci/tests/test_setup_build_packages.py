@@ -33,14 +33,14 @@ import threading
 import time
 import typing
 
+import pytest
+
 from rediacc_ci import paths
 from rediacc_ci.setup import build_packages as port
 from rediacc_ci.tests import differential as diff
 
 if typing.TYPE_CHECKING:
     import pathlib
-
-    import pytest
 
 ROOT = paths.repo_root()
 TWIN_REL = ".ci/scripts/setup/build-packages.sh"
@@ -560,3 +560,36 @@ def test_a_dead_no_exchange_swap_is_restored_or_swept(tmp_path: pathlib.Path) ->
     live.mkdir()
     port.remove_dead_stages(tmp_path)
     assert live.exists()
+
+
+class _Done:
+    def __init__(self, returncode: int) -> None:
+        self.returncode = returncode
+
+
+@pytest.mark.parametrize(
+    ("emits", "wording"), [(True, "rebuilt and swapped"), (False, "old output")]
+)
+def test_a_failed_dependent_build_names_the_workspace_and_what_dist_holds(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+    emits: bool,
+    wording: str,
+) -> None:
+    """2f637151.1/.3: the error names the failing workspace and says truthfully whether the swap happened."""
+    monkeypatch.chdir(tmp_path)
+    stage = tmp_path / "stage"
+    errors: list[str] = []
+
+    def fake_run(argv: list[str], **_kw: typing.Any) -> _Done:
+        if "--outDir" in argv and emits:
+            stage.mkdir()
+        return _Done(1 if "@rediacc/provisioning" in argv else 0)
+
+    monkeypatch.setattr(port.subprocess, "run", fake_run)
+    monkeypatch.setattr(port.log, "error", errors.append)
+    monkeypatch.setattr(port, "swap_into_place", lambda _s, _t: None)
+    assert port.build_into(str(stage)) is False
+    assert len(errors) == 1
+    assert "@rediacc/provisioning" in errors[0]
+    assert wording in errors[0]

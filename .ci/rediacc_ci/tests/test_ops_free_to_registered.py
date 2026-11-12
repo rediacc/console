@@ -2,6 +2,7 @@
 
 import json
 import re
+import time
 import urllib.parse
 from datetime import UTC, datetime
 
@@ -791,8 +792,11 @@ def test_a_silent_register_command_times_out_instead_of_hanging(tmp_path, monkey
     monkeypatch.setattr(ftr, "URL_WAIT_S", 0.3)
     script = _stub(tmp_path, "sleep 5\n")
     job = ftr._Process(["x"], {}, program=script)
+    started = time.monotonic()
     try:
         with pytest.raises(ftr.DrillError, match="no verification URL"):
             job.read_url()
+        # The blocking loop only returned at EOF, after the 5 s sleep; the deadline fires at 0.3 s.
+        assert time.monotonic() - started < 3
     finally:
         job.kill()

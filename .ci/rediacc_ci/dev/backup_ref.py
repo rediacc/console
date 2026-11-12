@@ -35,6 +35,7 @@ STATE_DIR = "rediacc-backup"
 LOCK_WAIT_S = 600
 GIT_TIMEOUT_S = 900
 LEASE_HOLDER = "/.claude/worktrees/"
+RESTORING = "refs/backup-restoring/"
 RESTORED = "refs/backup-restored/"
 # Mirrors BACKUP_RETENTION_DAYS and backup_snapshot in the pre-push hook module: prune may delete only what that hook admits deleting.
 RETENTION_DAYS = {"daily": 90, "pre-rewrite": 30}
@@ -338,9 +339,12 @@ def restore(repo: pathlib.Path, remote: str, name: str, out) -> int:
     if not name or name.startswith("/") or ".." in name or "/" not in name:
         raise StepError("`%s` is not <branch>/<leaf> or refs/backup/<branch>/<leaf>" % name)
     local = RESTORED + name
-    # The module refuses forced refspecs, so a restore of a name that moved on the remote (a rewritten `live`) drops the old local ref first instead of force-updating it.
-    _git(repo, ["update-ref", "-d", local], check=False)
-    _git(repo, ["fetch", "--no-tags", "--refmap=", remote, "%s%s:%s" % (SPACE, name, local)])
+    # The module refuses forced refspecs, so the fetch lands in a scratch ref that is dropped first; only a successful fetch then moves the restored ref with `update-ref`, so a failed fetch leaves the previous restored copy in place.
+    scratch = RESTORING + name
+    _git(repo, ["update-ref", "-d", scratch], check=False)
+    _git(repo, ["fetch", "--no-tags", "--refmap=", remote, "%s%s:%s" % (SPACE, name, scratch)])
+    _git(repo, ["update-ref", local, scratch])
+    _git(repo, ["update-ref", "-d", scratch], check=False)
     top = pathlib.Path(_out(repo, ["rev-parse", "--show-toplevel"]))
     target = top.parent / ("%s-restored-%s" % (top.name, name.replace("/", "-")))
     out.write("restored %s at %s\n" % (local, _out(repo, ["rev-parse", local])[:12]))
@@ -364,7 +368,7 @@ def _remember_live(repo: pathlib.Path, tip: str) -> None:
 def lag(
     repo: pathlib.Path, remote: str, cached: bool
 ) -> tuple[int | None, str, datetime.datetime | None]:
-    """`(commits HEAD holds that live does not, branch, commit time of the oldest of them)`; the count is None when there is nothing to judge (detached, main, no remote, or `cached` with no recorded live), and the time is None when nothing is unbacked. A rewritten live counts the commits HEAD holds that live does not."""
+    """`(commits HEAD holds that live does not, branch, commit time of the oldest of them)`; the count is None when there is nothing to judge (detached, main, no remote, or `cached` with no recorded live, or a recorded live that names a different branch or is empty), and the time is None when nothing is unbacked. A rewritten live counts the commits HEAD holds that live does not."""
     branch = _git(repo, ["symbolic-ref", "--short", "-q", "HEAD"], check=False).stdout.strip()
     if not branch or branch == "main":
         return None, branch, None

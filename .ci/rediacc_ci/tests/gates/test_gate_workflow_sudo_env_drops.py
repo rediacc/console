@@ -258,3 +258,15 @@ def test_the_sudo_env_pattern_does_not_backtrack_on_adjacent_quotes():
     assert workflows.SUDO_ENV_RE.search(line) is None
     assert time.monotonic() - started < 1.0
     assert workflows.SUDO_ENV_RE.search('X="a b" sudo env PATH=$PATH cmd') is not None
+
+
+def test_a_stray_apostrophe_in_an_unquoted_assignment_does_not_match_sudo_env():
+    """e099399f.2: `FOO=it's sudo env ...` is not a well-formed prefix, so it stays unmatched; a properly quoted value still matches."""
+    assert workflows.SUDO_ENV_RE.search("FOO=it's sudo env PATH=$PATH cmd") is None
+    assert workflows.SUDO_ENV_RE.search("FOO='it s' sudo env PATH=$PATH cmd") is not None
+    assert workflows.SUDO_ENV_RE.search("FOO=plain sudo env PATH=$PATH cmd") is not None
+
+
+def test_a_quoted_value_on_a_continuation_line_is_a_scalar():
+    """e099399f.3: the quote after a newline starts a scalar, so its comma does not split entries."""
+    assert workflows.flow_env_names("{A:\n 'x, y: z', B: 2}") == ["A", "B"]

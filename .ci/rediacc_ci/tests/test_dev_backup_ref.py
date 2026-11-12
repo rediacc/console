@@ -541,3 +541,18 @@ def test_prune_agrees_with_the_pre_push_hook_on_every_boundary(monkeypatch):
         refused = gh.backup_ref_refusal(repo, url, [line])
         pruned = bool(br.expired([("1104-1", leaf, oid)], DAY))
         assert pruned == (refused == ""), (leaf, refused)
+
+
+def test_a_failed_restore_fetch_keeps_the_previous_restored_copy(world):
+    """59365428.1: the fetch lands in a scratch ref, so a failure leaves the older good restore in place and no scratch ref behind."""
+    work, _bare = world
+    _commit(work, "one")
+    assert br.sync(work) == 0
+    name = "1104-1/live"
+    assert br.restore(work, "gitlab", name, io.StringIO()) == 0
+    first = _git(work, "rev-parse", "refs/backup-restored/" + name)
+    _git(work, "remote", "set-url", "gitlab", str(work / "no-such-remote"))
+    with pytest.raises(br.StepError):
+        br.restore(work, "gitlab", name, io.StringIO())
+    assert _git(work, "rev-parse", "refs/backup-restored/" + name) == first
+    assert _git(work, "for-each-ref", "refs/backup-restoring") == ""

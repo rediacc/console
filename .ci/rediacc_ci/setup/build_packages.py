@@ -192,7 +192,7 @@ def clean_targets(root: pathlib.Path | None = None) -> list[str]:
 
 
 def build_into(stage: str) -> bool:
-    """Build the shared package into `stage`, swap it over `dist` when the build succeeded, then build the dependents. A failed shared build removes nothing: `dist` stays as it was. A failed dependent build comes after the swap, so `dist` already holds the new shared output and the dependent is named in the error. A shared build that emitted nothing warns and leaves `dist` alone (pinned by the twin golden)."""
+    """Build the shared package into `stage`, swap it over `dist` when the build succeeded, then build the dependents. A failed shared build removes nothing: `dist` stays as it was. A failed dependent build comes after the swap step: when the shared build emitted output `dist` already holds it, and when it emitted nothing `dist` still holds the old output; either way the dependent is named in the error. A shared build that emitted nothing warns and leaves `dist` alone (pinned by the twin golden)."""
     # A fresh `stage` makes the build unconditional, which is what the tsbuildinfo wipe exists for; the build info lives in it and travels with the swap.
     out = os.path.abspath(stage)
     shared = [
@@ -201,7 +201,8 @@ def build_into(stage: str) -> bool:
     ]  # fmt: skip
     if subprocess.run(common.launchable(shared), check=False).returncode != 0:
         return False
-    if os.path.isdir(stage):
+    swapped = os.path.isdir(stage)
+    if swapped:
         swap_into_place(stage, DIST_DIR)
     else:
         log.warn("Shared build emitted nothing; keeping the existing %s" % DIST_DIR)
@@ -209,8 +210,13 @@ def build_into(stage: str) -> bool:
         argv = ["npm", "run", "build", "-w", workspace]
         if subprocess.run(common.launchable(argv), check=False).returncode != 0:
             log.error(
-                "Failed to build %s (the shared package was already rebuilt and swapped)"
-                % workspace
+                "Failed to build %s (%s)"
+                % (
+                    workspace,
+                    "the shared package was already rebuilt and swapped"
+                    if swapped
+                    else "the shared build emitted nothing, so dist is the old output",
+                )
             )
             return False
     return True

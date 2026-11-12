@@ -653,3 +653,10 @@ def test_a_dry_run_that_times_out_is_refused_by_name() -> None:
 
     with pytest.raises(account_e2e.RefusedError, match=r"--dry-run chromium timed out"):
         account_e2e.install_system_deps("chromium", ".", hanging)
+
+
+def test_a_dry_run_with_empty_stdout_is_refused_too() -> None:
+    """e099399f.1: nothing printed is as unreadable as an unrecognised line, so the gate stops instead of skipping apt."""
+    fake = _Fake("", set())
+    with pytest.raises(account_e2e.RefusedError, match="printed no `apt-get install` line"):
+        account_e2e.install_system_deps("chromium", ".", fake)

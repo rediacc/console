@@ -1145,7 +1145,8 @@ def test_a_backup_scope_mint_needs_a_jar_account_session_logged_in(
     with pytest.raises(lib.GatewayError, match="needs a jar that account_session logged in"):
         drill.account_mint_token(stranger, "sub-1", "tok", ["backup:manage"])
     assert not any("/test/elevate" in p for _m, p, _b in _Account.seen)
-    # The record is keyed by the jar object, so it goes away with the jar.
+    # The record is keyed by the jar object, never by id(): an id can be reused once the jar is collected.
+    assert not any(isinstance(key, int) for key in drill.session_emails)
     second = http.cookiejar.CookieJar()
     assert drill.account_session("c@d.e", "pw", second)
     assert second in drill.session_emails
