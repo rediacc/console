@@ -537,3 +537,26 @@ def test_swap_onto_an_absent_target_is_one_rename(tmp_path: pathlib.Path) -> Non
     (staged / "new.js").write_text("new", encoding="utf-8")
     port.swap_into_place(str(staged), str(tmp_path / "dist"))
     assert sorted(p.name for p in tmp_path.iterdir()) == ["dist"]
+
+
+def test_a_dead_no_exchange_swap_is_restored_or_swept(tmp_path: pathlib.Path) -> None:
+    """89015bba.4: `dist` missing with `dist.old-<dead pid>` beside it is renamed back; with `dist` present the old copy is removed; a live pid's copy stays."""
+    shared = tmp_path / "packages" / "shared"
+    shared.mkdir(parents=True)
+    dead = subprocess.Popen([sys.executable, "-c", "pass"])
+    dead.wait()
+    aside = shared / ("dist.old-%d" % dead.pid)
+    aside.mkdir()
+    (aside / "old.js").write_text("old", encoding="utf-8")
+    port.remove_dead_stages(tmp_path)
+    assert (shared / "dist" / "old.js").read_text(encoding="utf-8") == "old"
+    assert not aside.exists()
+    # dist now present: a second dead copy is debris.
+    aside.mkdir()
+    port.remove_dead_stages(tmp_path)
+    assert not aside.exists()
+    assert (shared / "dist" / "old.js").exists()
+    live = shared / ("dist.old-%d" % os.getpid())
+    live.mkdir()
+    port.remove_dead_stages(tmp_path)
+    assert live.exists()

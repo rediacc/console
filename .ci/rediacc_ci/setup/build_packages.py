@@ -169,6 +169,14 @@ def remove_dead_stages(root: pathlib.Path | None = None) -> None:
         suffix = path.rsplit("-", 1)[-1]
         if suffix.isdigit() and not _pid_alive(int(suffix)):
             remove_path(path)
+    # A process killed between the two renames of the no-exchange swap leaves `dist` missing and the old copy at `dist.old-<pid>`: restore it when `dist` is absent, otherwise it is only debris.
+    for path in glob.glob(str(base / DIST_DIR) + ".old-*"):
+        suffix = path.rsplit("-", 1)[-1]
+        if suffix.isdigit() and not _pid_alive(int(suffix)):
+            if not os.path.lexists(base / DIST_DIR):
+                os.rename(path, base / DIST_DIR)
+            else:
+                remove_path(path)
 
 
 def clean_targets(root: pathlib.Path | None = None) -> list[str]:
@@ -184,7 +192,7 @@ def clean_targets(root: pathlib.Path | None = None) -> list[str]:
 
 
 def build_into(stage: str) -> bool:
-    """Build the shared package into `stage`, swap it over `dist` when the build succeeded, then build the dependents. A failed build removes nothing: `dist` stays as it was. A build that emitted nothing warns and leaves `dist` alone."""
+    """Build the shared package into `stage`, swap it over `dist` when the build succeeded, then build the dependents. A failed shared build removes nothing: `dist` stays as it was. A failed dependent build comes after the swap, so `dist` already holds the new shared output and the dependent is named in the error. A shared build that emitted nothing warns and leaves `dist` alone (pinned by the twin golden)."""
     # A fresh `stage` makes the build unconditional, which is what the tsbuildinfo wipe exists for; the build info lives in it and travels with the swap.
     out = os.path.abspath(stage)
     shared = [
@@ -200,6 +208,10 @@ def build_into(stage: str) -> bool:
     for workspace in DEPENDENT_WORKSPACES:
         argv = ["npm", "run", "build", "-w", workspace]
         if subprocess.run(common.launchable(argv), check=False).returncode != 0:
+            log.error(
+                "Failed to build %s (the shared package was already rebuilt and swapped)"
+                % workspace
+            )
             return False
     return True
 

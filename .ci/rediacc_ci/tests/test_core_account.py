@@ -1127,7 +1127,7 @@ def _argv_delta_3a8d1f46(line: str) -> str:
 _LOCK_SHA_LINE = re.compile(r"\| state (web_lock_sha|lock_sha)=")
 
 
-# RULE T, commit 89015bba60 (the atomic shared dist swap): the port builds `@rediacc/shared` into `dist.build-<pid>` and `@rediacc/provisioning` as a second call, where the twin ran one `npm run build:packages`; a fake npm that emits nothing also makes the port warn that it keeps the old dist. Both are rewritten onto the twin's spelling (idempotent on the twin's own lines) and the `call#N` / `err#N` counters are renumbered per case, so the one build step meets the twin's one line. `test_delta_89015bba_the_build_is_two_staged_calls_in_the_port` pins the port's shape and that the rewrite meets a twin line.
+# RULE T, commit 89015bba60 (the atomic shared dist swap): the port builds `@rediacc/shared` into `dist.build-<pid>` and `@rediacc/provisioning` as a second call, where the twin ran one `npm run build:packages`; a fake npm that emits nothing also makes the port warn that it keeps the old dist. The shared call is rewritten onto the twin's `npm run build:packages` (idempotent on the twin's own lines); the provisioning call and the warning are dropped outright on both sides (the warning is pinned by `test_a_build_that_emits_nothing_warns_and_keeps_the_old_dist` in test_setup_build_packages.py). The `call#N` / `err#N` counters are renumbered per prefix on every counted line of every lifecycle scenario, so the one build step meets the twin's one line. `test_delta_89015bba_the_build_is_two_staged_calls_in_the_port` pins the port's shape and that the rewrite meets a twin line.
 _BUILD_SHARED_CALL = re.compile(
     r"\| npm run build -w @rediacc/shared -- --outDir \S+dist\.build-\d+ .*$"
 )
@@ -1215,6 +1215,22 @@ def _transcript_divergence(scenario: str, old: list[str], new: list[str], cap: i
     if len(lines) > cap:
         shown.append("... %d more diff lines" % (len(lines) - cap))
     return "scenario %s diverged:\n%s" % (scenario, "\n".join(shown))
+
+
+def test_the_divergence_message_shows_a_duplicated_line() -> None:
+    """79a0a3d9.1: a line printed twice is a divergence the message names."""
+    message = _transcript_divergence("demo", ["obs a"], ["obs a", "obs a"])
+    assert "+obs a" in message
+    assert message.startswith("scenario demo diverged:")
+
+
+def test_the_divergence_message_is_capped_and_says_how_much_it_cut() -> None:
+    old = ["obs %d" % i for i in range(100)]
+    new = ["obs x%d" % i for i in range(100)]
+    message = _transcript_divergence("demo", old, new)
+    assert "... " in message
+    assert message.rstrip().endswith("more diff lines")
+    assert len(message.splitlines()) <= 1 + 60 + 1
 
 
 def test_the_divergence_message_shows_a_reorder() -> None:
@@ -1754,9 +1770,16 @@ def test_delta_89015bba_the_build_is_two_staged_calls_in_the_port() -> None:
     assert "npm run build -w @rediacc/shared -- --outDir" in new_dev
     assert "npm run build -w @rediacc/provisioning" in new_dev
     assert "| npm run build:packages" not in new_dev
-    assert "npm run build -w @rediacc/shared" not in "\n".join(
-        _lifecycle_comparable(new_dev.splitlines(), "dev")
-    )
+    comparable_new = _lifecycle_comparable(new_dev.splitlines(), "dev")
+    comparable_old = _lifecycle_comparable(old_dev.splitlines(), "dev")
+    assert "npm run build -w @rediacc/shared" not in "\n".join(comparable_new)
+    assert "npm run build -w @rediacc/provisioning" not in "\n".join(comparable_new)
+    # The rewrite is what makes them meet: the port's comparable lines hold the twin's single build line, at the twin's counter.
+    twin_build = [line for line in comparable_old if line.endswith("| npm run build:packages")]
+    assert twin_build
+    assert [
+        line for line in comparable_new if line.endswith("| npm run build:packages")
+    ] == twin_build
 
 
 def test_delta_l6_a_failing_install_shows_more_than_its_last_line(tmp_path, capsys) -> None:
