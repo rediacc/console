@@ -48,10 +48,7 @@ export function shortGuid(guid: string): string {
   return guid.slice(0, 8);
 }
 
-/** Map every repository GUID in the config, live or deleted, to its name. */
-export function repoNamesByGuid(config: RdcConfig): Map<string, RepoNameEntry> {
-  const out = new Map<string, RepoNameEntry>();
-  const resources = config.resources ?? {};
+function addLiveRepos(out: Map<string, RepoNameEntry>, resources: Resources): void {
   const datastores = resources.datastores ?? {};
   for (const [family, record] of Object.entries(resources.repositories ?? {})) {
     const { machine, datastore } = machineOfPlacement(record.placement, datastores);
@@ -68,6 +65,9 @@ export function repoNamesByGuid(config: RdcConfig): Map<string, RepoNameEntry> {
       });
     }
   }
+}
+
+function addDeletedRepos(out: Map<string, RepoNameEntry>, resources: Resources): void {
   for (const archived of resources.deletedRepositories ?? []) {
     if (out.has(archived.repositoryGuid)) continue;
     out.set(archived.repositoryGuid, {
@@ -80,5 +80,13 @@ export function repoNamesByGuid(config: RdcConfig): Map<string, RepoNameEntry> {
       deleted: true,
     });
   }
+}
+
+/** Map every repository GUID in the config, live or deleted, to its name. */
+export function repoNamesByGuid(config: RdcConfig): Map<string, RepoNameEntry> {
+  const out = new Map<string, RepoNameEntry>();
+  const resources = config.resources ?? {};
+  addLiveRepos(out, resources);
+  addDeletedRepos(out, resources);
   return out;
 }
