@@ -321,6 +321,31 @@ async function localGateway(): Promise<string> {
   }
 }
 
+/**
+ * Accept the current Terms for the logged-in seeded user, as the portal checkbox does. The account
+ * gates every `/portal` route behind the Terms (403 TERMS_ACCEPTANCE_REQUIRED), and a seeded test
+ * user has never seen them. Mirrors `account_accept_terms` in .ci/rediacc_ci/drills/lib.py.
+ */
+async function acceptCurrentTerms(session: AccountSession, server: string): Promise<void> {
+  const status = (await session.must('GET', '/portal/terms')) as {
+    satisfied?: boolean;
+    current?: { version?: string; sha256?: string };
+  };
+  if (typeof status.satisfied !== 'boolean') {
+    throw new Error(`${server} /portal/terms answered no satisfied flag`);
+  }
+  if (status.satisfied) return;
+  const { version, sha256 } = status.current ?? {};
+  if (!version || !sha256) throw new Error(`${server} /portal/terms names no current version`);
+  const accepted = (await session.must('POST', '/portal/terms/accept', {
+    version,
+    sha256,
+    locale: 'en',
+    method: 'web-checkbox',
+  })) as { accepted?: boolean };
+  if (accepted.accepted !== true) throw new Error(`${server} refused the Terms acceptance`);
+}
+
 /** Seed a subscribed user through the TEST_MODE seams and mint its token, as start_account does. */
 async function mintLocalToken(server: string): Promise<string> {
   const session = new AccountSession(server);
@@ -331,6 +356,7 @@ async function mintLocalToken(server: string): Promise<string> {
     planCode: LOCAL_PLAN,
   });
   await session.must('POST', '/auth/login', credentials);
+  await acceptCurrentTerms(session, server);
   const subscriptionId = ((await session.must('GET', '/portal/subscription')) as { id?: string })
     .id;
   if (!subscriptionId) throw new Error(`${server} returned no subscription for ${LOCAL_EMAIL}`);

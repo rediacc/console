@@ -370,6 +370,7 @@ def seed_and_mint(api: Api, opts: Options) -> tuple[str, str]:
     if not _json_get(login, "user", "id"):
         log.error(f"Headless login failed: {login}")
         raise LegError(f"could not open a session for {opts.email}")
+    accept_terms(api)
     _, subscription = api.call("GET", "/portal/subscription")
     subscription_id = _json_get(subscription, "id") or ""
     if not subscription_id:
@@ -384,6 +385,34 @@ def seed_and_mint(api: Api, opts: Options) -> tuple[str, str]:
         log.error(f"API token mint failed: {minted}")
         raise LegError("could not mint an API token")
     return str(token), str(subscription_id)
+
+
+def accept_terms(api: Api) -> None:
+    """Accept the current Terms for the logged-in seeded user, as the portal checkbox does. The account gates every `/portal` route behind the Terms (403 TERMS_ACCEPTANCE_REQUIRED), and a seeded user has never seen them; `account_accept_terms` in drills/lib.py does the same for the drills."""
+    code, raw = api.call("GET", "/portal/terms")
+    try:
+        status = json.loads(raw)
+    except ValueError:
+        status = None
+    if code != 200 or not isinstance(status, dict) or not isinstance(status.get("satisfied"), bool):
+        raise LegError(f"/portal/terms answered HTTP {code}: {raw[:300]}")
+    if status["satisfied"]:
+        return
+    current = status.get("current")
+    if not isinstance(current, dict) or not current.get("version") or not current.get("sha256"):
+        raise LegError(f"/portal/terms names no current version: {raw[:300]}")
+    code, answer = api.call(
+        "POST",
+        "/portal/terms/accept",
+        {
+            "version": current["version"],
+            "sha256": current["sha256"],
+            "locale": "en",
+            "method": "web-checkbox",
+        },
+    )
+    if not 200 <= code < 300 or _json_get(answer, "accepted") is not True:
+        raise LegError(f"the Terms acceptance was refused: HTTP {code}: {answer[:300]}")
 
 
 def _json_get(text: str, *keys: str) -> object:

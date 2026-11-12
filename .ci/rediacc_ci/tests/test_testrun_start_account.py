@@ -2,7 +2,7 @@
 
 A FAKE `npx` launches `testrun_stub_server.py` (a stub of the account server's test surface) on a free port, so both sides really start a process, poll `/health`, resolve the listener pid from the socket, seed over HTTP and mint a token. Compared: the request sequence the stub saw, `$GITHUB_ENV`, `$GITHUB_OUTPUT`, the recorded pid file, stdout (token masked) and exit code. The REAL account server is exercised by the live run recorded in the porting report, not here.
 
-INTENTIONAL DELTAS (Rule T), each a `test_delta_*` failing on the bash behaviour: an HTTP 500 from the seed routes fails there; a failed leg does not leave its server running; a stale server on the port is refused; `--port` with no value is a usage error.
+INTENTIONAL DELTAS (Rule T), each a `test_delta_*` failing on the bash behaviour: an HTTP 500 from the seed routes fails there; a failed leg does not leave its server running; a stale server on the port is refused; `--port` with no value is a usage error; the seeded user accepts the current Terms before `/portal/subscription` (the account gates every `/portal` route behind them since PLAN-terms-acceptance, so the retired twin's sequence would now answer 403). The twin comparisons read `twin_trace`, which leaves those two Terms requests out.
 """
 
 from __future__ import annotations
@@ -170,6 +170,14 @@ def trace(directory: pathlib.Path) -> list[tuple]:
     ]
 
 
+TERMS_PATHS = ("/portal/terms", "/portal/terms/accept")
+
+
+def twin_trace(directory: pathlib.Path) -> list[tuple]:
+    """`trace` without the Terms read and acceptance, the one step the retired twin never made (the Terms delta)."""
+    return [t for t in trace(directory) if not t[1].endswith(TERMS_PATHS)]
+
+
 @pytest.fixture
 def cleanup(tmp_path: pathlib.Path):
     yield
@@ -184,7 +192,7 @@ def test_success_matches_the_twin(tmp_path: pathlib.Path) -> None:
     )
     new, nd, np_ = side(tmp_path, "py", ["--plan", "STARTER", "--email", "a@b.io", "--name", "tok"])
     assert (old.code, new.code) == (0, 0), (old.err, new.err)
-    assert trace(od) == trace(nd)
+    assert twin_trace(od) == twin_trace(nd)
     seed = [r for r in requests(nd) if r["path"] != "/health"]
     assert seed[0]["test_mode"] == "true"
     assert seed[0]["key_lengths"] == {"ACCOUNT_SERVER_API_KEY": 64, "ACCOUNT_JWT_SECRET": 64}
@@ -193,6 +201,8 @@ def test_success_matches_the_twin(tmp_path: pathlib.Path) -> None:
         "ensure-login",
         "ensure-subscription",
         "login",
+        "terms",
+        "accept",
         "subscription",
         "api-tokens",
     ]
@@ -246,7 +256,7 @@ def test_failures_match_the_twin(tmp_path: pathlib.Path, mode: str, needle: str)
     assert (old.code, new.code) == (1, 1)
     assert needle in old.err
     assert needle in new.err
-    assert trace(od) == trace(nd)
+    assert twin_trace(od) == twin_trace(nd)
     assert not (nd / "gh_env").exists()
     assert not (od / "gh_env").exists()
 
@@ -271,6 +281,32 @@ def test_delta_http_500_from_a_seed_route_fails_there(tmp_path: pathlib.Path) ->
     assert new.code == 1
     assert "/test/ensure-login failed with HTTP 500" in new.err
     assert len(trace(nd)) == 1
+
+
+@pytest.mark.usefixtures("cleanup")
+def test_delta_the_seeded_user_accepts_the_terms_before_the_portal(tmp_path: pathlib.Path) -> None:
+    # Python side only: the golden holds no bash run for a new case, and test_success_matches_the_twin already pins the twin's sequence without the Terms requests.
+    new, nd, _ = side(tmp_path, "py", [])
+    assert new.code == 0, new.err
+    paths = [t[1] for t in trace(nd)]
+    accept = next(t for t in trace(nd) if t[1].endswith("/portal/terms/accept"))
+    assert accept[2] == {
+        "version": "2026-11-11",
+        "sha256": "f" * 64,
+        "locale": "en",
+        "method": "web-checkbox",
+    }
+    assert paths.index(accept[1]) < next(
+        i for i, p in enumerate(paths) if p.endswith("/portal/subscription")
+    )
+
+
+@pytest.mark.usefixtures("cleanup")
+def test_a_refused_terms_acceptance_fails_the_leg(tmp_path: pathlib.Path) -> None:
+    new, nd, _ = side(tmp_path, "py", [], "terms-refused")
+    assert new.code == 1
+    assert "the Terms acceptance was refused" in new.err
+    assert not [t for t in trace(nd) if t[1].endswith("/portal/subscription")]
 
 
 def test_delta_a_failed_leg_does_not_leave_its_server_running(tmp_path: pathlib.Path) -> None:
@@ -421,6 +457,8 @@ class FakeApi(sa.Api):
     def call(self, _method: str, path: str, body: dict | None = None) -> tuple[int, str]:
         if path == "/auth/login":
             return 200, json.dumps({"user": {"id": "u1"}})
+        if path == "/portal/terms":
+            return 200, json.dumps({"satisfied": True})
         if path == "/portal/subscription":
             return 200, json.dumps({"id": "sub1"})
         if path == "/api-tokens":
