@@ -39,7 +39,7 @@ def fixture(tmp: pathlib.Path, urls: list[str]) -> pathlib.Path:
     return root
 
 
-def run_gate(gate, root: pathlib.Path):
+def run_gate(gate, root: pathlib.Path, site_origin: str = ""):
     if not VALIDATOR.is_file():
         gate.log_fail("subject under test is missing: %s" % paths.relative_to_root(VALIDATOR))
     npx = harness.require_tool(
@@ -48,7 +48,11 @@ def run_gate(gate, root: pathlib.Path):
     return harness.run(
         [npx, "tsx", str(VALIDATOR)],
         cwd=paths.repo_root(),
-        env={"EXTERNAL_LINKS_FIXTURE_ROOT": str(root), "GITHUB_TOKEN": ""},
+        env={
+            "EXTERNAL_LINKS_FIXTURE_ROOT": str(root),
+            "EXTERNAL_LINKS_SITE_ORIGIN": site_origin,
+            "GITHUB_TOKEN": "",
+        },
     )
 
 
@@ -78,6 +82,34 @@ def test_a_404_is_a_broken_link_not_an_outage(gate, tmp_path):
     gate.assert_contains(result.err, "-> " + CITED, "the citing file and line are named")
     gate.assert_not_contains(result.err, "UPSTREAM REACHABILITY FAILURE", "a 404 is an answer")
     gate.log_pass("a 404 is a finding in the tree")
+
+
+PAGE = "packages/www/src/pages/[lang]/new-policy.astro"
+
+
+def site_fixture(tmp: pathlib.Path, urls: list[str], page: bool) -> pathlib.Path:
+    root = fixture(tmp, urls)
+    if page:
+        (root / PAGE).parent.mkdir(parents=True, exist_ok=True)
+        (root / PAGE).write_text("---\n---\n", encoding="utf-8")
+    return root
+
+
+def test_a_site_page_this_tree_adds_is_unreleased_not_broken(gate, tmp_path):
+    """Control first: the same 404 with no page file in the tree is BROKEN, so the green below comes from the page file and nothing else."""
+    with stub_upstream({}) as stub:
+        url = stub.base + "/en/new-policy"
+        red = run_gate(gate, site_fixture(tmp_path / "red", [url], False), stub.base)
+        green = run_gate(gate, site_fixture(tmp_path / "green", [url], True), stub.base)
+        other = run_gate(gate, site_fixture(tmp_path / "other", [url], True))
+    gate.assert_exit(1, red, "control: a site 404 with no page in the tree fails")
+    gate.assert_contains(red.err, "BROKEN [404]: %s" % url, "control: it is BROKEN")
+    gate.assert_exit(0, green, "a site 404 whose page the tree adds passes")
+    gate.assert_contains(green.out, "not live until the next release", "it is named")
+    gate.assert_contains(green.out, "%s  (%s; cited at %s)" % (url, PAGE, CITED), "url, page, citation")
+    gate.assert_not_contains(green.err, "BROKEN [", "it is not a dead link")
+    gate.assert_exit(1, other, "with no site origin named, a fixture 404 stays a break")
+    gate.log_pass("an unreleased site page is named and passes; a missing one still fails")
 
 
 def test_an_unreachable_host_is_red_and_named_as_an_outage(gate, tmp_path):
