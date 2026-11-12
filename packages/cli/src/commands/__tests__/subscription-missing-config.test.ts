@@ -1,3 +1,4 @@
+import { BAKED_IN_REGIONS } from '@rediacc/shared/regions';
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -23,14 +24,18 @@ vi.mock('../../services/account/account-client.js', () => ({
 vi.mock('../../services/account/account-pointer.js', () => ({
   readAccountPointer: () => ({ accountServer: h.accountServer }),
 }));
-vi.mock('../../services/account/subscription-auth.js', () => ({
-  deleteStoredSubscriptionToken: vi.fn(),
-  getSubscriptionScopeMismatch: vi.fn(),
-  getSubscriptionServerUrl: (preferred?: string) =>
-    preferred ?? h.accountServer ?? 'https://eu.rediacc.cloud',
-  normalizeServerUrl: (s: string) => s,
-  saveStoredSubscriptionToken: h.saveToken,
-}));
+vi.mock('../../services/account/subscription-auth.js', async () => {
+  const { WK_ACCOUNT_DEFAULT_ORIGIN: fallback } = await import(
+    '@rediacc/shared/config/well-known.generated'
+  );
+  return {
+    deleteStoredSubscriptionToken: vi.fn(),
+    getSubscriptionScopeMismatch: vi.fn(),
+    getSubscriptionServerUrl: (preferred?: string) => preferred ?? h.accountServer ?? fallback,
+    normalizeServerUrl: (s: string) => s,
+    saveStoredSubscriptionToken: h.saveToken,
+  };
+});
 vi.mock('../../services/account/subscription-device-auth.js', () => ({
   authorizeSubscriptionViaDeviceCode: h.authorize,
 }));
@@ -68,7 +73,10 @@ async function run(...args: string[]): Promise<void> {
   await program.parseAsync(['node', 'rdc', 'subscription', ...args]);
 }
 
-const ASIA = { region: { label: 'Asia Pacific' }, domain: 'asia.rediacc.cloud' };
+const ASIA_REGION = BAKED_IN_REGIONS.find((r) => r.id === 'asia');
+if (!ASIA_REGION) throw new Error('regions.json has no asia region');
+const ASIA = { region: { label: ASIA_REGION.label }, domain: ASIA_REGION.domain };
+const ASIA_ORIGIN = `https://${ASIA_REGION.domain}`;
 
 describe('subscription login/register on a config that does not exist', () => {
   beforeEach(() => {
@@ -104,9 +112,9 @@ describe('subscription login/register on a config that does not exist', () => {
   });
 
   it('login with --server and --token refuses the same way', async () => {
-    await expect(
-      run('login', '--server', 'https://asia.rediacc.cloud', '--token', 'x')
-    ).rejects.toThrow('errors.config.missingNamed:eu-edge-asia');
+    await expect(run('login', '--server', ASIA_ORIGIN, '--token', 'x')).rejects.toThrow(
+      'errors.config.missingNamed:eu-edge-asia'
+    );
     expect(h.update).not.toHaveBeenCalled();
     expect(h.saveToken).not.toHaveBeenCalled();
   });
@@ -126,7 +134,7 @@ describe('subscription login/register on a config that does not exist', () => {
     h.exists.mockResolvedValue(true);
     await run('login');
     expect(h.promptRegion).toHaveBeenCalledTimes(1);
-    expect(h.authorize.mock.calls[0][0]).toBe('https://asia.rediacc.cloud');
+    expect(h.authorize.mock.calls[0][0]).toBe(ASIA_ORIGIN);
   });
 
   it('control: the default config (auto-created) is never refused', async () => {
