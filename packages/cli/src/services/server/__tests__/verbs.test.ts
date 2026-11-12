@@ -209,6 +209,28 @@ describe('licence', () => {
     expect(Object.values(fake.written).some((v) => v.includes('"licence": "cert"'))).toBe(false);
   });
 
+  it('keeps polling through an indeterminate reply and succeeds only on the cert answer', async () => {
+    const fake = makeFake({
+      freeProbe: 409,
+      freeProbeSequence: [503, 503],
+      boxReplies: { '/auth/login': { cookie: 'access_token=own' } },
+    });
+    const result = await serverLicence(fake.deps, LOC);
+    expect(result.via).toBe('upload');
+    expect(fake.calls.filter((c) => c.endsWith('/onprem/free-license'))).toHaveLength(3);
+    expect(Object.values(fake.written).some((v) => v.includes('"licence": "cert"'))).toBe(true);
+  });
+
+  it('fails without success or a record when the probe stays indeterminate', async () => {
+    const fake = makeFake({
+      freeProbe: 503,
+      boxReplies: { '/auth/login': { cookie: 'access_token=own' } },
+    });
+    await expect(serverLicence(fake.deps, LOC)).rejects.toThrow(/stillFree/);
+    expect(outputService.info).not.toHaveBeenCalledWith('commands.server.licence.viaUpload');
+    expect(Object.values(fake.written).some((v) => v.includes('"licence": "cert"'))).toBe(false);
+  });
+
   it.each([
     ['401', { [UPLOAD]: { status: 401 } }],
     ['404', { [UPLOAD]: { status: 404 } }],

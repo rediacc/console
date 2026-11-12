@@ -66,8 +66,9 @@ export async function probeFreeTier(
 }
 
 /**
- * Wait until the server stops answering as the free tier, so a cert that was just handed over
- * has taken effect. Throws `stillFree` when it never switches within the health wait's bounds.
+ * Wait until the server answers as a cert holder (409), so a cert that was just handed over has
+ * taken effect. An indeterminate reply (a 503 during a restart) keeps polling. Throws `stillFree`
+ * when no definite cert answer arrives within the health wait's bounds.
  */
 export async function waitCertTier(
   deps: ServerDeps,
@@ -75,7 +76,7 @@ export async function waitCertTier(
   tries = HEALTH_TRIES
 ): Promise<void> {
   for (let attempt = 0; attempt < tries; attempt++) {
-    if ((await probeFreeTier(deps, target)) !== true) return;
+    if ((await probeFreeTier(deps, target)) === false) return;
     if (attempt + 1 < tries) await deps.sleep(HEALTH_INTERVAL_MS);
   }
   throw new ServerError(t('commands.server.licence.stillFree', { domain: target.domain }));
