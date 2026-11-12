@@ -2909,17 +2909,19 @@
     },
     "version": {
       "channel": "Güncelleme kanalı: {{channel}}",
-      "description": "rdc sürümünü, platformu, güncelleme kanalını ve etkin lisansı yazdırır: oturum açıksa planı, açık değilse \"anonim (depo başına FREE)\", hesap sunucusuna ulaşılamıyorsa \"bilinmiyor (çevrimdışı)\". --version bayrağı yine yalnızca sürümü yazdırır.",
+      "description": "rdc sürümünü, platformu, güncelleme kanalını ve etkin lisansı yazdırır: oturum açıksa planı, açık değilse \"anonim (depo başına FREE)\", hesap sunucusuna ulaşılamıyorsa \"bilinmiyor (sunucuya ulaşılamıyor)\". --version bayrağı yine yalnızca sürümü yazdırır.",
       "descriptionShort": "CLI sürümünü, kanalı ve etkin lisansı göster",
       "license": {
         "anonymous": "anonim (depo başına FREE)",
         "label": "Lisans: {{license}}",
-        "unknown": "bilinmiyor (çevrimdışı)"
+        "unknown": "bilinmiyor (çevrimdışı)",
+        "unreachable": "bilinmiyor (sunucuya ulaşılamıyor)"
       },
       "platform": "Sistem: {{platform}} {{arch}}"
     },
     "legal": {
       "accepted": "Kabul edildi: sürüm {{version}}, {{at}} ({{method}})",
+      "acceptedUnreachable": "Kabul edildi: bilinmiyor (sunucuya ulaşılamıyor)",
       "binding": "esas alınan",
       "credits": "Üçüncü taraf bildirimleri: {{command}}",
       "description": "Yasal belgelerin bağlantılarını kendi dilinizde ve esas alınan İngilizce bağlantılarla, güncel Hizmet Şartları sürümünü sağlama toplamı ve arşiv URL'siyle, kayıtlı kabulü (oturum açıksa hesap sunucusundan, değilse bu yapılandırmadan) ve sözleşme tarafını yazdırır. Üçüncü taraf bildirimleri rdc credits --licenses altındadır.",

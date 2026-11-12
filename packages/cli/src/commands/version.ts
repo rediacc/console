@@ -9,8 +9,8 @@ import { VERSION } from '../version.js';
 
 const LICENSE_STATUS_PATH = '/account/api/v1/licenses/status';
 
-/** How the active licence was determined: a plan from the account server, no login at all, or a login whose server could not be asked. */
-type LicenseKind = 'account' | 'anonymous' | 'unknown';
+/** How the active licence was determined: a plan from the account server, no login at all, or a login whose server answered without a plan (unknown) or could not be asked (unreachable). */
+type LicenseKind = 'account' | 'anonymous' | 'unknown' | 'unreachable';
 
 export interface VersionInfo {
   version: string;
@@ -20,14 +20,14 @@ export interface VersionInfo {
   license: { kind: LicenseKind; tier?: string };
 }
 
-/** The active licence: the tier from the account server when logged in, anonymous (FREE per repository) without a login, unknown when the server cannot answer. */
+/** The active licence: the tier from the account server when logged in, anonymous (FREE per repository) without a login, unknown when the server answered without a plan, unreachable when it cannot answer. */
 async function activeLicense(): Promise<VersionInfo['license']> {
   if (getSubscriptionTokenState().kind !== 'ready') return { kind: 'anonymous' };
   try {
     const status = await accountServerFetch<{ planCode?: string }>(LICENSE_STATUS_PATH);
     return status.planCode ? { kind: 'account', tier: status.planCode } : { kind: 'unknown' };
   } catch {
-    return { kind: 'unknown' };
+    return { kind: 'unreachable' };
   }
 }
 
@@ -43,8 +43,9 @@ export async function collectVersionInfo(): Promise<VersionInfo> {
 
 function licenseText(license: VersionInfo['license']): string {
   if (license.kind === 'account') return license.tier ?? '';
-  return license.kind === 'anonymous'
-    ? t('commands.version.license.anonymous')
+  if (license.kind === 'anonymous') return t('commands.version.license.anonymous');
+  return license.kind === 'unreachable'
+    ? t('commands.version.license.unreachable')
     : t('commands.version.license.unknown');
 }
 

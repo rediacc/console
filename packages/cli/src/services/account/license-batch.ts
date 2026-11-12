@@ -304,17 +304,18 @@ export function freeLicensesToAdopt(
 function forceReissueSet(
   licenseStatuses: { repositoryGuid: string; status: string }[],
   foreignOrigin: Set<string>,
-  adopted: Set<string>
+  adopted: Set<string>,
+  sameOriginCopies: Set<string>
 ): Set<string> {
   const guids = new Set(
     licenseStatuses
       .filter((s) => s.status === 'machine_mismatch' || s.status === 'identity_mismatch')
       .map((s) => s.repositoryGuid)
   );
-  // A foreign-origin licence that is not adopted is skipped whole, so it is no pending reissue either, whatever its status.
+  // A foreign-origin licence that is not adopted is left out of the batch, so it is no pending reissue either, whatever its status. A guid that also has a same-origin copy keeps that copy in the batch (skipForeignOrigin), so the copy's mismatch is still reissued; only the foreign copies are excluded.
   for (const guid of foreignOrigin) {
     if (adopted.has(guid)) guids.add(guid);
-    else guids.delete(guid);
+    else if (!sameOriginCopies.has(guid)) guids.delete(guid);
   }
   return guids;
 }
@@ -379,10 +380,21 @@ function selectBatchRepos(
 } {
   const foreignOrigin = reposWithForeignLicenseOrigin(remoteRepos, machineName);
   const freeAdopted = freeLicensesToAdopt(remoteRepos, foreignOrigin, machineName);
+  const configOrigin = configAccountOrigin(machineName);
+  const sameOriginCopies = new Set(
+    remoteRepos
+      .filter(
+        (repo) =>
+          foreignOrigin.has(repo.repositoryGuid) &&
+          (!repo.currentRenewalUrl || renewalOrigin(repo.currentRenewalUrl) === configOrigin)
+      )
+      .map((repo) => repo.repositoryGuid)
+  );
   const forceReissueGuids = forceReissueSet(
     licenseStatuses,
     foreignOrigin,
-    adoptOrigin ? foreignOrigin : freeAdopted
+    adoptOrigin ? foreignOrigin : freeAdopted,
+    sameOriginCopies
   );
   const repoByGuid = new Map(
     localRepos.map((entry) => [entry.config.repositoryGuid, { grandGuid: entry.config.grandGuid }])

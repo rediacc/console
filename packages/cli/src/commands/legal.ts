@@ -32,8 +32,10 @@ export interface LegalInfo {
   terms: { version: string; sha256: string; effective: string; archiveUrl: string };
   /** The newest announced version that is not yet in force. */
   upcoming?: { version: string; effective: string };
-  /** The acceptance on record, or null when none. */
+  /** The acceptance on record, or null when none or when the server could not be asked. */
   accepted: AcceptedTerms | null;
+  /** True when a logged-in config's account server could not answer, so `accepted` is unknown rather than absent. */
+  acceptedUnreachable: boolean;
   entity: {
     legalName: string;
     registryCode: string;
@@ -55,38 +57,45 @@ interface TermsStatusResponse {
   accepted?: { version?: string; acceptedAt?: string; method?: string } | null;
 }
 
-/** The acceptance on record: the account server's answer when logged in, this config's state when anonymous. A server that cannot answer leaves it unknown, reported as not accepted. */
-async function acceptedTerms(): Promise<AcceptedTerms | null> {
+/** The acceptance on record: the account server's answer when logged in, this config's state when anonymous. A server that cannot answer leaves it unknown, flagged `unreachable`. */
+async function acceptedTerms(): Promise<{ accepted: AcceptedTerms | null; unreachable: boolean }> {
   if (getSubscriptionTokenState().kind === 'ready') {
     try {
       const status = await accountServerFetch<TermsStatusResponse>(TERMS_STATUS_PATH);
       const accepted = status.accepted;
-      return accepted?.version
-        ? {
-            version: accepted.version,
-            acceptedAt: accepted.acceptedAt ?? null,
-            method: accepted.method ?? null,
-            source: 'account',
-          }
-        : null;
+      return {
+        accepted: accepted?.version
+          ? {
+              version: accepted.version,
+              acceptedAt: accepted.acceptedAt ?? null,
+              method: accepted.method ?? null,
+              source: 'account',
+            }
+          : null,
+        unreachable: false,
+      };
     } catch {
-      return null;
+      return { accepted: null, unreachable: true };
     }
   }
   const stored = (await configService.getCurrent())?.state?.terms;
-  return stored
-    ? {
-        version: stored.version,
-        acceptedAt: stored.acceptedAt,
-        method: stored.method,
-        source: 'config',
-      }
-    : null;
+  return {
+    accepted: stored
+      ? {
+          version: stored.version,
+          acceptedAt: stored.acceptedAt,
+          method: stored.method,
+          source: 'config',
+        }
+      : null,
+    unreachable: false,
+  };
 }
 
 export async function collectLegalInfo(now = new Date()): Promise<LegalInfo> {
   const lang = documentLanguage();
   const state = termsAt(now);
+  const { accepted, unreachable } = await acceptedTerms();
   const documents = Object.values(LEGAL_DOCUMENTS)
     .filter((doc) => doc !== undefined)
     .map((doc) => ({
@@ -105,7 +114,8 @@ export async function collectLegalInfo(now = new Date()): Promise<LegalInfo> {
     ...(state.upcoming
       ? { upcoming: { version: state.upcoming.version, effective: state.upcoming.effective } }
       : {}),
-    accepted: await acceptedTerms(),
+    accepted,
+    acceptedUnreachable: unreachable,
     entity: {
       legalName: LEGAL_ENTITY.legalName,
       registryCode: LEGAL_ENTITY.registryCode,
@@ -115,6 +125,19 @@ export async function collectLegalInfo(now = new Date()): Promise<LegalInfo> {
     },
     thirdPartyNotices: CREDITS_COMMAND,
   };
+}
+
+function acceptedLine(info: LegalInfo): string {
+  if (info.accepted) {
+    return t('commands.legal.accepted', {
+      version: info.accepted.version,
+      at: info.accepted.acceptedAt ?? '-',
+      method: info.accepted.method ?? '-',
+    });
+  }
+  return info.acceptedUnreachable
+    ? t('commands.legal.acceptedUnreachable')
+    : t('commands.legal.notAccepted');
 }
 
 export function renderLegal(info: LegalInfo): string {
@@ -141,13 +164,7 @@ export function renderLegal(info: LegalInfo): string {
     );
   }
   lines.push(
-    info.accepted
-      ? t('commands.legal.accepted', {
-          version: info.accepted.version,
-          at: info.accepted.acceptedAt ?? '-',
-          method: info.accepted.method ?? '-',
-        })
-      : t('commands.legal.notAccepted'),
+    acceptedLine(info),
     '',
     t('commands.legal.entity', {
       name: info.entity.legalName,

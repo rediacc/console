@@ -2909,17 +2909,19 @@
     },
     "version": {
       "channel": "Uuenduskanal: {{channel}}",
-      "description": "Prindib CLI versiooni, platvormi, uuenduskanali ja aktiivse litsentsi: sisselogituna paketi, ilma sisselogimiseta „anonüümne (FREE repositooriumi kohta)“ ja „teadmata (võrguühenduseta)“, kui konto serverini ei jõua. Lipp --version prindib endiselt ainult versiooni.",
+      "description": "Prindib CLI versiooni, platvormi, uuenduskanali ja aktiivse litsentsi: sisselogituna paketi, ilma sisselogimiseta „anonüümne (FREE repositooriumi kohta)“ ja „teadmata (server pole kättesaadav)“, kui konto serverini ei jõua. Lipp --version prindib endiselt ainult versiooni.",
       "descriptionShort": "Näita CLI versiooni, kanalit ja aktiivset litsentsi",
       "license": {
         "anonymous": "anonüümne (FREE repositooriumi kohta)",
         "label": "Litsents: {{license}}",
-        "unknown": "teadmata (võrguühenduseta)"
+        "unknown": "teadmata (võrguühenduseta)",
+        "unreachable": "teadmata (server pole kättesaadav)"
       },
       "platform": "Platvorm: {{platform}} {{arch}}"
     },
     "legal": {
       "accepted": "Nõustutud: versioon {{version}}, {{at}} ({{method}})",
+      "acceptedUnreachable": "Nõustutud: teadmata (server pole kättesaadav)",
       "binding": "siduv",
       "credits": "Kolmandate osapoolte teated: {{command}}",
       "description": "Prindib õigusdokumentide lingid sinu keeles koos siduvate ingliskeelsete linkidega, kehtiva kasutustingimuste versiooni koos kontrollsumma ja arhiivi URL-iga, registreeritud nõusoleku (sisselogituna konto serverist, muidu sellest konfiguratsioonist) ja lepingupoole. Kolmandate osapoolte teated on käsu rdc credits --licenses all.",

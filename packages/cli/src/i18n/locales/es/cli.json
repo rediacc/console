@@ -2909,17 +2909,19 @@
     },
     "version": {
       "channel": "Canal de actualización: {{channel}}",
-      "description": "Muestra la versión de rdc, la plataforma, el canal de actualización y la licencia activa: el plan con la sesión iniciada, \"anónima (FREE por repositorio)\" sin sesión y \"desconocida (sin conexión)\" cuando no se llega al servidor de cuentas. La opción --version sigue mostrando solo la versión.",
+      "description": "Muestra la versión de rdc, la plataforma, el canal de actualización y la licencia activa: el plan con la sesión iniciada, \"anónima (FREE por repositorio)\" sin sesión y \"desconocida (servidor inaccesible)\" cuando no se llega al servidor de cuentas. La opción --version sigue mostrando solo la versión.",
       "descriptionShort": "Mostrar la versión de la CLI, el canal y la licencia activa",
       "license": {
         "anonymous": "anónima (FREE por repositorio)",
         "label": "Licencia: {{license}}",
-        "unknown": "desconocida (sin conexión)"
+        "unknown": "desconocida (sin conexión)",
+        "unreachable": "desconocida (servidor inaccesible)"
       },
       "platform": "Plataforma: {{platform}} {{arch}}"
     },
     "legal": {
       "accepted": "Aceptado: versión {{version}} el {{at}} ({{method}})",
+      "acceptedUnreachable": "Aceptado: desconocido (servidor inaccesible)",
       "binding": "vinculante",
       "credits": "Avisos de terceros: {{command}}",
       "description": "Muestra los enlaces de los documentos legales en su idioma junto con los enlaces vinculantes en inglés, la versión vigente de los Términos del Servicio con su suma de verificación y la URL del archivo, la aceptación registrada (del servidor de cuentas con la sesión iniciada, de esta configuración sin ella) y la entidad contratante. Los avisos de terceros están en rdc credits --licenses.",

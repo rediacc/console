@@ -15596,7 +15596,7 @@ export const CLI_CONTRACT: CliContract = {
       "group": "TOOLS",
       "plane": "other",
       "descriptionKey": "commands.version.description",
-      "label": "Print the CLI version, platform, update channel and the active license: the plan when logged in, \"anonymous (FREE per repository)\" without a login, and \"unknown (offline)\" when the account server cannot be reached. The --version flag still prints the bare version.",
+      "label": "Print the CLI version, platform, update channel and the active license: the plan when logged in, \"anonymous (FREE per repository)\" without a login, and \"unknown (server unreachable)\" when the account server cannot be reached. The --version flag still prints the bare version.",
       "options": [
         {
           "flags": "--json",

@@ -426,6 +426,7 @@ describe('hidden bench licence region', () => {
     const offered = m.promptRegion.mock.calls[0][0] as { id: string }[];
     expect(offered.length).toBeGreaterThan(0);
     expect(offered.map((r) => r.id)).not.toContain('bench');
+    expect(BAKED_IN_REGIONS.map((r) => r.id)).toContain('us');
     expect(BAKED_IN_REGIONS.map((r) => r.id)).not.toContain('bench');
   });
 });

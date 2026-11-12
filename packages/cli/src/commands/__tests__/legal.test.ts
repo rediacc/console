@@ -90,10 +90,25 @@ describe('rdc legal --json', () => {
     });
   });
 
-  it('a server that cannot answer leaves the acceptance not shown', async () => {
+  it('a server that cannot answer leaves the acceptance unknown, flagged unreachable', async () => {
     m.tokenState.mockReturnValue({ kind: 'ready', token: {}, serverUrl: 'x' });
     m.fetch.mockRejectedValue(new Error('offline'));
-    expect((await collectLegalInfo()).accepted).toBeNull();
+    const info = await collectLegalInfo();
+    expect(info.accepted).toBeNull();
+    expect(info.acceptedUnreachable).toBe(true);
+    const out = renderLegal(info);
+    expect(out).toContain('commands.legal.acceptedUnreachable');
+    expect(out).not.toContain('commands.legal.notAccepted');
+  });
+
+  it('a reachable server with no acceptance on record is plainly not accepted', async () => {
+    m.tokenState.mockReturnValue({ kind: 'ready', token: {}, serverUrl: 'x' });
+    m.fetch.mockResolvedValue({ accepted: null });
+    const info = await collectLegalInfo();
+    expect(info.acceptedUnreachable).toBe(false);
+    const out = renderLegal(info);
+    expect(out).toContain('commands.legal.notAccepted');
+    expect(out).not.toContain('commands.legal.acceptedUnreachable');
   });
 });
 

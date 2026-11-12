@@ -178,7 +178,7 @@ describe('headless subscription login', () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
-  it('a plain member on a no-2FA account falls back to the base scopes after the 2FA refusal', async () => {
+  it('a plain member whose backup scopes need 2FA falls back to the base scopes after the 2FA refusal', async () => {
     process.env.REDIACC_LOGIN_EMAIL = 'a@b.co';
     process.env.REDIACC_LOGIN_PASSWORD = PASSWORD;
     const calls = stubServer({ backupNeedsTwoFactor: true, memberRefusedPrivileged: true });

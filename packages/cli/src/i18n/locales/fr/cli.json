@@ -2909,17 +2909,19 @@
     },
     "version": {
       "channel": "Canal de mise à jour : {{channel}}",
-      "description": "Affiche la version de rdc, la plateforme, le canal de mise à jour et la licence active : le forfait une fois connecté, « anonyme (FREE par dépôt) » sans connexion et « inconnue (hors ligne) » quand le serveur de compte est injoignable. L'option --version n'affiche toujours que la version.",
+      "description": "Affiche la version de rdc, la plateforme, le canal de mise à jour et la licence active : le forfait une fois connecté, « anonyme (FREE par dépôt) » sans connexion et « inconnue (serveur injoignable) » quand le serveur de compte est injoignable. L'option --version n'affiche toujours que la version.",
       "descriptionShort": "Afficher la version du CLI, le canal et la licence active",
       "license": {
         "anonymous": "anonyme (FREE par dépôt)",
         "label": "Licence : {{license}}",
-        "unknown": "inconnue (hors ligne)"
+        "unknown": "inconnue (hors ligne)",
+        "unreachable": "inconnue (serveur injoignable)"
       },
       "platform": "Plateforme : {{platform}} {{arch}}"
     },
     "legal": {
       "accepted": "Accepté : version {{version}} le {{at}} ({{method}})",
+      "acceptedUnreachable": "Accepté : inconnu (serveur injoignable)",
       "binding": "qui fait foi",
       "credits": "Mentions des composants tiers : {{command}}",
       "description": "Affiche les liens des documents juridiques dans votre langue avec les liens anglais qui font foi, la version en vigueur des Conditions d'utilisation avec sa somme de contrôle et l'URL de l'archive, l'acceptation enregistrée (depuis le serveur de compte une fois connecté, depuis cette configuration sinon) et l'entité contractante. Les mentions des composants tiers sont sous rdc credits --licenses.",

@@ -2909,17 +2909,19 @@
     },
     "version": {
       "channel": "Canale di aggiornamento: {{channel}}",
-      "description": "Stampa la versione di rdc, la piattaforma, il canale di aggiornamento e la licenza attiva: il piano dopo l'accesso, \"anonima (FREE per repository)\" senza accesso e \"sconosciuta (offline)\" se il server degli account non è raggiungibile. L'opzione --version continua a stampare solo la versione.",
+      "description": "Stampa la versione di rdc, la piattaforma, il canale di aggiornamento e la licenza attiva: il piano dopo l'accesso, \"anonima (FREE per repository)\" senza accesso e \"sconosciuta (server non raggiungibile)\" se il server degli account non è raggiungibile. L'opzione --version continua a stampare solo la versione.",
       "descriptionShort": "Mostra versione della CLI, canale e licenza attiva",
       "license": {
         "anonymous": "anonima (FREE per repository)",
         "label": "Licenza: {{license}}",
-        "unknown": "sconosciuta (offline)"
+        "unknown": "sconosciuta (offline)",
+        "unreachable": "sconosciuta (server non raggiungibile)"
       },
       "platform": "Piattaforma: {{platform}} {{arch}}"
     },
     "legal": {
       "accepted": "Accettato: versione {{version}} il {{at}} ({{method}})",
+      "acceptedUnreachable": "Accettato: sconosciuto (server non raggiungibile)",
       "binding": "vincolante",
       "credits": "Note su componenti di terze parti: {{command}}",
       "description": "Stampa i link ai documenti legali nella tua lingua con i link inglesi vincolanti, la versione corrente dei Termini di servizio con checksum e URL dell'archivio, l'accettazione registrata (dal server degli account dopo l'accesso, da questa configurazione senza accesso) e l'entità contraente. Le note su componenti di terze parti sono in rdc credits --licenses.",

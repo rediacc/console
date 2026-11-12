@@ -2909,17 +2909,19 @@
     },
     "version": {
       "channel": "Update-Kanal: {{channel}}",
-      "description": "Gibt die rdc-Version, die Plattform, den Update-Kanal und die aktive Lizenz aus: den Tarif bei Anmeldung, „anonym (FREE pro Repository)“ ohne Anmeldung und „unbekannt (offline)“, wenn der Kontoserver nicht erreichbar ist. Das Flag --version gibt weiterhin nur die Version aus.",
+      "description": "Gibt die rdc-Version, die Plattform, den Update-Kanal und die aktive Lizenz aus: den Tarif bei Anmeldung, „anonym (FREE pro Repository)“ ohne Anmeldung und „unbekannt (Server nicht erreichbar)“, wenn der Kontoserver nicht erreichbar ist. Das Flag --version gibt weiterhin nur die Version aus.",
       "descriptionShort": "CLI-Version, Kanal und aktive Lizenz anzeigen",
       "license": {
         "anonymous": "anonym (FREE pro Repository)",
         "label": "Lizenz: {{license}}",
-        "unknown": "unbekannt (offline)"
+        "unknown": "unbekannt (offline)",
+        "unreachable": "unbekannt (Server nicht erreichbar)"
       },
       "platform": "Plattform: {{platform}} {{arch}}"
     },
     "legal": {
       "accepted": "Akzeptiert: Version {{version}} am {{at}} ({{method}})",
+      "acceptedUnreachable": "Akzeptiert: unbekannt (Server nicht erreichbar)",
       "binding": "maßgeblich",
       "credits": "Hinweise zu Drittkomponenten: {{command}}",
       "description": "Gibt die Links zu den rechtlichen Dokumenten in Ihrer Sprache samt den maßgeblichen englischen Links aus, dazu die aktuelle Version der Nutzungsbedingungen mit Prüfsumme und Archiv-URL, die hinterlegte Zustimmung (bei Anmeldung vom Kontoserver, sonst aus dieser Konfiguration) und die Vertragspartei. Hinweise zu Drittkomponenten stehen unter rdc credits --licenses.",

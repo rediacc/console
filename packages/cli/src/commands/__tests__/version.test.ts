@@ -1,5 +1,5 @@
 /**
- * PLAN-terms-acceptance C3: `rdc version`. Offline it reports "unknown (offline)" and still exits
+ * PLAN-terms-acceptance C3: `rdc version`. Offline it reports "unknown (server unreachable)" and still exits
  * 0, anonymously it names FREE per repository, and logged in it shows the plan.
  */
 
@@ -38,14 +38,24 @@ beforeEach(() => {
 });
 
 describe('rdc version', () => {
-  it('offline with a login reports unknown (offline) and does not fail', async () => {
+  it('offline with a login reports unknown (server unreachable) and does not fail', async () => {
     m.tokenState.mockReturnValue({ kind: 'ready', token: {}, serverUrl: 'x' });
     m.fetch.mockRejectedValue(new Error('getaddrinfo ENOTFOUND'));
     await run([]);
     expect(m.handleError).not.toHaveBeenCalled();
     const out = m.print.mock.calls[0][0] as string;
     expect(out).toContain('commands.version.license.label');
+    expect(out).toContain('commands.version.license.unreachable');
+    expect(out).not.toContain('commands.version.license.unknown');
+  });
+
+  it('a reachable server that names no plan stays unknown, not unreachable', async () => {
+    m.tokenState.mockReturnValue({ kind: 'ready', token: {}, serverUrl: 'x' });
+    m.fetch.mockResolvedValue({});
+    await run([]);
+    const out = m.print.mock.calls[0][0] as string;
     expect(out).toContain('commands.version.license.unknown');
+    expect(out).not.toContain('commands.version.license.unreachable');
   });
 
   it('without a login the licence is anonymous and nothing is fetched', async () => {

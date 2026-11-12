@@ -200,6 +200,21 @@ describe('refreshRepoLicensesBatch and a foreign-origin licence', () => {
     expect(warnMock).toHaveBeenCalledTimes(1);
   });
 
+  it.each(['machine_mismatch', 'identity_mismatch'])(
+    'still force-reissues a mismatched same-origin copy kept beside a foreign sibling (%s)',
+    async (status) => {
+      const sibling = {
+        ...scan[0],
+        currentRenewalUrl: `${NEW_ORIGIN}/account/api/v1/licenses/renew`,
+      };
+      statusMock.mockResolvedValueOnce([{ repositoryGuid: OLD, status }]);
+      const { sent } = await refresh([scan[0], sibling]);
+      expect(sent.has(OLD)).toBe(true);
+      expect(sent.get(OLD)?.currentHardExpiresAt).toBeUndefined();
+      expect(sent.get(OLD)?.currentRefreshRecommendedAt).toBeUndefined();
+    }
+  );
+
   it('with adoptOrigin reissues the foreign licence, dropping its current dates', async () => {
     const { sent } = await refresh(scan.slice(0, 2), { adoptOrigin: true });
     expect(sent.has(OLD)).toBe(true);
