@@ -203,9 +203,7 @@ function checkH1Presence() {
     'LegalDocument',
   ];
 
-  // The allowlist above vouches for a component by name, so each entry must itself still render
-  // an <h1>, directly or through another entry. Without this, removing LegalDocument's <h1>
-  // would leave every legal page green.
+  // The allowlist above vouches for a component by name, so each entry must itself still render an <h1>, directly or through another entry. Without this, removing LegalDocument's <h1> would leave every legal page green.
   for (const comp of h1Components) {
     const [file] = globSync(`${WWW_SRC}/**/${comp}.astro`);
     if (!file) continue;

@@ -114,6 +114,7 @@ type LookupError = 'invalid' | 'captcha' | 'miss' | 'error';
 
 interface LookupFormProps {
   t: Translate;
+  lang: Language;
   targetPath: string;
   onBack: () => void;
 }
@@ -126,7 +127,7 @@ const LOOKUP_MESSAGE_KEY: Record<LookupError, string> = {
 };
 
 /** Work-email form. Only the domain is looked up; the answer is a host or a neutral miss, the same for every address at a domain. The address itself only pre-fills the sign-in page, via a URL fragment. */
-const LookupForm: React.FC<LookupFormProps> = ({ t, targetPath, onBack }) => {
+const LookupForm: React.FC<LookupFormProps> = ({ t, lang, targetPath, onBack }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [loading, setLoading] = useState(false);
   const [lookupError, setLookupError] = useState<LookupError | null>(null);
@@ -175,7 +176,9 @@ const LookupForm: React.FC<LookupFormProps> = ({ t, targetPath, onBack }) => {
         ref={inputRef}
         disabled={loading}
       />
-      <p className="region-picker-footer-note">{t('regionPicker.lookup.privacy')}</p>
+      <p className="region-picker-footer-note">
+        <Sentences text={t('regionPicker.lookup.privacy')} lang={lang} />
+      </p>
       {messageKey && !(lookupError === 'captcha' && captcha.failed) && (
         <p className="form-error" role="alert">
           {t(messageKey)}
@@ -436,7 +439,12 @@ const RegionPickerModal: React.FC<RegionPickerModalProps> = ({ lang }) => {
     >
       <div className="overlay-body region-picker">
         {view === 'lookup' ? (
-          <LookupForm t={t} targetPath={targetPath} onBack={() => setView('regions')} />
+          <LookupForm
+            t={t}
+            lang={currentLang}
+            targetPath={targetPath}
+            onBack={() => setView('regions')}
+          />
         ) : (
           <>
             {showCountdown ? (
