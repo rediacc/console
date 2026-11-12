@@ -65,7 +65,7 @@
  * is not it, so declaring a header here would register a gate that does not exist and turn
  * check:ci-gate-bind red. Registration is reported to the root driver instead.
  */
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { createRequire, syncBuiltinESMExports } from 'node:module';
 import os from 'node:os';
@@ -1317,6 +1317,21 @@ function selftest(): number {
   } finally {
     fs.rmSync(untracked, { force: true });
   }
+  // The zero-hit branch: a glob matching nothing names itself on stderr, and with no other path the answer is refused (64), never an empty verdict.
+  const zero = spawnSync(
+    'node',
+    [path.join(ROOT, 'scripts/gen/gen-docs.ts'), '--could-affect', 'scripts/gen/no-such-fil?.json'],
+    { cwd: ROOT, encoding: 'utf-8' }
+  );
+  ck(
+    'the CLI names a glob that matches no file and refuses to answer over nothing',
+    zero.status === 64 &&
+      zero.stderr.includes(
+        'the glob scripts/gen/no-such-fil?.json matches no tracked or untracked file'
+      ) &&
+      zero.stdout === '',
+    { status: zero.status, stderr: zero.stderr, stdout: zero.stdout }
+  );
   const env = couldAffect(ROOT, ['.ci/config/env-manifest.json']);
   ck(
     'the env manifest could move the env-manifest provider',

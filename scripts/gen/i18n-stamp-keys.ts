@@ -252,6 +252,6 @@ const TRANSLATIONS_DIRS = [DEFAULT_TRANSLATIONS_DIR];
 
 if (isEntryPoint(import.meta.filename)) {
   for (const d of TRANSLATIONS_DIRS) {
-    process.exitCode = Math.max(process.exitCode ?? 0, run(process.argv.slice(2), d));
+    process.exitCode = Math.max(Number(process.exitCode ?? 0), run(process.argv.slice(2), d));
   }
 }
