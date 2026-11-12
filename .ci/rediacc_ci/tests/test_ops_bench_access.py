@@ -642,3 +642,66 @@ def test_preflight_never_fails(capsys):
 def test_main_preflight_returns_zero_without_credentials(monkeypatch):
     monkeypatch.setenv("CI", "true")
     assert ba.main(["preflight"]) == 0
+
+
+STRIPE_WEBHOOK = "/account/api/v1/webhooks/stripe"
+
+
+def _blocked(expr: str, *, method: str, path: str, ip: str, host: str = BENCH_HOST) -> bool:
+    """Evaluate the rule expression for one request by its own clauses: the rule is `(host) and (not ip) and (not (...exempt...))`, and a request is blocked when every clause holds."""
+    clauses = expr[1:-1].split(") and (")
+    for clause in clauses:
+        if clause.startswith("http.host in"):
+            holds = '"%s"' % host in clause
+        elif clause.startswith("not ip.src in"):
+            holds = ip not in clause[clause.index("{") + 1 : clause.index("}")].split()
+        elif clause.startswith("not ("):
+            exempt = False
+            for alt in clause[len("not (") : -1].split(" or "):
+                m = alt.split(" and ")
+                want_method = m[0].split('"')[1]
+                paths = (
+                    m[1].split("{")[1].rstrip("}").replace('"', "").split()
+                    if " in {" in m[1]
+                    else [m[1].split('"')[1]]
+                )
+                exempt = exempt or (method == want_method and path in paths)
+            holds = not exempt
+        else:
+            raise AssertionError("unknown clause: " + clause)
+        if not holds:
+            return False
+    return True
+
+
+def test_the_rule_admits_only_a_post_of_the_exact_stripe_webhook_path():
+    """Stripe's deliveries come from rotating AWS addresses; the handler verifies Stripe-Signature, so the exact path is open to POST from any IP and nothing broader."""
+    expr = ba.expression(HOSTS, ["198.51.100.7"])
+    stranger = "203.0.113.9"
+    assert not _blocked(expr, method="POST", path=STRIPE_WEBHOOK, ip=stranger)
+    assert _blocked(expr, method="POST", path="/account/api/v1/auth/login", ip=stranger)
+    assert _blocked(expr, method="POST", path=STRIPE_WEBHOOK + "/x", ip=stranger)
+    assert _blocked(expr, method="POST", path="/account/api/v1/webhooks", ip=stranger)
+    assert _blocked(expr, method="GET", path=STRIPE_WEBHOOK, ip=stranger)
+    assert _blocked(expr, method="PUT", path=STRIPE_WEBHOOK, ip=stranger)
+    assert not _blocked(expr, method="GET", path="/v1/health", ip=stranger)
+    # The rule covers both bench hosts with the same exemption.
+    assert not _blocked(
+        expr, method="POST", path=STRIPE_WEBHOOK, ip=stranger, host=PROXY_BENCH_HOST
+    )
+
+
+def test_an_allowlisted_ip_still_passes_everything():
+    expr = ba.expression(HOSTS, ["198.51.100.7"])
+    for method, path in (
+        ("POST", "/account/api/v1/auth/login"),
+        ("GET", "/"),
+        ("POST", STRIPE_WEBHOOK),
+    ):
+        assert not _blocked(expr, method=method, path=path, ip="198.51.100.7")
+
+
+def test_with_no_ips_only_the_exempt_requests_pass():
+    expr = ba.expression(HOSTS, [])
+    assert not _blocked(expr, method="POST", path=STRIPE_WEBHOOK, ip="203.0.113.9")
+    assert _blocked(expr, method="POST", path="/account/api/v1/auth/login", ip="203.0.113.9")

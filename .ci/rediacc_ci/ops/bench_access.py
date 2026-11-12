@@ -58,6 +58,8 @@ STAMP_MARK = " | added "
 RULE_DESCRIPTION = "rediacc bench IP allowlist (rediacc_ci.ops.bench_access)"
 # GET of these paths is never blocked: ops-telemetry-probe.yml probes them from runners with no fixed IP.
 EXEMPT_PATHS = ("/account/api/v1/health", "/v1/health")
+# POST of this exact path is never blocked either: Stripe delivers webhooks from rotating AWS addresses, and the handler verifies the Stripe-Signature header (an unsigned POST gets 401), so admitting the path opens nothing unauthenticated.
+EXEMPT_POST_PATH = "/account/api/v1/webhooks/stripe"
 RUN = "PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access "
 COMMAND = RUN + "add-current"
 # The one command that DECIDES whether a bench 403 is this rule: it GETs the bench root (no EXEMPT_PATHS entry, and no account API permission applies to it) and runs add-current only when that answers 403, so an ambiguous 403 (the CLI envelope's bare "HTTP 403") is settled and fixed in one step.
@@ -132,13 +134,17 @@ def normalize_ip(text: str) -> str:
 
 
 def expression(hosts: list[str], ips: list[str]) -> str:
-    """The rule expression: a bench host, a source outside `ips`, and not a GET of an exempt path. With no IPs everything but the exempt GET is blocked."""
+    """The rule expression: a bench host, a source outside `ips`, and not a GET of an exempt path or a POST of the Stripe webhook path. With no IPs everything but those is blocked."""
     host_set = " ".join('"%s"' % h for h in hosts)
     path_set = " ".join('"%s"' % p for p in EXEMPT_PATHS)
     parts = ["http.host in {%s}" % host_set]
     if ips:
         parts.append("not ip.src in {%s}" % " ".join(ips))
-    parts.append('not (http.request.method eq "GET" and http.request.uri.path in {%s})' % path_set)
+    parts.append(
+        'not (http.request.method eq "GET" and http.request.uri.path in {%s}'
+        ' or http.request.method eq "POST" and http.request.uri.path eq "%s")'
+        % (path_set, EXEMPT_POST_PATH)
+    )
     return "(" + ") and (".join(parts) + ")"
 
 
