@@ -35,6 +35,8 @@ def test_template_web_env_matches_elite():
 
 
 def test_control_new_elite_variable_is_detected():
-    elite = ELITE.read_text().replace("      - SMTP_HOST=", "      - NEW_ELITE_VARIABLE=1\n      - SMTP_HOST=", 1)
+    elite = ELITE.read_text().replace(
+        "      - SMTP_HOST=", "      - NEW_ELITE_VARIABLE=1\n      - SMTP_HOST=", 1
+    )
     missing, _ = _diff(elite, TEMPLATE.read_text())
     assert missing == {"NEW_ELITE_VARIABLE"}
