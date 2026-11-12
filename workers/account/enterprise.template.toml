@@ -62,6 +62,14 @@ bucket_name = "backups-@@COMPANY@@"@@R2_JURISDICTION@@
 binding = "EXECUTOR"
 service = "proxy-@@COMPANY@@"
 
+# The signer of the company's contract region, reached only by this binding: a Worker without it refuses to start
+# (private/account/src/entry/cloudflare.ts). The props are fixed at deploy time and name the signing scope.
+[[services]]
+binding = "LICENSE_SIGNER"
+service = "@@SIGNER@@"
+entrypoint = "LicenseSigner"
+props = { tier = "enterprise", companyId = "@@COMPANY_ID@@", region = "@@REGION@@" }
+
 [[queues.producers]]
 binding = "BACKUP_REPLICATE_QUEUE"
 queue = "backup-replicate-@@COMPANY@@"

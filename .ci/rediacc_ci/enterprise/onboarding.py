@@ -507,7 +507,13 @@ def live_actions(
         if not uuid:
             raise OnboardingError("company %s: the d1 step left no database id" % plan.company_id)
         configs.write(
-            plan.name, plan.region, uuid, allow_ips=plan.request.allow_ips, out_root=out_root
+            plan.name,
+            plan.region,
+            uuid,
+            company_id=plan.company_id,
+            bench=plan.request.bench,
+            allow_ips=plan.request.allow_ips,
+            out_root=out_root,
         )
         if plan.environment == pc.COMPANY_ENVIRONMENT:
             return ""
@@ -519,7 +525,13 @@ def live_actions(
                 "company %s: the account config has no single ENVIRONMENT line" % plan.company_id
             )
         text = text.replace(line, 'ENVIRONMENT = "%s"' % plan.environment)
-        reasons = configs.account_refusals(plan.name, plan.region, text)
+        reasons = configs.account_refusals(
+            plan.name,
+            plan.region,
+            text,
+            company_id=plan.company_id,
+            bench=plan.request.bench,
+        )
         if reasons:
             raise OnboardingError("company %s: %s" % (plan.company_id, "; ".join(reasons)))
         account.write_text(text, encoding="utf-8")

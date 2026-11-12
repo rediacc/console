@@ -2,7 +2,7 @@
 
 `generate(company, region, d1_id)` fills `workers/proxy/wrangler.template.toml` (through `proxy_configs.company_target` and `render`, so the shared output stays byte-identical) and `workers/account/enterprise.template.toml`, then runs `proxy_configs.config_refusals` and `account_refusals` plus the company's own account checks over the result and raises `ConfigError` naming each refusal. `write` puts the two texts at gitignored `workers/{proxy,account}/enterprise.<company>.toml`, a name that escapes `proxy_configs.CONFIG_GLOB`, so `check:ci-proxy-configs` never reads a company file and no company name reaches a tracked path.
 
-The host names come from `well_known.PRODUCT_DOMAIN` and regions.json, never typed here. The account config carries no signing secret name: a company Worker reaches its region's signer by binding (S2-S4), and holds neither the private key nor `FREE_LICENSE_HMAC_KEY`.
+The host names come from `well_known.PRODUCT_DOMAIN` and regions.json, never typed here. The account config carries no signing secret name: a company Worker reaches its region's signer by a `LICENSE_SIGNER` service binding (entrypoint `LicenseSigner`, service `signer-<region>` or `signer-bench-<region>` with `bench=True`, props `{tier = "enterprise", companyId, region}`, the same props `deploy_signer.expected_props` states), and holds neither the private key nor `FREE_LICENSE_HMAC_KEY`.
 """
 
 from __future__ import annotations
@@ -76,19 +76,71 @@ def proxy_refusals(
     return pc.config_refusals(text, target, pc._region_tokens(regions))
 
 
-def account_refusals(
-    company: str, region: str, text: str, *, root: pathlib.Path | None = None
+def signer_name(region: str, *, bench: bool) -> str:
+    return ("signer-bench-%s" if bench else "signer-%s") % region
+
+
+def signer_binding_refusals(
+    config: dict, region: str, *, bench: bool, company_id: str | None
 ) -> list[str]:
-    """Why `text` may not stand as the company's account config; empty when it may."""
+    """Why the config's `LICENSE_SIGNER` binding is not the company's: exactly one, to its region's signer, entrypoint `LicenseSigner`, props `{tier, companyId, region}`. The count is the presence rule `requireSignerOnly` (private/account/src/entry/cloudflare.ts) applies; the rest is the exact value."""
+    found = [
+        s
+        for s in config.get("services") or []
+        if isinstance(s, dict) and s.get("binding") == "LICENSE_SIGNER"
+    ]
+    if len(found) != 1:
+        return ["%d LICENSE_SIGNER service binding(s), not 1" % len(found)]
+    entry = found[0]
+    out: list[str] = []
+    expected = signer_name(region, bench=bench)
+    if entry.get("service") != expected:
+        out.append("LICENSE_SIGNER service is %r, not %r" % (entry.get("service"), expected))
+    if entry.get("entrypoint") != "LicenseSigner":
+        out.append("LICENSE_SIGNER entrypoint is %r, not 'LicenseSigner'" % entry.get("entrypoint"))
+    props = entry.get("props")
+    if not isinstance(props, dict) or set(props) != {"tier", "companyId", "region"}:
+        return [*out, "LICENSE_SIGNER props are %r, not tier, companyId and region" % (props,)]
+    if props["tier"] != "enterprise":
+        out.append("LICENSE_SIGNER props.tier is %r, not 'enterprise'" % props["tier"])
+    if props["region"] != region:
+        out.append("LICENSE_SIGNER props.region is %r, not %r" % (props["region"], region))
+    if not isinstance(props["companyId"], str) or not props["companyId"]:
+        out.append("LICENSE_SIGNER props.companyId is empty")
+    elif company_id is not None and props["companyId"] != company_id:
+        out.append(
+            "LICENSE_SIGNER props.companyId is %r, not %r" % (props["companyId"], company_id)
+        )
+    return out
+
+
+def account_refusals(
+    company: str,
+    region: str,
+    text: str,
+    *,
+    company_id: str | None = None,
+    bench: bool | None = None,
+    root: pathlib.Path | None = None,
+) -> list[str]:
+    """Why `text` may not stand as the company's account config; empty when it may. `bench` defaults to `vars.ENVIRONMENT == "bench"`; a None `company_id` checks only that one is present."""
     root = _root(root)
     regions, entry = _region(region, root)
     all_regions = pc._region_tokens(regions)
     own = frozenset({region})
-    out = pc.account_refusals(text, "proxy-%s" % company, company, all_regions, own)
+    out = [
+        r
+        for r in pc.account_refusals(text, "proxy-%s" % company, company, all_regions, own)
+        # The shared rule knows `signer-<key>` for a shared target only; the company's binding is checked below.
+        if not r.startswith("[[services]] LICENSE_SIGNER service")
+    ]
     try:
         config = tomllib.loads(text)
     except tomllib.TOMLDecodeError:
         return out
+    if bench is None:
+        bench = (config.get("vars") or {}).get("ENVIRONMENT") == "bench"
+    out.extend(signer_binding_refusals(config, region, bench=bench, company_id=company_id))
     host = "%s.%s" % (company, PRODUCT_DOMAIN)
     foreign = (all_regions | pc.CHANNEL_TOKENS) - own
 
@@ -97,9 +149,11 @@ def account_refusals(
             out.append("%s is %r, not %r" % (label, got, expected))
 
     want("name", config.get("name"), "account-%s" % company)
-    for token in pc.NAME_TOKEN_SPLIT.split(str(config.get("name", "")).lower()):
-        if token in foreign:
-            out.append("name %r names %s, which is not %s" % (config.get("name"), token, company))
+    out.extend(
+        "name %r names %s, which is not %s" % (config.get("name"), token, company)
+        for token in pc.NAME_TOKEN_SPLIT.split(str(config.get("name", "")).lower())
+        if token in foreign
+    )
     want("routes", config.get("routes"), [{"pattern": host + "/*", "zone_name": PRODUCT_DOMAIN}])
     variables = config.get("vars") or {}
     want("vars.REGION", variables.get("REGION"), region)
@@ -121,14 +175,16 @@ def account_refusals(
     buckets = [b.get("bucket_name") for b in config.get("r2_buckets") or []]
     want("r2 bucket names", buckets, ["configs-%s" % company, "backups-%s" % company])
     jurisdiction = entry.get("r2Jurisdiction")
-    for bucket in config.get("r2_buckets") or []:
-        if bucket.get("jurisdiction") != jurisdiction:
-            out.append(
-                "bucket %r jurisdiction is %r, not %r"
-                % (bucket.get("bucket_name"), bucket.get("jurisdiction"), jurisdiction)
-            )
+    out.extend(
+        "bucket %r jurisdiction is %r, not %r"
+        % (bucket.get("bucket_name"), bucket.get("jurisdiction"), jurisdiction)
+        for bucket in config.get("r2_buckets") or []
+        if bucket.get("jurisdiction") != jurisdiction
+    )
     queues = [q.get("queue") for q in (config.get("queues") or {}).get("producers") or []]
     want("queue producers", queues, ["backup-replicate-%s" % company])
+    bindings = sorted(str(s.get("binding")) for s in config.get("services") or [])
+    want("service bindings", bindings, ["EXECUTOR", "LICENSE_SIGNER"])
     out.extend(
         "the text names %s; a company account Worker never holds it" % marker
         for marker in SIGNING_NAMES
@@ -142,15 +198,19 @@ def generate(
     region: str,
     d1_id: str,
     *,
+    company_id: str,
+    bench: bool = False,
     allow_ips: tuple[str, ...] = (),
     root: pathlib.Path | None = None,
 ) -> Generated:
-    """The proxy and account config texts of one company, refused with `ConfigError` when either breaks a rule."""
+    """The proxy and account config texts of one company, refused with `ConfigError` when either breaks a rule. `company_id` is the control row's id the signer scopes the company by; `bench` binds `signer-bench-<region>`."""
     root = _root(root)
     try:
         names.check(company)
     except names.CompanyNameError as exc:
         raise ConfigError(str(exc)) from None
+    if not company_id:
+        raise ConfigError("company %s has no company id for the LICENSE_SIGNER props" % company)
     if not D1_ID_RE.fullmatch(d1_id):
         raise ConfigError("the D1 database id %r is not a uuid" % (d1_id,))
     regions, entry = _region(region, root)
@@ -169,6 +229,8 @@ def generate(
         "HEADER": HEADER,
         "NAME": "account-%s" % company,
         "COMPANY": company,
+        "COMPANY_ID": company_id,
+        "SIGNER": signer_name(region, bench=bench),
         "ROUTE_ENTRY": '{ pattern = "%s.%s/*", zone_name = "%s" }'
         % (company, PRODUCT_DOMAIN, PRODUCT_DOMAIN),
         "HOST": "%s.%s" % (company, PRODUCT_DOMAIN),
@@ -188,7 +250,12 @@ def generate(
         raise ConfigError("%s leaves %s unfilled" % (ACCOUNT_TEMPLATE, ", ".join(left)))
     reasons = [
         "proxy: " + r for r in pc.config_refusals(proxy, target, pc._region_tokens(regions))
-    ] + ["account: " + r for r in account_refusals(company, region, account, root=root)]
+    ] + [
+        "account: " + r
+        for r in account_refusals(
+            company, region, account, company_id=company_id, bench=bench, root=root
+        )
+    ]
     if reasons:
         raise ConfigError("; ".join(reasons))
     return Generated(proxy=proxy, account=account)
@@ -199,12 +266,16 @@ def write(
     region: str,
     d1_id: str,
     *,
+    company_id: str,
+    bench: bool = False,
     allow_ips: tuple[str, ...] = (),
     root: pathlib.Path | None = None,
     out_root: pathlib.Path | None = None,
 ) -> list[pathlib.Path]:
     """Generate and write both files under `out_root` (default: the repository), returning the paths."""
-    out = generate(company, region, d1_id, allow_ips=allow_ips, root=root)
+    out = generate(
+        company, region, d1_id, company_id=company_id, bench=bench, allow_ips=allow_ips, root=root
+    )
     base = _root(out_root)
     targets = (
         (base.joinpath(*pc.PROXY_REL) / ("enterprise.%s.toml" % company), out.proxy),
