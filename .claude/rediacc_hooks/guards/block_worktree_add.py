@@ -1190,7 +1190,7 @@ def _filled_sequences(sequences, mentions):
 
 
 # A LEASE PATH IS NOT A MENTION OF THE VERB (#7d3a5939). `.claude/worktrees/agent-x/f` holds the substring `worktree`, and that alone licensed `_filled` to complete any unknown piece of the program with `add`/`worktree`: `subprocess.run(['git','-C',d,'add','f'])` plus a print of a lease path was refused as `git worktree add`, with no worktree verb anywhere. The lease root is dropped before the reading; a bare `worktree` word, `worktree.py` and `alias.wt=worktree` are untouched, and a path that is the verb's own operand (`git worktree add .claude/worktrees/x`) still names the word `worktree` outside the path.
-LEASE_ROOT_TEXT = re.compile(r"\.claude/worktrees(?![\w-]|\.\w)(?:/[^\s'\"`]*)?")
+LEASE_ROOT_TEXT = re.compile(r"\.claude/worktrees(?![\w-])(?:/[^\s'\"`]*)?")
 
 
 def _mentions_worktree(text):

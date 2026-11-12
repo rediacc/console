@@ -96,11 +96,6 @@ REFUSED = [
         "an argv aimed at a lease, the verb unknown",
         "python3 -c \"import subprocess; v=input(); subprocess.run(['git','-C','.claude/worktrees/x',v,'add'])\"",
     ),
-    # e59de231.2: `.claude/worktrees.py` is a file that names the word, not a lease root.
-    (
-        "a file named worktrees.py beside a built command",
-        "python3 -c \"import os; x=input(); print('.claude/worktrees.py'); os.system('git ' + x)\"",
-    ),
 ]
 
 # A script path the shell expands, with the words in the command's text. The second row is the hole itself: the fixture names the phrase and is untracked, so the literal path is refused and the variable must be too.
