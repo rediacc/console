@@ -38,8 +38,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # changes nothing about what gets installed today and everything about whether the
 # same Dockerfile builds the same image tomorrow.
 #
-# The same version is pinned in .devcontainer/Dockerfile and in the Install agent-browser step of
-# .github/workflows/ci-quality.yml; the three move together.
+# The same version is pinned in .devcontainer/Dockerfile; the Install agent-browser step of
+# .github/workflows/ci-quality.yml reads that pin (`rediacc_ci.ci.agent_browser_pin read`) instead of
+# carrying a third copy, so the two Dockerfiles move together and the workflow follows.
 #
 # NPM_BEFORE is the release-age cutoff (`PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age
 # npm-before`, passed by every build site as a build-arg). A global install resolves live, with

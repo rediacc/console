@@ -337,3 +337,47 @@ def test_a_server_that_survives_sigkill_is_named_on_stderr(
     err = capsys.readouterr().err
     assert "still alive 10 s after SIGKILL" in err
     assert "pid %d" % started[0].pid in err
+
+
+def test_wait_for_server_names_a_server_that_exited_before_listening() -> None:
+    """748cdf09.1: the early-exit poll stops the wait at once instead of burning SERVER_WAIT_SECONDS."""
+    dead = subprocess.Popen([sys.executable, "-c", "raise SystemExit(3)"])
+    dead.wait()
+    with pytest.raises(mpd.ServerExitedError, match="exited with code 3"):
+        mpd.wait_for_server(mpd.pick_port(), dead)
+
+
+@pytest.mark.usefixtures("browser")
+def test_main_retries_a_server_that_exits_and_gives_up_after_three_attempts(
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """748cdf09.1/.2: three attempts in all (two retries), each on a fresh port, and the last exit is reported with rc=1."""
+    ports: list[int] = []
+    real = mpd.pick_port
+
+    def spy() -> int:
+        port = real()
+        ports.append(port)
+        return port
+
+    def always_exited(port: int, _server: Any = None) -> None:
+        raise mpd.ServerExitedError("the server on %d exited with code 1 before it listened" % port)
+
+    class Gone:
+        pid = 1
+        returncode = 1
+
+        def __init__(self, *_a: Any, **_k: Any) -> None:
+            pass
+
+        def poll(self) -> int:
+            return 1
+
+    monkeypatch.setattr(mpd, "pick_port", spy)
+    monkeypatch.setattr(mpd.subprocess, "Popen", Gone)
+    monkeypatch.setattr(mpd, "wait_for_server", always_exited)
+    assert mpd.main([str(tmp_path / "o.csv")], www=_site(tmp_path)) == 1
+    assert len(ports) == 3
+    assert "exited with code 1 before it listened" in capsys.readouterr().err
