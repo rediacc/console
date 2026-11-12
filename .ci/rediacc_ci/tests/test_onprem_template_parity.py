@@ -1,0 +1,40 @@
+"""The Elite renet template's web service keeps the same environment as private/elite's compose, minus the networking keys."""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import yaml
+
+ROOT = Path(__file__).resolve().parents[3]
+ELITE = ROOT / "private/elite/docker-compose.yml"
+TEMPLATE = ROOT / "packages/cli/templates/elite/docker-compose.yml"
+
+# Elite names the host through SYSTEM_DOMAIN; the template names it ELITE_DOMAIN and lets Traefik terminate TLS.
+ELITE_ONLY = {"SYSTEM_DOMAIN"}
+TEMPLATE_ONLY = {"ENABLE_HTTPS", "UPSTREAM_URL", "UPSTREAM_API_KEY"}
+
+
+def _web_env_keys(text: str) -> set[str]:
+    env = yaml.safe_load(text)["services"]["web"]["environment"]
+    if isinstance(env, dict):
+        return set(env)
+    return {item.split("=", 1)[0] for item in env}
+
+
+def _diff(elite_text: str, template_text: str) -> tuple[set[str], set[str]]:
+    elite = _web_env_keys(elite_text) - ELITE_ONLY
+    template = _web_env_keys(template_text) - TEMPLATE_ONLY
+    return elite - template, template - elite
+
+
+def test_template_web_env_matches_elite():
+    missing, extra = _diff(ELITE.read_text(), TEMPLATE.read_text())
+    assert missing == set(), f"Elite has web variables the template lacks: {sorted(missing)}"
+    assert extra == set(), f"template-only web variables: {sorted(extra)}"
+
+
+def test_control_new_elite_variable_is_detected():
+    elite = ELITE.read_text().replace("      - SMTP_HOST=", "      - NEW_ELITE_VARIABLE=1\n      - SMTP_HOST=", 1)
+    missing, _ = _diff(elite, TEMPLATE.read_text())
+    assert missing == {"NEW_ELITE_VARIABLE"}

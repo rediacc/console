@@ -1,0 +1,66 @@
+#!/bin/bash
+
+REQUIRED_VARS=(
+  ELITE_DOMAIN
+  ELITE_STORE_DOMAIN
+  TAG
+  RUSTFS_ACCESS_KEY
+  RUSTFS_SECRET_KEY
+  ACCOUNT_CONFIG_SERVER_KEY
+  ACCOUNT_ED25519_PRIVATE_KEY
+  ACCOUNT_ED25519_PUBLIC_KEY
+  ACCOUNT_X25519_PRIVATE_KEY
+  ACCOUNT_X25519_PUBLIC_KEY
+  ACCOUNT_SERVER_API_KEY
+  ACCOUNT_JWT_SECRET
+)
+
+load_secrets() {
+  if [[ ! -f secrets.env ]]; then
+    echo "secrets.env is missing; copy secrets.env.example and fill it in" >&2
+    return 1
+  fi
+  set -a
+  source ./secrets.env
+  set +a
+
+  local var
+  for var in "${REQUIRED_VARS[@]}"; do
+    if [[ -z "${!var:-}" ]]; then
+      echo "secrets.env: ${var} is not set" >&2
+      return 1
+    fi
+  done
+  if [[ -z "${DELEGATION_CERT_BASE64:-}" && ! -f data/web/delegation-cert.json ]]; then
+    echo "secrets.env: DELEGATION_CERT_BASE64 is not set and data/web/delegation-cert.json is absent" >&2
+    return 1
+  fi
+}
+
+up() {
+  load_secrets || return 1
+  mkdir -p data/web data/rustfs
+
+  # Local-first image path: load the shipped tarball when the image is not present yet.
+  local image="${ELITE_IMAGE:-ghcr.io/rediacc/server:${TAG}}"
+  if [[ -f images/server.tar ]] && ! docker image inspect "$image" >/dev/null 2>&1; then
+    docker load -i images/server.tar || return 1
+  fi
+
+  renet compose -- up -d
+}
+
+down() {
+  load_secrets || return 1
+  renet compose -- down
+}
+
+info() {
+  load_secrets || return 1
+  renet compose -- ps
+}
+
+health() {
+  load_secrets || return 1
+  curl -fsS --max-time 10 "https://${ELITE_DOMAIN}/health" >/dev/null
+}
