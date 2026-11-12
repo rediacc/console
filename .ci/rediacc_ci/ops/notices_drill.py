@@ -119,12 +119,13 @@ def event_rows(
     ids: Sequence[str],
     sub_id: str,
     user_id: str,
-    org_id: str,
+    org_id: str | None,
     team_id: str | None,
     now: datetime,
 ) -> list[str]:
     """Two INSERT statements shaped like SubscriptionService's `repo_license_issued` log call (subscription.service.ts ~832): the data holds the GUIDs, kind, dates and the machine id, never a name."""
-    for ident in (sub_id, user_id, org_id, *ids, *([team_id] if team_id else [])):
+    optional = [i for i in (org_id, team_id) if i]
+    for ident in (sub_id, user_id, *ids, *optional):
         if not UUID.match(ident):
             raise DrillError("refusing a non-UUID id in an insert: %r" % ident)
     plans = (
@@ -165,7 +166,7 @@ def event_rows(
                 cust=sql_literal(user_id),
                 team=sql_literal(team_id) if team_id else "NULL",
                 data=sql_literal(json.dumps(data, separators=(",", ":"))),
-                org=sql_literal(org_id),
+                org=sql_literal(org_id) if org_id else "NULL",
                 ts=sql_literal(iso(issued)),
             )
         )
@@ -507,7 +508,11 @@ def _step_plant(d: Deps, ev: Evidence, st: State) -> None:
     if len(subs) != 1:
         ev.add(5, "plant", 1, "subscription rows=%d" % len(subs))
         raise DrillError("the throwaway subscription row is missing")
-    st.sub_id, org_id = str(subs[0]["id"]), str(subs[0].get("org_id") or "")
+    # A registered user's subscription carries no org_id (auth.service.ts registers the org by
+    # customer_id), and the real repo_license_issued log writes that null, so the planted rows do too.
+    st.sub_id, sub_org = str(subs[0]["id"]), str(subs[0].get("org_id") or "") or None
+    orgs = d.rows(q("SELECT id FROM organizations WHERE customer_id = $u", u=sql_literal(user_id)))
+    org_id = sub_org or (str(orgs[0]["id"]) if len(orgs) == 1 else "")
     refusal = shard_check(
         d.rows(
             q(
@@ -523,7 +528,7 @@ def _step_plant(d: Deps, ev: Evidence, st: State) -> None:
     team_id = str(teams[0]["id"]) if teams else None
     ids = [d.new_uuid(), d.new_uuid()]
     try:
-        statements = event_rows(st.planted, ids, st.sub_id, user_id, org_id, team_id, d.now())
+        statements = event_rows(st.planted, ids, st.sub_id, user_id, sub_org, team_id, d.now())
     except DrillError as exc:
         ev.add(5, "plant", 1, str(exc))
         raise

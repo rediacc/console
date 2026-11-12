@@ -36,7 +36,13 @@ class Fake:
     """Records every call in order; D1 is a small in-memory store keyed by the SQL's shape."""
 
     def __init__(
-        self, tmp_path, mails_per_run=1, mail_text=GOOD_MAIL, shard=None, two_factor=False
+        self,
+        tmp_path,
+        mails_per_run=1,
+        mail_text=GOOD_MAIL,
+        shard=None,
+        two_factor=False,
+        sub_org=ORG,
     ):
         self.calls: list[str] = []
         self.sql: list[str] = []
@@ -46,6 +52,7 @@ class Fake:
         self.mail_text = mail_text
         self.shard = shard
         self.two_factor = two_factor
+        self.sub_org = sub_org
         self.runs = 0
         self.user_present = False
         self.events: set[str] = set()
@@ -130,7 +137,7 @@ class Fake:
         if sql.startswith("SELECT id FROM users"):
             return [{"id": USER}] if self.user_present else []
         if sql.startswith("SELECT id, org_id FROM subscriptions"):
-            return [{"id": SUB, "org_id": ORG}]
+            return [{"id": SUB, "org_id": self.sub_org}]
         if sql.startswith("SELECT id FROM subscriptions"):
             return [{"id": SUB}]
         if sql.startswith("SELECT shard FROM subscription_shards"):
@@ -190,7 +197,7 @@ class Fake:
 
 
 def drill(tmp_path, capsys, **kw):
-    init = ("mails_per_run", "mail_text", "shard", "two_factor")
+    init = ("mails_per_run", "mail_text", "shard", "two_factor", "sub_org")
     fake = Fake(tmp_path, **{k: v for k, v in kw.items() if k in init})
     for key in ("unread", "notice_name"):
         if key in kw:
@@ -237,6 +244,21 @@ def test_planted_events_are_two_realistic_issued_rows(tmp_path, capsys):
     assert HARD in inserts[0]
     assert FRESH in inserts[1]
     assert nd.iso(NOW) == "2026-11-12T10:30:00.000Z"
+
+
+def test_a_registered_subscription_without_an_org_id_plants_null_like_the_real_log(
+    tmp_path, capsys
+):
+    """Registration leaves subscriptions.org_id null and the real repo_license_issued log writes that null (bench 2026-11-12: STEP 5 refused '' as a non-UUID id)."""
+    fake, rc, out = drill(tmp_path, capsys, sub_org=None)
+    assert rc == 0, out.err
+    inserts = [s for s in fake.sql if s.startswith("INSERT INTO event_log")]
+    assert len(inserts) == 2
+    for sql in inserts:
+        assert ORG not in sql
+        assert TEAM in sql
+    # the team is still found, through the organization the user registered
+    assert any(s.startswith("SELECT id FROM teams") and ORG in s for s in fake.sql)
 
 
 def test_a_second_captured_mail_fails_the_run(tmp_path, capsys):
