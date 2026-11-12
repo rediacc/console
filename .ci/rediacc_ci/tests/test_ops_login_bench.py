@@ -61,6 +61,7 @@ class FakeApi:
         accept_records: bool = True,
         status_body: dict | None = None,
         reread_status: int = 0,
+        reread_body: dict | None = None,
     ):
         self.calls: list[tuple[str, dict]] = []
         self.gets: list[str] = []
@@ -68,6 +69,7 @@ class FakeApi:
         self.accept_records = accept_records
         self.status_body = status_body
         self.reread_status = reread_status
+        self.reread_body = reread_body
         self.challenge = challenge
         self.verify = verify
         self.fail = fail or {}
@@ -76,6 +78,8 @@ class FakeApi:
         self.gets.append(route)
         if self.reread_status and len(self.gets) > 1:
             return self.reread_status, {}
+        if self.reread_body is not None and len(self.gets) > 1:
+            return 200, self.reread_body
         if route in self.fail:
             return self.fail[route], {}
         if self.status_body is not None:
@@ -669,4 +673,13 @@ def test_an_accept_the_status_does_not_reflect_stops_the_run():
 def test_a_failed_reread_after_the_accept_stops_the_run_and_says_so():
     api = FakeApi(satisfied=False, reread_status=503)
     with pytest.raises(login_bench.LoginError, match=r"re-read GET .* answered HTTP 503"):
+        _login(FakeRunner(), api=api)
+
+
+def test_a_reread_satisfied_for_another_version_stops_the_run():
+    api = FakeApi(
+        satisfied=False,
+        reread_body={"satisfied": True, "current": {"version": "2026-12-01", "sha256": "b" * 64}},
+    )
+    with pytest.raises(login_bench.LoginError, match="it reports '2026-12-01'"):
         _login(FakeRunner(), api=api)

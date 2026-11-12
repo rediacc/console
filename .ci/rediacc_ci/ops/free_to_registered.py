@@ -596,19 +596,16 @@ def _step_free_refused(d: Deps, ev: Evidence, item: FreeIssued, stamp: str) -> N
         None,
     )
     after = _window_count(d, d.now())
-    err = answer.get("error") if isinstance(answer.get("error"), dict) else answer
-    # error-handler.ts spreads an AppError's details beside `error` and `code`, and the CLI reads
-    # them the same way (account-client.ts termsRequiredError: `parsed.details ?? parsed`).
-    details = err.get("details") if isinstance(err, dict) else None
-    details = details if isinstance(details, dict) else (err if isinstance(err, dict) else {})
-    code = err.get("code") if isinstance(err, dict) else None
+    # private/account/src/middleware/error-handler.ts spreads an AppError's details beside `error`
+    # (the message) and `code`; it writes no nested `details` object for an AppError.
+    code, flag = answer.get("code"), answer.get("flag")
     bad: list[str] = []
     if status != 403:
         bad.append("http=%d want 403" % status)
     if code != TERMS_REQUIRED:
         bad.append("code=%r want %s" % (code, TERMS_REQUIRED))
-    if details.get("flag") != "--accept-terms":
-        bad.append("details.flag=%r want --accept-terms" % details.get("flag"))
+    if flag != "--accept-terms":
+        bad.append("flag=%r want --accept-terms" % flag)
     if before != after or before < 0:
         bad.append("window rows %d -> %d" % (before, after))
     ev.add(
