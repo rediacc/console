@@ -5,6 +5,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { isPluralGroup } from './shared/plural-group.js';
 import { resolveRequiredDirOption } from './shared/require-path-option.js';
 
 // Cache for locale coverage data
@@ -31,7 +32,10 @@ const countKeys = (obj, prefix = '') => {
   for (const [key, value] of Object.entries(obj)) {
     const fullPath = prefix ? `${prefix}.${key}` : key;
 
-    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    if (isPluralGroup(value)) {
+      // A plural group counts once, by its `other` key: locales hold different CLDR category sets by design.
+      count += 1;
+    } else if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
       count += countKeys(value, fullPath);
     } else {
       count += 1;

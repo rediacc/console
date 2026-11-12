@@ -6,6 +6,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { isPluralGroup } from './shared/plural-group.js';
 import { resolveRequiredDirOption } from './shared/require-path-option.js';
 
 // Cache for loaded locale data
@@ -32,7 +33,10 @@ const flattenKeys = (obj, prefix = '') => {
   for (const [key, value] of Object.entries(obj)) {
     const fullPath = prefix ? `${prefix}.${key}` : key;
 
-    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+    if (isPluralGroup(value)) {
+      // One leaf per group: locales hold different CLDR category sets by design.
+      keys.push(fullPath);
+    } else if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
       keys.push(...flattenKeys(value, fullPath));
     } else {
       keys.push(fullPath);
