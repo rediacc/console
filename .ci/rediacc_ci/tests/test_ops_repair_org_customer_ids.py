@@ -6,6 +6,7 @@ No Cloudflare credential and no network: the fake runner executes the tool's rea
 from __future__ import annotations
 
 import argparse
+import json
 import sqlite3
 
 import pytest
@@ -223,3 +224,18 @@ def test_unbound_without_the_cloudflare_env_it_reexecutes_under_the_profile(
     monkeypatch.setattr(mod.target_mod, "profile_bound", lambda _p: True)
     assert mod.run(_args(), argv=["--target", "bench"]) == 1
     assert seen == []
+
+
+def test_a_failed_statement_names_the_json_mode_error_from_stdout(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    class Done:
+        returncode = 1
+        stdout = json.dumps({"error": {"text": "D1_ERROR: no such column: customer_id"}})
+        stderr = ""
+
+    monkeypatch.setattr(mod.executor_orgs, "database_name", lambda _p: "account-eu")
+    monkeypatch.setattr(mod.subprocess, "run", lambda *_a, **_k: Done())
+    run_sql = mod.wrangler_runner(tmp_path, "wrangler.eu.toml")
+    with pytest.raises(mod.RefusedError, match="no such column: customer_id"):
+        run_sql("SELECT 1")

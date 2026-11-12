@@ -356,6 +356,25 @@ def test_a_non_zero_wrangler_exit_on_the_write_is_refused_and_stderr_is_cut(
     assert len(_calls(fake)) == 2
 
 
+@pytest.mark.usefixtures("fake")
+def test_a_failed_write_names_the_json_mode_error_from_stdout(monkeypatch, capsys) -> None:
+    locked = json.dumps({"error": {"text": "D1_ERROR: database is locked"}})
+    _sequence(monkeypatch, _ok(ROWS), locked)
+    real = mod.subprocess.run
+
+    def run(argv, **kw):
+        write = "UPDATE" in " ".join(argv)
+        proc = real(argv, **kw)
+        if write:
+            proc.returncode = 1
+        return proc
+
+    monkeypatch.setattr(mod.subprocess, "run", run)
+    assert _run("block", "--target", "stable", "--region", "eu", "--org", ORG_A) == 1
+    shown = capsys.readouterr()
+    assert "database is locked" in shown.out + shown.err
+
+
 def test_unblock_of_an_unknown_org_writes_nothing(fake) -> None:
     assert _run("unblock", "--target", "stable", "--region", "eu", "--org", "nomatch-xyz") == 1
     assert len(_calls(fake)) == 1
