@@ -260,8 +260,9 @@ No change (O1). Enforcement is at issuance on the server, and the blob's `subscr
 - [ ] X1 [lead] Local proof chain: a VERIFIED `npm run vm:check -- --changed` on the head tree, then `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench` (applies 0083), then the drill.
   Local-route: vm-check, deploy-bench, d1-migrations -- the branch tree is proved on the fleet and deployed to bench from this checkout
   Owns: none (runs only). Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.free_to_registered` rc 0, printing STEP 3b, 3c and 4b with rc=0 and cleanup rc=0.
-- [ ] X2 [lead] Stripe consent on bench, once the operator has set the test-mode ToS URL: set `STRIPE_CONSENT_COLLECTION=1` on bench, start a checkout through the bench portal API, and retrieve the session with the test key.
+- [x] X2 [lead] Stripe consent on bench, once the operator has set the test-mode ToS URL: set `STRIPE_CONSENT_COLLECTION=1` on bench, start a checkout through the bench portal API, and retrieve the session with the test key.
   Owns: none. Accept: the retrieved session shows `consent_collection.terms_of_service = "required"`, and after a test-card completion one `terms_acceptances` row with method `stripe-checkout` exists for the user (bench D1 query).
+    (ticked) 2026-11-12T06:48:05Z by d778be9d: commit:947d898f78 bench X2 proven 2026-11-12 (no replay): consent_collection.terms_of_service=required; terms_acceptances f5282faa... method=stripe-checkout version=2026-11-11 written by a real Stripe delivery; bench-only proof
 - [ ] LP-bench [live] Fresh bench receipt after X1, recorded and ticked through `worklist.py --live-proof`.
   Accept: live-proof bench account-smoke
 

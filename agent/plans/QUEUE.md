@@ -59,11 +59,11 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 - Branch: 1104-1, PR #605 open.
 - Plans on the PR (6):
   - agent/plans/PLAN-backup-program.md -- 186 of 192 boxes ticked, the PR body's `Plan:` line
-  - agent/plans/PLAN-backup-restore-path.md -- 8 of 10 boxes ticked, a turbo batch claim on the `Plan:` line
-  - agent/plans/PLAN-stop-hook-retro-20261110.md -- 8 of 8 boxes ticked, a turbo batch claim on the `Plan:` line
-  - agent/plans/_done/PLAN-submodule-branch-coordination-guard.md -- 5 of 8 boxes ticked, a turbo batch claim on the `Plan:` line
-  - agent/plans/PLAN-proxy-cd-six-targets.md -- 27 of 31 boxes ticked, a turbo batch claim on the `Plan:` line
-  - agent/plans/PLAN-repo-docker-storage-prune.md -- 12 of 14 boxes ticked, a turbo batch claim on the `Plan:` line
+  - agent/plans/PLAN-backup-restore-path.md -- 8 of 10 boxes ticked, the PR body's `Plan:` line
+  - agent/plans/PLAN-stop-hook-retro-20261110.md -- 8 of 8 boxes ticked, the PR body's `Plan:` line
+  - agent/plans/_done/PLAN-submodule-branch-coordination-guard.md -- 5 of 8 boxes ticked, the PR body's `Plan:` line
+  - agent/plans/PLAN-proxy-cd-six-targets.md -- 27 of 31 boxes ticked, the PR body's `Plan:` line
+  - agent/plans/PLAN-repo-docker-storage-prune.md -- 12 of 14 boxes ticked, the PR body's `Plan:` line
 - Work outside the PR's plans (17 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 26 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
@@ -80,17 +80,17 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 622 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 624 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
-- Writers: 3 live of writer_cap 25 (session d778be9d): worker:ab45f7cbd39ac59b6, worker:adf4f862998ad2bda, worker:a142398e66d17cbdc.
-- Leased items: 10: #0d605233 (worker:b5zm3pxva, d778be9d), #1dcc5437 (worker:b5zm3pxva, d778be9d), #443ba017 (worker:b5zm3pxva, d778be9d), #8030611c (worker:adf4f862998ad2bda, d778be9d), #928ba562 (worker:a142398e66d17cbdc, d778be9d), #9cb71958 (worker:b5zm3pxva, d778be9d), #a1ecc191 (worker:ab45f7cbd39ac59b6, d778be9d), #bb081378 (worker:b5zm3pxva, d778be9d), #e3b3ba33 (worker:b5zm3pxva, d778be9d), #fec9f1b5 (worker:b5zm3pxva, d778be9d).
+- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a888e3c54c57df97d, worker:a15587079924dd0ed.
+- Leased items: 13: #04b4a244 (worker:a888e3c54c57df97d, d778be9d), #0d605233 (worker:blfcpi0x2, d778be9d), #1dcc5437 (worker:blfcpi0x2, d778be9d), #443ba017 (worker:blfcpi0x2, d778be9d), #5ac354e6 (worker:a15587079924dd0ed, d778be9d), #8030611c (worker:blfcpi0x2, d778be9d), #9cb71958 (worker:blfcpi0x2, d778be9d), #a1ecc191 (worker:blfcpi0x2, d778be9d), #bb081378 (worker:blfcpi0x2, d778be9d), #bf47a483 (worker:blfcpi0x2, d778be9d), #d2fcce23 (worker:blfcpi0x2, d778be9d), #e3b3ba33 (worker:blfcpi0x2, d778be9d), and 1 more.
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 23 of 66 plans done, 1077 of 1227 boxes done (87%).
+Promoted: 23 of 67 plans done, 1078 of 1243 boxes done (86%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -159,7 +159,8 @@ Promoted: 23 of 66 plans done, 1077 of 1227 boxes done (87%).
 | 63 | PLAN-d1-scaling.md | 17/31 | 14 open |
 | 64 | PLAN-experience-feedback.md | 12/16 | 4 open |
 | 65 | PLAN-local-first-delivery.md | 14/15 | 1 open |
-| 66 | PLAN-terms-acceptance.md | 22/25 | 3 open |
+| 66 | PLAN-terms-acceptance.md | 23/25 | 2 open |
+| 67 | PLAN-account-notices.md | 0/16 | 16 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
@@ -228,6 +229,7 @@ Promoted: 23 of 66 plans done, 1077 of 1227 boxes done (87%).
 64. agent/plans/PLAN-experience-feedback.md -- operator rulings ASKED:2026-11-10T06:24Z ("One plan, run now in parallel"; retire a lesson once a guard, gate, test, CI check or tool fix enforces it): the ledger audit found experience recorded but never fed back (0 of 125 hint proposals promoted, a retro gate silencing long sessions, 6,465 review findings recurring by class); epic #562ef6c3; P1
 65. agent/plans/PLAN-local-first-delivery.md -- operator 2026-11-11T09:0xZ: "Queue the new plan now to prompted and start implementing"
 66. agent/plans/PLAN-terms-acceptance.md -- operator 2026-11-11 "don't forget to promote the plan"; rulings R1-R4 ASKED 2026-11-11
+67. agent/plans/PLAN-account-notices.md -- operator 2026-11-12: "Please promote the new plans after planning finishes. Then start to implement them"; rulings ASKED 2026-11-12T05:57Z and 06:01Z
 
 ## Generated
 
