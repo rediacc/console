@@ -7,7 +7,7 @@ import { t } from '../../i18n/index.js';
 import { ServerError } from './box.js';
 import type { BoxTarget, ServerDeps } from './types.js';
 
-const API = '/account/api/v1';
+export const API = '/account/api/v1';
 const HEALTH_TRIES = 60;
 const HEALTH_INTERVAL_MS = 5_000;
 
@@ -63,6 +63,16 @@ export async function probeFreeTier(
   if (reply.status === 409) return false;
   if (reply.status === 400) return true;
   return undefined;
+}
+
+/** The owner's session cookie, or undefined when the box does not log them in. */
+export async function loginOwner(
+  deps: ServerDeps,
+  target: BoxTarget,
+  creds: { email: string; password: string }
+): Promise<string | undefined> {
+  const login = await deps.box(target, 'POST', `${API}/auth/login`, creds);
+  return login.status === 200 ? login.cookie : undefined;
 }
 
 interface OwnerResult {

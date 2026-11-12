@@ -47,6 +47,8 @@ export interface FakeOptions {
   zoneToken?: string;
   files?: Record<string, string>;
   rdcFail?: string;
+  /** Per-path-suffix answers that win over the defaults (a refused login, a 404 route). */
+  boxReplies?: Record<string, Partial<BoxReply>>;
 }
 
 export interface Fake {
@@ -58,6 +60,8 @@ export interface Fake {
   bwsWrites: BwsWriteRequest[];
   dnsWrites: string[];
   secrets: Record<string, string>;
+  /** Every HTTPS request to the box, with its body and the cookie it carried. */
+  boxRequests: { method: string; path: string; body?: unknown; cookie?: string }[];
 }
 
 const DEFAULT_SECRETS: Record<string, string> = {
@@ -83,6 +87,7 @@ export function makeFake(opts: FakeOptions = {}): Fake {
   const written: Record<string, string> = {};
   const bwsWrites: BwsWriteRequest[] = [];
   const dnsWrites: string[] = [];
+  const boxRequests: Fake['boxRequests'] = [];
   const secrets: Record<string, string> = { ...DEFAULT_SECRETS, ...opts.secrets };
   const resolves = [...(opts.resolveSequence ?? [['203.0.113.10']])];
   let now = Date.parse('2026-11-12T12:00:00Z');
@@ -158,9 +163,14 @@ export function makeFake(opts: FakeOptions = {}): Fake {
       calls.push(name === 'setenv' ? `ssh ${machine} setenv ${out}` : `ssh ${machine} ${name}`);
       return Promise.resolve(ok(name === 'setenv' ? '' : out));
     },
-    box(_target, method, path) {
+    box(_target, method, path, body, cookie) {
       calls.push(`https ${method} ${path}`);
+      boxRequests.push({ method, path, body, cookie });
       const base: BoxReply = { status: 200, body: {}, sans: opts.sans ?? ['acme.example.com'] };
+      const override = Object.entries(opts.boxReplies ?? {}).find(([suffix]) =>
+        path.endsWith(suffix)
+      );
+      if (override) return Promise.resolve({ ...base, ...override[1] });
       const tweak = BOX_REPLIES.find(([suffix]) => path.endsWith(suffix));
       return Promise.resolve(tweak ? { ...base, ...tweak[1] } : base);
     },
@@ -218,5 +228,5 @@ export function makeFake(opts: FakeOptions = {}): Fake {
     now: () => now,
     secret: () => 'Secret123A1!',
   };
-  return { deps, calls, stdout, setEnv, written, bwsWrites, dnsWrites, secrets };
+  return { deps, calls, stdout, setEnv, written, bwsWrites, dnsWrites, secrets, boxRequests };
 }

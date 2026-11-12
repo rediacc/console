@@ -2607,6 +2607,9 @@
         "offerFree": "是否改为以免费版启动服务器？",
         "noCertForUpgrade": "没有可用的委托证书：请以所有者或管理员身份并通过 2FA 使用 `rdc subscription login` 登录，或传入 --cert <file>",
         "stillFree": "重启后 {{domain}} 仍以免费版响应",
+        "viaUpload": "运行中的服务器已接受该证书，无需重启",
+        "viaRestart": "证书已写入 secrets.env，服务器正在重启以加载它",
+        "uploadRefused": "运行中的服务器拒绝了证书上传（状态 {{status}}），改为带证书重启服务器",
         "freeProbeHoldsCert": "尽管未安装任何证书，服务器仍响应为持有证书"
       },
       "bundle": {

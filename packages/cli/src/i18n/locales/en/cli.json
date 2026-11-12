@@ -2878,6 +2878,9 @@
         "offerFree": "Start the server on the free tier instead?",
         "noCertForUpgrade": "No delegation certificate is available: log in with `rdc subscription login` as an owner or admin with 2FA, or pass --cert <file>",
         "stillFree": "{{domain}} still answers as the free tier after the restart",
+        "viaUpload": "The running server accepted the certificate; no restart was needed",
+        "viaRestart": "The certificate went into secrets.env and the server is restarting to adopt it",
+        "uploadRefused": "The running server refused the certificate upload (status {{status}}); restarting it with the certificate instead",
         "freeProbeHoldsCert": "The server answers as holding a certificate although none was installed"
       },
       "bundle": {

@@ -7,7 +7,10 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const m = vi.hoisted(() => ({ builtinVersion: '' as string }));
+const m = vi.hoisted(() => ({
+  builtinVersion: '' as string,
+  owner: undefined as { email: string; password: string } | undefined,
+}));
 
 vi.mock('../../../i18n/index.js', () => ({
   t: (key: string, vars?: Record<string, unknown>) =>
@@ -15,6 +18,10 @@ vi.mock('../../../i18n/index.js', () => ({
 }));
 vi.mock('../../core/output.js', () => ({
   outputService: { info: vi.fn(), success: vi.fn(), warn: vi.fn(), error: vi.fn(), print: vi.fn() },
+}));
+vi.mock('../state.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../state.js')>()),
+  loadOwner: () => m.owner,
 }));
 vi.mock('../../config/config-resources.js', () => ({
   configService: {
@@ -46,6 +53,7 @@ const LOC = { domain: 'acme.example.com', machine: 'm1' };
 beforeEach(() => {
   vi.clearAllMocks();
   m.builtinVersion = '';
+  m.owner = { email: 'owner@example.com', password: 'pw-1' };
 });
 
 describe('status', () => {
@@ -147,11 +155,51 @@ describe('upgrade', () => {
 });
 
 describe('licence', () => {
-  it('moves a free-tier box to the issued cert and restarts it', async () => {
+  const UPLOAD = '/account/api/v1/onprem/cert-upload';
+
+  it('uploads the mapped cert as the owner and restarts nothing', async () => {
+    const fake = makeFake({
+      freeProbe: 409,
+      boxReplies: { '/auth/login': { cookie: 'access_token=own' } },
+    });
+    const result = await serverLicence(fake.deps, LOC);
+    expect(result).toMatchObject({ subscriptionId: 'sub-1', via: 'upload' });
+    const upload = fake.boxRequests.find((r) => r.path === UPLOAD);
+    expect(upload).toEqual({
+      method: 'POST',
+      path: UPLOAD,
+      body: {
+        payload: JSON.parse(Buffer.from(certFor(BOX_KEY), 'base64').toString()).payload,
+        signature: 'sig',
+        publicKeyId: 'k1',
+      },
+      cookie: 'access_token=own',
+    });
+    expect(fake.calls).not.toContain('rdc repo up elite@m1');
+    expect(fake.setEnv[0].DELEGATION_CERT_BASE64).toBe(certFor(BOX_KEY));
+  });
+
+  it.each([
+    ['401', { [UPLOAD]: { status: 401 } }],
+    ['404', { [UPLOAD]: { status: 404 } }],
+    ['a login the box refuses', { '/auth/login': { status: 401 } }],
+  ])('falls back to secrets.env and a restart on %s', async (_name, replies) => {
+    const fake = makeFake({
+      freeProbe: 409,
+      boxReplies: { '/auth/login': { cookie: 'access_token=own' }, ...replies },
+    });
+    const result = await serverLicence(fake.deps, LOC);
+    expect(result.via).toBe('restart');
+    expect(fake.setEnv[0].DELEGATION_CERT_BASE64).toBe(certFor(BOX_KEY));
+    expect(fake.calls).toContain('rdc repo up elite@m1');
+  });
+
+  it('falls back when no owner credentials were saved', async () => {
+    m.owner = undefined;
     const fake = makeFake({ freeProbe: 409 });
     const result = await serverLicence(fake.deps, LOC);
-    expect(result.subscriptionId).toBe('sub-1');
-    expect(fake.setEnv[0].DELEGATION_CERT_BASE64).toBe(certFor(BOX_KEY));
+    expect(result.via).toBe('restart');
+    expect(fake.boxRequests.some((r) => r.path === UPLOAD)).toBe(false);
     expect(fake.calls).toContain('rdc repo up elite@m1');
   });
 

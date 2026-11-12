@@ -2607,6 +2607,9 @@
         "offerFree": "代わりに無料プランでサーバーを起動しますか?",
         "noCertForUpgrade": "利用できる委任証明書がありません: オーナーまたは管理者として 2FA で `rdc subscription login` にログインするか、--cert <file> を指定してください",
         "stillFree": "再起動後も {{domain}} は無料プランとして応答しています",
+        "viaUpload": "稼働中のサーバーが証明書を受け付けました。再起動は不要でした",
+        "viaRestart": "証明書を secrets.env に書き込み、サーバーを再起動して反映しています",
+        "uploadRefused": "稼働中のサーバーが証明書のアップロードを拒否しました（ステータス {{status}}）。代わりに証明書を適用して再起動します",
         "freeProbeHoldsCert": "証明書をインストールしていないのに、サーバーが証明書を保持しているかのように応答しています"
       },
       "bundle": {

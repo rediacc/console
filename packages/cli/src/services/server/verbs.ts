@@ -5,7 +5,7 @@
 import { t } from '../../i18n/index.js';
 import { outputService } from '../core/output.js';
 import { locateRepo, rdcMust, readBundle, readPublicFacts, ServerError, setBoxEnv } from './box.js';
-import { decodeCertBase64 } from './cert.js';
+import { decodeCertBase64, parseSignedCert } from './cert.js';
 import {
   boxTarget,
   builtinTemplateVersion,
@@ -16,10 +16,10 @@ import {
   requireRecord,
   TEMPLATE_NAME,
 } from './common.js';
-import { covers, probeFreeTier, waitHealthy } from './http.js';
+import { API, covers, loginOwner, probeFreeTier, waitHealthy } from './http.js';
 import { obtainLicence } from './licence.js';
-import { recordFile } from './state.js';
-import type { ServerDeps } from './types.js';
+import { loadOwner, recordFile } from './state.js';
+import type { BoxTarget, ServerDeps } from './types.js';
 
 export interface StatusResult {
   domain: string;
@@ -162,11 +162,44 @@ export interface LicenceUpgradeResult {
   domain: string;
   subscriptionId: string;
   tier: string;
+  /** `upload`: the running server took the cert through its root-only route; `restart`: secrets.env and `repo up`. */
+  via: 'upload' | 'restart';
+}
+
+/**
+ * The cert through the server's own `POST /onprem/cert-upload`, as the owner. Moving from the
+ * free tier counts as bootstrap, so no elevation is asked. False when anything refuses (no saved
+ * owner, a login that fails, a server without the route or without a root user): the caller
+ * then takes the restart path.
+ */
+async function uploadCert(
+  deps: ServerDeps,
+  target: BoxTarget,
+  domain: string,
+  certBase64: string | undefined
+): Promise<boolean> {
+  const owner = loadOwner(domain);
+  if (!owner || !certBase64) return false;
+  const cookie = await loginOwner(deps, target, owner);
+  if (!cookie) return false;
+  const { payload, signature, publicKeyId } = parseSignedCert(certBase64);
+  const reply = await deps.box(
+    target,
+    'POST',
+    `${API}/onprem/cert-upload`,
+    { payload, signature, publicKeyId },
+    cookie
+  );
+  if (reply.status === 200) return true;
+  outputService.warn(t('commands.server.licence.uploadRefused', { status: reply.status || '-' }));
+  return false;
 }
 
 /**
  * From the free tier to a cert: the logged-in config mints one for the box's key (or `--cert`
- * brings it), it goes into secrets.env, and `repo up` restarts the server, which adopts it at boot.
+ * brings it). The running server takes it through `POST /onprem/cert-upload` as the owner; when
+ * that is refused, it goes into secrets.env and `repo up` restarts the server, which adopts it
+ * at boot.
  */
 export async function serverLicence(
   deps: ServerDeps,
@@ -188,10 +221,17 @@ export async function serverLicence(
   if (result.kind !== 'cert') {
     throw new ServerError(t('commands.server.licence.noCertForUpgrade'));
   }
-  await setBoxEnv(deps, where, result.env);
-  await rdcMust(deps, ['repo', 'up', `${record.repo}@${record.machine}`]);
   const target = await boxTarget(deps, record);
-  await waitHealthy(deps, target);
+  const uploaded = await uploadCert(deps, target, record.domain, result.env.DELEGATION_CERT_BASE64);
+  // Written either way, so the next restart or upgrade carries the cert and its renewal token.
+  await setBoxEnv(deps, where, result.env);
+  if (uploaded) {
+    outputService.info(t('commands.server.licence.viaUpload'));
+  } else {
+    outputService.info(t('commands.server.licence.viaRestart'));
+    await rdcMust(deps, ['repo', 'up', `${record.repo}@${record.machine}`]);
+    await waitHealthy(deps, target);
+  }
   if ((await probeFreeTier(deps, target)) === true) {
     throw new ServerError(t('commands.server.licence.stillFree', { domain: record.domain }));
   }
@@ -202,5 +242,6 @@ export async function serverLicence(
     domain: record.domain,
     subscriptionId: result.subscriptionId,
     tier: cert?.planCode ?? 'licensed',
+    via: uploaded ? 'upload' : 'restart',
   };
 }

@@ -129,7 +129,12 @@ describe('the elite template', () => {
 
   it('passes ROOT_EMAIL and the ON_PREMISE_* variables through to the web service', () => {
     const text = read('docker-compose.yml');
-    for (const key of ['ROOT_EMAIL', 'ON_PREMISE_MODE', 'ON_PREMISE_PRIVATE_KEY', 'ON_PREMISE_PUBLIC_KEY']) {
+    for (const key of [
+      'ROOT_EMAIL',
+      'ON_PREMISE_MODE',
+      'ON_PREMISE_PRIVATE_KEY',
+      'ON_PREMISE_PUBLIC_KEY',
+    ]) {
       expect(text).toContain(`- ${key}=\${${key}:-`);
     }
   });

@@ -2607,6 +2607,9 @@
         "offerFree": "Sunucu bunun yerine ücretsiz katmanda başlatılsın mı?",
         "noCertForUpgrade": "Kullanılabilir yetki devri sertifikası yok: `rdc subscription login` ile 2FA'lı bir sahip veya yönetici olarak oturum açın ya da --cert <file> verin",
         "stillFree": "{{domain}}, yeniden başlatmadan sonra hâlâ ücretsiz katman olarak yanıt veriyor",
+        "viaUpload": "Çalışan sunucu sertifikayı kabul etti; yeniden başlatmaya gerek kalmadı",
+        "viaRestart": "Sertifika secrets.env dosyasına yazıldı ve sunucu onu almak için yeniden başlatılıyor",
+        "uploadRefused": "Çalışan sunucu sertifika yüklemesini reddetti (durum {{status}}); bunun yerine sertifikayla yeniden başlatılıyor",
         "freeProbeHoldsCert": "Hiçbir sertifika kurulmamasına rağmen sunucu sertifika taşıyormuş gibi yanıt veriyor"
       },
       "bundle": {

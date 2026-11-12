@@ -2607,6 +2607,9 @@
         "offerFree": "대신 무료 등급으로 서버를 시작할까요?",
         "noCertForUpgrade": "사용할 수 있는 위임 인증서가 없습니다: 소유자 또는 관리자로서 2FA와 함께 `rdc subscription login` 으로 로그인하거나 --cert <file> 을 지정하세요",
         "stillFree": "재시작 후에도 {{domain}} 이(가) 무료 등급으로 응답합니다",
+        "viaUpload": "실행 중인 서버가 인증서를 받아들였습니다. 재시작은 필요하지 않았습니다",
+        "viaRestart": "인증서를 secrets.env에 기록했고, 서버를 다시 시작해 적용하는 중입니다",
+        "uploadRefused": "실행 중인 서버가 인증서 업로드를 거부했습니다(상태 {{status}}). 대신 인증서를 적용해 서버를 다시 시작합니다",
         "freeProbeHoldsCert": "설치된 인증서가 없는데도 서버가 인증서를 보유한 것처럼 응답합니다"
       },
       "bundle": {

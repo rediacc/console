@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2801,
-    "sourceCommit": "95c774cca9cd35067d1d010843c0a5be3758da52"
+    "keyCount": 2804,
+    "sourceCommit": "6c48953db00a1ef4725d3ccdda87f0cad5a32787"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2040,6 +2040,9 @@
     "commands.server.licence.otherKey": "dcaf4c5f",
     "commands.server.licence.planDisallows": "e85e101d",
     "commands.server.licence.stillFree": "13ba4183",
+    "commands.server.licence.uploadRefused": "78413dc2",
+    "commands.server.licence.viaRestart": "897dcb1c",
+    "commands.server.licence.viaUpload": "9151c0e3",
     "commands.server.optionMachine": "31387926",
     "commands.server.optionRepo": "799bfacf",
     "commands.server.owner.raced": "459303bb",

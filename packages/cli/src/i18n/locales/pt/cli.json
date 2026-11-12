@@ -2607,6 +2607,9 @@
         "offerFree": "Iniciar o servidor no plano gratuito?",
         "noCertForUpgrade": "Nenhum certificado de delegação disponível: faça login com `rdc subscription login` como proprietário ou administrador com 2FA, ou informe --cert <file>",
         "stillFree": "{{domain}} continua respondendo como plano gratuito após a reinicialização",
+        "viaUpload": "O servidor em execução aceitou o certificado; não foi preciso reiniciar",
+        "viaRestart": "O certificado foi gravado em secrets.env e o servidor está reiniciando para adotá-lo",
+        "uploadRefused": "O servidor em execução recusou o envio do certificado (status {{status}}); ele será reiniciado com o certificado",
         "freeProbeHoldsCert": "O servidor responde como se tivesse um certificado, embora nenhum tenha sido instalado"
       },
       "bundle": {

@@ -2607,6 +2607,9 @@
         "offerFree": "Avviare invece il server con il livello gratuito?",
         "noCertForUpgrade": "Nessun certificato di delega disponibile: accedere con `rdc subscription login` come proprietario o amministratore con 2FA, oppure passare --cert <file>",
         "stillFree": "{{domain}} risponde ancora come livello gratuito dopo il riavvio",
+        "viaUpload": "Il server in esecuzione ha accettato il certificato; non è servito alcun riavvio",
+        "viaRestart": "Il certificato è stato scritto in secrets.env e il server si riavvia per adottarlo",
+        "uploadRefused": "Il server in esecuzione ha rifiutato il caricamento del certificato (stato {{status}}); viene invece riavviato con il certificato",
         "freeProbeHoldsCert": "Il server risponde come se avesse un certificato, benché non ne sia stato installato alcuno"
       },
       "bundle": {
