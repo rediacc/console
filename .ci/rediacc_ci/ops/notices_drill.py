@@ -359,6 +359,8 @@ class State:
     config: str
     planted: Planted
     user_jar: str = ""
+    # Set the moment the root jar file is created, so the cleanup unlinks it whichever later step raises.
+    root_jar: str = ""
     sub_id: str = ""
     config_made: bool = False
     registered: bool = False
@@ -543,6 +545,7 @@ def _step_root_run(d: Deps, ev: Evidence, st: State, wait_cron: bool) -> tuple[s
         raise DrillError("the cron sent no mail")
     creds = d.root_creds()
     jar = d.jar_path(st.stamp + "-root")
+    st.root_jar = jar
     status, answer = d.call(
         "POST", API + "/auth/login", {"email": creds[0], "password": creds[1]}, {}, jar
     )
@@ -648,7 +651,6 @@ def run(
         return 0
     password = d.password()
     st.user_jar = d.jar_path(stamp)
-    root_jar = ""
     try:
         rc = d.allowlist()
         ev.add(1, "allowlist", rc)
@@ -659,7 +661,6 @@ def run(
         _step_config(d, ev, st, base, password)
         _step_plant(d, ev, st)
         root = _step_root_run(d, ev, st, wait_cron)
-        root_jar = root[0] if root else ""
         _step_mail(d, ev, st)
         _step_unread(d, ev, st)
         _step_notices(d, ev, st, base)
@@ -671,7 +672,7 @@ def run(
     finally:
         notes: list[str] = []
         crc = 0
-        for jar in (st.user_jar, root_jar):
+        for jar in (st.user_jar, st.root_jar):
             if jar:
                 d.unlink(jar)
         if st.registered:

@@ -404,3 +404,24 @@ def test_the_address_pattern_and_main_usage(capsys):
     assert nd.ADDRESS.match(nd.stamp_address("20261112103000"))
     assert nd.main(["--bogus"]) == 2
     assert "usage" in capsys.readouterr().err
+
+
+def test_the_root_jar_is_unlinked_when_the_reminder_run_raises(tmp_path, capsys):
+    """Review 192841da.1: a raise after the root login (here the reminders call) still removes the authenticated root session file."""
+    fake = Fake(tmp_path)
+    deps = fake.deps()
+    deps.root_creds = lambda: ("root-x@rediacc.io", "pw")
+    unlinked: list[str] = []
+    deps.unlink = unlinked.append
+    orig = deps.call
+
+    def call(method, path, body, headers, jar):
+        if path.endswith("/admin/reminders/run"):
+            raise nd.DrillError("the root's Terms are not accepted")
+        return orig(method, path, body, headers, jar)
+
+    deps.call = call
+    rc = nd.run(False, deps, env={})
+    capsys.readouterr()
+    assert rc == 1
+    assert any(p.endswith("-root") for p in unlinked), unlinked
