@@ -11,7 +11,8 @@ import { outputService } from '../services/core/output.js';
 import { isMachineReadable } from '../services/core/output-format.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { liveServerDeps } from '../services/server/deps.js';
-import { type InstallOptions, ServerInstall } from '../services/server/install.js';
+import { ServerInstall } from '../services/server/install.js';
+import type { InstallOptions } from '../services/server/install-options.js';
 import { LICENCE_MODES, TLS_METHODS } from '../services/server/types.js';
 import {
   type StatusResult,

@@ -172,9 +172,7 @@ export async function serverUpgrade(
   }
 
   await setBoxEnv(deps, where, { ELITE_IMAGE: image, TAG: imageTag(image) });
-  // One-time move off DELEGATION_CERT_BASE64, which the server no longer reads: its cert goes into
-  // the inbox before the restart and the boot decides it. Delete this (and MIGRATE_ENV_CERT) once
-  // no deployed box predates template VERSION 4.
+  // One-time move off DELEGATION_CERT_BASE64, which the server no longer reads: its cert goes into the inbox before the restart and the boot decides it. Delete this (and MIGRATE_ENV_CERT) once no deployed box predates template VERSION 4.
   const migrated = await migrateEnvCert(deps, where);
   if (migrated) outputService.info(t('commands.server.upgrade.migratingCert'));
   await rdcMust(deps, ['repo', 'up', repoRef]);

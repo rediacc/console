@@ -525,6 +525,8 @@ class _Process(Background):
                     lines.put(text)
             finally:
                 lines.put(None)
+                # The pump is the only reader, so it closes the pipe at EOF; a pipe left to the garbage collector raises ResourceWarning in whichever test runs then.
+                stream.close()
 
         threading.Thread(target=pump, daemon=True).start()
         deadline = time.monotonic() + URL_WAIT_S
