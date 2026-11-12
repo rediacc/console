@@ -557,11 +557,6 @@ def issue(caller: str, kind: str, *, probe: Probe = _no_probe) -> proof.Answer:
     return probe(caller, "issue", kind)
 
 
-def _like_escape(text: str) -> str:
-    """`text` as a literal inside a LIKE pattern that declares `ESCAPE '\\'` (review c0ce889a.3)."""
-    return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
-
-
 def certificate_audited(
     signer: str, certificate_id: str, *, run: control_db.Runner = control_db.run_wrangler
 ) -> bool:
@@ -572,11 +567,10 @@ def certificate_audited(
     try:
         rows = control_db.query(
             database,
-            "SELECT COUNT(*) AS n FROM audit WHERE action = ? AND detail LIKE ? ESCAPE '\\'",
-            [
-                "delegation_cert.signed",
-                '%%"subscriptionId":%s%%' % _like_escape(json.dumps(certificate_id)),
-            ],
+            # instr, not LIKE: D1 refuses a LIKE pattern over 50 bytes ("LIKE or GLOB pattern too
+            # complex"), which a quoted subscription id passes, and instr takes the id literally.
+            "SELECT COUNT(*) AS n FROM audit WHERE action = ? AND instr(detail, ?) > 0",
+            ["delegation_cert.signed", '"subscriptionId":%s' % json.dumps(certificate_id)],
             runner=run,
         )
     except control_db.ControlDbError as exc:
@@ -605,9 +599,19 @@ def _require_bench_signer(signer: str) -> None:
         )
 
 
-def stop_signer(signer: str, *, run: Runner = run_process) -> None:
-    """Delete a bench signer Worker (`--force`, since callers bind it); `start_signer` redeploys it. Bench only."""
+def stop_signer(
+    signer: str, *, run: Runner = run_process, env: typing.Mapping[str, str] | None = None
+) -> None:
+    """Delete a bench signer Worker (`--force`, since callers bind it); `start_signer` redeploys it. Bench only.
+
+    Refused before the delete unless the restart could run: on 2026-11-12 `proof signer --bench` without the deploy-signer profile stopped signer-bench-eu, failed the restart on the missing key and left bench signing down (SIGNER_UNAVAILABLE)."""
     _require_bench_signer(signer)
+    missing = [n for n in SECRET_NAMES if not (os.environ if env is None else env).get(n)]
+    if missing:
+        raise proof.LabError(
+            "%s is not stopped: its restart needs %s set (bind with bws_env exec --profile %s)"
+            % (signer, ", ".join(missing), PROFILE)
+        )
     res = _wrangler(run, [*wrangler.ARGV, "delete", "--name", signer, "--force"])
     if res.rc != 0:
         raise proof.LabError("wrangler delete %s exited %d" % (signer, res.rc))
@@ -640,9 +644,11 @@ def _bench_signer(region: str) -> str:
     return "signer-bench-%s" % region
 
 
-def cut_region(region: str, *, run: Runner = run_process) -> None:
+def cut_region(
+    region: str, *, run: Runner = run_process, env: typing.Mapping[str, str] | None = None
+) -> None:
     """Bench only: stop the region's bench signer. Its control database is not cut (see the module docstring)."""
-    stop_signer(_bench_signer(region), run=run)
+    stop_signer(_bench_signer(region), run=run, env=env)
 
 
 def restore_region(

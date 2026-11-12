@@ -11,6 +11,8 @@ import pytest
 from rediacc_ci.deploy import deploy_signer as ds
 from rediacc_ci.enterprise import lab, proof
 
+KEYS = {"ACCOUNT_ED25519_PRIVATE_KEY": "k", "ACCOUNT_ED25519_PUBLIC_KEY": "p"}
+
 
 def _protocol_signature(name: str) -> inspect.Signature:
     return inspect.signature(getattr(proof.Lab, name))
@@ -156,11 +158,20 @@ def test_issue_renew_and_current_go_through_the_probe():
 
 def test_stop_signer_deletes_only_a_known_signer():
     run = FakeRun()
-    ds.stop_signer("signer-bench-eu", run=run)
+    ds.stop_signer("signer-bench-eu", run=run, env=KEYS)
     assert run.calls[0][-4:] == ["delete", "--name", "signer-bench-eu", "--force"]
     with pytest.raises(proof.LabError):
-        ds.stop_signer("account-bench", run=run)
+        ds.stop_signer("account-bench", run=run, env=KEYS)
     assert len(run.calls) == 1
+
+
+def test_stop_signer_refuses_before_the_delete_when_the_restart_key_is_unbound():
+    run = FakeRun()
+    with pytest.raises(proof.LabError, match="ACCOUNT_ED25519_PRIVATE_KEY"):
+        ds.stop_signer("signer-bench-eu", run=run, env={"ACCOUNT_ED25519_PUBLIC_KEY": "p"})
+    with pytest.raises(proof.LabError, match="not stopped"):
+        ds.cut_region("eu", run=run, env={})
+    assert run.calls == []
 
 
 @pytest.mark.parametrize("name", ["signer-eu", "signer-us", "signer-asia", "account-eu", "nope"])
@@ -207,7 +218,8 @@ def test_restore_region_redeploys_the_bench_signer_and_refuses_other_regions(mon
         ds.restore_region("asia", run=FakeRun(), env={})
 
 
-def test_certificate_audited_escapes_like_wildcards_in_the_id(monkeypatch):
+def test_certificate_audited_matches_the_id_literally_without_a_like_pattern(monkeypatch):
+    """D1 refuses a LIKE pattern over 50 bytes, which `proof signer --bench` hit on 2026-11-12."""
     seen: dict = {}
 
     def query(_database, sql, params, **_kw):
@@ -216,21 +228,22 @@ def test_certificate_audited_escapes_like_wildcards_in_the_id(monkeypatch):
 
     monkeypatch.setattr(ds.control_db, "query", query)
     ds.certificate_audited("signer-eu", "a%b_c")
-    assert "ESCAPE '\\'" in seen["sql"]
-    assert "a\\%b\\_c" in seen["params"][1]
+    assert "LIKE" not in seen["sql"].upper()
+    assert "instr(detail, ?)" in seen["sql"]
+    assert seen["params"][1] == '"subscriptionId":"a%b_c"'
 
 
 def test_cut_region_stops_the_bench_signer_and_refuses_other_regions():
     run = FakeRun()
-    ds.cut_region("eu", run=run)
+    ds.cut_region("eu", run=run, env=KEYS)
     assert run.calls[0][-2:] == ["signer-bench-eu", "--force"]
     with pytest.raises(proof.LabError):
-        ds.cut_region("asia", run=run)
+        ds.cut_region("asia", run=run, env=KEYS)
 
 
 def test_a_failed_delete_is_a_lab_error():
     with pytest.raises(proof.LabError):
-        ds.stop_signer("signer-bench-us", run=FakeRun(rc=1))
+        ds.stop_signer("signer-bench-us", run=FakeRun(rc=1), env=KEYS)
 
 
 def test_certificate_audited_queries_the_signer_regions_control_database(monkeypatch):
