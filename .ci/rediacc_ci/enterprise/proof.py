@@ -38,16 +38,20 @@ HTTP_FORBIDDEN = 403
 # TEST-NET-1 (RFC 5737): no request comes from it, so an allowlist naming only it puts this machine off the list.
 FOREIGN_IP = "192.0.2.10"
 
-# The signer scope matrix of box S1: each is refused, beside a legitimate licence and certificate that are issued.
-SCOPE_CASES: tuple[str, ...] = (
-    "foreign-subscription",
-    "wrong-host",
-    "over-limit",
-    "suspended",
-    "raw-bytes",
-    "shared-enterprise",
-    "certificate-over-ceiling",
-)
+# The signer scope matrix of box S1: each is refused with its code, beside a legitimate licence and certificate that are issued.
+# The codes are private/account/src/services/license-signer.service.ts SignerRefusal, mirrored by signer-probe.service.ts.
+SCOPE_CODES: dict[str, str] = {
+    "foreign-subscription": "SIGNER_FOREIGN_SUBSCRIPTION",
+    "wrong-host": "SIGNER_WRONG_HOST",
+    "over-limit": "SIGNER_OVER_LIMIT",
+    "suspended": "SIGNER_SUSPENDED",
+    "raw-bytes": "SIGNER_REQUEST_MALFORMED",
+    "shared-enterprise": "SIGNER_PLAN_FORBIDDEN",
+    "certificate-over-ceiling": "SIGNER_CERT_OVER_CEILING",
+}
+SCOPE_CASES: tuple[str, ...] = tuple(SCOPE_CODES)
+# The named error an account server answers when its signer is out of reach (private/account/src/services/signer-client.ts).
+SIGNER_UNAVAILABLE = "SIGNER_UNAVAILABLE"
 REPLAY_KINDS: tuple[str, ...] = ("session", "api-token", "config-token", "e2e-envelope")
 GITHUB_SURFACES: tuple[str, ...] = ("logs", "jobs-api", "run-api", "step-summary")
 RELEASE_RINGS: tuple[str, ...] = ("canary", "small", "medium", "large")
@@ -114,11 +118,8 @@ class Lab(Protocol):
     def secret_names(self, worker: str) -> list[str]: ...
     def callers(self, *, bench: bool) -> list[str]: ...
     def signer_of(self, caller: str) -> str: ...
-    def signer_props(self, caller: str) -> dict[str, str]: ...
     def expected_props(self, caller: str) -> dict[str, str]: ...
-    def issue(self, caller: str, kind: str) -> Answer: ...
     def certificate_audited(self, signer: str, certificate_id: str) -> bool: ...
-    def current_licence_works(self, caller: str) -> bool: ...
     def renew(self, caller: str) -> Answer: ...
     def stop_signer(self, signer: str) -> None: ...
     def start_signer(self, signer: str) -> None: ...
@@ -138,6 +139,11 @@ class Lab(Protocol):
     def export(self, company: str) -> int: ...
     def remove(self, company: str, *, delete_data: bool, github_actions: bool) -> int: ...
     def leftovers(self, company: str) -> list[str]: ...
+
+    # The caller-side signer probe (box V1): what a caller's signer sees and signs, asked through the caller.
+    def signer_props(self, caller: str) -> dict[str, str]: ...
+    def issue(self, caller: str, kind: str) -> Answer: ...
+    def current_licence_works(self, caller: str) -> bool: ...
 
     # Routing.
     def fetch(self, host: str) -> Reply: ...
@@ -279,8 +285,8 @@ def verb_signer(lab: Lab, p: Proof, *, bench: bool) -> None:
         want, seen = lab.expected_props(caller), lab.signer_props(caller)
         p.check(f"{caller}: the signer sees its binding props", ok=seen == want, detail=f"{seen}")
         p.admitted(f"{caller}: a legitimate licence is issued", lab.issue(caller, "licence"))
-        for case in SCOPE_CASES:
-            p.refused(f"{caller}: {case} is refused", lab.issue(caller, case))
+        for case, code in SCOPE_CODES.items():
+            p.refused(f"{caller}: {case} is refused", lab.issue(caller, case), naming=code)
         cert = lab.issue(caller, "certificate")
         if p.admitted(f"{caller}: a legitimate certificate is issued", cert):
             cid = cert.body.get("id", "")
@@ -294,7 +300,9 @@ def verb_signer(lab: Lab, p: Proof, *, bench: bool) -> None:
         return
     try:
         p.refused(
-            f"{caller}: a stopped signer is named", lab.issue(caller, "licence"), naming=signer
+            f"{caller}: a stopped signer is named",
+            lab.issue(caller, "licence"),
+            naming=SIGNER_UNAVAILABLE,
         )
         p.check(
             f"{caller}: the current licence works with the signer stopped",
@@ -318,7 +326,7 @@ def verb_region_loss(lab: Lab, p: Proof, *, bench: bool) -> None:
     try:
         p.admitted("us company issues with eu cut", lab.issue(us, "licence"))
         p.admitted("us company renews with eu cut", lab.renew(us))
-        p.refused("eu company gets the named error", lab.renew(eu), naming=lab.signer_of(eu))
+        p.refused("eu company gets the named error", lab.renew(eu), naming=SIGNER_UNAVAILABLE)
         p.check(
             "eu company's current licence works with eu cut",
             ok=lab.current_licence_works(eu),

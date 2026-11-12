@@ -4,7 +4,7 @@ WHAT IS BOUND. The company half is real: `add` and `ensure_company` run box C1's
 
 WHAT IS A SEAM. Every other method belongs to a box whose code has not landed. `OWNERS` names that box per method, and `SEAMS` names the module the box will add. A call resolves the module when it is called, so a box that lands with a function of the method's name is bound without an edit here; until then the call raises `NotBuiltError("not built yet: <box> (...)")`. That is a `proof.LabError`, so the proof records it as a broken claim and exits 1 rather than claiming anything, and nothing live is touched first. The signer group (box S2) includes `account_workers` and `secret_names`: until the signers exist every account Worker holds the key by design, so reading the secret lists would only restate the known state.
 
-The readers the proof needs that no writer box owns (the captured mail and the lookup, routing, tokens, the proxy and executor, cost, the fleet renet, the GitHub run, what a removed company leaves) are this module's own functions, one section per live box below `build`, each taking its live calls through the shared transports of the first section; their SEAMS name this module. A reader whose driver does not exist yet raises `not built yet: <box> (...)` from inside its section, the way S2's caller probe does. `release` is bound by `LiveLab` rather than by name, because the ring runner's own `release(args, world)` is its CLI entry: the lab calls `rings_run.lab_release`.
+The readers the proof needs that no writer box owns (the caller-side signer probe, the captured mail and the lookup, routing, tokens, the proxy and executor, cost, the fleet renet, the GitHub run, what a removed company leaves) are this module's own functions, one section per live box below `build`, each taking its live calls through the shared transports of the first section; their SEAMS name this module. A reader whose driver does not exist yet raises `not built yet: <box> (...)` from inside its section. `release` is bound by `LiveLab` rather than by name, because the ring runner's own `release(args, world)` is its CLI entry: the lab calls `rings_run.lab_release`.
 """
 
 from __future__ import annotations
@@ -48,7 +48,7 @@ from rediacc_ci.housekeeping import cf_leftovers
 from rediacc_ci.ops import bench_access, cf_usage_report, enterprise_lookup, login_bench, totp
 from rediacc_ci.ops import observability_volume as ov
 from rediacc_ci.release import local
-from rediacc_ci.well_known import CF_API_BASE, PRODUCT_DOMAIN
+from rediacc_ci.well_known import BENCH_ORIGIN, CF_API_BASE, PRODUCT_DOMAIN
 
 if TYPE_CHECKING:
     import types
@@ -70,6 +70,7 @@ class Seam:
 
 SEAMS: dict[str, Seam] = {
     "S2": Seam("rediacc_ci.deploy.deploy_signer", "the regional signers and their binding"),
+    "V1": Seam(__name__, "the caller-side signer probe"),
     "K2": Seam("rediacc_ci.release.rings_run", "the ring runner"),
     "C2": Seam("rediacc_ci.enterprise.lifecycle", "list, update, suspend, export and remove"),
     "A1": Seam(__name__, "the owner mail a bench company captured"),
@@ -85,10 +86,11 @@ SEAMS: dict[str, Seam] = {
 
 _GROUPS: dict[str, tuple[str, ...]] = {
     "S2": (
-        "account_workers", "signers", "secret_names", "callers", "signer_of", "signer_props",
-        "expected_props", "issue", "certificate_audited", "current_licence_works", "renew",
+        "account_workers", "signers", "secret_names", "callers", "signer_of",
+        "expected_props", "certificate_audited", "renew",
         "stop_signer", "start_signer", "cut_region", "restore_region",
     ),
+    "V1": ("signer_props", "issue", "current_licence_works"),
     "C1": ("ensure_company", "caller_of", "company_hosts", "company_words", "add"),
     "A1": ("captured_mail",),
     "V3": ("lookup",),
@@ -170,6 +172,7 @@ class LiveLab:
     ):
         self.bench = bench
         reset_sessions()
+        reset_licences()
         self._adder = adder or self._live_add
         self._finder = finder or self._live_find
         self._resolver = resolver or self._live_resolve
@@ -347,7 +350,7 @@ def build(*, bench: bool, **seams: Any) -> LiveLab:
 
 
 BENCH = True
-PROFILE = "deploy-workers"
+PROFILE = "enterprise"
 CHILD_TIMEOUT_S = 1800
 R2_JURISDICTION_HEADER = "cf-r2-jurisdiction"
 
@@ -1541,6 +1544,127 @@ def e2e_envelope(
         }
     )
     return json.dumps(envelope, sort_keys=True)
+
+
+# ==== box V1: the caller-side signer probe (`proof signer`)
+#
+# A signer Worker has no route, so the proof asks a caller to ask it: `POST /account/api/v1/subscriptions/signer-probe` on the caller's own host (private/account/src/services/signer-probe.service.ts) makes one canned request through that Worker's `LICENSE_SIGNER` binding and answers `{ok, body, props}` or `{ok: false, error: <code>}`. The route answers on bench alone (404 elsewhere) and under the Worker's `ACCOUNT_SERVER_API_KEY`, which the `enterprise` profile (`PROFILE`) binds alongside the Cloudflare pair.
+#
+# THE PROPS ARE READ WHERE THEY LAND. `signer_props` is the `whoami` kind: the signer's `probe()` reports the `ctx.props` it sees. The Cloudflare API is no witness: neither `/workers/scripts/<name>/settings` nor `/versions/<id>` returns a service binding's `props` (read 2026-11-12 for account-bench, whose deploys upload them), so a reader of that API saw `{}` on a binding that carries them.
+#
+# A REFUSAL IS A SIGNER CODE OR NOTHING. A 200 with `ok: false` is a refusal and carries the code (`SIGNER_*`, or `LICENCE_*` for `verify`); any other status, or a body without a verdict, is a `LabError`, so a probe that is down, unauthorised or unmounted never passes a refusal claim. An admitted `licence` was checked by the account server against its public key (payload, key id and Ed25519 signature) before it answered, and is kept per caller for `current_licence_works`, which sends it back as the `verify` kind: no signer is asked, so it answers while the signer is stopped.
+
+SIGNER_PROBE_PATH = "/account/api/v1/subscriptions/signer-probe"
+BENCH_CALLER = "account-bench"
+SERVER_API_KEY_ENV = "ACCOUNT_SERVER_API_KEY"
+# The kinds `issue` asks for; the route's own list is private/account/src/services/signer-probe.service.ts SIGNER_PROBE_KINDS.
+ISSUE_KINDS: tuple[str, ...] = ("licence", "certificate", *proof.SCOPE_CASES)
+SIGNED_PARTS = ("payload", "signature", "publicKeyId")
+# (caller, kind, signed licence or None) -> the route's JSON answer.
+SignerProbe = Callable[[str, str, "dict[str, str] | None"], dict]
+_LICENCES: dict[str, dict[str, str]] = {}
+
+
+def reset_licences(licences: dict[str, dict[str, str]] = _LICENCES) -> None:
+    licences.clear()
+
+
+def _probe_origin(caller: str) -> str:
+    if caller == BENCH_CALLER:
+        return BENCH_ORIGIN
+    raise proof.LabError(
+        "%s: the signer probe answers on %s only (the route is bench-only, and "
+        "workers/account/enterprise.template.toml binds no LICENSE_SIGNER yet)"
+        % (caller, BENCH_CALLER)
+    )
+
+
+def signer_probe(
+    caller: str,
+    kind: str,
+    signed: dict[str, str] | None = None,
+    *,
+    call: Call = http_call,
+    env: Mapping[str, str] | None = None,
+) -> dict:
+    """One probe request on `caller`'s host; a non-200 answer or a body with no verdict is a `LabError`."""
+    origin = _probe_origin(caller)
+    key = (os.environ if env is None else env).get(SERVER_API_KEY_ENV, "")
+    if not key:
+        raise proof.LabError(
+            "%s is not set (bws_env exec --profile %s)" % (SERVER_API_KEY_ENV, PROFILE)
+        )
+    request: dict[str, object] = {"kind": kind}
+    if signed is not None:
+        request["signed"] = signed
+    answer = call(
+        "POST",
+        origin + SIGNER_PROBE_PATH,
+        {"X-API-Key": key, "Content-Type": "application/json"},
+        json.dumps(request).encode(),
+    )
+    if answer.status != 200:
+        raise proof.LabError(
+            "%s: the signer probe (%s) answered HTTP %d" % (caller, kind, answer.status)
+        )
+    doc = answer.json()
+    if not isinstance(doc.get("ok"), bool):
+        raise proof.LabError("%s: the signer probe (%s) answered no verdict" % (caller, kind))
+    return doc
+
+
+def _probe_answer(caller: str, kind: str, doc: dict) -> proof.Answer:
+    if doc["ok"]:
+        body = doc.get("body")
+        return proof.Answer(
+            True, body={str(k): str(v) for k, v in body.items()} if isinstance(body, dict) else {}
+        )
+    error = doc.get("error")
+    if not isinstance(error, str) or not error:
+        raise proof.LabError("%s: the signer probe (%s) refused with no code" % (caller, kind))
+    return proof.Answer(False, error)
+
+
+def signer_props(caller: str, *, probe: SignerProbe = signer_probe) -> dict[str, str]:
+    """The binding props the caller's signer reads from `ctx.props`, as its `probe()` reports them."""
+    doc = probe(caller, "whoami", None)
+    if not doc["ok"]:
+        raise proof.LabError(
+            "%s: the signer probe could not reach the signer (%s)" % (caller, doc.get("error"))
+        )
+    props = doc.get("props")
+    return {str(k): str(v) for k, v in props.items()} if isinstance(props, dict) else {}
+
+
+def issue(
+    caller: str,
+    kind: str,
+    *,
+    probe: SignerProbe = signer_probe,
+    licences: dict[str, dict[str, str]] = _LICENCES,
+) -> proof.Answer:
+    if kind not in ISSUE_KINDS:
+        raise proof.LabError("the signer probe issues no %r" % kind)
+    answer = _probe_answer(caller, kind, probe(caller, kind, None))
+    if kind == "licence" and answer.ok:
+        parts = {k: answer.body.get(k, "") for k in SIGNED_PARTS}
+        if not all(parts.values()):
+            raise proof.LabError("%s: the admitted licence carries no signed parts" % caller)
+        licences[caller] = parts
+    return answer
+
+
+def current_licence_works(
+    caller: str,
+    *,
+    probe: SignerProbe = signer_probe,
+    licences: dict[str, dict[str, str]] = _LICENCES,
+) -> bool:
+    """The licence last issued to `caller` in this run still verifies on its account server, no signer asked."""
+    signed = licences.get(caller)
+    if signed is None:
+        raise proof.LabError("no licence was issued to %s in this run" % caller)
+    return _probe_answer(caller, "verify", probe(caller, "verify", signed)).ok
 
 
 # ==== box V7: the proxy and executor (`proof proxy`)

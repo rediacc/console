@@ -5,11 +5,13 @@ from __future__ import annotations
 import datetime
 import functools
 import json
+import pathlib
 import re
 import socket
 import subprocess
 import sys
 import threading
+import tomllib
 import types
 import wsgiref.simple_server
 from typing import cast
@@ -18,6 +20,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.core import https
+from rediacc_ci.deploy import deploy_signer
 from rediacc_ci.enterprise import lab, onboarding, proof
 from rediacc_ci.ops import enterprise_lookup
 from rediacc_ci.well_known import BENCH_ORIGIN, GH_API_BASE, PRODUCT_DOMAIN
@@ -101,7 +104,7 @@ def test_a_built_module_missing_the_function_is_still_named(monkeypatch):
         ("remove", ("c0123456789abcdef",), {"delete_data": True, "github_actions": False}, "C2"),
         ("release", (), {}, "K2"),
         ("versions", (["fast"],), {}, "K2"),
-        ("issue", ("account-bench", "licence"), {}, "S2"),
+        ("issue", ("account-bench", "licence"), {}, "V1"),
         ("fetch", ("acme.example",), {}, "V4"),
         ("mint", ("c0123456789abcdef", "session"), {}, "V6"),
         ("container_app", ("c0123456789abcdef",), {}, "V7"),
@@ -3027,3 +3030,192 @@ def test_the_json_scan_resumes_after_a_decoded_value_followed_by_text(monkeypatc
     got = lab._json_value("noise " + inner + " trailing words", "[")
     assert got == want
     assert len(calls) == 1
+
+
+# --- box V1: the caller-side signer probe ----------------------------------------------
+
+PROBE_KEY = "k" * 40
+PROBE_URL = BENCH_ORIGIN + lab.SIGNER_PROBE_PATH
+SHARED_PROPS = {"tier": "shared", "region": "eu"}
+SIGNED = {"payload": "cGF5", "signature": "c2ln", "publicKeyId": "fb37"}
+
+
+class FakeProbeCall:
+    """The bench signer-probe route: one canned JSON answer per kind, recording each request."""
+
+    def __init__(self, answers: dict[str, tuple[int, object]]):
+        self.answers = answers
+        self.requests: list[tuple[str, str, dict[str, str], dict]] = []
+
+    def __call__(self, method, url, headers, body):
+        doc = json.loads(body)
+        self.requests.append((method, url, headers, doc))
+        status, answer = self.answers[doc["kind"]]
+        return lab.HttpAnswer(status, (), json.dumps(answer).encode())
+
+
+def _probe(answers: dict[str, tuple[int, object]]):
+    call = FakeProbeCall(answers)
+    env = {lab.SERVER_API_KEY_ENV: PROBE_KEY}
+
+    def probe(caller, kind, signed):
+        return lab.signer_probe(caller, kind, signed, call=call, env=env)
+
+    return probe, call
+
+
+def test_signer_props_are_what_the_signer_reports_not_the_api():
+    probe, call = _probe(
+        {"whoami": (200, {"ok": True, "body": {"region": "eu"}, "props": SHARED_PROPS})}
+    )
+    assert lab.signer_props("account-bench", probe=probe) == SHARED_PROPS
+    method, url, headers, doc = call.requests[0]
+    assert (method, url, doc) == ("POST", PROBE_URL, {"kind": "whoami"})
+    assert headers["X-API-Key"] == PROBE_KEY
+
+
+def test_signer_props_of_a_binding_without_props_are_empty():
+    probe, _ = _probe({"whoami": (200, {"ok": True, "body": {}, "props": {}})})
+    assert lab.signer_props("account-bench", probe=probe) == {}
+
+
+def test_signer_props_with_the_signer_out_of_reach_is_a_lab_error():
+    probe, _ = _probe({"whoami": (200, {"ok": False, "error": "SIGNER_UNAVAILABLE"})})
+    with pytest.raises(proof.LabError, match="SIGNER_UNAVAILABLE"):
+        lab.signer_props("account-bench", probe=probe)
+
+
+@pytest.mark.parametrize("status", [401, 404, 500, 503])
+def test_a_probe_that_is_not_answering_is_never_a_refusal(status):
+    probe, _ = _probe({"raw-bytes": (status, {"ok": False, "error": "SIGNER_X"})})
+    with pytest.raises(proof.LabError, match="answered HTTP %d" % status):
+        lab.issue("account-bench", "raw-bytes", probe=probe, licences={})
+
+
+@pytest.mark.parametrize("answer", [{}, {"error": "SIGNER_X"}, {"ok": "no"}])
+def test_a_probe_answer_without_a_verdict_is_a_lab_error(answer):
+    probe, _ = _probe({"licence": (200, answer)})
+    with pytest.raises(proof.LabError, match="no verdict"):
+        lab.issue("account-bench", "licence", probe=probe, licences={})
+
+
+def test_a_refusal_without_a_code_is_a_lab_error():
+    probe, _ = _probe({"wrong-host": (200, {"ok": False})})
+    with pytest.raises(proof.LabError, match="no code"):
+        lab.issue("account-bench", "wrong-host", probe=probe, licences={})
+
+
+def test_a_scope_refusal_carries_the_signer_code():
+    probe, _ = _probe({"suspended": (200, {"ok": False, "error": "SIGNER_SUSPENDED"})})
+    got = lab.issue("account-bench", "suspended", probe=probe, licences={})
+    assert got == proof.Answer(False, "SIGNER_SUSPENDED")
+
+
+def test_issue_asks_only_for_the_kinds_the_proof_uses():
+    probe, call = _probe({})
+    with pytest.raises(proof.LabError, match="issues no"):
+        lab.issue("account-bench", "whoami", probe=probe, licences={})
+    assert call.requests == []
+    assert set(lab.ISSUE_KINDS) == {"licence", "certificate", *proof.SCOPE_CODES}
+
+
+def test_an_issued_licence_is_kept_and_verified_again_with_no_signer():
+    licences: dict[str, dict[str, str]] = {}
+    probe, call = _probe(
+        {
+            "licence": (200, {"ok": True, "body": {**SIGNED, "subscriptionId": "free:x"}}),
+            "verify": (200, {"ok": True, "body": {"hardExpiresAt": "2999-01-01"}}),
+        }
+    )
+    assert lab.issue("account-bench", "licence", probe=probe, licences=licences).ok
+    assert licences == {"account-bench": SIGNED}
+    assert lab.current_licence_works("account-bench", probe=probe, licences=licences)
+    assert call.requests[-1][3] == {"kind": "verify", "signed": SIGNED}
+
+
+def test_a_licence_the_server_no_longer_accepts_does_not_work():
+    probe, _ = _probe({"verify": (200, {"ok": False, "error": "LICENCE_INVALID"})})
+    assert not lab.current_licence_works(
+        "account-bench", probe=probe, licences={"account-bench": SIGNED}
+    )
+
+
+def test_current_licence_with_none_issued_is_a_lab_error():
+    probe, _ = _probe({})
+    with pytest.raises(proof.LabError, match="no licence was issued"):
+        lab.current_licence_works("account-bench", probe=probe, licences={})
+
+
+def test_an_admitted_licence_without_its_signed_parts_is_a_lab_error():
+    probe, _ = _probe({"licence": (200, {"ok": True, "body": {"payload": "x"}})})
+    with pytest.raises(proof.LabError, match="no signed parts"):
+        lab.issue("account-bench", "licence", probe=probe, licences={})
+
+
+def test_the_certificate_id_rides_the_answer_body():
+    probe, _ = _probe({"certificate": (200, {"ok": True, "body": {"id": "sub-1"}})})
+    answer = lab.issue("account-bench", "certificate", probe=probe, licences={})
+    assert answer.body == {"id": "sub-1"}
+
+
+def test_the_probe_needs_the_server_api_key_and_names_the_enterprise_profile():
+    with pytest.raises(proof.LabError, match=lab.SERVER_API_KEY_ENV) as caught:
+        lab.signer_probe("account-bench", "whoami", call=FakeProbeCall({}), env={})
+    assert "--profile enterprise" in str(caught.value)
+
+
+def test_missing_cloudflare_credentials_name_the_enterprise_profile(monkeypatch):
+    """The `enterprise` profile (.ci/config/secret-supply.json) binds the Cloudflare pair and the server API key the lab reads."""
+    assert lab.PROFILE == "enterprise"
+    monkeypatch.delenv("CLOUDFLARE_API_TOKEN", raising=False)
+    monkeypatch.delenv("CLOUDFLARE_ACCOUNT_ID", raising=False)
+    with pytest.raises(proof.LabError, match=r"--profile enterprise\)"):
+        lab._credentials()
+
+
+def test_a_company_caller_is_named_as_unprobed_not_asked():
+    call = FakeProbeCall({})
+    with pytest.raises(proof.LabError, match="account-bench only"):
+        lab.signer_probe("account-acme", "whoami", call=call, env={lab.SERVER_API_KEY_ENV: "k"})
+    assert call.requests == []
+
+
+def test_a_new_lab_forgets_the_licences_of_the_last(monkeypatch):
+    monkeypatch.setitem(lab._LICENCES, "account-bench", SIGNED)
+    lab.build(bench=True)
+    assert lab._LICENCES == {}
+
+
+def test_the_v1_methods_bind_to_this_module_not_the_signer_deploy_module():
+    for method in ("signer_props", "issue", "current_licence_works"):
+        assert lab.OWNERS[method] == "V1"
+    assert lab.SEAMS["V1"].module == lab.__name__
+
+
+ACCOUNT_CONFIGS = sorted(
+    (pathlib.Path(paths.repo_root()) / "workers" / "account").glob("wrangler.*.toml")
+)
+
+
+def test_the_account_configs_are_found():
+    """Control: the parametrized check below has every shared config to read."""
+    assert {p.name for p in ACCOUNT_CONFIGS} >= {
+        "wrangler.eu.toml",
+        "wrangler.us.toml",
+        "wrangler.asia.toml",
+        "wrangler.bench.toml",
+    }
+
+
+@pytest.mark.parametrize("config", ACCOUNT_CONFIGS, ids=lambda p: p.name)
+def test_every_account_config_binds_the_props_its_signer_requires(config):
+    """The props each account Worker deploys with are the identity the lab expects of it, in the shape the signer parses."""
+    doc = tomllib.loads(config.read_text(encoding="utf-8"))
+    bound = [s for s in doc.get("services", []) if s.get("binding") == "LICENSE_SIGNER"]
+    assert len(bound) == 1, "%s binds LICENSE_SIGNER %d times" % (config.name, len(bound))
+    binding = bound[0]
+    assert binding.get("entrypoint") == "LicenseSigner"
+    # parseSignerCaller (private/account/src/services/license-signer.service.ts): a shared caller is exactly {tier, region}.
+    props = binding.get("props")
+    assert props == {"tier": "shared", "region": doc["vars"]["REGION"]}
+    assert deploy_signer.expected_props(doc["name"], companies=lambda _bench: []) == props

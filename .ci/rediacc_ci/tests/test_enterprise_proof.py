@@ -38,6 +38,7 @@ class FakeLab:
     licence_survives: bool = True
     raise_on: str = ""
     stopped_error_names_signer: bool = True
+    wrong_codes: dict[str, str] = dataclasses.field(default_factory=dict)
     # add
     added: dict[str, str] = dataclasses.field(default_factory=dict)
     rerun_changes: tuple[str, ...] = ()
@@ -124,10 +125,13 @@ class FakeLab:
         self._rec(f"issue:{kind}")
         signer = self.signer_of(caller)
         if signer in self.stopped or ("eu" in signer and "eu" in self.cut and "us" not in signer):
-            name = signer if self.stopped_error_names_signer else "upstream"
-            return refused(f"{name} is unreachable")
+            if self.stopped_error_names_signer:
+                return refused(f"{proof.SIGNER_UNAVAILABLE}: {signer}")
+            return refused("upstream is unreachable")
         if kind in proof.SCOPE_CASES:
-            return OK if kind in self.admit_cases else refused(f"{kind} refused")
+            if kind in self.admit_cases:
+                return OK
+            return refused(self.wrong_codes.get(kind, proof.SCOPE_CODES[kind]))
         if kind == "certificate":
             return Answer(ok=True, body={"id": "cert-1"})
         return OK
@@ -446,6 +450,12 @@ BREAKS: list[tuple[str, FakeLab, str]] = [
     ("signer", FakeLab(admit_cases={"raw-bytes"}), "raw-bytes is refused"),
     ("signer", FakeLab(admit_cases={"shared-enterprise"}), "shared-enterprise is refused"),
     ("signer", FakeLab(admit_cases={"certificate-over-ceiling"}), "certificate-over-ceiling"),
+    # A refusal for another reason (here the probe's own wrong row) is not the scope refusal claimed.
+    (
+        "signer",
+        FakeLab(wrong_codes={"suspended": "SIGNER_FOREIGN_SUBSCRIPTION"}),
+        "suspended is refused",
+    ),
     ("signer", FakeLab(licence_survives=False), "current licence works"),
     ("signer", FakeLab(stopped_error_names_signer=False), "a stopped signer is named"),
     ("region-loss", FakeLab(licence_survives=False), "current licence works with eu cut"),

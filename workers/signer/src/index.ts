@@ -22,7 +22,7 @@ import {
 /**
  * The regional licence signer, `signer-<region>` and `signer-bench-<region>` (agent/plans/PLAN-enterprise-isolation.md, Design "Signers"). It has no route, no workers.dev host and no preview URL: it is reached only through a service binding that names the `LicenseSigner` entrypoint, and the default fetch answers 404 to anything else.
  *
- * The caller's identity is the binding's deploy-time props, `{ tier: 'shared', region }` or `{ tier: 'enterprise', companyId, region }`, read from `ctx.props` and never from an argument, so a caller's Worker code cannot claim another identity. Four RPC methods: `probe()` reports the region and the public key id and signs nothing; `signRepoLicense`, `signSubscriptionBlob` and `signDelegationCert` check the request against the caller's scope and answer `{ ok: true, signed }` or `{ ok: false, reason }` with a `SIGNER_*` code. The scope rules live in private/account/src/services/license-signer.service.ts and are not repeated here.
+ * The caller's identity is the binding's deploy-time props, `{ tier: 'shared', region }` or `{ tier: 'enterprise', companyId, region }`, read from `ctx.props` and never from an argument, so a caller's Worker code cannot claim another identity. Four RPC methods: `probe()` reports the region, the public key id and the caller identity the props carry, and signs nothing; `signRepoLicense`, `signSubscriptionBlob` and `signDelegationCert` check the request against the caller's scope and answer `{ ok: true, signed }` or `{ ok: false, reason }` with a `SIGNER_*` code. The scope rules live in private/account/src/services/license-signer.service.ts and are not repeated here.
  *
  * Bindings (workers/signer/wrangler.template.toml, rendered by .ci/rediacc_ci/deploy/deploy_signer.py): `CONTROL`, the region's control database; `SHARED`, the region's `account-<r>` database, read only; the `REGION` and `SHARED_HOSTS` vars; and the secrets `ACCOUNT_ED25519_PRIVATE_KEY` and `ACCOUNT_ED25519_PUBLIC_KEY`. No value of either secret is logged, returned or put in an error: an unexpected failure is logged by its error name alone and rejects with `SIGNER_UNAVAILABLE`.
  */
@@ -115,8 +115,12 @@ function signAs<T>(
 }
 
 export class LicenseSigner extends WorkerEntrypoint<Env, unknown> {
-  probe(): Promise<{ region: string; publicKeyId: string }> {
-    return guarded('probe', async () => (await signer(this.env)).probe());
+  /** Signs nothing. `caller` is the binding props this signer sees, so a caller can prove its deploy-time identity (live box V1): the Cloudflare API does not return a service binding's props. */
+  probe(): Promise<{ region: string; publicKeyId: string; caller: SignerCaller | null }> {
+    return guarded('probe', async () => ({
+      ...(await (await signer(this.env)).probe()),
+      caller: parseSignerCaller(this.ctx.props),
+    }));
   }
 
   signRepoLicense(license: RepoLicense): Promise<SignResult<SignedRepoLicense>> {
