@@ -109,6 +109,15 @@ REFUSED = [
         "a node piece glued to the end of the lease path",
         "node -e \"const v=process.argv[1]; require('child_process').execSync('git -C .claude/worktrees/x' + v + ' add f')\"",
     ),
+    # b66f5eee.1: a lease-NAME prefix is no exemption. `name = "x worktree"` makes the string `git -C .claude/worktrees/agent-x worktree add f`, so a piece after `agent-` that ends the path before a space is the same verb slot as the glued-at-end row above. The legitimate builders are the controls in FALSE_POSITIVES: the piece after the separator, the path going on after the piece, and the name inside one argv element.
+    (
+        "an unknown piece after a lease-name prefix, ending the path",
+        "python3 -c \"import os; name=input(); os.system('git -C .claude/worktrees/agent-' + name + ' add f')\"",
+    ),
+    (
+        "an f-string piece after a lease-name prefix, ending the path",
+        "python3 -c \"import os; name=input(); os.system(f'git -C .claude/worktrees/agent-{name} add f')\"",
+    ),
 ]
 
 # A script path the shell expands, with the words in the command's text. The second row is the hole itself: the fixture names the phrase and is untracked, so the literal path is refused and the variable must be too.
@@ -347,6 +356,15 @@ FALSE_POSITIVES = [
     (
         "an unknown piece inside a lease name, the path going on",
         "python3 -c \"import os; x=input(); os.system(f'git -C .claude/worktrees/agent-{x}/sub add f')\"",
+    ),
+    # b66f5eee.1 controls: the lease-name builders a command really uses. The path going on after the piece keeps it inside the path, and an argv element cannot split into a second word whatever the name holds.
+    (
+        "a lease-name prefix piece, the path going on",
+        "python3 -c \"import os; name=input(); os.system('git -C .claude/worktrees/agent-' + name + '/sub add f')\"",
+    ),
+    (
+        "a lease-name prefix piece inside one argv element",
+        "python3 -c \"import subprocess; name=input(); subprocess.run(['git','-C','.claude/worktrees/agent-' + name,'add','f'])\"",
     ),
     # e5ff36fc.1: `.claude/worktrees.py` is a file name, read as neither a lease root nor a mention of the verb, so an unknown built command beside it is not filled.
     (
@@ -963,6 +981,25 @@ for label, pair, rows in (
         )
     else:
         print("%s: all %d admitted" % (label, len(rows)))
+
+# b66f5eee.1: exempting a piece after a lease-name prefix (`agent-`) from the verb slot admits both prefix rows, so they are refused BY the separator check, not by another arm.
+NAME_PREFIX_PLANT = (
+    'if head != m.group(0) and not head.endswith("/"):',
+    'if head != m.group(0) and not head.endswith(("/", "-")):',
+)
+NAME_PREFIX_ROWS = [
+    _row(REFUSED, "an unknown piece after a lease-name prefix, ending the path"),
+    _row(REFUSED, "an f-string piece after a lease-name prefix, ending the path"),
+]
+admitted = [n for n, c in NAME_PREFIX_ROWS if run_guard(c, defect=NAME_PREFIX_PLANT)[0] == 0]
+if len(admitted) != len(NAME_PREFIX_ROWS):
+    failures.append("plant: a lease-name prefix exempts the verb slot")
+    print(
+        "*** FAIL *** with a lease-name prefix exempt, only %d of %d admitted"
+        % (len(admitted), len(NAME_PREFIX_ROWS))
+    )
+else:
+    print("a lease-name prefix exempts the verb slot: all %d admitted" % len(NAME_PREFIX_ROWS))
 
 # THE SCOPE (#a8ae93bd): a scratch repository with a git common dir of its own is admitted, and this checkout, a submodule and every target the guard cannot resolve stay refused. The scratch repository is a bare `git init`, made here in a subprocess no hook sees; the guard only asks git where its common dir is, so it needs no commit. Each row carries the event `cwd` it is judged from.
 SCRATCH = tempfile.mkdtemp(prefix="wt-scope-")
