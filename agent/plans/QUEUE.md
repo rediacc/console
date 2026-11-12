@@ -72,7 +72,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic ec9ba176, plan agent/plans/PLAN-backup-integrity.md, outside the set, 2 commit(s) on the branch, 0 open item(s): backup integrity docs and closure
   - epic d6bb9963, plan agent/plans/PLAN-backup-critical-tier.md, outside the set, 7 commit(s) on the branch, 0 open item(s): backup critical tier proofs
   - epic b21ab2e2, plan agent/plans/PLAN-jobs-backup-real-machine-tests.md, outside the set, 2 commit(s) on the branch, 0 open item(s): real machine tests for jobs and backup
-  - epic 92df2f69, plan agent/plans/PLAN-free-license.md, outside the set, 5 commit(s) on the branch, 0 open item(s): free license ladder F6
+  - epic 92df2f69, plan agent/plans/PLAN-free-license.md, outside the set, 8 commit(s) on the branch, 0 open item(s): free license ladder F6
   - epic 1f877343, plan agent/plans/PLAN-worktree-lease.md, outside the set, 55 commit(s) on the branch, 0 open item(s): guided detached worktree leases
   - epic 2e0e531f, plan agent/plans/PLAN-rediaccfile-unprivileged.md, outside the set, 19 commit(s) on the branch, 0 open item(s): Rediaccfile lifecycle runs unprivileged
   - epic 783185d2, plan agent/plans/PLAN-enterprise-isolation.md, outside the set, 50 commit(s) on the branch, 0 open item(s): Enterprise per-company isolation, regional signers and release rings
@@ -80,10 +80,10 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 16 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 546 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
-  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 118 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a88303e5c4ceab972.
-- Leased items: 2: #9cb71958 (worker:a88303e5c4ceab972, d778be9d), #a8ae93bd (worker:a88303e5c4ceab972, d778be9d).
+  - epic 79b7e92e, no plan, 597 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
+- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a00acf5725895f4da.
+- Leased items: 5: #10caccc2 (worker:a00acf5725895f4da, d778be9d), #1dcc5437 (worker:a00acf5725895f4da, d778be9d), #443ba017 (worker:a00acf5725895f4da, d778be9d), #928ba562 (worker:a00acf5725895f4da, d778be9d), #9cb71958 (worker:a00acf5725895f4da, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 

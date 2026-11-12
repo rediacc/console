@@ -460,7 +460,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 231 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 224 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -619,7 +619,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-account-env-to-bws.md` | done | 131 | 0 | 20 | 26622 |
 | `agent/plans/_done/PLAN-account-vm-check.md` | done | 144 | 0 | 7 | 28880 |
 | `agent/plans/_done/PLAN-app-wide-org-selection.md` | done | 258 | 0 | 3 | 25429 |
-| `agent/plans/_done/PLAN-b2-emit-matrix.md` | done | 305 | 0 | 13 | 34443 |
 | `agent/plans/_done/PLAN-backup-credential-isolation.md` | done | 55 | 0 | 8 | 12190 |
 | `agent/plans/_done/PLAN-backup-presign-bucket-require-and-wrangler-vars.md` | done | 50 | 0 | 7 | 7369 |
 | `agent/plans/_done/PLAN-biome-only-lint.md` | done | 317 | 0 | 29 | 54095 |
@@ -627,8 +626,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-cd-errors-in-ci.md` | done | 86 | 0 | 6 | 8862 |
 | `agent/plans/_done/PLAN-chunk-store-browse-toc-and-remote.md` | done | 172 | 0 | 11 | 35651 |
 | `agent/plans/_done/PLAN-ci-consolidation.md` | done | 187 | 0 | 22 | 24553 |
-| `agent/plans/_done/PLAN-ci-gate-write-taint-scanners.md` | done | 338 | 0 | 19 | 51229 |
-| `agent/plans/_done/PLAN-ci-verdict.md` | done | 76 | 0 | 7 | 17515 |
 | `agent/plans/_done/PLAN-ci-watch-enforcement.md` | superseded | 232 | 6 | 0 | 21797 |
 | `agent/plans/_done/PLAN-clean-review-ledger.md` | done | 209 | 0 | 18 | 24391 |
 | `agent/plans/_done/PLAN-commit-as-you-go.md` | superseded | 384 | 0 | 12 | 35925 |
@@ -653,8 +650,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-lessons-registry-followups.md` | done | 22 | 1 | 1 | 2105 |
 | `agent/plans/_done/PLAN-lessons-registry.md` | done | 186 | 0 | 9 | 21416 |
 | `agent/plans/_done/PLAN-locale-techdiff-resync.md` | done | 86 | 0 | 5 | 7099 |
-| `agent/plans/_done/PLAN-parallel-writer-roster.md` | done | 304 | 0 | 28 | 40550 |
-| `agent/plans/_done/PLAN-per-commit-review.md` | done | 400 | 0 | 17 | 52582 |
 | `agent/plans/_done/PLAN-per-flavor-renet-binary-paths.md` | done | 158 | 0 | 8 | 27063 |
 | `agent/plans/_done/PLAN-pin-awscli-toolchain-python-compatible.md` | done | 83 | 0 | 7 | 16560 |
 | `agent/plans/_done/PLAN-pins-command.md` | done | 87 | 0 | 13 | 28197 |
@@ -677,11 +672,9 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-scope-mirrors.md` | done | 272 | 0 | 11 | 31109 |
 | `agent/plans/_done/PLAN-secret-namespace-migration.md` | done | 1780 | 0 | 34 | 198853 |
 | `agent/plans/_done/PLAN-shell-sandbox-readonly-view.md` | done | 124 | 0 | 7 | 20505 |
-| `agent/plans/_done/PLAN-stop-hook-continuity.md` | done | 438 | 0 | 22 | 49904 |
 | `agent/plans/_done/PLAN-stop-hook-effort-tuning.md` | done | 41 | 0 | 7 | 8930 |
 | `agent/plans/_done/PLAN-stop-hook-effort.md` | done | 45 | 0 | 7 | 7833 |
 | `agent/plans/_done/PLAN-stop-hook-focus-mode.md` | done | 354 | 0 | 8 | 36786 |
-| `agent/plans/_done/PLAN-stop-hook-overhaul.md` | done | 116 | 0 | 9 | 12544 |
 | `agent/plans/_done/PLAN-stop-hook-retro-20260924.md` | done | 619 | 0 | 23 | 67980 |
 | `agent/plans/_done/PLAN-stop-hook-retro-20260925.md` | done | 259 | 0 | 10 | 25162 |
 | `agent/plans/_done/PLAN-stop-hook-rulings-campaign.md` | done | 132 | 0 | 17 | 14083 |
@@ -696,7 +689,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 | `agent/plans/_removed/PLAN-uncommitted-work-exposure-check.md` | removed | 107 | 0 | 0 | 15888 |
 
-231 plan(s), 168 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+224 plan(s), 161 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
 
 ## Expired plans
 
@@ -706,14 +699,17 @@ A plan whose retention ran out. The FILE is gone and the full text is the blob b
 |---|---|---|---|---|
 | `agent/plans/_done/PLAN-agent-session-archival.md` | PLAN: Agent session archival: a deliberate verb, and a gate that only reds when someone is responsible | 2026-09-22 | 2026-11-03 | `2f03187765bb973a9f5efe3c3e05d709d67dc89e` |
 | `agent/plans/_done/PLAN-archival-tests-python-compliance.md` | PLAN: port test-agent-session-archival.sh to a pytest gate test, retire the bash gate-test entry | 2026-09-23 | 2026-11-03 | `25e0dec0399159eeac4cefcec3eeb6ce648fc7c9` |
+| `agent/plans/_done/PLAN-b2-emit-matrix.md` | PLAN: B2 emit the matrix (within-lane sharding for ci-quality.yml) | 2026-09-17 | 2026-11-12 | `6bea75a2ada407b9946a06c3ebd8b65d968d5ca7` |
 | `agent/plans/_done/PLAN-bgsweep-orphan-shells.md` | PLAN: a Stop-hook orphan background-shell sweep (notify-only, session-scoped) | 2026-09-23 | 2026-11-03 | `bcf6ce218b77cf34e5d86d2628a0f2165cf93464` |
 | `agent/plans/_done/PLAN-bws-rotation-on-failure.md` | BWS rotation is triggered by the failure, not by a date | 2026-09-17 | 2026-11-03 | `3659929deabb46f462ace139b9ce506498e35bef` |
 | `agent/plans/_done/PLAN-calibrate-judge-rules-live.md` | PLAN: re-run live judge calibration for four drifted rubric prompts | 2026-09-23 | 2026-11-04 | `fedfa79a6ce76482df362c8c0613cde72760945c` |
 | `agent/plans/_done/PLAN-carried-red-finding-keys.md` | PLAN: Carried reds carry findings, not gates | 2026-09-30 | 2026-11-10 | `881b892ba78f28163c42bc48828ecfe368b043da` |
+| `agent/plans/_done/PLAN-ci-gate-write-taint-scanners.md` | PLAN: Gates that write the real tree must declare it (gate-module write-target scanners) | 2026-09-24 | 2026-11-12 | `8906705f35433bdb0a7f247fc1d2dfa566cc8027` |
 | `agent/plans/_done/PLAN-ci-pr-head-ref-trigger-resolution.md` | PLAN: widen check:ci-pr-head-ref-completeness from "a setter exists" to "the setter resolves on every trigger" | 2026-09-17 | 2026-11-03 | `51fa48d76dee38da1e63162dd88c6f8a60ea063e` |
 | `agent/plans/_done/PLAN-ci-prebaked-vm-images.md` | PLAN: pre-baked per-distro VM images for the E2E Workers legs (spec W follow-on) | 2026-09-29 | 2026-11-09 | `b18c08573852411c51bed4293c0d09f0b9444acb` |
 | `agent/plans/_done/PLAN-ci-time-budget.md` | PLAN: CI time budget. Every job finishes in 15 minutes or less, and the pipeline in 20 minutes or less (operator spec W) | 2026-09-25 | 2026-11-09 | `f1ba29d0ea6bee7870d994aa4557d431a83f3f48` |
 | `agent/plans/_done/PLAN-ci-vacuity-baseline-registry.md` | PLAN: Python control plants — make a vacuous mutant impossible, not merely reported | 2026-09-17 | 2026-11-03 | `03546fc570cd31fe34ef8f7f11b3374b23b08f13` |
+| `agent/plans/_done/PLAN-ci-verdict.md` | PLAN-ci-verdict: a tracer that cannot call a head green early, diagnosis verbs instead of raw gh, a guard for raw CI reads, CI-published verdicts every session reads, and a renet setup phase that cannot go silent | 2026-10-02 | 2026-11-12 | `23c92e993b90ee0bc970e18c455e54dbdf19b39f` |
 | `agent/plans/_done/PLAN-cleanup-context-state-files.md` | PLAN: Context state file cleanup — opportunistic TTL sweep on save | 2026-09-22 | 2026-11-03 | `1837de0891254cc1c1b8a6bb896a39c317537efc` |
 | `agent/plans/_done/PLAN-commit-author-identity.md` | PLAN: commits must be attributable to a GitHub account | 2026-09-17 | 2026-11-03 | `ec2825e9f8470585b3ea7bcc4328dfed43ea3c2a` |
 | `agent/plans/_done/PLAN-defer-settle-classifier.md` | PLAN: an automated accept/reject classifier for [?] deferrals | 2026-09-23 | 2026-11-04 | `5d327617d9d34afdaa1af27c6f94f2b697c372a2` |
@@ -734,6 +730,8 @@ A plan whose retention ran out. The FILE is gone and the full text is the blob b
 | `agent/plans/_done/PLAN-migrate-plan-doc-discovery.md` | Plan-document discovery in /migrate and the Stop hook's handoff block | 2026-09-17 | 2026-11-03 | `e36ee9241f35231d53a6471810d1ab3001c0e4b7` |
 | `agent/plans/_done/PLAN-npm-global-install-release-age.md` | PLAN: every npm install -g honours the release-age window | 2026-09-30 | 2026-11-10 | `4daee019dad8c1a44ed954b50db4778e8e99e532` |
 | `agent/plans/_done/PLAN-npm11-everywhere.md` | PLAN: npm 11 is the only npm, in console and in private/account, locally and in CI | 2026-09-24 | 2026-11-04 | `81bb3d8281b0897f1c4a3ec6782270332cd28b3a` |
+| `agent/plans/_done/PLAN-parallel-writer-roster.md` | PLAN: Parallel-writer roster, where the Stop hook and the main session share supervision of the writers | 2026-09-24 | 2026-11-12 | `396eb852daa4ae884467395d8bf35fe1083622f3` |
+| `agent/plans/_done/PLAN-per-commit-review.md` | PLAN: per-commit reviews replace the GitHub review | 2026-09-25 | 2026-11-12 | `93887c785dbdeaa2c761eb7ee7c614606852a1fe` |
 | `agent/plans/_done/PLAN-pid-fallback-liveness-check.md` | PLAN: block_unsatisfiable_pid_wait.py -- a /proc/$(cat X // echo <always-alive-PID>) liveness-check guard | 2026-09-22 | 2026-11-03 | `f00cb5e85d86ff0dc444a7f75f156f05eb169f96` |
 | `agent/plans/_done/PLAN-pipefail-grep-q-renet-gate.md` | PLAN: give private/renet its own pipefail/grep -q gate | 2026-09-17 | 2026-11-04 | `09d751cad070971e15d4a7f4b1f0b0e4d88553ca` |
 | `agent/plans/_done/PLAN-plan-file-lifecycle.md` | Plan files: a lifecycle nobody has to remember | 2026-09-17 | 2026-11-04 | `f8986ac0b9a0faa28a6aa9bc6301b96cd845525b` |
@@ -748,6 +746,8 @@ A plan whose retention ran out. The FILE is gone and the full text is the blob b
 | `agent/plans/_done/PLAN-session-onboarding-marker.md` | PLAN: what a session is told at its FIRST TOUCH, and how we would know it changed anything | 2026-09-17 | 2026-11-03 | `087188ce3923ae3e124a60a0de238dc16df28ffa` |
 | `agent/plans/_done/PLAN-stop-hook-behavioral-hints.md` | PLAN: a rotating behavioral-hint line on the stop report | 2026-09-22 | 2026-11-03 | `df0f7caf881ca9e7b75a9527bcba48620fc6b793` |
 | `agent/plans/_done/PLAN-stop-hook-cap-saturated-wait.md` | PLAN: stand the stop hook down while every writer slot is live | 2026-09-24 | 2026-11-05 | `0bc6b86efaac6208591873b3138a65ee2e404124` |
+| `agent/plans/_done/PLAN-stop-hook-continuity.md` | PLAN: Stop-hook continuity. Make it surface what it computes, and stop generating turns | 2026-09-24 | 2026-11-12 | `28ad0cd1d4af80ea9269f8d606f86f5a41a157cd` |
+| `agent/plans/_done/PLAN-stop-hook-overhaul.md` | Stop-hook overhaul: noise, rulings, idempotence, focus | 2026-09-17 | 2026-11-12 | `9d7bf28988efd2984aa5536155472a2f7091a3be` |
 | `agent/plans/_done/PLAN-stop-hook-plan-agent-check-declined.md` | PLAN: plan-agent Stop check (section 4 of the stop-hook rulings campaign), DECLINED | 2026-09-17 | 2026-11-04 | `c33179481de18dde1ac646697eec15fce0dfbc59` |
 | `agent/plans/_done/PLAN-stop-hook-plan-backlog-nudge.md` | PLAN: a Stop-hook advisory that names the ONE next plan to implement, newest-first, validated against other sessions | 2026-09-22 | 2026-11-03 | `44d66679812d737e34b83c6352c68ac0f0838558` |
 | `agent/plans/_done/PLAN-stop-hook-task-verification.md` | PLAN: Stop-hook task-completion verification (claim -> citation -> tree) | 2026-09-22 | 2026-11-03 | `65fa641b83fccabeb5c53da0622f5466a0230062` |
@@ -756,4 +756,4 @@ A plan whose retention ran out. The FILE is gone and the full text is the blob b
 | `agent/plans/_done/PLAN-w9p2-script-relocation.md` | PLAN: W9 P2 script relocation, remaining legs (scripts/gen, scripts/ops) | 2026-09-17 | 2026-11-04 | `03cc02f95dd3d0ea1dfb67a9275b929f561c80f3` |
 | `agent/plans/_done/PLAN-wl-wait-duplicate-listener.md` | PLAN: wl_wait duplicate listeners -- `--timeout 60` is SIXTY MINUTES and nothing refuses a second instance | 2026-09-23 | 2026-11-03 | `d95c15b4c60f39f75ab14f3e9e294745e280071a` |
 
-51 expired plan(s). The row is the receipt; the blob is the text.
+58 expired plan(s). The row is the receipt; the blob is the text.
