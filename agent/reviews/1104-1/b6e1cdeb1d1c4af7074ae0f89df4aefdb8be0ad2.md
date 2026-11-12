@@ -22,4 +22,4 @@ Body-Sig: 953f887b7f711637
 Anchor: in-diff
 Claim: The added comment says 'sign-in itself never requires 2FA', but tests/integration/backup-team-scope.test.ts and backup-restore-session.test.ts state that 'a user with 2FA must pass a challenge at login', so the commit documents two incompatible sign-in behaviours.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: fixed 9768c6e25a8eb5863b4992751d2ea89a1f91e192 | d778be9d 2026-11-12T09:08:18Z

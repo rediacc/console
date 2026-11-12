@@ -22,10 +22,10 @@ Body-Sig: feea0ca495649e47
 Anchor: in-diff
 Claim: _foreign_adds admits a direct `git -C <scratch> worktree add <path>` whenever the repository the run acts on is not this checkout, but never reads the add <path> argument, so the new worktree can be created inside this checkout's tree (e.g. under .claude/worktrees or a submodule path), outside the lease rule the file's own docstring names as the only permitted tree.
 Class: other
-Resolution: open
+Resolution: fixed 388ab3634e677fba85b33fccbb5721de142a5287 | d778be9d 2026-11-12T08:55:22Z
 
 ### 161baeee.2 [low] .claude/rediacc_hooks/guards/block_worktree_add.py:327
 Anchor: in-diff
 Claim: The commit message and docstring promise refusal for any GIT_* repository variable in the command text or hook environment, but the check tests only the five hard-coded names in GIT_REPO_ENV / GIT_REPO_ENV_TEXT, so other GIT_* variables pass this gate.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: not-a-bug | .claude/rediacc_hooks/guards/_repo_scope.py:20 git_run_scope_doubt refuses any GIT_ variable outside the identity and neutral lists; test-_repo_scope.py GIT_DIR rows pin it | d778be9d 2026-11-12T08:55:27Z

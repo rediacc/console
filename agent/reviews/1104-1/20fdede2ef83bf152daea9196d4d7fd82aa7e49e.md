@@ -22,10 +22,10 @@ Body-Sig: da26494685020b4d
 Anchor: in-diff
 Claim: ensure_deps now takes the exclusive prepare lock and re-checks the stamp under it, but no test exercises that path (test_core_prepare_lock.py only drives ensure_packages_built), so a regression that drops the lock or the re-check would pass the suite.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed 97a4bd322cb9da7b512ce7aaa3a2b889ecd93aad | d778be9d 2026-11-12T09:06:26Z
 
 ### 20fdede2.2 [low] .ci/rediacc_ci/core/account_lifecycle.py:1011
 Anchor: in-diff
 Claim: test() now holds the prepare lock shared around vitest, and no test asserts that the lock is taken or released around the run, so removing the `with` would pass unnoticed.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed 97a4bd322cb9da7b512ce7aaa3a2b889ecd93aad | d778be9d 2026-11-12T09:06:42Z

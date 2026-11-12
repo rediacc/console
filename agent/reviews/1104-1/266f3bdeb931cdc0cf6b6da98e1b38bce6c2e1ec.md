@@ -22,10 +22,10 @@ Body-Sig: a5ac5162b644fb4f
 Anchor: in-diff
 Claim: The commit changes the retry classification (adds 'covered by') and adds a pointer-hover step before every playback click, but the diff contains no test for either; the only evidence is a manual investigator run, so a regex or hover regression would not be caught by any repo check.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed 837cce00acc04b5fa92d94f2ca8a808a2dd7dca1 | d778be9d 2026-11-12T08:42:32Z
 
 ### 266f3bde.2 [medium] packages/www/scripts/test-tutorial-player-release-gate.js:222
 Anchor: in-diff
 Claim: clickWithRetry now retries a 'covered by' refusal (lines 221-222) without calling revealControls again, so if the 2 s idle timer hides the bar during the retry gaps (e.g. a slow first attempt on a loaded host), every retry hits the same hidden bar and the click is logged FAILED.
 Class: other
-Resolution: open
+Resolution: fixed 837cce00acc04b5fa92d94f2ca8a808a2dd7dca1 | d778be9d 2026-11-12T08:42:33Z
