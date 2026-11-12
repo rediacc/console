@@ -3,7 +3,7 @@
 
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.repair_org_customer_ids --target bench|edge|stable [--region eu|us|asia] [--write [--confirm-stable]]
 
-THE DEFECT. Before account commit 49fa2a3, `handleCheckoutCompleted` re-pointed `subscriptions.customer_id` and `users.customer_id` to the Stripe customer id (`cus_...`) but left `organizations.customer_id` at the owner's user id. The portal resolves the subscription through the org, so the buyer got a 404 on GET /portal/subscription. Orgs of purchases made before that fix deployed are still in that state; this tool re-points them.
+THE DEFECT. Before private/account commit 49fa2a3, `handleCheckoutCompleted` re-pointed `subscriptions.customer_id` and `users.customer_id` to the Stripe customer id (`cus_...`) but left `organizations.customer_id` at the owner's user id. The portal resolves the subscription through the org, so the buyer got a 404 on GET /portal/subscription. Orgs of purchases made before that fix deployed are still in that state; this tool re-points them.
 
 SELECTION (`SELECT_SQL`), exact: an org whose `customer_id` is its owner's user id, whose owner's `users.customer_id` starts with `cus_`, and a subscription row carries that `cus_` id. An org deliberately pointed at any other customer id never matches.
 

@@ -267,7 +267,7 @@ def test_a_mail_without_the_fix_command_or_link_fails(tmp_path, capsys):
     assert "/account/notices" in out.out
 
 
-def test_a_second_run_that_mails_again_fails(tmp_path, capsys):
+def test_a_second_run_that_mails_again_fails(tmp_path, capsys, monkeypatch):
     fake = Fake(tmp_path)
     orig = fake.call
 
@@ -277,7 +277,7 @@ def test_a_second_run_that_mails_again_fails(tmp_path, capsys):
             fake.mails.append({"kind": "repo-digest", "subject": "s", "text_body": GOOD_MAIL})
         return out
 
-    fake.call = second_mails
+    monkeypatch.setattr(fake, "call", second_mails)
     rc = nd.run(False, fake.deps(), env={})
     out = capsys.readouterr().out
     assert rc == 1
@@ -296,7 +296,7 @@ def test_a_notice_that_names_the_wrong_repo_fails(tmp_path, capsys):
     assert "STEP 9 notices rc=1" in out.out
 
 
-def test_a_retire_that_leaves_the_licence_in_the_summary_fails(tmp_path, capsys):
+def test_a_retire_that_leaves_the_licence_in_the_summary_fails(tmp_path, capsys, monkeypatch):
     fake = Fake(tmp_path)
     orig = fake.rdc
 
@@ -306,7 +306,7 @@ def test_a_retire_that_leaves_the_licence_in_the_summary_fails(tmp_path, capsys)
             return 0, ""
         return orig(argv, env)
 
-    fake.rdc = keeps
+    monkeypatch.setattr(fake, "rdc", keeps)
     rc = nd.run(False, fake.deps(), env={})
     out = capsys.readouterr().out
     assert rc == 1
@@ -373,7 +373,7 @@ def test_cleanup_runs_after_a_failed_step_and_scopes_deletes_to_the_exact_email(
             assert "LIKE" not in sql
 
 
-def test_a_leftover_after_the_delete_fails_the_cleanup(tmp_path, capsys):
+def test_a_leftover_after_the_delete_fails_the_cleanup(tmp_path, capsys, monkeypatch):
     fake = Fake(tmp_path)
     orig = fake.rows
 
@@ -383,7 +383,7 @@ def test_a_leftover_after_the_delete_fails_the_cleanup(tmp_path, capsys):
             return []
         return orig(sql)
 
-    fake.rows = sticky
+    monkeypatch.setattr(fake, "rows", sticky)
     rc = nd.run(False, fake.deps(), env={})
     out = capsys.readouterr().out
     assert rc == 1

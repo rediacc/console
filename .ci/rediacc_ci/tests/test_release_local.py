@@ -291,10 +291,12 @@ def test_the_www_pages_build_binds_the_turnstile_site_key_through_a_keyed_profil
     assert "deploy-workers" in pages.profiles
     assert "GITHUB_TOKEN" in pages.gh_env
     assert "deploy-workers" in deploy.profiles, "deploy_www's keyless-dist refusal needs the key"
-    argv = local.child_argv(pages, {"version": "1.2.3", "media_origin": "https://m"})
+    argv = local.child_argv(pages, local.Context(version="1.2.3", media_origin="https://m"))
     assert argv[:4] == ["python3", "-m", "rediacc_ci.core.bws_env", "exec"]
-    assert ["--spec", "TURNSTILE_SITE_KEY > PUBLIC_TURNSTILE_SITE_KEY"] == argv[
-        argv.index("--spec") : argv.index("--spec") + 2
+    spec_at = argv.index("--spec")
+    assert argv[spec_at : spec_at + 2] == [
+        "--spec",
+        "TURNSTILE_SITE_KEY > PUBLIC_TURNSTILE_SITE_KEY",
     ]
 
 

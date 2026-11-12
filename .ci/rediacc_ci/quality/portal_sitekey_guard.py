@@ -191,7 +191,7 @@ def local_step_findings(steps: Iterable[Any]) -> list[str]:
 
 
 WWW_BIND = "TURNSTILE_SITE_KEY > PUBLIC_TURNSTILE_SITE_KEY"
-SECRET_SUPPLY_REL = ".ci/config/secret-supply.json"
+SUPPLY_MANIFEST_REL = ".ci/config/secret-supply.json"
 DEPLOY_WWW_REL = ".ci/rediacc_ci/deploy/deploy_www.py"
 
 
@@ -222,7 +222,7 @@ def local_www_findings(steps: Iterable[Any], keyed: frozenset[str]) -> list[str]
             if not keyed_here:
                 out.append(
                     "%s: runs under profile(s) %s, none of which requires TURNSTILE_SITE_KEY in %s"
-                    % (label, list(step.profiles) or "none", SECRET_SUPPLY_REL)
+                    % (label, list(step.profiles) or "none", SUPPLY_MANIFEST_REL)
                 )
             if any(k == "PUBLIC_TURNSTILE_SITE_KEY" for k, _ in step.env):
                 out.append(
@@ -472,7 +472,7 @@ def local_findings(root: pathlib.Path) -> tuple[list[str], int]:
     bench_out = pathlib.PurePosixPath(
         deploy_bench.portal_out_dir(worker).relative_to(worker).as_posix()
     )
-    supply = json.loads((root / SECRET_SUPPLY_REL).read_text(encoding="utf-8"))
+    supply = json.loads((root / SUPPLY_MANIFEST_REL).read_text(encoding="utf-8"))
     table = local._table()
     found = [
         *local_step_findings(table),
@@ -791,7 +791,11 @@ def _www_selftest() -> bool:
             print("✗ control: %s (%s)" % (label, got or "no finding"), file=sys.stderr)
             failed = True
 
-    expect("a guarded www workflow read as a finding", www_findings_for("ok.yml", _WWW_GUARDED)[0], False)
+    expect(
+        "a guarded www workflow read as a finding",
+        www_findings_for("ok.yml", _WWW_GUARDED)[0],
+        False,
+    )
     unkeyed = copy.deepcopy(_WWW_GUARDED)
     del unkeyed["jobs"]["d"]["steps"][0]["env"]
     expect(
@@ -823,7 +827,11 @@ def _www_selftest() -> bool:
     if www_findings_for("ok.yml", _WWW_GUARDED)[1] != 1:
         print("✗ control: the guarded www build was not counted", file=sys.stderr)
         failed = True
-    expect("a guarded release/local.py www table read as a finding", local_www_findings(_www_table(), keyed), False)
+    expect(
+        "a guarded release/local.py www table read as a finding",
+        local_www_findings(_www_table(), keyed),
+        False,
+    )
     expect(
         "a release/local.py www build without the bind was not reported",
         local_www_findings(_www_table(pages={"binds": ()}), keyed),

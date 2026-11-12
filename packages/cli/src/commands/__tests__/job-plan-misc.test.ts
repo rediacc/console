@@ -77,6 +77,7 @@ vi.mock('../../services/config/config-resources.js', () => ({
     getLocalConfig: vi.fn().mockResolvedValue({ sshPrivateKey: 'key', ssh: {} }),
     getLocalMachine: vi.fn().mockResolvedValue({ ip: '10.0.0.1', user: 'root' }),
     listRepositories: vi.fn().mockResolvedValue([]),
+    getCurrent: vi.fn().mockResolvedValue(undefined),
   },
 }));
 vi.mock('../../services/renet/renet-execution.js', () => ({
