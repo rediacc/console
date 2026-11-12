@@ -5,11 +5,11 @@ import { registerBackupCommands } from './commands/backup.js';
 import { registerClusterCommands } from './commands/cluster/index.js';
 import { registerConfigCommands } from './commands/config.js';
 import { registerCreditsCommand } from './commands/credits.js';
-import { registerLegalCommand } from './commands/legal.js';
 import { registerDatastoreCommands } from './commands/datastore.js';
 import { registerDoctorCommand } from './commands/doctor.js';
 import { registerExecutorDaemonCommands } from './commands/executor-daemon.js';
 import { registerJobCommands } from './commands/job.js';
+import { registerLegalCommand } from './commands/legal.js';
 import { registerMachineCommands } from './commands/machine/index.js';
 import { registerMcpCommands } from './commands/mcp/index.js';
 import { registerOpsCommands } from './commands/ops/index.js';
@@ -24,8 +24,8 @@ import { registerVersionCommand } from './commands/version.js';
 import { registerVSCodeCommands } from './commands/vscode.js';
 import { changeLanguage, initI18n, SUPPORTED_LANGUAGES, t } from './i18n/index.js';
 import { setFreeLicenseRegion } from './services/account/free-license.js';
-import { setAcceptTermsFlag } from './services/account/terms.js';
 import { getSubscriptionTokenState } from './services/account/subscription-auth.js';
+import { setAcceptTermsFlag } from './services/account/terms.js';
 import { configService } from './services/config/config-resources.js';
 import { setInvocationCommand } from './services/config/push-visibility.js';
 import { auditService } from './services/core/audit.js';
@@ -247,7 +247,7 @@ export function createCli(): Command {
         outputService.setFields(opts.fields);
       }
       // Pick the account region a FREE licence is issued by (`--region` is taken by machine provisioning)
-      if (opts.licenseRegion) {
+      if (opts.licenseRegion !== undefined) {
         setFreeLicenseRegion(opts.licenseRegion as string);
       }
       // Accept the Terms of Service for the anonymous Free License without asking (`RDC_ACCEPT_TERMS=1` is the env form)

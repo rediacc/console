@@ -194,8 +194,9 @@ describe('machine restart-services --repo', () => {
       stdout: [progress('starting'), progress('restarted')].join('\n'),
       stderr: '',
     };
-    await run('--include-docker').catch(() => undefined);
+    await run('--include-docker');
     expect(mocks.success).not.toHaveBeenCalled();
+    expect(mocks.print).not.toHaveBeenCalled();
   });
 
   describe('a FAILED daemons-restart job with progress lines on stdout', () => {

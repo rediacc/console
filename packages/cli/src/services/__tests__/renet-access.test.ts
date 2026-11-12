@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const { mockInspect, mockProvision, mockWarn, mockInfo, mockExecFileSync, mockExecSync } =
   vi.hoisted(() => ({
@@ -51,8 +51,14 @@ const CONFIG = { renetPath: process.execPath };
 const MACHINE = { ip: '10.0.0.5', user: 'root', port: 22 };
 
 /** A renet source tree on disk: the guard only reads a work tree that holds renet's `build.sh`. */
+const renetTrees: string[] = [];
+afterEach(() => {
+  for (const dir of renetTrees.splice(0)) fs.rmSync(dir, { recursive: true, force: true });
+});
+
 function renetTree(): string {
   const top = fs.mkdtempSync(path.join(os.tmpdir(), 'renet-access-'));
+  renetTrees.push(top);
   fs.writeFileSync(path.join(top, 'build.sh'), '');
   return top;
 }

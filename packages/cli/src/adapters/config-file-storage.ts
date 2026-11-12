@@ -525,6 +525,8 @@ export class ConfigFileStorage {
       }
       throw new Error(`Config "${name}" not found`);
     }
+    // The config file is gone: the cache entry goes with it even when a later unlink fails.
+    this.cache.delete(name);
     try {
       await fs.unlink(this.getBackupPath(name));
     } catch (error) {
@@ -539,7 +541,6 @@ export class ConfigFileStorage {
         throw error;
       }
     }
-    this.cache.delete(name);
   }
 
   /**
