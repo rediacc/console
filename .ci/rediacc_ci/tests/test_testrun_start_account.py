@@ -302,6 +302,36 @@ def test_delta_the_seeded_user_accepts_the_terms_before_the_portal(tmp_path: pat
 
 
 @pytest.mark.usefixtures("cleanup")
+def test_a_backup_scope_enrols_two_factor_before_the_mint(tmp_path: pathlib.Path) -> None:
+    new, nd, _ = side(tmp_path, "py", ["--scopes", "license:read,backup:manage"])
+    assert new.code == 0, new.err
+    names = ["/".join(t[1].rsplit("/", 2)[-2:]) for t in trace(nd)]
+    for step in ("2fa/status", "test/elevate", "2fa/setup", "2fa/enable"):
+        assert step in names, (step, names)
+    enable = next(t for t in trace(nd) if t[1].endswith("/auth/2fa/enable"))
+    assert isinstance(enable[2]["code"], str)
+    assert len(enable[2]["code"]) == 6
+    mint_at = next(i for i, t in enumerate(trace(nd)) if t[1].endswith("/api-tokens"))
+    enable_at = next(i for i, t in enumerate(trace(nd)) if t[1].endswith("/auth/2fa/enable"))
+    assert enable_at < mint_at
+
+
+@pytest.mark.usefixtures("cleanup")
+def test_the_default_scopes_make_no_two_factor_calls(tmp_path: pathlib.Path) -> None:
+    new, nd, _ = side(tmp_path, "py", [])
+    assert new.code == 0, new.err
+    assert not [t for t in trace(nd) if "/2fa/" in t[1] or t[1].endswith("/test/elevate")]
+
+
+@pytest.mark.usefixtures("cleanup")
+def test_a_refused_two_factor_enrol_fails_the_leg(tmp_path: pathlib.Path) -> None:
+    new, nd, _ = side(tmp_path, "py", ["--scopes", "backup:manage"], "2fa-refused")
+    assert new.code == 1
+    assert "the 2FA enable was refused" in new.err
+    assert not [t for t in trace(nd) if t[1].endswith("/api-tokens")]
+
+
+@pytest.mark.usefixtures("cleanup")
 def test_a_refused_terms_acceptance_fails_the_leg(tmp_path: pathlib.Path) -> None:
     new, nd, _ = side(tmp_path, "py", [], "terms-refused")
     assert new.code == 1

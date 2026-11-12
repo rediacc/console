@@ -159,7 +159,8 @@ def free_port() -> int:
 
 
 # Scopes the account refuses to mint for a session without 2FA (private/account/src/middleware/require-2fa.ts).
-TWO_FACTOR_TOKEN_SCOPES = frozenset({"backup:manage", "backup:restore"})
+# Mirrors TWO_FACTOR_TOKEN_SCOPES in private/account/src/middleware/require-2fa.ts: the account refuses to mint a token with any of these unless the user has 2FA.
+TWO_FACTOR_TOKEN_SCOPES = frozenset({"backup:manage", "backup:restore", "delegation:issue"})
 
 
 class Shim:

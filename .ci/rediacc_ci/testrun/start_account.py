@@ -30,6 +30,8 @@ import sys
 import time
 
 from rediacc_ci import log, paths
+from rediacc_ci.drills.lib import TWO_FACTOR_TOKEN_SCOPES
+from rediacc_ci.ops import totp
 
 LOGIN_PHRASE = "E2eClusterLicensing123!"
 HEALTH_TRIES = 60
@@ -371,6 +373,8 @@ def seed_and_mint(api: Api, opts: Options) -> tuple[str, str]:
         log.error(f"Headless login failed: {login}")
         raise LegError(f"could not open a session for {opts.email}")
     accept_terms(api)
+    if TWO_FACTOR_TOKEN_SCOPES.intersection(token_scopes(opts)):
+        ensure_two_factor(api, opts.email)
     _, subscription = api.call("GET", "/portal/subscription")
     subscription_id = _json_get(subscription, "id") or ""
     if not subscription_id:
@@ -413,6 +417,35 @@ def accept_terms(api: Api) -> None:
     )
     if not 200 <= code < 300 or _json_get(answer, "accepted") is not True:
         raise LegError(f"the Terms acceptance was refused: HTTP {code}: {answer[:300]}")
+
+
+def ensure_two_factor(api: Api, email: str) -> None:
+    """Enrol TOTP for the logged-in seeded user, as `account_ensure_two_factor` in drills/lib.py does: the account refuses to mint a token with a backup-storage or delegation-issuing scope without 2FA, and that refusal stays in force. Setup and enable need an elevated session, which the dev-only `/test/elevate` grants. A refused step raises by name."""
+    code, raw = api.call("GET", "/auth/2fa/status")
+    enabled = _json_field(raw, "enabled")
+    if code != 200 or not isinstance(enabled, bool):
+        raise LegError(f"the 2FA status read was refused: HTTP {code}: {raw[:300]}")
+    if enabled:
+        return
+    code, raw = api.call("POST", "/test/elevate", {"email": email})
+    if not 200 <= code < 300 or _json_field(raw, "elevated") is not True:
+        raise LegError(f"the /test/elevate step was refused: HTTP {code}: {raw[:300]}")
+    code, raw = api.call("POST", "/auth/2fa/setup", {})
+    secret = _json_field(raw, "secret")
+    if not 200 <= code < 300 or not isinstance(secret, str) or not secret:
+        raise LegError(f"the 2FA setup was refused: HTTP {code}: {raw[:300]}")
+    code, raw = api.call("POST", "/auth/2fa/enable", {"code": totp.code(secret)})
+    if not 200 <= code < 300 or _json_field(raw, "enabled") is not True:
+        raise LegError(f"the 2FA enable was refused: HTTP {code}: {raw[:300]}")
+
+
+def _json_field(text: str, key: str) -> object:
+    """One top-level field of a JSON object answer, or None; unlike `_json_get` it keeps a literal False."""
+    try:
+        value: object = json.loads(text)
+    except ValueError:
+        return None
+    return value.get(key) if isinstance(value, dict) else None
 
 
 def _json_get(text: str, *keys: str) -> object:
