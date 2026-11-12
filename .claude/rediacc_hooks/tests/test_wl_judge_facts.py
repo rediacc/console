@@ -15,6 +15,7 @@ import stat
 import subprocess
 import sys
 import tempfile
+import time
 import types
 
 import pytest
@@ -57,6 +58,12 @@ def waker():
         [sys.executable, "-c", "import sys; sys.stdin.read()", "wl_wake.py"],
         stdin=subprocess.PIPE,
     )
+    # Popen returns after fork: until the child execs, /proc/<pid>/cmdline is still pytest's own,
+    # so a loaded host judged the lock dead (ci:quick 1112s). Wait for the exec, bounded.
+    deadline = time.monotonic() + 30
+    while not WAKE.is_waker_pid(proc.pid):
+        assert time.monotonic() < deadline, "the waker child never exec'd"
+        time.sleep(0.01)
     try:
         yield proc
     finally:
