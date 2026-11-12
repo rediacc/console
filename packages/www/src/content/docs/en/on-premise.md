@@ -168,19 +168,19 @@ The cert's validity is governed by the validity policy (per-plan defaults and ce
 
 ### 3. Install the cert on the on-premise server
 
-Save the downloaded `.json` to a known path and point the on-premise to it:
+The server reads its delegation cert from one file on its data volume, `/data/delegation-cert.json` (`DELEGATION_CERT_PATH`). Nothing else carries a cert: there is no environment variable for it. `rdc server install` drops the downloaded cert there, and `rdc server licence` replaces it later:
 
 ```bash
-DELEGATION_CERT_PATH=/etc/rediacc/delegation-cert.json
+rdc server install <domain> --cert delegation-cert.json
+rdc server licence <domain> --cert delegation-cert.json
+rdc server status <domain>
 ```
 
-Or, for ephemeral / Docker-secrets workflows, embed the cert as base64 in an env var:
+Both commands hand the cert to the running server through its cert inbox (`data/web/cert-inbox/new.json`). The server verifies it and answers with `applied.json` or `rejected.json`, and the command confirms the new cert id with `rdc server status` (the same `cert-status` data as step 6). `rdc server upgrade` does the same for a cert it carries. One upgrade step moves a leftover `DELEGATION_CERT_BASE64` from `secrets.env` into the inbox, so a box installed before the inbox existed keeps its cert.
 
-```bash
-DELEGATION_CERT_BASE64=$(base64 -w 0 < delegation-cert.json)
-```
+The server loads the cert at boot and checks it against the key it signs licenses with: the signing key's fingerprint must equal the fingerprint of the cert's `delegatedPublicKey`, because licenses signed under a key the cert does not authorize would be unvalidatable on every machine. Keep the signing keypair and the cert's `delegatedPublicKey` in sync.
 
-At boot the server refuses to start (a FATAL log and non-zero exit) if the loaded cert delegates to a different key than the one the server signs licenses with: it compares the signing key's fingerprint against the cert's `delegatedPublicKey` fingerprint and bails on a mismatch, because licenses signed under a key the cert does not authorize would be unvalidatable on every machine. Keep the signing keypair and the cert's `delegatedPublicKey` in sync.
+A cert the server refuses at boot (a bad signature, the wrong key, a missing `UPSTREAM_PUBLIC_KEY`, or a malformed file) does not stop it. The server starts on the free tier and moves the bad file to `delegation-cert.rejected.json` next to the original. Repo licence signing answers `503 DELEGATION_CERT_REFUSED` until a valid cert is in place, and `rdc server status` shows `cert REFUSED (reason)`. Run `rdc server licence` with a valid cert to repair it. An expired cert still loads, and the box degrades to the free tier instead of being refused.
 
 ### 4. Configure upstream verification + auto-renew (optional but recommended)
 
@@ -268,8 +268,7 @@ For backup and audit, the on-premise admin can also download the currently loade
 | `ON_PREMISE_MODE` | Yes | Set to `true` to enable the on-premise route subset |
 | `ON_PREMISE_PRIVATE_KEY` | Yes | Base64 PKCS8 Ed25519 private key for delegated signing |
 | `ON_PREMISE_PUBLIC_KEY` | Yes | Base64 SPKI Ed25519 public key (must match the cert's `delegatedPublicKey`) |
-| `DELEGATION_CERT_PATH` | One of these | Filesystem path to the signed cert JSON |
-| `DELEGATION_CERT_BASE64` | One of these | Base64-encoded cert JSON (alternative to file path) |
+| `DELEGATION_CERT_PATH` | Optional | Filesystem path to the signed cert JSON. Default `/data/delegation-cert.json` on the data volume. Replace the cert with `rdc server licence`, not by hand. |
 | `UPSTREAM_PUBLIC_KEY` | Required if `UPSTREAM_API_KEY` is set, or for `/onprem/cert-upload` to work | Base64 SPKI of the upstream master public key. Fail-fast at boot if missing. |
 | `UPSTREAM_URL` | For auto-renew | Upstream account server base URL, e.g. `https://www.rediacc.com` |
 | `UPSTREAM_API_KEY` | For auto-renew | A `delegation:renew`-scoped api token. Mint via the portal - see Step 4. |
