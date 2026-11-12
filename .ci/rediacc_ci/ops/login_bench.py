@@ -503,7 +503,12 @@ def accept_terms(account: Poster) -> None:
         raise LoginError(
             "GET %s answered HTTP %d: the Terms status is unreadable" % (TERMS_STATUS, status)
         )
-    if answer.get("satisfied") is True:
+    satisfied = answer.get("satisfied")
+    if not isinstance(satisfied, bool):
+        raise LoginError(
+            "GET %s answered no boolean `satisfied`: the Terms status is unreadable" % TERMS_STATUS
+        )
+    if satisfied:
         log.step("The bench account's Terms acceptance satisfies the current version")
         return
     current = answer.get("current") or {}
@@ -522,6 +527,13 @@ def accept_terms(account: Poster) -> None:
     if status not in (200, 201):
         raise LoginError(
             "POST %s answered HTTP %d: the acceptance was refused" % (TERMS_ACCEPT, status)
+        )
+    # The status is read again, so an answer that recorded nothing never passes as an acceptance.
+    status, answer = account.get(TERMS_STATUS)
+    if status != 200 or answer.get("satisfied") is not True:
+        raise LoginError(
+            "POST %s answered but GET %s does not report the current version satisfied"
+            % (TERMS_ACCEPT, TERMS_STATUS)
         )
 
 

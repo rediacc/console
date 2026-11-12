@@ -58,10 +58,14 @@ class FakeApi:
         verify: int = 200,
         fail: dict | None = None,
         satisfied: bool = True,
+        accept_records: bool = True,
+        status_body: dict | None = None,
     ):
         self.calls: list[tuple[str, dict]] = []
         self.gets: list[str] = []
         self.satisfied = satisfied
+        self.accept_records = accept_records
+        self.status_body = status_body
         self.challenge = challenge
         self.verify = verify
         self.fail = fail or {}
@@ -70,6 +74,8 @@ class FakeApi:
         self.gets.append(route)
         if route in self.fail:
             return self.fail[route], {}
+        if self.status_body is not None:
+            return 200, self.status_body
         return 200, {
             "satisfied": self.satisfied,
             "current": {"version": "2026-11-11", "sha256": "a" * 64},
@@ -88,6 +94,7 @@ class FakeApi:
         if route == "2fa/setup":
             return 200, {"secret": NEW_SEED, "uri": "otpauth://x"}
         if route == "/account/api/v1/portal/terms/accept":
+            self.satisfied = self.accept_records
             return 201, {}
         if route == "2fa/enable":
             return 200, {"enabled": True, "backupCodes": ["bk-1111"]}
@@ -637,3 +644,19 @@ def test_an_unreadable_terms_status_or_a_refused_accept_stops_the_run():
             FakeRunner(),
             api=FakeApi(satisfied=False, fail={login_bench.TERMS_ACCEPT: 403}),
         )
+
+
+def test_a_status_without_a_boolean_satisfied_accepts_nothing():
+    api = FakeApi(status_body={"current": {"version": "2026-11-11", "sha256": "a" * 64}})
+    with pytest.raises(login_bench.LoginError, match="no boolean `satisfied`"):
+        _login(FakeRunner(), api=api)
+    assert login_bench.TERMS_ACCEPT not in [route for route, _ in api.calls]
+
+
+def test_an_accept_the_status_does_not_reflect_stops_the_run():
+    api = FakeApi(satisfied=False, accept_records=False)
+    with pytest.raises(
+        login_bench.LoginError, match="does not report the current version satisfied"
+    ):
+        _login(FakeRunner(), api=api)
+    assert api.gets == [login_bench.TERMS_STATUS, login_bench.TERMS_STATUS]
