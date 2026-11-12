@@ -1,0 +1,615 @@
+"""`./run.sh onprem install|status` (PLAN-enterprise-tenants box P2): Elite as a renet repo on one machine, the internal fast path that the customer verb `rdc server install` (box C7) ports.
+
+    ./run.sh onprem install --config <cfg> --machine <m> --domain <host> --owner <mail>
+        [--repo <name>] [--store-domain <host>] [--size <n>] [--public-ip <ip>]
+        [--image-ref <ref>] [--subscription <id>] [--state-dir <dir>]
+    ./run.sh onprem status --domain <host> [--state-dir <dir>]
+
+THE STEPS, in order, each recorded in a ledger so a rerun skips what is done: preflight, dns, image, keys, cert, repo, files, up, wait, owner, record. A failed step leaves the earlier ones done and names itself.
+
+  preflight  `rdc machine status <m>` answers and names renet; the repo name is free, or already ours (the ledger says it was created here).
+  dns        the domain and the store domain resolve (to `--public-ip` when given). A name that does not resolve is written as a DNS-only A record when its zone is one this account owns, and refused with the record to create otherwise. A name that already resolves is never written.
+  image      `build_server onprem` when `rediacc-server-onprem:dev` is missing, then `docker save` into the stage directory. With `--image-ref` nothing is built or saved and the repo pulls.
+  keys       the licence-signing pairs, API key, JWT secret, object-store pair and config key, in the state directory at 0600.
+  cert       the bench portal session (`login_bench.login`) lists the subscription's active delegation certs. One for the same key is reused from its saved copy; one for another key is refused naming the revoke route; with none, one is issued.
+  repo       `repo create <repo> -m <m> --size <n>` when absent.
+  files      `repo admin template apply <repo> --template elite`, then `repo sync upload` of `secrets.env` and `images/` with `--verify`.
+  up         `repo up <repo>`.
+  wait       `https://<domain>/health` answers 200 and the certificate presented covers the domain.
+  owner      `POST /auth/register` and `/auth/login` as the owner, then the box's subscription must equal the cert's, which closes the first-account race inside the run.
+  record     `install.json`: the facts of the run, no secret in it.
+
+Writes go through the named config only. `eu-remote` is refused for every mutating call and for `install` as a whole; `status` reads only. Secrets live in the state directory (`~/.local/state/rediacc/onprem/<domain>/`, 0700, files 0600) and are never printed.
+
+EXIT CODES. 0 done; 1 a refusal or a failed step, named on stderr; 2 usage.
+"""
+
+from __future__ import annotations
+
+import dataclasses
+import http.client
+import json
+import os
+import pathlib
+import socket
+import ssl
+import subprocess
+import sys
+import time
+import uuid
+from typing import TYPE_CHECKING, Any
+
+from rediacc_ci import log, paths
+from rediacc_ci.core import account
+from rediacc_ci.drills import backup_elite_compose as elite
+from rediacc_ci.drills import backup_roundtrip as rt
+from rediacc_ci.ops import apply_cf_redirect_rules as redirects
+from rediacc_ci.ops import cf_dns, login_bench
+from rediacc_ci.well_known import BENCH_ORIGIN
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Sequence
+
+STEPS = (
+    "preflight",
+    "dns",
+    "image",
+    "keys",
+    "cert",
+    "repo",
+    "files",
+    "up",
+    "wait",
+    "owner",
+    "record",
+)
+EXIT_USAGE = 2
+HTTP_ERROR_FLOOR = 300
+READ_ONLY_CONFIGS = ("eu-remote",)
+DEFAULT_IMAGE = elite.DEFAULT_IMAGE
+CERT_VALID_DAYS = 30
+HEALTH_TRIES = 60
+HEALTH_INTERVAL_S = 5.0
+PORTAL = "/account/api/v1/portal"
+DNS_COMMENT = "rediacc onprem install"
+USAGE = (__doc__ or "").split("\n\n")[1]
+FLAGS = {
+    "--config": "config",
+    "--machine": "machine",
+    "--domain": "domain",
+    "--owner": "owner",
+    "--repo": "repo",
+    "--store-domain": "store_domain",
+    "--size": "size",
+    "--public-ip": "public_ip",
+    "--image-ref": "image_ref",
+    "--subscription": "subscription",
+    "--state-dir": "state_dir",
+}
+TEMPLATE_KEYS = (
+    "RUSTFS_ACCESS_KEY",
+    "RUSTFS_SECRET_KEY",
+    "ACCOUNT_CONFIG_SERVER_KEY",
+    "ACCOUNT_ED25519_PRIVATE_KEY",
+    "ACCOUNT_ED25519_PUBLIC_KEY",
+    "ACCOUNT_X25519_PRIVATE_KEY",
+    "ACCOUNT_X25519_PUBLIC_KEY",
+    "ACCOUNT_SERVER_API_KEY",
+    "ACCOUNT_JWT_SECRET",
+    "DELEGATION_CERT_BASE64",
+)
+
+
+class InstallError(Exception):
+    """A refusal or a failed step; the message names it."""
+
+
+def state_root() -> pathlib.Path:
+    return pathlib.Path.home() / ".local" / "state" / "rediacc" / "onprem"
+
+
+def store_domain_of(domain: str) -> str:
+    head, _, rest = domain.partition(".")
+    return "%s-store.%s" % (head, rest)
+
+
+@dataclasses.dataclass
+class Options:
+    config: str
+    machine: str
+    domain: str
+    owner: str
+    repo: str = "elite"
+    store_domain: str = ""
+    size: str = "10G"
+    public_ip: str = ""
+    image_ref: str = ""
+    subscription: str = ""
+    state_dir: pathlib.Path = dataclasses.field(default_factory=pathlib.Path)
+
+    def __post_init__(self) -> None:
+        self.store_domain = self.store_domain or store_domain_of(self.domain)
+        if not str(self.state_dir) or str(self.state_dir) == ".":
+            self.state_dir = state_root() / self.domain
+
+
+# --------------------------------------------------------------------------- the seams ---------------------------------------------------------------------------
+
+
+class HttpsApi(rt.Api):
+    """`rt.Api` over TLS on the domain, for the owner step."""
+
+    def __init__(self, domain: str) -> None:
+        super().__init__("https://%s" % domain)
+        self.port = 443
+
+    def _request(self, method: str, path: str, body: bytes | None, timeout: int) -> tuple[int, str]:
+        headers = {"Content-Type": "application/json"} if body is not None else {}
+        if self.cookies:
+            headers["Cookie"] = "; ".join("%s=%s" % kv for kv in self.cookies.items())
+        if self.token:
+            headers["Authorization"] = "Bearer " + self.token
+        conn = http.client.HTTPSConnection(self.host, 443, timeout=timeout)
+        try:
+            conn.request(method, path, body=body, headers=headers)
+            response = conn.getresponse()
+            for value in response.headers.get_all("Set-Cookie") or []:
+                name, _, cookie = value.split(";", 1)[0].partition("=")
+                self.cookies[name.strip()] = cookie.strip()
+            return response.status, response.read().decode("utf-8", errors="replace")
+        finally:
+            conn.close()
+
+
+class BenchPortal:
+    """The bench portal under the cookie session `login_bench.login` opened. `call` returns the decoded object, or raises `InstallError` on a non-2xx."""
+
+    def __init__(self, api: login_bench.Poster) -> None:
+        self.api = api
+
+    def call(self, method: str, path: str, body: dict | None = None) -> dict:
+        route = PORTAL + path
+        status, answer = self.api.post(route, body) if method == "POST" else self.api.get(route)
+        if status >= HTTP_ERROR_FLOOR:
+            raise InstallError("bench %s %s answered HTTP %d" % (method, path, status))
+        return answer
+
+
+def live_portal() -> BenchPortal:
+    api = login_bench.AccountApi(BENCH_ORIGIN)
+    login_bench.login([], os.environ, api=api)
+    return BenchPortal(api)
+
+
+def live_health(domain: str) -> tuple[int, list[str]]:
+    """The `/health` status and the certificate's SANs, over a handshake that verifies the chain and the host name. 0 and no names when nothing answered."""
+    conn = http.client.HTTPSConnection(
+        domain, 443, timeout=10, context=ssl.create_default_context()
+    )
+    try:
+        conn.request("GET", "/health")
+        status = conn.getresponse().status
+        cert = conn.sock.getpeercert() if conn.sock else {}
+    except (OSError, ssl.SSLError):
+        return 0, []
+    finally:
+        conn.close()
+    sans = [v for k, v in (cert or {}).get("subjectAltName", ()) if k == "DNS"]
+    return status, sans
+
+
+def live_resolve(host: str) -> set[str]:
+    try:
+        return {str(i[4][0]) for i in socket.getaddrinfo(host, 443, proto=socket.IPPROTO_TCP)}
+    except OSError:
+        return set()
+
+
+def live_rdc(argv: Sequence[str]) -> tuple[int, str]:
+    proc = subprocess.run(
+        [str(paths.repo_root() / "rdc.sh"), *argv], capture_output=True, text=True, check=False
+    )
+    return proc.returncode, proc.stdout
+
+
+def live_local(argv: Sequence[str]) -> int:
+    env = dict(os.environ)
+    ci = str(paths.repo_root() / ".ci")
+    env["PYTHONPATH"] = ci + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
+    return subprocess.run(list(argv), env=env, check=False).returncode
+
+
+def live_cf() -> cf_dns.Http:
+    return cf_dns.live_http(redirects.auth_headers())
+
+
+def live_keygen() -> account.CryptoKeys:
+    return account.generate_crypto_keys(strict=True)
+
+
+def live_token() -> str:
+    return uuid.uuid4().hex + uuid.uuid4().hex
+
+
+@dataclasses.dataclass
+class Deps:
+    """Everything a step reaches outside this process. The tests' are scripted."""
+
+    rdc: Callable[[Sequence[str]], tuple[int, str]] = live_rdc
+    local: Callable[[Sequence[str]], int] = live_local
+    resolve: Callable[[str], set[str]] = live_resolve
+    cf: Callable[[], cf_dns.Http] = live_cf
+    portal: Callable[[], BenchPortal] = live_portal
+    box_api: Callable[[str], Any] = HttpsApi
+    health: Callable[[str], tuple[int, list[str]]] = live_health
+    keygen: Callable[[], account.CryptoKeys] = live_keygen
+    token: Callable[[], str] = live_token
+    sleep: Callable[[float], None] = time.sleep
+    now: Callable[[], float] = time.time
+
+
+# --------------------------------------------------------------------------- the ledger ---------------------------------------------------------------------------
+
+
+def write_private(path: pathlib.Path, text: str) -> None:
+    """`text` into `path` at 0600, never readable by another user even for a moment."""
+    descriptor = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+        stream.write(text)
+    path.chmod(0o600)
+
+
+class Ledger:
+    """`ledger.json` in the state directory: which steps are done, and the non-secret facts they learned."""
+
+    def __init__(self, directory: pathlib.Path, domain: str) -> None:
+        self.dir = directory
+        self.path = directory / "ledger.json"
+        self.domain = domain
+        self.steps: dict[str, str] = {}
+        self.facts: dict[str, str] = {}
+        directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+        directory.chmod(0o700)
+        if self.path.is_file():
+            doc = json.loads(self.path.read_text(encoding="utf-8"))
+            if doc.get("domain") != domain:
+                raise InstallError(
+                    "%s belongs to %s, not %s" % (self.path, doc.get("domain"), domain)
+                )
+            self.steps = dict(doc.get("steps", {}))
+            self.facts = dict(doc.get("facts", {}))
+
+    def done(self, step: str) -> bool:
+        return step in self.steps
+
+    def mark(self, step: str, stamp: str) -> None:
+        self.steps[step] = stamp
+        self.save()
+
+    def fact(self, key: str, value: str) -> None:
+        self.facts[key] = value
+        self.save()
+
+    def save(self) -> None:
+        doc = {"domain": self.domain, "steps": self.steps, "facts": self.facts}
+        write_private(self.path, json.dumps(doc, indent=2) + "\n")
+
+    def secret(self, name: str) -> pathlib.Path:
+        return self.dir / name
+
+
+# --------------------------------------------------------------------------- the run ---------------------------------------------------------------------------
+
+
+class Install:
+    def __init__(
+        self,
+        opts: Options,
+        deps: Deps | None = None,
+        say: Callable[[str], None] = log.step,
+    ) -> None:
+        self.o = opts
+        self.deps = deps or Deps()
+        self.say = say
+        self.ledger = Ledger(opts.state_dir, opts.domain)
+        self.stage = opts.state_dir / "stage"
+
+    def rdc(self, *args: str, mutating: bool = True) -> tuple[int, str]:
+        if mutating and self.o.config in READ_ONLY_CONFIGS:
+            raise InstallError(
+                "refusing a mutating call through --config %s (reads only); use eu-bench"
+                % self.o.config
+            )
+        return self.deps.rdc(["--config", self.o.config, *args])
+
+    def must(self, *args: str, mutating: bool = True) -> str:
+        rc, out = self.rdc(*args, mutating=mutating)
+        if rc != 0:
+            raise InstallError("rdc %s failed (exit %d)" % (" ".join(args[:4]), rc))
+        return out
+
+    def ref(self) -> str:
+        return "%s@%s" % (self.o.repo, self.o.machine)
+
+    def run(self) -> None:
+        if self.o.config in READ_ONLY_CONFIGS:
+            raise InstallError(
+                "install refuses --config %s: it only reads; use eu-bench" % self.o.config
+            )
+        for step in STEPS:
+            if self.ledger.done(step):
+                self.say("%s: done earlier, skipped" % step)
+                continue
+            self.say(step)
+            try:
+                getattr(self, "step_" + step)()
+            except InstallError as exc:
+                raise InstallError("%s: %s" % (step, exc)) from None
+            stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(self.deps.now()))
+            self.ledger.mark(step, stamp)
+
+    def step_preflight(self) -> None:
+        out = self.must("-o", "json", "machine", "status", self.o.machine, mutating=False)
+        if "renet" not in out.lower():
+            raise InstallError("machine %s answered but names no renet" % self.o.machine)
+        rc, _ = self.rdc("-o", "json", "repo", "status", self.ref(), mutating=False)
+        if rc == 0 and not self.ledger.facts.get("repo_created"):
+            raise InstallError(
+                "repo %s already exists on %s and was not created by this install"
+                % (self.o.repo, self.o.machine)
+            )
+
+    def step_dns(self) -> None:
+        for host in (self.o.domain, self.o.store_domain):
+            found = self.deps.resolve(host)
+            if found and (not self.o.public_ip or self.o.public_ip in found):
+                continue
+            if found:
+                raise InstallError(
+                    "%s resolves to %s, not %s" % (host, ", ".join(sorted(found)), self.o.public_ip)
+                )
+            zone = ".".join(host.split(".")[-2:])
+            if zone not in redirects.ZONE_IDS or not self.o.public_ip:
+                raise InstallError(
+                    "%s does not resolve; create A %s -> %s (DNS only) at its zone"
+                    % (host, host, self.o.public_ip or "<the machine's public IP>")
+                )
+            try:
+                cf_dns.ensure_record(
+                    zone, host, "A", self.o.public_ip, False, DNS_COMMENT, self.deps.cf()
+                )
+            except cf_dns.DnsError as exc:
+                raise InstallError(str(exc)) from None
+
+    def image_ref(self) -> str:
+        return self.o.image_ref or DEFAULT_IMAGE
+
+    def step_image(self) -> None:
+        if self.o.image_ref:
+            return
+        ref = self.image_ref()
+        if self.deps.local(["docker", "image", "inspect", ref]) != 0:
+            rc = self.deps.local([sys.executable, "-m", "rediacc_ci.ops.build_server", "onprem"])
+            if rc != 0:
+                raise InstallError("build_server onprem failed (exit %d)" % rc)
+        target = self.stage / "images" / "server.tar"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        if self.deps.local(["docker", "save", "-o", str(target), ref]) != 0:
+            raise InstallError("docker save %s failed" % ref)
+
+    def step_keys(self) -> None:
+        keys = self.deps.keygen()
+        doc = {
+            "ed25519_priv": keys.ed25519_priv,
+            "ed25519_pub": keys.ed25519_pub,
+            "x25519_priv": keys.x25519_priv,
+            "x25519_pub": keys.x25519_pub,
+            "api_key": keys.api_key,
+            "jwt": keys.jwt,
+            "store_access": self.deps.token()[:20],
+            "store_secret": self.deps.token(),
+            "config_key": self.deps.token(),
+        }
+        write_private(self.ledger.secret("keys.json"), json.dumps(doc))
+
+    def read_keys(self) -> dict[str, str]:
+        return json.loads(self.ledger.secret("keys.json").read_text(encoding="utf-8"))
+
+    def step_cert(self) -> None:
+        keys = self.read_keys()
+        portal = self.deps.portal()
+        sub = self.o.subscription or str(portal.call("GET", "/subscription").get("id", ""))
+        if not sub:
+            raise InstallError("the bench account names no subscription; pass --subscription")
+        listed = portal.call("GET", "/delegation-certs?subscriptionId=%s&status=active" % sub)
+        active = [c for c in listed.get("items", []) if isinstance(c, dict)]
+        saved = self.ledger.secret("cert.b64")
+        for cert in active:
+            if cert.get("delegatedPublicKey") != keys["ed25519_pub"]:
+                raise InstallError(
+                    "subscription %s holds an active delegation cert for another key; revoke it "
+                    "first: POST %s/delegation-certs/%s/revoke" % (sub, PORTAL, cert.get("id"))
+                )
+            if not saved.is_file():
+                raise InstallError(
+                    "an active cert for this key exists but no copy is saved here; revoke it: "
+                    "POST %s/delegation-certs/%s/revoke" % (PORTAL, cert.get("id"))
+                )
+            self.ledger.fact("subscription", sub)
+            return
+        answer = portal.call(
+            "POST",
+            "/delegation-certs",
+            {
+                "subscriptionId": sub,
+                "delegatedPublicKey": keys["ed25519_pub"],
+                "validDays": CERT_VALID_DAYS,
+            },
+        )
+        try:
+            b64 = elite.cert_base64(json.dumps(answer))
+        except ValueError as exc:
+            raise InstallError(str(exc)) from None
+        if elite.cert_subscription(b64) != sub:
+            raise InstallError("the issued cert does not name subscription %s" % sub)
+        write_private(saved, b64)
+        self.ledger.fact("subscription", sub)
+
+    def secrets_text(self) -> str:
+        keys = self.read_keys()
+        cert = self.ledger.secret("cert.b64").read_text(encoding="utf-8").strip()
+        env = elite.elite_env(
+            self.o.domain,
+            keys=keys,
+            cert_b64=cert,
+            store_access=keys["store_access"],
+            store_secret=keys["store_secret"],
+            config_key=keys["config_key"],
+        )
+        values = {k: env[k] for k in TEMPLATE_KEYS}
+        values["TAG"] = "latest" if self.o.image_ref else "dev"
+        values["ELITE_DOMAIN"] = self.o.domain
+        values["ELITE_STORE_DOMAIN"] = self.o.store_domain
+        values["ELITE_IMAGE"] = self.image_ref()
+        return elite.env_text(values)
+
+    def step_repo(self) -> None:
+        rc, _ = self.rdc("-o", "json", "repo", "status", self.ref(), mutating=False)
+        if rc == 0:
+            return
+        self.ledger.fact("repo_created", "1")
+        self.must("repo", "create", self.o.repo, "-m", self.o.machine, "--size", self.o.size)
+
+    def step_files(self) -> None:
+        try:
+            text = self.secrets_text()
+        except ValueError as exc:
+            raise InstallError(str(exc)) from None
+        self.stage.mkdir(parents=True, exist_ok=True)
+        secrets_file = self.stage / "secrets.env"
+        write_private(secrets_file, text)
+        ref = self.ref()
+        self.must("repo", "admin", "template", "apply", ref, "--template", "elite")
+        sync = ("repo", "sync", "upload", ref)
+        self.must(*sync, "--local", str(secrets_file), "--remote-file", "secrets.env", "--verify")
+        images = self.stage / "images"
+        if images.is_dir():
+            self.must(*sync, "--local", str(images), "--remote", "images", "--verify")
+
+    def step_up(self) -> None:
+        self.must("repo", "up", self.ref())
+
+    def step_wait(self) -> None:
+        status, sans = 0, []
+        for attempt in range(HEALTH_TRIES):
+            status, sans = self.deps.health(self.o.domain)
+            if status == 200:
+                break
+            if attempt + 1 < HEALTH_TRIES:
+                self.deps.sleep(HEALTH_INTERVAL_S)
+        if status != 200:
+            raise InstallError(
+                "https://%s/health answered %s, not 200" % (self.o.domain, status or "nothing")
+            )
+        if not cf_dns.covers(sans, self.o.domain):
+            raise InstallError(
+                "the certificate covers %s, not %s" % (", ".join(sans) or "nothing", self.o.domain)
+            )
+
+    def step_owner(self) -> None:
+        api = self.deps.box_api(self.o.domain)
+        phrase = self.deps.token()[:32] + "A1!"
+        creds = {"email": self.o.owner, "password": phrase}
+        write_private(self.ledger.secret("owner.json"), json.dumps(creds))
+        try:
+            api.call("POST", "/auth/register", creds)
+            api.call("POST", "/auth/login", creds)
+            api.accept_terms()
+            sub = str(api.call("GET", "/portal/subscription").get("id", ""))
+        except rt.StepError as exc:
+            raise InstallError(str(exc)) from None
+        cert = self.ledger.secret("cert.b64").read_text(encoding="utf-8").strip()
+        named = elite.cert_subscription(cert)
+        if sub != named:
+            raise InstallError(
+                "the box's subscription %r is not the cert's %r: another account registered first"
+                % (sub, named)
+            )
+
+    def step_record(self) -> None:
+        doc = {
+            "domain": self.o.domain,
+            "store_domain": self.o.store_domain,
+            "repo": self.o.repo,
+            "machine": self.o.machine,
+            "config": self.o.config,
+            "owner": self.o.owner,
+            "image": self.image_ref(),
+            "subscription": self.ledger.facts.get("subscription", ""),
+            "steps": self.ledger.steps,
+        }
+        text = json.dumps(doc, indent=2, sort_keys=True) + "\n"
+        (self.o.state_dir / "install.json").write_text(text, encoding="utf-8")
+
+
+def status_lines(
+    domain: str,
+    state_dir: pathlib.Path | None,
+    health: Callable[[str], tuple[int, list[str]]],
+) -> list[str]:
+    """The ledger of one domain and the live health answer; reads only."""
+    directory = state_dir or state_root() / domain
+    lines = []
+    ledger_path = directory / "ledger.json"
+    if ledger_path.is_file():
+        done = json.loads(ledger_path.read_text(encoding="utf-8")).get("steps", {})
+        lines.extend("%-10s %s" % (step, done.get(step, "pending")) for step in STEPS)
+    else:
+        lines.append("no install ledger for %s" % domain)
+    code, sans = health(domain)
+    lines.append("health     %s" % (code or "no answer"))
+    lines.append("cert SANs  %s" % (", ".join(sans) or "none"))
+    return lines
+
+
+def parse(argv: Sequence[str]) -> tuple[str, dict[str, Any]]:
+    verb = argv[0] if argv else ""
+    if verb not in ("install", "status"):
+        raise ValueError("unknown verb %r" % verb)
+    values: dict[str, Any] = {}
+    rest = list(argv[1:])
+    while rest:
+        arg = rest.pop(0)
+        key, eq, inline = arg.partition("=")
+        if key not in FLAGS:
+            raise ValueError("unexpected argument %r" % arg)
+        if not eq:
+            if not rest:
+                raise ValueError("%s needs a value" % key)
+            inline = rest.pop(0)
+        values[FLAGS[key]] = pathlib.Path(inline) if key == "--state-dir" else inline
+    need = ("config", "machine", "domain", "owner") if verb == "install" else ("domain",)
+    missing = [k for k in need if not values.get(k)]
+    if missing:
+        raise ValueError("missing --%s" % ", --".join(m.replace("_", "-") for m in missing))
+    return verb, values
+
+
+def main(argv: Sequence[str], deps: Deps | None = None) -> int:
+    try:
+        verb, values = parse(argv)
+    except ValueError as exc:
+        print("%s\n%s" % (exc, USAGE), file=sys.stderr)
+        return EXIT_USAGE
+    d = deps or Deps()
+    if verb == "status":
+        for line in status_lines(values["domain"], values.get("state_dir"), d.health):
+            print(line)
+        return 0
+    try:
+        opts = Options(**{"config": "", "machine": "", "owner": "", **values})
+        Install(opts, d).run()
+    except InstallError as exc:
+        log.error(str(exc))
+        return 1
+    return 0

@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-12T11:30:26.748Z",
+  "generatedAt": "2026-11-12T12:18:47.907Z",
   "legs": [
     {
       "index": 1,
@@ -456,6 +456,7 @@
         "pytest:.ci/rediacc_ci/tests/test_infra_apt_mirror.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_renet_pkg_matrix.py",
         "pytest:.ci/rediacc_ci/tests/test_main.py",
+        "pytest:.ci/rediacc_ci/tests/test_onprem_install.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_bench_access.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_cf_auth.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_cf_notifications.py",

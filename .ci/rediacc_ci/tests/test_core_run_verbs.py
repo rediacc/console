@@ -19,6 +19,7 @@ import pytest
 from rediacc_ci import __main__ as entry
 from rediacc_ci import paths
 from rediacc_ci.core import run_verbs as rv
+from rediacc_ci.onprem import install
 from rediacc_ci.quality import submodule_branches
 
 # The `Usage:` lines of the deleted dispatcher, verbatim, one per verb that printed one.
@@ -560,3 +561,17 @@ def test_with_docker_group_scopes_the_entrypoint_variable_to_the_call(root, monk
     rv._with_docker_group(["devbox", "status"])
     assert inside == [str(root / "run.sh")]
     assert "SCRIPT_ENTRYPOINT" not in os.environ
+
+
+# --------------------------------------------------------------------------- onprem: the verb reaches the install module ---------------------------------------------------------------------------
+
+
+def test_onprem_hands_its_argv_to_the_install_module(monkeypatch) -> None:
+    seen: list[list[str]] = []
+    monkeypatch.setattr(install, "main", lambda argv: noting(seen, list(argv), 7))
+    row = next(v for v in entry.VERBS if v.name == "onprem")
+    assert entry._resolve(row) is rv.onprem_main
+    assert rv.onprem_main(["status", "--domain", "x.example.com"]) == 7
+    assert seen == [["status", "--domain", "x.example.com"]]
+    assert "onprem install" in rv.HELP
+    assert "enterprise dns" in rv.HELP

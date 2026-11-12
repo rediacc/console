@@ -104,9 +104,15 @@ VERBS: tuple[Verb, ...] = (
     ),
     Verb(
         name="enterprise",
-        summary="add | list | update | suspend | export | remove | release | proof | control",
+        summary="add | list | update | suspend | export | remove | release | proof | control | dns",
         module="rediacc_ci.core.run_verbs",
         entry="enterprise_main",
+    ),
+    Verb(
+        name="onprem",
+        summary="install | status (Elite as a renet repo on one machine)",
+        module="rediacc_ci.core.run_verbs",
+        entry="onprem_main",
     ),
     Verb(
         name="quality",

@@ -254,6 +254,12 @@ ENTERPRISE COMMANDS (one company's own Workers, database and buckets):
   enterprise release  Release the company Workers ring by ring
   enterprise proof <verb> [--bench]  Run one live proof of PLAN-enterprise-isolation.md
   enterprise control ensure     Create and migrate the regional control databases
+  enterprise dns ensure [--check]  The wildcard record and Universal SSL of the product zone
+
+ON-PREM COMMANDS (Elite as a renet repo; the fast path of the customer install):
+  onprem install --config <cfg> --machine <m> --domain <host> --owner <mail>
+                      Resumable install through the step ledger (never --config eu-remote)
+  onprem status --domain <host>   The ledger and the live health of one install
 
 QUALITY COMMANDS:
   quality lint        Run linting (ESLint + Knip)
@@ -401,6 +407,12 @@ def enterprise_main(argv: list[str]) -> int:
     """`./run.sh enterprise <verb>`: the whole subcommand tree is `rediacc_ci.enterprise.cli`'s, as `worktree` is `dev.worktree`'s."""
     _flush()
     return importlib.import_module("rediacc_ci.enterprise.cli").main(argv)
+
+
+def onprem_main(argv: list[str]) -> int:
+    """`./run.sh onprem <install|status>`: `rediacc_ci.onprem.install`'s."""
+    _flush()
+    return importlib.import_module("rediacc_ci.onprem.install").main(argv)
 
 
 # --------------------------------------------------------------------------- devbox ---------------------------------------------------------------------------
