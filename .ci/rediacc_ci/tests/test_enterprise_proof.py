@@ -43,6 +43,10 @@ class FakeLab:
     lag: int = 0
     # A start (or restore) that runs without error and leaves the signer refusing.
     restart_breaks: bool = False
+    # A cross-region dependency: with the us signer cut, every caller is refused, eu ones included.
+    us_cut_breaks_eu: bool = False
+    # The region each ensure_company call asked for, in order.
+    regions: list[str] = dataclasses.field(default_factory=list)
     _lag_left: int = 0
     _old: tuple[frozenset[str], frozenset[str]] = (frozenset(), frozenset())
     # add
@@ -108,6 +112,9 @@ class FakeLab:
         if worker in self.secrets:
             return self.secrets[worker]
         if worker.startswith("signer-"):
+            # A stopped or cut signer has had its private key deleted.
+            if worker in self.stopped or self._region(worker) in self.cut:
+                return ["ACCOUNT_ED25519_PUBLIC_KEY"]
             return [proof.PRIVATE_KEY, "ACCOUNT_ED25519_PUBLIC_KEY"]
         return ["ACCOUNT_ED25519_PUBLIC_KEY", "ACCOUNT_JWT_SECRET"]
 
@@ -127,6 +134,10 @@ class FakeLab:
     def expected_props(self, caller: str) -> dict[str, str]:
         return {"tier": "enterprise" if caller.endswith("cabc123") else "shared", "caller": caller}
 
+    @staticmethod
+    def _region(signer: str) -> str:
+        return signer.rsplit("-", 1)[-1]
+
     def _transition(self) -> None:
         """Remember the state before a stop, start, cut or restore, which the next `lag` issue calls still see."""
         self._old = (frozenset(self.stopped), frozenset(self.cut))
@@ -139,7 +150,11 @@ class FakeLab:
         if self._lag_left > 0:
             self._lag_left -= 1
             stopped, cut = set(self._old[0]), set(self._old[1])
-        if signer in stopped or ("eu" in signer and "eu" in cut and "us" not in signer):
+        if (
+            signer in stopped
+            or self._region(signer) in cut
+            or (self.us_cut_breaks_eu and "us" in cut)
+        ):
             if self.stopped_error_names_signer:
                 return refused(f"{proof.SIGNER_UNAVAILABLE}: {signer}")
             return refused("upstream is unreachable")
@@ -193,7 +208,7 @@ class FakeLab:
         self.companies[cid] = (label, ring)
         self.version.setdefault(cid, "0.9.0")
         self.version.setdefault("fast", "0.9.1")
-        del region
+        self.regions.append(region)
         return cid
 
     def caller_of(self, company: str) -> str:
@@ -558,7 +573,97 @@ def test_region_loss_restores_eu_when_a_claim_raises() -> None:
 def test_region_loss_records_what_bench_cannot_prove() -> None:
     _, lines = run("region-loss", FakeLab())
     notes = [line for line in lines if line.startswith("note")]
-    assert len(notes) == len(proof.NOT_PROVEN_ON_BENCH)
+    assert len(notes) == len(proof.NOT_PROVEN_ON_BENCH) + len(proof.BENCH_REGION_LOSS_GAPS)
+    assert any("cross-region placement" in line for line in notes)
+    # control: the second-region form names only the three bench limits
+    _, other = run("region-loss", FakeLab(), bench=False)
+    assert len([line for line in other if line.startswith("note")]) == len(
+        proof.NOT_PROVEN_ON_BENCH
+    )
+
+
+# -- the bench form of region-loss: eu only, the property proven at the signer ---
+
+
+def test_bench_region_loss_never_asks_for_a_company_outside_eu() -> None:
+    """Bench refuses --region us for a company (a55df8872f), so the bench form must not ask for one."""
+    lab = FakeLab()
+    rc, lines = run("region-loss", lab)
+    assert rc == 0, lines
+    assert lab.regions == ["eu"]
+    # control: the second-region form still places its survivor in us
+    other = FakeLab()
+    rc, lines = run("region-loss", other, bench=False)
+    assert rc == 0, lines
+    assert other.regions == ["eu", "us"]
+
+
+def test_bench_region_loss_cuts_us_before_eu_and_restores_both() -> None:
+    lab = FakeLab()
+    rc, lines = run("region-loss", lab)
+    assert rc == 0, lines
+    assert lab.cut == set()
+    ok = [line for line in lines if line.startswith("ok")]
+    assert any("signer-bench-us: bench signing is restored" in line for line in ok)
+    for late in ("", ", after the eu round trip"):
+        assert any(line.endswith(f"eu company issues with us cut{late}") for line in ok), ok
+        assert any(line.endswith(f"eu company renews with us cut{late}") for line in ok), ok
+    assert any("eu company gets the named error" in line for line in ok)
+
+
+def test_bench_region_loss_breaks_when_the_us_cut_reaches_the_eu_company() -> None:
+    """A cross-region dependency (the eu company refused while only us is cut) breaks the survivor claims."""
+    rc, lines = run("region-loss", FakeLab(us_cut_breaks_eu=True))
+    assert rc == 1
+    named = broken(lines)
+    assert any(line.startswith("BROKEN  eu company issues with us cut:") for line in named), named
+    assert any(line.startswith("BROKEN  eu company renews with us cut:") for line in named), named
+    # control: a healthy lab holds both
+    rc, lines = run("region-loss", FakeLab())
+    assert rc == 0, lines
+
+
+def test_bench_region_loss_refuses_an_eu_company_bound_to_another_signer() -> None:
+    """Cutting us proves nothing about a company that does not sign through signer-bench-eu."""
+
+    class BoundElsewhere(FakeLab):
+        def signer_of(self, caller: str) -> str:
+            return "signer-bench-us" if caller.endswith("-eu") else super().signer_of(caller)
+
+    lab = BoundElsewhere()
+    rc, lines = run("region-loss", lab)
+    assert rc == 1
+    assert any("eu company signs through signer-bench-eu" in line for line in broken(lines))
+    assert "cut_region" not in lab.calls
+
+
+def test_bench_region_loss_restores_us_when_the_eu_cut_fails() -> None:
+    class EuCutFails(FakeLab):
+        def cut_region(self, region: str) -> None:
+            if region == "eu":
+                self._rec("cut_region:eu")
+                raise LabError("eu cut failed")
+            super().cut_region(region)
+
+    lab = EuCutFails()
+    rc, lines = run("region-loss", lab)
+    assert rc == 1
+    assert lab.cut == set()
+    assert any(line.startswith("BROKEN  eu signer is cut") for line in lines)
+    assert any(
+        line.startswith("ok      signer-bench-us: bench signing is restored") for line in lines
+    )
+
+
+def test_bench_region_loss_breaks_when_us_keeps_no_key_after_its_restore() -> None:
+    lab = FakeLab(secrets={"signer-bench-us": ["ACCOUNT_ED25519_PUBLIC_KEY"]})
+    rc, lines = run("region-loss", lab)
+    assert rc == 1
+    restored = [
+        line for line in broken(lines) if "signer-bench-us: bench signing is restored" in line
+    ]
+    assert len(restored) == 1, broken(lines)
+    assert "deploy_signer --target bench-us" in restored[0]
 
 
 def test_proxy_lists_this_machine_then_only_the_foreign_address() -> None:
@@ -658,16 +763,34 @@ def test_a_clean_lab_never_waits(fake_clock: list[float]) -> None:
     assert fake_clock[0] == 0
 
 
-@pytest.mark.parametrize("verb", ["signer", "region-loss"])
-def test_a_restart_that_leaves_signing_refused_is_broken_and_names_the_deploy(verb: str) -> None:
+def test_a_restart_that_leaves_signing_refused_is_broken_and_names_the_deploy() -> None:
     lab = FakeLab(restart_breaks=True)
-    rc, lines = run(verb, lab)
+    rc, lines = run("signer", lab)
     assert rc == 1
     restored = [line for line in broken(lines) if "bench signing is restored" in line]
     assert len(restored) == 1, broken(lines)
     assert "deploy_signer --target bench-eu" in restored[0]
-    start = "start_signer" if verb == "signer" else "restore_region"
-    assert lab.calls.count(start) == 2
+    assert lab.calls.count("start_signer") == 2
+
+
+def test_a_region_restore_that_leaves_both_regions_down_names_each_deploy() -> None:
+    """The bench region-loss form cuts us and eu; a restart that brings neither back is two broken restores, each naming its own deploy, each started twice."""
+    lab = FakeLab(restart_breaks=True)
+    rc, lines = run("region-loss", lab)
+    assert rc == 1
+    restored = [line for line in broken(lines) if "bench signing is restored" in line]
+    assert len(restored) == 2, broken(lines)
+    assert any("deploy_signer --target bench-eu" in line for line in restored)
+    assert any(
+        line.startswith("BROKEN  signer-bench-us") and "deploy_signer --target bench-us" in line
+        for line in restored
+    )
+    assert lab.calls.count("restore_region") == 4
+    # With eu not back, the us-cut survivor claims are skipped, never judged.
+    assert any(
+        line.startswith("skipped eu company issues and renews with us cut, after the eu round trip")
+        for line in lines
+    )
 
 
 def test_lag_beyond_the_settle_window_breaks_the_stopped_claim_naming_the_wait() -> None:
