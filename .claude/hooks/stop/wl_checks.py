@@ -2757,7 +2757,12 @@ def green_receipt_on_unpushed_head(root, receipt_path=None):
         receipt = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return False
-    if not isinstance(receipt, dict) or receipt.get("exitCode") != 0:
+    # `type(...) is int`: JSON `false` and `0.0` compare equal to 0 but are not an exit code a run wrote.
+    if (
+        not isinstance(receipt, dict)
+        or type(receipt.get("exitCode")) is not int
+        or receipt["exitCode"] != 0
+    ):
         return False
     try:
         head = subprocess.run(

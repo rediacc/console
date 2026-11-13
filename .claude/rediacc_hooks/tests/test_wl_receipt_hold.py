@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import types
 
 import pytest
 
@@ -77,3 +78,58 @@ def test_no_upstream_is_a_doubt_and_does_not_hold(repo):
     _git(repo, "branch", "--unset-upstream")
     _receipt(repo, exitCode=0, head=_git(repo, "rev-parse", "HEAD"))
     assert CK.green_receipt_on_unpushed_head(str(repo)) is False
+
+
+def test_a_boolean_exit_code_is_not_a_green_receipt(repo):
+    """JSON `false` compares equal to 0 in Python, so a bare `!= 0` read a malformed receipt as green."""
+    head = _git(repo, "rev-parse", "HEAD")
+    _receipt(repo, exitCode=False, head=head)
+    assert CK.green_receipt_on_unpushed_head(str(repo)) is False
+    _receipt(repo, exitCode=0.0, head=head)
+    assert CK.green_receipt_on_unpushed_head(str(repo)) is False
+    _receipt(repo, exitCode=0, head=head)
+    assert CK.green_receipt_on_unpushed_head(str(repo)) is True
+
+
+WT = wlfix.import_wl("wl_worktrees")
+
+
+def _worktree_check(monkeypatch, repo):
+    """`wl_checks.worktree_check` over one unlanded lease, with the two running-run holds off; returns (queued, blocked)."""
+    lease = {"id": "w1", "path": "/x/w1", "unlanded": 1}
+    monkeypatch.setattr(CK.C, "project_start", lambda _event: str(repo))
+    monkeypatch.setattr(CK.C, "project_root", lambda _start: str(repo))
+    monkeypatch.setattr(CK, "vm_check_running", lambda: False)
+    monkeypatch.setattr(CK, "ci_quick_running", lambda _root: False)
+    monkeypatch.setattr(
+        WT, "survey", lambda *_a, **_k: {"unlanded": [lease], "cache": {}, "orphans": []}
+    )
+    monkeypatch.setattr(WT, "live_work", lambda *_a, **_k: [])
+    monkeypatch.setattr(WT, "unlanded_lines", lambda _got: "    w1")
+    monkeypatch.setattr(WT, "report_lines", lambda _got: "")
+    queued, blocked = [], []
+    monkeypatch.setattr(CK, "outq_add", lambda *a, **_k: queued.append(a[4]))
+    CK.worktree_check(
+        {}, "sid", {}, types_fold(), [], {"cwd": str(repo)}, lambda *a, **_k: blocked.append(a)
+    )
+    return queued, blocked
+
+
+def types_fold():
+    return types.SimpleNamespace(items=[])
+
+
+def test_a_green_receipt_reports_the_lease_instead_of_blocking(repo, monkeypatch):
+    _receipt(repo, exitCode=0, head=_git(repo, "rev-parse", "HEAD"))
+    queued, blocked = _worktree_check(monkeypatch, repo)
+    assert blocked == []
+    assert any("held for the push" in text for text in queued)
+    assert any("w1" in text for text in queued)
+
+
+def test_without_a_green_receipt_the_unlanded_lease_blocks(repo, monkeypatch):
+    """Control: a red receipt leaves the block in place and queues no hold report."""
+    _receipt(repo, exitCode=1, head=_git(repo, "rev-parse", "HEAD"))
+    queued, blocked = _worktree_check(monkeypatch, repo)
+    assert [b[0] for b in blocked] == ["worktree-unlanded"]
+    assert not any("held for the push" in text for text in queued)
