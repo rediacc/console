@@ -611,8 +611,16 @@ def live_actions(
             len(report.pushed),
         )
 
+    def claim_wildcard(plan: Plan) -> None:
+        try:
+            wildcard(False)
+        except dns.DnsClaimError as exc:
+            raise OnboardingError("company %s: %s" % (plan.company_id, exc)) from None
+
     def deploy_both(ctx: Context) -> str:
         plan = ctx.plan
+        # The proxy deploy smoke-tests the company's proxy host, so its DNS record must exist before the deploy, not after the `route` step.
+        claim_wildcard(plan)
         proxy_path, account_path = files(plan)
         tree = root if root is not None else paths.repo_root()
 
@@ -640,10 +648,7 @@ def live_actions(
 
     def route(ctx: Context) -> str:
         plan = ctx.plan
-        try:
-            wildcard(False)
-        except dns.DnsClaimError as exc:
-            raise OnboardingError("company %s: %s" % (plan.company_id, exc)) from None
+        claim_wildcard(plan)
         # `lab` imports this module, so the one shared route matcher is bound on first use.
         worker_of = route_of or importlib.import_module("rediacc_ci.enterprise.lab").routed_worker
         bad = []
@@ -718,14 +723,13 @@ def live_provision(
     environ = dict(os.environ if env is None else env)
 
     def provision(company: secrets.Company) -> Any:
-        token = environ.get("CF_MANAGEMENT_TOKEN", "")
-        if not token:
-            raise OnboardingError(
-                "company %s: the secrets step needs CF_MANAGEMENT_TOKEN to mint the backup token"
-                % company.id
-            )
         entry = region_entry(company.region)
-        from_domain = environ.get("AWS_SES_FROM", "").rpartition("@")[2].strip("> ")
+        try:
+            secrets.preflight(environ, str(entry["secretSuffix"]))
+        except secrets.SecretsError as exc:
+            raise OnboardingError("company %s: %s" % (company.id, exc)) from None
+        token = environ["CF_MANAGEMENT_TOKEN"]
+        from_domain = environ["AWS_SES_FROM"].rpartition("@")[2].strip("> ")
         if not from_domain:
             raise OnboardingError("company %s: the secrets step needs AWS_SES_FROM" % company.id)
 

@@ -552,7 +552,9 @@ def test_live_deploy_step_deploys_proxy_then_account_with_each_own_config(tmp_pa
         ran.append((module, argv))
         return 0
 
-    actions = onboarding.live_actions(runner=None, out_root=tmp_path, deploy=deploy, root=tmp_path)
+    actions = onboarding.live_actions(
+        runner=None, out_root=tmp_path, deploy=deploy, root=tmp_path, ensure_dns=lambda _c: "ok"
+    )
     actions["deploy"](ctx)
     assert [m for m, _ in ran] == [
         "rediacc_ci.deploy.deploy_proxy",
@@ -566,12 +568,58 @@ def test_live_deploy_step_deploys_proxy_then_account_with_each_own_config(tmp_pa
     assert account_argv[account_argv.index("--company-id") + 1] == "c0123456789abcdef"
 
 
+def test_live_deploy_step_claims_the_wildcard_before_the_proxy_smoke_runs(tmp_path):
+    """The proxy deploy smoke-tests the company's proxy host, whose record the wildcard claim creates: a first deploy cannot pass when the claim waits for the route step."""
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    order = []
+
+    def ensure(_check_only):
+        order.append("dns")
+        return "ok"
+
+    def deploy(module, _argv):
+        order.append(module.rsplit(".", 1)[1])
+        return 0
+
+    actions = onboarding.live_actions(
+        runner=None, out_root=tmp_path, deploy=deploy, root=tmp_path, ensure_dns=ensure
+    )
+    actions["deploy"](ctx)
+    assert order == ["dns", "deploy_proxy", "deploy_account"]
+
+
+def test_live_deploy_step_deploys_nothing_when_the_wildcard_claim_fails(tmp_path):
+    """The control: a refused claim stops the step before any module runs."""
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+
+    def deploy(_m, _a):
+        raise AssertionError("deployed")
+
+    actions = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        deploy=deploy,
+        root=tmp_path,
+        ensure_dns=RouteWorld({}, dns.DnsClaimError("Universal SSL is not enabled")).ensure,
+    )
+    with pytest.raises(onboarding.OnboardingError, match="Universal SSL is not enabled"):
+        actions["deploy"](ctx)
+
+
 def test_live_deploy_step_names_the_failed_module(tmp_path):
     _tree(tmp_path)
     ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
     onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
     actions = onboarding.live_actions(
-        runner=None, out_root=tmp_path, deploy=lambda _m, _a: 1, root=tmp_path
+        runner=None,
+        out_root=tmp_path,
+        deploy=lambda _m, _a: 1,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
     )
     with pytest.raises(onboarding.OnboardingError, match="deploy_proxy exited 1"):
         actions["deploy"](ctx)
@@ -685,6 +733,23 @@ def test_live_secrets_step_hands_the_company_to_the_provisioner():
 def test_live_secrets_step_without_a_provisioner_refuses_by_name():
     with pytest.raises(onboarding.OnboardingError, match="--bws-project"):
         onboarding.live_actions(runner=None)["secrets"](_ctx(World()))
+
+
+def test_live_provision_names_every_missing_secrets_input_at_once():
+    company = _ctx(World()).plan
+    provision = onboarding.live_provision("proj", env={})
+    co = types.SimpleNamespace(id="c0123456789abcdef", region="eu")
+    with pytest.raises(onboarding.OnboardingError) as caught:
+        provision(co)
+    message = str(caught.value)
+    for name in (
+        "CF_MANAGEMENT_TOKEN",
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SES_FROM",
+        "OBS_OTLP_CREDENTIALS_EU",
+    ):
+        assert name in message
+    assert company.company_id in message or "c0123456789abcdef" in message
 
 
 class FakeAccount:
