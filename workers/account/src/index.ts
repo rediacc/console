@@ -186,14 +186,23 @@ export default {
     // No `as never` here: the Hono entry declares `env: CloudflareEnv` and this worker's Env satisfies it, so the cast was load-bearing for nothing and
     // @typescript-eslint/no-unnecessary-type-assertion said so as soon as
     // workers/ entered the lint scope (2026-09-06). Keeping it would have hidden any real future divergence between the two Env shapes behind `never`.
+    // A failed fence lookup (a D1 error other than a missing table) is logged and the run goes ahead: only a frozen fence skips it, and every write the run makes is checked against the fence again by the wrapped handle.
     ctx.waitUntil(
-      fence.frozen(env.DB).then((frozen) => {
-        if (frozen) {
-          console.warn(`[fence] writes are frozen: cron ${controller.cron} skipped`);
-          return;
-        }
-        accountApp.scheduled(controller, fencedEnv(env), ctx);
-      })
+      fence
+        .frozen(env.DB)
+        .catch((error: unknown) => {
+          console.error(
+            `[fence] the fence lookup failed, cron ${controller.cron} runs, its writes still fenced: ${error instanceof Error ? error.message : String(error)}`
+          );
+          return false;
+        })
+        .then((frozen) => {
+          if (frozen) {
+            console.warn(`[fence] writes are frozen: cron ${controller.cron} skipped`);
+            return;
+          }
+          accountApp.scheduled(controller, fencedEnv(env), ctx);
+        })
     );
   },
 };

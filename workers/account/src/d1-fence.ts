@@ -6,8 +6,10 @@ import { writesFrozenError } from '../../../private/account/src/errors.js';
  * While table `_write_fence` (private/account/drizzle/0086_write_fence.sql) holds
  * its one row, the D1 handle this module wraps refuses every statement but a read
  * with 503 WRITES_FROZEN. The fence lives in the database itself, so every Worker
- * version still bound to that database refuses writes too, and a copy taken while
- * it is up misses nothing. Reads (`SELECT`, `WITH ... SELECT`, `VALUES`, `EXPLAIN`,
+ * version still bound to that database refuses writes too. An isolate trusts its
+ * last lookup for FENCE_TTL_MS, so one that read "unfenced" just before the row was
+ * inserted can still commit for up to FENCE_TTL_MS: a copy misses nothing once
+ * FENCE_TTL_MS has passed since the fence went up. Reads (`SELECT`, `WITH ... SELECT`, `VALUES`, `EXPLAIN`,
  * a read-only `PRAGMA`) pass without a lookup; a write looks the fence up, cached
  * per isolate for FENCE_TTL_MS. A database without the table (the migration not yet
  * applied) counts as unfenced. Every entry of workers/account wraps `env.DB` here:
@@ -22,6 +24,20 @@ export const FENCE_TTL_MS = 10_000;
 export const FENCE_ALARM_DELAY_MS = 300_000;
 
 const FENCE_PROBE = 'SELECT 1 AS fenced FROM _write_fence LIMIT 1';
+
+/** PRAGMAs that may take a parenthesised argument and still only read. */
+const READING_PRAGMA_CALLS = new Set([
+  'TABLE_INFO',
+  'TABLE_XINFO',
+  'TABLE_LIST',
+  'INDEX_LIST',
+  'INDEX_INFO',
+  'INDEX_XINFO',
+  'FOREIGN_KEY_LIST',
+  'FOREIGN_KEY_CHECK',
+  'INTEGRITY_CHECK',
+  'QUICK_CHECK',
+]);
 
 /** PRAGMAs that write even without an `=` argument. */
 const WRITING_PRAGMAS = new Set([
@@ -86,7 +102,7 @@ function scanAt(sql: string, i: number): { next: number; token: string | null; d
 }
 
 /**
- * The tokens of `sql` outside parentheses: upper-cased words, `;` and `=`.
+ * The tokens of `sql` outside parentheses: upper-cased words, `;`, `=` and a `(` that opens at the top level.
  * Comments are dropped; a quoted string or identifier becomes one `LIT` token.
  */
 function topLevelTokens(sql: string): string[] {
@@ -97,9 +113,18 @@ function topLevelTokens(sql: string): string[] {
     const step = scanAt(sql, i);
     depth = Math.max(0, depth + step.depth);
     if (step.token !== null && depth === 0) tokens.push(step.token);
+    // A parenthesis opening at the top level is kept as a token: `PRAGMA name(value)` sets as `PRAGMA name = value` does.
+    if (step.depth > 0 && depth === step.depth) tokens.push('(');
     i = step.next;
   }
   return tokens;
+}
+
+/** Whether a tokenised PRAGMA only reads: no `=`, no writing name, and a parenthesised argument only on an inspection pragma. */
+function pragmaReads(tokens: string[]): boolean {
+  if (tokens.includes('=') || tokens.some((t) => WRITING_PRAGMAS.has(t))) return false;
+  // `PRAGMA name(value)` is the other spelling of a set.
+  return !tokens.includes('(') || READING_PRAGMA_CALLS.has(tokens[1] ?? '');
 }
 
 /**
@@ -117,9 +142,7 @@ export function isReadOnlySql(sql: string): boolean {
     const main = tokens.slice(1).find((t) => MAIN_KEYWORDS.has(t));
     return main === 'SELECT' || main === 'VALUES';
   }
-  if (first === 'PRAGMA') {
-    return !tokens.includes('=') && !tokens.some((t) => WRITING_PRAGMAS.has(t));
-  }
+  if (first === 'PRAGMA') return pragmaReads(tokens);
   return false;
 }
 
