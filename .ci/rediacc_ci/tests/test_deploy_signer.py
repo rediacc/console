@@ -12,7 +12,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_signer as ds
-from rediacc_ci.enterprise import registry
+from rediacc_ci.enterprise import proof, registry
 from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, BENCH_ORIGIN
 
 ACCOUNT_HOST = ACCOUNT_DEFAULT_ORIGIN.removeprefix("https://")
@@ -411,7 +411,7 @@ def test_a_failed_start_carries_what_wrangler_said_without_the_key(monkeypatch, 
     monkeypatch.setattr(ds, "_root", lambda: repo)
     fake = FakeWrangler(secrets=[], echo_stdin=True)
     monkeypatch.setattr(ds, "deploy", functools.partial(ds.deploy, sleep=lambda _s: None))
-    with pytest.raises(ds.proof.LabError) as exc:
+    with pytest.raises(proof.LabError) as exc:
         ds.start_signer("signer-bench-eu", run=fake, env=ENV)
     text = str(exc.value)
     assert "wrangler said:" in text
@@ -529,3 +529,12 @@ def test_dry_run_needs_no_credential_and_reads_no_control(repo):
 def test_main_prints_refusal_and_exits_1(capsys):
     assert ds.main(["--target", "mars"], run=FakeWrangler()) == 1
     assert "not a signer target" in capsys.readouterr().err
+
+
+def test_the_regional_bench_accounts_bind_a_shared_signer_of_their_own_region():
+    """PLAN-multi-region-bench.md W2: expected_props names the region of every regions.json `bench` account Worker; a Worker no bench object names is still refused (control)."""
+    assert ds.expected_props("account-bench-us") == {"tier": "shared", "region": "us"}
+    assert ds.expected_props("account-bench-asia") == {"tier": "shared", "region": "asia"}
+    assert ds.expected_props("account-bench") == {"tier": "shared", "region": "eu"}
+    with pytest.raises(proof.LabError):
+        ds.expected_props("account-bench-zz", companies=lambda _bench: [])

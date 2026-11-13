@@ -10,6 +10,8 @@ OFFLINE LAYER (this module, every CI run, no credential):
   proxy      each proxy toml: name, route, ACCOUNT and ISSUER services naming this target's account Worker, ACCOUNT_URL, REGION, ENVIRONMENT, destinations;
   profile    each regional profile binds exactly the store names the pusher reads for its region and channel (derived from set_account_worker_secrets' own constants and read_env source), no other target's name, and the three regions of a channel are equal modulo the suffix; bench's profile binds every per-target family under its `_BENCH` name; bench's push payload carries exactly the regional pusher's Worker keys.
 
+BENCH OBJECTS. Each region row may carry a `bench` object (names, hosts, placement, queue, dataset, rate-limit ids, `deployable`): the home region's (`eu`) names the bench target of the four, the others become `extra_bench_targets`, whose tomls (`wrangler.bench-<r>.toml`) get the same account and proxy checks plus the signer, queue, dataset and rate-limit checks of `check_bench_object`. A non-home bench copies production placement, and a placeholder database id is allowed only while `deployable` is false.
+
 LIVE LAYER (`--live`, rediacc_ci.quality.region_consistency_live; `main` is in rediacc_ci.quality.region_consistency): the same four targets against Cloudflare.
 
 ANTI-VACUITY. Fewer than 4 targets, a missing toml or profile, or zero parsed bindings is exit 2. The success line prints the counts. `--selftest` plants one drift per class into a copy of the real inputs and requires each to go red, and plants benign changes that must stay green.
@@ -27,6 +29,7 @@ import tomllib
 from typing import TYPE_CHECKING
 
 from rediacc_ci.deploy import account_secrets_local as local_push
+from rediacc_ci.deploy import proxy_configs
 from rediacc_ci.deploy import set_account_worker_secrets as pusher
 from rediacc_ci.well_known import BENCH_ORIGIN, PRODUCT_DOMAIN
 
@@ -42,6 +45,27 @@ BENCH = "bench"
 BENCH_DOMAIN = BENCH_ORIGIN.removeprefix("https://")
 SHARED = "shared"
 BENCH_PROFILE = "deploy-bench"
+# The region whose bench keeps today's unsuffixed names (`account-bench`, `proxy-bench`); every other region's bench carries `-<r>`.
+BENCH_HOME = proxy_configs.BENCH_HOME_REGION
+BENCH_KEYS = (
+    "host",
+    "proxyHost",
+    "workerName",
+    "proxyWorkerName",
+    "signerWorkerName",
+    "d1",
+    "controlD1",
+    "r2",
+    "backupR2",
+    "r2Jurisdiction",
+    "r2Location",
+    "queue",
+    "dataset",
+    "rateLimits",
+    "otlp",
+    "config",
+    "deployable",
+)
 CLASSES = ("regions", "account", "proxy", "profile")
 
 # Names a regional profile binds that the pusher does not read: account_secrets_local's own preflight (wrangler token and account, and the Turnstile drift check that compares the site key with the secret).
@@ -113,6 +137,8 @@ class Target:
     otlp: str
     # The D1 database's own jurisdiction (creation-only on Cloudflare); None while the database sits under a location hint.
     d1_jurisdiction: str | None = None
+    # The region a bench serves (its `[vars] REGION`); empty for a shared target, which serves its own id.
+    serves: str = ""
 
     @property
     def account_toml(self) -> str:
@@ -124,7 +150,7 @@ class Target:
 
     @property
     def file_stem(self) -> str:
-        return BENCH if self.channel == BENCH else self.region
+        return self.id if self.channel == BENCH else self.region
 
     @property
     def profile(self) -> str:
@@ -177,17 +203,148 @@ def pattern(
     )
 
 
-def bench_jurisdiction(doc: dict | None) -> str | None:
-    """The jurisdiction wrangler.bench.toml declares for its CONFIG_BUCKET: bench has no regions.json row, so the toml is its declaration and `check_account` holds both of a Worker's buckets to the jurisdiction the target's pattern carries."""
-    if not doc:
-        return None
-    return blocks(doc, "r2_buckets").get("CONFIG_BUCKET", {}).get("jurisdiction")
+def bench_key(rid: str) -> str:
+    return BENCH if rid == BENCH_HOME else "%s-%s" % (BENCH, rid)
 
 
-def targets_from(doc: dict, bench_doc: dict | None = None) -> tuple[list[Target], list[Finding]]:
+def bench_expected(rid: str, d1_jurisdiction: str | None) -> dict[str, str]:
+    """The names region `rid`'s bench `bench` object must carry: today's unsuffixed ones for the home region, `-<r>` for the others."""
+    home = rid == BENCH_HOME
+    sfx = "" if home else "-" + rid
+    host = BENCH_DOMAIN if home else "bench-%s.%s" % (rid, PRODUCT_DOMAIN)
+    return {
+        "host": host,
+        "proxyHost": "proxy." + host,
+        "workerName": "account-bench" + sfx,
+        "proxyWorkerName": "proxy-bench" + sfx,
+        "signerWorkerName": "signer-bench-" + rid,
+        "d1": "account-bench%s%s" % (sfx, "-j" if d1_jurisdiction else ""),
+        "controlD1": "control-bench-" + rid,
+        "r2": "configs-bench" + sfx,
+        "backupR2": "backups-bench" + sfx,
+        "queue": "backup-replicate-bench" + sfx,
+        "dataset": "telemetry_bench" + ("" if home else "_" + rid),
+        "otlp": BENCH,
+        "config": rid + "-bench",
+    }
+
+
+def _named(value: object) -> object:
+    return value.get("name") if isinstance(value, dict) else value
+
+
+def bench_target(row: dict) -> Target:
+    """The Target of one region's bench, every name read from that row's `bench` object."""
+    rid = str(row.get("id", ""))
+    bench = row["bench"]
+    d1 = bench.get("d1") if isinstance(bench.get("d1"), dict) else {}
+    home = rid == BENCH_HOME
+    return Target(
+        id=bench_key(rid),
+        channel=BENCH,
+        region=BENCH if home else rid,
+        suffix=BENCH.upper() if home else rid.upper(),
+        account_worker=str(bench.get("workerName")),
+        proxy_worker=str(bench.get("proxyWorkerName")),
+        d1=str(d1.get("name")),
+        config_bucket=str(_named(bench.get("r2"))),
+        backup_bucket=str(_named(bench.get("backupR2"))),
+        domain=str(bench.get("host")),
+        jurisdiction=bench.get("r2Jurisdiction"),
+        otlp=str(bench.get("otlp")),
+        d1_jurisdiction=d1.get("jurisdiction"),
+        serves=rid,
+    )
+
+
+def bench_object_findings(rows: list[dict]) -> list[Finding]:
+    """Every regions.json `bench` object held to its pattern, to production's placement for a non-home region, and to its siblings' rate-limit ids."""
+    found: list[Finding] = []
+    seen_limits: dict[str, str] = {}
+    for row in rows:
+        rid = str(row.get("id", ""))
+        tid = bench_key(rid)
+        bench = row.get("bench")
+        if not isinstance(bench, dict):
+            continue
+        missing = [k for k in BENCH_KEYS if k not in bench]
+        if missing:
+            found.append(
+                Finding(tid, "regions", "regions.json bench object lacks %s" % ", ".join(missing))
+            )
+            continue
+        d1 = bench["d1"] if isinstance(bench["d1"], dict) else {}
+        want = bench_expected(rid, d1.get("jurisdiction"))
+        got = {k: _named(bench.get(k)) for k in want}
+        got["d1"] = d1.get("name")
+        for field, expect in want.items():
+            if got[field] != expect:
+                found.append(
+                    Finding(
+                        tid,
+                        "regions",
+                        "regions.json bench.%s is %r, the pattern says %r"
+                        % (field, got[field], expect),
+                    )
+                )
+        if not isinstance(bench["deployable"], bool):
+            found.append(
+                Finding(tid, "regions", "regions.json bench.deployable is not true or false")
+            )
+        if rid != BENCH_HOME:
+            prod_d1 = row.get("d1") if isinstance(row.get("d1"), dict) else {}
+            placement = (
+                ("d1.location", d1.get("location"), prod_d1.get("location")),
+                ("d1.jurisdiction", d1.get("jurisdiction"), prod_d1.get("jurisdiction")),
+                ("r2Location", bench["r2Location"], prod_d1.get("location")),
+                ("r2Jurisdiction", bench["r2Jurisdiction"], row.get("r2Jurisdiction")),
+            )
+            for field, have, prod in placement:
+                if have != prod:
+                    found.append(
+                        Finding(
+                            tid,
+                            "regions",
+                            "regions.json bench.%s is %r, production %s places it at %r"
+                            % (field, have, rid, prod),
+                        )
+                    )
+        limits = bench["rateLimits"] if isinstance(bench["rateLimits"], dict) else {}
+        for name in ("audit", "config"):
+            ident = limits.get(name)
+            if not isinstance(ident, str) or not ident:
+                found.append(
+                    Finding(
+                        tid, "regions", "regions.json bench.rateLimits.%s is %r" % (name, ident)
+                    )
+                )
+            elif ident in seen_limits:
+                found.append(
+                    Finding(
+                        tid,
+                        "regions",
+                        "regions.json bench.rateLimits.%s %r is also %s's"
+                        % (name, ident, seen_limits[ident]),
+                    )
+                )
+            else:
+                seen_limits[ident] = tid
+    return found
+
+
+def extra_bench_targets(doc: dict) -> list[Target]:
+    """The benches beyond the home one: one Target per other region row that carries a `bench` object."""
+    return [
+        bench_target(r)
+        for r in doc.get("regions", [])
+        if isinstance(r.get("bench"), dict) and r.get("id") != BENCH_HOME
+    ]
+
+
+def targets_from(doc: dict) -> tuple[list[Target], list[Finding]]:
     """The four targets, and every regions.json value that disagrees with its pattern.
 
-    `bench_doc` is the parsed wrangler.bench.toml: its bucket jurisdiction drives the bench pattern, and a bench jurisdiction makes the bench D1 name carry `-j` the way a regions.json `d1.jurisdiction` does.
+    The bench target is read from the home region's `bench` object, whose jurisdiction makes the bench D1 name carry `-j` the way a `d1.jurisdiction` does; the other regions' benches come from `extra_bench_targets`, and their objects are held to the same patterns here.
     """
     rows = doc.get("regions") if isinstance(doc, dict) else None
     if not isinstance(rows, list) or not rows:
@@ -245,8 +402,14 @@ def targets_from(doc: dict, bench_doc: dict | None = None) -> tuple[list[Target]
                     "regions.json carries no r2Jurisdiction key (null is a value; absent is not)",
                 )
             )
-    bench_jur = bench_jurisdiction(bench_doc)
-    out.append(pattern(BENCH, BENCH, bench_jur, bench_jur))
+    home = next((r for r in rows if r.get("id") == BENCH_HOME), None)
+    if not home or not isinstance(home.get("bench"), dict):
+        raise NoVerdictError(
+            "regions.json %s carries no bench object; a bench with no declaration is unchecked"
+            % BENCH_HOME
+        )
+    found += bench_object_findings(rows)
+    out.append(bench_target(home))
     return out, found
 
 
@@ -329,7 +492,7 @@ def check_account(t: Target, doc: dict, ref: dict[str, object]) -> list[Finding]
     if ex.get("service") != t.proxy_worker:
         bad("EXECUTOR service %r, expected %r" % (ex.get("service"), t.proxy_worker))
     want_vars: dict[str, str | None] = {
-        "REGION": "eu" if t.channel == BENCH else t.region,
+        "REGION": t.serves or t.region,
         "WEBAUTHN_RP_ID": t.domain,
         "WEBAUTHN_ORIGIN": "https://" + t.domain,
         **CHANNEL_VARS[t.channel],
@@ -348,7 +511,8 @@ def check_account(t: Target, doc: dict, ref: dict[str, object]) -> list[Finding]
         bad("observability destinations %r, expected %r" % (_destinations(doc), want_dest))
     shape = account_shape(doc)
     for field, actual in shape.items():
-        if actual != ref[field] and (t.id, field) not in SHAPE_EXCEPTIONS:
+        exempt = (BENCH if t.channel == BENCH else t.id, field) in SHAPE_EXCEPTIONS
+        if actual != ref[field] and not exempt:
             bad("%s is %r where the reference target has %r" % (field, actual, ref[field]))
     return f
 
@@ -373,7 +537,7 @@ def check_proxy(t: Target, doc: dict) -> list[Finding]:
     v = doc.get("vars", {})
     for key, want in (
         ("ACCOUNT_URL", "https://" + t.domain),
-        ("REGION", "eu" if t.channel == BENCH else t.region),
+        ("REGION", t.serves or t.region),
         ("ENVIRONMENT", PROXY_ENVIRONMENT[t.channel]),
     ):
         if v.get(key) != want:
@@ -381,6 +545,56 @@ def check_proxy(t: Target, doc: dict) -> list[Finding]:
     want_dest = (["otlp-%s-logs" % t.otlp], ["otlp-%s-traces" % t.otlp])
     if _destinations(doc) != want_dest:
         bad("observability destinations %r, expected %r" % (_destinations(doc), want_dest))
+    return f
+
+
+def check_bench_object(t: Target, bench: dict, doc: dict) -> list[Finding]:
+    """What a bench account toml carries that the `bench` object of its region row decides: the signer binding and its props, the replicate queue pair, the telemetry dataset, the rate-limit namespaces, and whether a placeholder database id is allowed."""
+    f: list[Finding] = []
+
+    def bad(msg: str) -> None:
+        f.append(Finding(t.id, "account", "%s: %s" % (t.account_toml, msg)))
+
+    signer = blocks(doc, "services").get("LICENSE_SIGNER", {})
+    if signer.get("service") != bench.get("signerWorkerName"):
+        bad(
+            "LICENSE_SIGNER service %r, regions.json bench says %r"
+            % (signer.get("service"), bench.get("signerWorkerName"))
+        )
+    want_props = {"tier": "shared", "region": t.serves}
+    if signer.get("props") != want_props:
+        bad("LICENSE_SIGNER props %r, expected %r" % (signer.get("props"), want_props))
+    queue = str(bench.get("queue"))
+    queues = doc.get("queues", {})
+    producers = [p.get("queue") for p in queues.get("producers", []) if isinstance(p, dict)]
+    consumers = [c for c in queues.get("consumers", []) if isinstance(c, dict)]
+    if producers != [queue]:
+        bad("queue producers %r, regions.json bench says [%r]" % (producers, queue))
+    if [(c.get("queue"), c.get("dead_letter_queue")) for c in consumers] != [
+        (queue, queue + "-dlq")
+    ]:
+        bad(
+            "queue consumers %r, expected one on %r with dead letter %r"
+            % (
+                [(c.get("queue"), c.get("dead_letter_queue")) for c in consumers],
+                queue,
+                queue + "-dlq",
+            )
+        )
+    datasets = [
+        d.get("dataset") for d in doc.get("analytics_engine_datasets", []) if isinstance(d, dict)
+    ]
+    if datasets != [bench.get("dataset")]:
+        bad("analytics dataset %r, regions.json bench says [%r]" % (datasets, bench.get("dataset")))
+    limits = {n: b.get("namespace_id") for n, b in blocks(doc, "ratelimits").items()}
+    rate = bench.get("rateLimits") if isinstance(bench.get("rateLimits"), dict) else {}
+    want_limits = {"AUDIT_WRITE_LIMIT": rate.get("audit"), "CONFIG_WRITE_LIMIT": rate.get("config")}
+    if limits != want_limits:
+        bad("ratelimits %r, regions.json bench says %r" % (limits, want_limits))
+    f.extend(
+        Finding(t.id, "account", "%s: %s" % (t.account_toml, r))
+        for r in proxy_configs.deployable_refusals(doc, bench)
+    )
     return f
 
 
@@ -392,6 +606,8 @@ def check_d1_ids(targets: list[Target], docs: dict[str, dict]) -> list[Finding]:
         uuid = blocks(docs[t.id], "d1_databases").get("DB", {}).get("database_id")
         if not uuid:
             f.append(Finding(t.id, "account", "%s: DB carries no database_id" % t.account_toml))
+        elif str(uuid).startswith(proxy_configs.PLACEHOLDER_D1_ID):
+            continue
         elif uuid in seen:
             f.append(
                 Finding(
@@ -589,6 +805,8 @@ class Inputs:
     proxy: dict[str, dict]
     consumers: dict
     bench_payload: list[str]
+    # The benches beyond the home one: (target, account toml, proxy toml), one per other region row with a `bench` object.
+    bench_regions: list[tuple[Target, dict, dict]] = dataclasses.field(default_factory=list)
 
 
 def load(root: pathlib.Path) -> tuple[Inputs, list[Target], list[Finding]]:
@@ -602,8 +820,7 @@ def load(root: pathlib.Path) -> tuple[Inputs, list[Target], list[Finding]]:
         return path.read_text(encoding="utf-8")
 
     regions = json.loads(read(REGIONS_REL))
-    bench_doc = tomllib.loads(read("workers/account/wrangler.%s.toml" % BENCH))
-    targets, found = targets_from(regions, bench_doc)
+    targets, found = targets_from(regions)
     if len(targets) != EXPECTED_TARGETS:
         raise NoVerdictError(
             "built %d target(s), expected %d (3 shared regions, plus bench)"
@@ -613,7 +830,11 @@ def load(root: pathlib.Path) -> tuple[Inputs, list[Target], list[Finding]]:
     proxy = {t.id: tomllib.loads(read(t.proxy_toml)) for t in targets}
     consumers = json.loads(read(SUPPLY_REL)).get("consumers", {})
     payload = bench_payload_keys(read(BENCH_DEPLOY_REL))
-    return Inputs(regions, account, proxy, consumers, payload), targets, found
+    extras = [
+        (t, tomllib.loads(read(t.account_toml)), tomllib.loads(read(t.proxy_toml)))
+        for t in extra_bench_targets(regions)
+    ]
+    return Inputs(regions, account, proxy, consumers, payload, extras), targets, found
 
 
 def offline(inputs: Inputs, targets: list[Target], found: list[Finding]) -> list[Finding]:
@@ -627,7 +848,17 @@ def offline(inputs: Inputs, targets: list[Target], found: list[Finding]) -> list
     for t in targets:
         out += check_account(t, inputs.account[t.id], ref)
         out += check_proxy(t, inputs.proxy[t.id])
-    out += check_d1_ids(targets, inputs.account)
+    bench_rows = {r.get("id"): r.get("bench") for r in inputs.regions.get("regions", [])}
+    for t in targets:
+        if t.channel == BENCH and isinstance(bench_rows.get(t.serves), dict):
+            out += check_bench_object(t, bench_rows[t.serves], inputs.account[t.id])
+    docs = dict(inputs.account)
+    for t, account_doc, proxy_doc in inputs.bench_regions:
+        docs[t.id] = account_doc
+        out += check_account(t, account_doc, ref)
+        out += check_proxy(t, proxy_doc)
+        out += check_bench_object(t, bench_rows[t.serves], account_doc)
+    out += check_d1_ids([*targets, *(t for t, _a, _p in inputs.bench_regions)], docs)
     out += check_profiles(targets, inputs.consumers, inputs.bench_payload)
     return out
 

@@ -4,7 +4,7 @@
 # resets via `PYTHONPATH=.ci python3 -m rediacc_ci.ops.reset_bench`.
 #
 # Differences from account-eu:
-#   - Single non-regional environment (no us / asia siblings)
+#   - The eu bench; the us and asia benches are wrangler.bench-us.toml and wrangler.bench-asia.toml (PLAN-multi-region-bench.md)
 #   - No EU jurisdiction lock on R2 (this is internal test data, not customer)
 #   - Reuses prod EU SES credentials at deploy time (set by rediacc_ci.ops.deploy_bench)
 #   - ENVIRONMENT = "bench" (requires schema bump in env.ts)
@@ -102,7 +102,7 @@ service = "proxy-bench"
 
 # The regional licence signer (agent/plans/PLAN-enterprise-isolation.md, Design "Bench and local dev"). account-bench holds
 # no licence private key: signing goes through this binding to signer-bench-eu, which holds the production key by the
-# standing bench ruling. Bench is the one account Worker, REGION "eu". wrangler refuses a deploy whose binding names a
+# standing bench ruling. This bench is REGION "eu". wrangler refuses a deploy whose binding names a
 # missing Worker, so deploy signer-bench-eu first (rediacc_ci.deploy.deploy_signer --target bench-eu).
 [[services]]
 binding = "LICENSE_SIGNER"

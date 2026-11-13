@@ -215,7 +215,7 @@ THREE = tuple(
         t.routes[0],
     )
     for key, t in proxy_configs.targets(proxy_configs.load_regions(ROOT)).items()
-    if t.generated
+    if t.generated and not t.key.startswith("bench")
 )
 
 

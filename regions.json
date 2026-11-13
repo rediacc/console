@@ -12,7 +12,26 @@
       "proxyWorkerName": "proxy-eu",
       "sesRegion": "eu-central-1",
       "secretSuffix": "EU",
-      "default": true
+      "default": true,
+      "bench": {
+        "host": "bench.rediacc.cloud",
+        "proxyHost": "proxy.bench.rediacc.cloud",
+        "workerName": "account-bench",
+        "proxyWorkerName": "proxy-bench",
+        "signerWorkerName": "signer-bench-eu",
+        "d1": { "name": "account-bench", "location": null, "jurisdiction": null },
+        "controlD1": "control-bench-eu",
+        "r2": { "name": "configs-bench" },
+        "backupR2": { "name": "backups-bench" },
+        "r2Jurisdiction": null,
+        "r2Location": null,
+        "queue": "backup-replicate-bench",
+        "dataset": "telemetry_bench",
+        "rateLimits": { "audit": "1104", "config": "1204" },
+        "otlp": "bench",
+        "config": "eu-bench",
+        "deployable": true
+      }
     },
     {
       "id": "us",
@@ -26,7 +45,26 @@
       "proxyWorkerName": "proxy-us",
       "sesRegion": "us-east-1",
       "secretSuffix": "US",
-      "default": false
+      "default": false,
+      "bench": {
+        "host": "bench-us.rediacc.cloud",
+        "proxyHost": "proxy.bench-us.rediacc.cloud",
+        "workerName": "account-bench-us",
+        "proxyWorkerName": "proxy-bench-us",
+        "signerWorkerName": "signer-bench-us",
+        "d1": { "name": "account-bench-us", "location": "enam", "jurisdiction": null },
+        "controlD1": "control-bench-us",
+        "r2": { "name": "configs-bench-us" },
+        "backupR2": { "name": "backups-bench-us" },
+        "r2Jurisdiction": null,
+        "r2Location": "enam",
+        "queue": "backup-replicate-bench-us",
+        "dataset": "telemetry_bench_us",
+        "rateLimits": { "audit": "1105", "config": "1205" },
+        "otlp": "bench",
+        "config": "us-bench",
+        "deployable": false
+      }
     },
     {
       "id": "asia",
@@ -40,7 +78,26 @@
       "proxyWorkerName": "proxy-asia",
       "sesRegion": "eu-central-1",
       "secretSuffix": "ASIA",
-      "default": false
+      "default": false,
+      "bench": {
+        "host": "bench-asia.rediacc.cloud",
+        "proxyHost": "proxy.bench-asia.rediacc.cloud",
+        "workerName": "account-bench-asia",
+        "proxyWorkerName": "proxy-bench-asia",
+        "signerWorkerName": "signer-bench-asia",
+        "d1": { "name": "account-bench-asia", "location": "apac", "jurisdiction": null },
+        "controlD1": "control-bench-asia",
+        "r2": { "name": "configs-bench-asia" },
+        "backupR2": { "name": "backups-bench-asia" },
+        "r2Jurisdiction": null,
+        "r2Location": "apac",
+        "queue": "backup-replicate-bench-asia",
+        "dataset": "telemetry_bench_asia",
+        "rateLimits": { "audit": "1106", "config": "1206" },
+        "otlp": "bench",
+        "config": "asia-bench",
+        "deployable": false
+      }
     }
   ]
 }

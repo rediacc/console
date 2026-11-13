@@ -3,6 +3,7 @@
 WHAT THIS ADDS TO `--selftest`. The controls plant into parsed dicts; here the entry point reads real files through `--root`, so the TOML and JSON parsing, the file discovery for all eight tomls, the matrix and the exit codes are proven on the bytes the tree really has. The fixture starts from a copy and is made consistent first (`_clean`), so each plant below is judged against a green run, not against whatever the real tree currently carries.
 """
 
+import copy
 import json
 import pathlib
 import shutil
@@ -16,7 +17,7 @@ from rediacc_ci.tests.gates import harness
 
 ROOT = paths.repo_root()
 GATE = paths.from_root(".ci", "scripts", "quality", "check_region_consistency.py")
-STEMS = ("eu", "us", "asia", "bench")
+STEMS = ("eu", "us", "asia", "bench", "bench-us", "bench-asia")
 COPIED = (
     "regions.json",
     ".ci/config/secret-supply.json",
@@ -195,19 +196,14 @@ def test_the_bench_only_payload_keys_are_exempt_and_an_unknown_one_is_not():
     assert [f.message for f in extra if "ZZZ_UNKNOWN_KEY" in f.message]
 
 
-def test_load_passes_the_parsed_bench_toml_to_targets_from(monkeypatch):
-    """4d34bc89.1: dropping the bench_doc argument in load() would leave the selftest green; the call itself is pinned."""
-    seen: dict = {}
-    real = rco.targets_from
-
-    def spy(doc, bench_doc=None):
-        seen["bench_doc"] = bench_doc
-        return real(doc, bench_doc)
-
-    monkeypatch.setattr(rco, "targets_from", spy)
-    rco.load(ROOT)
-    assert isinstance(seen["bench_doc"], dict)
-    assert "r2_buckets" in seen["bench_doc"]
+def test_load_reads_the_other_benches_as_extra_targets():
+    """The us and asia benches are not among the four targets but load() reads their tomls, so a drift in them is judged; a dropped extras list would leave the selftest green."""
+    inputs, targets, _found = rco.load(ROOT)
+    assert [t.id for t in targets] == ["eu", "us", "asia", "bench"]
+    assert [t.id for t, _a, _p in inputs.bench_regions] == ["bench-us", "bench-asia"]
+    for _t, account, proxy in inputs.bench_regions:
+        assert "d1_databases" in account
+        assert "containers" in proxy
 
 
 def _regions_with_d1(d1):
@@ -226,3 +222,211 @@ def test_a_d1_dict_with_the_key_has_no_such_finding():
     """Control: the dict form carrying `jurisdiction` raises no missing-key finding."""
     _targets, found = rco.targets_from(_regions_with_d1({"name": "x", "jurisdiction": None}))
     assert not [f for f in found if "d1 carries no jurisdiction key" in f.message]
+
+
+# --- the regional benches (PLAN-multi-region-bench.md boxes W1 and W2) ---
+# Control first: `test_the_real_tree_is_clean` judges the real inputs clean; each plant changes ONE thing in a deep copy and must add a finding on the named bench and class.
+
+
+def _judge(inputs: rco.Inputs, targets: list[rco.Target], found: list[rco.Finding]):
+    return rco.offline(inputs, targets, found)
+
+
+def _loaded():
+    inputs, targets, found = rco.load(ROOT)
+    return inputs, targets, found
+
+
+def _row(inputs: rco.Inputs, rid: str) -> dict:
+    return next(r for r in inputs.regions["regions"] if r["id"] == rid)
+
+
+def _extra(inputs: rco.Inputs, key: str):
+    return next(e for e in inputs.bench_regions if e[0].id == key)
+
+
+def _new(inputs: rco.Inputs, targets, found, mutate) -> set[tuple[str, str]]:
+    base = {(f.target, f.cls) for f in _judge(inputs, targets, found)}
+    inputs2 = copy.deepcopy(inputs)
+    found2 = list(found)
+    out = mutate(inputs2, found2) or found2
+    # a regions.json plant is re-derived the way the gate does it
+    return {(f.target, f.cls) for f in _judge(inputs2, targets, out)} - base
+
+
+def _regions_plant(fn):
+    def mutate(inputs: rco.Inputs, _found):
+        fn(inputs)
+        return rco.targets_from(inputs.regions)[1]
+
+    return mutate
+
+
+def test_the_real_tree_is_clean() -> None:
+    inputs, targets, found = _loaded()
+    assert _judge(inputs, targets, found) == []
+    assert [t.id for t, _a, _p in inputs.bench_regions] == ["bench-us", "bench-asia"]
+
+
+def test_the_home_bench_target_is_read_from_the_eu_bench_object() -> None:
+    inputs, targets, _found = _loaded()
+    bench = _row(inputs, "eu")["bench"]
+    t = next(t for t in targets if t.id == "bench")
+    assert (t.account_worker, t.proxy_worker, t.domain) == (
+        bench["workerName"],
+        bench["proxyWorkerName"],
+        bench["host"],
+    )
+    assert t.serves == "eu"
+
+
+@pytest.mark.parametrize("rid", ["us", "asia"])
+def test_a_regional_account_serving_another_region_fires(rid: str) -> None:
+    inputs, targets, found = _loaded()
+
+    def mutate(i, f):
+        _extra(i, "bench-" + rid)[1]["vars"]["REGION"] = "eu"
+        return f
+
+    assert ("bench-" + rid, "account") in _new(inputs, targets, found, mutate)
+
+
+def test_the_us_bench_binding_the_eu_signer_fires() -> None:
+    inputs, targets, found = _loaded()
+
+    def mutate(i, f):
+        for s in _extra(i, "bench-us")[1]["services"]:
+            if s["binding"] == "LICENSE_SIGNER":
+                s["service"] = "signer-bench-eu"
+        return f
+
+    assert ("bench-us", "account") in _new(inputs, targets, found, mutate)
+
+
+def test_a_signer_prop_naming_another_region_fires() -> None:
+    inputs, targets, found = _loaded()
+
+    def mutate(i, f):
+        for s in _extra(i, "bench-asia")[1]["services"]:
+            if s["binding"] == "LICENSE_SIGNER":
+                s["props"] = {"tier": "shared", "region": "eu"}
+        return f
+
+    assert ("bench-asia", "account") in _new(inputs, targets, found, mutate)
+
+
+def test_a_queue_dataset_or_rate_limit_that_differs_from_the_object_fires() -> None:
+    inputs, targets, found = _loaded()
+
+    def queue(i, f):
+        _extra(i, "bench-us")[1]["queues"]["producers"][0]["queue"] = "backup-replicate-bench"
+        return f
+
+    def dataset(i, f):
+        _extra(i, "bench-us")[1]["analytics_engine_datasets"][0]["dataset"] = "telemetry_bench"
+        return f
+
+    def limit(i, f):
+        _extra(i, "bench-us")[1]["ratelimits"][0]["namespace_id"] = "1104"
+        return f
+
+    for mutate in (queue, dataset, limit):
+        assert ("bench-us", "account") in _new(inputs, targets, found, mutate)
+
+
+def test_a_placeholder_id_on_a_deployable_bench_and_a_real_id_on_an_undeployable_one_fire() -> None:
+    inputs, targets, found = _loaded()
+
+    def deployable(i, f):
+        _row(i, "us")["bench"]["deployable"] = True
+        return f
+
+    def real_id(i, f):
+        _extra(i, "bench-us")[1]["d1_databases"][0]["database_id"] = (
+            "11111111-2222-3333-4444-555555555555"
+        )
+        return f
+
+    assert ("bench-us", "account") in _new(inputs, targets, found, deployable)
+    assert ("bench-us", "account") in _new(inputs, targets, found, real_id)
+
+
+def test_two_placeholders_are_not_a_shared_database_id() -> None:
+    """Control: us and asia both carry TO-BE-CREATED-L1 and the real tree is clean; a real id shared with the eu bench is the finding."""
+    inputs, targets, found = _loaded()
+    assert not [f for f in _judge(inputs, targets, found) if "also" in f.message]
+
+    def shared(i, f):
+        eu_id = i.account["bench"]["d1_databases"][0]["database_id"]
+        _extra(i, "bench-us")[1]["d1_databases"][0]["database_id"] = eu_id
+        _row(i, "us")["bench"]["deployable"] = True
+        return f
+
+    new = rco.offline(_mut(inputs, shared), targets, found)
+    assert any("also bench's" in f.message for f in new)
+
+
+def _mut(inputs: rco.Inputs, mutate) -> rco.Inputs:
+    inputs2 = copy.deepcopy(inputs)
+    mutate(inputs2, [])
+    return inputs2
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("host", "bench.rediacc.cloud"),
+        ("workerName", "account-bench"),
+        ("queue", "backup-replicate-bench"),
+        ("signerWorkerName", "signer-bench-eu"),
+        ("config", "eu-bench"),
+    ],
+)
+def test_a_us_bench_object_off_its_pattern_fires(field: str, value: str) -> None:
+    inputs, targets, found = _loaded()
+    new = _new(
+        inputs,
+        targets,
+        found,
+        _regions_plant(lambda i: _row(i, "us")["bench"].update({field: value})),
+    )
+    assert ("bench-us", "regions") in new
+
+
+def test_a_us_bench_placed_away_from_production_us_fires() -> None:
+    inputs, targets, found = _loaded()
+
+    def d1_location(i):
+        _row(i, "us")["bench"]["d1"]["location"] = "weur"
+
+    def r2_hint(i):
+        _row(i, "asia")["bench"]["r2Location"] = "enam"
+
+    def jurisdiction(i):
+        _row(i, "us")["bench"]["r2Jurisdiction"] = "eu"
+
+    for plant in (d1_location, r2_hint, jurisdiction):
+        new = _new(inputs, targets, found, _regions_plant(plant))
+        assert ("bench-us", "regions") in new or ("bench-asia", "regions") in new
+
+
+def test_a_bench_object_missing_a_key_or_sharing_a_rate_limit_fires() -> None:
+    inputs, targets, found = _loaded()
+    missing = _new(
+        inputs, targets, found, _regions_plant(lambda i: _row(i, "us")["bench"].pop("queue"))
+    )
+    assert ("bench-us", "regions") in missing
+    dup = _new(
+        inputs,
+        targets,
+        found,
+        _regions_plant(lambda i: _row(i, "asia")["bench"]["rateLimits"].update({"audit": "1105"})),
+    )
+    assert ("bench-asia", "regions") in dup
+
+
+def test_the_eu_bench_is_not_held_to_production_eu_placement() -> None:
+    """Control for the placement rule: the home bench carries no location hint today and is clean; only the other regions copy production."""
+    inputs, targets, found = _loaded()
+    assert _row(inputs, "eu")["bench"]["d1"]["location"] is None
+    assert _judge(inputs, targets, found) == []

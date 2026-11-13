@@ -788,7 +788,10 @@ def test_bench_turns_stripe_consent_collection_on_and_no_other_config_does():
     seen = _consent_switches(paths.from_root("workers", "account"))
     assert seen, "no account wrangler config found"
     assert seen.get(deploy_bench.CONFIG) == "1", seen
-    assert [name for name, value in seen.items() if value == "1"] == [deploy_bench.CONFIG], seen
+    # The regional benches (wrangler.bench-<r>.toml) bill the same sandbox pair and carry the switch too.
+    on = [name for name, value in seen.items() if value == "1"]
+    assert deploy_bench.CONFIG in on, seen
+    assert all(name.startswith("wrangler.bench") for name in on), seen
 
 
 def test_control_an_env_table_switch_is_seen(tmp_path):

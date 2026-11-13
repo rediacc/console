@@ -499,22 +499,36 @@ def run() -> int:
         g.targets_from(jur_doc)[1],
         [],
     )
-    bench_toml = {
-        "r2_buckets": [
-            {"binding": "CONFIG_BUCKET", "bucket_name": "configs-bench", "jurisdiction": "eu"},
-            {"binding": "BACKUP_BUCKET", "bucket_name": "backups-bench", "jurisdiction": "eu"},
-        ]
-    }
-    bench_t = g.targets_from(base_inputs.regions, bench_toml)[0][-1]
+    # The bench is read from the eu row's `bench` object: a jurisdictional bench D1 carries `-j`, and an object that disagrees with the pattern is a finding.
+    jur_bench = copy.deepcopy(base_inputs.regions)
+    jur_bench["regions"][0]["bench"]["d1"].update(name="account-bench-j", jurisdiction="eu")
+    jur_bench["regions"][0]["bench"]["r2Jurisdiction"] = "eu"
+    bench_t = g.targets_from(jur_bench)[0][-1]
     ctl.check(
-        "bench jurisdiction comes from the bench toml",
+        "bench jurisdiction comes from the regions.json bench object",
         (bench_t.jurisdiction, bench_t.d1_jurisdiction, bench_t.d1),
         ("eu", "eu", "account-bench-j"),
     )
     ctl.check(
-        "no bench toml jurisdiction keeps the plain bench names",
-        g.targets_from(base_inputs.regions, {"r2_buckets": []})[0][-1].d1,
-        "account-bench",
+        "a jurisdictional bench d1 named account-bench-j is clean",
+        g.targets_from(jur_bench)[1],
+        [],
+    )
+    plain = g.targets_from(base_inputs.regions)[0][-1]
+    ctl.check("the plain bench keeps account-bench", plain.d1, "account-bench")
+    no_bench = copy.deepcopy(base_inputs.regions)
+    del no_bench["regions"][0]["bench"]
+    ctl.raises("no home bench object is no verdict", g.NoVerdictError, g.targets_from, no_bench)
+    moved = copy.deepcopy(base_inputs.regions)
+    moved["regions"][1]["bench"]["d1"]["location"] = "weur"
+    ctl.truthy(
+        "a us bench placed away from production us is a regions finding",
+        any("d1.location" in f.message for f in g.targets_from(moved)[1]),
+    )
+    ctl.check(
+        "the other benches become extra targets",
+        [t.id for t in g.extra_bench_targets(base_inputs.regions)],
+        ["bench-us", "bench-asia"],
     )
 
     for label, want, mutate in offline_plants():

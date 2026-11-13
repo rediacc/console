@@ -125,6 +125,16 @@ def load_region_ids(repo_root: pathlib.Path) -> list[str]:
     return [str(r["id"]).lower() for r in data["regions"]]
 
 
+def bench_account_regions(repo_root: pathlib.Path) -> dict[str, str]:
+    """`{account Worker name: region id}` for every `bench` object of regions.json: the benches whose account Worker binds a shared signer."""
+    data = json.loads((repo_root / "regions.json").read_text(encoding="utf-8"))
+    return {
+        str(r["bench"]["workerName"]): str(r["id"]).lower()
+        for r in data["regions"]
+        if isinstance(r.get("bench"), dict)
+    }
+
+
 def control_database(key: str) -> str:
     """The CONTROL database of target KEY (`eu`, `bench-us`). A key with no declared name is refused, never derived."""
     try:
@@ -635,6 +645,9 @@ def expected_props(caller: str, *, companies: Companies = default_companies) -> 
     name = caller[len(COMPANY_WORKER_PREFIX) :] if caller.startswith(COMPANY_WORKER_PREFIX) else ""
     if name in load_region_ids(_root()):
         return {"tier": "shared", "region": name}
+    bench_region = bench_account_regions(_root()).get(caller)
+    if bench_region:
+        return {"tier": "shared", "region": bench_region}
     for bench in (True, False):
         for row in companies(bench):
             if str(row["name"]) == name:

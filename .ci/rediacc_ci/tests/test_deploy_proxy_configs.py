@@ -5,6 +5,7 @@ CONTROL FIRST. The real tree must pass `--check`, and every unplanted config mus
 
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 import sys
@@ -74,7 +75,7 @@ def test_the_cli_check_exits_zero_on_the_real_tree() -> None:
         check=False,
     )
     assert proc.returncode == 0, proc.stderr
-    assert "5 proxy configs hold" in proc.stdout
+    assert "7 proxy configs hold" in proc.stdout
 
 
 @pytest.mark.parametrize("key", sorted(TARGETS))
@@ -82,9 +83,11 @@ def test_every_unplanted_config_carries_no_refusal(key: str) -> None:
     assert refusals(real(key), key) == []
 
 
-def test_five_targets_and_three_generated() -> None:
-    assert sorted(TARGETS) == sorted(["eu", "us", "asia", "bench", "dev"])
-    assert sorted(t.key for t in TARGETS.values() if t.generated) == sorted(["eu", "us", "asia"])
+def test_seven_targets_and_five_generated() -> None:
+    assert sorted(TARGETS) == sorted(["eu", "us", "asia", "bench", "bench-us", "bench-asia", "dev"])
+    assert sorted(t.key for t in TARGETS.values() if t.generated) == sorted(
+        ["eu", "us", "asia", "bench-us", "bench-asia"]
+    )
 
 
 @pytest.mark.parametrize(
@@ -483,4 +486,126 @@ def test_a_well_known_host_disagreeing_with_regions_json_is_refused(tmp_path: pa
     out = pc.check(root)
     assert any(
         f"the us proxy host is '{PROXY_US_HOST}', not 'proxy.usa.rediacc.cloud'" in r for r in out
+    ), out
+
+
+# --- the regional benches (PLAN-multi-region-bench.md box W2) ---------------------------------------------
+
+
+def _bench_row(rid: str) -> dict:
+    return next(r for r in REGIONS if r["id"] == rid)
+
+
+@pytest.mark.parametrize("rid", ["us", "asia"])
+def test_a_regional_bench_target_is_read_from_the_regions_bench_object(rid: str) -> None:
+    bench = _bench_row(rid)["bench"]
+    target = TARGETS["bench-" + rid]
+    assert target.generated
+    assert target.name == bench["proxyWorkerName"]
+    assert target.routes == (bench["proxyHost"],)
+    assert target.account_url == "https://" + bench["host"]
+    assert dict(target.variables) == {
+        "ACCOUNT_URL": "https://" + bench["host"],
+        "REGION": rid,
+        "ENVIRONMENT": "bench",
+    }
+    assert {s for _, s, _ in target.services} == {bench["workerName"]}
+    # Control: the home bench stays the hand-written one, with the drill var allowed.
+    assert not TARGETS["bench"].generated
+    assert TARGETS["bench"].optional_variables == pc.BENCH_OPTIONAL_VARS
+    assert target.optional_variables == frozenset()
+
+
+@pytest.mark.parametrize("rid", ["us", "asia"])
+def test_a_regional_bench_toml_that_disagrees_with_regions_json_is_refused(rid: str) -> None:
+    key = "bench-" + rid
+    assert refusals(real(key), key) == [], "control: the committed %s passes" % key
+    host = _bench_row(rid)["bench"]["proxyHost"]
+    text = plant(real(key), host, host.replace("bench-", "bench-x"))
+    out = refusals(text, key)
+    assert any("routes are" in r for r in out), out
+    text = plant(real(key), 'REGION = "%s"' % rid, 'REGION = "eu"')
+    assert any("vars.REGION is 'eu'" in r for r in refusals(text, key))
+
+
+def test_the_us_bench_binding_an_eu_account_is_refused_by_name() -> None:
+    text = plant(
+        real("bench-us"),
+        'binding = "ACCOUNT"\nservice = "account-bench-us"',
+        'binding = "ACCOUNT"\nservice = "account-bench"',
+    )
+    out = refusals(text, "bench-us")
+    assert any("the ACCOUNT service binding is" in r for r in out), out
+
+
+def test_a_stale_generated_regional_bench_is_refused(tmp_path: pathlib.Path) -> None:
+    assert pc.check(ROOT) == []
+    root = copy_tree(tmp_path)
+    path = root.joinpath(*pc.PROXY_REL) / "wrangler.bench-asia.toml"
+    path.write_text(path.read_text(encoding="utf-8") + "# hand edit\n", encoding="utf-8")
+    out = pc.check(root)
+    assert any("wrangler.bench-asia.toml is stale" in r for r in out), out
+
+
+def test_a_regional_bench_toml_with_no_bench_object_is_no_known_target(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = copy_tree(tmp_path)
+    doc = json.loads((root / pc.REGIONS_REL).read_text(encoding="utf-8"))
+    del next(r for r in doc["regions"] if r["id"] == "us")["bench"]
+    (root / pc.REGIONS_REL).write_text(json.dumps(doc), encoding="utf-8")
+    out = pc.check(root)
+    assert any("wrangler.bench-us.toml is no known proxy target" in r for r in out), out
+
+
+def test_the_home_bench_object_must_agree_with_well_known(tmp_path: pathlib.Path) -> None:
+    root = copy_tree(tmp_path)
+    doc = json.loads((root / pc.REGIONS_REL).read_text(encoding="utf-8"))
+    next(r for r in doc["regions"] if r["id"] == "eu")["bench"]["host"] = "bench-eu.rediacc.cloud"
+    (root / pc.REGIONS_REL).write_text(json.dumps(doc), encoding="utf-8")
+    out = pc.check(root)
+    assert any("WK_BENCH_ORIGIN is" in r for r in out), out
+
+
+def test_the_home_region_must_carry_a_bench_object(tmp_path: pathlib.Path) -> None:
+    root = copy_tree(tmp_path)
+    doc = json.loads((root / pc.REGIONS_REL).read_text(encoding="utf-8"))
+    del next(r for r in doc["regions"] if r["id"] == "eu")["bench"]
+    (root / pc.REGIONS_REL).write_text(json.dumps(doc), encoding="utf-8")
+    out = pc.check(root)
+    assert any("carries no bench object" in r for r in out), out
+
+
+@pytest.mark.parametrize("rid", ["us", "asia"])
+def test_a_regional_bench_account_serving_another_region_is_refused(
+    tmp_path: pathlib.Path, rid: str
+) -> None:
+    root = copy_tree(tmp_path)
+    path = root.joinpath(*pc.ACCOUNT_REL) / ("wrangler.bench-%s.toml" % rid)
+    path.write_text(
+        plant(path.read_text(encoding="utf-8"), 'REGION = "%s"' % rid, 'REGION = "eu"'),
+        encoding="utf-8",
+    )
+    out = pc.check(root)
+    assert any("[vars] REGION is 'eu', not '%s'" % rid in r for r in out), out
+
+
+def test_a_placeholder_database_id_is_allowed_only_while_the_bench_is_not_deployable(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Control: the committed us bench (placeholder id, deployable false) passes. Flipping either side alone is refused."""
+    assert pc.check(ROOT) == []
+    root = copy_tree(tmp_path)
+    doc = json.loads((root / pc.REGIONS_REL).read_text(encoding="utf-8"))
+    next(r for r in doc["regions"] if r["id"] == "us")["bench"]["deployable"] = True
+    (root / pc.REGIONS_REL).write_text(json.dumps(doc), encoding="utf-8")
+    out = pc.check(root)
+    assert any("marked deployable but its DB database_id" in r for r in out), out
+    doc["regions"][0]["bench"]["deployable"] = False
+    next(r for r in doc["regions"] if r["id"] == "us")["bench"]["deployable"] = False
+    (root / pc.REGIONS_REL).write_text(json.dumps(doc), encoding="utf-8")
+    out = pc.check(root)
+    assert any(
+        "wrangler.bench.toml: the bench is marked not deployable but its DB database_id" in r
+        for r in out
     ), out

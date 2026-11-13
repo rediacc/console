@@ -1,0 +1,154 @@
+# bench-asia.rediacc.cloud: the asia bench account Worker (agent/plans/PLAN-multi-region-bench.md), the
+# real-Cloudflare test twin of account-asia. Every name, host and limit here is the `bench` object of the
+# asia row of regions.json; `rediacc_ci.quality.region_consistency_offline` and `rediacc_ci.deploy.proxy_configs`
+# refuse a drift.
+#
+# NOT DEPLOYABLE YET: `database_id` is the placeholder TO-BE-CREATED-L1 and regions.json marks this bench
+# `deployable: false`. The objects are created by box L1 (D1 `account-bench-asia` with location apac, R2, queues), which
+# replaces the placeholder and flips the flag in one commit; the consistency gate refuses either alone.
+# Differences from account-asia: ENVIRONMENT = "bench", no captcha, e-mail capture in D1, keyless portal in ./bench/dist.
+
+name = "account-bench-asia"
+main = "src/index.ts"
+compatibility_date = "2026-01-20"
+compatibility_flags = ["nodejs_compat"]
+upload_source_maps = true
+
+routes = [
+  { pattern = "bench-asia.rediacc.cloud", custom_domain = true }
+]
+
+[vars]
+REGION = "asia"
+ENVIRONMENT = "bench"
+ALLOWED_EMAIL_DOMAINS = "rediacc.com,rediacc.io"
+WEBAUTHN_RP_ID = "bench-asia.rediacc.cloud"
+WEBAUTHN_ORIGIN = "https://bench-asia.rediacc.cloud"
+# Bench is test-only: no captcha for agents or humans (operator ruling 2026-10-13). Pairs with the
+# empty VITE_TURNSTILE_SITE_KEY in rediacc_ci/ops/deploy_bench.py. Never add to a production config.
+TURNSTILE_ENABLED = "false"
+# Bench also stores each outgoing email in the captured_emails D1 table, so an agent can read a
+# session elevation link, a magic link or an invitation token with `wrangler d1 execute` (operator
+# ruling 2026-10-13, "Bench-only email capture in D1"). No route exposes the table. The account
+# server refuses to start with this switch unless ENVIRONMENT is "bench". Never add to a production config.
+EMAIL_CAPTURE_D1 = "true"
+# Stripe Checkout asks for Terms of Service consent on bench, which bills only the sandbox pair
+# (STRIPE_SANDBOX_*), so the PLAN-terms-acceptance X2 checkout reads it here first. Pinned by
+# test_ops_deploy_bench.py, which also refuses the switch in any other account config.
+STRIPE_CONSENT_COLLECTION = "1"
+
+# Nightly maintenance at 03:00 UTC (off-peak): audit retention sweep + backup GC.
+# Handled by `scheduled` in src/index.ts, which forwards to the account app in
+# private/account/src/entry/cloudflare.ts. Without this block the handler ships
+# but is never invoked and event_log grows without bound.
+[triggers]
+# Hourly backup maintenance, then the daily audit sweep and reminders.
+# private/account/src/entry/cloudflare.ts dispatches on these exact strings.
+crons = ["17 * * * *", "0 3 * * *"]
+
+[observability]
+enabled = true
+
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = false
+destinations = ["otlp-bench-logs"]
+persist = false
+
+[observability.traces]
+enabled = true
+head_sampling_rate = 1
+destinations = ["otlp-bench-traces"]
+persist = false
+
+# The keyless bench portal (no Turnstile site key) is built into ./bench/dist, never ./dist: every shared-region config
+# uploads ./dist, and a bench build left there shipped a widgetless login to stable on 2026-10-28.
+# rediacc_ci.ops.deploy_bench refuses to build when this directory changes (bench_assets_refusal).
+[assets]
+directory = "./bench/dist"
+binding = "ASSETS"
+not_found_handling = "404-page"
+run_worker_first = ["/*"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "account-bench-asia"
+database_id = "TO-BE-CREATED-L1"
+migrations_dir = "../../private/account/drizzle"
+
+# Production asia placement: no jurisdiction, location hint apac at creation (regions.json bench.r2Location).
+[[r2_buckets]]
+binding = "CONFIG_BUCKET"
+bucket_name = "configs-bench-asia"
+
+# Backup chunk store (content-addressed backup storage). The bucket is an
+# operator/provision step: create it before deploying with this binding.
+[[r2_buckets]]
+binding = "BACKUP_BUCKET"
+bucket_name = "backups-bench-asia"
+
+# The web console reaches the executor proxy through this binding, not a public fetch: both Workers
+# share the rediacc.cloud zone, and a same-zone subrequest never reaches another Worker. CD sets
+# EXECUTOR_MODE as a secret only after proxy-bench-asia passes its smoke (agent/plans/PLAN-proxy-cd-six-targets.md
+# Design item 2). wrangler refuses a deploy whose binding names a Worker that does not exist yet, so the
+# first deploy of a target runs `deploy_account --stub` (a placeholder under this Worker's name, which the proxy
+# binds back to), then the proxy (workers/proxy/wrangler.bench.toml), then this Worker for real.
+[[services]]
+binding = "EXECUTOR"
+service = "proxy-bench-asia"
+
+# The regional licence signer (agent/plans/PLAN-enterprise-isolation.md, Design "Bench and local dev"). account-bench-asia holds
+# no licence private key: signing goes through this binding to signer-bench-asia, which holds the production key by the
+# standing bench ruling. This bench is REGION "asia". wrangler refuses a deploy whose binding names a
+# missing Worker, so deploy signer-bench-asia first (rediacc_ci.deploy.deploy_signer --target bench-asia).
+[[services]]
+binding = "LICENSE_SIGNER"
+service = "signer-bench-asia"
+entrypoint = "LicenseSigner"
+props = { tier = "shared", region = "asia" }
+
+# Replicate mode (private/account/src/services/backup-replicate.service.ts): a new snapshot, a new
+# rule and the hourly sweep send a message here; `queue` in src/index.ts kicks one BackupReplicator
+# per (subscription, lineage, target store), whose alarm runs the copy. DEPLOY ORDER: both queues
+# are a provision step and must exist before the first deploy of this block
+# (`wrangler queues create backup-replicate-bench-asia` and `wrangler queues create backup-replicate-bench-asia-dlq`).
+# Gated by private/account/tests/integration/replicate-wiring.test.ts.
+[[queues.producers]]
+binding = "BACKUP_REPLICATE_QUEUE"
+queue = "backup-replicate-bench-asia"
+
+[[queues.consumers]]
+queue = "backup-replicate-bench-asia"
+max_batch_size = 10
+max_retries = 5
+dead_letter_queue = "backup-replicate-bench-asia-dlq"
+
+[[durable_objects.bindings]]
+name = "BACKUP_REPLICATOR"
+class_name = "BackupReplicator"
+
+# Each Worker script has its own Durable Object namespace, so this migration applies afresh to
+# every target.
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["BackupReplicator"]
+
+# Telemetry mirror (PLAN-d1-scaling Z3): EventLogService writes telemetry event types to this Analytics
+# Engine dataset as well as D1. The portal's reads use the SQL API with ACCOUNT_AE_READ_TOKEN.
+[[analytics_engine_datasets]]
+binding = "TELEMETRY"
+dataset = "telemetry_bench_asia"
+
+# Per-tenant write caps (PLAN-d1-scaling Z6; private/account/src/middleware/tenant-write-cap.ts reads
+# these binding names). Approximate per location: a false refusal answers 429 with Retry-After, so a caller that
+# retries loses nothing and one that does not loses that write.
+[[ratelimits]]
+name = "AUDIT_WRITE_LIMIT"
+namespace_id = "1106"
+simple = { limit = 120, period = 60 }
+
+[[ratelimits]]
+name = "CONFIG_WRITE_LIMIT"
+namespace_id = "1206"
+simple = { limit = 60, period = 60 }

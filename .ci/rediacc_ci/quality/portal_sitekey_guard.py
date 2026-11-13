@@ -433,18 +433,21 @@ def bench_findings(
             % DEPLOY_BENCH_REL
         )
     bench_root = bench_out.parent
-    production = [n for n in configs if n != "wrangler.bench.toml"]
+    # The eu bench is wrangler.bench.toml, the other regions' are wrangler.bench-<r>.toml (PLAN-multi-region-bench.md); all serve the keyless build.
+    benches = [n for n in configs if n == "wrangler.bench.toml" or n.startswith("wrangler.bench-")]
+    production = [n for n in configs if n not in benches]
     if "wrangler.bench.toml" not in configs or not production:
         return [
             *out,
             "workers/account: no bench or production config found; the check would pass vacuously",
         ]
-    served = pathlib.PurePosixPath(_assets_dir(configs["wrangler.bench.toml"]).removeprefix("./"))
-    if served != bench_root:
-        out.append(
-            "wrangler.bench.toml: [assets] directory is %r, not ./%s where deploy_bench builds"
-            % (str(served), bench_root)
-        )
+    for bench_name in sorted(benches):
+        served = pathlib.PurePosixPath(_assets_dir(configs[bench_name]).removeprefix("./"))
+        if served != bench_root:
+            out.append(
+                "%s: [assets] directory is %r, not ./%s where deploy_bench builds"
+                % (bench_name, str(served), bench_root)
+            )
     for name in sorted(production):
         uploads = pathlib.PurePosixPath(_assets_dir(configs[name]).removeprefix("./"))
         if uploads == pathlib.PurePosixPath("."):
@@ -710,6 +713,24 @@ def _local_selftest() -> bool:
             {**_CONFIGS, "wrangler.bench.toml": '[assets]\ndirectory = "./dist"\n'},
         ),
         True,
+    )
+    expect(
+        "a regional bench config serving ./dist was not reported",
+        bench_findings(
+            _BENCH_OK,
+            _BENCH_OUT,
+            {**_CONFIGS, "wrangler.bench-us.toml": '[assets]\ndirectory = "./dist"\n'},
+        ),
+        True,
+    )
+    expect(
+        "a regional bench config serving the bench build was reported as production",
+        bench_findings(
+            _BENCH_OK,
+            _BENCH_OUT,
+            {**_CONFIGS, "wrangler.bench-us.toml": '[assets]\ndirectory = "./bench/dist"\n'},
+        ),
+        False,
     )
     expect(
         "a production config uploading the bench build root was not reported",

@@ -62,7 +62,7 @@ ACCOUNT_BINDING = ("ACCOUNT", "CloudflareInternal")
 ISSUER_BINDING = ("ISSUER", "ExecutorIssuer")
 FORBIDDEN_TEXT = "EXECUTOR_TOKEN"
 # Per target, the two vars that bound the executor (PLAN-executor-durable-object-policy.md Design item 2): the caps are decimal strings the Worker parses.
-TARGET_KEYS = ("eu", "us", "asia", "bench", "dev")
+TARGET_KEYS = ("eu", "us", "asia", "bench", "bench-us", "bench-asia", "dev")
 CAP_BY_TARGET: dict[str, str] = dict.fromkeys(TARGET_KEYS, "25")
 HEAVY_CAP_BY_TARGET: dict[str, str] = dict.fromkeys(TARGET_KEYS, "5")
 EXECUTOR_VARS = ("EXECUTOR_CAP", "EXECUTOR_HEAVY_CAP")
@@ -75,6 +75,11 @@ COMPANY_ENVIRONMENT = "stable"
 DRILL_SIDE = r"(?:\[[0-9a-fA-F:.]+\]|[^\s:\[\]=]+):\d{1,5}"
 DRILL_PROBE_RE = re.compile(r"^%s=%s$" % (DRILL_SIDE, DRILL_SIDE))
 PLACEHOLDER_RE = re.compile(r"@@[A-Z_]+@@")
+
+# The region whose bench keeps the unsuffixed target key `bench` (today's single bench, hand-written); the other regions' benches are `bench-<r>` and generated from the template.
+BENCH_HOME_REGION = "eu"
+# The database id a bench account config carries until its objects exist (box L1 of PLAN-multi-region-bench.md); regions.json `bench.deployable` says whether that is still allowed.
+PLACEHOLDER_D1_ID = "TO-BE-CREATED"
 
 # The WK_PROXY_*_HOST value for each region; --check holds each equal to proxy.<domain> from regions.json.
 HOSTS: dict[str, str] = {
@@ -161,8 +166,54 @@ def executor_vars(key: str) -> tuple[tuple[str, str], ...]:
     )
 
 
+def bench_key(rid: str) -> str:
+    """The target key of region `rid`'s bench: `bench` for the home region, `bench-<r>` for the others."""
+    return "bench" if rid == BENCH_HOME_REGION else "bench-%s" % rid
+
+
+def bench_object(region: dict) -> dict | None:
+    """The regions.json `bench` object of one region row, or None when the row carries none."""
+    bench = region.get("bench")
+    return bench if isinstance(bench, dict) else None
+
+
+def _bench_target(region: dict) -> Target:
+    """The bench proxy target of one region, every name read from its regions.json `bench` object. The home region's config is hand-written (it carries the reachability drill var); the others are generated from the template."""
+    rid = str(region["id"])
+    bench = bench_object(region)
+    if bench is None:
+        raise ConfigError("%s region %s carries no bench object" % (REGIONS_REL, rid))
+    try:
+        host, proxy_host = str(bench["host"]), str(bench["proxyHost"])
+        account, name = str(bench["workerName"]), str(bench["proxyWorkerName"])
+        otlp = str(bench["otlp"])
+    except KeyError as exc:
+        raise ConfigError("%s region %s bench object lacks %s" % (REGIONS_REL, rid, exc)) from None
+    key = bench_key(rid)
+    home = rid == BENCH_HOME_REGION
+    account_url = "https://" + host
+    return Target(
+        key=key,
+        config="wrangler.%s.toml" % key,
+        name=name,
+        routes=(proxy_host,),
+        account_url=account_url,
+        variables=(("ACCOUNT_URL", account_url), ("REGION", rid), ("ENVIRONMENT", "bench")),
+        services=(
+            (ACCOUNT_BINDING[0], account, ACCOUNT_BINDING[1]),
+            (ISSUER_BINDING[0], account, ISSUER_BINDING[1]),
+        ),
+        destinations=("otlp-%s-logs" % otlp, "otlp-%s-traces" % otlp),
+        version_metadata=True,
+        generated=not home,
+        own_tokens=frozenset({"bench"} if home else {"bench", rid}),
+        executor_vars=executor_vars(key),
+        optional_variables=BENCH_OPTIONAL_VARS if home else frozenset(),
+    )
+
+
 def targets(regions: list[dict]) -> dict[str, Target]:
-    """Every proxy config target, keyed by its config suffix: the three generated ones, bench and dev."""
+    """Every proxy config target, keyed by its config suffix: the three generated ones, the benches and dev."""
     out: dict[str, Target] = {}
     for region in regions:
         rid = str(region["id"])
@@ -196,24 +247,10 @@ def targets(regions: list[dict]) -> dict[str, Target]:
             own_tokens=frozenset({rid}),
             executor_vars=executor_vars(rid),
         )
-    out["bench"] = Target(
-        key="bench",
-        config=BENCH_CONFIG,
-        name="proxy-bench",
-        routes=(PROXY_BENCH_HOST,),
-        account_url=BENCH_ORIGIN,
-        variables=(("ACCOUNT_URL", BENCH_ORIGIN), ("REGION", "eu"), ("ENVIRONMENT", "bench")),
-        services=(
-            (ACCOUNT_BINDING[0], "account-bench", ACCOUNT_BINDING[1]),
-            (ISSUER_BINDING[0], "account-bench", ISSUER_BINDING[1]),
-        ),
-        destinations=("otlp-bench-logs", "otlp-bench-traces"),
-        version_metadata=True,
-        generated=False,
-        own_tokens=frozenset({"bench"}),
-        executor_vars=executor_vars("bench"),
-        optional_variables=BENCH_OPTIONAL_VARS,
-    )
+    for region in regions:
+        rid = str(region["id"])
+        if rid == BENCH_HOME_REGION or bench_object(region) is not None:
+            out[bench_key(rid)] = _bench_target(region)
     out["dev"] = Target(
         key="dev",
         config=DEV_CONFIG,
@@ -556,19 +593,25 @@ def config_refusals(text: str, target: Target, all_regions: frozenset[str]) -> l
 
 def _is_own_signer(value: str, key: str, region: object) -> bool:
     """Is `value` the licence signer Worker this target signs through: `signer-<region>` for a shared region, and for bench `signer-bench-<region>` with the region the config itself serves (`[vars] REGION`), so bench cannot bind another region's bench signer."""
-    if key == "bench":
+    if key.startswith("bench"):
         return isinstance(region, str) and bool(region) and value == "signer-bench-%s" % region
     return value == "signer-%s" % key
 
 
 def account_refusals(
-    text: str, proxy_name: str, key: str, all_regions: frozenset[str], own: frozenset[str]
+    text: str,
+    proxy_name: str,
+    key: str,
+    all_regions: frozenset[str],
+    own: frozenset[str],
+    region: str | None = None,
 ) -> list[str]:
-    """Why a workers/account config does not bind EXECUTOR to exactly its own target's proxy."""
+    """Why a workers/account config does not bind EXECUTOR to exactly its own target's proxy, and, when `region` is given, does not serve that region (`[vars] REGION`)."""
     try:
         config = tomllib.loads(text)
     except tomllib.TOMLDecodeError as exc:
         return ["does not parse as TOML: %s" % exc]
+    want_region = region
     out: list[str] = []
     services = [s for s in config.get("services") or [] if isinstance(s, dict)]
     executor = [s.get("service") for s in services if s.get("binding") == "EXECUTOR"]
@@ -580,6 +623,8 @@ def account_refusals(
     foreign = (all_regions | CHANNEL_TOKENS) - own
     variables = config.get("vars")
     region = variables.get("REGION") if isinstance(variables, dict) else None
+    if want_region is not None and region != want_region:
+        out.append("[vars] REGION is %r, not %r" % (region, want_region))
     for entry in services:
         value = str(entry.get("service", ""))
         signer = entry.get("binding") == "LICENSE_SIGNER"
@@ -599,8 +644,28 @@ def account_refusals(
     return out
 
 
+def deployable_refusals(config: dict, bench: dict) -> list[str]:
+    """Why a parsed bench account config and its regions.json `bench.deployable` disagree: a placeholder database id is allowed only while the bench is marked not deployable, and a real one only once it is marked deployable."""
+    dbs = [d for d in config.get("d1_databases") or [] if isinstance(d, dict)]
+    ids = [str(d.get("database_id", "")) for d in dbs if d.get("binding") == "DB"]
+    placeholder = any(i.startswith(PLACEHOLDER_D1_ID) for i in ids)
+    deployable = bench.get("deployable")
+    if not isinstance(deployable, bool):
+        return ["bench.deployable is %r, not true or false" % (deployable,)]
+    if placeholder and deployable:
+        return [
+            "the bench is marked deployable but its DB database_id %r is a placeholder" % (ids,)
+        ]
+    if not placeholder and not deployable:
+        return [
+            "the bench is marked not deployable but its DB database_id %r is not a placeholder"
+            % (ids,)
+        ]
+    return []
+
+
 def generate(root: pathlib.Path) -> dict[str, str]:
-    """`{config file name: text}` for the three generated targets."""
+    """`{config file name: text}` for the generated targets: the three regions and the non-home benches."""
     template = (root.joinpath(*PROXY_REL) / TEMPLATE).read_text(encoding="utf-8")
     return {
         t.config: render(template, t) for t in targets(load_regions(root)).values() if t.generated
@@ -627,6 +692,20 @@ def check(root: pathlib.Path) -> list[str]:
                 ".ci/config/well-known.env: the %s proxy host is %r, not %r"
                 % (region["id"], host, "proxy." + region["domain"])
             )
+
+    for region in regions:
+        bench = bench_object(region)
+        if bench is not None and region["id"] == BENCH_HOME_REGION:
+            if bench.get("host") != BENCH_ORIGIN.removeprefix("https://"):
+                out.append(
+                    ".ci/config/well-known.env: WK_BENCH_ORIGIN is %r, regions.json %s bench host is %r"
+                    % (BENCH_ORIGIN, region["id"], bench.get("host"))
+                )
+            if bench.get("proxyHost") != PROXY_BENCH_HOST:
+                out.append(
+                    ".ci/config/well-known.env: WK_PROXY_BENCH_HOST is %r, regions.json %s bench proxyHost is %r"
+                    % (PROXY_BENCH_HOST, region["id"], bench.get("proxyHost"))
+                )
 
     known = {TEMPLATE} | {t.config for t in all_targets.values()}
     out.extend(
@@ -671,8 +750,24 @@ def check(root: pathlib.Path) -> list[str]:
             continue
         out.extend(
             "%s: %s" % (arel, r)
-            for r in account_refusals(text, target.name, target.key, all_regions, target.own_tokens)
+            for r in account_refusals(
+                text,
+                target.name,
+                target.key,
+                all_regions,
+                target.own_tokens,
+                dict(target.variables).get("REGION"),
+            )
         )
+        if target.key.startswith("bench"):
+            row = next(r for r in regions if bench_key(str(r["id"])) == target.key)
+            try:
+                parsed = tomllib.loads(text)
+            except tomllib.TOMLDecodeError:
+                parsed = {}
+            out.extend(
+                "%s: %s" % (arel, r) for r in deployable_refusals(parsed, bench_object(row) or {})
+            )
     return out
 
 

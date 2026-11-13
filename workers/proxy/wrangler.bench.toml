@@ -1,7 +1,7 @@
 # The proxy Worker for bench.rediacc.cloud, the internal-only environment (workers/account/wrangler.bench.toml).
 # Deployed only by `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target bench`, under
-# the deploy-proxy-bench Bitwarden profile. Hand-written, unlike the six generated from
-# wrangler.template.toml, and held to the same shape by
+# the deploy-proxy-bench Bitwarden profile. Hand-written, unlike the five generated from
+# wrangler.template.toml (the three regions and the us and asia benches), and held to the same shape by
 # `rediacc_ci.deploy.proxy_configs.config_refusals`: the name proxy-bench, the only route
 # proxy.bench.rediacc.cloud, ACCOUNT_URL https://bench.rediacc.cloud, ACCOUNT and ISSUER both bound to
 # account-bench, and nothing naming a region or production. check:ci-proxy-cost-guard reads
