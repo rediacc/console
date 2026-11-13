@@ -5,7 +5,7 @@ Depends-On: PLAN-d1-eu-jurisdiction.md
 Priority: P2 -- draft awaiting an operator cost decision; nothing waits on it today
 Concurrency: exclusive -- it adds per-region bench objects and hosts and re-keys the single-bench names (deploy records, bench configs, signer targets) that other plans read while they run bench boxes.
 Owns: agent/plans/PLAN-multi-region-bench.md, regions.json, packages/shared/src/regions/data.json, workers/account/wrangler.bench*.toml, workers/proxy/wrangler.bench*.toml, .ci/rediacc_ci/ops/deploy_bench.py, .ci/rediacc_ci/ops/reset_bench.py, .ci/rediacc_ci/ops/bench_preflight.py, .ci/rediacc_ci/ops/bench_production.py, .ci/config/bench-production.json, .ci/rediacc_ci/ops/bench_access.py, .ci/rediacc_ci/ops/login_bench.py, .ci/rediacc_ci/ops/live_proof.py, .ci/rediacc_ci/proof/live_tier.py, .ci/rediacc_ci/deploy/deploy_signer.py, .ci/rediacc_ci/deploy/deploy_proxy.py, .ci/rediacc_ci/deploy/proxy_configs.py, .ci/rediacc_ci/deploy/console_executor.py, .ci/rediacc_ci/deploy/deploy_record.py, .ci/rediacc_ci/enterprise/*.py, .ci/rediacc_ci/quality/region_consistency_offline.py, .ci/config/secret-supply.json, .ci/config/bws-secret-map.json, .ci/config/well-known.env, .ci/config/proof-tiers.json, .ci/config/cf-spend-guard.json, .claude/hooks/trapguard/dispatch.py, .claude/rediacc_hooks/guards/block_settled_questions.py, docs/agent-reference/bench-login.md, .claude/skills/deploy/SKILL.md, .ci/rediacc_ci/tests/**
-Live-Proof: bench -- draft for an operator cost decision; once approved, L1-L5 and LP-bench-us prove each new region on bench
+Live-Proof: bench -- draft for an operator cost decision; once approved, L1-L5 and LP-bench prove each new region on bench
 Owner: d778be9d
 Updated: 2026-11-13
 First-Seen: 2026-11-13
@@ -150,7 +150,7 @@ Shared means one object serves all three benches.
 | Worker CPU ms | 228,972 + 32 + 35 = 229,039 | 3,214,093 | 30,000,000 |
 | D1 rows read / written | 732,132 / 89,854 (account-bench) | 34.89M / 9.85M | 25,000M / 50M |
 | D1 storage | 9.27 MB | 0.145 GB | 5 GB |
-| R2 storage | configs-bench 0.147 GB + backups-bench 5.895 GB + leftovers rediacc-backups-bench 5.714 GB and rediacc-configs-bench 0.048 GB = 11.80 GB | 1,101 GB | 10 GB (exceeded) |
+| R2 storage | configs-bench 0.147 GB + backups-bench 5.895 GB + two leftover buckets under the names retired by agent/plans/PLAN-product-domain-rename.md (5.714 GB and 0.048 GB) = 11.80 GB | 1,101 GB | 10 GB (exceeded) |
 | R2 Class A / B | about 6,106 / 25,611 | 270,815 / 1,627,537 | 1M / 10M |
 | Containers, DO, Queue | 0 container rows, 5 DO requests, 0 queue operations | 8.6 GiB-h memory, 488 vCPU-s over 11 applications | 25 GiB-h, 22,500 vCPU-s |
 
@@ -285,7 +285,8 @@ Cost per run: the heavy month's metered lines prorated to a one-day run, (112.08
 - [ ] L3 [live] WAF covers all six hosts. Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access add-current` rc 0, `list` names six hosts, `verify-pinned` rc 0
 - [ ] L4 [live] `us-bench` and `asia-bench` configs logged in headless with their own bws entries. Accept: `npm run login:bench -- --region us` and `-- --region asia` rc 0, then `./rdc.sh --config us-bench subscription status -o json` rc 0
 - [ ] L5 [live] Renewal hosts per region: a bench test machine licensed through `us-bench` shows renewalUrl `https://bench-us.rediacc.cloud`, renews, and a `bench.rediacc.cloud` renewal sent to `signer-bench-us` is `SIGNER_WRONG_HOST`; hostinger's licences on eu are unchanged. Accept: `machine status <machine> --licenses -o json` names bench-us and `sudo renet license renew --force --output json` reports renewed
-- [ ] LP-bench-us [live] Fresh receipts for both new regions. Accept: live-proof bench account-smoke with `--region us` and with `--region asia`
+- [ ] LP-bench [live] Fresh bench receipt after the us and asia bring-up (L1-L5), recorded once per region with `--region us` and `--region asia`.
+  Accept: live-proof bench account-smoke
 
 ### Phase 3: rehearsal
 - [ ] R1 [live] Region-loss across regions: companies placed on bench-us and bench-asia, then the four cuts of *Rehearsal use* on us with asia and eu as observers; record detect and restore times and every unnamed error. Accept: `./run.sh enterprise proof region-loss --bench` rc 0 with the two-region form and no `cross-region placement` gap note

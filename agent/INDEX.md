@@ -548,7 +548,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-local-first-delivery.md` | approved | 117 | 1 | 14 | 26550 |
 | `agent/plans/PLAN-local-release.md` | approved | 295 | 0 | 14 | 25607 |
 | `agent/plans/PLAN-localize-cheat-sheet-rendering.md` | compacted | 50 | 0 | 0 | 4436 |
-| `agent/plans/PLAN-multi-region-bench.md` | approved | 302 | 22 | 0 | 46224 |
+| `agent/plans/PLAN-multi-region-bench.md` | approved | 303 | 22 | 0 | 46302 |
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
 | `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3252 |
 | `agent/plans/PLAN-onprem-relicence-inbox.md` | approved | 79 | 3 | 10 | 13676 |

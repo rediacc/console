@@ -85,10 +85,10 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 79b7e92e, no plan, 843 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
-  - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 104 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
+  - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 113 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
-- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a0991328c18554184, worker:a50bc78586bae7e5a.
-- Leased items: 31: #000fcf57 (worker:bhs9kbyib, d778be9d), #0eecc43c (worker:bhs9kbyib, d778be9d), #14adbaec (worker:bhs9kbyib, d778be9d), #1f64af37 (worker:bhs9kbyib, d778be9d), #22e2ca84 (worker:bhs9kbyib, d778be9d), #2c00ac36 (worker:bhs9kbyib, d778be9d), #2c4b1eec (worker:bhs9kbyib, d778be9d), #2efa1fe3 (worker:bhs9kbyib, d778be9d), #30e8fcba (worker:a50bc78586bae7e5a, d778be9d), #4be994ad (worker:bhs9kbyib, d778be9d), #56bf9966 (worker:a0991328c18554184, d778be9d), #5ac354e6 (worker:bhs9kbyib, d778be9d), and 19 more.
+- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a3f35dec4aedf58be, worker:af5cdd294f67ccc00.
+- Leased items: 30: #000fcf57 (worker:bqtohxk7h, d778be9d), #0eecc43c (worker:bqtohxk7h, d778be9d), #14adbaec (worker:bqtohxk7h, d778be9d), #1f64af37 (worker:bqtohxk7h, d778be9d), #22e2ca84 (worker:bqtohxk7h, d778be9d), #2c00ac36 (worker:bqtohxk7h, d778be9d), #2c4b1eec (worker:bqtohxk7h, d778be9d), #4be994ad (worker:bqtohxk7h, d778be9d), #56bf9966 (worker:a3f35dec4aedf58be, d778be9d), #5ac354e6 (worker:bqtohxk7h, d778be9d), #5cd4f7ce (worker:bqtohxk7h, d778be9d), #5f39f550 (worker:a3f35dec4aedf58be, d778be9d), and 18 more.
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
