@@ -30,6 +30,7 @@ import json
 import os
 import re
 import sys
+import time
 import tomllib
 import urllib.error
 import urllib.parse
@@ -56,8 +57,28 @@ PAGE = 100
 class CfError(Exception):
     """A Cloudflare read that failed; the message names the path and Cloudflare's own errors."""
 
+    def __init__(self, message: str, status: int | None = None):
+        super().__init__(message)
+        self.status = status
+
+
+RETRY_STATUSES = frozenset({429, 500, 502, 503, 504})
+RETRY_PAUSES_S = (2.0, 5.0, 15.0)
+
 
 def request(method: str, path: str, token: str, jurisdiction: str | None = None) -> dict:
+    """`_request_once`, retried after a pause on a rate limit or a 5xx (Cloudflare throttles a bucket emptied 16 calls at a time, and its 429 page is not JSON). Every other failure raises at once."""
+    for pause in RETRY_PAUSES_S:
+        try:
+            return _request_once(method, path, token, jurisdiction)
+        except CfError as exc:
+            if exc.status not in RETRY_STATUSES:
+                raise
+            time.sleep(pause)
+    return _request_once(method, path, token, jurisdiction)
+
+
+def _request_once(method: str, path: str, token: str, jurisdiction: str | None = None) -> dict:
     """One API call, returning the decoded body and raising CfError on any failure. The only network call here; `cf_retire` sends its DELETEs through it. `jurisdiction` sets the `cf-r2-jurisdiction` header an R2 call needs to see an `eu` bucket."""
     headers = {"Authorization": "Bearer " + token}
     if jurisdiction is not None:
@@ -68,6 +89,7 @@ def request(method: str, path: str, token: str, jurisdiction: str | None = None)
             raw = resp.read()
             status = getattr(resp, "status", 200)
     except urllib.error.HTTPError as exc:
+        status = exc.code
         try:
             raw = exc.read()
         except OSError as read_exc:
@@ -86,10 +108,10 @@ def request(method: str, path: str, token: str, jurisdiction: str | None = None)
     try:
         body = json.loads(raw)
     except ValueError:
-        raise CfError("%s %s: non-JSON answer" % (method, path)) from None
+        raise CfError("%s %s: non-JSON answer (HTTP %s)" % (method, path, status), status) from None
     if not isinstance(body, dict) or body.get("success") is not True:
         errors = body.get("errors") if isinstance(body, dict) else None
-        raise CfError("%s %s: %s" % (method, path, json.dumps(errors)))
+        raise CfError("%s %s: %s" % (method, path, json.dumps(errors)), status)
     return body
 
 

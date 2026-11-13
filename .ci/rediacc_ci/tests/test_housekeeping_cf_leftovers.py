@@ -297,6 +297,40 @@ def test_an_empty_2xx_delete_answer_is_success(monkeypatch):
     assert cfl.request("DELETE", "/accounts/a/workers/domains/d", TOKEN)["success"] is True
 
 
+def test_a_429_is_retried_then_succeeds(monkeypatch):
+    """Live 2026-11-13: an R2 object DELETE during a 16-wide bucket emptying got a non-JSON throttle answer and stopped the run."""
+    calls = {"n": 0}
+
+    def flaky():
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise urllib.error.HTTPError(
+                "u", 429, "slow", email.message.Message(), io.BytesIO(b"<html>rate</html>")
+            )
+        return _Resp(b'{"success": true, "result": null}')
+
+    _patch_urlopen(monkeypatch, flaky)
+    monkeypatch.setattr(cfl.time, "sleep", lambda _s: None)
+    assert cfl.request("DELETE", "/r2/x", TOKEN)["success"] is True
+    assert calls["n"] == 2
+
+
+def test_control_a_403_is_not_retried(monkeypatch):
+    calls = {"n": 0}
+
+    def refused():
+        calls["n"] += 1
+        raise urllib.error.HTTPError(
+            "u", 403, "no", email.message.Message(), io.BytesIO(b'{"success": false, "errors": []}')
+        )
+
+    _patch_urlopen(monkeypatch, refused)
+    monkeypatch.setattr(cfl.time, "sleep", lambda _s: None)
+    with pytest.raises(cfl.CfError):
+        cfl.request("DELETE", "/r2/x", TOKEN)
+    assert calls["n"] == 1
+
+
 def test_control_an_empty_get_answer_is_still_a_cf_error(monkeypatch):
     _patch_urlopen(monkeypatch, lambda: _Resp(b""))
     with pytest.raises(cfl.CfError, match="non-JSON"):
