@@ -183,4 +183,4 @@ Each Linux package tree (`apt/<channel>/`, `rpm/<channel>/`, `apk/<channel>/`, `
 
 ## Why this is a separate file
 
-`CLAUDE.md` stays under budget by cutting what already has a home elsewhere (`agent/plans/PLAN-tooling-transformation.md`, box W11 P5b). The entry's flags, gates and records are described here and verified against `.github/workflows/the edge workflow.yml`, `.github/workflows/cd-release-stable.yml` and `.ci/rediacc_ci/release/` (`local.py`, `local_gates.py`, `order.py`, `renet_key_gate.py`, `tag.py`) and `agent/plans/PLAN-local-release.md`.
+`CLAUDE.md` stays under budget by cutting what already has a home elsewhere (`agent/plans/PLAN-tooling-transformation.md`, box W11 P5b). The entry's flags, gates and records are described here and verified against `.github/workflows/cd-release-edge.yml`, `.github/workflows/cd-release-stable.yml` and `.ci/rediacc_ci/release/` (`local.py`, `local_gates.py`, `order.py`, `renet_key_gate.py`, `tag.py`) and `agent/plans/PLAN-local-release.md`.

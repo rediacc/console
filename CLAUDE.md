@@ -265,7 +265,7 @@ Version source of truth: **git tags** (e.g., `v0.8.3`). No version bump commits;
 
 ## Release Channels
 
-Two channels. **edge** serves the public eu/us/asia customers (one shared Worker set per region on `<r>.rediacc.cloud`) and is released with no soak on every merge to main, or by the agent's faster path `npm run release:local -- --channel edge` (shared R2 sentinel lock; `--branch-release` ships from a pushed branch head). **stable** is the CLI channel that enterprise company Workers ride, promoted from edge by `cd-release-stable.yml` after the 7-day soak and released to companies through rings (`cd-enterprise-release.yml`); CI/CD only, and a stable deploy always needs `RELEASE_ASKED`.
+Two channels. **edge** serves the public eu/us/asia customers (one shared Worker set per region on `<r>.rediacc.cloud`) and is released with no soak on every merge to main, or by the agent's faster path `npm run release:local -- --channel edge` (shared R2 sentinel lock; `--branch-release` ships from a pushed branch head). **stable** is the CLI channel that enterprise company Workers ride, promoted from edge by `cd-release-stable.yml` after the 7-day soak (the `publish_stable` hotfix and the `release` PR label publish it with no soak) and released to companies through rings (`cd-enterprise-release.yml`); CI/CD only, and a stable deploy always needs `RELEASE_ASKED`.
 
 **[docs/agent-reference/release-process.md](docs/agent-reference/release-process.md)** carries the channel URLs, the R2 layout, the dispatch commands, and the local entry's flags, gates and rollback.
 

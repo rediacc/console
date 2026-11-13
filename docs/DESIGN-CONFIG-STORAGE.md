@@ -392,11 +392,13 @@ CLI                           Account server                 Browser (any machin
  ├─ POST /device-codes/D/claim ►│  the CLI polls with S        │
  │                              │                              │
  │                              │◄─ GET .../handoff-request ───┤
- │                              │   {keyHash, boundToYou}      │
+ │                              │   {keyHash, nonceHash,       │
+ │                              │    boundToYou}               │
  │                              │                              │
  │                              │  Page checks: pending, bound │
  │                              │  to this session's user,     │
  │                              │  H(key in link) == keyHash   │
+ │                              │  H(N in link) == nonceHash   │
  │                              │                              │
  │                              │  User types P from the       │
  │                              │  terminal; the page compares │
@@ -438,12 +440,12 @@ What each value is for:
 | Bound user | server row | another account completing the request |
 | Pairing code P, typed by the user | terminal to keyboard | a swapped whole link: P derives from the CLI's key, so an attacker's key never matches |
 | Nonce N, sealed inside the blob | fragment and sealed plaintext only | a forged blob written by a relay or database insider |
-| `nonceHash` = SHA-256(N) stored at creation | server row, returned by `GET /device-codes/D/handoff-request` | a link whose nonce was altered: the page refuses it before any unlock, instead of the CLI refusing the finished handoff |
+| `nonceHash` = SHA-256(N) stored at creation | server row, returned by `GET /device-codes/D/handoff-request` | a link whose nonce was altered by a party other than the server: the page refuses it before any unlock, instead of the CLI refusing the finished handoff. The hash comes from the same response a rogue server can rewrite, so it does not defend against the server (the sealed nonce N, checked by the CLI, does) |
 | Poll secret S | CLI to server, never in the link | a third party racing the claim to consume the blob |
 
 The request lives for 10 minutes (`DEVICE_CODE_TTL_MS`). The blob is deleted on the first successful claim, so it rests on the server for at most that long. A user holds at most 5 pending requests.
 
-**Security note**: The page reads the key from the fragment, but `keyHash` and `boundToYou` come from the handoff-request response, which a rogue server controls and can rewrite. Only the pairing code P does not rest on a server answer: the user types it from the terminal and the page compares it with the code derived from the key in the link, so a swapped link or key is caught there. The page must still be served as a static page with Content Security Policy (CSP) and Subresource Integrity (SRI) to prevent script injection. The fingerprint and the pairing code defend against link tampering and relay-side swaps, not against a server that ships modified page code: the JavaScript it serves can read the fragment, skip the pairing check and exfiltrate the unlocked secret. Zero-knowledge here rests on trusting the served page, as it does for every portal page that handles the CEK.
+**Security note**: The page reads the key from the fragment, but `keyHash`, `nonceHash` and `boundToYou` come from the handoff-request response, which a rogue server controls and can rewrite. Only the pairing code P does not rest on a server answer: the user types it from the terminal and the page compares it with the code derived from the key in the link, so a swapped link or key is caught there. The page must still be served as a static page with Content Security Policy (CSP) and Subresource Integrity (SRI) to prevent script injection. The fingerprint and the pairing code defend against link tampering and relay-side swaps, not against a server that ships modified page code: the JavaScript it serves can read the fragment, skip the pairing check and exfiltrate the unlocked secret. Zero-knowledge here rests on trusting the served page, as it does for every portal page that handles the CEK.
 
 ### Adding a Team Member
 
