@@ -298,6 +298,22 @@ def test_every_wrangler_failure_site_carries_the_stderr_tail():
         assert "l1" not in str(err.value)
 
 
+def test_a_failed_query_masks_the_values_it_bound_when_wrangler_echoes_the_sql():
+    """D1 can echo the inlined SQL in its error: the bound label never reaches the message (review 51f22f73.2)."""
+    run = _failing("near \"WHERE name = 'acme''corp'\": syntax error")
+    with pytest.raises(control_db.ControlDbError) as err:
+        control_db.query("control-eu", "SELECT 1 WHERE name = ?", ["acme'corp"], runner=run)
+    assert "acme" not in str(err.value)
+    assert "syntax error" in str(err.value)
+
+
+def test_a_failed_query_leaves_a_cause_that_quotes_no_bound_value_alone():
+    """THE CONTROL: the masking touches only what was bound."""
+    run = _failing("no such table: companies")
+    with pytest.raises(control_db.ControlDbError, match="no such table: companies"):
+        control_db.query("control-eu", "SELECT 1 WHERE name = ?", ["acme"], runner=run)
+
+
 def test_a_failed_create_carries_the_stderr_tail():
     state = {"n": 0}
 

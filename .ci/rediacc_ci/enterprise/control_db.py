@@ -8,7 +8,7 @@ IDEMPOTENT. `ensure` lists the account's databases first and creates only a miss
 
 THE QUERY TRANSPORT. `transport(runner)` is the `registry.Query` the registry and `enterprise add` read and write through: `wrangler d1 execute <db> --remote --json --command <sql>`. wrangler binds no parameters, so `bind` inlines each `?` as a quoted literal (single quotes doubled), counting placeholders outside string literals only and refusing a count mismatch.
 
-A FAILED CALL CARRIES WRANGLER'S LAST STDERR LINES (`stderr_tail`): ANSI stripped, blank lines dropped, the last three lines, each cut to 200 characters. Stdout is never quoted, because it holds query rows (company labels); stderr is where wrangler states why it refused (a missing CLOUDFLARE_API_TOKEN, an authentication error).
+A FAILED CALL CARRIES WRANGLER'S STATED CAUSE (`failure_tail`): the `error` of its `--json` stdout, then its last stderr lines (`stderr_tail`: ANSI stripped, blank lines dropped, the last three lines, each cut to 200 characters). Query rows are never quoted, because they hold company labels, and a failed query masks every string value it bound (`mask_values`), because D1 can echo the inlined SQL in an error.
 
 THE TOKEN IS CHECKED UP FRONT. wrangler refuses the Global API Key non-interactively, so `require_token` refuses a missing CLOUDFLARE_API_TOKEN naming the `enterprise` profile of .ci/config/secret-supply.json, before the first call (`main`, `ensure` and `transport` when they run over the production runner, which covers `add`, `control` and the proof readers).
 """
@@ -45,7 +45,7 @@ Runner = Callable[..., Completed]
 
 
 class ControlDbError(RuntimeError):
-    """A control database step failed; the message names the database and never quotes wrangler."""
+    """A control database step failed; the message names the database and quotes wrangler's stated cause (`failure_tail`), with the values a query bound masked."""
 
 
 AUTH_ENV = "CLOUDFLARE_API_TOKEN"
@@ -89,8 +89,17 @@ def failure_tail(stdout: str, stderr: str) -> str:
     return " | ".join(t for t in (stdout_error(stdout), stderr_tail(kept)) if t)
 
 
-def _failure(what: str, done: Completed) -> ControlDbError:
-    tail = failure_tail(done.stdout, done.stderr)
+def mask_values(text: str, params: Sequence[object]) -> str:
+    """`text` with every string value in `params` replaced by `<value>`, as written raw or with its single quotes doubled."""
+    for value in params:
+        if isinstance(value, str) and value:
+            for form in (value.replace("'", "''"), value):
+                text = text.replace(form, "<value>")
+    return text
+
+
+def _failure(what: str, done: Completed, params: Sequence[object] = ()) -> ControlDbError:
+    tail = mask_values(failure_tail(done.stdout, done.stderr), params)
     return ControlDbError("%s exited %d%s" % (what, done.rc, ": " + tail if tail else ""))
 
 
@@ -285,7 +294,7 @@ def query(database: str, sql: str, params: Sequence[object], *, runner: Runner) 
     """The rows of one statement on a remote D1 database. Raises ControlDbError (a RuntimeError, so the registry names the region)."""
     done = _call(runner, execute_argv(database, sql=bind(sql, list(params))))
     if done.rc != 0:
-        raise _failure("wrangler d1 execute on %s" % database, done)
+        raise _failure("wrangler d1 execute on %s" % database, done, params)
     answer = parse_json(done.stdout)
     rows: list[dict] = []
     for part in answer if isinstance(answer, list) else [answer]:
