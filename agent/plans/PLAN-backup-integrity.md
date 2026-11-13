@@ -408,6 +408,7 @@ V1 to V6 share `backup.go`, `backup_snapshot.go` and `backup_restore.go`, and on
   - Accept: `./rdc.sh --config eu-bench backup manifests <repo> -o json` rc 0 shows the states, and the delivery is recorded here.
   (corrected 2026-11-11, R2) Local-route: deploy-bench, bench-cli -- deploy the branch to bench and replay the bad night through eu-bench, no merge or nightly needed.
     (ticked) 2026-11-13T03:16:20Z by d778be9d: eu-bench replay: one digest (row 13740552, email 79334c81), none on repeat, cleanup passed; residue lineages 6d718f71/17cfecf5 at storedBytes 0 chunkCount 0 in backup usage rc=0 03:09Z 2026-11-13; bench-only commit:c916259a7d
+    (accept) `./rdc.sh --config eu-bench backup manifests b1-integ-0aba78:latest -o json` rc 0: snapshot 20261112T195605Z-f6defb9b0a9be54b of lineage 6d718f71, verificationState verified, verificationLevel store, verifiedAt 2026-11-12T21:20:53Z, deletedAt null.
 - [x] B2: Repair on bench with a chunk corrupted through the store's credentials.
   (corrected ASKED:2026-11-05T07:06Z) "After the merge and edge deploy" in the section heading no longer applies: bench runs the branch head through `deploy_bench`, and the Accept already reads as bench.
   - Accept: `./rdc.sh --config eu-bench backup repair <repo>` rc 0, then `backup verify <repo> --store` rc 0.
