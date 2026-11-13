@@ -1240,7 +1240,7 @@ def main(argv: list[str]) -> int:
             record.update({"worker": spec.name, "version_id": version_id, "smoke_rc": status})
             write_record(record_path, record)
         if status != 0:
-            # A smoke that follows a deferred-smoke deploy is the first smoke of that version, so its failure names the revert as a failed deploy-time smoke does.
+            # A failing --smoke-only names the recorded revert as a failed deploy-time smoke does: the version may be one a deferred-smoke deploy left unsmoked, or one already smoked that a re-run found broken.
             log.error(
                 "Rollback: %s"
                 % shown(
@@ -1290,7 +1290,7 @@ def main(argv: list[str]) -> int:
         return 1
 
     timing: dict[str, int] = {}
-    # A company's first deploy cannot be ready yet: its proxy's ISSUER binding names the company account Worker, which carries no ExecutorIssuer until its own deploy, and that deploy needs this proxy (its EXECUTOR binding). The caller smokes with --smoke-only once the account Worker is up.
+    # `--defer-smoke` (the company onboarding passes it on every company deploy) skips this smoke: the proxy's ISSUER binding names the company account Worker, which carries no ExecutorIssuer until its own deploy ships, and that deploy needs this proxy (its EXECUTOR binding), so a smoke here could not pass on a first deploy. The caller smokes with --smoke-only once the account Worker is up.
     smoke_rc = None if args.defer_smoke else smoke(host, version_id, timing, shown)
     rollback = revert_line(config, previous, forward_only, current_tag)
     if record_path is not None:

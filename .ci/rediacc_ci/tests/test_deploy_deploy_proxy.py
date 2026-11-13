@@ -1747,10 +1747,11 @@ def test_defer_smoke_is_refused_on_a_shared_target(tmp_path: pathlib.Path) -> No
     assert "--defer-smoke is refused without --company" in proc.stderr
 
 
-def test_help_names_both_new_options() -> None:
+def test_help_names_the_new_options() -> None:
     text = port._parser().format_help()
     assert "--rollback VERSION_ID" in text
     assert "--var KEY=VALUE" in text
+    assert "--defer-smoke" in text
 
 
 # ---- review 4a915178: the rollback's revert line, id case and failure record ----

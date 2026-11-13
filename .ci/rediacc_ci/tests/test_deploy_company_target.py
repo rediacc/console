@@ -926,6 +926,44 @@ def test_the_proxy_deploy_logs_no_label_on_a_failed_listing(lroot, monkeypatch, 
 
 
 @pytest.mark.usefixtures("proxy_fakes")
+@pytest.mark.parametrize(
+    "other",
+    [("--smoke-only",), ("--rollback", PROXY_LIVE), ("--dry-run",)],
+    ids=["smoke-only", "rollback", "dry-run"],
+)
+def test_defer_smoke_is_refused_beside_smoke_only_rollback_and_dry_run(lroot, capsys, other):
+    """Review d39e851d.2: the flag only means something on a plain deploy."""
+    assert dp.main([*lflags(lroot, "proxy"), "--defer-smoke", *other]) == 1
+    assert "--defer-smoke needs a plain deploy" in capsys.readouterr().err
+
+
+@pytest.mark.usefixtures("proxy_fakes")
+def test_a_deferred_smoke_deploy_skips_the_smoke_exits_zero_and_records_no_smoke(
+    lroot, monkeypatch, tmp_path
+):
+    """Review d39e851d.2: the core deferred path, driven through main()."""
+    smoked = []
+    monkeypatch.setattr(dp, "smoke", lambda *a, **_k: smoked.append(a) or 0)
+    record = tmp_path / "record.json"
+    args = [*lflags(lroot, "proxy"), "--version", VERSION, "--record", str(record)]
+    assert dp.main([*args, "--defer-smoke"]) == 0
+    assert smoked == []
+    assert json.loads(record.read_text(encoding="utf-8"))["smoke_rc"] is None
+
+
+@pytest.mark.usefixtures("proxy_fakes")
+def test_a_plain_company_deploy_still_smokes_and_records_the_result(lroot, monkeypatch, tmp_path):
+    """THE CONTROL of the deferred-smoke test: the same deploy without the flag smokes."""
+    smoked = []
+    monkeypatch.setattr(dp, "smoke", lambda *a, **_k: smoked.append(a) or 0)
+    record = tmp_path / "record.json"
+    args = [*lflags(lroot, "proxy"), "--version", VERSION, "--record", str(record)]
+    assert dp.main(args) == 0
+    assert len(smoked) == 1
+    assert json.loads(record.read_text(encoding="utf-8"))["smoke_rc"] == 0
+
+
+@pytest.mark.usefixtures("proxy_fakes")
 def test_the_proxy_rollback_logs_no_label(lroot, capsys):
     assert dp.main([*lflags(lroot, "proxy"), "--rollback", PROXY_LIVE]) == 0
     out = capsys.readouterr()
