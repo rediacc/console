@@ -75,10 +75,11 @@ function confirmRetire(name: string, guid: string, state: string): Promise<boole
   return askConfirm(t('commands.subscription.retire.confirm', { name, guid, state }));
 }
 
-export async function executeSubscriptionRetire(
+/** The argument combinations `retire` refuses before any network call. */
+function assertRetireArguments(
   guidArg: string | undefined,
-  options: SubscriptionRetireOptions = {}
-): Promise<void> {
+  options: SubscriptionRetireOptions
+): void {
   if (options.expired && guidArg !== undefined) {
     throw new ValidationError(t('commands.subscription.retire.expiredWithGuid'));
   }
@@ -88,6 +89,12 @@ export async function executeSubscriptionRetire(
   if (!options.expired && options.dryRun) {
     throw new ValidationError(t('commands.subscription.retire.dryRunNeedsExpired'));
   }
+}
+
+/** The licence report of the signed-in subscription, refused when the token is not usable. */
+async function readReportOrThrow(): Promise<
+  NonNullable<Awaited<ReturnType<typeof fetchSubscriptionLicenseReportOrThrow>>>
+> {
   const tokenState = getSubscriptionTokenState();
   if (tokenState.kind !== 'ready') {
     throw new ValidationError(unreadyTokenDiagnostic(tokenState));
@@ -98,11 +105,30 @@ export async function executeSubscriptionRetire(
   if (!report) {
     throw new ValidationError(t('errors.subscription.notLoggedIn'));
   }
+  return report;
+}
+
+export async function executeSubscriptionRetire(
+  guidArg: string | undefined,
+  options: SubscriptionRetireOptions = {}
+): Promise<void> {
+  assertRetireArguments(guidArg, options);
+  const report = await readReportOrThrow();
+  const recent = report.repoLicenses.recent ?? [];
   if (options.expired) {
-    await retireExpired(report.repoLicenses.recent ?? [], options);
+    await retireExpired(recent, options);
     return;
   }
-  const licence = matchLicence(guidArg ?? '', report.repoLicenses.recent ?? []);
+  await retireOne(guidArg ?? '', recent, options);
+}
+
+/** `subscription retire <guid>`: one licence, refused while its repository is live unless forced. */
+async function retireOne(
+  guidArg: string,
+  recent: Parameters<typeof licenceRows>[0],
+  options: SubscriptionRetireOptions
+): Promise<void> {
+  const licence = matchLicence(guidArg, recent);
   const guid = licence.repositoryGuid;
   const names = await readRepoNames();
   const entry = names.get(guid);
@@ -179,12 +205,7 @@ async function retireExpired(
     printOtherLicences(targets);
   }
   if (options.dryRun) {
-    if (format === 'table') outputService.info(t('commands.subscription.retire.expiredDryRun'));
-    else
-      outputService.print(
-        { retired: [], failed: [], would: targets.map((r) => r.guid), ...counts },
-        format
-      );
+    printDryRun(targets, counts, format);
     return;
   }
   if (!options.yes && !(await confirmExpired(targets.length))) {
@@ -194,15 +215,42 @@ async function retireExpired(
 
   const { retired, failed } = await retireEach(targets);
   if (failed.length > 0) setExitCode(1);
+  printExpiredResult({ retired, failed }, counts, format);
+}
+
+type ExpiredCounts = { skipped: number; dryRun: boolean };
+
+/** The `--dry-run` outcome: the stop line for a table, the would-retire list otherwise. */
+function printDryRun(
+  targets: LicenceRow[],
+  counts: ExpiredCounts,
+  format: ReturnType<typeof getOutputFormat>
+): void {
   if (format === 'table') {
-    outputService.report(
-      t('commands.subscription.retire.expiredResult', {
-        retired: retired.length,
-        skipped: skipped.length,
-        failed: failed.length,
-      })
-    );
+    outputService.info(t('commands.subscription.retire.expiredDryRun'));
     return;
   }
-  outputService.print({ retired, failed, ...counts }, format);
+  outputService.print(
+    { retired: [], failed: [], would: targets.map((r) => r.guid), ...counts },
+    format
+  );
+}
+
+/** The batch outcome: one summary line for a table, the full lists otherwise. */
+function printExpiredResult(
+  outcome: { retired: RetireOutcome[]; failed: RetireOutcome[] },
+  counts: ExpiredCounts,
+  format: ReturnType<typeof getOutputFormat>
+): void {
+  if (format !== 'table') {
+    outputService.print({ ...outcome, ...counts }, format);
+    return;
+  }
+  outputService.report(
+    t('commands.subscription.retire.expiredResult', {
+      retired: outcome.retired.length,
+      skipped: counts.skipped,
+      failed: outcome.failed.length,
+    })
+  );
 }

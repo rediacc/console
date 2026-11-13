@@ -14,6 +14,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.quality import region_consistency_offline as rco
 from rediacc_ci.tests.gates import harness
+from rediacc_ci.well_known import BENCH_ORIGIN
 
 ROOT = paths.repo_root()
 GATE = paths.from_root(".ci", "scripts", "quality", "check_region_consistency.py")
@@ -375,7 +376,7 @@ def _mut(inputs: rco.Inputs, mutate) -> rco.Inputs:
 @pytest.mark.parametrize(
     ("field", "value"),
     [
-        ("host", "bench.rediacc.cloud"),
+        ("host", BENCH_ORIGIN),
         ("workerName", "account-bench"),
         ("queue", "backup-replicate-bench"),
         ("signerWorkerName", "signer-bench-eu"),

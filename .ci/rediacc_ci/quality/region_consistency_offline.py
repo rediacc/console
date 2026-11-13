@@ -292,7 +292,8 @@ def bench_object_findings(rows: list[dict]) -> list[Finding]:
                 Finding(tid, "regions", "regions.json bench.deployable is not true or false")
             )
         if rid != BENCH_HOME:
-            prod_d1 = row.get("d1") if isinstance(row.get("d1"), dict) else {}
+            row_d1 = row.get("d1")
+            prod_d1: dict = row_d1 if isinstance(row_d1, dict) else {}
             placement = (
                 ("d1.location", d1.get("location"), prod_d1.get("location")),
                 ("d1.jurisdiction", d1.get("jurisdiction"), prod_d1.get("jurisdiction")),
@@ -587,7 +588,8 @@ def check_bench_object(t: Target, bench: dict, doc: dict) -> list[Finding]:
     if datasets != [bench.get("dataset")]:
         bad("analytics dataset %r, regions.json bench says [%r]" % (datasets, bench.get("dataset")))
     limits = {n: b.get("namespace_id") for n, b in blocks(doc, "ratelimits").items()}
-    rate = bench.get("rateLimits") if isinstance(bench.get("rateLimits"), dict) else {}
+    raw_rate = bench.get("rateLimits")
+    rate: dict = raw_rate if isinstance(raw_rate, dict) else {}
     want_limits = {"AUDIT_WRITE_LIMIT": rate.get("audit"), "CONFIG_WRITE_LIMIT": rate.get("config")}
     if limits != want_limits:
         bad("ratelimits %r, regions.json bench says %r" % (limits, want_limits))
