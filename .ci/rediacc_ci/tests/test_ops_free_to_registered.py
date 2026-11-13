@@ -868,4 +868,6 @@ def test_the_pump_closes_the_output_pipe_once_the_process_ends(tmp_path):
     job = ftr._Process(["x"], {}, program=script)
     job.read_url()
     assert job.finish(10) == 0
-    assert job.proc.stdout.closed
+    stdout = job.proc.stdout
+    assert stdout is not None
+    assert stdout.closed

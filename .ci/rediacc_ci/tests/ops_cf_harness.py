@@ -20,6 +20,8 @@ from rediacc_ci.tests import differential as diff
 
 ROOT = paths.repo_root()
 BASH = shutil.which("bash") or "/bin/bash"
+# The one fake R2 S3 endpoint the backup tests hand to code that only parses it.
+R2_ENDPOINT = "https://acct.r2.cloudflarestorage.com"
 
 REAL_TOOLS = (
     "jq",
@@ -211,6 +213,7 @@ class World:
             "scripts/ops/lib/cf-auth.sh",
             ".ci/config/well-known.env",
             ".ci/config/well-known.generated.sh",
+            ".ci/config/bench-production.json",  # reset_bench fails closed without the declaration
             "regions.json",  # backup_d1 names the shared databases from it
         ):
             if not (ROOT / rel).is_file():  # a retired twin: only a re-freeze from bash needs it

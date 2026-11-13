@@ -1181,7 +1181,7 @@ def _payload_env(monkeypatch) -> None:
     monkeypatch.delenv("ACCOUNT_BACKUP_S3_BUCKET", raising=False)
     monkeypatch.setenv("OBS_OTLP_CREDENTIALS", '{"user": "u", "pass": "p"}')
     monkeypatch.setattr(deploy_bench, "stripe_pair", lambda: ("", ""))
-    monkeypatch.setenv("ACCOUNT_BACKUP_S3_ENDPOINT", "https://acct.r2.cloudflarestorage.com")
+    monkeypatch.setenv("ACCOUNT_BACKUP_S3_ENDPOINT", h.R2_ENDPOINT)
 
 
 def test_deploy_bench_pushes_the_jurisdictional_endpoint_for_a_jurisdictional_bucket(
@@ -1200,4 +1200,4 @@ def test_deploy_bench_leaves_the_endpoint_alone_for_a_default_jurisdiction_bucke
     _bench_repo(monkeypatch, tmp_path, plain)
     _payload_env(monkeypatch)
     payload = deploy_bench.secrets_payload()
-    assert payload["ACCOUNT_BACKUP_S3_ENDPOINT"] == "https://acct.r2.cloudflarestorage.com"
+    assert payload["ACCOUNT_BACKUP_S3_ENDPOINT"] == h.R2_ENDPOINT

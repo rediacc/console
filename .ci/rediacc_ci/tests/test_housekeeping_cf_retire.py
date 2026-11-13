@@ -277,7 +277,7 @@ def test_the_executor_rechecks_every_name_before_it_is_sent(tree):
 def test_order_is_unbind_workers_containers_queues_d1_r2_pages(tree):
     cf = FakeCf()
     assert run(tree, cf, "delete", "--write", "--no-archive", ASKED) == 0
-    order = []
+    order: list[str] = []
     for path, _jur in cf.deletes:
         step = (
             "unbind"

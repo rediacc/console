@@ -3,6 +3,7 @@
  * that a `placed` ready line (an image already at its final path, nothing staged) skips.
  */
 
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { describe, expect, it, vi } from 'vitest';
 import type { ExecSessionHandle } from '../../../remote/sftp/client.js';
 import { buildImportCommand, startImportSession } from '../session.js';
@@ -11,7 +12,7 @@ const SHA = 'a'.repeat(64);
 const base = {
   renetPath: '/usr/bin/renet',
   guid: 'guid-1',
-  datastore: '/mnt/rediacc',
+  datastore: WK_DATASTORE_PATH,
   allocatedBytes: 10,
 };
 
@@ -70,7 +71,7 @@ describe('startImportSession staging check', () => {
   });
 
   it('accepts an unplaced reply with a safe staging path (control)', async () => {
-    const session = await open(ready({ staging: '/mnt/rediacc/staging/g1', fresh: true }));
+    const session = await open(ready({ staging: `${WK_DATASTORE_PATH}/staging/g1`, fresh: true }));
     expect(session.ready.placed).toBe(false);
     await session.quit();
   });

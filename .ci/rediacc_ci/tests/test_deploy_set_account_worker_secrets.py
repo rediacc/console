@@ -29,6 +29,7 @@ from rediacc_ci.deploy import set_account_worker_secrets as port
 from rediacc_ci.deploy import set_preview_worker_secrets as preview
 from rediacc_ci.deploy import set_www_worker_secrets as www
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.ops_cf_harness import R2_ENDPOINT
 from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
@@ -59,7 +60,7 @@ FIXTURE_ENV = {
     "AWS_SES_REGION": "eu-central-1",
     "CLOUDFLARE_TURNSTILE_SECRET_KEY": "ts",
     "OBS_OTLP_CREDENTIALS_EU": '{"user":"u-eu","pass":"p-eu"}',
-    "ACCOUNT_BACKUP_S3_ENDPOINT": "https://acct.r2.cloudflarestorage.com",
+    "ACCOUNT_BACKUP_S3_ENDPOINT": R2_ENDPOINT,
     "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": "bk",
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY": "bs",
     "BACKUP_BUCKET_STABLE": "rediacc-backups-eu",
@@ -398,7 +399,7 @@ def test_a_region_without_a_jurisdiction_keeps_the_default_host(tmp_path: pathli
     }
     old, new, old_calls, new_calls = run_both(tmp_path, **us)
     doc = document(old_calls)
-    assert '"ACCOUNT_BACKUP_S3_ENDPOINT": "https://acct.r2.cloudflarestorage.com"' in doc
+    assert f'"ACCOUNT_BACKUP_S3_ENDPOINT": "{R2_ENDPOINT}"' in doc
     assert '"AWS_SES_ACCESS_KEY_ID": "sk-us"' in doc
     _assert_agree(old, new, "no-jurisdiction", old_calls, new_calls)
 
@@ -692,7 +693,7 @@ def test_pure_helpers() -> None:
     assert port.SELF == "rediacc_ci.deploy.set_account_worker_secrets"
 
     # apply_jurisdiction, all four arms.
-    plain = "https://acct.r2.cloudflarestorage.com"
+    plain = R2_ENDPOINT
     assert port.apply_jurisdiction(plain, "") == plain
     assert port.apply_jurisdiction(plain, "eu") == "https://acct.eu.r2.cloudflarestorage.com"
     labelled = "https://acct.eu.r2.cloudflarestorage.com"

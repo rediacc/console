@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from rediacc_ci.ops import region_smoke as rs
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN
 
 if TYPE_CHECKING:
     import pathlib
@@ -53,7 +54,7 @@ def _smoke(fake: FakeRdc, region: str = "eu", values=VALUES) -> str:
 
 
 def test_the_origin_is_the_regions_domain_or_the_bench_origin() -> None:
-    assert rs.origin("eu") == "https://eu.rediacc.cloud"
+    assert rs.origin("eu") == ACCOUNT_DEFAULT_ORIGIN
     assert rs.origin("bench").startswith("https://bench.")
     with pytest.raises(rs.SmokeError) as err:
         rs.origin("mars")
@@ -65,8 +66,8 @@ def test_the_smoke_runs_init_login_enable_refresh_and_show_in_order() -> None:
     digest = _smoke(fake)
     assert fake.verbs() == [
         "config init region-smoke-eu",
-        "subscription login --server https://eu.rediacc.cloud",
-        "-o json config remote enable --master-password --api-url https://eu.rediacc.cloud",
+        f"subscription login --server {ACCOUNT_DEFAULT_ORIGIN}",
+        f"-o json config remote enable --master-password --api-url {ACCOUNT_DEFAULT_ORIGIN}",
         "config remote refresh",
         "-o json config show",
     ]

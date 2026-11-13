@@ -943,7 +943,12 @@ def test_a_deferred_smoke_deploy_skips_the_smoke_exits_zero_and_records_no_smoke
 ):
     """Review d39e851d.2: the core deferred path, driven through main()."""
     smoked = []
-    monkeypatch.setattr(dp, "smoke", lambda *a, **_k: smoked.append(a) or 0)
+
+    def fake_smoke(*a: object, **_k: object) -> int:
+        smoked.append(a)
+        return 0
+
+    monkeypatch.setattr(dp, "smoke", fake_smoke)
     record = tmp_path / "record.json"
     args = [*lflags(lroot, "proxy"), "--version", VERSION, "--record", str(record)]
     assert dp.main([*args, "--defer-smoke"]) == 0
@@ -955,7 +960,12 @@ def test_a_deferred_smoke_deploy_skips_the_smoke_exits_zero_and_records_no_smoke
 def test_a_plain_company_deploy_still_smokes_and_records_the_result(lroot, monkeypatch, tmp_path):
     """THE CONTROL of the deferred-smoke test: the same deploy without the flag smokes."""
     smoked = []
-    monkeypatch.setattr(dp, "smoke", lambda *a, **_k: smoked.append(a) or 0)
+
+    def fake_smoke(*a: object, **_k: object) -> int:
+        smoked.append(a)
+        return 0
+
+    monkeypatch.setattr(dp, "smoke", fake_smoke)
     record = tmp_path / "record.json"
     args = [*lflags(lroot, "proxy"), "--version", VERSION, "--record", str(record)]
     assert dp.main(args) == 0

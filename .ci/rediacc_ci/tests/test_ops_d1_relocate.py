@@ -341,12 +341,13 @@ def test_a_failed_fk_call_exits_1_not_zero_violations(pair) -> None:
     )
     ctx.out = io.StringIO()
     status = rel.step_verify(
-        ctx, rel.SqliteDb("account-x", src), cast("rel.Db", FailingFk(rel.SqliteDb("account-x-j", dst))), None
+        ctx,
+        rel.SqliteDb("account-x", src),
+        cast("rel.Db", FailingFk(rel.SqliteDb("account-x-j", dst))),
+        None,
     )
     assert status == 1
-    assert (
-        "PRAGMA foreign_key_check on account-x-j failed: query answered 500" in text(ctx.err)
-    )
+    assert "PRAGMA foreign_key_check on account-x-j failed: query answered 500" in text(ctx.err)
     assert "verified" not in text(ctx.out), "a check that could not run is not a pass"
 
 
@@ -587,9 +588,8 @@ def test_retire_refuses_a_name_still_in_a_toml(tmp_path: Path) -> None:
     )
     ctx.run = lambda _a: pytest.fail("must not delete")
     assert call(ctx, *RETIRE, "--write") == 2
-    assert (
-        "still named by: workers/account/wrangler.eu.toml (d1_databases database_name)"
-        in text(ctx.err)
+    assert "still named by: workers/account/wrangler.eu.toml (d1_databases database_name)" in text(
+        ctx.err
     )
 
 
@@ -654,28 +654,29 @@ def test_retire_deletes_only_with_write(tmp_path: Path) -> None:
     ctx.run = record_run
     assert call(ctx, *RETIRE) == 0
     assert ran == []
-    assert (
-        "dry run, would run: npx --no-install wrangler d1 delete account-old" in text(ctx.out)
-    )
+    assert "dry run, would run: npx --no-install wrangler d1 delete account-old" in text(ctx.out)
     assert call(ctx, *RETIRE, "--write") == 0
     assert ran == [
         ["npx", "--no-install", "wrangler", "d1", "delete", "account-old", "--skip-confirmation"]
     ]
-    assert (
-        last(ctx, "account-old", "retire")["replaced_by"] == "account-old-j"
-    )
+    assert last(ctx, "account-old", "retire")["replaced_by"] == "account-old-j"
+
+
+def _no_transport(*_a: object) -> tuple[int, object]:
+    """A transport that is never called: these tests stub the wrangler seams, not the REST API."""
+    raise AssertionError("the REST transport must not be reached")
 
 
 def test_the_config_reaches_the_wrangler_export_and_import(monkeypatch, tmp_path: Path) -> None:
     """fb92c369.1: --config rides on the export and the import, not only on the migrations lookup."""
-    seen: dict[str, object] = {}
+    seen: dict[str, Any] = {}
     monkeypatch.setattr(
         rel.clone_d1,
         "export_redacted",
         lambda *_a, **_k: seen.update(export=list(_a[2])),
     )
     monkeypatch.setattr(rel, "run_wrangler", lambda argv: seen.update(argv=argv) or 0)
-    d1 = rel.D1Db("account-x-j", dsm.D1Executor(None, {}, "acct", "account-x-j"), "w.toml")
+    d1 = rel.D1Db("account-x-j", dsm.D1Executor(_no_transport, {}, "acct", "account-x-j"), "w.toml")
     d1.export_into(str(tmp_path))
     d1.import_file(str(tmp_path / "i.sql"))
     assert seen["export"] == ["--config", "w.toml"]
@@ -684,8 +685,8 @@ def test_the_config_reaches_the_wrangler_export_and_import(monkeypatch, tmp_path
 
 def test_no_config_adds_no_config_words(monkeypatch, tmp_path: Path) -> None:
     """Control: an empty config contributes no argument."""
-    seen: dict[str, object] = {}
+    seen: dict[str, Any] = {}
     monkeypatch.setattr(rel, "run_wrangler", lambda argv: seen.update(argv=argv) or 0)
-    d1 = rel.D1Db("account-x-j", dsm.D1Executor(None, {}, "acct", "account-x-j"))
+    d1 = rel.D1Db("account-x-j", dsm.D1Executor(_no_transport, {}, "acct", "account-x-j"))
     d1.import_file(str(tmp_path / "i.sql"))
     assert "--config" not in seen["argv"]

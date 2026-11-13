@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import urllib.parse
+
 import pytest
 
 from rediacc_ci.enterprise import dns
@@ -26,7 +28,8 @@ class FakeCf:
         self.calls.append((method, path.split("?")[0]))
         base = "/zones/%s" % ZID
         if method == "GET" and path.startswith(base + "/dns_records"):
-            name = path.split("name=")[1] if "name=" in path else None
+            query = urllib.parse.parse_qs(urllib.parse.urlsplit(path).query)
+            name = query["name"][0] if "name" in query else None
             found = [r for r in self.records if name in (None, r["name"])]
             return {"success": True, "result": found}
         if method == "POST" and path == base + "/dns_records":

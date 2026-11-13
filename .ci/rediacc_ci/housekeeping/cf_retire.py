@@ -282,26 +282,26 @@ def build_plan(root, account: str, client, rs: RetiredSet) -> tuple[list[Action]
             acts.append(Action("container", name, app.get("id", "?"), why, parent=parent))
     for q in inv.queues:
         name = q.get("queue_name", "")
-        why = judge("queue", name)
-        if why:
+        reason = judge("queue", name)
+        if reason:
             foreign = _foreign(bound.get(("queue", name)), retired)
-            acts.append(Action("queue", name, q.get("queue_id", "?"), why, bound=foreign))
+            acts.append(Action("queue", name, q.get("queue_id", "?"), reason, bound=foreign))
     for db in inv.d1:
         name = db.get("name", "")
-        why = judge("d1", name)
-        if why:
+        reason = judge("d1", name)
+        if reason:
             path = "/accounts/%s/d1/database/%s" % (account, db["uuid"])
             detail = client.get(path).get("result") or {}
             tables = int(detail.get("num_tables") or 0)
-            a = Action("d1", name, db["uuid"], why, count=tables, holds_data=tables > 0)
+            a = Action("d1", name, db["uuid"], reason, count=tables, holds_data=tables > 0)
             a.size = int(detail.get("file_size") or 0)
             a.bound = _foreign(bound.get(("d1", db["uuid"])), retired)
             acts.append(a)
     for b in inv.buckets:
         name = b["name"]
-        why = judge("r2", name)
-        if why:
-            a = Action("r2", name, name, why, jurisdiction=b["jurisdiction"])
+        reason = judge("r2", name)
+        if reason:
+            a = Action("r2", name, name, reason, jurisdiction=b["jurisdiction"])
             path = "/accounts/%s/r2/buckets/%s/usage" % (account, name)
             usage = client.get(path, a.header()).get("result") or {}
             a.count = int(usage.get("objectCount") or 0)
@@ -312,9 +312,9 @@ def build_plan(root, account: str, client, rs: RetiredSet) -> tuple[list[Action]
             acts.append(a)
     for proj in inv.pages:
         name = proj.get("name", "")
-        why = judge("pages", name)
-        if why:
-            acts.append(Action("pages", name, proj.get("id", "?"), why))
+        reason = judge("pages", name)
+        if reason:
+            acts.append(Action("pages", name, proj.get("id", "?"), reason))
     for a in acts:
         if a.step not in ("unbind", "container"):
             a.refs = cfl.referenced_by(a.name, texts, "pages" if a.step == "pages" else "")

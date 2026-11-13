@@ -98,11 +98,12 @@ def _fake_iptables(tmp_path):
     return log
 
 
-def test_remove_script_deletes_the_tagged_rules_and_no_others(tmp_path):
+def test_remove_script_deletes_the_tagged_rules_and_no_others(tmp_path, monkeypatch):
     """Review bf0bded8.4: run the script against a fake iptables that holds one tagged and one foreign rule."""
     log = _fake_iptables(tmp_path)
-    env = {**os.environ, "PATH": "%s:%s" % (tmp_path, os.environ["PATH"])}
-    subprocess.run(["sh", "-c", airgap.remove_script()], env=env, check=True)
+    # The fake leads a fixed system path, so the test writes PATH and never reads the host's.
+    monkeypatch.setenv("PATH", "%s:%s" % (tmp_path, os.defpath))
+    subprocess.run(["sh", "-c", airgap.remove_script()], check=True)
     lines = log.read_text().splitlines()
     for tool in airgap.TOOLS:
         assert "%s -P OUTPUT ACCEPT" % tool in lines

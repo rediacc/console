@@ -43,9 +43,9 @@ describe('local lock on a filesystem without hard links', () => {
 
   it('still refuses a live holder', () => {
     acquireLocalLock(lockPath, { pid: 1, host: 'h1', isPidAlive: () => true });
-    expect(() => acquireLocalLock(lockPath, { pid: 2, host: 'h1', isPidAlive: () => true })).toThrow(
-      ImageLockError
-    );
+    expect(() =>
+      acquireLocalLock(lockPath, { pid: 2, host: 'h1', isPidAlive: () => true })
+    ).toThrow(ImageLockError);
   });
 
   it('still takes over a dead holder on the same host', () => {
@@ -56,8 +56,8 @@ describe('local lock on a filesystem without hard links', () => {
 
   it('control: a link error that is not a missing-hard-link code still fails the run', () => {
     linkCode.value = 'EIO';
-    expect(() => acquireLocalLock(lockPath, { pid: 3, host: 'h1', isPidAlive: () => true })).toThrow(
-      /EIO/
-    );
+    expect(() =>
+      acquireLocalLock(lockPath, { pid: 3, host: 'h1', isPidAlive: () => true })
+    ).toThrow(/EIO/);
   });
 });

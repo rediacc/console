@@ -196,7 +196,7 @@ describe('the elite template', () => {
       const result = rediaccfile(work, script);
       return { out: result.stdout, err: result.stderr };
     };
-    const REF = 'ghcr.io/rediacc/server:1';
+    const REF = `${WK_IMAGE_REGISTRY}/server:1`;
 
     it('serves the image from a tar whose manifest ref the load makes present', () => {
       const r = run({ manifest: `server.tar ${REF}\n`, tarHolds: REF });

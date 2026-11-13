@@ -212,7 +212,8 @@ def inbox_answer_command(stack_dir: str) -> str:
 
 def inbox_answers(text: str) -> list[dict]:
     """Every JSON object in `text`, in order: the output of `inbox_answer_command` holds one per answer file. Text that is not JSON ends the scan."""
-    decoder, at, found = json.JSONDecoder(), 0, []
+    decoder, at = json.JSONDecoder(), 0
+    found: list[dict] = []
     while True:
         while at < len(text) and text[at].isspace():
             at += 1

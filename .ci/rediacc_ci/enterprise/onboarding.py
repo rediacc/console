@@ -802,9 +802,7 @@ class Minters:
         return self.cloudflare.r2_bucket_token(token_name, resource)
 
 
-def live_api_key(
-    project_id: str, env: Mapping[str, str] | None = None
-) -> Callable[[str], str]:
+def live_api_key(project_id: str, env: Mapping[str, str] | None = None) -> Callable[[str], str]:
     """The company's own ACCOUNT_SERVER_API_KEY, read from the enterprise bws project the `secrets` step wrote it to; "" when absent."""
     environ = dict(os.environ if env is None else env)
 

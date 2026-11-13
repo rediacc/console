@@ -18,6 +18,7 @@ import pytest
 
 from rediacc_ci.drills import backup_window as bw
 from rediacc_ci.ops import backup_meter_replay as mod
+from rediacc_ci.tests.ops_cf_harness import R2_ENDPOINT
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -41,7 +42,7 @@ def timers_text(now: int, *rows: str) -> str:
 SECRET = "s3cr3t-value-that-must-never-print"
 KEY_ID = "key-id-that-must-never-print"
 ENV = {
-    "ACCOUNT_BACKUP_S3_ENDPOINT": "https://acct.r2.cloudflarestorage.com",
+    "ACCOUNT_BACKUP_S3_ENDPOINT": R2_ENDPOINT,
     "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": KEY_ID,
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY": SECRET,
 }
