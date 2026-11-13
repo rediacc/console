@@ -45,6 +45,9 @@ def rec(**kw) -> dict:
     return {**base, **kw}
 
 
+ENSURE_KEYS = ("zone", "name", "rtype", "content", "proxied", "comment")
+
+
 def ensure(http, **kw):
     args = {
         "zone": ZONE,
@@ -55,6 +58,8 @@ def ensure(http, **kw):
         "comment": "originless",
     }
     args.update(kw)
+    unknown = set(args) - {*ENSURE_KEYS, "dry_run"}
+    assert not unknown, "ensure() would drop %s" % sorted(unknown)
     return cf_dns.ensure_record(
         http=http,
         zone=str(args["zone"]),
@@ -174,6 +179,12 @@ def test_records_reads_every_page():
     assert len(cf_dns.records(ZONE, None, http)) == cf_dns.PAGE_SIZE + 1
     assert len(seen) == 2
     assert len(cf_dns.records(ZONE, None, Rec([{"id": "x"}]))) == 1
+
+
+def test_ensure_helper_refuses_a_keyword_it_would_drop():
+    """Review 09b714f6.1: an extra keyword fails loudly instead of passing without being exercised."""
+    with pytest.raises(AssertionError, match="ttl"):
+        ensure(Rec(), ttl=300)
 
 
 def test_unknown_zone_refused():

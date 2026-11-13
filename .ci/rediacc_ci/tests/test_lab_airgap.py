@@ -5,6 +5,8 @@ Each failing check has a CONTROL that runs the same scenario with the one fault 
 
 from __future__ import annotations
 
+import os
+import shlex
 import subprocess
 
 import pytest
@@ -70,6 +72,46 @@ def test_refuses_non_ops_ip(ip):
     for verb in ("apply", "remove", "check"):
         assert airgap.main([verb, "--vm", ip], rec) == 2
     assert rec.calls == []
+
+
+def test_remove_goes_through_the_transport_as_the_remove_script():
+    """Review bf0bded8.4: `remove` is sent over ssh, not just present as text."""
+    rec = Recorder()
+    assert airgap.main(["remove", "--vm", "192.168.111.12"], rec) == 0
+    assert rec.calls[0][-1].endswith(shlex.quote(airgap.remove_script()))
+    assert airgap.main(["remove", "--vm", "192.168.111.12"], Recorder(1, "boom")) == 1
+
+
+def _fake_iptables(tmp_path):
+    log = tmp_path / "log"
+    for tool in airgap.TOOLS:
+        path = tmp_path / tool
+        path.write_text(
+            "#!/bin/sh\n"
+            'echo "%s $*" >> %s\n'
+            'if [ "$1" = "-S" ]; then\n'
+            '  echo "-A $2 -o lo -m comment --comment %s -j ACCEPT"\n'
+            '  echo "-A $2 -s 10.9.9.9 -j DROP"\n'
+            "fi\n" % (tool, log, airgap.TAG)
+        )
+        path.chmod(0o755)
+    return log
+
+
+def test_remove_script_deletes_the_tagged_rules_and_no_others(tmp_path):
+    """Review bf0bded8.4: run the script against a fake iptables that holds one tagged and one foreign rule."""
+    log = _fake_iptables(tmp_path)
+    env = {**os.environ, "PATH": "%s:%s" % (tmp_path, os.environ["PATH"])}
+    subprocess.run(["sh", "-c", airgap.remove_script()], env=env, check=True)
+    lines = log.read_text().splitlines()
+    for tool in airgap.TOOLS:
+        assert "%s -P OUTPUT ACCEPT" % tool in lines
+        for chain in ("OUTPUT", "DOCKER-USER"):
+            assert (
+                "%s -D %s -o lo -m comment --comment %s -j ACCEPT" % (tool, chain, airgap.TAG)
+                in lines
+            )
+    assert not any("10.9.9.9" in line and " -D " in line for line in lines)
 
 
 def test_usage():
