@@ -228,9 +228,10 @@ def http_fetch(method: str, path: str, token: str, body: Mapping[str, str] | Non
         with https.urlopen(req, timeout=30) as resp:
             raw = resp.read()
     except urllib.error.HTTPError as exc:
-        raise ApiError(
-            "HTTP %d on %s %s%s" % (exc.code, method, label, _cf_errors(exc.read()))
-        ) from None
+        with exc:
+            raise ApiError(
+                "HTTP %d on %s %s%s" % (exc.code, method, label, _cf_errors(exc.read()))
+            ) from None
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         raise ApiError("transport failure on %s %s: %s" % (method, label, exc)) from None
     try:

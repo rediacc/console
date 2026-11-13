@@ -61,7 +61,8 @@ def http_get(url: str) -> Response:
                 resp.status, resp.headers.get("Content-Type") or "", resp.read(2_000_000)
             )
     except urllib.error.HTTPError as exc:
-        return Response(exc.code, exc.headers.get("Content-Type") or "" if exc.headers else "")
+        with exc:
+            return Response(exc.code, exc.headers.get("Content-Type") or "" if exc.headers else "")
     except (OSError, ValueError) as exc:
         return Response(0, error=type(exc).__name__)
 

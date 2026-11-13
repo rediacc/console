@@ -355,6 +355,8 @@ def fetch_deployed(url: str, token: str) -> Deployed | None:
     try:
         response = https.urlopen(request, timeout=20)
     except urllib.error.HTTPError as exc:
+        # An HTTPError owns the response; only its status is read here, so release it before judging.
+        exc.close()
         if exc.code == 404:
             return None
         raise StatusUnreadableError("%s answered HTTP %d" % (url, exc.code)) from exc

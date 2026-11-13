@@ -391,6 +391,7 @@ class HttpFetcher:
             with self._open(url, True, False) as resp:
                 return resp.read().decode("utf-8", "replace"), ""
         except urllib.error.HTTPError as exc:
+            exc.close()
             location = exc.headers.get("Location") if exc.code in (301, 302, 303, 307) else None
             if not location:
                 return None, "HTTP %s for %s" % (exc.code, path)

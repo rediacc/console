@@ -356,7 +356,8 @@ class Worker:
             with https.urlopen(request, timeout=timeout, http="loopback") as resp:
                 return json.loads(resp.read().decode("utf-8"))
         except urllib.error.HTTPError as exc:
-            body = exc.read().decode("utf-8", "replace")
+            with exc:
+                body = exc.read().decode("utf-8", "replace")
             try:
                 return {"http_status": exc.code, **json.loads(body)}
             except ValueError:
