@@ -20,6 +20,13 @@ export interface ImageRsyncArgsOptions {
   direction: 'download' | 'upload';
   /** The destination file does not exist yet (download: the local image; upload: a fresh staging). */
   freshDest: boolean;
+  /**
+   * The destination filesystem stores holes (preflight's `probeSparse`). False drops `--sparse`: on
+   * exFAT, FAT or a WSL drvfs mount it saves nothing and turns every zero run into a seek and a short
+   * write, which measured 5x slower onto a WSL-mounted exFAT drive (146 s against 27 s for 300 MiB).
+   * Omitted keeps the old behaviour.
+   */
+  sparseDest?: boolean;
   /** The `-e` remote shell command. */
   sshCommand: string;
   /** `--bwlimit` in KiB/s; omitted or 0 is unlimited. */
@@ -45,7 +52,7 @@ export function buildImageRsyncArgs(opts: ImageRsyncArgsOptions): string[] {
     '--chmod=F600',
     '--timeout=120',
   ];
-  if (opts.freshDest) args.push('--sparse');
+  if (opts.freshDest && opts.sparseDest !== false) args.push('--sparse');
   // The import helper sets the owner and mode of the finalized image.
   if (opts.direction === 'upload') args.push('--no-owner', '--no-group', '--no-perms');
   if (opts.bwlimitKiBps && opts.bwlimitKiBps > 0) {
