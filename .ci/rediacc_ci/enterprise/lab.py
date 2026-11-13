@@ -362,6 +362,12 @@ class Proc:
     stderr: str = ""
 
 
+def _cause(done: Proc) -> str:
+    """`: <wrangler's stated cause>` for an error message, empty when wrangler stated none."""
+    tail = control_db.failure_tail(done.stdout, done.stderr)
+    return ": " + tail if tail else ""
+
+
 # (argv, cwd, extra env) -> Proc. Streams are captured, never echoed: they can carry a company name.
 Runner = Callable[[Sequence[str], "pathlib.Path | None", "dict[str, str] | None"], Proc]
 # (absolute API path, starting with `/`) -> the decoded `result`.
@@ -586,7 +592,7 @@ def lookup(
     if NOT_FOUND in (text + "\n" + done.stderr).lower():
         return None
     if done.rc != 0:
-        raise proof.LabError("wrangler kv key get exited %d" % done.rc)
+        raise proof.LabError("wrangler kv key get exited %d%s" % (done.rc, _cause(done)))
     return text or None
 
 
@@ -2323,7 +2329,7 @@ def worker_versions(worker: str, *, run: Runner = run_process) -> list[str]:
     argv = [*wrangler.ARGV, "deployments", "list", "--json", "--name", worker]
     done = run(argv, root().joinpath(*WRANGLER_REL), None)
     if done.rc != 0:
-        raise proof.LabError("wrangler deployments list exited %d" % done.rc)
+        raise proof.LabError("wrangler deployments list exited %d%s" % (done.rc, _cause(done)))
     data = _json_value(done.stdout, "[")
     if not isinstance(data, list):
         raise proof.LabError("wrangler deployments list printed no JSON list")
@@ -2348,7 +2354,7 @@ def put_version(worker: str, version_id: str, *, run: Runner = run_process) -> N
     ]  # fmt: skip
     done = run(argv, root().joinpath(*WRANGLER_REL), None)
     if done.rc != 0:
-        raise proof.LabError("wrangler rollback exited %d" % done.rc)
+        raise proof.LabError("wrangler rollback exited %d%s" % (done.rc, _cause(done)))
 
 
 def renew_on(machine: str, *, run: Runner = run_process, env: Env = _env) -> proof.Answer:

@@ -421,9 +421,15 @@ def region_entry(region: str, root: pathlib.Path | None = None) -> dict:
     raise OnboardingError("no region %r in regions.json" % region)
 
 
-def _exists(done: Any) -> bool:
-    text = ("%s %s" % (done.stdout or "", done.stderr or "")).lower()
-    return "already exists" in text or "already owned" in text
+def _listed(listing: Any, name: str) -> bool:
+    """Whether `name` stands as a whole token in a `wrangler ... list` output, so `backup-replicate-acme` never matches `backup-replicate-acme-dlq`."""
+    return re.search(r"(?<![\w-])%s(?![\w-])" % re.escape(name), listing.stdout or "") is not None
+
+
+def _cause(done: Any, label: str) -> str:
+    """`: <wrangler's stated cause>` for an error message, with the company label masked because wrangler echoes the resource name."""
+    tail = control_db.failure_tail(done.stdout or "", done.stderr or "")
+    return ": " + tail.replace(label, "<name>") if tail else ""
 
 
 def live_actions(
@@ -546,7 +552,8 @@ def live_actions(
         done = run_cmd(argv, cwd=base().joinpath(*pc.ACCOUNT_REL))
         if done.returncode != 0:
             raise OnboardingError(
-                "company %s: the account migrations exited %d" % (plan.company_id, done.returncode)
+                "company %s: the account migrations exited %d%s"
+                % (plan.company_id, done.returncode, _cause(done, plan.name))
             )
         return ""
 
@@ -554,19 +561,29 @@ def live_actions(
         plan = ctx.plan
         jurisdiction = region_entry(plan.region).get("r2Jurisdiction")
         flag = ["--jurisdiction", str(jurisdiction)] if jurisdiction else []
+        # Each resource is looked up in its list first, so one the company already owns (left by an earlier run) is reused; `create` is never run to find out.
         work = (
-            ("configs bucket", ["r2", "bucket", "create", "configs-%s" % plan.name, *flag]),
-            ("backups bucket", ["r2", "bucket", "create", "backups-%s" % plan.name, *flag]),
-            ("backup queue", ["queues", "create", "backup-replicate-%s" % plan.name]),
-            ("dead-letter queue", ["queues", "create", "backup-replicate-%s-dlq" % plan.name]),
+            ("configs bucket", ["r2", "bucket"], "configs-%s" % plan.name, flag),
+            ("backups bucket", ["r2", "bucket"], "backups-%s" % plan.name, flag),
+            ("backup queue", ["queues"], "backup-replicate-%s" % plan.name, []),
+            ("dead-letter queue", ["queues"], "backup-replicate-%s-dlq" % plan.name, []),
         )
         # From the account worker directory, never `cwd=None`: `run_captured` turns None into an empty temporary directory, where `npx --no-install` finds no pinned wrangler ("npx canceled due to missing packages", finding e69747ea). That directory holds no default wrangler.toml, and these calls name no config.
-        for what, args in work:
-            done = run_cmd([*wrangler.ARGV, *args], cwd=base().joinpath(*pc.ACCOUNT_REL))
-            if done.returncode != 0 and not _exists(done):
+        cwd = base().joinpath(*pc.ACCOUNT_REL)
+        for what, noun, name, extra in work:
+            listing = run_cmd([*wrangler.ARGV, *noun, "list", *extra], cwd=cwd)
+            if listing.returncode != 0:
                 raise OnboardingError(
-                    "company %s: creating the %s failed (wrangler exited %d)"
-                    % (plan.company_id, what, done.returncode)
+                    "company %s: listing for the %s failed (wrangler exited %d)%s"
+                    % (plan.company_id, what, listing.returncode, _cause(listing, plan.name))
+                )
+            if _listed(listing, name):
+                continue
+            done = run_cmd([*wrangler.ARGV, *noun, "create", name, *extra], cwd=cwd)
+            if done.returncode != 0:
+                raise OnboardingError(
+                    "company %s: creating the %s failed (wrangler exited %d)%s"
+                    % (plan.company_id, what, done.returncode, _cause(done, plan.name))
                 )
         return ""
 

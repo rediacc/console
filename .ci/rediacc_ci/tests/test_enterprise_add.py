@@ -349,21 +349,98 @@ def test_live_configs_step_refuses_without_a_d1_id(tmp_path):
         actions["configs"](_ctx(World()))
 
 
-def test_live_buckets_step_creates_buckets_and_queues_and_accepts_existing():
+def test_live_buckets_step_creates_buckets_and_queues():
     calls = []
 
     def runner(argv, *, cwd=None):
         del cwd
         calls.append(argv[len(wrangler.ARGV) :])
-        if "backups-acme" in argv:
-            return Proc(1, "", "The bucket you tried to create already exists")
         return Proc(0)
 
     onboarding.live_actions(runner=runner)["buckets"](_ctx(World()))
+    assert ["r2", "bucket", "list", "--jurisdiction", "eu"] in calls
     assert ["r2", "bucket", "create", "configs-acme", "--jurisdiction", "eu"] in calls
     assert ["r2", "bucket", "create", "backups-acme", "--jurisdiction", "eu"] in calls
     assert ["queues", "create", "backup-replicate-acme"] in calls
     assert ["queues", "create", "backup-replicate-acme-dlq"] in calls
+
+
+def test_live_buckets_step_reuses_what_the_list_shows_and_never_creates_it():
+    calls = []
+
+    def runner(argv, *, cwd=None):
+        del cwd
+        args = argv[len(wrangler.ARGV) :]
+        calls.append(args)
+        if "list" in args and args[0] == "r2":
+            return Proc(0, "name: configs-acme\nname: backups-acme\n")
+        if "list" in args:
+            return Proc(0, "backup-replicate-acme-dlq\n")
+        return Proc(0)
+
+    onboarding.live_actions(runner=runner)["buckets"](_ctx(World()))
+    created = [c for c in calls if "create" in c]
+    # only the queue is created: its -dlq sibling is listed, and must not match it
+    assert created == [["queues", "create", "backup-replicate-acme"]]
+
+
+def test_live_buckets_step_control_creates_when_the_list_is_empty():
+    """THE CONTROL: with an empty list every resource is created, so the reuse test above can go red."""
+    calls = []
+
+    def runner(argv, *, cwd=None):
+        del cwd
+        calls.append(argv[len(wrangler.ARGV) :])
+        return Proc(0)
+
+    onboarding.live_actions(runner=runner)["buckets"](_ctx(World()))
+    assert len([c for c in calls if "create" in c]) == 4
+
+
+def test_live_buckets_step_does_not_read_exists_from_a_create_error():
+    def runner(argv, *, cwd=None):
+        del cwd
+        if "create" in argv:
+            return Proc(1, "", "The bucket you tried to create already exists")
+        return Proc(0)
+
+    with pytest.raises(onboarding.OnboardingError, match="already exists"):
+        onboarding.live_actions(runner=runner)["buckets"](_ctx(World()))
+
+
+def test_live_buckets_step_names_the_cause_of_a_create_failure_with_the_label_masked():
+    def runner(argv, *, cwd=None):
+        del cwd
+        if "create" in argv:
+            out = '{"error": {"text": "bucket configs-acme is taken", "notes": [{"text": "see docs"}]}}'
+            err = 'Using "CF_EMAIL" environment variable. This is deprecated\nrate limited'
+            return Proc(1, out, err)
+        return Proc(0)
+
+    with pytest.raises(onboarding.OnboardingError) as err:
+        onboarding.live_actions(runner=runner)["buckets"](_ctx(World()))
+    text = str(err.value)
+    assert "bucket configs-<name> is taken | see docs | rate limited" in text
+    assert "acme" not in text
+    assert "deprecated" not in text
+
+
+def test_live_buckets_step_names_the_cause_of_a_list_failure():
+    def runner(argv, *, cwd=None):
+        del cwd
+        return Proc(1, "", "not authorized") if "list" in argv else Proc(0)
+
+    with pytest.raises(onboarding.OnboardingError, match=r"listing.*exited 1.*not authorized"):
+        onboarding.live_actions(runner=runner)["buckets"](_ctx(World()))
+
+
+def test_live_migrate_step_names_the_cause_of_a_failure():
+    def runner(*_args, **_kwargs):
+        return Proc(1, "", "d1 acme says no")
+
+    with pytest.raises(onboarding.OnboardingError) as err:
+        onboarding.live_actions(runner=runner)["migrate"](_ctx(World()))
+    assert "d1 <name> says no" in str(err.value)
 
 
 def _local_only_npx(tmp_path, *, install: bool):

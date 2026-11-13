@@ -482,8 +482,29 @@ def test_lookup_failure_is_a_lab_error():
     def broken(_argv, _cwd, _env):
         return lab.Proc(1, "", "Authentication error")
 
-    with pytest.raises(proof.LabError, match="exited 1"):
+    with pytest.raises(proof.LabError, match="exited 1: Authentication error"):
         lab.lookup("acme.example", run=broken, pepper="pep")
+
+
+def test_lookup_failure_without_a_stated_cause_adds_nothing():
+    """THE CONTROL: silent wrangler output leaves the bare exit code, no dangling colon."""
+
+    def broken(_argv, _cwd, _env):
+        return lab.Proc(1, "", "")
+
+    with pytest.raises(proof.LabError) as err:
+        lab.lookup("acme.example", run=broken, pepper="pep")
+    assert str(err.value) == "wrangler kv key get exited 1"
+
+
+def test_worker_versions_and_rollback_failures_name_wrangler_cause():
+    def broken(_argv, _cwd, _env):
+        return lab.Proc(1, '{"error": {"text": "no such worker", "notes": []}}', "")
+
+    with pytest.raises(proof.LabError, match="deployments list exited 1: no such worker"):
+        lab.worker_versions("account-proof-a", run=broken)
+    with pytest.raises(proof.LabError, match="rollback exited 1: no such worker"):
+        lab.put_version("account-proof-a", "v1", run=broken)
 
 
 def test_lookup_without_the_pepper_is_a_lab_error(monkeypatch):

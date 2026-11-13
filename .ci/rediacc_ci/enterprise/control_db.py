@@ -80,13 +80,16 @@ def stdout_error(text: str) -> str:
     return " | ".join(p[:TAIL_WIDTH] for p in parts if p)
 
 
-def _failure(what: str, done: Completed) -> ControlDbError:
+def failure_tail(stdout: str, stderr: str) -> str:
+    """wrangler's stated cause: the `--json` stdout error then the stderr tail without the CF_EMAIL deprecation line, joined by ` | `; empty when neither holds one."""
     kept = "\n".join(
-        line
-        for line in done.stderr.splitlines()
-        if not DEPRECATION.match(ANSI.sub("", line).strip())
+        line for line in stderr.splitlines() if not DEPRECATION.match(ANSI.sub("", line).strip())
     )
-    tail = " | ".join(t for t in (stdout_error(done.stdout), stderr_tail(kept)) if t)
+    return " | ".join(t for t in (stdout_error(stdout), stderr_tail(kept)) if t)
+
+
+def _failure(what: str, done: Completed) -> ControlDbError:
+    tail = failure_tail(done.stdout, done.stderr)
     return ControlDbError("%s exited %d%s" % (what, done.rc, ": " + tail if tail else ""))
 
 
