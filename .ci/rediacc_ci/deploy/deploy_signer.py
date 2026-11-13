@@ -9,13 +9,13 @@ THE CONFIG. `workers/signer/wrangler.template.toml` is rendered into the gitigno
 
 THE KEY. `ACCOUNT_ED25519_PRIVATE_KEY` and `ACCOUNT_ED25519_PUBLIC_KEY` are read from the environment (a Bitwarden profile binds them) and reach wrangler only as the JSON document on the stdin of `wrangler secret bulk`. No value is ever put in argv, printed, written to the record or carried by an exception: every line of wrangler output this module prints is first redacted of both values, and a missing value is refused by its name alone.
 
-THE ORDER. `wrangler deploy`, whose `Current Version ID:` line is captured; then `wrangler secret bulk`; then the verification: `wrangler secret list --format json` must name exactly the two key names, so a signer never runs with an extra secret or without its key. The signer answers no internet request, so its `probe()` RPC is proven by its callers over their binding (live box V1, `./run.sh enterprise proof signer --bench`), not here.
+THE ORDER. `wrangler deploy`, whose `Current Version ID:` line is captured; then `wrangler secret bulk`; then the verification: `wrangler secret list --format json` must name exactly the two key names, so a signer never runs with an extra secret or without its key. A list that misses a key name (and names nothing else) is pushed again and re-read, `SECRET_SETTLE_S` apart, up to `SECRET_PUSHES` pushes, because one read straight after a push is not proof the push failed; an extra name is refused at once. The signer answers no internet request, so its `probe()` RPC is proven by its callers over their binding (live box V1, `./run.sh enterprise proof signer --bench`), not here.
 
 THE WRANGLER. Every call runs from `workers/signer`, whose own lockfile pins wrangler (`npm ci --prefix workers/signer` installs it), with `--config` naming the rendered file; wrangler resolves `main` relative to the config.
 
 A DRY RUN (`--dry-run`) renders with a placeholder control id and runs `wrangler deploy --dry-run`, which bundles the Worker and needs no credential or key.
 
-THE LAB READERS AND DRIVERS (box S2's group in `rediacc_ci.enterprise.lab`, the `Lab` protocol of `rediacc_ci.enterprise.proof`). Fifteen module functions that `LiveLab` binds by name at call time. Each live call goes through an injectable seam, a keyword-only argument that defaults to the production transport: `run` (the wrangler `Runner` above), `api` (a Cloudflare account GET, `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` from the environment), `companies` (the registry's rows) and `probe`. `bench=True` selects `signer-bench-<r>` and `account-bench`; `callers` and `account_workers` also list each non-removed company's `account-<name>` Worker. `secret_names` is `wrangler secret list`; `signer_of` and `signer_props` read the caller's `LICENSE_SIGNER` service binding from the Workers settings API; `expected_props` is what S4's binding must carry (`{tier: shared, region}` from the account config's `vars.REGION`, `{tier: enterprise, companyId, region}` from the control row); `certificate_audited` reads the signer region's control `audit` table. A signer is stopped by `wrangler secret delete ACCOUNT_ED25519_PRIVATE_KEY` (the Worker and every caller's `LICENSE_SIGNER` binding stay; a signer without its private key refuses every signing call, which its callers answer as SIGNER_UNAVAILABLE) and started by this module's own `deploy`, which re-pushes the key. Deleting the Worker instead (`wrangler delete --force`) left account-bench's binding detached from the recreated Worker on 2026-11-12, so bench answered SIGNER_UNAVAILABLE after the restart until a full deploy_bench. `cut_region` stops that region's bench signer and does NOT delete or detach its control database, because D1 offers no unreachable state short of destroying the data, and the signer is the only Worker that reads it for signing. `issue`, `renew` and `current_licence_works` need the caller Worker to ask its signer, and no caller-side probe route exists yet (box S4 binds `LICENSE_SIGNER`); their default `probe` raises `LabError("not built yet: ...")`, never an answer, so a refused claim cannot pass on a missing route.
+THE LAB READERS AND DRIVERS (box S2's group in `rediacc_ci.enterprise.lab`, the `Lab` protocol of `rediacc_ci.enterprise.proof`). Seventeen module functions that `LiveLab` binds by name at call time. Each live call goes through an injectable seam, a keyword-only argument that defaults to the production transport: `run` (the wrangler `Runner` above), `api` (a Cloudflare account GET, `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` from the environment), `companies` (the registry's rows) and `probe`. `bench=True` selects `signer-bench-<r>` and `account-bench`; `account_workers` also lists each non-removed company's `account-<name>` Worker, and `callers` each such Worker whose company has a control `scope` row (`scoped`, a read of every control database), while `unscoped_callers` names the rest, which the signer proof skips by name. `secret_names` is `wrangler secret list`; `signer_of` and `signer_props` read the caller's `LICENSE_SIGNER` service binding from the Workers settings API; `expected_props` is what S4's binding must carry (`{tier: shared, region}` from the account config's `vars.REGION`, `{tier: enterprise, companyId, region}` from the control row); `certificate_audited` reads the signer region's control `audit` table. A signer is stopped by `wrangler secret delete ACCOUNT_ED25519_PRIVATE_KEY` (the Worker and every caller's `LICENSE_SIGNER` binding stay; a signer without its private key refuses every signing call, which its callers answer as SIGNER_UNAVAILABLE) and started by this module's own `deploy`, which re-pushes the key. Deleting the Worker instead (`wrangler delete --force`) left account-bench's binding detached from the recreated Worker on 2026-11-12, so bench answered SIGNER_UNAVAILABLE after the restart until a full deploy_bench. `cut_region` stops that region's bench signer and does NOT delete or detach its control database, because D1 offers no unreachable state short of destroying the data, and the signer is the only Worker that reads it for signing. `issue`, `renew` and `current_licence_works` need the caller Worker to ask its signer, and no caller-side probe route exists yet (box S4 binds `LICENSE_SIGNER`); their default `probe` raises `LabError("not built yet: ...")`, never an answer, so a refused claim cannot pass on a missing route.
 
 THE RECORD. `--record PATH` writes JSON: target, worker, region, config, version id, the previous version id, whether it could be read (`previous_known`), the secret names seen, and the rollback command (`wrangler rollback <previous>`, or null). The record is written, and the rollback line printed, right after `wrangler deploy` succeeds, with empty `secret_names`; it is rewritten once the secret list is verified, so a failure of the key push still leaves the way back on disk.
 """
@@ -31,6 +31,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import time
 import tomllib
 import typing
 
@@ -38,6 +39,7 @@ from rediacc_ci import paths
 from rediacc_ci.core import wrangler
 from rediacc_ci.enterprise import control_db, proof, registry
 from rediacc_ci.housekeeping import cf_leftovers
+from rediacc_ci.ops import bench_production
 
 SELF = "rediacc_ci.deploy.deploy_signer"
 
@@ -62,6 +64,11 @@ CONTROL_DATABASES: dict[str, str] = {
     "bench-us": "control-bench-us",
 }
 DRY_RUN_DB_ID = "00000000-0000-0000-0000-000000000000"
+# How many times `deploy` pushes the key pair before it refuses a secret list that misses a key name, and the wait before each re-push.
+SECRET_PUSHES = 3
+SECRET_SETTLE_S = 10
+# How many of the deploy's last output lines a failed `start_signer` carries in its LabError.
+START_TAIL_LINES = 6
 TOKEN_RE = re.compile(r"@[A-Z_]+@")
 VERSION_ID_RE = re.compile(r"Current Version ID:\s*([0-9A-Za-z][0-9A-Za-z-]*)")
 REDACTED = "[redacted]"
@@ -304,6 +311,7 @@ def deploy(
     dry_run: bool = False,
     record: pathlib.Path | None = None,
     out: typing.TextIO = sys.stdout,
+    sleep: typing.Callable[[float], None] = time.sleep,
 ) -> dict[str, typing.Any]:
     all_targets = targets(load_region_ids(repo_root))
     if target_key not in all_targets:
@@ -404,23 +412,44 @@ def deploy(
         say("Rollback: unknown (the deployments list could not be read before this deploy)")
 
     document = json.dumps({PRIVATE_KEY: private_key, PUBLIC_KEY: public_key})
-    res = run(secret_bulk_argv(config), signer_dir, document)
-    say(res.stdout)
-    say(res.stderr)
-    if res.rc != 0:
-        raise RefusedError("%s: wrangler secret bulk failed (rc %d)" % (SELF, res.rc))
 
-    res = run(secret_list_argv(config), signer_dir, None)
-    if res.rc != 0:
-        raise RefusedError("%s: wrangler secret list failed (rc %d)" % (SELF, res.rc))
-    try:
-        names = sorted(str(s.get("name")) for s in json.loads(res.stdout))
-    except (json.JSONDecodeError, AttributeError, TypeError):
-        raise RefusedError("%s: wrangler secret list printed no JSON list" % SELF) from None
+    def push(attempt: int) -> None:
+        res = run(secret_bulk_argv(config), signer_dir, document)
+        say(res.stdout)
+        say(res.stderr)
+        if res.rc != 0:
+            raise RefusedError(
+                "%s: wrangler secret bulk failed (rc %d, push %d)" % (SELF, res.rc, attempt)
+            )
+
+    def listed() -> list[str]:
+        res = run(secret_list_argv(config), signer_dir, None)
+        if res.rc != 0:
+            raise RefusedError("%s: wrangler secret list failed (rc %d)" % (SELF, res.rc))
+        try:
+            return sorted(str(s.get("name")) for s in json.loads(res.stdout))
+        except (json.JSONDecodeError, AttributeError, TypeError):
+            raise RefusedError("%s: wrangler secret list printed no JSON list" % SELF) from None
+
+    # Push, then verify. A list missing a key name is pushed again and re-read, SECRET_SETTLE_S apart, up to SECRET_PUSHES pushes in all: on 2026-11-13 the region-loss restore of signer-bench-eu read [] right after a bulk push that exited 0 (the public key the cut never touched was absent too), and the restore refused on that single read. An extra secret is refused at once, never pushed over.
+    pushes = 1
+    push(pushes)
+    names = listed()
+    while (
+        names != sorted(SECRET_NAMES) and set(names) <= set(SECRET_NAMES) and pushes < SECRET_PUSHES
+    ):
+        say(
+            "%s lists secrets %s after push %d; waiting %d s and pushing again."
+            % (target.worker, names, pushes, SECRET_SETTLE_S)
+        )
+        sleep(SECRET_SETTLE_S)
+        pushes += 1
+        push(pushes)
+        names = listed()
     if names != sorted(SECRET_NAMES):
         raise RefusedError(
-            "%s: %s holds secrets %s, not exactly %s"
-            % (SELF, target.worker, names, sorted(SECRET_NAMES))
+            "%s: %s holds secrets %s, not exactly %s (after %d push(es))"
+            % (SELF, target.worker, names, sorted(SECRET_NAMES), pushes)
         )
 
     result["secret_names"] = names
@@ -439,6 +468,8 @@ BENCH_ACCOUNT = "account-bench"
 # (path under /accounts/<id>) -> the decoded `result`. The tests swap it for a dict lookup.
 Api = typing.Callable[[str], typing.Any]
 Companies = typing.Callable[[bool], list[dict]]
+# bench -> (region, company id) of every control scope row. The tests swap it for a set.
+Scoped = typing.Callable[[bool], set[tuple[str, str]]]
 # (caller, action in issue|renew|current, kind) -> Answer.
 Probe = typing.Callable[[str, str, str], proof.Answer]
 
@@ -497,12 +528,60 @@ def _wrangler(run: Runner, argv: list[str], stdin: str | None = None) -> Result:
     return run(argv, cwd, stdin)
 
 
-def account_workers(*, bench: bool, companies: Companies = default_companies) -> list[str]:
-    """Every account Worker whose secret list must hold no private key: the shared ones, then each live company's."""
-    shared = (
+def _shared_workers(bench: bool) -> list[str]:
+    return (
         [BENCH_ACCOUNT] if bench else [COMPANY_WORKER_PREFIX + r for r in load_region_ids(_root())]
     )
-    return [*shared, *(COMPANY_WORKER_PREFIX + str(r["name"]) for r in companies(bench))]
+
+
+def account_workers(*, bench: bool, companies: Companies = default_companies) -> list[str]:
+    """Every account Worker whose secret list must hold no private key: the shared ones, then each live company's."""
+    return [
+        *_shared_workers(bench),
+        *(COMPANY_WORKER_PREFIX + str(r["name"]) for r in companies(bench)),
+    ]
+
+
+SCOPED_SQL = "SELECT company_id FROM scope"
+
+
+def default_scoped(bench: bool) -> set[tuple[str, str]]:
+    """(region, company id) of every `scope` row in the control databases. The regional signer joins `companies` to `scope` in its own region's control database before it signs anything for a company, so a company without a row there is answered SIGNER_UNKNOWN_COMPANY whatever it asks."""
+    try:
+        rows = registry.Registry(control_db.transport(), bench=bench).read_all(SCOPED_SQL)
+    except registry.RegistryUnreachableError as exc:
+        raise proof.LabError(str(exc)) from None
+    return {(region, str(r["company_id"])) for region, found in rows.items() for r in found}
+
+
+def _company_callers(
+    bench: bool, companies: Companies, scoped: Scoped
+) -> tuple[list[str], list[str]]:
+    """Each live company's account Worker, split into those whose company has a control scope row and those without one."""
+    rows = companies(bench)
+    held = scoped(bench) if rows else set()
+    with_row: list[str] = []
+    without: list[str] = []
+    for r in rows:
+        worker = COMPANY_WORKER_PREFIX + str(r["name"])
+        (with_row if (str(r["region"]), str(r["id"])) in held else without).append(worker)
+    return with_row, without
+
+
+def callers(
+    *, bench: bool, companies: Companies = default_companies, scoped: Scoped | None = None
+) -> list[str]:
+    """The Workers that ask a signer: every shared account Worker, and each live company's whose control database holds its scope row. A company without one is never asked, since every answer would be SIGNER_UNKNOWN_COMPANY; `unscoped_callers` names those."""
+    with_row, _ = _company_callers(bench, companies, scoped or default_scoped)
+    return [*_shared_workers(bench), *with_row]
+
+
+def unscoped_callers(
+    *, bench: bool, companies: Companies = default_companies, scoped: Scoped | None = None
+) -> list[str]:
+    """Each live company's account Worker whose control database holds no scope row (a company onboarded before onboarding wrote it)."""
+    _, without = _company_callers(bench, companies, scoped or default_scoped)
+    return without
 
 
 def signers(*, bench: bool) -> list[str]:
@@ -518,11 +597,6 @@ def secret_names(worker: str, *, run: Runner = run_process) -> list[str]:
         return sorted(str(s["name"]) for s in json.loads(res.stdout))
     except (json.JSONDecodeError, KeyError, TypeError):
         raise proof.LabError("wrangler secret list for %s printed no JSON list" % worker) from None
-
-
-def callers(*, bench: bool, companies: Companies = default_companies) -> list[str]:
-    """The Workers that ask a signer: every account Worker."""
-    return account_workers(bench=bench, companies=companies)
 
 
 def _binding(caller: str, api: Api | None) -> dict:
@@ -620,15 +694,35 @@ def _require_bench_signer(signer: str) -> None:
         )
 
 
+def stop_refusal(
+    signer: str,
+    *,
+    protected: typing.Callable[[], typing.Sequence[bench_production.Protected]] | None = None,
+) -> str:
+    """Why the bench signer `signer` must not be stopped or cut, or "" when it may: `bench_production.signer_stop_refusal` over `.ci/config/bench-production.json`, and a declaration that cannot be read is a refusal (the guard fails closed)."""
+    try:
+        entries = (protected or bench_production.load)()
+        return bench_production.signer_stop_refusal(signer, entries) or ""
+    except bench_production.ProductionRefusalError as exc:
+        return str(exc)
+
+
 def stop_signer(
-    signer: str, *, run: Runner = run_process, env: typing.Mapping[str, str] | None = None
+    signer: str,
+    *,
+    run: Runner = run_process,
+    env: typing.Mapping[str, str] | None = None,
+    protected: typing.Callable[[], typing.Sequence[bench_production.Protected]] | None = None,
 ) -> None:
     """Stop a bench signer by deleting its private-key secret; `start_signer` redeploys it, which re-pushes the key. Bench only.
 
     The Worker is not deleted: a caller's `LICENSE_SIGNER` service binding does not reattach to a recreated Worker (account-bench answered SIGNER_UNAVAILABLE after the 2026-11-12 restart until a full deploy_bench). A signer without its private key refuses with SIGNER_KEY_UNSET, which its callers read as SIGNER_UNAVAILABLE. The secret list is read back after the delete, and a list still naming the key is a LabError.
 
-    Refused before the delete unless every name the redeploy refuses without (`deploy`'s check: CLOUDFLARE_API_TOKEN and both key names) is bound: on 2026-11-12 `proof signer --bench` without the deploy-signer profile stopped signer-bench-eu, failed the restart on the missing key and left bench signing down (SIGNER_UNAVAILABLE). A restart can still fail on Cloudflare's side; this refuses only what is knowable before the delete."""
+    Refused before anything else while `.ci/config/bench-production.json` declares a protected subscription (`stop_refusal`): bench then carries production licences, and a stopped signer stops their renewals. Refused before the delete unless every name the redeploy refuses without (`deploy`'s check: CLOUDFLARE_API_TOKEN and both key names) is bound: on 2026-11-12 `proof signer --bench` without the deploy-signer profile stopped signer-bench-eu, failed the restart on the missing key and left bench signing down (SIGNER_UNAVAILABLE). A restart can still fail on Cloudflare's side; this refuses only what is knowable before the delete."""
     _require_bench_signer(signer)
+    refusal = stop_refusal(signer, protected=protected)
+    if refusal:
+        raise proof.LabError(refusal)
     source = os.environ if env is None else env
     missing = [n for n in ("CLOUDFLARE_API_TOKEN", *SECRET_NAMES) if not source.get(n)]
     if missing:
@@ -656,16 +750,22 @@ def start_signer(
     keys = [k for k, t in _all_targets().items() if t.worker == signer]
     if not keys:
         raise proof.LabError("%r is not a signer Worker" % signer)
+    out = io.StringIO()
     try:
         deploy(
             _root(),
             keys[0],
             env=os.environ if env is None else env,
             run=run,
-            out=io.StringIO(),
+            out=out,
         )
     except (RefusedError, wrangler.WranglerNotInstalledError) as exc:
-        raise proof.LabError("; ".join(getattr(exc, "lines", (str(exc),)))) from None
+        # The deploy's own lines are redacted of both key values before they reach `out`; their tail says what wrangler answered.
+        tail = [line for line in out.getvalue().splitlines() if line.strip()][-START_TAIL_LINES:]
+        detail = "; ".join(getattr(exc, "lines", (str(exc),)))
+        if tail:
+            detail += " (wrangler said: %s)" % " | ".join(tail)
+        raise proof.LabError(detail) from None
 
 
 def _bench_signer(region: str) -> str:
@@ -677,10 +777,14 @@ def _bench_signer(region: str) -> str:
 
 
 def cut_region(
-    region: str, *, run: Runner = run_process, env: typing.Mapping[str, str] | None = None
+    region: str,
+    *,
+    run: Runner = run_process,
+    env: typing.Mapping[str, str] | None = None,
+    protected: typing.Callable[[], typing.Sequence[bench_production.Protected]] | None = None,
 ) -> None:
-    """Bench only: stop the region's bench signer. Its control database is not cut (see the module docstring)."""
-    stop_signer(_bench_signer(region), run=run, env=env)
+    """Bench only: stop the region's bench signer, under `stop_signer`'s refusals. Its control database is not cut (see the module docstring)."""
+    stop_signer(_bench_signer(region), run=run, env=env, protected=protected)
 
 
 def restore_region(

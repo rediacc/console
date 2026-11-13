@@ -211,3 +211,13 @@ def test_refuse_ids_names_a_declared_subscription():
 def test_refuse_ids_passes_undeclared_subscriptions():
     bench_production.refuse_ids([OTHER], DECLARED)
     bench_production.refuse_ids([SUB], [])
+
+
+def test_signer_stop_refusal_names_the_signer_and_the_declaration():
+    refusal = bench_production.signer_stop_refusal("signer-bench-eu", DECLARED)
+    assert refusal is not None
+    assert "signer-bench-eu" in refusal
+    assert SUB in refusal
+    assert bench_production.CONFIG_REL in refusal
+    # control: nothing declared, nothing refused
+    assert bench_production.signer_stop_refusal("signer-bench-eu", []) is None

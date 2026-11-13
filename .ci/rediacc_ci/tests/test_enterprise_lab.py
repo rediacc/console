@@ -52,6 +52,8 @@ def no_network(monkeypatch):
 
 
 def _lab(**kw) -> lab.LiveLab:
+    # Every company a test adds has its control scope row unless the test says otherwise.
+    kw.setdefault("scoped", lambda _row: True)
     return lab.build(bench=True, **kw)
 
 
@@ -192,6 +194,75 @@ def test_ensure_company_adds_once_then_reuses():
     assert first == again
     assert len(fake.calls) == 1
     assert fake.calls[0][0].unlisted is True
+
+
+def test_ensure_company_recreates_a_proof_company_without_a_scope_row(monkeypatch):
+    """account-proof-loss-eu was onboarded before onboarding wrote the scope row, and its signer answered SIGNER_UNKNOWN_COMPANY to every request (2026-11-13)."""
+    adder = FakeAdd()
+    stale = adder.companies.setdefault(
+        "proof-loss-eu",
+        {"id": "c00000000000000aa", "name": "proof-loss-eu", "region": "eu", "state": "active"},
+    )
+
+    class Removing(FakeLifecycle):
+        def remove(self, ctx, name, *, delete_data, confirm=None):
+            super().remove(ctx, name, delete_data=delete_data, confirm=confirm)
+            del adder.companies[name]
+
+    fake = Removing()
+    monkeypatch.setattr(
+        lab, "_import", lambda name: fake if name == lab.SEAMS["C2"].module else None
+    )
+    built = _lab(
+        adder=adder,
+        finder=adder.find,
+        resolver=adder.by_id,
+        lifecycle_ctx=lambda _lc, *, bench, env: types.SimpleNamespace(bench=bench, env=env),
+        scoped=lambda row: row["id"] != stale["id"],
+    )
+    cid = built.ensure_company("proof-loss-eu", "eu")
+    assert cid != stale["id"]
+    assert [(v, n, kw) for v, _c, n, kw in fake.calls] == [
+        ("export", "proof-loss-eu", {}),
+        ("remove", "proof-loss-eu", {"delete_data": True, "confirm": "proof-loss-eu"}),
+    ]
+    assert len(adder.calls) == 1
+    # control: a company with its scope row is reused, nothing exported, removed or added
+    fake.calls.clear()
+    assert built.ensure_company("proof-loss-eu", "eu") == cid
+    assert fake.calls == []
+    assert len(adder.calls) == 1
+
+
+def test_a_proof_company_without_a_scope_row_whose_export_fails_is_a_lab_error(monkeypatch):
+    built, adder = _with_lifecycle(monkeypatch, FakeLifecycle(refuse={"export"}))
+    adder.companies["proof-loss-eu"] = {
+        "id": "c00000000000000aa", "name": "proof-loss-eu", "region": "eu", "state": "active",
+    }  # fmt: skip
+    built._scoped = lambda _row: False
+    with pytest.raises(proof.LabError, match="no control scope row and its export failed"):
+        built.ensure_company("proof-loss-eu", "eu")
+    assert adder.calls == []
+
+
+def test_the_live_scope_check_reads_the_companys_own_control_database(monkeypatch):
+    seen: list[tuple[str, str, list]] = []
+
+    def transport():
+        def run(database, sql, params):
+            seen.append((database, sql, params))
+            return [] if params == ["c00000000000000aa"] else [{"subscription_id": "s"}]
+
+        return run
+
+    monkeypatch.setattr(lab.control_db, "transport", transport)
+    built = lab.build(bench=True)
+    assert built._scoped({"id": "c00000000000000aa", "region": "eu"}) is False
+    assert built._scoped({"id": "c00000000000000bb", "region": "us"}) is True
+    assert [d for d, _s, _p in seen] == ["control-bench-eu", "control-bench-us"]
+    assert all(s == lab.SUBSCRIPTION_SQL for _d, s, _p in seen)
+    with pytest.raises(proof.LabError, match="no control database"):
+        built._scoped({"id": "c00000000000000cc", "region": "asia"})
 
 
 def test_ensure_company_raises_a_lab_error_when_the_add_fails():

@@ -89,6 +89,12 @@ BENCH_REGION_LOSS_GAPS: tuple[str, ...] = (
         "read from its secret list holding the private key again, not from a renewal"
     ),
 )
+# Why `signer` asks a company Worker nothing when its company has no control scope row (the lab's `unscoped_callers`).
+UNSCOPED_SKIP = (
+    "its company has no scope row in its control database (onboarded before onboarding wrote it), so its "
+    "signer answers SIGNER_UNKNOWN_COMPANY to every request; export it and remove it with --delete-data, "
+    "then add it again"
+)
 # The bench region every bench company sits in, and the other bench signer region the bench form cuts first.
 BENCH_COMPANY_REGION = "eu"
 BENCH_OTHER_REGION = "us"
@@ -153,9 +159,11 @@ class Lab(Protocol):
     def signers(self, *, bench: bool) -> list[str]: ...
     def secret_names(self, worker: str) -> list[str]: ...
     def callers(self, *, bench: bool) -> list[str]: ...
+    def unscoped_callers(self, *, bench: bool) -> list[str]: ...
     def signer_of(self, caller: str) -> str: ...
     def expected_props(self, caller: str) -> dict[str, str]: ...
     def certificate_audited(self, signer: str, certificate_id: str) -> bool: ...
+    def stop_refusal(self, signer: str) -> str: ...
     def stop_signer(self, signer: str) -> None: ...
     def start_signer(self, signer: str) -> None: ...
     def cut_region(self, region: str) -> None: ...
@@ -363,6 +371,18 @@ def _restore(lab: Lab, p: Proof, signer: str, caller: str, *, region: str = "") 
     )
 
 
+def _may_stop(lab: Lab, p: Proof, *signers: str) -> bool:
+    """Ask before any of `signers` is stopped or cut: bench carries production licences once `.ci/config/bench-production.json` declares a subscription (`rediacc_ci.ops.bench_production`), and a stopped bench signer stops their renewals. Each refusal is a broken claim, and the caller then stops nothing; a lab error is a refusal too."""
+    allowed = True
+    for signer in signers:
+        try:
+            refusal = lab.stop_refusal(signer)
+        except LAB_ERRORS as exc:
+            refusal = f"{type(exc).__name__}: {exc}"
+        allowed &= p.check(f"{signer} may be stopped", ok=not refusal, detail=refusal)
+    return allowed
+
+
 # -- the verbs --------------------------------------------------------------------
 
 
@@ -380,9 +400,11 @@ def _no_key_on_account(lab: Lab, p: Proof, *, bench: bool) -> None:
 
 
 def verb_signer(lab: Lab, p: Proof, *, bench: bool) -> None:
-    """V1: the binding across Workers, props honoured, a licence issued and renewed per caller, scope refused (a company caller is asked `COMPANY_SCOPE_CODES`), no key on any account Worker, certificates through the signer, a stopped signer named (settled) while a current licence works, and signing restored."""
+    """V1: the binding across Workers, props honoured, a licence issued and renewed per caller, scope refused (a company caller is asked `COMPANY_SCOPE_CODES`), no key on any account Worker, certificates through the signer, a stopped signer named (settled) while a current licence works, and signing restored. A company Worker whose company has no control scope row is skipped by name (`UNSCOPED_SKIP`), and nothing is stopped while bench carries production data (`_may_stop`)."""
     _no_key_on_account(lab, p, bench=bench)
     callers = lab.callers(bench=bench)
+    for unscoped in lab.unscoped_callers(bench=bench):
+        p.skip(f"{unscoped}: signing", UNSCOPED_SKIP)
     if not p.check("signer callers are listed", ok=callers, detail="no caller found"):
         return
     for caller in callers:
@@ -401,6 +423,8 @@ def verb_signer(lab: Lab, p: Proof, *, bench: bool) -> None:
 
     caller = callers[0]
     signer = lab.signer_of(caller)
+    if not _may_stop(lab, p, signer):
+        return
     if not p.attempt(f"{signer} stops", lambda: lab.stop_signer(signer)):
         _restore(lab, p, signer, caller)
         return
@@ -454,9 +478,13 @@ def _region_loss_bench(lab: Lab, p: Proof) -> None:
     4. With us still cut, the eu company issues and renews again. Sampled once, after step 3's settles, so the us cut has had at least that long to propagate (step 2's sample may precede it); skipped if eu did not come back, because a refusal then would be eu's, not us's.
     5. us is restored, read from its secret list (no bench caller binds it).
 
+    Nothing is cut while either bench signer is refused a stop (`_may_stop`: bench carries production data).
+
     NOT PROVEN HERE (BENCH_REGION_LOSS_GAPS): cross-region placement, a company placed in us surviving the loss of eu, because bench has no second deploy region."""
     region, other = BENCH_COMPANY_REGION, BENCH_OTHER_REGION
     signer = f"signer-bench-{region}"
+    if not _may_stop(lab, p, signer, f"signer-bench-{other}"):
+        return
     caller = lab.caller_of(lab.ensure_company(f"proof-loss-{region}", region))
     bound = lab.signer_of(caller)
     if not p.check(
@@ -516,6 +544,8 @@ def verb_region_loss(lab: Lab, p: Proof, *, bench: bool) -> None:
     us = lab.caller_of(lab.ensure_company("proof-loss-us", "us"))
     # Only bench runs this verb, and the lab cuts a region by stopping its bench signer.
     eu_signer = "signer-bench-eu"
+    if not _may_stop(lab, p, eu_signer):
+        return
     p.admitted("eu company renews before the cut", lab.renew(eu))
     if not p.attempt("eu signer is cut", lambda: lab.cut_region("eu")):
         _restore(lab, p, eu_signer, eu, region="eu")

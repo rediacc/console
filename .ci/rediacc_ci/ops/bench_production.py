@@ -1,10 +1,11 @@
 """The bench production guard: bench subscriptions that carry production data, declared in `.ci/config/bench-production.json` (agent/plans/PLAN-hostinger-to-bench.md Design 3).
 
-Bench signs with the production key, and once a production machine backs up through bench (hostinger), a bench wipe or a drill cleanup could remove the only off-site copy. Three refusals read this one declaration:
+Bench signs with the production key, and once a production machine backs up through bench (hostinger), a bench wipe or a drill cleanup could remove the only off-site copy, and a stopped bench signer stops its licence renewals. Four refusals read this one declaration:
 
   1. `reset_refusal` -- reset_bench refuses every mode (exit 2) while the file declares anything, before any credential is read.
   2. `d1_refusal` -- reset_bench also refuses when the live bench D1 holds `backup_manifests` rows of a declared subscription; the read runs after the token is minted and before the confirmation, so it is the second layer when the declaration is present.
   3. `refuse_ids` -- the drills' cleanup refuses to delete rows of a declared subscription and deletes nothing.
+  4. `signer_stop_refusal` -- the enterprise proofs' signer stop and region cut (`rediacc_ci.deploy.deploy_signer.stop_signer`, reached by `enterprise proof signer --bench` and `region-loss --bench`) refuse every bench signer while the file declares anything, before any secret is deleted.
 
 There is no override flag. A file that cannot be read or parsed, or an entry without a UUID `subscription_id`, is a refusal too: the guard fails closed.
 """
@@ -98,6 +99,16 @@ def reset_refusal(entries: Sequence[Protected]) -> str | None:
             CONFIG_REL,
             _describe(entries),
         )
+    )
+
+
+def signer_stop_refusal(signer: str, entries: Sequence[Protected]) -> str | None:
+    """Why the bench signer `signer` must not be stopped or cut, or None when nothing is declared."""
+    if not entries:
+        return None
+    return (
+        "bench carries production data (%s): %s; %s is not stopped or cut, because a declared subscription's licences renew through the bench signers, and removing the entry is a reviewed commit"
+        % (CONFIG_REL, _describe(entries), signer)
     )
 
 

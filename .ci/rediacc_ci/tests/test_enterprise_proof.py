@@ -51,6 +51,10 @@ class FakeLab:
     us_cut_breaks_eu: bool = False
     # The region each ensure_company call asked for, in order.
     regions: list[str] = dataclasses.field(default_factory=list)
+    # Company account Workers whose company has no control scope row.
+    unscoped: list[str] = dataclasses.field(default_factory=list)
+    # signer -> why it must not be stopped (bench_production declares a subscription).
+    stop_refusals: dict[str, str] = dataclasses.field(default_factory=dict)
     _lag_left: int = 0
     _old: tuple[frozenset[str], frozenset[str]] = (frozenset(), frozenset())
     # add
@@ -185,6 +189,14 @@ class FakeLab:
     def renew(self, caller: str) -> Answer:
         self._rec("renew")
         return self.issue(caller, "licence")
+
+    def unscoped_callers(self, *, bench: bool) -> list[str]:
+        self._rec("unscoped_callers")
+        return list(self.unscoped) if bench else []
+
+    def stop_refusal(self, signer: str) -> str:
+        self._rec("stop_refusal")
+        return self.stop_refusals.get(signer, "")
 
     def stop_signer(self, signer: str) -> None:
         self._rec("stop_signer")
@@ -644,6 +656,74 @@ def test_region_loss_records_what_bench_cannot_prove() -> None:
     assert len([line for line in other if line.startswith("note")]) == len(
         proof.NOT_PROVEN_ON_BENCH
     )
+
+
+def test_signer_names_and_skips_a_company_without_a_scope_row() -> None:
+    """account-probe500 had no control scope row; the lab lists it apart, and the proof prints it skipped by name, never tested as a signer failure."""
+    lab = FakeLab(unscoped=["account-probe500"])
+    rc, lines = run("signer", lab)
+    assert rc == 0, lines
+    skipped = [line for line in lines if line.startswith("skipped account-probe500: signing:")]
+    assert len(skipped) == 1, lines
+    assert "SIGNER_UNKNOWN_COMPANY" in skipped[0]
+    assert "remove it with --delete-data" in skipped[0]
+    assert not any("account-probe500" in line for line in lines if not line.startswith("skipped"))
+    # control: with every company scoped nothing is skipped
+    rc, lines = run("signer", FakeLab())
+    assert rc == 0, lines
+    assert not any(line.startswith("skipped") for line in lines)
+
+
+# -- a bench carrying production data is never cut ------------------------------
+
+PRODUCTION = "bench carries production data (.ci/config/bench-production.json): subscription x"
+
+
+def test_bench_region_loss_cuts_nothing_while_bench_carries_production_data() -> None:
+    lab = FakeLab(stop_refusals={"signer-bench-eu": PRODUCTION, "signer-bench-us": PRODUCTION})
+    rc, lines = run("region-loss", lab)
+    assert rc == 1
+    named = broken(lines)
+    assert any(
+        line.startswith("BROKEN  signer-bench-eu may be stopped:") and PRODUCTION in line
+        for line in named
+    ), named
+    for call in ("cut_region", "restore_region", "stop_signer", "start_signer", "ensure_company"):
+        assert call not in lab.calls, (call, lab.calls)
+    # control: with nothing declared, both signers may be stopped and the cut runs
+    healthy = FakeLab()
+    rc, lines = run("region-loss", healthy)
+    assert rc == 0, lines
+    assert any(line.startswith("ok      signer-bench-eu may be stopped") for line in lines)
+    assert "cut_region" in healthy.calls
+
+
+def test_bench_region_loss_cuts_nothing_when_only_the_us_signer_is_refused() -> None:
+    lab = FakeLab(stop_refusals={"signer-bench-us": PRODUCTION})
+    rc, _ = run("region-loss", lab)
+    assert rc == 1
+    assert "cut_region" not in lab.calls
+
+
+def test_signer_stops_nothing_while_bench_carries_production_data() -> None:
+    lab = FakeLab(stop_refusals={"signer-bench-eu": PRODUCTION})
+    rc, lines = run("signer", lab)
+    assert rc == 1
+    assert "stop_signer" not in lab.calls
+    assert "start_signer" not in lab.calls
+    assert any("signer-bench-eu may be stopped" in line for line in broken(lines))
+
+
+def test_a_stop_refusal_that_raises_is_a_refusal_and_cuts_nothing() -> None:
+    class Unreadable(FakeLab):
+        def stop_refusal(self, signer: str) -> str:
+            raise proof.LabError(f"cannot read the declaration for {signer}")
+
+    lab = Unreadable()
+    rc, lines = run("region-loss", lab)
+    assert rc == 1
+    assert "cut_region" not in lab.calls
+    assert any("cannot read the declaration" in line for line in broken(lines))
 
 
 # -- the bench form of region-loss: eu only, the property proven at the signer ---

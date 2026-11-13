@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import io
 import json
 import pathlib
@@ -61,10 +62,13 @@ class FakeWrangler:
         secrets: list[str] | None = None,
         echo_stdin: bool = False,
         deploy_rc: int = 0,
+        lists: list[list[str]] | None = None,
     ) -> None:
         self.calls: list[tuple[list[str], pathlib.Path, str | None]] = []
         self.control = control
         self.secrets = list(ds.SECRET_NAMES) if secrets is None else secrets
+        # Successive `secret list` answers; the last one repeats, and `secrets` answers when unset.
+        self.lists = list(lists or [])
         self.echo_stdin = echo_stdin
         self.deploy_rc = deploy_rc
 
@@ -101,14 +105,14 @@ class FakeWrangler:
                 0, "read: %s\n" % stdin if self.echo_stdin else "Finished processing secrets\n", ""
             )
         if verb == ["secret", "list"]:
-            return ds.Result(
-                0, json.dumps([{"name": n, "type": "secret_text"} for n in self.secrets]), ""
-            )
+            names = self.lists.pop(0) if len(self.lists) > 1 else (self.lists or [self.secrets])[0]
+            return ds.Result(0, json.dumps([{"name": n, "type": "secret_text"} for n in names]), "")
         raise AssertionError("unexpected wrangler call %s" % argv)
 
 
 def run(repo: pathlib.Path, fake: FakeWrangler, target: str = "bench-eu", **kw):
     out = io.StringIO()
+    kw.setdefault("sleep", lambda _s: None)
     result = ds.deploy(repo, target, env=kw.pop("env", ENV), run=fake, out=out, **kw)
     return result, out.getvalue()
 
@@ -354,6 +358,66 @@ def test_missing_cloudflare_token_is_refused(repo):
 def test_secret_list_must_name_exactly_the_two_keys(repo, secrets):
     with pytest.raises(ds.RefusedError, match="not exactly"):
         run(repo, FakeWrangler(secrets=secrets))
+
+
+def _verbs(fake: FakeWrangler) -> list[list[str]]:
+    return [c[0][3:5] for c in fake.calls if c[0][3] == "secret"]
+
+
+def test_a_list_missing_the_keys_after_the_push_is_pushed_again_then_verified(repo):
+    """2026-11-13: the region-loss restore of signer-bench-eu read [] after a bulk push that exited 0 and refused on that one read, leaving bench signing down."""
+    slept: list[float] = []
+    fake = FakeWrangler(lists=[[], [ds.PUBLIC_KEY], list(ds.SECRET_NAMES)])
+    result, out = run(repo, fake, sleep=slept.append)
+    assert _verbs(fake) == [["secret", "bulk"], ["secret", "list"]] * 3
+    bulks = [c[2] for c in fake.calls if c[0][3:5] == ["secret", "bulk"]]
+    assert all(
+        json.loads(b or "{}") == {ds.PRIVATE_KEY: PRIVATE, ds.PUBLIC_KEY: PUBLIC} for b in bulks
+    )
+    assert slept == [ds.SECRET_SETTLE_S, ds.SECRET_SETTLE_S]
+    assert result["secret_names"] == sorted(ds.SECRET_NAMES)
+    assert "pushing again" in out
+    assert PRIVATE not in out
+
+
+def test_a_full_list_on_the_first_read_pushes_once_and_never_waits(repo):
+    slept: list[float] = []
+    fake = FakeWrangler()
+    run(repo, fake, sleep=slept.append)
+    assert _verbs(fake) == [["secret", "bulk"], ["secret", "list"]]
+    assert slept == []
+
+
+def test_an_extra_secret_is_refused_at_once_without_another_push(repo):
+    slept: list[float] = []
+    fake = FakeWrangler(secrets=[*ds.SECRET_NAMES, "FREE_LICENSE_HMAC_KEY"])
+    with pytest.raises(ds.RefusedError, match=r"not exactly .* \(after 1 push"):
+        run(repo, fake, sleep=slept.append)
+    assert _verbs(fake) == [["secret", "bulk"], ["secret", "list"]]
+    assert slept == []
+
+
+def test_a_list_that_never_shows_the_keys_is_refused_after_the_last_push(repo):
+    fake = FakeWrangler(secrets=[])
+    with pytest.raises(
+        ds.RefusedError,
+        match=r"holds secrets \[\], not exactly .* \(after %d push" % ds.SECRET_PUSHES,
+    ):
+        run(repo, fake)
+    assert _verbs(fake).count(["secret", "bulk"]) == ds.SECRET_PUSHES
+
+
+def test_a_failed_start_carries_what_wrangler_said_without_the_key(monkeypatch, repo):
+    monkeypatch.setattr(ds, "_root", lambda: repo)
+    fake = FakeWrangler(secrets=[], echo_stdin=True)
+    monkeypatch.setattr(ds, "deploy", functools.partial(ds.deploy, sleep=lambda _s: None))
+    with pytest.raises(ds.proof.LabError) as exc:
+        ds.start_signer("signer-bench-eu", run=fake, env=ENV)
+    text = str(exc.value)
+    assert "wrangler said:" in text
+    assert "pushing again" in text
+    assert PRIVATE not in text
+    assert PUBLIC not in text
 
 
 def test_failed_deploy_pushes_no_key(repo):

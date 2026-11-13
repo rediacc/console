@@ -89,9 +89,9 @@ SEAMS: dict[str, Seam] = {
 
 _GROUPS: dict[str, tuple[str, ...]] = {
     "S2": (
-        "account_workers", "signers", "secret_names", "callers", "signer_of",
+        "account_workers", "signers", "secret_names", "callers", "unscoped_callers", "signer_of",
         "expected_props", "certificate_audited",
-        "stop_signer", "start_signer", "cut_region", "restore_region",
+        "stop_refusal", "stop_signer", "start_signer", "cut_region", "restore_region",
     ),
     "V1": ("signer_props", "issue", "renew", "current_licence_works"),
     "C1": ("ensure_company", "caller_of", "company_hosts", "company_words", "add"),
@@ -159,6 +159,8 @@ def _delegate(method: str) -> Callable[..., Any]:
 
 Adder = Callable[..., onboarding.Outcome]
 Finder = Callable[[str], dict | None]
+# A registry row -> whether its control database holds the company's `scope` row.
+Scoped = Callable[[dict], bool]
 
 
 class LiveLab:
@@ -172,6 +174,7 @@ class LiveLab:
         finder: Finder | None = None,
         resolver: Finder | None = None,
         lifecycle_ctx: Callable[..., Any] | None = None,
+        scoped: Scoped | None = None,
     ):
         self.bench = bench
         reset_sessions()
@@ -180,6 +183,7 @@ class LiveLab:
         self._finder = finder or self._live_find
         self._resolver = resolver or self._live_resolve
         self._lifecycle_ctx = lifecycle_ctx or cli.lifecycle_context
+        self._scoped = scoped or self._live_scoped
 
     def __getattr__(self, attr: str) -> Callable[..., Any]:
         """Every protocol method this class does not define is a seam bound to its owner's module (OWNERS)."""
@@ -232,6 +236,20 @@ class LiveLab:
     def _live_resolve(self, company: str) -> dict | None:
         return next((r for r in self._companies() if r["id"] == company), None)
 
+    def _live_scoped(self, row: dict) -> bool:
+        database = registry.databases(self.bench).get(str(row.get("region")), "")
+        if not database:
+            raise proof.LabError(
+                "company %s sits in region %r, which has no control database"
+                % (row.get("id"), row.get("region"))
+            )
+        try:
+            return bool(control_db.transport()(database, SUBSCRIPTION_SQL, [str(row["id"])]))
+        except onboarding.STEP_ERRORS as exc:
+            raise proof.LabError(
+                "the scope row of company %s cannot be read: %s" % (row.get("id"), exc)
+            ) from None
+
     def _row(self, company: str) -> dict:
         row = self._resolver(company)
         if row is None:
@@ -267,9 +285,28 @@ class LiveLab:
             rc=out.rc, company=out.company_id, changed=tuple(out.changed), error=out.error
         )
 
+    def _recreate(self, row: dict) -> None:
+        """Take out a proof company whose control database has no `scope` row, so `ensure_company` adds it afresh: export it (remove needs a verified export), then remove it with its data. Such a company was onboarded before onboarding wrote the scope row; its control-row step is recorded done, so a resumed add never writes the row, and its signer answers SIGNER_UNKNOWN_COMPANY to every request. A step that fails is a LabError naming the company, never a silent test of the broken one."""
+        cid = str(row["id"])
+        if self.export(cid) != 0:
+            raise proof.LabError(
+                "company %s has no control scope row and its export failed, so it is not recreated; "
+                "take it out by hand (./run.sh enterprise export %s --bench, then ./run.sh enterprise remove %s --bench --delete-data --confirm %s)"
+                % (cid, row.get("name"), row.get("name"), row.get("name"))
+            )
+        if self.remove(cid, delete_data=True, github_actions=False) != 0:
+            raise proof.LabError(
+                "company %s has no control scope row and its remove failed, so it is not recreated"
+                % cid
+            )
+
     def ensure_company(self, label: str, region: str, *, ring: str | None = None) -> str:
+        """The id of the live proof company `label`, added (or its add resumed) when it is missing or not active, and recreated (`_recreate`) when its control database holds no `scope` row."""
         lifecycle = self._lifecycle() if ring is not None else None
         row = self._finder(label)
+        if row is not None and not self._scoped(row):
+            self._recreate(row)
+            row = None
         if row is None or row.get("state") != "active":
             domain = "%s.example" % label
             req = onboarding.Request(

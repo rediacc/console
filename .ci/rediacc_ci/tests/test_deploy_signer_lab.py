@@ -10,12 +10,26 @@ import pytest
 
 from rediacc_ci.deploy import deploy_signer as ds
 from rediacc_ci.enterprise import lab, proof
+from rediacc_ci.ops import bench_production
 
 KEYS = {
     "CLOUDFLARE_API_TOKEN": "t",
     "ACCOUNT_ED25519_PRIVATE_KEY": "k",
     "ACCOUNT_ED25519_PUBLIC_KEY": "p",
 }
+
+
+@pytest.fixture(autouse=True)
+def _nothing_declared(monkeypatch):
+    """The live `.ci/config/bench-production.json` decides nothing here; a test that needs a declaration passes one."""
+    monkeypatch.setattr(bench_production, "load", lambda *_a: [])
+
+
+DECLARED = [
+    bench_production.Protected(
+        "11111111-2222-4333-8444-555555555555", "hostinger", "production backups"
+    )
+]
 
 
 def _protocol_signature(name: str) -> inspect.Signature:
@@ -162,6 +176,65 @@ def test_issue_renew_and_current_go_through_the_probe():
     ]
 
 
+COMPANIES = [
+    {"id": "c00000000000000aa", "name": "probe500", "region": "eu", "state": "active"},
+    {"id": "c00000000000000bb", "name": "proof-loss-eu", "region": "eu", "state": "active"},
+]
+
+
+def _companies(_bench: bool) -> list[dict]:
+    return COMPANIES
+
+
+def _scoped_to(*pairs: tuple[str, str]):
+    def scoped(_bench: bool) -> set[tuple[str, str]]:
+        return set(pairs)
+
+    return scoped
+
+
+def test_callers_ask_only_companies_with_a_scope_row_and_name_the_rest():
+    """account-probe500 had no scope row, and every claim for it failed with SIGNER_UNKNOWN_COMPANY (2026-11-13)."""
+    scoped = _scoped_to(("eu", "c00000000000000bb"))
+    assert ds.callers(bench=True, companies=_companies, scoped=scoped) == [
+        "account-bench",
+        "account-proof-loss-eu",
+    ]
+    assert ds.unscoped_callers(bench=True, companies=_companies, scoped=scoped) == [
+        "account-probe500"
+    ]
+    # A scope row in another region's control database is not the company's: the signer joins within one database.
+    elsewhere = _scoped_to(("us", "c00000000000000aa"), ("eu", "c00000000000000bb"))
+    assert ds.unscoped_callers(bench=True, companies=_companies, scoped=elsewhere) == [
+        "account-probe500"
+    ]
+    # control: every company scoped, none named; account_workers still lists all of them for the key check
+    every = _scoped_to(*(("eu", r["id"]) for r in COMPANIES))
+    assert ds.unscoped_callers(bench=True, companies=_companies, scoped=every) == []
+    assert ds.account_workers(bench=True, companies=_companies) == [
+        "account-bench",
+        "account-probe500",
+        "account-proof-loss-eu",
+    ]
+
+
+def test_no_company_reads_no_scope():
+    def scoped(_bench):
+        raise AssertionError("scope read with no company")
+
+    assert ds.callers(bench=True, companies=lambda _b: [], scoped=scoped) == ["account-bench"]
+
+
+def test_default_scoped_reads_every_control_database(monkeypatch):
+    def read_all(_self, sql, _params=None):
+        assert sql == ds.SCOPED_SQL
+        return {"eu": [{"company_id": "c1"}], "us": [{"company_id": "c2"}]}
+
+    monkeypatch.setattr(ds.control_db, "transport", lambda: None)
+    monkeypatch.setattr(ds.registry.Registry, "read_all", read_all)
+    assert ds.default_scoped(True) == {("eu", "c1"), ("us", "c2")}
+
+
 SECRET_DELETE = ["secret", "delete", "ACCOUNT_ED25519_PRIVATE_KEY", "--name", "signer-bench-eu"]
 
 
@@ -179,6 +252,42 @@ def test_stop_signer_deletes_the_private_key_secret_not_the_worker():
     with pytest.raises(proof.LabError):
         ds.stop_signer("account-bench", run=run, env=KEYS)
     assert len(run.calls) == 2
+
+
+@pytest.mark.parametrize("signer", ["signer-bench-eu", "signer-bench-us"])
+def test_stop_and_cut_refuse_while_bench_carries_production_data(signer):
+    run = FakeRun(json.dumps([{"name": "ACCOUNT_ED25519_PUBLIC_KEY"}]))
+    with pytest.raises(proof.LabError, match=r"bench carries production data.*hostinger"):
+        ds.stop_signer(signer, run=run, env=KEYS, protected=lambda: DECLARED)
+    with pytest.raises(proof.LabError, match="is not stopped or cut"):
+        ds.cut_region(signer.rsplit("-", 1)[1], run=run, env=KEYS, protected=lambda: DECLARED)
+    assert run.calls == []
+    assert "hostinger" in ds.stop_refusal(signer, protected=lambda: DECLARED)
+    # control: with nothing declared the stop deletes the key
+    assert ds.stop_refusal(signer, protected=list) == ""
+    ds.stop_signer(signer, run=run, env=KEYS, protected=list)
+    assert run.calls[0][len(ds.wrangler.ARGV) : len(ds.wrangler.ARGV) + 3] == [
+        "secret",
+        "delete",
+        "ACCOUNT_ED25519_PRIVATE_KEY",
+    ]
+
+
+def test_an_unreadable_declaration_refuses_the_stop(monkeypatch):
+    def unreadable(*_a):
+        raise bench_production.ProductionRefusalError("cannot read; the guard fails closed")
+
+    monkeypatch.setattr(bench_production, "load", unreadable)
+    run = FakeRun()
+    assert "fails closed" in ds.stop_refusal("signer-bench-eu")
+    with pytest.raises(proof.LabError, match="fails closed"):
+        ds.cut_region("eu", run=run, env=KEYS)
+    assert run.calls == []
+
+
+def test_stop_refusal_reads_the_declaration_by_default(monkeypatch):
+    monkeypatch.setattr(bench_production, "load", lambda *_a: DECLARED)
+    assert "production backups" in ds.stop_refusal("signer-bench-eu")
 
 
 def test_stop_signer_refuses_a_signer_that_still_lists_its_private_key():
