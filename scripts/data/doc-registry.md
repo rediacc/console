@@ -1007,7 +1007,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/infra | 21 | .py 21 |
 | .ci/rediacc_ci/lab | 3 | .py 3 |
 | .ci/rediacc_ci/legal | 2 | .py 2 |
-| .ci/rediacc_ci/ops | 49 | .py 49 |
+| .ci/rediacc_ci/ops | 50 | .py 50 |
 | .ci/rediacc_ci/pr | 2 | .py 2 |
 | .ci/rediacc_ci/private | 10 | .py 10 |
 | .ci/rediacc_ci/proof | 5 | .py 5 |
@@ -1020,7 +1020,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/setup | 14 | .py 14 |
 | .ci/rediacc_ci/spikes | 2 | .py 2 |
 | .ci/rediacc_ci/testrun | 12 | .py 12 |
-| .ci/rediacc_ci/tests | 553 | .py 553 |
+| .ci/rediacc_ci/tests | 554 | .py 554 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/fixtures | 2 | .json 2 |
 | .ci/rediacc_ci/tests/fixtures/budget_drift | 1 | .json 1 |

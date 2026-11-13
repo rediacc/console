@@ -5,7 +5,7 @@ from __future__ import annotations
 import io
 import json
 import sqlite3
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, TextIO, cast
 
 import pytest
 
@@ -38,6 +38,17 @@ INSERT INTO notes VALUES ('line one
 line two'), ('plain');
 INSERT INTO _cf_KV VALUES ('k', X'01');
 """
+
+
+def text(stream: TextIO) -> str:
+    assert isinstance(stream, io.StringIO)
+    return stream.getvalue()
+
+
+def last(ctx: rel.Ctx, name: str, event: str) -> dict[str, Any]:
+    found = rel.last_event(ctx.records.load(name), event)
+    assert found is not None
+    return found
 
 
 class Clock:
@@ -112,7 +123,7 @@ def test_fence_without_write_changes_nothing(pair) -> None:
     src, _dst, ctx, _clock = pair
     assert call(ctx, "fence", "--db", "account-x", "--on", "--sqlite", "account-x=%s" % src) == 0
     assert rows(src, "SELECT * FROM _write_fence") == []
-    assert "dry run, would run on account-x: INSERT INTO" in ctx.out.getvalue()
+    assert "dry run, would run on account-x: INSERT INTO" in text(ctx.out)
     assert not ctx.records.path("account-x").exists()
 
 
@@ -137,8 +148,8 @@ def test_fence_on_drains_then_off(pair) -> None:
     )
     assert rows(src, "SELECT id, reason, set_at FROM _write_fence") == [(1, "move", T0)]
     assert slept == [rel.DRAIN_S] == [50]
-    assert "live leases after the drain: none" in ctx.out.getvalue()
-    assert rel.last_event(ctx.records.load("account-x"), "fence-on")["reason"] == "move"
+    assert "live leases after the drain: none" in text(ctx.out)
+    assert last(ctx, "account-x", "fence-on")["reason"] == "move"
     assert (
         call(
             ctx, "fence", "--db", "account-x", "--off", "--write", "--sqlite", "account-x=%s" % src
@@ -155,7 +166,7 @@ def test_fence_refuses_a_database_without_the_fence_table(tmp_path: Path) -> Non
         call(ctx, "fence", "--db", "account-x", "--on", "--write", "--sqlite", "account-x=%s" % src)
         == 2
     )
-    assert "no _write_fence table" in ctx.err.getvalue()
+    assert "no _write_fence table" in text(ctx.err)
 
 
 def test_plan_names_the_fence_state_and_live_leases(pair) -> None:
@@ -165,7 +176,7 @@ def test_plan_names_the_fence_state_and_live_leases(pair) -> None:
     conn.commit()
     conn.close()
     assert call(ctx, "plan", "--from", "account-x", "--to", "account-x-j", *sq(src, dst)) == 0
-    out = ctx.out.getvalue()
+    out = text(ctx.out)
     assert "fence table: present, empty" in out
     assert "backup_sessions b1 (expires 2026-11-13T11:00:00.000Z)" in out
     assert "l1" not in out, "an expired lease is not live"
@@ -180,7 +191,7 @@ def test_copy_moves_every_row_and_never_the_fence_row_or_cf_tables(pair) -> None
     assert (
         call(ctx, "copy", "--from", "account-x", "--to", "account-x-j", "--write", *sq(src, dst))
         == 0
-    ), ctx.err.getvalue()
+    ), text(ctx.err)
     assert rows(src, "SELECT count(*) FROM _write_fence") == [(1,)], "the source stays fenced"
     assert rows(dst, "SELECT count(*) FROM _write_fence") == [(0,)], (
         "a fence row never reaches the target"
@@ -195,8 +206,8 @@ def test_copy_moves_every_row_and_never_the_fence_row_or_cf_tables(pair) -> None
         ("line one\nline two",),
         ("plain",),
     ]
-    assert "verified account-x -> account-x-j" in ctx.out.getvalue()
-    assert rel.last_event(ctx.records.load("account-x"), "copy")["verify"] == 0
+    assert "verified account-x -> account-x-j" in text(ctx.out)
+    assert last(ctx, "account-x", "copy")["verify"] == 0
 
 
 def test_copy_without_write_changes_nothing(pair) -> None:
@@ -204,7 +215,7 @@ def test_copy_without_write_changes_nothing(pair) -> None:
     fence_and_drain(ctx, clock, src)
     assert call(ctx, "copy", "--from", "account-x", "--to", "account-x-j", *sq(src, dst)) == 0
     assert rows(dst, "SELECT count(*) FROM sqlite_master") == [(0,)]
-    assert "dry run, nothing copied" in ctx.out.getvalue()
+    assert "dry run, nothing copied" in text(ctx.out)
 
 
 def test_copy_refuses_an_unfenced_source(pair) -> None:
@@ -213,7 +224,7 @@ def test_copy_refuses_an_unfenced_source(pair) -> None:
         call(ctx, "copy", "--from", "account-x", "--to", "account-x-j", "--write", *sq(src, dst))
         == 2
     )
-    assert "account-x is not fenced (present, empty)" in ctx.err.getvalue()
+    assert "account-x is not fenced (present, empty)" in text(ctx.err)
     assert rows(dst, "SELECT count(*) FROM sqlite_master") == [(0,)]
 
 
@@ -228,7 +239,7 @@ def test_copy_refuses_inside_the_drain_window(pair) -> None:
         call(ctx, "copy", "--from", "account-x", "--to", "account-x-j", "--write", *sq(src, dst))
         == 2
     )
-    assert "less than the 50 s drain ago" in ctx.err.getvalue()
+    assert "less than the 50 s drain ago" in text(ctx.err)
 
 
 def test_copy_refuses_a_target_that_holds_tables(pair) -> None:
@@ -239,7 +250,7 @@ def test_copy_refuses_a_target_that_holds_tables(pair) -> None:
         call(ctx, "copy", "--from", "account-x", "--to", "account-x-j", "--write", *sq(src, dst))
         == 2
     )
-    assert "already holds tables (stray)" in ctx.err.getvalue()
+    assert "already holds tables (stray)" in text(ctx.err)
 
 
 def test_planted_row_drift_exits_3(pair) -> None:
@@ -254,7 +265,7 @@ def test_planted_row_drift_exits_3(pair) -> None:
     conn.commit()
     conn.close()
     assert call(ctx, "verify", "--from", "account-x", "--to", "account-x-j", *sq(src, dst)) == 3
-    err = ctx.err.getvalue()
+    err = text(ctx.err)
     assert "mismatch organizations: source 2 rows" in err
     assert "subscriptions" not in err
 
@@ -273,7 +284,7 @@ def test_a_missing_row_and_a_migration_difference_exit_3(pair) -> None:
     assert call(ctx, "verify", "--from", "account-x", "--to", "account-x-j", *sq(src, dst)) == 3
     assert (
         "d1_migrations: source ['0000_init.sql', '0001_fence.sql'], target ['0000_init.sql']"
-        in ctx.err.getvalue()
+        in text(ctx.err)
     )
 
 
@@ -289,7 +300,7 @@ def test_a_fence_row_on_the_target_fails_verify(pair) -> None:
     conn.commit()
     conn.close()
     assert call(ctx, "verify", "--from", "account-x", "--to", "account-x-j", *sq(src, dst)) == 3
-    assert "fence row on the target: ('x', 'y'), expected None" in ctx.err.getvalue()
+    assert "fence row on the target: ('x', 'y'), expected None" in text(ctx.err)
 
 
 def test_a_foreign_key_violation_exits_3(pair) -> None:
@@ -305,7 +316,7 @@ def test_a_foreign_key_violation_exits_3(pair) -> None:
         conn.commit()
         conn.close()
     assert call(ctx, "verify", "--from", "account-x", "--to", "account-x-j", *sq(src, dst)) == 3
-    assert '"parent": "organizations"' in ctx.err.getvalue()
+    assert '"parent": "organizations"' in text(ctx.err)
 
 
 class FailingFk:
@@ -330,13 +341,13 @@ def test_a_failed_fk_call_exits_1_not_zero_violations(pair) -> None:
     )
     ctx.out = io.StringIO()
     status = rel.step_verify(
-        ctx, rel.SqliteDb("account-x", src), FailingFk(rel.SqliteDb("account-x-j", dst)), None
+        ctx, rel.SqliteDb("account-x", src), cast("rel.Db", FailingFk(rel.SqliteDb("account-x-j", dst))), None
     )
     assert status == 1
     assert (
-        "PRAGMA foreign_key_check on account-x-j failed: query answered 500" in ctx.err.getvalue()
+        "PRAGMA foreign_key_check on account-x-j failed: query answered 500" in text(ctx.err)
     )
-    assert "verified" not in ctx.out.getvalue(), "a check that could not run is not a pass"
+    assert "verified" not in text(ctx.out), "a check that could not run is not a pass"
 
 
 def test_a_failed_d1_fk_call_exits_1(pair) -> None:
@@ -353,7 +364,7 @@ def test_a_failed_d1_fk_call_exits_1(pair) -> None:
 
     d1 = rel.D1Db("account-x-j", dsm.D1Executor(transport, {}, "acct", "account-x-j"))
     assert rel.step_verify(ctx, rel.SqliteDb("account-x", src), d1, None) == 1
-    assert "PRAGMA foreign_key_check on account-x-j failed" in ctx.err.getvalue()
+    assert "PRAGMA foreign_key_check on account-x-j failed" in text(ctx.err)
 
 
 def test_pending_migrations_fail_verify(pair, tmp_path: Path) -> None:
@@ -371,7 +382,7 @@ def test_pending_migrations_fail_verify(pair, tmp_path: Path) -> None:
         ctx, rel.SqliteDb("account-x", src), rel.SqliteDb("account-x-j", dst), mdir
     )
     assert status == 3
-    assert "migrations pending on the target: 0002_new.sql" in ctx.err.getvalue()
+    assert "migrations pending on the target: 0002_new.sql" in text(ctx.err)
 
 
 def test_config_for_finds_the_toml_and_its_migrations_dir(tmp_path: Path) -> None:
@@ -441,7 +452,7 @@ def test_reverse_copies_back_and_keeps_the_old_fence(pair) -> None:
     assert (
         call(ctx, "reverse", "--from", "account-x", "--to", "account-x-j", "--write", *sq(src, dst))
         == 0
-    ), ctx.err.getvalue()
+    ), text(ctx.err)
     assert rows(src, "SELECT id FROM organizations ORDER BY id") == [("o1",), ("o2",), ("o3",)]
     assert rows(src, "SELECT reason, set_at FROM _write_fence") == [("d1_relocate", T0)], (
         "the old fence stays"
@@ -486,7 +497,7 @@ def test_create_runs_wrangler_and_requires_the_api_to_report_eu(tmp_path: Path) 
     assert ran == [
         ["npx", "--no-install", "wrangler", "d1", "create", "account-x-j", "--jurisdiction", "eu"]
     ]
-    assert rel.last_event(ctx.records.load("account-x"), "create")["jurisdiction"] == "eu"
+    assert last(ctx, "account-x", "create")["jurisdiction"] == "eu"
 
 
 def test_create_exits_1_when_the_api_does_not_report_eu(tmp_path: Path) -> None:
@@ -508,11 +519,11 @@ def test_create_exits_1_when_the_api_does_not_report_eu(tmp_path: Path) -> None:
         "--write",
     ]
     assert call(ctx, *argv, transport=api) == 1
-    assert "not jurisdiction eu" in ctx.err.getvalue()
+    assert "not jurisdiction eu" in text(ctx.err)
     # An existing database outside the jurisdiction is refused the same way, and nothing runs.
     ctx2 = make_ctx(tmp_path, run=lambda _a: pytest.fail("must not run"))
     assert call(ctx2, *argv, transport=api) == 1
-    assert "already exists outside jurisdiction eu" in ctx2.err.getvalue()
+    assert "already exists outside jurisdiction eu" in text(ctx2.err)
 
 
 def test_create_exits_1_when_wrangler_fails(tmp_path: Path) -> None:
@@ -528,14 +539,14 @@ def test_create_exits_1_when_wrangler_fails(tmp_path: Path) -> None:
         "--write",
     ]
     assert call(ctx, *argv, transport=FakeD1Api({})) == 1
-    assert "exited 7" in ctx.err.getvalue()
+    assert "exited 7" in text(ctx.err)
 
 
 def test_a_failed_api_lookup_exits_1(tmp_path: Path) -> None:
     ctx = make_ctx(tmp_path)
     argv = ["create", "--from", "a", "--to", "a-j", "--jurisdiction", "eu"]
     assert call(ctx, *argv, transport=lambda *_a: (403, {"success": False})) == 1
-    assert "D1 API" in ctx.err.getvalue()
+    assert "D1 API" in text(ctx.err)
 
 
 # --- record and retire --------------------------------------------------------------------------
@@ -562,7 +573,7 @@ def test_record_without_write_stamps_nothing(tmp_path: Path) -> None:
     ctx = make_ctx(tmp_path)
     assert call(ctx, "record", "--from", "account-old", "--event", "cutover") == 0
     assert not ctx.records.path("account-old").exists()
-    assert json.loads(ctx.out.getvalue().split("\n", 1)[1])["events"] == []
+    assert json.loads(text(ctx.out).split("\n", 1)[1])["events"] == []
 
 
 def test_retire_refuses_a_name_still_in_a_toml(tmp_path: Path) -> None:
@@ -578,7 +589,7 @@ def test_retire_refuses_a_name_still_in_a_toml(tmp_path: Path) -> None:
     assert call(ctx, *RETIRE, "--write") == 2
     assert (
         "still named by: workers/account/wrangler.eu.toml (d1_databases database_name)"
-        in ctx.err.getvalue()
+        in text(ctx.err)
     )
 
 
@@ -586,24 +597,24 @@ def test_retire_refuses_a_name_in_regions_json_but_not_a_worker_name(tmp_path: P
     ctx = retire_root(
         tmp_path, cutover="2026-11-13T10:00:00.000Z", export_stamp="2026-11-14T00-00-00"
     )
-    regions = {
+    regions: dict[str, Any] = {
         "regions": [{"id": "x", "workerName": "account-old", "d1": {"name": "account-old-j"}}]
     }
     (tmp_path / "regions.json").write_text(json.dumps(regions), encoding="utf-8")
-    assert call(ctx, *RETIRE) == 0, ctx.err.getvalue()
+    assert call(ctx, *RETIRE) == 0, text(ctx.err)
     regions["regions"][0]["d1"]["name"] = "account-old"
     (tmp_path / "regions.json").write_text(json.dumps(regions), encoding="utf-8")
     assert call(ctx, *RETIRE) == 2
-    assert "regions.json (x d1.name)" in ctx.err.getvalue()
+    assert "regions.json (x d1.name)" in text(ctx.err)
 
 
 def test_retire_refuses_a_protected_database(tmp_path: Path) -> None:
     ctx = retire_root(tmp_path, cutover="2026-11-13T10:00:00.000Z", export_stamp=None)
     argv = ["retire", "--from", "account-eu", "--to", "account-eu-j", "--yes-delete", "account-eu"]
     assert call(ctx, "record", "--from", "account-eu", "--event", "cutover", "--write") == 0
-    ctx.clock.now = "2027-02-01T00:00:00.000Z"
+    cast("Clock", ctx.clock).now = "2027-02-01T00:00:00.000Z"
     assert call(ctx, *argv) == 2
-    assert "deploy_www.PROTECTED_DATABASES" in ctx.err.getvalue()
+    assert "deploy_www.PROTECTED_DATABASES" in text(ctx.err)
 
 
 def test_retire_refuses_before_30_days(tmp_path: Path) -> None:
@@ -611,15 +622,15 @@ def test_retire_refuses_before_30_days(tmp_path: Path) -> None:
         tmp_path, cutover="2026-12-01T00:00:00.000Z", export_stamp="2026-12-02T00-00-00"
     )
     assert call(ctx, *RETIRE, "--write") == 2
-    assert "19 day(s) ago; retire waits 30 days" in ctx.err.getvalue()
+    assert "19 day(s) ago; retire waits 30 days" in text(ctx.err)
 
 
 def test_retire_refuses_without_a_cutover_or_the_exact_name(tmp_path: Path) -> None:
     ctx = make_ctx(tmp_path)
     assert call(ctx, *RETIRE) == 2
-    assert "has no cutover" in ctx.err.getvalue()
+    assert "has no cutover" in text(ctx.err)
     assert call(ctx, *RETIRE[:-1], "account-old-j") == 2
-    assert "must repeat the database name exactly" in ctx.err.getvalue()
+    assert "must repeat the database name exactly" in text(ctx.err)
 
 
 def test_retire_refuses_without_a_final_export_taken_after_the_cutover(tmp_path: Path) -> None:
@@ -627,7 +638,7 @@ def test_retire_refuses_without_a_final_export_taken_after_the_cutover(tmp_path:
         tmp_path, cutover="2026-11-13T10:00:00.000Z", export_stamp="2026-11-01T00-00-00"
     )
     assert call(ctx, *RETIRE) == 2
-    assert "no backup_d1 export of account-old taken after" in ctx.err.getvalue()
+    assert "no backup_d1 export of account-old taken after" in text(ctx.err)
 
 
 def test_retire_deletes_only_with_write(tmp_path: Path) -> None:
@@ -635,16 +646,21 @@ def test_retire_deletes_only_with_write(tmp_path: Path) -> None:
         tmp_path, cutover="2026-11-13T10:00:00.000Z", export_stamp="2026-11-14T00-00-00"
     )
     ran: list[list[str]] = []
-    ctx.run = lambda argv: ran.append(argv) or 0
+
+    def record_run(argv: list[str]) -> int:
+        ran.append(argv)
+        return 0
+
+    ctx.run = record_run
     assert call(ctx, *RETIRE) == 0
     assert ran == []
     assert (
-        "dry run, would run: npx --no-install wrangler d1 delete account-old" in ctx.out.getvalue()
+        "dry run, would run: npx --no-install wrangler d1 delete account-old" in text(ctx.out)
     )
     assert call(ctx, *RETIRE, "--write") == 0
     assert ran == [
         ["npx", "--no-install", "wrangler", "d1", "delete", "account-old", "--skip-confirmation"]
     ]
     assert (
-        rel.last_event(ctx.records.load("account-old"), "retire")["replaced_by"] == "account-old-j"
+        last(ctx, "account-old", "retire")["replaced_by"] == "account-old-j"
     )

@@ -46,7 +46,7 @@ import tomllib
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import TYPE_CHECKING, Protocol
+from typing import TYPE_CHECKING, Protocol, TextIO
 
 from rediacc_ci.core import wrangler
 from rediacc_ci.deploy import clone_d1, deploy_record, deploy_www
@@ -431,8 +431,8 @@ def last_event(record: dict, event: str) -> dict | None:
 class Ctx:
     root: Path
     records: Records
-    out: object
-    err: object
+    out: TextIO
+    err: TextIO
     clock: Callable[[], str] = now_iso
     sleep: Callable[[float], None] = time.sleep
     run: Callable[[list[str]], int] = run_wrangler

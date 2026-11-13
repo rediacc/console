@@ -706,7 +706,7 @@ def live_actions(
         # The proxy's /v1/ready asks the account Worker's ExecutorIssuer, which a first deploy has not shipped yet, and the account deploy needs the proxy (its EXECUTOR binding): deploy the proxy, then the account, then smoke the proxy.
         record = pathlib.Path(tempfile.mkdtemp(prefix="enterprise-proxy-")) / "proxy-record.json"
         proxy_extra = ["--record", str(record)]
-        steps = (
+        steps: tuple[tuple[str, Any, list[str]], ...] = (
             ("rediacc_ci.deploy.deploy_proxy", proxy_target, ["--defer-smoke", *proxy_extra]),
             ("rediacc_ci.deploy.deploy_account", target(account_config=account_path), []),
             ("rediacc_ci.deploy.deploy_proxy", proxy_target, ["--smoke-only", *proxy_extra]),

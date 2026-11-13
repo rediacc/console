@@ -211,6 +211,7 @@ class World:
             "scripts/ops/lib/cf-auth.sh",
             ".ci/config/well-known.env",
             ".ci/config/well-known.generated.sh",
+            "regions.json",  # backup_d1 names the shared databases from it
         ):
             if not (ROOT / rel).is_file():  # a retired twin: only a re-freeze from bash needs it
                 continue

@@ -11,7 +11,7 @@ import shutil
 import sqlite3
 import types
 import urllib.error
-from typing import Any, NoReturn
+from typing import Any, NoReturn, cast
 
 import pytest
 
@@ -787,7 +787,7 @@ def test_live_provision_names_every_missing_secrets_input_at_once():
     provision = onboarding.live_provision("proj", env={})
     co = types.SimpleNamespace(id="c0123456789abcdef", region="eu")
     with pytest.raises(onboarding.OnboardingError) as caught:
-        provision(co)
+        provision(cast("Any", co))
     message = str(caught.value)
     for name in (
         "CF_MANAGEMENT_TOKEN",
@@ -1203,11 +1203,16 @@ def test_live_deploy_step_stops_when_the_portal_build_fails(tmp_path):
     _tree(tmp_path)
     ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
     onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
-    ran = []
+    ran: list[str] = []
+
+    def record_deploy(module: str, _argv: Any) -> int:
+        ran.append(module)
+        return 0
+
     actions = onboarding.live_actions(
         runner=None,
         out_root=tmp_path,
-        deploy=lambda m, _a: ran.append(m) or 0,
+        deploy=record_deploy,
         portal=lambda _t, _e: 2,
         root=tmp_path,
         ensure_dns=lambda _c: "ok",
@@ -1222,10 +1227,13 @@ def test_build_portal_refuses_a_missing_sitekey_by_name_and_runs_the_release_row
 ):
     with pytest.raises(onboarding.OnboardingError, match="TURNSTILE_SITE_KEY"):
         onboarding.build_portal(tmp_path, {"TURNSTILE_SITE_KEY": " "})
-    calls = []
-    monkeypatch.setattr(
-        onboarding.subprocess, "call", lambda argv, cwd, env: calls.append((argv, cwd, env)) or 0
-    )
+    calls: list[tuple[Any, Any, Any]] = []
+
+    def record_call(argv: Any, cwd: Any, env: Any) -> int:
+        calls.append((argv, cwd, env))
+        return 0
+
+    monkeypatch.setattr(onboarding.subprocess, "call", record_call)
     assert onboarding.build_portal(tmp_path, {"TURNSTILE_SITE_KEY": "0xKEY"}) == 0
     argv, cwd, env = calls[0]
     assert "workers/account/dist/account" in " ".join(argv)

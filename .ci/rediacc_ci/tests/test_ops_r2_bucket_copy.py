@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import json
+from typing import Any
 
 import pytest
 
@@ -293,7 +294,7 @@ class FakeSettingsApi:
         parts = path.strip("/").split("/")
         bucket = parts[2]
         kind = parts[3] if parts[0] == "r2" else "notifications"
-        empty = {"cors": [], "lifecycle": [], "notifications": []}
+        empty: dict[str, list[Any]] = {"cors": [], "lifecycle": [], "notifications": []}
         current = self.state.setdefault((jur, bucket), empty)
         if method == "GET":
             if kind == "cors" and not current["cors"]:
@@ -311,7 +312,7 @@ class FakeSettingsApi:
 
 
 HEAD = {"ContentType": "application/json", "CacheControl": "no-store", "Metadata": {"owner": "o1"}}
-SOURCE_SETTINGS = {
+SOURCE_SETTINGS: dict[str, list[Any]] = {
     "cors": [{"allowed": {"origins": ["https://a"], "methods": ["GET"]}}],
     "lifecycle": [{"id": "abort", "enabled": True}],
     "notifications": [
@@ -412,7 +413,7 @@ def test_an_empty_source_cors_deletes_the_destination_cors(
 
 
 def test_settings_compare_without_server_made_rule_fields() -> None:
-    other = json.loads(json.dumps(SOURCE_SETTINGS))
+    other: dict[str, list[Any]] = json.loads(json.dumps(SOURCE_SETTINGS))
     other["notifications"][0]["rules"][0].update(
         ruleId="r9", createdAt="y", actions=["CopyObject", "PutObject"]
     )
