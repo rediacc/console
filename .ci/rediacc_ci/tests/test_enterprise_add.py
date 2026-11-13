@@ -848,7 +848,22 @@ def test_control_row_registers_the_scope_the_signer_reads_and_bootstrap_sends_it
     assert rows[0]["max_expiry_days"] > 365
     fake = FakeAccount(201)
     _account_actions(fake)["bootstrap"](ctx)
-    assert fake.calls[0][2]["subscriptionId"] == rows[0]["subscription_id"]
+    sent = fake.calls[0][2]
+    assert sent["subscriptionId"] == rows[0]["subscription_id"]
+    assert sent["maxActivations"] == rows[0]["max_machines"] == onboarding.SCOPE_MAX_MACHINES
+    assert sent["maxRepositorySizeGb"] == rows[0]["max_storage_gb"]
+    assert sent["maxActivations"] != 1
+
+
+def test_bootstrap_sends_the_limits_a_changed_scope_row_holds():
+    world = World()
+    ctx = _ctx(world)
+    onboarding.write_control_row(ctx)
+    world.query(ctx.plan.database, "UPDATE scope SET max_machines = 7, max_storage_gb = 30", [])
+    fake = FakeAccount(201)
+    _account_actions(fake)["bootstrap"](ctx)
+    assert fake.calls[0][2]["maxActivations"] == 7
+    assert fake.calls[0][2]["maxRepositorySizeGb"] == 30
 
 
 def test_bootstrap_without_a_scope_row_refuses_before_calling_the_worker():
@@ -866,7 +881,14 @@ def test_live_bootstrap_creates_through_the_account_route():
     assert url.startswith("https://")
     assert key == "k-secret"
     assert body["companyId"] == "c0123456789abcdef"
-    assert set(body) == {"companyId", "ownerEmail", "storageGb", "subscriptionId"}
+    assert set(body) == {
+        "companyId",
+        "ownerEmail",
+        "storageGb",
+        "subscriptionId",
+        "maxActivations",
+        "maxRepositorySizeGb",
+    }
     assert detail == "created"
 
 
