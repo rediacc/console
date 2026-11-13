@@ -1,6 +1,6 @@
-"""Close the sqlite connections a test opens, whoever holds them.
+"""Close the sqlite connections a test opens through `sqlite3.connect`, whoever holds them.
 
-The in-memory control planes the tests build keep their connections in fakes and helper factories that nothing closes. From Python 3.13 an unclosed `sqlite3.Connection` raises a ResourceWarning when it is finalised, which pytest reports as an unraisable exception against whichever test the worker happens to be running then, so a leak in one file fails an unrelated one and the failing test changes with the shard layout. Tracking every connection `sqlite3.connect` hands out inside one test, and closing them when it ends, puts the cleanup in one place.
+The in-memory control planes the tests build keep their connections in fakes and helper factories that nothing closes. From Python 3.13 an unclosed `sqlite3.Connection` raises a ResourceWarning when it is finalised, which pytest reports as an unraisable exception against whichever test the worker happens to be running then, so a leak in one file fails an unrelated one and the failing test changes with the shard layout. Tracking every connection `sqlite3.connect` hands out inside one test, and closing them when it ends, puts the cleanup in one place. Only calls that look `sqlite3.connect` up at call time are tracked: a module that imported the name `connect` from sqlite3 before the block is not, and no module under .ci does so.
 """
 
 from __future__ import annotations

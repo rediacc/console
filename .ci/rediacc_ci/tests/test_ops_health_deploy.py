@@ -314,12 +314,14 @@ def test_the_error_response_is_closed_whether_the_status_is_a_first_deploy_or_no
     monkeypatch: pytest.MonkeyPatch, code: int
 ) -> None:
     """The HTTPError owns the response; held here so only `fetch_deployed` can have closed it."""
-    err = urllib.error.HTTPError("https://x", code, "status", email.message.Message(), io.BytesIO())
-    try:
-        _fetch_with(monkeypatch, err)
-    except d.StatusUnreadableError:
-        assert code == 500
-    assert err.fp is None or err.fp.closed
+    body = io.BytesIO()
+    err = urllib.error.HTTPError("https://x", code, "status", email.message.Message(), body)
+    if code == 500:
+        with pytest.raises(d.StatusUnreadableError):
+            _fetch_with(monkeypatch, err)
+    else:
+        assert _fetch_with(monkeypatch, err) is None
+    assert body.closed
 
 
 def test_a_404_or_an_unreachable_host_is_a_first_deploy(monkeypatch: pytest.MonkeyPatch) -> None:

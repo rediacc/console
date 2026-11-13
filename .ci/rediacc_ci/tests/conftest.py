@@ -14,6 +14,6 @@ if TYPE_CHECKING:
 
 @pytest.fixture(autouse=True)
 def _close_sqlite_connections() -> Iterator[None]:
-    """Close every sqlite connection the test opened when it ends (why: `sqlite_tracking`'s docstring)."""
+    """Close every sqlite connection the test opened through `sqlite3.connect` when it ends (why and limits: `sqlite_tracking`'s docstring)."""
     with sqlite_tracking.closing_every_connection():
         yield
