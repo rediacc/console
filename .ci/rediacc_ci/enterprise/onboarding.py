@@ -361,6 +361,33 @@ def run_module(module: str, argv: list[str]) -> int:
     )
 
 
+PORTAL_STEP = "account-portal"
+SITEKEY_ENV = "TURNSTILE_SITE_KEY"
+
+
+def build_portal(tree: pathlib.Path, env: Mapping[str, str]) -> int:
+    """Build the account portal into `workers/account/dist/account` with the Turnstile sitekey, as the release path does, before `deploy_account` checks the dist for it.
+
+    The command, its env and its sitekey binding are the `account-portal` row of `rediacc_ci.release.local.STEPS`, read here so the build command has one copy. A missing sitekey is refused by name before the build runs.
+    """
+    if not (env.get(SITEKEY_ENV) or "").strip():
+        raise OnboardingError(
+            "the portal build needs %s, which is not bound (bound by --profile enterprise-mint)"
+            % SITEKEY_ENV
+        )
+    # Imported here: `release.local` is a large module the other verbs never need.
+    local = importlib.import_module("rediacc_ci.release.local")
+    step = next(s for s in local.STEPS if s.id == PORTAL_STEP)
+    child = dict(env)
+    for bind in step.binds:
+        source, _, target = bind.partition(" > ")
+        child[target] = env[source]
+    child.update(step.env)
+    return subprocess.call(
+        list(step.argv), cwd=str(tree / step.cwd.removeprefix("clone:")), env=child
+    )
+
+
 def http_status(url: str) -> int:
     """The status of an HTTPS GET through `core.https`, 0 when nothing answered."""
     try:
@@ -442,6 +469,7 @@ def live_actions(
     out_root: pathlib.Path | None = None,
     root: pathlib.Path | None = None,
     deploy: Callable[[str, list[str]], int] | None = None,
+    portal: Callable[[pathlib.Path, Mapping[str, str]], int] | None = None,
     fetch: Callable[[str], int] | None = None,
     ensure_dns: Callable[[bool], str] | None = None,
     route_of: Callable[[str], str] | None = None,
@@ -455,6 +483,7 @@ def live_actions(
     run_cmd = runner or run_captured
     control = control_runner or control_db.run_wrangler
     deploy_run = deploy or run_module
+    portal_build = portal or build_portal
     get = fetch or http_status
     wildcard = ensure_dns or dns.ensure
     put = lookup_put or enterprise_lookup.put
@@ -636,6 +665,10 @@ def live_actions(
             )
 
         proxy_target = target(proxy_config=proxy_path)
+        # `deploy_account` refuses a dist built without the sitekey, so the portal is built with it before the account deploy.
+        rc = portal_build(tree, os.environ if env is None else env)
+        if rc != 0:
+            raise OnboardingError("company %s: the portal build exited %d" % (plan.company_id, rc))
         # The proxy's /v1/ready asks the account Worker's ExecutorIssuer, which a first deploy has not shipped yet, and the account deploy needs the proxy (its EXECUTOR binding): deploy the proxy, then the account, then smoke the proxy.
         for module, company, extra in (
             ("rediacc_ci.deploy.deploy_proxy", proxy_target, ["--defer-smoke"]),

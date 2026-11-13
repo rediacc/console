@@ -540,6 +540,10 @@ def test_live_lookup_step_turns_a_refusal_into_an_onboarding_error():
         actions["lookup"](_ctx(World()))
 
 
+def _portal_ok(_tree, _env):
+    return 0
+
+
 def test_live_deploy_step_deploys_proxy_then_account_with_each_own_config(tmp_path):
     _tree(tmp_path)
     actions = onboarding.live_actions(runner=None, out_root=tmp_path)
@@ -553,7 +557,12 @@ def test_live_deploy_step_deploys_proxy_then_account_with_each_own_config(tmp_pa
         return 0
 
     actions = onboarding.live_actions(
-        runner=None, out_root=tmp_path, deploy=deploy, root=tmp_path, ensure_dns=lambda _c: "ok"
+        runner=None,
+        out_root=tmp_path,
+        portal=_portal_ok,
+        deploy=deploy,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
     )
     actions["deploy"](ctx)
     assert [m for m, _ in ran] == [
@@ -585,7 +594,12 @@ def test_live_deploy_step_claims_the_wildcard_before_the_proxy_smoke_runs(tmp_pa
         return 0
 
     actions = onboarding.live_actions(
-        runner=None, out_root=tmp_path, deploy=deploy, root=tmp_path, ensure_dns=ensure
+        runner=None,
+        out_root=tmp_path,
+        portal=_portal_ok,
+        deploy=deploy,
+        root=tmp_path,
+        ensure_dns=ensure,
     )
     actions["deploy"](ctx)
     assert order == ["dns", "deploy_proxy", "deploy_account", "deploy_proxy"]
@@ -603,7 +617,12 @@ def test_live_deploy_step_smokes_the_proxy_only_after_the_account_worker_is_depl
         return 0
 
     actions = onboarding.live_actions(
-        runner=None, out_root=tmp_path, deploy=deploy, root=tmp_path, ensure_dns=lambda _c: "ok"
+        runner=None,
+        out_root=tmp_path,
+        portal=_portal_ok,
+        deploy=deploy,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
     )
     actions["deploy"](ctx)
     (_, first), (_, account), (_, last) = ran
@@ -627,6 +646,7 @@ def test_live_deploy_step_deploys_nothing_when_the_wildcard_claim_fails(tmp_path
     actions = onboarding.live_actions(
         runner=None,
         out_root=tmp_path,
+        portal=_portal_ok,
         deploy=deploy,
         root=tmp_path,
         ensure_dns=RouteWorld({}, dns.DnsClaimError("Universal SSL is not enabled")).ensure,
@@ -642,6 +662,7 @@ def test_live_deploy_step_names_the_failed_module(tmp_path):
     actions = onboarding.live_actions(
         runner=None,
         out_root=tmp_path,
+        portal=_portal_ok,
         deploy=lambda _m, _a: 1,
         root=tmp_path,
         ensure_dns=lambda _c: "ok",
@@ -1144,3 +1165,69 @@ def test_the_run_sh_verb_is_registered():
     assert entry._resolve(row) is run_verbs.enterprise_main
     assert "enterprise add" in run_verbs.HELP
     assert "enterprise proof" in run_verbs.HELP
+
+
+def test_live_deploy_step_builds_the_portal_with_the_sitekey_before_deploy_account(tmp_path):
+    """Bench run 7: deploy_account refused a dist built without the Turnstile sitekey. The build runs after the proxy deploy and before the account deploy, handed the environment that carries the key."""
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    order = []
+    seen = {}
+
+    def deploy(module, _argv):
+        order.append(module.rsplit(".", 1)[1])
+        return 0
+
+    def portal(tree, env):
+        order.append("portal")
+        seen["tree"], seen["key"] = tree, env.get("TURNSTILE_SITE_KEY")
+        return 0
+
+    actions = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        deploy=deploy,
+        portal=portal,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+        env={"TURNSTILE_SITE_KEY": "0xKEY"},
+    )
+    actions["deploy"](ctx)
+    assert order.index("portal") < order.index("deploy_account")
+    assert seen == {"tree": tmp_path, "key": "0xKEY"}
+
+
+def test_live_deploy_step_stops_when_the_portal_build_fails(tmp_path):
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    ran = []
+    actions = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        deploy=lambda m, _a: ran.append(m) or 0,
+        portal=lambda _t, _e: 2,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+    )
+    with pytest.raises(onboarding.OnboardingError, match="portal build exited 2"):
+        actions["deploy"](ctx)
+    assert "rediacc_ci.deploy.deploy_account" not in ran
+
+
+def test_build_portal_refuses_a_missing_sitekey_by_name_and_runs_the_release_row(
+    tmp_path, monkeypatch
+):
+    with pytest.raises(onboarding.OnboardingError, match="TURNSTILE_SITE_KEY"):
+        onboarding.build_portal(tmp_path, {"TURNSTILE_SITE_KEY": " "})
+    calls = []
+    monkeypatch.setattr(
+        onboarding.subprocess, "call", lambda argv, cwd, env: calls.append((argv, cwd, env)) or 0
+    )
+    assert onboarding.build_portal(tmp_path, {"TURNSTILE_SITE_KEY": "0xKEY"}) == 0
+    argv, cwd, env = calls[0]
+    assert "workers/account/dist/account" in " ".join(argv)
+    assert cwd == str(tmp_path / "private/account/web")
+    assert env["VITE_TURNSTILE_SITE_KEY"] == "0xKEY"
+    assert env["VITE_CI_MODE"] == "false"
