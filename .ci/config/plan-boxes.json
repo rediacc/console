@@ -1813,13 +1813,13 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 2,
-      "done": 5,
+      "open": 1,
+      "done": 6,
       "open_sigs": [
-        "185b202a",
         "9c610a87"
       ],
       "done_sigs": [
+        "185b202a",
         "2556f2e9",
         "67e0500b",
         "9a772925",

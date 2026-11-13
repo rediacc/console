@@ -55,9 +55,10 @@ DRY: every piece rides the existing reminder, notice, preference and alert pipel
   Owns: private/account/web/src/pages/Notifications.tsx, private/account/web/src/lib/notice-names.ts, private/account/web/src/pages/__tests__/notices.test.tsx, private/account/web/src/pages/__tests__/notifications-prefs.test.tsx, private/account/web/src/i18n/locales/*/notices.json, private/account/web/src/i18n/locales/*/settings.json
   Accept: `cd private/account/web && npx vitest run src/pages/__tests__/notices.test.tsx src/pages/__tests__/notifications-prefs.test.tsx && cd .. && npm run typecheck:web` rc 0. Covered: a `delegation_cert_expiry` notice renders its days left and date; the toggle posts `productOrg.delegationExpiring` (control: the kind falls to the default branch before the change).
     (ticked) 2026-11-12T14:18:01Z by d778be9d: commit:38d5acf899 account 0244ff6 + 3f387ba; web vitest notices + notifications-prefs rc=0 (20 tests), typecheck:web rc=0
-- [ ] L1 [live] Bench: seed a delegation cert expiring in 7 days for a throwaway `@rediacc.io` org, run `POST /admin/reminders/run {kinds:['delegation']}` and the sales digest, read the captured mails (the owner's and the sales digest) and the owner's notice, then clean up.
+- [x] L1 [live] Bench: seed a delegation cert expiring in 7 days for a throwaway `@rediacc.io` org, run `POST /admin/reminders/run {kinds:['delegation']}` and the sales digest, read the captured mails (the owner's and the sales digest) and the owner's notice, then clean up.
   Owns: none (runs only)
   Accept: one `captured_emails` row for the owner naming the cert's `validUntil`, one sales digest row naming the org, and `GET /portal/notices/unread-count` 1 for the owner; a second run captures nothing.
+    (ticked) 2026-11-13T04:23:29Z by d778be9d: licence_expiry_drill rc=0 on bench 04:18Z: one owner mail naming validUntil 2026-11-20, one sales digest naming cert 6a018cc5 and the org, unread-count 1, second run captures nothing, cleanup rc=0; bench-only commit:0de7d914f5
 - [ ] LP-bench [live] A fresh bench receipt after L1, recorded and ticked through `worklist.py --live-proof`.
   Accept: live-proof bench account-smoke
 

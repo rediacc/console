@@ -80,20 +80,20 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 763 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 773 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 20 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
-  - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 84 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
-  - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 24 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
-- Writers: 0 live of writer_cap 25 (session d778be9d).
-- Leased items: 8: #04b4a244 (worker:bxgx584bi, d778be9d), #5ac354e6 (worker:bxgx584bi, d778be9d), #5f6d277d (worker:bxgx584bi, d778be9d), #756a5f03 (worker:bxgx584bi, d778be9d), #9cb71958 (worker:bxgx584bi, d778be9d), #a1ecc191 (worker:bxgx584bi, d778be9d), #bf47a483 (worker:bxgx584bi, d778be9d), #ffca9706 (worker:bxgx584bi, d778be9d).
+  - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 85 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
+  - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 29 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
+- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a048a3398b0ef32ce, worker:a655f768c9db114c2.
+- Leased items: 10: #000fcf57 (worker:b5u6uonob, d778be9d), #04b4a244 (worker:b5u6uonob, d778be9d), #22e2ca84 (worker:a655f768c9db114c2, d778be9d), #5ac354e6 (worker:bx5y9crvc, d778be9d), #63c267ff (worker:a048a3398b0ef32ce, d778be9d), #756a5f03 (worker:a048a3398b0ef32ce, d778be9d), #a1ecc191 (worker:b5u6uonob, d778be9d), #bf47a483 (worker:bx5y9crvc, d778be9d), #cb02f9f2 (worker:a048a3398b0ef32ce, d778be9d), #ffca9706 (worker:b5u6uonob, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 24 of 71 plans done, 1124 of 1313 boxes done (85%).
+Promoted: 24 of 71 plans done, 1125 of 1313 boxes done (85%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -165,7 +165,7 @@ Promoted: 24 of 71 plans done, 1124 of 1313 boxes done (85%).
 | 66 | PLAN-terms-acceptance.md | 25/25 | done |
 | 67 | PLAN-account-notices.md | 12/16 | 4 open |
 | 68 | PLAN-enterprise-tenants.md | 16/47 | 31 open |
-| 69 | PLAN-licence-expiry-notices.md | 5/7 | 2 open |
+| 69 | PLAN-licence-expiry-notices.md | 6/7 | 1 open |
 | 70 | PLAN-onprem-relicence-inbox.md | 10/13 | 3 open |
 | 71 | PLAN-signer-bench-stop-binding-reattach.md | 0/3 | 3 open |
 <!-- queue:progress:end -->
