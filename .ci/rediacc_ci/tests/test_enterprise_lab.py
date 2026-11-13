@@ -3286,3 +3286,8 @@ def test_live_add_passes_the_env_bws_project_to_onboarding(monkeypatch):
 
 def test_live_add_without_the_bws_project_passes_no_provisioner(monkeypatch):
     assert _drive_live_add(monkeypatch, None)["provision"] is None
+
+
+def test_live_add_with_an_empty_bws_project_passes_no_provisioner(monkeypatch):
+    # Review e8770edd.1: an empty value is unset, never a project named "".
+    assert _drive_live_add(monkeypatch, "")["provision"] is None
