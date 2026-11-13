@@ -829,3 +829,102 @@ def test_delta_10_a_caller_config_server_key_is_kept(
 ) -> None:
     monkeypatch.setenv("ACCOUNT_CONFIG_SERVER_KEY", "c" * 40)
     assert _captured_server_env(monkeypatch, tmp_path)["ACCOUNT_CONFIG_SERVER_KEY"] == "c" * 40
+
+
+class ScriptApi(sa.Api):
+    """Answers each path from a script of (HTTP code, body) and records the paths called."""
+
+    def __init__(self, script: dict[str, tuple[int, str]]) -> None:
+        super().__init__("0", "")
+        self.script = script
+        self.paths: list[str] = []
+
+    def call(self, _method: str, path: str, body: dict | None = None) -> tuple[int, str]:
+        del body
+        self.paths.append(path)
+        return self.script.get(path, (200, "{}"))
+
+
+TERMS_OPEN = json.dumps({"satisfied": False, "current": {"version": "v1", "sha256": "abc"}})
+
+
+@pytest.mark.parametrize(
+    ("status", "needle"),
+    [
+        ((500, "boom"), "/portal/terms answered HTTP 500"),
+        ((200, "[]"), "/portal/terms answered HTTP 200"),
+        ((200, json.dumps({"satisfied": "yes"})), "/portal/terms answered HTTP 200"),
+        ((200, json.dumps({"satisfied": False})), "names no current version"),
+        (
+            (200, json.dumps({"satisfied": False, "current": {"version": "v1"}})),
+            "names no current version",
+        ),
+    ],
+    ids=["non-200", "not-a-dict", "satisfied-not-bool", "no-current", "no-sha"],
+)
+def test_accept_terms_refuses_an_unreadable_status_by_name(
+    status: tuple[int, str], needle: str
+) -> None:
+    """Review 5139a19b.1: each guard raises, and nothing is accepted."""
+    api = ScriptApi({"/portal/terms": status})
+    with pytest.raises(sa.LegError, match=needle):
+        sa.accept_terms(api)
+    assert "/portal/terms/accept" not in api.paths
+
+
+def test_accept_terms_refuses_a_2xx_answer_without_accepted_true() -> None:
+    """Review 5139a19b.2: HTTP 2xx alone is not an acceptance."""
+    api = ScriptApi(
+        {"/portal/terms": (200, TERMS_OPEN), "/portal/terms/accept": (200, json.dumps({}))}
+    )
+    with pytest.raises(sa.LegError, match="acceptance was refused"):
+        sa.accept_terms(api)
+
+
+def test_accept_terms_accepts_when_the_answer_says_accepted() -> None:
+    """THE CONTROL of the two tests above: the same script with `accepted: true` passes."""
+    api = ScriptApi(
+        {
+            "/portal/terms": (200, TERMS_OPEN),
+            "/portal/terms/accept": (200, json.dumps({"accepted": True})),
+        }
+    )
+    sa.accept_terms(api)
+    assert api.paths == ["/portal/terms", "/portal/terms/accept"]
+
+
+@pytest.mark.parametrize(
+    ("script", "needle"),
+    [
+        ({"/auth/2fa/status": (403, "no")}, "2FA status read was refused"),
+        ({"/auth/2fa/status": (200, json.dumps({}))}, "2FA status read was refused"),
+        (
+            {"/auth/2fa/status": (200, json.dumps({"enabled": False})), "/test/elevate": (403, "")},
+            "/test/elevate step was refused",
+        ),
+        (
+            {
+                "/auth/2fa/status": (200, json.dumps({"enabled": False})),
+                "/test/elevate": (200, json.dumps({"elevated": True})),
+                "/auth/2fa/setup": (500, "x"),
+            },
+            "2FA setup was refused",
+        ),
+    ],
+    ids=["status-refused", "status-no-bool", "elevate-refused", "setup-refused"],
+)
+def test_ensure_two_factor_refuses_each_failed_step_by_name(
+    script: dict[str, tuple[int, str]], needle: str
+) -> None:
+    """Review 9eee93a6.1: the status, elevate and setup guards each raise."""
+    api = ScriptApi(script)
+    with pytest.raises(sa.LegError, match=needle):
+        sa.ensure_two_factor(api, "owner@example.test")
+    assert "/auth/2fa/enable" not in api.paths
+
+
+def test_ensure_two_factor_does_nothing_when_already_enabled() -> None:
+    """THE CONTROL: an enabled account is left alone."""
+    api = ScriptApi({"/auth/2fa/status": (200, json.dumps({"enabled": True}))})
+    sa.ensure_two_factor(api, "owner@example.test")
+    assert api.paths == ["/auth/2fa/status"]

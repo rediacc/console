@@ -69,6 +69,7 @@ SYSTEM_DEPS_TIMEOUT_S = 120
 
 ALL_PRESENT_LINE = "All system dependencies are installed."
 MISSING_HEADER = "Missing system dependencies"
+PACKAGE_NAME = re.compile(r"[a-z0-9][a-z0-9+.:-]*")
 
 
 def dry_run_packages(dry_run_output: str) -> list[str]:
@@ -79,7 +80,10 @@ def dry_run_packages(dry_run_output: str) -> list[str]:
         if line.startswith(MISSING_HEADER):
             listing = True
         elif listing and line.startswith((" ", "\t")) and line.strip():
-            packages.append(line.strip())
+            name = line.strip()
+            # A package name only: an option-looking line must never reach dpkg-query or apt-get as an argument.
+            if PACKAGE_NAME.fullmatch(name):
+                packages.append(name)
         elif listing:
             break
     return packages
@@ -128,7 +132,7 @@ def install_system_deps(
     if dry.returncode not in (0, 1) or (dry.returncode == 1 and not packages):
         # rc=1 is how Playwright 1.65 reports missing packages; rc=1 with no list is a real failure, and stdout is where it speaks.
         raise RefusedError(
-            f"playwright install-deps --dry-run {browser} failed (rc={dry.returncode}): {(dry.stderr or out).strip()[-300:]}"
+            f"playwright install-deps --dry-run {browser} failed (rc={dry.returncode}): {((dry.stderr or '').strip() or out.strip())[-300:]}"
         )
     if not packages:
         # An unparseable dry run (an output-format change) must not read as "nothing missing": the libraries would then be found absent only at browser launch.

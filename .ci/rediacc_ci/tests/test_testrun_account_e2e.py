@@ -611,6 +611,12 @@ def test_dry_run_packages_parse() -> None:
     assert account_e2e.dry_run_packages(ALL_PRESENT) == []
 
 
+def test_dry_run_packages_drops_an_option_looking_line() -> None:
+    """Review b7e661a3.1: a line such as ` --allow-downgrades` under the header is not a package, so it never becomes an argv token."""
+    out = "Missing system dependencies (2):\n  libnss3\n  --allow-downgrades\n  -o\n  libgbm1\n"
+    assert account_e2e.dry_run_packages(out) == ["libnss3", "libgbm1"]
+
+
 def test_system_deps_present_skips_apt() -> None:
     fake = _Fake(DRY, {"libnss3", "libatk1.0-0", "libgbm1"})
     assert account_e2e.install_system_deps("chromium", ".", fake) is False
@@ -686,6 +692,16 @@ def test_playwright_165_missing_list_with_rc1_reaches_apt() -> None:
 def test_a_dry_run_rc1_with_no_list_is_still_refused_and_shows_stdout() -> None:
     def failing(argv: list[str], **_kw: typing.Any) -> subprocess.CompletedProcess[str]:
         return subprocess.CompletedProcess(argv, 1, "unsupported platform\n", "")
+
+    with pytest.raises(account_e2e.RefusedError, match=r"failed \(rc=1\): unsupported platform"):
+        account_e2e.install_system_deps("chromium", ".", failing)
+
+
+def test_a_dry_run_failure_with_whitespace_only_stderr_shows_stdout() -> None:
+    """Review b7e661a3.2: a stderr of "\\n" is no diagnostic, so stdout is shown."""
+
+    def failing(argv: list[str], **_kw: typing.Any) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(argv, 1, "unsupported platform\n", "\n")
 
     with pytest.raises(account_e2e.RefusedError, match=r"failed \(rc=1\): unsupported platform"):
         account_e2e.install_system_deps("chromium", ".", failing)
