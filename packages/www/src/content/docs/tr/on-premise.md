@@ -8,11 +8,93 @@ tags:
 subcategory: setup
 order: 5
 language: tr
-sourceHash: "37f3874a9cf58a5d"
-sourceCommit: "430ec2c17cba9a80d3e5ed83da35d149ccd90d65"
+sourceHash: "7216d032580dd4e1"
+sourceCommit: "48fd8400c9f2754ab1653f0247fb0d77a1835c5b"
 ---
 
 Rediacc tamamen kendi altyapınızda çalışabilir. Bağımsız Docker imajı hesap sunucusunu, web portalını, pazarlama sitesini ve CLI dağıtım uç noktasını içerir. Rediacc'ın barındırılan servislerine harici bağımlılık gerekmez.
+
+## rdc ile kurulum
+
+`rdc server install`, hesap sunucusunu CLI'ın SSH ile eriştiği bir makineye depo olarak kurar. Tek komut makine denetimini, renet kurulumunu, DNS'i, TLS'i, anahtar üretimini, lisanslamayı, başlatmayı ve sahip hesabını kapsar. Her değerin bir bayrağı vardır. Terminalde eksik değer sorulur; `--yes` ile hiçbir şey sorulmaz ve eksik değer reddedilir. Her adım kaydedilir, bu yüzden yeniden çalıştırma yapılmış olanı atlar.
+
+Adımlar sırasıyla: `preflight` (parolasız sudo, mimari, 80 ve 443 numaralı portlar, disk alanı, saat sapması), `setup` (`rdc machine setup`, yalnızca renet yoksa), `dns`, `tls`, `repo`, `keys`, `licence`, `image`, `up` ve `owner`.
+
+### Önce mevcut makineler
+
+Kurulum, zaten var olan bir makineyi hedefler: veri merkezindeki bir sunucuyu ya da yerel ağdaki bir cihazı. Yapılandırılmış makine argüman olarak verilir. Henüz kayıtlı olmayan makine adresiyle eklenir:
+
+```bash
+rdc server install --ip 203.0.113.10 --user admin --domain accounts.example.com
+rdc server install server-1 --domain accounts.example.com --owner owner@example.com --yes
+```
+
+`--port` ve `--name`, SSH portunu ve makinenin kaydedileceği adı belirler. Bulut VM'i önce `rdc machine provision` ile oluşturulur; kurulum hiçbir zaman VM oluşturmaz.
+
+### DNS
+
+Kurulum, sunucu alan adı ile yedekleme deposunun alan adı için A ve AAAA kayıtlarını yazdırır (`--store-domain`, varsayılan `<ad>-store.<alan adının geri kalanı>`) ve ikisi de makineye çözülene kadar bekler. Hiçbir kayıt bir bölgeye yazılmaz. `--no-dns-wait` kayıtları yazdırıp devam eder; yerel bir çözümleyicinin sunduğu LAN adları için uygundur.
+
+### TLS
+
+`--tls` üç yöntemden birini seçer:
+
+| Yöntem | Gereken | Notlar |
+|---|---|---|
+| `letsencrypt` | 80 ve 443 numaralı portların internetten erişilebilir olması | HTTP-01 doğrulaması. `--cert-email` süre sonu bildirimlerini alır; varsayılan sahiptir. |
+| `cloudflare` | `--cf-token` | Cloudflare API belirteci ile DNS-01 doğrulaması. |
+| `byo` | `--tls-cert` ve `--tls-key` | Her iki alan adını kapsayan mevcut bir PEM sertifikası. `--tls-ca`, sağlık denetiminin güvendiği CA'yı belirtir. |
+
+```bash
+rdc server install lab --domain lab.example.internal --tls byo \
+  --tls-cert host.crt --tls-key host.key --tls-ca ca.crt \
+  --licence free --no-dns-wait --yes
+```
+
+### İmaj
+
+İmaj adımı varsayılan olarak `ghcr.io/rediacc/server:latest` imajını makinede çeker. `--image` başka bir referans seçer. `--image-file`, `docker save` ile yazılmış bir tar'ı gönderir; `--local-image` ise `--image`'ı yerel Docker'dan kaydedip gönderir. İkisi de makinenin bir kayıt defterine erişmesini gerektirmez.
+
+### Lisanslama ve ücretsiz katman
+
+`--licence auto` (varsayılan), oturum açmış hesabın yetki devri sertifikasını kullanır; yoksa ücretsiz katmanda başlar. `--licence free` her zaman ücretsiz katmanda başlar. Kurulum komutu var olmadan önce oturum açmış bir hesap, doğru kapsamı alması için `rdc subscription login` komutunu yeniden çalıştırmalıdır.
+
+Hesap sunucusuna yolu olmayan bir makine için `--cert <file>`, başka yerden alınmış bir yetki devri sertifikasını kabul eder. Sertifika makinede üretilen anahtarı adlandırmalıdır; bu yüzden olağan sıra önce ücretsiz katmanda kurulum, ardından sertifikadır:
+
+```bash
+rdc server install server-1 --domain accounts.example.com --licence free --yes
+rdc server licence accounts.example.com --cert delegation-cert.json
+```
+
+`rdc server licence`, ücretsiz katmandaki bir sunucuyu oturum açmış hesabın ya da `--cert` ile verilen sertifikaya geçirir. Sunucunun neyi denetlediğini aşağıdaki lisanslama bölümünün 3. adımı anlatır.
+
+### Kurtarma paketi
+
+Tüm anahtarlar makinede üretilir ve yalnızca deponun `secrets.env` dosyasına yazılır. Terminalde kurulum, tek seferlik bir kurtarma paketi yazdırarak biter: yetki devredilen anahtar çifti, hesap yapılandırma sunucusu anahtarı ve nesne depolama kimlik bilgileri. Paket hiçbir zaman günlüğe yazılmaz ve `--output json` çıktısına girmez. Terminal yoksa yazdırılmaz ve kapanış satırı `rdc server backup` komutunu anar.
+
+```bash
+rdc server backup accounts.example.com --out elite-recovery.env
+```
+
+`--out` dosyayı 0600 kipiyle yazar; verilmezse paket stdout'a gider. Kurulumdaki `--bws-project <id>` anahtarları ayrıca bir Bitwarden Secrets Manager projesine kopyalar, `--rotate` ise farklı olan kayıtlı bir değerin yerini alır. `--bws-project` olmadan hiçbir anahtar makineden çıkmaz.
+
+### Durum
+
+```bash
+rdc server status accounts.example.com
+```
+
+Durum, sunucunun sağlığını, katmanını, sertifikasını ve imajını gösterir. Cihazda alan adı için kurulum kaydı yoksa `--machine` ve `--repo` hedefi belirtir.
+
+### Güncellemeler
+
+| Bileşen | Komut |
+|---|---|
+| CLI | `rdc update` |
+| Makinedeki renet | `rdc machine setup <machine>` |
+| Sunucu imajı ve şablonu | `rdc server upgrade <domain>` |
+
+`rdc server upgrade`, depoyu geri dönüş noktası olarak çatallar, yeni imajı yerleştirir, yerleşik şablon daha yeniyse onu yeniden uygular ve yeniden başlatır. Kurulum gibi `--image`, `--image-file` ve `--local-image` kabul eder; böylece hava boşluklu bir makine kaydedilmiş bir imaj tar'ından güncellenir.
 
 ## Docker İmajı
 

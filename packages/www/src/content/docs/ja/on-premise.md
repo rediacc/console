@@ -8,11 +8,93 @@ tags:
 subcategory: setup
 order: 5
 language: ja
-sourceHash: "37f3874a9cf58a5d"
-sourceCommit: "430ec2c17cba9a80d3e5ed83da35d149ccd90d65"
+sourceHash: "7216d032580dd4e1"
+sourceCommit: "48fd8400c9f2754ab1653f0247fb0d77a1835c5b"
 ---
 
 Rediaccは完全に独自インフラ上で運用できます。スタンドアロンDockerイメージには、アカウントサーバー、ウェブポータル、マーケティングサイト、およびCLIディストリビューションエンドポイントが含まれます。Rediaccのホスト型サービスへの外部依存は不要です。
+
+## rdcでインストールする
+
+`rdc server install`は、CLIがSSHで到達できるマシンに、アカウントサーバーをリポジトリとしてインストールします。1つのコマンドで、マシンの確認、renetのセットアップ、DNS、TLS、キー生成、ライセンス、起動、オーナーアカウントの作成までを行います。すべての値にフラグがあります。ターミナルでは不足している値を尋ね、`--yes`を付けると何も尋ねず、不足した値は拒否されます。各ステップは記録されるため、再実行では完了済みのステップが省略されます。
+
+ステップは次の順です。`preflight`(パスワードなしのsudo、アーキテクチャ、80番と443番ポート、ディスク容量、時計のずれ)、`setup`(renetがない場合のみ`rdc machine setup`)、`dns`、`tls`、`repo`、`keys`、`licence`、`image`、`up`、`owner`。
+
+### 既存のマシンを優先する
+
+インストール先は、すでに存在するマシンです。データセンターのサーバーでも、LAN上の機器でも構いません。設定済みのマシンは引数で指定します。まだ登録されていないマシンは、アドレスで追加します。
+
+```bash
+rdc server install --ip 203.0.113.10 --user admin --domain accounts.example.com
+rdc server install server-1 --domain accounts.example.com --owner owner@example.com --yes
+```
+
+`--port`と`--name`で、SSHポートとマシンの登録名を指定します。クラウドVMは事前に`rdc machine provision`で作成します。インストール自体がVMを作成することはありません。
+
+### DNS
+
+インストールは、サーバーのドメインとバックアップストアのドメイン(`--store-domain`、既定値は`<名前>-store.<ドメインの残り>`)のAレコードとAAAAレコードを表示し、両方がマシンに解決されるまで待ちます。ゾーンにレコードが書き込まれることはありません。`--no-dns-wait`はレコードを表示してそのまま進むため、ローカルのリゾルバーが提供するLAN内の名前に向いています。
+
+### TLS
+
+`--tls`は3つの方式から1つを選びます。
+
+| 方式 | 必要なもの | 備考 |
+|---|---|---|
+| `letsencrypt` | 80番と443番ポートにインターネットから到達できること | HTTP-01チャレンジ。`--cert-email`が有効期限の通知を受け取ります。既定値はオーナーです。 |
+| `cloudflare` | `--cf-token` | CloudflareのAPIトークンによるDNS-01チャレンジ。 |
+| `byo` | `--tls-cert`と`--tls-key` | 両方のドメインをカバーする既存のPEM証明書。`--tls-ca`は、ヘルスチェックが信頼するCAを指定します。 |
+
+```bash
+rdc server install lab --domain lab.example.internal --tls byo \
+  --tls-cert host.crt --tls-key host.key --tls-ca ca.crt \
+  --licence free --no-dns-wait --yes
+```
+
+### イメージ
+
+イメージのステップでは、既定でマシン上に`ghcr.io/rediacc/server:latest`をpullします。`--image`で別の参照を選べます。`--image-file`は`docker save`で作成したtarを送り、`--local-image`はローカルのDockerから`--image`を保存して送ります。どちらもマシンからレジストリへアクセスする必要がありません。
+
+### ライセンスと無料プラン
+
+`--licence auto`(既定)は、ログイン中のアカウントの委任証明書を使い、なければ無料プランで起動します。`--licence free`は常に無料プランで起動します。インストールコマンドが存在する前にログインしたアカウントは、適切なスコープを得るために`rdc subscription login`を再実行する必要があります。
+
+アカウントサーバーへの経路がないマシンでは、`--cert <file>`で別の場所で取得した委任証明書を渡せます。証明書にはマシン上で生成されたキーが指定されている必要があるため、通常は先に無料プランでインストールし、その後に証明書を適用します。
+
+```bash
+rdc server install server-1 --domain accounts.example.com --licence free --yes
+rdc server licence accounts.example.com --cert delegation-cert.json
+```
+
+`rdc server licence`は、無料プランのサーバーを、ログイン中のアカウントまたは`--cert`の証明書に切り替えます。サーバーが何を検証するかは、後述のライセンスのセクションのステップ3に記載しています。
+
+### リカバリーバンドル
+
+すべてのキーはマシン上で生成され、リポジトリの`secrets.env`にのみ書き込まれます。ターミナルでは、インストールの最後に一度だけリカバリーバンドルを表示します。内容は、委任されたキーペア、アカウント設定サーバーのキー、オブジェクトストレージの認証情報です。バンドルはログに記録されず、`--output json`にも含まれません。ターミナルがない場合は表示されず、最後の行で`rdc server backup`が案内されます。
+
+```bash
+rdc server backup accounts.example.com --out elite-recovery.env
+```
+
+`--out`はファイルをモード0600で書き込みます。指定しない場合、バンドルはstdoutに出力されます。インストール時の`--bws-project <id>`は、キーをBitwarden Secrets Managerのプロジェクトにもコピーし、`--rotate`は保存済みの異なる値を置き換えます。`--bws-project`がなければ、キーがマシンの外へ出ることはありません。
+
+### ステータス
+
+```bash
+rdc server status accounts.example.com
+```
+
+ステータスには、サーバーのヘルス、プラン、証明書、イメージが表示されます。このデバイスにドメインのインストール記録がない場合は、`--machine`と`--repo`で対象を指定します。
+
+### アップデート
+
+| コンポーネント | コマンド |
+|---|---|
+| CLI | `rdc update` |
+| マシン上のrenet | `rdc machine setup <machine>` |
+| サーバーイメージとテンプレート | `rdc server upgrade <domain>` |
+
+`rdc server upgrade`は、リポジトリをロールバック用にforkし、新しいイメージを配置し、組み込みのテンプレートが新しければ再適用して、再起動します。インストールと同様に`--image`、`--image-file`、`--local-image`を受け付けるため、エアギャップのマシンは保存したイメージのtarからアップグレードできます。
 
 ## Dockerイメージ
 

@@ -8,11 +8,93 @@ tags:
 subcategory: setup
 order: 5
 language: et
-sourceHash: "37f3874a9cf58a5d"
-sourceCommit: "430ec2c17cba9a80d3e5ed83da35d149ccd90d65"
+sourceHash: "7216d032580dd4e1"
+sourceCommit: "48fd8400c9f2754ab1653f0247fb0d77a1835c5b"
 ---
 
 Rediacc saab töötada täielikult sinu enda infrastruktuuris. Eraldiseisev Dockeri pilt sisaldab konto-serverit, veebiportaali, turunduslehte ja CLI jaotuse lõpp-punkti. Rediacc hostitud teenustele pole väliseid sõltuvusi.
+
+## Paigaldus rdc-ga
+
+`rdc server install` paigaldab kontoserveri hoidlana masinasse, millele CLI pääseb SSH kaudu ligi. Üks käsk katab masina kontrolli, renet'i seadistuse, DNS-i, TLS-i, võtmete loomise, litsentsimise, käivitamise ja omaniku konto. Igal väärtusel on lipp. Terminalis küsitakse puuduvat väärtust; lipuga `--yes` ei küsita midagi ja puuduv väärtus lükatakse tagasi. Iga samm salvestatakse, seega kordusjooks jätab juba tehtu vahele.
+
+Sammud järjekorras: `preflight` (paroolita sudo, arhitektuur, pordid 80 ja 443, kettaruum, kella kõrvalekalle), `setup` (`rdc machine setup`, ainult kui renet puudub), `dns`, `tls`, `repo`, `keys`, `licence`, `image`, `up` ja `owner`.
+
+### Esmalt olemasolevad masinad
+
+Paigaldus sihib masinat, mis juba olemas on: andmekeskuse serverit või kohtvõrgu seadet. Seadistatud masin antakse argumendina. Veel registreerimata masin lisatakse aadressi järgi:
+
+```bash
+rdc server install --ip 203.0.113.10 --user admin --domain accounts.example.com
+rdc server install server-1 --domain accounts.example.com --owner owner@example.com --yes
+```
+
+`--port` ja `--name` määravad SSH pordi ja nime, mille all masin registreeritakse. Pilve-VM luuakse enne käsuga `rdc machine provision`; paigaldus ei loo seda kunagi.
+
+### DNS
+
+Paigaldus prindib A- ja AAAA-kirjed serveri domeeni ja selle varukoopiahoidla domeeni jaoks (`--store-domain`, vaikimisi `<nimi>-store.<ülejäänud domeen>`) ning ootab, kuni mõlemad lahenduvad masinale. Ühtegi kirjet ei kirjutata kunagi tsooni. `--no-dns-wait` prindib kirjed ja jätkab, mis sobib kohtvõrgu nimele, mida teenindab kohalik lahendaja.
+
+### TLS
+
+`--tls` valib ühe kolmest meetodist:
+
+| Meetod | Vajab | Märkused |
+|---|---|---|
+| `letsencrypt` | Pordid 80 ja 443 on internetist ligipääsetavad | HTTP-01 väljakutse. `--cert-email` saab aegumisteated; vaikimisi omanik. |
+| `cloudflare` | `--cf-token` | DNS-01 väljakutse Cloudflare'i API tokeniga. |
+| `byo` | `--tls-cert` ja `--tls-key` | Olemasolev PEM-sertifikaat, mis katab mõlemad domeenid. `--tls-ca` nimetab CA, mida tervisekontroll usaldab. |
+
+```bash
+rdc server install lab --domain lab.example.internal --tls byo \
+  --tls-cert host.crt --tls-key host.key --tls-ca ca.crt \
+  --licence free --no-dns-wait --yes
+```
+
+### Image
+
+Image'i samm tõmbab vaikimisi masinasse `ghcr.io/rediacc/server:latest`. `--image` valib teise viite. `--image-file` saadab käsuga `docker save` kirjutatud tari ja `--local-image` salvestab `--image` kohalikust Dockerist ning saadab selle. Mõlemad välistavad masina ligipääsu registrile.
+
+### Litsentsimine ja tasuta tase
+
+`--licence auto` (vaikimisi) võtab sisseloginud konto delegeerimissertifikaadi või käivitub tasuta tasemel, kui sertifikaati pole. `--licence free` käivitub alati tasuta tasemel. Konto, mis logis sisse enne paigalduskäsu olemasolu, peab õige skoobi saamiseks uuesti käivitama `rdc subscription login`.
+
+Masinale, millel pole teed kontoserverini, võtab `--cert <file>` mujalt saadud delegeerimissertifikaadi. Sertifikaat peab nimetama masinas loodud võtit, mistõttu tavaline järjekord on esmalt paigaldus tasuta tasemel, seejärel sertifikaat:
+
+```bash
+rdc server install server-1 --domain accounts.example.com --licence free --yes
+rdc server licence accounts.example.com --cert delegation-cert.json
+```
+
+`rdc server licence` viib tasuta taseme serveri üle sisseloginud konto või `--cert` sertifikaadile. Mida server kontrollib, kirjeldab allpool litsentsimise jaotise 3. samm.
+
+### Taastepakett
+
+Kõik võtmed luuakse masinas ja kirjutatakse ainult hoidla `secrets.env` faili. Terminalis lõpeb paigaldus ühekordse taastepaketi printimisega: delegeeritud võtmepaar, kontokonfiguratsiooni serveri võti ja objektihoidla mandaadid. Paketti ei logita kunagi ja see ei kuulu `--output json` väljundisse. Ilma terminalita seda ei prindita ning lõpurida nimetab käsku `rdc server backup`.
+
+```bash
+rdc server backup accounts.example.com --out elite-recovery.env
+```
+
+`--out` kirjutab faili režiimiga 0600; ilma selleta läheb pakett stdout'i. Paigalduse `--bws-project <id>` kopeerib võtmed lisaks Bitwarden Secrets Manageri projekti ja `--rotate` asendab erineva salvestatud väärtuse. Ilma `--bws-project`'ita ei lahku ükski võti masinast.
+
+### Olek
+
+```bash
+rdc server status accounts.example.com
+```
+
+Olek näitab serveri tervist, taset, sertifikaati ja image'it. `--machine` ja `--repo` nimetavad sihtmärgi, kui seadmel pole domeeni paigaldusekirjet.
+
+### Uuendused
+
+| Komponent | Käsk |
+|---|---|
+| CLI | `rdc update` |
+| renet masinas | `rdc machine setup <machine>` |
+| Serveri image ja mall | `rdc server upgrade <domain>` |
+
+`rdc server upgrade` forkib hoidla tagasipöördepunktiks, paigutab uue image'i, rakendab malli uuesti, kui sisseehitatud mall on uuem, ja taaskäivitab. See võtab `--image`, `--image-file` ja `--local-image` nagu paigaldus, nii et isoleeritud masin uuendab salvestatud image'i tarist.
 
 ## Dockeri pilt
 

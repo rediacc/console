@@ -8,11 +8,93 @@ tags:
 subcategory: setup
 order: 5
 language: fr
-sourceHash: "37f3874a9cf58a5d"
-sourceCommit: "430ec2c17cba9a80d3e5ed83da35d149ccd90d65"
+sourceHash: "7216d032580dd4e1"
+sourceCommit: "48fd8400c9f2754ab1653f0247fb0d77a1835c5b"
 ---
 
 Rediacc peut fonctionner entièrement sur votre propre infrastructure. L'image Docker autonome inclut le serveur de compte, le portail web, le site marketing et le point de terminaison de distribution de la CLI. Aucune dépendance externe aux services hébergés de Rediacc n'est requise.
+
+## Installer avec rdc
+
+`rdc server install` installe le serveur de comptes comme dépôt sur une machine que la CLI atteint par SSH. Une seule commande couvre la vérification de la machine, la configuration de renet, le DNS, le TLS, la génération des clés, la licence, le démarrage et le compte propriétaire. Chaque valeur a un indicateur. Dans un terminal, une valeur manquante est demandée ; avec `--yes`, rien n'est demandé et une valeur manquante est refusée. Chaque étape est consignée, si bien qu'une relance saute ce qui est déjà fait.
+
+Les étapes, dans l'ordre : `preflight` (sudo sans mot de passe, architecture, ports 80 et 443, espace disque, décalage d'horloge), `setup` (`rdc machine setup`, seulement si renet manque), `dns`, `tls`, `repo`, `keys`, `licence`, `image`, `up` et `owner`.
+
+### D'abord les machines existantes
+
+L'installation cible une machine qui existe déjà : un serveur en centre de données ou un appareil du réseau local. Une machine configurée se nomme en argument. Une machine pas encore enregistrée s'ajoute avec son adresse :
+
+```bash
+rdc server install --ip 203.0.113.10 --user admin --domain accounts.example.com
+rdc server install server-1 --domain accounts.example.com --owner owner@example.com --yes
+```
+
+`--port` et `--name` fixent le port SSH et le nom d'enregistrement de la machine. Une VM cloud se crée d'abord avec `rdc machine provision` ; l'installation n'en crée jamais.
+
+### DNS
+
+L'installation affiche les enregistrements A et AAAA du domaine du serveur et de celui de son stockage de sauvegarde (`--store-domain`, par défaut `<nom>-store.<reste du domaine>`), puis attend que les deux pointent vers la machine. Aucun enregistrement n'est jamais écrit dans une zone. `--no-dns-wait` affiche les enregistrements et continue, ce qui convient à un nom de réseau local servi par un résolveur local.
+
+### TLS
+
+`--tls` choisit l'une des trois méthodes :
+
+| Méthode | Prérequis | Remarques |
+|---|---|---|
+| `letsencrypt` | Ports 80 et 443 joignables depuis Internet | Défi HTTP-01. `--cert-email` reçoit les avis d'expiration ; par défaut, le propriétaire. |
+| `cloudflare` | `--cf-token` | Défi DNS-01 via un jeton d'API Cloudflare. |
+| `byo` | `--tls-cert` et `--tls-key` | Un certificat PEM existant couvrant les deux domaines. `--tls-ca` désigne l'autorité à laquelle le contrôle de santé fait confiance. |
+
+```bash
+rdc server install lab --domain lab.example.internal --tls byo \
+  --tls-cert host.crt --tls-key host.key --tls-ca ca.crt \
+  --licence free --no-dns-wait --yes
+```
+
+### Image
+
+L'étape image tire par défaut `ghcr.io/rediacc/server:latest` sur la machine. `--image` choisit une autre référence. `--image-file` envoie une archive écrite par `docker save`, et `--local-image` enregistre l'`--image` depuis le Docker local avant de l'envoyer. Les deux évitent tout accès à un registre depuis la machine.
+
+### Licence et offre gratuite
+
+`--licence auto` (valeur par défaut) prend un certificat de délégation du compte connecté, ou démarre sur l'offre gratuite s'il n'y en a pas. `--licence free` démarre toujours sur l'offre gratuite. Un compte connecté avant l'existence de la commande d'installation doit refaire `rdc subscription login` pour porter le bon scope.
+
+Pour une machine sans accès au serveur de comptes, `--cert <file>` prend un certificat de délégation obtenu ailleurs. Le certificat doit nommer la clé générée sur la machine ; l'ordre habituel est donc une installation sur l'offre gratuite, puis le certificat :
+
+```bash
+rdc server install server-1 --domain accounts.example.com --licence free --yes
+rdc server licence accounts.example.com --cert delegation-cert.json
+```
+
+`rdc server licence` fait passer un serveur de l'offre gratuite à un certificat du compte connecté, ou de `--cert`. L'étape 3 de la section sur les licences, plus bas, décrit ce que le serveur vérifie.
+
+### Lot de récupération
+
+Toutes les clés sont générées sur la machine et écrites uniquement dans le `secrets.env` du dépôt. Dans un terminal, l'installation se termine par l'affichage unique d'un lot de récupération : la paire de clés déléguée, la clé du serveur de configuration de compte et les identifiants du stockage d'objets. Le lot n'est jamais journalisé ni inclus dans `--output json`. Sans terminal, il n'est pas affiché, et la ligne de fin mentionne `rdc server backup`.
+
+```bash
+rdc server backup accounts.example.com --out elite-recovery.env
+```
+
+`--out` écrit le fichier en mode 0600 ; sans lui, le lot part sur stdout. `--bws-project <id>` à l'installation copie aussi les clés dans un projet Bitwarden Secrets Manager, et `--rotate` remplace une valeur stockée différente. Sans `--bws-project`, aucune clé ne quitte la machine.
+
+### État
+
+```bash
+rdc server status accounts.example.com
+```
+
+L'état affiche la santé, l'offre, le certificat et l'image du serveur. `--machine` et `--repo` désignent la cible quand l'appareil n'a aucun enregistrement d'installation pour le domaine.
+
+### Mises à jour
+
+| Composant | Commande |
+|---|---|
+| CLI | `rdc update` |
+| renet sur la machine | `rdc machine setup <machine>` |
+| Image et modèle du serveur | `rdc server upgrade <domain>` |
+
+`rdc server upgrade` fork le dépôt comme point de retour, place la nouvelle image, réapplique le modèle quand celui qui est intégré est plus récent, puis redémarre. Il accepte `--image`, `--image-file` et `--local-image` comme l'installation, de sorte qu'une machine isolée se met à jour depuis une archive d'image enregistrée.
 
 ## Image Docker
 

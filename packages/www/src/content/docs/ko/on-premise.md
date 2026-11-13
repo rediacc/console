@@ -8,11 +8,93 @@ tags:
 subcategory: setup
 order: 5
 language: ko
-sourceHash: "37f3874a9cf58a5d"
-sourceCommit: "430ec2c17cba9a80d3e5ed83da35d149ccd90d65"
+sourceHash: "7216d032580dd4e1"
+sourceCommit: "48fd8400c9f2754ab1653f0247fb0d77a1835c5b"
 ---
 
 Rediacc는 자체 인프라에서 완전히 실행할 수 있습니다. 독립 실행형 Docker 이미지에는 계정 서버, 웹 포털, 마케팅 사이트, CLI 배포 엔드포인트가 포함되어 있습니다. Rediacc의 호스팅 서비스에 대한 외부 의존성은 필요하지 않습니다.
+
+## rdc로 설치하기
+
+`rdc server install`은 CLI가 SSH로 접근할 수 있는 머신에 계정 서버를 저장소로 설치합니다. 명령 하나로 머신 점검, renet 설정, DNS, TLS, 키 생성, 라이선스, 시작, 소유자 계정까지 처리합니다. 모든 값에는 플래그가 있습니다. 터미널에서는 빠진 값을 물어보고, `--yes`를 쓰면 아무것도 묻지 않으며 빠진 값은 거부됩니다. 각 단계는 기록되므로 다시 실행하면 이미 끝난 단계는 건너뜁니다.
+
+단계는 순서대로 `preflight`(비밀번호 없는 sudo, 아키텍처, 80번과 443번 포트, 디스크 공간, 시계 오차), `setup`(renet이 없을 때만 `rdc machine setup`), `dns`, `tls`, `repo`, `keys`, `licence`, `image`, `up`, `owner`입니다.
+
+### 기존 머신 우선
+
+설치 대상은 이미 있는 머신입니다. 데이터 센터의 서버나 LAN의 장치가 해당합니다. 설정된 머신은 인자로 지정합니다. 아직 등록되지 않은 머신은 주소로 추가합니다.
+
+```bash
+rdc server install --ip 203.0.113.10 --user admin --domain accounts.example.com
+rdc server install server-1 --domain accounts.example.com --owner owner@example.com --yes
+```
+
+`--port`와 `--name`은 SSH 포트와 머신을 등록할 이름을 정합니다. 클라우드 VM은 먼저 `rdc machine provision`으로 만들며, 설치 자체는 VM을 만들지 않습니다.
+
+### DNS
+
+설치는 서버 도메인과 백업 저장소 도메인(`--store-domain`, 기본값은 `<이름>-store.<도메인의 나머지>`)의 A 레코드와 AAAA 레코드를 출력하고, 두 도메인이 모두 머신으로 확인될 때까지 기다립니다. 존에 레코드를 쓰는 일은 없습니다. `--no-dns-wait`는 레코드를 출력하고 바로 진행하므로, 로컬 리졸버가 제공하는 LAN 이름에 알맞습니다.
+
+### TLS
+
+`--tls`는 세 가지 방식 중 하나를 고릅니다.
+
+| 방식 | 필요한 것 | 비고 |
+|---|---|---|
+| `letsencrypt` | 80번과 443번 포트를 인터넷에서 접근할 수 있어야 함 | HTTP-01 챌린지입니다. `--cert-email`이 만료 알림을 받으며, 기본값은 소유자입니다. |
+| `cloudflare` | `--cf-token` | Cloudflare API 토큰을 이용한 DNS-01 챌린지입니다. |
+| `byo` | `--tls-cert`와 `--tls-key` | 두 도메인을 모두 포함하는 기존 PEM 인증서입니다. `--tls-ca`는 상태 점검이 신뢰하는 CA를 지정합니다. |
+
+```bash
+rdc server install lab --domain lab.example.internal --tls byo \
+  --tls-cert host.crt --tls-key host.key --tls-ca ca.crt \
+  --licence free --no-dns-wait --yes
+```
+
+### 이미지
+
+이미지 단계는 기본적으로 머신에서 `ghcr.io/rediacc/server:latest`를 pull합니다. `--image`로 다른 참조를 고를 수 있습니다. `--image-file`은 `docker save`로 만든 tar를 전송하고, `--local-image`는 로컬 Docker에서 `--image`를 저장해 전송합니다. 둘 다 머신이 레지스트리에 접근할 필요가 없습니다.
+
+### 라이선스와 무료 플랜
+
+`--licence auto`(기본값)는 로그인한 계정의 위임 인증서를 사용하고, 없으면 무료 플랜으로 시작합니다. `--licence free`는 항상 무료 플랜으로 시작합니다. 설치 명령이 생기기 전에 로그인한 계정은 올바른 스코프를 얻으려면 `rdc subscription login`을 다시 실행해야 합니다.
+
+계정 서버로 가는 경로가 없는 머신에서는 `--cert <file>`로 다른 곳에서 받은 위임 인증서를 사용할 수 있습니다. 인증서는 머신에서 생성된 키를 지정해야 하므로, 보통은 먼저 무료 플랜으로 설치한 뒤 인증서를 적용합니다.
+
+```bash
+rdc server install server-1 --domain accounts.example.com --licence free --yes
+rdc server licence accounts.example.com --cert delegation-cert.json
+```
+
+`rdc server licence`는 무료 플랜 서버를 로그인한 계정 또는 `--cert`의 인증서로 전환합니다. 서버가 무엇을 검증하는지는 아래 라이선스 섹션의 3단계에 설명되어 있습니다.
+
+### 복구 번들
+
+모든 키는 머신에서 생성되며 저장소의 `secrets.env`에만 기록됩니다. 터미널에서는 설치가 끝날 때 복구 번들을 한 번만 출력합니다. 위임된 키 쌍, 계정 설정 서버 키, 오브젝트 스토리지 자격 증명이 들어 있습니다. 번들은 로그에 남지 않으며 `--output json`에도 포함되지 않습니다. 터미널이 없으면 출력하지 않고, 마지막 줄에서 `rdc server backup`을 안내합니다.
+
+```bash
+rdc server backup accounts.example.com --out elite-recovery.env
+```
+
+`--out`은 파일을 0600 모드로 기록하며, 지정하지 않으면 번들은 stdout으로 나갑니다. 설치 시 `--bws-project <id>`는 키를 Bitwarden Secrets Manager 프로젝트에도 복사하고, `--rotate`는 저장된 값이 다를 때 교체합니다. `--bws-project`가 없으면 어떤 키도 머신 밖으로 나가지 않습니다.
+
+### 상태
+
+```bash
+rdc server status accounts.example.com
+```
+
+상태는 서버의 헬스, 플랜, 인증서, 이미지를 보여 줍니다. 장치에 해당 도메인의 설치 기록이 없으면 `--machine`과 `--repo`로 대상을 지정합니다.
+
+### 업데이트
+
+| 구성 요소 | 명령 |
+|---|---|
+| CLI | `rdc update` |
+| 머신의 renet | `rdc machine setup <machine>` |
+| 서버 이미지와 템플릿 | `rdc server upgrade <domain>` |
+
+`rdc server upgrade`는 저장소를 롤백 지점으로 fork하고, 새 이미지를 배치하고, 내장 템플릿이 더 새로우면 다시 적용한 뒤 재시작합니다. 설치와 마찬가지로 `--image`, `--image-file`, `--local-image`를 받으므로, 에어갭 머신은 저장해 둔 이미지 tar로 업그레이드할 수 있습니다.
 
 ## Docker 이미지
 

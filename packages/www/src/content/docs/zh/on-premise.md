@@ -8,11 +8,93 @@ tags:
 subcategory: setup
 order: 5
 language: zh
-sourceHash: "37f3874a9cf58a5d"
-sourceCommit: "430ec2c17cba9a80d3e5ed83da35d149ccd90d65"
+sourceHash: "7216d032580dd4e1"
+sourceCommit: "48fd8400c9f2754ab1653f0247fb0d77a1835c5b"
 ---
 
 Rediacc 可以完全运行在您自己的基础设施上。独立 Docker 镜像包含账户服务器、Web 管理门户、营销网站和 CLI 分发端点，无需依赖 Rediacc 托管服务。
+
+## 使用 rdc 安装
+
+`rdc server install` 把账户服务器作为仓库安装到 CLI 能通过 SSH 访问的机器上。一条命令涵盖机器检查、renet 设置、DNS、TLS、密钥生成、授权、启动和所有者账户。每个值都有对应的标志。在终端中,缺失的值会被询问;使用 `--yes` 时不会询问任何内容,缺失的值会被拒绝。每个步骤都会被记录,因此重新运行会跳过已完成的部分。
+
+步骤依次为:`preflight`(免密 sudo、架构、80 和 443 端口、磁盘空间、时钟偏差)、`setup`(仅在缺少 renet 时运行 `rdc machine setup`)、`dns`、`tls`、`repo`、`keys`、`licence`、`image`、`up` 和 `owner`。
+
+### 优先使用现有机器
+
+安装的目标是已经存在的机器:数据中心的服务器或局域网中的设备。已配置的机器以参数形式给出。尚未注册的机器通过地址添加:
+
+```bash
+rdc server install --ip 203.0.113.10 --user admin --domain accounts.example.com
+rdc server install server-1 --domain accounts.example.com --owner owner@example.com --yes
+```
+
+`--port` 和 `--name` 分别设置 SSH 端口和机器的注册名称。云虚拟机需先用 `rdc machine provision` 创建;安装本身从不创建虚拟机。
+
+### DNS
+
+安装会打印服务器域名及其备份存储域名(`--store-domain`,默认为 `<名称>-store.<域名其余部分>`)的 A 和 AAAA 记录,然后等待两者都解析到该机器。记录绝不会被写入任何区域。`--no-dns-wait` 打印记录后直接继续,适合由本地解析器提供的局域网名称。
+
+### TLS
+
+`--tls` 从三种方式中选择一种:
+
+| 方式 | 需要 | 说明 |
+|---|---|---|
+| `letsencrypt` | 80 和 443 端口可从互联网访问 | HTTP-01 质询。`--cert-email` 接收到期通知;默认为所有者。 |
+| `cloudflare` | `--cf-token` | 通过 Cloudflare API 令牌完成 DNS-01 质询。 |
+| `byo` | `--tls-cert` 和 `--tls-key` | 覆盖两个域名的现有 PEM 证书。`--tls-ca` 指定健康检查所信任的 CA。 |
+
+```bash
+rdc server install lab --domain lab.example.internal --tls byo \
+  --tls-cert host.crt --tls-key host.key --tls-ca ca.crt \
+  --licence free --no-dns-wait --yes
+```
+
+### 镜像
+
+镜像步骤默认在机器上拉取 `ghcr.io/rediacc/server:latest`。`--image` 选择其他引用。`--image-file` 传送由 `docker save` 生成的 tar,`--local-image` 则从本地 Docker 保存 `--image` 并传送。两者都不需要机器访问镜像仓库。
+
+### 授权与免费版
+
+`--licence auto`(默认)使用已登录账户的委托证书,没有时以免费版启动。`--licence free` 始终以免费版启动。在安装命令出现之前登录的账户,需要重新运行 `rdc subscription login` 才能获得正确的 scope。
+
+对于无法连接账户服务器的机器,`--cert <file>` 接受在别处获得的委托证书。证书必须指明机器上生成的密钥,因此通常的顺序是先以免费版安装,再应用证书:
+
+```bash
+rdc server install server-1 --domain accounts.example.com --licence free --yes
+rdc server licence accounts.example.com --cert delegation-cert.json
+```
+
+`rdc server licence` 把免费版服务器切换到已登录账户或 `--cert` 提供的证书。服务器会检查什么,见下文授权部分的第 3 步。
+
+### 恢复包
+
+所有密钥都在机器上生成,并且只写入仓库的 `secrets.env`。在终端中,安装结束时会一次性打印恢复包:委托密钥对、账户配置服务器密钥和对象存储凭据。恢复包不会写入日志,也不属于 `--output json` 的内容。没有终端时不会打印,结尾一行会提示 `rdc server backup`。
+
+```bash
+rdc server backup accounts.example.com --out elite-recovery.env
+```
+
+`--out` 以 0600 模式写入文件;不带它时,恢复包输出到 stdout。安装时的 `--bws-project <id>` 还会把密钥复制到 Bitwarden Secrets Manager 项目,`--rotate` 会替换与之不同的已存储值。没有 `--bws-project` 时,任何密钥都不会离开机器。
+
+### 状态
+
+```bash
+rdc server status accounts.example.com
+```
+
+状态显示服务器的健康状况、套餐、证书和镜像。设备上没有该域名的安装记录时,用 `--machine` 和 `--repo` 指明目标。
+
+### 更新
+
+| 组件 | 命令 |
+|---|---|
+| CLI | `rdc update` |
+| 机器上的 renet | `rdc machine setup <machine>` |
+| 服务器镜像和模板 | `rdc server upgrade <domain>` |
+
+`rdc server upgrade` 会 fork 仓库作为回退点,放置新镜像,在内置模板更新时重新应用模板,然后重启。它与安装一样接受 `--image`、`--image-file` 和 `--local-image`,因此隔离网络的机器可以从保存的镜像 tar 升级。
 
 ## Docker 镜像
 
