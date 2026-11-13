@@ -371,6 +371,126 @@ def test_the_live_fetch_with_no_origin_refuses(tmp_path: pathlib.Path) -> None:
     assert "fetch of origin main failed" in got.message
 
 
+# --------------------------------------------------------------------------- (e') origin/main under --branch-release
+
+
+def branch_world(tmp_path: pathlib.Path) -> tuple[pathlib.Path, pathlib.Path]:
+    """A repository whose main is pushed to a bare origin, then one commit ahead of it (HEAD, not yet pushed)."""
+    root = tagged_repo(tmp_path)
+    bare = tmp_path / "origin.git"
+    git(tmp_path, "init", "-q", "--bare", str(bare))
+    git(root, "remote", "add", "origin", str(bare))
+    git(root, "push", "-q", "origin", "main")
+    (root / "branch.txt").write_text("the branch's work\n", encoding="utf-8")
+    commit_all(root, "on the branch")
+    return root, bare
+
+
+def codes_and_text(found: list[lg.Refusal]) -> str:
+    return " | ".join(r.line() for r in found)
+
+
+def test_a_branch_release_admits_a_pushed_descendant_of_origin_main(tmp_path: pathlib.Path) -> None:
+    root, _bare = branch_world(tmp_path)
+    git(root, "push", "-q", "origin", "HEAD:refs/heads/1104-1")
+    head = head_of(root)
+    assert lg.branch_release_refusals(root, head, lg.live_fetch) == []
+    heads, why = lg.live_heads(root)
+    assert why == ""
+    assert lg.pushed_branch(heads or {}, head) == "1104-1"
+
+
+def test_a_branch_release_refuses_an_unpushed_head(tmp_path: pathlib.Path) -> None:
+    root, _bare = branch_world(tmp_path)
+    found = lg.branch_release_refusals(root, head_of(root), lg.live_fetch)
+    assert [r.code for r in found] == ["origin-main"]
+    assert "the tip of no branch on origin" in found[0].message
+
+
+def test_a_branch_release_refuses_a_head_not_descended_from_origin_main(
+    tmp_path: pathlib.Path,
+) -> None:
+    root, _bare = branch_world(tmp_path)
+    git(root, "push", "-q", "origin", "HEAD:refs/heads/1104-1")
+    # origin/main moves to a sibling of HEAD: same parent, another commit, so HEAD no longer descends from it.
+    sibling = git(root, "commit-tree", "HEAD~1^{tree}", "-p", "HEAD~1", "-m", "main moved on")
+    git(root, "push", "-q", "origin", "%s:refs/heads/main" % sibling)
+    found = lg.branch_release_refusals(root, head_of(root), lg.live_fetch)
+    assert [r.code for r in found] == ["origin-main"], codes_and_text(found)
+    assert "is not an ancestor of HEAD" in found[0].message
+
+
+def test_a_branch_release_refuses_when_nothing_can_be_read(tmp_path: pathlib.Path) -> None:
+    root = tagged_repo(tmp_path)
+    head = head_of(root)
+    failed = lg.branch_release_refusals(root, head, lambda _r: (None, "offline"))
+    assert [r.message for r in failed] == [
+        "the fetch of origin main failed, so nothing is judged: offline"
+    ]
+    unread = lg.branch_release_refusals(
+        root,
+        head,
+        lambda _r: (head, ""),
+        heads=lambda _r: (None, "ls-remote exited 128"),
+        ancestor=lambda _r, _a, _h: None,
+    )
+    assert [r.code for r in unread] == ["origin-main", "origin-main"]
+    assert "whether HEAD is pushed is not judged" in unread[0].message
+    assert "git cannot tell whether origin/main" in unread[1].message
+
+
+def test_pushed_branch_prefers_the_branch_over_main() -> None:
+    sha = "a" * 40
+    assert lg.pushed_branch({"main": sha, "1104-1": sha, "other": "b" * 40}, sha) == "1104-1"
+    assert lg.pushed_branch({"main": sha}, sha) == "main"
+    assert lg.pushed_branch({"main": "b" * 40}, sha) is None
+
+
+def test_check_branch_release_swaps_only_the_origin_main_rule(tmp_path: pathlib.Path) -> None:
+    root = green_world(tmp_path)
+    head = head_of(root)
+    world: dict[str, Any] = {
+        "fetch": lambda _r: ("f" * 40, ""),
+        "sentinel": lambda _v: False,
+        "existing": free,
+        "next_version": lambda _r: "1.0.1",
+    }
+    # Control: without the flag the equality rule holds, so a HEAD that is not origin/main refuses.
+    plain = lg.check(root, "edge", **world)
+    assert [r.code for r in plain] == ["origin-main"]
+    assert "is not origin/main" in plain[0].message
+    # With it, a pushed HEAD descended from origin/main is admitted, and every other gate still ran.
+    pushed = lg.check(
+        root,
+        "edge",
+        branch_release=True,
+        heads=lambda _r: ({"1104-1": head}, ""),
+        ancestor=lambda _r, _a, _h: True,
+        **world,
+    )
+    assert pushed == []
+    unpushed = lg.check(
+        root,
+        "edge",
+        branch_release=True,
+        heads=lambda _r: ({}, ""),
+        ancestor=lambda _r, _a, _h: False,
+        **{**world, "sentinel": lambda _v: True},
+    )
+    assert [r.code for r in unpushed] == ["origin-main", "origin-main", "lock"]
+
+
+def test_check_branch_release_is_edge_only(tmp_path: pathlib.Path) -> None:
+    root = green_world(tmp_path)
+    got = lg.check(root, "stable", branch_release=True, fetch=lambda _r: (None, "unused"))
+    assert [(r.code, r.message) for r in got] == [
+        ("usage", "--branch-release applies to --channel edge only")
+    ]
+    with pytest.raises(SystemExit) as exc:
+        lg.main(["--channel", "stable", "--branch-release"])
+    assert exc.value.code == 2
+
+
 # --------------------------------------------------------------------------- (f) the release lock
 
 

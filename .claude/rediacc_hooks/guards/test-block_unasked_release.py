@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Control harness for block_unasked_release: the release entry only when asked, a real Enterprise company's release only when asked, no raw publish verb, no hand write into the release clone.
 
-BOTH DIRECTIONS, through the real dispatcher. Every refusal has an admission twin that differs by one planted fact: `--dry-run` after `--` against before it, a proven `RELEASE_ASKED` minute against an unproven, malformed or missing one, `--target bench` against another target, `--region eu` against another region, a branch push against a `v*` tag push, a build against a push, a read of the release clone against a write.
+BOTH DIRECTIONS, through the real dispatcher. Every refusal has an admission twin that differs by one planted fact: `--dry-run` after `--` against before it (a branch release's included), a proven `RELEASE_ASKED` minute against an unproven, malformed or missing one, `--target bench` against another target, `--region eu` against another region, a branch push against a `v*` tag push, a build against a push, a read of the release clone against a write.
 
 THE ASKED PROOF is driven against a planted transcript holding one AskUserQuestion answered at 00:00:30Z: `ASKED:2026-01-01T00:00Z` is inside the 300 s window and `ASKED:2026-01-01T00:10Z` is not, and the same proven minute with no transcript in the payload is refused.
 
@@ -86,6 +86,7 @@ TR = transcript("2026-01-01T00:00:30Z")
 ASK = "RELEASE_ASKED=ASKED:2026-01-01T00:00Z"
 ASK_ELSEWHERE = "RELEASE_ASKED=ASKED:2026-01-01T00:10Z"
 ENTRY = "npm run release:local -- --channel edge"
+BRANCH = ENTRY + " --workers-only --branch-release"
 PY = "PYTHONPATH=.ci python3 -m"
 CLONE = ".ci/cache/release/abc"
 BWS = "%s rediacc_ci.core.bws_env exec --profile deploy-workers --" % PY
@@ -156,6 +157,51 @@ CASES = [
         TR,
         B,
         "promoted through CI/CD only",
+    ),
+    # ------------------------------------------------------------- the entry: a branch release asks, its dry run stays free
+    ("entry: branch release, no ASKED", BRANCH, None, B, "carries no RELEASE_ASKED=ASKED:"),
+    (
+        "entry: branch release, proven ASKED",
+        "%s %s" % (ASK, BRANCH),
+        TR,
+        A,
+        "admitted by RELEASE_ASKED",
+    ),
+    (
+        "entry: branch release, ASKED matching no answer",
+        "%s %s" % (ASK_ELSEWHERE, BRANCH),
+        TR,
+        B,
+        "matches no AskUserQuestion answer",
+    ),
+    ("entry: branch release, dry run", BRANCH + " --dry-run", None, A, "!BLOCKED"),
+    (
+        "entry: branch release, dry run before the separator",
+        "npm run release:local --dry-run -- --channel edge --workers-only --branch-release",
+        None,
+        B,
+        "release:local --branch-release",
+    ),
+    (
+        "entry: branch release by module, no ASKED",
+        "%s rediacc_ci.release.local --channel edge --workers-only --branch-release" % PY,
+        None,
+        B,
+        "carries no RELEASE_ASKED",
+    ),
+    (
+        "entry: branch release by module, proven ASKED",
+        "%s %s rediacc_ci.release.local --channel edge --workers-only --branch-release" % (ASK, PY),
+        TR,
+        A,
+        "admitted by RELEASE_ASKED",
+    ),
+    (
+        "entry: branch release inside the devbox",
+        "%s %s" % (DEVBOX, BRANCH),
+        None,
+        B,
+        "--branch-release",
     ),
     # ------------------------------------------------------------- the ASKED proof, on a stable CLI promote
     ("stable: proven ASKED", "%s %s" % (ASK, PROMOTE), TR, A, "admitted by RELEASE_ASKED"),
@@ -1313,6 +1359,8 @@ MUST_FLIP = {
     "asked-always-true": "stable: ASKED matching no answer",
     "channel-before-separator": "entry: channel before the separator",
     "any-channel-admitted": "entry: stable channel",
+    "branch-release-free": "entry: branch release, no ASKED",
+    "branch-release-dry-run-ignored": "entry: branch release, dry run",
     "unshared-config-unasked": "wrangler deploy on a config outside the region set, no ASKED",
     "region-config-asked": "wrangler deploy on a shared region config",
     "region-list-ignored": "wrangler deploy on a region-shaped config of no region",

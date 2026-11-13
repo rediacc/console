@@ -441,6 +441,190 @@ def test_regions_needs_workers_only() -> None:
         local.parse(["--channel", "edge", "--regions", "eu"])
 
 
+# --------------------------------------------------------------------------- --branch-release
+
+BRANCH_ARGV = ["--channel", "edge", "--workers-only", "--regions", "eu", "--branch-release"]
+HEAD_SHA = "0123456789abcdef" * 2 + "01234567"
+
+
+def _heads(branch: str = "1104-1"):
+    def heads(root: pathlib.Path) -> tuple[dict[str, str] | None, str]:
+        del root
+        return {"main": "f" * 40, branch: HEAD_SHA}, ""
+
+    return heads
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["--channel", "edge", "--branch-release"],
+        ["--channel", "edge", "--dry-run", "--branch-release"],
+        ["--channel", "stable", "--workers-only", "--branch-release"],
+        # No abbreviation reaches the run as the flag: block_unasked_release judges the exact word.
+        ["--channel", "edge", "--workers-only", "--branch"],
+    ],
+)
+def test_branch_release_outside_edge_workers_only_is_a_usage_error(
+    argv: list[str], capsys: pytest.CaptureFixture[str]
+) -> None:
+    with pytest.raises(SystemExit) as exc:
+        local.parse(argv)
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert local.BRANCH_RELEASE_USAGE in err or "unrecognized arguments: --branch" in err
+
+
+@pytest.mark.parametrize("asked", [None, "", "ASKED:2026-11-13T05:02", "2026-11-13T05:02Z"])
+def test_branch_release_without_release_asked_refuses_before_any_step(
+    asked: str | None, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    if asked is None:
+        monkeypatch.delenv(local.ASK_ENV, raising=False)
+    else:
+        monkeypatch.setenv(local.ASK_ENV, asked)
+    runner = FakeRunner()
+    seen: list[str] = []
+
+    def gates(root, version, ctx):
+        del root, version, ctx
+        seen.append("gates")
+        return local.GateResult([], [])
+
+    for argv in (BRANCH_ARGV, [*BRANCH_ARGV, "--dry-run"]):
+        rc = local.main(argv, runner=runner, gates=gates, heads=_heads())
+        assert rc == 2
+        assert "RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z" in capsys.readouterr().err
+    assert runner.calls == []
+    assert seen == []
+
+
+def test_the_gates_row_carries_branch_release_only_on_a_branch_release() -> None:
+    (plain,) = [s for s in WORKERS if s.kind == "gates"]
+    assert "--branch-release" not in plain.argv
+    branch = local.plan(REGIONS, workers_only=True, branch_release=True)
+    (gates,) = [s for s in branch if s.kind == "gates"]
+    assert gates.argv[-1] == "--branch-release"
+    assert ids(branch) == ids(WORKERS)
+
+
+def test_branch_context_names_the_branch_and_the_build_metadata(tmp_path: pathlib.Path) -> None:
+    got = local.branch_context(tmp_path, HEAD_SHA, "ASKED:2026-11-13T05:02Z", _heads())
+    assert got == {
+        "branch_release": "true",
+        "branch": "1104-1",
+        "asked": "ASKED:2026-11-13T05:02Z",
+        "build_meta": "+1104-1.01234567",
+    }
+    odd = local.branch_context(tmp_path, HEAD_SHA, "", _heads("feat/x_y"))
+    assert odd["build_meta"] == "+feat-x-y.01234567"
+    unpushed = local.branch_context(tmp_path, HEAD_SHA, "", lambda _r: ({}, ""))
+    assert unpushed["build_meta"] == "+unpushed.01234567"
+
+
+def _env_of(steps: list[local.Step], step_id: str, ctx: local.Context, key: str) -> str:
+    (step,) = [s for s in steps if s.id == step_id]
+    return local.child_env(step, ctx, ROOT)[key]
+
+
+def test_app_version_carries_the_build_metadata_on_a_branch_release(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = _tmp_root(tmp_path)
+    ctx = local.base_context(root, ["eu"], True)
+    ctx.update(version="9.9.9")
+    steps = local.plan(["eu"], workers_only=True, branch_release=True)
+    # Control: a plain workers-only run reports the live version itself.
+    assert _env_of(steps, "www-pages", ctx, "APP_VERSION") == "9.9.9"
+    assert _env_of(steps, "verify-endpoints", ctx, "VERSION") == "9.9.9"
+    ctx.update(local.branch_context(root, HEAD_SHA, "ASKED:2026-11-13T05:02Z", _heads()))
+    assert _env_of(steps, "www-pages", ctx, "APP_VERSION") == "9.9.9+1104-1.01234567"
+    assert _env_of(steps, "verify-endpoints", ctx, "VERSION") == "9.9.9+1104-1.01234567"
+    # The deploy records and the executor artifacts keep the live X.Y.Z release they select.
+    assert _env_of(steps, "www-deploy", ctx, "DEPLOY_RECORD_VERSION") == "9.9.9"
+    (proxy,) = [s for s in steps if s.id == "proxy-deploy-eu"]
+    argv = local.child_argv(proxy, ctx)
+    assert argv[argv.index("--version") + 1] == "9.9.9"
+
+
+def test_the_release_record_carries_the_branch_release_fields(tmp_path: pathlib.Path) -> None:
+    root = _tmp_root(tmp_path)
+    ctx = local.base_context(root, ["eu"], True)
+    ctx.update(version="9.9.9", run_id="t")
+    plain = local.release_record(local.Run(root, ctx))
+    assert plain["branch_release"] is False
+    assert plain["branch"] is None
+    assert plain["asked"] is None
+    assert plain["app_version"] == "9.9.9"
+    assert plain["head_sha"] == ctx["sha"]
+    ctx.update(local.branch_context(root, ctx["sha"], "ASKED:2026-11-13T05:02Z", _heads()))
+    record = local.release_record(local.Run(root, ctx))
+    assert record["branch_release"] is True
+    assert record["branch"] == "unpushed"  # the fixture's HEAD is not the planted branch tip
+    assert record["asked"] == "ASKED:2026-11-13T05:02Z"
+    assert record["head_sha"] == ctx["sha"]
+    assert record["app_version"] == "9.9.9+unpushed.%s" % ctx["sha"][:8]
+
+
+def test_a_branch_release_dry_run_prints_the_branch_and_hands_the_flag_to_the_gates(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setenv(local.ASK_ENV, "ASKED:2026-11-13T05:02Z")
+    monkeypatch.setattr(local, "prereq_refusals", no_prereqs)
+    monkeypatch.setattr(local, "internal_channel_version", _set_version)
+    monkeypatch.setattr(local, "base_context", _base_context_at(HEAD_SHA))
+    seen: dict[str, typing.Any] = {}
+
+    def gates(root, version, ctx):
+        del root
+        seen.update(version=version, branch_release=ctx["branch_release"])
+        return local.GateResult([], [])
+
+    rc = local.main([*BRANCH_ARGV, "--dry-run"], runner=FakeRunner(), gates=gates, heads=_heads())
+    out = capsys.readouterr().out
+    assert rc == 0, out
+    assert seen == {"version": "9.9.9", "branch_release": "true"}
+    lines = out.splitlines()
+    assert lines[0].startswith(
+        "release:local --channel edge --workers-only --regions eu --branch-release (dry run)"
+    )
+    assert (
+        "branch release: 1104-1 at %s; the Workers report 9.9.9+1104-1.01234567 "
+        "(RELEASE_ASKED=ASKED:2026-11-13T05:02Z)" % HEAD_SHA[:12]
+    ) in lines
+    assert re.search(r"rediacc_ci\.release\.local_gates .*--branch-release", out)
+    assert "--workers-only --regions eu --branch-release` executes" in lines[-1]
+
+
+def _base_context_at(sha: str):
+    real = local.base_context
+
+    def base_context(root, regions, workers_only):
+        ctx = real(root, regions, workers_only)
+        ctx["sha"] = sha
+        return ctx
+
+    return base_context
+
+
+def test_the_dry_gates_hand_branch_release_to_the_gates(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    seen: list[bool] = []
+
+    def check(root, channel, **kw):
+        del root, channel
+        seen.append(kw["branch_release"])
+        return []
+
+    monkeypatch.setattr(local.local_gates, "check", check)
+    ctx = local.Context(clone=str(tmp_path / "c"), releases_origin="https://x.invalid")
+    local.dry_gates(tmp_path, "9.9.9", ctx)
+    ctx["branch_release"] = "true"
+    local.dry_gates(tmp_path, "9.9.9", ctx)
+    assert seen == [False, True]
+
+
 @pytest.mark.parametrize(
     "argv",
     [

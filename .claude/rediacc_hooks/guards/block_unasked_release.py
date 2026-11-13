@@ -2,9 +2,9 @@
 
 WHY. agent/plans/PLAN-local-release.md moves the edge release to one local entry, `npm run release:local -- --channel edge [--dry-run]` (`rediacc_ci.release.local`, box W2-B). The operator ruling of 2026-10-27T09:45Z sets the line this guard (box W2-C) holds: "EU/ASIA/US stable should be asked! They're CI/CD only. BUT edge and bench could be released via agent or with CI/CD." agent/plans/PLAN-product-domain-rename.md then retires the stable Worker set (box W7): the edge and stable pairs become one shared Worker set per region, which the session deploys without asking. So:
 
-  1. EVERY SHARED WORKER DEPLOY IS FREE, with no question (the one exception is a Worker module run naming `--company` without `--company-bench`, which rule 4 asks for). PLAN-product-domain-rename (box W7) collapses the stable and edge Worker pairs into one shared set per region (`account-<r>`, `proxy-<r>`, `www`, plus bench), and its operator ruling 4 of 2026-11-05 lets the session deploy them without asking, so no stable Worker remains: `npm run release:local -- --channel edge` (with or without `--dry-run`), and every run of the Worker modules (`deploy_account`, `deploy_proxy`, `console_executor`, `account_secrets_local`, `deploy_www`, `deploy_bench`, `set_account_worker_secrets`, `set_www_worker_secrets`) whatever shared target it names, and `wrangler deploy|rollback|publish|versions deploy` on a shared region Worker's `wrangler.<region>.toml` (the region ids read from `regions.json` at the project root) kept in `workers/account` or `workers/proxy`, or named bare so it resolves in the working directory.
-  2. THE CLI'S STABLE CHANNEL NEEDS A PROVEN ASK: the promote verbs (`promote_r2_to_stable`, its hotfix twin, `promote_docker_to_stable_hotfix`, `mark_production`), and a `wrangler deploy|rollback` on a config that is neither a shared region Worker's nor a bench or preview one (`wrangler.toml` of `workers/mta-sts`, `workers/ops-health` or `workers/www` raw, `wrangler.dev.toml`). Each is admitted only when the command carries `RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z` and that minute matches an AskUserQuestion answer in the payload's transcript within 300 s. The proof is `wl_checks._asked_in_transcript`, imported, the same check `block_vm_unverified_push` and `block_backup_unverified_push` use.
-  3. `release:local --channel stable` IS REFUSED OUTRIGHT, dry run included, and RELEASE_ASKED does not admit it: stable is promoted by `.github/workflows/cd-release-stable.yml` only. A run of the entry naming no channel is refused too, and each launcher is told its own reason: npm hands the script only the words after `--` (`npm run release:local --channel edge` reaches the script with no channel at all), while `python3 -m rediacc_ci.release.local` sees every word and simply names none.
+  1. EVERY SHARED WORKER DEPLOY IS FREE, with no question (the one exception is a Worker module run naming `--company` without `--company-bench`, which rule 4 asks for). PLAN-product-domain-rename (box W7) collapses the stable and edge Worker pairs into one shared set per region (`account-<r>`, `proxy-<r>`, `www`, plus bench), and its operator ruling 4 of 2026-11-05 lets the session deploy them without asking, so no stable Worker remains: `npm run release:local -- --channel edge` (with or without `--dry-run`; a `--branch-release` run is rule 2's), and every run of the Worker modules (`deploy_account`, `deploy_proxy`, `console_executor`, `account_secrets_local`, `deploy_www`, `deploy_bench`, `set_account_worker_secrets`, `set_www_worker_secrets`) whatever shared target it names, and `wrangler deploy|rollback|publish|versions deploy` on a shared region Worker's `wrangler.<region>.toml` (the region ids read from `regions.json` at the project root) kept in `workers/account` or `workers/proxy`, or named bare so it resolves in the working directory.
+  2. THE CLI'S STABLE CHANNEL, AND A BRANCH RELEASE, NEED A PROVEN ASK: `release:local --channel edge --workers-only --branch-release` without `--dry-run` (it deploys a pushed branch head, not origin/main, to the shared Workers that serve public eu/us/asia; operator ruling ASKED:2026-11-13T05:02Z; its dry run reads no secret and writes nothing, so it stays free), the promote verbs (`promote_r2_to_stable`, its hotfix twin, `promote_docker_to_stable_hotfix`, `mark_production`), and a `wrangler deploy|rollback` on a config that is neither a shared region Worker's nor a bench or preview one (`wrangler.toml` of `workers/mta-sts`, `workers/ops-health` or `workers/www` raw, `wrangler.dev.toml`). Each is admitted only when the command carries `RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z` and that minute matches an AskUserQuestion answer in the payload's transcript within 300 s. The proof is `wl_checks._asked_in_transcript`, imported, the same check `block_vm_unverified_push` and `block_backup_unverified_push` use.
+  3. `release:local --channel stable` IS REFUSED OUTRIGHT, dry run included, and RELEASE_ASKED does not admit it: stable is the CLI channel the Enterprise company Workers ride through rings (PLAN-enterprise-isolation ruling 12), promoted by `.github/workflows/cd-release-stable.yml` only. A run of the entry naming no channel is refused too, and each launcher is told its own reason: npm hands the script only the words after `--` (`npm run release:local --channel edge` reaches the script with no channel at all), while `python3 -m rediacc_ci.release.local` sees every word and simply names none.
   4. AN ENTERPRISE COMPANY'S RELEASE NEEDS A PROVEN ASK, because company Workers carry the stable channel (agent/plans/PLAN-enterprise-isolation.md box K2): the ring runner `python3 -m rediacc_ci.release.rings_run`, spelled also `./run.sh enterprise release` and `python3 -m rediacc_ci enterprise release`, is admitted freely with `--bench` (fake companies on bench), `--dry-run` or `--help`, and otherwise only with a proven RELEASE_ASKED. A Worker module run naming `--company` without `--company-bench` deploys one real company's Worker outside the runner, so it needs the same ask; the shared Worker sets of rule 1 stay free.
   5. THE RAW PUBLISH VERBS STAY REFUSED, with no escape: `gh release create|upload|edit|delete`, a `git push` of a `v*` tag (`refs/tags/v*`, `--tags`, `--mirror`, and `--follow-tags` on any push but the GitLab mirror push of `main`), `docker push` (and `image push`, `manifest push`, `compose push|publish`, `compose build --push`), a `docker build`/`buildx build` with `--push` or a registry output (`-o` attached or bundled too), `docker buildx imagetools create`, `wrangler pages deploy|publish`, a `wrangler deploy|rollback|publish|versions deploy` on a bench or preview config (judged on the config's file name, never the directories above it; `deploy_bench` and `deploy_proxy --target bench` are its path), and `-m` on the release entry's own steps (`upload_to_r2`, `upload_repos_to_r2`, `write_release_sentinel`, `create_github_release`, `tag_submodules`, `update_homebrew_tap`), which the entry runs in order with its gates and record.
 
@@ -48,6 +48,14 @@ MUTANTS = {
         "    tail = args\n    return _option(tail",
     ),
     "any-channel-admitted": ('    if channel == "edge":\n', "    if True:\n"),
+    "branch-release-free": (
+        'return "ask", BRANCH_RELEASE_WHAT, ""',
+        'return "", BRANCH_RELEASE_WHAT, ""',
+    ),
+    "branch-release-dry-run-ignored": (
+        "and DRY_RUN_FLAG not in words",
+        "and True",
+    ),
     "unshared-config-unasked": (
         'return "ask", "wrangler %s on %s (no shared',
         'return "", "wrangler %s on %s (no shared',
@@ -178,9 +186,16 @@ STEP_MODULES = (
 )
 PUBLISH_MODULES = (*WORKER_MODULES, *STABLE_MODULES, *STEP_MODULES)
 STABLE_CHANNEL_REFUSAL = (
-    "release:local --channel stable: stable is promoted through CI/CD only "
-    "(.github/workflows/cd-release-stable.yml, operator ruling 2026-10-27T09:45Z); "
-    "RELEASE_ASKED does not admit it"
+    "release:local --channel stable: stable is the CLI channel Enterprise company Workers ride "
+    "through rings, promoted through CI/CD only (.github/workflows/cd-release-stable.yml, "
+    "operator ruling 2026-10-27T09:45Z); RELEASE_ASKED does not admit it"
+)
+# A branch release deploys a pushed branch head to the shared Workers that serve public eu/us/asia (operator ruling 2026-11-13T05:02Z); the entry parses with allow_abbrev=False, so the flag is judged as one exact word.
+BRANCH_RELEASE_FLAG = "--branch-release"
+DRY_RUN_FLAG = "--dry-run"
+BRANCH_RELEASE_WHAT = (
+    "release:local --branch-release (a pushed branch head to the shared edge Workers of "
+    "public eu/us/asia)"
 )
 NO_CHANNEL_REFUSAL = (
     "release:local names no --channel edge after `--` (npm hands the script only the words "
@@ -306,7 +321,7 @@ MESSAGE = """BLOCKED: this command publishes, or reaches the release clone, outs
 EVERY WORKER DEPLOY IS FREE: the stable and edge Worker pairs are one shared set per region
 (PLAN-product-domain-rename, operator ruling 4 of 2026-11-05):
 
-    npm run release:local -- --channel edge [--dry-run]
+    npm run release:local -- --channel edge [--dry-run] [--workers-only]
     PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_account --region <r>
     PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target <t> --region <r>
     npx wrangler deploy --config wrangler.<region>.toml
@@ -316,6 +331,9 @@ outside the shared region set, needs the operator's answer first, and the ASKED 
 an AskUserQuestion answer in this session's transcript (within 300 s):
 
     RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z <the command>
+
+A branch release (`release:local -- --channel edge --workers-only --branch-release`, not a dry
+run) deploys a pushed branch head to public production, and needs the same proven ask.
 
 An Enterprise company's release (`rings_run` or `./run.sh enterprise release` without `--bench`
 or `--dry-run`), or a Worker module run naming a real `--company`, needs the same proven ask.
@@ -572,9 +590,18 @@ def _channel(args, npm):
     return _option(tail, "--channel")
 
 
-def _entry_verdict(channel, npm):
-    """`(kind, what, note)` for a run of the release entry on `channel`, launched through `npm run` when `npm` is true."""
+def _entry_words(args, npm):
+    """The words a run of the entry hands the script: for npm only those after `--` (`_channel` says why), for the module every word."""
+    if not npm:
+        return list(args)
+    return args[args.index("--") + 1 :] if "--" in args else []
+
+
+def _entry_verdict(channel, npm, words=()):
+    """`(kind, what, note)` for a run of the release entry on `channel` with the script's own `words`, launched through `npm run` when `npm` is true."""
     if channel == "edge":
+        if BRANCH_RELEASE_FLAG in words and DRY_RUN_FLAG not in words:
+            return "ask", BRANCH_RELEASE_WHAT, ""
         return "", "", ""
     if channel == "stable":
         return "refuse", STABLE_CHANNEL_REFUSAL, ""
@@ -848,10 +875,15 @@ def _publish(run, where, root):
     args = list(run.argv)
     npm = _npm_run(run)
     if npm is not None and npm[0] == RELEASE_SCRIPT:
-        return _entry_verdict(_channel(npm[1], npm=True), npm=True)
+        return _entry_verdict(
+            _channel(npm[1], npm=True), npm=True, words=_entry_words(npm[1], npm=True)
+        )
     module = _module(run, where)
     if module == RELEASE_MODULE:
-        return _entry_verdict(_channel(_module_args(run), npm=False), npm=False)
+        rest = _module_args(run)
+        return _entry_verdict(
+            _channel(rest, npm=False), npm=False, words=_entry_words(rest, npm=False)
+        )
     if module == RINGS_MODULE:
         return _rings_verdict(_module_args(run), root)
     if name == "run.sh" and args[:2] == RINGS_VERB:
