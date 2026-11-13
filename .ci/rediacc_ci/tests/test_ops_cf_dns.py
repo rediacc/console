@@ -143,6 +143,39 @@ def test_comment_without_label_passes():
     assert ensure(http, name="acme." + ZONE, comment="tenant host").action == "created"
 
 
+def test_a_short_label_matches_whole_words_only():
+    """8d3cf5ea.1: the label `ci` refuses the word `ci` and not `decision`."""
+    http = Rec()
+    assert ensure(http, name="ci." + ZONE, comment="decision log").action == "created"
+    with pytest.raises(cf_dns.DnsError, match="label"):
+        ensure(Rec(), name="ci." + ZONE, comment="the ci edge")
+
+
+def test_an_apex_record_comment_may_name_the_product():
+    """8d3cf5ea.2: the apex has no host label, so a zone label in the comment is fine."""
+    product = ZONE.split(".")[0]
+    http = Rec()
+    assert ensure(http, name=ZONE, comment="%s apex" % product).action == "created"
+
+
+def test_records_reads_every_page():
+    """8d3cf5ea.3: a zone with more than one page lists all of them."""
+    pages = {
+        1: [{"id": str(i), "type": "A"} for i in range(cf_dns.PAGE_SIZE)],
+        2: [{"id": "last", "type": "A"}],
+    }
+    seen: list[str] = []
+
+    def http(_method, path, _body=None):
+        seen.append(path)
+        page = int(path.rsplit("page=", 1)[1])
+        return {"success": True, "result": pages[page]}
+
+    assert len(cf_dns.records(ZONE, None, http)) == cf_dns.PAGE_SIZE + 1
+    assert len(seen) == 2
+    assert len(cf_dns.records(ZONE, None, Rec([{"id": "x"}]))) == 1
+
+
 def test_unknown_zone_refused():
     with pytest.raises(cf_dns.DnsError, match="unknown zone"):
         cf_dns.records("nope.example", None, Rec())

@@ -6,7 +6,7 @@
 
 `<zone>` is a zone name from `apply_cf_redirect_rules.ZONE_IDS`. `<name>` is the full host name. Auth is `apply_cf_redirect_rules.auth_headers` (`CLOUDFLARE_API_TOKEN`, or `CF_GLOBAL_API_KEY` + `CF_EMAIL`).
 
-`ensure_record` is idempotent: it creates the record, updates it in place when content, proxied flag or comment differ, and leaves it alone when they match. It refuses a record of another type at the same name (A and AAAA may share a name; a CNAME shares with nothing). A record comment never carries a company label: a comment containing any label of the host name below the zone is refused.
+`ensure_record` is idempotent: it creates the record, updates it in place when content, proxied flag or comment differ, and leaves it alone when they match. It refuses a record of another type at the same name (A and AAAA may share a name; a CNAME shares with nothing). A record comment never carries a company label: a comment containing, as a whole word, any label of the host name below the zone is refused (an apex record has no such label). `show` reads every page of the zone's records.
 
 A Cloudflare error shows Cloudflare's own `errors[].message`. Nothing here runs a live call unless the CLI is invoked.
 """
@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import dataclasses
 import json
+import re
 import sys
 import typing
 
@@ -25,6 +26,8 @@ Http = typing.Callable[[str, str, "dict | None"], dict]
 
 ADDRESS_TYPES = frozenset({"A", "AAAA"})
 USAGE = __doc__
+PAGE_SIZE = 100
+MAX_PAGES = 100
 
 
 class DnsError(Exception):
@@ -74,18 +77,28 @@ def _result(body: dict, what: str) -> typing.Any:
 
 def records(zone: str, name: str | None, http: Http) -> list[dict]:
     """The zone's DNS records, filtered to `name` when given."""
-    path = "/zones/%s/dns_records?per_page=100" % zone_id(zone)
+    base = "/zones/%s/dns_records?per_page=%d" % (zone_id(zone), PAGE_SIZE)
     if name:
-        path += "&name=" + name
-    found = _result(http("GET", path, None), "listing DNS records")
-    return list(found or [])
+        base += "&name=" + name
+    out: list[dict] = []
+    for page in range(1, MAX_PAGES + 1):
+        body = http("GET", "%s&page=%d" % (base, page), None)
+        found = list(_result(body, "listing DNS records") or [])
+        out += found
+        total = (body.get("result_info") or {}).get("total_pages")
+        if len(found) < PAGE_SIZE or (isinstance(total, int) and page >= total):
+            return out
+    raise DnsError("listing DNS records: more than %d pages" % MAX_PAGES)
 
 
 def _check_comment(zone: str, name: str, comment: str) -> None:
-    labels = [x for x in name.removesuffix("." + zone).split(".") if x and x != "*"]
+    # The apex has no host label: its zone labels are the product's own name, not a company's.
+    host = "" if name == zone else name.removesuffix("." + zone)
+    labels = [x for x in host.split(".") if x and x != "*"]
     lowered = comment.lower()
     for label in labels:
-        if label.lower() in lowered:
+        # A whole word only: the label `ci` must not refuse `decision log`.
+        if re.search(r"(?<![a-z0-9])%s(?![a-z0-9])" % re.escape(label.lower()), lowered):
             raise DnsError("the record comment must not carry a host label (found %r)" % label)
 
 
