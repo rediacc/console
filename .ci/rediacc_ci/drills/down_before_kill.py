@@ -470,6 +470,15 @@ def up_after_verdict(events: list[tuple[str, int]], at: int) -> tuple[bool, str]
     return False, "no up line at or after %d" % at
 
 
+def failure_tail(res: Any, lines: int = 3) -> str:
+    """` -- <last lines>` of a failed call's output (stdout and stderr), empty for a success: a K1.0 `rdc repo up` that exited 1 on 2026-11-13 left no reason in the ledger and no log on disk."""
+    if getattr(res, "rc", 0) == 0:
+        return ""
+    text = (str(getattr(res, "out", "") or "") + "\n" + str(getattr(res, "err", "") or "")).strip()
+    kept = [ln.strip() for ln in text.splitlines() if ln.strip()][-lines:]
+    return " -- " + " | ".join(kept) if kept else " -- (no output)"
+
+
 def up_written_verdict(events: list[tuple[str, int]]) -> tuple[bool, str]:
     """(ok, evidence) of K1.0: the probe's `up()` ran at least once."""
     ups = [ts for kind, ts in events if kind == "up"]
@@ -654,7 +663,7 @@ class _LiveK1:
                     "K1.0 %s is up and its up() wrote a line" % ref,
                     up.rc == 0 and ok and st["active"] == "active",
                     up,
-                    "rc=%d active=%s %s" % (up.rc, st["active"], why),
+                    "rc=%d active=%s %s%s" % (up.rc, st["active"], why, failure_tail(up)),
                 )
                 and ok_all
             )

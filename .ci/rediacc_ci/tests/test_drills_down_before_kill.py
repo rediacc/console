@@ -1558,3 +1558,14 @@ def test_k1_6_a_prune_that_leaves_a_slot_is_a_failed_check(
     assert len(rows) == 1
     assert rows[0][1] is False
     assert "old-slot" in rows[0][2]
+
+
+def test_failure_tail_names_a_failed_calls_last_output_lines() -> None:
+    """A K1.0 `rdc repo up` that exited 1 (2026-11-13) left no reason; the evidence now carries its tail."""
+    failed = types.SimpleNamespace(
+        rc=1, out="Starting\n", err="step a\nstep b\nERROR: unit failed\n"
+    )
+    assert k.failure_tail(failed) == " -- step a | step b | ERROR: unit failed"
+    assert k.failure_tail(types.SimpleNamespace(rc=2, out="", err="")) == " -- (no output)"
+    # control: a success adds nothing
+    assert k.failure_tail(types.SimpleNamespace(rc=0, out="fine", err="")) == ""
