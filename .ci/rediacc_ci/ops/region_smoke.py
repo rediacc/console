@@ -65,6 +65,7 @@ CHILD_SECRET_NAMES = (
 )
 SCRUBBED_SELECTORS = ("RDC_DEV", "REDIACC_CONFIG", "REDIACC_TOKEN", "REDIACC_ACCOUNT_SERVER")
 ALREADY_EXISTS = "already exists"
+ALREADY_ENABLED = "is already linked to remote storage and this device can open it"
 BASELINE_DIR = (".ci", "state", "region-smoke")
 USAGE = (
     "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.ops.region_smoke "
@@ -72,7 +73,7 @@ USAGE = (
 )
 
 Runner = Callable[[Sequence[str], Mapping[str, str]], int]
-Capture = Callable[[Sequence[str], Mapping[str, str]], tuple[int, str]]
+Capture = Callable[..., tuple[int, str]]
 
 
 class SmokeError(RuntimeError):
@@ -194,7 +195,10 @@ def content_digest(out: str) -> str:
     try:
         document = json.loads(out)
     except ValueError:
-        raise SmokeError("config show did not print a JSON document: %r" % out[:200]) from None
+        # The text is the probe account's config content, so only its size is reported.
+        raise SmokeError(
+            "config show did not print a JSON document (%d bytes)" % len(out)
+        ) from None
     return canonical_digest(document)
 
 
@@ -247,12 +251,16 @@ def _subprocess_runner(argv: Sequence[str], env: Mapping[str, str]) -> int:
     ).returncode
 
 
-def _subprocess_capture(argv: Sequence[str], env: Mapping[str, str]) -> tuple[int, str]:
+def _subprocess_capture(
+    argv: Sequence[str], env: Mapping[str, str], merge_stderr: bool = False
+) -> tuple[int, str]:
+    """(exit status, stdout); with `merge_stderr` the CLI's error lines are part of the text, since a thrown error is printed on stderr."""
     proc = subprocess.run(
         list(argv),
         env=dict(env),
         cwd=str(paths.repo_root()),
         stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT if merge_stderr else None,
         text=True,
         check=False,
     )
@@ -274,7 +282,9 @@ def smoke(
     clean = base_env(env)
 
     log.step("Creating the probe config %s" % config)
-    init_rc, init_out = capture(_rdc(config, "config", "init", config), dict(clean))
+    init_rc, init_out = capture(
+        _rdc(config, "config", "init", config), dict(clean), merge_stderr=True
+    )
     if init_rc != 0 and ALREADY_EXISTS not in init_out:
         raise SmokeError("config init %s failed (exit %d)" % (config, init_rc))
 
@@ -304,8 +314,9 @@ def smoke(
             server,
         ),
         enable_env,
+        merge_stderr=True,
     )
-    if rc != 0 and "this device can open it" not in out:
+    if rc != 0 and ALREADY_ENABLED not in out:
         raise SmokeError("config remote enable failed (exit %d)" % rc)
 
     log.step("Reading the store through %s (config remote refresh)" % server)

@@ -36,7 +36,8 @@ class FakeRdc:
         self.calls.append((list(argv), dict(env)))
         return self._rc(argv)
 
-    def capture(self, argv, env):
+    def capture(self, argv, env, merge_stderr=False):
+        del merge_stderr
         self.calls.append((list(argv), dict(env)))
         rc = self._rc(argv)
         return rc, (self.show if argv[-2:] == ["config", "show"] else "")
@@ -112,10 +113,11 @@ def test_a_failed_step_is_named_and_exits_1(fail: str, named: str) -> None:
 
 def test_config_init_that_already_exists_is_not_a_failure() -> None:
     class Exists(FakeRdc):
-        def capture(self, argv, env):
+        def capture(self, argv, env, merge_stderr=False):
             if argv[-3:-1] == ["config", "init"]:
-                return 1, 'Config "region-smoke-eu" already exists'
-            return super().capture(argv, env)
+                # The CLI prints this thrown error on stderr: seen only when the caller merges it.
+                return 1, ('Config "region-smoke-eu" already exists' if merge_stderr else "")
+            return super().capture(argv, env, merge_stderr)
 
     assert _smoke(Exists())
 
@@ -226,3 +228,37 @@ def test_a_region_without_a_declared_profile_is_refused_naming_it(
 def test_the_bench_profile_is_declared_and_the_declared_set_is_read_from_the_supply_file() -> None:
     assert rs.profile_for("bench") in rs.declared_profiles()
     assert rs.profile_for("mars") not in rs.declared_profiles()
+
+
+def test_a_failing_remote_enable_with_a_partial_phrase_is_a_failed_step() -> None:
+    """4f1397c0.3: only the CLI's already-linked message excuses a non-zero enable."""
+
+    class Enable(FakeRdc):
+        text = ""
+
+        def capture(self, argv, env, merge_stderr=False):
+            if "enable" in argv:
+                return 1, self.text
+            return super().capture(argv, env, merge_stderr)
+
+    partial = Enable()
+    partial.text = "token refused: this device can open it later"
+    with pytest.raises(rs.SmokeError, match="remote enable"):
+        _smoke(partial)
+    linked = Enable()
+    linked.text = 'Config "x" is already linked to remote storage and this device can open it, so'
+    assert _smoke(linked)
+
+
+def test_the_capture_merges_stderr_only_when_asked() -> None:
+    """4f1397c0.2: the real subprocess path, with a child that writes to stderr."""
+    argv = ["sh", "-c", "echo oops >&2; exit 1"]
+    assert rs._subprocess_capture(argv, {}, merge_stderr=True) == (1, "oops\n")
+    assert rs._subprocess_capture(argv, {}) == (1, "")
+
+
+def test_a_non_json_config_show_error_does_not_carry_the_output() -> None:
+    """4f1397c0.1: the config content never reaches the error text."""
+    with pytest.raises(rs.SmokeError) as err:
+        _smoke(FakeRdc(show="machines: SECRET-CONTENT"))
+    assert "SECRET-CONTENT" not in str(err.value)
