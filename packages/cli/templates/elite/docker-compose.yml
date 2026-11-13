@@ -6,6 +6,9 @@ services:
     depends_on:
       rustfs:
         condition: service_healthy
+      # The buckets exist before the server starts; rustfs-init exits 0 once both are there.
+      rustfs-init:
+        condition: service_completed_successfully
     environment:
       - ENABLE_HTTPS=false
       - DATABASE_PATH=${DATABASE_PATH:-/data/account.db}

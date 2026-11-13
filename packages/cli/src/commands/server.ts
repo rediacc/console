@@ -92,6 +92,13 @@ function locatorOptions(command: Command): Command {
     .option('--repo <name>', t('commands.server.optionRepo'));
 }
 
+/** The marker's `at` as `YYYY-MM-DD HH:MMZ` in UTC, whatever offset it carries; `?` when it is absent or not a date. */
+function refusedAt(raw: string): string {
+  const date = new Date(raw);
+  if (!raw || Number.isNaN(date.getTime())) return raw || '?';
+  return `${date.toISOString().slice(0, 16).replace('T', ' ')}Z`;
+}
+
 /** The status lines; a refused cert prints as one `cert` line plus the command that fixes it. */
 function reportStatus(result: StatusResult, domain: string): void {
   for (const [key, value] of Object.entries(result)) {
@@ -99,7 +106,7 @@ function reportStatus(result: StatusResult, domain: string): void {
   }
   if (!result.certRefused) return;
   const { reason } = result.certRefused;
-  const at = result.certRefused.at.replace('T', ' ').replace(/:\d\d(\.\d+)?Z$/, 'Z');
+  const at = refusedAt(result.certRefused.at);
   outputService.report(
     `${'cert'.padEnd(24)} ${t('commands.server.status.certRefused', { reason, at })}`
   );

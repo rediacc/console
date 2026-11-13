@@ -6,8 +6,12 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { fetchMock } = vi.hoisted(() => ({ fetchMock: vi.fn() }));
+const { fetchMock, guardMock } = vi.hoisted(() => ({
+  fetchMock: vi.fn(),
+  guardMock: vi.fn(async () => undefined),
+}));
 vi.mock('../account-client.js', () => ({ accountServerFetch: fetchMock }));
+vi.mock('../active-config-guard.js', () => ({ assertActiveConfigExists: guardMock }));
 
 import { CliExitError } from '../../../utils/cli-exit-error.js';
 import { outputService } from '../../core/output.js';
@@ -62,6 +66,23 @@ describe('device-code login expiry', () => {
     );
 
     expect(error).toMatchObject({ code: 'AUTH_REQUIRED', retryable: true });
+  });
+});
+
+describe('a named config that does not exist', () => {
+  it('refuses before any request is made', async () => {
+    guardMock.mockRejectedValueOnce(new Error('config "typo" does not exist'));
+    await expect(
+      authorizeSubscriptionViaDeviceCode('https://example.com', { interactive: true })
+    ).rejects.toThrow('config "typo" does not exist');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('starts the device code when the config exists (control)', async () => {
+    fetchMock.mockResolvedValueOnce(INIT).mockResolvedValue({ status: 'expired' });
+    await settle(authorizeSubscriptionViaDeviceCode('https://example.com', { interactive: true }));
+    expect(guardMock).toHaveBeenCalled();
+    expect(fetchMock).toHaveBeenCalled();
   });
 });
 

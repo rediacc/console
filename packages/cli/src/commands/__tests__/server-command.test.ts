@@ -15,9 +15,13 @@ const m = vi.hoisted(() => ({
   licence: vi.fn(),
   confirm: vi.fn(),
   print: vi.fn(),
+  report: vi.fn(),
+  machine: true,
 }));
 
-vi.mock('../../i18n/index.js', () => ({ t: (key: string) => key }));
+vi.mock('../../i18n/index.js', () => ({
+  t: (key: string, p?: object) => (p ? `${key} ${JSON.stringify(p)}` : key),
+}));
 vi.mock('../../services/core/output.js', () => ({
   outputService: {
     info: vi.fn(),
@@ -25,10 +29,10 @@ vi.mock('../../services/core/output.js', () => ({
     warn: vi.fn(),
     error: vi.fn(),
     print: m.print,
-    report: vi.fn(),
+    report: m.report,
   },
 }));
-vi.mock('../../services/core/output-format.js', () => ({ isMachineReadable: () => true }));
+vi.mock('../../services/core/output-format.js', () => ({ isMachineReadable: () => m.machine }));
 vi.mock('../../services/core/request-context.js', () => ({ setExitCode: vi.fn() }));
 vi.mock('../../services/server/deps.js', () => ({ liveServerDeps: () => ({}) }));
 vi.mock('../../services/server/install.js', () => ({
@@ -64,6 +68,7 @@ function program(): Command {
 beforeEach(() => {
   vi.clearAllMocks();
   m.installOpts = undefined;
+  m.machine = true;
   m.run.mockResolvedValue({ domain: 'acme.example.com' });
   m.status.mockResolvedValue({ health: 200 });
   m.upgrade.mockResolvedValue({ rollback: 'acme:rollback' });
@@ -231,5 +236,46 @@ describe('rdc server', () => {
     expect(loc).toMatchObject({ domain: 'acme.example.com' });
     expect(cert).toBe('c.json');
     expect(m.print).toHaveBeenCalledWith({ subscriptionId: 'sub-1' }, 'json');
+  });
+
+  describe('status in the human-readable form', () => {
+    const lines = () => m.report.mock.calls.map((c) => String(c[0]));
+    const refusal = (at: string) => ({
+      health: 200,
+      certRefused: { reason: 'bad-signature', detail: 'd', at },
+    });
+    const run = () =>
+      program().parseAsync(['server', 'status', 'acme.example.com'], { from: 'user' });
+
+    it('prints the cert refusal and the command that fixes it', async () => {
+      m.machine = false;
+      m.status.mockResolvedValue(refusal('2026-11-01T10:20:30.123Z'));
+      await run();
+      const cert = lines().find((l) => l.startsWith('cert '));
+      expect(cert).toContain('commands.server.status.certRefused');
+      expect(cert).toContain('"reason":"bad-signature"');
+      expect(lines().some((l) => l.includes('commands.server.status.certRefusedRun'))).toBe(true);
+      expect(lines().some((l) => l.includes('"domain":"acme.example.com"'))).toBe(true);
+      expect(m.print).not.toHaveBeenCalled();
+    });
+
+    it('prints no cert line when nothing was refused (control)', async () => {
+      m.machine = false;
+      await run();
+      expect(lines().some((l) => l.startsWith('cert '))).toBe(false);
+      expect(lines().some((l) => l.includes('certRefusedRun'))).toBe(false);
+    });
+
+    it.each([
+      ['2026-11-01T10:20:30.123Z', '2026-11-01 10:20Z'],
+      ['2026-11-01T10:20:30+00:00', '2026-11-01 10:20Z'],
+      ['2026-11-01T12:20:30+02:00', '2026-11-01 10:20Z'],
+      ['', '?'],
+    ])('shows the timestamp %j as %j', async (at, shown) => {
+      m.machine = false;
+      m.status.mockResolvedValue(refusal(at));
+      await run();
+      expect(lines().find((l) => l.startsWith('cert '))).toContain(`"at":"${shown}"`);
+    });
   });
 });

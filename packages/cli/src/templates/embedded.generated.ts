@@ -217,6 +217,9 @@ info() {
     depends_on:
       rustfs:
         condition: service_healthy
+      # The buckets exist before the server starts; rustfs-init exits 0 once both are there.
+      rustfs-init:
+        condition: service_completed_successfully
     environment:
       - ENABLE_HTTPS=false
       - DATABASE_PATH=\${DATABASE_PATH:-/data/account.db}
@@ -398,7 +401,8 @@ load_images() {
     if ! docker image inspect "$ref" >/dev/null 2>&1; then
       docker load -i "$tar" || return 1
     fi
-    if [[ "$ref" == "$image" ]]; then
+    # Served only once the ref is present: a tar that does not hold the manifest's ref serves nothing.
+    if [[ "$ref" == "$image" ]] && docker image inspect "$ref" >/dev/null 2>&1; then
       served=1
     fi
   done
@@ -414,10 +418,10 @@ load_images() {
 
 up() {
   load_secrets || return 1
-  mkdir -p data/web data/rustfs
+  mkdir -p data/web data/rustfs || return 1
   # The cert inbox the server reads new certs from (rdc server licence drops them here).
-  mkdir -p -m 0700 data/web/cert-inbox
-  chmod 0700 data/web/cert-inbox
+  mkdir -p -m 0700 data/web/cert-inbox || return 1
+  chmod 0700 data/web/cert-inbox || return 1
   load_images || return 1
 
   renet compose -- up -d

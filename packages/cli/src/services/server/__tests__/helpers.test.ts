@@ -166,6 +166,81 @@ describe('the elite template', () => {
     expect(statSync(join(work, 'data/web/cert-inbox')).mode & 0o777).toBe(0o700);
   });
 
+  it('up stops before compose when the cert inbox cannot be created', () => {
+    const work = mkdtempSync(join(tmpdir(), 'elite-'));
+    writeFileSync(join(work, 'secrets.env'), 'ELITE_DOMAIN=a\n');
+    mkdirSync(join(work, 'data/web'), { recursive: true });
+    writeFileSync(join(work, 'data/web/cert-inbox'), 'in the way');
+    const script =
+      'cd "$1"; source "$2"; REQUIRED_VARS=(ELITE_DOMAIN); load_images() { :; }; renet() { echo ran > ran; }; up';
+    const result = rediaccfile(work, script);
+    expect(result.status).not.toBe(0);
+    expect(existsSync(join(work, 'ran'))).toBe(false);
+  });
+
+  describe('load_images', () => {
+    // docker is a shell function over a "present" file: `image inspect` succeeds for a listed ref,
+    // `load` makes the tar's own refs present, `pull` is recorded.
+    const run = (setup: { manifest?: string; tarHolds?: string; offline?: boolean }) => {
+      const work = mkdtempSync(join(tmpdir(), 'elite-'));
+      mkdirSync(join(work, 'images'));
+      writeFileSync(join(work, 'images/server.tar'), '');
+      if (setup.manifest !== undefined)
+        writeFileSync(join(work, 'images/manifest.txt'), setup.manifest);
+      const script = [
+        'cd "$1"; source "$2"; TAG=1; : > present; : > pulled',
+        setup.offline ? 'ELITE_OFFLINE=1' : ':',
+        `docker() { case "$1" in image) grep -qx "$3" present;; load) echo '${setup.tarHolds ?? ''}' >> present;; pull) echo "$2" >> pulled;; esac; }`,
+        'load_images; echo "rc=$?"; echo "pulled=$(cat pulled)"',
+      ].join('\n');
+      const result = rediaccfile(work, script);
+      return { out: result.stdout, err: result.stderr };
+    };
+    const REF = 'ghcr.io/rediacc/server:1';
+
+    it('serves the image from a tar whose manifest ref the load makes present', () => {
+      const r = run({ manifest: `server.tar ${REF}\n`, tarHolds: REF });
+      expect(r.out).toContain('rc=0');
+      expect(r.out).toContain('pulled=\n');
+    });
+
+    it('pulls when the tar did not bring the manifest ref', () => {
+      const r = run({ manifest: `server.tar ${REF}\n`, tarHolds: 'other:1' });
+      expect(r.out).toContain('rc=0');
+      expect(r.out).toContain(`pulled=${REF}`);
+    });
+
+    it('refuses under ELITE_OFFLINE when the tar did not bring the manifest ref', () => {
+      const r = run({ manifest: `server.tar ${REF}\n`, tarHolds: 'other:1', offline: true });
+      expect(r.out).toContain('rc=1');
+      expect(r.err).toContain('ELITE_OFFLINE=1');
+      expect(r.out).toContain('pulled=\n');
+    });
+
+    it('refuses a tar the manifest does not name', () => {
+      const r = run({ manifest: 'other.tar x:1\n' });
+      expect(r.out).toContain('rc=1');
+      expect(r.err).toContain('has no ref for images/server.tar');
+    });
+  });
+
+  it('health resolves the domain to this machine and trusts ELITE_CA_FILE when set', () => {
+    const work = mkdtempSync(join(tmpdir(), 'elite-'));
+    writeFileSync(join(work, 'secrets.env'), 'ELITE_DOMAIN=acme.example.com\n');
+    const script =
+      'cd "$1"; source "$2"; REQUIRED_VARS=(ELITE_DOMAIN); curl() { printf "%s\n" "$@" >&2; }; health; ELITE_CA_FILE=/ca.pem health';
+    const lines = rediaccfile(work, script).stderr.split('\n');
+    expect(lines).toContain('acme.example.com:443:127.0.0.1');
+    expect(lines).toContain('https://acme.example.com/health');
+    expect(lines.filter((l) => l === '--cacert')).toHaveLength(1);
+    expect(lines).toContain('/ca.pem');
+  });
+
+  it('web waits for the bucket init to complete', () => {
+    const text = read('docker-compose.yml');
+    expect(text).toMatch(/rustfs-init:\n\s+condition: service_completed_successfully/);
+  });
+
   it('the compose file carries no DELEGATION_CERT_BASE64, and ON_PREMISE_MODE defaults to true', () => {
     const text = read('docker-compose.yml');
     expect(text).not.toContain('DELEGATION_CERT_BASE64');
