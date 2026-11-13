@@ -1,14 +1,16 @@
-## SESSION d778be9d 2026-11-13T10:11:43Z
+## SESSION d778be9d 2026-11-13T11:09:28Z
 
 ## Next action
-1. Land group C (lease agent-aaaabc1118d9f2d83, 10 commits) once red fixer a0d49c4b (main checkout, uncommitted .ci edits incl. onboarding.py) reports and its files are committed; then the bootstrap fix b6079c0aba (lease agent-a64718513ee95b70a), group D console commits (lease agent-acd91fe92c5f20f01: 4edcbc31fd 1be0581dde d38f61fedb 8a2a14d8ea d455b4a6b1 73bb869a5e ee9e84f48e 9e58170000), group E (lease agent-ac926e688f08f398f: 8 console commits, private/account 315a594 873d278, private/elite 63c03d3) and its LEAD-EDITs to plan files; mark findings from the reports; ci:quick; push with TURBO_PUSH_REASON red-fix; publish eu/us/asia --branch-release (RELEASE_ASKED=ASKED:2026-11-13T05:02Z).
-2. Landed: groups A (gitlink 755db53f) and B (gitlink 2c8c71c1); marks still refused by the --test name rule: de542e7a.1 4328e3d2.2 7a9e23a8.4.
-3. Cloudflare leftovers #cbc778d4: operator ASKED:2026-11-13T10:07Z delete all four groups without archive, keep rediacc-public-data; writer a9d65501 builds cf_retire; then dry run, then delete --write --no-archive. L10 blocked on the eu-remote authenticator (operator).
-4. Drive backup #b1dba17a: task bz9tgzd0d, 10 repos to /mnt/d/rdc-backups; fixes 56d23f91, 1bead027.
-5. PLAN-d1-eu-jurisdiction: W1-W3 landed; next B0-B6 then P0-P7 (operator: now).
+1. When ci:quick task bobkr5o7i ends: read /tmp/ciq-1113e.log; if green, push 1104-1 with TURBO_PUSH_REASON='red-fix: PR 605 CI reds and review findings' (submodules first: git -C private/<x> push origin <sha>:refs/heads/1104-1), then publish eu/us/asia: RELEASE_ASKED=ASKED:2026-11-13T05:02Z bws deploy-workers npm run release:local -- --channel edge --workers-only --branch-release; then deploy_bench at the pushed head and rerun region-loss (--profile enterprise-mint, ENTERPRISE_PROOF_BWS_PROJECT=8dced6da-0624-43e7-ae25-b501006a8123) and the LP-bench proofs 9c610a87, ec915c2d. If red, spawn a lease fixer.
+2. After the push lands: cherry-pick W3 53ccf123f2 (lease agent-a89f8e05033ba3cfa, rdc config import-machine), tick PLAN-hostinger-to-bench 66727474; gc lease agent-a554ac4ad06dbdecd (38 dirty paths = the 63d7e510 locale patches already landed as d6de2a82; decide in gc).
+3. Cloudflare cleanup #cbc778d4: cf_retire stopped on rediacc-www-media with HTTP 429 after retries (16-wide emptying); lower concurrency in cf_retire (writer) then rerun `cf_retire delete --no-archive ASKED:2026-11-13T10:07Z --write` with --only for the rest (rediacc-www-media, edge-rediacc-backups-eu, edge-rediacc-configs-eu, rediacc-backups-probe, rediacc-configs-eu, Pages rediacc; rebuild the list from a fresh dry run). Keep rediacc-backups-eu until PLAN-hostinger-to-bench C7; remove the live-console-edge-* profiles from secret-supply.json, then delete edge-account-db-eu/us/asia.
+4. PLAN-hostinger-to-bench: W1 W2 W4 W5 ticked; next PLAN-d1-eu-jurisdiction bench wave B0-B6, then L2-L5 and C1-C8. P0 finding: machine status --licenses shows no renewalUrl (fix before C2).
+
+## Delegated
+none live: every writer reported; task bobkr5o7i (ci:quick), bz9tgzd0d (drive downloads, item #b1dba17a) and the wake timer run.
 
 ## Big pieces
-PLAN-d1-eu-jurisdiction (bench rehearsal then production eu), PLAN-product-domain-rename L10/L11/L12 (old Cloudflare objects), PLAN-enterprise-tenants region-loss proof.
+PLAN-d1-eu-jurisdiction, PLAN-hostinger-to-bench, PLAN-product-domain-rename L11 (Cloudflare), PLAN-enterprise-tenants region-loss.
 
 ## Owed ticks
-PLAN-detached-jobs.md#1d17b634, PLAN-health-checks-local.md#85f55665, PLAN-proxy-cd-six-targets.md#abe9b4eb, PLAN-production-key-only.md#6a1ca4a4, PLAN-enterprise-isolation.md#2878e08d a8892e0c 0a6e5712 e8b5ad6f 6041744e f4b49503 0fbd62dc cc583290 b343464b: live halves owed after the push and bench deploy at the pushed head.
+PLAN-detached-jobs.md#1d17b634, PLAN-health-checks-local.md#85f55665, PLAN-proxy-cd-six-targets.md#abe9b4eb, PLAN-production-key-only.md#6a1ca4a4, PLAN-enterprise-isolation.md#2878e08d a8892e0c 0a6e5712 e8b5ad6f 6041744e f4b49503 0fbd62dc cc583290 b343464b: live halves after the push and a bench deploy at the pushed head.
