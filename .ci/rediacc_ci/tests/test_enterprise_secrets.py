@@ -562,15 +562,31 @@ def test_preflight_passes_a_complete_environment_and_ignores_the_optional_names(
     assert "OBS_OTLP_CREDENTIALS_EU" in es.step_env_names("EU")
 
 
+def _profile_names(doc: dict, profile: str) -> set[str]:
+    spec = doc["consumers"][profile]
+    return {s.split(">")[-1].strip() for s in spec["required"] + spec["optional"]}
+
+
+MINTING_NAMES = ("CF_MANAGEMENT_TOKEN", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY")
+
+
 def test_step_env_names_are_bound_by_the_mint_profile():
-    """Every input the preflight demands is a LOCAL name some composition of the enterprise profiles binds, so the profile and the preflight cannot drift apart."""
+    """Every input the preflight demands is a LOCAL name the two enterprise profiles bind together, so the profile and the preflight cannot drift apart. The minting credentials belong to `enterprise-mint` ALONE: `remove` and `export` compose `enterprise` without it and must not hold them."""
     doc = json.loads((paths.repo_root() / ".ci/config/secret-supply.json").read_text("utf-8"))
-    bound: set[str] = set()
-    for profile in ("enterprise", es.MINT_PROFILE):
-        for spec in doc["consumers"][profile]["required"] + doc["consumers"][profile]["optional"]:
-            bound.add(spec.split(">")[-1].strip())
+    mint = _profile_names(doc, es.MINT_PROFILE)
+    base = _profile_names(doc, "enterprise")
     for suffix in ("EU", "US", "ASIA"):
-        assert set(es.step_env_names(suffix)) <= bound
+        assert set(es.step_env_names(suffix)) <= base | mint
+    assert set(MINTING_NAMES) <= mint
+    assert not set(MINTING_NAMES) & base
+
+
+def test_ses_region_refuses_a_region_without_ses_region(tmp_path):
+    (tmp_path / "regions.json").write_text(
+        json.dumps({"regions": [{"id": "eu", "secretSuffix": "EU"}]}), encoding="utf-8"
+    )
+    with pytest.raises(es.SecretsError, match="no sesRegion"):
+        es.ses_region("EU", tmp_path)
 
 
 def test_ses_region_refuses_an_unknown_suffix():

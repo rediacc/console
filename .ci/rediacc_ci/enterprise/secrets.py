@@ -284,12 +284,17 @@ def preflight(env: Mapping[str, str], suffix: str) -> None:
 def ses_region(suffix: str, root: pathlib.Path | None = None) -> str:
     """The `sesRegion` of the regions.json entry whose `secretSuffix` is `suffix`: the region the IAM minter's policy allows, so the Worker's AWS_SES_REGION is the same one."""
     doc = json.loads(((root or paths.repo_root()) / "regions.json").read_text(encoding="utf-8"))
-    hits = [str(r["sesRegion"]) for r in doc["regions"] if r.get("secretSuffix") == suffix]
-    if len(hits) != 1:
+    entries = [r for r in doc["regions"] if r.get("secretSuffix") == suffix]
+    if len(entries) != 1:
         raise SecretsError(
-            "regions.json has %d region(s) with secretSuffix %r, not 1" % (len(hits), suffix)
+            "regions.json has %d region(s) with secretSuffix %r, not 1" % (len(entries), suffix)
         )
-    return hits[0]
+    if not entries[0].get("sesRegion"):
+        raise SecretsError(
+            "regions.json region %r (secretSuffix %r) has no sesRegion"
+            % (entries[0].get("id"), suffix)
+        )
+    return str(entries[0]["sesRegion"])
 
 
 def shared_from_env(
