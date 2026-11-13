@@ -391,7 +391,7 @@ def _step_plant(d: Deps, ev: Evidence, st: State) -> None:
     if len(subs) != 1:
         ev.add(4, "plant", 1, "subscription rows=%d" % len(subs))
         raise DrillError("the throwaway subscription row is missing")
-    st.sub_id, org_id = str(subs[0]["id"]), str(subs[0].get("org_id") or "")
+    st.sub_id = str(subs[0]["id"])
     refusal = shard_check(
         d.rows(
             q(
@@ -403,11 +403,18 @@ def _step_plant(d: Deps, ev: Evidence, st: State) -> None:
     if refusal:
         ev.add(4, "plant", 1, refusal)
         raise DrillError(refusal)
-    orgs = d.rows(q("SELECT name FROM organizations WHERE id = $o", o=sql_literal(org_id)))
-    st.org_name = str(orgs[0].get("name") or "") if orgs else ""
+    # The digest names the org registered for the customer (subscriptions.org_id is null for a
+    # self-registered user), so the drill reads the same row.
+    orgs = d.rows(
+        q("SELECT id, name FROM organizations WHERE customer_id = $u", u=sql_literal(user_id))
+    )
+    if len(orgs) != 1:
+        ev.add(4, "plant", 1, "organization rows=%d for the customer" % len(orgs))
+        raise DrillError("the throwaway user's organization is not exactly one row")
+    st.org_name = str(orgs[0].get("name") or "")
     if not st.org_name:
-        ev.add(4, "plant", 1, "organization %r has no name" % org_id)
-        raise DrillError("the throwaway organization row is missing")
+        ev.add(4, "plant", 1, "organization %r has no name" % orgs[0].get("id"))
+        raise DrillError("the throwaway organization has no name")
     try:
         statement = cert_insert(st.planted, st.sub_id, d.now())
     except DrillError as exc:

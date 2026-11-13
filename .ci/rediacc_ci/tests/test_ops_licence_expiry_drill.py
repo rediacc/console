@@ -32,6 +32,7 @@ class Fake:
         digest_lines=1,
         second_digest_lines=0,
         second_owner_mails=0,
+        org_rows=1,
         shard=None,
         two_factor=False,
         sales_text=SALES_MAIL,
@@ -44,6 +45,7 @@ class Fake:
         self.digest_lines = digest_lines
         self.second_digest_lines = second_digest_lines
         self.second_owner_mails = second_owner_mails
+        self.org_rows = org_rows
         self.shard = shard
         self.two_factor = two_factor
         self.sales_text = sales_text
@@ -120,8 +122,8 @@ class Fake:
             return [{"id": SUB}]
         if sql.startswith("SELECT shard FROM subscription_shards"):
             return [{"shard": self.shard}] if self.shard else []
-        if sql.startswith("SELECT name FROM organizations"):
-            return [{"name": ORG_NAME}]
+        if sql.startswith("SELECT id, name FROM organizations WHERE customer_id"):
+            return [{"id": ORG, "name": ORG_NAME}] * self.org_rows
         if sql.startswith("SELECT id FROM organizations"):
             return [{"id": ORG}]
         if sql.startswith("INSERT INTO delegation_certs"):
@@ -264,6 +266,15 @@ def test_a_second_owner_mail_on_the_rerun_fails_step_ten(capsys):
     _, rc0, out0 = drill(capsys)
     assert rc0 == 0
     assert "STEP 10 rerun rc=0" in out0.out
+
+
+@pytest.mark.parametrize("rows", [0, 2])
+def test_the_customer_org_must_be_exactly_one_row(capsys, rows):
+    """Bench 2026-11-13: STEP 4 read the org through subscriptions.org_id, which registration leaves null."""
+    fake, rc, out = drill(capsys, org_rows=rows)
+    assert rc == 1
+    assert "STEP 4 plant rc=1 organization rows=%d for the customer" % rows in out.out
+    assert not fake.cert
 
 
 def test_a_tenant_shard_other_than_zero_is_refused_and_nothing_is_planted(capsys):
