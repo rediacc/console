@@ -55,6 +55,9 @@ if TYPE_CHECKING:
 
 ADD_REGION = "eu"
 PROOF_STORAGE_GB = 10
+# The contract limits a proof company is added with (`onboarding.Request.max_machines` and `max_storage_gb`).
+PROOF_MAX_MACHINES = 50
+PROOF_MAX_STORAGE_GB = 1024
 RING_REASON = "placed by enterprise proof"
 
 
