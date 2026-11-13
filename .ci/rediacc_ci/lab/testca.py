@@ -22,7 +22,7 @@ DAYS = "30"
 
 
 def san_entry(host: str) -> str:
-    if not host or "*" in host or any(c.isspace() or c in ",;=" for c in host):
+    if not host or "*" in host or any(c.isspace() or c in ",;=/\\\0" for c in host):
         raise ValueError("refused host %r: a per-host name or IP, never a wildcard" % host)
     try:
         ipaddress.ip_address(host)

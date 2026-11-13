@@ -60,6 +60,9 @@ def test_apply_runs_one_ssh_to_the_vm():
         "::1",
         "example.com",
         "192.168.111.300",
+        "192.168.111.254",
+        "192.168.111.0",
+        "192.168.111.255",
     ],
 )
 def test_refuses_non_ops_ip(ip):
@@ -122,3 +125,34 @@ def test_testca_san_is_exactly_the_host(tmp_path):
 def test_testca_refuses_wildcard(tmp_path):
     assert testca.main([str(tmp_path), "*.ops.test"]) == 2
     assert not (tmp_path / "ca.crt").exists()
+
+
+def test_a_vm_address_next_to_the_gateway_is_accepted():
+    """Control for the gateway refusal: .253 and .1 are VM addresses."""
+    assert airgap.is_ops_vm_ip("192.168.111.253")
+    assert airgap.is_ops_vm_ip("192.168.111.1")
+    assert not airgap.is_ops_vm_ip("192.168.111.254")
+
+
+def test_testca_refuses_a_path_separator_in_a_host(tmp_path):
+    """bf0bded8.2: a host never reaches the output path with a slash in it."""
+    assert testca.main([str(tmp_path / "out"), "a/../x"]) == 2
+    assert not (tmp_path / "out").exists()
+    assert not (tmp_path / "x.key").exists()
+
+
+def test_testca_openssl_failure_exits_1(tmp_path, monkeypatch, capsys):
+    """bf0bded8.3: a failing openssl is exit 1 with a message, and a missing binary the same."""
+
+    def fail(*_a, **_k):
+        raise subprocess.CalledProcessError(1, ["openssl"])
+
+    monkeypatch.setattr(testca.subprocess, "run", fail)
+    assert testca.main([str(tmp_path), "h.test"]) == 1
+    assert "openssl failed" in capsys.readouterr().err
+
+    def missing(*_a, **_k):
+        raise FileNotFoundError("openssl")
+
+    monkeypatch.setattr(testca.subprocess, "run", missing)
+    assert testca.main([str(tmp_path), "h.test"]) == 1

@@ -4,7 +4,7 @@
     remove  the policies go back to ACCEPT and the rules this module added are deleted.
     check   runs ON the VM: `curl -m5` to ghcr.io, registry-1.docker.io, archive.ubuntu.com and download.docker.com and a DNS query to 1.1.1.1 must all FAIL while ssh answers. The OUTPUT DROP counter is printed as evidence.
 
-Ops network only: an address outside 192.168.111.0/24 is refused before any ssh. The ops VMs are disposable development machines; no other machine may be cut off by this tool. Commands go through `drills.vm_ssh`, the one way a drill reaches an ops VM.
+Ops network only: an address outside 192.168.111.0/24, or the network, gateway (.254) and broadcast address inside it, is refused before any ssh. The ops VMs are disposable development machines; no other machine may be cut off by this tool. Commands go through `drills.vm_ssh`, the one way a drill reaches an ops VM.
 
 EXIT CODES. 0 done / check passed; 1 failed or check failed; 2 usage or refused address.
 """
@@ -21,6 +21,7 @@ from collections.abc import Callable, Sequence
 from rediacc_ci.drills import vm_ssh
 
 OPS_VM_NETWORK = "192.168.111"
+GATEWAY_HOST = 254
 TAG = "rediacc-airgap"
 TOOLS = ("iptables", "ip6tables")
 HOSTS = ("ghcr.io", "registry-1.docker.io", "archive.ubuntu.com", "download.docker.com")
@@ -40,11 +41,12 @@ DNS_PROBE = (
 
 
 def is_ops_vm_ip(ip: str) -> bool:
-    """True only for a dotted IPv4 literal inside the ops network: a hostname, an IPv6 form or a look-alike is not an ops VM."""
+    """True only for a dotted IPv4 literal of a VM inside the ops network: a hostname, an IPv6 form, a look-alike or the network, gateway and broadcast address is not an ops VM."""
     parts = ip.split(".")
     if len(parts) != 4 or not all(p.isascii() and p.isdigit() and int(p) <= 255 for p in parts):
         return False
-    return ".".join(parts[:3]) == OPS_VM_NETWORK
+    # .0 is the network, .254 the host gateway that reaches the VMs over ssh, .255 the broadcast: none is a VM.
+    return ".".join(parts[:3]) == OPS_VM_NETWORK and 0 < int(parts[3]) < GATEWAY_HOST
 
 
 def apply_script() -> str:
