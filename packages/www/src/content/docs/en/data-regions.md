@@ -16,9 +16,11 @@ When you sign up for Rediacc, you pick a data region. All your data stays there.
 
 | Region | Location | Domain |
 |---|---|---|
-| **Europe (EU)** | Frankfurt, Germany | `eu.rediacc.cloud` |
-| **United States (US)** | Virginia, USA | `us.rediacc.cloud` |
-| **Asia Pacific** | Tokyo, Japan | `asia.rediacc.cloud` |
+| **Europe (EU)** | European Union | `eu.rediacc.cloud` |
+| **United States (US)** | Eastern North America | `us.rediacc.cloud` |
+| **Asia Pacific** | Asia Pacific | `asia.rediacc.cloud` |
+
+The location column names a Cloudflare region, not a data-centre city. Cloudflare does not promise a city.
 
 The product runs on these `rediacc.cloud` domains. All documentation and the marketing site live on `www.rediacc.com`, which sends visitors to the right region from its region picker.
 
@@ -26,7 +28,7 @@ At sign-up, the picker suggests a region from the visitor's location, which can 
 
 ## What Stays in Your Region
 
-These data types are stored and processed exclusively in your chosen region:
+These data types are stored and processed in the chosen region (see Regional Infrastructure below for what is guaranteed):
 
 - **Account data**: email, name, organization, team memberships
 - **Billing and subscription records**: plan, activations, license issuances
@@ -45,20 +47,21 @@ These are not region-specific:
 
 | Component | EU | US | Asia |
 |---|---|---|---|
-| Database (D1) | Eastern Europe (EEUR) | Eastern North America (ENAM) | Asia Pacific (APAC) |
-| Config storage (R2) | EU jurisdiction | US | Asia Pacific |
+| Database (D1) | Eastern Europe hint (EEUR) | Eastern North America hint (ENAM) | Asia Pacific hint (APAC) |
+| Config storage (R2) | EU jurisdiction (guaranteed) | No jurisdiction (best effort) | No jurisdiction (best effort) |
 | Email (SES) | Frankfurt (eu-central-1) | Virginia (us-east-1) | Frankfurt (eu-central-1) |
+
+Only the EU config storage is held to a guaranteed jurisdiction: Cloudflare restricts R2 objects under the EU jurisdiction to the EU. D1 database placement and the US and Asia Pacific storage use location hints, which are best effort. Cloudflare does not guarantee they run in the hinted region.
 
 Each region runs independent infrastructure. There are no cross-region queries or data flows between regions.
 
 ## EU Data Guarantees
 
-Look: if you're subject to European data residency requirements, the EU region adds specific guarantees:
+For European data residency requirements, the EU region adds one hard guarantee and some best-effort placement:
 
-- **D1 database**: runs in Eastern Europe (EEUR location hint)
-- **R2 config storage**: uses EU jurisdictional enforcement (contractual guarantee, not just a location hint)
+- **D1 database**: placed with the EEUR (Eastern Europe) location hint, which is best effort and not a guarantee
+- **R2 config storage**: held to the EU jurisdiction, which Cloudflare guarantees (a hard restriction, not just a location hint)
 - **Email**: sent from Frankfurt (eu-central-1)
-- **EU-Japan mutual adequacy decision (2019)**: enables compliant data flows for the Asia region's infrastructure
 
 For detailed GDPR mapping, see [GDPR Compliance](/en/docs/legal-gdpr).
 
@@ -81,7 +84,7 @@ For details on the encryption architecture, see [Config Storage](/en/docs/config
 Technical properties of the regional architecture:
 
 - **Separate databases per region**: each region has its own Cloudflare D1 database. No cross-region queries.
-- **Separate storage per region**: each region has its own R2 bucket. EU uses jurisdictional enforcement.
+- **Separate storage per region**: each region has its own R2 bucket. Only the EU bucket is held to a jurisdiction; US and Asia Pacific use best-effort placement.
 - **Email delivery via AWS SES**: transactional emails are sent via AWS SES. EU and US use dedicated regional endpoints; Asia Pacific routes through the EU endpoint (eu-central-1).
 - **One user, one region**: a user account exists in exactly one region. It cannot span multiple regions.
 - **Webhook isolation**: Stripe webhook events are received by all regional workers but only processed by the region that owns the customer record.

@@ -7,8 +7,8 @@ tags:
 subcategory: foundations
 order: 7
 language: es
-sourceHash: "1e10165626ba3730"
-sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
+sourceHash: "af327ad5729b1cab"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 Muchos países requieren que los datos personales de sus ciudadanos se almacenen y procesen dentro de las fronteras nacionales. La arquitectura autoalojada de Rediacc satisface estos requisitos por diseño: los datos permanecen en tu máquina, en tu centro de datos, en tu jurisdicción. Ningún dato sale de la máquina durante la clonación, y ningún SaaS de terceros procesa tus datos.
@@ -88,4 +88,4 @@ En todas las jurisdicciones, la ecuación de cumplimiento es la misma:
 
 ## Servicio alojado: residencia regional de datos
 
-Para los usuarios del servicio Rediacc alojado (no autoalojado), la residencia de datos se aplica mediante infraestructura regional. Hay tres regiones disponibles: UE (Fráncfort), EE. UU. (Virginia) y Asia-Pacífico (Tokio). Cada región opera bases de datos y almacenamiento independientes, sin flujos de datos entre regiones. El correo transaccional se entrega mediante AWS SES; la UE y EE. UU. usan endpoints regionales dedicados, y Asia-Pacífico usa el endpoint de la UE (eu-central-1). La región de la UE aplica cumplimiento jurisdiccional en el almacenamiento R2. Consulta [Regiones de datos](/es/docs/data-regions) para el desglose técnico completo.
+Para los usuarios del servicio Rediacc alojado (no autoalojado), la residencia de datos se ofrece mediante infraestructura regional. Hay tres regiones disponibles: Unión Europea, Este de Norteamérica y Asia-Pacífico. Cada región opera bases de datos y almacenamiento independientes, sin flujos de datos entre regiones. Solo el almacenamiento de configuración de la UE queda sujeto a una jurisdicción garantizada (la restricción jurisdiccional de la UE en Cloudflare R2); la ubicación de la base de datos y el almacenamiento de US y Asia-Pacífico usan indicaciones de ubicación de Cloudflare, que se aplican con el mejor esfuerzo. El correo transaccional se entrega mediante AWS SES; la UE y EE. UU. usan endpoints regionales dedicados, y Asia-Pacífico usa el endpoint de la UE (eu-central-1). Consulta [Regiones de datos](/es/docs/data-regions) para el desglose técnico completo.

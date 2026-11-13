@@ -6,13 +6,17 @@ export const REGION_META: Partial<
   eu: {
     flagSrc: '/assets/images/flags/eu.svg',
     flagAlt: 'EU flag',
-    location: 'Frankfurt, Germany',
+    location: 'European Union',
   },
-  us: { flagSrc: '/assets/images/flags/us.svg', flagAlt: 'US flag', location: 'Virginia, USA' },
+  us: {
+    flagSrc: '/assets/images/flags/us.svg',
+    flagAlt: 'US flag',
+    location: 'Eastern North America',
+  },
   asia: {
     flagSrc: '/assets/images/flags/jp.svg',
     flagAlt: 'Japan flag',
-    location: 'Tokyo, Japan',
+    location: 'Asia Pacific',
   },
 };
 

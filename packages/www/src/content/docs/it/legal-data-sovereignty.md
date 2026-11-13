@@ -1,5 +1,5 @@
 ---
-sourceHash: "1e10165626ba3730"
+sourceHash: "af327ad5729b1cab"
 title: "Sovranità dei dati"
 description: "Come l'architettura self-hosted di Rediacc soddisfa i requisiti di residenza e sovranità dei dati nelle diverse giurisdizioni globali."
 category: "Legal"
@@ -87,4 +87,4 @@ In tutte le giurisdizioni l'equazione di conformità è la stessa:
 
 ## Servizio hosted: residenza regionale dei dati
 
-Per gli utenti del servizio hosted Rediacc (non self-hosted), la residenza dei dati è garantita tramite infrastruttura regionale. Sono disponibili tre regioni: UE (Francoforte), USA (Virginia) e Asia Pacifico (Tokyo). Ogni regione dispone di database e storage indipendenti senza flussi di dati tra regioni. La posta elettronica transazionale viene inviata tramite AWS SES; UE e USA utilizzano endpoint regionali dedicati, Asia Pacifico utilizza l'endpoint UE (eu-central-1). La regione UE applica il vincolo giurisdizionale sullo storage R2. Vedere [Regioni dati](/it/docs/data-regions) per la descrizione tecnica completa.
+Per gli utenti del servizio hosted Rediacc (non self-hosted), la residenza dei dati è offerta tramite infrastruttura regionale. Sono disponibili tre regioni: Unione Europea, Nord America orientale e Asia Pacifico. Ogni regione dispone di database e storage indipendenti senza flussi di dati tra regioni. Solo l'archiviazione della configurazione EU è vincolata a una giurisdizione garantita (la restrizione giurisdizionale EU di Cloudflare R2); la collocazione del database e lo storage US e Asia Pacifico usano suggerimenti di posizione di Cloudflare, applicati al meglio delle possibilità. La posta elettronica transazionale viene inviata tramite AWS SES; UE e USA usano endpoint regionali dedicati, l'Asia Pacifico usa l'endpoint UE (eu-central-1). Vedi [Regioni dati](/it/docs/data-regions) per il dettaglio tecnico completo.

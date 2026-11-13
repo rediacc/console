@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 3
 language: de
-sourceHash: "30205685897b43b5"
-sourceCommit: "1c88d0973e4d058c26b33fe8b3058eddea9feed2"
+sourceHash: "05afa82e66e34693"
+sourceCommit: "f9c980842b182e644eb84eb1d37e394baf60f7a5"
 ---
 
 Bei der Anmeldung für Rediacc wählen Sie eine Datenregion. Alle Daten verbleiben in dieser Region. Diese Entscheidung ist dauerhaft und kann nach der Registrierung nicht mehr geändert werden. Es gibt keinen Migrationspfad. Wählen Sie die Region basierend darauf, wo Ihre Daten rechtlich ansässig sein müssen, nicht wo Ihre Server heute sind.
@@ -18,9 +18,11 @@ Bei der Anmeldung für Rediacc wählen Sie eine Datenregion. Alle Daten verbleib
 
 | Region | Standort | Domain |
 |---|---|---|
-| **Europa (EU)** | Frankfurt, Deutschland | `eu.rediacc.cloud` |
-| **Vereinigte Staaten (US)** | Virginia, USA | `us.rediacc.cloud` |
-| **Asien-Pazifik** | Tokio, Japan | `asia.rediacc.cloud` |
+| **Europa (EU)** | Europäische Union | `eu.rediacc.cloud` |
+| **Vereinigte Staaten (US)** | Östliches Nordamerika | `us.rediacc.cloud` |
+| **Asien-Pazifik** | Asien-Pazifik | `asia.rediacc.cloud` |
+
+Die Spalte Standort nennt eine Cloudflare-Region, keine Rechenzentrumsstadt. Cloudflare sagt keine Stadt zu.
 
 Das Produkt läuft auf diesen `rediacc.cloud`-Domains. Die gesamte Dokumentation und die Marketing-Website liegen auf `www.rediacc.com`, das Sie über die Regionsauswahl zur passenden Region weiterleitet.
 
@@ -28,7 +30,7 @@ Bei der Registrierung schlägt die Auswahl anhand Ihres Standorts eine Region vo
 
 ## Was in der Region verbleibt
 
-Diese Datentypen werden ausschließlich in der gewählten Region gespeichert und verarbeitet:
+Diese Datentypen werden in Ihrer gewählten Region gespeichert und verarbeitet (was garantiert ist, steht unten unter Regionale Infrastruktur):
 
 - **Kontodaten**: E-Mail, Name, Organisation, Teammitgliedschaften
 - **Abrechnungs- und Abonnementdatensätze**: Plan, Aktivierungen, Lizenzausstellungen
@@ -47,20 +49,21 @@ Folgendes ist nicht regionsspezifisch:
 
 | Komponente | EU | US | Asien |
 |---|---|---|---|
-| Datenbank (D1) | Osteuropa (EEUR) | Ostnordamerika (ENAM) | Asien-Pazifik (APAC) |
-| Konfigurationsspeicher (R2) | EU-Jurisdiktion | US | Asien-Pazifik |
+| Datenbank (D1) | Hinweis Osteuropa (EEUR) | Hinweis Ostnordamerika (ENAM) | Hinweis Asien-Pazifik (APAC) |
+| Konfigurationsspeicher (R2) | EU-Jurisdiktion (garantiert) | Keine Jurisdiktion (nach bestem Bemühen) | Keine Jurisdiktion (nach bestem Bemühen) |
 | E-Mail (SES) | Frankfurt (eu-central-1) | Virginia (us-east-1) | Frankfurt (eu-central-1) |
+
+Nur der EU-Konfigurationsspeicher unterliegt einer garantierten Jurisdiktion: Cloudflare hält R2-Objekte unter der EU-Jurisdiktion innerhalb der EU. Die Platzierung der D1-Datenbank sowie der Speicher in US und Asien-Pazifik folgen Standorthinweisen, die nach bestem Bemühen berücksichtigt werden. Cloudflare garantiert nicht, dass sie in der angegebenen Region laufen.
 
 Jede Region betreibt unabhängige Infrastruktur. Es gibt keine regionsübergreifenden Abfragen oder Datenflüsse zwischen Regionen.
 
 ## EU-Datengarantien
 
-Wenn Sie europäischen Datenhaltungsanforderungen unterliegen, bietet die EU-Region zusätzliche Garantien:
+Wenn Sie europäischen Datenresidenzanforderungen unterliegen, bietet die EU-Region eine feste Garantie und eine Platzierung nach bestem Bemühen:
 
-- **D1-Datenbank**: läuft in Osteuropa (EEUR-Standorthinweis)
-- **R2-Konfigurationsspeicher**: verwendet EU-Jurisdiktionsdurchsetzung (vertragliche Garantie, nicht nur ein Standorthinweis)
+- **D1-Datenbank**: platziert mit dem Standorthinweis EEUR (Osteuropa), nach bestem Bemühen und ohne Garantie
+- **R2-Konfigurationsspeicher**: an die EU-Jurisdiktion gebunden, was Cloudflare garantiert (eine feste Beschränkung, nicht nur ein Standorthinweis)
 - **E-Mail**: gesendet aus Frankfurt (eu-central-1)
-- **EU-Japan gegenseitiger Angemessenheitsbeschluss (2019)**: ermöglicht konformen Datenaustausch für die Infrastruktur der Asien-Region
 
 Eine detaillierte DSGVO-Zuordnung findet sich unter [DSGVO-Compliance](/de/docs/legal-gdpr).
 
@@ -83,7 +86,7 @@ Details zur Verschlüsselungsarchitektur finden sich unter [Konfigurationsspeich
 Technische Eigenschaften der regionalen Architektur:
 
 - **Separate Datenbanken pro Region**: Jede Region hat ihre eigene Cloudflare-D1-Datenbank. Keine regionsübergreifenden Abfragen.
-- **Separater Speicher pro Region**: Jede Region hat ihren eigenen R2-Bucket. EU verwendet Jurisdiktionsdurchsetzung.
+- **Separater Speicher pro Region**: Jede Region hat ihren eigenen R2-Bucket. Nur der EU-Bucket ist an eine Jurisdiktion gebunden; US und Asien-Pazifik werden nach bestem Bemühen platziert.
 - **E-Mail-Bereitstellung über AWS SES**: Transaktions-E-Mails werden über AWS SES gesendet. EU und US verwenden dedizierte regionale Endpunkte; Asien-Pazifik wird über den EU-Endpunkt (eu-central-1) geroutet.
 - **Ein Benutzer, eine Region**: Ein Benutzerkonto existiert in genau einer Region. Es kann keine mehreren Regionen umfassen.
 - **Webhook-Isolation**: Stripe-Webhook-Ereignisse werden von allen regionalen Workern empfangen, aber nur von der Region verarbeitet, der der Kundendatensatz gehört.
