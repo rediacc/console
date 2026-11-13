@@ -1773,6 +1773,37 @@
         "f895ccf3"
       ]
     },
+    "agent/plans/PLAN-hostinger-to-bench.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 20,
+      "done": 0,
+      "open_sigs": [
+        "0f3afa58",
+        "12ba3ee0",
+        "3dadc532",
+        "3f694d9d",
+        "4f14b0fc",
+        "57fb82e3",
+        "66727474",
+        "6680bad2",
+        "6ae8bf86",
+        "7684e59c",
+        "7d493cd9",
+        "850392c1",
+        "89e29a2a",
+        "a221bf15",
+        "a5224d45",
+        "b9263981",
+        "dab0b572",
+        "e91d5c8a",
+        "f1adf697",
+        "f3dd8f35"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-idle-writer-capacity.md": {
       "status": "approved",
       "owner": "d778be9d",
