@@ -93,6 +93,32 @@ function compareHardExpiry(a: LicenceRow, b: LicenceRow): number {
   return a.hardExpiresAt.localeCompare(b.hardExpiresAt);
 }
 
+const URGENCY_RANK: Record<ReportedLicence['freshness'], number> = {
+  hard_expired: 0,
+  refresh_recommended: 1,
+  valid: 2,
+};
+
+/** The table order of the live repositories: hard expired, refresh recommended, valid, then soonest hard expiry. */
+function compareUrgency(a: LicenceRow, b: LicenceRow): number {
+  return URGENCY_RANK[a.freshness] - URGENCY_RANK[b.freshness] || compareHardExpiry(a, b);
+}
+
+/** The licences of repositories the active config holds, most urgent first. */
+export function liveLicences(rows: LicenceRow[]): LicenceRow[] {
+  return rows.filter((row) => row.presence === 'config').sort(compareUrgency);
+}
+
+/** The licences of repositories deleted from the config or unknown to it, most urgent first. */
+export function otherLicences(rows: LicenceRow[]): LicenceRow[] {
+  return rows.filter((row) => row.presence !== 'config').sort(compareUrgency);
+}
+
+/** What `subscription retire --expired` retires: hard-expired licences of deleted or unknown repositories, never a live one. */
+export function expiredRetireTargets(rows: LicenceRow[]): LicenceRow[] {
+  return otherLicences(rows).filter((row) => row.freshness === 'hard_expired');
+}
+
 /** Every reported licence joined to the config, soonest hard expiry first (no expiry last). */
 export function licenceRows(
   recent: ReportedLicence[],

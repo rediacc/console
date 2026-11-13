@@ -489,13 +489,14 @@ export function registerSubscriptionCommands(program: Command): void {
     .command('status')
     .description(t('commands.subscription.status.description'))
     .option('-m, --machine <name>', t('options.machine'))
+    .option('--all', t('commands.subscription.status.optionAll'))
     .action(async (options) => {
       try {
         if (options.machine) {
           await executeMachineStatus(options.machine);
           return;
         }
-        await executeSubscriptionStatus();
+        await executeSubscriptionStatus({ all: options.all });
       } catch (error) {
         handleError(error);
       }
@@ -516,13 +517,15 @@ export function registerSubscriptionCommands(program: Command): void {
       }
     });
 
-  // subscription retire <guid> [--force]; -y/--yes is the global option.
+  // subscription retire <guid> [--force] | --expired [--dry-run]; -y/--yes is the global option.
   sub
     .command('retire')
     .description(t('commands.subscription.retire.description'))
-    .argument('<guid>', t('commands.subscription.retire.argGuid'))
+    .argument('[guid]', t('commands.subscription.retire.argGuid'))
     .option('--force', t('commands.subscription.retire.optionForce'))
-    .action(async (guid: string, options) => {
+    .option('--expired', t('commands.subscription.retire.optionExpired'))
+    .option('--dry-run', t('commands.subscription.retire.optionDryRun'))
+    .action(async (guid: string | undefined, options) => {
       try {
         await executeSubscriptionRetire(guid, options);
       } catch (error) {

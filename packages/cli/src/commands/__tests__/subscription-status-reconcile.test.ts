@@ -19,6 +19,7 @@ vi.mock('../../services/core/output.js', () => ({
     report: (m: string) => reports.push(m),
     warn: (m: string) => warns.push(m),
     success: vi.fn(),
+    format: () => 'TABLE',
     print: mockPrint,
   },
 }));
@@ -88,7 +89,7 @@ describe('subscription status reconcile view', () => {
     expect(split.totalTrackedRepos + split.notInConfigCount).toBe(recent.length);
   });
 
-  it('prints the in-config and not-in-config lines from the report', async () => {
+  it('prints the table of this config and one summary line for the rest', async () => {
     mockReport.mockResolvedValue({
       planCode: 'ENTERPRISE',
       status: 'active',
@@ -108,9 +109,9 @@ describe('subscription status reconcile view', () => {
     ]);
     await executeSubscriptionStatus();
     const out = reports.join('\n');
-    expect(out).toContain('remoteRepoLicensesInConfig:');
-    expect(out).toContain('"totalTrackedRepos":2');
-    expect(out).toContain('remoteRepoLicensesNotInConfig:{"count":2}');
+    expect(out).toContain('status.licencesHeader');
+    expect(out).toContain('status.elsewhereSummary');
+    expect(out).not.toContain('remoteRepoLicensesInConfig');
     expect(out).not.toContain('commands.subscription.status.remoteRepoLicenses:');
   });
 

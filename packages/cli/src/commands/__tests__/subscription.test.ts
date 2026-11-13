@@ -143,6 +143,8 @@ vi.mock('../../services/core/output.js', () => ({
     warn: mockOutputWarn,
     success: mockOutputSuccess,
     error: mockOutputError,
+    format: () => 'TABLE',
+    print: vi.fn(),
   },
 }));
 

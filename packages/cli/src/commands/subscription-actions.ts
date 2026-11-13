@@ -18,11 +18,7 @@ import {
   refreshRepoLicensesBatch,
 } from '../services/account/license.js';
 import { DEFAULT_DATASTORE } from '../services/account/license-machine.js';
-import {
-  LICENCE_STATE_KEYS,
-  type LicenceRow,
-  licenceRows,
-} from '../services/account/license-retire.js';
+import { type LicenceRow, licenceRows } from '../services/account/license-retire.js';
 import type { RemoteRepoLicenseScanEntry } from '../services/account/license-types.js';
 import {
   getSubscriptionScopeMismatch,
@@ -49,6 +45,7 @@ import {
   renderRepoBatchRefreshSummary,
 } from './subscription-output.js';
 import { executeRepoLicenseRefresh } from './subscription-repo-refresh.js';
+import { renderLicenceView, renderMachineTable } from './subscription-status-view.js';
 import { renderRepoLicenseTable } from './subscription-repo-table.js';
 import { executeTokenFreeMachineRefresh } from './subscription-token-free.js';
 
@@ -140,7 +137,7 @@ async function resolveSubscriptionCommandContext(
  * the verb exited 0 printing "Not logged in" (empty stdout under `-o json`), so automation read
  * an absent token as a valid one, and the next `repo create` refused with tokenRequired (vm:check P4, 2026-10-15).
  */
-export async function executeSubscriptionStatus(): Promise<void> {
+export async function executeSubscriptionStatus(options: { all?: boolean } = {}): Promise<void> {
   const tokenState = getSubscriptionTokenState();
   if (tokenState.kind !== 'ready') {
     throw new ValidationError(unreadyTokenDiagnostic(tokenState));
@@ -161,7 +158,7 @@ export async function executeSubscriptionStatus(): Promise<void> {
     outputService.print(subscriptionStatusData(status, config?.liveGuids, rows), format);
     return;
   }
-  outputRemoteStatus(status, config?.liveGuids, rows);
+  outputRemoteStatus(status, rows, options.all === true);
 }
 
 /** The structured form of the account view, for `-o json|yaml|csv`: the same facts the table prints. */
@@ -192,6 +189,7 @@ function subscriptionStatusData(
         freshness: row.freshness,
         refreshRecommendedAt: row.refreshRecommendedAt,
         hardExpiresAt: row.hardExpiresAt,
+        presence: row.presence,
         fix: row.fix,
       })),
     }),
@@ -226,68 +224,26 @@ export function splitRepoLicensesByConfig(recent: TrackedRepo[], configGuids: Se
   };
 }
 
-function outputRepoLicenseCounts(
+/** The account-wide counts line, for a report that carries no per-repo list to build the table from. */
+function outputAccountLicenseCounts(
   repoLicenses: NonNullable<
     Awaited<ReturnType<typeof fetchSubscriptionLicenseReportOrThrow>>
-  >['repoLicenses'],
-  configGuids?: Set<string>
+  >['repoLicenses']
 ) {
-  const recent = repoLicenses.recent;
-  if (recent && configGuids) {
-    const split = splitRepoLicensesByConfig(recent, configGuids);
-    outputService.report(t('commands.subscription.status.remoteRepoLicensesInConfig', split));
-    outputService.report(
-      t('commands.subscription.status.remoteRepoLicensesNotInConfig', {
-        count: split.notInConfigCount,
-      })
-    );
-  } else {
-    outputService.report(
-      t('commands.subscription.status.remoteRepoLicenses', {
-        totalTrackedRepos: repoLicenses.totalTrackedRepos,
-        validCount: repoLicenses.validCount,
-        refreshRecommendedCount: repoLicenses.refreshRecommendedCount,
-        hardExpiredCount: repoLicenses.hardExpiredCount,
-      })
-    );
-  }
-}
-
-/** The per-licence lines under the counts: the joined name, state and dates, and the command that settles it. */
-function outputLicenceRows(rows: LicenceRow[]): void {
-  if (rows.length === 0) return;
-  outputService.report(t('commands.subscription.status.licencesHeader'));
-  for (const row of rows) {
-    outputService.report(
-      t('commands.subscription.status.licenceRow', {
-        name: licenceRowName(row),
-        kind: row.kind ?? '-',
-        state: t(LICENCE_STATE_KEYS[row.freshness]),
-        refreshBy: row.refreshRecommendedAt?.slice(0, 10) ?? '-',
-        hardExpiry: row.hardExpiresAt?.slice(0, 10) ?? '-',
-      })
-    );
-    if (row.fix) {
-      outputService.report(t('commands.subscription.status.licenceFix', { fix: row.fix }));
-    }
-  }
-}
-
-/** `ref@machine`; `ref (deleted)` for an archived repository; the 8-character GUID and "not in this config" when the config does not know it. */
-function licenceRowName(row: LicenceRow): string {
-  if (row.presence === 'absent') {
-    return t('commands.subscription.status.licenceNotInConfig', { guid: row.guid.slice(0, 8) });
-  }
-  const name = row.machine ? `${row.name}@${row.machine}` : String(row.name);
-  return row.presence === 'deleted'
-    ? t('commands.subscription.status.licenceDeleted', { name })
-    : name;
+  outputService.report(
+    t('commands.subscription.status.remoteRepoLicenses', {
+      totalTrackedRepos: repoLicenses.totalTrackedRepos,
+      validCount: repoLicenses.validCount,
+      refreshRecommendedCount: repoLicenses.refreshRecommendedCount,
+      hardExpiredCount: repoLicenses.hardExpiredCount,
+    })
+  );
 }
 
 function outputRemoteStatus(
   status: Awaited<ReturnType<typeof fetchSubscriptionLicenseReportOrThrow>>,
-  configGuids?: Set<string>,
-  rows?: LicenceRow[]
+  rows?: LicenceRow[],
+  all = false
 ) {
   if (!status) return;
   outputService.report(t('commands.subscription.status.remote'));
@@ -320,19 +276,9 @@ function outputRemoteStatus(
   } else if (issuanceUsage >= 0.8) {
     outputService.warn(t('commands.subscription.status.issuanceUsageHigh80'));
   }
-  outputRepoLicenseCounts(status.repoLicenses, configGuids);
-  if (rows) outputLicenceRows(rows);
-  for (const machine of status.machineSlots.machines) {
-    const key = machine.overLimit
-      ? 'commands.subscription.status.remoteMachineOverLimit'
-      : 'commands.subscription.status.remoteMachine';
-    outputService.report(
-      t(key, {
-        id: machine.machineId.slice(0, 12),
-        lastSeen: machine.lastSeenAt,
-      })
-    );
-  }
+  if (rows) renderLicenceView(rows, all);
+  else outputAccountLicenseCounts(status.repoLicenses);
+  renderMachineTable(status.machineSlots.machines);
 
   // Soft-claim (design decision 2): a renewal never fails for being over the cap, it just flags the row. Nothing else would tell the operator that the fleet has outgrown its plan until the next NEW repository is refused, so the count is called out rather than left to be spotted row by row.
   const overLimitCount = status.machineSlots.machines.filter((m) => m.overLimit).length;

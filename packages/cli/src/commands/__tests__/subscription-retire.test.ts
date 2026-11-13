@@ -12,11 +12,17 @@ vi.mock('../../i18n/index.js', () => ({
 const infos = vi.hoisted(() => [] as string[]);
 const successes = vi.hoisted(() => [] as string[]);
 const warns = vi.hoisted(() => [] as string[]);
+const reports = vi.hoisted(() => [] as string[]);
+const tables = vi.hoisted(() => [] as unknown[][]);
 const mockPrint = vi.hoisted(() => vi.fn());
 vi.mock('../../services/core/output.js', () => ({
   outputService: {
     info: (m: string) => infos.push(m),
-    report: vi.fn(),
+    report: (m: string) => reports.push(m),
+    format: (rows: unknown[]) => {
+      tables.push(rows);
+      return 'TABLE';
+    },
     warn: (m: string) => warns.push(m),
     success: (m: string) => successes.push(m),
     print: mockPrint,
@@ -222,6 +228,152 @@ describe('subscription retire', () => {
     mockFetch.mockRejectedValue(new Error('403 forbidden'));
     await expect(executeSubscriptionRetire(GONE, { yes: true })).rejects.toThrow('403 forbidden');
     expect(successes).toEqual([]);
+  });
+});
+
+describe('subscription retire --expired', () => {
+  const LIVE_EXPIRED = '55555555-ffff-4fff-8fff-000000000005';
+  const originalTty = process.stdin.isTTY;
+  const opts = { expired: true };
+
+  beforeEach(() => {
+    infos.length = 0;
+    reports.length = 0;
+    tables.length = 0;
+    warns.length = 0;
+    process.exitCode = undefined;
+    mockFetch.mockReset().mockResolvedValue({ repositoryGuid: GONE, retired: true });
+    mockConfirm.mockReset().mockResolvedValue(true);
+    mockPrint.mockReset();
+    tokenKind.value = 'ready';
+    setOutputFormat('table');
+    setTty(true);
+    mockReport.mockResolvedValue({
+      planCode: 'ENTERPRISE',
+      status: 'active',
+      machineSlots: { active: 0, max: 1, machines: [] },
+      repoLicenseIssuances: { used: 0, limit: 10 },
+      repoLicenses: {
+        totalTrackedRepos: 6,
+        validCount: 1,
+        refreshRecommendedCount: 1,
+        hardExpiredCount: 4,
+        recent: [...recent, { repositoryGuid: LIVE_EXPIRED, freshness: 'hard_expired' }],
+      },
+    });
+    mockConfig.value = {
+      resources: {
+        repositories: {
+          web: {
+            grand: 'main',
+            placement: { machine: 'box' },
+            tags: { main: { repositoryGuid: LIVE }, dead: { repositoryGuid: LIVE_EXPIRED } },
+          },
+        },
+        deletedRepositories: [{ name: 'old', tag: 'main', repositoryGuid: GONE }],
+      },
+    };
+  });
+
+  afterEach(() => {
+    setTty(originalTty);
+    process.exitCode = undefined;
+  });
+
+  const retiredGuids = () =>
+    mockFetch.mock.calls.map((c) => String(c[0]).split('/repos/')[1].split('/')[0]).sort();
+
+  it('retires every hard-expired deleted or unknown licence and never a live one', async () => {
+    await executeSubscriptionRetire(undefined, { ...opts, yes: true });
+    expect(retiredGuids()).toEqual([GONE, TWIN_A, TWIN_B]);
+    expect(retiredGuids()).not.toContain(LIVE_EXPIRED);
+    expect(retiredGuids()).not.toContain(LIVE);
+    expect(retiredGuids()).not.toContain(UNKNOWN);
+    expect(process.exitCode).toBeUndefined();
+  });
+
+  it('lists the targets, asks once for the batch and reports the counts', async () => {
+    await executeSubscriptionRetire(undefined, opts);
+    expect(mockConfirm).toHaveBeenCalledTimes(1);
+    expect(mockConfirm.mock.calls[0][0]).toContain('"count":3');
+    expect(tables).toHaveLength(1);
+    expect(tables[0]).toHaveLength(3);
+    expect(reports.join('\n')).toContain('"retired":3,"skipped":1,"failed":0');
+  });
+
+  it('retires nothing when the operator answers n', async () => {
+    mockConfirm.mockResolvedValue(false);
+    await executeSubscriptionRetire(undefined, opts);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('--dry-run lists and changes nothing, and does not ask', async () => {
+    await executeSubscriptionRetire(undefined, { ...opts, dryRun: true, yes: true });
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(mockConfirm).not.toHaveBeenCalled();
+    expect(tables[0]).toHaveLength(3);
+    expect(infos.join()).toContain('expiredDryRun');
+  });
+
+  it('exits non-zero when any retire failed, after trying the rest', async () => {
+    mockFetch.mockImplementation((path: string) =>
+      path.includes(TWIN_A) ? Promise.reject(new Error('503')) : Promise.resolve({ retired: true })
+    );
+    await executeSubscriptionRetire(undefined, { ...opts, yes: true });
+    expect(mockFetch).toHaveBeenCalledTimes(3);
+    expect(process.exitCode).toBe(1);
+    expect(warns.join()).toContain('503');
+    expect(reports.join('\n')).toContain('"retired":2,"skipped":1,"failed":1');
+  });
+
+  it('refuses a GUID together with --expired, and --dry-run without it', async () => {
+    await expect(executeSubscriptionRetire(GONE, { ...opts, yes: true })).rejects.toThrow(
+      'commands.subscription.retire.expiredWithGuid'
+    );
+    await expect(executeSubscriptionRetire(undefined, { yes: true })).rejects.toThrow(
+      'commands.subscription.retire.needsGuidOrExpired'
+    );
+    await expect(executeSubscriptionRetire(GONE, { dryRun: true, yes: true })).rejects.toThrow(
+      'commands.subscription.retire.dryRunNeedsExpired'
+    );
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('needs --yes off a terminal, and a config that holds repositories', async () => {
+    setTty(undefined);
+    await expect(executeSubscriptionRetire(undefined, opts)).rejects.toThrow(
+      'commands.subscription.retire.needsYes'
+    );
+    mockConfig.value = null;
+    await expect(executeSubscriptionRetire(undefined, { ...opts, yes: true })).rejects.toThrow(
+      'commands.subscription.retire.expiredNeedsConfig'
+    );
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it('says so when nothing is retirable, and prints data under -o json', async () => {
+    mockReport.mockResolvedValue({
+      planCode: 'ENTERPRISE',
+      status: 'active',
+      machineSlots: { active: 0, max: 1, machines: [] },
+      repoLicenseIssuances: { used: 0, limit: 10 },
+      repoLicenses: {
+        totalTrackedRepos: 1,
+        validCount: 0,
+        refreshRecommendedCount: 0,
+        hardExpiredCount: 1,
+        recent: [{ repositoryGuid: LIVE_EXPIRED, freshness: 'hard_expired' }],
+      },
+    });
+    await executeSubscriptionRetire(undefined, { ...opts, yes: true });
+    expect(infos.join()).toContain('expiredNone');
+    setOutputFormat('json');
+    await executeSubscriptionRetire(undefined, { ...opts, yes: true });
+    expect(mockPrint).toHaveBeenCalledWith(
+      { retired: [], failed: [], skipped: 1, dryRun: false },
+      'json'
+    );
+    expect(mockFetch).not.toHaveBeenCalled();
   });
 });
 

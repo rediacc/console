@@ -16040,13 +16040,35 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.subscription.retire.optionForce",
           "label": "Retire a license whose repository is still in this config and not hard-expired"
+        },
+        {
+          "flags": "--expired",
+          "long": "expired",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.subscription.retire.optionExpired",
+          "label": "Retire every hard-expired license of a deleted repository or one not in this config"
+        },
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.subscription.retire.optionDryRun",
+          "label": "With --expired: list what would be retired and change nothing"
         }
       ],
       "positionals": [
         {
           "name": "guid",
           "kind": "plain",
-          "required": true,
+          "required": false,
           "variadic": false,
           "descriptionKey": "commands.subscription.retire.argGuid",
           "label": "Repository GUID, or at least 8 characters of one license in the account report"
@@ -16088,6 +16110,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "common",
           "descriptionKey": "options.machine",
           "label": "Machine name"
+        },
+        {
+          "flags": "--all",
+          "long": "all",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.subscription.status.optionAll",
+          "label": "Also list the licenses of deleted repositories and of repositories not in this config"
         }
       ],
       "positionals": [],

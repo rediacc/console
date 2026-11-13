@@ -7052,6 +7052,12 @@
               "descriptionKey": "options.machine",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--all",
+              "descriptionKey": "commands.subscription.status.optionAll",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [],
@@ -7092,12 +7098,24 @@
               "descriptionKey": "commands.subscription.retire.optionForce",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--expired",
+              "descriptionKey": "commands.subscription.retire.optionExpired",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "commands.subscription.retire.optionDryRun",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [
             {
               "name": "guid",
-              "required": true,
+              "required": false,
               "variadic": false,
               "defaultValue": null
             }
