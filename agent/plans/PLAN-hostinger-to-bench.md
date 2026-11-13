@@ -51,9 +51,10 @@ Worklist: #ad4d5f4e, PR-TASK 79b7e92e
   Tests: a pinned entry survives 30 days and a full rotating list; `remove` and `clear` refuse it; a hand-deleted pin returns on the next `add-current`; `verify-pinned` exits 1 when one is absent.
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_ops_bench_access.py -q` rc 0
     (ticked) 2026-11-13T11:01:11Z by d778be9d: commit:e3c2d2ef12 bench_access pins + verify-pinned; pytest test_ops_bench_access 67 passed
-- [ ] W3 [writer] `rdc config import-machine` (Design 5) with i18n in every locale.
+- [x] W3 [writer] `rdc config import-machine` (Design 5) with i18n in every locale.
   Tests: absent repos and tags added; equal entries no-op; a same-name repo with a different GUID refuses; a differing strategy refuses without `--strategy-from-source`; no credential, key or GUID value in output; the write goes through `updateSyncedConfig`.
   Accept: `cd packages/cli && npx vitest run src/commands/__tests__/config-import-machine.test.ts` rc 0, plus `npm run check:i18n` rc 0
+    (ticked) 2026-11-13T12:02:54Z by d778be9d: commit:3cbf695ba106 vitest passed 11 at rc=0 on the landed tree. DEPS-WAIVED: the import-machine verb is pure CLI code and needs no output of the prerequisite plan
 - [x] W4 [writer] The rotation tool `rdcConfig` and its test move to eu-bench. Accept: `cd private/account && npx vitest run tests/integration/rotation-observability-restart.test.ts` rc 0
     (ticked) 2026-11-13T11:01:16Z by d778be9d: commit:df30b6993d rotation rdcConfig eu-bench; vitest rotation-observability-restart 9 passed
 - [x] W5 [writer] A `hostinger-escrow` profile in secret-supply.json binding `HOSTINGER_REPO_CREDENTIALS_ESCROW`, mapped in bws-secret-map.json. Accept: `npm run check:ci-secret-supply` rc 0

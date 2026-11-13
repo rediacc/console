@@ -142,10 +142,11 @@ Two resume paths keep the invariant "every exists answer the commit relies on wa
   Owns: private/account/src/routes/root.ts, private/account/src/routes/root-stripe.ts, private/account/src/app.ts, private/account/tests/integration/shard-fanout.test.ts (new).
   Accept: `cd private/account && npx vitest run shard-fanout` rc 0.
     (ticked) 2026-11-09T17:34:22Z by d778be9d: commit:126729c0 account suite 258 files 3971 passed rc=0; tsc rc=0
-- [ ] WC [writer] Waiting-chunk compaction per Z5: rebuild migration and the converted readers and writers. Tests: the backup-gc suite passes unchanged in behaviour, a 20,000-row bulk insert and a 1,000-row reap page work, and no statement binds more than 100 parameters.
+- [x] WC [writer] Waiting-chunk compaction per Z5: rebuild migration and the converted readers and writers. Tests: the backup-gc suite passes unchanged in behaviour, a 20,000-row bulk insert and a 1,000-row reap page work, and no statement binds more than 100 parameters.
   Depends on: P1, P3, C1 (backup-gc.service.ts, schema.ts, drizzle order).
   Owns: private/account/src/services/backup-gc.service.ts, private/account/src/db/schema.ts, private/account/drizzle/** (its migration only), private/account/tests/integration/backup-waiting-compact.test.ts (new).
   Accept: `cd private/account && npx vitest run backup-gc backup-waiting-compact` rc 0.
+    (ticked) 2026-11-13T12:08:36Z by d778be9d: commit:6e28fa6243af account vitest 4550 passed rc=0, tsc rc=0 on the landed tree
 - [x] L1 [writer] Guardrail doc in private/account/CLAUDE.md, and docs/d1-scaling-review.md Phase B statuses updated to point at this plan's boxes.
   Depends on: PLAN-enterprise-isolation.md#L1.
   Owns: private/account/CLAUDE.md, docs/d1-scaling-review.md.
@@ -158,10 +159,11 @@ Two resume paths keep the invariant "every exists answer the commit relies on wa
   Depends on: LB1.
   Owns: private/account/src/services/backup-gc.service.ts, private/account/src/db/schema.ts, private/account/src/db/scope-registry.ts, private/account/drizzle/** (its migration only), private/account/tests/**/backup-gc*.test.ts.
   Accept: `cd private/account && npx vitest run backup-gc` rc 0 and `grep -rn "backupExistsPins\|backup_exists_pins" private/account/src` returns nothing outside the drop migration (rc 1).
-- [ ] A3 [writer] Stop D1 writes for telemetry types (Z3 step 3). The type-class purge stays and drains the old rows within 90 days. Test: a `cli.*` event writes no D1 row.
+- [x] A3 [writer] Stop D1 writes for telemetry types (Z3 step 3). The type-class purge stays and drains the old rows within 90 days. Test: a `cli.*` event writes no D1 row.
   Depends on: LA1.
   Owns: private/account/src/services/event-log.service.ts, private/account/tests/integration/telemetry-sink.test.ts.
   Accept: `cd private/account && npx vitest run telemetry-sink event-log-retention` rc 0.
+    (ticked) 2026-11-13T12:08:34Z by d778be9d: commit:6e28fa6243af account vitest 4550 passed rc=0, tsc rc=0 on the landed tree
 - [ ] C2 [writer] Drop `config_versions.envelope_json` (unindexed, `ALTER TABLE DROP COLUMN` as 0072), the read fallback and the backfill job.
   Depends on: LC1.
   Owns: private/account/src/services/config.service.ts, private/account/src/db/config-schema.ts, private/account/drizzle/** (its migration only), private/account/src/entry/cloudflare.ts, private/account/tests/integration/config-version-envelopes.test.ts.
