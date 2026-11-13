@@ -27,6 +27,7 @@ import subprocess
 import sys
 import tempfile
 import urllib.error
+import uuid
 from collections.abc import Callable, Mapping
 from typing import Any, NamedTuple
 
@@ -220,7 +221,36 @@ def write_control_row(ctx: Context) -> str:
         "VALUES (?, ?, ?, 'onboarding', ?, ?, ?) ON CONFLICT(id) DO NOTHING",
         [plan.company_id, plan.name, plan.region, int(plan.request.unlisted), ctx.now, ctx.now],
     )
+    # The regional signer reads `scope` (JOIN companies) before it signs anything for the company, and the company Worker signs the subscription's blob inside the bootstrap call itself. The row is therefore written here, with the subscription id the bootstrap call is told to create under (`scope_subscription_id`); a rerun keeps the row it finds.
+    ctx.query(
+        plan.database,
+        "INSERT INTO scope (company_id, subscription_id, renewal_host, max_plan, max_machines, max_storage_gb, max_expiry_days) "
+        "VALUES (?, ?, ?, 'ENTERPRISE', ?, ?, ?) ON CONFLICT(company_id) DO NOTHING",
+        [
+            plan.company_id,
+            str(uuid.uuid4()),
+            plan.hosts[0],
+            SCOPE_MAX_MACHINES,
+            SCOPE_MAX_STORAGE_GB,
+            SCOPE_MAX_EXPIRY_DAYS,
+        ],
+    )
     return ""
+
+
+def scope_subscription_id(ctx: Context) -> str:
+    """The subscription id the company's control row registers; the bootstrap creates the subscription under it."""
+    rows = ctx.query(
+        ctx.plan.database,
+        "SELECT subscription_id FROM scope WHERE company_id = ?",
+        [ctx.plan.company_id],
+    )
+    if not rows:
+        raise OnboardingError(
+            "company %s: the control row has no scope; the control-row step has not run"
+            % ctx.plan.company_id
+        )
+    return str(rows[0]["subscription_id"])
 
 
 def write_audit(ctx: Context) -> str:
@@ -476,6 +506,11 @@ def account_post(url: str, api_key: str, body: dict) -> tuple[int, dict]:
         return 0, {}
 
 
+# The scope a new company's control row starts with: the ENTERPRISE per-repository cap (packages/shared/src/subscription/constants.ts), and an expiry bound past the 365-day default the Worker's first blob carries, since the signer refuses a blob that ends after `now + max_expiry_days`. `enterprise limits` moves them afterwards.
+SCOPE_MAX_MACHINES = 50
+SCOPE_MAX_STORAGE_GB = 1024
+SCOPE_MAX_EXPIRY_DAYS = 400
+
 BODY_TEXT_KEY = "_text"
 BODY_LIMIT = 500
 
@@ -584,7 +619,11 @@ def live_actions(
         status, _payload = account_call(
             ctx,
             "bootstrap",
-            {"ownerEmail": ctx.plan.request.owner, "storageGb": ctx.plan.request.storage_gb},
+            {
+                "ownerEmail": ctx.plan.request.owner,
+                "storageGb": ctx.plan.request.storage_gb,
+                "subscriptionId": scope_subscription_id(ctx),
+            },
         )
         return "created" if status == HTTP_CREATED else "already bootstrapped"
 

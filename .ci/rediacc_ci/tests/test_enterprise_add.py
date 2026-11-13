@@ -829,33 +829,62 @@ def _account_actions(fake, key="k-secret"):
     return onboarding.live_actions(runner=None, post=fake, api_key_of=lambda _company: key)
 
 
+def _seeded_ctx(world):
+    """A context whose control database already holds the company's row and scope, as after the control-row step."""
+    ctx = _ctx(world)
+    onboarding.write_control_row(ctx)
+    return ctx
+
+
+def test_control_row_registers_the_scope_the_signer_reads_and_bootstrap_sends_its_subscription_id():
+    world = World()
+    ctx = _ctx(world)
+    onboarding.write_control_row(ctx)
+    onboarding.write_control_row(ctx)
+    rows = world.rows(ctx.plan.database, "SELECT * FROM scope")
+    assert len(rows) == 1
+    assert rows[0]["company_id"] == "c0123456789abcdef"
+    assert rows[0]["renewal_host"] == ctx.plan.hosts[0]
+    assert rows[0]["max_expiry_days"] > 365
+    fake = FakeAccount(201)
+    _account_actions(fake)["bootstrap"](ctx)
+    assert fake.calls[0][2]["subscriptionId"] == rows[0]["subscription_id"]
+
+
+def test_bootstrap_without_a_scope_row_refuses_before_calling_the_worker():
+    fake = FakeAccount(201)
+    with pytest.raises(onboarding.OnboardingError, match="no scope"):
+        _account_actions(fake)["bootstrap"](_ctx(World()))
+    assert fake.calls == []
+
+
 def test_live_bootstrap_creates_through_the_account_route():
     fake = FakeAccount(201)
-    detail = _account_actions(fake)["bootstrap"](_ctx(World()))
+    detail = _account_actions(fake)["bootstrap"](_seeded_ctx(World()))
     url, key, body = fake.calls[0]
     assert url.endswith("/account/api/v1/subscriptions/enterprise/bootstrap")
     assert url.startswith("https://")
     assert key == "k-secret"
     assert body["companyId"] == "c0123456789abcdef"
-    assert set(body) == {"companyId", "ownerEmail", "storageGb"}
+    assert set(body) == {"companyId", "ownerEmail", "storageGb", "subscriptionId"}
     assert detail == "created"
 
 
 def test_live_bootstrap_rerun_is_success():
-    assert _account_actions(FakeAccount(200))["bootstrap"](_ctx(World())) == "already bootstrapped"
+    assert _account_actions(FakeAccount(200))["bootstrap"](_seeded_ctx(World())) == "already bootstrapped"
 
 
 def test_live_bootstrap_owner_change_refuses_with_its_status_and_code():
     fake = FakeAccount(409, {"code": "OWNER_MISMATCH"})
     with pytest.raises(onboarding.OnboardingError, match=r"HTTP 409 \(OWNER_MISMATCH\)"):
-        _account_actions(fake)["bootstrap"](_ctx(World()))
+        _account_actions(fake)["bootstrap"](_seeded_ctx(World()))
 
 
 def test_live_bootstrap_and_invite_refuse_naming_the_missing_key():
     fake = FakeAccount()
     for step in ("bootstrap", "invite"):
         with pytest.raises(onboarding.OnboardingError, match=onboarding.ACCOUNT_KEY_ENV):
-            _account_actions(fake, key="")[step](_ctx(World()))
+            _account_actions(fake, key="")[step](_seeded_ctx(World()))
     assert fake.calls == []
 
 
@@ -870,7 +899,7 @@ def test_live_bootstrap_uses_the_company_key_not_the_environment_key(monkeypatch
         return "company-key"
 
     onboarding.live_actions(runner=None, post=fake, api_key_of=company_key)["bootstrap"](
-        _ctx(World())
+        _seeded_ctx(World())
     )
     assert fake.calls[0][1] == "company-key"
     assert asked == ["c0123456789abcdef"]
@@ -882,7 +911,7 @@ def test_live_bootstrap_without_a_company_key_source_never_falls_back_to_the_env
     monkeypatch.setenv(onboarding.ACCOUNT_KEY_ENV, "shared-key")
     fake = FakeAccount()
     with pytest.raises(onboarding.OnboardingError, match="bws-project"):
-        onboarding.live_actions(runner=None, post=fake)["bootstrap"](_ctx(World()))
+        onboarding.live_actions(runner=None, post=fake)["bootstrap"](_seeded_ctx(World()))
     assert fake.calls == []
 
 
@@ -907,7 +936,7 @@ def test_live_invite_posts_the_owner_mail_route():
 @pytest.mark.parametrize("status", [202, 204])
 def test_live_account_call_accepts_any_2xx(status):
     fake = FakeAccount(status)
-    _account_actions(fake)["bootstrap"](_ctx(World()))
+    _account_actions(fake)["bootstrap"](_seeded_ctx(World()))
     assert len(fake.calls) == 1
 
 
@@ -917,14 +946,14 @@ def test_live_account_call_accepts_any_2xx(status):
 )
 def test_live_account_call_refuses_a_non_2xx_with_or_without_a_code(status, payload, tail):
     with pytest.raises(onboarding.OnboardingError) as caught:
-        _account_actions(FakeAccount(status, payload))["bootstrap"](_ctx(World()))
+        _account_actions(FakeAccount(status, payload))["bootstrap"](_seeded_ctx(World()))
     assert ("refused with HTTP %d%s on POST " % (status, tail)) in str(caught.value)
 
 
 def test_live_account_call_names_the_path_and_the_body_of_a_refusal():
     body = {"error": "D1_ERROR: no such table: company_orgs"}
     with pytest.raises(onboarding.OnboardingError) as caught:
-        _account_actions(FakeAccount(500, body))["bootstrap"](_ctx(World()))
+        _account_actions(FakeAccount(500, body))["bootstrap"](_seeded_ctx(World()))
     message = str(caught.value)
     assert "HTTP 500" in message
     assert "POST /account/api/v1/subscriptions/enterprise/bootstrap" in message
@@ -934,7 +963,7 @@ def test_live_account_call_names_the_path_and_the_body_of_a_refusal():
 def test_live_account_call_truncates_the_body_and_masks_the_key():
     body = {"_text": "boom k-secret " + "x" * 2000}
     with pytest.raises(onboarding.OnboardingError) as caught:
-        _account_actions(FakeAccount(500, body))["bootstrap"](_ctx(World()))
+        _account_actions(FakeAccount(500, body))["bootstrap"](_seeded_ctx(World()))
     message = str(caught.value)
     assert "k-secret" not in message
     assert "<redacted>" in message
@@ -943,7 +972,7 @@ def test_live_account_call_truncates_the_body_and_masks_the_key():
 
 def test_live_account_call_control_a_bodyless_refusal_adds_no_tail():
     with pytest.raises(onboarding.OnboardingError) as caught:
-        _account_actions(FakeAccount(500, {}))["bootstrap"](_ctx(World()))
+        _account_actions(FakeAccount(500, {}))["bootstrap"](_seeded_ctx(World()))
     assert str(caught.value).endswith("/enterprise/bootstrap")
 
 
@@ -1048,7 +1077,7 @@ def test_live_account_calls_accept_a_success_with_an_empty_body():
     """Review f2446371.2: a cut-off 200 reads as (200, {}), which both callers take as success."""
     assert _account_actions(FakeAccount(200, {}))["invite"](_ctx(World())) == ""
     assert (
-        _account_actions(FakeAccount(200, {}))["bootstrap"](_ctx(World())) == "already bootstrapped"
+        _account_actions(FakeAccount(200, {}))["bootstrap"](_seeded_ctx(World())) == "already bootstrapped"
     )
 
 
