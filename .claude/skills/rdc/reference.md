@@ -2169,6 +2169,8 @@ Copy one machine from another config into the active config: the machine entry w
 - `--dry-run`: Show what would be copied without writing
 - `--strategy-from-source`: Replace a differing backup strategy with the source config's version instead of refusing it
 
+> MCP excluded: Copies a machine and its repositories between named configs; config mutation, use CLI directly
+
 ### rdc doctor
 
 Run diagnostic checks on the CLI environment: Node.js version, renet binary availability, config file validity, SSH key status, and network connectivity. Outputs a structured health report with pass/fail indicators.
@@ -2338,6 +2340,7 @@ Show subscription, and license state for a machine.
 **Options:**
 
 - `-m, --machine <name>`: Machine name
+- `--all`: Also list the licenses of deleted repositories and of repositories not in this config
 
 ### rdc subscription notices
 
@@ -2349,13 +2352,15 @@ List the account's notices: license expiry, backup health, renewals, certificate
 - `--unread`: Only notices not yet read
 - `--mark-read`: Mark the listed notices as read
 
-### rdc subscription retire <guid>
+### rdc subscription retire [guid]
 
 Retire the license of a repository that is gone, so it leaves the license counts and notices.
 
 **Options:**
 
 - `--force`: Retire a license whose repository is still in this config and not hard-expired
+- `--expired`: Retire every hard-expired license of a deleted repository or one not in this config
+- `--dry-run`: With --expired: list what would be retired and change nothing
 
 ### rdc subscription refresh
 

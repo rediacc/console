@@ -7,7 +7,7 @@ order: 2
 language: fr
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/fr/cli.json
-sourceHash: "b093d951a6a809d9"
+sourceHash: "505feb83df0a1561"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -3346,6 +3346,7 @@ rdc subscription status [options]
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `-m, --machine <name>` | {{t:cli.options.machine}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--all` | {{t:cli.commands.subscription.status.optionAll}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-subscription-refresh"></a>
@@ -3370,12 +3371,14 @@ rdc subscription refresh [options]
 {{t:cli.commands.subscription.retire.description}}
 
 ```bash
-rdc subscription retire <guid> [options]
+rdc subscription retire [guid] [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
 | `--force` | {{t:cli.commands.subscription.retire.optionForce}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--expired` | {{t:cli.commands.subscription.retire.optionExpired}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--dry-run` | {{t:cli.commands.subscription.retire.optionDryRun}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 <a id="cli-local-subscription-notices"></a>
