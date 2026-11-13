@@ -22,16 +22,16 @@ Body-Sig: 2100aa78874e8817
 Anchor: in-diff
 Claim: branch_context discards the failure reason from heads(root) (`remote, _why = heads(root)`) and names the branch `unpushed` when the ls-remote read failed, so the dry-run line and the Worker's build metadata say HEAD is unpushed when only the read failed; the origin-main gate still refuses the run.
 Class: swallowed-error
-Resolution: open
+Resolution: fixed 01f2a26f115583b0c8e372acda5ee2b8b5efae2e | d778be9d 2026-11-13T06:31:20Z
 
 ### 2099b8d9.2 [low] .ci/rediacc_ci/release/local.py:1439
 Anchor: in-diff
 Claim: The comment says the gates row's argv is printed, but `if step.argv:` now prints the argv of every non-run row that has one (assist, seal, stage and the rest), so a dry run prints more child commands than the comment describes.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: fixed 01f2a26f115583b0c8e372acda5ee2b8b5efae2e | d778be9d 2026-11-13T06:31:20Z
 
 ### 2099b8d9.3 [low] .ci/rediacc_ci/release/local.py:1378
 Anchor: in-diff
 Claim: dry_gates passes fetch=_ls_remote_main (an ls-remote read that fetches no objects) into the new branch-release ancestry check, so a dry run can judge origin/main's ancestry differently from the real run's fetch, which the commit does not test.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed 01f2a26f115583b0c8e372acda5ee2b8b5efae2e | d778be9d 2026-11-13T06:31:20Z
