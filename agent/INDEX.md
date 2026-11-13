@@ -506,7 +506,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-console-executor-multi-org.md` | approved | 377 | 1 | 17 | 67459 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-converge-preflight-and-repo-recovery.md` | executing | 94 | 0 | 19 | 34124 |
-| `agent/plans/PLAN-d1-eu-jurisdiction.md` | approved | 82 | 21 | 0 | 18395 |
+| `agent/plans/PLAN-d1-eu-jurisdiction.md` | approved | 82 | 21 | 0 | 18469 |
 | `agent/plans/PLAN-d1-scaling.md` | approved | 217 | 14 | 17 | 45560 |
 | `agent/plans/PLAN-deletion-budget.md` | draft | 388 | 28 | 0 | 53439 |
 | `agent/plans/PLAN-detached-jobs.md` | approved | 1063 | 8 | 32 | 194448 |

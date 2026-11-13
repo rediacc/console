@@ -64,7 +64,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/_done/PLAN-submodule-branch-coordination-guard.md -- 5 of 8 boxes ticked, the PR body's `Plan:` line
   - agent/plans/PLAN-proxy-cd-six-targets.md -- 27 of 31 boxes ticked, the PR body's `Plan:` line
   - agent/plans/PLAN-repo-docker-storage-prune.md -- 12 of 14 boxes ticked, the PR body's `Plan:` line
-- Work outside the PR's plans (20 epic(s)):
+- Work outside the PR's plans (21 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 26 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
   - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 48 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
@@ -75,6 +75,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 92df2f69, plan agent/plans/PLAN-free-license.md, outside the set, 8 commit(s) on the branch, 0 open item(s): free license ladder F6
   - epic 1f877343, plan agent/plans/PLAN-worktree-lease.md, outside the set, 55 commit(s) on the branch, 0 open item(s): guided detached worktree leases
   - epic 2e0e531f, plan agent/plans/PLAN-rediaccfile-unprivileged.md, outside the set, 19 commit(s) on the branch, 0 open item(s): Rediaccfile lifecycle runs unprivileged
+  - epic 5eb69cff, plan agent/plans/PLAN-website-routing-and-mail.md, outside the set, 2 commit(s) on the branch, 0 open item(s): Website routing, company lookup and product mail on .cloud
   - epic 783185d2, plan agent/plans/PLAN-enterprise-isolation.md, outside the set, 53 commit(s) on the branch, 0 open item(s): Enterprise per-company isolation, regional signers and release rings
   - epic 1d805023, plan agent/plans/PLAN-tick-tracking.md, outside the set, 26 commit(s) on the branch, 0 open item(s): tick tracking: plan-box trailer, landing prints the tick, box audit
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
@@ -85,8 +86,8 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 92 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
-- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a6411f644ba06ceef, worker:ae985425dc891d7f5.
-- Leased items: 14: #000fcf57 (worker:btrwtl44y, d778be9d), #0eecc43c (worker:a6411f644ba06ceef, d778be9d), #14adbaec (worker:a1c356cc67c2a5061, d778be9d), #22e2ca84 (worker:ae985425dc891d7f5, d778be9d), #56bf9966 (worker:btrwtl44y, d778be9d), #5ac354e6 (worker:ae985425dc891d7f5, d778be9d), #63c267ff (worker:ae985425dc891d7f5, d778be9d), #756a5f03 (worker:ae985425dc891d7f5, d778be9d), #a1ecc191 (worker:btrwtl44y, d778be9d), #ab9c68b1 (worker:ae985425dc891d7f5, d778be9d), #bf47a483 (worker:ae985425dc891d7f5, d778be9d), #cb02f9f2 (worker:ae985425dc891d7f5, d778be9d), and 2 more.
+- Writers: 6 live of writer_cap 25 (session d778be9d): worker:a1f594061d92e22a0, worker:a0067044c3f218927, worker:ae985425dc891d7f5, worker:adafc311f68d50dfc, worker:ae32c67fd81bc1423, worker:a3f1ae833b8280dbb.
+- Leased items: 18: #000fcf57 (worker:btrwtl44y, d778be9d), #0eecc43c (worker:ae985425dc891d7f5, d778be9d), #14adbaec (worker:ae32c67fd81bc1423, d778be9d), #1f64af37 (worker:a3f1ae833b8280dbb, d778be9d), #22e2ca84 (worker:ae985425dc891d7f5, d778be9d), #2c00ac36 (worker:adafc311f68d50dfc, d778be9d), #56bf9966 (worker:a1f594061d92e22a0, d778be9d), #5ac354e6 (worker:ae985425dc891d7f5, d778be9d), #63c267ff (worker:ae985425dc891d7f5, d778be9d), #73b8357d (worker:ae32c67fd81bc1423, d778be9d), #756a5f03 (worker:ae985425dc891d7f5, d778be9d), #a1ecc191 (worker:btrwtl44y, d778be9d), and 6 more.
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
