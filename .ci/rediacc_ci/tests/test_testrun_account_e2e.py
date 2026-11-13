@@ -593,18 +593,22 @@ class _Fake:
                 argv, 0 if ok else 1, "install ok installed" if ok else "", ""
             )
         if "--dry-run" in argv:
-            return subprocess.CompletedProcess(argv, 0, self.dry, "")
+            return subprocess.CompletedProcess(
+                argv, 1 if "Missing system dependencies" in self.dry else 0, self.dry, ""
+            )
         if isinstance(self.apt, BaseException):
             raise self.apt
         return subprocess.CompletedProcess(argv, int(typing.cast("int", self.apt)), "", "")
 
 
-DRY = "apt-get install -y --no-install-recommends libnss3 libatk1.0-0 libgbm1\n"
+DRY = "Missing system dependencies (3):\n  libnss3\n  libatk1.0-0\n  libgbm1\n"
+ALL_PRESENT = "All system dependencies are installed.\n"
 
 
 def test_dry_run_packages_parse() -> None:
     assert account_e2e.dry_run_packages(DRY) == ["libnss3", "libatk1.0-0", "libgbm1"]
     assert account_e2e.dry_run_packages("nothing to do\n") == []
+    assert account_e2e.dry_run_packages(ALL_PRESENT) == []
 
 
 def test_system_deps_present_skips_apt() -> None:
@@ -634,7 +638,7 @@ def test_system_deps_apt_failure_fails_by_name() -> None:
 
 def test_a_dry_run_that_prints_no_apt_line_is_refused_not_skipped() -> None:
     fake = _Fake("Playwright changed its output\n", set())
-    with pytest.raises(account_e2e.RefusedError, match="printed no `apt-get install` line"):
+    with pytest.raises(account_e2e.RefusedError, match="printed no `Missing system dependencies` list"):
         account_e2e.install_system_deps("chromium", ".", fake)
     assert not any(c[0] == "npx" and "--dry-run" not in c for c in fake.calls)
 
@@ -658,5 +662,26 @@ def test_a_dry_run_that_times_out_is_refused_by_name() -> None:
 def test_a_dry_run_with_empty_stdout_is_refused_too() -> None:
     """e099399f.1: nothing printed is as unreadable as an unrecognised line, so the gate stops instead of skipping apt."""
     fake = _Fake("", set())
-    with pytest.raises(account_e2e.RefusedError, match="printed no `apt-get install` line"):
+    with pytest.raises(account_e2e.RefusedError, match="printed no `Missing system dependencies` list"):
         account_e2e.install_system_deps("chromium", ".", fake)
+
+
+def test_playwright_165_all_present_dry_run_skips_apt() -> None:
+    """The 1.65 shape (rc=0, no package list) is a clean skip; the 1.64-era apt-get line parse read it as unreadable."""
+    fake = _Fake(ALL_PRESENT, set())
+    assert account_e2e.install_system_deps("chromium", ".", fake) is False
+    assert not any(c[0] == "npx" and "--dry-run" not in c for c in fake.calls)
+
+
+def test_playwright_165_missing_list_with_rc1_reaches_apt() -> None:
+    """Run 43360983417: rc=1 plus a `Missing system dependencies` list on stdout was refused as a failed dry run."""
+    fake = _Fake(DRY, set())
+    assert account_e2e.install_system_deps("chromium", ".", fake) is True
+
+
+def test_a_dry_run_rc1_with_no_list_is_still_refused_and_shows_stdout() -> None:
+    def failing(argv: list[str], **_kw: typing.Any) -> subprocess.CompletedProcess[str]:
+        return subprocess.CompletedProcess(argv, 1, "unsupported platform\n", "")
+
+    with pytest.raises(account_e2e.RefusedError, match=r"failed \(rc=1\): unsupported platform"):
+        account_e2e.install_system_deps("chromium", ".", failing)
