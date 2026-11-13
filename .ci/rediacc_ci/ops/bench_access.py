@@ -547,6 +547,9 @@ def run(
     else:
         raise AccessError("unknown command %r" % command)
     save(api, hosts, ips)
+    if command in ("add-current", "add"):
+        # A 403 on a host outside this list (the retired bench.rediacc.com, still bound to the old workers behind a frozen rule) is not fixed by this run; name what it does cover.
+        print("rule covers: " + ", ".join(hosts))
     if not ips:
         log.warn("the list is empty: every bench request but the health paths is blocked")
     _print_list(ips, now)

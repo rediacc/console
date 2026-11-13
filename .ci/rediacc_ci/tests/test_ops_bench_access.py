@@ -124,6 +124,17 @@ def test_first_add_creates_the_rule_holding_the_callers_ip(capsys):
     assert "198.51.100.7" in capsys.readouterr().out
 
 
+def test_add_names_the_hosts_the_rule_covers_and_list_does_not(capsys):
+    """Review 2026-11-13: a 403 on bench.rediacc.com (the retired host, frozen rule on the old zone) survived add-current with no hint that the live hosts are the .cloud ones."""
+    api = FakeCloudflare()
+    _run(api, "add-current")
+    out = capsys.readouterr().out
+    assert "rule covers: bench.rediacc.cloud, proxy.bench.rediacc.cloud" in out
+    assert "bench.rediacc.com" not in out
+    _run(api, "list")
+    assert "rule covers" not in capsys.readouterr().out
+
+
 def test_the_rule_blocks_without_a_custom_response():
     """The Free plan refuses a custom response (live 2026-10-26: `not entitled to use a custom response`), so the rule is a plain block and the hint lives in the tooling."""
     api = FakeCloudflare()
