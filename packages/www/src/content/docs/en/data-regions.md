@@ -28,7 +28,7 @@ At sign-up, the picker suggests a region from the visitor's location, which can 
 
 ## What Stays in Your Region
 
-These data types are stored and processed in the chosen region (see Regional Infrastructure below for what is guaranteed):
+These data types are stored and processed in the chosen region, except that Asia Pacific transactional email is sent through the EU endpoint (see Regional Infrastructure below for what is guaranteed):
 
 - **Account data**: email, name, organization, team memberships
 - **Billing and subscription records**: plan, activations, license issuances

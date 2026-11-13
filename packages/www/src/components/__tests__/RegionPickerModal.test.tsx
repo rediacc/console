@@ -232,7 +232,8 @@ describe('LookupPrivacyNote', () => {
   });
 
   it('renders a one-sentence note as plain text with no span (control)', () => {
-    const html = renderToStaticMarkup(<LookupPrivacyNote text={firstSentence} lang="en" />);
-    expect(html).toBe(`<p class="region-picker-footer-note">${firstSentence}</p>`);
+    const single = 'Only the domain is looked up.';
+    const html = renderToStaticMarkup(<LookupPrivacyNote text={single} lang="en" />);
+    expect(html).toBe(`<p class="region-picker-footer-note">${single}</p>`);
   });
 });

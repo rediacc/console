@@ -14,8 +14,8 @@ export const REGION_META: Partial<
     location: 'Eastern North America',
   },
   asia: {
-    flagSrc: '/assets/images/flags/jp.svg',
-    flagAlt: 'Japan flag',
+    flagSrc: '/assets/images/flags/apac.svg',
+    flagAlt: 'Globe',
     location: 'Asia Pacific',
   },
 };

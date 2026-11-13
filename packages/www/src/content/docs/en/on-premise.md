@@ -74,7 +74,7 @@ All keys are generated on the machine and written only to the repository's `secr
 rdc server backup accounts.example.com --out elite-recovery.env
 ```
 
-`--out` writes the file with mode 0600; without it, the bundle goes to stdout. `--bws-project <id>` on the install also copies the keys to a Bitwarden Secrets Manager project, and `--rotate` replaces a stored value that differs. Without `--bws-project`, no key leaves the machine.
+`--out` writes the file with mode 0600; without it, the bundle goes to stdout. `--bws-project <id>` on the install also copies the keys to a Bitwarden Secrets Manager project, and `--rotate` replaces a stored value that differs. Without `--bws-project`, the keys leave the server only in the recovery bundle the install prints and in the file `rdc server backup --out` writes.
 
 ### Status
 
@@ -250,7 +250,7 @@ The cert's validity is governed by the validity policy (per-plan defaults and ce
 
 ### 3. Install the cert on the on-premise server
 
-The server reads its delegation cert from one file on its data volume, `/data/delegation-cert.json` (`DELEGATION_CERT_PATH`). Nothing else carries a cert: there is no environment variable for it. `rdc server install` drops the downloaded cert there, and `rdc server licence` replaces it later:
+The server reads its delegation cert from one file on its data volume, `/data/delegation-cert.json` (`DELEGATION_CERT_PATH` names it). No environment variable carries the cert itself. `rdc server install` drops the downloaded cert there, and `rdc server licence` replaces it later:
 
 ```bash
 rdc server install <domain> --cert delegation-cert.json
@@ -258,7 +258,7 @@ rdc server licence <domain> --cert delegation-cert.json
 rdc server status <domain>
 ```
 
-Both commands hand the cert to the running server through its cert inbox (`data/web/cert-inbox/new.json`). The server verifies it and answers with `applied.json` or `rejected.json`, and the command confirms the new cert id with `rdc server status` (the same `cert-status` data as step 6). `rdc server upgrade` does the same for a cert it carries. One upgrade step moves a leftover `DELEGATION_CERT_BASE64` from `secrets.env` into the inbox, so a box installed before the inbox existed keeps its cert.
+Both commands hand the cert to the running server through its cert inbox (`data/web/cert-inbox/new.json`). The server verifies it and answers with `applied.json` or `rejected.json`, and the command confirms the new cert id with `rdc server status` (the same `cert-status` data as step 6). `rdc server upgrade` does the same for a cert it carries. The server no longer reads `DELEGATION_CERT_BASE64`: one upgrade step moves a leftover value from `secrets.env` into the inbox, so a box installed before the inbox existed keeps its cert.
 
 The server loads the cert at boot and checks it against the key it signs licenses with: the signing key's fingerprint must equal the fingerprint of the cert's `delegatedPublicKey`, because licenses signed under a key the cert does not authorize would be unvalidatable on every machine. Keep the signing keypair and the cert's `delegatedPublicKey` in sync.
 
@@ -330,6 +330,8 @@ This entire loop never requires network egress from the on-premise.
 | `write-failed` | 500 | The cert could not be written to disk |
 | `adoption-failed` | 500 | The server could not load the written cert |
 
+For `bad-signature`, check that `UPSTREAM_PUBLIC_KEY` matches the upstream master public key. For `no-upstream-key`, set `UPSTREAM_PUBLIC_KEY`.
+
 ### 6. Status and monitoring
 
 Query the on-premise local cert state at any time:
@@ -351,7 +353,7 @@ For backup and audit, the on-premise admin can also download the currently loade
 | `ON_PREMISE_PRIVATE_KEY` | Yes | Base64 PKCS8 Ed25519 private key for delegated signing |
 | `ON_PREMISE_PUBLIC_KEY` | Yes | Base64 SPKI Ed25519 public key (must match the cert's `delegatedPublicKey`) |
 | `DELEGATION_CERT_PATH` | Optional | Filesystem path to the signed cert JSON. Default `/data/delegation-cert.json` on the data volume. Replace the cert with `rdc server licence`, not by hand. |
-| `UPSTREAM_PUBLIC_KEY` | Required if `UPSTREAM_API_KEY` is set, or for `/onprem/cert-upload` to work | Base64 SPKI of the upstream master public key. Fail-fast at boot if missing. |
+| `UPSTREAM_PUBLIC_KEY` | Required if `UPSTREAM_API_KEY` is set, or for `/onprem/cert-upload` to work | Base64 SPKI of the upstream master public key. Without it the server refuses every cert at boot (`no-upstream-key`) and runs the free tier, as step 3 describes. |
 | `UPSTREAM_URL` | For auto-renew | Upstream account server base URL, e.g. `https://www.rediacc.com` |
 | `UPSTREAM_API_KEY` | For auto-renew | A `delegation:renew`-scoped api token. Mint via the portal - see Step 4. |
 | `AUTO_RENEW_INTERVAL_HOURS` | Optional | Default 24. How often to check whether the cert needs renewal. |
