@@ -43,9 +43,10 @@ Worklist: #ad4d5f4e, PR-TASK 79b7e92e
   Accept: `npm run login:bench` rc 0 plus every read rc 0, recorded in this plan.
 
 ### Wave 1: writers
-- [ ] W1 [writer] The bench production guard (Design 3): `bench_production.py`, `bench-production.json`, reset_bench refusals, drill cleanup refusals.
+- [x] W1 [writer] The bench production guard (Design 3): `bench_production.py`, `bench-production.json`, reset_bench refusals, drill cleanup refusals.
   Tests: a declared file makes `--yes`, `--d1-only` and `--r2-only` exit 2 before any credential is read; an empty file passes; the D1 check refuses on planted rows; drill cleanup with a declared id exits 1 without deleting.
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_ops_bench_production.py -q` rc 0, plus the reset_bench tests rc 0
+    (ticked) 2026-11-13T11:06:40Z by d778be9d: commit:07efc580b6 bench_production guard; pytest bench_production + reset_bench names + drills 97 passed
 - [x] W2 [writer] bench_access pinned entries and `verify-pinned` (Design 4).
   Tests: a pinned entry survives 30 days and a full rotating list; `remove` and `clear` refuse it; a hand-deleted pin returns on the next `add-current`; `verify-pinned` exits 1 when one is absent.
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_ops_bench_access.py -q` rc 0
@@ -55,7 +56,8 @@ Worklist: #ad4d5f4e, PR-TASK 79b7e92e
   Accept: `cd packages/cli && npx vitest run src/commands/__tests__/config-import-machine.test.ts` rc 0, plus `npm run check:i18n` rc 0
 - [x] W4 [writer] The rotation tool `rdcConfig` and its test move to eu-bench. Accept: `cd private/account && npx vitest run tests/integration/rotation-observability-restart.test.ts` rc 0
     (ticked) 2026-11-13T11:01:16Z by d778be9d: commit:df30b6993d rotation rdcConfig eu-bench; vitest rotation-observability-restart 9 passed
-- [ ] W5 [writer] A `hostinger-escrow` profile in secret-supply.json binding `HOSTINGER_REPO_CREDENTIALS_ESCROW`, mapped in bws-secret-map.json. Accept: `npm run check:ci-secret-supply` rc 0
+- [x] W5 [writer] A `hostinger-escrow` profile in secret-supply.json binding `HOSTINGER_REPO_CREDENTIALS_ESCROW`, mapped in bws-secret-map.json. Accept: `npm run check:ci-secret-supply` rc 0
+    (ticked) 2026-11-13T11:06:41Z by d778be9d: commit:a61e7b99cb hostinger-escrow profile; check:ci-secret-supply rc 0
 
 ### Wave 2: bench readiness (after W1-W5 land and PLAN-d1-eu-jurisdiction's bench wave is ticked)
 - [ ] L1 [live] Pin hostinger with `bench_access add-current` and the pinned file in the tree. Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access verify-pinned` rc 0, and P0's two curls from hostinger print a code other than 403
