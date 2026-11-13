@@ -396,6 +396,7 @@
       "kind": "no-github-twin",
       "reason": "Edge-us test org C of the live console probes: provisioned fresh for the executor connect-timeout check (agent/plans/PLAN-org-executor-connect-timeout-relocate.md, 2026-10-28) and stored in the vault, but no `.ci/config/secret-supply.json` profile binds it yet (live-console-edge-us binds orgs A and B only) and no workflow runs those probes, so no GitHub secret of that name exists to shadow."
     },
+    "CF_MANAGEMENT_TOKEN": {"kind": "no-github-twin", "reason": "The user-level Cloudflare token (API Tokens Write only) that mints each company's bucket-scoped backup token, bound only by `bws_env exec --profile enterprise-mint` (.ci/config/secret-supply.json); no workflow mints company tokens, so no GitHub secret of that name exists to shadow."},
     "LINODE_API_TOKEN": {
       "kind": "no-github-twin",
       "reason": "The Linode API token for `rdc machine provision` and `machine provider add --token-env` on an operator workstation, bound only by `bws_env exec --profile cloud-provision` (.ci/config/secret-supply.json); no workflow provisions cloud machines, so no GitHub secret of that name exists to shadow."

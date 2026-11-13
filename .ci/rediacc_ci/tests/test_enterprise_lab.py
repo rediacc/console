@@ -3254,7 +3254,7 @@ def _drive_live_add(monkeypatch, project: str | None) -> dict[str, object]:
     monkeypatch.setattr(lab.control_db, "ensure_all", lambda **_k: None)
     monkeypatch.setattr(lab.control_db, "transport", lambda: None)
 
-    def fake_provision(pid, env=None):
+    def fake_provision(pid, **_k):
         seen["project"] = pid
         return lambda _company: None
 
