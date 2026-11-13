@@ -2891,6 +2891,15 @@ def test_ledger_write_starts_on_a_fresh_line_after_a_torn_fragment(tmp_path):
     assert ledger.read_text(encoding="utf-8") == ""
 
 
+def test_ledger_write_of_no_rows_writes_nothing_after_a_torn_fragment(tmp_path):
+    """d733cf18.1: an empty row list must not turn a torn fragment's missing newline into a bare line."""
+    ledger = lease._ledger_file(tmp_path)
+    ledger.parent.mkdir(parents=True)
+    ledger.write_text('{"sha": "tor', encoding="utf-8")
+    lease._ledger_write(tmp_path, [])
+    assert ledger.read_text(encoding="utf-8") == '{"sha": "tor'
+
+
 def test_control_ledger_write_adds_no_blank_line_after_a_whole_row(tmp_path):
     first, second = {"sha": "a"}, {"sha": "b"}
     lease._ledger_write(tmp_path, [first])

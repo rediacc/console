@@ -1578,6 +1578,8 @@ def _ledger_file(root):
 
 def _ledger_write(root, rows):
     """Append `rows`, each on a fresh line: a torn fragment a failed retract left without its newline would otherwise glue onto the first row, which then neither parses nor retracts (97b56dda.1)."""
+    if not rows:
+        return
     path = _ledger_file(root)
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a+b") as handle:
