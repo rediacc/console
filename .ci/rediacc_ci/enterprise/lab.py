@@ -189,6 +189,11 @@ class LiveLab:
     def _registry(self) -> registry.Registry:
         return registry.Registry(control_db.transport(), bench=self.bench)
 
+    def _provision(self) -> Callable[..., Any] | None:
+        """The secrets-step provisioner over the enterprise bws project `ENTERPRISE_PROOF_BWS_PROJECT` names (the id `store_api_key` reads); None without it, and the step then refuses naming `--bws-project`."""
+        project = os.environ.get(BWS_PROJECT_ENV, "")
+        return onboarding.live_provision(project) if project else None
+
     def _live_add(self, req: onboarding.Request, stop_after: str = "") -> onboarding.Outcome:
         try:
             control_db.ensure_all(bench=req.bench)
@@ -197,7 +202,7 @@ class LiveLab:
         return onboarding.run(
             req,
             query=control_db.transport(),
-            actions=onboarding.live_actions(),
+            actions=onboarding.live_actions(provision=self._provision()),
             stop_after=stop_after,
             out=lambda _line: None,
         )

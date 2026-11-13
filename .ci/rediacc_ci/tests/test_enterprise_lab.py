@@ -3240,3 +3240,49 @@ def test_every_account_config_binds_the_props_its_signer_requires(config):
     props = binding.get("props")
     assert props == {"tier": "shared", "region": doc["vars"]["REGION"]}
     assert deploy_signer.expected_props(doc["name"], companies=lambda _bench: []) == props
+
+
+# --- the live add's bws project -----------------------------------------------
+
+
+def _drive_live_add(monkeypatch, project: str | None) -> dict[str, object]:
+    seen: dict[str, object] = {}
+    if project is None:
+        monkeypatch.delenv(lab.BWS_PROJECT_ENV, raising=False)
+    else:
+        monkeypatch.setenv(lab.BWS_PROJECT_ENV, project)
+    monkeypatch.setattr(lab.control_db, "ensure_all", lambda **_k: None)
+    monkeypatch.setattr(lab.control_db, "transport", lambda: None)
+
+    def fake_provision(pid, env=None):
+        seen["project"] = pid
+        return lambda _company: None
+
+    def fake_actions(*, provision=None, **_k):
+        seen["provision"] = provision
+        return []
+
+    monkeypatch.setattr(onboarding, "live_provision", fake_provision)
+    monkeypatch.setattr(onboarding, "live_actions", fake_actions)
+    monkeypatch.setattr(onboarding, "run", lambda *_a, **_k: onboarding.Outcome(0, "c1", ()))
+    req = onboarding.Request(
+        name="x",
+        region="eu",
+        owner="o@x.example",
+        storage_gb=1,
+        unlisted=True,
+        lookup_domain="x.example",
+        bench=True,
+    )
+    _lab()._live_add(req)
+    return seen
+
+
+def test_live_add_passes_the_env_bws_project_to_onboarding(monkeypatch):
+    seen = _drive_live_add(monkeypatch, "proj-123")
+    assert seen["project"] == "proj-123"
+    assert callable(seen["provision"])
+
+
+def test_live_add_without_the_bws_project_passes_no_provisioner(monkeypatch):
+    assert _drive_live_add(monkeypatch, None)["provision"] is None
