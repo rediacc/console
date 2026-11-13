@@ -57,23 +57,23 @@ The ONLY caller that passes `--sanitize` is the removed edge-clone-d1.yml workfl
 "The target D1 never sees real PII" -- is true only because the target sees nothing at all. Reproduced here, not repaired: recreating a deleted 152-line SQL file is not a port's decision.
 
 -----------------------------------------------------------------------------
-DEFECT B -- A FAILED FK VERIFICATION IS REPORTED AS ZERO VIOLATIONS
+DEFECT B -- A FAILED FK VERIFICATION WAS REPORTED AS ZERO VIOLATIONS (REPAIRED)
 -----------------------------------------------------------------------------
-Step 5 is the script's whole safety claim, and it cannot fail for any reason other than a violation it actually managed to read:
+Step 5 is the script's whole safety claim, and the twin could not fail it for any reason other than a violation it actually managed to read:
 
     FK_RESULT=$(npx wrangler d1 execute ... --json 2>/dev/null || true)
     FK_COUNT=$(echo "$FK_RESULT" | jq '.[0].results | length' 2>/dev/null || echo "0")
     if [[ "$FK_COUNT" -gt 0 ]]; then ... fi
     log_info "FK integrity check passed (0 violations)"
 
-`2>/dev/null || true` discards both wrangler's message and its status, so an expired token, a network failure or a wrangler crash all yield an empty `FK_RESULT`. `jq` on empty input then prints NOTHING and exits 0 -- so the `|| echo "0"` fallback never even fires -- and `[[ "" -gt 0 ]]` is false without error. Driven 2026-09-14:
+`2>/dev/null || true` discards both wrangler's message and its status, so an expired token, a network failure or a wrangler crash all yield an empty `FK_RESULT`, `jq` on it prints nothing and exits 0, and `[[ "" -gt 0 ]]` is false without error. Driven 2026-09-14:
 
     $ FK_RESULT=""; FK_COUNT=$(echo "$FK_RESULT" | jq '.[0].results | length' 2>/dev/null || echo "0")
     $ echo "[$FK_COUNT]"; [[ "$FK_COUNT" -gt 0 ]] && echo gt || echo notgt
     []
     notgt
 
-The run then prints `✓ FK integrity check passed (0 violations)` and exits 0. This is the "an API call that failed folded into the check passed" shape, on the step whose entire job is to notice corruption. Reproduced here, not repaired.
+REPAIRED 2026-11-13 (PLAN-d1-eu-jurisdiction W2, which reuses this check for the jurisdiction move): `verify_fk` reads wrangler's status and its stderr reaches the operator; a non-zero status, or an answer that is not a D1 result set, prints why and exits 1. Only a result set actually read counts its violations. This is the one place the port departs from the frozen twin on purpose, and `test_deploy_clone_d1.py` pins the departure.
 
 -----------------------------------------------------------------------------
 DEFECT C -- THE HEADER PROMISES A GUARD ON `CLOUDFLARE_ACCOUNT_ID` THAT IS ABSENT
@@ -149,8 +149,7 @@ DROP_STATEMENTS_SED = (
 IMPORT_HEADER = ("PRAGMA defer_foreign_keys=ON;", "PRAGMA foreign_keys=OFF;")
 IMPORT_FOOTER = ("PRAGMA foreign_keys=ON;",)
 
-# `jq '.[0].results | length'` (twin :152) and the `--command` at :151.
-FK_JQ = ".[0].results | length"
+# The `jq` that prints the violation rows (twin :155) and the `--command` at :151.
 FK_RESULTS_JQ = ".[0].results"
 FK_COMMAND = "PRAGMA foreign_key_check"
 
@@ -178,9 +177,9 @@ REQUIRED_VAR = "CLOUDFLARE_API_TOKEN"
 # `"$SCRIPT_DIR/sanitize-d1.sql"` (twin :117), relative to the repository root so the missing-file path is checkable without guessing at an absolute one.
 SANITIZE_SQL_RELATIVE = (".ci", "scripts", "deploy", "sanitize-d1.sql")
 
-# The four defects in the module docstring, as constants a test can assert by name instead of restating the sentence.
+# The four defects in the module docstring, as constants a test can assert by name instead of restating the sentence. DEFECT B is repaired, so its constant is False.
 THE_SANITIZE_PATH_CANNOT_WORK = True
-A_FAILED_FK_CHECK_REPORTS_ZERO_VIOLATIONS = True
+A_FAILED_FK_CHECK_REPORTS_ZERO_VIOLATIONS = False
 THE_ACCOUNT_ID_GUARD_THE_HEADER_PROMISES_IS_ABSENT = True
 THE_BLOCKER_COMMENTS_NAME_A_VALUE_THAT_IS_NEVER_BUILT = True
 
@@ -409,6 +408,24 @@ def run_export(source_db: str, tmpdir: str) -> int:
     return export_rc
 
 
+def export_redacted(source_db: str, tmpdir: str) -> None:
+    """Step 1 whole: the retried export into `<tmpdir>/export.sql`, its log printed with the pre-signed URL redacted, and the line report. A failed export raises BashExitError with wrangler's status. `ops.d1_relocate` calls this too, so there is one export path."""
+    log.step("Exporting D1 database: %s" % source_db)
+    export_rc = run_export(source_db, tmpdir)
+
+    # THE REDACTION, and `|| true` because `grep -v` exits 1 when it filters everything out. Its stdout is the script's stdout.
+    _run(["grep", "-v", REDACT_PATTERN, os.path.join(tmpdir, "export.log")])
+
+    if export_rc != 0:
+        log.error(
+            "wrangler d1 export %s failed (exit %d) after %d attempts; its full output "
+            "is above (R2 URL redacted)" % (source_db, export_rc, EXPORT_ATTEMPTS)
+        )
+        raise BashExitError(export_rc)
+
+    log.info(export_line_report(os.path.join(tmpdir, "export.sql")))
+
+
 def sanitize(tmpdir: str, root: str) -> None:
     """Step 1.5 (twin :110-122), which cannot complete; see DEFECT A.
 
@@ -489,38 +506,38 @@ def build_import_sql(tmpdir: str, drop_tables: list[str] | None = None) -> None:
         out.writelines(("%s\n" % line).encode("utf-8") for line in IMPORT_FOOTER)
 
 
-def verify_fk(target_db: str, config_words: list[str]) -> None:
-    """Step 5 (twin :148-158). DEFECT B lives here, whole.
+def fk_violations(fk_result: str) -> list | None:
+    """The violation rows of a `PRAGMA foreign_key_check --json` answer, or None when the answer is not a D1 result set (the `.[0].results` list)."""
+    try:
+        rows = json.loads(fk_result)[0]["results"]
+    except (ValueError, LookupError, TypeError):
+        return None
+    return rows if isinstance(rows, list) else None
 
-    `2>/dev/null || true` on the wrangler call and `2>/dev/null || echo "0"` on the jq call mean the only observable outcome of a failed verification is the success line. Reproduced exactly, including the fact that on empty input `jq` prints nothing and exits 0, so the `|| echo "0"` fallback does not fire and `FK_COUNT` is the empty string rather than `0`.
+
+def verify_fk(target_db: str, config_words: list[str]) -> None:
+    """Step 5 (twin :148-158), with DEFECT B repaired.
+
+    A wrangler call that failed, or an answer that is not a D1 result set, raises BashExitError(1) with the reason; wrangler's own stderr is inherited, so its message reaches the operator. Only a result set actually read is counted, and a violation prints the twin's line and its rows (through the twin's `jq`) and exits 1.
     """
     log.step("Verifying foreign key integrity")
-    _, fk_result = _capture(
-        fk_check_argv(target_db, config_words), stderr=subprocess.DEVNULL, cwd=wrangler_cwd()
-    )
+    status, fk_result = _capture(fk_check_argv(target_db, config_words), cwd=wrangler_cwd())
+    if status:
+        log.error(
+            "FK integrity check could not run: wrangler d1 execute %s exited %d"
+            % (target_db, status)
+        )
+        raise BashExitError(1)
+    rows = fk_violations(fk_result)
+    if rows is None:
+        log.error(
+            "FK integrity check could not run: the answer for %s is not a D1 result set: %s"
+            % (target_db, (fk_result.strip() or "(empty)")[:200])
+        )
+        raise BashExitError(1)
 
-    # `echo "$FK_RESULT" | jq ...`: echo appends a newline, so jq's input is never truly empty, and jq's own status is discarded either way.
-    _flush()
-    jq = subprocess.run(
-        ["jq", FK_JQ],
-        input=("%s\n" % fk_result).encode("utf-8"),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-        check=False,
-    )
-    fk_count = jq.stdout.decode("utf-8", "surrogateescape").rstrip("\n")
-    if jq.returncode != 0:
-        fk_count = "0"
-
-    try:
-        violations = bash_arithmetic_gt_zero(fk_count)
-    except BashUnboundError as exc:
-        # bash prints `<script>: line 153: <name>: unbound variable` and stops. Same three facts, same stream, same status; the EXIT trap still runs.
-        print("%s: %s: unbound variable" % (SELF, exc.name), file=sys.stderr, flush=True)
-        raise BashExitError(1) from exc
-
-    if violations:
-        log.error("Foreign key violations found: %s" % fk_count)
+    if rows:
+        log.error("Foreign key violations found: %d" % len(rows))
         _flush()
         subprocess.run(
             ["jq", FK_RESULTS_JQ],
@@ -530,70 +547,6 @@ def verify_fk(target_db: str, config_words: list[str]) -> None:
         )
         raise BashExitError(1)
     log.info("FK integrity check passed (0 violations)")
-
-
-# A bash NAME, used to tell "this expression mentions an unset variable" from "this expression is malformed". The lookbehind keeps the `a` in `1a` out: that is a bad NUMBER, and bash treats the two cases differently.
-BASH_NAME = re.compile(r"(?<![0-9A-Za-z_])[A-Za-z_][A-Za-z0-9_]*")
-
-# A complete bash arithmetic literal: optional sign, then hex, octal or decimal.
-BASH_NUMBER = re.compile(r"^[+-]?(?:0[xX][0-9a-fA-F]+|0[0-7]*|[1-9][0-9]*)$")
-
-
-class BashUnboundError(Exception):
-    """`set -u` firing inside an arithmetic evaluation. FATAL, exit 1."""
-
-    def __init__(self, name: str) -> None:
-        super().__init__(name)
-        self.name = name
-
-
-def bash_arithmetic_gt_zero(text: str) -> bool:
-    """`[[ "$FK_COUNT" -gt 0 ]]`, which is ARITHMETIC EVALUATION under `set -u`.
-
-    Five behaviours, all probed against real bash on 2026-09-14 rather than reasoned about, because three of them are surprising:
-
-        [$v]      exit  output
-        [null]    1     bash: line 1: null: unbound variable        <- FATAL
-        [a b]     1     bash: line 1: a: unbound variable           <- FATAL
-        [1a]      0     [[: 1a: value too great for base   -> FALSE
-        [08]      0     [[: 08: value too great for base   -> FALSE
-        [0x10]    0     -> TRUE  (hex)
-        [010]     0     -> TRUE  (octal 8)
-        []        0     -> FALSE
-        [-2]      0     -> FALSE
-
-    THE FATAL ROWS ARE THE POINT. A bare word is a VARIABLE REFERENCE, and an unset one under `set -u` ends the script with exit 1 and no message of the script's own -- so a `jq` program that ever emitted `null` here would turn a clone into a hard failure rather than a verdict. It cannot today: `jq length` prints a number or the pipeline fails and `|| echo "0"` supplies one.
-    Reproduced anyway, because the next person to edit that jq program should not have to rediscover it.
-
-    THE TWO NON-FATAL ERROR ROWS ARE REPRODUCED WITH THEIR DIAGNOSTIC, minus bash's own `<file>: line <n>:` prefix, because the zero-padded-octal class has bitten this campaign four times and a silent FALSE would hide it a fifth. The residual case (a non-numeric value that does not start with a digit and names no variable, e.g. `+`) evaluates FALSE here with no message, where bash
-    prints an `arithmetic syntax error`; it is unreachable
-    from `jq length` and from this script's `|| echo "0"` fallback.
-    """
-    stripped = text.strip()
-    if stripped == "":
-        return False
-    if BASH_NUMBER.match(stripped):
-        negative = stripped.startswith("-")
-        digits = stripped.lstrip("+-")
-        if digits[:2].lower() == "0x":
-            value = int(digits, 16)
-        elif digits.startswith("0") and digits != "0":
-            value = int(digits, 8)
-        else:
-            value = int(digits)
-        return (-value if negative else value) > 0
-    name = BASH_NAME.search(stripped)
-    if name:
-        raise BashUnboundError(name.group(0))
-    if stripped[0].isdigit():
-        # `[[: 08: value too great for base (error token is "08")`, verbatim apart from bash's own `<file>: line <n>:` prefix.
-        print(
-            '%s: [[: %s: value too great for base (error token is "%s")'
-            % (SELF, stripped, stripped),
-            file=sys.stderr,
-            flush=True,
-        )
-    return False
 
 
 def query_argv(db: str, config_words: list[str], sql: str) -> list[str]:
@@ -717,20 +670,7 @@ def main(argv: list[str]) -> int:
 
     try:
         # --- Step 1: export ------------------------------------------------
-        log.step("Exporting D1 database: %s" % source_db)
-        export_rc = run_export(source_db, tmpdir)
-
-        # THE REDACTION, and `|| true` because `grep -v` exits 1 when it filters everything out. Its stdout is the script's stdout.
-        _run(["grep", "-v", REDACT_PATTERN, os.path.join(tmpdir, "export.log")])
-
-        if export_rc != 0:
-            log.error(
-                "wrangler d1 export %s failed (exit %d) after %d attempts; its full output "
-                "is above (R2 URL redacted)" % (source_db, export_rc, EXPORT_ATTEMPTS)
-            )
-            raise BashExitError(export_rc)
-
-        log.info(export_line_report(os.path.join(tmpdir, "export.sql")))
+        export_redacted(source_db, tmpdir)
 
         # --- Step 1.5: sanitize --------------------------------------------
         if wants_sanitize:

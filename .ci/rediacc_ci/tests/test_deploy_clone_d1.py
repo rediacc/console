@@ -180,6 +180,9 @@ if rest[:2] == ["d1", "execute"]:
             # about. Non-zero, no stdout, its stderr swallowed by 2>/dev/null.
             sys.stderr.write("wrangler: could not reach the API (fixture)\n")
             sys.exit(1)
+        if mode == "garbage":
+            sys.stdout.write("<html>gateway timeout</html>\n")
+            sys.exit(0)
         if mode == "violations":
             sys.stdout.write(
                 json.dumps([{"results": [{"table": "sessions", "rowid": 1}]}]) + "\n"
@@ -704,18 +707,44 @@ def test_defect_a_a_missing_sqlite3_refuses_with_the_common_sh_wording(tmp_path)
 def test_defect_b_a_verification_that_could_not_run_reports_zero_violations(
     tmp_path,
 ) -> None:
-    """The FK probe exits 1 with nothing on stdout and its stderr discarded. The script prints its success line and exits 0, which is the failure this whole step exists to prevent, applied to itself."""
-    assert port.A_FAILED_FK_CHECK_REPORTS_ZERO_VIOLATIONS
+    """THE TWIN'S SIDE, frozen: the FK probe exits 1 with nothing on stdout, and the twin printed its success line and exited 0. The port departs from it here on purpose: the same run exits 1 and names the failed call."""
     _root, old, new = run_both(tmp_path, FAKE_FK="silent")
-    _agree(old, new, "fk-silent")
 
     proc, calls = old
-    assert proc.returncode == 0, "a verification that never ran is scored as a pass"
+    assert proc.returncode == 0, "the twin scored a verification that never ran as a pass"
     assert "✓ FK integrity check passed (0 violations)" in proc.stderr
-    assert "wrangler: could not reach the API" not in proc.stderr, (
-        "2>/dev/null means the operator is not even told"
-    )
     assert _verbs(calls)[-1] == "d1 execute"
+
+    port_proc, port_calls = new
+    assert port_proc.returncode == 1, port_proc.stderr
+    assert "FK integrity check passed" not in port_proc.stderr
+    assert _verbs(port_calls) == _verbs(calls), "the same calls, a different verdict"
+
+
+def test_defect_b_repaired_a_verification_that_could_not_run_exits_1(tmp_path) -> None:
+    """DEFECT B repaired: the same silent failure is a refusal naming wrangler's status, wrangler's own stderr reaches the operator, and the success line is never printed."""
+    assert not port.A_FAILED_FK_CHECK_REPORTS_ZERO_VIOLATIONS
+    _root, proc, calls = _port_only(tmp_path, args=SEED_ARGS, FAKE_FK="silent")
+    assert proc.returncode == 1, proc.stderr
+    assert "FK integrity check passed" not in proc.stderr
+    assert "FK integrity check could not run: wrangler d1 execute" in proc.stderr
+    assert "exited 1" in proc.stderr
+    assert "wrangler: could not reach the API (fixture)" in proc.stderr
+    assert _verbs(calls)[-1] == "d1 execute"
+
+
+def test_defect_b_repaired_an_answer_that_is_not_a_result_set_exits_1(tmp_path) -> None:
+    _root, proc, _calls_log = _port_only(tmp_path, args=SEED_ARGS, FAKE_FK="garbage")
+    assert proc.returncode == 1, proc.stderr
+    assert "is not a D1 result set" in proc.stderr
+    assert "FK integrity check passed" not in proc.stderr
+
+
+def test_fk_violations_reads_only_a_result_set() -> None:
+    assert port.fk_violations('[{"results": []}]') == []
+    assert port.fk_violations('[{"results": [{"table": "t"}]}]') == [{"table": "t"}]
+    for bad in ("", "null", "{}", "[]", '[{"results": 3}]', "<html>"):
+        assert port.fk_violations(bad) is None, bad
 
 
 def test_defect_c_the_account_id_is_never_required(tmp_path) -> None:
@@ -730,28 +759,6 @@ def test_defect_c_the_account_id_is_never_required(tmp_path) -> None:
 
 
 # --------------------------------------------------------------------------- Pure helpers, exercised directly ---------------------------------------------------------------------------
-
-
-def test_bash_arithmetic_gt_zero_follows_bash_rather_than_int() -> None:
-    """EVERY ROW HERE WAS PROBED AGAINST REAL BASH, and three of them are surprising: a bare word is a VARIABLE and is fatal under `set -u`, `0x10` is hex, and `08` is a malformed octal that evaluates FALSE without stopping."""
-    assert port.bash_arithmetic_gt_zero("1") is True
-    assert port.bash_arithmetic_gt_zero("0") is False
-    assert port.bash_arithmetic_gt_zero("") is False, "an empty count is zero, not an error"
-    assert port.bash_arithmetic_gt_zero("   ") is False
-    assert port.bash_arithmetic_gt_zero("-3") is False
-    assert port.bash_arithmetic_gt_zero("010") is True, "octal 10 is 8, still positive"
-    assert port.bash_arithmetic_gt_zero("0x10") is True, "hex is arithmetic too"
-    assert port.bash_arithmetic_gt_zero("08") is False, (
-        "bash cannot parse 08 as octal; the comparison is FALSE and does not stop"
-    )
-    assert port.bash_arithmetic_gt_zero("1a") is False, "a bad number, not a variable"
-    assert port.bash_arithmetic_gt_zero("1 2") is False, "a syntax error, not a variable"
-
-    # THE FATAL ROWS: a bare word is a variable reference, and an unset one under `set -u` ends the script.
-    for fatal in ("null", "a b", "a-b"):
-        with pytest.raises(port.BashUnboundError) as caught:
-            port.bash_arithmetic_gt_zero(fatal)
-        assert caught.value.name == fatal.split()[0].split("-")[0]
 
 
 def test_config_flag_words_splits_the_way_an_unquoted_expansion_does() -> None:
@@ -788,7 +795,8 @@ def test_the_helpers_the_selftest_leans_on_are_exported() -> None:
         "export_argv",
         "execute_file_argv",
         "fk_check_argv",
-        "bash_arithmetic_gt_zero",
+        "fk_violations",
+        "export_redacted",
         "wc_lines",
     ):
         assert inspect.isfunction(getattr(port, name)), name

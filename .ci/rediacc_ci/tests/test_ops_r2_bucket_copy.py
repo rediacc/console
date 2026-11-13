@@ -237,3 +237,293 @@ def test_main_logs_a_malformed_list_buckets_reply_and_exits_1(
 
     monkeypatch.setattr(bc.awscli, "run", lambda *_a, **_k: Proc())
     assert bc.main(["--inventory", "--endpoint", BASE]) == 1
+
+
+# --- relocate across jurisdictions (PLAN-d1-eu-jurisdiction W2) ------------------------------------
+
+EU = "https://abc123.eu.r2.cloudflarestorage.com"
+
+
+class FakeEndpoints:
+    """Buckets per (endpoint, bucket): key -> (bytes, get-object head, modified, etag). The listing, the GET and the PUT are faked at their seams."""
+
+    def __init__(self, buckets: dict[tuple[str, str], dict[str, tuple]]) -> None:
+        self.buckets = buckets
+        self.puts: list[tuple[str, str, str, dict]] = []
+
+    def install(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        def list_tree(run: r2_promote.Transfers, _prefix: str) -> list[r2_promote.Obj]:
+            objects = self.buckets[(run.endpoint, run.bucket)]
+            return sorted(
+                (r2_promote.Obj(k, len(v[0]), v[2], v[3]) for k, v in objects.items()),
+                key=lambda o: o.rel,
+            )
+
+        def fetch_object(endpoint: str, bucket: str, key: str, path: str) -> dict:
+            body, head, _m, _e = self.buckets[(endpoint, bucket)][key]
+            with open(path, "wb") as handle:
+                handle.write(body)
+            return dict(head)
+
+        def store_object(endpoint: str, bucket: str, key: str, path: str, head: dict) -> None:
+            with open(path, "rb") as handle:
+                body = handle.read()
+            self.puts.append((endpoint, bucket, key, head))
+            self.buckets[(endpoint, bucket)][key] = (body, dict(head), T + HOUR, "")
+
+        monkeypatch.setattr(r2_promote.Transfers, "list_tree", list_tree)
+        monkeypatch.setattr(bc, "fetch_object", fetch_object)
+        monkeypatch.setattr(bc, "store_object", store_object)
+
+
+class FakeSettingsApi:
+    """The Cloudflare bucket-settings API per (jurisdiction, bucket); `ignore_writes` models an API that accepts a PUT and changes nothing."""
+
+    def __init__(
+        self, state: dict[tuple[str, str], dict[str, list]], *, ignore_writes: bool = False
+    ) -> None:
+        self.state = state
+        self.ignore_writes = ignore_writes
+        self.calls: list[tuple[str, str, str]] = []
+
+    def __call__(self, method: str, url: str, headers, body):
+        jur = headers.get(bc.JURISDICTION_HEADER, "default")
+        path = url.split("/accounts/acct", 1)[1]
+        self.calls.append((method, jur, path))
+        parts = path.strip("/").split("/")
+        bucket = parts[2]
+        kind = parts[3] if parts[0] == "r2" else "notifications"
+        empty = {"cors": [], "lifecycle": [], "notifications": []}
+        current = self.state.setdefault((jur, bucket), empty)
+        if method == "GET":
+            if kind == "cors" and not current["cors"]:
+                return 404, {"success": False}
+            key = "queues" if kind == "notifications" else "rules"
+            return 200, {"success": True, "result": {key: current[kind]}}
+        if not self.ignore_writes:
+            if method == "DELETE":
+                current[kind] = []
+            elif kind == "notifications":
+                current["notifications"].append({"queueId": parts[5], "rules": body["rules"]})
+            else:
+                current[kind] = body["rules"]
+        return 200, {"success": True, "result": {}}
+
+
+HEAD = {"ContentType": "application/json", "CacheControl": "no-store", "Metadata": {"owner": "o1"}}
+SOURCE_SETTINGS = {
+    "cors": [{"allowed": {"origins": ["https://a"], "methods": ["GET"]}}],
+    "lifecycle": [{"id": "abort", "enabled": True}],
+    "notifications": [
+        {
+            "queueId": "q1",
+            "rules": [
+                {
+                    "prefix": "p/",
+                    "actions": ["PutObject", "CopyObject"],
+                    "ruleId": "r1",
+                    "createdAt": "x",
+                }
+            ],
+        }
+    ],
+}
+
+
+def relocate_fixture(monkeypatch: pytest.MonkeyPatch, *, dst_objects: dict | None = None):
+    fake = FakeEndpoints(
+        {
+            (BASE, "configs-bench"): {
+                "a.json": (b'{"a":1}', HEAD, T, "e1-2"),
+                "dir/b.bin": (b"\x00\x01", {}, T, "e2-2"),
+            },
+            (EU, "configs-bench"): dict(dst_objects or {}),
+        }
+    )
+    fake.install(monkeypatch)
+    api = FakeSettingsApi({("default", "configs-bench"): json.loads(json.dumps(SOURCE_SETTINGS))})
+    return fake, api, bc.Settings(api, {}, "acct")
+
+
+def _relocate(settings: bc.Settings, *, write: bool) -> int:
+    return bc.relocate(
+        BASE, "configs-bench", EU, "configs-bench", settings, (None, "eu"), write=write
+    )
+
+
+def test_relocate_without_write_changes_nothing(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fake, api, settings = relocate_fixture(monkeypatch)
+    assert _relocate(settings, write=False) == 0
+    out = capsys.readouterr().out
+    assert fake.puts == []
+    assert [c for c in api.calls if c[0] != "GET"] == []
+    assert "2 of 2 object(s) to move" in out
+    assert "bucket settings differ: cors (source 1, destination 0)" in out
+    assert "dry run, nothing written" in out
+
+
+def test_relocate_streams_every_object_with_its_metadata_and_copies_the_settings(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fake, api, settings = relocate_fixture(monkeypatch)
+    assert _relocate(settings, write=True) == 0, capsys.readouterr().err
+    assert [(p[0], p[1], p[2]) for p in fake.puts] == [
+        (EU, "configs-bench", "a.json"),
+        (EU, "configs-bench", "dir/b.bin"),
+    ]
+    assert fake.puts[0][3] == HEAD
+    assert fake.buckets[(EU, "configs-bench")]["dir/b.bin"][0] == b"\x00\x01"
+    assert ("PUT", "eu", "/r2/buckets/configs-bench/cors") in api.calls
+    assert ("PUT", "eu", "/event_notifications/r2/configs-bench/configuration/queues/q1") in (
+        api.calls
+    )
+    assert not [c for c in api.calls if c[0] != "GET" and c[1] != "eu"], "the source is not written"
+    assert "bucket settings equal" in capsys.readouterr().out
+    # Re-runnable: a second run moves nothing and writes no settings.
+    fake.puts.clear()
+    api.calls.clear()
+    assert _relocate(settings, write=True) == 0
+    assert fake.puts == []
+    assert [c for c in api.calls if c[0] != "GET"] == []
+
+
+def test_relocate_exits_1_when_the_settings_do_not_read_back_equal(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fake, _api, _settings = relocate_fixture(monkeypatch)
+    deaf = FakeSettingsApi(
+        {("default", "configs-bench"): json.loads(json.dumps(SOURCE_SETTINGS))}, ignore_writes=True
+    )
+    assert _relocate(bc.Settings(deaf, {}, "acct"), write=True) == 1
+    assert "bucket settings differ: cors" in capsys.readouterr().err
+    assert len(fake.puts) == 2
+
+
+def test_an_empty_source_cors_deletes_the_destination_cors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _fake, api, settings = relocate_fixture(monkeypatch)
+    api.state[("default", "configs-bench")]["cors"] = []
+    api.state[("eu", "configs-bench")] = {"cors": [{"x": 1}], "lifecycle": [], "notifications": []}
+    assert _relocate(settings, write=True) == 0
+    assert ("DELETE", "eu", "/r2/buckets/configs-bench/cors") in api.calls
+
+
+def test_settings_compare_without_server_made_rule_fields() -> None:
+    other = json.loads(json.dumps(SOURCE_SETTINGS))
+    other["notifications"][0]["rules"][0].update(
+        ruleId="r9", createdAt="y", actions=["CopyObject", "PutObject"]
+    )
+    assert bc.settings_differences(SOURCE_SETTINGS, other) == []
+    other["lifecycle"] = []
+    assert bc.settings_differences(SOURCE_SETTINGS, other) == [
+        "bucket settings differ: lifecycle (source 1, destination 0)"
+    ]
+
+
+def test_verify_deep_catches_same_size_bytes_a_listing_cannot(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    drifted = {
+        "a.json": (b'{"a":2}', HEAD, T, "x-2"),
+        "dir/b.bin": (b"\x00\x01", {}, T, "e2-2"),
+    }
+    relocate_fixture(monkeypatch, dst_objects=drifted)
+    args = (BASE, "configs-bench", EU, "configs-bench", None, (None, "eu"))
+    # The control: multipart ETags hide the drift from the listing.
+    assert bc.verify_across(*args, deep=False) == 0
+    assert bc.verify_across(*args, deep=True) == 1
+    assert "sha256 differs: a.json" in capsys.readouterr().err
+
+
+def test_put_object_argv_carries_the_head_and_the_metadata() -> None:
+    head = {**HEAD, "ContentLength": 7, "ETag": '"e"', "Expires": "Thu, 01 Jan 2099 00:00:00 GMT"}
+    argv = bc.put_object_argv(EU, "configs-bench", "a.json", "/t/o", head)
+    assert argv[2:9] == [
+        "put-object",
+        "--bucket",
+        "configs-bench",
+        "--key",
+        "a.json",
+        "--body",
+        "/t/o",
+    ]
+    assert argv[argv.index("--content-type") + 1] == "application/json"
+    assert argv[argv.index("--cache-control") + 1] == "no-store"
+    assert argv[argv.index("--expires") + 1] == "Thu, 01 Jan 2099 00:00:00 GMT"
+    assert json.loads(argv[argv.index("--metadata") + 1]) == {"owner": "o1"}
+    assert argv[argv.index("--endpoint-url") + 1] == EU
+    assert "--content-length" not in argv
+    bare = bc.put_object_argv(EU, "b", "k", "/t/o", {})
+    assert "--metadata" not in bare
+    assert "--content-type" not in bare
+    get = bc.get_object_argv(BASE, "configs-bench", "a.json", "/t/o")
+    assert get[2:8] == ["get-object", "--bucket", "configs-bench", "--key", "a.json", "/t/o"]
+
+
+RELOCATE_ARGV = [
+    "--relocate",
+    "--from",
+    "configs-bench",
+    "--from-jurisdiction",
+    "default",
+    "--to",
+    "configs-bench",
+    "--to-jurisdiction",
+    "eu",
+    "--endpoint",
+    BASE,
+]
+
+
+def test_main_relocate_reads_both_endpoints(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    fake, api, _settings = relocate_fixture(monkeypatch)
+    env = {"CLOUDFLARE_API_TOKEN": "tok", "CLOUDFLARE_ACCOUNT_ID": "acct"}
+    assert bc.main(RELOCATE_ARGV, env=env, transport=api) == 0
+    assert fake.puts == []
+    assert bc.main([*RELOCATE_ARGV, "--write"], env=env, transport=api) == 0
+    assert len(fake.puts) == 2
+    capsys.readouterr()
+    assert bc.main(["--verify", *RELOCATE_ARGV[1:], "--deep"], env=env, transport=api) == 0
+    assert "sha256 equal per key, bucket settings equal" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["--relocate", "--from", "a-b", "--to", "a-b", "--endpoint", BASE],
+        [*RELOCATE_ARGV, "--jurisdiction", "eu"],
+        ["--copy", *RELOCATE_ARGV[1:]],
+        [*RELOCATE_ARGV[:7], "--endpoint", BASE],
+    ],
+)
+def test_main_relocate_needs_both_jurisdictions_and_no_other(argv: list[str]) -> None:
+    with pytest.raises(SystemExit):
+        bc.main(argv, env={})
+
+
+def test_relocate_needs_a_cloudflare_credential(monkeypatch: pytest.MonkeyPatch) -> None:
+    fake, _api, _settings = relocate_fixture(monkeypatch)
+    assert bc.main([*RELOCATE_ARGV, "--write"], env={}) == 1
+    assert fake.puts == []
+
+
+def test_the_same_bucket_on_the_same_endpoint_is_refused() -> None:
+    with pytest.raises(bc.CopyError, match="same bucket"):
+        bc.verify_across(BASE, "b-1", BASE, "b-1", None, (None, None), deep=True)
+
+
+def test_a_failed_get_is_a_copy_error(monkeypatch: pytest.MonkeyPatch) -> None:
+    class Proc:
+        returncode = 255
+        stdout = b""
+        stderr = b"An error occurred (NoSuchKey)"
+
+    monkeypatch.setattr(bc.awscli, "run", lambda *_a, **_k: Proc())
+    monkeypatch.setattr(bc.transfer_retry, "retried", lambda run, *_a, **_k: run()[0])
+    with pytest.raises(bc.CopyError, match="get of b/k failed"):
+        bc.fetch_object(EU, "b", "k", "/nonexistent/o")
