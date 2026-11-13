@@ -819,3 +819,53 @@ def test_a_challenge_without_a_token_is_refused_before_the_seed_is_read():
 
     with pytest.raises(ftr.DrillError, match="challengeToken"):
         ftr.verify_root_challenge(lambda *_a: (200, {}), "jar", {"requiresTwoFactor": True}, seed)
+
+
+def test_a_204_verify_answer_accepts_the_code():
+    """0de7d914.1: a 2xx other than 200 is success, so the next window's code is not spent."""
+    calls = []
+
+    def call(*_a):
+        calls.append(1)
+        return 204, {}
+
+    ftr.verify_root_challenge(
+        call,
+        "jar",
+        {"challengeToken": "t"},
+        lambda: "JBSWY3DPEHPK3PXP",
+        sleep=lambda _s: None,
+        now=lambda: 1000.0,
+    )
+    assert len(calls) == 1
+
+
+def test_a_refused_code_in_two_windows_still_names_the_seed():
+    """Control for the 2xx rule: a 403 twice stays a stale-seed refusal."""
+    with pytest.raises(ftr.DrillError, match="seed is stale"):
+        ftr.verify_root_challenge(
+            lambda *_a: (403, {}),
+            "jar",
+            {"challengeToken": "t"},
+            lambda: "JBSWY3DPEHPK3PXP",
+            sleep=lambda _s: None,
+            now=lambda: 1000.0,
+        )
+
+
+def test_a_process_whose_grandchild_keeps_the_output_open_is_a_timeout(tmp_path):
+    """bfbeef8c.1/.2: the pump outliving the join is a DrillError, not the returncode."""
+    script = _stub(tmp_path, 'sleep 4 &\necho "%s"\nexit 0\n' % URL_LINE)
+    job = ftr._Process(["x"], {}, program=script)
+    assert job.read_url() == URL_LINE.strip()
+    with pytest.raises(ftr.DrillError, match="output stayed open"):
+        job.finish(1)
+
+
+def test_the_pump_closes_the_output_pipe_once_the_process_ends(tmp_path):
+    """117f143f.1: the stream is closed after finish, and the clean exit is the control."""
+    script = _stub(tmp_path, 'echo "%s"\n' % URL_LINE)
+    job = ftr._Process(["x"], {}, program=script)
+    job.read_url()
+    assert job.finish(10) == 0
+    assert job.proc.stdout.closed

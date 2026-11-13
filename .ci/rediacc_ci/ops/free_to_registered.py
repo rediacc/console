@@ -150,20 +150,20 @@ def verify_root_challenge(
 ) -> None:
     """Spend the TOTP code on the root login's challenge, in the login's cookie jar.
 
-    A first 4xx is retried once with the next window's code (the account refuses a code it already spent, and the challenge survives a refused verify); a second refusal names the seed. A 429 or 5xx is a fault, never a refusal. `seed` is read only when a challenge is present.
+    Any 2xx accepts the code. A first 4xx is retried once with the next window's code (the account refuses a code it already spent, and the challenge survives a refused verify); a second refusal names the seed. A 429 or 5xx is a fault, never a refusal. `seed` is read only when a challenge is present.
     """
     challenge = answer.get("challengeToken")
     if not isinstance(challenge, str) or not challenge:
         raise DrillError("the root login reported two-factor but named no challengeToken")
     secret = seed()
     first = _verify_challenge(call, jar, challenge, login_bench.fresh_code(secret, now, sleep))
-    if first == 200:
+    if 200 <= first < 300:
         return
     asked = now()
     left = totp.STEP - (asked % totp.STEP)
     sleep(left + 0.5)
     second = _verify_challenge(call, jar, challenge, totp.code(secret, at=asked + left + 0.5))
-    if second != 200:
+    if not 200 <= second < 300:
         raise DrillError(
             "the %s seed was refused for the bench root in two consecutive windows (HTTP %d, then HTTP %d): the seed is stale"
             % (login_bench.TOTP_SEED_ENV, first, second)
@@ -584,7 +584,7 @@ class _Process(Background):
                     lines.put(text)
             finally:
                 lines.put(None)
-                # The pump is the only reader, so it closes the pipe at EOF; a pipe left to the garbage collector raises ResourceWarning in whichever test runs then.
+                # The pump is the only reader, so it closes the pipe when the iteration ends, at EOF or on a read error; a pipe left to the garbage collector raises ResourceWarning in whichever test runs then.
                 stream.close()
 
         self._pump = threading.Thread(target=pump, daemon=True)
@@ -614,6 +614,11 @@ class _Process(Background):
             else:
                 self.proc.wait(timeout=timeout)
                 pump.join(timeout=timeout)
+                if pump.is_alive():
+                    self.kill()
+                    raise DrillError(
+                        "the register command exited but its output stayed open after %ds" % timeout
+                    )
         except subprocess.TimeoutExpired:
             self.kill()
             raise DrillError("the register command did not finish in %ds" % timeout) from None
