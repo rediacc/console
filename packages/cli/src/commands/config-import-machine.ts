@@ -67,7 +67,12 @@ interface ImportOptions {
 
 /** The connection identity of a machine: the same name at another address or user is another machine. */
 function machineIdentity(m: MachineEntry): unknown {
-  return { ip: m.ip, user: m.user, port: m.port ?? DEFAULTS.SSH.PORT, datastore: m.datastore ?? null };
+  return {
+    ip: m.ip,
+    user: m.user,
+    port: m.port ?? DEFAULTS.SSH.PORT,
+    datastore: m.datastore ?? null,
+  };
 }
 
 /** True when `family` is placed on `machine`, directly or through a local datastore anchored there. */

@@ -893,7 +893,10 @@ def test_live_bootstrap_creates_through_the_account_route():
 
 
 def test_live_bootstrap_rerun_is_success():
-    assert _account_actions(FakeAccount(200))["bootstrap"](_seeded_ctx(World())) == "already bootstrapped"
+    assert (
+        _account_actions(FakeAccount(200))["bootstrap"](_seeded_ctx(World()))
+        == "already bootstrapped"
+    )
 
 
 def test_live_bootstrap_owner_change_refuses_with_its_status_and_code():
@@ -1003,10 +1006,15 @@ def test_account_post_keeps_a_non_json_error_body(monkeypatch):
         pass
 
     def refuse(*_a, **_k):
-        raise urllib.error.HTTPError("https://h/x", 500, "err", {}, Reply(b"Internal Server Error"))
+        raise urllib.error.HTTPError(
+            "https://h/x", 500, "err", email.message.Message(), Reply(b"Internal Server Error")
+        )
 
     monkeypatch.setattr(onboarding.https, "urlopen", refuse)
-    assert onboarding.account_post("https://h/x", "k", {}) == (500, {"_text": "Internal Server Error"})
+    assert onboarding.account_post("https://h/x", "k", {}) == (
+        500,
+        {"_text": "Internal Server Error"},
+    )
 
 
 def test_account_post_names_the_status_when_the_error_body_cannot_be_read(monkeypatch):
@@ -1099,7 +1107,8 @@ def test_live_account_calls_accept_a_success_with_an_empty_body():
     """Review f2446371.2: a cut-off 200 reads as (200, {}), which both callers take as success."""
     assert _account_actions(FakeAccount(200, {}))["invite"](_ctx(World())) == ""
     assert (
-        _account_actions(FakeAccount(200, {}))["bootstrap"](_seeded_ctx(World())) == "already bootstrapped"
+        _account_actions(FakeAccount(200, {}))["bootstrap"](_seeded_ctx(World()))
+        == "already bootstrapped"
     )
 
 

@@ -536,7 +536,11 @@ def _body_tail(payload: dict, secrets_in_reply: tuple[str, ...]) -> str:
     """`: <reply body>` cut to BODY_LIMIT characters, with the API key masked; empty when the reply had no body."""
     if not payload:
         return ""
-    text = str(payload[BODY_TEXT_KEY]) if BODY_TEXT_KEY in payload else json.dumps(payload, sort_keys=True)
+    text = (
+        str(payload[BODY_TEXT_KEY])
+        if BODY_TEXT_KEY in payload
+        else json.dumps(payload, sort_keys=True)
+    )
     for secret in secrets_in_reply:
         if secret:
             text = text.replace(secret, "<redacted>")
