@@ -5,7 +5,8 @@
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access add <ip>
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access remove <ip>
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access preflight     # ci:quick's step: probe bench, run add-current only on a 403, never fails
-    PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access clear         # empty the list, enforcement stays on
+    PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access clear         # empty the list, enforcement stays on (refused while an address is pinned)
+    PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access verify-pinned # read-only: exit 1 when a pinned address is missing from the live rule
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access disable       # delete the rule, bench is open again
 
 WHO RUNS IT. An operator or an AI session whose bench request answers Cloudflare's own 403 page (the rule carries no custom body; deploy_bench prints HINT on that 403). The caller's IP changes (it rotates nightly), so the fix is this one command; no ticket and no operator step.
@@ -16,11 +17,13 @@ WHAT THE RULE BLOCKS. Every request to a bench host (the route patterns of `work
 
 EXPIRY. Every address is allowed for `TTL_DAYS` (7) days from the run that added it. The add time lives in the rule's own `description` (`RULE_DESCRIPTION | added ip=<UTC time> ...`), so the Cloudflare rule is the only store and no local state exists. Every mutating run first drops the addresses older than 7 days (the CLI's clock, UTC), then applies its verb; re-adding a live address refreshes its stamp; the 5-address cap counts what is left after the drop. A LEGACY address (in the expression but with no stamp, written before expiry existed or edited by hand) is treated as EXPIRED and dropped by the next mutating run, never stamped now, so an unknown age cannot become a permanent allowance. `list` is read-only and marks such entries. The expiry is enforced when the script runs, not by Cloudflare: an address stays in the rule past 7 days until the next run (the nightly `add-current` that the rotating IP already needs).
 
+PINNED ENTRIES are the exception: `.ci/config/bench-access-pinned.json` lists `{ip, label, reason, plan}` addresses (hostinger's IPv4 and IPv6 /64) that never expire, are never evicted and do not count toward `MAX_IPS`. Every mutating run (`add`, `add-current`, `remove`) writes each pinned address back into the rule when it is missing (a hand-deleted pin returns on the next run) and keeps an existing stamp. `remove` of a pinned address and `clear` while any is pinned are refused, naming the file; unpinning is an edit of that file in a reviewed commit. `list` marks pinned entries, and `verify-pinned` (read-only) exits 1 when a pinned address is absent from the live rule or no rule exists.
+
 IPv6 IS KEPT AS A /64. A host's IPv6 address is a privacy address that rotates within its /64, so an IPv6 `add`, `remove` or detected address is canonicalized to its /64 network (`2001:a61:50d0:3b01::/64`) and re-adding an address inside it refreshes that one entry. A CIDR given by hand is accepted only for IPv6 /64 or narrower (down to /128); IPv4 stays one address. The allowance is the whole /64: every host sharing that prefix, not only the caller's machine, passes the rule. The prefix is written into `ip.src in {...}` as Cloudflare's CIDR literal. Under WSL `add-current` also asks the Windows host (powershell.exe, api64.ipify.org and api.ipify.org) for its egress addresses, because a Windows browser leaves over a different family than the WSL guest; a family that does not answer is skipped with a note.
 
 PREFLIGHT. `preflight` is the step ci:quick runs first (the `ci:quick` npm script): a read-only GET of bench from this machine (and from the Windows host under WSL), and only a 403 triggers `add-current`. It skips under CI=true, and it ALWAYS exits 0, printing one line on any error, so it can never fail ci:quick.
 
-THE LIST. At most `MAX_IPS` (5) entries (single addresses or IPv6 /64 prefixes), oldest first in the rule's expression, which is the record: `add-current` appends the caller's address (re-adding one moves it to the end) and evicts from the front when the list is full. With no rule yet, the first `add` creates it holding the caller's own address, so the first enforcement cannot lock the caller out. `add-current` asks Cloudflare's own trace endpoint for the IPv4 and the IPv6 address it sees (one family may be unreachable and is then skipped), so a dual-stack host is allowed in whichever family curl or node picks.
+THE LIST. At most `MAX_IPS` (5) unpinned entries (single addresses or IPv6 /64 prefixes; the pinned ones come first and are extra), oldest first in the rule's expression, which is the record: `add-current` appends the caller's address (re-adding one moves it to the end) and evicts from the front when the list is full. With no rule yet, the first `add` creates it holding the caller's own address, so the first enforcement cannot lock the caller out. `add-current` asks Cloudflare's own trace endpoint for the IPv4 and the IPv6 address it sees (one family may be unreachable and is then skipped), so a dual-stack host is allowed in whichever family curl or node picks.
 
 AUTH. `cf_auth.resolve_scoped("bench-access", zone_id=ZONE_ID)`: a supplied `CF_MANAGEMENT_TOKEN`, or a token minted from the Global API Key with `Zone WAF Write` on the rediacc.cloud zone only (plus the user-scoped API Tokens pair its self-destruct needs), deleted at the end of the run. The script re-runs itself under the `bench-access` Bitwarden profile (`CF_GLOBAL_API_KEY`, `CF_EMAIL`) when neither is in the environment. The credential reaches curl on its stdin (`rediacc_ci.core.curl_stdin`), never on argv, and is never printed.
 """
@@ -80,6 +83,8 @@ PROBE_AGENT = "rediacc-bench-access/1"
 POWERSHELL = "/mnt/c/Windows/System32/WindowsPowerShell/v1.0/powershell.exe"
 HOST_IP_URLS = ("https://api64.ipify.org", "https://api.ipify.org")
 WSL_MARKER = "/proc/sys/fs/binfmt_misc/WSLInterop"
+PINNED_FILE = (".ci", "config", "bench-access-pinned.json")
+PINNED_PATH_TEXT = ".ci/config/bench-access-pinned.json"
 Entry = tuple[str, datetime.datetime | None]
 IP_SET = re.compile(r"ip\.src in \{([^}]*)\}")
 
@@ -131,6 +136,31 @@ def normalize_ip(text: str) -> str:
         "refusing %r: only an IPv4 address or an IPv6 prefix of /%d to /128 may be allowed"
         % (text, V6_PREFIX)
     )
+
+
+def load_pinned(root=None) -> list[str]:
+    """The canonical addresses of `.ci/config/bench-access-pinned.json`, in file order; AccessError on a malformed file."""
+    path = (root or paths.repo_root()).joinpath(*PINNED_FILE)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise AccessError("cannot read %s: %s" % (PINNED_PATH_TEXT, exc)) from exc
+    items = data.get("entries") if isinstance(data, dict) else None
+    if not isinstance(items, list):
+        raise AccessError("%s must be an object with an entries list" % PINNED_PATH_TEXT)
+    found: list[str] = []
+    for item in items:
+        if not isinstance(item, dict) or not all(
+            isinstance(item.get(k), str) and item[k].strip()
+            for k in ("ip", "label", "reason", "plan")
+        ):
+            raise AccessError(
+                "%s: every entry needs a non-empty ip, label, reason and plan" % PINNED_PATH_TEXT
+            )
+        canonical = normalize_ip(item["ip"])
+        if canonical not in found:
+            found.append(canonical)
+    return found
 
 
 def expression(hosts: list[str], ips: list[str]) -> str:
@@ -195,9 +225,13 @@ def is_ours(rule: dict) -> bool:
     return text == RULE_DESCRIPTION or text.startswith(RULE_DESCRIPTION + STAMP_MARK)
 
 
-def live_entries(entries: list[Entry], now: datetime.datetime) -> tuple[list[Entry], list[str]]:
-    """(the entries younger than `TTL`, the dropped addresses); an entry with no stamp is legacy and dropped."""
-    kept: list[Entry] = [(ip, at) for ip, at in entries if at is not None and now - at < TTL]
+def live_entries(
+    entries: list[Entry], now: datetime.datetime, pinned: typing.Collection[str] = ()
+) -> tuple[list[Entry], list[str]]:
+    """(the entries younger than `TTL` plus every pinned one, the dropped addresses); an unpinned entry with no stamp is legacy and dropped."""
+    kept: list[Entry] = [
+        (ip, at) for ip, at in entries if ip in pinned or (at is not None and now - at < TTL)
+    ]
     kept_ips = {ip for ip, _ in kept}
     return kept, [ip for ip, _ in entries if ip not in kept_ips]
 
@@ -219,6 +253,13 @@ def with_ip(
     entries = [e for e in current if e[0] != new] + [(new, now)]
     evicted = [ip for ip, _ in entries[: max(0, len(entries) - limit)]]
     return entries[len(evicted) :], evicted
+
+
+def with_pins(entries: list[Entry], pinned: list[str], now: datetime.datetime) -> list[Entry]:
+    """`entries` with every pinned address first (an existing stamp kept, a missing pin stamped `now`) and the unpinned rest after, in their order."""
+    stamps = dict(entries)
+    head: list[Entry] = [(ip, stamps.get(ip) or now) for ip in pinned]
+    return head + [e for e in entries if e[0] not in pinned]
 
 
 class CloudflareApi:
@@ -480,13 +521,19 @@ def _fetch_trace(url: str) -> str:
         raise OSError("HTTP %d" % exc.code) from exc
 
 
-def _print_list(entries: list[Entry] | None, now: datetime.datetime | None = None) -> None:
+def _print_list(
+    entries: list[Entry] | None,
+    now: datetime.datetime | None = None,
+    pinned: typing.Collection[str] = (),
+) -> None:
     if entries is None:
         print("no bench allowlist rule: bench is open to every IP")
         return
-    print("bench allowlist (oldest first, at most %d):" % MAX_IPS)
+    print("bench allowlist (oldest first, at most %d unpinned):" % MAX_IPS)
     for ip, at in entries:
-        if at is None:
+        if ip in pinned:
+            note = "pinned (never expires, set in %s)" % PINNED_PATH_TEXT
+        elif at is None:
             note = "no add time (legacy, dropped by the next add)"
         else:
             note = "added %s, expires %s" % (
@@ -510,8 +557,10 @@ def run(
 ) -> int:
     """Run one verb against `api`; 0 on success. Raises AccessError."""
     if command == "list":
-        _print_list(current_entries(api), clock())
+        _print_list(current_entries(api), clock(), load_pinned(root))
         return 0
+    if command == "verify-pinned":
+        return _verify_pinned(current_entries(api), load_pinned(root))
     if command == "disable":
         print("rule deleted: bench is open again" if delete_rule(api) else "no rule to delete")
         return 0
@@ -520,7 +569,9 @@ def run(
         microsecond=0
     )  # stamps keep whole seconds, so the read-back compares equal
     existing = current_entries(api)
-    ips, expired = live_entries(list(existing or []), now)
+    pins = load_pinned(root)
+    ips, expired = live_entries(list(existing or []), now, pins)
+    free = [e for e in ips if e[0] not in pins]
     for gone in expired:
         log.warn("dropped %s: older than %d days or with no add time" % (gone, TTL_DAYS))
     if command in ("add-current", "add"):
@@ -530,29 +581,57 @@ def run(
                 for ip in (detect() if command == "add-current" else [argument or ""])
             )
         )
-        for ip in new:
-            ips, evicted = with_ip(ips, ip, now)
+        for ip in (i for i in new if i not in pins):
+            free, evicted = with_ip(free, ip, now)
             for gone in evicted:
                 log.warn("evicted the oldest allowed IP %s (limit %d)" % (gone, MAX_IPS))
         print("allowing " + ", ".join(new))
     elif command == "remove":
         target = normalize_ip(argument or "")
-        if target not in [ip for ip, _ in ips]:
+        if target in pins:
+            raise AccessError(
+                "%s is pinned in %s and is never removed here; edit that file to unpin it"
+                % (target, PINNED_PATH_TEXT)
+            )
+        if target not in [ip for ip, _ in free]:
             raise AccessError("%s is not in the allowlist" % target)
-        ips = [e for e in ips if e[0] != target]
+        free = [e for e in free if e[0] != target]
     elif command == "clear":
         if existing is None:
             raise AccessError("no bench allowlist rule exists, so there is nothing to clear")
-        ips = []
+        if pins:
+            raise AccessError(
+                "clear would drop the pinned %s from %s; remove them there first"
+                % (", ".join(pins), PINNED_PATH_TEXT)
+            )
+        free = []
     else:
         raise AccessError("unknown command %r" % command)
+    ips = with_pins([e for e in ips if e[0] in pins] + free, pins, now)
     save(api, hosts, ips)
     if command in ("add-current", "add"):
         # A 403 on a host outside this list (the retired bench.rediacc.com, still bound to the old workers behind a frozen rule) is not fixed by this run; name what it does cover.
         print("rule covers: " + ", ".join(hosts))
     if not ips:
         log.warn("the list is empty: every bench request but the health paths is blocked")
-    _print_list(ips, now)
+    _print_list(ips, now, pins)
+    return 0
+
+
+def _verify_pinned(entries: list[Entry] | None, pinned: list[str]) -> int:
+    """0 when every pinned address is in the live rule; 1, naming the missing ones (or the missing rule), otherwise."""
+    if entries is None:
+        print(
+            "no bench allowlist rule: bench is open, so pinned %s are not enforced"
+            % ", ".join(pinned)
+        )
+        return 1
+    live = {ip for ip, _ in entries}
+    missing = [ip for ip in pinned if ip not in live]
+    if missing:
+        print("pinned but missing from the live rule: %s; run add-current" % ", ".join(missing))
+        return 1
+    print("pinned entries present: %s" % ", ".join(pinned))
     return 0
 
 
@@ -566,6 +645,7 @@ VERBS = {
     "preflight": 0,
     "add-current": 0,
     "list": 0,
+    "verify-pinned": 0,
     "disable": 0,
     "clear": 0,
     "add": 1,
@@ -608,7 +688,7 @@ def main(argv: list[str]) -> int:
         return 0
     if not argv or argv[0] not in VERBS or len(argv) - 1 != VERBS[argv[0]]:
         log.error(
-            "usage: bench_access preflight | add-current | list | add <ip> | remove <ip> | clear | disable"
+            "usage: bench_access preflight | add-current | list | add <ip> | remove <ip> | clear | verify-pinned | disable"
         )
         return 2
     if argv[0] == "preflight":

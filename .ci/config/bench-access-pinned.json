@@ -1,0 +1,16 @@
+{
+  "entries": [
+    {
+      "ip": "72.61.137.225",
+      "label": "hostinger",
+      "reason": "hostinger's backup unit renews its licence and reports sessions to bench, so its IPv4 must never expire out of the allowlist",
+      "plan": "PLAN-hostinger-to-bench.md"
+    },
+    {
+      "ip": "2a02:4780:c:e9b5::/64",
+      "label": "hostinger",
+      "reason": "hostinger's IPv6 prefix, the second family its backup unit may reach bench over",
+      "plan": "PLAN-hostinger-to-bench.md"
+    }
+  ]
+}

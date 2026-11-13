@@ -68,6 +68,19 @@ def _hosts(monkeypatch):
     monkeypatch.setattr(ba, "bench_hosts", lambda _root=None: HOSTS)
 
 
+PIN4 = "72.61.137.225"
+PIN6 = "2a02:4780:c:e9b5::/64"
+PINS: list[str] = []
+REAL_LOAD_PINNED = ba.load_pinned
+
+
+@pytest.fixture(autouse=True)
+def _pins(monkeypatch):
+    """No pinned entries unless a test fills `PINS`; the shipped file is read by its own test."""
+    PINS[:] = []
+    monkeypatch.setattr(ba, "load_pinned", lambda _root=None: list(PINS))
+
+
 class Clock:
     """A settable UTC clock for `ba.run`."""
 
@@ -716,3 +729,118 @@ def test_with_no_ips_only_the_exempt_requests_pass():
     expr = ba.expression(HOSTS, [])
     assert not _blocked(expr, method="POST", path=STRIPE_WEBHOOK, ip="203.0.113.9")
     assert _blocked(expr, method="POST", path="/account/api/v1/auth/login", ip="203.0.113.9")
+
+
+def test_the_shipped_pinned_file_names_hostinger_ipv4_and_ipv6():
+    raw = json.loads(ba.paths.repo_root().joinpath(*ba.PINNED_FILE).read_text())
+    assert {e["label"] for e in raw["entries"]} == {"hostinger"}
+    assert {e["plan"] for e in raw["entries"]} == {"PLAN-hostinger-to-bench.md"}
+    assert all(e["reason"] for e in raw["entries"])
+    assert REAL_LOAD_PINNED() == [PIN4, PIN6]
+
+
+def test_load_pinned_refuses_a_malformed_file(tmp_path):
+    cfg = tmp_path / ".ci" / "config"
+    cfg.mkdir(parents=True)
+    (cfg / "bench-access-pinned.json").write_text('{"entries": [{"ip": "1.2.3.4"}]}')
+    with pytest.raises(ba.AccessError, match=r"bench-access-pinned\.json"):
+        REAL_LOAD_PINNED(tmp_path)
+
+
+def _pinned_rule_api():
+    PINS[:] = [PIN4, PIN6]
+    api = FakeCloudflare()
+    assert _run(api, "add-current", detect=lambda: ["198.51.100.7"]) == 0
+    return api
+
+
+def _stored_ips(api):
+    return [ip for ip, _ in _stored(api)]
+
+
+def test_a_first_write_includes_every_pin_first():
+    assert _stored_ips(_pinned_rule_api()) == [PIN4, PIN6, "198.51.100.7"]
+
+
+def test_a_pinned_entry_survives_thirty_days_and_a_full_rotating_list():
+    api = _pinned_rule_api()
+    for day in range(30):
+        CLOCK.advance(days=1)
+        assert _run(api, "add-current", detect=lambda d=day: ["203.0.113.%d" % d]) == 0
+    stored = _stored_ips(api)
+    assert stored[:2] == [PIN4, PIN6]
+    assert len(stored) == 2 + ba.MAX_IPS
+    assert "203.0.113.29" in stored
+
+
+def test_pinned_entries_do_not_count_toward_the_cap():
+    api = _pinned_rule_api()
+    for n in range(ba.MAX_IPS - 1):
+        _run(api, "add", "192.0.2.%d" % n)
+    stored = _stored_ips(api)
+    assert len(stored) == 2 + ba.MAX_IPS
+    assert "198.51.100.7" in stored
+
+
+def test_remove_refuses_a_pinned_entry_naming_the_file():
+    api = _pinned_rule_api()
+    with pytest.raises(ba.AccessError, match=r"bench-access-pinned\.json"):
+        _run(api, "remove", PIN4)
+    with pytest.raises(ba.AccessError, match=r"bench-access-pinned\.json"):
+        _run(api, "remove", "2a02:4780:c:e9b5::7")  # inside the pinned /64
+    assert PIN4 in _stored_ips(api)
+
+
+def test_clear_refuses_while_anything_is_pinned_and_works_without_pins():
+    api = _pinned_rule_api()
+    with pytest.raises(ba.AccessError, match=r"bench-access-pinned\.json"):
+        _run(api, "clear")
+    assert len(_stored(api)) == 3
+    PINS[:] = []
+    assert _run(api, "clear") == 0
+    assert _stored(api) == []
+
+
+def test_a_hand_deleted_pin_returns_on_the_next_add_current():
+    api = _pinned_rule_api()
+    api.mine()[0]["expression"] = ba.expression(HOSTS, ["198.51.100.7"])
+    assert PIN4 not in _stored_ips(api)
+    _run(api, "add-current", detect=lambda: ["198.51.100.7"])
+    assert _stored_ips(api)[:2] == [PIN4, PIN6]
+
+
+def test_an_unstamped_pin_is_kept_not_dropped_as_legacy():
+    PINS[:] = [PIN4]
+    api = FakeCloudflare()
+    _run(api, "add", "198.51.100.7")
+    api.mine()[0]["description"] = ba.RULE_DESCRIPTION  # strip every stamp
+    _run(api, "add", "198.51.100.8")
+    assert PIN4 in _stored_ips(api)
+
+
+def test_list_marks_pinned_entries(capsys):
+    api = _pinned_rule_api()
+    capsys.readouterr()
+    _run(api, "list")
+    out = capsys.readouterr().out
+    assert out.count("pinned (never expires") == 2
+    assert "198.51.100.7  added" in out
+
+
+def test_verify_pinned_exits_1_when_a_pin_is_absent_and_0_when_present(capsys):
+    api = _pinned_rule_api()
+    assert _run(api, "verify-pinned") == 0
+    api.mine()[0]["expression"] = ba.expression(HOSTS, [PIN4])
+    assert _run(api, "verify-pinned") == 1
+    assert PIN6 in capsys.readouterr().out
+
+
+def test_verify_pinned_exits_1_without_a_rule_and_writes_nothing():
+    PINS[:] = [PIN4]
+    api = FakeCloudflare()
+    assert _run(api, "verify-pinned") == 1
+    assert [m for m, _ in api.calls if m != "GET"] == []
+
+
+def test_verify_pinned_is_a_known_verb_of_arity_zero():
+    assert ba.VERBS["verify-pinned"] == 0
