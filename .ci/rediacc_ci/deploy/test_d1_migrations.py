@@ -175,19 +175,24 @@ def repo_root() -> str:
 
 
 def region_id(source_db: str) -> str:
-    """`${SOURCE_DB#account-}`: `account-eu` is region `eu`. A name without the prefix is passed through whole, which is what a regions.json naming its databases anything else would produce."""
+    """`${SOURCE_DB#account-}`: `account-eu` is region `eu`. A name without the prefix is passed through whole. `_one_region` does not use it: a database name can carry a suffix the region id lacks (`account-eu-j`), so it takes the id regions.json names for the row."""
     return source_db.removeprefix(DB_PREFIX)
 
 
+def clone_db_name(run_id: str, run_attempt: str, region: str) -> str:
+    """`migration-test-<region>-<run>-<attempt>` (twin :99, minus the channel tag). REGION is the id regions.json names for the row, because a database name can carry a suffix the id lacks (`account-eu-j`)."""
+    return DB_NAME_TEMPLATE % (region, run_id, run_attempt)
+
+
 def test_db_name(source_db: str, run_id: str, run_attempt: str) -> str:
-    """`migration-test-<region>-<run>-<attempt>` (twin :99, minus the channel tag)."""
-    return DB_NAME_TEMPLATE % (region_id(source_db), run_id, run_attempt)
+    """`clone_db_name` for the region id left of the database name (`account-eu` is `eu`): the twin's form, kept for a name that is `account-<id>` exactly."""
+    return clone_db_name(run_id, run_attempt, region_id(source_db))
 
 
-def d1_location(root: str, source_db: str) -> str:
-    """The `d1.location` regions.json names for the region whose database is `source_db`.
+def d1_row(root: str, source_db: str) -> dict:
+    """The regions.json row whose `d1.name` is `source_db`, as `{"id", "location", "jurisdiction"}` (the last two "" when unset).
 
-    Read with a real JSON parse, and refused (BashExitError after a printed reason) when regions.json cannot be read, names no such database, or names it without a location: a test database created in a guessed location would test the wrong thing.
+    Read with a real JSON parse, and refused (BashExitError after a printed reason) when regions.json cannot be read or names no such database.
     """
     try:
         with open(os.path.join(root, REGIONS_FILE), encoding="utf-8") as handle:
@@ -195,15 +200,30 @@ def d1_location(root: str, source_db: str) -> str:
         for region in regions:
             d1 = region["d1"]
             if d1["name"] == source_db:
-                location = str(d1.get("location") or "")
-                if location:
-                    return location
-                break
+                return {
+                    "id": str(region["id"]),
+                    "location": str(d1.get("location") or ""),
+                    "jurisdiction": str(d1.get("jurisdiction") or ""),
+                }
     except (OSError, ValueError, LookupError, TypeError) as exc:
-        log.error("cannot read the D1 location of %s from %s: %s" % (source_db, REGIONS_FILE, exc))
+        log.error("cannot read the D1 placement of %s from %s: %s" % (source_db, REGIONS_FILE, exc))
         raise BashExitError(1) from None
-    log.error("%s names no d1.location for %s" % (REGIONS_FILE, source_db))
+    log.error("%s names no d1 entry for %s" % (REGIONS_FILE, source_db))
     raise BashExitError(1)
+
+
+def d1_location(root: str, source_db: str) -> str:
+    """The `d1.location` regions.json names for the region whose database is `source_db`; refused when it names none, because a test database created in a guessed location would test the wrong thing."""
+    location = d1_row(root, source_db)["location"]
+    if not location:
+        log.error("%s names no d1.location for %s" % (REGIONS_FILE, source_db))
+        raise BashExitError(1)
+    return location
+
+
+def d1_jurisdiction(root: str, source_db: str) -> str:
+    """The `d1.jurisdiction` regions.json names for `source_db` ("" when none): a clone of a jurisdictional database is created in that jurisdiction too, or the test would run where the data does not live."""
+    return d1_row(root, source_db)["jurisdiction"]
 
 
 def read_names(text: str) -> list[str]:
@@ -252,8 +272,10 @@ def wrangler_cwd() -> str:
     return str(common.repo_root().joinpath(*WRANGLER_CWD_REL))
 
 
-def create_argv(db_name: str, location: str) -> list[str]:
-    """`npx wrangler d1 create "$DB_NAME" --location <region location>` (twin :104, with the location read from regions.json)."""
+def create_argv(db_name: str, location: str, jurisdiction: str = "") -> list[str]:
+    """`npx wrangler d1 create "$DB_NAME" --location <region location>` (twin :104, with the location read from regions.json); `--jurisdiction <j>` instead when the region's database has one (Cloudflare ignores the location hint then)."""
+    if jurisdiction:
+        return [*wrangler.ARGV, "d1", "create", db_name, "--jurisdiction", jurisdiction]
     return [*wrangler.ARGV, "d1", "create", db_name, "--location", location]
 
 
@@ -399,15 +421,17 @@ def _one_region(
     cleanup_dbs: list[str],
 ) -> None:
     """One iteration of `for SOURCE_DB in "${ALL_DBS[@]}"` (twin :88-136)."""
-    region = region_id(source_db)
-    db_name = test_db_name(source_db, run_id, run_attempt)
-    location = d1_location(root, source_db)
+    row = d1_row(root, source_db)
+    region = row["id"]
+    db_name = clone_db_name(run_id, run_attempt, region)
+    jurisdiction = row["jurisdiction"]
+    location = d1_location(root, source_db) if not jurisdiction else row["location"]
     # APPENDED BEFORE THE CREATE, so a create that half-succeeded is still attempted by the trap.
     cleanup_dbs.append(db_name)
 
     print("::group::Test migrations against %s (%s)" % (source_db, region))
 
-    status = _run(create_argv(db_name, location), cwd=wrangler_cwd())
+    status = _run(create_argv(db_name, location, jurisdiction), cwd=wrangler_cwd())
     if status:
         raise BashExitError(status)
 

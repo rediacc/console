@@ -94,6 +94,64 @@ def test_location_comes_from_regions_json():
         control_db.location("mars")
 
 
+def test_create_argv_prefers_the_jurisdiction_over_the_location_hint():
+    assert control_db.create_argv("c", "eeur")[-2:] == ["--location", "eeur"]
+    assert control_db.create_argv("c", "eeur", "eu")[-2:] == ["--jurisdiction", "eu"]
+    assert "--location" not in control_db.create_argv("c", "eeur", "eu")
+
+
+def _jurisdictional_root(tmp_path: pathlib.Path) -> pathlib.Path:
+    rows = [
+        {"id": "eu", "d1": {"name": "account-eu-j", "location": "eeur", "jurisdiction": "eu"}},
+        {"id": "us", "d1": {"name": "account-us", "location": "enam", "jurisdiction": None}},
+    ]
+    (tmp_path / "regions.json").write_text(json.dumps({"regions": rows}), encoding="utf-8")
+    bench = tmp_path.joinpath(*control_db.bench_preflight.BENCH_CONFIG_REL)
+    bench.parent.mkdir(parents=True)
+    bench.write_text(
+        '[[d1_databases]]\nbinding = "DB"\ndatabase_name = "account-bench-j"\n'
+        '[[r2_buckets]]\nbinding = "CONFIG_BUCKET"\nbucket_name = "configs-bench"\n'
+        'jurisdiction = "eu"\n',
+        encoding="utf-8",
+    )
+    return tmp_path
+
+
+def test_jurisdiction_comes_from_the_region_row_and_the_bench_toml(tmp_path):
+    root = _jurisdictional_root(tmp_path)
+    assert control_db.jurisdiction("eu", root=root) == "eu"
+    assert control_db.jurisdiction("us", root=root) == ""
+    # Bench has no row: the bench toml's jurisdiction applies to both bench control databases.
+    assert control_db.jurisdiction("us", bench=True, root=root) == "eu"
+    with pytest.raises(control_db.ControlDbError, match="no region"):
+        control_db.jurisdiction("mars", root=root)
+
+
+def test_the_real_tree_creates_under_a_location_hint_until_the_repoint():
+    assert control_db.jurisdiction("eu") == ""
+    assert control_db.jurisdiction("us", bench=True) == ""
+
+
+def test_a_jurisdictional_region_creates_its_control_database_with_the_jurisdiction(
+    monkeypatch, tmp_path
+):
+    root = _jurisdictional_root(tmp_path)
+    monkeypatch.setattr(control_db.paths, "repo_root", lambda: root)
+    fake = FakeWrangler()
+    control_db.ensure_database("control-eu", "eu", runner=fake)
+    assert [*wrangler.ARGV, "d1", "create", "control-eu", "--jurisdiction", "eu"] in fake.calls
+    bench = FakeWrangler()
+    control_db.ensure_database("control-bench-us", "us", runner=bench, bench=True)
+    assert [
+        *wrangler.ARGV,
+        "d1",
+        "create",
+        "control-bench-us",
+        "--jurisdiction",
+        "eu",
+    ] in bench.calls
+
+
 def test_ensure_creates_migrates_and_reports_for_bench_eu():
     fake = FakeWrangler()
     result = control_db.ensure("eu", bench=True, runner=fake)

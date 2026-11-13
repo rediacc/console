@@ -120,7 +120,15 @@ DB_NAME_TEMPLATE = "account-pr-%s"
 D1_LOCATION = "eeur"
 
 # The two names twin :69 refuses to delete. Unreachable, which is fact 1.
-PROTECTED_DATABASES = ("account-eu", "account-us", "account-asia", "account-bench")
+# The `-j` names are the databases created under a jurisdiction (PLAN-d1-eu-jurisdiction Design 1): protected before they exist, so the guard never lags the repoint.
+PROTECTED_DATABASES = (
+    "account-eu",
+    "account-us",
+    "account-asia",
+    "account-bench",
+    "account-eu-j",
+    "account-bench-j",
+)
 
 # The `sed` address at twin :52 and the `jq` program at twin :57, verbatim.
 JSON_START_SED = "/^[[:space:]]*[{[]/,$p"

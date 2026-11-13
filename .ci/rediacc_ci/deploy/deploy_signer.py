@@ -53,6 +53,14 @@ SECRET_NAMES = (PRIVATE_KEY, PUBLIC_KEY)
 PROFILE = "deploy-signer"
 
 BENCH_REGIONS = ("eu", "us")
+# The control database each target binds as CONTROL, declared rather than derived from the target key: a database created under a jurisdiction takes a `-j` name (PLAN-d1-eu-jurisdiction Design 1) and no rename exists, so a repoint changes one entry here. A test pins each entry against `enterprise.registry.control_database`, the name `control_db ensure` creates.
+CONTROL_DATABASES: dict[str, str] = {
+    "eu": "control-eu",
+    "us": "control-us",
+    "asia": "control-asia",
+    "bench-eu": "control-bench-eu",
+    "bench-us": "control-bench-us",
+}
 DRY_RUN_DB_ID = "00000000-0000-0000-0000-000000000000"
 TOKEN_RE = re.compile(r"@[A-Z_]+@")
 VERSION_ID_RE = re.compile(r"Current Version ID:\s*([0-9A-Za-z][0-9A-Za-z-]*)")
@@ -110,13 +118,24 @@ def load_region_ids(repo_root: pathlib.Path) -> list[str]:
     return [str(r["id"]).lower() for r in data["regions"]]
 
 
+def control_database(key: str) -> str:
+    """The CONTROL database of target KEY (`eu`, `bench-us`). A key with no declared name is refused, never derived."""
+    try:
+        return CONTROL_DATABASES[key]
+    except KeyError:
+        raise RefusedError(
+            "no control database is declared for target %r (CONTROL_DATABASES has %s)"
+            % (key, ", ".join(CONTROL_DATABASES))
+        ) from None
+
+
 def targets(region_ids: typing.Iterable[str]) -> dict[str, Target]:
     out: dict[str, Target] = {}
     for r in region_ids:
-        out[r] = Target(r, "signer-%s" % r, r, "control-%s" % r, "wrangler.%s.toml" % r)
+        out[r] = Target(r, "signer-%s" % r, r, control_database(r), "wrangler.%s.toml" % r)
     for r in BENCH_REGIONS:
         key = "bench-%s" % r
-        out[key] = Target(key, "signer-%s" % key, r, "control-%s" % key, "wrangler.bench.toml")
+        out[key] = Target(key, "signer-%s" % key, r, control_database(key), "wrangler.bench.toml")
     return out
 
 
@@ -563,7 +582,10 @@ def certificate_audited(
     """A `delegation_cert.signed` row naming the certificate's subscription id sits in the signer region's control audit table."""
     if not signer.startswith("signer-"):
         raise proof.LabError("%r is not a signer Worker" % signer)
-    database = "control-" + signer[len("signer-") :]
+    try:
+        database = control_database(signer[len("signer-") :])
+    except RefusedError as exc:
+        raise proof.LabError(str(exc)) from None
     try:
         rows = control_db.query(
             database,

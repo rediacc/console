@@ -62,6 +62,26 @@ def test_unbound_bench_and_edge_databases_listed_bound_and_other_not():
     assert kinds(found) == {("d1", "old-bench"), ("d1", "edge-forgotten")}
 
 
+def test_unbound_jurisdictional_bench_databases_are_listed():
+    found = run([], ["old-bench-j", "control-bench-eu-j", "account-pr-5"], [])
+    assert kinds(found) == {("d1", "old-bench-j"), ("d1", "control-bench-eu-j")}
+
+
+def test_the_bound_jurisdictional_bench_database_is_not_a_leftover(tmp_path):
+    (tmp_path / "workers" / "account").mkdir(parents=True)
+    (tmp_path / "workers" / "account" / "wrangler.test.toml").write_text(
+        'name = "account-test"\n[[d1_databases]]\nbinding = "DB"\n'
+        'database_name = "account-bench-j"\n'
+    )
+    found = cfl.find_leftovers(
+        tmp_path,
+        "acct",
+        TOKEN,
+        fake_api(["account-test"], ["account-bench-j", "stray-bench-j"], []),
+    )
+    assert kinds(found) == {("d1", "stray-bench-j")}
+
+
 def test_a_bound_edge_database_is_not_a_leftover(tmp_path):
     """No checked-in config binds an edge-* database any more, so a scratch root binds one: the exclusion for the edge-* pattern is proven apart from the bench one."""
     (tmp_path / "workers" / "account").mkdir(parents=True)

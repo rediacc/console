@@ -3,7 +3,7 @@
 PLAN-cloudflare-spend-guard T7. Four listings, all read with GET, nothing deleted or changed:
 
   script  a Workers script named by no `workers/*/wrangler*.toml` (nor `private/account/wrangler.toml`) and not a PR preview (`pr-<n>`, which the PR-close cleanup owns)
-  d1      a D1 database matching `edge-*` or `*-bench` that no config binds as `database_name`
+  d1      a D1 database matching `edge-*`, `*-bench` or the jurisdictional `*-bench-j` that no config binds as `database_name`
   route   a Workers route in any zone whose script is absent from the account, or that names no script
   domain  a Workers custom domain whose service is absent from the account
 
@@ -31,7 +31,8 @@ from rediacc_ci.quality import enterprise_leak as leak
 from rediacc_ci.well_known import CF_API_BASE
 
 PR_SCRIPT_RE = re.compile(r"^pr-[0-9]+$")
-D1_PATTERNS = ("edge-*", "*-bench")
+# `*-bench-j` and `*-bench-*-j` are the bench databases created under a jurisdiction (`account-bench-j`, `control-bench-eu-j`).
+D1_PATTERNS = ("edge-*", "*-bench", "*-bench-j", "*-bench-*-j")
 CONFIG_GLOBS = ("workers/*/wrangler*.toml", "private/account/wrangler*.toml")
 PAGE = 100
 

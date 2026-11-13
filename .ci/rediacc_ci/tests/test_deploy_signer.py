@@ -11,6 +11,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_signer as ds
+from rediacc_ci.enterprise import registry
 from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, BENCH_ORIGIN
 
 ACCOUNT_HOST = ACCOUNT_DEFAULT_ORIGIN.removeprefix("https://")
@@ -128,6 +129,22 @@ def test_targets_are_one_per_region_plus_two_bench():
     assert t["bench-us"].region == "us"
     assert t["bench-us"].control_db == "control-bench-us"
     assert t["bench-us"].account_config == "wrangler.bench.toml"
+
+
+def test_the_declared_control_databases_equal_the_names_control_db_creates():
+    expected = {r: registry.control_database(r) for r in registry.region_ids()}
+    expected.update({"bench-%s" % r: registry.control_database(r, True) for r in ds.BENCH_REGIONS})
+    assert expected == ds.CONTROL_DATABASES
+
+
+def test_a_target_without_a_declared_control_database_is_refused_not_derived():
+    with pytest.raises(ds.RefusedError, match="no control database is declared for target 'mars'"):
+        ds.targets(["mars"])
+
+
+def test_a_repointed_control_name_reaches_the_target(monkeypatch):
+    monkeypatch.setitem(ds.CONTROL_DATABASES, "bench-us", "control-bench-us-j")
+    assert ds.targets(["eu"])["bench-us"].control_db == "control-bench-us-j"
 
 
 @pytest.mark.parametrize("target", ["eu", "us", "asia", "bench-eu", "bench-us"])

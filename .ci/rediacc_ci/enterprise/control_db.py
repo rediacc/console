@@ -29,6 +29,7 @@ from typing import NamedTuple
 from rediacc_ci import paths
 from rediacc_ci.core import wrangler
 from rediacc_ci.enterprise import registry
+from rediacc_ci.ops import bench_preflight
 
 SELF = "rediacc_ci.enterprise.control_db"
 TABLE_PROBE = "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'companies'"
@@ -169,11 +170,30 @@ def location(region: str, root: pathlib.Path | None = None) -> str:
     raise ControlDbError("no region %r in regions.json" % region)
 
 
+def jurisdiction(region: str, *, bench: bool = False, root: pathlib.Path | None = None) -> str:
+    """The D1 jurisdiction a new database of REGION is created under ("" for a location hint only).
+
+    A shared region takes its regions.json `d1.jurisdiction`; bench has no row and takes the jurisdiction wrangler.bench.toml declares for its buckets, so the whole bench is one jurisdiction (PLAN-d1-eu-jurisdiction Design 1).
+    """
+    if bench:
+        return bench_preflight.bench_names(
+            (root or paths.repo_root()).joinpath(*bench_preflight.BENCH_CONFIG_REL)
+        ).config_jurisdiction
+    data = json.loads(((root or paths.repo_root()) / "regions.json").read_text(encoding="utf-8"))
+    for entry in data["regions"]:
+        if str(entry["id"]) == region:
+            return str(entry["d1"].get("jurisdiction") or "")
+    raise ControlDbError("no region %r in regions.json" % region)
+
+
 def list_argv() -> list[str]:
     return [*wrangler.ARGV, "d1", "list", "--json"]
 
 
-def create_argv(name: str, where: str) -> list[str]:
+def create_argv(name: str, where: str, jurisdiction: str = "") -> list[str]:
+    """`wrangler d1 create`: `--jurisdiction <j>` when the region has one (the location hint is ignored then), else `--location <where>`."""
+    if jurisdiction:
+        return [*wrangler.ARGV, "d1", "create", name, "--jurisdiction", jurisdiction]
     return [*wrangler.ARGV, "d1", "create", name, "--location", where]
 
 
@@ -245,12 +265,14 @@ def database_ids(runner: Runner) -> dict[str, str]:
     return {str(r["name"]): str(r["uuid"]) for r in rows if isinstance(r, dict) and "name" in r}
 
 
-def ensure_database(name: str, region: str, *, runner: Runner) -> tuple[str, bool]:
-    """`(uuid, created)` for the D1 database `name`, created in the region's location when missing."""
+def ensure_database(
+    name: str, region: str, *, runner: Runner, bench: bool = False
+) -> tuple[str, bool]:
+    """`(uuid, created)` for the D1 database `name`, created in the region's jurisdiction (else its location) when missing."""
     known = database_ids(runner)
     if name in known:
         return known[name], False
-    done = _call(runner, create_argv(name, location(region)))
+    done = _call(runner, create_argv(name, location(region), jurisdiction(region, bench=bench)))
     if done.rc != 0:
         raise _failure("wrangler d1 create %s" % name, done)
     uuid = database_ids(runner).get(name)
@@ -299,7 +321,7 @@ def ensure(region: str, *, bench: bool, runner: Runner = run_wrangler) -> Ensure
     if runner is run_wrangler:
         require_token()
     database = registry.control_database(region, bench)
-    uuid, created = ensure_database(database, region, runner=runner)
+    uuid, created = ensure_database(database, region, runner=runner, bench=bench)
     applied = False
     if not migrated(database, runner=runner):
         apply_migration(database, runner=runner)

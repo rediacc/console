@@ -579,7 +579,14 @@ def test_fact_the_production_database_guard_cannot_fire() -> None:
     The guard itself works (`is_protected` says yes to every shared database); no output `db_name_for` can produce ever reaches it, because the template carries a literal `-pr-` for every input including the empty string.
     """
     assert port.PRODUCTION_GUARD_IS_UNREACHABLE is True
-    shared = ("account-eu", "account-us", "account-asia", "account-bench")
+    shared = (
+        "account-eu",
+        "account-us",
+        "account-asia",
+        "account-bench",
+        "account-eu-j",
+        "account-bench-j",
+    )
     for name in shared:
         assert port.is_protected(name) is True, name
     assert not port.is_protected("account-db"), "the retired bare name guards nothing"

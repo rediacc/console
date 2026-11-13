@@ -337,6 +337,37 @@ def test_each_clone_is_created_in_its_regions_own_location(tmp_path) -> None:
     assert port.create_argv("d", "apac")[-2:] == ["--location", "apac"]
 
 
+def test_a_jurisdictional_region_is_cloned_with_its_jurisdiction(tmp_path) -> None:
+    """A clone of a database created under `jurisdiction = eu` is created there too, and the run is named after the regions.json id, not the `-j` database name."""
+    regions = {
+        "regions": [
+            {"id": "eu", "d1": {"name": "account-eu", "location": "eeur", "jurisdiction": "eu"}},
+            {"id": "us", "d1": {"name": "account-us", "location": "enam", "jurisdiction": None}},
+        ]
+    }
+    root = fixture(tmp_path, regions=regions)
+    _proc, calls = _run(root)
+    creates = [c for c in _calls(calls) if c.startswith("npx --no-install wrangler d1 create ")]
+    assert [c.split()[-2:] for c in creates] == [["--jurisdiction", "eu"], ["--location", "enam"]]
+    assert "--location eeur" not in " ".join(creates)
+
+
+def test_the_run_id_comes_from_the_regions_row_not_the_database_name(tmp_path) -> None:
+    regions = {
+        "regions": [
+            {"id": "eu", "d1": {"name": "account-eu-j", "location": "eeur", "jurisdiction": "eu"}}
+        ]
+    }
+    (tmp_path / "regions.json").write_text(json.dumps(regions), encoding="utf-8")
+    row = port.d1_row(str(tmp_path), "account-eu-j")
+    assert row["id"] == "eu"
+    assert port.d1_jurisdiction(str(tmp_path), "account-eu-j") == "eu"
+    assert port.clone_db_name("7", "1", row["id"]) == "migration-test-eu-7-1"
+    # The control: deriving the id from the database name lets the `-j` suffix leak into the clone's name.
+    assert port.test_db_name("account-eu-j", "7", "1") == "migration-test-eu-j-7-1"
+    assert port.create_argv("d", "eeur", "eu")[-2:] == ["--jurisdiction", "eu"]
+
+
 def test_a_region_without_a_location_is_refused_before_anything_is_created(tmp_path) -> None:
     regions = {"regions": [{"id": "eu", "d1": {"name": "account-eu"}}]}
     root = fixture(tmp_path, regions=regions)
