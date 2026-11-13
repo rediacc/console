@@ -141,8 +141,8 @@ def run(shards, subs, target=1, **kw) -> tuple[int, str, str]:
 
 def test_tenant_set_follows_the_router_and_every_table_scopes(template: pathlib.Path) -> None:
     tenant = mod.load_tenant_tables()
-    assert len(tenant) == 30
-    assert len(set(tenant)) == 30
+    assert len(tenant) == 29
+    assert len(set(tenant)) == 29
     db = mod.SqliteExecutor(template)
     schema = mod.read_schema(db)
     scope = mod.Scope([S1], [O1], {STORE}, {ENTRY})

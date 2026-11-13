@@ -684,6 +684,10 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       excludeOptions: ['debug', 'accept-observed'],
     },
   },
+  'config import-machine': {
+    mcpExcludeReason:
+      'Copies a machine and its repositories between named configs; config mutation, use CLI directly',
+  },
   'config rotate-cek': {
     mcpExcludeReason:
       'Rotates the org config-encryption key; destructive and human-driven (portal wizard).',

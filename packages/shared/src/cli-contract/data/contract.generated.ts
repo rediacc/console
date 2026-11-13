@@ -4449,6 +4449,7 @@ export const CLI_CONTRACT: CliContract = {
         }
       ],
       "hasSubcommands": false,
+      "mcpExcludeReason": "Copies a machine and its repositories between named configs; config mutation, use CLI directly",
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",

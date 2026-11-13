@@ -17,6 +17,7 @@
  */
 
 import { isDeepStrictEqual } from 'node:util';
+import { DEFAULTS } from '@rediacc/shared/config';
 import type { Command } from 'commander';
 import { configFileStorage } from '../adapters/config-file-storage.js';
 import { t } from '../i18n/index.js';
@@ -32,9 +33,9 @@ type MachineEntry = NonNullable<Resources['machines']>[string];
 type RepoFamily = NonNullable<Resources['repositories']>[string];
 type DatastoreEntry = NonNullable<Resources['datastores']>[string];
 
-export type ImportKind = 'machine' | 'datastore' | 'strategy' | 'binding' | 'repository' | 'tag';
-export type ImportStatus = 'equal' | 'added' | 'replaced' | 'refused';
-export type RefusalReason =
+type ImportKind = 'machine' | 'datastore' | 'strategy' | 'binding' | 'repository' | 'tag';
+type ImportStatus = 'equal' | 'added' | 'replaced' | 'refused';
+type RefusalReason =
   | 'machine-differs'
   | 'datastore-differs'
   | 'strategy-differs'
@@ -45,14 +46,14 @@ export type RefusalReason =
   | 'tag-differs';
 
 /** One verdict of the import report. `name` is a resource name (`family:tag` for a tag), never a value. */
-export interface ImportRow {
+interface ImportRow {
   kind: ImportKind;
   name: string;
   status: ImportStatus;
   reason?: RefusalReason;
 }
 
-export interface ImportPlan {
+interface ImportPlan {
   rows: ImportRow[];
   /** The target config with every non-refused change applied; equal to the input when nothing changes. */
   config: RdcConfig;
@@ -60,13 +61,13 @@ export interface ImportPlan {
   refusals: number;
 }
 
-export interface ImportOptions {
+interface ImportOptions {
   strategyFromSource?: boolean;
 }
 
 /** The connection identity of a machine: the same name at another address or user is another machine. */
 function machineIdentity(m: MachineEntry): unknown {
-  return { ip: m.ip, user: m.user, port: m.port ?? 22, datastore: m.datastore ?? null };
+  return { ip: m.ip, user: m.user, port: m.port ?? DEFAULTS.SSH.PORT, datastore: m.datastore ?? null };
 }
 
 /** True when `family` is placed on `machine`, directly or through a local datastore anchored there. */
@@ -221,7 +222,7 @@ class Planner {
  * Plan the import of `machine` from `source` into `target`. Pure: `target` is not mutated. Throws a
  * ValidationError when the source config has no such machine.
  */
-export function planMachineImport(
+function planMachineImport(
   source: RdcConfig,
   target: RdcConfig,
   machine: string,

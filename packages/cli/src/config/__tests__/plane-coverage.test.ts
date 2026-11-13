@@ -153,8 +153,10 @@ describe('command plane coverage', () => {
     // 213 -> 215, other 40 -> 42: `subscription notices` and `subscription retire` (PLAN-account-notices) go through the account server, so they take `subscription`'s `other` plane.
     //
     // 215 -> 220, machine 116 -> 121: `rdc server install|status|upgrade|backup|licence` (PLAN-enterprise-tenants C7) all reach the machine over SSH.
-    expect(COMMANDS.length).toBe(220);
-    expect(counts).toEqual({ config: 57, machine: 121, other: 42 });
+    //
+    // 220 -> 221, config 57 -> 58: `config import-machine` (PLAN-hostinger-to-bench Design 5) reads one config file and writes another on the workstation, never a machine, so it keeps the config domain's default plane.
+    expect(COMMANDS.length).toBe(221);
+    expect(counts).toEqual({ config: 58, machine: 121, other: 42 });
   });
 
   it('records the interactive commands', () => {

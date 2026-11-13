@@ -314,14 +314,19 @@ def scope_where(table: str, columns: list[str], scope: Scope) -> str | None:
     raise MoveError("tenant table %s has no column this tool can scope by" % table)
 
 
-def fetch(db: Executor, table: str, where: str | None) -> list[dict]:
+def fetch(db: Executor, table: str, columns: list[str], where: str | None) -> list[dict]:
+    """Every row matching `where`, paged in a stable order.
+
+    The order is every column by position, not `rowid`: a WITHOUT ROWID table (`backup_waiting_chunks`, 0087) has no rowid, and a full-row order is unique for any table whose primary key is among its columns.
+    """
     if where is None:
         return []
+    order = ", ".join(str(i + 1) for i in range(len(columns)))
     rows: list[dict] = []
     while True:
         page = db.query(
             sql("SELECT * FROM ", q(table), " WHERE ", where)
-            + sql(" ORDER BY rowid LIMIT ", PAGE, " OFFSET ", len(rows))
+            + sql(" ORDER BY ", order, " LIMIT ", PAGE, " OFFSET ", len(rows))
         )
         rows += page
         if len(page) < PAGE:
@@ -367,7 +372,7 @@ def export(db: Executor, order: list[str], schema: Schema, scope: Scope) -> list
     out: list[TableExport] = []
     for table in order:
         where = scope_where(table, schema.columns[table], scope)
-        rows = fetch(db, table, where)
+        rows = fetch(db, table, schema.columns[table], where)
         if table == "config_stores":
             scope.stores = {r["id"] for r in rows}
         elif table == "config_entries":
@@ -544,7 +549,7 @@ def delete_rows(db: Executor, exported: list[TableExport]) -> None:
 def mismatches(db: Executor, exported: list[TableExport], schema: Schema) -> list[str]:
     off: list[str] = []
     for t in exported:
-        rows = fetch(db, t.table, t.where)
+        rows = fetch(db, t.table, schema.columns[t.table], t.where)
         got = digest(rows, schema.columns[t.table])
         if len(rows) != t.count or got != t.sha256:
             off.append(

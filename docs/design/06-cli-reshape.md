@@ -22,7 +22,7 @@ behind `REDIACC_ALLOW_CLUSTER_OPS`; hidden `run` unchanged, absolutely agent-blo
 This is no longer a target. It is a transcript of the shipped tree, generated from `packages/cli/scripts/command-tree.json` and checked in BOTH directions: every leaf below exists in the CLI, and every leaf in the CLI appears below. **210 contract commands** (116 machine-plane, 57 config-plane, 37 other; 97 proxyCapable). `run` is hidden and held out of the contract.
 
 ```
-rdc config:     init list show current delete set clear recover prune edit reconcile rotate-cek
+rdc config:     init list show current delete set clear recover prune edit reconcile rotate-cek import-machine
                 access {add remove ranges list}
                 field {get set unset rotate list}    audit {log tail verify}
                 remote {enable disable status refresh versions restore master-password {change}}    ssh {set show remove}
@@ -58,7 +58,7 @@ rdc doctor | credits | update | version | legal | serve | mcp serve | run (hidde
 
 ### 1.1 Where the shipped tree differs from the tree this section used to draw
 
-Thirty-one differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the rest are later additions.
+Thirty-two differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the rest are later additions.
 
 | Was drawn as | Shipped as | Why |
 |---|---|---|
@@ -93,6 +93,7 @@ Thirty-one differences. The first six are deliberate and each is traceable to a 
 | no `version` or `legal` commands | `version` + `legal` | PLAN-terms-acceptance Design 7: `version` prints the CLI version, platform, update channel and the active licence; `legal` prints the document URLs for the user's language, the current terms version and the accepted version, and the licensor and contracting entity. Both take only `--json`, so they are leaves with no noun of their own. `--version` is unchanged. |
 | no `subscription register` | `subscription register --email <address> [--server <url>]` | A first-time user without an account starts from the CLI: `register` validates the address, picks the region, and runs the same device-code authorisation as `login` with the email attached, then prints the login summary. A leaf under the existing `subscription` noun. |
 | no `subscription notices` or `subscription retire` | `subscription notices` + `subscription retire <guid>` | PLAN-account-notices: `notices` lists the account's notices (licence expiry, backup health and the like) without opening the portal, and `retire` retires a repository's licence by GUID on the account server. Both are leaves under the existing `subscription` noun. |
+| no `config import-machine` | `config import-machine <machine> --from <config> [--dry-run] [--strategy-from-source]` | PLAN-hostinger-to-bench Design 5: moving a machine between named configs by hand-editing JSON dropped its datastores, repositories and backup bindings, and a name clash silently overwrote the target's entry. The verb plans the whole import first (machine, datastores, strategies, bindings, repositories, tags), refuses a clash on a different identity, and writes nothing under `--dry-run`. |
 
 Four families were built by operator commits AFTER this tree was drawn. They exist in the live CLI today, so P4 recontracts them; it does not invent them. **All four were ruled on 2026-07-13** (spec/03 §9) and are folded into the §1 tree above:
 
