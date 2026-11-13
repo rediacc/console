@@ -9,6 +9,7 @@ import base64
 import json
 import pathlib
 import shutil
+import subprocess
 import types
 import typing
 
@@ -554,6 +555,36 @@ def test_a_rejected_inbox_drop_fails_its_row(harness) -> None:
     rejected = json.dumps({"requestId": ec.INBOX_REQUEST_ID, "reason": "wrong-key", "detail": "x"})
     run = harness(elite_answers=[("applied.json", ok(rejected))])
     assert any("boot scan applied the cert" in desc for desc in failed(run))
+
+
+def test_the_row_reads_our_answer_when_both_answer_files_exist(harness) -> None:
+    """6ef2ef77.1: two files concatenated used to parse as nothing and fail the row; now the document naming our request decides."""
+    other = json.dumps({"requestId": "someone-else", "reason": "wrong-key"})
+    run = harness(elite_answers=[("applied.json", ok(other + "\n" + APPLIED + "\n"))])
+    assert not any("boot scan applied the cert" in desc for desc in failed(run))
+
+
+def test_inbox_answers_reads_concatenated_documents_and_stops_at_text() -> None:
+    assert ec.inbox_answers('{"a": 1}\n{"b": 2}\n') == [{"a": 1}, {"b": 2}]
+    assert ec.inbox_answers('{"a": 1}\nnot json') == [{"a": 1}]
+    assert ec.inbox_answers("") == []
+
+
+def test_the_answer_script_separates_two_files_with_a_newline(tmp_path, monkeypatch) -> None:
+    """The script itself, run in a real shell over a temporary inbox: the two files parse as two documents."""
+    (tmp_path / "applied.json").write_text('{"requestId": "x", "certId": "c"}', encoding="utf-8")
+    (tmp_path / "rejected.json").write_text('{"requestId": "y", "reason": "r"}', encoding="utf-8")
+    monkeypatch.setattr(ec, "INBOX_DIR", str(tmp_path))
+    out = subprocess.run(
+        ["sh", "-c", ec.inbox_answer_script()], capture_output=True, text=True, check=True
+    ).stdout
+    assert [d["requestId"] for d in ec.inbox_answers(out)] == ["x", "y"]
+    (tmp_path / "applied.json").unlink()
+    (tmp_path / "rejected.json").unlink()
+    empty = subprocess.run(
+        ["sh", "-c", ec.inbox_answer_script()], capture_output=True, text=True, check=True
+    )
+    assert empty.stdout == ""
 
 
 def test_a_failed_inbox_seed_stops_before_compose_up(harness) -> None:

@@ -197,10 +197,33 @@ def seed_inbox_command(stack_dir: str) -> str:
     )
 
 
+def inbox_answer_script() -> str:
+    """The shell script that prints the server's answer files, each ended by a newline so two files never run together; an absent file prints nothing."""
+    return (
+        "for f in %(d)s/applied.json %(d)s/rejected.json; do "
+        "[ -f $f ] && { cat $f; echo; }; done; true" % {"d": INBOX_DIR}
+    )
+
+
 def inbox_answer_command(stack_dir: str) -> str:
-    """The server's answer files from inside the running web container; an absent file prints nothing."""
-    script = "cat %(d)s/applied.json %(d)s/rejected.json 2>/dev/null || true" % {"d": INBOX_DIR}
-    return compose_command(stack_dir, "exec", "-T", "web", "sh", "-c", script)
+    """The server's answer files from inside the running web container."""
+    return compose_command(stack_dir, "exec", "-T", "web", "sh", "-c", inbox_answer_script())
+
+
+def inbox_answers(text: str) -> list[dict]:
+    """Every JSON object in `text`, in order: the output of `inbox_answer_command` holds one per answer file. Text that is not JSON ends the scan."""
+    decoder, at, found = json.JSONDecoder(), 0, []
+    while True:
+        while at < len(text) and text[at].isspace():
+            at += 1
+        if at >= len(text):
+            return found
+        try:
+            doc, at = decoder.raw_decode(text, at)
+        except ValueError:
+            return found
+        if isinstance(doc, dict):
+            found.append(doc)
 
 
 def curl_status_command(url: str) -> str:
@@ -560,12 +583,12 @@ class EliteCompose:
         answer = self.elite(command, None).stdout
         d.last_cmd = command
         verdict = ""
-        try:
-            doc = json.loads(answer) if answer.strip() else {}
-        except ValueError:
-            doc = {}
-        if isinstance(doc, dict) and doc.get("requestId") == INBOX_REQUEST_ID:
-            verdict = "applied" if doc.get("certId") else "rejected: %s" % doc.get("reason", "?")
+        for doc in inbox_answers(answer):
+            if doc.get("requestId") == INBOX_REQUEST_ID:
+                verdict = (
+                    "applied" if doc.get("certId") else "rejected: %s" % doc.get("reason", "?")
+                )
+                break
         d.assert_equal(
             "applied",
             verdict,
