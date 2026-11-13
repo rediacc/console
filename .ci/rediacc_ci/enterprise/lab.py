@@ -87,10 +87,10 @@ SEAMS: dict[str, Seam] = {
 _GROUPS: dict[str, tuple[str, ...]] = {
     "S2": (
         "account_workers", "signers", "secret_names", "callers", "signer_of",
-        "expected_props", "certificate_audited", "renew",
+        "expected_props", "certificate_audited",
         "stop_signer", "start_signer", "cut_region", "restore_region",
     ),
-    "V1": ("signer_props", "issue", "current_licence_works"),
+    "V1": ("signer_props", "issue", "renew", "current_licence_works"),
     "C1": ("ensure_company", "caller_of", "company_hosts", "company_words", "add"),
     "A1": ("captured_mail",),
     "V3": ("lookup",),
@@ -1571,7 +1571,11 @@ def e2e_envelope(
 
 # ==== box V1: the caller-side signer probe (`proof signer`)
 #
-# A signer Worker has no route, so the proof asks a caller to ask it: `POST /account/api/v1/subscriptions/signer-probe` on the caller's own host (private/account/src/services/signer-probe.service.ts) makes one canned request through that Worker's `LICENSE_SIGNER` binding and answers `{ok, body, props}` or `{ok: false, error: <code>}`. The route answers on bench alone (404 elsewhere) and under the Worker's `ACCOUNT_SERVER_API_KEY`, which the `enterprise` profile (`PROFILE`) binds alongside the Cloudflare pair.
+# A signer Worker has no route, so the proof asks a caller to ask it: `POST /account/api/v1/subscriptions/signer-probe` on the caller's own host (private/account/src/services/signer-probe.service.ts) makes one canned request through that Worker's `LICENSE_SIGNER` binding and answers `{ok, body, props}` or `{ok: false, error: <code>}`. The route answers on bench alone (404 elsewhere, before any key is read) and under the answering Worker's own `ACCOUNT_SERVER_API_KEY`.
+#
+# TWO KINDS OF CALLER. `account-bench` answers on `BENCH_ORIGIN` under the shared key, which the `enterprise` profile (`PROFILE`) binds alongside the Cloudflare pair. A bench company's `account-<name>` answers on its own account host (`names.hosts`) under the company's own key, read from the enterprise bws project (`store_api_key`); every bench company Worker carries `ENVIRONMENT = "bench"` and binds `LICENSE_SIGNER` through workers/account/enterprise.template.toml. Any other caller is a `LabError` before a request is sent. A company Worker builds its requests on its own subscription, so of the scope cases it is asked only `proof.COMPANY_SCOPE_CODES`.
+#
+# RENEWAL. `renew(caller)` sends the licence last issued to the caller in this run back as the `renew` kind, and the account server signs its successor (next sequence, chained to the presented payload) through the same binding; an admitted renewal becomes the caller's current licence. A caller with no licence yet is issued one first, and a refused issue is the renewal's answer.
 #
 # THE PROPS ARE READ WHERE THEY LAND. `signer_props` is the `whoami` kind: the signer's `probe()` reports the `ctx.props` it sees. The Cloudflare API is no witness: neither `/workers/scripts/<name>/settings` nor `/versions/<id>` returns a service binding's `props` (read 2026-11-12 for account-bench, whose deploys upload them), so a reader of that API saw `{}` on a binding that carries them.
 #
@@ -1592,14 +1596,36 @@ def reset_licences(licences: dict[str, dict[str, str]] = _LICENCES) -> None:
     licences.clear()
 
 
-def _probe_origin(caller: str) -> str:
+def _probe_target(
+    caller: str,
+    *,
+    companies: Companies,
+    api_key: ApiKey,
+    env: Mapping[str, str] | None,
+) -> tuple[str, str]:
+    """(origin, API key) of the caller's probe route: account-bench under the shared key, a live bench company's account Worker under the company's own."""
     if caller == BENCH_CALLER:
-        return BENCH_ORIGIN
-    raise proof.LabError(
-        "%s: the signer probe answers on %s only (the route is bench-only, and "
-        "workers/account/enterprise.template.toml binds no LICENSE_SIGNER yet)"
-        % (caller, BENCH_CALLER)
+        key = (os.environ if env is None else env).get(SERVER_API_KEY_ENV, "")
+        if not key:
+            raise proof.LabError(
+                "%s is not set (bws_env exec --profile %s)" % (SERVER_API_KEY_ENV, PROFILE)
+            )
+        return BENCH_ORIGIN, key
+    name = caller.removeprefix("account-")
+    row = next(
+        (
+            r
+            for r in live_companies(BENCH, companies=companies)
+            if caller.startswith("account-") and str(r.get("name")) == name
+        ),
+        None,
     )
+    if row is None:
+        raise proof.LabError(
+            "%s: no signer probe to ask (neither %s nor a live bench company's account Worker)"
+            % (caller, BENCH_CALLER)
+        )
+    return "https://%s" % names.hosts(name, PRODUCT_DOMAIN)[0], api_key(str(row["id"]))
 
 
 def signer_probe(
@@ -1609,14 +1635,11 @@ def signer_probe(
     *,
     call: Call = http_call,
     env: Mapping[str, str] | None = None,
+    companies: Companies = all_companies,
+    api_key: ApiKey = store_api_key,
 ) -> dict:
     """One probe request on `caller`'s host; a non-200 answer or a body with no verdict is a `LabError`."""
-    origin = _probe_origin(caller)
-    key = (os.environ if env is None else env).get(SERVER_API_KEY_ENV, "")
-    if not key:
-        raise proof.LabError(
-            "%s is not set (bws_env exec --profile %s)" % (SERVER_API_KEY_ENV, PROFILE)
-        )
+    origin, key = _probe_target(caller, companies=companies, api_key=api_key, env=env)
     request: dict[str, object] = {"kind": kind}
     if signed is not None:
         request["signed"] = signed
@@ -1670,10 +1693,31 @@ def issue(
         raise proof.LabError("the signer probe issues no %r" % kind)
     answer = _probe_answer(caller, kind, probe(caller, kind, None))
     if kind == "licence" and answer.ok:
-        parts = {k: answer.body.get(k, "") for k in SIGNED_PARTS}
-        if not all(parts.values()):
-            raise proof.LabError("%s: the admitted licence carries no signed parts" % caller)
-        licences[caller] = parts
+        _keep(caller, answer, licences)
+    return answer
+
+
+def _keep(caller: str, answer: proof.Answer, licences: dict[str, dict[str, str]]) -> None:
+    parts = {k: answer.body.get(k, "") for k in SIGNED_PARTS}
+    if not all(parts.values()):
+        raise proof.LabError("%s: the admitted licence carries no signed parts" % caller)
+    licences[caller] = parts
+
+
+def renew(
+    caller: str,
+    *,
+    probe: SignerProbe = signer_probe,
+    licences: dict[str, dict[str, str]] = _LICENCES,
+) -> proof.Answer:
+    """The caller's current licence renewed through its signer; one is issued first when the run holds none."""
+    if caller not in licences:
+        first = issue(caller, "licence", probe=probe, licences=licences)
+        if not first.ok:
+            return first
+    answer = _probe_answer(caller, "renew", probe(caller, "renew", licences[caller]))
+    if answer.ok:
+        _keep(caller, answer, licences)
     return answer
 
 

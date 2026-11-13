@@ -3222,11 +3222,115 @@ def test_missing_cloudflare_credentials_name_the_enterprise_profile(monkeypatch)
         lab._credentials()
 
 
-def test_a_company_caller_is_named_as_unprobed_not_asked():
+PROBE_COMPANIES = [
+    {"id": "c00000000000000a1", "name": "acme", "state": "active"},
+    {"id": "c00000000000000b2", "name": "gone", "state": "removed"},
+]
+
+
+def _company_probe(caller: str, call: FakeProbeCall, keys: list[str]) -> dict:
+    def api_key(company: str) -> str:
+        keys.append(company)
+        return "company-key-%s" % company
+
+    return lab.signer_probe(
+        caller,
+        "whoami",
+        call=call,
+        env={lab.SERVER_API_KEY_ENV: PROBE_KEY},
+        companies=lambda _bench: PROBE_COMPANIES,
+        api_key=api_key,
+    )
+
+
+def test_a_company_caller_is_asked_on_its_own_host_under_its_own_key():
+    call = FakeProbeCall({"whoami": (200, {"ok": True, "body": {}, "props": {}})})
+    keys: list[str] = []
+    _company_probe("account-acme", call, keys)
+    method, url, headers, doc = call.requests[0]
+    assert method == "POST"
+    assert url == "https://acme.%s%s" % (lab.PRODUCT_DOMAIN, lab.SIGNER_PROBE_PATH)
+    assert headers["X-API-Key"] == "company-key-c00000000000000a1"
+    assert keys == ["c00000000000000a1"]
+    assert doc == {"kind": "whoami"}
+
+
+@pytest.mark.parametrize("caller", ["account-ghost", "account-gone", "acme", "proxy-acme"])
+def test_a_caller_that_is_neither_bench_nor_a_live_company_is_never_asked(caller):
+    """Control: an unknown, removed or non-account Worker reaches no host and reads no key."""
     call = FakeProbeCall({})
-    with pytest.raises(proof.LabError, match="account-bench only"):
-        lab.signer_probe("account-acme", "whoami", call=call, env={lab.SERVER_API_KEY_ENV: "k"})
+    keys: list[str] = []
+    with pytest.raises(proof.LabError, match="no signer probe to ask"):
+        _company_probe(caller, call, keys)
     assert call.requests == []
+    assert keys == []
+
+
+def test_account_bench_never_reads_a_company_key():
+    """Control: the shared caller keeps the shared key and origin."""
+    call = FakeProbeCall({"whoami": (200, {"ok": True, "body": {}, "props": {}})})
+    keys: list[str] = []
+    _company_probe("account-bench", call, keys)
+    assert call.requests[0][1] == PROBE_URL
+    assert call.requests[0][2]["X-API-Key"] == PROBE_KEY
+    assert keys == []
+
+
+def test_the_stale_template_claim_is_gone_and_the_template_binds_the_signer():
+    """The error text once said the company template binds no LICENSE_SIGNER; it does."""
+    template = pathlib.Path(paths.repo_root()) / "workers" / "account" / "enterprise.template.toml"
+    assert re.search(
+        r'\[\[services\]\]\nbinding = "LICENSE_SIGNER"\nservice = "@@SIGNER@@"',
+        template.read_text(),
+    )
+    assert "binds no LICENSE_SIGNER" not in pathlib.Path(lab.__file__).read_text()
+
+
+RENEWED = {"payload": "p2", "signature": "s2", "publicKeyId": "k"}
+
+
+def test_renew_issues_first_when_the_run_holds_no_licence_then_renews_it():
+    licences: dict[str, dict[str, str]] = {}
+    probe, call = _probe(
+        {
+            "licence": (200, {"ok": True, "body": SIGNED}),
+            "renew": (200, {"ok": True, "body": RENEWED}),
+        }
+    )
+    assert lab.renew("account-bench", probe=probe, licences=licences).ok
+    assert [r[3]["kind"] for r in call.requests] == ["licence", "renew"]
+    assert call.requests[1][3] == {"kind": "renew", "signed": SIGNED}
+    assert licences == {"account-bench": RENEWED}
+
+
+def test_renew_sends_the_held_licence_and_asks_for_no_new_one():
+    licences = {"account-bench": SIGNED}
+    probe, call = _probe({"renew": (200, {"ok": True, "body": RENEWED})})
+    assert lab.renew("account-bench", probe=probe, licences=licences).ok
+    assert [r[3] for r in call.requests] == [{"kind": "renew", "signed": SIGNED}]
+
+
+def test_a_refused_renewal_carries_its_code_and_keeps_the_current_licence():
+    licences = {"account-bench": SIGNED}
+    probe, _ = _probe({"renew": (200, {"ok": False, "error": "SIGNER_UNAVAILABLE"})})
+    got = lab.renew("account-bench", probe=probe, licences=licences)
+    assert got == proof.Answer(False, "SIGNER_UNAVAILABLE")
+    assert licences == {"account-bench": SIGNED}
+
+
+def test_a_refused_first_issue_is_the_renewals_answer_and_no_renewal_is_asked():
+    probe, call = _probe({"licence": (200, {"ok": False, "error": "SIGNER_UNAVAILABLE"})})
+    got = lab.renew("account-bench", probe=probe, licences={})
+    assert got == proof.Answer(False, "SIGNER_UNAVAILABLE")
+    assert [r[3]["kind"] for r in call.requests] == ["licence"]
+
+
+def test_the_company_scope_cases_mirror_the_probe_route():
+    source = (
+        pathlib.Path(paths.repo_root()) / "private/account/src/services/signer-probe.service.ts"
+    ).read_text()
+    block = source.split("SIGNER_PROBE_COMPANY_SCOPE_CASES = [", 1)[1].split("]", 1)[0]
+    assert re.findall(r"'([a-z-]+)'", block) == list(proof.COMPANY_SCOPE_CODES)
 
 
 def test_a_new_lab_forgets_the_licences_of_the_last(monkeypatch):
@@ -3236,7 +3340,7 @@ def test_a_new_lab_forgets_the_licences_of_the_last(monkeypatch):
 
 
 def test_the_v1_methods_bind_to_this_module_not_the_signer_deploy_module():
-    for method in ("signer_props", "issue", "current_licence_works"):
+    for method in ("signer_props", "issue", "renew", "current_licence_works"):
         assert lab.OWNERS[method] == "V1"
     assert lab.SEAMS["V1"].module == lab.__name__
 

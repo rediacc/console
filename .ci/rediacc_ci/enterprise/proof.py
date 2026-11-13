@@ -54,6 +54,17 @@ SCOPE_CODES: dict[str, str] = {
     "certificate-over-ceiling": "SIGNER_CERT_OVER_CEILING",
 }
 SCOPE_CASES: tuple[str, ...] = tuple(SCOPE_CODES)
+# The cases a company caller (binding props `tier: enterprise`) is asked, mirroring signer-probe.service.ts SIGNER_PROBE_COMPANY_SCOPE_CASES. Its probe builds every request on the company's one subscription, so `suspended` (only the company's control row suspends it) and `shared-enterprise` (a company may sign ENTERPRISE) have no request.
+COMPANY_SCOPE_CODES: dict[str, str] = {
+    case: SCOPE_CODES[case]
+    for case in (
+        "foreign-subscription",
+        "wrong-host",
+        "over-limit",
+        "raw-bytes",
+        "certificate-over-ceiling",
+    )
+}
 # The named error an account server answers when its signer is out of reach (private/account/src/services/signer-client.ts).
 SIGNER_UNAVAILABLE = "SIGNER_UNAVAILABLE"
 REPLAY_KINDS: tuple[str, ...] = ("session", "api-token", "config-token", "e2e-envelope")
@@ -145,7 +156,6 @@ class Lab(Protocol):
     def signer_of(self, caller: str) -> str: ...
     def expected_props(self, caller: str) -> dict[str, str]: ...
     def certificate_audited(self, signer: str, certificate_id: str) -> bool: ...
-    def renew(self, caller: str) -> Answer: ...
     def stop_signer(self, signer: str) -> None: ...
     def start_signer(self, signer: str) -> None: ...
     def cut_region(self, region: str) -> None: ...
@@ -168,6 +178,7 @@ class Lab(Protocol):
     # The caller-side signer probe (box V1): what a caller's signer sees and signs, asked through the caller.
     def signer_props(self, caller: str) -> dict[str, str]: ...
     def issue(self, caller: str, kind: str) -> Answer: ...
+    def renew(self, caller: str) -> Answer: ...
     def current_licence_works(self, caller: str) -> bool: ...
 
     # Routing.
@@ -369,7 +380,7 @@ def _no_key_on_account(lab: Lab, p: Proof, *, bench: bool) -> None:
 
 
 def verb_signer(lab: Lab, p: Proof, *, bench: bool) -> None:
-    """V1: the binding across Workers, props honoured, scope refused, no key on any account Worker, certificates through the signer, a stopped signer named (settled) while a current licence works, and signing restored."""
+    """V1: the binding across Workers, props honoured, a licence issued and renewed per caller, scope refused (a company caller is asked `COMPANY_SCOPE_CODES`), no key on any account Worker, certificates through the signer, a stopped signer named (settled) while a current licence works, and signing restored."""
     _no_key_on_account(lab, p, bench=bench)
     callers = lab.callers(bench=bench)
     if not p.check("signer callers are listed", ok=callers, detail="no caller found"):
@@ -378,7 +389,9 @@ def verb_signer(lab: Lab, p: Proof, *, bench: bool) -> None:
         want, seen = lab.expected_props(caller), lab.signer_props(caller)
         p.check(f"{caller}: the signer sees its binding props", ok=seen == want, detail=f"{seen}")
         p.admitted(f"{caller}: a legitimate licence is issued", lab.issue(caller, "licence"))
-        for case, code in SCOPE_CODES.items():
+        p.admitted(f"{caller}: the licence is renewed", lab.renew(caller))
+        codes = COMPANY_SCOPE_CODES if want.get("tier") == "enterprise" else SCOPE_CODES
+        for case, code in codes.items():
             p.refused(f"{caller}: {case} is refused", lab.issue(caller, case), naming=code)
         cert = lab.issue(caller, "certificate")
         if p.admitted(f"{caller}: a legitimate certificate is issued", cert):

@@ -24,6 +24,10 @@ def refused(error: str = "refused by scope") -> Answer:
     return Answer(ok=False, error=error)
 
 
+# The scope cases a company Worker's probe has no request for (signer-probe.service.ts), held apart from proof.COMPANY_SCOPE_CODES so a wrong proof constant is caught.
+COMPANY_UNREACHABLE = ("suspended", "shared-enterprise")
+
+
 @dataclasses.dataclass
 class FakeLab:
     """A healthy bench, recording every call. Each test breaks one thing."""
@@ -145,6 +149,9 @@ class FakeLab:
 
     def issue(self, caller: str, kind: str) -> Answer:
         self._rec(f"issue:{kind}")
+        if kind in COMPANY_UNREACHABLE and self.expected_props(caller)["tier"] == "enterprise":
+            # signer-probe.service.ts: a company Worker has no request for this case and answers 400.
+            raise LabError(f"{caller}: the signer probe ({kind}) answered HTTP 400")
         signer = self.signer_of(caller)
         stopped, cut = self.stopped, self.cut
         if self._lag_left > 0:
@@ -548,6 +555,63 @@ def test_a_broken_claim_exits_non_zero_and_is_named(verb: str, lab: FakeLab, cla
 
 def test_every_verb_has_at_least_one_break_case() -> None:
     assert {v for v, _, _ in BREAKS} == set(proof.VERBS)
+
+
+# -- issue and renew per caller, the scope matrix per tier ---------------------------
+
+
+def test_a_company_caller_is_asked_only_the_company_scope_cases() -> None:
+    lab = FakeLab()
+    rc, lines = run("signer", lab)
+    assert rc == 0, lines
+    held = [line for line in lines if line.startswith("ok")]
+    for case in proof.COMPANY_SCOPE_CODES:
+        assert any(f"account-cabc123: {case} is refused" in line for line in held)
+    assert not any("account-cabc123: suspended" in line for line in lines)
+    # Control: the shared caller is still asked the whole matrix.
+    for case in proof.SCOPE_CODES:
+        assert any(f"account-bench: {case} is refused" in line for line in held)
+
+
+def test_asking_a_company_caller_the_shared_matrix_breaks(monkeypatch) -> None:
+    """The tier switch is load-bearing: with the shared matrix planted for every caller, the company probe's 400 breaks the run."""
+    monkeypatch.setattr(proof, "COMPANY_SCOPE_CODES", proof.SCOPE_CODES)
+    rc, lines = run("signer", FakeLab())
+    assert rc == 1
+    assert any(
+        "account-cabc123: the signer probe (suspended) answered HTTP 400" in line
+        for line in broken(lines)
+    )
+
+
+def test_the_company_matrix_is_the_shared_one_less_the_unreachable_cases() -> None:
+    assert set(proof.COMPANY_SCOPE_CODES) == set(proof.SCOPE_CODES) - set(COMPANY_UNREACHABLE)
+    assert all(
+        proof.COMPANY_SCOPE_CODES[c] == proof.SCOPE_CODES[c] for c in proof.COMPANY_SCOPE_CODES
+    )
+
+
+def test_each_caller_renews_and_a_refused_renewal_is_broken() -> None:
+    lab = FakeLab()
+    rc, lines = run("signer", lab)
+    assert rc == 0, lines
+    for caller in ("account-bench", "account-cabc123"):
+        assert any(
+            line.startswith("ok") and line.endswith(f"{caller}: the licence is renewed")
+            for line in lines
+        ), lines
+
+    class RenewRefused(FakeLab):
+        def renew(self, caller: str) -> Answer:
+            self._rec("renew")
+            return refused("SIGNER_OVER_LIMIT") if caller.endswith("cabc123") else OK
+
+    rc, lines = run("signer", RenewRefused())
+    assert rc == 1
+    assert [line for line in broken(lines) if "the licence is renewed" in line] == [
+        line for line in broken(lines) if "account-cabc123: the licence is renewed" in line
+    ]
+    assert any("account-cabc123: the licence is renewed" in line for line in broken(lines))
 
 
 # -- what is broken is put back --------------------------------------------------
