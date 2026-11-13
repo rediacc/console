@@ -361,6 +361,7 @@ class Settings:
         status, answer = self.transport(method, url, headers, body)
         # A bucket with no CORS or notification configuration answers 404 to the GET, and to the DELETE of that configuration.
         if status == 404 and method in ("GET", "DELETE"):
+            self._require_bucket(path, headers)
             return None
         if status != 200 or not isinstance(answer, dict) or not answer.get("success"):
             raise CopyError(
@@ -368,6 +369,20 @@ class Settings:
                 % (method, path, jurisdiction or "default", status or "nothing")
             )
         return answer.get("result")
+
+    def _require_bucket(self, path: str, headers: Mapping[str, str]) -> None:
+        """A 404 on a settings path is "no configuration" only when the bucket itself exists; a wrong bucket name or jurisdiction answers 404 too, and must not read as empty settings."""
+        found = re.search(r"/r2/buckets/([^/]+)/|/event_notifications/r2/([^/]+)/", path)
+        if found is None:
+            return
+        bucket = found.group(1) or found.group(2)
+        url = "%s/accounts/%s/r2/buckets/%s" % (CF_API_BASE, self.account, bucket)
+        status, _answer = self.transport("GET", url, dict(headers), None)
+        if status == 404:
+            raise CopyError(
+                "bucket %s does not exist (jurisdiction %s): its settings cannot be read"
+                % (bucket, headers.get(JURISDICTION_HEADER) or "default")
+            )
 
     def _list(self, path: str, jurisdiction: str | None, key: str) -> list:
         result = self._result("GET", path, jurisdiction)

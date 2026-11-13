@@ -780,6 +780,7 @@ def test_the_argv_builders_match_the_twins_words() -> None:
         "--remote",
         "--output=/t/e.sql",
     ]
+    assert port.export_argv("db", "/t/e.sql", ["--config", "w"])[-3:-1] == ["--config", "w"]
     assert port.execute_file_argv("db", [], "/t/i.sql")[-1] == "--file=/t/i.sql"
     assert port.execute_file_argv("db", ["--config", "w"], "/t/i.sql")[-3:-1] == ["--config", "w"]
     assert port.fk_check_argv("db", [])[-2:] == [

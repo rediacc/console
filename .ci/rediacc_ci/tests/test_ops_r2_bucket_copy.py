@@ -281,8 +281,13 @@ class FakeSettingsApi:
     """The Cloudflare bucket-settings API per (jurisdiction, bucket); `ignore_writes` models an API that accepts a PUT and changes nothing."""
 
     def __init__(
-        self, state: dict[tuple[str, str], dict[str, list]], *, ignore_writes: bool = False
+        self,
+        state: dict[tuple[str, str], dict[str, list]],
+        *,
+        ignore_writes: bool = False,
+        missing: frozenset[str] = frozenset(),
     ) -> None:
+        self.missing = missing
         self.state = state
         self.ignore_writes = ignore_writes
         self.calls: list[tuple[str, str, str]] = []
@@ -293,6 +298,10 @@ class FakeSettingsApi:
         self.calls.append((method, jur, path))
         parts = path.strip("/").split("/")
         bucket = parts[2]
+        if len(parts) == 3 and parts[0] == "r2":
+            return (404, {"success": False}) if bucket in self.missing else (200, {"success": True})
+        if bucket in self.missing:
+            return 404, {"success": False}
         kind = parts[3] if parts[0] == "r2" else "notifications"
         empty: dict[str, list[Any]] = {"cors": [], "lifecycle": [], "notifications": []}
         current = self.state.setdefault((jur, bucket), empty)
@@ -528,3 +537,17 @@ def test_a_failed_get_is_a_copy_error(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(bc.transfer_retry, "retried", lambda run, *_a, **_k: run()[0])
     with pytest.raises(bc.CopyError, match="get of b/k failed"):
         bc.fetch_object(EU, "b", "k", "/nonexistent/o")
+
+
+def test_a_404_for_a_missing_bucket_is_an_error_not_empty_settings():
+    """fb92c369.3: a wrong bucket name must not read as a bucket with no configuration."""
+    api = FakeSettingsApi({}, missing=frozenset({"typo"}))
+    settings = bc.Settings(api, {}, "acct")
+    with pytest.raises(bc.CopyError, match="bucket typo does not exist"):
+        settings.read("typo", "eu")
+
+
+def test_a_404_for_an_existing_bucket_without_cors_is_empty_settings():
+    """Control: the same 404 on a bucket that exists stays an empty CORS list."""
+    settings = bc.Settings(FakeSettingsApi({}), {}, "acct")
+    assert settings.read("real", "eu")["cors"] == []

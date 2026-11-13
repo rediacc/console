@@ -117,9 +117,13 @@ import re
 import shutil
 import subprocess
 import sys
+from typing import TYPE_CHECKING
 
 from rediacc_ci import log
 from rediacc_ci.core import common, wrangler
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
 SELF = "rediacc_ci.deploy.clone_d1"
@@ -272,9 +276,17 @@ def wrangler_cwd() -> str:
     return str(common.repo_root().joinpath(*WRANGLER_CWD_REL))
 
 
-def export_argv(source_db: str, out_path: str) -> list[str]:
-    """`npx wrangler d1 export "$SOURCE_DB" --remote --output=...` (twin :94)."""
-    return [*wrangler.ARGV, "d1", "export", source_db, "--remote", "--output=%s" % out_path]
+def export_argv(source_db: str, out_path: str, config_words: Sequence[str] = ()) -> list[str]:
+    """`npx wrangler d1 export "$SOURCE_DB" --remote --output=...` (twin :94); `config_words` is the optional `--config <toml>` that `ops.d1_relocate` passes."""
+    return [
+        *wrangler.ARGV,
+        "d1",
+        "export",
+        source_db,
+        "--remote",
+        *config_words,
+        "--output=%s" % out_path,
+    ]
 
 
 def execute_file_argv(target_db: str, config_words: list[str], file_path: str) -> list[str]:
@@ -379,7 +391,7 @@ def export_line_report(export_sql: str) -> str:
     return "Exported %s lines (%s)" % (lines, size)
 
 
-def run_export(source_db: str, tmpdir: str) -> int:
+def run_export(source_db: str, tmpdir: str, config_words: Sequence[str] = ()) -> int:
     """The retry loop (twin :92-101). Returns the LAST attempt's status.
 
     `>"$TMPDIR/export.log" 2>&1` merges both streams into the log, which is what makes the redaction possible at all: the pre-signed URL can arrive on either one. The loop breaks on the first success, and the warning between attempts names the attempt number so a retry is visible in the job log.
@@ -389,7 +401,7 @@ def run_export(source_db: str, tmpdir: str) -> int:
         export_rc = 0
         with open(os.path.join(tmpdir, "export.log"), "wb") as handle:
             export_rc = _run(
-                export_argv(source_db, os.path.join(tmpdir, "export.sql")),
+                export_argv(source_db, os.path.join(tmpdir, "export.sql"), config_words),
                 stdout=handle,
                 stderr=subprocess.STDOUT,
                 cwd=wrangler_cwd(),
@@ -408,10 +420,10 @@ def run_export(source_db: str, tmpdir: str) -> int:
     return export_rc
 
 
-def export_redacted(source_db: str, tmpdir: str) -> None:
+def export_redacted(source_db: str, tmpdir: str, config_words: Sequence[str] = ()) -> None:
     """Step 1 whole: the retried export into `<tmpdir>/export.sql`, its log printed with the pre-signed URL redacted, and the line report. A failed export raises BashExitError with wrangler's status. `ops.d1_relocate` calls this too, so there is one export path."""
     log.step("Exporting D1 database: %s" % source_db)
-    export_rc = run_export(source_db, tmpdir)
+    export_rc = run_export(source_db, tmpdir, config_words)
 
     # THE REDACTION, and `|| true` because `grep -v` exits 1 when it filters everything out. Its stdout is the script's stdout.
     _run(["grep", "-v", REDACT_PATTERN, os.path.join(tmpdir, "export.log")])

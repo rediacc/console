@@ -522,7 +522,7 @@ def test_create_exits_1_when_the_api_does_not_report_eu(tmp_path: Path) -> None:
     assert "not jurisdiction eu" in text(ctx.err)
     # An existing database outside the jurisdiction is refused the same way, and nothing runs.
     ctx2 = make_ctx(tmp_path, run=lambda _a: pytest.fail("must not run"))
-    assert call(ctx2, *argv, transport=api) == 1
+    assert call(ctx2, *argv, transport=api) == 2
     assert "already exists outside jurisdiction eu" in text(ctx2.err)
 
 
@@ -664,3 +664,28 @@ def test_retire_deletes_only_with_write(tmp_path: Path) -> None:
     assert (
         last(ctx, "account-old", "retire")["replaced_by"] == "account-old-j"
     )
+
+
+def test_the_config_reaches_the_wrangler_export_and_import(monkeypatch, tmp_path: Path) -> None:
+    """fb92c369.1: --config rides on the export and the import, not only on the migrations lookup."""
+    seen: dict[str, object] = {}
+    monkeypatch.setattr(
+        rel.clone_d1,
+        "export_redacted",
+        lambda *_a, **_k: seen.update(export=list(_a[2])),
+    )
+    monkeypatch.setattr(rel, "run_wrangler", lambda argv: seen.update(argv=argv) or 0)
+    d1 = rel.D1Db("account-x-j", dsm.D1Executor(None, {}, "acct", "account-x-j"), "w.toml")
+    d1.export_into(str(tmp_path))
+    d1.import_file(str(tmp_path / "i.sql"))
+    assert seen["export"] == ["--config", "w.toml"]
+    assert seen["argv"][seen["argv"].index("--config") : -1] == ["--config", "w.toml"]
+
+
+def test_no_config_adds_no_config_words(monkeypatch, tmp_path: Path) -> None:
+    """Control: an empty config contributes no argument."""
+    seen: dict[str, object] = {}
+    monkeypatch.setattr(rel, "run_wrangler", lambda argv: seen.update(argv=argv) or 0)
+    d1 = rel.D1Db("account-x-j", dsm.D1Executor(None, {}, "acct", "account-x-j"))
+    d1.import_file(str(tmp_path / "i.sql"))
+    assert "--config" not in seen["argv"]

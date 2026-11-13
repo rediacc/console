@@ -16,7 +16,7 @@ WITHOUT `--write` EVERY SUBCOMMAND PRINTS WHAT IT WOULD DO AND CHANGES NOTHING. 
 
 THE STEPS.
   plan      read-only: size, table count, region and jurisdiction of both databases (the D1 API), the fence table state (`fence table: present, empty`), live backup leases.
-  create    `wrangler d1 create <to> --jurisdiction <j>`; the API must then report that jurisdiction, else exit 1. A target that already exists in the right jurisdiction is accepted as it is.
+  create    `wrangler d1 create <to> --jurisdiction <j>`; the API must then report that jurisdiction, else exit 1. A target that already exists in the right jurisdiction is accepted as it is, and one outside it is refused with exit 2.
   fence     `--on` writes the one `_write_fence` row (Design 2: the account Worker refuses every write while it is present), waits 2 x the fence cache TTL + 30 s for every isolate to see it, then lists live leases; `--off` deletes the row.
   bookmark  `deploy_record.d1_bookmark` (the Time Travel restore point) into the run record.
   copy      refuses an unfenced source, a source fenced less than the drain window ago, and a target that already holds tables; then the `clone_d1` export, the `_cf_*` statements and the fence row stripped from it, the `clone_d1` deferred-FK import, then `verify`.
@@ -137,9 +137,10 @@ class SqliteDb:
 class D1Db:
     """A D1 database: reads and the fence row over the REST query API, export and import through `clone_d1`'s wrangler path."""
 
-    def __init__(self, name: str, executor: dsm.D1Executor) -> None:
+    def __init__(self, name: str, executor: dsm.D1Executor, config: str = "") -> None:
         self.name = name
         self.executor = executor
+        self.config_words = ["--config", config] if config else []
 
     def query(self, sql: str) -> list[dict]:
         try:
@@ -155,12 +156,12 @@ class D1Db:
 
     def export_into(self, tmpdir: str) -> None:
         try:
-            clone_d1.export_redacted(self.name, tmpdir)
+            clone_d1.export_redacted(self.name, tmpdir, self.config_words)
         except clone_d1.BashExitError as exc:
             raise RelocateError("export of %s failed (exit %d)" % (self.name, exc.code)) from exc
 
     def import_file(self, path: str) -> None:
-        status = run_wrangler(clone_d1.execute_file_argv(self.name, [], path))
+        status = run_wrangler(clone_d1.execute_file_argv(self.name, self.config_words, path))
         if status:
             raise RelocateError("import into %s failed (wrangler exit %d)" % (self.name, status))
 
@@ -467,7 +468,7 @@ def step_create(ctx: Ctx, api: Api, src: str, to: str, jurisdiction: str, write:
         ctx.warn(
             "%s already exists outside jurisdiction %s: %s" % (to, jurisdiction, describe(existing))
         )
-        return EXIT_FAILED
+        return EXIT_REFUSED
     argv = [*wrangler.ARGV, "d1", "create", to, "--jurisdiction", jurisdiction]
     if not write:
         ctx.say("dry run, would run: %s" % " ".join(argv))
@@ -791,12 +792,16 @@ def parser() -> argparse.ArgumentParser:
 
 
 def open_db(
-    name: str, sqlite: Mapping[str, str], env: Mapping[str, str], transport: ov.Transport
+    name: str,
+    sqlite: Mapping[str, str],
+    env: Mapping[str, str],
+    transport: ov.Transport,
+    config: str = "",
 ) -> Db:
     if name in sqlite:
         return SqliteDb(name, sqlite[name])
     account = env.get("CLOUDFLARE_ACCOUNT_ID") or ov.DEFAULT_ACCOUNT_ID
-    return D1Db(name, dsm.D1Executor(transport, ov.cf_headers(env), account, name))
+    return D1Db(name, dsm.D1Executor(transport, ov.cf_headers(env), account, name), config)
 
 
 def open_api(env: Mapping[str, str], transport: ov.Transport) -> Api:
@@ -819,7 +824,7 @@ def dispatch(
         sqlite[name] = path
 
     def db(name: str) -> Db:
-        return open_db(name, sqlite, env, transport)
+        return open_db(name, sqlite, env, transport, config)
 
     names = [n for n in (getattr(args, "src", None), getattr(args, "dst", None)) if n]
     config, mdir = config_for(ctx.root, names, args.config)
