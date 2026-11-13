@@ -413,7 +413,21 @@ def test_a_green_dry_run_exits_zero(
     )
     out = capsys.readouterr().out
     assert rc == 0
-    assert out.splitlines()[-1].startswith("admitted: every gate passes")
+    assert out.splitlines()[-1].startswith("admitted: every judged gate passes (1 not judged")
+
+
+def test_a_dry_run_with_every_gate_judged_says_every_gate_passes(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Review 01f2a26f.2, the control: with nothing left unjudged the claim is unqualified."""
+    monkeypatch.setattr(local, "prereq_refusals", no_prereqs)
+    rc = local.main(
+        ["--channel", "edge", "--dry-run"],
+        runner=FakeRunner(VERSION_ANSWERS),
+        gates=lambda _r, _v, _c: local.GateResult([], []),
+    )
+    assert rc == 0
+    assert capsys.readouterr().out.splitlines()[-1].startswith("admitted: every gate passes;")
 
 
 def test_a_workers_only_dry_run_drops_the_lock_refusal(
@@ -654,6 +668,30 @@ def test_a_branch_release_dry_run_prints_the_branch_and_hands_the_flag_to_the_ga
     ) in lines
     assert re.search(r"rediacc_ci\.release\.local_gates .*--branch-release", out)
     assert "--workers-only --regions eu --branch-release` executes" in lines[-1]
+
+
+def test_a_branch_release_dry_run_prints_why_origin_branches_were_unreadable(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Review 01f2a26f.1: the unread-branches line is printed under --dry-run, and absent when the read worked."""
+    monkeypatch.setenv(local.ASK_ENV, "ASKED:2026-11-13T05:02Z")
+    monkeypatch.setattr(local, "prereq_refusals", no_prereqs)
+    monkeypatch.setattr(local, "internal_channel_version", _set_version)
+    monkeypatch.setattr(local, "base_context", _base_context_at(HEAD_SHA))
+
+    def gates(_root, _version, _ctx):
+        return local.GateResult([], [])
+
+    def unread(_root):
+        return None, "branch listing exited 128"
+
+    local.main([*BRANCH_ARGV, "--dry-run"], runner=FakeRunner(), gates=gates, heads=unread)
+    assert (
+        "branch release: origin's branches could not be read: branch listing exited 128"
+        in capsys.readouterr().out
+    )
+    local.main([*BRANCH_ARGV, "--dry-run"], runner=FakeRunner(), gates=gates, heads=_heads())
+    assert "could not be read" not in capsys.readouterr().out
 
 
 def _base_context_at(sha: str):

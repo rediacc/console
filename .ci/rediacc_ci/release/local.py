@@ -2537,9 +2537,14 @@ def dry_run(
     if refusals:
         print("refused: %d refusal(s): %s" % (len(refusals), ", ".join(_codes(refusals))))
         return 1
+    unjudged = sum("not judged" in note for note in result.notes)
     print(
-        "admitted: every gate passes; the run above is what `npm run release:local -- --channel edge%s` executes"
-        % _flags(args)
+        "admitted: every %sgate passes%s; the run above is what `npm run release:local -- --channel edge%s` executes"
+        % (
+            "judged " if unjudged else "",
+            " (%d not judged under --dry-run, see the notes)" % unjudged if unjudged else "",
+            _flags(args),
+        )
     )
     return 0
 
