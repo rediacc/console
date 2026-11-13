@@ -185,7 +185,7 @@ _git(TWIN, "push", "-q", "origin", "0914-1:refs/heads/0914-2")
 _git(TWIN, "fetch", "-q", "origin")
 TWIN_SHA = _tip(TWIN, "origin/0914-1")
 
-# The host is read from the hook layer for every row below, and pinned here as a literal, so a wrong host in `githooks` fails this suite instead of moving the rows with it.
+# The host is read from the hook layer for every row below. This suite only requires a gitlab. host; the exact literal is pinned by test_the_mirror_host_is_the_pinned_literal in tests/test_githook_backup_ref.py, so a wrong host in `githooks` fails that test.
 if not githooks.MIRROR_HOST.startswith("gitlab."):
     raise SystemExit("githooks.MIRROR_HOST is %r, want a gitlab. host" % githooks.MIRROR_HOST)
 MIRROR_HOST = githooks.MIRROR_HOST

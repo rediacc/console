@@ -60,14 +60,14 @@ def waker():
     )
     # Popen returns after fork: until the child execs, /proc/<pid>/cmdline is still pytest's own,
     # so a loaded host judged the lock dead (ci:quick 1112s). Wait for the exec, bounded.
-    deadline = time.monotonic() + 30
-    while not WAKE.is_waker_pid(proc.pid):
-        assert time.monotonic() < deadline, "the waker child never exec'd"
-        time.sleep(0.01)
+    assert proc.stdin is not None
     try:
+        deadline = time.monotonic() + 30
+        while not WAKE.is_waker_pid(proc.pid):
+            assert time.monotonic() < deadline, "the waker child never exec'd"
+            time.sleep(0.01)
         yield proc
     finally:
-        assert proc.stdin is not None
         proc.stdin.close()
         proc.wait(timeout=30)
 
