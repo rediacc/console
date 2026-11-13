@@ -393,6 +393,7 @@ export async function realUploadDeps(
           guid: target.guid,
           datastore: target.datastore,
           seedGuid: target.seedGuid,
+          adoptSha256: target.adoptSha256,
           allocatedBytes: target.allocatedBytes,
         }),
         startImportSession

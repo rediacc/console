@@ -52,6 +52,8 @@ interface ImportReady {
   staging: string;
   fresh: boolean;
   seeded: boolean;
+  /** The image was already placed by an earlier run and matched `adoptSha256`; no bytes are sent. */
+  placed?: boolean;
   existingBytes: number;
   rsyncPath: string;
 }
@@ -242,6 +244,8 @@ export interface ImportCommandInput {
   guid: string;
   datastore: string;
   seedGuid?: string;
+  /** A rerun of an upload killed after placement: adopt the placed image when it hashes to this. */
+  adoptSha256?: string;
   allocatedBytes: number;
 }
 
@@ -258,6 +262,9 @@ export function buildImportCommand(i: ImportCommandInput): string {
     shellQuote(assertSafeRemoteToken(i.datastore, 'datastore')),
   ];
   if (i.seedGuid) parts.push('--seed', shellQuote(assertSafeRemoteToken(i.seedGuid, 'seed')));
+  if (i.adoptSha256) {
+    parts.push('--adopt-sha256', shellQuote(assertSafeRemoteToken(i.adoptSha256, 'sha256')));
+  }
   parts.push('--allocated-bytes', String(Math.max(0, Math.trunc(i.allocatedBytes))));
   parts.push('--idle-timeout', SESSION_IDLE_TIMEOUT);
   return parts.join(' ');
@@ -328,11 +335,12 @@ export async function startImportSession(input: OpenSessionInput): Promise<Impor
     staging: str(ev.staging),
     fresh: ev.fresh === true,
     seeded: ev.seeded === true,
+    placed: ev.placed === true,
     existingBytes: num(ev.existingBytes),
     rsyncPath: str(ev.rsyncPath) || 'rsync',
   };
   try {
-    assertSafeRemoteToken(ready.staging, 'staging');
+    if (!ready.placed) assertSafeRemoteToken(ready.staging, 'staging');
   } catch (error) {
     await proto.quit();
     throw error;
