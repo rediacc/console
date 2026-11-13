@@ -10,6 +10,7 @@
     ./run.sh enterprise export <company> [--export-root <dir>] [--bws-project <id>] [--bench]
     ./run.sh enterprise remove <company> [--delete-data --confirm <company>] [--export-root <dir>]
         [--lookup-domain <d>]... [--bws-project <id>] [--bench]
+    ./run.sh enterprise configs-key <company> --bws-project <id> [--bench]
     ./run.sh enterprise release ...          (box K2, rediacc_ci.release.rings_run)
     ./run.sh enterprise proof <verb> [--bench]
     ./run.sh enterprise control ensure [--bench] [--region <r>]
@@ -213,7 +214,7 @@ def _credentials(error: type[Exception], env: Mapping[str, str]) -> str:
 def _r2(
     error: type[Exception], region: str, env: Mapping[str, str], seams: LiveSeams
 ) -> tuple[Any, str | None, str]:
-    """(the shared-pair R2 S3 transport, built on first use so a missing pair is refused only when a bucket other than a backups bucket is reached; the region's jurisdiction; the endpoint)."""
+    """(the shared-pair R2 S3 transport, built on first use so a missing pair is refused only when a bucket other than one of a company's two is reached; the region's jurisdiction; the endpoint)."""
     try:
         jurisdiction = onboarding.region_entry(region).get("r2Jurisdiction")
     except (onboarding.OnboardingError, OSError, ValueError, KeyError) as exc:
@@ -235,23 +236,28 @@ def _r2(
 
 def _company_s3(
     error: type[Exception], store: Any, endpoint: str, seams: LiveSeams
-) -> Callable[[Any], Any]:
-    """The transport for a company's backups bucket, signed with the company's own key (the `ACCOUNT_BACKUP_S3_KEYPAIR` store entry onboarding minted), read from the enterprise store when first needed."""
-    entry = "ACCOUNT_BACKUP_S3_KEYPAIR"
+) -> Callable[[Any, str], Any]:
+    """The transport for one of a company's buckets, signed with the company's own key for that bucket, read from the enterprise store when first needed: the backups bucket with `ACCOUNT_BACKUP_S3_KEYPAIR`, the configs bucket with `COMPANY_CONFIGS_S3_KEYPAIR` (a key over that bucket only; `enterprise configs-key` mints it for a company onboarded before it existed)."""
 
-    def for_company(company: Any) -> Any:
+    def for_company(company: Any, bucket: str) -> Any:
+        if bucket == company.configs_bucket:
+            entry, halves = secrets.CONFIGS_ENTRY, secrets.CONFIGS_PAIR
+            hint = "run `./run.sh enterprise configs-key %s` to mint it" % company.name
+        else:
+            entry, halves = secrets.BACKUP_ENTRY, secrets.BACKUP_PAIR
+            hint = "the key is minted by `enterprise add`"
         name = secrets.store_name(company.id, entry)
         raw = store.read([name]).get(name)
         if not raw:
             raise error(
-                "company %s: the enterprise store holds no backups key (%s); the key is minted by `enterprise add`, so a company onboarded without it cannot be exported or removed with --delete-data"
-                % (company.id, name)
+                "company %s: the enterprise store holds no key for bucket %s (%s); %s, and without it the company cannot be exported or removed with --delete-data"
+                % (company.id, bucket, name, hint)
             )
         try:
             pair = secrets._unpack_pair(entry, raw, company.id)
         except secrets.SecretsError as exc:
             raise error(str(exc)) from None
-        key_id, secret = (pair[k] for k in secrets.BACKUP_PAIR)
+        key_id, secret = (pair[k] for k in halves)
         return (seams.company_s3 or la.r2_s3)(endpoint, key_id, secret)
 
     return for_company
@@ -445,6 +451,58 @@ def lifecycle_main(
     )
 
 
+def configs_key_main(
+    argv: Sequence[str],
+    *,
+    context: Callable[..., Any] | None = None,
+    minter: secrets.BucketMinter | None = None,
+    env: Mapping[str, str] | None = None,
+) -> int:
+    """`enterprise configs-key`: mint the configs-bucket-only key of a company onboarded before `enterprise add` minted one, and store it. Idempotent: a company whose store already holds the key is left alone. Needs `CF_MANAGEMENT_TOKEN` (profile `enterprise-mint`), and changes nothing on the company's Worker."""
+    lifecycle = _module(LIFECYCLE)
+    if lifecycle is None:
+        return _refuse_not_built("C2", LIFECYCLE)
+    ap = argparse.ArgumentParser(prog="./run.sh enterprise configs-key")
+    ap.add_argument("company")
+    ap.add_argument("--bench", action="store_true")
+    ap.add_argument("--bws-project", default="")
+    try:
+        args = ap.parse_args(list(argv))
+    except SystemExit as exc:
+        return 0 if exc.code == 0 else EXIT_USAGE
+    environ = dict(os.environ if env is None else env)
+    try:
+        if not args.bws_project:
+            raise lifecycle.LifecycleError("--bws-project names the enterprise bws project")
+        ctx = (context or lifecycle_context)(
+            lifecycle, bench=args.bench, bws_project=args.bws_project
+        )
+        target = lifecycle.load_company(ctx, args.company)
+        use: secrets.BucketMinter
+        if minter is not None:
+            use = minter
+        else:
+            token = environ.get("CF_MANAGEMENT_TOKEN", "")
+            if not token:
+                raise lifecycle.LifecycleError(
+                    "CF_MANAGEMENT_TOKEN is not set (bound by --profile %s)" % secrets.MINT_PROFILE
+                )
+            use = secrets.CloudflareMinter.from_headers(["-H", "Authorization: Bearer %s" % token])
+        company = secrets.Company(
+            id=target.id,
+            name=target.name,
+            region=target.region,
+            cf_account_id=onboarding.CF_ACCOUNT_ID,
+            r2_jurisdiction=onboarding.region_entry(target.region).get("r2Jurisdiction"),
+        )
+        minted = secrets.ensure_configs_key(company, store=ctx.store, minter=use)
+    except (lifecycle.LifecycleError, secrets.SecretsError, onboarding.OnboardingError) as exc:
+        print("%s: configs-key failed: %s" % (SELF, exc), file=sys.stderr)
+        return 1
+    print("company %s: configs key %s" % (target.id, "minted" if minted else "already stored"))
+    return 0
+
+
 # --- dispatch --------------------------------------------------------------------
 
 
@@ -463,6 +521,8 @@ def main(
         return add_main(rest, add=add)
     if verb in LIFECYCLE_VERBS:
         return lifecycle_main(verb, rest, context=context)
+    if verb == "configs-key":
+        return configs_key_main(rest, context=context)
     if verb == "release":
         rings = _module(RINGS_RUN)
         if rings is None:

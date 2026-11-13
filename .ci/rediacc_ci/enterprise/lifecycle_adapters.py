@@ -59,6 +59,11 @@ def backup_token_name(company: Target) -> str:
     return "enterprise-%s-backups" % company.id
 
 
+def configs_token_name(company: Target) -> str:
+    """The name `secrets.configs_token_name` gives the configs-bucket-only token."""
+    return "enterprise-%s-configs" % company.id
+
+
 def _codes(answer: Mapping[str, Any]) -> str:
     errors = answer.get("errors")
     if not isinstance(errors, list):
@@ -100,7 +105,7 @@ def _pages(answer: Mapping[str, Any], rows: list, per_page: int, page: int) -> i
 
 
 def list_keys(s3: S3, bucket: str) -> list[str] | None:
-    """Every key of `bucket` (ListObjectsV2, following continuation tokens), or None when the bucket does not exist. Any other non-200 page raises without naming the bucket."""
+    """Every key of `bucket` (ListObjectsV2, following continuation tokens), or None when the bucket does not exist. Any other non-200 page raises, naming the bucket."""
     keys: list[str] = []
     token = ""
     while True:
@@ -111,10 +116,10 @@ def list_keys(s3: S3, bucket: str) -> list[str] | None:
         if status == 404 and not token:
             return None
         if status != 200:
-            raise LifecycleError("listing a company bucket answered HTTP %d" % status)
+            raise LifecycleError("listing company bucket %s answered HTTP %d" % (bucket, status))
         body = raw.decode("utf-8", errors="replace")
         if "<ListBucketResult" not in body:
-            raise LifecycleError("listing a company bucket answered no ListBucketResult")
+            raise LifecycleError("listing company bucket %s answered no ListBucketResult" % bucket)
         keys += [html.unescape(k) for k in XML_KEY.findall(body)]
         found = XML_NEXT_TOKEN.search(body)
         token = html.unescape(found.group(1)) if found else ""
@@ -127,11 +132,11 @@ def _object_path(bucket: str, key: str) -> str:
 
 
 def _bucket_s3(
-    shared: S3, company_s3: Callable[[Target], S3] | None, company: Target, bucket: str
+    shared: S3, company_s3: Callable[[Target, str], S3] | None, company: Target, bucket: str
 ) -> S3:
-    """The transport for one bucket: a company's backups bucket is reached with the company's own key (the shared pair is scoped to the releases bucket and configs-bench since PLAN-backup-credential-isolation B8, so it answers 403), every other bucket with the shared pair."""
-    if company_s3 is not None and bucket == company.backups_bucket:
-        return company_s3(company)
+    """The transport for one bucket: each of a company's two buckets is reached with the company's own key for that bucket (the shared pair is scoped to the releases bucket and configs-bench since PLAN-backup-credential-isolation B8, so it answers 403), every other bucket with the shared pair."""
+    if company_s3 is not None and bucket in company.buckets:
+        return company_s3(company, bucket)
     return shared
 
 
@@ -142,7 +147,7 @@ class CloudflareExporter:
     """`lifecycle.Exporter` over wrangler (the D1 dump) and the R2 S3 endpoint (the bucket objects)."""
 
     def __init__(
-        self, *, wrangler: Wrangler, s3: S3, company_s3: Callable[[Target], S3] | None = None
+        self, *, wrangler: Wrangler, s3: S3, company_s3: Callable[[Target, str], S3] | None = None
     ) -> None:
         self._wrangler = wrangler
         self._s3 = s3
@@ -171,7 +176,7 @@ class CloudflareExporter:
         keys = list_keys(self._s3_for(company, bucket), bucket)
         if keys is None:
             raise LifecycleError(
-                "listing a company bucket answered HTTP 404; the bucket is missing"
+                "listing company bucket %s answered HTTP 404; the bucket is missing" % bucket
             )
         return keys
 
@@ -266,7 +271,7 @@ class CloudflareTeardown:
         account_id: str,
         http: Http,
         s3: S3,
-        company_s3: Callable[[Target], S3] | None = None,
+        company_s3: Callable[[Target, str], S3] | None = None,
         secrets: BwsDeleter,
         lookup_domains: LookupDomains,
         lookup_run: enterprise_lookup.Runner | None = None,
@@ -381,7 +386,7 @@ class CloudflareTeardown:
         return 1, failed
 
     def revoke_tokens(self, company: Target) -> None:
-        name = backup_token_name(company)
+        names = {backup_token_name(company), configs_token_name(company)}
 
         def step() -> str | None:
             stale: list[str] = []
@@ -394,7 +399,7 @@ class CloudflareTeardown:
                 stale += [
                     str(r["id"])
                     for r in rows
-                    if isinstance(r, dict) and r.get("name") == name and r.get("id")
+                    if isinstance(r, dict) and r.get("name") in names and r.get("id")
                 ]
                 pages = _pages(answer, rows, 50, page)
                 page += 1

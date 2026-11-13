@@ -52,15 +52,25 @@ def _control() -> sqlite3.Connection:
 
 COMPANY_KEY_ID = "company-key-id"
 KEYPAIR_ENTRY = "%s_ACCOUNT_BACKUP_S3_KEYPAIR" % ACME
+CONFIGS_KEY_ID = "configs-key-id"
+CONFIGS_ENTRY = "%s_COMPANY_CONFIGS_S3_KEYPAIR" % ACME
 
 
 class FakeStore:
     """Holds a value for every name; the backups key pair is a real pair entry unless `without_pair`."""
 
     without_pair = False
+    without_configs_pair = False
 
     def read(self, names: Any) -> dict[str, str]:
         out = dict.fromkeys(names, "value")
+        if CONFIGS_ENTRY in out:
+            if self.without_configs_pair:
+                del out[CONFIGS_ENTRY]
+            else:
+                out[CONFIGS_ENTRY] = json.dumps(
+                    dict(zip(secrets.CONFIGS_PAIR, (CONFIGS_KEY_ID, "configs-secret"), strict=True))
+                )
         if KEYPAIR_ENTRY in out:
             if self.without_pair:
                 del out[KEYPAIR_ENTRY]
@@ -180,18 +190,37 @@ def test_export_reaches_a_real_cloudflare_exporter(rig):
     (argv,) = rig.wrangler_argvs
     assert "d1" in argv
     assert "account-acme" in argv
-    assert rig.s3_endpoints
-    assert all(e.startswith("https://%s." % ACCOUNT) for e in rig.s3_endpoints)
-    assert any(m == "GET" and p.startswith("configs-acme") for m, p in rig.s3_calls)
+    assert any(m == "GET" and p.startswith("configs-acme") for m, p in rig.company_s3_calls)
 
 
 def test_export_lists_the_backups_bucket_with_the_company_key_and_not_the_shared_pair(rig):
     assert _export(rig, CF_ENV) == 0
-    assert rig.company_key_ids == [COMPANY_KEY_ID]
+    assert COMPANY_KEY_ID in rig.company_key_ids
     assert any(m == "GET" and p.startswith("backups-acme") for m, p in rig.company_s3_calls)
     assert not any(p.startswith("backups-acme") for _m, p in rig.s3_calls), rig.s3_calls
-    # control: the configs bucket is still read with the shared pair
-    assert not any(p.startswith("configs-acme") for _m, p in rig.company_s3_calls)
+
+
+def test_export_lists_the_configs_bucket_with_the_configs_key_and_not_the_shared_pair(rig):
+    assert _export(rig, CF_ENV) == 0
+    assert CONFIGS_KEY_ID in rig.company_key_ids
+    assert not any(p.startswith("configs-acme") for _m, p in rig.s3_calls), rig.s3_calls
+    # control: the backups listing is signed with the backups key, never the configs one
+    assert rig.company_key_ids.count(CONFIGS_KEY_ID) == 1
+    assert rig.company_key_ids.count(COMPANY_KEY_ID) == 1
+
+
+def test_export_without_the_configs_key_names_the_bucket_and_the_mint_command(
+    rig, capsys, monkeypatch
+):
+    store = FakeStore()
+    store.without_configs_pair = True
+    monkeypatch.setattr(secrets.BwsStore, "from_env", classmethod(lambda _c, _p, _e=None: store))
+    assert _export(rig, CF_ENV) == 1
+    said = _said(capsys)
+    assert "configs-acme" in said
+    assert CONFIGS_ENTRY in said
+    assert "enterprise configs-key acme" in said
+    assert "configs-secret" not in said
 
 
 def test_export_without_the_company_key_in_the_store_names_the_entry(rig, capsys, monkeypatch):
@@ -201,9 +230,10 @@ def test_export_without_the_company_key_in_the_store_names_the_entry(rig, capsys
     assert _export(rig, CF_ENV) == 1
     said = _said(capsys)
     assert KEYPAIR_ENTRY in said
-    assert "no backups key" in said
+    assert "backups-acme" in said
+    assert "holds no key for bucket" in said
     assert "company-secret" not in said
-    assert rig.company_s3_calls == []
+    assert not any(p.startswith("backups-acme") for _m, p in rig.company_s3_calls)
 
 
 def test_remove_reaches_a_real_cloudflare_teardown(rig):
@@ -227,11 +257,11 @@ def test_export_without_a_credential_refuses_naming_it(rig, missing, capsys):
     assert rig.wrangler_argvs == []
 
 
-def test_export_without_the_r2_pair_refuses_naming_it(rig, capsys):
+def test_export_does_not_need_the_shared_r2_pair(rig):
+    # Both company buckets are read with the company's own keys, so the shared pair (scoped to releases and configs-bench) is not required.
     env = {k: v for k, v in CF_ENV.items() if "R2" not in k}
-    rig.seams = cli.LiveSeams(wrangler=rig.seams.wrangler)
-    assert _export(rig, env) == 1
-    assert "CLOUDFLARE_R2_ACCESS_KEY_ID" in _said(capsys)
+    assert _export(rig, env) == 0
+    assert rig.s3_calls == []
 
 
 def test_remove_without_a_bws_project_refuses_naming_the_flag(rig, capsys):
@@ -347,3 +377,71 @@ def test_lazy_sends_a_call_without_a_company_to_the_last_named_adapter():
     lazy = cli.Lazy(RuntimeError, lambda _r: Inner())
     assert lazy.dump(_Region("eu")) == "dump"
     assert lazy.read("k") == "got k"
+
+
+# --- configs-key -----------------------------------------------------------------------
+
+
+class MintStore(FakeStore):
+    def __init__(self, *, holds_configs: bool) -> None:
+        self.without_configs_pair = not holds_configs
+        self.created: list[tuple[str, str]] = []
+
+    def create(self, name: str, value: str) -> None:
+        self.created.append((name, value))
+
+
+class RecordingMinter:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str]] = []
+
+    def r2_bucket_token(self, token_name: str, bucket_resource: str) -> tuple[str, str]:
+        self.calls.append((token_name, bucket_resource))
+        return "minted-id", "minted-value"
+
+    def ses_user(self, _user_name: str) -> tuple[str, str]:
+        raise AssertionError("configs-key mints no SES user")
+
+
+def _configs_key(rig, monkeypatch, store, minter, extra=("--bws-project", PROJECT), env=None):
+    monkeypatch.setattr(secrets.BwsStore, "from_env", classmethod(lambda _c, _p, _e=None: store))
+    environ = CF_ENV if env is None else env
+    return cli.configs_key_main(
+        ["acme", *extra],
+        context=rig.context(environ),
+        minter=minter,
+        env=environ,
+    )
+
+
+def test_configs_key_mints_the_configs_only_key_for_a_company_without_one(rig, monkeypatch, capsys):
+    store, minter = MintStore(holds_configs=False), RecordingMinter()
+    assert _configs_key(rig, monkeypatch, store, minter) == 0
+    assert [n for n, _v in store.created] == [CONFIGS_ENTRY]
+    ((token_name, resource),) = minter.calls
+    assert token_name.endswith("-configs")
+    assert resource.endswith("_configs-acme")
+    assert "minted" in _said(capsys)
+    assert "minted-value" not in _said(capsys)
+
+
+def test_configs_key_is_idempotent_when_the_store_holds_the_key(rig, monkeypatch, capsys):
+    store, minter = MintStore(holds_configs=True), RecordingMinter()
+    assert _configs_key(rig, monkeypatch, store, minter) == 0
+    assert store.created == []
+    assert minter.calls == []
+    assert "already stored" in _said(capsys)
+
+
+def test_configs_key_without_a_bws_project_refuses_naming_the_flag(rig, monkeypatch, capsys):
+    store, minter = MintStore(holds_configs=False), RecordingMinter()
+    assert _configs_key(rig, monkeypatch, store, minter, extra=()) == 1
+    assert "--bws-project" in _said(capsys)
+    assert minter.calls == []
+
+
+def test_configs_key_without_the_management_token_refuses_naming_it(rig, monkeypatch, capsys):
+    store = MintStore(holds_configs=False)
+    assert _configs_key(rig, monkeypatch, store, None) == 1
+    assert "CF_MANAGEMENT_TOKEN" in _said(capsys)
+    assert store.created == []

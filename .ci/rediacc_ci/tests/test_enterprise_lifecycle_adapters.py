@@ -104,7 +104,9 @@ class FakeCloudflare:
         self.d1 = {"account-acme": "1111-uuid", "account-eu": "2222-uuid"}
         self.tokens = [
             {"id": "t-own", "name": "enterprise-%s-backups" % ACME},
+            {"id": "t-own-cfg", "name": "enterprise-%s-configs" % ACME},
             {"id": "t-other", "name": "enterprise-c1123456789abcdef-backups"},
+            {"id": "t-other-cfg", "name": "enterprise-c1123456789abcdef-configs"},
             {"id": "t-mgmt", "name": "auto-rotation-management"},
         ]
         self.calls: list[tuple] = []
@@ -292,34 +294,58 @@ def test_bucket_keys_follows_continuation_tokens_and_unescapes_keys():
 
 
 @pytest.mark.parametrize("status_bucket", ["nosuchbucket", "broken"])
-def test_bucket_keys_refuses_a_missing_or_failing_bucket_without_naming_it(status_bucket):
+def test_bucket_keys_refuses_a_missing_or_failing_bucket_naming_it(status_bucket):
     s3 = FakeS3({"broken": {}})
     s3.fail.add(("GET", "broken"))
     exporter = la.CloudflareExporter(wrangler=FakeWrangler(), s3=s3)
     with pytest.raises(lifecycle.LifecycleError) as caught:
         exporter.bucket_keys(_company(), status_bucket)
-    assert status_bucket not in str(caught.value)
+    assert "company bucket %s " % status_bucket in str(caught.value)
     assert "HTTP" in str(caught.value)
 
 
-def test_backups_bucket_is_read_with_the_company_key_and_not_the_shared_pair():
-    shared = FakeS3({"configs-acme": {"c": b"1"}, "backups-acme": {"snap": b"3"}})
-    company = FakeS3({"backups-acme": {"snap": b"3"}})
-    asked: list[str] = []
+def test_list_keys_names_the_bucket_in_a_non_200_and_in_a_malformed_answer():
+    failing = FakeS3({"configs-acme": {}})
+    failing.fail.add(("GET", "configs-acme"))
+    with pytest.raises(lifecycle.LifecycleError, match="company bucket configs-acme answered HTTP"):
+        la.list_keys(failing, "configs-acme")
+    with pytest.raises(lifecycle.LifecycleError, match="company bucket backups-acme answered no"):
+        la.list_keys(lambda _m, _p: (200, b"junk"), "backups-acme")
 
-    def company_s3(target):
-        asked.append(target.id)
-        return company
+
+def test_both_company_buckets_are_read_with_the_company_key_and_not_the_shared_pair():
+    shared = FakeS3({"configs-acme": {"c": b"1"}, "backups-acme": {"snap": b"3"}})
+    backups = FakeS3({"backups-acme": {"snap": b"3"}})
+    configs = FakeS3({"configs-acme": {"c": b"1"}})
+    asked: list[tuple[str, str]] = []
+
+    def company_s3(target, bucket):
+        asked.append((target.id, bucket))
+        return backups if bucket.startswith("backups") else configs
 
     exporter = la.CloudflareExporter(wrangler=FakeWrangler(), s3=shared, company_s3=company_s3)
     assert exporter.bucket_keys(_company(), "backups-acme") == ["snap"]
     assert exporter.get_object(_company(), "backups-acme", "snap") == b"3"
-    assert asked == [ACME, ACME]
-    assert shared.calls == []
-    # control: the configs bucket stays on the shared pair
     assert exporter.bucket_keys(_company(), "configs-acme") == ["c"]
-    assert [c[1].split("?")[0] for c in shared.calls] == ["configs-acme"]
-    assert len(company.calls) == 2
+    assert exporter.get_object(_company(), "configs-acme", "c") == b"1"
+    assert asked == [(ACME, "backups-acme")] * 2 + [(ACME, "configs-acme")] * 2
+    assert shared.calls == []
+    assert len(backups.calls) == 2
+    assert len(configs.calls) == 2
+    # control: a bucket that is not one of the company's two stays on the shared pair
+    other = FakeS3({"releases": {"r": b"x"}})
+    other_exporter = la.CloudflareExporter(wrangler=FakeWrangler(), s3=other, company_s3=company_s3)
+    assert other_exporter.bucket_keys(_company(), "releases") == ["r"]
+    assert len(asked) == 4
+
+
+def test_configs_bucket_listing_with_the_shared_pair_alone_answers_403_naming_it():
+    """The defect: without a company key the shared pair (releases and configs-bench only) is refused for configs-<name>."""
+    shared = FakeS3({"configs-acme": {"c": b"1"}})
+    shared.fail.add(("GET", "configs-acme"))
+    exporter = la.CloudflareExporter(wrangler=FakeWrangler(), s3=shared)
+    with pytest.raises(lifecycle.LifecycleError, match="configs-acme answered HTTP"):
+        exporter.bucket_keys(_company(), "configs-acme")
 
 
 def test_backups_bucket_listing_with_the_shared_pair_alone_answers_403():
@@ -331,23 +357,26 @@ def test_backups_bucket_listing_with_the_shared_pair_alone_answers_403():
         exporter.bucket_keys(_company(), "backups-acme")
 
 
-def test_delete_bucket_empties_the_backups_bucket_with_the_company_key(monkeypatch):
+@pytest.mark.parametrize("bucket", ["backups-acme", "configs-acme"])
+def test_delete_bucket_empties_the_company_bucket_with_the_company_key(monkeypatch, bucket):
     rig = Rig(monkeypatch)
     own = FakeS3(rig.s3.buckets)
+    objects = len(rig.s3.buckets[bucket])
     teardown = la.CloudflareTeardown(
         account_id=ACCOUNT,
         http=rig.cf,
         s3=rig.s3,
-        company_s3=lambda _company: own,
+        company_s3=lambda _company, _bucket: own,
         secrets=la.BwsDeleter(PROJECT, list_rows=rig.bws.list_rows, delete=rig.bws.delete),
         lookup_domains=lambda _company: rig.domains,
         lookup_run=rig.kv_run,
         r2_jurisdiction="eu",
     )
-    teardown.delete_bucket(_company(), "backups-acme")
-    assert [m for m, _p in own.calls if m == "DELETE"] == ["DELETE"]
-    assert "backups-acme" not in rig.s3.buckets
-    assert not any(p.startswith("backups-acme") for _m, p in rig.s3.calls)
+    teardown.delete_bucket(_company(), bucket)
+    assert [m for m, _p in own.calls if m == "DELETE"] == ["DELETE"] * objects
+    assert objects >= 1
+    assert bucket not in rig.s3.buckets
+    assert not any(p.startswith(bucket) for _m, p in rig.s3.calls)
 
 
 def test_get_object_quotes_the_key_and_returns_bytes():
@@ -446,6 +475,7 @@ def test_export_through_the_adapter_writes_dump_objects_and_a_0600_secrets_file(
 def test_token_name_matches_the_minter():
     company = secrets.Company(id=ACME, name="acme", region="eu", cf_account_id=ACCOUNT)
     assert la.backup_token_name(_company()) == secrets.r2_token_name(company)
+    assert la.configs_token_name(_company()) == secrets.configs_token_name(company)
 
 
 def test_undeploy_deletes_proxy_then_account_and_skips_an_absent_worker(monkeypatch):
@@ -534,8 +564,11 @@ def test_revoke_tokens_deletes_only_this_companys_backup_token_across_pages(monk
     rig = Rig(monkeypatch)
     rig.cf.tokens.insert(0, {"id": "t-pad", "name": "unrelated"})
     rig.teardown.revoke_tokens(_company())
-    assert sorted(t["id"] for t in rig.cf.tokens) == ["t-mgmt", "t-other", "t-pad"]
-    assert [c[1] for c in rig.cf.calls if c[0] == "DELETE"] == ["/user/tokens/t-own"]
+    assert sorted(t["id"] for t in rig.cf.tokens) == ["t-mgmt", "t-other", "t-other-cfg", "t-pad"]
+    assert [c[1] for c in rig.cf.calls if c[0] == "DELETE"] == [
+        "/user/tokens/t-own",
+        "/user/tokens/t-own-cfg",
+    ]
 
 
 def test_revoke_tokens_follows_a_full_page_when_the_answer_omits_result_info(monkeypatch):
@@ -695,7 +728,7 @@ def test_full_remove_with_delete_data_tears_down_everything(tmp_path, monkeypatc
     assert rig.cf.workers == {"account-eu"}
     assert rig.cf.d1 == {"account-eu": "2222-uuid"}
     assert set(rig.s3.buckets) == {"configs-globex"}
-    assert sorted(t["id"] for t in rig.cf.tokens) == ["t-mgmt", "t-other"]
+    assert sorted(t["id"] for t in rig.cf.tokens) == ["t-mgmt", "t-other", "t-other-cfg"]
     assert [r["id"] for r in rig.bws.rows] == ["id-foreign"]
     assert len(rig.kv) == 1
     assert _state(conn) == "removed"

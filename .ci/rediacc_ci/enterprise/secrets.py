@@ -54,6 +54,10 @@ GENERATED: tuple[str, ...] = (
 X25519_PAIR = ("ACCOUNT_X25519_PRIVATE_KEY", "ACCOUNT_X25519_PUBLIC_KEY")
 SES_PAIR = ("AWS_SES_ACCESS_KEY_ID", "AWS_SES_SECRET_ACCESS_KEY")
 BACKUP_PAIR = ("ACCOUNT_BACKUP_S3_ACCESS_KEY_ID", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY")
+# The key over the company's configs bucket only. Not a Worker secret (the Worker binds that bucket), so it is outside MINTED and the payload; the lifecycle verbs read and empty the bucket with it.
+CONFIGS_PAIR = ("COMPANY_CONFIGS_S3_ACCESS_KEY_ID", "COMPANY_CONFIGS_S3_SECRET_ACCESS_KEY")
+CONFIGS_ENTRY = "COMPANY_CONFIGS_S3_KEYPAIR"
+BACKUP_ENTRY = "ACCOUNT_BACKUP_S3_KEYPAIR"
 MINTED: tuple[str, ...] = (*SES_PAIR, *BACKUP_PAIR)
 OWNED: tuple[str, ...] = (*GENERATED, *MINTED)
 
@@ -62,6 +66,7 @@ PAIRS: dict[str, tuple[str, str]] = {
     "ACCOUNT_X25519_KEYPAIR": X25519_PAIR,
     "AWS_SES_KEYPAIR": SES_PAIR,
     "ACCOUNT_BACKUP_S3_KEYPAIR": BACKUP_PAIR,
+    "COMPANY_CONFIGS_S3_KEYPAIR": CONFIGS_PAIR,
 }
 SINGLES: tuple[str, ...] = tuple(k for k in GENERATED if k not in X25519_PAIR)
 # The store entry keys: one per unpaired generated secret, one per pair.
@@ -173,17 +178,32 @@ class Company:
         return "https://%s.%sr2.cloudflarestorage.com" % (self.cf_account_id, jurisdiction)
 
     @property
-    def bucket_resource(self) -> str:
+    def configs_bucket(self) -> str:
+        return "configs-%s" % self.name
+
+    def _resource(self, bucket: str) -> str:
         return "%s.%s_%s_%s" % (
             R2_BUCKET_SCOPE,
             self.cf_account_id,
             self.r2_jurisdiction or "default",
-            self.backup_bucket,
+            bucket,
         )
+
+    @property
+    def bucket_resource(self) -> str:
+        return self._resource(self.backup_bucket)
+
+    @property
+    def configs_resource(self) -> str:
+        return self._resource(self.configs_bucket)
 
 
 def r2_token_name(company: Company) -> str:
     return "enterprise-%s-backups" % company.id
+
+
+def configs_token_name(company: Company) -> str:
+    return "enterprise-%s-configs" % company.id
 
 
 def ses_user_name(company: Company) -> str:
@@ -317,9 +337,11 @@ class Store(Protocol):
     def create(self, name: str, value: str) -> None: ...
 
 
-class Minter(Protocol):
+class BucketMinter(Protocol):
     def r2_bucket_token(self, token_name: str, bucket_resource: str) -> tuple[str, str]: ...
 
+
+class Minter(BucketMinter, Protocol):
     def ses_user(self, user_name: str) -> tuple[str, str]: ...
 
 
@@ -419,6 +441,35 @@ def _unpack_pair(entry: str, raw: str, company_id: str) -> dict[str, str]:
     return {k: held[k] for k in halves}
 
 
+def _mint_configs(
+    company: Company, minter: BucketMinter, keep: Callable[[str, str | dict[str, str]], None]
+) -> None:
+    token_id, token_value = _step(
+        "minting the configs token",
+        minter.r2_bucket_token,
+        configs_token_name(company),
+        company.configs_resource,
+    )
+    secret_key = hashlib.sha256(token_value.encode()).hexdigest()
+    keep(CONFIGS_ENTRY, dict(zip(CONFIGS_PAIR, (token_id, secret_key), strict=True)))
+
+
+def ensure_configs_key(company: Company, *, store: Store, minter: BucketMinter) -> bool:
+    """Mint the configs-bucket-only key for a company that was onboarded without one; True when minted, False when the store already holds it. Touches nothing else: no other entry, no push, so the deployed Worker keeps its secrets."""
+    name = store_name(company.id, CONFIGS_ENTRY)
+    held = _step("reading the store", store.read, [name])
+    if held.get(name):
+        _unpack_pair(CONFIGS_ENTRY, held[name], company.id)
+        return False
+
+    def keep(_entry: str, value: str | dict[str, str]) -> None:
+        raw = json.dumps(value, sort_keys=True) if isinstance(value, dict) else value
+        _step("storing %s" % name, store.create, name, raw)
+
+    _mint_configs(company, minter, keep)
+    return True
+
+
 def provision(
     company: Company,
     shared: Mapping[str, str],
@@ -488,6 +539,11 @@ def provision(
         keep(
             "ACCOUNT_BACKUP_S3_KEYPAIR", dict(zip(BACKUP_PAIR, (token_id, secret_key), strict=True))
         )
+
+    if CONFIGS_ENTRY in pairs:
+        reuse(CONFIGS_ENTRY)
+    else:
+        _mint_configs(company, minter, keep)
 
     merged = {**values, **base}
     payload = {k: merged[k] for k in PAYLOAD_KEYS}

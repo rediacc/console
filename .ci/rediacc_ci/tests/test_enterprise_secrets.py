@@ -212,7 +212,11 @@ def test_provision_generates_stores_mints_and_pushes():
         (
             es.r2_token_name(company()),
             "com.cloudflare.edge.r2.bucket.%s_eu_backups-acme" % CF_ACCOUNT,
-        )
+        ),
+        (
+            es.configs_token_name(company()),
+            "com.cloudflare.edge.r2.bucket.%s_eu_configs-acme" % CF_ACCOUNT,
+        ),
     ]
     assert minter.ses_calls == [es.ses_user_name(company())]
     assert len(push.calls) == 1
@@ -363,6 +367,8 @@ def test_each_pair_is_one_store_entry_holding_both_halves():
     _r, store, _m, push = run()
     doc = json.loads(push.calls[0][1])
     for entry, halves in es.PAIRS.items():
+        if entry == es.CONFIGS_ENTRY:
+            continue
         assert json.loads(store.data[es.store_name(CID, entry)]) == {k: doc[k] for k in halves}
         for half in halves:
             assert es.store_name(CID, half) not in store.data
@@ -981,3 +987,53 @@ def test_listing_without_result_info_follows_a_full_last_allowed_page() -> None:
     assert la._pages({}, [0], 10, last + 1) == last + 1
     with pytest.raises(la.LifecycleError, match="did not end"):
         la._pages({}, [0] * 10, 10, last + 1)
+
+
+# --- the configs-bucket-only key ---------------------------------------------------
+
+
+def test_the_configs_key_is_stored_but_never_pushed_to_the_worker():
+    _r, store, minter, push = run()
+    held = json.loads(store.data[es.store_name(CID, es.CONFIGS_ENTRY)])
+    assert set(held) == set(es.CONFIGS_PAIR)
+    assert held[es.CONFIGS_PAIR[0]] == R2_TOKEN_ID
+    doc = json.loads(push.calls[0][1])
+    assert not set(es.CONFIGS_PAIR) & set(doc)
+    # control: the backups token stays scoped to the backups bucket alone
+    resources = dict(minter.r2_calls)
+    assert resources[es.r2_token_name(company())].endswith("_backups-acme")
+    assert resources[es.configs_token_name(company())].endswith("_configs-acme")
+
+
+def test_provision_over_a_company_with_only_the_backups_key_mints_just_the_configs_key():
+    _r, first, _m, _p = run()
+    legacy = {n: v for n, v in first.data.items() if not n.endswith(es.CONFIGS_ENTRY)}
+    report, store, minter, _push = run(store=FakeStore(legacy))
+    assert store.created == [es.store_name(CID, es.CONFIGS_ENTRY)]
+    assert [name for name, _r in minter.r2_calls] == [es.configs_token_name(company())]
+    assert minter.ses_calls == []
+    assert es.CONFIGS_ENTRY in report.created
+
+
+def test_ensure_configs_key_mints_once_and_touches_nothing_else():
+    _r, first, _m, _p = run()
+    legacy = {n: v for n, v in first.data.items() if not n.endswith(es.CONFIGS_ENTRY)}
+    store, minter = FakeStore(legacy), FakeMinter()
+    assert es.ensure_configs_key(company(), store=store, minter=minter) is True
+    assert store.created == [es.store_name(CID, es.CONFIGS_ENTRY)]
+    assert minter.r2_calls == [(es.configs_token_name(company()), company().configs_resource)]
+    assert minter.ses_calls == []
+    # control: a second run finds the key and mints nothing
+    again = FakeMinter()
+    assert es.ensure_configs_key(company(), store=store, minter=again) is False
+    assert again.r2_calls == []
+    assert len(store.created) == 1
+
+
+def test_ensure_configs_key_refuses_a_half_pair_without_minting():
+    name = es.store_name(CID, es.CONFIGS_ENTRY)
+    store = FakeStore({name: json.dumps({es.CONFIGS_PAIR[0]: "id-only"})})
+    minter = FakeMinter()
+    with pytest.raises(es.SecretsError, match=es.CONFIGS_ENTRY):
+        es.ensure_configs_key(company(), store=store, minter=minter)
+    assert minter.r2_calls == []
