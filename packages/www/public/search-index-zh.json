@@ -5949,7 +5949,7 @@
   {
     "id": "search-20222",
     "content": "12.5 status",
-    "body": "显示订阅状态以及某台机器的许可证状态。 rdc subscription status [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | -m, --machine <name> | 机器名称 | 否 | - | <a id=\"cli-local-subscription-refresh\"></a>",
+    "body": "显示订阅状态以及某台机器的许可证状态。 rdc subscription status [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | -m, --machine <name> | 机器名称 | 否 | - | | --all | 同时列出已删除仓库和不在此配置中的仓库的许可证 | 否 | - | <a id=\"cli-local-subscription-refresh\"></a>",
     "excerpt": "显示订阅状态以及某台机器的许可证状态。 rdc subscription status [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | -m, --machine <name> | 机器名称...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",
@@ -5973,8 +5973,8 @@
   {
     "id": "search-20224",
     "content": "12.7 retire",
-    "body": "退还已不存在的仓库的许可证,使其从许可证统计和通知中消失。 rdc subscription retire <guid> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --force | 退还其仓库仍在此配置中且尚未彻底过期的许可证 | 否 | - | <a id=\"cli-local-subscription-notices\"></a>",
-    "excerpt": "退还已不存在的仓库的许可证,使其从许可证统计和通知中消失。 rdc subscription retire <guid> [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --force |...",
+    "body": "退还已不存在的仓库的许可证,使其从许可证统计和通知中消失。 rdc subscription retire [guid] [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --force | 退还其仓库仍在此配置中且尚未彻底过期的许可证 | 否 | - | | --expired | 退还已删除或不在此配置中的仓库的所有已彻底过期许可证 | 否 | - | | --dry-run | 与 --expired 搭配:只列出将要退还的内容,不做任何更改 | 否 | - | <a id=\"cli-local-subscription-notices\"></a>",
+    "excerpt": "退还已不存在的仓库的许可证,使其从许可证统计和通知中消失。 rdc subscription retire [guid] [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --force |...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",
     "fragment": "127-retire",

@@ -5949,7 +5949,7 @@
   {
     "id": "search-3280",
     "content": "12.5 status",
-    "body": "Abonnement und Lizenzstatus für eine Maschine anzeigen. rdc subscription status [options] | Option | Beschreibung | Erforderlich | Standard | |------|-------------|----------|---------| | -m, --machine <name> | Machine-Name | Nein | - | <a id=\"cli-local-subscription-refresh\"></a>",
+    "body": "Abonnement und Lizenzstatus für eine Maschine anzeigen. rdc subscription status [options] | Option | Beschreibung | Erforderlich | Standard | |------|-------------|----------|---------| | -m, --machine <name> | Machine-Name | Nein | - | | --all | Zeigt auch die Lizenzen gelöschter Repositories und solcher, die nicht in dieser Konfiguration liegen | Nein | - | <a id=\"cli-local-subscription-refresh\"></a>",
     "excerpt": "Abonnement und Lizenzstatus für eine Maschine anzeigen. rdc subscription status [options] | Option | Beschreibung | Erforderlich | Standard | |------|...",
     "category": "Documentation",
     "page": "/de/docs/cli-application",
@@ -5973,8 +5973,8 @@
   {
     "id": "search-3282",
     "content": "12.7 retire",
-    "body": "Die Lizenz eines nicht mehr vorhandenen Repositorys zurückgeben, damit sie aus Lizenzsummen und Hinweisen verschwindet. rdc subscription retire <guid> [options] | Option | Beschreibung | Erforderlich | Standard | |------|-------------|----------|---------| | --force | Eine Lizenz zurückgeben, deren Repository noch in dieser Konfiguration liegt und nicht endgültig abgelaufen ist | Nein | - | <a id=\"cli-local-subscription-notices\"></a>",
-    "excerpt": "Die Lizenz eines nicht mehr vorhandenen Repositorys zurückgeben, damit sie aus Lizenzsummen und Hinweisen verschwindet. rdc subscription retire <guid>...",
+    "body": "Die Lizenz eines nicht mehr vorhandenen Repositorys zurückgeben, damit sie aus Lizenzsummen und Hinweisen verschwindet. rdc subscription retire [guid] [options] | Option | Beschreibung | Erforderlich | Standard | |------|-------------|----------|---------| | --force | Eine Lizenz zurückgeben, deren Repository noch in dieser Konfiguration liegt und nicht endgültig abgelaufen ist | Nein | - | | --expired | Gibt jede endgültig abgelaufene Lizenz eines gelöschten Repositorys oder eines Repositorys außerhalb dieser Konfiguration zurück | Nein | - | | --dry-run | Mit --expired: zeigt, was zurückgegeben würde, und ändert nichts | Nein | - | <a id=\"cli-local-subscription-notices\"></a>",
+    "excerpt": "Die Lizenz eines nicht mehr vorhandenen Repositorys zurückgeben, damit sie aus Lizenzsummen und Hinweisen verschwindet. rdc subscription retire [guid]...",
     "category": "Documentation",
     "page": "/de/docs/cli-application",
     "fragment": "127-retire",

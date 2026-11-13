@@ -5949,7 +5949,7 @@
   {
     "id": "search-6371",
     "content": "12.5 status",
-    "body": "Mostrar la suscripción y el estado de licencia de una máquina. rdc subscription status [options] | Opción | Descripción | Obligatorio | Predeterminado | |------|-------------|----------|---------| | -m, --machine <name> | Nombre de máquina | No | - | <a id=\"cli-local-subscription-refresh\"></a>",
+    "body": "Mostrar la suscripción y el estado de licencia de una máquina. rdc subscription status [options] | Opción | Descripción | Obligatorio | Predeterminado | |------|-------------|----------|---------| | -m, --machine <name> | Nombre de máquina | No | - | | --all | Incluye también las licencias de repositorios eliminados y de los que no están en esta configuración | No | - | <a id=\"cli-local-subscription-refresh\"></a>",
     "excerpt": "Mostrar la suscripción y el estado de licencia de una máquina. rdc subscription status [options] | Opción | Descripción | Obligatorio | Predeterminado...",
     "category": "Documentation",
     "page": "/es/docs/cli-application",
@@ -5973,8 +5973,8 @@
   {
     "id": "search-6373",
     "content": "12.7 retire",
-    "body": "Retira la licencia de un repositorio que ya no existe, para que salga de los recuentos de licencias y de los avisos. rdc subscription retire <guid> [options] | Opción | Descripción | Obligatorio | Predeterminado | |------|-------------|----------|---------| | --force | Retira una licencia cuyo repositorio sigue en esta configuración y no ha caducado del todo | No | - | <a id=\"cli-local-subscription-notices\"></a>",
-    "excerpt": "Retira la licencia de un repositorio que ya no existe, para que salga de los recuentos de licencias y de los avisos. rdc subscription retire <guid> [o...",
+    "body": "Retira la licencia de un repositorio que ya no existe, para que salga de los recuentos de licencias y de los avisos. rdc subscription retire [guid] [options] | Opción | Descripción | Obligatorio | Predeterminado | |------|-------------|----------|---------| | --force | Retira una licencia cuyo repositorio sigue en esta configuración y no ha caducado del todo | No | - | | --expired | Retira todas las licencias caducadas del todo de repositorios eliminados o que no están en esta configuración | No | - | | --dry-run | Con --expired: muestra lo que se retiraría y no cambia nada | No | - | <a id=\"cli-local-subscription-notices\"></a>",
+    "excerpt": "Retira la licencia de un repositorio que ya no existe, para que salga de los recuentos de licencias y de los avisos. rdc subscription retire [guid] [o...",
     "category": "Documentation",
     "page": "/es/docs/cli-application",
     "fragment": "127-retire",

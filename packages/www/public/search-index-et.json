@@ -5949,7 +5949,7 @@
   {
     "id": "search-7910",
     "content": "12.5 status",
-    "body": "Näita tellimust ja masina litsentsi olekut. rdc subscription status [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|----------|---------| | -m, --machine <name> | Masina nimi | Ei | - | <a id=\"cli-local-subscription-refresh\"></a>",
+    "body": "Näita tellimust ja masina litsentsi olekut. rdc subscription status [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|----------|---------| | -m, --machine <name> | Masina nimi | Ei | - | | --all | Näitab ka kustutatud hoidlate ja selles konfiguratsioonis puuduvate hoidlate litsentse | Ei | - | <a id=\"cli-local-subscription-refresh\"></a>",
     "excerpt": "Näita tellimust ja masina litsentsi olekut. rdc subscription status [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|-...",
     "category": "Documentation",
     "page": "/et/docs/cli-application",
@@ -5973,8 +5973,8 @@
   {
     "id": "search-7912",
     "content": "12.7 retire",
-    "body": "Tagastab kadunud hoidla litsentsi, et see kaoks litsentside kogusummast ja teadetest. rdc subscription retire <guid> [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|----------|---------| | --force | Tagastab litsentsi, mille hoidla on selles konfiguratsioonis alles ja mis pole lõplikult aegunud | Ei | - | <a id=\"cli-local-subscription-notices\"></a>",
-    "excerpt": "Tagastab kadunud hoidla litsentsi, et see kaoks litsentside kogusummast ja teadetest. rdc subscription retire <guid> [options] | Lipuke | Kirjeldus |...",
+    "body": "Tagastab kadunud hoidla litsentsi, et see kaoks litsentside kogusummast ja teadetest. rdc subscription retire [guid] [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|----------|---------| | --force | Tagastab litsentsi, mille hoidla on selles konfiguratsioonis alles ja mis pole lõplikult aegunud | Ei | - | | --expired | Tagastab kõik lõplikult aegunud litsentsid kustutatud hoidlatelt ja hoidlatelt, mida selles konfiguratsioonis pole | Ei | - | | --dry-run | Koos --expired: loetleb, mis tagastataks, ega muuda midagi | Ei | - | <a id=\"cli-local-subscription-notices\"></a>",
+    "excerpt": "Tagastab kadunud hoidla litsentsi, et see kaoks litsentside kogusummast ja teadetest. rdc subscription retire [guid] [options] | Lipuke | Kirjeldus |...",
     "category": "Documentation",
     "page": "/et/docs/cli-application",
     "fragment": "127-retire",

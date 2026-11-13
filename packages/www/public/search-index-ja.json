@@ -5949,7 +5949,7 @@
   {
     "id": "search-12527",
     "content": "12.5 status",
-    "body": "サブスクリプションと、マシンのライセンス状態を表示する rdc subscription status [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | -m, --machine <name> | マシン名 | いいえ | - | <a id=\"cli-local-subscription-refresh\"></a>",
+    "body": "サブスクリプションと、マシンのライセンス状態を表示する rdc subscription status [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | -m, --machine <name> | マシン名 | いいえ | - | | --all | 削除済みのリポジトリと、この構成にないリポジトリのライセンスも表示します | いいえ | - | <a id=\"cli-local-subscription-refresh\"></a>",
     "excerpt": "サブスクリプションと、マシンのライセンス状態を表示する rdc subscription status [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | -m, --machine <n...",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",
@@ -5973,8 +5973,8 @@
   {
     "id": "search-12529",
     "content": "12.7 retire",
-    "body": "存在しなくなったリポジトリのライセンスを返却し、ライセンス数とお知らせから外します。 rdc subscription retire <guid> [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --force | リポジトリがこの構成に残っていて、完全失効していないライセンスも返却します | いいえ | - | <a id=\"cli-local-subscription-notices\"></a>",
-    "excerpt": "存在しなくなったリポジトリのライセンスを返却し、ライセンス数とお知らせから外します。 rdc subscription retire <guid> [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|-------...",
+    "body": "存在しなくなったリポジトリのライセンスを返却し、ライセンス数とお知らせから外します。 rdc subscription retire [guid] [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --force | リポジトリがこの構成に残っていて、完全失効していないライセンスも返却します | いいえ | - | | --expired | 削除済み、またはこの構成にないリポジトリで完全に失効したライセンスをすべて返却します | いいえ | - | | --dry-run | --expired と併用: 返却される内容を一覧表示し、何も変更しません | いいえ | - | <a id=\"cli-local-subscription-notices\"></a>",
+    "excerpt": "存在しなくなったリポジトリのライセンスを返却し、ライセンス数とお知らせから外します。 rdc subscription retire [guid] [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|-------...",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",
     "fragment": "127-retire",

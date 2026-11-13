@@ -5949,7 +5949,7 @@
   {
     "id": "search-18683",
     "content": "12.5 status",
-    "body": "Bir makine için aboneliği ve lisans durumunu göster. rdc subscription status [options] | Bayrak | Açıklama | Gerekli | Varsayılan | |------|-------------|----------|---------| | -m, --machine <name> | Makine adı | Hayır | - | <a id=\"cli-local-subscription-refresh\"></a>",
+    "body": "Bir makine için aboneliği ve lisans durumunu göster. rdc subscription status [options] | Bayrak | Açıklama | Gerekli | Varsayılan | |------|-------------|----------|---------| | -m, --machine <name> | Makine adı | Hayır | - | | --all | Silinmiş depoların ve bu yapılandırmada olmayan depoların lisanslarını da listeler | Hayır | - | <a id=\"cli-local-subscription-refresh\"></a>",
     "excerpt": "Bir makine için aboneliği ve lisans durumunu göster. rdc subscription status [options] | Bayrak | Açıklama | Gerekli | Varsayılan | |------|----------...",
     "category": "Documentation",
     "page": "/tr/docs/cli-application",
@@ -5973,8 +5973,8 @@
   {
     "id": "search-18685",
     "content": "12.7 retire",
-    "body": "Artık var olmayan bir deponun lisansını iade eder; lisans sayımlarından ve bildirimlerden çıkar. rdc subscription retire <guid> [options] | Bayrak | Açıklama | Gerekli | Varsayılan | |------|-------------|----------|---------| | --force | Deposu hâlâ bu yapılandırmada olan ve kesin olarak süresi dolmamış bir lisansı iade eder | Hayır | - | <a id=\"cli-local-subscription-notices\"></a>",
-    "excerpt": "Artık var olmayan bir deponun lisansını iade eder; lisans sayımlarından ve bildirimlerden çıkar. rdc subscription retire <guid> [options] | Bayrak | A...",
+    "body": "Artık var olmayan bir deponun lisansını iade eder; lisans sayımlarından ve bildirimlerden çıkar. rdc subscription retire [guid] [options] | Bayrak | Açıklama | Gerekli | Varsayılan | |------|-------------|----------|---------| | --force | Deposu hâlâ bu yapılandırmada olan ve kesin olarak süresi dolmamış bir lisansı iade eder | Hayır | - | | --expired | Silinmiş veya bu yapılandırmada olmayan depolara ait, kesin olarak süresi dolmuş tüm lisansları iade eder | Hayır | - | | --dry-run | --expired ile: nelerin iade edileceğini listeler, hiçbir şeyi değiştirmez | Hayır | - | <a id=\"cli-local-subscription-notices\"></a>",
+    "excerpt": "Artık var olmayan bir deponun lisansını iade eder; lisans sayımlarından ve bildirimlerden çıkar. rdc subscription retire [guid] [options] | Bayrak | A...",
     "category": "Documentation",
     "page": "/tr/docs/cli-application",
     "fragment": "127-retire",

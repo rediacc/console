@@ -6104,7 +6104,7 @@
   {
     "id": "search-4819",
     "content": "12.5 status",
-    "body": "Show subscription, and license state for a machine. rdc subscription status [options] | Flag | Description | Required | Default | |------|-------------|----------|---------| | -m, --machine <name> | Machine name | No | - | <a id=\"cli-local-subscription-refresh\"></a>",
+    "body": "Show subscription, and license state for a machine. rdc subscription status [options] | Flag | Description | Required | Default | |------|-------------|----------|---------| | -m, --machine <name> | Machine name | No | - | | --all | Also list the licenses of deleted repositories and of repositories not in this config | No | - | <a id=\"cli-local-subscription-refresh\"></a>",
     "excerpt": "Show subscription, and license state for a machine. rdc subscription status [options] | Flag | Description | Required | Default | |------|------------...",
     "category": "Documentation",
     "page": "/en/docs/cli-application",
@@ -6128,8 +6128,8 @@
   {
     "id": "search-4821",
     "content": "12.7 retire",
-    "body": "Retire the license of a repository that is gone, so it leaves the license counts and notices. rdc subscription retire <guid> [options] | Flag | Description | Required | Default | |------|-------------|----------|---------| | --force | Retire a license whose repository is still in this config and not hard-expired | No | - | <a id=\"cli-local-subscription-notices\"></a>",
-    "excerpt": "Retire the license of a repository that is gone, so it leaves the license counts and notices. rdc subscription retire <guid> [options] | Flag | Descri...",
+    "body": "Retire the license of a repository that is gone, so it leaves the license counts and notices. rdc subscription retire [guid] [options] | Flag | Description | Required | Default | |------|-------------|----------|---------| | --force | Retire a license whose repository is still in this config and not hard-expired | No | - | | --expired | Retire every hard-expired license of a deleted repository or one not in this config | No | - | | --dry-run | With --expired: list what would be retired and change nothing | No | - | <a id=\"cli-local-subscription-notices\"></a>",
+    "excerpt": "Retire the license of a repository that is gone, so it leaves the license counts and notices. rdc subscription retire [guid] [options] | Flag | Descri...",
     "category": "Documentation",
     "page": "/en/docs/cli-application",
     "fragment": "127-retire",

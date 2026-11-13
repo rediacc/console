@@ -5949,7 +5949,7 @@
   {
     "id": "search-14066",
     "content": "12.5 status",
-    "body": "구독 상태와 머신의 라이선스 상태를 표시합니다 rdc subscription status [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | -m, --machine <name> | 머신 이름 | 아니오 | - | <a id=\"cli-local-subscription-refresh\"></a>",
+    "body": "구독 상태와 머신의 라이선스 상태를 표시합니다 rdc subscription status [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | -m, --machine <name> | 머신 이름 | 아니오 | - | | --all | 삭제된 리포지토리와 이 구성에 없는 리포지토리의 라이선스도 함께 표시합니다 | 아니오 | - | <a id=\"cli-local-subscription-refresh\"></a>",
     "excerpt": "구독 상태와 머신의 라이선스 상태를 표시합니다 rdc subscription status [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | -m, --machine <name>...",
     "category": "Documentation",
     "page": "/ko/docs/cli-application",
@@ -5973,8 +5973,8 @@
   {
     "id": "search-14068",
     "content": "12.7 retire",
-    "body": "더 이상 없는 저장소의 라이선스를 반납해 라이선스 집계와 알림에서 제외합니다. rdc subscription retire <guid> [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --force | 저장소가 아직 이 구성에 있고 완전 만료되지 않은 라이선스도 반납합니다 | 아니오 | - | <a id=\"cli-local-subscription-notices\"></a>",
-    "excerpt": "더 이상 없는 저장소의 라이선스를 반납해 라이선스 집계와 알림에서 제외합니다. rdc subscription retire <guid> [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|--------...",
+    "body": "더 이상 없는 저장소의 라이선스를 반납해 라이선스 집계와 알림에서 제외합니다. rdc subscription retire [guid] [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --force | 저장소가 아직 이 구성에 있고 완전 만료되지 않은 라이선스도 반납합니다 | 아니오 | - | | --expired | 삭제되었거나 이 구성에 없는 리포지토리의 완전 만료 라이선스를 모두 반납합니다 | 아니오 | - | | --dry-run | --expired와 함께: 반납될 항목만 나열하고 아무것도 바꾸지 않습니다 | 아니오 | - | <a id=\"cli-local-subscription-notices\"></a>",
+    "excerpt": "더 이상 없는 저장소의 라이선스를 반납해 라이선스 집계와 알림에서 제외합니다. rdc subscription retire [guid] [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|--------...",
     "category": "Documentation",
     "page": "/ko/docs/cli-application",
     "fragment": "127-retire",

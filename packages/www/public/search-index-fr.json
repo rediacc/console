@@ -5949,7 +5949,7 @@
   {
     "id": "search-9449",
     "content": "12.5 status",
-    "body": "Afficher l'abonnement et l'état des licences pour une machine. rdc subscription status [options] | Option | Libellé | Requis | Défaut | |------|-------------|----------|---------| | -m, --machine <name> | Nom de la machine | Non | - | <a id=\"cli-local-subscription-refresh\"></a>",
+    "body": "Afficher l'abonnement et l'état des licences pour une machine. rdc subscription status [options] | Option | Libellé | Requis | Défaut | |------|-------------|----------|---------| | -m, --machine <name> | Nom de la machine | Non | - | | --all | Liste aussi les licences des dépôts supprimés et de ceux absents de cette configuration | Non | - | <a id=\"cli-local-subscription-refresh\"></a>",
     "excerpt": "Afficher l'abonnement et l'état des licences pour une machine. rdc subscription status [options] | Option | Libellé | Requis | Défaut | |------|------...",
     "category": "Documentation",
     "page": "/fr/docs/cli-application",
@@ -5973,8 +5973,8 @@
   {
     "id": "search-9451",
     "content": "12.7 retire",
-    "body": "Retire la licence d'un dépôt qui n'existe plus, pour qu'elle disparaisse des totaux de licences et des avis. rdc subscription retire <guid> [options] | Option | Libellé | Requis | Défaut | |------|-------------|----------|---------| | --force | Retire une licence dont le dépôt figure encore dans cette configuration et n'a pas expiré définitivement | Non | - | <a id=\"cli-local-subscription-notices\"></a>",
-    "excerpt": "Retire la licence d'un dépôt qui n'existe plus, pour qu'elle disparaisse des totaux de licences et des avis. rdc subscription retire <guid> [options]...",
+    "body": "Retire la licence d'un dépôt qui n'existe plus, pour qu'elle disparaisse des totaux de licences et des avis. rdc subscription retire [guid] [options] | Option | Libellé | Requis | Défaut | |------|-------------|----------|---------| | --force | Retire une licence dont le dépôt figure encore dans cette configuration et n'a pas expiré définitivement | Non | - | | --expired | Retire toutes les licences expirées définitivement des dépôts supprimés ou absents de cette configuration | Non | - | | --dry-run | Avec --expired : liste ce qui serait retiré sans rien modifier | Non | - | <a id=\"cli-local-subscription-notices\"></a>",
+    "excerpt": "Retire la licence d'un dépôt qui n'existe plus, pour qu'elle disparaisse des totaux de licences et des avis. rdc subscription retire [guid] [options]...",
     "category": "Documentation",
     "page": "/fr/docs/cli-application",
     "fragment": "127-retire",
