@@ -21,13 +21,14 @@ import http.client
 import importlib
 import json
 import os
+import pathlib
 import re
 import subprocess
 import sys
 import tempfile
 import urllib.error
 from collections.abc import Callable, Mapping
-from typing import TYPE_CHECKING, Any, NamedTuple
+from typing import Any, NamedTuple
 
 from rediacc_ci import paths
 from rediacc_ci.core import https, wrangler
@@ -36,9 +37,6 @@ from rediacc_ci.deploy import proxy_configs as pc
 from rediacc_ci.enterprise import configs, control_db, dns, names, proof, registry, secrets
 from rediacc_ci.ops import enterprise_lookup
 from rediacc_ci.well_known import PRODUCT_DOMAIN
-
-if TYPE_CHECKING:
-    import pathlib
 
 STEPS: tuple[str, ...] = (
     "control-row",
@@ -388,6 +386,42 @@ def build_portal(tree: pathlib.Path, env: Mapping[str, str]) -> int:
     )
 
 
+def roll_back_proxy(
+    plan: Plan,
+    proxy_target: console_executor.CompanyTarget,
+    record: pathlib.Path,
+    deploy_run: Callable[[str, list[str]], int],
+) -> None:
+    """Put the proxy back on the version recorded before its deferred deploy; a first deploy has none, and the run says so."""
+    try:
+        previous = json.loads(record.read_text(encoding="utf-8")).get("previous_version_id")
+    except (OSError, ValueError, AttributeError):
+        previous = None
+    if not previous:
+        print(
+            "company %s: no earlier proxy version to roll back to" % plan.company_id,
+            file=sys.stderr,
+            flush=True,
+        )
+        return
+    rc = deploy_run(
+        "rediacc_ci.deploy.deploy_proxy",
+        [
+            *console_executor.company_argv(proxy_target),
+            "--rollback",
+            str(previous),
+            "--record",
+            str(record),
+        ],
+    )
+    if rc != 0:
+        print(
+            "company %s: the proxy rollback to %s exited %d" % (plan.company_id, previous, rc),
+            file=sys.stderr,
+            flush=True,
+        )
+
+
 def http_status(url: str) -> int:
     """The status of an HTTPS GET through `core.https`, 0 when nothing answered."""
     try:
@@ -670,13 +704,19 @@ def live_actions(
         if rc != 0:
             raise OnboardingError("company %s: the portal build exited %d" % (plan.company_id, rc))
         # The proxy's /v1/ready asks the account Worker's ExecutorIssuer, which a first deploy has not shipped yet, and the account deploy needs the proxy (its EXECUTOR binding): deploy the proxy, then the account, then smoke the proxy.
-        for module, company, extra in (
-            ("rediacc_ci.deploy.deploy_proxy", proxy_target, ["--defer-smoke"]),
+        record = pathlib.Path(tempfile.mkdtemp(prefix="enterprise-proxy-")) / "proxy-record.json"
+        proxy_extra = ["--record", str(record)]
+        steps = (
+            ("rediacc_ci.deploy.deploy_proxy", proxy_target, ["--defer-smoke", *proxy_extra]),
             ("rediacc_ci.deploy.deploy_account", target(account_config=account_path), []),
-            ("rediacc_ci.deploy.deploy_proxy", proxy_target, ["--smoke-only"]),
-        ):
+            ("rediacc_ci.deploy.deploy_proxy", proxy_target, ["--smoke-only", *proxy_extra]),
+        )
+        for module, company, extra in steps:
             rc = deploy_run(module, [*console_executor.company_argv(company), *extra])
             if rc != 0:
+                # The deferred proxy deploy left the new version at 100% unsmoked, so a later failure puts the previous one back.
+                if module.endswith("deploy_account") or "--smoke-only" in extra:
+                    roll_back_proxy(plan, proxy_target, record, deploy_run)
                 raise OnboardingError(
                     "company %s: %s exited %d" % (plan.company_id, module.rsplit(".", 1)[1], rc)
                 )

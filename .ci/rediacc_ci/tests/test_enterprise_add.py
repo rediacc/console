@@ -5,6 +5,7 @@ from __future__ import annotations
 import email.message
 import http.client
 import io
+import json
 import os
 import shutil
 import sqlite3
@@ -1231,3 +1232,56 @@ def test_build_portal_refuses_a_missing_sitekey_by_name_and_runs_the_release_row
     assert cwd == str(tmp_path / "private/account/web")
     assert env["VITE_TURNSTILE_SITE_KEY"] == "0xKEY"
     assert env["VITE_CI_MODE"] == "false"
+
+
+def _rollback_world(tmp_path, previous, fail):
+    """A deploy step whose fake proxy run records `previous` and whose `fail` module (or `--smoke-only` run) exits 1."""
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    ran = []
+
+    def deploy(module, argv):
+        ran.append((module.rsplit(".", 1)[1], argv))
+        if "--defer-smoke" in argv:
+            record = argv[argv.index("--record") + 1]
+            with open(record, "w", encoding="utf-8") as fh:
+                json.dump({"previous_version_id": previous}, fh)
+        if "--rollback" in argv:
+            return 0
+        if fail == "account" and module.endswith("deploy_account"):
+            return 1
+        if fail == "smoke" and "--smoke-only" in argv:
+            return 1
+        return 0
+
+    actions = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        deploy=deploy,
+        portal=_portal_ok,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+    )
+    return actions, ctx, ran
+
+
+@pytest.mark.parametrize("fail", ["account", "smoke"])
+def test_live_deploy_step_rolls_the_proxy_back_to_the_recorded_version_on_a_later_failure(
+    tmp_path, fail
+):
+    """Review d39e851d.1: a deferred-smoke proxy deploy leaves the new version live and unsmoked, so a failing account deploy or --smoke-only run returns it to the recorded previous version."""
+    actions, ctx, ran = _rollback_world(tmp_path, "aaaaaaaa-1111-4222-8333-444444444444", fail)
+    with pytest.raises(onboarding.OnboardingError, match="exited 1"):
+        actions["deploy"](ctx)
+    last_module, last_argv = ran[-1]
+    assert last_module == "deploy_proxy"
+    assert last_argv[last_argv.index("--rollback") + 1] == "aaaaaaaa-1111-4222-8333-444444444444"
+
+
+def test_live_deploy_step_with_no_previous_version_fails_without_a_rollback(tmp_path, capsys):
+    actions, ctx, ran = _rollback_world(tmp_path, None, "account")
+    with pytest.raises(onboarding.OnboardingError, match="deploy_account exited 1"):
+        actions["deploy"](ctx)
+    assert not any("--rollback" in argv for _m, argv in ran)
+    assert "no earlier proxy version to roll back to" in capsys.readouterr().err

@@ -1239,6 +1239,17 @@ def main(argv: list[str]) -> int:
                     record = {}
             record.update({"worker": spec.name, "version_id": version_id, "smoke_rc": status})
             write_record(record_path, record)
+        if status != 0:
+            # A smoke that follows a deferred-smoke deploy is the first smoke of that version, so its failure names the revert as a failed deploy-time smoke does.
+            log.error(
+                "Rollback: %s"
+                % shown(
+                    read_record_field(record_path, "rollback")
+                    or rollback_command(
+                        config, read_record_field(record_path, "previous_version_id")
+                    )
+                )
+            )
         return status
 
     if bench and not os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY"):

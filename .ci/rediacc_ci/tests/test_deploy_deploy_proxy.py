@@ -1090,6 +1090,44 @@ def test_smoke_only_smokes_the_recorded_version_and_deploys_nothing(tmp_path: pa
     assert data["target"] == "stable", "the deploy step's fields are kept"
 
 
+def test_a_failing_smoke_only_names_the_recorded_rollback_like_a_deploy_smoke(
+    tmp_path: pathlib.Path,
+) -> None:
+    """After a deferred-smoke deploy the --smoke-only run is the first smoke of that version: its failure prints the record's rollback line, as a failed deploy-time smoke does (review d39e851d.1)."""
+    root = _fixture_root(tmp_path)
+    record = tmp_path / "record.json"
+    record.write_text(
+        json.dumps(
+            {"version_id": NEW_ID, "previous_version_id": PREV_ID, "rollback": "REVERT-LINE"}
+        ),
+        encoding="utf-8",
+    )
+    proc, _calls = _run(
+        tmp_path,
+        root,
+        ("--target", "stable", "--region", "us", "--smoke-only", "--record", str(record)),
+        FAKE_HEALTH="503",
+    )
+    assert proc.returncode == 1
+    assert "✗ Rollback: REVERT-LINE\n" in proc.stderr
+
+
+def test_a_failing_smoke_only_of_a_first_deploy_prints_the_no_rollback_line_and_still_fails(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = _fixture_root(tmp_path)
+    record = tmp_path / "record.json"
+    record.write_text(json.dumps({"version_id": NEW_ID}), encoding="utf-8")
+    proc, _calls = _run(
+        tmp_path,
+        root,
+        ("--target", "stable", "--region", "us", "--smoke-only", "--record", str(record)),
+        FAKE_HEALTH="503",
+    )
+    assert proc.returncode == 1
+    assert "Rollback: none: no earlier deployment of this Worker exists" in proc.stderr
+
+
 def test_smoke_only_without_a_record_reads_the_newest_deployment(tmp_path: pathlib.Path) -> None:
     """With no record the newest deployment is the version to smoke; here that is the previous one, so the ready check expects PREV_ID."""
     root = _fixture_root(tmp_path)
