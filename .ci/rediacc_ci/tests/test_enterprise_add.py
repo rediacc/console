@@ -918,7 +918,44 @@ def test_live_account_call_accepts_any_2xx(status):
 def test_live_account_call_refuses_a_non_2xx_with_or_without_a_code(status, payload, tail):
     with pytest.raises(onboarding.OnboardingError) as caught:
         _account_actions(FakeAccount(status, payload))["bootstrap"](_ctx(World()))
-    assert str(caught.value).endswith("refused with HTTP %d%s" % (status, tail))
+    assert ("refused with HTTP %d%s on POST " % (status, tail)) in str(caught.value)
+
+
+def test_live_account_call_names_the_path_and_the_body_of_a_refusal():
+    body = {"error": "D1_ERROR: no such table: company_orgs"}
+    with pytest.raises(onboarding.OnboardingError) as caught:
+        _account_actions(FakeAccount(500, body))["bootstrap"](_ctx(World()))
+    message = str(caught.value)
+    assert "HTTP 500" in message
+    assert "POST /account/api/v1/subscriptions/enterprise/bootstrap" in message
+    assert "no such table: company_orgs" in message
+
+
+def test_live_account_call_truncates_the_body_and_masks_the_key():
+    body = {"_text": "boom k-secret " + "x" * 2000}
+    with pytest.raises(onboarding.OnboardingError) as caught:
+        _account_actions(FakeAccount(500, body))["bootstrap"](_ctx(World()))
+    message = str(caught.value)
+    assert "k-secret" not in message
+    assert "<redacted>" in message
+    assert len(message) < 800
+
+
+def test_live_account_call_control_a_bodyless_refusal_adds_no_tail():
+    with pytest.raises(onboarding.OnboardingError) as caught:
+        _account_actions(FakeAccount(500, {}))["bootstrap"](_ctx(World()))
+    assert str(caught.value).endswith("/enterprise/bootstrap")
+
+
+def test_account_post_keeps_a_non_json_error_body(monkeypatch):
+    class Reply(io.BytesIO):
+        pass
+
+    def refuse(*_a, **_k):
+        raise urllib.error.HTTPError("https://h/x", 500, "err", {}, Reply(b"Internal Server Error"))
+
+    monkeypatch.setattr(onboarding.https, "urlopen", refuse)
+    assert onboarding.account_post("https://h/x", "k", {}) == (500, {"_text": "Internal Server Error"})
 
 
 def test_account_post_names_the_status_when_the_error_body_cannot_be_read(monkeypatch):

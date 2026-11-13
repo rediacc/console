@@ -476,12 +476,31 @@ def account_post(url: str, api_key: str, body: dict) -> tuple[int, dict]:
         return 0, {}
 
 
+BODY_TEXT_KEY = "_text"
+BODY_LIMIT = 500
+
+
 def _json_body(raw: bytes) -> dict:
+    """The JSON object of a reply body; a body that is not one comes back as `{BODY_TEXT_KEY: <its text>}`, so a Worker's plain-text or HTML 500 reaches the error message instead of being dropped."""
     try:
         data = json.loads(raw or b"{}")
     except ValueError:
-        return {}
-    return data if isinstance(data, dict) else {}
+        data = None
+    if isinstance(data, dict):
+        return data
+    text = raw.decode("utf-8", "replace").strip()
+    return {BODY_TEXT_KEY: text} if text else {}
+
+
+def _body_tail(payload: dict, secrets_in_reply: tuple[str, ...]) -> str:
+    """`: <reply body>` cut to BODY_LIMIT characters, with the API key masked; empty when the reply had no body."""
+    if not payload:
+        return ""
+    text = str(payload[BODY_TEXT_KEY]) if BODY_TEXT_KEY in payload else json.dumps(payload, sort_keys=True)
+    for secret in secrets_in_reply:
+        if secret:
+            text = text.replace(secret, "<redacted>")
+    return ": " + text[:BODY_LIMIT]
 
 
 def region_entry(region: str, root: pathlib.Path | None = None) -> dict:
@@ -549,8 +568,15 @@ def live_actions(
         if not HTTP_OK <= status < HTTP_OK + 100:
             code = str(payload.get("code") or "")
             raise OnboardingError(
-                "company %s: the %s call was refused with HTTP %d%s"
-                % (plan.company_id, route, status, " (%s)" % code if code else "")
+                "company %s: the %s call was refused with HTTP %d%s on POST %s%s"
+                % (
+                    plan.company_id,
+                    route,
+                    status,
+                    " (%s)" % code if code else "",
+                    SUBSCRIPTIONS_PATH + route,
+                    _body_tail(payload, (key,)),
+                )
             )
         return status, payload
 
