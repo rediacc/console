@@ -87,3 +87,25 @@ def test_a_duplicate_sha_keeps_its_first_line(tmp_path):
 
 def test_a_missing_ledger_reads_as_empty(tmp_path):
     assert C.read(pathlib.Path(tmp_path) / "nope" / C.NAME) == []
+
+
+def test_contract_the_reader_accepts_every_verdict_the_writer_may_write():
+    """A writer verdict the reader lacks turns real ledger lines into "garbled; skipped" warnings (2026-11-13: every `skipped (record-only)` line on 1104-1)."""
+    assert set(C.VERDICTS) == set(wl_review.LEDGER_VERDICTS)
+
+
+def test_a_record_only_line_reads_back(tmp_path):
+    path = tmp_path / "clean.jsonl"
+    path.write_text(
+        wl_review.ledger_line(review(3, verdict="skipped (record-only)")) + "\n", encoding="utf-8"
+    )
+    rows = C.read(path)
+    assert [r["verdict"] for r in rows] == ["skipped (record-only)"]
+
+
+def test_control_an_unknown_verdict_is_still_skipped(tmp_path):
+    path = tmp_path / "clean.jsonl"
+    line = json.loads(wl_review.ledger_line(review(4)))
+    line["verdict"] = "nonsense"
+    path.write_text(json.dumps(line) + "\n", encoding="utf-8")
+    assert C.read(path) == []
