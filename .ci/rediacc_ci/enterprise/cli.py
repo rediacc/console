@@ -1,7 +1,7 @@
 """`./run.sh enterprise <verb>`: the operator's command line for Enterprise companies (agent/plans/PLAN-enterprise-isolation.md, boxes C1, C2, K2 and P1).
 
     ./run.sh enterprise add <company> --region <r> --owner <mail> --storage-gb <n>
-        [--allow-ip <ip|cidr>]... [--unlisted] [--lookup-domain <d>] [--bench]
+        --max-machines <n> --max-storage-gb <n> [--allow-ip <ip|cidr>]... [--unlisted] [--lookup-domain <d>] [--bench]
         [--bws-project <id>] [--lookup-namespace-id <id>]
     ./run.sh enterprise list [--all] [--bench]
     ./run.sh enterprise update <company> [--max-machines N] [--max-storage-gb N] [--max-expiry-days N]
@@ -79,6 +79,12 @@ def _add_parser() -> argparse.ArgumentParser:
     ap.add_argument("--region", required=True)
     ap.add_argument("--owner", required=True, help="the owner's mail address")
     ap.add_argument("--storage-gb", type=int, required=True)
+    ap.add_argument("--max-machines", type=int, help="the company's machine limit (required)")
+    ap.add_argument(
+        "--max-storage-gb",
+        type=int,
+        help="the company's per-repository size cap in GB, as the signer checks it (required)",
+    )
     ap.add_argument("--allow-ip", action="append", default=[], help="repeat for each IP or CIDR")
     ap.add_argument("--unlisted", action="store_true", help="no www lookup entry")
     ap.add_argument("--lookup-domain", default="", help="default: the owner's mail domain")
@@ -120,6 +126,8 @@ def add_main(argv: Sequence[str], *, add: Add | None = None) -> int:
         unlisted=opts.unlisted,
         lookup_domain=opts.lookup_domain,
         bench=opts.bench,
+        max_machines=opts.max_machines,
+        max_storage_gb=opts.max_storage_gb,
     )
     outcome = (add or live_add)(req, opts)
     if outcome.rc != 0:

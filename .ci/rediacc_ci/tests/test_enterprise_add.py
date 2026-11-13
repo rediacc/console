@@ -96,6 +96,8 @@ def _req(**kw) -> onboarding.Request:
         "region": "eu",
         "owner": "owner@acme.example",
         "storage_gb": 100,
+        "max_machines": 50,
+        "max_storage_gb": 1024,
     }
     base.update(kw)
     return onboarding.Request(**base)
@@ -123,6 +125,10 @@ def _run(world, req, rec, **kw):
         ({"region": "mars"}, "region"),
         ({"owner": "not-an-address"}, "owner"),
         ({"storage_gb": 0}, "storage"),
+        ({"max_machines": None}, "--max-machines is required"),
+        ({"max_storage_gb": None}, "--max-storage-gb is required"),
+        ({"max_machines": 0}, "--max-machines must be"),
+        ({"max_storage_gb": -5}, "--max-storage-gb must be"),
         ({"lookup_domain": "gmail.com"}, "free-mail"),
         ({"owner": "boss@gmail.com"}, "free-mail"),
         ({"bench": True, "region": "asia"}, "bench"),
@@ -829,9 +835,9 @@ def _account_actions(fake, key="k-secret"):
     return onboarding.live_actions(runner=None, post=fake, api_key_of=lambda _company: key)
 
 
-def _seeded_ctx(world):
+def _seeded_ctx(world, **kw):
     """A context whose control database already holds the company's row and scope, as after the control-row step."""
-    ctx = _ctx(world)
+    ctx = _ctx(world, **kw)
     onboarding.write_control_row(ctx)
     return ctx
 
@@ -850,7 +856,7 @@ def test_control_row_registers_the_scope_the_signer_reads_and_bootstrap_sends_it
     _account_actions(fake)["bootstrap"](ctx)
     sent = fake.calls[0][2]
     assert sent["subscriptionId"] == rows[0]["subscription_id"]
-    assert sent["maxActivations"] == rows[0]["max_machines"] == onboarding.SCOPE_MAX_MACHINES
+    assert sent["maxActivations"] == rows[0]["max_machines"] == 50
     assert sent["maxRepositorySizeGb"] == rows[0]["max_storage_gb"]
     assert sent["maxActivations"] != 1
 
@@ -1145,6 +1151,7 @@ def test_cli_add_parses_into_a_request():
     rc = cli.main(
         [
             "add", "acme", "--region", "us", "--owner", "o@acme.example", "--storage-gb", "50",
+            "--max-machines", "12", "--max-storage-gb", "300",
             "--allow-ip", "192.0.2.1", "--allow-ip", "192.0.2.0/24", "--unlisted",
             "--lookup-domain", "acme.example", "--bench", "--bws-project", "p1",
         ],
@@ -1157,6 +1164,8 @@ def test_cli_add_parses_into_a_request():
         region="us",
         owner="o@acme.example",
         storage_gb=50,
+        max_machines=12,
+        max_storage_gb=300,
         allow_ips=("192.0.2.1", "192.0.2.0/24"),
         unlisted=True,
         lookup_domain="acme.example",
@@ -1171,12 +1180,67 @@ def test_cli_add_returns_the_outcome_rc_and_prints_the_error(capsys):
 
     assert (
         cli.main(
-            ["add", "acme", "--region", "eu", "--owner", "o@x.example", "--storage-gb", "1"],
+            [
+                "add",
+                "acme",
+                "--region",
+                "eu",
+                "--owner",
+                "o@x.example",
+                "--storage-gb",
+                "1",
+                "--max-machines",
+                "1",
+                "--max-storage-gb",
+                "1",
+            ],
             add=add,
         )
         == 1
     )
     assert "free-mail" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    ("drop", "flag"), [("--max-machines", "max-machines"), ("--max-storage-gb", "max-storage-gb")]
+)
+def test_cli_add_without_a_limit_is_refused_before_any_call_naming_the_flag(drop, flag, capsys):
+    limits = {"--max-machines": "12", "--max-storage-gb": "300"}
+    base = ["add", "acme", "--region", "eu", "--owner", "o@acme.example", "--storage-gb", "5"]
+    # control: with both limits the add runs
+    ran: list[onboarding.Request] = []
+
+    def add(req, _opts):
+        ran.append(req)
+        return onboarding.Outcome(0, "c1", ())
+
+    both = [x for k, v in limits.items() for x in (k, v)]
+    assert cli.main(base + both, add=add) == 0
+    assert ran[0].max_machines == 12
+    assert ran[0].max_storage_gb == 300
+    # without one: refused by the request check, before a step or a Cloudflare call
+    rest = [x for k, v in limits.items() if k != drop for x in (k, v)]
+    world, rec = World(), Recorder()
+    seen: list[onboarding.Request] = []
+
+    def real_check(req, _opts):
+        seen.append(req)
+        return _run(world, req, rec)
+
+    assert cli.main(base + rest, add=real_check) == 1
+    assert rec.calls == []
+    assert flag in capsys.readouterr().err
+
+
+def test_given_limits_reach_the_scope_row_and_the_bootstrap_body():
+    world = World()
+    ctx = _seeded_ctx(world, max_machines=9, max_storage_gb=77)
+    rows = world.rows(ctx.plan.database, "SELECT * FROM scope")
+    assert (rows[0]["max_machines"], rows[0]["max_storage_gb"]) == (9, 77)
+    fake = FakeAccount(201)
+    _account_actions(fake)["bootstrap"](ctx)
+    assert fake.calls[0][2]["maxActivations"] == 9
+    assert fake.calls[0][2]["maxRepositorySizeGb"] == 77
 
 
 def test_cli_add_missing_flag_is_usage():

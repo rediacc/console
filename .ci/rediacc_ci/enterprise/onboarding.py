@@ -94,6 +94,9 @@ class Request:
     unlisted: bool = False
     lookup_domain: str = ""
     bench: bool = False
+    # The company's scope limits. No default: `check_request` refuses a request that leaves either unset, so no seed value decides a company's machine count or per-repository size cap.
+    max_machines: int | None = None
+    max_storage_gb: int | None = None
 
     @property
     def lookup(self) -> str:
@@ -174,6 +177,14 @@ def check_request(req: Request) -> None:
         or req.storage_gb < 1
     ):
         raise OnboardingError("--storage-gb must be a positive whole number of GB")
+    for flag, value in (
+        ("--max-machines", req.max_machines),
+        ("--max-storage-gb", req.max_storage_gb),
+    ):
+        if value is None:
+            raise OnboardingError("%s is required: the company's scope limit has no default" % flag)
+        if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+            raise OnboardingError("%s must be a positive whole number" % flag)
     if req.allow_ips:
         reason = pc.allow_ips_refusal(",".join(req.allow_ips))
         if reason:
@@ -230,8 +241,8 @@ def write_control_row(ctx: Context) -> str:
             plan.company_id,
             str(uuid.uuid4()),
             plan.hosts[0],
-            SCOPE_MAX_MACHINES,
-            SCOPE_MAX_STORAGE_GB,
+            plan.request.max_machines,
+            plan.request.max_storage_gb,
             SCOPE_MAX_EXPIRY_DAYS,
         ],
     )
@@ -511,9 +522,7 @@ def account_post(url: str, api_key: str, body: dict) -> tuple[int, dict]:
         return 0, {}
 
 
-# The scope a new company's control row starts with: the ENTERPRISE per-repository cap (packages/shared/src/subscription/constants.ts), and an expiry bound past the 365-day default the Worker's first blob carries, since the signer refuses a blob that ends after `now + max_expiry_days`. `enterprise limits` moves them afterwards.
-SCOPE_MAX_MACHINES = 50
-SCOPE_MAX_STORAGE_GB = 1024
+# The expiry bound of a new company's control row: past the 365-day default the Worker's first blob carries, since the signer refuses a blob that ends after `now + max_expiry_days`. It is a constant, not a per-company input, because it exists only to outlast that first licence; `enterprise update --max-expiry-days` moves it afterwards. The machine and per-repository GB limits have no seed: `enterprise add` requires `--max-machines` and `--max-storage-gb`.
 SCOPE_MAX_EXPIRY_DAYS = 400
 
 BODY_TEXT_KEY = "_text"
