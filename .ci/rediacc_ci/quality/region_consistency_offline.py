@@ -178,7 +178,7 @@ def pattern(
 
 
 def bench_jurisdiction(doc: dict | None) -> str | None:
-    """The jurisdiction wrangler.bench.toml declares for its CONFIG_BUCKET: bench has no regions.json row, so the toml is its declaration and the other bucket must agree with it."""
+    """The jurisdiction wrangler.bench.toml declares for its CONFIG_BUCKET: bench has no regions.json row, so the toml is its declaration and `check_account` holds both of a Worker's buckets to the jurisdiction the target's pattern carries."""
     if not doc:
         return None
     return blocks(doc, "r2_buckets").get("CONFIG_BUCKET", {}).get("jurisdiction")
@@ -229,7 +229,7 @@ def targets_from(doc: dict, bench_doc: dict | None = None) -> tuple[list[Target]
                     "secretSuffix %r is not %r" % (row.get("secretSuffix"), rid.upper()),
                 )
             )
-        if isinstance(d1_row, dict) and "jurisdiction" not in d1_row:
+        if not isinstance(d1_row, dict) or "jurisdiction" not in d1_row:
             found.append(
                 Finding(
                     rid,

@@ -3,6 +3,7 @@
 WHAT THIS ADDS TO `--selftest`. The controls plant into parsed dicts; here the entry point reads real files through `--root`, so the TOML and JSON parsing, the file discovery for all eight tomls, the matrix and the exit codes are proven on the bytes the tree really has. The fixture starts from a copy and is made consistent first (`_clean`), so each plant below is judged against a green run, not against whatever the real tree currently carries.
 """
 
+import json
 import pathlib
 import shutil
 import sys
@@ -192,3 +193,36 @@ def test_the_bench_only_payload_keys_are_exempt_and_an_unknown_one_is_not():
     assert not [f for f in rco.check_profiles([], {}, base) if "pushes" in f.message]
     extra = rco.check_profiles([], {}, [*base, "ZZZ_UNKNOWN_KEY"])
     assert [f.message for f in extra if "ZZZ_UNKNOWN_KEY" in f.message]
+
+
+def test_load_passes_the_parsed_bench_toml_to_targets_from(monkeypatch):
+    """4d34bc89.1: dropping the bench_doc argument in load() would leave the selftest green; the call itself is pinned."""
+    seen: dict = {}
+    real = rco.targets_from
+
+    def spy(doc, bench_doc=None):
+        seen["bench_doc"] = bench_doc
+        return real(doc, bench_doc)
+
+    monkeypatch.setattr(rco, "targets_from", spy)
+    rco.load(ROOT)
+    assert isinstance(seen["bench_doc"], dict)
+    assert "r2_buckets" in seen["bench_doc"]
+
+
+def _regions_with_d1(d1):
+    doc = json.loads((ROOT / rco.REGIONS_REL).read_text(encoding="utf-8"))
+    doc["regions"][0]["d1"] = d1
+    return doc
+
+
+def test_a_d1_written_as_a_bare_string_is_a_missing_jurisdiction_key():
+    """4d34bc89.2: only a dict d1 was checked for the key; a bare string passed silently."""
+    _targets, found = rco.targets_from(_regions_with_d1("account-eu"))
+    assert [f for f in found if "d1 carries no jurisdiction key" in f.message]
+
+
+def test_a_d1_dict_with_the_key_has_no_such_finding():
+    """Control: the dict form carrying `jurisdiction` raises no missing-key finding."""
+    _targets, found = rco.targets_from(_regions_with_d1({"name": "x", "jurisdiction": None}))
+    assert not [f for f in found if "d1 carries no jurisdiction key" in f.message]
