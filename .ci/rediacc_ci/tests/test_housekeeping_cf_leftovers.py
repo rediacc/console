@@ -18,11 +18,24 @@ TOKEN = "tok-SECRET-123"
 ACCOUNT_HOST = urlsplit(ACCOUNT_DEFAULT_ORIGIN).hostname
 
 
-def fake_api(scripts, d1, routes, domains=(), calls=None):
-    def get(path, token):
+def fake_api(scripts, d1, routes, domains=(), calls=None, extra=None):
+    """A read-only fake. `extra` maps a class to its items: `buckets` ((name, jurisdiction) pairs), `queues`, `containers`, `namespaces`, `pages`, and `bindings` (script -> binding list)."""
+    extra = extra or {}
+
+    def get(path, token, jurisdiction=None):
         if calls is not None:
             calls.append((path, token))
         base = path.split("?")[0]
+        if base.endswith("/settings"):
+            script = base.split("/")[-2]
+            bindings = (extra.get("bindings") or {}).get(script, [])
+            return {"success": True, "result": {"bindings": bindings}}
+        if base.endswith("/r2/buckets"):
+            jur = jurisdiction or "default"
+            res = [{"name": n} for n, j in extra.get("buckets", ()) if j == jur]
+            return {"success": True, "result": {"buckets": res}, "result_info": {}}
+        if base.endswith("/containers/applications"):
+            return {"success": True, "result": list(extra.get("containers", ()))}
         if base.endswith("/workers/scripts"):
             res = [{"id": s} for s in scripts]
         elif base.endswith("/d1/database"):
@@ -33,6 +46,12 @@ def fake_api(scripts, d1, routes, domains=(), calls=None):
             res = list(routes)
         elif base.endswith("/workers/domains"):
             res = list(domains)
+        elif base.endswith("/queues"):
+            res = list(extra.get("queues", ()))
+        elif base.endswith("/durable_objects/namespaces"):
+            res = list(extra.get("namespaces", ()))
+        elif base.endswith("/pages/projects"):
+            res = list(extra.get("pages", ()))
         else:
             raise cfl.CfError("unexpected " + path)
         return {"success": True, "result": res, "result_info": {"total_pages": 1}}
@@ -133,7 +152,7 @@ def test_unreadable_listing_is_an_error_not_an_empty_report(monkeypatch, capsys)
     monkeypatch.setenv("CLOUDFLARE_API_TOKEN", TOKEN)
     monkeypatch.setenv("CLOUDFLARE_ACCOUNT_ID", "acct")
 
-    def get(path, _token):
+    def get(path, _token, **_kw):
         raise cfl.CfError("GET %s: denied" % path)
 
     assert cfl.main([], get=get) == 1
@@ -155,6 +174,11 @@ def test_only_get_listings_are_requested():
         or "/d1/database" in p
         or p.startswith("/zones")
         or "/workers/domains" in p
+        or "/r2/buckets" in p
+        or "/queues" in p
+        or "/containers/applications" in p
+        or "/durable_objects/namespaces" in p
+        or "/pages/projects" in p
         for p, _ in calls
     )
 
@@ -198,7 +222,10 @@ def test_report_states_how_many_items_were_scanned(monkeypatch, capsys):
     cfl.main(
         [], get=fake_api([CONFIGURED, "pr-1"], [BOUND_DB], [{"pattern": "p", "script": CONFIGURED}])
     )
-    assert "scanned 2 scripts, 1 d1, 1 routes, 0 domains" in capsys.readouterr().out
+    assert (
+        "scanned 2 scripts, 1 d1, 1 routes, 0 domains, 0 buckets, 0 queues, 0 containers, 0 do, 0 pages"
+        in capsys.readouterr().out
+    )
 
 
 class _Resp:
@@ -275,7 +302,7 @@ def test_zones_are_listed_for_this_account_only():
     calls: list = []
     base = fake_api([CONFIGURED], [], [], calls=calls)
 
-    def get(path, token):
+    def get(path, token, jurisdiction=None):
         if path.startswith("/zones?"):
             calls.append((path, token))
             return {
@@ -288,7 +315,81 @@ def test_zones_are_listed_for_this_account_only():
             }
         if "/zones/z2/" in path:
             raise AssertionError("another account's zone was read")
-        return base(path, token)
+        return base(path, token, jurisdiction)
 
     cfl.find_leftovers(ROOT, "acct", TOKEN, get)
     assert any("account.id=acct" in p for p, _ in calls)
+
+
+# --- the classes PLAN-product-domain-rename L11 needs seen ---------------------------------------
+
+
+def rows(found):
+    return {(k, n): d for k, n, d in found}
+
+
+def test_buckets_of_both_jurisdictions_are_listed_and_configured_ones_not():
+    """An eu bucket is seen only through the jurisdiction header, so a default-only listing would miss it."""
+    found = run_extra(buckets=[("old-bucket", "default"), ("old-eu", "eu"), ("configs-eu", "eu")])
+    got = rows(found)
+    assert ("bucket", "old-bucket") in got
+    assert ("bucket", "old-eu") in got
+    assert "jurisdiction eu" in got[("bucket", "old-eu")]
+    assert ("bucket", "configs-eu") not in got
+
+
+def test_a_leftover_names_its_id_references_and_bindings():
+    found = run_extra(
+        buckets=[("rediacc-public-data", "default")],
+        bindings={CONFIGURED: [{"type": "r2_bucket", "bucket_name": "rediacc-public-data"}]},
+    )
+    detail = rows(found)[("bucket", "rediacc-public-data")]
+    assert "referenced: .ci/config/" in detail
+    assert "bound: r2 binding of %s" % CONFIGURED in detail
+
+
+def test_queues_containers_namespaces_and_pages_are_listed():
+    found = run_extra(
+        queues=[
+            {"queue_id": "q1", "queue_name": "old-queue", "consumers": [{"script": "w-old"}]},
+            {"queue_id": "q2", "queue_name": "backup-replicate-eu"},
+        ],
+        namespaces=[
+            {"id": "ns-old", "name": "w-old_Exec", "script": "w-old", "class": "Exec"},
+            {"id": "ns-live", "name": "%s_X" % CONFIGURED, "script": CONFIGURED, "class": "X"},
+        ],
+        containers=[
+            {"id": "c1", "name": "w-old-exec", "durable_objects": {"namespace_id": "ns-old"}},
+            {"id": "c2", "name": "gone-exec", "durable_objects": {"namespace_id": "ns-gone"}},
+            {"id": "c3", "name": "live-x", "durable_objects": {"namespace_id": "ns-live"}},
+        ],
+        pages=[{"id": "p1", "name": "oldsite", "domains": ["oldsite.pages.dev"]}],
+    )
+    got = rows(found)
+    assert ("queue", "old-queue") in got
+    assert "consumer w-old" in got[("queue", "old-queue")]
+    assert ("queue", "backup-replicate-eu") not in got
+    assert ("do", "w-old_Exec") in got
+    assert ("do", "%s_X" % CONFIGURED) not in got
+    assert ("container", "w-old-exec") in got
+    assert ("container", "gone-exec") in got
+    assert "exists no more" in got[("container", "gone-exec")]
+    assert ("container", "live-x") not in got
+    assert ("pages", "oldsite") in got
+    assert "id p1" in got[("pages", "oldsite")]
+
+
+def test_a_script_leftover_names_its_custom_domain():
+    found = run(["stray-worker"], [], [], [{"hostname": "old.example", "service": "stray-worker"}])
+    assert "custom domain old.example" in rows(found)[("script", "stray-worker")]
+
+
+def test_the_retired_terms_record_is_no_reference():
+    texts = cfl.reference_texts(ROOT)
+    assert ".ci/config/retired-terms.json" not in texts
+    assert any(rel.startswith("workers/") for rel in texts)
+    assert cfl.referenced_by("x-y", {"a": "x-y-z", "b": "(x-y)"}) == ["b"]
+
+
+def run_extra(**extra):
+    return cfl.find_leftovers(ROOT, "acct", TOKEN, fake_api([CONFIGURED], [], [], extra=extra))

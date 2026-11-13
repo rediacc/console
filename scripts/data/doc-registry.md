@@ -1003,7 +1003,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/drills/privdrop-probe | 1 | (none) 1 |
 | .ci/rediacc_ci/enterprise | 13 | .py 13 |
 | .ci/rediacc_ci/env | 2 | .py 2 |
-| .ci/rediacc_ci/housekeeping | 8 | .py 8 |
+| .ci/rediacc_ci/housekeeping | 9 | .py 9 |
 | .ci/rediacc_ci/infra | 21 | .py 21 |
 | .ci/rediacc_ci/lab | 3 | .py 3 |
 | .ci/rediacc_ci/legal | 2 | .py 2 |
@@ -1020,7 +1020,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/setup | 14 | .py 14 |
 | .ci/rediacc_ci/spikes | 2 | .py 2 |
 | .ci/rediacc_ci/testrun | 12 | .py 12 |
-| .ci/rediacc_ci/tests | 556 | .py 556 |
+| .ci/rediacc_ci/tests | 557 | .py 557 |
 | .ci/rediacc_ci/tests/data | 2 | .json 1, .yml 1 |
 | .ci/rediacc_ci/tests/fixtures | 2 | .json 2 |
 | .ci/rediacc_ci/tests/fixtures/budget_drift | 1 | .json 1 |
@@ -1304,7 +1304,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/release-age.json` | .ci/config | code: `.ci/rediacc_ci/quality/go_deps.py` | no -- hardcoded in `.ci/rediacc_ci/quality/go_deps.py` |
 | `.ci/config/release-requires.json` | .ci/config | code: `.ci/rediacc_ci/release/order.py` | no -- hardcoded in `.ci/rediacc_ci/release/order.py` |
 | `.ci/config/renet-test-map.json` | .ci/config | code: `.claude/hooks/stop/wl_renettests.py` | no -- hardcoded in `.claude/hooks/stop/wl_renettests.py` |
-| `.ci/config/retired-terms.json` | .ci/config | code: `.ci/rediacc_ci/quality/retired_terms.py` | no -- hardcoded in `.ci/rediacc_ci/quality/retired_terms.py` |
+| `.ci/config/retired-terms.json` | .ci/config | code: `.ci/rediacc_ci/housekeeping/cf_retire.py` | no -- hardcoded in `.ci/rediacc_ci/housekeeping/cf_retire.py` |
 | `.ci/config/rubric-calibration.json` | .ci/config | code: `.ci/rediacc_ci/quality/rubric_calibration.py` | no -- hardcoded in `.ci/rediacc_ci/quality/rubric_calibration.py` |
 | `.ci/config/scope-mirrors-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/scope_mirrors.py` | no -- hardcoded in `.ci/rediacc_ci/quality/scope_mirrors.py` |
 | `.ci/config/scope-mirrors.json` | .ci/config | code: `.ci/rediacc_ci/quality/scope_mirrors.py` | no -- hardcoded in `.ci/rediacc_ci/quality/scope_mirrors.py` |

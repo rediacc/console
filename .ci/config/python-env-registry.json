@@ -631,6 +631,10 @@
       "CLOUDFLARE_ACCOUNT_ID",
       "CLOUDFLARE_API_TOKEN"
     ],
+    ".ci/rediacc_ci/housekeeping/cf_retire.py": [
+      "CLOUDFLARE_ACCOUNT_ID",
+      "CLOUDFLARE_API_TOKEN"
+    ],
     ".ci/rediacc_ci/housekeeping/cleanup_versions.py": [
       "BRANCH_MAX_AGE_DAYS",
       "CLOUDFLARE_ACCOUNT_ID",
