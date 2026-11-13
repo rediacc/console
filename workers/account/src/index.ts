@@ -1,7 +1,9 @@
 import { WorkerEntrypoint } from 'cloudflare:workers';
 import accountApp from '../../../private/account/src/entry/cloudflare.js';
+import { WRITES_FROZEN_QUEUE_DELAY_SECONDS } from '../../../private/account/src/errors.js';
 import { allowlistRefusal } from '../../proxy/src/ip-allowlist.js';
 import { BackupReplicator, replicatorStub } from './backup-replicator.js';
+import { fence, fencedEnv } from './d1-fence.js';
 
 // The replicate-mode Durable Object class; wrangler.*.toml binds it as BACKUP_REPLICATOR.
 export { BackupReplicator };
@@ -86,7 +88,7 @@ export class CloudflareInternal extends WorkerEntrypoint<Env> {
       return withSecurityHeaders(new Response('Not Found', { status: 404 }));
     }
     return withSecurityHeaders(
-      await accountApp.fetchViaServiceBinding(request, this.env, this.ctx)
+      await accountApp.fetchViaServiceBinding(request, fencedEnv(this.env), this.ctx)
     );
   }
 }
@@ -100,7 +102,7 @@ export class ExecutorIssuer extends WorkerEntrypoint<Env> {
   ): Promise<
     { orgId: string; tier: 'standard' | 'high'; placement: number } | { refused: string }
   > {
-    return accountApp.routeExecutorCaller(this.env, bearer);
+    return accountApp.routeExecutorCaller(fencedEnv(this.env), bearer);
   }
 
   relocate(
@@ -111,15 +113,15 @@ export class ExecutorIssuer extends WorkerEntrypoint<Env> {
     | { ok: false; reason: 'stale' | 'budget'; placement: number }
     | { ok: false; reason: 'unknown-org' }
   > {
-    return accountApp.relocateExecutorPlacement(this.env, orgId, fromPlacement);
+    return accountApp.relocateExecutorPlacement(fencedEnv(this.env), orgId, fromPlacement);
   }
 
   issue(orgId: string): Promise<{ token: string; expiresAt: string }> {
-    return accountApp.issueExecutorToken(this.env, orgId);
+    return accountApp.issueExecutorToken(fencedEnv(this.env), orgId);
   }
 
   probe(): Promise<{ ok: true; scopes: string[]; ttlMs: number }> {
-    return accountApp.probeExecutorIssuer(this.env);
+    return accountApp.probeExecutorIssuer(fencedEnv(this.env));
   }
 }
 
@@ -143,7 +145,7 @@ export default {
 
     // Account API: delegate to Hono app (handles auth, billing, configs, webhooks, etc.)
     if (url.pathname.startsWith('/account/api/') || url.pathname === '/account/api') {
-      return withSecurityHeaders(await accountApp.fetch(request, env, ctx));
+      return withSecurityHeaders(await accountApp.fetch(request, fencedEnv(env), ctx));
     }
 
     // Account SPA: serve portal assets
@@ -162,19 +164,36 @@ export default {
   },
 
   // Replicate-mode queue consumer ([[queues.consumers]] in every wrangler.*.toml): the account app reads each message's rules and this hands every target to its BackupReplicator, whose alarm runs the copy. Gated with the bindings by private/account/tests/integration/replicate-wiring.test.ts.
+  // While the D1 write fence is up (d1-fence.ts) no message is acked: each is retried after WRITES_FROZEN_QUEUE_DELAY_SECONDS, so the copy resumes once writes do. The account app retries the same way when the fence goes up mid-batch.
   async queue(batch: MessageBatch<unknown>, env: Env): Promise<void> {
-    await accountApp.consumeReplicationBatch(batch, env, (key) =>
-      replicatorStub(env, key).kick(key)
+    if (await fence.frozen(env.DB)) {
+      for (const message of batch.messages) {
+        message.retry({ delaySeconds: WRITES_FROZEN_QUEUE_DELAY_SECONDS });
+      }
+      return;
+    }
+    const fenced = fencedEnv(env);
+    await accountApp.consumeReplicationBatch(batch, fenced, (key) =>
+      replicatorStub(fenced, key).kick(key)
     );
   },
 
   // Cron entrypoint. Every deployed region reaches the account app's scheduled work through here, so forgetting this re-export silently disables it: the nightly event_log retention sweep never ran in any region until this line existed, because this module used to export `fetch` alone while the handler sat unreachable in private/account/src/entry/cloudflare.ts. The [triggers]
   // block in every wrangler.*.toml is the other half; both are gated by
   // private/account/tests/integration/cron-wiring.test.ts.
+  // While the D1 write fence is up (d1-fence.ts) the cron skips its whole run: every sweep writes, and the next tick after the cutover catches up.
   scheduled(controller: ScheduledController, env: Env, ctx: ExecutionContext): void {
     // No `as never` here: the Hono entry declares `env: CloudflareEnv` and this worker's Env satisfies it, so the cast was load-bearing for nothing and
     // @typescript-eslint/no-unnecessary-type-assertion said so as soon as
     // workers/ entered the lint scope (2026-09-06). Keeping it would have hidden any real future divergence between the two Env shapes behind `never`.
-    accountApp.scheduled(controller, env, ctx);
+    ctx.waitUntil(
+      fence.frozen(env.DB).then((frozen) => {
+        if (frozen) {
+          console.warn(`[fence] writes are frozen: cron ${controller.cron} skipped`);
+          return;
+        }
+        accountApp.scheduled(controller, fencedEnv(env), ctx);
+      })
+    );
   },
 };
