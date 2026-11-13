@@ -142,7 +142,8 @@ def test_add_names_the_hosts_the_rule_covers_and_list_does_not(capsys):
     api = FakeCloudflare()
     _run(api, "add-current")
     out = capsys.readouterr().out
-    assert f"rule covers: {BENCH_ORIGIN}, {PROXY_BENCH_HOST}" in out
+    bench_host = BENCH_ORIGIN.removeprefix("https://")
+    assert f"rule covers: {bench_host}, {PROXY_BENCH_HOST}" in out
     assert "bench.rediacc.com" not in out
     _run(api, "list")
     assert "rule covers" not in capsys.readouterr().out
