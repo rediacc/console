@@ -38,6 +38,8 @@ MOUNTS = DATASTORE_PATH + "/mounts"
 LOG_FILE = "downproof.log"
 REDIACCFILE = "Rediaccfile"
 DOWN_SLEEP_S = 20
+# How many trailing output lines a failed call leaves in its ledger row (failure_tail).
+FAILURE_TAIL_LINES = 3
 GRAND_SIZE = "1G"
 SHUTDOWN_UNIT = "rediacc-repo-shutdown.service"
 STOP_HOOK = "daemon stop-hook"
@@ -470,12 +472,12 @@ def up_after_verdict(events: list[tuple[str, int]], at: int) -> tuple[bool, str]
     return False, "no up line at or after %d" % at
 
 
-def failure_tail(res: Any, lines: int = 3) -> str:
+def failure_tail(res: Any) -> str:
     """` -- <last lines>` of a failed call's output (stdout and stderr), empty for a success: a K1.0 `rdc repo up` that exited 1 on 2026-11-13 left no reason in the ledger and no log on disk."""
     if getattr(res, "rc", 0) == 0:
         return ""
     text = (str(getattr(res, "out", "") or "") + "\n" + str(getattr(res, "err", "") or "")).strip()
-    kept = [ln.strip() for ln in text.splitlines() if ln.strip()][-lines:]
+    kept = [ln.strip() for ln in text.splitlines() if ln.strip()][-FAILURE_TAIL_LINES:]
     return " -- " + " | ".join(kept) if kept else " -- (no output)"
 
 

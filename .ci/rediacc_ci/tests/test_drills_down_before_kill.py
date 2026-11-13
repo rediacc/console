@@ -712,6 +712,31 @@ def test_k1_0_fails_when_up_wrote_no_line(tmp_path: pathlib.Path) -> None:
     assert _oks(ctx, "K1.0 k1-") == [False, False]
 
 
+def test_k1_0_a_failed_up_carries_its_output_into_the_row(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review 2fdbbb77.2: the K1.0 call site passes the failed `repo up` result to failure_tail."""
+    worker = FakeWorker()
+    live, ctx = _live(tmp_path, worker)
+    real = ctx.rdc
+
+    def rdc(*args: str, **kw: Any) -> _Res:
+        if args[:2] == ("repo", "up") and ":" not in args[2]:
+            ctx.calls.append(("rdc", *args))
+            return _Res(rc=1, err="Starting\nERROR: rediacc-docker unit failed to start\n")
+        return real(*args, **kw)
+
+    monkeypatch.setattr(ctx, "rdc", rdc)
+    assert not live.k1_0_bring_up()
+    want = "K1.0 %s is up and its up() wrote a line" % live.grand
+    grand_row = next(r for r in ctx.rows if r[0] == want)
+    assert grand_row[1] is False
+    assert grand_row[2].endswith("-- Starting | ERROR: rediacc-docker unit failed to start")
+    # control: the fork's row, whose up succeeded, carries no tail
+    fork_row = next(r for r in ctx.rows if r[0].startswith("K1.0 %s:k1b is up" % live.grand))
+    assert " -- " not in fork_row[2]
+
+
 def test_k1_1_passes_on_the_new_unit_and_fails_on_the_old(tmp_path: pathlib.Path) -> None:
     worker = FakeWorker()
     live, ctx = _ready(tmp_path, worker)
