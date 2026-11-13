@@ -7,6 +7,7 @@ import pytest
 
 from rediacc_ci.ops import licence_expiry_drill as led
 
+SEED = "JBSWY3DPEHPK3PXP"
 NOW = datetime(2026, 11, 12, 10, 30, 0, tzinfo=UTC)
 CERT = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
 USER = "11111111-1111-4111-8111-111111111111"
@@ -38,6 +39,8 @@ class Fake:
         two_factor=False,
         sales_text=SALES_MAIL,
         unread=1,
+        verify=(200,),
+        seed=SEED,
     ):
         self.calls: list[str] = []
         self.sql: list[str] = []
@@ -50,6 +53,9 @@ class Fake:
         self.org_name = org_name
         self.shard = shard
         self.two_factor = two_factor
+        self.verify = list(verify)
+        self.seed = seed
+        self.verified: list[dict] = []
         self.sales_text = sales_text
         self.unread = unread
         self.digest_runs = 0
@@ -64,6 +70,11 @@ class Fake:
         self.uuids = iter([CERT] * 4)
 
     # --- injected seams
+    def _seed(self):
+        if not self.seed:
+            raise led.DrillError("unset seed: run under the bench-login profile")
+        return self.seed
+
     def allowlist(self):
         self.calls.append("allowlist")
         return 0
@@ -79,8 +90,11 @@ class Fake:
         self.calls.append("%s %s" % (method, path))
         if path.endswith("/auth/login"):
             if body["email"].startswith("root") and self.two_factor:
-                return 200, {"requiresTwoFactor": True}
+                return 200, {"requiresTwoFactor": True, "challengeToken": "x"}
             return 200, {}
+        if path.endswith("/auth/2fa/verify"):
+            self.verified.append(body)
+            return self.verify.pop(0), {}
         if path.endswith("/portal/terms"):
             return 200, {"satisfied": False}
         if path.endswith("/portal/terms/accept"):
@@ -165,6 +179,8 @@ class Fake:
             rows=self.rows,
             allowlist=self.allowlist,
             root_creds=lambda: ("root@rediacc.io", "pw"),
+            root_seed=self._seed,
+            sleep=lambda _s: None,
             new_uuid=lambda: next(self.uuids),
             jar_path=lambda stamp: "/tmp/jar-" + stamp,
             unlink=lambda _p: None,
@@ -293,11 +309,48 @@ def test_a_tenant_shard_other_than_zero_is_refused_and_nothing_is_planted(capsys
     assert fake.reminder_runs == 0
 
 
-def test_root_two_factor_fails_the_step(capsys):
+def test_root_two_factor_challenge_is_verified_then_the_run_continues(capsys):
     fake, rc, out = drill(capsys, two_factor=True)
+    assert rc == 0, out.err
+    assert [b["challengeToken"] for b in fake.verified] == ["x"]
+    assert re.fullmatch(r"\d{6}", fake.verified[0]["code"])
+    assert fake.reminder_runs >= 1
+    assert SEED not in out.out + out.err
+
+
+def test_a_refused_first_verify_is_retried_once_with_the_next_window(capsys):
+    fake, rc, out = drill(capsys, two_factor=True, verify=(401, 200))
+    assert rc == 0, out.err
+    assert len(fake.verified) == 2
+    assert fake.verified[0]["code"] != fake.verified[1]["code"]
+
+
+def test_two_refused_verifies_fail_naming_the_seed(capsys):
+    fake, rc, out = drill(capsys, two_factor=True, verify=(401, 401))
     assert rc == 1
-    assert "two-factor" in out.out
+    assert "REDIACC_BENCH_TOTP_SEED" in out.err
+    assert len(fake.verified) == 2
     assert fake.reminder_runs == 0
+
+
+def test_an_unset_seed_fails_naming_the_bench_login_profile(capsys):
+    fake, rc, out = drill(capsys, two_factor=True, seed="")
+    assert rc == 1
+    assert "bench-login" in out.err
+    assert fake.verified == []
+
+
+def test_a_429_on_verify_is_a_fault_and_is_not_retried(capsys):
+    fake, rc, out = drill(capsys, two_factor=True, verify=(429, 200))
+    assert rc == 1
+    assert "fault" in out.err
+    assert len(fake.verified) == 1
+
+
+def test_no_challenge_never_reads_the_seed(capsys):
+    fake, rc, out = drill(capsys, seed="")
+    assert rc == 0, out.err
+    assert fake.verified == []
 
 
 def test_an_unset_sales_address_is_refused_before_anything_runs(capsys):
@@ -374,3 +427,22 @@ def test_the_address_pattern_and_main_usage(capsys):
     assert re.match(led.ADDRESS, led.stamp_address("20261112103000"))
     assert led.main(["--nope"]) == 2
     assert "usage" in capsys.readouterr().err
+
+
+def test_the_reexec_binds_both_profiles(monkeypatch):
+    seen: list[list[str]] = []
+
+    class Done:
+        returncode = 7
+
+    monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-bench")
+    monkeypatch.setattr(led.subprocess, "run", lambda argv, **_kw: seen.append(argv) or Done())
+    assert led._reexec_under_profile([]) == 7
+    argv = seen[0]
+    profiles = [argv[i + 1] for i, a in enumerate(argv) if a == "--profile"]
+    assert profiles == ["deploy-bench", "bench-login"]
+
+
+def test_the_reexec_is_skipped_when_both_profiles_are_bound(monkeypatch):
+    monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-bench,bench-login")
+    assert led._reexec_under_profile([]) is None

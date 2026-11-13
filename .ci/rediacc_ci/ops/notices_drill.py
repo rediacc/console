@@ -1,8 +1,8 @@
 """Bench drill: expired repository licences become ONE reminder mail, an unread notice and an `rdc` verb, driven from both sides.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.ops.notices_drill [--dry-run] [--wait-cron]
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-bench --profile bench-login -- python3 -m rediacc_ci.ops.notices_drill [--dry-run] [--wait-cron]
 
-BENCH ONLY. The target is `BENCH_ORIGIN`; no other server is accepted. The run re-executes itself under the `deploy-bench` Bitwarden profile (it needs `CF_GLOBAL_API_KEY` and `CF_EMAIL` for the D1 queries, and `ROOT_EMAIL` plus `BENCH_ROOT_PASSWORD` for the root session) unless that profile is already bound. Plan: agent/plans/PLAN-account-notices.md, box D1 (Design 1 to 5, Context 6 and 7).
+BENCH ONLY. The target is `BENCH_ORIGIN`; no other server is accepted. The run re-executes itself under the `deploy-bench` and `bench-login` Bitwarden profiles (it needs `CF_GLOBAL_API_KEY` and `CF_EMAIL` for the D1 queries, and `ROOT_EMAIL` plus `BENCH_ROOT_PASSWORD` for the root session) unless both are already bound. The `bench-login` profile binds `REDIACC_BENCH_TOTP_SEED`, which answers the bench root's two-factor challenge (`POST /auth/2fa/verify`, one retry with the next window's code); the seed is never printed. Plan: agent/plans/PLAN-account-notices.md, box D1 (Design 1 to 5, Context 6 and 7).
 
 THE STEPS, each printing one evidence line `STEP <n> <name> rc=<rc> <detail>`:
 
@@ -11,7 +11,7 @@ THE STEPS, each printing one evidence line `STEP <n> <name> rc=<rc> <detail>`:
   3  terms      A login with a cookie jar, then `POST /portal/terms/accept` when the Terms are not satisfied.
   4  config     A throwaway named config `ntc-<stamp>` (`rdc config init`), a CLI login, the machine `drillbox` added offline (`rdc machine add`, TEST-NET 192.0.2.10), and a repository record `drill` carrying the planted GUID patched into the config JSON.
   5  plant      Two `repo_license_issued` events in the D1 `event_log`, one hard-expired and one refresh-recommended, for the throwaway subscription. The event log is tenant-sharded: the subscription's shard is read from `subscription_shards` first, and a shard other than 0 is refused (bench runs the directory database only).
-  6  root-run    The root session (`ROOT_EMAIL`, `BENCH_ROOT_PASSWORD`) calls `POST /admin/reminders/run {kinds:['repo']}`. With `--wait-cron` the call is skipped and the run waits for the deployed 03:00 UTC cron to send the mail (use it when the bench root has two-factor on).
+  6  root-run    The root session (`ROOT_EMAIL`, `BENCH_ROOT_PASSWORD`) calls `POST /admin/reminders/run {kinds:['repo']}`. With `--wait-cron` the call is skipped and the run waits for the deployed 03:00 UTC cron to send the mail (use it when the root session cannot be opened).
   7  mail       Exactly one `captured_emails` row names either planted GUID; its text holds both 8-char GUIDs, `rdc subscription refresh` and `/account/notices`, and neither the repository name, the machine name nor the planted machine id.
   8  unread     With the user's session `GET /portal/notices/unread-count` is 1.
   9  notices    `rdc subscription notices -o json` names the planted repository `drill@drillbox`.
@@ -355,6 +355,7 @@ class Deps:
     read: Callable[[pathlib.Path], str] = _read
     write: Callable[[pathlib.Path, str], None] = _write
     root_creds: Callable[[], tuple[str, str]] = _root_creds
+    root_seed: Callable[[], str] = ftr.root_seed_from_env
     new_uuid: Callable[[], str] = lambda: str(uuid.uuid4())
     jar_path: Callable[[str], str] = lambda stamp: str(
         pathlib.Path(tempfile.gettempdir()) / ("ntc-jar-%s-%s.txt" % (stamp, secrets.token_hex(4)))
@@ -581,11 +582,16 @@ def _step_root_run(d: Deps, ev: Evidence, st: State, wait_cron: bool) -> tuple[s
     status, answer = d.call(
         "POST", API + "/auth/login", {"email": creds[0], "password": creds[1]}, {}, jar
     )
-    if answer.get("requiresTwoFactor"):
-        d.unlink(jar)
-        ev.add(6, "root-run", 1, "the root login asks for two-factor")
-        raise DrillError("the bench root has two-factor on; rerun with --wait-cron")
-    if status != 200:
+    if status == 200 and answer.get("requiresTwoFactor"):
+        try:
+            ftr.verify_root_challenge(
+                d.call, jar, answer, d.root_seed, d.sleep, lambda: d.now().timestamp()
+            )
+        except DrillError as exc:
+            d.unlink(jar)
+            ev.add(6, "root-run", 1, "the root two-factor challenge failed: %s" % exc)
+            raise
+    elif status != 200:
         d.unlink(jar)
         ev.add(6, "root-run", 1, "root login http=%d" % status)
         raise DrillError("root login failed")
@@ -728,7 +734,8 @@ def run(
 
 
 def _reexec_under_profile(argv: Sequence[str]) -> int | None:
-    if PROFILE in (os.environ.get("REDIACC_BWS_PROFILES") or "").split(","):
+    bound = (os.environ.get("REDIACC_BWS_PROFILES") or "").split(",")
+    if PROFILE in bound and ftr.TWO_FACTOR_PROFILE in bound:
         return None
     env = dict(os.environ)
     ci = str(paths.repo_root() / ".ci")
@@ -741,6 +748,8 @@ def _reexec_under_profile(argv: Sequence[str]) -> int | None:
             "exec",
             "--profile",
             PROFILE,
+            "--profile",
+            ftr.TWO_FACTOR_PROFILE,
             "--",
             sys.executable,
             "-m",

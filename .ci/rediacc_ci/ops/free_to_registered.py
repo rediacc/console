@@ -42,7 +42,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 from rediacc_ci import paths
-from rediacc_ci.ops import deploy_bench
+from rediacc_ci.ops import deploy_bench, login_bench, totp
 from rediacc_ci.well_known import BENCH_ORIGIN, INFRA_DOMAIN
 
 PROFILE = "deploy-bench"
@@ -109,6 +109,65 @@ Spawn = Callable[[Sequence[str], Mapping[str, str]], Background]
 
 class DrillError(RuntimeError):
     """A step that cannot continue. The message never carries a secret."""
+
+
+TWO_FACTOR_PROFILE = "bench-login"
+
+
+def root_seed_from_env() -> str:
+    """The bench root's TOTP seed from the environment; the `bench-login` profile binds it. Never printed."""
+    seed = os.environ.get(login_bench.TOTP_SEED_ENV) or ""
+    if not seed:
+        raise DrillError(
+            "the bench root has two-factor on and %s is not set; run under the %s profile "
+            "(bws_env exec --profile deploy-bench --profile %s)"
+            % (login_bench.TOTP_SEED_ENV, TWO_FACTOR_PROFILE, TWO_FACTOR_PROFILE)
+        )
+    return seed
+
+
+def _verify_challenge(
+    call: Callable[..., tuple[int, dict]], jar: str, challenge: str, code: str
+) -> int:
+    status, _ = call(
+        "POST", API + "/auth/2fa/verify", {"challengeToken": challenge, "code": code}, {}, jar
+    )
+    if status == 429 or status >= 500:
+        raise DrillError(
+            "POST /auth/2fa/verify answered HTTP %d: a rate-limit or server fault, not a refusal of the code; rerun later"
+            % status
+        )
+    return status
+
+
+def verify_root_challenge(
+    call: Callable[..., tuple[int, dict]],
+    jar: str,
+    answer: Mapping[str, object],
+    seed: Callable[[], str],
+    sleep: Callable[[float], None] = time.sleep,
+    now: Callable[[], float] = time.time,
+) -> None:
+    """Spend the TOTP code on the root login's challenge, in the login's cookie jar.
+
+    A first 4xx is retried once with the next window's code (the account refuses a code it already spent, and the challenge survives a refused verify); a second refusal names the seed. A 429 or 5xx is a fault, never a refusal. `seed` is read only when a challenge is present.
+    """
+    challenge = answer.get("challengeToken")
+    if not isinstance(challenge, str) or not challenge:
+        raise DrillError("the root login reported two-factor but named no challengeToken")
+    secret = seed()
+    first = _verify_challenge(call, jar, challenge, login_bench.fresh_code(secret, now, sleep))
+    if first == 200:
+        return
+    asked = now()
+    left = totp.STEP - (asked % totp.STEP)
+    sleep(left + 0.5)
+    second = _verify_challenge(call, jar, challenge, totp.code(secret, at=asked + left + 0.5))
+    if second != 200:
+        raise DrillError(
+            "the %s seed was refused for the bench root in two consecutive windows (HTTP %d, then HTTP %d): the seed is stale"
+            % (login_bench.TOTP_SEED_ENV, first, second)
+        )
 
 
 def stamp_now(now: datetime | None = None) -> str:

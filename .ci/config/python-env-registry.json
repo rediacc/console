@@ -795,6 +795,7 @@
       "ENTERPRISE_LOOKUP_PEPPER"
     ],
     ".ci/rediacc_ci/ops/free_to_registered.py": [
+      "REDIACC_BENCH_TOTP_SEED",
       "REDIACC_BWS_PROFILES",
       "XDG_CONFIG_HOME"
     ],

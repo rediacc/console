@@ -8,6 +8,7 @@ import pytest
 
 from rediacc_ci.ops import notices_drill as nd
 
+SEED = "JBSWY3DPEHPK3PXP"
 NOW = datetime(2026, 11, 12, 10, 30, 0, tzinfo=UTC)
 HARD = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
 FRESH = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
@@ -43,6 +44,8 @@ class Fake:
         shard=None,
         two_factor=False,
         sub_org=ORG,
+        verify=(200,),
+        seed=SEED,
     ):
         self.calls: list[str] = []
         self.sql: list[str] = []
@@ -52,6 +55,9 @@ class Fake:
         self.mail_text = mail_text
         self.shard = shard
         self.two_factor = two_factor
+        self.verify = list(verify)
+        self.seed = seed
+        self.verified: list[dict] = []
         self.sub_org = sub_org
         self.runs = 0
         self.user_present = False
@@ -67,6 +73,11 @@ class Fake:
         self.uuids = iter(UUIDS * 3)
 
     # --- injected seams
+    def _seed(self):
+        if not self.seed:
+            raise nd.DrillError("unset seed: run under the bench-login profile")
+        return self.seed
+
     def allowlist(self):
         self.calls.append("allowlist")
         return 0
@@ -84,6 +95,9 @@ class Fake:
             if body["email"].startswith("root") and self.two_factor:
                 return 200, {"requiresTwoFactor": True, "challengeToken": "x"}
             return 200, {}
+        if path.endswith("/auth/2fa/verify"):
+            self.verified.append(body)
+            return self.verify.pop(0), {}
         if path.endswith("/portal/terms"):
             return 200, {"satisfied": False}
         if path.endswith("/portal/terms/accept"):
@@ -186,6 +200,7 @@ class Fake:
             drop_token_file=lambda _c: False,
             config_path=lambda _c: self.config_file,
             root_creds=lambda: ("root@rediacc.io", "pw"),
+            root_seed=self._seed,
             new_uuid=lambda: next(self.uuids),
             jar_path=lambda stamp: "/tmp/jar-" + stamp,
             unlink=lambda _p: None,
@@ -197,7 +212,7 @@ class Fake:
 
 
 def drill(tmp_path, capsys, **kw):
-    init = ("mails_per_run", "mail_text", "shard", "two_factor", "sub_org")
+    init = ("mails_per_run", "mail_text", "shard", "two_factor", "sub_org", "verify", "seed")
     fake = Fake(tmp_path, **{k: v for k, v in kw.items() if k in init})
     for key in ("unread", "notice_name"):
         if key in kw:
@@ -361,14 +376,48 @@ def test_a_tenant_shard_other_than_zero_is_refused_and_nothing_is_planted(tmp_pa
     assert not any(s.startswith("INSERT") for s in fake.sql)
 
 
-def test_root_two_factor_points_at_wait_cron(tmp_path, capsys):
-    fake = Fake(tmp_path, two_factor=True)
-    deps = fake.deps()
-    deps.root_creds = lambda: ("root-x@rediacc.io", "pw")
-    rc = nd.run(False, deps, env={})
-    out = capsys.readouterr()
+def test_root_two_factor_challenge_is_verified_then_the_run_continues(tmp_path, capsys):
+    fake, rc, out = drill(tmp_path, capsys, two_factor=True)
+    assert rc == 0, out.err
+    assert [b["challengeToken"] for b in fake.verified] == ["x"]
+    assert re.fullmatch(r"\d{6}", fake.verified[0]["code"])
+    assert fake.runs >= 1
+    assert SEED not in out.out + out.err
+
+
+def test_a_refused_first_verify_is_retried_once_with_the_next_window(tmp_path, capsys):
+    fake, rc, out = drill(tmp_path, capsys, two_factor=True, verify=(401, 200))
+    assert rc == 0, out.err
+    assert len(fake.verified) == 2
+    assert fake.verified[0]["code"] != fake.verified[1]["code"]
+
+
+def test_two_refused_verifies_fail_naming_the_seed(tmp_path, capsys):
+    fake, rc, out = drill(tmp_path, capsys, two_factor=True, verify=(401, 401))
     assert rc == 1
-    assert "--wait-cron" in out.err
+    assert "REDIACC_BENCH_TOTP_SEED" in out.err
+    assert len(fake.verified) == 2
+    assert fake.runs == 0
+
+
+def test_an_unset_seed_fails_naming_the_bench_login_profile(tmp_path, capsys):
+    fake, rc, out = drill(tmp_path, capsys, two_factor=True, seed="")
+    assert rc == 1
+    assert "bench-login" in out.err
+    assert fake.verified == []
+
+
+def test_a_429_on_verify_is_a_fault_and_is_not_retried(tmp_path, capsys):
+    fake, rc, out = drill(tmp_path, capsys, two_factor=True, verify=(429, 200))
+    assert rc == 1
+    assert "fault" in out.err
+    assert len(fake.verified) == 1
+
+
+def test_no_challenge_never_reads_the_seed(tmp_path, capsys):
+    fake, rc, out = drill(tmp_path, capsys, seed="")
+    assert rc == 0, out.err
+    assert fake.verified == []
 
 
 def test_wait_cron_skips_the_trigger_and_waits_for_the_mail(tmp_path, capsys):
@@ -571,3 +620,22 @@ def test_a_root_login_that_is_not_200_fails_the_step_and_unlinks_the_jar(tmp_pat
     assert rc == 1
     assert "root login http=401" in out.out
     assert any(p.endswith("-root") for p in unlinked)
+
+
+def test_the_reexec_binds_both_profiles(monkeypatch):
+    seen: list[list[str]] = []
+
+    class Done:
+        returncode = 7
+
+    monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-bench")
+    monkeypatch.setattr(nd.subprocess, "run", lambda argv, **_kw: seen.append(argv) or Done())
+    assert nd._reexec_under_profile([]) == 7
+    argv = seen[0]
+    profiles = [argv[i + 1] for i, a in enumerate(argv) if a == "--profile"]
+    assert profiles == ["deploy-bench", "bench-login"]
+
+
+def test_the_reexec_is_skipped_when_both_profiles_are_bound(monkeypatch):
+    monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-bench,bench-login")
+    assert nd._reexec_under_profile([]) is None

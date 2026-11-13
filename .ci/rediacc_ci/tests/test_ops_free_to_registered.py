@@ -800,3 +800,22 @@ def test_a_silent_register_command_times_out_instead_of_hanging(tmp_path, monkey
         assert time.monotonic() - started < 3
     finally:
         job.kill()
+
+
+def test_root_seed_from_env_names_the_bench_login_profile_when_unset(monkeypatch):
+    monkeypatch.delenv("REDIACC_BENCH_TOTP_SEED", raising=False)
+    with pytest.raises(ftr.DrillError, match="bench-login"):
+        ftr.root_seed_from_env()
+
+
+def test_root_seed_from_env_returns_the_bound_seed(monkeypatch):
+    monkeypatch.setenv("REDIACC_BENCH_TOTP_SEED", "JBSWY3DPEHPK3PXP")
+    assert ftr.root_seed_from_env() == "JBSWY3DPEHPK3PXP"
+
+
+def test_a_challenge_without_a_token_is_refused_before_the_seed_is_read():
+    def seed() -> str:
+        raise AssertionError("the seed was read")
+
+    with pytest.raises(ftr.DrillError, match="challengeToken"):
+        ftr.verify_root_challenge(lambda *_a: (200, {}), "jar", {"requiresTwoFactor": True}, seed)

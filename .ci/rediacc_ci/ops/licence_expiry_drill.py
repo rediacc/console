@@ -1,8 +1,8 @@
 """Bench drill: a delegation cert 7 days from its end becomes ONE owner mail, an unread notice and ONE sales digest line, then nothing more on a second run.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.ops.licence_expiry_drill [--dry-run]
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-bench --profile bench-login -- python3 -m rediacc_ci.ops.licence_expiry_drill [--dry-run]
 
-BENCH ONLY. The target is `BENCH_ORIGIN`; no other server is accepted. The run re-executes itself under the `deploy-bench` Bitwarden profile (it needs `CF_GLOBAL_API_KEY` and `CF_EMAIL` for the D1 queries, `ROOT_EMAIL` plus `BENCH_ROOT_PASSWORD` for the root session and `SALES_NOTIFY_EMAIL` for the sales inbox the digest goes to) unless that profile is already bound. Plan: agent/plans/PLAN-licence-expiry-notices.md, box L1.
+BENCH ONLY. The target is `BENCH_ORIGIN`; no other server is accepted. The run re-executes itself under the `deploy-bench` and `bench-login` Bitwarden profiles (it needs `CF_GLOBAL_API_KEY` and `CF_EMAIL` for the D1 queries, `ROOT_EMAIL` plus `BENCH_ROOT_PASSWORD` for the root session and `SALES_NOTIFY_EMAIL` for the sales inbox the digest goes to) unless both are already bound. The `bench-login` profile binds `REDIACC_BENCH_TOTP_SEED`, which answers the bench root's two-factor challenge (`POST /auth/2fa/verify`, one retry with the next window's code); the seed is never printed. Plan: agent/plans/PLAN-licence-expiry-notices.md, box L1.
 
 THE STEPS, each printing one evidence line `STEP <n> <name> rc=<rc> <detail>`:
 
@@ -30,6 +30,7 @@ import secrets
 import subprocess
 import sys
 import tempfile
+import time
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -278,6 +279,8 @@ class Deps:
     rows: Rows = deploy_bench._d1_rows
     allowlist: Callable[[], int] = ftr._allowlist
     root_creds: Callable[[], tuple[str, str]] = _root_creds
+    root_seed: Callable[[], str] = ftr.root_seed_from_env
+    sleep: Callable[[float], None] = time.sleep
     new_uuid: Callable[[], str] = lambda: str(uuid.uuid4())
     jar_path: Callable[[str], str] = lambda stamp: str(
         pathlib.Path(tempfile.gettempdir()) / ("lexp-jar-%s-%s.txt" % (stamp, secrets.token_hex(4)))
@@ -452,11 +455,16 @@ def _open_root(d: Deps, ev: Evidence, st: State) -> str:
     status, answer = d.call(
         "POST", API + "/auth/login", {"email": creds[0], "password": creds[1]}, {}, jar
     )
-    if answer.get("requiresTwoFactor"):
-        d.unlink(jar)
-        ev.add(5, "reminders", 1, "the root login asks for two-factor")
-        raise DrillError("the bench root has two-factor on; this drill cannot log it in")
-    if status != 200:
+    if status == 200 and answer.get("requiresTwoFactor"):
+        try:
+            ftr.verify_root_challenge(
+                d.call, jar, answer, d.root_seed, d.sleep, lambda: d.now().timestamp()
+            )
+        except DrillError as exc:
+            d.unlink(jar)
+            ev.add(5, "reminders", 1, "the root two-factor challenge failed: %s" % exc)
+            raise
+    elif status != 200:
         d.unlink(jar)
         ev.add(5, "reminders", 1, "root login http=%d" % status)
         raise DrillError("root login failed")
@@ -601,7 +609,8 @@ def run(
 
 
 def _reexec_under_profile(argv: Sequence[str]) -> int | None:
-    if PROFILE in (os.environ.get("REDIACC_BWS_PROFILES") or "").split(","):
+    bound = (os.environ.get("REDIACC_BWS_PROFILES") or "").split(",")
+    if PROFILE in bound and ftr.TWO_FACTOR_PROFILE in bound:
         return None
     env = dict(os.environ)
     ci = str(paths.repo_root() / ".ci")
@@ -614,6 +623,8 @@ def _reexec_under_profile(argv: Sequence[str]) -> int | None:
             "exec",
             "--profile",
             PROFILE,
+            "--profile",
+            ftr.TWO_FACTOR_PROFILE,
             "--",
             sys.executable,
             "-m",
