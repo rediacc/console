@@ -46,13 +46,15 @@ Worklist: #ad4d5f4e, PR-TASK 79b7e92e
 - [ ] W1 [writer] The bench production guard (Design 3): `bench_production.py`, `bench-production.json`, reset_bench refusals, drill cleanup refusals.
   Tests: a declared file makes `--yes`, `--d1-only` and `--r2-only` exit 2 before any credential is read; an empty file passes; the D1 check refuses on planted rows; drill cleanup with a declared id exits 1 without deleting.
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_ops_bench_production.py -q` rc 0, plus the reset_bench tests rc 0
-- [ ] W2 [writer] bench_access pinned entries and `verify-pinned` (Design 4).
+- [x] W2 [writer] bench_access pinned entries and `verify-pinned` (Design 4).
   Tests: a pinned entry survives 30 days and a full rotating list; `remove` and `clear` refuse it; a hand-deleted pin returns on the next `add-current`; `verify-pinned` exits 1 when one is absent.
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_ops_bench_access.py -q` rc 0
+    (ticked) 2026-11-13T11:01:11Z by d778be9d: commit:e3c2d2ef12 bench_access pins + verify-pinned; pytest test_ops_bench_access 67 passed
 - [ ] W3 [writer] `rdc config import-machine` (Design 5) with i18n in every locale.
   Tests: absent repos and tags added; equal entries no-op; a same-name repo with a different GUID refuses; a differing strategy refuses without `--strategy-from-source`; no credential, key or GUID value in output; the write goes through `updateSyncedConfig`.
   Accept: `cd packages/cli && npx vitest run src/commands/__tests__/config-import-machine.test.ts` rc 0, plus `npm run check:i18n` rc 0
-- [ ] W4 [writer] The rotation tool `rdcConfig` and its test move to eu-bench. Accept: `cd private/account && npx vitest run tests/integration/rotation-observability-restart.test.ts` rc 0
+- [x] W4 [writer] The rotation tool `rdcConfig` and its test move to eu-bench. Accept: `cd private/account && npx vitest run tests/integration/rotation-observability-restart.test.ts` rc 0
+    (ticked) 2026-11-13T11:01:16Z by d778be9d: commit:df30b6993d rotation rdcConfig eu-bench; vitest rotation-observability-restart 9 passed
 - [ ] W5 [writer] A `hostinger-escrow` profile in secret-supply.json binding `HOSTINGER_REPO_CREDENTIALS_ESCROW`, mapped in bws-secret-map.json. Accept: `npm run check:ci-secret-supply` rc 0
 
 ### Wave 2: bench readiness (after W1-W5 land and PLAN-d1-eu-jurisdiction's bench wave is ticked)
