@@ -24,7 +24,7 @@ LISTED_NAME = re.compile(r"^name:\s+(\S+)", re.MULTILINE)
 
 @dataclasses.dataclass(frozen=True)
 class BenchNames:
-    """The names and jurisdictions wrangler.bench.toml declares: the one place every bench tool reads them from, so a repoint (PLAN-d1-eu-jurisdiction) is a toml change."""
+    """The names and jurisdictions wrangler.bench.toml declares: where reset_bench and the preflights read them from, so a repoint (PLAN-d1-eu-jurisdiction) is a toml change; deploy_bench reads the BACKUP_BUCKET binding through push_backup_credentials._config_binding."""
 
     database_name: str
     database_id: str
