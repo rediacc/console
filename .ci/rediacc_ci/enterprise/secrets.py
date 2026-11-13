@@ -1,6 +1,6 @@
 """Company secrets for an Enterprise company's account Worker (agent/plans/PLAN-enterprise-isolation.md D2).
 
-WHAT A COMPANY GETS. Generated per company: the X25519 pair (a shared one would let one breached Worker open another company's captured request tunnel), `ACCOUNT_JWT_SECRET`, `ACCOUNT_CONFIG_SERVER_KEY` (stored durably, because losing it loses layer 3 of the config store), `ACCOUNT_SERVER_API_KEY` and `ACCOUNT_BACKUP_STORE_KEK`. Minted per company: an IAM user on the shared SES sender, allowed `ses:SendEmail` and `ses:SendRawEmail` only, and an R2 token scoped to object read and write on `backups-<company>`, pushed as R2's S3 pair (the token id and sha256 of its value, as rotation's `r2-keypair` shape does). Shared and handed in by the caller: the Ed25519 PUBLIC key, the Turnstile secret, the region's OTLP credentials, the SES region and sender, and `ROOT_EMAIL`. Absent, and refused if offered: the Ed25519 private key (the signer holds it), `FREE_LICENSE_HMAC_KEY` (a company issues no FREE licences), Stripe and every `SELLER_*` (contract billing lives outside). The shared pusher demands the FREE key (`set_account_worker_secrets.REQUIRED_NONEMPTY`), so a company has its own `COMPANY_REQUIRED`.
+WHAT A COMPANY GETS. Generated per company: the X25519 pair (a shared one would let one breached Worker open another company's captured request tunnel), `ACCOUNT_JWT_SECRET`, `ACCOUNT_CONFIG_SERVER_KEY` (stored durably, because losing it loses layer 3 of the config store), `ACCOUNT_SERVER_API_KEY` and `ACCOUNT_BACKUP_STORE_KEK`. Minted per company: an IAM user on the shared SES sender, allowed `ses:SendEmail` and `ses:SendRawEmail` only, and an R2 token scoped to object read and write on `backups-<company>`, pushed as R2's S3 pair (the token id and sha256 of its value, as rotation's `r2-keypair` shape does). Shared and handed in by the caller: the Ed25519 PUBLIC key, the Turnstile secret, the region's OTLP credentials, the SES sender, and `ROOT_EMAIL`; the SES region is the region's `sesRegion` from regions.json, the one the IAM user's policy allows. Absent, and refused if offered: the Ed25519 private key (the signer holds it), `FREE_LICENSE_HMAC_KEY` (a company issues no FREE licences), Stripe and every `SELLER_*` (contract billing lives outside). The shared pusher demands the FREE key (`set_account_worker_secrets.REQUIRED_NONEMPTY`), so a company has its own `COMPANY_REQUIRED`.
 
 OPAQUE NAMES. A company is known outside its control row by `c<16 hex>`, drawn from the OS's randomness and never derived from the name: a hash of a guessable company name is reversed by a dictionary. Store entries are `<id>_<WORKER KEY>` in the separate enterprise bws project, the Cloudflare token is `enterprise-<id>-backups` and the IAM user `rediacc-ses-<id>`. The bucket and Worker names carry the label, as the Design's Shape fixes; they appear inside the Worker payload and in wrangler's `--name`, never in a store name.
 
@@ -21,12 +21,16 @@ import re
 import subprocess
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
+from rediacc_ci import paths
 from rediacc_ci.core import awscli, bws_env
 from rediacc_ci.deploy import set_account_worker_secrets
 from rediacc_ci.enterprise import names
 from rediacc_ci.ops import cf_auth
+
+if TYPE_CHECKING:
+    import pathlib
 
 RandomBytes = Callable[[int], bytes]
 
@@ -242,12 +246,60 @@ def generate(random_bytes: RandomBytes = os.urandom) -> dict[str, str]:
     return values
 
 
-def shared_from_env(env: Mapping[str, str], suffix: str) -> dict[str, str]:
-    """The SHARED keys from an environment, the OTLP credential read as `OBS_OTLP_CREDENTIALS_<SUFFIX>`. Anything else in `env` is ignored."""
-    out = {k: env[k] for k in SHARED if k != OTLP_KEY and k in env}
-    regional = "%s_%s" % (OTLP_KEY, suffix)
-    if regional in env:
-        out[OTLP_KEY] = env[regional]
+# The profile that binds every environment input of the secrets step (.ci/config/secret-supply.json `consumers`).
+MINT_PROFILE = "enterprise-mint"
+SES_REGION_KEY = "AWS_SES_REGION"
+
+
+def step_env_names(suffix: str) -> tuple[str, ...]:
+    """Every environment name the secrets step reads for a region whose `secretSuffix` is `suffix`, each one required non-empty.
+
+    The minters' credentials (`CF_MANAGEMENT_TOKEN` for the bucket token, the aws CLI's `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`, bound from the IAM admin pair, for the SES user), the wrangler push's `CLOUDFLARE_API_TOKEN`, `AWS_SES_FROM` (optional on the Worker, but its domain scopes the SES user's policy), and every required SHARED key under the name the environment carries it: the OTLP credential as `OBS_OTLP_CREDENTIALS_<SUFFIX>`. `AWS_SES_REGION` is absent because it comes from regions.json, and `AWS_SES_CONFIGURATION_SET` because it is optional everywhere.
+    """
+    shared = [
+        "%s_%s" % (OTLP_KEY, suffix) if k == OTLP_KEY else k
+        for k in SHARED
+        if k in COMPANY_REQUIRED and k != SES_REGION_KEY
+    ]
+    return (
+        "CF_MANAGEMENT_TOKEN",
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY",
+        "CLOUDFLARE_API_TOKEN",
+        "AWS_SES_FROM",
+        *shared,
+    )
+
+
+def preflight(env: Mapping[str, str], suffix: str) -> None:
+    """Refuse, in ONE error, every environment input of the secrets step that is absent or empty, so a live run names them all at once instead of peeling one per run. Names only."""
+    missing = [n for n in step_env_names(suffix) if not env.get(n)]
+    if missing:
+        raise SecretsError(
+            "the secrets step is missing %d input(s): %s (bound by --profile %s)"
+            % (len(missing), ", ".join(missing), MINT_PROFILE)
+        )
+
+
+def ses_region(suffix: str, root: pathlib.Path | None = None) -> str:
+    """The `sesRegion` of the regions.json entry whose `secretSuffix` is `suffix`: the region the IAM minter's policy allows, so the Worker's AWS_SES_REGION is the same one."""
+    doc = json.loads(((root or paths.repo_root()) / "regions.json").read_text(encoding="utf-8"))
+    hits = [str(r["sesRegion"]) for r in doc["regions"] if r.get("secretSuffix") == suffix]
+    if len(hits) != 1:
+        raise SecretsError(
+            "regions.json has %d region(s) with secretSuffix %r, not 1" % (len(hits), suffix)
+        )
+    return hits[0]
+
+
+def shared_from_env(
+    env: Mapping[str, str], suffix: str, root: pathlib.Path | None = None
+) -> dict[str, str]:
+    """The SHARED keys from an environment, after `preflight` has named every missing input of the step at once. The OTLP credential is read as `OBS_OTLP_CREDENTIALS_<SUFFIX>`, and AWS_SES_REGION is the region's `sesRegion` from regions.json, never the environment's single value: the IAM minter's policy allows only that region, so any other one would leave the company unable to send. Anything else in `env` is ignored."""
+    preflight(env, suffix)
+    out = {k: env[k] for k in SHARED if k not in (OTLP_KEY, SES_REGION_KEY) and k in env}
+    out[OTLP_KEY] = env["%s_%s" % (OTLP_KEY, suffix)]
+    out[SES_REGION_KEY] = ses_region(suffix, root)
     return out
 
 

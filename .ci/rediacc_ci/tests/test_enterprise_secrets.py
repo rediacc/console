@@ -13,6 +13,7 @@ from typing import Any
 
 import pytest
 
+from rediacc_ci import paths
 from rediacc_ci.deploy import set_account_worker_secrets
 from rediacc_ci.enterprise import lifecycle_adapters as la
 from rediacc_ci.enterprise import secrets as es
@@ -507,20 +508,74 @@ def test_no_value_reaches_captured_output_or_the_report(capsys):
     assert repr(report).count(R2_TOKEN_VALUE) == 0
 
 
+STEP_ENV = {
+    "CF_MANAGEMENT_TOKEN": "cf-mgmt-VALUE",
+    "AWS_ACCESS_KEY_ID": "AKIAADMINVALUE",
+    "AWS_SECRET_ACCESS_KEY": "admin-secret-VALUE",
+    "CLOUDFLARE_API_TOKEN": "cf-api-VALUE",
+    "ACCOUNT_ED25519_PUBLIC_KEY": "p",
+    "CLOUDFLARE_TURNSTILE_SECRET_KEY": "t",
+    "OBS_OTLP_CREDENTIALS_EU": "eu-otlp",
+    "OBS_OTLP_CREDENTIALS_US": "us-otlp",
+    "AWS_SES_REGION": "single-env-region",
+    "AWS_SES_FROM": "noreply@notify.example",
+    "ROOT_EMAIL": "r@example.test",
+    "FREE_LICENSE_HMAC_KEY": "never-taken",
+}
+
+
 def test_shared_from_env_takes_the_region_suffixed_otlp():
-    env = {
-        "ACCOUNT_ED25519_PUBLIC_KEY": "p",
-        "CLOUDFLARE_TURNSTILE_SECRET_KEY": "t",
-        "OBS_OTLP_CREDENTIALS_EU": "eu-otlp",
-        "OBS_OTLP_CREDENTIALS_US": "us-otlp",
-        "AWS_SES_REGION": "eu-central-1",
-        "ROOT_EMAIL": "r@example.test",
-        "FREE_LICENSE_HMAC_KEY": "never-taken",
-    }
-    shared = es.shared_from_env(env, "EU")
+    shared = es.shared_from_env(STEP_ENV, "EU")
     assert shared["OBS_OTLP_CREDENTIALS"] == "eu-otlp"
     assert "FREE_LICENSE_HMAC_KEY" not in shared
     assert set(shared) <= set(es.SHARED)
+
+
+@pytest.mark.parametrize(("suffix", "region"), [("EU", "eu-central-1"), ("US", "us-east-1")])
+def test_shared_from_env_takes_the_ses_region_from_regions_json(suffix, region):
+    """The IAM minter's policy allows only the region's `sesRegion`, so the Worker's AWS_SES_REGION is that one and never the environment's single value."""
+    shared = es.shared_from_env(STEP_ENV, suffix)
+    assert shared["AWS_SES_REGION"] == region
+
+
+def test_preflight_names_every_missing_input_in_one_error():
+    """A live run once peeled the step's inputs one per run (CF_MANAGEMENT_TOKEN, then OBS_OTLP_CREDENTIALS); the preflight names all of them at once, under the names the environment must carry."""
+    gone = ("CF_MANAGEMENT_TOKEN", "AWS_ACCESS_KEY_ID", "OBS_OTLP_CREDENTIALS_US", "ROOT_EMAIL")
+    env = {k: v for k, v in STEP_ENV.items() if k not in gone}
+    env["AWS_SES_FROM"] = ""
+    with pytest.raises(es.SecretsError) as caught:
+        es.shared_from_env(env, "US")
+    message = str(caught.value)
+    for name in (*gone, "AWS_SES_FROM"):
+        assert name in message
+    assert "missing 5 input(s)" in message
+    assert es.MINT_PROFILE in message
+    assert "VALUE" not in message
+
+
+def test_preflight_passes_a_complete_environment_and_ignores_the_optional_names():
+    """The control: every step input present, the optional configuration set and the region-derived SES region absent."""
+    env = {k: v for k, v in STEP_ENV.items() if k != "AWS_SES_REGION"}
+    es.preflight(env, "EU")
+    assert "AWS_SES_CONFIGURATION_SET" not in es.step_env_names("EU")
+    assert "AWS_SES_REGION" not in es.step_env_names("EU")
+    assert "OBS_OTLP_CREDENTIALS_EU" in es.step_env_names("EU")
+
+
+def test_step_env_names_are_bound_by_the_mint_profile():
+    """Every input the preflight demands is a LOCAL name some composition of the enterprise profiles binds, so the profile and the preflight cannot drift apart."""
+    doc = json.loads((paths.repo_root() / ".ci/config/secret-supply.json").read_text("utf-8"))
+    bound: set[str] = set()
+    for profile in ("enterprise", es.MINT_PROFILE):
+        for spec in doc["consumers"][profile]["required"] + doc["consumers"][profile]["optional"]:
+            bound.add(spec.split(">")[-1].strip())
+    for suffix in ("EU", "US", "ASIA"):
+        assert set(es.step_env_names(suffix)) <= bound
+
+
+def test_ses_region_refuses_an_unknown_suffix():
+    with pytest.raises(es.SecretsError, match="secretSuffix 'NOPE'"):
+        es.ses_region("NOPE")
 
 
 # --- production adapters, driven through fake transports ------------------------
