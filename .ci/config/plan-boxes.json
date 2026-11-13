@@ -1001,6 +1001,38 @@
         "fcb61e61"
       ]
     },
+    "agent/plans/PLAN-d1-eu-jurisdiction.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 21,
+      "done": 0,
+      "open_sigs": [
+        "0096bfeb",
+        "02ef454f",
+        "22c8a4e5",
+        "2fb6c342",
+        "32bb2d09",
+        "4fee2ae7",
+        "526daab6",
+        "536acd7d",
+        "57f565f1",
+        "741ec9c2",
+        "7a79f65c",
+        "7b8e0ac7",
+        "7ce163ad",
+        "7ef4ac8e",
+        "8248889f",
+        "ae8e12f8",
+        "c51463d2",
+        "ca5f18a8",
+        "dbc95d71",
+        "e785f32b",
+        "f032a06a"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-d1-scaling.md": {
       "status": "approved",
       "owner": "d778be9d",
