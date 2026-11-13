@@ -194,6 +194,11 @@ class LiveLab:
         project = os.environ.get(BWS_PROJECT_ENV, "")
         return onboarding.live_provision(project) if project else None
 
+    def _api_key_of(self) -> Callable[[str], str] | None:
+        """The company's own ACCOUNT_SERVER_API_KEY reader over the same project; None without it."""
+        project = os.environ.get(BWS_PROJECT_ENV, "")
+        return onboarding.live_api_key(project) if project else None
+
     def _live_add(self, req: onboarding.Request, stop_after: str = "") -> onboarding.Outcome:
         try:
             control_db.ensure_all(bench=req.bench)
@@ -202,7 +207,9 @@ class LiveLab:
         return onboarding.run(
             req,
             query=control_db.transport(),
-            actions=onboarding.live_actions(provision=self._provision()),
+            actions=onboarding.live_actions(
+                provision=self._provision(), api_key_of=self._api_key_of()
+            ),
             stop_after=stop_after,
             out=lambda _line: None,
         )

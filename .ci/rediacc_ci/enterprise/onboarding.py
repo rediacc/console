@@ -512,6 +512,7 @@ def live_actions(
     lookup_namespace: str = enterprise_lookup.NAMESPACE_ID,
     post: AccountPost | None = None,
     env: Mapping[str, str] | None = None,
+    api_key_of: Callable[[str], str] | None = None,
 ) -> dict[str, Action]:
     """The production action of every step, each external call through the seam its argument names."""
     run_cmd = runner or run_captured
@@ -524,12 +525,13 @@ def live_actions(
     send = post or account_post
 
     def account_call(ctx: Context, route: str, body: dict) -> tuple[int, dict]:
-        """One authenticated call to the company's account host. The key is read here, so a step that never runs needs none."""
+        """One authenticated call to the company's account host under the company's own key: the one the `secrets` step generated and pushed to that Worker, never the shared ACCOUNT_SERVER_API_KEY of the caller's environment, which the company Worker answers with 401. The key is read here, so a step that never runs needs none."""
         plan = ctx.plan
-        key = (os.environ if env is None else env).get(ACCOUNT_KEY_ENV, "")
+        key = api_key_of(plan.company_id) if api_key_of is not None else ""
         if not key:
             raise OnboardingError(
-                "company %s: the %s step needs %s" % (plan.company_id, route, ACCOUNT_KEY_ENV)
+                "company %s: the %s step needs the company's own %s from the enterprise bws project (--bws-project)"
+                % (plan.company_id, route, ACCOUNT_KEY_ENV)
             )
         url = "https://%s%s%s" % (plan.hosts[0], SUBSCRIPTIONS_PATH, route)
         status, payload = send(url, key, {"companyId": plan.company_id, **body})
@@ -790,6 +792,23 @@ class Minters:
 
     def r2_bucket_token(self, token_name: str, resource: str) -> tuple[str, str]:
         return self.cloudflare.r2_bucket_token(token_name, resource)
+
+
+def live_api_key(
+    project_id: str, env: Mapping[str, str] | None = None
+) -> Callable[[str], str]:
+    """The company's own ACCOUNT_SERVER_API_KEY, read from the enterprise bws project the `secrets` step wrote it to; "" when absent."""
+    environ = dict(os.environ if env is None else env)
+
+    def read(company_id: str) -> str:
+        name = secrets.store_name(company_id, ACCOUNT_KEY_ENV)
+        try:
+            found = secrets.BwsStore.from_env(project_id, environ).read([name])
+        except secrets.SecretsError as exc:
+            raise OnboardingError("company %s: %s" % (company_id, exc)) from None
+        return found.get(name, "")
+
+    return read
 
 
 def live_provision(

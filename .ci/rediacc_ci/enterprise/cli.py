@@ -96,7 +96,9 @@ def live_add(req: onboarding.Request, opts: argparse.Namespace) -> onboarding.Ou
         return onboarding.Outcome(1, "", (), "refused: %s" % exc)
     provision = onboarding.live_provision(opts.bws_project) if opts.bws_project else None
     actions = onboarding.live_actions(
-        provision=provision, lookup_namespace=opts.lookup_namespace_id
+        provision=provision,
+        lookup_namespace=opts.lookup_namespace_id,
+        api_key_of=onboarding.live_api_key(opts.bws_project) if opts.bws_project else None,
     )
     return onboarding.run(req, query=control_db.transport(), actions=actions)
 

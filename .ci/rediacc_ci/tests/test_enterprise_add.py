@@ -811,8 +811,7 @@ class FakeAccount:
 
 
 def _account_actions(fake, key="k-secret"):
-    env = {onboarding.ACCOUNT_KEY_ENV: key} if key else {}
-    return onboarding.live_actions(runner=None, post=fake, env=env)
+    return onboarding.live_actions(runner=None, post=fake, api_key_of=lambda _company: key)
 
 
 def test_live_bootstrap_creates_through_the_account_route():
@@ -843,6 +842,43 @@ def test_live_bootstrap_and_invite_refuse_naming_the_missing_key():
         with pytest.raises(onboarding.OnboardingError, match=onboarding.ACCOUNT_KEY_ENV):
             _account_actions(fake, key="")[step](_ctx(World()))
     assert fake.calls == []
+
+
+def test_live_bootstrap_uses_the_company_key_not_the_environment_key(monkeypatch):
+    # Run 8 of region-loss: the shared key in the caller's environment got HTTP 401 from the company Worker.
+    monkeypatch.setenv(onboarding.ACCOUNT_KEY_ENV, "shared-key")
+    fake = FakeAccount(201)
+    asked = []
+
+    def company_key(company_id):
+        asked.append(company_id)
+        return "company-key"
+
+    onboarding.live_actions(runner=None, post=fake, api_key_of=company_key)["bootstrap"](
+        _ctx(World())
+    )
+    assert fake.calls[0][1] == "company-key"
+    assert asked == ["c0123456789abcdef"]
+
+
+def test_live_bootstrap_without_a_company_key_source_never_falls_back_to_the_environment(
+    monkeypatch,
+):
+    monkeypatch.setenv(onboarding.ACCOUNT_KEY_ENV, "shared-key")
+    fake = FakeAccount()
+    with pytest.raises(onboarding.OnboardingError, match="bws-project"):
+        onboarding.live_actions(runner=None, post=fake)["bootstrap"](_ctx(World()))
+    assert fake.calls == []
+
+
+def test_live_api_key_reads_the_company_entry_from_the_project(monkeypatch):
+    class Store:
+        def read(self, names):
+            assert names == ["c0123456789abcdef_ACCOUNT_SERVER_API_KEY"]
+            return {names[0]: "k-company"}
+
+    monkeypatch.setattr(onboarding.secrets.BwsStore, "from_env", lambda *_a, **_k: Store())
+    assert onboarding.live_api_key("proj", {})("c0123456789abcdef") == "k-company"
 
 
 def test_live_invite_posts_the_owner_mail_route():
