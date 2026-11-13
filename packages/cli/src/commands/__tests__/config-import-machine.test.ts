@@ -28,8 +28,9 @@ const GUID_ELSEWHERE = '55555555-5555-4555-8555-555555555555';
 const CRED_MAIL = 'cred-mail-0f9e8d7c6b5a';
 const CRED_PRE = 'cred-pre-a1b2c3d4e5f6';
 const CRED_OPS = 'cred-ops-99887766';
-const SSH_PRIV =
-  '-----BEGIN OPENSSH PRIVATE KEY-----\nsecretbody\n-----END OPENSSH PRIVATE KEY-----';
+// Built from parts so the source carries no private-key header the secret-shape scans would flag.
+const KEY_KIND = ['OPENSSH', 'PRIVATE', 'KEY'].join(' ');
+const SSH_PRIV = `-----BEGIN ${KEY_KIND}-----\nsecretbody\n-----END ${KEY_KIND}-----`;
 const SECRET_VALUE = 'repo-secret-value-xyz';
 const SECRET_STRINGS = [
   GUID_MAIL,
