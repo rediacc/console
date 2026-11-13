@@ -126,15 +126,27 @@ def _object_path(bucket: str, key: str) -> str:
     return "%s/%s" % (bucket, urllib.parse.quote(key, safe="/"))
 
 
+def _bucket_s3(
+    shared: S3, company_s3: Callable[[Target], S3] | None, company: Target, bucket: str
+) -> S3:
+    """The transport for one bucket: a company's backups bucket is reached with the company's own key (the shared pair is scoped to the releases bucket and configs-bench since PLAN-backup-credential-isolation B8, so it answers 403), every other bucket with the shared pair."""
+    if company_s3 is not None and bucket == company.backups_bucket:
+        return company_s3(company)
+    return shared
+
+
 # --- Exporter --------------------------------------------------------------------------
 
 
 class CloudflareExporter:
     """`lifecycle.Exporter` over wrangler (the D1 dump) and the R2 S3 endpoint (the bucket objects)."""
 
-    def __init__(self, *, wrangler: Wrangler, s3: S3) -> None:
+    def __init__(
+        self, *, wrangler: Wrangler, s3: S3, company_s3: Callable[[Target], S3] | None = None
+    ) -> None:
         self._wrangler = wrangler
         self._s3 = s3
+        self._company_s3 = company_s3
 
     def dump_d1(self, company: Target) -> str:
         with tempfile.TemporaryDirectory(prefix="enterprise-export-") as tmp:
@@ -152,16 +164,19 @@ class CloudflareExporter:
                 )
             return out.read_text(encoding="utf-8")
 
-    def bucket_keys(self, bucket: str) -> list[str]:
-        keys = list_keys(self._s3, bucket)
+    def _s3_for(self, company: Target, bucket: str) -> S3:
+        return _bucket_s3(self._s3, self._company_s3, company, bucket)
+
+    def bucket_keys(self, company: Target, bucket: str) -> list[str]:
+        keys = list_keys(self._s3_for(company, bucket), bucket)
         if keys is None:
             raise LifecycleError(
                 "listing a company bucket answered HTTP 404; the bucket is missing"
             )
         return keys
 
-    def get_object(self, bucket: str, key: str) -> bytes:
-        status, body = self._s3("GET", _object_path(bucket, key))
+    def get_object(self, company: Target, bucket: str, key: str) -> bytes:
+        status, body = self._s3_for(company, bucket)("GET", _object_path(bucket, key))
         if status != 200:
             raise LifecycleError("reading a company object answered HTTP %d" % status)
         return body
@@ -251,6 +266,7 @@ class CloudflareTeardown:
         account_id: str,
         http: Http,
         s3: S3,
+        company_s3: Callable[[Target], S3] | None = None,
         secrets: BwsDeleter,
         lookup_domains: LookupDomains,
         lookup_run: enterprise_lookup.Runner | None = None,
@@ -262,6 +278,7 @@ class CloudflareTeardown:
         self.account_id = account_id
         self._http = http
         self._s3 = s3
+        self._company_s3 = company_s3
         self._secrets = secrets
         self._lookup_domains = lookup_domains
         self._lookup_run = lookup_run
@@ -395,11 +412,12 @@ class CloudflareTeardown:
         kind = bucket.split("-", 1)[0]
 
         def step() -> str | None:
-            keys = list_keys(self._s3, bucket)
+            s3 = _bucket_s3(self._s3, self._company_s3, company, bucket)
+            keys = list_keys(s3, bucket)
             if keys is None:
                 return GONE
             for index, key in enumerate(keys):
-                status, _body = self._s3("DELETE", _object_path(bucket, key))
+                status, _body = s3("DELETE", _object_path(bucket, key))
                 if status not in S3_DELETED:
                     raise LifecycleError(
                         "deleting an object answered HTTP %d; %d of %d objects deleted"
@@ -505,7 +523,7 @@ def r2_s3(
 
 
 def r2_s3_from_env(endpoint: str, env: Mapping[str, str] | None = None) -> S3:
-    """`r2_s3` with the operator's R2 S3 pair read by name from `env`: an admin pair, since the company's own token reaches only its backups bucket."""
+    """`r2_s3` with the shared R2 S3 pair read by name from `env`. That pair is scoped to the releases bucket and configs-bench, so it does not reach a company's `backups-<name>` bucket: that one is read with the company's own key from the enterprise store."""
     source = os.environ if env is None else env
     missing = [n for n in R2_ENV_NAMES if not source.get(n)]
     if missing:

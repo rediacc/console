@@ -29,6 +29,8 @@ import sys
 import time
 from typing import TYPE_CHECKING, Protocol
 
+from rediacc_ci.core import toolchain
+
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
 
@@ -94,6 +96,13 @@ UNSCOPED_SKIP = (
     "its company has no scope row in its control database (onboarded before onboarding wrote it), so its "
     "signer answers SIGNER_UNKNOWN_COMPANY to every request; export it and remove it with --delete-data, "
     "then add it again"
+)
+# Why `signer` asks a company Worker nothing when it does not run the version edge runs: a company Worker keeps the code it was first deployed with until `enterprise release` redeploys it (`deploy_bench` redeploys account-bench only), so an older one answers for an older signer contract.
+STALE_SKIP = (
+    "its Worker runs %s, not the %s edge runs, so its answers describe older code; redeploy it with "
+    "`./run.sh enterprise release --bench --company <id>` and run the proof again; when the answer is "
+    "still SIGNER_FOREIGN_SUBSCRIPTION, its subscription id differs from the one onboarding now binds, "
+    "so remove it with --delete-data and add it again"
 )
 # The bench region every bench company sits in, and the other bench signer region the bench form cuts first.
 BENCH_COMPANY_REGION = "eu"
@@ -200,6 +209,7 @@ class Lab(Protocol):
     # Releases.
     def target_version(self) -> str: ...
     def versions(self, targets: Sequence[str]) -> dict[str, str]: ...
+    def caller_version(self, caller: str) -> str: ...
     def release(
         self,
         *,
@@ -399,6 +409,14 @@ def _no_key_on_account(lab: Lab, p: Proof, *, bench: bool) -> None:
         p.check(f"{s} holds {PRIVATE_KEY}", ok=PRIVATE_KEY in lab.secret_names(s), detail="absent")
 
 
+def _runs(running: str, target: str) -> bool:
+    """Whether a Worker's recorded version is at least `target`; an empty or unparseable one is not."""
+    try:
+        return bool(running) and toolchain.compare(running, target) >= 0
+    except toolchain.VersionError:
+        return False
+
+
 def verb_signer(lab: Lab, p: Proof, *, bench: bool) -> None:
     """V1: the binding across Workers, props honoured, a licence issued and renewed per caller, scope refused (a company caller is asked `COMPANY_SCOPE_CODES`), no key on any account Worker, certificates through the signer, a stopped signer named (settled) while a current licence works, and signing restored. A company Worker whose company has no control scope row is skipped by name (`UNSCOPED_SKIP`), and nothing is stopped while bench carries production data (`_may_stop`)."""
     _no_key_on_account(lab, p, bench=bench)
@@ -406,6 +424,21 @@ def verb_signer(lab: Lab, p: Proof, *, bench: bool) -> None:
     for unscoped in lab.unscoped_callers(bench=bench):
         p.skip(f"{unscoped}: signing", UNSCOPED_SKIP)
     if not p.check("signer callers are listed", ok=callers, detail="no caller found"):
+        return
+    target = lab.target_version()
+    judged: list[str] = []
+    for caller in callers:
+        want = lab.expected_props(caller)
+        if want.get("tier") == "enterprise":
+            running = lab.caller_version(caller)
+            if not _runs(running, target):
+                p.skip(
+                    f"{caller}: signing", STALE_SKIP % (running or "no recorded version", target)
+                )
+                continue
+        judged.append(caller)
+    callers = judged
+    if not p.check("a signer caller is current", ok=callers, detail="every caller is stale"):
         return
     for caller in callers:
         want, seen = lab.expected_props(caller), lab.signer_props(caller)

@@ -88,10 +88,10 @@ class World:
         self.calls.append(("dump_d1", company.id))
         return "-- dump of %s\n" % company.id
 
-    def bucket_keys(self, bucket):
+    def bucket_keys(self, _company, bucket):
         return sorted(self.buckets[bucket])
 
-    def get_object(self, bucket, key):
+    def get_object(self, _company, bucket, key):
         return self.buckets[bucket][key]
 
     # Teardown
@@ -459,6 +459,16 @@ def test_remove_with_delete_data_deletes_everything_after_undeploy(w):
     assert json.loads(w.audit("eu")[-1]["detail"])["data_deleted"] is True
 
 
+def test_remove_revokes_the_tokens_only_after_the_buckets_are_emptied(w):
+    """The company's own backups key lists and empties its bucket, so the revoke that ends the key comes last of the data steps."""
+    _exported(w)
+    lifecycle.remove(w.ctx, "acme", delete_data=True, confirm="acme")
+    order = [c[0] for c in w.calls if c[0] in ("delete_bucket", "revoke_tokens", "delete_d1")]
+    assert order.index("revoke_tokens") > max(
+        i for i, name in enumerate(order) if name == "delete_bucket"
+    ), order
+
+
 def test_delete_data_refuses_a_database_that_changed_since_the_export(w):
     _exported(w)
     w.dump_d1 = lambda _company: "-- a row written after the export\n"
@@ -496,7 +506,7 @@ def test_a_resumed_delete_data_remove_is_not_judged_against_its_own_deletions(w)
     w.delete_d1 = ok
     w.buckets.clear()  # the first run already emptied and deleted them
     w.dump_d1 = lambda _company: "-- gone\n"
-    w.bucket_keys = lambda _bucket: []
+    w.bucket_keys = lambda _company, _bucket: []
     lifecycle.remove(w.ctx, "acme", delete_data=True, confirm="acme")
     assert w.state("eu", ACME) == "removed"
 

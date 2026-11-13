@@ -103,7 +103,7 @@ _GROUPS: dict[str, tuple[str, ...]] = {
         "fetch", "expected_worker", "region_hosts", "specific_hosts", "cert_log_names",
         "turnstile_domains",
     ),
-    "K2": ("target_version", "versions", "release"),
+    "K2": ("target_version", "versions", "caller_version", "release"),
     "V6": ("mint", "present"),
     "V7": (
         "container_app", "durable_object", "console_command", "egress_ips", "set_allowlist",
@@ -334,6 +334,14 @@ class LiveLab:
             except lifecycle.LifecycleError as exc:
                 raise proof.LabError(str(exc)) from None
         return cid
+
+    def caller_version(self, caller: str) -> str:
+        """The version a company Worker last rolled out (the upgrade proof's source, `versions`), or "" when its company has no deployed rollout row or `caller` is no company's Worker."""
+        name = caller.removeprefix("account-")
+        row = next((r for r in self._companies() if r["name"] == name), None)
+        if row is None:
+            return ""
+        return str(self.versions([str(row["id"])]).get(str(row["id"]), ""))
 
     def caller_of(self, company: str) -> str:
         return "account-%s" % self._row(company)["name"]

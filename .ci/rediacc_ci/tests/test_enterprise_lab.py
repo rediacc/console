@@ -3445,6 +3445,27 @@ def test_every_account_config_binds_the_props_its_signer_requires(config):
     assert deploy_signer.expected_props(doc["name"], companies=lambda _bench: []) == props
 
 
+# --- the version a company Worker last rolled out ---------------------------------
+
+
+def test_caller_version_reads_the_rollout_version_of_the_companys_id(monkeypatch):
+    built = _lab(finder=lambda _n: None)
+    monkeypatch.setattr(built, "_companies", lambda: [{"id": "cabc", "name": "acme"}])
+    asked: list[list[str]] = []
+
+    def versions(targets):
+        asked.append(list(targets))
+        return {"cabc": "0.9.1"}
+
+    monkeypatch.setattr(built, "versions", versions, raising=False)
+    assert built.caller_version("account-acme") == "0.9.1"
+    assert asked == [["cabc"]]
+    # control: a Worker no company owns, and a company with no rollout row, read as no version
+    assert built.caller_version("account-bench") == ""
+    monkeypatch.setattr(built, "versions", lambda _t: {}, raising=False)
+    assert built.caller_version("account-acme") == ""
+
+
 # --- the live add's bws project -----------------------------------------------
 
 

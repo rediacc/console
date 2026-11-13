@@ -70,9 +70,9 @@ class Target:
 class Exporter(Protocol):
     def dump_d1(self, company: Target) -> str: ...
 
-    def bucket_keys(self, bucket: str) -> Sequence[str]: ...
+    def bucket_keys(self, company: Target, bucket: str) -> Sequence[str]: ...
 
-    def get_object(self, bucket: str, key: str) -> bytes: ...
+    def get_object(self, company: Target, bucket: str, key: str) -> bytes: ...
 
 
 class Teardown(Protocol):
@@ -336,9 +336,11 @@ def export(ctx: Context, name: str) -> pathlib.Path:
         objects: list[dict[str, str]] = []
         for bucket in company.buckets:
             for index, key in enumerate(
-                _step("export failed: list bucket", ctx.exporter.bucket_keys, bucket)
+                _step("export failed: list bucket", ctx.exporter.bucket_keys, company, bucket)
             ):
-                data = _step("export failed: get object", ctx.exporter.get_object, bucket, key)
+                data = _step(
+                    "export failed: get object", ctx.exporter.get_object, company, bucket, key
+                )
                 rel = "objects/%s/%d" % (bucket, index)
                 _write(target / rel, data, root=target)
                 files[rel] = _sha(data)
@@ -438,7 +440,9 @@ def _refuse_stale_export(ctx: Context, company: Target) -> None:
     now = {
         (bucket, key)
         for bucket in company.buckets
-        for key in _step("stale-export check: list bucket", ctx.exporter.bucket_keys, bucket)
+        for key in _step(
+            "stale-export check: list bucket", ctx.exporter.bucket_keys, company, bucket
+        )
     }
     if now != held:
         raise LifecycleError("the buckets of company %s %s" % (company.id, again))
@@ -477,10 +481,11 @@ def remove(
     if not company.unlisted:
         run("drop lookup", ctx.teardown.drop_lookup, company)
     if delete_data:
-        run("revoke tokens", ctx.teardown.revoke_tokens, company)
         _record_stale_check(ctx, company)
         for bucket in company.buckets:
             run("delete bucket", ctx.teardown.delete_bucket, company, bucket)
+        # After the buckets: the company's backups key lists and empties its bucket, and the revoke ends it.
+        run("revoke tokens", ctx.teardown.revoke_tokens, company)
         run("delete d1", ctx.teardown.delete_d1, company)
         for secret in _secret_names(company):
             run("delete secret", ctx.teardown.delete_secret, secret)

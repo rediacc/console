@@ -53,6 +53,8 @@ class FakeLab:
     regions: list[str] = dataclasses.field(default_factory=list)
     # Company account Workers whose company has no control scope row.
     unscoped: list[str] = dataclasses.field(default_factory=list)
+    # company Worker -> the version it last rolled out; an absent one has no rollout row.
+    caller_versions: dict[str, str] = dataclasses.field(default_factory=dict)
     # signer -> why it must not be stopped (bench_production declares a subscription).
     stop_refusals: dict[str, str] = dataclasses.field(default_factory=dict)
     _lag_left: int = 0
@@ -129,6 +131,10 @@ class FakeLab:
     def callers(self, *, bench: bool) -> list[str]:
         self._rec("callers")
         return ["account-bench", "account-cabc123"] if bench else ["account-eu", "account-us"]
+
+    def caller_version(self, caller: str) -> str:
+        self._rec("caller_version")
+        return self.caller_versions.get(caller, "0.9.1")
 
     def signer_of(self, caller: str) -> str:
         return (
@@ -672,6 +678,36 @@ def test_signer_names_and_skips_a_company_without_a_scope_row() -> None:
     rc, lines = run("signer", FakeLab())
     assert rc == 0, lines
     assert not any(line.startswith("skipped") for line in lines)
+
+
+def test_signer_skips_a_stale_company_caller_by_name_and_judges_a_current_one() -> None:
+    """A company Worker older than the edge version answers for older code; it is skipped with the redeploy command, never tested as a signer failure."""
+    lab = FakeLab(caller_versions={"account-cabc123": "0.8.0"})
+    rc, lines = run("signer", lab)
+    assert rc == 0, lines
+    skipped = [line for line in lines if line.startswith("skipped account-cabc123: signing:")]
+    assert len(skipped) == 1, lines
+    assert "0.8.0" in skipped[0]
+    assert "0.9.1" in skipped[0]
+    assert "enterprise release --bench --company" in skipped[0]
+    assert "SIGNER_FOREIGN_SUBSCRIPTION" in skipped[0]
+    assert "add it again" in skipped[0]
+    assert not any("account-cabc123" in line for line in lines if not line.startswith("skipped"))
+    # a company with no recorded rollout is skipped the same way
+    rc, lines = run("signer", FakeLab(caller_versions={"account-cabc123": ""}))
+    assert rc == 0, lines
+    assert any("no recorded version" in line for line in lines if line.startswith("skipped"))
+    # control: a current caller is judged and nothing is skipped
+    rc, lines = run("signer", FakeLab())
+    assert rc == 0, lines
+    assert not any(line.startswith("skipped") for line in lines)
+    assert any("account-cabc123: a legitimate licence is issued" in line for line in lines)
+
+
+def test_signer_asks_no_version_of_a_shared_caller() -> None:
+    lab = FakeLab()
+    run("signer", lab)
+    assert lab.calls.count("caller_version") == 1
 
 
 # -- a bench carrying production data is never cut ------------------------------

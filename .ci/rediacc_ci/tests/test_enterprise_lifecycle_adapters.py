@@ -285,7 +285,9 @@ def test_dump_d1_refuses_a_success_that_wrote_no_file():
 def test_bucket_keys_follows_continuation_tokens_and_unescapes_keys():
     s3 = FakeS3({"configs-acme": {"k%02d" % i: b"" for i in range(5)} | {"a&b": b""}}, page=2)
     exporter = la.CloudflareExporter(wrangler=FakeWrangler(), s3=s3)
-    assert exporter.bucket_keys("configs-acme") == sorted(["a&b", *("k%02d" % i for i in range(5))])
+    assert exporter.bucket_keys(_company(), "configs-acme") == sorted(
+        ["a&b", *("k%02d" % i for i in range(5))]
+    )
     assert len([c for c in s3.calls if c[0] == "GET"]) == 3
 
 
@@ -295,18 +297,66 @@ def test_bucket_keys_refuses_a_missing_or_failing_bucket_without_naming_it(statu
     s3.fail.add(("GET", "broken"))
     exporter = la.CloudflareExporter(wrangler=FakeWrangler(), s3=s3)
     with pytest.raises(lifecycle.LifecycleError) as caught:
-        exporter.bucket_keys(status_bucket)
+        exporter.bucket_keys(_company(), status_bucket)
     assert status_bucket not in str(caught.value)
     assert "HTTP" in str(caught.value)
+
+
+def test_backups_bucket_is_read_with_the_company_key_and_not_the_shared_pair():
+    shared = FakeS3({"configs-acme": {"c": b"1"}, "backups-acme": {"snap": b"3"}})
+    company = FakeS3({"backups-acme": {"snap": b"3"}})
+    asked: list[str] = []
+
+    def company_s3(target):
+        asked.append(target.id)
+        return company
+
+    exporter = la.CloudflareExporter(wrangler=FakeWrangler(), s3=shared, company_s3=company_s3)
+    assert exporter.bucket_keys(_company(), "backups-acme") == ["snap"]
+    assert exporter.get_object(_company(), "backups-acme", "snap") == b"3"
+    assert asked == [ACME, ACME]
+    assert shared.calls == []
+    # control: the configs bucket stays on the shared pair
+    assert exporter.bucket_keys(_company(), "configs-acme") == ["c"]
+    assert [c[1].split("?")[0] for c in shared.calls] == ["configs-acme"]
+    assert len(company.calls) == 2
+
+
+def test_backups_bucket_listing_with_the_shared_pair_alone_answers_403():
+    """The defect: without a company key the shared pair (releases and configs-bench only) is refused."""
+    shared = FakeS3({"backups-acme": {"snap": b"3"}})
+    shared.fail.add(("GET", "backups-acme"))
+    exporter = la.CloudflareExporter(wrangler=FakeWrangler(), s3=shared)
+    with pytest.raises(lifecycle.LifecycleError, match="HTTP"):
+        exporter.bucket_keys(_company(), "backups-acme")
+
+
+def test_delete_bucket_empties_the_backups_bucket_with_the_company_key(monkeypatch):
+    rig = Rig(monkeypatch)
+    own = FakeS3(rig.s3.buckets)
+    teardown = la.CloudflareTeardown(
+        account_id=ACCOUNT,
+        http=rig.cf,
+        s3=rig.s3,
+        company_s3=lambda _company: own,
+        secrets=la.BwsDeleter(PROJECT, list_rows=rig.bws.list_rows, delete=rig.bws.delete),
+        lookup_domains=lambda _company: rig.domains,
+        lookup_run=rig.kv_run,
+        r2_jurisdiction="eu",
+    )
+    teardown.delete_bucket(_company(), "backups-acme")
+    assert [m for m, _p in own.calls if m == "DELETE"] == ["DELETE"]
+    assert "backups-acme" not in rig.s3.buckets
+    assert not any(p.startswith("backups-acme") for _m, p in rig.s3.calls)
 
 
 def test_get_object_quotes_the_key_and_returns_bytes():
     s3 = FakeS3({"configs-acme": {"dir/a b&c": b"\x00\x01"}})
     exporter = la.CloudflareExporter(wrangler=FakeWrangler(), s3=s3)
-    assert exporter.get_object("configs-acme", "dir/a b&c") == b"\x00\x01"
+    assert exporter.get_object(_company(), "configs-acme", "dir/a b&c") == b"\x00\x01"
     assert s3.calls[-1] == ("GET", "configs-acme/dir/a%20b%26c")
     with pytest.raises(lifecycle.LifecycleError, match="HTTP 404"):
-        exporter.get_object("configs-acme", "gone")
+        exporter.get_object(_company(), "configs-acme", "gone")
 
 
 def _control_world(tmp_path, exporter, teardown, store, unlisted=False):

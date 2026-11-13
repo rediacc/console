@@ -161,7 +161,8 @@ class LiveSeams:
     """The transports under the production adapters; None takes the live one from `lifecycle_adapters`."""
 
     wrangler: Callable[..., Any] | None = None  # (cwd, env) -> Wrangler
-    s3: Callable[..., Any] | None = None  # (endpoint, env) -> S3
+    s3: Callable[..., Any] | None = None  # (endpoint, env) -> S3, the shared pair
+    company_s3: Callable[..., Any] | None = None  # (endpoint, key_id, secret) -> S3
     http: Callable[..., Any] | None = None  # (headers) -> Http
     bws: Callable[..., Any] | None = None  # (project, env) -> (list_rows, delete)
     lookup_run: Callable[..., Any] | None = None
@@ -211,27 +212,65 @@ def _credentials(error: type[Exception], env: Mapping[str, str]) -> str:
 
 def _r2(
     error: type[Exception], region: str, env: Mapping[str, str], seams: LiveSeams
-) -> tuple[Any, str | None]:
-    """(the R2 S3 transport for the region's jurisdiction, that jurisdiction)."""
+) -> tuple[Any, str | None, str]:
+    """(the shared-pair R2 S3 transport, built on first use so a missing pair is refused only when a bucket other than a backups bucket is reached; the region's jurisdiction; the endpoint)."""
     try:
         jurisdiction = onboarding.region_entry(region).get("r2Jurisdiction")
     except (onboarding.OnboardingError, OSError, ValueError, KeyError) as exc:
         raise error("the region %r cannot be read from regions.json: %s" % (region, exc)) from None
     prefix = "%s." % jurisdiction if jurisdiction else ""
     endpoint = "https://%s.%sr2.cloudflarestorage.com" % (env[ACCOUNT_ENV], prefix)
-    return (seams.s3 or la.r2_s3_from_env)(endpoint, env), jurisdiction
+    built: list[Any] = []
+
+    def shared(method: str, path: str) -> tuple[int, bytes]:
+        if not built:
+            try:
+                built.append((seams.s3 or la.r2_s3_from_env)(endpoint, env))
+            except la.LifecycleError as exc:
+                raise error(str(exc)) from None
+        return built[0](method, path)
+
+    return shared, jurisdiction, endpoint
 
 
-def _live_exporter(error: type[Exception], env: Mapping[str, str], seams: LiveSeams) -> Lazy:
+def _company_s3(
+    error: type[Exception], store: Any, endpoint: str, seams: LiveSeams
+) -> Callable[[Any], Any]:
+    """The transport for a company's backups bucket, signed with the company's own key (the `ACCOUNT_BACKUP_S3_KEYPAIR` store entry onboarding minted), read from the enterprise store when first needed."""
+    entry = "ACCOUNT_BACKUP_S3_KEYPAIR"
+
+    def for_company(company: Any) -> Any:
+        name = secrets.store_name(company.id, entry)
+        raw = store.read([name]).get(name)
+        if not raw:
+            raise error(
+                "company %s: the enterprise store holds no backups key (%s); the key is minted by `enterprise add`, so a company onboarded without it cannot be exported or removed with --delete-data"
+                % (company.id, name)
+            )
+        try:
+            pair = secrets._unpack_pair(entry, raw, company.id)
+        except secrets.SecretsError as exc:
+            raise error(str(exc)) from None
+        key_id, secret = (pair[k] for k in secrets.BACKUP_PAIR)
+        return (seams.company_s3 or la.r2_s3)(endpoint, key_id, secret)
+
+    return for_company
+
+
+def _live_exporter(
+    error: type[Exception], env: Mapping[str, str], seams: LiveSeams, store: Any
+) -> Lazy:
     def build(region: str) -> Any:
         _credentials(error, env)
-        s3, _ = _r2(error, region, env, seams)
+        s3, _, endpoint = _r2(error, region, env, seams)
         cwd = paths.repo_root().joinpath(*pc.ACCOUNT_REL)
         try:
             run = (seams.wrangler or la.live_wrangler)(cwd, env)
         except wrangler_mod.WranglerNotInstalledError as exc:
             raise error(str(exc)) from None
-        return la.CloudflareExporter(wrangler=run, s3=s3)
+        return la.CloudflareExporter(
+            wrangler=run, s3=s3, company_s3=_company_s3(error, store, endpoint, seams)
+        )
 
     return Lazy(error, build)
 
@@ -270,6 +309,7 @@ def _live_teardown(
     error: type[Exception],
     env: Mapping[str, str],
     seams: LiveSeams,
+    store: Any,
     bws_project: str,
     lookup_domains: Sequence[str],
 ) -> Lazy:
@@ -277,12 +317,13 @@ def _live_teardown(
         token = _credentials(error, env)
         if not bws_project:
             raise error("--bws-project names the enterprise bws project whose entries are deleted")
-        s3, jurisdiction = _r2(error, region, env, seams)
+        s3, jurisdiction, endpoint = _r2(error, region, env, seams)
         list_rows, delete = (seams.bws or _live_bws_pair(error, env))(bws_project, env)
         return la.CloudflareTeardown(
             account_id=env[ACCOUNT_ENV],
             http=(seams.http or la.cloudflare_http)(["-H", "Authorization: Bearer %s" % token]),
             s3=s3,
+            company_s3=_company_s3(error, store, endpoint, seams),
             secrets=la.BwsDeleter(bws_project, list_rows=list_rows, delete=delete),
             lookup_domains=lambda _company: tuple(lookup_domains),
             lookup_run=seams.lookup_run,
@@ -323,8 +364,8 @@ def lifecycle_context(
     return lifecycle.Context(
         registry=registry.Registry(q, bench=bench),
         query=q,
-        exporter=_live_exporter(error, environ, live),
-        teardown=_live_teardown(error, environ, live, bws_project, lookup_domains),
+        exporter=_live_exporter(error, environ, live, store),
+        teardown=_live_teardown(error, environ, live, store, bws_project, lookup_domains),
         store=store,
         export_root=export_root or EXPORT_ROOT,
         env=environ,

@@ -5,6 +5,7 @@ Nothing here reaches Cloudflare, R2 or bws: the wrangler, S3, http, bws and KV s
 
 from __future__ import annotations
 
+import json
 import pathlib
 import sqlite3
 from typing import Any
@@ -49,9 +50,25 @@ def _control() -> sqlite3.Connection:
     return conn
 
 
+COMPANY_KEY_ID = "company-key-id"
+KEYPAIR_ENTRY = "%s_ACCOUNT_BACKUP_S3_KEYPAIR" % ACME
+
+
 class FakeStore:
+    """Holds a value for every name; the backups key pair is a real pair entry unless `without_pair`."""
+
+    without_pair = False
+
     def read(self, names: Any) -> dict[str, str]:
-        return dict.fromkeys(names, "value")
+        out = dict.fromkeys(names, "value")
+        if KEYPAIR_ENTRY in out:
+            if self.without_pair:
+                del out[KEYPAIR_ENTRY]
+            else:
+                out[KEYPAIR_ENTRY] = json.dumps(
+                    dict(zip(secrets.BACKUP_PAIR, (COMPANY_KEY_ID, "company-secret"), strict=True))
+                )
+        return out
 
     def create(self, _name: str, _value: str) -> None:
         raise AssertionError("lifecycle never writes secrets")
@@ -64,12 +81,15 @@ class Rig:
         self.wrangler_argvs: list[list[str]] = []
         self.s3_calls: list[tuple[str, str]] = []
         self.s3_endpoints: list[str] = []
+        self.company_s3_calls: list[tuple[str, str]] = []
+        self.company_key_ids: list[str] = []
         self.http_calls: list[tuple[str, str]] = []
         self.deleted: list[str] = []
         self.kv: list[list[str]] = []
         self.seams = cli.LiveSeams(
             wrangler=lambda _cwd, _env: self._wrangler,
             s3=self._s3_factory,
+            company_s3=self._company_s3_factory,
             http=lambda _headers: self._http,
             bws=lambda _project, _env: (self._rows, self._delete),
             lookup_run=self._kv,
@@ -93,6 +113,17 @@ class Rig:
 
         def call(method: str, path: str) -> tuple[int, bytes]:
             self.s3_calls.append((method, path))
+            if method == "GET" and "?" in path:
+                return 200, b"<ListBucketResult><IsTruncated>false</IsTruncated></ListBucketResult>"
+            return 404, b""
+
+        return call
+
+    def _company_s3_factory(self, _endpoint: str, key_id: str, _secret: str) -> la.S3:
+        self.company_key_ids.append(key_id)
+
+        def call(method: str, path: str) -> tuple[int, bytes]:
+            self.company_s3_calls.append((method, path))
             if method == "GET" and "?" in path:
                 return 200, b"<ListBucketResult><IsTruncated>false</IsTruncated></ListBucketResult>"
             return 404, b""
@@ -152,6 +183,27 @@ def test_export_reaches_a_real_cloudflare_exporter(rig):
     assert rig.s3_endpoints
     assert all(e.startswith("https://%s." % ACCOUNT) for e in rig.s3_endpoints)
     assert any(m == "GET" and p.startswith("configs-acme") for m, p in rig.s3_calls)
+
+
+def test_export_lists_the_backups_bucket_with_the_company_key_and_not_the_shared_pair(rig):
+    assert _export(rig, CF_ENV) == 0
+    assert rig.company_key_ids == [COMPANY_KEY_ID]
+    assert any(m == "GET" and p.startswith("backups-acme") for m, p in rig.company_s3_calls)
+    assert not any(p.startswith("backups-acme") for _m, p in rig.s3_calls), rig.s3_calls
+    # control: the configs bucket is still read with the shared pair
+    assert not any(p.startswith("configs-acme") for _m, p in rig.company_s3_calls)
+
+
+def test_export_without_the_company_key_in_the_store_names_the_entry(rig, capsys, monkeypatch):
+    store = FakeStore()
+    store.without_pair = True
+    monkeypatch.setattr(secrets.BwsStore, "from_env", classmethod(lambda _c, _p, _e=None: store))
+    assert _export(rig, CF_ENV) == 1
+    said = _said(capsys)
+    assert KEYPAIR_ENTRY in said
+    assert "no backups key" in said
+    assert "company-secret" not in said
+    assert rig.company_s3_calls == []
 
 
 def test_remove_reaches_a_real_cloudflare_teardown(rig):
