@@ -217,7 +217,9 @@ def test_ensure_company_recreates_a_proof_company_without_a_scope_row(monkeypatc
         adder=adder,
         finder=adder.find,
         resolver=adder.by_id,
-        lifecycle_ctx=lambda _lc, *, bench, env: types.SimpleNamespace(bench=bench, env=env),
+        lifecycle_ctx=lambda _lc, *, bench, env, bws_project="": types.SimpleNamespace(
+            bench=bench, env=env, bws_project=bws_project
+        ),
         scoped=lambda row: row["id"] != stale["id"],
     )
     cid = built.ensure_company("proof-loss-eu", "eu")
@@ -340,9 +342,32 @@ def _with_lifecycle(monkeypatch, fake):
         adder=adder,
         finder=adder.find,
         resolver=adder.by_id,
-        lifecycle_ctx=lambda _lc, *, bench, env: types.SimpleNamespace(bench=bench, env=env),
+        lifecycle_ctx=lambda _lc, *, bench, env, bws_project="": types.SimpleNamespace(
+            bench=bench, env=env, bws_project=bws_project
+        ),
     )
     return built, adder
+
+
+def test_export_and_remove_open_the_store_of_the_proof_bws_project(monkeypatch):
+    """Region-loss 2026-11-14: export refused with '--bws-project names the enterprise bws project this verb reads' because the lab built its context with no project."""
+    monkeypatch.setenv(lab.BWS_PROJECT_ENV, "proj-1")
+    fake = FakeLifecycle()
+    built, _adder = _with_lifecycle(monkeypatch, fake)
+    cid = built.ensure_company("proof-remove", "eu")
+    assert built.export(cid) == 0
+    assert built.remove(cid, delete_data=True, github_actions=False) == 0
+    assert [ctx.bws_project for _v, ctx, _n, _kw in fake.calls] == ["proj-1", "proj-1"]
+
+
+def test_export_context_has_no_project_when_the_env_is_unset(monkeypatch):
+    """Control: without the variable the context carries no project, so the store stays unbound and refuses naming `--bws-project`."""
+    monkeypatch.delenv(lab.BWS_PROJECT_ENV, raising=False)
+    fake = FakeLifecycle()
+    built, _adder = _with_lifecycle(monkeypatch, fake)
+    cid = built.ensure_company("proof-remove", "eu")
+    assert built.export(cid) == 0
+    assert fake.calls[0][1].bws_project == ""
 
 
 def test_export_and_remove_call_lifecycle_by_name_with_confirm(monkeypatch):

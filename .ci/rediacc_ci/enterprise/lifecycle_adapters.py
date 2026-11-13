@@ -71,12 +71,28 @@ def _codes(answer: Mapping[str, Any]) -> str:
     return ",".join(str(e.get("code")) for e in errors if isinstance(e, dict)) or "none"
 
 
+MAX_MESSAGE_CHARS = 200
+
+
+def _messages(answer: Mapping[str, Any]) -> str:
+    """Cloudflare's own error messages, one line and capped, so a refusal says why and not only which code."""
+    errors = answer.get("errors")
+    if not isinstance(errors, list):
+        return ""
+    texts = [str(e.get("message")) for e in errors if isinstance(e, dict) and e.get("message")]
+    return " ".join("; ".join(texts).split())[:MAX_MESSAGE_CHARS]
+
+
 def _ok(answer: object, what: str) -> Mapping[str, Any]:
-    """The answer when Cloudflare reports success; otherwise a refusal naming its error codes, never its text."""
+    """The answer when Cloudflare reports success; otherwise a refusal naming its error codes and its message."""
     if not isinstance(answer, Mapping):
         raise LifecycleError("Cloudflare answered %s with a non-object" % what)
     if answer.get("success") is not True:
-        raise LifecycleError("Cloudflare refused %s (error codes %s)" % (what, _codes(answer)))
+        text = _messages(answer)
+        raise LifecycleError(
+            "Cloudflare refused %s (error codes %s%s)"
+            % (what, _codes(answer), ": " + text if text else "")
+        )
     return answer
 
 
@@ -320,19 +336,61 @@ class CloudflareTeardown:
                 listed.append({str(r.get("id")) for r in rows if isinstance(r, dict)})
             return listed[0]
 
-        def step_for(worker: str) -> Callable[[], str | None]:
+        def step_for(worker: str, queues: bool) -> Callable[[], str | None]:
             def step() -> str | None:
-                if worker not in present():
-                    return GONE
-                path = "/workers/scripts/%s?force=true" % urllib.parse.quote(worker)
-                _ok(self._http("DELETE", self._account(path)), "the Worker delete")
-                return None
+                # A Worker that consumes a queue cannot be deleted (Cloudflare error 10064), so its consumers go first and the queues after it.
+                found = self._company_queues(company) if queues else []
+                for queue in found:
+                    for consumer in queue["consumers"]:
+                        if consumer.get("script") == worker and consumer.get("consumer_id"):
+                            path = "/queues/%s/consumers/%s" % (
+                                urllib.parse.quote(queue["queue_id"]),
+                                urllib.parse.quote(str(consumer["consumer_id"])),
+                            )
+                            _ok(
+                                self._http("DELETE", self._account(path)),
+                                "the queue consumer delete",
+                            )
+                deleted = worker in present()
+                if deleted:
+                    path = "/workers/scripts/%s?force=true" % urllib.parse.quote(worker)
+                    _ok(self._http("DELETE", self._account(path)), "the Worker delete")
+                for queue in found:
+                    path = "/queues/%s" % urllib.parse.quote(queue["queue_id"])
+                    _ok(self._http("DELETE", self._account(path)), "the queue delete")
+                return None if deleted or found else GONE
 
             return step
 
         self._do("undeploy zone routes", company.id, lambda: self._drop_routes(company))
         for label, worker in worker_names(company):
-            self._do("undeploy %s" % label, company.id, step_for(worker))
+            self._do("undeploy %s" % label, company.id, step_for(worker, label == "account worker"))
+
+    def _company_queues(self, company: Target) -> list[dict[str, Any]]:
+        """The company's backup queue and its dead-letter queue as `{queue_id, consumers}`, matched by exact name."""
+        names = {"backup-replicate-%s" % company.name, "backup-replicate-%s-dlq" % company.name}
+        what = "the queue listing"
+        found: list[dict[str, Any]] = []
+        page, pages = 1, 1
+        while page <= pages:
+            answer = _ok(
+                self._http("GET", self._account("/queues?per_page=100&page=%d" % page)), what
+            )
+            rows = _rows(answer, what)
+            for row in rows:
+                if isinstance(row, dict) and row.get("queue_name") in names and row.get("queue_id"):
+                    consumers = row.get("consumers")
+                    found.append(
+                        {
+                            "queue_id": str(row["queue_id"]),
+                            "consumers": [c for c in consumers if isinstance(c, dict)]
+                            if isinstance(consumers, list)
+                            else [],
+                        }
+                    )
+            pages = _pages(answer, rows, 100, page)
+            page += 1
+        return found
 
     def _drop_routes(self, company: Target) -> str | None:
         """Delete every Worker Route of the product zone whose script is one of the company's Workers; `GONE` when none is left."""

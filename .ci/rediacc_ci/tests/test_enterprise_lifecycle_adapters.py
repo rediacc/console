@@ -102,6 +102,12 @@ class FakeCloudflare:
             {"id": "r-none", "pattern": "x.%s/*" % PRODUCT_DOMAIN},
         ]
         self.d1 = {"account-acme": "1111-uuid", "account-eu": "2222-uuid"}
+        # The company's backup queue (consumed by its account Worker), its dead-letter queue, and another company's queue.
+        self.queues: dict[str, dict[str, str | None]] = {
+            "q-main": {"name": "backup-replicate-acme", "consumer": "account-acme"},
+            "q-dlq": {"name": "backup-replicate-acme-dlq", "consumer": None},
+            "q-eu": {"name": "backup-replicate-eu", "consumer": "account-eu"},
+        }
         self.tokens = [
             {"id": "t-own", "name": "enterprise-%s-backups" % ACME},
             {"id": "t-own-cfg", "name": "enterprise-%s-configs" % ACME},
@@ -136,7 +142,33 @@ class FakeCloudflare:
         if method == "DELETE" and path.startswith(base + "/workers/scripts/"):
             name = path.rsplit("/", 1)[1].split("?")[0]
             assert path.endswith("?force=true")
+            if any(q["consumer"] == name for q in self.queues.values()):
+                return {
+                    "success": False,
+                    "errors": [{"code": 10064, "message": "worker is a queue consumer"}],
+                }
             self.workers.discard(name)
+            return {"success": True, "result": None}
+        if method == "GET" and path.startswith(base + "/queues?"):
+            qrows = [
+                {
+                    "queue_id": qid,
+                    "queue_name": q["name"],
+                    "consumers": [{"script": q["consumer"], "consumer_id": "c-" + qid}]
+                    if q["consumer"]
+                    else [],
+                }
+                for qid, q in self.queues.items()
+            ]
+            return {"success": True, "result": qrows}
+        if method == "DELETE" and "/queues/" in path:
+            parts = path.split("/queues/", 1)[1].split("/")
+            qid = parts[0]
+            if len(parts) == 3:
+                self.queues[qid]["consumer"] = None
+            else:
+                assert self.queues[qid]["consumer"] is None, "a consumed queue is not deleted"
+                del self.queues[qid]
             return {"success": True, "result": None}
         if method == "GET" and path.startswith(base + "/d1/database?"):
             args = urllib.parse.parse_qs(path.split("?", 1)[1])
@@ -483,7 +515,7 @@ def test_undeploy_deletes_proxy_then_account_and_skips_an_absent_worker(monkeypa
     rig.cf.workers.discard("proxy-acme")
     rig.cf.routes = [r for r in rig.cf.routes if not str(r.get("script", "")).endswith("-acme")]
     rig.teardown.undeploy(_company())
-    deletes = [c[1] for c in rig.cf.calls if c[0] == "DELETE"]
+    deletes = [c[1] for c in rig.cf.calls if c[0] == "DELETE" and "/workers/" in c[1]]
     assert deletes == ["/accounts/%s/workers/scripts/account-acme?force=true" % ACCOUNT]
     assert rig.cf.workers == {"account-eu"}
     assert rig.teardown.done == [
@@ -499,7 +531,7 @@ def test_undeploy_deletes_only_the_companys_zone_routes_before_its_workers(monke
     deletes = [c[1] for c in rig.cf.calls if c[0] == "DELETE"]
     routes = "/zones/%s/workers/routes/" % ZONE
     assert deletes[:2] == [routes + "r-acct", routes + "r-proxy"]
-    assert all("/workers/scripts/" in d for d in deletes[2:])
+    assert all("/workers/scripts/" in d or "/queues/" in d for d in deletes[2:])
     assert [r["id"] for r in rig.cf.routes] == ["r-eu", "r-none"]
     assert rig.teardown.done[0] == "undeploy zone routes"
 
@@ -520,8 +552,44 @@ def test_a_refused_route_delete_names_its_codes_and_keeps_the_workers(monkeypatc
     with pytest.raises(lifecycle.LifecycleError) as caught:
         rig.teardown.undeploy(_company())
     assert "7003" in str(caught.value)
-    assert "acme" not in str(caught.value).replace(ACME, "")
     assert {"proxy-acme", "account-acme"} <= rig.cf.workers
+
+
+def test_undeploy_detaches_the_queue_consumer_before_the_account_worker_and_drops_the_queues(
+    monkeypatch,
+):
+    """Remove on 2026-11-13 failed at the account Worker with 10064: the Worker still consumed backup-replicate-<name>."""
+    rig = Rig(monkeypatch)
+    rig.teardown.undeploy(_company())
+    deletes = [c[1] for c in rig.cf.calls if c[0] == "DELETE"]
+    base = "/accounts/%s" % ACCOUNT
+    consumer = deletes.index(base + "/queues/q-main/consumers/c-q-main")
+    worker = deletes.index(base + "/workers/scripts/account-acme?force=true")
+    assert consumer < worker
+    assert base + "/queues/q-main" in deletes[worker:]
+    assert base + "/queues/q-dlq" in deletes[worker:]
+    assert rig.cf.workers == {"account-eu"}
+    assert sorted(rig.cf.queues) == ["q-eu"]
+    assert rig.cf.queues["q-eu"]["consumer"] == "account-eu"
+
+
+def test_undeploy_without_the_company_queues_still_deletes_the_worker(monkeypatch):
+    """Control: no company queue means no queue call, and the Worker delete is the same single call."""
+    rig = Rig(monkeypatch)
+    rig.cf.queues = {k: v for k, v in rig.cf.queues.items() if k == "q-eu"}
+    rig.teardown.undeploy(_company())
+    deletes = [c[1] for c in rig.cf.calls if c[0] == "DELETE"]
+    assert not any("/queues/" in d for d in deletes)
+    assert rig.cf.workers == {"account-eu"}
+
+
+def test_a_rerun_after_the_worker_went_still_drops_the_leftover_queues(monkeypatch):
+    rig = Rig(monkeypatch)
+    rig.cf.workers.discard("account-acme")
+    rig.cf.queues["q-main"]["consumer"] = None
+    rig.teardown.undeploy(_company())
+    assert sorted(rig.cf.queues) == ["q-eu"]
+    assert "undeploy account worker" in rig.teardown.done
 
 
 def test_drop_lookup_deletes_the_hmac_key_and_puts_neither_domain_nor_pepper_in_argv(monkeypatch):
@@ -696,14 +764,13 @@ def test_a_seam_exception_keeps_only_its_type_and_chains_nothing(monkeypatch):
     assert caught.value.__cause__ is None
 
 
-def test_a_cloudflare_refusal_reports_codes_not_its_text(monkeypatch):
+def test_a_cloudflare_refusal_reports_its_codes_and_its_message(monkeypatch):
     rig = Rig(monkeypatch)
     rig.cf.fail.add(("DELETE", "/workers/scripts/proxy-acme"))
     with pytest.raises(lifecycle.LifecycleError) as caught:
         rig.teardown.undeploy(_company())
     assert "7003" in str(caught.value)
-    assert "boom" not in str(caught.value)
-    assert "acme" not in str(caught.value).replace(ACME, "")
+    assert "boom acme" in str(caught.value)
 
 
 # --- Teardown under remove: a midway failure stops the rest and a rerun resumes ----------

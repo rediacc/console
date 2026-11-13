@@ -262,7 +262,9 @@ class LiveLab:
     def _context(self, lifecycle: types.ModuleType, *, github_actions: bool = False) -> Any:
         # None lets the context inherit os.environ, as the CLI path does; the CI simulation sets only its variable.
         env = {"GITHUB_ACTIONS": "true"} if github_actions else None
-        return self._lifecycle_ctx(lifecycle, bench=self.bench, env=env)
+        # The enterprise bws project the proof lab's other steps read, so export, remove and update open the store `--bws-project` would.
+        project = os.environ.get(BWS_PROJECT_ENV, "")
+        return self._lifecycle_ctx(lifecycle, bench=self.bench, env=env, bws_project=project)
 
     # -- companies (C1, C2) ------------------------------------------------------------
 
@@ -2009,7 +2011,13 @@ def egress_ips(*, fetch: Callable[[str], str] | None = None) -> list[str]:
 
 def _update_scope(name: str, ips: Sequence[str]) -> None:
     try:
-        lifecycle.update(cli.lifecycle_context(lifecycle, bench=BENCH), name, allow_ips=list(ips))
+        lifecycle.update(
+            cli.lifecycle_context(
+                lifecycle, bench=BENCH, bws_project=os.environ.get(BWS_PROJECT_ENV, "")
+            ),
+            name,
+            allow_ips=list(ips),
+        )
     except lifecycle.LifecycleError as exc:
         raise proof.LabError(str(exc)) from None
 
