@@ -347,6 +347,32 @@ def test_backup_d1_default_plan_is_the_shared_set_and_retired_sets_are_named() -
     ]
 
 
+def test_backup_d1_names_follow_regions_json_and_the_bench_toml(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    """A repoint is a config change: a `-j` name in regions.json or the bench toml reaches the export plan with no code edit."""
+    rows = [
+        {"id": r, "d1": {"name": n}}
+        for r, n in (("eu", "account-eu-j"), ("us", "account-us"), ("asia", "account-asia"))
+    ]
+    (tmp_path / "regions.json").write_text(json.dumps({"regions": rows}), encoding="utf-8")
+    toml_dir = tmp_path / "workers" / "account"
+    toml_dir.mkdir(parents=True)
+    (toml_dir / "wrangler.bench.toml").write_text(
+        '[[d1_databases]]\nbinding = "DB"\ndatabase_name = "account-bench-j"\n'
+        '[[r2_buckets]]\nbinding = "CONFIG_BUCKET"\nbucket_name = "configs-bench"\n'
+        '[[r2_buckets]]\nbinding = "BACKUP_BUCKET"\nbucket_name = "backups-bench"\n',
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(backup_d1.paths, "repo_root", lambda: tmp_path)
+    assert [n for _s, n in backup_d1.export_plan("shared")] == [
+        "account-eu-j",
+        "account-us",
+        "account-asia",
+    ]
+    assert backup_d1.export_plan("bench") == [("bench", "account-bench-j")]
+
+
 def test_delta_a_minted_token_is_always_destroyed(world: h.World) -> None:
     env = world.env(**GLOBAL_ENV)
     world.twin_run("scripts/ops/backup-d1.sh", ["edge"], env)
@@ -1103,3 +1129,75 @@ def test_deploy_bench_refuses_a_config_with_no_backup_binding(monkeypatch, tmp_p
     monkeypatch.delenv("ACCOUNT_BACKUP_S3_BUCKET", raising=False)
     with pytest.raises(deploy_bench.DeployError, match="BACKUP_BUCKET"):
         deploy_bench.bench_bucket()
+
+
+JURISDICTIONAL_BENCH_TOML = (
+    'name = "account-bench"\n\n'
+    "[[d1_databases]]\n"
+    'binding = "DB"\n'
+    'database_name = "account-bench-j"\n'
+    'database_id = "22222222-2222-4222-8222-222222222222"\n\n'
+    "[[r2_buckets]]\n"
+    'binding = "BACKUP_BUCKET"\n'
+    'bucket_name = "backups-bench"\n'
+    'jurisdiction = "eu"\n'
+)
+
+
+def test_deploy_bench_d1_name_comes_from_the_db_binding(monkeypatch, tmp_path) -> None:
+    _bench_repo(monkeypatch, tmp_path, JURISDICTIONAL_BENCH_TOML)
+    assert deploy_bench.db_name() == "account-bench-j"
+    assert deploy_bench.DB_NAME == "account-bench-j"  # login_bench reads the attribute
+
+
+def test_deploy_bench_refuses_a_config_with_no_db_binding(monkeypatch, tmp_path) -> None:
+    _bench_repo(monkeypatch, tmp_path, 'name = "account-bench"\n')
+    with pytest.raises(deploy_bench.DeployError, match="bench D1 name"):
+        deploy_bench.db_name()
+
+
+PAYLOAD_ENV = (
+    "ACCOUNT_ED25519_PUBLIC_KEY",
+    "ACCOUNT_X25519_PRIVATE_KEY",
+    "ACCOUNT_X25519_PUBLIC_KEY",
+    "ACCOUNT_SERVER_API_KEY",
+    "ACCOUNT_JWT_SECRET",
+    "FREE_LICENSE_HMAC_KEY",
+    "ACCOUNT_AE_READ_TOKEN",
+    "ACCOUNT_CONFIG_SERVER_KEY",
+    "ACCOUNT_BACKUP_STORE_KEK",
+    "ROOT_EMAIL",
+    "AWS_SES_ACCESS_KEY_ID",
+    "AWS_SES_SECRET_ACCESS_KEY",
+    "CLOUDFLARE_TURNSTILE_SECRET_KEY",
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
+)
+
+
+def _payload_env(monkeypatch) -> None:
+    for name in PAYLOAD_ENV:
+        monkeypatch.setenv(name, "v-" + name)
+    monkeypatch.delenv("ACCOUNT_BACKUP_S3_BUCKET", raising=False)
+    monkeypatch.setenv("OBS_OTLP_CREDENTIALS", '{"user": "u", "pass": "p"}')
+    monkeypatch.setattr(deploy_bench, "stripe_pair", lambda: ("", ""))
+    monkeypatch.setenv("ACCOUNT_BACKUP_S3_ENDPOINT", "https://acct.r2.cloudflarestorage.com")
+
+
+def test_deploy_bench_pushes_the_jurisdictional_endpoint_for_a_jurisdictional_bucket(
+    monkeypatch, tmp_path
+) -> None:
+    _bench_repo(monkeypatch, tmp_path, JURISDICTIONAL_BENCH_TOML)
+    _payload_env(monkeypatch)
+    payload = deploy_bench.secrets_payload()
+    assert payload["ACCOUNT_BACKUP_S3_ENDPOINT"] == "https://acct.eu.r2.cloudflarestorage.com"
+
+
+def test_deploy_bench_leaves_the_endpoint_alone_for_a_default_jurisdiction_bucket(
+    monkeypatch, tmp_path
+) -> None:
+    plain = JURISDICTIONAL_BENCH_TOML.replace('jurisdiction = "eu"\n', "")
+    _bench_repo(monkeypatch, tmp_path, plain)
+    _payload_env(monkeypatch)
+    payload = deploy_bench.secrets_payload()
+    assert payload["ACCOUNT_BACKUP_S3_ENDPOINT"] == "https://acct.r2.cloudflarestorage.com"

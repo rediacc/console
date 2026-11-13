@@ -12,7 +12,11 @@ from rediacc_ci.enterprise import control_db
 from rediacc_ci.ops import deploy_bench
 
 VID = "0b1f2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d"
-ASSETS = '[assets]\ndirectory = "./bench/dist"\n'
+ASSETS = (
+    '[assets]\ndirectory = "./bench/dist"\n'
+    '\n[[d1_databases]]\nbinding = "DB"\ndatabase_name = "account-bench"\n'
+    'database_id = "11111111-1111-4111-8111-111111111111"\n'
+)
 
 
 def _world(monkeypatch, tmp_path, events):

@@ -9,7 +9,10 @@ import shlex
 import subprocess
 import sys
 
+import pytest
+
 from rediacc_ci import paths
+from rediacc_ci.ops import bench_preflight
 
 CI_DIR = str(paths.from_root(".ci"))
 
@@ -20,7 +23,7 @@ def _stub(bin_dir, name, body):
     path.chmod(0o755)
 
 
-def _run(tmp_path, call, npm_ls_rc=0, listed=(), config=None, npm_ls_out=""):
+def _run(tmp_path, call, npm_ls_rc=0, listed=(), config=None, npm_ls_out="", listed_eu=()):
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir(exist_ok=True)
     log = tmp_path / "npx.log"
@@ -33,11 +36,13 @@ def _run(tmp_path, call, npm_ls_rc=0, listed=(), config=None, npm_ls_out=""):
         % (shlex.quote(str(report)), npm_ls_rc),
     )
     names = "".join("name:           %s\\n" % b for b in listed)
+    names_eu = "".join("name:           %s\\n" % b for b in listed_eu)
     _stub(
         bin_dir,
         "npx",
-        'echo "$*" >> %s\nif [ "$4 $5" = "bucket list" ]; then printf "%s"; fi\nexit 0\n'
-        % (log, names),
+        'echo "$*" >> %s\nif [ "$4 $5" = "bucket list" ]; then\n'
+        '  case "$*" in *"--jurisdiction eu"*) printf "%s";; *) printf "%s";; esac\nfi\nexit 0\n'
+        % (log, names_eu, names),
     )
     cfg = tmp_path / "wrangler.test.toml"
     cfg.write_text(config or "", encoding="utf-8")
@@ -78,12 +83,72 @@ def test_control_nothing_is_created_when_every_bucket_exists(tmp_path):
     assert not any("create" in c for c in calls)
 
 
-def test_a_jurisdictional_binding_is_refused_not_guessed(tmp_path):
-    cfg = TWO_BUCKETS + 'jurisdiction = "eu"\n'
-    done, calls = _run(tmp_path, "buckets CFG", config=cfg)
-    assert done.returncode == 1
-    assert "jurisdiction" in done.stderr
+EU_BUCKETS = (
+    '[[r2_buckets]]\nbucket_name = "in-eu"\njurisdiction = "eu"\n\n'
+    '[[r2_buckets]]\nbucket_name = "plain"\n'
+)
+
+
+def test_a_jurisdictional_binding_is_created_with_its_jurisdiction(tmp_path):
+    done, calls = _run(tmp_path, "buckets CFG", listed=("plain",), config=EU_BUCKETS)
+    assert done.returncode == 0, done.stderr
+    assert "--no-install wrangler r2 bucket create in-eu --jurisdiction eu" in calls
+    assert any(c.endswith("bucket list --jurisdiction eu") for c in calls)
+    assert not any("create plain" in c for c in calls)
+
+
+def test_a_default_jurisdiction_twin_does_not_satisfy_an_eu_binding(tmp_path):
+    done, calls = _run(tmp_path, "buckets CFG", listed=("in-eu", "plain"), config=EU_BUCKETS)
+    assert done.returncode == 0, done.stderr
+    assert "--no-install wrangler r2 bucket create in-eu --jurisdiction eu" in calls
+
+
+def test_control_an_eu_bucket_listed_under_eu_is_not_recreated(tmp_path):
+    done, calls = _run(
+        tmp_path, "buckets CFG", listed=("plain",), listed_eu=("in-eu",), config=EU_BUCKETS
+    )
+    assert done.returncode == 0, done.stderr
     assert not any("create" in c for c in calls)
+
+
+BENCH_TOML = """
+[[d1_databases]]
+binding = "DB"
+database_name = "account-bench-j"
+database_id = "11111111-1111-4111-8111-111111111111"
+
+[[r2_buckets]]
+binding = "CONFIG_BUCKET"
+bucket_name = "configs-bench"
+jurisdiction = "eu"
+
+[[r2_buckets]]
+binding = "BACKUP_BUCKET"
+bucket_name = "backups-bench"
+"""
+
+
+def test_bench_names_reads_names_and_jurisdictions_from_the_toml(tmp_path):
+    cfg = tmp_path / "wrangler.bench.toml"
+    cfg.write_text(BENCH_TOML, encoding="utf-8")
+    names = bench_preflight.bench_names(cfg)
+    assert names.database_name == "account-bench-j"
+    assert (names.config_bucket, names.config_jurisdiction) == ("configs-bench", "eu")
+    assert (names.backup_bucket, names.backup_jurisdiction) == ("backups-bench", "")
+
+
+def test_bench_names_refuses_a_toml_without_the_db_name(tmp_path):
+    cfg = tmp_path / "wrangler.bench.toml"
+    cfg.write_text("[[d1_databases]]\nbinding = 'DB'\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="no DB database"):
+        bench_preflight.bench_names(cfg)
+
+
+def test_the_real_bench_toml_has_every_name():
+    names = bench_preflight.bench_names()
+    assert names.database_name.startswith("account-bench")
+    assert names.config_bucket
+    assert names.backup_bucket
 
 
 def test_a_drifted_install_is_refused(tmp_path):

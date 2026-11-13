@@ -19,7 +19,11 @@ from rediacc_ci.well_known import BENCH_ORIGIN
 
 REGISTER_PATH = "/account/api/v1/auth/register"
 # The [assets] block deploy_bench requires before it builds the keyless portal (bench_assets_refusal).
-BENCH_ASSETS_TOML = '[assets]\ndirectory = "./bench/dist"\n'
+BENCH_ASSETS_TOML = (
+    '[assets]\ndirectory = "./bench/dist"\n'
+    '\n[[d1_databases]]\nbinding = "DB"\ndatabase_name = "account-bench"\n'
+    'database_id = "11111111-1111-4111-8111-111111111111"\n'
+)
 
 
 class _Server:

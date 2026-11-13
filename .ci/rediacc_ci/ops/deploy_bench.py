@@ -46,7 +46,12 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import wrangler
-from rediacc_ci.deploy import deploy_account, deploy_record, deploy_signer
+from rediacc_ci.deploy import (
+    deploy_account,
+    deploy_record,
+    deploy_signer,
+    set_account_worker_secrets,
+)
 from rediacc_ci.enterprise import control_db
 from rediacc_ci.ops import bench_access, bench_preflight, cf_auth, push_backup_credentials
 from rediacc_ci.proof import receipt
@@ -61,7 +66,6 @@ BENCH_HOST = BENCH_ORIGIN.removeprefix("https://")
 ACCOUNT_ID = cf_auth.DEFAULT_ACCOUNT_ID
 WORKER_NAME = "account-bench"
 CONFIG = "wrangler.bench.toml"
-DB_NAME = "account-bench"
 DOMAIN = BENCH_HOST
 # Bench is test-only (operator ruling 2026-10-13): the portal is built with NO site key, so the
 # widget never renders, and wrangler.bench.toml sets TURNSTILE_ENABLED=false for the API.
@@ -108,6 +112,23 @@ BACKUP_NAMES: tuple[str, ...] = (
 DEFAULT_SES_FROM = "noreply@notify.%s" % PRODUCT_DOMAIN
 
 
+def db_name() -> str:
+    """The bench D1 database, as the DB binding of wrangler.bench.toml names it (the one declaration a repoint changes). Raises DeployError when the binding is missing."""
+    try:
+        return bench_preflight.bench_names(
+            paths.repo_root().joinpath(*push_backup_credentials.WORKER_DIR, CONFIG)
+        ).database_name
+    except (OSError, ValueError) as exc:
+        raise DeployError("cannot read the bench D1 name from %s: %s" % (CONFIG, exc)) from exc
+
+
+def __getattr__(name: str) -> str:
+    """`deploy_bench.DB_NAME` (read by login_bench) stays the toml's name, resolved when read rather than frozen at import."""
+    if name == "DB_NAME":
+        return db_name()
+    raise AttributeError("module %r has no attribute %r" % (__name__, name))
+
+
 def _backup_values() -> tuple[str, str, str]:
     """The endpoint, key id and secret for the bench backup bucket. Raises DeployError naming the first one that is missing or empty."""
     endpoint = os.environ.get("ACCOUNT_BACKUP_S3_ENDPOINT") or ""
@@ -125,9 +146,14 @@ def _backup_values() -> tuple[str, str, str]:
 
 def bench_bucket() -> str:
     """The bench backup bucket, read from the BACKUP_BUCKET binding in wrangler.bench.toml, the bucket the Worker reads and sweeps. An exported ACCOUNT_BACKUP_S3_BUCKET that differs from it, or a config with no such binding, is a DeployError."""
+    return bench_backup_binding()[0]
+
+
+def bench_backup_binding() -> tuple[str, str]:
+    """(bucket, jurisdiction) of the BACKUP_BUCKET binding; the jurisdiction is "" for a default-jurisdiction bucket. The checks of `bench_bucket` apply."""
     config_path = paths.repo_root().joinpath(*push_backup_credentials.WORKER_DIR, CONFIG)
     try:
-        _, bucket, _ = push_backup_credentials._config_binding(config_path)
+        _, bucket, jurisdiction = push_backup_credentials._config_binding(config_path)
     except push_backup_credentials.PushError as exc:
         raise DeployError(str(exc)) from exc
     if not bucket:
@@ -139,7 +165,7 @@ def bench_bucket() -> str:
             "binding must name one bucket. Unset the variable; the bucket comes from the binding"
             % (override, CONFIG, bucket)
         )
-    return bucket
+    return bucket, jurisdiction
 
 
 def require_nonempty(name: str, value: str) -> None:
@@ -251,7 +277,10 @@ def secrets_payload() -> dict[str, str]:
         "AWS_SES_FROM": os.environ.get("AWS_SES_FROM") or DEFAULT_SES_FROM,
         "AWS_SES_CONFIGURATION_SET": os.environ.get("AWS_SES_CONFIGURATION_SET") or "",
         "CLOUDFLARE_TURNSTILE_SECRET_KEY": os.environ.get("CLOUDFLARE_TURNSTILE_SECRET_KEY") or "",
-        "ACCOUNT_BACKUP_S3_ENDPOINT": endpoint,
+        # A jurisdictional bucket lives at `<account>.<jurisdiction>.r2.cloudflarestorage.com`; the raw endpoint cannot see it.
+        "ACCOUNT_BACKUP_S3_ENDPOINT": set_account_worker_secrets.apply_jurisdiction(
+            endpoint, bench_backup_binding()[1]
+        ),
         "ACCOUNT_BACKUP_S3_BUCKET": bench_bucket(),
         "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": backup_key,
         "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY": backup_secret,
@@ -369,7 +398,7 @@ def restore_command(bookmark: str) -> str:
         "cd %s && npx --no-install wrangler d1 time-travel restore %s --bookmark=%s --config %s"
         % (
             "workers/account",
-            DB_NAME,
+            db_name(),
             bookmark,
             CONFIG,
         )
@@ -380,7 +409,7 @@ def capture_bookmark(worker_dir) -> str | None:
     """Print the D1 bookmark taken BEFORE the migrations, with the exact restore command: a Worker rollback does not undo a migration, so the bookmark is the rollback handle. A failed capture is reported loudly and returns None; the deploy goes on (the migrations are not blocked on a read-only query, and the bash had no bookmark at all)."""
     try:
         proc = subprocess.run(
-            [*wrangler.ARGV, "d1", "time-travel", "info", DB_NAME, "--config", CONFIG],
+            [*wrangler.ARGV, "d1", "time-travel", "info", db_name(), "--config", CONFIG],
             cwd=str(worker_dir),
             capture_output=True,
             text=True,
@@ -400,7 +429,7 @@ def capture_bookmark(worker_dir) -> str | None:
         log.warn(
             "NO D1 BOOKMARK CAPTURED for %s (%s%s): the migrations below cannot be rolled back "
             "to a known point. Continuing."
-            % (DB_NAME, failure, "; " + detail.splitlines()[-1] if detail else "")
+            % (db_name(), failure, "; " + detail.splitlines()[-1] if detail else "")
         )
         return None
     bookmark = found.group(0)
@@ -630,7 +659,7 @@ def _d1_rows(sql: str) -> list[dict]:
         env.pop(name, None)
     env["CLOUDFLARE_API_KEY"], env["CLOUDFLARE_EMAIL"] = key, mail
     env["CLOUDFLARE_ACCOUNT_ID"] = ACCOUNT_ID
-    argv = [*wrangler.ARGV, "d1", "execute", DB_NAME, "--remote", "--config", CONFIG]
+    argv = [*wrangler.ARGV, "d1", "execute", db_name(), "--remote", "--config", CONFIG]
     argv.extend(["--json", "--command", sql])
     proc = subprocess.run(
         argv,
@@ -945,9 +974,9 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
         _run(["npm", "install"], worker_dir, "npm install")
     _ensure_signers(root)
     capture_bookmark(worker_dir)
-    log.step("Applying D1 migrations to %s (remote)" % DB_NAME)
+    log.step("Applying D1 migrations to %s (remote)" % db_name())
     _run(
-        [*wrangler.ARGV, "d1", "migrations", "apply", DB_NAME, "--remote", "--config", CONFIG],
+        [*wrangler.ARGV, "d1", "migrations", "apply", db_name(), "--remote", "--config", CONFIG],
         worker_dir,
         "wrangler d1 migrations apply",
     )
@@ -982,8 +1011,9 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
 
     print()
     log.info("bench is live: https://%s" % DOMAIN)
-    print("  D1:     %s (ac45c2de-053b-404c-bc47-9ad9cbd2bb15)" % DB_NAME)
-    print("  R2:     configs-bench")
+    names = bench_preflight.bench_names(root.joinpath(*push_backup_credentials.WORKER_DIR, CONFIG))
+    print("  D1:     %s (%s)" % (names.database_name, names.database_id))
+    print("  R2:     %s" % names.config_bucket)
     print("  Worker: %s" % WORKER_NAME)
     print()
     print("Test it:")

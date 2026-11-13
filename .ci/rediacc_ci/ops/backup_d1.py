@@ -17,32 +17,43 @@ THE PRE-SIGNED URL FILTER IS KEPT. Wrangler prints a pre-signed R2 URL valid for
 from __future__ import annotations
 
 import datetime
+import json
 import shutil
 import subprocess
 import sys
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import wrangler
-from rediacc_ci.ops import cf_auth
+from rediacc_ci.ops import bench_preflight, cf_auth
 
 ACCOUNT_ID = cf_auth.DEFAULT_ACCOUNT_ID
 REGIONS = ("eu", "us", "asia")
 # The shared set and bench are the live databases; the production and edge prefixes name the databases the rename retired, kept only so each can be archived before it is deleted.
-SHARED_DB_PREFIX = "account"
-BENCH_DB = "account-bench"
 PROD_DB_PREFIX = "account-db"
 EDGE_DB_PREFIX = "edge-account-db"
 USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_d1 [--dry-run] [--self-destruct] [shared|bench|production|edge]"
 FILTERED = ("r2.cloudflarestorage.com", "valid for one hour")
 
 
+def shared_databases() -> list[str]:
+    """The live database of each region, as regions.json names it (`d1.name`: `account-<r>`, with `-j` once the database was created under a jurisdiction)."""
+    with open(paths.repo_root() / "regions.json", encoding="utf-8") as fh:
+        rows = {r["id"]: r for r in json.load(fh)["regions"]}
+    return [rows[r]["d1"]["name"] for r in REGIONS]
+
+
+def bench_database() -> str:
+    """The bench database, as wrangler.bench.toml's DB binding names it."""
+    return bench_preflight.bench_names().database_name
+
+
 def export_plan(target: str) -> list[tuple[str, str]]:
     """The (set, database) pairs one run exports. No target (or `shared`) is the live shared set only: the retired `production` and `edge` sets are archived by naming them."""
     plan: list[tuple[str, str]] = []
     if target in ("", "shared"):
-        plan += [("shared", "%s-%s" % (SHARED_DB_PREFIX, r)) for r in REGIONS]
+        plan += [("shared", name) for name in shared_databases()]
     if target == "bench":
-        plan.append(("bench", BENCH_DB))
+        plan.append(("bench", bench_database()))
     if target == "production":
         plan += [("production", "%s-%s" % (PROD_DB_PREFIX, r)) for r in REGIONS]
     if target == "edge":

@@ -220,7 +220,10 @@ class World:
         (self.root / "workers/account/node_modules").mkdir(parents=True)
         (self.root / "workers/account/wrangler.bench.toml").write_text(
             # The [assets] line deploy_bench.bench_assets_refusal requires: the keyless bench portal builds outside ./dist.
-            '[assets]\ndirectory = "./bench/dist"\n\n[[r2_buckets]]\nbucket_name = "configs-bench"\n'
+            '[assets]\ndirectory = "./bench/dist"\n\n'
+            '[[d1_databases]]\nbinding = "DB"\ndatabase_name = "account-bench"\n'
+            'database_id = "ac45c2de-053b-404c-bc47-9ad9cbd2bb15"\n\n'
+            '[[r2_buckets]]\nbinding = "CONFIG_BUCKET"\nbucket_name = "configs-bench"\n'
         )
         (self.root / "private/account/web/node_modules").mkdir(parents=True)
         (self.root / "private/account").mkdir(parents=True, exist_ok=True)
