@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-12T23:23:44.600Z",
+  "generatedAt": "2026-11-13T04:33:03.412Z",
   "legs": [
     {
       "index": 1,
@@ -504,6 +504,7 @@
         "pytest:.ci/rediacc_ci/tests/test_release_resolve_backfill_commit.py",
         "pytest:.ci/rediacc_ci/tests/test_release_tag.py",
         "pytest:.ci/rediacc_ci/tests/test_security_rdc_sh_env_check.py",
+        "pytest:.ci/rediacc_ci/tests/test_sqlite_tracking.py",
         "pytest:.ci/rediacc_ci/tests/test_tree_tripwire.py",
         "pytest:.ci/rediacc_ci/tests/test_wl_proc.py",
         "pytest:.ci/rediacc_ci/tests/test_workflow_cd_deploy_account_proxy.py",
