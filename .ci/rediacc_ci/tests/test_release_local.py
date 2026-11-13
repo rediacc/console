@@ -513,6 +513,7 @@ def test_branch_context_names_the_branch_and_the_build_metadata(tmp_path: pathli
     assert got == {
         "branch_release": "true",
         "branch": "1104-1",
+        "branch_read": "",
         "asked": "ASKED:2026-11-13T05:02Z",
         "build_meta": "+1104-1.01234567",
     }
@@ -520,6 +521,65 @@ def test_branch_context_names_the_branch_and_the_build_metadata(tmp_path: pathli
     assert odd["build_meta"] == "+feat-x-y.01234567"
     unpushed = local.branch_context(tmp_path, HEAD_SHA, "", lambda _r: ({}, ""))
     assert unpushed["build_meta"] == "+unpushed.01234567"
+    assert unpushed["branch_read"] == ""
+
+
+def test_a_failed_branch_read_is_named_unread_with_its_reason(tmp_path: pathlib.Path) -> None:
+    got = local.branch_context(tmp_path, HEAD_SHA, "", lambda _r: (None, "ls-remote timed out"))
+    assert got["branch"] == "unread"
+    assert got["branch_read"] == "ls-remote timed out"
+    assert got["build_meta"] == "+unread.01234567"
+    blank = local.branch_context(tmp_path, HEAD_SHA, "", lambda _r: (None, ""))
+    assert blank["branch"] == "unread"
+    assert blank["branch_read"]
+
+
+def test_the_dry_run_describes_every_child_command(tmp_path: pathlib.Path) -> None:
+    ctx = local.Context(clone=str(tmp_path / "c"), version="9.9.9", releases_origin="https://x")
+    steps = [
+        *local.plan(REGIONS, workers_only=True, branch_release=True),
+        local.Step("stamp-x", "assist", ("echo", "stamped-{version}"), kind="stamp"),
+        local.Step("no-argv", "assist", (), kind="stamp"),
+    ]
+    text = "\n".join(local.describe(steps, ctx))
+    assert "--branch-release" in text
+    assert "echo stamped-9.9.9" in text
+    assert text.count("$ ") == sum(1 for s in steps if s.argv)
+
+
+def _dry_ancestry(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path, verdict
+) -> local.GateResult:
+    monkeypatch.setattr(local, "_ls_remote_main", lambda _r: ("a" * 40, ""))
+    monkeypatch.setattr(local.local_gates, "live_heads", lambda _r: ({"b": HEAD_SHA}, ""))
+    monkeypatch.setattr(local.local_gates, "live_ancestor", lambda _r, _a, _h: verdict)
+    seen: dict[str, object] = {}
+
+    def check(root, channel, **kw):
+        del root, channel
+        seen["verdict"] = kw["ancestor"](tmp_path, "a" * 40, HEAD_SHA)
+        return []
+
+    monkeypatch.setattr(local.local_gates, "check", check)
+    ctx = local.Context(
+        clone=str(tmp_path / "c"), releases_origin="https://x.invalid", branch_release="true"
+    )
+    result = local.dry_gates(tmp_path, "9.9.9", ctx)
+    result.notes.append("verdict=%s" % seen["verdict"])
+    return result
+
+
+def test_the_dry_run_states_an_ancestry_it_cannot_judge(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    unknown = _dry_ancestry(monkeypatch, tmp_path, None)
+    assert any("not judged under --dry-run" in n and "ancestor" in n for n in unknown.notes)
+    assert unknown.notes[-1] == "verdict=True"
+    # Controls: a definite answer is passed through and no note is added.
+    for verdict in (True, False):
+        known = _dry_ancestry(monkeypatch, tmp_path, verdict)
+        assert not any("ancestor" in n for n in known.notes)
+        assert known.notes[-1] == "verdict=%s" % verdict
 
 
 def _env_of(steps: list[local.Step], step_id: str, ctx: local.Context, key: str) -> str:

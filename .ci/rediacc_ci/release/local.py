@@ -1243,12 +1243,16 @@ _META_UNSAFE = re.compile(r"[^0-9A-Za-z-]+")
 def branch_context(
     root: pathlib.Path, head: str, asked: str, heads: local_gates.Heads = local_gates.live_heads
 ) -> dict[str, str]:
-    """The context a branch release adds: the origin branch whose tip is HEAD (a read-only `git ls-remote`), the RELEASE_ASKED minute, and `build_meta`, `+<branch>.<sha8>` with each run of characters semver build metadata refuses folded to `-`. An unpushed HEAD names the branch `unpushed`, and the origin-main gate refuses it."""
-    remote, _why = heads(root)
-    branch = local_gates.pushed_branch(remote or {}, head) or "unpushed"
+    """The context a branch release adds: the origin branch whose tip is HEAD (a read-only `git ls-remote`), the RELEASE_ASKED minute, and `build_meta`, `+<branch>.<sha8>` with each run of characters semver build metadata refuses folded to `-`. An unpushed HEAD names the branch `unpushed`; a failed read of origin's branches names it `unread` and carries the reason in `branch_read`. The origin-main gate refuses both."""
+    remote, why = heads(root)
+    if remote is None:
+        branch, read = "unread", why or "the read of origin's branches failed"
+    else:
+        branch, read = local_gates.pushed_branch(remote, head) or "unpushed", ""
     return {
         "branch_release": "true",
         "branch": branch,
+        "branch_read": read,
         "asked": asked,
         "build_meta": "+%s.%s" % (_META_UNSAFE.sub("-", branch).strip("-") or "branch", head[:8]),
     }
@@ -1367,15 +1371,30 @@ def dry_gates(root: pathlib.Path, version: str | None, ctx: Context) -> GateResu
         "local-gates: clone: not judged under --dry-run (it writes the release clone %s)"
         % paths_rel(root, pathlib.Path(ctx["clone"]))
     ]
+    ancestry_unjudged: list[str] = []
+
+    def ancestor(r: pathlib.Path, base: str, head: str) -> bool | None:
+        # The real run fetches origin's objects first; a dry run writes nothing, so a base commit this checkout lacks cannot be judged.
+        verdict = local_gates.live_ancestor(r, base, head)
+        if verdict is None:
+            ancestry_unjudged.append(base[:12])
+        return True if verdict is None else verdict
+
     refusals = local_gates.check(
         root,
         "edge",
         fetch=_ls_remote_main,
+        ancestor=ancestor,
         sentinel=public_sentinel(ctx["releases_origin"]),
         existing=readonly_existing,
         version=version,
         clone=lambda _r, _t, _h: None,
         branch_release=bool(ctx.get("branch_release")),
+    )
+    notes.extend(
+        "local-gates: origin-main: whether origin/main %s is an ancestor of HEAD is not judged under --dry-run (the object is not fetched)"
+        % base
+        for base in ancestry_unjudged
     )
     return GateResult([r.line() for r in refusals], notes)
 
@@ -1437,7 +1456,7 @@ def describe(steps: Sequence[Step], ctx: Context) -> list[str]:
         if step.kind != "run":
             lines.append("      (%s, run by the entry)" % step.kind)
             if step.argv:
-                # The gates row runs its argv as a child: print it, so a dry run shows the flags (`--branch-release`) the gates judge with.
+                # Every non-run row that carries an argv runs it as a child (the gates row among them): print it, so a dry run shows each command, the flags (`--branch-release`) the gates judge with included.
                 lines.append(
                     "      %s$ %s"
                     % (_cwd_label(step), " ".join(shlex.quote(a) for a in child_argv(step, ctx)))
@@ -2489,6 +2508,8 @@ def dry_run(
         "version: %s%s"
         % (version or "unresolved", " (bump %s)" % ctx["bump"] if "bump" in ctx else "")
     )
+    if ctx.get("branch_release") and ctx.get("branch_read"):
+        print("branch release: origin's branches could not be read: %s" % ctx["branch_read"])
     if ctx.get("branch_release"):
         print(
             "branch release: %s at %s; the Workers report %s%s (%s=%s)"
