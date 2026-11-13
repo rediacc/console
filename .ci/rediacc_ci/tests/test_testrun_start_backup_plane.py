@@ -366,6 +366,7 @@ def test_verify_mode_checks_every_binary_and_nothing_else(
 def _private_tmp(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Every directory `pin_renet` or a test makes lands under the test's own tmp_path."""
     monkeypatch.setattr(tempfile, "tempdir", str(tmp_path))
+    monkeypatch.setattr(plane, "pin_root", lambda: str(tmp_path))
 
 
 def test_pin_copies_the_three_names_and_verifies_the_copies(
@@ -519,3 +520,33 @@ def test_run_execs_the_follow_on_only_after_the_plane_is_up(monkeypatch) -> None
     drive(monkeypatch, "192.168.111.254", probe_ok=False)
     assert plane.run(plane.Options("4900", "11", True, [], ["true"])) == 1
     assert ran == []
+
+
+def test_pin_root_is_on_disk_off_actions_not_the_system_temp(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A RAM-backed /tmp held three ~600 MB pins at a host OOM (2026-11-13): off Actions the pins live under the repo's gitignored cache."""
+    monkeypatch.undo()
+    monkeypatch.delenv("RUNNER_TEMP", raising=False)
+    monkeypatch.setattr(plane.paths, "repo_root", lambda: tmp_path)
+    monkeypatch.setattr(tempfile, "tempdir", str(tmp_path / "systemtmp"))
+    root = plane.pin_root()
+    assert root == str(tmp_path / ".ci" / "cache" / "backup-plane-pins")
+    assert os.path.isdir(root)
+
+
+def test_control_pin_root_on_actions_is_runner_temp(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.undo()
+    monkeypatch.setenv("RUNNER_TEMP", str(tmp_path / "rt"))
+    assert plane.pin_root() == str(tmp_path / "rt")
+
+
+def test_a_pin_lands_under_pin_root(tmp_path, monkeypatch: pytest.MonkeyPatch) -> None:
+    root = tmp_path / "pins"
+    monkeypatch.setattr(plane, "pin_root", lambda: str(root.mkdir(exist_ok=True) or root))
+    (tmp_path / "renet").write_text("r")
+    monkeypatch.setattr(plane, "baked_public_key", lambda _b, *_a: PUB)
+    host = plane.pin_renet([str(tmp_path / "renet")], PUB)
+    assert os.path.dirname(os.path.dirname(host)) == str(root)

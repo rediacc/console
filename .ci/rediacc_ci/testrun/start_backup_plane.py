@@ -184,10 +184,20 @@ def staged_renets() -> list[str]:
     return [str(bin_dir / name) for name in STAGED_RENETS if (bin_dir / name).is_file()]
 
 
+def pin_root() -> str:
+    """Where pinned renet copies live: `$RUNNER_TEMP` on Actions, else the gitignored `.ci/cache/backup-plane-pins` on disk.
+
+    Not the system temp directory: on a host whose /tmp is a RAM tmpfs (this WSL host, 2026-11-13) each run's ~600 MB copy stayed in memory until a later run pruned it, and three of them sat in /tmp at a global out-of-memory kill."""
+    runner_temp = os.environ.get("RUNNER_TEMP")
+    root = runner_temp or str(paths.repo_root() / ".ci" / "cache" / "backup-plane-pins")
+    os.makedirs(root, exist_ok=True)
+    return root
+
+
 def prune_pinned(now: float | None = None) -> None:
     """Remove the pinned directories of earlier runs that are more than PINNED_MAX_AGE_S old."""
     cutoff = (time.time() if now is None else now) - PINNED_MAX_AGE_S
-    root = tempfile.gettempdir()
+    root = pin_root()
     for name in os.listdir(root):
         path = os.path.join(root, name)
         with contextlib.suppress(OSError):
@@ -211,7 +221,7 @@ def pin_renet(
     if "renet" not in by_name:
         raise PlaneError("the renet rebuild staged no host `renet` binary to pin")
     prune_pinned()
-    pinned = tempfile.mkdtemp(prefix=PINNED_PREFIX)
+    pinned = tempfile.mkdtemp(prefix=PINNED_PREFIX, dir=pin_root())
     try:
         for name, source in by_name.items():
             shutil.copy2(source, os.path.join(pinned, name))
