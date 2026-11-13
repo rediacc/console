@@ -111,6 +111,8 @@ class Target:
     domain: str
     jurisdiction: str | None
     otlp: str
+    # The D1 database's own jurisdiction (creation-only on Cloudflare); None while the database sits under a location hint.
+    d1_jurisdiction: str | None = None
 
     @property
     def account_toml(self) -> str:
@@ -145,7 +147,17 @@ class NoVerdictError(Exception):
     """The gate cannot rule: an input is missing or unreadable."""
 
 
-def pattern(channel: str, rid: str, jurisdiction: str | None) -> Target:
+def d1_name(rid: str, d1_jurisdiction: str | None) -> str:
+    """`account-<r>`, plus `-j` exactly when the database was created under a jurisdiction (no rename exists, PLAN-d1-eu-jurisdiction Design 1)."""
+    return "account-%s%s" % (rid, "-j" if d1_jurisdiction else "")
+
+
+def pattern(
+    channel: str,
+    rid: str,
+    jurisdiction: str | None,
+    d1_jurisdiction: str | None = None,
+) -> Target:
     """The target every regions.json row and the bench constants must equal."""
     domain = BENCH_DOMAIN if channel == BENCH else "%s.%s" % (rid, PRODUCT_DOMAIN)
     return Target(
@@ -155,17 +167,28 @@ def pattern(channel: str, rid: str, jurisdiction: str | None) -> Target:
         suffix=rid.upper(),
         account_worker="account-%s" % rid,
         proxy_worker="proxy-%s" % rid,
-        d1="account-%s" % rid,
+        d1=d1_name(rid, d1_jurisdiction),
         config_bucket="configs-%s" % rid,
         backup_bucket="backups-%s" % rid,
         domain=domain,
         jurisdiction=jurisdiction,
         otlp=rid,
+        d1_jurisdiction=d1_jurisdiction,
     )
 
 
-def targets_from(doc: dict) -> tuple[list[Target], list[Finding]]:
-    """The four targets, and every regions.json value that disagrees with its pattern."""
+def bench_jurisdiction(doc: dict | None) -> str | None:
+    """The jurisdiction wrangler.bench.toml declares for its CONFIG_BUCKET: bench has no regions.json row, so the toml is its declaration and the other bucket must agree with it."""
+    if not doc:
+        return None
+    return blocks(doc, "r2_buckets").get("CONFIG_BUCKET", {}).get("jurisdiction")
+
+
+def targets_from(doc: dict, bench_doc: dict | None = None) -> tuple[list[Target], list[Finding]]:
+    """The four targets, and every regions.json value that disagrees with its pattern.
+
+    `bench_doc` is the parsed wrangler.bench.toml: its bucket jurisdiction drives the bench pattern, and a bench jurisdiction makes the bench D1 name carry `-j` the way a regions.json `d1.jurisdiction` does.
+    """
     rows = doc.get("regions") if isinstance(doc, dict) else None
     if not isinstance(rows, list) or not rows:
         raise NoVerdictError("regions.json has no `regions` list; nothing to compare")
@@ -174,8 +197,10 @@ def targets_from(doc: dict) -> tuple[list[Target], list[Finding]]:
     for row in rows:
         rid = row.get("id", "")
         jur = row.get("r2Jurisdiction")
+        d1_row = row.get("d1")
+        d1_jur = d1_row.get("jurisdiction") if isinstance(d1_row, dict) else None
         fields = ("workerName", "proxyWorkerName", "d1", "r2", "backupR2", "domain")
-        t = pattern(SHARED, rid, jur)
+        t = pattern(SHARED, rid, jur, d1_jur)
         want = (
             t.account_worker,
             t.proxy_worker,
@@ -204,6 +229,14 @@ def targets_from(doc: dict) -> tuple[list[Target], list[Finding]]:
                     "secretSuffix %r is not %r" % (row.get("secretSuffix"), rid.upper()),
                 )
             )
+        if isinstance(d1_row, dict) and "jurisdiction" not in d1_row:
+            found.append(
+                Finding(
+                    rid,
+                    "regions",
+                    "regions.json d1 carries no jurisdiction key (null is a value; absent is not)",
+                )
+            )
         if "r2Jurisdiction" not in row:
             found.append(
                 Finding(
@@ -212,7 +245,8 @@ def targets_from(doc: dict) -> tuple[list[Target], list[Finding]]:
                     "regions.json carries no r2Jurisdiction key (null is a value; absent is not)",
                 )
             )
-    out.append(pattern(BENCH, BENCH, None))
+    bench_jur = bench_jurisdiction(bench_doc)
+    out.append(pattern(BENCH, BENCH, bench_jur, bench_jur))
     return out, found
 
 
@@ -568,7 +602,8 @@ def load(root: pathlib.Path) -> tuple[Inputs, list[Target], list[Finding]]:
         return path.read_text(encoding="utf-8")
 
     regions = json.loads(read(REGIONS_REL))
-    targets, found = targets_from(regions)
+    bench_doc = tomllib.loads(read("workers/account/wrangler.%s.toml" % BENCH))
+    targets, found = targets_from(regions, bench_doc)
     if len(targets) != EXPECTED_TARGETS:
         raise NoVerdictError(
             "built %d target(s), expected %d (3 shared regions, plus bench)"

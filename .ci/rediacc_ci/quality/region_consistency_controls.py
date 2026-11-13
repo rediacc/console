@@ -63,6 +63,17 @@ def offline_plants() -> list[
 
         return m
 
+    def d1_jurisdiction(rid: str, value: object):
+        def m(i: g.Inputs, _found):
+            row = next(r for r in i.regions["regions"] if r["id"] == rid)
+            if value is None:
+                row["d1"].pop("jurisdiction")
+            else:
+                row["d1"]["jurisdiction"] = value
+            return g.targets_from(i.regions)[1]
+
+        return m
+
     def acc(tid: str, fn):
         def m(i: g.Inputs, found):
             fn(i.account[tid])
@@ -128,6 +139,16 @@ def offline_plants() -> list[
             "regions: an absent r2Jurisdiction key",
             ("asia", "regions"),
             regions("r2Jurisdiction", "asia", None),
+        ),
+        (
+            "regions: a D1 jurisdiction whose name lacks -j",
+            ("us", "regions"),
+            d1_jurisdiction("us", "eu"),
+        ),
+        (
+            "regions: an absent d1.jurisdiction key",
+            ("asia", "regions"),
+            d1_jurisdiction("asia", None),
         ),
         (
             "regions: a wrong secretSuffix",
@@ -467,6 +488,33 @@ def run() -> int:
     )
     ctl.raises(
         "a short target list is no verdict", g.NoVerdictError, g.targets_from, {"regions": []}
+    )
+    # The name pattern follows the jurisdiction: a jurisdictional D1 carries `-j`, bench takes its jurisdiction from the bench toml.
+    ctl.check("d1 name without jurisdiction", g.d1_name("eu", None), "account-eu")
+    ctl.check("d1 name with jurisdiction", g.d1_name("eu", "eu"), "account-eu-j")
+    jur_doc = copy.deepcopy(base_inputs.regions)
+    jur_doc["regions"][0]["d1"].update(name="account-eu-j", jurisdiction="eu")
+    ctl.check(
+        "a jurisdictional d1 named account-eu-j is clean",
+        g.targets_from(jur_doc)[1],
+        [],
+    )
+    bench_toml = {
+        "r2_buckets": [
+            {"binding": "CONFIG_BUCKET", "bucket_name": "configs-bench", "jurisdiction": "eu"},
+            {"binding": "BACKUP_BUCKET", "bucket_name": "backups-bench", "jurisdiction": "eu"},
+        ]
+    }
+    bench_t = g.targets_from(base_inputs.regions, bench_toml)[0][-1]
+    ctl.check(
+        "bench jurisdiction comes from the bench toml",
+        (bench_t.jurisdiction, bench_t.d1_jurisdiction, bench_t.d1),
+        ("eu", "eu", "account-bench-j"),
+    )
+    ctl.check(
+        "no bench toml jurisdiction keeps the plain bench names",
+        g.targets_from(base_inputs.regions, {"r2_buckets": []})[0][-1].d1,
+        "account-bench",
     )
 
     for label, want, mutate in offline_plants():
