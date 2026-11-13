@@ -629,7 +629,12 @@ def test_the_reexec_binds_both_profiles(monkeypatch):
         returncode = 7
 
     monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-bench")
-    monkeypatch.setattr(nd.subprocess, "run", lambda argv, **_kw: seen.append(argv) or Done())
+
+    def fake_run(argv, **_kw):
+        seen.append(argv)
+        return Done()
+
+    monkeypatch.setattr(nd.subprocess, "run", fake_run)
     assert nd._reexec_under_profile([]) == 7
     argv = seen[0]
     profiles = [argv[i + 1] for i, a in enumerate(argv) if a == "--profile"]

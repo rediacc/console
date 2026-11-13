@@ -8,6 +8,7 @@ from __future__ import annotations
 import contextlib
 import sqlite3
 from typing import TYPE_CHECKING
+from unittest import mock
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -24,10 +25,9 @@ def closing_every_connection() -> Iterator[list[sqlite3.Connection]]:
         opened.append(conn)
         return conn
 
-    sqlite3.connect = tracked
     try:
-        yield opened
+        with mock.patch.object(sqlite3, "connect", tracked):
+            yield opened
     finally:
-        sqlite3.connect = real_connect
         for conn in opened:
             conn.close()

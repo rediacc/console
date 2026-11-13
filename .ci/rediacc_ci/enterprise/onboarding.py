@@ -565,7 +565,7 @@ def live_actions(
         jurisdiction = region_entry(plan.region).get("r2Jurisdiction")
         flag = ["--jurisdiction", str(jurisdiction)] if jurisdiction else []
         # Each resource is looked up in its list first, so one the company already owns (left by an earlier run) is reused; `create` is never run to find out.
-        work = (
+        work: tuple[tuple[str, list[str], str, list[str]], ...] = (
             ("configs bucket", ["r2", "bucket"], "configs-%s" % plan.name, flag),
             ("backups bucket", ["r2", "bucket"], "backups-%s" % plan.name, flag),
             ("backup queue", ["queues"], "backup-replicate-%s" % plan.name, []),
