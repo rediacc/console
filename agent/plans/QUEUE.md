@@ -64,7 +64,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/_done/PLAN-submodule-branch-coordination-guard.md -- 5 of 8 boxes ticked, the PR body's `Plan:` line
   - agent/plans/PLAN-proxy-cd-six-targets.md -- 27 of 31 boxes ticked, the PR body's `Plan:` line
   - agent/plans/PLAN-repo-docker-storage-prune.md -- 12 of 14 boxes ticked, the PR body's `Plan:` line
-- Work outside the PR's plans (21 epic(s)):
+- Work outside the PR's plans (22 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 30 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
   - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 48 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
@@ -73,21 +73,22 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic d6bb9963, plan agent/plans/PLAN-backup-critical-tier.md, outside the set, 7 commit(s) on the branch, 0 open item(s): backup critical tier proofs
   - epic b21ab2e2, plan agent/plans/PLAN-jobs-backup-real-machine-tests.md, outside the set, 2 commit(s) on the branch, 0 open item(s): real machine tests for jobs and backup
   - epic 92df2f69, plan agent/plans/PLAN-free-license.md, outside the set, 8 commit(s) on the branch, 0 open item(s): free license ladder F6
-  - epic 1f877343, plan agent/plans/PLAN-worktree-lease.md, outside the set, 55 commit(s) on the branch, 0 open item(s): guided detached worktree leases
+  - epic 1f877343, plan agent/plans/PLAN-worktree-lease.md, outside the set, 56 commit(s) on the branch, 0 open item(s): guided detached worktree leases
   - epic 2e0e531f, plan agent/plans/PLAN-rediaccfile-unprivileged.md, outside the set, 19 commit(s) on the branch, 0 open item(s): Rediaccfile lifecycle runs unprivileged
+  - epic fbb27b45, plan agent/plans/PLAN-product-domain-rename.md, outside the set, 3 commit(s) on the branch, 0 open item(s): Product moves to rediacc.cloud and names drop their prefixes
   - epic 5eb69cff, plan agent/plans/PLAN-website-routing-and-mail.md, outside the set, 11 commit(s) on the branch, 0 open item(s): Website routing, company lookup and product mail on .cloud
   - epic 783185d2, plan agent/plans/PLAN-enterprise-isolation.md, outside the set, 54 commit(s) on the branch, 0 open item(s): Enterprise per-company isolation, regional signers and release rings
   - epic 1d805023, plan agent/plans/PLAN-tick-tracking.md, outside the set, 26 commit(s) on the branch, 0 open item(s): tick tracking: plan-box trailer, landing prints the tick, box audit
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 816 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 828 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 99 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
-- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a9d65501c09223fd3, worker:a554ac4ad06dbdecd.
-- Leased items: 27: #000fcf57 (worker:a554ac4ad06dbdecd, d778be9d), #0eecc43c (worker:a554ac4ad06dbdecd, d778be9d), #14adbaec (worker:a554ac4ad06dbdecd, d778be9d), #1f64af37 (worker:a554ac4ad06dbdecd, d778be9d), #22e2ca84 (worker:a554ac4ad06dbdecd, d778be9d), #2c00ac36 (worker:a554ac4ad06dbdecd, d778be9d), #4be994ad (worker:a554ac4ad06dbdecd, d778be9d), #56bf9966 (worker:a554ac4ad06dbdecd, d778be9d), #5ac354e6 (worker:a554ac4ad06dbdecd, d778be9d), #5cd4f7ce (worker:a554ac4ad06dbdecd, d778be9d), #5f39f550 (worker:a554ac4ad06dbdecd, d778be9d), #63c267ff (worker:a554ac4ad06dbdecd, d778be9d), and 15 more.
+- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a53713b3ffe3fbf5d.
+- Leased items: 28: #000fcf57 (worker:bobkr5o7i, d778be9d), #0eecc43c (worker:bobkr5o7i, d778be9d), #14adbaec (worker:bobkr5o7i, d778be9d), #1f64af37 (worker:bobkr5o7i, d778be9d), #22e2ca84 (worker:bobkr5o7i, d778be9d), #2c00ac36 (worker:bobkr5o7i, d778be9d), #2c4b1eec (worker:bobkr5o7i, d778be9d), #4be994ad (worker:bobkr5o7i, d778be9d), #56bf9966 (worker:bobkr5o7i, d778be9d), #5ac354e6 (worker:bobkr5o7i, d778be9d), #5cd4f7ce (worker:bobkr5o7i, d778be9d), #5f39f550 (worker:bobkr5o7i, d778be9d), and 16 more.
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
