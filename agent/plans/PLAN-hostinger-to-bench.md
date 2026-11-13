@@ -81,6 +81,10 @@ Worklist: #ad4d5f4e, PR-TASK 79b7e92e
   Accept: `backup status -m hostinger -o json` shows a run after the next 02:00 verified for every repo, the journal shows `license renew` without refused or error, and `bench_access verify-pinned` rc 0
 - [ ] C8 [live] Retire eu-remote and eu-edge for hostinger (Design 7). Accept: `machine list -o json` in both lacks hostinger, and hostinger's `systemctl list-timers 'rediacc-backup-*'` is identical before and after
 - [ ] D1 [writer] PLAN-product-domain-rename: L10 closes as superseded by this plan; L11 gains a dependency on C7 and its Accept moves to `--config eu-bench`; b38b0881 deactivation waits on C7. docs/agent-reference/bench-login.md gains "bench carries hostinger production data: reset guard, pins, escrow". Accept: `npm run check:ci-plan-record` rc 0
+- [ ] LP-bench [live] Fresh bench receipt after the bench guard and pin boxes (W1, W2, L5) and the hostinger re-licence land on bench.
+  Accept: live-proof bench account-smoke
+- [ ] LP-hostinger [live] Fresh hostinger receipt after the re-licence and the first scheduled run through eu-bench (C7).
+  Accept: live-proof hostinger renet-live machine=hostinger
 
 ## Risks
 1. Bench runs unmerged account code; once rediacc-backups-eu is gone a deployed GC or retention bug could remove the only off-site copy (hostinger still holds the live data). An R2 bucket lock on the protected prefix is a possible follow-up.
