@@ -1530,37 +1530,50 @@ def _resolve_superseded(world, lease_id, pairs, reason):
         key, sha = hits[0]
         repo = world.root / key
         tip = world.tip if key == CONSOLE else spike.out(repo, "rev-parse", "HEAD")
-        full = _quiet(repo, "rev-parse", "--verify", landed + "^{commit}")
-        if not full or not tip:
+        # A change can land split across several commits (one conflicting half through a duplicate fix, the rest through a re-apply), so `landed` may join shas with "+"; their changed paths are united.
+        parts = [p for p in landed.split("+") if p]
+        fulls = [_quiet(repo, "rev-parse", "--verify", p + "^{commit}") for p in parts]
+        if not parts or not tip or not all(fulls):
             problems.append("%s is no commit of %s" % (landed, key))
-        elif spike.git(repo, "merge-base", "--is-ancestor", full.strip(), tip).returncode != 0:
+            continue
+        fulls = [f.strip() for f in fulls]
+        if bad := [
+            p
+            for p, f in zip(parts, fulls, strict=True)
+            if spike.git(repo, "merge-base", "--is-ancestor", f, tip).returncode != 0
+        ]:
             problems.append(
-                "%s is not an ancestor of the live tip of %s" % (landed[:SHA_SHOWN], key)
+                "%s is not an ancestor of the live tip of %s"
+                % (", ".join(b[:SHA_SHOWN] for b in bad), key)
             )
-        elif (lease_paths := _touched(repo, sha)) is None or (
-            landed_paths := _touched(repo, full.strip())
-        ) is None:
+            continue
+        lease_paths = _touched(repo, sha)
+        landed_sets = [_touched(repo, f) for f in fulls]
+        if lease_paths is None or any(x is None for x in landed_sets):
             problems.append(
                 "the changed paths of %s or %s could not be read"
                 % (sha[:SHA_SHOWN], landed[:SHA_SHOWN])
             )
-        elif not lease_paths:
+            continue
+        landed_paths = set().union(*landed_sets)
+        full = "+".join(fulls)
+        if not lease_paths:
             problems.append(
                 "%s changes no path, so no landed commit can stand for it; collect the tree"
                 " without --superseded-by once it holds nothing else" % sha[:SHA_SHOWN]
             )
         elif uncovered := sorted(lease_paths - landed_paths):
-            # 747e14b4.3: one shared path (a lockfile, a changelog) is too weak a proof, so the landed commit must change EVERY path the lease commit changes. The content may differ, because a duplicate whose pick conflicts is the case this waiver exists for.
+            # 747e14b4.3: one shared path (a lockfile, a changelog) is too weak a proof, so the landed commit(s) must change EVERY path the lease commit changes. The content may differ, because a duplicate whose pick conflicts is the case this waiver exists for.
             problems.append(
                 "%s does not change %s, which %s changes, so it is not a duplicate of it"
-                % (landed[:SHA_SHOWN], ", ".join(uncovered), sha[:SHA_SHOWN])
+                % (landed[: SHA_SHOWN * 2 + 1], ", ".join(uncovered), sha[:SHA_SHOWN])
             )
         else:
             named.add(sha)
             rows.append(
                 {
                     "sha": sha,
-                    "landed": full.strip(),
+                    "landed": full,
                     "lease": lease_id,
                     "reason": reason,
                     "at": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),

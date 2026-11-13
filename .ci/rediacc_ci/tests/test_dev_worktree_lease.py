@@ -2625,6 +2625,30 @@ def test_gc_superseded_by_removes_the_tree_prints_the_reason_and_the_stop_check_
     assert watch.superseded_commits(gc_repo.root, {sha}, tip) == {sha}
 
 
+def test_gc_superseded_by_accepts_a_change_split_across_two_landed_commits(gc_repo):
+    """A lease commit whose paths landed through two commits is waived by naming both with "+"; one alone is refused."""
+    tree = make_tree(gc_repo, "sup5")
+    spike.write(tree / "a.txt", "tree a\n")
+    spike.write(tree / "b.txt", "tree b\n")
+    spike.must(tree, "add", "--", "a.txt", "b.txt")
+    done = spike.git(tree, "commit", "--no-gpg-sign", "-m", "feat: two halves\n\n%s" % TRAILERS)
+    assert done.returncode == 0, done.stderr
+    sha = spike.must(tree, "rev-parse", "HEAD")
+    assert run_pin_verb(tree).returncode == 0
+    first = committed(gc_repo.root, "a.txt")
+    second = committed(gc_repo.root, "b.txt")
+    reason = "landed split across the two named commits"
+    alone = run_gc(gc_repo.root, "--write", "--id", "sup5", "--superseded-by", "%s=%s" % (sha, first), "--reason", reason)  # fmt: skip
+    assert alone.returncode != 0
+    assert tree.exists()
+    both = run_gc(gc_repo.root, "--write", "--id", "sup5", "--superseded-by", "%s=%s+%s" % (sha, first, second), "--reason", reason)  # fmt: skip
+    assert both.returncode == 0, both.stdout + both.stderr
+    assert not tree.exists()
+    tip = spike.must(gc_repo.root, "rev-parse", "HEAD")
+    watch = lease._hook_module("wl_worktrees")
+    assert watch.superseded_commits(gc_repo.root, {sha}, tip) == {sha}
+
+
 def test_gc_superseded_by_bare_sha_names_the_single_unlanded_commit(gc_repo):
     tree, _sha, landed = superseded_fixture(gc_repo, "sup2")
     done = run_gc(

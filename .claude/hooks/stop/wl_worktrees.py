@@ -318,7 +318,12 @@ def superseded_commits(tree, shas, tip):
         if (
             sha in shas
             and landed
-            and _git(tree, "merge-base", "--is-ancestor", landed + "^{commit}", tip) is not None
+            # A change split across commits records them joined with "+"; every one must still be on the tip.
+            and all(
+                _git(tree, "merge-base", "--is-ancestor", part + "^{commit}", tip) is not None
+                for part in landed.split("+")
+                if part
+            )
         ):
             out.add(sha)
     return out
