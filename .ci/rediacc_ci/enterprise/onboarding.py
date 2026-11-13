@@ -367,7 +367,8 @@ def http_status(url: str) -> int:
         with https.urlopen(https.build_request(url, method="GET"), timeout=20) as reply:
             return int(reply.status)
     except urllib.error.HTTPError as exc:
-        return int(exc.code)
+        with exc:
+            return int(exc.code)
     except OSError:
         return 0
 
@@ -396,11 +397,13 @@ def account_post(url: str, api_key: str, body: dict) -> tuple[int, dict]:
                 # The server answered and the body was cut off: the status is real, so the call is not "no answer" (review 9bfbbb2f.1).
                 return status, {}
     except urllib.error.HTTPError as exc:
-        try:
-            raw = exc.read()
-        except (OSError, http.client.HTTPException):
-            raw = b""
-        return int(exc.code), _json_body(raw)
+        # An HTTPError owns the response socket and temp file; closing it here is what stops a ResourceWarning at collection.
+        with exc:
+            try:
+                raw = exc.read()
+            except (OSError, http.client.HTTPException):
+                raw = b""
+            return int(exc.code), _json_body(raw)
     except (OSError, http.client.HTTPException):
         return 0, {}
 

@@ -786,6 +786,45 @@ def test_account_post_survives_an_incomplete_read_of_the_error_body(monkeypatch)
     assert onboarding.account_post("https://h/x", "k", {}) == (502, {})
 
 
+def test_account_post_closes_the_error_response_it_read(monkeypatch):
+    """An HTTPError owns its response; left open it is finalised later as a ResourceWarning in an unrelated test."""
+    err = urllib.error.HTTPError(
+        "https://h", 403, "no", email.message.Message(), io.BytesIO(b'{"code": "NOPE"}')
+    )
+
+    def refuse(*_a, **_k):
+        raise err
+
+    monkeypatch.setattr(onboarding.https, "urlopen", refuse)
+    assert onboarding.account_post("https://h/x", "k", {}) == (403, {"code": "NOPE"})
+    assert err.fp is None or err.fp.closed
+
+
+def test_http_status_closes_the_error_response(monkeypatch):
+    err = urllib.error.HTTPError("https://h", 404, "gone", email.message.Message(), io.BytesIO(b""))
+
+    def refuse(*_a, **_k):
+        raise err
+
+    monkeypatch.setattr(onboarding.https, "urlopen", refuse)
+    assert onboarding.http_status("https://h/x") == 404
+    assert err.fp is None or err.fp.closed
+
+
+def test_http_status_of_a_plain_answer_is_its_status(monkeypatch):
+    class Reply:
+        status = 204
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_a):
+            return False
+
+    monkeypatch.setattr(onboarding.https, "urlopen", lambda *_a, **_k: Reply())
+    assert onboarding.http_status("https://h/x") == 204
+
+
 def test_account_post_keeps_the_status_of_a_success_whose_body_was_cut_off(monkeypatch):
     """Review 9bfbbb2f.1: the server answered 200, so the call is not "no answer" (0)."""
 
