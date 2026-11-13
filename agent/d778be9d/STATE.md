@@ -1,22 +1,47 @@
-## SESSION d778be9d 2026-11-12T13:21:49Z
+## SESSION d778be9d 2026-11-13T04:10:00Z
 
-# STATE d778be9d (2026-11-12, context epoch 27 hand-over)
+# STATE d778be9d (2026-11-13, branch 1104-1, PR 605)
 
-## Big pieces
-- PR 605 (branch 1104-1): ~166 unpushed commits, all review rounds and ci:quick repairs landed. vm:check bvys7h857 running on tree with the portal scope fix (last VERIFIED earlier at 7bcb3e070fc5; the 1112n run failed only A1.2 api-tokens-scopes, since fixed in d47b337710). Before the push: run `npm run ci:quick` (last reds all fixed on the tip; cli-examples green after P2 removal; lane-budget green), then `worklist.py --review-commit d778be9d`, then `TURBO_PUSH_REASON='red-fix: ci reds and review waves' git push origin 1104-1`, then `.ci/scripts/ci/ci-trace.py --wait`.
-- PLAN-enterprise-tenants.md (QUEUE entry 68, epic c01fbf97): ticked Q0 E1 E2 E3 P1 L1 C3 C4 C5 C6 C9 C10 C12 P2(superseded by C7). Rulings in plan: R5-R8, single install path (rdc server install only), offline licence request/response + long cert (ASKED:2026-11-12T13:07Z), prerequisites-only packages + template re-apply refusing local edits + dedicated bench lab subscription (ASKED:2026-11-12T13:00Z), every plan may self-host (gates removed c167e0ddc9).
-- Production fixes landed, deploy owed: delegation renew path /account/api/v1/delegation/renew (8ddacdc79a) -> deploy account Workers eu/us/asia via the deploy skill; signer probe + template LICENSE_SIGNER binding -> deploy signer-bench-eu then deploy_bench, then V1.
+## Where things stand
+- PR 605 pushed aded1dde93..61d3034452 after ci:quick green, vm:check VERIFIED (tree f2760603d9d7) and backup-check VERIFIED. Unpushed since: renet retry test + allowlist warning, B1 tick 6f07910672 + accept 9dc6d476ca, digest org fix (account 7f5e8eb, 161ebc9, 8c8c96b), licence drill fixes 12803257ef, e6d99e32.
+- CI run 43360983417 on 61d3034452 RED on 10 jobs in three clusters, each with a lease writer.
+- Bench at a4aaa85482: proof signer 22/22 ok. region-loss broke at the company buckets step. notices and licence drills stop at the root TOTP challenge (bench root == operator account, seed REDIACC_BENCH_TOTP_SEED, profile bench-login).
 
-## Owed ticks
-- C7 c3e44c99 when its writer lands (lease agent-ae96292538e907a06): land with `./run.sh worktree land <id>`, then `--ticks`, investigate (40+ char note, two pointer kinds: commit + fileline with an extension) and plan-tick.
-- V1 49c93654 after the bench deploy and rerun.
-
-## Delegated
-- ae96292538e907a06 | #af61285a, #1ff32880 | packages/cli/src/commands/server.ts, services/server/**, utils/server-prompts.ts, machine/register.ts, services/machine/add-existing.ts, CLI locales | accept: `cd packages/cli && npx vitest run src/commands/__tests__/server src/services/server`, `npx tsc --noEmit -p packages/cli/tsconfig.json`, `npm run check:ci-cli-contract`, `npm run check:ci-i18n-hashes`, `npm run check:cli-examples`, `./rdc.sh server install --help`. Brief: C7 rdc server install|status|upgrade|backup|licence, existing-machine first, prompts, licence via POST /delegation/issue / --licence free / --cert, optional --bws-project (ours), owned-zone DNS only, recovery bundle.
+## Delegated (land with ./run.sh worktree land <id>, submodules first)
+- a048a3398b0ef32ce #63c267ff: pytest unraisable warnings, shards 1,4,5.
+- a655f768c9db114c2 #22e2ca84: renet/proxy Go reds.
+- a814243710bff3c3f #cb02f9f2: Account E2E setup red.
+- abd2f2febfee485bf #04b4a244 #a1ecc191 #000fcf57: drills answer root TOTP.
+- a4e7dc4d47bd7da49 #ffca9706: region-loss bucket step.
 
 ## Next action
-1. When C7 reports: spot-check, land, run its accept commands on the landed tree, tick C7, collect the tree.
-2. Run ci:quick + vm:check --changed; fix any red with lease writers; then review-commit and push PR 605; ci-trace --wait.
-3. After the push: `bws_env exec --profile deploy-signer -- python3 -m rediacc_ci.deploy.deploy_signer --target bench-eu`, `python3 -m rediacc_ci.ops.deploy_bench`, then `bws_env exec --profile enterprise -- ./run.sh enterprise proof signer --bench` (V1); deploy account Workers for the renew fix (deploy skill; eu/us/asia allowed by operator rulings).
-4. Next enterprise boxes: C11 (bundle/offline install, after C7), C8 (renet release via release:local then machine setup hostinger), LD1, V3, V4, T1 (acme.rediacc.cloud --unlisted, owner muhammed@rediacc.com, 10 GB, bws enterprise project must be created first), HO1 via `./rdc.sh --config eu-bench server install hostinger ...`.
-5. Open operator questions to ask when their boxes come up: a public VPS for CL3, whether the ghcr on-prem image is public (Q11).
+1. Land each writer report as it arrives: spot-check, cherry-pick submodules first, run its accept on the landed tree, commit gitlinks, mark review findings, gc.
+2. Drill writer landed: deploy_bench, run notices_drill and licence_expiry_drill under deploy-bench + bench-login, tick notices X2 and L1, then LP-bench (investigate, then --live-proof --write --tick, nothing committed between deploy and record).
+3. Region-loss writer landed: rerun region-loss --bench, then signer plan LP-bench 89d70106.
+4. CI writers landed: vm:check --changed --base 61d3034452, backup drills if backup paths, ci:quick, review-commit, push red-fix, ci-trace --wait.
+5. After merge: production deploys #5ac354e6 and #bf47a483 (+ repair_org_customer_ids) via release:local (ASKED:2026-11-12T05:57Z).
+
+## Big pieces
+- PLAN-enterprise-tenants.md (C8, C11, LD1, V3, V4, T1, HO1 open); PLAN-onprem-relicence-inbox.md (L1, LP-bench, LP-hostinger live proofs owed).
+
+## Owed ticks
+- PLAN-health-checks-local.md#85f55665
+- PLAN-proxy-cd-six-targets.md#abe9b4eb
+- PLAN-production-key-only.md#6a1ca4a4
+- PLAN-enterprise-isolation.md#2878e08d
+- PLAN-enterprise-isolation.md#a8892e0c
+- PLAN-enterprise-isolation.md#0a6e5712
+- PLAN-enterprise-isolation.md#e8b5ad6f
+- PLAN-enterprise-isolation.md#6041744e
+- PLAN-enterprise-isolation.md#f4b49503
+- PLAN-enterprise-isolation.md#0fbd62dc
+- PLAN-enterprise-isolation.md#cc583290
+- PLAN-enterprise-isolation.md#b343464b
+- PLAN-backup-program.md#0a237b2e
+- PLAN-backup-program.md#575e0098
+- PLAN-backup-program.md#07955f58 -- live-owed: code landed; bench, hostinger or fleet runs close them.
+
+## Overnight
+- Ticked: #5f6d277d B1, #9cb71958 PR red push, #e3b3ba33 Terms, #1e9cacce lineage purge, #81bed146 relicence plan.
+- Decided: org-customer-id E2E route is a test seam (kept); K1.0 vm:check rc=1 did not recur in 2 reruns, row now records output.
+- Hints: 6cf2f040, 4557399b, a039fb78, b8ae082c.
