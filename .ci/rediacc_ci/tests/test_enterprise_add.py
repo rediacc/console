@@ -18,7 +18,7 @@ import pytest
 from rediacc_ci import __main__ as entry
 from rediacc_ci import paths
 from rediacc_ci.core import run_verbs, wrangler
-from rediacc_ci.enterprise import cli, dns, onboarding, registry
+from rediacc_ci.enterprise import cli, dns, lab, onboarding, registry
 
 T0 = "2026-11-09T00:00:00Z"
 IDS = iter("c%016x" % n for n in range(1, 10_000))
@@ -748,6 +748,22 @@ def test_live_route_step_refuses_when_the_wildcard_claim_fails_before_reading_ro
         actions["route"](ctx)
 
 
+def test_live_route_step_reads_routes_through_the_lab_matcher_when_none_is_injected(monkeypatch):
+    """Review 7f868920.1: the production default is `lab.routed_worker`, bound on first use; a LabError from it names the company by id."""
+    ctx, (account, proxy), name = _route_ctx()
+    routes = {account: "account-%s" % name, proxy: "proxy-%s" % name}
+    monkeypatch.setattr(lab, "routed_worker", lambda host: routes[host])
+    actions = onboarding.live_actions(runner=None, ensure_dns=lambda _c: "ok")
+    assert actions["route"](ctx) == ""
+
+    def broken(_host):
+        raise onboarding.proof.LabError("the zone cannot be read")
+
+    monkeypatch.setattr(lab, "routed_worker", broken)
+    with pytest.raises(onboarding.OnboardingError, match="company c0123456789abcdef: the zone"):
+        actions["route"](ctx)
+
+
 def test_a_company_onboarded_before_the_route_step_reruns_only_route():
     world = World()
     out = _run(world, _req(), Recorder())
@@ -783,7 +799,6 @@ def test_live_secrets_step_without_a_provisioner_refuses_by_name():
 
 
 def test_live_provision_names_every_missing_secrets_input_at_once():
-    company = _ctx(World()).plan
     provision = onboarding.live_provision("proj", env={})
     co = types.SimpleNamespace(id="c0123456789abcdef", region="eu")
     with pytest.raises(onboarding.OnboardingError) as caught:
@@ -796,7 +811,7 @@ def test_live_provision_names_every_missing_secrets_input_at_once():
         "OBS_OTLP_CREDENTIALS_EU",
     ):
         assert name in message
-    assert company.company_id in message or "c0123456789abcdef" in message
+    assert message.startswith("company %s: " % co.id)
 
 
 class FakeAccount:
@@ -1329,3 +1344,102 @@ def test_live_deploy_step_with_no_previous_version_fails_without_a_rollback(tmp_
         actions["deploy"](ctx)
     assert not any("--rollback" in argv for _m, argv in ran)
     assert "no earlier proxy version to roll back to" in capsys.readouterr().err
+
+
+def test_live_deploy_step_with_an_unreadable_proxy_record_says_so_instead_of_no_earlier_version(
+    tmp_path, capsys
+):
+    """Review a597b802.1: a corrupt record is not a first deploy, so the run names the live unsmoked version."""
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    inner = []
+
+    def deploy(module, argv):
+        inner.append((module.rsplit(".", 1)[1], argv))
+        if "--defer-smoke" in argv:
+            with open(argv[argv.index("--record") + 1], "w", encoding="utf-8") as fh:
+                fh.write("{not json")
+        return 1 if module.endswith("deploy_account") else 0
+
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    live = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        deploy=deploy,
+        portal=_portal_ok,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+    )
+    with pytest.raises(onboarding.OnboardingError, match="deploy_account exited 1"):
+        live["deploy"](ctx)
+    err = capsys.readouterr().err
+    assert "cannot be read" in err
+    assert "no earlier proxy version" not in err
+    assert not any("--rollback" in argv for _m, argv in inner)
+
+
+def test_live_deploy_step_reports_a_failed_proxy_rollback(tmp_path, capsys):
+    """Review a597b802.2: a rollback that itself exits non-zero is named, with the version it tried."""
+    previous = "aaaaaaaa-1111-4222-8333-444444444444"
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+
+    def deploy(module, argv):
+        if "--defer-smoke" in argv:
+            with open(argv[argv.index("--record") + 1], "w", encoding="utf-8") as fh:
+                json.dump({"previous_version_id": previous}, fh)
+        if "--rollback" in argv:
+            return 3
+        return 1 if module.endswith("deploy_account") else 0
+
+    live = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        deploy=deploy,
+        portal=_portal_ok,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+    )
+    with pytest.raises(onboarding.OnboardingError, match="deploy_account exited 1"):
+        live["deploy"](ctx)
+    assert "the proxy rollback to %s exited 3" % previous in capsys.readouterr().err
+
+
+def test_live_deploy_step_removes_its_proxy_record_directory(tmp_path):
+    """Review a597b802.4: the record's scratch directory does not outlive the step."""
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    seen = []
+
+    def deploy(_module, argv):
+        seen.append(argv[argv.index("--record") + 1] if "--record" in argv else None)
+        return 0
+
+    live = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        deploy=deploy,
+        portal=_portal_ok,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+    )
+    live["deploy"](ctx)
+    records = [r for r in seen if r]
+    assert records
+    assert not os.path.exists(os.path.dirname(records[0]))
+
+
+def test_build_portal_binds_the_sitekey_stripped(tmp_path, monkeypatch):
+    """Review 324e02dd.1: the guard tests the stripped key, so the build gets the stripped key."""
+    calls = []
+
+    def call(_argv, *, cwd, env):
+        del cwd
+        calls.append(env)
+        return 0
+
+    monkeypatch.setattr(onboarding.subprocess, "call", call)
+    assert onboarding.build_portal(tmp_path, {"TURNSTILE_SITE_KEY": "  0xKEY\n"}) == 0
+    assert calls[0]["VITE_TURNSTILE_SITE_KEY"] == "0xKEY"

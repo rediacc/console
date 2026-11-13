@@ -379,7 +379,7 @@ def build_portal(tree: pathlib.Path, env: Mapping[str, str]) -> int:
     child = dict(env)
     for bind in step.binds:
         source, _, target = bind.partition(" > ")
-        child[target] = env[source]
+        child[target] = env[source].strip()
     child.update(step.env)
     return subprocess.call(
         list(step.argv), cwd=str(tree / step.cwd.removeprefix("clone:")), env=child
@@ -396,7 +396,14 @@ def roll_back_proxy(
     try:
         previous = json.loads(record.read_text(encoding="utf-8")).get("previous_version_id")
     except (OSError, ValueError, AttributeError):
-        previous = None
+        # An unreadable record is not "no earlier version": a previous one may exist and the unsmoked version stays live.
+        print(
+            "company %s: the proxy record cannot be read, so the unsmoked proxy version stays live and needs a manual rollback"
+            % plan.company_id,
+            file=sys.stderr,
+            flush=True,
+        )
+        return
     if not previous:
         print(
             "company %s: no earlier proxy version to roll back to" % plan.company_id,
@@ -706,22 +713,23 @@ def live_actions(
         if rc != 0:
             raise OnboardingError("company %s: the portal build exited %d" % (plan.company_id, rc))
         # The proxy's /v1/ready asks the account Worker's ExecutorIssuer, which a first deploy has not shipped yet, and the account deploy needs the proxy (its EXECUTOR binding): deploy the proxy, then the account, then smoke the proxy.
-        record = pathlib.Path(tempfile.mkdtemp(prefix="enterprise-proxy-")) / "proxy-record.json"
-        proxy_extra = ["--record", str(record)]
-        steps: tuple[tuple[str, Any, list[str]], ...] = (
-            ("rediacc_ci.deploy.deploy_proxy", proxy_target, ["--defer-smoke", *proxy_extra]),
-            ("rediacc_ci.deploy.deploy_account", target(account_config=account_path), []),
-            ("rediacc_ci.deploy.deploy_proxy", proxy_target, ["--smoke-only", *proxy_extra]),
-        )
-        for module, company, extra in steps:
-            rc = deploy_run(module, [*console_executor.company_argv(company), *extra])
-            if rc != 0:
-                # The deferred proxy deploy left the new version at 100% unsmoked, so a later failure puts the previous one back.
-                if module.endswith("deploy_account") or "--smoke-only" in extra:
-                    roll_back_proxy(plan, proxy_target, record, deploy_run)
-                raise OnboardingError(
-                    "company %s: %s exited %d" % (plan.company_id, module.rsplit(".", 1)[1], rc)
-                )
+        with tempfile.TemporaryDirectory(prefix="enterprise-proxy-") as scratch:
+            record = pathlib.Path(scratch) / "proxy-record.json"
+            proxy_extra = ["--record", str(record)]
+            steps: tuple[tuple[str, Any, list[str]], ...] = (
+                ("rediacc_ci.deploy.deploy_proxy", proxy_target, ["--defer-smoke", *proxy_extra]),
+                ("rediacc_ci.deploy.deploy_account", target(account_config=account_path), []),
+                ("rediacc_ci.deploy.deploy_proxy", proxy_target, ["--smoke-only", *proxy_extra]),
+            )
+            for module, company, extra in steps:
+                rc = deploy_run(module, [*console_executor.company_argv(company), *extra])
+                if rc != 0:
+                    # The deferred proxy deploy left the new version at 100% unsmoked, so a later failure puts the previous one back.
+                    if module.endswith("deploy_account") or "--smoke-only" in extra:
+                        roll_back_proxy(plan, proxy_target, record, deploy_run)
+                    raise OnboardingError(
+                        "company %s: %s exited %d" % (plan.company_id, module.rsplit(".", 1)[1], rc)
+                    )
         return ""
 
     def route(ctx: Context) -> str:
