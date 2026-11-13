@@ -5672,6 +5672,39 @@
               "subcommands": []
             }
           ]
+        },
+        {
+          "name": "import-machine",
+          "descriptionKey": "commands.config.importMachine.description",
+          "options": [
+            {
+              "flags": "--from <config>",
+              "descriptionKey": "commands.config.importMachine.optionFrom",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "commands.config.importMachine.optionDryRun",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--strategy-from-source",
+              "descriptionKey": "commands.config.importMachine.optionStrategyFromSource",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "machine",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
         }
       ]
     },

@@ -120,6 +120,10 @@ export const OPTION_KIND_OVERRIDES: Readonly<Record<string, OptionKindOverride>>
     waived:
       'a backup store id registered on the account server (such as eu-west), not a repository, machine or other contract resource',
   },
+  'config import-machine --from': {
+    waived:
+      'the name of another local config file to copy from, not a machine, repository or other contract resource of the active config',
+  },
   'repo merge --base': {
     waived:
       'a common-ancestor commit GUID for the three-way merge, not a repository ref, so FORMAT_OVERRIDES gives it format "guid" instead',

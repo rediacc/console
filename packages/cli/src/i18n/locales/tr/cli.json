@@ -1065,6 +1065,21 @@
           "description": "Geçerli SSH anahtar yapılandırmasını göster",
           "noKey": "SSH anahtarı yapılandırılmamış"
         }
+      },
+      "importMachine": {
+        "descriptionShort": "Bir makineyi depolarıyla birlikte başka bir yapılandırmadan aktar",
+        "description": "Bir makineyi başka bir yapılandırmadan etkin yapılandırmaya kopyalar: etkin yapılandırmada yoksa makine kaydını, makinede bulunan her depoyu tüm etiketleriyle ve makineye bağlı her yedekleme stratejisini. Var olan hiçbir şeyin üzerine yazılmaz. Aynı olan kayıtlara dokunulmaz, farklı olanlar reddedilir (aynı adlı ama başka GUID'li bir depo, başka adresteki bir makine gibi). Tek bir ret bile olsa hiçbir şey yazılmaz. Rapor yalnızca adları gösterir; hiçbir kimlik bilgisini, anahtarı ya da GUID'i yazdırmaz.",
+        "argMachine": "Kaynak yapılandırmadaki makine adı",
+        "optionFrom": "Kopyalanacak kaynak yapılandırma",
+        "optionDryRun": "Hiçbir şey yazmadan nelerin kopyalanacağını göster",
+        "optionStrategyFromSource": "Farklı bir yedekleme stratejisini reddetmek yerine kaynak yapılandırmadaki sürümüyle değiştir",
+        "machineMissing": "\"{{machine}}\" adlı makine kaynak yapılandırmada yok.",
+        "sameConfig": "Kaynak yapılandırma \"{{name}}\" zaten etkin yapılandırma. Hedefi --config ile seçin.",
+        "sourceMissing": "\"{{name}}\" adlı yapılandırma bulunamadı.",
+        "targetMissing": "Etkin yapılandırma \"{{name}}\" bulunamadı.",
+        "refused": "{{count}} kayıt kaynak yapılandırmadan farklı; hiçbir şey yazılmadı.",
+        "summary": "\"{{machine}}\" makinesi için \"{{from}}\" yapılandırmasından {{count}} değişiklik kopyalandı.",
+        "summaryDryRun": "\"{{machine}}\" makinesi için \"{{from}}\" yapılandırmasından {{count}} değişiklik kopyalanacak."
       }
     },
     "credits": {

@@ -4387,6 +4387,72 @@
     {
       "path": [
         "config",
+        "import-machine"
+      ],
+      "pathKey": "config import-machine",
+      "domain": "config",
+      "group": "TOOLS",
+      "plane": "config",
+      "descriptionKey": "commands.config.importMachine.description",
+      "label": "Copy one machine from another config into the active config: the machine entry when the active config lacks it, every repository placed on the machine with every tag, and each backup strategy bound to the machine. Nothing that already exists is overwritten. Equal entries are left alone, and a differing entry (a same-name repository with another GUID, a machine at another address) is refused. Any refusal writes nothing. The report names entries only and never prints a credential, key or GUID.",
+      "options": [
+        {
+          "flags": "--from <config>",
+          "long": "from",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "tier": "common",
+          "descriptionKey": "commands.config.importMachine.optionFrom",
+          "label": "Config to copy from"
+        },
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.importMachine.optionDryRun",
+          "label": "Show what would be copied without writing"
+        },
+        {
+          "flags": "--strategy-from-source",
+          "long": "strategy-from-source",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.importMachine.optionStrategyFromSource",
+          "label": "Replace a differing backup strategy with the source config's version instead of refusing it"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "machine",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.config.importMachine.argMachine",
+          "label": "Machine name in the source config"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "machine",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "config",
         "init"
       ],
       "pathKey": "config init",

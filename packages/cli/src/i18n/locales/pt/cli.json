@@ -1065,6 +1065,21 @@
           "description": "Mostrar a configuração actual de chave SSH",
           "noKey": "Nenhuma chave SSH configurada"
         }
+      },
+      "importMachine": {
+        "descriptionShort": "Trazer uma máquina e seus repositórios de outra configuração",
+        "description": "Copia uma máquina de outra configuração para a configuração ativa: a entrada da máquina quando a ativa não a tem, cada repositório alocado na máquina com todas as tags e cada estratégia de backup vinculada a ela. Nada que já existe é sobrescrito. Entradas iguais ficam como estão, e uma entrada diferente é recusada (um repositório de mesmo nome com outro GUID, uma máquina em outro endereço). Se houver qualquer recusa, nada é gravado. O relatório mostra apenas nomes e nunca exibe credenciais, chaves ou GUIDs.",
+        "argMachine": "Nome da máquina na configuração de origem",
+        "optionFrom": "Configuração de onde copiar",
+        "optionDryRun": "Mostrar o que seria copiado sem gravar nada",
+        "optionStrategyFromSource": "Substituir uma estratégia de backup diferente pela versão da configuração de origem em vez de recusá-la",
+        "machineMissing": "A máquina \"{{machine}}\" não está na configuração de origem.",
+        "sameConfig": "A configuração de origem \"{{name}}\" é a configuração ativa. Escolha o destino com --config.",
+        "sourceMissing": "A configuração \"{{name}}\" não existe.",
+        "targetMissing": "A configuração ativa \"{{name}}\" não existe.",
+        "refused": "{{count}} entradas diferem da configuração de origem; nada foi gravado.",
+        "summary": "{{count}} alterações copiadas para a máquina \"{{machine}}\" a partir da configuração \"{{from}}\".",
+        "summaryDryRun": "{{count}} alterações seriam copiadas para a máquina \"{{machine}}\" a partir da configuração \"{{from}}\"."
       }
     },
     "credits": {

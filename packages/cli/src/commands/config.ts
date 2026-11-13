@@ -14,6 +14,7 @@ import { registerCurrentCommand } from './config/current.js';
 import { registerEditCommands } from './config/edit.js';
 import { registerFieldCommands } from './config/field.js';
 import { registerAccessCommands } from './config-access.js';
+import { registerImportMachineCommand } from './config-import-machine.js';
 import { registerPruneCommand as registerConfigPruneCommand } from './config-prune-cmd.js';
 import { type ReconcileCliOptions, runReconcile } from './config-reconcile.js';
 import { registerRemoteCommands, rotateCek } from './config-remote.js';
@@ -535,4 +536,5 @@ ${t('help.examples')}
   registerFieldCommands(config, program);
   registerEditCommands(config, program);
   registerAuditCommands(config, program);
+  registerImportMachineCommand(config, program);
 }

@@ -1065,6 +1065,21 @@
           "description": "Aktuelle SSH-Schlüsselkonfiguration anzeigen",
           "noKey": "Kein SSH-Schlüssel konfiguriert"
         }
+      },
+      "importMachine": {
+        "descriptionShort": "Eine Maschine samt Repositories aus einer anderen Konfiguration übernehmen",
+        "description": "Übernimmt eine Maschine aus einer anderen Konfiguration in die aktive: den Maschineneintrag, falls er in der aktiven Konfiguration fehlt, jedes Repository auf dieser Maschine mit allen Tags und jede an die Maschine gebundene Backup-Strategie. Vorhandene Einträge werden nie überschrieben. Gleiche Einträge bleiben unverändert, abweichende werden abgelehnt (etwa ein gleichnamiges Repository mit anderer GUID oder eine Maschine unter anderer Adresse). Bei einer Ablehnung wird nichts geschrieben. Der Bericht nennt nur Namen und gibt nie Zugangsdaten, Schlüssel oder GUIDs aus.",
+        "argMachine": "Name der Maschine in der Quellkonfiguration",
+        "optionFrom": "Konfiguration, aus der übernommen wird",
+        "optionDryRun": "Nur anzeigen, was übernommen würde, ohne zu schreiben",
+        "optionStrategyFromSource": "Eine abweichende Backup-Strategie durch die Fassung der Quellkonfiguration ersetzen, statt sie abzulehnen",
+        "machineMissing": "Die Maschine \"{{machine}}\" ist in der Quellkonfiguration nicht vorhanden.",
+        "sameConfig": "Die Quellkonfiguration \"{{name}}\" ist die aktive Konfiguration. Wählen Sie das Ziel mit --config.",
+        "sourceMissing": "Die Konfiguration \"{{name}}\" existiert nicht.",
+        "targetMissing": "Die aktive Konfiguration \"{{name}}\" existiert nicht.",
+        "refused": "{{count}} Einträge weichen von der Quellkonfiguration ab; es wurde nichts geschrieben.",
+        "summary": "{{count}} Änderungen für Maschine \"{{machine}}\" aus Konfiguration \"{{from}}\" übernommen.",
+        "summaryDryRun": "{{count}} Änderungen für Maschine \"{{machine}}\" aus Konfiguration \"{{from}}\" würden übernommen."
       }
     },
     "credits": {

@@ -7,7 +7,7 @@ order: 2
 language: ko
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ko/cli.json
-sourceHash: "0d66fc5749e8dc8b"
+sourceHash: "b093d951a6a809d9"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -529,6 +529,22 @@ rdc config access ranges [options]
 ```bash
 rdc config access list
 ```
+
+<a id="cli-local-config-import-machine"></a>
+### 1.18 import-machine
+
+{{t:cli.commands.config.importMachine.description}}
+
+```bash
+rdc config import-machine <machine> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--from <config>` | {{t:cli.commands.config.importMachine.optionFrom}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--dry-run` | {{t:cli.commands.config.importMachine.optionDryRun}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--strategy-from-source` | {{t:cli.commands.config.importMachine.optionStrategyFromSource}} | {{t:cli.docs.optionLabels.no}} | - |
+
 
 ---
 

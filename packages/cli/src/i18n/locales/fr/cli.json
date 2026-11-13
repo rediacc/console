@@ -1065,6 +1065,21 @@
           "description": "Afficher la configuration actuelle de la clé SSH",
           "noKey": "Aucune clé SSH configurée"
         }
+      },
+      "importMachine": {
+        "descriptionShort": "Reprendre une machine et ses dépôts depuis une autre configuration",
+        "description": "Copie une machine d'une autre configuration vers la configuration active : l'entrée de la machine si la configuration active ne l'a pas, chaque dépôt placé sur cette machine avec toutes ses étiquettes, et chaque stratégie de sauvegarde liée à la machine. Rien de ce qui existe déjà n'est écrasé. Les entrées identiques restent telles quelles, et une entrée différente est refusée (un dépôt du même nom avec un autre GUID, une machine à une autre adresse). Au moindre refus, rien n'est écrit. Le rapport ne cite que des noms et n'affiche jamais d'identifiant, de clé ou de GUID.",
+        "argMachine": "Nom de la machine dans la configuration source",
+        "optionFrom": "Configuration à partir de laquelle copier",
+        "optionDryRun": "Afficher ce qui serait copié sans rien écrire",
+        "optionStrategyFromSource": "Remplacer une stratégie de sauvegarde différente par la version de la configuration source au lieu de la refuser",
+        "machineMissing": "La machine \"{{machine}}\" ne figure pas dans la configuration source.",
+        "sameConfig": "La configuration source \"{{name}}\" est la configuration active. Choisissez la cible avec --config.",
+        "sourceMissing": "La configuration \"{{name}}\" n'existe pas.",
+        "targetMissing": "La configuration active \"{{name}}\" n'existe pas.",
+        "refused": "{{count}} entrées diffèrent de la configuration source ; rien n'a été écrit.",
+        "summary": "{{count}} modifications copiées pour la machine \"{{machine}}\" depuis la configuration \"{{from}}\".",
+        "summaryDryRun": "{{count}} modifications seraient copiées pour la machine \"{{machine}}\" depuis la configuration \"{{from}}\"."
       }
     },
     "credits": {

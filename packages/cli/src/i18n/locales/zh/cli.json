@@ -1065,6 +1065,21 @@
           "description": "显示当前 SSH 密钥配置",
           "noKey": "未配置 SSH 密钥"
         }
+      },
+      "importMachine": {
+        "descriptionShort": "从另一个配置导入机器及其仓库",
+        "description": "把一台机器从另一个配置复制到当前配置：当前配置中没有的机器条目、该机器上的每个仓库及其全部标签，以及绑定到该机器的每个备份策略。已有内容一律不覆盖。相同的条目保持不变，不同的条目会被拒绝（同名但 GUID 不同的仓库、地址不同的机器）。只要有一项被拒绝，就不写入任何内容。报告只列出名称，绝不输出凭据、密钥或 GUID。",
+        "argMachine": "源配置中的机器名称",
+        "optionFrom": "要从中复制的配置",
+        "optionDryRun": "只显示将要复制的内容，不写入",
+        "optionStrategyFromSource": "遇到不同的备份策略时，用源配置中的版本替换，而不是拒绝",
+        "machineMissing": "源配置中没有机器 \"{{machine}}\"。",
+        "sameConfig": "源配置 \"{{name}}\" 就是当前配置。请用 --config 选择目标配置。",
+        "sourceMissing": "配置 \"{{name}}\" 不存在。",
+        "targetMissing": "当前配置 \"{{name}}\" 不存在。",
+        "refused": "有 {{count}} 个条目与源配置不同，未写入任何内容。",
+        "summary": "已从配置 \"{{from}}\" 为机器 \"{{machine}}\" 复制 {{count}} 项变更。",
+        "summaryDryRun": "将从配置 \"{{from}}\" 为机器 \"{{machine}}\" 复制 {{count}} 项变更。"
       }
     },
     "credits": {

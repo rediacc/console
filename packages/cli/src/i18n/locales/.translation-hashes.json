@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2821,
-    "sourceCommit": "781a29e2f22e04456e268a82439f0297443a0139"
+    "keyCount": 2834,
+    "sourceCommit": "eca9802505385dc6a4c6ef9c6ddb047df4dbd7c8"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -578,6 +578,19 @@
     "commands.config.field.unset.optionCurrent": "5c0b66dd",
     "commands.config.field.unset.optionPointer": "07c80cc7",
     "commands.config.field.unset.success": "f65e4cd3",
+    "commands.config.importMachine.argMachine": "1a720d53",
+    "commands.config.importMachine.description": "52b69afd",
+    "commands.config.importMachine.descriptionShort": "a6d9a3f1",
+    "commands.config.importMachine.machineMissing": "305b7df4",
+    "commands.config.importMachine.optionDryRun": "7d3e4bde",
+    "commands.config.importMachine.optionFrom": "4d13b124",
+    "commands.config.importMachine.optionStrategyFromSource": "a53eb433",
+    "commands.config.importMachine.refused": "554c8926",
+    "commands.config.importMachine.sameConfig": "f8663a8a",
+    "commands.config.importMachine.sourceMissing": "3ff8bcba",
+    "commands.config.importMachine.summary": "11e8579a",
+    "commands.config.importMachine.summaryDryRun": "56fc66ab",
+    "commands.config.importMachine.targetMissing": "122d8e90",
     "commands.config.infra.push.certCacheUploaded": "e7359f2c",
     "commands.config.infra.push.dnsCreated": "012f6aa8",
     "commands.config.infra.push.dnsError": "21243d11",

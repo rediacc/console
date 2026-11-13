@@ -1065,6 +1065,21 @@
           "description": "Kuva praegune SSH-võtme konfiguratsioon",
           "noKey": "SSH-võtit ei ole seadistatud"
         }
+      },
+      "importMachine": {
+        "descriptionShort": "Too masin koos hoidlatega teisest konfiguratsioonist üle",
+        "description": "Kopeerib ühe masina teisest konfiguratsioonist aktiivsesse: masina kirje, kui aktiivses konfiguratsioonis seda pole, iga sellel masinal asuva hoidla kõigi siltidega ja iga masinaga seotud varundusstrateegia. Olemasolevat ei kirjutata kunagi üle. Samasugused kirjed jäävad puutumata, erinevad lükatakse tagasi (sama nimega hoidla teise GUID-iga, masin teisel aadressil). Kui midagi lükatakse tagasi, ei kirjutata midagi. Aruanne näitab ainult nimesid ega trüki kunagi välja mandaate, võtmeid ega GUID-e.",
+        "argMachine": "Masina nimi lähtekonfiguratsioonis",
+        "optionFrom": "Konfiguratsioon, millest kopeerida",
+        "optionDryRun": "Näita, mida kopeeritaks, ilma midagi kirjutamata",
+        "optionStrategyFromSource": "Asenda erinev varundusstrateegia lähtekonfiguratsiooni versiooniga, selle asemel et see tagasi lükata",
+        "machineMissing": "Masinat \"{{machine}}\" lähtekonfiguratsioonis ei ole.",
+        "sameConfig": "Lähtekonfiguratsioon \"{{name}}\" on aktiivne konfiguratsioon. Vali sihtkoht suvandiga --config.",
+        "sourceMissing": "Konfiguratsiooni \"{{name}}\" ei ole olemas.",
+        "targetMissing": "Aktiivset konfiguratsiooni \"{{name}}\" ei ole olemas.",
+        "refused": "{{count}} kirjet erineb lähtekonfiguratsioonist; midagi ei kirjutatud.",
+        "summary": "Masina \"{{machine}}\" jaoks kopeeriti konfiguratsioonist \"{{from}}\" {{count}} muudatust.",
+        "summaryDryRun": "Masina \"{{machine}}\" jaoks kopeeritaks konfiguratsioonist \"{{from}}\" {{count}} muudatust."
       }
     },
     "credits": {
