@@ -291,6 +291,18 @@ def test_fetch_maps_every_unreadable_answer_to_cf_error(monkeypatch):
         assert label
 
 
+def test_an_empty_2xx_delete_answer_is_success(monkeypatch):
+    """A Worker custom-domain DELETE answers 200 with an empty body (live 2026-11-13: the first cf_retire run stopped on it)."""
+    _patch_urlopen(monkeypatch, lambda: _Resp(b""))
+    assert cfl.request("DELETE", "/accounts/a/workers/domains/d", TOKEN)["success"] is True
+
+
+def test_control_an_empty_get_answer_is_still_a_cf_error(monkeypatch):
+    _patch_urlopen(monkeypatch, lambda: _Resp(b""))
+    with pytest.raises(cfl.CfError, match="non-JSON"):
+        cfl.fetch("/p", TOKEN)
+
+
 def test_a_malformed_wrangler_toml_is_a_cf_error_not_a_traceback(tmp_path):
     (tmp_path / "workers" / "x").mkdir(parents=True)
     (tmp_path / "workers" / "x" / "wrangler.toml").write_text("name = ")

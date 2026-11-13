@@ -66,6 +66,7 @@ def request(method: str, path: str, token: str, jurisdiction: str | None = None)
         req = https.build_request(CF_API_BASE + path, headers=headers, method=method)
         with https.urlopen(req, timeout=30) as resp:
             raw = resp.read()
+            status = getattr(resp, "status", 200)
     except urllib.error.HTTPError as exc:
         try:
             raw = exc.read()
@@ -78,6 +79,10 @@ def request(method: str, path: str, token: str, jurisdiction: str | None = None)
     except OSError as exc:
         # URLError, a timeout and a connection reset while reading the body are all OSErrors.
         raise CfError("%s %s: %s" % (method, path, exc)) from None
+    else:
+        # Some DELETEs (a Worker custom domain) answer 200 with an empty body; that is success, not a garbled answer.
+        if method == "DELETE" and 200 <= status < 300 and not raw.strip():
+            return {"success": True, "result": None}
     try:
         body = json.loads(raw)
     except ValueError:
