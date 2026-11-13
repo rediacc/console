@@ -6,6 +6,7 @@ from datetime import UTC, datetime
 
 import pytest
 
+from rediacc_ci.ops import bench_production
 from rediacc_ci.ops import notices_drill as nd
 
 SEED = "JBSWY3DPEHPK3PXP"
@@ -644,3 +645,26 @@ def test_the_reexec_binds_both_profiles(monkeypatch):
 def test_the_reexec_is_skipped_when_both_profiles_are_bound(monkeypatch):
     monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-bench,bench-login")
     assert nd._reexec_under_profile([]) is None
+
+
+def test_cleanup_of_a_declared_production_subscription_exits_1_and_deletes_nothing(
+    tmp_path, capsys, monkeypatch
+):
+    declared = [bench_production.Protected(SUB, "hostinger", "production backups")]
+    monkeypatch.setattr(bench_production, "load", lambda *_a: declared)
+    fake, rc, out = drill(tmp_path, capsys)
+    assert rc == 1
+    assert fake.deleted == []
+    assert "STEP 12 cleanup rc=1" in out.out
+    assert "declared production subscription" in out.out
+    assert SUB in out.out
+
+
+def test_cleanup_with_an_undeclared_subscription_still_deletes(tmp_path, capsys, monkeypatch):
+    other = "99999999-9999-4999-8999-999999999999"
+    monkeypatch.setattr(
+        bench_production, "load", lambda *_a: [bench_production.Protected(other, "m", "r")]
+    )
+    fake, rc, out = drill(tmp_path, capsys)
+    assert rc == 0, out.err
+    assert any(d.split()[2] == "subscriptions" for d in fake.deleted)

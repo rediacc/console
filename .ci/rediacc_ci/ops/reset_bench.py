@@ -6,6 +6,8 @@ DESTRUCTIVE. It drops every table of the bench D1 database (`account-bench`) and
 
 Auth is `cf_auth`. As in the bash, the credential is destroyed on the way out whether the run succeeded or not, a pre-supplied `CF_MANAGEMENT_TOKEN` included (the scoped token is treated as single-use for this script).
 
+PRODUCTION GUARD. While `.ci/config/bench-production.json` declares a subscription, every mode exits 2 before the profile re-exec and before any credential is read; with the declaration present, a second check after the token is minted refuses when the live D1 holds `backup_manifests` rows of a declared subscription (`bench_production`). There is no override flag.
+
 RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in `tests/test_ops_reset_bench.py` that fails on the bash behaviour).
 
   1. THE R2 WIPE USES THE S3 API, AND A FAILED LISTING IS A FAILURE. The listing was `curl -sS <CF REST .../r2/buckets/<b>/objects> 2>/dev/null || echo '{"result":[]}'` with jq errors discarded. Run live on 2026-10-01 that endpoint answers `Authentication error` to the minted management token (it carries no R2 permission group, and the REST API serves no object listing), so the bash read EVERY run as "Bucket is already empty (or listing API not available -- continuing)" and ended "bench has been reset" with the bucket untouched. The port lists and deletes through the S3-compatible endpoint (ListObjectsV2 with continuation tokens, then DELETE per key) signed with `CLOUDFLARE_R2_ENDPOINT` / `CLOUDFLARE_R2_ACCESS_KEY_ID` / `CLOUDFLARE_R2_SECRET_ACCESS_KEY` (bound by the reset-bench profile, which the run re-executes under when it is not already bound), which are checked before anything is wiped; the credentials travel on curl's stdin, not argv. Any non-200 page stops the run.
@@ -32,7 +34,7 @@ import urllib.parse
 from rediacc_ci import log, paths
 from rediacc_ci.core import wrangler
 from rediacc_ci.deploy import set_account_worker_secrets
-from rediacc_ci.ops import bench_preflight, cf_auth
+from rediacc_ci.ops import bench_preflight, bench_production, cf_auth
 
 ACCOUNT_ID = cf_auth.DEFAULT_ACCOUNT_ID
 # The database, its id and the bucket come from wrangler.bench.toml (`bench_preflight.bench_names`), the one declaration a repoint changes; a literal here read a stale database id.
@@ -104,6 +106,17 @@ def _query(auth: cf_auth.Auth, sql: str) -> dict:
         return cf_auth.curl_json("POST", url, auth.headers, json.dumps({"sql": sql}), flags="-sS")
     except cf_auth.CfAuthError as exc:
         raise ResetError(str(exc)) from None
+
+
+def _rows(auth: cf_auth.Auth, sql: str) -> list[dict]:
+    """The result rows of one D1 read; ResetError on a failed query or an unexpected shape."""
+    answer = _query(auth, sql)
+    if answer.get("success") is not True:
+        raise ResetError("D1 query failed")
+    try:
+        return list(answer["result"][0]["results"])
+    except (KeyError, IndexError, TypeError):
+        raise ResetError("D1 query failed: unexpected response shape") from None
 
 
 REFERENCES = re.compile(r'REFERENCES\s+[`"\[]?([A-Za-z0-9_]+)', re.IGNORECASE)
@@ -325,6 +338,16 @@ def main(argv: list[str]) -> int:
             log.error("Run with --help for usage.")
             return 2
 
+    # The production guard runs before the profile re-exec and before any credential is read; there is no override flag.
+    try:
+        protected = bench_production.load()
+        refusal = bench_production.reset_refusal(protected)
+    except bench_production.ProductionRefusalError as exc:
+        refusal = str(exc)
+    if refusal:
+        log.error(refusal)
+        return bench_production.REFUSAL_EXIT
+
     for cmd in ("curl", "npx"):
         if shutil.which(cmd) is None:
             log.error("Required command '%s' is not available" % cmd)
@@ -350,6 +373,13 @@ def main(argv: list[str]) -> int:
     try:
         env = cf_auth.wrangler_env(auth, ACCOUNT_ID, scrub_global_key=True)
         cf_auth.await_propagation(auth)
+        try:
+            held = bench_production.d1_refusal(lambda sql: _rows(auth, sql), protected)
+        except (ResetError, bench_production.ProductionRefusalError) as exc:
+            held = "the bench production D1 check could not run: %s" % exc
+        if held:
+            log.error(held)
+            return bench_production.REFUSAL_EXIT
         if not assume_yes:
             print()
             log.warn("About to wipe the bench environment:")

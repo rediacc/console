@@ -1,8 +1,10 @@
 """reset_bench reads its bucket, jurisdiction and database id from wrangler.bench.toml (review finding 6826f345.1)."""
 
+from typing import cast
+
 import pytest
 
-from rediacc_ci.ops import bench_preflight, reset_bench
+from rediacc_ci.ops import bench_preflight, cf_auth, reset_bench
 
 
 def _names(**over) -> bench_preflight.BenchNames:
@@ -56,11 +58,11 @@ def test_the_query_targets_the_database_id_of_the_toml(monkeypatch):
 
     monkeypatch.setattr(bench_preflight, "bench_names", lambda *_a: _names())
     monkeypatch.setattr(reset_bench.cf_auth, "curl_json", fake_curl)
-    reset_bench._query(_Auth(), "SELECT 1")
+    reset_bench._query(cast("cf_auth.Auth", _Auth()), "SELECT 1")
     assert seen["url"].endswith("/d1/database/db-id-1/query")
 
 
 def test_a_toml_without_a_database_id_refuses_the_query(monkeypatch):
     monkeypatch.setattr(bench_preflight, "bench_names", lambda *_a: _names(database_id=""))
     with pytest.raises(reset_bench.ResetError, match="database_id"):
-        reset_bench._query(_Auth(), "SELECT 1")
+        reset_bench._query(cast("cf_auth.Auth", _Auth()), "SELECT 1")

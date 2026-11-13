@@ -39,7 +39,7 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from rediacc_ci import paths
-from rediacc_ci.ops import deploy_bench
+from rediacc_ci.ops import bench_production, deploy_bench
 from rediacc_ci.ops import free_to_registered as ftr
 from rediacc_ci.ops.free_to_registered import (
     API,
@@ -283,7 +283,7 @@ NO_USER_ID = "00000000-0000-0000-0000-000000000000"
 
 
 def cleanup_notices(email: str, planted: Planted, rows: Rows, log: Callable[[str], None]) -> None:
-    """Delete the notice-side rows of `email`'s user. DrillError when any is still present."""
+    """Delete the notice-side rows of `email`'s user. DrillError when any is still present. ProductionRefusalError, before any delete, when one of the user's subscriptions is declared in .ci/config/bench-production.json."""
     lit = sql_literal(email)
     found = rows(q("SELECT id FROM users WHERE email = $e", e=lit))
     if not found:
@@ -297,6 +297,7 @@ def cleanup_notices(email: str, planted: Planted, rows: Rows, log: Callable[[str
         log("no user row for the address; reminder-log and planted event rows deleted")
         if left:
             raise DrillError("reminder-log or planted event rows remain after the delete")
+    plan: list[tuple[str, list[str]]] = []
     for user in found:
         user_id = str(user["id"])
         if not UUID.match(user_id):
@@ -307,6 +308,10 @@ def cleanup_notices(email: str, planted: Planted, rows: Rows, log: Callable[[str
                 q("SELECT id FROM subscriptions WHERE customer_id = $u", u=sql_literal(user_id))
             )
         ]
+        plan.append((user_id, subs))
+    # Every subscription is checked against the production declaration before the first delete.
+    bench_production.refuse_ids([s for _u, subs in plan for s in subs])
+    for user_id, subs in plan:
         for sql in notice_cleanup_sql(email, user_id, subs, planted.event_ids):
             rows(sql)
         left = rows(q("SELECT id FROM account_notices WHERE user_id = $u", u=sql_literal(user_id)))
@@ -720,6 +725,11 @@ def run(
             ):
                 try:
                     action()
+                except bench_production.ProductionRefusalError as exc:
+                    # A declared production subscription: nothing more is deleted, the user step included.
+                    crc = 1
+                    notes.append("%s: %s" % (label, exc))
+                    break
                 except DrillError as exc:
                     crc = 1
                     notes.append("%s: %s" % (label, exc))

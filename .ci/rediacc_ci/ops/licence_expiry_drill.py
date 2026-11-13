@@ -37,7 +37,7 @@ from datetime import UTC, datetime, timedelta
 from typing import TYPE_CHECKING
 
 from rediacc_ci import paths
-from rediacc_ci.ops import deploy_bench
+from rediacc_ci.ops import bench_production, deploy_bench
 from rediacc_ci.ops import free_to_registered as ftr
 from rediacc_ci.ops.free_to_registered import (
     API,
@@ -221,11 +221,12 @@ def cleanup_licence(
     rows: Rows,
     log: Callable[[str], None],
 ) -> None:
-    """Delete the cert, notice, reminder-log and sales-mail rows of `email`'s user. DrillError when any is still present."""
+    """Delete the cert, notice, reminder-log and sales-mail rows of `email`'s user. DrillError when any is still present. ProductionRefusalError, before any delete, when one of the user's subscriptions is declared in .ci/config/bench-production.json."""
     found = rows(q("SELECT id FROM users WHERE email = $e", e=sql_literal(email)))
     targets: list[tuple[str, str | None]] = [(str(u["id"]), None) for u in found] or [
         (NO_USER_ID, "no user row")
     ]
+    plan: list[tuple[str, str | None, list[str]]] = []
     for user_id, note in targets:
         if not UUID.match(user_id):
             raise DrillError("refusing a non-UUID user id %r" % user_id)
@@ -239,6 +240,10 @@ def cleanup_licence(
             if note is None
             else []
         )
+        plan.append((user_id, note, subs))
+    # Every subscription is checked against the production declaration before the first delete.
+    bench_production.refuse_ids([s for _u, _n, subs in plan for s in subs])
+    for user_id, note, subs in plan:
         for sql in cleanup_sql(email, sales, user_id, subs, planted, since):
             rows(sql)
         sub_list = ", ".join(sql_literal(s) for s in subs) or "''"
@@ -601,6 +606,11 @@ def run(
             ):
                 try:
                     action()
+                except bench_production.ProductionRefusalError as exc:
+                    # A declared production subscription: nothing more is deleted, the user step included.
+                    crc = 1
+                    notes.append("%s: %s" % (label, exc))
+                    break
                 except DrillError as exc:
                     crc = 1
                     notes.append("%s: %s" % (label, exc))

@@ -5,6 +5,7 @@ from datetime import UTC, datetime
 
 import pytest
 
+from rediacc_ci.ops import bench_production
 from rediacc_ci.ops import licence_expiry_drill as led
 
 SEED = "JBSWY3DPEHPK3PXP"
@@ -451,3 +452,26 @@ def test_the_reexec_binds_both_profiles(monkeypatch):
 def test_the_reexec_is_skipped_when_both_profiles_are_bound(monkeypatch):
     monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-bench,bench-login")
     assert led._reexec_under_profile([]) is None
+
+
+def test_cleanup_of_a_declared_production_subscription_exits_1_and_deletes_nothing(
+    capsys, monkeypatch
+):
+    declared = [bench_production.Protected(SUB, "hostinger", "production backups")]
+    monkeypatch.setattr(bench_production, "load", lambda *_a: declared)
+    fake, rc, out = drill(capsys)
+    assert rc == 1
+    assert fake.deleted == []
+    assert "STEP 11 cleanup rc=1" in out.out
+    assert "declared production subscription" in out.out
+    assert SUB in out.out
+
+
+def test_cleanup_with_an_undeclared_subscription_still_deletes(capsys, monkeypatch):
+    other = "99999999-9999-4999-8999-999999999999"
+    monkeypatch.setattr(
+        bench_production, "load", lambda *_a: [bench_production.Protected(other, "m", "r")]
+    )
+    fake, rc, out = drill(capsys)
+    assert rc == 0, out.err
+    assert any("FROM subscriptions" in d for d in fake.deleted)
