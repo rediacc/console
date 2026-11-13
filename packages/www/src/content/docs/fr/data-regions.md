@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 3
 language: fr
-sourceHash: "05afa82e66e34693"
-sourceCommit: "f9c980842b182e644eb84eb1d37e394baf60f7a5"
+sourceHash: "9efeb1e2b1f9c8db"
+sourceCommit: "c477e296238c19495f4a07ef6c5a62f15e942f90"
 ---
 
 Lorsque vous créez un compte Rediacc, vous choisissez une région de données. Toutes vos données restent dans cette région. Ce choix est permanent et ne peut pas être modifié après l'inscription. Aucune migration n'est possible. Choisissez votre région en fonction de l'endroit où vos données doivent résider légalement, et non en fonction de l'emplacement actuel de vos serveurs.
@@ -30,7 +30,7 @@ Le produit fonctionne sur ces domaines `rediacc.cloud`. Toute la documentation e
 
 ## Ce qui reste dans votre région
 
-Ces types de données sont stockés et traités dans la région que vous avez choisie (voir plus bas l'infrastructure régionale pour ce qui est garanti) :
+Ces types de données sont stockés et traités dans la région que vous avez choisie, sauf que l'e-mail transactionnel pour l'Asie-Pacifique passe par le point de terminaison de l'UE (voir plus bas l'infrastructure régionale pour ce qui est garanti) :
 
 - **Données de compte** : email, nom, organisation, appartenances aux équipes
 - **Enregistrements de facturation et d'abonnement** : plan, activations, émissions de licences

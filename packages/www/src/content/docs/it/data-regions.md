@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 3
 language: it
-sourceHash: "05afa82e66e34693"
-sourceCommit: "f9c980842b182e644eb84eb1d37e394baf60f7a5"
+sourceHash: "9efeb1e2b1f9c8db"
+sourceCommit: "c477e296238c19495f4a07ef6c5a62f15e942f90"
 ---
 
 Quando crei un account Rediacc, scegli una regione dei dati. Tutti i tuoi dati rimangono in quella regione. Questa scelta è permanente e non può essere modificata dopo la registrazione. Non esiste un percorso di migrazione. Scegli in base a dove i tuoi dati devono risiedere legalmente, non dove si trovano i tuoi server oggi.
@@ -30,7 +30,7 @@ Alla registrazione il selettore suggerisce una regione in base alla tua posizion
 
 ## Cosa Rimane nella Tua Regione
 
-Questi tipi di dati sono archiviati ed elaborati nella regione scelta (per ciò che è garantito, vedi più sotto l'infrastruttura regionale):
+Questi tipi di dati sono archiviati ed elaborati nella regione scelta, tranne che le email transazionali per Asia-Pacifico vengono inviate tramite l'endpoint UE (per ciò che è garantito, vedi più sotto l'infrastruttura regionale):
 
 - **Dati dell'account**: email, nome, organizzazione, appartenenza ai team
 - **Registrazioni di fatturazione e abbonamento**: piano, attivazioni, emissioni di licenze

@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 3
 language: tr
-sourceHash: "05afa82e66e34693"
-sourceCommit: "f9c980842b182e644eb84eb1d37e394baf60f7a5"
+sourceHash: "9efeb1e2b1f9c8db"
+sourceCommit: "c477e296238c19495f4a07ef6c5a62f15e942f90"
 ---
 
 Bir Rediacc hesabı oluşturduğunuzda bir veri bölgesi seçersiniz. Tüm verileriniz o bölgede kalır. Bu seçim kalıcıdır ve kayıt sonrasında değiştirilemez. Geçiş yolu yoktur. Verilerinizin yasal olarak nerede bulunması gerektiğine göre seçin, bugün sunucularınızın nerede olduğuna göre değil.
@@ -30,7 +30,7 @@ Kayıt sırasında seçici, konumunuza göre bir bölge önerir; onaylayabilir v
 
 ## Bölgenizde Kalan Veriler
 
-Bu veri türleri seçtiğiniz bölgede depolanır ve işlenir (nelerin garanti edildiği için aşağıdaki bölgesel altyapı bölümüne bakın):
+Bu veri türleri seçtiğiniz bölgede depolanır ve işlenir; yalnızca Asya Pasifik işlem e-postaları AB uç noktası üzerinden gönderilir (nelerin garanti edildiği için aşağıdaki bölgesel altyapı bölümüne bakın):
 
 - **Hesap verileri**: e-posta, ad, organizasyon, takım üyelikleri
 - **Faturalama ve abonelik kayıtları**: plan, aktivasyonlar, lisans düzenlemeleri

@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 5
 language: ko
-sourceHash: "7216d032580dd4e1"
-sourceCommit: "48fd8400c9f2754ab1653f0247fb0d77a1835c5b"
+sourceHash: "6b60637180f58cc2"
+sourceCommit: "c477e296238c19495f4a07ef6c5a62f15e942f90"
 ---
 
 Rediacc는 자체 인프라에서 완전히 실행할 수 있습니다. 독립 실행형 Docker 이미지에는 계정 서버, 웹 포털, 마케팅 사이트, CLI 배포 엔드포인트가 포함되어 있습니다. Rediacc의 호스팅 서비스에 대한 외부 의존성은 필요하지 않습니다.
@@ -76,7 +76,7 @@ rdc server licence accounts.example.com --cert delegation-cert.json
 rdc server backup accounts.example.com --out elite-recovery.env
 ```
 
-`--out`은 파일을 0600 모드로 기록하며, 지정하지 않으면 번들은 stdout으로 나갑니다. 설치 시 `--bws-project <id>`는 키를 Bitwarden Secrets Manager 프로젝트에도 복사하고, `--rotate`는 저장된 값이 다를 때 교체합니다. `--bws-project`가 없으면 어떤 키도 머신 밖으로 나가지 않습니다.
+`--out`은 파일을 0600 모드로 기록하며, 지정하지 않으면 번들은 stdout으로 나갑니다. 설치 시 `--bws-project <id>`는 키를 Bitwarden Secrets Manager 프로젝트에도 복사하고, `--rotate`는 저장된 값이 다를 때 교체합니다. `--bws-project`가 없으면 키는 설치가 출력하는 복구 번들과 `rdc server backup --out`이 쓰는 파일에 담겨서만 서버를 떠납니다.
 
 ### 상태
 
@@ -252,7 +252,7 @@ ON_PREMISE_PUBLIC_KEY=$(openssl pkey -in onprem-private.pem -pubout -outform DER
 
 ### 3. 온프레미스 서버에 인증서 설치
 
-서버는 위임 인증서를 데이터 볼륨의 파일 하나, `/data/delegation-cert.json`(`DELEGATION_CERT_PATH`)에서 읽습니다. 인증서를 전달하는 다른 수단은 없으며 이를 위한 환경 변수도 없습니다. `rdc server install`은 다운로드한 인증서를 그 위치에 넣고, `rdc server licence`는 이후에 그것을 교체합니다.
+서버는 위임 인증서를 데이터 볼륨의 파일 하나, `/data/delegation-cert.json`(`DELEGATION_CERT_PATH`가 그 경로를 지정)에서 읽습니다. 인증서 자체를 담는 환경 변수는 없습니다. `rdc server install`은 다운로드한 인증서를 그 위치에 넣고, `rdc server licence`는 이후에 그것을 교체합니다.
 
 ```bash
 rdc server install <domain> --cert delegation-cert.json
@@ -260,7 +260,7 @@ rdc server licence <domain> --cert delegation-cert.json
 rdc server status <domain>
 ```
 
-두 명령 모두 인증서 인박스(`data/web/cert-inbox/new.json`)를 통해 실행 중인 서버에 인증서를 전달합니다. 서버는 인증서를 검증하고 `applied.json` 또는 `rejected.json`으로 응답하며, 명령은 새 인증서 ID를 `rdc server status`로 확인합니다(6단계의 `cert-status`와 같은 데이터입니다). `rdc server upgrade`도 같은 인박스를 사용합니다. 업그레이드 단계 하나가 `secrets.env`에 남아 있던 `DELEGATION_CERT_BASE64`를 인박스로 옮기므로, 인박스가 생기기 전에 설치한 박스도 인증서를 유지합니다.
+두 명령 모두 인증서 인박스(`data/web/cert-inbox/new.json`)를 통해 실행 중인 서버에 인증서를 전달합니다. 서버는 인증서를 검증하고 `applied.json` 또는 `rejected.json`으로 응답하며, 명령은 새 인증서 ID를 `rdc server status`로 확인합니다(6단계의 `cert-status`와 같은 데이터입니다). `rdc server upgrade`도 같은 인박스를 사용합니다. 서버는 더 이상 `DELEGATION_CERT_BASE64`를 읽지 않습니다. 업그레이드 단계 하나가 `secrets.env`에 남아 있던 값을 인박스로 옮기므로, 인박스가 생기기 전에 설치한 박스도 인증서를 유지합니다.
 
 서버는 부팅 시 인증서를 로드하고 라이선스 서명에 쓰는 키와 대조합니다. 서명 키의 지문이 인증서의 `delegatedPublicKey` 지문과 같아야 합니다. 인증서가 승인하지 않은 키로 서명한 라이선스는 어느 머신에서도 검증할 수 없기 때문입니다. 서명 키 쌍과 인증서의 `delegatedPublicKey`를 항상 일치시키세요.
 
@@ -332,6 +332,8 @@ RENEW_THRESHOLD_DAYS=14
 | `write-failed` | 500 | 인증서를 디스크에 쓰지 못했습니다. |
 | `adoption-failed` | 500 | 서버가 기록된 인증서를 불러오지 못했습니다. |
 
+`bad-signature`이면 `UPSTREAM_PUBLIC_KEY`가 업스트림 마스터 공개 키와 일치하는지 확인하세요. `no-upstream-key`이면 `UPSTREAM_PUBLIC_KEY`를 설정하세요.
+
 ### 6. 상태 및 모니터링
 
 언제든지 온프레미스 로컬 인증서 상태를 쿼리합니다.
@@ -353,7 +355,7 @@ curl https://onprem.example.com/account/api/v1/onprem/cert-status \
 | `ON_PREMISE_PRIVATE_KEY` | 예 | 위임된 서명을 위한 Base64 PKCS8 Ed25519 개인 키 |
 | `ON_PREMISE_PUBLIC_KEY` | 예 | Base64 SPKI Ed25519 공개 키 (인증서의 `delegatedPublicKey`와 일치해야 함) |
 | `DELEGATION_CERT_PATH` | 선택 사항 | 서명된 인증서 JSON의 파일 시스템 경로. 기본값은 데이터 볼륨의 `/data/delegation-cert.json`입니다. 인증서는 직접 고치지 말고 `rdc server licence`로 교체하세요. |
-| `UPSTREAM_PUBLIC_KEY` | `UPSTREAM_API_KEY`가 설정된 경우 또는 `/onprem/cert-upload` 작동을 위해 필요 | 업스트림 마스터 공개 키의 Base64 SPKI. 누락된 경우 부팅 시 빠르게 실패합니다. |
+| `UPSTREAM_PUBLIC_KEY` | `UPSTREAM_API_KEY`가 설정된 경우 또는 `/onprem/cert-upload` 작동을 위해 필요 | 업스트림 마스터 공개 키의 Base64 SPKI. 없으면 서버는 부팅 시 모든 인증서를 거부하고(`no-upstream-key`) 3단계에서 설명한 대로 무료 티어로 동작합니다. |
 | `UPSTREAM_URL` | 자동 갱신을 위해 | 업스트림 계정 서버 기본 URL, 예: `https://www.rediacc.com` |
 | `UPSTREAM_API_KEY` | 자동 갱신을 위해 | `delegation:renew` 범위의 api 토큰. 포털을 통해 발급합니다 - 4단계를 참조하세요. |
 | `AUTO_RENEW_INTERVAL_HOURS` | 선택 사항 | 기본값 24. 인증서 갱신이 필요한지 확인하는 빈도입니다. |

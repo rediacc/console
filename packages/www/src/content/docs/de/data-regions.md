@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 3
 language: de
-sourceHash: "05afa82e66e34693"
-sourceCommit: "f9c980842b182e644eb84eb1d37e394baf60f7a5"
+sourceHash: "9efeb1e2b1f9c8db"
+sourceCommit: "c477e296238c19495f4a07ef6c5a62f15e942f90"
 ---
 
 Bei der Anmeldung für Rediacc wählen Sie eine Datenregion. Alle Daten verbleiben in dieser Region. Diese Entscheidung ist dauerhaft und kann nach der Registrierung nicht mehr geändert werden. Es gibt keinen Migrationspfad. Wählen Sie die Region basierend darauf, wo Ihre Daten rechtlich ansässig sein müssen, nicht wo Ihre Server heute sind.
@@ -30,7 +30,7 @@ Bei der Registrierung schlägt die Auswahl anhand Ihres Standorts eine Region vo
 
 ## Was in der Region verbleibt
 
-Diese Datentypen werden in Ihrer gewählten Region gespeichert und verarbeitet (was garantiert ist, steht unten unter Regionale Infrastruktur):
+Diese Datentypen werden in Ihrer gewählten Region gespeichert und verarbeitet, mit der Ausnahme, dass transaktionale E-Mails für Asien-Pazifik über den EU-Endpunkt versendet werden (was garantiert ist, steht unten unter Regionale Infrastruktur):
 
 - **Kontodaten**: E-Mail, Name, Organisation, Teammitgliedschaften
 - **Abrechnungs- und Abonnementdatensätze**: Plan, Aktivierungen, Lizenzausstellungen

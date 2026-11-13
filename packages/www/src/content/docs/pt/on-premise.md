@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 5
 language: pt
-sourceHash: "7216d032580dd4e1"
-sourceCommit: "48fd8400c9f2754ab1653f0247fb0d77a1835c5b"
+sourceHash: "6b60637180f58cc2"
+sourceCommit: "c477e296238c19495f4a07ef6c5a62f15e942f90"
 ---
 
 O Rediacc pode funcionar inteiramente na sua própria infraestrutura. A imagem Docker autónoma inclui o servidor de conta, o portal web, o site de marketing e o endpoint de distribuição do CLI. Não existem dependências externas dos serviços alojados pelo Rediacc.
@@ -76,7 +76,7 @@ Todas as chaves são geradas na máquina e gravadas apenas no `secrets.env` do r
 rdc server backup accounts.example.com --out elite-recovery.env
 ```
 
-`--out` grava o arquivo com modo 0600; sem ele, o pacote vai para stdout. `--bws-project <id>` na instalação também copia as chaves para um projeto do Bitwarden Secrets Manager, e `--rotate` substitui um valor armazenado que seja diferente. Sem `--bws-project`, nenhuma chave sai da máquina.
+`--out` grava o arquivo com modo 0600; sem ele, o pacote vai para stdout. `--bws-project <id>` na instalação também copia as chaves para um projeto do Bitwarden Secrets Manager, e `--rotate` substitui um valor armazenado que seja diferente. Sem `--bws-project`, as chaves só saem do servidor no pacote de recuperação que a instalação imprime e no arquivo que `rdc server backup --out` grava.
 
 ### Status
 
@@ -252,7 +252,7 @@ A validade do certificado é regida pela política de validade (predefinições 
 
 ### 3. Instalar o certificado no servidor on-premise
 
-O servidor lê o seu certificado de delegação de um único ficheiro no volume de dados, `/data/delegation-cert.json` (`DELEGATION_CERT_PATH`). Mais nada transporta um certificado: não existe uma variável de ambiente para isso. `rdc server install` coloca lá o certificado transferido, e `rdc server licence` substitui-o mais tarde:
+O servidor lê o seu certificado de delegação de um único ficheiro no volume de dados, `/data/delegation-cert.json` (`DELEGATION_CERT_PATH` indica-o). Nenhuma variável de ambiente transporta o certificado em si. `rdc server install` coloca lá o certificado transferido, e `rdc server licence` substitui-o mais tarde:
 
 ```bash
 rdc server install <domain> --cert delegation-cert.json
@@ -260,7 +260,7 @@ rdc server licence <domain> --cert delegation-cert.json
 rdc server status <domain>
 ```
 
-Ambos os comandos entregam o certificado ao servidor em execução através da sua caixa de entrada de certificados (`data/web/cert-inbox/new.json`). O servidor verifica-o e responde com `applied.json` ou `rejected.json`, e o comando confirma o id do novo certificado com `rdc server status` (os mesmos dados de `cert-status` do passo 6). `rdc server upgrade` usa a mesma caixa. Um passo da atualização move um `DELEGATION_CERT_BASE64` deixado em `secrets.env` para a caixa, de modo que uma máquina instalada antes de a caixa existir mantém o seu certificado.
+Ambos os comandos entregam o certificado ao servidor em execução através da sua caixa de entrada de certificados (`data/web/cert-inbox/new.json`). O servidor verifica-o e responde com `applied.json` ou `rejected.json`, e o comando confirma o id do novo certificado com `rdc server status` (os mesmos dados de `cert-status` do passo 6). `rdc server upgrade` usa a mesma caixa. O servidor já não lê `DELEGATION_CERT_BASE64`: um passo da atualização move um valor deixado em `secrets.env` para a caixa, de modo que uma máquina instalada antes de a caixa existir mantém o seu certificado.
 
 O servidor carrega o certificado no arranque e compara-o com a chave com que assina licenças: a impressão digital da chave de assinatura tem de ser igual à do `delegatedPublicKey` do certificado, porque licenças assinadas com uma chave que o certificado não autoriza não seriam validáveis em nenhuma máquina. Mantenha sincronizados o par de chaves de assinatura e o `delegatedPublicKey` do certificado.
 
@@ -332,6 +332,8 @@ Todo este ciclo nunca requer saída de rede do on-premise.
 | `write-failed` | 500 | Não foi possível gravar o certificado em disco |
 | `adoption-failed` | 500 | O servidor não conseguiu carregar o certificado gravado |
 
+Para `bad-signature`, verifique se `UPSTREAM_PUBLIC_KEY` corresponde à chave pública mestre do upstream. Para `no-upstream-key`, defina `UPSTREAM_PUBLIC_KEY`.
+
 ### 6. Estado e monitorização
 
 Consulte o estado do certificado local on-premise a qualquer momento:
@@ -353,7 +355,7 @@ Para backup e auditoria, o administrador on-premise também pode transferir o ce
 | `ON_PREMISE_PRIVATE_KEY` | Sim | Chave privada Ed25519 PKCS8 em Base64 para assinatura delegada |
 | `ON_PREMISE_PUBLIC_KEY` | Sim | Chave pública Ed25519 SPKI em Base64 (deve corresponder à `delegatedPublicKey` do certificado) |
 | `DELEGATION_CERT_PATH` | Opcional | Caminho do sistema de ficheiros para o JSON do certificado assinado. Predefinição `/data/delegation-cert.json` no volume de dados. Substitua o certificado com `rdc server licence`, não à mão. |
-| `UPSTREAM_PUBLIC_KEY` | Obrigatório se `UPSTREAM_API_KEY` estiver definido, ou para `/onprem/cert-upload` funcionar | SPKI Base64 da chave pública mestre do upstream. Falha imediatamente no arranque se estiver em falta. |
+| `UPSTREAM_PUBLIC_KEY` | Obrigatório se `UPSTREAM_API_KEY` estiver definido, ou para `/onprem/cert-upload` funcionar | SPKI Base64 da chave pública mestre do upstream. Sem ela, o servidor recusa qualquer certificado no arranque (`no-upstream-key`) e funciona no plano gratuito, como descreve o passo 3. |
 | `UPSTREAM_URL` | Para renovação automática | URL base do servidor de conta upstream, p. ex. `https://www.rediacc.com` |
 | `UPSTREAM_API_KEY` | Para renovação automática | Um token de API com âmbito `delegation:renew`. Obtenha via portal - consulte o Passo 4. |
 | `AUTO_RENEW_INTERVAL_HOURS` | Opcional | Predefinição 24. Com que frequência verificar se o certificado precisa de renovação. |

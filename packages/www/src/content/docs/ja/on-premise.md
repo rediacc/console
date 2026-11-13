@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 5
 language: ja
-sourceHash: "7216d032580dd4e1"
-sourceCommit: "48fd8400c9f2754ab1653f0247fb0d77a1835c5b"
+sourceHash: "6b60637180f58cc2"
+sourceCommit: "c477e296238c19495f4a07ef6c5a62f15e942f90"
 ---
 
 Rediaccは完全に独自インフラ上で運用できます。スタンドアロンDockerイメージには、アカウントサーバー、ウェブポータル、マーケティングサイト、およびCLIディストリビューションエンドポイントが含まれます。Rediaccのホスト型サービスへの外部依存は不要です。
@@ -76,7 +76,7 @@ rdc server licence accounts.example.com --cert delegation-cert.json
 rdc server backup accounts.example.com --out elite-recovery.env
 ```
 
-`--out`はファイルをモード0600で書き込みます。指定しない場合、バンドルはstdoutに出力されます。インストール時の`--bws-project <id>`は、キーをBitwarden Secrets Managerのプロジェクトにもコピーし、`--rotate`は保存済みの異なる値を置き換えます。`--bws-project`がなければ、キーがマシンの外へ出ることはありません。
+`--out`はファイルをモード0600で書き込みます。指定しない場合、バンドルはstdoutに出力されます。インストール時の`--bws-project <id>`は、キーをBitwarden Secrets Managerのプロジェクトにもコピーし、`--rotate`は保存済みの異なる値を置き換えます。`--bws-project`がない場合、キーがサーバーの外へ出るのは、インストール時に表示されるリカバリーバンドルと、`rdc server backup --out`が書き込むファイルだけです。
 
 ### ステータス
 
@@ -252,7 +252,7 @@ ON_PREMISE_PUBLIC_KEY=$(openssl pkey -in onprem-private.pem -pubout -outform DER
 
 ### 3. オンプレミスサーバーへの証明書のインストール
 
-サーバーは委任証明書を、データボリューム上の1つのファイル`/data/delegation-cert.json`（`DELEGATION_CERT_PATH`）から読み込みます。ほかに証明書を渡す手段はなく、そのための環境変数もありません。`rdc server install`はダウンロードした証明書をそこに置き、`rdc server licence`は後からそれを差し替えます。
+サーバーは委任証明書を、データボリューム上の1つのファイル`/data/delegation-cert.json`（パスは`DELEGATION_CERT_PATH`で指定）から読み込みます。証明書そのものを保持する環境変数はありません。`rdc server install`はダウンロードした証明書をそこに置き、`rdc server licence`は後からそれを差し替えます。
 
 ```bash
 rdc server install <domain> --cert delegation-cert.json
@@ -260,7 +260,7 @@ rdc server licence <domain> --cert delegation-cert.json
 rdc server status <domain>
 ```
 
-どちらのコマンドも、証明書を証明書インボックス（`data/web/cert-inbox/new.json`）経由で稼働中のサーバーに渡します。サーバーは証明書を検証し、`applied.json`または`rejected.json`で応答します。コマンドは新しい証明書IDを`rdc server status`で確認します（ステップ6の`cert-status`と同じデータです）。`rdc server upgrade`も同じインボックスを使います。アップグレードの1ステップが、`secrets.env`に残っていた`DELEGATION_CERT_BASE64`をインボックスへ移すため、インボックス導入前にインストールしたボックスでも証明書は保持されます。
+どちらのコマンドも、証明書を証明書インボックス（`data/web/cert-inbox/new.json`）経由で稼働中のサーバーに渡します。サーバーは証明書を検証し、`applied.json`または`rejected.json`で応答します。コマンドは新しい証明書IDを`rdc server status`で確認します（ステップ6の`cert-status`と同じデータです）。`rdc server upgrade`も同じインボックスを使います。サーバーは`DELEGATION_CERT_BASE64`を読み込まなくなりました。アップグレードの1ステップが、`secrets.env`に残っていた値をインボックスへ移すため、インボックス導入前にインストールしたボックスでも証明書は保持されます。
 
 サーバーは起動時に証明書を読み込み、ライセンスの署名に使う鍵と照合します。署名鍵のフィンガープリントが証明書の`delegatedPublicKey`のフィンガープリントと一致している必要があります。証明書が認めていない鍵で署名したライセンスは、どのマシンでも検証できないためです。署名鍵ペアと証明書の`delegatedPublicKey`は常に一致させてください。
 
@@ -332,6 +332,8 @@ RENEW_THRESHOLD_DAYS=14
 | `write-failed` | 500 | 証明書をディスクに書き込めなかった |
 | `adoption-failed` | 500 | 書き込んだ証明書をサーバーが読み込めなかった |
 
+`bad-signature`の場合は、`UPSTREAM_PUBLIC_KEY`が上流マスター公開鍵と一致しているか確認します。`no-upstream-key`の場合は、`UPSTREAM_PUBLIC_KEY`を設定します。
+
 ### 6. ステータスとモニタリング
 
 オンプレミスのローカル証明書状態をいつでもクエリできます：
@@ -353,7 +355,7 @@ curl https://onprem.example.com/account/api/v1/onprem/cert-status \
 | `ON_PREMISE_PRIVATE_KEY` | はい | 委任署名用のBase64 PKCS8 Ed25519秘密鍵 |
 | `ON_PREMISE_PUBLIC_KEY` | はい | Base64 SPKI Ed25519公開鍵（証明書の`delegatedPublicKey`と一致する必要がある） |
 | `DELEGATION_CERT_PATH` | オプション | 署名済み証明書JSONのファイルシステムパス。デフォルトはデータボリューム上の`/data/delegation-cert.json`。証明書は手作業ではなく`rdc server licence`で差し替えます。 |
-| `UPSTREAM_PUBLIC_KEY` | `UPSTREAM_API_KEY`が設定されている場合、または`/onprem/cert-upload`が機能するために必須 | 上流マスター公開鍵のBase64 SPKI。欠如している場合は起動時にfail-fast。 |
+| `UPSTREAM_PUBLIC_KEY` | `UPSTREAM_API_KEY`が設定されている場合、または`/onprem/cert-upload`が機能するために必須 | 上流マスター公開鍵のBase64 SPKI。ない場合、サーバーは起動時にすべての証明書を拒否し（`no-upstream-key`）、ステップ3で説明するとおり無料プランで動作します。 |
 | `UPSTREAM_URL` | 自動更新に必要 | 上流アカウントサーバーのベースURL（例：`https://www.rediacc.com`） |
 | `UPSTREAM_API_KEY` | 自動更新に必要 | `delegation:renew`スコープのAPIトークン。ポータルから取得 - ステップ4を参照。 |
 | `AUTO_RENEW_INTERVAL_HOURS` | オプション | デフォルト24。証明書の更新が必要かどうか確認する間隔。 |

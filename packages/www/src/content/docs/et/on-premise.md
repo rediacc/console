@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 5
 language: et
-sourceHash: "7216d032580dd4e1"
-sourceCommit: "48fd8400c9f2754ab1653f0247fb0d77a1835c5b"
+sourceHash: "6b60637180f58cc2"
+sourceCommit: "c477e296238c19495f4a07ef6c5a62f15e942f90"
 ---
 
 Rediacc saab töötada täielikult sinu enda infrastruktuuris. Eraldiseisev Dockeri pilt sisaldab konto-serverit, veebiportaali, turunduslehte ja CLI jaotuse lõpp-punkti. Rediacc hostitud teenustele pole väliseid sõltuvusi.
@@ -76,7 +76,7 @@ Kõik võtmed luuakse masinas ja kirjutatakse ainult hoidla `secrets.env` faili.
 rdc server backup accounts.example.com --out elite-recovery.env
 ```
 
-`--out` kirjutab faili režiimiga 0600; ilma selleta läheb pakett stdout'i. Paigalduse `--bws-project <id>` kopeerib võtmed lisaks Bitwarden Secrets Manageri projekti ja `--rotate` asendab erineva salvestatud väärtuse. Ilma `--bws-project`'ita ei lahku ükski võti masinast.
+`--out` kirjutab faili režiimiga 0600; ilma selleta läheb pakett stdout'i. Paigalduse `--bws-project <id>` kopeerib võtmed lisaks Bitwarden Secrets Manageri projekti ja `--rotate` asendab erineva salvestatud väärtuse. Ilma `--bws-project`'ita lahkuvad võtmed serverist ainult taastepaketis, mille paigaldus välja prindib, ja failis, mille kirjutab `rdc server backup --out`.
 
 ### Olek
 
@@ -252,7 +252,7 @@ Serdi kehtivust juhib kehtivuspoliitika (plaanipõhised vaikeväärtused ja laed
 
 ### 3. Paigalda sert kohapealsele serverile
 
-Server loeb oma delegeerimissertifikaadi ühest failist oma andmekettal, `/data/delegation-cert.json` (`DELEGATION_CERT_PATH`). Muu ei kanna sertifikaati: selleks pole keskkonnamuutujat. `rdc server install` paneb allalaaditud sertifikaadi sinna ja `rdc server licence` asendab selle hiljem:
+Server loeb oma delegeerimissertifikaadi ühest failist oma andmekettal, `/data/delegation-cert.json` (`DELEGATION_CERT_PATH` nimetab selle). Ükski keskkonnamuutuja ei kanna sertifikaati ennast. `rdc server install` paneb allalaaditud sertifikaadi sinna ja `rdc server licence` asendab selle hiljem:
 
 ```bash
 rdc server install <domain> --cert delegation-cert.json
@@ -260,7 +260,7 @@ rdc server licence <domain> --cert delegation-cert.json
 rdc server status <domain>
 ```
 
-Mõlemad käsud annavad sertifikaadi töötavale serverile edasi tema sertifikaadipostkasti kaudu (`data/web/cert-inbox/new.json`). Server kontrollib seda ja vastab failiga `applied.json` või `rejected.json`, ning käsk kinnitab uue sertifikaadi id `rdc server status` abil (samad `cert-status` andmed nagu sammus 6). `rdc server upgrade` kasutab sama postkasti. Üks uuenduse samm tõstab `secrets.env` faili jäänud `DELEGATION_CERT_BASE64` postkasti, nii et enne postkasti loomist paigaldatud masin säilitab oma sertifikaadi.
+Mõlemad käsud annavad sertifikaadi töötavale serverile edasi tema sertifikaadipostkasti kaudu (`data/web/cert-inbox/new.json`). Server kontrollib seda ja vastab failiga `applied.json` või `rejected.json`, ning käsk kinnitab uue sertifikaadi id `rdc server status` abil (samad `cert-status` andmed nagu sammus 6). `rdc server upgrade` kasutab sama postkasti. Server ei loe enam `DELEGATION_CERT_BASE64`: üks uuenduse samm tõstab `secrets.env` faili jäänud väärtuse postkasti, nii et enne postkasti loomist paigaldatud masin säilitab oma sertifikaadi.
 
 Server laeb sertifikaadi käivitamisel ja võrdleb seda võtmega, millega ta litsentse allkirjastab: allkirjastamisvõtme sõrmejälg peab olema sama mis sertifikaadi `delegatedPublicKey` sõrmejälg, sest võtmega, mida sertifikaat ei volita, allkirjastatud litsentse ei saaks ühelgi masinal valideerida. Hoidke allkirjastamise võtmepaar ja sertifikaadi `delegatedPublicKey` kooskõlas.
 
@@ -332,6 +332,8 @@ See kogu silmus ei nõua kohapealselt kunagi võrguegress-ühendust.
 | `write-failed` | 500 | Serti ei õnnestunud kettale kirjutada |
 | `adoption-failed` | 500 | Server ei suutnud kirjutatud serti laadida |
 
+Veakoodi `bad-signature` korral kontrolli, et `UPSTREAM_PUBLIC_KEY` vastaks ülesvoolu peavõtme avalikule võtmele. Veakoodi `no-upstream-key` korral sea `UPSTREAM_PUBLIC_KEY`.
+
 ### 6. Olek ja seire
 
 Päri kohapealse kohalik serdi olek igal ajal:
@@ -353,7 +355,7 @@ Varunduse ja auditi jaoks saab kohapealne administraator alla laadida ka hetkel 
 | `ON_PREMISE_PRIVATE_KEY` | Jah | Base64 PKCS8 Ed25519 privaatvõti delegeeritud allkirjastamise jaoks |
 | `ON_PREMISE_PUBLIC_KEY` | Jah | Base64 SPKI Ed25519 avalik võti (peab vastama serdi `delegatedPublicKey`-le) |
 | `DELEGATION_CERT_PATH` | Valikuline | Failisüsteemi tee allkirjastatud serdi JSON-i. Vaikimisi `/data/delegation-cert.json` andmekettal. Asenda sert käsuga `rdc server licence`, mitte käsitsi. |
-| `UPSTREAM_PUBLIC_KEY` | Nõutav kui `UPSTREAM_API_KEY` on seatud, või `/onprem/cert-upload` tööks | Ülesvoolu peaserveri avaliku võtme base64 SPKI. Kiire ebaõnnestumine käivitamisel kui puudub. |
+| `UPSTREAM_PUBLIC_KEY` | Nõutav kui `UPSTREAM_API_KEY` on seatud, või `/onprem/cert-upload` tööks | Ülesvoolu peaserveri avaliku võtme base64 SPKI. Ilma selleta lükkab server käivitamisel iga sertifikaadi tagasi (`no-upstream-key`) ja töötab tasuta paketiga, nagu kirjeldab samm 3. |
 | `UPSTREAM_URL` | Automaatseks uuendamiseks | Ülesvoolu konto-serveri baas-URL, nt `https://www.rediacc.com` |
 | `UPSTREAM_API_KEY` | Automaatseks uuendamiseks | `delegation:renew`-ulatusega API token. Loe portaali kaudu -- vt 4. samm. |
 | `AUTO_RENEW_INTERVAL_HOURS` | Valikuline | Vaikimisi 24. Kui sageli kontrollida, kas sert vajab uuendamist. |

@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 3
 language: et
-sourceHash: "05afa82e66e34693"
-sourceCommit: "f9c980842b182e644eb84eb1d37e394baf60f7a5"
+sourceHash: "9efeb1e2b1f9c8db"
+sourceCommit: "c477e296238c19495f4a07ef6c5a62f15e942f90"
 ---
 
 Rediacci konto loomisel valite andmeregiooni. Kõik teie andmed jäävad sellesse regiooni. See valik on püsiv ega ole pärast registreerumist muudetav. Migratsiooniviis puudub. Valige regioon selle alusel, kus teie andmed seaduslikult asuda peavad, mitte kus teie serverid täna asuvad.
@@ -30,7 +30,7 @@ Registreerimisel pakub valija sinu asukoha põhjal regiooni, mille saad kinnitad
 
 ## Mis jääb teie regiooni
 
-Neid andmetüüpe salvestatakse ja töödeldakse teie valitud regioonis (mis on tagatud, vaadake allpool jaotisest regionaalne infrastruktuur):
+Neid andmetüüpe salvestatakse ja töödeldakse teie valitud regioonis, välja arvatud Aasia ja Vaikse ookeani piirkonna tehingute e-kirjad, mis saadetakse ELi lõpp-punkti kaudu (mis on tagatud, vaadake allpool jaotisest regionaalne infrastruktuur):
 
 - **Kontoandmed**: e-post, nimi, organisatsioon, meeskonnaliikmesused
 - **Arveldus- ja tellimiskirjed**: plaan, aktiveerimised, litsentsi väljastamised

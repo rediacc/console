@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 5
 language: ar
-sourceHash: "7216d032580dd4e1"
-sourceCommit: "48fd8400c9f2754ab1653f0247fb0d77a1835c5b"
+sourceHash: "6b60637180f58cc2"
+sourceCommit: "c477e296238c19495f4a07ef6c5a62f15e942f90"
 ---
 
 يمكن تشغيل Rediacc بالكامل على بنيتك التحتية الخاصة. تتضمن صورة Docker المستقلة خادم الحساب وبوابة الويب وموقع التسويق ونقطة توزيع CLI. لا تتطلب أي اعتماديات خارجية على خدمات Rediacc المستضافة.
@@ -76,7 +76,7 @@ rdc server licence accounts.example.com --cert delegation-cert.json
 rdc server backup accounts.example.com --out elite-recovery.env
 ```
 
-يكتب `--out` الملف بصلاحيات 0600؛ وبدونه تذهب الحزمة إلى stdout. ينسخ `--bws-project <id>` عند التثبيت المفاتيح أيضًا إلى مشروع في Bitwarden Secrets Manager، ويستبدل `--rotate` قيمة مخزَّنة مختلفة. وبدون `--bws-project` لا يغادر أي مفتاح الجهاز.
+يكتب `--out` الملف بصلاحيات 0600؛ وبدونه تذهب الحزمة إلى stdout. ينسخ `--bws-project <id>` عند التثبيت المفاتيح أيضًا إلى مشروع في Bitwarden Secrets Manager، ويستبدل `--rotate` قيمة مخزَّنة مختلفة. وبدون `--bws-project` لا تغادر المفاتيح الخادم إلا في حزمة الاسترداد التي يطبعها التثبيت وفي الملف الذي يكتبه `rdc server backup --out`.
 
 ### الحالة
 
@@ -252,7 +252,7 @@ ON_PREMISE_PUBLIC_KEY=$(openssl pkey -in onprem-private.pem -pubout -outform DER
 
 ### 3. تثبيت الشهادة على الخادم المحلي
 
-يقرأ الخادم شهادة التفويض من ملف واحد على وحدة بياناته، هو `/data/delegation-cert.json` (`DELEGATION_CERT_PATH`). لا شيء آخر يحمل الشهادة: لا يوجد متغير بيئة لذلك. يضع `rdc server install` الشهادة التي نزّلتها هناك، ثم يستبدلها `rdc server licence` لاحقًا:
+يقرأ الخادم شهادة التفويض من ملف واحد على وحدة بياناته، هو `/data/delegation-cert.json` (`DELEGATION_CERT_PATH` يحدد مساره). لا يحمل أي متغير بيئة الشهادة نفسها. يضع `rdc server install` الشهادة التي نزّلتها هناك، ثم يستبدلها `rdc server licence` لاحقًا:
 
 ```bash
 rdc server install <domain> --cert delegation-cert.json
@@ -260,7 +260,7 @@ rdc server licence <domain> --cert delegation-cert.json
 rdc server status <domain>
 ```
 
-يسلّم الأمران الشهادة إلى الخادم العامل عبر صندوق وارد الشهادات (`data/web/cert-inbox/new.json`). يتحقق الخادم منها ويردّ بالملف `applied.json` أو `rejected.json`، ويؤكد الأمر معرّف الشهادة الجديدة عبر `rdc server status` (وهي بيانات `cert-status` نفسها في الخطوة 6). يستخدم `rdc server upgrade` صندوق الوارد نفسه. وتنقل إحدى خطوات الترقية قيمة `DELEGATION_CERT_BASE64` المتبقية في `secrets.env` إلى صندوق الوارد، فيحتفظ الجهاز المثبّت قبل وجود الصندوق بشهادته.
+يسلّم الأمران الشهادة إلى الخادم العامل عبر صندوق وارد الشهادات (`data/web/cert-inbox/new.json`). يتحقق الخادم منها ويردّ بالملف `applied.json` أو `rejected.json`، ويؤكد الأمر معرّف الشهادة الجديدة عبر `rdc server status` (وهي بيانات `cert-status` نفسها في الخطوة 6). يستخدم `rdc server upgrade` صندوق الوارد نفسه. لم يعد الخادم يقرأ `DELEGATION_CERT_BASE64`: تنقل إحدى خطوات الترقية القيمة المتبقية في `secrets.env` إلى صندوق الوارد، فيحتفظ الجهاز المثبّت قبل وجود الصندوق بشهادته.
 
 يحمّل الخادم الشهادة عند الإقلاع ويطابقها مع المفتاح الذي يوقّع به التراخيص: يجب أن تساوي بصمة مفتاح التوقيع بصمة `delegatedPublicKey` في الشهادة، لأن التراخيص الموقّعة بمفتاح لا تفوّضه الشهادة لا يمكن التحقق منها على أي جهاز. أبقِ زوج مفاتيح التوقيع و`delegatedPublicKey` في الشهادة متطابقين.
 
@@ -332,6 +332,8 @@ RENEW_THRESHOLD_DAYS=14
 | `write-failed` | 500 | تعذّرت كتابة الشهادة على القرص |
 | `adoption-failed` | 500 | تعذّر على الخادم تحميل الشهادة المكتوبة |
 
+للخطأ `bad-signature`، تحقق من تطابق `UPSTREAM_PUBLIC_KEY` مع المفتاح العام الرئيسي للخادم الأعلى. وللخطأ `no-upstream-key`، اضبط `UPSTREAM_PUBLIC_KEY`.
+
 ### 6. الحالة والمراقبة
 
 استعلم عن حالة الشهادة المحلية للخادم المحلي في أي وقت:
@@ -353,7 +355,7 @@ curl https://onprem.example.com/account/api/v1/onprem/cert-status \
 | `ON_PREMISE_PRIVATE_KEY` | نعم | مفتاح خاص Ed25519 بتنسيق PKCS8 base64 للتوقيع المفوَّض |
 | `ON_PREMISE_PUBLIC_KEY` | نعم | مفتاح عام Ed25519 بتنسيق SPKI base64 (يجب أن يتطابق مع `delegatedPublicKey` في الشهادة) |
 | `DELEGATION_CERT_PATH` | اختياري | مسار نظام الملفات لملف JSON للشهادة الموقّعة. الافتراضي `/data/delegation-cert.json` على وحدة البيانات. استبدل الشهادة بالأمر `rdc server licence` لا يدويًا. |
-| `UPSTREAM_PUBLIC_KEY` | مطلوب إذا ضُبط `UPSTREAM_API_KEY`، أو لعمل `/onprem/cert-upload` | بتنسيق SPKI base64 للمفتاح العام الرئيسي للخادم الأعلى. إيقاف سريع عند الإقلاع إذا كان مفقوداً. |
+| `UPSTREAM_PUBLIC_KEY` | مطلوب إذا ضُبط `UPSTREAM_API_KEY`، أو لعمل `/onprem/cert-upload` | بتنسيق SPKI base64 للمفتاح العام الرئيسي للخادم الأعلى. بدونه يرفض الخادم كل شهادة عند الإقلاع (`no-upstream-key`) ويعمل بالباقة المجانية، كما تصف الخطوة 3. |
 | `UPSTREAM_URL` | للتجديد التلقائي | عنوان URL الأساسي لخادم الحساب الأعلى، مثل `https://www.rediacc.com` |
 | `UPSTREAM_API_KEY` | للتجديد التلقائي | رمز API بنطاق `delegation:renew`. احصل عليه عبر البوابة - انظر الخطوة 4. |
 | `AUTO_RENEW_INTERVAL_HOURS` | اختياري | الافتراضي 24. مدة التحقق من حاجة الشهادة للتجديد. |

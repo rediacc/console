@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 5
 language: tr
-sourceHash: "7216d032580dd4e1"
-sourceCommit: "48fd8400c9f2754ab1653f0247fb0d77a1835c5b"
+sourceHash: "6b60637180f58cc2"
+sourceCommit: "c477e296238c19495f4a07ef6c5a62f15e942f90"
 ---
 
 Rediacc tamamen kendi altyapınızda çalışabilir. Bağımsız Docker imajı hesap sunucusunu, web portalını, pazarlama sitesini ve CLI dağıtım uç noktasını içerir. Rediacc'ın barındırılan servislerine harici bağımlılık gerekmez.
@@ -76,7 +76,7 @@ Tüm anahtarlar makinede üretilir ve yalnızca deponun `secrets.env` dosyasına
 rdc server backup accounts.example.com --out elite-recovery.env
 ```
 
-`--out` dosyayı 0600 kipiyle yazar; verilmezse paket stdout'a gider. Kurulumdaki `--bws-project <id>` anahtarları ayrıca bir Bitwarden Secrets Manager projesine kopyalar, `--rotate` ise farklı olan kayıtlı bir değerin yerini alır. `--bws-project` olmadan hiçbir anahtar makineden çıkmaz.
+`--out` dosyayı 0600 kipiyle yazar; verilmezse paket stdout'a gider. Kurulumdaki `--bws-project <id>` anahtarları ayrıca bir Bitwarden Secrets Manager projesine kopyalar, `--rotate` ise farklı olan kayıtlı bir değerin yerini alır. `--bws-project` olmadan anahtarlar sunucudan yalnızca kurulumun yazdırdığı kurtarma paketiyle ve `rdc server backup --out` komutunun yazdığı dosyayla çıkar.
 
 ### Durum
 
@@ -252,7 +252,7 @@ Sertifikanın geçerliliği, geçerlilik politikası tarafından yönetilir (pla
 
 ### 3. Sertifikayı yerinde sunucuya kurma
 
-Sunucu, devretme sertifikasını veri biriminin üzerindeki tek bir dosyadan okur: `/data/delegation-cert.json` (`DELEGATION_CERT_PATH`). Sertifikayı başka hiçbir şey taşımaz: bunun için bir ortam değişkeni yoktur. `rdc server install` indirilen sertifikayı oraya bırakır, `rdc server licence` ise sonradan değiştirir:
+Sunucu, devretme sertifikasını veri biriminin üzerindeki tek bir dosyadan okur: `/data/delegation-cert.json` (`DELEGATION_CERT_PATH` bu yolu belirtir). Sertifikanın kendisini hiçbir ortam değişkeni taşımaz. `rdc server install` indirilen sertifikayı oraya bırakır, `rdc server licence` ise sonradan değiştirir:
 
 ```bash
 rdc server install <domain> --cert delegation-cert.json
@@ -260,7 +260,7 @@ rdc server licence <domain> --cert delegation-cert.json
 rdc server status <domain>
 ```
 
-Her iki komut da sertifikayı çalışan sunucuya sertifika gelen kutusu (`data/web/cert-inbox/new.json`) üzerinden iletir. Sunucu sertifikayı doğrular ve `applied.json` veya `rejected.json` ile yanıt verir; komut yeni sertifika kimliğini `rdc server status` ile doğrular (6. adımdaki `cert-status` verisinin aynısı). `rdc server upgrade` aynı gelen kutusunu kullanır. Yükseltmenin bir adımı, `secrets.env` içinde kalmış bir `DELEGATION_CERT_BASE64` değerini gelen kutusuna taşır; böylece gelen kutusundan önce kurulmuş bir makine sertifikasını korur.
+Her iki komut da sertifikayı çalışan sunucuya sertifika gelen kutusu (`data/web/cert-inbox/new.json`) üzerinden iletir. Sunucu sertifikayı doğrular ve `applied.json` veya `rejected.json` ile yanıt verir; komut yeni sertifika kimliğini `rdc server status` ile doğrular (6. adımdaki `cert-status` verisinin aynısı). `rdc server upgrade` aynı gelen kutusunu kullanır. Sunucu artık `DELEGATION_CERT_BASE64` değerini okumaz: yükseltmenin bir adımı, `secrets.env` içinde kalmış değeri gelen kutusuna taşır; böylece gelen kutusundan önce kurulmuş bir makine sertifikasını korur.
 
 Sunucu sertifikayı açılışta yükler ve lisansları imzaladığı anahtarla karşılaştırır: imzalama anahtarının parmak izi, sertifikanın `delegatedPublicKey` parmak izine eşit olmalıdır; çünkü sertifikanın yetkilendirmediği bir anahtarla imzalanan lisanslar hiçbir makinede doğrulanamaz. İmzalama anahtar çiftini ve sertifikanın `delegatedPublicKey` değerini uyumlu tutun.
 
@@ -332,6 +332,8 @@ Bu akış hiçbir zaman yerinde sunucudan ağ çıkışı gerektirmez.
 | `write-failed` | 500 | Sertifika diske yazılamadı |
 | `adoption-failed` | 500 | Sunucu yazılan sertifikayı yükleyemedi |
 
+`bad-signature` için `UPSTREAM_PUBLIC_KEY` değerinin yukarı akış ana genel anahtarıyla eşleştiğini kontrol edin. `no-upstream-key` için `UPSTREAM_PUBLIC_KEY` değerini ayarlayın.
+
 ### 6. Durum ve izleme
 
 Yerinde yerel sertifika durumunu istediğiniz zaman sorgulayın:
@@ -353,7 +355,7 @@ Yedekleme ve denetim için, yerinde yönetici `GET /onprem/cert-current` aracıl
 | `ON_PREMISE_PRIVATE_KEY` | Evet | Yetkilendirilmiş imzalama için Base64 PKCS8 Ed25519 özel anahtarı |
 | `ON_PREMISE_PUBLIC_KEY` | Evet | Base64 SPKI Ed25519 genel anahtarı (sertifikanın `delegatedPublicKey`'iyle eşleşmeli) |
 | `DELEGATION_CERT_PATH` | İsteğe bağlı | İmzalı sertifika JSON'una dosya sistemi yolu. Varsayılan: veri biriminde `/data/delegation-cert.json`. Sertifikayı elle değil, `rdc server licence` ile değiştirin. |
-| `UPSTREAM_PUBLIC_KEY` | `UPSTREAM_API_KEY` ayarlanmışsa veya `/onprem/cert-upload`'ın çalışması için gerekli | Yukarı akış ana genel anahtarının Base64 SPKI'si. Eksikse önyüklemede hızla başarısız olur. |
+| `UPSTREAM_PUBLIC_KEY` | `UPSTREAM_API_KEY` ayarlanmışsa veya `/onprem/cert-upload`'ın çalışması için gerekli | Yukarı akış ana genel anahtarının Base64 SPKI'si. Yoksa sunucu önyüklemede her sertifikayı reddeder (`no-upstream-key`) ve 3. adımda anlatıldığı gibi ücretsiz katmanda çalışır. |
 | `UPSTREAM_URL` | Otomatik yenileme için | Yukarı akış hesap sunucusu temel URL'si, örn. `https://www.rediacc.com` |
 | `UPSTREAM_API_KEY` | Otomatik yenileme için | `delegation:renew` kapsamlı api tokeni. Portal aracılığıyla oluşturun - bkz. Adım 4. |
 | `AUTO_RENEW_INTERVAL_HOURS` | İsteğe bağlı | Varsayılan 24. Sertifikanın yenilenmesi gerekip gerekmediğini ne sıklıkla kontrol edeceği. |
