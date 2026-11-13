@@ -93,7 +93,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 24 of 71 plans done, 1125 of 1313 boxes done (85%).
+Promoted: 24 of 71 plans done, 1127 of 1313 boxes done (85%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -163,7 +163,7 @@ Promoted: 24 of 71 plans done, 1125 of 1313 boxes done (85%).
 | 64 | PLAN-experience-feedback.md | 12/16 | 4 open |
 | 65 | PLAN-local-first-delivery.md | 14/15 | 1 open |
 | 66 | PLAN-terms-acceptance.md | 25/25 | done |
-| 67 | PLAN-account-notices.md | 12/16 | 4 open |
+| 67 | PLAN-account-notices.md | 14/16 | 2 open |
 | 68 | PLAN-enterprise-tenants.md | 16/47 | 31 open |
 | 69 | PLAN-licence-expiry-notices.md | 6/7 | 1 open |
 | 70 | PLAN-onprem-relicence-inbox.md | 10/13 | 3 open |
