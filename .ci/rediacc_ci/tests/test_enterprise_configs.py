@@ -239,6 +239,20 @@ def test_a_missing_company_id_is_refused():
         _gen(company_id="")
 
 
+@pytest.mark.parametrize("bad", ['c"1', "c1\\", "acme", "c12", 'c0123456789abcdef", x = "y'])
+def test_a_company_id_that_is_not_an_opaque_id_is_refused_before_it_reaches_the_template(bad):
+    with pytest.raises(configs.ConfigError, match="opaque"):
+        _gen(company_id=bad)
+
+
+def test_an_account_config_that_does_not_parse_is_refused_not_passed():
+    out = _gen()
+    reasons = configs.account_refusals(
+        "acme", "eu", out.account + '\nbroken = "', company_id=COMPANY_ID, root=ROOT
+    )
+    assert any("not valid TOML" in r for r in reasons)
+
+
 @pytest.mark.parametrize(
     ("old", "new", "needle"),
     [

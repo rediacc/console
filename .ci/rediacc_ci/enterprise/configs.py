@@ -20,6 +20,7 @@ if typing.TYPE_CHECKING:
     import pathlib
 
 ACCOUNT_TEMPLATE = "enterprise.template.toml"
+COMPANY_ID_RE = re.compile(r"^c[0-9a-f]{6,}$")
 D1_ID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 # Names a company account config may never carry: the licence signing key and the FREE licence HMAC key stay off every production account Worker.
 SIGNING_NAMES = ("ED25519_PRIVATE_KEY", "FREE_LICENSE_HMAC_KEY", "LICENSE_SIGNING")
@@ -137,7 +138,11 @@ def account_refusals(
     try:
         config = tomllib.loads(text)
     except tomllib.TOMLDecodeError:
-        return out
+        # The binding checks below need a parsed document, so an unparseable text is refused outright rather than passed on the shared rules alone.
+        return [
+            *out,
+            "the account config is not valid TOML, so its LICENSE_SIGNER binding is unchecked",
+        ]
     if bench is None:
         bench = (config.get("vars") or {}).get("ENVIRONMENT") == "bench"
     out.extend(signer_binding_refusals(config, region, bench=bench, company_id=company_id))
@@ -211,6 +216,8 @@ def generate(
         raise ConfigError(str(exc)) from None
     if not company_id:
         raise ConfigError("company %s has no company id for the LICENSE_SIGNER props" % company)
+    if not COMPANY_ID_RE.fullmatch(company_id):
+        raise ConfigError("company %s: the company id is not an opaque c<hex> id" % company)
     if not D1_ID_RE.fullmatch(d1_id):
         raise ConfigError("the D1 database id %r is not a uuid" % (d1_id,))
     regions, entry = _region(region, root)

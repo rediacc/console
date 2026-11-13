@@ -507,6 +507,34 @@ def test_worker_versions_and_rollback_failures_name_wrangler_cause():
         lab.put_version("account-proof-a", "v1", run=broken)
 
 
+def test_wrangler_cause_masks_the_worker_the_call_named():
+    """Wrangler echoes the Worker it was asked about, and a company's Worker name carries the company name (review 304248ab.1)."""
+
+    def broken(_argv, _cwd, _env):
+        return lab.Proc(
+            1, '{"error": {"text": "no worker account-acmecorp here", "notes": []}}', ""
+        )
+
+    for call in (
+        lambda: lab.worker_versions("account-acmecorp", run=broken),
+        lambda: lab.put_version("account-acmecorp", "v1", run=broken),
+    ):
+        with pytest.raises(proof.LabError) as err:
+            call()
+        assert "acmecorp" not in str(err.value)
+        assert "no worker <name> here" in str(err.value)
+
+
+def test_wrangler_cause_leaves_text_that_names_no_worker_alone():
+    """THE CONTROL: a cause that does not quote the Worker is printed as stated."""
+
+    def broken(_argv, _cwd, _env):
+        return lab.Proc(1, '{"error": {"text": "Authentication error", "notes": []}}', "")
+
+    with pytest.raises(proof.LabError, match="exited 1: Authentication error"):
+        lab.worker_versions("account-acmecorp", run=broken)
+
+
 def test_lookup_without_the_pepper_is_a_lab_error(monkeypatch):
     monkeypatch.delenv(enterprise_lookup.PEPPER_ENV, raising=False)
     with pytest.raises(proof.LabError, match=enterprise_lookup.PEPPER_ENV):

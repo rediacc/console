@@ -367,9 +367,12 @@ class Proc:
     stderr: str = ""
 
 
-def _cause(done: Proc) -> str:
-    """`: <wrangler's stated cause>` for an error message, empty when wrangler stated none."""
+def _cause(done: Proc, *names: str) -> str:
+    """`: <wrangler's stated cause>` for an error message, empty when wrangler stated none; each of `names` (the Worker, key or domain the call was given) is masked, because wrangler echoes what it was asked about and a Worker name can carry a company name."""
     tail = control_db.failure_tail(done.stdout, done.stderr)
+    for name in names:
+        if name:
+            tail = re.sub(re.escape(name), "<name>", tail, flags=re.IGNORECASE)
     return ": " + tail if tail else ""
 
 
@@ -597,7 +600,9 @@ def lookup(
     if NOT_FOUND in (text + "\n" + done.stderr).lower():
         return None
     if done.rc != 0:
-        raise proof.LabError("wrangler kv key get exited %d%s" % (done.rc, _cause(done)))
+        raise proof.LabError(
+            "wrangler kv key get exited %d%s" % (done.rc, _cause(done, key, d, namespace_id))
+        )
     return text or None
 
 
@@ -2334,7 +2339,9 @@ def worker_versions(worker: str, *, run: Runner = run_process) -> list[str]:
     argv = [*wrangler.ARGV, "deployments", "list", "--json", "--name", worker]
     done = run(argv, root().joinpath(*WRANGLER_REL), None)
     if done.rc != 0:
-        raise proof.LabError("wrangler deployments list exited %d%s" % (done.rc, _cause(done)))
+        raise proof.LabError(
+            "wrangler deployments list exited %d%s" % (done.rc, _cause(done, worker))
+        )
     data = _json_value(done.stdout, "[")
     if not isinstance(data, list):
         raise proof.LabError("wrangler deployments list printed no JSON list")
@@ -2359,7 +2366,7 @@ def put_version(worker: str, version_id: str, *, run: Runner = run_process) -> N
     ]  # fmt: skip
     done = run(argv, root().joinpath(*WRANGLER_REL), None)
     if done.rc != 0:
-        raise proof.LabError("wrangler rollback exited %d%s" % (done.rc, _cause(done)))
+        raise proof.LabError("wrangler rollback exited %d%s" % (done.rc, _cause(done, worker)))
 
 
 def renew_on(machine: str, *, run: Runner = run_process, env: Env = _env) -> proof.Answer:
