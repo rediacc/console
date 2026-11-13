@@ -37,7 +37,6 @@ export interface FeatureFlags {
   customBranding: boolean;
   /** Dedicated account manager */
   dedicatedAccount: boolean;
-  /** Self-service delegation cert issuance from the customer portal */
 }
 
 /**

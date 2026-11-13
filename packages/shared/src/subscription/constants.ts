@@ -414,8 +414,9 @@ export const ACCOUNT_API_BASE_PATH = '/account/api/v1' as const;
  * cert renewal endpoint. Defined here
  * (rather than hard-coded inside the on-prem CertAutoRenewService) so the
  * upstream router and the on-prem auto-renew client agree on the same path.
- * Both ends import this constant; changing one without the other is a
- * compile-time error in the consumer that uses it.
+ * The type system does not tie the two ends: the client imports this constant,
+ * the router mounts its own literal, and a mismatch surfaces as a 404 at
+ * runtime. `__tests__/constants-paths.test.ts` pins the value, so a change shows up in review.
  */
 export const DELEGATION_RENEW_PATH = `${ACCOUNT_API_BASE_PATH}/delegation/renew` as const;
 
