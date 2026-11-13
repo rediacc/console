@@ -2159,6 +2159,16 @@ Verify the integrity of the SHA-256 hash chain across all audit entries
 
 > MCP tool
 
+### rdc config import-machine <machine>
+
+Copy one machine from another config into the active config: the machine entry when the active config lacks it, every repository placed on the machine with every tag, and each backup strategy bound to the machine. Nothing that already exists is overwritten. Equal entries are left alone, and a differing entry (a same-name repository with another GUID, a machine at another address) is refused. Any refusal writes nothing. The report names entries only and never prints a credential, key or GUID.
+
+**Options:**
+
+- `--from <config>`: Config to copy from
+- `--dry-run`: Show what would be copied without writing
+- `--strategy-from-source`: Replace a differing backup strategy with the source config's version instead of refusing it
+
 ### rdc doctor
 
 Run diagnostic checks on the CLI environment: Node.js version, renet binary availability, config file validity, SSH key status, and network connectivity. Outputs a structured health report with pass/fail indicators.

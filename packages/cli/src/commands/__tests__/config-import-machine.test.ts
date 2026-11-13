@@ -9,6 +9,7 @@
 import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { Command } from 'commander';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -92,7 +93,7 @@ function sourceResources(): Res {
       hostinger: {
         ip: '192.0.2.10',
         user: 'deploy',
-        datastore: '/mnt/rediacc',
+        datastore: WK_DATASTORE_PATH,
         backupStrategies: ['nightly'],
       },
       elsewhere: { ip: '192.0.2.99', user: 'deploy' },

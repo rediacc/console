@@ -66,11 +66,11 @@
     },
     {
       "file": ".ci/rediacc_ci/housekeeping/cf_retire.py",
-      "match": "EMPTY_WORKERS = 16",
-      "width": 16,
+      "match": "EMPTY_WORKERS = 4",
+      "width": 4,
       "kind": "io",
       "limit": "Cloudflare R2 API, per-object DELETE requests while a retired bucket is emptied",
-      "reason": "Parallel object deletes against the R2 API while a retired bucket is emptied; the width bounds requests in flight against Cloudflare, not local cores."
+      "reason": "Parallel object deletes against the R2 API while a retired bucket is emptied; the width bounds requests in flight against Cloudflare, not local cores. Lowered from 16 to 4 after the live retire runs met HTTP 429 from Cloudflare."
     },
     {
       "file": ".ci/rediacc_ci/security/audit.py",
