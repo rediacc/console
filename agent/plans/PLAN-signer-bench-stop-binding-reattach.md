@@ -23,11 +23,13 @@ Stop by deleting the key secret, settle each judged state with bounded polling, 
 - `_restore(lab, p, signer, caller)` runs in the finally of verb_signer and verb_region_loss: start_signer, settle until issuance is admitted, one more start_signer and settle on failure; the claim "<caller>: bench signing is restored" then holds or breaks, a broken one naming `deploy_signer --target bench-<r>`. It replaces the issues-after-restart and renews-after-restore single calls.
 
 ## Tasks
-- [ ] F1 [writer] deploy_signer: stop_signer deletes the private-key secret instead of the Worker, `_wrangler` takes `stdin`, a read-back still listing the key raises LabError; the module and stop_signer docstrings say so.
+- [x] F1 [writer] deploy_signer: stop_signer deletes the private-key secret instead of the Worker, `_wrangler` takes `stdin`, a read-back still listing the key raises LabError; the module and stop_signer docstrings say so.
   Owns: .ci/rediacc_ci/deploy/deploy_signer.py, .ci/rediacc_ci/tests/test_deploy_signer_lab.py
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_deploy_signer_lab.py -q` rc 0. The stop test asserts the argv `secret delete ACCOUNT_ED25519_PRIVATE_KEY --name signer-bench-eu` with stdin "y\n" and that no call carries `--force` or `delete --name` (fires with the old argv planted back); a FakeRun whose secret list still names the key fires LabError "still holds". Control: the precondition, non-bench refusal and start_signer tests pass unchanged.
-- [ ] F2 [writer] proof: the `settle` helper, settled stop and restart claims, and `_restore` in both finally blocks.
+    (ticked) 2026-11-13T07:51:17Z by d778be9d: commit:e80df8a9c95c stop_signer deletes the private-key secret; enterprise proof signer --bench 22/22
+- [x] F2 [writer] proof: the `settle` helper, settled stop and restart claims, and `_restore` in both finally blocks.
   Owns: .ci/rediacc_ci/enterprise/proof.py, .ci/rediacc_ci/tests/test_enterprise_proof.py
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_enterprise_proof.py -q` rc 0. FakeLab gains `lag` (issue calls still answering the old state after a stop or start) and `restart_breaks` (start leaves the signer refusing): lag=3 passes rc 0 for signer and region-loss while planted single-shot judging fires; restart_breaks gives rc 1 with "bench signing is restored" broken, naming `deploy_signer --target`, and start_signer called twice; lag beyond SETTLE_S breaks the stopped claim naming the 90 s wait. Control: a clean FakeLab passes rc 0 and the existing tests stay green. No test sleeps.
+    (ticked) 2026-11-13T07:51:25Z by d778be9d: commit:08c6fde495bf proof settle helper + restore in both finally blocks; enterprise proof signer --bench 22/22
 - [ ] LP-bench [live] Under the deploy-bench, deploy-workers and deploy-signer profiles, `./run.sh enterprise proof signer --bench` then `region-loss --bench`, each rc 0 with no deploy_bench between them, then the receipt.
   Accept: live-proof bench account-smoke

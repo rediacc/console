@@ -1120,8 +1120,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
-      "done": 32,
+      "open": 7,
+      "done": 33,
       "open_sigs": [
         "1d17b634",
         "27123f68",
@@ -1129,8 +1129,7 @@
         "845dbf74",
         "8ab57406",
         "96717f6c",
-        "a116dd8b",
-        "f63db1ea"
+        "a116dd8b"
       ],
       "done_sigs": [
         "10ee1dbe",
@@ -1164,6 +1163,7 @@
         "e1e9d8df",
         "e25f1778",
         "e32825a7",
+        "f63db1ea",
         "fb84a4e4"
       ]
     },
@@ -2741,14 +2741,15 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 3,
-      "done": 0,
+      "open": 1,
+      "done": 2,
       "open_sigs": [
-        "46c3de93",
-        "89d70106",
-        "b86ddfc4"
+        "89d70106"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "46c3de93",
+        "b86ddfc4"
+      ]
     },
     "agent/plans/PLAN-skip-release-gates-r2-manifest.md": {
       "status": "compacted",
