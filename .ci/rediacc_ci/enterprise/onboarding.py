@@ -635,11 +635,14 @@ def live_actions(
                 **config,
             )
 
-        for module, company in (
-            ("rediacc_ci.deploy.deploy_proxy", target(proxy_config=proxy_path)),
-            ("rediacc_ci.deploy.deploy_account", target(account_config=account_path)),
+        proxy_target = target(proxy_config=proxy_path)
+        # The proxy's /v1/ready asks the account Worker's ExecutorIssuer, which a first deploy has not shipped yet, and the account deploy needs the proxy (its EXECUTOR binding): deploy the proxy, then the account, then smoke the proxy.
+        for module, company, extra in (
+            ("rediacc_ci.deploy.deploy_proxy", proxy_target, ["--defer-smoke"]),
+            ("rediacc_ci.deploy.deploy_account", target(account_config=account_path), []),
+            ("rediacc_ci.deploy.deploy_proxy", proxy_target, ["--smoke-only"]),
         ):
-            rc = deploy_run(module, console_executor.company_argv(company))
+            rc = deploy_run(module, [*console_executor.company_argv(company), *extra])
             if rc != 0:
                 raise OnboardingError(
                     "company %s: %s exited %d" % (plan.company_id, module.rsplit(".", 1)[1], rc)

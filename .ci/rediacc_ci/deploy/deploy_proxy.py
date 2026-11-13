@@ -943,6 +943,11 @@ def _parser() -> argparse.ArgumentParser:
         "--dry-run", action="store_true", help="compile the Worker with wrangler; deploy nothing"
     )
     parser.add_argument(
+        "--defer-smoke",
+        action="store_true",
+        help="company only: deploy and cross-check, then leave the smoke to a later --smoke-only run",
+    )
+    parser.add_argument(
         "--rollback",
         default=None,
         metavar="VERSION_ID",
@@ -1155,6 +1160,14 @@ def main(argv: list[str]) -> int:
             )
         if args.var and args.smoke_only:
             raise RefusedError("--var is refused with --smoke-only: nothing is deployed")
+        if args.defer_smoke and company is None:
+            raise RefusedError(
+                "--defer-smoke is refused without --company: a shared target is smoked by its own deploy"
+            )
+        if args.defer_smoke and (args.smoke_only or args.rollback is not None or args.dry_run):
+            raise RefusedError(
+                "--defer-smoke needs a plain deploy: it is refused with --smoke-only, --rollback and --dry-run"
+            )
         overrides = parse_var_overrides(args.var, text, spec.config)
         reasons = override_refusals(repo_root, text, spec, overrides)
         if reasons:
@@ -1266,7 +1279,8 @@ def main(argv: list[str]) -> int:
         return 1
 
     timing: dict[str, int] = {}
-    smoke_rc = smoke(host, version_id, timing, shown)
+    # A company's first deploy cannot be ready yet: its proxy's ISSUER binding names the company account Worker, which carries no ExecutorIssuer until its own deploy, and that deploy needs this proxy (its EXECUTOR binding). The caller smokes with --smoke-only once the account Worker is up.
+    smoke_rc = None if args.defer_smoke else smoke(host, version_id, timing, shown)
     rollback = revert_line(config, previous, forward_only, current_tag)
     if record_path is not None:
         # Read before the write replaces it: the earlier record knows the release of the version a later rollback may return to (`release_map`).
@@ -1293,7 +1307,9 @@ def main(argv: list[str]) -> int:
                 **({"company_id": company_id} if company_id else {}),
             },
         )
-    if smoke_rc != 0:
+    if smoke_rc is None:
+        log.info("Smoke deferred: run --smoke-only once the account Worker is deployed")
+    elif smoke_rc != 0:
         log.error("Rollback: %s" % shown(rollback))
         return smoke_rc
     if bench and company is None:

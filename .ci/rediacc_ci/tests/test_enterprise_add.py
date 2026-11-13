@@ -559,6 +559,7 @@ def test_live_deploy_step_deploys_proxy_then_account_with_each_own_config(tmp_pa
     assert [m for m, _ in ran] == [
         "rediacc_ci.deploy.deploy_proxy",
         "rediacc_ci.deploy.deploy_account",
+        "rediacc_ci.deploy.deploy_proxy",
     ]
     proxy_argv, account_argv = ran[0][1], ran[1][1]
     assert "--proxy-config" in proxy_argv
@@ -587,7 +588,31 @@ def test_live_deploy_step_claims_the_wildcard_before_the_proxy_smoke_runs(tmp_pa
         runner=None, out_root=tmp_path, deploy=deploy, root=tmp_path, ensure_dns=ensure
     )
     actions["deploy"](ctx)
-    assert order == ["dns", "deploy_proxy", "deploy_account"]
+    assert order == ["dns", "deploy_proxy", "deploy_account", "deploy_proxy"]
+
+
+def test_live_deploy_step_smokes_the_proxy_only_after_the_account_worker_is_deployed(tmp_path):
+    """A first deploy's /v1/ready asks the company account Worker's ExecutorIssuer, so the first proxy run defers its smoke and a --smoke-only run follows the account deploy (bench run 6 failed 503 issuer-probe-failed for 300 s). Control: the account run never carries either flag."""
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    ran = []
+
+    def deploy(module, argv):
+        ran.append((module.rsplit(".", 1)[1], argv))
+        return 0
+
+    actions = onboarding.live_actions(
+        runner=None, out_root=tmp_path, deploy=deploy, root=tmp_path, ensure_dns=lambda _c: "ok"
+    )
+    actions["deploy"](ctx)
+    (_, first), (_, account), (_, last) = ran
+    assert "--defer-smoke" in first
+    assert "--smoke-only" not in first
+    assert "--smoke-only" in last
+    assert "--defer-smoke" not in last
+    assert "--defer-smoke" not in account
+    assert "--smoke-only" not in account
 
 
 def test_live_deploy_step_deploys_nothing_when_the_wildcard_claim_fails(tmp_path):

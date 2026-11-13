@@ -1695,6 +1695,20 @@ def test_var_is_refused_with_smoke_only(tmp_path: pathlib.Path) -> None:
     assert "--var is refused with --smoke-only" in proc.stderr
 
 
+def test_defer_smoke_is_refused_on_a_shared_target(tmp_path: pathlib.Path) -> None:
+    """A shared target is smoked by its own deploy, so the company-only flag cannot switch that smoke off."""
+    root = _fixture_root(tmp_path)
+    proc, calls = _run(
+        tmp_path,
+        root,
+        ("--target", "bench", "--defer-smoke"),
+        REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
+    )
+    assert proc.returncode == 1
+    assert calls == ""
+    assert "--defer-smoke is refused without --company" in proc.stderr
+
+
 def test_help_names_both_new_options() -> None:
     text = port._parser().format_help()
     assert "--rollback VERSION_ID" in text
