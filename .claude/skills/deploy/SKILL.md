@@ -24,9 +24,9 @@ When the request is ambiguous about regions or components, settle it from the ta
 | account (bench) | `account-bench` | `bench.rediacc.cloud` | `workers/account/wrangler.bench.toml` | `account-bench` |
 | proxy | `proxy-<region>` | `proxy.<region>.rediacc.cloud` | `workers/proxy/wrangler.<region>.toml` | none |
 | proxy (bench) | `proxy-bench` | `proxy.bench.rediacc.cloud` | `workers/proxy/wrangler.bench.toml` | none |
-| www | `www` | `www.rediacc.com`, built from edge | `workers/www/wrangler.toml` | none |
+| www | `www` | `www.rediacc.com`, shipped with the edge release | `workers/www/wrangler.toml` | none |
 
-Regions, hosts and bucket names (`configs-<region>`, `backups-<region>`) live in `regions.json`. The proxy Workers deploy through `release:local` (`deploy_proxy` with `workers/proxy/wrangler.<target>.toml`); section 4a covers the per-region steps. The bench proxy stays manual. The CLI release channels (R2 `edge/` and `stable/`) are published by CD and `release:local`, and promoted to stable by `cd-release-stable.yml`, not by this skill.
+Regions, hosts and bucket names (`configs-<region>`, `backups-<region>`) live in `regions.json`. The proxy Workers deploy through `release:local` (`deploy_proxy` with `workers/proxy/wrangler.<target>.toml`); section 4a covers the per-region steps. The bench proxy stays manual. The public eu/us/asia customers ride the edge channel with no soak. The CLI's `stable` channel (R2 `stable/`) is promoted by `cd-release-stable.yml` and reaches enterprise company Workers (`<company>.rediacc.cloud`) through the release rings of `cd-enterprise-release.yml`, not through this skill.
 
 ## 2. Paths: locally or by CD
 
@@ -37,9 +37,11 @@ npm run release:local -- --channel edge --workers-only --regions eu,us --dry-run
 npm run release:local -- --channel edge --workers-only --regions eu,us
 ```
 
+`release:local --channel edge --branch-release` ships the shared edge Workers from a pushed branch head that descends from `origin/main`, gated by `RELEASE_ASKED`.
+
 `--dry-run` prints every step with profile and key names, reads no secret value and writes nothing. The entry sets `APP_VERSION`, builds the portal with the Turnstile key and refuses a build without it, checks the `wrangler_pin`, applies the region's D1 migrations, and pushes the account Worker secrets through `account_secrets_local`. The `--channel edge` name stays: it picks the CLI update channel the Workers announce (`ENVIRONMENT=edge`), not a separate Worker set. The `rediacc_ci.deploy.*` modules run directly too, with no ask, when a step needs them on its own (a stub bootstrap, a single proxy redeploy).
 
-**The CLI's stable channel (asked).** `release:local --channel stable` is refused outright; stable is promoted through CI/CD after the 7-day soak, and the dispatch needs `RELEASE_ASKED` naming the operator's answer:
+**The CLI's stable channel (asked).** `release:local --channel stable` is refused outright; stable is promoted through CI/CD (the 7-day soak applies to the CLI channel and the rings' fast tier, never to the public Workers), and the dispatch needs `RELEASE_ASKED` naming the operator's answer:
 
 ```bash
 RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z gh workflow run "CD - Release to Stable"
