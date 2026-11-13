@@ -403,6 +403,10 @@
     "LINODE_API_TOKEN": {
       "kind": "no-github-twin",
       "reason": "The Linode API token for `rdc machine provision` and `machine provider add --token-env` on an operator workstation, bound only by `bws_env exec --profile cloud-provision` (.ci/config/secret-supply.json); no workflow provisions cloud machines, so no GitHub secret of that name exists to shadow."
+    },
+    "HOSTINGER_REPO_CREDENTIALS_ESCROW": {
+      "kind": "no-github-twin",
+      "reason": "The escrow of hostinger's repository credentials outside bench (agent/plans/PLAN-hostinger-to-bench.md Design 6): one JSON object, repository name to {repositoryGuid, credential} per tag. Bound only by `bws_env exec --profile hostinger-escrow` (.ci/config/secret-supply.json) from an operator workstation, written from eu-bench's hostinger tags and read back for a restore; no workflow requests it."
     }
   },
   "no_fetch_jobs": {}

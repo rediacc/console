@@ -65,6 +65,14 @@
       "reason": "The promotion simulation's parallel CopyObject calls (PLAN-ci-time-budget T2.5 widened it from the twin's 8): small server-side R2 requests, so the width is request concurrency against R2."
     },
     {
+      "file": ".ci/rediacc_ci/housekeeping/cf_retire.py",
+      "match": "EMPTY_WORKERS = 16",
+      "width": 16,
+      "kind": "io",
+      "limit": "Cloudflare R2 API, per-object DELETE requests while a retired bucket is emptied",
+      "reason": "Parallel object deletes against the R2 API while a retired bucket is emptied; the width bounds requests in flight against Cloudflare, not local cores."
+    },
+    {
       "file": ".ci/rediacc_ci/security/audit.py",
       "match": "FETCH_PARALLELISM = 8",
       "width": 8,
