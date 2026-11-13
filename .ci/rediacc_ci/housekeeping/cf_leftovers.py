@@ -29,6 +29,7 @@ import fnmatch
 import json
 import os
 import re
+import secrets
 import sys
 import time
 import tomllib
@@ -57,29 +58,54 @@ PAGE = 100
 class CfError(Exception):
     """A Cloudflare read that failed; the message names the path and Cloudflare's own errors."""
 
-    def __init__(self, message: str, status: int | None = None):
+    def __init__(self, message: str, status: int | None = None, retry_after: float | None = None):
         super().__init__(message)
         self.status = status
+        self.retry_after = retry_after
 
 
 RETRY_STATUSES = frozenset({429, 500, 502, 503, 504})
 RETRY_PAUSES_S = (2.0, 5.0, 15.0)
+# A throttle (429) backs off longer than a 5xx: twice the step, never less than the server's Retry-After (capped), plus jitter.
+THROTTLE_FACTOR = 2.0
+RETRY_AFTER_CAP_S = 120.0
+JITTER_FRACTION = 0.25
+
+
+def retry_after_s(raw: str | None) -> float | None:
+    """The seconds a `Retry-After` header asks for (the delta-seconds form), or None when absent or not a number."""
+    if raw is None:
+        return None
+    try:
+        value = float(str(raw).strip())
+    except ValueError:
+        return None
+    return min(max(value, 0.0), RETRY_AFTER_CAP_S)
+
+
+def backoff_s(exc: CfError, pause: float) -> float:
+    """The seconds to wait before retrying `exc`: `pause` for a 5xx, a longer jittered wait for a 429 that honours Retry-After."""
+    if exc.status != 429:
+        return pause
+    base = max(pause * THROTTLE_FACTOR, exc.retry_after or 0.0)
+    return base + secrets.SystemRandom().uniform(0.0, base * JITTER_FRACTION)
 
 
 def request(method: str, path: str, token: str, jurisdiction: str | None = None) -> dict:
-    """`_request_once`, retried after a pause on a rate limit or a 5xx (Cloudflare throttles a bucket emptied 16 calls at a time, and its 429 page is not JSON). Every other failure raises at once."""
+    """`_request_once`, retried after a pause on a rate limit or a 5xx (Cloudflare throttles a bucket emptied many calls at a time, and its 429 page is not JSON). Every other failure raises at once."""
     for pause in RETRY_PAUSES_S:
         try:
             return _request_once(method, path, token, jurisdiction)
         except CfError as exc:
             if exc.status not in RETRY_STATUSES:
                 raise
-            time.sleep(pause)
+            time.sleep(backoff_s(exc, pause))
     return _request_once(method, path, token, jurisdiction)
 
 
 def _request_once(method: str, path: str, token: str, jurisdiction: str | None = None) -> dict:
     """One API call, returning the decoded body and raising CfError on any failure. The only network call here; `cf_retire` sends its DELETEs through it. `jurisdiction` sets the `cf-r2-jurisdiction` header an R2 call needs to see an `eu` bucket."""
+    retry_after = None
     headers = {"Authorization": "Bearer " + token}
     if jurisdiction is not None:
         headers[R2_JURISDICTION_HEADER] = jurisdiction
@@ -90,6 +116,7 @@ def _request_once(method: str, path: str, token: str, jurisdiction: str | None =
             status = getattr(resp, "status", 200)
     except urllib.error.HTTPError as exc:
         status = exc.code
+        retry_after = retry_after_s(exc.headers.get("Retry-After") if exc.headers else None)
         try:
             raw = exc.read()
         except OSError as read_exc:
@@ -108,10 +135,12 @@ def _request_once(method: str, path: str, token: str, jurisdiction: str | None =
     try:
         body = json.loads(raw)
     except ValueError:
-        raise CfError("%s %s: non-JSON answer (HTTP %s)" % (method, path, status), status) from None
+        raise CfError(
+            "%s %s: non-JSON answer (HTTP %s)" % (method, path, status), status, retry_after
+        ) from None
     if not isinstance(body, dict) or body.get("success") is not True:
         errors = body.get("errors") if isinstance(body, dict) else None
-        raise CfError("%s %s: %s" % (method, path, json.dumps(errors)), status)
+        raise CfError("%s %s: %s" % (method, path, json.dumps(errors)), status, retry_after)
     return body
 
 

@@ -439,3 +439,56 @@ def test_the_retired_terms_record_is_no_reference():
 
 def run_extra(**extra):
     return cfl.find_leftovers(ROOT, "acct", TOKEN, fake_api([CONFIGURED], [], [], extra=extra))
+
+
+def _throttle(retry_after=None):
+    headers = email.message.Message()
+    if retry_after is not None:
+        headers["Retry-After"] = retry_after
+    return urllib.error.HTTPError("u", 429, "slow", headers, io.BytesIO(b"<html>rate</html>"))
+
+
+def test_retry_after_is_honoured_on_a_429(monkeypatch):
+    """A Retry-After of 40 s outweighs the 4 s first step: the pause is at least 40 s, and no more than the jitter allows."""
+    calls = {"n": 0}
+
+    def flaky():
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise _throttle("40")
+        return _Resp(b'{"success": true, "result": null}')
+
+    _patch_urlopen(monkeypatch, flaky)
+    pauses: list = []
+    monkeypatch.setattr(cfl.time, "sleep", pauses.append)
+    assert cfl.request("DELETE", "/r2/x", TOKEN)["success"] is True
+    assert len(pauses) == 1
+    assert 40.0 <= pauses[0] <= 40.0 * (1 + cfl.JITTER_FRACTION)
+
+
+def test_a_429_without_retry_after_backs_off_longer_than_a_5xx(monkeypatch):
+    pauses: list = []
+    monkeypatch.setattr(cfl.time, "sleep", pauses.append)
+    for status in (429, 503):
+        calls = {"n": 0}
+
+        def flaky(status=status, calls=calls):
+            calls["n"] += 1
+            if calls["n"] == 1:
+                raise urllib.error.HTTPError(
+                    "u", status, "x", email.message.Message(), io.BytesIO(b"<html>")
+                )
+            return _Resp(b'{"success": true, "result": null}')
+
+        _patch_urlopen(monkeypatch, flaky)
+        cfl.request("DELETE", "/r2/x", TOKEN)
+    throttle, server = pauses
+    assert throttle >= cfl.RETRY_PAUSES_S[0] * cfl.THROTTLE_FACTOR
+    assert server == cfl.RETRY_PAUSES_S[0]
+
+
+def test_retry_after_is_capped_and_a_bad_value_is_ignored():
+    assert cfl.retry_after_s("5") == 5.0
+    assert cfl.retry_after_s("99999") == cfl.RETRY_AFTER_CAP_S
+    assert cfl.retry_after_s("Wed, 21 Oct 2026 07:28:00 GMT") is None
+    assert cfl.retry_after_s(None) is None

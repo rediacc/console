@@ -8,6 +8,7 @@ import urllib.parse
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.housekeeping import cf_leftovers as cfl
 from rediacc_ci.housekeeping import cf_retire as cr
 
 ROOT = paths.repo_root()
@@ -348,3 +349,67 @@ def test_the_live_plan_names_the_rename_objects():
         "rediacc-proxy-executor",
     ):
         assert rs.why(keep) is None, keep
+
+
+class ThrottledCf(FakeCf):
+    """A FakeCf whose object DELETEs answer 429 a set number of times per key before they succeed, or answer another status for ever."""
+
+    def __init__(self, throttles: int = 0, status: int = 429):
+        super().__init__()
+        self.throttles, self.status = throttles, status
+        self.attempts: dict = {}
+
+    def delete(self, path, jurisdiction=None):
+        if "/objects/" in path:
+            n = self.attempts[path] = self.attempts.get(path, 0) + 1
+            if self.status != 429 or n <= self.throttles:
+                raise cfl.CfError("DELETE %s: HTTP %s" % (path, self.status), self.status)
+        return super().delete(path, jurisdiction)
+
+
+@pytest.fixture
+def pauses(monkeypatch):
+    out: list = []
+    monkeypatch.setattr(cfl.time, "sleep", out.append)
+    return out
+
+
+def test_emptying_parallelism_defaults_to_four_and_a_flag_sets_it(tree, monkeypatch):
+    widths: list = []
+    real = cr.concurrent.futures.ThreadPoolExecutor
+
+    def spy(n, *a, **kw):
+        widths.append(n)
+        return real(n, *a, **kw)
+
+    monkeypatch.setattr(cr.concurrent.futures, "ThreadPoolExecutor", spy)
+    assert cr.EMPTY_WORKERS == 4
+    assert run(tree, FakeCf(), "delete", "--write", "--no-archive", ASKED) == 0
+    assert set(widths) == {4}
+    widths.clear()
+    assert (
+        run(tree, FakeCf(), "delete", "--write", "--empty-workers", "2", "--no-archive", ASKED) == 0
+    )
+    assert set(widths) == {2}
+
+
+def test_a_429_storm_on_one_object_eventually_succeeds(tree, pauses):
+    cf = ThrottledCf(throttles=cr.THROTTLE_ROUNDS)
+    assert run(tree, cf, "delete", "--write", "--no-archive", ASKED) == 0
+    assert cf.buckets[("rediacc-configs-eu", "eu")] == []
+    assert len(pauses) >= cr.THROTTLE_ROUNDS
+    assert all(p >= cr.THROTTLE_PAUSE_S for p in pauses)
+
+
+def test_a_429_that_never_clears_stops_the_run_after_the_rounds(tree, pauses, capsys):
+    cf = ThrottledCf(throttles=10**6)
+    assert run(tree, cf, "delete", "--write", "--no-archive", ASKED) == 1
+    assert pauses
+    assert "failed" in capsys.readouterr().err
+
+
+def test_control_a_403_stops_the_run_at_once(tree, pauses, capsys):
+    cf = ThrottledCf(status=403)
+    assert run(tree, cf, "delete", "--write", "--no-archive", ASKED) == 1
+    assert pauses == []
+    assert "HTTP 403" in capsys.readouterr().err

@@ -24,6 +24,7 @@ import argparse
 import concurrent.futures
 import dataclasses
 import datetime
+import functools
 import hashlib
 import json
 import os
@@ -48,7 +49,11 @@ KEEP_NAMES = frozenset({"rediacc-public-data"})
 KEEP_RE = re.compile(r"(?:^|-)proof-loss(?:-|$)")
 ASKED_RE = re.compile(r"ASKED:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z")
 STEPS = ("unbind", "worker", "container", "queue", "d1", "r2", "pages")
-EMPTY_WORKERS = 16
+# R2 throttles a wide emptying (16 parallel DELETEs drew 429 on 8,823 objects, live 2026-11-13), so the default is narrow.
+EMPTY_WORKERS = 4
+# After a whole call still fails on 429, the run pauses this long (jittered) and retries it, up to THROTTLE_ROUNDS times, before giving up.
+THROTTLE_PAUSE_S = 30.0
+THROTTLE_ROUNDS = 4
 
 
 class RetireError(Exception):
@@ -368,21 +373,35 @@ def print_actions(acts: list[Action]) -> None:
 # --- the deletes ----------------------------------------------------------------------------------
 
 
-def _empty_bucket(client, account: str, a: Action) -> int:
+def _throttled(call):
+    """Run `call`; a 429 that survived `cf_leftovers.request`'s own retries pauses longer and tries again, up to THROTTLE_ROUNDS times. Any other CfError raises at once."""
+    for _round in range(THROTTLE_ROUNDS):
+        try:
+            return call()
+        except cfl.CfError as exc:
+            if exc.status != 429:
+                raise
+            wait = cfl.backoff_s(exc, THROTTLE_PAUSE_S)
+            print("cf_retire:   throttled (429); pausing %.0f s" % wait, file=sys.stderr)
+            cfl.time.sleep(wait)
+    return call()
+
+
+def _empty_bucket(client, account: str, a: Action, workers: int = EMPTY_WORKERS) -> int:
     removed = 0
-    with concurrent.futures.ThreadPoolExecutor(EMPTY_WORKERS) as pool:
+    with concurrent.futures.ThreadPoolExecutor(max(1, workers)) as pool:
         while True:
             keys = r2_objects(client, account, a.name, a.header())
             if not keys:
                 return removed
             base = "/accounts/%s/r2/buckets/%s/objects/" % (account, a.name)
             urls = [base + urllib.parse.quote(k, safe="") for k in keys]
-            list(pool.map(lambda u: client.delete(u, a.header()), urls))
+            list(pool.map(lambda u: _throttled(lambda: client.delete(u, a.header())), urls))
             removed += len(keys)
             print("cf_retire:   %s: %d object(s) removed" % (a.name, removed))
 
 
-def run_action(client, account: str, a: Action) -> None:
+def run_action(client, account: str, a: Action, workers: int = EMPTY_WORKERS) -> None:
     acct = "/accounts/%s" % account
     if a.step == "unbind" and a.zone:
         client.delete("/zones/%s/workers/routes/%s" % (a.zone, a.oid))
@@ -397,7 +416,7 @@ def run_action(client, account: str, a: Action) -> None:
     elif a.step == "d1":
         client.delete("%s/d1/database/%s" % (acct, a.oid))
     elif a.step == "r2":
-        _empty_bucket(client, account, a)
+        _empty_bucket(client, account, a, workers)
         client.delete("%s/r2/buckets/%s" % (acct, a.name), a.header())
     elif a.step == "pages":
         client.delete("%s/pages/projects/%s" % (acct, a.name))
@@ -413,6 +432,7 @@ def execute(
     acts: list[Action],
     write: bool,
     no_archive: str | None,
+    workers: int = EMPTY_WORKERS,
 ) -> int:
     """Print each action; send it only under `write`, recording each. Refusals stop the run before the first call."""
     refused = judge_refusals(root, acts, no_archive)
@@ -451,7 +471,7 @@ def execute(
         print("cf_retire: running %s" % a.line())
         note(a, "started")
         try:
-            run_action(client, account, a)
+            _throttled(functools.partial(run_action, client, account, a, workers))
         except cfl.CfError as exc:
             note(a, "failed", str(exc))
             print("cf_retire: %s %s failed: %s" % (a.step, a.name, exc), file=sys.stderr)
@@ -592,6 +612,7 @@ def parse(argv: list[str]) -> argparse.Namespace:
     d = sub.add_parser("delete")
     d.add_argument("--only", action="append", default=[])
     d.add_argument("--write", action="store_true")
+    d.add_argument("--empty-workers", dest="empty_workers", type=int, default=EMPTY_WORKERS)
     d.add_argument("--no-archive", dest="no_archive", default=None)
     return ap.parse_args(argv)
 
@@ -631,7 +652,7 @@ def main(argv: list[str], client=None, root=None) -> int:
             summary(acts, kept)
             print("cf_retire: plan only; nothing deleted")
             return 0
-        rc = execute(root, account, client, rs, acts, args.write, no_archive)
+        rc = execute(root, account, client, rs, acts, args.write, no_archive, args.empty_workers)
         summary(acts, kept)
         return rc
     except (RetireError, cfl.CfError) as exc:
