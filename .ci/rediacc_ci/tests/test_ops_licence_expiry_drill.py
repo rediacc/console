@@ -33,6 +33,7 @@ class Fake:
         second_digest_lines=0,
         second_owner_mails=0,
         org_rows=1,
+        org_name=ORG_NAME,
         shard=None,
         two_factor=False,
         sales_text=SALES_MAIL,
@@ -46,6 +47,7 @@ class Fake:
         self.second_digest_lines = second_digest_lines
         self.second_owner_mails = second_owner_mails
         self.org_rows = org_rows
+        self.org_name = org_name
         self.shard = shard
         self.two_factor = two_factor
         self.sales_text = sales_text
@@ -116,14 +118,12 @@ class Fake:
         self.sql.append(sql)
         if sql.startswith("SELECT id FROM users"):
             return [{"id": USER}] if self.user_present else []
-        if sql.startswith("SELECT id, org_id FROM subscriptions"):
-            return [{"id": SUB, "org_id": ORG}]
         if sql.startswith("SELECT id FROM subscriptions"):
             return [{"id": SUB}]
         if sql.startswith("SELECT shard FROM subscription_shards"):
             return [{"shard": self.shard}] if self.shard else []
         if sql.startswith("SELECT id, name FROM organizations WHERE customer_id"):
-            return [{"id": ORG, "name": ORG_NAME}] * self.org_rows
+            return [{"id": ORG, "name": self.org_name}] * self.org_rows
         if sql.startswith("SELECT id FROM organizations"):
             return [{"id": ORG}]
         if sql.startswith("INSERT INTO delegation_certs"):
@@ -274,6 +274,14 @@ def test_the_customer_org_must_be_exactly_one_row(capsys, rows):
     fake, rc, out = drill(capsys, org_rows=rows)
     assert rc == 1
     assert "STEP 4 plant rc=1 organization rows=%d for the customer" % rows in out.out
+    assert not fake.cert
+
+
+def test_a_customer_org_with_no_name_refuses_the_plant(capsys):
+    """Review 12803257.1: the digest line names the org, so a nameless org is refused before planting."""
+    fake, rc, out = drill(capsys, org_name="")
+    assert rc == 1
+    assert "STEP 4 plant rc=1 organization '%s' has no name" % ORG in out.out
     assert not fake.cert
 
 

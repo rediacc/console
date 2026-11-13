@@ -385,9 +385,7 @@ def _step_plant(d: Deps, ev: Evidence, st: State) -> None:
         ev.add(4, "plant", 1, "users rows=%d" % len(users))
         raise DrillError("the throwaway user row is missing")
     user_id = str(users[0]["id"])
-    subs = d.rows(
-        q("SELECT id, org_id FROM subscriptions WHERE customer_id = $u", u=sql_literal(user_id))
-    )
+    subs = d.rows(q("SELECT id FROM subscriptions WHERE customer_id = $u", u=sql_literal(user_id)))
     if len(subs) != 1:
         ev.add(4, "plant", 1, "subscription rows=%d" % len(subs))
         raise DrillError("the throwaway subscription row is missing")
