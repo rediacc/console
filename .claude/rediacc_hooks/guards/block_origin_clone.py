@@ -305,7 +305,7 @@ class World:
         return rel == "." or first in ALWAYS_OURS or os.path.exists(os.path.join(self.root, first))
 
     def is_source_of_ours(self, real):
-        """Does a clone SOURCE name this checkout or its git directory? A place test is too wide for a source: from a run standing below the root (a package directory, a lease under `.claude/worktrees/`) every bare word resolves under an existing top-level entry, so `fetch` read as a source was "ours" (#11ad5926). git clones only a source that exists, so a source must exist, apart from a path under `.git` and an absent submodule directory (`private/<name>`)."""
+        """Does a clone SOURCE name this checkout or its git directory? A place test is too wide for a source: from a run standing below the root (a package directory, a lease under `.claude/worktrees/`) every bare word resolves under an existing top-level entry, so `fetch` read as a source was "ours" (#11ad5926). git clones only a source that exists, so a source must exist, apart from a path under `.git` and an absent submodule directory (`private/<name>`). A bare absent `private` is not one: it is a plain directory of the superproject, never a repository, so git clones nothing from it (review c804bc45.2)."""
         common = self.common()
         if common and commit_policy.is_inside(real, common):
             return True
@@ -316,7 +316,7 @@ class World:
         rel = os.path.relpath(real, os.path.realpath(self.root))
         parts = rel.split(os.sep)
         # In a lease `.git` is a file, so `.git/modules/...` names the module store only by its spelling.
-        return parts[0] == ".git" or rel == "private" or (parts[0] == "private" and len(parts) == 2)
+        return parts[0] == ".git" or (parts[0] == "private" and len(parts) == 2)
 
 
 def _config_urls(config, section):
@@ -511,39 +511,100 @@ def _sequence_nodes(tree):
             yield node, [programs._const_str(a) for a in node.args]
 
 
-def _handed_sequences(tree):
-    """The ids of every call, and of every list, tuple or set literal a call is handed as an argument, positional or keyword.
+# Builtins that run no process and call nothing they are handed, so an argument they take is not yet an argv. `map` and `filter` call their first argument, and `sorted`, `min` and `max` call a `key=`, so those are not here or stop counting once a `key` is passed.
+PURE_BUILTINS = frozenset(
+    (
+        "print",
+        "len",
+        "repr",
+        "str",
+        "list",
+        "tuple",
+        "sorted",
+        "set",
+        "frozenset",
+        "sum",
+        "min",
+        "max",
+        "any",
+        "all",
+        "enumerate",
+        "zip",
+        "isinstance",
+        "bool",
+        "type",
+        "id",
+    )
+)
 
-    A literal bound to a name counts as handed when that name reaches a call: as an argument, plain or starred, or as an element of a literal a call is handed (`sh("git", *ARGV)`, `run_git(ARGV)`, `subprocess.run(["git", *ARGV])`, review c804bc45.1). Scope is ignored, so a name that reaches any call hands every literal bound to it.
+
+def _rebound_names(tree):
+    """Every name the program binds itself: a def, a class, an import, an argument or an assignment target. A pure builtin rebound so is the program's own callable."""
+    out = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            out.add(node.name)
+        elif isinstance(node, ast.alias):
+            out.add((node.asname or node.name).split(".", 1)[0])
+        elif isinstance(node, ast.arg):
+            out.add(node.arg)
+        elif isinstance(node, ast.Name) and isinstance(node.ctx, (ast.Store, ast.Del)):
+            out.add(node.id)
+    return out
+
+
+def _bindings(tree):
+    """`{name: [value, ...]}` for every plain, annotated, augmented or walrus assignment to a bare name."""
+    out = {}
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            pairs = [(target, node.value) for target in node.targets]
+        elif (
+            isinstance(node, (ast.AnnAssign, ast.AugAssign, ast.NamedExpr))
+            and node.value is not None
+        ):
+            pairs = [(node.target, node.value)]
+        else:
+            continue
+        for target, value in pairs:
+            if isinstance(target, ast.Name):
+                out.setdefault(target.id, []).append(value)
+    return out
+
+
+def _handed_sequences(tree):
+    """The ids of every call that can run something, and of every list, tuple or set literal such a call is handed.
+
+    A call counts unless its callee is a bare pure builtin the program does not rebind (`PURE_BUILTINS`): `print(SPELLABLE)` or `len(SPELLABLE)` hands nothing (review 21761c0f.1). What a counting call is handed is its whole argument expressions, through a pure builtin, a subscript or an operator inside them (`sh("git", *ARGV)`, `run_git(list(ARGV))`, `subprocess.run(["git", *ARGV])`, review c804bc45.1). A name reached so hands every literal bound to it, and so does every name its bindings mention (`X = list(ARGV)` then `run_git(X)`), until nothing new is reached. Scope is ignored, so a name that reaches such a call anywhere hands every literal bound to it anywhere.
     """
     sequences = (ast.List, ast.Tuple, ast.Set)
+    pure = PURE_BUILTINS - _rebound_names(tree)
     out, names = set(), set()
 
     def hand(value):
-        value = value.value if isinstance(value, ast.Starred) else value
-        if isinstance(value, ast.Name):
-            names.add(value.id)
-        elif isinstance(value, sequences):
-            out.add(id(value))
-            for element in value.elts:
-                hand(element)
+        for node in ast.walk(value):
+            if isinstance(node, ast.Name):
+                names.add(node.id)
+            elif isinstance(node, sequences):
+                out.add(id(node))
+
+    def runs_something(call):
+        func = call.func
+        if not (isinstance(func, ast.Name) and func.id in pure):
+            return True
+        return func.id in ("sorted", "min", "max") and any(k.arg == "key" for k in call.keywords)
 
     for node in ast.walk(tree):
-        if isinstance(node, ast.Call):
+        if isinstance(node, ast.Call) and runs_something(node):
             out.add(id(node))
             for arg in list(node.args) + [keyword.value for keyword in node.keywords]:
                 hand(arg)
-    for node in ast.walk(tree):
-        if isinstance(node, ast.Assign):
-            targets = node.targets
-        elif isinstance(node, ast.AnnAssign) and node.value is not None:
-            targets = [node.target]
-        else:
-            continue
-        if isinstance(node.value, sequences) and any(
-            isinstance(target, ast.Name) and target.id in names for target in targets
-        ):
-            out.add(id(node.value))
+    bindings, done = _bindings(tree), set()
+    while names - done:
+        name = (names - done).pop()
+        done.add(name)
+        for value in bindings.get(name, ()):
+            hand(value)
     return out
 
 
@@ -584,7 +645,7 @@ def _python_reasons(code, world, depth, by_path):
     for node, seq in _sequence_nodes(tree):
         if not seq:
             continue
-        # A helper taking the verb's argv: `sh('git', ['clone', ...])`. Only a sequence a call is handed, directly or through the name it is bound to, reads so; a literal no call takes, like `SPELLABLE = ("clone", "fetch", ...)`, is a table of words, not a git argv (#11ad5926, c804bc45.1).
+        # A helper taking the verb's argv: `sh('git', ['clone', ...])`. Only a sequence a call that can run something is handed, directly or through the name it is bound to, reads so; a literal no such call takes, like `SPELLABLE = ("clone", "fetch", ...)` printed or counted, is a table of words, not a git argv (#11ad5926, c804bc45.1, 21761c0f.1).
         verb_first = seq[0] in ("clone", "fetch", "pull") and id(node) in handed
         words = ["git", *seq] if verb_first else seq
         if words[0] == "git" and any(e is not None for e in words[1:]):

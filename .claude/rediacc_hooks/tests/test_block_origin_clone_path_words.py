@@ -286,3 +286,73 @@ def test_a_named_clone_argv_handed_to_a_call_is_refused(cwd, body):
 )
 def test_a_named_verb_table_no_call_takes_is_data(cwd, body):
     assert _run(_heredoc(body), cwd=cwd) == (0, "")
+
+
+# Review 21761c0f.1: a table only a pure builtin takes is data, even when its walk as a git argv would be refused (`.` is this checkout from both directories).
+PATHY_TABLE = 'SPELLABLE = ("clone", ".", "fetch", "pull")\n'
+
+
+@pytest.mark.parametrize("cwd", [ROOT, SUBDIR])
+@pytest.mark.parametrize(
+    "body",
+    [
+        PATHY_TABLE + "print(SPELLABLE)",
+        PATHY_TABLE + "print(len(SPELLABLE))",
+        PATHY_TABLE + "n = len(SPELLABLE)",
+        PATHY_TABLE + 'print(sorted(SPELLABLE), *SPELLABLE, sep=",")',
+        'print(["clone", ".", "/tmp/x"])',
+    ],
+)
+def test_a_verb_table_only_a_pure_builtin_takes_is_data(cwd, body):
+    assert _run(_heredoc(body), cwd=cwd) == (0, "")
+
+
+@pytest.mark.parametrize("cwd", [ROOT, SUBDIR])
+def test_a_verb_table_a_pure_builtin_takes_in_a_script_by_path_is_data(cwd, tmp_path):
+    script = tmp_path / "t.py"
+    script.write_text(PATHY_TABLE + "print(SPELLABLE)\n", encoding="utf-8")
+    assert _run("python3 %s" % script, cwd=cwd) == (0, "")
+
+
+# The pure-builtin exemption must not reopen c804bc45.1: a pure builtin passes its argument through to a call that runs, a rebound builtin is the program's own, and a `key=` or `map` calls what it is handed.
+@pytest.mark.parametrize("cwd", [ROOT, SUBDIR])
+@pytest.mark.parametrize(
+    "body",
+    [
+        NAMED_ARGV + "run_git(list(ARGV))",
+        NAMED_ARGV + "X = list(ARGV)\nrun_git(X)",
+        NAMED_ARGV + "X = ARGV\nrun_git(X)",
+        NAMED_ARGV + 'import subprocess\nsubprocess.run(["git", *tuple(ARGV)])',
+        NAMED_ARGV + "run_git(ARGV[0:])",
+        "def print(*a):\n    sh('git', *a)\n" + NAMED_ARGV + "print(*ARGV)",
+        "from helpers import run_git as len\n" + NAMED_ARGV + "len(ARGV)",
+        NAMED_ARGV + "sorted([ARGV], key=run_git)",
+        NAMED_ARGV + "list(map(run_git, [ARGV]))",
+    ],
+)
+def test_a_named_clone_argv_reaching_a_call_through_a_builtin_is_refused(cwd, body):
+    rc, err = _run(_heredoc(body), cwd=cwd)
+    assert rc == 2
+    assert MARK in err
+    assert "origin or mirror" in err
+
+
+class _Root:
+    """The two attributes `is_source_of_ours` reads, over a scratch root with no git directory."""
+
+    def __init__(self, root):
+        self.root = str(root)
+
+    def common(self):
+        return ""
+
+
+def test_a_bare_absent_private_is_no_source_of_ours(tmp_path):
+    # Review c804bc45.2: `private` alone is a plain superproject directory, never a repository; an absent `private/<name>` and `.git/...` still count.
+    world = _Root(tmp_path)
+    judge = block_origin_clone.World.is_source_of_ours
+    assert not (tmp_path / "private").exists()
+    assert judge(world, str(tmp_path / "private")) is False
+    assert judge(world, str(tmp_path / "private" / "renet")) is True
+    assert judge(world, str(tmp_path / ".git" / "modules" / "x")) is True
+    assert judge(world, str(tmp_path / "fetch")) is False
