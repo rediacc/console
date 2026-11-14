@@ -23,8 +23,9 @@ def _floor_problem(entries: list[dict], gate_id: str) -> str | None:
         return "%s has no integer cores.min: %r" % (gate_id, cores)
     if cores["min"] < FLOOR:
         return (
-            "%s may be granted %d core(s); below %d its ~500 core-seconds overrun the 485.6 s "
-            "gate limit (scripts/ci-runner/manifest.ts explains the measurement)"
+            "%s may be granted %d core(s), below the floor of %d: one core overran the 485.6 s "
+            "limit on 2026-11-14 and six took 243 s under contention, so fewer cores lose the "
+            "headroom (scripts/ci-runner/manifest.ts explains the measurement)"
             % (gate_id, cores["min"], FLOOR)
         )
     return None
