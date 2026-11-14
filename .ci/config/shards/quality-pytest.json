@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-14T14:36:24.750Z",
+  "generatedAt": "2026-11-14T14:39:39.724Z",
   "legs": [
     {
       "index": 1,
@@ -262,6 +262,7 @@
         "pytest:.ci/rediacc_ci/tests/test_deploy_wait_for_preview_worker.py",
         "pytest:.ci/rediacc_ci/tests/test_dev_worktree.py",
         "pytest:.ci/rediacc_ci/tests/test_dev_worktree_lease_gates.py",
+        "pytest:.ci/rediacc_ci/tests/test_dev_worktree_spike.py",
         "pytest:.ci/rediacc_ci/tests/test_docker_cleanup_staging.py",
         "pytest:.ci/rediacc_ci/tests/test_docker_create_manifest.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_integrity.py",

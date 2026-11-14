@@ -705,3 +705,28 @@ def test_a_dry_run_failure_with_whitespace_only_stderr_shows_stdout() -> None:
 
     with pytest.raises(account_e2e.RefusedError, match=r"failed \(rc=1\): unsupported platform"):
         account_e2e.install_system_deps("chromium", ".", failing)
+
+
+def test_backend_env_opens_test_mode_and_closes_the_terms_gate(monkeypatch) -> None:
+    """6325a494.1: the e2e users never accept the Terms, so the backend gets TERMS_GATE=false beside TEST_MODE=true."""
+    seen: dict[str, typing.Any] = {}
+
+    class StopHereError(Exception):
+        pass
+
+    def fake_popen(*_args: typing.Any, **kwargs: typing.Any) -> typing.NoReturn:
+        seen.update(kwargs["env"])
+        raise StopHereError
+
+    monkeypatch.setattr(account_e2e.subprocess, "Popen", fake_popen)
+    monkeypatch.setenv("ACCOUNT_X25519_PRIVATE_KEY", "xpriv")
+    monkeypatch.setenv("ACCOUNT_X25519_PUBLIC_KEY", "xpub")
+    monkeypatch.setenv("TERMS_GATE", "true")
+    run = account_e2e.Run.__new__(account_e2e.Run)
+    run.api_port = "3001"
+    run.e2e_port = "5173"
+    run.account_dir = pathlib.Path()
+    with pytest.raises(StopHereError):
+        run.start_backend("")
+    assert seen["TEST_MODE"] == "true"
+    assert seen["TERMS_GATE"] == "false"

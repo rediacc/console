@@ -4075,3 +4075,53 @@ def test_lanes_passing_also_ignores_a_comment_that_names_the_flag(tmp_path):
         },
     )
     assert br.lanes_passing_also(tmp_path) == {"with-also": True, "comment-only": False}
+
+
+@pytest.mark.parametrize("line", ["- run: r # --also x", "- run: r  #--also x", "- run: r"])
+def test_lanes_passing_also_ignores_a_trailing_comment_that_names_the_flag(tmp_path, line):
+    """3cd51aae.2: a `#` after whitespace starts a comment, so the job passes no --also."""
+    _write_workflows(tmp_path, {"job": ("A", [line])})
+    assert br.lanes_passing_also(tmp_path) == {"job": False}
+
+
+def test_lanes_passing_also_keeps_a_flag_before_a_comment_and_a_quoted_hash(tmp_path):
+    """CONTROL for 3cd51aae.2: the flag before a comment, and a `#` inside quotes or glued to a word, still count."""
+    _write_workflows(
+        tmp_path,
+        {
+            "before": ("A", ["- run: r --also x # why"]),
+            "quoted": ("B", ["- run: r 'a # b' --also x"]),
+            "glued": ("C", ["- run: r a#b --also x"]),
+        },
+    )
+    assert br.lanes_passing_also(tmp_path) == {"before": True, "quoted": True, "glued": True}
+
+
+def test_drop_stale_leg_extras_keeps_a_lane_whose_job_the_workflow_does_not_name():
+    """3cd51aae.1: a `passes_also` that lacks the lane's job leaves its extras alone, with no note."""
+    costs = {
+        "test-e2e-workers": {"fedora-43": {"fixedMinutes": 7.0, "legExtraMinutes": {"1": 3.0}}}
+    }
+    out, notes = br.drop_stale_leg_extras(costs, {"some-other-job": False})
+    assert out == costs
+    assert notes == []
+
+
+def test_refresh_keeps_a_leg_extra_when_ci_yml_is_missing(tmp_path):
+    """3cd51aae.1: no ci.yml gives `passes_also` {}, and the refresh keeps the committed extra."""
+    path = _lane_durations_path(tmp_path)
+    prior = {
+        "test-e2e-workers": {
+            "fedora-43": {"fixedMinutes": 7.22, "legExtraMinutes": {"1": 3.03}, "units": {}}
+        }
+    }
+    path.write_text(
+        json.dumps(
+            {"refreshed_at": "2026-01-01T00:00:00Z", "concurrency": 20, "variantCosts": prior}
+        )
+    )
+    measured = {"test-e2e-workers": {"fedora-43": {"fixedMinutes": 7.0, "units": {}}}}
+    compute = _fake_compute(variant_costs=measured, variant_legs={"test-e2e-workers": 3})
+    assert br.refresh_lane_durations(path, limit=10, compute=compute) == 0
+    cost = json.loads(path.read_text())["variantCosts"]["test-e2e-workers"]["fedora-43"]
+    assert cost["legExtraMinutes"] == {"1": 3.03}

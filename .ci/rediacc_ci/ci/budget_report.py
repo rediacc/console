@@ -724,8 +724,22 @@ def lane_display_patterns(
     return patterns
 
 
+def _without_yaml_comment(line: str) -> str:
+    """`line` without a trailing YAML comment: a `#` at the start or preceded by whitespace, outside single and double quotes."""
+    quote = ""
+    for index, char in enumerate(line):
+        if quote:
+            if char == quote:
+                quote = ""
+        elif char in "'\"":
+            quote = char
+        elif char == "#" and (index == 0 or line[index - 1].isspace()):
+            return line[:index]
+    return line
+
+
 def lanes_passing_also(root: Path, workflow: str = DEFAULT_WORKFLOW) -> dict[str, bool]:
-    """`{job id: whether its block passes `--also` to the E2E runner on a non-comment line}` for every callee job of `workflow`, read the way `lane_display_patterns` reads the same files. `--also` is how a leg takes suites its shard manifest does not name, which is the only source of a variant's `legExtraMinutes`; a job without it carries none."""
+    """`{job id: whether its block passes `--also` to the E2E runner outside a comment, whole-line or trailing}` for every callee job of `workflow`, read the way `lane_display_patterns` reads the same files. `--also` is how a leg takes suites its shard manifest does not name, which is the only source of a variant's `legExtraMinutes`; a job without it carries none."""
     ci_jobs = parse_workflow_jobs((root / ".github" / "workflows" / workflow).read_text("utf-8"))
     out: dict[str, bool] = {}
     for rec in ci_jobs.values():
@@ -749,7 +763,7 @@ def lanes_passing_also(root: Path, workflow: str = DEFAULT_WORKFLOW) -> dict[str
             if header:
                 current = header.group(1)
                 out[current] = False
-            elif current is not None and "--also" in line and not line.lstrip().startswith("#"):
+            elif current is not None and "--also" in _without_yaml_comment(line):
                 out[current] = True
     return out
 

@@ -65,14 +65,15 @@ class InterruptedRunError(Exception):
 def git(cwd, *args, env=None):
     merged = {k: v for k, v in os.environ.items() if k not in SCRUBBED_ENV}
     merged["GIT_TERMINAL_PROMPT"] = "0"
-    # A GitHub runner has no global git identity, and the fixture commits: without these `git commit` died "Author identity unknown" (PR #605 CI run 43585926477, nine setup errors in test_dev_worktree_lease_gates.py) while a developer machine with a ~/.gitconfig passed. setdefault keeps an identity the environment already sets.
+    # A GitHub runner has no global git identity, and the fixture commits: without these `git commit` died "Author identity unknown" (PR #605 CI run 43585926477, nine setup errors in test_dev_worktree_lease_gates.py) while a developer machine with a ~/.gitconfig passed. A non-empty identity the environment already sets is kept; an empty one (a runner exporting `GIT_AUTHOR_NAME=`) is filled, because git refuses an empty ident.
     for key, value in (
         ("GIT_AUTHOR_NAME", "spike"),
         ("GIT_AUTHOR_EMAIL", "spike@example.invalid"),
         ("GIT_COMMITTER_NAME", "spike"),
         ("GIT_COMMITTER_EMAIL", "spike@example.invalid"),
     ):
-        merged.setdefault(key, value)
+        if not merged.get(key):
+            merged[key] = value
     merged.update(env or {})
     return subprocess.run(
         ["git", *args],
