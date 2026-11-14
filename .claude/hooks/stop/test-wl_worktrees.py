@@ -776,7 +776,11 @@ def control_landed(tmp):
     # A change split across commits: every joined part must be on the tip (reviews 918cfd41.1, 918cfd41.2).
     earlier = git(tmp, main, "rev-parse", "HEAD~1")
     ledger.write_text(json.dumps({"sha": sha, "landed": other + "+" + earlier}) + "\n")
-    check("a joined ledger row with every part on the tip reads landed", read(tmp, main)["unlanded"], [])
+    check(
+        "a joined ledger row with every part on the tip reads landed",
+        read(tmp, main)["unlanded"],
+        [],
+    )
     side = git(tmp, main, "commit-tree", "HEAD^{tree}", "-p", "HEAD~1", "-m", "side")
     git(tmp, main, "branch", "side-joined", side)
     ledger.write_text(json.dumps({"sha": sha, "landed": other + "+" + side}) + "\n")
