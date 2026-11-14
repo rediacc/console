@@ -247,7 +247,8 @@ test.describe('Container Operations @bridge', () => {
       datastorePath,
     });
     // The RepairReport JSON (renet cmd/renet/repository_repair.go) names how many repair() functions ran; a dry run plans only, so none ran and none failed.
-    const out = runner.getCombinedOutput(result);
+    // The report rides the function runner's log line as msg="[repository_repair] {...}" with escaped quotes (as tests 25 and 30 unwrap), so undo that before matching.
+    const out = runner.getCombinedOutput(result).replaceAll('\\"', '"');
     expect(out).toMatch(/"ran":\s*0/);
     expect(out).toMatch(/"failed":\s*0/);
   });
