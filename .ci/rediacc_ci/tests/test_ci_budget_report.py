@@ -4071,7 +4071,10 @@ def test_lanes_passing_also_ignores_a_comment_that_names_the_flag(tmp_path):
     assert br.lanes_passing_also(tmp_path) == {"with-also": True, "comment-only": False}
 
 
-@pytest.mark.parametrize("line", ["- run: r # --also x", "- run: r  #--also x", "- run: r"])
+@pytest.mark.parametrize(
+    "line",
+    ["- run: r # --also x", "- run: r  #--also x", "- run: r", "- run: echo it's ok # --also x"],
+)
 def test_lanes_passing_also_ignores_a_trailing_comment_that_names_the_flag(tmp_path, line):
     """3cd51aae.2: a `#` after whitespace starts a comment, so the job passes no --also."""
     _write_workflows(tmp_path, {"job": ("A", [line])})

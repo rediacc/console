@@ -195,18 +195,22 @@ def pin_root() -> str:
 
 
 def prune_pinned(now: float | None = None) -> None:
-    """Remove the pinned directories of earlier runs that are more than PINNED_MAX_AGE_S old."""
+    """Remove the pinned directories of earlier runs that are more than PINNED_MAX_AGE_S old, in `pin_root()` and in the system temp directory where runs before 2026-11-13 left theirs (RAM-backed on some hosts, so they would otherwise stay until a reboot)."""
     cutoff = (time.time() if now is None else now) - PINNED_MAX_AGE_S
-    root = pin_root()
-    for name in os.listdir(root):
-        path = os.path.join(root, name)
-        with contextlib.suppress(OSError):
-            if (
-                name.startswith(PINNED_PREFIX)
-                and os.path.isdir(path)
-                and os.stat(path).st_mtime < cutoff
-            ):
-                shutil.rmtree(path, ignore_errors=True)
+    for root in dict.fromkeys((pin_root(), tempfile.gettempdir())):
+        try:
+            names = os.listdir(root)
+        except OSError:
+            continue
+        for name in names:
+            path = os.path.join(root, name)
+            with contextlib.suppress(OSError):
+                if (
+                    name.startswith(PINNED_PREFIX)
+                    and os.path.isdir(path)
+                    and os.stat(path).st_mtime < cutoff
+                ):
+                    shutil.rmtree(path, ignore_errors=True)
 
 
 def pin_renet(

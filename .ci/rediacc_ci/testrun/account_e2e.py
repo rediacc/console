@@ -73,7 +73,7 @@ PACKAGE_NAME = re.compile(r"[a-z0-9][a-z0-9+.:-]*")
 
 
 def dry_run_packages(dry_run_output: str) -> list[str]:
-    """Package names `playwright install-deps --dry-run` lists under its `Missing system dependencies (N):` header (Playwright 1.65, which exits 1 when any are missing); empty when it prints no such list."""
+    """Package names `playwright install-deps --dry-run` lists under its `Missing system dependencies (N):` header (Playwright 1.65, which exits 1 when any are missing); empty when it prints no such list. Raises RefusedError for a listed line that is not a package name."""
     packages: list[str] = []
     listing = False
     for line in dry_run_output.splitlines():
@@ -81,9 +81,12 @@ def dry_run_packages(dry_run_output: str) -> list[str]:
             listing = True
         elif listing and line.startswith((" ", "\t")) and line.strip():
             name = line.strip()
-            # A package name only: an option-looking line must never reach dpkg-query or apt-get as an argument.
-            if PACKAGE_NAME.fullmatch(name):
-                packages.append(name)
+            # A package name only: an option-looking line must never reach dpkg-query or apt-get as an argument, and a listed line that is not a name is refused rather than dropped, so a missing library is not found only at browser launch.
+            if not PACKAGE_NAME.fullmatch(name):
+                raise RefusedError(
+                    f"playwright install-deps --dry-run lists {name[:80]!r}, which is not a package name; cannot tell which system packages are missing"
+                )
+            packages.append(name)
         elif listing:
             break
     return packages

@@ -184,6 +184,13 @@ def test_testca_refuses_a_path_separator_in_a_host(tmp_path):
     assert not (tmp_path / "x.key").exists()
 
 
+@pytest.mark.parametrize("bad", ["a\\b", "a\0b", "a,b", "a;b", "a=b", "a b"])
+def test_testca_refuses_each_unsafe_character_in_a_host(tmp_path, bad):
+    """e59bfd3a.1: a backslash or NUL (and the other separators) is refused, not only a forward slash."""
+    assert testca.main([str(tmp_path / "out"), bad]) == 2
+    assert not (tmp_path / "out").exists()
+
+
 def test_testca_openssl_failure_exits_1(tmp_path, monkeypatch, capsys):
     """bf0bded8.3: a failing openssl is exit 1 with a message, and a missing binary the same."""
 

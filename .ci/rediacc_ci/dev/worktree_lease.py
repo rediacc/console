@@ -1537,6 +1537,7 @@ def _resolve_superseded(world, lease_id, pairs, reason):
             problems.append("%s is no commit of %s" % (landed, key))
             continue
         fulls = [f.strip() for f in fulls]
+        shown = "+".join(p[:SHA_SHOWN] for p in parts)
         if bad := [
             p
             for p, f in zip(parts, fulls, strict=True)
@@ -1551,8 +1552,7 @@ def _resolve_superseded(world, lease_id, pairs, reason):
         landed_sets = [_touched(repo, f) for f in fulls]
         if lease_paths is None or any(x is None for x in landed_sets):
             problems.append(
-                "the changed paths of %s or %s could not be read"
-                % (sha[:SHA_SHOWN], landed[:SHA_SHOWN])
+                "the changed paths of %s or %s could not be read" % (sha[:SHA_SHOWN], shown)
             )
             continue
         landed_paths = set().union(*landed_sets)
@@ -1566,7 +1566,7 @@ def _resolve_superseded(world, lease_id, pairs, reason):
             # 747e14b4.3: one shared path (a lockfile, a changelog) is too weak a proof, so the landed commit(s) must change EVERY path the lease commit changes. The content may differ, because a duplicate whose pick conflicts is the case this waiver exists for.
             problems.append(
                 "%s does not change %s, which %s changes, so it is not a duplicate of it"
-                % (landed[: SHA_SHOWN * 2 + 1], ", ".join(uncovered), sha[:SHA_SHOWN])
+                % (shown, ", ".join(uncovered), sha[:SHA_SHOWN])
             )
         else:
             named.add(sha)

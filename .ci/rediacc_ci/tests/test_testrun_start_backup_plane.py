@@ -435,6 +435,30 @@ def test_a_pin_prunes_the_directories_of_earlier_runs_a_day_old_and_keeps_fresh_
     assert other.exists()
 
 
+def test_a_prune_also_clears_a_stale_pin_left_in_the_system_temp(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review 408260a8.1: pins that runs before the move left in /tmp are pruned, a fresh one and an unrelated directory are kept."""
+    pins = tmp_path / "pins"
+    system_tmp = tmp_path / "systmp"
+    pins.mkdir()
+    system_tmp.mkdir()
+    monkeypatch.setattr(plane, "pin_root", lambda: str(pins))
+    monkeypatch.setattr(tempfile, "tempdir", str(system_tmp))
+    stale = system_tmp / (plane.PINNED_PREFIX + "old")
+    fresh = system_tmp / (plane.PINNED_PREFIX + "new")
+    other = system_tmp / "unrelated-dir"
+    for directory in (stale, fresh, other):
+        directory.mkdir()
+    old = time.time() - plane.PINNED_MAX_AGE_S - 60
+    os.utime(stale, (old, old))
+    os.utime(other, (old, old))
+    plane.prune_pinned()
+    assert not stale.exists()
+    assert fresh.exists()
+    assert other.exists()
+
+
 def test_pin_needs_the_host_binary(tmp_path) -> None:
     (tmp_path / "renet-linux-amd64").write_text("r")
     with pytest.raises(plane.PlaneError, match="host `renet`"):

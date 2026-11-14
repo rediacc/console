@@ -2716,6 +2716,8 @@ def test_gc_superseded_by_refuses_a_landed_commit_that_shares_no_path_with_the_l
     )  # fmt: skip
     assert done.returncode == 1
     assert "does not change dup.txt" in done.stderr
+    # 918cfd41.3: the landed commit is shown at the usual short width, not a longer slice of its full sha.
+    assert "%s does not change" % unrelated[: lease.SHA_SHOWN] in done.stderr
     assert tree.exists()
     ledger = gc_repo.root / ".git" / lease.RECORD_DIR / "superseded.jsonl"
     assert not ledger.exists() or sha not in ledger.read_text()

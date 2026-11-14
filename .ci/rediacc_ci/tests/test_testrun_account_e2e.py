@@ -611,10 +611,12 @@ def test_dry_run_packages_parse() -> None:
     assert account_e2e.dry_run_packages(ALL_PRESENT) == []
 
 
-def test_dry_run_packages_drops_an_option_looking_line() -> None:
-    """Review b7e661a3.1: a line such as ` --allow-downgrades` under the header is not a package, so it never becomes an argv token."""
-    out = "Missing system dependencies (2):\n  libnss3\n  --allow-downgrades\n  -o\n  libgbm1\n"
-    assert account_e2e.dry_run_packages(out) == ["libnss3", "libgbm1"]
+@pytest.mark.parametrize("bad", ["--allow-downgrades", "-o", "libnss3 (2.0)", "LibNSS3"])
+def test_dry_run_packages_refuses_a_listed_line_that_is_not_a_package_name(bad: str) -> None:
+    """Reviews b7e661a3.1 and 5d45445a.1: such a line never becomes an argv token, and is not silently dropped either."""
+    out = f"Missing system dependencies (2):\n  libnss3\n  {bad}\n  libgbm1\n"
+    with pytest.raises(account_e2e.RefusedError, match="not a package name"):
+        account_e2e.dry_run_packages(out)
 
 
 def test_system_deps_present_skips_apt() -> None:
