@@ -252,3 +252,37 @@ def test_an_unchanged_tracked_file_holding_a_verb_beside_an_unread_run_is_allowe
     helper = _tracked_helper(tmp_path)
     _, cmd = _unread(tmp_path)
     assert _run("%s %s" % (cmd, helper)) == (0, "")
+
+
+# Review c804bc45.1: a verb-first list bound to a name and handed to a call later is still a git argv; only a table no call takes stays data.
+NAMED_ARGV = 'ARGV = ["clone", "%s", "/tmp/x"]\n' % ORIGIN
+
+
+@pytest.mark.parametrize("cwd", [ROOT, SUBDIR])
+@pytest.mark.parametrize(
+    "body",
+    [
+        NAMED_ARGV + 'sh("git", *ARGV)',
+        NAMED_ARGV + "run_git(ARGV)",
+        NAMED_ARGV + 'import subprocess\nsubprocess.run(["git", *ARGV])',
+        NAMED_ARGV.replace("ARGV =", "ARGV: list =") + "run_git(argv=ARGV)",
+        "def main():\n    " + NAMED_ARGV + '    sh("git", *ARGV)',
+    ],
+)
+def test_a_named_clone_argv_handed_to_a_call_is_refused(cwd, body):
+    rc, err = _run(_heredoc(body), cwd=cwd)
+    assert rc == 2
+    assert MARK in err
+    assert "origin or mirror" in err
+
+
+@pytest.mark.parametrize("cwd", [ROOT, SUBDIR])
+@pytest.mark.parametrize(
+    "body",
+    [
+        'SPELLABLE = ("clone", "fetch", "pull", "remote", "submodule")\nfor v in SPELLABLE:\n    print(v)',
+        'SPELLABLE = ("clone", "fetch", "pull")\nprint("pull" in SPELLABLE)',
+    ],
+)
+def test_a_named_verb_table_no_call_takes_is_data(cwd, body):
+    assert _run(_heredoc(body), cwd=cwd) == (0, "")

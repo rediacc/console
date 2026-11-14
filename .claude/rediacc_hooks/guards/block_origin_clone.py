@@ -512,15 +512,38 @@ def _sequence_nodes(tree):
 
 
 def _handed_sequences(tree):
-    """The ids of every call, and of every list, tuple or set literal a call is handed as an argument, positional or keyword."""
-    out = set()
+    """The ids of every call, and of every list, tuple or set literal a call is handed as an argument, positional or keyword.
+
+    A literal bound to a name counts as handed when that name reaches a call: as an argument, plain or starred, or as an element of a literal a call is handed (`sh("git", *ARGV)`, `run_git(ARGV)`, `subprocess.run(["git", *ARGV])`, review c804bc45.1). Scope is ignored, so a name that reaches any call hands every literal bound to it.
+    """
+    sequences = (ast.List, ast.Tuple, ast.Set)
+    out, names = set(), set()
+
+    def hand(value):
+        value = value.value if isinstance(value, ast.Starred) else value
+        if isinstance(value, ast.Name):
+            names.add(value.id)
+        elif isinstance(value, sequences):
+            out.add(id(value))
+            for element in value.elts:
+                hand(element)
+
     for node in ast.walk(tree):
         if isinstance(node, ast.Call):
             out.add(id(node))
             for arg in list(node.args) + [keyword.value for keyword in node.keywords]:
-                value = arg.value if isinstance(arg, ast.Starred) else arg
-                if isinstance(value, (ast.List, ast.Tuple, ast.Set)):
-                    out.add(id(value))
+                hand(arg)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign):
+            targets = node.targets
+        elif isinstance(node, ast.AnnAssign) and node.value is not None:
+            targets = [node.target]
+        else:
+            continue
+        if isinstance(node.value, sequences) and any(
+            isinstance(target, ast.Name) and target.id in names for target in targets
+        ):
+            out.add(id(node.value))
     return out
 
 
@@ -561,7 +584,7 @@ def _python_reasons(code, world, depth, by_path):
     for node, seq in _sequence_nodes(tree):
         if not seq:
             continue
-        # A helper taking the verb's argv: `sh('git', ['clone', ...])`. Only a sequence a call is handed reads so; a literal standing alone, like `SPELLABLE = ("clone", "fetch", ...)`, is a table of words, not a git argv (#11ad5926).
+        # A helper taking the verb's argv: `sh('git', ['clone', ...])`. Only a sequence a call is handed, directly or through the name it is bound to, reads so; a literal no call takes, like `SPELLABLE = ("clone", "fetch", ...)`, is a table of words, not a git argv (#11ad5926, c804bc45.1).
         verb_first = seq[0] in ("clone", "fetch", "pull") and id(node) in handed
         words = ["git", *seq] if verb_first else seq
         if words[0] == "git" and any(e is not None for e in words[1:]):
