@@ -684,7 +684,7 @@
       "build:packages"
     ],
     "cores": {
-      "min": 1,
+      "min": 6,
       "max": "all"
     },
     "heavy": true,
