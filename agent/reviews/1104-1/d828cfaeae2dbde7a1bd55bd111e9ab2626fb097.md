@@ -22,4 +22,4 @@ Body-Sig: d40d72c0495f1c13
 Anchor: in-diff
 Claim: The live_add wiring now passes api_key_of=onboarding.live_api_key(opts.bws_project) when --bws-project is set, but no test in this diff exercises that line, so dropping or misnaming the argument would silently revert bootstrap/invite to the 'needs the company's own key' refusal in the production path without any test failing.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed 204faecbd78c0561cba930898987f701d730e41b | d778be9d 2026-11-14T17:18:10Z
