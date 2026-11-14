@@ -250,3 +250,26 @@ def test_a_single_token_endpoint_flag_is_an_r2_call_too(monkeypatch) -> None:
     awscli.run([awscli.AWS, "s3", "ls", "--endpoint-url=https://r2.example.invalid"])
     assert seen
     assert seen[-1]["AWS_CONFIG_FILE"] == str(awscli.CONFIG_FILE)
+
+
+def test_a_release_clone_with_an_empty_cache_borrows_the_main_checkouts_pinned_aws(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Measured 2026-11-14: the clone's .ci/cache/toolchain is empty and the pin sits in the main checkout's."""
+    main, clone, empty = tmp_path / "main", tmp_path / "clone", tmp_path / "path"
+    clone.mkdir()
+    empty.mkdir()
+    monkeypatch.delenv(awscli.ENV_KEY, raising=False)
+    monkeypatch.setenv("PATH", str(empty))
+    awscli._PROBED.clear()
+    pinned = _fake(awscli.cache_binary(PIN, main))
+    # Control: the old lookup, with no borrowed root, finds nothing in the clone.
+    monkeypatch.delenv(awscli.TOOLCHAIN_ROOT_ENV, raising=False)
+    assert awscli.resolve(root=clone) is None
+    # The release child's environment names the main checkout, and the clone resolves its pin.
+    monkeypatch.setenv(awscli.TOOLCHAIN_ROOT_ENV, str(main))
+    assert awscli.resolve(root=clone) == str(pinned)
+    # A borrowed cache left at another version is still not the pin.
+    _fake(pinned, "1.0.0")
+    awscli._PROBED.clear()
+    assert awscli.resolve(root=clone) is None
