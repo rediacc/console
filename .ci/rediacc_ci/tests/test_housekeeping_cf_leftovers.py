@@ -35,7 +35,11 @@ def fake_api(scripts, d1, routes, domains=(), calls=None, extra=None):
             res = [{"name": n} for n, j in extra.get("buckets", ()) if j == jur]
             return {"success": True, "result": {"buckets": res}, "result_info": {}}
         if base.endswith("/containers/applications"):
-            return {"success": True, "result": list(extra.get("containers", ()))}
+            return {
+                "success": True,
+                "result": list(extra.get("containers", ())),
+                "result_info": {"total_pages": 1},
+            }
         if base.endswith("/workers/scripts"):
             res = [{"id": s} for s in scripts]
         elif base.endswith("/d1/database"):
@@ -344,7 +348,7 @@ def test_control_an_empty_2xx_delete_elsewhere_is_still_a_failure(monkeypatch):
 
 
 def test_control_an_empty_delete_without_a_status_is_not_success(monkeypatch):
-    """Review b28631e8.3: a response that carries no status is not read as a 2xx."""
+    """Review b28631e8.3, 9900887b.2: a response that carries no status is a CfError, not a 2xx and not a crash."""
 
     class NoStatus:
         def __enter__(self):
@@ -357,7 +361,7 @@ def test_control_an_empty_delete_without_a_status_is_not_success(monkeypatch):
             return b""
 
     _patch_urlopen(monkeypatch, NoStatus)
-    with pytest.raises(AttributeError):
+    with pytest.raises(cfl.CfError, match="no HTTP status"):
         cfl.request("DELETE", "/accounts/a/workers/domains/d", TOKEN)
 
 
@@ -654,6 +658,19 @@ def test_pages_listing_without_total_pages_is_an_error_not_a_partial_count():
         }
 
     assert [i["n"] for i in cfl.listing_by_page("/p", TOKEN, counted)] == [1, 2, 3]
+
+
+def test_containers_listing_without_paging_metadata_is_an_error_not_a_truncation():
+    """Review 9900887b.1: items with no page count are refused; an empty listing is the control."""
+    with pytest.raises(cfl.CfError, match="total_pages"):
+        cfl.followed("/c", TOKEN, lambda _p, _t: {"success": True, "result": [{"id": 1}]})
+    assert cfl.followed("/c", TOKEN, lambda _p, _t: {"success": True, "result": []}) == []
+    counted = {
+        "success": True,
+        "result": [{"id": 1}],
+        "result_info": {"total_count": 5, "per_page": 10},
+    }
+    assert cfl.followed("/c", TOKEN, lambda _p, _t: counted) == [{"id": 1}]
 
 
 def test_containers_follow_every_page_the_listing_reports():

@@ -126,7 +126,9 @@ def _request_once(method: str, path: str, token: str, jurisdiction: str | None =
         req = https.build_request(CF_API_BASE + path, headers=headers, method=method)
         with https.urlopen(req, timeout=30) as resp:
             raw = resp.read()
-            status = resp.status
+            status = getattr(resp, "status", None)
+            if status is None:
+                raise CfError("%s %s: response carries no HTTP status" % (method, path))
     except urllib.error.HTTPError as exc:
         status = exc.code
         retry_after = retry_after_s(exc.headers.get("Retry-After") if exc.headers else None)
@@ -293,6 +295,15 @@ def referenced_by(name: str, texts: dict[str, str], kind: str = "") -> list[str]
     return [rel for rel, text in texts.items() if pat.search(text)]
 
 
+def _total_pages(body: dict) -> int | None:
+    """The page count a listing names: `result_info.total_pages`, else `total_count` over `per_page`, else None."""
+    info = body.get("result_info") or {}
+    total = info.get("total_pages")
+    if total is None and info.get("total_count") and info.get("per_page"):
+        total = math.ceil(info["total_count"] / info["per_page"])
+    return total
+
+
 def listing_by_page(path: str, token: str, get=fetch) -> list:
     """Every `result` item of a path that pages by `page` alone (Pages projects refuse `per_page`)."""
     sep = "&" if "?" in path else "?"
@@ -302,10 +313,7 @@ def listing_by_page(path: str, token: str, get=fetch) -> list:
         body = get("%s%spage=%d" % (path, sep, page), token)
         chunk = body.get("result") or []
         items.extend(chunk)
-        info = body.get("result_info") or {}
-        total = info.get("total_pages")
-        if total is None and info.get("total_count") and info.get("per_page"):
-            total = math.ceil(info["total_count"] / info["per_page"])
+        total = _total_pages(body)
         if total is None:
             if chunk:
                 raise CfError("%s: listing carries no total_pages, so its end is unknown" % path)
@@ -319,7 +327,11 @@ def followed(path: str, token: str, get=fetch) -> list:
     """Every `result` item of a path read plainly first (the containers listing documents no paging parameters): when its `result_info` says more pages remain, they are read with `page` alone."""
     body = get(path, token)
     items = list(body.get("result") or [])
-    total = (body.get("result_info") or {}).get("total_pages") or 1
+    total = _total_pages(body)
+    if total is None:
+        if items:
+            raise CfError("%s: listing carries no total_pages, so its end is unknown" % path)
+        return items
     sep = "&" if "?" in path else "?"
     for page in range(2, total + 1):
         items.extend(get("%s%spage=%d" % (path, sep, page), token).get("result") or [])
