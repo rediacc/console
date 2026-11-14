@@ -511,7 +511,7 @@ def _sequence_nodes(tree):
             yield node, [programs._const_str(a) for a in node.args]
 
 
-# Builtins that run no process and call nothing they are handed, so an argument they take is not yet an argv. `map` and `filter` call their first argument, and `sorted`, `min` and `max` call a `key=`, so those are not here or stop counting once a `key` is passed.
+# Builtins that run no process and, over a literal table of strings, call no code the program wrote, so an argument they take is not yet an argv. A builtin that hands its argument to program code is not here or stops counting by its keywords: `map` and `filter` call their first argument, `isinstance` asks the class's metaclass `__instancecheck__`, `sorted`, `min` and `max` call a `key=`, and `print` calls the `write` of a `file=` (review 4c1ac1fc.2).
 PURE_BUILTINS = frozenset(
     (
         "print",
@@ -530,7 +530,6 @@ PURE_BUILTINS = frozenset(
         "all",
         "enumerate",
         "zip",
-        "isinstance",
         "bool",
         "type",
         "id",
@@ -592,11 +591,15 @@ def _handed_sequences(tree):
         func = call.func
         if not (isinstance(func, ast.Name) and func.id in pure):
             return True
-        # A `**mapping` expansion can carry any keyword, `key=` included (`sorted(x, **{"key": f})`), so a pure builtin
-        # called with one is not judged pure (review 4c1ac1fc.1).
-        if any(k.arg is None for k in call.keywords):
-            return True
-        return func.id in ("sorted", "min", "max") and any(k.arg == "key" for k in call.keywords)
+        # A `**mapping` expansion can carry any keyword, so it counts only for the builtins a keyword makes call program
+        # code (`sorted(x, **{"key": f})`, `print(x, **{"file": w})`); `len(x, **opts)` carries nothing that runs
+        # (reviews 4c1ac1fc.1, 2e01f0d2.1).
+        keys = {k.arg for k in call.keywords}
+        if func.id in ("sorted", "min", "max"):
+            return "key" in keys or None in keys
+        if func.id == "print":
+            return "file" in keys or None in keys
+        return False
 
     for node in ast.walk(tree):
         if isinstance(node, ast.Call) and runs_something(node):

@@ -302,6 +302,9 @@ PATHY_TABLE = 'SPELLABLE = ("clone", ".", "fetch", "pull")\n'
         PATHY_TABLE + "n = len(SPELLABLE)",
         PATHY_TABLE + 'print(sorted(SPELLABLE), *SPELLABLE, sep=",")',
         'print(["clone", ".", "/tmp/x"])',
+        # Review 2e01f0d2.1: a `**` expansion on a builtin no keyword makes call code, and on `dict`, hands the table nothing.
+        PATHY_TABLE + "opts = {}\nn = len(SPELLABLE, **opts)",
+        PATHY_TABLE + "opts = {}\nprint(dict(**opts), len(SPELLABLE))",
     ],
 )
 def test_a_verb_table_only_a_pure_builtin_takes_is_data(cwd, body):
@@ -331,6 +334,11 @@ def test_a_verb_table_a_pure_builtin_takes_in_a_script_by_path_is_data(cwd, tmp_
         NAMED_ARGV + 'sorted([ARGV], **{"key": run_git})',
         NAMED_ARGV + "sorted([ARGV], **dict(key=run_git))",
         NAMED_ARGV + "list(map(run_git, [ARGV]))",
+        # Review 4c1ac1fc.2: a metaclass `__instancecheck__` and a `file=` writer are program code the table reaches.
+        NAMED_ARGV
+        + "class C(type):\n    def __instancecheck__(cls, o):\n        run_git(o)\nisinstance(ARGV, C)",
+        NAMED_ARGV + "print(ARGV, file=writer)",
+        NAMED_ARGV + 'print(ARGV, **{"file": writer})',
     ],
 )
 def test_a_named_clone_argv_reaching_a_call_through_a_builtin_is_refused(cwd, body):
