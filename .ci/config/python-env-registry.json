@@ -251,7 +251,8 @@
     ],
     ".ci/rediacc_ci/core/awscli.py": [
       "AWS_BIN",
-      "PATH"
+      "PATH",
+      "REDIACC_TOOLCHAIN_ROOT"
     ],
     ".ci/rediacc_ci/core/bws_env.py": [
       "*local",
@@ -358,6 +359,7 @@
       "REDIACC_SMOKE_RESOLVE_WINDOW_S"
     ],
     ".ci/rediacc_ci/deploy/deploy_record.py": [
+      "DEPLOY_RECORD_BRANCH",
       "DEPLOY_RECORD_OUT",
       "DEPLOY_RECORD_VERSION",
       "GITHUB_OUTPUT",
@@ -1917,6 +1919,9 @@
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_infra_docker_pull_ghcr.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/test_infra_renet_embed_cache.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_ops_build_server.py": [
