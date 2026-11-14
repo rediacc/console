@@ -600,6 +600,9 @@
       "HOME",
       "VM_IMAGE"
     ],
+    ".ci/rediacc_ci/enterprise/cli.py": [
+      "CF_MANAGEMENT_TOKEN"
+    ],
     ".ci/rediacc_ci/enterprise/lab.py": [
       "*name",
       "CLOUDFLARE_ACCOUNT_ID",
@@ -611,7 +614,9 @@
     ],
     ".ci/rediacc_ci/enterprise/onboarding.py": [
       "AWS_SES_FROM",
-      "CF_MANAGEMENT_TOKEN"
+      "CF_MANAGEMENT_TOKEN",
+      "CLOUDFLARE_ACCOUNT_ID",
+      "CLOUDFLARE_API_TOKEN"
     ],
     ".ci/rediacc_ci/env/create_e2e_env.py": [
       "*name",
