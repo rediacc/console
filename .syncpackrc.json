@@ -54,7 +54,7 @@
         "@opentelemetry/exporter-trace-otlp-http",
         "@opentelemetry/sdk-node"
       ],
-      "pinVersion": "^0.301.1"
+      "pinVersion": "^0.301.2"
     },
     {
       "label": "Pin the OpenTelemetry 3.x line in lockstep",

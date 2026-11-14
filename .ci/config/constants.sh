@@ -237,13 +237,13 @@ readonly PKG_PRIORITY="optional"
 readonly R2_MAX_RELEASE_VERSIONS=20
 
 # nfpm configuration (replaces dpkg-deb + rpmbuild for package creation)
-readonly NFPM_VERSION="2.48.0"
+readonly NFPM_VERSION="2.49.0"
 # Verified against the checksums.txt asset of the goreleaser/nfpm release tagged
 # with the NFPM_VERSION above (https://github.com/goreleaser/nfpm/releases).
 # The tarball is piped straight into `sudo tar` in a job that also holds release
 # secrets, so an unverified download is arbitrary root-owned code. Update both
 # this and NFPM_VERSION together.
-readonly NFPM_SHA256_LINUX_X86_64="6d7f9a28b2f397934403950fcbba83f598b08d02edbe79a0815b3b4897341750"
+readonly NFPM_SHA256_LINUX_X86_64="2afaa5ffb5e3493402e31e7c67a5a1fb42133e3f66fc315ca0051934125561c7"
 
 # actionlint validates workflow YAML itself: `${{ }}` expression types, matrix
 # property references, runner labels, action input names, `if:` syntax. Pinned
@@ -307,7 +307,7 @@ readonly SHFMT_SHA256_DARWIN_ARM64="b7c872db63553ccffc7253aba3ed7d4885a27d83f1ba
 
 # wrangler is installed globally in jobs that carry the production Cloudflare
 # API token, so it is pinned rather than floating on @latest.
-readonly WRANGLER_VERSION="4.160.1"
+readonly WRANGLER_VERSION="4.161.0"
 
 # Homebrew tap configuration
 readonly HOMEBREW_FORMULA_PATH="Formula/rediacc-cli.rb"
