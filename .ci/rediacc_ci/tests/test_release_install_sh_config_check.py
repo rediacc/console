@@ -49,7 +49,10 @@ PORT_RE = re.compile(r"127\.0\.0\.1:\d+")
 
 # Mutation anchors, each asserted present before it is used.
 SERVER_DEFAULT = 'local account_server="${SERVER_URL:-' + SITE_ORIGIN + '}"'
-EARLY_RETURN = '    if [[ -z "${SERVER_URL:-}" && "${CHANNEL:-$default_channel}" == "$default_channel" ]]; then'
+EARLY_RETURN = (
+    '    if [[ -z "${SERVER_URL:-}" && "${CHANNEL:-$default_channel}" == "$default_channel"'
+    ' && "${RELEASES_URL:-$default_releases}" == "$default_releases" ]]; then'
+)
 CHMOD_ABSENT = '        chmod 600 "$config_file"\n    fi'
 BAKED_CHANNEL_GUARD = 'if [[ -z "${REDIACC_CHANNEL:-}" && "$CHANNEL" == "$default_channel" ]]; then'
 MINIMAL_CONFIG = 'local account_json="{\\"accountServer\\":\\"$account_server\\",\\"updateChannel\\":\\"$CHANNEL\\""'
@@ -188,8 +191,8 @@ def test_real_tree_agrees() -> None:
     old = _twin(ROOT)
     new = _run(PORT, ROOT)
     assert old.returncode == 0, old.stderr
-    assert old.stdout.count(OK_GLYPH) == 5
-    assert old.stdout.endswith("\nPassed: 5\nFailed: 0\n")
+    assert old.stdout.count(OK_GLYPH) == 6
+    assert old.stdout.endswith("\nPassed: 6\nFailed: 0\n")
     assert old.stderr == ""
     assert_same(old, new)
 
@@ -216,6 +219,11 @@ def test_a_wrong_default_account_server_is_caught(tmp_path: pathlib.Path) -> Non
             "worker_channel_only: got channel=stable accountServer=https://V1.invalid; "
             "expected channel=stable accountServer=" + SITE_ORIGIN + "\n"
         )
+        + BAD_GLYPH
+        + (
+            "worker_custom_releases: got channel=edge accountServer=https://V1.invalid; "
+            "expected channel=edge accountServer=" + SITE_ORIGIN + "\n"
+        )
     )
     assert_same(old, new)
 
@@ -225,9 +233,9 @@ def test_a_wrong_config_mode_is_caught_on_every_writing_case(tmp_path: pathlib.P
     mutate(fixture, CHMOD_ABSENT, '        chmod 640 "$config_file"\n    fi')
     old, new = run_both(fixture)
     assert old.returncode == 1
-    assert old.stderr.count("expected mode 600, got 640") == 4
+    assert old.stderr.count("expected mode 600, got 640") == 5
     # The mode failure does not suppress the channel PASS lines: the twin's `run_case` keeps going after a mode mismatch (:110-112).
-    assert old.stdout.count(OK_GLYPH) == 5
+    assert old.stdout.count(OK_GLYPH) == 6
     assert_same(old, new)
 
 
@@ -240,10 +248,15 @@ def test_a_config_that_is_never_written_is_caught(tmp_path: pathlib.Path) -> Non
     )
     old, new = run_both(fixture)
     assert old.returncode == 1
-    # Every case with a server now sits on the edge default, so the mutated early return fires for all three.
+    # Every case on the edge default now returns early, so the mutated early return fires for all four.
     assert old.stderr == "".join(
         BAD_GLYPH + "%s: expected rediacc.json, but none was written\n" % name
-        for name in ("worker_full", "worker_server_only", "worker_full_with_server_info")
+        for name in (
+            "worker_full",
+            "worker_server_only",
+            "worker_full_with_server_info",
+            "worker_custom_releases",
+        )
     )
     assert_same(old, new)
 

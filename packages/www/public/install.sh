@@ -200,7 +200,10 @@ cleanup_legacy_state() {
 # Writes: ${config_dir}/rediacc.json (account section only)
 write_install_config() {
     local default_channel="edge"
-    if [[ -z "${SERVER_URL:-}" && "${CHANNEL:-$default_channel}" == "$default_channel" ]]; then
+    local default_releases="https://releases.rediacc.com"
+    # Nothing to record in the plain default case; a custom releases URL is
+    # always recorded because the CLI reads it only from the config.
+    if [[ -z "${SERVER_URL:-}" && "${CHANNEL:-$default_channel}" == "$default_channel" && "${RELEASES_URL:-$default_releases}" == "$default_releases" ]]; then
         return 0
     fi
 
