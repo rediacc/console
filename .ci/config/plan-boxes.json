@@ -1006,8 +1006,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 20,
-      "done": 2,
+      "open": 19,
+      "done": 3,
       "open_sigs": [
         "0096bfeb",
         "02ef454f",
@@ -1025,14 +1025,14 @@
         "7ef4ac8e",
         "8248889f",
         "c51463d2",
-        "ca5f18a8",
         "dbc95d71",
         "e785f32b",
         "f032a06a"
       ],
       "done_sigs": [
         "22c8a4e5",
-        "ae8e12f8"
+        "ae8e12f8",
+        "ca5f18a8"
       ]
     },
     "agent/plans/PLAN-d1-scaling.md": {

@@ -76,7 +76,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 1f877343, plan agent/plans/PLAN-worktree-lease.md, outside the set, 56 commit(s) on the branch, 0 open item(s): guided detached worktree leases
   - epic 2e0e531f, plan agent/plans/PLAN-rediaccfile-unprivileged.md, outside the set, 19 commit(s) on the branch, 0 open item(s): Rediaccfile lifecycle runs unprivileged
   - epic fbb27b45, plan agent/plans/PLAN-product-domain-rename.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Product moves to rediacc.cloud and names drop their prefixes
-  - epic 5eb69cff, plan agent/plans/PLAN-website-routing-and-mail.md, outside the set, 11 commit(s) on the branch, 0 open item(s): Website routing, company lookup and product mail on .cloud
+  - epic 5eb69cff, plan agent/plans/PLAN-website-routing-and-mail.md, outside the set, 12 commit(s) on the branch, 0 open item(s): Website routing, company lookup and product mail on .cloud
   - epic 783185d2, plan agent/plans/PLAN-enterprise-isolation.md, outside the set, 54 commit(s) on the branch, 0 open item(s): Enterprise per-company isolation, regional signers and release rings
   - epic 1d805023, plan agent/plans/PLAN-tick-tracking.md, outside the set, 26 commit(s) on the branch, 0 open item(s): tick tracking: plan-box trailer, landing prints the tick, box audit
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
@@ -95,7 +95,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 24 of 74 plans done, 1141 of 1379 boxes done (82%).
+Promoted: 24 of 74 plans done, 1142 of 1379 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -170,7 +170,7 @@ Promoted: 24 of 74 plans done, 1141 of 1379 boxes done (82%).
 | 69 | PLAN-licence-expiry-notices.md | 6/7 | 1 open |
 | 70 | PLAN-onprem-relicence-inbox.md | 10/13 | 3 open |
 | 71 | PLAN-signer-bench-stop-binding-reattach.md | 2/3 | 1 open |
-| 72 | PLAN-d1-eu-jurisdiction.md | 2/22 | 20 open |
+| 72 | PLAN-d1-eu-jurisdiction.md | 3/22 | 19 open |
 | 73 | PLAN-hostinger-to-bench.md | 5/22 | 17 open |
 | 74 | PLAN-multi-region-bench.md | 2/22 | 20 open |
 <!-- queue:progress:end -->

@@ -40,9 +40,10 @@ Worklist: #14adbaec, PR-TASK 5eb69cff
 ## Boxes
 
 ### Wave 1: writers
-- [ ] W1 [writer] The D1 fence (Design 2): next-number migration `_write_fence` plus journal; `workers/account/src/d1-fence.ts` wrapping `env.DB` in workers/account/src/index.ts (fetch, scheduled, queue) and backup-replicator.ts; `WRITES_FROZEN` 503 with Retry-After in private/account/src/errors.ts; queue retry delay, cron skip, DO reschedule.
+- [x] W1 [writer] The D1 fence (Design 2): next-number migration `_write_fence` plus journal; `workers/account/src/d1-fence.ts` wrapping `env.DB` in workers/account/src/index.ts (fetch, scheduled, queue) and backup-replicator.ts; `WRITES_FROZEN` 503 with Retry-After in private/account/src/errors.ts; queue retry delay, cron skip, DO reschedule.
   Tests: a fenced DB refuses INSERT/UPDATE/DELETE/`INSERT ... RETURNING` and passes SELECT and WITH-SELECT; the cache sees fence on/off within 10 s; the queue path retries with delay and does not ack; a GET whose service writes answers 503, not 500.
   Accept: `cd private/account && npx vitest run tests/integration/d1-fence.test.ts`
+    (ticked) 2026-11-14T06:11:08Z by d778be9d: commit:9d9a864e25 (account c36c62ad78), accept: cd private/account && npx vitest run tests/integration/d1-fence.test.ts rc=0, 40 passed, 2026-11-14. Corrects b11b52ee, whose message named W1 while it ticked W3. DEPS-WAIVED: code box; nothing it needs is unfinished
 - [x] W2 [writer] `rediacc_ci.ops.d1_relocate` (Design 3) reusing clone_d1 export and import (DEFECT B fixed in the shared FK check: a failed call exits 1), d1_shard_move `digest` and `live_rows`, deploy_record `d1_bookmark`; it refuses a copy from an unfenced source and `retire` before 30 days. Also `r2_bucket_copy --relocate` and `--verify --deep` across jurisdictions (Design 4).
   Tests over in-memory sqlite: planted row drift exits 3; a fence row never reaches the target; a failed FK call exits 1; `create` without API jurisdiction=eu exits 1; `retire` refuses a name still in a toml.
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_ops_d1_relocate.py .ci/rediacc_ci/tests/test_ops_r2_bucket_copy.py .ci/rediacc_ci/tests/test_deploy_clone_d1.py -q`
