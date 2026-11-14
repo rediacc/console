@@ -58,8 +58,11 @@ describe('elsewhereItems ordering', () => {
       'other',
       'surprise',
     ]);
-    // Review 6af0546d.1: the server's row order must not reorder the line.
+    // Review 6af0546d.1: the server's row order must not reorder the line; 5b4dbcde.2: every rotation and the reverse.
     expect(elsewhereItems([...rows].reverse())).toEqual(forward);
+    for (let k = 1; k < rows.length; k++) {
+      expect(elsewhereItems([...rows.slice(k), ...rows.slice(0, k)])).toEqual(forward);
+    }
   });
 
   it.each(['toString', 'constructor', '__proto__'])(

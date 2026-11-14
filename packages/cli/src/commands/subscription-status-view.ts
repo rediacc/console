@@ -75,6 +75,12 @@ const FRESHNESS_URGENCY: Record<LicenceRow['freshness'], number> = {
   valid: 2,
 };
 
+/** Code-unit order, the same on every host: `localeCompare` follows the host locale and can call distinct strings equal (review 5b4dbcde.1). */
+function compareCodeUnits(a: string, b: string): number {
+  if (a < b) return -1;
+  return a > b ? 1 : 0;
+}
+
 function urgencyOf(freshness: LicenceRow['freshness']): number {
   return Object.hasOwn(FRESHNESS_URGENCY, freshness)
     ? FRESHNESS_URGENCY[freshness]
@@ -97,7 +103,7 @@ export function elsewhereItems(others: LicenceRow[]): string[] {
       // Values that share a rank (unknown freshness strings) order by name, so the line never depends on the server's row order (review 6af0546d.1).
       return byUrgency !== 0
         ? byUrgency
-        : String(a.row.freshness).localeCompare(String(b.row.freshness));
+        : compareCodeUnits(String(a.row.freshness), String(b.row.freshness));
     })
     .map(({ row, count }) =>
       t(
