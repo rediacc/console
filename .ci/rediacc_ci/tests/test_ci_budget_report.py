@@ -2319,7 +2319,7 @@ def test_a_refresh_on_enough_runs_rewrites_the_same_entries(tmp_path):
 
 
 def test_a_job_p90_priced_from_two_runs_keeps_its_committed_value(tmp_path, capsys):
-    """2026-11-14: a committed job p90 moves only on `MIN_VARIANT_RUNS` runs, so a thin sample cannot reprice a leg (the over-budget ubuntu legs that day had 3+ runs and are not changed by it); `jobs` and gate steps still move on `MIN_DRIFT_RUNS` (the CONTROL that the stricter rule is scoped)."""
+    """2026-11-14: a committed job p90 moves only on `MIN_VARIANT_RUNS` runs, so a thin sample cannot reprice a leg (the over-budget ubuntu legs that day are not changed by it: their job p90s count job wall times from 3+ runs, while their variant fixedMinutes count leg logs from only 2); `jobs` and gate steps still move on `MIN_DRIFT_RUNS` (the CONTROL that the stricter rule is scoped)."""
     path = _fixture_tree(tmp_path, {})
     path.write_text(json.dumps(_the_11_03_table()))
     runs = {
