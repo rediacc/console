@@ -10,9 +10,9 @@ import { findSmartRedirect } from './smart-redirect';
 
 interface Env extends LookupEnv {
   ASSETS: Fetcher;
-  // Only bound in PR previews (deploy-www.sh mints account-db-pr-N and injects the binding via wrangler.preview.toml). On stable / edge, /account/api/* is served by the regional workers, so DB is absent here and the branch below 410s.
+  // Only bound in PR previews (deploy-www.sh mints account-db-pr-N and injects the binding via wrangler.preview.toml). On www.rediacc.com, /account/api/* is served by the regional workers, so DB is absent here and the branch below 410s.
   DB?: D1Database;
-  // Service binding to the EU regional account worker. Used to forward the public marketing endpoints (contact submit, newsletter subscribe) so the forms on www.rediacc.com can reach a DB-bound backend without cross-origin CORS. Bound on stable + edge wrangler configs, absent on PR previews (which serve via env.DB instead).
+  // Service binding to the EU regional account worker. Used to forward the public marketing endpoints (contact submit, newsletter subscribe) so the forms on www.rediacc.com can reach a DB-bound backend without cross-origin CORS. Bound in workers/www/wrangler.toml (the one www config, www.rediacc.com), absent on PR previews (which serve via env.DB instead).
   ACCOUNT?: Fetcher;
   [key: string]: unknown;
 }
