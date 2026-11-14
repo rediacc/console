@@ -3565,23 +3565,6 @@
         "f8911c29"
       ]
     },
-    "agent/plans/_done/PLAN-breakpoint-secret-shape.md": {
-      "status": "done",
-      "owner": "unowned",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-10-04",
-      "open": 2,
-      "done": 2,
-      "open_sigs": [
-        "452accb3",
-        "756e8906"
-      ],
-      "done_sigs": [
-        "046222ae",
-        "ed896ebb"
-      ],
-      "ruling": "#b4858621"
-    },
     "agent/plans/_done/PLAN-cd-errors-in-ci.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -4274,29 +4257,6 @@
         "ff593758"
       ]
     },
-    "agent/plans/_done/PLAN-plan-priority-concurrency.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-10-04",
-      "open": 0,
-      "done": 12,
-      "open_sigs": [],
-      "done_sigs": [
-        "2245bc52",
-        "34d0dc5e",
-        "3da37da2",
-        "3dd11297",
-        "5f2f6103",
-        "663c28a2",
-        "7130379b",
-        "7b81a161",
-        "8c6768b8",
-        "bbcb36e3",
-        "cbf22d66",
-        "cef6fb0f"
-      ]
-    },
     "agent/plans/_done/PLAN-plyr-to-videojs.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -4573,32 +4533,6 @@
         "c47feeb9",
         "c7185323",
         "edfd4e34"
-      ]
-    },
-    "agent/plans/_done/PLAN-scheduled-red-detector.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-10-04",
-      "open": 0,
-      "done": 15,
-      "open_sigs": [],
-      "done_sigs": [
-        "1b770238",
-        "3868fd1a",
-        "59cfeae7",
-        "5b8051ac",
-        "749edc05",
-        "7a229b69",
-        "86469470",
-        "97ab06a1",
-        "9a1cd094",
-        "cae97c9c",
-        "cc739d78",
-        "cca915f2",
-        "cd141739",
-        "dbc6918b",
-        "f726703c"
       ]
     },
     "agent/plans/_done/PLAN-scope-mirrors.md": {
@@ -5042,24 +4976,6 @@
         "f81620de",
         "fce2c5e8",
         "fde098b5"
-      ]
-    },
-    "agent/plans/_done/PLAN-trap-enforcement.md": {
-      "status": "done",
-      "owner": "99ccf057",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-10-04",
-      "open": 0,
-      "done": 7,
-      "open_sigs": [],
-      "done_sigs": [
-        "33c18d35",
-        "4da18b17",
-        "7717a198",
-        "a59805d9",
-        "d8dae661",
-        "dd8a45ec",
-        "ef0d8159"
       ]
     },
     "agent/plans/_done/PLAN-turbo-local-first.md": {
