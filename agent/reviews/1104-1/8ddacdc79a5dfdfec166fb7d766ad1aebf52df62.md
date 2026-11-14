@@ -22,10 +22,10 @@ Body-Sig: 076b4679987ac46c
 Anchor: in-diff
 Claim: The comment says changing one end without the other is a compile-time error, but DELEGATION_RENEW_PATH is a plain template-literal string, so a consumer still compiles if the upstream router keeps the old path; the mismatch only surfaces at runtime as a 404.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: fixed 8634a89861780fdf1017d07bff8cbdbabfefa83a | d778be9d 2026-11-14T17:01:10Z
 
 ### 8ddacdc7.2 [medium] packages/shared/src/subscription/constants.ts:439
 Anchor: in-diff
 Claim: DELEGATION_RENEW_PATH changes from /api/v1/delegation/renew to /account/api/v1/delegation/renew with no test added; the listed verification (build, existing src/subscription suite, biome) would pass whether or not the value is correct, so nothing guards the path against regression.
 Class: missing-control-test
-Resolution: open
+Resolution: not-a-bug | packages/shared/src/subscription/__tests__/constants-paths.test.ts pins the value, and private/account/tests/integration/delegation-route.test.ts:59 drives the real router at it | d778be9d 2026-11-14T17:01:54Z

@@ -22,22 +22,22 @@ Body-Sig: 7b3fc5309dd64eb0
 Anchor: in-diff
 Claim: is_ops_vm_ip accepts any 192.168.111.x, including .254, which the module docstring names as the host gateway; `apply --vm 192.168.111.254` would set OUTPUT DROP on the host, contrary to the docstring's 'no other machine may be cut off by this tool'. No test covers .254 or the .0/.255 edges.
 Class: other
-Resolution: open
+Resolution: fixed e59bfd3ac021239846250ea712180ed26dbc27a7 | d778be9d 2026-11-14T17:02:25Z
 
 ### bf0bded8.2 [low] .ci/rediacc_ci/onprem/testca.py:63
 Anchor: in-diff
 Claim: san_entry refuses wildcards, whitespace and ',;=' but not '/', so a host such as 'a/../x' is joined into the output path for the key and cert unchecked; the write goes to the operator-chosen directory tree, not a checked filename.
 Class: other
-Resolution: open
+Resolution: not-a-bug | fixed, not a bug: .ci/rediacc_ci/lab/testca.py:25 (san_entry refuses / \ and NUL) landed in e59bfd3ac0 after the onprem/ -> lab/ move; the fixed verb refused only because its move search reads the newest 60 commits | d778be9d 2026-11-14T17:02:53Z
 
 ### bf0bded8.3 [low] .ci/rediacc_ci/onprem/testca.py:107
 Anchor: in-diff
 Claim: The openssl-failure branch of main (CalledProcessError/FileNotFoundError -> exit 1) is new behaviour with no test; test_onprem_airgap.py only exercises the success and wildcard-refusal paths.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed e59bfd3ac021239846250ea712180ed26dbc27a7 | d778be9d 2026-11-14T17:02:39Z
 
 ### bf0bded8.4 [low] .ci/rediacc_ci/tests/test_onprem_airgap.py:41
 Anchor: in-diff
 Claim: The remove verb is covered only by a substring assertion on remove_script(); no test sends `remove` through the transport or checks that it deletes the tagged rules, so a broken remove path would still pass the suite.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed 039e874fea1d2317510a9cab201139c6596410b5 | d778be9d 2026-11-14T17:02:39Z
