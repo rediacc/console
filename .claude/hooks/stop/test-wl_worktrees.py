@@ -773,6 +773,25 @@ def control_landed(tmp):
     check("a ledger row reads it landed", read(tmp, main)["unlanded"], [])
     ledger.write_text(json.dumps({"sha": sha, "landed": "0" * 40}) + "\n")
     check("a ledger row naming no commit waives nothing", ids(read(tmp, main)["unlanded"]), ["w1"])
+    # A change split across commits: every joined part must be on the tip (reviews 918cfd41.1, 918cfd41.2).
+    earlier = git(tmp, main, "rev-parse", "HEAD~1")
+    ledger.write_text(json.dumps({"sha": sha, "landed": other + "+" + earlier}) + "\n")
+    check("a joined ledger row with every part on the tip reads landed", read(tmp, main)["unlanded"], [])
+    side = git(tmp, main, "commit-tree", "HEAD^{tree}", "-p", "HEAD~1", "-m", "side")
+    git(tmp, main, "branch", "side-joined", side)
+    ledger.write_text(json.dumps({"sha": sha, "landed": other + "+" + side}) + "\n")
+    check(
+        "a joined ledger row with one part off the tip waives nothing",
+        ids(read(tmp, main)["unlanded"]),
+        ["w1"],
+    )
+    for empty in ("+", "++"):
+        ledger.write_text(json.dumps({"sha": sha, "landed": empty}) + "\n")
+        check(
+            "a ledger row of only separators (%r) waives nothing" % empty,
+            ids(read(tmp, main)["unlanded"]),
+            ["w1"],
+        )
 
     main = lease_main_repo(tmp, "pinned")
     lease = new_lease(tmp, main, "w1")

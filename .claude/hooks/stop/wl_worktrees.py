@@ -315,14 +315,14 @@ def superseded_commits(tree, shas, tip):
         if not isinstance(row, dict):
             continue
         sha, landed = str(row.get("sha") or ""), str(row.get("landed") or "")
+        # A change split across commits records them joined with "+"; every one must still be on the tip, and a row with no part at all ("+", "++") waives nothing (review 918cfd41.2).
+        parts = [part for part in landed.split("+") if part]
         if (
             sha in shas
-            and landed
-            # A change split across commits records them joined with "+"; every one must still be on the tip.
+            and parts
             and all(
                 _git(tree, "merge-base", "--is-ancestor", part + "^{commit}", tip) is not None
-                for part in landed.split("+")
-                if part
+                for part in parts
             )
         ):
             out.add(sha)
