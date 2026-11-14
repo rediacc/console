@@ -57,6 +57,8 @@ class FakeLab:
     secret_fails: list[str] = dataclasses.field(default_factory=list)
     # company Worker -> the version it last rolled out; an absent one has no rollout row.
     caller_versions: dict[str, str] = dataclasses.field(default_factory=dict)
+    # The callers caller_version was asked about, in order.
+    version_asked: list[str] = dataclasses.field(default_factory=list)
     # signer -> why it must not be stopped (bench_production declares a subscription).
     stop_refusals: dict[str, str] = dataclasses.field(default_factory=dict)
     _lag_left: int = 0
@@ -139,6 +141,7 @@ class FakeLab:
 
     def caller_version(self, caller: str) -> str:
         self._rec("caller_version")
+        self.version_asked.append(caller)
         return self.caller_versions.get(caller, "0.9.1")
 
     def signer_of(self, caller: str) -> str:
@@ -717,6 +720,16 @@ def test_signer_records_a_failing_secret_list_as_a_broken_claim_and_goes_on() ->
     assert rc == 0
 
 
+def test_signer_records_a_failing_signer_secret_list_as_a_broken_claim_and_goes_on() -> None:
+    """Review b0c6da9f.2: the signer loop of the no-key claim guards its secret list like the account loop does."""
+    rc, lines = run("signer", FakeLab(secret_fails=["signer-bench-eu"]))
+    assert rc == 1, lines
+    assert any(
+        line.startswith("BROKEN") and "signer-bench-eu lists its secrets" in line for line in lines
+    )
+    assert any("account-cabc123: a legitimate licence is issued" in line for line in lines)
+
+
 def test_signer_skips_a_stale_company_caller_by_name_and_judges_a_current_one() -> None:
     """A company Worker older than the edge version answers for older code; it is skipped with the redeploy command, never tested as a signer failure."""
     lab = FakeLab(caller_versions={"account-cabc123": "0.8.0"})
@@ -742,9 +755,11 @@ def test_signer_skips_a_stale_company_caller_by_name_and_judges_a_current_one() 
 
 
 def test_signer_asks_no_version_of_a_shared_caller() -> None:
+    """Review f8e1e5a4.3: the one version question goes to the company caller, never to the shared account-bench caller."""
     lab = FakeLab()
     run("signer", lab)
-    assert lab.calls.count("caller_version") == 1
+    assert lab.version_asked == ["account-cabc123"]
+    assert "account-bench" not in lab.version_asked
 
 
 # -- a bench carrying production data is never cut ------------------------------
@@ -870,6 +885,39 @@ def test_bench_region_loss_restores_us_when_the_eu_cut_fails() -> None:
     assert any(
         line.startswith("ok      signer-bench-us: bench signing is restored") for line in lines
     )
+
+
+@pytest.mark.parametrize("failing", ["us", "eu"])
+def test_bench_region_loss_restores_both_signers_when_a_cut_raises_a_non_lab_error(
+    failing: str,
+) -> None:
+    """Review 4ac41a6c.2: a cut that half-applies and raises a non-LAB error still has its signer restored, us and eu alike."""
+
+    class CutRaises(FakeLab):
+        def cut_region(self, region: str) -> None:
+            super().cut_region(region)
+            if region == failing:
+                msg = "unexpected"
+                raise RuntimeError(msg)
+
+    lab = CutRaises()
+    with pytest.raises(RuntimeError, match="unexpected"):
+        run("region-loss", lab)
+    assert lab.cut == set()
+    assert "restore_region" in lab.calls
+
+
+def test_stop_that_raises_a_non_lab_error_still_restarts_the_signer() -> None:
+    class StopRaises(FakeLab):
+        def stop_signer(self, signer: str) -> None:
+            super().stop_signer(signer)
+            msg = "unexpected"
+            raise RuntimeError(msg)
+
+    lab = StopRaises()
+    with pytest.raises(RuntimeError, match="unexpected"):
+        run("signer", lab)
+    assert lab.stopped == set()
 
 
 def test_bench_region_loss_breaks_when_us_keeps_no_key_after_its_restore() -> None:

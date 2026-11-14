@@ -416,7 +416,12 @@ def _no_key_on_account(lab: Lab, p: Proof, *, bench: bool) -> None:
     signers = lab.signers(bench=bench)
     p.check("signers are listed", ok=signers, detail="no signer found")
     for s in signers:
-        p.check(f"{s} holds {PRIVATE_KEY}", ok=PRIVATE_KEY in lab.secret_names(s), detail="absent")
+        try:
+            held = lab.secret_names(s)
+        except LAB_ERRORS as exc:
+            p.check(f"{s} lists its secrets", ok=False, detail=f"{type(exc).__name__}: {exc}")
+            continue
+        p.check(f"{s} holds {PRIVATE_KEY}", ok=PRIVATE_KEY in held, detail="absent")
 
 
 def _runs(running: str, target: str) -> bool:
@@ -428,7 +433,7 @@ def _runs(running: str, target: str) -> bool:
 
 
 def verb_signer(lab: Lab, p: Proof, *, bench: bool) -> None:
-    """V1: the binding across Workers, props honoured, a licence issued and renewed per caller, scope refused (a company caller is asked `COMPANY_SCOPE_CODES`), no key on any account Worker, certificates through the signer, a stopped signer named (settled) while a current licence works, and signing restored. A company Worker whose company has no control scope row is skipped by name (`UNSCOPED_SKIP`), and nothing is stopped while bench carries production data (`_may_stop`)."""
+    """V1: the binding across Workers, props honoured, a licence issued and renewed per caller, scope refused (a company caller is asked `COMPANY_SCOPE_CODES`), no key on any account Worker, certificates through the signer, a stopped signer named (settled) while a current licence works, and signing restored. A company Worker whose company no longer exists is skipped by name (`GONE_SKIP`), one whose company has no control scope row is skipped by name (`UNSCOPED_SKIP`), and nothing is stopped while bench carries production data (`_may_stop`)."""
     _no_key_on_account(lab, p, bench=bench)
     callers = lab.callers(bench=bench)
     for gone in lab.gone_callers(bench=bench):
@@ -470,10 +475,9 @@ def verb_signer(lab: Lab, p: Proof, *, bench: bool) -> None:
     signer = lab.signer_of(caller)
     if not _may_stop(lab, p, signer):
         return
-    if not p.attempt(f"{signer} stops", lambda: lab.stop_signer(signer)):
-        _restore(lab, p, signer, caller)
-        return
     try:
+        if not p.attempt(f"{signer} stops", lambda: lab.stop_signer(signer)):
+            return
         p.refused(
             f"{caller}: a stopped signer is named",
             settle(lambda: lab.issue(caller, "licence"), _names_unavailable),
@@ -537,16 +541,16 @@ def _region_loss_bench(lab: Lab, p: Proof) -> None:
     ):
         return
     p.admitted(f"{region} company renews before the cut", lab.renew(caller))
-    if not p.attempt(f"{other} signer is cut", lambda: lab.cut_region(other)):
-        _restore_uncalled_region(lab, p, other)
-        return
+    # Every cut sits inside a try whose finally restores it, so a non-LAB error from `cut_region` itself still puts the signer back.
     try:
+        if not p.attempt(f"{other} signer is cut", lambda: lab.cut_region(other)):
+            return
         p.admitted(f"{region} company issues with {other} cut", lab.issue(caller, "licence"))
         p.admitted(f"{region} company renews with {other} cut", lab.renew(caller))
-        if not p.attempt(f"{region} signer is cut", lambda: lab.cut_region(region)):
-            _restore(lab, p, signer, caller, region=region)
-            return
+        restored = False
         try:
+            if not p.attempt(f"{region} signer is cut", lambda: lab.cut_region(region)):
+                return
             p.refused(
                 f"{region} company gets the named error",
                 settle(lambda: lab.renew(caller), _names_unavailable),
@@ -587,15 +591,14 @@ def verb_region_loss(lab: Lab, p: Proof, *, bench: bool) -> None:
         return
     eu = lab.caller_of(lab.ensure_company("proof-loss-eu", "eu"))
     us = lab.caller_of(lab.ensure_company("proof-loss-us", "us"))
-    # Only bench runs this verb, and the lab cuts a region by stopping its bench signer.
+    # A deploy target with a second region runs this form; the lab cuts a region by stopping its bench signer (`cut_region`).
     eu_signer = "signer-bench-eu"
     if not _may_stop(lab, p, eu_signer):
         return
     p.admitted("eu company renews before the cut", lab.renew(eu))
-    if not p.attempt("eu signer is cut", lambda: lab.cut_region("eu")):
-        _restore(lab, p, eu_signer, eu, region="eu")
-        return
     try:
+        if not p.attempt("eu signer is cut", lambda: lab.cut_region("eu")):
+            return
         p.admitted("us company issues with eu cut", lab.issue(us, "licence"))
         p.admitted("us company renews with eu cut", lab.renew(us))
         p.refused(
