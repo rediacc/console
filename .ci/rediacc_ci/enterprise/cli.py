@@ -16,7 +16,7 @@
     ./run.sh enterprise control ensure [--bench] [--region <r>]
     ./run.sh enterprise dns ensure [--check]
 
-`add` (box C1) is `onboarding.run` over the live steps, after `control_db.ensure_all` has made sure every control database of the environment exists with its schema. `list`, `update`, `suspend`, `export` and `remove` are box C2's `lifecycle` verbs over one `lifecycle.Context`; the context binds the production Exporter and Teardown (`lifecycle_adapters`) lazily, so `list`, `update` and `suspend` need no Cloudflare credentials, while `export` and `remove` read CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (plus the R2 S3 pair, and `--bws-project` for `remove`) from the environment, as `bws_env exec --profile <p>` provides them, and refuse naming the one that is missing. A verb whose module has not landed refuses with `not built yet: <box>` and exit 2, rather than claiming anything.
+`add` (box C1) is `onboarding.run` over the live steps, after `control_db.ensure_all` has made sure every control database of the environment exists with its schema. `list`, `update`, `suspend`, `export` and `remove` are box C2's `lifecycle` verbs over one `lifecycle.Context`; the context binds the production Exporter and Teardown (`lifecycle_adapters`) lazily, so `list`, `update` and `suspend` need no Cloudflare credentials, while `export` and `remove` read CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID (and `--bws-project` for `remove`) from the environment, as `bws_env exec --profile <p>` provides them, and refuse naming the one that is missing. Neither verb needs the shared R2 S3 pair for a company's own buckets (each is read with the company's own key from the store); the pair is read only for a bucket that is neither of the company's. A verb whose module has not landed refuses with `not built yet: <box>` and exit 2, rather than claiming anything.
 
 EXIT CODES. 0 done; 1 a refusal or a failed step; 2 usage, or a verb not built yet.
 """
@@ -90,11 +90,12 @@ def _add_parser() -> argparse.ArgumentParser:
     ap.add_argument("--region", required=True)
     ap.add_argument("--owner", required=True, help="the owner's mail address")
     ap.add_argument("--storage-gb", type=int, required=True)
-    ap.add_argument("--max-machines", type=int, help="the company's machine limit (required)")
+    ap.add_argument("--max-machines", type=int, required=True, help="the company's machine limit")
     ap.add_argument(
         "--max-storage-gb",
         type=int,
-        help="the company's per-repository size cap in GB, as the signer checks it (required)",
+        required=True,
+        help="the company's per-repository size cap in GB, as the signer checks it",
     )
     ap.add_argument("--allow-ip", action="append", default=[], help="repeat for each IP or CIDR")
     ap.add_argument("--unlisted", action="store_true", help="no www lookup entry")
@@ -252,7 +253,10 @@ def _company_s3(
     def for_company(company: Any, bucket: str) -> Any:
         if bucket == company.configs_bucket:
             entry, halves = secrets.CONFIGS_ENTRY, secrets.CONFIGS_PAIR
-            hint = "run `./run.sh enterprise configs-key %s` to mint it" % company.name
+            hint = (
+                "run `./run.sh enterprise configs-key %s --bws-project <id>` (with --bench for a bench company) to mint it"
+                % company.name
+            )
         else:
             entry, halves = secrets.BACKUP_ENTRY, secrets.BACKUP_PAIR
             hint = "the key is minted by `enterprise add`"
@@ -528,7 +532,14 @@ def configs_key_main(
             r2_jurisdiction=onboarding.region_entry(target.region).get("r2Jurisdiction"),
         )
         minted = secrets.ensure_configs_key(company, store=ctx.store, minter=use)
-    except (lifecycle.LifecycleError, secrets.SecretsError, onboarding.OnboardingError) as exc:
+    except (
+        lifecycle.LifecycleError,
+        secrets.SecretsError,
+        onboarding.OnboardingError,
+        OSError,
+        ValueError,
+        KeyError,
+    ) as exc:
         print("%s: configs-key failed: %s" % (SELF, exc), file=sys.stderr)
         return 1
     print("company %s: configs key %s" % (target.id, "minted" if minted else "already stored"))

@@ -5,6 +5,7 @@ Nothing here reaches Cloudflare, R2 or bws: the wrangler, S3, http, bws and KV s
 
 from __future__ import annotations
 
+import argparse
 import json
 import pathlib
 import sqlite3
@@ -227,7 +228,7 @@ def test_export_without_the_configs_key_names_the_bucket_and_the_mint_command(
     said = _said(capsys)
     assert "configs-acme" in said
     assert CONFIGS_ENTRY in said
-    assert "enterprise configs-key acme" in said
+    assert "enterprise configs-key acme --bws-project <id>" in said
     assert "configs-secret" not in said
 
 
@@ -245,6 +246,55 @@ def test_export_without_the_company_key_in_the_store_names_the_entry(rig, capsys
 
 
 REMOVE_ENV = {**CF_ENV, "CF_MANAGEMENT_TOKEN": "mgmt-token"}
+
+
+def test_remove_delete_data_without_the_company_key_names_the_entry(rig, capsys, monkeypatch):
+    """Review f8e1e5a4.2: the missing-key refusal of for_company is also the teardown path's, after a completed export."""
+    assert _export(rig, CF_ENV) == 0
+    capsys.readouterr()
+    store = FakeStore()
+    store.without_pair = True
+    monkeypatch.setattr(secrets.BwsStore, "from_env", classmethod(lambda _c, _p, _e=None: store))
+    argv = [
+        *("remove", "acme", "--delete-data", "--confirm", "acme"),
+        *("--bws-project", PROJECT, "--export-root", str(rig.tmp / "x")),
+        *("--lookup-domain", DOMAIN),
+    ]
+    assert cli.main(argv, context=rig.context(REMOVE_ENV)) == 1
+    said = _said(capsys)
+    assert "holds no key for bucket" in said
+    assert KEYPAIR_ENTRY in said
+    assert "company-secret" not in said
+    assert rig.deleted == []
+
+
+def test_live_add_gives_bootstrap_and_invite_the_companys_own_key_reader(monkeypatch):
+    """Review d828cfae.1: with --bws-project, live_add hands onboarding both the provisioner and the company-key reader; without it, neither."""
+    seen: dict[str, Any] = {}
+    monkeypatch.setattr(cli.control_db, "ensure_all", lambda **_k: None)
+    monkeypatch.setattr(cli.control_db, "transport", lambda *_a, **_k: None)
+    monkeypatch.setattr(cli.onboarding, "live_provision", lambda project: ("provision", project))
+    monkeypatch.setattr(cli.onboarding, "live_api_key", lambda project: ("api_key_of", project))
+    monkeypatch.setattr(cli.onboarding, "live_actions", lambda **kw: seen.update(kw) or {})
+    monkeypatch.setattr(
+        cli.onboarding, "run", lambda *_a, **_k: cli.onboarding.Outcome(0, "c1", ())
+    )
+    req = cli.onboarding.Request(
+        name="acme",
+        region="eu",
+        owner="o@acme.example",
+        storage_gb=5,
+        max_machines=1,
+        max_storage_gb=1,
+    )
+    opts = argparse.Namespace(bws_project="proj", lookup_namespace_id="ns")
+    cli.live_add(req, opts)
+    assert seen["provision"] == ("provision", "proj")
+    assert seen["api_key_of"] == ("api_key_of", "proj")
+    seen.clear()
+    cli.live_add(req, argparse.Namespace(bws_project="", lookup_namespace_id="ns"))
+    assert seen["provision"] is None
+    assert seen["api_key_of"] is None
 
 
 def test_remove_reaches_a_real_cloudflare_teardown(rig):
@@ -468,6 +518,22 @@ def test_configs_key_without_a_bws_project_refuses_naming_the_flag(rig, monkeypa
     assert _configs_key(rig, monkeypatch, store, minter, extra=()) == 1
     assert "--bws-project" in _said(capsys)
     assert minter.calls == []
+
+
+@pytest.mark.parametrize(
+    "error", [OSError("unreadable"), ValueError("malformed"), KeyError("regions")]
+)
+def test_configs_key_with_an_unreadable_regions_file_fails_cleanly(rig, monkeypatch, capsys, error):
+    """Review 0dc0f341.3: a bad regions.json is the 'failed:' line and exit 1, never a traceback."""
+
+    def broken(_region):
+        raise error
+
+    monkeypatch.setattr(cli.onboarding, "region_entry", broken)
+    store, minter = MintStore(holds_configs=False), RecordingMinter()
+    assert _configs_key(rig, monkeypatch, store, minter) == 1
+    assert "configs-key failed" in _said(capsys)
+    assert store.created == []
 
 
 def test_configs_key_without_the_management_token_refuses_naming_it(rig, monkeypatch, capsys):

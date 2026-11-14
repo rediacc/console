@@ -1417,32 +1417,29 @@ def test_cli_add_returns_the_outcome_rc_and_prints_the_error(capsys):
 @pytest.mark.parametrize(
     ("drop", "flag"), [("--max-machines", "max-machines"), ("--max-storage-gb", "max-storage-gb")]
 )
-def test_cli_add_without_a_limit_is_refused_before_any_call_naming_the_flag(drop, flag, capsys):
+def test_cli_add_without_a_limit_is_a_usage_error_naming_the_flag(drop, flag, capsys):
+    """Review cbaa9996.1: both limits are argparse-required, so omitting one is exit 2 like --storage-gb, before the add runs."""
     limits = {"--max-machines": "12", "--max-storage-gb": "300"}
     base = ["add", "acme", "--region", "eu", "--owner", "o@acme.example", "--storage-gb", "5"]
-    # control: with both limits the add runs
-    ran: list[onboarding.Request] = []
-
-    def add(req, _opts):
-        ran.append(req)
-        return onboarding.Outcome(0, "c1", ())
-
-    both = [x for k, v in limits.items() for x in (k, v)]
-    assert cli.main(base + both, add=add) == 0
-    assert ran[0].max_machines == 12
-    assert ran[0].max_storage_gb == 300
-    # without one: refused by the request check, before a step or a Cloudflare call
     rest = [x for k, v in limits.items() if k != drop for x in (k, v)]
+    assert cli.main(base + rest, add=_never) == 2
+    assert flag in capsys.readouterr().err
+
+
+def test_cli_add_with_both_limits_runs_the_real_validation_and_steps():
+    """Review cbaa9996.2: THE CONTROL runs the real run over the fake world, not a stub that skips check_request."""
+    limits = ["--max-machines", "12", "--max-storage-gb", "300"]
+    base = ["add", "acme", "--region", "eu", "--owner", "o@acme.example", "--storage-gb", "5"]
     world, rec = World(), Recorder()
     seen: list[onboarding.Request] = []
 
-    def real_check(req, _opts):
+    def real(req, _opts):
         seen.append(req)
         return _run(world, req, rec)
 
-    assert cli.main(base + rest, add=real_check) == 1
-    assert rec.calls == []
-    assert flag in capsys.readouterr().err
+    assert cli.main(base + limits, add=real) == 0
+    assert (seen[0].max_machines, seen[0].max_storage_gb) == (12, 300)
+    assert rec.calls != []
 
 
 def test_given_limits_reach_the_scope_row_and_the_bootstrap_body():
