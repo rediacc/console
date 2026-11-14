@@ -511,7 +511,7 @@ def _sequence_nodes(tree):
             yield node, [programs._const_str(a) for a in node.args]
 
 
-# Builtins that run no process and, over a literal table of strings, call no code the program wrote, so an argument they take is not yet an argv. A builtin that hands its argument to program code is not here or stops counting by its keywords: `map` and `filter` call their first argument, `isinstance` asks the class's metaclass `__instancecheck__`, `sorted`, `min` and `max` call a `key=`, and `print` calls the `write` of a `file=` (review 4c1ac1fc.2).
+# Builtins that run no process and, over a literal table of strings, call no code the program wrote, so an argument they take is not yet an argv. A builtin that hands its argument to program code is not here or stops counting by its keywords: `map` and `filter` call their first argument, `isinstance` asks the class's metaclass `__instancecheck__`, `sorted`, `min` and `max` call a `key=`, and `print` calls the `write` of a `file=` (review 4c1ac1fc.2). `type` is here for its one-argument form, which only reads a type; given a second argument, a keyword or a `*`/`**` expansion it creates a class, whose bases' `__init_subclass__` and metaclass are program code, so `runs_something` counts it then (reviews 2a494086.3, 109da352.1).
 PURE_BUILTINS = frozenset(
     (
         "print",
