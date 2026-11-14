@@ -512,7 +512,8 @@ def test_fetch_pages_a_without_rowid_table_in_full_row_order(tmp_path: pathlib.P
     db = mod.SqliteExecutor(tmp_path / "w.db")
     db.batch(["CREATE TABLE w (a TEXT, b INTEGER, PRIMARY KEY (a, b)) WITHOUT ROWID"])
     total = mod.PAGE * 2 + 7
-    db.batch(["INSERT INTO w VALUES ('k%05d', %d)" % (i, i) for i in range(total)])
+    with sqlite3.connect(tmp_path / "w.db") as conn:
+        conn.executemany("INSERT INTO w VALUES (?, ?)", [("k%05d" % i, i) for i in range(total)])
     seen: list[str] = []
 
     class Recording:
