@@ -505,3 +505,25 @@ def test_digest_hashes_blob_values() -> None:
     assert same == mod.digest([{"id": "a", "payload": b"\x00\x01"}], ["id", "payload"])
     assert same != mod.digest([{"id": "a", "payload": b"\x00\x02"}], ["id", "payload"])
     assert same != mod.digest([{"id": "a", "payload": "0001"}], ["id", "payload"])
+
+
+def test_fetch_pages_a_without_rowid_table_in_full_row_order(tmp_path: pathlib.Path) -> None:
+    """8c78e9a9.1: paging orders by column position, so a WITHOUT ROWID table (no rowid) is read whole, and a rowid order would fail."""
+    db = mod.SqliteExecutor(tmp_path / "w.db")
+    db.batch(["CREATE TABLE w (a TEXT, b INTEGER, PRIMARY KEY (a, b)) WITHOUT ROWID"])
+    total = mod.PAGE * 2 + 7
+    db.batch(["INSERT INTO w VALUES ('k%05d', %d)" % (i, i) for i in range(total)])
+    seen: list[str] = []
+
+    class Recording:
+        def query(self, sql: str) -> list[dict]:
+            seen.append(sql)
+            return db.query(sql)
+
+    rows = mod.fetch(Recording(), "w", ["a", "b"], "b >= 0")
+    assert len(rows) == total
+    assert len({r["a"] for r in rows}) == total
+    assert len(seen) == 3
+    assert all("ORDER BY 1, 2 " in sql and "rowid" not in sql for sql in seen)
+    with pytest.raises(sqlite3.OperationalError):
+        db.query("SELECT * FROM w ORDER BY rowid")
