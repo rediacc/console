@@ -237,6 +237,21 @@ def test_a_receipt_written_by_build_sh_is_accepted_by_both(tmp_path):
 
 
 @needs_build_sh
+def test_a_missing_dockerfile_fails_the_digest_instead_of_hashing_nothing(tmp_path):
+    """`sha256sum | cut` exits 0 with an empty hash; an empty receipt field would then match an unlabelled image (review f21afb43.1)."""
+    src = _staged(tmp_path)
+    (src / "Dockerfile").unlink()
+    assets = rec.assets_dir(src)
+    digest = _bash(src, "_embed_dockerfile_sha")
+    assert digest.returncode != 0
+    assert digest.stdout == ""
+    written = _bash(src, '_embed_write_receipt "%s" "%s/.staged.json"' % (assets, assets))
+    assert written.returncode != 0
+    assert not _shell_says_current(src)
+    assert not rec.receipt_is_current(src)
+
+
+@needs_build_sh
 @pytest.mark.parametrize(
     "mutate",
     [
