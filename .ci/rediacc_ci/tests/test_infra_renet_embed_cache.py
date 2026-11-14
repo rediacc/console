@@ -12,6 +12,7 @@ import json
 import pathlib
 import shutil
 import subprocess
+import time
 
 import pytest
 
@@ -279,3 +280,152 @@ def test_python_and_build_sh_agree(tmp_path, mutate):
     src = _staged(tmp_path)
     mutate(src)
     assert rec.receipt_is_current(src) is _shell_says_current(src)
+
+
+# ---------------------------------------------------------------------------
+# embed_assets itself, driven against a fake `docker` on a fake assets tree.
+# Origin: the 2026-11-14 restage printed `zstd: can't stat ... -- ignored` four
+# times and still ended "Embedded assets ready" with a current receipt.
+# ---------------------------------------------------------------------------
+
+FAKE_DOCKER = """#!/bin/bash
+case "$1" in
+  image) cat "$FAKE_RECIPE_FILE" ;;
+  create) echo fakecontainer ;;
+  rm) ;;
+  cp)
+    dest="$3"
+    case "$FAKE_CP:$(basename "$dest")" in
+      *:"$FAKE_CP_FAIL") exit 1 ;;
+      *:"$FAKE_CP_NOOP") exit 0 ;;
+    esac
+    printf 'fresh:%s' "$(basename "$dest")" > "$dest"
+    ;;
+esac
+"""
+
+
+def _embed(
+    src: pathlib.Path,
+    tmp_path: pathlib.Path,
+    *,
+    fail: str = "",
+    noop: str = "",
+    pre: str = "",
+    timeout_s: int | None = None,
+):
+    bindir = tmp_path / "fakebin"
+    bindir.mkdir(exist_ok=True)
+    docker = bindir / "docker"
+    docker.write_text(FAKE_DOCKER, encoding="utf-8")
+    docker.chmod(0o755)
+    recipe = tmp_path / "recipe"
+    recipe.write_text(_sha((src / "Dockerfile").read_bytes()) + "\n", encoding="utf-8")
+    script = (
+        'source "$1" || true; set +e; SCRIPT_DIR="$2"; EMBED_LOCKFILE="$2/embed-assets.lock.json"; '
+        'PATH="$3:$PATH"; export FAKE_RECIPE_FILE="$4" FAKE_CP_FAIL="$5" FAKE_CP_NOOP="$6"; '
+        + pre
+        + " embed_assets --force"
+    )
+    cmd = [
+        "bash",
+        "-c",
+        script,
+        "bash",
+        str(BUILD_SH),
+        str(src),
+        str(bindir),
+        str(recipe),
+        fail,
+        noop,
+    ]
+    if timeout_s is not None:
+        # `timeout` kills the whole staging; the result is None when it had to.
+        proc = subprocess.run(
+            ["timeout", "--kill-after=1", str(timeout_s), *cmd],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        return None if proc.returncode in (124, 137) else proc
+    return subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=120)
+
+
+needs_embed_tools = pytest.mark.skipif(
+    not BUILD_SH.is_file() or shutil.which("jq") is None or shutil.which("zstd") is None,
+    reason="needs the private/renet submodule, jq and zstd",
+)
+
+
+@needs_embed_tools
+def test_a_full_staging_compresses_every_asset_and_writes_a_current_receipt(tmp_path):
+    src = _skeleton(tmp_path)
+    proc = _embed(src, tmp_path)
+    assert proc.returncode == 0, proc.stderr
+    assets = rec.assets_dir(src)
+    for rel in ASSETS:
+        assert (assets / rel).is_file(), rel
+        assert not (assets / rel[: -len(".zst")]).exists()
+    assert rec.receipt_is_current(src)
+
+
+@needs_embed_tools
+def test_a_failed_copy_does_not_leave_the_old_artifact_for_the_receipt(tmp_path):
+    src = _skeleton(tmp_path)
+    assets = rec.assets_dir(src)
+    stale = assets / "arm64/base/criu-linux-arm64.zst"
+    stale.write_bytes(b"OLD BYTES")
+    proc = _embed(src, tmp_path, fail="criu-linux-arm64")
+    assert proc.returncode != 0
+    assert not stale.exists(), "the stale .zst survived a failed extraction"
+    assert not (assets / ".staged.json").exists()
+
+
+@needs_embed_tools
+def test_a_raw_file_that_vanishes_before_compression_is_a_hard_error(tmp_path):
+    """cp exits 0 but nothing is there: the shape a concurrent `zstd --rm` produces."""
+    src = _skeleton(tmp_path)
+    proc = _embed(src, tmp_path, noop="criu-linux-arm64")
+    assert proc.returncode != 0
+    assert "missing before compression" in proc.stderr
+    assert not (rec.assets_dir(src) / ".staged.json").exists()
+
+
+@needs_embed_tools
+def test_control_a_bare_zstd_loop_under_if_not_context_passes_silently(tmp_path):
+    """The old compress loop: zstd exits 1 on a missing input, but errexit is off inside `if ! embed_assets`, so the loop carried on and the function returned 0."""
+    script = (
+        'old() { set -e; zstd -19 -T0 -q --rm -f "$1"; echo reached-the-receipt; }; '
+        'if ! old "$1"; then echo FAILED; else echo PASSED; fi'
+    )
+    proc = subprocess.run(
+        ["bash", "-c", script, "bash", str(tmp_path / "absent-linux-amd64")],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert "PASSED" in proc.stdout
+    assert "reached-the-receipt" in proc.stdout
+    assert "ignored" in proc.stderr
+
+
+@needs_embed_tools
+@pytest.mark.skipif(shutil.which("flock") is None, reason="needs flock")
+def test_a_second_staging_waits_while_one_holds_the_tree(tmp_path):
+    src = _skeleton(tmp_path)
+    assets = rec.assets_dir(src)
+    holder = subprocess.Popen(["flock", str(assets), "sleep", "30"])
+    try:
+        for _ in range(50):
+            if subprocess.run(["flock", "-n", str(assets), "true"], check=False).returncode != 0:
+                break
+            time.sleep(0.1)
+        assert _embed(src, tmp_path, timeout_s=2) is None, (
+            "embed_assets ran while another staging held the tree"
+        )
+    finally:
+        holder.kill()
+        holder.wait()
+    done = _embed(src, tmp_path)
+    assert done is not None
+    assert done.returncode == 0
