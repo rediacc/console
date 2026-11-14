@@ -134,20 +134,26 @@ const DIAGNOSTIC_LINE = /licen[sc]e|refus|error|exit code|failed/i;
 
 /**
  * Trim a failed command's output for an assertion message without losing the line that explains the failure.
- * Output within `maxChars` is kept whole; longer output keeps its head and tail plus every diagnostic line from the elided middle, with a marker saying how much was dropped.
+ * Output within `maxChars` is kept whole; longer output keeps its head and tail (a quarter of `maxChars` each, at least one char) plus the diagnostic lines of the elided middle, each capped at 600 chars.
+ * The diagnostic lines together are capped at `maxChars`; when that cap cuts them, a marker says how many chars were dropped.
  */
 export const trimFailureOutput = (output: string, maxChars = 8000): string => {
   if (output.length <= maxChars) return output;
-  const edge = Math.floor(maxChars / 4);
+  const edge = Math.max(1, Math.floor(maxChars / 4));
+  if (output.length <= edge * 2) return output;
   const head = output.slice(0, edge);
-  const tail = output.slice(-edge);
-  const middle = output
+  const tail = output.slice(output.length - edge);
+  const diagnostics = output
     .slice(edge, output.length - edge)
     .split('\n')
     .filter((line) => DIAGNOSTIC_LINE.test(line))
     .map((line) => (line.length > 600 ? `${line.slice(0, 600)}...` : line))
-    .join('\n')
-    .slice(0, maxChars);
+    .join('\n');
+  const cut = Math.max(0, diagnostics.length - maxChars);
+  const middle =
+    cut > 0
+      ? `${diagnostics.slice(0, maxChars)}\n[... ${cut} more chars of diagnostic lines cut ...]`
+      : diagnostics;
   const dropped = output.length - head.length - tail.length;
   return `${head}\n[... ${dropped} chars elided; diagnostic lines from the elided span follow ...]\n${middle}\n[... end of elided span ...]\n${tail}`;
 };
