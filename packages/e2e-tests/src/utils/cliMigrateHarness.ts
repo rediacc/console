@@ -11,7 +11,7 @@ import { RenetFunctionsTestRunner } from './renet-functions/RenetFunctionsTestRu
 
 // Shared by suites 23a (migrate routing, keep-source, reconcile) and 23b (migrate ordering, failed target, gc race): the two-worker fleet wiring, the isolated e2e-cli config, the config and bridge probes, and a teardown that removes exactly the repositories one suite names.
 //
-// Both suites write the same e2e-cli config and 23a asserts that an UNFILTERED `config reconcile` reports no conflict, so the two must never run at the same time against one fleet. CI runs them in separate jobs, each on its own fleet; one local playwright run takes them in turn (the test-23 project, one worker).
+// Both suites write the same e2e-cli config and 23a asserts that an UNFILTERED `config reconcile` reports no conflict, so the two must never run at the same time against one fleet. CI runs them in separate legs of the full-integration job, each on its own fleet. The vm:check cli-migrate-23 leg (.ci/config/proof-tiers.json) and a local run take both files in ONE playwright invocation on one fleet, which is safe only because `--workers 1` with `fullyParallel: false` runs the test-23 project one file at a time, 23a then 23b by file name, so they are never concurrent.
 
 export const workers = (process.env.VM_WORKERS ?? '').trim().split(/\s+/).filter(Boolean);
 export const canRun = workers.length >= 2;

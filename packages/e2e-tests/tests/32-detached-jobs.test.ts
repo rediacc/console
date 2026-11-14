@@ -147,7 +147,7 @@ test.describe
       // A run that stops before case 7 leaves the holder frozen and both repositories behind, and REPO keeps the harness's default network id, which the next run's case 5 needs. Every job the suite started (the holder, case 5b's, case 7's) is cancelled and ended before the repositories go.
       await releaseJobs();
       await w.repositoryRm(REPO, DS).catch(() => undefined);
-      await w.repositoryRm(OTHER, DS, OTHER_NETWORK_ID).catch(() => undefined);
+      await w.repositoryRm(OTHER, DS, otherNetworkId).catch(() => undefined);
       await w
         .executeViaBridge(`sudo systemctl stop 'rediacc-job-*-${PLANT_SUFFIX}.service'`)
         .catch(() => undefined);
@@ -341,8 +341,8 @@ test.describe
     // Cases 5 to 7 share one holder: a job for a real repository, frozen while still non-terminal.
     const REPO = e2eRepoGuid();
     const OTHER = e2eRepoGuid();
-    // A per-run id in 3500-3999: the fixed fork ids (9216, 9280) belong to other tests' repositories that can still be mounted on this machine, and renet refuses to take a held id over (exit 17); test 30 draws from 3000-3499.
-    const OTHER_NETWORK_ID = String(3500 + (Date.now() % 500));
+    // Starts at a per-run id in 3500-3999 (the fixed fork ids 9216 and 9280 belong to other tests' repositories, and test 30 draws from 3000-3499). A random start can still land on an id an earlier run left mounted, so case 6b does not trust it: renet refuses to take a held id over (exit 17), and 6b walks to the next id in the range until repository_create succeeds, which makes the id it ends on free on this machine by renet's own check. The variable holds the id in use so both cleanups remove the repository from the right network.
+    let otherNetworkId = String(3500 + (Date.now() % 500));
     let holder: Handle | undefined;
 
     test('5. a repo-exclusive start while a job holds the repository exits 15 naming the holder', async () => {
@@ -432,14 +432,20 @@ test.describe
         datastorePath: DS,
       });
       expect(licence.code, `licence: ${w.getCombinedOutput(licence).slice(-400)}`).toBe(0);
-      const created = await w.testFunction({
-        function: 'repository_create',
-        repository: OTHER,
-        size: '64M',
-        password: 'e2e-jobs-pw',
-        datastorePath: DS,
-        networkId: OTHER_NETWORK_ID,
-      });
+      const tryCreate = (id: string) =>
+        w.testFunction({
+          function: 'repository_create',
+          repository: OTHER,
+          size: '64M',
+          password: 'e2e-jobs-pw',
+          datastorePath: DS,
+          networkId: id,
+        });
+      let created = await tryCreate(otherNetworkId);
+      for (let step = 0; created.code === 17 && step < 500; step += 1) {
+        otherNetworkId = String(3500 + ((Number(otherNetworkId) - 3500 + 1) % 500));
+        created = await tryCreate(otherNetworkId);
+      }
       expect(created.code, `repository_create: ${w.getCombinedOutput(created).slice(-400)}`).toBe(
         0
       );
@@ -467,6 +473,6 @@ test.describe
       // The jobs of 5b and of this case are live too; end them before the repositories are removed.
       await releaseJobs();
       await w.repositoryRm(REPO, DS).catch(() => undefined);
-      await w.repositoryRm(OTHER, DS, OTHER_NETWORK_ID).catch(() => undefined);
+      await w.repositoryRm(OTHER, DS, otherNetworkId).catch(() => undefined);
     });
   });

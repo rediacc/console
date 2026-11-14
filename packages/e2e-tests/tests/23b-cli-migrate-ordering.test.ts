@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 import { CliMigrateSuite, canRun, DS, imagePath, M1, M2 } from '../src/utils/cliMigrateHarness';
 import type { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
-// Suite 23b (`E2E Full Integration`, ubuntu-24.04 CLI_SUITE leg), Box M1 of agent/plans/PLAN-jobs-backup-real-machine-tests.md: the ordering of the `repository_migrate` job path (the source is deleted only after the target is up), a migrate whose target fails to come up, and the `repository_gc` re-check of a candidate mounted between the list and the delete. Split from suite 23a (operator ruling #12755b25) so each runs in a job of its own; the two share src/utils/cliMigrateHarness.ts and must not run at the same time on one fleet (23a's unfiltered `config reconcile` asserts on every repo in the e2e-cli config).
+// Suite 23b (`E2E Full Integration`, ubuntu-24.04 CLI_SUITE leg), Box M1 of agent/plans/PLAN-jobs-backup-real-machine-tests.md: the ordering of the `repository_migrate` job path (the source is deleted only after the target is up), a migrate whose target fails to come up, and the `repository_gc` re-check of a candidate mounted between the list and the delete. Split from suite 23a (operator ruling #12755b25) so each runs in a CI leg of its own (in vm:check both run in one invocation, sequentially under --workers 1); the two share src/utils/cliMigrateHarness.ts and must not run at the same time on one fleet (23a's unfiltered `config reconcile` asserts on every repo in the e2e-cli config).
 //
 // Gated on TWO worker VMs (machine-11 / machine-12).
 // One repo per scenario (ordering, failed target, gc race).

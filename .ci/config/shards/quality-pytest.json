@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-14T12:55:33.959Z",
+  "generatedAt": "2026-11-14T14:36:24.750Z",
   "legs": [
     {
       "index": 1,
@@ -459,6 +459,7 @@
         "pytest:.ci/rediacc_ci/tests/test_drills_lib.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_privdrop_probe.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_session_teardown.py",
+        "pytest:.ci/rediacc_ci/tests/test_e2e_full_integration_suites.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_cli_wiring.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_leak.py",
         "pytest:.ci/rediacc_ci/tests/test_enterprise_no_key_on_account.py",

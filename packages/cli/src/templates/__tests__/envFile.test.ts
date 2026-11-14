@@ -24,13 +24,21 @@ const envFileEntries = (compose: Compose): { service: string; path: string; opti
 const upBody = (rediaccfile: string): string =>
   /^up\(\)\s*\{\n([\s\S]*?)^\}/m.exec(rediaccfile)?.[1] ?? '';
 
-/** True when a line of up(), with its comment stripped, redirects into exactly `path` (not `path.bak`). A `#` after whitespace starts a comment, which is how the templates write them; a `#` inside quotes is not expected in these Rediaccfiles. */
+/** A line with its trailing comment removed: a `#` at the start or after whitespace, outside single and double quotes, starts the comment. */
+const stripComment = (line: string): string =>
+  // Left to right: a complete quoted string is kept whole, so a `#` inside it is never reached; the first `#` outside quotes that starts the line or follows whitespace takes the rest of the line.
+  line.replace(
+    /("[^"]*"|'[^']*')|(?:^|\s)#.*$/g,
+    (_match, quoted: string | undefined) => quoted ?? ''
+  );
+
+/** True when a line of up(), with its comment stripped, redirects into exactly `path` (not `path.bak`). */
 const createdByUp = (rediaccfile: string, path: string): boolean => {
   const escaped = path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const creator = new RegExp(`>>?\\s*["']?\\.?/?${escaped}(?![\\w.-])`);
   return upBody(rediaccfile)
     .split('\n')
-    .map((line) => line.replace(/(^|\s)#.*$/, ''))
+    .map(stripComment)
     .some((line) => creator.test(line));
 };
 
@@ -74,6 +82,15 @@ describe('createdByUp', () => {
 
   it('ignores a redirect inside a trailing comment (review ff7e55e6.1)', () => {
     expect(createdByUp(file('  cp a b # > .env'), '.env')).toBe(false);
+  });
+
+  it('counts a redirect after a # inside quotes (review ce9cdfe0.1)', () => {
+    expect(createdByUp(file('  echo "key # x" > .env'), '.env')).toBe(true);
+    expect(createdByUp(file("  echo 'key # x' > .env"), '.env')).toBe(true);
+  });
+
+  it('still strips a trailing comment after a quoted argument', () => {
+    expect(createdByUp(file('  echo "a" # > .env'), '.env')).toBe(false);
   });
 
   it('ignores a comment-only mention in up()', () => {

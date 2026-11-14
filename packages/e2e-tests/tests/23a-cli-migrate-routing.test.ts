@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test';
 import { CliMigrateSuite, canRun, M1, M2 } from '../src/utils/cliMigrateHarness';
 
 // Suite 23a (`E2E Full Integration`, ubuntu-24.04 CLI_SUITE leg): the FIRST rdc-driven e2e. The two-VM `repo migrate` routing family is CLI logic — config placement rewrite + `config reconcile` — that renet-side tests structurally cannot cover (07 §1-9). This suite drives the real `rdc` binary via CliRunner and cross-checks the CLI's claims against the bridge (SSH → renet) so the CLI
-// asserts are falsifiable, not self-referential. Its sibling 23b (migrate ordering, failed target, gc race) shares the harness in src/utils/cliMigrateHarness.ts and runs in another job: tests 7 and 8 here run an UNFILTERED `config reconcile` and assert on every conflict in the e2e-cli config, so 23b's repos must never exist on this fleet while they run.
+// asserts are falsifiable, not self-referential. Its sibling 23b (migrate ordering, failed target, gc race) shares the harness in src/utils/cliMigrateHarness.ts and runs in another CI leg (ct-tests.yml gives each its own fleet; the vm:check cli-migrate-23 leg runs the two files one after the other under --workers 1, never together): tests 7 and 8 here run an UNFILTERED `config reconcile` and assert on every conflict in the e2e-cli config, so 23b's repos must never exist on this fleet while they run.
 //
 // Gated on TWO worker VMs (machine-11 / machine-12).
 const APP = 'e2ecli-app';
