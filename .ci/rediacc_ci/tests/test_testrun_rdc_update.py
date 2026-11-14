@@ -50,6 +50,7 @@ if (( rollback )); then
 fi
 if [[ "${FAKE_UPDATE_MODE:-}" == unreachable ]]; then echo "connect ECONNREFUSED" >&2; exit 1; fi
 if (( check )); then
+  curl -fsS "$REDIACC_RELEASES_URL/cli/$channel/manifest.json" >/dev/null || { echo "manifest fetch failed" >&2; exit 1; }
   mkdir -p "$HOME/.config/rediacc"
   printf '{"account":{"updateChannel":"%s"}}\n' "$channel" > "$HOME/.config/rediacc/rediacc.json"
   exit 0
@@ -149,7 +150,10 @@ def test_each_scenario_matches_the_twin(
 
 
 def test_a_broken_updater_fails_the_same_scenarios(tmp_path: pathlib.Path) -> None:
-    """A rdc that does nothing: the swap scenarios fail on both sides, and the same ones."""
+    """A rdc that does nothing: the swap scenarios fail on both sides, and the same ones.
+
+    The one delta is check-only: the twin let an updater that never contacted the fixture pass it (rc 0, no swap), the port fails it with "made no request to the fixture server".
+    """
     inert = tmp_path / "inert"
     inert.write_text('#!/bin/bash\n[[ "$1" == --version ]] && echo 1.0.3\nexit 0\n')
     inert.chmod(0o755)
@@ -157,15 +161,16 @@ def test_a_broken_updater_fails_the_same_scenarios(tmp_path: pathlib.Path) -> No
     new = drive(tmp_path, "py", ["happy", "rollback", "check-only"], inert)
     assert old.code == 1
     assert old.err.count("FAIL:") >= 2
-    assert (new.code, ANSI.sub("", new.out).count("PASS:")) == (
-        old.code,
-        ANSI.sub("", old.out).count("PASS:"),
-    )
+    assert new.code == 1
+    assert ANSI.sub("", old.out).count("PASS:") == 1
+    assert ANSI.sub("", new.out).count("PASS:") == 0
     old_failed = FAILED_LINE.search(ANSI.sub("", old.err))
     new_failed = FAILED_LINE.search(ANSI.sub("", new.err))
     assert old_failed
     assert new_failed
-    assert old_failed.group(0) == new_failed.group(0)
+    assert old_failed.group(0) == "FAILED: happy rollback"
+    assert new_failed.group(0) == "FAILED: happy rollback check-only"
+    assert "made no request to the fixture server" in new.err
 
 
 FAILED_LINE = re.compile(r"FAILED: .*")
