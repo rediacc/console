@@ -1006,12 +1006,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 22,
-      "done": 0,
+      "open": 20,
+      "done": 2,
       "open_sigs": [
         "0096bfeb",
         "02ef454f",
-        "22c8a4e5",
         "2fb6c342",
         "32bb2d09",
         "4fee2ae7",
@@ -1025,14 +1024,16 @@
         "7d2ab038",
         "7ef4ac8e",
         "8248889f",
-        "ae8e12f8",
         "c51463d2",
         "ca5f18a8",
         "dbc95d71",
         "e785f32b",
         "f032a06a"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "22c8a4e5",
+        "ae8e12f8"
+      ]
     },
     "agent/plans/PLAN-d1-scaling.md": {
       "status": "approved",
