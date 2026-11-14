@@ -1,5 +1,11 @@
-import { DiagLogLevel, diag, metrics as metricsApi, trace } from '@opentelemetry/api';
-import { type Logger, logs } from '@opentelemetry/api-logs';
+import {
+  DiagLogLevel,
+  diag,
+  type Logger,
+  logs,
+  metrics as metricsApi,
+  trace,
+} from '@opentelemetry/api';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-http';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-http';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';

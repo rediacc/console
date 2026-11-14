@@ -90,6 +90,12 @@
       "GITHUB_STEP_SUMMARY",
       "VERSION"
     ],
+    ".ci/rediacc_ci/ci/backup_changed.py": [
+      "BASE_SHA",
+      "BEFORE_SHA",
+      "EVENT_NAME",
+      "GITHUB_OUTPUT"
+    ],
     ".ci/rediacc_ci/ci/cancel_older_runs.py": [
       "GH_TOKEN",
       "GITHUB_REPOSITORY",
@@ -169,6 +175,12 @@
     ],
     ".ci/rediacc_ci/ci/profiler_panel.py": [
       "*name"
+    ],
+    ".ci/rediacc_ci/ci/renet_changed.py": [
+      "BASE_SHA",
+      "BEFORE_SHA",
+      "EVENT_NAME",
+      "GITHUB_OUTPUT"
     ],
     ".ci/rediacc_ci/ci/scope_reconcile_shadow.py": [
       "GITHUB_REPOSITORY",
@@ -338,9 +350,6 @@
     ".ci/rediacc_ci/deploy/deploy_account.py": [
       "CLOUDFLARE_API_TOKEN"
     ],
-    ".ci/rediacc_ci/deploy/deploy_edge.py": [
-      "CLOUDFLARE_API_TOKEN"
-    ],
     ".ci/rediacc_ci/deploy/deploy_proxy.py": [
       "ACCOUNT_ED25519_PUBLIC_KEY",
       "CLOUDFLARE_API_TOKEN",
@@ -354,11 +363,18 @@
       "GITHUB_OUTPUT",
       "GITHUB_STEP_SUMMARY"
     ],
-    ".ci/rediacc_ci/deploy/deploy_www.py": [
+    ".ci/rediacc_ci/deploy/deploy_signer.py": [
       "CLOUDFLARE_ACCOUNT_ID",
       "CLOUDFLARE_API_TOKEN"
     ],
+    ".ci/rediacc_ci/deploy/deploy_www.py": [
+      "CLOUDFLARE_ACCOUNT_ID",
+      "CLOUDFLARE_API_TOKEN",
+      "ENTERPRISE_LOOKUP_PEPPER",
+      "TURNSTILE_SITE_KEY"
+    ],
     ".ci/rediacc_ci/deploy/executor_artifacts.py": [
+      "ACCOUNT_ED25519_PUBLIC_KEY",
       "CLOUDFLARE_R2_ENDPOINT"
     ],
     ".ci/rediacc_ci/deploy/promote_r2_to_stable.py": [
@@ -379,8 +395,6 @@
     ".ci/rediacc_ci/deploy/resolve_account_deploy_config.py": [
       "*name",
       "MATRIX_DOMAIN",
-      "MATRIX_EDGE_DOMAIN",
-      "MATRIX_EDGE_WORKER_NAME",
       "MATRIX_WORKER_NAME"
     ],
     ".ci/rediacc_ci/deploy/resolve_www_deploy_target.py": [
@@ -389,12 +403,12 @@
     ".ci/rediacc_ci/deploy/set_account_worker_secrets.py": [
       "*key_name",
       "*name",
+      "ACCOUNT_AE_READ_TOKEN",
       "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE",
       "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE",
       "ACCOUNT_BACKUP_S3_ENDPOINT",
       "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE",
       "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE",
-      "ACCOUNT_ED25519_PRIVATE_KEY",
       "ACCOUNT_ED25519_PUBLIC_KEY",
       "ACCOUNT_JWT_SECRET",
       "ACCOUNT_SERVER_API_KEY",
@@ -407,10 +421,12 @@
       "AWS_SES_SECRET_ACCESS_KEY_EU",
       "BACKUP_BUCKET_EDGE",
       "BACKUP_BUCKET_STABLE",
+      "CLOUDFLARE_ACCOUNT_ID",
       "CLOUDFLARE_TURNSTILE_SECRET_KEY",
       "FREE_LICENSE_HMAC_KEY",
       "R2_JURISDICTION",
       "ROOT_EMAIL",
+      "SALES_NOTIFY_EMAIL",
       "SELLER_ADDRESS_LINE1",
       "SELLER_ADDRESS_LINE2",
       "SELLER_CITY",
@@ -418,6 +434,7 @@
       "SELLER_EMAIL",
       "SELLER_NAME",
       "SELLER_POSTAL_CODE",
+      "SELLER_REGISTER_NAME",
       "SELLER_REGISTRATION_NUMBER",
       "SELLER_VAT_NUMBER",
       "STRIPE_SECRET_KEY",
@@ -583,6 +600,24 @@
       "HOME",
       "VM_IMAGE"
     ],
+    ".ci/rediacc_ci/enterprise/cli.py": [
+      "CF_MANAGEMENT_TOKEN"
+    ],
+    ".ci/rediacc_ci/enterprise/lab.py": [
+      "*name",
+      "CLOUDFLARE_ACCOUNT_ID",
+      "CLOUDFLARE_API_TOKEN",
+      "ENTERPRISE_LOOKUP_PEPPER",
+      "ENTERPRISE_PROOF_BWS_PROJECT",
+      "ENTERPRISE_PROOF_CONFIG",
+      "ENTERPRISE_PROOF_REF"
+    ],
+    ".ci/rediacc_ci/enterprise/onboarding.py": [
+      "AWS_SES_FROM",
+      "CF_MANAGEMENT_TOKEN",
+      "CLOUDFLARE_ACCOUNT_ID",
+      "CLOUDFLARE_API_TOKEN"
+    ],
     ".ci/rediacc_ci/env/create_e2e_env.py": [
       "*name",
       "BRIDGE_TIMEOUT",
@@ -598,6 +633,10 @@
       "*name"
     ],
     ".ci/rediacc_ci/housekeeping/cf_leftovers.py": [
+      "CLOUDFLARE_ACCOUNT_ID",
+      "CLOUDFLARE_API_TOKEN"
+    ],
+    ".ci/rediacc_ci/housekeeping/cf_retire.py": [
       "CLOUDFLARE_ACCOUNT_ID",
       "CLOUDFLARE_API_TOKEN"
     ],
@@ -667,6 +706,9 @@
       "USER",
       "VM_NET_BASE"
     ],
+    ".ci/rediacc_ci/legal/entity.py": [
+      "PYTHONPATH"
+    ],
     ".ci/rediacc_ci/log.py": [
       "CI",
       "NO_COLOR"
@@ -716,12 +758,13 @@
       "CF_MANAGEMENT_TOKEN"
     ],
     ".ci/rediacc_ci/ops/deploy_bench.py": [
+      "ACCOUNT_AE_READ_TOKEN",
       "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
       "ACCOUNT_BACKUP_S3_BUCKET",
       "ACCOUNT_BACKUP_S3_ENDPOINT",
       "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
+      "ACCOUNT_BACKUP_STORE_KEK",
       "ACCOUNT_CONFIG_SERVER_KEY",
-      "ACCOUNT_ED25519_PRIVATE_KEY",
       "ACCOUNT_ED25519_PUBLIC_KEY",
       "ACCOUNT_JWT_SECRET",
       "ACCOUNT_SERVER_API_KEY",
@@ -740,6 +783,7 @@
       "OBS_OTLP_CREDENTIALS",
       "REDIACC_BWS_PROFILES",
       "ROOT_EMAIL",
+      "SALES_NOTIFY_EMAIL",
       "SELLER_ADDRESS_LINE1",
       "SELLER_ADDRESS_LINE2",
       "SELLER_CITY",
@@ -747,11 +791,27 @@
       "SELLER_EMAIL",
       "SELLER_NAME",
       "SELLER_POSTAL_CODE",
+      "SELLER_REGISTER_NAME",
       "SELLER_REGISTRATION_NUMBER",
-      "SELLER_VAT_NUMBER"
+      "SELLER_VAT_NUMBER",
+      "STRIPE_SANDBOX_SECRET_KEY",
+      "STRIPE_SANDBOX_WEBHOOK_SECRET"
     ],
     ".ci/rediacc_ci/ops/derive_shadow_pass_list.py": [
       "BRANCH"
+    ],
+    ".ci/rediacc_ci/ops/enterprise_lookup.py": [
+      "ENTERPRISE_LOOKUP_PEPPER"
+    ],
+    ".ci/rediacc_ci/ops/free_to_registered.py": [
+      "REDIACC_BENCH_TOTP_SEED",
+      "REDIACC_BWS_PROFILES",
+      "XDG_CONFIG_HOME"
+    ],
+    ".ci/rediacc_ci/ops/licence_expiry_drill.py": [
+      "REDIACC_BWS_PROFILES",
+      "ROOT_EMAIL",
+      "SALES_NOTIFY_EMAIL"
     ],
     ".ci/rediacc_ci/ops/linode_cluster_validation.py": [
       "CLUSTER_NAME",
@@ -766,16 +826,29 @@
       "CLAUDE_CODE_SESSION_ID",
       "CLOUDFLARE_API_TOKEN",
       "REDIACC_BWS_PROFILES",
+      "REDIACC_TRANSCRIPT_PATH",
       "WORKLIST_SESSION_ID"
     ],
     ".ci/rediacc_ci/ops/login_bench.py": [
+      "CF_EMAIL",
+      "CF_GLOBAL_API_KEY",
+      "REDIACC_BENCH_EMAIL",
       "REDIACC_BWS_PROFILES"
     ],
     ".ci/rediacc_ci/ops/mirror_config_store.py": [
+      "*dst_name",
       "*name",
+      "*src_name",
       "CF_EMAIL",
       "CF_GLOBAL_API_KEY",
       "CF_MANAGEMENT_TOKEN"
+    ],
+    ".ci/rediacc_ci/ops/notices_drill.py": [
+      "REDIACC_BWS_PROFILES",
+      "ROOT_EMAIL"
+    ],
+    ".ci/rediacc_ci/ops/ops_health.py": [
+      "OPS_HEALTH_LOCK_HANDOFF"
     ],
     ".ci/rediacc_ci/ops/prune_worker_secrets.py": [
       "CLOUDFLARE_ACCOUNT_ID",
@@ -786,6 +859,12 @@
       "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
       "ACCOUNT_BACKUP_S3_ENDPOINT",
       "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
+      "REDIACC_BWS_PROFILES"
+    ],
+    ".ci/rediacc_ci/ops/r2_bucket_copy.py": [
+      "CLOUDFLARE_R2_ENDPOINT"
+    ],
+    ".ci/rediacc_ci/ops/region_smoke.py": [
       "REDIACC_BWS_PROFILES"
     ],
     ".ci/rediacc_ci/ops/reset_bench.py": [
@@ -1202,6 +1281,7 @@
     ".ci/rediacc_ci/release/check_soak_period.py": [
       "*name",
       "CHANNEL_SNAPSHOTS",
+      "DRIFT_CONCLUSION",
       "EDGE_RELEASES",
       "EDGE_VERSION",
       "FORCE",
@@ -1241,6 +1321,7 @@
       "CLOUDFLARE_R2_ENDPOINT",
       "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
       "PATH",
+      "RELEASE_ASKED",
       "RELEASE_GPG_PASSPHRASE",
       "RELEASE_GPG_PRIVATE_KEY"
     ],
@@ -1252,10 +1333,18 @@
       "GITHUB_REPOSITORY",
       "VERSION"
     ],
+    ".ci/rediacc_ci/release/nightly_tested_edge.py": [
+      "GITHUB_OUTPUT",
+      "GITHUB_REPOSITORY"
+    ],
     ".ci/rediacc_ci/release/order.py": [
       "CLOUDFLARE_R2_ACCESS_KEY_ID",
       "CLOUDFLARE_R2_ENDPOINT",
       "CLOUDFLARE_R2_SECRET_ACCESS_KEY"
+    ],
+    ".ci/rediacc_ci/release/redacted_tee.py": [
+      "COMPANY",
+      "GITHUB_STEP_SUMMARY"
     ],
     ".ci/rediacc_ci/release/renet_key_gate.py": [
       "ACCOUNT_ED25519_PUBLIC_KEY"
@@ -1395,6 +1484,7 @@
       "ACCOUNT_ED25519_PRIVATE_KEY",
       "ACCOUNT_ED25519_PUBLIC_KEY",
       "ACCOUNT_SERVER_API_KEY",
+      "GITHUB_ACTIONS",
       "GITHUB_ENV",
       "GITHUB_OUTPUT",
       "RUNNER_TEMP"
@@ -1641,6 +1731,10 @@
       "HOME",
       "PATH"
     ],
+    ".ci/rediacc_ci/tests/test_conftest_duration_order.py": [
+      "ABAD_KEPT",
+      "ABAD_NEW"
+    ],
     ".ci/rediacc_ci/tests/test_controls.py": [
       "GIT_DIR",
       "GIT_INDEX_FILE"
@@ -1682,9 +1776,6 @@
       "HOME"
     ],
     ".ci/rediacc_ci/tests/test_deploy_deploy_account.py": [
-      "HOME"
-    ],
-    ".ci/rediacc_ci/tests/test_deploy_deploy_edge.py": [
       "HOME"
     ],
     ".ci/rediacc_ci/tests/test_deploy_deploy_proxy.py": [
@@ -1732,6 +1823,9 @@
     ".ci/rediacc_ci/tests/test_deploy_test_d1_migrations.py": [
       "HOME"
     ],
+    ".ci/rediacc_ci/tests/test_deploy_upload_media_to_r2.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/test_deploy_upload_repos_to_r2.py": [
       "HOME"
     ],
@@ -1770,6 +1864,12 @@
     ".ci/rediacc_ci/tests/test_drills_backup_local_plane.py": [
       "ACCOUNT_BACKUP_S3_BUCKET"
     ],
+    ".ci/rediacc_ci/tests/test_drills_backup_renet.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/test_drills_down_before_kill.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/test_drills_lib.py": [
       "HOME",
       "PATH"
@@ -1783,7 +1883,13 @@
     ".ci/rediacc_ci/tests/test_drills_universe_transfer.py": [
       "PATH"
     ],
+    ".ci/rediacc_ci/tests/test_drills_upgrade_converge.py": [
+      "PATH"
+    ],
     ".ci/rediacc_ci/tests/test_drills_vm_check.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/test_enterprise_add.py": [
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_housekeeping_cleanup_cf_preview.py": [
@@ -1826,6 +1932,8 @@
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_ops_mirror_config_store.py": [
+      "*names[0]",
+      "*names[1]",
       "PATH"
     ],
     ".ci/rediacc_ci/tests/test_private_renet_build_vcs_stamp.py": [
@@ -1968,6 +2076,12 @@
     ],
     ".ci/rediacc_ci/tests/test_testrun_e2e.py": [
       "RENET_DATA_DIR"
+    ],
+    ".ci/rediacc_ci/tests/test_testrun_start_account.py": [
+      "PATH"
+    ],
+    ".ci/rediacc_ci/tests/test_testrun_start_backup_plane.py": [
+      "RENET_BINARY_PATH"
     ],
     ".ci/rediacc_ci/tests/wkloader.py": [
       "PATH"
@@ -2125,9 +2239,15 @@
       "SHAPE_PROBE_CACHE",
       "WORKLIST_STORE_DIR"
     ],
+    ".claude/hooks/stop/test-opshealth.py": [
+      "PYTHONPATH"
+    ],
     ".claude/hooks/stop/test-planrec.py": [
       "HOME",
       "PATH"
+    ],
+    ".claude/hooks/stop/test-wl_worktrees.py": [
+      "WL_WORKTREES_TEST_CLAUDE"
     ],
     ".claude/hooks/stop/wl_agents.py": [
       "WORKLIST_AGENTS_DIR",
@@ -2136,10 +2256,16 @@
       "WORKLIST_AGENT_HINT_MIN_SCORE",
       "WORKLIST_AGENT_HINT_REFRESH_MIN"
     ],
+    ".claude/hooks/stop/wl_away.py": [
+      "WL_AWAY_STATE"
+    ],
     ".claude/hooks/stop/wl_bgsweep.py": [
       "CLAUDE_PID",
       "WORKLIST_BGSWEEP_AGE_MIN",
       "WORKLIST_HARNESS_PID"
+    ],
+    ".claude/hooks/stop/wl_boxaudit.py": [
+      "TMPDIR"
     ],
     ".claude/hooks/stop/wl_bravedefault.py": [
       "WORKLIST_BRAVE_MAX_FIRES",
@@ -2178,6 +2304,8 @@
       "WORKLIST_UNREAD_ROTATE_MIN"
     ],
     ".claude/hooks/stop/wl_ci.py": [
+      "CI",
+      "REDIACC_GATE_LEDGER_DIR",
       "WORKLIST_CI_CACHE_FINAL_S",
       "WORKLIST_CI_CACHE_LIVE_S",
       "WORKLIST_CI_MAX_BLOCKS",
@@ -2185,7 +2313,8 @@
       "WORKLIST_CI_QUEUE_DEPTH",
       "WORKLIST_CI_QUEUE_MIN",
       "WORKLIST_CI_RETRY_PATTERNS",
-      "WORKLIST_PUBLISH_REF"
+      "WORKLIST_PUBLISH_REF",
+      "XDG_STATE_HOME"
     ],
     ".claude/hooks/stop/wl_claimcheck.py": [
       "TMPDIR"
@@ -2234,6 +2363,9 @@
       "WORKLIST_ROSTER_MAX",
       "WORKLIST_TEAMMATE_FRESH_MIN",
       "WORKLIST_TEAMMATE_TAIL_BYTES"
+    ],
+    ".claude/hooks/stop/wl_planbox.py": [
+      "TMPDIR"
     ],
     ".claude/hooks/stop/wl_planfid.py": [
       "WORKLIST_PLANFID_MIN_TASKS",
@@ -2284,6 +2416,7 @@
       "WORKLIST_DEAD_HOURS",
       "WORKLIST_REPORTS_DIR",
       "WORKLIST_REPORT_INDEX_READ_MAX_BYTES",
+      "WORKLIST_REPORT_RELAY_FLOOR",
       "WORKLIST_REPORT_RETENTION_DAYS",
       "WORKLIST_REPORT_SCAN_IDLE_MIN",
       "WORKLIST_REPORT_SCAN_LIVE_MIN",
@@ -2351,9 +2484,15 @@
       "WORKLIST_PUBLISH_ROOT"
     ],
     ".claude/hooks/trapguard/dispatch.py": [
+      "SHAPE_ROOT",
       "TRAPGUARD_DIR",
       "TRAPGUARD_FAULT",
       "TRAPGUARD_PROBE_PATH"
+    ],
+    ".claude/hooks/trapguard/shapes.py": [
+      "CLAUDE_CONFIG_DIR",
+      "SHAPE_MEMORY_DIR",
+      "TRAPGUARD_DIR"
     ],
     ".claude/hooks/why-on-edit.py": [
       "CLAUDE_PROJECT_DIR",
@@ -2365,7 +2504,8 @@
       "*rr.ENV",
       "BACKUP_CHECK_PUSH_REASON",
       "COMMIT_POLICY_OK",
-      "GEN_DOCS_PRECOMMIT_VERBOSE"
+      "GEN_DOCS_PRECOMMIT_VERBOSE",
+      "PYTHONPATH"
     ],
     ".claude/rediacc_hooks/git/release_run.py": [
       "PYTHONNOUSERSITE",
@@ -2379,6 +2519,9 @@
     ".claude/rediacc_hooks/guards/block_inline_python.py": [
       "TMPDIR"
     ],
+    ".claude/rediacc_hooks/guards/block_review_file_shell_write.py": [
+      "REDIACC_REVIEW_STDIN_PROCFS"
+    ],
     ".claude/rediacc_hooks/guards/block_unproven_bulk_transform.py": [
       "WORKLIST_BULK_FILE_THRESHOLD"
     ],
@@ -2386,6 +2529,7 @@
       "REDIACC_PID_WAIT_PROCFS"
     ],
     ".claude/rediacc_hooks/guards/block_worktree_add.py": [
+      "CLAUDE_PROJECT_DIR",
       "REDIACC_WORKTREE_STDIN_PROCFS"
     ],
     ".claude/rediacc_hooks/guards/test-block_admin_merge.py": [
@@ -2403,11 +2547,17 @@
     ".claude/rediacc_hooks/guards/test-block_second_branch.py": [
       "PATH"
     ],
+    ".claude/rediacc_hooks/guards/test-block_second_open_pr.py": [
+      "PATH"
+    ],
     ".claude/rediacc_hooks/guards/test-block_turbo_early_push.py": [
       "PATH"
     ],
     ".claude/rediacc_hooks/guards/test-warn_staged_shape_duplication.py": [
       "PATH"
+    ],
+    ".claude/rediacc_hooks/guards/test-warn_writer_brief.py": [
+      "CLAUDE_PROJECT_DIR"
     ],
     ".claude/rediacc_hooks/guards/warn_staged_shape_duplication.py": [
       "SHAPE_PROBE_DEADLINE_S"
@@ -2424,10 +2574,19 @@
     ".claude/rediacc_hooks/run_tests.py": [
       "PYTEST_BIN"
     ],
+    ".claude/rediacc_hooks/shellscan.py": [
+      "*n"
+    ],
     ".claude/rediacc_hooks/tests/hooklabels.py": [
       "HOOK_LABEL_DIR"
     ],
     ".claude/rediacc_hooks/tests/test_block_turbo_early_push_merge_phase.py": [
+      "PATH"
+    ],
+    ".claude/rediacc_hooks/tests/test_conftest_no_ambient_git_config.py": [
+      "GIT_CONFIG_NOSYSTEM"
+    ],
+    ".claude/rediacc_hooks/tests/test_githook_backup_ref.py": [
       "PATH"
     ],
     ".claude/rediacc_hooks/tests/test_guards_differential.py": [
@@ -2468,6 +2627,12 @@
     ".claude/rediacc_hooks/tests/test_wl_commit_remind.py": [
       "TMPDIR"
     ],
+    ".claude/rediacc_hooks/tests/test_wl_interim_reports.py": [
+      "WORKLIST_REPORTS_DIR"
+    ],
+    ".claude/rediacc_hooks/tests/test_wl_lessons.py": [
+      "PATH"
+    ],
     ".claude/rediacc_hooks/tests/test_wl_report_inbox.py": [
       "TMPDIR"
     ],
@@ -2488,6 +2653,9 @@
       "BWS_ROTATE_TARGET_FILE",
       "GH_BIN",
       "XDG_CONFIG_HOME"
+    ],
+    "scripts/ops/bws-map-refresh.py": [
+      "BWS_ACCESS_TOKEN"
     ],
     "scripts/ops/secret-rename.py": [
       "SECRET_RENAME_MIN_FILES"

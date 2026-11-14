@@ -11,6 +11,17 @@ vi.mock('../../services/account/account-client.js', () => ({
   accountServerFetch: mockAccountServerFetch,
 }));
 
+const mockPick = vi.hoisted(() => vi.fn());
+vi.mock('../../services/backup/backup-store-pick.js', async () => ({
+  ...(await vi.importActual<object>('../../services/backup/backup-store-pick.js')),
+  pickStores: mockPick,
+}));
+// The failure the executor would render (it exits the process in agent mode); the fallback renders only the one that ends the run.
+const mockRenderFailure = vi.hoisted(() => vi.fn());
+vi.mock('../../utils/local-execution-failures.js', () => ({
+  renderLocalExecutionFailure: mockRenderFailure,
+}));
+
 const mockExecuteRepoFunction = vi.hoisted(() => vi.fn());
 vi.mock('../../utils/repo-executor.js', () => ({
   executeRepoFunction: mockExecuteRepoFunction,
@@ -39,9 +50,10 @@ vi.mock('../backup.js', () => ({
 
 const mockPrint = vi.hoisted(() => vi.fn());
 const mockWarn = vi.hoisted(() => vi.fn());
+const mockInfo = vi.hoisted(() => vi.fn());
 vi.mock('../../services/core/output.js', () => ({
   outputService: {
-    info: vi.fn(),
+    info: mockInfo,
     success: vi.fn(),
     warn: mockWarn,
     error: vi.fn(),
@@ -69,6 +81,34 @@ vi.mock('../../utils/errors.js', async () => {
 
 const { registerBackupStorageCommands } = await import('../backup-storage.js');
 const { ValidationError } = await import('../../utils/errors.js');
+const { renderBrowseListing } = await import('../backup-storage-browse.js');
+
+type BrowseOptions = {
+  job?: { verb: string; steps: { name: string; params: Record<string, string> }[] };
+};
+
+/** The executor answers with `result`; a success then runs the job's render step, as the ticket would. */
+function answer(result: { success: boolean; exitCode: number; stdout: string }): void {
+  mockExecuteRepoFunction.mockImplementation(
+    async (
+      _fn: string,
+      _repo: string,
+      _machine: string,
+      _params: unknown,
+      options: BrowseOptions
+    ) => {
+      const step = options.job?.steps[0];
+      if (result.success && step?.name === 'renderBackupBrowse') {
+        await renderBrowseListing(result.stdout, {
+          repo: step.params.repo,
+          snapshot: step.params.snapshot,
+          limit: step.params.limit,
+        });
+      }
+      return result;
+    }
+  );
+}
 
 async function run(argv: string[]): Promise<void> {
   const program = new Command();
@@ -81,7 +121,7 @@ async function run(argv: string[]): Promise<void> {
 const SNAPSHOT = '01J0000000000000000000SNAP';
 // Browse reads a stored listing, so it asks for the nearest indexed snapshot (D-listing).
 const ANY = { anyStream: true };
-const INDEXED = { indexed: true };
+const INDEXED = { indexed: true, store: 'home' };
 
 const listingStdout = JSON.stringify({
   source: 'snapshot',
@@ -102,11 +142,10 @@ beforeEach(() => {
     credential: 'secret',
   });
   mockResolveSnapshotAt.mockResolvedValue(SNAPSHOT);
-  mockExecuteRepoFunction.mockResolvedValue({
-    success: true,
-    exitCode: 0,
-    stdout: listingStdout,
-  });
+  mockPick.mockImplementation((_lineage: string, from?: string) =>
+    Promise.resolve({ stores: [from ?? 'home'], explicit: from !== undefined })
+  );
+  answer({ success: true, exitCode: 0, stdout: listingStdout });
 });
 
 afterEach(() => {
@@ -128,7 +167,19 @@ describe('backup browse without --at (regression control)', () => {
       'path',
     ]);
     expect(params.path).toBe('');
-    expect(options).toEqual({ debug: undefined, captureOutput: true });
+    expect(options).toMatchObject({ debug: undefined, captureOutput: true });
+    // The listing print is the job's step, carrying no snapshot for a browse of the live image.
+    expect(options.job).toEqual({
+      verb: 'backup browse',
+      steps: [
+        {
+          name: 'renderBackupBrowse',
+          on: 'success',
+          needsOutput: true,
+          params: { repo: 'shop', snapshot: '', limit: expect.any(String) },
+        },
+      ],
+    });
     expect(mockGetRepository).not.toHaveBeenCalled();
     expect(mockAccountServerFetch).not.toHaveBeenCalled();
     expect(mockResolveSnapshotAt).not.toHaveBeenCalled();
@@ -154,6 +205,18 @@ describe('backup browse failure', () => {
   });
 });
 
+describe('backup browse as a job', () => {
+  it('returns the ticket without printing or failing when the job outlives the attach window', async () => {
+    mockExecuteRepoFunction.mockResolvedValue({ success: true, exitCode: 0, state: 'running' });
+
+    await run(['browse', 'shop']);
+
+    expect(mockPrint).not.toHaveBeenCalled();
+    expect(mockWarn).not.toHaveBeenCalled();
+    expect(process.exitCode).not.toBe(18);
+  });
+});
+
 describe('backup browse --at', () => {
   it('dispatches backup_browse_at with a snapshot id as given', async () => {
     await run(['browse', 'shop', '--at', SNAPSHOT, '--path', '/app']);
@@ -165,7 +228,12 @@ describe('backup browse --at', () => {
     expect(repoKey).toBe('shop');
     expect(machine).toBe('m1');
     expect(params).toMatchObject({ lineage: 'repo-guid', at: SNAPSHOT, path: '/app' });
-    expect(options).toEqual({ debug: undefined, captureOutput: true });
+    expect(options).toMatchObject({ debug: undefined, captureOutput: true });
+    expect(options.job.verb).toBe('backup browse');
+    expect(options.job.steps[0]).toMatchObject({
+      name: 'renderBackupBrowse',
+      params: { repo: 'shop', snapshot: SNAPSHOT },
+    });
   });
 
   it('uses the grand GUID as the lineage for a fork', async () => {
@@ -200,7 +268,7 @@ describe('backup browse --at', () => {
   });
 
   it('turns exit 18 into a warning and exit code 18, printing nothing', async () => {
-    mockExecuteRepoFunction.mockResolvedValue({ success: false, exitCode: 18, stdout: '' });
+    answer({ success: false, exitCode: 18, stdout: '' });
 
     await run(['browse', 'shop', '--at', SNAPSHOT]);
 
@@ -220,7 +288,7 @@ describe('backup browse --at', () => {
   });
 
   it('notes once that a live-mount listing may differ from the stored image, and still renders it', async () => {
-    mockExecuteRepoFunction.mockResolvedValue({
+    answer({
       success: true,
       exitCode: 0,
       stdout: JSON.stringify({ ...JSON.parse(listingStdout), listingSource: 'live-mount' }),
@@ -235,7 +303,7 @@ describe('backup browse --at', () => {
   });
 
   it('adds no note for a staged listing', async () => {
-    mockExecuteRepoFunction.mockResolvedValue({
+    answer({
       success: true,
       exitCode: 0,
       stdout: JSON.stringify({ ...JSON.parse(listingStdout), listingSource: 'staged' }),
@@ -245,5 +313,126 @@ describe('backup browse --at', () => {
 
     expect(mockWarn).not.toHaveBeenCalled();
     expect(mockPrint).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('backup browse --at store fallback', () => {
+  const RANKED = { stores: ['eu-west', 'home'], explicit: false };
+  const failed = (error: string) => ({ success: false, exitCode: 1, error, stdout: '' });
+  /** The executor answers each backup_browse_at call in turn; the last repeats. */
+  function answers(...results: Record<string, unknown>[]): void {
+    let i = 0;
+    mockExecuteRepoFunction.mockImplementation(() => {
+      const result = results[Math.min(i, results.length - 1)];
+      i += 1;
+      return Promise.resolve(result);
+    });
+  }
+  const stores = () => mockExecuteRepoFunction.mock.calls.map((c) => c[3].store);
+  const FALLBACK = `commands.backup.restore.storeFallback ${JSON.stringify({ failed: 'eu-west', next: 'home' })}`;
+
+  it('falls back to the next store on a 5xx and names the store that served', async () => {
+    mockPick.mockResolvedValue(RANKED);
+    answers(failed('HTTP 502 bad gateway'), { success: true, exitCode: 0, stdout: listingStdout });
+
+    await run(['browse', 'shop', '--at', SNAPSHOT]);
+
+    expect(stores()).toEqual(['eu-west', undefined]);
+    expect(mockWarn).toHaveBeenCalledWith(FALLBACK);
+    expect(mockInfo).toHaveBeenCalledWith(
+      `commands.backup.restore.storeServed ${JSON.stringify({ store: 'home' })}`
+    );
+    expect(mockRenderFailure).not.toHaveBeenCalled();
+    // Every attempt defers its failure, or the first would have exited the process.
+    expect(mockExecuteRepoFunction.mock.calls.every((c) => c[4].failureIsAnswer === true)).toBe(
+      true
+    );
+  });
+
+  it('does not fall back when the snapshot is missing, and renders that failure', async () => {
+    mockPick.mockResolvedValue(RANKED);
+    answers(failed('snapshot snap-1 not found in the manifest index'));
+
+    await run(['browse', 'shop', '--at', SNAPSHOT]);
+
+    expect(stores()).toEqual(['eu-west']);
+    expect(mockWarn).not.toHaveBeenCalled();
+    expect(mockRenderFailure).toHaveBeenCalledTimes(1);
+  });
+
+  it('never falls back from an explicit --from, even on a 5xx', async () => {
+    answers(failed('HTTP 503 service unavailable'));
+
+    await run(['browse', 'shop', '--at', SNAPSHOT, '--from', 'eu-west']);
+
+    expect(stores()).toEqual(['eu-west']);
+    expect(mockWarn).not.toHaveBeenCalled();
+    expect(mockRenderFailure).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('backup browse --at resolves the time inside each store (item #acd03b8a)', () => {
+  const AT = '2026-08-16T00:00:00Z';
+  const RANKED = { stores: ['eu-west', 'home'], explicit: false };
+  const IN_STORE: Record<string, string> = { 'eu-west': 'snap-eu', home: 'snap-home' };
+  const resolvedIn = () => mockResolveSnapshotAt.mock.calls.map((c) => c[3].store);
+  const browsed = () => mockExecuteRepoFunction.mock.calls.map((c) => [c[3].store, c[3].at]);
+
+  beforeEach(() => {
+    mockResolveSnapshotAt.mockImplementation(
+      (_lineage: string, _at: string, _scope: unknown, options: { store: string }) =>
+        Promise.resolve(IN_STORE[options.store])
+    );
+  });
+
+  it('with --from, resolves inside that store only', async () => {
+    await run(['browse', 'shop', '--at', AT, '--from', 'eu-west']);
+
+    expect(resolvedIn()).toEqual(['eu-west']);
+    expect(browsed()).toEqual([['eu-west', 'snap-eu']]);
+  });
+
+  it('on a fallback, resolves the time again inside the next store', async () => {
+    mockPick.mockResolvedValue(RANKED);
+    let i = 0;
+    mockExecuteRepoFunction.mockImplementation(() =>
+      Promise.resolve(
+        i++ === 0
+          ? { success: false, exitCode: 1, error: 'HTTP 502 bad gateway', stdout: '' }
+          : { success: true, exitCode: 0, stdout: listingStdout }
+      )
+    );
+
+    await run(['browse', 'shop', '--at', AT]);
+
+    expect(resolvedIn()).toEqual(['eu-west', 'home']);
+    expect(browsed()).toEqual([
+      ['eu-west', 'snap-eu'],
+      [undefined, 'snap-home'],
+    ]);
+  });
+
+  it('passes over a store holding no snapshot at that time, without a fallback warning', async () => {
+    mockPick.mockResolvedValue(RANKED);
+    mockResolveSnapshotAt.mockImplementation(
+      (_lineage: string, _at: string, _scope: unknown, options: { store: string }) =>
+        options.store === 'eu-west'
+          ? Promise.reject(new ValidationError('no snapshot at or before'))
+          : Promise.resolve('snap-home')
+    );
+
+    await run(['browse', 'shop', '--at', AT]);
+
+    expect(browsed()).toEqual([[undefined, 'snap-home']]);
+    expect(mockWarn).not.toHaveBeenCalled();
+  });
+
+  it('throws the refusal of an explicit --from store that holds none, browsing nothing', async () => {
+    mockResolveSnapshotAt.mockRejectedValue(new ValidationError('no snapshot at or before'));
+
+    await expect(run(['browse', 'shop', '--at', AT, '--from', 'eu-west'])).rejects.toBeInstanceOf(
+      ValidationError
+    );
+    expect(mockExecuteRepoFunction).not.toHaveBeenCalled();
   });
 });

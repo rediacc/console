@@ -1,7 +1,7 @@
 /**
  * THE PER-GATE KILL TIMER, and the one place its numbers live.
  *
- * WHY IT EXISTS. Before it the runner waited on every gate for as long as the gate cared to run. On 2026-10-06 and 2026-10-07 housekeeping.yml's `Gate cost capture` (a serial `run.ts --quick --jobs 1 --json`) sat silent until GitHub cancelled the job at fifteen minutes, against a healthy 277.5 s; the only trace of which gate was running was the runner's orphan list (`check:ci-docs-browse-invariants`, a 0.5 s gate, then `check:ci-no-client-key-composition`). One gate that never exits stalled the whole capture, and nothing named it.
+ * WHY IT EXISTS. Before it the runner waited on every gate for as long as the gate cared to run. On 2026-10-06 and 2026-10-07 ops-housekeeping.yml's `Gate cost capture` (a serial `run.ts --quick --jobs 1 --json`) sat silent until GitHub cancelled the job at fifteen minutes, against a healthy 277.5 s; the only trace of which gate was running was the runner's orphan list (`check:ci-docs-browse-invariants`, a 0.5 s gate, then `check:ci-no-client-key-composition`). One gate that never exits stalled the whole capture, and nothing named it.
  *
  * WHAT THE NUMBER IS. A gate's limit is GATE_TIMEOUT_FACTOR times the slowest thing ever measured of it (the committed CI step p90 in lane-durations.json, this machine's ewma, and the largest of its recent passing walls), never below GATE_TIMEOUT_FLOOR_MS. A gate measured nowhere gets the floor, or GATE_TIMEOUT_UNMEASURED_SLOW_MS when it is declared `slow`. `--gate-timeout <s>` replaces every limit for one run.
  *

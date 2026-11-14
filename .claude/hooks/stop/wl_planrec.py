@@ -264,6 +264,10 @@ class RecordError(Exception):
     """A refusal with a reason a session can act on. Never a traceback."""
 
 
+class BoundError(RecordError):
+    """The plan is still held by something (`wl_planbind.bindings`); the text lists every binding and the commands that release it."""
+
+
 # --------------------------------------------------------------------------- git, with a return code. `wl_core._git` collapses "failed" and "succeeded with no output" into the same empty string, which is exactly wrong for `merge-base --is-ancestor`, whose success output IS empty.
 
 
@@ -377,11 +381,19 @@ def refuse_unresolved_citations(root, text, what):
         if dead:
             bad.append("%s citation `%s` %s" % (kind, token, why))
     if bad:
+        hints = []
+        if any(b.startswith(("fileline ", "plan ")) for b in bad):
+            hints.append(
+                "Write the full repo-relative path (`scripts/ci-runner/run.ts:352`, not `run.ts:352`)."
+            )
+        if any(not b.startswith(("fileline ", "plan ")) for b in bad):
+            hints.append(
+                "Cite a sha HEAD reaches: a lease's own commit is gone once its tree is collected, so cite the landed sha."
+            )
         raise RecordError(
             "%s carries %d citation(s) that do not resolve, so check:ci-plan-citations would "
-            "red the plan they are written into:\n  %s\n\nWrite the full repo-relative path "
-            "(`scripts/ci-runner/run.ts:352`, not `run.ts:352`)."
-            % (what, len(bad), "\n  ".join(bad))
+            "red the plan they are written into:\n  %s\n\n%s"
+            % (what, len(bad), "\n  ".join(bad), "\n".join(hints))
         )
 
 
@@ -881,14 +893,35 @@ def ledger_at(root, commit, ledger_rel=LEDGER_REL):
         return None
 
 
+def plan_identity(rel):
+    """The basename for a path in a plan folder, else the path itself (so an unrelated file never pairs)."""
+    return "plan:" + rel.rsplit("/", 1)[-1] if plan_folder(rel) else rel
+
+
 def attested_at(ledger, rel, sig):
-    """Does this ledger document attest `sig` as DONE for plan `rel`?"""
+    """Does this ledger document attest `sig` as DONE for plan `rel`, under that exact path? A proof under another path counts only through a stub (`check_plan_record.py` R4)."""
     if not isinstance(ledger, dict):
         return False
     entry = (ledger.get("plans") or {}).get(rel)
     if not isinstance(entry, dict):
         return False
     return sig in (entry.get("done_sigs") or [])
+
+
+def attested_by_identity(ledger, rel, sig):
+    """`attested_at` for the plan under any folder: `check:ci-plan-folders --move` relocates a finished plan into `_done/`, and the move must not read as the tick.
+
+    A row under `rel` itself decides alone; the other folders' rows are read only when there is none (the ledgers from before the move). `merge_ledger` replaces one row and leaves a stale pre-move row beside the new one, so ORing every row of the basename read a box reopened after the move as still attested by the row the move left behind (review f142ed91.1).
+    """
+    if not isinstance(ledger, dict):
+        return False
+    if isinstance((ledger.get("plans") or {}).get(rel), dict):
+        return attested_at(ledger, rel, sig)
+    ident = plan_identity(rel)
+    return any(
+        plan_identity(r) == ident and isinstance(v, dict) and sig in (v.get("done_sigs") or [])
+        for r, v in (ledger.get("plans") or {}).items()
+    )
 
 
 def done_commit(history, rel, sig):
@@ -898,7 +931,7 @@ def done_commit(history, rel, sig):
     """
     start = ""
     for commit, doc in history:
-        start = (start or commit) if attested_at(doc, rel, sig) else ""
+        start = (start or commit) if attested_by_identity(doc, rel, sig) else ""
     return start
 
 
@@ -1389,6 +1422,10 @@ def write_atomic(path, text):
         raise
 
 
+#: Heading of the section `plan_lifecycle.TOMBSTONE_SECTION` names. Restated rather than imported: the hook modules do not load `.ci/`.
+TOMBSTONE_SECTION = "## Expired plans"
+
+
 def refresh_index(root, plan_records, plan_box_census):
     """Rewrite `agent/INDEX.md` after a verb changed a plan's bytes; True when it changed.
 
@@ -1409,6 +1446,10 @@ def refresh_index(root, plan_records, plan_box_census):
         got = path.read_text(encoding="utf-8")
     except OSError:
         got = ""
+    # THE TOMBSTONE SECTION IS OWNED BY THE PLAN SWEEP AND HAS NO DISK STATE TO RENDER FROM, so it is carried over from the file, as check_plan_record's R8 does. Without this every plan verb deleted the expired-plan rows, and only the rows something still cited went red.
+    at = got.find("\n" + TOMBSTONE_SECTION + "\n")
+    if want and at != -1:
+        want = want.rstrip("\n") + "\n" + got[at:]
     if not want or got == want:
         return False
     write_atomic(path, want)
@@ -1725,6 +1766,13 @@ def compact(root, rel, me, why="author", park=False, now=None):
             "dirty file would leave the text in no commit and no working tree. Commit or "
             "revert the path first (never `git checkout`: that discards work)." % rel
         )
+
+    # BOUND PLANS ARE NEVER COMPACTED, parked or not (agent/plans/PLAN-plan-compaction-bindings.md, CB2; operator ruling 2026-10-03). `wl_planbind.bindings` is the one decision; this path asks it after the argument and dirty-path refusals and before anything is derived, so a held plan answers with every binding rather than with a box count.
+    import wl_planbind as PB
+
+    found = PB.bindings(root, rel)
+    if found:
+        raise BoundError(PB.render(rel, found))
 
     d = derive(root, rel, text)
     if d.get("problems"):
@@ -2250,6 +2298,9 @@ INVESTIGATION_REL = ("agent", "ledgers", "plan-investigation.jsonl")
 #:   partial  some of it exists; `note` says which part, and the box stays open.
 INV_VERDICTS = ("absent", "present", "partial")
 
+#: What a `partial` box still OWES, required on a live partial row (`--owed`, agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.1, D1). Every kind but `code` names work no local edit can supply -- a live system, a CI run, a push, the operator -- so the stop-gate judge reads such a box as not local work (`wl_checks._batch_box_facts`). A free-text note cannot be read mechanically, which is why this is a field. Rows written before it carry none and count as `code`.
+INV_OWED = ("live", "ci", "post-push", "operator", "code")
+
 #: TWO POINTERS OF TWO DISTINCT KINDS. One pointer is a citation; two of different kinds is a triangulation, and the asymmetry is cheap -- a `fileline` plus a `commit` costs one file read and one `rev-parse`. Two of the SAME kind is refused because the cheapest way to satisfy a pointer count is to cite the same artifact twice.
 INV_MIN_POINTERS = 2
 INV_MIN_KINDS = 2
@@ -2477,7 +2528,9 @@ def _retro_commits(root, pointers):
     return out
 
 
-def plan_investigate(root, rel, selector, verdict, pointer_tokens, note, me, now=None, retro=False):
+def plan_investigate(
+    root, rel, selector, verdict, pointer_tokens, note, me, now=None, retro=False, owed=None
+):
     """(row, resolved) for one investigation. Raises RecordError. WRITES NOTHING.
 
     `retro=True` IS THE HONEST LATE RECORD, and it is the only door for a box that was ticked without an investigation. It reaches ONLY a box that is already `[x]` (an open box is refused: it can still be investigated before the work, which is the whole point), requires a `commit:` pointer to the implementing commit that is an ancestor of HEAD, and a note of at least
@@ -2493,6 +2546,7 @@ def plan_investigate(root, rel, selector, verdict, pointer_tokens, note, me, now
          calls, and the whole row is refused if any one fails, naming which.
       4. at least INV_MIN_POINTERS pointers of at least INV_MIN_KINDS kinds.
       5. the note clears INV_NOTE_MIN characters.
+      6. a live `partial` names what it still owes (`owed`, one of INV_OWED); any other verdict names none.
 
     `head` is `git rev-parse HEAD` at write time, and it is what makes the record an ASSERTION ABOUT A TREE rather than a story: Clause 1 in plan_tick requires the tick's own cited commit to descend from it, which an investigation written after the implementation cannot satisfy.
     """
@@ -2508,6 +2562,21 @@ def plan_investigate(root, rel, selector, verdict, pointer_tokens, note, me, now
             "whole gate optional in one command. The door for a box that cannot be worked now "
             "is `worklist.py --add` or `worklist.py --defer`, both of which keep it VISIBLE."
             % (verdict, ", ".join(INV_VERDICTS))
+        )
+    owed_kind = str(owed or "").strip().lower()
+    if owed_kind and owed_kind not in INV_OWED:
+        raise RecordError("--owed %r is not one of %s" % (owed, ", ".join(INV_OWED)))
+    if owed_kind and v != "partial":
+        raise RecordError(
+            "--owed belongs to a `partial` verdict: a box that is %s owes nothing a kind can name"
+            % v
+        )
+    if v == "partial" and not retro and not owed_kind:
+        raise RecordError(
+            "a `partial` verdict needs --owed <%s>: say what the open part still owes. Every kind "
+            "but `code` names work no local edit supplies (a live system, a CI run, a push, the "
+            "operator), and the stop-gate judge reads the box that way; `code` keeps it local work."
+            % "|".join(INV_OWED)
         )
     text = p.read_text(encoding="utf-8", errors="replace")
     if is_record(text):
@@ -2594,6 +2663,8 @@ def plan_investigate(root, rel, selector, verdict, pointer_tokens, note, me, now
         "resolved": [[k, ok, d] for k, ok, d in resolved],
         "note": n[:600],
     }
+    if owed_kind:
+        row["owed"] = owed_kind
     if retro:
         # PROVENANCE IN THE ROW. `head` stays the live HEAD, because that IS when this was written; `retro` says the ordering P-A4 checks never happened, and the gate prints it instead of judging it.
         row["retro"] = True

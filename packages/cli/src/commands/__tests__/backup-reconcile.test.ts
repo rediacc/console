@@ -1,7 +1,13 @@
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('../../i18n/index.js', () => ({ t: (key: string) => key }));
+// The stand-in `t` carries its params into the text, so a test sees whether a value reaches the rendered message.
+const mockT = vi.hoisted(() =>
+  vi.fn((key: string, params?: Record<string, unknown>) =>
+    params ? `${key} ${Object.values(params).join(' ')}` : key
+  )
+);
+vi.mock('../../i18n/index.js', () => ({ t: mockT }));
 
 const mockFetch = vi.hoisted(() => vi.fn());
 const mockPrint = vi.hoisted(() => vi.fn());
@@ -85,6 +91,7 @@ describe('backup reconcile', () => {
     mockPrint.mockReset();
     mockSetExitCode.mockReset();
     mockWarn.mockReset();
+    mockT.mockClear();
     mockInfo.mockReset();
     mockFormat.mockClear();
     outputFormat.value = 'json';
@@ -140,32 +147,53 @@ describe('backup reconcile', () => {
     expect(mockPrint).toHaveBeenCalledWith(res, 'json');
   });
 
-  it('--check ignores a skipped lineage, even one whose figures differ, and names it', async () => {
+  it('--check fails on a skipped lineage, which is no verdict, and names it', async () => {
     outputFormat.value = 'table';
+    // The bench shape (2026-11-05): observed 0 with the lineage skipped as leased.
     const skipped = lineage({
       lineageGuid: 'busy-1',
       observedBytes: 0,
       observedChunks: 0,
       skipped: 'leased',
     });
-    mockFetch.mockResolvedValue(response({ lineages: [lineage(), skipped], driftBytes: 100 }));
+    mockFetch.mockResolvedValue(response({ lineages: [lineage(), skipped] }));
     await run(['--check']);
-    expect(mockSetExitCode).not.toHaveBeenCalled();
-    expect(mockWarn).toHaveBeenCalledWith('commands.backup.reconcile.checkSkipped');
+    expect(mockSetExitCode).toHaveBeenCalledWith(1);
+    expect(mockWarn).toHaveBeenCalledWith(expect.stringContaining('busy-1 (leased)'));
+    expect(mockT).toHaveBeenCalledWith('commands.backup.reconcile.checkSkipped', {
+      lineages: 'busy-1 (leased)',
+    });
     const rows = mockFormat.mock.calls[0][0] as { lineage: string; status: string }[];
     expect(rows.find((r) => r.lineage === 'busy-1')?.status).toBe(
       'commands.backup.reconcile.skipped.leased'
     );
   });
 
-  it('--check names skipped lineages under json output too', async () => {
+  it('--check fails on a skipped lineage under json output too, with the reason on stderr', async () => {
     outputFormat.value = 'json';
+    for (const reason of ['leased', 'unreadable']) {
+      mockSetExitCode.mockReset();
+      mockWarn.mockReset();
+      mockT.mockClear();
+      mockFetch.mockResolvedValue(
+        response({ lineages: [lineage({ lineageGuid: 'busy-1', skipped: reason })] })
+      );
+      await run(['--check']);
+      expect(mockSetExitCode).toHaveBeenCalledWith(1);
+      expect(mockWarn).toHaveBeenCalledWith(expect.stringContaining(`busy-1 (${reason})`));
+      expect(mockT).toHaveBeenCalledWith('commands.backup.reconcile.checkSkipped', {
+        lineages: `busy-1 (${reason})`,
+      });
+    }
+  });
+
+  it('a skipped lineage fails only --check: a dry run or an apply sets no exit code', async () => {
     mockFetch.mockResolvedValue(
       response({ lineages: [lineage({ lineageGuid: 'busy-1', skipped: 'leased' })] })
     );
-    await run(['--check']);
+    await run(['--dry-run']);
+    await run([]);
     expect(mockSetExitCode).not.toHaveBeenCalled();
-    expect(mockWarn).toHaveBeenCalledWith('commands.backup.reconcile.checkSkipped');
   });
 
   it('--check still fails on a reconcilable lineage next to a skipped one', async () => {
@@ -203,7 +231,17 @@ describe('backup reconcile', () => {
       expect.any(Array)
     );
     expect(mockPrint).toHaveBeenCalledWith('TABLE');
-    expect(mockInfo).toHaveBeenCalledWith('commands.backup.reconcile.summary');
+    // The summary carries the ledger, the bucket and the absolute drift, each as formatted bytes.
+    const { formatSizeBytes } = await import('@rediacc/shared/renet-contract');
+    const params = {
+      ledger: formatSizeBytes(100),
+      bucket: formatSizeBytes(100),
+      drift: formatSizeBytes(0),
+    };
+    expect(mockT).toHaveBeenCalledWith('commands.backup.reconcile.summary', params);
+    expect(mockInfo).toHaveBeenCalledWith(
+      `commands.backup.reconcile.summary ${Object.values(params).join(' ')}`
+    );
   });
 
   it('table output does not warn when the response is complete, and prints empty', async () => {

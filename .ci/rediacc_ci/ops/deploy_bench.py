@@ -1,4 +1,4 @@
-"""Port of `scripts/ops/deploy-bench.sh` (293 lines): deploy the account worker to bench.rediacc.com.
+"""Port of `scripts/ops/deploy-bench.sh` (293 lines): deploy the account worker to bench.rediacc.cloud.
 
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench
 
@@ -6,7 +6,7 @@ Bench is the internal "real Cloudflare D1" environment, deliberately NOT wired i
 
 THE ROTATION CHECK ALWAYS COMPARES, AND ANYTHING BUT "IN SYNC" REFUSES THE PUSH (operator ruling 2026-10-13). The check reads the observability host's OTLP basicauth user names over plain OpenSSH, through `private/account/scripts/rotation/lib/observability-reader.ts`, with the three `OBS_READER_SSH_*` values this profile binds: the base64 of the machine's existing private key, the pinned known_hosts lines and `user@host[:port]`. No `rdc` login is involved. Exit 1 is drift; exit 2 is a credential that could not be read, which is reported as such with its cause and refuses the push as well, because an unread value is an uncompared one.
 
-Resources: D1 `account-db-bench`, R2 `rediacc-configs-bench`, worker `rediacc-account-bench`, domain `bench.rediacc.com`. The cleanup of the Cloudflare token runs on every way out, a supplied `CF_MANAGEMENT_TOKEN` included, as in the bash.
+Resources: D1 `account-bench`, R2 `configs-bench`, worker `account-bench`, domain `bench.rediacc.cloud`. The cleanup of the Cloudflare token runs on every way out, a supplied `CF_MANAGEMENT_TOKEN` included, as in the bash.
 
 RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in `tests/test_ops_deploy_bench.py` that fails on the bash behaviour).
 
@@ -22,7 +22,9 @@ RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in 
 
   9. THE STORED PASSWORD IS SET ON AN EXISTING ROOT USER THROUGH THE RESET FLOW (`set_root_password`, `--set-root-password`). The account server has no root route that sets a password, but it has `POST /account/api/v1/auth/forgot` (mails a reset link, kind `password-reset`) and `POST /account/api/v1/auth/reset {token, password}` (sets it, clears the lockout, revokes every session). Bench copies each outgoing email into the D1 table `captured_emails` (EMAIL_CAPTURE_D1, bench only), so the run asks for the link, reads the newest `password-reset` row for ROOT_EMAIL through `wrangler d1 execute` and posts the token with the stored password. The token is extracted in process and never printed, logged or put on argv. Wrangler authenticates with the Global API Key pair, as the documented captured-email read does.
 
-  10. BENCH BINDS THE PRODUCTION KEY (operator rulings 2026-10-27 and 2026-10-29). The deploy-bench profile binds the six unsuffixed signing and session names (`ACCOUNT_ED25519_*`, `ACCOUNT_X25519_*`, `ACCOUNT_SERVER_API_KEY`, `ACCOUNT_JWT_SECRET`) that the edge and stable account-secrets profiles bind (ED25519 fingerprint fb37f1ae16f8b7c0 through `renet_key_gate.key_fingerprint`), so a released renet verifies a bench licence. The values are still read by name from the environment; only the profile binding changed, and `tests/test_ops_deploy_bench.py` pins it.
+  10. BENCH BINDS THE PRODUCTION KEY (operator rulings 2026-10-27 and 2026-10-29). The deploy-bench profile binds the unsuffixed session names and the ED25519 PUBLIC key (`ACCOUNT_ED25519_PUBLIC_KEY`, `ACCOUNT_X25519_*`, `ACCOUNT_SERVER_API_KEY`, `ACCOUNT_JWT_SECRET`) that the edge and stable account-secrets profiles bind (ED25519 fingerprint fb37f1ae16f8b7c0 through `renet_key_gate.key_fingerprint`), so a released renet verifies a bench licence. The ED25519 PRIVATE key is not in the account Worker's secret list: `signer-bench-eu` and `signer-bench-us` hold it (the deploy-signer profile) and `account-bench` signs through its LICENSE_SIGNER binding (agent/plans/PLAN-enterprise-isolation.md S4). The values are still read by name from the environment; only the profile binding changed, and `tests/test_ops_deploy_bench.py` pins it.
+
+  11. A DEPLOY FROM A CLEAN BENCH REPEATS (finding 87f7acb9, `tests/test_deploy_bench_repeatability.py`). `_ensure_signers` creates the control databases (`control_db ensure --bench`) and deploys `signer-bench-eu` and `signer-bench-us` (each under the deploy-signer profile, which binds the private key) before the migrations, since Cloudflare refuses the account deploy with error 10143 while the `LICENSE_SIGNER` target Worker is missing. `_remove_retired_secrets` deletes a leftover `ACCOUNT_ED25519_PRIVATE_KEY` from `account-bench` (the listed names are read first, nothing else is deleted), because `requireSignerOnly` makes a Worker holding it answer 500. `smoke` then GETs `/account/api/v1/.well-known/server-info` and a last status other than 200 exits 1 naming it, so a Worker serving 500 is never a green deploy.
 
 THE SECRET VALUES ARE READ BY NAME FROM THE ENVIRONMENT, as the bash read them, and are never logged; the `OBS_OTLP_CREDENTIALS` validity probe reports only that the value is not a JSON {user, pass} object, never the value.
 """
@@ -44,10 +46,16 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import wrangler
-from rediacc_ci.deploy import deploy_record
+from rediacc_ci.deploy import (
+    deploy_account,
+    deploy_record,
+    deploy_signer,
+    set_account_worker_secrets,
+)
+from rediacc_ci.enterprise import control_db
 from rediacc_ci.ops import bench_access, bench_preflight, cf_auth, push_backup_credentials
 from rediacc_ci.proof import receipt
-from rediacc_ci.well_known import BENCH_ORIGIN
+from rediacc_ci.well_known import BENCH_ORIGIN, PRODUCT_DOMAIN
 
 if TYPE_CHECKING:
     import pathlib
@@ -56,9 +64,8 @@ if TYPE_CHECKING:
 BENCH_HOST = BENCH_ORIGIN.removeprefix("https://")
 
 ACCOUNT_ID = cf_auth.DEFAULT_ACCOUNT_ID
-WORKER_NAME = "rediacc-account-bench"
+WORKER_NAME = "account-bench"
 CONFIG = "wrangler.bench.toml"
-DB_NAME = "account-db-bench"
 DOMAIN = BENCH_HOST
 # Bench is test-only (operator ruling 2026-10-13): the portal is built with NO site key, so the
 # widget never renders, and wrangler.bench.toml sets TURNSTILE_ENABLED=false for the API.
@@ -101,6 +108,27 @@ BACKUP_NAMES: tuple[str, ...] = (
 )
 
 
+# The sender the bench Worker mails from when AWS_SES_FROM is unset: the notify host of the product zone.
+DEFAULT_SES_FROM = "noreply@notify.%s" % PRODUCT_DOMAIN
+
+
+def db_name() -> str:
+    """The bench D1 database, as the DB binding of wrangler.bench.toml names it (the one declaration a repoint changes). Raises DeployError when the binding is missing."""
+    try:
+        return bench_preflight.bench_names(
+            paths.repo_root().joinpath(*push_backup_credentials.WORKER_DIR, CONFIG)
+        ).database_name
+    except (OSError, ValueError) as exc:
+        raise DeployError("cannot read the bench D1 name from %s: %s" % (CONFIG, exc)) from exc
+
+
+def __getattr__(name: str) -> str:
+    """`deploy_bench.DB_NAME` (read by login_bench) stays the toml's name, resolved when read rather than frozen at import."""
+    if name == "DB_NAME":
+        return db_name()
+    raise AttributeError("module %r has no attribute %r" % (__name__, name))
+
+
 def _backup_values() -> tuple[str, str, str]:
     """The endpoint, key id and secret for the bench backup bucket. Raises DeployError naming the first one that is missing or empty."""
     endpoint = os.environ.get("ACCOUNT_BACKUP_S3_ENDPOINT") or ""
@@ -118,9 +146,14 @@ def _backup_values() -> tuple[str, str, str]:
 
 def bench_bucket() -> str:
     """The bench backup bucket, read from the BACKUP_BUCKET binding in wrangler.bench.toml, the bucket the Worker reads and sweeps. An exported ACCOUNT_BACKUP_S3_BUCKET that differs from it, or a config with no such binding, is a DeployError."""
+    return bench_backup_binding()[0]
+
+
+def bench_backup_binding() -> tuple[str, str]:
+    """(bucket, jurisdiction) of the BACKUP_BUCKET binding; the jurisdiction is "" for a default-jurisdiction bucket. The checks of `bench_bucket` apply."""
     config_path = paths.repo_root().joinpath(*push_backup_credentials.WORKER_DIR, CONFIG)
     try:
-        _, bucket, _ = push_backup_credentials._config_binding(config_path)
+        _, bucket, jurisdiction = push_backup_credentials._config_binding(config_path)
     except push_backup_credentials.PushError as exc:
         raise DeployError(str(exc)) from exc
     if not bucket:
@@ -132,7 +165,7 @@ def bench_bucket() -> str:
             "binding must name one bucket. Unset the variable; the bucket comes from the binding"
             % (override, CONFIG, bucket)
         )
-    return bucket
+    return bucket, jurisdiction
 
 
 def require_nonempty(name: str, value: str) -> None:
@@ -157,18 +190,50 @@ def otlp_credentials_valid(value: str) -> bool:
     )
 
 
+TEST_KEY_PREFIXES = ("sk_test_", "rk_test_")
+
+
+def stripe_pair() -> tuple[str, str]:
+    """The (secret key, webhook secret) bound as the bench Worker's STRIPE_SANDBOX_* pair, or ("", "") when the pair is absent.
+
+    The deploy-bench profile binds STRIPE_SANDBOX_SECRET_KEY and STRIPE_SANDBOX_WEBHOOK_SECRET under their own names, the ones the account app reads as its sandbox pair, so bench never presents itself as live billing. A key without a test prefix is refused by name and no value is ever printed. One half without the other is refused too, since a key with no webhook secret (or the reverse) would boot a half-working billing path.
+    """
+    key = os.environ.get("STRIPE_SANDBOX_SECRET_KEY") or ""
+    hook = os.environ.get("STRIPE_SANDBOX_WEBHOOK_SECRET") or ""
+    if not key and not hook:
+        print("Stripe sandbox pair absent: bench keeps the Stripe secrets blank")
+        return "", ""
+    if not key or not hook:
+        missing = "STRIPE_SANDBOX_WEBHOOK_SECRET" if key else "STRIPE_SANDBOX_SECRET_KEY"
+        raise DeployError(
+            "the Stripe sandbox pair is half-set (%s is empty): set both or neither" % missing
+        )
+    if not key.startswith(TEST_KEY_PREFIXES):
+        raise DeployError(
+            "STRIPE_SANDBOX_SECRET_KEY is not a Stripe test key (expected the sk_test_ or rk_test_ "
+            "prefix): bench never takes a live key"
+        )
+    print(
+        "Stripe sandbox pair bound as the bench Worker's STRIPE_SANDBOX_SECRET_KEY / STRIPE_SANDBOX_WEBHOOK_SECRET"
+    )
+    return key, hook
+
+
 def secrets_payload() -> dict[str, str]:
     """The `wrangler secret bulk` body, keys in the order the bash emitted them. Raises DeployError on a missing or empty required value."""
     signing = {
-        "ACCOUNT_ED25519_PRIVATE_KEY": os.environ.get("ACCOUNT_ED25519_PRIVATE_KEY") or "",
         "ACCOUNT_ED25519_PUBLIC_KEY": os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY") or "",
         "ACCOUNT_X25519_PRIVATE_KEY": os.environ.get("ACCOUNT_X25519_PRIVATE_KEY") or "",
         "ACCOUNT_X25519_PUBLIC_KEY": os.environ.get("ACCOUNT_X25519_PUBLIC_KEY") or "",
         "ACCOUNT_SERVER_API_KEY": os.environ.get("ACCOUNT_SERVER_API_KEY") or "",
         "ACCOUNT_JWT_SECRET": os.environ.get("ACCOUNT_JWT_SECRET") or "",
         "FREE_LICENSE_HMAC_KEY": os.environ.get("FREE_LICENSE_HMAC_KEY") or "",
+        # The Analytics Engine read token the portal's telemetry reads use (agent/plans/PLAN-d1-scaling.md W2).
+        "ACCOUNT_AE_READ_TOKEN": os.environ.get("ACCOUNT_AE_READ_TOKEN") or "",
         # Layer 3 of the config store; the deploy-bench profile binds the bench-only vault entry under this name (agent/plans/PLAN-config-server-key.md K2).
         "ACCOUNT_CONFIG_SERVER_KEY": os.environ.get("ACCOUNT_CONFIG_SERVER_KEY") or "",
+        # Seals customer backup store credentials; the deploy-bench profile binds the bench-only vault entry under this name.
+        "ACCOUNT_BACKUP_STORE_KEK": os.environ.get("ACCOUNT_BACKUP_STORE_KEK") or "",
     }
     for name, value in signing.items():
         if not value:
@@ -180,6 +245,7 @@ def secrets_payload() -> dict[str, str]:
         "CLOUDFLARE_TURNSTILE_SECRET_KEY", os.environ.get("CLOUDFLARE_TURNSTILE_SECRET_KEY") or ""
     )
     endpoint, backup_key, backup_secret = _backup_values()
+    stripe_key, stripe_hook = stripe_pair()
     otlp = os.environ.get("OBS_OTLP_CREDENTIALS") or ""
     require_nonempty("OBS_OTLP_CREDENTIALS", otlp)
     if not otlp_credentials_valid(otlp):
@@ -188,25 +254,33 @@ def secrets_payload() -> dict[str, str]:
             "re-mint it with ./run.sh rotation rotate otlp-bench"
         )
     return {
-        "ACCOUNT_ED25519_PRIVATE_KEY": signing["ACCOUNT_ED25519_PRIVATE_KEY"],
         "ACCOUNT_ED25519_PUBLIC_KEY": signing["ACCOUNT_ED25519_PUBLIC_KEY"],
         "ACCOUNT_X25519_PRIVATE_KEY": signing["ACCOUNT_X25519_PRIVATE_KEY"],
         "ACCOUNT_X25519_PUBLIC_KEY": signing["ACCOUNT_X25519_PUBLIC_KEY"],
         "ACCOUNT_SERVER_API_KEY": signing["ACCOUNT_SERVER_API_KEY"],
         "ACCOUNT_JWT_SECRET": signing["ACCOUNT_JWT_SECRET"],
         "FREE_LICENSE_HMAC_KEY": signing["FREE_LICENSE_HMAC_KEY"],
+        "ACCOUNT_AE_READ_TOKEN": signing["ACCOUNT_AE_READ_TOKEN"],
+        # The account whose Analytics Engine datasets the SQL API reads; every regional Worker gets it from the pusher.
+        "CLOUDFLARE_ACCOUNT_ID": ACCOUNT_ID,
         "ACCOUNT_CONFIG_SERVER_KEY": signing["ACCOUNT_CONFIG_SERVER_KEY"],
-        # Stripe is disabled (empty strings) so the worker boots without billing, as edge does.
+        "ACCOUNT_BACKUP_STORE_KEK": signing["ACCOUNT_BACKUP_STORE_KEK"],
+        # The live Stripe names stay empty so the worker never presents itself as live billing, as edge does; the sandbox pair (test keys only, checked in stripe_pair) rides the names the app reads for a sandbox, empty when the vault holds none.
         "STRIPE_SECRET_KEY": "",
         "STRIPE_WEBHOOK_SECRET": "",
+        "STRIPE_SANDBOX_SECRET_KEY": stripe_key,
+        "STRIPE_SANDBOX_WEBHOOK_SECRET": stripe_hook,
         "ROOT_EMAIL": os.environ.get("ROOT_EMAIL") or "",
         "AWS_SES_ACCESS_KEY_ID": os.environ.get("AWS_SES_ACCESS_KEY_ID") or "",
         "AWS_SES_SECRET_ACCESS_KEY": os.environ.get("AWS_SES_SECRET_ACCESS_KEY") or "",
         "AWS_SES_REGION": os.environ.get("AWS_SES_REGION") or "eu-central-1",
-        "AWS_SES_FROM": os.environ.get("AWS_SES_FROM") or "noreply@notify.rediacc.com",
+        "AWS_SES_FROM": os.environ.get("AWS_SES_FROM") or DEFAULT_SES_FROM,
         "AWS_SES_CONFIGURATION_SET": os.environ.get("AWS_SES_CONFIGURATION_SET") or "",
         "CLOUDFLARE_TURNSTILE_SECRET_KEY": os.environ.get("CLOUDFLARE_TURNSTILE_SECRET_KEY") or "",
-        "ACCOUNT_BACKUP_S3_ENDPOINT": endpoint,
+        # A jurisdictional bucket lives at `<account>.<jurisdiction>.r2.cloudflarestorage.com`; the raw endpoint cannot see it.
+        "ACCOUNT_BACKUP_S3_ENDPOINT": set_account_worker_secrets.apply_jurisdiction(
+            endpoint, bench_backup_binding()[1]
+        ),
         "ACCOUNT_BACKUP_S3_BUCKET": bench_bucket(),
         "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": backup_key,
         "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY": backup_secret,
@@ -214,12 +288,14 @@ def secrets_payload() -> dict[str, str]:
         "SELLER_NAME": os.environ.get("SELLER_NAME") or "",
         "SELLER_VAT_NUMBER": os.environ.get("SELLER_VAT_NUMBER") or "",
         "SELLER_REGISTRATION_NUMBER": os.environ.get("SELLER_REGISTRATION_NUMBER") or "",
+        "SELLER_REGISTER_NAME": os.environ.get("SELLER_REGISTER_NAME") or "",
         "SELLER_ADDRESS_LINE1": os.environ.get("SELLER_ADDRESS_LINE1") or "",
         "SELLER_ADDRESS_LINE2": os.environ.get("SELLER_ADDRESS_LINE2") or "",
         "SELLER_CITY": os.environ.get("SELLER_CITY") or "",
         "SELLER_POSTAL_CODE": os.environ.get("SELLER_POSTAL_CODE") or "",
         "SELLER_COUNTRY": os.environ.get("SELLER_COUNTRY") or "",
         "SELLER_EMAIL": os.environ.get("SELLER_EMAIL") or "",
+        "SALES_NOTIFY_EMAIL": os.environ.get("SALES_NOTIFY_EMAIL") or "",
     }
 
 
@@ -322,7 +398,7 @@ def restore_command(bookmark: str) -> str:
         "cd %s && npx --no-install wrangler d1 time-travel restore %s --bookmark=%s --config %s"
         % (
             "workers/account",
-            DB_NAME,
+            db_name(),
             bookmark,
             CONFIG,
         )
@@ -333,7 +409,7 @@ def capture_bookmark(worker_dir) -> str | None:
     """Print the D1 bookmark taken BEFORE the migrations, with the exact restore command: a Worker rollback does not undo a migration, so the bookmark is the rollback handle. A failed capture is reported loudly and returns None; the deploy goes on (the migrations are not blocked on a read-only query, and the bash had no bookmark at all)."""
     try:
         proc = subprocess.run(
-            [*wrangler.ARGV, "d1", "time-travel", "info", DB_NAME, "--config", CONFIG],
+            [*wrangler.ARGV, "d1", "time-travel", "info", db_name(), "--config", CONFIG],
             cwd=str(worker_dir),
             capture_output=True,
             text=True,
@@ -353,7 +429,7 @@ def capture_bookmark(worker_dir) -> str | None:
         log.warn(
             "NO D1 BOOKMARK CAPTURED for %s (%s%s): the migrations below cannot be rolled back "
             "to a known point. Continuing."
-            % (DB_NAME, failure, "; " + detail.splitlines()[-1] if detail else "")
+            % (db_name(), failure, "; " + detail.splitlines()[-1] if detail else "")
         )
         return None
     bookmark = found.group(0)
@@ -574,7 +650,7 @@ def _sql_literal(value: str) -> str:
 
 
 def _d1_rows(sql: str) -> list[dict]:
-    """`wrangler d1 execute account-db-bench --remote --json --command SQL` from the worker dir, authenticated with the Global API Key pair, and the result rows. The stdout is never printed: it holds live links."""
+    """`wrangler d1 execute account-bench --remote --json --command SQL` from the worker dir, authenticated with the Global API Key pair, and the result rows. The stdout is never printed: it holds live links."""
     key, mail = os.environ.get("CF_GLOBAL_API_KEY"), os.environ.get("CF_EMAIL")
     if not (key and mail):
         raise SeedError("CF_GLOBAL_API_KEY and CF_EMAIL are required to read the captured email")
@@ -583,7 +659,7 @@ def _d1_rows(sql: str) -> list[dict]:
         env.pop(name, None)
     env["CLOUDFLARE_API_KEY"], env["CLOUDFLARE_EMAIL"] = key, mail
     env["CLOUDFLARE_ACCOUNT_ID"] = ACCOUNT_ID
-    argv = [*wrangler.ARGV, "d1", "execute", DB_NAME, "--remote", "--config", CONFIG]
+    argv = [*wrangler.ARGV, "d1", "execute", db_name(), "--remote", "--config", CONFIG]
     argv.extend(["--json", "--command", sql])
     proc = subprocess.run(
         argv,
@@ -701,6 +777,138 @@ def bench_assets_refusal(worker_dir) -> str | None:
     return None
 
 
+# The account Worker binds LICENSE_SIGNER to `signer-bench-<region>` (workers/account/wrangler.bench.toml), and Cloudflare refuses the account deploy with error 10143 while that Worker does not exist. The control databases the signers bind are created first. A signer holds the private key, which only the deploy-signer profile binds, so each signer deploys in its own child under that profile.
+SIGNER_TARGETS = tuple("bench-%s" % r for r in deploy_signer.BENCH_REGIONS)
+# Secrets the account Worker must never hold: `requireSignerOnly` (private/account/src/entry/cloudflare.ts) refuses to serve, HTTP 500 "Server misconfiguration", while the retired private key is present.
+RETIRED_SECRETS = (deploy_signer.PRIVATE_KEY,)
+SMOKE_PATH = "/account/api/v1/.well-known/server-info"
+SMOKE_ATTEMPTS = 5
+SMOKE_WAIT_S = 3.0
+
+
+def _child_env(root) -> dict[str, str]:
+    env = dict(os.environ)
+    ci = str(root / ".ci")
+    env["PYTHONPATH"] = ci + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
+    return env
+
+
+def _ensure_signers(root, run=None) -> None:
+    """Create and migrate the bench control databases, then deploy both bench signers, before the account deploy."""
+    run = run or _run
+    env = _child_env(root)
+    log.step("Ensuring the bench control databases")
+    run(
+        [sys.executable, "-m", control_db.SELF, "ensure", "--bench"],
+        root,
+        "control_db ensure --bench",
+        env=env,
+    )
+    for target in SIGNER_TARGETS:
+        log.step("Deploying the signer Worker signer-%s (LICENSE_SIGNER binding)" % target)
+        run(
+            [
+                sys.executable,
+                "-m",
+                "rediacc_ci.core.bws_env",
+                "exec",
+                "--profile",
+                deploy_signer.PROFILE,
+                "--",
+                sys.executable,
+                "-m",
+                deploy_signer.SELF,
+                "--target",
+                target,
+            ],
+            root,
+            "deploy_signer --target %s" % target,
+            env=env,
+        )
+
+
+def _remove_retired_secrets(worker_dir, run=None) -> list[str]:
+    """Delete each retired secret that `account-bench` still holds (names listed first; nothing else is touched). Returns the names removed."""
+    run = run or _run
+    listing = run(
+        [*wrangler.ARGV, "secret", "list", "--format", "json", "--name", WORKER_NAME],
+        worker_dir,
+        "wrangler secret list",
+        capture=True,
+    )
+    try:
+        rows = control_db.parse_json(listing)
+    except control_db.ControlDbError as exc:
+        raise DeployError("wrangler secret list printed no JSON list: %s" % exc) from None
+    if not isinstance(rows, list):
+        raise DeployError("wrangler secret list did not print a list")
+    held = {str(r.get("name")) for r in rows if isinstance(r, dict)}
+    removed = [name for name in RETIRED_SECRETS if name in held]
+    for name in removed:
+        run(
+            [*wrangler.ARGV, "secret", "delete", name, "--name", WORKER_NAME],
+            worker_dir,
+            "wrangler secret delete %s" % name,
+            stdin="y\n",
+        )
+        log.info("Removed the retired secret %s from %s" % (name, WORKER_NAME))
+    return removed
+
+
+def _run_curl(url: str) -> subprocess.CompletedProcess[str]:
+    """One curl GET of `url` printing only the status code."""
+    return subprocess.run(
+        [
+            "curl",
+            "-sS",
+            "-o",
+            os.devnull,
+            "--connect-timeout",
+            str(CURL_CONNECT_TIMEOUT_S),
+            "--max-time",
+            str(CURL_MAX_TIME_S),
+            "-w",
+            "%{http_code}",
+            url,
+        ],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
+
+def _http_status(url: str) -> int:
+    """GET `url` with curl; 0 means no HTTP answer, a missing curl included."""
+    try:
+        proc = _run_curl(url)
+    except OSError:
+        return 0
+    try:
+        return int(proc.stdout.strip())
+    except ValueError:
+        return 0
+
+
+def smoke(
+    fetch: Callable[[str], int] | None = None, sleep: Callable[[float], None] = time.sleep
+) -> None:
+    """The deployed Worker must serve: GET server-info answers 200, retried while the new version propagates. A last status other than 200 is a DeployError naming it."""
+    fetch = fetch or _http_status
+    url = "https://%s%s" % (DOMAIN, SMOKE_PATH)
+    status = 0
+    for attempt in range(SMOKE_ATTEMPTS):
+        status = fetch(url)
+        if status == 200:
+            log.info("bench smoke: %s answered 200" % url)
+            return
+        if attempt + 1 < SMOKE_ATTEMPTS:
+            sleep(SMOKE_WAIT_S)
+    raise DeployError(
+        "bench smoke failed: GET %s answered %d%s"
+        % (url, status, _blocked_hint(status) if status == 403 else "")
+    )
+
+
 def _deploy(auth: cf_auth.Auth, root) -> None:
     worker_dir = root / "workers" / "account"
     if not (worker_dir / CONFIG).is_file():
@@ -730,6 +938,13 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
     finally:
         os.chdir(cwd)
 
+    log.step("Preflight: every queue bound in %s exists (missing ones are created)" % CONFIG)
+    try:
+        for name in deploy_account.check_queues(worker_dir / CONFIG, os.environ):
+            log.info("Created queue %s" % name)
+    except deploy_account.QueuePreflightError as exc:
+        raise DeployError(str(exc)) from None
+
     log.step("Building account portal SPA (captcha disabled on bench: no Turnstile sitekey)")
     refusal = bench_assets_refusal(worker_dir)
     if refusal:
@@ -738,6 +953,12 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
     web_dir = root / "private" / "account" / "web"
     if not (web_dir / "node_modules").is_dir():
         _run(["npm", "install"], web_dir, "npm install")
+    # The portal imports @rediacc/shared as a file: dependency, so vite bundles whatever packages/shared/dist holds. Without this build a deploy shipped a stale dist: on 2026-11-11 the bench consent page rendered with an empty notice and no Terms link, because dist predated the regenerated consent notices.
+    # Imported here, not at module level: local_common writes the checkout (stamps, gypi, key cache), and every gate that imports deploy_bench (login_bench, ops_health, portal_sitekey_guard) would then be judged a tree writer by check:ci-gate-tree-writes.
+    from rediacc_ci.core import local_common
+
+    if not local_common.ensure_packages_built():
+        raise DeployError("building packages/shared failed; the portal would bundle a stale dist")
     build_env = dict(os.environ)
     build_env["VITE_TURNSTILE_SITE_KEY"] = TURNSTILE_SITEKEY
     build_env["VITE_CI_MODE"] = "false"
@@ -751,10 +972,11 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
 
     if not (worker_dir / "node_modules").is_dir():
         _run(["npm", "install"], worker_dir, "npm install")
+    _ensure_signers(root)
     capture_bookmark(worker_dir)
-    log.step("Applying D1 migrations to %s (remote)" % DB_NAME)
+    log.step("Applying D1 migrations to %s (remote)" % db_name())
     _run(
-        [*wrangler.ARGV, "d1", "migrations", "apply", DB_NAME, "--remote", "--config", CONFIG],
+        [*wrangler.ARGV, "d1", "migrations", "apply", db_name(), "--remote", "--config", CONFIG],
         worker_dir,
         "wrangler d1 migrations apply",
     )
@@ -767,6 +989,7 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
     log.info("Worker deployed")
 
     _rotation_check(root)
+    _remove_retired_secrets(worker_dir)
     _run(
         [*wrangler.ARGV, "secret", "bulk", "--name", WORKER_NAME],
         worker_dir,
@@ -774,6 +997,7 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
         stdin=body,
     )
     log.info("Worker secrets pushed")
+    smoke()
     _seed_and_report()
     # After the whole deploy, so a missing id fails a finished deploy rather than leaving secrets unpushed.
     exists, live_version = deploy_record.worker_version(worker_dir, CONFIG, WORKER_NAME)
@@ -787,8 +1011,9 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
 
     print()
     log.info("bench is live: https://%s" % DOMAIN)
-    print("  D1:     %s (ac45c2de-053b-404c-bc47-9ad9cbd2bb15)" % DB_NAME)
-    print("  R2:     rediacc-configs-bench")
+    names = bench_preflight.bench_names(root.joinpath(*push_backup_credentials.WORKER_DIR, CONFIG))
+    print("  D1:     %s (%s)" % (names.database_name, names.database_id))
+    print("  R2:     %s" % names.config_bucket)
     print("  Worker: %s" % WORKER_NAME)
     print()
     print("Test it:")

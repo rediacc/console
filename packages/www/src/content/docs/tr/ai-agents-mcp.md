@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 33
 language: tr
-sourceHash: "442b5cfa49239dbc"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "9fcdf73439f82d82"
+sourceCommit: "7aedf8f834a72520b4ea8a4a1226b5b94afed2ae"
 ---
 
 ## Genel Bakış
@@ -132,7 +132,7 @@ export REDIACC_ALLOW_GRAND_REPO='gitlab'   # bir depo
 claude   # ya da cursor, gemini, vb.
 ```
 
-Geçersiz kılma, işlem soy ağacına karşı doğrulanır: ajanın kendisinin ortamında zaten bulunması gereken zamanında sayılır, yani ajanı (ve ajanın başlattığı MCP sunucusunu) başlatmadan önce dışa aktarıldığı anlamına gelir. Ajan oturum ortasında değişkeni ayarlayarak kendisine erişim veremez. Bu amaçla kasıtlı olarak sunucu bayrağı yoktur: MCP sunucusu argümanlarındaki bayrak, onu oraya koyanı kanıtlamaz, oysa soy ağacı kontrolü kanıtlar. Makine düzeyinde erişim (örneğin `term connect -m <machine>` depo belirtmeden) hâlâ `*` gerektirir; repo adlarından oluşan bir liste bu erişimi açmaz.
+Geçersiz kılma, işlem soy ağacına karşı doğrulanır: ajanın kendisinin ortamında zaten bulunması gereken zamanında sayılır, yani ajanı (ve ajanın başlattığı MCP sunucusunu) başlatmadan önce dışa aktarıldığı anlamına gelir. Ajan oturum ortasında değişkeni ayarlayarak kendisine erişim veremez. Bu amaçla kasıtlı olarak sunucu bayrağı yoktur: MCP sunucusu argümanlarındaki bayrak, onu oraya koyanı kanıtlamaz, oysa soy ağacı kontrolü kanıtlar. Makine düzeyinde erişim (örneğin `term connect <machine>` depo belirtmeden) hâlâ `*` gerektirir; repo adlarından oluşan bir liste bu erişimi açmaz.
 
 ### Depo başına SSH anahtarları ve sunucu tarafı sandbox
 

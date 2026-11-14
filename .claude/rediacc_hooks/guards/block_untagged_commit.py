@@ -48,7 +48,7 @@ ORDER = 37
 DEFECT = ("if known and not _grep_qx(found, known):", "if False:")
 
 COMMIT_AT_COMMAND_POS = hookio.rx(
-    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+commit([{S}]|$)"
+    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+(=[^ ;&|]*|[{S}]+[^ ;&|]+)?)*[{S}]+commit([{S}]|$)"
 )
 
 FILE_ARGS = hookio.rx(r"(-F|--file)([{S}]+|=)[^{S};|&]+")
@@ -67,6 +67,16 @@ Add a trailer line naming the epic this change belongs to:
 
   PR-TASK: <epic-id>"
 """
+
+
+NO_EPIC = (
+    "BLOCKED: PR-TASK id '%s' names no epic on this branch.\n"
+    "\n"
+    "This is worse than a missing trailer, which is why it is refused. The commit\n"
+    "LOOKS tagged, so nothing downstream complains: `git log --grep` finds no epic\n"
+    "by that id, the PR body's epic block never lists the commit, and the gap is\n"
+    "reported by nobody. A single mistyped character does it.\n"
+)
 
 
 def _fixture(path):
@@ -177,10 +187,12 @@ def _ledger_epic_ids(root):
     return ids
 
 
-def _epic_menu(ev, known, snap, branch_key, branch):
+def epic_menu(known, snap, branch_key, branch):
+    """The lines a refusal prints under its verdict: the declared epics with their titles, or how to declare one. Shared with the lease `commit-msg` hook (`githooks.lease_pr_task_refusal`), which prints the same menu."""
+    out = []
     if known:
-        ev.warn("")
-        ev.warn("Epics declared for this branch (agent/pr/%s.md):" % branch_key)
+        out.append("")
+        out.append("Epics declared for this branch (agent/pr/%s.md):" % branch_key)
         for record in known.split("\n"):
             if record == "":
                 continue
@@ -197,12 +209,57 @@ def _epic_menu(ev, known, snap, branch_key, branch):
                     heads.extend(h for h in lines[max(0, i - 4) : i + 1] if h.startswith("### "))
             if heads:
                 title = heads[-1][len("### ") :]
-            ev.warn("    %s  %s" % (record, title or "(untitled)"))
+            out.append("    %s  %s" % (record, title or "(untitled)"))
     else:
-        ev.warn("")
-        ev.warn("No snapshot at agent/pr/%s.md, so there is no epic to name yet:" % branch_key)
-        ev.warn('    .claude/hooks/stop/worklist.py --epic <me> new "<title>"')
-        ev.warn("    .claude/hooks/stop/worklist.py --publish <me> %s" % (branch or "<branch>"))
+        out.append("")
+        out.append("No snapshot at agent/pr/%s.md, so there is no epic to name yet:" % branch_key)
+        out.append('    .claude/hooks/stop/worklist.py --epic <me> new "<title>"')
+        out.append("    .claude/hooks/stop/worklist.py --publish <me> %s" % (branch or "<branch>"))
+    return out
+
+
+def _epic_menu(ev, known, snap, branch_key, branch):
+    for line in epic_menu(known, snap, branch_key, branch):
+        ev.warn(line)
+
+
+def trailer_id(msg):
+    """The id of the first PR-TASK trailer line in `msg`, "" when it carries none."""
+    match = TRAILER.search(msg)
+    return match.group(1) if match else ""
+
+
+def declared_epics(root, branch):
+    """The epic ids a PR-TASK trailer may name on `branch` in the checkout at `root`: `(known, shown, snap, branch_key)`.
+
+    `known` is what a trailer is judged against (the snapshot's ids united with the ledger's) and `shown` is the menu a refusal prints (the snapshot's, or the ledger's when there is no snapshot), each a newline-joined record list; `snap` is the snapshot path. ONE parser for both enforcement points: this guard, and the lease `commit-msg` hook, which loads this module rather than keeping a second copy (#c9ca8d23).
+    """
+    branch_key = branch.replace("/", "-")
+    snap = "%s/agent/pr/%s.md" % (root, branch_key)
+    known = ""
+    snap_path = pathlib.Path(snap)
+    if snap_path.is_file():
+        try:
+            text = snap_path.read_text(encoding="utf-8", errors="replace")
+        except OSError:
+            text = ""
+        ids = []
+        for record in hookio.grep_lines(SNAPSHOT_ID, text):
+            ids.extend(hookio.grep_o(r"[0-9a-f]{6,32}", record))
+        known = hookio._command_substitution(hookio._grep_out(ids))
+    # NO SNAPSHOT FALLS BACK TO THE LEDGER, which is what check:ci-pr-task-trailers reads. Measured 2026-10-03: branch 1003-1 had no agent/pr/1003-1.md, so `known` stayed empty and 41 commits carrying `PR-TASK: 76a0eaaf`, a worklist item id rather than an epic id, were allowed, until ci:quick refused them all at push time. The ledger is repo-scoped and always lists every epic, so judging against it cannot block a new branch's first commit that names a real epic.
+    # The menu a refusal prints is the snapshot's (this branch's epics); with no snapshot it is the ledger's, as before.
+    shown = known or hookio._command_substitution(hookio._grep_out(_ledger_epic_ids(root)))
+    # THE LEDGER IS ALWAYS ACCEPTED TOO. Since 2026-10-07 the snapshot renders only this PR's epics plus the open backlog, so an older open epic enters it only once a commit cites it; judging against the snapshot alone would refuse that first commit forever.
+    known = hookio._command_substitution(
+        hookio._grep_out(sorted(set(known.split()) | set(_ledger_epic_ids(root))))
+    )
+    return known, shown, snap, branch_key
+
+
+def epic_named(found, known):
+    """Whether the trailer id `found` is one of the newline-joined `known` epic ids."""
+    return _grep_qx(found, known)
 
 
 def run(ev):
@@ -223,14 +280,15 @@ def run(ev):
     # (one that cannot possibly name an epic for a repo it has never heard of), so every such commit was refused for a trailer no epic file could ever supply. Detect a `cd`/`git -C` into another repo anywhere on the line -- a cd applies to every later segment, so this is deliberately line-wide, matching hook_target_repo's convention in lib/command-scan.sh -- and if the git root
     # THAT resolves to is a real repo distinct from this one, this guard has nothing to check: that repo's commits are not this repo's epics' business. THE RESOLUTION MOVED TO lib/command-scan.sh when a third guard needed it. Two siblings had the same defect -- block-unverified-push.sh refused a foreign repo's push against THIS tree's gate stamp (reproduced live), and
     # warn-remote-drift.sh has the same shape latently -- so the walk this file pioneered is now shared rather than copied twice more.
-    if shellscan.target_root(scan, root, verb="commit") != "":
+    if shellscan.target_root(scan, root, verb="commit", cmd=cmd) != "":
         return hookio.ALLOW
 
     # THE TOOL CALL'S OWN `cwd` IS A SECOND, MORE RELIABLE SIGNAL than the text-parsed `cd`/`-C` hint above -- reproduced live 2026-09-23: a session ran `git commit` with the Bash tool's `cwd` field pointed at an independent local clone (`/home/developer/console-ci-fix-scratch`, cloned to keep a risky change out of this shared tree), with no `cd`/`-C` anywhere in the command text
     # itself, so `target_root` found no hint at all and this guard judged the commit against THIS repo's stale index and its `agent/pr/<this-branch>.md` epic snapshot -- the exact wrong-tree failure the comment above already fixed for the text-hint case, reachable from a second direction the fix never covered. `ev.field("cwd") or root` is the same fallback
     # `block_unproven_bulk_transform.py:262` already uses for this exact field.
+    # A repository variable or a moving global option outranks the cwd: `GIT_DIR=<this checkout>/.git git commit` from a scratch cwd commits here (#f2e3507a, `shellscan.git_scope_doubt`).
     _cwd = ev.field("cwd")
-    if _cwd and _cwd != root:
+    if _cwd and _cwd != root and not shellscan.git_scope_doubt(cmd):
         _cwd_root = hookio.git_out(["-C", _cwd, "rev-parse", "--show-toplevel"], want_rc=True)
         if _cwd_root is not None and _cwd_root.strip() not in ("", root):
             return hookio.ALLOW
@@ -313,29 +371,10 @@ def run(ev):
     ):
         return hookio.ALLOW
 
-    branch_key = branch.replace("/", "-")
-    snap = "%s/agent/pr/%s.md" % (root, branch_key)
-    known = ""
-    snap_path = pathlib.Path(snap)
-    if snap_path.is_file():
-        try:
-            text = snap_path.read_text(encoding="utf-8", errors="replace")
-        except OSError:
-            text = ""
-        ids = []
-        for record in hookio.grep_lines(SNAPSHOT_ID, text):
-            ids.extend(hookio.grep_o(r"[0-9a-f]{6,32}", record))
-        known = hookio._command_substitution(hookio._grep_out(ids))
-    # NO SNAPSHOT FALLS BACK TO THE LEDGER, which is what check:ci-pr-task-trailers reads. Measured 2026-10-03: branch 1003-1 had no agent/pr/1003-1.md, so `known` stayed empty and 41 commits carrying `PR-TASK: 76a0eaaf`, a worklist item id rather than an epic id, were allowed, until ci:quick refused them all at push time. The ledger is repo-scoped and always lists every epic, so judging against it cannot block a new branch's first commit that names a real epic.
-    # The menu a refusal prints is the snapshot's (this branch's epics); with no snapshot it is the ledger's, as before.
-    shown = known or hookio._command_substitution(hookio._grep_out(_ledger_epic_ids(root)))
-    # THE LEDGER IS ALWAYS ACCEPTED TOO. Since 2026-10-07 the snapshot renders only this PR's epics plus the open backlog, so an older open epic enters it only once a commit cites it; judging against the snapshot alone would refuse that first commit forever.
-    known = hookio._command_substitution(
-        hookio._grep_out(sorted(set(known.split()) | set(_ledger_epic_ids(root))))
-    )
+    # The snapshot, the ledger fallback and their union: `declared_epics`, shared with the lease `commit-msg` hook.
+    known, shown, snap, branch_key = declared_epics(root, branch)
 
-    match = TRAILER.search(msg)
-    found = match.group(1) if match else ""
+    found = trailer_id(msg)
 
     # AN EARLIER CLAUSE MAY WRITE WHAT WAS JUST READ (R20260924.22): `worklist.py --publish` rewrites the epic snapshot. This guard ran before it, so it says so above its finding rather than leaving the session to discover it (2026-09-24 19:02:10: "names no epic" for an epic the same command's `--publish` was about to write). A `printf ... > <msg>` rewriting the `-F` file was refused before any of this was read.
     split = shellscan.split_refusal(
@@ -353,14 +392,7 @@ def run(ev):
     # A trailer whose id names no epic is WORSE than no trailer: it looks tagged. With no snapshot the set is the ledger's (above); with neither there is no set to judge against, and the guard allows.
     if known and not _grep_qx(found, known):
         ev.warn_raw(split)
-        ev.warn_raw(
-            "BLOCKED: PR-TASK id '%s' names no epic on this branch.\n"
-            "\n"
-            "This is worse than a missing trailer, which is why it is refused. The commit\n"
-            "LOOKS tagged, so nothing downstream complains: `git log --grep` finds no epic\n"
-            "by that id, the PR body's epic block never lists the commit, and the gap is\n"
-            "reported by nobody. A single mistyped character does it.\n" % found
-        )
+        ev.warn_raw(NO_EPIC % found)
         _epic_menu(ev, shown, snap, branch_key, branch)
         return hookio.DENY
     return hookio.ALLOW

@@ -31,20 +31,30 @@
 # Build (local with the wrapper):
 #   PYTHONPATH=.ci python3 -m rediacc_ci.ops.build_server onprem
 
-ARG NODE_IMAGE=node:24-alpine
+ARG NODE_IMAGE=node:26-alpine
 ARG ACCOUNT_ENTRY=on-premise          # the self-hosted account server entry
 # The one npm (.devcontainer/toolchain.env NPM_VERSION, which this build context
 # cannot reach; check:ci-lockfile asserts the two agree). The image's bundled npm is
-# not the pin, and two npm 11 minors can read and write a lockfile differently.
-ARG NPM_VERSION=11.21.0
+# not the pin, and two npm minors can read and write a lockfile differently.
+ARG NPM_VERSION=12.2.2
 
 # =============================================================================
 # Stage 1: account-builder
 # Build the account server bundle. Variant-specific via ACCOUNT_ENTRY.
-# Bundles EVERYTHING via esbuild (no externals) so the runtime stage doesn't
-# need any node_modules at all -- fully self-contained, fully reproducible.
-# esbuild's tree-shaker eliminates unreached code paths automatically when
-# bundling from the on-premise entry (no Stripe, no admin routes, no SES).
+# esbuild bundles every dependency except better-sqlite3, and its
+# tree-shaker eliminates unreached code paths when bundling from the
+# on-premise entry (no Stripe, no admin routes, no SES).
+#
+# better-sqlite3 stays EXTERNAL because it cannot be bundled: its loader
+# (lib/binding.js) finds the native addon at
+# path.join(__dirname, '..', 'prebuilds', '<platform>-<arch>.node'). Inlined
+# into an ESM bundle that __dirname is undefined (Node 24 refuses the module
+# with ERR_AMBIGUOUS_MODULE_SYNTAX, since the bundle also holds top-level
+# await), and no .node file would sit beside it anyway. The package ships
+# N-API prebuilds for the platforms it supports, so no compile is needed (the
+# stage fails the build if none matches): the stage below stages the package's lib/ plus the one prebuild this platform loads,
+# and the runtime stage puts it at /app/account/node_modules next to the
+# bundle, where Node resolves the external import.
 # =============================================================================
 FROM ${NODE_IMAGE} AS account-builder
 ARG ACCOUNT_ENTRY
@@ -82,8 +92,24 @@ RUN npm run build
 # CJS-style require() at runtime even when the output format is ESM.
 RUN npm exec --prefix /app -- esbuild dist/entry/${ACCOUNT_ENTRY}.js \
     --bundle --platform=node --format=esm \
+    --external:better-sqlite3 \
     --outfile=dist/bundle.js \
     --banner:js="import { createRequire } from 'module'; const require = createRequire(import.meta.url);"
+# Stage better-sqlite3 for the runtime: package.json, LICENSE, lib/, and the
+# prebuild its own getPrebuildPath() picks on this platform (the build stage
+# shares the runtime's base image and target platform, so it is the one the
+# runtime loads). The final node -e opens an in-memory database through the
+# staged copy, so a missing or wrong binary fails the build, not the boot.
+RUN set -e; \
+    pkg=node_modules/better-sqlite3; \
+    out=dist/runtime/node_modules/better-sqlite3; \
+    prebuild="$(node -p "require('./$pkg/lib/binding.js').getPrebuildPath() || ''")"; \
+    test -n "$prebuild" || { echo "better-sqlite3 ships no prebuild for this platform" >&2; exit 1; }; \
+    mkdir -p "$out/prebuilds"; \
+    cp -R "$pkg/package.json" "$pkg/LICENSE" "$pkg/lib" "$out/"; \
+    cp "$prebuild" "$out/prebuilds/"; \
+    cp -R drizzle dist/runtime/drizzle; \
+    cd dist/runtime && node -e "new (require('better-sqlite3'))(':memory:').prepare('select 1').get()"
 
 # =============================================================================
 # Stage 2: runtime-base
@@ -100,8 +126,14 @@ COPY ./www-assets/         /usr/share/nginx/html/
 # Account portal SPA (/account/)
 COPY ./account-web-assets/ /usr/share/nginx/html/account/
 
-# Account server bundle (variant-specific, fully self-contained)
+# Account server bundle (variant-specific), the external better-sqlite3 it
+# imports, and the drizzle migrations. runMigrations() reads
+# <cwd>/drizzle (private/account/src/db/migrate.ts), so the working directory
+# is /app/account, which the entrypoint's `node /app/account/bundle.js`
+# inherits.
+COPY --from=account-builder /app/private/account/dist/runtime/ /app/account/
 COPY --from=account-builder /app/private/account/dist/bundle.js /app/account/bundle.js
+WORKDIR /app/account
 
 # CLI npm tarball + release manifest for the install script
 COPY ./cli-npm/ /usr/share/nginx/html/npm/

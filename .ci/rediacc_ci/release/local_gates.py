@@ -1,6 +1,6 @@
 """The gates a local release must pass before it builds or publishes anything (box W2-A of agent/plans/PLAN-local-release.md).
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.release.local_gates --channel edge|stable [--version V] [--force-asked ASKED:<YYYY-MM-DDTHH:MM>Z]
+    PYTHONPATH=.ci python3 -m rediacc_ci.release.local_gates --channel edge|stable [--version V] [--branch-release] [--force-asked ASKED:<YYYY-MM-DDTHH:MM>Z]
 
 Exit 0 when every gate admits, 1 with one `local-gates: <code>: <why>` line per refusal otherwise, 2 on a usage error. Every gate runs, so one run names every refusal rather than the first.
 
@@ -8,8 +8,8 @@ THE GATES, each a refusal unless it holds:
   ci-quick     a whole, green ci:quick receipt judged `HEAD^{tree}`: the push guard's own `read_receipt` (the per-tree copy `.ci/cache/receipts/<tree>.json` first, then the latest file) and `receipt_refusal`, imported the way `rediacc_ci.ci.gate_model` imports that guard, never copied.
   vm-check     the vm:check trigger paths changed since the previous release tag (the highest-versioned `v*` tag reachable from HEAD, `git tag --merged HEAD --sort=-v:refname`) are admitted by a VERIFIED receipt, through `surfaces.changed_paths(root, <tag>, "push")` and `vm_tier.admit`. No hit is "not required", and admits.
   backup       when the backup paths moved since that tag, a VERIFIED backup receipt covers the tree: `backup_check_trigger.check(root, "HEAD", base=<tag>)`, the reader the backup push guard and the git-level pre-push hook run. Exit 1 and 2 (cannot judge) both refuse (decision 4).
-  clone        a fresh clone of HEAD with its submodules at `.ci/cache/release/<tree>/` is clean, names the tree, and every submodule sits at its gitlink, unmodified (decision 1). The shared checkout always carries other sessions' ledgers, so cleanliness is judged on the clone, which is also where the release builds. Each submodule is cloned from this checkout's own copy of it (`<root>/<path>`, else `<root>/.git/modules/<name>`), never from the network; a pointer commit the local copy lacks is a refusal. HEAD equal to origin/main (below) is what makes those pointers the merged ones.
-  origin-main  a fresh `git fetch origin main` succeeded, and HEAD equals origin/main. A failed fetch refuses: a stale origin/main would pass vacuously.
+  clone        a fresh clone of HEAD with its submodules at `.ci/cache/release/<tree>/` is clean, names the tree, and every submodule sits at its gitlink, unmodified (decision 1). The shared checkout always carries other sessions' ledgers, so cleanliness is judged on the clone, which is also where the release builds. Each submodule is cloned from this checkout's own copy of it (`<root>/<path>`, else `<root>/.git/modules/<name>`), never from the network; a pointer commit the local copy lacks is a refusal. HEAD equal to origin/main (below) is what makes those pointers the merged ones; under `--branch-release` they are the pushed branch head's.
+  origin-main  a fresh `git fetch origin main` succeeded, and HEAD equals origin/main. A failed fetch refuses: a stale origin/main would pass vacuously. Under `--branch-release` (edge only; `release:local --channel edge --workers-only --branch-release` passes it, operator ruling ASKED:2026-11-13T05:02Z) equality is not asked: HEAD must be the tip of a branch on origin (`git ls-remote origin 'refs/heads/*'`), and origin/main after that same fetch must be an ancestor of HEAD (`git merge-base --is-ancestor`). A failed branch read or an ancestry git cannot answer refuses. Every other gate runs unchanged.
   lock         (edge) the release lock is free: the R2 sentinel `cli/v<V>/.released` of the version about to be cut is absent (`release_state_validator.sentinel_exists` through `order.live_sentinel_exists`; UNKNOWN refuses) and `check_existing_release` finds neither the tag nor the GitHub Release.
   stable       (stable) the edge version V promoted is tagged `v<V>` and sealed (sentinel present), its edge record `release-records/v<V>/edge.json` in R2 carries `smoke_rc` 0, and `check_soak_period.select` finds it soaked SOAK_DAYS from the record's `recorded_at`. `--force-asked` skips the age only when its ASKED minute is proven against an AskUserQuestion answer in the transcript (`wl_checks._asked_in_transcript`, as `block_vm_unverified_push` proves its escape); the transcript is `--transcript` or `$REDIACC_TRANSCRIPT_PATH`, and none proves nothing.
 
@@ -48,7 +48,7 @@ EDGE_RECORD_KEY = "release-records/v%s/edge.json"
 TRANSCRIPT_ENV = "REDIACC_TRANSCRIPT_PATH"
 GIT_TIMEOUT_S = 600
 FETCH_TIMEOUT_S = 120
-ASKED_RE = re.compile(r"^ASKED:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z$")
+ASKED_RE = re.compile(r"ASKED:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z")
 
 # The seams. Each answers the question its gate asks of the world, None meaning "could not tell".
 Fetch = Callable[[pathlib.Path], "tuple[str | None, str]"]
@@ -59,6 +59,8 @@ EdgeVersion = Callable[[], "str | None"]
 TagCommit = Callable[[str], "str | None"]
 RecordReader = Callable[[str], "tuple[dict[str, Any] | None, str]"]
 AskedProof = Callable[[str], bool]
+Heads = Callable[[pathlib.Path], "tuple[dict[str, str] | None, str]"]
+Ancestor = Callable[[pathlib.Path, str, str], "bool | None"]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -269,6 +271,84 @@ def origin_main_refusal(root: pathlib.Path, head: str, fetch: Fetch) -> Refusal 
     return None
 
 
+def live_heads(root: pathlib.Path) -> tuple[dict[str, str] | None, str]:
+    """({branch: tip sha} on origin, "") read with `git ls-remote`, which writes no ref, or (None, why the read failed)."""
+    rc, out, err = _git(root, "ls-remote", "origin", "refs/heads/*", timeout=FETCH_TIMEOUT_S)
+    if rc != 0:
+        return None, err or "git ls-remote origin exited %d" % rc
+    heads: dict[str, str] = {}
+    for line in out.splitlines():
+        sha, _sep, ref = line.partition("\t")
+        if ref.startswith("refs/heads/"):
+            heads[ref[len("refs/heads/") :]] = sha.strip()
+    return heads, ""
+
+
+def pushed_branch(heads: dict[str, str], head: str) -> str | None:
+    """The origin branch whose tip is `head`: a branch other than main first, since a branch release names the branch it ships, else main, else None."""
+    names = sorted(name for name, sha in heads.items() if sha == head)
+    return next((n for n in names if n != "main"), names[0] if names else None)
+
+
+def live_ancestor(root: pathlib.Path, ancestor: str, head: str) -> bool | None:
+    """`git merge-base --is-ancestor`: True on exit 0, False on 1, None (cannot tell) on anything else, an object this checkout lacks included."""
+    rc, _out, _err = _git(root, "merge-base", "--is-ancestor", ancestor, head)
+    return {0: True, 1: False}.get(rc)
+
+
+def branch_release_refusals(
+    root: pathlib.Path,
+    head: str,
+    fetch: Fetch,
+    heads: Heads = live_heads,
+    ancestor: Ancestor = live_ancestor,
+) -> list[Refusal]:
+    """The origin-main gate of a branch release: HEAD is a pushed branch tip and descends from a freshly fetched origin/main."""
+    origin_main, why = fetch(root)
+    if origin_main is None:
+        return [
+            Refusal(
+                "origin-main", "the fetch of origin main failed, so nothing is judged: %s" % why
+            )
+        ]
+    found: list[Refusal] = []
+    remote, why = heads(root)
+    if remote is None:
+        found.append(
+            Refusal(
+                "origin-main",
+                "the read of origin's branches failed, so whether HEAD is pushed is not judged: %s"
+                % why,
+            )
+        )
+    elif pushed_branch(remote, head) is None:
+        found.append(
+            Refusal(
+                "origin-main",
+                "HEAD %s is the tip of no branch on origin; a branch release ships a pushed head only"
+                % head[:12],
+            )
+        )
+    verdict = ancestor(root, origin_main, head)
+    if verdict is None:
+        found.append(
+            Refusal(
+                "origin-main",
+                "git cannot tell whether origin/main %s is an ancestor of HEAD %s"
+                % (origin_main[:12], head[:12]),
+            )
+        )
+    elif not verdict:
+        found.append(
+            Refusal(
+                "origin-main",
+                "origin/main %s is not an ancestor of HEAD %s; a branch release ships a head descended from the merged main only"
+                % (origin_main[:12], head[:12]),
+            )
+        )
+    return found
+
+
 # --------------------------------------------------------------------------- (f) the release lock
 
 
@@ -424,7 +504,7 @@ def stable_refusals(
         found.append(Refusal("stable", "the edge record %s has smoke_rc %r, not 0" % (key, smoke)))
     forced = False
     if force_asked is not None:
-        if not ASKED_RE.match(force_asked):
+        if not ASKED_RE.fullmatch(force_asked):
             found.append(
                 Refusal("stable", "--force-asked %r is not ASKED:<YYYY-MM-DDTHH:MM>Z" % force_asked)
             )
@@ -476,10 +556,15 @@ def check(
     asked_proof: AskedProof | None = None,
     now_epoch: int | None = None,
     clone: Callable[[pathlib.Path, str, str], Refusal | None] = clone_refusal,
+    branch_release: bool = False,
+    heads: Heads = live_heads,
+    ancestor: Ancestor = live_ancestor,
 ) -> list[Refusal]:
-    """Every refusal of releasing `root`'s HEAD to `channel`; empty admits."""
+    """Every refusal of releasing `root`'s HEAD to `channel`; empty admits. `branch_release` swaps the origin-main equality for the pushed-descendant rule (edge only)."""
     if channel not in CHANNELS:
         return [Refusal("usage", "--channel %r is not one of %s" % (channel, ", ".join(CHANNELS)))]
+    if branch_release and channel != "edge":
+        return [Refusal("usage", "--branch-release applies to --channel edge only")]
     head = _rev(root, "HEAD")
     tree = _rev(root, "HEAD^{tree}")
     if head is None or tree is None:
@@ -500,7 +585,15 @@ def check(
         found.extend(
             r for r in (vm_check_refusal(root, tree, base), backup_refusal(root, base)) if r
         )
-    found.extend(r for r in (clone(root, tree, head), origin_main_refusal(root, head, fetch)) if r)
+    cloned = clone(root, tree, head)
+    if cloned:
+        found.append(cloned)
+    if branch_release:
+        found.extend(branch_release_refusals(root, head, fetch, heads, ancestor))
+    else:
+        main_refusal = origin_main_refusal(root, head, fetch)
+        if main_refusal:
+            found.append(main_refusal)
     if channel == "edge":
         found.extend(lock_refusals(root, version or next_version(root), sentinel, existing))
     else:
@@ -536,6 +629,11 @@ def main(argv: list[str]) -> int:
         help="the version to judge (edge: the one about to be cut; stable: the edge one promoted)",
     )
     parser.add_argument(
+        "--branch-release",
+        action="store_true",
+        help="edge: HEAD is a pushed branch tip descended from origin/main, not origin/main itself",
+    )
+    parser.add_argument(
         "--force-asked", help="stable: skip the soak age, with a proven ASKED:<YYYY-MM-DDTHH:MM>Z"
     )
     parser.add_argument(
@@ -546,6 +644,8 @@ def main(argv: list[str]) -> int:
     args = parser.parse_args(argv)
     if args.force_asked is not None and args.channel != "stable":
         parser.error("--force-asked applies to --channel stable only")
+    if args.branch_release and args.channel != "edge":
+        parser.error("--branch-release applies to --channel edge only")
     transcript = args.transcript or os.environ.get(TRANSCRIPT_ENV)
     refusals = check(
         paths.repo_root(),
@@ -553,6 +653,7 @@ def main(argv: list[str]) -> int:
         version=args.version,
         force_asked=args.force_asked,
         asked_proof=transcript_proof(transcript),
+        branch_release=args.branch_release,
     )
     if refusals:
         for refusal in refusals:

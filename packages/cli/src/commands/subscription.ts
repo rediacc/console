@@ -5,6 +5,7 @@ import { configFileStorage } from '../adapters/config-file-storage.js';
 import { t } from '../i18n/index.js';
 import { accountServerFetch, fetchServerInfo } from '../services/account/account-client.js';
 import { readAccountPointer } from '../services/account/account-pointer.js';
+import { assertActiveConfigExists } from '../services/account/active-config-guard.js';
 import {
   deleteStoredSubscriptionToken,
   getSubscriptionScopeMismatch,
@@ -12,7 +13,10 @@ import {
   normalizeServerUrl,
   saveStoredSubscriptionToken,
 } from '../services/account/subscription-auth.js';
-import { authorizeSubscriptionViaDeviceCode } from '../services/account/subscription-device-auth.js';
+import {
+  authorizeSubscriptionViaDeviceCode,
+  type ClaimTerms,
+} from '../services/account/subscription-device-auth.js';
 import {
   loginWithPassword,
   resolvePasswordLoginInput,
@@ -24,19 +28,19 @@ import { updateConfigAtPointer } from '../services/config/synced-write.js';
 import { outputService } from '../services/core/output.js';
 import { discoverRegions } from '../services/provision/region-discovery.js';
 import { telemetryService } from '../services/telemetry/telemetry.js';
-import { handleError, ValidationError } from '../utils/errors.js';
+import { handleError, setOutputFormat, ValidationError } from '../utils/errors.js';
 import { promptRegionSelection } from '../utils/region-prompt.js';
 import { withSpinner } from '../utils/spinner.js';
 import { readStdinValue } from '../utils/stdin.js';
 import {
-  executeAccountRefresh,
-  executeMachineRefresh,
   executeMachineStatus,
-  executeRepoLicenseRefresh,
+  executeSubscriptionRefresh,
   executeSubscriptionStatus,
 } from './subscription-actions.js';
+import { executeSubscriptionNotices } from './subscription-notices.js';
 import { outputSubscriptionScope } from './subscription-output.js';
 import { executeProxyToken } from './subscription-proxy-token.js';
+import { executeSubscriptionRetire } from './subscription-retire.js';
 
 /** Clear session and notify when the server URL has changed. */
 function handleServerChange(currentServer: string | undefined, newServer: string): void {
@@ -77,6 +81,18 @@ function withAccountField<C extends { account?: Record<string, unknown> }>(
   return { ...cfg, account };
 }
 
+/** The active config's name, or undefined (with a warning when a channel write is lost) when it does not exist yet. */
+async function existingActiveConfigName(
+  fields: Partial<Record<AccountField, string>>
+): Promise<string | undefined> {
+  const configName = getEffectiveConfigName();
+  if (await configFileStorage.exists(configName)) return configName;
+  if (fields.updateChannel !== undefined) {
+    outputService.warn(`update channel not saved: config "${configName}" does not exist yet`);
+  }
+  return undefined;
+}
+
 /**
  * Write account fields into the active config. A config that does not exist yet is skipped; any
  * other write failure throws, because a lost `e2ePublicKey` leaves every later request to discover
@@ -84,9 +100,10 @@ function withAccountField<C extends { account?: Record<string, unknown> }>(
  * routed by its pointer: the login fields stay on this device, `updateChannel` syncs, and is
  * written only when it changes, so a login does not push an unchanged channel.
  */
-async function patchActiveAccount(fields: Partial<Record<AccountField, string>>): Promise<void> {
-  const configName = getEffectiveConfigName();
-  if (!(await configFileStorage.exists(configName))) return;
+async function patchActiveAccount(fields: Partial<Record<AccountField, string>>): Promise<boolean> {
+  const configName = await existingActiveConfigName(fields);
+  if (configName === undefined) return false;
+  let saved = true;
   for (const [field, value] of Object.entries(fields) as [AccountField, string | undefined][]) {
     if (value === undefined) continue;
     if (field === 'updateChannel' && readAccountPointer(configName).updateChannel === value)
@@ -101,11 +118,13 @@ async function patchActiveAccount(fields: Partial<Record<AccountField, string>>)
     // The channel is a synced preference, not a login field: a remote config that cannot take the
     // write right now keeps its old channel rather than failing the login.
     await write.catch((error: unknown) => {
+      saved = false;
       outputService.warn(
         `update channel not saved: ${error instanceof Error ? error.message : String(error)}`
       );
     });
   }
+  return saved;
 }
 
 /** Persist explicit --server flag and detect server changes. */
@@ -136,17 +155,23 @@ async function promptRegionIfNeeded(): Promise<void> {
 }
 
 /**
- * Resolve the account server URL and auto-sync update channel + e2e key from server-info.
- * Returns the resolved server URL for use in subsequent requests.
+ * Resolve the account server URL and sync the e2e key from server-info into the active config. The
+ * update channel is NOT written here: the returned `applyChannel` writes it, and the caller picks
+ * the moment. A synced channel write of a remote config pulls the store with the stored login
+ * token, which an IP change has turned into the "enter the 6-digit code" prompt; a fresh login
+ * must not run that prompt, so `subscription login` and `register` call `applyChannel` only after
+ * the new token is stored.
  */
-export async function resolveAndSyncServer(options: { server?: string }): Promise<string> {
+async function resolveServerDeferringChannel(options: {
+  server?: string;
+}): Promise<{ serverUrl: string; applyChannel: () => Promise<void> }> {
   // Resolve the server URL from --server / env / active config / default.
   const serverUrl = getSubscriptionServerUrl(options.server);
 
   // Pin the resolved server into the active config for per-config isolation.
   await patchActiveAccount({ accountServer: serverUrl });
 
-  // Auto-sync update channel and e2e key from server-info into the active config. Only the fetch is non-fatal: a server-info that cannot be read leaves the existing config, but one that was read and then could not be persisted is an error, never a silent fall back to the production key.
+  // Only the fetch is non-fatal: a server-info that cannot be read leaves the existing config, but one that was read and then could not be persisted is an error, never a silent fall back to the production key.
   let info: Awaited<ReturnType<typeof fetchServerInfo>> | undefined;
   try {
     info = await fetchServerInfo(serverUrl);
@@ -157,17 +182,26 @@ export async function resolveAndSyncServer(options: { server?: string }): Promis
     );
   }
   if (info) {
-    await patchActiveAccount({
-      updateChannel: info.updateChannel,
-      e2ePublicKey: info.e2e?.keys?.[0]?.publicKeySpki,
-    });
-    if (info.updateChannel) {
-      outputService.info(
-        t('commands.subscription.login.channelSynced', { channel: info.updateChannel })
-      );
-    }
+    await patchActiveAccount({ e2ePublicKey: info.e2e?.keys?.[0]?.publicKeySpki });
   }
+  const channel = info?.updateChannel;
+  const applyChannel = async (): Promise<void> => {
+    if (!channel) return;
+    // One write, one announcement: the line says "set" only when the write landed.
+    if (await patchActiveAccount({ updateChannel: channel })) {
+      outputService.info(t('commands.subscription.login.channelSynced', { channel }));
+    }
+  };
+  return { serverUrl, applyChannel };
+}
 
+/**
+ * Resolve the account server URL and auto-sync update channel + e2e key from server-info into the
+ * active config. Returns the resolved server URL for use in subsequent requests.
+ */
+export async function resolveAndSyncServer(options: { server?: string }): Promise<string> {
+  const { serverUrl, applyChannel } = await resolveServerDeferringChannel(options);
+  await applyChannel();
   return serverUrl;
 }
 
@@ -189,6 +223,20 @@ function setSubscriptionTelemetryContext(input: {
   });
 }
 
+/** The one terms line of the login summary: accepted, pending with an accept URL, or pending. */
+function termsSummaryLine(terms: ClaimTerms): string {
+  if (terms.accepted) {
+    return t('commands.subscription.login.termsAccepted', { version: terms.accepted });
+  }
+  if (terms.acceptUrl) {
+    return t('commands.subscription.login.termsPendingAccept', {
+      url: terms.url,
+      acceptUrl: terms.acceptUrl,
+    });
+  }
+  return t('commands.subscription.login.termsPending', { url: terms.url });
+}
+
 /**
  * The post-login summary. One renderer for both login paths (an explicit
  * `--token` and the device-code flow), which had drifted into two copies of the
@@ -203,7 +251,8 @@ function renderLoginSummary(
     overLimitCount?: number;
   },
   teamName: string | undefined,
-  serverUrl: string
+  serverUrl: string,
+  terms?: ClaimTerms
 ): void {
   outputService.success(t('commands.subscription.login.success'));
   outputSubscriptionScope({ orgName: status.orgName, teamName, serverUrl });
@@ -218,6 +267,9 @@ function renderLoginSummary(
       max: status.maxMachines ?? SUBSCRIPTION_DEFAULTS.UNKNOWN_QUOTA,
     })
   );
+  if (terms) {
+    outputService.info(termsSummaryLine(terms));
+  }
   // Soft-claimed slots: renewals still succeed, but new repositories cannot be licensed, so say it at login rather than at the next `repo create`.
   if ((status.overLimitCount ?? 0) > 0) {
     outputService.warn(
@@ -308,6 +360,7 @@ export function registerSubscriptionCommands(program: Command): void {
     .option('--server <url>', t('options.serverUrl'))
     .action(async (options) => {
       try {
+        await assertActiveConfigExists();
         const passwordLogin = await readPasswordLoginInput(options);
         // Read and validate the token FIRST: a refused token (empty stdin, whitespace) must not leave a region prompt or a server rewrite behind it. `--token ""` is a token given and refused, not the device-code flow.
         let token =
@@ -319,7 +372,7 @@ export function registerSubscriptionCommands(program: Command): void {
           await promptRegionIfNeeded();
         }
 
-        const serverUrl = await resolveAndSyncServer(options);
+        const { serverUrl, applyChannel } = await resolveServerDeferringChannel(options);
 
         if (passwordLogin) {
           token = await withSpinner(
@@ -330,7 +383,7 @@ export function registerSubscriptionCommands(program: Command): void {
         }
 
         if (token === undefined) {
-          const { status } = await authorizeSubscriptionViaDeviceCode(serverUrl, {
+          const { status, terms } = await authorizeSubscriptionViaDeviceCode(serverUrl, {
             interactive: true,
             teamName: await configService.getTeam(),
           });
@@ -339,10 +392,47 @@ export function registerSubscriptionCommands(program: Command): void {
             planCode: status.planCode,
             source: TELEMETRY_SUBSCRIPTION_SOURCES.storedToken,
           });
-          renderLoginSummary(status, status.teamName, serverUrl);
+          renderLoginSummary(status, status.teamName, serverUrl, terms);
         } else {
           await loginWithToken(token, serverUrl);
         }
+        await applyChannel();
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // subscription register --email <addr>
+  sub
+    .command('register')
+    .description(t('commands.subscription.register.description'))
+    .requiredOption('--email <address>', t('commands.subscription.register.optionEmail'))
+    .option('--server <url>', t('options.serverUrl'))
+    .action(async (options) => {
+      try {
+        await assertActiveConfigExists();
+        const email = String(options.email).trim();
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+          throw new ValidationError(t('commands.subscription.register.invalidEmail'));
+        }
+        if (options.server) {
+          await persistExplicitServer(options.server);
+        } else {
+          await promptRegionIfNeeded();
+        }
+        const { serverUrl, applyChannel } = await resolveServerDeferringChannel(options);
+        const { status, terms } = await authorizeSubscriptionViaDeviceCode(serverUrl, {
+          interactive: true,
+          teamName: await configService.getTeam(),
+          email,
+        });
+        setSubscriptionTelemetryContext({
+          subscriptionId: status.subscriptionId,
+          planCode: status.planCode,
+          source: TELEMETRY_SUBSCRIPTION_SOURCES.storedToken,
+        });
+        renderLoginSummary(status, status.teamName, serverUrl, terms);
+        await applyChannel();
       } catch (error) {
         handleError(error);
       }
@@ -383,6 +473,8 @@ export function registerSubscriptionCommands(program: Command): void {
     .description(t('commands.subscription.proxyToken.description'))
     .option('--json', t('commands.subscription.proxyToken.jsonOption'))
     .action(async (options: { json?: boolean }) => {
+      // Inside `$(...)` stdout is no TTY, so the root hook picks JSON output, and a JSON error envelope lands on stdout where the substitution captures it as a "token". The refusal goes to stderr as text instead, whatever the format.
+      setOutputFormat('table');
       try {
         await executeProxyToken(options);
       } catch (error) {
@@ -397,13 +489,45 @@ export function registerSubscriptionCommands(program: Command): void {
     .command('status')
     .description(t('commands.subscription.status.description'))
     .option('-m, --machine <name>', t('options.machine'))
+    .option('--all', t('commands.subscription.status.optionAll'))
     .action(async (options) => {
       try {
         if (options.machine) {
           await executeMachineStatus(options.machine);
           return;
         }
-        await executeSubscriptionStatus();
+        await executeSubscriptionStatus({ all: options.all });
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // subscription notices [--all] [--unread] [--mark-read]
+  sub
+    .command('notices')
+    .description(t('commands.subscription.notices.description'))
+    .option('--all', t('commands.subscription.notices.optionAll'))
+    .option('--unread', t('commands.subscription.notices.optionUnread'))
+    .option('--mark-read', t('commands.subscription.notices.optionMarkRead'))
+    .action(async (options) => {
+      try {
+        await executeSubscriptionNotices(options);
+      } catch (error) {
+        handleError(error);
+      }
+    });
+
+  // subscription retire <guid> [--force] | --expired [--dry-run]; -y/--yes is the global option.
+  sub
+    .command('retire')
+    .description(t('commands.subscription.retire.description'))
+    .argument('[guid]', t('commands.subscription.retire.argGuid'))
+    .option('--force', t('commands.subscription.retire.optionForce'))
+    .option('--expired', t('commands.subscription.retire.optionExpired'))
+    .option('--dry-run', t('commands.subscription.retire.optionDryRun'))
+    .action(async (guid: string | undefined, options) => {
+      try {
+        await executeSubscriptionRetire(guid, options);
       } catch (error) {
         handleError(error);
       }
@@ -418,21 +542,10 @@ export function registerSubscriptionCommands(program: Command): void {
     .description(t('commands.subscription.refresh.description'))
     .option('-m, --machine <name>', t('options.machine'))
     .option('--repo <ref>', t('options.repoRef'))
+    .option('--adopt-origin', t('commands.subscription.refresh.adoptOrigin'))
     .action(async (options) => {
       try {
-        if (options.machine && options.repo) {
-          throw new ValidationError(t('commands.subscription.refresh.targetExclusive'));
-        }
-        if (options.repo) {
-          // --repo derives its own machine from the ref, so it never needs -m.
-          await executeRepoLicenseRefresh(options.repo);
-          return;
-        }
-        if (options.machine) {
-          await executeMachineRefresh(options.machine);
-          return;
-        }
-        await executeAccountRefresh();
+        await executeSubscriptionRefresh(options);
       } catch (error) {
         handleError(error);
       }

@@ -7,8 +7,8 @@ tags:
 subcategory: foundations
 order: 7
 language: zh
-sourceHash: "1e10165626ba3730"
-sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
+sourceHash: "af327ad5729b1cab"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 许多国家要求其公民的个人数据在国境内存储和处理。Rediacc 的自托管架构在设计上满足这些要求：数据保留在您的机器上、您的数据中心、您的管辖区内。克隆期间数据不会离开机器，也没有第三方 SaaS 处理您的数据。
@@ -88,4 +88,4 @@ sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
 
 ## 托管服务：区域数据驻留
 
-对于托管版 Rediacc 服务（非自托管）的用户，数据驻留通过区域基础设施强制执行。共提供三个区域：欧盟（法兰克福）、美国（弗吉尼亚）和亚太地区（东京）。每个区域运行独立的数据库和存储，区域之间不存在数据流动。事务性邮件通过 AWS SES 发送；欧盟和美国使用专用区域端点，亚太地区使用欧盟端点（eu-central-1）。欧盟区域对 R2 存储采用司法管辖强制。完整技术细节请参阅[数据区域](/zh/docs/data-regions)。
+对于托管版 Rediacc 服务（非自托管）的用户，数据驻留通过区域基础设施实现。共提供三个区域：欧盟、北美东部和亚太地区。每个区域运行独立的数据库和存储，区域之间不存在数据流动。只有 EU 配置存储受有保证的司法管辖区约束（Cloudflare R2 的 EU 司法管辖限制）；数据库的位置以及 US 和亚太地区的存储使用 Cloudflare 位置提示，属于尽力而为。事务性邮件通过 AWS SES 发送；欧盟和美国使用专用区域端点，亚太地区使用欧盟端点（eu-central-1）。完整技术细节请参阅[数据区域](/zh/docs/data-regions)。

@@ -8,11 +8,93 @@ tags:
 subcategory: setup
 order: 5
 language: de
-sourceHash: "2c3ac4a96a028b3f"
-sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
+sourceHash: "6b60637180f58cc2"
+sourceCommit: "c477e296238c19495f4a07ef6c5a62f15e942f90"
 ---
 
 Rediacc kann vollständig auf eigener Infrastruktur betrieben werden. Das Standalone-Docker-Image enthält den Account-Server, das Webportal, die Marketing-Website und den CLI-Distributionsendpunkt. Externe Abhängigkeiten von Rediacccs gehosteten Diensten sind nicht erforderlich.
+
+## Installation mit rdc
+
+`rdc server install` installiert den Account-Server als Repository auf einer Maschine, die die CLI per SSH erreicht. Ein Befehl deckt Maschinenprüfung, renet-Einrichtung, DNS, TLS, Schlüsselerzeugung, Lizenzierung, Start und das Owner-Konto ab. Jeder Wert hat ein Flag. Auf einem Terminal wird ein fehlender Wert abgefragt; mit `--yes` wird nichts abgefragt und ein fehlender Wert abgelehnt. Jeder Schritt wird festgehalten, ein erneuter Lauf überspringt daher, was schon erledigt ist.
+
+Die Schritte in Reihenfolge: `preflight` (sudo ohne Passwort, Architektur, Ports 80 und 443, Speicherplatz, Zeitabweichung), `setup` (`rdc machine setup`, nur wenn renet fehlt), `dns`, `tls`, `repo`, `keys`, `licence`, `image`, `up` und `owner`.
+
+### Zuerst vorhandene Maschinen
+
+Die Installation zielt auf eine bereits vorhandene Maschine: einen Server im Rechenzentrum oder ein Gerät im LAN. Eine konfigurierte Maschine wird als Argument genannt. Eine noch nicht registrierte Maschine wird über ihre Adresse hinzugefügt:
+
+```bash
+rdc server install --ip 203.0.113.10 --user admin --domain accounts.example.com
+rdc server install server-1 --domain accounts.example.com --owner owner@example.com --yes
+```
+
+`--port` und `--name` setzen den SSH-Port und den Namen, unter dem die Maschine registriert wird. Eine Cloud-VM wird vorab mit `rdc machine provision` erstellt; die Installation legt nie eine an.
+
+### DNS
+
+Die Installation gibt die A- und AAAA-Einträge für die Server-Domain und die Domain des Backup-Speichers aus (`--store-domain`, standardmäßig `<name>-store.<Rest der Domain>`) und wartet, bis beide auf die Maschine zeigen. Es wird nie ein Eintrag in eine Zone geschrieben. `--no-dns-wait` gibt die Einträge aus und macht weiter, passend für einen LAN-Namen, den ein lokaler Resolver bedient.
+
+### TLS
+
+`--tls` wählt eine von drei Methoden:
+
+| Methode | Voraussetzung | Hinweise |
+|---|---|---|
+| `letsencrypt` | Ports 80 und 443 aus dem Internet erreichbar | HTTP-01-Challenge. `--cert-email` erhält Ablaufhinweise; Standard ist der Owner. |
+| `cloudflare` | `--cf-token` | DNS-01-Challenge über ein Cloudflare-API-Token. |
+| `byo` | `--tls-cert` und `--tls-key` | Ein vorhandenes PEM-Zertifikat für beide Domains. `--tls-ca` nennt die CA, der die Health-Prüfung vertraut. |
+
+```bash
+rdc server install lab --domain lab.example.internal --tls byo \
+  --tls-cert host.crt --tls-key host.key --tls-ca ca.crt \
+  --licence free --no-dns-wait --yes
+```
+
+### Image
+
+Der Image-Schritt zieht standardmäßig `ghcr.io/rediacc/server:latest` auf der Maschine. `--image` wählt eine andere Referenz. `--image-file` überträgt ein mit `docker save` geschriebenes Tar, und `--local-image` sichert das `--image` aus dem lokalen Docker und überträgt es. Beides kommt ohne Registry-Zugriff der Maschine aus.
+
+### Lizenzierung und Free-Tarif
+
+`--licence auto` (Standard) nimmt ein Delegierungszertifikat des angemeldeten Kontos oder startet im Free-Tarif, wenn keines vorliegt. `--licence free` startet immer im Free-Tarif. Ein Konto, das sich vor Einführung des Installationsbefehls angemeldet hat, braucht erneut `rdc subscription login`, damit der passende Scope vorhanden ist.
+
+Für eine Maschine ohne Verbindung zum Account-Server übernimmt `--cert <file>` ein anderswo bezogenes Delegierungszertifikat. Das Zertifikat muss den auf der Maschine erzeugten Schlüssel nennen; üblich ist daher erst eine Installation im Free-Tarif, danach das Zertifikat:
+
+```bash
+rdc server install server-1 --domain accounts.example.com --licence free --yes
+rdc server licence accounts.example.com --cert delegation-cert.json
+```
+
+`rdc server licence` bringt einen Free-Tarif-Server auf ein Zertifikat des angemeldeten Kontos oder aus `--cert`. Was der Server prüft, beschreibt Schritt 3 im Lizenzierungsabschnitt weiter unten.
+
+### Recovery-Bundle
+
+Alle Schlüssel entstehen auf der Maschine und landen nur in der `secrets.env` des Repositorys. Auf einem Terminal endet die Installation mit der einmaligen Ausgabe eines Recovery-Bundles: das delegierte Schlüsselpaar, der Account-Config-Server-Schlüssel und die Zugangsdaten des Objektspeichers. Das Bundle wird nie protokolliert und ist nie Teil von `--output json`. Ohne Terminal wird es nicht ausgegeben, und die Abschlusszeile nennt `rdc server backup`.
+
+```bash
+rdc server backup accounts.example.com --out elite-recovery.env
+```
+
+`--out` schreibt die Datei mit Modus 0600; ohne dieses Flag geht das Bundle auf stdout. `--bws-project <id>` bei der Installation kopiert die Schlüssel zusätzlich in ein Bitwarden-Secrets-Manager-Projekt, und `--rotate` ersetzt einen abweichenden gespeicherten Wert. Ohne `--bws-project` verlassen die Schlüssel den Server nur im Wiederherstellungs-Bundle, das die Installation ausgibt, und in der Datei, die `rdc server backup --out` schreibt.
+
+### Status
+
+```bash
+rdc server status accounts.example.com
+```
+
+Der Status zeigt Health, Tarif, Zertifikat und Image des Servers. `--machine` und `--repo` nennen das Ziel, wenn das Gerät keinen Installationseintrag für die Domain hat.
+
+### Updates
+
+| Komponente | Befehl |
+|---|---|
+| CLI | `rdc update` |
+| renet auf der Maschine | `rdc machine setup <machine>` |
+| Server-Image und Template | `rdc server upgrade <domain>` |
+
+`rdc server upgrade` forkt das Repository als Rücksprungpunkt, legt das neue Image ab, wendet das Template erneut an, wenn das eingebaute neuer ist, und startet neu. Es kennt `--image`, `--image-file` und `--local-image` wie die Installation, sodass eine Air-Gapped-Maschine aus einem gespeicherten Image-Tar aktualisiert wird.
 
 ## Docker-Image
 
@@ -170,19 +252,19 @@ Die Gültigkeit des Zertifikats wird durch die Gültigkeitsrichtlinie bestimmt (
 
 ### 3. Zertifikat auf dem On-Premise-Server installieren
 
-Die heruntergeladene `.json`-Datei an einem bekannten Pfad speichern und den On-Premise-Server darauf hinweisen:
+Der Server liest sein Delegationszertifikat aus einer einzigen Datei auf seinem Datenvolume, `/data/delegation-cert.json` (`DELEGATION_CERT_PATH` benennt ihn). Keine Umgebungsvariable enthält das Zertifikat selbst. `rdc server install` legt das heruntergeladene Zertifikat dort ab, und `rdc server licence` ersetzt es später:
 
 ```bash
-DELEGATION_CERT_PATH=/etc/rediacc/delegation-cert.json
+rdc server install <domain> --cert delegation-cert.json
+rdc server licence <domain> --cert delegation-cert.json
+rdc server status <domain>
 ```
 
-Für ephemere/Docker-Secrets-Workflows kann das Zertifikat auch als base64 in einer Umgebungsvariable eingebettet werden:
+Beide Befehle übergeben das Zertifikat über den Zertifikat-Posteingang (`data/web/cert-inbox/new.json`) an den laufenden Server. Der Server prüft es und antwortet mit `applied.json` oder `rejected.json`; der Befehl bestätigt die neue Zertifikat-ID mit `rdc server status` (dieselben `cert-status`-Daten wie in Schritt 6). `rdc server upgrade` nutzt denselben Posteingang. Der Server liest `DELEGATION_CERT_BASE64` nicht mehr: Ein Upgrade-Schritt verschiebt einen übrig gebliebenen Wert aus `secrets.env` in den Posteingang, sodass eine vor dem Posteingang installierte Box ihr Zertifikat behält.
 
-```bash
-DELEGATION_CERT_BASE64=$(base64 -w 0 < delegation-cert.json)
-```
+Der Server lädt das Zertifikat beim Start und gleicht es mit dem Schlüssel ab, mit dem er Lizenzen signiert: Der Fingerabdruck des Signaturschlüssels muss dem Fingerabdruck des `delegatedPublicKey` im Zertifikat entsprechen, weil unter einem vom Zertifikat nicht autorisierten Schlüssel signierte Lizenzen auf keiner Maschine validierbar wären. Signaturschlüsselpaar und `delegatedPublicKey` des Zertifikats müssen übereinstimmen.
 
-Beim Start verweigert der Server den Start (ein FATAL-Log-Eintrag und ein von null verschiedener Exit-Code), wenn das geladene Zertifikat an einen anderen Schlüssel delegiert als den, mit dem der Server Lizenzen signiert: Er vergleicht den Fingerabdruck des Signierschlüssels mit dem Fingerabdruck des `delegatedPublicKey` des Zertifikats und bricht bei einer Abweichung ab, weil Lizenzen, die mit einem vom Zertifikat nicht autorisierten Schlüssel signiert wurden, auf jeder Maschine nicht validierbar wären. Halten Sie das Signierschlüsselpaar und den `delegatedPublicKey` des Zertifikats synchron.
+Ein Zertifikat, das der Server beim Start ablehnt (ungültige Signatur, falscher Schlüssel, fehlender `UPSTREAM_PUBLIC_KEY` oder fehlerhafte Datei), stoppt ihn nicht. Der Server startet im Free-Tarif und verschiebt die fehlerhafte Datei nach `delegation-cert.rejected.json` neben dem Original. Die Repo-Lizenzsignierung antwortet mit `503 DELEGATION_CERT_REFUSED`, bis ein gültiges Zertifikat vorliegt, und `rdc server status` zeigt `cert REFUSED (reason)`. Mit `rdc server licence` und einem gültigen Zertifikat lässt sich das beheben. Ein abgelaufenes Zertifikat wird weiterhin geladen: Es wird weich herabgestuft statt abgelehnt.
 
 ### 4. Vorgelagerte Verifizierung und automatische Erneuerung konfigurieren (optional, aber empfohlen)
 
@@ -232,11 +314,25 @@ Diese gesamte Schleife erfordert keinen Netzwerkabgang vom On-Premise-Server.
 
 #### Zertifikat-Upload-Fehlermodi
 
-| Code | Ursache | Behebung |
+`POST /onprem/cert-upload` antwortet bei Erfolg mit `{uploaded: true, bootstrap, certId}`. Ein abgelehntes Zertifikat liefert `{error, code}`; `error` enthält die Details, `code` ist einer der unten genannten Gründe. Jedes angewendete oder abgelehnte Zertifikat wird protokolliert und per E-Mail an den Eigentümer der Box gesendet.
+
+`rdc server licence` legt das Zertifikat per SSH im Posteingang der Box (`data/web/cert-inbox`) ab und liest anschließend `applied.json` oder `rejected.json` zurück. Es bestätigt die neue Zertifikats-ID über `cert-status`. Eine Ablehnung nennt dieselben Gründe, dazu `not-a-regular-file` und `too-large` vom Posteingang selbst.
+
+| Code | HTTP | Ursache |
 |---|---|---|
-| `CHAIN_HEAD_BEHIND` | `genesisSequence` des neuen Zertifikats liegt vor dem lokalen Kettenkopf | Das vorgelagerte System befindet sich auf einer abgezweigten Kette - untersuchen |
-| `CHAIN_FORK_ON_UPLOAD` | Chain-Hash an `genesisSequence` des Zertifikats stimmt nicht mit dem lokalen Ledger überein | Die lokale Kette hat sich vom vorgelagerten System abgezweigt - untersuchen |
-| `Signature verification failed` | Zertifikat ist nicht vom konfigurierten `UPSTREAM_PUBLIC_KEY` signiert | Prüfung, ob `UPSTREAM_PUBLIC_KEY` mit dem vorgelagerten Master-Public-Key übereinstimmt |
+| `malformed` | 400 | Der Upload ist kein gültiges Zertifikat |
+| `bad-signature` | 400 | Das Zertifikat ist nicht mit dem konfigurierten `UPSTREAM_PUBLIC_KEY` signiert |
+| `wrong-key` | 400 | Das Zertifikat wurde für einen anderen Schlüssel ausgestellt als den dieser On-Premise-Installation |
+| `expired` | 400 | Das Zertifikat ist bereits über sein `validUntil` hinaus abgelaufen |
+| `not-newer` | 409 | Das Zertifikat ist nicht neuer als das aktuell gültige |
+| `other-subscription` | 409 | Das Zertifikat gehört zu einem anderen Abonnement |
+| `chain-ahead` | 409 | `genesisSequence` des Zertifikats liegt vor dem lokalen Kettenkopf |
+| `chain-fork` | 409 | Der Chain-Hash an `genesisSequence` des Zertifikats stimmt nicht mit dem lokalen Ledger überein |
+| `no-upstream-key` | 500 | `UPSTREAM_PUBLIC_KEY` ist nicht konfiguriert |
+| `write-failed` | 500 | Das Zertifikat konnte nicht auf die Festplatte geschrieben werden |
+| `adoption-failed` | 500 | Der Server konnte das geschriebene Zertifikat nicht laden |
+
+Prüfen Sie bei `bad-signature`, ob `UPSTREAM_PUBLIC_KEY` dem öffentlichen Master-Schlüssel des Upstreams entspricht. Setzen Sie bei `no-upstream-key` `UPSTREAM_PUBLIC_KEY`.
 
 ### 6. Status und Monitoring
 
@@ -258,9 +354,8 @@ Für Backup und Audit kann der On-Premise-Admin das aktuell geladene signierte Z
 | `ON_PREMISE_MODE` | Ja | Auf `true` setzen, um die On-Premise-Route-Teilmenge zu aktivieren |
 | `ON_PREMISE_PRIVATE_KEY` | Ja | Base64 PKCS8 Ed25519-Privatschlüssel für delegiertes Signieren |
 | `ON_PREMISE_PUBLIC_KEY` | Ja | Base64 SPKI Ed25519-Öffentlichschlüssel (muss mit `delegatedPublicKey` des Zertifikats übereinstimmen) |
-| `DELEGATION_CERT_PATH` | Eines davon | Dateisystempfad zur signierten Zertifikat-JSON-Datei |
-| `DELEGATION_CERT_BASE64` | Eines davon | Base64-kodiertes Zertifikat-JSON (Alternative zum Dateipfad) |
-| `UPSTREAM_PUBLIC_KEY` | Erforderlich, wenn `UPSTREAM_API_KEY` gesetzt ist, oder damit `/onprem/cert-upload` funktioniert | Base64 SPKI des vorgelagerten Master-Public-Keys. Fail-Fast beim Start, wenn fehlend. |
+| `DELEGATION_CERT_PATH` | Optional | Dateisystempfad zur signierten Zertifikat-JSON-Datei. Standard `/data/delegation-cert.json` auf dem Datenvolume. Das Zertifikat mit `rdc server licence` ersetzen, nicht von Hand. |
+| `UPSTREAM_PUBLIC_KEY` | Erforderlich, wenn `UPSTREAM_API_KEY` gesetzt ist, oder damit `/onprem/cert-upload` funktioniert | Base64 SPKI des vorgelagerten Master-Public-Keys. Fehlt er, lehnt der Server beim Start jedes Zertifikat ab (`no-upstream-key`) und läuft im kostenlosen Tarif, wie Schritt 3 beschreibt. |
 | `UPSTREAM_URL` | Für automatische Erneuerung | Basis-URL des vorgelagerten Account-Servers, z. B. `https://www.rediacc.com` |
 | `UPSTREAM_API_KEY` | Für automatische Erneuerung | Ein `delegation:renew`-bezogener API-Token. Über das Portal erstellen - siehe Schritt 4. |
 | `AUTO_RENEW_INTERVAL_HOURS` | Optional | Standard 24. Wie oft geprüft wird, ob das Zertifikat erneuert werden muss. |

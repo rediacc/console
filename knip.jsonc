@@ -83,7 +83,7 @@
       "ignoreExportsUsedInFile": true,
       "project": ["scripts/**/*.ts"],
       "ignoreBinaries": [
-        // BLOCKER: .github/workflows/cleanup-preview.yml runs `npx --no-install wrangler` against a global install it makes itself at the toolchain pin (WRANGLER_VERSION, --before the release-age window); the root workspace deliberately carries no wrangler dependency, since the Worker directories are not root workspaces
+        // BLOCKER: .github/workflows/ops-cleanup-preview.yml runs `npx --no-install wrangler` against a global install it makes itself at the toolchain pin (WRANGLER_VERSION, --before the release-age window); the root workspace deliberately carries no wrangler dependency, since the Worker directories are not root workspaces
         "wrangler"
       ]
     },
@@ -294,6 +294,7 @@
     // BLOCKER: ssh-agent tooling spawned for key management in the CLI ssh stack; provided by the host OpenSSH installation
     "ssh-add",
     "ssh-agent",
+    "ssh-keygen",
     "ssh-keyscan",
 
     // BLOCKER: external tools invoked by www build/tutorial scripts (ffmpeg muxing and its ffprobe stream probe, pdftotext content checks, agent-browser session capture); installed on dev/CI hosts, not npm deps

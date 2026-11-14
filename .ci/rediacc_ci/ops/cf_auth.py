@@ -25,6 +25,7 @@ import getpass
 import json
 import os
 import subprocess
+import sys
 import time
 import typing
 
@@ -364,6 +365,10 @@ def resolve(account_id: str = DEFAULT_ACCOUNT_ID) -> Auth:
         return Auth(token=token)
     if global_key and email:
         return _mint(global_key, email, account_id)
+    if not sys.stdin.isatty():
+        raise CfAuthError(
+            "Cloudflare authentication credentials are required and stdin is not a terminal: set CF_MANAGEMENT_TOKEN or CF_GLOBAL_API_KEY + CF_EMAIL"
+        )
     print("Authentication method:")
     print("  1) Global API Key + Email (auto-creates scoped token)")
     print("  2) Scoped API Token (if you have one ready)")

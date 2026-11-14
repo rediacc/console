@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { execCalls } = vi.hoisted(() => ({ execCalls: [] as string[] }));
+const { execCalls, setupExit } = vi.hoisted(() => ({
+  execCalls: [] as string[],
+  setupExit: { code: 0 },
+}));
 
 vi.mock('../config/config-resources.js', () => ({
   configService: {
@@ -28,7 +31,7 @@ vi.mock('../machine/machine-connection.js', () => ({
       sftp: {
         execStreaming: vi.fn((cmd: string) => {
           execCalls.push(cmd);
-          return Promise.resolve(0);
+          return Promise.resolve(setupExit.code);
         }),
       },
     }),
@@ -40,6 +43,16 @@ import { bootstrapMachine } from '../renet/machine-bootstrap.js';
 describe('bootstrapMachine setup command', () => {
   beforeEach(() => {
     execCalls.length = 0;
+    setupExit.code = 0;
+  });
+
+  it('a failing setup throws a named error with the setup exit code', async () => {
+    setupExit.code = 100;
+    await expect(bootstrapMachine('m1', {})).rejects.toMatchObject({
+      code: 'INFRA_FAILED',
+      exitCode: 100,
+      message: 'Machine setup exited with code 100',
+    });
   });
 
   it('quotes the renet path and the datastore path', async () => {

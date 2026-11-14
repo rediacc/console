@@ -10,35 +10,44 @@
  * Deploy strategy: state-based reconciliation. Read remote state (existing
  * unit files + SHA-256 hashes + systemd status), diff against desired, only
  * touch what changed. In-flight backups are detected and block updates/
- * removes by default (`--force` to override). Writes are staged to
- * `<path>.new` and `mv`-committed so a partial SSH failure never leaves
- * the machine with a half-deployed unit. Post-deploy, timers are
- * re-queried to confirm they actually loaded.
+ * removes by default (`--force` to override). The mutation phase runs on the
+ * machine as one `backup-schedule` job: writes are staged to `<path>.new` and
+ * renamed, so a dropped connection never leaves a half-deployed unit, and
+ * post-deploy the timers are re-queried to confirm they actually loaded.
  *
  * Implementation is split across:
  * - backup-schedule/unit-generator.ts, pure content generators
  * - backup-schedule/reconcile.ts     , read + diff + in-flight gate
- * - backup-schedule/execute.ts       , mutations + verification + summary
+ * - backup-schedule/execute.ts       , the job's payload + summary
  */
 
 import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { BackupStrategyConfig } from '../../types/index.js';
+import { getOutputFormat } from '../../utils/errors.js';
 import { refreshRepoLicensesBatch } from '../account/license.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
 import { setExitCode } from '../core/request-context.js';
+import { pendingExitCode, runCommandJob } from '../jobs/command-job.js';
+import type { PlannedStep } from '../jobs/steps.js';
 import { machineConnections } from '../machine/machine-connection.js';
 import { acquireRemoteRenet, readSSHKey } from '../renet/renet-execution.js';
 import { REMOTE_INSTALL_PATH } from '../renet/renet-provisioner.js';
+import {
+  mayOfferReplacement,
+  renetHoldReason,
+  renetMayUpload,
+} from '../renet/renet-upload-decision.js';
 import { envFilePath, generateEnvFile } from './backup-env-file.js';
 import {
+  buildSchedulePayload,
   emitPlanSummary,
-  executePlan,
   printDryRunUnitBodies,
-  verifyPostDeploy,
+  type SchedulePayload,
 } from './backup-schedule-execute.js';
 import {
+  accountServerForRenet,
   applyInFlightGate,
   computeDesiredUnits,
   computeReconcilePlan,
@@ -49,8 +58,9 @@ import {
   resolveMachineCpuCount,
 } from './backup-schedule-reconcile.js';
 import {
+  buildScheduleStatusRows,
   type ExpectedScheduleUnit,
-  readScheduleStatus,
+  parseFoldedSystemctlShow,
   type ScheduleStatusRow,
   scheduleStatusExitCode,
 } from './backup-schedule-status.js';
@@ -73,8 +83,19 @@ import {
   sanitizeBackupOutput,
   sha256Hex,
 } from './backup-schedule-unit-generator.js';
+import { expandStatusRows, type StatusTargets } from './backup-store-pick.js';
+import { expectedAccountServerOrigin, storeFlagForRenet } from './backup-store-universe.js';
 
-type PushScheduleOptions = ReconcileOptions;
+type PushScheduleOptions = ReconcileOptions & {
+  /** Client-side steps the apply job carries on its ticket (they run after it, whoever observes it). */
+  steps?: PlannedStep[];
+};
+
+/**
+ * What a push did: `dry-run` and `unchanged` made no job; `applied` ran the job to its end with `options.steps` run
+ * after it; `pending` handed the ticket back, so the steps run when the job is observed finished.
+ */
+export type PushScheduleResult = 'dry-run' | 'unchanged' | 'applied' | 'pending';
 
 /** Validate no duplicate destination names across strategies. */
 function assertNoDuplicateDestinations(strategies: { config: BackupStrategyConfig }[]): void {
@@ -122,6 +143,7 @@ interface LocalMachine {
  * is purely read-only against the remote.
  */
 async function preDeployProvisioning(
+  machineName: string,
   localConfig: Awaited<ReturnType<typeof configService.getLocalConfig>>,
   machine: LocalMachine,
   sshPrivateKey: string,
@@ -133,7 +155,11 @@ async function preDeployProvisioning(
     // therefore hashes match against previously-deployed unit files).
     return REMOTE_INSTALL_PATH;
   }
-  outputService.info(`Provisioning renet to ${machine.ip}...`);
+  if (renetMayUpload('provision')) {
+    outputService.info(`Provisioning renet to ${machine.ip}...`);
+  } else if (!mayOfferReplacement('provision')) {
+    outputService.info(`Using the installed renet on ${machine.ip} (${renetHoldReason()}).`);
+  }
   const { remotePath } = await acquireRemoteRenet(
     'provision',
     { renetPath: localConfig.renetPath },
@@ -141,7 +167,12 @@ async function preDeployProvisioning(
     sshPrivateKey,
     { debug: options.debug }
   );
-  const repoRefresh = await refreshRepoLicensesBatch(machine, sshPrivateKey, remotePath);
+  const repoRefresh = await refreshRepoLicensesBatch(
+    machineName,
+    machine,
+    sshPrivateKey,
+    remotePath
+  );
   if (repoRefresh.scanned > 0 && repoRefresh.valid === 0) {
     throw new Error(
       'Backup deployment aborted: no valid repo licenses are available on target machine'
@@ -210,7 +241,9 @@ export async function buildStrategyCommandsForMachine(
   machineName: string,
   strategyName: string,
   strategy: ScheduledStrategy,
-  remoteRenetPath: string
+  remoteRenetPath: string,
+  accountServer?: string,
+  renetHasStoreFlag = false
 ): Promise<string[]> {
   const specs = await resolveUnitSpecs(machineName, [{ name: strategyName, config: strategy }]);
   const commands: string[] = [];
@@ -222,7 +255,12 @@ export async function buildStrategyCommandsForMachine(
         enabled,
         spec.datastore.path,
         remoteRenetPath,
-        spec.scope
+        spec.scope,
+        undefined,
+        spec.strategy.schedule,
+        undefined,
+        accountServer,
+        renetHasStoreFlag
       ).commands
     );
   }
@@ -288,16 +326,15 @@ export async function expectedScheduleUnits(machineName: string): Promise<Expect
 }
 
 /**
- * `backup status` body: per unit, scheduled or not, last run and result, next run, and a missed-run
- * verdict. Prints the table and sets exit code 1 when any unit is unscheduled or missed a run.
+ * The units `backup status` reads: the machine's expected scheduled units, narrowed to one strategy. A named
+ * strategy with no unit spec is still listed under its own name, so status reports it as not scheduled.
  */
-export async function reportBackupScheduleStatus(
+export async function expectedStatusUnits(
   machineName: string,
   strategyFilter?: string
-): Promise<ScheduleStatusRow[]> {
+): Promise<ExpectedScheduleUnit[]> {
   const localConfig = await configService.getLocalConfig();
-  const machine = localConfig.machines[machineName];
-  if (!machine) throw new Error(`Machine "${machineName}" not found`);
+  if (!localConfig.machines[machineName]) throw new Error(`Machine "${machineName}" not found`);
   const expected = (await expectedScheduleUnits(machineName)).filter(
     (u) => strategyFilter === undefined || u.strategyName === strategyFilter
   );
@@ -309,36 +346,64 @@ export async function reportBackupScheduleStatus(
       schedule: strategy?.schedule ?? '',
     });
   }
-  const sshPrivateKey =
-    localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
-  const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
-  try {
-    const rows = await readScheduleStatus(lease.sftp, expected);
-    if (rows.length === 0) {
-      outputService.warn(
-        `No backup strategy is bound to ${machineName}, so nothing is scheduled. Bind one with: rdc backup strategy bind <name> -m ${machineName}`
-      );
-      setExitCode(1);
-      return rows;
-    }
-    outputService.print(
+  return expected;
+}
+
+/**
+ * `backup status` render: per unit, scheduled or not, last run and result, next run, and a missed-run verdict, from
+ * the `systemctl show` text a `backup-status` job returned. Prints the table and sets exit code 2 when any unit could
+ * not be read, else 1 when any unit is unscheduled or missed a run ({@link scheduleStatusExitCode}).
+ */
+export function renderBackupScheduleStatus(
+  machineName: string,
+  expected: ExpectedScheduleUnit[],
+  showOutput: string,
+  targets?: StatusTargets
+): ScheduleStatusRow[] {
+  const unreadCause = showOutput.trim() === '' ? 'the read returned no output' : undefined;
+  const rows = buildScheduleStatusRows(
+    expected,
+    parseFoldedSystemctlShow(showOutput),
+    Date.now(),
+    unreadCause
+  );
+  if (rows.length === 0) {
+    outputService.warn(
+      `No backup strategy is bound to ${machineName}, so nothing is scheduled. Bind one with: rdc backup strategy bind <name> -m ${machineName}`
+    );
+    setExitCode(1);
+    return rows;
+  }
+  // One row per destination store of each unit's strategy: the store, its newest snapshot, last verify and clean-up state ride beside the unit's own columns.
+  outputService.print(
+    expandStatusRows(
       rows.map((r) => ({
         strategy: r.strategy,
         unit: r.unit,
-        status: r.scheduled ? 'scheduled' : 'not scheduled',
+        status: statusLabel(r),
         lastRun: r.lastRun,
         result: r.result,
         nextRun: r.nextRun,
         missed: r.missed ? (r.reason ?? BACKUP_DEFAULTS.MISSED_REASON_FALLBACK) : '-',
       })),
-      'table'
+      targets
+    ),
+    getOutputFormat()
+  );
+  const unread = rows.filter((r) => r.unread);
+  if (unread.length > 0) {
+    outputService.error(
+      `Could not read the backup schedule status of ${unread.length} unit(s) on ${machineName}${unread[0].reason ? `: ${unread[0].reason}` : ''}. This is not a verdict that no timer exists.`
     );
-    const code = scheduleStatusExitCode(rows);
-    if (code !== 0) setExitCode(code);
-    return rows;
-  } finally {
-    lease.release();
   }
+  const code = scheduleStatusExitCode(rows);
+  if (code !== 0) setExitCode(code);
+  return rows;
+}
+
+function statusLabel(r: ScheduleStatusRow): string {
+  if (r.unread) return 'unreadable';
+  return r.scheduled ? 'scheduled' : 'not scheduled';
 }
 
 function sftpTocKeyTransport(sftp: SFTPClient): TocKeyTransport {
@@ -397,7 +462,7 @@ async function installTocKeys(
 export async function pushBackupSchedule(
   machineName: string,
   options: PushScheduleOptions = {}
-): Promise<void> {
+): Promise<PushScheduleResult> {
   const localConfig = await configService.getLocalConfig();
   const machine = localConfig.machines[machineName];
   if (!machine) {
@@ -419,15 +484,28 @@ export async function pushBackupSchedule(
   const sshPrivateKey =
     localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
 
-  const remoteRenetPath = await preDeployProvisioning(localConfig, machine, sshPrivateKey, options);
+  const remoteRenetPath = await preDeployProvisioning(
+    machineName,
+    localConfig,
+    machine,
+    sshPrivateKey,
+    options
+  );
 
   const lease = await machineConnections.acquireFor(machine, sshPrivateKey);
   const sftp = lease.sftp;
+  let released = false;
 
   try {
     const cpuCount = await resolveMachineCpuCount(sftp);
     await installTocKeys(sftp, machineName, specs, remoteRenetPath, options);
-    const desired = computeDesiredUnits(specs, remoteRenetPath, cpuCount);
+    const desired = computeDesiredUnits(
+      specs,
+      remoteRenetPath,
+      cpuCount,
+      await accountServerForRenet(sftp, remoteRenetPath, expectedAccountServerOrigin()),
+      await storeFlagForRenet(sftp, remoteRenetPath)
+    );
     const remote = await readRemoteState(sftp, Array.from(desired.keys()));
     const plan = computeReconcilePlan(desired, remote);
     applyInFlightGate(plan, options.force ?? false);
@@ -436,20 +514,57 @@ export async function pushBackupSchedule(
       outputService.info(`Dry-run: plan for ${machineName}`);
       emitPlanSummary(plan);
       if (options.debug) printDryRunUnitBodies(plan);
-      return;
+      return 'dry-run';
     }
 
     emitPlanSummary(plan);
     if (!plan.daemonReloadNeeded) {
       outputService.info(`No changes needed on ${machineName}`);
-      return;
+      return 'unchanged';
     }
 
-    await executePlan(sftp, plan, options);
-    await verifyPostDeploy(sftp, plan);
-  } finally {
+    // The reads are done: release the connection before the job opens its own.
     lease.release();
+    released = true;
+    return await applyScheduleJob(machineName, buildSchedulePayload(plan, options), options);
+  } finally {
+    if (!released) lease.release();
   }
+}
+
+/**
+ * Apply the plan as ONE `backup-schedule` job. The unit bodies (env files carry credentials) ride the job's stdin
+ * payload, never an argument or a step param.
+ */
+async function applyScheduleJob(
+  machineName: string,
+  payload: SchedulePayload,
+  options: PushScheduleOptions
+): Promise<PushScheduleResult> {
+  const outcome = await runCommandJob(
+    'backup schedule',
+    {
+      functionName: 'backup-schedule',
+      machineName,
+      commandKind: { name: 'backup-schedule', payload: JSON.stringify(payload) },
+      debug: options.debug,
+      captureOutput: true,
+    },
+    options.steps ?? []
+  );
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return 'pending';
+  }
+  if (!outcome.result.success) {
+    const detail = outcome.result.error ?? outcome.result.stderr?.trim() ?? '';
+    throw new Error(
+      `Applying the backup schedule on ${machineName} failed${detail ? `: ${detail}` : ''}`
+    );
+  }
+  if (options.debug && outcome.result.stdout) outputService.info(outcome.result.stdout.trimEnd());
+  return 'applied';
 }
 
 /** @internal Exported for unit tests and ad-hoc backup execution. */
@@ -465,5 +580,6 @@ export const _testing = {
   applyInFlightGate,
   parseStrategyFromPath,
   parseSystemctlShow,
+  preDeployProvisioning,
 };
 export { sanitizeBackupOutput };

@@ -75,7 +75,7 @@ See the [AI Agent Safety & Guardrails](https://www.rediacc.com/en/docs/ai-agents
 | `config remote {enable,disable,status,refresh}` | Link to the encrypted config store |
 | `machine query` | Machine status (SSH + `renet list all`) |
 | `repo up / down / fork / takeover / sync` | Repository deployment + sync |
-| `term connect -m <machine> -r <repo>` | SSH into a sandboxed repo context |
+| `term connect <repo>@<machine>` | SSH into a sandboxed repo context |
 | `vscode connect` | VS Code Remote-SSH helper |
 | `doctor` | Environment diagnosis |
 | `update` | Self-update |

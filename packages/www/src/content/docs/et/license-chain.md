@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: et
-sourceHash: "d6d980d721be2373"
-sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
+sourceHash: "78e880294cc0bf15"
+sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
 ---
 
 # Litsentsiahelad ja delegeerimine
@@ -118,7 +118,7 @@ Delegeerimissertifikaat sisaldab järgmist:
 
 ### Kuidas delegeerimine toimib
 
-1. Ettevõtte administraator genereerib Ed25519 võtmepaari kohapealsel serveril.
+1. Administraator genereerib Ed25519 võtmepaari kohapealsel serveril.
 2. Administraator taotleb delegeerimissertifikaati ülesvoolu serverilt:
    ```
    POST /admin/delegation-certs
@@ -322,8 +322,8 @@ Uuendamistaotle manifest jäädvustab ahela pea genereerimise hetkel. Kuni manif
 
 Kui uus sertifikaat laaditakse kohapealsele serverile tagasi, valideerib `/onprem/cert-upload`, et uue sertifikaadi `genesisSequence` seostub endiselt kohaliku väljastamisregistri teadaoleva kirjega:
 
-- Kui `cert.genesisSequence > localHead.sequence` -- tagastab `409 CHAIN_HEAD_BEHIND` (ülesvoolu server on hargnenud ahelal).
-- Kui `cert.genesisSequence > 0` ja kohaliku registri kirjel sel järjekorranumbril on erinev `chainHash` kui `cert.genesisHash` -- tagastab `409 CHAIN_FORK_ON_UPLOAD` (kohalik ahel on harunenud).
+- Kui `cert.genesisSequence > localHead.sequence`, tagastab `409` koodiga `chain-ahead`.
+- Kui `cert.genesisSequence > 0` ja kohaliku registri kirjel sel järjekorranumbril on erinev `chainHash` kui `cert.genesisHash`, tagastab `409` koodiga `chain-fork`.
 - Vastasel juhul aktsepteeritakse sertifikaat. Tulevased väljastamised jätkuvad `localHead.sequence + 1`-st.
 
 See tähendab, et **transiidi ajal ei ole kirjutamise külmutamine vajalik**. Ahel laieneb loomulikult mõlemal poolel. Vastab sellele, kuidas X.509 sertifikaadi uuendamine käitleb lennul olevaid seerianumbreid.

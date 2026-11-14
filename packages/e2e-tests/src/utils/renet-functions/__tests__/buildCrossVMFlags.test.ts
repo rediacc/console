@@ -26,6 +26,18 @@ describe('RenetFunctionsTestRunner.buildCrossVMFlags', () => {
     }
   });
 
+  it("carries each peer's known-hosts record on a cross-VM verb", () => {
+    const flags = crossVMFlags()({
+      function: 'backup_push',
+      sourceMachine: 'a',
+      destMachine: 'b',
+      sourceKnownHosts: 'c3Jj',
+      destKnownHosts: 'ZGVzdA==',
+    });
+    expect(flags).toContain(' --src-known-hosts c3Jj');
+    expect(flags).toContain(' --dest-known-hosts ZGVzdA==');
+  });
+
   it('gives other verbs the machine flags and neither user nor key', () => {
     const flags = crossVMFlags()({
       function: 'backup_list',

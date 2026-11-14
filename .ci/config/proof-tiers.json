@@ -15,6 +15,7 @@
         "private/renet/embed-assets.lock.json"
       ],
       "live": ["hostinger"],
+      "local": ["vm-check", "hostinger", "e2e-local"],
       "renet_build": true
     },
     "cli-remote": {
@@ -23,11 +24,13 @@
         "packages/cli/src/services/repo/repo-key-deployment.ts"
       ],
       "live": ["hostinger"],
+      "local": ["vm-check", "hostinger", "e2e-local"],
       "renet_build": true
     },
     "cli": {
       "globs": ["packages/cli/src/**"],
       "live": ["bench", "hostinger"],
+      "local": ["bench-cli", "hostinger"],
       "renet_build": false
     },
     "account": {
@@ -37,21 +40,25 @@
         "packages/shared/src/**"
       ],
       "live": ["bench"],
+      "local": ["deploy-bench", "d1-migrations"],
       "renet_build": false
     },
     "account-worker": {
       "globs": ["workers/account/**"],
       "live": ["bench"],
+      "local": ["deploy-bench"],
       "renet_build": false
     },
     "proxy": {
       "globs": ["workers/proxy/src/**", "workers/proxy/wrangler*.toml", "workers/proxy/Dockerfile"],
       "live": ["bench"],
+      "local": ["deploy-proxy-bench"],
       "renet_build": false
     },
     "www": {
       "globs": ["packages/www/src/**", "workers/www/**"],
       "live": ["bench"],
+      "local": ["www-local"],
       "renet_build": false
     }
   },
@@ -85,6 +92,9 @@
         ".ci/rediacc_ci/drills/session_teardown.py": ["renet"],
         ".ci/rediacc_ci/drills/converge_preflight.py": ["renet"],
         ".ci/rediacc_ci/drills/gpu_grants.py": ["renet"],
+        ".ci/rediacc_ci/drills/lifecycle_privilege.py": ["renet"],
+        ".ci/rediacc_ci/drills/down_before_kill.py": ["renet"],
+        ".ci/rediacc_ci/drills/repo_resources.py": ["renet"],
         ".ci/rediacc_ci/drills/vm_ssh.py": ["renet", "account"],
         ".ci/rediacc_ci/drills/wire.py": ["renet", "account"],
         ".ci/rediacc_ci/drills/backup_check_trigger.py": ["renet"]
@@ -100,27 +110,30 @@
       "fleets": {
         "worker": {
           "ips": ["192.168.111.1", "192.168.111.11"],
-          "up": "./rdc.sh ops up --basic"
+          "up": "VM_DSK=48 ./rdc.sh ops up --basic"
         },
         "two-workers": {
           "ips": ["192.168.111.1", "192.168.111.11", "192.168.111.12"],
-          "up": "./rdc.sh ops up"
+          "up": "VM_DSK=48 ./rdc.sh ops up"
         },
         "ceph": {
           "ips": ["192.168.111.1", "192.168.111.21", "192.168.111.22", "192.168.111.23"],
-          "up": "VM_WORKERS='11 12' VM_CEPH_NODES='21 22 23' ./rdc.sh ops up"
+          "up": "VM_DSK=48 VM_WORKERS='11 12' VM_CEPH_NODES='21 22 23' ./rdc.sh ops up"
         },
         "ceph-workers": {
           "ips": ["192.168.111.1", "192.168.111.11", "192.168.111.12", "192.168.111.21", "192.168.111.22"],
-          "up": "VM_WORKERS='11 12' VM_CEPH_NODES='21 22 23' ./rdc.sh ops up"
+          "up": "VM_DSK=48 VM_WORKERS='11 12' VM_CEPH_NODES='21 22 23' ./rdc.sh ops up"
         },
         "k3s-ceph": {
           "ips": ["192.168.111.1", "192.168.111.11", "192.168.111.12", "192.168.111.21", "192.168.111.22", "192.168.111.23"],
-          "up": "VM_WORKERS='11 12' VM_CEPH_NODES='21 22 23' ./rdc.sh ops up"
+          "up": "VM_DSK=48 VM_WORKERS='11 12' VM_CEPH_NODES='21 22 23' ./rdc.sh ops up"
         },
         "second-group": {
           "ips": ["192.168.111.1", "192.168.111.11", "192.168.112.5", "192.168.112.51"],
-          "up": "./rdc.sh ops up --basic, then group B as ct-tests.yml 'Boot second KVM group (B)' does: VM_NET=renet12 VM_NET_BASE=192.168.112 VM_NET_OFFSET=0 VM_BRIDGE=5 VM_WORKERS=51 VM_CEPH_NODES='' PROVISION_CEPH_CLUSTER=false private/renet/bin/renet ops up --force --parallel"
+          "up": "VM_DSK=48 ./rdc.sh ops up --basic",
+          "also_up": [
+            "VM_NET=renet12 VM_NET_BASE=192.168.112 VM_NET_OFFSET=0 VM_BRIDGE=5 VM_WORKERS=51 VM_CEPH_NODES='' PROVISION_CEPH_CLUSTER=false ./rdc.sh ops up --force --parallel"
+          ]
         }
       },
       "areas": {
@@ -177,7 +190,7 @@
               "what": "suite 23, rdc-driven repo migrate routing across two workers",
               "cmd": [
                 "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11 12\"",
-                "BRIDGE_TEST_SKIP_RESET=1 PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test 23-cli-migrate-routing --fail-on-skip"
+                "CLI_SUITE=1 BRIDGE_TEST_SKIP_RESET=1 PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test 23-cli-migrate-routing --fail-on-skip"
               ]
             },
             {
@@ -213,7 +226,7 @@
               "what": "suite 11, connectivity, setup, push/pull and parallel execution across workers .11 and .12",
               "cmd": [
                 "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11 12\"",
-                "BRIDGE_TEST_SKIP_RESET=1 PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test 11-multi-machine --fail-on-skip"
+                "PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test 11-multi-machine --fail-on-skip"
               ]
             }
           ],
@@ -281,7 +294,7 @@
               "fleet": "worker",
               "what": "the e2e_k8s job: a k8s repo running k3s inside a datastore-backed image on one worker",
               "cmd": [
-                "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11\" --vm-ram-worker 4096",
+                "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11\" --vm-ram-worker 4096 --k8s",
                 "PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.k8s.config.ts --fail-on-skip"
               ]
             },
@@ -291,7 +304,7 @@
               "fleet": "k3s-ceph",
               "what": "the e2e_k8s_ceph job: a datastore cluster on Ceph",
               "cmd": [
-                "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11 12\" --vm-ceph-nodes \"21 22 23\" --vm-ram-worker 3072 --vm-ram-ceph 2560",
+                "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11 12\" --vm-ceph-nodes \"21 22 23\" --vm-ram-worker 3072 --vm-ram-ceph 2560 --k8s",
                 "PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.k8s-ceph.config.ts --fail-on-skip"
               ]
             },
@@ -301,8 +314,8 @@
               "fleet": "k3s-ceph",
               "what": "the e2e_k8s_multinode job: a multinode cluster, and suite 24's cluster licensing (CLUSTER_LICENSING_SUITE=1)",
               "cmd": [
-                "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11 12\" --vm-ceph-nodes \"21 22 23\" --vm-ram-worker 3072 --vm-ram-ceph 2560",
-                "CLUSTER_LICENSING_SUITE=1 PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.k8s-multinode.config.ts --fail-on-skip"
+                "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11 12\" --vm-ceph-nodes \"21 22 23\" --vm-ram-worker 3072 --vm-ram-ceph 2560 --k8s",
+                "CLUSTER_LICENSING_SUITE=1 PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --config playwright.k8s-multinode.config.ts --grep-invert \"licensing on the fleet\" --fail-on-skip"
               ]
             }
           ],
@@ -328,6 +341,16 @@
               "receipt": "backup-check",
               "what": "the backup drills' VERIFIED receipt for this tree (rediacc_ci.drills.backup_check_trigger.admit, the receipt block_backup_unverified_push reads)",
               "cmd": ["./run.sh drill backup", "./run.sh drill backup-onprem"]
+            },
+            {
+              "id": "backup-large-2g",
+              "kind": "external",
+              "fleet": "worker",
+              "what": "suite 31 at a 2 GiB seed: the incremental byte, no-rehash and proportional time budget, and the anchor-deleted control that must breach it (VM_DSK=48 in the fleet's up keeps FREE_GIB_NEEDED=17 true for a fleet this run brings up; a fleet already running with a smaller disk fails the suite's free-space assertion, which names VM_DSK, rather than running weaker, so `./rdc.sh ops down` first. The disks are thin, the preflight counts a fill ratio of the virtual size)",
+              "cmd": [
+                "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11\"",
+                "K10_SEED_GB=2 BACKUP_LARGE_REPO_SUITE=1 BRIDGE_TEST_SKIP_RESET=1 PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane -- python3 -m rediacc_ci.testrun.e2e --workers 1 --test 31-backup-large-repo --fail-on-skip"
+              ]
             }
           ],
           "suites": [
@@ -335,7 +358,8 @@
             "packages/e2e-tests/tests/15-storage-backup.test.ts",
             "packages/e2e-tests/tests/25-backup-chunk-store.test.ts",
             "packages/e2e-tests/tests/26-backup-storage-cli.test.ts",
-            "packages/e2e-tests/tests/27-backup-browse-at.test.ts"
+            "packages/e2e-tests/tests/27-backup-browse-at.test.ts",
+            "packages/e2e-tests/tests/31-backup-large-repo.test.ts"
           ],
           "ci_jobs": ["e2e_workers", "e2e_backup_browse_at"]
         }
@@ -343,6 +367,62 @@
     },
     "live": {
       "baseline_at": "2026-10-28",
+      "local_about": [
+        "agent/plans/PLAN-local-first-delivery.md Design L, operator ruling R2: \"The planner should really find no way to test/deploy locally to go with github.\"",
+        "`local_runners` names each way to prove a change from this machine, with no GitHub run: `run` is the command list, `what` what it proves. Every surface's `local` names at least one of them (rediacc_ci.proof.surfaces refuses a surface with none).",
+        "`github_waits` is the one phrase list a plan box that waits on GitHub matches. An open box that matches carries `GitHub-only: <CD|CI parity|native-runner|soak|preview> -- <why no local path, 20+ chars>` on its line or in an indented `(corrected ...)` line under it (LP8, wl_plandeps.github_wait_findings; docs/agent-reference/plan-records.md)."
+      ],
+      "local_runners": {
+        "vm-check": {
+          "what": "the renet and account VM battery on the local KVM fleet, plus the touched areas' legs",
+          "run": ["npm run vm:check -- --changed"]
+        },
+        "hostinger": {
+          "what": "the branch build on the hostinger machine (renet provisioned from this tree, the CLI run against it)",
+          "run": ["./rdc.sh --config eu-bench machine status hostinger -o json"]
+        },
+        "e2e-local": {
+          "what": "the e2e suites on the local KVM fleet (.claude/agents/e2e-local.md), never a CI ct-tests run; append --test <file> to narrow to one suite",
+          "run": [
+            "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env",
+            "PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1"
+          ]
+        },
+        "bench-cli": {
+          "what": "the CLI built from this tree against the bench account server",
+          "run": ["./rdc.sh --config eu-bench subscription status"]
+        },
+        "deploy-bench": {
+          "what": "the account Worker and its D1 migrations deployed from this tree to bench",
+          "run": ["PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench"]
+        },
+        "d1-migrations": {
+          "what": "the account D1 migrations applied to ephemeral clones of every regional production database",
+          "run": ["PYTHONPATH=.ci python3 -m rediacc_ci.deploy.test_d1_migrations"]
+        },
+        "deploy-proxy-bench": {
+          "what": "the proxy Worker and executor image deployed from this tree to bench, then its smoke",
+          "run": [
+            "PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target bench",
+            "PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target bench --smoke-only"
+          ]
+        },
+        "www-local": {
+          "what": "the site built and served from this tree (no bench www Worker exists yet; see tiers.live.checks.www-smoke)",
+          "run": ["cd packages/www && npm run build && npm run preview"]
+        }
+      },
+      "github_waits": [
+        "released",
+        "after the merge",
+        "CD",
+        "nightly",
+        "preview deploy",
+        "CI run",
+        "ct-tests run",
+        "run id",
+        "ci-trace"
+      ],
       "targets": {
         "bench": {"origin_wk": "WK_BENCH_ORIGIN"},
         "hostinger": {"config": "eu-bench", "machines": ["hostinger"]}
@@ -361,8 +441,8 @@
         "proxy-ready": {
           "targets": ["bench"],
           "surfaces": ["proxy"],
-          "deploy": "unrecorded",
-          "what": "deploy_proxy --smoke-only against bench: /v1/health 200, /v1/server-info 401 and /v1/ready on the newest deployment; no deploy record ties that version to a console head yet, so a run is NOT_VERIFIED not-live",
+          "deploy": "bench-proxy-cache",
+          "what": "deploy_proxy --smoke-only against bench: /v1/health 200, /v1/server-info 401 and /v1/ready on the newest deployment; the version deploy_proxy --target bench recorded after its smoke passed is the one serving 100% on proxy-bench at check time",
           "steps": [
             {"id": "smoke", "argv": ["python3", "-m", "rediacc_ci.deploy.deploy_proxy", "--target", "bench", "--smoke-only"], "timeout_s": 900}
           ]

@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: et
-sourceHash: "243d934efa7d9d54"
-sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
+sourceHash: "677e95e38761776f"
+sourceCommit: "d1141cb40538b792a1c385b399ef948033e3139a"
 ---
 
 # Varundamine ja taastamine
@@ -45,6 +45,8 @@ Sellest ühest otsusest tulenevad kõik omadused.
 
 Kvooti loetakse **füüsiliste unikaalsete salvestatud baitidena**: see, mida pärast dedupleerimist tegelikult hoitakse, mitte teie hetktõmmiste loogiline kogusumma. Kolmkümmend hetktõmmist repositooriumist, mis muutub aeglaselt, maksavad peaaegu sama palju kui üks. `rdc backup usage` näitab salvestatud baite sinu kvoodi vastu, mis on tellimusepõhine number, mis algab 10 GB-st Community plaanil.
 
+Tasuta litsentsiga masinal pole majutatud varukoopiat ja varundusverbid keelduvad temast uuendamissõnumiga. Registreeri konto (Community pakett on tasuta) ja logi masin sellesse sisse, siis arvestatakse tema varukoopiad 10 GB majutatud salvestusruumi.
+
 ### Mida hetktõmmised vajavad
 
 Hetktõmmise üleslaadimine käib läbi konto-serveri, mis autoriseerib iga käivituse repositooriumi paigaldatud litsentsi vastu ja annab masinale lühiajalise kirjutusõiguse. Seega vajab see tee konto-serverit, mille masin saab kätte, ja litsentseeritud repositooriumi. Ilma nendeta lükatakse hetktõmmis tagasi, selle asemel et vaikselt vahele jätta, ja `rdc backup manifests`, `rdc backup usage` ning `rdc backup retention` ei leia midagi lugeda.
@@ -59,9 +61,9 @@ Masina-masina push ja pull ei vaja kumbagi. Need on otsene ülekanne kahe masina
 - **See ei ole pidev replikatsioon.** Hetktõmmis on hetk, mille sa jäädvustasid, ja sa võid kaotada kõik, mis on kirjutatud alates viimasest. Kui palju see on, sõltub sellest, kui sageli sa käivitad.
 - **Salvestatud objektid on üks kord kirjutatavad, mitte sertifitseeritud WORM.** Rakud kirjutatakse ainult-loomise tingimusega, masina saadav õigus ei saa midagi kustutada, ja kustutamised toimuvad serveripoolselt säilituspoliitika alusel. See on tõeline tõke kompromiteeritud masinale, mis hävitab oma varukopiad. See ei ole vastavussertifikaat ja seda ei auditeerita sellisena.
 
-### Üks sihtkohatüüp
+### Sihtkohad
 
-Tükksalvestuse varukoopiatel on üks sihtkohatüüp: teenuse majutatud tükksalvestus, millele pääseb ligi kontoserveri kaudu. Väliste salvestusotspunktide registrit ei ole, seega nimetavad `--to` ja `--from` käskudel `repo push` ja `repo pull` ainult masinat.
+Strateegia võib kirjutada hoidlasse `home`, teise majutatud regiooni või registreeritud kliendi ämbrisse (bucket), ja iga sihtkoht on eraldi taastepunkt. Hoidlad, sihtkoha hoidla nimetamine, taastamine käsuga `--from` ja sihtkohtade kaupa olek on lehel [Varunduse sihtkohad](/et/docs/backup-destinations). Käskudes `repo push` ja `repo pull` nimetavad `--to` ja `--from` endiselt ainult masinat.
 
 ### Tükksalvestuse käsud
 
@@ -92,6 +94,7 @@ rdc backup usage
 | `--dry-run` | Ainult planeeri: üleslaadimist ei toimu. Näitab, mis liiguks |
 | `--cold` | Peata konteinerid, külmuta, käivita uuesti, seejärel laadi üles. Ei saa kombineerida `--dry-run`-iga |
 | `--reseed` | Ära usalda kohalikku ankrut ja laadi üles täielik sisu. Laadib kõik uuesti üles ja arvestab kvoodi uuesti |
+| `--accept-identity-change` | Võta kujutis uueks lähtejoonaks, kui selle LUKS-i identiteet muutus või see kahanes. Laadib üles täieliku hetktõmmise ja ajastatud käivitus ei kanna seda kunagi |
 | `--read-bwlimit <limit>` | Piirang sellele, kui kiiresti hetktõmmis kettalt kujutist loeb, samades ühikutes nagu `--bwlimit` (vaikimisi `50M`, `0` = piiranguta) |
 | `--hash-parallelism <n>` | Räsitööliste arv (vaikimisi `1`, `0` = üks protsessori kohta, kuni `16`) |
 | `--debug` | Luba detailne väljund |
@@ -305,6 +308,7 @@ Strateegia saab deklareerida poliitika repositooriumidele, mida ta katab: `rdc b
 | `--keep-weekly <n>` | Säilita kõige uuem hetktõmmis igast neist nädalatest |
 | `--keep-monthly <n>` | Säilita kõige uuem hetktõmmis igast neist kuudest |
 | `--keep-yearly <n>` | Säilita kõige uuem hetktõmmis igast neist aastatest |
+| `--keep-within <duration>` | Säilita iga hetktõmmis, mis jääb voo kõige uuemast hetktõmmisest selle aja piiresse, näiteks `24h`; mõõdetakse kõige uuemast hetktõmmisest, mitte praegusest hetkest, nii et seiskunud voog ei kustuta oma aknast midagi |
 | `--stream <id>` | Rakenda poliitika ühele varundusvoole kogu repositooriumi vaikeväärtuse asemel |
 
 Anna vähemalt üks reegel. `set` asendab iga parameetri, mitte ei ühenda, seega antakse kogu poliitika iga kord uuesti. Reegliteta `set` lükatakse tagasi, selle asemel et käsitleda seda kui "ära säilita midagi", sest poliitika tühjendamiseks on olemas `clear`. `clear` eemaldab määratud poliitika, mistõttu hakkab uuesti kehtima paketi või serveri vaikeväärtus; see ei tähenda kunagi "ära säilita midagi" ega "säilita kõike".
@@ -325,6 +329,8 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 
 Aeg lahendatakse ainult selle repositooriumi hetktõmmiste hulgas selle lähtemasinal. Teiste masinate või sama liini forkide kirjutatud hetktõmmiseid ei arvestata, kui `--any-stream` ei laienda otsingut tahtlikult. Kui repositooriumi enda voogu ei saa kindlaks teha, lükatakse taaste tagasi ja küsitakse `--any-stream`, selle asemel et arvata.
 
+Kui repositooriumi hoiab mitu hoidlat, loeb taastamine hoidlast, mille uusim hetktõmmis läbis viimase kontrolli, ja liigub järgmisse hoidlasse, kui hoidla tõrgub. `--from <storeId>` loeb ühte nimetatud hoidlat ega lähe kunagi üle teisele. Vaata lehte [Varunduse sihtkohad](/et/docs/backup-destinations).
+
 Taastamine uue nime alla käsuga `--as` ei kirjuta midagi üle, seega on taastamise harjutus ohutu käivitada elava masina vastu. Taastamine juba olemasoleva nime alla lükatakse tagasi.
 
 | Valik | Kirjeldus |
@@ -334,14 +340,19 @@ Taastamine uue nime alla käsuga `--as` ei kirjuta midagi üle, seega on taastam
 | `-m, --machine <machine>` | Masin, kuhu taastada |
 | `--datastore <name>` | Taasta sellesse nimetatud andmehoidlasse, mille ühendatud masin seda majutab |
 | `--at <time>` | Taasta ajahetk: hetktõmmise id või RFC 3339 aeg |
+| `--from <storeId>` | Loe hetktõmmis sellest varundushoidlast. Ilma selleta loetakse hoidlat, kus on uusim kontrollitud hetktõmmis, ja hoidla tõrke korral järgmist hoidlat. Valikuga `--from` varuvarianti ei ole |
 | `--any-stream` | Koos `--at` arvesta ka teiste masinate ja selle liini forkide hetktõmmiseid |
 | `--up` | Juuruta taastatud repositoorium pärast ülekannet |
+| `--allow-unopenable` | Paiguta kujutis ka siis, kui repositooriumi paroolifraas seda ei ava (hetktõmmis paroolifraasi vahetuse eelsest ajast) |
+| `--salvage` | Jätka ka kadunud või riknenud tükkide korral ja jäta nende lahtrid aukudeks. Vajab `--as` |
 | `--health-window <seconds>` | Kui kaua jälgida juurutatud repositooriumi tervist |
 | `--health-timeout <seconds>` | Kui kaua oodata, kuni see saab terveks |
 | `-y, --yes` | Jäta kinnitus vahele |
 | `--debug` | Luba detailne väljund |
 
 Repositooriumi taastamine vajab selle LUKS-volitust, mis elab sinu konfiguratsioonis. Kui sul on konfiguratsiooni salvestus lubatud, tuleb see volitus tagasi koos sinu konfiguratsiooniga uuel masinal. Kui mitte, hoia konfiguratsiooni koopiat kuskil, kuhu ebaõnnestuv masin seda endaga kaasa ei võta.
+
+Taastamine kontrollib paroolifraasi enne, kui midagi paigutab. Kui kujutis on kokku pandud ning selle suurus ja LUKS-i päis on korras, proovib konfiguratsioonis olev paroolifraas seda avada. Kui see avaneb, teatab taastamine edust. Kui ei avane, taastamine ebaõnnestub ega paiguta midagi, ja kokkupandud kujutis jääb ettevalmistatuks, et uus katse õige paroolifraasiga ei peaks seda uuesti alla laadima. Paroolifraasi vahetuse eelne hetktõmmis avaneb ainult vana paroolifraasiga; `--allow-unopenable` paigutab sellise kujutise ikkagi ja ütleb, et seda ei avatud.
 
 ### Taastamise tõestamine igal masinal
 
@@ -368,6 +379,132 @@ rdc repo pull shop:nightly@server-1 --from server-2
 ```
 
 Täielikud valikute nimekirjad on [Varukoopia saatmine teise masinasse](#push-a-backup-to-another-machine) ja [Varukoopia tõmbamine teisest masinast](#pull-a-backup-from-another-machine) all.
+
+## Varukoopiate kontrollimine ja parandamine
+
+Üleslaaditud hetktõmmis ei ole veel hetktõmmis, mille saab taastada. Igal hetktõmmisel on kontrollimise olek ja allpool kirjeldatud kontrollid liigutavad seda.
+
+### Kontrollimise redel
+
+| Olek | Määrab | Tõestab |
+|-------|--------|--------|
+| `unverified` | Iga uus hetktõmmis | Veel mitte midagi |
+| `verified` | Valikkontroll pärast käivitust, `--deep` või puhas `--store` läbimine | Masina ankur või salvestatud tükid vastavad oma räsidele. Selle sees olevat failisüsteemi ei hinnata |
+| `proven` | `rdc backup check` või `--restore-test` | Paroolifraas avab päris sisu |
+| `failed` | Iga kontroll, mis leidis probleemi | Sellele ei tohi toetuda |
+
+`failed` hetktõmmis jääb ebaõnnestunuks, kuni läbib kontroll, mis luges samu andmeid. Säilitamine hoiab lisaks viimaste arvule iga voo uusimat `verified` ja uusimat `proven` hetktõmmist, mis ei ole `failed`, nii et halbade ööde jada ei suuda välja suruda iga head versiooni. Ühe nende kahe hetktõmmise kustutamisest keeldutakse.
+
+```bash
+rdc backup verify my-app --deep
+rdc backup verify my-app --store
+rdc backup verify my-app --restore-test
+```
+
+`--deep` arvutab masinas iga lahtri räsi uuesti. `--store` laseb serveril arvutada iga salvestatud tüki räsi uuesti ja nimetada iga puuduva või riknenud tüki. `--restore-test` taastab ankru hetktõmmise ajutise nime all otse hoidlast, võrdleb seda, salvestab tulemuse ja kustutab koopia. Neid kolme ei saa kombineerida.
+
+### Kontrollimise ajakava
+
+`rdc backup schedule` lisab kontrolli genereeritavatele ühikutele. Hetktõmmise teenus lõpeb juhuslike lahtrite valikkontrolliga ja ebaõnnestunud hetktõmmist ei märgita kunagi kontrollituks. Päevane taimer nihutatud ajal käivitab iga kord ühe repositooriumi täieliku kontrolli piirangu `CPUQuota=100%` all ja liigub repositooriumide vahel ringiratast: tsükkel on öödes 7 ja repositooriumide arvu suurem väärtus. Strateegia valikuline `verify` plokk häälestab seda väljadega `spotAfterRun`, `deepSchedule` (cron-avaldis) ja `off`, mis ei genereeri ei valikkontrolli ega taimerit.
+
+Ajastatud ühikutel ei ole paroolifraasi ja see on kavatsuslik, mistõttu kaks kontrolli, mis seda vajavad, `rdc backup check` ja `--restore-test`, jooksevad CLI-st, kus konfiguratsioon asub. Mõistlik rütm on esimest kord kuus ja teist kord kvartalis.
+
+### Paroolifraasi tõestamine
+
+```bash
+rdc backup check my-app
+```
+
+`rdc backup check` avab paroolifraasiga hiljutise hetktõmmise salvestatud loendi, taastab ühe faili ajutisse kataloogi, võrdleb seda loendis oleva suurusega ning salvestab `proven` või `failed`. Kustutatakse ainult ajutine kataloog. `--path <file>` valib faili; vaikimisi on selleks väikseim mittetühi fail. Hetktõmmisest, millel pole salvestatud loendit, teatatakse selgelt ja see ei muutu `proven` olekusse.
+
+### Parandamine ja päästmine
+
+```bash
+rdc backup repair my-app --dry-run
+rdc backup repair my-app
+rdc backup restore my-app --at <snapshot-id> --as my-app-salvage --salvage
+```
+
+Tüki võti on tema baitide räsi, seega salvestatud objekt, mille räsi ei vasta võtmele, ei saa kunagi taastamist rahuldada. `rdc backup repair` laseb serveril iga riknenud objekti uuesti lugeda, kustutada see ainult siis, kui see on ikka vale, ja laadida lahter üles selle masina ankrust pärast räsi uuesti arvutamist. See keeldub töötamast, kuni varukoopia hoiab liini, nimetab hetktõmmised, mis riknenud tükke kasutasid, ja märgib need `failed`. Tükki, mida masina ankur ei sisalda, ei saa parandada ja käsk lõpeb nullist erineva koodiga. `--dry-run` ei muuda midagi.
+
+`--salvage` on mõeldud hetktõmmisele, mida ei saa parandada. See taastab ainult uue nime alla võtmega `--as`, mitte kunagi olemasoleva repositooriumi peale, kirjutab iga halva lahtri august, loetleb augud baidivahemike kaupa ning lõpeb nullist erineva koodiga ja olekuga `restored-damaged`. Auk LUKS-i päises muudab kujutise avamatuks ja aruanne ütleb seda. Üksik fail, mis asub halvast lahtrist eemal, taastub `--path` abil endiselt puhtalt.
+
+### Loendi võtmed
+
+Hetktõmmise sirvimisloend on pitseeritud avaliku võtmega, et masin saaks seda kirjutada ilma paroolifraasi omamata. CLI tuletab selle võtme repositooriumi volitusest ja paigaldab avaliku poole, kui ajakava juurutatakse. Masinat, millel on juba teistsugune võti, hoiatatakse repositooriumi nime järgi ja seda ei kirjutata üle.
+
+```bash
+rdc backup toc-key sync my-app --dry-run
+rdc backup toc-key sync my-app --replace
+```
+
+`--replace` paigaldab tuletatud võtme teistsuguse asemele ja saadab tõestuseks paroolifraasi. Repositoorium, millel on võti, aga pole ei võtmefaili ega haakepunkti, ei saa loendit ja ühiku logi ütleb seda. Selline hetktõmmis taastub endiselt tervikuna; loendit vajavad ainult sirvimine ja `rdc backup check`.
+
+### Rikketeavitused
+
+Ebaõnnestunud hetktõmmis või kontroll jõuab kontole rikkearuande kaudu ja voogu, mis lakkab pärast armuaega aru andmast, märgitakse samuti. Konto saadab tellimuse kohta päevas ühe kokkuvõtliku e-kirja portaali Teavituste lehe varundamise tervise eelistuse järgi, mis on vaikimisi sisse lülitatud. `rdc machine health` näitab ebaõnnestunud kontrolli hoiatusena ja lõpeb nullist erineva koodiga. Voog, millel on deklareeritud siht ja mis ei ole oma järgmise käivituse oodatud ajaks teatanud või mille kolm viimast käivitust igaüks sihi mööda lasid, saadab oma hoiatuse, voo kohta kuni üks 6 tunni jooksul, nimetades sihi, saavutatud näitaja ja põhjuse. Tuvastusviivitus võrdub hooldusringi intervalliga ehk ühe tunniga, seega võib hoiatus tulla kuni tund pärast möödalaskmist. Sihita voog jääb päevaülevaatesse.
+
+## Kriitilise taseme varukoopiad
+
+Repositoorium, mis tohib kaotada minuteid, mitte päeva, deklareerib kaitsesihi. Hetktõmmised käivad siis lühikese intervalliga, muutunud lahtrid laaditakse üles igal korral ja konto jälgib sihti.
+
+### Sihi deklareerimine
+
+```bash
+# Mõõda, kui palju käivituste vahel muutub, seejärel loe prognoosi ja lahtri soovitust.
+rdc backup churn mail --samples 12 --interval 5m
+
+# Deklareeri 15-minutiline siht ühele repositooriumile strateegias.
+rdc backup strategy set nightly-hot --repo-rpo mail=15m
+
+# Või üks siht igale repositooriumile, mida strateegia katab (vähemalt 5m; none eemaldab selle).
+rdc backup strategy set nightly-hot --rpo 15m
+```
+
+Siht on kaotusaken: aeg viimase muudatuse, mille taastamine veel tagasi tuua suudab, ja rikke vahel, kaasa arvatud üleslaadimiseks kuluv aeg. Käivitus, mis lõpeb sihist hiljem, loetakse möödalaskmiseks ka siis, kui hetktõmmis ise õnnestub. `rdc machine health` näitab saavutatud näitajat sihi kõrval. Sihi seadmisel prinditakse churn-mõõtmise põhjal igakuine kuluhinnang; mõõtmiseta repositooriumi lükatakse tagasi, kuni on käivitatud `rdc backup churn <repo>` või antud `--no-estimate`. `--dry-run` näitab muudatust seda kirjutamata.
+
+Käivitus pärib hoidlalt ainult neid lahtreid, mis on eelmisest hetktõmmisest muutunud, ning lisaks 16 muutumatu lahtri veerevat valimit, mida hoidla peab ikka veel hoidma. Kui valimi lahter puudub, pärib see käivitus kõike ja laadib üles selle, mis on kadunud. Muutumatu repositoorium salvestab uue hetktõmmise asemel käivituse `unchanged`. Iga käivitus on piiratud tähtajaga, nii et rippuv käivitus tapetakse ja loetakse möödalaskmiseks, selle asemel et taimer vaikselt seisma jääks.
+
+Ühe masina repositooriumid jagavad ühte käivituskohta, seega ei jookse kaks sihti kunagi kahte üleslaadimist korraga.
+
+### Varundamiseelne konks
+
+Repositoorium saab oma rakenduse külmutamise ümber ise vaikseks panna. Selleks on kaks valikulist funktsiooni tema Rediaccfile'is.
+
+```bash
+backup_prepare() { docker exec db psql -c "CHECKPOINT"; }
+backup_finish()  { :; }
+```
+
+Kuuma käivituse korral jookseb `backup_prepare`, failisüsteem sünkroonitakse ja tehakse reflink ning `backup_finish` jookseb alati pärast seda, ka ebaõnnestunud prepare'i järel. Räsimine ja üleslaadimine algavad alles siis, kui `backup_finish` on naasnud, seega ei hoita rakendust üleslaadimise ajal kinni. Igal funktsioonil on vaikimisi ajalimiit 30 sekundit ja kõige rohkem 300, ning limiidi ületanud funktsioon tapetakse koos kogu oma protsessirühmaga. Konksu hoitud kirjutused lõpevad, kui `backup_finish` naaseb. Kui renet ise tapetakse, käivitab enne konksu seatud taimer `backup_finish` kahekordse ajalimiidi pluss 30 sekundi jooksul. Konksust läbi käinud hetktõmmis salvestatakse kui `app-quiesced`, ilma konksuta hetktõmmis kui `crash-consistent`. Külm käivitus ei kasuta konksu kunagi, kuna peatab teenused ise.
+
+Turvamärkus: konks on repositooriumi kood. See jookseb eraldi ehitatud keskkonnaga, mitte varundusüksuse omaga, seega ei ole varunduse mandaadid talle nähtavad. Dockerile pääseb ligi ainult repositooriumi poliitikaproksi kaudu, kõigi selle piirangutega. Konks, mis ebaõnnestub või ületab ajalimiidi, salvestatakse oma tulemusega (`failed`, `timeout`) ja sellest teavitatakse, ning ajalimiidi ületanud finish annab kohe hoiatuse, sest rakendus võib veel olla vaikseks pandud.
+
+### Lahtri suurus
+
+Kujutis lõigatakse vaikimisi 4 MiB lahtriteks. Väikeste hajusate kirjutustega repositoorium, näiteks meilihoidla, laadib 1 MiB puhul üles palju vähem baite, samas kui suured koondunud kirjutused väiksemast lahtrist midagi ei võida ja korrutavad vaid päringuid. `rdc backup churn` soovitab mõõdetud kirjutusmustri põhjal suuruse ning `--repo-cell-size mail=1M` rakendab selle. Lahtri suuruse muutmine külvab repositooriumi uuesti: iga lahter laaditakse uuesti üles ja arvestatakse elusana, kuni säilitamine vana ahela loobub, ning vanal ruudustikul olevad forkid lõpetavad deduplitseerimise. Ajastatud käivitus ei muuda ruudustikku kunagi ise. Suurust, mis lõikaks kujutise rohkem kui 262 144 lahtriks, ei võeta vastu, sest puhastamine lükatakse sealt edasi (256 GiB 1 MiB puhul).
+
+### Viivitatud hävitamine
+
+```bash
+rdc backup immutability show
+rdc backup immutability set 7
+rdc backup undelete <snapshot-id>
+```
+
+`D` päeva (0 kuni 30) pikkuse aknaga ootavad hetktõmmise kustutamine, repositooriumi eemaldamine ja vähem säilitav säilitusmuudatus kõik `D` päeva enne jõustumist ning iga neist saab selle ajani tagasi võtta (`rdc backup undelete`, `purge --cancel`). Kustutatud hetktõmmis taastub ootamise ajal edasi. Rohkem säilitav muudatus jõustub kohe ning akna enda lühendamine või väljalülitamine ootab vana akna ära. Iga selline toiming teavitab kohe omanikku ja administraatoreid. Baidid kaovad pärast akent ja 7-päevast ooteperioodi, ehk `D + 7` päeva pärast taotlust.
+
+Piirangud on öeldud otse. Seda jõustab konto server, mitte objektihoidla: see ei ole WORM-salvestus ning ühtegi ämbri- ega objektilukku ei kasutata. See ei kaitse omaniku või administraatori eest, kes akna ära ootab, ega salvestuse enda kadumise eest, kuna teist sihtkohta ei ole. Parandus kustutab riknenud objekti kohe, sest uuesti räsimine tõestab selle vigaseks, ning iga parandus logitakse ja sellest hoiatatakse. Manifestiahela kokkuvõtmine kirjutab ajaloo ümber, eemaldamata ühtegi taastatavat olekut. Tellimus, mis tühistati säilitamisega (retain-on-cancel), järgib oma 60-päevast läbivaatust.
+
+### Elav ja ootel salvestus
+
+`rdc backup usage` teatab kaks näitajat. **Elav** on see, mida säilitatud hetktõmmised taastada suudavad, ja ainult see arvestatakse paketi kvoodi vastu. **Ootel** on salvestus, mida ükski säilitatud hetktõmmis enam ei nimeta ja mis ootab enne kustutamist ära 7-päevase armuaja; seda ei arvestata ja kasutuse kokkuvõte näitab seda kustutamist ootavana.
+
+Ootel salvestus ei ole piiramatu. Voolavuse lagi on kahekordne paketi kvoot. Selle ületamisel lükatakse voo, mis kinnitas vähem kui 60 minutit tagasi, uus üleslaadimine tagasi, kuni ootel salvestus tühjeneb, masin salvestab käivituse kui `throttled` ja see loetakse sihi möödalaskmiseks, põhjuseks nimetatud lagi. Voogu, mis jookseb tunni või aeglasemalt, ei lükata kunagi tagasi.
+
+### Möödalastud sihi hoiatused
+
+Sihiga voog saadab oma hoiatuse, kui tema järgmine oodatud käivitus on hilinenud või ta on kolm käivitust järjest mööda lasknud, voo kohta kuni üks 6 tunni jooksul, selle asemel et päevast ülevaadet oodata. Hoiatus nimetab sihi, saavutatud näitaja ja põhjuse. Tuvastusviivitus võrdub hooldusringi intervalliga ehk ühe tunniga, seega võib hoiatus tulla kuni tund pärast möödalaskmist. Hävitav taotlus viivitatud hävitamise korral teavitab kohe.
 
 ## Ajastatud varundamine
 

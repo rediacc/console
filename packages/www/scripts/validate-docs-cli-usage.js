@@ -66,7 +66,7 @@ const escapeRegex = (str) => str.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const buildDetectionRegex = (commandPath) => {
   const segments = commandPath.trim().split(/\s+/).map(escapeRegex).join('\\s+');
-  return new RegExp(`(?:^|[\\s\`($:'"])(?:rdc\\s+)${segments}\\s+(?=[<{\\["'a-zA-Z0-9])`);
+  return new RegExp(`(?:^|[\\s\`($:'"])(?:rdc\\s+)${segments}\\s+(?=\\[(?!-)|[<{"'a-zA-Z0-9])`);
 };
 
 const buildPlaceholderOnlyRegex = (commandPath) => {

@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: et
-sourceHash: "05e87ddd9ad815ff"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "1a57c2ff08008d4e"
+sourceCommit: "c1e4f1e1584c84a89aaa6b606f4195df0d6725b0"
 ---
 
 # Kiirjuhend
@@ -223,7 +223,7 @@ rdc backup usage
 
 Tõmmised laaditakse üles tükksalvestusse, mis vajab konto-serverit ja litsentseeritud repositooriumi. Salvestatakse ainult muutunud andmed, seega maksab sama repositooriumi teine tõmmis ainult erinevuse, mitte kogu tõmmise hinda.
 
-Varukoopiatel on üks sihtkohatüüp, teenuse majutatud tükksalvestus, ja `--to` käsul `repo push` nimetab ainult masinat. Säilitus deklareeritakse repositooriumi liini kaupa käsuga `rdc backup retention set` ning ajastatud käitused tulevad käsust `rdc backup strategy set` pluss `rdc backup schedule`. Vaata [Varundus ja taastamine](/et/docs/backup-restore).
+Varukoopiad lähevad registreeritud hoidlatesse: `home`, majutatud hoidlasse, mis on igal tellimusel, ning vajaduse korral teise majutatud regiooni või kliendi bucketisse, millest igaüht nimetab sihtkoha `--target` (vaata [Varunduse sihtkohad](/et/docs/backup-destinations)). `--to` käsul `repo push` nimetab ainult masinat. Säilitus deklareeritakse repositooriumi liini kaupa käsuga `rdc backup retention set` ning ajastatud käitused tulevad käsust `rdc backup strategy set` pluss `rdc backup schedule`. Vaata [Varundus ja taastamine](/et/docs/backup-restore).
 
 ### 4. Tõmba kaugelt
 

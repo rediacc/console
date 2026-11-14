@@ -780,6 +780,110 @@ def scope_controls():
 # --------------------------------------------------------------------------- 5. CLAUSE 3, WARN-FIRST (agent/plans/PLAN-plan-preflight.md PF5, Design 3b). The stale-plan check warns and lets every tick through; each warning case is paired with a silent one.
 
 
+# ---------------------------------------------------------------------------
+# 6. THE GATE: a GATES: pr-plan-set deferral holds the PR plan-set block while its window is open.
+# ---------------------------------------------------------------------------
+
+
+def _same_owner(owner, session_id):
+    return owner == session_id
+
+
+def _always(_r):
+    return True
+
+
+def _has_default(line):
+    # Production's own matcher, so the hold controls exercise the regex the hook uses.
+    import wl_core
+
+    return wl_core.DEFAULT_TOKEN.search(line)
+
+
+def gate_controls():
+    """A [?] of this session carrying GATES: pr-plan-set holds the set; nothing else does."""
+    pe = E
+    tok = pe.GATE_TAG
+    cases = [
+        (
+            "an open [?] of mine with the token holds the set",
+            {"id": "g1", "state": "?", "owner": "me", "lastnote": "q " + tok},
+            "g1",
+        ),
+        (
+            "an open [ ] with the token does not",
+            {"id": "g2", "state": " ", "owner": "me", "lastnote": tok},
+            "",
+        ),
+        (
+            "a peer's [?] with the token does not",
+            {"id": "g3", "state": "?", "owner": "peer", "lastnote": tok},
+            "",
+        ),
+        (
+            "my [?] without the token does not",
+            {"id": "g4", "state": "?", "owner": "me", "lastnote": "a plain question"},
+            "",
+        ),
+        (
+            "a ticked item with the token does not",
+            {"id": "g5", "state": "x", "owner": "me", "text": tok},
+            "",
+        ),
+    ]
+    for label, item, want in cases:
+        control("gate: " + label, pe.gating_deferral([item], "me", _same_owner, _always), want)
+    ok = {
+        "id": "h1",
+        "state": "?",
+        "owner": "me",
+        "lastnote": tok,
+        "line": "- [?] q DEFAULT: wait",
+        "just": {"why": "w"},
+    }
+    control(
+        "hold: a justified deferral inside its window holds",
+        pe.deferral_holds(ok, 30, 120, _has_default),
+        True,
+    )
+    control(
+        "hold: past its window it does not", pe.deferral_holds(ok, 121, 120, _has_default), False
+    )
+    control(
+        "hold: with no DEFAULT it does not",
+        pe.deferral_holds(dict(ok, line="- [?] q"), 30, 120, _has_default),
+        False,
+    )
+    control(
+        "hold: with no WHY it does not",
+        pe.deferral_holds(dict(ok, just={}), 30, 120, _has_default),
+        False,
+    )
+    control(
+        "hold: an unreadable age does not", pe.deferral_holds(ok, None, 120, _has_default), False
+    )
+    control(
+        "gate: an expired tagged deferral does not hold the set",
+        pe.gating_deferral(
+            [ok], "me", _same_owner, lambda r: pe.deferral_holds(r, 500, 120, _has_default)
+        ),
+        "",
+    )
+    src = "\n".join(
+        ln
+        for ln in (HERE / "wl_checks.py").read_text(encoding="utf-8").splitlines()
+        if not ln.lstrip().startswith("#")
+    )
+    truthy(
+        "gate wiring: wl_checks binds the hold to the deferral window",
+        "S.DEFER_WINDOW_MIN" in src and "deferral_holds(" in src,
+    )
+    truthy(
+        "gate wiring: the gate makes the plan-set evaluation live",
+        "live=bool(live_bg) or bool(_pe_gate)" in src,
+    )
+
+
 def _preflight_tree(tmp, stamp=True, origin=True):
     """(root, rel, sig, c1, evidence): `make_tree` on branch `work`, with the plan citing `seed.txt` and, when `stamp`, a `Revalidated:` header at c1, the commit `origin/main` names when `origin`. Branch `work` keeps git's `main` fallback out of reach, so removing origin/main really leaves the merge base unresolvable."""
     root, rel, sigs, _c0 = make_tree(tmp)
@@ -889,6 +993,7 @@ def main():
     neighbour_controls()
     wiring_controls()
     scope_controls()
+    gate_controls()
     preflight_warn_controls()
     print("\n%d control(s) ran, %d failed" % (Tally.count, Tally.fails))
     return 1 if Tally.fails else 0

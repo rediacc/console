@@ -122,6 +122,9 @@ if ROLE == "sudo":
 
 if ROLE == "mint":
     log("mint", *args)
+    if args == ["-print-machine-id"]:
+        print("FAKE-MACHINE-ID")
+        sys.exit(0)
     if args == ["-gen-key"]:
         if CFG.get("gen_fail"):
             sys.exit(4)
@@ -178,7 +181,7 @@ if ROLE == "renet":
                 return "cert_expired"
             if o.get("-hard-expires", "").startswith("-"):
                 return "expired"
-        if "-machine" in o and int(o.get("-issued-at", "0h").rstrip("h")) <= -960:
+        if o.get("-machine", "FAKE-MACHINE-ID") != "FAKE-MACHINE-ID" and int(o.get("-issued-at", "0h").rstrip("h")) <= -960:
             return "machine_mismatch"
         if op == "status":
             if "-datastore-id" in o and o["-datastore-id"] != ds_id:

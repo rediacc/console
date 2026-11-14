@@ -9,6 +9,9 @@ const mocks = vi.hoisted(() => ({
   fail: false,
   repos: [] as Record<string, unknown>[],
   deletes: [] as string[],
+  deployed: [] as string[],
+  events: [] as string[],
+  sshEntries: [] as string[],
 }));
 
 vi.mock('../../utils/errors.js', () => ({
@@ -23,18 +26,9 @@ vi.mock('../../services/executor/executor-factory.js', () => ({
     execute: (req: { functionName: string; params?: { repository?: string } }) => {
       if (req.functionName === 'repository_delete') {
         mocks.deletes.push(String(req.params?.repository));
+        mocks.events.push(`delete:${String(req.params?.repository)}`);
       }
-      if (mocks.fail) return Promise.resolve({ success: false, error: 'boom' });
-      if (req.functionName === 'repository_prune') {
-        return Promise.resolve({
-          success: true,
-          stdout: JSON.stringify({ stale_locks: null, auth_keys: [] }),
-        });
-      }
-      return Promise.resolve({
-        success: true,
-        stdout: 'Nothing to prune. All networks have repositories.',
-      });
+      return Promise.resolve({ success: true });
     },
   }),
 }));
@@ -45,12 +39,13 @@ vi.mock('../../services/machine/machine-status.js', () => ({
   fetchMachineStatus: async () => ({ repositories: mocks.repos }),
 }));
 vi.mock('@rediacc/shared/renet-contract/data/list-types.generated', () => ({
-  getRepositories: () => [{ name: KNOWN }, { name: ORPHAN }],
+  getRepositories: () => mocks.deployed.map((name) => ({ name })),
 }));
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getCurrent: async () => ({}),
     getCurrentName: () => 'dev',
+    applyDefaults: async () => ({}),
     listRepositories: async () => [{ name: 'base', config: { repositoryGuid: KNOWN } }],
     listArchivedRepositories: async () => [],
     purgeExpiredArchives: async () => [],
@@ -60,27 +55,61 @@ vi.mock('../../adapters/config-file-storage.js', () => ({
   configFileStorage: { list: async () => ['dev'], load: async () => ({}) },
 }));
 vi.mock('../../remote/vscode/index.js', () => ({
-  listSSHConfigEntries: () => [],
-  removePersistedKeys: vi.fn(),
-  removeSSHConfigEntry: vi.fn(),
+  listSSHConfigEntries: () => mocks.sshEntries,
+  removePersistedKeys: (_team: string, _machine: string, repo: string) => {
+    mocks.events.push(`keys:${repo}`);
+  },
+  removeSSHConfigEntry: (entry: string) => {
+    mocks.events.push(`ssh:${entry}`);
+  },
 }));
 
-import { registerPruneCommand } from '../machine/prune.js';
+import { registerPruneCommand, splitPrunePhases } from '../machine/prune.js';
+import { installJobDeps } from './job-deps.js';
+
+/** The one machine_prune job's stdout: each phase behind its marker line. */
+const PRUNE_STDOUT = [
+  '{"prune_phase":"datastore"}',
+  JSON.stringify({ stale_locks: null, auth_keys: [] }),
+  '{"prune_phase":"units"}',
+  'Nothing to prune. All networks have repositories.',
+].join('\n');
+
+let restoreJobDeps: () => void;
 
 let stdout = '';
 
 beforeEach(() => {
+  restoreJobDeps = installJobDeps(() =>
+    Promise.resolve(
+      mocks.fail
+        ? { success: false, exitCode: 1, durationMs: 1, state: 'failed' as const, error: 'boom' }
+        : {
+            success: true,
+            exitCode: 0,
+            durationMs: 1,
+            state: 'succeeded' as const,
+            stdout: PRUNE_STDOUT,
+          }
+    )
+  );
   stdout = '';
   mocks.fail = false;
   mocks.repos = [];
   mocks.deletes = [];
+  mocks.deployed = [KNOWN, ORPHAN];
+  mocks.events = [];
+  mocks.sshEntries = [];
   vi.spyOn(process.stdout, 'write').mockImplementation((chunk: string | Uint8Array) => {
     stdout += String(chunk);
     return true;
   });
   vi.spyOn(console, 'error').mockImplementation(() => undefined);
 });
-afterEach(() => vi.restoreAllMocks());
+afterEach(() => {
+  restoreJobDeps();
+  vi.restoreAllMocks();
+});
 
 async function run(...args: string[]): Promise<void> {
   const machine = new Command();
@@ -144,4 +173,54 @@ describe('machine prune output', () => {
     await run('--prune-unknown');
     expect(mocks.deletes).toEqual([ORPHAN]);
   });
+
+  // The SSH-config cleanup runs client-side after a real orphan deletion, and only then.
+  describe('ssh artifact cleanup', () => {
+    const STALE = 'rediacc--ops-worker-gone';
+    const LIVE = 'rediacc--ops-worker-base';
+
+    it('removes the stale entry and its keys after the orphan is deleted, and keeps a configured repo', async () => {
+      mocks.format = 'json';
+      mocks.sshEntries = [STALE, LIVE, 'rediacc--other-machine-gone'];
+      await run('--orphaned-repos');
+      expect(mocks.events).toEqual([`delete:${ORPHAN}`, `ssh:${STALE}`, 'keys:gone']);
+    });
+
+    it('touches no ssh entry on a dry run', async () => {
+      mocks.format = 'json';
+      mocks.sshEntries = [STALE];
+      await run('--orphaned-repos', '--dry-run');
+      expect(mocks.events).toEqual([]);
+    });
+
+    it('touches no ssh entry when nothing is orphaned', async () => {
+      mocks.format = 'json';
+      mocks.deployed = [KNOWN];
+      mocks.sshEntries = [STALE];
+      await run('--orphaned-repos');
+      expect(mocks.events).toEqual([]);
+    });
+  });
+});
+
+describe('splitPrunePhases', () => {
+  it('splits the two phases at their markers', () => {
+    expect(splitPrunePhases(PRUNE_STDOUT)).toEqual({
+      datastore: JSON.stringify({ stale_locks: null, auth_keys: [] }),
+      units: 'Nothing to prune. All networks have repositories.',
+    });
+  });
+
+  it.each(['constructor', '__proto__', 'toString'])(
+    'skips the lines of an unknown marker named %s instead of throwing',
+    (name) => {
+      const out = [
+        '{"prune_phase":"datastore"}',
+        '{"a":1}',
+        `{"prune_phase":"${name}"}`,
+        'stray',
+      ].join('\n');
+      expect(splitPrunePhases(out)).toEqual({ datastore: '{"a":1}', units: '' });
+    }
+  );
 });

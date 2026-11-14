@@ -1,6 +1,6 @@
 # Headless bench login (`npm run login:bench`)
 
-`npm run login:bench` logs the `eu-bench` rdc config into https://bench.rediacc.com with the operator's own bench account, with no prompt and no browser (operator order 2026-10-27). It is bench only. Edge and stable keep human login, and no profile binds an account for them.
+`npm run login:bench` logs the `eu-bench` rdc config into https://bench.rediacc.cloud with the operator's own bench account, with no prompt and no browser (operator order 2026-10-27). It is bench only. Edge and stable keep human login, and no profile binds an account for them.
 
 ## Whose step it is
 
@@ -18,12 +18,12 @@ The operator's door is narrower: a value still holding `PLACEHOLDER-operator-fil
 
 `rediacc_ci.ops.login_bench` runs these steps in order and stops at the first one that fails, naming it (exit 1):
 
-1. Refuses any server other than `https://bench.rediacc.com` and any config other than `eu-bench` (a named error, exit 2), before any credential is read.
+1. Refuses any server other than `https://bench.rediacc.cloud` and any config other than `eu-bench` (a named error, exit 2), before any credential is read.
 2. Re-executes under the `bench-login` Bitwarden profile through `rediacc_ci.core.bws_env exec`.
 3. Refuses a value that is unset or still the placeholder `PLACEHOLDER-operator-fills`, naming the Bitwarden entry and its id (exit 2).
 4. Refreshes the bench IP allowlist with `rediacc_ci.ops.bench_access add-current`, which binds its own `bench-access` profile.
-5. Derives the six-digit TOTP code in memory (`rediacc_ci.ops.totp`, RFC 6238, HMAC-SHA1, 30 s, 6 digits) and runs `./rdc.sh --config eu-bench subscription login --server https://bench.rediacc.com`.
-6. Runs `./rdc.sh --config eu-bench config remote enable --master-password --config-id 1880812c-2086-4daa-a620-8f84aa3b6e7c --api-url https://bench.rediacc.com`, unless `config remote status` already reports `eu-bench` connected to that config id on bench. `enable` refuses a linked config with "nothing to enable" (exit 2), so a repeat run skips the step instead of failing on it.
+5. Derives the six-digit TOTP code in memory (`rediacc_ci.ops.totp`, RFC 6238, HMAC-SHA1, 30 s, 6 digits) and runs `./rdc.sh --config eu-bench subscription login --server https://bench.rediacc.cloud`.
+6. Runs `./rdc.sh --config eu-bench config remote enable --master-password --config-id 1880812c-2086-4daa-a620-8f84aa3b6e7c --api-url https://bench.rediacc.cloud`, unless `config remote status` already reports `eu-bench` connected to that config id on bench. `enable` refuses a linked config with "nothing to enable" (exit 2), so a repeat run skips the step instead of failing on it.
 7. Prints `./rdc.sh --config eu-bench config remote status`.
 
 ## The secrets

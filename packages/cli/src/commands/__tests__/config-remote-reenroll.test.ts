@@ -30,6 +30,8 @@ const { server, secureMem, relay, account, pushSpy, messages, active } = vi.hois
     slotSecrets: new Set<string>(),
     wrappedCek: '',
     failure: null as (() => Error) | null,
+    /** The session endpoint (testConnection) answers nothing while pulls still succeed. */
+    sessionDown: false,
   },
   secureMem: new Map<string, string>(),
   relay: { payload: null as Record<string, unknown> | null, runs: 0 },
@@ -74,6 +76,19 @@ vi.mock('../../adapters/remote-config-adapter.js', async (importOriginal) => {
       this.request();
       await this.unwrap(token.wrappedCek);
       return { config: structuredClone(server.config), version: server.version, sdkEpoch: 1 };
+    }
+
+    /** The session probe: the token and the request, no unwrap. */
+    async testConnection(): Promise<boolean> {
+      try {
+        if (server.sessionDown) return false;
+        const token = await this.tokens.get(this.configName);
+        if (!token?.token) return false;
+        this.request();
+        return true;
+      } catch {
+        return false;
+      }
     }
 
     private request(): void {
@@ -183,6 +198,7 @@ import {
 } from '../../adapters/remote-config-adapter.js';
 import { remoteTokenStorage } from '../../adapters/remote-token-storage.js';
 import { RemoteTokenRefreshError } from '../../services/config/device-token-refresh.js';
+import { outputService } from '../../services/core/output.js';
 import { registerRemoteCommands } from '../config-remote.js';
 
 // ─── Fixtures ────────────────────────────────────────────────────────────
@@ -319,6 +335,7 @@ beforeEach(async () => {
     slotSecrets: new Set([SLOT_SECRET]),
     wrappedCek: WRAPPED_CEK,
     failure: null,
+    sessionDown: false,
   });
 });
 
@@ -660,5 +677,77 @@ describe('config remote enable on a linked config: other lost and not-lost enrol
     expect(relay.runs).toBe(0);
     expect(await fs.readFile(configFileStorage.getConfigPath(active.name), 'utf-8')).toBe(before);
     expect(secureMem.get(PASSKEY_KEY_ID)).toBe(SLOT_SECRET);
+  });
+});
+
+// ─── `config remote status` reports whether this device can open the store ──
+
+describe('config remote status: can this device open the store', () => {
+  const printed = () => {
+    const calls = vi.mocked(outputService.print).mock.calls;
+    return calls[calls.length - 1][0] as Record<string, unknown>;
+  };
+
+  beforeEach(() => {
+    vi.mocked(outputService.print).mockClear();
+  });
+
+  it('reads connected with deviceCanOpen true while the device key works', async () => {
+    await enrolledDevice();
+    await rdc('status');
+    expect(printed()).toMatchObject({ status: 'connected', deviceCanOpen: true });
+    expect(messages.join('\n')).not.toContain('rdc config remote enable');
+  });
+
+  it('reads device-key-missing with deviceCanOpen false, and names enable, once the keyring is empty', async () => {
+    await enrolledDevice();
+    reboot();
+    await rdc('status');
+    expect(printed()).toMatchObject({
+      config: active.name,
+      status: 'device-key-missing',
+      deviceCanOpen: false,
+      storeId: STORE_ID,
+    });
+    expect(messages.join('\n')).toContain('rdc config remote enable');
+  });
+
+  // A healthy local key says nothing about the server, so "connected" still needs the session probe.
+  it('reads error, not connected, when the key works but the server session does not answer', async () => {
+    await enrolledDevice();
+    server.sessionDown = true;
+    await rdc('status');
+    expect(printed()).toMatchObject({ status: 'error', deviceCanOpen: true });
+  });
+
+  // enrollmentUsable throws (server unreachable), so the old connection test decides and deviceCanOpen is unknown.
+  it('falls back to the connection test with no deviceCanOpen when the server is unreachable', async () => {
+    await enrolledDevice();
+    server.failure = () => new RemoteUnreachableError(API_URL, new Error('ECONNREFUSED'));
+    await rdc('status');
+    const out = printed();
+    expect(out.status).toBe('error');
+    expect(out).not.toHaveProperty('deviceCanOpen');
+    expect(messages).toEqual([]);
+  });
+
+  // A rejected enrollment (rotated or stale slot) is not "the key is gone".
+  it('reads device-cannot-open with a neutral warning when the slot was rejected, not device-key-missing', async () => {
+    await enrolledDevice();
+    server.slotSecrets = new Set(['rotated-away']);
+    await rdc('status');
+    expect(printed()).toMatchObject({ status: 'device-cannot-open', deviceCanOpen: false });
+    const text = messages.join('\n');
+    expect(text).toContain('rdc config remote enable');
+    expect(text).not.toContain('key is gone');
+  });
+
+  it('leaves an unlinked config as it was: disconnected, no deviceCanOpen', async () => {
+    const unlinked = linkedCache();
+    delete unlinked.remote;
+    await writeConfigFile(unlinked);
+    await rdc('status');
+    expect(printed()).toEqual({ config: active.name, status: 'disconnected' });
+    expect(messages).toEqual([]);
   });
 });

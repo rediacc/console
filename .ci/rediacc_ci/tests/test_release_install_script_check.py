@@ -230,7 +230,7 @@ def test_a_no_jq_path_that_prints_the_wrong_command_is_caught(tmp_path: pathlib.
     )
     assert old[0] == 1
     assert old[2].startswith(BAD_LINE + "no-jq path must print the follow-up command:")
-    assert "rdc upgrade --channel edge" in old[2]
+    assert "rdc upgrade --channel stable" in old[2]
     assert old[1].count(OK_LINE) == 5
     assert_same(old, new)
 
@@ -263,7 +263,7 @@ def test_a_reintroduced_versions_constant_is_caught(tmp_path: pathlib.Path) -> N
 
 
 def test_a_broken_channel_inheritance_is_caught(tmp_path: pathlib.Path) -> None:
-    """The asymmetry that caused a real user-visible bug: a stable install followed by an immediate `rdc update` jumping to edge."""
+    """The asymmetry that caused a real user-visible bug: an install followed by an immediate `rdc update` jumping to the other channel."""
     old, new, _ = drive(
         "a-broken-channel-inheritance",
         tmp_path,
@@ -271,7 +271,7 @@ def test_a_broken_channel_inheritance_is_caught(tmp_path: pathlib.Path) -> None:
     )
     assert old[0] == 1
     assert old[2] == (
-        BAD_LINE + "config account.updateChannel=edge must be inherited, got: stable\n"
+        BAD_LINE + "config account.updateChannel=stable must be inherited, got: edge\n"
     )
     assert old[1].count(OK_LINE) == 10
     assert_same(old, new)

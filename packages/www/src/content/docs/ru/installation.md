@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 1
 language: ru
-sourceHash: "f80f4bf22d4accf1"
-sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
+sourceHash: "dee69e89a962aa32"
+sourceCommit: "9900c15aaef286077bf72464af2a52f248a555c5"
 ---
 
 # Установка
@@ -177,10 +177,10 @@ rdc update --channel edge      # Переключиться на канал edge
 rdc update --channel stable    # Вернуться на канал stable
 ```
 
-Установить напрямую из канала edge:
+Однострочные установщики на www.rediacc.com устанавливают канал edge. Чтобы установить канал stable, задайте `REDIACC_CHANNEL`:
 
 ```bash
-REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
+REDIACC_CHANNEL=stable curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 Для менеджеров пакетов замените `stable` на `edge` в URL репозитория:
@@ -197,7 +197,7 @@ docker pull ghcr.io/rediacc/rdc:edge
 
 Канал применяется единообразно ко всем методам доставки:
 
-- **Скрипты установки**: Переменная окружения `REDIACC_CHANNEL` выбирает канал
+- **Скрипты установки**: однострочные установщики www по умолчанию используют `edge`; переменная окружения `REDIACC_CHANNEL` выбирает другой канал
 - **Репозитории пакетов**: `releases.rediacc.com/{формат}/{канал}/`
 - **Теги Docker**: `ghcr.io/rediacc/rdc:{канал}`
 - **Обновления CLI**: `rdc update` проверяет канал, настроенный при установке

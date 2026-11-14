@@ -53,6 +53,8 @@ changed since they were naturalized) and which are **never naturalized**.
 
 `check-i18n-naturalization` is a **blocking** CI gate (part of `check:i18n`): it fails when a key that was already naturalized has gone stale. It does **not** fail keys that were never naturalized (that backlog shrinks as more languages/surfaces are done).
 
+Keys outside the pipeline's surfaces (legal pages, `legal.consent`, `footer.legalLinks`) are naturalized by hand, and `npx tsx scripts/gen/i18n-stamp-keys.ts --prefix <key-prefix> [--lang <l>] [--write]` records their fingerprint so `check-i18n-ledger-growth` accepts them. It lists without `--write`, appends only keys with no ledger entry (an existing entry, stale or fresh, is never rewritten), refuses an empty prefix, and refuses a key whose locale value is missing, carries a different `{{placeholder}}` set, or is identical to English outside `.id`/`.slug` anchors and letter-free values.
+
 ## 5. For AI sessions specifically
 
 - Never bulk-replace a locale file with literal/machine translations.

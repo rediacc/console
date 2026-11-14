@@ -84,14 +84,14 @@ Scans: every tracked file in the policy directory, against `POLICY_FILES` in bot
 | `.ci-parity-exempt` | name per line | 8 | 9 | both |
 | `.cli-i18n-orphan-allowlist` | name per line | 6 | 7 | both |
 | `.dead-bash-allowlist` | name per line | 4 | 5 | both |
-| `.deps-upgrade-blocklist` | name per line | 1 | 2 | both |
+| `.deps-upgrade-blocklist` | name per line | 3 | 4 | both |
 | `.devcontainer-upgrade-blocklist` | name per line | 0 | 2 | both |
-| `.e2e-coverage-allowlist` | name per line | 44 | 10 | both |
+| `.e2e-coverage-allowlist` | name per line | 42 | 9 | both |
 | `.embed-assets-upgrade-blocklist` | name per line | 0 | 1 | both |
 | `.go-deps-upgrade-blocklist` | name per line | 2 | 3 | both |
 | `.host-toolchain-exceptions` | name per line | 0 | 1 | both |
-| `.language-policy-allowlist` | name per line | 39 | 40 | both |
-| `.pins-upgrade-blocklist` | name per line | 5 | 6 | both |
+| `.language-policy-allowlist` | name per line | 40 | 41 | both |
+| `.pins-upgrade-blocklist` | name per line | 1 | 2 | both |
 | `.plan-housekeeping-allowlist` | name per line | 2 | 3 | both |
 | `.profiler-coverage-allowlist` | name per line | 62 | 4 | both |
 | `.runner-advice-allowlist` | name per line | 0 | 1 | both |
@@ -291,23 +291,23 @@ git blame --line-porcelain -- <file> \
 |---|---|---|---|
 | 20 | `breakpoint.yml:preflight` | 2026-08-05 | 31 |
 | 21 | `breakpoint.yml:session` | 2026-08-05 | 31 |
-| 24 | `profiler-probe.yml:facts-latest` | 2026-08-05 | 31 |
-| 25 | `profiler-probe.yml:facts-slim` | 2026-08-05 | 31 |
-| 26 | `profiler-probe.yml:post-nested-latest` | 2026-08-05 | 31 |
-| 27 | `profiler-probe.yml:post-nested-slim` | 2026-08-05 | 31 |
+| 24 | `ops-profiler-probe.yml:facts-latest` | 2026-08-05 | 31 |
+| 25 | `ops-profiler-probe.yml:facts-slim` | 2026-08-05 | 31 |
+| 26 | `ops-profiler-probe.yml:post-nested-latest` | 2026-08-05 | 31 |
+| 27 | `ops-profiler-probe.yml:post-nested-slim` | 2026-08-05 | 31 |
 | 32 | `autopilot.yml:finish` | 2026-08-05 | 31 |
 | 33 | `autopilot.yml:gate` | 2026-08-05 | 31 |
 | 34 | `autopilot.yml:model` | 2026-08-05 | 31 |
 | 35 | `autopilot.yml:sweeper` | 2026-08-05 | 31 |
-| 38 | `backfill-release-sentinel.yml:backfill` | 2026-08-05 | 31 |
+| 38 | `ops-backfill-release-sentinel.yml:backfill` | 2026-08-05 | 31 |
 | 41 | `cd-deploy-account.yml:build` | 2026-08-05 | 31 |
 | 42 | `cd-deploy-account.yml:deploy` | 2026-08-05 | 31 |
 | 43 | `cd-deploy-account.yml:read-regions` | 2026-08-05 | 31 |
 | 46 | `cd-deploy-worker.yml:deploy` | 2026-08-05 | 31 |
-| 49 | `cd-v2.yml:init` | 2026-08-05 | 31 |
-| 50 | `cd-v2.yml:publish` | 2026-08-05 | 31 |
-| 51 | `cd-v2.yml:smoke-test` | 2026-08-05 | 31 |
-| 52 | `cd-v2.yml:tag-and-release` | 2026-08-05 | 31 |
+| 49 | `cd-release-edge.yml:init` | 2026-08-05 | 31 |
+| 50 | `cd-release-edge.yml:publish` | 2026-08-05 | 31 |
+| 51 | `cd-release-edge.yml:smoke-test` | 2026-08-05 | 31 |
+| 52 | `cd-release-edge.yml:tag-and-release` | 2026-08-05 | 31 |
 | 55 | `ci-build-docker.yml:build-cli-docker` | 2026-08-05 | 31 |
 | 56 | `ci-build-docker.yml:build-cli-docker-skip` | 2026-08-05 | 31 |
 | 57 | `ci-build-docker.yml:build-devcontainer-amd64` | 2026-08-05 | 31 |
@@ -341,8 +341,8 @@ git blame --line-porcelain -- <file> \
 | 91 | `ci.yml:stripe-sandbox` | 2026-08-05 | 31 |
 | 92 | `ci.yml:validate-promote` | 2026-08-05 | 31 |
 | 95 | `claude-mention.yml:claude` | 2026-08-05 | 31 |
-| 101 | `cleanup-preview.yml:cleanup` | 2026-08-05 | 31 |
-| 104 | `cleanup-r2-staging.yml:cleanup` | 2026-08-05 | 31 |
+| 101 | `ops-cleanup-preview.yml:cleanup` | 2026-08-05 | 31 |
+| 104 | `ops-cleanup-r2-staging.yml:cleanup` | 2026-08-05 | 31 |
 | 107 | `ct-install-methods.yml:install-methods-complete` | 2026-08-05 | 31 |
 | 108 | `ct-install-methods.yml:test-linux-arm64` | 2026-08-05 | 31 |
 | 109 | `ct-install-methods.yml:test-linux-x64` | 2026-08-05 | 31 |
@@ -352,12 +352,12 @@ git blame --line-porcelain -- <file> \
 | 117 | `ct-update-flow.yml:test-linux-x64` | 2026-08-05 | 31 |
 | 120 | `edge-clone-d1.yml:clone` | 2026-08-05 | 31 |
 | 121 | `edge-clone-d1.yml:read-regions` | 2026-08-05 | 31 |
-| 124 | `housekeeping.yml:cleanup` | 2026-08-05 | 31 |
-| 125 | `housekeeping.yml:stripe-cleanup` | 2026-08-05 | 31 |
-| 128 | `nightly-status.yml:report` | 2026-08-05 | 31 |
-| 131 | `promote-stable.yml:promote` | 2026-08-05 | 31 |
-| 132 | `promote-stable.yml:verify-stable` | 2026-08-05 | 31 |
-| 138 | `watchdog-monitor.yml:monitor` | 2026-08-05 | 31 |
+| 124 | `ops-housekeeping.yml:cleanup` | 2026-08-05 | 31 |
+| 125 | `ops-housekeeping.yml:stripe-cleanup` | 2026-08-05 | 31 |
+| 128 | `ops-nightly-status.yml:report` | 2026-08-05 | 31 |
+| 131 | `cd-release-stable.yml:promote` | 2026-08-05 | 31 |
+| 132 | `cd-release-stable.yml:verify-stable` | 2026-08-05 | 31 |
+| 138 | `ops-watchdog-monitor.yml:monitor` | 2026-08-05 | 31 |
 
 #### `.unverified-download-allowlist`
 

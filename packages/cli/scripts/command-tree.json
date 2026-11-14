@@ -33,6 +33,18 @@
       "defaultValue": null
     },
     {
+      "flags": "--license-region <id>",
+      "descriptionKey": "options.licenseRegion",
+      "mandatory": false,
+      "defaultValue": null
+    },
+    {
+      "flags": "--accept-terms",
+      "descriptionKey": "options.acceptTerms",
+      "mandatory": false,
+      "defaultValue": null
+    },
+    {
       "flags": "-b, --background",
       "descriptionKey": "options.background",
       "mandatory": false,
@@ -54,6 +66,12 @@
             {
               "flags": "-m, --machine <name>",
               "descriptionKey": "commands.job.list.machineOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--all",
+              "descriptionKey": "commands.job.list.allOption",
               "mandatory": false,
               "defaultValue": null
             }
@@ -176,6 +194,39 @@
           "subcommands": []
         },
         {
+          "name": "dismiss",
+          "descriptionKey": "commands.job.dismiss.description",
+          "options": [
+            {
+              "flags": "--stale",
+              "descriptionKey": "commands.job.dismiss.staleOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--older-than <duration>",
+              "descriptionKey": "commands.job.dismiss.olderThanOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-y, --yes",
+              "descriptionKey": "options.yes",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "job-id",
+              "required": false,
+              "variadic": true,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
           "name": "gc",
           "descriptionKey": "commands.job.gc.description",
           "options": [
@@ -255,6 +306,12 @@
             {
               "flags": "--force",
               "descriptionKey": "commands.machine.remove.forceOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--archive-repos",
+              "descriptionKey": "commands.machine.deprovision.optionArchiveRepos",
               "mandatory": false,
               "defaultValue": null
             }
@@ -456,10 +513,48 @@
         {
           "name": "health",
           "descriptionKey": "commands.machine.health.description",
+          "options": [],
+          "arguments": [
+            {
+              "name": "name",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "repair",
+          "descriptionKey": "commands.machine.repair.description",
           "options": [
             {
-              "flags": "-t, --team <name>",
-              "descriptionKey": "options.team",
+              "flags": "--dry-run",
+              "descriptionKey": "commands.machine.repair.optionDryRun",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--code <code>",
+              "descriptionKey": "commands.machine.repair.optionCode",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--with-backup",
+              "descriptionKey": "commands.machine.repair.optionWithBackup",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--window-override",
+              "descriptionKey": "commands.machine.repair.optionWindowOverride",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--set-window <window>",
+              "descriptionKey": "commands.machine.repair.optionSetWindow",
               "mandatory": false,
               "defaultValue": null
             }
@@ -544,6 +639,12 @@
             {
               "flags": "--force",
               "descriptionKey": "options.yes",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--archive-repos",
+              "descriptionKey": "commands.machine.deprovision.optionArchiveRepos",
               "mandatory": false,
               "defaultValue": null
             },
@@ -708,6 +809,12 @@
             {
               "flags": "--include-docker",
               "descriptionKey": "commands.machine.restartServices.includeDockerOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--repo <name>",
+              "descriptionKey": "commands.machine.restartServices.repoOption",
               "mandatory": false,
               "defaultValue": null
             },
@@ -1172,6 +1279,18 @@
                   "defaultValue": null
                 },
                 {
+                  "flags": "--target <storeId>",
+                  "descriptionKey": "commands.backup.strategy.set.optionTarget",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--replicate-from <storeId>",
+                  "descriptionKey": "commands.backup.strategy.set.optionReplicateFrom",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
                   "flags": "--cron <expression>",
                   "descriptionKey": "commands.backup.strategy.set.optionCron",
                   "mandatory": false,
@@ -1591,6 +1710,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--from <storeId>",
+              "descriptionKey": "commands.backup.browse.optionFrom",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -1988,17 +2113,17 @@
           "subcommands": [
             {
               "name": "sync",
-              "descriptionKey": "commands.backup.tocKey.syncDescription",
+              "descriptionKey": "commands.backup.tocKey.sync.description",
               "options": [
                 {
                   "flags": "--replace",
-                  "descriptionKey": "commands.backup.tocKey.optionReplace",
+                  "descriptionKey": "commands.backup.tocKey.sync.optionReplace",
                   "mandatory": false,
                   "defaultValue": null
                 },
                 {
                   "flags": "--dry-run",
-                  "descriptionKey": "commands.backup.tocKey.optionDryRun",
+                  "descriptionKey": "commands.backup.tocKey.sync.optionDryRun",
                   "mandatory": false,
                   "defaultValue": null
                 }
@@ -2117,6 +2242,12 @@
               "descriptionKey": "commands.backup.download.optionAt",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--from <storeId>",
+              "descriptionKey": "commands.backup.download.optionFrom",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [
@@ -2227,6 +2358,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--from <storeId>",
+              "descriptionKey": "commands.backup.restore.optionFrom",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--any-stream",
               "descriptionKey": "commands.backup.restore.optionAnyStream",
               "mandatory": false,
@@ -2308,6 +2445,12 @@
           "descriptionKey": "commands.backup.purge.description",
           "options": [
             {
+              "flags": "--lineage <guid>",
+              "descriptionKey": "commands.backup.purge.optionLineage",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--dry-run",
               "descriptionKey": "options.dryRun",
               "mandatory": false,
@@ -2329,7 +2472,7 @@
           "arguments": [
             {
               "name": "repo-ref",
-              "required": true,
+              "required": false,
               "variadic": false,
               "defaultValue": null
             }
@@ -2671,6 +2814,78 @@
             }
           ],
           "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "health",
+          "descriptionKey": "commands.repo.health.description",
+          "options": [
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--skip-router-restart",
+              "descriptionKey": "options.skipRouterRestart",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "ref",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "repair",
+          "descriptionKey": "commands.repo.repair.description",
+          "options": [
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "commands.repo.repair.optionDryRun",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--with-backup",
+              "descriptionKey": "commands.repo.repair.optionWithBackup",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--window-override",
+              "descriptionKey": "commands.repo.repair.optionWindowOverride",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-y, --yes",
+              "descriptionKey": "commands.repo.repair.optionYes",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--debug",
+              "descriptionKey": "options.debug",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "ref",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
           "subcommands": []
         },
         {
@@ -3087,6 +3302,12 @@
                   "descriptionKey": "commands.repo.machineOption",
                   "mandatory": true,
                   "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
                 }
               ],
               "arguments": [],
@@ -3214,6 +3435,24 @@
                 {
                   "flags": "--uid <uid>",
                   "descriptionKey": "commands.repo.admin.ownership.uidOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--root-owned",
+                  "descriptionKey": "commands.repo.admin.ownership.rootOwnedOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--dry-run",
+                  "descriptionKey": "commands.repo.admin.ownership.dryRunOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--undo",
+                  "descriptionKey": "commands.repo.admin.ownership.undoOption",
                   "mandatory": false,
                   "defaultValue": null
                 },
@@ -3572,6 +3811,54 @@
                 {
                   "flags": "--trim-interval <hours>",
                   "descriptionKey": "commands.repo.policy.set.trimIntervalOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--memory-max <size>",
+                  "descriptionKey": "commands.repo.policy.set.memoryMaxOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--memory-high <size>",
+                  "descriptionKey": "commands.repo.policy.set.memoryHighOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--cpu-max <cores>",
+                  "descriptionKey": "commands.repo.policy.set.cpuMaxOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--io-max <limits>",
+                  "descriptionKey": "commands.repo.policy.set.ioMaxOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--pids-max <count>",
+                  "descriptionKey": "commands.repo.policy.set.pidsMaxOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--ram-volume <size>",
+                  "descriptionKey": "commands.repo.policy.set.ramVolumeOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--clear-limits",
+                  "descriptionKey": "commands.repo.policy.set.clearLimitsOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--force",
+                  "descriptionKey": "commands.repo.policy.set.forceOption",
                   "mandatory": false,
                   "defaultValue": null
                 },
@@ -4565,6 +4852,101 @@
               "subcommands": []
             }
           ]
+        },
+        {
+          "name": "permission",
+          "descriptionKey": "commands.repo.permission.description",
+          "options": [],
+          "arguments": [],
+          "subcommands": [
+            {
+              "name": "grant",
+              "descriptionKey": "commands.repo.permission.grant.description",
+              "options": [
+                {
+                  "flags": "--root",
+                  "descriptionKey": "commands.repo.permission.grant.rootOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--path <path>",
+                  "descriptionKey": "commands.repo.permission.grant.pathOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "ref",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "revoke",
+              "descriptionKey": "commands.repo.permission.revoke.description",
+              "options": [
+                {
+                  "flags": "--root",
+                  "descriptionKey": "commands.repo.permission.revoke.rootOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--path <path>",
+                  "descriptionKey": "commands.repo.permission.revoke.pathOption",
+                  "mandatory": false,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "ref",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            },
+            {
+              "name": "show",
+              "descriptionKey": "commands.repo.permission.show.description",
+              "options": [
+                {
+                  "flags": "--debug",
+                  "descriptionKey": "options.debug",
+                  "mandatory": false,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [
+                {
+                  "name": "ref",
+                  "required": true,
+                  "variadic": false,
+                  "defaultValue": null
+                }
+              ],
+              "subcommands": []
+            }
+          ]
         }
       ]
     },
@@ -4747,6 +5129,12 @@
             {
               "flags": "--orphan-repos",
               "descriptionKey": "commands.config.prune.orphanReposOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--gone-machine-repos",
+              "descriptionKey": "commands.config.prune.goneMachineReposOption",
               "mandatory": false,
               "defaultValue": null
             },
@@ -5284,6 +5672,39 @@
               "subcommands": []
             }
           ]
+        },
+        {
+          "name": "import-machine",
+          "descriptionKey": "commands.config.importMachine.description",
+          "options": [
+            {
+              "flags": "--from <config>",
+              "descriptionKey": "commands.config.importMachine.optionFrom",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "commands.config.importMachine.optionDryRun",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--strategy-from-source",
+              "descriptionKey": "commands.config.importMachine.optionStrategyFromSource",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "machine",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
         }
       ]
     },
@@ -5301,6 +5722,34 @@
         {
           "flags": "--licenses",
           "descriptionKey": "options.licenses",
+          "mandatory": false,
+          "defaultValue": null
+        }
+      ],
+      "arguments": [],
+      "subcommands": []
+    },
+    {
+      "name": "legal",
+      "descriptionKey": "commands.legal.description",
+      "options": [
+        {
+          "flags": "--json",
+          "descriptionKey": "options.json",
+          "mandatory": false,
+          "defaultValue": null
+        }
+      ],
+      "arguments": [],
+      "subcommands": []
+    },
+    {
+      "name": "version",
+      "descriptionKey": "commands.version.description",
+      "options": [
+        {
+          "flags": "--json",
+          "descriptionKey": "options.json",
           "mandatory": false,
           "defaultValue": null
         }
@@ -6554,6 +7003,26 @@
           "subcommands": []
         },
         {
+          "name": "register",
+          "descriptionKey": "commands.subscription.register.description",
+          "options": [
+            {
+              "flags": "--email <address>",
+              "descriptionKey": "commands.subscription.register.optionEmail",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--server <url>",
+              "descriptionKey": "options.serverUrl",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
           "name": "logout",
           "descriptionKey": "commands.subscription.logout.description",
           "options": [],
@@ -6583,9 +7052,74 @@
               "descriptionKey": "options.machine",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--all",
+              "descriptionKey": "commands.subscription.status.optionAll",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "notices",
+          "descriptionKey": "commands.subscription.notices.description",
+          "options": [
+            {
+              "flags": "--all",
+              "descriptionKey": "commands.subscription.notices.optionAll",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--unread",
+              "descriptionKey": "commands.subscription.notices.optionUnread",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--mark-read",
+              "descriptionKey": "commands.subscription.notices.optionMarkRead",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
+          "subcommands": []
+        },
+        {
+          "name": "retire",
+          "descriptionKey": "commands.subscription.retire.description",
+          "options": [
+            {
+              "flags": "--force",
+              "descriptionKey": "commands.subscription.retire.optionForce",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--expired",
+              "descriptionKey": "commands.subscription.retire.optionExpired",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--dry-run",
+              "descriptionKey": "commands.subscription.retire.optionDryRun",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "guid",
+              "required": false,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
           "subcommands": []
         },
         {
@@ -6601,6 +7135,12 @@
             {
               "flags": "--repo <ref>",
               "descriptionKey": "options.repoRef",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--adopt-origin",
+              "descriptionKey": "commands.subscription.refresh.adoptOrigin",
               "mandatory": false,
               "defaultValue": null
             }
@@ -6663,6 +7203,317 @@
       ],
       "arguments": [],
       "subcommands": []
+    },
+    {
+      "name": "server",
+      "descriptionKey": "commands.server.description",
+      "options": [],
+      "arguments": [],
+      "subcommands": [
+        {
+          "name": "install",
+          "descriptionKey": "commands.server.install.description",
+          "options": [
+            {
+              "flags": "--ip <address>",
+              "descriptionKey": "commands.server.install.optionIp",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--user <name>",
+              "descriptionKey": "commands.server.install.optionUser",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--port <port>",
+              "descriptionKey": "commands.server.install.optionPort",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--name <name>",
+              "descriptionKey": "commands.server.install.optionName",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--domain <host>",
+              "descriptionKey": "commands.server.install.optionDomain",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--store-domain <host>",
+              "descriptionKey": "commands.server.install.optionStoreDomain",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--repo <name>",
+              "descriptionKey": "commands.server.install.optionRepo",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--size <size>",
+              "descriptionKey": "commands.server.install.optionSize",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--owner <email>",
+              "descriptionKey": "commands.server.install.optionOwner",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--tls <method>",
+              "descriptionKey": "commands.server.install.optionTls",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cf-token <token>",
+              "descriptionKey": "commands.server.install.optionCfToken",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cert-email <email>",
+              "descriptionKey": "commands.server.install.optionCertEmail",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--tls-cert <file>",
+              "descriptionKey": "commands.server.install.optionTlsCert",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--tls-key <file>",
+              "descriptionKey": "commands.server.install.optionTlsKey",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--tls-ca <file>",
+              "descriptionKey": "commands.server.install.optionTlsCa",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--licence <mode>",
+              "descriptionKey": "commands.server.install.optionLicence",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--cert <file>",
+              "descriptionKey": "commands.server.install.optionCert",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--image <ref>",
+              "descriptionKey": "commands.server.install.optionImage",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--image-file <tar>",
+              "descriptionKey": "commands.server.install.optionImageFile",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--local-image",
+              "descriptionKey": "commands.server.install.optionLocalImage",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--no-dns-wait",
+              "descriptionKey": "commands.server.install.optionNoDnsWait",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--bws-project <id>",
+              "descriptionKey": "commands.server.install.optionBwsProject",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--rotate",
+              "descriptionKey": "commands.server.install.optionRotate",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-y, --yes",
+              "descriptionKey": "commands.server.install.optionYes",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "machine",
+              "required": false,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "status",
+          "descriptionKey": "commands.server.status.description",
+          "options": [
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.server.optionMachine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--repo <name>",
+              "descriptionKey": "commands.server.optionRepo",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "domain",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "upgrade",
+          "descriptionKey": "commands.server.upgrade.description",
+          "options": [
+            {
+              "flags": "--image <ref>",
+              "descriptionKey": "commands.server.install.optionImage",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--image-file <tar>",
+              "descriptionKey": "commands.server.install.optionImageFile",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--local-image",
+              "descriptionKey": "commands.server.install.optionLocalImage",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-y, --yes",
+              "descriptionKey": "commands.server.install.optionYes",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.server.optionMachine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--repo <name>",
+              "descriptionKey": "commands.server.optionRepo",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "domain",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "backup",
+          "descriptionKey": "commands.server.backup.description",
+          "options": [
+            {
+              "flags": "--out <file>",
+              "descriptionKey": "commands.server.backup.optionOut",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.server.optionMachine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--repo <name>",
+              "descriptionKey": "commands.server.optionRepo",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "domain",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        },
+        {
+          "name": "licence",
+          "descriptionKey": "commands.server.licence.description",
+          "options": [
+            {
+              "flags": "--cert <file>",
+              "descriptionKey": "commands.server.install.optionCert",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "-m, --machine <name>",
+              "descriptionKey": "commands.server.optionMachine",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--repo <name>",
+              "descriptionKey": "commands.server.optionRepo",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [
+            {
+              "name": "domain",
+              "required": true,
+              "variadic": false,
+              "defaultValue": null
+            }
+          ],
+          "subcommands": []
+        }
+      ]
     }
   ],
   "globalOptions": [

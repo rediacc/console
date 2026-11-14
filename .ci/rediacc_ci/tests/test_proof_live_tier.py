@@ -84,8 +84,8 @@ def _cli_row(**over: Any) -> dict[str, Any]:
     return LT.build_row(_ident(["cli"]), R.VERIFIED, **body)
 
 
-def _account_row() -> dict[str, Any]:
-    """A healthy VERIFIED account-smoke row: the bench cache deploy, the account VM phase."""
+def _account_row(ladder: dict[str, Any] | None = None) -> dict[str, Any]:
+    """A healthy VERIFIED account-smoke row: the bench cache deploy, the account VM phase; `ladder` replaces the default admitting run id."""
     argv = [list(r.argv) for r in LT.expand(LT.registry()["account-smoke"], "bench")]
     return LT.build_row(
         _ident(["account"]),
@@ -113,7 +113,7 @@ def _account_row() -> dict[str, Any]:
             "log_sha256": "b" * 64,
             "tail": ['{"status":"ok"}'],
         },
-        ladder={"vm": "vmc-10280533-5ddf37"},
+        ladder=ladder or {"vm": "vmc-10280533-5ddf37"},
     )
 
 
@@ -368,6 +368,24 @@ def test_a_vm_phase_surface_needs_its_ladder_run() -> None:
     assert any("ladder.vm" in p for p in LT.validate_row(row))
 
 
+def _waived_account_row(waived: str) -> dict[str, Any]:
+    return _account_row({"vm": None, "waived": waived, "head_tree": TREE})
+
+
+def test_a_well_formed_waived_row_is_a_valid_receipt() -> None:
+    """The positive control for the waiver: the judge LP5 runs passes a ticked-eligible waived row."""
+    assert LT.validate_row(_waived_account_row("ASKED:2026-11-10T13:38Z")) == []
+
+
+@pytest.mark.parametrize("suffix", ["\n", " ", "\r\n"])
+def test_a_waiver_token_with_a_trailing_character_is_refused(suffix: str) -> None:
+    """`$` matches before a trailing newline; the token must be the whole minute, nothing after it."""
+    token = "ASKED:2026-11-10T13:38Z"
+    assert LT.validate_row(_waived_account_row(token)) == [], "the control must pass first"
+    problems = LT.validate_row(_waived_account_row(token + suffix))
+    assert any("ladder.waived" in p for p in problems), problems
+
+
 def test_an_account_row_on_a_moved_account_checkout_is_refused() -> None:
     row = _account_row()
     row["submodules"]["private/account"]["checkout"] = "9" * 40
@@ -405,20 +423,94 @@ def test_a_renet_hash_row_judges_the_renet_build_even_for_a_cli_only_plan() -> N
             "log_sha256": "c" * 64,
             "tail": ["f" * 64],
         },
-        ladder={"vm": None},
+        ladder={"vm": "vmc-11040941-158f0e"},
     )
     assert LT.validate_row(row) == []
     _plant("renet.modified", True)(row)
     assert any(p.startswith("modified-build") for p in LT.validate_row(row))
 
 
+def _renet_cli_only_row(vm: str | None) -> dict[str, Any]:
+    check = LT.registry()["renet-live"]
+    argv = [list(r.argv) for r in LT.expand(check, "hostinger")]
+    renet = {"built": PTR_R, "modified": False, "sha256": "f" * 64}
+    return LT.build_row(
+        _ident(["cli"], renet=renet),
+        R.VERIFIED,
+        at="2026-10-28T10:00:00Z",
+        by="d778be9d",
+        plan="agent/plans/PLAN-demo.md",
+        box="2f44fc06",
+        target="hostinger",
+        region=None,
+        deploy={
+            "surface": "renet",
+            "worker": None,
+            "version_id": f"renet:{PTR_R}@sha256:{'f' * 64}",
+            "source": "rdc:eu-bench",
+            "deployed_head": HEAD,
+            "confirmed_live": True,
+        },
+        check={
+            "id": "renet-live",
+            "args": [],
+            "argv": argv,
+            "rc": 0,
+            "duration_s": 9.0,
+            "log_sha256": "c" * 64,
+            "tail": ["f" * 64],
+        },
+        ladder={"vm": vm},
+    )
+
+
+def test_a_renet_hash_row_on_a_cli_only_plan_needs_its_ladder_run() -> None:
+    """A renet-hash check provisions renet on a real machine, so a null ladder.vm is refused even when the row's surfaces carry no VM phase (the reopened LP-hostinger receipt of PLAN-ssh-key-source-ranges)."""
+    row = _renet_cli_only_row("vmc-11040941-158f0e")
+    assert LT.validate_row(row) == [], "the control must pass before the plant"
+    assert S.phases_for(row["surfaces"]) == frozenset()
+    assert LT.ladder_phases(row["surfaces"], LT.registry()["renet-live"]) == frozenset({"renet"})
+    refused = _renet_cli_only_row(None)
+    assert any("ladder.vm" in p for p in LT.validate_row(refused))
+
+
+def test_a_tree_row_on_a_cli_only_plan_keeps_a_null_ladder() -> None:
+    row = _cli_row()
+    assert LT.ladder_phases(row["surfaces"], LT.registry()["cli-bench"]) == frozenset()
+    assert row["ladder"] == {"vm": None}
+    assert LT.validate_row(row) == []
+
+
 def test_an_unrecorded_deploy_never_validates() -> None:
+    row = _cli_row()
+    row["check"]["id"] = "www-smoke"
+    row["check"]["argv"] = [list(r.argv) for r in LT.expand(LT.registry()["www-smoke"], "bench")]
+    row["surfaces"] = ["www"]
+    _reid(row)
+    assert any("identifies no deploy" in p for p in LT.validate_row(row))
+
+
+def _proxy_row(version: str) -> dict[str, Any]:
     row = _cli_row()
     row["check"]["id"] = "proxy-ready"
     row["check"]["argv"] = [list(r.argv) for r in LT.expand(LT.registry()["proxy-ready"], "bench")]
     row["surfaces"] = ["proxy"]
+    row["deploy"] = {
+        "surface": "proxy",
+        "worker": "proxy-bench",
+        "version_id": version,
+        "source": LT.BENCH_PROXY_CACHE,
+        "deployed_head": HEAD,
+        "confirmed_live": True,
+    }
     _reid(row)
-    assert any("identifies no deploy" in p for p in LT.validate_row(row))
+    return row
+
+
+def test_a_bench_proxy_row_validates_with_a_version_uuid_only() -> None:
+    assert LT.validate_row(_proxy_row(UUID)) == [], "the control must pass before the plant"
+    assert any("malformed" in p for p in LT.validate_row(_proxy_row("proxy:" + HEAD)))
+    assert LT.DEPLOY_SURFACE[LT.BENCH_PROXY_CACHE] == "proxy"
 
 
 # ------------------------------------------------------------------ the git checks and the kept log

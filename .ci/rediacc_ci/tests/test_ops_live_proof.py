@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from rediacc_ci.deploy import deploy_proxy, proxy_configs
 from rediacc_ci.ops import deploy_bench
 from rediacc_ci.ops import live_proof as LP
 from rediacc_ci.proof import live_tier as LT
@@ -24,7 +25,7 @@ from rediacc_ci.well_known import BENCH_ORIGIN
 
 if TYPE_CHECKING:
     import pathlib
-    from collections.abc import Callable, Sequence
+    from collections.abc import Callable, Iterable, Sequence
 
 UUID = "6b822ba9-1111-4222-8333-444455556666"
 MOVED = "0b4e20ac-1111-4222-8333-444455556666"
@@ -67,6 +68,7 @@ class Fake:
 
     def __init__(self, renet_ptr: str) -> None:
         self.calls: list[tuple[str, ...]] = []
+        self.cwds: list[pathlib.Path] = []
         self.envs: list[dict[str, str] | None] = []
         self.answers: dict[str, LP.Result] = {
             "curl": LP.Result(0, '{"status":"ok"}\n', ""),
@@ -114,11 +116,12 @@ class Fake:
     def run(
         self,
         argv: Sequence[str],
-        _cwd: pathlib.Path,
+        cwd: pathlib.Path,
         _timeout: int,
         env: dict[str, str] | None = None,
     ) -> LP.Result:
         self.calls.append(tuple(argv))
+        self.cwds.append(cwd)
         self.envs.append(env)
         queued = self.queued.get(self.key(argv))
         if queued:
@@ -181,6 +184,17 @@ class Bed:
         }
         record.update(over)
         _write(self.root, "/".join(deploy_bench.VERSION_RECORD), json.dumps(record))
+
+    def proxy_json(self, **over: Any) -> None:
+        record = {
+            "worker": deploy_proxy.BENCH_WORKER,
+            "config": "workers/proxy/" + proxy_configs.BENCH_CONFIG,
+            "version_id": UUID,
+            **R.identity(self.root, deploy_proxy.BENCH_RECORD_SURFACES),
+            "at": "2026-10-28T09:00:00Z",
+        }
+        record.update(over)
+        _write(self.root, "/".join(deploy_proxy.BENCH_VERSION_RECORD), json.dumps(record))
 
     def ledger(self) -> list[dict[str, Any]]:
         return [e.row for e in LT.read_ledger(LT.ledger_path(self.root)) if e.row is not None]
@@ -324,7 +338,7 @@ def test_a_modified_renet_build_refuses_modified_build(bed: Bed) -> None:
         ({"check": "account-smoke", "target": "hostinger"}, "not 'hostinger'"),
         ({"machine": "prod-1"}, "not in tiers.live.targets.hostinger.machines"),
         ({"region": "mars"}, "--region"),
-        ({"plan": "agent/plans/_done/PLAN-demo.md"}, "not a live plan"),
+        ({"plan": "agent/plans/_removed/PLAN-demo.md"}, "not a live plan"),
         ({"box": "ffffffff"}, "no box with signature"),
     ],
 )
@@ -572,14 +586,101 @@ def test_an_envelope_without_the_key_is_still_refused(bed: Bed) -> None:
     assert "stale_binary is null" in out.message
 
 
-def test_an_unrecorded_deploy_is_never_verified(bed: Bed) -> None:
+def _proxy_plan(bed: Bed) -> None:
     text = PLAN.replace("private/renet/cmd/**", "private/renet/cmd/**, workers/proxy/src/**")
     _write(bed.root, PLAN_REL, text)
     _commit(bed.root, "proxy owns")
-    out = bed.record(bed.request("proxy-ready"), write=True)
+
+
+def test_an_unrecorded_deploy_is_never_verified(bed: Bed) -> None:
+    """`unrecorded` stays for any check with no record (www-smoke today); the proxy-ready check with its deploy kind swapped back is the fixture, with a valid proxy record present so only the kind can refuse it."""
+    _proxy_plan(bed)
+    bed.proxy_json()
+    checks = LT.registry()
+    assert bed.record(bed.request("proxy-ready"), checks=checks).status == R.VERIFIED, (
+        "the control: the recorded kind verifies the same run"
+    )
+    checks["proxy-ready"] = dataclasses.replace(checks["proxy-ready"], deploy=LT.UNRECORDED)
+    out = bed.record(bed.request("proxy-ready"), write=True, checks=checks)
     assert (out.status, out.code) == (R.NOT_VERIFIED, R.NOT_LIVE)
     assert "no deploy record" in out.message
     assert bed.ledger() == []
+
+
+def test_proxy_ready_is_recorded_by_the_bench_proxy_deploy() -> None:
+    assert LT.registry()["proxy-ready"].deploy == LT.BENCH_PROXY_CACHE
+    assert LT.registry()["www-smoke"].deploy == LT.UNRECORDED
+
+
+def test_a_proxy_run_reads_the_proxy_record_and_confirms_it_through_wrangler(bed: Bed) -> None:
+    _proxy_plan(bed)
+    bed.proxy_json()
+    out = bed.record(bed.request("proxy-ready"), write=True)
+    assert out.status == R.VERIFIED, out.message
+    assert out.written
+    assert out.row is not None
+    deploy = out.row["deploy"]
+    assert deploy["source"] == LT.BENCH_PROXY_CACHE
+    assert deploy["surface"] == "proxy"
+    assert deploy["worker"] == deploy_proxy.BENCH_WORKER
+    assert deploy["version_id"] == UUID
+    assert deploy["deployed_head"] == out.row["head"]
+    assert deploy["confirmed_live"] is True
+    assert [bed.fake.key(c) for c in bed.fake.calls] == ["deploy_proxy", "wrangler"]
+    wrangler = bed.fake.calls[-1]
+    assert proxy_configs.BENCH_CONFIG in wrangler
+    assert bed.fake.cwds[-1] == bed.root.joinpath(*deploy_proxy.WORKER_SUBDIR), (
+        "the read names proxy-bench through workers/proxy, not account-bench through workers/account"
+    )
+    code, lines = LP.verify(bed.root, PLAN_REL)
+    assert code == 0, lines
+
+
+def test_a_moved_bench_proxy_version_refuses_not_live(bed: Bed) -> None:
+    _proxy_plan(bed)
+    bed.proxy_json()
+    assert bed.record(bed.request("proxy-ready")).status == R.VERIFIED
+    bed.fake.answers["wrangler"] = LP.Result(0, Fake.deployments(MOVED), "")
+    out = bed.record(bed.request("proxy-ready"), write=True)
+    assert (out.status, out.code) == (R.NOT_VERIFIED, R.NOT_LIVE)
+    assert f"bench proxy serves version {MOVED}, not the recorded {UUID}" in out.message
+    assert bed.ledger() == []
+
+
+def test_an_unreadable_proxy_listing_refuses_not_live(bed: Bed) -> None:
+    _proxy_plan(bed)
+    bed.proxy_json()
+    bed.fake.answers["wrangler"] = LP.Result(1, "", "rate limited\n")
+    out = bed.record(bed.request("proxy-ready"))
+    assert (out.status, out.code) == (R.NOT_VERIFIED, R.NOT_LIVE)
+    assert "<unknown>" in out.message, "an unknown live version is a refusal, never a pass"
+
+
+def test_a_missing_foreign_or_unclean_proxy_record_refuses_not_live(bed: Bed) -> None:
+    _proxy_plan(bed)
+    bed.bench_json()
+    out = bed.record(bed.request("proxy-ready"))
+    assert (out.status, out.code) == (R.NOT_VERIFIED, R.NOT_LIVE)
+    assert "no bench proxy deploy record" in out.message, "the account record never stands in"
+    bed.proxy_json(head="9" * 40)
+    out = bed.record(bed.request("proxy-ready"))
+    assert (out.status, out.code) == (R.NOT_VERIFIED, R.NOT_LIVE)
+    assert "bench proxy serves a deploy cut from 999999999999, not the head" in out.message
+    bed.proxy_json(dirty=True)
+    assert "unclean tree" in bed.record(bed.request("proxy-ready")).message
+    bed.proxy_json(dirty=None)
+    assert "unclean tree" in bed.record(bed.request("proxy-ready")).message
+    assert bed.fake.ran("deploy_proxy") == 0, "a refused record runs no step"
+
+
+def test_a_proxy_check_reexecutes_under_the_proxy_bench_profile() -> None:
+    checks = LT.registry()
+    assert LP._profile_for(checks["proxy-ready"], {}) == deploy_proxy.BENCH_PROFILE
+    assert LP._profile_for(checks["account-smoke"], {}) == deploy_bench.PROFILE
+    assert LP._profile_for(checks["cli-bench"], {}) is None
+    bound = {"REDIACC_BWS_PROFILES": deploy_proxy.BENCH_PROFILE}
+    assert LP._profile_for(checks["proxy-ready"], bound) is None
+    assert LP._profile_for(checks["proxy-ready"], {"CLOUDFLARE_API_TOKEN": "t"}) is None
 
 
 def test_a_planted_secret_in_the_tail_refuses(bed: Bed) -> None:
@@ -660,3 +761,412 @@ def test_the_command_line_takes_no_retro_flag() -> None:
     with pytest.raises(SystemExit):
         LP._parser().parse_args(["record", "--retro"])
     assert "--retro" not in LP._parser().format_help()
+
+
+# ------------------------------------------------------------------ the ladder of a renet-hash deploy on a CLI-only plan
+
+
+CLI_ONLY_OWNS = "Owns: packages/cli/src/services/machine/**"
+
+
+def _cli_only_plan(bed: Bed) -> None:
+    """Narrow the fixture plan's Owns to a CLI path with no VM phase, the shape of PLAN-ssh-key-source-ranges."""
+    text = PLAN.replace(
+        "Owns: packages/cli/src/**, private/account/src/**, private/renet/cmd/**", CLI_ONLY_OWNS
+    )
+    assert text != PLAN
+    _write(bed.root, PLAN_REL, text)
+    _commit(bed.root, "cli-only plan")
+
+
+class _Recorder:
+    """An admit that records the phases it was asked for, then answers like `_admits`."""
+
+    def __init__(self) -> None:
+        self.phases: list[frozenset[str]] = []
+
+    def __call__(self, root: object, tree: str, inputs: object, phases: Iterable[str]) -> R.Verdict:
+        self.phases.append(frozenset(phases))
+        return _admits(root, tree, inputs, phases)
+
+
+def test_a_renet_hash_run_on_a_cli_only_plan_records_the_renet_phase_vm_run(bed: Bed) -> None:
+    _cli_only_plan(bed)
+    admit = _Recorder()
+    out = bed.record(bed.request("renet-live", target="hostinger"), admit=admit, write=True)
+    assert out.status == R.VERIFIED, out.message
+    assert out.row is not None
+    assert out.row["surfaces"] == ["cli"], "the control: the plan touches the CLI alone"
+    assert S.phases_for(out.row["surfaces"]) == frozenset(), "the CLI surface has no VM phase"
+    assert admit.phases == [frozenset({"renet"})], "the renet-hash deploy asks for the renet phase"
+    assert out.row["ladder"] == {"vm": "vmc-fixture-1"}
+    code, lines = LP.verify(bed.root, PLAN_REL)
+    assert code == 0, lines
+
+
+def test_a_renet_hash_run_on_a_cli_only_plan_with_no_vm_receipt_refuses_the_ladder(
+    bed: Bed,
+) -> None:
+    _cli_only_plan(bed)
+    out = bed.record(bed.request("renet-live", target="hostinger"), admit=_refuses, write=True)
+    assert (out.status, out.code) == (R.NOT_VERIFIED, LP.CODE_LADDER)
+    assert "renet phase" in out.message
+    assert "npm run vm:check" in out.message
+    assert bed.fake.calls == [], "no branch renet reaches hostinger before the VMs pass it"
+    assert bed.ledger() == []
+
+
+def test_a_cli_check_on_a_cli_only_plan_asks_no_vm_run(bed: Bed) -> None:
+    _cli_only_plan(bed)
+    admit = _Recorder()
+    out = bed.record(bed.request("cli-bench"), admit=admit)
+    assert out.status == R.VERIFIED, out.message
+    assert out.row is not None
+    assert admit.phases == [], "a tree deploy provisions nothing, so no VM run is asked for"
+    assert out.row["ladder"] == {"vm": None}
+
+
+# ------------------------------------------------------------------ the `_done/` door (operator ruling #827dc647)
+
+
+DONE_REL = "agent/plans/_done/PLAN-demo.md"
+DONE_PLAN = PLAN.replace("Status: approved", "Status: done")
+STUB = "# PLAN: demo\n\nStatus: moved\nMoved-To: agent/plans/PLAN-demo.md\n"
+
+
+class _Owed:
+    """A fake `World.owed`: answers `owed` (or raises it) and records every plan it was asked about."""
+
+    def __init__(self, owed: Iterable[str] | Exception) -> None:
+        self.owed = owed
+        self.asked: list[str] = []
+
+    def __call__(self, _root: pathlib.Path, rel: str) -> frozenset[str]:
+        self.asked.append(rel)
+        if isinstance(self.owed, Exception):
+            raise self.owed
+        return frozenset(self.owed)
+
+
+def _to_done(bed: Bed, text: str = DONE_PLAN, keep_live: bool = False) -> None:
+    """Move the plan to `_done/` with a done Status, its boxes still open: the state after an LP box is moved back byte-identical."""
+    if not keep_live:
+        (bed.root / PLAN_REL).unlink()
+    _write(bed.root, DONE_REL, text)
+    _commit(bed.root, "finish the plan")
+
+
+def _door(
+    bed: Bed, owed: Iterable[str] | Exception, **over: Any
+) -> tuple[LP.World, _Owed, LP.Request]:
+    ask = _Owed(owed)
+    world = bed.lp_world()
+    world.owed = ask
+    req = dataclasses.replace(bed.request("renet-live", target="hostinger"), plan=DONE_REL)
+    return world, ask, dataclasses.replace(req, **over)
+
+
+def test_an_owed_done_plan_records_in_place(bed: Bed) -> None:
+    _to_done(bed)
+    world, ask, req = _door(bed, {"hostinger"})
+    out = bed.record(req, world=world, write=True)
+    assert out.status == R.VERIFIED, out.message
+    assert out.row is not None
+    assert out.row["plan"] == DONE_REL, "the plan never moves, and the row names where it is"
+    assert ask.asked == [DONE_REL]
+    assert [r["plan"] for r in bed.ledger()] == [DONE_REL]
+    code, lines = LP.verify(bed.root, PLAN_REL)
+    assert code == 0, f"verify --plan matches by identity: {lines}"
+
+
+@pytest.mark.parametrize("owed", [set(), {"bench"}], ids=["nothing-owed", "another-target"])
+def test_a_done_plan_lp6_does_not_owe_this_target_refuses(bed: Bed, owed: set[str]) -> None:
+    _to_done(bed)
+    world, ask, req = _door(bed, owed)
+    with pytest.raises(LP.RequestError, match="no LP6 finding on this branch owes it a hostinger"):
+        bed.record(req, world=world)
+    assert ask.asked == [DONE_REL]
+    assert bed.fake.calls == []
+
+
+def test_a_removed_plan_is_never_admitted(bed: Bed) -> None:
+    rel = "agent/plans/_removed/PLAN-demo.md"
+    _write(bed.root, rel, DONE_PLAN)
+    _commit(bed.root, "removed copy")
+    world, ask, req = _door(bed, {"hostinger"}, plan=rel)
+    with pytest.raises(LP.RequestError, match="is not a live plan under agent/plans/"):
+        bed.record(req, world=world)
+    assert ask.asked == [], "the door is not even asked"
+    assert bed.fake.calls == []
+
+
+def test_a_done_stub_is_refused(bed: Bed) -> None:
+    _to_done(bed, text=STUB, keep_live=True)
+    world, ask, req = _door(bed, {"hostinger"})
+    with pytest.raises(LP.RequestError, match="is a stub"):
+        bed.record(req, world=world)
+    assert ask.asked == []
+    assert bed.fake.calls == []
+
+
+def test_a_ticked_box_in_a_done_plan_refuses(bed: Bed) -> None:
+    _to_done(bed)
+    world, _ask, _req = _door(bed, {"bench"})
+    req = dataclasses.replace(bed.request("cli-bench"), plan=DONE_REL, box=bed.sigs["ticked"])
+    with pytest.raises(LP.RequestError, match="already ticked"):
+        bed.record(req, world=world)
+    assert bed.fake.calls == []
+
+
+RENET_BOX = (
+    "- [ ] LP-hostinger [live] renet on hostinger\n  - Accept: live-proof hostinger renet-live\n"
+)
+HOME_REL = "agent/plans/PLAN-home.md"
+TWIN_REL = "agent/plans/PLAN-twin.md"
+
+
+def _home(name: str) -> str:
+    return (
+        f"# PLAN: {name}\n\nStatus: approved\nOwns: private/renet/cmd/**\n\n## Tasks\n\n{RENET_BOX}"
+    )
+
+
+def _moved_out_then_back(bed: Bed) -> None:
+    """HEAD: the `_done/` plan carries a move note where its renet box was, and PLAN-home holds the box. The working tree: the box is back in the `_done/` plan, byte-identical, and the note is gone, the state the recorder sees before the restore commit."""
+    (bed.root / PLAN_REL).unlink()
+    _write(
+        bed.root,
+        DONE_REL,
+        DONE_PLAN.replace(RENET_BOX, f"(moved 2026-11-08 to {HOME_REL}) LP-hostinger\n"),
+    )
+    _write(bed.root, HOME_REL, _home("home"))
+    _commit(bed.root, "finish the plan, its renet box moved to PLAN-home")
+    _write(bed.root, DONE_REL, DONE_PLAN)
+
+
+def test_a_box_still_open_in_the_plan_it_was_moved_to_refuses(bed: Bed) -> None:
+    _moved_out_then_back(bed)
+    world, ask, req = _door(bed, {"hostinger"})
+    with pytest.raises(LP.RequestError, match=f"still open in {HOME_REL}; move it, do not copy it"):
+        bed.record(req, world=world)
+    assert ask.asked == [DONE_REL]
+    assert bed.fake.calls == []
+
+
+def test_a_box_moved_back_out_of_its_interim_home_records(bed: Bed) -> None:
+    """CONTROL: the same restore with the box removed from PLAN-home is admitted."""
+    _moved_out_then_back(bed)
+    _write(bed.root, HOME_REL, _home("home").replace(RENET_BOX, ""))
+    world, _ask, req = _door(bed, {"hostinger"})
+    out = bed.record(req, world=world)
+    assert out.status == R.VERIFIED, out.message
+
+
+def test_a_templated_twin_box_in_an_unrelated_plan_does_not_refuse(bed: Bed) -> None:
+    """CONTROL: box signatures repeat across plans whose LP text is templated (eleven live plans shared one on 2026-11-10). A twin the move note does not name is another plan's own box, not a copy."""
+    _to_done(bed)
+    _write(bed.root, TWIN_REL, _home("twin"))
+    _commit(bed.root, "an unrelated plan with the same templated box")
+    world, _ask, req = _door(bed, {"hostinger"})
+    out = bed.record(req, world=world)
+    assert out.status == R.VERIFIED, out.message
+
+
+def test_an_owed_lookup_that_fails_refuses_and_runs_nothing(bed: Bed) -> None:
+    _to_done(bed)
+    world, ask, req = _door(bed, LP.RequestError("cannot ask LP6: exited 77"))
+    with pytest.raises(LP.RequestError, match="exited 77"):
+        bed.record(req, world=world)
+    assert ask.asked == [DONE_REL]
+    assert bed.fake.calls == []
+
+
+def test_a_live_folder_plan_with_a_done_status_is_still_refused(bed: Bed) -> None:
+    _write(bed.root, PLAN_REL, DONE_PLAN)
+    _commit(bed.root, "done in place")
+    world, ask, req = _door(bed, {"hostinger"}, plan=PLAN_REL)
+    with pytest.raises(LP.RequestError, match="is finished"):
+        bed.record(req, world=world)
+    assert ask.asked == [], "the door is for _done/ plans alone"
+    assert bed.fake.calls == []
+
+
+@pytest.mark.parametrize(
+    ("rc", "stdout", "want"),
+    [
+        (0, f"96 control(s) passed\nowed {DONE_REL} hostinger\n", frozenset({"hostinger"})),
+        (1, "96 control(s) passed\n", frozenset()),
+        (77, "", None),
+        (0, "96 control(s) passed\n", None),
+        (2, "owed x hostinger\n", None),
+    ],
+    ids=["owed", "nothing", "cannot-run", "rc0-no-line", "control-failed"],
+)
+def test_lp6_owed_reads_the_gate_and_fails_closed(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: pathlib.Path,
+    rc: int,
+    stdout: str,
+    want: frozenset[str] | None,
+) -> None:
+    seen: list[list[str]] = []
+
+    def fake(argv: Sequence[str], _cwd: pathlib.Path, _timeout: int, _env: Any = None) -> LP.Result:
+        seen.append(list(argv))
+        return LP.Result(rc, stdout, "CANNOT RUN: no merge-base\n" if rc == 77 else "")
+
+    monkeypatch.setattr(LP, "run_subprocess", fake)
+    if want is None:
+        with pytest.raises(LP.RequestError, match=f"exited {rc}"):
+            LP._lp6_owed(tmp_path, DONE_REL)
+    else:
+        assert LP._lp6_owed(tmp_path, DONE_REL) == want
+    assert seen[0][-2:] == ["--owed", DONE_REL]
+
+
+# ------------------------------------------------------------------ the VM waiver (`--vm-waived ASKED:<minute>Z`, operator ruling 2026-11-10)
+
+ASKED = "ASKED:2026-11-10T13:38Z"
+
+
+class _Asked:
+    """An ASKED proof that records each (token, transcript) it is asked about and answers `ok`."""
+
+    def __init__(self, ok: bool = True) -> None:
+        self.ok = ok
+        self.calls: list[tuple[str, str | None]] = []
+
+    def __call__(self, token: str, transcript: str | None) -> bool:
+        self.calls.append((token, transcript))
+        return self.ok
+
+
+def _waiver_world(bed: Bed, asked: _Asked, admit: Callable[..., R.Verdict] = _refuses) -> LP.World:
+    return dataclasses.replace(bed.lp_world(admit), asked=asked, transcript="/t/lead.jsonl")
+
+
+@pytest.mark.parametrize(
+    "token",
+    [
+        "today",
+        "ASKED:today",
+        "ASKED:2026-11-10",
+        "ASKED:2026-11-10T13:38",
+        "x ASKED:2026-11-10T13:38Z",
+        "ASKED:2026-11-10T13:38Z\n",
+    ],
+)
+def test_a_malformed_waiver_refuses_before_anything_runs(bed: Bed, token: str) -> None:
+    asked = _Asked()
+    req = bed.request("renet-live", target="hostinger", vm_waived=token)
+    with pytest.raises(LP.RequestError, match=r"--vm-waived .* is not ASKED:<YYYY-MM-DDTHH:MM>Z"):
+        bed.record(req, world=_waiver_world(bed, asked), write=True)
+    assert bed.fake.calls == []
+    assert asked.calls == [], "a malformed token never reaches the transcript"
+    assert bed.ledger() == []
+
+
+def test_a_waiver_no_operator_answer_proves_refuses_before_anything_runs(bed: Bed) -> None:
+    asked = _Asked(ok=False)
+    req = bed.request("renet-live", target="hostinger", vm_waived=ASKED)
+    with pytest.raises(LP.RequestError, match="matches no AskUserQuestion answer"):
+        bed.record(req, world=_waiver_world(bed, asked), write=True)
+    assert asked.calls == [(ASKED, "/t/lead.jsonl")]
+    assert bed.fake.calls == []
+    assert bed.ledger() == []
+
+
+def test_a_waiver_with_no_transcript_names_where_the_transcript_comes_from(bed: Bed) -> None:
+    world = dataclasses.replace(bed.lp_world(_refuses), asked=_Asked(ok=False), transcript=None)
+    req = bed.request("renet-live", target="hostinger", vm_waived=ASKED)
+    with pytest.raises(LP.RequestError, match=r"--transcript .*REDIACC_TRANSCRIPT_PATH"):
+        bed.record(req, world=world)
+
+
+def test_a_proven_waiver_lets_a_ladder_failing_run_record_a_waived_row(bed: Bed) -> None:
+    # Control: the same run without the waiver is the ladder refusal.
+    plain = bed.record(bed.request("renet-live", target="hostinger"), admit=_refuses, write=True)
+    assert (plain.status, plain.code) == (R.NOT_VERIFIED, LP.CODE_LADDER)
+    bed.fake.calls.clear()
+    req = bed.request("renet-live", target="hostinger", vm_waived=ASKED)
+    out = bed.record(req, world=_waiver_world(bed, _Asked()), write=True)
+    assert out.status == R.VERIFIED, out.message
+    assert out.row is not None
+    assert out.row["ladder"] == {"vm": None, "waived": ASKED, "head_tree": out.row["tree"]}
+    assert "waived" in out.message
+    assert out.row["tree"][:12] in out.message
+    assert [bed.fake.key(c) for c in bed.fake.calls] == ["status", "hash"], "the steps ran"
+    assert bed.ledger() == [out.row]
+    assert out.log_path is not None
+    assert f"ladder waived {ASKED}" in out.log_path.read_text(encoding="utf-8")
+    code, lines = LP.verify(bed.root, PLAN_REL)
+    assert code == 0, lines
+    assert f"vm=waived:{ASKED}" in lines[0]
+
+
+def test_a_waiver_on_a_run_the_ladder_admits_records_the_vm_run(bed: Bed) -> None:
+    req = bed.request("renet-live", target="hostinger", vm_waived=ASKED)
+    out = bed.record(req, world=_waiver_world(bed, _Asked(), admit=_admits))
+    assert out.status == R.VERIFIED, out.message
+    assert out.row is not None
+    assert out.row["ladder"] == {"vm": "vmc-fixture-1"}, "an admitted ladder needs no waiver"
+
+
+def _set(key: str, value: Any) -> Callable[[dict[str, Any]], None]:
+    return lambda ladder: ladder.update({key: value})
+
+
+@pytest.mark.parametrize(
+    ("edit", "needle"),
+    [
+        (_set("waived", "ASKED:today"), "ladder.waived"),
+        (_set("head_tree", "0" * 40), "ladder.head_tree"),
+        (_set("vm", "vmc-1"), "both"),
+        (lambda ladder: ladder.pop("waived"), "needs ladder.vm"),
+    ],
+    ids=["malformed", "other-tree", "vm-and-waived", "no-waiver"],
+)
+def test_validate_row_refuses_a_tampered_waived_ladder(
+    bed: Bed, edit: Callable[[dict[str, Any]], Any], needle: str
+) -> None:
+    req = bed.request("renet-live", target="hostinger", vm_waived=ASKED)
+    out = bed.record(req, world=_waiver_world(bed, _Asked()))
+    assert out.row is not None
+    checks = LT.registry()
+    assert LT.validate_row(out.row, checks=checks) == [], "control: the waived row is valid"
+    row = json.loads(json.dumps(out.row))
+    edit(row["ladder"])
+    row["id"] = R.row_id(row)
+    problems = LT.validate_row(row, checks=checks)
+    assert any(needle in p for p in problems), problems
+
+
+def test_a_waiver_on_a_row_with_no_vm_phase_is_refused_by_validate_row(bed: Bed) -> None:
+    out = bed.record(bed.request("cli-bench"))
+    assert out.row is not None
+    row = json.loads(json.dumps(out.row))
+    row["ladder"] = {"vm": None, "waived": ASKED, "head_tree": row["tree"]}
+    row["id"] = R.row_id(row)
+    problems = LT.validate_row(row, checks=LT.registry())
+    assert any("no VM phase to waive" in p for p in problems), problems
+
+
+def test_the_command_line_takes_vm_waived_and_transcript() -> None:
+    args = LP._parser().parse_args(
+        [
+            "record",
+            "--plan",
+            "p",
+            "--box",
+            "b",
+            "--target",
+            "bench",
+            "--check",
+            "cli-bench",
+            "--vm-waived",
+            ASKED,
+            "--transcript",
+            "/t/x.jsonl",
+        ]
+    )
+    assert (args.vm_waived, args.transcript) == (ASKED, "/t/x.jsonl")

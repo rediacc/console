@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Housekeeping's gate-cost capture (.github/workflows/housekeeping.yml, job gate-costs-capture), one phase per call.
+"""Housekeeping's gate-cost capture (.github/workflows/ops-housekeeping.yml, job gate-costs-capture), one phase per call.
 
     PYTHONPATH=.ci python3 -m rediacc_ci.ci.capture_gate_costs quick      serial ci:quick -> quick.json; fails on a hang or an unusable report
     PYTHONPATH=.ci python3 -m rediacc_ci.ci.capture_gate_costs rotation   one third of the slow gates (run.ts --slow-rotation) -> rotation.json;

@@ -43,7 +43,7 @@ SLUG = "retry-failed-runs"
 
 LIVE_HEAD = "a" * 40
 DEAD_HEAD = "b" * 40
-WATCHDOG = ".github/workflows/watchdog-monitor.yml"
+WATCHDOG = ".github/workflows/ops-watchdog-monitor.yml"
 NORMAL = ".github/workflows/cleanup-pr-preview.yml"
 
 FAKE_GH = """#!/usr/bin/python3
@@ -617,7 +617,7 @@ def test_planted_watchdog_exclusion_defect_is_caught(tmp_path: pathlib.Path) -> 
     """ANTI-VACUITY, planted on the watchdog exclusion -- the filter that removes 63 of 64 measured candidates and whose absence looks like a busy night rather than a bug. Driven red against the recording, then the source is confirmed byte-identical and green."""
     original = PORT.read_text(encoding="utf-8")
     mutated = original.replace(
-        'EXCLUDED_PATHS = (".github/workflows/watchdog-monitor.yml",)', "EXCLUDED_PATHS = ()"
+        'EXCLUDED_PATHS = (".github/workflows/ops-watchdog-monitor.yml",)', "EXCLUDED_PATHS = ()"
     )
     assert mutated != original, "the line this plant targets is no longer present verbatim"
 

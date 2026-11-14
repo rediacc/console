@@ -277,7 +277,7 @@ Metadata lives in D1 (lightweight, queryable for conflict detection and listing)
 
 ### R2 Bucket Structure
 
-One bucket per deployment and region (`rediacc-configs-{eu,us,asia}`, `edge-rediacc-configs-{eu,us,asia}`), keyed by store, team and config:
+One bucket per deployment and region (`configs-{eu,us,asia}`, shared by every channel), keyed by store, team and config:
 
 ```
   s/{storeId}/{teamId | _default}/{configId}/
@@ -379,23 +379,26 @@ CLI                           Account server                 Browser (any machin
  │                              │                              │
  ├─ POST /device-codes ────────►│  row bound to the CLI's user │
  │  purpose=config-handoff      │  stores H(key), H(S)         │
- │  keyHash, pollVerifier       │                              │
+ │  keyHash, pollVerifier,      │  and H(N)                    │
+ │  nonceHash = H(N)            │                              │
  │◄──────── device code D ──────┤                              │
  │                              │                              │
  ├─ Print link + pairing code P │                              │
  │  <portal>/config-remote      │                              │
- │   #code=D&key=...&nonce=N    │   (the fragment is never     │
- │  P = first 60 bits of        │    sent to any server)       │
- │      SHA-256(key)            │                              │
+ │   #code=D&key=...&nonce=N    │   (the fragment itself is    │
+ │  P = first 60 bits of        │    never sent; the server    │
+ │      SHA-256(key)            │    holds only H(N))          │
  │                              │                              │
  ├─ POST /device-codes/D/claim ►│  the CLI polls with S        │
  │                              │                              │
  │                              │◄─ GET .../handoff-request ───┤
- │                              │   {keyHash, boundToYou}      │
+ │                              │   {keyHash, nonceHash,       │
+ │                              │    boundToYou}               │
  │                              │                              │
  │                              │  Page checks: pending, bound │
  │                              │  to this session's user,     │
  │                              │  H(key in link) == keyHash   │
+ │                              │  H(N in link) == nonceHash   │
  │                              │                              │
  │                              │  User types P from the       │
  │                              │  terminal; the page compares │
@@ -437,11 +440,12 @@ What each value is for:
 | Bound user | server row | another account completing the request |
 | Pairing code P, typed by the user | terminal to keyboard | a swapped whole link: P derives from the CLI's key, so an attacker's key never matches |
 | Nonce N, sealed inside the blob | fragment and sealed plaintext only | a forged blob written by a relay or database insider |
+| `nonceHash` = SHA-256(N) stored at creation | server row, returned by `GET /device-codes/D/handoff-request` | a link whose nonce was altered by a party other than the server: the page refuses it before any unlock, instead of the CLI refusing the finished handoff. The hash comes from the same response a rogue server can rewrite, so it does not defend against the server (the sealed nonce N, checked by the CLI, does) |
 | Poll secret S | CLI to server, never in the link | a third party racing the claim to consume the blob |
 
 The request lives for 10 minutes (`DEVICE_CODE_TTL_MS`). The blob is deleted on the first successful claim, so it rests on the server for at most that long. A user holds at most 5 pending requests.
 
-**Security note**: The page reads the key from the fragment, but `keyHash` and `boundToYou` come from the handoff-request response, which a rogue server controls and can rewrite. Only the pairing code P does not rest on a server answer: the user types it from the terminal and the page compares it with the code derived from the key in the link, so a swapped link or key is caught there. The page must still be served as a static page with Content Security Policy (CSP) and Subresource Integrity (SRI) to prevent script injection. The fingerprint and the pairing code defend against link tampering and relay-side swaps, not against a server that ships modified page code: the JavaScript it serves can read the fragment, skip the pairing check and exfiltrate the unlocked secret. Zero-knowledge here rests on trusting the served page, as it does for every portal page that handles the CEK.
+**Security note**: The page reads the key from the fragment, but `keyHash`, `nonceHash` and `boundToYou` come from the handoff-request response, which a rogue server controls and can rewrite. Only the pairing code P does not rest on a server answer: the user types it from the terminal and the page compares it with the code derived from the key in the link, so a swapped link or key is caught there. The page must still be served as a static page with Content Security Policy (CSP) and Subresource Integrity (SRI) to prevent script injection. The fingerprint and the pairing code defend against link tampering and relay-side swaps, not against a server that ships modified page code: the JavaScript it serves can read the fragment, skip the pairing check and exfiltrate the unlocked secret. Zero-knowledge here rests on trusting the served page, as it does for every portal page that handles the CEK.
 
 ### Adding a Team Member
 

@@ -3,7 +3,7 @@
 
 Dispatches ONE generation of the chained watchdog monitor. The twin's header carries why the chain exists (ubuntu-slim's 15-minute job cap against a 1-2h CI run) and who calls it; none of it is restated here.
 
-LIVE CALLERS, not repointed: `.github/workflows/ci.yml` (CI Watchdog bootstrap, `--generation 1`) and `.github/workflows/watchdog-monitor.yml` (chain handoff). The bash twin stays the registered gate; this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
+LIVE CALLERS, not repointed: `.github/workflows/ci.yml` (CI Watchdog bootstrap, `--generation 1`) and `.github/workflows/ops-watchdog-monitor.yml` (chain handoff). The bash twin stays the registered gate; this module is its verified-equivalent alternative, and the cutover is a separate, later, driver-only step.
 
 Ledger: `.ci/shadow/w7p6-dispatch-watchdog.observations.jsonl` (`npx tsx scripts/lib/shadow-gate.ts --pair w7p6-dispatch-watchdog --assert --k 5`).
 
@@ -45,7 +45,7 @@ The twin's fallback arm is
 and a command substitution inside an `elif` condition runs with `set -e` suspended. So when THAT lookup failed, its exit status was discarded, the ref became the EMPTY STRING, and `gh workflow run --ref ''` was attempted and reported as the dispatch having failed:
 
     (error) Failed to dispatch watchdog generation 1 for run 1: gh workflow run
-      watchdog-monitor.yml --repo r/c --ref  -f target_run_id=1 ...
+      ops-watchdog-monitor.yml --repo r/c --ref  -f target_run_id=1 ...
 
 The port checks the lookup's status: a failed lookup is its own error (`Could not determine the default branch of <repo> ...`, exit 1) and no `gh workflow run` is attempted with an empty ref. The recording keeps the twin's bytes as the control; `test_delta_a_failed_default_branch_lookup_is_its_own_error` pins the port.
 
@@ -87,7 +87,7 @@ from rediacc_ci import log
 from rediacc_ci.core import common, gh_retry
 
 # `MAX_GENERATIONS=22` (twin :85). ~3 hours at ~8-minute generations, matching
-# watchdog-monitor.yml's own maxRuntime.
+# ops-watchdog-monitor.yml's own maxRuntime.
 MAX_GENERATIONS = 22
 
 # Divergence 2/3 stand-ins for bash's `${VAR:?}` and `$2: unbound variable`.
@@ -178,7 +178,7 @@ def gh_api(endpoint: str, jq: str) -> tuple[int, str]:
 
 
 def dispatch(ref: str, args: dict[str, str], repository: str) -> tuple[int, str]:
-    """`gh workflow run watchdog-monitor.yml ...`, both streams MERGED.
+    """`gh workflow run ops-watchdog-monitor.yml ...`, both streams MERGED.
 
     The merge is the twin's (`out="$(dispatch "$1" 2>&1)"`), and it is why a
     SUCCESSFUL dispatch prints nothing: the call's own output is swallowed.
@@ -187,7 +187,7 @@ def dispatch(ref: str, args: dict[str, str], repository: str) -> tuple[int, str]
         "gh",
         "workflow",
         "run",
-        "watchdog-monitor.yml",
+        "ops-watchdog-monitor.yml",
         "--repo",
         repository,
         "--ref",
@@ -315,9 +315,9 @@ def main(argv: list[str]) -> int:
     dispatch_err = out
 
     if is_bootstrap_404(dispatch_err):
-        # workflow_dispatch resolves the workflow FILENAME against the DEFAULT branch's registry, so until watchdog-monitor.yml has landed on main it cannot be dispatched from ANY ref. One-time bootstrap condition; fail OPEN with a loud warning instead of failing the job.
+        # workflow_dispatch resolves the workflow FILENAME against the DEFAULT branch's registry, so until ops-watchdog-monitor.yml has landed on main it cannot be dispatched from ANY ref. One-time bootstrap condition; fail OPEN with a loud warning instead of failing the job.
         log.warn(
-            "watchdog-monitor.yml is not registered on the default branch yet "
+            "ops-watchdog-monitor.yml is not registered on the default branch yet "
             "(pre-merge bootstrap) - run %s continues UNWATCHED" % args["run_id"]
         )
         return 0

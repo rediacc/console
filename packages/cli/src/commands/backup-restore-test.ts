@@ -24,8 +24,10 @@ import { machineConnections } from '../services/machine/machine-connection.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { assertResourceName, compositeKey } from '../utils/config-schema.js';
 import { getOutputFormat, ValidationError } from '../utils/errors.js';
+import { resolveRepoRef } from '../utils/repo-target.js';
 import { shellQuote } from '../utils/shell-quote.js';
 import { readSourceAnchor } from './backup-restore-chunk.js';
+import type { BackupManifestsResponse } from './backup-storage.js';
 import { lineageOf } from './backup-storage-browse.js';
 import {
   type CompareRecord,
@@ -33,9 +35,7 @@ import {
   parseRestoreStats,
   type RestoreStats,
 } from './backup-storage-parser.js';
-import type { BackupManifestsResponse } from './backup-storage.js';
 import { postVerification, type VerificationAnswer } from './backup-verification.js';
-import { resolveRepoRef } from '../utils/repo-target.js';
 
 /** The copy needs the image plus headroom for the staging file's metadata and the filesystem. */
 const SPACE_FACTOR = 1.2;
@@ -211,7 +211,6 @@ async function restoreAndCompare(args: {
   return { status: 'proven', passphraseCheck, compare: verdict, postFailed: false };
 }
 
-const SPACE_UNKNOWN = '?';
 const STATE_UNRECORDED = 'unrecorded';
 
 interface RestoreTestPlan {
@@ -239,12 +238,22 @@ async function planRestoreTest(repoRef: string): Promise<RestoreTestPlan> {
   }
   const imageBytes = await indexedImageBytes(lineage, snapshotId);
   const free = await datastoreFreeBytes(machineName);
-  if (imageBytes === undefined || free === undefined || free < imageBytes * SPACE_FACTOR) {
+  if (imageBytes === undefined) {
+    throw new ValidationError(
+      t('commands.backup.verify.restoreTestSizeUnknown', { snapshot: snapshotId })
+    );
+  }
+  if (free === undefined) {
+    throw new ValidationError(
+      t('commands.backup.verify.restoreTestFreeUnknown', { machine: machineName })
+    );
+  }
+  if (free < imageBytes * SPACE_FACTOR) {
     throw new ValidationError(
       t('commands.backup.verify.restoreTestNoSpace', {
         snapshot: snapshotId,
-        need: imageBytes === undefined ? SPACE_UNKNOWN : Math.ceil(imageBytes * SPACE_FACTOR),
-        free: free ?? SPACE_UNKNOWN,
+        need: Math.ceil(imageBytes * SPACE_FACTOR),
+        free,
       })
     );
   }

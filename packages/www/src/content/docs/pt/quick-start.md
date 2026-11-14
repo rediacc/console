@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: pt
-sourceHash: "05e87ddd9ad815ff"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "1a57c2ff08008d4e"
+sourceCommit: "c1e4f1e1584c84a89aaa6b606f4195df0d6725b0"
 ---
 
 # Início Rápido
@@ -223,7 +223,7 @@ rdc backup usage
 
 Os snapshots são enviados para o armazenamento fragmentado, que precisa de um servidor de conta e de um repositório licenciado. Só são armazenados os dados alterados, pelo que um segundo snapshot do mesmo repositório custa apenas a diferença, não a imagem inteira.
 
-Os backups têm um único tipo de destino, o armazenamento em chunks alojado no serviço, e `--to` em `repo push` indica apenas uma máquina. A retenção declara-se por linhagem de repositório com `rdc backup retention set`, e as execuções agendadas vêm de `rdc backup strategy set` mais `rdc backup schedule`. Veja [Backup e Restauro](/pt/docs/backup-restore).
+Os backups vão para armazéns registados: `home`, o armazém alojado que toda a subscrição tem, mais uma segunda região alojada ou um bucket do cliente, cada um indicado pelo `--target` de um destino (veja [Destinos de backup](/pt/docs/backup-destinations)). `--to` em `repo push` indica apenas uma máquina. A retenção declara-se por linhagem de repositório com `rdc backup retention set`, e as execuções agendadas vêm de `rdc backup strategy set` mais `rdc backup schedule`. Veja [Backup e Restauro](/pt/docs/backup-restore).
 
 ### 4. Receber de Remoto
 

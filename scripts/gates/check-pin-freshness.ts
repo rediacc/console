@@ -60,6 +60,7 @@
  * selftest: true
  * why: a toolchain or devcontainer pin with only agreement gates can be stale for a year
  *      with every copy agreeing; this asks the pin's own source through the pins drivers
+ * slow: true
  * ---- end gate ----
  *
  * Usage:

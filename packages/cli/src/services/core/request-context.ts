@@ -94,6 +94,12 @@ export interface CommandRequestContext {
    */
   executor?: Executor;
   /**
+   * The client asked for `--background` (CommandRequest.background): every
+   * machine job of this request starts with a zero attach window. Read per
+   * request, never from the process global, which concurrent requests share.
+   */
+  background?: boolean;
+  /**
    * The config this request's commands run against, overriding the disk.
    *
    * Set by the container tier, whose config exists only as the plaintext it

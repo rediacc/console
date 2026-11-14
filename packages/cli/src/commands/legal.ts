@@ -1,0 +1,203 @@
+import { SITE_LOCALES } from '@rediacc/locales';
+import {
+  LEGAL_DOCUMENTS,
+  LEGAL_ENTITY,
+  LEGAL_URLS,
+  type LegalDocumentId,
+  termsAt,
+} from '@rediacc/shared/legal';
+import type { Command } from 'commander';
+import i18n from 'i18next';
+import { t } from '../i18n/index.js';
+import { accountServerFetch } from '../services/account/account-client.js';
+import { getSubscriptionTokenState } from '../services/account/subscription-auth.js';
+import { configService } from '../services/config/config-resources.js';
+import { outputService } from '../services/core/output.js';
+import { handleError } from '../utils/errors.js';
+
+const TERMS_STATUS_PATH = '/account/api/v1/terms/status';
+/** Where third-party notices live; `rdc legal` only points at it. */
+const CREDITS_COMMAND = 'rdc credits --licenses';
+
+interface AcceptedTerms {
+  version: string;
+  acceptedAt: string | null;
+  method: string | null;
+  /** Where the answer came from: the account server (logged in) or this config's state (anonymous). */
+  source: 'account' | 'config';
+}
+
+export interface LegalInfo {
+  documents: { id: LegalDocumentId; url: string; bindingUrl: string }[];
+  terms: { version: string; sha256: string; effective: string; archiveUrl: string };
+  /** The newest announced version that is not yet in force. */
+  upcoming?: { version: string; effective: string };
+  /** The acceptance on record, or null when none or when the server could not be asked. */
+  accepted: AcceptedTerms | null;
+  /** True when a logged-in config's account server could not answer, so `accepted` is unknown rather than absent. */
+  acceptedUnreachable: boolean;
+  entity: {
+    legalName: string;
+    registryCode: string;
+    registerName: string;
+    vatNumber: string;
+    registeredAddress: string;
+  };
+  thirdPartyNotices: string;
+}
+
+function documentLanguage(): (typeof SITE_LOCALES)[number] {
+  const lang = (i18n.language || 'en').split('-')[0];
+  return (SITE_LOCALES as readonly string[]).includes(lang)
+    ? (lang as (typeof SITE_LOCALES)[number])
+    : 'en';
+}
+
+interface TermsStatusResponse {
+  accepted?: { version?: string; acceptedAt?: string; method?: string } | null;
+}
+
+/** True for a failure carrying an HTTP status: the server answered, so the network was reachable. */
+function answeredWithStatus(error: unknown): boolean {
+  return typeof (error as { status?: unknown } | null)?.status === 'number';
+}
+
+/** The acceptance the account server holds, or null when it holds none. */
+async function accountAcceptance(): Promise<AcceptedTerms | null> {
+  const { accepted } = await accountServerFetch<TermsStatusResponse>(TERMS_STATUS_PATH);
+  if (!accepted?.version) return null;
+  return {
+    version: accepted.version,
+    acceptedAt: accepted.acceptedAt ?? null,
+    method: accepted.method ?? null,
+    source: 'account',
+  };
+}
+
+/** The acceptance on record: the account server's answer when logged in, this config's state when anonymous. A server that cannot answer leaves it unknown, flagged `unreachable`. */
+async function acceptedTerms(): Promise<{ accepted: AcceptedTerms | null; unreachable: boolean }> {
+  if (getSubscriptionTokenState().kind === 'ready') {
+    try {
+      return { accepted: await accountAcceptance(), unreachable: false };
+    } catch (error) {
+      // A server that ANSWERED with an error status (401, 500) is not unreachable: surface its refusal instead of labelling it a network failure.
+      if (answeredWithStatus(error)) throw error;
+      return { accepted: null, unreachable: true };
+    }
+  }
+  const stored = (await configService.getCurrent())?.state?.terms;
+  return {
+    accepted: stored
+      ? {
+          version: stored.version,
+          acceptedAt: stored.acceptedAt,
+          method: stored.method,
+          source: 'config',
+        }
+      : null,
+    unreachable: false,
+  };
+}
+
+export async function collectLegalInfo(now = new Date()): Promise<LegalInfo> {
+  const lang = documentLanguage();
+  const state = termsAt(now);
+  const { accepted, unreachable } = await acceptedTerms();
+  const documents = Object.values(LEGAL_DOCUMENTS)
+    .filter((doc) => doc !== undefined)
+    .map((doc) => ({
+      id: doc.id,
+      url: LEGAL_URLS.documentUrl(doc.page, lang),
+      bindingUrl: LEGAL_URLS.documentUrl(doc.page, 'en'),
+    }));
+  return {
+    documents,
+    terms: {
+      version: state.current.version,
+      sha256: state.current.sha256,
+      effective: state.current.effective,
+      archiveUrl: state.current.archiveUrl,
+    },
+    ...(state.upcoming
+      ? { upcoming: { version: state.upcoming.version, effective: state.upcoming.effective } }
+      : {}),
+    accepted,
+    acceptedUnreachable: unreachable,
+    entity: {
+      legalName: LEGAL_ENTITY.legalName,
+      registryCode: LEGAL_ENTITY.registryCode,
+      registerName: LEGAL_ENTITY.registerName,
+      vatNumber: LEGAL_ENTITY.vatNumber,
+      registeredAddress: LEGAL_ENTITY.registeredAddress,
+    },
+    thirdPartyNotices: CREDITS_COMMAND,
+  };
+}
+
+function acceptedLine(info: LegalInfo): string {
+  if (info.accepted) {
+    return t('commands.legal.accepted', {
+      version: info.accepted.version,
+      at: info.accepted.acceptedAt ?? '-',
+      method: info.accepted.method ?? '-',
+    });
+  }
+  return info.acceptedUnreachable
+    ? t('commands.legal.acceptedUnreachable')
+    : t('commands.legal.notAccepted');
+}
+
+export function renderLegal(info: LegalInfo): string {
+  const lines = [t('commands.legal.documentsTitle')];
+  for (const doc of info.documents) {
+    lines.push(
+      doc.url === doc.bindingUrl
+        ? `  ${doc.id}: ${doc.url}`
+        : `  ${doc.id}: ${doc.url} (${t('commands.legal.binding')}: ${doc.bindingUrl})`
+    );
+  }
+  lines.push(
+    '',
+    t('commands.legal.terms', { version: info.terms.version, effective: info.terms.effective }),
+    `  sha256: ${info.terms.sha256}`,
+    `  ${info.terms.archiveUrl}`
+  );
+  if (info.upcoming) {
+    lines.push(
+      t('commands.legal.upcoming', {
+        version: info.upcoming.version,
+        effective: info.upcoming.effective,
+      })
+    );
+  }
+  lines.push(
+    acceptedLine(info),
+    '',
+    t('commands.legal.entity', {
+      name: info.entity.legalName,
+      code: info.entity.registryCode,
+      register: info.entity.registerName,
+      vat: info.entity.vatNumber,
+      address: info.entity.registeredAddress,
+    }),
+    t('commands.legal.credits', { command: info.thirdPartyNotices })
+  );
+  return lines.join('\n');
+}
+
+export function registerLegalCommand(program: Command): void {
+  program
+    .command('legal')
+    .summary(t('commands.legal.descriptionShort'))
+    .description(t('commands.legal.description'))
+    .option('--json', t('options.json'))
+    .action(async (options: { json?: boolean }) => {
+      try {
+        const info = await collectLegalInfo();
+        const json = options.json === true || program.opts().output === 'json';
+        outputService.print(json ? JSON.stringify(info, null, 2) : renderLegal(info));
+      } catch (error) {
+        handleError(error);
+      }
+    });
+}

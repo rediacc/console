@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 33
 language: et
-sourceHash: "442b5cfa49239dbc"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "9fcdf73439f82d82"
+sourceCommit: "7aedf8f834a72520b4ea8a4a1226b5b94afed2ae"
 ---
 
 ## Ülevaade
@@ -132,7 +132,7 @@ export REDIACC_ALLOW_GRAND_REPO='gitlab'   # üks repo
 claude   # või cursor, gemini jne.
 ```
 
-Ülekate kontrollitakse protsessi päritolu suhtes: see arvestatakse ainult siis, kui see oli juba agendi protsessi keskkonnas, mis tähendab, et sa eksportisid selle enne agendi (ja MCP serveri, mille see käivitas) käivitamist. Agent ei saa end juurdepääsu anda, seades muutuja seansi keskel. Tahtlikult pole serveriflagi: lipp MCP serveri argumentides ei näita, kes selle sinna pani, samal ajal kui päritolu kontroll näitab. Masinataseme juurdepääs (näiteks `term connect -m <machine>` ilma repota) nõuab siiski `*`; repo nimede loend seda ei ava.
+Ülekate kontrollitakse protsessi päritolu suhtes: see arvestatakse ainult siis, kui see oli juba agendi protsessi keskkonnas, mis tähendab, et sa eksportisid selle enne agendi (ja MCP serveri, mille see käivitas) käivitamist. Agent ei saa end juurdepääsu anda, seades muutuja seansi keskel. Tahtlikult pole serveriflagi: lipp MCP serveri argumentides ei näita, kes selle sinna pani, samal ajal kui päritolu kontroll näitab. Masinataseme juurdepääs (näiteks `term connect <machine>` ilma repota) nõuab siiski `*`; repo nimede loend seda ei ava.
 
 ### Repo-põhised SSH-võtmed ja serveripoolne liivakast
 

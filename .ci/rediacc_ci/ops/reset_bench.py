@@ -2,9 +2,11 @@
 
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.reset_bench [--yes] [--d1-only] [--r2-only]
 
-DESTRUCTIVE. It drops every table of the bench D1 database (`account-db-bench`) and re-applies migrations, then deletes every object in the bench R2 bucket (`rediacc-configs-bench`). The worker code and DNS are untouched; `deploy_bench` redeploys code. Without `--yes` one confirmation is asked: type `wipe bench`.
+DESTRUCTIVE. It drops every table of the bench D1 database (`account-bench`) and re-applies migrations, then deletes every object in the bench R2 bucket (`configs-bench`). The worker code and DNS are untouched; `deploy_bench` redeploys code. Without `--yes` one confirmation is asked: type `wipe bench`.
 
 Auth is `cf_auth`. As in the bash, the credential is destroyed on the way out whether the run succeeded or not, a pre-supplied `CF_MANAGEMENT_TOKEN` included (the scoped token is treated as single-use for this script).
+
+PRODUCTION GUARD. While `.ci/config/bench-production.json` declares a subscription, every mode exits 2 before the profile re-exec and before any credential is read; with the declaration present, a second check after the token is minted refuses when the live D1 holds `backup_manifests` rows of a declared subscription (`bench_production`). There is no override flag.
 
 RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in `tests/test_ops_reset_bench.py` that fails on the bash behaviour).
 
@@ -31,12 +33,11 @@ import urllib.parse
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import wrangler
-from rediacc_ci.ops import cf_auth
+from rediacc_ci.deploy import set_account_worker_secrets
+from rediacc_ci.ops import bench_preflight, bench_production, cf_auth
 
 ACCOUNT_ID = cf_auth.DEFAULT_ACCOUNT_ID
-DB_UUID = "ac45c2de-053b-404c-bc47-9ad9cbd2bb15"
-DB_NAME = "account-db-bench"
-BUCKET = "rediacc-configs-bench"
+# The database, its id and the bucket come from wrangler.bench.toml (`bench_preflight.bench_names`), the one declaration a repoint changes; a literal here read a stale database id.
 CONFIRMATION = "wipe bench"
 # The Bitwarden profile this re-executes under (.ci/config/secret-supply.json): the R2 S3-API trio the wipe signs with, and the Cloudflare global key that `cf_auth` mints a management token from. The trio left the deploy-bench profile (agent/plans/PLAN-backup-credential-isolation.md B2), so a deploy no longer carries a key that reaches every bucket.
 PROFILE = "reset-bench"
@@ -53,7 +54,7 @@ Usage:
   --d1-only   skip the R2 wipe
   --r2-only   skip the D1 wipe
 
-Resources: D1 account-db-bench, R2 rediacc-configs-bench. The worker code and
+Resources: the DB and CONFIG_BUCKET bindings of workers/account/wrangler.bench.toml. The worker code and
 DNS are not touched; rediacc_ci.ops.deploy_bench redeploys them.
 """
 
@@ -89,12 +90,33 @@ def _reexec_under_profile(argv: list[str]) -> int | None:
     ).returncode
 
 
+def _names() -> bench_preflight.BenchNames:
+    try:
+        return bench_preflight.bench_names()
+    except (OSError, ValueError) as exc:
+        raise ResetError("cannot read the bench names from wrangler.bench.toml: %s" % exc) from None
+
+
 def _query(auth: cf_auth.Auth, sql: str) -> dict:
-    url = "%s/accounts/%s/d1/database/%s/query" % (cf_auth.CF_API_BASE, ACCOUNT_ID, DB_UUID)
+    database_id = _names().database_id
+    if not database_id:
+        raise ResetError("wrangler.bench.toml's DB binding carries no database_id")
+    url = "%s/accounts/%s/d1/database/%s/query" % (cf_auth.CF_API_BASE, ACCOUNT_ID, database_id)
     try:
         return cf_auth.curl_json("POST", url, auth.headers, json.dumps({"sql": sql}), flags="-sS")
     except cf_auth.CfAuthError as exc:
         raise ResetError(str(exc)) from None
+
+
+def _rows(auth: cf_auth.Auth, sql: str) -> list[dict]:
+    """The result rows of one D1 read; ResetError on a failed query or an unexpected shape."""
+    answer = _query(auth, sql)
+    if answer.get("success") is not True:
+        raise ResetError("D1 query failed")
+    try:
+        return list(answer["result"][0]["results"])
+    except (KeyError, IndexError, TypeError):
+        raise ResetError("D1 query failed: unexpected response shape") from None
 
 
 REFERENCES = re.compile(r'REFERENCES\s+[`"\[]?([A-Za-z0-9_]+)', re.IGNORECASE)
@@ -131,7 +153,7 @@ def quote_identifier(name: str) -> str:
 
 
 def _wipe_d1(auth: cf_auth.Auth, env: dict[str, str]) -> None:
-    log.step("Querying D1 table list (%s)" % DB_NAME)
+    log.step("Querying D1 table list (%s)" % _names().database_name)
     listed = _query(auth, TABLE_QUERY)
     if listed.get("success") is not True:
         print(json.dumps(listed, indent=2))
@@ -154,7 +176,7 @@ def _wipe_d1(auth: cf_auth.Auth, env: dict[str, str]) -> None:
             print(json.dumps(result, indent=2))
             raise ResetError("Drop tables failed")
         log.info("All tables dropped")
-    log.step("Re-applying migrations to %s" % DB_NAME)
+    log.step("Re-applying migrations to %s" % _names().database_name)
     worker_dir = paths.repo_root() / "workers" / "account"
     _npm_install_if_needed(worker_dir, env)
     _run(
@@ -163,7 +185,7 @@ def _wipe_d1(auth: cf_auth.Auth, env: dict[str, str]) -> None:
             "d1",
             "migrations",
             "apply",
-            DB_NAME,
+            _names().database_name,
             "--remote",
             "--config",
             "wrangler.bench.toml",
@@ -203,9 +225,20 @@ class R2Credentials:
         self.endpoint = (os.environ.get("CLOUDFLARE_R2_ENDPOINT") or "").rstrip("/")
         self.key_id = os.environ.get("CLOUDFLARE_R2_ACCESS_KEY_ID") or ""
         self.secret = os.environ.get("CLOUDFLARE_R2_SECRET_ACCESS_KEY") or ""
+        # The bucket and its jurisdiction are the CONFIG_BUCKET binding's; a jurisdictional bucket is only reachable through the `.<jurisdiction>.` host.
+        try:
+            names = bench_preflight.bench_names()
+            self.bucket, self.jurisdiction = names.config_bucket, names.config_jurisdiction
+        except (OSError, ValueError):
+            self.bucket, self.jurisdiction = "", ""
+
+    def host(self) -> str:
+        """The S3 endpoint for the bound bucket, through `apply_jurisdiction` like every other R2 endpoint."""
+        return set_account_worker_secrets.apply_jurisdiction(self.endpoint, self.jurisdiction)
 
     def missing(self) -> list[str]:
         names = {
+            "CONFIG_BUCKET in wrangler.bench.toml": self.bucket,
             "CLOUDFLARE_R2_ENDPOINT": self.endpoint,
             "CLOUDFLARE_R2_ACCESS_KEY_ID": self.key_id,
             "CLOUDFLARE_R2_SECRET_ACCESS_KEY": self.secret,
@@ -228,7 +261,7 @@ def _s3(creds: R2Credentials, method: str, path: str) -> tuple[int, str]:
             "-",
             "-w",
             "\n%{http_code}",
-            "%s/%s" % (creds.endpoint, path),
+            "%s/%s" % (creds.host(), path),
         ],
         input=config,
         capture_output=True,
@@ -249,11 +282,15 @@ def list_bucket_keys(creds: R2Credentials) -> list[str]:
         query = "list-type=2&max-keys=1000"
         if token:
             query += "&continuation-token=%s" % urllib.parse.quote(token, safe="")
-        status, body = _s3(creds, "GET", "%s?%s" % (BUCKET, query))
+        status, body = _s3(creds, "GET", "%s?%s" % (creds.bucket, query))
         if status != 200:
-            raise ResetError("listing %s failed: HTTP %d %s" % (BUCKET, status, body.strip()[:200]))
+            raise ResetError(
+                "listing %s failed: HTTP %d %s" % (creds.bucket, status, body.strip()[:200])
+            )
         if "<ListBucketResult" not in body:
-            raise ResetError("listing %s failed: the answer was not a ListBucketResult" % BUCKET)
+            raise ResetError(
+                "listing %s failed: the answer was not a ListBucketResult" % creds.bucket
+            )
         # The answer is machine-generated and flat; a regex read avoids an XML parser on a network answer.
         keys += [html.unescape(k) for k in XML_KEY.findall(body)]
         truncated = "true" if "<IsTruncated>true</IsTruncated>" in body else "false"
@@ -264,14 +301,16 @@ def list_bucket_keys(creds: R2Credentials) -> list[str]:
 
 
 def _wipe_r2(creds: R2Credentials) -> None:
-    log.step("Listing objects in %s (S3 API)" % BUCKET)
+    log.step("Listing objects in %s (S3 API)" % creds.bucket)
     keys = list_bucket_keys(creds)
     if not keys:
         log.info("Bucket is already empty")
         return
-    log.step("Deleting %d objects from %s" % (len(keys), BUCKET))
+    log.step("Deleting %d objects from %s" % (len(keys), creds.bucket))
     for index, key in enumerate(keys):
-        status, body = _s3(creds, "DELETE", "%s/%s" % (BUCKET, urllib.parse.quote(key, safe="/")))
+        status, body = _s3(
+            creds, "DELETE", "%s/%s" % (creds.bucket, urllib.parse.quote(key, safe="/"))
+        )
         if status not in (200, 204):
             raise ResetError(
                 "deleting %s failed: HTTP %d %s; %d of %d objects deleted"
@@ -299,6 +338,16 @@ def main(argv: list[str]) -> int:
             log.error("Run with --help for usage.")
             return 2
 
+    # The production guard runs before the profile re-exec and before any credential is read; there is no override flag.
+    try:
+        protected = bench_production.load()
+        refusal = bench_production.reset_refusal(protected)
+    except bench_production.ProductionRefusalError as exc:
+        refusal = str(exc)
+    if refusal:
+        log.error(refusal)
+        return bench_production.REFUSAL_EXIT
+
     for cmd in ("curl", "npx"):
         if shutil.which(cmd) is None:
             log.error("Required command '%s' is not available" % cmd)
@@ -307,6 +356,11 @@ def main(argv: list[str]) -> int:
     if rebound is not None:
         return rebound
 
+    try:
+        bench = _names()
+    except ResetError as exc:
+        log.error(str(exc))
+        return 1
     r2 = R2Credentials()
     if do_r2 and r2.missing():
         log.error("the R2 wipe needs %s in the environment" % ", ".join(r2.missing()))
@@ -319,13 +373,20 @@ def main(argv: list[str]) -> int:
     try:
         env = cf_auth.wrangler_env(auth, ACCOUNT_ID, scrub_global_key=True)
         cf_auth.await_propagation(auth)
+        try:
+            held = bench_production.d1_refusal(lambda sql: _rows(auth, sql), protected)
+        except (ResetError, bench_production.ProductionRefusalError) as exc:
+            held = "the bench production D1 check could not run: %s" % exc
+        if held:
+            log.error(held)
+            return bench_production.REFUSAL_EXIT
         if not assume_yes:
             print()
             log.warn("About to wipe the bench environment:")
             if do_d1:
-                print("  D1: drop all rows from %s, then re-apply migrations" % DB_NAME)
+                print("  D1: drop all rows from %s, then re-apply migrations" % bench.database_name)
             if do_r2:
-                print("  R2: delete all objects from %s" % BUCKET)
+                print("  R2: delete all objects from %s" % r2.bucket)
             print()
             # `read -rp` semantics: the prompt goes to stderr, and only when stdin is a terminal.
             if sys.stdin.isatty():

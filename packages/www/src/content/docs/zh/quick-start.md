@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: zh
-sourceHash: "05e87ddd9ad815ff"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "1a57c2ff08008d4e"
+sourceCommit: "c1e4f1e1584c84a89aaa6b606f4195df0d6725b0"
 ---
 
 # 快速开始
@@ -223,7 +223,7 @@ rdc backup usage
 
 快照会上传到分块存储，这需要账户服务器和已获许可的仓库。只存储发生变化的数据，因此对同一仓库做第二次快照只需支付差异部分的成本，而不是整份镜像的成本。
 
-备份只有一种目标类型，即由服务托管的分块存储，`repo push` 的 `--to` 只接受机器名。保留策略按仓库谱系用 `rdc backup retention set` 声明，定时运行则来自 `rdc backup strategy set` 加 `rdc backup schedule`。参见[备份与恢复](/zh/docs/backup-restore)。
+备份会写入已注册的存储：每个订阅都有的托管存储 `home`，再加上第二个托管区域或客户自己的存储桶，每个存储都由目标的 `--target` 指定（参见[备份目标](/zh/docs/backup-destinations)）。`repo push` 的 `--to` 只接受机器名。保留策略按仓库谱系用 `rdc backup retention set` 声明，定时运行则来自 `rdc backup strategy set` 加 `rdc backup schedule`。参见[备份与恢复](/zh/docs/backup-restore)。
 
 ### 4. 从远程拉取
 

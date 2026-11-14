@@ -14,13 +14,16 @@ THE DRIFT SET IS DERIVED, NOT LISTED, AND KEYED ON THE STEP NAME ALONE. Until 20
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import re
 import subprocess
+import sys
 from collections.abc import Callable, Mapping, Sequence
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from rediacc_ci.core import gh_retry
+from rediacc_ci.core import gh_retry, ghx
 from rediacc_ci.security.ci_workflow_invariants import UPSTREAM_GATES
 
 SHA_RE = re.compile(r"^[0-9a-f]{40}$")
@@ -225,3 +228,116 @@ def fetch_run_jobs(repo: str, run_id: str, api: ApiJson = _api_json) -> list[dic
         if isinstance(page, dict) and isinstance(page.get("jobs"), list):
             jobs.extend(page["jobs"])
     return jobs
+
+
+# --- The weekly fleet run as the test evidence (PLAN-health-checks-local D4, design D-promote) ---
+#
+# promote-stable is triggered by the daily `CI - Drift` run (a drift run that concluded success or failure qualifies; every step of that job is drift by construction). What vouches for the EDGE COMMIT is the newest completed scheduled `Console CI` run on main, which is now weekly. It counts when it is at most `WEEKLY_MAX_AGE_DAYS` old and either green or red on drift steps only (`nightly_failures_are_drift_only`, applied by `check_soak_period`). Anything else is no waiver, and the ordinary 7-day soak decides.
+
+WEEKLY_MAX_AGE_DAYS = 8
+DRIFT_RUN_CONCLUSIONS: frozenset[str] = frozenset({"success", "failure"})
+WEEKLY_WORKFLOW = "ci.yml"
+# The `conclusion` written when no run qualifies; `check_soak_period` reads anything but success/failure as "no waiver".
+NO_EVIDENCE = "none"
+
+
+def drift_run_qualifies(conclusion: str) -> tuple[bool, str]:
+    """Whether a `CI - Drift` run may trigger a promotion: only success or failure. `cancelled`, `startup_failure`, `timed_out` and the rest never do."""
+    if conclusion in DRIFT_RUN_CONCLUSIONS:
+        return True, f"the drift run concluded {conclusion}"
+    return (
+        False,
+        f"the drift run concluded {conclusion or 'nothing'}, which never triggers a promotion",
+    )
+
+
+def _parse_time(value: object) -> datetime | None:
+    if not isinstance(value, str):
+        return None
+    try:
+        return datetime.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def weekly_evidence(
+    runs: Sequence[Mapping[str, Any]], now: datetime, max_age_days: int = WEEKLY_MAX_AGE_DAYS
+) -> tuple[Mapping[str, Any] | None, str]:
+    """The newest completed scheduled run that concluded success or failure and is at most `max_age_days` old, with the reason. `(None, reason)` when there is none: a cancelled run vouches for nothing, and an old run vouches only for its own old head."""
+    dated: list[tuple[datetime, Mapping[str, Any]]] = []
+    for run in runs:
+        finished = _parse_time(run.get("updated_at"))
+        if (
+            finished is not None
+            and run.get("status") == "completed"
+            and run.get("event", "schedule") == "schedule"
+            and run.get("conclusion") in DRIFT_RUN_CONCLUSIONS
+        ):
+            dated.append((finished, run))
+    if not dated:
+        return None, "no completed scheduled Console CI run concluded success or failure"
+    finished, newest = max(dated, key=lambda pair: pair[0])
+    age = now - finished
+    if age > timedelta(days=max_age_days):
+        too_old = (
+            f"the newest scheduled Console CI run {newest.get('id')} finished {age.days} days ago, "
+            f"over the {max_age_days}-day limit"
+        )
+        return None, too_old
+    return (
+        newest,
+        f"scheduled Console CI run {newest.get('id')} ({newest.get('conclusion')}, {age.days} day(s) old)",
+    )
+
+
+def fetch_weekly_runs(repo: str, api: ApiJson = _api_json) -> list[dict[str, Any]]:
+    """The most recent completed scheduled runs of ci.yml on main. Raises `ghx.GhError` on a failed read after the transient retries."""
+    page = api(
+        f"repos/{repo}/actions/workflows/{WEEKLY_WORKFLOW}/runs"
+        "?event=schedule&branch=main&status=completed&per_page=10",
+        attempts=3,
+    )
+    runs = page.get("workflow_runs") if isinstance(page, dict) else None
+    return [run for run in runs if isinstance(run, dict)] if isinstance(runs, list) else []
+
+
+def evidence_outputs(
+    repo: str,
+    now: datetime | None = None,
+    fetch: Callable[[str], list[dict[str, Any]]] = fetch_weekly_runs,
+) -> dict[str, str]:
+    """`head_sha`, `conclusion`, `run_id` and `reason` for the promote step. Runs that could not be read, or none that qualifies: `conclusion` is `none`, so the caller falls back to the soak."""
+    try:
+        runs = fetch(repo)
+    except ghx.GhError as exc:
+        reason = f"the runs could not be read: {exc}"
+        return {"head_sha": "", "conclusion": NO_EVIDENCE, "run_id": "", "reason": reason}
+    run, reason = weekly_evidence(runs, now or datetime.now(UTC))
+    if run is None:
+        return {"head_sha": "", "conclusion": NO_EVIDENCE, "run_id": "", "reason": reason}
+    return {
+        "head_sha": str(run.get("head_sha", "")),
+        "conclusion": str(run.get("conclusion", "")),
+        "run_id": str(run.get("id", "")),
+        "reason": reason,
+    }
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """`python3 -m rediacc_ci.release.nightly_tested_edge`: write the weekly evidence to `$GITHUB_OUTPUT` for promote-stable's `check_soak_period` step."""
+    del argv
+    repo = os.environ.get("GITHUB_REPOSITORY", "")
+    if not repo:
+        print("nightly_tested_edge: GITHUB_REPOSITORY must be set", file=sys.stderr)
+        return 1
+    out = evidence_outputs(repo)
+    print(f"Weekly evidence: {out['reason']}")
+    path = os.environ.get("GITHUB_OUTPUT")
+    if path:
+        with open(path, "a", encoding="utf-8") as fh:
+            fh.writelines(f"{key}={out[key]}\n" for key in ("head_sha", "conclusion", "run_id"))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

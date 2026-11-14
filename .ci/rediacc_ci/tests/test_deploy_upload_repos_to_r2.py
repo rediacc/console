@@ -60,8 +60,8 @@ DEFAULT_TREE = {
     "dist/repos/apt/InRelease": "InRelease body\n",
     "dist/repos/apt/dists/stable/Packages.gz": "packages body\n",
     "dist/repos/apk/APKINDEX.tar.gz": "apkindex body\n",
-    "dist/pages/install.sh": '#!/bin/sh\n: "${REDIACC_CHANNEL:-stable}"\n',
-    "dist/pages/install.ps1": '$c = if ($e) { "edge" } else { "stable" }\n',
+    "dist/pages/install.sh": '#!/bin/sh\n: "${REDIACC_CHANNEL:-edge}"\n',
+    "dist/pages/install.ps1": '$c = if ($e) { "edge" } else { "edge" }\n',
 }
 
 FAKE_AWS = """#!/usr/bin/python3
@@ -631,7 +631,7 @@ def test_divergence_each_of_the_five_guards_is_bashs_own_unbound_variable(
 def test_an_empty_channel_refuses_exactly_as_an_absent_one_does(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`:?` IS AN UNSET-OR-EMPTY TEST. A port testing `"CHANNEL" in os.environ` would sail past this and sync every format to `s3://rediacc-releases/apt//`, which is every channel's parent prefix."""
+    """`:?` IS AN UNSET-OR-EMPTY TEST. A port testing `"CHANNEL" in os.environ` would sail past this and sync every format to `s3://releases/apt//`, which is every channel's parent prefix."""
     old, new, old_calls, new_calls = run_both(tmp_path, CHANNEL="")
     assert old.returncode == new.returncode == 1
     assert new.stderr == "CHANNEL: rediacc_ci.deploy.upload_repos_to_r2: CHANNEL must be set\n"
@@ -773,7 +773,7 @@ def test_pure_helpers() -> None:
         "s3://" + RELEASES_BUCKET + "/cli/edge/install.sh"
     )
     assert port.sed_argv("pr-1", "dist/pages/install.sh")[2] == (
-        "s|REDIACC_CHANNEL:-stable|REDIACC_CHANNEL:-pr-1|g"
+        "s|REDIACC_CHANNEL:-edge|REDIACC_CHANNEL:-pr-1|g"
     )
     assert not hasattr(port, "purge_argv")
 
@@ -962,7 +962,7 @@ PRUNE_TREE = {
     "dist/repos/rpm/repodata/ccc-primary.xml.gz": "primary 1.2.0\n",
     "dist/repos/rpm/repodata/repomd.xml": "repomd naming ccc-primary.xml.gz\n",
     "dist/repos/rpm/rediacc.repo": "[rediacc]\n",
-    "dist/pages/install.sh": '#!/bin/sh\n: "${REDIACC_CHANNEL:-stable}"\n',
+    "dist/pages/install.sh": '#!/bin/sh\n: "${REDIACC_CHANNEL:-edge}"\n',
 }
 
 # What a previous release left in the bucket: the old version's packages, stale rpm repodata, and trees the prune must never touch.

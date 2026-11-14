@@ -6,7 +6,7 @@
 // Machine status types from 'renet list all --json'
 // ============================================
 
-export const LIST_TYPES_VERSION = 'dev';
+export const LIST_TYPES_VERSION = 'v3.0.0-200-gd85a3ca';
 
 /** Storage/memory capacity information */
 export interface DiskInfo {
@@ -151,6 +151,7 @@ export interface RepositoryInfo {
   name: string;
   network_id?: number;
   repo_name?: string;
+  resources?: RepositoryResources;
   service_count: number;
   size: number;
   size_human: string;
@@ -373,6 +374,7 @@ export interface StaleProcess {
 export interface ListResult {
   backup_coverage?: BackupCoverage;
   block_devices: BlockDevice[];
+  certificates?: CertificatesSection;
   containers?: ContainersResult;
   health_drift?: HealthDriftSummary;
   jobs: JobInfo[];
@@ -408,6 +410,44 @@ export interface BackupRepoStatus {
   target_met?: boolean;
   target_seconds?: number;
   ticks_missed?: number;
+}
+
+/** CertificateInfo (referenced type) */
+export interface CertificateInfo {
+  challenges?: ChallengeInfo[];
+  main: string;
+  not_after: string;
+  sans: string[];
+}
+
+/** CertificatesSection (referenced type) */
+export interface CertificatesSection {
+  certificates: CertificateInfo[];
+  delegated_names?: string[];
+  error?: string;
+  status: string;
+}
+
+/** ChallengeInfo (referenced type) */
+export interface ChallengeInfo {
+  cname?: string;
+  name: string;
+  unknown?: boolean;
+}
+
+/** RepositoryResources (referenced type) */
+export interface RepositoryResources {
+  cpu_max: string;
+  cpu_usage_usec: number;
+  io_max: string;
+  memory_current: number;
+  memory_high: number;
+  memory_max: number;
+  oom_kills: number;
+  pids_current: number;
+  pids_max: number;
+  ram_size: number;
+  ram_used: number;
 }
 
 /** StaleProcessesSection (referenced type) */

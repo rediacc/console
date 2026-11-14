@@ -80,7 +80,10 @@ def http_fetch(path: str, token: str) -> tuple[object, dict]:
         with https.urlopen(req, timeout=30) as resp:
             raw = resp.read()
     except urllib.error.HTTPError as e:
-        raise ApiError("HTTP %d on %s%s" % (e.code, label(path), _cf_errors(e.read()))) from None
+        with e:
+            raise ApiError(
+                "HTTP %d on %s%s" % (e.code, label(path), _cf_errors(e.read()))
+            ) from None
     except (urllib.error.URLError, TimeoutError, OSError) as e:
         raise ApiError("transport failure on %s: %s" % (label(path), e)) from None
     try:

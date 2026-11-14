@@ -28,6 +28,19 @@ export {
 } from './connect-helpers.js';
 export type { ExecSessionHandle, Ipv6Resolver, SFTPClientConfig } from './types.js';
 
+/** Set on every container executor by the proxy (`executorEnv` in workers/proxy/src/org-executor-support.ts); `rdc serve --mode container` refuses to boot without it (services/serve/auth.ts), and nothing else sets it. */
+const EXECUTOR_ENV = 'REDIACC_EXECUTOR_ORG_ID';
+
+/**
+ * The connect deadline inside a container executor. The container's first SYNs to a machine can be lost: a capture on hostinger (2026-11-10) saw no SYN for the executor's whole 10 s attempt and the one that arrived ~14.5 s in, the fourth Linux retransmission (1, 3, 7, 15 s), which completed the handshake after the client had already given up. 25 s turns that late SYN into a slow success. Interactive CLI calls keep DEFAULTS.SSH.READY_TIMEOUT.
+ */
+export const EXECUTOR_READY_TIMEOUT_MS = 25_000;
+
+/** The ssh2 readyTimeout when the config names none: EXECUTOR_READY_TIMEOUT_MS inside a container executor, DEFAULTS.SSH.READY_TIMEOUT everywhere else. */
+export function defaultReadyTimeoutMs(env: NodeJS.ProcessEnv = process.env): number {
+  return env[EXECUTOR_ENV]?.trim() ? EXECUTOR_READY_TIMEOUT_MS : DEFAULTS.SSH.READY_TIMEOUT;
+}
+
 /**
  * SFTP Client for direct file operations over SSH
  *
@@ -110,7 +123,7 @@ export class SFTPClient {
     const ssh = this.ssh;
     return new Promise((resolve, reject) => {
       const port = this.config.port ?? DEFAULTS.SSH.PORT;
-      const readyTimeout = this.config.timeout ?? DEFAULTS.SSH.READY_TIMEOUT;
+      const readyTimeout = this.config.timeout ?? defaultReadyTimeoutMs();
       // ssh2 emits `connect` once the TCP socket is up; its absence is what separates an unanswered connect from a silent peer.
       let tcpConnected = false;
       const connectConfig: ConnectConfig = {

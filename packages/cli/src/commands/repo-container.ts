@@ -31,6 +31,8 @@ import type { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
+import type { ExecuteOptions, ExecuteResult } from '../services/executor/types.js';
+import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
@@ -56,6 +58,109 @@ function resolveContainer(
   void machineName;
   void kubeCluster;
   return undefined;
+}
+
+/** Container names out of `docker ps --format json` output (one JSON object per line). */
+function parseContainerNames(stdout: string | undefined): string[] {
+  const names: string[] = [];
+  for (const line of (stdout ?? '').split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('{')) continue;
+    try {
+      const entry = JSON.parse(trimmed) as { Names?: unknown };
+      if (typeof entry.Names === 'string') {
+        names.push(...entry.Names.split(',').map((n) => n.trim()));
+      }
+    } catch {
+      // not a container row
+    }
+  }
+  return names.filter(Boolean);
+}
+
+function editDistance(a: string, b: string): number {
+  let prev = Array.from({ length: b.length + 1 }, (_, i) => i);
+  for (let i = 1; i <= a.length; i++) {
+    const row = [i];
+    for (let j = 1; j <= b.length; j++) {
+      row[j] = Math.min(prev[j] + 1, row[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    prev = row;
+  }
+  return prev[b.length];
+}
+
+/** The listed name closest to the typed one: a name containing it wins, else the smallest edit distance. */
+function closestContainer(requested: string, names: string[]): string | undefined {
+  const contained = names.find((n) => n.includes(requested) || requested.includes(n));
+  if (contained) return contained;
+  return [...names].sort((x, y) => editDistance(requested, x) - editDistance(requested, y))[0];
+}
+
+/** Whether `docker exec -c` would accept `requested` as an ID: the full ID or a unique ID prefix from the listing's `ID` fields. */
+function matchesContainerId(stdout: string | undefined, requested: string): boolean {
+  const ids: string[] = [];
+  for (const line of (stdout ?? '').split('\n')) {
+    const trimmed = line.trim();
+    if (!trimmed.startsWith('{')) continue;
+    try {
+      const entry = JSON.parse(trimmed) as { ID?: unknown };
+      if (typeof entry.ID === 'string') ids.push(entry.ID);
+    } catch {
+      // not a container row
+    }
+  }
+  return ids.filter((id) => id.startsWith(requested)).length === 1;
+}
+
+/**
+ * An unknown container is a named error that lists the repo's containers. docker's own "No such container" went to a stream nothing printed, so the verb exited 1 silent. When the listing cannot be read the call proceeds and renet decides.
+ */
+async function assertContainerKnown(
+  call: ExecuteOptions,
+  container: string | undefined
+): Promise<void> {
+  if (!container) return;
+  const listing = await getExecutor().execute({
+    functionName: 'container_list',
+    machineName: call.machineName,
+    datastore: call.datastore,
+    params: { repository: call.params?.repository, all: true },
+    captureOutput: true,
+    ...(call.kubeCluster !== undefined && { kubeCluster: call.kubeCluster }),
+  });
+  if (!listing.success) return;
+  const names = parseContainerNames(listing.stdout);
+  if (names.length === 0 || names.includes(container)) return;
+  if (matchesContainerId(listing.stdout, container)) return;
+  throw new ValidationError(
+    t('errors.container.unknown', {
+      container,
+      repository: String(call.params?.repository ?? ''),
+      containers: names.join(', '),
+      suggestion: closestContainer(container, names) ?? '',
+    })
+  );
+}
+
+/**
+ * Run the call as the verb's one job, or as a plain executor call when the form owns the terminal (`stream`). A job
+ * handed back as a ticket (`--background`, the proxy window) returns undefined after setting the exit code the
+ * executor reported; otherwise the finished result is returned, with the remote exit code in it.
+ */
+async function runBoundedOrStream(
+  verb: string,
+  call: ExecuteOptions,
+  stream: boolean
+): Promise<ExecuteResult | undefined> {
+  if (stream) return getExecutor().execute(call);
+  const outcome = await runCommandJob(verb, call, []);
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return undefined;
+  }
+  return outcome.result;
 }
 
 export function registerRepoContainerCommands(repo: Command): void {
@@ -92,7 +197,7 @@ export function registerRepoContainerCommands(repo: Command): void {
             );
           }
 
-          const result = await getExecutor().execute({
+          const call: ExecuteOptions = {
             functionName: 'container_logs',
             machineName,
             // #74: the container lives in the repo's compose project, which renet resolves through the repo's mount, the machine default is not it.
@@ -107,7 +212,10 @@ export function registerRepoContainerCommands(repo: Command): void {
             debug: options.debug,
             passthroughOutput: true,
             ...(kubeCluster !== undefined && { kubeCluster }),
-          });
+          };
+          // The `-f` form streams to the terminal until interrupted (section 24), so it stays a plain call; the bounded form is one read job with no client follow-up.
+          const result = await runBoundedOrStream('repo logs', call, options.follow === true);
+          if (!result) return;
           if (!result.success) {
             throw new Error(result.error ?? t('errors.container.logsFailed'));
           }
@@ -143,7 +251,7 @@ export function registerRepoContainerCommands(repo: Command): void {
           await assertCommandPolicy(CMD.REPO_EXEC, repoKey);
           const container = resolveContainer(repoKey, machineName, kubeCluster, options.container);
 
-          const result = await getExecutor().execute({
+          const call: ExecuteOptions = {
             functionName: 'container_exec',
             machineName,
             // #74: same as container_logs, the exec target is resolved through the repo's mount, so the recorded datastore has to travel.
@@ -159,7 +267,11 @@ export function registerRepoContainerCommands(repo: Command): void {
             debug: options.debug,
             passthroughOutput: true,
             ...(kubeCluster !== undefined && { kubeCluster }),
-          });
+          };
+          await assertContainerKnown(call, container);
+          // The interactive form (`-i`, tty) needs the local terminal (section 24) and stays a plain call; every other exec is one job whose exit code is the remote command's.
+          const result = await runBoundedOrStream('repo exec', call, options.interactive === true);
+          if (!result) return;
 
           // The remote exit code IS the result (§1 deviation). Anything else makes `repo exec <ref> -- test -f /x` a command whose answer cannot be read.
           if (!result.success) {

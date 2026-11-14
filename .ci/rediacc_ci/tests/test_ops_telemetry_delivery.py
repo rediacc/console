@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import io
 import json
+import pathlib
+import re
 import threading
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -177,15 +179,15 @@ def test_main_never_echoes_token_even_when_hosts_fail(monkeypatch, capsys):
     assert TOKEN not in cap.out + cap.err
 
 
-def test_all_hosts_is_stable_edge_and_bench():
+def test_all_hosts_is_the_shared_hosts_and_bench():
     regions = [
-        {"id": "eu", "domain": "eu.d", "edgeDomain": "edge-eu.d"},
-        {"id": "us", "domain": "us.d", "edgeDomain": "edge-us.d"},
+        {"id": "eu", "domain": "eu.d"},
+        {"id": "us", "domain": "us.d"},
     ]
     hosts = td.all_hosts(regions)
-    assert hosts[:4] == ["eu.d", "us.d", "edge-eu.d", "edge-us.d"]
-    assert len(hosts) == 5
-    assert hosts[4].startswith("bench")
+    assert hosts[:2] == ["eu.d", "us.d"]
+    assert len(hosts) == 3
+    assert hosts[2].startswith("bench")
 
 
 def test_loki_and_tempo_need_real_results():
@@ -307,3 +309,20 @@ def test_proxy_route_without_a_pattern_is_an_error(tmp_path):
     (tmp_path / "w.toml").write_text("[[routes]]\ncustom_domain = true\n")
     with pytest.raises(ValueError, match="without a pattern"):
         td.proxy_hosts(("w.toml",), root=tmp_path)
+
+
+def test_loki_selector_matches_every_deployed_worker_name():
+    """The Loki service_name label is the Worker's name, so the selector must admit every account and proxy Worker the wrangler configs declare."""
+    root = pathlib.Path(__file__).resolve().parents[3]
+    selector_match = re.search(r'=~"([^"]+)"', td.LOKI_SELECTOR)
+    assert selector_match is not None
+    pattern = re.compile(selector_match.group(1))
+    names = []
+    for kind in ("account", "proxy"):
+        for region in ("eu", "us", "asia", "bench"):
+            config = root / "workers" / kind / f"wrangler.{region}.toml"
+            found = re.search(r'^name = "([^"]+)"', config.read_text(), re.MULTILINE)
+            assert found, config
+            names.append(found.group(1))
+    assert len(names) == 8
+    assert all(pattern.fullmatch(n) for n in names), names

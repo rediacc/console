@@ -1,0 +1,593 @@
+"""`rediacc_ci.drills.backup_elite_compose` (box I3): the pure helpers, the `.env` it writes for the elite stack, and the run's row logic against two scripted VMs, a scripted gateway and a scripted box.
+
+The live run (two ops VMs, the dev gateway, a server image built by `rediacc_ci.ops.build_server onprem`) is the acceptance and belongs to the lead: `./run.sh drill backup-elite-compose`.
+"""
+
+from __future__ import annotations
+
+import base64
+import json
+import pathlib
+import shutil
+import subprocess
+import types
+import typing
+
+import pytest
+
+from rediacc_ci.core import account, run_verbs
+from rediacc_ci.drills import backup_elite_compose as ec
+from rediacc_ci.drills import backup_roundtrip as rt
+from rediacc_ci.drills import lib
+
+ELITE = "192.168.111.11"
+MACHINE = "192.168.111.12"
+SUB = "sub-123"
+REAL_ELITE = pathlib.Path(__file__).resolve().parents[3] / "private" / "elite"
+KEYS = {
+    "ed25519_priv": "ep",
+    "ed25519_pub": "eu",
+    "x25519_priv": "xp",
+    "x25519_pub": "xu",
+    "api_key": "k" * 32,
+    "jwt": "j" * 32,
+}
+
+
+APPLIED = json.dumps(
+    {"requestId": "backup-elite-compose", "certId": "0123456789abcdef", "issuedAt": "x"}, indent=2
+)
+
+
+def signed_cert(sub: str = SUB) -> dict[str, str]:
+    payload = base64.b64encode(json.dumps({"subscriptionId": sub}).encode()).decode()
+    return {"payload": payload, "signature": "sig", "publicKeyId": "kid"}
+
+
+# ---------------------------------------------------------------- pure helpers
+
+
+def test_arguments_name_the_two_machines_and_refuse_one_host_for_both() -> None:
+    opts = ec.parse_args(["--elite", "10.0.0.5", "--machine", "10.0.0.6", "--keep-stack"])
+    assert (opts.elite_vm, opts.machine_vm, opts.keep_stack) == ("10.0.0.5", "10.0.0.6", True)
+    default = ec.parse_args([])
+    assert (default.elite_vm, default.machine_vm) == (ELITE, MACHINE)
+    with pytest.raises(ValueError, match="same host"):
+        ec.parse_args(["--elite", "10.0.0.5", "--machine", "10.0.0.5"])
+    with pytest.raises(ValueError, match="needs a value"):
+        ec.parse_args(["--image"])
+    with pytest.raises(ValueError, match="Unknown option"):
+        ec.parse_args(["--bogus"])
+
+
+def test_the_env_publishes_the_store_on_the_elite_address_and_enrols_the_box() -> None:
+    env = ec.elite_env(
+        ELITE,
+        keys=KEYS,
+        store_access="a" * 32,
+        store_secret="s" * 64,
+        config_key="c=",
+    )
+    assert env["SYSTEM_DOMAIN"] == ELITE
+    assert env["RUSTFS_BIND"] == ELITE
+    assert env["PUBLIC_SITE_URL"] == "http://%s:%d" % (ELITE, ec.HTTP_PORT)
+    assert env["ACCOUNT_ED25519_PRIVATE_KEY"] == "ep"
+    # The cert reaches the box through its cert inbox, never the environment (the server no longer reads one).
+    assert not any(key.startswith("DELEGATION_CERT") for key in env)
+    assert env["ENABLE_HTTPS"] == "false"
+    # The standalone default of the public endpoint is the claim under test, so the drill never sets it.
+    assert "ACCOUNT_BACKUP_S3_PUBLIC_ENDPOINT" not in env
+    assert (
+        "%s/server:%s" % (env["DOCKER_REGISTRY"], env["WEB_TAG"])
+        == "rediacc-drill/server:elite-compose"
+    )
+
+
+def test_every_key_the_drill_sets_reaches_the_rendered_web_service() -> None:
+    """The compose file passes only what it names: a drill key it drops would silently never reach the server."""
+    both = "".join((REAL_ELITE / name).read_text(encoding="utf-8") for name in ec.COMPOSE_FILES)
+    env = ec.elite_env(ELITE, keys=KEYS, store_access="a", store_secret="s", config_key="c")
+    missing = [key for key in env if "${%s" % key not in both]
+    assert missing == []
+    # Control: the same check names a key the files do not read. The box needs none: the cert embeds in every licence from the cert alone, and the ON_PREMISE_* pair only turns on auto-renew (private/account/src/services/onprem-extras.ts).
+    assert "${ON_PREMISE_PRIVATE_KEY" not in both
+    assert "${ON_PREMISE_PUBLIC_KEY" not in both
+
+
+def test_the_inbox_seed_carries_the_drill_request_id_and_the_signed_cert() -> None:
+    cert = signed_cert()
+    seed = ec.inbox_seed(base64.b64encode(json.dumps(cert).encode()).decode())
+    assert seed.endswith("\n")
+    assert json.loads(seed) == {"requestId": ec.INBOX_REQUEST_ID, "cert": cert}
+    command = ec.seed_inbox_command("/tmp/stack")
+    assert "run --rm --no-deps -T --entrypoint sh web -c" in command
+    assert "/data/cert-inbox/new.json.tmp" in command
+    assert "chmod 700 /data/cert-inbox" in command
+
+
+def test_the_env_text_is_quoted_and_refuses_a_value_it_cannot_hold() -> None:
+    assert ec.env_text({"B": "2", "A": "x+/="}) == 'A="x+/="\nB="2"\n'
+    with pytest.raises(ValueError, match="KEY carries") as caught:
+        ec.env_text({"KEY": 'se"cret'})
+    assert "se" not in str(caught.value).replace("KEY carries", "")
+
+
+def test_the_env_text_refuses_a_value_with_a_trailing_newline() -> None:
+    with pytest.raises(ValueError, match="KEY carries"):
+        ec.env_text({"KEY": "abc\n"})
+
+
+@pytest.mark.parametrize("code", [255, 127])
+def test_a_failed_resolution_probe_is_not_the_outside_control(harness, code: int) -> None:
+    run = harness(
+        machine_answers=[
+            (ec.SERVER_INFO, ok("200")),
+            (":%d/" % ec.STORE_PORT, ok("403")),
+            ("curl", ok("000")),
+            ("getent", rt.VmResult(code, "", "")),
+        ]
+    )
+    assert any("outside the docker network" in desc for desc in failed(run))
+
+
+def test_the_cert_is_carried_as_base64_json_and_its_subscription_read_back() -> None:
+    b64 = ec.cert_base64(json.dumps({"cert": signed_cert()}))
+    assert json.loads(base64.b64decode(b64))["publicKeyId"] == "kid"
+    assert ec.cert_subscription(b64) == SUB
+    assert ec.cert_subscription("bm90LWpzb24=") == ""
+    with pytest.raises(ValueError, match="no cert"):
+        ec.cert_base64(json.dumps({"error": "Subscription not found"}))
+    with pytest.raises(ValueError, match="not JSON"):
+        ec.cert_base64("<html>")
+
+
+def test_compose_runs_both_elite_files_in_the_stack_directory() -> None:
+    cmd = ec.compose_command("/tmp/s", "up", "-d")
+    assert (
+        cmd
+        == "cd /tmp/s && sudo -n docker compose -f docker-compose.yml -f docker-compose.standalone.yml up -d"
+    )
+
+
+# ---------------------------------------------------------------- the run, scripted
+
+
+class FakeVm:
+    """A VM that answers by the first matching substring, and remembers every command and stdin."""
+
+    def __init__(self, answers: list[tuple[str, rt.VmResult]]) -> None:
+        self.answers = answers
+        self.calls: list[tuple[str, str | None]] = []
+
+    def __call__(self, command: str, stdin_data: str | None = None) -> rt.VmResult:
+        self.calls.append((command, stdin_data))
+        for needle, result in self.answers:
+            if needle in command:
+                return result
+        return rt.VmResult(0, "", "")
+
+
+class FakeApi:
+    def __init__(self, base: str, sub: str = SUB) -> None:
+        self.base = base
+        self.sub = sub
+        self.token = ""
+        self.cookies: dict[str, str] = {"session": "x"}
+        self.calls: list[tuple[str, str]] = []
+
+    def accept_terms(self) -> bool:
+        self.calls.append(("ACCEPT", "/portal/terms/accept"))
+        return False
+
+    def call(self, method: str, path: str, body: dict | None = None, timeout: int = 30) -> dict:
+        del body, timeout
+        self.calls.append((method, path))
+        if path == "/portal/subscription":
+            return {"id": self.sub}
+        if path == "/api-tokens":
+            return {"token": "tok"}
+        return {}
+
+
+class FakeTrip:
+    def __init__(self, rc: int, seen: dict) -> None:
+        self.rc = rc
+        self.seen = seen
+
+    def __call__(
+        self, vm, api, work, *, say, subscription
+    ):  # the factory signature EliteRoundtrip has
+        del work, say
+        self.seen.update(vm=vm, api=api, subscription=subscription)
+        return self
+
+    def run(self) -> int:
+        return self.rc
+
+
+def ok(out: str = "") -> rt.VmResult:
+    return rt.VmResult(0, out, "")
+
+
+@pytest.fixture
+def harness(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch):
+    root = tmp_path / "root"
+    shutil.copytree(REAL_ELITE, root / "private" / "elite", ignore=shutil.ignore_patterns(".git"))
+    monkeypatch.setenv("REDIACC_CI_ROOT", str(root))
+    monkeypatch.setenv("TMPDIR", str(tmp_path))
+    monkeypatch.setattr(
+        account,
+        "generate_crypto_keys",
+        lambda **_k: types.SimpleNamespace(
+            ed25519_priv="ep",
+            ed25519_pub="eu",
+            x25519_priv="xp",
+            x25519_pub="xu",
+            api_key="k" * 32,
+            jwt="j" * 32,
+        ),
+    )
+
+    def go(
+        *,
+        machine_answers=None,
+        elite_answers=None,
+        ship_rc=0,
+        trip_rc=0,
+        box_sub=SUB,
+        cert_sub=SUB,
+        image_rc=0,
+        keep_stack=False,
+    ):
+        drill: typing.Any = lib.Drill("backup-elite-compose", selftest=False, keep_work=False)
+        drill.init()
+        posts: list[tuple[str, dict]] = []
+        drill.gateway_alive = lambda: True
+        drill.account_ensure_login = lambda *_a: None
+        drill.account_ensure_subscription = lambda *_a, **_k: None
+        drill.account_session = lambda *_a: True
+        drill.account_subscription_id = lambda _jar: cert_sub
+
+        def api_post(path, body, jar=None):
+            del jar
+            posts.append((path, body))
+            return json.dumps({"cert": signed_cert(cert_sub)})
+
+        drill.api_post = api_post
+        # Explicit answers win (first match); a healthy box's boot scan answers the drill's drop.
+        elite = FakeVm([*(elite_answers or []), ("applied.json", ok(APPLIED))])
+        machine = FakeVm(
+            machine_answers
+            if machine_answers is not None
+            else [
+                (ec.SERVER_INFO, ok("200")),
+                (":%d/" % ec.STORE_PORT, ok("403")),
+                ("curl", ok("000")),
+                ("getent", rt.VmResult(2, "", "")),
+            ]
+        )
+        seen: dict = {}
+        apis: list[FakeApi] = []
+
+        def api_factory(base: str) -> FakeApi:
+            apis.append(FakeApi(base, box_sub))
+            return apis[-1]
+
+        opts = ec.parse_args(["--keep-stack"] if keep_stack else [])
+        subject = ec.EliteCompose(
+            drill,
+            opts,
+            elite=elite,
+            machine=machine,
+            ship=lambda: ship_rc,
+            local=lambda _argv: image_rc,
+            api_factory=typing.cast("typing.Any", api_factory),
+            roundtrip_factory=FakeTrip(trip_rc, seen),
+            sleep=lambda _s: None,
+        )
+        try:
+            code = subject.run_all()
+        except SystemExit as exc:
+            code = 100 + int(exc.code or 0)
+        finally:
+            drill.teardown()
+        return types.SimpleNamespace(
+            code=code,
+            drill=drill,
+            elite=elite,
+            machine=machine,
+            posts=posts,
+            seen=seen,
+            apis=apis,
+            subject=subject,
+        )
+
+    return go
+
+
+def failed(run) -> list[str]:
+    return [desc for _num, status, desc in run.drill.rows if status != "PASS"]
+
+
+def test_a_healthy_stack_and_a_completed_snapshot_pass_every_row(harness) -> None:
+    run = harness()
+    assert failed(run) == []
+    assert run.code == 0
+    # The cert is minted for the box's own Ed25519 public key.
+    assert run.posts == [
+        (
+            "/portal/delegation-certs",
+            {"subscriptionId": SUB, "delegatedPublicKey": "eu", "validDays": ec.CERT_VALID_DAYS},
+        )
+    ]
+    # The .env went over stdin, never on a command line, and enrols the box with that cert.
+    env_writes = [stdin for cmd, stdin in run.elite.calls if cmd.endswith(("/.env'", "/.env"))]
+    assert len(env_writes) == 1
+    assert "DELEGATION_CERT" not in env_writes[0]
+    # The cert goes into the inbox on the data volume over stdin, before the stack's first boot.
+    commands = [cmd for cmd, _ in run.elite.calls]
+    seed_at = next(i for i, cmd in enumerate(commands) if "--entrypoint sh web" in cmd)
+    up_at = next(i for i, cmd in enumerate(commands) if cmd.endswith(" up -d"))
+    assert seed_at < up_at
+    assert json.loads(run.elite.calls[seed_at][1]) == {
+        "requestId": ec.INBOX_REQUEST_ID,
+        "cert": signed_cert(),
+    }
+    assert all("ep" not in cmd.split() for cmd, _ in run.elite.calls)
+    # Both compose files are the tree's own, byte for byte.
+    shipped = {
+        cmd.rsplit("/", 1)[-1]: stdin
+        for cmd, stdin in run.elite.calls
+        if stdin and "docker-compose" in cmd
+    }
+    assert shipped["docker-compose.yml"] == (REAL_ELITE / "docker-compose.yml").read_text(
+        encoding="utf-8"
+    )
+    # The snapshot runs on the MACHINE VM against the box, under the adopted subscription, with the bearer and no cookie.
+    assert run.seen["vm"] is run.machine
+    assert run.seen["subscription"] == SUB
+    assert run.apis[0].base == "http://%s:%d" % (ELITE, ec.HTTP_PORT)
+    assert run.apis[0].token == "tok"
+    assert run.apis[0].cookies == {}
+    # The stack goes down with its volumes.
+    assert any("down -v" in cmd for cmd, _ in run.elite.calls)
+
+
+def test_an_unenrolled_server_fails_its_row_and_skips_the_snapshot(harness) -> None:
+    run = harness(
+        machine_answers=[
+            (ec.SERVER_INFO, ok("502")),
+            (":%d/" % ec.STORE_PORT, ok("403")),
+            ("curl", ok("000")),
+            ("getent", rt.VmResult(2, "", "")),
+        ]
+    )
+    assert any("server-info" in desc for desc in failed(run))
+    assert run.seen == {}
+    assert run.code != 0
+
+
+def test_a_store_on_loopback_only_fails_the_reach_row(harness) -> None:
+    run = harness(
+        machine_answers=[
+            (ec.SERVER_INFO, ok("200")),
+            ("curl", ok("000")),
+            ("getent", rt.VmResult(2, "", "")),
+        ]
+    )
+    assert any("published store answers 403" in desc for desc in failed(run))
+    assert run.code != 0
+
+
+def test_a_machine_inside_the_docker_network_fails_the_outside_control(harness) -> None:
+    run = harness(
+        machine_answers=[
+            (ec.SERVER_INFO, ok("200")),
+            (":%d/" % ec.STORE_PORT, ok("403")),
+            ("curl", ok("000")),
+            ("getent", ok("172.18.0.3 rediacc-rustfs")),
+        ]
+    )
+    assert any("outside the docker network" in desc for desc in failed(run))
+
+
+def test_a_failed_snapshot_fails_the_acceptance_row(harness) -> None:
+    run = harness(trip_rc=2)
+    assert failed(run) == [
+        "a machine outside the docker network completes a snapshot and a byte-identical restore"
+    ]
+    assert run.code != 0
+
+
+def test_a_box_that_did_not_adopt_the_cert_fails_its_row(harness) -> None:
+    run = harness(box_sub="sub-other")
+    assert any("delegation cert names" in desc for desc in failed(run))
+
+
+def test_a_failed_compose_up_stops_the_run_and_still_tears_down(harness) -> None:
+    run = harness(elite_answers=[(" up -d", rt.VmResult(1, "", "pull access denied"))])
+    assert run.code == 101
+    assert run.seen == {}
+    assert any("down -v" in cmd for cmd, _ in run.elite.calls)
+
+
+def test_keep_stack_leaves_the_stack_up(harness) -> None:
+    run = harness(keep_stack=True)
+    assert not any("down -v" in cmd for cmd, _ in run.elite.calls)
+
+
+def test_a_missing_image_is_refused_before_any_machine_work(harness) -> None:
+    run = harness(image_rc=1)
+    assert run.code == 101
+    assert run.posts == []
+    assert not any("compose" in cmd and "up" in cmd for cmd, _ in run.elite.calls)
+
+
+def test_the_drill_is_registered_with_the_run_sh_dispatcher() -> None:
+    assert (
+        run_verbs.DRILL_MODULES["backup-elite-compose"] == "rediacc_ci.drills.backup_elite_compose"
+    )
+    assert "backup-elite-compose" in run_verbs.DRILL_ARMS
+
+
+# ---------------------------------------------------------------- the machine's licence from the box
+
+
+def box_licence(*, cert: dict | None = None, key_id: str = "0123456789abcdef") -> dict:
+    doc: dict = {"payload": "p", "signature": "s", "publicKeyId": key_id}
+    if cert is not None:
+        doc["delegationCert"] = cert
+    return doc
+
+
+class LicenceApi(FakeApi):
+    def __init__(self, licence: dict) -> None:
+        super().__init__("http://box")
+        self.licence = licence
+        self.bodies: list[dict] = []
+
+    def call(self, method: str, path: str, body: dict | None = None, timeout: int = 30) -> dict:
+        if path == "/licenses/activate-repo":
+            self.bodies.append(body or {})
+            return {"license": self.licence}
+        return super().call(method, path, body, timeout)
+
+
+@pytest.fixture
+def licence_trip(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch):
+    ident = tmp_path / "machine-id"
+    ident.write_text("client-1\n", encoding="utf-8")
+    monkeypatch.setattr(rt, "CLIENT_MACHINE_ID", ident)
+    work = tmp_path / "work"
+    work.mkdir()
+
+    def make(licence: dict):
+        vm = FakeVm([("renet machine-id", ok("mid-1\n"))])
+        api = LicenceApi(licence)
+        trip = ec.EliteRoundtrip(
+            vm, typing.cast("typing.Any", api), work, say=lambda _m: None, subscription=SUB
+        )
+        return trip, vm, api
+
+    return make
+
+
+def test_the_machine_is_licensed_by_the_box_it_backs_up_into(licence_trip) -> None:
+    """The elite path must install the box's licence before `repository create`; a machine with none gets LICENSE_REQUIRED / missing."""
+    trip, vm, api = licence_trip(box_licence(cert=signed_cert()))
+    trip.issue_license("g1", "g1", "grand")
+    assert api.bodies
+    assert api.bodies[0]["repositoryGuid"] == "g1"
+    assert any("license/repos/g1/0123456789abcdef.json" in c for c, _ in vm.calls)
+
+
+def test_the_elite_path_installs_where_a_scoped_datastore_is_read(licence_trip) -> None:
+    trip, vm, _api = licence_trip(box_licence(cert=signed_cert()))
+    vm.answers.insert(0, ("datastore.json", ok(json.dumps({"datastoreId": "abcd1234-ef"}))))
+    trip.issue_license("g1", "g1", "grand")
+    assert any("license/datastores/abcd1234-ef/repos/g1/" in c for c, _ in vm.calls)
+    assert not any("license/repos/g1/" in c for c, _ in vm.calls)
+
+
+@pytest.mark.parametrize(
+    ("licence", "needle"),
+    [
+        (box_licence(), "delegationCert"),
+        (box_licence(cert=signed_cert("other-sub")), "other-sub"),
+        (box_licence(cert=signed_cert(), key_id="kid-1"), "16-hex"),
+    ],
+)
+def test_a_box_licence_renet_cannot_select_is_refused_before_the_create(
+    licence_trip, licence: dict, needle: str
+) -> None:
+    trip, vm, _api = licence_trip(licence)
+    with pytest.raises(rt.StepError, match=needle):
+        trip.issue_license("g1", "g1", "grand")
+    assert not any("cp /tmp/rt-lic.json" in c for c, _ in vm.calls)
+
+
+def test_a_failed_descriptor_probe_raises_instead_of_guessing_the_flat_root(licence_trip) -> None:
+    # A transient ssh or sudo failure must not install the licence where a scoped datastore is never read.
+    trip, vm, _api = licence_trip(box_licence(cert=signed_cert()))
+    vm.answers.insert(0, ("datastore.json", rt.VmResult(255, "", "ssh: connection reset")))
+    with pytest.raises(rt.StepError, match="cannot read the datastore descriptor"):
+        trip.issue_license("g1", "g1", "grand")
+    assert not any("license/repos/g1/" in c for c, _ in vm.calls)
+
+
+def test_an_absent_descriptor_is_the_flat_population(licence_trip) -> None:
+    trip, vm, _api = licence_trip(box_licence(cert=signed_cert()))
+    vm.answers.insert(0, ("datastore.json", ok(rt.NO_DESCRIPTOR + "\n")))
+    trip.issue_license("g1", "g1", "grand")
+    assert any("license/repos/g1/0123456789abcdef.json" in c for c, _ in vm.calls)
+
+
+@pytest.mark.parametrize(
+    ("descriptor", "root"),
+    [
+        (json.dumps({"datastoreId": "abcd1234-ef"}), "license/datastores/abcd1234-ef/repos/g1"),
+        (rt.NO_DESCRIPTOR, "license/repos/g1"),
+    ],
+)
+def test_teardown_removes_the_licence_from_the_root_renet_reads(
+    licence_trip, descriptor: str, root: str
+) -> None:
+    trip, vm, _api = licence_trip(box_licence(cert=signed_cert()))
+    vm.answers.insert(0, ("datastore.json", ok(descriptor + "\n")))
+    trip.created = ["g1"]
+    trip.teardown()
+    removals = [c for c, _ in vm.calls if "rm -rf" in c]
+    assert removals
+    assert all(root in c for c in removals)
+
+
+def test_the_registration_accepts_the_terms_before_reading_the_subscription(harness) -> None:
+    """85d9bad6.2: removing the accept_terms call from register() fails here."""
+    run = harness()
+    calls = run.apis[0].calls
+    assert ("ACCEPT", "/portal/terms/accept") in calls
+    assert calls.index(("ACCEPT", "/portal/terms/accept")) < calls.index(
+        ("GET", "/portal/subscription")
+    )
+
+
+def test_a_rejected_inbox_drop_fails_its_row(harness) -> None:
+    rejected = json.dumps({"requestId": ec.INBOX_REQUEST_ID, "reason": "wrong-key", "detail": "x"})
+    run = harness(elite_answers=[("applied.json", ok(rejected))])
+    assert any("boot scan applied the cert" in desc for desc in failed(run))
+
+
+def test_the_row_reads_our_answer_when_both_answer_files_exist(harness) -> None:
+    """6ef2ef77.1: two files concatenated used to parse as nothing and fail the row; now the document naming our request decides."""
+    other = json.dumps({"requestId": "someone-else", "reason": "wrong-key"})
+    run = harness(elite_answers=[("applied.json", ok(other + "\n" + APPLIED + "\n"))])
+    assert not any("boot scan applied the cert" in desc for desc in failed(run))
+
+
+def test_inbox_answers_reads_concatenated_documents_and_stops_at_text() -> None:
+    assert ec.inbox_answers('{"a": 1}\n{"b": 2}\n') == [{"a": 1}, {"b": 2}]
+    assert ec.inbox_answers('{"a": 1}\nnot json') == [{"a": 1}]
+    assert ec.inbox_answers("") == []
+
+
+def test_the_answer_script_separates_two_files_with_a_newline(tmp_path, monkeypatch) -> None:
+    """The script itself, run in a real shell over a temporary inbox: the two files parse as two documents."""
+    (tmp_path / "applied.json").write_text('{"requestId": "x", "certId": "c"}', encoding="utf-8")
+    (tmp_path / "rejected.json").write_text('{"requestId": "y", "reason": "r"}', encoding="utf-8")
+    monkeypatch.setattr(ec, "INBOX_DIR", str(tmp_path))
+    out = subprocess.run(
+        ["sh", "-c", ec.inbox_answer_script()], capture_output=True, text=True, check=True
+    ).stdout
+    assert [d["requestId"] for d in ec.inbox_answers(out)] == ["x", "y"]
+    (tmp_path / "applied.json").unlink()
+    (tmp_path / "rejected.json").unlink()
+    empty = subprocess.run(
+        ["sh", "-c", ec.inbox_answer_script()], capture_output=True, text=True, check=True
+    )
+    assert empty.stdout == ""
+
+
+def test_a_failed_inbox_seed_stops_before_compose_up(harness) -> None:
+    run = harness(elite_answers=[("--entrypoint sh web", rt.VmResult(1, "", "no such volume"))])
+    assert any("dropped into the box's cert inbox" in desc for desc in failed(run))
+    assert not any(cmd.endswith(" up -d") for cmd, _ in run.elite.calls)

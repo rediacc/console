@@ -2,7 +2,7 @@
 
 A FAKE `npx` launches `testrun_stub_server.py` (a stub of the account server's test surface) on a free port, so both sides really start a process, poll `/health`, resolve the listener pid from the socket, seed over HTTP and mint a token. Compared: the request sequence the stub saw, `$GITHUB_ENV`, `$GITHUB_OUTPUT`, the recorded pid file, stdout (token masked) and exit code. The REAL account server is exercised by the live run recorded in the porting report, not here.
 
-INTENTIONAL DELTAS (Rule T), each a `test_delta_*` failing on the bash behaviour: an HTTP 500 from the seed routes fails there; a failed leg does not leave its server running; a stale server on the port is refused; `--port` with no value is a usage error.
+INTENTIONAL DELTAS (Rule T), each a `test_delta_*` failing on the bash behaviour: an HTTP 500 from the seed routes fails there; a failed leg does not leave its server running; a stale server on the port is refused; `--port` with no value is a usage error; the seeded user accepts the current Terms before `/portal/subscription` (the account gates every `/portal` route behind them since PLAN-terms-acceptance, so the retired twin's sequence would now answer 403). The twin comparisons read `twin_trace`, which leaves those two Terms requests out.
 """
 
 from __future__ import annotations
@@ -68,6 +68,7 @@ def side(
         "RUNNER_TEMP": str(directory),
         "GITHUB_ENV": str(directory / "gh_env"),
         "GITHUB_OUTPUT": str(directory / "gh_output"),
+        "GITHUB_ACTIONS": "true",
         "STUB_LOG": str(directory / "stub.jsonl"),
         "STUB_MODE": mode,
         "ACCOUNT_API_PORT": str(port),
@@ -169,6 +170,14 @@ def trace(directory: pathlib.Path) -> list[tuple]:
     ]
 
 
+TERMS_PATHS = ("/portal/terms", "/portal/terms/accept")
+
+
+def twin_trace(directory: pathlib.Path) -> list[tuple]:
+    """`trace` without the Terms read and acceptance, the one step the retired twin never made (the Terms delta)."""
+    return [t for t in trace(directory) if not t[1].endswith(TERMS_PATHS)]
+
+
 @pytest.fixture
 def cleanup(tmp_path: pathlib.Path):
     yield
@@ -183,7 +192,7 @@ def test_success_matches_the_twin(tmp_path: pathlib.Path) -> None:
     )
     new, nd, np_ = side(tmp_path, "py", ["--plan", "STARTER", "--email", "a@b.io", "--name", "tok"])
     assert (old.code, new.code) == (0, 0), (old.err, new.err)
-    assert trace(od) == trace(nd)
+    assert twin_trace(od) == twin_trace(nd)
     seed = [r for r in requests(nd) if r["path"] != "/health"]
     assert seed[0]["test_mode"] == "true"
     assert seed[0]["key_lengths"] == {"ACCOUNT_SERVER_API_KEY": 64, "ACCOUNT_JWT_SECRET": 64}
@@ -192,6 +201,8 @@ def test_success_matches_the_twin(tmp_path: pathlib.Path) -> None:
         "ensure-login",
         "ensure-subscription",
         "login",
+        "terms",
+        "accept",
         "subscription",
         "api-tokens",
     ]
@@ -245,7 +256,7 @@ def test_failures_match_the_twin(tmp_path: pathlib.Path, mode: str, needle: str)
     assert (old.code, new.code) == (1, 1)
     assert needle in old.err
     assert needle in new.err
-    assert trace(od) == trace(nd)
+    assert twin_trace(od) == twin_trace(nd)
     assert not (nd / "gh_env").exists()
     assert not (od / "gh_env").exists()
 
@@ -270,6 +281,62 @@ def test_delta_http_500_from_a_seed_route_fails_there(tmp_path: pathlib.Path) ->
     assert new.code == 1
     assert "/test/ensure-login failed with HTTP 500" in new.err
     assert len(trace(nd)) == 1
+
+
+@pytest.mark.usefixtures("cleanup")
+def test_delta_the_seeded_user_accepts_the_terms_before_the_portal(tmp_path: pathlib.Path) -> None:
+    # Python side only: the golden holds no bash run for a new case, and test_success_matches_the_twin already pins the twin's sequence without the Terms requests.
+    new, nd, _ = side(tmp_path, "py", [])
+    assert new.code == 0, new.err
+    paths = [t[1] for t in trace(nd)]
+    accept = next(t for t in trace(nd) if t[1].endswith("/portal/terms/accept"))
+    assert accept[2] == {
+        "version": "2026-11-11",
+        "sha256": "f" * 64,
+        "locale": "en",
+        "method": "web-checkbox",
+    }
+    assert paths.index(accept[1]) < next(
+        i for i, p in enumerate(paths) if p.endswith("/portal/subscription")
+    )
+
+
+@pytest.mark.usefixtures("cleanup")
+def test_a_backup_scope_enrols_two_factor_before_the_mint(tmp_path: pathlib.Path) -> None:
+    new, nd, _ = side(tmp_path, "py", ["--scopes", "license:read,backup:manage"])
+    assert new.code == 0, new.err
+    names = ["/".join(t[1].rsplit("/", 2)[-2:]) for t in trace(nd)]
+    for step in ("2fa/status", "test/elevate", "2fa/setup", "2fa/enable"):
+        assert step in names, (step, names)
+    enable = next(t for t in trace(nd) if t[1].endswith("/auth/2fa/enable"))
+    assert isinstance(enable[2]["code"], str)
+    assert len(enable[2]["code"]) == 6
+    mint_at = next(i for i, t in enumerate(trace(nd)) if t[1].endswith("/api-tokens"))
+    enable_at = next(i for i, t in enumerate(trace(nd)) if t[1].endswith("/auth/2fa/enable"))
+    assert enable_at < mint_at
+
+
+@pytest.mark.usefixtures("cleanup")
+def test_the_default_scopes_make_no_two_factor_calls(tmp_path: pathlib.Path) -> None:
+    new, nd, _ = side(tmp_path, "py", [])
+    assert new.code == 0, new.err
+    assert not [t for t in trace(nd) if "/2fa/" in t[1] or t[1].endswith("/test/elevate")]
+
+
+@pytest.mark.usefixtures("cleanup")
+def test_a_refused_two_factor_enrol_fails_the_leg(tmp_path: pathlib.Path) -> None:
+    new, nd, _ = side(tmp_path, "py", ["--scopes", "backup:manage"], "2fa-refused")
+    assert new.code == 1
+    assert "the 2FA enable was refused" in new.err
+    assert not [t for t in trace(nd) if t[1].endswith("/api-tokens")]
+
+
+@pytest.mark.usefixtures("cleanup")
+def test_a_refused_terms_acceptance_fails_the_leg(tmp_path: pathlib.Path) -> None:
+    new, nd, _ = side(tmp_path, "py", [], "terms-refused")
+    assert new.code == 1
+    assert "the Terms acceptance was refused" in new.err
+    assert not [t for t in trace(nd) if t[1].endswith("/portal/subscription")]
 
 
 def test_delta_a_failed_leg_does_not_leave_its_server_running(tmp_path: pathlib.Path) -> None:
@@ -307,6 +374,100 @@ def test_delta_a_server_already_on_the_port_is_refused(tmp_path: pathlib.Path) -
         stale.wait()
 
 
+def test_a_server_this_tool_recorded_is_stopped_and_the_run_goes_on(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    port = str(free_port())
+    stale = subprocess.Popen(
+        [
+            "python3",
+            "-c",
+            "import http.server,sys\nclass H(http.server.BaseHTTPRequestHandler):\n  def do_GET(s):\n    s.send_response(200);s.end_headers();s.wfile.write(b'ok')\nhttp.server.HTTPServer(('127.0.0.1',int(sys.argv[1])),H).serve_forever()",
+            port,
+        ],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    try:
+        for _ in range(40):
+            if sa.healthy(port):
+                break
+            time.sleep(0.1)
+        assert sa.healthy(port), "CONTROL: the stale listener never answered"
+        pid_file = tmp_path / "account-for-e2e.pid"
+        pid_file.write_text(f"{stale.pid}\n")
+        monkeypatch.setattr(
+            sa, "listener_pid", lambda _port: str(stale.pid) if stale.poll() is None else ""
+        )
+        assert sa.reap_recorded(port, pid_file) is True
+        stale.wait(timeout=5)
+        assert not sa.healthy(port)
+        assert not pid_file.exists()
+    finally:
+        if stale.poll() is None:
+            stale.kill()
+            stale.wait()
+
+
+def test_the_port_is_not_free_while_a_listener_still_holds_the_socket(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """/health has stopped answering but the socket is still held: the next server could not bind, so the port is not reported free."""
+    pid_file = tmp_path / "account-for-e2e.pid"
+    pid_file.write_text("4242\n")
+    monkeypatch.setattr(sa, "listener_pid", lambda _port: "4242")
+    monkeypatch.setattr(sa, "healthy", lambda _port: False)
+    monkeypatch.setattr(sa.os, "kill", lambda _pid, _sig: None)
+    assert sa.reap_recorded("4999", pid_file, wait_s=0.5) is False
+    assert pid_file.exists()
+
+
+def test_run_reaps_a_recorded_server_and_then_starts_its_own(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The wiring in run(): an occupied port whose listener the pid file names is reaped, and the run goes on to start a server instead of refusing."""
+    (tmp_path / "private" / "account").mkdir(parents=True)
+    (tmp_path / "private" / "account" / "package.json").write_text("{}")
+    monkeypatch.setattr(sa.paths, "repo_root", lambda: tmp_path)
+    monkeypatch.setenv("RUNNER_TEMP", str(tmp_path))
+    state = {"up": True, "started": 0}
+    monkeypatch.setattr(sa, "healthy", lambda _port: state["up"])
+    monkeypatch.setattr(sa, "server_keys", lambda _pair=False: {"edPub": "pub"})
+
+    def fake_reap(_port: str, _pid_file: pathlib.Path) -> bool:
+        state["up"] = False
+        return True
+
+    def fake_start(*_args: object) -> object:
+        state["started"] += 1
+        state["up"] = True
+        return object()
+
+    published: list[tuple] = []
+    monkeypatch.setattr(sa, "reap_recorded", fake_reap)
+    monkeypatch.setattr(sa, "start_server", fake_start)
+    monkeypatch.setattr(sa, "listener_pid", lambda _port: "")
+    monkeypatch.setattr(sa, "seed_and_mint", lambda _api, _opts: ("rdt_unit_token", "sub1"))
+    monkeypatch.setattr(sa, "publish", lambda *args: published.append(args))
+    monkeypatch.setattr(sa.time, "sleep", lambda _s: None)
+    assert sa.run(sa.parse([])) == 0
+    assert state["started"] == 1
+    assert published
+
+
+def test_a_listener_the_pid_file_does_not_name_is_left_alone(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    pid_file = tmp_path / "account-for-e2e.pid"
+    pid_file.write_text("999999\n")
+    monkeypatch.setattr(sa, "listener_pid", lambda _port: "12345")
+    killed: list[int] = []
+    monkeypatch.setattr(sa.os, "kill", lambda pid, _sig: killed.append(pid))
+    assert sa.reap_recorded("4999", pid_file) is False
+    assert not killed
+    assert pid_file.exists()
+
+
 def test_delta_port_without_a_value_is_a_usage_error(tmp_path: pathlib.Path) -> None:
     old, _, _ = side(tmp_path, "bash", ["--port"])
     new, _, _ = side(tmp_path, "py", ["--port"])
@@ -326,6 +487,8 @@ class FakeApi(sa.Api):
     def call(self, _method: str, path: str, body: dict | None = None) -> tuple[int, str]:
         if path == "/auth/login":
             return 200, json.dumps({"user": {"id": "u1"}})
+        if path == "/portal/terms":
+            return 200, json.dumps({"satisfied": True})
         if path == "/portal/subscription":
             return 200, json.dumps({"id": "sub1"})
         if path == "/api-tokens":
@@ -430,6 +593,21 @@ def test_env_signing_pair_is_reused_and_only_its_public_half_published(
         assert "ACCOUNT_ED25519_PRIVATE_KEY" not in text
 
 
+@pytest.mark.parametrize("actions", [True, False])
+def test_the_token_mask_line_prints_only_under_actions(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capsys, actions: bool
+) -> None:
+    if actions:
+        monkeypatch.setenv("GITHUB_ACTIONS", "true")
+    else:
+        monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
+    _seen, gh_env = drive_run(tmp_path, monkeypatch, github_env=True)
+    out = capsys.readouterr().out
+    assert ("::add-mask::rdt_unit" in out) is actions
+    # The $GITHUB_ENV write does not depend on it.
+    assert "E2E_ACCOUNT_API_TOKEN=rdt_unit\n" in gh_env.read_text()
+
+
 def test_a_mismatched_env_pair_is_refused(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(sa, "generate_keys", lambda: dict(FAKE_KEYS))
     monkeypatch.setenv("ACCOUNT_ED25519_PRIVATE_KEY", "ENV-PRIVATE-SENTINEL")
@@ -499,70 +677,111 @@ def test_without_both_env_halves_the_keys_are_generated(
     ]
 
 
-def test_require_env_pair_is_a_valueless_flag() -> None:
-    assert sa.parse([]).require_env_pair is False
-    opts = sa.parse(["--require-env-pair", "--port", "4911"])
-    assert opts.require_env_pair is True
-    assert opts.port == "4911"
-    assert "--require-env-pair" in sa.USAGE
+def test_delta_8_require_env_pair_is_gone() -> None:
+    """Delta 8: the flag that demanded the production pair is a usage error, so no workflow can still ask for it and pass."""
+    with pytest.raises(ValueError, match="Unknown option: --require-env-pair"):
+        sa.parse(["--require-env-pair", "--port", "4911"])
+    assert "--require-env-pair" not in sa.USAGE
+    assert sa.main(["--require-env-pair"]) == 2
 
 
-@pytest.mark.parametrize(
-    ("present", "named"),
-    [
-        ((), "ACCOUNT_ED25519_PRIVATE_KEY and ACCOUNT_ED25519_PUBLIC_KEY"),
-        (("ACCOUNT_ED25519_PUBLIC_KEY",), "ACCOUNT_ED25519_PRIVATE_KEY not set"),
-        (("ACCOUNT_ED25519_PRIVATE_KEY",), "ACCOUNT_ED25519_PUBLIC_KEY not set"),
-    ],
-    ids=["none", "public-only", "private-only"],
-)
-def test_delta_require_env_pair_refuses_to_mint(
-    tmp_path: pathlib.Path,
-    monkeypatch: pytest.MonkeyPatch,
-    capsys,
-    present: tuple[str, ...],
-    named: str,
+def test_delta_8_a_leg_with_no_env_pair_mints_and_publishes_its_own(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, capsys
 ) -> None:
-    """Delta 8: a CI leg that lost its Bitwarden mapping fails at the key step, by name, before a server starts or a key is generated."""
+    """The normal CI case: nothing in the environment, a minted pair, and its PUBLIC half in $GITHUB_ENV for the renet build that follows."""
     for name in ("ACCOUNT_ED25519_PRIVATE_KEY", "ACCOUNT_ED25519_PUBLIC_KEY"):
         monkeypatch.delenv(name, raising=False)
-    for name in present:
-        monkeypatch.setenv(name, "HALF-SENTINEL")
-    calls: list[str] = []
-
-    def fake_generate_keys() -> dict[str, str]:
-        calls.append("generate")
-        return dict(FAKE_KEYS)
-
-    def fake_start_server(*_a: object) -> None:
-        calls.append("start")
-
-    monkeypatch.setattr(sa, "generate_keys", fake_generate_keys)
-    monkeypatch.setattr(sa, "start_server", fake_start_server)
-    monkeypatch.setattr(sa, "healthy", lambda _port: False)
-    monkeypatch.setenv("RUNNER_TEMP", str(tmp_path))
-    gh_env = tmp_path / "env"
-    monkeypatch.setenv("GITHUB_ENV", str(gh_env))
-    assert sa.run(sa.parse(["--require-env-pair", "--port", "4911"])) == 1
-    assert calls == []
-    assert not gh_env.exists()
-    err = capsys.readouterr().err
-    assert "--require-env-pair" in err
-    assert named in err
-    assert "HALF-SENTINEL" not in err
+    seen, _ = drive_run(tmp_path, monkeypatch, github_env=False)
+    assert (seen["edPriv"], seen["edPub"]) == ("GEN-PRIV", "GEN-PUB")
+    out = capsys.readouterr()
+    assert "ACCOUNT_ED25519_PUBLIC_KEY=GEN-PUB\n" in out.out
+    assert "GEN-PRIV" not in out.out + out.err
 
 
-def test_require_env_pair_signs_with_the_env_pair(
+def test_an_env_pair_still_signs_when_both_halves_match(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    """start_backup_plane hands its own pair in; a matching pair is used as given."""
     monkeypatch.setattr(sa, "generate_keys", lambda: dict(FAKE_KEYS))
     monkeypatch.setenv("ACCOUNT_ED25519_PRIVATE_KEY", "ENV-PRIVATE-SENTINEL")
     monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", "ENV-PUB")
     monkeypatch.setattr(sa, "derived_public_key", lambda: "ENV-PUB")
-    keys = sa.server_keys(require_env_pair=True)
+    keys = sa.server_keys()
     assert (keys["edPriv"], keys["edPub"]) == ("ENV-PRIVATE-SENTINEL", "ENV-PUB")
     # The x25519 pair is not the signing pair and still comes from the generator.
     assert (keys["xPriv"], keys["xPub"]) == ("GEN-XPRIV", "GEN-XPUB")
+
+
+def test_a_mismatched_env_pair_is_still_refused(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The one refusal kept: a private half whose public half is not the one published would sign licences no renet built with that key accepts."""
+    monkeypatch.setattr(sa, "generate_keys", lambda: dict(FAKE_KEYS))
+    monkeypatch.setenv("ACCOUNT_ED25519_PRIVATE_KEY", "ENV-PRIVATE-SENTINEL")
+    monkeypatch.setenv("ACCOUNT_ED25519_PUBLIC_KEY", "ENV-PUB")
+    monkeypatch.setattr(sa, "derived_public_key", lambda: "OTHER-PUB")
+    with pytest.raises(sa.LegError, match="not one pair"):
+        sa.server_keys()
+
+
+def test_delta_8_emit_pair_prints_two_exports_and_starts_nothing(
+    monkeypatch: pytest.MonkeyPatch, capsys
+) -> None:
+    calls: list[str] = []
+    monkeypatch.setattr(sa, "generate_keys", lambda: dict(FAKE_KEYS))
+
+    def fake_run(_opts) -> int:
+        calls.append("run")
+        return 0
+
+    monkeypatch.setattr(sa, "run", fake_run)
+    assert sa.main(["--emit-pair"]) == 0
+    assert calls == []
+    out = capsys.readouterr().out
+    assert out.splitlines() == [
+        "export ACCOUNT_ED25519_PRIVATE_KEY=GEN-PRIV",
+        "export ACCOUNT_ED25519_PUBLIC_KEY=GEN-PUB",
+    ]
+
+
+def test_delta_8_emit_pair_output_evaluates_to_a_real_pair_in_bash(tmp_path: pathlib.Path) -> None:
+    """The workflow form, run for real: the assignment, the eval, then the two variables are set and the public half is the private half's."""
+    script = (
+        "set -e\n"
+        'pair="$(python3 -m rediacc_ci.testrun.start_account --emit-pair)"\n'
+        'eval "$pair"\n'
+        'test -n "$ACCOUNT_ED25519_PRIVATE_KEY"\n'
+        'node -e \'const c=require("crypto");const k=c.createPrivateKey({key:Buffer.from(process.env.ACCOUNT_ED25519_PRIVATE_KEY,"base64"),format:"der",type:"pkcs8"});process.exit(c.createPublicKey(k).export({type:"spki",format:"der"}).toString("base64")===process.env.ACCOUNT_ED25519_PUBLIC_KEY?0:1)\'\n'
+    )
+    env = {**os.environ, "PYTHONPATH": str(pathlib.Path(sa.__file__).resolve().parents[2])}
+    done = subprocess.run(
+        ["bash", "-c", script], env=env, cwd=tmp_path, capture_output=True, text=True, check=False
+    )
+    assert done.returncode == 0, done.stderr
+
+
+def test_delta_8_a_failed_emit_pair_is_fatal_in_the_workflow_form(tmp_path: pathlib.Path) -> None:
+    """Control for the assignment form: a mint that exits 1 stops `bash -e` before the eval."""
+    fake = tmp_path / "bin"
+    fake.mkdir()
+    (fake / "node").write_text("#!/bin/sh\nexit 1\n")
+    (fake / "node").chmod(0o755)
+    script = (
+        "set -e\n"
+        'pair="$(python3 -m rediacc_ci.testrun.start_account --emit-pair)"\n'
+        'eval "$pair"\n'
+        "echo REACHED\n"
+    )
+    env = {
+        **os.environ,
+        "PATH": f"{fake}:{os.environ['PATH']}",
+        "PYTHONPATH": str(pathlib.Path(sa.__file__).resolve().parents[2]),
+    }
+    done = subprocess.run(
+        ["bash", "-c", script], env=env, cwd=tmp_path, capture_output=True, text=True, check=False
+    )
+    assert done.returncode != 0
+    assert "REACHED" not in done.stdout
 
 
 def _captured_server_env(monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path) -> dict[str, str]:
@@ -610,3 +829,102 @@ def test_delta_10_a_caller_config_server_key_is_kept(
 ) -> None:
     monkeypatch.setenv("ACCOUNT_CONFIG_SERVER_KEY", "c" * 40)
     assert _captured_server_env(monkeypatch, tmp_path)["ACCOUNT_CONFIG_SERVER_KEY"] == "c" * 40
+
+
+class ScriptApi(sa.Api):
+    """Answers each path from a script of (HTTP code, body) and records the paths called."""
+
+    def __init__(self, script: dict[str, tuple[int, str]]) -> None:
+        super().__init__("0", "")
+        self.script = script
+        self.paths: list[str] = []
+
+    def call(self, _method: str, path: str, body: dict | None = None) -> tuple[int, str]:
+        del body
+        self.paths.append(path)
+        return self.script.get(path, (200, "{}"))
+
+
+TERMS_OPEN = json.dumps({"satisfied": False, "current": {"version": "v1", "sha256": "abc"}})
+
+
+@pytest.mark.parametrize(
+    ("status", "needle"),
+    [
+        ((500, "boom"), "/portal/terms answered HTTP 500"),
+        ((200, "[]"), "/portal/terms answered HTTP 200"),
+        ((200, json.dumps({"satisfied": "yes"})), "/portal/terms answered HTTP 200"),
+        ((200, json.dumps({"satisfied": False})), "names no current version"),
+        (
+            (200, json.dumps({"satisfied": False, "current": {"version": "v1"}})),
+            "names no current version",
+        ),
+    ],
+    ids=["non-200", "not-a-dict", "satisfied-not-bool", "no-current", "no-sha"],
+)
+def test_accept_terms_refuses_an_unreadable_status_by_name(
+    status: tuple[int, str], needle: str
+) -> None:
+    """Review 5139a19b.1: each guard raises, and nothing is accepted."""
+    api = ScriptApi({"/portal/terms": status})
+    with pytest.raises(sa.LegError, match=needle):
+        sa.accept_terms(api)
+    assert "/portal/terms/accept" not in api.paths
+
+
+def test_accept_terms_refuses_a_2xx_answer_without_accepted_true() -> None:
+    """Review 5139a19b.2: HTTP 2xx alone is not an acceptance."""
+    api = ScriptApi(
+        {"/portal/terms": (200, TERMS_OPEN), "/portal/terms/accept": (200, json.dumps({}))}
+    )
+    with pytest.raises(sa.LegError, match="acceptance was refused"):
+        sa.accept_terms(api)
+
+
+def test_accept_terms_accepts_when_the_answer_says_accepted() -> None:
+    """THE CONTROL of the two tests above: the same script with `accepted: true` passes."""
+    api = ScriptApi(
+        {
+            "/portal/terms": (200, TERMS_OPEN),
+            "/portal/terms/accept": (200, json.dumps({"accepted": True})),
+        }
+    )
+    sa.accept_terms(api)
+    assert api.paths == ["/portal/terms", "/portal/terms/accept"]
+
+
+@pytest.mark.parametrize(
+    ("script", "needle"),
+    [
+        ({"/auth/2fa/status": (403, "no")}, "2FA status read was refused"),
+        ({"/auth/2fa/status": (200, json.dumps({}))}, "2FA status read was refused"),
+        (
+            {"/auth/2fa/status": (200, json.dumps({"enabled": False})), "/test/elevate": (403, "")},
+            "/test/elevate step was refused",
+        ),
+        (
+            {
+                "/auth/2fa/status": (200, json.dumps({"enabled": False})),
+                "/test/elevate": (200, json.dumps({"elevated": True})),
+                "/auth/2fa/setup": (500, "x"),
+            },
+            "2FA setup was refused",
+        ),
+    ],
+    ids=["status-refused", "status-no-bool", "elevate-refused", "setup-refused"],
+)
+def test_ensure_two_factor_refuses_each_failed_step_by_name(
+    script: dict[str, tuple[int, str]], needle: str
+) -> None:
+    """Review 9eee93a6.1: the status, elevate and setup guards each raise."""
+    api = ScriptApi(script)
+    with pytest.raises(sa.LegError, match=needle):
+        sa.ensure_two_factor(api, "owner@example.test")
+    assert "/auth/2fa/enable" not in api.paths
+
+
+def test_ensure_two_factor_does_nothing_when_already_enabled() -> None:
+    """THE CONTROL: an enabled account is left alone."""
+    api = ScriptApi({"/auth/2fa/status": (200, json.dumps({"enabled": True}))})
+    sa.ensure_two_factor(api, "owner@example.test")
+    assert api.paths == ["/auth/2fa/status"]

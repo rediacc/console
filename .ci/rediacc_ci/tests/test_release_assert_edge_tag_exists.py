@@ -25,7 +25,7 @@ from rediacc_ci.core import ghx
 from rediacc_ci.release import assert_edge_tag_exists as port
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests.twin_names import as_twin
-from rediacc_ci.well_known import GH_REPO
+from rediacc_ci.well_known import GH_REPO, RELEASES_BUCKET
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -337,7 +337,7 @@ def test_a_403_is_could_not_tell_and_gets_the_opposite_advice(
 
 
 def test_nocredentials_from_aws_gets_the_aws_specific_hint(tmp_path: pathlib.Path) -> None:
-    """The line naming CLOUDFLARE_R2_ACCESS_KEY_ID exists because this exact failure broke promote-stable for 7 consecutive runs from 2026-08-27."""
+    """The line naming CLOUDFLARE_R2_ACCESS_KEY_ID exists because this exact failure broke cd-release-stable for 7 consecutive runs from 2026-08-27."""
     old, new, old_calls, new_calls = run_both(
         tmp_path,
         ["1.3.0"],
@@ -429,14 +429,14 @@ def test_a_mixture_of_absent_and_unknown_takes_the_could_not_tell_advice(
 def test_the_defaults_for_repo_and_bucket_are_used_when_unset(
     tmp_path: pathlib.Path,
 ) -> None:
-    """`${GITHUB_REPOSITORY:-rediacc/console}` / `${RELEASES_BUCKET:-rediacc-releases}`.
+    """`${GITHUB_REPOSITORY:-rediacc/console}` / `${RELEASES_BUCKET:-$WK_RELEASES_BUCKET}`.
     Only the call log shows which names were used; the OK lines carry them too."""
     old, new, old_calls, new_calls = run_both(
         tmp_path, ["1.3.0"], drop_env=("GITHUB_REPOSITORY", "RELEASES_BUCKET")
     )
     assert old.returncode == 0
     assert ("gh\tapi\trepos/" + GH_REPO + "/git/ref/tags/v1.3.0") in old_calls
-    assert any("--bucket\trediacc-releases" in c for c in old_calls)
+    assert any("--bucket\t" + RELEASES_BUCKET in c for c in old_calls)
     _assert_agree(old, new, "defaults", old_calls, new_calls)
 
 

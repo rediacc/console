@@ -94,7 +94,6 @@ function generateSchema(): SubscriptionSchema {
           advancedQueue: { type: 'boolean', jsonKey: 'advancedQueue' },
           customBranding: { type: 'boolean', jsonKey: 'customBranding' },
           dedicatedAccount: { type: 'boolean', jsonKey: 'dedicatedAccount' },
-          delegationCerts: { type: 'boolean', jsonKey: 'delegationCerts' },
         },
       },
       SubscriptionData: {

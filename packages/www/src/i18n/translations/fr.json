@@ -189,10 +189,14 @@
       "summary": "{{companyName}} | Numéro d'immatriculation {{registryCode}} | TVA {{vatNumber}} |"
     },
     "legalLinks": {
+      "acceptableUsePolicy": "Politique d'utilisation acceptable",
       "cookiePolicy": "Politique relative aux cookies",
+      "dataProcessingAgreement": "Accord de traitement des données",
+      "enterpriseLicense": "Licence Enterprise",
       "legalInformation": "Informations légales",
       "privacyPolicy": "Politique de confidentialité",
       "refundPolicy": "Politique de remboursement",
+      "serviceLevelAgreement": "Accord de niveau de service",
       "telemetryPolicy": "Politique de télémétrie",
       "termsOfService": "Conditions d'utilisation"
     },
@@ -240,6 +244,14 @@
         "creator": "@rediacc",
         "site": "@rediacc"
       }
+    }
+  },
+  "legal": {
+    "consent": {
+      "webCheckbox": "J'accepte les Conditions d'utilisation de {{legalName}} ({{termsUrl}}) et j'ai lu la Politique de confidentialité ({{privacyUrl}}). Si je me trouve aux États-Unis, j'accepte que les litiges soient réglés par un arbitrage individuel contraignant, et je renonce au droit à un procès devant jury et à la participation à une action collective, comme le décrivent les Conditions.",
+      "cliPrompt": "Une Licence gratuite nécessite l'acceptation des Conditions d'utilisation de {{legalName}} sur {{termsUrl}}, avec la Politique de confidentialité sur {{privacyUrl}} ; pour les utilisateurs aux États-Unis, les Conditions imposent un arbitrage individuel et excluent les actions collectives. Accepter les Conditions ?",
+      "cliRefusal": "Une Licence gratuite nécessite l'acceptation des Conditions d'utilisation de {{legalName}} sur {{termsUrl}}, avec la Politique de confidentialité sur {{privacyUrl}} ; pour les utilisateurs aux États-Unis, les Conditions imposent un arbitrage individuel et excluent les actions collectives. Cette exécution est non interactive : rien n'a donc été accepté ni récupéré. Pour accepter, passez --accept-terms ou définissez RDC_ACCEPT_TERMS=1 ; --yes seul n'accepte pas. Les conditions lient quiconque exécute cette automatisation.",
+      "stripeCheckout": "J'accepte les Conditions d'utilisation de {{legalName}} ({{termsUrl}}) et j'ai lu la Politique de confidentialité ({{privacyUrl}}). Les utilisateurs aux États-Unis acceptent l'arbitrage individuel contraignant et renoncent aux actions collectives. L'abonnement est renouvelé automatiquement à la fin de chaque période de facturation et le moyen de paiement est débité jusqu'à la résiliation ; résiliez à tout moment dans le portail de compte avant la date de renouvellement pour éviter le prélèvement suivant."
     }
   },
   "navigation": {
@@ -321,6 +333,106 @@
     "errorRequiredEmail": "Veuillez saisir votre adresse e-mail."
   },
   "pages": {
+    "acceptableUsePolicy": {
+      "meta": {
+        "title": "Utilisation acceptable : usages interdits | Rediacc",
+        "description": "Règles d'utilisation de la CLI Rediacc, du Renet Agent, du portail de compte et des services hébergés : contenus et activités interdits, signalement, sanctions.",
+        "keywords": "politique d'utilisation acceptable, AUP, usage interdit, abus, Rediacc"
+      },
+      "hero": {
+        "title": "Politique d'utilisation acceptable",
+        "effectiveDate": "Date d'entrée en vigueur : 11 novembre 2026"
+      },
+      "toc": {
+        "title": "Table des matières"
+      },
+      "sections": {
+        "scope": {
+          "id": "scope",
+          "title": "1. Champ d'application",
+          "content": [
+            "La présente Politique d'utilisation acceptable (la « Politique ») s'applique à toute personne qui utilise les Services de {{legalName}} (« Rediacc »), y compris la CLI, le Renet Agent, le portail de compte, l'API, le stockage hébergé de sauvegardes et la Licence gratuite. Elle fait partie des <a href=\"terms-of-service\">Conditions d'utilisation</a>, et les termes qui y sont définis ont la même signification ici. La présente Politique est rédigée en anglais ; les traductions sont fournies à titre indicatif uniquement et, en cas de divergence, la version anglaise prévaut.",
+            "Les Données client restent sur des Machines que Rediacc ne contrôle pas. La présente Politique s'applique néanmoins à ce qui est déployé avec les Services, et le Client est responsable de chaque Utilisateur autorisé et de chaque automatisation agissant sous son Compte ou sur ses Machines."
+          ]
+        },
+        "prohibitedContent": {
+          "id": "prohibited-content",
+          "title": "2. Contenus interdits",
+          "content": [
+            "Les Services ne doivent pas être utilisés pour stocker, héberger, distribuer ou traiter :"
+          ],
+          "items": [
+            "des contenus pédopornographiques, ou des contenus qui exploitent sexuellement des mineurs ou les mettent en danger",
+            "des contenus qui portent atteinte aux droits de propriété intellectuelle, au respect de la vie privée ou à d'autres droits de tiers, ou qui se les approprient indûment",
+            "des logiciels malveillants, rançongiciels, logiciels espions, contrôleurs de botnet ou tout autre code conçu pour nuire aux systèmes ou aux données",
+            "des contenus illicites là où ils sont hébergés ou consultés, y compris les contenus terroristes et les discours de haine illégaux",
+            "des données personnelles traitées sans base légale"
+          ]
+        },
+        "prohibitedActivities": {
+          "id": "prohibited-activities",
+          "title": "3. Activités interdites",
+          "content": ["Les Services ne doivent pas être utilisés pour :"],
+          "items": [
+            "obtenir ou tenter d'obtenir un accès non autorisé à un système, un réseau, un compte ou des données, y compris ceux de Rediacc",
+            "scanner, sonder ou soumettre à des tests d'intrusion ou de charge l'infrastructure de Rediacc sans l'autorisation écrite préalable de Rediacc",
+            "lancer ou faciliter des attaques par déni de service, ou exploiter des proxys ouverts, des relais ouverts ou des services d'anonymisation à des fins d'abus",
+            "envoyer des communications de masse non sollicitées (spam), ou se livrer à de l'hameçonnage ou à la fraude",
+            "miner de la cryptomonnaie sur la Plateforme ou sur le stockage hébergé de sauvegardes",
+            "usurper l'identité d'une personne ou d'une entité, ou présenter de façon trompeuse une affiliation",
+            "violer les lois relatives au contrôle des exportations ou aux sanctions",
+            "violer toute loi ou réglementation applicable"
+          ]
+        },
+        "platformAbuse": {
+          "id": "platform-abuse",
+          "title": "4. Abus de la Plateforme et des forfaits gratuits",
+          "content": ["Les agissements suivants sont interdits :"],
+          "items": [
+            "contourner ou tenter de contourner la validation des licences, les limites d'activation de Machines, les limitations de débit, les limites de taille ou d'autres limites techniques",
+            "obtenir des Licences gratuites ou des Comptes en nombre, au moyen d'adresses réseau ou d'identifiants de Machine tournants, ou par d'autres moyens conçus pour échapper aux limites de la Licence gratuite",
+            "perturber la Plateforme ou lui imposer une charge excessive, ou l'utiliser d'une manière qui dégrade le service pour les autres",
+            "revendre, redistribuer ou proposer les Services à des tiers en tant que service géré sans l'accord écrit préalable de Rediacc",
+            "partager les identifiants du Compte ou les jetons d'API en dehors des Utilisateurs autorisés du Compte"
+          ]
+        },
+        "security": {
+          "id": "security-research",
+          "title": "5. Recherche en sécurité",
+          "content": [
+            "La recherche en sécurité menée de bonne foi est la bienvenue lorsqu'elle est signalée à <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> avec l'objet « Security », qu'elle évite les atteintes à la vie privée, la destruction de données et la dégradation du service, et qu'elle se limite aux Comptes et Machines appartenant au chercheur. Rediacc n'engage aucune action contre les recherches qui respectent ces conditions."
+          ]
+        },
+        "reporting": {
+          "id": "reporting",
+          "title": "6. Signalement des violations",
+          "content": [
+            "Les violations présumées de la présente Politique peuvent être signalées à <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> avec l'objet « Abuse ». Les réclamations relatives au droit d'auteur suivent la procédure décrite dans la section sur les réclamations relatives au droit d'auteur des <a href=\"terms-of-service\">Conditions d'utilisation</a>. Les signalements de contenus illicites sont traités conformément au règlement européen sur les services numériques lorsqu'il s'applique."
+          ]
+        },
+        "enforcement": {
+          "id": "enforcement",
+          "title": "7. Application",
+          "content": [
+            "Rediacc peut enquêter sur les violations présumées. Selon leur gravité, Rediacc peut avertir le Client, retirer ou désactiver l'accès à des contenus sur la Plateforme, refuser de délivrer ou de renouveler des licences, suspendre ou résilier le Compte, et signaler les activités illicites aux autorités compétentes. Lorsque c'est possible et licite, Rediacc prévient et laisse la possibilité de remédier au manquement avant d'agir, sauf lorsque la violation présente un risque immédiat pour les Services, pour des tiers ou pour Rediacc."
+          ]
+        },
+        "changes": {
+          "id": "changes",
+          "title": "8. Modification de la présente Politique",
+          "content": [
+            "Rediacc peut mettre à jour la présente Politique selon la procédure de modification prévue dans les <a href=\"terms-of-service\">Conditions d'utilisation</a>."
+          ]
+        }
+      },
+      "contact": {
+        "title": "Des questions ?",
+        "description": "Si vous avez des questions sur la présente Politique d'utilisation acceptable, ou si vous devez signaler un abus, contactez-nous à <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>."
+      },
+      "related": {
+        "title": "Politiques associées"
+      }
+    },
     "blog": {
       "allArticles": "Tous les articles",
       "featured": "Articles en vedette",
@@ -487,6 +599,12 @@
                 "Ce cookie est classé comme « strictement nécessaire » en vertu de la Directive ePrivacy de l'UE car il est essentiel au fonctionnement du site web tel que vous l'avez demandé. Aucune bannière de consentement n'est requise pour ce cookie."
               ],
               "title": "3.1 Cookie de préférence linguistique"
+            },
+            "regionStorage": {
+              "content": [
+                "<strong>Nom :</strong> <code>rediacc_region</code><br><strong>Type :</strong> Stockage local du navigateur de première partie, pas un cookie, strictement nécessaire<br><strong>Durée :</strong> Jusqu'à ce que vous effaciez les données de votre navigateur<br><strong>Objectif :</strong> Mémorise la région de compte que vous avez choisie (Europe, États-Unis ou Asie-Pacifique) afin que la page de connexion puisse la présélectionner. Elle reste dans votre navigateur et n'est jamais envoyée à nos serveurs par le site web."
+              ],
+              "title": "3.2 Préférence de région (stockage local)"
             }
           },
           "title": "3. Cookies que nous utilisons"
@@ -538,6 +656,155 @@
       },
       "toc": {
         "title": "Table des matières"
+      }
+    },
+    "dataProcessingAgreement": {
+      "meta": {
+        "title": "Accord de traitement des données (RGPD art. 28) | Rediacc",
+        "description": "Traitement des données (art. 28 du RGPD) pour les clients professionnels de Rediacc : instructions, sécurité, sous-traitants, violations, suppression.",
+        "keywords": "accord de traitement des données, DPA, RGPD, article 28, sous-traitants ultérieurs, clauses contractuelles types, Rediacc"
+      },
+      "hero": {
+        "title": "Accord de traitement des données",
+        "effectiveDate": "Date d'entrée en vigueur : 11 novembre 2026"
+      },
+      "toc": {
+        "title": "Table des matières"
+      },
+      "sections": {
+        "scope": {
+          "id": "scope",
+          "title": "1. Champ d'application et rôles",
+          "content": [
+            "Le présent Accord de traitement des données (le « DPA ») fait partie des <a href=\"terms-of-service\">Conditions d'utilisation</a> entre {{legalName}} (« Rediacc », le « Sous-traitant ») et le Client, lorsque le Client utilise les Services à titre professionnel et que Rediacc traite des Données personnelles du Client pour le compte du Client. Les termes définis dans les Conditions d'utilisation ont la même signification ici. Le présent DPA est rédigé en anglais ; les traductions sont fournies à titre indicatif uniquement et, en cas de divergence, la version anglaise prévaut.",
+            "Pour les Données personnelles du Client, le Client est le responsable de traitement (ou un sous-traitant agissant pour son propre responsable de traitement) et Rediacc est le sous-traitant (ou sous-traitant ultérieur). Pour les enregistrements de Compte, de facturation et d'acceptation et pour les Données de télémétrie, Rediacc est un responsable de traitement indépendant, comme décrit dans la <a href=\"privacy-policy\">Politique de confidentialité</a>, et le présent DPA ne s'applique pas à ce traitement.",
+            "Les Données client présentes sur les Machines du Client ne sont pas traitées par Rediacc. Le stockage chiffré des configurations et les sauvegardes hébergées sont chiffrés avec des clés que Rediacc ne détient pas ; Rediacc stocke donc ces blocs de données mais ne peut pas en lire le contenu."
+          ]
+        },
+        "definitions": {
+          "id": "definitions",
+          "title": "2. Définitions",
+          "items": [
+            "<strong>« Lois sur la protection des données »</strong> désigne le Règlement général sur la protection des données de l'UE (Règlement (UE) 2016/679, « RGPD »), le RGPD britannique (UK GDPR) et toute autre loi sur la protection des données applicable au traitement régi par le présent DPA.",
+            "<strong>« Données personnelles du Client »</strong> désigne les données personnelles que Rediacc traite pour le compte du Client dans le cadre de la fourniture de la Plateforme, telles que les noms et adresses e-mail des Utilisateurs autorisés et des membres d'équipe invités par le Client, ainsi que les données chiffrées que le Client stocke sur la Plateforme.",
+            "<strong>« Violation de données à caractère personnel »</strong>, <strong>« traitement »</strong>, <strong>« responsable de traitement »</strong>, <strong>« sous-traitant »</strong> et <strong>« personne concernée »</strong> ont le sens que leur donne le RGPD.",
+            "<strong>« CCT »</strong> désigne les clauses contractuelles types approuvées par la décision d'exécution (UE) 2021/914 de la Commission européenne.",
+            "<strong>« Sous-traitant ultérieur »</strong> désigne un tiers auquel Rediacc fait appel pour traiter des Données personnelles du Client."
+          ]
+        },
+        "instructions": {
+          "id": "instructions",
+          "title": "3. Traitement sur instructions",
+          "content": [
+            "Rediacc ne traite les Données personnelles du Client que sur instructions documentées du Client, à savoir les Conditions d'utilisation, le présent DPA et l'utilisation et la configuration des Services par le Client, sauf si la loi exige autre chose, auquel cas Rediacc en informe le Client avant le traitement, sauf si la loi l'interdit. Rediacc informe le Client lorsqu'il estime qu'une instruction enfreint les Lois sur la protection des données."
+          ]
+        },
+        "details": {
+          "id": "details",
+          "title": "4. Détails du traitement",
+          "items": [
+            "<strong>Objet et finalité :</strong> fourniture de la Plateforme, y compris la gestion des Comptes et des équipes, la délivrance de licences, le stockage chiffré des configurations, le stockage hébergé de sauvegardes et l'assistance",
+            "<strong>Durée :</strong> la durée des Conditions d'utilisation, augmentée du délai de suppression prévu à la Section 11",
+            "<strong>Nature du traitement :</strong> collecte, stockage, transmission, consultation et suppression",
+            "<strong>Catégories de personnes concernées :</strong> les Utilisateurs autorisés du Client, les membres d'équipe invités et les contacts de partenaires",
+            "<strong>Catégories de données personnelles :</strong> noms, adresses e-mail, organisation et fonction, données d'authentification (hachages de mots de passe, clés publiques de passkeys), adresses réseau et agents utilisateurs des sessions, et toute donnée personnelle contenue dans les données chiffrées que le Client stocke sur la Plateforme",
+            "<strong>Catégories particulières :</strong> aucune prévue ; le Client ne doit pas stocker de catégories particulières de données non chiffrées sur la Plateforme"
+          ]
+        },
+        "confidentiality": {
+          "id": "confidentiality",
+          "title": "5. Confidentialité",
+          "content": [
+            "Rediacc veille à ce que toute personne autorisée à traiter des Données personnelles du Client soit tenue à une obligation de confidentialité."
+          ]
+        },
+        "security": {
+          "id": "security",
+          "title": "6. Sécurité",
+          "content": [
+            "Rediacc met en œuvre des mesures techniques et organisationnelles appropriées au titre de l'article 32 du RGPD, notamment :"
+          ],
+          "items": [
+            "le chiffrement en transit (TLS 1.2 ou ultérieur) et au repos, ainsi que le chiffrement côté client du stockage des configurations et des sauvegardes hébergées avec des clés que Rediacc ne détient pas",
+            "un accès aux systèmes de production limité au personnel autorisé, avec authentification multifacteur",
+            "une séparation logique des données des clients et un stockage régional des données",
+            "la journalisation et la supervision des systèmes de production, ainsi que des tests réguliers des mesures de sécurité"
+          ]
+        },
+        "subprocessors": {
+          "id": "subprocessors",
+          "title": "7. Sous-traitants ultérieurs",
+          "content": [
+            "Le Client autorise Rediacc à faire appel à des Sous-traitants ultérieurs. Rediacc impose à chaque Sous-traitant ultérieur des obligations de protection des données au moins aussi protectrices que celles du présent DPA et reste responsable de l'exécution par ses Sous-traitants ultérieurs. Les Sous-traitants ultérieurs actuels sont :"
+          ],
+          "items": [
+            "<strong>Cloudflare, Inc.</strong> (États-Unis ; réseau mondial) : hébergement du portail de compte et de l'API (Workers), de la base de données des comptes (D1), du stockage hébergé de sauvegardes et d'objets (R2), diffusion de contenu et DNS, et protection contre les bots sur les formulaires (Turnstile)",
+            "<strong>Amazon Web Services, Inc.</strong> (Amazon Simple Email Service, dans la région AWS qui dessert la région du compte du Client) : envoi d'e-mails transactionnels tels que les liens de connexion, les avis et les factures",
+            "<strong>Stripe, Inc. et ses sociétés affiliées</strong> (États-Unis et Irlande) : traitement des paiements, facturation des abonnements, émission des factures et calcul des taxes pour les Abonnements payants",
+            "<strong>Hostinger</strong> (serveurs virtuels dans l'Union européenne) : hébergement du point de terminaison de télémétrie et d'observabilité (<code>otlp.rediacc.io</code>) qui reçoit les Données de télémétrie et les journaux de service"
+          ],
+          "content2": [
+            "Rediacc prévient au moins trente (30) jours à l'avance avant d'ajouter ou de remplacer un Sous-traitant ultérieur, en mettant à jour cette page et en notifiant l'adresse e-mail du Compte. Le Client peut s'y opposer dans ce délai pour des motifs raisonnables de protection des données. Si les parties ne parviennent pas à résoudre l'objection, le Client peut résilier les Services concernés et obtenir le remboursement des frais prépayés pour la période postérieure à la résiliation.",
+            "L'analyse d'audience du site web (Plausible) ne traite pas de Données personnelles du Client et relève de la Politique de confidentialité."
+          ]
+        },
+        "transfers": {
+          "id": "transfers",
+          "title": "8. Transferts internationaux",
+          "content": [
+            "Lorsque des Données personnelles du Client sont transférées vers un pays situé en dehors de l'Espace économique européen et ne bénéficiant pas d'une décision d'adéquation, les CCT sont incorporées au présent DPA par référence : le Module Deux (de responsable de traitement à sous-traitant) lorsque le Client est responsable de traitement, et le Module Trois (de sous-traitant à sous-traitant) lorsque le Client est sous-traitant. Pour les CCT : la clause d'adhésion facultative (clause 7) s'applique ; la clause 9, point a), option 2 (autorisation générale) s'applique avec le délai de préavis de la Section 7 ; la formulation facultative de la clause 11 ne s'applique pas ; les clauses 17 et 18 désignent la loi et les juridictions de {{country}} ; et les annexes I et II sont complétées par les Sections 1, 4 et 6, et l'annexe III par la Section 7 du présent DPA.",
+            "Pour les transferts soumis au RGPD britannique (UK GDPR), l'International Data Transfer Addendum publié par l'Information Commissioner du Royaume-Uni s'applique avec les CCT. Rediacc s'appuie sur le cadre de protection des données UE-États-Unis (EU-US Data Privacy Framework) pour les Sous-traitants ultérieurs certifiés à ce titre."
+          ]
+        },
+        "dataSubjectRights": {
+          "id": "data-subject-rights",
+          "title": "9. Demandes des personnes concernées et assistance",
+          "content": [
+            "Rediacc transmet sans délai au Client toute demande d'une personne concernée relative aux Données personnelles du Client et n'y répond pas lui-même, sauf sur instruction du Client. Compte tenu de la nature du traitement, Rediacc aide le Client à répondre à ces demandes et à respecter ses obligations au titre des articles 32 à 36 du RGPD, y compris les analyses d'impact relatives à la protection des données et les consultations préalables."
+          ]
+        },
+        "breach": {
+          "id": "breach",
+          "title": "10. Violation de données à caractère personnel",
+          "content": [
+            "Rediacc notifie le Client dans les meilleurs délais, et en tout état de cause dans les soixante-douze (72) heures après avoir pris connaissance d'une Violation de données à caractère personnel affectant des Données personnelles du Client. La notification décrit, dans la mesure où ils sont connus, la nature de la violation, les catégories et le nombre approximatif de personnes concernées et d'enregistrements concernés, les conséquences probables et les mesures prises ou proposées. Rediacc prend des mesures raisonnables pour contenir la violation et y remédier."
+          ]
+        },
+        "deletion": {
+          "id": "deletion",
+          "title": "11. Suppression ou restitution",
+          "content": [
+            "À la fin des Services, le Client peut exporter les Données personnelles du Client dans un délai de trente (30) jours. Rediacc supprime ensuite les Données personnelles du Client des systèmes actifs, et des sauvegardes dans un délai de quatre-vingt-dix (90) jours, sauf si la loi impose à Rediacc de les conserver."
+          ]
+        },
+        "audits": {
+          "id": "audits",
+          "title": "12. Droit d'audit",
+          "content": [
+            "Rediacc met à la disposition du Client les informations nécessaires pour démontrer le respect de l'article 28 du RGPD, principalement par des réponses écrites à des questionnaires de sécurité raisonnables et par les rapports d'audit et certifications disponibles de Rediacc et de ses Sous-traitants ultérieurs. Lorsque ces informations sont insuffisantes ou qu'une autorité de contrôle l'exige, le Client peut réaliser un audit, à ses frais, moyennant un préavis de trente (30) jours, pendant les heures ouvrables, au plus une fois par an, sous obligation de confidentialité et de manière à ne perturber ni les Services ni les autres clients."
+          ]
+        },
+        "liability": {
+          "id": "liability",
+          "title": "13. Responsabilité et ordre de priorité",
+          "content": [
+            "La responsabilité de chaque partie au titre du présent DPA est soumise aux limitations des Conditions d'utilisation, sauf lorsque les Lois sur la protection des données ne le permettent pas. En cas de conflit entre le présent DPA et les Conditions d'utilisation, le présent DPA prévaut pour le traitement des Données personnelles du Client ; en cas de conflit entre les CCT et le présent DPA, les CCT prévalent."
+          ]
+        },
+        "attribution": {
+          "id": "attribution",
+          "title": "14. Source du présent DPA",
+          "content": [
+            "Certaines parties du présent DPA sont adaptées des Common Paper Data Processing Agreement Standard Terms Version 1.1 (<a href=\"https://commonpaper.com/standards/data-processing-agreement/1.1\">commonpaper.com/standards/data-processing-agreement/1.1</a>), publiés par Common Paper, Inc. sous la licence Creative Commons Attribution 4.0 International (<a href=\"https://creativecommons.org/licenses/by/4.0/\">CC BY 4.0</a>). Le texte a été modifié : il a été restructuré, abrégé et adapté aux Services. Common Paper, Inc. n'approuve pas le présent DPA."
+          ]
+        }
+      },
+      "contact": {
+        "title": "Des questions ?",
+        "description": "Pour toute question sur le présent Accord de traitement des données, ou pour vous opposer à un Sous-traitant ultérieur, contactez-nous à <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>."
+      },
+      "related": {
+        "title": "Politiques associées"
       }
     },
     "disasterRecovery": {
@@ -723,6 +990,139 @@
       },
       "sections": {
         "cli": "Interface en ligne de commande (CLI)"
+      }
+    },
+    "enterpriseLicense": {
+      "meta": {
+        "title": "Licence Enterprise pour l'auto-hébergement | Rediacc",
+        "description": "Conditions de licence des Abonnements Enterprise de Rediacc vendus sur Bon de commande : serveurs auto-hébergés, plafonds d'activation, assistance, contrôle.",
+        "keywords": "licence enterprise, contrat de licence logicielle, sur site, bon de commande, Rediacc Enterprise"
+      },
+      "hero": {
+        "title": "Licence logicielle Enterprise",
+        "effectiveDate": "Date d'entrée en vigueur : 11 novembre 2026"
+      },
+      "toc": {
+        "title": "Table des matières"
+      },
+      "sections": {
+        "scope": {
+          "id": "scope",
+          "title": "1. Champ d'application et Bon de commande",
+          "content": [
+            "La présente Licence logicielle Enterprise (la « Licence ») s'applique aux Abonnements Enterprise achetés auprès de {{legalName}} (« Rediacc ») ou par l'intermédiaire d'un partenaire agréé de Rediacc sur Bon de commande. La Licence, le Bon de commande et les <a href=\"terms-of-service\">Conditions d'utilisation</a> forment ensemble le contrat applicable à cet Abonnement. En cas de conflit, le Bon de commande prévaut, puis la présente Licence, puis les Conditions d'utilisation. La présente Licence est rédigée en anglais ; les traductions sont fournies à titre indicatif uniquement et, en cas de divergence, la version anglaise prévaut.",
+            "Lorsqu'un Abonnement Enterprise est acheté par l'intermédiaire d'un partenaire, les frais et les conditions de paiement sont convenus entre le Client et le partenaire, et les droits et restrictions de licence sont concédés par Rediacc au titre de la présente Licence."
+          ]
+        },
+        "definitions": {
+          "id": "definitions",
+          "title": "2. Définitions",
+          "items": [
+            "<strong>« Logiciel sous licence »</strong> désigne le Logiciel sur site et, lorsque le Bon de commande l'inclut, le logiciel de serveur de compte auto-hébergé permettant d'exécuter la Plateforme sur l'infrastructure propre du Client, sous forme de code objet, ainsi que les mises à jour fournies par Rediacc.",
+            "<strong>« Plafond d'activations »</strong> désigne le nombre maximal de Machines pouvant détenir une activation en même temps, tel qu'indiqué dans le Bon de commande, ou 25 lorsqu'aucun n'est indiqué.",
+            "<strong>« Durée de l'Abonnement »</strong> désigne la période indiquée dans le Bon de commande, renouvellements compris.",
+            "<strong>« Partenaire »</strong> désigne un revendeur ou prestataire de services autorisé par Rediacc à vendre des Abonnements Enterprise."
+          ]
+        },
+        "grant": {
+          "id": "grant",
+          "title": "3. Octroi de licence",
+          "content": [
+            "Sous réserve de la présente Licence et du paiement des frais, Rediacc concède au Client, pour la Durée de l'Abonnement, une licence non exclusive, non transférable et non sous-licenciable pour installer et utiliser le Logiciel sous licence sur l'infrastructure que le Client possède ou contrôle, dans la limite du Plafond d'activations, exclusivement pour les besoins professionnels internes du Client et de ses sociétés affiliées. Les sous-traitants peuvent utiliser le Logiciel sous licence pour le compte du Client, et le Client en est responsable."
+          ]
+        },
+        "restrictions": {
+          "id": "restrictions",
+          "title": "4. Restrictions d'usage",
+          "content": [
+            "Les restrictions des Conditions d'utilisation s'appliquent. En outre, le Client ne dépassera pas le Plafond d'activations, n'exploitera pas le serveur de compte auto-hébergé pour d'autres personnes que le Client et ses sociétés affiliées, et ne fournira pas le Logiciel sous licence à des tiers en tant que service hébergé ou géré, sauf si le Bon de commande l'autorise expressément."
+          ]
+        },
+        "delivery": {
+          "id": "delivery",
+          "title": "5. Livraison, fichiers de licence et validation",
+          "content": [
+            "Rediacc livre le Logiciel sous licence par voie électronique. Les licences sont des fichiers signés que le Logiciel sous licence valide, y compris hors ligne. Un serveur de compte auto-hébergé fonctionne sous sa propre licence et enregistre l'acceptation du contrat du Client par le biais du Bon de commande plutôt que par le parcours d'acceptation en ligne de la Plateforme."
+          ]
+        },
+        "support": {
+          "id": "support",
+          "title": "6. Assistance et mises à jour",
+          "content": [
+            "Rediacc ou le Partenaire fournit l'assistance et les mises à jour au niveau indiqué dans le Bon de commande. Lorsqu'aucun niveau n'est indiqué, l'assistance est fournie par e-mail les jours ouvrables, et les mises à jour du Logiciel sous licence sont mises à disposition pendant la Durée de l'Abonnement."
+          ]
+        },
+        "fees": {
+          "id": "fees",
+          "title": "7. Frais et paiement",
+          "content": [
+            "Les frais, la facturation et les conditions de paiement sont indiqués dans le Bon de commande. Sauf disposition contraire du Bon de commande, les factures sont payables sous trente (30) jours, les frais s'entendent hors taxes, et les frais de la Durée de l'Abonnement ne sont ni annulables ni remboursables, sauf dans les cas prévus par la présente Licence ou par les Conditions d'utilisation."
+          ]
+        },
+        "ownership": {
+          "id": "ownership",
+          "title": "8. Propriété",
+          "content": [
+            "Rediacc et ses concédants de licence sont propriétaires du Logiciel sous licence et de tous les droits de propriété intellectuelle qui s'y rattachent, ou ont le droit de les concéder sous licence. Le Logiciel sous licence est concédé sous licence et non vendu, et aucun droit n'est accordé sauf mention expresse de la présente Licence."
+          ]
+        },
+        "warranty": {
+          "id": "warranty",
+          "title": "9. Garantie limitée",
+          "content": [
+            "Rediacc garantit que, pendant quatre-vingt-dix (90) jours après la livraison, le Logiciel sous licence sera substantiellement conforme à sa Documentation. Le recours exclusif du Client en cas de manquement à cette garantie est que Rediacc corrige la non-conformité ou, si Rediacc ne peut le faire dans un délai raisonnable, que chaque partie puisse résilier l'Abonnement concerné et que Rediacc rembourse les frais prépayés pour la Durée de l'Abonnement restante.",
+            "SAUF POUR CETTE GARANTIE LIMITÉE, LE LOGICIEL SOUS LICENCE EST FOURNI « EN L'ÉTAT » (« AS IS »), ET L'EXCLUSION DE GARANTIES DES CONDITIONS D'UTILISATION S'APPLIQUE."
+          ]
+        },
+        "liability": {
+          "id": "liability",
+          "title": "10. Limitation de responsabilité",
+          "content": [
+            "La limitation de responsabilité des Conditions d'utilisation s'applique, sauf que le plafond correspond aux frais payés ou payables pour l'Abonnement au titre du Bon de commande au cours des douze (12) mois précédant le fait générateur de la réclamation, à moins que le Bon de commande ne fixe un autre montant."
+          ]
+        },
+        "indemnity": {
+          "id": "indemnity",
+          "title": "11. Défense en cas de contrefaçon",
+          "content": [
+            "L'obligation de défense en cas de contrefaçon qui incombe à Rediacc au titre des Conditions d'utilisation s'applique au Logiciel sous licence."
+          ]
+        },
+        "verification": {
+          "id": "verification",
+          "title": "12. Vérification",
+          "content": [
+            "Le Logiciel sous licence transmet le nombre d'activations au service de licences ou, pour un serveur de compte auto-hébergé hors ligne, conserve des enregistrements locaux des activations. Sur demande raisonnable, au plus une fois par an, le Client confirmera par écrit son nombre d'activations. Si le Client dépasse le Plafond d'activations, les parties conviendront d'un Bon de commande modifié, et le Client paiera les frais correspondant à l'utilisation excédentaire aux tarifs du Bon de commande."
+          ]
+        },
+        "term": {
+          "id": "term",
+          "title": "13. Durée et résiliation",
+          "content": [
+            "La présente Licence s'applique pendant la Durée de l'Abonnement. Chaque partie peut la résilier en cas de manquement grave auquel il n'a pas été remédié dans les trente (30) jours suivant une notification écrite. À l'expiration ou à la résiliation, le Client cesse d'utiliser le Logiciel sous licence, sauf que les Dépôts déjà en cours d'exécution continuent de fonctionner au niveau de fonctionnalités du forfait Community, et supprime les fichiers de licence sur demande."
+          ]
+        },
+        "general": {
+          "id": "general",
+          "title": "14. Exportation, droit applicable et dispositions générales",
+          "content": [
+            "Les dispositions des Conditions d'utilisation relatives au contrôle des exportations, au droit applicable, au règlement des litiges et aux dispositions générales s'appliquent à la présente Licence, sauf si le Bon de commande prévoit d'autres conditions. La section sur l'arbitrage des Conditions d'utilisation ne s'applique qu'aux Clients dont le principal établissement est situé aux États-Unis."
+          ]
+        },
+        "attribution": {
+          "id": "attribution",
+          "title": "15. Source de la présente Licence",
+          "content": [
+            "Certaines parties de la présente Licence sont adaptées des Common Paper Software License Agreement Standard Terms Version 1.1 (<a href=\"https://commonpaper.com/standards/software-license-agreement/1.1\">commonpaper.com/standards/software-license-agreement/1.1</a>), publiés par Common Paper, Inc. sous la licence Creative Commons Attribution 4.0 International (<a href=\"https://creativecommons.org/licenses/by/4.0/\">CC BY 4.0</a>). Le texte a été modifié : il a été restructuré, abrégé et adapté aux Services. Common Paper, Inc. n'approuve pas la présente Licence."
+          ]
+        }
+      },
+      "contact": {
+        "title": "Des questions ?",
+        "description": "Pour toute question sur les licences Enterprise, ou pour demander un Bon de commande, contactez-nous à <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>."
+      },
+      "related": {
+        "title": "Politiques associées"
       }
     },
     "home": {
@@ -1829,11 +2229,6 @@
           }
         ]
       },
-      "edgeChannel": {
-        "cta": "Commencer gratuitement",
-        "description": "Le canal edge livre nos toutes dernières fonctionnalités en premier et fonctionne avec le double des limites du canal stable.",
-        "heading": "Essayer le canal Edge"
-      },
       "faq": {
         "heading": "Foire aux questions",
         "items": [
@@ -1873,7 +2268,7 @@
       },
       "freeLicense": {
         "cta": "Installer Rediacc",
-        "description": "N'importe quelle machine peut obtenir une licence gratuite pour un dépôt, sans inscription : jusqu'à 3 Go, valable 48 heures et renouvelable gratuitement autant de fois que nécessaire. À son expiration, les dépôts en cours continuent de fonctionner ; les nouveaux dépôts et les sauvegardes hébergées nécessitent une offre payante.",
+        "description": "N'importe quelle machine peut obtenir une licence gratuite pour un dépôt, sans inscription : jusqu'à 3 Go, valable 48 heures et renouvelable gratuitement autant de fois que nécessaire. À son expiration, les dépôts en cours continuent de fonctionner. Elle n'inclut aucune sauvegarde hébergée. Un compte gratuit ouvre l'accès à Community : dépôts jusqu'à 10 Go, 100 émissions de licence par mois et 10 Go de sauvegarde hébergée. Les offres payantes vont plus loin.",
         "heading": "Essayez sans compte"
       },
       "hero": {
@@ -2072,7 +2467,7 @@
         "title": "Questions ?"
       },
       "hero": {
-        "effectiveDate": "Date d'effet : 1er février 2026",
+        "effectiveDate": "Date d'entrée en vigueur : 11 novembre 2026",
         "title": "Notre engagement en matière de confidentialité"
       },
       "meta": {
@@ -2086,13 +2481,15 @@
       "sections": {
         "changes": {
           "content": [
-            "Nous pouvons mettre à jour cette politique périodiquement. Les modifications seront publiées sur cette page."
+            "Nous pouvons mettre à jour cette Politique de confidentialité de temps à autre. Les modifications sont publiées sur cette page avec une nouvelle date d'entrée en vigueur, et les modifications importantes sont en outre notifiées par e-mail aux titulaires de compte au moins trente (30) jours avant leur prise d'effet. Les modifications relatives au fonctionnement de l'acceptation des Conditions d'utilisation suivent la procédure de modification prévue dans les <a href=\"terms-of-service\">Conditions d'utilisation</a>."
           ],
           "id": "changes",
           "title": "10. Modifications de cette politique"
         },
         "childrenPrivacy": {
-          "content": ["Nos services ne sont pas destinés aux personnes de moins de 16 ans."],
+          "content": [
+            "Nos services s'adressent aux personnes âgées d'au moins 18 ans et ne sont pas destinés aux enfants. Nous ne collectons pas sciemment de données personnelles auprès de personnes de moins de 18 ans. Si nous apprenons que nous avons collecté de telles données, nous les supprimerons sans délai."
+          ],
           "id": "children-privacy",
           "title": "9. Vie privée des enfants"
         },
@@ -2100,7 +2497,8 @@
           "content": [
             "Les données du formulaire de contact sont conservées dans notre système de messagerie aussi longtemps que nécessaire pour répondre à votre demande et maintenir les archives de correspondance. Les données de compte sont conservées pendant la durée de votre compte actif plus 30 jours après la suppression du compte pour permettre la récupération. Les registres de facturation sont conservés conformément aux lois fiscales et comptables applicables.",
             "Les données analytiques Plausible sont agrégées et ne contiennent pas de données personnelles, les politiques de conservation des données ne s'y appliquent donc pas.",
-            "Les données de télémétrie des produits sont conservées sous forme de traces brutes pendant 90 jours maximum à des fins de débogage. Les métriques de télémétrie agrégées sont conservées pendant 12 mois maximum, puis supprimées. Pour plus de détails, consultez notre <a href=\"telemetry-policy\">Politique de télémétrie</a>."
+            "Les données de télémétrie des produits sont conservées sous forme de traces brutes pendant 90 jours maximum à des fins de débogage. Les métriques de télémétrie agrégées sont conservées pendant 12 mois maximum, puis supprimées. Pour plus de détails, consultez notre <a href=\"telemetry-policy\">Politique de télémétrie</a>.",
+            "Les traces d'acceptation d'un compte sont conservées pendant la durée de vie du compte, plus trois (3) ans, soit le délai général de prescription des actions contractuelles en droit estonien. Les traces d'acceptation d'une Licence gratuite sont conservées trois (3) ans à compter de l'acceptation. Les deux sont ensuite supprimées automatiquement."
           ],
           "id": "data-retention",
           "title": "5. Conservation des données"
@@ -2116,7 +2514,7 @@
           "content": ["Nous ne vendons ni ne louons vos données personnelles à des tiers."],
           "id": "data-sharing",
           "items": [
-            "<strong>Prestataires de services</strong> qui nous aident à exploiter la plateforme",
+            "<strong>Prestataires de services (sous-traitants ultérieurs)</strong> qui hébergent et exploitent notre plateforme, envoient les e-mails et traitent les paiements, et qui sont tenus par contrat de protéger vos données. La liste actuelle, avec le rôle et la localisation de chaque prestataire, figure dans notre <a href=\"data-processing-agreement\">Accord de traitement des données</a>",
             "<strong>Plausible Analytics</strong> pour des analyses web anonymes",
             "<strong>Traitement de la télémétrie</strong> — les données d'utilisation anonymisées des produits sont transmises à notre propre point de terminaison de télémétrie au sein de l'UE pour agrégation et analyse. Aucune donnée de télémétrie n'est partagée avec des tiers (voir notre <a href=\"telemetry-policy\">Politique de télémétrie</a>)",
             "<strong>Autorités légales</strong> lorsque la loi l'exige"
@@ -2166,6 +2564,14 @@
                 "Nous utilisons un seul cookie fonctionnel (<code>rediacc_lang</code>) pour mémoriser votre préférence linguistique. Plus de détails dans notre <a href=\"cookie-policy\">Politique de cookies</a>."
               ],
               "title": "2.4 Cookies"
+            },
+            "acceptanceRecords": {
+              "title": "2.7 Preuves d'acceptation",
+              "content": [
+                "Lorsque les Conditions d'utilisation sont acceptées, nous conservons une trace de l'acceptation comme preuve du contrat : le document et sa version, la somme de contrôle du texte accepté, le libellé exact du consentement affiché et sa langue, la méthode utilisée (case à cocher du portail, paiement, invite de la CLI ou option de la CLI en mode non interactif) et l'horodatage. Pour un compte, la trace comprend aussi l'adresse IP et l'agent utilisateur de la requête et, pour un paiement, l'identifiant de la session de paiement.",
+                "Pour une Licence gratuite acceptée sans compte, la trace contient l'identifiant lié à la machine que la licence utilise déjà, c'est-à-dire un hachage à clé de l'identifiant de la machine cliente et la version de la CLI, sans adresse IP ni autre donnée réseau.",
+                "Les bases légales sont l'exécution du contrat (article 6, paragraphe 1, point b, du RGPD) ainsi que le respect de nos obligations légales et la constatation, l'exercice ou la défense de droits en justice (article 6, paragraphe 1, points c et f, du RGPD)."
+              ]
             },
             "productTelemetry": {
               "content": [
@@ -2756,7 +3162,7 @@
     },
     "resourcesNis2Directive": {
       "about": {
-        "body": "Rediacc est une plateforme d'infrastructure auto-hébergée enregistrée en Estonie (OÜ 17363830, TVA EE102920091). Ce résumé a été rédigé dans notre programme de contenu NIS2. Les guides ci-dessus détaillent comment Rediacc adresse des articles spécifiques, y compris les lacunes où Rediacc n'est pas la solution (pas de certifications pour l'instant ; pas de couche GRC ; pas de notifications Article 23 gérées ; authentification forte uniquement en portail). Pour la liste détaillée des capacités, consultez {nis2DoraLink} dans la documentation.",
+        "body": "Rediacc est une plateforme d'infrastructure auto-hébergée ; les informations d'immatriculation de la société figurent sur la page des informations légales. Ce résumé a été rédigé dans le cadre de notre programme de contenus NIS2. Les guides complémentaires ci-dessus décrivent comment Rediacc traite certains articles de la directive, y compris les lacunes pour lesquelles Rediacc n'est pas la réponse (pas encore de certifications ; pas de couche GRC ; pas de notification gérée au titre de l'article 23 ; MFA uniquement dans le portail). Pour la correspondance publique des capacités, voir {nis2DoraLink} dans la documentation.",
         "cta": "Envoyez-nous votre questionnaire fournisseur ou vos trois plus gros postes de sécurité du budget passé. Nous répondrons sur la base d'une vraie instance qui tourne sur nos serveurs, par écrit, et nous vous montrerons où ça cloche. Ou téléchargez le PDF et passez-le à un collègue.",
         "downloadButton": "Télécharger le PDF",
         "heading": "À propos"
@@ -2928,6 +3334,102 @@
         "threeYearRoi": "ROI 3 ans"
       },
       "title": "Combien Rediacc pourrait vous économiser ?"
+    },
+    "serviceLevelAgreement": {
+      "meta": {
+        "title": "SLA : disponibilité et crédits de service | Rediacc",
+        "description": "Engagement de disponibilité mensuelle du portail de compte et de l'API Rediacc pour les Abonnements payants, et crédits de service en cas de manquement.",
+        "keywords": "accord de niveau de service, SLA, disponibilité, temps de fonctionnement, crédits de service, Rediacc"
+      },
+      "hero": {
+        "title": "Accord de niveau de service",
+        "effectiveDate": "Date d'entrée en vigueur : 11 novembre 2026"
+      },
+      "toc": {
+        "title": "Table des matières"
+      },
+      "sections": {
+        "scope": {
+          "id": "scope",
+          "title": "1. Champ d'application",
+          "content": [
+            "Le présent Accord de niveau de service (le « SLA ») fait partie des <a href=\"terms-of-service\">Conditions d'utilisation</a> entre {{legalName}} (« Rediacc ») et les Clients disposant d'un Abonnement payant (Professional, Business ou Enterprise, sauf si le Bon de commande prévoit d'autres conditions). Il ne s'applique pas à la Licence gratuite, au forfait Community, aux essais ni aux fonctionnalités expérimentales. Le présent SLA est rédigé en anglais ; les traductions sont fournies à titre indicatif uniquement et, en cas de divergence, la version anglaise prévaut.",
+            "Le SLA couvre la disponibilité du portail de compte et de l'API de compte dans la région du Client (le « Service couvert »). Il ne couvre jamais les Machines, Dépôts ni réseaux du Client, ni le Logiciel sur site qui y fonctionne, lesquels fonctionnent indépendamment du Service couvert : les Dépôts en cours d'exécution continuent de fonctionner lorsque le Service couvert est indisponible."
+          ]
+        },
+        "definitions": {
+          "id": "definitions",
+          "title": "2. Définitions",
+          "items": [
+            "<strong>« Indisponibilité »</strong> désigne une période d'au moins cinq (5) minutes consécutives pendant laquelle le Service couvert renvoie des erreurs serveur, ou ne répond pas, à au moins cinq pour cent des requêtes valides, telle que mesurée par la supervision de Rediacc.",
+            "<strong>« Taux de disponibilité mensuel »</strong> désigne le nombre total de minutes d'un mois civil moins les minutes d'Indisponibilité, divisé par le nombre total de minutes de ce mois, hors les minutes des événements visés à la Section 5.",
+            "<strong>« Frais mensuels »</strong> désigne les frais payés pour l'Abonnement au titre du mois concerné (en cas de facturation annuelle, un douzième des frais annuels).",
+            "<strong>« Crédit de service »</strong> désigne un crédit, calculé en pourcentage des Frais mensuels, imputé sur les frais futurs."
+          ]
+        },
+        "commitment": {
+          "id": "commitment",
+          "title": "3. Engagement de disponibilité",
+          "content": [
+            "Rediacc déploiera des efforts commercialement raisonnables pour que le Service couvert soit disponible avec un Taux de disponibilité mensuel d'au moins 99,5 %."
+          ]
+        },
+        "credits": {
+          "id": "credits",
+          "title": "4. Crédits de service",
+          "content": [
+            "Si le Taux de disponibilité mensuel passe sous l'engagement, le Client peut prétendre au Crédit de service suivant :"
+          ],
+          "items": [
+            "moins de 99,5 % mais au moins 99,0 % : 10 % des Frais mensuels",
+            "moins de 99,0 % : 25 % des Frais mensuels"
+          ],
+          "content2": [
+            "Le total des Crédits de service pour un mois ne dépassera pas 25 % des Frais mensuels. Les Crédits de service sont imputés sur les factures futures, ne sont pas versés en espèces, ne sont pas cessibles et expirent à la fin de l'Abonnement."
+          ]
+        },
+        "exclusions": {
+          "id": "exclusions",
+          "title": "5. Cas exclus",
+          "content": ["L'Indisponibilité n'inclut pas l'indisponibilité causée par :"],
+          "items": [
+            "une maintenance programmée annoncée au moins quarante-huit (48) heures à l'avance, dans la limite de quatre (4) heures par mois",
+            "une maintenance d'urgence nécessaire pour corriger une vulnérabilité de sécurité ou une attaque en cours",
+            "des événements échappant au contrôle raisonnable de Rediacc, y compris les défaillances d'internet, de réseaux tiers ou de fournisseurs auxquels Rediacc n'a pas fait appel",
+            "les Machines, réseaux, logiciels, configuration ou identifiants du Client, ou tout acte ou omission du Client ou de ses Utilisateurs autorisés",
+            "une suspension ou une résiliation prévue par les Conditions d'utilisation, ou une utilisation en violation de la Politique d'utilisation acceptable",
+            "les fonctionnalités expérimentales, ou l'utilisation par le Client d'une version non prise en charge du Logiciel sur site"
+          ]
+        },
+        "claims": {
+          "id": "claims",
+          "title": "6. Demande de Crédit de service",
+          "content": [
+            "Pour obtenir un Crédit de service, le Client doit envoyer une demande à <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> avec l'objet « SLA credit » dans les trente (30) jours suivant la fin du mois concerné, en indiquant les dates et heures de l'Indisponibilité et les requêtes concernées. Rediacc confirme ou refuse la demande, sur la base de sa supervision, dans un délai de trente (30) jours. Un Client dont des frais sont en retard n'a pas droit aux Crédits de service."
+          ]
+        },
+        "soleRemedy": {
+          "id": "sole-remedy",
+          "title": "7. Recours exclusif",
+          "content": [
+            "<strong>Les Crédits de service constituent le recours unique et exclusif du Client, et l'intégralité de la responsabilité de Rediacc, pour tout manquement à l'engagement de disponibilité.</strong> Des manquements répétés n'y changent rien, sauf qu'un Client dont le Taux de disponibilité mensuel passe sous 99,0 % pendant trois (3) mois consécutifs peut résilier l'Abonnement et obtenir le remboursement des frais prépayés pour la durée restante."
+          ]
+        },
+        "attribution": {
+          "id": "attribution",
+          "title": "8. Source du présent SLA",
+          "content": [
+            "Certaines parties du présent SLA sont adaptées des Common Paper Service Level Agreement Standard Terms Version 2.0 (<a href=\"https://commonpaper.com/standards/service-level-agreement/2.0\">commonpaper.com/standards/service-level-agreement/2.0</a>), publiés par Common Paper, Inc. sous la licence Creative Commons Attribution 4.0 International (<a href=\"https://creativecommons.org/licenses/by/4.0/\">CC BY 4.0</a>). Le texte a été modifié : il a été restructuré, abrégé et adapté aux Services. Common Paper, Inc. n'approuve pas le présent SLA."
+          ]
+        }
+      },
+      "contact": {
+        "title": "Des questions ?",
+        "description": "Pour toute question sur le présent Accord de niveau de service, ou pour demander un Crédit de service, contactez-nous à <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>."
+      },
+      "related": {
+        "title": "Politiques associées"
+      }
     },
     "solutionPages": {
       "aiPentesting": {
@@ -9512,58 +10014,97 @@
         "title": "Questions ?"
       },
       "hero": {
-        "effectiveDate": "Date d'effet : 1er février 2026",
-        "title": "Conditions générales d’utilisation"
+        "effectiveDate": "Date d'entrée en vigueur : 11 novembre 2026",
+        "title": "Conditions d'utilisation"
       },
       "meta": {
-        "description": "Conditions régissant l'utilisation du site web et de la plateforme d'automatisation d'infrastructure Rediacc.",
-        "keywords": "conditions d'utilisation, termes et conditions, accord utilisateur, Rediacc",
-        "title": "Conditions d'Utilisation — Rediacc"
+        "description": "Conditions de la CLI Rediacc, du Renet Agent, du portail de compte et des services associés : licence logicielle, frais, responsabilité et litiges.",
+        "keywords": "conditions d'utilisation, contrat client, licence logicielle, Rediacc, plateforme d'infrastructure, conditions SaaS, licence CLI, arbitrage",
+        "title": "Conditions d'utilisation - Accord juridique | Rediacc"
       },
       "related": {
         "title": "Politiques associées"
       },
       "sections": {
+        "acceptableUse": {
+          "id": "acceptable-use",
+          "title": "11. Utilisation acceptable",
+          "content": [
+            "Votre utilisation des Services doit respecter la <a href=\"acceptable-use-policy\">Politique d'utilisation acceptable</a>, qui fait partie des présentes Conditions. Vous êtes responsable des contenus et des applications déployés sur vos Machines ainsi que du comportement de vos Utilisateurs autorisés."
+          ]
+        },
         "acceptance": {
           "content": [
-            "En accédant au site web de Rediacc (<a href=\"https://www.rediacc.com\">www.rediacc.com</a>) ou à la plateforme Rediacc, vous acceptez ces Conditions d'Utilisation.",
-            "Si vous n'acceptez pas les présentes Conditions, vous ne devez pas accéder aux Services ni les utiliser. Les présentes Conditions constituent un accord juridiquement contraignant entre vous et Rediacc OÜ (code registre 17363830), une société enregistrée en Estonie dont le siège social est situé à Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Estonie (« Rediacc », « nous », « notre » ou « nos »)."
+            "Les présentes Conditions d'utilisation (les « Conditions ») constituent un contrat juridiquement contraignant entre vous et Rediacc. Vous acceptez ces Conditions par un acte exprès : cocher la case d'acceptation lorsque vous créez un Compte ou la prochaine fois que vous l'utilisez, les accepter lors du paiement, répondre oui à l'invite d'acceptation de la CLI ou, lorsque la CLI s'exécute sans surveillance, passer l'option <code>--accept-terms</code> ou définir <code>RDC_ACCEPT_TERMS=1</code>. Chaque acceptation est enregistrée avec la version des présentes Conditions, l'horodatage et la méthode utilisée.",
+            "Si vous acceptez ces Conditions au nom d'une organisation, vous déclarez avoir le pouvoir d'engager cette organisation, et « vous » et « Client » désignent alors cette organisation. Si vous n'avez pas ce pouvoir ou si vous n'êtes pas d'accord avec ces Conditions, ne les acceptez pas et n'utilisez pas les Services.",
+            "Les documents suivants font partie des présentes Conditions : la <a href=\"acceptable-use-policy\">Politique d'utilisation acceptable</a>, la <a href=\"refund-policy\">Politique de remboursement</a>, pour les clients professionnels l'<a href=\"data-processing-agreement\">Accord de traitement des données</a>, pour les Abonnements payants l'<a href=\"service-level-agreement\">Accord de niveau de service</a> et, pour les clients Enterprise, la <a href=\"enterprise-license\">Licence logicielle Enterprise</a> et le Bon de commande. La <a href=\"privacy-policy\">Politique de confidentialité</a> et la <a href=\"telemetry-policy\">Politique de télémétrie</a> expliquent comment les données personnelles et les Données de télémétrie sont traitées.",
+            "Les présentes Conditions sont rédigées en anglais. Les traductions sont fournies à titre indicatif uniquement. En cas de divergence entre une traduction et la version anglaise, la version anglaise prévaut."
           ],
           "id": "acceptance",
-          "title": "2. Acceptation des conditions"
+          "title": "2. Accord et acceptation"
         },
-        "accounts": {
+        "attribution": {
+          "id": "attribution",
+          "title": "28. Source des présentes Conditions",
           "content": [
-            "Vous devez fournir des informations exactes lors de l'inscription et êtes responsable de toutes les activités sous votre compte."
-          ],
-          "content2": [
-            "Vous devez nous notifier immédiatement à <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> si vous suspectez un accès non autorisé à votre Compte. Nous nous réservons le droit de suspendre ou de supprimer les Comptes inactifs depuis plus de douze (12) mois ou dont nous estimons raisonnablement qu'ils sont utilisés en violation des présentes Conditions."
-          ],
-          "id": "accounts",
-          "items": [
-            "La protection de vos identifiants de Compte, jetons API et clés d'accès",
-            "Toutes les activités effectuées sous votre Compte ou par vos Utilisateurs autorisés",
-            "Vous assurer que les Utilisateurs autorisés respectent les présentes Conditions",
-            "Le maintien de la confidentialité de vos fichiers de Configuration, y compris les clés privées SSH et les identifiants de chiffrement"
-          ],
-          "title": "4. Comptes et inscription"
+            "Certaines parties des présentes Conditions sont adaptées des Common Paper Terms of Service et des Common Paper Cloud Service Agreement Standard Terms Version 2.1 (<a href=\"https://commonpaper.com/standards/cloud-service-agreement/2.1\">commonpaper.com/standards/cloud-service-agreement/2.1</a>), publiés par Common Paper, Inc. sous la licence Creative Commons Attribution 4.0 International (<a href=\"https://creativecommons.org/licenses/by/4.0/\">CC BY 4.0</a>). Le texte a été modifié : il a été restructuré, combiné avec des clauses rédigées pour les Services (y compris les sections sur l'arbitrage, l'exportation, le droit d'auteur et l'acceptation) et adapté aux Services. Common Paper, Inc. n'approuve pas les présentes Conditions."
+          ]
         },
         "changes": {
           "content": [
-            "Nous pouvons mettre à jour ces conditions périodiquement.",
-            "Votre utilisation continue des Services après l'entrée en vigueur des Conditions mises à jour constitue l'acceptation des Conditions révisées. Si vous n'acceptez pas les Conditions mises à jour, vous devez cesser d'utiliser les Services et annuler votre Abonnement avant que les modifications ne prennent effet."
+            "Rediacc peut mettre à jour les présentes Conditions. Chaque version est publiée avec son identifiant de version, sa date d'entrée en vigueur et sa somme de contrôle, et les versions antérieures restent disponibles dans l'archive accessible depuis cette page.",
+            "En cas de modification substantielle, Rediacc vous en informe par e-mail à l'adresse du Compte et sur le site web au moins trente (30) jours avant sa prise d'effet. Une modification substantielle ne vous lie qu'une fois que vous l'avez acceptée par un acte exprès décrit à la Section 2 ; d'ici là, Rediacc peut limiter l'accès à la Plateforme et la délivrance de licences aux seules étapes nécessaires pour examiner et accepter la nouvelle version. Si vous n'acceptez pas, vous pouvez cesser d'utiliser les Services et résilier votre Abonnement, et les frais prépayés pour la période postérieure à la prise d'effet de la modification vous sont remboursés.",
+            "Une modification non substantielle, telle qu'une correction ou une clarification qui ne réduit pas vos droits, prend effet dès sa publication."
           ],
           "id": "changes",
-          "title": "19. Modifications de ces conditions"
+          "title": "24. Modification des présentes Conditions"
         },
-        "dataOwnership": {
+        "confidentiality": {
+          "id": "confidentiality",
+          "title": "17. Confidentialité des informations",
           "content": [
-            "Vos données vous appartiennent. Détails dans notre <a href=\"privacy-policy\">Politique de Confidentialité</a>.",
-            "Les informations de Compte (e-mail, nom de l'organisation, détails de facturation) sont traitées conformément à notre <a href=\"privacy-policy\">Politique de confidentialité</a>. À la résiliation de votre Compte, vous pouvez exporter vos données de Compte dans un délai de trente (30) jours. Après trente (30) jours, nous supprimerons vos données de Compte de nos systèmes actifs. Les Données client sur vos Machines ne sont pas affectées par la résiliation du Compte — elles restent sur votre infrastructure sous votre contrôle.",
-            "Conformément au Data Act de l'UE (Règlement 2023/2854), si vous utilisez les fonctionnalités cloud de la Plateforme, vous avez le droit de changer de fournisseur ou de migrer vers une installation auto-hébergée. Vos Données client sont stockées sur vos propres Machines et sont toujours sous votre contrôle. Toutes les données de Compte et configurations stockées sur la Plateforme peuvent être exportées dans des formats standards lisibles par machine. Nous fournirons une assistance raisonnable pendant toute période de transition pouvant aller jusqu'à trente (30) jours suivant votre demande."
+            "Les « Informations confidentielles » désignent les informations non publiques communiquées par une partie à l'autre qui sont marquées comme confidentielles ou doivent raisonnablement être considérées comme telles, y compris les prix non publics, les Bons de commande et les informations de sécurité. Elles n'incluent pas les informations qui sont ou deviennent publiques sans faute du destinataire, que le destinataire connaissait déjà ou a développées de manière indépendante, ou qu'il a reçues légitimement d'un tiers sans obligation de confidentialité.",
+            "Le destinataire n'utilisera les Informations confidentielles de la partie qui les communique que pour exécuter les présentes Conditions, les protégera avec au moins un soin raisonnable et ne les divulguera qu'à ses employés, sous-traitants et conseillers qui ont besoin de les connaître et sont soumis à des obligations similaires, ou lorsque la loi l'exige, après notification lorsque la loi le permet."
+          ]
+        },
+        "copyright": {
+          "id": "copyright",
+          "title": "23. Réclamations relatives au droit d'auteur (DMCA)",
+          "content": [
+            "Rediacc respecte les droits de propriété intellectuelle et traite les notifications de violation présumée conformément au Digital Millennium Copyright Act américain (17 U.S.C. 512) et au règlement européen sur les services numériques. Envoyez les notifications à <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> avec l'objet « Copyright notice ». Une notification doit comprendre :"
           ],
-          "id": "data-ownership",
-          "title": "11. Vos données"
+          "items": [
+            "la signature physique ou électronique du titulaire du droit d'auteur ou d'une personne autorisée à agir en son nom",
+            "l'identification de l'œuvre protégée par le droit d'auteur dont la violation est alléguée",
+            "l'identification du contenu prétendument contrefaisant et des informations raisonnablement suffisantes pour le localiser",
+            "vos coordonnées, y compris une adresse e-mail",
+            "une déclaration selon laquelle vous croyez de bonne foi que l'utilisation n'est pas autorisée par le titulaire du droit d'auteur, son mandataire ou la loi",
+            "une déclaration, sous peine de parjure (« under penalty of perjury »), selon laquelle les informations de la notification sont exactes et vous êtes autorisé à agir au nom du titulaire"
+          ],
+          "content2": [
+            "Une personne dont le contenu a été retiré peut envoyer une contre-notification à la même adresse, accompagnée des informations exigées par 17 U.S.C. 512(g)(3). Rediacc résilie, dans les circonstances appropriées, les Comptes des contrevenants récidivistes. Les Données client restant sur des Machines que Rediacc ne contrôle pas, Rediacc peut ne pas être en mesure de retirer directement un contenu et peut à la place transmettre la notification au Client et agir conformément à la Section 21."
+          ]
+        },
+        "customerData": {
+          "id": "customer-data",
+          "title": "13. Données client, chiffrement et sauvegardes",
+          "content": [
+            "<strong>Vos Données client vous appartiennent.</strong> Les Données client restent sur les Machines que vous contrôlez, chiffrées avec des identifiants que vous seul détenez. Rediacc n'a pas accès aux Données client au repos et n'y accède pas, ne les utilise pas et ne les partage pas, sauf dans la mesure strictement nécessaire pour fournir les Services que vous demandez.",
+            "Le Logiciel sur site utilise le chiffrement intégral de disque LUKS pour les données des Dépôts, et le stockage chiffré des configurations ainsi que les sauvegardes hébergées sont chiffrés avec des clés dérivées sur vos appareils (chiffrement à connaissance nulle). <strong>Rediacc ne peut ni lire, ni réinitialiser, ni récupérer ces clés. Perdre vos identifiants de chiffrement, votre mot de passe principal, vos clés d'accès (passkeys) et vos codes de récupération signifie perdre les données qu'ils protègent, et Rediacc ne peut pas les restaurer.</strong>",
+            "<strong>Les sauvegardes relèvent de votre responsabilité.</strong> Vous devez conserver des sauvegardes à jour de vos Données client et de votre Configuration, que vous utilisiez ou non le stockage hébergé de sauvegardes. Le stockage hébergé de sauvegardes, lorsqu'il est inclus dans votre forfait, est un outil pour vous y aider et non une garantie que les données pourront être restaurées.",
+            "À la résiliation d'un Compte, les données du Compte peuvent être exportées dans un délai de trente (30) jours, puis sont supprimées des systèmes actifs. Les Données client présentes sur vos Machines ne sont pas affectées par la résiliation. En vertu du règlement européen sur les données (Règlement 2023/2854), vous pouvez changer de fournisseur ou passer à une configuration entièrement auto-hébergée, les données du Compte sont exportables dans des formats lisibles par machine, et Rediacc fournit une assistance raisonnable pendant trente (30) jours au maximum après une demande."
+          ]
+        },
+        "customerResponsibilities": {
+          "id": "customer-responsibilities",
+          "title": "12. Vos serveurs, agents et automatisations",
+          "content": ["Vous êtes seul responsable :"],
+          "items": [
+            "de la sécurité, de l'exploitation et de la maintenance de vos Machines, y compris l'accès SSH, les pare-feu, les mises à jour du système d'exploitation et la sécurité physique",
+            "de chaque script, pipeline CI, agent d'IA et autre automatisation qui exécute la CLI ou appelle la Plateforme avec vos identifiants ou sur vos Machines, et de tout ce qu'elle fait",
+            "des acceptations données par une automatisation : lorsque <code>--accept-terms</code> ou <code>RDC_ACCEPT_TERMS=1</code> est utilisé, les présentes Conditions lient quiconque exécute cette automatisation, et la personne ou l'organisation qui l'a configurée est réputée les avoir acceptées",
+            "du respect des licences de tout logiciel tiers déployé sur votre infrastructure"
+          ]
         },
         "definitions": {
           "content": [
@@ -9571,243 +10112,352 @@
           ],
           "id": "definitions",
           "items": [
-            "<strong>« Compte »</strong> désigne le compte utilisateur que vous créez pour accéder à la Plateforme et gérer votre Abonnement.",
-            "<strong>« Utilisateur autorisé »</strong> désigne toute personne ayant accès aux Services dans le cadre de votre Compte, y compris les membres de l'équipe, les employés et les sous-traitants agissant en votre nom.",
-            "<strong>« Renet Agent »</strong> désigne l'agent côté serveur de Rediacc qui s'exécute sur vos Machines pour gérer le stockage chiffré, l'orchestration de conteneurs et les opérations d'infrastructure.",
-            "<strong>« CLI »</strong> désigne l'interface en ligne de commande de Rediacc (<code>rdc</code>) installée sur votre poste de travail.",
-            "<strong>« Configuration »</strong> désigne les fichiers de configuration locaux stockés sur votre poste de travail contenant les détails de connexion aux Machines, les identifiants de chiffrement et d'autres paramètres opérationnels.",
-            "<strong>« Données client »</strong> désigne toutes les données, contenus, fichiers, conteneurs, configurations et applications que vous déployez, stockez ou traitez sur vos Machines en utilisant les Services. Les Données client n'incluent pas les informations de Compte ni les Données de télémétrie.",
-            "<strong>« Machine »</strong> désigne un serveur ou une machine virtuelle que vous possédez ou contrôlez et sur lequel le Renet Agent est installé.",
-            "<strong>« Logiciel sur site »</strong> désigne les composants logiciels installés sur votre infrastructure, y compris le CLI, le Renet Agent et l'Application de bureau.",
-            "<strong>« Plateforme »</strong> désigne l'application web Rediacc, le portail de compte et tous les services hébergés dans le cloud fournis par Rediacc.",
+            "<strong>« Compte »</strong> désigne le compte utilisateur créé pour accéder à la Plateforme et gérer un Abonnement.",
+            "<strong>« Utilisateur autorisé »</strong> désigne toute personne à qui l'accès aux Services est accordé dans le cadre d'un Compte, y compris les membres de l'équipe, les employés et les sous-traitants agissant pour le compte du Client.",
+            "<strong>« CLI »</strong> désigne l'interface en ligne de commande de Rediacc (<code>rdc</code>).",
+            "<strong>« Configuration »</strong> désigne les fichiers de configuration présents sur un poste de travail, qui contiennent les informations de connexion aux Machines, les identifiants de chiffrement et d'autres paramètres d'exploitation.",
+            "<strong>« Client »</strong> ou <strong>« vous »</strong> désigne la personne physique qui accepte les présentes Conditions ou, lorsqu'elle les accepte au nom d'une organisation, cette organisation.",
+            "<strong>« Données client »</strong> désigne les données, contenus, fichiers, conteneurs, configurations et applications déployés, stockés ou traités sur des Machines à l'aide des Services. Les Données client n'incluent ni les informations du Compte ni les Données de télémétrie.",
+            "<strong>« Documentation »</strong> désigne les guides d'utilisation et la documentation de référence publiés sur <a href=\"https://www.rediacc.com\">www.rediacc.com</a>.",
+            "<strong>« Licence gratuite »</strong> désigne une licence de dépôt que toute Machine peut obtenir via la CLI sans Compte, comme décrit à la Section 6.1.",
+            "<strong>« Machine »</strong> désigne un serveur ou une machine virtuelle appartenant au Client ou placé sous son contrôle, sur lequel le Renet Agent est installé.",
+            "<strong>« Logiciel sur site »</strong> désigne le logiciel installé sur l'infrastructure du Client, y compris la CLI et le Renet Agent.",
+            "<strong>« Bon de commande »</strong> désigne un document de commande d'un Abonnement Enterprise qui renvoie aux présentes Conditions.",
+            "<strong>« Plateforme »</strong> désigne le portail de compte Rediacc, son API et tout service hébergé dans le cloud fourni par Rediacc.",
+            "<strong>« Renet Agent »</strong> désigne l'agent côté serveur de Rediacc qui s'exécute sur les Machines pour gérer le stockage chiffré, l'orchestration de conteneurs et les opérations d'infrastructure.",
             "<strong>« Dépôt »</strong> désigne un déploiement d'application isolé géré par le Renet Agent, composé d'une image disque chiffrée, d'un démon Docker dédié et des conteneurs associés.",
-            "<strong>« Services »</strong> désigne, collectivement, le Logiciel sur site, la Plateforme, la documentation et tous les services professionnels connexes fournis par Rediacc.",
-            "<strong>« Abonnement »</strong> désigne le niveau de forfait que vous avez sélectionné (Community, Professional, Business ou Enterprise), qui détermine votre accès aux fonctionnalités et limites de ressources.",
-            "<strong>« Données de télémétrie »</strong> désigne les données d'utilisation anonymisées collectées par les Services telles que décrites dans notre <a href=\"telemetry-policy\">Politique de télémétrie</a>."
+            "<strong>« Services »</strong> désigne, collectivement, le Logiciel sur site, la Plateforme, la Documentation et tout service connexe fourni par Rediacc.",
+            "<strong>« Abonnement »</strong> désigne le forfait choisi pour un Compte (Community, Professional, Business ou Enterprise), qui détermine l'accès aux fonctionnalités et les limites de ressources.",
+            "<strong>« Données de télémétrie »</strong> désigne les données d'utilisation collectées par les Services, telles que décrites dans la <a href=\"telemetry-policy\">Politique de télémétrie</a>."
           ],
-          "title": "1. Definitions"
+          "title": "1. Définitions"
         },
-        "experimentalFeatures": {
+        "eligibility": {
+          "id": "eligibility",
+          "title": "4. Conditions requises",
           "content": [
-            "Certaines fonctionnalités des Services peuvent être désignées comme « expérimentales », « bêta » ou « aperçu » (collectivement, « Fonctionnalités expérimentales »). Les Fonctionnalités expérimentales sont fournies à des fins d'évaluation et peuvent être incomplètes, instables ou sujettes à modification sans préavis.",
-            "Les Fonctionnalités expérimentales sont fournies « EN L'ÉTAT » sans garantie d'aucune sorte. Nous pouvons modifier ou supprimer les Fonctionnalités expérimentales à tout moment sans préavis, et nous ne sommes pas responsables des pertes ou dommages résultant de votre utilisation ou de votre dépendance aux Fonctionnalités expérimentales."
-          ],
-          "id": "experimental-features",
-          "title": "8. Fonctionnalités expérimentales"
+            "Vous devez avoir au moins 18 ans et avoir la capacité de conclure un contrat pour accepter les présentes Conditions ou utiliser les Services. Les Services ne s'adressent pas aux personnes de moins de 18 ans. En acceptant ces Conditions, vous confirmez que vous remplissez ces exigences et que la réception des Services ne vous est pas interdite par les lois décrites à la Section 22."
+          ]
+        },
+        "exportControl": {
+          "id": "export-control",
+          "title": "22. Contrôle des exportations et sanctions",
+          "content": [
+            "Le Logiciel sur site contient du chiffrement. Il est classé sous le numéro de classification de contrôle des exportations (ECCN) 5D992.c des Export Administration Regulations américaines en tant que logiciel de chiffrement grand public, et il est soumis aux lois de contrôle des exportations et des biens à double usage de l'Union européenne (y compris le Règlement (UE) 2021/821), des États-Unis et d'autres pays.",
+            "Vous ne devez pas exporter, réexporter, transférer ou utiliser les Services : (a) dans ou vers un pays ou une région soumis à des sanctions ou embargos globaux de l'UE, de l'ONU ou des États-Unis ; (b) par ou pour une personne figurant sur une liste de sanctions ou de parties refusées de l'UE, de l'ONU, du Royaume-Uni ou des États-Unis, ou détenue ou contrôlée par une telle personne ; ou (c) pour tout usage final interdit par ces lois, y compris les armes de destruction massive. Vous déclarez que vous n'êtes pas une telle personne et que vous ne vous trouvez pas dans un tel pays ou une telle région. Rediacc peut suspendre ou résilier les Services lorsque cela est nécessaire pour se conformer à ces lois."
+          ]
+        },
+        "fees": {
+          "id": "fees",
+          "title": "7. Frais, taxes, renouvellement et remboursements",
+          "subsections": {
+            "billing": {
+              "title": "7.1 Frais et facturation",
+              "content": [
+                "Les Abonnements payants commencent par un essai gratuit de 14 jours. Un moyen de paiement est requis à l'inscription, et le premier prélèvement a lieu à la fin de l'essai. Annuler avant la fin de l'essai ne coûte rien.",
+                "Les Abonnements payants sont facturés à l'avance, mensuellement ou annuellement. La facturation annuelle bénéficie d'une remise de 15 % sur douze (12) mois du prix mensuel. Tous les frais sont indiqués en dollars américains. Les paiements sont traités par Stripe ; Rediacc ne conserve pas les numéros complets des cartes de paiement. Les frais Enterprise sont fixés dans le Bon de commande.",
+                "Rediacc peut modifier ses prix moyennant un préavis de trente (30) jours. Une modification de prix prend effet au début de la période de facturation suivante, jamais pendant la période en cours, et vous pouvez annuler avant sa prise d'effet."
+              ]
+            },
+            "taxes": {
+              "title": "7.2 Taxes et droits",
+              "content": [
+                "Tous les frais s'entendent hors taxes. Vous êtes responsable de l'ensemble des taxes, droits et prélèvements applicables à votre Abonnement, à l'exclusion des impôts sur le revenu net de Rediacc. Lorsque la loi l'exige, Rediacc collecte et reverse les taxes (y compris la TVA de l'UE), qui sont détaillées sur la facture."
+              ]
+            },
+            "autoRenewal": {
+              "title": "7.3 Renouvellement automatique",
+              "content": [
+                "<strong>Les Abonnements payants sont renouvelés automatiquement à la fin de chaque période de facturation, pour la même durée et au prix alors en vigueur, et le moyen de paiement enregistré est débité à chaque renouvellement jusqu'à ce que vous résiliez.</strong> Vous pouvez résilier à tout moment depuis le portail de compte ou en écrivant à <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>. La résiliation empêche le renouvellement suivant ; les fonctionnalités payantes restent disponibles jusqu'à la fin de la période de facturation en cours. Rediacc envoie un rappel à l'adresse e-mail du Compte avant chaque renouvellement annuel."
+              ]
+            },
+            "refunds": {
+              "title": "7.4 Remboursements",
+              "content": [
+                "Aucun remboursement au prorata n'est accordé pour les périodes de facturation partielles, sauf dans les cas décrits dans la <a href=\"refund-policy\">Politique de remboursement</a> ou exigés par la loi."
+              ]
+            },
+            "gracePeriod": {
+              "title": "7.5 Validation de la licence et délai de grâce",
+              "content": [
+                "Le Logiciel sur site valide périodiquement l'Abonnement. Si la validation échoue en raison d'un problème réseau, d'un Abonnement expiré ou d'un défaut de paiement, un délai de grâce de trois (3) jours s'applique. Passé ce délai, le Logiciel sur site fonctionne au niveau de fonctionnalités Community jusqu'au rétablissement de l'Abonnement. Les Dépôts en cours d'exécution continuent de fonctionner."
+              ]
+            }
+          }
+        },
+        "freeAndBeta": {
+          "id": "free-and-beta",
+          "title": "10. Licence gratuite, forfaits gratuits et fonctionnalités expérimentales",
+          "content": [
+            "La Licence gratuite, le forfait Community, les essais et toute fonctionnalité désignée comme « expérimentale », « bêta » ou « préliminaire » (ensemble, les « Services gratuits ») sont fournis à des fins d'évaluation et pour un usage personnel ou interne. Les Services gratuits peuvent être incomplets, instables ou limités, ou être modifiés sans préavis.",
+            "LES SERVICES GRATUITS SONT FOURNIS « EN L'ÉTAT » (« AS IS »), SANS GARANTIE D'AUCUNE SORTE ET SANS AUCUN ENGAGEMENT DE SERVICE. Rediacc peut modifier, limiter ou interrompre tout Service gratuit à tout moment. Dans la mesure permise par la loi, la responsabilité totale de Rediacc pour les Services gratuits est limitée à cent dollars américains (100 USD)."
+          ]
+        },
+        "general": {
+          "id": "general",
+          "title": "27. Dispositions générales",
+          "items": [
+            "<strong>Intégralité de l'accord.</strong> Les présentes Conditions, avec les documents énumérés à la Section 2 et tout Bon de commande, constituent l'intégralité de l'accord entre vous et Rediacc concernant les Services et remplacent tout accord antérieur sur ce sujet. En cas de conflit entre un Bon de commande et les présentes Conditions, le Bon de commande prévaut pour cet Abonnement.",
+            "<strong>Cession.</strong> Vous ne pouvez pas céder les présentes Conditions sans l'accord écrit préalable de Rediacc. Rediacc peut céder les présentes Conditions à une société affiliée ou dans le cadre d'une fusion, d'une acquisition ou de la vente de la totalité ou de la quasi-totalité de l'activité ou des actifs concernés, moyennant notification à votre attention.",
+            "<strong>Force majeure.</strong> Aucune partie n'est responsable d'un retard ou d'un défaut d'exécution causé par des événements échappant à son contrôle raisonnable, à l'exception des obligations de paiement.",
+            "<strong>Notifications.</strong> Rediacc envoie les notifications à l'adresse e-mail du Compte ou via le portail de compte. Les notifications à Rediacc sont adressées à <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>.",
+            "<strong>Contractualisation électronique.</strong> Vous convenez que l'acceptation par un acte électronique exprès, y compris par une automatisation que vous avez configurée, constitue une signature valable et que les enregistrements électroniques de l'acceptation sont recevables comme preuve.",
+            "<strong>Divisibilité et absence de renonciation.</strong> Si une disposition est jugée inapplicable, elle est appliquée dans toute la mesure permise et le reste des présentes Conditions demeure en vigueur. Le fait de ne pas faire appliquer une disposition ne vaut pas renonciation.",
+            "<strong>Parties indépendantes.</strong> Les parties sont des contractants indépendants. Rien dans les présentes Conditions ne crée une société, un mandat ou une relation de travail, et il n'existe aucun tiers bénéficiaire."
+          ]
         },
         "governingLaw": {
           "content": [
-            "Ces conditions sont régies par les lois de la République d'Estonie.",
-            "Nonobstant ce qui précède, chaque partie peut demander une injonction ou tout autre recours en équité devant tout tribunal compétent pour prévenir la violation réelle ou imminente, le détournement ou la violation de droits de propriété intellectuelle ou d'obligations de confidentialité."
+            "Les présentes Conditions, ainsi que tout litige né de celles-ci ou en lien avec elles, sont régis par le droit de la République d'Estonie, à l'exclusion de ses règles de conflit de lois et de la Convention des Nations unies sur les contrats de vente internationale de marchandises. Sous réserve de la Section 26, le tribunal de comté de Harju (Harju Maakohus) à Tallinn, en Estonie, a compétence exclusive.",
+            "Si vous êtes un consommateur, ce choix de loi ne vous prive pas de la protection des dispositions impératives de la loi de votre pays de résidence, et vous pouvez également saisir les juridictions de votre pays de résidence lorsque cette loi le permet. Les consommateurs de l'UE peuvent aussi recourir aux dispositifs européens de règlement en ligne des litiges prévus par la loi applicable.",
+            "Chaque partie peut demander une mesure d'injonction ou toute autre mesure d'équité devant toute juridiction compétente afin de prévenir une atteinte effective ou imminente aux droits de propriété intellectuelle ou un manquement à la confidentialité."
           ],
           "id": "governing-law",
-          "title": "18. Droit applicable"
+          "title": "25. Droit applicable et juridictions compétentes"
         },
         "indemnification": {
           "id": "indemnification",
           "subsections": {
             "byCustomer": {
               "content": [
-                "Vous acceptez d'indemniser, défendre et dégager de toute responsabilité Rediacc et ses dirigeants, administrateurs, employés et agents contre toute réclamation de tiers, dommage, perte ou dépense (y compris les honoraires raisonnables d'avocats) résultant de : (a) votre utilisation des Services ; (b) le contenu ou les applications que vous déployez en utilisant les Services ; (c) votre violation des présentes Conditions ; ou (d) votre violation de toute loi applicable ou de droits de tiers."
+                "Vous indemniserez, défendrez et garantirez Rediacc ainsi que ses concédants de licence, dirigeants, administrateurs, employés et agents contre toute réclamation d'un tiers, et les dommages, pertes et frais qui en résultent (y compris les honoraires juridiques raisonnables), découlant : (a) de vos Données client ou des contenus et applications déployés sur vos Machines ; (b) de votre utilisation des Services en violation des présentes Conditions ou de la Politique d'utilisation acceptable ; (c) d'une automatisation exécutée avec vos identifiants ou sur vos Machines ; ou (d) de votre violation de toute loi ou de tout droit d'un tiers. La présente section ne s'applique pas aux consommateurs lorsque la loi de leur pays de résidence ne le permet pas."
               ],
-              "title": "16.1 By You"
+              "title": "20.1 De votre part"
             },
             "byRediacc": {
               "content": [
-                "Rediacc vous indemnisera, défendra et dégagera de toute responsabilité contre toute réclamation de tiers alléguant que le Logiciel sur site ou la Plateforme, tels que fournis par Rediacc, porte atteinte à un droit de propriété intellectuelle valide d'un tiers, à condition que vous : (a) notifiiez rapidement Rediacc de la réclamation ; (b) accordiez à Rediacc le contrôle exclusif de la défense et du règlement ; et (c) fournissiez une coopération raisonnable aux frais de Rediacc.",
-                "Si les Services deviennent, ou selon l'opinion de Rediacc sont susceptibles de devenir, l'objet d'une réclamation pour contrefaçon, Rediacc peut à son choix : (i) obtenir le droit pour vous de continuer à utiliser les Services ; (ii) remplacer ou modifier le composant concerné pour le rendre non contrefaisant ; ou (iii) si ni (i) ni (ii) n'est commercialement réalisable, résilier l'Abonnement concerné et rembourser les frais prépayés non utilisés.",
-                "Rediacc n'a aucune obligation au titre de la présente section pour les réclamations résultant de : modifications que vous apportez aux Services, utilisation des Services en combinaison avec des logiciels tiers non fournis par Rediacc, ou utilisation des Services en violation des présentes Conditions."
+                "Pour les Abonnements payants, Rediacc vous défendra contre toute réclamation d'un tiers selon laquelle le Logiciel sur site ou la Plateforme, tels que fournis par Rediacc, portent atteinte à un droit de propriété intellectuelle de ce tiers, et paiera les dommages-intérêts définitivement accordés ou convenus dans le cadre d'une transaction, à condition que vous : (a) informiez Rediacc sans délai de la réclamation ; (b) donniez à Rediacc le contrôle exclusif de la défense et de la transaction ; et (c) apportiez une coopération raisonnable aux frais de Rediacc.",
+                "Si les Services font ou, de l'avis de Rediacc, sont susceptibles de faire l'objet d'une telle réclamation, Rediacc peut : (i) obtenir pour vous le droit de continuer à les utiliser ; (ii) modifier ou remplacer le composant concerné afin qu'il ne porte pas atteinte aux droits d'autrui ; ou (iii) si aucune de ces options n'est commercialement réalisable, résilier l'Abonnement concerné et rembourser les frais prépayés non utilisés.",
+                "Rediacc n'a aucune obligation au titre de la présente section pour les réclamations découlant de modifications que vous avez effectuées, d'une combinaison avec des logiciels ou des données non fournis par Rediacc, des Services gratuits ou d'une utilisation en violation des présentes Conditions. La présente section énonce l'intégralité de la responsabilité de Rediacc en matière de réclamations pour contrefaçon."
               ],
-              "title": "16.2 By Rediacc"
+              "title": "20.2 De la part de Rediacc"
             }
           },
-          "title": "16. Indemnisation"
+          "title": "20. Indemnisation"
         },
         "intellectualProperty": {
           "content": [
-            "Les services sont la propriété de Rediacc et protégés par les lois sur la propriété intellectuelle.",
-            "Vous conservez tous les droits, titres et intérêts sur vos Données client et tout contenu ou application que vous créez en utilisant les Services. En utilisant la Plateforme, vous accordez à Rediacc une licence limitée, mondiale et libre de redevances pour héberger, traiter et afficher vos informations de Compte uniquement dans le but de vous fournir les Services. Cette licence prend fin lorsque vous supprimez votre Compte.",
-            "Nous pouvons collecter et utiliser des données anonymisées et agrégées dérivées de votre utilisation des Services (y compris les Données de télémétrie) à des fins d'amélioration du produit, d'analyse et de benchmarking. Ces données agrégées ne vous identifient pas, vous ou tout utilisateur individuel."
+            "Rediacc et ses concédants de licence sont propriétaires des Services, ou ont le droit de les concéder sous licence, y compris le Logiciel sur site, la Plateforme, la Documentation, les API, les designs et tous les contenus fournis par Rediacc, ainsi que de tous les droits de propriété intellectuelle qui s'y rattachent. Hormis les licences expressément concédées par les présentes Conditions, aucun droit ni aucune licence n'est accordé, implicitement ou autrement.",
+            "Vous conservez tous les droits sur vos Données client ainsi que sur les contenus et applications que vous créez. Vous concédez à Rediacc une licence limitée, mondiale et gratuite pour héberger, traiter et afficher les informations de votre Compte, uniquement afin de vous fournir les Services ; cette licence prend fin lorsque votre Compte est supprimé.",
+            "Vous pouvez, sans y être tenu, transmettre à Rediacc des retours ou suggestions sur les Services (les « Retours »). Les Retours sont fournis « EN L'ÉTAT » (« AS IS »), et Rediacc peut les utiliser librement, sans restriction ni obligation. Rediacc peut également utiliser des données d'utilisation et des Données de télémétrie sous forme anonymisée et agrégée pour exploiter, améliorer et sécuriser les Services ; ces données ne vous identifient pas, ni aucune autre personne."
           ],
           "id": "intellectual-property",
-          "title": "12. Propriété intellectuelle"
+          "title": "15. Propriété intellectuelle et retours"
         },
         "limitationOfLiability": {
           "content": [
-            "Dans la mesure maximale permise par la loi, Rediacc ne sera pas responsable des dommages indirects.",
-            "LA RESPONSABILITÉ TOTALE CUMULÉE DE REDIACC POUR TOUTES LES RÉCLAMATIONS DÉCOULANT DES PRÉSENTES CONDITIONS OU DES SERVICES OU S'Y RAPPORTANT NE POURRA EXCÉDER LE PLUS ÉLEVÉ DES MONTANTS SUIVANTS : (A) LE MONTANT TOTAL QUE VOUS AVEZ PAYÉ À REDIACC AU COURS DES DOUZE (12) MOIS PRÉCÉDANT L'ÉVÉNEMENT À L'ORIGINE DE LA RÉCLAMATION ; OU (B) CENT DOLLARS AMÉRICAINS (100 $).",
-            "LES LIMITATIONS ET EXCLUSIONS DES SECTIONS 14 ET 15 NE S'APPLIQUENT PAS : (A) À LA RESPONSABILITÉ POUR DÉCÈS OU BLESSURE CORPORELLE CAUSÉS PAR NÉGLIGENCE ; (B) À LA RESPONSABILITÉ POUR FRAUDE OU DÉCLARATION FRAUDULEUSE ; (C) À LA RESPONSABILITÉ POUR FAUTE INTENTIONNELLE (TAHTLIK RIKKUMINE) OU NÉGLIGENCE GRAVE (RASKE HOOLETUS) EN VERTU DE LA LOI ESTONIENNE SUR LES OBLIGATIONS ; OU (D) À TOUTE AUTRE RESPONSABILITÉ QUI NE PEUT ÊTRE EXCLUE OU LIMITÉE EN VERTU DE LA LOI APPLICABLE."
+            "DANS LA MESURE MAXIMALE PERMISE PAR LA LOI APPLICABLE, REDIACC, SES CONCÉDANTS DE LICENCE, SES AFFILIÉS, DIRIGEANTS, ADMINISTRATEURS, EMPLOYÉS OU AGENTS NE SAURAIENT EN AUCUN CAS ÊTRE TENUS RESPONSABLES DE DOMMAGES INDIRECTS, ACCESSOIRES, SPÉCIAUX, CONSÉCUTIFS OU PUNITIFS, NI DE TOUTE PERTE DE BÉNÉFICES, DE REVENUS, DE DONNÉES, D'UTILISATION OU DE CLIENTÈLE, DÉCOULANT DES PRÉSENTES CONDITIONS OU DES SERVICES OU EN LIEN AVEC EUX, QUEL QUE SOIT LE FONDEMENT JURIDIQUE INVOQUÉ ET MÊME S'ILS ONT ÉTÉ INFORMÉS DE LA POSSIBILITÉ DE TELS DOMMAGES.",
+            "LA RESPONSABILITÉ TOTALE CUMULÉE DE REDIACC POUR L'ENSEMBLE DES RÉCLAMATIONS DÉCOULANT DES PRÉSENTES CONDITIONS OU DES SERVICES, OU LIÉES À CEUX-CI, NE DÉPASSERA PAS LES FRAIS QUE VOUS AVEZ PAYÉS À REDIACC POUR LES SERVICES AU COURS DES DOUZE (12) MOIS PRÉCÉDANT LE FAIT GÉNÉRATEUR DE LA RÉCLAMATION OU, SI VOUS N'AVEZ PAYÉ AUCUN FRAIS PENDANT CETTE PÉRIODE, CENT DOLLARS AMÉRICAINS (100 USD).",
+            "LES LIMITATIONS DES SECTIONS 18 ET 19 NE S'APPLIQUENT PAS : (A) À LA RESPONSABILITÉ EN CAS DE DÉCÈS OU DE DOMMAGE CORPOREL CAUSÉ PAR NÉGLIGENCE ; (B) À LA FRAUDE OU À LA DÉCLARATION FRAUDULEUSE ; (C) À LA FAUTE INTENTIONNELLE (TAHTLIK RIKKUMINE) OU À LA NÉGLIGENCE GRAVE (RASKE HOOLETUS) AU SENS DE LA LOI ESTONIENNE SUR LES OBLIGATIONS (VÕLAÕIGUSSEADUS) ; NI (D) À TOUTE AUTRE RESPONSABILITÉ QUI NE PEUT ÊTRE EXCLUE OU LIMITÉE EN VERTU DE LA LOI APPLICABLE."
           ],
           "id": "limitation-of-liability",
-          "title": "15. Limitation de responsabilité"
+          "title": "19. Limitation de responsabilité"
         },
-        "onPremiseLicense": {
+        "parties": {
+          "id": "parties",
+          "title": "3. Les parties et la propriété du logiciel",
           "content": [
-            "Sous réserve des présentes Conditions et de votre Abonnement actif, Rediacc vous accorde une licence limitée, non exclusive, non sous-licenciable, non transférable et révocable pour installer et utiliser le Logiciel sur site (CLI, Renet Agent et Application de bureau) exclusivement à des fins professionnelles internes pendant la durée de votre Abonnement."
+            "Les Services sont fournis par {{legalName}}, société immatriculée en {{country}} auprès du {{registerName}} sous le numéro d'immatriculation {{registryCode}}, numéro de TVA {{vatNumber}}, dont le siège social est situé à l'adresse suivante : {{registeredAddress}} (« Rediacc », « nous » ou « notre »).",
+            "Rediacc et ses concédants de licence sont propriétaires des Services et du logiciel qu'ils comprennent, ou ont le droit de les concéder sous licence. Rediacc vous concède une licence sur le Logiciel sur site et vous donne accès à la Plateforme conformément aux présentes Conditions."
+          ]
+        },
+        "plans": {
+          "id": "plans",
+          "title": "6. Forfaits",
+          "content": [
+            "Les Services sont proposés selon les forfaits suivants. Les limites actuelles de chaque forfait sont publiées sur la page des tarifs."
           ],
-          "id": "on-premise-license",
           "subsections": {
-            "encryptionCredentials": {
+            "freeLicense": {
+              "title": "6.1 Licence gratuite",
               "content": [
-                "Le Logiciel sur site utilise le chiffrement intégral de disque LUKS pour les données des Dépôts. Les identifiants de chiffrement sont générés localement et stockés exclusivement dans vos fichiers de Configuration sur votre poste de travail. <strong>Rediacc n'a pas accès à vos identifiants de chiffrement et ne peut pas récupérer vos données si vous les perdez.</strong> Vous êtes seul responsable de la sauvegarde de vos fichiers de Configuration et de vos identifiants de chiffrement."
-              ],
-              "title": "6.3 Encryption and Credentials"
+                "Toute Machine peut obtenir une Licence gratuite pour un Dépôt via la CLI, sans Compte. Une Licence gratuite couvre un Dépôt de 3 Go maximum, est valable 48 heures et peut être renouvelée gratuitement. Elle n'inclut aucun stockage hébergé de sauvegardes. La délivrance est limitée par Machine et par adresse réseau afin de prévenir les abus. Une Licence gratuite est fournie conformément à la Section 10 et ne comporte ni garantie ni engagement de service."
+              ]
             },
-            "installation": {
+            "community": {
+              "title": "6.2 Forfait Community",
               "content": [
-                "Le Renet Agent fonctionne avec des privilèges élevés (root) sur vos Machines pour gérer les volumes chiffrés, les environnements d'exécution de conteneurs et les services système. Vous êtes seul responsable de la sécurité de vos Machines, y compris l'accès SSH, la configuration du pare-feu, les mises à jour du système d'exploitation et la sécurité physique. Rediacc n'accède pas à distance à vos Machines sauf à votre demande explicite à des fins de support."
-              ],
-              "title": "6.1 Installation and Machine Access"
+                "Community est le forfait gratuit d'un Compte enregistré. Il offre les fonctionnalités et limites publiées pour lui, une assistance communautaire uniquement et aucun engagement de service. Un Compte revient à Community lorsqu'un essai ou un Abonnement payant prend fin."
+              ]
             },
-            "restrictions": {
-              "content": ["Il vous est interdit de :"],
-              "items": [
-                "Effectuer de l'ingénierie inverse, décompiler, désassembler ou tenter de toute autre manière d'obtenir le code source du binaire du Renet Agent ou de tout composant non open source du Logiciel sur site",
-                "Redistribuer, sous-licencier, louer, donner en crédit-bail ou prêter le Logiciel sur site à un tiers",
-                "Supprimer, altérer ou masquer tout avis de propriété, étiquette ou marque sur le Logiciel sur site",
-                "Utiliser le Logiciel sur site pour créer un produit ou service concurrent",
-                "Contourner ou désactiver tout mécanisme de validation de licence, de télémétrie ou de sécurité du Logiciel sur site",
-                "Dépasser les limites d'activation de Machine de votre niveau d'Abonnement"
-              ],
-              "title": "6.2 Restrictions"
+            "paid": {
+              "title": "6.3 Abonnements payants",
+              "content": [
+                "Professional et Business sont des Abonnements payants souscrits via le portail de compte. Ils comprennent les fonctionnalités, limites et services d'assistance publiés pour eux, ainsi que l'Accord de niveau de service."
+              ]
+            },
+            "enterprise": {
+              "title": "6.4 Forfait Enterprise",
+              "content": [
+                "Les Abonnements Enterprise sont vendus par l'intermédiaire des partenaires de Rediacc, ou directement, sur la base d'un Bon de commande. Un Abonnement Enterprise est régi par les présentes Conditions, la Licence logicielle Enterprise et le Bon de commande. Le Bon de commande fixe le plafond d'activations de Machines ; si aucun plafond n'est négocié, 25 activations de Machines s'appliquent."
+              ]
+            },
+            "clusters": {
+              "title": "6.5 Activations de Machines, Clusters et nœuds",
+              "content": [
+                "Un <strong>« Cluster »</strong> désigne deux Machines ou plus exploitées ensemble comme un seul pool de stockage ou de calcul au moyen des Services. Un <strong>« Nœud »</strong> désigne une Machine membre d'un Cluster. Un Nœud est une Machine à toutes fins au titre des présentes Conditions, et chaque Nœud consomme une activation de Machine. Les Clusters ne sont ni mutualisés ni remisés : un Cluster de cinq Nœuds consomme cinq activations de Machine.",
+                "Le <strong>plafond d'activations de Machines</strong> est le nombre maximal de Machines pouvant détenir une activation en même temps. Il est inscrit dans l'Abonnement. Les chiffres publiés pour chaque forfait sont les valeurs par défaut ; un plafond convenu dans un Bon de commande ou un accord de partenariat remplace la valeur par défaut pour cet Abonnement. Le clustering n'est disponible que dans le cadre des accords Enterprise et partenaires.",
+                "Une activation de Machine est consommée lorsqu'un Dépôt est créé, copié ou placé sur une Machine, et elle est libérée automatiquement après une période d'inactivité. Le simple fait de construire une infrastructure, y compris créer un Cluster et y ajouter des Nœuds, ne consomme aucune activation.",
+                "Lorsque toutes les activations sont utilisées, Rediacc peut refuser d'activer une Machine supplémentaire. Les Machines qui détiennent déjà une activation continuent de fonctionner et peuvent renouveler leurs licences existantes ; Rediacc peut consigner ces renouvellements comme un dépassement du plafond et vous contacter pour régulariser l'Abonnement."
+              ]
             }
-          },
-          "title": "6. Licence du logiciel sur site"
+          }
         },
-        "platformLicense": {
+        "platform": {
+          "id": "platform",
+          "title": "9. Accès à la Plateforme",
           "content": [
-            "Sous réserve des présentes Conditions et de votre Abonnement actif, Rediacc vous accorde une licence limitée, non exclusive et non transférable pour accéder à la Plateforme et l'utiliser pendant la durée de votre Abonnement. Vous pouvez accorder l'accès aux Utilisateurs autorisés au sein de votre organisation.",
-            "Nous nous réservons le droit de modifier, mettre à jour ou supprimer des fonctionnalités de la Plateforme à tout moment. Dans la mesure du possible, nous fournirons un préavis pour les modifications importantes. Les modifications ne réduiront pas substantiellement les fonctionnalités principales de votre niveau d'Abonnement actuel pendant une période de facturation payante active.",
-            "Nous nous efforçons de maintenir une haute disponibilité de la Plateforme mais ne garantissons pas un accès ininterrompu. La Plateforme peut être temporairement indisponible en raison de la maintenance, de mises à jour ou de circonstances indépendantes de notre volonté."
-          ],
-          "id": "platform-license",
-          "title": "7. Licence de la plateforme"
+            "Sous réserve des présentes Conditions, Rediacc vous concède un droit limité, non exclusif et non transférable d'accéder à la Plateforme et de l'utiliser pendant la durée de votre Abonnement. Vous pouvez donner accès à des Utilisateurs autorisés et vous êtes responsable du respect des présentes Conditions par ceux-ci.",
+            "Vous êtes responsable de la sécurité des identifiants du Compte, des jetons d'API, des clés d'accès (passkeys) et des codes de récupération, de toute l'activité réalisée sous votre Compte, et de la notification rapide à <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> de tout soupçon d'accès non autorisé. Rediacc peut suspendre ou supprimer les Comptes restés inactifs pendant plus de douze (12) mois.",
+            "Rediacc peut modifier, mettre à jour ou interrompre des fonctionnalités de la Plateforme. Lorsque c'est possible, Rediacc prévient à l'avance des modifications importantes, et aucune modification ne réduira substantiellement les fonctionnalités essentielles d'un Abonnement payant pendant une période de facturation payée. Hormis l'Accord de niveau de service applicable aux Abonnements payants, Rediacc ne garantit pas un accès ininterrompu."
+          ]
+        },
+        "privacy": {
+          "id": "privacy",
+          "title": "14. Confidentialité, traitement des données et télémétrie",
+          "content": [
+            "Les données personnelles sont traitées comme décrit dans la <a href=\"privacy-policy\">Politique de confidentialité</a>. Lorsque vous utilisez les Services à titre professionnel et que Rediacc traite des données personnelles pour votre compte, l'<a href=\"data-processing-agreement\">Accord de traitement des données</a> s'applique et fait partie des présentes Conditions.",
+            "Le Logiciel sur site et la Plateforme collectent des Données de télémétrie comme décrit dans la <a href=\"telemetry-policy\">Politique de télémétrie</a>, qui explique ce que collecte chaque produit et comment s'y opposer avant l'envoi de toute donnée. La télémétrie est désactivée automatiquement dans les environnements CI."
+          ]
         },
         "serviceDescription": {
           "content": [
             "Rediacc fournit une plateforme d'automatisation d'infrastructure pour les opérations pilotées par l'IA."
           ],
           "content2": [
-            "Les fonctionnalités spécifiques, limites de ressources et capacités disponibles dépendent de votre niveau d'Abonnement. Les descriptions de fonctionnalités sur notre site web et dans notre documentation décrivent la fonctionnalité prévue de chaque niveau mais ne constituent pas des garanties de performance contraignantes."
+            "Les fonctionnalités, limites de ressources et capacités disponibles dépendent de l'Abonnement ou de la licence détenus. Les descriptions de fonctionnalités figurant sur le site web et dans la Documentation décrivent les fonctionnalités prévues pour chaque forfait et ne constituent pas des garanties de performance contraignantes, sauf dans la mesure où l'Accord de niveau de service le prévoit pour les Abonnements payants."
           ],
           "id": "service-description",
           "items": [
-            "<strong>Logiciel sur site :</strong> Le CLI (<code>rdc</code>), le Renet Agent et l'Application de bureau — installés sur vos postes de travail et Machines pour orchestrer des déploiements de conteneurs chiffrés et isolés",
-            "<strong>Plateforme :</strong> L'application web et le portail de compte pour la gestion des abonnements, la collaboration en équipe et (lorsque disponible) la gestion d'infrastructure basée sur le cloud",
-            "<strong>Services professionnels :</strong> Conseil optionnel, assistance à la migration et support à l'implémentation, sous réserve d'accords de services distincts"
+            "<strong>Logiciel sur site :</strong> la CLI (<code>rdc</code>) et le Renet Agent, installés sur des postes de travail et des Machines pour orchestrer des déploiements de conteneurs chiffrés et isolés",
+            "<strong>Plateforme :</strong> le portail de compte et l'API pour la délivrance des licences, la gestion des abonnements, la collaboration en équipe, le stockage chiffré des configurations et, lorsqu'il est disponible, le stockage hébergé des sauvegardes",
+            "<strong>Services professionnels :</strong> conseil, aide à la migration et accompagnement à la mise en œuvre, en option, sur la base de contrats de services distincts"
           ],
-          "title": "3. Description des services"
+          "title": "5. Description des Services"
         },
-        "subscriptions": {
-          "content": [
-            "Les abonnements payants sont facturés mensuellement ou annuellement à l'avance. Remboursements selon notre <a href=\"refund-policy\">Politique de remboursement</a>."
-          ],
-          "id": "subscriptions",
-          "items": [
-            "<strong>Community</strong> (gratuit) : 1 activation de Machine, fonctionnalités essentielles, support communautaire. C'est le plan par défaut auquel votre compte revient après la fin d'un essai ou d'un Abonnement payant.",
-            "<strong>Professional</strong> : 1 activation de Machine, journalisation d'audit, support prioritaire, marque personnalisée",
-            "<strong>Business</strong> : 1 activation de Machine, stockage distribué, analyses avancées, gestionnaire de succès dédié",
-            "<strong>Enterprise</strong> : infrastructure dédiée, intégrations personnalisées, support 24/7, et un plafond d'activations de Machine fixé dans votre commande. Lorsqu'aucun plafond n'est négocié, 25 activations de Machine s'appliquent. Enterprise est vendu par l'intermédiaire de nos partenaires."
-          ],
+        "softwareLicense": {
+          "id": "software-license",
+          "title": "8. Licence logicielle",
           "subsections": {
-            "billing": {
+            "grant": {
+              "title": "8.1 Octroi de licence",
               "content": [
-                "Les Abonnements payants (Professional et Business) commencent par un essai gratuit de 14 jours. Vous fournissez un moyen de paiement lors de l'inscription, et le premier prélèvement intervient à la fin de l'essai. Vous pouvez annuler avant la fin de l'essai sans frais. Si vous annulez pendant l'essai, si vous annulez un Abonnement payant ultérieurement, ou si un paiement échoue, votre compte repasse au plan Community gratuit.",
-                "Les Abonnements payants sont facturés mensuellement ou annuellement à l'avance. La facturation annuelle est proposée avec une remise de 15 % sur douze (12) mois au prix mensuel. Tous les frais sont indiqués en dollars américains. Le paiement est traité par notre prestataire de paiement tiers (Stripe) ; nous ne stockons pas les détails complets de carte de paiement.",
-                "Nous nous réservons le droit de modifier nos tarifs avec un préavis de trente (30) jours. Les changements de prix n'affecteront pas votre cycle de facturation en cours. Si vous n'acceptez pas un changement de prix, vous pouvez annuler votre Abonnement avant le prochain cycle de facturation."
-              ],
-              "title": "5.1 Billing"
+                "Sous réserve des présentes Conditions, Rediacc vous concède une licence limitée, non exclusive, non transférable, non sous-licenciable et révocable pour installer et utiliser le Logiciel sur site (la CLI et le Renet Agent) sur les Machines et postes de travail que vous contrôlez, exclusivement pour vos besoins professionnels internes ou personnels, dans les limites de votre Abonnement ou de votre Licence gratuite et aussi longtemps que celui-ci ou celle-ci reste en vigueur."
+              ]
             },
-            "clusters": {
+            "sourceLicense": {
+              "title": "8.2 Code source",
               "content": [
-                "Un <strong>« Cluster »</strong> désigne deux Machines ou plus que vous exploitez ensemble comme un pool unique de stockage ou de calcul via les Services. Un <strong>« Nœud »</strong> désigne une Machine qui est membre d'un Cluster. Un Nœud est une Machine à toutes les fins des présentes Conditions, et chaque Nœud consomme une activation de Machine. Les Clusters ne sont ni mutualisés ni remisés : un Cluster de cinq Nœuds consomme cinq activations de Machine.",
-                "Votre <strong>plafond d'activations de Machine</strong> est le nombre maximal de Machines pouvant détenir une activation à un instant donné. Il est enregistré sur votre Abonnement et régi par votre commande. Les chiffres par niveau indiqués ci-dessus sont les valeurs par défaut standard, non négociées ; un plafond convenu dans une commande ou un accord partenaire remplace la valeur par défaut pour cet Abonnement. Le clustering n'est disponible que dans le cadre d'accords Enterprise et partenaires.",
-                "Une activation de Machine est consommée lorsqu'un Dépôt est créé, copié ou placé sur une Machine, et elle est libérée automatiquement après une période d'inactivité. Le seul fait de construire une infrastructure, y compris créer un Cluster et y rattacher des Nœuds, ne consomme aucune activation.",
-                "Lorsque toutes les activations sont déjà utilisées, Rediacc peut refuser d'activer une Machine supplémentaire. Les Machines qui détiennent déjà une activation continuent de fonctionner et peuvent renouveler leurs licences existantes, et Rediacc peut enregistrer ces renouvellements comme dépassant votre plafond. Rediacc peut vous contacter pour régulariser votre Abonnement lorsqu'un plafond d'activations de Machine est dépassé de façon persistante."
-              ],
-              "title": "5.5 Activations de Machine, clusters et nœuds"
+                "Lorsque Rediacc publie le code source des Services, ce code source est mis à disposition sous la Rediacc Source License (RSL) 1.0, qui n'autorise la consultation et l'étude qu'à des fins pédagogiques, de recherche et non commerciales. La RSL n'accorde aucun droit d'exécuter, de modifier ou de distribuer le logiciel ; le droit d'exécuter le Logiciel sur site découle uniquement de la Section 8.1."
+              ]
             },
-            "gracePeriod": {
+            "installation": {
+              "title": "8.3 Installation et accès aux Machines",
               "content": [
-                "Le Logiciel sur site valide périodiquement le statut de votre Abonnement. Si la validation échoue (en raison de problèmes réseau, d'un Abonnement expiré ou d'un non-paiement), un délai de grâce de trois (3) jours s'applique. Après le délai de grâce, le Logiciel sur site fonctionnera au niveau de fonctionnalités du forfait Community jusqu'à ce que le statut de l'Abonnement soit rétabli."
-              ],
-              "title": "5.4 License Validation and Grace Period"
+                "Le Renet Agent s'exécute avec des privilèges élevés (root) sur les Machines pour gérer les volumes chiffrés, les environnements d'exécution de conteneurs et les services système. Rediacc n'accède pas à distance à vos Machines, sauf si vous le demandez expressément dans le cadre d'une demande d'assistance."
+              ]
             },
-            "renewalCancellation": {
+            "restrictions": {
+              "title": "8.4 Restrictions d'usage",
               "content": [
-                "Les Abonnements payants se renouvellent automatiquement à la fin de chaque cycle de facturation au tarif alors en vigueur, sauf si vous annulez avant la date de renouvellement. <strong>En souscrivant à un forfait payant, vous autorisez les prélèvements récurrents sur votre moyen de paiement jusqu'à annulation.</strong> Vous pouvez annuler à tout moment via le portail de compte ou en nous contactant à <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>. Après annulation, vous conservez l'accès aux fonctionnalités payantes jusqu'à la fin de votre période de facturation en cours. Aucun remboursement au prorata n'est effectué pour les périodes de facturation partielles, sauf tel que décrit dans notre <a href=\"refund-policy\">Politique de remboursement</a>. Nous enverrons un rappel de renouvellement à l'adresse e-mail de votre Compte avant chaque renouvellement annuel."
+                "Sauf autorisation expresse des présentes Conditions, vous vous interdisez, et vous interdisez à quiconque, de :"
               ],
-              "title": "5.3 Renewal and Cancellation"
-            },
-            "taxes": {
-              "content": [
-                "Tous les frais s'entendent hors taxes applicables. Vous êtes responsable de toutes les taxes, droits et prélèvements imposés par les autorités fiscales sur votre Abonnement, à l'exclusion des taxes basées sur le revenu net de Rediacc. Lorsque la loi l'exige, Rediacc collectera et reversera les taxes applicables (y compris la TVA de l'UE) et celles-ci seront détaillées sur votre facture."
-              ],
-              "title": "5.2 Taxes"
+              "items": [
+                "procéder à de la rétro-ingénierie, décompiler, désassembler ou tenter d'une autre manière d'obtenir le code source d'un composant non publié du Logiciel sur site, sauf dans la mesure où la loi applicable l'autorise expressément malgré cette restriction",
+                "copier, modifier, redistribuer, sous-licencier, louer, prêter ou vendre le Logiciel sur site, ou le mettre à la disposition d'un tiers",
+                "supprimer, modifier ou masquer toute mention de propriété figurant sur les Services",
+                "utiliser les Services pour concevoir un produit ou un service concurrent",
+                "contourner ou désactiver tout mécanisme de validation de licence, limite d'activation, limitation de débit ou mécanisme de sécurité des Services, ou obtenir des Licences gratuites d'une manière conçue pour échapper à leurs limites",
+                "utiliser les Services en violation de la Politique d'utilisation acceptable ou de toute loi"
+              ]
             }
-          },
-          "title": "5. Abonnements et paiement"
-        },
-        "telemetry": {
-          "content": [
-            "Nos produits logiciels collectent des données de télémétrie d'utilisation anonymisées afin d'améliorer la qualité et les performances des produits. En utilisant les Services, vous reconnaissez que la collecte de télémétrie a lieu comme décrit dans notre <a href=\"telemetry-policy\">Politique de télémétrie</a>.",
-            "La télémétrie est conçue pour préserver la vie privée : les identifiants personnels sont anonymisés avant la transmission, et vous pouvez vous désinscrire de la télémétrie à tout moment. La <a href=\"telemetry-policy\">Politique de télémétrie</a> décrit les données spécifiques collectées par chaque produit et les mécanismes de désactivation de la collecte.",
-            "Dans les juridictions qui exigent un consentement explicite pour la collecte de télémétrie sur les équipements terminaux (y compris en vertu de la Directive ePrivacy telle que transposée dans votre juridiction), vous devez configurer vos préférences de télémétrie avant la première utilisation du Logiciel sur site. Votre utilisation continue des Services avec la télémétrie activée constitue votre consentement à la collecte décrite dans la <a href=\"telemetry-policy\">Politique de télémétrie</a>."
-          ],
-          "id": "telemetry",
-          "title": "10. Télémétrie et collecte de données"
+          }
         },
         "termination": {
           "content": [
-            "Vous pouvez résilier votre compte à tout moment. Nous pouvons suspendre votre accès en cas de violation de ces conditions.",
+            "Les présentes Conditions s'appliquent à compter de votre première acceptation jusqu'à la fermeture de votre Compte et à la fin de votre utilisation des Services. Vous pouvez résilier votre Abonnement et fermer votre Compte à tout moment depuis le portail de compte ou en écrivant à <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>.",
+            "Rediacc peut suspendre immédiatement l'accès à la Plateforme ou refuser de délivrer des licences lorsque : (a) un paiement est en retard de plus de trente (30) jours ; (b) votre utilisation enfreint la Politique d'utilisation acceptable ou présente un risque de sécurité ou juridique pour Rediacc, les Services ou des tiers ; ou (c) la loi l'exige. Rediacc limite la suspension à ce qui est raisonnablement nécessaire et la lève dès que la cause est résolue.",
+            "Chaque partie peut résilier les présentes Conditions en cas de manquement grave auquel l'autre partie n'a pas remédié dans les trente (30) jours suivant une notification écrite. Rediacc peut résilier immédiatement lorsque le manquement constitue une activité illégale ou ne peut pas être corrigé. Rediacc peut mettre fin à un Service gratuit à tout moment.",
             "En cas de résiliation :"
           ],
           "id": "termination",
           "items": [
-            "Votre licence d'utilisation du Logiciel sur site et de la Plateforme cesse à la fin de votre période de facturation en cours (ou immédiatement en cas de violation)",
-            "Les Données client sur vos Machines restent sous votre contrôle — Rediacc n'a aucune capacité d'y accéder ou de les supprimer",
-            "Les données de Compte seront conservées pendant trente (30) jours pour permettre l'exportation, puis supprimées de nos systèmes actifs",
-            "Les Sections 1 (Définitions), 11 (Vos données), 12 (Propriété intellectuelle), 14 (Garanties), 15 (Responsabilité), 16 (Indemnisation) et 18 (Droit applicable) survivent à la résiliation"
+            "votre licence du Logiciel sur site et votre accès à la Plateforme prennent fin à la fin de la période de facturation en cours, ou immédiatement en cas de résiliation pour manquement",
+            "les Données client présentes sur vos Machines restent sous votre contrôle ; Rediacc n'a aucun moyen d'y accéder ni de les supprimer",
+            "les données du Compte sont conservées trente (30) jours pour permettre leur export, puis supprimées des systèmes actifs, à l'exception des enregistrements que Rediacc doit conserver en vertu de la loi ou de la Politique de confidentialité",
+            "les Sections 1, 3, 12, 13, 15 et 17 à 27 demeurent en vigueur"
           ],
-          "title": "17. Résiliation"
+          "title": "21. Durée, suspension et résiliation"
         },
         "thirdPartyComponents": {
           "content": [
-            "Le Logiciel sur site peut installer, configurer ou interagir avec des logiciels open source tiers sur vos Machines, notamment Docker, des environnements d'exécution de conteneurs et des outils de synchronisation de stockage. Ces composants tiers sont régis par leurs licences respectives et sont fournis « EN L'ÉTAT » sans garantie de la part de Rediacc.",
-            "Rediacc n'assume aucune responsabilité quant à la fonctionnalité, la sécurité ou la disponibilité des composants tiers. Vous êtes responsable de l'examen et du respect des licences de tout logiciel tiers déployé sur votre infrastructure."
+            "Le Logiciel sur site inclut ou installe des composants open source tiers, tels que Docker, des environnements d'exécution de conteneurs et des outils de synchronisation de stockage. Ces composants sont régis par leurs propres licences, que liste <code>rdc credits --licenses</code>, et sont fournis par Rediacc « EN L'ÉTAT » (« AS IS »), sans garantie. Rediacc n'est pas responsable des services tiers que vous choisissez de connecter aux Services."
           ],
           "id": "third-party-components",
-          "title": "13. Composants tiers"
+          "title": "16. Composants tiers"
         },
-        "useRestrictions": {
+        "usArbitration": {
+          "id": "us-arbitration",
+          "title": "26. Arbitrage et renonciation aux actions collectives pour les utilisateurs aux États-Unis",
           "content": [
-            "Vous acceptez que vous et vos Utilisateurs autorisés n'utiliserez pas les Services pour :"
+            "<strong>La présente section ne s'applique que si vous résidez aux États-Unis ou si votre organisation y a son principal établissement. Elle impose que les litiges soient réglés par un arbitrage individuel contraignant et renonce au droit à un procès devant jury et à la participation à une action collective. Veuillez la lire attentivement.</strong> Elle ne s'applique pas aux utilisateurs de l'Union européenne ni d'ailleurs en dehors des États-Unis."
           ],
-          "content2": [
-            "Vous êtes seul responsable du contenu et des applications que vous déployez sur vos Machines en utilisant les Services. Nous nous réservons le droit de suspendre ou de résilier l'accès à la Plateforme si nous estimons raisonnablement qu'une violation de ces restrictions s'est produite."
-          ],
-          "id": "use-restrictions",
-          "items": [
-            "Déployer, héberger ou distribuer des logiciels malveillants, virus, rançongiciels ou tout autre code nuisible",
-            "Exploiter du minage de cryptomonnaies, des réseaux de partage de fichiers pair-à-pair ou des services de proxy ouverts",
-            "Porter atteinte à ou détourner la propriété intellectuelle, la vie privée ou d'autres droits de tiers",
-            "Envoyer des communications commerciales non sollicitées (spam) ou mener des attaques d'hameçonnage",
-            "Effectuer des analyses de vulnérabilité, tests d'intrusion ou tests de charge non autorisés contre l'infrastructure de Rediacc",
-            "Usurper l'identité de toute personne ou entité, ou déclarer faussement votre affiliation",
-            "Enfreindre toute loi, réglementation ou droit de tiers applicable",
-            "Revendre, redistribuer ou mettre les Services à la disposition de tiers dans le cadre d'une offre de services gérés sans notre consentement écrit préalable"
-          ],
-          "title": "9. Restrictions d'utilisation"
+          "subsections": {
+            "informal": {
+              "title": "26.1 D'abord, un règlement amiable",
+              "content": [
+                "Avant d'engager un arbitrage ou une procédure devant un tribunal des petites créances, la partie à l'origine du litige doit adresser à l'autre une notification écrite décrivant le litige et la réparation demandée (à Rediacc, à <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> ; à vous, à l'adresse e-mail de votre Compte). Les parties s'efforceront de bonne foi de régler le litige à l'amiable pendant soixante (60) jours à compter de la réception de la notification, y compris, à la demande de l'une d'elles, par un appel individuel. Les délais de prescription sont suspendus pendant cette période."
+              ]
+            },
+            "agreement": {
+              "title": "26.2 Convention d'arbitrage",
+              "content": [
+                "Tout différend, réclamation ou litige entre vous et Rediacc découlant des présentes Conditions ou des Services, ou s'y rapportant, qui n'est pas réglé à l'amiable sera tranché par un arbitrage individuel contraignant administré par l'American Arbitration Association (« AAA ») selon ses Consumer Arbitration Rules (pour les particuliers) ou ses Commercial Arbitration Rules (pour les organisations), telles que modifiées par la présente section. Lorsque vingt-cinq (25) demandes similaires ou plus sont déposées contre Rediacc par les mêmes conseils ou des conseils coordonnés, ou avec leur aide, les Mass Arbitration Supplementary Rules de l'AAA s'appliquent également. Les règles de l'AAA sont disponibles sur <a href=\"https://www.adr.org\">www.adr.org</a>.",
+                "L'arbitre, et non un tribunal, tranche toutes les questions d'arbitrabilité, sauf que les questions relatives aux Sections 26.4 et 26.7 sont tranchées par un tribunal. L'arbitrage se déroule par visioconférence ou dans le comté (county) où vous résidez, sauf accord contraire des parties. L'arbitre peut accorder les mêmes réparations individuelles qu'un tribunal, mais uniquement en faveur de la partie individuelle qui les demande et dans la seule mesure nécessaire à sa demande individuelle. Le Federal Arbitration Act américain régit l'interprétation et l'exécution de la présente section."
+              ]
+            },
+            "fees": {
+              "title": "26.3 Frais",
+              "content": [
+                "Le paiement des frais de dépôt, des frais d'administration et des honoraires d'arbitre de l'AAA suit les règles de l'AAA. Pour une demande individuelle de consommateur de 10 000 USD ou moins, Rediacc prend ces frais à sa charge, sauf si l'arbitre estime la demande frivole ou introduite dans un but illégitime."
+              ]
+            },
+            "classWaiver": {
+              "title": "26.4 Renonciation aux actions collectives et au procès devant jury",
+              "content": [
+                "<strong>VOUS ET REDIACC RENONCEZ CHACUN AU DROIT À UN PROCÈS DEVANT JURY ET CONVENEZ QUE LES LITIGES SERONT RÉGLÉS UNIQUEMENT À TITRE INDIVIDUEL, ET NON EN TANT QUE DEMANDEUR OU MEMBRE D'UN GROUPE DANS UNE PROCÉDURE COLLECTIVE, DE GROUPE, JOINTE OU REPRÉSENTATIVE.</strong> L'arbitre ne peut pas joindre les demandes de plus d'une personne, sauf dans la mesure où les Mass Arbitration Supplementary Rules prévoient leur administration."
+              ]
+            },
+            "smallClaims": {
+              "title": "26.5 Exception pour les petites créances",
+              "content": [
+                "Chaque partie peut, à la place, introduire une demande individuelle devant un tribunal des petites créances du comté où vous résidez, ou devant une autre juridiction compétente en matière de petites créances, tant que la demande reste devant cette juridiction et n'est poursuivie qu'à titre individuel."
+              ]
+            },
+            "optOut": {
+              "title": "26.6 Droit de refus",
+              "content": [
+                "Vous pouvez refuser la présente convention d'arbitrage en envoyant, dans les trente (30) jours suivant votre première acceptation des présentes Conditions, un e-mail à <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> avec l'objet « Arbitration opt out », indiquant votre nom, l'adresse e-mail de votre Compte (ou, pour une Licence gratuite, l'identifiant de la Machine affiché par <code>rdc legal</code>) et que vous refusez l'arbitrage. Ce refus n'affecte aucune autre partie des présentes Conditions. Si vous refusez, la Section 25 s'applique à vos litiges.",
+                "Si Rediacc apporte une modification substantielle à la présente section, vous pouvez la refuser en envoyant la même notification dans les trente (30) jours suivant sa prise d'effet, auquel cas la version de la présente section que vous avez acceptée en dernier continue de s'appliquer."
+              ]
+            },
+            "severability": {
+              "title": "26.7 Divisibilité",
+              "content": [
+                "Si la renonciation aux actions collectives de la Section 26.4 est jugée inapplicable à une demande ou à une réparation particulière, cette demande ou réparation est disjointe et tranchée par un tribunal conformément à la Section 25, après l'arbitrage de toutes les autres demandes, et non en arbitrage. Si une demande d'injonction d'intérêt public ne peut pas faire l'objet d'une renonciation ou d'un arbitrage en vertu de la loi applicable (y compris en vertu de <em>McGill v. Citibank, N.A.</em>, 2 Cal. 5th 945 (2017)), cette demande est disjointe, suspendue dans l'attente de l'arbitrage des demandes individuelles et tranchée par un tribunal. Le reste de la présente section demeure en vigueur."
+              ]
+            }
+          }
         },
         "warranties": {
           "content": [
-            "DANS LA MESURE MAXIMALE PERMISE PAR LA LOI APPLICABLE, LES SERVICES SONT FOURNIS « EN L'ÉTAT » ET « TELS QUE DISPONIBLES ». REDIACC DÉCLINE TOUTE GARANTIE, QU'ELLE SOIT EXPRESSE, IMPLICITE OU LÉGALE, Y COMPRIS MAIS SANS S'Y LIMITER LES GARANTIES IMPLICITES DE QUALITÉ MARCHANDE, D'ADÉQUATION À UN USAGE PARTICULIER, DE NON-CONTREFAÇON ET TOUTE GARANTIE DÉCOULANT DES USAGES COMMERCIAUX OU DES PRATIQUES PROFESSIONNELLES.",
-            "SANS LIMITER CE QUI PRÉCÈDE, REDIACC NE GARANTIT PAS QUE : (A) LES SERVICES RÉPONDRONT À VOS EXIGENCES OU ATTENTES ; (B) LES SERVICES SERONT ININTERROMPUS, PONCTUELS, SÉCURISÉS OU EXEMPTS D'ERREURS ; (C) LES RÉSULTATS OBTENUS À PARTIR DES SERVICES SERONT PRÉCIS OU FIABLES ; OU (D) TOUT DÉFAUT DANS LES SERVICES SERA CORRIGÉ.",
-            "RIEN DANS LES PRÉSENTES CONDITIONS N'EXCLUT OU NE LIMITE LA RESPONSABILITÉ POUR : (A) DÉCÈS OU BLESSURE CORPORELLE CAUSÉS PAR NÉGLIGENCE ; (B) FRAUDE OU DÉCLARATION FRAUDULEUSE ; OU (C) TOUTE RESPONSABILITÉ QUI NE PEUT ÊTRE EXCLUE OU LIMITÉE EN VERTU DE LA LOI ESTONIENNE SUR LES OBLIGATIONS (VÕLAÕIGUSSEADUS), Y COMPRIS LA RESPONSABILITÉ POUR FAUTE INTENTIONNELLE OU NÉGLIGENCE GRAVE.",
-            "Vous reconnaissez que le Logiciel sur site fonctionne avec des privilèges élevés sur vos Machines et que vous assumez tous les risques associés à son installation et à son fonctionnement sur votre infrastructure. Les descriptions de fonctionnalités, les métriques de performance et les estimations de temps de récupération dans notre documentation et nos supports marketing décrivent la fonctionnalité prévue et ne constituent pas des garanties de performance contraignantes."
+            "DANS LA MESURE MAXIMALE PERMISE PAR LA LOI APPLICABLE, LES SERVICES SONT FOURNIS « EN L'ÉTAT » (« AS IS ») ET « SELON LA DISPONIBILITÉ ». REDIACC ET SES CONCÉDANTS DE LICENCE EXCLUENT TOUTES GARANTIES ET CONDITIONS, EXPRESSES, IMPLICITES OU LÉGALES, Y COMPRIS TOUTE GARANTIE IMPLICITE DE QUALITÉ MARCHANDE, D'ADÉQUATION À UN USAGE PARTICULIER, DE TITRE ET D'ABSENCE DE CONTREFAÇON, AINSI QUE TOUTE GARANTIE RÉSULTANT DES USAGES DU COMMERCE OU DES RELATIONS ANTÉRIEURES ENTRE LES PARTIES.",
+            "SANS LIMITER CE QUI PRÉCÈDE, REDIACC NE GARANTIT PAS QUE : (A) LES SERVICES RÉPONDRONT À VOS BESOINS ; (B) LES SERVICES SERONT ININTERROMPUS, OPPORTUNS, SÉCURISÉS OU EXEMPTS D'ERREURS ; (C) LES DONNÉES SERONT CONSERVÉES OU POURRONT ÊTRE RESTAURÉES ; OU (D) UN DÉFAUT SERA CORRIGÉ.",
+            "VOUS RECONNAISSEZ QUE LE LOGICIEL SUR SITE S'EXÉCUTE AVEC DES PRIVILÈGES ÉLEVÉS SUR VOS MACHINES ET QUE VOUS ASSUMEZ TOUS LES RISQUES LIÉS À SON INSTALLATION ET À SON FONCTIONNEMENT SUR VOTRE INFRASTRUCTURE.",
+            "Certaines juridictions n'autorisent pas l'exclusion de certaines garanties. Si vous êtes un consommateur, vous conservez les droits que vous reconnaît la loi de votre pays de résidence et qui ne peuvent être écartés par contrat."
           ],
           "id": "warranties",
-          "title": "14. Exclusion de garanties"
+          "title": "18. Exclusion de garanties"
         }
       },
       "toc": {
@@ -9816,9 +10466,27 @@
     }
   },
   "regionPicker": {
+    "cancel": "Annuler",
+    "change": "Changer de région",
+    "countdown": "Redirection vers {{region}} dans {{seconds}} secondes.",
+    "countdownAnnounce": "Redirection vers {{region}} dans {{seconds}} secondes. Choisissez Annuler pour rester ici, ou Changer de région pour en choisir une autre.",
+    "enterprise": "Client entreprise ?",
     "footer": "Choisissez la région la plus proche de vous ou celle exigée par votre organisation.",
     "footerNote": "Ce choix ne peut pas être modifié après l'inscription.",
+    "lookup": {
+      "back": "Retour aux régions",
+      "checking": "Vérification...",
+      "description": "Saisissez votre adresse e-mail professionnelle pour trouver la connexion de votre organisation.",
+      "error": "La recherche est indisponible pour le moment. Choisissez plutôt une région.",
+      "invalid": "Saisissez un domaine d'entreprise, par exemple company.com.",
+      "label": "E-mail professionnel",
+      "miss": "Aucune connexion d'entreprise n'a été trouvée pour ce domaine. Choisissez plutôt une région.",
+      "placeholder": "vous@entreprise.com",
+      "privacy": "Seul le domaine est envoyé pour trouver votre région. Votre e-mail sert uniquement à préremplir la page de connexion.",
+      "submit": "Continuer"
+    },
     "reassurance": "Les données de vos serveurs et sauvegardes restent sur votre propre infrastructure.",
+    "resolving": "Recherche de votre région...",
     "subtitle": "Votre compte, facturation et configurations restent dans la région que vous choisissez.",
     "title": "Choisissez la région de votre compte"
   },

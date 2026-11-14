@@ -29,7 +29,7 @@ XDIST_GROUP = "wl-identity-l1"
 
 
 #: Exit codes an ACCEPTED run of a verb ends with when the git-less fixture makes it answer with a refusal of its own (see the 184 loop).
-ACCEPTED_RC = {"--batch-body": 1, "--promote": 1}
+ACCEPTED_RC = {"--add-many": 2, "--batch-body": 1, "--promote": 1, "--hint-resolve": 2}
 
 
 def l1run(fix, *argv: str, peer: str = "") -> wlfix.Result:
@@ -499,12 +499,27 @@ def drive_l1(fix) -> L1Drive:
         ("--plan-preflight", "--plan-preflight @WHO@ %s" % inv_rel, "5. VERDICT:"),
         # Listing mode (a `<me>` and no plan): prints the open LP boxes after the same _identity_or_die its record and tick modes run, and runs no recorder.
         ("--live-proof", "--live-proof @WHO@", "open live-proof box(es)"),
+        # The clause verbs (agent/plans/PLAN-tick-tracking.md T8), each in its listing mode: a bare `<me>` lists the progress ledger after the same _identity_or_die its --write mode runs.
+        ("--box-clauses", "--box-clauses @WHO@", "clause maps: 0 box(es)"),
+        ("--box-progress", "--box-progress @WHO@", "box progress: 0 row(s)"),
+        # Read-only (T9): the fixture has no git repository and no plan, so the audit prints its header over zero boxes after the same _identity_or_die.
+        ("--box-audit", "--box-audit @WHO@", "BOX AUDIT @"),
         ("--hint-propose", "--hint-propose @WHO@ l1-table-hint", "proposed:"),
+        # Writes agent/ledgers/hint-resolutions.jsonl (PLAN-experience-feedback.md P2): the fixture holds no proposal with this id, so the accepted run answers with the unknown-id refusal after the same _identity_or_die a real resolve passes.
+        (
+            "--hint-resolve",
+            "--hint-resolve @WHO@ 0000beef guard:x",
+            "no hint proposal has id 0000beef",
+        ),
+        # Read-only (PLAN-experience-feedback.md P7): the fixture's memory directory does not exist, so the sweep classifies the fixture's own stores after the same _identity_or_die.
+        ("--lessons-sweep", "--lessons-sweep @WHO@ --memory-dir l1-no-memory", "lessons sweep:"),
         # The effort tuner's verbs (agent/plans/PLAN-stop-hook-effort-tuning.md T2, T5), each driven in its listing mode: a bare `<me>` prints the proposal ledger's summary after the same _identity_or_die their write modes run.
         ("--effort-propose", "--effort-propose @WHO@", "effort proposals:"),
         ("--effort-answer", "--effort-answer @WHO@", "effort proposals:"),
         # Bare form: prints the effective settings and writes nothing; the write form runs the identical argv parse and _identity_or_die.
         ("--queue-set", "--queue-set @WHO@", "effort: "),
+        # The table's stdin holds a blank line, which --add-many refuses, so the accepted run answers with that refusal after the same _identity_or_die a real run passes.
+        ("--add-many", "--add-many @WHO@", "REFUSED: line 2"),
         # Read-only (PLAN-turbo-local-first D2): the fixture has no git branch, so the accepted run answers with the no-branch refusal after the same _identity_or_die a real run passes.
         ("--batch-body", "--batch-body @WHO@", "no live branch is checked out"),
         # Writes QUEUE.md (#dd9b7624): the fixture holds no such plan, so the accepted run answers with the does-not-exist refusal after the same _identity_or_die a real promote passes.

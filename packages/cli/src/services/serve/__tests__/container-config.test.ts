@@ -451,18 +451,19 @@ describe('container-tier config loading', () => {
     ]);
   });
 
-  it('re-attaches to a job against the decrypted config too', async () => {
+  it('polls a job against the decrypted config too', async () => {
     reattachResolved.length = 0;
     await grantKey();
 
     const response = await fetch(
-      `${baseUrl}${PROXY_ROUTES.jobEvents('j1a2b-0123abcd')}?machine=prod-1&sinceLine=0`,
+      `${baseUrl}${PROXY_ROUTES.jobPoll('j1a2b-0123abcd')}?machine=prod-1&sinceLine=0`,
       { headers: { authorization: `Bearer ${OWNER_TOKEN}` } }
     );
-    expect(response.status).toBe(200);
+    // The mocked connect throws before SSH, which the poll route answers as a 500 carrying the message.
+    expect(response.status).toBe(500);
     const body = await response.text();
 
-    // B3, re-attach route: the machine was looked up in the session's decrypted config (10.9.9.9). Before the fix the lookup read the empty container disk and failed with "has no machines configured".
+    // B3, poll route: the machine was looked up in the session's decrypted config (10.9.9.9). Before the fix the lookup read the empty container disk and failed with "has no machines configured".
     expect(reattachResolved).toEqual(['10.9.9.9']);
     expect(body).toContain('stopped before SSH');
   });

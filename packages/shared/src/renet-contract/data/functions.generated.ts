@@ -28,6 +28,10 @@ export interface BackupBrowseAtParams {
   depth?: string;
   /** Maximum entries to return (0 = unlimited) */
   limit?: string;
+  /** Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check */
+  expectAccountServer?: string;
+  /** Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store */
+  store?: string;
 }
 
 /** Measure a repository's block churn since the last probe, projected at each cell size */
@@ -46,6 +50,8 @@ export interface BackupCompareParams {
   readBwlimit?: string;
   /** Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota */
   cpuLimit?: number;
+  /** Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store */
+  store?: string;
 }
 
 /** Delete one or more backups from a machine's datastore */
@@ -134,6 +140,10 @@ export interface BackupRepairParams {
   readBwlimit?: string;
   /** Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota */
   cpuLimit?: number;
+  /** Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check */
+  expectAccountServer?: string;
+  /** Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store */
+  store?: string;
 }
 
 /** Restore a repository image from a chunk-store snapshot */
@@ -150,6 +160,10 @@ export interface BackupRestoreParams {
   allowUnopenable?: boolean;
   /** Continue past a chunk the store lost or holds wrong: its cells stay holes, reported by byte range, with status restored-damaged. Only for a target with no image */
   salvage?: boolean;
+  /** Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check */
+  expectAccountServer?: string;
+  /** Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store */
+  store?: string;
 }
 
 /** Restore one file or directory from a chunk-store snapshot, without restoring the whole image */
@@ -162,6 +176,10 @@ export interface BackupRestorePathParams {
   path: string;
   /** Directory the path is placed under (empty = <datastore>/restores/<snapshot-id>) */
   to?: string;
+  /** Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check */
+  expectAccountServer?: string;
+  /** Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store */
+  store?: string;
 }
 
 /** Upload a chunk-store snapshot: full inventory first, changed cells after */
@@ -198,6 +216,10 @@ export interface BackupSnapshotParams {
   cellBytes?: number;
   /** Let cell_bytes replace the recorded grid. Re-seeds the repository: every cell uploads again and is charged */
   acceptGridChange?: boolean;
+  /** Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check */
+  expectAccountServer?: string;
+  /** Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store */
+  store?: string;
 }
 
 /** Inspect or install a repository's browse-listing public key */
@@ -220,6 +242,8 @@ export interface BackupVerifyParams {
   readBwlimit?: string;
   /** Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota */
   cpuLimit?: number;
+  /** Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store */
+  store?: string;
 }
 
 /** Mount RBD image on client */
@@ -622,6 +646,14 @@ export interface MachineVersionParams {}
 /** List network IDs in use on the machine */
 export interface NetworkUsedParams {}
 
+/** Anchor ACME challenge names that share a CNAME end and restart Traefik (JSON result) */
+export interface ProxyAcmeFixParams {
+  /** Report the collisions and the planned fix only */
+  dryRun?: boolean;
+  /** Restart Traefik even when nothing was anchored, so a stalled renewal retries now */
+  restart?: boolean;
+}
+
 /** Disable automatic repository start on boot */
 export interface RepositoryAutostartDisableParams {}
 
@@ -780,10 +812,38 @@ export interface RepositoryGpuRevokeParams {
 }
 
 /** Evaluate the repository health gate once (JSON HealthReport) */
-export interface RepositoryHealthParams {}
+export interface RepositoryHealthParams {
+  /** Monitoring mode: no readiness fallback; a repository without health() answers level none */
+  strict?: boolean;
+  /** Evaluate every mounted repository (no repository is named) */
+  all?: boolean;
+}
 
 /** Get repository information */
 export interface RepositoryInfoParams {}
+
+/** Set the repository's memory, CPU, I/O and process limits and its RAM volume */
+export interface RepositoryLimitsSetParams {
+  /** Memory cap (memory.max), a size such as 10G, or max */
+  memoryMax?: string;
+  /** Memory throttle point (memory.high), a size, or max */
+  memoryHigh?: string;
+  /** CPU cap in cores (4, 2.5) or N%, or max */
+  cpuMax?: string;
+  /** I/O cap of the repository's device, rbps=,wbps=,riops=,wiops= (any subset), or max */
+  ioMax?: string;
+  /** Process cap (pids.max), a count, or max */
+  pidsMax?: string;
+  /** Size of the RAM volume at <mount>/.ram, or max to remove it */
+  ramVolume?: string;
+  /** Remove every limit and the RAM volume */
+  clearLimits?: boolean;
+  /** Allow a memory cap below the repository's current memory use */
+  force?: boolean;
+}
+
+/** Show the repository's grant, its limits and RAM volume included, as JSON */
+export interface RepositoryLimitsShowParams {}
 
 /** List repositories on machine */
 export interface RepositoryListParams {
@@ -830,7 +890,32 @@ export interface RepositoryOwnershipParams {
   ownerUid?: string;
   /** Skip Docker volume detection (true/false) */
   force?: string;
+  /** Hand root-owned files to the owner UID below directories owned by root or that UID, recording each in an undo manifest */
+  rootOwned?: boolean;
+  /** With root_owned: list the files that would change, and change nothing */
+  dryRun?: boolean;
+  /** With root_owned: return the files in the undo manifest that the owner UID still owns to root */
+  undo?: boolean;
 }
+
+/** Widen what the repository's Rediaccfile up() and down() may reach: a path, or root */
+export interface RepositoryPermissionGrantParams {
+  /** Run up() and down() as root, with no privilege drop */
+  root?: boolean;
+  /** Absolute path up() and down() may reach, PATH[:ro|:rw] (default :ro) */
+  path?: string;
+}
+
+/** Withdraw a lifecycle path grant, or the root grant, from the repository */
+export interface RepositoryPermissionRevokeParams {
+  /** Withdraw the root grant */
+  root?: boolean;
+  /** Absolute path to withdraw */
+  path?: string;
+}
+
+/** Show the repository's grant as JSON */
+export interface RepositoryPermissionShowParams {}
 
 /** Show automatic size policy (machine default, repo override, effective) */
 export interface RepositoryPolicyGetParams {
@@ -867,6 +952,16 @@ export interface RepositoryPromoteParams {
 /** Remove orphaned datastore resources (empty mounts, stale locks) */
 export interface RepositoryPruneParams {
   /** Preview only, no changes */
+  dryRun?: boolean;
+}
+
+/** Run the repository's Rediaccfile repair() functions that their declared class allows (JSON RepairReport) */
+export interface RepositoryRepairParams {
+  /** Comma-separated classes that may run: auto-safe, auto-with-backup, operator-only (an undeclared repair() is operator-only) */
+  allowClasses?: string;
+  /** The machine is inside its maintenance window, so window-only repairs may run */
+  inWindow?: boolean;
+  /** Run health() and report what would run, without running repair() */
   dryRun?: boolean;
 }
 
@@ -1017,6 +1112,7 @@ export const RENET_FUNCTIONS = [
   'machine_uninstall',
   'machine_version',
   'network_used',
+  'proxy_acme_fix',
   'repository_autostart_disable',
   'repository_autostart_disable_all',
   'repository_autostart_enable',
@@ -1038,16 +1134,22 @@ export const RENET_FUNCTIONS = [
   'repository_gpu_revoke',
   'repository_health',
   'repository_info',
+  'repository_limits_set',
+  'repository_limits_show',
   'repository_list',
   'repository_log',
   'repository_logs',
   'repository_merge',
   'repository_mount',
   'repository_ownership',
+  'repository_permission_grant',
+  'repository_permission_revoke',
+  'repository_permission_show',
   'repository_policy_get',
   'repository_policy_set',
   'repository_promote',
   'repository_prune',
+  'repository_repair',
   'repository_resize',
   'repository_status',
   'repository_template_apply',
@@ -1121,6 +1223,7 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'checkpoint_create',
   'checkpoint_restore',
   'checkpoint_validate',
+  'cluster_join',
   'container_exec',
   'container_inspect',
   'container_kill',
@@ -1191,6 +1294,7 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'machine_fix_groups',
   'machine_gpu_list',
   'machine_ping',
+  'machine_prune',
   'machine_ssh_test',
   'machine_uninstall',
   'machine_version',
@@ -1199,6 +1303,11 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'network_prune',
   'network_ps_status',
   'network_used',
+  'proxy_acme_fix',
+  'replica_attach',
+  'replica_discard',
+  'replica_fork',
+  'replica_publish',
   'repository_autostart_disable',
   'repository_autostart_disable_all',
   'repository_autostart_enable',
@@ -1216,11 +1325,14 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'repository_exec',
   'repository_expand',
   'repository_fork',
+  'repository_fsck',
   'repository_gc',
   'repository_gpu_grant',
   'repository_gpu_revoke',
   'repository_health',
   'repository_info',
+  'repository_limits_set',
+  'repository_limits_show',
   'repository_list',
   'repository_log',
   'repository_logs',
@@ -1228,10 +1340,14 @@ export const RENET_BRIDGE_FUNCTIONS = [
   'repository_migrate',
   'repository_mount',
   'repository_ownership',
+  'repository_permission_grant',
+  'repository_permission_revoke',
+  'repository_permission_show',
   'repository_policy_get',
   'repository_policy_set',
   'repository_promote',
   'repository_prune',
+  'repository_repair',
   'repository_resize',
   'repository_status',
   'repository_template_apply',
@@ -1303,6 +1419,7 @@ export type FunctionParamsMap = {
   machine_uninstall: MachineUninstallParams;
   machine_version: MachineVersionParams;
   network_used: NetworkUsedParams;
+  proxy_acme_fix: ProxyAcmeFixParams;
   repository_autostart_disable: RepositoryAutostartDisableParams;
   repository_autostart_disable_all: RepositoryAutostartDisableAllParams;
   repository_autostart_enable: RepositoryAutostartEnableParams;
@@ -1324,16 +1441,22 @@ export type FunctionParamsMap = {
   repository_gpu_revoke: RepositoryGpuRevokeParams;
   repository_health: RepositoryHealthParams;
   repository_info: RepositoryInfoParams;
+  repository_limits_set: RepositoryLimitsSetParams;
+  repository_limits_show: RepositoryLimitsShowParams;
   repository_list: RepositoryListParams;
   repository_log: RepositoryLogParams;
   repository_logs: RepositoryLogsParams;
   repository_merge: RepositoryMergeParams;
   repository_mount: RepositoryMountParams;
   repository_ownership: RepositoryOwnershipParams;
+  repository_permission_grant: RepositoryPermissionGrantParams;
+  repository_permission_revoke: RepositoryPermissionRevokeParams;
+  repository_permission_show: RepositoryPermissionShowParams;
   repository_policy_get: RepositoryPolicyGetParams;
   repository_policy_set: RepositoryPolicySetParams;
   repository_promote: RepositoryPromoteParams;
   repository_prune: RepositoryPruneParams;
+  repository_repair: RepositoryRepairParams;
   repository_resize: RepositoryResizeParams;
   repository_status: RepositoryStatusParams;
   repository_template_apply: RepositoryTemplateApplyParams;
@@ -1517,6 +1640,9 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
   'network_used': {
     requirements: { machine: true, team: true },
   },
+  'proxy_acme_fix': {
+    requirements: { machine: true },
+  },
   'repository_autostart_disable': {
     requirements: { machine: true, team: true, repository: true },
   },
@@ -1580,6 +1706,12 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
   'repository_info': {
     requirements: { machine: true, team: true, repository: true },
   },
+  'repository_limits_set': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_limits_show': {
+    requirements: { machine: true, team: true, repository: true },
+  },
   'repository_list': {
     requirements: { machine: true, team: true, organization: true },
   },
@@ -1598,6 +1730,15 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
   'repository_ownership': {
     requirements: { machine: true, team: true, repository: true },
   },
+  'repository_permission_grant': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_permission_revoke': {
+    requirements: { machine: true, team: true, repository: true },
+  },
+  'repository_permission_show': {
+    requirements: { machine: true, team: true, repository: true },
+  },
   'repository_policy_get': {
     requirements: { machine: true },
   },
@@ -1609,6 +1750,9 @@ export const FUNCTION_REQUIREMENTS: Record<RenetFunctionName, { requirements: Pa
   },
   'repository_prune': {
     requirements: { machine: true },
+  },
+  'repository_repair': {
+    requirements: { machine: true, team: true, repository: true },
   },
   'repository_resize': {
     requirements: { machine: true, team: true, repository: true },
@@ -1646,6 +1790,7 @@ export const FUNCTION_CATEGORIES = [
   'kube',
   'machine',
   'network',
+  'proxy',
   'repository',
 ] as const;
 
@@ -1763,6 +1908,14 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         default: '10000',
         help: 'Maximum entries to return (0 = unlimited)',
       },
+      expectAccountServer: {
+        type: 'string',
+        help: 'Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check',
+      },
+      store: {
+        type: 'string',
+        help: 'Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store',
+      },
     },
   },
   'backup_churn_probe': {
@@ -1801,6 +1954,10 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       cpuLimit: {
         type: 'int',
         help: 'Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota',
+      },
+      store: {
+        type: 'string',
+        help: 'Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store',
       },
     },
   },
@@ -2032,6 +2189,14 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         type: 'int',
         help: 'Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota',
       },
+      expectAccountServer: {
+        type: 'string',
+        help: 'Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check',
+      },
+      store: {
+        type: 'string',
+        help: 'Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store',
+      },
     },
   },
   'backup_restore': {
@@ -2072,6 +2237,14 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         default: 'false',
         help: 'Continue past a chunk the store lost or holds wrong: its cells stay holes, reported by byte range, with status restored-damaged. Only for a target with no image',
       },
+      expectAccountServer: {
+        type: 'string',
+        help: 'Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check',
+      },
+      store: {
+        type: 'string',
+        help: 'Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store',
+      },
     },
   },
   'backup_restore_path': {
@@ -2101,6 +2274,14 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       to: {
         type: 'string',
         help: 'Directory the path is placed under (empty = <datastore>/restores/<snapshot-id>)',
+      },
+      expectAccountServer: {
+        type: 'string',
+        help: 'Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check',
+      },
+      store: {
+        type: 'string',
+        help: 'Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store',
       },
     },
   },
@@ -2182,6 +2363,14 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         default: 'false',
         help: 'Let cell_bytes replace the recorded grid. Re-seeds the repository: every cell uploads again and is charged',
       },
+      expectAccountServer: {
+        type: 'string',
+        help: 'Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check',
+      },
+      store: {
+        type: 'string',
+        help: 'Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store',
+      },
     },
   },
   'backup_toc_key': {
@@ -2234,6 +2423,10 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       cpuLimit: {
         type: 'int',
         help: 'Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota',
+      },
+      store: {
+        type: 'string',
+        help: 'Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store',
       },
     },
   },
@@ -3141,6 +3334,24 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
     params: {
     },
   },
+  'proxy_acme_fix': {
+    name: 'proxy_acme_fix',
+    category: 'proxy',
+    showInMenu: false,
+    requirements: { machine: true },
+    params: {
+      dryRun: {
+        type: 'bool',
+        help: 'Report the collisions and the planned fix only',
+        options: ['true', 'false'],
+      },
+      restart: {
+        type: 'bool',
+        help: 'Restart Traefik even when nothing was anchored, so a stalled renewal retries now',
+        options: ['true', 'false'],
+      },
+    },
+  },
   'repository_autostart_disable': {
     name: 'repository_autostart_disable',
     category: 'repository',
@@ -3504,10 +3715,82 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
     showInMenu: false,
     requirements: { machine: true, team: true, repository: true },
     params: {
+      strict: {
+        type: 'bool',
+        default: 'false',
+        help: 'Monitoring mode: no readiness fallback; a repository without health() answers level none',
+        options: ['true', 'false'],
+      },
+      all: {
+        type: 'bool',
+        default: 'false',
+        help: 'Evaluate every mounted repository (no repository is named)',
+        options: ['true', 'false'],
+      },
     },
   },
   'repository_info': {
     name: 'repository_info',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+    },
+  },
+  'repository_limits_set': {
+    name: 'repository_limits_set',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      memoryMax: {
+        type: 'string',
+        help: 'Memory cap (memory.max), a size such as 10G, or max',
+        placeholder: '10G',
+        pattern: '^([0-9]+(\\.[0-9]+)?[KMGTkmgt]?([iI]?[bB])?|max)$',
+      },
+      memoryHigh: {
+        type: 'string',
+        help: 'Memory throttle point (memory.high), a size, or max',
+        placeholder: '8G',
+        pattern: '^([0-9]+(\\.[0-9]+)?[KMGTkmgt]?([iI]?[bB])?|max)$',
+      },
+      cpuMax: {
+        type: 'string',
+        help: 'CPU cap in cores (4, 2.5) or N%, or max',
+        placeholder: '4',
+        pattern: '^([0-9]+(\\.[0-9]+)?%?|max)$',
+      },
+      ioMax: {
+        type: 'string',
+        help: 'I/O cap of the repository\'s device, rbps=,wbps=,riops=,wiops= (any subset), or max',
+        placeholder: 'rbps=200M,wbps=100M',
+        pattern: '^(max|((rbps|wbps|riops|wiops)=[0-9A-Za-z.]+)(,(rbps|wbps|riops|wiops)=[0-9A-Za-z.]+)*)$',
+      },
+      pidsMax: {
+        type: 'string',
+        help: 'Process cap (pids.max), a count, or max',
+        placeholder: '4096',
+        pattern: '^([0-9]+|max)$',
+      },
+      ramVolume: {
+        type: 'string',
+        help: 'Size of the RAM volume at <mount>/.ram, or max to remove it',
+        placeholder: '8G',
+        pattern: '^([0-9]+(\\.[0-9]+)?[KMGTkmgt]?([iI]?[bB])?|max)$',
+      },
+      clearLimits: {
+        type: 'bool',
+        help: 'Remove every limit and the RAM volume',
+      },
+      force: {
+        type: 'bool',
+        help: 'Allow a memory cap below the repository\'s current memory use',
+      },
+    },
+  },
+  'repository_limits_show': {
+    name: 'repository_limits_show',
     category: 'repository',
     showInMenu: false,
     requirements: { machine: true, team: true, repository: true },
@@ -3617,6 +3900,63 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
         type: 'string',
         help: 'Skip Docker volume detection (true/false)',
       },
+      rootOwned: {
+        type: 'bool',
+        default: 'false',
+        help: 'Hand root-owned files to the owner UID below directories owned by root or that UID, recording each in an undo manifest',
+      },
+      dryRun: {
+        type: 'bool',
+        default: 'false',
+        help: 'With root_owned: list the files that would change, and change nothing',
+      },
+      undo: {
+        type: 'bool',
+        default: 'false',
+        help: 'With root_owned: return the files in the undo manifest that the owner UID still owns to root',
+      },
+    },
+  },
+  'repository_permission_grant': {
+    name: 'repository_permission_grant',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      root: {
+        type: 'bool',
+        help: 'Run up() and down() as root, with no privilege drop',
+      },
+      path: {
+        type: 'string',
+        help: 'Absolute path up() and down() may reach, PATH[:ro|:rw] (default :ro)',
+        placeholder: '/srv/data:rw',
+      },
+    },
+  },
+  'repository_permission_revoke': {
+    name: 'repository_permission_revoke',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      root: {
+        type: 'bool',
+        help: 'Withdraw the root grant',
+      },
+      path: {
+        type: 'string',
+        help: 'Absolute path to withdraw',
+        placeholder: '/srv/data',
+      },
+    },
+  },
+  'repository_permission_show': {
+    name: 'repository_permission_show',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
     },
   },
   'repository_policy_get': {
@@ -3694,6 +4034,28 @@ export const FUNCTION_DEFINITIONS: Record<RenetFunctionName, FunctionDefinition>
       dryRun: {
         type: 'bool',
         help: 'Preview only, no changes',
+        options: ['true', 'false'],
+      },
+    },
+  },
+  'repository_repair': {
+    name: 'repository_repair',
+    category: 'repository',
+    showInMenu: false,
+    requirements: { machine: true, team: true, repository: true },
+    params: {
+      allowClasses: {
+        type: 'string',
+        help: 'Comma-separated classes that may run: auto-safe, auto-with-backup, operator-only (an undeclared repair() is operator-only)',
+      },
+      inWindow: {
+        type: 'bool',
+        help: 'The machine is inside its maintenance window, so window-only repairs may run',
+        options: ['true', 'false'],
+      },
+      dryRun: {
+        type: 'bool',
+        help: 'Run health() and report what would run, without running repair()',
         options: ['true', 'false'],
       },
     },
@@ -3998,6 +4360,7 @@ export const queueFunctions: QueueFunctionsType = {
   machine_uninstall: (params) => ({ functionName: 'machine_uninstall', params }),
   machine_version: (params) => ({ functionName: 'machine_version', params }),
   network_used: (params) => ({ functionName: 'network_used', params }),
+  proxy_acme_fix: (params) => ({ functionName: 'proxy_acme_fix', params }),
   repository_autostart_disable: (params) => ({ functionName: 'repository_autostart_disable', params }),
   repository_autostart_disable_all: (params) => ({ functionName: 'repository_autostart_disable_all', params }),
   repository_autostart_enable: (params) => ({ functionName: 'repository_autostart_enable', params }),
@@ -4019,16 +4382,22 @@ export const queueFunctions: QueueFunctionsType = {
   repository_gpu_revoke: (params) => ({ functionName: 'repository_gpu_revoke', params }),
   repository_health: (params) => ({ functionName: 'repository_health', params }),
   repository_info: (params) => ({ functionName: 'repository_info', params }),
+  repository_limits_set: (params) => ({ functionName: 'repository_limits_set', params }),
+  repository_limits_show: (params) => ({ functionName: 'repository_limits_show', params }),
   repository_list: (params) => ({ functionName: 'repository_list', params }),
   repository_log: (params) => ({ functionName: 'repository_log', params }),
   repository_logs: (params) => ({ functionName: 'repository_logs', params }),
   repository_merge: (params) => ({ functionName: 'repository_merge', params }),
   repository_mount: (params) => ({ functionName: 'repository_mount', params }),
   repository_ownership: (params) => ({ functionName: 'repository_ownership', params }),
+  repository_permission_grant: (params) => ({ functionName: 'repository_permission_grant', params }),
+  repository_permission_revoke: (params) => ({ functionName: 'repository_permission_revoke', params }),
+  repository_permission_show: (params) => ({ functionName: 'repository_permission_show', params }),
   repository_policy_get: (params) => ({ functionName: 'repository_policy_get', params }),
   repository_policy_set: (params) => ({ functionName: 'repository_policy_set', params }),
   repository_promote: (params) => ({ functionName: 'repository_promote', params }),
   repository_prune: (params) => ({ functionName: 'repository_prune', params }),
+  repository_repair: (params) => ({ functionName: 'repository_repair', params }),
   repository_resize: (params) => ({ functionName: 'repository_resize', params }),
   repository_status: (params) => ({ functionName: 'repository_status', params }),
   repository_template_apply: (params) => ({ functionName: 'repository_template_apply', params }),

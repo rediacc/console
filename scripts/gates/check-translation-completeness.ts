@@ -355,6 +355,16 @@ const ALLOWED_IDENTICAL = new Set([
   'Magnet',
 ]);
 
+/**
+ * Values that may stay English-identical in ONE locale only. "1. Introduction" is correct French
+ * (the numbered legal-page section title of privacyPolicy/cookiePolicy/telemetryPolicy); in any
+ * other locale the same value is an untranslated title. Matched by exact value, so
+ * "1. Definitions" and every other numbered title is still reported.
+ */
+const ALLOWED_IDENTICAL_BY_LOCALE: Readonly<Record<string, ReadonlySet<string>>> = {
+  fr: new Set(['1. Introduction']),
+};
+
 // Patterns for strings that should not be translated (placeholders, format strings)
 const PLACEHOLDER_PATTERNS: RegExp[] = [
   /placeholder$/i, // Keys ending in "placeholder"
@@ -428,7 +438,7 @@ const PLACEHOLDER_PATTERNS: RegExp[] = [
   /\(64-bit\)$/, // Architecture labels like "x64 (64-bit)"
   /\.subsections\.\w+\.title$/, // Legal subsection titles (often kept in English)
   /\.badgeLabels\./, // Badge labels (often identical: "Standard", "Priority")
-  /^\d+\.\s+\w+$/, // Numbered section titles like "1. Introduction", "1. Overview"
+  /^(?=.*\d)[\d.\s]+$/, // Pure numbering like "1.", "2.4", "10.2.1" (no words to translate); at least one digit, so "..." or blanks are not skipped
   /^~?\d+\s+minutes?$/, // Time durations like "~15 minutes", "30 minutes"
   /\.(rpo|rto)$/, // Recovery point/time objective values (technical metrics)
   /\.cardClass$/, // CSS class identifiers (sealed, restored, verified, down, config, compliant)
@@ -586,15 +596,72 @@ function flatten(obj: TranslationObject, prefix = ''): Record<string, Translatio
   return result;
 }
 
-function shouldSkipValue(value: TranslationValue, key = ''): boolean {
+function shouldSkipValue(value: TranslationValue, key = '', lang = ''): boolean {
   if (typeof value !== 'string') return true;
   if (value.length <= MIN_STRING_LENGTH) return true;
   if (ALLOWED_IDENTICAL.has(value)) return true;
+  if (ALLOWED_IDENTICAL_BY_LOCALE[lang]?.has(value)) return true;
   // Check placeholder patterns
   for (const pattern of PLACEHOLDER_PATTERNS) {
     if (pattern.test(key) || pattern.test(value)) return true;
   }
   return false;
+}
+
+/** The CLDR plural categories `Intl.PluralRules` can select. */
+const PLURAL_CATEGORIES = new Set(['zero', 'one', 'two', 'few', 'many', 'other']);
+
+/**
+ * PLURAL GROUPS (the account emails' `tCount`, PLAN-account-notices E1): an English parent whose
+ * direct leaves are all CLDR categories, `other` among them, and which holds nothing else. Each
+ * language holds the categories ITS plural rules select (en one/other, ru one/few/many/other,
+ * ja other), so a group's leaves are not mirrored key for key. Which categories a language
+ * must hold is check-account-email-templates.ts's job; this gate only stops calling a
+ * language-specific category an orphan, or a category the language never selects missing.
+ */
+function pluralGroupsOf(keys: string[]): Set<string> {
+  const leaves = new Map<string, string[]>();
+  const descendants = new Map<string, number>();
+  for (const key of keys) {
+    const cut = key.lastIndexOf('.');
+    if (cut < 0) continue;
+    const parent = key.slice(0, cut);
+    leaves.set(parent, [...(leaves.get(parent) ?? []), key.slice(cut + 1)]);
+    for (let i = key.indexOf('.'); i >= 0; i = key.indexOf('.', i + 1)) {
+      const ancestor = key.slice(0, i);
+      descendants.set(ancestor, (descendants.get(ancestor) ?? 0) + 1);
+    }
+  }
+  const groups = new Set<string>();
+  for (const [parent, names] of leaves) {
+    if (
+      names.includes('other') &&
+      names.every((n) => PLURAL_CATEGORIES.has(n)) &&
+      descendants.get(parent) === names.length
+    ) {
+      groups.add(parent);
+    }
+  }
+  return groups;
+}
+
+function leafOf(key: string): string {
+  return key.slice(key.lastIndexOf('.') + 1);
+}
+
+function isPluralLeaf(key: string, groups: Set<string>): boolean {
+  const cut = key.lastIndexOf('.');
+  return cut > 0 && groups.has(key.slice(0, cut)) && PLURAL_CATEGORIES.has(key.slice(cut + 1));
+}
+
+/** The categories `lang` selects, or null when `lang` is not a valid BCP 47 tag (`pt_BR`). */
+function pluralCategoriesOf(lang: string): Set<string> | null {
+  try {
+    return new Set(new Intl.PluralRules(lang).resolvedOptions().pluralCategories);
+  } catch (e) {
+    if (e instanceof RangeError) return null;
+    throw e;
+  }
 }
 
 function checkLocaleDir(name: string, localeDir: string, flatFiles = false): CheckResult {
@@ -647,6 +714,7 @@ function checkLocaleDir(name: string, localeDir: string, flatFiles = false): Che
   }
 
   const totalEnKeys = Object.keys(enKeys).length;
+  const enPluralGroups = pluralGroupsOf(Object.keys(enKeys));
   const stats: Record<string, LanguageStats> = {};
 
   for (const lang of languages) {
@@ -685,10 +753,19 @@ function checkLocaleDir(name: string, localeDir: string, flatFiles = false): Che
 
     // Check for untranslated strings
     const untranslatedKeys: string[] = [];
+    const resolvedCategories = pluralCategoriesOf(lang);
+    if (resolvedCategories === null) {
+      errors.push(
+        `[${name}/${lang}] locale name is not a valid BCP 47 tag, so its plural categories cannot be resolved (rename it, e.g. pt_BR -> pt-BR)`
+      );
+    }
+    const langCategories = resolvedCategories ?? new Set(['other']);
     for (const [key, enValue] of Object.entries(enKeys)) {
       if (!(key in langKeys)) {
+        // A plural category this language's rules never select is not owed (ja has no `one`).
+        if (isPluralLeaf(key, enPluralGroups) && !langCategories.has(leafOf(key))) continue;
         missing++;
-      } else if (langKeys[key] === enValue && !shouldSkipValue(enValue, key)) {
+      } else if (langKeys[key] === enValue && !shouldSkipValue(enValue, key, lang)) {
         untranslated++;
         untranslatedKeys.push(key);
       }
@@ -707,7 +784,13 @@ function checkLocaleDir(name: string, localeDir: string, flatFiles = false): Che
     // English is the source of truth and lookups resolve against its key set,
     // so a key absent from English is unreachable by definition. Deleting it is
     // always safe; keeping it is always dead weight.
-    const orphanKeys = Object.keys(langKeys).filter((key) => !(key in enKeys));
+    //
+    // One exception, plural groups: a category English lacks but this language's rules select
+    // (ru `few`, ar `two`) is reachable through tCount, so it is not an orphan.
+    const orphanKeys = Object.keys(langKeys).filter(
+      (key) =>
+        !(key in enKeys) && !(isPluralLeaf(key, enPluralGroups) && langCategories.has(leafOf(key)))
+    );
 
     const total = totalEnKeys;
     const untranslatedRatio = total > 0 ? (untranslated / total) * 100 : 0;
@@ -888,10 +971,93 @@ function controlMissingAndOrphanKeys(): void {
     );
   }
 
+  // Plural groups: a category the language never selects is not owed (ja has no `one`), one it
+  // does select is (de needs `one`); a category English lacks but the language selects (ru `few`)
+  // is not an orphan; a locale directory that is no BCP 47 tag is an error, not silently exempt.
+  const plural = {
+    items: { one: 'one item', other: 'many items' },
+  };
+  fs.writeFileSync(path.join(tmp, 'en.json'), JSON.stringify(plural));
+  fs.writeFileSync(path.join(tmp, 'ja.json'), JSON.stringify({ items: { other: 'ja items' } }));
+  fs.writeFileSync(path.join(tmp, 'de.json'), JSON.stringify({ items: { other: 'de items' } }));
+  fs.writeFileSync(
+    path.join(tmp, 'ru.json'),
+    JSON.stringify({ items: { one: 'ru one', few: 'ru few', many: 'ru many', other: 'ru other' } })
+  );
+  fs.writeFileSync(path.join(tmp, 'pt_BR.json'), JSON.stringify({ items: { other: 'x items' } }));
+  const pluralRun = checkLocaleDir('control', tmp, true);
+  if (pluralRun.stats?.ja?.missing !== 0) {
+    failures.push('ja lacks `one`, a category it never selects, but was counted missing');
+  }
+  if (pluralRun.stats?.de?.missing !== 1) {
+    failures.push('de lacks `one`, a category it selects, and was not counted missing');
+  }
+  if (pluralRun.errors.some((e) => e.includes('[control/ru]'))) {
+    failures.push('ru `few`/`many` (selected by ru, absent from English) were reported');
+  }
+  if (!pluralRun.errors.some((e) => e.includes('pt_BR') && e.includes('BCP 47'))) {
+    failures.push('a locale directory name that is not a BCP 47 tag was not reported');
+  }
+
   fs.rmSync(tmp, { recursive: true, force: true });
   if (failures.length > 0) {
     console.error('\x1b[31m✗\x1b[0m CONTROL FAILED: this gate cannot detect a missing or');
     console.error('  orphaned key, so its verdict on the real trees means nothing.');
+    for (const f of failures) console.error(`    ${f}`);
+    process.exit(1);
+  }
+}
+
+/**
+ * CONTROL for numbered section titles. A blanket `/^\d+\.\s+\w+$/` skip once hid
+ * "1. Definitions" in de/es/fr/ja/ar/ru/tr/zh. Asserts: the old pattern would have skipped
+ * it (so the plant reproduces the defect), an English-identical numbered title is now
+ * reported, a translated one and pure numbering stay silent.
+ */
+function controlNumberedTitles(): void {
+  const failures: string[] = [];
+  // The gate's own patterns must not skip a numbered title or a punctuation-only value.
+  if (PLACEHOLDER_PATTERNS.some((p) => p.test('1. Definitions'))) {
+    failures.push('a PLACEHOLDER_PATTERNS entry skips the numbered title "1. Definitions"');
+  }
+  if (PLACEHOLDER_PATTERNS.some((p) => p.test('...') || p.test('   '))) {
+    failures.push('a PLACEHOLDER_PATTERNS entry skips a value with no digit or letter');
+  }
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'completeness-numbered-control-'));
+  const en = { title: '1. Definitions', num: '2.4', sub: '10.2.1' };
+  fs.writeFileSync(path.join(tmp, 'en.json'), JSON.stringify(en));
+  fs.writeFileSync(path.join(tmp, 'de.json'), JSON.stringify(en));
+  const planted = checkLocaleDir('control', tmp, true).stats?.de;
+  if (planted?.untranslated !== 1 || planted.untranslatedKeys[0] !== 'title') {
+    failures.push(
+      `expected exactly "1. Definitions" reported (pure numbering skipped), got ${planted?.untranslated} (${planted?.untranslatedKeys.join(',')})`
+    );
+  }
+  // "1. Introduction" is an allowed cognate in fr only.
+  const intro = { intro: '1. Introduction' };
+  fs.writeFileSync(path.join(tmp, 'en.json'), JSON.stringify(intro));
+  fs.writeFileSync(path.join(tmp, 'de.json'), JSON.stringify(intro));
+  fs.writeFileSync(path.join(tmp, 'fr.json'), JSON.stringify(intro));
+  const introRun = checkLocaleDir('control', tmp, true).stats;
+  if (introRun?.de?.untranslated !== 1) {
+    failures.push('"1. Introduction" identical to English in de was not reported');
+  }
+  if (introRun?.fr?.untranslated !== 0) {
+    failures.push('"1. Introduction" in fr was reported, but it is a French cognate');
+  }
+  fs.rmSync(path.join(tmp, 'fr.json'));
+  fs.writeFileSync(path.join(tmp, 'en.json'), JSON.stringify(en));
+  fs.writeFileSync(
+    path.join(tmp, 'de.json'),
+    JSON.stringify({ ...en, title: '1. Begriffsbestimmungen' })
+  );
+  const clean = checkLocaleDir('control', tmp, true).stats?.de;
+  if (clean?.untranslated !== 0) {
+    failures.push('a translated numbered title was reported as untranslated');
+  }
+  fs.rmSync(tmp, { recursive: true, force: true });
+  if (failures.length > 0) {
+    console.error('\x1b[31m✗\x1b[0m CONTROL FAILED: numbered section titles are not checked.');
     for (const f of failures) console.error(`    ${f}`);
     process.exit(1);
   }
@@ -904,6 +1070,7 @@ function main(): void {
   // CONTROL FIRST. Nothing below is evidence if the threshold cannot fire.
   controlUntranslatedThreshold();
   controlMissingAndOrphanKeys();
+  controlNumberedTitles();
 
   const allErrors: string[] = [];
   const allWarnings: string[] = [];

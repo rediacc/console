@@ -1,18 +1,20 @@
-"""check:ci-region-consistency, offline layer: the seven account targets are one shape, modulo the documented per-target differences.
+"""check:ci-region-consistency, offline layer: the four account targets are one shape, modulo the documented per-target differences.
 
-THE SEVEN TARGETS. `stable-{eu,us,asia}`, `edge-{eu,us,asia}` (one per `regions.json` region and channel) and `bench`. Each is an account Worker, a proxy Worker, a D1 database, two R2 buckets (CONFIG_BUCKET, BACKUP_BUCKET) and a bws profile that feeds its secret push. Operator ask 2026-10-29: "a CI job to check consistency between regions (2*3+1)".
+THE FOUR TARGETS. `eu`, `us`, `asia` (one shared set per `regions.json` region, no stable and edge pairs) and `bench`. Each is an account Worker, a proxy Worker, a D1 database, two R2 buckets (CONFIG_BUCKET, BACKUP_BUCKET) and a bws profile that feeds its secret push. Operator ask 2026-10-29: "a CI job to check consistency between regions", now 3+1 since the product moved to rediacc.cloud (PLAN-product-domain-rename.md).
 
-WHY. Every per-target fact is written down more than once (regions.json, workers/account/wrangler.<t>.toml, workers/proxy/wrangler.<t>.toml, the `account-secrets-<r>-<c>` and `deploy-bench` profiles of .ci/config/secret-supply.json) and each family was grown one target at a time. Siblings that check one slice exist and are not repeated here: check:ci-backup-bucket-conformance (BACKUP_BUCKET name and jurisdiction against regions.json), check:ci-proxy-configs (every proxy toml against its template), check:ci-builder-env-contract (CD's env exports against the pusher), check:ci-backup-credential-isolation (the backup key pairs). None of them asks the cross-target question: is target X missing something the other six have, or naming something that belongs to another target.
+WHY. Every per-target fact is written down more than once (regions.json, workers/account/wrangler.<t>.toml, workers/proxy/wrangler.<t>.toml, the `account-secrets-<r>` and `deploy-bench` profiles of .ci/config/secret-supply.json) and each family was grown one target at a time. Siblings that check one slice exist and are not repeated here: check:ci-backup-bucket-conformance (BACKUP_BUCKET name and jurisdiction against regions.json), check:ci-proxy-configs (every proxy toml against its template), check:ci-builder-env-contract (CD's env exports against the pusher), check:ci-backup-credential-isolation (the backup key pairs). None of them asks the cross-target question: is target X missing something the other three have, or naming something that belongs to another target.
 
 OFFLINE LAYER (this module, every CI run, no credential):
-  regions    every regions.json name follows its pattern (`{edge-}rediacc-account-<r>`, `{edge-}account-db-<r>`, `{edge-}rediacc-{configs,backups}-<r>`, `{edge-}rediacc-proxy-<r>`, `<r>.rediacc.com` / `edge-<r>.rediacc.com`, suffix `<R>`), bench by the same pattern with `<r>` = bench;
-  account    each account toml: name, route, D1 name (and a database_id no other target shares), both bucket names and jurisdictions, EXECUTOR service, REGION / WEBAUTHN vars, observability destinations, and a structural SHAPE (binding names per kind, crons, compatibility, assets and observability knobs) equal to the reference target stable-<default region>, modulo `SHAPE_EXCEPTIONS`;
+  regions    every regions.json name follows its pattern (`account-<r>` for the Worker and the D1, `{configs,backups}-<r>`, `proxy-<r>`, `<r>.rediacc.cloud`, suffix `<R>`), bench by the same pattern with `<r>` = bench;
+  account    each account toml: name, route, D1 name (and a database_id no other target shares), both bucket names and jurisdictions, EXECUTOR service, REGION / WEBAUTHN vars, observability destinations, and a structural SHAPE (binding names per kind, crons, compatibility, assets and observability knobs) equal to the reference target, the first region, modulo `SHAPE_EXCEPTIONS`;
   proxy      each proxy toml: name, route, ACCOUNT and ISSUER services naming this target's account Worker, ACCOUNT_URL, REGION, ENVIRONMENT, destinations;
   profile    each regional profile binds exactly the store names the pusher reads for its region and channel (derived from set_account_worker_secrets' own constants and read_env source), no other target's name, and the three regions of a channel are equal modulo the suffix; bench's profile binds every per-target family under its `_BENCH` name; bench's push payload carries exactly the regional pusher's Worker keys.
 
-LIVE LAYER (`--live`, rediacc_ci.quality.region_consistency_live; `main` is in rediacc_ci.quality.region_consistency): the same seven targets against Cloudflare.
+BENCH OBJECTS. Each region row may carry a `bench` object (names, hosts, placement, queue, dataset, rate-limit ids, `deployable`): the home region's (`eu`) names the bench target of the four, the others become `extra_bench_targets`, whose tomls (`wrangler.bench-<r>.toml`) get the same account and proxy checks plus the signer, queue, dataset and rate-limit checks of `check_bench_object`. A non-home bench copies production placement, and a placeholder database id is allowed only while `deployable` is false.
 
-ANTI-VACUITY. Fewer than 7 targets, a missing toml or profile, or zero parsed bindings is exit 2. The success line prints the counts. `--selftest` plants one drift per class into a copy of the real inputs and requires each to go red, and plants benign changes that must stay green.
+LIVE LAYER (`--live`, rediacc_ci.quality.region_consistency_live; `main` is in rediacc_ci.quality.region_consistency): the same four targets against Cloudflare.
+
+ANTI-VACUITY. Fewer than 4 targets, a missing toml or profile, or zero parsed bindings is exit 2. The success line prints the counts. `--selftest` plants one drift per class into a copy of the real inputs and requires each to go red, and plants benign changes that must stay green.
 
 Exit 0 consistent, 1 drift, 2 no verdict.
 """
@@ -27,21 +29,43 @@ import tomllib
 from typing import TYPE_CHECKING
 
 from rediacc_ci.deploy import account_secrets_local as local_push
+from rediacc_ci.deploy import proxy_configs
 from rediacc_ci.deploy import set_account_worker_secrets as pusher
-from rediacc_ci.well_known import APEX_DOMAIN, BENCH_ORIGIN
+from rediacc_ci.well_known import BENCH_ORIGIN, PRODUCT_DOMAIN
 
 if TYPE_CHECKING:
     import pathlib
 
 SELF = "region-consistency"
-EXPECTED_TARGETS = 7
+EXPECTED_TARGETS = 4
 REGIONS_REL = "regions.json"
 SUPPLY_REL = ".ci/config/secret-supply.json"
 BENCH_DEPLOY_REL = ".ci/rediacc_ci/ops/deploy_bench.py"
 BENCH = "bench"
 BENCH_DOMAIN = BENCH_ORIGIN.removeprefix("https://")
-STABLE, EDGE = "stable", "edge"
+SHARED = "shared"
 BENCH_PROFILE = "deploy-bench"
+# The region whose bench keeps today's unsuffixed names (`account-bench`, `proxy-bench`); every other region's bench carries `-<r>`.
+BENCH_HOME = proxy_configs.BENCH_HOME_REGION
+BENCH_KEYS = (
+    "host",
+    "proxyHost",
+    "workerName",
+    "proxyWorkerName",
+    "signerWorkerName",
+    "d1",
+    "controlD1",
+    "r2",
+    "backupR2",
+    "r2Jurisdiction",
+    "r2Location",
+    "queue",
+    "dataset",
+    "rateLimits",
+    "otlp",
+    "config",
+    "deployable",
+)
 CLASSES = ("regions", "account", "proxy", "profile")
 
 # Names a regional profile binds that the pusher does not read: account_secrets_local's own preflight (wrangler token and account, and the Turnstile drift check that compares the site key with the secret).
@@ -56,28 +80,31 @@ BENCH_FAMILIES = (
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
     "CLOUDFLARE_TURNSTILE_SECRET_KEY",
 )
-# The six signing and session store names every regional profile binds and bench binds the same way, unaliased (production key, operator 2026-10-29).
+# The signing and session store names every regional profile binds and bench binds the same way, unaliased (production key, operator 2026-10-29). The licence private key is not among them since PLAN-enterprise-isolation S4: account Workers sign through LICENSE_SIGNER and the deploy-signer profile carries the key.
 BENCH_UNALIASED = (
-    "ACCOUNT_ED25519_PRIVATE_KEY",
     "ACCOUNT_ED25519_PUBLIC_KEY",
     "ACCOUNT_X25519_PRIVATE_KEY",
     "ACCOUNT_X25519_PUBLIC_KEY",
     "ACCOUNT_SERVER_API_KEY",
     "ACCOUNT_JWT_SECRET",
 )
+# The licence private key stays out of the bench profile in any spelling, aliased or not: the bench account Worker signs through LICENSE_SIGNER (test_gate_region_consistency.py plants it bound and aliased).
+BENCH_FORBIDDEN = ("ACCOUNT_ED25519_PRIVATE_KEY",)
 # Vars each channel's account toml carries beyond REGION / WEBAUTHN_RP_ID / WEBAUTHN_ORIGIN, with the value where it is fixed.
 CHANNEL_VARS: dict[str, dict[str, str | None]] = {
-    STABLE: {},
-    EDGE: {"ENVIRONMENT": "edge"},
+    # ENVIRONMENT=edge stays on the shared Workers: it picks the CLI's update channel (private/account/src/app.ts:234).
+    SHARED: {"ENVIRONMENT": "edge"},
     # Bench-only switches, each documented in wrangler.bench.toml as "never add to a production config".
     BENCH: {
         "ENVIRONMENT": "bench",
         "ALLOWED_EMAIL_DOMAINS": None,
         "TURNSTILE_ENABLED": "false",
         "EMAIL_CAPTURE_D1": "true",
+        # Checkout asks for Terms consent on bench first, where only the sandbox pair bills (PLAN-terms-acceptance X2).
+        "STRIPE_CONSENT_COLLECTION": "1",
     },
 }
-PROXY_ENVIRONMENT = {STABLE: "production", EDGE: "edge", BENCH: "bench"}
+PROXY_ENVIRONMENT = {SHARED: "edge", BENCH: "bench"}
 # (target, shape field) -> the reason it may differ from the reference. Printed every run, so an exemption stays visible.
 SHAPE_EXCEPTIONS: dict[tuple[str, str], str] = {
     (BENCH, "assets.directory"): (
@@ -85,11 +112,16 @@ SHAPE_EXCEPTIONS: dict[tuple[str, str], str] = {
         "stable (wrangler.bench.toml, 2026-10-28 incident)"
     ),
 }
+# Payload keys only bench pushes, with the reason: the regional Workers run live billing, so they get no sandbox pair.
+BENCH_ONLY_PAYLOAD: dict[str, str] = {
+    "STRIPE_SANDBOX_SECRET_KEY": "bench bills against the Stripe sandbox, never the live account",
+    "STRIPE_SANDBOX_WEBHOOK_SECRET": "bench bills against the Stripe sandbox, never the live account",
+}
 
 
 @dataclasses.dataclass(frozen=True)
 class Target:
-    """One of the seven: every name derived from the pattern, plus where its declarations live."""
+    """One of the four: every name derived from the pattern, plus where its declarations live."""
 
     id: str
     channel: str
@@ -103,6 +135,10 @@ class Target:
     domain: str
     jurisdiction: str | None
     otlp: str
+    # The D1 database's own jurisdiction (creation-only on Cloudflare); None while the database sits under a location hint.
+    d1_jurisdiction: str | None = None
+    # The region a bench serves (its `[vars] REGION`); empty for a shared target, which serves its own id.
+    serves: str = ""
 
     @property
     def account_toml(self) -> str:
@@ -114,13 +150,13 @@ class Target:
 
     @property
     def file_stem(self) -> str:
-        return {STABLE: self.region, EDGE: "edge-" + self.region, BENCH: BENCH}[self.channel]
+        return self.id if self.channel == BENCH else self.region
 
     @property
     def profile(self) -> str:
         if self.channel == BENCH:
             return BENCH_PROFILE
-        return local_push.profile_name(self.region, self.channel)
+        return local_push.profile_name(self.region)
 
 
 @dataclasses.dataclass(frozen=True)
@@ -137,28 +173,180 @@ class NoVerdictError(Exception):
     """The gate cannot rule: an input is missing or unreadable."""
 
 
-def pattern(channel: str, rid: str, jurisdiction: str | None) -> Target:
+def d1_name(rid: str, d1_jurisdiction: str | None) -> str:
+    """`account-<r>`, plus `-j` exactly when the database was created under a jurisdiction (no rename exists, PLAN-d1-eu-jurisdiction Design 1)."""
+    return "account-%s%s" % (rid, "-j" if d1_jurisdiction else "")
+
+
+def pattern(
+    channel: str,
+    rid: str,
+    jurisdiction: str | None,
+    d1_jurisdiction: str | None = None,
+) -> Target:
     """The target every regions.json row and the bench constants must equal."""
-    pre = "edge-" if channel == EDGE else ""
-    domain = BENCH_DOMAIN if channel == BENCH else "%s%s.%s" % (pre, rid, APEX_DOMAIN)
+    domain = BENCH_DOMAIN if channel == BENCH else "%s.%s" % (rid, PRODUCT_DOMAIN)
     return Target(
-        id=BENCH if channel == BENCH else "%s-%s" % (channel, rid),
+        id=BENCH if channel == BENCH else rid,
         channel=channel,
         region=rid,
         suffix=rid.upper(),
-        account_worker="%srediacc-account-%s" % (pre, rid),
-        proxy_worker="%srediacc-proxy-%s" % (pre, rid),
-        d1="%saccount-db-%s" % (pre, rid),
-        config_bucket="%srediacc-configs-%s" % (pre, rid),
-        backup_bucket="%srediacc-backups-%s" % (pre, rid),
+        account_worker="account-%s" % rid,
+        proxy_worker="proxy-%s" % rid,
+        d1=d1_name(rid, d1_jurisdiction),
+        config_bucket="configs-%s" % rid,
+        backup_bucket="backups-%s" % rid,
         domain=domain,
         jurisdiction=jurisdiction,
         otlp=rid,
+        d1_jurisdiction=d1_jurisdiction,
     )
 
 
+def bench_key(rid: str) -> str:
+    return BENCH if rid == BENCH_HOME else "%s-%s" % (BENCH, rid)
+
+
+def bench_expected(rid: str, d1_jurisdiction: str | None) -> dict[str, str]:
+    """The names region `rid`'s bench `bench` object must carry: today's unsuffixed ones for the home region, `-<r>` for the others."""
+    home = rid == BENCH_HOME
+    sfx = "" if home else "-" + rid
+    host = BENCH_DOMAIN if home else "bench-%s.%s" % (rid, PRODUCT_DOMAIN)
+    return {
+        "host": host,
+        "proxyHost": "proxy." + host,
+        "workerName": "account-bench" + sfx,
+        "proxyWorkerName": "proxy-bench" + sfx,
+        "signerWorkerName": "signer-bench-" + rid,
+        "d1": "account-bench%s%s" % (sfx, "-j" if d1_jurisdiction else ""),
+        "controlD1": "control-bench-" + rid,
+        "r2": "configs-bench" + sfx,
+        "backupR2": "backups-bench" + sfx,
+        "queue": "backup-replicate-bench" + sfx,
+        "dataset": "telemetry_bench" + ("" if home else "_" + rid),
+        "otlp": BENCH,
+        "config": rid + "-bench",
+    }
+
+
+def _named(value: object) -> object:
+    return value.get("name") if isinstance(value, dict) else value
+
+
+def bench_target(row: dict) -> Target:
+    """The Target of one region's bench, every name read from that row's `bench` object."""
+    rid = str(row.get("id", ""))
+    bench = row["bench"]
+    d1 = bench.get("d1") if isinstance(bench.get("d1"), dict) else {}
+    home = rid == BENCH_HOME
+    return Target(
+        id=bench_key(rid),
+        channel=BENCH,
+        region=BENCH if home else rid,
+        suffix=BENCH.upper() if home else rid.upper(),
+        account_worker=str(bench.get("workerName")),
+        proxy_worker=str(bench.get("proxyWorkerName")),
+        d1=str(d1.get("name")),
+        config_bucket=str(_named(bench.get("r2"))),
+        backup_bucket=str(_named(bench.get("backupR2"))),
+        domain=str(bench.get("host")),
+        jurisdiction=bench.get("r2Jurisdiction"),
+        otlp=str(bench.get("otlp")),
+        d1_jurisdiction=d1.get("jurisdiction"),
+        serves=rid,
+    )
+
+
+def bench_object_findings(rows: list[dict]) -> list[Finding]:
+    """Every regions.json `bench` object held to its pattern, to production's placement for a non-home region, and to its siblings' rate-limit ids."""
+    found: list[Finding] = []
+    seen_limits: dict[str, str] = {}
+    for row in rows:
+        rid = str(row.get("id", ""))
+        tid = bench_key(rid)
+        bench = row.get("bench")
+        if not isinstance(bench, dict):
+            continue
+        missing = [k for k in BENCH_KEYS if k not in bench]
+        if missing:
+            found.append(
+                Finding(tid, "regions", "regions.json bench object lacks %s" % ", ".join(missing))
+            )
+            continue
+        d1 = bench["d1"] if isinstance(bench["d1"], dict) else {}
+        want = bench_expected(rid, d1.get("jurisdiction"))
+        got = {k: _named(bench.get(k)) for k in want}
+        got["d1"] = d1.get("name")
+        for field, expect in want.items():
+            if got[field] != expect:
+                found.append(
+                    Finding(
+                        tid,
+                        "regions",
+                        "regions.json bench.%s is %r, the pattern says %r"
+                        % (field, got[field], expect),
+                    )
+                )
+        if not isinstance(bench["deployable"], bool):
+            found.append(
+                Finding(tid, "regions", "regions.json bench.deployable is not true or false")
+            )
+        if rid != BENCH_HOME:
+            row_d1 = row.get("d1")
+            prod_d1: dict = row_d1 if isinstance(row_d1, dict) else {}
+            placement = (
+                ("d1.location", d1.get("location"), prod_d1.get("location")),
+                ("d1.jurisdiction", d1.get("jurisdiction"), prod_d1.get("jurisdiction")),
+                ("r2Location", bench["r2Location"], prod_d1.get("location")),
+                ("r2Jurisdiction", bench["r2Jurisdiction"], row.get("r2Jurisdiction")),
+            )
+            for field, have, prod in placement:
+                if have != prod:
+                    found.append(
+                        Finding(
+                            tid,
+                            "regions",
+                            "regions.json bench.%s is %r, production %s places it at %r"
+                            % (field, have, rid, prod),
+                        )
+                    )
+        limits = bench["rateLimits"] if isinstance(bench["rateLimits"], dict) else {}
+        for name in ("audit", "config"):
+            ident = limits.get(name)
+            if not isinstance(ident, str) or not ident:
+                found.append(
+                    Finding(
+                        tid, "regions", "regions.json bench.rateLimits.%s is %r" % (name, ident)
+                    )
+                )
+            elif ident in seen_limits:
+                found.append(
+                    Finding(
+                        tid,
+                        "regions",
+                        "regions.json bench.rateLimits.%s %r is also %s's"
+                        % (name, ident, seen_limits[ident]),
+                    )
+                )
+            else:
+                seen_limits[ident] = tid
+    return found
+
+
+def extra_bench_targets(doc: dict) -> list[Target]:
+    """The benches beyond the home one: one Target per other region row that carries a `bench` object."""
+    return [
+        bench_target(r)
+        for r in doc.get("regions", [])
+        if isinstance(r.get("bench"), dict) and r.get("id") != BENCH_HOME
+    ]
+
+
 def targets_from(doc: dict) -> tuple[list[Target], list[Finding]]:
-    """The seven targets, and every regions.json value that disagrees with its pattern."""
+    """The four targets, and every regions.json value that disagrees with its pattern.
+
+    The bench target is read from the home region's `bench` object, whose jurisdiction makes the bench D1 name carry `-j` the way a `d1.jurisdiction` does; the other regions' benches come from `extra_bench_targets`, and their objects are held to the same patterns here.
+    """
     rows = doc.get("regions") if isinstance(doc, dict) else None
     if not isinstance(rows, list) or not rows:
         raise NoVerdictError("regions.json has no `regions` list; nothing to compare")
@@ -167,58 +355,62 @@ def targets_from(doc: dict) -> tuple[list[Target], list[Finding]]:
     for row in rows:
         rid = row.get("id", "")
         jur = row.get("r2Jurisdiction")
-        for channel, fields in (
-            (STABLE, ("workerName", "proxyWorkerName", "d1", "r2", "backupR2", "domain")),
-            (
-                EDGE,
-                (
-                    "edgeWorkerName",
-                    "edgeProxyWorkerName",
-                    "edgeD1",
-                    "edgeR2",
-                    "edgeBackupR2",
-                    "edgeDomain",
-                ),
-            ),
-        ):
-            t = pattern(channel, rid, jur)
-            want = (
-                t.account_worker,
-                t.proxy_worker,
-                t.d1,
-                t.config_bucket,
-                t.backup_bucket,
-                t.domain,
-            )
-            for field, expect in zip(fields, want, strict=True):
-                got = row.get(field)
-                got = got.get("name") if isinstance(got, dict) else got
-                if got != expect:
-                    found.append(
-                        Finding(
-                            t.id,
-                            "regions",
-                            "regions.json %s is %r, the pattern says %r" % (field, got, expect),
-                        )
+        d1_row = row.get("d1")
+        d1_jur = d1_row.get("jurisdiction") if isinstance(d1_row, dict) else None
+        fields = ("workerName", "proxyWorkerName", "d1", "r2", "backupR2", "domain")
+        t = pattern(SHARED, rid, jur, d1_jur)
+        want = (
+            t.account_worker,
+            t.proxy_worker,
+            t.d1,
+            t.config_bucket,
+            t.backup_bucket,
+            t.domain,
+        )
+        for field, expect in zip(fields, want, strict=True):
+            got = row.get(field)
+            got = got.get("name") if isinstance(got, dict) else got
+            if got != expect:
+                found.append(
+                    Finding(
+                        t.id,
+                        "regions",
+                        "regions.json %s is %r, the pattern says %r" % (field, got, expect),
                     )
-            out.append(t)
+                )
+        out.append(t)
         if row.get("secretSuffix") != rid.upper():
             found.append(
                 Finding(
-                    "stable-" + rid,
+                    rid,
                     "regions",
                     "secretSuffix %r is not %r" % (row.get("secretSuffix"), rid.upper()),
+                )
+            )
+        if not isinstance(d1_row, dict) or "jurisdiction" not in d1_row:
+            found.append(
+                Finding(
+                    rid,
+                    "regions",
+                    "regions.json d1 carries no jurisdiction key (null is a value; absent is not)",
                 )
             )
         if "r2Jurisdiction" not in row:
             found.append(
                 Finding(
-                    "stable-" + rid,
+                    rid,
                     "regions",
                     "regions.json carries no r2Jurisdiction key (null is a value; absent is not)",
                 )
             )
-    out.append(pattern(BENCH, BENCH, None))
+    home = next((r for r in rows if r.get("id") == BENCH_HOME), None)
+    if not home or not isinstance(home.get("bench"), dict):
+        raise NoVerdictError(
+            "regions.json %s carries no bench object; a bench with no declaration is unchecked"
+            % BENCH_HOME
+        )
+    found += bench_object_findings(rows)
+    out.append(bench_target(home))
     return out, found
 
 
@@ -231,7 +423,7 @@ def blocks(doc: dict, kind: str) -> dict[str, dict]:
 
 
 def account_shape(doc: dict) -> dict[str, object]:
-    """The structural facts that must be equal across the seven account tomls."""
+    """The structural facts that must be equal across the four account tomls."""
     obs = doc.get("observability", {})
     assets = doc.get("assets", {})
     return {
@@ -301,7 +493,7 @@ def check_account(t: Target, doc: dict, ref: dict[str, object]) -> list[Finding]
     if ex.get("service") != t.proxy_worker:
         bad("EXECUTOR service %r, expected %r" % (ex.get("service"), t.proxy_worker))
     want_vars: dict[str, str | None] = {
-        "REGION": "eu" if t.channel == BENCH else t.region,
+        "REGION": t.serves or t.region,
         "WEBAUTHN_RP_ID": t.domain,
         "WEBAUTHN_ORIGIN": "https://" + t.domain,
         **CHANNEL_VARS[t.channel],
@@ -320,7 +512,8 @@ def check_account(t: Target, doc: dict, ref: dict[str, object]) -> list[Finding]
         bad("observability destinations %r, expected %r" % (_destinations(doc), want_dest))
     shape = account_shape(doc)
     for field, actual in shape.items():
-        if actual != ref[field] and (t.id, field) not in SHAPE_EXCEPTIONS:
+        exempt = (BENCH if t.channel == BENCH else t.id, field) in SHAPE_EXCEPTIONS
+        if actual != ref[field] and not exempt:
             bad("%s is %r where the reference target has %r" % (field, actual, ref[field]))
     return f
 
@@ -345,7 +538,7 @@ def check_proxy(t: Target, doc: dict) -> list[Finding]:
     v = doc.get("vars", {})
     for key, want in (
         ("ACCOUNT_URL", "https://" + t.domain),
-        ("REGION", "eu" if t.channel == BENCH else t.region),
+        ("REGION", t.serves or t.region),
         ("ENVIRONMENT", PROXY_ENVIRONMENT[t.channel]),
     ):
         if v.get(key) != want:
@@ -353,6 +546,57 @@ def check_proxy(t: Target, doc: dict) -> list[Finding]:
     want_dest = (["otlp-%s-logs" % t.otlp], ["otlp-%s-traces" % t.otlp])
     if _destinations(doc) != want_dest:
         bad("observability destinations %r, expected %r" % (_destinations(doc), want_dest))
+    return f
+
+
+def check_bench_object(t: Target, bench: dict, doc: dict) -> list[Finding]:
+    """What a bench account toml carries that the `bench` object of its region row decides: the signer binding and its props, the replicate queue pair, the telemetry dataset, the rate-limit namespaces, and whether a placeholder database id is allowed."""
+    f: list[Finding] = []
+
+    def bad(msg: str) -> None:
+        f.append(Finding(t.id, "account", "%s: %s" % (t.account_toml, msg)))
+
+    signer = blocks(doc, "services").get("LICENSE_SIGNER", {})
+    if signer.get("service") != bench.get("signerWorkerName"):
+        bad(
+            "LICENSE_SIGNER service %r, regions.json bench says %r"
+            % (signer.get("service"), bench.get("signerWorkerName"))
+        )
+    want_props = {"tier": "shared", "region": t.serves}
+    if signer.get("props") != want_props:
+        bad("LICENSE_SIGNER props %r, expected %r" % (signer.get("props"), want_props))
+    queue = str(bench.get("queue"))
+    queues = doc.get("queues", {})
+    producers = [p.get("queue") for p in queues.get("producers", []) if isinstance(p, dict)]
+    consumers = [c for c in queues.get("consumers", []) if isinstance(c, dict)]
+    if producers != [queue]:
+        bad("queue producers %r, regions.json bench says [%r]" % (producers, queue))
+    if [(c.get("queue"), c.get("dead_letter_queue")) for c in consumers] != [
+        (queue, queue + "-dlq")
+    ]:
+        bad(
+            "queue consumers %r, expected one on %r with dead letter %r"
+            % (
+                [(c.get("queue"), c.get("dead_letter_queue")) for c in consumers],
+                queue,
+                queue + "-dlq",
+            )
+        )
+    datasets = [
+        d.get("dataset") for d in doc.get("analytics_engine_datasets", []) if isinstance(d, dict)
+    ]
+    if datasets != [bench.get("dataset")]:
+        bad("analytics dataset %r, regions.json bench says [%r]" % (datasets, bench.get("dataset")))
+    limits = {n: b.get("namespace_id") for n, b in blocks(doc, "ratelimits").items()}
+    raw_rate = bench.get("rateLimits")
+    rate: dict = raw_rate if isinstance(raw_rate, dict) else {}
+    want_limits = {"AUDIT_WRITE_LIMIT": rate.get("audit"), "CONFIG_WRITE_LIMIT": rate.get("config")}
+    if limits != want_limits:
+        bad("ratelimits %r, regions.json bench says %r" % (limits, want_limits))
+    f.extend(
+        Finding(t.id, "account", "%s: %s" % (t.account_toml, r))
+        for r in proxy_configs.deployable_refusals(doc, bench)
+    )
     return f
 
 
@@ -364,6 +608,8 @@ def check_d1_ids(targets: list[Target], docs: dict[str, dict]) -> list[Finding]:
         uuid = blocks(docs[t.id], "d1_databases").get("DB", {}).get("database_id")
         if not uuid:
             f.append(Finding(t.id, "account", "%s: DB carries no database_id" % t.account_toml))
+        elif str(uuid).startswith(proxy_configs.PLACEHOLDER_D1_ID):
+            continue
         elif uuid in seen:
             f.append(
                 Finding(
@@ -386,23 +632,20 @@ def pusher_reads() -> frozenset[str]:
 
 def expected_store_names(t: Target, reads: frozenset[str], suffixes: set[str]) -> set[str]:
     """What the profile of a regional target must bind: what the pusher reads for it, minus what regions.json derives."""
-    derived = DERIVED_NAMES
-    own = pusher.BACKUP_PAIR_STABLE if t.channel == STABLE else pusher.BACKUP_PAIR_EDGE
-    other = pusher.BACKUP_PAIR_EDGE if t.channel == STABLE else pusher.BACKUP_PAIR_STABLE
+    # The pusher still reads BACKUP_BUCKET_EDGE as a public bucket variable; the shared Worker never gets one, and it is no vault entry.
+    derived = DERIVED_NAMES | {pusher.BUCKET_VAR_EDGE}
+    own = pusher.BACKUP_PAIR_STABLE
+    other = pusher.BACKUP_PAIR_EDGE
     names = set(reads) - derived - set(other)
     names -= {
         n for n in names if any(n.endswith("_" + s) for s in suffixes)
     }  # region literals, re-added below
     names |= set(own)
-    if t.channel != STABLE:
-        names -= set(pusher.REQUIRED_NONEMPTY_STABLE)
     for prefix in pusher.SUFFIXED_PREFIXES:
-        if prefix == "STRIPE_WEBHOOK_SECRET" and t.channel != STABLE:
-            continue
         names.add("%s_%s" % (prefix, t.suffix))
     if t.suffix == pusher.ASIA:
         names |= set(pusher.ASIA_BORROWS)
-    channel = pusher.CHANNEL_STABLE if t.channel == STABLE else pusher.CHANNEL_EDGE
+    channel = pusher.CHANNEL_STABLE
     for prefix in pusher.SUFFIXED_CHANNEL_PREFIXES:
         names.add("%s_%s_%s" % (prefix, t.suffix, channel))
     return names
@@ -416,7 +659,6 @@ DERIVED_NAMES = frozenset(
         "SUFFIX",
         "AWS_SES_REGION",
         "BACKUP_BUCKET_STABLE",
-        "BACKUP_BUCKET_EDGE",
         "R2_JURISDICTION",
     }
 )
@@ -424,11 +666,12 @@ DERIVED_NAMES = frozenset(
 
 def _store_names(profile: dict) -> list[str]:
     specs = list(profile.get("required", [])) + list(profile.get("optional", []))
-    return [s.split(">")[0].strip() for s in specs]
+    # `store > local`: the pusher reads the local name, and us and asia bind their `_EDGE` vault entries under the `_STABLE` local name.
+    return [s.split(">")[-1].strip() for s in specs]
 
 
 def normalize(name: str, t: Target) -> str:
-    channel = pusher.CHANNEL_STABLE if t.channel == STABLE else pusher.CHANNEL_EDGE
+    channel = pusher.CHANNEL_STABLE
     name = re.sub(r"_%s_%s$" % (t.suffix, channel), "_{R}_{C}", name)
     name = re.sub(r"_%s$" % t.suffix, "_{R}", name)
     return re.sub(r"_%s$" % channel, "_{C}", name)
@@ -475,14 +718,12 @@ def check_profiles(
             for n in have
             if not (t.suffix == pusher.ASIA and n in pusher.ASIA_BORROWS)
         }
-    for channel in (STABLE, EDGE):
-        group = {tid: s for tid, s in norm.items() if tid.startswith(channel + "-")}
-        union = set().union(*group.values()) if group else set()
-        f.extend(
-            Finding(tid, "profile", "binds no %s where another %s region does" % (n, channel))
-            for tid, s in sorted(group.items())
-            for n in sorted(union - s)
-        )
+    union = set().union(*norm.values()) if norm else set()
+    f.extend(
+        Finding(tid, "profile", "binds no %s where another region does" % n)
+        for tid, s in sorted(norm.items())
+        for n in sorted(union - s)
+    )
     pushed = {k for k, _var, _src in pusher.KEYS}
     payload = set(bench_payload)
     if len(bench_payload) < len(pushed) // 2:
@@ -504,7 +745,7 @@ def check_profiles(
             "profile",
             "deploy_bench.secrets_payload() pushes %s, which no regional Worker gets" % n,
         )
-        for n in sorted(payload - pushed)
+        for n in sorted(payload - pushed - BENCH_ONLY_PAYLOAD.keys())
     )
     return f
 
@@ -531,6 +772,13 @@ def _check_bench_profile(t: Target, prof: dict, suffixes: set[str]) -> list[Find
         )
         for spec in specs
         if ">" in spec and spec.split(">")[1] in BENCH_UNALIASED
+    )
+    f.extend(
+        Finding(
+            t.id, "profile", "%s binds `%s`, which no bench profile may carry" % (t.profile, spec)
+        )
+        for spec in specs
+        if any(forbidden in spec for forbidden in BENCH_FORBIDDEN)
     )
     foreign = [*sorted(suffixes - {t.suffix}), pusher.CHANNEL_STABLE, pusher.CHANNEL_EDGE]
     stores = [s.split(">")[0] for s in specs]
@@ -559,6 +807,8 @@ class Inputs:
     proxy: dict[str, dict]
     consumers: dict
     bench_payload: list[str]
+    # The benches beyond the home one: (target, account toml, proxy toml), one per other region row with a `bench` object.
+    bench_regions: list[tuple[Target, dict, dict]] = dataclasses.field(default_factory=list)
 
 
 def load(root: pathlib.Path) -> tuple[Inputs, list[Target], list[Finding]]:
@@ -575,18 +825,22 @@ def load(root: pathlib.Path) -> tuple[Inputs, list[Target], list[Finding]]:
     targets, found = targets_from(regions)
     if len(targets) != EXPECTED_TARGETS:
         raise NoVerdictError(
-            "built %d target(s), expected %d (3 regions x stable+edge, plus bench)"
+            "built %d target(s), expected %d (3 shared regions, plus bench)"
             % (len(targets), EXPECTED_TARGETS)
         )
     account = {t.id: tomllib.loads(read(t.account_toml)) for t in targets}
     proxy = {t.id: tomllib.loads(read(t.proxy_toml)) for t in targets}
     consumers = json.loads(read(SUPPLY_REL)).get("consumers", {})
     payload = bench_payload_keys(read(BENCH_DEPLOY_REL))
-    return Inputs(regions, account, proxy, consumers, payload), targets, found
+    extras = [
+        (t, tomllib.loads(read(t.account_toml)), tomllib.loads(read(t.proxy_toml)))
+        for t in extra_bench_targets(regions)
+    ]
+    return Inputs(regions, account, proxy, consumers, payload, extras), targets, found
 
 
 def offline(inputs: Inputs, targets: list[Target], found: list[Finding]) -> list[Finding]:
-    ref_target = next(t for t in targets if t.channel == STABLE)
+    ref_target = next(t for t in targets if t.channel == SHARED)
     ref = account_shape(inputs.account[ref_target.id])
     if not ref["r2 bindings"] or not ref["d1 bindings"]:
         raise NoVerdictError(
@@ -596,7 +850,17 @@ def offline(inputs: Inputs, targets: list[Target], found: list[Finding]) -> list
     for t in targets:
         out += check_account(t, inputs.account[t.id], ref)
         out += check_proxy(t, inputs.proxy[t.id])
-    out += check_d1_ids(targets, inputs.account)
+    bench_rows = {r.get("id"): r.get("bench") for r in inputs.regions.get("regions", [])}
+    for t in targets:
+        if t.channel == BENCH and isinstance(bench_rows.get(t.serves), dict):
+            out += check_bench_object(t, bench_rows[t.serves], inputs.account[t.id])
+    docs = dict(inputs.account)
+    for t, account_doc, proxy_doc in inputs.bench_regions:
+        docs[t.id] = account_doc
+        out += check_account(t, account_doc, ref)
+        out += check_proxy(t, proxy_doc)
+        out += check_bench_object(t, bench_rows[t.serves], account_doc)
+    out += check_d1_ids([*targets, *(t for t, _a, _p in inputs.bench_regions)], docs)
     out += check_profiles(targets, inputs.consumers, inputs.bench_payload)
     return out
 

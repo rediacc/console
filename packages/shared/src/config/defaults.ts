@@ -78,8 +78,8 @@ export const REPOSITORY_DEFAULTS = {
   /** Default container user */
   UNIVERSAL_USER: 'rediacc',
 
-  /** Default universal user ID */
-  UNIVERSAL_USER_ID: '1000',
+  /** The universal user's uid: renet creates it as 7111 (config.RediaccUID) */
+  UNIVERSAL_USER_ID: '7111',
 
   /** Default container log lines to show */
   LOG_LINES: '50',
@@ -369,6 +369,9 @@ export const CONTEXT_DEFAULTS = {
 
   /** Default output format for config field list */
   FIELD_LIST_OUTPUT: 'table',
+
+  /** Output format a planned job step falls back to when its params carry none */
+  OUTPUT_FORMAT: 'table',
 } as const;
 
 /**

@@ -647,3 +647,83 @@ def test_s5_a_plan_named_without_its_extension_counts(wl):
     got = wl.run()
     assert got.decision == "block", got.out[:300]
     assert "BIG PIECES DRIFT" not in got.out, got.out[:600]
+
+
+# ---- PLAN-tick-tracking T12: the "## Owed ticks" section --------------------------------------
+
+OWED_ONE = [("agent/plans/PLAN-fx.md", "fd66592c", "tickable-now")]
+OWED_SECTION = (
+    "\n\n## Owed ticks\n- tickable-now PLAN-fx.md#fd66592c: worklist.py --plan-tick deadbeef "
+    "agent/plans/PLAN-fx.md fd66592c 'commit:abc1234 landed' --write"
+)
+
+
+def test_owed_body_without_the_section_and_one_tickable_box_is_owing():
+    store = wlfix.import_wl("wl_store")
+    verdict, detail = store.agent_state_shape(B_BODY_29F, OWED_ONE)
+    assert verdict == "owing"
+    assert "PLAN-fx.md#fd66592c tickable-now" in detail
+
+
+def test_owed_the_same_body_with_the_section_is_ok():
+    store = wlfix.import_wl("wl_store")
+    assert store.agent_state_shape(B_BODY_29F + OWED_SECTION, OWED_ONE)[0] == "ok"
+
+
+def test_owed_no_owed_box_demands_no_section():
+    store = wlfix.import_wl("wl_store")
+    assert store.agent_state_shape(B_BODY_29F, [])[0] == "ok"
+
+
+def test_owed_control_without_the_owed_argument_the_first_case_reads_ok():
+    """The old verdict (review a94cd7a7.3): no `owed` argument passed, nothing stubbed, so the owing body of the first case is `ok`."""
+    store = wlfix.import_wl("wl_store")
+    assert store.agent_state_shape(B_BODY_29F)[0] == "ok"
+    assert store.agent_state_shape(B_BODY_29F, None)[0] == "ok"
+
+
+# ---- R20261101.3: every failing shape verdict in one refusal ------------------------------------
+
+
+def test_r3_problems_lists_every_failing_verdict_and_shape_keeps_the_first():
+    store = wlfix.import_wl("wl_store")
+    body = UNFOCUSED_BODY + "z" * (store.AGENT_STATE_MAX_CHARS + 20)
+    problems = store.agent_state_problems(body)
+    verdicts = [v for v, _d in problems]
+    assert verdicts == ["bloated", "unfocused"], problems
+    assert "over by" in problems[0][1], problems
+    assert store.agent_state_shape(body)[0] == "bloated"
+
+
+def test_r3_control_a_good_body_has_no_problems_and_a_thin_one_has_one():
+    store = wlfix.import_wl("wl_store")
+    assert store.agent_state_problems(wlfix.STATE_BODY) == []
+    assert [v for v, _d in store.agent_state_problems("wip")] == ["thin"]
+
+
+def test_r3_state_verb_names_every_problem_in_one_refusal(wl):
+    wl.hand_now()
+    good = wl.state_file().read_text(encoding="utf-8")
+    store = wlfix.import_wl("wl_store")
+    body = UNFOCUSED_BODY + "z" * (store.AGENT_STATE_MAX_CHARS + 20)
+    got = wl.python(["--state", wlfix.ME], stdin=body)
+    assert got.rc == 2, got.out + got.err
+    assert "STATE REFUSED (bloated+unfocused: 2 problems:" in got.err, got.err[:600]
+    assert "over by" in got.err, got.err[:600]
+    assert "Big pieces" in got.err, got.err[:600]
+    assert wl.state_file().read_text(encoding="utf-8") == good
+
+
+def test_r3_a_waitled_body_with_another_fault_names_both_and_the_wait_lead(wl):
+    """Review 726d73cc.1: a wait-led body that also fails another verdict prints the combined refusal AND the wait-lead message, so the lead line still names the wait it must replace."""
+    wl.hand_now()
+    good = wl.state_file().read_text(encoding="utf-8")
+    body = "x" * 300 + "\n\n## Next action\n\n1. Await green, then review.\n"
+    store = wlfix.import_wl("wl_store")
+    assert [v for v, _d in store.agent_state_problems(body)] == ["waitled", "unfocused"]
+    got = wl.python(["--state", wlfix.ME], stdin=body)
+    assert got.rc == 2, got.out + got.err
+    assert "STATE REFUSED (waitled+unfocused: 2 problems:" in got.err, got.err[:600]
+    tail = got.err.split("2 problems:", 1)[1]
+    assert "Await green" in tail, got.err[:900]
+    assert wl.state_file().read_text(encoding="utf-8") == good

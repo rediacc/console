@@ -11,6 +11,7 @@ const {
 } = vi.hoisted(() => {
   const mockAdapterInstance = {
     pull: vi.fn(),
+    pullVersion: vi.fn(),
     push: vi.fn(),
     testConnection: vi.fn(),
   };
@@ -138,6 +139,10 @@ describe('ConfigServiceBase remote integration', () => {
     mockConfigFileStorage.updateCache.mockImplementation(
       async (_name: string, updater: (c: unknown) => unknown) =>
         updater(await mockConfigFileStorage.getOrCreateDefault())
+    );
+    // The local-edit check reads the decrypted file: the same disk the test loads.
+    mockConfigFileStorage.loadDecrypted.mockImplementation(() =>
+      mockConfigFileStorage.getOrCreateDefault()
     );
   });
 
@@ -288,6 +293,12 @@ describe('ConfigServiceBase remote integration', () => {
       mockAdapterInstance.pull.mockResolvedValue({
         config: { ...pulledConfig },
         version: 4,
+        sdkEpoch: 42,
+      });
+      // Version 3, which the file caches, is what the file holds: the cache is behind, not edited.
+      mockAdapterInstance.pullVersion.mockResolvedValue({
+        config: { ...cachedOnDisk, remote: undefined },
+        version: 3,
         sdkEpoch: 42,
       });
       const result = await service.getCurrent();

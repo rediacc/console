@@ -1,0 +1,51 @@
+{
+  "$comment": [
+    "The one generic ops-health config (agent/plans/PLAN-health-checks-local.md D-config). Thresholds and limits only: no host name, no IP and no target list.",
+    "The off-box Worker (workers/ops-health) bundles this file at build time and the Python side (rediacc_ci.ops) reads it, so no threshold is written twice.",
+    "Targets reach the Worker as the OPS_HEALTH_TARGETS secret at deploy time (rediacc_ci.ops.deploy_ops_health); per-service thresholds live in each repo's own health().",
+    "github_mentions: GitHub logins or org/team slugs, without the leading @, mentioned by scripts/ci/report-budget-check.cjs (D-alerts)."
+  ],
+  "version": 1,
+  "tls": {
+    "warn_days": 21,
+    "red_days": 7
+  },
+  "transitions": {
+    "to_red": 2,
+    "to_green": 2,
+    "remail_hours": 24
+  },
+  "stale": {
+    "last_cron_minutes": 30
+  },
+  "local_ttl_minutes": {
+    "machines": 30,
+    "telemetry": 360,
+    "portal_captcha": 360,
+    "cf_usage": 10080,
+    "offbox_read": 15
+  },
+  "ingest": {
+    "max_age_h": {
+      "drift": 36,
+      "ci-weekly": 192,
+      "local-*": 24,
+      "default": 24
+    }
+  },
+  "auto_repair": {
+    "classes": ["auto-safe"],
+    "max_attempts_per_code_per_machine_per_day": 3
+  },
+  "worker": {
+    "probe_timeout_ms": 10000,
+    "mail_log_size": 50,
+    "ct_cache_hours": 6,
+    "ct_max_pages": 5,
+    "digest": {
+      "weekday_utc": 1,
+      "hour_utc": 6
+    }
+  },
+  "github_mentions": ["mfbayraktar"]
+}

@@ -1,6 +1,6 @@
 # Release process
 
-CI validates and CD publishes. Edge is released two ways, sharing the R2 sentinel lock: CD (`cd-v2.yml`) on every merge to main, and `npm run release:local -- --channel edge` from the operator's machine as the agent's faster extra path. Stable is CI/CD only (`promote-stable.yml`, after the soak) and a stable deploy always needs `RELEASE_ASKED`.
+CI validates and CD publishes. Edge is released two ways, sharing the R2 sentinel lock: CD (`cd-release-edge.yml`) on every merge to main, and `npm run release:local -- --channel edge` from the operator's machine as the agent's faster extra path. Stable is the CLI channel that enterprise company Workers ride through release rings; it is CI/CD only (`cd-release-stable.yml` after the soak, `cd-enterprise-release.yml` for the rings) and a stable deploy always needs `RELEASE_ASKED`.
 
 ```
 CI: quality -> build -> dry-run -> validate install (6 platforms) -> ci-complete
@@ -15,24 +15,22 @@ Install validation runs pre-publish against R2 staging artifacts. Docker is vali
 
 Two channels, both production-quality:
 
-- **edge** -- released by CD on every merge to main, or by `release:local --channel edge`, downloaded from
-`releases.rediacc.com/cli/edge/` (R2 bucket `rediacc-releases`), serving `edge.rediacc.com`.
-- **stable** -- the default, promoted from edge by `promote-stable.yml` (see Release to Production below),
-downloaded from `releases.rediacc.com/cli/stable/`, serving `www.rediacc.com`.
+- **edge** -- released with no soak by CD on every merge to main, or by `release:local --channel edge`, downloaded from `releases.rediacc.com/cli/edge/` (R2 bucket `releases`). It also serves the public customers: ONE shared Worker set per region (`account-<r>`, `proxy-<r>`, plus the global `www`) on `<r>.rediacc.cloud` for each region in `regions.json` (`eu`, `us`, `asia`), configured by `workers/account/wrangler.<r>.toml` and running with `ENVIRONMENT=edge` (`agent/plans/PLAN-product-domain-rename.md`, ruling 5). There is no stable Worker set.
+- **stable** -- the CLI channel that enterprise company Workers (`<company>.rediacc.cloud`) ride, promoted from edge by `cd-release-stable.yml` (see Release to Stable below), downloaded from `releases.rediacc.com/cli/stable/`. A promoted version reaches the companies ring by ring (see Enterprise rings below); it does not move the shared public Workers.
 
-R2 layout: `rediacc-releases/cli/{edge,stable}/{manifest.json,latest.json,rdc-*}`.
+R2 layout: `releases/cli/{edge,stable}/{manifest.json,latest.json,rdc-*}`.
 
 **CORRECTION to a claim that was in CLAUDE.md: edge's D1 is NOT cloned from production daily.** `.github/workflows/edge-clone-d1.yml`'s own header says otherwise: *"Edge D1 databases are now persistent for the beta channel. Daily cloning from production is disabled; use workflow_dispatch for manual runs."* The workflow still exists for a manual, on-demand clone -- it is not
 scheduled.
 
 The mechanical job topology (every workflow, folded to one row per stage of its `needs:` graph) is generated, not hand-maintained: the `job-graph` region in [scripts/data/doc-registry.md](../../scripts/data/doc-registry.md). This file explains the concepts that table cannot show -- what `release_mode` means, when a soak period applies, how the local edge entry orders its steps and which gates refuse it, and how a release is rolled back.
 
-## Release to Edge (`cd-v2.yml`)
+## Release to Edge (`cd-release-edge.yml`)
 
 Dispatched automatically from CI's `finalize-release-sentinel` job right after the release sentinel is sealed, or manually:
 
 ```
-gh workflow run "Release to Edge" -f ci_run_id=<id> -f release_mode=patch|retry
+gh workflow run "CD - Release to Edge" -f ci_run_id=<id> -f release_mode=patch|retry
 ```
 
 `release_mode` is a `workflow_dispatch` `choice` input with only two values -- **GitHub itself rejects `minor`/`major`**, there is no in-repo validation to bypass:
@@ -47,7 +45,7 @@ Three more inputs, none in `CLAUDE.md` before this doc existed:
 - `publish_stable` (boolean) -- also promote straight to the stable channel in the same
 run, skipping the normal 7-day soak. This is the **hotfix** path:
   ```
-  gh workflow run "Release to Edge" -f ci_run_id=<id> -f release_mode=patch -f publish_stable=true
+  gh workflow run "CD - Release to Edge" -f ci_run_id=<id> -f release_mode=patch -f publish_stable=true
   ```
 - `deploy_workers_only` (boolean) -- redeploy the Cloudflare Workers only, skipping the
 version bump, CLI build, Docker promote and GitHub Release. For when the release artifacts are already correct and only the Worker deploy needs to re-run.
@@ -58,7 +56,7 @@ Console CI on main" guard. Only for cherry-picking a specific prior CI run; usin
 
 ### Job order: the tag and the sentinel are one unit
 
-`finalize-release-sentinel` in `ci.yml` seals `cli/v<V>/.released` and, in the very next step under the same `if:`, dispatches this workflow. Check Release State requires a `v<V>` git tag for every sentinel, so the tag is cd-v2's FIRST write: the `Create version tag` step at the end of `init`, behind only the read-only guards `check-existing-release` and `assert-artifact-version`.
+`finalize-release-sentinel` in `ci.yml` seals `cli/v<V>/.released` and, in the very next step under the same `if:`, dispatches this workflow. Check Release State requires a `v<V>` git tag for every sentinel, so the tag is the edge workflow's FIRST write: the `Create version tag` step at the end of `init`, behind only the read-only guards `check-existing-release` and `assert-artifact-version`.
 
 Everything that can fail after the seal runs after the tag: `publish` (Docker promote), both edge deploys, the smoke test and `validate-install-published`. `tag-and-release` still waits for all of them, and now does only the parts users consume: submodule tags, the Homebrew formula, the contract-floor ratchet and the GitHub Release.
 
@@ -72,29 +70,33 @@ Retry behaviour, per step:
 
 What can still split the pair: `init` failing before its tag step, or the dispatch never arriving. The sentinel then has no tag, Check Release State names it, and the repair is a `release_mode=patch` re-dispatch (it recomputes the same version, because no tag exists for it yet).
 
-`check:ci-workflow-invariants` (`.ci/rediacc_ci/security/ci_workflow_invariants.py`, release-order phase) enforces the shape on the job graph. It refuses a version-tag step behind any job other than `init`, a tag step or job whose `if:` reads `retry_mode`, a dispatch that does not immediately follow the seal under the same `if:`, `contents: write` anywhere in cd-v2, an inline `git push` in a cd-v2 `run:` step that is not on the `preset: cd` App token, and a `cd` preset that stops requesting `workflows: write`.
+`check:ci-workflow-invariants` (`.ci/rediacc_ci/security/ci_workflow_invariants.py`, release-order phase) enforces the shape on the job graph. It refuses a version-tag step behind any job other than `init`, a tag step or job whose `if:` reads `retry_mode`, a dispatch that does not immediately follow the seal under the same `if:`, `contents: write` anywhere in the edge workflow, an inline `git push` in a the edge workflow `run:` step that is not on the `preset: cd` App token, and a `cd` preset that stops requesting `workflows: write`.
 
 ### CD preflight: CD failures predicted before the merge
 
 `rediacc_ci.release.cd_preflight` is read-only and judges the live release state: (a) the sentinel/tag bijection now, (b) the bijection after the next housekeeping runs and this release, (c) the contract floor and channel pointers, (d) the version under release, and the Validate Promotion budget. An unreadable answer (no `aws`, no credentials, R2 or `git ls-remote` unreachable, zero sentinels) is UNCHECKED and exits non-zero like DRIFT. It runs at three sites:
 
 - `ci.yml` job `cd-preflight` (CD Preflight), on same-repo PRs and on pushes to `main`, with `--phase pr --release-version <initialize next_version> --checks a,b,c,d,promotion`. Fork PRs skip it (no secrets). `homebrew` is deselected because its dry run needs the private tap submodule and real checksums. CI Complete aggregates it in the soft tier.
-- `cd-v2.yml` `init`, step `CD preflight`, with `--phase cd --checks a,c,d`, AFTER `Create version tag`: before that step v<V> is sealed and untagged, so an earlier preflight would red every release.
-- `housekeeping.yml` `cleanup`, step `Release-state preflight`, with `--checks a,c`, after the retry step and before `cleanup_versions`, which has no status function and is skipped when the preflight is red.
+- `cd-release-edge.yml` `init`, step `CD preflight`, with `--phase cd --checks a,c,d`, AFTER `Create version tag`: before that step v<V> is sealed and untagged, so an earlier preflight would red every release.
+- `ops-housekeeping.yml` `cleanup`, step `Release-state preflight`, with `--checks a,c`, after the retry step and before `cleanup_versions`, which has no status function and is skipped when the preflight is red.
 
 `check:ci-workflow-invariants` pins all three sites, their check lists, the PR arm of the job's `if:` and the step order. Locally: `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile r2-artifacts -- python3 -m rediacc_ci.release.cd_preflight --phase pr --release-version X.Y.Z`, with the `aws` CLI on `PATH`.
 
-The `release` PR label sets `publish_stable` on the automatic dispatch. When the merged PR carries the exact label `release` and not `bump-none`, `initialize` records `publish_stable=true` and finalize-release-sentinel dispatches cd-v2 with `-f publish_stable=true`, so the merge publishes to edge AND stable with no soak (operator ruling 2026-09-30). A failed PR lookup still releases, to edge only. The decision lives in `.ci/rediacc_ci/ci/dispatch_release.py`.
+The `release` PR label sets `publish_stable` on the automatic dispatch. When the merged PR carries the exact label `release` and not `bump-none`, `initialize` records `publish_stable=true` and finalize-release-sentinel dispatches the edge workflow with `-f publish_stable=true`, so the merge publishes to edge AND stable with no soak (operator ruling 2026-09-30). A failed PR lookup still releases, to edge only. The decision lives in `.ci/rediacc_ci/ci/dispatch_release.py`.
 
-## Release to Production (`promote-stable.yml`)
+## Release to Stable (`cd-release-stable.yml`)
 
 ```
 Daily cron: 0 6 * * * UTC
-Manual:     gh workflow run "Release to Production" -f force=true
+Manual:     gh workflow run "CD - Release to Stable" -f force=true
 ```
 
-Promotes the current edge release to the stable channel (`eu`/`us`/`asia`), serving `www.rediacc.com`. Runs on a daily cron and refuses to promote a version still inside its `SOAK_DAYS` (7) window unless dispatched with `force: true`, which skips the soak check entirely -- there is no partial-skip.
-A green scheduled nightly (`Console CI` on `main`) also triggers it through `workflow_run`, and that run skips the soak only when the edge tag's commit is the nightly's `head_sha` or an ancestor of it (`rediacc_ci.release.nightly_tested_edge`); an edge the nightly did not contain, or any failed lookup, falls back to the soak rule. The rollback-label check and every deploy and verify job run the same on all three triggers, a `promote-stable` concurrency group queues them rather than running two at once, and the summary names the trigger and the rule (`force`, `nightly` or `soak`) that decided.
+Promotes the current edge release to the CLI stable channel (R2 `cli/stable/`, the package repos and the `:stable` Docker tags); it deploys no Worker. Runs on a daily cron and refuses to promote a version still inside its `SOAK_DAYS` (7) window unless dispatched with `force: true`, which skips the soak check entirely -- there is no partial-skip.
+A completed `CI - Drift` run on `main` also triggers it through `workflow_run`, and that run skips the soak only when the newest scheduled `Console CI` run (at most 8 days old, green or red on drift steps only) contains the edge tag's commit (`rediacc_ci.release.nightly_tested_edge`); an edge that run did not contain, or any failed lookup, falls back to the soak rule. The rollback-label check and every verify job run the same on all three triggers, and a `cd-release-stable` concurrency group queues them rather than running two at once.
+
+## Enterprise rings (`cd-enterprise-release.yml`)
+
+Company Workers are released ring by ring from a stable-channel version (`agent/plans/PLAN-enterprise-isolation.md`, rulings 9 and 12). The stages, in order, are `bench`, the fast tier (the shared release, with the 7-day soak), then the company rings `canary`, `small`, `medium` and `large`. `rediacc_ci.release.rings` holds the pure `decide`, `rings_run` the runner; a company's ring comes from its machine high-water mark (under 10 is small, under 50 medium, the rest large) unless overridden, pauses hold 24 h after small and 48 h after medium, and a failed company latches a stop until `--resume`. The workflow is dispatch only (inputs `version`, `company`, `resume`, `dry_run`), and only a security order skips pauses or the soak.
 
 Both R2 promotes (this one and the `publish_stable` hotfix lane) copy `<dir>/edge/` to `<dir>/stable/` server-side with one `aws s3api copy-object` per object, so no release bytes pass through the runner; only the four channel pointers (`cli/install.sh`, `cli/install.ps1`, `rpm/rediacc.repo`, `archlinux/rediacc.conf`) are fetched, stamped for stable and uploaded after the rest of their tree. `.ci/rediacc_ci/deploy/r2_promote.py` carries the plan and R2's copy limits.
 
@@ -103,9 +105,12 @@ Both R2 promotes (this one and the `publish_stable` hotfix lane) copy `<dir>/edg
 ```
 npm run release:local -- --channel edge [--dry-run]
 npm run release:local -- --channel edge --workers-only --regions eu,us [--dry-run]
+npm run release:local -- --channel edge --branch-release [--dry-run]
 ```
 
 `rediacc_ci.release.local` is one declarative `STEPS` table, the agent's local path to edge, sharing the R2 sentinel lock with CD. `--dry-run` prints every step with profile and key names, reads no secret value and writes nothing. `--workers-only` redeploys the Cloudflare Workers for the listed regions and skips the version, builds, Docker and Release steps.
+
+`--branch-release` ships the shared edge Workers from a pushed branch head that descends from `origin/main`, and is gated by `RELEASE_ASKED`.
 
 Edge and bench need no ask. A stable deploy always needs `RELEASE_ASKED=ASKED:<YYYY-MM-DDTHH:MM>Z`, the minute of the operator's answer in the transcript, enforced by the `block_unasked_release` guard (`ci-gates.md`, *Never push to `main` or cut a release unasked*).
 
@@ -115,7 +120,7 @@ The version comes from `resolve_version --bump-type` inside the entry, from the 
 
 1. **Gates** (below), all refusing before any build.
 2. **Builds**, in the release clone, each step timed: renet under the `release-local` bws profile (the production `ACCOUNT_ED25519_PUBLIC_KEY`) followed by the signing-key gate, the CLI bundle and npm tarball, the Linux SEAs (linux-x64, both musl targets, linux-arm64 in a `linux/arm64` node container) and the Docker renet, rdc and server images through buildx.
-3. **Assist dispatch**, started at minute zero: `local-release-assist.yml` builds the mac and win SEAs and runs the mac and win install legs against the staged bytes. The entry awaits it before stage.
+3. **Assist dispatch**, started at minute zero: `ops-local-release-assist.yml` builds the mac and win SEAs and runs the mac and win install legs against the staged bytes. The entry awaits it before stage.
 4. **Stage**: signed packages, manifest, pages, package repos, the `:edge` Docker retag, validation and the R2 upload.
 5. **Seal and tag**: `write_release_sentinel` seals `cli/v<V>/.released`, and `rediacc_ci.release.tag` creates `v<V>` at once. The pair is one unit, held by the `STEPS` invariant test: the tag follows the seal at once, and precedes every later step that can fail. A failure before the seal (builds, assist, stage) leaves no sentinel and no tag, so the version stays free. Stage may already have uploaded R2 objects and moved the `:edge` Docker tags; a re-run overwrites both before it seals.
 6. **Publish**: promote to `:V` and `:latest`, the Stripe sync and webhook verify, cleanup of the channel tags.
@@ -178,4 +183,4 @@ Each Linux package tree (`apt/<channel>/`, `rpm/<channel>/`, `apk/<channel>/`, `
 
 ## Why this is a separate file
 
-`CLAUDE.md` stays under budget by cutting what already has a home elsewhere (`agent/plans/PLAN-tooling-transformation.md`, box W11 P5b). The entry's flags, gates and records are described here and verified against `.github/workflows/cd-v2.yml`, `.github/workflows/promote-stable.yml` and `.ci/rediacc_ci/release/` (`local.py`, `local_gates.py`, `order.py`, `renet_key_gate.py`, `tag.py`) and `agent/plans/PLAN-local-release.md`.
+`CLAUDE.md` stays under budget by cutting what already has a home elsewhere (`agent/plans/PLAN-tooling-transformation.md`, box W11 P5b). The entry's flags, gates and records are described here and verified against `.github/workflows/cd-release-edge.yml`, `.github/workflows/cd-release-stable.yml` and `.ci/rediacc_ci/release/` (`local.py`, `local_gates.py`, `order.py`, `renet_key_gate.py`, `tag.py`) and `agent/plans/PLAN-local-release.md`.

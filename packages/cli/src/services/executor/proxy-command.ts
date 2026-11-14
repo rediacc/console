@@ -16,10 +16,31 @@
 import type { ContractCommand } from '@rediacc/shared/cli-contract';
 import { getCommand } from '@rediacc/shared/cli-contract';
 import type { Command } from 'commander';
+import { getOutputFormat } from '../../utils/errors.js';
 import { formatStepDuration, getActiveLabel, getDoneLine } from '../../utils/timeline.js';
 import { exitProcess, writeStderr, writeStdout } from '../core/request-context.js';
+import { backgroundEnvelope, backgroundStartedHint } from './job-client.js';
 import { ProxyClient, type ProxyCommandOutcome } from './proxy-client.js';
 import type { RenetEvent } from './types.js';
+
+/**
+ * Commands that talk to the account server directly and never take the proxy branch, whatever
+ * `--proxy` or REDIACC_PROXY_URL say. `subscription proxy-token` mints the credential the proxy
+ * itself needs: with REDIACC_PROXY_URL exported, `REDIACC_TOKEN=$(rdc subscription proxy-token)`
+ * used to hit the proxy branch, print its refusal envelope on stdout, and hand that JSON to the next
+ * call as a token (bench, 2026-11-05).
+ */
+const ACCOUNT_DIRECT_COMMANDS: ReadonlySet<string> = new Set(['subscription proxy-token']);
+
+/** The proxy URL a command runs through, or undefined when it runs here. */
+export function proxyUrlFor(
+  commandPath: string,
+  flag: string | undefined,
+  env: string | undefined
+): string | undefined {
+  if (ACCOUNT_DIRECT_COMMANDS.has(commandPath)) return undefined;
+  return flag ?? env;
+}
 
 /**
  * Refuse a command that cannot work through the proxy.
@@ -218,6 +239,8 @@ export interface ProxyRunContext {
   fetchImpl?: typeof fetch;
   /** The config key to grant a container executor. Defaults to the enrolled one. */
   getCek?: () => Promise<CryptoKey>;
+  /** `-b` / `--background`: ask the executor for the job's ticket at once instead of following the job. */
+  background?: boolean;
 }
 
 /**
@@ -290,11 +313,32 @@ export async function runCommandThroughProxy(
     params,
     positionals,
     renderEvent,
-    machine ? { machine } : undefined
+    machine ? { machine } : undefined,
+    { background: context.background === true }
   );
 
-  writeOutcome(outcome);
+  const ticketed = Boolean(outcome.running && outcome.jobId && outcome.machine);
+  writeOutcome(ticketed && getOutputFormat() === 'json' ? withoutCapturedOutput(outcome) : outcome);
+  if (ticketed && outcome.jobId && outcome.machine) {
+    writeTicket(outcome.jobId, outcome.machine, commandPath);
+  }
   return exitProcess(outcome.exitCode);
+}
+
+/** Under `-o json` a `-b` ticket is the one envelope on stdout, so the output the starting result line carried is not printed beside it. */
+export function withoutCapturedOutput(outcome: ProxyCommandOutcome): ProxyCommandOutcome {
+  const rest: ProxyCommandOutcome = { ...outcome, stdout: '' };
+  delete rest.stdoutBytes;
+  return rest;
+}
+
+/** Hand the `-b` ticket to the operator: the one envelope under `-o json`, the hint on stderr otherwise (stdout belongs to the command). */
+function writeTicket(jobId: string, machine: string, verb: string): void {
+  if (getOutputFormat() === 'json') {
+    writeStdout(`${JSON.stringify(backgroundEnvelope({ jobId, machine, verb }))}\n`);
+    return;
+  }
+  writeStderr(`${backgroundStartedHint(jobId, machine)}\n`);
 }
 
 /** Print what the command produced at the executor, the way it would have printed locally. */

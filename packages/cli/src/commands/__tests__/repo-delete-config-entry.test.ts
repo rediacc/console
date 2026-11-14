@@ -19,11 +19,12 @@ vi.mock('../../services/account/subscription-auth.js', () => ({
 }));
 
 const infos = vi.hoisted(() => [] as string[]);
+const warns = vi.hoisted(() => [] as string[]);
 vi.mock('../../services/core/output.js', () => ({
   outputService: {
     info: (m: string) => infos.push(m),
     success: vi.fn(),
-    warn: vi.fn(),
+    warn: (m: string) => warns.push(m),
     print: vi.fn(),
   },
 }));
@@ -87,8 +88,25 @@ describe('repo delete settles the config entry', () => {
 describe('repo delete settles the cloud backups (F8)', () => {
   beforeEach(() => {
     infos.length = 0;
+    warns.length = 0;
     mockFetch.mockReset();
     mockTokenState.kind = 'ready';
+  });
+
+  it('a delayed --purge-backups names the cancel by lineage: the repository leaves the config', async () => {
+    mockFetch.mockResolvedValue({
+      lineageGuid: 'g1',
+      done: false,
+      delayed: true,
+      purgeAfter: '2026-11-19T08:00:00.000Z',
+      freedBytes: 0,
+      deletedSnapshots: 0,
+      deletedChunks: 0,
+      deletedBytes: 0,
+    });
+    await settleCloudBackups('lva', grand, true);
+    // THE DEFECT: `rdc backup purge lva --cancel` names a repository this delete removes, so the cancel it prints cannot run.
+    expect(warns.join('\n')).toContain('"cancel":"rdc backup purge --lineage g1 --cancel"');
   });
 
   it('marks the lineage of a grand repo orphaned', async () => {

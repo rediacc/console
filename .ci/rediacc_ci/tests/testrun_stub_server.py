@@ -1,6 +1,6 @@
 """A stub of the account server's test surface, for `test_testrun_start_account.py`.
 
-Launched by a fake `npx` as `python3 testrun_stub_server.py <port> <log> <mode>`, so it is the process that holds the port, exactly as the real server is the grandchild of the `npx` wrapper. Every request is appended to the log as one JSON line. The mode selects a failure: `ensure-login-500`, `no-subscription`, `no-token`, `login-fails`, `never-healthy`. The server's own environment is recorded (its `ACCOUNT_*` and `TEST_*` entries), which is how a test sees what the runner started it with.
+Launched by a fake `npx` as `python3 testrun_stub_server.py <port> <log> <mode>`, so it is the process that holds the port, exactly as the real server is the grandchild of the `npx` wrapper. Every request is appended to the log as one JSON line. The mode selects a failure: `ensure-login-500`, `no-subscription`, `no-token`, `login-fails`, `terms-refused`, `2fa-refused`, `never-healthy`. The 2FA status answers not enrolled, so a backup-scope mint must enrol first. The Terms read answers unsatisfied (a seeded user has never accepted them), so the runner must accept them before `/portal/subscription`. The server's own environment is recorded (its `ACCOUNT_*` and `TEST_*` entries), which is how a test sees what the runner started it with.
 """
 
 import http.server
@@ -52,6 +52,13 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.record()
         if self.path == "/health":
             self.reply(200, {"ok": True})
+        elif self.path.endswith("/portal/terms"):
+            self.reply(
+                200,
+                {"satisfied": False, "current": {"version": "2026-11-11", "sha256": "f" * 64}},
+            )
+        elif self.path.endswith("/auth/2fa/status"):
+            self.reply(200, {"enabled": False})
         elif self.path.endswith("/portal/subscription"):
             self.reply(200, {} if MODE == "no-subscription" else {"id": "sub_1"})
         else:
@@ -69,6 +76,20 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 {"error": "no"} if MODE == "login-fails" else {"user": {"id": "u1"}},
                 cookie=True,
             )
+        elif self.path.endswith("/portal/terms/accept"):
+            if MODE == "terms-refused":
+                self.reply(400, {"error": "refused", "code": "TERMS_ACCEPTANCE_INVALID"})
+            else:
+                self.reply(201, {"accepted": True, "version": "2026-11-11"})
+        elif self.path.endswith("/test/elevate"):
+            self.reply(200, {"elevated": True})
+        elif self.path.endswith("/auth/2fa/setup"):
+            self.reply(200, {"secret": "JBSWY3DPEHPK3PXP"})
+        elif self.path.endswith("/auth/2fa/enable"):
+            if MODE == "2fa-refused":
+                self.reply(400, {"error": "bad code"})
+            else:
+                self.reply(200, {"enabled": True})
         elif self.path.endswith("/api-tokens"):
             self.reply(200, {} if MODE == "no-token" else {"token": "rdt_stub_token_0123456789"})
         else:

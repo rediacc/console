@@ -3,6 +3,11 @@ import { BACKUP_DEFAULTS } from '@rediacc/shared/config';
 import { type Command, Option } from 'commander';
 import { t } from '../i18n/index.js';
 import {
+  registerStrategyReplication,
+  removeReplicationRulesFor,
+  replicateDestinations,
+} from '../services/backup/backup-replication.js';
+import {
   type CronCadence,
   hasAccountToken,
   pushStrategyRetention,
@@ -17,6 +22,7 @@ import {
 import {
   cronFloorReason,
   strategyUnschedulableReason,
+  uncheckedTargets,
 } from '../services/backup/backup-strategy-validate.js';
 import { configService } from '../services/config/config-resources.js';
 import {
@@ -25,13 +31,22 @@ import {
   unbindBackupStrategy,
 } from '../services/config/config-strategy-binding.js';
 import { outputService } from '../services/core/output.js';
-import type { BackupStrategyConfig, BackupStrategyDestination } from '../types/index.js';
+import type { BackupStrategyConfig } from '../types/index.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import {
+  assertReplicaIsNotSelfCopy,
   buildStrategyUpdate,
   resolveEnabledFlag,
   upsertBackupDestination,
 } from './backup-strategy-options.js';
+import {
+  dropReplicationForMachine,
+  reportReplication,
+  syncReplicationRules,
+  syncStrategyEnabledRules,
+  withReplication,
+} from './backup-strategy-replication.js';
+import { strategyBindings, strategyRow } from './backup-strategy-rows.js';
 
 /**
  * Refuse repo names the active config does not know. A typo in --include would otherwise schedule a backup of nothing (or, for exclude, of everything), and surface only as a missing snapshot. Every unknown name is reported at once, and the check runs before anything is written.
@@ -51,24 +66,26 @@ async function assertKnownRepoNames(names: string[] | undefined): Promise<void> 
 /**
  * Refuse to bind a strategy `backup schedule` could not turn into a unit, through the same rules schedule applies (strategyUnschedulableReason). Disabled destinations are skipped, as the scheduler skips them.
  */
-export async function assertStrategyBindable(strategyName: string): Promise<void> {
+export async function assertStrategyBindable(strategyName: string): Promise<string[]> {
   const strategy = await configService.getBackupStrategy(strategyName);
-  if (!strategy) return;
-  const reason = strategyUnschedulableReason(
-    strategy,
-    strategy.destinations.filter((d) => d.enabled !== false)
-  );
+  if (!strategy) return [];
+  const enabled = strategy.destinations.filter((d) => d.enabled !== false);
+  const reason = strategyUnschedulableReason(strategy, enabled);
   if (reason) {
     throw new ValidationError(
       `Strategy "${strategyName}" cannot be scheduled, not bound. ${reason}`
     );
   }
+  // No store list client exists in the CLI, so registration is not checked offline; the caller says so.
+  return uncheckedTargets(enabled, undefined);
 }
 
 export async function applyBackupStrategyOptions(
   name: string,
   options: {
     destination?: string;
+    target?: string;
+    replicateFrom?: string;
     cron?: string;
     mode?: string;
     bwlimit?: string;
@@ -90,12 +107,27 @@ export async function applyBackupStrategyOptions(
 ): Promise<RetentionFill | undefined> {
   const enabled = resolveEnabledFlag(options.enable, options.disable);
   const targetsDestination = Boolean(options.destination);
+  if (!targetsDestination && options.target !== undefined) {
+    throw new ValidationError(t('commands.backup.strategy.set.targetNeedsDestination'));
+  }
+  if (!targetsDestination && options.replicateFrom !== undefined) {
+    throw new ValidationError(t('commands.backup.strategy.set.replicateFromNeedsDestination'));
+  }
   if (targetsDestination && options.readBwlimit !== undefined) {
     throw new ValidationError(t('commands.backup.strategy.set.readBwlimitStrategyOnly'));
   }
 
   if (targetsDestination && options.cpuLimit !== undefined) {
     throw new ValidationError(t('commands.backup.strategy.set.cpuLimitStrategyOnly'));
+  }
+
+  if (options.destination) {
+    await assertReplicaIsNotSelfCopy({
+      strategyName: name,
+      destinationName: options.destination,
+      target: options.target,
+      replicateFrom: options.replicateFrom,
+    });
   }
 
   // Strategy fields and destination fields are applied in the SAME call. This used to be an either/or, so creating a strategy with a destination took two invocations, and the first one, `set <new> --destination …`, silently produced a strategy with an empty schedule.
@@ -117,6 +149,9 @@ export async function applyBackupStrategyOptions(
   const fill = await applyTargetOptions(name, options, update, deps);
   if (options.dryRun) return undefined;
 
+  // The rules the server holds follow the stored destinations, so the strategy as it stood is kept to find what a change leaves stale.
+  const previous = await configService.getBackupStrategy(name);
+
   // Order matters: upsertBackupDestination reads the stored strategy to merge destination defaults, so the strategy has to exist before the destination is attached. These cannot run in parallel.
   if (!targetsDestination || Object.keys(update).length > 0) {
     await configService.setBackupStrategy(name, update);
@@ -128,7 +163,18 @@ export async function applyBackupStrategyOptions(
       destinationName: options.destination,
       enabled,
       bwlimit: options.bwlimit,
+      target: options.target,
+      replicateFrom: options.replicateFrom,
     });
+    if (
+      enabled !== undefined ||
+      options.replicateFrom !== undefined ||
+      options.target !== undefined
+    ) {
+      await syncReplicationRules(name, previous);
+    }
+  } else if (enabled !== undefined) {
+    await syncStrategyEnabledRules(name, enabled);
   }
 
   // Warn after the write, from the stored result: `--cron` alone can invalidate a retention set earlier.
@@ -172,7 +218,7 @@ async function applyTargetOptions(
       const refs = change.asks.map((a) => a.ref ?? name).join(', ');
       throw new ValidationError(t('commands.backup.strategy.set.noMeasurement', { refs }));
     }
-    for (const line of report.lines) outputService.info(line);
+    for (const line of report.lines) outputService.report(line);
   }
   for (const { ref, size } of change.reseeds) {
     outputService.warn(t('commands.backup.strategy.set.reseedWarning', { ref, size }));
@@ -274,58 +320,6 @@ async function applyRetentionNow(name: string): Promise<void> {
   }
 }
 
-/** strategy name -> machines binding it, for reporting deployment reach. */
-async function strategyBindings(): Promise<Map<string, string[]>> {
-  const machines = await configService.listMachines();
-  const bindings = new Map<string, string[]>();
-  for (const { name, config } of machines) {
-    for (const strategy of config.backupStrategies ?? []) {
-      const list = bindings.get(strategy);
-      if (list) list.push(name);
-      else bindings.set(strategy, [name]);
-    }
-  }
-  return bindings;
-}
-
-function formatRetention(retention: NonNullable<BackupStrategyConfig['retention']>): string {
-  const parts: [string, number | undefined][] = [
-    ['last', retention.keepLast],
-    ['within', retention.keepWithinSeconds],
-    ['hourly', retention.keepHourly],
-    ['daily', retention.keepDaily],
-    ['weekly', retention.keepWeekly],
-    ['monthly', retention.keepMonthly],
-    ['yearly', retention.keepYearly],
-  ];
-  return parts
-    .filter(([, n]) => n !== undefined)
-    .map(([name, n]) => `${name}=${n}`)
-    .join(',');
-}
-
-/** One destination as a cell: its name, with a marker when it is switched off. */
-function destinationCell(dest: BackupStrategyDestination): string {
-  return dest.enabled === false ? `${dest.name} (disabled)` : dest.name;
-}
-
-/** One strategy as a row of `show`: the same fields in every format, so a script and a person read one document. */
-function strategyRow(name: string, strategy: BackupStrategyConfig): Record<string, unknown> {
-  return {
-    name,
-    schedule: strategy.schedule,
-    mode: strategy.mode ?? BACKUP_DEFAULTS.MODE,
-    enabled: strategy.enabled !== false,
-    bandwidthLimit: strategy.bandwidthLimit ?? '-',
-    readBandwidthLimit: strategy.readBandwidthLimit ?? '-',
-    cpuLimit: strategy.cpuLimit ?? '-',
-    include: strategy.include?.join(',') ?? '-',
-    exclude: strategy.exclude?.join(',') ?? '-',
-    retention: strategy.retention ? formatRetention(strategy.retention) : '-',
-    destinations: strategy.destinations.map(destinationCell).join(', ') || '-',
-  };
-}
-
 /** Commander accumulator for a repeatable option. */
 function collectRepeated(value: string, previous: string[]): string[] {
   return [...previous, value];
@@ -340,6 +334,8 @@ export function registerBackupStrategyCommands(backup: Command): void {
     .argument('<strategy>', t('options.strategyName'))
     .description(t('commands.backup.strategy.set.description'))
     .option('--destination <name>', t('commands.backup.strategy.set.optionDestination'))
+    .option('--target <storeId>', t('commands.backup.strategy.set.optionTarget'))
+    .option('--replicate-from <storeId>', t('commands.backup.strategy.set.optionReplicateFrom'))
     .option('--cron <expression>', t('commands.backup.strategy.set.optionCron'))
     .addOption(
       new Option('--mode <mode>', t('commands.backup.strategy.set.optionMode')).choices([
@@ -388,8 +384,20 @@ export function registerBackupStrategyCommands(backup: Command): void {
     .description(t('commands.backup.strategy.bind.description'))
     .action(async (strategy: string, options: { machine: string }) => {
       try {
-        await assertStrategyBindable(strategy);
+        const unchecked = await assertStrategyBindable(strategy);
+        if (unchecked.length > 0) {
+          outputService.info(
+            t('commands.backup.strategy.bind.uncheckedTargets', { targets: unchecked.join(', ') })
+          );
+        }
         const bound = await bindBackupStrategy(options.machine, strategy);
+        // The bind is written; a rule that cannot be registered is a warning, and a later `bind` or `set` retries it.
+        await withReplication(await configService.getBackupStrategy(strategy), async (found) => {
+          reportReplication(
+            await registerStrategyReplication(found, options.machine),
+            'registered'
+          );
+        });
         outputService.success(
           bound
             ? t('commands.backup.strategy.bind.bound', {
@@ -413,7 +421,9 @@ export function registerBackupStrategyCommands(backup: Command): void {
     .description(t('commands.backup.strategy.unbind.description'))
     .action(async (strategy: string, options: { machine: string }) => {
       try {
+        const stored = await configService.getBackupStrategy(strategy);
         const removed = await unbindBackupStrategy(options.machine, strategy);
+        if (removed) await dropReplicationForMachine(stored, options.machine);
         outputService.success(
           removed
             ? t('commands.backup.strategy.unbind.unbound', {
@@ -444,9 +454,21 @@ export function registerBackupStrategyCommands(backup: Command): void {
     .action(async (strategy: string, options) => {
       try {
         if (options.destination) {
+          const stored = await configService.getBackupStrategy(strategy);
+          const gone = stored?.destinations.filter((d) => d.name === options.destination);
           await configService.removeBackupDestination(strategy, options.destination);
+          if (stored && gone && gone.length > 0) {
+            await withReplication({ ...stored, destinations: gone }, async (found) => {
+              reportReplication(
+                await removeReplicationRulesFor(found, replicateDestinations(found, false)),
+                'removed'
+              );
+            });
+          }
         } else {
+          const stored = await configService.getBackupStrategy(strategy);
           const unbound = await removeStrategyChecked(strategy, options.unbind === true);
+          for (const machine of unbound) await dropReplicationForMachine(stored, machine);
           if (unbound.length > 0) {
             outputService.warn(
               t('commands.backup.strategy.remove.unboundWarn', {

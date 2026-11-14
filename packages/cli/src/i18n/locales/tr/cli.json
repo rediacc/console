@@ -11,9 +11,11 @@
         "descriptionShort": "Bir deponun ya da --at ile saklanan bir anlık görüntünün dosyalarını listele",
         "empty": "{{name}} hiç dosya içermiyor.",
         "failed": "{{name}} listelenemedi",
+        "fromNeedsAt": "--from, anlık görüntünün okunacağı yedek deposunu belirtir; bu yüzden --at gerekir.",
         "liveMountListing": "{{snapshot}} anlık görüntüsünün listesi, alındığı ana yakın bir zamanda canlı bağlama noktasından okundu; bu yüzden saklanan imajdan biraz farklı olabilir. Geri yükleme, saklanan imajı birebir getirir.",
         "noListing": "{{name}} deposunun {{snapshot}} anlık görüntüsü için kayıtlı dosya listesi yok, bu yüzden gezilemiyor. Dosyalarına bakmak için geri yükleyin.",
         "optionAt": "Bu zamanda veya öncesinde alınan anlık görüntüyü ya da bu anlık görüntü kimliğini listele (parça deposunu okur)",
+        "optionFrom": "--at ile anlık görüntüyü en iyi sıralanan depo yerine bu yedek deposundan oku",
         "optionDepth": "İnişi N seviyeyle sınırla (sınırsız için 0)",
         "optionLimit": "Döndürülecek maksimum girdi sayısı (sınırsız için 0)",
         "optionPath": "Listelemeyi bu alt ağaçla sınırla",
@@ -23,7 +25,6 @@
       },
       "cancel": {
         "cancelled": "{{name}} iptal edildi",
-        "cancelling": "{{name}} durduruluyor...",
         "description": "Uzak makinede çalışan bir yedeklemeyi iptal et",
         "notRunning": "\"{{name}}\" stratejisi için çalışan yedekleme yok"
       },
@@ -68,7 +69,12 @@
         "optionAs": "Geri yüklenen depo için ad (varsayılan: artefakt adı)",
         "optionAt": "Belirli bir zamana geri yükle: bir anlık görüntü kimliği veya RFC3339 saati (parça depolamadan geri yükleme)",
         "optionDatastore": "Bu adlandırılmış veri deposuna geri yükle (bağlı olduğu makine onu barındırır)",
+        "optionFrom": "Anlık görüntüyü bu yedek deposundan oku (varsayılan: doğrulanmış en yeni anlık görüntüye sahip depo; depo hatasında bir sonrakine geçilir)",
         "noSeedNeedsSnapshot": "--no-seed, parça deposundaki bir anlık görüntüden geri yüklemelere uygulanır ve bu deponun hiç anlık görüntüsü yok.",
+        "fromNeedsSnapshot": "--from bir yedek deposu belirtir ve bu deponun, buradan geri yüklenebilecek parça deposu anlık görüntüsü yok.",
+        "storeFallback": "Yedek deposu {{failed}} geri yüklemeyi sunamadı; {{next}} deneniyor.",
+        "storeRankingUnreadable": "En yeni anlık görüntünün hangi yedek deposunda olduğu okunamadı ({{reason}}); ana depo okunuyor.",
+        "storeServed": "Yedek deposu {{store}} üzerinden okundu.",
         "optionNoSeed": "Yerel çapaları veya depo imajlarını yeniden kullanmak yerine her parçayı depodan getir (deponun okunabildiğini kanıtlar)",
         "optionUp": "Aktarımdan sonra geri yüklenen depoyu dağıt",
         "placementExclusive": "Yalnızca bir yerleşim bayrağı geçirin: --machine veya --datastore.",
@@ -207,7 +213,8 @@
         "bind": {
           "alreadyBound": "\"{{strategy}}\" yedekleme stratejisi zaten \"{{machine}}\" makinesine bağlı",
           "bound": "\"{{strategy}}\" yedekleme stratejisi \"{{machine}}\" makinesine bağlandı",
-          "description": "Bir yedekleme stratejisini bir makineye bağla, böylece zamanlaması orada dağıtılır"
+          "description": "Bir yedekleme stratejisini bir makineye bağla, böylece zamanlaması orada dağıtılır",
+          "uncheckedTargets": "Depo kaydı şunlar için denetlenmedi: {{targets}}. Birim yazılırken zamanlama, kayıtlı olmayan bir depoyu reddeder."
         },
         "description": "Adlandırılmış yedekleme stratejilerini yönet (sıcak/soğuk modlar, hedefler, zamanlama)",
         "list": {
@@ -225,6 +232,14 @@
           "removed": "Yedekleme stratejisi kaldırıldı",
           "unboundWarn": "\"{{strategy}}\" stratejisi kaldırıldı ve şu makinelerle bağlantısı koparıldı: {{machines}}. Bu makinelere zaten dağıtılmış zamanlayıcılar, orada \"rdc backup schedule\" çalıştırılana kadar kalır."
         },
+        "replication": {
+          "registered": "Çoğaltma: {{count}} kural hesap sunucusuna kaydedildi",
+          "removed": "Çoğaltma: {{count}} kural hesap sunucusundan kaldırıldı",
+          "unsupported": "Hesap sunucusunda çoğaltma kuralı yok (HTTP 404), bu yüzden kopyalama çalışmayacak. Strateji kaydedildi; hesap sunucusunu güncelleyin, sonra yeniden bağlayın.",
+          "notPushed": "Çoğaltma kuralları gönderilmedi: hesap belirteci yok. Oturum açın, sonra stratejiyi yeniden bağlayın.",
+          "failed": "Soy {{lineage}} için {{target}} deposuna yönelik çoğaltma kuralı reddedildi: {{reason}}",
+          "syncFailed": "Çoğaltma kuralları senkronize edilemedi: {{reason}}"
+        },
         "set": {
           "description": "Yedekleme stratejisi oluştur veya güncelle",
           "examples": {
@@ -234,6 +249,9 @@
           "optionBwlimit": "Saniye başına bayt cinsinden yükleme bant genişliği sınırı, isteğe bağlı K/M/G son ekiyle (ör. \"6M\", \"500K\")",
           "optionCron": "Cron zamanlaması (ör. \"0 * * * *\" saatlik için)",
           "optionDestination": "Strateji içindeki hedef adı. Bir Rediacc parça depolama hedefi oluşturur",
+          "optionTarget": "Hedefin yazdığı kayıtlı depo kimliği (varsayılan: home). --destination ile birlikte kullanılır",
+          "optionReplicateFrom": "Hedefi bir kopya yapar: hesap sunucusu bu depoyu hedefin depo kimliğine kopyalar, bu yüzden makine ona hiçbir şey yüklemez. --destination ve --target ile birlikte kullanılır",
+          "replicateFromNeedsDestination": "--replicate-from tek bir hedefin kaynağını belirtir; --destination <name> ekleyin.",
           "optionDisable": "Stratejiyi veya hedefi devre dışı bırak",
           "optionEnable": "Stratejiyi veya hedefi etkinleştir",
           "optionExclude": "Bu depoları yedeklemeden hariç tut (virgülle ayrılmış adlar)",
@@ -241,6 +259,7 @@
           "optionMode": "Yedekleme modu: \"hot\" her şey çalışırken anlık görüntü alır, \"cold\" görüntü alınırken konteynerleri durdurur",
           "optionReadBwlimit": "Bu stratejinin snapshot'ları için okuma hız sınırı: --bwlimit ile aynı birimler; none sınırı kaldırır",
           "readBwlimitStrategyOnly": "--read-bwlimit stratejinin tamamı için geçerlidir (okuma makinede yerel yapılır); --destination parametresini kaldırın.",
+          "targetNeedsDestination": "--target tek bir hedefin deposunu belirtir; --destination <name> ekleyin.",
           "saved": "Yedekleme stratejisi yapılandırması kaydedildi",
           "optionRetention": "Anlık görüntü saklama, örneğin last=7,daily=7,weekly=4,monthly=6 (\"none\" kaldırır)",
           "retentionInvalid": "--retention \"{{value}}\" ad=sayı çiftlerinden oluşan bir liste değil. Geçerli adlar last, hourly, daily, weekly, monthly ve yearly'dir, her biri bir kez kullanılır ve her sayı tam sayı olmalıdır, örneğin last=7,daily=7.",
@@ -336,6 +355,8 @@
         "restoreTestNeedsCredential": "{{name}} için bu yapılandırmada kimlik bilgisi yok, bu yüzden geri yüklenen kopya deneme amaçlı açılamazdı.",
         "restoreTestNoAnchor": "{{name}} için makinesinde geri yüklenecek yedek çapası yok. Önce bir anlık görüntü alın.",
         "restoreTestNoSpace": "{{snapshot}} geri yükleme testi için yeterli yer yok: {{need}} bayt boş alan gerekiyor, veri deposunda {{free}} var.",
+        "restoreTestSizeUnknown": "{{snapshot}} anlık görüntüsünün boyutu hesabın dizininde yok, bu yüzden geri yükleme testinin ihtiyaç duyduğu yer denetlenemiyor. rdc backup snapshot ile bir anlık görüntü alıp yeniden denenmeli.",
+        "restoreTestFreeUnknown": "{{machine}} makinesinin veri deposundaki boş alan okunamadı, bu yüzden geri yükleme testinin ihtiyaç duyduğu yer denetlenemiyor.",
         "verdictUnreadable": "{{name}} doğrulaması okunabilir bir sonuç yazdırmadı, bu yüzden hiçbir şey kanıtlanmadı."
       },
       "snapshots": {
@@ -371,7 +392,9 @@
         "summaryError": "  hata: {{error}}",
         "optionStore": "Şifreli imajı makine olmadan doğrudan yedek deposundan yeniden oluşturur. REDIACC_TOKEN içinde backup:read + backup:restore kapsamlı bir API belirteci gerekir",
         "optionAt": "--store ile alınacak anlık görüntü: bir zaman (ISO 8601) veya anlık görüntü kimliği (varsayılan: en yenisi)",
+        "optionFrom": "--store ile en iyi sıralanan depo yerine bu yedek deposundan oku; başka bir depoya asla geçilmez",
         "storeDone": "{{repo}}: {{snapshot}} anlık görüntüsü alındı -> {{image}} ({{bytes}} bayt indirildi)",
+        "storeCellsRoot": "Anlık görüntü kökü denetimi: {{outcome}}",
         "storeOfflineNote": "Kopya şifrelidir ve bu işletim sisteminde açılamaz; 'rdc backup upload' ile bir Linux makinesine gönderilebilir."
       },
       "upload": {
@@ -406,7 +429,11 @@
         "cancelExclusive": "--cancel, --dry-run ile birlikte kullanılamaz",
         "cancelled": "\"{{name}}\" için ertelenmiş tam temizleme iptal edildi.",
         "nothingWaiting": "\"{{name}}\" için bekleyen bir temizleme yoktu.",
-        "delayed": "\"{{name}}\" temizlemesi ertelendi: hiçbir şey silinmedi ve {{when}} (UTC) tarihinde çalışır. Öncesinde şununla iptal edin: rdc backup purge {{name}} --cancel"
+        "delayed": "\"{{name}}\" temizlemesi ertelendi: hiçbir şey silinmedi ve {{when}} (UTC) tarihinde çalışır. Öncesinde şununla iptal edin: {{cancel}}",
+        "optionLineage": "Deposu artık bu yapılandırmada olmayan bir yedek soyunu kimliğiyle (`rdc backup usage` çıktısındaki haliyle) temizle",
+        "targetRequired": "Tam olarak bir hedef belirtin: bir depo referansı ya da deposu artık olmayan bir soy için --lineage <guid>.",
+        "lineageOwned": "{{lineage}} soyu bu yapılandırmada \"{{name}}\" deposuna ait. Şununla temizleyin: rdc backup purge {{name}}",
+        "confirmLineage": "Bu işlem {{name}} soyunun depolanan {{count}} anlık görüntüsünün tamamını ({{bytes}}) siler ve geri alınamaz. Onaylamak için soy kimliğini yazın:"
       },
       "check": {
         "description": "Bir dosyayı geri yükleyerek anlık görüntünün parola ile açıldığını kanıtlar",
@@ -424,9 +451,11 @@
       },
       "tocKey": {
         "description": "Bir deponun gözatma listesi anahtarını yönetir",
-        "optionDryRun": "Neyin yapılacağını bildirir; hiçbir şeye dokunmaz",
-        "optionReplace": "Makinede zaten bulunan farklı bir anahtarı değiştir (kanıt olarak parolayı gönderir)",
-        "syncDescription": "Deponun liste anahtarını makinesine kurar veya farklı olanı değiştirir"
+        "sync": {
+          "description": "Deponun liste anahtarını makinesine kurar veya farklı olanı değiştirir",
+          "optionDryRun": "Neyin yapılacağını bildirir; hiçbir şeye dokunmaz",
+          "optionReplace": "Makinede zaten bulunan farklı bir anahtarı değiştir (kanıt olarak parolayı gönderir)"
+        }
       },
       "churn": {
         "description": "Bir deponun imajının çalıştırmalar arasında ne kadar değiştiğini ölçer, hücre boyutu başına yüklemeyi öngörür ve birini önerir. Çalışırken makinede bir reflink tabanı tutulur ve her zaman kaldırılır.",
@@ -784,13 +813,20 @@
         "removedCerts": "{{count}} sertifika önbellek girişi {{verb}} kaldırıldı:",
         "removedOrphanRepos": "{{count}} depo girişi (hiçbir makinede yer almayan) {{verb}} kaldırıldı:",
         "scanning": "Yerel yapılandırma eski kalıntılar için taranıyor...",
-        "tooManyOnlyFlags": "--certs-only / --archives-only / --refs-only seçeneklerinden en fazla birini geçirin."
+        "tooManyOnlyFlags": "--certs-only / --archives-only / --refs-only seçeneklerinden en fazla birini geçirin.",
+        "goneMachineReposOption": "Artık yapılandırmada olmayan bir makineye yerleştirilmiş depo kayıtlarını arşivle. Silinmez, arşivlenir: her biri kimlik bilgisini korur ve arşiv süresi dolana kadar geri yüklenebilir. Yalnızca bu grubu seçer: kendi --*-only seçeneği de verilmedikçe sertifika önbelleği, arşiv ve çapraz başvuru grupları atlanır.",
+        "foundGoneMachineRepos": "{{count}} depo kaydı artık yapılandırmada olmayan bir makineye yerleştirilmiş:",
+        "archivedGoneMachineRepos": "{{count}} depo kaydı {{verb}} arşivlendi (artık yapılandırmada olmayan bir makinede):",
+        "goneMachineReposHint": "Bunları 'rdc config prune --gone-machine-repos' ile arşivleyin; her biri arşiv süresi dolana kadar geri yüklenebilir kalır.",
+        "droppedGoneMachineState": "Artık yapılandırmada olmayan bir makineyi gösteren {{count}} çalışma kaydı {{verb}} kaldırıldı:"
       },
       "reconcile": {
         "acceptObservedUnfiltered": "--accept-observed, --machine ile birleştirilemez: kısmi bir tarama, bir yerleşimin belirsizlik içermediğini kanıtlayamaz, bu yüzden yeniden yazma bir tahmin olur. 'rdc config reconcile --accept-observed' komutunu filtresiz çalıştırın.",
         "description": "Çalışma zamanı durumunu makinelerin gerçek durumundan yeniden kurar. Eski bağlama ve yönlendirme verilerini düzeltir.",
         "optionAcceptObserved": "Bildirilen bir yerleşimi, imajın gerçekte bulunduğu yere uyacak şekilde yeniden yazar, ancak yalnızca bu belirsizlik içermediğinde (tam olarak bir makinede gözlemlendiğinde) yapar. Kopyalar çakışma olarak kalır.",
-        "optionMachine": "Uzlaştırmayı bu makinelerle sınırla"
+        "optionMachine": "Uzlaştırmayı bu makinelerle sınırla",
+        "noListing": "{{machine}} için kaydedilmiş bir liste yok.",
+        "listFailed": "renet list all başarısız oldu (çıkış kodu {{exitCode}})."
       },
       "recover": {
         "confirm": "\"{{name}}\" yapılandırması yedekten geri yüklensin mi?",
@@ -894,11 +930,14 @@
           "notEnabled": "Uzak yapılandırma etkin değil.",
           "pulled": "Yapılandırma alındı",
           "pulling": "Yapılandırma uzak sunucudan alınıyor...",
-          "success": "Yapılandırma uzak sunucudan güncellendi (sürüm {{version}})."
+          "success": "Yapılandırma uzak sunucudan güncellendi (sürüm {{version}}).",
+          "replacedLocal": "\"{{config}}\" yapılandırması: yerel dosya sunucu sürümü {{version}} ile farklıydı ve onunla değiştirildi: {{changes}}"
         },
         "staleSlot": "Key slot'unuz güncel değil (yapılandırma şifreleme anahtarı döndürüldü). Şununla yeniden kaydolun: rdc config remote enable",
         "status": {
-          "description": "Uzak bağlantı durumunu göster"
+          "description": "Uzak bağlantı durumunu göster",
+          "deviceKeyMissing": "Bu cihaz artık bu yapılandırmanın uzak depolamasını açamıyor: anahtarı kayboldu (yeniden başlatma anahtar deposunu boşaltabilir). Cihazı şu komutla yeniden kaydedin: rdc config remote enable",
+          "deviceCannotOpen": "Bu cihaz bu yapılandırmanın uzak depolamasını açamıyor: kaydı reddedildi, örneğin anahtar döndürüldükten sonra. Cihazı şu komutla yeniden kaydedin: rdc config remote enable"
         },
         "masterPassword": {
           "description": "Bu üyenin ana parolasını yönetin (password slot)",
@@ -977,7 +1016,10 @@
           "invalidVersion": "Sürüm pozitif bir tam sayı olmalı, girilen: \"{{version}}\".",
           "alreadyCurrent": "{{version}} sürümü zaten \"{{config}}\" yapılandırmasının güncel sürümü; geri yüklenecek bir şey yok.",
           "success": "\"{{config}}\" yapılandırmasının {{restored}} sürümü, {{version}} sürümü olarak geri yüklendi."
-        }
+        },
+        "localEditsPushed": "\"{{config}}\" yapılandırması: yerel dosyada sunucu sürümü {{from}} sonrasında yapılmış düzenlemeler vardı; bunlar {{to}} sürümü olarak gönderildi: {{changes}}",
+        "localEditsConflict": "\"{{config}}\" yapılandırması: yerel dosyada sunucu sürümü {{cached}} sonrasında yapılmış düzenlemeler var ({{changes}}) ve sunucu {{server}} sürümüne geçti. Hiçbir şeyin üzerine yazılmadı. Düzenlemeleri bir kenara kopyalayın, {{server}} sürümünü almak için \"rdc config remote refresh\" çalıştırın (yerel dosyayı değiştirir) ve ardından düzenlemeleri yeniden uygulayın.",
+        "localEditsUnverifiable": "\"{{config}}\" yapılandırması: yerel dosya sunucu sürümü {{server}} ile farklı ({{changes}}) ve önbelleğin alındığı {{cached}} sürümü okunamadı ({{reason}}); bu yüzden yerel bir düzenleme sunucu değişikliğinden ayırt edilemiyor. Hiçbir şeyin üzerine yazılmadı. Düzenlemeleri bir kenara kopyalayın, {{server}} sürümünü almak için \"rdc config remote refresh\" çalıştırın (yerel dosyayı değiştirir) ve ardından yeniden uygulayın."
       },
       "rotateCek": {
         "cancelled": "Döndürme iptal edildi. Hiçbir şey değişmedi.",
@@ -1023,6 +1065,21 @@
           "description": "Geçerli SSH anahtar yapılandırmasını göster",
           "noKey": "SSH anahtarı yapılandırılmamış"
         }
+      },
+      "importMachine": {
+        "descriptionShort": "Bir makineyi depolarıyla birlikte başka bir yapılandırmadan aktar",
+        "description": "Bir makineyi başka bir yapılandırmadan etkin yapılandırmaya kopyalar: etkin yapılandırmada yoksa makine kaydını, makinede bulunan her depoyu tüm etiketleriyle ve makineye bağlı her yedekleme stratejisini. Var olan hiçbir şeyin üzerine yazılmaz. Aynı olan kayıtlara dokunulmaz, farklı olanlar reddedilir (aynı adlı ama başka GUID'li bir depo, başka adresteki bir makine gibi). Tek bir ret bile olsa hiçbir şey yazılmaz. Rapor yalnızca adları gösterir; hiçbir kimlik bilgisini, anahtarı ya da GUID'i yazdırmaz.",
+        "argMachine": "Kaynak yapılandırmadaki makine adı",
+        "optionFrom": "Kopyalanacak kaynak yapılandırma",
+        "optionDryRun": "Hiçbir şey yazmadan nelerin kopyalanacağını göster",
+        "optionStrategyFromSource": "Farklı bir yedekleme stratejisini reddetmek yerine kaynak yapılandırmadaki sürümüyle değiştir",
+        "machineMissing": "\"{{machine}}\" adlı makine kaynak yapılandırmada yok.",
+        "sameConfig": "Kaynak yapılandırma \"{{name}}\" zaten etkin yapılandırma. Hedefi --config ile seçin.",
+        "sourceMissing": "\"{{name}}\" adlı yapılandırma bulunamadı.",
+        "targetMissing": "Etkin yapılandırma \"{{name}}\" bulunamadı.",
+        "refused": "{{count}} kayıt kaynak yapılandırmadan farklı; hiçbir şey yazılmadı.",
+        "summary": "\"{{machine}}\" makinesi için \"{{from}}\" yapılandırmasından {{count}} değişiklik kopyalandı.",
+        "summaryDryRun": "\"{{machine}}\" makinesi için \"{{from}}\" yapılandırmasından {{count}} değişiklik kopyalanacak."
       }
     },
     "credits": {
@@ -1206,7 +1263,8 @@
           "basic": "Bir makinedeki görevleri listele."
         },
         "machineOption": "Hedef makine adı (bu yapılandırmanın bekleyen görev biletlerini listelemek için boş bırakın)",
-        "emptyTickets": "Bu yapılandırmada bekleyen görev yok."
+        "emptyTickets": "Bu yapılandırmada bekleyen görev yok.",
+        "allOption": "Süresi dolmuş ve reddedilmiş biletleri de göster"
       },
       "logs": {
         "description": "Bağımsız bir görevin olay günlüğünü yeniden oynatır veya canlı izler",
@@ -1226,6 +1284,7 @@
           "basic": "Tek bir görevin durumunu göster."
         }
       },
+      "stepsUnfinished": "{{verb}}: iş bitti, ancak {{steps}} adımları tamamlanmadı. Bunları rdc job wait tamamlar.",
       "summary": "Bir makinedeki bağımsız görevleri yönetin",
       "machineRequired": "Bu yapılandırmada {{jobId}} görevi için bilet yok. Nerede çalıştığını -m <machine> ile belirtin.",
       "ticketMachineOption": "Hedef makine adı (bu yapılandırmada görevin bileti varsa isteğe bağlı)",
@@ -1248,7 +1307,28 @@
       },
       "steps": {
         "pending": "bekleyen adımlar var: rdc job wait {{jobId}}",
-        "pendingForConfig": "{{config}} yapılandırması için {{count}} adım bekliyor"
+        "pendingForConfig": "{{config}} yapılandırması için {{count}} adım bekliyor",
+        "abandoned": "iş {{jobId}}: adımlar bırakıldı ({{reason}})",
+        "reason": {
+          "gone": "iş makinede artık yok",
+          "never-started": "hiç başlamadı",
+          "age": "7 günden eski",
+          "dismissed": "reddedildi"
+        }
+      },
+      "dismiss": {
+        "description": "İş biletlerini yerelde bırak: bekleyen adımlar atılır ve bilet artık görünmez. Makineye bağlanmaz, işin kendisine dokunmaz.",
+        "summary": "İş biletlerini yerelde bırak, makine çağrısı yapmadan",
+        "idArg": "Reddedilecek biletlerin iş kimlikleri veya istek kimlikleri",
+        "staleOption": "--older-than süresinden eski tüm bekleyen biletleri reddet (varsayılan 24h)",
+        "olderThanOption": "--stale ile biletin asgari yaşı, örn. 90m, 24h (varsayılan: 24h)",
+        "confirm": "{{count}} bilet reddedilsin mi? Bekleyen adımları hiç çalışmayacak.",
+        "dismissed": "{{count}} bilet reddedildi.",
+        "none": "Eşleşen bilet yok.",
+        "invalidOlderThan": "--older-than 90m veya 24h gibi bir süre olmalı (alınan: \"{{value}}\")",
+        "needsTarget": "En az bir iş kimliği verin ya da --stale kullanın.",
+        "conflictingTargets": "İş kimliklerini ya da --stale seçeneğini (isteğe bağlı --older-than ile) verin, ikisini birden değil; --older-than için --stale gerekir.",
+        "notFound": "Bu yapılandırmada {{jobId}} için bilet yok."
       }
     },
     "machine": {
@@ -1271,7 +1351,11 @@
         "dnsCleanedUp": "{{count}} DNS kaydı kaldırıldı",
         "dnsDeleted": "DNS kaydı silindi: {{type}} {{name}}",
         "noState": "\"{{name}}\" için OpenTofu durumu bulunamadı. Manuel eklenen makineler için 'config remove-machine' kullanın.",
-        "optionForce": "Onay istemini atla"
+        "optionForce": "Onay istemini atla",
+        "optionArchiveRepos": "Bu makineye yerleştirilmiş depoların yapılandırma kayıtlarını arşivle (kimlik bilgileri korunur, geri yüklenebilir)",
+        "reposArchived": "{{machine}} üzerindeki {{count}} depo kaydı arşivlendi: {{repos}}",
+        "reposLeft": "{{count}} depo kaydı hâlâ artık bu yapılandırmada olmayan {{machine}} makinesini gösteriyor: {{repos}}",
+        "reposLeftHint": "Bunları 'rdc config prune --gone-machine-repos' ile ya da tek tek 'rdc repo delete <name> -y' ile arşivleyin."
       },
       "description": "Uzak makine durumunu incele: sistem kaynakları, çalışan konteynerler, systemd servisleri, dağıtılmış depolar ve sağlık tanılaması. Salt okunur sorgulardır; depoları değiştirmek için `repo` kullanın. Temel alt komutlar: status (--system, --containers, --repositories, --services ile daraltılan tam durum), health, list, add, remove, setup, prune, provision, deprovision.",
       "descriptionShort": "Uzak makineleri yönetin (status, health, list, add, remove, setup, prune)",
@@ -1302,7 +1386,41 @@
         "systemDisk": "  Disk alanı: {{percent}}",
         "systemMemory": "  Bellek: {{percent}}",
         "systemSection": "\nSistem:",
-        "systemUptime": "  Çalışma süresi: {{uptime}}"
+        "systemUptime": "  Çalışma süresi: {{uptime}}",
+        "repoHealthSection": "\nDepo sağlığı:",
+        "repoHealthNoCheck": "  Denetimsiz (health() tanımlı değil): {{repositories}}"
+      },
+      "repair": {
+        "description": "Bir makinenin sağlık bulguları için güvenli düzeltmeleri çalıştırır ve yeniden denetler (çıkış 0: hiçbir şey kalmadı, 1: uyarı veya operatör işi kaldı, 2: hata kaldı ya da bir düzeltme başarısız oldu)",
+        "descriptionShort": "Bir makinenin sağlık bulguları için güvenli düzeltmeleri çalıştırır, ardından yeniden denetler",
+        "optionDryRun": "Çalışacak düzeltmeleri çalıştırmadan listeler",
+        "optionCode": "Yalnızca bu bulgu kodunu düzeltir (tekrarlanabilir)",
+        "optionWithBackup": "auto-with-backup düzeltmelerine izin verir; her biri deposunun başarılı bir anlık görüntüsünden sonra çalışır",
+        "optionWindowOverride": "window=only düzeltmelerini bakım penceresi dışında da çalıştırır",
+        "optionSetWindow": "Makinenin bakım penceresini kaydeder (HH:MM-HH:MM, UTC) ya da off ile siler ve çıkar",
+        "header": "\n{{name}} onarımı:",
+        "nothingDue": "  Çalıştırılacak düzeltmesi olan bulgu yok",
+        "runByHand": "    Elle çalıştırın: {{command}}",
+        "summary": "{{ran}} düzeltme çalıştı, {{failed}} başarısız; {{remaining}} bulgu kaldı",
+        "windowSet": "{{name}} bakım penceresi {{window}} UTC olarak ayarlandı",
+        "windowCleared": "{{name}} bakım penceresi silindi; window=only düzeltmeler artık kendiliğinden çalışmaz",
+        "windowInvalid": "Geçersiz bakım penceresi \"{{window}}\": UTC olarak HH:MM-HH:MM ya da off kullanın",
+        "reasonNeedsBackup": "--with-backup gerekir (önce bir anlık görüntü alınır)",
+        "reasonOutsideWindow": "yalnızca {{window}} UTC bakım penceresinde (--window-override şimdi çalıştırır)",
+        "reasonNoWindow": "yalnızca bakım penceresinde, ama makinenin penceresi yok (--set-window ile ayarlayın)",
+        "reasonSnapshotFailed": "anlık görüntü alınamadı; yedek gerektiren düzeltmeler çalışmadı: {{detail}}",
+        "reasonNoRepository": "depo bu yapılandırmada yok",
+        "reasonNoNetworkIds": "bulgu hiçbir rediacc-docker gözetmenini adlandırmıyor, bu yüzden yeniden başlatma makinedeki hepsine ulaşırdı",
+        "reasonNoAction": "bu bulgu için bilinen bir düzeltme yok",
+        "resultOk": "düzeltildi",
+        "resultFailed": "düzeltme başarısız",
+        "resultPlanned": "çalışacaktı",
+        "resultSkipped": "atlandı",
+        "resultRefused": "reddedildi",
+        "resultCancelled": "iptal edildi",
+        "resultGone": "zaten giderilmiş",
+        "resultCovered": "önceki bir düzeltmeyle karşılandı",
+        "resultOperator": "operatör kararı"
       },
       "infra": {
         "cert": {
@@ -1331,7 +1449,6 @@
         "push": {
           "description": "Altyapı yapılandırmasını makineye gönderin (Traefik proxy, yönlendirici, Cloudflare DNS). Önce 'machine infra set <machine>' çalıştırın",
           "descriptionShort": "Altyapı yapılandırmasını makineye gönder",
-          "installingProxy": "Router kuruluyor...",
           "success": "Altyapı yapılandırması \"{{name}}\" makinesine gönderildi"
         },
         "set": {
@@ -1434,12 +1551,11 @@
         "previewEmpty": "Artık veri deposu kaynağı bulunamadı",
         "pruneUnknownOption": "Sadece renet .interim/state aynasının sınıflandıramadığı depoları sil (yerel yapılandırmada yok VE fork işaretli ayna yok). --orphaned-repos seçeneğinden kesinlikle daha dardır: ayna onları tanımladığında yapılandırması olmayan fork'lar korunur. Pre-mirror eski yetimler ve yapılandırma girişi silinmiş eski grands ikisi de bu kovaya düşer.",
         "startingDatastore": "{{machine}} üzerinde sahipsiz veri deposu kaynakları taranıyor...",
-        "startingUnits": "{{machine}} üzerinde sahipsiz systemd birimleri taranıyor...",
         "unitsCompleted": "Birim temizliği tamamlandı",
-        "unitsFailed": "Birim temizliği başarısız oldu",
         "unknownCompleted": "{{count}} bilinmeyen depo temizlendi",
         "unknownFound": "{{count}} bilinmeyen depo bulundu (bağlama güvenlik kontrolünden sonra {{deletable}} silinebilir)",
-        "unknownStarting": "{{machine}} üzerinde bilinmeyen depolar taranıyor (yerel yapılandırmada yok + fork işaretli ayna yok)..."
+        "unknownStarting": "{{machine}} üzerinde bilinmeyen depolar taranıyor (yerel yapılandırmada yok + fork işaretli ayna yok)...",
+        "orphanFormsNeedFinishedJob": "Temizleme işi hâlâ çalışıyor, bu yüzden --orphaned-repos ve --prune-unknown silmeleri başlamadı. 'rdc job wait' işin bittiğini bildirince komutu yeniden çalıştırın."
       },
       "converge": {
         "autoFailed": "'{{machine}}' üzerinde runtime eşitlemesi başarısız oldu: {{error}}. Kaldığı yerden sürdürmek için: {{command}}",
@@ -1495,6 +1611,10 @@
         "includeDockerOption": "Her deponun rediacc-docker-N denetleyicisini de yeniden başlat (deponun konteynerlerini yeniden başlatır)",
         "jsonOption": "Raporu JSON olarak yazdır",
         "nothingStale": "'{{machine}}' üzerinde değiştirilmiş bir ikili dosyayı çalıştıran renet daemon'ı yok.",
+        "repoNeedsDocker": "--repo için --include-docker gerekir: yalnızca tek bir deponun denetleyicisi hedeflenir",
+        "repoNoNetworkId": "'{{repo}}' deposunun bu yapılandırmada ağ kimliği yok; şununla kontrol edin: rdc repo list",
+        "repoOption": "Yeniden başlatmayı tek bir deponun denetleyicisiyle sınırla (--include-docker gerekir)",
+        "repoRenetTooOld": "'{{machine}}' üzerindeki renet --repo seçeneğini henüz tanımıyor ve kapsamı reddetti; hiçbir şey yeniden başlatılmadı. Önce rdc machine setup {{machine}} çalıştırın",
         "starting": "'{{machine}}' üzerindeki renet daemon'ları yeniden başlatılıyor..."
       },
       "scanKeys": {
@@ -1525,7 +1645,6 @@
           "basic": "Bir makinenin tam durumunu göster.",
           "containers": "Bir makinedeki yalnızca çalışan konteynerleri göster."
         },
-        "fetched": "Durum alındı",
         "fetching": "{{machine}} durumu alınıyor...",
         "healthCheck": "Sağlık kontrolü modu - sağlıksız varsa kod 2 ile çıkar",
         "infrastructure": "Altyapı",
@@ -1549,7 +1668,9 @@
         "verifyFailureSection": "Başarısız yedek doğrulamaları",
         "verifyFailureWarning": "{{count}} depo son yedek doğrulamasında başarısız oldu.",
         "missedTargetSection": "Yedekleme hedefini kaçıran depolar",
-        "missedTargetWarning": "{{count}} depo son çalıştırmada yedekleme hedefini kaçırdı."
+        "missedTargetWarning": "{{count}} depo son çalıştırmada yedekleme hedefini kaçırdı.",
+        "licenseDetailUnreadable": "Listede okunabilir lisans ayrıntısı yok (renet, licenses bölümünden eski ya da bir kayıt bozuk); bu yüzden engellenen yedekleme ve yenileme durumu bilinmiyor.",
+        "noMemoryCap": "{{count}} depo bellek üst sınırı olmadan çalışıyor, yani herhangi biri ana makinenin belleğini tüketebilir: {{names}}. rdc repo policy set <ref> --memory-max <size> ile bir sınır belirleyin"
       },
       "gpu": {
         "descriptionShort": "Bir makinenin GPU'larını ve cihaz izinlerini incele",
@@ -1703,7 +1824,8 @@
           "description": "CLI yapılandırma ref'lerini (dallar, HEAD) bir makinede gerçekten mevcut olan nesnelere karşı doğrula. Sarkan ref'leri (eksik bir nesneyi gösteren bir ref) ve yetim commit'leri (hiçbir ref'in erişemediği değişmez bir commit) raporlar. Salt okunur.",
           "descriptionShort": "Yapılandırma ref'lerini makine nesnelerine karşı kontrol et",
           "orphanHeader": "{{count}} yetim commit (hiçbir ref bunlara erişmiyor):",
-          "orphanHint": "Yetimleri şununla geri kazanın: rdc repo gc --apply -m <machine>"
+          "orphanHint": "Yetimleri şununla geri kazanın: rdc repo gc --apply -m <machine>",
+          "noReport": "{{machine}} üzerindeki fsck işi nesne raporu döndürmedi, bu yüzden hiçbir şey karşılaştırılmadı."
         },
         "ownership": {
           "completed": "Sahiplik güncellendi",
@@ -1711,7 +1833,12 @@
           "descriptionShort": "Depo dizininin sahiplik UID değerini değiştir",
           "failed": "Sahiplik güncelleme başarısız",
           "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" sahipliği ayarlanıyor...",
-          "uidOption": "Sahip UID'si (varsayılan: 7111)"
+          "uidOption": "Sahip UID'si (varsayılan: 7111)",
+          "rootOwnedOption": "root'a ya da bu UID'ye ait dizinlerin altındaki root dosyalarını sahip UID'ye devret ve her birini geri alma manifestine kaydet",
+          "dryRunOption": "--root-owned ile: değişecek dosyaları listele, hiçbir şeyi değiştirme",
+          "undoOption": "--root-owned ile: geri alma manifestindeki, hâlâ sahip UID'ye ait dosyaları root'a geri ver",
+          "rootOwnedQualifiers": "--dry-run ve --undo yalnızca --root-owned ile birlikte geçerlidir ve birlikte kullanılamaz",
+          "rootOwnedDryRunSummary": "{{machine}} üzerindeki {{repository}} altında root'a ait {{count}} girdi sahip UID'ye devredilirdi; hiçbir şey değiştirilmedi."
         },
         "template": {
           "apply": {
@@ -1831,7 +1958,8 @@
         "sizeOption": "Depo boyutu (ör. 10G, 100G, 1T)",
         "sizeRequiredDocker": "Bir docker deposu için --size zorunludur (--machine veya docker dünyasına ait bir --datastore).",
         "starting": "\"{{machine}}\" üzerinde \"{{repository}}\" ({{size}}) deposu oluşturuluyor...",
-        "startingDatastore": "\"{{repository}}\" deposu \"{{datastore}}\" veri deposunda oluşturuluyor ({{machine}})..."
+        "startingDatastore": "\"{{repository}}\" deposu \"{{datastore}}\" veri deposunda oluşturuluyor ({{machine}})...",
+        "stepsUnfinished": "repo create: {{name}} oluşturuldu, ancak {{steps}} adımları tamamlanmadı. Bunları rdc job wait tamamlar."
       },
       "delete": {
         "archived": "\"{{repository}}\" kimlik bilgisi arşivlendi",
@@ -1857,7 +1985,9 @@
         "licenseRetireFailed": "\"{{repository}}\" deposunun lisansının iade edildiği hesap sunucusuna bildirilemedi ({{reason}}). İade edilene kadar sunucunun lisans toplamlarında sayılmaya devam eder.",
         "backupsPurged": "\"{{repository}}\" deposunun {{count}} bulut anlık görüntüsü silindi, {{bytes}} yer açıldı.",
         "purgeBackupsOption": "Deponun bulut yedeklerini süresinin dolmasını beklemeden hemen sil",
-        "purgeForkRefused": "\"{{repository}}\" bir fork ve yedek soyunu ana depoyla paylaşıyor; --purge-backups ana deponun yedeklerini de silerdi. Fork'u bu seçenek olmadan silin."
+        "purgeForkRefused": "\"{{repository}}\" bir fork ve yedek soyunu ana depoyla paylaşıyor; --purge-backups ana deponun yedeklerini de silerdi. Fork'u bu seçenek olmadan silin.",
+        "confirmMachineGone": "\"{{repository}}\" deposunun \"{{machine}}\" makinesi artık bu yapılandırmada yok; hiçbir makinede değişiklik yapılmaz. \"{{repository}}\" yapılandırma kaydı arşivlensin mi?",
+        "machineGoneArchived": "\"{{repository}}\" yapılandırma kaydı arşivlendi: makinesi \"{{machine}}\" artık bu yapılandırmada olmadığından hiçbir makineye bağlanılmadı"
       },
       "description": "Makinelerde şifreli depoları dağıt ve yönet. Temel alt komutlar: create, up (dağıt), down (durdur), fork (anında CoW klonu), delete, push/pull (yedekleme), sync (dosya aktarımı). Yaşam döngüsü: repo create → repo up → repo down. Mimari, yönlendirme ve ortam değişkeni ayrıntıları için rdc --help çıktısındaki Temel Kavramlar bölümüne bakın.",
       "descriptionShort": "Makinelerde şifrelenmiş depoları dağıt ve yönet",
@@ -1942,6 +2072,10 @@
       },
       "gc": {
         "applied": "Çöp toplama tamamlandı: {{deleted}}/{{total}} commit silindi",
+        "started": "{{total}} silme işleminden {{started}} tanesi iş olarak çalışıyor; bunları takip etmek için: rdc job list.",
+        "partlyFailed": "{{total}} commit'ten {{failed}} tanesi silinemedi",
+        "noSummary": "gc işi özet yazdırmadı, bu yüzden toplamlar bilinmiyor. Geriye ne kaldığını görmek için deneme çalıştırmasını yeniden yapın.",
+        "datastorePathUnsupported": "{{path}} veri deposu yolu, işin liste parametresinin taşıyamadığı ',' veya '@' karakterini içeriyor. Yolu yeniden adlandırın.",
         "applyOption": "Erişilemez commit'leri gerçekten sil (varsayılan, deneme çalıştırması önizlemesidir)",
         "deleted": "{{commit}} commit'i silindi",
         "deleteFailed": "{{commit}} commit'i silinemedi",
@@ -2036,6 +2170,7 @@
         "description": "Makinenin depolama bakımcısının uyguladığı otomatik boyut politikasını yönetir: depo dolduğunda kotayı çevrimiçi büyütür (asla max-quota üzerine çıkmaz, havuz azaldığında büyütmez) ve planlı trimler çalıştırır. Otomatik küçültme yoktur; bunun için 'repo resize' kullanın. Referans verilmezse -m üzerindeki makine geneli varsayılan politika hedeflenir",
         "descriptionShort": "Otomatik boyut politikasını yönet (otomatik büyüme, planlı trim)",
         "failed": "Politika işlemi başarısız",
+        "settingsNotHeld": "Ayarların okunması bu işleme ulaşmadı, bu yüzden sınırlar tek bir belgede birleştirilemiyor.",
         "get": {
           "description": "Kayıtlı makine varsayılanını, depo geçersiz kılmasını (bir referansla) ve bakımcının uyguladığı birleşik etkin politikayı gösterir",
           "descriptionShort": "Boyut politikasını göster (makine varsayılanı, depo geçersiz kılması, etkin)"
@@ -2050,7 +2185,21 @@
           "growStepOption": "Adım başına büyüme: mutlak (10G) veya kota yüzdesi (20%)",
           "growThresholdOption": "Büyümeyi tetikleyen dosya sistemi doluluk yüzdesi (varsayılan 85)",
           "maxQuotaOption": "Otomatik büyütme tavanı (örn. 200G); otomatik büyütme için zorunlu",
-          "trimIntervalOption": "Otomatik trimler arasındaki en az saat (varsayılan 24)"
+          "trimIntervalOption": "Otomatik trimler arasındaki en az saat (varsayılan 24)",
+          "memoryMaxOption": "Deponun bellek üst sınırı (örn. 10G, kaldırmak için max); sınırda kapsayıcılarından biri OOM ile sonlandırılır, dışındaki hiçbir şey etkilenmez",
+          "memoryHighOption": "Deponun bellek kısma noktası (örn. 8G, kaldırmak için max)",
+          "cpuMaxOption": "Deponun çekirdek cinsinden CPU üst sınırı (4, 2.5) veya N%, kaldırmak için max",
+          "ioMaxOption": "Depo aygıtının G/Ç üst sınırı: rbps=,wbps=,riops=,wiops= (herhangi bir alt küme, örn. rbps=200M,wbps=100M; KEY=max birini kaldırır) veya max",
+          "pidsMaxOption": "Deponun süreç üst sınırı (pids.max), kaldırmak için max",
+          "ramVolumeOption": "Deponun <mount>/.ram konumundaki RAM biriminin boyutu (örn. 8G, kaldırmak için max); bellek üst sınırı bunun en az 1G üzerinde kalmalıdır",
+          "clearLimitsOption": "Deponun tüm sınırlarını ve RAM birimini kaldır",
+          "forceOption": "Deponun mevcut bellek kullanımının altında bir bellek üst sınırına izin ver"
+        },
+        "limitsNeedRef": "Sınır bayrakları tek bir depoya uygulanır: deponun ref değerini verin (rdc repo policy set <ref> --memory-max 10G). Makine genelindeki biçim yalnızca boyut ilkesi bayraklarını alır",
+        "limits": {
+          "starting": "\"{{machine}}\" üzerindeki \"{{repository}}\" sınırları uygulanıyor...",
+          "completed": "\"{{repository}}\" sınırları",
+          "failed": "Sınır işlemi başarısız oldu"
         }
       },
       "promote": {
@@ -2221,6 +2370,38 @@
         "failed": "Durum kontrolü başarısız",
         "starting": "\"{{repository}}\" deposunun durumu \"{{machine}}\" üzerinden alınıyor..."
       },
+      "health": {
+        "description": "Deponun Rediaccfile health() denetimlerini çalıştırır ve 0 (sağlıklı), 1 (uyarı) ya da 2 (hata) koduyla çıkar",
+        "header": "\n{{repository}} sağlık durumu:",
+        "levelOk": "✓ Sağlıklı",
+        "levelWarning": "⚠ Uyarı",
+        "levelError": "✗ Hata",
+        "levelNone": "– Denetim yok: hiçbir Rediaccfile health() tanımlamıyor",
+        "fileLine": "  {{file}}: {{level}} (çıkış kodu {{exit}})",
+        "fileLevelOk": "sağlıklı",
+        "fileLevelWarning": "uyarı",
+        "fileLevelError": "hata",
+        "failed": "{{repository}} sağlık denetimi başarısız oldu: {{message}}",
+        "unsupported": "{{machine}} üzerindeki renet, depo sağlık denetimlerinden eski; rdc machine setup {{machine}} ile güncelleyin",
+        "renetFailed": "renet sağlık denetimini çalıştıramadı"
+      },
+      "repair": {
+        "description": "Deponun Rediaccfile dosyalarındaki, bildirilen sınıfının izin verdiği repair() işlevlerini çalıştırır, ardından health() yeniden çalışır (çıkış 0 ok, 1 uyarı, 2 hata ya da başarısız onarım)",
+        "descriptionShort": "Bir deponun Rediaccfile dosyasındaki izin verilen repair() işlevlerini çalıştırır, ardından sağlığını yeniden denetler",
+        "optionDryRun": "Hangi repair() işlevinin çalışacağını, hiçbirini çalıştırmadan gösterir",
+        "optionWithBackup": "auto-with-backup repair() işlevlerine, deponun başarılı bir anlık görüntüsünden sonra izin verir",
+        "optionWindowOverride": "window=only repair() işlevlerini makinenin bakım penceresi dışında da çalıştırır",
+        "optionYes": "Sınıf bildirmeyen (operator-only) repair() işlevlerini sormadan çalıştırır",
+        "header": "\n{{repository}} onarımı:",
+        "summary": "{{ran}} repair() çalıştı, {{failed}} başarısız; health() şimdi {{level}}",
+        "withheldNeedsBackup": "auto-with-backup repair() işlevleri çalışmadı: --with-backup verin",
+        "withheldSnapshotFailed": "auto-with-backup repair() işlevleri çalışmadı: anlık görüntü alınamadı",
+        "withheldNotConfirmed": "Sınıf bildirmeyen (operator-only) repair() işlevleri çalışmadı: onaylanmadılar (--yes çalıştırır)",
+        "confirmOperatorOnly": "Bu repair() işlevleri sınıf bildirmiyor ve operator-only sayılıyor: {{files}}. Çalıştırılsın mı?",
+        "unreadable": "renet onarım raporu olmadan yanıt verdi",
+        "unsupported": "{{machine}} üzerindeki renet repository repair desteğinden eski; rdc machine setup {{machine}} ile güncelleyin",
+        "renetFailed": "renet onarımı çalıştıramadı"
+      },
       "sync": {
         "description": "Depoları ve dosyaları senkronize et (toplu push/pull, dosya aktarımı)",
         "download": {
@@ -2318,6 +2499,37 @@
           "completed": "{{device}}, \"{{repository}}\" deposundan geri alındı",
           "failed": "Cihaz izni geri alınamadı"
         }
+      },
+      "permission": {
+        "descriptionShort": "Bir deponun Rediaccfile'ının erişebileceklerini ver veya geri al",
+        "description": "Bir deponun Rediaccfile'ındaki up() ve down() işlevlerinin erişebileceklerini genişletir. Bunlar ayrıcalıksız evrensel kullanıcı olarak çalışır; bir yetki bir yol (--path) veya ayrıcalık düşürmeden root (--root) ekler. Yetkiyi makine uygular, Rediaccfile yalnızca '# rediacc:needs' satırıyla yetki isteyebilir ve fork yetkisiz başlar.",
+        "nothingToChange": "permission {{verb}} için --root veya --path gerekir",
+        "grant": {
+          "descriptionShort": "Bir deponun up() ve down() işlevlerine daha geniş erişim ver",
+          "description": "Deponun Rediaccfile'ındaki up() ve down() işlevlerinin bir yola erişmesine veya root olarak çalışmasına izin verir. Kullanıcı ajanı başlatmadan önce REDIACC_ALLOW_GRAND_REPO ayarlamadıysa --root bir ajana reddedilir.",
+          "rootOption": "up() ve down() işlevlerini ayrıcalık düşürmeden root olarak çalıştır",
+          "pathOption": "up() ve down() işlevlerinin erişebileceği mutlak yol, PATH[:ro|:rw] (varsayılan salt okunur)",
+          "starting": "\"{{repository}}\" deposuna \"{{machine}}\" üzerinde yetki veriliyor...",
+          "completed": "\"{{repository}}\" deposuna yetki verildi",
+          "failed": "Yetki verilemedi"
+        },
+        "revoke": {
+          "descriptionShort": "Bir depodan yol veya root yetkisini geri al",
+          "description": "Depodan yaşam döngüsü yol yetkisini veya root yetkisini geri alır. Sonraki up() ve down() çalıştırmaları kalan yetkilerle yapılır.",
+          "rootOption": "Root yetkisini geri al",
+          "pathOption": "Geri alınacak mutlak yol",
+          "starting": "\"{{repository}}\" deposunun \"{{machine}}\" üzerindeki yetkisi geri alınıyor...",
+          "completed": "\"{{repository}}\" deposunun yetkisi geri alındı",
+          "failed": "Yetki geri alınamadı"
+        },
+        "show": {
+          "descriptionShort": "Bir deponun yaşam döngüsü yetkisini göster",
+          "description": "Deponun up() ve down() işlevlerinin root olarak çalışıp çalışmadığını ve hangi yollara erişebildiğini gösterir.",
+          "starting": "\"{{repository}}\" deposunun \"{{machine}}\" üzerindeki yetkisi okunuyor...",
+          "completed": "\"{{repository}}\" deposunun yetkisi okundu",
+          "failed": "Yetki okunamadı",
+          "unreadable": "Makinenin yetki çıktısı okunamadı"
+        }
       }
     },
     "serve": {
@@ -2334,6 +2546,190 @@
       "optionMode": "Konum: daemon (müşteri sunucusu) veya container",
       "optionPort": "Dinlenecek port",
       "summary": "Uzak istemciler için yürütücü olarak çalıştır"
+    },
+    "server": {
+      "summary": "Kendi sunucunuzda barındırılan Rediacc hesap sunucusunu kurun ve çalıştırın",
+      "description": "Kendi sunucunuzda barındırılan Rediacc hesap sunucusunu (Elite) bir makineye depo olarak kurar; ardından denetleme, yükseltme, yedekleme ve lisanslama sağlar. Bu CLI'yi yürütücü olarak çalıştıran `rdc serve` ile karıştırılmamalıdır.",
+      "domainArgument": "Kurulu sunucunun genel alan adı",
+      "optionMachine": "Bu cihazda alan adı için kurulum kaydı yoksa sunucunun çalıştığı makine",
+      "optionRepo": "Sunucunun çalıştığı depo (varsayılan: elite)",
+      "install": {
+        "summary": "Hesap sunucusunu bir makineye kur",
+        "description": "Kendi sunucunuzda barındırılan hesap sunucusunu mevcut bir makineye kurar: makineyi denetler, eksikse renet'i kurar, DNS'i bekler, TLS'i yapılandırır, depoyu oluşturur, anahtarları makinede üretir, lisanslar, sunucuyu başlatır ve sahip hesabını oluşturur. Her değerin bir bayrağı vardır; terminalde eksik değer sorulur. Yeniden çalıştırma, tamamlanmış adımları atlar.",
+        "machineArgument": "Kurulum yapılacak yapılandırılmış makine (veya --ip ve --user ile bir tane kaydedin)",
+        "optionIp": "Önce kaydedilecek mevcut bir sunucunun veya LAN cihazının adresi",
+        "optionUser": "O makinedeki SSH kullanıcısı",
+        "optionPort": "O makinedeki SSH bağlantı noktası (varsayılan: 22)",
+        "optionName": "O makinenin kaydedileceği ad (varsayılan: server-<ip>)",
+        "optionDomain": "Sunucunun genel alan adı, örneğin accounts.example.com",
+        "optionStoreDomain": "Yedek deposunun genel alan adı (varsayılan: <name>-store.<alan adının geri kalanı>)",
+        "optionRepo": "Depo adı (varsayılan: elite)",
+        "optionSize": "Depo boyutu (varsayılan: 10G)",
+        "optionOwner": "Kurulum sırasında oluşturulan sahip hesabının e-postası (varsayılan: oturum açmış hesap)",
+        "optionTls": "Sertifikanın nasıl alınacağı: letsencrypt (HTTP-01), cloudflare (DNS-01) veya byo (mevcut bir sertifika)",
+        "optionCfToken": "DNS-01 için Cloudflare API belirteci (--tls cloudflare ile)",
+        "optionCertEmail": "Let's Encrypt'in süre bitimi bildirimlerini göndereceği e-posta (varsayılan: sahip)",
+        "optionTlsCert": "PEM biçiminde sertifika dosyası (--tls byo ile), her iki alan adını da kapsamalıdır",
+        "optionTlsKey": "O sertifikanın özel anahtar dosyası (--tls byo ile)",
+        "optionTlsCa": "Sunucu sertifikasının zincirlendiği CA sertifikası, sağlık denetiminde kullanılır",
+        "optionLicence": "auto: oturum açmış hesaptan bir sertifika, yoksa ücretsiz katman; free: ücretsiz katmanda başlat",
+        "optionCert": "Çevrimdışı kurulum için yetki devri sertifikası dosyası; makinede üretilen anahtarı belirtmelidir",
+        "optionImage": "Çalıştırılacak sunucu imajı (varsayılan: ghcr.io/rediacc/server:latest)",
+        "optionImageFile": "Çekmek yerine gönderilecek kayıtlı imaj arşivi (docker save)",
+        "optionLocalImage": "--image imajını yerel Docker'dan kaydet ve çekmek yerine gönder",
+        "optionNoDnsWait": "DNS kayıtlarını çözümlenmelerini beklemeden yazdır",
+        "optionBwsProject": "Üretilen anahtarları ayrıca bu Bitwarden Secrets Manager projesine kopyala; bu olmadan hiçbir anahtar makineden çıkmaz",
+        "optionRotate": "--bws-project ile, farklı olan kayıtlı bir değeri reddetmek yerine değiştir",
+        "optionYes": "Hiçbir şey sorma: varsayılanları al ve eksik değeri reddet",
+        "help": "Adımlar, sırayla (her biri kaydedilir, bu yüzden yeniden çalıştırma tamamlananları atlar):\n  preflight  sudo -n, mimari, 80 ve 443 numaralı bağlantı noktaları, disk alanı ve saat kayması\n  setup      renet eksikse rdc machine setup\n  dns        A ve AAAA kayıtlarını yazdırır, ardından her iki alan adı da makineye çözümlenene kadar bekler\n  tls        Let's Encrypt, Cloudflare DNS-01 veya mevcut bir sertifika\n  repo       depoyu oluşturur ve elite şablonunu uygular\n  keys       tüm anahtarları makinede, deponun secrets.env dosyasına üretir\n  licence    --cert, yoksa oturum açmış hesaptan bir sertifika, o da yoksa ücretsiz katman\n  image      imajı makinede çeker veya --image-file gönderir\n  up         sunucuyu başlatır ve https://<domain>/health yanıtını bekler\n  owner      sahip hesabını oluşturur\n\nHenüz kaydedilmemiş bir makine --ip ve --user ile eklenir. Bulut VM'si önce rdc machine provision ile oluşturulur.\nDNS kayıtları yazdırılır, hiçbir zaman müşteri bölgesine yazılmaz.\nTerminalde kurulum, tek seferlik bir kurtarma paketiyle biter. Güvenli bir yerde saklayın: günlüğe hiç yazılmaz, --output json çıktısına girmez ve rdc server backup onu daha sonra yeniden yazdırır.",
+        "step": "Adım: {{step}}",
+        "skipped": "Adım {{step}}: daha önce tamamlandı, atlandı",
+        "done": "Hesap sunucusu https://{{domain}} adresinde çalışıyor",
+        "freeTier": "{{domain}} ücretsiz katmanda çalışıyor. Lisanslamak için `rdc server licence {{domain}}` komutunu çalıştırın.",
+        "backupHint": "Kurtarma paketini `rdc server backup {{domain}} --out <file>` ile kaydedin. Sahibin ilk parolası {{ownerFile}} içindedir.",
+        "examples": {
+          "brought": "Mevcut bir sunucuyu adresiyle kaydedip üzerine kurulum yap.",
+          "configured": "Yapılandırılmış bir makineye hiçbir soru sormadan kurulum yap.",
+          "lan": "Bir LAN makinesine mevcut sertifikayla, ücretsiz katmanda kurulum yap."
+        }
+      },
+      "status": {
+        "description": "Kurulu bir sunucunun sağlığını, katmanını, sertifikasını ve imajını göster",
+        "certRefused": "REDDEDİLDİ ({{reason}}) {{at}}",
+        "certRefusedRun": "çalıştırın: rdc server licence {{domain}}"
+      },
+      "backup": {
+        "description": "Kurulu bir sunucunun kurtarma paketini (anahtarları) yazdır veya bir dosyaya yaz",
+        "optionOut": "Paketi stdout yerine bu dosyaya yaz (kip 0600)",
+        "written": "Kurtarma paketi {{file}} dosyasına yazıldı (kip 0600)",
+        "examples": {
+          "out": "Kurtarma paketini yalnızca sahibinin okuyabileceği bir dosyaya kaydet."
+        }
+      },
+      "upgrade": {
+        "description": "Kurulu bir sunucuyu yükselt: deponun geri alma noktası olarak fork'unu oluştur, yeni imajı yerleştir, yerleşik şablon daha yeniyse şablonu yeniden uygula ve yeniden başlat",
+        "descriptionShort": "Kurulu bir sunucuyu geri alma çatalıyla yükselt",
+        "confirm": "{{domain}} üzerindeki hesap sunucusu yükseltilsin mi?",
+        "forking": "Depo, {{tag}} geri alma noktası olarak fork ediliyor",
+        "template": "elite şablonu yeniden uygulanıyor (sürüm {{from}} -> {{to}})",
+        "templateCurrent": "Dağıtılmış şablon (sürüm {{version}}) güncel",
+        "done": "{{domain}} yükseltildi. Geri alma noktası: {{rollback}}",
+        "migratingCert": "Sertifika secrets.env dosyasından sertifika gelen kutusuna taşınıyor; sunucu açılırken uygular"
+      },
+      "licence": {
+        "description": "Ücretsiz katmandaki bir sunucuyu, oturum açmış hesaptan veya --cert ile alınan yetki devri sertifikasına taşı",
+        "done": "{{domain}}, {{subscription}} aboneliği altında lisanslandı",
+        "certUnreadable": "{{file}} sertifika dosyası okunamıyor",
+        "certInvalid": "{{file}} kullanılabilir bir yetki devri sertifikası değil: {{error}}",
+        "keyMismatch": "{{file}}, makinede üretilen anahtardan farklı bir anahtar için verilmiş. Makinenin anahtarı için bir sertifika alın.",
+        "issuedKeyMismatch": "Hesap sunucusu, makinede üretilen anahtardan farklı bir anahtar için sertifika verdi",
+        "noLogin": "Oturum açmış hesap yok: sunucu ücretsiz katmanda başlar",
+        "planDisallows": "Abonelik bir yetki devri sertifikası barındıramaz ({{error}}); sunucu ücretsiz katmanda başlar",
+        "otherKey": "Abonelikte başka bir anahtar ({{certId}}) için etkin bir yetki devri sertifikası zaten var. Portalda iptal edin, sonra kurulumu yeniden çalıştırın. {{error}}",
+        "missingScope": "Bu oturum bir yetki devri sertifikası veremez. `rdc subscription login` komutunu 2FA'lı bir sahip veya yönetici olarak yeniden çalıştırın ya da --licence free ile kurun.",
+        "offerFree": "Sunucu bunun yerine ücretsiz katmanda başlatılsın mı?",
+        "noCertForUpgrade": "Kullanılabilir yetki devri sertifikası yok: `rdc subscription login` ile 2FA'lı bir sahip veya yönetici olarak oturum açın ya da --cert <file> verin",
+        "freeProbeHoldsCert": "Hiçbir sertifika kurulmamasına rağmen sunucu sertifika taşıyormuş gibi yanıt veriyor",
+        "viaInbox": "Sunucu sertifikayı sertifika gelen kutusundan uyguladı; yeniden başlatma gerekmedi",
+        "alreadyCurrent": "Sunucuda bu sertifika zaten var ({{certId}}); uygulanacak bir şey yok",
+        "rejected": "Sunucu sertifikayı reddetti ({{reason}}): {{detail}}",
+        "noResult": "Sunucu bırakılan sertifikaya {{seconds}} saniye içinde yanıt vermedi; çalıştığını kontrol edin",
+        "inboxBusy": "Sunucunun sertifika gelen kutusunda bekleyen başka bir sertifika var; o karara bağlandıktan sonra yeniden deneyin",
+        "confirmMismatch": "Sunucu {{expected}} yerine {{actual}} sertifikasını bildiriyor; yani yeni sertifika yürürlükte değil",
+        "confirmSkipped": "Kayıtlı sahip girişi yok ({{ownerFile}}), bu yüzden sunucunun sertifikası doğrulanamadı; gelen kutusunun yanıtı esas alındı",
+        "bootRefused": "Sunucu açılışta sertifikasını reddetti ({{reason}}): {{detail}}",
+        "droppedCert": "{{certId}} sertifikası gelen kutusuna bırakıldı",
+        "noUpstreamKey": "Sunucuda UPSTREAM_PUBLIC_KEY yok; bu yüzden hiçbir sertifikayı doğrulayamaz ve yeni bir sertifika işe yaramaz. {{domain}} sırlarında UPSTREAM_PUBLIC_KEY değerini ayarlayın, ardından `rdc server upgrade {{domain}}` çalıştırın.",
+        "bootRefusalStays": "Sertifika uygulandı, ancak sunucu hâlâ açılışta bir ret bildiriyor ({{reason}}); sunucu günlüklerine bakın"
+      },
+      "bundle": {
+        "header": "{{domain}} için kurtarma paketi. Çevrimdışı saklayın; sunucunun anahtarlarını geri yükler.",
+        "once": "Bu kurtarma paketi yalnızca bir kez gösterilir. Şimdi güvenli bir yerde saklayın:",
+        "owner": "Sahip hesabı: {{email}}, ilk parola: {{password}}"
+      },
+      "bws": {
+        "skipped": "--bws-project yok: anahtarlar yalnızca makinede kalır",
+        "done": "Anahtarlar Bitwarden Secrets Manager'a yedeklendi: {{created}} oluşturuldu, {{unchanged}} değişmedi, {{rotated}} değiştirildi",
+        "noToken": "Bitwarden Secrets Manager belirteci yok: BWS_ACCESS_TOKEN ayarlayın veya yapılandırma dizinindeki bws-access-token dosyasına yazın",
+        "listFailed": "bws secret list başarısız oldu",
+        "noWriter": "--bws-project bir console checkout'u gerektirir: yazma, değeri komut satırı dışında tutan private/account/scripts/rotation/bws-write.ts üzerinden yapılır",
+        "writeFailed": "{{key}} değerinin Bitwarden Secrets Manager'a yazılması başarısız oldu",
+        "readFailed": "Anahtarların makineden okunması başarısız oldu",
+        "badName": "Opak olmayan bir depo adı reddediliyor",
+        "differs": "{{key}} zaten farklı bir değerle kayıtlı; değiştirmek için --rotate verin"
+      },
+      "dns": {
+        "create": "Bu DNS kayıtlarını DNS sağlayıcısında oluşturun:",
+        "waiting": "Kayıtların çözümlenmesi bekleniyor...",
+        "resolved": "DNS makineye çözümleniyor",
+        "notWaiting": "DNS beklenmiyor",
+        "timeout": "Bu kayıtlar hâlâ çözümlenmiyor: {{records}}",
+        "resolvesElsewhere": "{{name}}, {{want}} yerine {{found}} adresine çözümleniyor; önce kaydı düzeltin",
+        "written": "Yazıldı: {{type}} {{name}} -> {{value}}"
+      },
+      "health": {
+        "failed": "https://{{domain}}/health, 200 yerine {{status}} yanıtı verdi",
+        "noAnswer": "yanıt yok",
+        "certMismatch": "{{domain}} için sertifika {{sans}} adlarını kapsıyor, {{domain}} adını kapsamıyor"
+      },
+      "image": {
+        "pulling": "{{image}} makinede çekiliyor",
+        "pullFailed": "{{image}} çekilemedi: {{detail}}",
+        "saving": "{{image}} yerel Docker'dan kaydediliyor",
+        "saveFailed": "docker save {{image}} başarısız oldu"
+      },
+      "owner": {
+        "stepFailed": "{{step}} {{status}} {{error}} yanıtı verdi",
+        "raced": "Sunucunun aboneliği {{box}}, sertifikanın aboneliği {{cert}} ile aynı değil: başka bir hesap önce kaydoldu"
+      },
+      "preflight": {
+        "refused": "{{machine}} hazır değil:",
+        "noAnswer": "{{machine}} SSH üzerinden ön denetime yanıt vermedi",
+        "noSudo": "sudo -n {{machine}} üzerinde başarısız; SSH kullanıcısının parolasız sudo yetkisi olmalı",
+        "arch": "{{arch}} mimarisi desteklenmiyor (x86_64 veya aarch64)",
+        "portBusy": "{{port}} numaralı bağlantı noktasını {{holder}} kullanıyor",
+        "disk": "Veri deposunda {{free}} GiB boş alan var, {{need}} GiB gerekli",
+        "clock": "Makinenin saati {{skew}} sn sapmış (en fazla {{max}} sn); zaman eşitlemesini etkinleştirin"
+      },
+      "tls": {
+        "byoNeedsPair": "--tls byo için --tls-cert ve --tls-key gerekir",
+        "byoFailed": "{{host}} için sertifika kurulumu başarısız oldu: {{detail}}",
+        "byoInstalled": "{{host}} için sertifika kuruldu",
+        "cloudflareNeedsToken": "--tls cloudflare için --cf-token gerekir"
+      },
+      "prompts": {
+        "machine": "Kurulum yapılacak makine",
+        "machineAddExisting": "Mevcut sunucu veya LAN cihazı (IP ve kullanıcı)",
+        "provisionHint": "Bulut VM'si önce rdc machine provision ile oluşturulur.",
+        "machineIp": "IP adresi",
+        "machineUser": "SSH kullanıcısı",
+        "machinePort": "SSH bağlantı noktası",
+        "machineName": "Bu makinenin adı",
+        "domain": "Sunucunun genel alan adı",
+        "storeDomain": "Yedek deposunun genel alan adı",
+        "tls": "Sertifika",
+        "tlsLetsencrypt": "Let's Encrypt (makine 80 numaralı bağlantı noktasında yanıt verir)",
+        "tlsCloudflare": "Cloudflare DNS (API belirteci)",
+        "tlsByo": "Mevcut bir sertifika ve anahtar",
+        "cfToken": "Cloudflare API belirteci",
+        "owner": "Sahip hesabının e-postası",
+        "required": "Bir değer gerekli"
+      },
+      "errors": {
+        "needsTTY": "Terminalde çalışmıyorken {{flag}} gereklidir",
+        "machineUnknown": "{{machine}} makinesi bu yapılandırmada yok. Kaydetmek için --ip ve --user verin.",
+        "machineNameTaken": "{{machine}} adlı bir makine zaten {{ip}} adresinde kayıtlı; başka bir --name seçin",
+        "otherMachine": "{{domain}}, bu cihazdan {{machine}} makinesine kurulmuştu",
+        "repoExists": "{{repo}} deposu {{machine}} üzerinde zaten var ve bu kurulum tarafından oluşturulmadı; --repo <name> verin",
+        "repoUnknown": "{{repo}} deposu bu yapılandırmada yok",
+        "noRecord": "Bu cihazda {{domain}} için kurulum kaydı yok; --machine verin (elite değilse --repo da)",
+        "noDaemon": "{{repo}} deposu için henüz kaydedilmiş bir Docker daemon'u yok",
+        "keygenNoKey": "Makine bir Ed25519 genel anahtarı bildirmedi",
+        "bundleIncomplete": "Makinedeki secrets.env dosyasında {{keys}} eksik",
+        "boxScriptFailed": "{{machine}} üzerindeki komut {{code}} koduyla çıktı: {{detail}}",
+        "rdcFailed": "{{command}} başarısız oldu (çıkış kodu {{code}})",
+        "certAndFree": "--cert ve --licence free birlikte kullanılamaz"
+      }
     },
     "shortcuts": {
       "cancel": {
@@ -2367,10 +2763,10 @@
       "description": "Lisanslama ve abonelik jetonlarını yönet. login ile giriş yapın, status ile inceleyin, refresh ile lisansları yeniden verin.",
       "descriptionShort": "Makine lisanslama ve abonelik yönetimi",
       "login": {
+        "backupNeedsTwoFactor": "Yedekleme depolama yönetimi olmadan oturum açıldı. {{url}} adresindeki Ayarlar'dan iki adımlı doğrulamayı açın, ardından yeniden oturum açın.",
         "channelSynced": "Güncelleme kanalı {{channel}} olarak ayarlandı.",
         "description": "Web portaldan alınan API belirteci ile kimlik doğrulama",
         "discoveringRegions": "Kullanılabilir bölgeler keşfediliyor...",
-        "edgeSeparator": "Edge Kanalı",
         "emptyToken": "API belirteci boş olamaz (stdin'den belirteç gelmedi).",
         "expired": "Yetkilendirme zaman aşımına uğradı. Lütfen tekrar deneyin.",
         "machines": "Makineler: {{active}}/{{max}}",
@@ -2390,11 +2786,19 @@
         "regionSelected": "Veri bölgesi: {{region}} ({{domain}})",
         "serverChanged": "Sunucu değiştirildi. Önceki oturum temizlendi.",
         "success": "Giriş başarılı",
+        "termsAccepted": "Kabul edilen Hizmet Şartları: sürüm {{version}}",
+        "termsPending": "Hizmet Şartları henüz kabul edilmedi. {{url}} adresinden kabul edin",
+        "termsPendingAccept": "Şartları {{url}} adresinde okuyun ve {{acceptUrl}} adresinden kabul edin",
         "tokenAndPassword": "--token ve --password-stdin birlikte kullanılamaz.",
         "totpRequired": "Bu hesap iki adımlı doğrulama gerektiriyor. {{field}} değerini güncel bir kodla ayarla.",
         "validated": "Belirteç doğrulandı",
         "validating": "Belirteç doğrulanıyor...",
         "waitingApproval": "Tarayıcı yetkilendirmesi bekleniyor..."
+      },
+      "register": {
+        "description": "Tarayıcıda hesap oluştur (e-posta önceden doldurulur) ve oturum aç",
+        "optionEmail": "Kayıt sayfasında önceden doldurulacak e-posta adresi",
+        "invalidEmail": "Geçerli bir e-posta adresi girin."
       },
       "logout": {
         "description": "Kayıtlı abonelik jetonunu temizle",
@@ -2424,7 +2828,21 @@
           "refreshing": "Depo lisansları yenileniyor..."
         },
         "success": "Lisans yenilendi ve yüklendi",
-        "targetExclusive": "-m veya --repo seçeneklerinden en fazla birini geçirin. --repo kendi makinesini referanstan kendisi belirler."
+        "adoptOrigin": "Başka bir hesap sunucusunun verdiği lisansları bu yapılandırmanın hesap sunucusundan yeniden verip taşır. Bu seçenek olmadan bu lisanslara dokunulmaz.",
+        "adoptOriginNeedsTarget": "--adopt-origin bir makinenin tüm lisanslarını taşır: -m <machine> ile birlikte verin.",
+        "adoptOriginNeedsLogin": "--adopt-origin lisansları bu yapılandırmanın hesap sunucusundan yeniden verir, bunun için oturum açmak gerekir: önce \"rdc subscription login\" komutunu çalıştırın.",
+        "targetExclusive": "-m veya --repo seçeneklerinden en fazla birini geçirin. --repo kendi makinesini referanstan kendisi belirler.",
+        "noLogin": {
+          "renewing": "Lisanslar kendi kimlik bilgileriyle yenileniyor...",
+          "renewed": "Lisans yenileme tamamlandı",
+          "none": "Bu makinede kurulu depo lisansı yok.",
+          "repoRenewed": "{{repositoryGuid}}: yenilendi",
+          "repoNotDue": "{{repositoryGuid}}: henüz yenileme zamanı gelmedi",
+          "repoNeedsLogin": "{{repositoryGuid}}: atlandı, oturum açmak gerekiyor ({{detail}})",
+          "repoFailed": "{{repositoryGuid}}: yenilenemedi ({{detail}})",
+          "failed": "{{count}} lisans yenilenemedi; yukarıdaki satırlara bakın. Oturum açmak bunu değiştirmez.",
+          "paidNote": "Oturum açılmadan yalnızca kendi kendine yenilenen lisanslar (FREE lisanslar) yenilenir; ücretli lisanslar için \"rdc subscription login\" gerekir."
+        }
       },
       "repo": {
         "status": {
@@ -2446,16 +2864,81 @@
         "overLimitSummary": "  {{count}} makine, makine slotu sınırının ötesinde geçici olarak tutuluyor. Yenilemeler başarılı olmaya devam ediyor; bir slot boşaltana veya sınırı artırana kadar YENİ depolar lisanslanamaz.",
         "parseFailed": "  Lisans dosyası ayrıştırılamadı",
         "remote": "\nUzak abonelik:",
-        "remoteMachine": "    - {{id}}... (son görülme: {{lastSeen}})",
         "remoteMachineActivations": "  Makine etkinleştirmeleri: {{active}}/{{max}}",
-        "remoteMachineOverLimit": "    - {{id}}… (son görülme: {{lastSeen}}) SINIRI AŞIYOR",
-        "remotePlan": "  Plan:      {{plan}}",
+        "remotePlan": "  Plan: {{plan}}",
         "remoteRepoLicenseIssuances": "  Yüzen lisans istekleri: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  Depo lisansları: {{totalTrackedRepos}} izleniyor, {{validCount}} geçerli, {{refreshRecommendedCount}} yenileme öneriliyor, {{hardExpiredCount}} tamamen süresi dolmuş",
-        "remoteRepoLicensesInConfig": "  Bu yapılandırmadaki depo lisansları: {{totalTrackedRepos}} izleniyor, {{validCount}} geçerli, {{refreshRecommendedCount}} yenileme öneriliyor, {{hardExpiredCount}} tamamen süresi dolmuş",
-        "remoteRepoLicensesNotInConfig": "  Bu yapılandırmada olmayan depo lisansları (silinmiş, çatallar veya başka bir yapılandırma): {{count}}",
-        "remoteStatus": "  Durum:     {{status}}",
-        "serverWouldUse": "Kullanılacak hesap sunucusu: {{server}}"
+        "remoteStatus": "  Durum: {{status}}",
+        "serverWouldUse": "Kullanılacak hesap sunucusu: {{server}}",
+        "licencesHeader": "  Lisanslar:",
+        "colGuid": "GUID",
+        "colHardExpiry": "Kesin bitiş",
+        "colKind": "Tür",
+        "colLastSeen": "Son görülme",
+        "colMachine": "Makine",
+        "colName": "Ad",
+        "colRefreshBy": "Yenileme tarihi",
+        "colRepo": "Depo",
+        "colState": "Durum",
+        "colWhere": "Nerede",
+        "elsewhereAbsent": "{{count}} bu yapılandırmada yok ({{state}})",
+        "elsewhereDeleted": "{{count}} silinmiş ({{state}})",
+        "elsewhereSummary": "Diğerleri: {{items}}",
+        "listHint": "Listelemek için: rdc subscription status --all",
+        "noLiveLicences": "  Bu yapılandırmadaki hiçbir deponun henüz lisansı yok.",
+        "optionAll": "Silinmiş depoların ve bu yapılandırmada olmayan depoların lisanslarını da listeler",
+        "othersHeader": "  Silinmiş ve bilinmeyen lisanslar:",
+        "overLimitCell": "LİMİT AŞILDI",
+        "refreshHint": "Yenilemek için: rdc subscription refresh",
+        "retireHint": "Kesin olarak süresi dolanları iade etmek için: rdc subscription retire --expired",
+        "whereAbsent": "bu yapılandırmada yok",
+        "whereDeleted": "silinmiş"
+      },
+      "licenceState": {
+        "valid": "geçerli",
+        "refreshRecommended": "yenileme önerilir",
+        "hardExpired": "kesin olarak süresi dolmuş"
+      },
+      "retire": {
+        "tooShort": "Deponun GUID değerinden en az 8 karakter girin: {{guid}}",
+        "notFound": "Bu hesabın lisans raporunda \"{{guid}}\" için lisans yok.",
+        "ambiguous": "\"{{guid}}\" {{count}} lisansla eşleşiyor: {{matches}}. Daha fazla karakter girin.",
+        "inConfig": "{{name}} hâlâ bu yapılandırmada ve lisansı {{state}}. İade edilen lisans iade edilmiş kalır, çünkü yenileme depoyu geri getirmez. Yine de iade etmek için --force kullanın.",
+        "needsYes": "Lisansı iade etmek onay gerektirir ve stdin bir terminal değil. Onaylamak için --yes verin.",
+        "confirm": "{{name}} lisansı iade edilsin mi ({{guid}}, {{state}})? Yenileme onu geri getirmez.",
+        "success": "Lisans iade edildi: {{name}}",
+        "description": "Artık var olmayan bir deponun lisansını iade eder; lisans sayımlarından ve bildirimlerden çıkar.",
+        "argGuid": "Deponun GUID değeri ya da hesap raporundaki bir lisansın en az 8 karakteri",
+        "optionForce": "Deposu hâlâ bu yapılandırmada olan ve kesin olarak süresi dolmamış bir lisansı iade eder",
+        "dryRunNeedsExpired": "--dry-run, --expired ile birlikte kullanılır.",
+        "expiredConfirm": "{{count}} lisans iade edilsin mi? Yenileme onları geri getirmez.",
+        "expiredDryRun": "Deneme çalıştırması: hiçbir şey iade edilmedi.",
+        "expiredFailed": "{{name}} iade edilemedi: {{error}}",
+        "expiredList": "Silinmiş veya bilinmeyen depolara ait, kesin olarak süresi dolmuş {{count}} lisans:",
+        "expiredNeedsConfig": "Bu yapılandırmada hiç depo yok, bu yüzden --expired hangi lisansların artık gereksiz olduğunu anlayamaz. Yapılandırmayı --config ile seçin.",
+        "expiredNone": "İade edilecek, silinmiş veya bilinmeyen bir depoya ait kesin süresi dolmuş lisans yok.",
+        "expiredResult": "İade edilen: {{retired}}, atlanan: {{skipped}} (etkin depolar), başarısız: {{failed}}.",
+        "expiredWithGuid": "--expired, kesin olarak süresi dolmuş tüm lisansları iade eder ve GUID almaz.",
+        "needsGuidOrExpired": "Bir depo GUID'si verin ya da --expired kullanın.",
+        "optionDryRun": "--expired ile: nelerin iade edileceğini listeler, hiçbir şeyi değiştirmez",
+        "optionExpired": "Silinmiş veya bu yapılandırmada olmayan depolara ait, kesin olarak süresi dolmuş tüm lisansları iade eder"
+      },
+      "notices": {
+        "description": "Hesabın bildirimlerini listeler: lisans süreleri, yedekleme durumu, yenilemeler, sertifikalar ve koşullar.",
+        "optionAll": "Kapatılan bildirimleri ve tüm sayfaları dahil eder, yalnızca son 30 günü değil",
+        "optionUnread": "Yalnızca henüz okunmamış bildirimler",
+        "optionMarkRead": "Listelenen bildirimleri okundu olarak işaretler",
+        "empty": "Bildirim yok.",
+        "markedRead": "{{count}} bildirim okundu olarak işaretlendi.",
+        "more": "+{{count}} tane daha",
+        "summary": {
+          "repoLicence": "{{hardExpired}} kesin olarak süresi dolmuş, {{refreshRecommended}} yenileme önerilen: {{names}}",
+          "backupHealth": "{{count}} yedekleme durumu öğesi",
+          "licenceRenewal": "{{planCode}} {{date}} tarihinde yenilenir",
+          "certExpiry": "{{track}} sertifikası {{number}} {{date}} tarihinde sona erer",
+          "evalExpiry": "{{planCode}} deneme süresi {{date}} tarihinde biter",
+          "termsNotice": "{{version}} koşulları {{date}} tarihinde yürürlüğe girer"
+        }
       }
     },
     "sync": {
@@ -2652,6 +3135,31 @@
         "checksumMismatch": "{{url}} için sağlama toplamı tutmuyor: beklenen {{expected}}, gelen {{actual}}. İndirilen dosya silindi, hiçbir şey kurulmadı.",
         "badArchive": "İndirilen arşiv kullanılamıyor: {{reason}}"
       }
+    },
+    "version": {
+      "channel": "Güncelleme kanalı: {{channel}}",
+      "description": "rdc sürümünü, platformu, güncelleme kanalını ve etkin lisansı yazdırır: oturum açıksa planı, açık değilse \"anonim (depo başına FREE)\", hesap sunucusuna ulaşılamıyorsa \"bilinmiyor (sunucuya ulaşılamıyor)\". --version bayrağı yine yalnızca sürümü yazdırır.",
+      "descriptionShort": "CLI sürümünü, kanalı ve etkin lisansı göster",
+      "license": {
+        "anonymous": "anonim (depo başına FREE)",
+        "label": "Lisans: {{license}}",
+        "unknown": "bilinmiyor (çevrimdışı)",
+        "unreachable": "bilinmiyor (sunucuya ulaşılamıyor)"
+      },
+      "platform": "Sistem: {{platform}} {{arch}}"
+    },
+    "legal": {
+      "accepted": "Kabul edildi: sürüm {{version}}, {{at}} ({{method}})",
+      "acceptedUnreachable": "Kabul edildi: bilinmiyor (sunucuya ulaşılamıyor)",
+      "binding": "esas alınan",
+      "credits": "Üçüncü taraf bildirimleri: {{command}}",
+      "description": "Yasal belgelerin bağlantılarını kendi dilinizde ve esas alınan İngilizce bağlantılarla, güncel Hizmet Şartları sürümünü sağlama toplamı ve arşiv URL'siyle, kayıtlı kabulü (oturum açıksa hesap sunucusundan, değilse bu yapılandırmadan) ve sözleşme tarafını yazdırır. Üçüncü taraf bildirimleri rdc credits --licenses altındadır.",
+      "descriptionShort": "Yasal belgeleri, Şartlar sürümünü ve kabulünüzü göster",
+      "documentsTitle": "Yasal belgeler:",
+      "entity": "Sözleşme tarafı: {{name}}, {{register}} {{code}}, KDV {{vat}}, {{address}}",
+      "notAccepted": "Kabul edildi: kabul edilmedi",
+      "terms": "Hizmet Şartları: sürüm {{version}}, {{effective}} tarihinden beri yürürlükte",
+      "upcoming": "Gelecek sürüm {{version}}, {{effective}} tarihinde yürürlüğe girer"
     }
   },
   "docs": {
@@ -2668,8 +3176,7 @@
         "machineRequired": "`--machine` ile bir makine belirtin veya bağlam varsayılanı ayarlayın",
         "noActiveConfig": "Etkin yapılandırma yok. `rdc config init` ile bir tane oluşturun",
         "permissionDenied": "Hesabınız gerekli izinlere sahip değil",
-        "regionRequired": "`--region` ile bir bölge belirtin veya bağlam varsayılanı ayarlayın",
-        "teamRequired": "`--team` ile bir takım belirtin veya bağlam varsayılanı ayarlayın"
+        "regionRequired": "`--region` ile bir bölge belirtin veya bağlam varsayılanı ayarlayın"
       }
     },
     "frontmatter": {
@@ -2701,6 +3208,7 @@
     "pageTitle": "Rediacc CLI Referansı",
     "sectionTitles": {
       "backup": "Yedekleme ve Geri Yükleme",
+      "server": "Sunucu Kurulumu",
       "cluster": "Küme Yönetimi",
       "config": "Yapılandırma Yönetimi",
       "credits": "Üçüncü Taraf Katkıları",
@@ -2719,7 +3227,9 @@
       "term": "SSH Terminal Erişimi",
       "update": "CLI Güncellemeleri",
       "vscode": "VS Code Entegrasyonu",
-      "tools": "Yerel araçlar"
+      "tools": "Yerel araçlar",
+      "legal": "Yasal Belgeler ve Şartlar",
+      "version": "Sürüm Bilgisi"
     },
     "supplements": {
       "config": {
@@ -2767,7 +3277,13 @@
       "rotateNotSensitive": "Pointer \"{{pointer}}\" hassas bir alan değil; bunun yerine 'config field set' kullanın.",
       "rotateRequiresTty": "config field rotate, etkileşimli TTY onayı gerektirir; etkileşimli olmayan bağlamda reddedilir (geçersiz kılmak için REDIACC_ALLOW_CONFIG_EDIT tanımlayın).",
       "showReveal": "--reveal, ajan ortamlarında engellenir. Güvenli parmak izi için `rdc config show` (redakte) veya `rdc config field get --pointer <pointer> --digest` kullanın.",
-      "showRevealRequiresTty": "--reveal etkileşimli TTY gerektirir; açık metin TTY olmayan bir hedefe aktarılmayacak."
+      "showRevealRequiresTty": "--reveal etkileşimli TTY gerektirir; açık metin TTY olmayan bir hedefe aktarılmayacak.",
+      "rootGrantBlocked": "Ajanlar \"{{name}}\" deposuna root yetkisi veremez: Rediaccfile'ı ayrıcalık düşürülmeden çalışırdı.\n\nKullanıcı: buna izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO={{name}} (veya tüm depolar için *) ayarlayın.",
+      "rootGrantOverride": "\"{{name}}\" deposunun root yetkisi için ajanın başlattığı geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın. Bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir.",
+      "pathGrantBlocked": "Ajanlar \"{{name}}\" grand deposunun yol yetkilerini değiştiremez: Rediaccfile'ı, kullanıcının hiç onaylamadığı ana makine yollarına ulaşırdı.\n\nKullanıcı: buna izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO={{name}} (veya tüm depolar için *) ayarlayın. Bir fork için geçersiz kılma gerekmez.",
+      "pathGrantOverride": "\"{{name}}\" grand deposundaki yol yetkisi için ajanın başlattığı geçersiz kılmalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın. Bunu yalnızca kullanıcı ajan başlamadan önce yetkilendirebilir.",
+      "limitsGrantBlocked": "Ajanlar ana depo \"{{name}}\" kaynak sınırlarını değiştiremez: daha düşük bir üst sınır kapsayıcılarının OOM ile sonlandırılmasına yol açabilir.\n\nKullanıcı: izin vermek için ajan oturumunu başlatmadan önce terminalinizde REDIACC_ALLOW_GRAND_REPO={{name}} (tüm depolar için *) ayarlayın. Bir çatal için gerekmez.",
+      "limitsGrantOverride": "Ana depo \"{{name}}\" üzerindeki bir sınır değişikliği için ajanın başlattığı istisnalar kabul edilmez.\n\nREDIACC_ALLOW_GRAND_REPO ayarlamaya çalışmayın. Buna yalnızca kullanıcı, ajan başlamadan önce izin verebilir."
     },
     "authRequired": "Kimlik doğrulama gerekli. Çalıştırın: rdc subscription login",
     "cluster": {
@@ -2782,6 +3298,7 @@
       "targetRequired": "Bir hedef makine (-m) veya küme (--cluster) gereklidir"
     },
     "config": {
+      "missingNamed": "\"{{name}}\" yapılandırması yok, bu yüzden hiçbir şey değiştirilmedi. Önce şununla oluşturun: rdc config init {{name}}",
       "invalidEmail": "Geçersiz e-posta adresi: \"{{value}}\".",
       "machineNotFound": "\"{{name}}\" makinesi yapılandırmada bulunamadı. Mevcut: {{available}}.",
       "noActiveConfig": "Aktif yapılandırma yok",
@@ -2790,7 +3307,8 @@
     },
     "container": {
       "execFailed": "container_exec başarısız oldu",
-      "logsFailed": "container_logs başarısız oldu"
+      "logsFailed": "container_logs başarısız oldu",
+      "unknown": "\"{{repository}}\" deposunda \"{{container}}\" adlı bir konteyner yok. Konteynerler: {{containers}}. Şunu mu demek istediniz: \"{{suggestion}}\"?"
     },
     "datastore": {
       "defaultIsImplicit": "varsayılan veri deposu örtüktür; bu fiiller ek adlandırılmış veri depolarını yönetir.",
@@ -2810,12 +3328,16 @@
     },
     "invalidFunctionParams": "\"{{function}}\" işlevi için geçersiz parametreler: {{errors}}",
     "invalidKey": "Geçersiz anahtar. Geçerli anahtarlar: {{keys}}",
+    "invalidOutputFormat": "Geçersiz çıktı biçimi \"{{value}}\". İzin verilenler: {{allowed}}",
     "license": {
       "machineSlotLimit": "Bu yerleştirme {{needed}} makine slotu daha gerektiriyor ve abonelikte {{free}} boş slot var ({{max}} slotun {{active}} tanesi kullanımda). Bir slot, o makinenin son etkinliğinden 5 saat sonra otomatik olarak veya makine kaldırıldığında hemen serbest kalır. Planı yükselterek sınırı artırın veya anlaşmalı bir Enterprise ya da iş ortağı makine sınırı için satış ekibiyle iletişime geçin.",
       "nothingProvisioned": "Hiçbir şey provizyonlanmadı: depo oluşturulmadı.",
+      "backupStoreMismatch": "Reddedildi: {{machine}} üzerindeki \"{{repo}}\" deposunun lisansı {{installed}} tarafından verilmiş. Bu yedekleme komutu bu yüzden o hesabın yedek deposunu kullanırdı; \"{{config}}\" yapılandırmasının hesap sunucusu olan {{expected}} deposunu değil. Komutu, hesap sunucusu {{installed}} olan yapılandırmayla çalıştırın.",
+      "backupStoreUnreadable": "Reddedildi: {{machine}} üzerindeki \"{{repo}}\" deposu için kurulu lisanslar okunamadı, bu yüzden bu yedekleme komutunun hangi hesabın yedek deposunu kullanacağı bilinmiyor. {{machine}} üzerinde parolasız sudo'nun çalıştığını kontrol edin, ardından yeniden deneyin.",
       "partialPlacement": "Yerleştirme yarıda durdu: {{placed}} makine tamamlandı ({{placedNames}}) ve {{remaining}} makine hiç başlatılmadı ({{remainingNames}}). Hiçbir şey geri alınmadı, bu yüzden tamamlanan makineler depolarını ve slotlarını korur. Bir slot boşaltın veya sınırı artırın, ardından yeniden çalıştırın: {{command}}",
       "preflightTokenNotReady": "Abonelik jetonu hazır değil. Çalıştırın: rdc subscription login. {{machine}} üzerindeki dağıtım atlandı.",
       "recoveryFailedNoKnownRepos": "{{machine}} üzerinde depolar bulundu ancak hiçbiri yerel yapılandırmanızda kayıtlı değil. İzlenen depolarınızı `rdc repo list` ile listeleyin, ardından yeniden deneyin.",
+      "foreignOriginSkipped": "atlandı: lisansı veren {{licenseOrigin}}, bu yapılandırmanın hesap sunucusu ({{configOrigin}}) değil (--adopt-origin taşır)",
       "recoveryFailedServerRejected": "Hesap sunucusu \"{{machine}}\" üzerindeki depo için lisans verilmesini reddetti. İlk hata: {{error}}. Ayrıntılar için çalıştırın: rdc subscription refresh --repo <repo-ref>",
       "recoveryFailedTokenNotReady": "Abonelik jetonunuz hazır değil. Çalıştırın: rdc subscription login, ardından yeniden deneyin."
     },
@@ -2823,9 +3345,12 @@
       "offerPrompt": "Bu komut bir lisans gerektiriyor ve oturum açılmamış. Oturum açmak mı, yoksa ücretsiz bir lisansla devam etmek mi?",
       "offerLogin": "Bir hesapla oturum aç",
       "offerFree": "Ücretsiz lisansla devam et ({{maxGb}} GB'a kadar)",
-      "autoTaken": "Oturum açılmadığı için ücretsiz lisans kullanılıyor ({{maxGb}} GB'a kadar, barındırılan yedekleme yok). Daha fazlası için hesap oluşturun: {{url}}",
+      "autoTaken": "Oturum açılmadığı için ücretsiz lisans kullanılıyor ({{maxGb}} GB'a kadar, barındırılan yedekleme yok). Ücretsiz bir hesapla Community limitleri geçerli olur (depo başına {{repoGb}} GB, ayda {{issuances}} lisans, {{backupGb}} GB barındırılan yedekleme): {{url}}",
+      "defaultRegion": "Bölge seçilmedi, bu yüzden ücretsiz lisans {{server}} sunucusundan alınır. Başka bir bölge seçmek için --license-region <id> verin veya REDIACC_ACCOUNT_SERVER değerini ayarlayın.",
+      "regionIgnored": "Bu yapılandırma zaten {{server}} sunucusunu kullanıyor, bu yüzden --license-region yok sayılır.",
       "issued": "Bu depo için ücretsiz lisans kuruldu (en fazla {{maxGb}} GB).",
-      "noHostedBackup": "Ücretsiz lisansta barındırılan yedekleme yoktur. Bu depoyu yedeklemek için bir hesap oluşturup ücretli bir plan seçin: {{url}}"
+      "registerHint": "Bu ücretsiz lisansta barındırılan yedekleme yoktur. Ücretsiz bir hesapla Community limitleri geçerli olur (depo başına {{repoGb}} GB, ayda {{issuances}} lisans, {{backupGb}} GB barındırılan yedekleme): {{url}}",
+      "noHostedBackup": "Ücretsiz lisansta barındırılan yedekleme yoktur. Community'nin barındırılan yedeklemesi için ücretsiz bir hesap oluşturun; daha fazlası için ücretli bir plan seçin: {{url}}"
     },
     "machineNotFound": "\"{{name}}\" makinesi bulunamadı",
     "machineRequired": "Makine adı gerekli. --machine <name> kullanın",
@@ -2903,7 +3428,6 @@
       "remoteFileLocalNotDir": "--remote-file ayarlandığında, --local var olan bir dizin olmalıdır: {{path}}",
       "remoteFileRequiresSingleFile": "--remote-file için, bir dosyaya işaret eden tam olarak bir --local yolu gerekir."
     },
-    "teamRequired": "Takım adı gerekli. --team kullanın veya varsayılanı şu komutla ayarlayın: rdc config set team <name>",
     "term": {
       "connectivityFailed": "{{host}}:{{port}} adresine erişilemiyor. {{error}}\n\nSorun Giderme:\n  - Makineyi kontrol edin ve ağa bağlı olup olmadığını doğrulayın\n  - IP adresinin makine kasasında doğru olduğunu doğrulayın\n  - {{port}} bağlantı noktasının güvenlik duvarı tarafından engellenmediğini doğrulayın\n  - Makineye ping atmayı deneyin: ping {{host}}",
       "dockerComposeForbidden": "\"docker compose\" depo bağlamında izin verilmiyor.\n\nBunun yerine \"renet compose -- <args>\" kullanın; böylece depoya özel loopback IP'leri, ana bilgisayar ağ enjeksiyonu, CRIU yetenekleri ve compose doğrulaması uygulanır. \"docker compose\" komutunu doğrudan çalıştırmak bunların tümünü atlar ve dağıtımı sessizce bozar.\n\nOrkestrasyonlu dağıtımlar için tercih edin: rdc repo up <repo-ref>",
@@ -2918,8 +3442,16 @@
       "sshCode127": "Komut uzak makinede bulunamadı",
       "sshCode130": "Bağlantı kullanıcı tarafından sonlandırıldı (Ctrl+C)",
       "sshCode255": "SSH bağlantısı başarısız - olası nedenler:\n    - Kimlik doğrulama başarısız (SSH anahtar izinlerini kontrol edin)\n    - Ana bilgisayar anahtarı doğrulaması başarısız\n    - Ağ bağlantısı kesildi\n    - Uzak SSH hizmeti çalışmıyor",
+      "blankCommand": "-c komutu boş. Çalıştırılacak bir komut verin ya da etkileşimli kabuk için -c'yi kullanmayın.",
       "sshExitCode": "SSH {{code}} koduyla çıktı",
       "secretStagingFailed": "Depo gizli değerleri makineye hazırlanamadı (ssh çıkış kodu {{code}})."
+    },
+    "terms": {
+      "declined": "Hizmet Şartları kabul edilmedi, bu yüzden ücretsiz lisans alınmadı.",
+      "required": "Bu hesap için Hizmet Şartları kabul edilmedi. {{url}} adresinden kabul edin, ardından komutu yeniden çalıştırın.",
+      "requiredAccept": "Şartları {{url}} adresinde okuyun, {{acceptUrl}} adresinden kabul edin, ardından komutu yeniden çalıştırın.",
+      "requiredFree": "Bu ücretsiz lisans için Hizmet Şartları kabul edilmedi. {{url}} adresinde okuyun, ardından {{flag}} verin veya {{env}} ayarlayın.",
+      "upcoming": "Yeni Hizmet Şartları {{version}}, {{effective}} tarihinde yürürlüğe girer. Şartları {{url}} adresinde okuyabilirsiniz."
     },
     "unknownCommand": "Bilinmeyen komut \"{{command}}\". Kullanılabilir komutlar: {{available}}.",
     "unknownRegion": "Bilinmeyen bölge: {{region}}",
@@ -2968,6 +3500,7 @@
       "localSha256Mismatch": "{{image}} artık indirilirken kaydedilen sha256 ile eşleşmiyor (beklenen {{expected}}, bulunan {{actual}}). İmajı yeniden indirin ya da yine de göndermek için --skip-verify verin.",
       "registerFailed": "İmaj {{machine}} makinesine {{guid}} olarak yerleştirildi, ancak yapılandırmaya kaydı başarısız oldu: {{error}}. Kaydedilmemiş imajı şu komutla bulabilirsiniz: rdc machine prune {{machine}} --orphaned-repos --dry-run",
       "atNeedsStore": "--at yalnızca --store ile birlikte geçerlidir.",
+      "fromNeedsStore": "--from yalnızca --store ile birlikte geçerlidir.",
       "storeRefusesMachine": "--store doğrudan yedek deposundan okur ve -m <machine> kabul etmez.",
       "storeRefusesCheckpoint": "--store hiçbir makineye dokunmadığı için --checkpoint kabul etmez.",
       "storeRefusesOption": "--store {{option}} kabul etmez: bu ayar makine üzerinden indirmeye aittir; depodan alma kendi kaldığı yerden sürer ve her parçayı doğrular.",
@@ -2988,7 +3521,26 @@
       "noConfig": "{{path}} içinde tofu yapılandırması (main.tf.json) yok; onu yazan hazırlama adımı çalışmadı.",
       "belowFloor": "{{path}} konumundaki {{engine}} {{version}}, en düşük sürüm olan {{floor}} sürümünden eski. Sabitlenmiş OpenTofu'yu şu komutla kurun: rdc tools install tofu",
       "overrideUnusable": "REDIACC_TOFU, {{path}} yolunu gösteriyor ancak bu dosya OpenTofu ya da Terraform olarak çalışmıyor. Değişkeni düzeltin veya kaldırın ya da sabitlenmiş OpenTofu'yu şu komutla kurun: rdc tools install tofu"
-    }
+    },
+    "jobs": {
+      "overlap": {
+        "refusedHead": "Reddedildi: {{subject}}, {{origin}}.",
+        "warningHead": "Uyarı: {{subject}}, {{origin}}.",
+        "seeIt": "  Görmek için: {{attach}}",
+        "subject": "{{what}} ({{doing}}{{scope}}) {{state}}{{started}}",
+        "whatJob": "{{id}} numaralı iş",
+        "onScope": " ({{scope}} üzerinde)",
+        "startedAt": ", başlangıç {{timestamp}}",
+        "originUnknown": "başlatan: bilinmiyor (eski renet sürümü)",
+        "originStarted": "{{client}} üzerinden {{user}} başlattı{{config}}",
+        "originConfig": " (yapılandırma {{name}})"
+      },
+      "refused": "'{{machine}}' üzerinde iş başlatılmadı: {{holder}} aynı kapsamı tutuyor.",
+      "holderJob": "{{id}} numaralı iş",
+      "holderOther": "başka bir iş",
+      "orStopIt": "  Ya da durdurun: rdc job cancel {{id}} -m {{machine}}"
+    },
+    "delegationCertRefused": "Sunucunun lisans sertifikası reddedildi ({{code}}); operatörden şunu çalıştırmasını isteyin: rdc server licence"
   },
   "help": {
     "agentMode": "\n  Ajan Modu\n    • Yalnızca fork: herhangi bir depoda değişiklik yapmadan önce bir fork oluşturun\n    • Grand (fork olmayan) depolar ajanlar için salt okunurdur\n    • İş akışı: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Bir depo referansı (repo[:tag]) kendi makinesini kendisi belirler, bu yüzden -m gerekmez\n    • JSON çıktısı otomatiktir: tüm komutlar { success, data, errors, metrics } döndürür\n    • Her zaman JSON'ın tamamını ayrıştırın, JSON çıktısında asla tail/head/grep kullanmayın\n    • Yanıt boyutunu azaltmak için filtre bayraklarını kullanın (ör. --repositories, --containers)\n\n",
@@ -3041,6 +3593,7 @@
     }
   },
   "options": {
+    "acceptTerms": "Ücretsiz lisans için Hizmet Şartları'nı sormadan kabul et (veya RDC_ACCEPT_TERMS=1 ayarla)",
     "apiToken": "API belirteci (rdt_...). stdin'den okumak için `-` geçin (belirteç süreç listesinde görünmez).",
     "artifactRef": "Yedek artefakt referansı (repo[:tag][@place])",
     "background": "Makinede ayrık bir görev olarak çalıştır: kimliğini yazdır ve çık",
@@ -3067,7 +3620,9 @@
     "healthTimeout": "Deneme başına sağlık kontrolü zaman aşımı, saniye cinsinden (varsayılan 30)",
     "healthWindow": "Toplam sağlık kapısı penceresi, saniye cinsinden (varsayılan 300)",
     "insiders": "VS Code Insiders ayarlarını kullanın",
+    "json": "Makine tarafından okunabilir JSON yazdır",
     "lang": "Dil geçersiz kılması ({{languages}})",
+    "licenseRegion": "Yapılandırma sunucu belirtmediğinde ücretsiz lisansı veren hesap bölgesi (örn. us, eu)",
     "licenses": "Sürüm derlemeleriyle paketlenen tam THIRD_PARTY_LICENSES metnini yazdır",
     "localPath": "Yerel dizin yolu (varsayılan: güncel dizin)",
     "localPaths": "Bir veya daha fazla yerel dosya veya dizin yolu (varsayılan: geçerli dizin)",
@@ -3121,7 +3676,6 @@
     "sshPort": "SSH bağlantı noktası",
     "sshUser": "SSH kullanıcı adı",
     "strategyName": "Yedekleme stratejisi adı",
-    "team": "Takım adı",
     "urlOnly": "VS Code URI'sini yazdırın, başlatmayın",
     "verifyChecksum": "Senkronizasyondan sonra dosyaları sağlama toplamı kullanarak doğrulayın",
     "vmId": "Sanal makine kimliği",
@@ -3164,6 +3718,7 @@
   "warnings": {
     "licenseSignatureRefreshed": "renet güncellemesinden sonra geçersiz imzalı {{count}} depo lisansı yenilendi",
     "licenseSignatureRefreshFailed": "renet güncellemesinden sonra {{count}} depo lisansının imzası geçersiz. Çalıştırın: rdc subscription refresh -m <machine>",
+    "licenseForeignOriginSkipped": "{{machine}} üzerindeki {{repo}} lisansına dokunulmadı: lisansı {{licenseOrigin}} verdi, bu yapılandırmanın hesap sunucusu ise {{configOrigin}}. Buradan üzerine yazmak yenileme zincirini bozar. Makinenin lisanslarını {{configOrigin}} hesap sunucusuna taşımak için şunu çalıştırın: rdc subscription refresh -m {{machine}} --adopt-origin",
     "secretNameSkipped": "{{name}} gizli değerinin adı geçerli bir ortam değişkeni adı değil; oturum onsuz başlıyor."
   }
 }

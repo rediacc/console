@@ -4,7 +4,7 @@
 
 WHY IT EXISTS. The export runs through Cloudflare destinations, a collector and the observability stack, and a break anywhere along it reads as silence, not as an error (agent/plans/PLAN-telemetry-export.md, T16). One probe per host proves the whole path: the Worker answers, Cloudflare ships the span and the log, and both are queryable.
 
-THE PROBE. `GET https://<host>/account/api/v1/health` with `X-Rediacc-Probe: <uuid4>`. The Worker records the uuid as the `rediacc.probe` attribute on the root span and on its logs. The hosts are the six of regions.json (stable and edge, each region) plus bench, taken from `portal_health.hosts`. Proxy hosts (the routes of `PROXY_CONFIGS`) are probed at `/v1/health` instead, since the account path answers a proxy 401; the proxy logs `telemetry-probe <uuid>` and sets `rediacc.probe`, so the same Tempo tag search and Loki uuid filter match (its Tempo service name is the script name, so the search never filters on service.name).
+THE PROBE. `GET https://<host>/account/api/v1/health` with `X-Rediacc-Probe: <uuid4>`. The Worker records the uuid as the `rediacc.probe` attribute on the root span and on its logs. The hosts are the three of regions.json (one shared set per region) plus bench, taken from `portal_health.hosts`. Proxy hosts (the routes of `PROXY_CONFIGS`) are probed at `/v1/health` instead, since the account path answers a proxy 401; the proxy logs `telemetry-probe <uuid>` and sets `rediacc.probe`, so the same Tempo tag search and Loki uuid filter match (its Tempo service name is the script name, so the search never filters on service.name).
 
 THE POLL. For each probe, Tempo is searched through the Grafana datasource proxy (`/api/datasources/proxy/uid/tempo/api/search`, tag `rediacc.probe=<uuid>`) and Loki is queried (`/loki/api/v1/query_range`, line filter on the uuid), every `--interval-s` seconds until each signal is seen or `--timeout-s` (default 600) has passed. All probes are sent first and polled together, so the deadline is one 10 minute window and not one per host.
 
@@ -43,7 +43,8 @@ PROBE_HEADER = "X-Rediacc-Probe"
 SIGNALS = ("traces", "logs")
 TIMEOUT_S = 20.0
 USER_AGENT = "rediacc-telemetry-delivery/1"
-LOKI_SELECTOR = '{service_name=~"rediacc-.+"}'
+# The Workers' service name is the script name (account-<r>, proxy-<r>), not a fixed prefix.
+LOKI_SELECTOR = '{service_name=~"(account|proxy)-.+"}'
 
 
 @dataclass(frozen=True)

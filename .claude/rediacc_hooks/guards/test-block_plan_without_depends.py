@@ -185,6 +185,11 @@ def tree():
                 live="Live-Proof: bench -- the cli against the bench origin",
             ),
         ),
+        "agent/plans/PLAN-lpwait.md": plan(
+            dep=DEP,
+            x=xlp(live="Live-Proof: none -- tooling only, ruled in #%s" % CLOSED_ITEM),
+            body="- [ ] T1 a box\n" + LP8_WAIT,
+        ),
         QUOTE_FILE: "The operator answered: %s.\n" % QUOTE,
         "agent/worklist/cafe0000.jsonl": "".join(json.dumps(e) + "\n" for e in STORE_EVENTS),
     }
@@ -235,7 +240,35 @@ def edit(rel, old, new, replace_all=False):
 
 NEW = "agent/plans/PLAN-new.md"
 
+# PLAN-local-first-delivery L2: an open box this edit adds that waits on GitHub (a phrase of proof-tiers.json `github_waits`) needs a `GitHub-only:` tag or a `Local-route:` correction; a box already waiting is the gate's, not the edit's.
+LP8_WAIT = "- [ ] T2 runs once the change is released\n"
+LP8_TAGGED = (
+    "- [ ] T2 runs once the change is released "
+    "GitHub-only: soak -- needs seven days of real traffic on the channel\n"
+)
+
 CASES = [
+    (
+        "LP8: an edit adds an untagged GitHub wait",
+        edit("agent/plans/PLAN-lpok.md", "- [ ] T1 a box\n", "- [ ] T1 a box\n" + LP8_WAIT),
+        True,
+    ),
+    (
+        "LP8 allow twin: the added wait carries a GitHub-only tag",
+        edit("agent/plans/PLAN-lpok.md", "- [ ] T1 a box\n", "- [ ] T1 a box\n" + LP8_TAGGED),
+        False,
+    ),
+    (
+        "LP8 allow twin: an edit beside an existing untagged wait",
+        edit("agent/plans/PLAN-lpwait.md", "T1 a box", "T1 the box"),
+        False,
+    ),
+    # 3818220a.2: a finished plan is history, so an edit to it is not judged for a wait (the gate judges live plans only).
+    (
+        "LP8 allow twin: a finished plan edited to add an untagged wait",
+        edit("agent/plans/_done/PLAN-fin.md", "- [ ] T1 a box\n", "- [ ] T1 a box\n" + LP8_WAIT),
+        False,
+    ),
     # ---- refusals ----
     ("a Write without the field", write(NEW, plan()), True),
     # Judged where the write LANDS (#bc7d998c): each refusal was allowed (rc 0) before.
@@ -829,6 +862,67 @@ def main():
 
     _good_ns: dict = {"__name__": "good_guard", "__file__": str(GUARD)}
     exec(compile(SOURCE, str(GUARD), "exec"), _good_ns)
+
+    # 3818220a.1: an unreadable proof-tiers.json warns and skips LP8, it neither refuses nor raises.
+    class _NoMapDeps:
+        @staticmethod
+        def github_wait_config(_root):
+            return None
+
+        @staticmethod
+        def github_wait_introduced(*_a):
+            raise AssertionError("LP8 must not run without the map")
+
+    class _Ev:
+        def __init__(self):
+            self.warned = []
+
+        def warn(self, msg):
+            self.warned.append(msg)
+
+    _ev = _Ev()
+    _got = _good_ns["_github_wait_findings"](
+        _NoMapDeps, None, LP8_WAIT, "agent/plans/PLAN-x.md", _ev
+    )
+    if _got != [] or len(_ev.warned) != 1 or "PLAN-x.md" not in _ev.warned[0]:
+        print("*** FAIL *** an unreadable map must warn once and skip: %r %r" % (_got, _ev.warned))
+        fails += 1
+    else:
+        print("ok: an unreadable proof-tiers.json warns once and skips LP8")
+
+    # b403757f.1: the same skip through the REAL reader. A root with no proof-tiers.json makes `github_wait_config` itself answer None (it catches the read failure); the repo's own root, which has the map, makes it answer a config (the control).
+    _sp_spec = importlib.util.spec_from_file_location("_bpwd_syspath", HERE.parent / "syspath.py")
+    if _sp_spec is None or _sp_spec.loader is None:
+        raise SystemExit("cannot load rediacc_hooks/syspath.py")
+    _syspath = importlib.util.module_from_spec(_sp_spec)
+    _sp_spec.loader.exec_module(_syspath)
+    _stop_dir = str(_syspath.STOP_DIR)
+    _added = _syspath.on_sys_path(_stop_dir)
+    try:
+        _real_deps, _ = _good_ns["_grammar"]()
+    finally:
+        if _added:
+            sys.path.remove(_stop_dir)
+    _real_root = _good_ns["REPO_ROOT"]
+    _empty_root = BASE / "no-proof-map"
+    _empty_root.mkdir(parents=True, exist_ok=True)
+    try:
+        _good_ns["REPO_ROOT"] = _empty_root
+        _ev_real = _Ev()
+        _got_real = _good_ns["_github_wait_findings"](
+            _real_deps, None, LP8_WAIT, "agent/plans/PLAN-x.md", _ev_real
+        )
+    finally:
+        _good_ns["REPO_ROOT"] = _real_root
+    if _got_real != [] or len(_ev_real.warned) != 1:
+        print("*** FAIL *** the real reader on a root with no map must warn once and skip")
+        fails += 1
+    elif _real_deps.github_wait_config(_real_root) is None:
+        print("*** FAIL *** control: the real reader must read the repo's own map")
+        fails += 1
+    else:
+        print("ok: the real reader skips LP8 on a root with no map and reads the repo's own")
+
     for label in ("DEFECT", "VERDICT_DEFECT", "LIVE_DEFECT"):
         old, new = _good_ns[label]
         if old not in _outside_defect(SOURCE, "DEFECT", "VERDICT_DEFECT", "LIVE_DEFECT"):

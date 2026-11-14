@@ -6,6 +6,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { t } from '../../i18n/index.js';
+import { ValidationError } from '../../types/errors.js';
+import { assertCommandNotBlank } from '../../utils/command-blank.js';
 import { resolveTermOutputMode } from '../term.js';
 
 describe('resolveTermOutputMode', () => {
@@ -25,5 +28,22 @@ describe('resolveTermOutputMode', () => {
       quietOutput: false,
       noTTY: false,
     });
+  });
+});
+
+describe('assertCommandNotBlank', () => {
+  it.each(['', '   ', '\t\n'])('refuses %j before any SSH', (command) => {
+    expect(() => assertCommandNotBlank({ command })).toThrow(ValidationError);
+  });
+
+  it('refuses with the translated message, not the bare key', () => {
+    const message = t('errors.term.blankCommand');
+    expect(message).not.toBe('errors.term.blankCommand');
+    expect(() => assertCommandNotBlank({ command: ' ' })).toThrow(message);
+  });
+
+  it('accepts a real command and an omitted -c', () => {
+    expect(() => assertCommandNotBlank({ command: 'uptime' })).not.toThrow();
+    expect(() => assertCommandNotBlank({})).not.toThrow();
   });
 });

@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: fr
-sourceHash: "05e87ddd9ad815ff"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "1a57c2ff08008d4e"
+sourceCommit: "c1e4f1e1584c84a89aaa6b606f4195df0d6725b0"
 ---
 
 # Démarrage rapide
@@ -223,7 +223,7 @@ rdc backup usage
 
 Les instantanés sont envoyés vers le stockage fragmenté, qui nécessite un serveur de compte et un dépôt sous licence. Seules les données modifiées sont stockées, donc un second instantané du même dépôt ne coûte que la différence plutôt que l'image entière.
 
-Les sauvegardes n'ont qu'un seul type de destination, le stockage fragmenté hébergé par le service, et `--to` sur `repo push` ne désigne qu'une machine. La rétention se déclare par lignée de dépôt avec `rdc backup retention set`, et les exécutions planifiées viennent de `rdc backup strategy set` puis de `rdc backup schedule`. Voir [Sauvegarde et restauration](/fr/docs/backup-restore).
+Les sauvegardes vont dans des stores enregistrés : `home`, le store hébergé que possède chaque abonnement, plus une seconde région hébergée ou un bucket client, chacun désigné par le `--target` d'une destination (voir [Destinations de sauvegarde](/fr/docs/backup-destinations)). `--to` sur `repo push` ne désigne qu'une machine. La rétention se déclare par lignée de dépôt avec `rdc backup retention set`, et les exécutions planifiées viennent de `rdc backup strategy set` puis de `rdc backup schedule`. Voir [Sauvegarde et restauration](/fr/docs/backup-restore).
 
 ### 4. Récupérer depuis un emplacement distant
 

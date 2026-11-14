@@ -112,6 +112,16 @@ const PROXY_EXCLUSIONS: Record<string, string> = {
   'machine access push':
     "Rewrites who may log in to the machine from the CALLER's access keys; an executor never rewrites the access it connects with, and it would push its own config's keys. Run it without --proxy.",
 
+  // ── The install record and child processes on the caller's machine ─────
+  'server status':
+    "Finds the server through the caller's local install record; a remote executor holds none. Run it without --proxy.",
+  'server upgrade':
+    "Drives child commands and the caller's local install record (and --local-image, the caller's Docker); a remote executor would act from its own. Run it without --proxy.",
+  'server backup':
+    "Writes the recovery bundle (the server's keys) to the caller's terminal or file; through an executor the keys would cross another machine. Run it without --proxy.",
+  'server licence':
+    "Mints the certificate with the caller's login and records it in the caller's local install record; a remote executor holds neither. Run it without --proxy.",
+
   // ── Caller-held secrets ───────────────────────────────────────────────
   'machine converge':
     "Restarts each repo daemon with the env secrets from the CALLER's config; a remote executor would restart them with its own copy, or with none. Run it without --proxy.",

@@ -95,9 +95,22 @@ class World:
                     "file": "f.py",
                     "line": 2,
                     "claim": "returns None on the empty path",
+                    "class": "other",
                 },
-                {"severity": "medium", "file": "f.py", "line": 3, "claim": "untested branch"},
-                {"severity": "high", "file": "not/in/commit.py", "line": 1, "claim": "dropped"},
+                {
+                    "severity": "medium",
+                    "file": "f.py",
+                    "line": 3,
+                    "claim": "untested branch",
+                    "class": "other",
+                },
+                {
+                    "severity": "high",
+                    "file": "not/in/commit.py",
+                    "line": 1,
+                    "claim": "dropped",
+                    "class": "other",
+                },
             ]
         )
         self.init_repo(self.repo)
@@ -379,7 +392,9 @@ def test_the_same_sha_triggered_twice_starts_one_reviewer(world):
 
 def test_two_commits_back_to_back_get_two_files_with_their_own_findings(world):
     a = world.commit("f.py")
-    world.answer([{"severity": "low", "file": "g.py", "line": 1, "claim": "naming"}])
+    world.answer(
+        [{"severity": "low", "file": "g.py", "line": 1, "claim": "naming", "class": "other"}]
+    )
     b = world.commit("g.py", body="x = 1\n")
 
     def fake(sha_findings):
@@ -396,7 +411,9 @@ def test_two_commits_back_to_back_get_two_files_with_their_own_findings(world):
         reviewer=fake(
             {
                 "verdict": "findings",
-                "findings": [{"severity": "high", "file": "f.py", "line": 1, "claim": "a"}],
+                "findings": [
+                    {"severity": "high", "file": "f.py", "line": 1, "claim": "a", "class": "other"}
+                ],
                 "labels": {"bump": "none", "kind": [], "why": ""},
             }
         ),
@@ -410,7 +427,9 @@ def test_two_commits_back_to_back_get_two_files_with_their_own_findings(world):
         reviewer=fake(
             {
                 "verdict": "findings",
-                "findings": [{"severity": "low", "file": "g.py", "line": 1, "claim": "b"}],
+                "findings": [
+                    {"severity": "low", "file": "g.py", "line": 1, "claim": "b", "class": "other"}
+                ],
                 "labels": {"bump": "minor", "kind": ["feature"], "why": ""},
             }
         ),
@@ -767,7 +786,17 @@ def test_mark_fixed_reads_the_stub_from_the_fix_commit_not_the_working_tree(worl
 
 def test_mark_fixed_falls_back_to_the_flat_legacy_stub_when_the_fix_tree_has_none(world):
     """A retired flat `agent/PLAN-<slug>.md` stub is absent from the fix commit's tree; the mark still follows the slug to the moved plan, and a fix touching neither file is refused."""
-    world.answer([{"severity": "high", "file": "agent/PLAN-x.md", "line": 1, "claim": "stale"}])
+    world.answer(
+        [
+            {
+                "severity": "high",
+                "file": "agent/PLAN-x.md",
+                "line": 1,
+                "claim": "stale",
+                "class": "other",
+            }
+        ]
+    )
     sha = world.commit("agent/PLAN-x.md", body="a = 1\nb = 2\nc = 3\n", msg="docs: plan")
     world.run_child(sha)
     fid = "%s.1" % sha[:8]
@@ -972,9 +1001,15 @@ def test_validate_marks_a_line_far_from_any_hunk_outside_diff():
     verdict, findings, _labels, dropped = R.validate(
         {
             "findings": [
-                {"severity": "high", "file": "f.py", "line": 41, "claim": "near"},
-                {"severity": "high", "file": "f.py", "line": 400, "claim": "far"},
-                {"severity": "critical", "file": "f.py", "line": 1, "claim": "bad severity"},
+                {"severity": "high", "file": "f.py", "line": 41, "claim": "near", "class": "other"},
+                {"severity": "high", "file": "f.py", "line": 400, "claim": "far", "class": "other"},
+                {
+                    "severity": "critical",
+                    "file": "f.py",
+                    "line": 1,
+                    "claim": "bad severity",
+                    "class": "other",
+                },
             ]
         },
         ["f.py"],
@@ -998,9 +1033,27 @@ def test_a_finding_about_writing_is_capped_at_low_and_code_is_not():
     _v, findings, _l, _d = R.validate(
         {
             "findings": [
-                {"severity": "high", "file": "agent/x/STATE.md", "line": 1, "claim": "stamp"},
-                {"severity": "high", "file": "src/a.py", "line": 1, "claim": "crash"},
-                {"severity": "high", "file": "CLAUDE.md", "line": 1, "claim": "policy"},
+                {
+                    "severity": "high",
+                    "file": "agent/x/STATE.md",
+                    "line": 1,
+                    "claim": "stamp",
+                    "class": "other",
+                },
+                {
+                    "severity": "high",
+                    "file": "src/a.py",
+                    "line": 1,
+                    "claim": "crash",
+                    "class": "other",
+                },
+                {
+                    "severity": "high",
+                    "file": "CLAUDE.md",
+                    "line": 1,
+                    "claim": "policy",
+                    "class": "other",
+                },
             ]
         },
         ["agent/x/STATE.md", "src/a.py", "CLAUDE.md"],
@@ -1417,6 +1470,7 @@ def _finding(path):
         "file": path,
         "line": 1,
         "claim": "a claim long enough to be a real finding here",
+        "class": "other",
     }
 
 
@@ -1619,7 +1673,15 @@ def test_drop_foreign_reviews_reports_a_partial_delete_and_rewrites_the_ledger_f
 def test_mark_fixed_admits_a_test_file_for_a_missing_test_finding(world):
     """2026-10-23: a "no test for this bump" finding anchored at one file was refused ("does not touch") for the fix that necessarily adds a test elsewhere. A test path among the fix's files, or an explicit `--test <path>` the fix touches, now closes it; an unrelated sha is still refused."""
     world.answer(
-        [{"severity": "high", "file": "f.py", "line": 2, "claim": "no test covers this bump"}]
+        [
+            {
+                "severity": "high",
+                "file": "f.py",
+                "line": 2,
+                "claim": "no test covers this bump",
+                "class": "other",
+            }
+        ]
     )
     sha = world.commit()
     world.run_child(sha)
@@ -1671,7 +1733,15 @@ def test_related_test_matches_the_stem_as_a_whole_token():
 def test_mark_fixed_refuses_an_unrelated_test_file(world):
     """79cf9eed.1/.2: a test of some OTHER module closes nothing, neither through `--test` nor through a claim that mentions a test; a claim that a test is missing is admitted only by a test whose name carries the anchored file's stem."""
     world.answer(
-        [{"severity": "high", "file": "f.py", "line": 2, "claim": "no test covers this bump"}]
+        [
+            {
+                "severity": "high",
+                "file": "f.py",
+                "line": 2,
+                "claim": "no test covers this bump",
+                "class": "other",
+            }
+        ]
     )
     sha = world.commit()
     world.run_child(sha)

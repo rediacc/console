@@ -757,6 +757,13 @@
         "'360'"
       ]
     },
+    "WORKLIST_REPORT_RELAY_FLOOR": {
+      "kind": "tuning",
+      "class": "harness",
+      "defaults": [
+        "'600'"
+      ]
+    },
     "WORKLIST_REPORT_RETENTION_DAYS": {
       "kind": "tuning",
       "class": "harness",

@@ -166,7 +166,41 @@ BENCH_REFUSE += [
 BENCH_REFUSE += [
     # Review 28139d6b.1: "into" and "sign" spellings are the same login ask.
     ("log into spelling", "Can you log into eu-bench again?", ""),
+    # eu-remote in ANOTHER sentence does not excuse an eu-bench login ask.
+    ("a login ask beside an eu-remote remark", "Can you log into eu-bench? eu-remote is fine.", ""),
     ("sign into spelling", "Please sign into bench for me.", ""),
+    # Review bcee4974.1: eu-remote in the SAME sentence as a comparison does not excuse it either.
+    (
+        "a login ask with eu-remote as a comparison",
+        "Can you log into eu-bench again, same as eu-remote?",
+        "",
+    ),
+    (
+        "a bench code ask naming eu-remote",
+        "Could you send the TOTP code for eu-bench, the one beside eu-remote's?",
+        "",
+    ),
+    # Review b6058d34.1 and .2: every login phrasing aimed at bench keeps the eu-remote comparison from opening the door.
+    ("login to, beside eu-remote", "Can you login to eu-bench, same as eu-remote?", ""),
+    (
+        "log it back in, beside eu-remote",
+        "Can you log it back in to eu-bench, same as eu-remote?",
+        "",
+    ),
+    ("sign back in, beside eu-remote", "Could you sign back in to bench, like eu-remote?", ""),
+    ("re-login, beside eu-remote", "Please re-login to eu-bench, same as eu-remote.", ""),
+    (
+        "logging in, beside eu-remote",
+        "Could you try logging in to eu-bench again, as on eu-remote?",
+        "",
+    ),
+    # Review 2652b857.1 and .2: the "signing" form is the same ask, with and without eu-remote.
+    (
+        "signing in, beside eu-remote",
+        "Could you try signing in to eu-bench, as on eu-remote?",
+        "",
+    ),
+    ("signing in to bench", "Could you try signing in to bench?", ""),
 ]
 
 BENCH_PASS = [
@@ -183,6 +217,11 @@ BENCH_PASS = [
     ("a fact question about the code", "Is the bench TOTP derivation RFC 6238?", ""),
     ("a design question about the flow", "Should the bench login flow cover us-bench too?", ""),
     ("another config", "Could you enter the authenticator code for eu-remote?", ""),
+    (
+        "eu-remote's login with bench as the alternative",
+        "Should we run the eu-remote reads behind your login, or reword them to bench?",
+        "",
+    ),
     ("a design question about the module", "Should we let login_bench retry a refused code?", ""),
     # Review dae87b66.1: addressed to the operator, yet the ask is for a code change, not a login.
     ("a request to fix the login test", "Do you want me to fix the bench login test?", ""),

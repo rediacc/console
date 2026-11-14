@@ -84,7 +84,10 @@ def http_get(auth: dict[str, str]) -> Get:
             with https.urlopen(req, timeout=30) as resp:
                 raw = resp.read()
         except urllib.error.HTTPError as exc:
-            raise LiveError("HTTP %d on %s%s" % (exc.code, label, _errors(exc.read()))) from None
+            with exc:
+                raise LiveError(
+                    "HTTP %d on %s%s" % (exc.code, label, _errors(exc.read()))
+                ) from None
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             raise LiveError("transport failure on %s: %s" % (label, exc)) from None
         try:

@@ -3,7 +3,7 @@
 
 Pushes twenty-four runtime secrets into the www Worker (stable or edge) in ONE `wrangler secret bulk` call. The twin's own header carries the reason the call is bulk and not twenty-four `secret put`s: each `put` mints a new Worker version, and on an assets-bound Worker a new version disassociates the static assets the deploy just uploaded.
 
-THIS SCRIPT MARSHALS, IT DOES NOT DECIDE. Which Stripe and SES credentials land here is `cd-deploy-worker.yml`'s choice (sandbox on edge, live EU on stable), and the twin says so at :10-12 and again at :36-38: there is no region indirection anywhere in it. The port keeps that property, which is why there is no channel argument and no lookup table here either.
+THIS SCRIPT MARSHALS, IT DOES NOT DECIDE. Which Stripe and SES credentials land here is `cd-deploy-worker.yml`'s choice (the live Stripe pair and the EU SES pair, on every target), and the twin says so at :10-12 and again at :36-38: there is no region indirection anywhere in it. The port keeps that property, which is why there is no channel argument and no lookup table here either.
 
 SECRETS ARRIVE AS ENVIRONMENT VARIABLES AND NEVER TRAVEL AS ARGUMENTS. `argv` is visible in `ps` and in some log surfaces. A value travels env -> a `json.dumps` object on jq's STDIN -> jq's document on wrangler's STDIN. The twin passed each value as a `jq --arg` pair, on jq's argv; the port does not (worklist #a2d19f74), and `test_no_secret_value_reaches_any_child_argv` pins it.
 
@@ -39,8 +39,13 @@ import json
 import os
 import subprocess
 import sys
+from typing import TYPE_CHECKING
 
+from rediacc_ci import paths
 from rediacc_ci.core import common, wrangler
+
+if TYPE_CHECKING:
+    import pathlib
 
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
 SELF = "rediacc_ci.deploy.set_www_worker_secrets"
@@ -85,7 +90,7 @@ KEYS: tuple[tuple[str, str], ...] = (
 # WHY THESE THIRTEEN, in the twin's own words (:56-76): the Worker schema marks several of them optional() and normalises "" to undefined, so an empty value deploys cleanly and SILENTLY turns the feature off; `required: true` on the GitHub side used to be the guard and a job-start Bitwarden fetch has no equivalent. The six env.ts declares NON-optional are demanded here too, because
 # zod does catch those, but only inside the deployed Worker as an EnvConfigError 500 on every request afterwards.
 #
-# STRIPE IS UNCONDITIONAL HERE and is not on the preview sibling's list: edge gets the sandbox key and stable the live one, so it is never legitimately empty for www.
+# STRIPE IS UNCONDITIONAL HERE and is not on the preview sibling's list: the one www Worker takes live billing, so it is never legitimately empty for www.
 REQUIRED_NONEMPTY: tuple[str, ...] = (
     "ACCOUNT_ED25519_PRIVATE_KEY",
     "ACCOUNT_ED25519_PUBLIC_KEY",
@@ -171,6 +176,11 @@ def _jq(argv: list[str], document: str) -> tuple[int, str]:
     return proc.returncode, proc.stdout
 
 
+def worker_dir() -> pathlib.Path:
+    """`workers/www`, whose `node_modules/.bin/wrangler` the release (`www-worker-deps`) and the deploy job install. `wrangler.ARGV` is `npx --no-install`, which resolves only a local binary at or above its cwd, and the repository root has none: the L7 production run of release:local (2026-11-10, finding fc8ad2fd) died on `npx canceled due to missing packages and no YES option: ["wrangler@4.160.0"]`. So wrangler starts here, as `set_preview_worker_secrets` and `deploy_www` do."""
+    return paths.repo_root() / "workers" / "www"
+
+
 def wrangler_argv(worker_name: str) -> list[str]:
     """`npx wrangler secret bulk --name "$WORKER_NAME"` (:141)."""
     return [*wrangler.ARGV, "secret", "bulk", "--name", worker_name]
@@ -178,12 +188,14 @@ def wrangler_argv(worker_name: str) -> list[str]:
 
 def _wrangler(argv: list[str], payload: str) -> int:
     """The right half of the pipe. BOTH streams inherited, as the twin leaves them: wrangler's own output is the entire visible result of a good run."""
-    proc = subprocess.run(argv, input=payload, text=True, check=False)
+    proc = subprocess.run(argv, input=payload, text=True, check=False, cwd=worker_dir())
     return proc.returncode
 
 
 def main(argv: list[str]) -> int:
-    del argv  # the twin parses nothing; extra arguments are ignored by both
+    refused = common.refuse_arguments(argv)
+    if refused is not None:
+        return refused
 
     # ORDER IS OBSERVABLE: `require_cmd jq` runs first, so a run missing both binaries names jq, and both run BEFORE the WORKER_NAME guard.
     for tool in ("jq", "npx"):

@@ -221,6 +221,22 @@ export const GATES: readonly GateSpec[] = [
   },
   // <<< gen-manifest: region 2
   {
+    id: 'check:ci-i18n-sync',
+    run: 'npm run check:ci-i18n-sync',
+    gate: true,
+    leaves: [
+      'scripts/__tests__/sync-translations.control.ts',
+      'scripts/__tests__/generate-translation-hashes.control.ts',
+      'scripts/__tests__/i18n-stamp-keys.control.ts',
+    ],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n sync control',
+    },
+  },
+  {
     id: 'check:ci-i18n-docs-render-parity',
     run: 'npm run check:ci-i18n-docs-render-parity',
     gate: true,
@@ -602,7 +618,7 @@ export const GATES: readonly GateSpec[] = [
     // check:types's project set through tsc's incremental caches, so the quick lane reads the test tsconfigs (a TS2322 in a CLI test file reached CI on 2026-10-01 because check:types is slow). Measured 2026-10-01 on 24 cores: cold 28.6 s, warm 8.6-8.9 s, about 90 CPU-s warm.
     id: 'check:types:incremental',
     run: 'npm run check:types:incremental',
-    slow: true, // 20.3-24.4 s measured 2026-10-07 (local ewma 23.2 s, push clone 20.7 s; recent 21.9/42.7/20.3/23.6 s), over the pre-push lane's budget even when granted every core
+    // Not slow: 20.3-24.4 s on 2026-10-07 made it slow, but the kept ci:quick clone keeps its incremental build warm, and check:ci-gate-manifest's tier oracle measured a typical 4.9 s there on 2026-11-06, inside the pre-push lane. The cold cost (28.6 s above) is paid once per kept clone, on the first run after it is created or its caches are cleared.
     // ELASTIC (2026-10-06): its tool sizes itself from the grant (core_lease.granted_cores / lease-client grantedCores). Without a declared range the pool exports a grant rounded from the gate's own measured cpu/wall, about 1, so the tool ran one-wide; check:types:incremental measured 24.4 s at cpu = wall after PLAN-prepush-full-cpu PF3/PF6.
     cores: { min: 1, max: 'all' },
     gate: true,
@@ -655,8 +671,10 @@ export const GATES: readonly GateSpec[] = [
     run: 'VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run check:test-cli',
     slow: true, // 38.3s measured
     gate: true,
+    needs: ['build:packages'],
     // ELASTIC (PF5, 2026-10-05): `weight: 2` retired. vitest takes every core by default, so the old budget of 2 understated it. VITEST_MAX_WORKERS is the knob (vitest 5.0.3 reads it after config resolution and it overrides `maxWorkers`), set from the pool's grant; it travels through npm and the Python proxies, which pass the environment on. Unset (a CI step, where no runner grants) it is empty, and vitest keeps its own default.
-    cores: { min: 1, max: 'all' },
+    // MIN 6, NOT 1 (2026-11-14). The suite is ~500 core-seconds (512 files: 64 s at 8 workers in a ci:quick clone), and the 38.3 s above is its wall at full width. A busy pool sized it from that wall and granted ONE core (`elastic grants: ... check:test-cli 1 core(s)`), so vitest ran every file serially and four ci:quick runs that day hit the 485.6 s limit while the suite passed alone in 43-64 s. At six workers it measured 243 s beside a running ci:quick (load 25-44, 2026-11-14), half the limit; inside the lane the six cores are leased to it. The pool waits for them rather than starting it starved. .ci/rediacc_ci/tests/test_ci_runner_core_floors.py holds the floor.
+    cores: { min: 6, max: 'all' },
     heavy: true,
     leaves: ['vitest'],
     ci: {
@@ -688,6 +706,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:test-www',
     run: 'npm run check:test-www',
     gate: true,
+    needs: ['build:packages'],
     leaves: ['vitest'],
     ci: {
       kind: 'step',
@@ -1229,6 +1248,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-tree-shape',
     run: 'npm run check:ci-tree-shape',
     gate: true,
+    slow: true, // 20.9s CI step measured 2026-11-11 (check:ci-gate-manifest tier)
     leaves: ['.ci/scripts/quality/check_tree_shape.py'],
     ci: {
       kind: 'step',
@@ -1470,7 +1490,7 @@ export const GATES: readonly GateSpec[] = [
       GH_TOKEN: '${{ github.token }}',
     },
     run: 'npm run check:ci-budget-freshness',
-    slow: true, // network: reads ci.yml and housekeeping.yml runs and artifacts
+    slow: true, // network: reads ci.yml and ops-housekeeping.yml runs and artifacts
     gate: true,
     leaves: ['.ci/rediacc_ci/ci/freshness.py'],
     paths: [
@@ -2023,6 +2043,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-dead-python',
     run: 'npm run check:ci-dead-python',
     gate: true,
+    slow: true, // 20.3s CI step measured 2026-11-11 (check:ci-gate-manifest tier)
     leaves: ['.ci/scripts/quality/check_dead_python.py'],
     ci: {
       kind: 'step',
@@ -2169,7 +2190,7 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
-    // Operator ask 2026-10-29 ("a CI job to check consistency between regions (2*3+1)"). The seven account targets (stable and edge in eu, us, asia, plus bench) must be one shape across regions.json, both wrangler tomls per target and the secret-supply profiles that feed each push, modulo the per-target differences the gate names; a target missing what the other six have, or naming another target's bucket, key or Worker, fails here. The `--live` half runs nightly in housekeeping.yml's cf-leftovers job against Cloudflare. NO `paths:`: an entry without paths is always selected.
+    // Operator ask 2026-10-29 ("a CI job to check consistency between regions (2*3+1)"). The seven account targets (stable and edge in eu, us, asia, plus bench) must be one shape across regions.json, both wrangler tomls per target and the secret-supply profiles that feed each push, modulo the per-target differences the gate names; a target missing what the other six have, or naming another target's bucket, key or Worker, fails here. The `--live` half runs nightly in ops-housekeeping.yml's cf-leftovers job against Cloudflare. NO `paths:`: an entry without paths is always selected.
     id: 'check:ci-region-consistency',
     run: 'npm run check:ci-region-consistency',
     gate: true,
@@ -2318,6 +2339,33 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   {
+    // WHAT STILL HOLDS A CLOSED PLAN (agent/plans/PLAN-plan-compaction-bindings.md CB4). A plan under _done/ or _removed/, or whose Status is finished, parked, moved or removed, with a live binding (an own open box, an open worklist item of any session citing it, an unfinished dependent, another plan's open box citing one of its boxes) is a finding. The decision is
+    // wl_planbind.bindings, shared with the compaction verbs and check_plan_folders --move/--sweep, which is why it and the modules it reads are in `paths`; agent/worklist/** is there because an item opened or ticked changes the verdict. Lane quality-static: it needs no merge-base, and that job carries a gate-bind region, so the step is emitted from the gate header.
+    id: 'check:ci-plan-bindings',
+    run: 'npm run check:ci-plan-bindings',
+    gate: true,
+    slow: true, // ~50 s on a dev host 2026-11-09: wl_planbind.bindings rebuilds the plan graph per call, 158 judged plans over 312 read and 3,312 items
+    paths: [
+      'agent/plans/**',
+      'agent/INDEX.md',
+      'agent/worklist/**',
+      '.ci/scripts/quality/check_plan_bindings.py',
+      '.claude/hooks/stop/wl_planbind.py',
+      '.claude/hooks/stop/wl_plandeps.py',
+      '.claude/hooks/stop/wl_planfile.py',
+      '.claude/hooks/stop/wl_planrec.py',
+      '.claude/hooks/stop/wl_store.py',
+    ],
+    pathsOrigin: 'declared',
+    leaves: ['.ci/scripts/quality/check_plan_bindings.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-static',
+      step: 'Plan bindings',
+    },
+  },
+  {
     // A PLAN THAT TOUCHES A DEPLOYABLE SURFACE CLOSES ONLY ON A LIVE RECEIPT (agent/plans/PLAN-tested-on-bench.md V6): its `Live-Proof:` header, one `LP-<target> [live]` box per declared target, and from tiers.live.baseline_at on a VERIFIED row in agent/ledgers/live-proof.jsonl for every LP box this branch ticks.
     // NO `paths:` DELIBERATELY. LP5 recomputes the surface inputs digest from the surface code itself (private/renet, private/account, packages/cli, workers/**), and the gate imports check_plan_boxes, check_plan_implementation, wl_planrec and the worklist store, so a path table would let `--changed` drop it exactly when surface code moves after a receipt. Lane quality-branch for the merge-base its LP4 to LP6 need (fetch-depth 0, the PR head ref, GITHUB_BASE_REF); hand-written for its neighbours' reason (no `- id: setup` in that job).
     id: 'check:ci-plan-live-proof',
@@ -2326,7 +2374,7 @@ export const GATES: readonly GateSpec[] = [
     },
     run: 'npm run check:ci-plan-live-proof',
     gate: true,
-    slow: true, // 83.2 s CI step p90 (lane-durations refresh 2026-11-01); the tier is judged on the CI step, and a9981f7cd halving the local run (27 s -> 14 s) projects that step to about 40 s, still over the 20 s ceiling
+    slow: true, // 69.3 s CI step p90 (lane-durations 2026-11-03, 83.2 s on 11-01); LP4 to LP6 walk every commit since the merge-base, so the one later CI sample, 3.0 s on a 23-commit PR (run 41769535457), says little about a long branch, and 1104-1 at 978 commits runs it in 9.0 s locally on 24 cores
     leaves: ['.ci/scripts/quality/check_plan_live_proof.py'],
     ci: {
       kind: 'step',
@@ -3028,6 +3076,22 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   // <<< gen-manifest: region 21
+  // A ru page wrote its tags list with en dashes, YAML read `tags` as one string, every local gate passed, and only the Astro content loader refused it (10eae6293b). This validates every docs and blog entry with the REAL zod schema from content.config.ts, parsed by the parser Astro itself calls. Hand-written (two leaves), so it sits outside the generated regions.
+  {
+    id: 'check:ci-docs-frontmatter',
+    run: 'npm run check:ci-docs-frontmatter',
+    gate: true,
+    leaves: [
+      'scripts/gates/check-docs-frontmatter.ts',
+      'scripts/__tests__/check-docs-frontmatter.control.ts',
+    ],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'Docs front matter matches the content schema',
+    },
+  },
   {
     id: 'check:ci-lint-scope-coverage',
     run: 'npm run check:ci-lint-scope-coverage',
@@ -3900,6 +3964,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-account-scope-audit',
     run: 'VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run check:ci-account-scope-audit',
     gate: true,
+    needs: ['build:packages'],
     mutex: ['account-vitest'],
     // ELASTIC (PF5, 2026-10-05): `weight: 2` retired. vitest takes every core by default, so the old budget of 2 understated it. VITEST_MAX_WORKERS is the knob (vitest 5.0.3 reads it after config resolution and it overrides `maxWorkers`), set from the pool's grant; it travels through npm and the Python proxies, which pass the environment on. Unset (a CI step, where no runner grants) it is empty, and vitest keeps its own default.
     cores: { min: 1, max: 'all' },
@@ -3919,6 +3984,7 @@ export const GATES: readonly GateSpec[] = [
     run: 'VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run check:ci-test-account-web',
     slow: true, // 32.6s measured
     gate: true,
+    needs: ['build:packages'],
     mutex: ['account-vitest'],
     // ELASTIC (PF5, 2026-10-05): `weight: 2` retired. vitest takes every core by default, so the old budget of 2 understated it. VITEST_MAX_WORKERS is the knob (vitest 5.0.3 reads it after config resolution and it overrides `maxWorkers`), set from the pool's grant; it travels through npm and the Python proxies, which pass the environment on. Unset (a CI step, where no runner grants) it is empty, and vitest keeps its own default.
     cores: { min: 1, max: 'all' },
@@ -3985,6 +4051,22 @@ export const GATES: readonly GateSpec[] = [
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-go',
       step: 'Check Go dependency freshness',
+    },
+  },
+  {
+    id: 'check:ci-ops-health',
+    env: {
+      OPS_HEALTH_READ_TOKEN: '${{ env.BWS_OPS_HEALTH_READ_TOKEN }}',
+    },
+    run: 'npm run check:ci-ops-health',
+    gate: true,
+    // One GET of the ops-health Worker's /v1/status (PLAN-health-checks-local D-gate). It asks a host outside the repository, so it is one of UPSTREAM_GATES and runs under the no-external-quality hold.
+    leaves: ['.ci/scripts/quality/check_ops_health.py'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-go',
+      step: 'Off-box ops health',
     },
   },
   {
@@ -4181,6 +4263,7 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-account-backup',
     run: 'VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run check:ci-account-backup',
     gate: true,
+    needs: ['build:packages'],
     // Measured 21s in CI on 2026-11-02, after the backup integrity and critical-tier suites grew it.
     slow: true,
     mutex: ['account-vitest'],
@@ -4330,6 +4413,18 @@ export const GATES: readonly GateSpec[] = [
       workflow: '.github/workflows/ci-quality.yml',
       job: 'quality-content',
       step: 'SVG theme reach',
+    },
+  },
+  {
+    id: 'check:ci-terms-version',
+    run: 'npm run check:ci-terms-version',
+    gate: true,
+    leaves: ['scripts/gates/check-terms-version.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-content',
+      step: 'Terms version',
     },
   },
   {
@@ -4862,6 +4957,7 @@ export const GATES: readonly GateSpec[] = [
       GITHUB_TOKEN: '${{ github.token }}',
     },
     run: 'npm run check:ci-pin-freshness',
+    slow: true,
     gate: true,
     leaves: ['scripts/gates/check-pin-freshness.ts'],
     ci: {
@@ -5179,7 +5275,6 @@ export const GATES: readonly GateSpec[] = [
     // The line budget eslint's `max-lines` enforced until the Biome-only lint cut (PLAN-biome-only-lint); its own gate header binds it to this step. Wired 2026-09-26 after gate-bind --write emitted the step while no script or entry existed, so CI ran `npm run check:ci-max-lines` against a missing script.
     id: 'check:ci-max-lines',
     run: 'npm run check:ci-max-lines',
-    slow: true, // 24.1s measured: counts lines across every tracked source file
     gate: true,
     leaves: ['scripts/gates/check-max-lines.ts'],
     ci: {

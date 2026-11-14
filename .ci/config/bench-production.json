@@ -1,0 +1,4 @@
+{
+  "_comment": "Bench subscriptions that carry production data (agent/plans/PLAN-hostinger-to-bench.md Design 3). While `protected` names anything, rediacc_ci.ops.reset_bench refuses every mode (exit 2) before any credential is read, and the bench drills refuse to delete rows of a listed subscription. There is no override flag: un-protecting a subscription is a reviewed commit that removes its entry. Each entry: {subscription_id (UUID), machine, reason, plan}.",
+  "protected": []
+}

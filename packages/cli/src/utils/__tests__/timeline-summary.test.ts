@@ -4,10 +4,12 @@ import {
   buildTimingBars,
   buildTimingSummary,
   buildTimingWaterfall,
+  formatStepDoneLine,
   getActiveLabel,
   getDoneLine,
   getDoneText,
   PARALLEL_STEP_DETAIL,
+  STEP_FAILED_DETAIL,
   type TimelineStep,
   unattributedMs,
   workloadSplit,
@@ -158,6 +160,35 @@ describe('zero/negative wall guards', () => {
     expect(buildTimingBars(s, 0)).toBe('');
     expect(buildTimingWaterfall(s, -5, T0)).toBeNull();
     expect(buildTimingSummary(s, 0, { minWallMs: 0 })).toBeNull();
+  });
+});
+
+// renet ends a failed Rediaccfile up() with StepTimer.Fail (detail "failed"); `repo up` printed "✔ Services started" before reporting the compose failure.
+describe('a failed step', () => {
+  it('renders compose_up with a cross and the failure label, never "Services started"', () => {
+    const line = formatStepDoneLine('compose_up', 2_500, STEP_FAILED_DETAIL);
+    expect(line).toBe('\r✖ Service start failed (2.5s)\n');
+    expect(line).not.toContain('Services started');
+    expect(getDoneText('compose_up', STEP_FAILED_DETAIL)).toBe('Service start failed');
+  });
+
+  it('keeps the check mark and the done label for a step with no failure', () => {
+    expect(formatStepDoneLine('compose_up', 2_500)).toBe('\r✔ Services started (2.5s)\n');
+  });
+
+  it('names a failed step without its own label after its active label', () => {
+    expect(formatStepDoneLine('luks_mount', 10, STEP_FAILED_DETAIL)).toBe(
+      '\r✖ Mounting LUKS failed (10ms)\n'
+    );
+  });
+
+  it('labels a failed step as failed in the end-of-command bars', () => {
+    const out = buildTimingBars(
+      [{ name: 'compose_up', duration_ms: 8_000, startedAtMs: T0, detail: STEP_FAILED_DETAIL }],
+      10_000
+    );
+    expect(out).toContain('Service start failed');
+    expect(out).not.toContain('Services started');
   });
 });
 

@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: ar
-sourceHash: "d6d980d721be2373"
-sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
+sourceHash: "78e880294cc0bf15"
+sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
 ---
 
 # سلسلة التراخيص والتفويض
@@ -118,7 +118,7 @@ POST /licenses/renew
 
 ### كيف يعمل التفويض
 
-1. يُولِّد مسؤول المؤسسة زوج مفاتيح Ed25519 على الخادم المحلي.
+1. يُولِّد المسؤول زوج مفاتيح Ed25519 على الخادم المحلي.
 2. يطلب المسؤول شهادة تفويض من الخادم الأعلى:
    ```
    POST /admin/delegation-certs
@@ -322,8 +322,8 @@ Retry-After: 78234
 
 عند رفع الشهادة الجديدة مجدداً إلى الخادم المحلي، يتحقق `/onprem/cert-upload` من أن `genesisSequence` للشهادة الجديدة لا يزال يرتبط بإدخال معروف في دفتر الإصدار المحلي:
 
-- إذا كان `cert.genesisSequence > localHead.sequence` - يُعيد `409 CHAIN_HEAD_BEHIND` (الخادم الأعلى على سلسلة متشعبة).
-- إذا كان `cert.genesisSequence > 0` وإدخال دفتر الأستاذ المحلي عند ذلك التسلسل لديه `chainHash` مختلف عن `cert.genesisHash` - يُعيد `409 CHAIN_FORK_ON_UPLOAD` (السلسلة المحلية تباعدت).
+- إذا كان `cert.genesisSequence > localHead.sequence` - يُعيد `409` بالرمز `chain-ahead`.
+- إذا كان `cert.genesisSequence > 0` وإدخال دفتر الأستاذ المحلي عند ذلك التسلسل لديه `chainHash` مختلف عن `cert.genesisHash` - يُعيد `409` بالرمز `chain-fork`.
 - بخلاف ذلك، تُقبل الشهادة. تستمر الإصدارات المستقبلية من `localHead.sequence + 1`.
 
 هذا يعني أنه **لا يُشترط تجميد الكتابة أثناء النقل**. السلسلة تمتد بشكل طبيعي على كلا الجانبين. مشابه لكيفية تعامل تجديد شهادة X.509 مع الأرقام التسلسلية أثناء التشغيل.

@@ -24,6 +24,7 @@ type JobPollState = 'running' | 'succeeded' | 'failed' | 'cancelled' | (string &
 interface JobPollStatus {
   state: JobPollState;
   exitCode?: number;
+  startedAt?: string;
   finishedAt?: string;
   function: string;
 }
@@ -85,6 +86,10 @@ function parseEvent(text: string): unknown {
   }
 }
 
+function nonEmptyString(value: unknown): string | undefined {
+  return typeof value === 'string' && value !== '' ? value : undefined;
+}
+
 function parseStatus(trailer: string): JobPollStatus {
   let parsed: unknown;
   try {
@@ -104,9 +109,10 @@ function parseStatus(trailer: string): JobPollStatus {
     function: typeof raw.function === 'string' ? raw.function : '',
   };
   if (typeof raw.exit_code === 'number') status.exitCode = raw.exit_code;
-  if (typeof raw.finished_at === 'string' && raw.finished_at !== '') {
-    status.finishedAt = raw.finished_at;
-  }
+  const startedAt = nonEmptyString(raw.started_at);
+  if (startedAt) status.startedAt = startedAt;
+  const finishedAt = nonEmptyString(raw.finished_at);
+  if (finishedAt) status.finishedAt = finishedAt;
   return status;
 }
 

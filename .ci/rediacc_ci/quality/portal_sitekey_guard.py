@@ -11,7 +11,12 @@ AND THE LOCAL DEPLOY PATHS, since stable eu/us/asia served a keyless portal on 2
   4. `rediacc_ci.deploy.deploy_account` main refuses a keyless dist before `wrangler deploy` (`portal_sitekey_refusal`) and smokes the served portal after it (`portal_smoke`), and its rebuild hint binds `VITE_TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY"` into `workers/account/dist/account`;
   5. `rediacc_ci.ops.deploy_bench` builds its keyless portal through `portal_out_dir`, which lies outside the production assets directory; wrangler.bench.toml's [assets] directory is that build root, and every production and edge account config uploads `./dist`, which holds no bench build root.
 
-Self-hosted image builds (ci-build-docker.yml) and the CI e2e build (ci.yml) are out of scope: they build keyless or with a per-run widget on purpose.
+AND THE MARKETING SITE, since every www form (contact, newsletter, lead magnet, partner application, ROI calculator, region lookup) refused every visitor in production on 2026-11-12: seven www components read `import.meta.env.PUBLIC_TURNSTILE_SITE_KEY`, no build path set it, so no widget rendered while the servers verified every token.
+  6. every `.github/workflows/cd-deploy-*.yml` step that runs `npm run build -w @rediacc/www` sets `PUBLIC_TURNSTILE_SITE_KEY` from `env.BWS_TURNSTILE_SITE_KEY`, a later step in the same job fails when the key is empty or absent from the built `<packages|workers>/www/dist/assets`, and every production `rediacc_ci.deploy.deploy_www` step of that job passes `TURNSTILE_SITE_KEY` from the same env;
+  7. every `rediacc_ci.release.local` step that builds `@rediacc/www` binds `TURNSTILE_SITE_KEY > PUBLIC_TURNSTILE_SITE_KEY` under a profile whose secret-supply.json consumer requires `TURNSTILE_SITE_KEY` and never sets `PUBLIC_TURNSTILE_SITE_KEY` itself, and the `deploy_www` step runs under such a profile too;
+  8. `rediacc_ci.deploy.deploy_www` main refuses a keyless www dist (`www_sitekey_refusal`) before the production deploy (`record_www_deploy`).
+
+Self-hosted image builds (ci-build-docker.yml) and the CI e2e and PR-preview builds (ci.yml) are out of scope: they build keyless or with a per-run widget on purpose. The PR-preview www pages come from the keyless `build-www` artifact, so a preview's www forms carry no widget; only the preview portal gets the per-PR widget.
 
 Exit 0 clean, 1 on findings, 2 when the gate's own controls fail (controls_first convention).
 """
@@ -20,6 +25,7 @@ from __future__ import annotations
 
 import ast
 import copy
+import json
 import pathlib
 import re
 import sys
@@ -77,6 +83,7 @@ def findings(root: pathlib.Path) -> list[str]:
         return ["no %s found: the gate would pass vacuously" % WORKFLOW_GLOB]
     out: list[str] = []
     builds = 0
+    www_builds = 0
     for f in files:
         doc = yaml.safe_load(f.read_text(encoding="utf-8")) or {}
         builds += sum(
@@ -86,11 +93,70 @@ def findings(root: pathlib.Path) -> list[str]:
             if _OUTDIR.search(str(s.get("run") or ""))
         )
         out.extend(findings_for(f.name, doc))
+        www, n = www_findings_for(f.name, doc)
+        out.extend(www)
+        www_builds += n
     if builds == 0:
         out.append(
             "no portal build step found in %s: the gate would pass vacuously" % WORKFLOW_GLOB
         )
+    if www_builds == 0:
+        out.append(
+            "no www pages build step (npm run build -w @rediacc/www) found in %s:"
+            " the gate would pass vacuously" % WORKFLOW_GLOB
+        )
     return out
+
+
+# ---- the marketing site in the deploy workflows -------------------------------------------
+
+_WWW_BUILD = re.compile(r"npm run build -w @rediacc/www\b")
+_WWW_ASSETS = re.compile(r"(?:packages|workers)/www/dist/assets\b")
+# A production deploy_www run: the module named with no `--name` on the same line (`--name pr-N` is the preview lane, which builds keyless on purpose).
+_WWW_DEPLOY = re.compile(r"rediacc_ci\.deploy\.deploy_www\b(?![^\n]*--name)")
+_WWW_GUARD = re.compile(r"test -n \"\$PUBLIC_TURNSTILE_SITE_KEY\"")
+
+
+def www_findings_for(name: str, doc: dict) -> tuple[list[str], int]:
+    """Findings over each www pages build in one workflow, and how many builds were read."""
+    out: list[str] = []
+    builds = 0
+    for job_id, job in (doc.get("jobs") or {}).items():
+        steps = (job or {}).get("steps") or []
+        job_builds = 0
+        for i, step in enumerate(steps):
+            if not _WWW_BUILD.search(str(step.get("run") or "")):
+                continue
+            builds += 1
+            job_builds += 1
+            label = "%s job %s step %r" % (name, job_id, step.get("name") or i)
+            key = str(((step.get("env") or {}).get("PUBLIC_TURNSTILE_SITE_KEY")) or "")
+            if not _BWS_KEY.match(key.strip()):
+                out.append(
+                    "%s: PUBLIC_TURNSTILE_SITE_KEY is %r, not ${{ env.BWS_TURNSTILE_SITE_KEY }},"
+                    " so every www form renders no captcha widget and the servers refuse it"
+                    % (label, key)
+                )
+            later = [str(s.get("run") or "") for s in steps[i + 1 :]]
+            if not any(_WWW_GUARD.search(r) and _WWW_ASSETS.search(r) for r in later):
+                out.append(
+                    "%s: no later step fails when the site key is empty or missing from the www"
+                    ' build; add one that runs test -n "$PUBLIC_TURNSTILE_SITE_KEY" and greps the'
+                    " key over packages/www/dist/assets" % label
+                )
+        if not job_builds:
+            continue
+        for i, step in enumerate(steps):
+            if not _WWW_DEPLOY.search(str(step.get("run") or "")):
+                continue
+            key = str(((step.get("env") or {}).get("TURNSTILE_SITE_KEY")) or "")
+            if not _BWS_KEY.match(key.strip()):
+                out.append(
+                    "%s job %s step %r: deploy_www runs without TURNSTILE_SITE_KEY:"
+                    " ${{ env.BWS_TURNSTILE_SITE_KEY }}, so its keyless-dist refusal cannot check"
+                    " the build" % (name, job_id, step.get("name") or i)
+                )
+    return out, builds
 
 
 # ---- the local deploy paths ---------------------------------------------------------------
@@ -124,7 +190,84 @@ def local_step_findings(steps: Iterable[Any]) -> list[str]:
     return out
 
 
-def _calls_in(func: ast.AST) -> list[tuple[int, str]]:
+WWW_BIND = "TURNSTILE_SITE_KEY > PUBLIC_TURNSTILE_SITE_KEY"
+SUPPLY_MANIFEST_REL = ".ci/config/secret-supply.json"
+DEPLOY_WWW_REL = ".ci/rediacc_ci/deploy/deploy_www.py"
+
+
+def keyed_profiles(supply: dict) -> frozenset[str]:
+    """The secret-supply.json consumers whose `required` list carries TURNSTILE_SITE_KEY."""
+    return frozenset(
+        name
+        for name, consumer in (supply.get("consumers") or {}).items()
+        if "TURNSTILE_SITE_KEY" in ((consumer or {}).get("required") or [])
+    )
+
+
+def local_www_findings(steps: Iterable[Any], keyed: frozenset[str]) -> list[str]:
+    """Each release/local.py step that builds @rediacc/www binds PUBLIC_TURNSTILE_SITE_KEY under a profile that requires TURNSTILE_SITE_KEY, and the deploy_www step runs under such a profile so its refusal can check the dist."""
+    out: list[str] = []
+    builds = deploys = 0
+    for step in steps:
+        argv = " ".join(step.argv)
+        keyed_here = bool(keyed.intersection(step.profiles))
+        if _WWW_BUILD.search(argv):
+            builds += 1
+            label = "release/local.py step %r (www pages)" % step.id
+            if WWW_BIND not in step.binds:
+                out.append(
+                    "%s: does not bind %r, so every www form builds with no captcha widget"
+                    % (label, WWW_BIND)
+                )
+            if not keyed_here:
+                out.append(
+                    "%s: runs under profile(s) %s, none of which requires TURNSTILE_SITE_KEY in %s"
+                    % (label, list(step.profiles) or "none", SUPPLY_MANIFEST_REL)
+                )
+            if any(k == "PUBLIC_TURNSTILE_SITE_KEY" for k, _ in step.env):
+                out.append(
+                    "%s: sets PUBLIC_TURNSTILE_SITE_KEY in env, overriding the bound key" % label
+                )
+        if "rediacc_ci.deploy.deploy_www" in argv:
+            deploys += 1
+            if not keyed_here:
+                out.append(
+                    "release/local.py step %r (deploy_www): runs under profile(s) %s, none of which"
+                    " requires TURNSTILE_SITE_KEY, so its keyless-dist refusal cannot check the build"
+                    % (step.id, list(step.profiles) or "none")
+                )
+    if builds == 0:
+        out.append(
+            "release/local.py: no www pages build step found; the check would pass vacuously"
+        )
+    if deploys == 0:
+        out.append("release/local.py: no deploy_www step found; the check would pass vacuously")
+    return out
+
+
+def deploy_www_findings(source: str) -> list[str]:
+    """deploy_www main refuses a keyless www dist (`www_sitekey_refusal`) before the production deploy (`record_www_deploy`)."""
+    tree = ast.parse(source)
+    main = next((n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "main"), None)
+    if main is None:
+        return ["%s: no main(); the check would pass vacuously" % DEPLOY_WWW_REL]
+    calls = _calls_in(main)
+    deploys = [line for line, name, _node in calls if name == "record_www_deploy"]
+    if not deploys:
+        return [
+            "%s: main never calls record_www_deploy; the check would pass vacuously"
+            % DEPLOY_WWW_REL
+        ]
+    refusals = [line for line, name, _node in calls if name == "www_sitekey_refusal"]
+    if not refusals or min(refusals) > min(deploys):
+        return [
+            "%s: main does not refuse a keyless www dist (www_sitekey_refusal) before the"
+            " production deploy (record_www_deploy)" % DEPLOY_WWW_REL
+        ]
+    return []
+
+
+def _calls_in(func: ast.AST) -> list[tuple[int, str, ast.Call]]:
     found = []
     for node in ast.walk(func):
         if isinstance(node, ast.Call):
@@ -134,8 +277,79 @@ def _calls_in(func: ast.AST) -> list[tuple[int, str]]:
                 if isinstance(f, ast.Name)
                 else (f.attr if isinstance(f, ast.Attribute) else "")
             )
-            found.append((node.lineno, name))
+            found.append((node.lineno, name, node))
     return found
+
+
+# The only spellings of a positive dry-run test the gate trusts: `dry_run`, `args.dry_run`, `args.get("ARG_DRY_RUN")` and `"ARG_DRY_RUN" in args`. Any other test (a negation, a comparison, a name that merely contains "dry") is not a preview branch.
+_DRY_NAME = re.compile(r"(?:\w+\.)*(?:arg_)?dry_run")
+_DRY_GET = re.compile(r"\w+\.get\(['\"]arg_dry_run['\"]\)")
+
+
+def _is_positive_dry_run_test(test: ast.expr) -> bool:
+    if (
+        isinstance(test, ast.Compare)
+        and len(test.ops) == 1
+        and isinstance(test.ops[0], ast.In)
+        and isinstance(test.left, ast.Constant)
+        and isinstance(test.left.value, str)
+    ):
+        return test.left.value.lower() == "arg_dry_run"
+    if isinstance(test, ast.Name | ast.Attribute | ast.Call):
+        text = ast.unparse(test).lower()
+        return bool(_DRY_NAME.fullmatch(text) or _DRY_GET.fullmatch(text))
+    return False
+
+
+def _dry_run_preview_calls(func: ast.FunctionDef) -> set[int]:
+    """`id()` of each `deploy_argv` call that only formats a preview: a call nested in a `print(...)` or `log.*(...)` argument inside the body of an `if` whose test is a positive dry-run check and whose body ends in `return`.
+
+    Nodes, not line numbers, so a real deploy sharing a physical line with a preview is still checked; and only a `deploy_argv` that reaches a print or log argument through formatting calls alone (`" ".join(...)`, `str(...)`) is set aside, so `_run(deploy_argv(...))` inside the branch, and `print(_run(deploy_argv(...)))`, still count as a real deploy.
+    """
+    exempt: set[int] = set()
+    for node in ast.walk(func):
+        if not (
+            isinstance(node, ast.If)
+            and _is_positive_dry_run_test(node.test)
+            and node.body
+            and isinstance(node.body[-1], ast.Return)
+        ):
+            continue
+        for inner in node.body:
+            for outer in ast.walk(inner):
+                if not isinstance(outer, ast.Call):
+                    continue
+                f = outer.func
+                if not (
+                    (isinstance(f, ast.Name) and f.id == "print")
+                    or (
+                        isinstance(f, ast.Attribute)
+                        and isinstance(f.value, ast.Name)
+                        and f.value.id == "log"
+                    )
+                ):
+                    continue
+                for arg in outer.args:
+                    _collect_preview(arg, exempt)
+    return exempt
+
+
+# Calls that only turn their arguments into text, so a `deploy_argv(...)` under them is still only formatted. Any other call between the print and the deploy_argv may run it (`print(_run(deploy_argv(config)))` executes wrangler), so it is not a preview.
+_PURE_FORMATTERS = frozenset({"join", "str", "repr", "format", "list", "tuple", "quote"})
+
+
+def _collect_preview(node: ast.AST, exempt: set[int], *, pure: bool = True) -> None:
+    """Add `id()` of each `deploy_argv` call under `node` that is reached only through formatting calls."""
+    if isinstance(node, ast.Call):
+        f = node.func
+        name = f.id if isinstance(f, ast.Name) else (f.attr if isinstance(f, ast.Attribute) else "")
+        if name == "deploy_argv":
+            if pure:
+                exempt.add(id(node))
+        else:
+            pure = pure and name in _PURE_FORMATTERS
+    for child in ast.iter_child_nodes(node):
+        _collect_preview(child, exempt, pure=pure)
 
 
 def deploy_account_findings(source: str) -> list[str]:
@@ -148,9 +362,15 @@ def deploy_account_findings(source: str) -> list[str]:
         return ["%s: no main(); the check would pass vacuously" % DEPLOY_ACCOUNT_REL]
     calls = _calls_in(main)
     first: dict[str, int] = {}
-    for line, name in sorted(calls):
+    for line, name, _node in sorted(calls, key=lambda c: (c[0], c[1])):
         first.setdefault(name, line)
-    deploy = first.get("deploy_argv")
+    # The dry-run preview prints `deploy_argv(...)` inside a positive dry-run `if` that returns; only a deploy_argv outside such a print runs wrangler, and the refusal must precede every one of them and the smoke must follow the last.
+    preview = _dry_run_preview_calls(main)
+    deploy_lines = [
+        line for line, name, node in calls if name == "deploy_argv" and id(node) not in preview
+    ]
+    deploy = min(deploy_lines) if deploy_lines else None
+    last_deploy = max(deploy_lines) if deploy_lines else None
     if deploy is None:
         out.append(
             "%s: main never calls deploy_argv; the check would pass vacuously" % DEPLOY_ACCOUNT_REL
@@ -162,7 +382,7 @@ def deploy_account_findings(source: str) -> list[str]:
             % DEPLOY_ACCOUNT_REL
         )
     smoke = first.get("portal_smoke")
-    if smoke is None or (deploy is not None and smoke < deploy):
+    if smoke is None or (last_deploy is not None and smoke < last_deploy):
         out.append(
             "%s: main does not smoke the served portal (portal_smoke) after wrangler deploy"
             % DEPLOY_ACCOUNT_REL
@@ -213,18 +433,21 @@ def bench_findings(
             % DEPLOY_BENCH_REL
         )
     bench_root = bench_out.parent
-    production = [n for n in configs if n != "wrangler.bench.toml"]
+    # The eu bench is wrangler.bench.toml, the other regions' are wrangler.bench-<r>.toml (PLAN-multi-region-bench.md); all serve the keyless build.
+    benches = [n for n in configs if n == "wrangler.bench.toml" or n.startswith("wrangler.bench-")]
+    production = [n for n in configs if n not in benches]
     if "wrangler.bench.toml" not in configs or not production:
         return [
             *out,
             "workers/account: no bench or production config found; the check would pass vacuously",
         ]
-    served = pathlib.PurePosixPath(_assets_dir(configs["wrangler.bench.toml"]).removeprefix("./"))
-    if served != bench_root:
-        out.append(
-            "wrangler.bench.toml: [assets] directory is %r, not ./%s where deploy_bench builds"
-            % (str(served), bench_root)
-        )
+    for bench_name in sorted(benches):
+        served = pathlib.PurePosixPath(_assets_dir(configs[bench_name]).removeprefix("./"))
+        if served != bench_root:
+            out.append(
+                "%s: [assets] directory is %r, not ./%s where deploy_bench builds"
+                % (bench_name, str(served), bench_root)
+            )
     for name in sorted(production):
         uploads = pathlib.PurePosixPath(_assets_dir(configs[name]).removeprefix("./"))
         if uploads == pathlib.PurePosixPath("."):
@@ -244,7 +467,7 @@ def bench_findings(
 
 
 def local_findings(root: pathlib.Path) -> tuple[list[str], int]:
-    """Findings over the three local deploy paths and how many inputs were read."""
+    """Findings over the local deploy paths (release/local.py, deploy_account, deploy_www, deploy_bench) and how many account configs were read."""
     worker = root / ACCOUNT_WORKER_REL
     configs = {
         p.name: p.read_text(encoding="utf-8") for p in sorted(worker.glob("wrangler.*.toml"))
@@ -252,9 +475,13 @@ def local_findings(root: pathlib.Path) -> tuple[list[str], int]:
     bench_out = pathlib.PurePosixPath(
         deploy_bench.portal_out_dir(worker).relative_to(worker).as_posix()
     )
+    supply = json.loads((root / SUPPLY_MANIFEST_REL).read_text(encoding="utf-8"))
+    table = local._table()
     found = [
-        *local_step_findings(local._table()),
+        *local_step_findings(table),
+        *local_www_findings(table, keyed_profiles(supply)),
         *deploy_account_findings((root / DEPLOY_ACCOUNT_REL).read_text(encoding="utf-8")),
+        *deploy_www_findings((root / DEPLOY_WWW_REL).read_text(encoding="utf-8")),
         *bench_findings((root / DEPLOY_BENCH_REL).read_text(encoding="utf-8"), bench_out, configs),
     ]
     return found, len(configs)
@@ -299,6 +526,7 @@ def selftest() -> bool:
         print("✗ control: a build with no key-presence step was not reported", file=sys.stderr)
         failed = True
     failed |= _local_selftest()
+    failed |= _www_selftest()
     return failed
 
 
@@ -380,6 +608,80 @@ def _local_selftest() -> bool:
         deploy_account_findings(swapped),
         True,
     )
+    guarded = "def main(argv):\n"
+
+    def with_branch(test: str, body: str) -> str:
+        return _ACCOUNT_OK.replace(
+            guarded, guarded + "    if %s:\n        %s\n        return 0\n" % (test, body)
+        )
+
+    preview = 'print("would run: %s" % " ".join(deploy_argv(config)))'
+    expect(
+        "a dry-run preview printing deploy_argv read as a finding",
+        deploy_account_findings(with_branch('"ARG_DRY_RUN" in args', preview)),
+        False,
+    )
+    expect(
+        "a dry_run preview printing deploy_argv read as a finding",
+        deploy_account_findings(with_branch("dry_run", preview)),
+        False,
+    )
+    for test in (
+        "not dry_run",
+        "dry_run is False",
+        "dry_run == False",
+        "is_dry_run_disabled",
+        "not_dry_run",
+        "no_dry_run or dry_run",
+    ):
+        expect(
+            "a deploy_argv under the non-preview test %r was exempted" % test,
+            deploy_account_findings(with_branch(test, preview)),
+            True,
+        )
+    expect(
+        "a real deploy before the refusal inside a positive dry-run branch was exempted",
+        deploy_account_findings(with_branch("dry_run", "_run(deploy_argv(config))")),
+        True,
+    )
+    for wrapped in (
+        "print(_run(deploy_argv(config)))",
+        'log.info("ran %s" % _run(deploy_argv(config)))',
+        "print(str(_run(deploy_argv(config))))",
+    ):
+        expect(
+            "a deploy_argv run inside a print argument was exempted: %s" % wrapped,
+            deploy_account_findings(with_branch("dry_run", wrapped)),
+            True,
+        )
+    expect(
+        "a deploy_argv only formatted through str() read as a finding",
+        deploy_account_findings(with_branch("dry_run", "print(str(deploy_argv(config)))")),
+        False,
+    )
+    expect(
+        "a real deploy on the physical line of a preview was exempted",
+        deploy_account_findings(with_branch("dry_run", preview + "; _run(deploy_argv(config))")),
+        True,
+    )
+    two = _ACCOUNT_OK.replace(
+        "    smoke = portal_smoke(worker_dir / config, os.environ)\n",
+        "    smoke = portal_smoke(worker_dir / config, os.environ)\n    status = _run(deploy_argv(config))\n",
+    )
+    expect(
+        "a deploy after the smoke (the LAST deploy_argv decides) was not reported",
+        deploy_account_findings(two),
+        True,
+    )
+    both = _ACCOUNT_OK.replace(
+        "    status = _run(deploy_argv(config))\n",
+        "    status = _run(deploy_argv(config))\n    status = _run(deploy_argv(config))\n",
+    )
+    expect(
+        "two deploys both followed by the smoke read as a finding",
+        deploy_account_findings(both),
+        False,
+    )
     expect(
         "a deploy_account rebuild hint with no key was not reported",
         deploy_account_findings(_ACCOUNT_OK.replace(HINT_BIND, "VITE_TURNSTILE_SITE_KEY=")),
@@ -413,6 +715,24 @@ def _local_selftest() -> bool:
         True,
     )
     expect(
+        "a regional bench config serving ./dist was not reported",
+        bench_findings(
+            _BENCH_OK,
+            _BENCH_OUT,
+            {**_CONFIGS, "wrangler.bench-us.toml": '[assets]\ndirectory = "./dist"\n'},
+        ),
+        True,
+    )
+    expect(
+        "a regional bench config serving the bench build was reported as production",
+        bench_findings(
+            _BENCH_OK,
+            _BENCH_OUT,
+            {**_CONFIGS, "wrangler.bench-us.toml": '[assets]\ndirectory = "./bench/dist"\n'},
+        ),
+        False,
+    )
+    expect(
         "a production config uploading the bench build root was not reported",
         bench_findings(
             _BENCH_OK,
@@ -433,6 +753,148 @@ def _local_selftest() -> bool:
     return failed
 
 
+_WWW_GUARDED: dict[str, Any] = {
+    "jobs": {
+        "d": {
+            "steps": [
+                {
+                    "name": "Build pages",
+                    "run": "npm run build -w @rediacc/www",
+                    "env": {"PUBLIC_TURNSTILE_SITE_KEY": "${{ env.BWS_TURNSTILE_SITE_KEY }}"},
+                },
+                {
+                    "name": "Pages carry the Turnstile site key",
+                    "run": 'test -n "$PUBLIC_TURNSTILE_SITE_KEY" || exit 1\n'
+                    'grep -rqF -- "$PUBLIC_TURNSTILE_SITE_KEY" packages/www/dist/assets || exit 1',
+                },
+                {
+                    "name": "Deploy Worker",
+                    "run": "PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_www",
+                    "env": {"TURNSTILE_SITE_KEY": "${{ env.BWS_TURNSTILE_SITE_KEY }}"},
+                },
+            ]
+        }
+    }
+}
+
+_WWW_OK = """
+def main(argv):
+    if worker_name:
+        return _preview(worker_name, worker_dir)
+    refusal = www_sitekey_refusal(worker_dir, os.environ)
+    return deploy_record.record_www_deploy(worker_dir, CONFIG, "www-stable", _deploy_production)
+"""
+
+
+def _lstep(sid: str, argv: str, profiles=("deploy-workers",), binds=(), env=()) -> SimpleNamespace:
+    return SimpleNamespace(
+        id=sid, argv=tuple(argv.split()), profiles=profiles, binds=binds, env=env
+    )
+
+
+def _www_table(**over: Any) -> list[SimpleNamespace]:
+    pages = {"binds": (WWW_BIND,), **over.pop("pages", {})}
+    deploy = over.pop("deploy", {})
+    return [
+        _lstep("www-pages", "npm run build -w @rediacc/www", **pages),
+        _lstep("www-deploy", "PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_www", **deploy),
+    ]
+
+
+def _www_selftest() -> bool:
+    """Each www defect is planted and must be reported; the guarded shapes must not be."""
+    failed = False
+    keyed = frozenset({"deploy-workers"})
+
+    def expect(label: str, got: list[str], want_finding: bool) -> None:
+        nonlocal failed
+        if bool(got) != want_finding:
+            print("✗ control: %s (%s)" % (label, got or "no finding"), file=sys.stderr)
+            failed = True
+
+    expect(
+        "a guarded www workflow read as a finding",
+        www_findings_for("ok.yml", _WWW_GUARDED)[0],
+        False,
+    )
+    unkeyed = copy.deepcopy(_WWW_GUARDED)
+    del unkeyed["jobs"]["d"]["steps"][0]["env"]
+    expect(
+        "the 2026-11-12 www build with no PUBLIC_TURNSTILE_SITE_KEY was not reported",
+        www_findings_for("unkeyed.yml", unkeyed)[0],
+        True,
+    )
+    no_check = copy.deepcopy(_WWW_GUARDED)
+    del no_check["jobs"]["d"]["steps"][1]
+    expect(
+        "a www build with no key-presence step was not reported",
+        www_findings_for("nocheck.yml", no_check)[0],
+        True,
+    )
+    deploy_unkeyed = copy.deepcopy(_WWW_GUARDED)
+    del deploy_unkeyed["jobs"]["d"]["steps"][2]["env"]
+    expect(
+        "a production deploy_www without TURNSTILE_SITE_KEY was not reported",
+        www_findings_for("deploy.yml", deploy_unkeyed)[0],
+        True,
+    )
+    preview = copy.deepcopy(deploy_unkeyed)
+    preview["jobs"]["d"]["steps"][2]["run"] += ' --name "pr-${PR_NUMBER}"'
+    expect(
+        "a preview deploy_www (--name) was held to the production key",
+        www_findings_for("preview.yml", preview)[0],
+        False,
+    )
+    if www_findings_for("ok.yml", _WWW_GUARDED)[1] != 1:
+        print("✗ control: the guarded www build was not counted", file=sys.stderr)
+        failed = True
+    expect(
+        "a guarded release/local.py www table read as a finding",
+        local_www_findings(_www_table(), keyed),
+        False,
+    )
+    expect(
+        "a release/local.py www build without the bind was not reported",
+        local_www_findings(_www_table(pages={"binds": ()}), keyed),
+        True,
+    )
+    expect(
+        "a release/local.py www build under an unkeyed profile was not reported",
+        local_www_findings(_www_table(pages={"profiles": ()}), keyed),
+        True,
+    )
+    expect(
+        "a release/local.py www build overriding PUBLIC_TURNSTILE_SITE_KEY was not reported",
+        local_www_findings(_www_table(pages={"env": (("PUBLIC_TURNSTILE_SITE_KEY", ""),)}), keyed),
+        True,
+    )
+    expect(
+        "a release/local.py deploy_www under an unkeyed profile was not reported",
+        local_www_findings(_www_table(deploy={"profiles": ("r2-artifacts",)}), keyed),
+        True,
+    )
+    expect(
+        "a release/local.py table with no www build was not reported",
+        local_www_findings(_www_table()[1:], keyed),
+        True,
+    )
+    expect("a guarded deploy_www read as a finding", deploy_www_findings(_WWW_OK), False)
+    expect(
+        "deploy_www without the keyless-dist refusal was not reported",
+        deploy_www_findings(_WWW_OK.replace("www_sitekey_refusal", "noop")),
+        True,
+    )
+    late = _WWW_OK.replace("    refusal = www_sitekey_refusal(worker_dir, os.environ)\n", "")
+    late += "    refusal = www_sitekey_refusal(worker_dir, os.environ)\n"
+    expect("deploy_www refusing AFTER the deploy was not reported", deploy_www_findings(late), True)
+    expect(
+        "a deploy_www with no production deploy was not reported",
+        deploy_www_findings(_WWW_OK.replace("record_www_deploy", "noop")),
+        True,
+    )
+    return failed
+
+
 def main(argv: list[str]) -> int:
     rc = controls_first("portal Turnstile site-key guard", selftest)
     if rc or "--selftest" in argv:
@@ -446,8 +908,9 @@ def main(argv: list[str]) -> int:
             print("    %s" % f, file=sys.stderr)
         return 1
     print(
-        "✓ every cd-deploy portal build takes the Bitwarden site key and proves the build contains it;"
-        " release/local.py binds it, deploy_account checks the dist and the served portal,"
+        "✓ every cd-deploy portal and www pages build takes the Bitwarden site key and proves the build contains it;"
+        " release/local.py binds it for both, deploy_account checks the dist and the served portal,"
+        " deploy_www refuses a keyless www dist,"
         " and deploy_bench builds outside the dist %d account configs upload" % (configs - 1)
     )
     return 0

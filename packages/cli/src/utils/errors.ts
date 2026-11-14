@@ -1,5 +1,6 @@
 import { DEFAULTS } from '@rediacc/shared/config';
 import { outputService } from '../services/core/output.js';
+import { currentOutputFormat, setCurrentOutputFormat } from '../services/core/output-format.js';
 import {
   currentRequestContext,
   DispatchExit,
@@ -11,19 +12,16 @@ import { type CliError, ERROR_CODES, type NextAction, ValidationError } from '..
 import { EXIT_CODES, type OutputFormat } from '../types/index.js';
 import { CliExitError } from './cli-exit-error.js';
 
-// Global output format (set by main program before command execution)
-let currentOutputFormat: OutputFormat = 'table';
-
 /**
  * Set the current output format for error handling.
  * Should be called after parsing CLI options but before running commands.
  */
 export function setOutputFormat(format: OutputFormat): void {
-  currentOutputFormat = format;
+  setCurrentOutputFormat(format);
 }
 
 export function getOutputFormat(): OutputFormat {
-  return currentOutputFormat;
+  return currentOutputFormat();
 }
 
 /** Determine if an error is retryable based on exit code */
@@ -78,6 +76,10 @@ export function namedFailureOf(error: unknown): NamedFailure | undefined {
       ...(error.connectTarget && { connectTarget: error.connectTarget }),
     };
   }
+  // A provisioner refusal keeps its code across `rdc serve`, so a proxied caller can act on it.
+  if (error instanceof CliExitError && error.code.startsWith('RENET_')) {
+    return { errorCode: error.code, guidance: error.guidance };
+  }
   const named = sshConnectError(error);
   if (!named?.errorCode) return undefined;
   const connectTarget = unreachableTarget(error);
@@ -120,6 +122,9 @@ function outputJsonError(cliError: CliError): void {
         retryable: isRetryable(cliError),
         guidance: getGuidance(cliError),
         ...(cliError.next && { next: cliError.next }),
+        ...((cliError as { overlaps?: unknown[] }).overlaps?.length && {
+          overlaps: (cliError as { overlaps?: unknown[] }).overlaps,
+        }),
       },
     ],
     warnings: outputService.getWarnings(),
@@ -166,7 +171,7 @@ export function handleError(error: unknown): never {
     hasDetails: Boolean(cliError.details?.length),
   });
 
-  if (currentOutputFormat === 'json') {
+  if (currentOutputFormat() === 'json') {
     outputJsonError(cliError);
   } else {
     outputTextError(cliError);

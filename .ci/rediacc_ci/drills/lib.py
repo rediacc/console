@@ -16,7 +16,7 @@ RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in 
   1. THE GATEWAY DOES NOT INHERIT THE SANDBOX. `universe.sh` exported its throwaway `XDG_CONFIG_HOME` before restarting the gateway, and the gateway's secret loader (`bws_env`) looks for the Bitwarden bootstrap token under `${XDG_CONFIG_HOME}/rediacc/`: it found none and the drill died with "The dev gateway exited during startup" on every run since secrets moved to Bitwarden (run live 2026-10-01; the bash passes only when `BWS_ACCESS_TOKEN` happens to be exported). The sandbox applies to the `rdc` commands under test (`Drill.cli_env`); the gateway is started with the environment the drill itself was started with (`Drill.gateway_env`).
   2. JSON EXPRESSIONS ARE PATHS, NOT EVALUATED CODE. `drill_json` ran the caller's expression through node's `new Function`, and every failure inside it (a parse error, a typo) collapsed to an empty string indistinguishable from an absent field. `json_get` takes a path (`data.name`, `errors[0].code`) and distinguishes "absent" (empty string, the bash's answer) from "unparseable input" (`<unparseable>`), which an assertion reports as such.
   3. THE TEARDOWN REPORTS WHAT IT COULD NOT STOP. The bash swallowed every failure (`|| true`) so a surviving gateway left no trace; each step now records its failure on stderr and the teardown still completes.
-  4. GATEWAY IS NEVER KILLED. `drill_gateway_stop` swept `lsof -ti:<port>` .. `<port>+2` with `kill -9` whenever `DRILL_GATEWAY_PORT` was set, and the `--no-restart` path sets it for a gateway the operator started: every `--no-restart` drill ended by SIGKILLing the gateway it had been told to reuse (or whatever else listened on those ports). The sweep now runs only after this run stopped a process group of its own.
+  4. THE SWEEP NEVER KILLS A GATEWAY THE DRILL DID NOT START, AND A REPLACED GATEWAY LEAVES ONE RUNNING. `drill_gateway_stop` swept `lsof -ti:<port>` .. `<port>+2` with `kill -9` whenever `DRILL_GATEWAY_PORT` was set, and the `--no-restart` path sets it for a gateway the operator started: every `--no-restart` drill ended by SIGKILLing the gateway it had been told to reuse (or whatever else listened on those ports). The sweep now runs only after this run stopped a process group of its own. `restart_gateway` itself still stops a healthy gateway it finds (`stop_worktree_stack`) and starts the drill's own; when it did, the teardown detaches the drill's gateway instead of killing it, so a later consumer that skips a restart (vm:check's renet-only P4) still finds one running. The original process is not brought back.
   5. STAYS OUT OF THE FAILURE REPORT. `drill_run env REDIACC_TOKEN=<token> REDIACC_STORE_MASTER_PASSWORD=<password> rdc ...` recorded the whole `env` line as the command, and every failed assertion printed it ("command : ...") to stderr, which in CI is a log: the account token and the store password landed there. `run_with` passes the variables through the child's environment and records only the command.
   6. `urllib`, NOT `curl` AND `node`. The API helpers, the port probe (`free_port`) and the offline shim (`Shim`, an in-process threaded TCP forwarder) no longer need curl, node or a generated `proxy.js`.
 """
@@ -41,11 +41,13 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import weakref
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import https
 from rediacc_ci.drills import wire
+from rediacc_ci.ops import totp
 
 if TYPE_CHECKING:
     import http.cookiejar
@@ -156,6 +158,11 @@ def free_port() -> int:
         return int(sock.getsockname()[1])
 
 
+# Scopes the account refuses to mint for a session without 2FA (private/account/src/middleware/require-2fa.ts).
+# Mirrors TWO_FACTOR_TOKEN_SCOPES in private/account/src/middleware/require-2fa.ts: the account refuses to mint a token with any of these unless the user has 2FA.
+TWO_FACTOR_TOKEN_SCOPES = frozenset({"backup:manage", "backup:restore", "delegation:issue"})
+
+
 class Shim:
     """An in-process TCP forwarder in front of the gateway.
 
@@ -236,6 +243,8 @@ class Drill:
         self.active_gateway_log: pathlib.Path | None = None
         self.gateway_proc: subprocess.Popen | None = None
         self.gateway_port_cached = ""
+        # True once `restart_gateway` found a healthy gateway this run had not started: the teardown then leaves the drill's own gateway running instead of killing it.
+        self.gateway_preexisted = False
         self.shim: Shim | None = None
         self.shim_port = 0
         self.code = 0
@@ -245,6 +254,10 @@ class Drill:
         self.last_cmd = ""
         self.started_at = 0
         self.twofa_used = False
+        # Keyed by the jar object itself, weakly: an id() key could be reused by a later jar once the first was collected, and that jar would resolve to a stale email.
+        self.session_emails: weakref.WeakKeyDictionary[http.cookiejar.CookieJar, str] = (
+            weakref.WeakKeyDictionary()
+        )
         self.extra_env: dict[str, str] = {}
         self.green, self.red, self.yellow, self.nc = _colours(sys.stderr)
 
@@ -279,6 +292,9 @@ class Drill:
 
     def teardown(self) -> None:
         """Best-effort cleanup, every step reported if it fails: shim, gateway, work directory."""
+        if self.gateway_preexisted:
+            # A gateway was running before restart_gateway stopped it: leave the drill's replacement running (as vm_check does) rather than kill it, so one still answers after the run.
+            self.detach_gateway()
         for label, action in (("shim", self.stop_shim), ("gateway", self.stop_gateway)):
             try:
                 action()
@@ -544,6 +560,9 @@ class Drill:
         # Append mode: opening is the writability check, and nothing is truncated while the old gateway may still write to this same file.
         log_file = target.open("ab")
         self.active_gateway_log = target
+        # Only a gateway this run did not start counts: a second restart would see the drill's own.
+        if self.gateway_proc is None and self.gateway_alive():
+            self.gateway_preexisted = True
         self.stop_gateway()
         self.stop_worktree_stack()
         log_file.truncate(0)
@@ -758,6 +777,7 @@ class Drill:
     def account_session(self, email: str, password: str, jar: http.cookiejar.CookieJar) -> bool:
         """The headless auth chain: login, and when TOTP is enabled complete the challenge from the dev-only `/test/totp-code`. Sets `twofa_used`."""
         self.twofa_used = False
+        self.session_emails[jar] = email
         body = self.api_post("/auth/login", {"email": email, "password": password}, jar)
         challenge = json_get(body, "challengeToken")
         if challenge:
@@ -776,6 +796,33 @@ class Drill:
         if not json_get(body, "user.id"):
             log.error("Headless login failed for %s: %s" % (email, body))
             return False
+        self.account_accept_terms(jar)
+        return True
+
+    def account_accept_terms(self, jar: http.cookiejar.CookieJar) -> bool:
+        """Accept the current Terms for the logged-in drill account, as the portal checkbox does. Returns True when it accepted, False when the account already satisfied them. The account gates every `/portal` route behind the Terms (403 TERMS_ACCEPTANCE_REQUIRED), and a drill account is a throwaway that has never seen them. A status or accept answer that is not the documented shape raises by name instead of being swallowed."""
+        raw = self._request("GET", self.api_base() + "/portal/terms", None, jar)
+        status = json_obj(raw)
+        if not isinstance(status.get("satisfied"), bool):
+            raise GatewayError("the Terms status read was refused: %s" % raw[:300])
+        if status["satisfied"]:
+            return False
+        current = status.get("current")
+        if not isinstance(current, dict) or not current.get("version") or not current.get("sha256"):
+            raise GatewayError("the Terms status names no current version: %s" % raw[:300])
+        answer = self.api_post(
+            "/portal/terms/accept",
+            {
+                "version": current["version"],
+                "sha256": current["sha256"],
+                "locale": "en",
+                "method": "web-checkbox",
+            },
+            jar,
+        )
+        if json_obj(answer).get("accepted") is not True:
+            raise GatewayError("the Terms acceptance was refused: %s" % answer[:300])
+        self.note("accepted Terms %s for the drill account" % current["version"])
         return True
 
     def account_subscription_id(self, jar: http.cookiejar.CookieJar) -> str:
@@ -783,10 +830,41 @@ class Drill:
             self._request("GET", self.api_base() + "/portal/subscription", None, jar), "id"
         )
 
+    def _elevate(self, email: str) -> None:
+        """The dev-only elevation of `email`'s session; a refused or unreadable answer raises here, at the step, instead of surfacing later as an unrelated 403."""
+        answer = json_obj(self.api_post("/test/elevate", {"email": email}))
+        if answer.get("elevated") is not True:
+            raise GatewayError("the /test/elevate step was refused: %s" % json.dumps(answer)[:300])
+
+    def account_ensure_two_factor(self, jar: http.cookiejar.CookieJar, email: str) -> bool:
+        """Enrol TOTP 2FA for the logged-in drill account the way a user does: setup returns a secret, enable verifies a code computed from it. Returns True when it enrolled, False when the account already had 2FA. The account refuses to mint a token with backup-storage scopes without it, and that refusal stays in force. Setup and enable need an elevated session, which the dev-only `/test/elevate` grants. A refused step raises by name."""
+        status = json_obj(self._request("GET", self.api_base() + "/auth/2fa/status", None, jar))
+        if not isinstance(status.get("enabled"), bool):
+            raise GatewayError("the 2FA status read was refused: %s" % json.dumps(status)[:300])
+        if status["enabled"]:
+            return False
+        self._elevate(email)
+        setup = json_obj(self.api_post("/auth/2fa/setup", {}, jar))
+        secret = setup.get("secret")
+        if not isinstance(secret, str) or not secret:
+            raise GatewayError("the 2FA setup was refused: %s" % json.dumps(setup)[:300])
+        answer = json_obj(self.api_post("/auth/2fa/enable", {"code": totp.code(secret)}, jar))
+        if answer.get("enabled") is not True:
+            raise GatewayError("the 2FA enable was refused: %s" % json.dumps(answer)[:300])
+        self.note("enrolled 2FA for the drill account %s" % email)
+        return True
+
     def account_mint_token(
         self, jar: http.cookiejar.CookieJar, subscription_id: str, name: str, scopes: list[str]
     ) -> str:
-        """Mint an API token and return it; an empty answer raises."""
+        """Mint an API token and return it; an empty answer raises. A token with a backup-storage scope first enrols 2FA for the session's account (idempotent), because the account requires it."""
+        if TWO_FACTOR_TOKEN_SCOPES.intersection(scopes):
+            email = self.session_emails.get(jar)
+            if not email:
+                raise GatewayError(
+                    "a backup-scope token needs a jar that account_session logged in"
+                )
+            self.account_ensure_two_factor(jar, email)
         body = self.api_post(
             "/api-tokens",
             {"subscriptionId": subscription_id, "name": name, "scopes": scopes},
@@ -803,7 +881,7 @@ class Drill:
     ) -> bool:
         """A root session with an elevated window, which the admin subscription routes require."""
         self.api_post("/test/promote-admin", {"email": email})
-        self.api_post("/test/elevate", {"email": email})
+        self._elevate(email)
         return self.account_session(email, password, jar)
 
     def account_patch_subscription(
@@ -815,6 +893,15 @@ class Drill:
             json.dumps(patch).encode(),
             jar,
         )
+
+
+def json_obj(text: str) -> dict:
+    """The body as a JSON object; anything else is an empty one."""
+    try:
+        value = json.loads(text)
+    except ValueError:
+        return {}
+    return value if isinstance(value, dict) else {}
 
 
 class GatewayError(RuntimeError):

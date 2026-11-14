@@ -4,9 +4,9 @@ THE CLONE. This is the backup twin of the `vm:check` pair: `rediacc_ci.proof.sur
 
 WHAT IS TOUCHED. Three path tables, one per repository, each entry either a directory prefix (ending in `/`) or an `fnmatch` pattern (`*` crosses `/`):
 
-  CONSOLE_PATHS   the CLI backup commands and services, and the drill that writes the receipt
+  CONSOLE_PATHS   the CLI backup commands and services, and the drill modules whose runs the receipt vouches for (the legs, their real-renet half, the round trip and the on-premise half; only `backup` and `backup_onprem` write it, see WHO WRITES IT)
   RENET_PATHS     relative to private/renet: the backup, datastore and prune commands, the chunk store, delta, datastore, coldbackup, backupstate and prune packages, go.mod and go.sum
-  ACCOUNT_PATHS   relative to private/account: the backup routes, services and DTO, their migrations, and `src/entry/on-premise.ts` (the I7 boot)
+  ACCOUNT_PATHS   relative to private/account: the backup routes, services and DTO, their migrations, `src/entry/on-premise.ts` (the I7 boot) and `src/routes/test.ts` (the session-TTL seam that legs t and u drive)
 
 Test files and documents are excluded through `rediacc_ci.proof.surfaces.excluded`, the same rule the vm-check trigger applies. A submodule whose gitlink moved is diffed inside the submodule; a range that cannot be computed is UNKNOWN, named in `Changed.unknown`, and counts as touched.
 
@@ -52,13 +52,21 @@ CONSOLE_PATHS = (
     "packages/cli/src/commands/backup*",
     "packages/cli/src/commands/repo-backup*",
     "packages/cli/src/services/backup/",
+    "packages/cli/src/services/jobs/",
     ".ci/rediacc_ci/drills/backup.py",
+    ".ci/rediacc_ci/drills/backup_renet.py",
+    ".ci/rediacc_ci/drills/backup_roundtrip.py",
+    ".ci/rediacc_ci/drills/backup_onprem.py",
     ".ci/rediacc_ci/drills/lib.py",
     ".ci/rediacc_ci/drills/wire.py",
 )
 RENET_PATHS = (
     "cmd/renet/backup*",
     "cmd/renet/datastore*",
+    "cmd/renet/repository_migrate*",
+    "cmd/renet/repository_gc*",
+    "pkg/functions/commands/backup*",
+    "pkg/bwrate/",
     "cmd/renet/repository_prune*",
     "cmd/renet/prune_commands*",
     "pkg/chunkstore/",
@@ -75,6 +83,7 @@ ACCOUNT_PATHS = (
     "src/services/backup*",
     "src/dto/backup.dto.ts",
     "src/entry/on-premise.ts",
+    "src/routes/test.ts",
     "drizzle/*backup*",
 )
 DIGEST_VERSION = "backup-v1"
@@ -434,15 +443,25 @@ def record_half(
     started_at: str,
     finished_at: str,
     reason: dict[str, str] | None = None,
-) -> pathlib.Path:
+) -> pathlib.Path | None:
     """Record one drill's half of the receipt and carry the other half from the receipt already on file for this exact checkout (`_carried`).
 
-    The RustFS drill (`half="legs"`, `legs` = the legs that passed) and the on-premise variant (`half="onprem"`) are separate runs, and the receipt is VERIFIED only once both halves passed for one tree, one digest and one pair of checkouts. A half that did not pass contributes nothing (no legs, `onprem` false), so a failed re-run withdraws what that half had vouched for, and the other half survives it."""
+    The RustFS drill (`half="legs"`, `legs` = the legs that passed) and the on-premise variant (`half="onprem"`) are separate runs, and the receipt is VERIFIED only once both halves passed for one tree, one digest and one pair of checkouts. A half that did not pass contributes nothing (no legs, `onprem` false), so a failed re-run withdraws what that half had vouched for, and the other half survives it.
+
+    One exception, returning None with nothing written: a run of a PARTIAL leg selection (short of `REQUIRED_LEGS`) that did not fail, against a VERIFIED receipt already on file for the same TREE, whatever the worktree digest or submodule state of this run (a bench runner mid-edit still must not downgrade the tree's verdict; the receipt vouches for the committed tree, and `admit` re-checks its own digest and gitlinks). Such a run can only be NOT_VERIFIED (`legs-partial`) or an unavailable drill, and neither is evidence against what the fuller run proved on the same code. A FAILED verdict is always written, whatever the selection: a leg that really failed is never hidden."""
     if half not in HALVES:
         raise ValueError(f"half {half!r} is not one of {', '.join(HALVES)}")
     tree = make_git(root)(["rev-parse", "HEAD^{tree}"]) or ""
     prior = _carried(root, tree) or {}
+    on_file = (read_archive(root, tree) if tree else None) or {}
     passed = status == VERIFIED
+    if (
+        half == LEGS_HALF
+        and status != FAILED
+        and on_file.get("status") == VERIFIED
+        and any(leg not in legs for leg in REQUIRED_LEGS)
+    ):
+        return None
     if half == LEGS_HALF:
         ran = list(legs) if passed else []
         onprem = prior.get("onprem") is True
@@ -504,6 +523,12 @@ def record_drill(drill: Any, half: str, rc: int, legs: Sequence[str] = ()) -> pa
         )
     except (OSError, ValueError) as exc:
         print(f"backup-check: the receipt was NOT written ({exc})", file=sys.stderr)
+        return None
+    if path is None:
+        print(
+            "backup-check: a partial leg selection leaves the VERIFIED receipt for this tree as it is",
+            file=sys.stderr,
+        )
         return None
     written = read_latest(pathlib.Path(drill.root)) or {}
     print(

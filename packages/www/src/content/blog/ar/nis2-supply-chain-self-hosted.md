@@ -12,8 +12,8 @@ tags:
   - compliance
 featured: false
 language: ar
-sourceHash: "c1a20432472d9452"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "02a3f195c73de031"
+sourceCommit: "ddf4affc88b6a49d8b23351f99d04e19870444f3"
 translatedFrom: en
 ---
 
@@ -124,7 +124,7 @@ translatedFrom: en
 
 | الحقل | بعد |
 |---|---|
-| البائعون | (1) Rediacc OÜ، ترخيص برمجي؛ (2) Hetzner، IaaS |
+| البائعون | (1) [Rediacc](/ar/legal-information)، ترخيص برمجي؛ (2) Hetzner، IaaS |
 | المستوى | (1) غير حرج (لا مستوى بيانات)؛ (2) حرج (مستوى البيانات، لكن يسيطر عليه العميل) |
 | البيانات المعالَجة | (1) لا شيء؛ (2) أحجام مشفّرة، العميل يمتلك المفاتيح |
 | المعالجون الفرعيون | (1) لا أحد للاستضافة الذاتية؛ (2) Hetzner داخلياً فقط، مدرجون في اتفاقية معالجة البيانات الخاصة بهم |

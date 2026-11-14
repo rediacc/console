@@ -40,7 +40,7 @@ import re
 import sys
 
 import _cipath
-from rediacc_ci.core import gh_retry
+from rediacc_ci.core import gh_retry, ghx
 from rediacc_ci.well_known import GH_REPO
 
 # A job must be allowed to take at least this multiple of its observed worst
@@ -53,6 +53,8 @@ MAX_BASELINE_AGE_DAYS = 14
 
 # Vacuity floor. An empty baseline makes every comparison vacuous and the gate would exit 0 reading exactly like full coverage.
 MIN_BASELINE_JOBS = 2
+# A refresh over fewer readable runs than this is refused (capped at the number of runs listed, so `--runs 1` still works).
+MIN_REFRESH_RUNS = 2
 
 WORKFLOW = ".github/workflows/ci.yml"
 # D-W2/T3.4: retired from its own `job-timeout-baseline.json` into this shared file's `job_max_seconds` section (see the module docstring).
@@ -253,6 +255,8 @@ def refresh(lane_durations_path, limit):
     if not isinstance(baseline_jobs, dict):
         baseline_jobs = {}
     seen = {}
+    skipped = 0
+    measured = 0
     for run_id in ids:
         out = gh_retry.gh(
             [
@@ -263,11 +267,22 @@ def refresh(lane_durations_path, limit):
             ]
         )
         if not out.ok:
+            # A run whose jobs endpoint keeps answering a server fault after the retry budget is skipped and NAMED, never dropped quietly; any other failure (a 4xx, auth, rate limit) is not evidence about that run and still fails the refresh.
+            transient = out.failure == ghx.FAILURE_TIMED_OUT or gh_retry.is_transient(out.stderr)
+            if not transient:
+                print(
+                    "refresh could not read the jobs of run %s: %s" % (run_id, out.stderr.strip()),
+                    file=sys.stderr,
+                )
+                return 1
             print(
-                "refresh could not read the jobs of run %s: %s" % (run_id, out.stderr.strip()),
+                "skipped run %s: jobs unreadable after %d attempts: %s"
+                % (run_id, gh_retry.ATTEMPTS, out.stderr.strip() or out.failure),
                 file=sys.stderr,
             )
-            return 1
+            skipped += 1
+            continue
+        measured += 1
         for line in out.stdout.splitlines():
             parts = line.split("\t")
             if len(parts) != 3:
@@ -285,11 +300,18 @@ def refresh(lane_durations_path, limit):
             for alias in {name, name.split(" / ")[-1], name.split(" / ")[0]}:
                 if secs > seen.get(alias, 0):
                     seen[alias] = secs
+    if measured < min(MIN_REFRESH_RUNS, len(ids)):
+        print(
+            "refresh read the jobs of only %d of %d run(s) (minimum %d); baseline untouched"
+            % (measured, len(ids), min(MIN_REFRESH_RUNS, len(ids))),
+            file=sys.stderr,
+        )
+        return 1
     updated = 0
     for name, rec in baseline_jobs.items():
         if name in seen and seen[name] > 0:
             rec["observed_max_seconds"] = seen[name]
-            rec["samples"] = len(ids)
+            rec["samples"] = measured
             # The old note described the old number; keeping it would leave a comment that contradicts the value directly beneath it.
             rec.pop("observed_note", None)
             updated += 1
@@ -310,7 +332,10 @@ def refresh(lane_durations_path, limit):
     section["refreshed_at"] = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     data["job_max_seconds"] = section
     lane_durations_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
-    print("baseline refreshed from %d run(s); %d job duration(s) observed" % (len(ids), len(seen)))
+    print(
+        "baseline refreshed from %d run(s) (%d skipped); %d job duration(s) observed"
+        % (measured, skipped, len(seen))
+    )
     return 0
 
 

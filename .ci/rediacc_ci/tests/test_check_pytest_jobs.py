@@ -105,3 +105,35 @@ def test_every_key_is_in_the_finding_alphabet_and_an_unreadable_junit_keys_nothi
     keys = check_pytest.junit_finding_keys(junit)
     assert all(log.FINDING_KEY_RE.match(k) for k in keys), keys
     assert check_pytest.junit_finding_keys(tmp_path / "absent.xml") == []
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        [".ci/rediacc_ci/tests/test_check_pytest_jobs.py"],
+        ["-k", "jobs"],
+        ["--selftest", "tests/test_x.py"],
+        ["--shard-manifest", "m.json", "--shard", "1/5", "-x"],
+    ],
+)
+def test_a_test_path_or_pytest_option_is_refused_before_anything_runs(
+    monkeypatch, capsys, argv
+) -> None:
+    """`npm run check:ci-pytest -- <file>` used to drop the file and run the WHOLE suite. It now refuses before resolving pytest, so a planted removal of the refusal reds here at once instead of starting the suite."""
+
+    def no_resolution(_root):
+        raise AssertionError("pytest was resolved, so the run would have started")
+
+    monkeypatch.setattr(check_pytest, "resolve_pytest", no_resolution)
+    assert check_pytest.main(argv) == check_pytest.EXIT_FAIL
+    err = capsys.readouterr().err
+    assert "takes no test" in err
+    assert argv[-1] in err
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [[], ["--selftest"], ["--help"], ["-h"], ["--shard-manifest", "m.json", "--shard", "1/5"]],
+)
+def test_control_the_gate_s_own_arguments_are_not_refused(argv) -> None:
+    assert check_pytest.unknown_args(argv) == []

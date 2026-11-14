@@ -23,6 +23,8 @@ export const BackupBrowseAtParamsSchema = z.object({
   path: z.string().optional().describe('Limit the listing to this subtree'),
   depth: z.string().default('0').optional().describe('Limit descent to N levels (0 = unlimited)'),
   limit: z.string().default('10000').optional().describe('Maximum entries to return (0 = unlimited)'),
+  expectAccountServer: z.string().optional().describe('Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check'),
+  store: z.string().optional().describe('Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store'),
 });
 
 /** Measure a repository's block churn since the last probe, projected at each cell size */
@@ -36,6 +38,7 @@ export const BackupCompareParamsSchema = z.object({
   againstAnchor: z.string().min(1).describe('The source repository GUID whose anchor the copy is held to'),
   readBwlimit: z.string().optional().describe('Read cap across both files, same units as backup_snapshot\'s bwlimit. Empty = the verb default (50M); 0 = unlimited'),
   cpuLimit: z.number().int().optional().describe('Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota'),
+  store: z.string().optional().describe('Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store'),
 });
 
 /** Delete one or more backups from a machine's datastore */
@@ -110,6 +113,8 @@ export const BackupRepairParamsSchema = z.object({
   bwlimit: z.string().optional().describe('Upload cap, same units as backup_snapshot\'s bwlimit. Empty = unlimited'),
   readBwlimit: z.string().optional().describe('Anchor read cap, same units as backup_snapshot\'s bwlimit. Empty = the verb default (50M); 0 = unlimited'),
   cpuLimit: z.number().int().optional().describe('Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota'),
+  expectAccountServer: z.string().optional().describe('Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check'),
+  store: z.string().optional().describe('Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store'),
 });
 
 /** Restore a repository image from a chunk-store snapshot */
@@ -120,6 +125,8 @@ export const BackupRestoreParamsSchema = z.object({
   noSeed: z.boolean().default(false).optional().describe('Fetch every chunk from the store instead of reusing local anchors or images'),
   allowUnopenable: z.boolean().default(false).optional().describe('Place the image even though the repository passphrase did not open it: a snapshot taken before a passphrase change opens only with the old one'),
   salvage: z.boolean().default(false).optional().describe('Continue past a chunk the store lost or holds wrong: its cells stay holes, reported by byte range, with status restored-damaged. Only for a target with no image'),
+  expectAccountServer: z.string().optional().describe('Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check'),
+  store: z.string().optional().describe('Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store'),
 });
 
 /** Restore one file or directory from a chunk-store snapshot, without restoring the whole image */
@@ -128,6 +135,8 @@ export const BackupRestorePathParamsSchema = z.object({
   at: z.string().min(1).describe('Snapshot id to restore from (a TIME is resolved by the CLI, never here)'),
   path: z.string().min(1).describe('File or directory to restore, relative to the repository root'),
   to: z.string().optional().describe('Directory the path is placed under (empty = <datastore>/restores/<snapshot-id>)'),
+  expectAccountServer: z.string().optional().describe('Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check'),
+  store: z.string().optional().describe('Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store'),
 });
 
 /** Upload a chunk-store snapshot: full inventory first, changed cells after */
@@ -148,6 +157,8 @@ export const BackupSnapshotParamsSchema = z.object({
   indexEvery: z.string().optional().describe('Seal the browse index only this often, as a duration. Empty = every run, or 1h with a target'),
   cellBytes: z.number().int().optional().describe('Grid cell size in bytes. Empty keeps the repository\'s recorded grid, else 4 MiB. A different value needs accept_grid_change'),
   acceptGridChange: z.boolean().default(false).optional().describe('Let cell_bytes replace the recorded grid. Re-seeds the repository: every cell uploads again and is charged'),
+  expectAccountServer: z.string().optional().describe('Refuse unless the repository licence names this account-server origin (scheme://host[:port]). Empty = no check'),
+  store: z.string().optional().describe('Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store'),
 });
 
 /** Inspect or install a repository's browse-listing public key */
@@ -167,6 +178,7 @@ export const BackupVerifyParamsSchema = z.object({
     .describe('Verification level: spot (sampled cells) or full (re-hash every recorded cell)'),
   readBwlimit: z.string().optional().describe('Read cap for the full level, same units as backup_snapshot\'s bwlimit. Empty = the verb default (50M); 0 = unlimited'),
   cpuLimit: z.number().int().optional().describe('Hard CPU ceiling as a percent of all cores, 1-100; 100 = no ceiling. Empty = one core. Enforced by a systemd scope CPUQuota'),
+  store: z.string().optional().describe('Backup store id the session is for (a registered store such as eu-west). Empty or home = the home store'),
 });
 
 /** Mount RBD image on client */
@@ -456,6 +468,12 @@ export const MachineVersionParamsSchema = z.object({});
 /** List network IDs in use on the machine */
 export const NetworkUsedParamsSchema = z.object({});
 
+/** Anchor ACME challenge names that share a CNAME end and restart Traefik (JSON result) */
+export const ProxyAcmeFixParamsSchema = z.object({
+  dryRun: z.boolean().optional().describe('Report the collisions and the planned fix only'),
+  restart: z.boolean().optional().describe('Restart Traefik even when nothing was anchored, so a stalled renewal retries now'),
+});
+
 /** Disable automatic repository start on boot */
 export const RepositoryAutostartDisableParamsSchema = z.object({});
 
@@ -571,10 +589,28 @@ export const RepositoryGpuRevokeParamsSchema = z.object({
 });
 
 /** Evaluate the repository health gate once (JSON HealthReport) */
-export const RepositoryHealthParamsSchema = z.object({});
+export const RepositoryHealthParamsSchema = z.object({
+  strict: z.boolean().default(false).optional().describe('Monitoring mode: no readiness fallback; a repository without health() answers level none'),
+  all: z.boolean().default(false).optional().describe('Evaluate every mounted repository (no repository is named)'),
+});
 
 /** Get repository information */
 export const RepositoryInfoParamsSchema = z.object({});
+
+/** Set the repository's memory, CPU, I/O and process limits and its RAM volume */
+export const RepositoryLimitsSetParamsSchema = z.object({
+  memoryMax: z.string().regex(/^([0-9]+(\.[0-9]+)?[KMGTkmgt]?([iI]?[bB])?|max)$/).optional().describe('Memory cap (memory.max), a size such as 10G, or max'),
+  memoryHigh: z.string().regex(/^([0-9]+(\.[0-9]+)?[KMGTkmgt]?([iI]?[bB])?|max)$/).optional().describe('Memory throttle point (memory.high), a size, or max'),
+  cpuMax: z.string().regex(/^([0-9]+(\.[0-9]+)?%?|max)$/).optional().describe('CPU cap in cores (4, 2.5) or N%, or max'),
+  ioMax: z.string().regex(/^(max|((rbps|wbps|riops|wiops)=[0-9A-Za-z.]+)(,(rbps|wbps|riops|wiops)=[0-9A-Za-z.]+)*)$/).optional().describe('I/O cap of the repository\'s device, rbps=,wbps=,riops=,wiops= (any subset), or max'),
+  pidsMax: z.string().regex(/^([0-9]+|max)$/).optional().describe('Process cap (pids.max), a count, or max'),
+  ramVolume: z.string().regex(/^([0-9]+(\.[0-9]+)?[KMGTkmgt]?([iI]?[bB])?|max)$/).optional().describe('Size of the RAM volume at <mount>/.ram, or max to remove it'),
+  clearLimits: z.boolean().optional().describe('Remove every limit and the RAM volume'),
+  force: z.boolean().optional().describe('Allow a memory cap below the repository\'s current memory use'),
+});
+
+/** Show the repository's grant, its limits and RAM volume included, as JSON */
+export const RepositoryLimitsShowParamsSchema = z.object({});
 
 /** List repositories on machine */
 export const RepositoryListParamsSchema = z.object({
@@ -609,7 +645,25 @@ export const RepositoryMountParamsSchema = z.object({
 export const RepositoryOwnershipParamsSchema = z.object({
   ownerUid: z.string().optional().describe('New owner user ID'),
   force: z.string().optional().describe('Skip Docker volume detection (true/false)'),
+  rootOwned: z.boolean().default(false).optional().describe('Hand root-owned files to the owner UID below directories owned by root or that UID, recording each in an undo manifest'),
+  dryRun: z.boolean().default(false).optional().describe('With root_owned: list the files that would change, and change nothing'),
+  undo: z.boolean().default(false).optional().describe('With root_owned: return the files in the undo manifest that the owner UID still owns to root'),
 });
+
+/** Widen what the repository's Rediaccfile up() and down() may reach: a path, or root */
+export const RepositoryPermissionGrantParamsSchema = z.object({
+  root: z.boolean().optional().describe('Run up() and down() as root, with no privilege drop'),
+  path: z.string().optional().describe('Absolute path up() and down() may reach, PATH[:ro|:rw] (default :ro)'),
+});
+
+/** Withdraw a lifecycle path grant, or the root grant, from the repository */
+export const RepositoryPermissionRevokeParamsSchema = z.object({
+  root: z.boolean().optional().describe('Withdraw the root grant'),
+  path: z.string().optional().describe('Absolute path to withdraw'),
+});
+
+/** Show the repository's grant as JSON */
+export const RepositoryPermissionShowParamsSchema = z.object({});
 
 /** Show automatic size policy (machine default, repo override, effective) */
 export const RepositoryPolicyGetParamsSchema = z.object({
@@ -636,6 +690,13 @@ export const RepositoryPromoteParamsSchema = z.object({
 /** Remove orphaned datastore resources (empty mounts, stale locks) */
 export const RepositoryPruneParamsSchema = z.object({
   dryRun: z.boolean().optional().describe('Preview only, no changes'),
+});
+
+/** Run the repository's Rediaccfile repair() functions that their declared class allows (JSON RepairReport) */
+export const RepositoryRepairParamsSchema = z.object({
+  allowClasses: z.string().optional().describe('Comma-separated classes that may run: auto-safe, auto-with-backup, operator-only (an undeclared repair() is operator-only)'),
+  inWindow: z.boolean().optional().describe('The machine is inside its maintenance window, so window-only repairs may run'),
+  dryRun: z.boolean().optional().describe('Run health() and report what would run, without running repair()'),
 });
 
 /** Resize a repository */
@@ -783,6 +844,7 @@ export const FUNCTION_SCHEMAS = {
   machine_uninstall: MachineUninstallParamsSchema,
   machine_version: MachineVersionParamsSchema,
   network_used: NetworkUsedParamsSchema,
+  proxy_acme_fix: ProxyAcmeFixParamsSchema,
   repository_autostart_disable: RepositoryAutostartDisableParamsSchema,
   repository_autostart_disable_all: RepositoryAutostartDisableAllParamsSchema,
   repository_autostart_enable: RepositoryAutostartEnableParamsSchema,
@@ -804,16 +866,22 @@ export const FUNCTION_SCHEMAS = {
   repository_gpu_revoke: RepositoryGpuRevokeParamsSchema,
   repository_health: RepositoryHealthParamsSchema,
   repository_info: RepositoryInfoParamsSchema,
+  repository_limits_set: RepositoryLimitsSetParamsSchema,
+  repository_limits_show: RepositoryLimitsShowParamsSchema,
   repository_list: RepositoryListParamsSchema,
   repository_log: RepositoryLogParamsSchema,
   repository_logs: RepositoryLogsParamsSchema,
   repository_merge: RepositoryMergeParamsSchema,
   repository_mount: RepositoryMountParamsSchema,
   repository_ownership: RepositoryOwnershipParamsSchema,
+  repository_permission_grant: RepositoryPermissionGrantParamsSchema,
+  repository_permission_revoke: RepositoryPermissionRevokeParamsSchema,
+  repository_permission_show: RepositoryPermissionShowParamsSchema,
   repository_policy_get: RepositoryPolicyGetParamsSchema,
   repository_policy_set: RepositoryPolicySetParamsSchema,
   repository_promote: RepositoryPromoteParamsSchema,
   repository_prune: RepositoryPruneParamsSchema,
+  repository_repair: RepositoryRepairParamsSchema,
   repository_resize: RepositoryResizeParamsSchema,
   repository_status: RepositoryStatusParamsSchema,
   repository_template_apply: RepositoryTemplateApplyParamsSchema,

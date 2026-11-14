@@ -179,6 +179,22 @@
     }
   },
   {
+    "id": "check:ci-i18n-sync",
+    "run": "npm run check:ci-i18n-sync",
+    "gate": true,
+    "leaves": [
+      "scripts/__tests__/sync-translations.control.ts",
+      "scripts/__tests__/generate-translation-hashes.control.ts",
+      "scripts/__tests__/i18n-stamp-keys.control.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n sync control"
+    }
+  },
+  {
     "id": "check:ci-i18n-docs-render-parity",
     "run": "npm run check:ci-i18n-docs-render-parity",
     "gate": true,
@@ -605,7 +621,6 @@
   {
     "id": "check:types:incremental",
     "run": "npm run check:types:incremental",
-    "slow": true,
     "cores": {
       "min": 1,
       "max": "all"
@@ -665,8 +680,11 @@
     "run": "VITEST_MAX_WORKERS=\"$CI_RUNNER_CORES\" npm run check:test-cli",
     "slow": true,
     "gate": true,
+    "needs": [
+      "build:packages"
+    ],
     "cores": {
-      "min": 1,
+      "min": 6,
       "max": "all"
     },
     "heavy": true,
@@ -706,6 +724,9 @@
     "id": "check:test-www",
     "run": "npm run check:test-www",
     "gate": true,
+    "needs": [
+      "build:packages"
+    ],
     "leaves": [
       "vitest"
     ],
@@ -1275,6 +1296,7 @@
     "id": "check:ci-tree-shape",
     "run": "npm run check:ci-tree-shape",
     "gate": true,
+    "slow": true,
     "leaves": [
       ".ci/scripts/quality/check_tree_shape.py"
     ],
@@ -2099,6 +2121,7 @@
     "id": "check:ci-dead-python",
     "run": "npm run check:ci-dead-python",
     "gate": true,
+    "slow": true,
     "leaves": [
       ".ci/scripts/quality/check_dead_python.py"
     ],
@@ -2405,6 +2428,33 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-branch",
       "step": "Plan dependencies"
+    }
+  },
+  {
+    "id": "check:ci-plan-bindings",
+    "run": "npm run check:ci-plan-bindings",
+    "gate": true,
+    "slow": true,
+    "paths": [
+      "agent/plans/**",
+      "agent/INDEX.md",
+      "agent/worklist/**",
+      ".ci/scripts/quality/check_plan_bindings.py",
+      ".claude/hooks/stop/wl_planbind.py",
+      ".claude/hooks/stop/wl_plandeps.py",
+      ".claude/hooks/stop/wl_planfile.py",
+      ".claude/hooks/stop/wl_planrec.py",
+      ".claude/hooks/stop/wl_store.py"
+    ],
+    "pathsOrigin": "declared",
+    "leaves": [
+      ".ci/scripts/quality/check_plan_bindings.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-static",
+      "step": "Plan bindings"
     }
   },
   {
@@ -3168,6 +3218,21 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-content",
       "step": "Agent model roster matches its documented reasons"
+    }
+  },
+  {
+    "id": "check:ci-docs-frontmatter",
+    "run": "npm run check:ci-docs-frontmatter",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-docs-frontmatter.ts",
+      "scripts/__tests__/check-docs-frontmatter.control.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Docs front matter matches the content schema"
     }
   },
   {
@@ -4140,6 +4205,9 @@
     "id": "check:ci-account-scope-audit",
     "run": "VITEST_MAX_WORKERS=\"$CI_RUNNER_CORES\" npm run check:ci-account-scope-audit",
     "gate": true,
+    "needs": [
+      "build:packages"
+    ],
     "mutex": [
       "account-vitest"
     ],
@@ -4163,6 +4231,9 @@
     "run": "VITEST_MAX_WORKERS=\"$CI_RUNNER_CORES\" npm run check:ci-test-account-web",
     "slow": true,
     "gate": true,
+    "needs": [
+      "build:packages"
+    ],
     "mutex": [
       "account-vitest"
     ],
@@ -4242,6 +4313,23 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-go",
       "step": "Check Go dependency freshness"
+    }
+  },
+  {
+    "id": "check:ci-ops-health",
+    "env": {
+      "OPS_HEALTH_READ_TOKEN": "${{ env.BWS_OPS_HEALTH_READ_TOKEN }}"
+    },
+    "run": "npm run check:ci-ops-health",
+    "gate": true,
+    "leaves": [
+      ".ci/scripts/quality/check_ops_health.py"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-go",
+      "step": "Off-box ops health"
     }
   },
   {
@@ -4454,6 +4542,9 @@
     "id": "check:ci-account-backup",
     "run": "VITEST_MAX_WORKERS=\"$CI_RUNNER_CORES\" npm run check:ci-account-backup",
     "gate": true,
+    "needs": [
+      "build:packages"
+    ],
     "slow": true,
     "mutex": [
       "account-vitest"
@@ -4628,6 +4719,20 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-content",
       "step": "SVG theme reach"
+    }
+  },
+  {
+    "id": "check:ci-terms-version",
+    "run": "npm run check:ci-terms-version",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-terms-version.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-content",
+      "step": "Terms version"
     }
   },
   {
@@ -5218,6 +5323,7 @@
       "GITHUB_TOKEN": "${{ github.token }}"
     },
     "run": "npm run check:ci-pin-freshness",
+    "slow": true,
     "gate": true,
     "leaves": [
       "scripts/gates/check-pin-freshness.ts"
@@ -5538,7 +5644,6 @@
   {
     "id": "check:ci-max-lines",
     "run": "npm run check:ci-max-lines",
-    "slow": true,
     "gate": true,
     "leaves": [
       "scripts/gates/check-max-lines.ts"

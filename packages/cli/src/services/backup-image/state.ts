@@ -238,6 +238,25 @@ function unlinkQuietly(path: string): void {
 }
 
 /** Writes `body` to a new 0600 file, fsynced; the file is removed again when any step fails. */
+/** Errors a filesystem without hard links (exFAT, FAT32, some network mounts) answers `link()` with. */
+const NO_HARDLINK_CODES = new Set(['EPERM', 'ENOTSUP', 'EOPNOTSUPP', 'ENOSYS']);
+
+/**
+ * Publishes `body` at `dest` exclusively: a hard link of the durable temp file when the filesystem
+ * has hard links, else an O_EXCL create of `dest` written in place. Both refuse with EEXIST when
+ * `dest` exists. The fallback can show `dest` briefly empty, which `readLock` reads as an unreadable
+ * lock and refuses, never as a free one.
+ */
+function publishExclusive(tmp: string, dest: string, body: string): void {
+  try {
+    linkSync(tmp, dest);
+    return;
+  } catch (error) {
+    if (!NO_HARDLINK_CODES.has((error as NodeJS.ErrnoException).code ?? '')) throw error;
+  }
+  writeDurableTemp(dest, body);
+}
+
 function writeDurableTemp(tmp: string, body: string): void {
   const fd = openSync(tmp, 'wx', 0o600);
   try {
@@ -457,10 +476,11 @@ function uniqueSibling(path: string, kind: string): string {
  */
 function tryCreateLock(lockPath: string, info: LockInfo, deps: LockDeps): boolean {
   const tmp = uniqueSibling(lockPath, 'tmp');
-  writeDurableTemp(tmp, JSON.stringify(info));
+  const body = JSON.stringify(info);
+  writeDurableTemp(tmp, body);
   try {
     deps.beforePublish?.();
-    linkSync(tmp, lockPath);
+    publishExclusive(tmp, lockPath, body);
     return true;
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === 'EEXIST') return false;
@@ -494,7 +514,7 @@ function takeOver(lockPath: string, dead: LockInfo): boolean {
   }
   // A live lock went aside: put it back unless yet another run has created one meanwhile.
   try {
-    linkSync(grave, lockPath);
+    publishExclusive(grave, lockPath, JSON.stringify(moved));
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
   } finally {

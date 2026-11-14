@@ -42,6 +42,8 @@ export interface ImportTarget {
   guid: string;
   datastore: string;
   seedGuid?: string;
+  /** Set on a resumed upload: a placed image for the GUID that hashes to this is adopted, not refused. */
+  adoptSha256?: string;
   allocatedBytes: number;
 }
 
@@ -279,7 +281,8 @@ async function transferAndFinalize(
 ): Promise<{ path: string }> {
   let session: ImportSession = onceQuit(await d.openImportSession(target));
   try {
-    session = await uploadRsyncLoop(o, d, target, session);
+    // A placed image was adopted by the helper: nothing to send, only the finalize acknowledgement.
+    if (!session.ready.placed) session = await uploadRsyncLoop(o, d, target, session);
     return await session.finalize(localSha);
   } finally {
     await session.quit();
@@ -302,7 +305,7 @@ async function stageUpload(o: UploadOptions, d: UploadDeps, plan: UploadPlan, lo
   if (pending) {
     d.progress?.(`${t('commands.backup.upload.resuming', { guid: upload.guid, machine: o.to })}\n`);
   }
-  return { upload, state };
+  return { upload, state, resumed: pending !== null };
 }
 
 /** Registration happens only after the machine finalized the image; a failure names the orphan. */
@@ -357,6 +360,7 @@ export async function runUpload(o: UploadOptions, d: UploadDeps): Promise<{ exit
           guid,
           datastore: upload.datastore,
           seedGuid: staged.state.repo.guid || undefined,
+          adoptSha256: staged.resumed ? localSha : undefined,
           allocatedBytes: staged.state.run.allocatedBytes || localAllocated(o.image),
         },
         localSha

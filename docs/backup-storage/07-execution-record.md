@@ -160,7 +160,13 @@ them. Its first draft did NOT fire on its own headline defect in any of the four
 | C | CF API, genuine temp creds | never | that R2 ENFORCES the JWT prefixes, delete-free actions and exp: the ransomware property |
 | D | a bucket the operator creates | n/a | prerequisite for every write test in B and C |
 
-### 6.1 What the read-only JWT probe settled, and what it did not
+### 6.1 Tier B result (2026-11-06)
+
+Run 2026-11-06 against the bench bucket `rediacc-backups-bench` with its bench keys (decision O1, ASKED:2026-11-05T07:06Z): `./run.sh drill backup --legs a,s` with `DRILL_STORE_*` from the `backup-push-bench` bws profile exited 0 with 24 of 24 assertions passed. The proof line read `STORE-PROOF tier=B duplicate_put=412 wrong_checksum=400`. A duplicate PUT answered 412 and a wrong `x-amz-checksum-sha256` was refused with 400, as R2's documentation states, so nothing was retuned.
+
+The same day, legs `a,n` on the same bucket exited 0 with 23 of 23 passed: a PUT one byte longer than the signed length was refused with 403, and the exact body through the same URL was accepted.
+
+### 6.2 What the read-only JWT probe settled, and what it did not
 
 Run 2026-08-14 under a narrow operator authorisation: sign the JWT locally from the `.env` pair and use the triple for a READ-ONLY `ListObjectsV2` against an EXISTING bucket. No writes, no bucket creation, no mutating Cloudflare or R2 call. The boundary held.
 
@@ -487,3 +493,14 @@ Design decision 13 (`archive/02-design.md`) is a post-launch flag "pending GA co
 The measured figure does not make the case. The weekly `cf_usage_report` read R2 at 116.9 GB of a 200 GB ceiling on 2026-10-26 across all 16 buckets, which is the whole account and not only backups, and the design's own cost model puts storage for a 137 GB seed at about $2 a month. A third off that is cents, and Infrequent Access carries a per-GB retrieval fee, a minimum storage duration and a higher per-operation price, none of which is measured against a restore or a compaction pass here. Compaction and garbage collection read and delete old objects on a schedule, so a tier that charges for reads and early deletes can cost more than it saves until the access pattern is measured. No box in the program is blocked on the tier.
 
 Revisit when either trigger fires: the backup buckets alone (the `rediacc-backups-*` rows, not the account-wide total above) pass about 50 percent of the 200 GB ceiling in the `cf_usage_report` weekly run (the figure is then large enough for a third to matter), or paying customers hold enough backup data that the monthly storage line is worth a measured test. The test is one lifecycle rule on `rediacc-backups-probe` with the restore and compaction drills run against it, reading the billed retrieval and early-delete lines before any production bucket is touched.
+
+---
+
+## 11. Critical-tier docs and drills (2026-11-04)
+
+Run on the lease tree of branch 1104-1, from `PLAN-backup-critical-tier.md` boxes M9, T1, T3 and T4.
+
+- M9: `npx vitest run tests/integration/backup-target-alerts.test.ts tests/integration/backup-alerts.test.ts` in `private/account` rc 0 (62 tests). Control: with `BACKUP_TARGET_ALERT_INTERVAL_MS` set to 1 the repeat-inside-6-hours test failed, rc 1; the constant was restored and the pair passed again. The detection-latency sentence is in `backup-restore.md` (English, commit ce7173cfd).
+- T3: the `Critical-Tier Backups` section (target and RPO as a loss window including upload time, the hook with its bounds and security note, cell size, delayed destruction with its limits, live and waiting storage, the churn cap, alert latency) and the `--keep-within` row are in all 13 locales of `backup-restore.md`; the study text in `mt6-backup.ts` names the window. `check:cli-docs`, `validate:cli-docs -w @rediacc/www`, `check:ci-i18n-docs-untranslated` and `check:ci-docs-structure-parity` rc 0.
+- T4, leg u: `backup_onprem` records Object Lock and versioning as `STORE-CAPABILITY` lines, not asserted; three planted controls sit in the row. The live row against RustFS and legs t, v, w need a worker and were not run.
+- Not run: no live machine, bench or hostinger step, no `vm:check`.

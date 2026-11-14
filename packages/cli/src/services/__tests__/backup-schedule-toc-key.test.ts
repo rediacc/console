@@ -15,6 +15,7 @@ import {
   type TocKeyTarget,
   type TocKeyTransport,
   tocKeyTargetsFor,
+  tocKeyWarnings,
 } from '../backup/backup-schedule-toc-key.js';
 
 const RENET = '/usr/lib/rediacc/renet';
@@ -46,7 +47,7 @@ function installOutcome(current: string | null, line: string, replace: boolean):
 }
 
 /** A machine holding `stored` (or nothing). Install answers like renet: unchanged, differs, installed, replaced. */
-function fakeMachine(stored: string | null) {
+function fakeMachine(stored: string | null, listingSource = 'keyfile') {
   const calls: Call[] = [];
   let current = stored;
   const answer = (exitCode: number, record: object) => ({
@@ -58,6 +59,7 @@ function fakeMachine(stored: string | null) {
       action: 'status',
       outcome: current === null ? 'absent' : 'present',
       publicKey: current ?? undefined,
+      listingSource,
     });
   const install = (command: string) => {
     const line = /--public-key '([^']+)'/.exec(command)?.[1] ?? '';
@@ -108,11 +110,77 @@ describe('syncTocKeys', () => {
     expect(m.calls).toHaveLength(0);
   });
 
-  it('a dry run touches nothing, not even a read', async () => {
-    const m = fakeMachine(null);
-    const results = await syncTocKeys(m.transport, RENET, [target()], { dryRun: true });
-    expect(m.calls).toHaveLength(0);
-    expect(results[0].outcome).toBe('dry-run');
+  it('a dry run reads the machine key, writes nothing and states whether the CLI key equals it', async () => {
+    const cases = [
+      { stored: null, outcome: 'would-install', equal: undefined },
+      { stored: publicLine, outcome: 'unchanged', equal: true },
+      {
+        stored: deriveTocPublicKeyLine('another credential value', GRAND),
+        outcome: 'differs',
+        equal: false,
+      },
+    ] as const;
+    for (const c of cases) {
+      const m = fakeMachine(c.stored);
+      const [r] = await syncTocKeys(m.transport, RENET, [target()], { dryRun: true });
+      expect(r.outcome).toBe(c.outcome);
+      expect(r.machineKeyEqual).toBe(c.equal);
+      expect(m.calls).toHaveLength(1);
+      expect(m.calls[0].command).toContain('toc-key status');
+      expect(m.calls.some((x) => x.command.includes('toc-key install'))).toBe(false);
+      expect(m.stored()).toBe(c.stored);
+    }
+  });
+
+  it('a dry run with --replace over a different key says it would replace and sends no credential', async () => {
+    const m = fakeMachine(deriveTocPublicKeyLine('another credential value', GRAND));
+    const [r] = await syncTocKeys(m.transport, RENET, [target()], { dryRun: true, replace: true });
+    expect(r.outcome).toBe('would-replace');
+    expect(r.machineKeyEqual).toBe(false);
+    expect(m.calls.every((x) => x.stdin === undefined)).toBe(true);
+  });
+
+  it('reports a repository with a key but neither keyfile nor mount as getting no listing, and stays silent otherwise', async () => {
+    for (const stored of [null, publicLine]) {
+      const none = await syncTocKeys(fakeMachine(stored, 'none').transport, RENET, [target()], {});
+      expect(none[0].listingSource).toBe('none');
+      const warnings = tocKeyWarnings(none);
+      expect(warnings).toHaveLength(1);
+      expect(warnings[0]).toContain('no file listing');
+      for (const source of ['keyfile', 'mount']) {
+        const ok = await syncTocKeys(fakeMachine(stored, source).transport, RENET, [target()], {});
+        expect(tocKeyWarnings(ok)).toEqual([]);
+      }
+    }
+  });
+
+  it('a dry run over a machine with no key makes no claim that it holds one, while a held key still warns', async () => {
+    const keyless = await syncTocKeys(fakeMachine(null, 'none').transport, RENET, [target()], {
+      dryRun: true,
+    });
+    expect(keyless[0].outcome).toBe('would-install');
+    expect(tocKeyWarnings(keyless)).toEqual([]);
+    const held = await syncTocKeys(fakeMachine(publicLine, 'none').transport, RENET, [target()], {
+      dryRun: true,
+    });
+    expect(held[0].outcome).toBe('unchanged');
+    expect(tocKeyWarnings(held)[0]).toContain('holds a listing key');
+  });
+
+  it('a status that never answers is unreadable, in a dry run as in a real one, and nothing is installed', async () => {
+    for (const dryRun of [true, false]) {
+      const calls: string[] = [];
+      const transport: TocKeyTransport = {
+        run(command) {
+          calls.push(command);
+          return Promise.resolve({ exitCode: 1, stdout: 'sudo: renet: not found\n' });
+        },
+      };
+      const [r] = await syncTocKeys(transport, RENET, [target()], { dryRun });
+      expect(r.outcome).toBe('unreadable');
+      expect(r.detail).toContain('renet exited 1');
+      expect(calls).toHaveLength(1);
+    }
   });
 
   it('flags a credential shorter than the generated shape, still installing the key', async () => {

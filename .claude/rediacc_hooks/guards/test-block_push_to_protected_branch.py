@@ -25,6 +25,10 @@ import sys
 import tempfile
 import typing
 
+import _hookpath
+
+from rediacc_hooks.guards import _backup_push as BP
+
 DISPATCH = str(pathlib.Path(__file__).resolve().parents[1] / "dispatch.py")
 
 # ONE PID-STAMPED RUN DIRECTORY holds both fixture repos, and the next run sweeps it when this one was killed before `atexit` could fire: 114 `guard-push-main-*` repos had leaked into /tmp by 2026-09-24. See `rediacc_ci.runtmp`, loaded BY FILE rather than through a `sys.path` hop, which test_canonical_sys_path_hop.py freezes; it is stdlib-only for exactly this reason.
@@ -37,6 +41,16 @@ if _RUNTMP is None or _RUNTMP.loader is None:
     )
 runtmp = importlib.util.module_from_spec(_RUNTMP)
 _RUNTMP.loader.exec_module(runtmp)
+
+# The mirror host is `githooks.MIRROR_HOST`, the one place it is typed; loaded BY FILE like `runtmp`, since the git hook layer sits outside any package path.
+_GITHOOKS = importlib.util.spec_from_file_location(
+    "githooks_for_push_guard",
+    pathlib.Path(__file__).resolve().parents[1] / "git" / "githooks.py",
+)
+if _GITHOOKS is None or _GITHOOKS.loader is None:
+    raise SystemExit("%s: .claude/rediacc_hooks/git/githooks.py is missing" % __file__)
+githooks = importlib.util.module_from_spec(_GITHOOKS)
+_GITHOOKS.loader.exec_module(githooks)
 
 RUN_TMP = runtmp.run_dir("guard-push-main-")
 GUARD_ARGV = [sys.executable, DISPATCH, "block_push_to_protected_branch"]
@@ -171,7 +185,11 @@ _git(TWIN, "push", "-q", "origin", "0914-1:refs/heads/0914-2")
 _git(TWIN, "fetch", "-q", "origin")
 TWIN_SHA = _tip(TWIN, "origin/0914-1")
 
-MIRROR_URL = "https://gitlab.rediacc.io/rediacc-org/github/console.git"
+# The host is read from the hook layer for every row below. This suite only requires a gitlab. host; the exact literal is pinned by test_the_mirror_host_is_the_pinned_literal in tests/test_githook_backup_ref.py, so a wrong host in `githooks` fails that test.
+if not githooks.MIRROR_HOST.startswith("gitlab."):
+    raise SystemExit("githooks.MIRROR_HOST is %r, want a gitlab. host" % githooks.MIRROR_HOST)
+MIRROR_HOST = githooks.MIRROR_HOST
+MIRROR_URL = "https://%s/rediacc-org/github/console.git" % MIRROR_HOST
 
 
 def _make_mirror(on_main=True, url=MIRROR_URL, ahead=False, behind=False, hooks=False):
@@ -207,7 +225,7 @@ def _make_mirror(on_main=True, url=MIRROR_URL, ahead=False, behind=False, hooks=
 MIRROR = _make_mirror()
 MIRROR_FEATURE = _make_mirror(on_main=False)
 MIRROR_WRONG_URL = _make_mirror(url="https://gitlab.example.invalid/rediacc-org/github/console.git")
-MIRROR_WRONG_PATH = _make_mirror(url="https://gitlab.rediacc.io/someone/else.git")
+MIRROR_WRONG_PATH = _make_mirror(url="https://%s/someone/else.git" % MIRROR_HOST)
 MIRROR_AHEAD = _make_mirror(ahead=True)
 MIRROR_BEHIND = _make_mirror(behind=True)
 MIRROR_NO_REMOTE = _make_mirror(url=None)
@@ -253,7 +271,7 @@ if a[:2] == ["api", "graphql"]:
         nodes = [ctx]
         extra = os.environ.get("FX_EXTRA", "")
         if extra:
-            # A failing context no workflow on the head defines, as main's retired review-status.yml posted on #591.
+            # A failing context no workflow on the head defines, as main's retired ops-review-status.yml posted on #591.
             nodes.append({"__typename": "StatusContext", "context": extra, "state": "FAILURE", "targetUrl": ""})
         commit = {
             "oid": head,
@@ -706,6 +724,17 @@ CASES = [
         True,
     ),
 ]
+
+# BOX G5 OF PLAN-local-first-delivery: the shared backup-ref cases (`_backup_push.CASES`) in checkouts ON main. This guard judges only a push reaching main, and none of the shared commands names it, so each is allowed before G5 and after. The same commands with `HEAD:main` added are the ones that matter here: the predicate admits only a push whose EVERY destination is under `refs/backup/`, so each must still be refused.
+BACKUP_WORLDS = {
+    True: BP.plant(_make_repo(MAIN)),
+    False: BP.plant(_make_repo(MAIN), pinned=False),
+}
+for _label, _command, _pinned, _admitted in BP.CASES:
+    CASES.append((_label, _command, BACKUP_WORLDS[_pinned], False))
+    CASES.append(
+        (_label + ", plus HEAD:main", "%s HEAD:%s" % (_command, MAIN), BACKUP_WORLDS[_pinned], True)
+    )
 
 
 def run(command, cwd, extra=None):

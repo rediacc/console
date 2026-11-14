@@ -11,7 +11,12 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
 import type { SFTPClient, SFTPClientConfig } from '../../remote/sftp/index.js';
-import { createTempSSHKeyFile, removeTempSSHKeyFile } from '../../remote/ssh/index.js';
+import {
+  createTempKnownHostsFile,
+  createTempSSHKeyFile,
+  removeTempKnownHostsFile,
+  removeTempSSHKeyFile,
+} from '../../remote/ssh/index.js';
 import { executeRsync, getRsyncCommand } from '../../remote/sync/index.js';
 import { debugEnabled } from '../../utils/debug.js';
 import { shellQuote } from '../../utils/shell-quote.js';
@@ -158,25 +163,47 @@ async function hasLocalRsync(): Promise<boolean> {
   }
 }
 
-async function deltaSyncBinary(
+/**
+ * ssh options for the rsync transport. A machine with recorded known_hosts lines is pinned: strict checking against only those lines. A machine with none keeps the unchecked transport, which is what the SFTP connection does for it too (`hostVerifier` is installed only when `knownHosts` is set, remote/sftp/client.ts), so a first `machine setup` is unchanged.
+ */
+export function buildDeltaSshOptions(
+  config: Pick<SFTPClientConfig, 'port'>,
+  keyFilePath: string,
+  knownHostsPath: string | null
+): string {
+  const hostKeyOptions =
+    knownHostsPath === null
+      ? ['-o StrictHostKeyChecking=no', '-o UserKnownHostsFile=/dev/null']
+      : [
+          '-o StrictHostKeyChecking=yes',
+          `-o UserKnownHostsFile="${knownHostsPath}"`,
+          '-o GlobalKnownHostsFile=/dev/null',
+        ];
+  return [
+    ...hostKeyOptions,
+    '-o IdentitiesOnly=yes',
+    `-p ${config.port ?? DEFAULTS.SSH.PORT}`,
+    `-i "${keyFilePath}"`,
+  ].join(' ');
+}
+
+export async function deltaSyncBinary(
   config: SFTPClientConfig,
   binary: Buffer,
   stagingPath: string,
   remoteRsyncPath: string
 ): Promise<void> {
   const keyFilePath = await createTempSSHKeyFile(config.privateKey);
+  let knownHostsPath: string | null = null;
   const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'rdc-renet-'));
   const localBinaryPath = path.join(tempDir, 'renet');
 
   try {
+    if (config.knownHosts?.trim()) {
+      knownHostsPath = await createTempKnownHostsFile(config.knownHosts);
+    }
     await fs.writeFile(localBinaryPath, binary, { mode: 0o700 });
-    const sshOptions = [
-      '-o StrictHostKeyChecking=no',
-      '-o UserKnownHostsFile=/dev/null',
-      '-o IdentitiesOnly=yes',
-      `-p ${config.port ?? DEFAULTS.SSH.PORT}`,
-      `-i "${keyFilePath}"`,
-    ].join(' ');
+    const sshOptions = buildDeltaSshOptions(config, keyFilePath, knownHostsPath);
     const destination = `${config.username}@${config.host}:${stagingPath}`;
     const result = await executeRsync({
       sshOptions,
@@ -190,6 +217,7 @@ async function deltaSyncBinary(
   } finally {
     await fs.rm(tempDir, { recursive: true, force: true });
     await removeTempSSHKeyFile(keyFilePath);
+    if (knownHostsPath !== null) await removeTempKnownHostsFile(knownHostsPath);
   }
 }
 

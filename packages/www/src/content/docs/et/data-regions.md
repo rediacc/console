@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 3
 language: et
-sourceHash: "c03afe9324e59b45"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "9efeb1e2b1f9c8db"
+sourceCommit: "c477e296238c19495f4a07ef6c5a62f15e942f90"
 ---
 
 Rediacci konto loomisel valite andmeregiooni. Kõik teie andmed jäävad sellesse regiooni. See valik on püsiv ega ole pärast registreerumist muudetav. Migratsiooniviis puudub. Valige regioon selle alusel, kus teie andmed seaduslikult asuda peavad, mitte kus teie serverid täna asuvad.
@@ -18,15 +18,19 @@ Rediacci konto loomisel valite andmeregiooni. Kõik teie andmed jäävad selless
 
 | Regioon | Asukoht | Domeen |
 |---|---|---|
-| **Euroopa (EU)** | Frankfurt, Saksamaa | `eu.rediacc.com` |
-| **Ameerika Ühendriigid (US)** | Virginia, USA | `us.rediacc.com` |
-| **Aasia ja Vaikse ookeani piirkond** | Tõkio, Jaapan | `asia.rediacc.com` |
+| **Euroopa (EU)** | Euroopa Liit | `eu.rediacc.cloud` |
+| **Ameerika Ühendriigid (US)** | Põhja-Ameerika ida | `us.rediacc.cloud` |
+| **Aasia ja Vaikse ookeani piirkond** | Aasia ja Vaikse ookeani piirkond | `asia.rediacc.cloud` |
 
-Teie regioon tuvastatakse automaatselt teie ajavööndi järgi registreerimisel. Saate regiooni valijas soovituse üle kirjutada.
+Asukoha veerg nimetab Cloudflare'i regiooni, mitte andmekeskuse linna. Cloudflare ei luba ühtegi linna.
+
+Toode töötab nendel `rediacc.cloud` domeenidel. Kogu dokumentatsioon ja turundusveebisait asuvad aadressil `www.rediacc.com`, mis suunab sind regioonivalija kaudu õigesse regiooni.
+
+Registreerimisel pakub valija sinu asukoha põhjal regiooni, mille saad kinnitada või muuta. Sisselogimisel suunab see sind pärast lühikest tagasiloendust, mille saad tühistada või muuta, sinu regiooni. Kui sinu ettevõttel on oma juurutus, viib valija valik „Enterprise'i klient?“ sind sinna sinu töö e-posti aadressi alusel. Regiooni leidmiseks saadetakse ainult domeen; e-posti aadress täidab ainult sisselogimislehe ette.
 
 ## Mis jääb teie regiooni
 
-Järgmist tüüpi andmeid salvestatakse ja töödeldakse ainult teie valitud regioonis:
+Neid andmetüüpe salvestatakse ja töödeldakse teie valitud regioonis, välja arvatud Aasia ja Vaikse ookeani piirkonna tehingute e-kirjad, mis saadetakse ELi lõpp-punkti kaudu (mis on tagatud, vaadake allpool jaotisest regionaalne infrastruktuur):
 
 - **Kontoandmed**: e-post, nimi, organisatsioon, meeskonnaliikmesused
 - **Arveldus- ja tellimiskirjed**: plaan, aktiveerimised, litsentsi väljastamised
@@ -38,27 +42,28 @@ Järgmist tüüpi andmeid salvestatakse ja töödeldakse ainult teie valitud reg
 Need ei ole regioonispetsiifilised:
 
 - **CLI väljalaskeartefaktid**: avalikud binaarfailid globaalsel CDN-il
-- **Turundusveebisait**: teenindatakse globaalselt servavasukohtadest
+- **Turundusveebisait ja dokumentatsioon**: `www.rediacc.com`, teenindatakse globaalselt servavasukohtadest
 - **Stripe'i maksete töötlemine**: haldab Stripe'i enda infrastruktuur nende andmetöötluslepingu alusel
 
 ## Regionaalne infrastruktuur
 
 | Komponent | EU | US | Aasia |
 |---|---|---|---|
-| Andmebaas (D1) | Ida-Euroopa (EEUR) | Ida-Põhja-Ameerika (ENAM) | Aasia ja Vaikse ookeani piirkond (APAC) |
-| Konfiguratsioonitalletus (R2) | EL-i jurisdiktsioon | USA | Aasia ja Vaikse ookeani piirkond |
+| Andmebaas (D1) | Ida-Euroopa vihje (EEUR) | Põhja-Ameerika ida vihje (ENAM) | Aasia ja Vaikse ookeani vihje (APAC) |
+| Konfiguratsioonitalletus (R2) | EL-i jurisdiktsioon (tagatud) | Jurisdiktsiooni pole (parim võimalus) | Jurisdiktsiooni pole (parim võimalus) |
 | E-post (SES) | Frankfurt (eu-central-1) | Virginia (us-east-1) | Frankfurt (eu-central-1) |
+
+Tagatud jurisdiktsiooniga on seotud ainult EU konfiguratsioonisalvestus: Cloudflare hoiab EU jurisdiktsiooni all olevad R2 objektid EL-i piires. D1 andmebaasi paigutus ning US ja Aasia-Vaikse ookeani piirkonna salvestus kasutavad asukohavihjeid, mida järgitakse parima võimaluse korral. Cloudflare ei taga, et need töötavad vihjatud regioonis.
 
 Iga regioon töötab sõltumatu infrastruktuuriga. Regioonidevahelisi päringuid ega andmevooge regioonide vahel ei toimu.
 
 ## EL-i andmegarantiid
 
-Kui te allute Euroopa andmeresidentsuse nõuetele, pakub EL-i regioon konkreetseid garantiisid:
+Kui te allute Euroopa andmeresidentsuse nõuetele, pakub EL-i regioon ühte kindlat garantiid ja parima võimaluse korral tehtavat paigutust:
 
-- **D1 andmebaas**: töötab Ida-Euroopas (EEUR asukohaviide)
-- **R2 konfiguratsioonitalletus**: kasutab EL-i jurisdiktsioonilist jõustamist (lepinguline garantii, mitte ainult asukohaviide)
+- **D1 andmebaas**: paigutatakse EEUR-i (Ida-Euroopa) asukohavihjega, mis on parima võimaluse põhimõttel, mitte garantii
+- **R2 konfiguratsioonisalvestus**: seotud EL-i jurisdiktsiooniga, mida Cloudflare tagab (range piirang, mitte ainult asukohavihje)
 - **E-post**: saadetakse Frankfurdist (eu-central-1)
-- **EL-Jaapan vastastikune piisavusotsus (2019)**: võimaldab nõuetele vastavaid andmevooge Aasia regiooni infrastruktuuri jaoks
 
 Üksikasjaliku GDPR-i kaardistuse jaoks vaadake [GDPR-i vastavust](/et/docs/legal-gdpr).
 
@@ -81,7 +86,7 @@ Krüpteerimisarhitektuuri üksikasjade kohta vaadake [Konfiguratsioonitalletus](
 Regionaalse arhitektuuri tehnilised omadused:
 
 - **Eraldi andmebaasid regiooni kohta**: igal regioonil on oma Cloudflare D1 andmebaas. Regioonidevahelisi päringuid pole.
-- **Eraldi talletus regiooni kohta**: igal regioonil on oma R2 ämber. EU kasutab jurisdiktsioonilist jõustamist.
+- **Eraldi talletus regiooni kohta**: igal regioonil on oma R2 ämber. Jurisdiktsiooniga on seotud ainult EU ämber; US ja Aasia-Vaikse ookeani piirkond paigutatakse parima võimaluse korral.
 - **E-posti edastus AWS SES kaudu**: tehingulised e-kirjad saadetakse AWS SES-i kaudu. EU ja US kasutavad pühendatud regionaalseid lõpp-punkte; Aasia ja Vaikse ookeani piirkond suunatakse läbi EU lõpp-punkti (eu-central-1).
 - **Üks kasutaja, üks regioon**: kasutajakonto eksisteerib täpselt ühes regioonis. See ei saa ulatuda mitmesse regiooni.
 - **Veebikonksu isoleerimine**: Stripe'i veebikonksu sündmused võtavad vastu kõik regionaalsed töötlejad, kuid töötlevad ainult selle regiooni, mis omab kliendikirjet.

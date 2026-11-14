@@ -9,19 +9,24 @@ import { registerDatastoreCommands } from './commands/datastore.js';
 import { registerDoctorCommand } from './commands/doctor.js';
 import { registerExecutorDaemonCommands } from './commands/executor-daemon.js';
 import { registerJobCommands } from './commands/job.js';
+import { registerLegalCommand } from './commands/legal.js';
 import { registerMachineCommands } from './commands/machine/index.js';
 import { registerMcpCommands } from './commands/mcp/index.js';
 import { registerOpsCommands } from './commands/ops/index.js';
 import { registerRepoCommands } from './commands/repo.js';
 import { registerServeCommand } from './commands/serve.js';
+import { registerServerCommands } from './commands/server.js';
 import { registerShortcuts } from './commands/shortcuts.js';
 import { registerSubscriptionCommands } from './commands/subscription.js';
 import { registerTermCommands } from './commands/term.js';
 import { registerToolsCommands } from './commands/tools.js';
 import { registerUpdateCommand } from './commands/update.js';
+import { registerVersionCommand } from './commands/version.js';
 import { registerVSCodeCommands } from './commands/vscode.js';
 import { changeLanguage, initI18n, SUPPORTED_LANGUAGES, t } from './i18n/index.js';
+import { setFreeLicenseRegion } from './services/account/free-license.js';
 import { getSubscriptionTokenState } from './services/account/subscription-auth.js';
+import { setAcceptTermsFlag } from './services/account/terms.js';
 import { configService } from './services/config/config-resources.js';
 import { setInvocationCommand } from './services/config/push-visibility.js';
 import { auditService } from './services/core/audit.js';
@@ -31,6 +36,7 @@ import { setBackgroundRequested } from './services/executor/executor-factory.js'
 import {
   assertDetachable,
   assertProxyCapable,
+  proxyUrlFor,
   runCommandThroughProxy,
 } from './services/executor/proxy-command.js';
 import {
@@ -52,7 +58,7 @@ import { isTelemetryDisabled, telemetryService } from './services/telemetry/tele
 import type { OutputFormat } from './types/index.js';
 import { isAgentEnvironment } from './utils/agent-guard.js';
 import { attachExamples } from './utils/attach-examples.js';
-import { setOutputFormat } from './utils/errors.js';
+import { handleError, setOutputFormat, ValidationError } from './utils/errors.js';
 import { applyRegistry } from './utils/mode-guard.js';
 import { isDevBuild } from './utils/platform.js';
 import { VERSION } from './version.js';
@@ -141,6 +147,18 @@ async function setUserAndSubscriptionContext(): Promise<void> {
   }
 }
 
+const OUTPUT_FORMATS = ['table', 'json', 'yaml', 'csv'] as const satisfies readonly OutputFormat[];
+
+/** Parse-time check of `-o`: an unknown format is refused with the usage-error exit code before any command runs. */
+function parseOutputFormat(value: string): OutputFormat {
+  if ((OUTPUT_FORMATS as readonly string[]).includes(value)) return value as OutputFormat;
+  return handleError(
+    new ValidationError(
+      t('errors.invalidOutputFormat', { value, allowed: OUTPUT_FORMATS.join(', ') })
+    )
+  );
+}
+
 // Output-format precedence when --output not explicitly set: 1. REDIACC_DEFAULT_OUTPUT env var (whitelist: table|json|yaml|csv) 2. Auto-JSON for non-TTY or agent environments 3. Default 'table' from .option() Used by tutorial recording to keep human-readable output even though
 // CLAUDECODE=1 in the parent shell triggers agent detection.
 function resolveOutputFormat(optsValue: OutputFormat, source: string | undefined): OutputFormat {
@@ -195,13 +213,15 @@ export function createCli(): Command {
     .description(t('cli.description'))
     .version(VERSION)
     .showHelpAfterError(true)
-    .option('-o, --output <format>', t('options.output'), 'table')
+    .option('-o, --output <format>', t('options.output'), parseOutputFormat, 'table')
     .option('--config <name>', t('options.config'))
     .option('-l, --lang <code>', t('options.lang', { languages: SUPPORTED_LANGUAGES.join('|') }))
     .option('-q, --quiet', t('options.quiet'))
     .option('-y, --yes', t('options.yes'))
     .option('--fields <fields>', t('options.fields'))
     .option('--proxy <url>', t('options.proxy'))
+    .option('--license-region <id>', t('options.licenseRegion'))
+    .option('--accept-terms', t('options.acceptTerms'))
     .option('-b, --background', t('options.background'))
     .hook('preAction', async (thisCommand, actionCommand) => {
       const opts = thisCommand.opts();
@@ -226,6 +246,14 @@ export function createCli(): Command {
       // Set --fields for output filtering
       if (opts.fields) {
         outputService.setFields(opts.fields);
+      }
+      // Pick the account region a FREE licence is issued by (`--region` is taken by machine provisioning)
+      if (opts.licenseRegion !== undefined) {
+        setFreeLicenseRegion(opts.licenseRegion as string);
+      }
+      // Accept the Terms of Service for the anonymous Free License without asking (`RDC_ACCEPT_TERMS=1` is the env form)
+      if (opts.acceptTerms) {
+        setAcceptTermsFlag(true);
       }
       // Set runtime config override if --config flag is provided
       if (opts.config) {
@@ -262,7 +290,11 @@ export function createCli(): Command {
       //
       // Interception is at the COMMAND, not deeper. A command's action body reads and writes local config on its way to the executor seam, and a proxy client holds no config, so intercepting at the seam meant dying with "Repository not found in context" before the wire was ever touched. This hook runs before every action, so exiting here means the local action never runs at all,
       // which is what makes the client genuinely thin.
-      const proxyUrl = (opts.proxy as string | undefined) ?? process.env.REDIACC_PROXY_URL;
+      const proxyUrl = proxyUrlFor(
+        commandPathOf(actionCommand),
+        opts.proxy as string | undefined,
+        process.env.REDIACC_PROXY_URL
+      );
       if (proxyUrl) {
         // Refuse a command the proxy cannot serve (interactive TTY, client-side file transfer, or an effect that only exists on this laptop) up front, so the operator gets a clear message instead of a confusing failure mid-request.
         const commandPath = commandPathOf(actionCommand);
@@ -273,6 +305,7 @@ export function createCli(): Command {
         await runCommandThroughProxy(commandPath, actionCommand, {
           baseUrl: proxyUrl,
           contractVersion: CLI_CONTRACT_VERSION,
+          background: opts.background === true,
           getToken: () => {
             const state = getSubscriptionTokenState();
             if (state.kind !== 'ready') {
@@ -385,6 +418,8 @@ export function createCli(): Command {
   registerConfigCommands(cli);
   registerDoctorCommand(cli);
   registerCreditsCommand(cli);
+  registerLegalCommand(cli);
+  registerVersionCommand(cli);
   registerClusterCommands(cli);
   registerTermCommands(cli);
   registerVSCodeCommands(cli);
@@ -395,6 +430,7 @@ export function createCli(): Command {
   registerSubscriptionCommands(cli);
   registerMcpCommands(cli);
   registerServeCommand(cli);
+  registerServerCommands(cli);
   registerExecutorDaemonCommands(cli);
   registerShortcuts(cli);
 

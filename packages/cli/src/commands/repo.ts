@@ -5,13 +5,14 @@ import { listReplicaSets } from '../services/cluster/repo-replicate.js';
 import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { parseCapturedJson } from '../services/executor/renet-output.js';
-import { planStep } from '../services/jobs/steps.js';
+import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
 import { isAgentEnvironment } from '../utils/agent-guard.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
+import { jobsOfStatusRecord, runningJobLines } from './machine/status.js';
 import { createRepoAdminCommand } from './repo-admin.js';
 import { registerRepoBackupCommands } from './repo-backup.js';
 import { handleDownAll, handleRepoList, handleUpAll } from './repo-batch-utils.js';
@@ -24,8 +25,11 @@ import { registerRepoDiffCommand } from './repo-diff.js';
 import { registerExtendedRepoCommands } from './repo-extended.js';
 import { registerRepoForkCommand } from './repo-fork.js';
 import { registerRepoGpuCommands } from './repo-gpu.js';
+import { registerRepoHealthCommand } from './repo-health.js';
 import { registerRepoMaintenanceCommands } from './repo-maintenance.js';
 import { registerRepoMigrateCommand } from './repo-migrate.js';
+import { registerRepoPermissionCommands } from './repo-permission.js';
+import { registerRepoRepairCommand } from './repo-repair.js';
 import { registerRepoReplicateCommands } from './repo-replicate.js';
 import { registerRepoSecretCommands } from './repo-secret.js';
 import { registerRepoSyncCommands } from './repo-sync.js';
@@ -125,7 +129,7 @@ async function handleSingleRepoUp(ref: string, options: RepoUpSingleOptions): Pr
 /**
  * Print what `repository_status` reported, as data on stdout in every output format (the record is structured, so a table would only say less). Renet's text is passed through untouched when it is not JSON.
  */
-function printRepoStatusRecord(stdout: string | undefined): void {
+export function printRepoStatusRecord(stdout: string | undefined, repoName: string): void {
   if (!stdout?.trim()) return;
   let record: unknown;
   try {
@@ -136,7 +140,20 @@ function printRepoStatusRecord(stdout: string | undefined): void {
   }
   const format = getOutputFormat();
   outputService.print(record, format === 'table' ? 'json' : format);
+  // The jobs on this repo's GUID ride in the record (JSON output carries them as is); the text view adds the attach rows.
+  if (format !== 'table') return;
+  const [header, ...rows] = runningJobLines(jobsOfStatusRecord(record), () => repoName);
+  if (header) {
+    outputService.info(`\n${header}`);
+    for (const row of rows) outputService.info(row);
+  }
 }
+
+/** The success step of `repo status`: print the record the job captured. */
+bindStepHandler('printRepoStatus', ({ output, params }) => {
+  printRepoStatusRecord(output, typeof params.name === 'string' ? params.name : '');
+  return Promise.resolve();
+});
 
 export function registerRepoCommands(program: Command): void {
   const repo = program
@@ -322,7 +339,13 @@ export function registerRepoCommands(program: Command): void {
             machineName,
             {},
             // captureOutput: the repo record IS the answer. The step detector drops it, so a local `repo status` printed nothing even with `-o json` while the proxied one (which streams renet's output) printed the record.
-            { ...options, kubeCluster, captureOutput: true },
+            {
+              ...options,
+              kubeCluster,
+              captureOutput: true,
+              // One read job; the record is the `printRepoStatus` step, so a ticket handed back early prints nothing half-done.
+              job: { verb: 'repo status', steps: [planStep('printRepoStatus', { name })] },
+            },
             {
               starting: t('commands.repo.status.starting', {
                 repository: ref,
@@ -332,8 +355,7 @@ export function registerRepoCommands(program: Command): void {
               failed: t('commands.repo.status.failed'),
             }
           );
-          if (!result.success) return;
-          printRepoStatusRecord(result.stdout);
+          if (!result.success || result.state === 'running') return;
           // Managed replica sets are CRUD-from-birth state (R2-F17): surface any set built on this repo alongside its status.
           const replicaSets = Object.entries(await listReplicaSets()).filter(
             ([, set]) => set.repo === name
@@ -371,6 +393,8 @@ export function registerRepoCommands(program: Command): void {
     .option('--debug', t('options.debug'))
     .option('--skip-router-restart', t('options.skipRouterRestart'))
     .action(handleRepoList);
+  registerRepoHealthCommand(repo);
+  registerRepoRepairCommand(repo);
   registerRepoCatCommand(repo);
   registerRepoForkCommand(repo);
   registerRepoDiffCommand(repo);
@@ -388,4 +412,5 @@ export function registerRepoCommands(program: Command): void {
   registerRepoTunnelCommand(repo);
   registerRepoSecretCommands(repo);
   registerRepoGpuCommands(repo);
+  registerRepoPermissionCommands(repo);
 }

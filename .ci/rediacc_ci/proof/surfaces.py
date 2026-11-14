@@ -4,6 +4,8 @@ ONE MAP. `.ci/config/proof-tiers.json` is the only surface map (agent/plans/PLAN
 
 GLOBS. Every surface glob and exclude is a console-relative glob in the Owns grammar: `wl_planconc.normalize_owns` expands braces, and `wl_planconc.glob_regex` matches one path. The same normaliser feeds `wl_planconc.owns_overlap`, which judges a plan's Owns against the same globs, so a path and a plan header are read by one grammar. A surface with a glob under `private/renet/` or `private/account/` lives in that submodule.
 
+LOCAL ROUTES (agent/plans/PLAN-local-first-delivery.md Design L, operator ruling R2: "The planner should really find no way to test/deploy locally to go with github."). `tiers.live.local_runners` names each way to prove a change from this machine (vm:check, hostinger, bench deploys, the D1 clones, the e2e-local fleet), and every surface's `local` lists the runners that prove it; `Surface.local` carries them. `tiers.live.github_waits` (`ProofMap.github_waits`) is the one phrase list of a plan box that waits on GitHub, judged by LP8 in `wl_plandeps.github_wait_findings`. A surface with no local route, or an empty phrase list, is a MapError.
+
 TWO TIERS. A surface may have a VM phase (`tiers.vm.phases`: `renet` covers the renet and cli-remote surfaces, `account` the account surface) and live targets (`surfaces.<name>.live`). `tiers.vm.instrument` lists drill files whose change needs a new VM run though they deploy nothing. `Changed.hits` and `Changed.sides` are the VM tier (the paths that need a vm:check run and the phases they select; `sides` keeps its name because the vm:check receipt records it); `Changed.surfaces` is every surface a change reaches, VM phase or not.
 
 AREAS. `tiers.vm.areas` splits the renet surface by what proves it (agent/plans/PLAN-renet-change-test-triggers.md Design item 3): `areas_of` names the areas of one path, `Changed.areas` those of a change and `Changed.unmapped` the renet hits in no area, which get the base battery alone. An unknown renet range, or a diff that failed, selects every area. Each area's legs (`vmcheck`, `receipt`, `external`), its fleets and its CI jobs are parsed here and judged by vm_check; `.ci/scripts/ci/scope-map.cjs` reads the same globs for CI.
@@ -61,6 +63,8 @@ class Surface:
     live: tuple[str, ...]
     renet_build: bool
     submodules: frozenset[str]
+    # The `tiers.live.local_runners` ids that prove this surface from this machine (Design L of agent/plans/PLAN-local-first-delivery.md).
+    local: tuple[str, ...] = ()
 
 
 LEG_VMCHECK = "vmcheck"
@@ -76,6 +80,8 @@ class Fleet:
     name: str
     ips: tuple[str, ...]
     up: str
+    # Recipes of further KVM groups the fleet spans, each naming its own VM_NET_BASE.
+    also_up: tuple[str, ...] = ()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -102,6 +108,15 @@ class Area:
 
 
 @dataclasses.dataclass(frozen=True)
+class LocalRunner:
+    """One way to prove a change from this machine with no GitHub run: `run` is its command list."""
+
+    id: str
+    what: str
+    run: tuple[str, ...]
+
+
+@dataclasses.dataclass(frozen=True)
 class ProofMap:
     surfaces: dict[str, Surface]
     exclude: tuple[str, ...]
@@ -110,6 +125,9 @@ class ProofMap:
     live: dict[str, Any]
     fleets: dict[str, Fleet] = dataclasses.field(default_factory=dict)
     areas: dict[str, Area] = dataclasses.field(default_factory=dict)
+    local_runners: dict[str, LocalRunner] = dataclasses.field(default_factory=dict)
+    # `tiers.live.github_waits`: the phrases of a plan box that waits on GitHub (LP8).
+    github_waits: tuple[str, ...] = ()
 
 
 def _normalised(globs: object, where: str) -> tuple[str, ...]:
@@ -143,6 +161,43 @@ def _parse_surfaces(entries: object) -> dict[str, Surface]:
         subs = frozenset(s for s in (_sub_of(g) for g in globs) if s)
         surfaces[name] = Surface(name, globs, tuple(live), entry["renet_build"], subs)
     return surfaces
+
+
+def _parse_local(
+    live: dict[str, Any], entries: object, surfaces: dict[str, Surface]
+) -> tuple[dict[str, LocalRunner], tuple[str, ...], dict[str, Surface]]:
+    """(runners, github_waits, surfaces with `local` filled), or MapError. Operator ruling R2 of agent/plans/PLAN-local-first-delivery.md: every surface has a local route, so a surface with no `local` entry, an empty one or one naming an unknown runner is a defect, and so is an empty phrase list (LP8 would judge nothing)."""
+    raw = live.get("local_runners")
+    if not isinstance(raw, dict) or not raw:
+        raise MapError("tiers.live.local_runners is empty: no surface could name a local route")
+    runners: dict[str, LocalRunner] = {}
+    for rid, entry in raw.items():
+        where = f"tiers.live.local_runners.{rid}"
+        if (
+            not isinstance(entry, dict)
+            or not isinstance(entry.get("what"), str)
+            or not entry["what"].strip()
+        ):
+            raise MapError(f"{where} needs a what")
+        runners[rid] = LocalRunner(rid, entry["what"], _strs(entry.get("run"), f"{where}.run"))
+    waits = _strs(live.get("github_waits"), "tiers.live.github_waits")
+    folded = [w.strip().lower() for w in waits]
+    if len(set(folded)) != len(folded):
+        raise MapError(f"tiers.live.github_waits repeats a phrase: {list(waits)}")
+    out: dict[str, Surface] = {}
+    for name, surface in surfaces.items():
+        where = f"surfaces.{name}.local"
+        entry = entries.get(name) if isinstance(entries, dict) else None
+        if not isinstance(entry, dict) or "local" not in entry:
+            raise MapError(f"{where} is missing: every surface names a local route (ruling R2)")
+        local = _strs(entry["local"], where)
+        unknown = [r for r in local if r not in runners]
+        if unknown:
+            raise MapError(f"{where} names runners not in tiers.live.local_runners: {unknown}")
+        if len(set(local)) != len(local):
+            raise MapError(f"{where} repeats a runner: {list(local)}")
+        out[name] = dataclasses.replace(surface, local=local)
+    return runners, waits, out
 
 
 def _parse_vm(vm: dict[str, Any], surfaces: dict[str, Surface]) -> tuple[dict, dict]:
@@ -181,8 +236,12 @@ def _parse_fleets(entries: object) -> dict[str, Fleet]:
     for name, entry in entries.items():
         if not isinstance(entry, dict) or not isinstance(entry.get("up"), str) or not entry["up"]:
             raise MapError(f"tiers.vm.fleets.{name} needs ips and an up command")
+        also = entry.get("also_up", [])
         fleets[name] = Fleet(
-            name, _strs(entry.get("ips"), f"tiers.vm.fleets.{name}.ips"), entry["up"]
+            name,
+            _strs(entry.get("ips"), f"tiers.vm.fleets.{name}.ips"),
+            entry["up"],
+            _strs(also, f"tiers.vm.fleets.{name}.also_up") if also else (),
         )
     return fleets
 
@@ -249,7 +308,7 @@ def _parse_areas(
 
 
 def parse_map(raw: object) -> ProofMap:
-    """The map, or MapError naming the first defect. Zero surfaces, an unknown surface in a phase, a phase-less instrument entry, a missing renet or account phase, an empty area table and an area leg naming an unknown fleet are all defects."""
+    """The map, or MapError naming the first defect. Zero surfaces, an unknown surface in a phase, a phase-less instrument entry, a missing renet or account phase, an empty area table, an area leg naming an unknown fleet, a surface with no `local` route and an empty `tiers.live.github_waits` are all defects."""
     if not isinstance(raw, dict) or raw.get("schema") != MAP_SCHEMA:
         raise MapError(f"the map is not an object of schema {MAP_SCHEMA}")
     if raw.get("submodules") != list(SUBMODULES):
@@ -263,9 +322,10 @@ def parse_map(raw: object) -> ProofMap:
     live = tiers.get("live")
     if not isinstance(live, dict):
         raise MapError("tiers.live is missing")
+    runners, waits, surfaces = _parse_local(live, raw.get("surfaces"), surfaces)
     fleets = _parse_fleets(tiers["vm"].get("fleets"))
     areas = _parse_areas(tiers["vm"].get("areas"), fleets, surfaces.get(SIDE_RENET_SURFACE))
-    return ProofMap(surfaces, exclude, phases, instrument, live, fleets, areas)
+    return ProofMap(surfaces, exclude, phases, instrument, live, fleets, areas, runners, waits)
 
 
 def load(path: pathlib.Path = MAP_PATH) -> ProofMap:
@@ -282,6 +342,8 @@ SIDE_ACCOUNT = "account"
 # The VM phases, in map order. vm_check and the receipt call them sides.
 SIDES = tuple(MAP.phases)
 SURFACES = tuple(MAP.surfaces)
+# The phrases of a plan box that waits on GitHub; LP8 (wl_plandeps.github_wait_findings) reads them through check:ci-plan-live-proof.
+GITHUB_WAITS = MAP.github_waits
 
 
 def _regexes(globs: Iterable[str]) -> list[re.Pattern[str]]:
@@ -611,6 +673,31 @@ def push_base(git: Callable[[Sequence[str]], str | None], branch: str | None) ->
             continue
         return BaseResolution(name, via, merge_base, tuple(tried), tuple(warnings))
     return BaseResolution(tried=tuple(tried), warnings=tuple(warnings))
+
+
+# The most branch commits `newest_verified_base` reads, newest first. A branch longer than this falls back to the push base for its older commits, which is the pre-V2 behaviour and never narrows a run.
+VERIFIED_SCAN_MAX = 200
+
+
+def newest_verified_base(
+    git: Callable[[Sequence[str]], str | None],
+    merge_base: str,
+    admitted: Callable[[str, str], bool],
+    tip: str = "HEAD",
+    limit: int = VERIFIED_SCAN_MAX,
+) -> tuple[str, str] | None:
+    """(commit, tree) of the newest first-parent commit in `merge_base..tip` that `admitted(commit, tree)` accepts, or None when none does or git cannot list them (agent/plans/PLAN-vmcheck-incremental.md V2).
+
+    `vm:check --changed` diffs against that commit instead of `merge_base`, so a batch after a VERIFIED run selects only what changed since it. `admitted` is `vm_tier.verified_base_admits`, the push guard's judgment of that tree; the merge base itself is never a candidate, since diffing against it is the fallback.
+    """
+    listed = git(["rev-list", "--first-parent", f"--max-count={limit}", f"{merge_base}..{tip}"])
+    if listed is None:
+        return None
+    for commit in listed.split():
+        tree = git(["rev-parse", f"{commit}^{{tree}}"])
+        if tree and admitted(commit, tree):
+            return commit, tree
+    return None
 
 
 # ----------------------------------------------------------------------------- inputs digest

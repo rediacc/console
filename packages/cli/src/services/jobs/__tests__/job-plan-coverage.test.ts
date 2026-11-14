@@ -83,6 +83,15 @@ function loadOverlap(): OverlapModel {
 
 const byText = (a: string, b: string): number => a.localeCompare(b);
 
+/** The commands with neither a plan nor a listed section 24 exception. */
+function unplanned(
+  commands: readonly string[],
+  plans: Readonly<Record<string, unknown>>,
+  exceptions: Readonly<Record<string, string>>
+): string[] {
+  return commands.filter((cmd) => !(cmd in plans) && !(cmd in exceptions));
+}
+
 const overlap = loadOverlap();
 const machinePlane = CLI_CONTRACT.commands
   .filter((c) => c.plane === 'machine')
@@ -94,9 +103,7 @@ const machinePlane = CLI_CONTRACT.commands
  * oracle here, so the audited class is pinned: a changed lock must change this table in the same diff.
  */
 const GAP_LOCKS: Readonly<Record<string, string>> = {
-  'repo canary remove': 'repo-exclusive',
   'backup schedule': 'machine-exclusive',
-  'machine infra push': 'machine-exclusive',
   'subscription refresh': 'machine-exclusive',
   'subscription status': 'read',
 };
@@ -160,8 +167,23 @@ describe('JOB_PLANS coverage', () => {
   });
 
   it('every machine-plane contract command has a plan or a listed exception', () => {
-    const missing = machinePlane.filter((p) => !(p in JOB_PLANS) && !(p in JOB_EXCEPTIONS));
-    expect(missing).toEqual([]);
+    expect(unplanned(machinePlane, JOB_PLANS, JOB_EXCEPTIONS)).toEqual([]);
+  });
+
+  it('control: a machine-plane command with no plan and no exception fails the coverage check', () => {
+    // The check is only worth its green if a command it does not know about turns it red.
+    expect(unplanned([...machinePlane, 'repo planted'], JOB_PLANS, JOB_EXCEPTIONS)).toEqual([
+      'repo planted',
+    ]);
+    const withoutUp = Object.fromEntries(
+      Object.entries(JOB_PLANS).filter(([command]) => command !== 'repo up')
+    );
+    expect(unplanned(machinePlane, withoutUp, JOB_EXCEPTIONS)).toEqual(['repo up']);
+    // A listed exception, and a plan, each cover their command.
+    expect(
+      unplanned(['repo planted'], JOB_PLANS, { 'repo planted': 'a reason long enough to count' })
+    ).toEqual([]);
+    expect(unplanned(['repo up'], JOB_PLANS, {})).toEqual([]);
   });
 
   it('no command has both a plan and an exception', () => {
@@ -212,7 +234,7 @@ describe('JOB_PLANS coverage', () => {
 
   it('a plan with no fn is checked against overlap.go through lockFrom or a named lockGap', () => {
     const fnless = Object.entries(JOB_PLANS).filter(([, plan]) => !plan.fn);
-    expect(fnless.map(([cmd]) => cmd)).toContain('repo canary remove');
+    expect(fnless.map(([cmd]) => cmd)).toContain('subscription refresh');
     expect(fnless.flatMap(([cmd, plan]) => classMismatches(cmd, plan))).toEqual([]);
   });
 
@@ -230,7 +252,7 @@ describe('JOB_PLANS coverage', () => {
       lock: 'repo-exclusive',
       timeout: '10m',
       box: 'J16',
-      lockGap: { runs: 'kube_delete', overlap: 'machine-exclusive' },
+      lockGap: { runs: 'kube_delete', overlap: 'read' },
     };
     expect(classMismatches('x', staleGap)).toHaveLength(1);
     const bare: JobPlan = { form: 'single', lock: 'read', timeout: '10m', box: 'J16' };
@@ -238,12 +260,12 @@ describe('JOB_PLANS coverage', () => {
   });
 
   it('a wrong lock on a lockGap plan is caught against its audited class', () => {
+    // infra-push is a named kind with its own class, so a wrong lock on its plan is caught through fn.
     const infraPush = JOB_PLANS['machine infra push'];
-    expect(infraPush.lockGap).toBeDefined();
-    expect(classMismatches('machine infra push', { ...infraPush, lock: 'read' })).toEqual([
-      'machine infra push: lock read != audited machine-exclusive',
-    ]);
+    expect(infraPush.fn).toBe('infra-push');
+    expect(classMismatches('machine infra push', { ...infraPush, lock: 'read' })).toHaveLength(1);
     const refresh = JOB_PLANS['subscription refresh'];
+    expect(refresh.lockGap).toBeDefined();
     expect(
       classMismatches('subscription refresh', { ...refresh, lock: 'repo-shared' })
     ).toHaveLength(1);
@@ -259,7 +281,7 @@ describe('JOB_PLANS coverage', () => {
       'backup schedule: overlap.go lists backup-unit as machine-shared like its lock, so it is a lockFrom',
     ]);
     // A new gap has no audited class yet.
-    expect(classMismatches('new gap', { ...infraPush })).toEqual([
+    expect(classMismatches('new gap', { ...refresh })).toEqual([
       'new gap: a new lockGap needs its audited lock in GAP_LOCKS',
     ]);
   });

@@ -2,8 +2,10 @@ import type { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
-import { getExecutor } from '../../services/executor/executor-factory.js';
+import { setExitCode } from '../../services/core/request-context.js';
 import { parseCapturedJson } from '../../services/executor/renet-output.js';
+import { pendingExitCode, runCommandJob } from '../../services/jobs/command-job.js';
+import { bindStepHandler, planStep } from '../../services/jobs/steps.js';
 import { getOutputFormat, handleError } from '../../utils/errors.js';
 import { renderLocalExecutionFailure } from '../../utils/local-execution-failures.js';
 import { assertMachineExists } from '../_validate.js';
@@ -132,30 +134,42 @@ async function renderGpuList(report: GpuListReport): Promise<void> {
   }
 }
 
+/** The `renderGpuList` step: print the report the `machine_gpu_list` job produced, as tables or as data. */
+function renderGpuReport(output: string | undefined): Promise<void> {
+  const report = parseCapturedJson<GpuListReport>(output);
+  const format = getOutputFormat();
+  if (format === 'table') return renderGpuList(report);
+  outputService.print(report, format);
+  return Promise.resolve();
+}
+
+bindStepHandler('renderGpuList', ({ output }) => renderGpuReport(output));
+
 async function handleGpuList(machineName: string, options: { debug?: boolean }): Promise<void> {
   await assertMachineExists(machineName);
-  const format = getOutputFormat();
-  if (format === 'table') {
+  if (getOutputFormat() === 'table') {
     outputService.info(t('commands.machine.gpu.list.starting', { machine: machineName }));
   }
 
-  const result = await getExecutor().execute({
-    functionName: 'machine_gpu_list',
-    machineName,
-    params: {},
-    debug: options.debug,
-    captureOutput: true,
-  });
-  if (!result.success) {
-    renderLocalExecutionFailure(result, t('commands.machine.gpu.list.failed'));
+  // One read job; the render is its step, so a ticket handed back early prints nothing half-done.
+  const outcome = await runCommandJob(
+    'machine gpu list',
+    {
+      functionName: 'machine_gpu_list',
+      machineName,
+      params: {},
+      debug: options.debug,
+      captureOutput: true,
+    },
+    [planStep('renderGpuList')]
+  );
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
     return;
   }
-
-  const report = parseCapturedJson<GpuListReport>(result.stdout);
-  if (format === 'table') {
-    await renderGpuList(report);
-  } else {
-    outputService.print(report, format);
+  if (!outcome.result.success) {
+    renderLocalExecutionFailure(outcome.result, t('commands.machine.gpu.list.failed'));
   }
 }
 

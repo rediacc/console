@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""The proxy Worker's wrangler configs: six generated from one template, two hand-written, all held to one shape.
+"""The proxy Worker's wrangler configs: three generated from one template, two hand-written, all held to one shape.
 
-WHAT IT GENERATES. `workers/proxy/wrangler.template.toml` plus `regions.json` give `wrangler.<target>.toml` for the six deployable targets, `eu`, `us`, `asia` (production) and `edge-eu`, `edge-us`, `edge-asia` (edge). Each names `rediacc-proxy-<r>` or `edge-rediacc-proxy-<r>` (regions.json `proxyWorkerName` / `edgeProxyWorkerName`), routes the custom domain `proxy.<domain>` or `proxy.<edgeDomain>` (the WK_PROXY_*_HOST values of .ci/config/well-known.env), and binds both ACCOUNT (entrypoint CloudflareInternal) and ISSUER (entrypoint ExecutorIssuer) to the same target's account Worker (agent/plans/PLAN-proxy-cd-six-targets.md Design item 7).
+WHAT IT GENERATES. `workers/proxy/wrangler.template.toml` plus `regions.json` give `wrangler.<target>.toml` for the three shared regions, `eu`, `us` and `asia`: one Worker set per region, with no stable and edge pair since the product moved to rediacc.cloud (PLAN-product-domain-rename.md). Each names `proxy-<r>` (regions.json `proxyWorkerName`), routes the custom domain `proxy.<domain>` (the WK_PROXY_*_HOST values of .ci/config/well-known.env), carries `ENVIRONMENT = "edge"` like the account Workers (it picks the CLI's update channel), and binds both ACCOUNT (entrypoint CloudflareInternal) and ISSUER (entrypoint ExecutorIssuer) to the same target's account Worker (agent/plans/PLAN-proxy-cd-six-targets.md Design item 7).
 
-WHAT IT REFUSES. `config_refusals(text, target)` is the generalization of `deploy_proxy.bench_refusals` to every target, the bench and dev configs included: the exact name, routes, `[vars]`, service bindings and their entrypoints, container blocks (the one `OrgExecutor` entry of the `durable_object` scheduling policy, which carries no `max_instances` or `instance_type`), the Durable Object bindings (`ORG_EXECUTOR`, `EXECUTOR_CAPACITY`), the migration list v1, v2, v3 (v3 deletes the retired `ExecutorContainer` class), the `EXECUTOR_CAP` / `EXECUTOR_HEAVY_CAP` vars (caps at most 25 and 5; an `EXECUTOR_BACKEND` var is refused as one no config may carry), telemetry destinations with `persist = false`, the top-level key allowlist, no `[env.*]` table, no EXECUTOR_TOKEN anywhere in the text, and a name, route, service or destination naming another region or channel refused by name (a us config can never carry an eu binding). `--check` runs it over every file, refuses a generated file that differs from what the template generates, a `wrangler*.toml` that is no known target, a WK_PROXY_*_HOST that disagrees with regions.json, and a workers/account config whose EXECUTOR binding is not the same target's proxy.
+WHAT IT REFUSES. `config_refusals(text, target)` is the generalization of `deploy_proxy.bench_refusals` to every target, the bench and dev configs included: the exact name, routes, `[vars]`, service bindings and their entrypoints, container blocks (the one `OrgExecutor` entry of the `durable_object` scheduling policy, which carries no `max_instances` or `instance_type`), the Durable Object bindings (`ORG_EXECUTOR`, `EXECUTOR_CAPACITY`), the migration list v1, v2, v3 (v3 deletes the retired `ExecutorContainer` class), the `EXECUTOR_CAP` / `EXECUTOR_HEAVY_CAP` vars (caps at most 25 and 5; an `EXECUTOR_BACKEND` var is refused as one no config may carry, and `EGRESS_DRILL_PROBE` as one only bench may carry), telemetry destinations with `persist = false`, the top-level key allowlist, no `[env.*]` table, no EXECUTOR_TOKEN anywhere in the text, and a name, route, service or destination naming another region or channel refused by name (a us config can never carry an eu binding). `--check` runs it over every file, refuses a generated file that differs from what the template generates, a `wrangler*.toml` that is no known target, a WK_PROXY_*_HOST that disagrees with regions.json, and a workers/account config whose EXECUTOR binding is not the same target's proxy.
 
 USAGE.
-    PYTHONPATH=.ci python3 -m rediacc_ci.deploy.proxy_configs [generate]   write the six configs
+    PYTHONPATH=.ci python3 -m rediacc_ci.deploy.proxy_configs [generate]   write the three configs
     PYTHONPATH=.ci python3 -m rediacc_ci.deploy.proxy_configs --check      exit 1 with every refusal, else 0
 """
 
@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import argparse
 import dataclasses
+import ipaddress
 import json
 import pathlib
 import re
@@ -25,9 +26,6 @@ from rediacc_ci.well_known import (
     BENCH_ORIGIN,
     PROXY_ASIA_HOST,
     PROXY_BENCH_HOST,
-    PROXY_EDGE_ASIA_HOST,
-    PROXY_EDGE_EU_HOST,
-    PROXY_EDGE_US_HOST,
     PROXY_EU_HOST,
     PROXY_US_HOST,
 )
@@ -42,9 +40,8 @@ BENCH_CONFIG = "wrangler.bench.toml"
 DEV_CONFIG = "wrangler.dev.toml"
 CONFIG_GLOB = "wrangler*.toml"
 
-PRODUCTION = "production"
-EDGE = "edge"
-CHANNELS = (PRODUCTION, EDGE)
+# The shared Workers keep ENVIRONMENT=edge: it picks the CLI's update channel (private/account/src/app.ts:234), and the account Workers carry the same value.
+SHARED_ENVIRONMENT = "edge"
 
 MAIN = "src/index.ts"
 VERSION_BINDING = "CF_VERSION_METADATA"
@@ -65,20 +62,30 @@ ACCOUNT_BINDING = ("ACCOUNT", "CloudflareInternal")
 ISSUER_BINDING = ("ISSUER", "ExecutorIssuer")
 FORBIDDEN_TEXT = "EXECUTOR_TOKEN"
 # Per target, the two vars that bound the executor (PLAN-executor-durable-object-policy.md Design item 2): the caps are decimal strings the Worker parses.
-TARGET_KEYS = ("eu", "us", "asia", "edge-eu", "edge-us", "edge-asia", "bench", "dev")
+TARGET_KEYS = ("eu", "us", "asia", "bench", "bench-us", "bench-asia", "dev")
 CAP_BY_TARGET: dict[str, str] = dict.fromkeys(TARGET_KEYS, "25")
 HEAVY_CAP_BY_TARGET: dict[str, str] = dict.fromkeys(TARGET_KEYS, "5")
 EXECUTOR_VARS = ("EXECUTOR_CAP", "EXECUTOR_HEAVY_CAP")
+# The bench config alone may carry the reachability drill's probe redirect (PLAN-org-executor-connect-timeout-relocate box E15); any other target carrying it is refused as a var it may not carry.
+BENCH_OPTIONAL_VARS = frozenset({"EGRESS_DRILL_PROBE"})
+# A company config may carry the opt-in IP allowlist (workers/proxy/src/ip-allowlist.ts) and reports the stable channel (PLAN-enterprise-isolation.md ruling 12).
+COMPANY_OPTIONAL_VARS = frozenset({"ALLOW_IPS"})
+COMPANY_ENVIRONMENT = "stable"
+# The drill var's shape as workers/proxy/src/drill.ts reads it: `<host:port>=<host:port>`, a host bare or an IPv6 literal in brackets, a decimal port up to 65535. The Worker falls back silently on anything else, so a typo is refused here; whether an address is one the probe admits stays the Worker's own check.
+DRILL_SIDE = r"(?:\[[0-9a-fA-F:.]+\]|[^\s:\[\]=]+):\d{1,5}"
+DRILL_PROBE_RE = re.compile(r"^%s=%s$" % (DRILL_SIDE, DRILL_SIDE))
 PLACEHOLDER_RE = re.compile(r"@@[A-Z_]+@@")
 
-# The WK_PROXY_*_HOST value for each (region, channel); --check holds each equal to proxy.<domain> from regions.json.
-HOSTS: dict[tuple[str, str], str] = {
-    ("eu", PRODUCTION): PROXY_EU_HOST,
-    ("us", PRODUCTION): PROXY_US_HOST,
-    ("asia", PRODUCTION): PROXY_ASIA_HOST,
-    ("eu", EDGE): PROXY_EDGE_EU_HOST,
-    ("us", EDGE): PROXY_EDGE_US_HOST,
-    ("asia", EDGE): PROXY_EDGE_ASIA_HOST,
+# The region whose bench keeps the unsuffixed target key `bench` (today's single bench, hand-written); the other regions' benches are `bench-<r>` and generated from the template.
+BENCH_HOME_REGION = "eu"
+# The database id a bench account config carries until its objects exist (box L1 of PLAN-multi-region-bench.md); regions.json `bench.deployable` says whether that is still allowed.
+PLACEHOLDER_D1_ID = "TO-BE-CREATED"
+
+# The WK_PROXY_*_HOST value for each region; --check holds each equal to proxy.<domain> from regions.json.
+HOSTS: dict[str, str] = {
+    "eu": PROXY_EU_HOST,
+    "us": PROXY_US_HOST,
+    "asia": PROXY_ASIA_HOST,
 }
 
 # Tokens of a name, route, service or destination (split on `.`, `-`, `_`) that name a region or a channel. A target owns some of them; any other is foreign and refused by name.
@@ -126,6 +133,10 @@ class Target:
     generated: bool
     own_tokens: frozenset[str]
     executor_vars: tuple[tuple[str, str], ...] = ()
+    # Vars this target may carry but need not: the bench-only reachability drill seam (workers/proxy/src/drill.ts). Every other target leaves it empty, so the var is refused there by name.
+    optional_variables: frozenset[str] = frozenset()
+    # A company target routes through a Worker Route in this zone (no certificate of its own, so no name in certificate logs); the shared targets leave it None and keep their custom domain.
+    zone: str | None = None
 
 
 class ConfigError(Exception):
@@ -155,63 +166,91 @@ def executor_vars(key: str) -> tuple[tuple[str, str], ...]:
     )
 
 
+def bench_key(rid: str) -> str:
+    """The target key of region `rid`'s bench: `bench` for the home region, `bench-<r>` for the others."""
+    return "bench" if rid == BENCH_HOME_REGION else "bench-%s" % rid
+
+
+def bench_object(region: dict) -> dict | None:
+    """The regions.json `bench` object of one region row, or None when the row carries none."""
+    bench = region.get("bench")
+    return bench if isinstance(bench, dict) else None
+
+
+def _bench_target(region: dict) -> Target:
+    """The bench proxy target of one region, every name read from its regions.json `bench` object. The home region's config is hand-written (it carries the reachability drill var); the others are generated from the template."""
+    rid = str(region["id"])
+    bench = bench_object(region)
+    if bench is None:
+        raise ConfigError("%s region %s carries no bench object" % (REGIONS_REL, rid))
+    try:
+        host, proxy_host = str(bench["host"]), str(bench["proxyHost"])
+        account, name = str(bench["workerName"]), str(bench["proxyWorkerName"])
+        otlp = str(bench["otlp"])
+    except KeyError as exc:
+        raise ConfigError("%s region %s bench object lacks %s" % (REGIONS_REL, rid, exc)) from None
+    key = bench_key(rid)
+    home = rid == BENCH_HOME_REGION
+    account_url = "https://" + host
+    return Target(
+        key=key,
+        config="wrangler.%s.toml" % key,
+        name=name,
+        routes=(proxy_host,),
+        account_url=account_url,
+        variables=(("ACCOUNT_URL", account_url), ("REGION", rid), ("ENVIRONMENT", "bench")),
+        services=(
+            (ACCOUNT_BINDING[0], account, ACCOUNT_BINDING[1]),
+            (ISSUER_BINDING[0], account, ISSUER_BINDING[1]),
+        ),
+        destinations=("otlp-%s-logs" % otlp, "otlp-%s-traces" % otlp),
+        version_metadata=True,
+        generated=not home,
+        own_tokens=frozenset({"bench"} if home else {"bench", rid}),
+        executor_vars=executor_vars(key),
+        optional_variables=BENCH_OPTIONAL_VARS if home else frozenset(),
+    )
+
+
 def targets(regions: list[dict]) -> dict[str, Target]:
-    """Every proxy config target, keyed by its config suffix: the six generated ones, bench and dev."""
+    """Every proxy config target, keyed by its config suffix: the three generated ones, the benches and dev."""
     out: dict[str, Target] = {}
     for region in regions:
         rid = str(region["id"])
-        for channel in CHANNELS:
-            edge = channel == EDGE
-            key = "%s-%s" % (EDGE, rid) if edge else rid
-            domain = str(region["edgeDomain"] if edge else region["domain"])
-            account = str(region["edgeWorkerName"] if edge else region["workerName"])
-            name = region.get("edgeProxyWorkerName" if edge else "proxyWorkerName")
-            if not name:
-                raise ConfigError(
-                    "%s region %s names no %s"
-                    % (REGIONS_REL, rid, "edgeProxyWorkerName" if edge else "proxyWorkerName")
-                )
-            host = HOSTS.get((rid, channel))
-            if host is None:
-                raise ConfigError(
-                    "region %s has no WK_PROXY_*_HOST for %s in .ci/config/well-known.env"
-                    % (rid, channel)
-                )
-            account_url = "https://" + domain
-            out[key] = Target(
-                key=key,
-                config="wrangler.%s.toml" % key,
-                name=str(name),
-                routes=(host,),
-                account_url=account_url,
-                variables=(("ACCOUNT_URL", account_url), ("REGION", rid), ("ENVIRONMENT", channel)),
-                services=(
-                    (ACCOUNT_BINDING[0], account, ACCOUNT_BINDING[1]),
-                    (ISSUER_BINDING[0], account, ISSUER_BINDING[1]),
-                ),
-                destinations=("otlp-%s-logs" % rid, "otlp-%s-traces" % rid),
-                version_metadata=True,
-                generated=True,
-                own_tokens=frozenset({rid, EDGE} if edge else {rid}),
-                executor_vars=executor_vars(key),
-            )
-    out["bench"] = Target(
-        key="bench",
-        config=BENCH_CONFIG,
-        name="rediacc-proxy-bench",
-        routes=(PROXY_BENCH_HOST,),
-        account_url=BENCH_ORIGIN,
-        variables=(("ACCOUNT_URL", BENCH_ORIGIN), ("REGION", "eu"), ("ENVIRONMENT", "bench")),
-        services=(
-            (ACCOUNT_BINDING[0], "rediacc-account-bench", ACCOUNT_BINDING[1]),
-            (ISSUER_BINDING[0], "rediacc-account-bench", ISSUER_BINDING[1]),
-        ),
-        destinations=("otlp-bench-logs", "otlp-bench-traces"),
-        version_metadata=True,
-        generated=False,
-        own_tokens=frozenset({"bench"}),
-        executor_vars=executor_vars("bench"),
-    )
+        domain = str(region["domain"])
+        account = str(region["workerName"])
+        name = region.get("proxyWorkerName")
+        if not name:
+            raise ConfigError("%s region %s names no proxyWorkerName" % (REGIONS_REL, rid))
+        host = HOSTS.get(rid)
+        if host is None:
+            raise ConfigError("region %s has no WK_PROXY_*_HOST in .ci/config/well-known.env" % rid)
+        account_url = "https://" + domain
+        out[rid] = Target(
+            key=rid,
+            config="wrangler.%s.toml" % rid,
+            name=str(name),
+            routes=(host,),
+            account_url=account_url,
+            variables=(
+                ("ACCOUNT_URL", account_url),
+                ("REGION", rid),
+                ("ENVIRONMENT", SHARED_ENVIRONMENT),
+            ),
+            services=(
+                (ACCOUNT_BINDING[0], account, ACCOUNT_BINDING[1]),
+                (ISSUER_BINDING[0], account, ISSUER_BINDING[1]),
+            ),
+            destinations=("otlp-%s-logs" % rid, "otlp-%s-traces" % rid),
+            version_metadata=True,
+            generated=True,
+            own_tokens=frozenset({rid}),
+            executor_vars=executor_vars(rid),
+        )
+    for region in regions:
+        rid = str(region["id"])
+        if rid == BENCH_HOME_REGION or bench_object(region) is not None:
+            out[bench_key(rid)] = _bench_target(region)
     out["dev"] = Target(
         key="dev",
         config=DEV_CONFIG,
@@ -229,15 +268,72 @@ def targets(regions: list[dict]) -> dict[str, Target]:
     return out
 
 
-def render(template: str, target: Target) -> str:
-    """The generated config text for one target."""
+def allow_ips_refusal(raw: object) -> str | None:
+    """Why `raw` is no ALLOW_IPS value the Worker reads (workers/proxy/src/ip-allowlist.ts), or None."""
+    if not isinstance(raw, str):
+        return "vars.ALLOW_IPS is %r, not a string" % (raw,)
+    for entry in (e.strip() for e in raw.split(",")):
+        base, slash, prefix = entry.partition("/")
+        try:
+            addr = ipaddress.ip_address(base)
+        except ValueError:
+            return "vars.ALLOW_IPS entry %r is not an address or a.b.c.d/n range" % entry
+        if slash and not (
+            addr.version == 4 and prefix.isascii() and prefix in {str(n) for n in range(1, 33)}
+        ):
+            return "vars.ALLOW_IPS entry %r is not an IPv4 range with a prefix of 1 to 32" % entry
+    return None
+
+
+def company_target(company: str, region_id: str, regions: list[dict], domain: str) -> Target:
+    """The proxy target of one Enterprise company: `proxy-<company>` on `<company>-proxy.<domain>`, bound to `account-<company>`, exporting to its region's destinations."""
+    region = next((r for r in regions if str(r.get("id")) == region_id), None)
+    if region is None:
+        raise ConfigError("no region %r in %s" % (region_id, REGIONS_REL))
+    account = "account-%s" % company
+    account_url = "https://%s.%s" % (company, domain)
+    return Target(
+        key=company,
+        config="enterprise.%s.toml" % company,
+        name="proxy-%s" % company,
+        routes=("%s-proxy.%s/*" % (company, domain),),
+        account_url=account_url,
+        variables=(
+            ("ACCOUNT_URL", account_url),
+            ("REGION", region_id),
+            ("ENVIRONMENT", COMPANY_ENVIRONMENT),
+        ),
+        services=(
+            (ACCOUNT_BINDING[0], account, ACCOUNT_BINDING[1]),
+            (ISSUER_BINDING[0], account, ISSUER_BINDING[1]),
+        ),
+        destinations=("otlp-%s-logs" % region_id, "otlp-%s-traces" % region_id),
+        version_metadata=True,
+        generated=True,
+        own_tokens=frozenset({region_id}),
+        executor_vars=(
+            ("EXECUTOR_CAP", str(MAX_EXECUTOR_CAP)),
+            ("EXECUTOR_HEAVY_CAP", str(MAX_EXECUTOR_HEAVY_CAP)),
+        ),
+        optional_variables=COMPANY_OPTIONAL_VARS,
+        zone=domain,
+    )
+
+
+def render(template: str, target: Target, extra_vars: tuple[tuple[str, str], ...] = ()) -> str:
+    """The generated config text for one target; `extra_vars` are appended to `[vars]` (a company's ALLOW_IPS)."""
     if not target.generated or target.destinations is None:
         raise ConfigError("%s is hand-written, not generated" % target.config)
     account = target.services[0][1]
+    if target.zone:
+        route = '{ pattern = "%s", zone_name = "%s" }' % (target.routes[0], target.zone)
+    else:
+        route = '{ pattern = "%s", custom_domain = true }' % target.routes[0]
     values = {
         "HEADER": HEADER,
         "NAME": target.name,
-        "ROUTE": target.routes[0],
+        "ROUTE_ENTRY": route,
+        "EXTRA_VARS": "".join('\n%s = "%s"' % kv for kv in extra_vars),
         "ACCOUNT_URL": target.account_url,
         "REGION": dict(target.variables)["REGION"],
         "ENVIRONMENT": dict(target.variables)["ENVIRONMENT"],
@@ -278,6 +374,27 @@ def _executor_var_refusals(variables: dict) -> list[str]:
             out.append("vars.%s is %r, not a decimal string" % (name, raw))
         elif int(raw) > ceiling:
             out.append("vars.%s is %r, over the ceiling of %d" % (name, raw, ceiling))
+    return out
+
+
+def _optional_var_refusals(variables: dict, optional: frozenset[str]) -> list[str]:
+    out: list[str] = []
+    raw = variables.get("EGRESS_DRILL_PROBE")
+    if "ALLOW_IPS" in optional and "ALLOW_IPS" in variables:
+        reason = allow_ips_refusal(variables["ALLOW_IPS"])
+        if reason:
+            out.append(reason)
+    if "EGRESS_DRILL_PROBE" in optional and "EGRESS_DRILL_PROBE" in variables:
+        valid = (
+            isinstance(raw, str)
+            and DRILL_PROBE_RE.fullmatch(raw) is not None
+            and all(int(p.rsplit(":", 1)[1]) <= 65535 for p in raw.split("="))
+        )
+        if not valid:
+            out.append(
+                "vars.EGRESS_DRILL_PROBE is %r, not <host:port>=<host:port> with ports up to 65535"
+                % (raw,)
+            )
     return out
 
 
@@ -382,7 +499,18 @@ def config_refusals(text: str, target: Target, all_regions: frozenset[str]) -> l
     if patterns != list(target.routes):
         out.append("routes are %r, not exactly %r" % (patterns, list(target.routes)))
     for entry in routes:
-        if not (isinstance(entry, dict) and entry.get("custom_domain") is True):
+        if target.zone:
+            if not (
+                isinstance(entry, dict)
+                and entry.get("zone_name") == target.zone
+                and "custom_domain" not in entry
+                and set(entry) == {"pattern", "zone_name"}
+            ):
+                out.append(
+                    "route %r is not a Worker Route in zone %r (a custom domain issues a certificate that names the company)"
+                    % (entry, target.zone)
+                )
+        elif not (isinstance(entry, dict) and entry.get("custom_domain") is True):
             out.append("route %r is not a custom domain" % _pattern(entry))
         foreign_hits("route", _pattern(entry))
 
@@ -393,9 +521,12 @@ def config_refusals(text: str, target: Target, all_regions: frozenset[str]) -> l
             out.append("vars.%s is %r, not %r" % (key, variables.get(key), value))
     out.extend(
         "vars.%s is not one a %s config may carry" % (key, target.key)
-        for key in sorted(set(variables) - set(want) - set(EXECUTOR_VARS))
+        for key in sorted(
+            set(variables) - set(want) - set(EXECUTOR_VARS) - target.optional_variables
+        )
     )
     out.extend(_executor_var_refusals(variables))
+    out.extend(_optional_var_refusals(variables, target.optional_variables))
 
     services = config.get("services") or []
     seen: dict[str, list[dict]] = {}
@@ -460,14 +591,27 @@ def config_refusals(text: str, target: Target, all_regions: frozenset[str]) -> l
     return out
 
 
+def _is_own_signer(value: str, key: str, region: object) -> bool:
+    """Is `value` the licence signer Worker this target signs through: `signer-<region>` for a shared region, and for bench `signer-bench-<region>` with the region the config itself serves (`[vars] REGION`), so bench cannot bind another region's bench signer."""
+    if key.startswith("bench"):
+        return isinstance(region, str) and bool(region) and value == "signer-bench-%s" % region
+    return value == "signer-%s" % key
+
+
 def account_refusals(
-    text: str, proxy_name: str, key: str, all_regions: frozenset[str], own: frozenset[str]
+    text: str,
+    proxy_name: str,
+    key: str,
+    all_regions: frozenset[str],
+    own: frozenset[str],
+    region: str | None = None,
 ) -> list[str]:
-    """Why a workers/account config does not bind EXECUTOR to exactly its own target's proxy."""
+    """Why a workers/account config does not bind EXECUTOR to exactly its own target's proxy, and, when `region` is given, does not serve that region (`[vars] REGION`)."""
     try:
         config = tomllib.loads(text)
     except tomllib.TOMLDecodeError as exc:
         return ["does not parse as TOML: %s" % exc]
+    want_region = region
     out: list[str] = []
     services = [s for s in config.get("services") or [] if isinstance(s, dict)]
     executor = [s.get("service") for s in services if s.get("binding") == "EXECUTOR"]
@@ -477,19 +621,51 @@ def account_refusals(
             % (executor, proxy_name)
         )
     foreign = (all_regions | CHANNEL_TOKENS) - own
+    variables = config.get("vars")
+    region = variables.get("REGION") if isinstance(variables, dict) else None
+    if want_region is not None and region != want_region:
+        out.append("[vars] REGION is %r, not %r" % (region, want_region))
     for entry in services:
         value = str(entry.get("service", ""))
+        signer = entry.get("binding") == "LICENSE_SIGNER"
+        if signer and _is_own_signer(value, key, region):
+            continue
         hits = [t for t in NAME_TOKEN_SPLIT.split(value.lower()) if t in foreign]
         if hits:
             out.append(
                 "[[services]] %s service %r names %s, which is not %s"
                 % (entry.get("binding"), value, "/".join(hits), key)
             )
+        elif signer:
+            out.append(
+                "[[services]] LICENSE_SIGNER service %r is not the signer of %s (REGION %r)"
+                % (value, key, region)
+            )
     return out
 
 
+def deployable_refusals(config: dict, bench: dict) -> list[str]:
+    """Why a parsed bench account config and its regions.json `bench.deployable` disagree: a placeholder database id is allowed only while the bench is marked not deployable, and a real one only once it is marked deployable."""
+    dbs = [d for d in config.get("d1_databases") or [] if isinstance(d, dict)]
+    ids = [str(d.get("database_id", "")) for d in dbs if d.get("binding") == "DB"]
+    placeholder = any(i.startswith(PLACEHOLDER_D1_ID) for i in ids)
+    deployable = bench.get("deployable")
+    if not isinstance(deployable, bool):
+        return ["bench.deployable is %r, not true or false" % (deployable,)]
+    if placeholder and deployable:
+        return [
+            "the bench is marked deployable but its DB database_id %r is a placeholder" % (ids,)
+        ]
+    if not placeholder and not deployable:
+        return [
+            "the bench is marked not deployable but its DB database_id %r is not a placeholder"
+            % (ids,)
+        ]
+    return []
+
+
 def generate(root: pathlib.Path) -> dict[str, str]:
-    """`{config file name: text}` for the six generated targets."""
+    """`{config file name: text}` for the generated targets: the three regions and the non-home benches."""
     template = (root.joinpath(*PROXY_REL) / TEMPLATE).read_text(encoding="utf-8")
     return {
         t.config: render(template, t) for t in targets(load_regions(root)).values() if t.generated
@@ -510,13 +686,25 @@ def check(root: pathlib.Path) -> list[str]:
     rel = "/".join(PROXY_REL)
 
     for region in regions:
-        for channel in CHANNELS:
-            domain = region["edgeDomain" if channel == EDGE else "domain"]
-            host = HOSTS[(str(region["id"]), channel)]
-            if host != "proxy." + domain:
+        host = HOSTS[str(region["id"])]
+        if host != "proxy." + region["domain"]:
+            out.append(
+                ".ci/config/well-known.env: the %s proxy host is %r, not %r"
+                % (region["id"], host, "proxy." + region["domain"])
+            )
+
+    for region in regions:
+        bench = bench_object(region)
+        if bench is not None and region["id"] == BENCH_HOME_REGION:
+            if bench.get("host") != BENCH_ORIGIN.removeprefix("https://"):
                 out.append(
-                    ".ci/config/well-known.env: the %s %s proxy host is %r, not %r"
-                    % (region["id"], channel, host, "proxy." + domain)
+                    ".ci/config/well-known.env: WK_BENCH_ORIGIN is %r, regions.json %s bench host is %r"
+                    % (BENCH_ORIGIN, region["id"], bench.get("host"))
+                )
+            if bench.get("proxyHost") != PROXY_BENCH_HOST:
+                out.append(
+                    ".ci/config/well-known.env: WK_PROXY_BENCH_HOST is %r, regions.json %s bench proxyHost is %r"
+                    % (PROXY_BENCH_HOST, region["id"], bench.get("proxyHost"))
                 )
 
     known = {TEMPLATE} | {t.config for t in all_targets.values()}
@@ -562,8 +750,24 @@ def check(root: pathlib.Path) -> list[str]:
             continue
         out.extend(
             "%s: %s" % (arel, r)
-            for r in account_refusals(text, target.name, target.key, all_regions, target.own_tokens)
+            for r in account_refusals(
+                text,
+                target.name,
+                target.key,
+                all_regions,
+                target.own_tokens,
+                dict(target.variables).get("REGION"),
+            )
         )
+        if target.key.startswith("bench"):
+            row = next(r for r in regions if bench_key(str(r["id"])) == target.key)
+            try:
+                parsed = tomllib.loads(text)
+            except tomllib.TOMLDecodeError:
+                parsed = {}
+            out.extend(
+                "%s: %s" % (arel, r) for r in deployable_refusals(parsed, bench_object(row) or {})
+            )
     return out
 
 

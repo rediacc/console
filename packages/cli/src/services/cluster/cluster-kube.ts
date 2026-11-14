@@ -24,6 +24,7 @@ import { targetFloor } from '../config/network-id-discovery.js';
 import { outputService } from '../core/output.js';
 import { type ExecuteResult, getExecutor } from '../executor/executor-factory.js';
 import { dispatchCeph, exportCephClientConfig, resolveCephMembers } from './cluster-ceph.js';
+import { runClusterPhase } from './cluster-job.js';
 
 const MOUNT_BASE = `${WK_DATASTORE_PATH}/mounts`;
 export const NAMED_DS_BASE = '/mnt/rediacc-ds';
@@ -241,19 +242,7 @@ export async function dispatch(
   params: Record<string, unknown>,
   opts: { debug?: boolean; capture?: boolean } = {}
 ): Promise<ExecuteResult> {
-  const result = await getExecutor().execute({
-    functionName,
-    machineName,
-    params,
-    debug: opts.debug,
-    captureOutput: opts.capture,
-  });
-  if (!result.success) {
-    throw new Error(
-      `Cluster step "${functionName}" failed on ${machineName}: ${result.error ?? DEFAULTS.CLOUD.UNKNOWN_ERROR}`
-    );
-  }
-  return result;
+  return (await runClusterPhase(functionName, machineName, params, opts)).result;
 }
 
 /**

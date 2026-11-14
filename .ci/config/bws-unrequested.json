@@ -36,6 +36,14 @@
     "entry reds instead of sitting there looking considered."
   ],
   "exemptions": {
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE": {"kind": "no-github-twin", "reason": "The retired edge backup pair (token cf-r2-backup-edge, agent/plans/PLAN-product-domain-rename.md). Since the rename one shared Worker set per region takes the _STABLE pair, so no workflow or profile requests it, and check:ci-backup-credential-isolation refuses one that does. It stays mapped until the token is revoked and the vault entry deleted (rename L11)."},
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE": {"kind": "no-github-twin", "reason": "The retired edge backup pair (token cf-r2-backup-edge, agent/plans/PLAN-product-domain-rename.md). Since the rename one shared Worker set per region takes the _STABLE pair, so no workflow or profile requests it, and check:ci-backup-credential-isolation refuses one that does. It stays mapped until the token is revoked and the vault entry deleted (rename L11)."},
+    "ACCOUNT_BACKUP_STORE_KEK_EU_EDGE": {"kind": "no-github-twin", "reason": "The eu edge Worker's value, retired with the product-domain rename (agent/plans/PLAN-product-domain-rename.md W10): the shared account-eu Worker seals under the EU_STABLE value, because its config objects were seeded from the stable bucket, so no workflow or profile requests this name. It stays mapped until the vault entry is deleted (rename L11)."},
+    "ACCOUNT_CONFIG_SERVER_KEY_EU_EDGE": {"kind": "no-github-twin", "reason": "The eu edge Worker's value, retired with the product-domain rename (agent/plans/PLAN-product-domain-rename.md W10): the shared account-eu Worker seals under the EU_STABLE value, because its config objects were seeded from the stable bucket, so no workflow or profile requests this name. It stays mapped until the vault entry is deleted (rename L11)."},
+    "ACCOUNT_BACKUP_STORE_KEK_US_STABLE": {"kind": "no-github-twin", "reason": "The old stable Worker's value for this region, retired with the product-domain rename (agent/plans/PLAN-product-domain-rename.md W10): the shared Worker for this region seeds from the edge database and config bucket, so cd-deploy-account.yml and the account-secrets-<region> profile fetch the region's _EDGE store value under this name as the LOCAL variable, and nothing requests this store entry. It stays mapped until the vault entry is deleted (rename L11)."},
+    "ACCOUNT_BACKUP_STORE_KEK_ASIA_STABLE": {"kind": "no-github-twin", "reason": "The old stable Worker's value for this region, retired with the product-domain rename (agent/plans/PLAN-product-domain-rename.md W10): the shared Worker for this region seeds from the edge database and config bucket, so cd-deploy-account.yml and the account-secrets-<region> profile fetch the region's _EDGE store value under this name as the LOCAL variable, and nothing requests this store entry. It stays mapped until the vault entry is deleted (rename L11)."},
+    "ACCOUNT_CONFIG_SERVER_KEY_US_STABLE": {"kind": "no-github-twin", "reason": "The old stable Worker's value for this region, retired with the product-domain rename (agent/plans/PLAN-product-domain-rename.md W10): the shared Worker for this region seeds from the edge database and config bucket, so cd-deploy-account.yml and the account-secrets-<region> profile fetch the region's _EDGE store value under this name as the LOCAL variable, and nothing requests this store entry. It stays mapped until the vault entry is deleted (rename L11)."},
+    "ACCOUNT_CONFIG_SERVER_KEY_ASIA_STABLE": {"kind": "no-github-twin", "reason": "The old stable Worker's value for this region, retired with the product-domain rename (agent/plans/PLAN-product-domain-rename.md W10): the shared Worker for this region seeds from the edge database and config bucket, so cd-deploy-account.yml and the account-secrets-<region> profile fetch the region's _EDGE store value under this name as the LOCAL variable, and nothing requests this store entry. It stays mapped until the vault entry is deleted (rename L11)."},
     "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH": {
       "kind": "no-github-twin",
       "reason": "The bench-scoped backup pair (agent/plans/PLAN-backup-credential-isolation.md, token cf-r2-backup-bench), bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench and `--profile backup-push-bench` for rediacc_ci.ops.push_backup_credentials. Bench is deliberately not deployed by any workflow, and check:ci-backup-credential-isolation refuses a workflow that requests this pair."
@@ -43,6 +51,10 @@
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH": {
       "kind": "no-github-twin",
       "reason": "The bench-scoped backup pair (agent/plans/PLAN-backup-credential-isolation.md, token cf-r2-backup-bench), bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench and `--profile backup-push-bench` for rediacc_ci.ops.push_backup_credentials. Bench is deliberately not deployed by any workflow, and check:ci-backup-credential-isolation refuses a workflow that requests this pair."
+    },
+    "ACCOUNT_BACKUP_STORE_KEK_BENCH": {
+      "kind": "no-github-twin",
+      "reason": "The bench backup store KEK, bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench push; bench deploys never run in GitHub CI, so no workflow requests it."
     },
     "ACCOUNT_CONFIG_SERVER_KEY_BENCH": {
       "kind": "no-github-twin",
@@ -108,6 +120,18 @@
       "kind": "no-github-twin",
       "reason": "Admin credential seeded 2026-09-24 on the operator's choice to keep it in ci-shared (agent/plans/PLAN-account-env-to-bws.md Q2). Read only by the local secret-rotation tool, never by a workflow."
     },
+    "CLOUDFLARE_R2_MIGRATION_ACCESS_KEY_ID": {
+      "kind": "no-github-twin",
+      "reason": "The key id of the account-wide R2 migration token minted at L1 of agent/plans/PLAN-product-domain-rename.md, bound only by `bws_env exec --profile r2-migration` for rediacc_ci.ops.r2_bucket_copy and the other bucket moves. No workflow moves buckets, and the token is deleted at L11."
+    },
+    "CLOUDFLARE_R2_MIGRATION_API_TOKEN": {
+      "kind": "no-github-twin",
+      "reason": "The account-wide R2 migration token itself (agent/plans/PLAN-product-domain-rename.md L1), bound only by `bws_env exec --profile r2-migration` for `wrangler r2 bucket list` and the bucket moves. No workflow moves buckets, and the token is deleted at L11."
+    },
+    "CLOUDFLARE_R2_MIGRATION_SECRET_ACCESS_KEY": {
+      "kind": "no-github-twin",
+      "reason": "The secret half of the R2 migration key pair (agent/plans/PLAN-product-domain-rename.md L1), bound only by `bws_env exec --profile r2-migration`. No workflow moves buckets, and the token is deleted at L11."
+    },
     "CLOUDFLARE_TURNSTILE_SECRET_KEY_BENCH": {
       "kind": "no-github-twin",
       "reason": "A bench-only credential, seeded 2026-09-24 from the retired bench env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench; bench is deliberately not deployed by any workflow."
@@ -144,9 +168,21 @@
       "kind": "no-github-twin",
       "reason": "Observability reader, stored 2026-10-13 on the operator's ruling that `rotation check` always compares against the live host and that the machine's existing key is reused. The `user@host[:port]` the reader connects to; not a credential. Bound by `bws_env exec --profile rotation|deploy-bench` for the local `./run.sh rotation check` (private/account/scripts/rotation/lib/observability-reader.ts); no workflow runs that check."
     },
+    "OPS_ALERT_EMAILS": {
+      "kind": "no-github-twin",
+      "reason": "The ops-health alerter's recipients (PLAN-health-checks-local), bound only by `bws_env exec --profile ops-health` for the local rediacc_ci.ops.deploy_ops_health, which pushes it to the ops-health Worker as a secret. No workflow sends mail with it."
+    },
     "OTEL_ENDPOINT": {
       "kind": "no-github-twin",
       "reason": "A constant endpoint (the OTLP collector URL), seeded 2026-09-24 from private/account/.env for PLAN-env-to-bitwarden-v2 box 27 so local .env hydration reads the vault; no workflow sends telemetry through it, so no call site requests it."
+    },
+    "R2_PUBLIC_DATA_ACCESS_KEY_ID": {
+      "kind": "no-github-twin",
+      "reason": "The bucket-scoped rediacc-public-data upload key (PLAN-health-checks-local O2), bound only by `bws_env exec --profile public-data` for the one-off archive upload and verification from hostinger. No workflow uploads public data."
+    },
+    "R2_PUBLIC_DATA_SECRET_ACCESS_KEY": {
+      "kind": "no-github-twin",
+      "reason": "The secret half of the rediacc-public-data upload key (PLAN-health-checks-local O2), bound only by `bws_env exec --profile public-data`. No workflow uploads public data."
     },
     "RELEASE_GPG_REVOCATION_CERT": {
       "kind": "no-github-twin",
@@ -360,9 +396,17 @@
       "kind": "no-github-twin",
       "reason": "Edge-us test org C of the live console probes: provisioned fresh for the executor connect-timeout check (agent/plans/PLAN-org-executor-connect-timeout-relocate.md, 2026-10-28) and stored in the vault, but no `.ci/config/secret-supply.json` profile binds it yet (live-console-edge-us binds orgs A and B only) and no workflow runs those probes, so no GitHub secret of that name exists to shadow."
     },
+    "CF_MANAGEMENT_TOKEN": {
+      "kind": "no-github-twin",
+      "reason": "The user-level Cloudflare token (API Tokens Write only) that mints each company's bucket-scoped backup token, bound only by `bws_env exec --profile enterprise-mint` (.ci/config/secret-supply.json); no workflow mints company tokens, so no GitHub secret of that name exists to shadow."
+    },
     "LINODE_API_TOKEN": {
       "kind": "no-github-twin",
       "reason": "The Linode API token for `rdc machine provision` and `machine provider add --token-env` on an operator workstation, bound only by `bws_env exec --profile cloud-provision` (.ci/config/secret-supply.json); no workflow provisions cloud machines, so no GitHub secret of that name exists to shadow."
+    },
+    "HOSTINGER_REPO_CREDENTIALS_ESCROW": {
+      "kind": "no-github-twin",
+      "reason": "The escrow of hostinger's repository credentials outside bench (agent/plans/PLAN-hostinger-to-bench.md Design 6): one JSON object, repository name to {repositoryGuid, credential} per tag. Bound only by `bws_env exec --profile hostinger-escrow` (.ci/config/secret-supply.json) from an operator workstation, written from eu-bench's hostinger tags and read back for a restore; no workflow requests it."
     }
   },
   "no_fetch_jobs": {}

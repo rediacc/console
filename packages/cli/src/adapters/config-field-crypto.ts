@@ -33,20 +33,12 @@ function isMasterPassword(config: RdcConfig): boolean {
 }
 
 /** Type-valid placeholder for an encrypted leaf we have not decrypted. */
-function stubFor(pointer: string): unknown {
-  // vaultContent is the one object-typed encrypt-at-rest leaf; every other is a
-  // string. An object stub keeps the record schema happy.
-  return pointer.endsWith('/vaultContent')
-    ? { __encryptedStub: pointer }
-    : `${STUB_PREFIX}${pointer}>`;
+function stubFor(pointer: string): string {
+  return `${STUB_PREFIX}${pointer}>`;
 }
 
 function isStub(value: unknown): boolean {
-  if (typeof value === 'string') return value.startsWith(STUB_PREFIX);
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return '__encryptedStub' in (value as Record<string, unknown>);
-  }
-  return false;
+  return typeof value === 'string' && value.startsWith(STUB_PREFIX);
 }
 
 function parentPointer(pointer: string): string {

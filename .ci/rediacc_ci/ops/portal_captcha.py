@@ -12,23 +12,30 @@ THE CHECK, per host, read-only except one refused login:
 
 UNKNOWN IS RED. A host that cannot be reached, a login page without an index bundle, or a bundle that does not answer 200 is a verdict nobody could check, never folded into OK.
 
-HOSTS default to every stable and edge host in regions.json (`portal_health.hosts`), so a new region is probed without editing this file. Exit 0 when every host is OK, 1 when any is BROKEN or UNKNOWN (each red line names the host and the fix command), 2 on a usage error. Output never carries a response body or the site key itself.
+HOSTS default to every shared host in regions.json (`portal_health.hosts`), so a new region is probed without editing this file. Exit 0 when every host is OK, 1 when any is BROKEN or UNKNOWN (each red line names the host and the fix command), 2 on a usage error. Output never carries a response body or the site key itself.
 
 `rediacc_ci.deploy.deploy_account` runs the same check after each deploy (`portal_smoke`), with the key it deployed and a short retry for propagation.
 """
 
 from __future__ import annotations
 
+import http.client as http_client
 import json
 import re
 import shlex
+import socket
+import ssl
 import sys
 import time
 import urllib.error
+import urllib.parse
+import urllib.request
 from collections.abc import Callable
 from dataclasses import dataclass
+from typing import Any
 
 from rediacc_ci.core import https
+from rediacc_ci.deploy import deploy_proxy
 from rediacc_ci.ops import portal_health
 
 LOGIN_PATH = portal_health.LOGIN_PATH
@@ -59,26 +66,72 @@ class Reply:
 Http = Callable[[str, str, "dict | None"], Reply]
 
 
+class _PinnedHTTPS(urllib.request.HTTPSHandler):
+    """HTTPS to a fixed address: the TCP connection to the pinned host goes to `address` (a redirect to any other host dials that host by name, after `https.build_opener`'s redirect check), while SNI, the certificate check and the Host header still name the URL's host, as curl's `--resolve host:443:<address>` does for the proxy smoke."""
+
+    def __init__(self, address: str, host: str, context: ssl.SSLContext | None = None) -> None:
+        super().__init__()
+        self.address = address
+        self.host = host
+        self.tls = context or ssl.create_default_context()
+
+    def https_open(self, req: urllib.request.Request) -> http_client.HTTPResponse:
+        address, tls, pinned_host = self.address, self.tls, self.host
+
+        class Connection(http_client.HTTPSConnection):
+            def connect(self) -> None:
+                # A redirect to another host dials that host by name: the pin is the first host's address.
+                target = address if self.host.lower() == pinned_host else self.host
+                sock = socket.create_connection((target, self.port), self.timeout)
+                self.sock = tls.wrap_socket(sock, server_hostname=self.host)
+
+        return self.do_open(Connection, req)
+
+
+def _open(request: urllib.request.Request, pin: str | None) -> Any:
+    """The response to `request`, through the system resolver, or straight to `pin` when set."""
+    if pin is None:
+        return https.urlopen(request, timeout=TIMEOUT_S)
+    https.check_url(request.full_url)
+    return https.build_opener(
+        _PinnedHTTPS(pin, urllib.parse.urlsplit(request.full_url).hostname or "")
+    ).open(request, timeout=TIMEOUT_S)
+
+
+def _unresolved(exc: OSError) -> bool:
+    """A URLError whose cause is a failed name lookup (NXDOMAIN, or a negative answer the local resolver still caches)."""
+    return isinstance(exc, urllib.error.URLError) and isinstance(exc.reason, socket.gaierror)
+
+
 def http(method: str, url: str, body: dict | None = None) -> Reply:
-    """One request through `rediacc_ci.core.https` (https only). An HTTP error status is an answer, not an exception."""
+    """One request through `rediacc_ci.core.https` (https only). An HTTP error status is an answer, not an exception.
+
+    A BRAND-NEW HOST (finding fc8ad2fd): right after a first deploy the local resolver can still hold the NXDOMAIN it cached before the record existed (negative TTL up to 1800 s), and the portal smoke then failed with URLError after a good deploy. A failed name lookup is therefore answered the way the proxy smoke answers it, by `deploy_proxy._doh_lookup` (Cloudflare's DNS-over-HTTPS, `REDIACC_SMOKE_DOH_URL`, empty disables it), and the request is sent once more straight to that address with the host still named for TLS.
+    """
     headers = {"User-Agent": USER_AGENT}
     data = None
     if body is not None:
         data = json.dumps(body).encode("utf-8")
         headers["Content-Type"] = "application/json"
     request = https.build_request(url, data=data, headers=headers, method=method)
-    try:
-        with https.urlopen(request, timeout=TIMEOUT_S) as resp:
-            return Reply(resp.status, resp.read(4_000_000).decode("utf-8", "replace"))
-    except urllib.error.HTTPError as exc:
+    pin: str | None = None
+    while True:
         try:
-            text = exc.read(65_536).decode("utf-8", "replace")
-        except OSError:
-            text = ""
-        exc.close()
-        return Reply(exc.code, text)
-    except (OSError, ValueError) as exc:
-        return Reply(0, error=type(exc).__name__)
+            with _open(request, pin) as resp:
+                return Reply(resp.status, resp.read(4_000_000).decode("utf-8", "replace"))
+        except urllib.error.HTTPError as exc:
+            try:
+                text = exc.read(65_536).decode("utf-8", "replace")
+            except OSError:
+                text = ""
+            exc.close()
+            return Reply(exc.code, text)
+        except (OSError, ValueError) as exc:
+            if pin is None and isinstance(exc, OSError) and _unresolved(exc):
+                pin = deploy_proxy._doh_lookup(urllib.parse.urlsplit(url).hostname or "")
+                if pin:
+                    continue
+            return Reply(0, error=type(exc).__name__)
 
 
 @dataclass(frozen=True)
@@ -152,12 +205,10 @@ def check_with_retry(
 
 
 def target_of(host: str, regions: list[dict] | None = None) -> tuple[str, str] | None:
-    """(`stable`|`edge`, region id) for a regions.json host, else None."""
+    """(`stable`, region id) for a regions.json host (the one shared host of the region), else None."""
     for region in portal_health.load_regions() if regions is None else regions:
         if region.get("domain") == host:
             return "stable", region["id"]
-        if region.get("edgeDomain") == host:
-            return "edge", region["id"]
     return None
 
 
@@ -175,31 +226,26 @@ def fix_command(host: str, regions: list[dict] | None = None) -> str:
             "rebuild the portal with VITE_TURNSTILE_SITE_KEY bound from TURNSTILE_SITE_KEY and redeploy %s"
             % host
         )
-    target, region = where
-    config = "wrangler.%s.toml" % (region if target == "stable" else "edge-" + region)
+    _target, region = where
+    config = "wrangler.%s.toml" % region
     rollback = (
         "or roll back: cd workers/account && npx wrangler deployments list --config %s, then "
         "npx wrangler rollback <last good version id> --config %s -y (deploy-workers profile)"
         % (config, config)
     )
-    if target == "edge":
-        return "npm run release:local -- --channel edge --workers-only --regions %s; %s" % (
-            region,
-            rollback,
-        )
     # The inner script is quoted once, for the outer shell (`shlex.quote`): inside its single quotes REBUILD's double quotes reach `sh -c` as quotes, so the key is bound bare. Escaping them as `\"` there handed the inner shell literal quote characters, and the rebuilt portal carried a key wrapped in them (review 760ca2d1.1).
     inner = "%s && PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_account --region %s" % (
         REBUILD,
         region,
     )
     return (
-        "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile account-secrets-%s-stable -- "
+        "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile account-secrets-%s -- "
         "sh -c %s; %s" % (region, shlex.quote(inner), rollback)
     )
 
 
 def default_hosts() -> list[str]:
-    return [h for target in ("stable", "edge") for h in portal_health.hosts(target, None)]
+    return portal_health.hosts("stable", None)
 
 
 def run(hosts: list[str], fetch: Http = http, out=None) -> int:

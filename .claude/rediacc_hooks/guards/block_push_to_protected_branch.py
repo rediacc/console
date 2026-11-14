@@ -67,6 +67,7 @@ import subprocess
 import sys
 
 from rediacc_hooks import commit_policy, hookio, plan_gate, shellscan
+from rediacc_hooks.guards import _backup_push
 from rediacc_hooks.wellknown import GH_REPO
 
 CHAIN = "pre-bash"
@@ -86,7 +87,9 @@ ENVS = [
     ("this-worktree", {"CLAUDE_PROJECT_DIR": "{FIXTURE:this-worktree-snapshot}"}, {}),
 ]
 
-GIT_AT_CMD = hookio.rx(r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+")
+GIT_AT_CMD = hookio.rx(
+    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+(=[^ ;&|]*|[{S}]+[^ ;&|]+)?)*[{S}]+"
+)
 GIT_PUSH_AT_CMD = GIT_AT_CMD + hookio.rx(r"push([{S}]|$)")
 
 
@@ -281,7 +284,7 @@ def _ci_green(live, number, sha):
         return "ci-trace did not read the open PR #%s" % number
     if trace.get("head") != sha:
         return "ci-trace read head `%s`, not `%s`" % (str(trace.get("head"))[:12], sha[:12])
-    # CI COMPLETE, NOT THE TRACER'S WHOLE VERDICT (operator ruling 2026-10-03, for the unattended merge cycle). `main`'s ruleset requires CI Complete alone, and it aggregates the PR's own CI. The whole verdict also counted contexts no workflow on the head defines: on #591 the base branch's retired review-status.yml kept posting a failing "Review Complete", which refused this push while CI Complete was SUCCESS (run 37089591716).
+    # CI COMPLETE, NOT THE TRACER'S WHOLE VERDICT (operator ruling 2026-10-03, for the unattended merge cycle). `main`'s ruleset requires CI Complete alone, and it aggregates the PR's own CI. The whole verdict also counted contexts no workflow on the head defines: on #591 the base branch's retired ops-review-status.yml kept posting a failing "Review Complete", which refused this push while CI Complete was SUCCESS (run 37089591716).
     # Exit 1 is a red whole verdict, which CI Complete then decides; exit 2 (no verdict) and 3 (head moved) are never a pass (review 2effee58.1).
     if proc.returncode not in (0, 1):
         return "ci-trace gave no verdict on `%s` (rc %d)" % (sha[:12], proc.returncode)
@@ -430,6 +433,9 @@ def run(ev):
     cmd = ev.raw("tool_input", "command")
     if cmd in ("", "null"):
         return hookio.ALLOW
+    # A push of nothing but `refs/backup/**` to its repository's pin is the git-level pre-push hook's to judge (box G5 of PLAN-local-first-delivery, `_backup_push`).
+    if _backup_push.admitted(ev, cmd):
+        return hookio.ALLOW
 
     # SCOPE: this policy is about THIS checkout and its submodules. A push in a repository outside it (a `/tmp` fixture, even one the same command `git init`s) is not its business (finding #5810a9f3).
     # The GitLab mirror push (`git push gitlab main:main`) is the operator's own ruling about console clones, so a repository outside this checkout is judged for it (test-block_push_to_protected_branch.py, "mirror: -C into another repository").
@@ -469,7 +475,7 @@ def run(ev):
     # `cd "${CLAUDE_PROJECT_DIR:-.}"`, same convention as block_merge_with_unpushed.py, then
     # resolve any `-C <dir>` / `cd <dir>` hint the command itself carries (a chained dispatcher runs several guards in one interpreter, so this reads cwd rather than changing it).
     root = ev.project_dir
-    target = shellscan.target_root(scan, root, verb="push")
+    target = shellscan.target_root(scan, root, verb="push", cmd=cmd)
     git_root = target if target != "" else root
 
     branch = hookio.git_out(["symbolic-ref", "--short", "-q", "HEAD"], cwd=git_root, want_rc=True)

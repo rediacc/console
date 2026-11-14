@@ -12,11 +12,11 @@ WHICH BWS KEY HOLDS A LEGACY NAME (`LEGACY_BWS`, mapped explicitly; found by com
 
 The PUT is an unmeasured step for the ASSETS binding (only the DELETE was measured, 2026-10-15): check the Worker's static assets after the first archive run.
 
-Run: `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-workers -- python3 -m rediacc_ci.ops.prune_worker_secrets --region eu --target stable`
+Run: `PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-workers -- python3 -m rediacc_ci.ops.prune_worker_secrets --region eu`
 
-BENCH. `--region bench` selects the bench account Worker (its name read from `workers/account/wrangler.bench.toml`, the file `deploy_bench` deploys with). Its expected set is the key set of `deploy_bench.secrets_payload()`, read with the region-consistency gate's own extractor, and its legacy names map through `BENCH_LEGACY_BWS`, because bench binds the six unsuffixed production signing and session names and the `_BENCH` Turnstile secret (`.ci/config/secret-supply.json`, `deploy-bench`). Bench is never part of `--region all`: it is chosen by name. Profile for a bench run: `deploy-workers` (Cloudflare token, account id) plus the bws store read the archive needs.
+BENCH. `--region bench` selects the bench account Worker (its name read from `workers/account/wrangler.bench.toml`, the file `deploy_bench` deploys with). Its expected set is the key set of `deploy_bench.secrets_payload()`, read with the region-consistency gate's own extractor, and its legacy names map through `BENCH_LEGACY_BWS`, because bench binds the unsuffixed production session names and the ED25519 public key and the `_BENCH` Turnstile secret (`.ci/config/secret-supply.json`, `deploy-bench`). Bench is never part of `--region all`: it is chosen by name. Profile for a bench run: `deploy-workers` (Cloudflare token, account id) plus the bws store read the archive needs.
 
-Options: `--region eu|us|asia|bench|all` (default all; `all` excludes bench), `--target stable|edge|all` (default all), `--archive` (archive then delete; needs an explicit `--region`; prefer it to a bare `--delete`), `--dry-run` (with `--archive`: report which names have a bws value, write nothing), `--delete` (needs an explicit `--region`; prints each deleted name, keeps no copy), `--json` (one JSON object on stdout, for `check:ci-worker-secret-names`).
+Options: `--region eu|us|asia|bench|all` (default all; `all` excludes bench), `--archive` (archive then delete; needs an explicit `--region`; prefer it to a bare `--delete`), `--dry-run` (with `--archive`: report which names have a bws value, write nothing), `--delete` (needs an explicit `--region`; prints each deleted name, keeps no copy), `--json` (one JSON object on stdout, for `check:ci-worker-secret-names`).
 
 Exit codes: 0 no extras, 1 extras listed (or a delete failed), 2 no verdict (missing credential, API failure, unknown option, `--archive` or `--delete` without an explicit `--region`, `--delete` combined with `--dry-run`).
 """
@@ -59,10 +59,13 @@ ARCHIVE_PREFIX = "__ARCHIVE_"
 # CD owns the console switch (EXECUTOR_MODE): it is set after the proxy smoke and deleted by the rollback, so it is never an extra.
 # Deleting it would close a target's console executor.
 CD_OWNED = frozenset({console_executor.MODE_KEY})
+# The licence private key under both of its Worker spellings. After PLAN-enterprise-isolation S4 no account Worker holds it (the signer Worker does, its value lives in the deploy-signer bws profile), so `--archive` DELETES it without a Worker copy (a `__ARCHIVE_` PUT would keep the key on the account Worker under another name), and only when bws holds NO_ARCHIVE_BWS; with no store copy it is left in place like any unrecoverable extra.
+NO_ARCHIVE = frozenset({"ED25519_PRIVATE_KEY", "ACCOUNT_ED25519_PRIVATE_KEY"})
+# The bws key that must hold a NO_ARCHIVE name's value before the Worker copy is deleted: the deploy-signer profile's copy is the recoverable one, so a name whose store copy is absent is left in place like any unrecoverable extra.
+NO_ARCHIVE_BWS = "ACCOUNT_ED25519_PRIVATE_KEY"
 # Legacy Worker secret name -> the bws key that holds its successor. `{SUFFIX}` is the region's `secretSuffix`.
 LEGACY_BWS: dict[str, str] = {
     "API_KEY": "ACCOUNT_SERVER_API_KEY",
-    "ED25519_PRIVATE_KEY": "ACCOUNT_ED25519_PRIVATE_KEY",
     "ED25519_PUBLIC_KEY": "ACCOUNT_ED25519_PUBLIC_KEY",
     "X25519_PRIVATE_KEY": "ACCOUNT_X25519_PRIVATE_KEY",
     "X25519_PUBLIC_KEY": "ACCOUNT_X25519_PUBLIC_KEY",
@@ -70,11 +73,10 @@ LEGACY_BWS: dict[str, str] = {
     "TURNSTILE_SECRET_KEY": "CLOUDFLARE_TURNSTILE_SECRET_KEY",
     "OTLP_CLIENT_CREDENTIALS": "OBS_OTLP_CREDENTIALS_{SUFFIX}",
 }
-# The same legacy names on the bench Worker, whose successors come from the deploy-bench profile's bindings (secret-supply.json): the six unsuffixed production signing and session names and the bench Turnstile secret.
+# The same legacy names on the bench Worker, whose successors come from the deploy-bench profile's bindings (secret-supply.json): the unsuffixed production session names, the ED25519 public key and the bench Turnstile secret.
 BENCH_LEGACY_BWS: dict[str, str] = {
     "API_KEY": "ACCOUNT_SERVER_API_KEY",
     "JWT_SECRET": "ACCOUNT_JWT_SECRET",
-    "ED25519_PRIVATE_KEY": "ACCOUNT_ED25519_PRIVATE_KEY",
     "ED25519_PUBLIC_KEY": "ACCOUNT_ED25519_PUBLIC_KEY",
     "X25519_PRIVATE_KEY": "ACCOUNT_X25519_PRIVATE_KEY",
     "X25519_PUBLIC_KEY": "ACCOUNT_X25519_PUBLIC_KEY",
@@ -106,7 +108,6 @@ class Row:
 @dataclasses.dataclass
 class Options:
     region: str = "all"
-    target: str = "all"
     delete: bool = False
     archive: bool = False
     dry_run: bool = False
@@ -176,12 +177,12 @@ def _regions(base: pathlib.Path, *fields: str) -> list[dict[str, str]]:
 
 
 def load_workers(root: pathlib.Path | None = None, *, bench: bool = False) -> list[Row]:
-    """Every (region, channel, worker) of `regions.json`, plus the bench Worker when `bench`."""
+    """Every (region, worker) of `regions.json`, plus the bench Worker when `bench`. A region has one shared Worker, so there is no channel to choose."""
     base = paths.repo_root() if root is None else root
-    rows: list[Row] = []
-    for region in _regions(base, "id", "workerName", "edgeWorkerName"):
-        rows.append(Row(region["id"], "stable", region["workerName"]))
-        rows.append(Row(region["id"], "edge", region["edgeWorkerName"]))
+    rows: list[Row] = [
+        Row(region["id"], "shared", region["workerName"])
+        for region in _regions(base, "id", "workerName")
+    ]
     if bench:
         rows.append(Row(BENCH, BENCH, bench_worker(base)))
     return rows
@@ -227,9 +228,10 @@ def http_fetch(method: str, path: str, token: str, body: Mapping[str, str] | Non
         with https.urlopen(req, timeout=30) as resp:
             raw = resp.read()
     except urllib.error.HTTPError as exc:
-        raise ApiError(
-            "HTTP %d on %s %s%s" % (exc.code, method, label, _cf_errors(exc.read()))
-        ) from None
+        with exc:
+            raise ApiError(
+                "HTTP %d on %s %s%s" % (exc.code, method, label, _cf_errors(exc.read()))
+            ) from None
     except (urllib.error.URLError, TimeoutError, OSError) as exc:
         raise ApiError("transport failure on %s %s: %s" % (method, label, exc)) from None
     try:
@@ -344,9 +346,35 @@ def archive_extras(
             wanted[(row.worker, name)] = bws_key(
                 name, region_suffix(suffixes, row.region), row.region
             )
-    have = values(sorted({k for k in wanted.values() if k}))
+    keys = {k for k in wanted.values() if k}
+    if any(name in NO_ARCHIVE for row in rows for name in row.extras):
+        keys.add(NO_ARCHIVE_BWS)
+    have = values(sorted(keys)) if keys else {}
     for row in rows:
         for name in row.extras:
+            if name in NO_ARCHIVE:
+                if not have.get(NO_ARCHIVE_BWS):
+                    lines.append(
+                        "no recoverable copy, left in place: %s: %s (bws key: %s is empty or absent)"
+                        % (row.worker, name, NO_ARCHIVE_BWS)
+                    )
+                    left += 1
+                    continue
+                if dry_run:
+                    lines.append(
+                        "would delete without an archive %s: %s (the licence private key is not copied back onto a Worker)"
+                        % (row.worker, name)
+                    )
+                    left += 1
+                    continue
+                try:
+                    fetch("DELETE", secrets_path(account, row.worker, name), token)
+                except ApiError as exc:
+                    lines.append("failed %s: %s: %s" % (row.worker, name, exc))
+                    left += 1
+                    continue
+                lines.append("deleted %s: %s (no archive kept on a Worker)" % (row.worker, name))
+                continue
             key = wanted[(row.worker, name)]
             value = have.get(key) if key else None
             if not value:
@@ -411,9 +439,6 @@ def parse(argv: list[str]) -> Options | None:
         elif arg == "--region" and i + 1 < len(argv):
             opts.region = argv[i + 1]
             i += 1
-        elif arg == "--target" and i + 1 < len(argv):
-            opts.target = argv[i + 1]
-            i += 1
         else:
             return None
         i += 1
@@ -449,14 +474,14 @@ def run(
         chosen = [
             w
             for w in load_workers(root, bench=opts.region == BENCH)
-            if opts.region in ("all", w.region) and opts.target in ("all", w.target)
+            if opts.region in ("all", w.region)
         ]
     except (ApiError, OSError, ValueError, tomllib.TOMLDecodeError) as exc:
         return 2, ["%s: %s; failing closed, no verdict" % (SELF, exc)], []
     if not chosen:
         return (
             2,
-            ["%s: no Worker matches --region %s --target %s" % (SELF, opts.region, opts.target)],
+            ["%s: no Worker matches --region %s" % (SELF, opts.region)],
             [],
         )
     try:

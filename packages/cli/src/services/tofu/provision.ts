@@ -8,18 +8,23 @@
 
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { DEFAULTS } from '@rediacc/shared/config';
+import { DEFAULTS, NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import { getConfigDir } from '@rediacc/shared/paths';
 import { t } from '../../i18n/index.js';
+import { ERROR_CODES } from '../../types/errors.js';
+import { CliExitError } from '../../utils/cli-exit-error.js';
 import { accountServerFetch } from '../account/account-client.js';
 import { readRemoteMachineId } from '../account/license-machine.js';
 import { getSubscriptionTokenState } from '../account/subscription-auth.js';
 import { configService } from '../config/config-resources.js';
 import { outputService } from '../core/output.js';
+import { setExitCode } from '../core/request-context.js';
+import { pendingExitCode, runCommandJob } from '../jobs/command-job.js';
+import { type PlannedStep, planStep } from '../jobs/steps.js';
 import { machineConnections } from '../machine/machine-connection.js';
-import { pushInfraConfig, removeMachineDnsRecords } from '../provision/infra-provision.js';
-import { bootstrapMachine, scanHostKeys, waitForSSH } from '../renet/machine-bootstrap.js';
-import { readSSHKey } from '../renet/renet-execution.js';
+import { removeMachineDnsRecords } from '../provision/infra-provision.js';
+import { scanHostKeys, waitForSSH } from '../renet/machine-bootstrap.js';
+import { acquireRemoteRenet, readSSHKey } from '../renet/renet-execution.js';
 import { TofuExecutor } from './executor.js';
 import { resolveProviderMapping } from './provider-resolver.js';
 import { generateTfJson } from './tf-generator.js';
@@ -91,6 +96,69 @@ async function loadSSHPublicKey(): Promise<{
 }
 
 /**
+ * The ticket steps of a provision's setup job: record the infra source, then push it. Both run when the job is seen
+ * to succeed (the push is the recorded successor, J0b finding 2), so a ticket handed back early never pushes infra to
+ * a machine whose setup has not finished. No infra source plans no step.
+ */
+async function provisionTailSteps(
+  machineName: string,
+  options: CreateOptions,
+  address: { ipv4: string; ipv6: string | undefined }
+): Promise<PlannedStep[]> {
+  if (options.noInfra) return [];
+  const infraSource = await resolveInfraSource(machineName, options);
+  if (!infraSource?.baseDomain) {
+    outputService.info(t('commands.machine.provision.noInfraHint'));
+    return [];
+  }
+  outputService.info(t('commands.machine.provision.configuringInfra', { name: machineName }));
+  const infra = { ...infraSource, publicIPv4: address.ipv4, publicIPv6: address.ipv6 };
+  return [
+    planStep('setMachineInfra', { machine: machineName, infra: JSON.stringify(infra) }),
+    planStep('pushProvisionedInfra', { machine: machineName, debug: options.debug === true }),
+  ];
+}
+
+/** The message of a failed setup job. A failure that carries no exit code (a failed step after a clean exit) is named for what it is, not as "code 0". */
+export function setupFailureMessage(result: { exitCode: number; error?: string }): string {
+  return result.exitCode === 0
+    ? `Machine setup failed${result.error ? `: ${result.error}` : ''}`
+    : `Machine setup exited with code ${result.exitCode}`;
+}
+
+/** The bootstrap upload stays outside the job (renet must be on the machine first), then one `setup` job. */
+async function runProvisionSetupJob(
+  machineName: string,
+  options: CreateOptions,
+  steps: PlannedStep[]
+) {
+  const localConfig = await configService.getLocalConfig();
+  const machine = await configService.getLocalMachine(machineName);
+  const sshPrivateKey =
+    localConfig.sshPrivateKey ?? (await readSSHKey(localConfig.ssh.privateKeyPath));
+  await acquireRemoteRenet('provision', localConfig, machine, sshPrivateKey, {
+    debug: options.debug,
+    explicitSetup: true,
+  });
+  return runCommandJob(
+    'machine provision',
+    {
+      functionName: 'setup',
+      machineName,
+      commandKind: {
+        name: 'setup',
+        args: {
+          datastore: machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH,
+          'datastore-size': localConfig.datastoreSize ?? NETWORK_DEFAULTS.DATASTORE_SIZE,
+        },
+      },
+      debug: options.debug,
+    },
+    steps
+  );
+}
+
+/**
  * Create a cloud machine via OpenTofu and bootstrap it.
  *
  * Flow: tofu apply → wait SSH → add-machine → scan-keys → setup-machine → [push-infra]
@@ -156,22 +224,18 @@ export async function createCloudMachine(
   if (keyscan) await configService.updateMachine(machineName, { knownHosts: keyscan });
 
   outputService.info(t('commands.machine.provision.settingUp'));
-  await bootstrapMachine(machineName, options);
-
-  // set-infra + push-infra
-  if (!options.noInfra) {
-    const infraSource = await resolveInfraSource(machineName, options);
-    if (infraSource?.baseDomain) {
-      outputService.info(t('commands.machine.provision.configuringInfra', { name: machineName }));
-      await configService.setMachineInfra(machineName, {
-        ...infraSource,
-        publicIPv4: ipv4,
-        publicIPv6: ipv6,
-      });
-      await pushInfraConfig(machineName, { debug: options.debug });
-    } else {
-      outputService.info(t('commands.machine.provision.noInfraHint'));
-    }
+  const steps = await provisionTailSteps(machineName, options, { ipv4, ipv6 });
+  const outcome = await runProvisionSetupJob(machineName, options, steps);
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return;
+  }
+  if (!outcome.result.success) {
+    const exitCode = outcome.result.exitCode > 0 ? outcome.result.exitCode : 1;
+    const message = setupFailureMessage(outcome.result);
+    outputService.warn(message);
+    throw new CliExitError(ERROR_CODES.INFRA_FAILED, message, { exitCode });
   }
 
   outputService.success(t('commands.machine.provision.completed', { name: machineName, ip: ipv4 }));

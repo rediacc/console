@@ -2,7 +2,7 @@
 
 Both-ways test for `rediacc_ci.release.resolve_backfill_commit` -- the step that decides which commit a backfilled release sentinel records. The bash subject this file originally drove, `.ci/scripts/release/resolve-backfill-commit.sh`, was deleted; `.ci/rediacc_ci/tests/test_release_resolve_backfill_commit.py` covers the port's byte-for-byte parity with the twin's own recordings, and this file keeps driving the same behavioural cases against the port directly (not the recordings), the same way 204fea21c re-pointed `test_gate_stage_artifacts_channel.py` at `rediacc_ci.release.validate_stage_artifacts`.
 
-WHY THIS CLASS NEEDS A GATE. The script had none, and its only caller is a manually-dispatched workflow (`.github/workflows/backfill-release-sentinel.yml`), so its failure paths are seen by a human roughly never, and then only by a human already mid-incident, reading the message to decide what went wrong. A wrong message there does not fail loudly; it sends the investigation
+WHY THIS CLASS NEEDS A GATE. The script had none, and its only caller is a manually-dispatched workflow (`.github/workflows/ops-backfill-release-sentinel.yml`), so its failure paths are seen by a human roughly never, and then only by a human already mid-incident, reading the message to decide what went wrong. A wrong message there does not fail loudly; it sends the investigation
 somewhere else.
 
 THE DEFECT THIS PINS. `git merge-base --is-ancestor` returns non-zero for two unrelated situations: a commit that exists but sits off main, and a SHA that is not an object in this repository at all. Git's own "Not a valid object name" for the second went to a `2>/dev/null`, so BOTH produced "commit <sha> is not reachable

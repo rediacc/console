@@ -742,6 +742,11 @@ def refresh(baseline_path, workflow_dir, branch, event, limit):
     data["format"] = BASELINE_FORMAT
     data["jobs"] = dict(sorted(merged.items()))
     data["refreshed_at"] = dt.datetime.now(dt.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+    # The provenance moves with the numbers: a refresh that left the old text would name runs the jobs no longer come from.
+    data["refreshed_from"] = (
+        "PROFILER_BASELINE_V1 annotations on %d Console CI run(s) of branch %s%s, check-runs annotations API."
+        % (len(run_ids), branch, " (event %s)" % event if event else "")
+    )
     baseline_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     print(
         "baseline refreshed from %d run(s): %d job(s) measured, %d row(s) parsed"

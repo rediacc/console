@@ -1,6 +1,7 @@
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
 import { createEmptyRdcConfig } from '@rediacc/shared/config-schema';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { installJobDeps } from '../../../commands/__tests__/job-deps.js';
 import type { ClusterConfig, MachineConfig, RdcConfig } from '../../../types/index.js';
 import { configService } from '../../config/config-resources.js';
 import { auditService } from '../../core/audit.js';
@@ -65,10 +66,19 @@ function execMock() {
   });
 }
 
-afterEach(() => vi.restoreAllMocks());
+let restoreJobDeps: () => void;
+beforeEach(() => {
+  // Each cluster phase is a ticketed job; its ticket goes to a temp store, never the real one.
+  restoreJobDeps = installJobDeps((options) => localExecutorService.execute(options));
+});
+
+afterEach(() => {
+  restoreJobDeps();
+  vi.restoreAllMocks();
+});
 
 describe('joinCluster', () => {
-  it('reads the token from the anchor datastore, joins with NO per-node repo, and sets the backref', async () => {
+  it('runs one cluster_join job on the member against the control anchor mount, with NO per-node repo, and sets the backref', async () => {
     stub({ adopted: { ip: '192.168.111.50', user: 'root' } });
     const exec = execMock();
     const update = vi.spyOn(configService, 'updateMachine').mockResolvedValue(undefined);
@@ -77,22 +87,14 @@ describe('joinCluster', () => {
 
     const calls = exec.mock.calls.map((c) => c[0]);
     // ★ #25: no repository_create. An agent's k3s state is a disposable cache and `renet kube join` MkdirAll's its own data-dir, so the per-node "cluster image" repo bought nothing and cost a LUKS volume + GUID + config record per node.
-    // network_used: the agent's network ID starts above every ID the machine already uses.
-    expect(calls.map((c) => c.functionName)).toEqual([
-      'kube_join_token',
-      'network_used',
-      'kube_join',
-    ]);
-    // Token read from the control plane's anchor datastore mount.
-    expect(calls[0]).toMatchObject({
-      machineName: 'prod-cp-1',
-      params: { mount_path: '/mnt/rediacc-ds/ds-control-prod' },
-    });
-    // Agent joins on the cluster mount path (a plain dir now), bound to its real NIC.
-    expect(calls[2]).toMatchObject({
+    // network_used: the agent's network ID starts above every ID the machine already uses. The token read and the join are one renet function on the member, so no token passes through the client.
+    expect(calls.map((c) => c.functionName)).toEqual(['network_used', 'cluster_join']);
+    expect(calls[1]).toMatchObject({
       machineName: 'adopted',
       params: {
         mount_path: `${WK_DATASTORE_PATH}/mounts/prod`,
+        to: 'prod-cp-1',
+        control_mount_path: '/mnt/rediacc-ds/ds-control-prod',
         role: 'agent',
         bind_ip: '192.168.111.50',
         endpoint: 'https://192.168.111.11:6443',

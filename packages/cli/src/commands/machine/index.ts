@@ -10,6 +10,7 @@ import { registerProviderCommands } from './provider.js';
 import { registerCloudCommands } from './provision.js';
 import { registerPruneCommand } from './prune.js';
 import { registerMachineRegistrationCommands } from './register.js';
+import { registerRepairCommand } from './repair.js';
 import { registerRestartServicesCommand } from './restart-services.js';
 import { registerStatusCommand } from './status.js';
 
@@ -21,8 +22,9 @@ export function registerMachineCommands(program: Command): void {
 
   // Config-CRUD + lifecycle: add/remove/list/scan-keys/setup, then the machine-reaching verbs. `machine query` is now `machine status` and folds in the retired containers/services/repos section commands as flags.
   registerMachineRegistrationCommands(machine, program);
-  registerStatusCommand(machine, program);
-  registerHealthCommand(machine, program);
+  registerStatusCommand(machine);
+  registerHealthCommand(machine);
+  registerRepairCommand(machine);
   registerCloudCommands(machine, program);
   registerPruneCommand(machine);
   registerGpuCommands(machine);

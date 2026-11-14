@@ -64,6 +64,10 @@ export function machineRemovePlacementError(
             run: 'rdc repo delete <repo>',
           },
           {
+            description: t('commands.machine.deprovision.optionArchiveRepos'),
+            run: `rdc machine remove ${machineName} --archive-repos`,
+          },
+          {
             description: t('commands.machine.remove.nextForce'),
             run: `rdc machine remove ${machineName} --force`,
           },
@@ -90,6 +94,19 @@ function reposOnAttachedDatastores(
       return p !== undefined && 'datastore' in p && stores.has(p.datastore);
     })
     .map((r) => r.name);
+}
+
+/** Repos placed on `machineName` directly or through a datastore attached to it. */
+async function placedRepoNames(
+  machineName: string,
+  datastores: Record<string, { attachedTo?: string }> = {}
+): Promise<string[]> {
+  const repos = await configService.listRepositories();
+  const direct = reposPlacedOnMachine(machineName, repos);
+  const viaDatastore = reposOnAttachedDatastores(machineName, datastores, repos).filter(
+    (r) => !direct.includes(r)
+  );
+  return [...direct, ...viaDatastore];
 }
 
 function clusterMemberError(machineName: string, cluster: string): CliExitError {
@@ -138,20 +155,17 @@ function strategyBoundError(machineName: string, strategies: string[]): CliExitE
  * datastore attached to it, and bound backup strategies. `--force` covers the last two and
  * WARNS once per reference kind, naming each reference (the accepted damage class: they dangle).
  */
-export async function guardMachineRemoval(machineName: string, force?: boolean): Promise<void> {
+export async function guardMachineRemoval(
+  machineName: string,
+  force?: boolean,
+  archiveRepos?: boolean
+): Promise<void> {
   const cfg = await configService.getCurrent();
   const cluster = cfg?.resources?.machines?.[machineName]?.cluster;
   if (cluster) {
     throw clusterMemberError(machineName, cluster.cluster);
   }
-  const repos = await configService.listRepositories();
-  const direct = reposPlacedOnMachine(machineName, repos);
-  const viaDatastore = reposOnAttachedDatastores(
-    machineName,
-    cfg?.state?.datastores ?? {},
-    repos
-  ).filter((r) => !direct.includes(r));
-  const placed = [...direct, ...viaDatastore];
+  const placed = archiveRepos ? [] : await placedRepoNames(machineName, cfg?.state?.datastores);
   const strategies = cfg?.resources?.machines?.[machineName]?.backupStrategies ?? [];
   if (!force) {
     if (placed.length > 0) throw machineRemovePlacementError(machineName, placed);

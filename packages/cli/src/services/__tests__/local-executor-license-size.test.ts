@@ -254,7 +254,7 @@ describe('repo-license size probe: which datastore it stats', () => {
     await localExecutorService.execute(forkOptions);
 
     expect(mockIssueRepoLicense).toHaveBeenCalledTimes(1);
-    expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({
+    expect(mockIssueRepoLicense.mock.calls[0][3]).toMatchObject({
       repositoryGuid: FORK_GUID,
       kind: 'fork',
       // 7 GiB measured, not the 1 GB floor the broken probe reported.
@@ -274,7 +274,7 @@ describe('repo-license size probe: which datastore it stats', () => {
     expect(statCommands()).toEqual([expectedProbe(DEFAULT_MOUNT, PARENT_GUID)]);
     expect(statCommands().join('\n')).not.toContain(NAMED_MOUNT);
     // No named placement means no registry lookup and no scoped identity.
-    expect(mockIssueRepoLicense.mock.calls[0][2].datastoreId).toBeUndefined();
+    expect(mockIssueRepoLicense.mock.calls[0][3].datastoreId).toBeUndefined();
   });
 
   it('keeps the machine default for an explicit {machine} placement', async () => {
@@ -353,7 +353,7 @@ describe('repo-license size probe: a failed stat is not a measurement', () => {
     await localExecutorService.execute(forkOptions);
 
     // Falls back to the floor, but never silently.
-    expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({ requestedSizeGb: 1 });
+    expect(mockIssueRepoLicense.mock.calls[0][3]).toMatchObject({ requestedSizeGb: 1 });
     const warnings = sizeWarnings(warnSpy);
     expect(warnings.length).toBeGreaterThan(0);
     expect(warnings[0]).toContain(`${NAMED_MOUNT}/repositories/${PARENT_GUID}`);
@@ -372,7 +372,7 @@ describe('repo-license size probe: a failed stat is not a measurement', () => {
       captureOutput: true,
     });
 
-    expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({ requestedSizeGb: 1 });
+    expect(mockIssueRepoLicense.mock.calls[0][3]).toMatchObject({ requestedSizeGb: 1 });
     expect(sizeWarnings(warnSpy)).toEqual([]);
   });
 
@@ -383,7 +383,7 @@ describe('repo-license size probe: a failed stat is not a measurement', () => {
 
     await localExecutorService.execute(forkOptions);
 
-    expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({ requestedSizeGb: 1 });
+    expect(mockIssueRepoLicense.mock.calls[0][3]).toMatchObject({ requestedSizeGb: 1 });
     expect(sizeWarnings(warnSpy)).toEqual([]);
   });
 
@@ -393,6 +393,6 @@ describe('repo-license size probe: a failed stat is not a measurement', () => {
 
     await localExecutorService.execute(forkOptions);
 
-    expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({ requestedSizeGb: 4 });
+    expect(mockIssueRepoLicense.mock.calls[0][3]).toMatchObject({ requestedSizeGb: 4 });
   });
 });

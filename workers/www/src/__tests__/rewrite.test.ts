@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
   WK_APEX_DOMAIN,
-  WK_EDGE_ORIGIN,
   WK_IMAGE_REGISTRY,
   WK_RELEASES_ORIGIN,
   WK_SITE_ORIGIN,
@@ -9,7 +8,9 @@ import {
 import { buildDisallowRobots, getChannel, rewriteOrigin, shouldRewrite } from '../index';
 
 const RELEASES_HOST = new URL(WK_RELEASES_ORIGIN).host;
-const EDGE_HOST = new URL(WK_EDGE_ORIGIN).host;
+// No edge host is served any more (one shared www Worker); the rewrite still maps an `edge.` subdomain to the edge channel, so the cases keep a host built from the apex.
+const EDGE_HOST = `edge.${WK_APEX_DOMAIN}`;
+const EDGE_ORIGIN = `https://${EDGE_HOST}`;
 const SITE_HOST = new URL(WK_SITE_ORIGIN).host;
 
 describe('getChannel', () => {
@@ -60,24 +61,24 @@ describe('rewriteOrigin', () => {
 
   it('rewrites install.sh channel default and server URL default', async () => {
     const body = [
-      'CHANNEL="${REDIACC_CHANNEL:-stable}"',
+      'CHANNEL="${REDIACC_CHANNEL:-edge}"',
       'SERVER_URL="${REDIACC_SERVER_URL:-}"',
     ].join('\n');
     const out = await rewriteOrigin(makeResponse(body, 'application/x-sh'), previewUrl, channel);
     const text = await out.text();
     expect(text).toContain('REDIACC_CHANNEL:-pr-420');
-    expect(text).not.toContain('REDIACC_CHANNEL:-stable');
+    expect(text).not.toContain('REDIACC_CHANNEL:-edge');
     expect(text).toContain('REDIACC_SERVER_URL:-https://pr-420.rediacc.workers.dev}');
   });
 
   it('rewrites install.ps1 PowerShell channel default', async () => {
     const ps1Url = new URL('https://pr-420.rediacc.workers.dev/install.ps1');
-    const body = '$Channel = if ($env:REDIACC_CHANNEL) { $env:REDIACC_CHANNEL } else { "stable" }';
+    const body = '$Channel = if ($env:REDIACC_CHANNEL) { $env:REDIACC_CHANNEL } else { "edge" }';
     // install.ps1 is served without a content-type header in production.
     const out = await rewriteOrigin(new Response(body), ps1Url, channel);
     const text = await out.text();
     expect(text).toContain('} else { "pr-420" }');
-    expect(text).not.toContain('} else { "stable" }');
+    expect(text).not.toContain('} else { "edge" }');
   });
 
   it('rewrites release channel URLs for all covered formats', async () => {
@@ -131,7 +132,7 @@ describe('rewriteOrigin', () => {
   });
 
   it('returns the response unchanged when path and content-type are not rewritable', async () => {
-    const body = 'REDIACC_CHANNEL:-stable';
+    const body = 'REDIACC_CHANNEL:-edge';
     const url = new URL('https://pr-420.rediacc.workers.dev/some.bin');
     const out = await rewriteOrigin(makeResponse(body, 'application/octet-stream'), url, channel);
     expect(await out.text()).toBe(body);
@@ -157,7 +158,7 @@ describe('rewriteOrigin', () => {
 // behavior that model depends on. ---------------------------------------------------------------------------
 
 describe('host→channel contract (www → portal handoff)', () => {
-  it('edge marketing host maps to the edge channel', () => {
+  it('an edge subdomain maps to the edge channel', () => {
     expect(getChannel(EDGE_HOST)).toBe('edge');
   });
 
@@ -165,17 +166,17 @@ describe('host→channel contract (www → portal handoff)', () => {
     expect(getChannel('pr-420.rediacc.workers.dev')).toBe('pr-420');
   });
 
-  it('www is NOT a preview: responses are served unrewritten, keeping stable defaults', () => {
+  it('www is NOT a preview: responses are served unrewritten, keeping the baked edge defaults', () => {
     // fetch() gates rewriteOrigin on isPreview (hostname !== SITE_HOST),
-    // so on www the baked-in stable channel reaches the visitor untouched.
+    // so on www the baked-in edge installer default reaches the visitor untouched.
     const isPreview = (h: string) => h !== SITE_HOST;
     expect(isPreview(SITE_HOST)).toBe(false);
     expect(isPreview(EDGE_HOST)).toBe(true);
   });
 
   it('edge host rewrites the install-script channel default to edge', async () => {
-    const edgeUrl = new URL(`${WK_EDGE_ORIGIN}/install.sh`);
-    const body = 'CHANNEL="${REDIACC_CHANNEL:-stable}"';
+    const edgeUrl = new URL(`${EDGE_ORIGIN}/install.sh`);
+    const body = 'CHANNEL="${REDIACC_CHANNEL:-edge}"';
     const out = await rewriteOrigin(makeResponse(body, 'application/x-sh'), edgeUrl, 'edge');
     const text = await out.text();
     expect(text).toContain('REDIACC_CHANNEL:-edge');
@@ -186,7 +187,7 @@ describe('host→channel contract (www → portal handoff)', () => {
     const body = `${WK_RELEASES_ORIGIN}/cli/stable/rdc-linux-x64`;
     const out = await rewriteOrigin(
       makeResponse(body, 'text/html'),
-      new URL(`${WK_EDGE_ORIGIN}/en/downloads`),
+      new URL(`${EDGE_ORIGIN}/en/downloads`),
       'edge'
     );
     expect(await out.text()).toContain(`${RELEASES_HOST}/cli/edge`);

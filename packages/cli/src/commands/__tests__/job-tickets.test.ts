@@ -149,3 +149,58 @@ describe('the optional -m takes the machine from the ticket', () => {
     err.mockRestore();
   });
 });
+
+describe('job dismiss', () => {
+  it('dismisses a ticket by job id locally and hides it from list until --all', async () => {
+    addTicket();
+    await run('dismiss', JOB_ID);
+
+    expect(remote.connectForJobs).not.toHaveBeenCalled();
+    expect(store.find(JOB_ID)?.expiredReason).toBe('dismissed');
+    expect(out.success).toHaveBeenCalledWith('Dismissed 1 ticket(s).');
+
+    await run('list');
+    expect(out.print).not.toHaveBeenCalled();
+
+    await run('list', '--all');
+    const [rows] = out.print.mock.calls[0];
+    expect(rows).toEqual([expect.objectContaining({ id: JOB_ID, state: 'expired:dismissed' })]);
+  });
+
+  it('keeps the reason of a ticket that was already given up on', async () => {
+    addTicket();
+    store.append('expired', 'req-1', { reason: 'gone' });
+    await run('dismiss', JOB_ID);
+
+    expect(store.find(JOB_ID)?.expiredReason).toBe('gone');
+    expect(out.success).not.toHaveBeenCalled();
+    expect(out.info).toHaveBeenCalledWith('No matching tickets.');
+  });
+
+  it('refuses job ids with --stale, and --older-than without it, instead of ignoring them', async () => {
+    addTicket();
+    const exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never);
+    await run('dismiss', JOB_ID, '--stale', '--yes');
+    await run('dismiss', JOB_ID, '--older-than', '1h');
+    exit.mockRestore();
+    const messages = out.error.mock.calls.map((c) => String(c[0]));
+    expect(messages.some((m) => /not both/.test(m))).toBe(true);
+    expect(messages).toHaveLength(2);
+    expect(store.find(JOB_ID)?.expiredReason).toBeUndefined();
+  });
+
+  it('--stale dismisses only tickets older than --older-than', async () => {
+    store.append('starting', 'old', {
+      machine: 'm',
+      startedAt: new Date(Date.now() - 3 * 86_400_000).toISOString(),
+    });
+    addTicket();
+    await run('dismiss', '--stale', '--yes');
+
+    expect(store.find('old')?.expiredReason).toBe('dismissed');
+    expect(store.find(JOB_ID)?.expiredReason).toBeUndefined();
+
+    await run('dismiss', '--stale', '--older-than', '0s', '--yes');
+    expect(store.find(JOB_ID)?.expiredReason).toBe('dismissed');
+  });
+});

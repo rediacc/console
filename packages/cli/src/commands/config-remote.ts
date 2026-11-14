@@ -98,6 +98,18 @@ async function disableRemote(configName: string): Promise<void> {
 
 // ─── Status Flow ─────────────────────────────────────────────────────────
 
+function statusLabel(accessLoss: 'key-missing' | 'rejected' | null, connected: boolean): string {
+  if (accessLoss === 'key-missing') return 'device-key-missing';
+  if (accessLoss === 'rejected') return 'device-cannot-open';
+  return connected ? 'connected' : 'error';
+}
+
+function accessLossKey(accessLoss: 'key-missing' | 'rejected') {
+  return accessLoss === 'key-missing'
+    ? 'commands.config.remote.status.deviceKeyMissing'
+    : 'commands.config.remote.status.deviceCannotOpen';
+}
+
 async function showStatus(configName: string, format: OutputFormat): Promise<void> {
   const { configFileStorage } = await import('../adapters/config-file-storage.js');
   const config = await configFileStorage.load(configName);
@@ -109,24 +121,49 @@ async function showStatus(configName: string, format: OutputFormat): Promise<voi
 
   const remote = config.remote;
   let connected = false;
+  // null: unknown, the server could not be asked (status stays a read and reports what is known locally).
+  let deviceCanOpen: boolean | null = null;
+  let accessLoss: 'key-missing' | 'rejected' | null = null;
 
   // Outside the try: a device with no usable secure storage is told so, with the remedy, instead of reading "error".
   const { getSecureStorage } = await import('../utils/secure-storage.js');
   const secureStorage = getSecureStorage();
 
+  const testServer = async (): Promise<boolean> => {
+    try {
+      const { RemoteConfigAdapter } = await import('../adapters/remote-config-adapter.js');
+      const { remoteTokenStorage } = await import('../adapters/remote-token-storage.js');
+      const adapter = new RemoteConfigAdapter(
+        remote,
+        configName,
+        remoteTokenStorage,
+        secureStorage
+      );
+      return await adapter.testConnection();
+    } catch {
+      return false;
+    }
+  };
+
   try {
-    const { RemoteConfigAdapter } = await import('../adapters/remote-config-adapter.js');
-    const { remoteTokenStorage } = await import('../adapters/remote-token-storage.js');
-    const adapter = new RemoteConfigAdapter(remote, configName, remoteTokenStorage, secureStorage);
-    connected = await adapter.testConnection();
+    // The same question `enable` asks before it re-enrolls this device; it never prompts or unlocks.
+    const { deviceAccessLoss } = await import('./config-remote-reenroll.js');
+    accessLoss = await deviceAccessLoss(remote, configName);
+    deviceCanOpen = accessLoss === null;
+    // Reachability is its own proof: a healthy local key says nothing about the server.
+    if (deviceCanOpen) connected = await testServer();
   } catch {
-    // Connection test failed
+    // Server unreachable, or an error that says nothing about this device's credentials: fall back to a plain connection test.
+    connected = await testServer();
   }
+
+  const status = statusLabel(accessLoss, connected);
 
   outputService.print(
     {
       config: configName,
-      status: connected ? 'connected' : 'error',
+      status,
+      ...(deviceCanOpen === null ? {} : { deviceCanOpen }),
       apiUrl: remote.apiUrl,
       storeId: remote.storeId,
       configId: remote.configId,
@@ -136,6 +173,9 @@ async function showStatus(configName: string, format: OutputFormat): Promise<voi
     },
     format
   );
+  if (accessLoss !== null && format !== 'json') {
+    outputService.warn(t(accessLossKey(accessLoss)));
+  }
 }
 
 // ─── Refresh Flow ────────────────────────────────────────────────────────
@@ -163,13 +203,26 @@ async function refreshRemote(configName: string): Promise<void> {
   );
 
   const { pullOrPurge, writeRemoteCache } = await import('../services/config/remote-cache.js');
-  const { config: pulledConfig, version } = await withSpinner(
+  const pulled = await withSpinner(
     t('commands.config.remote.refresh.pulling'),
     () => pullOrPurge(adapter, configName),
     t('commands.config.remote.refresh.pulled')
   );
+  const { config: pulledConfig, version } = pulled;
 
+  // Refresh is the explicit "take the server copy": it replaces what the local file holds, and names what it replaced.
+  const { localEditsAgainst } = await import('../services/config/local-edit-guard.js');
+  const replaced = localEditsAgainst(await configFileStorage.loadDecrypted(configName), pulled);
   await writeRemoteCache(configName, pulledConfig, version);
+  if (replaced) {
+    outputService.warn(
+      t('commands.config.remote.refresh.replacedLocal', {
+        config: configName,
+        version: String(version),
+        changes: replaced,
+      })
+    );
+  }
 
   outputService.success(t('commands.config.remote.refresh.success', { version: String(version) }));
 }

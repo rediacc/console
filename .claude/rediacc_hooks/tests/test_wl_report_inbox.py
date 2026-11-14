@@ -942,3 +942,671 @@ def test_28_no_ambient_session_id_survives_the_scrub(sc):
     assert "identity mismatch" in got.out + got.err, (
         "CONTROL: with an ambient id present the same call must be refused"
     )
+
+
+# ---- lead-only capture (agent/plans/PLAN-tick-tracking.md, T5) ---------------
+
+FIXTURES = pathlib.Path(__file__).resolve().parent / "tick_tracking_fixtures" / "report"
+COORD = "a465aa7e2ca09a227"
+
+
+def _harvest_all(jsonl):
+    """THE PRE-CHANGE `harvest_transcript`, kept here for the CONTROL only: it kept every SendMessage, whatever its `to`."""
+    report = wlfix.import_wl("wl_report")
+    sends, final, rec = [], "", {}
+    for line in report._bounded_lines(jsonl):
+        try:
+            r = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(r, dict) or r.get("type") != "assistant":
+            continue
+        rec = r
+        content = (r.get("message") or {}).get("content")
+        if isinstance(content, str):
+            if content.strip():
+                final = content
+            continue
+        if not isinstance(content, list):
+            continue
+        texts = []
+        for c in content:
+            if not isinstance(c, dict):
+                continue
+            if c.get("type") == "text" and str(c.get("text") or "").strip():
+                texts.append(str(c["text"]))
+            elif c.get("type") == "tool_use" and c.get("name") == "SendMessage":
+                inp = c.get("input") or {}
+                msg = inp.get("message")
+                if not isinstance(msg, str):
+                    msg = json.dumps(msg, ensure_ascii=False)
+                if str(msg).strip():
+                    sends.append(
+                        {
+                            "to": str(inp.get("to") or "?"),
+                            "at": str(r.get("timestamp") or ""),
+                            "summary": str(inp.get("summary") or ""),
+                            "message": str(msg),
+                        }
+                    )
+        if texts:
+            final = "\n".join(texts)
+    return sends, final, rec
+
+
+def coordinator_records(extra: list | None = None) -> list[dict]:
+    """The fixture transcript (21 sends to 11 agent ids, then a final text), restamped to the last ten minutes so neither scan's lookback nor body pruning sees an old agent."""
+    recs = [
+        json.loads(line)
+        for line in (FIXTURES / "coordinator.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    recs[-1:-1] = list(extra or [])
+    start = datetime.datetime.now(datetime.UTC) - datetime.timedelta(minutes=10)
+    for n, r in enumerate(recs):
+        r["timestamp"] = (start + datetime.timedelta(seconds=n)).strftime("%Y-%m-%dT%H:%M:%S.000Z")
+    return recs
+
+
+def write_transcript(path: pathlib.Path, recs: list[dict]) -> pathlib.Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(json.dumps(r) + "\n" for r in recs), encoding="utf-8")
+    return path
+
+
+def final_text(recs: list[dict]) -> str:
+    return recs[-1]["message"]["content"][0]["text"]
+
+
+def send_to_main() -> dict:
+    return {
+        "type": "assistant",
+        "agentId": COORD,
+        "sessionId": "sess1",
+        "gitBranch": "testbr",
+        "message": {
+            "content": [
+                {
+                    "type": "tool_use",
+                    "name": "SendMessage",
+                    "input": {
+                        "to": "main",
+                        "summary": "round report",
+                        "message": "ROUND REPORT FOR THE LEAD\n" + "detail. " * 40,
+                    },
+                }
+            ]
+        },
+    }
+
+
+def hook_capture(sc: Scratch, recs: list[dict]) -> dict:
+    tx = write_transcript(sc.subagents_dir() / ("agent-%s.jsonl" % COORD), recs)
+    sc.raw_stop(
+        {
+            "agent_id": COORD,
+            "agent_type": "general-purpose",
+            "session_id": READER,
+            "cwd": str(sc.repo),
+            "agent_transcript_path": str(tx),
+            "last_assistant_message": final_text(recs),
+        }
+    )
+    lines = sc.index_lines()
+    assert len(lines) == 1, lines
+    return json.loads(lines[0])
+
+
+def assert_no_orders(sc: Scratch, entry: dict, recs: list[dict]) -> None:
+    body = body_of(sc.store / entry["body"])
+    # No lead-bound section; every order is still stored, under its own heading.
+    assert "## SendMessage" not in body, body[:300]
+    assert len(re.findall(r"^## Outgoing \d+ -> a[0-9a-f]{16}\b", body, re.MULTILINE)) == 21, body[
+        :300
+    ]
+    assert final_text(recs) in body, "the final text was dropped"
+    assert entry["sends"] == 0, entry
+    assert entry["out"] == 21, entry
+    assert entry["silent"] is False, "an agent that sent 21 messages is not silent"
+    assert not entry["title"].startswith(("Coordinator ruling", "Brief addition")), entry["title"]
+    front = (sc.store / entry["body"]).read_text(encoding="utf-8").split("---\n\n", 1)[0]
+    assert "\nsends: 0\n" in front, front
+    assert "\nout: 21\n" in front, front
+
+
+def test_31_recipient_control_the_old_harvest_kept_every_send(sc):
+    """CONTROL: the pre-change harvest reads 21 sends off this fixture, so the zero below is the rule working and not a fixture with nothing in it."""
+    report = wlfix.import_wl("wl_report")
+    tx = write_transcript(sc.t / "coord.jsonl", coordinator_records())
+    old_sends, old_final, _ = _harvest_all(tx)
+    assert len(old_sends) == 21, len(old_sends)
+    assert len({s["to"] for s in old_sends}) == 11, "the fixture is not 21 sends to 11 ids"
+    assert report._title_of(old_sends, old_final).startswith("Coordinator ruling"), (
+        "the old reading is not the defect being fixed"
+    )
+    sends, final, _rec, others = report.harvest_transcript(tx)
+    assert sends == [], sends[:1]
+    assert len(others) == 21, len(others)
+    assert [s["message"] for s in others] == [s["message"] for s in old_sends], (
+        "a send to another agent was dropped rather than kept aside"
+    )
+    assert final == old_final, "the final text must be kept whole"
+
+
+def writer_records(to: str) -> list[dict]:
+    """A writer under a coordinator: its whole report is one long SendMessage to the coordinator, then a short sign-off."""
+    start = datetime.datetime.now(datetime.UTC) - datetime.timedelta(minutes=5)
+    report_text = "WRITER REPORT FOR THE COORDINATOR\n" + "Landed commit and test evidence. " * 60
+    return [
+        {
+            "type": "assistant",
+            "agentId": "awriterundercoord0001",
+            "sessionId": "sess1",
+            "gitBranch": "testbr",
+            "timestamp": start.strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+            "message": {
+                "content": [
+                    {
+                        "type": "tool_use",
+                        "name": "SendMessage",
+                        "input": {"to": to, "summary": "report", "message": report_text},
+                    }
+                ]
+            },
+        },
+        {
+            "type": "assistant",
+            "agentId": "awriterundercoord0001",
+            "sessionId": "sess1",
+            "gitBranch": "testbr",
+            "timestamp": (start + datetime.timedelta(seconds=5)).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+            "message": {"content": [{"type": "text", "text": "Report sent."}]},
+        },
+    ]
+
+
+def test_31g_recipient_a_report_sent_to_the_coordinator_is_stored(sc):
+    """Review finding 0009f584.1: dropping every non-lead send lost a writer's report delivered by SendMessage to its coordinator. CONTROL: on 0009f584 the stored body held only "Report sent.", so the report-text assertion below fails there, and `_relay_before` states the relay rule the row is checked against."""
+    for n, to in enumerate(("coordinator", COORD)):
+        recs = writer_records(to)
+        aid = "awriterundercoord%04d" % n
+        tx = write_transcript(sc.subagents_dir() / ("agent-%s.jsonl" % aid), recs)
+        sc.raw_stop(
+            {
+                "agent_id": aid,
+                "agent_type": "general-purpose",
+                "session_id": READER,
+                "cwd": str(sc.repo),
+                "agent_transcript_path": str(tx),
+                "last_assistant_message": "Report sent.",
+            }
+        )
+        entry = json.loads(sc.index_lines()[-1])
+        body = body_of(sc.store / entry["body"])
+        assert "WRITER REPORT FOR THE COORDINATOR" in body, body[:300]
+        assert "## Outgoing 1 -> %s" % to in body, body[:300]
+        assert "## SendMessage" not in body, "a send to the coordinator was filed as lead-bound"
+        # The send is not lead-bound, so `sends` stays 0; but it went to ONE peer, so it is the writer's report: titled from it and unread.
+        assert entry["sends"] == 0, entry
+        assert entry["out"] == 1, entry
+        assert entry["title"] == "WRITER REPORT FOR THE COORDINATOR", entry["title"]
+        assert entry["relay"] is False, entry
+        assert entry["silent"] is False, entry
+        report = wlfix.import_wl("wl_report")
+        parts, final = report.body_parts(body)
+        assert [(k, t) for k, t, _m in parts] == [("Outgoing", to)], parts
+        assert final.strip() == "Report sent.", final
+        # CONTROL: the relay rule of 0009f5844 and of 862dd2246 marked this same row a relay, so it never reached the lead.
+        assert _relay_before(entry["sends"], entry["out"], final), (
+            "CONTROL: the old relay rule must mark the writer a relay"
+        )
+    unread = sc.report_py("--list", "--unread").out
+    for aid in ("awriterundercoord0000", "awriterundercoord0001"):
+        assert aid[-12:] in unread, unread
+    assert unread.count("WRITER REPORT FOR THE COORDINATOR") == 2, unread
+
+
+def _relay_before(lead_sends, out, final):
+    """THE RELAY RULE OF 371592b85 AND 5e591cec2, kept for the CONTROL only: no lead-bound send, any outgoing send, and a final text under the relay floor, whatever the outgoing sends held or how many recipients they had."""
+    report = wlfix.import_wl("wl_report")
+    return lead_sends == 0 and out > 0 and len(str(final or "").strip()) < report.RELAY_FLOOR
+
+
+def test_31h_recipient_one_peer_with_a_short_send_and_fan_out_stay_relays():
+    """The narrowed rule keeps the coordinator shape a relay: sends to two or more recipients with a short final. A one-peer send under the silent floor ("Sent the status request", measured on the legacy rows) is not a report either."""
+    report = wlfix.import_wl("wl_report")
+    fan = [("a%016d" % n, "Coordinator ruling: x " + "y" * 400) for n in range(11)]
+    assert report.judge([], fan, "Waiting for the remaining nine.")[0] is True
+    assert report.judge([], fan, "A real report. " * 50)[0] is False
+    assert report.judge([], [("coordinator", "status?")], "Sent; waiting.")[0] is True
+    relay, title = report.judge([], [("coordinator", "REPORT\n" + "z" * 300)], "Done.")
+    assert relay is False
+    assert title == "REPORT"
+    assert report.judge(["LEAD\nx"], fan, "")[0] is False
+
+
+def test_31b_recipient_hook_path_keeps_only_the_final_text(sc):
+    recs = coordinator_records()
+    entry = hook_capture(sc, recs)
+    assert_no_orders(sc, entry, recs)
+    # A coordinator's turn-end status, under the relay floor, is not a report for the lead.
+    assert entry["relay"] is True, entry
+    got = sc.report_py("--list", "--unread")
+    assert COORD[-12:] not in got.out, got.out
+    assert "no UNREAD reports" in got.out, got.out
+
+
+def test_31c_recipient_scan_path_keeps_only_the_final_text(sc):
+    recs = coordinator_records()
+    proj = sc.subagents_dir()
+    (proj / ("agent-%s.meta.json" % COORD)).write_text(
+        json.dumps({"agentType": "general-purpose"}), encoding="utf-8"
+    )
+    tx = write_transcript(proj / ("agent-%s.jsonl" % COORD), recs)
+    old = time.time() - 3600
+    os.utime(tx, (old, old))
+    got = sc.report_py("--scan")
+    assert "indexed %s" % COORD[-12:] in got.out, got.out + got.err
+    lines = sc.index_lines()
+    assert len(lines) == 1, lines
+    entry = json.loads(lines[0])
+    assert entry["src"] == "scan", entry
+    assert_no_orders(sc, entry, recs)
+
+
+def test_31d_recipient_a_send_to_main_is_kept(sc):
+    recs = coordinator_records([send_to_main()])
+    entry = hook_capture(sc, recs)
+    body = body_of(sc.store / entry["body"])
+    assert "## SendMessage 1 -> main" in body, body[:300]
+    assert "ROUND REPORT FOR THE LEAD" in body
+    assert "## SendMessage 2" not in body, "an order to a writer rode along with the lead's send"
+    assert entry["sends"] == 1, entry
+    assert entry["out"] == 22, entry
+    assert entry["relay"] is False, entry
+    assert entry["title"] == "ROUND REPORT FOR THE LEAD", entry["title"]
+    got = sc.report_py("--list", "--unread")
+    assert COORD[-12:] in got.out, "CONTROL: a row with a lead-bound send must stay unread"
+
+
+def plant_legacy(
+    sc: Scratch, rid: str, fixture: str, title: str, sends: int, body: str = ""
+) -> None:
+    """A row as the pre-change capture wrote it: no `out` key, `sends` counting every send, titled from the last order."""
+    text = body or (FIXTURES / fixture).read_text(encoding="utf-8")
+    rel = "testbr/%s.md" % rid
+    (sc.store / "testbr").mkdir(parents=True, exist_ok=True)
+    (sc.store / rel).write_text(text, encoding="utf-8")
+    row = {
+        "ev": "report",
+        "id": rid,
+        "at": datetime.datetime.now(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "branch": "testbr",
+        "agent": "general-purpose",
+        "type": "general-purpose",
+        "session": READER[:8],
+        "body": rel,
+        "bytes": len(text.encode("utf-8")),
+        "silent": False,
+        "sends": sends,
+        "opens": 0,
+        "bkey": rid[:16],
+        "tx": "ok",
+        "title": title,
+        "transcript": "",
+        "src": "hook",
+    }
+    with sc.index.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(row, separators=(",", ":")) + "\n")
+
+
+def test_31e_recipient_legacy_coordinator_rows_are_not_unread(sc):
+    plant_legacy(
+        sc,
+        "a7e2ca09a227",
+        "coordinator-report-01.body",
+        "Brief addition (operator order): the report must end with a TICK block",
+        11,
+    )
+    plant_legacy(
+        sc,
+        "a7e2ca09a227-15",
+        "coordinator-report-15.body",
+        "Coordinator ruling: the boundary now also covers the matching test directory",
+        21,
+    )
+    report = wlfix.import_wl("wl_report")
+    assert report.unread(sc.store, "testbr", READER) == [], (
+        "a legacy coordinator row read as unread"
+    )
+    got = sc.report_py("--list", "--unread")
+    assert "no UNREAD reports" in got.out, got.out
+    assert "a7e2ca09a227" not in got.out, got.out
+    assert sc.surface("--session-start", "startup") == "", "a coordinator row surfaced"
+    # History still lists both, re-judged: marked relay and titled from the final message.
+    listing = sc.report_py("--list").out
+    assert listing.count("[relay]") == 2, listing
+    assert "Coordinator ruling" not in listing, listing
+    assert "Brief addition" not in listing, listing
+    for entry in report.read_index(sc.store):
+        judged = report.rejudge(sc.store, entry)
+        assert judged["sends"] == 0, judged
+        assert judged["out"] in (11, 21), judged
+        assert not judged["title"].startswith("Coordinator ruling"), judged["title"]
+
+
+def test_31f_recipient_control_legacy_rows_with_lead_substance_still_surface(sc):
+    """CONTROL: the re-judge drops orders, not reports. One copy differs only in one header naming `main`; the other only in a final message long enough to be a report."""
+    fifteen = (FIXTURES / "coordinator-report-15.body").read_text(encoding="utf-8")
+    to_main = re.sub(r"^(## SendMessage 21 -> )\S+", r"\1main", fifteen, flags=re.MULTILINE)
+    assert to_main != fifteen, "the fixture has no 21st send header to retarget"
+    plant_legacy(sc, "aaaa00000001", "", "Coordinator ruling: x", 21, body=to_main)
+    long_final = fifteen + "\n" + "A real report paragraph for the lead. " * 20
+    plant_legacy(sc, "aaaa00000002", "", "Coordinator ruling: y", 21, body=long_final)
+    report = wlfix.import_wl("wl_report")
+    got = {e["id"]: e for e in report.unread(sc.store, "testbr", READER)}
+    assert set(got) == {"aaaa00000001", "aaaa00000002"}, got
+    assert got["aaaa00000001"]["sends"] == 1, got["aaaa00000001"]
+    assert got["aaaa00000001"]["title"].startswith("Coordinator ruling: the boundary"), got
+    assert got["aaaa00000002"]["title"].startswith("Load is"), got["aaaa00000002"]["title"]
+    # And a legacy row with no sends at all is returned exactly as indexed.
+    plant_legacy(sc, "aaaa00000003", "", "plain final", 0, body="## Final message\n\n" + BIG)
+    row = next(e for e in report.read_index(sc.store) if e["id"] == "aaaa00000003")
+    assert report.rejudge(sc.store, row) is row
+    # Both header kinds in one body: an `## Outgoing` section never counts as lead-bound, even when its `to` reads `main`.
+    mixed = (
+        "## SendMessage 1 -> main\n\nLEAD PART\n\n"
+        "## Outgoing 1 -> main\n\nmislabelled order\n\n"
+        "## Outgoing 2 -> a0000000000000001\n\nan order\n\n"
+        "## Final message\n\nDone."
+    )
+    plant_legacy(sc, "aaaa00000004", "", "an order", 3, body=mixed)
+    row = next(e for e in report.read_index(sc.store) if e["id"] == "aaaa00000004")
+    judged = report.rejudge(sc.store, row)
+    assert judged["sends"] == 1, judged
+    assert judged["out"] == 3, judged
+    assert judged["title"] == "LEAD PART", judged["title"]
+    assert judged["relay"] is False, judged
+
+
+# ---- direction from the spawn lineage (review findings 4e34cbde.2, 862dd224.1) ----
+
+PARENT_ID = "a1111111111111111"
+CHILD_ID = "a2222222222222222"
+SIBLING_ID = "a3333333333333333"
+BRIEF = "Coordinator ruling: own exactly these files and nothing else.\n" + "Detail. " * 80
+SHORT_REPORT = "DONE: commit abc1234, tests rc=0."
+
+
+def plant_meta(sc: Scratch, aid: str, parent: str = "", sub: str = "", name: str = "") -> None:
+    """The meta sidecar the harness writes beside a sub-agent transcript; `parent` is its `parentAgentId` ("" for one the lead spawned), `sub` a `workflows/<run>` subdirectory."""
+    where = sc.subagents_dir() / sub if sub else sc.subagents_dir()
+    where.mkdir(parents=True, exist_ok=True)
+    info: dict = {"agentType": "general-purpose", "spawnDepth": 2 if parent else 1}
+    if parent:
+        info["parentAgentId"] = parent
+    if name:
+        info["name"] = name
+    (where / ("agent-%s.meta.json" % aid)).write_text(json.dumps(info), encoding="utf-8")
+
+
+def sends_records(sender: str, sends: list, final: str) -> list[dict]:
+    start = datetime.datetime.now(datetime.UTC) - datetime.timedelta(minutes=5)
+
+    def rec(n, content):
+        return {
+            "type": "assistant",
+            "agentId": sender,
+            "sessionId": "sess1",
+            "gitBranch": "testbr",
+            "timestamp": (start + datetime.timedelta(seconds=n)).strftime("%Y-%m-%dT%H:%M:%S.000Z"),
+            "message": {"content": content},
+        }
+
+    recs = [
+        rec(n, [{"type": "tool_use", "name": "SendMessage", "input": {"to": to, "message": msg}}])
+        for n, (to, msg) in enumerate(sends)
+    ]
+    return [*recs, rec(len(sends), [{"type": "text", "text": final}])]
+
+
+def stop_with(sc: Scratch, sender: str, sends: list, final: str, sub: str = "") -> dict:
+    where = sc.subagents_dir() / sub if sub else sc.subagents_dir()
+    tx = write_transcript(where / ("agent-%s.jsonl" % sender), sends_records(sender, sends, final))
+    sc.raw_stop(
+        {
+            "agent_id": sender,
+            "agent_type": "general-purpose",
+            "session_id": READER,
+            "cwd": str(sc.repo),
+            "agent_transcript_path": str(tx),
+            "last_assistant_message": final,
+        }
+    )
+    return json.loads(sc.index_lines()[-1])
+
+
+def family(sc: Scratch) -> None:
+    plant_meta(sc, PARENT_ID)
+    plant_meta(sc, CHILD_ID, parent=PARENT_ID)
+    plant_meta(sc, SIBLING_ID, parent=PARENT_ID)
+
+
+def test_31i_direction_a_coordinators_long_brief_to_its_own_child_is_a_relay(sc):
+    """4e34cbde.2: one long brief to one writer is the one-peer SHAPE of a report, but the writer's meta names the sender as its parent, so it is an order and stays out of the lead's inbox."""
+    report = wlfix.import_wl("wl_report")
+    assert len(BRIEF.strip()) >= report.SILENT_FLOOR
+    # CONTROL: the shape rule alone reads this exact capture as a report titled from the order.
+    shape = report.judge([], [(CHILD_ID, BRIEF)], "Brief sent; waiting.")
+    assert shape == (False, "Coordinator ruling: own exactly these files and nothing else."), shape
+    family(sc)
+    entry = stop_with(sc, PARENT_ID, [(CHILD_ID, BRIEF)], "Brief sent; waiting.")
+    assert entry["relay"] is True, entry
+    assert not entry["title"].startswith("Coordinator ruling"), entry["title"]
+    assert entry["dir"] == "down", entry
+    assert entry["silent"] is False, entry
+    got = sc.report_py("--list", "--unread")
+    assert PARENT_ID[-12:] not in got.out, got.out
+    # Fan-out to two children is a relay too.
+    entry = stop_with(sc, PARENT_ID, [(CHILD_ID, BRIEF + " 2"), (SIBLING_ID, BRIEF)], "Waiting.")
+    assert (entry["dir"], entry["relay"]) == ("down", True), entry
+    # A coordinator whose final text reaches RELAY_FLOOR still surfaces, titled from that final.
+    long_final = "ROUND SUMMARY FOR THE LEAD\n" + "Finding with evidence. " * 40
+    assert len(long_final) >= report.RELAY_FLOOR
+    entry = stop_with(sc, PARENT_ID, [(CHILD_ID, BRIEF + " 3")], long_final)
+    assert (entry["dir"], entry["relay"]) == ("down", False), entry
+    assert entry["title"] == "ROUND SUMMARY FOR THE LEAD", entry["title"]
+
+
+def test_31j_direction_a_childs_short_report_to_its_parent_is_shown(sc):
+    """862dd224.1: a report under SILENT_FLOOR to the coordinator, with a short sign-off, is the shape of a relay; the sender's meta names the recipient as its parent, so it is a report and reaches the lead's inbox, titled from the report."""
+    report = wlfix.import_wl("wl_report")
+    assert len(SHORT_REPORT) < report.SILENT_FLOOR
+    # CONTROL: the shape rule alone hides this exact capture.
+    assert report.judge([], [(PARENT_ID, SHORT_REPORT)], "Sent.")[0] is True
+    family(sc)
+    entry = stop_with(sc, CHILD_ID, [(PARENT_ID, SHORT_REPORT)], "Sent.")
+    assert entry["relay"] is False, entry
+    assert entry["title"] == SHORT_REPORT, entry["title"]
+    assert entry["dir"] == "up", entry
+    got = sc.report_py("--list", "--unread")
+    assert CHILD_ID[-12:] in got.out, got.out
+
+
+def test_31k_direction_unknown_lineage_keeps_the_shape_rule(sc):
+    """No meta for either side, and a send to a sibling, both leave the direction unsettled: the shape rule decides exactly as before, and the row says so with `dir` "?"."""
+    # No metas at all: the 862dd224.1 shape is still a relay, the 4e34cbde.2 shape still a report.
+    entry = stop_with(sc, CHILD_ID, [(PARENT_ID, SHORT_REPORT)], "Sent.")
+    assert (entry["dir"], entry["relay"]) == ("?", True), entry
+    entry = stop_with(sc, PARENT_ID, [(CHILD_ID, BRIEF)], "Brief sent; waiting.")
+    assert (entry["dir"], entry["relay"]) == ("?", False), entry
+    assert entry["title"].startswith("Coordinator ruling"), entry["title"]
+    # Siblings (both children of one coordinator) do not settle it either.
+    family(sc)
+    entry = stop_with(sc, CHILD_ID, [(SIBLING_ID, SHORT_REPORT + " sib")], "Sent.")
+    assert (entry["dir"], entry["relay"]) == ("?", True), entry
+    # A send to the lead is the report whatever the lineage, and a capture with no non-lead send says so.
+    entry = stop_with(sc, SIBLING_ID, [("main", "LEAD REPORT\n" + BIG)], "Done.")
+    assert (entry["dir"], entry["relay"]) == ("-", False), entry
+    assert entry["title"] == "LEAD REPORT", entry["title"]
+
+
+def test_31l_direction_helpers():
+    """`judge` without lineage is the shape rule; `direction` shows on ONE send up and hides only on EVERY send down."""
+    report = wlfix.import_wl("wl_report")
+    shape = report.judge([], [(CHILD_ID, BRIEF)], "w")
+    assert report.judge([], [(CHILD_ID, BRIEF)], "w", None) == shape
+    assert report.judge([], [(CHILD_ID, BRIEF)], "w", {}) == shape
+    kin = {PARENT_ID: "parent", CHILD_ID: "child"}
+    assert report.direction([], kin) == "-"
+    assert report.direction([(CHILD_ID, "x")], kin) == "down"
+    assert report.direction([(CHILD_ID, "x"), (PARENT_ID, "y")], kin) == "up"
+    assert report.direction([(CHILD_ID, "x"), (SIBLING_ID, "y")], kin) == "?"
+    # Up wins over down, and the title is the report to the parent, not the order.
+    relay, title = report.judge([], [(PARENT_ID, "UP REPORT"), (CHILD_ID, BRIEF)], "ok", kin)
+    assert (relay, title) == (False, "UP REPORT")
+
+
+def test_31m_direction_kin_of_reads_the_sidecars(sc):
+    """Both edges, by id and by teammate name, a workflow agent's meta dir, and a `to` that is not an id refused before it touches a path."""
+    report = wlfix.import_wl("wl_report")
+    plant_meta(sc, PARENT_ID, name="coord")
+    plant_meta(sc, CHILD_ID, parent=PARENT_ID, name="writer-1")
+    plant_meta(sc, SIBLING_ID, parent=PARENT_ID, sub="workflows/run1")
+    tx = sc.subagents_dir() / ("agent-%s.jsonl" % PARENT_ID)
+    tos = {CHILD_ID, SIBLING_ID, "writer-1", "main", "../evil", "console-34"}
+    got = report.kin_of(PARENT_ID, str(tx), tos)
+    assert got == {CHILD_ID: "child", SIBLING_ID: "child", "writer-1": "child"}, got
+    wf_tx = sc.subagents_dir() / "workflows" / "run1" / ("agent-%s.jsonl" % SIBLING_ID)
+    assert report.kin_of(SIBLING_ID, str(wf_tx), {PARENT_ID}) == {PARENT_ID: "parent"}
+    assert report.kin_of(CHILD_ID, str(tx), {"coord", "writer-1"}) == {"coord": "parent"}
+    # No transcript, or one outside any `subagents` directory: unknown.
+    assert report.kin_of(CHILD_ID, "", {PARENT_ID}) == {}
+    assert report.kin_of(CHILD_ID, str(sc.t / "x.jsonl"), {PARENT_ID}) == {}
+    # A workflow agent's own capture reads its lineage too.
+    entry = stop_with(sc, SIBLING_ID, [(PARENT_ID, SHORT_REPORT)], "Sent.", sub="workflows/run1")
+    assert (entry["dir"], entry["relay"]) == ("up", False), entry
+
+
+def test_31n_direction_hook_and_scan_agree(sc):
+    """`--scan` captures through the same `capture`, so it reaches the hook's verdict on the same transcript."""
+    family(sc)
+    hooked = stop_with(sc, PARENT_ID, [(CHILD_ID, BRIEF)], "Brief sent; waiting.")
+    tx = write_transcript(
+        sc.subagents_dir() / ("agent-%s.jsonl" % CHILD_ID),
+        sends_records(CHILD_ID, [(PARENT_ID, SHORT_REPORT)], "Sent."),
+    )
+    old = time.time() - 3600
+    os.utime(tx, (old, old))
+    got = sc.report_py("--scan")
+    assert "indexed %s" % CHILD_ID[-12:] in got.out, got.out + got.err
+    scanned = json.loads(sc.index_lines()[-1])
+    assert scanned["src"] == "scan", scanned
+    assert (scanned["dir"], scanned["relay"], scanned["title"]) == ("up", False, SHORT_REPORT)
+    assert (hooked["dir"], hooked["relay"]) == ("down", True), hooked
+
+
+def test_31o_direction_rows_without_the_field_read_as_before(sc):
+    """A row captured before `dir` keeps its stored `relay` (it carries `out`, so `rejudge` leaves it alone), and a legacy row with no `out` is still re-judged by the shape rule."""
+    report = wlfix.import_wl("wl_report")
+    family(sc)
+    shown = stop_with(sc, CHILD_ID, [(PARENT_ID, SHORT_REPORT)], "Sent.")
+    assert shown["dir"] == "up", shown
+    assert shown["relay"] is False, shown
+    old = {k: v for k, v in shown.items() if k != "dir"}
+    old.update({"id": "abcdabcdabcd", "relay": True, "bkey": "0" * 16})
+    with sc.index.open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps(old, separators=(",", ":")) + "\n")
+    assert report.rejudge(sc.store, old) is old
+    ids = {str(e["id"]) for e in report.unread(sc.store, "testbr", READER)}
+    assert CHILD_ID[-12:] in ids, ids
+    assert "abcdabcdabcd" not in ids, "a pre-field row was re-judged by the lineage"
+    fifteen = (FIXTURES / "coordinator-report-15.body").read_text(encoding="utf-8")
+    plant_legacy(sc, "aaaa00000009", "", "Coordinator ruling: z", 21, body=fifteen)
+    row = next(e for e in report.read_index(sc.store) if e["id"] == "aaaa00000009")
+    judged = report.rejudge(sc.store, row)
+    assert judged["relay"] is True, judged
+    assert "dir" not in judged, judged
+
+
+def test_lead_recipients_match_in_any_case_and_a_blank_lead_title_falls_back():
+    """Reviews 0009f584.3 and 4e34cbde.3: "Team-Lead" is the lead, and a lead-bound send with no text titles from the final message."""
+    report = wlfix.import_wl("wl_report")
+    assert report.is_lead("Main")
+    assert report.is_lead(" Team-Lead ")
+    assert not report.is_lead("worker")
+    assert report.judge(["\n  \n"], [], "Final words here")[1] == "Final words here"
+
+
+def test_an_agent_id_with_a_trailing_newline_is_refused(tmp_path):
+    """Review 1468d197.1: `$` matched before a trailing newline."""
+    report = wlfix.import_wl("wl_report")
+    (tmp_path / "agent-a1111.meta.json").write_text("{}", encoding="utf-8")
+    assert report._meta(tmp_path, "a1111") == {}
+    assert report._meta(tmp_path, "a1111\n") is None
+
+
+def test_kin_of_reads_the_sidecars_once_per_name(tmp_path, monkeypatch):
+    """Review 1468d197.2: two sends to one unresolved name walked the sidecar tree once, not twice per send."""
+    report = wlfix.import_wl("wl_report")
+    root = tmp_path / "s" / "subagents"
+    root.mkdir(parents=True)
+    (root / "agent-asender.meta.json").write_text("{}", encoding="utf-8")
+    calls: list[str] = []
+    real = report._named
+
+    def counting(r, n):
+        calls.append(n)
+        return real(r, n)
+
+    monkeypatch.setattr(report, "_named", counting)
+    report.kin_of("asender", str(root / "agent-asender.jsonl"), ["bob", "bob", "bob"])
+    assert calls == ["bob"]
+
+
+def test_a_payload_quoting_a_section_heading_stays_in_its_section():
+    """Review 862dd224.3: a lead-bound message holding a `## Outgoing 1 -> x` line was split into a second section on read-back."""
+    report = wlfix.import_wl("wl_report")
+    quoted = "see this heading:\n## Outgoing 1 -> x\nand this one\n## Final message\n\nnot final"
+    body = report.assemble_body([{"to": "main", "message": quoted}], "the sign-off")
+    parts, final = report.body_parts(body)
+    assert [(k, t) for k, t, _m in parts] == [("SendMessage", "main")]
+    assert final == "the sign-off"
+    assert "not final" in parts[0][2]
+
+
+def test_a_body_stored_by_the_old_defang_reads_back_as_written():
+    """Review d412dae6.2: the old `_defang` wrote a quoted heading as `\\## Outgoing 1 -> x` (one backslash, no escape of lines that were already backslashed). That form is the same one the new `_defang` writes for such a line, so both storages read back to the original; no stored body on disk carries a backslash-led heading line that the old writer left verbatim (grep of ~/.claude/agent-reports, 2026-11-07)."""
+    report = wlfix.import_wl("wl_report")
+    old = "## SendMessage 1 -> main\n\nsee\n\\## Outgoing 1 -> x\nend\n\n## Final message\n\ndone"
+    parts, final = report.body_parts(old)
+    assert parts[0][2] == "see\n## Outgoing 1 -> x\nend"
+    assert final == "done"
+
+
+# ---- R20261101.4: the unread-reports block names the listing verb ------------------------------
+
+
+def test_r4_the_unread_block_names_a_listing_verb_that_runs(sc):
+    """Reviews 58876982.1-.3: the listing line uses the same absolute wl_report.py path as its neighbours, the older-not-shown row points at it rather than repeating it, and the advertised command is run here, not only matched as text."""
+    msgs = wlfix.import_wl("worklist_messages")
+    rp = "/x/wl_report.py"
+    block = msgs.N_UNREAD_REPORTS % (3, "br", "    row", rp, rp, rp, "aaaaaaaa")
+    line = next(ln for ln in block.splitlines() if "list unread:" in ln)
+    assert line.strip() == "list unread: python3 %s --list --unread" % rp, line
+    older = msgs.N_UNREAD_OLDER % (4, "    row")
+    assert "4 older not shown" in older, older
+    assert "--list" not in older, older
+    got = sc.py("wl_report.py", "--list", "--unread")
+    assert got.rc == 0, got.err
+    assert "unknown mode" not in got.out + got.err
+
+
+def test_r4_an_unknown_mode_prints_the_usage_line(sc):
+    got = sc.py("wl_report.py", "--unread")
+    assert got.rc == 2, got.rc
+    assert "unknown mode --unread" in got.err, got.err
+    assert "usage: wl_report.py --subagent-stop" in got.err, got.err
+    assert "--list [--unread|--all]" in got.err, got.err
+    # CONTROL: a real mode does not print the unknown-mode line.
+    ok = sc.py("wl_report.py", "--list", "--unread")
+    assert "unknown mode" not in ok.out + ok.err

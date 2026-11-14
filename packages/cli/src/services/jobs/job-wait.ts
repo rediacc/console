@@ -43,7 +43,7 @@ export interface JobWaitDeps {
   /** J6 seam: follow a proxy ticket with short polls. Absent until the proxy client lands. */
   followProxy?: (ticket: Ticket, signal: AbortSignal) => Promise<JobStatus | undefined>;
   /** Resolve a ticket stuck at `starting` through `job list --request-id`. Absent until renet supports it (J1b). */
-  resolveStarting?: (ticket: Ticket) => Promise<string | undefined>;
+  resolveStarting?: (ticket: Ticket) => Promise<string | null | undefined>;
   /**
    * Replay a finished job's whole log from line 0 into `onEvent`. Used when a step that reads the job's output is due
    * and this observer did not see the whole stream (a ticket finished while away, a follow resumed past line 0).

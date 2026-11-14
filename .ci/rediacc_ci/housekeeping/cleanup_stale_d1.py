@@ -80,7 +80,7 @@ import os
 import subprocess
 import sys
 
-from rediacc_ci import log
+from rediacc_ci import log, paths
 from rediacc_ci.core import common, wrangler
 
 # `PREFIX="migration-test-"` (line 25). The trailing dash is part of it.
@@ -189,6 +189,11 @@ def compute_cutoff(max_age: str) -> tuple[str | None, int]:
     return proc.stdout.decode("utf-8", errors="replace").rstrip("\n"), 0
 
 
+def worker_dir() -> str:
+    """`workers/account`, whose `node_modules/.bin/wrangler` `npx --no-install` finds from there (it never reads PATH, finding e69747ea). The CI job's global install is found from any directory, so the move changes nothing there."""
+    return str(paths.repo_root() / "workers" / "account")
+
+
 def list_databases() -> str:
     """`npx wrangler d1 list --json 2>/dev/null || true`.
 
@@ -199,6 +204,7 @@ def list_databases() -> str:
         try:
             proc = subprocess.run(
                 [*wrangler.ARGV, "d1", "list", "--json"],
+                cwd=worker_dir(),
                 stdout=subprocess.PIPE,
                 stderr=null,
                 check=False,
@@ -218,6 +224,7 @@ def delete_database(name: str) -> bool:
         try:
             code = subprocess.run(
                 [*wrangler.ARGV, "d1", "delete", name, "--skip-confirmation"],
+                cwd=worker_dir(),
                 stderr=null,
                 check=False,
             ).returncode

@@ -18,7 +18,7 @@ import re
 from rediacc_ci import log
 
 NAME = "clean.jsonl"
-VERDICTS = ("clean", "skipped (gitlink-only)", "skipped (no-review)")
+VERDICTS = ("clean", "skipped (gitlink-only)", "skipped (no-review)", "skipped (record-only)")
 SHA40 = re.compile(r"^[0-9a-f]{40}$")
 BUMPS = ("none", "patch", "minor", "major")
 

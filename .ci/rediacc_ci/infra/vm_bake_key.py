@@ -87,6 +87,8 @@ PACKAGES: dict[str, str | dict[str, str]] = {
         "helpers.go": EXCLUDE,
     },
     "pkg/config": HASH,
+    # setup's createSystemDirectories makes /var/run/rediacc, /var/lib/rediacc and /var/log/rediacc through runpaths.EnsureDir, forcing mode 0755 whatever the umask; those directories and their modes stay on the baked disk.
+    "pkg/runpaths": HASH,
     "pkg/infra/pkgset": HASH,
     # writeAptConf rewrites the stock Ubuntu apt sources to HTTPS with it (renet beb1e87); the rewritten files stay on the baked disk.
     "pkg/infra/aptsources": HASH,

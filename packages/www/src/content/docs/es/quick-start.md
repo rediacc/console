@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: -1
 language: es
-sourceHash: "05e87ddd9ad815ff"
-sourceCommit: "3bd4b6e7faf8cd6cb396d19e31b222cbc97d1ff4"
+sourceHash: "1a57c2ff08008d4e"
+sourceCommit: "c1e4f1e1584c84a89aaa6b606f4195df0d6725b0"
 ---
 
 # Inicio rápido
@@ -223,7 +223,7 @@ rdc backup usage
 
 Los snapshots se suben al almacenamiento fragmentado, que necesita un servidor de cuenta y un repositorio con licencia. Solo se almacenan los datos que cambiaron, así que un segundo snapshot del mismo repositorio cuesta la diferencia en vez de la imagen completa.
 
-Los backups tienen un único tipo de destino, el almacenamiento fragmentado alojado en el servicio, y `--to` en `repo push` solo acepta una máquina. La retención se declara por linaje de repositorio con `rdc backup retention set`, y las ejecuciones programadas salen de `rdc backup strategy set` más `rdc backup schedule`. Consulta [Copia de seguridad y restauración](/es/docs/backup-restore).
+Los backups van a almacenes registrados: `home`, el almacén alojado que tiene toda suscripción, además de una segunda región alojada o un bucket del cliente, cada uno indicado con el `--target` de un destino (consulta [Destinos de backup](/es/docs/backup-destinations)). `--to` en `repo push` solo acepta una máquina. La retención se declara por linaje de repositorio con `rdc backup retention set`, y las ejecuciones programadas salen de `rdc backup strategy set` más `rdc backup schedule`. Consulta [Copia de seguridad y restauración](/es/docs/backup-restore).
 
 ### 4. Pull desde remoto
 

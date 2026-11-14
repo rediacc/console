@@ -6,9 +6,10 @@ because the journal is deliberately off under $WORKLIST_STORE_DIR; one control p
 
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 import wl_core as C
@@ -148,3 +149,48 @@ def test_a_linked_checkout_journal_is_its_own(repo, tmp_path):
     jd = S.journal_dir(linked)
     assert jd == private.resolve() / S.JOURNAL_DIR_NAME
     assert S.journal_dir(repo) == repo / ".git" / S.JOURNAL_DIR_NAME
+
+
+def test_event_order_sorts_an_infinite_or_junk_ns_as_zero():
+    """json.loads accepts `Infinity`, and int(inf) raises OverflowError (review 51610e8b.1); the key must not raise. Control: a finite ns keeps its value."""
+    inf = json.loads('{"at": "2026-01-01T00:00:00Z", "ns": Infinity}')
+    assert S.event_order(inf) == ("2026-01-01T00:00:00Z", 0)
+    assert S.event_order({"at": "x", "ns": "abc"}) == ("x", 0)
+    assert S.event_order({"at": "x", "ns": 7}) == ("x", 7)
+
+
+def test_an_added_aws_key_id_never_reaches_the_tracked_store(repo):
+    # 2026-11-10: an `add` quoting an AWS key id went straight into agent/worklist; only the lint read secret shapes.
+    key = "AKIA" + "ABCDEFGHIJKL" + "VCE5"
+    rid = S.add_item(worklist(), ME, "(%s) bws holds %s, a key of the EU user" % (ME, key))
+    stored = "".join(p.read_text() for p in S.store_dir(repo).glob("*.jsonl"))
+    assert key not in stored
+    assert "AKIA...VCE5" in stored
+    assert "AKIA...VCE5" in S.load(worklist(), sync=False).by_id[rid]["text"]
+
+
+@pytest.mark.usefixtures("repo")
+def test_control_a_note_without_a_secret_shape_is_stored_verbatim() -> None:
+    rid = S.add_item(worklist(), ME, "(%s) rotate the AKIA keys for ses-eu" % ME)
+    assert (
+        S.load(worklist(), sync=False).by_id[rid]["text"]
+        == "(%s) rotate the AKIA keys for ses-eu" % ME
+    )
+
+
+def test_a_secret_nested_in_an_event_value_is_redacted_too() -> None:
+    key = "AKIA" + "ABCDEFGHIJKL" + "ZBCP"
+    ev: dict[str, Any] = {"ev": "x", "notes": [{"t": "holds %s" % key}], "meta": {"k": [key]}}
+    S._redact_secret_shapes(ev)
+    assert key not in json.dumps(ev)
+    assert ev["notes"][0]["t"] == "holds AKIA...ZBCP"
+    assert ev["meta"]["k"] == ["AKIA...ZBCP"]
+
+
+def test_a_secret_used_as_a_nested_key_or_in_a_tuple_is_redacted() -> None:
+    key = "AKIA" + "ABCDEFGHIJKL" + "OQGI"
+    ev: dict[str, Any] = {"ev": "x", "map": {key: 1}, "pair": (key, "y")}
+    S._redact_secret_shapes(ev)
+    assert key not in json.dumps(ev)
+    assert "AKIA...OQGI" in ev["map"]
+    assert ev["pair"] == ["AKIA...OQGI", "y"]

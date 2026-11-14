@@ -32,6 +32,20 @@ describe('VS Code session environment', () => {
     expect(env.DOCKER_HOST).toBe(`unix://${WK_RUNTIME_DIR}/net-7104/docker-7104.sock`);
   });
 
+  // renet creates the universal user rediacc as uid 7111 (config.RediaccUID); a session told 1000 chowns files to a uid no machine user holds.
+  it("exports the universal user's real uid as UNIVERSAL_USER_ID", () => {
+    const env = buildRepositoryEnvironment({
+      teamName: 't',
+      machineName: 'm',
+      repositoryName: 'app',
+      datastore: '/srv/ds',
+      repositoryPath: '/mounts/guid',
+      universalUser: 'rediacc',
+      networkId: '7104',
+    });
+    expect(env.UNIVERSAL_USER_ID).toBe('7111');
+  });
+
   it('refuses a repository with no network id instead of using the system Docker socket', () => {
     expect(() =>
       buildRepositoryEnvironment({

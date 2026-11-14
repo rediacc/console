@@ -27,6 +27,10 @@ const mockSetRepositoryPlacement = vi.hoisted(() => vi.fn().mockResolvedValue(un
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
     getRepository: mockGetRepository,
+    // The create's duplicate check reads the live grand; these tests drive it through getRepository.
+    getLiveGrand(this: { getRepository: (n: string) => Promise<unknown> }, name: string) {
+      return this.getRepository(name);
+    },
     addRepository: mockAddRepository,
     allocateNetworkId: vi.fn().mockResolvedValue(99999),
     removeRepository: vi.fn(),
@@ -229,8 +233,8 @@ describe('G4 wiring (source): verbs behind executors and prompts', () => {
     expect(hook).toBeGreaterThan(settle);
   });
 
-  it('promote reconciles the machine after the fork ref is renamed', () => {
-    const body = sourceFrom('repo-promote.ts', 'repository_promote');
+  it('promote reconciles the machine after the fork ref is renamed, in its settlePromote success step', () => {
+    const body = sourceFrom('repo-promote.ts', "bindStepHandler('settlePromote'");
     const rename = body.indexOf('await configService.removeRepository(forkRef)');
     const hook = body.indexOf('await reconcileBackupSchedules(machineName)');
     expect(rename).toBeGreaterThan(-1);

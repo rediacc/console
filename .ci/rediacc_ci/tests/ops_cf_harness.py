@@ -20,6 +20,8 @@ from rediacc_ci.tests import differential as diff
 
 ROOT = paths.repo_root()
 BASH = shutil.which("bash") or "/bin/bash"
+# The one fake R2 S3 endpoint the backup tests hand to code that only parses it.
+R2_ENDPOINT = "https://acct.r2.cloudflarestorage.com"
 
 REAL_TOOLS = (
     "jq",
@@ -107,9 +109,12 @@ if argv[:2] == ["wrangler", "deploy"]:
     print("Current Version ID: 0b1f2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d")
 if argv[:3] == ["wrangler", "deployments", "list"]:
     print(json.dumps([{{"created_on": "2026-10-28T00:00:00Z", "versions": [{{"version_id": "bb3e1ba3-0000-4000-8000-000000000000", "percentage": 100}}]}}]))
+# deploy_bench lists the Worker's secret names to delete the retired private key (finding 87f7acb9); an empty list is the clean Worker.
+if argv[:3] == ["wrangler", "secret", "list"]:
+    print("[]")
 if argv[:4] == ["wrangler", "r2", "bucket", "list"]:
-    print("name:           rediacc-configs-bench")
-    print("name:           rediacc-backups-bench")
+    print("name:           configs-bench")
+    print("name:           backups-bench")
 fail = os.environ.get("FAKE_NPX_FAIL")
 if fail and " ".join(argv).startswith(fail):
     sys.exit(int(os.environ.get("FAKE_NPX_RC", "1")))
@@ -208,6 +213,8 @@ class World:
             "scripts/ops/lib/cf-auth.sh",
             ".ci/config/well-known.env",
             ".ci/config/well-known.generated.sh",
+            ".ci/config/bench-production.json",  # reset_bench fails closed without the declaration
+            "regions.json",  # backup_d1 names the shared databases from it
         ):
             if not (ROOT / rel).is_file():  # a retired twin: only a re-freeze from bash needs it
                 continue
@@ -217,7 +224,10 @@ class World:
         (self.root / "workers/account/node_modules").mkdir(parents=True)
         (self.root / "workers/account/wrangler.bench.toml").write_text(
             # The [assets] line deploy_bench.bench_assets_refusal requires: the keyless bench portal builds outside ./dist.
-            '[assets]\ndirectory = "./bench/dist"\n\n[[r2_buckets]]\nbucket_name = "rediacc-configs-bench"\n'
+            '[assets]\ndirectory = "./bench/dist"\n\n'
+            '[[d1_databases]]\nbinding = "DB"\ndatabase_name = "account-bench"\n'
+            'database_id = "ac45c2de-053b-404c-bc47-9ad9cbd2bb15"\n\n'
+            '[[r2_buckets]]\nbinding = "CONFIG_BUCKET"\nbucket_name = "configs-bench"\n'
         )
         (self.root / "private/account/web/node_modules").mkdir(parents=True)
         (self.root / "private/account").mkdir(parents=True, exist_ok=True)
@@ -320,7 +330,8 @@ class World:
             },
             work=(str(self.root.parent),),
         )
-        if diff.regolden_mode(script) is None:
+        # A port re-record answered from a replay too, so the log and files are written back.
+        if diff.regolden_mode(script) != "bash":
             with self.log.open("a") as fh:
                 fh.write(got["log"])
             for rel, (mode, text) in json.loads(got["files"]).items():

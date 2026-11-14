@@ -63,7 +63,7 @@ import sys
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths, proc
-from rediacc_ci.core import bws_env, devbox, toolchain
+from rediacc_ci.core import bws_env, devbox, prepare_lock, toolchain
 from rediacc_ci.release import renet_key_gate
 from rediacc_ci.well_known import GO_DL_BASE
 
@@ -763,14 +763,19 @@ def ensure_deps(env: dict[str, str] | None = None) -> bool:
     if deps_are_current(env):
         log.debug("Dependencies are up-to-date (stamp matched)")
         return True
-    log.step("Installing dependencies...")
-    _must(["npm", "install"], cwd=root)
-    if not ensure_cpu_features_gypi(node_modules):
-        return False
-    log.step("Compiling native modules (blocked at install by ignore-scripts)...")
-    _must(["npm", "run", "install:natives"], cwd=root)
-    # Hashed AFTER the install, as the twin's `$(_deps_hash)` is: `npm install` may rewrite the lockfile.
-    write_stamp_hash(stamp, deps_hash(env))
+    # Exclusive, and the stamp read again under it: a second preparer that waited here finds the install done, and a reader holding the lock shared (`prepare_lock`) never has `node_modules` rewritten under it.
+    with prepare_lock.held(root, shared=False):
+        if deps_are_current(env):
+            log.debug("Dependencies are up-to-date (stamp matched)")
+            return True
+        log.step("Installing dependencies...")
+        _must(["npm", "install"], cwd=root)
+        if not ensure_cpu_features_gypi(node_modules):
+            return False
+        log.step("Compiling native modules (blocked at install by ignore-scripts)...")
+        _must(["npm", "run", "install:natives"], cwd=root)
+        # Hashed AFTER the install, as the twin's `$(_deps_hash)` is: `npm install` may rewrite the lockfile.
+        write_stamp_hash(stamp, deps_hash(env))
     return True
 
 
@@ -786,20 +791,32 @@ def ensure_packages_built(env: dict[str, str] | None = None) -> bool:
     """`ensure_packages_built`, `.ci/lib/local-common.sh:278`."""
     root = local_root_dir(env)
     stamp = os.path.join(root, ".ci", "cache", "build-packages.stamp")
+    if _packages_state(root, stamp)[1]:
+        log.debug("Shared packages are up-to-date (stamp matched)")
+        return True
+    # The build deletes `packages/shared/dist` before `tsc` writes it again, so it runs exclusive, after any reader holding the lock shared has finished, and the stamp is read again under the lock: a second builder that waited here finds the build done and deletes nothing (worklist #6fbf7fa3, `prepare_lock`).
+    with prepare_lock.held(root, shared=False):
+        current, built = _packages_state(root, stamp)
+        if built:
+            log.debug("Shared packages are up-to-date (stamp matched)")
+            return True
+        log.step("Building shared packages...")
+        child_env = dict(os.environ if env is None else env, PYTHONPATH=local_ci_dir(env))
+        _must(["python3", "-m", "rediacc_ci.setup.build_packages"], env=child_env)
+        write_stamp_hash(stamp, current)
+    return True
+
+
+def _packages_state(root: str, stamp: str) -> tuple[str, bool]:
+    """The tree hash of `packages/shared` and `packages/provisioning`, and whether both outputs exist with the stamp holding that hash."""
     current = _subst(_tree_hash_or_die(root, ["packages/shared", "packages/provisioning"]))
     saved = _subst(read_stamp_hash(stamp))
-    if (
+    built = (
         os.path.isdir(os.path.join(root, "packages", "shared", "dist"))
         and os.path.isdir(os.path.join(root, "packages", "provisioning", "dist"))
         and saved == current
-    ):
-        log.debug("Shared packages are up-to-date (stamp matched)")
-        return True
-    log.step("Building shared packages...")
-    child_env = dict(os.environ if env is None else env, PYTHONPATH=local_ci_dir(env))
-    _must(["python3", "-m", "rediacc_ci.setup.build_packages"], env=child_env)
-    write_stamp_hash(stamp, current)
-    return True
+    )
+    return current, built
 
 
 def ensure_cli_built(env: dict[str, str] | None = None) -> bool:
@@ -844,9 +861,81 @@ def prepare_node_deps_packages(env: dict[str, str] | None = None) -> bool:
     )
 
 
-def prepare_cli(env: dict[str, str] | None = None) -> bool:
-    """`rdc.sh`'s whole preparation as one call: node floor, dependencies, shared packages, the CLI bundle, renet. First failure stops it."""
-    return prepare_node_deps_packages(env) and ensure_cli_built(env) and ensure_renet_built(env)
+# Top-level verbs, and verb/subverb pairs, that never upload renet to a machine: the CLI declares them 'read-only' at their renet call sites (`packages/cli/src/__tests__/renet-access-ledger.test.ts`) or never reach a machine at all.
+_READ_ONLY_VERBS = frozenset(
+    {"term", "status", "config", "doctor", "version", "help", "completion"}
+)
+_READ_ONLY_PAIRS = frozenset(
+    {
+        ("machine", "status"),
+        ("machine", "health"),
+        ("job", "list"),
+        ("job", "status"),
+        ("job", "logs"),
+    }
+)
+# The CLI's global options (`packages/cli/src/cli.ts`): those that take a separate value, and those that do not. An option in neither set could swallow the next word, so the verb cannot be told and the command is not tolerated.
+_VALUE_FLAGS = frozenset({"--config", "--output", "-o", "--lang", "-l", "--proxy", "--fields"})
+_BOOLEAN_FLAGS = frozenset(
+    {
+        "--dev",
+        "-q",
+        "--quiet",
+        "-y",
+        "--yes",
+        "-b",
+        "--background",
+        "--help",
+        "-h",
+        "--version",
+        "-V",
+    }
+)
+
+
+def renet_build_tolerated(argv: list[str]) -> bool:
+    """Whether a renet build failure may be waved through for this `rdc.sh` command line (#680c2665).
+
+    WHY. `./rdc.sh` builds renet from the working tree on every call, so one uncommitted broken file from another session (`undefined: errors` in pkg/compose) failed every command, including read-only `term connect`. A read-only verb never uploads renet, so the last good `bin/renet` serves it. A mutating verb is NOT tolerated: it must fail on a broken build rather than run against a stale one. No verb at all (`--help`, `--version`, a bare `rdc.sh`) is read-only.
+    """
+    words: list[str] = []
+    skip = False
+    for arg in argv:
+        if skip:
+            skip = False
+        elif arg in _VALUE_FLAGS:
+            skip = True
+        elif not arg.startswith("-"):
+            words.append(arg)
+        elif arg in _BOOLEAN_FLAGS or ("=" in arg and arg.split("=", 1)[0] in _VALUE_FLAGS):
+            continue
+        else:
+            return False
+    if not words:
+        return True
+    return (
+        words[0] in _READ_ONLY_VERBS
+        or (words[0], words[1] if len(words) > 1 else "") in _READ_ONLY_PAIRS
+    )
+
+
+def prepare_cli(env: dict[str, str] | None = None, argv: list[str] | None = None) -> bool:
+    """`rdc.sh`'s whole preparation as one call: node floor, dependencies, shared packages, the CLI bundle, renet. The first failure stops it, except a renet build failure under a read-only command.
+
+    A renet build failure under a read-only command line (`renet_build_tolerated`) falls back to the last `bin/renet` with a warning instead of failing the command.
+    """
+    if not (prepare_node_deps_packages(env) and ensure_cli_built(env)):
+        return False
+    if ensure_renet_built(env):
+        return True
+    renet_bin = os.path.join(local_root_dir(env), "private", "renet", "bin", "renet")
+    if renet_build_tolerated(argv or []) and os.path.isfile(renet_bin):
+        log.warn(
+            "renet build failed; this command is read-only, so it runs with the last built %s"
+            % renet_bin
+        )
+        return True
+    return False
 
 
 def prompt_continue(message: str = "Continue?") -> bool:
@@ -1342,6 +1431,48 @@ def renet_head(renet_dir: str) -> str:
 
 RENET_STAMP_NAME = ".renet-build-stamp"
 
+# The per-worktree markers git leaves while an operation that can stop on a conflict is in progress.
+RENET_OPERATION_MARKERS = (
+    "CHERRY_PICK_HEAD",
+    "MERGE_HEAD",
+    "REVERT_HEAD",
+    "rebase-merge",
+    "rebase-apply",
+)
+
+
+def renet_mid_operation(renet_dir: str) -> str:
+    """Why renet's working tree cannot be built right now, "" when it can: unmerged paths, or a cherry-pick, merge, revert, rebase or am in progress (#fd1964b9).
+
+    WHY. On 2026-11-06 the lead was mid-cherry-pick in private/renet with conflict markers in pkg/i18n/locales/*.go, and every `./rdc.sh` call rebuilt renet from that tree and died on `syntax error: unexpected <<`. Only renet's own checkout is asked (the `renet_head` rule): from a plain directory inside the console, git would answer with the console's state.
+    """
+    top = _capture(["git", "rev-parse", "--show-toplevel"], quiet_err=True, cwd=renet_dir)
+    if top.returncode != 0 or os.path.realpath(_subst(top.stdout or "")) != os.path.realpath(
+        renet_dir
+    ):
+        return ""
+    unmerged = _capture(
+        ["git", "diff", "--name-only", "--diff-filter=U"], quiet_err=True, cwd=renet_dir
+    )
+    names = [line for line in (unmerged.stdout or "").splitlines() if line]
+    if names:
+        more = " and %d more" % (len(names) - 1) if len(names) > 1 else ""
+        return "%d unmerged path(s) (%s%s)" % (len(names), names[0], more)
+    # No `--path-format=absolute`: a git older than 2.31 refuses it and the check would read "nothing in progress". Each path is relative to renet_dir (or absolute) and is joined to it.
+    argv = ["git", "rev-parse"]
+    for marker in RENET_OPERATION_MARKERS:
+        argv += ["--git-path", marker]
+    paths = _capture(argv, quiet_err=True, cwd=renet_dir)
+    if paths.returncode != 0:
+        return ""
+    # strict: git answers one path per `--git-path`, and any other count is a git this function was not written against.
+    for marker, path in zip(
+        RENET_OPERATION_MARKERS, (paths.stdout or "").splitlines(), strict=True
+    ):
+        if os.path.exists(os.path.join(renet_dir, path)):
+            return "%s is present (an operation is in progress)" % marker
+    return ""
+
 
 def renet_stamp_key(source: str, head: str, account_key: str) -> str:
     """The digest `ensure_renet_built` stores in `bin/.renet-build-stamp`: the renet source fingerprint, renet's HEAD commit and the account key.
@@ -1440,6 +1571,12 @@ def renet_key_refusal(renet_bin: str, account_key: str) -> str | None:
     return None if passed else "%s does not bake the account key %s" % (renet_bin, want)
 
 
+def _stamped_bin(stamp: str) -> str:
+    """The `bin=` fingerprint `ensure_renet_built` wrote beside its stamp key, "" when there is none."""
+    lines = _subst(read_stamp_hash(stamp)).split("\n")
+    return "\n".join(line[len("bin=") :] for line in lines if line.startswith("bin="))
+
+
 def ensure_renet_built(
     env: dict[str, str] | None = None,
     status: list[int] | None = None,
@@ -1454,10 +1591,35 @@ def ensure_renet_built(
     system = _uname("-s")
     exe = ".exe" if system.startswith(("MINGW", "MSYS", "CYGWIN")) else ""
     renet_bin = os.path.join(renet_dir, "bin", "renet" + exe)
+    stamp = os.path.join(renet_dir, "bin", RENET_STAMP_NAME)
+
+    # A tree mid-cherry-pick holds conflict markers and cannot compile, so the last good build serves until the operation ends (#fd1964b9). "Good" is the stamp's AND the key check's: a binary the key gate refused has no stamp, one changed since has another fingerprint, and a stamped one that no longer bakes today's account key is refused below (review 520056bf.1).
+    paused = renet_mid_operation(renet_dir)
+    if paused:
+        if os.path.isfile(renet_bin) and _stamped_bin(stamp) == renet_artifact_fp(renet_bin):
+            # The stamp proves the binary is the one built, not that it bakes TODAY's account key (review 520056bf.1).
+            refusal = renet_key_refusal(renet_bin, resolve_renet_account_key(renet_dir, environ))
+            if refusal:
+                log.error(
+                    "private/renet has %s, so it cannot be built, and the last renet at %s is not usable: %s. Finish or abort the operation in private/renet, then rerun."
+                    % (paused, renet_bin, refusal)
+                )
+                raise LocalCommonError(
+                    "renet is mid-operation and the last binary %s" % refusal, code=1
+                )
+            log.warn(
+                "renet rebuild skipped: private/renet has %s; using the last good %s"
+                % (paused, renet_bin)
+            )
+            return True
+        log.error(
+            "private/renet has %s, so it cannot be built, and there is no last good renet at %s to use instead. Finish or abort the operation in private/renet, then rerun."
+            % (paused, renet_bin)
+        )
+        raise LocalCommonError("renet is mid-operation and no last good binary exists", code=1)
 
     check_go_installed()
 
-    stamp = os.path.join(renet_dir, "bin", RENET_STAMP_NAME)
     account_key = resolve_renet_account_key(renet_dir, environ)
 
     fingerprint = git_tree_fingerprint(renet_dir, ["."], env)
@@ -1469,10 +1631,8 @@ def ensure_renet_built(
         source = _subst(computed)
 
     current = renet_stamp_key(source, renet_head(renet_dir), account_key)
-    saved_stamp = _subst(read_stamp_hash(stamp))
-    saved_lines = saved_stamp.split("\n")
-    saved = saved_lines[0]
-    saved_bin = "\n".join(line[len("bin=") :] for line in saved_lines if line.startswith("bin="))
+    saved = _subst(read_stamp_hash(stamp)).split("\n")[0]
+    saved_bin = _stamped_bin(stamp)
 
     if (
         os.path.isfile(renet_bin)
@@ -1636,7 +1796,7 @@ _BOOL_VERBS = {
     "ensure-docker-installed": lambda _rest: ensure_docker_installed(),
     "ensure-docker-group": lambda _rest: ensure_docker_group(),
     "ensure-renet-built": lambda _rest: ensure_renet_built(),
-    "prepare-cli": lambda _rest: prepare_cli(),
+    "prepare-cli": lambda rest: prepare_cli(argv=rest),
     "prepare-node-deps-packages": lambda _rest: prepare_node_deps_packages(),
 }
 

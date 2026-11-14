@@ -39,9 +39,9 @@ from rediacc_ci import paths
 from rediacc_ci.core import bash_dialect
 from rediacc_ci.deploy import verify_edge_endpoints as port
 from rediacc_ci.tests import differential as diff
-from rediacc_ci.well_known import EDGE_ORIGIN, RELEASES_ORIGIN
+from rediacc_ci.well_known import RELEASES_ORIGIN, SITE_ORIGIN
 
-EDGE_HOST = EDGE_ORIGIN.removeprefix("https://")
+EDGE_HOST = SITE_ORIGIN.removeprefix("https://")
 RELEASES_HOST = RELEASES_ORIGIN.removeprefix("https://")
 
 if typing.TYPE_CHECKING:
@@ -115,7 +115,7 @@ def slug_for(url: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]", "_", base)
 
 
-def region_domains(field: str = "edgeDomain") -> list[str]:
+def region_domains(field: str = "domain") -> list[str]:
     """Read `regions.json` the same way the subject does, so the fixture cannot go stale when a region is added."""
     proc = subprocess.run(
         ["jq", "-r", ".regions[] | .%s" % field, str(REGIONS)],
@@ -169,6 +169,13 @@ def normalise_log(text: str) -> str:
     return re.sub(r"cb=\d+", "cb=N", text)
 
 
+def golden_hosts(text: str) -> str:
+    """The twin golden's hosts written in the hosts the port probes now (PLAN-product-domain-rename): `edge-<r>.rediacc.com` and `<r>.rediacc.com` became `<r>.rediacc.cloud`, and the edge site became the one `www` site. Every OTHER byte of the golden is still compared."""
+    text = re.sub(r"edge-(eu|us|asia)\.rediacc\.com", r"\1.rediacc.cloud", text)
+    text = re.sub(r"(?<![\w.-])(eu|us|asia)\.rediacc\.com", r"\1.rediacc.cloud", text)
+    return text.replace("edge.rediacc.com", EDGE_HOST)
+
+
 class Run:
     """One side's four observable outputs."""
 
@@ -177,6 +184,20 @@ class Run:
         self.out = out
         self.err = err
         self.log = normalise_log(log)
+
+
+def _port_answer(env: dict[str, str], log: pathlib.Path, tree, module: str):
+    """The re-record seam (`regolden --source port`): the real module's `(rc, out, err, curl_log)` over the OLD side's fixture and log, once the twin is deleted. A planted `port_file` is the NEW side's subject only and is never recorded."""
+    port_env = dict(env)
+    port_env["PYTHONPATH"] = str(ROOT / ".ci")
+    port_env["PYTHONDONTWRITEBYTECODE"] = "1"
+    if tree is not None:
+        port_env["REDIACC_CI_ROOT"] = str(tree)
+    command = "python3 -m %s" % module
+    return (
+        *diff.bash_streams(command, env=port_env, timeout=60),
+        log.read_text(encoding="utf-8"),
+    )
 
 
 def drive(
@@ -233,9 +254,10 @@ def drive(
                     *diff.bash_streams(command, env=env, timeout=60),
                     log.read_text(encoding="utf-8"),
                 ),
+                port=lambda log=log, env=env: _port_answer(env, log, tree, module),
                 work=(tmp_path,),
             )
-            runs.append(Run(rc, out, err, curl_log))
+            runs.append(Run(rc, golden_hosts(out), golden_hosts(err), golden_hosts(curl_log)))
             continue
         rc, out, err = diff.bash_streams(command, env=env, timeout=60)
         runs.append(Run(rc, out, err, log.read_text(encoding="utf-8")))

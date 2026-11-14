@@ -8,8 +8,8 @@ tags:
 subcategory: ai-agents
 order: 33
 language: de
-sourceHash: "442b5cfa49239dbc"
-sourceCommit: "20f014619af1ee41e75cd46a3c8e4abc5add0983"
+sourceHash: "9fcdf73439f82d82"
+sourceCommit: "7aedf8f834a72520b4ea8a4a1226b5b94afed2ae"
 ---
 
 ## Überblick
@@ -132,7 +132,7 @@ export REDIACC_ALLOW_GRAND_REPO='gitlab'   # ein Repo
 claude   # oder cursor, gemini, usw.
 ```
 
-Die Überschreibung wird gegen die Prozessabstammung verifiziert: Sie zählt nur, wenn sie bereits in der Umgebung des Agent-Prozesses selbst vorhanden war, was bedeutet, dass Sie sie exportiert haben, bevor der Agent (und der MCP-Server, den er startete) gestartet wurde. Ein Agent kann sich selbst Zugriff gewähren, indem er die Variable mitten in einer Sitzung setzt. Es gibt bewusst keine Server-Flag dafür: Eine Flag in den MCP-Server-Argumenten trägt keinen Beweis dafür, wer sie dort eingefügt hat, während die Abstammungsverifizierung das tut. Maschinenstufe-Zugriff (etwa `term connect -m <machine>` ohne Repo) erfordert weiterhin `*`; eine Liste von Repo-Namen schaltet ihn nicht frei.
+Die Überschreibung wird gegen die Prozessabstammung verifiziert: Sie zählt nur, wenn sie bereits in der Umgebung des Agent-Prozesses selbst vorhanden war, was bedeutet, dass Sie sie exportiert haben, bevor der Agent (und der MCP-Server, den er startete) gestartet wurde. Ein Agent kann sich selbst Zugriff gewähren, indem er die Variable mitten in einer Sitzung setzt. Es gibt bewusst keine Server-Flag dafür: Eine Flag in den MCP-Server-Argumenten trägt keinen Beweis dafür, wer sie dort eingefügt hat, während die Abstammungsverifizierung das tut. Maschinenstufe-Zugriff (etwa `term connect <machine>` ohne Repo) erfordert weiterhin `*`; eine Liste von Repo-Namen schaltet ihn nicht frei.
 
 ### Per-Repo-SSH-Schlüssel und serverseitige Sandbox
 

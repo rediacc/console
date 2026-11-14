@@ -6,14 +6,22 @@ on:
   pull_request:
     types: [opened, synchronize]
   schedule:
+    # WEEKLY, Sundays, since PLAN-health-checks-local D3: the scheduled run is
+    # the full union and the 5-OS stock-image fleet, which costs too much to run
+    # daily. The cheap clock-based checks run daily in `CI - Drift`
+    # (.github/workflows/ci-drift.yml), and the stable promotion reads this run
+    # as its test evidence for up to 8 days (rediacc_ci.release.nightly_tested_edge).
+    # The `report-schedule` job posts this run's verdict to the ops-health
+    # ingest (source `ci-weekly`).
+    #
     # DECLARED 01:00 UTC, ACTUALLY DISPATCHED just after 04:00. Measured across
-    # all 12 available scheduled runs: drift +2h53m to +3h35m, mean +3h15m,
+    # all 12 daily scheduled runs: drift +2h53m to +3h35m, mean +3h15m,
     # never once below +2h53m. That is GitHub deferring scheduled workflows on
     # the free plan, not jitter, and it is stated here because someone checking
     # at 01:05 finds no run and reasonably concludes the schedule is broken.
-    # The window to look in is 04:00-04:40 UTC; after that, a missing run IS a
-    # finding.
-    - cron: '0 1 * * *'
+    # The window to look in is 04:00-04:40 UTC on Sunday; after that, a missing
+    # run IS a finding.
+    - cron: '0 1 * * 0'
   # workflow_dispatch is the NIGHTLY REHEARSAL, guarded to main by the first
   # step of `initialize`.
   #
@@ -63,7 +71,7 @@ permissions: {}
 #     commit supersedes an older one, which is the intended saving.
 #
 #   push (main)  -> keyed on 'ci-main', cancel-in-progress FALSE. Main is the
-#     release path: finalize-release-sentinel dispatches cd-v2, so cancelling a
+#     release path: finalize-release-sentinel dispatches cd-release-edge, so cancelling a
 #     main run mid-flight could interrupt a release. Queue instead.
 #
 #   everything else (schedule, workflow_dispatch) -> keyed on run_id, so they are
@@ -256,6 +264,7 @@ jobs:
       run_renet: ${{ steps.scope.outputs.run_renet }}
       # J9: 'true' when this push moved the private/renet pointer; see the step below.
       renet_changed: ${{ steps.renet-push.outputs.changed }}
+      backup_changed: ${{ steps.backup-push.outputs.changed }}
       run_license_enforcement: ${{ steps.scope.outputs.run_license_enforcement }}
       run_account_e2e: ${{ steps.scope.outputs.run_account_e2e }}
       run_drills: ${{ steps.scope.outputs.run_drills }}
@@ -328,32 +337,40 @@ jobs:
 
       # Login to GHCR for registry cache check
       - name: Login to GHCR
-        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
 
       # J9 (PLAN-backup-program): the renet go and integration jobs used to run only
-      # under `full_suite`, so a push to main that moved the private/renet pointer ran
-      # none of them. This decides, on a push, whether the gitlink moved between the
-      # pushed range's base and HEAD. 'true' on a hit and on anything it cannot decide
-      # (no base, unreachable base): fail open, the same direction as the scope engine.
-      # Every other event gets 'false' and the jobs follow `full_suite` as before. A
-      # gitlink diff needs no submodule checkout, only the two commits (fetch-depth 0).
-      - name: Decide whether private/renet changed in the push
+      # under `full_suite`. rediacc_ci.ci.renet_changed decides whether the private/renet
+      # gitlink moved: on a push, between the pushed range's base and HEAD; on a pull
+      # request, between the merge base with the PR base and HEAD. 'true' on a hit and
+      # on anything it cannot decide (no base, unreachable base): fail open, the same
+      # direction as the scope engine. Every other event gets 'false' and the jobs follow
+      # `full_suite` as before. A gitlink diff needs no submodule checkout, only the two
+      # commits (fetch-depth 0).
+      - name: Decide whether private/renet changed
         id: renet-push
         env:
           EVENT_NAME: ${{ github.event_name }}
           BEFORE_SHA: ${{ github.event.before }}
-        run: |
-          changed=false
-          if [ "$EVENT_NAME" = push ] && [ "${BEFORE_SHA//0/}" = "" ]; then changed=true; echo "a push that creates the branch has no base, so every renet leg runs"
-          elif [ "$EVENT_NAME" = push ]; then
-            if git cat-file -e "$BEFORE_SHA^{commit}" 2>/dev/null || git fetch --no-tags --filter=blob:none origin "$BEFORE_SHA"; then git diff --quiet "$BEFORE_SHA" HEAD -- private/renet || changed=true
-            else changed=true; echo "::warning::push base '$BEFORE_SHA' unavailable, so every renet leg runs"; fi
-          fi
-          echo "private/renet changed in this push: $changed"; echo "changed=$changed" >> "$GITHUB_OUTPUT"
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.renet_changed
+
+      # J6 (PLAN-backup-program): suite 26 (test-e2e-backup-browse-at) used to run only under
+      # `full_suite`. rediacc_ci.ci.backup_changed decides whether a backup path moved (the
+      # `backup` area of the proof tier map: its renet globs and its suite files),
+      # over the same range as the step above. Fail open like it: 'true' on anything it cannot
+      # decide, 'false' on every other event.
+      - name: Decide whether a backup path changed
+        id: backup-push
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BEFORE_SHA: ${{ github.event.before }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.backup_changed
 
       # Run consolidated initialization script
       - name: Initialize CI
@@ -547,13 +564,13 @@ jobs:
           GITHUB_REPOSITORY: ${{ github.repository }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.cancel_older_runs --timeout 60 --poll-interval 10
 
-      # The monitor itself lives in watchdog-monitor.yml as a chain of short
+      # The monitor itself lives in ops-watchdog-monitor.yml as a chain of short
       # ubuntu-slim generations: the 1-vCPU runner's 15-minute job cap is a
       # hard platform limit, so the old single 3-hour monitor job (which held
       # a standard runner for the whole run) cannot run there. This bootstrap
       # only dispatches generation 1; each generation re-dispatches the next
       # until the run completes or a terminal verdict fires. The WATCHDOG_*
-      # pattern env vars moved to watchdog-monitor.yml with the monitor step.
+      # pattern env vars moved to ops-watchdog-monitor.yml with the monitor step.
       - name: Start watchdog monitor chain
         env:
           GH_TOKEN: ${{ github.token }}
@@ -816,7 +833,6 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
             ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
@@ -857,28 +873,18 @@ jobs:
         env:
           STRIPE_SANDBOX_SECRET_KEY: ${{ env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
 
-      # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
-      # fetch serves the next step only, and the scrub after it blanks the key.
-      - name: Fetch the step-scoped signing key(s) for the next step only
-        uses: ./.github/actions/bws-secrets
-        with:
-          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
-          secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
+      # The signing pair is minted for this run (agent/plans/PLAN-production-key-only.md
+      # D6): the production private key never reaches this job, and the sandbox server's
+      # licences verify nothing outside it.
       - name: Start account server
         id: deploy
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_start_account
+        run: |
+          pair="$(PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --emit-pair)"
+          eval "$pair"
+          PYTHONPATH=.ci python3 -m rediacc_ci.infra.ci_start_account
         env:
-          ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
           ACCOUNT_SERVER_API_KEY: ${{ env.BWS_ACCOUNT_SERVER_API_KEY }}
           ACCOUNT_JWT_SECRET: ${{ env.BWS_ACCOUNT_JWT_SECRET }}
-      - name: Blank the step-scoped signing key(s) for the rest of the job
-        if: always()
-        uses: ./.github/actions/bws-scrub
-        with:
-          names: |
-            BWS_ACCOUNT_ED25519_PRIVATE_KEY
 
       - name: Verify account server health
         run: curl -sf http://localhost:3000/health
@@ -1212,7 +1218,7 @@ jobs:
       # A bump-none commit earns no tag and no GitHub release, so it must not
       # advance the R2 channel pointer either -- an edge manifest naming an
       # untagged version breaks `rdc` auto-update and, worse, feeds
-      # promote-stable a `ref: v<version>` that does not exist. See
+      # cd-release-stable a `ref: v<version>` that does not exist. See
       # agent/plans/PLAN-skip-release-gates-r2-manifest.md.
       skip_release: ${{ needs.initialize.outputs.skip_release }}
       renet_tag: ${{ needs.initialize.outputs.renet_tag }}
@@ -1242,13 +1248,11 @@ jobs:
     # on every distro and that nothing consumed; renet no longer does it.
     # The needs edge was pure critical-path cost (about 10.5 min), not a
     # real dependency.
-    # build-renet IS a real dependency (agent/plans/PLAN-free-license.md R2,
-    # F2): every VM/E2E leg installs the one renet that ci-build-renet.yml's
-    # renet-embed-assets job uploads (renet-test-linux-amd64-<sha>) instead of
-    # building its own.
+    # build-renet stays a dependency: its renet-embed-assets job stages the
+    # embedded assets the legs' own renet builds read from the cache.
     # always() below keeps the caller running when build-renet skips or fails,
     # so migration-test still runs on push-to-main; renet_built tells the legs
-    # that need the artifact to skip instead of dying in its download. A
+    # that need its output to skip instead of dying without it. A
     # failed build-renet still reds CI Complete through build-cli (HARD).
     needs: [initialize, build-renet]
     # full_suite moved from this `if:` into an INPUT so the workflow is still
@@ -1278,6 +1282,7 @@ jobs:
       run_fork_isolation: ${{ needs.initialize.outputs.run_fork_isolation }}
       run_renet: ${{ needs.initialize.outputs.run_renet }}
       renet_changed: ${{ needs.initialize.outputs.renet_changed }}
+      backup_changed: ${{ needs.initialize.outputs.backup_changed }}
       run_license_enforcement: ${{ needs.initialize.outputs.run_license_enforcement }}
       run_account_e2e: ${{ needs.initialize.outputs.run_account_e2e }}
       run_drills: ${{ needs.initialize.outputs.run_drills }}
@@ -1571,6 +1576,8 @@ jobs:
     # step below writes it to $GITHUB_STEP_SUMMARY. Cloudflare-side publish and
     # cleanup are untouched -- the operator's ask was to stop publishing them on
     # the GitHub side only.
+    outputs:
+      ed25519_public_key: ${{ steps.preview-secrets.outputs.ed25519_public_key }}
     env:
       PR_NUMBER: ${{ github.event.pull_request.number }}
     steps:
@@ -1594,10 +1601,10 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
             ACCOUNT_SERVER_API_KEY > BWS_ACCOUNT_SERVER_API_KEY
             ACCOUNT_X25519_PUBLIC_KEY > BWS_ACCOUNT_X25519_PUBLIC_KEY
+            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
             STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
             AWS_SES_ACCESS_KEY_ID_EU > BWS_AWS_SES_ACCESS_KEY_ID_EU
@@ -1713,16 +1720,19 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            ACCOUNT_ED25519_PRIVATE_KEY > BWS_ACCOUNT_ED25519_PRIVATE_KEY
             ACCOUNT_X25519_PRIVATE_KEY > BWS_ACCOUNT_X25519_PRIVATE_KEY
+      # The preview Worker holds NO licence private key (PLAN-enterprise-isolation S3): it signs
+      # through its LICENSE_SIGNER service binding to signer-bench-eu (deploy_www.PREVIEW_TOML), which
+      # signs with the production key. Only the public half is pushed, and it is the job output the
+      # smoke test verifies against.
       - name: Set preview worker secrets
+        id: preview-secrets
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
           # ONE NAME EVERYWHERE: the left side is the name the builder READS
           # and the key it WRITES into the Worker (private/account/src/types/
           # env.ts). The right side keeps the GitHub secret's current name.
-          ACCOUNT_ED25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_ED25519_PRIVATE_KEY }}
           ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
           ACCOUNT_X25519_PRIVATE_KEY: ${{ env.BWS_ACCOUNT_X25519_PRIVATE_KEY }}
           ACCOUNT_X25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_X25519_PUBLIC_KEY }}
@@ -1739,13 +1749,14 @@ jobs:
           CLOUDFLARE_TURNSTILE_SECRET_KEY: ${{ steps.create-widget.outputs.secret }}
           AWS_SES_FROM: ${{ env.BWS_AWS_SES_FROM }}
           AWS_SES_CONFIGURATION_SET: ${{ env.BWS_AWS_SES_CONFIGURATION_SET }}
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_preview_worker_secrets
+        run: |
+          echo "ed25519_public_key=${ACCOUNT_ED25519_PUBLIC_KEY}" >> "$GITHUB_OUTPUT"
+          PYTHONPATH=.ci python3 -m rediacc_ci.deploy.set_preview_worker_secrets
       - name: Blank the step-scoped signing key(s) for the rest of the job
         if: always()
         uses: ./.github/actions/bws-scrub
         with:
           names: |
-            BWS_ACCOUNT_ED25519_PRIVATE_KEY
             BWS_ACCOUNT_X25519_PRIVATE_KEY
 
       - name: Deployment summary
@@ -1808,7 +1819,6 @@ jobs:
         with:
           access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
           secrets: |
-            ACCOUNT_ED25519_PUBLIC_KEY > BWS_ACCOUNT_ED25519_PUBLIC_KEY
             ACCOUNT_JWT_SECRET > BWS_ACCOUNT_JWT_SECRET
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
             CLOUDFLARE_ACCOUNT_ID > BWS_CLOUDFLARE_ACCOUNT_ID
@@ -1846,7 +1856,7 @@ jobs:
         env:
           PREVIEW_URL: https://pr-${{ env.PR_NUMBER }}.rediacc.workers.dev
           SMOKE_TEST_TOKEN: ${{ steps.seed.outputs.SMOKE_TEST_TOKEN }}
-          ACCOUNT_ED25519_PUBLIC_KEY: ${{ env.BWS_ACCOUNT_ED25519_PUBLIC_KEY }}
+          ACCOUNT_ED25519_PUBLIC_KEY: ${{ needs.deploy-preview.outputs.ed25519_public_key }}
 
   # ============================================================================
   # VALIDATE INSTALL METHODS - Full pre-publish validation on all 6 platforms
@@ -1914,7 +1924,7 @@ jobs:
     # The second cancellation blocked the 0804-1 release: validate-promote is
     # soft-required in assert_ci_complete.py, which forgives `skipped` but NOT
     # `cancelled`, so CI Complete and Pipeline Sentinel both failed and the
-    # finalize step never dispatched cd-v2.yml. Nothing was wrong with the code.
+    # finalize step never dispatched cd-release-edge.yml. Nothing was wrong with the code.
     #
     # A PR CANNOT CATCH THIS, which is why the fix lands directly on main. PR
     # runs promote the tiny per-PR channel (pr-551 finished in 7m19s on run
@@ -2223,7 +2233,7 @@ jobs:
     needs: [initialize, ci-complete]
     permissions:
       contents: read
-      actions: write   # for dispatching cd-v2.yml after sentinel write
+      actions: write   # for dispatching cd-release-edge.yml after sentinel write
     if: >-
       always() &&
       github.event_name == 'push' &&
@@ -2324,7 +2334,7 @@ jobs:
       # only appeared to have -- it put dispatch immediately after the seal to
       # survive a CANCELLATION, and was then broken by a path it had not
       # considered: a step that ran, succeeded, and chose not to release.
-      # Cancellation is still covered, because cd-v2 runs as its own
+      # Cancellation is still covered, because cd-release-edge runs as its own
       # workflow_dispatch run with an independent lifecycle.
       #
       # The dispatch lives in a script so the bump-none skip decision has
@@ -2337,7 +2347,7 @@ jobs:
       # The same lookup set publish_stable for a `release`-labelled PR; only an
       # exact 'true' adds `-f publish_stable=true` (edge AND stable, no soak),
       # so a missing output FAILS CLOSED to an edge-only release.
-      - name: Dispatch cd-v2 release
+      - name: Dispatch cd-release-edge release
         if: needs.initialize.outputs.skip_release != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -2359,7 +2369,7 @@ jobs:
   # pull_request-only dep is `skipped` on push-to-main.
   #
   # (Housekeeping was moved out of the release pipeline to a nightly schedule —
-  # see .github/workflows/housekeeping.yml — so version/R2 cleanup can no longer
+  # see .github/workflows/ops-housekeeping.yml — so version/R2 cleanup can no longer
   # race a live release. It is no longer asserted here.)
   #
   # finalize-release-sentinel has its own `if:` guards; this sentinel is the
@@ -2390,3 +2400,57 @@ jobs:
       - name: Check finalize-release-sentinel conclusion (release channels only)
         if: needs.initialize.result == 'success' && (needs.initialize.outputs.channel == 'edge' || needs.initialize.outputs.channel == 'stable')
         run: PYTHONPATH=.ci python3 -m rediacc_ci.ci.assert_job_succeeded finalize-release-sentinel "${{ needs.finalize-release-sentinel.result }}" "${{ needs.ci-complete.result }}"
+
+  # ============================================================================
+  # REPORT SCHEDULE: the weekly fleet run's verdict, to the ops-health ingest
+  # PLAN-health-checks-local D3. Scheduled runs only (a push or a PR never
+  # posts). The scheduled run is weekly now, so this is how a red reaches the
+  # operator by mail between sessions: source `ci-weekly`, green when CI
+  # Complete succeeded, unknown when it was cancelled, red otherwise.
+  # Downstream of the aggregator like pr-labels, so a failed POST never reds
+  # CI itself; the ingest's own staleness check (a `ci-weekly` entry older than
+  # its max_age_h) is what notices a run that stopped reporting.
+  # ============================================================================
+  report-schedule:
+    name: Report schedule
+    runs-on: ubuntu-slim
+    needs: [initialize, ci-complete]
+    timeout-minutes: 5
+    if: always() && github.event_name == 'schedule'
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          sparse-checkout: |
+            .ci/rediacc_ci
+            .ci/config/bws-secret-map.json
+            .ci/config/well-known.env
+            .github/actions/bws-secrets
+            .github/actions/profiler
+          sparse-checkout-cone-mode: false
+
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-slim
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            OPS_HEALTH_INGEST_TOKEN > BWS_OPS_HEALTH_INGEST_TOKEN
+
+      - name: Post the run verdict to the ops-health ingest
+        env:
+          OPS_HEALTH_INGEST_TOKEN: ${{ env.BWS_OPS_HEALTH_INGEST_TOKEN }}
+          CI_COMPLETE_RESULT: ${{ needs.ci-complete.result }}
+          WEEKLY_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          case "$CI_COMPLETE_RESULT" in
+            success) state=green ;;
+            cancelled) state=unknown ;;
+            *) state=red ;;
+          esac
+          PYTHONPATH=.ci python3 -m rediacc_ci.release.ops_health_post --post-state "$state" \
+            --source ci-weekly --detail "Console CI weekly: CI Complete ${CI_COMPLETE_RESULT:-none}, $WEEKLY_RUN_URL"

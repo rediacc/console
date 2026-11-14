@@ -12,7 +12,7 @@ NOT PROVEN HERE, said plainly: by default no machine runs `renet backup snapshot
 
 THE OFFLINE CONTROL is `private/account/tests/integration/backup-lifecycle.test.ts`, the VM-less twin: if a leg fails here and its twin passes there, the difference is the environment.
 
-TIER B: `DRILL_STORE_ENDPOINT` plus `DRILL_STORE_BUCKET`/`DRILL_STORE_KEY`/`DRILL_STORE_SECRET` points the whole drill at a real S3/R2 bucket. A run deletes under its own tenant prefix, so a bucket not named *probe*/*test*/*scratch*/*bench* (and the bare `rediacc-backups`) is refused.
+TIER B: `DRILL_STORE_ENDPOINT` plus `DRILL_STORE_BUCKET`/`DRILL_STORE_KEY`/`DRILL_STORE_SECRET` points the whole drill at a real S3/R2 bucket. A run deletes under its own tenant prefix, so a bucket not named *probe*/*test*/*scratch*/*bench* is refused, and so is a production name (`backup_local_plane.is_production_bucket`: `backups`, `backups-<region>` and the `rediacc-` names they replace).
 
 RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in `tests/test_drills_backup_license.py`).
 
@@ -44,8 +44,10 @@ import uuid
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log
+from rediacc_ci.core import dockerx
 from rediacc_ci.drills import (
     backup_check_trigger,
+    backup_local_plane,
     backup_renet,
     backup_roundtrip,
     lib,
@@ -55,6 +57,7 @@ from rediacc_ci.drills import (
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
+    from typing import NoReturn
 
 KNOWN_LEGS = [
     "a",
@@ -76,7 +79,13 @@ KNOWN_LEGS = [
     "q",
     "r",
     "s",
+    "t",
+    "u",
+    "v",
+    "w",
+    "x",
 ]
+# t to x are opt-in and not in DEFAULT_LEGS: they need --renet and a worker, and t also needs the gateway's session-TTL seam.
 DEFAULT_LEGS = "a,b,c,d,e,f,g,h,j,k,l,m,n,o,p,q,r,s"
 CELL_BYTES = 65536
 CELLS = 8
@@ -109,7 +118,7 @@ CELLS_ROOT_VECTORS = (
 VERIFY_MAX_PAGES = 10
 HTTP_OK = "200"
 USAGE = (
-    "Usage: ./run.sh drill backup [--legs a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s] [--selftest] [--renet] "
+    "Usage: ./run.sh drill backup [--legs a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p,q,r,s,t,u,v,w,x] [--selftest] [--renet] "
     "[--no-restart] [--keep-work] [--vm <ip>] [--ssh-user <u>] [--ssh-key <p>]"
 )
 DRILL_PASSWORD = "DrillBackup123!"
@@ -333,7 +342,7 @@ class Options:
 
     def needs_plane(self) -> bool:
         """Any leg that talks to the control plane needs BOTH the dev gateway and a reachable chunk store (g and i do not)."""
-        return any(self.enabled(leg) for leg in "abcdefhjklmnopqrs")
+        return any(self.enabled(leg) for leg in "abcdefhjklmnopqrstuvwx")
 
     def using_real_store(self) -> bool:
         return bool(self.store_endpoint)
@@ -384,9 +393,11 @@ def disposable_store_error(opts: Options) -> list[str]:
     """The refusal lines for a tier-B bucket that is not marked disposable (empty when fine)."""
     if not opts.using_real_store():
         return []
-    if opts.store_bucket == "rediacc-backups":
+    if backup_local_plane.is_production_bucket(opts.store_bucket):
+        kind = "bare" if opts.store_bucket.endswith("backups") else "per-region"
         return [
-            "refusing the bare production bucket name 'rediacc-backups': this drill writes and deletes."
+            "refusing the %s production bucket name '%s': this drill writes and deletes."
+            % (kind, opts.store_bucket)
         ]
     if not re.search(r"(probe|test|scratch|bench)", opts.store_bucket):
         return [
@@ -419,6 +430,8 @@ class Backup:
         self.snap_seed = "snap-seed-%d" % stamp
         self.snap_incr = "snap-incr-%d" % stamp
         self.bucket = opts.bucket
+        # Set when the leg selection was refused before any setup: that run records no receipt.
+        self.refused = False
         self.api_token = ""
         self.subscription_id = ""
         self.admin_jar: http.cookiejar.CookieJar | None = None
@@ -549,8 +562,12 @@ class Backup:
         d, o = self.d, self.o
         d.step("Preflight: tools")
         ok = True
-        if o.needs_plane() and not _docker_ok():
-            log.error("Docker is not available, so ./run.sh account dev cannot start RustFS.")
+        docker_reason = dockerx.cannot_run_reason() if o.needs_plane() else None
+        if docker_reason:
+            log.error(
+                "Docker is not usable, so ./run.sh account dev cannot start RustFS: %s"
+                % docker_reason
+            )
             log.error(
                 "Legs a,b,c,d,e,f,h,j,k,l,m,n,o,p,q,r,s all need the chunk store; only leg g can run here:"
             )
@@ -1145,8 +1162,8 @@ class Backup:
             len(unique) - 1,
             "every unchanged cell is already held: exactly one hash is new",
         )
-        # An exists ANSWER is a promise to skip those chunks, so it must pin them for 24h; without the pin, GC can delete a skipped chunk between the answer and the commit that references it.
-        self.at("pinExpiresAt", "string", "the skip promise is pinned")
+        # An exists ANSWER is a promise to skip those chunks. Since account a5dd75c the exists answer carries no per-chunk pin (the account suite asserts the same in backup-commit-critical.test.ts and backup-storage.test.ts); this leg checks only that the field is absent, and the GC race itself is covered by leg l.
+        self.aj("pinExpiresAt", "", "the skip promise rides the live session, not a pin")
 
         held = set(existing)
         missing = [h for h in unique if h not in held]
@@ -3180,6 +3197,31 @@ class Backup:
         headers = wire.sigv4_headers("GET", url, b"", region, key, secret)
         return wire.http_bytes("GET", url, None, headers, json_body=False)
 
+    def leg_t_session_expiry(self) -> None:
+        if self.renet_legs is None:
+            raise LegStoppedError("leg t needs real renet: add --renet and --vm")
+        self.renet_legs.leg_t()
+
+    def leg_u_killed_run_reconciles(self) -> None:
+        if self.renet_legs is None:
+            raise LegStoppedError("leg u needs real renet: add --renet and --vm")
+        self.renet_legs.leg_u()
+
+    def leg_v_hook_order(self) -> None:
+        if self.renet_legs is None:
+            raise LegStoppedError("leg v needs real renet: add --renet and --vm")
+        self.renet_legs.leg_v()
+
+    def leg_w_sample_heals(self) -> None:
+        if self.renet_legs is None:
+            raise LegStoppedError("leg w needs real renet: add --renet and --vm")
+        self.renet_legs.leg_w()
+
+    def leg_x_restore_at_run(self) -> None:
+        if self.renet_legs is None:
+            raise LegStoppedError("leg x needs real renet: add --renet and --vm")
+        self.renet_legs.leg_x()
+
     def leg_s_store_conformance(self) -> None:
         d = self.d
         store = "%s/%s" % (self.store_url(), self.bucket)
@@ -3325,6 +3367,13 @@ class Backup:
 
     # ------------------------------------------------------------------ main
 
+    def refuse(self, *lines: str) -> NoReturn:
+        """Refuse the leg selection before any setup. Nothing ran, so `main` writes no receipt for it (`refused`)."""
+        for line in lines:
+            log.error(line)
+        self.refused = True
+        raise SystemExit(1)
+
     def run_all(self) -> int:
         o, d = self.o, self.d
         self.announce_cost()
@@ -3334,25 +3383,34 @@ class Backup:
             return d.summary()
 
         # Leg dependencies are refused before any setup: the gateway restart alone costs 20s or more.
-        # Legs b-f, h, j, k, l, m, n and o all operate on the session and lineage leg a opens. Selecting them without leg a would produce a pile of 401s that read like defects.
+        # Every leg but g and i operates on the session and lineage leg a opens. Selecting one without leg a would produce a pile of 401s that read like defects.
         if o.needs_plane() and not o.enabled("a"):
-            log.error(
-                "Legs b-f, h, j, k, l, m, n and o all run inside the session leg a mints, and there is no"
+            self.refuse(
+                "Every leg but g and i runs inside the session leg a mints (selected: %s), and there is no"
+                % o.legs,
+                "session on disk to inherit. Include leg a:  --legs %s" % o.legs_with("a"),
             )
-            log.error("session on disk to inherit. Include leg a:  --legs %s" % o.legs_with("a"))
-            raise SystemExit(1)
 
         # Leg o reads the lineage and snapshot leg b stored: without them it would test an empty tenant and pass.
         if o.enabled("o") and not o.enabled("b"):
-            log.error("Leg o reaches for the lineage and snapshot leg b stores. Include leg b:")
-            log.error("    --legs %s" % o.legs_with("a", "b"))
-            raise SystemExit(1)
+            self.refuse(
+                "Leg o reaches for the lineage and snapshot leg b stores. Include leg b:",
+                "    --legs %s" % o.legs_with("a", "b"),
+            )
+
+        # Legs t to x are real-renet only and work on the repository leg b creates.
+        if any(o.enabled(leg) for leg in "tuvwx") and not (o.renet and o.enabled("b")):
+            self.refuse(
+                "Legs t to x need --renet and the repository leg b creates. Run:",
+                "    --legs %s --renet --vm <worker>" % o.legs_with("a", "b"),
+            )
 
         # The real-renet half of p and r works on the source repository legs b-d leave.
         if o.renet and any(o.enabled(leg) for leg in "pr") and not o.enabled("b"):
-            log.error("With --renet, legs p and r act on the repository leg b creates. Include it:")
-            log.error("    --legs %s" % o.legs_with("a", "b"))
-            raise SystemExit(1)
+            self.refuse(
+                "With --renet, legs p and r act on the repository leg b creates. Include it:",
+                "    --legs %s" % o.legs_with("a", "b"),
+            )
 
         self.preflight_tools()
         self.preflight_machines()
@@ -3388,6 +3446,11 @@ class Backup:
             ("q", self.leg_q_verified_retention),
             ("r", self.leg_r_repair),
             ("s", self.leg_s_store_conformance),
+            ("t", self.leg_t_session_expiry),
+            ("u", self.leg_u_killed_run_reconciles),
+            ("v", self.leg_v_hook_order),
+            ("w", self.leg_w_sample_heals),
+            ("x", self.leg_x_restore_at_run),
             ("k", self.leg_k_lapsed_restore),
         ):
             if o.enabled(leg):
@@ -3413,12 +3476,6 @@ class Backup:
 
 
 # ---------------------------------------------------------------------- small utilities
-
-
-def _docker_ok() -> bool:
-    if not shutil.which("docker"):
-        return False
-    return subprocess.run(["docker", "info"], capture_output=True, check=False).returncode == 0
 
 
 def _sha_file(path: pathlib.Path) -> str:
@@ -3471,7 +3528,9 @@ def main(argv: list[str]) -> int:
             backup.teardown_hook()
         drill.teardown()
     # The legs half of the backup receipt (box J4): the legs this run selected, VERIFIED only on a clean, non-empty pass.
-    backup_check_trigger.record_drill(drill, backup_check_trigger.LEGS_HALF, rc, opts.leg_set())
+    # A refused selection ran nothing and proved nothing, so it records nothing either (the receipt on file stays what it was).
+    if not backup.refused:
+        backup_check_trigger.record_drill(drill, backup_check_trigger.LEGS_HALF, rc, opts.leg_set())
     return rc
 
 

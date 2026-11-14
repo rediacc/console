@@ -28,14 +28,33 @@ Hidden directories (names starting with `.`) are skipped.
 
 ### Lifecycle Functions
 
-A Rediaccfile contains up to two functions:
+renet runs these Rediaccfile functions:
 
 | Function | When it runs | Purpose | Error behavior |
 |----------|-------------|---------|----------------|
 | `up()` | When starting | Start services (e.g., `renet compose -- up -d`) | Root failure is **critical** (stops everything). Subdirectory failures are **non-critical** (logged, continues) |
 | `down()` | When stopping | Stop services (e.g., `renet compose -- down`) | **Best-effort** -- failures are logged but all Rediaccfiles are always attempted |
+| `health()` | On `rdc repo health`, on `rdc machine health`, and in the deploy health gate | Report the repository's own health: exit `0` ok, `1` warning, `2` error | Every Rediaccfile's `health()` runs and the worst level counts. Exit `75` means still warming (a warning). Any other exit, a signal or a timeout is an error (the deploy health gate reads a timeout as still warming and retries, see [Timeouts and Shutdown Order](#timeouts-and-shutdown-order)). A repository where no Rediaccfile defines `health()` reports **no check**, never healthy |
+| `repair()` | On `rdc repo repair`, and on `rdc machine repair` for a repository whose `health()` is not ok | Fix what that file's own `health()` reported | Runs only when its file's `health()` is not ok and its declared class is allowed (see below). A `health()` that exits `75` (still warming) counts as a warning, so a `repair()` should leave a repository that is still starting alone. `health()` runs again afterwards. A failed or timed-out `repair()` is an error |
 
-Both functions are optional. If a function is not defined, it is silently skipped.
+Every function is optional. If a function is not defined, it is silently skipped.
+
+#### Declaring a repair class
+
+`repair()` receives `REDIACC_HEALTH_LEVEL` (`warning` or `error`, the level its own file's `health()` reported) and `REDIACC_HEALTH_OUTPUT` (the tail of that `health()` output). A comment line declares how safe the function is:
+
+```bash
+# rediacc:repair class=auto-safe
+# rediacc:repair class=auto-with-backup window=only
+```
+
+| Class | Who runs it |
+|---|---|
+| `auto-safe` | `rdc machine repair` and `rdc repo repair` run it on their own |
+| `auto-with-backup` | Runs only with `--with-backup`, after a successful snapshot of the repository |
+| `operator-only` | Never runs on its own. `rdc repo repair` asks first (or takes `--yes`); `rdc machine repair` never runs it |
+
+A `repair()` with no declaration is `operator-only`, so no tool runs a repository's code unattended unless the repository says it is safe. `window=only` adds a second condition: the function runs only inside the machine's maintenance window ([Monitoring](/en/docs/monitoring#repair)), or with `--window-override`. When several lines declare a class, the most restrictive one counts.
 
 ### Execution Order
 
@@ -56,11 +75,78 @@ When a Rediaccfile function executes, the following environment variables are av
 
 The `{SERVICE}_IP` variables are auto-generated from the slot mappings in `.rediacc.json` and exported before your Rediaccfile functions run. The naming convention converts the service name to uppercase with hyphens replaced by underscores, then appends `_IP`. For example, a service named `listmonk-app` with slot `0` becomes `LISTMONK_APP_IP=127.0.11.2`.
 
-> **Warning: Do not use `sudo docker` in Rediaccfiles.** The `sudo` command resets environment variables, which means `DOCKER_HOST` is lost and Docker commands will target the system daemon instead of the repository's isolated daemon. This breaks container isolation and can cause port conflicts. Rediacc will block execution if it detects `sudo docker` without `-E`.
+> **Warning: Do not use `sudo docker` in Rediaccfiles.** The `sudo` command resets environment variables, which means `DOCKER_HOST` is lost and Docker commands will target the system daemon instead of the repository's isolated daemon. This breaks container isolation and can cause port conflicts. Rediacc will block execution if it detects `sudo docker`.
 >
-> Use `renet compose` in your Rediaccfiles, it automatically handles `DOCKER_HOST`, injects networking labels for route discovery, and configures service networking. See [Networking](/en/docs/networking) for details on how services are exposed via the reverse proxy. If calling Docker directly, use `docker` without `sudo`, Rediaccfile functions already run with sufficient privileges. If you must use sudo, use `sudo -E docker` to preserve environment variables.
+> Use `renet compose` in your Rediaccfiles, it automatically handles `DOCKER_HOST`, injects networking labels for route discovery, and configures service networking. See [Networking](/en/docs/networking) for details on how services are exposed via the reverse proxy. If calling Docker directly, use `docker` without `sudo`: Rediaccfile functions reach the repository's Docker daemon as the universal user, without root (see [Privileges](#privileges)).
 >
 > `renet` is the remote low-level tool. For normal user workflows from your workstation, prefer `rdc` commands such as `rdc repo up` and `rdc repo down`. See [rdc vs renet](/en/docs/rdc-vs-renet).
+
+### Privileges
+
+`up()` and `down()` run as the universal user (`rediacc`), not as root, inside a sandbox that limits where they can read and write. The environment is built for the function rather than inherited, so it carries the variables above, the repository's `REDIACC_SECRET_*` values and a minimal `PATH`. `sudo` is not available under any tier: the sandbox sets `no_new_privs`, so a Rediaccfile line that uses `sudo` fails and has to drop it. A machine without Landlock refuses `up()` and `down()` instead of running them unconfined.
+
+A line that needs more than the default fails with the error the sandbox gives it, and the journal and the CLI print the matching line of the Rediaccfile with the grant command.
+
+| A Rediaccfile does | It sees | Fix |
+|--------------------|---------|-----|
+| `sudo x` | `sudo: The "no new privileges" flag is set` | Drop `sudo`. The step either needs no root or needs a grant |
+| `chown 5050 ...` or `rm -rf` of a directory a container owns | `Operation not permitted` or `Permission denied` | Run the step in a one-shot container (root inside the container; the repository's Docker daemon refuses binds outside the repository's own roots): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| Writes `.env` or other files in the mount | Works; the files belong to the universal user | None |
+| Reads `/etc/rediacc/*`, `/proc/kcore` or a block device | `Permission denied` | Ask for a path grant |
+| Reads a file secret directly | `Permission denied` | Use compose `secrets:` or an env-mode secret |
+| `nvidia-smi` with no device grant | The device is missing | Grant the device, see [GPUs](/en/docs/gpu) |
+| `sysctl -w` | `Permission denied` | Set it once on the machine as an administrator |
+
+#### Asking for a grant
+
+A grant widens what `up()` and `down()` may reach. Only an operator gives one, from outside the repository:
+
+```bash
+rdc repo permission grant <repo-ref> --path /srv/data:rw
+rdc repo permission grant <repo-ref> --root
+rdc repo permission show <repo-ref>
+rdc repo permission revoke <repo-ref> --path /srv/data
+```
+
+`--path` adds one Landlock rule, read-only unless `:rw` is given, and the machine refuses a path that reaches another repository, the datastore or `/etc/rediacc`. `--root` runs the functions as root with no privilege drop, and a cold backup refuses such a repository. Agents cannot give `--root` unless the operator set `REDIACC_ALLOW_GRAND_REPO` before the agent started. A fork has a new network id and starts with no grant, and a grant found under a reused network id is discarded.
+
+A Rediaccfile can declare what it needs with a comment line, as a request only:
+
+```bash
+# rediacc:needs root
+# rediacc:needs path=/srv/data
+# rediacc:needs device=nvidia.com/gpu=all
+```
+
+`up()` compares the declaration with the grant. When the grant is missing, `up()` is refused before any line runs, and the message prints the exact grant command. `down()` never checks the declaration, so a comment edited inside the repository cannot stop an operator's `repo down`; a `down()` that really needs the grant fails in its own step. `machine converge` skips such a repository as `needs_lifecycle_grant` instead of restarting it into the refusal.
+
+### Timeouts and Shutdown Order
+
+A repository's containers do not stop until its `down()` has run and finished. This covers `systemctl stop` and `restart` of the repository's Docker unit, `machine converge`, `repo down --unmount`, a unit rewrite and a host shutdown. The exceptions are a crash of the Docker daemon or the host, power loss, and a `down()` that exceeds its timeout, whether at host shutdown or at a `systemctl stop` or `restart`. That `down()` is killed and the stop goes on, as described below.
+
+Each Docker unit runs a stop hook before the daemon is signalled. The hook runs `down()` against the still-running daemon, unless renet already ran it for this daemon start, and skips it when the daemon does not answer or the repository has no Rediaccfile. At host shutdown the Docker units stop first, each running `down()` in parallel, and a sweep unit then unmounts every mounted repository, with or without autostart. The stop budget of a unit is 17 minutes, which fits the 30-minute reboot job timeout. When `down()` times out inside this hook, its process group gets SIGTERM and, 10 seconds later, SIGKILL (`FunctionKillGrace`, `pkg/orchestration/procgroup.go`), a warning is logged and the hook exits 0, so systemd carries on with the stop. A timed-out `down()` therefore delays a `systemctl stop` or restart by up to its timeout plus 10 seconds (15 minutes 10 seconds at the cap), and the stop stays bounded by the unit's 17-minute `TimeoutStopSec`. Refusing to stop applies only to renet's own paths, such as `repo down --unmount`.
+
+`up()` and `down()` get 10 minutes each by default, set with `RENET_UP_TIMEOUT` and `RENET_DOWN_TIMEOUT` or `--up-timeout` and `--down-timeout`. On a timeout the process group gets SIGTERM, then SIGKILL after 10 seconds. A path that needs `down()` first, such as `repo down --unmount` or a converge restart, leaves the containers running when `down()` times out, and `--force` continues. A Rediaccfile can raise a limit with a comment line:
+
+```bash
+# rediacc:timeout up=20m down=15m backup=120s health=60s repair=10m
+```
+
+| Key | Default | Cap |
+|---|---|---|
+| `up` | 10 minutes | 60 minutes |
+| `down` | 10 minutes | 15 minutes |
+| `backup` | 30 seconds | 300 seconds |
+| `health` | 30 seconds | 300 seconds |
+| `repair` | 5 minutes | 30 minutes |
+
+`health()` is bounded the same way: its default is set with `RENET_HEALTH_TIMEOUT`, and on a timeout its process group gets SIGTERM, then SIGKILL after 10 seconds. The deploy health gate reads a timed-out `health()` as still warming and retries; `rdc repo health` and `rdc machine health` report it as an error. `repair()` follows the same model with `RENET_REPAIR_TIMEOUT`, and a timed-out `repair()` counts as failed.
+
+A directive only raises a limit and is clamped to its cap, so the repository cannot shorten `down()` into a kill. Unknown keys are ignored with a warning.
+
+Repository daemons keep Docker's `live-restore` off. Containers would survive a daemon restart, but the container shims share the unit's cgroup and are killed with it, so the restored daemon could not reattach, and the containers would keep the mount busy through a planned stop.
+
+A renet-managed RAM volume per repository (`# rediacc:ram size=6G`, with the host RAM granted by the operator) is a design only and has no implementation yet.
 
 ### Example
 

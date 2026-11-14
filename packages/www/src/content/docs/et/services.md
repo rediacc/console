@@ -10,8 +10,8 @@ tags:
 subcategory: workloads
 order: 5
 language: et
-sourceHash: "4769afb97c2b885d"
-sourceCommit: "7a4e982a101fe2df043d291fff9205fc0ba1fbc9"
+sourceHash: "a98cadc0afd3474b"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # Teenused
@@ -30,14 +30,33 @@ Peidetud kataloogid (nimed algavad `.`-ga) jäetakse vahele.
 
 ### Elutsükli funktsioonid
 
-Rediaccfile sisaldab kuni kahte funktsiooni:
+renet käivitab Rediaccfile'i neid funktsioone:
 
 | Funktsioon | Millal käivitub | Eesmärk | Vea käitumine |
 |----------|-------------|---------|----------------|
 | `up()` | Käivitamisel | Käivita teenused (nt `renet compose -- up -d`) | Juure tõrge on **kriitiline** (peatab kõik). Alamkataloogi tõrked on **mittekritiiilised** (logitakse, jätkab) |
 | `down()` | Peatamisel | Peata teenused (nt `renet compose -- down`) | **Parima jõu põhimõttel** - tõrked logitakse, kuid kõiki Rediaccfile'e proovitakse alati |
+| `health()` | Käsuga `rdc repo health`, käsuga `rdc machine health` ja juurutuse tervisekontrollis | Teatada hoidla enda tervisest: väljumiskood `0` korras, `1` hoiatus, `2` viga | Iga Rediaccfile'i `health()` käivitatakse ja arvesse läheb halvim tase. Väljumiskood `75` tähendab, et hoidla alles soojeneb (hoiatus). Iga muu väljumiskood, signaal või ajalõpp on viga (juurutuse tervisekontroll loeb ajalõpu tähenduseks „alles soojeneb“ ja proovib uuesti, vt [Ajalõpud ja seiskamise järjekord](#timeouts-and-shutdown-order)). Hoidla, mille ükski Rediaccfile `health()` ei defineeri, teatab **kontroll puudub**, mitte kunagi terve |
+| `repair()` | Käsuga `rdc repo repair` ja käsuga `rdc machine repair` hoidla puhul, mille `health()` pole korras | Parandada see, millest sama faili `health()` teatas | Käivitub ainult siis, kui tema faili `health()` pole korras ja deklareeritud klass on lubatud (vt allpool). `health()`, mis väljub koodiga `75` (alles soojeneb), loetakse hoiatuseks, seega peaks `repair()` jätma alles käivituva hoidla rahule. Seejärel käivitatakse `health()` uuesti. Ebaõnnestunud või ajalõpuga `repair()` on viga |
 
-Mõlemad funktsioonid on valikulised. Kui funktsiooni pole määratletud, jäetakse see vaikselt vahele.
+Iga funktsioon on valikuline. Kui funktsiooni pole määratletud, jäetakse see vaikselt vahele.
+
+#### Paranduse klassi deklareerimine
+
+`repair()` saab väärtused `REDIACC_HEALTH_LEVEL` (`warning` või `error`, tase, millest tema enda faili `health()` teatas) ja `REDIACC_HEALTH_OUTPUT` (selle `health()` väljundi lõpp). Kommentaarirea abil deklareeritakse, kui turvaline funktsioon on:
+
+```bash
+# rediacc:repair class=auto-safe
+# rediacc:repair class=auto-with-backup window=only
+```
+
+| Klass | Kes seda käivitab |
+|---|---|
+| `auto-safe` | `rdc machine repair` ja `rdc repo repair` käivitavad selle ise |
+| `auto-with-backup` | Käivitub ainult koos lipuga `--with-backup`, pärast hoidla edukat hetktõmmist |
+| `operator-only` | Ei käivitu kunagi ise. `rdc repo repair` küsib enne (või võtab `--yes`); `rdc machine repair` ei käivita seda kunagi |
+
+Deklaratsioonita `repair()` on `operator-only`, seega ükski tööriist ei käivita hoidla koodi järelevalveta, kui hoidla pole ise öelnud, et see on turvaline. `window=only` lisab teise tingimuse: funktsioon käivitub ainult masina hooldusakna sees ([Jälgimine](/et/docs/monitoring#repair)) või koos lipuga `--window-override`. Kui klassi deklareerib mitu rida, kehtib kõige piiravam.
 
 ### Täitmise järjekord
 
@@ -58,11 +77,78 @@ Kui Rediaccfile'i funktsioon käivitub, on saadaval järgmised keskkonna muutuja
 
 `{SERVICE}_IP`-muutujad genereeritakse automaatselt `.rediacc.json`-i pesa kaardistustest ja eksporditakse enne teie Rediaccfile'i funktsioonide käivitamist. Nimetamiskonventsioon teisendab teenuse nime suurtähtedeks, asendab sidekriipsud alljoontega ja lisab siis `_IP`. Näiteks teenus nimega `listmonk-app` pesaga `0` saab `LISTMONK_APP_IP=127.0.11.2`.
 
-> **Hoiatus: Ärge kasutage `sudo docker`-it Rediaccfile'ides.** Käsk `sudo` lähtestab keskkonna muutujad, mis tähendab, et `DOCKER_HOST` kaob ja Dockeri käsud suunatakse süsteemi deemonile repositooriumi isoleeritud deemoni asemel. See katkestab konteineri isoleerimise ja võib põhjustada pordinäitude. Rediacc blokeerib täitmise, kui tuvastab `sudo docker` ilma `-E`-ta.
+> **Hoiatus: Ärge kasutage `sudo docker`-it Rediaccfile'ides.** Käsk `sudo` lähtestab keskkonna muutujad, mis tähendab, et `DOCKER_HOST` kaob ja Dockeri käsud suunatakse süsteemi deemonile repositooriumi isoleeritud deemoni asemel. See katkestab konteineri isoleerimise ja võib põhjustada pordinäitude. Rediacc blokeerib täitmise, kui tuvastab `sudo docker`-i.
 >
-> Kasutage oma Rediaccfile'ides `renet compose`-it, see käsitseb automaatselt `DOCKER_HOST`-i, süstib võrgunduse sildid teeserveri avastamiseks ja konfigureerib teenuse võrgunduse. Vaadake [Võrgundus](/en/docs/networking) üksikasjade saamiseks, kuidas teenused puhverserveri kaudu avastuvad. Dockeri otsene kutsumine ilma sudo-ta, Rediaccfile'i funktsioonid juba töötavad piisavate õigustega. Kui peate sudo-d kasutama, kasutage `sudo -E docker` keskkonna muutujate säilitamiseks.
+> Kasutage oma Rediaccfile'ides `renet compose`-it, see käsitseb automaatselt `DOCKER_HOST`-i, süstib võrgunduse sildid teeserveri avastamiseks ja konfigureerib teenuse võrgunduse. Vaadake [Võrgundus](/en/docs/networking) üksikasjade saamiseks, kuidas teenused puhverserveri kaudu avastuvad. Kui kutsute Dockerit otse, kasutage `docker`-it ilma `sudo`-ta: Rediaccfile'i funktsioonid jõuavad hoidla Dockeri deemonini universaalse kasutajana, ilma root-õigusteta (vt [Õigused](#privileges)).
 >
 > `renet` on kaugjuhtimise madala taseme tööriist. Tavaliste kasutaja töövoode jaoks oma tööjaamast eelistage `rdc` käske nagu `rdc repo up` ja `rdc repo down`. Vaadake [rdc vs renet](/en/docs/rdc-vs-renet).
+
+### Õigused
+
+`up()` ja `down()` töötavad universaalse kasutajana (`rediacc`), mitte root-ina, liivakastis, mis piirab, kuhu nad lugeda ja kirjutada tohivad. Keskkond ehitatakse funktsiooni jaoks, mitte ei päritä, mistõttu see sisaldab ülaltoodud muutujaid, hoidla `REDIACC_SECRET_*` väärtusi ja minimaalset `PATH`-i. `sudo` ei ole saadaval üheski tasemes: liivakast seab `no_new_privs`, nii et Rediaccfile'i rida, mis kasutab `sudo`-t, ebaõnnestub ja peab sellest loobuma. Masin ilma Landlockita keeldub `up()` ja `down()` käivitamisest, selle asemel et neid piiranguteta käivitada.
+
+Rida, mis vajab enamat kui vaikimisi õigused, ebaõnnestub liivakasti antud veaga ning žurnaal ja CLI trükivad vastava Rediaccfile'i rea koos loa andmise käsuga.
+
+| Rediaccfile teeb | See näeb | Parandus |
+|--------------------|--------------------|--------------------|
+| `sudo x` | `sudo: The "no new privileges" flag is set` | Jätke `sudo` ära. Samm kas ei vaja root-õigusi või vajab luba |
+| `chown 5050 ...` või `rm -rf` kataloogil, mis kuulub konteinerile | `Operation not permitted` / `Permission denied` | Käivitage samm ühekordses konteineris (juurkasutaja konteineri sees; hoidla Docker-deemon keeldub sidumistest väljaspool hoidla enda juurkaustu): `renet compose -- run --rm --no-deps --user 0 --entrypoint chown <service> -R 5050:5050 /data` |
+| Kirjutab `.env` või muid faile haakepunkti | Töötab; failid kuuluvad universaalsele kasutajale | Pole vaja |
+| Loeb `/etc/rediacc/*`, `/proc/kcore` või plokkseadet | `Permission denied` | Taotlege rajaluba |
+| Loeb failisaladust otse | `Permission denied` | Kasutage composei `secrets:` või env-režiimi saladust |
+| `nvidia-smi` ilma seadmeloata | Seade puudub | Andke seadmele luba, vt [GPU-d](/et/docs/gpu) |
+| `sysctl -w` | `Permission denied` | Määrake see masinas üks kord administraatorina |
+
+#### Loa taotlemine
+
+Luba laiendab seda, mida `up()` ja `down()` tohivad kasutada. Selle annab ainult operaator, hoidlast väljastpoolt:
+
+```bash
+rdc repo permission grant <repo-ref> --path /srv/data:rw
+rdc repo permission grant <repo-ref> --root
+rdc repo permission show <repo-ref>
+rdc repo permission revoke <repo-ref> --path /srv/data
+```
+
+`--path` lisab ühe Landlocki reegli, mis on kirjutuskaitstud, kui pole antud `:rw`, ja masin keeldub rajast, mis ulatub teise hoidlani, andmehoidlani (datastore) või kataloogini `/etc/rediacc`. `--root` käivitab funktsioonid root-ina ilma õiguste loobumiseta ning külmvarundus keeldub sellisest hoidlast. Agendid ei saa `--root` anda, kui operaator pole enne agendi käivitamist seadnud `REDIACC_ALLOW_GRAND_REPO`. Hargnemisel on uus võrgu-ID ja see algab ilma loata ning korduskasutatud võrgu-ID alt leitud luba visatakse ära.
+
+Rediaccfile võib kommentaarireaga deklareerida, mida ta vajab, ainult taotlusena:
+
+```bash
+# rediacc:needs root
+# rediacc:needs path=/srv/data
+# rediacc:needs device=nvidia.com/gpu=all
+```
+
+`up()` võrdleb deklaratsiooni loaga. Kui luba puudub, lükatakse `up()` tagasi enne ühegi rea käivitamist ja teade trükib täpse loa andmise käsu. `down()` ei kontrolli deklaratsiooni kunagi, et hoidlas muudetud kommentaar ei saaks takistada operaatori `repo down`-i; `down()`, mis tõesti vajab luba, ebaõnnestub oma sammus. `machine converge` jätab sellise hoidla vahele olekuga `needs_lifecycle_grant`, selle asemel et seda keeldumisse taaskäivitada.
+
+### Ajalõpud ja seiskamise järjekord
+
+Hoidla konteinerid ei peatu enne, kui selle `down()` on käivitunud ja lõppenud. See kehtib hoidla Dockeri üksuse käskude `systemctl stop` ja `restart`, käskude `machine converge` ja `repo down --unmount`, üksuse ümberkirjutamise ning hosti seiskamise kohta. Erandid on Dockeri deemoni või hosti krahh, voolukatkestus ning `down()`, mis ületab oma ajalõpu, olgu hosti seiskamisel või käsu `systemctl stop` või `restart` ajal. Selline `down()` lõpetatakse ja peatamine jätkub, nagu allpool kirjeldatud.
+
+Iga Dockeri üksus käivitab enne deemonile signaali saatmist peatamiskonksu. Konks käivitab `down()` veel töötaval deemonil, kui renet pole seda selle deemoni käivituse jaoks juba teinud, ja jätab selle vahele, kui deemon ei vasta või hoidlal pole Rediaccfile'i. Hosti seiskamisel peatuvad kõigepealt Dockeri üksused ja igaüks käivitab `down()` paralleelselt, seejärel haagib puhastusüksus lahti kõik haagitud hoidlad, olenemata automaatkäivitusest. Üksuse peatamisbudget on 17 minutit, mis mahub taaskäivitustöö 30-minutilisse piiri. Kui `down()` ületab selles konksus ajalõpu, saab protsessirühm SIGTERMi ja 10 sekundi pärast SIGKILLi (`FunctionKillGrace`, `pkg/orchestration/procgroup.go`), kirjutatakse hoiatus ja konks väljub koodiga 0, nii et systemd jätkab peatamist. Ajalõpu ületanud `down()` viivitab käsku `systemctl stop` või taaskäivitust seega kuni oma ajalõpu pluss 10 sekundi võrra (ülempiiril 15 minutit 10 sekundit) ning peatamine jääb piiratuks üksuse 17-minutilise `TimeoutStopSec`-iga. Peatamisest keeldumine kehtib ainult renet'i enda radadel, näiteks `repo down --unmount`.
+
+`up()` ja `down()` saavad vaikimisi 10 minutit kumbki; seda seadistavad `RENET_UP_TIMEOUT` ja `RENET_DOWN_TIMEOUT` või `--up-timeout` ja `--down-timeout`. Ajalõpu korral saab protsessirühm SIGTERMi ja 10 sekundi pärast SIGKILLi. Toiming, mis vajab esmalt `down()`, näiteks `repo down --unmount` või converge'i taaskäivitus, jätab konteinerid tööle, kui `down()` ületab ajalõpu; `--force` jätkab. Rediaccfile saab piiri tõsta kommentaarireaga:
+
+```bash
+# rediacc:timeout up=20m down=15m backup=120s health=60s repair=10m
+```
+
+| Võti | Vaikimisi | Ülempiir |
+|---|---|---|
+| `up` | 10 minutit | 60 minutit |
+| `down` | 10 minutit | 15 minutit |
+| `backup` | 30 sekundit | 300 sekundit |
+| `health` | 30 sekundit | 300 sekundit |
+| `repair` | 5 minutit | 30 minutit |
+
+`health()` on piiratud samamoodi: vaikeaeg määratakse muutujaga `RENET_HEALTH_TIMEOUT` ja ajalõpu korral saab selle protsessirühm SIGTERM-i ning 10 sekundi pärast SIGKILL-i. Juurutuse tervisekontroll käsitleb ajalõpuga `health()` kui alles soojenevat ja proovib uuesti; `rdc repo health` ja `rdc machine health` teatavad sellest veana. `repair()` järgib sama mudelit muutujaga `RENET_REPAIR_TIMEOUT` ning ajalõpuga `repair()` loetakse ebaõnnestunuks.
+
+Direktiiv ainult tõstab piiri ja kärbitakse ülempiirini, nii et hoidla ei saa `down()` aega nii lühikeseks muuta, et see jõuga lõpetataks. Tundmatud võtmed jäetakse hoiatusega arvestamata.
+
+Hoidla deemonid hoiavad Dockeri `live-restore` välja lülitatuna. Konteinerid elaksid deemoni taaskäivitusest üle, kuid shim-protsessid jagavad üksuse cgroupi ja lõpetatakse koos sellega, nii et taastatud deemon ei saaks neid uuesti siduda ning konteinerid hoiaksid planeeritud peatamisel haakepunkti hõivatuna.
+
+Renet'i hallatav hoidlapõhine RAM-köide (`# rediacc:ram size=6G`, hosti mälu annab operaator) on praegu vaid kavand ja pole veel realiseeritud.
 
 ### Näide
 

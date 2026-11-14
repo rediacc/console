@@ -147,8 +147,10 @@ function registerInfraCore(infra: Command, program: Command): void {
     .action(async (machineName: string, options) => {
       try {
         const { pushInfraConfig } = await import('../../services/provision/infra-provision.js');
-        await pushInfraConfig(machineName, { debug: options.debug });
-        outputService.success(t('commands.machine.infra.push.success', { name: machineName }));
+        const finished = await pushInfraConfig(machineName, { debug: options.debug });
+        if (finished) {
+          outputService.success(t('commands.machine.infra.push.success', { name: machineName }));
+        }
       } catch (error) {
         handleError(error);
       }

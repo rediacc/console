@@ -1,0 +1,672 @@
+"""`rediacc_ci.ops.backup_meter_replay` against a fake store and a fake rdc: no network, no machine.
+
+The world is one subscription in the bench bucket. A healthy world meters what the store holds (R1 and A1 in place); each control changes one thing (the meter bills only the rerun's own uploads, a lineage drifts, the store moves mid-read, the throttled run finishes early) and must come out red or no-verdict, so a green cannot come from a comparison that never ran.
+"""
+
+from __future__ import annotations
+
+import datetime
+import io
+import json
+import shlex
+import subprocess
+import sys
+import urllib.parse
+from typing import TYPE_CHECKING, Any
+
+import pytest
+
+from rediacc_ci.drills import backup_window as bw
+from rediacc_ci.ops import backup_meter_replay as mod
+from rediacc_ci.tests.ops_cf_harness import R2_ENDPOINT
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+TIMER_LINE = (
+    "Sat 2026-11-07 02:00:00 UTC 17h Fri 2026-11-06 02:00:00 UTC 7h ago "
+    "rediacc-backup-nightly-hot.timer rediacc-backup-nightly-hot.service\n"
+)
+AT_0900 = 1793955600  # 2026-11-06 09:00:00Z
+AT_0158 = 1793930280  # 2026-11-06 01:58:00Z
+
+
+def timers_text(now: int, *rows: str) -> str:
+    return "NEXT LEFT LAST PASSED UNIT ACTIVATES\n%sNOW=%d\nRUNNING-BEGIN\n%sRUNNING-END\n" % (
+        TIMER_LINE,
+        now,
+        "".join(r + "\n" for r in rows),
+    )
+
+
+SECRET = "s3cr3t-value-that-must-never-print"
+KEY_ID = "key-id-that-must-never-print"
+ENV = {
+    "ACCOUNT_BACKUP_S3_ENDPOINT": R2_ENDPOINT,
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": KEY_ID,
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY": SECRET,
+}
+SUB = "63284afd-0000-4000-8000-000000000001"
+LIN = "03ee0999-0000-4000-8000-000000000002"
+OTHER = "1b8e6a28-0000-4000-8000-000000000003"
+CELL = 4 * 1024 * 1024
+PAGE = 7  # small pages so every listing exercises the continuation token
+
+
+def envelope(data: dict, success: bool = True) -> dict:
+    """The shape `rdc -o json` really prints: the figures sit under `data` (live run 2026-11-05)."""
+    return {"success": success, "command": "backup", "data": data, "errors": None, "warnings": []}
+
+
+def test_rdc_json_unwraps_the_envelope_and_refuses_a_failed_one():
+    calls = iter(
+        [
+            (0, json.dumps(envelope({"subscriptionId": SUB})), ""),
+            (0, json.dumps(envelope({"subscriptionId": SUB}, success=False)), ""),
+        ]
+    )
+    rdc = mod.Rdc("rdc", "eu-bench", mod.Deps(runner=lambda _argv, _timeout: next(calls)))
+    assert rdc.json("backup", "usage") == {"subscriptionId": SUB}
+    with pytest.raises(mod.NoVerdictError, match="no data object"):
+        rdc.json("backup", "usage")
+
+
+class World:
+    """The store (key -> size) and what the account server answers about it."""
+
+    def __init__(self, *, meter_all: bool = True, early_finish: bool = False):
+        self.objects: dict[str, int] = {}
+        self.meter_all = meter_all  # False: the pre-fix meter, billing only the rerun's own PUTs
+        self.early_finish = early_finish
+        self.billed: dict[str, int] = {}  # lineage -> chunks billed
+        self.next_chunk = 0
+        self.snapshot_running = False
+        self.client_rc: int | None = None
+        self.calls: list[list[str]] = []
+        self.list_calls = 0
+        self.move_on_list: int | None = None  # add a chunk on this listing call
+        self.headers: list[dict] = []
+        self.check_rc_override: int | None = None
+        self.window_calls = 0
+        self.refuse_window_on: int | None = None  # the n-th timer read answers 01:58Z
+
+    # -- store
+    def add_chunks(self, lineage: str, n: int) -> None:
+        for _ in range(n):
+            self.objects["t/%s/l/%s/c/%064x" % (SUB, lineage, self.next_chunk)] = CELL
+            self.next_chunk += 1
+
+    def add_manifest(self, lineage: str, sid: str) -> None:
+        self.objects["t/%s/l/%s/m/%s" % (SUB, lineage, sid)] = 1234
+
+    def chunks(self, lineage: str) -> int:
+        return sum(1 for k in self.objects if "/l/%s/c/" % lineage in k)
+
+    def transport(self, method, url, _body, headers):
+        assert method == "GET"
+        self.headers.append(headers)
+        self.list_calls += 1
+        if self.move_on_list == self.list_calls:
+            self.add_chunks(LIN, 1)
+        q = dict(urllib.parse.parse_qsl(urllib.parse.urlsplit(url).query))
+        assert urllib.parse.urlsplit(url).path.startswith("/backups-bench")
+        keys = sorted(k for k in self.objects if k.startswith(q["prefix"]))
+        start = int(q.get("continuation-token", "0"))
+        page = keys[start : start + PAGE]
+        more = start + PAGE < len(keys)
+        xml = "<ListBucketResult><IsTruncated>%s</IsTruncated>" % ("true" if more else "false")
+        for k in page:
+            xml += "<Contents><Key>%s</Key><Size>%d</Size></Contents>" % (k, self.objects[k])
+        if more:
+            xml += "<NextContinuationToken>%d</NextContinuationToken>" % (start + PAGE)
+        return 200, (xml + "</ListBucketResult>").encode()
+
+    # -- account
+    def lineage_rows(self) -> list[dict]:
+        rows = []
+        for lin in sorted({k.split("/")[3] for k in self.objects} | set(self.billed)):
+            n = self.chunks(lin)
+            rows.append(
+                {
+                    "lineageGuid": lin,
+                    "ledgerBytesBefore": self.billed.get(lin, 0) * CELL,
+                    "ledgerChunksBefore": self.billed.get(lin, 0),
+                    "observedBytes": n * CELL,
+                    "observedChunks": n,
+                    "referencedBytes": n * CELL,
+                    "referencedChunks": n,
+                    "unreferencedBytes": 0,
+                    "unreferencedChunks": 0,
+                    "unreferencedPastGraceChunks": 0,
+                    "applied": False,
+                    "skipped": None,
+                }
+            )
+        return rows
+
+    def reconcile(self, dry_run: bool) -> dict:
+        rows = self.lineage_rows()
+        if not dry_run:
+            for row in rows:
+                self.billed[row["lineageGuid"]] = row["observedChunks"]
+                row["applied"] = True
+        ledger = sum(self.billed.values())
+        return {
+            "subscriptionId": SUB,
+            "lineages": rows,
+            "ledgerBytes": ledger * CELL,
+            "ledgerChunkCount": ledger,
+            "bucketChunkBytes": sum(self.objects[k] for k in self.objects if "/c/" in k),
+            "bucketChunkCount": sum(1 for k in self.objects if "/c/" in k),
+            "driftBytes": 0,
+        }
+
+    def usage(self) -> dict:
+        total = sum(self.billed.values())
+        return {
+            "subscriptionId": SUB,
+            "storedBytes": total * CELL,
+            "chunkCount": total,
+            "lineages": [
+                {"lineageGuid": lin, "storedBytes": n * CELL, "chunkCount": n}
+                for lin, n in sorted(self.billed.items())
+            ],
+        }
+
+    def drift(self) -> bool:
+        return any(
+            self.billed.get(lin, 0) != self.chunks(lin)
+            for lin in {k.split("/")[3] for k in self.objects}
+        )
+
+    # -- rdc
+    def runner(self, argv, _timeout):
+        args = list(argv[3:])  # drop rdc --config <name>
+        self.calls.append(args)
+        if args[:2] == ["term", "connect"]:
+            cmd = args[4]
+            if cmd == bw.timers_script():
+                self.window_calls += 1
+                near = self.refuse_window_on == self.window_calls
+                return 0, timers_text(AT_0158 if near else AT_0900), ""
+            if cmd == mod.RUNNING_COMMAND:
+                return 0, "RUNNING\n" if self.snapshot_running else "IDLE\n", ""
+            if cmd == mod.KILL_COMMAND:
+                if self.snapshot_running:
+                    self.snapshot_running = False
+                    self.client_rc = 1
+                return 0, "GONE\n", ""
+            raise AssertionError(cmd)
+        if "-o" in args:
+            args = [a for a in args if a not in ("-o", "json")]
+            json_out = True
+        else:
+            json_out = False
+        if args[:2] == ["backup", "usage"]:
+            return 0, "fetching\n" + json.dumps(envelope(self.usage()), indent=2), ""
+        if args[:2] == ["backup", "reconcile"]:
+            if "--check" in args:
+                if self.check_rc_override is not None:
+                    return self.check_rc_override, "", ""
+                return (1 if self.drift() else 0), "", ""
+            return 0, json.dumps(envelope(self.reconcile("--dry-run" in args))), ""
+        if args[:2] == ["backup", "snapshot"] and json_out:
+            # the rerun: uploads what is missing (10 chunks), commits, and the meter moves
+            before = self.chunks(LIN)
+            self.add_chunks(LIN, 10)
+            self.add_manifest(LIN, "20261105T000000Z-rerun")
+            if self.meter_all:
+                self.billed[LIN] = self.chunks(LIN)
+            else:
+                self.billed[LIN] = self.billed.get(LIN, 0) + (self.chunks(LIN) - before)
+            return (
+                0,
+                json.dumps(
+                    {"snapshotId": "20261105T000000Z-rerun", "lineage": LIN, "chunksUploaded": 10}
+                ),
+                "",
+            )
+        raise AssertionError(args)
+
+    def spawner(self, argv, _out_path, _err_path):
+        assert "--bwlimit" in argv
+        self.snapshot_running = True
+        self.client_rc = None
+        world = self
+
+        class Proc:
+            def poll(self):
+                return world.client_rc
+
+            def wait(self, timeout=None):
+                assert timeout is None or timeout > 0
+                return world.client_rc if world.client_rc is not None else 1
+
+            def kill(self):
+                world.snapshot_running = False
+
+        return Proc()
+
+    def sleep(self, _s):
+        if self.snapshot_running:
+            self.add_chunks(LIN, 20)
+            if self.early_finish:
+                self.add_manifest(LIN, "early")
+                self.snapshot_running = False
+                self.client_rc = 0
+
+
+def deps(world: World, tmp_path: Path) -> mod.Deps:
+    return mod.Deps(runner=world.runner, spawner=world.spawner, sleep=world.sleep, workdir=tmp_path)
+
+
+def run(world: World, tmp_path: Path, *argv: str) -> tuple[int, str]:
+    out = io.StringIO()
+    rc = mod.main(
+        [*list(argv), "--rdc", "rdc"],
+        transport=world.transport,
+        environ=dict(ENV),
+        deps=deps(world, tmp_path),
+        out=out,
+    )
+    text = out.getvalue()
+    assert SECRET not in text
+    assert KEY_ID not in text
+    return rc, text
+
+
+REPLAY = (
+    "replay",
+    "--config",
+    "eu-bench",
+    "--repo",
+    "mautic",
+    "--machine",
+    "hostinger",
+    "--poll",
+    "0",
+)
+
+
+# Any, not World: the cases replace World methods with variants to plant one defect each.
+def seeded(**kw) -> Any:
+    w = World(**kw)
+    w.add_chunks(LIN, 5)
+    w.add_manifest(LIN, "old")
+    w.add_chunks(OTHER, 3)
+    w.billed = {LIN: 5, OTHER: 3}
+    return w
+
+
+def test_replay_metered_world_exits_0(tmp_path):
+    w = seeded()
+    rc, text = run(w, tmp_path, *REPLAY)
+    assert rc == 0, text
+    assert "PASS       lineage chunkCount" in text
+    assert "meter 75, listing 75" in text  # 5 baseline + 60 killed-run uploads + 10 by the rerun
+    assert ["term", "connect", "hostinger", "-c", mod.KILL_COMMAND] in w.calls
+    assert ["backup", "reconcile", "mautic@hostinger", "--check"] in w.calls
+    # the listing was signed
+    assert all(h["Authorization"].startswith("AWS4-HMAC-SHA256") for h in w.headers)
+
+
+def test_replay_control_pre_fix_meter_is_red(tmp_path):
+    """The bug itself: the rerun bills only its own 10 uploads, not the killed run's 60."""
+    w = seeded(meter_all=False)
+    rc, text = run(w, tmp_path, *REPLAY)
+    assert rc == 1, text
+    assert "FAIL       lineage chunkCount" in text
+    assert "meter 15, listing 75" in text
+
+
+def test_replay_check_drift_alone_is_red(tmp_path):
+    w = seeded()
+    w.check_rc_override = 1
+    rc, text = run(w, tmp_path, *REPLAY)
+    assert rc == 1
+    assert "FAIL       reconcile --check" in text
+
+
+def test_replay_snapshot_finishing_early_is_no_verdict(tmp_path):
+    w = seeded(early_finish=True)
+    rc, text = run(w, tmp_path, *REPLAY, "--kill-after", "50")
+    assert rc == 2, text
+    assert "before 50" in text
+    assert ["term", "connect", "hostinger", "-c", mod.KILL_COMMAND] not in w.calls
+
+
+def test_replay_refuses_when_a_snapshot_already_runs(tmp_path):
+    w = seeded()
+    w.snapshot_running = True
+    rc, text = run(w, tmp_path, *REPLAY)
+    assert rc == 2
+    assert "already runs" in text
+
+
+def test_replay_moving_store_is_no_verdict(tmp_path):
+    # A healthy run's last listing is the second verdict read; a chunk landing just before it moves the store.
+    probe = seeded()
+    assert run(probe, tmp_path, *REPLAY)[0] == 0
+    w = seeded()
+    w.move_on_list = probe.list_calls
+    rc, text = run(w, tmp_path, *REPLAY)
+    assert rc == 2
+    assert "the store moved" in text
+
+
+CENSUS = ("census", "--config", "eu-bench")
+
+
+def _line(text: str, what: str) -> list[str]:
+    """[verdict, detail] of the first report line naming `what`."""
+    for line in text.splitlines():
+        if what in line:
+            verdict, rest = line.split(None, 1)
+            return [verdict, rest.split(what, 1)[1].strip()]
+    raise AssertionError("no line names %r in:\n%s" % (what, text))
+
+
+def test_census_clean_exits_0(tmp_path):
+    w = seeded()
+    rc, text = run(w, tmp_path, *CENSUS)
+    assert rc == 0, text
+    assert _line(text, "total chunkCount") == ["PASS", "meter 8, listing 8"]
+
+
+def test_census_control_drift_is_red_and_apply_repairs(tmp_path):
+    w = seeded()
+    w.add_chunks(LIN, 4)  # debris a killed run left, unbilled
+    rc, text = run(w, tmp_path, *CENSUS)
+    assert rc == 1, text
+    assert _line(text, "total chunkCount") == ["FAIL", "meter 8, listing 12"]
+    rc, text = run(w, tmp_path, *CENSUS, "--apply")
+    assert rc == 0, text
+    assert "1 lineage(s) applied" in text or "2 lineage(s) applied" in text
+
+
+def test_census_refset_sum_mismatch_is_red(tmp_path):
+    w = seeded()
+    orig = w.reconcile
+
+    def short(dry_run):
+        doc = orig(dry_run)
+        doc["lineages"][0]["referencedChunks"] -= 1
+        return doc
+
+    w.reconcile = short
+    rc, text = run(w, tmp_path, *CENSUS)
+    assert rc == 1
+    assert "ref+unref chunks" in text
+
+
+def test_census_skipped_lineage_is_no_verdict(tmp_path):
+    w = seeded()
+    orig = w.reconcile
+
+    def skip(dry_run):
+        doc = orig(dry_run)
+        doc["lineages"][0]["skipped"] = "leased"
+        return doc
+
+    w.reconcile = skip
+    rc, text = run(w, tmp_path, *CENSUS)
+    assert rc == 2
+    assert "skipped by the server (leased)" in text
+
+
+def test_census_strict_referenced(tmp_path):
+    w = seeded()
+    orig = w.reconcile
+
+    def unref(dry_run):
+        doc = orig(dry_run)
+        for row in doc["lineages"]:
+            if row["lineageGuid"] == LIN:
+                row["referencedChunks"] -= 2
+                row["referencedBytes"] -= 2 * CELL
+                row["unreferencedChunks"] += 2
+                row["unreferencedBytes"] += 2 * CELL
+        return doc
+
+    w.reconcile = unref
+    rc, text = run(w, tmp_path, *CENSUS)
+    assert rc == 0, text  # unreferenced debris is billed, not a mismatch
+    rc, text = run(w, tmp_path, *CENSUS, "--strict-referenced", LIN)
+    assert rc == 1
+    assert "stored=referenced" in text
+
+
+def test_missing_credentials_exit_2(tmp_path):
+    w = seeded()
+    out = io.StringIO()
+    rc = mod.main(
+        [*list(CENSUS), "--rdc", "rdc"],
+        transport=w.transport,
+        environ={},
+        deps=deps(w, tmp_path),
+        out=out,
+    )
+    assert rc == 2
+    assert w.calls == []
+
+
+def test_listing_refused_is_no_verdict(tmp_path):
+    w = seeded()
+    w.transport = lambda *_a: (403, b"")
+    rc, text = run(w, tmp_path, *CENSUS)
+    assert rc == 2
+    assert "HTTP 403" in text
+
+
+@pytest.mark.parametrize(
+    ("start", "end", "crosses"),
+    [
+        ("2026-11-05T02:50:00", "2026-11-05T03:10:00", True),
+        ("2026-11-05T03:10:00", "2026-11-05T04:00:00", False),
+        ("2026-11-05T23:00:00", "2026-11-06T03:00:00", True),
+        ("2026-11-05T10:00:00", "2026-11-05T11:00:00", False),
+    ],
+)
+def test_crosses_maintenance(start, end, crosses):
+    s = datetime.datetime.fromisoformat(start).replace(tzinfo=datetime.UTC)
+    e = datetime.datetime.fromisoformat(end).replace(tzinfo=datetime.UTC)
+    assert mod.crosses_maintenance(s, e) is crosses
+
+
+def test_parse_page_decodes_entities_and_token():
+    xml = (
+        "<IsTruncated>true</IsTruncated><Contents><Key>t/s/l/x/m/a&amp;b</Key><Size>3</Size></Contents>"
+        "<NextContinuationToken>tok&amp;1</NextContinuationToken>"
+    )
+    objects, token = mod.parse_page(xml)
+    assert objects == [("t/s/l/x/m/a&b", 3)]
+    assert token == "tok&1"
+
+
+def test_replay_unreadable_listing_mid_poll_kills_the_client_and_the_remote_run(tmp_path):
+    w = seeded()
+    base_transport = w.transport
+    calls = {"n": 0}
+
+    def flaky(method, url, body, headers):
+        calls["n"] += 1
+        # the baseline listing is call 1 (one page); the first poll listing fails
+        if calls["n"] >= 2:
+            return 500, b""
+        return base_transport(method, url, body, headers)
+
+    w.transport = flaky
+    rc, text = run(w, tmp_path, *REPLAY)
+    assert rc == 2, text
+    assert ["term", "connect", "hostinger", "-c", mod.KILL_COMMAND] in w.calls
+    assert w.snapshot_running is False
+
+
+def test_real_runner_missing_binary_is_127_not_a_crash():
+    rc, _out, err = mod.real_runner(["/nonexistent/rdc-binary", "x"], 5)
+    assert rc == 127
+    assert "/nonexistent/rdc-binary" in err
+
+
+def test_replay_refuses_inside_the_backup_window_before_any_snapshot(tmp_path):
+    w = seeded()
+    w.refuse_window_on = 1
+    rc, text = run(w, tmp_path, *REPLAY)
+    assert rc == 2
+    assert "backup-window: refused" in text
+    assert not w.snapshot_running
+
+
+def test_replay_rechecks_the_window_right_before_the_kill(tmp_path):
+    w = seeded()
+    w.refuse_window_on = 2
+    rc, text = run(w, tmp_path, *REPLAY, "--kill-after", "50")
+    assert rc == 2, text
+    assert "backup-window: refused" in text
+    assert ["term", "connect", "hostinger", "-c", mod.KILL_COMMAND] not in w.calls
+
+
+def test_the_kill_signals_only_its_own_snapshot() -> None:
+    cmd = mod.KILL_COMMAND
+    assert "pkill" not in cmd
+    assert "rediacc-backup-" in cmd
+    assert "kill -KILL $p" in cmd
+    assert subprocess.run(["bash", "-n", "-c", cmd], check=False).returncode == 0
+
+
+def _flaky_listing(w) -> None:
+    base_transport = w.transport
+    calls = {"n": 0}
+
+    def flaky(method, url, body, headers):
+        calls["n"] += 1
+        if calls["n"] >= 2:
+            return 500, b""
+        return base_transport(method, url, body, headers)
+
+    w.transport = flaky
+
+
+def test_an_unreachable_host_during_the_cleanup_kill_keeps_the_listing_failure(tmp_path):
+    w = seeded()
+    _flaky_listing(w)
+    runner = w.runner
+
+    def unreachable(argv, timeout):
+        if list(argv[3:5]) == ["term", "connect"] and argv[7] == mod.KILL_COMMAND:
+            return 255, "", "ssh: connect to host: timed out"
+        return runner(argv, timeout)
+
+    w.runner = unreachable
+    rc, text = run(w, tmp_path, *REPLAY)
+    assert rc == 2, text
+    assert "term connect" not in text, "the kill failure replaced the original cause"
+
+
+def test_a_kill_answer_that_echoes_the_command_is_not_gone(tmp_path):
+    w = seeded()
+    runner = w.runner
+
+    def echoing(argv, timeout):
+        if list(argv[3:5]) == ["term", "connect"] and argv[7] == mod.KILL_COMMAND:
+            return 0, "echo ALIVE || echo GONE\nALIVE\n", ""
+        return runner(argv, timeout)
+
+    w.runner = echoing
+    rc, text = run(w, tmp_path, *REPLAY, "--kill-after", "5")
+    assert rc == 2, text
+    assert "still runs" in text
+
+
+def test_replay_rechecks_the_window_before_the_rerun(tmp_path):
+    w = seeded()
+    w.refuse_window_on = 3
+    rc, text = run(w, tmp_path, *REPLAY)
+    assert rc == 2, text
+    assert "backup-window: refused" in text
+    assert not any(c[:2] == ["backup", "snapshot"] and "-o" not in c for c in w.calls)
+
+
+def _own_pids(token_of) -> set[int]:
+    child = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(30)", "renet backup snapshot"]
+    )
+    try:
+        with open("/proc/%d/cgroup" % child.pid, encoding="utf-8") as fh:
+            cgroup = fh.read().splitlines()[0]
+        out = subprocess.run(
+            ["bash", "-c", mod.own_pids_command(token_of(cgroup))],
+            capture_output=True,
+            text=True,
+            check=False,
+        ).stdout.split()
+        return {child.pid} & {int(p) for p in out}
+    finally:
+        child.kill()
+        child.wait()
+
+
+def test_the_own_pid_filter_selects_a_snapshot_outside_a_backup_unit_and_skips_one_inside() -> None:
+    assert len(_own_pids(lambda _cgroup: "rediacc-backup-")) == 1
+    assert _own_pids(lambda cgroup: cgroup[:3]) == set()
+
+
+def test_the_rerun_is_held_to_the_window_the_guard_cleared(tmp_path):
+    """The default snapshot timeout is hours; the guard before the rerun clears only RUN_BUDGET_S, so the rerun's own timeout is that budget."""
+    assert mod.SNAPSHOT_TIMEOUT_S > bw.RUN_BUDGET_S
+    w = seeded()
+    runner = w.runner
+    timeouts: list[float] = []
+
+    def recording(argv, timeout):
+        if "-o" in argv and "snapshot" in argv:
+            timeouts.append(timeout)
+        return runner(argv, timeout)
+
+    w.runner = recording
+    rc, text = run(w, tmp_path, *REPLAY)
+    assert rc == 0, text
+    assert timeouts == [bw.RUN_BUDGET_S]
+
+
+def test_the_proc_root_is_quoted_into_the_shell_command(tmp_path):
+    """A proc root with a space or a metacharacter stays one word, so it cannot split or alter the command."""
+    root = tmp_path / "a b;touch pwned"
+    command = mod.own_pids_command(proc=str(root))
+    assert command.count(shlex.quote(str(root))) == 2
+    # Run from tmp_path: an unquoted root would run `touch pwned` relative to the shell's cwd, which is where the file would appear.
+    done = subprocess.run(["bash", "-c", command], capture_output=True, check=False, cwd=tmp_path)
+    assert done.returncode == 0
+    assert not (tmp_path / "pwned").exists()
+
+
+def test_a_pid_whose_cgroup_cannot_be_read_is_not_signalled(tmp_path):
+    """The fail-closed branch: an unreadable cgroup file is neither proof of a scheduled unit nor of this run's own snapshot, so the pid is skipped (a readable one without the unit token is selected)."""
+    child = subprocess.Popen(
+        [sys.executable, "-c", "import time; time.sleep(30)", "renet backup snapshot"]
+    )
+    try:
+        cgroup = tmp_path / str(child.pid) / "cgroup"
+        cgroup.parent.mkdir()
+        cgroup.write_text("0::/user.slice/run-own.scope\n", encoding="utf-8")
+
+        def selected() -> set[int]:
+            out = subprocess.run(
+                ["bash", "-c", mod.own_pids_command(proc=str(tmp_path))],
+                capture_output=True,
+                text=True,
+                check=False,
+            ).stdout.split()
+            return {child.pid} & {int(p) for p in out}
+
+        assert selected() == {child.pid}, "CONTROL: a readable cgroup without the unit token"
+        cgroup.chmod(0)
+        try:
+            cgroup.read_text()
+        except PermissionError:
+            assert selected() == set()
+        else:
+            pytest.skip("the file stays readable (running as root)")
+    finally:
+        child.kill()
+        child.wait()

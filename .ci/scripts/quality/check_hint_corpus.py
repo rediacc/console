@@ -5,7 +5,8 @@ WHY THIS EXISTS. `docs/agent-reference/HINTS.md` is hand-curated prose read by `
 Counting hints cannot separate them." A rotation that always emits the SAME hint, or that silently drops one from the cycle, looks identical from the stop report's own output to a healthy one -- the report shows one line either way. So this gate drives `hint_pick` directly, over the whole cycle, and asserts every active entry is actually reachable and the cycle actually repeats.
 
 CONTROL-FIRST, same shape as the model.
-Before the real corpus is judged at all, every assertion below is driven against a synthetic fixture carrying one planted defect apiece -- a corpus under the population floor, a duplicate id, a malformed id, an oversized or first-person heading, a Source pointing at a file that does not exist, and a hint_pick stubbed to return a constant -- plus one healthy fixture that must stay silent under all six.
+Before the real corpus is judged at all, every assertion below is driven against a synthetic fixture carrying one planted defect apiece -- a corpus under the population floor, a duplicate id, a malformed id, an oversized or first-person heading, a Source pointing at a file that does not exist, and a hint_pick stubbed to return a constant -- plus one healthy fixture that must stay silent under all of them.
+H7 (PLAN-experience-feedback P7, box C7b) judges every `Enforced-By:` pointer of a HINTS entry with `trap_registry.pointer_problem`, the resolver TRAPS.md is judged by, so "a live enforcer" means one thing in both corpora: a pointer naming a missing guard, an unscheduled gate or an untested rule reds, and JUDGMENT-ONLY is accepted as a declaration.
 If any plant is not caught, this gate declares itself broken and exits non-zero WITHOUT judging the real corpus.
 
 Design: agent/plans/PLAN-stop-hook-behavioral-hints.md section 6.3;
@@ -23,6 +24,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import pathlib
 import re
 import sys
 import tempfile
@@ -43,6 +45,7 @@ PRONOUN_RE = re.compile(
     r"your|yours|yourself|we|we're|we've|us|our|ours)(?![\w'-])",
     re.IGNORECASE,
 )
+JUDGMENT_ONLY = "JUDGMENT-ONLY"
 POINTER_KIND = {"file": "fileline", "gate": "gate", "trap": "trap", "plan": "plan"}
 
 RED = "\033[0;31m"
@@ -99,8 +102,36 @@ def source_pointers(value):
     return out
 
 
-def judge_corpus(hints_mod, entries, parse_errors):
-    """H1 through H4 assertions on the corpus."""
+def load_registry():
+    """(trap_registry module, Registry over this checkout), the shared Enforced-By resolver."""
+    from rediacc_ci.quality import trap_registry
+
+    return trap_registry, trap_registry.Registry(
+        trap_registry.resolve_seams(pathlib.Path(REPO_ROOT))
+    )
+
+
+def enforced_findings(resolver, entry):
+    """H7: one finding per `Enforced-By:` pointer of `entry` that `wl_lessons.pointer_problem` rejects, the judge `--hint-resolve` and the rotation sweep use too (so trap:, test: and commit: are judged by their local checks, the rest by the shared resolver). `resolver` is the (module, Registry) pair; None skips the check."""
+    if resolver is None:
+        return []
+    import wl_lessons  # on sys.path once load_hints has run
+
+    out = []
+    for ptr in str(entry.get("enforced") or "").replace(",", " ").split():
+        if ptr == JUDGMENT_ONLY:
+            continue
+        why = wl_lessons.pointer_problem(REPO_ROOT, ptr, registry=resolver)
+        if why:
+            out.append(
+                "%s: Enforced-By %s is not a live enforcer -- %s"
+                % (entry.get("id") or "?", ptr, why)
+            )
+    return out
+
+
+def judge_corpus(hints_mod, entries, parse_errors, resolver=None):
+    """H1 through H4 and H7 assertions on the corpus."""
     out = list(
         parse_errors
     )  # load_corpus's own errors: empty heading/id/source, duplicate id -- half of H2
@@ -131,6 +162,8 @@ def judge_corpus(hints_mod, entries, parse_errors):
                 ok, why = hints_mod.resolve(REPO_ROOT, kind, token) if hints_mod else (False, "")
                 if not ok:
                     out.append("%s: Source %s:%s does not resolve -- %s" % (eid, kind, token, why))
+        # H7 enforcement
+        out.extend(enforced_findings(resolver, e))
         # H4 shape
         if heading:
             if len(heading) > HEADING_MAX:
@@ -190,7 +223,7 @@ def write_hint(path: str, hint_id: str, heading: str, source: str) -> None:
         fh.write(f"## {heading}\n\nHint-Id: {hint_id}\nSource: {source}\nStatus: active\n\n")
 
 
-def controls_fired(hints_mod, plan_r):
+def controls_fired(hints_mod, plan_r, resolver):
     """Drive the matcher and this gate's evaluator against planted defects.
 
     Returns the list of planted defects that were NOT caught. Anything in it means the instrument cannot fail, so no verdict may be issued.
@@ -204,11 +237,20 @@ def controls_fired(hints_mod, plan_r):
             "Investigate questions with them by default, launching multiple agents in parallel",
             "file:CLAUDE.md:1, trap:check-cannot-fail",
         ),
-        ("plan-with-them", "Plan with them on anything non-trivial", "file:CLAUDE.md:1"),
+        (
+            "plan-with-them",
+            "Plan with them on anything non-trivial",
+            "file:CLAUDE.md:1",
+            (  # H7: live pointers, judged by the real resolver
+                "gate:check:ci-hint-corpus, "
+                "test:.ci/rediacc_ci/tests/test_gate_hint_corpus_enforced_by.py"
+            ),
+        ),
         (
             "writing-agents",
             "Writing agents: at most 4 at a time, with disjoint file ownership",
             "file:CLAUDE.md:1",
+            JUDGMENT_ONLY,  # H7: a declaration, accepted
         ),
         (
             "spot-check-output",
@@ -249,8 +291,11 @@ def controls_fired(hints_mod, plan_r):
         ) as fh:
             path = fh.name
             fh.write("# Hints\n\n")
-            for hint_id, heading, source in entries_list:
-                fh.write(f"## {heading}\nHint-Id: {hint_id}\nSource: {source}\nStatus: active\n\n")
+            for hint_id, heading, source, *rest in entries_list:
+                enforced = "Enforced-By: %s\n" % rest[0] if rest else ""
+                fh.write(
+                    f"## {heading}\nHint-Id: {hint_id}\nSource: {source}\nStatus: active\n{enforced}\n"
+                )
         try:
             entries, errors = hints_mod.load_corpus(path)
             return path, entries, errors
@@ -261,7 +306,7 @@ def controls_fired(hints_mod, plan_r):
         """Load fixture and judge it with both evaluators."""
         path, entries, errors = make_fixture(entries_list)
         try:
-            return judge_corpus(plan_r, entries, errors) + cycle_findings(
+            return judge_corpus(plan_r, entries, errors, resolver) + cycle_findings(
                 hints_mod.hint_pick, entries
             )
         finally:
@@ -321,6 +366,21 @@ def controls_fired(hints_mod, plan_r):
     if not (has_pronoun and has_length):
         missed.append("either a pronoun heading or an oversized heading was not caught")
 
+    # CONTROL 7 (H7): an Enforced-By naming a guard that does not exist, a gate that is not scheduled and a test file that is missing
+    for planted in (
+        "guard:block_planted_missing_guard",
+        "gate:check:ci-planted-missing-gate",
+        "test:.ci/rediacc_ci/tests/test_planted_missing.py",
+    ):
+        bad_enforcer = list(healthy_entries)
+        bad_enforcer[3] = (*bad_enforcer[3][:3], planted)
+        findings = judge(bad_enforcer)
+        if not any(
+            f.startswith("spot-check-output: Enforced-By %s is not a live enforcer" % planted)
+            for f in findings
+        ):
+            missed.append("an Enforced-By naming %s was not reported H7" % planted)
+
     # CONTROL 6a (H5/H6): hint_pick stubbed to always return first entry
     active = [e for e in healthy_entries if True]  # all are active in healthy fixture
 
@@ -331,7 +391,7 @@ def controls_fired(hints_mod, plan_r):
         constant_pick,
         [
             {"id": eid, "heading": h, "source": s, "status": "active"}
-            for eid, h, s in healthy_entries
+            for eid, h, s, *_ in healthy_entries
         ],
     )
     if not any("never surfaced" in f for f in findings):
@@ -359,7 +419,7 @@ def controls_fired(hints_mod, plan_r):
         repeating_pick,
         [
             {"id": eid, "heading": h, "source": s, "status": "active"}
-            for eid, h, s in healthy_entries
+            for eid, h, s, *_ in healthy_entries
         ],
     )
     if not any("repeated the hint that just closed" in f for f in findings):
@@ -382,7 +442,8 @@ def main() -> int:
     hints_mod, plan_r = load_hints()
 
     # --- control-first: prove this instrument can fail -------------------------
-    missed = controls_fired(hints_mod, plan_r)
+    resolver = load_registry()
+    missed = controls_fired(hints_mod, plan_r, resolver)
     if missed:
         print(
             f"{RED}✗{NC} CONTROLS DID NOT FIRE, so this gate cannot detect what it exists for:",
@@ -394,7 +455,7 @@ def main() -> int:
 
     # --- real corpus judgment --------------------------------------------------
     entries, parse_errors = hints_mod.load_corpus(HINTS_FILE)
-    findings = judge_corpus(plan_r, entries, parse_errors) + cycle_findings(
+    findings = judge_corpus(plan_r, entries, parse_errors, resolver) + cycle_findings(
         hints_mod.hint_pick, entries
     )
 
@@ -410,7 +471,7 @@ def main() -> int:
         f"  {len(entries)} total entries, {len(active)} active, every entry reachable "
         f"in one cycle of {len(active)}"
     )
-    print("  7 planted defects were caught first, so this green means the check can fail")
+    print("  the planted defects were caught first, so this green means the check can fail")
     return 0
 
 

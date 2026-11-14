@@ -19,6 +19,7 @@ import sys
 from typing import TYPE_CHECKING
 
 from rediacc_ci import paths
+from rediacc_ci.core import common
 
 if TYPE_CHECKING:
     import pathlib
@@ -104,7 +105,9 @@ def check(root: pathlib.Path) -> tuple[int, list[str]]:
 
 
 def main(argv: list[str]) -> int:
-    del argv
+    refused = common.refuse_arguments(argv)
+    if refused is not None:
+        return refused
     code, lines = check(paths.repo_root())
     stream = sys.stdout if code == 0 else sys.stderr
     for line in lines:

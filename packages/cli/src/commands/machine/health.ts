@@ -1,8 +1,10 @@
+import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import {
   getMachineHealth,
   type MachineHealthResult,
   parseListResult,
 } from '@rediacc/shared/services/machine';
+import { withFix } from '@rediacc/shared/services/machine/findings';
 import { Command } from 'commander';
 import { t } from '../../i18n/index.js';
 import type {
@@ -14,12 +16,25 @@ import { failedVerifyRepos, formatSpan } from '../../services/backup/backup-sche
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
 import { setExitCode } from '../../services/core/request-context.js';
+import { getExecutor } from '../../services/executor/executor-factory.js';
+import { pendingExitCode, runCommandJob } from '../../services/jobs/command-job.js';
+import { bindStepHandler, planStep } from '../../services/jobs/steps.js';
+import { machineStatusJob, parseMachineStatus } from '../../services/machine/machine-status.js';
 import type { RenetProcess } from '../../services/renet/renet-daemons.js';
-import { getStateProvider } from '../../services/state.js';
 import type { OutputFormat } from '../../types/index.js';
-import { handleError, ValidationError } from '../../utils/errors.js';
-import { withSpinner } from '../../utils/spinner.js';
-import { fetchMissedTargets, fetchStaleBackups, fetchStaleBinaries } from './status.js';
+import { getOutputFormat, handleError, ValidationError } from '../../utils/errors.js';
+import { renderLocalExecutionFailure } from '../../utils/local-execution-failures.js';
+import { startSpinner, stopSpinner } from '../../utils/spinner.js';
+import type { RepoHealthLevel } from '../repo-health.js';
+import {
+  applyCertificates,
+  applyRepoHealth,
+  certificatesOf,
+  foldRepoHealthResult,
+  type RepoHealthFold,
+  repoLabel,
+} from './health-folds.js';
+import { fetchMissedTargets, fetchStaleBackups, staleBinariesOf } from './status.js';
 
 const exitCodeStatusHandlers: Record<number, () => void> = {
   0: () => outputService.success(t('commands.machine.health.statusHealthy')),
@@ -137,7 +152,11 @@ function displayIssuesSection(issues: string[]): void {
   }
 }
 
-function displayHealthReport(health: MachineHealthResult, name: string): void {
+function displayHealthReport(
+  health: MachineHealthResult,
+  name: string,
+  repoHealth?: RepoHealthFold
+): void {
   outputService.info(t('commands.machine.health.header', { name }));
   displayStatusByExitCode(health.exitCode);
   displaySystemSection(health.details.system);
@@ -145,6 +164,7 @@ function displayHealthReport(health: MachineHealthResult, name: string): void {
   displayServicesSection(health.details.services);
   displayStorageSection(health.details.storage);
   displayRepositoriesSection(health.details.repositories);
+  if (repoHealth) displayRepoHealthSection(repoHealth);
   displayLicensesSection(health.details.licenses);
   displayIssuesSection(health.issues);
   outputService.info(t('commands.machine.health.exitCode', { code: health.exitCode }));
@@ -170,21 +190,30 @@ export function applyStaleness(
   extra: HealthStaleness
 ): MachineHealthResult {
   const issues = [...health.issues];
+  const findings = [...health.findings];
   let exitCode = health.exitCode;
+  const warn = (text: string, code: string, subject: string): void => {
+    issues.push(text);
+    findings.push(withFix({ code, severity: 'warning', subject, detail: text }));
+    exitCode = Math.max(exitCode, 1);
+  };
   const binaries = extra.staleBinary ?? [];
   if (binaries.length > 0) {
-    issues.push(
-      `${binaries.length} renet process(es) run a replaced binary: ${binaries.map((p) => `${p.unit} (pid ${p.pid})`).join(', ')}`
+    warn(
+      `${binaries.length} renet process(es) run a replaced binary: ${binaries.map((p) => `${p.unit} (pid ${p.pid})`).join(', ')}`,
+      'renet.binary.replaced',
+      // One unit runs several renet processes (dockerd's supervisor and its children), so the subject names each unit once.
+      [...new Set(binaries.map((p) => p.unit))].join(', ')
     );
-    exitCode = Math.max(exitCode, 1);
   }
   const behindSchedule = extra.staleBackups.filter((b) => b.targetSeconds === undefined);
   const behindTarget = extra.staleBackups.filter((b) => b.targetSeconds !== undefined);
   if (behindSchedule.length > 0) {
-    issues.push(
-      `${behindSchedule.length} repository(ies) last backed up more than twice their schedule interval ago`
+    warn(
+      `${behindSchedule.length} repository(ies) last backed up more than twice their schedule interval ago`,
+      'backup.schedule.behind',
+      behindSchedule.map((b) => b.name ?? b.guid).join(', ')
     );
-    exitCode = Math.max(exitCode, 1);
   }
   if (behindTarget.length > 0) {
     const named = behindTarget
@@ -193,8 +222,11 @@ export function applyStaleness(
           `${b.name ?? b.guid} (target ${formatSpan(b.targetSeconds ?? 0)}, last captured ${formatSpan(b.ageSeconds)} ago)`
       )
       .join(', ');
-    issues.push(`${behindTarget.length} repository(ies) missed their backup target: ${named}`);
-    exitCode = Math.max(exitCode, 1);
+    warn(
+      `${behindTarget.length} repository(ies) missed their backup target: ${named}`,
+      'backup.target.missed',
+      behindTarget.map((b) => b.name ?? b.guid).join(', ')
+    );
   }
   // A repo already reported as behind its target is not named a second time.
   const reported = new Set(extra.staleBackups.map((b) => b.guid));
@@ -207,22 +239,24 @@ export function applyStaleness(
         return `${m.name ?? m.guid} (target ${formatSpan(m.targetSeconds)}${achieved})`;
       })
       .join(', ');
-    issues.push(
-      `${missed.length} repository(ies) missed their backup target on the latest run: ${named}`
+    warn(
+      `${missed.length} repository(ies) missed their backup target on the latest run: ${named}`,
+      'backup.target.missed-latest',
+      missed.map((m) => m.name ?? m.guid).join(', ')
     );
-    exitCode = Math.max(exitCode, 1);
   }
   const failedVerifies = extra.failedVerifies ?? [];
   if (failedVerifies.length > 0) {
     const named = failedVerifies.map((f) => `${f.name ?? f.guid} (${f.status})`).join(', ');
-    issues.push(
-      `${failedVerifies.length} repository(ies) failed their last backup verify: ${named}`
+    warn(
+      `${failedVerifies.length} repository(ies) failed their last backup verify: ${named}`,
+      'backup.verify.failed',
+      failedVerifies.map((f) => f.name ?? f.guid).join(', ')
     );
-    exitCode = Math.max(exitCode, 1);
   }
   // Raised from 0 only by these checks, so the shared verdict's message moves with it.
   const message = exitCode === health.exitCode ? health.message : 'System has warnings';
-  return { ...health, issues, exitCode, healthy: exitCode === 0, message };
+  return { ...health, issues, findings, exitCode, healthy: exitCode === 0, message };
 }
 
 /** The machine's repos behind their schedule or target, and those whose latest run missed one. */
@@ -234,63 +268,153 @@ function backupStanding(
   return Promise.all([fetchStaleBackups(name, listResult), fetchMissedTargets(name, listResult)]);
 }
 
-export function registerHealthCommand(machine: Command, program: Command): void {
+/** Run `repository_health --all --strict` on the machine and fold its answer. */
+export async function fetchRepoHealth(machineName: string): Promise<RepoHealthFold> {
+  try {
+    const localConfig = await configService.getLocalConfig();
+    const machine = localConfig.machines[machineName] as { datastore?: string } | undefined;
+    const result = await getExecutor().execute({
+      functionName: 'repository_health',
+      machineName,
+      datastore: machine?.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH,
+      params: { all: true, strict: true },
+      captureOutput: true,
+      // The verdict reads this answer now: `--background` must not hand back a ticket in its place.
+      probe: true,
+    });
+    return foldRepoHealthResult(result);
+  } catch (error) {
+    return {
+      status: 'failed',
+      repositories: [],
+      error: error instanceof Error ? error.message : String(error),
+    };
+  }
+}
+
+function displayRepoHealthSection(fold: RepoHealthFold): void {
+  if (fold.status !== 'ok' || fold.repositories.length === 0) return;
+  outputService.info(t('commands.machine.health.repoHealthSection'));
+  const unchecked: string[] = [];
+  for (const r of fold.repositories) {
+    if (r.level === 'none') {
+      unchecked.push(repoLabel(r));
+      continue;
+    }
+    // The repo name is data; only the level is copy.
+    outputService.info(`  ${repoLabel(r)}: ${t(REPO_LEVEL_KEY[r.level])}`);
+  }
+  if (unchecked.length > 0) {
+    outputService.info(
+      t('commands.machine.health.repoHealthNoCheck', { repositories: unchecked.join(', ') })
+    );
+  }
+}
+
+const REPO_LEVEL_KEY: Record<Exclude<RepoHealthLevel, 'none'>, string> = {
+  ok: 'commands.repo.health.fileLevelOk',
+  warning: 'commands.repo.health.fileLevelWarning',
+  error: 'commands.repo.health.fileLevelError',
+};
+
+/** The `renderMachineHealth` step: the verdict for the listing the `list-all` job produced, plus every repo's health(). */
+/** The full machine verdict for one listing: the shared parser, then staleness, every repo's health() and the certificates. */
+export async function composeMachineHealth(name: string, listing: unknown) {
+  const vaultStatus = JSON.stringify(listing);
+  const machine = { machineName: name, vaultStatus };
+  const listResult = parseListResult(vaultStatus);
+  // The listing the job returned already holds the stale-process section.
+  const staleBinary = listResult ? staleBinariesOf(listResult) : null;
+  const [staleBackups, missedTargets] = await backupStanding(name, listResult);
+  const failedVerifies = failedVerifyRepos(listResult?.backup_coverage);
+  const repoHealth = await fetchRepoHealth(name);
+  const health = applyCertificates(
+    applyRepoHealth(
+      applyStaleness(getMachineHealth(machine), {
+        staleBinary,
+        staleBackups,
+        missedTargets,
+        failedVerifies,
+      }),
+      repoHealth,
+      name
+    ),
+    certificatesOf(listResult)
+  );
+  return { health, staleBinary, staleBackups, missedTargets, failedVerifies, repoHealth };
+}
+
+async function renderHealthFromJob(
+  name: string,
+  output: string | undefined,
+  format: OutputFormat
+): Promise<void> {
+  const { health, staleBinary, staleBackups, missedTargets, failedVerifies, repoHealth } =
+    await composeMachineHealth(name, parseMachineStatus(output));
+
+  if (format === 'json') {
+    outputService.print(
+      {
+        ...health,
+        stale_binary: staleBinary,
+        backup_staleness: staleBackups,
+        target_misses: missedTargets,
+        verify_failures: failedVerifies,
+        repo_health: repoHealth.repositories,
+        repo_health_status: repoHealth.status,
+      },
+      format
+    );
+  } else {
+    displayHealthReport(health, name, repoHealth);
+  }
+
+  if (health.exitCode !== 0) {
+    setExitCode(health.exitCode);
+  }
+}
+
+bindStepHandler('renderMachineHealth', async ({ machine, output }) => {
+  // The spinner of the attached call ends before the verdict prints; in a ticket's later run there is none.
+  stopSpinner(true);
+  await renderHealthFromJob(machine, output, getOutputFormat());
+});
+
+/** `machine health`: one read job; the verdict is its step, so a ticket handed back early prints nothing half-done. */
+async function runHealthJob(name: string): Promise<void> {
+  if (!(await configService.getLocalConfig()).machines[name]) {
+    throw new ValidationError(t('errors.machineNotFound', { name }));
+  }
+  // The job captures its output, so nothing else shows while the machine lists itself.
+  startSpinner(t('commands.machine.health.fetching'));
+  let outcome: Awaited<ReturnType<typeof runCommandJob>>;
+  try {
+    outcome = await runCommandJob('machine health', await machineStatusJob(name), [
+      planStep('renderMachineHealth'),
+    ]);
+  } catch (error) {
+    stopSpinner(false);
+    throw error;
+  }
+  stopSpinner(outcome.kind !== 'pending' && outcome.result.success);
+  if (outcome.kind === 'pending') {
+    const code = pendingExitCode(outcome);
+    if (code !== undefined) setExitCode(code);
+    return;
+  }
+  if (!outcome.result.success) {
+    renderLocalExecutionFailure(outcome.result, t('commands.machine.health.fetching'));
+  }
+}
+
+export function registerHealthCommand(machine: Command): void {
   machine
     .command('health')
     .description(t('commands.machine.health.description'))
     .argument('<name>', t('options.name'))
-    .option('-t, --team <name>', t('options.team'))
-    .action(async (name: string, options: { team?: string }) => {
+    .action(async (name: string) => {
       try {
-        const provider = getStateProvider();
-        const opts = await configService.applyDefaults(options);
-
-        const machine = await withSpinner(
-          t('commands.machine.health.fetching'),
-          () =>
-            provider.machines.getWithVaultStatus({
-              teamName: opts.team as string,
-              machineName: name,
-            }),
-          t('commands.machine.health.fetched')
-        );
-
-        if (!machine) {
-          throw new ValidationError(t('errors.machineNotFound', { name }));
-        }
-
-        const format = program.opts().output as OutputFormat;
-        const listResult = parseListResult(machine.vaultStatus);
-        const [staleBinary, [staleBackups, missedTargets]] = await Promise.all([
-          fetchStaleBinaries(name),
-          backupStanding(name, listResult),
-        ]);
-        const failedVerifies = failedVerifyRepos(listResult?.backup_coverage);
-        const health = applyStaleness(getMachineHealth(machine), {
-          staleBinary,
-          staleBackups,
-          missedTargets,
-          failedVerifies,
-        });
-
-        if (format === 'json') {
-          outputService.print(
-            {
-              ...health,
-              stale_binary: staleBinary,
-              backup_staleness: staleBackups,
-              target_misses: missedTargets,
-              verify_failures: failedVerifies,
-            },
-            format
-          );
-        } else {
-          displayHealthReport(health, name);
-        }
-
-        if (health.exitCode !== 0) {
-          setExitCode(health.exitCode);
-        }
+        await runHealthJob(name);
       } catch (error) {
         handleError(error);
       }

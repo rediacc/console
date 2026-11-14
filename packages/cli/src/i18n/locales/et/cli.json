@@ -11,9 +11,11 @@
         "descriptionShort": "Loetle hoidla või valikuga --at salvestatud hetktõmmise failid",
         "empty": "{{name}} ei sisalda faile.",
         "failed": "{{name}} loetlemine ebaõnnestus",
+        "fromNeedsAt": "--from nimetab varunduste hoidla, kust hetktõmmist loetakse, seega on vaja ka --at.",
         "liveMountListing": "Hetktõmmise {{snapshot}} loend loeti töötavalt haakepunktilt selle tegemise aja lähedal, seega võib see salvestatud tõmmisest veidi erineda. Taastamine annab salvestatud tõmmise täpselt tagasi.",
         "noListing": "Hoidla {{name}} hetktõmmisel {{snapshot}} pole salvestatud faililoendit, seega ei saa seda sirvida. Failide vaatamiseks taasta see.",
         "optionAt": "Loetle sel ajal või enne seda tehtud hetktõmmis või see hetktõmmise ID (loeb tükihoidlat)",
+        "optionFrom": "Koos --at'ga loe hetktõmmis sellest varunduste hoidlast, mitte parima järjestusega hoidlast",
         "optionDepth": "Piira laskumine N tasemega (0 piiramatuks)",
         "optionLimit": "Tagastatavate kirjete maksimaalne arv (0 piiramatuks)",
         "optionPath": "Piira loetelu selle alampuuga",
@@ -23,7 +25,6 @@
       },
       "cancel": {
         "cancelled": "{{name}} katkestatud",
-        "cancelling": "{{name}} peatamine...",
         "description": "Katkestab käimasoleva varukoopia kaugmasinal",
         "notRunning": "Strateegia \"{{name}}\" varukoopia pole käimas"
       },
@@ -68,7 +69,12 @@
         "optionAs": "Taastatud hoidla nimi (vaikimisi artefakti nimi)",
         "optionAt": "Taasta ajahetk: hetktõmmise ID või RFC3339 aeg (chunk-hoidla taastamine)",
         "optionDatastore": "Taasta sellesse nimega andmehoidlasse (seda majutab hoidla ühendatud masin)",
+        "optionFrom": "Loe hetktõmmis sellest varunduste hoidlast (vaikimisi hoidla uusima kontrollitud hetktõmmisega; hoidla tõrke korral liigu järgmise juurde)",
         "noSeedNeedsSnapshot": "--no-seed kehtib taastamisel tükipoe hetktõmmisest ja sellel hoidlal pole ühtegi.",
+        "fromNeedsSnapshot": "--from nimetab varunduste hoidla ning sellel hoidlal pole tükipoe hetktõmmist, mida sealt taastada.",
+        "storeFallback": "Varunduste hoidla {{failed}} ei suutnud taastamist teenindada; proovin hoidlat {{next}}.",
+        "storeRankingUnreadable": "Ei õnnestunud lugeda, milline varunduste hoidla sisaldab uusimat hetktõmmist ({{reason}}); loen põhihoidlat.",
+        "storeServed": "Loetud varunduste hoidlast {{store}}.",
         "optionNoSeed": "Too iga tükk poest, selle asemel et taaskasutada kohalikke ankruid või hoidla tõmmiseid (tõestab, et pood on loetav)",
         "optionUp": "Juuruta taastatud hoidla pärast ülekannet",
         "placementExclusive": "Anna täpselt üks asukohalipp: --machine või --datastore.",
@@ -207,7 +213,8 @@
         "bind": {
           "alreadyBound": "Varundusstrateegia \"{{strategy}}\" on juba seotud masinaga \"{{machine}}\"",
           "bound": "Varundusstrateegia \"{{strategy}}\" seoti masinaga \"{{machine}}\"",
-          "description": "Seo varundusstrateegia masinaga, et selle ajakava sinna juurutataks"
+          "description": "Seo varundusstrateegia masinaga, et selle ajakava sinna juurutataks",
+          "uncheckedTargets": "Hoidla registreerimist ei kontrollitud: {{targets}}. Ajakava keeldub registreerimata hoidlast, kui üksust kirjutatakse."
         },
         "description": "Halda nimelist varundusstrateegiat (hot/cold režiimid, sihtkohad, ajakava)",
         "list": {
@@ -225,6 +232,14 @@
           "removed": "Varundusstrateegia eemaldatud",
           "unboundWarn": "Strateegia \"{{strategy}}\" eemaldati ja lahutati masinatest: {{machines}}. Nendele masinatele juba paigaldatud taimerid jäävad alles, kuni seal käivitatakse \"rdc backup schedule\"."
         },
+        "replication": {
+          "registered": "Replikatsioon: {{count}} reeglit registreeritud kontoserveris",
+          "removed": "Replikatsioon: {{count}} reeglit eemaldatud kontoserverist",
+          "unsupported": "Kontoserveris pole replikatsioonireegleid (HTTP 404), seega ühtegi koopiat ei tehta. Strateegia on salvestatud; uuenda kontoserverit ja seo see siis uuesti.",
+          "notPushed": "Replikatsioonireegleid ei saadetud: kontotõend puudub. Logi sisse ja seo strateegia siis uuesti.",
+          "failed": "Liini {{lineage}} replikatsioonireegel hoidlasse {{target}} lükati tagasi: {{reason}}",
+          "syncFailed": "Replikatsioonireegleid ei õnnestunud sünkroonida: {{reason}}"
+        },
         "set": {
           "description": "Loo või uuenda varundusstrateegiat",
           "examples": {
@@ -234,6 +249,9 @@
           "optionBwlimit": "Üleslaadimise ribalaiuse piirang baitides sekundis, valikulise K/M/G järelliitega (nt \"6M\", \"500K\")",
           "optionCron": "Cron-ajakava (nt \"0 * * * *\" tunni kaupa)",
           "optionDestination": "Sihtkoha nimi strateegia sees. Loob Rediacc chunk-hoidla sihtkoha",
+          "optionTarget": "Registreeritud hoidla ID, kuhu sihtkoht kirjutab (vaikimisi: home). Kasuta koos valikuga --destination",
+          "optionReplicateFrom": "Muuda sihtkoht koopiaks: kontoserver kopeerib selle hoidla sihtkoha sihthoidlasse, nii et masin ei lae sinna midagi üles. Kasuta koos valikutega --destination ja --target",
+          "replicateFromNeedsDestination": "--replicate-from nimetab ühe sihtkoha allika; lisa --destination <name>.",
           "optionDisable": "Keela strateegia või sihtkoht",
           "optionEnable": "Luba strateegia või sihtkoht",
           "optionExclude": "Jäta need hoidlad varundusest välja (komaga eraldatud nimed)",
@@ -241,6 +259,7 @@
           "optionMode": "Varundusrežiim: \"hot\" teeb hetktõmmise, kui kõik töötab edasi, \"cold\" peatab konteinerid hetktõmmise tegemise ajaks",
           "optionReadBwlimit": "Selle strateegia hetktõmmiste lugemispiir: samad ühikud mis --bwlimit; none eemaldab selle",
           "readBwlimitStrategyOnly": "--read-bwlimit kehtib kogu strateegiale (lugemine toimub masinas kohapeal); jäta --destination ära.",
+          "targetNeedsDestination": "--target määrab ühe sihtkoha hoidla; lisa --destination <name>.",
           "saved": "Varundussettrateegia konfiguratsioon salvestatud",
           "optionRetention": "Hetktõmmiste säilitus, näiteks last=7,daily=7,weekly=4,monthly=6 (\"none\" eemaldab selle)",
           "retentionInvalid": "--retention \"{{value}}\" ei ole nimi=arv paaride loend. Nimed on last, hourly, daily, weekly, monthly ja yearly, igaüks üks kord, ja iga arv on täisarv, näiteks last=7,daily=7.",
@@ -336,6 +355,8 @@
         "restoreTestNeedsCredential": "Selles konfiguratsioonis pole {{name}} jaoks mandaati, seega ei saaks taastatud koopiat proovimiseks avada.",
         "restoreTestNoAnchor": "Hoidlal {{name}} pole masinas taastamiseks varundusankrut. Tee esmalt hetktõmmis.",
         "restoreTestNoSpace": "Hetktõmmise {{snapshot}} taastamistesti jaoks pole piisavalt ruumi: vaja on {{need}} baiti vaba ruumi, andmehoidlas on {{free}}.",
+        "restoreTestSizeUnknown": "Hetktõmmise {{snapshot}} suurust pole konto registris, seega ei saa kontrollida taastamistesti jaoks vajalikku ruumi. Tehke käsuga rdc backup snapshot hetktõmmis ja proovige uuesti.",
+        "restoreTestFreeUnknown": "Masina {{machine}} andmehoidla vaba ruumi ei õnnestunud lugeda, seega ei saa kontrollida taastamistesti jaoks vajalikku ruumi.",
         "verdictUnreadable": "Hoidla {{name}} kontroll ei printinud loetavat otsust, seega ei tõendatud midagi."
       },
       "snapshots": {
@@ -371,7 +392,9 @@
         "summaryError": "  viga: {{error}}",
         "optionStore": "Ehitab krüptitud kujutise otse varunduste hoidlast, ilma masinata. Vaja on API-tokenit skoobiga backup:read + backup:restore muutujas REDIACC_TOKEN",
         "optionAt": "Koos --store'iga: hangitav hetktõmmis, kellaaeg (ISO 8601) või hetktõmmise id (vaikimisi uusim)",
+        "optionFrom": "Koos --store'iga loe sellest varunduste hoidlast, mitte parima järjestusega hoidlast; teisele hoidlale ei lülituta kunagi",
         "storeDone": "{{repo}}: hetktõmmis {{snapshot}} hangitud -> {{image}} ({{bytes}} baiti alla laaditud)",
+        "storeCellsRoot": "Hetktõmmise juure kontroll: {{outcome}}",
         "storeOfflineNote": "Koopia on krüptitud ja seda ei saa selles operatsioonisüsteemis avada; selle saab Linuxi masinasse saata käsuga 'rdc backup upload'."
       },
       "upload": {
@@ -406,7 +429,11 @@
         "cancelExclusive": "--cancel ei saa kasutada koos --dry-run'iga",
         "cancelled": "Hoidla \"{{name}}\" edasilükatud täielik eemaldus tühistati.",
         "nothingWaiting": "Hoidla \"{{name}}\" täielikku eemaldust ei oodatud.",
-        "delayed": "Hoidla \"{{name}}\" täielik eemaldus on edasi lükatud: midagi ei kustutatud ja see käivitub {{when}} (UTC). Tühistage see enne käsuga: rdc backup purge {{name}} --cancel"
+        "delayed": "Hoidla \"{{name}}\" täielik eemaldus on edasi lükatud: midagi ei kustutatud ja see käivitub {{when}} (UTC). Tühistage see enne käsuga: {{cancel}}",
+        "optionLineage": "Puhasta varunduse liin selle ID järgi (nagu `rdc backup usage` seda näitab), kui selle hoidlat selles konfiguratsioonis enam pole",
+        "targetRequired": "Anna täpselt üks sihtmärk: hoidla viide või --lineage <guid> liini jaoks, mille hoidlat enam pole.",
+        "lineageOwned": "Liin {{lineage}} kuulub selles konfiguratsioonis hoidlale \"{{name}}\". Puhasta see käsuga: rdc backup purge {{name}}",
+        "confirmLineage": "See kustutab liini {{name}} kõik {{count}} salvestatud hetktõmmist ({{bytes}}) ja seda ei saa tagasi võtta. Kinnitamiseks sisesta liini ID:"
       },
       "check": {
         "description": "Tõendab, et hetktõmmis avaneb parooliga, taastades ühe faili",
@@ -424,9 +451,11 @@
       },
       "tocKey": {
         "description": "Halda hoidla sirvimisloendi võtit",
-        "optionDryRun": "Teatab, mida tehtaks; ei puutu midagi",
-        "optionReplace": "Asenda masinas juba olev erinev võti (saadab tõendiks parooli)",
-        "syncDescription": "Paigalda hoidla loendivõti selle masinasse või asenda erinev võti"
+        "sync": {
+          "description": "Paigalda hoidla loendivõti selle masinasse või asenda erinev võti",
+          "optionDryRun": "Teatab, mida tehtaks; ei puutu midagi",
+          "optionReplace": "Asenda masinas juba olev erinev võti (saadab tõendiks parooli)"
+        }
       },
       "churn": {
         "description": "Mõõdab, kui palju hoidla kujutis jooksutuste vahel muutub, prognoosib üleslaadimise mahu iga lahtrisuuruse kohta ja soovitab ühte. Töö ajal hoitakse masinas reflink-baasi, mis eemaldatakse alati.",
@@ -784,13 +813,20 @@
         "removedCerts": "{{count}} sertifikaadi vahemälu kirje {{verb}} eemaldatud:",
         "removedOrphanRepos": "{{count}} repositooriumikirjet {{verb}} eemaldatud (ei ole ühelegi masinale määratud):",
         "scanning": "Vananenud jääkide otsimine kohalikust konfiguratsioonist...",
-        "tooManyOnlyFlags": "Anna korraga maksimaalselt üks lipp: --certs-only / --archives-only / --refs-only."
+        "tooManyOnlyFlags": "Anna korraga maksimaalselt üks lipp: --certs-only / --archives-only / --refs-only.",
+        "goneMachineReposOption": "Arhiveeri hoidlakirjed, mis asuvad masinal, mida konfiguratsioonis enam pole. Arhiveeritakse, mitte ei kustutata: iga kirje säilitab oma mandaadi ja on taastatav kuni arhiivi ooteaja lõpuni. Valib ainult selle rühma: sertifikaadivahemälu, arhiivide ja ristviidete rühmad jäetakse vahele, kui nende oma --*-only lippu ei anta.",
+        "foundGoneMachineRepos": "{{count}} hoidlakirjet asub masinal, mida konfiguratsioonis enam pole:",
+        "archivedGoneMachineRepos": "{{count}} hoidlakirjet {{verb}} arhiveeritud (asuvad masinal, mida konfiguratsioonis enam pole):",
+        "goneMachineReposHint": "Arhiveeri need käsuga 'rdc config prune --gone-machine-repos'; iga kirje jääb taastatavaks kuni arhiivi ooteaja lõpuni.",
+        "droppedGoneMachineState": "{{count}} käituskirjet, mis viitavad konfiguratsioonist puuduvale masinale, {{verb}} eemaldatud:"
       },
       "reconcile": {
         "acceptObservedUnfiltered": "--accept-observed ei saa kombineerida --machine'iga: osaline skaneerimine ei suuda tõestada, et asukoht on ühemõtteline, seega oleks ümberkirjutamine oletus. Käivita 'rdc config reconcile --accept-observed' ilma filtrita.",
         "description": "Ehita töötamisaegne olek uuesti masina tõe põhjal. Parandab aegunud ühendus- ja marsruutimisandmed.",
         "optionAcceptObserved": "Kirjuta deklareeritud asukoht ümber vastavaks image'i tegelikule asukohale, kuid ainult siis, kui see on ühemõtteline (täheldatud täpselt ühel masinal). Duplikaadid jäävad konfliktideks.",
-        "optionMachine": "Piira tasakaalustamine nende masinatega"
+        "optionMachine": "Piira tasakaalustamine nende masinatega",
+        "noListing": "Masina {{machine}} kohta pole loendit salvestatud.",
+        "listFailed": "renet list all ebaõnnestus (väljumiskood {{exitCode}})."
       },
       "recover": {
         "confirm": "Taasta konfiguratsioon \"{{name}}\" varukoopiast?",
@@ -894,11 +930,14 @@
           "notEnabled": "Kaugkonfiguratsioon ei ole lubatud.",
           "pulled": "Konfiguratsioon toodud",
           "pulling": "Konfiguratsiooni toomine kaugelt...",
-          "success": "Konfiguratsioon värskendati kaugelt (versioon {{version}})."
+          "success": "Konfiguratsioon värskendati kaugelt (versioon {{version}}).",
+          "replacedLocal": "Konfiguratsioon \"{{config}}\": kohalik fail erines serveri versioonist {{version}} ja asendati sellega: {{changes}}"
         },
         "staleSlot": "Sinu key slot on aegunud (konfiguratsiooni krüptovõti roteeriti). Registreeru uuesti käsuga: rdc config remote enable",
         "status": {
-          "description": "Kuva kaugühenduse olek"
+          "description": "Kuva kaugühenduse olek",
+          "deviceKeyMissing": "See seade ei saa enam selle konfiguratsiooni kaugsalvestust avada: seadme võti on kadunud (taaskäivitus võib võtmehoidla tühjendada). Registreeri seade uuesti käsuga: rdc config remote enable",
+          "deviceCannotOpen": "See seade ei saa selle konfiguratsiooni kaugsalvestust avada: seadme registreering lükati tagasi, näiteks pärast võtme roteerimist. Registreeri seade uuesti käsuga: rdc config remote enable"
         },
         "masterPassword": {
           "description": "Halda selle liikme peaparooli (password slot)",
@@ -977,7 +1016,10 @@
           "invalidVersion": "Versioon peab olema positiivne täisarv, saadi \"{{version}}\".",
           "alreadyCurrent": "Versioon {{version}} on juba konfiguratsiooni \"{{config}}\" praegune versioon; taastada pole midagi.",
           "success": "Konfiguratsiooni \"{{config}}\" versioon {{restored}} taastati versioonina {{version}}."
-        }
+        },
+        "localEditsPushed": "Konfiguratsioon \"{{config}}\": kohalikus failis olid muudatused pärast serveri versiooni {{from}}; need saadeti versioonina {{to}}: {{changes}}",
+        "localEditsConflict": "Konfiguratsioon \"{{config}}\": kohalikus failis on muudatused pärast serveri versiooni {{cached}} ({{changes}}) ja server on liikunud versioonile {{server}}. Midagi ei kirjutatud üle. Kopeeri muudatused kõrvale, käivita \"rdc config remote refresh\", et võtta versioon {{server}} (see asendab kohaliku faili), ja rakenda need uuesti.",
+        "localEditsUnverifiable": "Konfiguratsioon \"{{config}}\": kohalik fail erineb serveri versioonist {{server}} ({{changes}}) ja versiooni {{cached}}, millest see vahemällu võeti, ei õnnestunud lugeda ({{reason}}), seega ei saa kohalikku muudatust serveri muudatusest eristada. Midagi ei kirjutatud üle. Kopeeri muudatused kõrvale, käivita \"rdc config remote refresh\", et võtta versioon {{server}} (see asendab kohaliku faili), ja rakenda need uuesti."
       },
       "rotateCek": {
         "cancelled": "Rotatsioon tühistatud. Midagi ei muutunud.",
@@ -1023,6 +1065,21 @@
           "description": "Kuva praegune SSH-võtme konfiguratsioon",
           "noKey": "SSH-võtit ei ole seadistatud"
         }
+      },
+      "importMachine": {
+        "descriptionShort": "Too masin koos hoidlatega teisest konfiguratsioonist üle",
+        "description": "Kopeerib ühe masina teisest konfiguratsioonist aktiivsesse: masina kirje, kui aktiivses konfiguratsioonis seda pole, iga sellel masinal asuva hoidla kõigi siltidega ja iga masinaga seotud varundusstrateegia. Olemasolevat ei kirjutata kunagi üle. Samasugused kirjed jäävad puutumata, erinevad lükatakse tagasi (sama nimega hoidla teise GUID-iga, masin teisel aadressil). Kui midagi lükatakse tagasi, ei kirjutata midagi. Aruanne näitab ainult nimesid ega trüki kunagi välja mandaate, võtmeid ega GUID-e.",
+        "argMachine": "Masina nimi lähtekonfiguratsioonis",
+        "optionFrom": "Konfiguratsioon, millest kopeerida",
+        "optionDryRun": "Näita, mida kopeeritaks, ilma midagi kirjutamata",
+        "optionStrategyFromSource": "Asenda erinev varundusstrateegia lähtekonfiguratsiooni versiooniga, selle asemel et see tagasi lükata",
+        "machineMissing": "Masinat \"{{machine}}\" lähtekonfiguratsioonis ei ole.",
+        "sameConfig": "Lähtekonfiguratsioon \"{{name}}\" on aktiivne konfiguratsioon. Vali sihtkoht suvandiga --config.",
+        "sourceMissing": "Konfiguratsiooni \"{{name}}\" ei ole olemas.",
+        "targetMissing": "Aktiivset konfiguratsiooni \"{{name}}\" ei ole olemas.",
+        "refused": "{{count}} kirjet erineb lähtekonfiguratsioonist; midagi ei kirjutatud.",
+        "summary": "Masina \"{{machine}}\" jaoks kopeeriti konfiguratsioonist \"{{from}}\" {{count}} muudatust.",
+        "summaryDryRun": "Masina \"{{machine}}\" jaoks kopeeritaks konfiguratsioonist \"{{from}}\" {{count}} muudatust."
       }
     },
     "credits": {
@@ -1206,7 +1263,8 @@
           "basic": "Loetle masina tööd."
         },
         "machineOption": "Sihtmasina nimi (jäta ära, et näha selle konfiguratsiooni pooleliolevate tööde pileteid)",
-        "emptyTickets": "Selles konfiguratsioonis pole pooleliolevaid töid."
+        "emptyTickets": "Selles konfiguratsioonis pole pooleliolevaid töid.",
+        "allOption": "Kuva ka aegunud ja hüljatud piletid"
       },
       "logs": {
         "description": "Taasesita või jälgi eraldiseisva töö sündmuslogi",
@@ -1226,6 +1284,7 @@
           "basic": "Kuva ühe töö olek."
         }
       },
+      "stepsUnfinished": "{{verb}}: töö lõppes, kuid sammud {{steps}} jäid pooleli. rdc job wait viib need lõpuni.",
       "summary": "Halda masina eraldiseisvaid töid",
       "machineRequired": "Selles konfiguratsioonis pole tööle {{jobId}} piletit. Anna valikuga -m <machine> teada, kus see töötab.",
       "ticketMachineOption": "Sihtmasina nimi (valikuline, kui konfiguratsioonis on töö pilet olemas)",
@@ -1248,7 +1307,28 @@
       },
       "steps": {
         "pending": "ootel sammud: rdc job wait {{jobId}}",
-        "pendingForConfig": "Konfiguratsioonil {{config}} on {{count}} sammu ootel"
+        "pendingForConfig": "Konfiguratsioonil {{config}} on {{count}} sammu ootel",
+        "abandoned": "töö {{jobId}}: sammudest loobuti ({{reason}})",
+        "reason": {
+          "gone": "tööd pole masinas enam",
+          "never-started": "see ei käivitunudki",
+          "age": "vanem kui 7 päeva",
+          "dismissed": "hüljatud"
+        }
+      },
+      "dismiss": {
+        "description": "Loobu tööpiletitest kohalikult: ootel sammud visatakse ära ja pilet ei ilmu enam. Masinaga ei ühenduta ja tööd ennast ei puututa.",
+        "summary": "Loobu tööde piletitest kohalikult, masinat kutsumata",
+        "idArg": "Hüljatavate piletite töö- või päringu-ID-d",
+        "staleOption": "Hülga kõik ootel piletid, mis on vanemad kui --older-than (vaikimisi 24h)",
+        "olderThanOption": "Koos --stale'iga pileti minimaalne vanus, nt 90m, 24h (vaikimisi: 24h)",
+        "confirm": "Kas hüljata {{count}} piletit? Nende ootel samme ei täideta kunagi.",
+        "dismissed": "Hüljati {{count}} piletit.",
+        "none": "Sobivaid pileteid pole.",
+        "invalidOlderThan": "--older-than peab olema kestus nagu 90m või 24h (saadud: \"{{value}}\")",
+        "needsTarget": "Anna vähemalt üks töö-ID või lisa --stale.",
+        "conflictingTargets": "Anna kas töö-ID-d või --stale (soovi korral koos --older-than), mitte mõlemat; --older-than nõuab --stale.",
+        "notFound": "Selles konfiguratsioonis pole {{jobId}} jaoks piletit."
       }
     },
     "machine": {
@@ -1271,7 +1351,11 @@
         "dnsCleanedUp": "Eemaldatud {{count}} DNS-kirjet",
         "dnsDeleted": "DNS-kirje kustutatud: {{type}} {{name}}",
         "noState": "Masina \"{{name}}\" jaoks pole OpenTofu olekut leitud. Kasuta käsitsi lisatud masinate jaoks 'config remove-machine'.",
-        "optionForce": "Jätab kinnitusviipa vahele"
+        "optionForce": "Jätab kinnitusviipa vahele",
+        "optionArchiveRepos": "Arhiveeri selle masina hoidlate konfiguratsioonikirjed (mandaadid säilivad, taastatavad)",
+        "reposArchived": "Arhiveeriti {{count}} masinal {{machine}} asunud hoidlakirjet: {{repos}}",
+        "reposLeft": "{{count}} hoidlakirjet viitab endiselt masinale {{machine}}, mida selles konfiguratsioonis enam pole: {{repos}}",
+        "reposLeftHint": "Arhiveeri need käsuga 'rdc config prune --gone-machine-repos' või ükshaaval käsuga 'rdc repo delete <name> -y'."
       },
       "description": "Vaatab kaugmasina olekut: süsteemi ressursid, töötavad konteinerid, systemd teenused, juurutatud repositooriumid ja tervisediagnostika. Ainult lugemiseks; repositooriumide muutmiseks kasuta `repo`. Peamised alamkomandod: status (täisolek, kitsendatav lippudega --system, --containers, --repositories, --services), health, list, add, remove, setup, prune, provision, deprovision.",
       "descriptionShort": "Halda kaugmasinaid (olek, tervis, loetlemine, lisamine, eemaldamine, seadistamine, koristamine)",
@@ -1302,7 +1386,41 @@
         "systemDisk": "  Ketas: {{percent}}",
         "systemMemory": "  Mälu: {{percent}}",
         "systemSection": "\nSüsteem:",
-        "systemUptime": "  Tööaeg: {{uptime}}"
+        "systemUptime": "  Tööaeg: {{uptime}}",
+        "repoHealthSection": "\nHoidlate seisund:",
+        "repoHealthNoCheck": "  Kontrollita (health() puudub): {{repositories}}"
+      },
+      "repair": {
+        "description": "Käivitab masina tervisekontrolli leidude ohutud parandused ja kontrollib uuesti (väljumiskood 0: midagi ei jäänud, 1: jäid hoiatused või operaatori tööd, 2: jäi viga või parandus ebaõnnestus)",
+        "descriptionShort": "Käivitab masina tervisehuvastuste ohutud parandused ja kontrollib seejärel uuesti",
+        "optionDryRun": "Loetleb parandused, mis käivitataks, neid käivitamata",
+        "optionCode": "Parandab ainult selle leiu koodi (korratav)",
+        "optionWithBackup": "Lubab auto-with-backup parandused, igaüks pärast oma hoidla õnnestunud hetktõmmist",
+        "optionWindowOverride": "Käivitab window=only parandused ka väljaspool hooldusakent",
+        "optionSetWindow": "Salvestab masina hooldusakna (HH:MM-HH:MM, UTC) või kustutab selle väärtusega off ja lõpetab",
+        "header": "\n{{name}} parandamine:",
+        "nothingDue": "  Ühelgi leiul pole käivitatavat parandust",
+        "runByHand": "    Käivita käsitsi: {{command}}",
+        "summary": "Käivitati {{ran}} parandust, ebaõnnestus {{failed}}; jäi {{remaining}} leidu",
+        "windowSet": "Masina {{name}} hooldusaken on nüüd {{window}} UTC",
+        "windowCleared": "Masina {{name}} hooldusaken kustutati; window=only parandused enam iseenesest ei käivitu",
+        "windowInvalid": "Vigane hooldusaken „{{window}}“: kasuta UTC-ajas HH:MM-HH:MM või off",
+        "reasonNeedsBackup": "vajab --with-backup (enne tehakse hetktõmmis)",
+        "reasonOutsideWindow": "ainult hooldusaknas {{window}} UTC (--window-override käivitab kohe)",
+        "reasonNoWindow": "ainult hooldusaknas, aga masinal pole hooldusakent (määra --set-window abil)",
+        "reasonSnapshotFailed": "hetktõmmis ebaõnnestus, seega varukoopiat vajavaid parandusi ei käivitatud: {{detail}}",
+        "reasonNoRepository": "hoidlat pole selles konfiguratsioonis",
+        "reasonNoNetworkIds": "leid ei nimeta ühtegi rediacc-docker järelevaatajat, seega taaskäivitus puudutaks kõiki masina järelevaatajaid",
+        "reasonNoAction": "selle leiu jaoks pole teadaolevat parandust",
+        "resultOk": "parandatud",
+        "resultFailed": "parandus ebaõnnestus",
+        "resultPlanned": "käivitataks",
+        "resultSkipped": "vahele jäetud",
+        "resultRefused": "keeldutud",
+        "resultCancelled": "tühistatud",
+        "resultGone": "juba kadunud",
+        "resultCovered": "kaetud varasema parandusega",
+        "resultOperator": "operaatori otsus"
       },
       "infra": {
         "cert": {
@@ -1331,7 +1449,6 @@
         "push": {
           "description": "Lükka infrastruktuuri konfiguratsioon masinale (Traefik-puhverserver, marsruuter, Cloudflare DNS). Käivita kõigepealt 'machine infra set <machine>'",
           "descriptionShort": "Lükka infrastruktuuri konfiguratsioon masinale",
-          "installingProxy": "Marsruuteri installimine...",
           "success": "Infrastruktuuri konfiguratsioon lükati masinale \"{{name}}\""
         },
         "set": {
@@ -1434,12 +1551,11 @@
         "previewEmpty": "Orbusid andmehoidla ressursse ei leitud",
         "pruneUnknownOption": "Kustutab ainult repositooriumeid, mida renet-i .interim/state peegel ei suuda klassifitseerida (pole kohalikus konfiguratsioonis JA puudub fork-märgistusega peegel). Rangelt kitsam kui --orphaned-repos: forkid ilma konfiguratsioonita säilitatakse, kui peegel neid tuvastab. Nii eelpeegelalised pärandorpad kui ka käsitsi kustutatud grand-repositooriumid kuuluvad sellesse kategooriasse.",
         "startingDatastore": "Orvu andmesalve ressursside skaneerimine masinal {{machine}}...",
-        "startingUnits": "Orvuks jäänud systemd-üksuste skaneerimine masinal {{machine}}...",
         "unitsCompleted": "Üksuste koristamine lõpetatud",
-        "unitsFailed": "Üksuste koristamine ebaõnnestus",
         "unknownCompleted": "{{count}} tundmatut repositooriumi koristatud",
         "unknownFound": "Leitud {{count}} tundmat repositooriumi ({{deletable}} kustutatavad pärast ühendusohutuse kontrolli)",
-        "unknownStarting": "Tundmatute repositooriumide skaneerimine masinal {{machine}} (pole kohalikus konfiguratsioonis + puudub fork-märgistusega peegel)..."
+        "unknownStarting": "Tundmatute repositooriumide skaneerimine masinal {{machine}} (pole kohalikus konfiguratsioonis + puudub fork-märgistusega peegel)...",
+        "orphanFormsNeedFinishedJob": "Puhastustöö alles käib, seega kustutamised valikutega --orphaned-repos ja --prune-unknown ei alanud. Käivita käsk uuesti, kui 'rdc job wait' teatab töö lõpust."
       },
       "converge": {
         "autoFailed": "Runtime'i ühtlustamine masinas '{{machine}}' ebaõnnestus: {{error}}. Jätkamiseks: {{command}}",
@@ -1495,6 +1611,10 @@
         "includeDockerOption": "Taaskäivita ka iga repositooriumi rediacc-docker-N supervisor (taaskäivitab selle konteinerid)",
         "jsonOption": "Väljasta aruanne JSON-vormingus",
         "nothingStale": "Masinas '{{machine}}' ei kasuta ükski renet'i deemon asendatud binaari.",
+        "repoNeedsDocker": "--repo nõuab --include-docker: piiratakse ainult ühe hoidla järelevaataja",
+        "repoNoNetworkId": "Hoidlal '{{repo}}' pole selles konfiguratsioonis võrgu ID-d; kontrolli käsuga rdc repo list",
+        "repoOption": "Piira taaskäivitus ühe hoidla järelevaatajaga (nõuab --include-docker)",
+        "repoRenetTooOld": "Masina '{{machine}}' renet ei tunne veel --repo valikut ja keeldus ulatusest; midagi ei taaskäivitatud. Käivita esmalt rdc machine setup {{machine}}",
         "starting": "Masina '{{machine}}' renet'i deemonite taaskäivitamine..."
       },
       "scanKeys": {
@@ -1525,7 +1645,6 @@
           "basic": "Kuva masina täielik olek.",
           "containers": "Kuva ainult masinal töötavad konteinerid."
         },
-        "fetched": "Staatus laaditud",
         "fetching": "Staatust laaditakse masinast {{machine}}...",
         "healthCheck": "Seisundikontrolli režiim - väljub koodiga 2, kui mõni on ebaterve",
         "infrastructure": "Infrastruktuur",
@@ -1549,7 +1668,9 @@
         "verifyFailureSection": "Ebaõnnestunud varunduskontrollid",
         "verifyFailureWarning": "{{count}} hoidlat ebaõnnestus viimases varunduskontrollis.",
         "missedTargetSection": "Hoidlad, mis jäid varundusest eesmärgist maha",
-        "missedTargetWarning": "{{count}} hoidlat jäi viimasel jooksutusel varundusest eesmärgist maha."
+        "missedTargetWarning": "{{count}} hoidlat jäi viimasel jooksutusel varundusest eesmärgist maha.",
+        "licenseDetailUnreadable": "Loendis pole loetavaid litsentsi üksikasju (renet on vanem kui jaotis licenses või mõni kirje on vigane), seega pole blokeeritud varunduste ja uuendamise olek teada.",
+        "noMemoryCap": "{{count}} hoidlat töötab ilma mälupiirita, seega võib ükskõik milline neist võtta kogu hosti mälu: {{names}}. Sea piir käsuga rdc repo policy set <ref> --memory-max <size>"
       },
       "gpu": {
         "descriptionShort": "Vaata masina GPU-sid ja seadmeõigusi",
@@ -1703,7 +1824,8 @@
           "description": "Kontrolli CLI konfiguratsiooni viitu (harud, HEAD) masinal tegelikult olemasolevate objektide vastu. Teatab rippuvatest viidetest (viide osutab puuduvale objektile) ja orvuks jäänud commit'idest (muutumatu commit, milleni ükski viide ei küüni). Ainult lugemiseks.",
           "descriptionShort": "Kontrolli konfiguratsiooni viitu masina objektide vastu",
           "orphanHeader": "{{count}} orvuks jäänud commit'i (ükski viide ei küüni nendeni):",
-          "orphanHint": "Taaskasuta orve käsuga: rdc repo gc --apply -m <machine>"
+          "orphanHint": "Taaskasuta orve käsuga: rdc repo gc --apply -m <machine>",
+          "noReport": "Masina {{machine}} fsck-töö ei tagastanud objektiaruannet, seega midagi ei võrreldud."
         },
         "ownership": {
           "completed": "Omandiõigus uuendatud",
@@ -1711,7 +1833,12 @@
           "descriptionShort": "Muuda hoidla kataloogi omaniku UID-i",
           "failed": "Omandiõiguse uuendamine ebaõnnestus",
           "starting": "Hoidla \"{{repository}}\" omandiõiguse seadistamine masinal \"{{machine}}\"...",
-          "uidOption": "Omaniku UID (vaikimisi: 7111)"
+          "uidOption": "Omaniku UID (vaikimisi: 7111)",
+          "rootOwnedOption": "Anna root-kasutajale kuuluvad failid, mis asuvad root-i või selle UID kataloogide all, omaniku UID-le ja salvesta igaüks tagasivõtmise manifesti",
+          "dryRunOption": "Koos lipuga --root-owned: loetle failid, mis muutuksid, midagi muutmata",
+          "undoOption": "Koos lipuga --root-owned: tagasta root-ile tagasivõtmise manifesti failid, mis kuuluvad endiselt omaniku UID-le",
+          "rootOwnedQualifiers": "--dry-run ja --undo kehtivad ainult koos lipuga --root-owned ning neid ei saa koos kasutada",
+          "rootOwnedDryRunSummary": "{{count}} root'i omanduses kirjet asukohas {{repository}} masinas {{machine}} antaks omaniku UID-le üle; midagi ei muudetud."
         },
         "template": {
           "apply": {
@@ -1831,7 +1958,8 @@
         "sizeOption": "Hoidla suurus (nt 10G, 100G, 1T)",
         "sizeRequiredDocker": "--size on Dockeri hoidla jaoks kohustuslik (--machine, või Dockeri-maailma --datastore).",
         "starting": "Hoidla \"{{repository}}\" ({{size}}) loomine masinal \"{{machine}}\"...",
-        "startingDatastore": "Hoidla \"{{repository}}\" loomine andmehoidlas \"{{datastore}}\" ({{machine}})..."
+        "startingDatastore": "Hoidla \"{{repository}}\" loomine andmehoidlas \"{{datastore}}\" ({{machine}})...",
+        "stepsUnfinished": "repo create: {{name}} loodi, kuid sammud {{steps}} jäid pooleli. rdc job wait viib need lõpuni."
       },
       "delete": {
         "archived": "Hoidla \"{{repository}}\" mandaat arhiveeritud",
@@ -1857,7 +1985,9 @@
         "licenseRetireFailed": "Kontoserverile ei õnnestunud teada anda, et hoidla \"{{repository}}\" litsents on tagastatud ({{reason}}). See jääb serveri litsentside kogusummas arvesse, kuni see on tagastatud.",
         "backupsPurged": "Hoidla \"{{repository}}\" {{count}} pilvehetktõmmist kustutati, vabanes {{bytes}}.",
         "purgeBackupsOption": "Kustuta hoidla pilvevarukoopiad kohe, selle asemel et lasta neil aeguda",
-        "purgeForkRefused": "\"{{repository}}\" on fork ja jagab varunduse liini oma lähtehoidlaga, nii et --purge-backups kustutaks ka lähtehoidla varukoopiad. Kustuta fork ilma selle valikuta."
+        "purgeForkRefused": "\"{{repository}}\" on fork ja jagab varunduse liini oma lähtehoidlaga, nii et --purge-backups kustutaks ka lähtehoidla varukoopiad. Kustuta fork ilma selle valikuta.",
+        "confirmMachineGone": "Hoidla \"{{repository}}\" masinat \"{{machine}}\" selles konfiguratsioonis enam pole, seega ühelgi masinal midagi ei muudeta. Kas arhiveerida hoidla \"{{repository}}\" konfiguratsioonikirje?",
+        "machineGoneArchived": "Hoidla \"{{repository}}\" konfiguratsioonikirje arhiveeriti: selle masinat \"{{machine}}\" selles konfiguratsioonis enam pole, seega ühegi masinaga ei ühendatud"
       },
       "description": "Juuruta ja halda krüpteeritud hoidlaid masinatel. Peamised alamkomandod: create, up (juuruta), down (peata), fork (hetkeline CoW-kloon), delete, push/pull (varukoopia), sync (failide ülekanne). Elutsükkel: repo create → repo up → repo down. Vaata arhitektuuri, marsruutimise ja keskkonna muutujate üksikasju käsuga rdc --help.",
       "descriptionShort": "Juuruta ja halda krüpteeritud hoidlaid masinatel",
@@ -1942,6 +2072,10 @@
       },
       "gc": {
         "applied": "Prügikoristus lõpetatud: {{deleted}}/{{total}} commit'i kustutatud",
+        "started": "{{started}} kustutust {{total}}-st töötab jobidena; jälgi neid käsuga rdc job list.",
+        "partlyFailed": "{{failed}} commit'i {{total}}-st ei õnnestunud kustutada",
+        "noSummary": "gc-töö ei trükkinud kokkuvõtet, seega kogusummad pole teada. Käivita proovikäivitus uuesti, et näha, mis on järel.",
+        "datastorePathUnsupported": "Andmehoidla tee {{path}} sisaldab märki ',' või '@', mida töö loendiparameeter edastada ei saa. Nimeta tee ümber.",
         "applyOption": "Kustuta ligipääsmatud commit'id päriselt (vaikimisi on kuiv eelvaade)",
         "deleted": "Commit {{commit}} kustutatud",
         "deleteFailed": "Commit'i {{commit}} kustutamine ebaõnnestus",
@@ -2036,6 +2170,7 @@
         "description": "Haldab masina salvestushooldaja rakendatavat automaatset suurusepoliitikat: kasvatab hoidla kvooti võrgus, kui see täitub (mitte üle max-quota ega siis, kui puulis on ruumi vähe), ja käivitab plaanitud trimme. Automaatset vähendamist ei ole; selleks kasuta 'repo resize'. Ilma viiteta hallatakse masinaülest vaikepoliitikat -m peal",
         "descriptionShort": "Halda automaatset suurusepoliitikat (automaatkasv, plaanitud trim)",
         "failed": "Poliitikatoiming ebaõnnestus",
+        "settingsNotHeld": "Seadete lugemine ei jõudnud sellesse protsessi, seega ei saa piiranguid ühte dokumenti liita.",
         "get": {
           "description": "Näitab salvestatud masina vaikeväärtust, hoidla ülekirjutust (viitega) ja hooldaja rakendatavat ühendatud kehtivat poliitikat",
           "descriptionShort": "Näita suurusepoliitikat (masina vaikimisi, hoidla ülekirjutus, kehtiv)"
@@ -2050,7 +2185,21 @@
           "growStepOption": "Kasv sammu kohta: absoluutne (10G) või protsent kvoodist (20%)",
           "growThresholdOption": "Failisüsteemi täituvus %, mis käivitab kasvu (vaikimisi 85)",
           "maxQuotaOption": "Automaatkasvu lagi (nt 200G); automaatkasvuks kohustuslik",
-          "trimIntervalOption": "Vähim tundide arv automaatsete trimmide vahel (vaikimisi 24)"
+          "trimIntervalOption": "Vähim tundide arv automaatsete trimmide vahel (vaikimisi 24)",
+          "memoryMaxOption": "Hoidla mälupiir (nt 10G, eemaldamiseks max); piiri juures lõpetab OOM ühe selle konteineri ja mitte midagi väljaspool",
+          "memoryHighOption": "Hoidla mälu pidurduspunkt (nt 8G, eemaldamiseks max)",
+          "cpuMaxOption": "Hoidla protsessoripiir tuumades (4, 2.5) või N%, eemaldamiseks max",
+          "ioMaxOption": "Hoidla seadme I/O piir: rbps=,wbps=,riops=,wiops= (mis tahes valik, nt rbps=200M,wbps=100M; KEY=max eemaldab ühe) või max",
+          "pidsMaxOption": "Hoidla protsesside piir (pids.max), eemaldamiseks max",
+          "ramVolumeOption": "Hoidla RAM-köite suurus asukohas <mount>/.ram (nt 8G, eemaldamiseks max); mälupiir peab jääma sellest 1G kõrgemale",
+          "clearLimitsOption": "Eemalda hoidla kõik piirangud ja RAM-köide",
+          "forceOption": "Luba mälupiir, mis on hoidla praegusest mälukasutusest madalam"
+        },
+        "limitsNeedRef": "Piirangulipud kehtivad ühele hoidlale: anna selle ref (rdc repo policy set <ref> --memory-max 10G). Kogu masina vorm võtab ainult suurusepoliitika lippe",
+        "limits": {
+          "starting": "Rakendatakse hoidla \"{{repository}}\" piiranguid masinas \"{{machine}}\"...",
+          "completed": "Hoidla \"{{repository}}\" piirangud",
+          "failed": "Piirangutoiming nurjus"
         }
       },
       "promote": {
@@ -2221,6 +2370,38 @@
         "failed": "Oleku kontrollimine ebaõnnestus",
         "starting": "Hoidla \"{{repository}}\" oleku pärimine masinal \"{{machine}}\"..."
       },
+      "health": {
+        "description": "Käivita hoidla Rediaccfile'i health() kontrollid ja välju koodiga 0 (korras), 1 (hoiatus) või 2 (viga)",
+        "header": "\nHoidla {{repository}} seisund:",
+        "levelOk": "✓ Korras",
+        "levelWarning": "⚠ Hoiatus",
+        "levelError": "✗ Viga",
+        "levelNone": "– Kontroll puudub: ükski Rediaccfile ei defineeri health() funktsiooni",
+        "fileLine": "  {{file}}: {{level}} (väljumiskood {{exit}})",
+        "fileLevelOk": "korras",
+        "fileLevelWarning": "hoiatus",
+        "fileLevelError": "viga",
+        "failed": "Hoidla {{repository}} seisundi kontroll ebaõnnestus: {{message}}",
+        "unsupported": "Masina {{machine}} renet on vanem kui hoidlate seisundikontrollid; uuenda seda käsuga rdc machine setup {{machine}}",
+        "renetFailed": "renet ei saanud seisundikontrolli käivitada"
+      },
+      "repair": {
+        "description": "Käivitab hoidla Rediaccfile'ide repair() funktsioonid, mida nende deklareeritud klass lubab, ja seejärel uuesti health() (väljumiskood 0 ok, 1 hoiatus, 2 viga või ebaõnnestunud parandus)",
+        "descriptionShort": "Käivitab hoidla Rediaccfile'i lubatud repair() funktsioonid ja kontrollib seejärel selle tervist uuesti",
+        "optionDryRun": "Näitab, milline repair() käivitataks, midagi käivitamata",
+        "optionWithBackup": "Lubab auto-with-backup repair() funktsioonid pärast hoidla õnnestunud hetktõmmist",
+        "optionWindowOverride": "Käivitab window=only repair() funktsioonid ka väljaspool masina hooldusakent",
+        "optionYes": "Käivitab klassi deklareerimata (operator-only) repair() funktsioonid küsimata",
+        "header": "\n{{repository}} parandamine:",
+        "summary": "Käivitati {{ran}} repair(), ebaõnnestus {{failed}}; health() on nüüd {{level}}",
+        "withheldNeedsBackup": "auto-with-backup repair() funktsioone ei käivitatud: lisa --with-backup",
+        "withheldSnapshotFailed": "auto-with-backup repair() funktsioone ei käivitatud: hetktõmmis ebaõnnestus",
+        "withheldNotConfirmed": "Klassi deklareerimata (operator-only) repair() funktsioone ei käivitatud: neid ei kinnitatud (--yes käivitab need)",
+        "confirmOperatorOnly": "Need repair() funktsioonid ei deklareeri klassi ja loetakse operator-only'ks: {{files}}. Kas käivitada?",
+        "unreadable": "renet vastas ilma parandusaruandeta",
+        "unsupported": "Masina {{machine}} renet on vanem kui repository repair; uuenda seda käsuga rdc machine setup {{machine}}",
+        "renetFailed": "renet ei suutnud parandust käivitada"
+      },
       "sync": {
         "description": "Sünkrooni hoidlaid ja faile (pakkpush/pull, failide ülekanne)",
         "download": {
@@ -2318,6 +2499,37 @@
           "completed": "Seade {{device}} võeti hoidlalt \"{{repository}}\" tagasi",
           "failed": "Seadme tagasivõtmine ebaõnnestus"
         }
+      },
+      "permission": {
+        "descriptionShort": "Anna hoidla Rediaccfile'ile juurdepääs või võta see tagasi",
+        "description": "Laiendab, millele hoidla Rediaccfile'i up() ja down() ligi pääsevad. Need töötavad eelistusteta universaalkasutajana; luba lisab tee (--path) või root-õiguse ilma õiguste loobumiseta (--root). Masin jõustab loa, Rediaccfile saab seda küsida vaid '# rediacc:needs' reaga ning fork algab ilma loata.",
+        "nothingToChange": "permission {{verb}} vajab valikut --root või --path",
+        "grant": {
+          "descriptionShort": "Anna hoidla up() ja down() funktsioonidele laiem juurdepääs",
+          "description": "Lubab hoidla Rediaccfile'i up() ja down() funktsioonidel pääseda ligi teele või töötada root-õigustes. --root lükatakse agendi puhul tagasi, kui kasutaja pole enne agendi käivitamist seadistanud muutujat REDIACC_ALLOW_GRAND_REPO.",
+          "rootOption": "Käivita up() ja down() root-õigustes, ilma õiguste loobumiseta",
+          "pathOption": "Absoluutne tee, millele up() ja down() ligi pääsevad, PATH[:ro|:rw] (vaikimisi kirjutuskaitstud)",
+          "starting": "Annan luba hoidlale \"{{repository}}\" masinas \"{{machine}}\"...",
+          "completed": "Luba antud hoidlale \"{{repository}}\"",
+          "failed": "Loa andmine ebaõnnestus"
+        },
+        "revoke": {
+          "descriptionShort": "Võta hoidlalt tee või root-loa õigus tagasi",
+          "description": "Võtab hoidlalt tagasi elutsükli tee loa või root-loa. Järgmised up() ja down() töötavad alles jäänud õigustega.",
+          "rootOption": "Võta root-luba tagasi",
+          "pathOption": "Absoluutne tee, mille luba tagasi võetakse",
+          "starting": "Võtan hoidla \"{{repository}}\" luba tagasi masinas \"{{machine}}\"...",
+          "completed": "Hoidla \"{{repository}}\" luba võeti tagasi",
+          "failed": "Loa tagasivõtmine ebaõnnestus"
+        },
+        "show": {
+          "descriptionShort": "Näita hoidla elutsükli luba",
+          "description": "Näitab, kas hoidla up() ja down() töötavad root-õigustes ning millistele teedele nad ligi pääsevad.",
+          "starting": "Loen hoidla \"{{repository}}\" luba masinas \"{{machine}}\"...",
+          "completed": "Hoidla \"{{repository}}\" luba loetud",
+          "failed": "Luba ei õnnestunud lugeda",
+          "unreadable": "Masina loa väljundit ei õnnestunud lugeda"
+        }
       }
     },
     "serve": {
@@ -2334,6 +2546,190 @@
       "optionMode": "Paiknemine: daemon (kliendi host) või container",
       "optionPort": "Port, mida kuulata",
       "summary": "Käivita täiturina kaugklientide jaoks"
+    },
+    "server": {
+      "summary": "Paigalda ja käivita ise majutatav Rediacci kontoserver",
+      "description": "Paigaldab ise majutatava Rediacci kontoserveri (Elite) masinasse hoidlana ning võimaldab seda seejärel kontrollida, uuendada, varundada ja litsentsida. Mitte segi ajada käsuga `rdc serve`, mis käivitab selle CLI täitjana.",
+      "domainArgument": "Paigaldatud serveri avalik domeen",
+      "optionMachine": "Masin, millel server töötab, kui sellel seadmel pole domeeni paigalduskirjet",
+      "optionRepo": "Hoidla, milles server töötab (vaikimisi: elite)",
+      "install": {
+        "summary": "Paigalda kontoserver masinasse",
+        "description": "Paigaldab ise majutatava kontoserveri olemasolevasse masinasse: kontrollib masinat, seadistab renet'i, kui see puudub, ootab DNS-i, seadistab TLS-i, loob hoidla, genereerib võtmed masinas, litsentsib, käivitab serveri ja loob omaniku konto. Igal väärtusel on lipp; terminalis küsitakse puuduvat väärtust. Uuesti käivitamine jätab tehtud sammud vahele.",
+        "machineArgument": "Seadistatud masin, millele paigaldada (või registreeri uus valikutega --ip ja --user)",
+        "optionIp": "Olemasoleva serveri või LAN-seadme aadress, mis tuleb enne registreerida",
+        "optionUser": "SSH-kasutaja sellel masinal",
+        "optionPort": "SSH-port sellel masinal (vaikimisi: 22)",
+        "optionName": "Nimi, mille all masin registreeritakse (vaikimisi: server-<ip>)",
+        "optionDomain": "Serveri avalik domeen, näiteks accounts.example.com",
+        "optionStoreDomain": "Selle varundushoidla avalik domeen (vaikimisi: <name>-store.<domeeni ülejäänud osa>)",
+        "optionRepo": "Hoidla nimi (vaikimisi: elite)",
+        "optionSize": "Hoidla suurus (vaikimisi: 10G)",
+        "optionOwner": "Paigalduse käigus loodava omaniku konto e-post (vaikimisi: sisse logitud konto)",
+        "optionTls": "Kuidas sertifikaat hangitakse: letsencrypt (HTTP-01), cloudflare (DNS-01) või byo (olemasolev sertifikaat)",
+        "optionCfToken": "Cloudflare'i API-tunnus DNS-01 jaoks (koos --tls cloudflare)",
+        "optionCertEmail": "E-post, kuhu Let's Encrypt saadab aegumisteated (vaikimisi: omanik)",
+        "optionTlsCert": "PEM-vormingus sertifikaadifail (koos --tls byo), mis katab mõlemad domeenid",
+        "optionTlsKey": "Selle sertifikaadi privaatvõtme fail (koos --tls byo)",
+        "optionTlsCa": "CA sertifikaat, millega serveri sertifikaat aheldub, kasutatakse tervisekontrollis",
+        "optionLicence": "auto: sisse logitud konto sertifikaat või selle puudumisel tasuta tase; free: alusta tasuta tasemel",
+        "optionCert": "Delegeerimissertifikaadi fail võrguta paigalduseks; selles peab olema nimetatud masinas genereeritud võti",
+        "optionImage": "Käivitatav serveri kujutis (vaikimisi: ghcr.io/rediacc/server:latest)",
+        "optionImageFile": "Salvestatud kujutise arhiiv (docker save), mis saadetakse tõmbamise asemel",
+        "optionLocalImage": "Salvesta --image kohalikust Dockerist ja saada see tõmbamise asemel",
+        "optionNoDnsWait": "Prindi DNS-kirjed, ootamata nende lahendumist",
+        "optionBwsProject": "Kopeeri genereeritud võtmed ka sellesse Bitwarden Secrets Manageri projekti; ilma selleta ei lahku ükski võti masinast",
+        "optionRotate": "Koos --bws-project asenda erinev salvestatud väärtus keeldumise asemel",
+        "optionYes": "Ära küsi midagi: võta vaikeväärtused ja keeldu puuduvast väärtusest",
+        "help": "Sammud järjekorras (iga samm salvestatakse, nii et uuesti käivitamine jätab tehtu vahele):\n  preflight  sudo -n, arhitektuur, pordid 80 ja 443, kettaruum ja kella nihe\n  setup      rdc machine setup, kui renet puudub\n  dns        prindib A- ja AAAA-kirjed, seejärel ootab, kuni mõlemad domeenid lahenduvad masinale\n  tls        Let's Encrypt, Cloudflare DNS-01 või olemasolev sertifikaat\n  repo       loob hoidla ja rakendab elite malli\n  keys       genereerib kõik võtmed masinas hoidla secrets.env faili\n  licence    --cert, muidu sisse logitud konto sertifikaat, muidu tasuta tase\n  image      tõmbab kujutise masinas või saadab --image-file\n  up         käivitab serveri ja ootab vastust aadressilt https://<domain>/health\n  owner      loob omaniku konto\n\nVeel registreerimata masin lisatakse valikutega --ip ja --user. Pilve-VM luuakse enne käsuga rdc machine provision.\nDNS-kirjeid prinditakse, kuid kunagi ei kirjutata kliendi tsooni.\nTerminalis lõpeb paigaldus ühekordse taastepaketiga. Hoia seda turvalises kohas: seda ei logita kunagi ja see ei kuulu valiku --output json väljundisse, kuid rdc server backup prindib selle hiljem uuesti.",
+        "step": "Samm: {{step}}",
+        "skipped": "Samm {{step}}: tehtud varem, jäetud vahele",
+        "done": "Kontoserver töötab aadressil https://{{domain}}",
+        "freeTier": "{{domain}} töötab tasuta tasemel. Litsentsimiseks käivita `rdc server licence {{domain}}`.",
+        "backupHint": "Salvesta taastepakett käsuga `rdc server backup {{domain}} --out <file>`. Omaniku esimene parool on failis {{ownerFile}}.",
+        "examples": {
+          "brought": "Registreeri olemasolev server aadressi järgi ja paigalda sellele.",
+          "configured": "Paigalda seadistatud masinale ilma ühegi küsimuseta.",
+          "lan": "Paigalda LAN-masinale olemasoleva sertifikaadiga tasuta tasemel."
+        }
+      },
+      "status": {
+        "description": "Näita paigaldatud serveri tervist, taset, sertifikaati ja kujutist",
+        "certRefused": "KEELATUD ({{reason}}) kell {{at}}",
+        "certRefusedRun": "käivita: rdc server licence {{domain}}"
+      },
+      "backup": {
+        "description": "Prindi paigaldatud serveri taastepakett (võtmed) või kirjuta see faili",
+        "optionOut": "Kirjuta pakett stdout'i asemel sellesse faili (režiim 0600)",
+        "written": "Taastepakett kirjutati faili {{file}} (režiim 0600)",
+        "examples": {
+          "out": "Salvesta taastepakett faili, mida saab lugeda ainult omanik."
+        }
+      },
+      "upgrade": {
+        "description": "Uuenda paigaldatud server: tee hoidlast fork tagasipöördepunktiks, paiguta uus kujutis, rakenda mall uuesti, kui sisseehitatud mall on uuem, ja taaskäivita",
+        "descriptionShort": "Uuenda paigaldatud server tagasipööramise haruga",
+        "confirm": "Kas uuendada kontoserver aadressil {{domain}}?",
+        "forking": "Hoidlast tehakse fork tagasipöördepunktiks {{tag}}",
+        "template": "Elite malli rakendatakse uuesti (versioon {{from}} -> {{to}})",
+        "templateCurrent": "Juurutatud mall (versioon {{version}}) on ajakohane",
+        "done": "{{domain}} uuendatud. Tagasipöördepunkt: {{rollback}}",
+        "migratingCert": "Sertifikaat viiakse secrets.env-ist sertifikaatide sisendkausta; server rakendab selle käivitumisel"
+      },
+      "licence": {
+        "description": "Vii tasuta taseme server üle delegeerimissertifikaadile, mis pärineb sisse logitud kontolt või valikust --cert",
+        "done": "{{domain}} on litsentsitud tellimuse {{subscription}} alusel",
+        "certUnreadable": "Sertifikaadifaili {{file}} ei saa lugeda",
+        "certInvalid": "{{file}} ei ole kasutatav delegeerimissertifikaat: {{error}}",
+        "keyMismatch": "{{file}} on välja antud muule võtmele kui masinas genereeritud võti. Anna välja sertifikaat masina võtmele.",
+        "issuedKeyMismatch": "Kontoserver andis sertifikaadi välja muule võtmele kui masinas genereeritud võti",
+        "noLogin": "Sisse logitud kontot pole: server käivitub tasuta tasemel",
+        "planDisallows": "Tellimus ei saa sisaldada delegeerimissertifikaati ({{error}}); server käivitub tasuta tasemel",
+        "otherKey": "Tellimusel on juba aktiivne delegeerimissertifikaat teisele võtmele ({{certId}}). Tühista see portaalis ja käivita paigaldus uuesti. {{error}}",
+        "missingScope": "See sisselogimine ei saa delegeerimissertifikaati välja anda. Käivita `rdc subscription login` uuesti omaniku või administraatorina koos 2FA-ga või paigalda valikuga --licence free.",
+        "offerFree": "Kas käivitada server hoopis tasuta tasemel?",
+        "noCertForUpgrade": "Delegeerimissertifikaati pole saadaval: logi sisse käsuga `rdc subscription login` omaniku või administraatorina koos 2FA-ga või anna --cert <file>",
+        "freeProbeHoldsCert": "Server vastab nii, nagu tal oleks sertifikaat, kuigi ühtegi pole paigaldatud",
+        "viaInbox": "Server võttis sertifikaadi kasutusele oma sertifikaatide sisendkaustast; taaskäivitust polnud vaja",
+        "alreadyCurrent": "Serveril on see sertifikaat juba olemas ({{certId}}); midagi pole rakendada",
+        "rejected": "Server lükkas sertifikaadi tagasi ({{reason}}): {{detail}}",
+        "noResult": "Server ei vastanud üleantud sertifikaadile {{seconds}} sekundi jooksul; kontrolli, kas see töötab",
+        "inboxBusy": "Serveri sertifikaatide sisendkaustas ootab juba teine sertifikaat; proovi uuesti, kui selle kohta on otsus tehtud",
+        "confirmMismatch": "Server teatab sertifikaadist {{actual}}, mitte {{expected}}, seega uus sertifikaat ei kehti",
+        "confirmSkipped": "Salvestatud omaniku sisselogimist pole ({{ownerFile}}), nii et serveri sertifikaati ei saanud kinnitada; aluseks võetakse sisendkausta vastus",
+        "bootRefused": "Server keeldus käivitusel oma sertifikaadist ({{reason}}): {{detail}}",
+        "droppedCert": "Sertifikaat {{certId}} paigutati sissekasti",
+        "noUpstreamKey": "Serveril puudub UPSTREAM_PUBLIC_KEY, seega ta ei saa ühtegi sertifikaati kontrollida ja uus sertifikaat ei aita. Määra UPSTREAM_PUBLIC_KEY domeeni {{domain}} saladustes ning käivita `rdc server upgrade {{domain}}`.",
+        "bootRefusalStays": "Sertifikaat rakendati, kuid server teatab endiselt käivituse keeldumisest ({{reason}}); kontrolli serveri logisid"
+      },
+      "bundle": {
+        "header": "Domeeni {{domain}} taastepakett. Hoia seda võrguühenduseta; see taastab serveri võtmed.",
+        "once": "See taastepakett kuvatakse ainult üks kord. Salvesta see kohe turvalisse kohta:",
+        "owner": "Omaniku konto: {{email}}, esimene parool: {{password}}"
+      },
+      "bws": {
+        "skipped": "Valikut --bws-project pole: võtmed jäävad ainult masinasse",
+        "done": "Võtmed varundati Bitwarden Secrets Manageri: {{created}} loodud, {{unchanged}} muutmata, {{rotated}} asendatud",
+        "noToken": "Bitwarden Secrets Manageri tunnust pole: sea BWS_ACCESS_TOKEN või kirjuta see seadistuskataloogi faili bws-access-token",
+        "listFailed": "bws secret list nurjus",
+        "noWriter": "--bws-project vajab console'i checkout'i: kirjutamine käib läbi faili private/account/scripts/rotation/bws-write.ts, mis hoiab väärtuse käsureast väljas",
+        "writeFailed": "Võtme {{key}} kirjutamine Bitwarden Secrets Manageri nurjus",
+        "readFailed": "Võtmete lugemine masinast nurjus",
+        "badName": "Keeldutakse hoidla nimest, mis pole läbipaistmatu",
+        "differs": "{{key}} on juba salvestatud teise väärtusega; asendamiseks anna --rotate"
+      },
+      "dns": {
+        "create": "Loo need DNS-kirjed DNS-teenusepakkuja juures:",
+        "waiting": "Oodatakse kirjete lahendumist...",
+        "resolved": "DNS lahendub masinale",
+        "notWaiting": "DNS-i ei oodata",
+        "timeout": "Need kirjed ei lahendu endiselt: {{records}}",
+        "resolvesElsewhere": "{{name}} lahendub aadressile {{found}}, mitte {{want}}; paranda kõigepealt kirje",
+        "written": "Kirjutatud {{type}} {{name}} -> {{value}}"
+      },
+      "health": {
+        "failed": "https://{{domain}}/health vastas {{status}}, mitte 200",
+        "noAnswer": "vastust pole",
+        "certMismatch": "Domeeni {{domain}} sertifikaat katab nimed {{sans}}, kuid mitte {{domain}}"
+      },
+      "image": {
+        "pulling": "Tõmmatakse {{image}} masinas",
+        "pullFailed": "Kujutise {{image}} tõmbamine nurjus: {{detail}}",
+        "saving": "Salvestatakse {{image}} kohalikust Dockerist",
+        "saveFailed": "docker save {{image}} nurjus"
+      },
+      "owner": {
+        "stepFailed": "{{step}} vastas {{status}} {{error}}",
+        "raced": "Serveri tellimus {{box}} ei ole sama, mis sertifikaadi tellimus {{cert}}: mõni teine konto registreeris end enne"
+      },
+      "preflight": {
+        "refused": "{{machine}} ei ole valmis:",
+        "noAnswer": "{{machine}} ei vastanud eelkontrollile SSH kaudu",
+        "noSudo": "sudo -n ebaõnnestub masinas {{machine}}; SSH-kasutaja vajab paroolita sudo-õigust",
+        "arch": "Arhitektuur {{arch}} ei ole toetatud (x86_64 või aarch64)",
+        "portBusy": "Pordi {{port}} hoiab kinni {{holder}}",
+        "disk": "Andmehoidlas on vaba {{free}} GiB, vaja on {{need}} GiB",
+        "clock": "Masina kell on {{skew}} s nihkes (lubatud kuni {{max}} s); luba ajasünkroonimine"
+      },
+      "tls": {
+        "byoNeedsPair": "--tls byo vajab valikuid --tls-cert ja --tls-key",
+        "byoFailed": "Hosti {{host}} sertifikaadi paigaldamine nurjus: {{detail}}",
+        "byoInstalled": "Hosti {{host}} sertifikaat paigaldatud",
+        "cloudflareNeedsToken": "--tls cloudflare vajab valikut --cf-token"
+      },
+      "prompts": {
+        "machine": "Masin, millele paigaldada",
+        "machineAddExisting": "Olemasolev server või LAN-seade (IP ja kasutaja)",
+        "provisionHint": "Pilve-VM luuakse enne käsuga rdc machine provision.",
+        "machineIp": "IP-aadress",
+        "machineUser": "SSH-kasutaja",
+        "machinePort": "SSH-port",
+        "machineName": "Selle masina nimi",
+        "domain": "Serveri avalik domeen",
+        "storeDomain": "Selle varundushoidla avalik domeen",
+        "tls": "Sertifikaat",
+        "tlsLetsencrypt": "Let's Encrypt (masin vastab pordil 80)",
+        "tlsCloudflare": "Cloudflare DNS (API-tunnus)",
+        "tlsByo": "Olemasolev sertifikaat ja võti",
+        "cfToken": "Cloudflare'i API-tunnus",
+        "owner": "Omaniku konto e-post",
+        "required": "Väärtus on kohustuslik"
+      },
+      "errors": {
+        "needsTTY": "{{flag}} on kohustuslik, kui ei töötata terminalis",
+        "machineUnknown": "Masin {{machine}} ei ole selles seadistuses. Registreerimiseks anna --ip ja --user.",
+        "machineNameTaken": "Masin nimega {{machine}} on juba registreeritud aadressil {{ip}}; vali mõni muu --name",
+        "otherMachine": "{{domain}} paigaldati sellelt seadmelt masinasse {{machine}}",
+        "repoExists": "Hoidla {{repo}} on masinas {{machine}} juba olemas ja seda ei loonud see paigaldus; anna --repo <name>",
+        "repoUnknown": "Hoidla {{repo}} ei ole selles seadistuses",
+        "noRecord": "Sellel seadmel pole domeeni {{domain}} paigalduskirjet; anna --machine (ja --repo, kui see pole elite)",
+        "noDaemon": "Hoidlale {{repo}} pole veel Dockeri deemonit registreeritud",
+        "keygenNoKey": "Masin ei teatanud ühtegi Ed25519 avalikku võtit",
+        "bundleIncomplete": "Masina secrets.env failis puuduvad {{keys}}",
+        "boxScriptFailed": "Käsk masinas {{machine}} lõppes koodiga {{code}}: {{detail}}",
+        "rdcFailed": "{{command}} nurjus (väljumiskood {{code}})",
+        "certAndFree": "--cert ja --licence free ei saa koos kasutada"
+      }
     },
     "shortcuts": {
       "cancel": {
@@ -2367,10 +2763,10 @@
       "description": "Halda litsentsimist ja tellimuse tokeneid. Logi sisse käsuga login, uuri olekut käsuga status, väljasta litsentsid uuesti käsuga refresh.",
       "descriptionShort": "Haldab masina litsentsimist ja tellimust",
       "login": {
+        "backupNeedsTwoFactor": "Sisse logitud ilma varundusruumi haldamiseta. Lülita seadetes aadressil {{url}} sisse kaheastmeline autentimine ja logi uuesti sisse.",
         "channelSynced": "Uuenduskanal seatud väärtusele {{channel}}.",
         "description": "Autentimine brauseri või API tokeni kaudu",
         "discoveringRegions": "Saadaolevaid piirkondi tuvastatakse...",
-        "edgeSeparator": "Edge kanal",
         "emptyToken": "API-token ei tohi olla tühi (stdin ei andnud tokenit).",
         "expired": "Autoriseerimine aegus. Palun proovi uuesti.",
         "machines": "Masinad: {{active}}/{{max}}",
@@ -2390,11 +2786,19 @@
         "regionSelected": "Andmepiirkond: {{region}} ({{domain}})",
         "serverChanged": "Server muutus. Eelmine seanss kustutatud.",
         "success": "Sisselogimine õnnestus",
+        "termsAccepted": "Kasutustingimustega on nõustutud: versioon {{version}}",
+        "termsPending": "Kasutustingimustega pole veel nõustutud. Nõustu nendega aadressil {{url}}",
+        "termsPendingAccept": "Loe neid aadressil {{url}} ja nõustu nendega aadressil {{acceptUrl}}",
         "tokenAndPassword": "Valikuid --token ja --password-stdin ei saa koos kasutada.",
         "totpRequired": "See konto nõuab kaheastmelist autentimist. Määra {{field}} kehtivaks koodiks.",
         "validated": "Token valideeritud",
         "validating": "Tokenit valideeritakse...",
         "waitingApproval": "Brauseri autoriseerimist oodatakse..."
+      },
+      "register": {
+        "description": "Loo brauseris konto (e-post eeltäidetud) ja logi sisse",
+        "optionEmail": "E-posti aadress, mis registreerimislehel eeltäidetakse",
+        "invalidEmail": "Sisesta kehtiv e-posti aadress."
       },
       "logout": {
         "description": "Kustutab salvestatud tellimuse tokeni",
@@ -2424,7 +2828,21 @@
           "refreshing": "Repositooriumi litsentse uuendatakse..."
         },
         "success": "Repositooriumi litsentsid töödeldud",
-        "targetExclusive": "Anna kõige rohkem üks: -m või --repo. --repo tuletab oma masina viitest."
+        "adoptOrigin": "Väljasta teise kontoserveri antud litsentsid uuesti selle konfiguratsiooni kontoserverist ja vii need sinna üle. Ilma selle valikuta jäävad sellised litsentsid puutumata.",
+        "adoptOriginNeedsTarget": "--adopt-origin viib üle terve masina litsentsid: lisa -m <machine>.",
+        "adoptOriginNeedsLogin": "--adopt-origin väljastab litsentsid uuesti selle konfiguratsiooni kontoserverist, mis nõuab sisselogimist: käivita esmalt \"rdc subscription login\".",
+        "targetExclusive": "Anna kõige rohkem üks: -m või --repo. --repo tuletab oma masina viitest.",
+        "noLogin": {
+          "renewing": "Litsentse uuendatakse nende enda mandaatidega...",
+          "renewed": "Litsentside uuendamine lõpetatud",
+          "none": "Sellesse masinasse pole paigaldatud ühtegi hoidla litsentsi.",
+          "repoRenewed": "{{repositoryGuid}}: uuendatud",
+          "repoNotDue": "{{repositoryGuid}}: pole veel uuendamise aeg",
+          "repoNeedsLogin": "{{repositoryGuid}}: vahele jäetud, vaja on sisselogimist ({{detail}})",
+          "repoFailed": "{{repositoryGuid}}: uuendamine ebaõnnestus ({{detail}})",
+          "failed": "{{count}} litsentsi uuendamine ebaõnnestus; vaata ülaltoodud ridu. Sisselogimine seda ei muuda.",
+          "paidNote": "Ilma sisselogimiseta uuendatakse ainult litsentse, mis uuenevad ise (FREE litsentsid); tasulised litsentsid nõuavad käsku \"rdc subscription login\"."
+        }
       },
       "repo": {
         "status": {
@@ -2446,16 +2864,81 @@
         "overLimitSummary": "  {{count}} masin(at) on soft-hõivatud üle masinakohtade limiidi. Uuendamine töötab endiselt; UUSI repositooriume ei saa litsentsida enne, kui vabastate koha või tõstate limiiti.",
         "parseFailed": "  Kaugmasina olekut ei õnnestunud lugeda",
         "remote": "\nTellimus:",
-        "remoteMachine": "    - {{id}}... (viimati nähtud: {{lastSeen}})",
         "remoteMachineActivations": "  Masina paigad: {{active}}/{{max}}",
-        "remoteMachineOverLimit": "    - {{id}}… (viimati nähtud: {{lastSeen}}) ÜLE LIMIIDI",
-        "remotePlan": "  Plaan:    {{plan}}",
+        "remotePlan": "  Plaan: {{plan}}",
         "remoteRepoLicenseIssuances": "  Igakuised repositooriumi litsentside väljastamised: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  Repositooriumi litsentsid: {{totalTrackedRepos}} jälgitavad, {{validCount}} kehtivad, {{refreshRecommendedCount}} soovitav uuendada, {{hardExpiredCount}} lõplikult aegunud",
-        "remoteRepoLicensesInConfig": "  Repositooriumi litsentsid selles konfiguratsioonis: {{totalTrackedRepos}} jälgitavad, {{validCount}} kehtivad, {{refreshRecommendedCount}} soovitav uuendada, {{hardExpiredCount}} lõplikult aegunud",
-        "remoteRepoLicensesNotInConfig": "  Repositooriumi litsentsid, mis ei kuulu sellesse konfiguratsiooni (kustutatud, haruteed või muu konfiguratsioon): {{count}}",
-        "remoteStatus": "  Olek:     {{status}}",
-        "serverWouldUse": "Kasutaks kontoserverit: {{server}}"
+        "remoteStatus": "  Olek: {{status}}",
+        "serverWouldUse": "Kasutaks kontoserverit: {{server}}",
+        "licencesHeader": "  Litsentsid:",
+        "colGuid": "GUID",
+        "colHardExpiry": "Lõplik aegumine",
+        "colKind": "Liik",
+        "colLastSeen": "Viimati nähtud",
+        "colMachine": "Masin",
+        "colName": "Nimi",
+        "colRefreshBy": "Uuenda enne",
+        "colRepo": "Hoidla",
+        "colState": "Olek",
+        "colWhere": "Kus",
+        "elsewhereAbsent": "{{count}} pole selles konfiguratsioonis ({{state}})",
+        "elsewhereDeleted": "{{count}} kustutatud ({{state}})",
+        "elsewhereSummary": "Mujal: {{items}}",
+        "listHint": "Nende kuvamiseks: rdc subscription status --all",
+        "noLiveLicences": "  Selle konfiguratsiooni hoidlatel pole veel litsentsi.",
+        "optionAll": "Näitab ka kustutatud hoidlate ja selles konfiguratsioonis puuduvate hoidlate litsentse",
+        "othersHeader": "  Kustutatud ja tundmatud litsentsid:",
+        "overLimitCell": "ÜLE PIIRI",
+        "refreshHint": "Uuendamiseks: rdc subscription refresh",
+        "retireHint": "Lõplikult aegunute tagastamiseks: rdc subscription retire --expired",
+        "whereAbsent": "pole selles konfiguratsioonis",
+        "whereDeleted": "kustutatud"
+      },
+      "licenceState": {
+        "valid": "kehtiv",
+        "refreshRecommended": "soovitatav uuendada",
+        "hardExpired": "lõplikult aegunud"
+      },
+      "retire": {
+        "tooShort": "Sisesta hoidla GUID-ist vähemalt 8 märki: {{guid}}",
+        "notFound": "Selle konto litsentsiaruandes pole \"{{guid}}\" litsentsi.",
+        "ambiguous": "\"{{guid}}\" sobib {{count}} litsentsiga: {{matches}}. Sisesta rohkem märke.",
+        "inConfig": "{{name}} on selles konfiguratsioonis alles ja selle litsents on {{state}}. Tagastatud litsents jääb tagastatuks, sest uuendamine ei too hoidlat tagasi. Tagastamiseks siiski kasuta --force.",
+        "needsYes": "Litsentsi tagastamine nõuab kinnitust ja stdin ei ole terminal. Kinnitamiseks lisa --yes.",
+        "confirm": "Kas tagastada hoidla {{name}} litsents ({{guid}}, {{state}})? Uuendamine ei too seda tagasi.",
+        "success": "Litsents tagastatud: {{name}}",
+        "description": "Tagastab kadunud hoidla litsentsi, et see kaoks litsentside kogusummast ja teadetest.",
+        "argGuid": "Hoidla GUID või vähemalt 8 märki konto aruandes olevast litsentsist",
+        "optionForce": "Tagastab litsentsi, mille hoidla on selles konfiguratsioonis alles ja mis pole lõplikult aegunud",
+        "dryRunNeedsExpired": "--dry-run käib koos valikuga --expired.",
+        "expiredConfirm": "Kas tagastada {{count}} litsentsi? Uuendamine ei too neid tagasi.",
+        "expiredDryRun": "Proovikäivitus: midagi ei tagastatud.",
+        "expiredFailed": "{{name}} tagastamine ebaõnnestus: {{error}}",
+        "expiredList": "{{count}} lõplikult aegunud litsentsi kustutatud või tundmatutelt hoidlatelt:",
+        "expiredNeedsConfig": "Selles konfiguratsioonis pole ühtegi hoidlat, nii et --expired ei saa teada, millised litsentsid on üleliigsed. Vali konfiguratsioon valikuga --config.",
+        "expiredNone": "Pole ühtegi tagastatavat lõplikult aegunud litsentsi kustutatud või tundmatult hoidlalt.",
+        "expiredResult": "Tagastatud: {{retired}}, vahele jäetud: {{skipped}} (kasutusel hoidlad), ebaõnnestunud: {{failed}}.",
+        "expiredWithGuid": "--expired tagastab kõik lõplikult aegunud litsentsid ega võta GUID-i.",
+        "needsGuidOrExpired": "Anna hoidla GUID või kasuta --expired.",
+        "optionDryRun": "Koos --expired: loetleb, mis tagastataks, ega muuda midagi",
+        "optionExpired": "Tagastab kõik lõplikult aegunud litsentsid kustutatud hoidlatelt ja hoidlatelt, mida selles konfiguratsioonis pole"
+      },
+      "notices": {
+        "description": "Näitab konto teateid: litsentside aegumine, varukoopiate seisukord, pikendused, sertifikaadid ja tingimused.",
+        "optionAll": "Kaasab suletud teated ja kõik leheküljed, mitte ainult viimased 30 päeva",
+        "optionUnread": "Ainult lugemata teated",
+        "optionMarkRead": "Märgib loetletud teated loetuks",
+        "empty": "Teateid pole.",
+        "markedRead": "{{count}} teade(t) märgiti loetuks.",
+        "more": "+{{count}} veel",
+        "summary": {
+          "repoLicence": "{{hardExpired}} lõplikult aegunud, {{refreshRecommended}} soovitatav uuendada: {{names}}",
+          "backupHealth": "{{count}} varukoopia seisukorra kirjet",
+          "licenceRenewal": "{{planCode}} uueneb {{date}}",
+          "certExpiry": "{{track}} sertifikaat {{number}} aegub {{date}}",
+          "evalExpiry": "{{planCode}} prooviperiood lõpeb {{date}}",
+          "termsNotice": "Tingimused {{version}} jõustuvad {{date}}"
+        }
       }
     },
     "sync": {
@@ -2652,6 +3135,31 @@
         "checksumMismatch": "Faili {{url}} kontrollsumma ei klapi: oodati {{expected}}, saadi {{actual}}. Allalaaditud fail kustutati ja midagi ei paigaldatud.",
         "badArchive": "Allalaaditud arhiivi ei saa kasutada: {{reason}}"
       }
+    },
+    "version": {
+      "channel": "Uuenduskanal: {{channel}}",
+      "description": "Prindib CLI versiooni, platvormi, uuenduskanali ja aktiivse litsentsi: sisselogituna paketi, ilma sisselogimiseta „anonüümne (FREE repositooriumi kohta)“ ja „teadmata (server pole kättesaadav)“, kui konto serverini ei jõua. Lipp --version prindib endiselt ainult versiooni.",
+      "descriptionShort": "Näita CLI versiooni, kanalit ja aktiivset litsentsi",
+      "license": {
+        "anonymous": "anonüümne (FREE repositooriumi kohta)",
+        "label": "Litsents: {{license}}",
+        "unknown": "teadmata (võrguühenduseta)",
+        "unreachable": "teadmata (server pole kättesaadav)"
+      },
+      "platform": "Platvorm: {{platform}} {{arch}}"
+    },
+    "legal": {
+      "accepted": "Nõustutud: versioon {{version}}, {{at}} ({{method}})",
+      "acceptedUnreachable": "Nõustutud: teadmata (server pole kättesaadav)",
+      "binding": "siduv",
+      "credits": "Kolmandate osapoolte teated: {{command}}",
+      "description": "Prindib õigusdokumentide lingid sinu keeles koos siduvate ingliskeelsete linkidega, kehtiva kasutustingimuste versiooni koos kontrollsumma ja arhiivi URL-iga, registreeritud nõusoleku (sisselogituna konto serverist, muidu sellest konfiguratsioonist) ja lepingupoole. Kolmandate osapoolte teated on käsu rdc credits --licenses all.",
+      "descriptionShort": "Näita õigusdokumente, kasutustingimuste versiooni ja sinu nõusolekut",
+      "documentsTitle": "Õigusdokumendid:",
+      "entity": "Lepingupool: {{name}}, {{register}} {{code}}, KMKR {{vat}}, {{address}}",
+      "notAccepted": "Nõustutud: ei ole nõustutud",
+      "terms": "Kasutustingimused: versioon {{version}}, kehtib alates {{effective}}",
+      "upcoming": "Tulev versioon {{version}} jõustub {{effective}}"
     }
   },
   "docs": {
@@ -2668,8 +3176,7 @@
         "machineRequired": "Määra masin lipukesega `--machine` või sea konfiguratsiooni vaikeväärtus",
         "noActiveConfig": "Aktiivne konfiguratsioon puudub. Loo üks käsuga `rdc config init`",
         "permissionDenied": "Sinu kontol puuduvad vajalikud õigused",
-        "regionRequired": "Määra piirkond lipukesega `--region` või sea konfiguratsiooni vaikeväärtus",
-        "teamRequired": "Määra meeskond lipukesega `--team` või sea konfiguratsiooni vaikeväärtus"
+        "regionRequired": "Määra piirkond lipukesega `--region` või sea konfiguratsiooni vaikeväärtus"
       }
     },
     "frontmatter": {
@@ -2701,6 +3208,7 @@
     "pageTitle": "Rediacc CLI viide",
     "sectionTitles": {
       "backup": "Varundamine ja taastamine",
+      "server": "Serveri paigaldamine",
       "cluster": "Klastrite haldus",
       "config": "Konfiguratsiooni haldus",
       "credits": "Kolmandate osapoolte autorlus",
@@ -2719,7 +3227,9 @@
       "term": "SSH-terminali juurdepääs",
       "update": "CLI uuendused",
       "vscode": "VS Code'i integratsioon",
-      "tools": "Kohalikud tööriistad"
+      "tools": "Kohalikud tööriistad",
+      "legal": "Õigusdokumendid ja kasutustingimused",
+      "version": "Versiooniteave"
     },
     "supplements": {
       "config": {
@@ -2767,7 +3277,13 @@
       "rotateNotSensitive": "Osuti \"{{pointer}}\" ei ole tundlik väli; kasuta selle asemel 'config field set'.",
       "rotateRequiresTty": "config field rotate nõuab interaktiivset TTY kinnitust; keeldun mitteinteraktiivses kontekstis (ülekirja jaoks seadista REDIACC_ALLOW_CONFIG_EDIT).",
       "showReveal": "--reveal on agendikeskkondades blokeeritud. Kasuta `rdc config show` (varjatud) või `rdc config field get --pointer <pointer> --digest` turvalise sõrmejälje saamiseks.",
-      "showRevealRequiresTty": "--reveal nõuab interaktiivset TTY-d; keeldun edastamast lihtteksti mitte-TTY sihtpunkti."
+      "showRevealRequiresTty": "--reveal nõuab interaktiivset TTY-d; keeldun edastamast lihtteksti mitte-TTY sihtpunkti.",
+      "rootGrantBlocked": "Agendid ei saa hoidlale \"{{name}}\" anda root-luba: selle Rediaccfile töötaks ilma õiguste loobumiseta.\n\nKasutaja: selle lubamiseks seadista REDIACC_ALLOW_GRAND_REPO={{name}} (või * kõigi repositooriumide jaoks) oma terminalis enne agendi seansi käivitamist.",
+      "rootGrantOverride": "Agendi algatatud ülekirjutusi hoidla \"{{name}}\" root-loa puhul vastu ei võeta.\n\nÄra proovi seadistada REDIACC_ALLOW_GRAND_REPO - ainult kasutaja saab selle enne agendi käivitamist autoriseerida.",
+      "pathGrantBlocked": "Agendid ei saa muuta grand-hoidla \"{{name}}\" teeõigusi: selle Rediaccfile jõuaks hosti teedeni, mida kasutaja pole kunagi heaks kiitnud.\n\nKasutaja: selle lubamiseks seadista REDIACC_ALLOW_GRAND_REPO={{name}} (või * kõigi repositooriumide jaoks) oma terminalis enne agendi seansi käivitamist. Fork ei vaja ülekirjutust.",
+      "pathGrantOverride": "Agendi algatatud ülekirjutusi grand-hoidla \"{{name}}\" teeloa puhul vastu ei võeta.\n\nÄra proovi seadistada REDIACC_ALLOW_GRAND_REPO - ainult kasutaja saab selle enne agendi käivitamist autoriseerida.",
+      "limitsGrantBlocked": "Agendid ei saa muuta põhihoidla \"{{name}}\" ressursipiiranguid: madalam piir võib selle konteinerid OOM-iga lõpetada.\n\nKasutaja: lubamiseks sea enne agendi seansi alustamist terminalis REDIACC_ALLOW_GRAND_REPO={{name}} (või * kõigi hoidlate jaoks). Haru jaoks pole seda vaja.",
+      "limitsGrantOverride": "Põhihoidla \"{{name}}\" piirangumuudatuse jaoks ei aktsepteerita agendi algatatud erandeid.\n\nÄra proovi seada REDIACC_ALLOW_GRAND_REPO. Seda saab lubada ainult kasutaja enne agendi käivitamist."
     },
     "authRequired": "Autentimine on nõutud. Käivita: rdc subscription login",
     "cluster": {
@@ -2782,6 +3298,7 @@
       "targetRequired": "Vajalik on sihtmasin (-m) või klaster (--cluster)"
     },
     "config": {
+      "missingNamed": "Konfiguratsiooni \"{{name}}\" pole olemas, seega midagi ei muudetud. Loo see esmalt käsuga: rdc config init {{name}}",
       "invalidEmail": "Vigane e-posti aadress: \"{{value}}\".",
       "machineNotFound": "Masina \"{{name}}\" ei leitud konfiguratsioonist. Saadaval: {{available}}.",
       "noActiveConfig": "Aktiivset konfiguratsiooni ei ole",
@@ -2790,7 +3307,8 @@
     },
     "container": {
       "execFailed": "container_exec ebaõnnestus",
-      "logsFailed": "container_logs ebaõnnestus"
+      "logsFailed": "container_logs ebaõnnestus",
+      "unknown": "Hoidlas \"{{repository}}\" pole konteinerit \"{{container}}\". Konteinerid: {{containers}}. Kas mõtlesid \"{{suggestion}}\"?"
     },
     "datastore": {
       "defaultIsImplicit": "vaikimisi andmehoidla on kaudne; need käsud haldavad täiendavaid nimega andmehoidlaid.",
@@ -2810,12 +3328,16 @@
     },
     "invalidFunctionParams": "Vigased parameetrid funktsioonile \"{{function}}\": {{errors}}",
     "invalidKey": "Vigane võti. Kehtivad võtmed: {{keys}}",
+    "invalidOutputFormat": "Kehtetu väljundvorming \"{{value}}\". Lubatud: {{allowed}}",
     "license": {
       "machineSlotLimit": "See paigutus vajab veel {{needed}} masinakoht(a) ja tellimusel on vaba {{free}} ({{active}} / {{max}} kasutusel). Koht vabaneb automaatselt 5 tundi pärast selle masina viimast aktiivsust või kohe, kui masin eemaldatakse. Tõsta limiiti paketti uuendades või võta ühendust müügiga, et leppida kokku Enterprise'i või partneri masinalimiit.",
       "nothingProvisioned": "Midagi ei loodud: repositooriumi ei loodud.",
+      "backupStoreMismatch": "Keeldutud: masinas {{machine}} oleval repositooriumil \"{{repo}}\" on litsents, mille väljastas {{installed}}, seega kasutaks see varundamiskäsk selle konto varunduste salvestust, mitte konfiguratsiooni \"{{config}}\" kontoserveri {{expected}} oma. Käivitage see konfiguratsiooniga, mille kontoserver on {{installed}}.",
+      "backupStoreUnreadable": "Keeldutud: masinas {{machine}} oleva repositooriumi \"{{repo}}\" paigaldatud litsentse ei õnnestunud lugeda, seega pole teada, millise konto varunduste salvestust see varundamiskäsk kasutaks. Kontrollige, et paroolita sudo töötab masinas {{machine}}, ja proovige siis uuesti.",
       "partialPlacement": "Paigutus katkes poole peal: {{placed}} masin(at) lõpetatud ({{placedNames}}) ja {{remaining}} jäi käivitamata ({{remainingNames}}). Midagi ei võetud tagasi, seega lõpetatud masinad säilitavad oma repositooriumid ja kohad. Vabasta koht või tõsta limiiti ning käivita uuesti: {{command}}",
       "preflightTokenNotReady": "Sinu tellimuse token ei ole valmis. Käivita: rdc subscription login. Juurutamine masinale {{machine}} jäeti vahele.",
       "recoveryFailedNoKnownRepos": "Masinal {{machine}} leiti hoidlaid, kuid ükski neist ei ole sinu kohalikus konfiguratsioonis jälgitud. Kuva jälgitavad hoidlad käsuga `rdc repo list`, seejärel proovi uuesti.",
+      "foreignOriginSkipped": "vahele jäetud: väljastas {{licenseOrigin}}, mitte selle konfiguratsiooni kontoserver {{configOrigin}} (--adopt-origin viib selle üle)",
       "recoveryFailedServerRejected": "Kontoserver lükkas hoidla litsentsi väljastamise tagasi masinal \"{{machine}}\". Esimene viga: {{error}}. Käivita: rdc subscription refresh --repo <repo-ref> üksikasjade saamiseks.",
       "recoveryFailedTokenNotReady": "Sinu tellimuse token ei ole valmis. Käivita: rdc subscription login, seejärel proovi uuesti."
     },
@@ -2823,9 +3345,12 @@
       "offerPrompt": "See käsk vajab litsentsi, kuid sisselogimist ei leitud. Kas logida sisse või jätkata tasuta litsentsiga?",
       "offerLogin": "Logi kontole sisse",
       "offerFree": "Jätka tasuta litsentsiga (kuni {{maxGb}} GB)",
-      "autoTaken": "Sisselogimist ei leitud, seega kasutatakse tasuta litsentsi (kuni {{maxGb}} GB, ilma majutatud varukoopiateta). Rohkema saamiseks loo konto: {{url}}",
+      "autoTaken": "Sisselogimist ei leitud, seega kasutatakse tasuta litsentsi (kuni {{maxGb}} GB, ilma majutatud varukoopiateta). Tasuta konto annab Community piirangud ({{repoGb}} GB hoidla kohta, {{issuances}} litsentsi kuus, {{backupGb}} GB hostitud varukoopiat): {{url}}",
+      "defaultRegion": "Piirkonda pole valitud, seega pärineb tasuta litsents serverist {{server}}. Teise valimiseks lisa --license-region <id> või sea REDIACC_ACCOUNT_SERVER.",
+      "regionIgnored": "See konfiguratsioon kasutab juba serverit {{server}}, seega --license-region jäetakse tähelepanuta.",
       "issued": "Selle hoidla tasuta litsents on paigaldatud (kuni {{maxGb}} GB).",
-      "noHostedBackup": "Tasuta litsentsiga ei kaasne majutatud varukoopiaid. Selle hoidla varundamiseks loo konto ja vali tasuline pakett: {{url}}"
+      "registerHint": "Sellel tasuta litsentsil pole hostitud varukoopiaid. Tasuta konto annab Community piirangud ({{repoGb}} GB hoidla kohta, {{issuances}} litsentsi kuus, {{backupGb}} GB hostitud varukoopiat): {{url}}",
+      "noHostedBackup": "Tasuta litsentsiga ei kaasne majutatud varukoopiaid. Loo tasuta konto, et kasutada Community majutatud varukoopiaid, või vali rohkema jaoks tasuline pakett: {{url}}"
     },
     "machineNotFound": "Masina \"{{name}}\" ei leitud",
     "machineRequired": "Masina nimi on nõutud. Kasuta --machine <name>",
@@ -2903,7 +3428,6 @@
       "remoteFileLocalNotDir": "Kui --remote-file on seadistatud, peab --local olema olemasolev kaust: {{path}}",
       "remoteFileRequiresSingleFile": "--remote-file nõuab täpselt ühte --local teed, mis osutab failile."
     },
-    "teamRequired": "Meeskonna nimi on nõutud. Kasuta --team või määra vaikimisi väärtus käsuga: rdc config set team <name>",
     "term": {
       "connectivityFailed": "Ei saavuta {{host}}:{{port}}. {{error}}\n\nVeaotsing:\n  - Kontrolli, kas masin on sisse lülitatud ja ühendatud võrku\n  - Veendu, et IP-aadress on masina võlvis õigesti seadistatud\n  - Veendu, et port {{port}} ei ole tulemüüriga blokeeritud\n  - Proovi masina pingimine: ping {{host}}",
       "dockerComposeForbidden": "\"docker compose\" ei ole repositooriumi kontekstis lubatud.\n\nKasuta \"renet compose -- <args>\", et rakendataks repositooriumipõhised loopback-IP-d, hosti võrgu süstimine, CRIU võimalused ja compose valideerimine. \"docker compose\" otse käivitamine hiilib kõigist neist kontrollidest mööda ja rikub kasutuselevõtu vaikselt.\n\nOrkestreeritud kasutusele võtmiseks eelista: rdc repo up <repo-ref>",
@@ -2918,8 +3442,16 @@
       "sshCode127": "Käsku ei leitud kaugmasinas",
       "sshCode130": "Ühenduse lõpetas kasutaja (Ctrl+C)",
       "sshCode255": "SSH-ühendus ebaõnnestus - võimalikud põhjused:\n    - Autentimine ebaõnnestus (kontrolli SSH-võtme õigusi)\n    - Hosti võtme kontrollimine ebaõnnestus\n    - Võrguühendus katkes\n    - Kaugmasinas ei tööta SSH-teenus",
+      "blankCommand": "Valik -c on tühi. Anna käivitatav käsk või jäta -c ära, et avada interaktiivne kest.",
       "sshExitCode": "SSH lõpetas koodiga {{code}}",
       "secretStagingFailed": "Hoidla saladusi ei õnnestunud masinasse ette valmistada (ssh väljumiskood {{code}})."
+    },
+    "terms": {
+      "declined": "Kasutustingimustega ei nõustutud, seega tasuta litsentsi ei laaditud.",
+      "required": "Selle konto kasutustingimustega pole nõustutud. Nõustu nendega aadressil {{url}} ja käivita käsk uuesti.",
+      "requiredAccept": "Loe neid aadressil {{url}}, nõustu nendega aadressil {{acceptUrl}} ja käivita käsk uuesti.",
+      "requiredFree": "Selle tasuta litsentsi kasutustingimustega ei nõustutud. Loe neid aadressil {{url}}, seejärel anna {{flag}} või määra {{env}}.",
+      "upcoming": "Uued kasutustingimused {{version}} jõustuvad {{effective}}. Loe neid aadressil {{url}}."
     },
     "unknownCommand": "Tundmatu käsk \"{{command}}\". Saadaval olevad käsud: {{available}}.",
     "unknownRegion": "Tundmatu regioon: {{region}}",
@@ -2968,6 +3500,7 @@
       "localSha256Mismatch": "{{image}} ei klapi enam allalaadimisel salvestatud sha256-ga (oodati {{expected}}, saadi {{actual}}). Laadi see uuesti alla või anna --skip-verify, et see siiski saata.",
       "registerFailed": "Tõmmis paigutati masinasse {{machine}} kui {{guid}}, kuid selle registreerimine konfiguratsioonis ebaõnnestus: {{error}}. Registreerimata tõmmise leiad käsuga: rdc machine prune {{machine}} --orphaned-repos --dry-run",
       "atNeedsStore": "--at kehtib ainult koos --store'iga.",
+      "fromNeedsStore": "--from kehtib ainult koos --store'iga.",
       "storeRefusesMachine": "--store loeb otse varunduste hoidlast ega võta valikut -m <machine>.",
       "storeRefusesCheckpoint": "--store ei võta valikut --checkpoint, sest see ei puuduta ühtegi masinat.",
       "storeRefusesOption": "--store ei võta valikut {{option}}: see juhib masina kaudu allalaadimist; hoidlast toomine jätkab ise ja kontrollib iga tükki.",
@@ -2988,7 +3521,26 @@
       "noConfig": "Kaustas {{path}} pole tofu seadistust (main.tf.json); seda kirjutav ettevalmistuse samm ei käivitunud.",
       "belowFloor": "{{engine}} {{version}} asukohas {{path}} on vanem kui miinimumversioon {{floor}}. Paigalda kinnitatud OpenTofu käsuga: rdc tools install tofu",
       "overrideUnusable": "REDIACC_TOFU osutab failile {{path}}, mis ei käivitu ei OpenTofu ega Terraformina. Paranda või eemalda muutuja või paigalda kinnitatud OpenTofu käsuga: rdc tools install tofu"
-    }
+    },
+    "jobs": {
+      "overlap": {
+        "refusedHead": "Keelatud: {{subject}}, {{origin}}.",
+        "warningHead": "Hoiatus: {{subject}}, {{origin}}.",
+        "seeIt": "  Vaata: {{attach}}",
+        "subject": "{{what}} ({{doing}}{{scope}}) on {{state}}{{started}}",
+        "whatJob": "töö {{id}}",
+        "onScope": " ({{scope}})",
+        "startedAt": ", algas {{timestamp}}",
+        "originUnknown": "käivitaja: teadmata (vanem renet)",
+        "originStarted": "käivitas {{user}} kliendiga {{client}}{{config}}",
+        "originConfig": " (konfiguratsioon {{name}})"
+      },
+      "refused": "Tööd masinas '{{machine}}' ei käivitatud: {{holder}} hoiab sama ulatust.",
+      "holderJob": "töö {{id}}",
+      "holderOther": "teine töö",
+      "orStopIt": "  Või peata see: rdc job cancel {{id}} -m {{machine}}"
+    },
+    "delegationCertRefused": "Serveri litsentsisertifikaat on keelatud ({{code}}); palu operaatoril käivitada: rdc server licence"
   },
   "help": {
     "agentMode": "\n  Agendirežiim\n    • Ainult forkimine: loo fork enne muudatuste tegemist mis tahes repositooriumis\n    • Pearepos (mitte-forkid) on agentidele kirjutuskaitstud\n    • Töövoog: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • Hoidla viide (repo[:tag]) tuletab oma masina ise, seega -m ei ole vajalik\n    • JSON-väljund on automaatne: kõik käsud tagastavad { success, data, errors, metrics }\n    • Parsi alati täielikku JSON-i, ära kasuta tail/head/grep JSON-väljundil\n    • Kasuta filtrilipukesi (nt --repositories, --containers) vastuse mahu vähendamiseks\n\n",
@@ -3041,6 +3593,7 @@
     }
   },
   "options": {
+    "acceptTerms": "Nõustu tasuta litsentsi kasutustingimustega küsimata (või määra RDC_ACCEPT_TERMS=1)",
     "apiToken": "API-token (rdt_...). Anna `-`, et lugeda see stdin-ist (nii ei satu see protsesside loendisse).",
     "artifactRef": "Varukoopia artefakti viide (repo[:tag][@place])",
     "background": "Käivita masinal eraldiseisva tööna: prindi selle ID ja välju",
@@ -3067,7 +3620,9 @@
     "healthTimeout": "Terviskontrolli katse aegumine sekundites (vaikimisi 30)",
     "healthWindow": "Terviseväravaks kuluv koguaeg sekundites (vaikimisi 300)",
     "insiders": "Kasuta VS Code Insidersi seadeid",
+    "json": "Väljasta masinloetav JSON",
     "lang": "Keele alistamine ({{languages}})",
+    "licenseRegion": "Konto piirkond, mis annab tasuta litsentsi, kui konfiguratsioon serverit ei nimeta (nt us, eu)",
     "licenses": "Prindi väljalaske ehitistega kaasas olev täielik THIRD_PARTY_LICENSES tekst",
     "localPath": "Lokaalne kaustatee (vaikimisi: praegune kaust)",
     "localPaths": "Üks või mitu lokaalset faili- või kaustateed (vaikimisi: praegune kaust)",
@@ -3121,7 +3676,6 @@
     "sshPort": "SSH-port",
     "sshUser": "SSH-kasutajanimi",
     "strategyName": "Varundusstrateegia nimi",
-    "team": "Meeskonna nimi",
     "urlOnly": "Prindi VS Code'i URI käivitamise asemel",
     "verifyChecksum": "Kontrolli faile kontrollsummade abil pärast sünkroonimist",
     "vmId": "Virtuaalmasina ID",
@@ -3164,6 +3718,7 @@
   "warnings": {
     "licenseSignatureRefreshed": "Uuendati {{count}} hoidla litsentsi(de) kehtetud allkirjad pärast reneti uuendamist",
     "licenseSignatureRefreshFailed": "{{count}} hoidla litsentsil(-itsentsidel) on pärast reneti uuendamist kehtetud allkirjad. Käivita: rdc subscription refresh -m <machine>",
+    "licenseForeignOriginSkipped": "Masina {{machine}} hoidla {{repo}} litsents jäi puutumata: selle väljastas {{licenseOrigin}}, aga selle konfiguratsiooni kontoserver on {{configOrigin}}. Siit ülekirjutamine katkestab litsentsi uuendusahela. Masina litsentside üleviimiseks serverisse {{configOrigin}} käivita: rdc subscription refresh -m {{machine}} --adopt-origin",
     "secretNameSkipped": "Saladuse {{name}} nimi ei ole kehtiv keskkonnamuutuja nimi; seanss algab ilma selleta."
   }
 }

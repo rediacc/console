@@ -4,9 +4,11 @@
 
 **CRITICAL: This repo uses git worktrees.** The working directory (from `pwd`) is the ONLY correct project root. NEVER use paths from other CLAUDE.md files that may appear in the system context — those belong to the main worktree and are a different checkout. All commands (`./run.sh`, `npx tsx`, file paths) MUST use the current working directory, not `/home/muhammed/monorepo/console/`.
 
-**`git worktree add` is hook-blocked from the assistant's own Bash tool** (`.claude/rediacc_hooks/guards/block_worktree_add.py`, chain `pre-bash`), unconditionally — the operator runs it themselves via the `!` prefix when they want one created. **Settled default (2026-09-16): do not ask which checkout new work should happen in.** Continue in whatever checkout the session is already
-in. A worktree only ever comes from the operator's own `! git worktree add ...`; there is nothing to gain from asking permission for a decision the assistant cannot execute either way. `.claude/rediacc_hooks/guards/block_settled_questions.py` (chain `pre-ask`) refuses a worktree/branch-routing question the same way it refuses a commit-permission question — if the genuine
-cross-session collision risk needs raising, park it as a worklist `[?]` naming the conflict, with a DEFAULT of "continue here", rather than blocking the turn on a question.
+**A second tree comes from a lease, never from `git worktree add` or a clone.** `git worktree add` is hook-blocked from the assistant's own Bash tool (`.claude/rediacc_hooks/guards/block_worktree_add.py`, chain `pre-bash`), and so are `git worktree remove|move|prune|lock|unlock` on a lease tree and a clone of this origin or of a submodule's, wherever it lands (`block_origin_clone.py`). The one tree an agent may hold is a lease: `./run.sh worktree lease` makes a detached, locked tree under `.claude/worktrees/<id>` at the live branch's tip, submodules at their gitlinks and dependencies seeded, and prints its path as the last stdout line. `/writers-now` gives a writer one when its plan or box needs its own tree. Uncommitted work in the main checkout is not in a lease. A real second checkout is still the operator's own `!` command.
+
+**A lease is a boundary.** A writer in one commits on the detached HEAD with the usual pathspec form, a `PR-TASK:` trailer and one `Plan-Box: <PLAN-file>.md#<sig8> clauses=<ids|all>` trailer per box served (or `Plan-Box: none -- <reason>`; the lease `commit-msg` hook and `land` refuse a commit without one), and never pushes, opens a PR, switches or creates a branch, cherry-picks, rebases, or commits a gitlink or `agent/**` (`block_lease_boundary.py`). `ci:quick`, `vm:check` and `live_proof record` refuse a lease; `npm run ci -- --narrow` and named tests run there. The lead spot-checks the report, then runs what `./run.sh worktree land <id>` prints (it only prints: `git cherry-pick -x` per commit, submodules first, then the gitlink commit), and after the picks `./run.sh worktree land <id> --ticks` prints each box's progress rows and its ready `--plan-tick` line (`--run` writes and runs them). `./run.sh worktree leases` lists every lease with its unlanded count, `./run.sh worktree gc` lists the trees safe to remove and `gc --write` removes them. Only GC removes a lease, and it keeps any tree holding an unlanded commit or a dirty path. The Stop hook follows this session's leases and blocks on an unlanded one.
+
+**Settled default (2026-09-16): do not ask which checkout new work should happen in, or whether a writer gets a lease.** Continue in whatever checkout the session is already in, and give a writer a lease when its plan or box needs its own tree. `.claude/rediacc_hooks/guards/block_settled_questions.py` (chain `pre-ask`) refuses a worktree/branch-routing question the same way it refuses a commit-permission question; if the genuine cross-session collision risk needs raising, park it as a worklist `[?]` naming the conflict, with a DEFAULT of "continue here", rather than blocking the turn on a question.
 
 ## Session Defaults
 
@@ -17,7 +19,7 @@ Standing rules for every task, in this repo and its submodules. The operator sho
 Verified work is committed right away, in small reviewable commits on the single current branch, so uncommitted work never piles up into a mountain nobody can review (operator ruling 2026-09-25; the commit-policy plan under agent/plans).
 
 - **A verified unit** serves one stated purpose inside one epic (one `PR-TASK:` id), has had its acceptance check run with the exit code read (a named test, gate or command at `rc=0`, or the lead's spot-check of a writer's output, rule 4), and touches only paths this session owns: its own edits and the file lists its writers reported. Other sessions' uncommitted paths are theirs, and are never committed by inference.
-- **Cadence.** The unit is committed as soon as it is verified, before the next one starts. A worklist item is committed first, then ticked with `commit:<sha>`. Writers never commit: the lead commits each writer's spot-checked output as the report is accepted. Review records of an authorized commit (`agent/reviews/<branch>/`) ride the same branch: `worklist.py --review-commit <me>` commits them, and a push waits until they are committed. A unit above 20 files needs a proof line anyway (`block_unproven_bulk_transform`), which is the signal to split it.
+- **Cadence.** The unit is committed as soon as it is verified, before the next one starts. A worklist item is committed first, then ticked with `commit:<sha>`. In the main checkout a writer does not commit: the lead commits each writer's spot-checked output as the report is accepted. A writer in a lease commits on its detached HEAD and never pushes, and the lead lands those commits with the `git cherry-pick -x` lines `./run.sh worktree land <id>` prints, so the sha a box ticks with is the landed one. Review records of an authorized commit (`agent/reviews/<branch>/`) ride the same branch: `worklist.py --review-commit <me>` commits them, and a push waits until they are committed. A unit above 20 files needs a proof line anyway (`block_unproven_bulk_transform`), which is the signal to split it. A unit's acceptance is a named test or `npm run ci -- --narrow`, never the full gate run: the full `ci:quick` run, with `vm:check` added only when the push range touches the VM trigger paths, runs once per batch, after the plan, STATE and tick commits (any commit outside `.ci/policy/record-paths.json` voids the receipt), right before the push.
 - **Commit form.** `git add -- <new paths>`, then `git commit -F <msg> -- <paths>` (the pathspec form `block_pathspecless_git_commit` enforces). Conventional Commits subject, the verification commands and their exit codes in the body, a `PR-TASK: <id>` trailer, no Co-Authored-By line, no amending: a mistake gets a new fix commit.
 - **Pushing is separate from committing.** Pushes are backups and CI triggers, never one per commit: <!-- scope: pr.push-cadence -->at an epic milestone, at least every 2 hours of committed work, and before a stop that leaves unpushed commits.<!-- /scope --> <!-- scope: pr.turbo-batch-end -->Under `turbo: on` with `turbo_push: batch-end` (the default) the batch is verified locally and pushed once when it completes; until then `block_turbo_early_push` refuses a push or `gh pr create` that names no operational reason, `TURBO_PUSH_REASON='<kind>: <why>'` with kind `ci-cd`, `red-fix`, `deadline` or `backup`, and a `backup` push, admitted once `backup_push_h` fires, opens no PR.<!-- /scope --> A completed batch pushes and opens its PR with no reason; the hooks decide push timing, so it is never asked. Each push still needs a `ci:quick` receipt (`block_unverified_push`), and a push whose range touches the VM trigger paths (`.ci/config/proof-tiers.json`: the deployed renet code, the `private/account` served code, and the CLI remote paths with the drill harness) needs a VERIFIED `npm run vm:check -- --changed` receipt covering each side it touches (`block_vm_unverified_push`), escaped only by `VM_CHECK_PUSH_REASON='<kind>: <why> ASKED:<YYYY-MM-DDTHH:MM>Z'` naming an operator answer.
 - **One branch, one PR, and no agent path to a second.** <!-- scope: pr.one-branch-one-pr -->Each repository (the console and each submodule under `private/`) holds at most one live `MMDD-N` branch and at most one open PR, whose head is that branch. `block_second_branch` refuses every spelling of a second branch (`checkout -b`, `switch -c`, `branch <new>`, a push to a new remote name, `gh pr create --head <other>`), and `block_second_open_pr` refuses a second PR.<!-- /scope --> A second branch or PR is the operator's own `!` command; there is nothing to ask for.
@@ -41,7 +43,7 @@ A session is scoped to one ask, but it walks past real defects on the way. Walki
 nothing, a flag that misbehaves, an error that explains nothing) means a defect has been found. Say so, with the exact command and the exact output. Do not quietly take the long way and leave the bug for the next session to rediscover.
 - **Discovery is always in scope, and so is the fix.** A finding is fixed in the
 session that finds it. Filing an issue never closes a finding. Small and local (no new abstraction, no signature change rippling outward): fix it inline immediately and say so. Bigger than that: ask the machinery (`worklist.py --triage <me> <finding...>` answers INLINE, PLAN+SUBAGENT, or OPERATOR-ONLY with the exact next command), have a Plan agent write the design to
-`agent/plans/PLAN-<slug>.md` (committed, survives compaction; it moves once at close into `_done/` or `_removed/` and leaves a stub, which `check:ci-plan-folders --move` does in one step), then implement it THIS session: via a writer sub-agent when the fix's file set is disjoint from the work in hand or the context is heavy (disjoint ownership, max 4, rule 4), inline otherwise. The
+`agent/plans/PLAN-<slug>.md` (committed, survives compaction; it moves once at close into `_done/` or `_removed/` and leaves a stub, which `check:ci-plan-folders --move` does in one step, and a plan anything still binds (an open box, an open item citing it, an unfinished dependent) is refused compaction, move and sweep), then implement it THIS session: via a writer sub-agent when the fix's file set is disjoint from the work in hand or the context is heavy (disjoint ownership, max 4, rule 4), inline otherwise. The
 fix rides the one branch and its open PR as its own commit (rule 1); there is no second branch to cut for it.
 - **Issues are a last resort with exactly three doors:** the fix needs
 operator-only powers (secrets, purchases, external accounts, production deploys); the operator explicitly deferred it when asked; or the target is outside this session's write access. "It is big" is not a door. Any last-resort issue must carry the evidence (exact command, exact output) and a ready-to-run brief a future session can execute without rediscovery, and its worklist item
@@ -144,10 +146,12 @@ Ask each for conclusions with `file:line` evidence, never file dumps. Pick the m
 - **Plan with them on anything non-trivial.** For a design with real trade-offs, run
 `Plan` agents (up to 3, different angles) and synthesize. Their plans are proposals, not findings: check the load-bearing claims directly before acting (see rule 3).
 - **Writing agents: at most 4 at a time, with disjoint file ownership.** The cap is `writer_cap:` in `agent/plans/QUEUE.md` `## Settings` (default 4), enforced by the Stop hook roster (`wl_roster.writer_cap`) and the pre-agent guard; lease every writer; read-only work goes to `Plan`/`Explore`, which do not count. State the exact
-files each one owns and forbid it from touching any other. Two agents editing one file, or one agent running a repo-wide regenerate script, corrupts the tree. Also forbid `git checkout/restore/stash` and any `sync`/`regenerate` script in their prompts, for the reasons in rule 1.
-Ownership is also declared per plan: each live plan's header carries `Owns:` (the globs it edits) and `Concurrency:` (`parallel`, or `exclusive -- <reason>`), and `block_plan_concurrency` refuses a writer spawn whose plan would overlap a live writer's files or break an `exclusive` plan.
+files each one owns and forbid it from touching any other. Two agents editing one file in the main checkout, or one agent running a repo-wide regenerate script, corrupts the tree; writers in separate leases cannot corrupt each other, and a clash surfaces as a cherry-pick conflict at landing. Also forbid `git checkout/restore/stash` and any `sync`/`regenerate` script in their prompts, for the reasons in rule 1.
+Ownership is also declared per plan: each live plan's header carries `Owns:` (the globs it edits) and `Concurrency:` (`parallel`, or `exclusive -- <reason>`), and `block_plan_concurrency` refuses a writer spawn whose plan would overlap a live writer's files or break an `exclusive` plan. A live runner of a writer type that edits nothing is briefed `Owns: none -- <reason>`, so it holds no plan while its transcript shows no edit; one edit makes it a holder again.
 - **Spot-check every agent's output against the artifact.** Their reports are accurate
 about intent and quietly wrong about placement. Verify structure across the whole file set they touched, not just the keys or symbols they claimed to change.
+- **The lead orchestrates; writers in leases build, in rolling waves.** When ready code work exists (a plan's open `[writer]` boxes, review findings, a finding's fix), the default is not to work it serially in the lead's own context. Group it by the files each piece touches, start one lease writer per file-disjoint group in ONE message (up to the free slots), and track each with `--add` and `--lease` to its real agent id. A brief stands alone: the plan box and its signature, an `Owns:` list, the accept command, the lease rules, and a commit message written to a `mktemp` path, since a fixed `/tmp` name is shared across sessions and leases. While the writers run, the lead lands what has reported, closes review findings, makes small inline fixes, and starts live steps; a lead waiting on writers with nothing in hand has mis-scoped the wave.
+  Each report is landed the same way: spot-check it, cherry-pick submodules first, run the suite on the landed tree and read its result, commit the gitlink, tick the box with the landed sha, mark the review findings, and collect the tree. A freed slot is refilled at once with ready work: newly unblocked boxes, and the review findings of landed commits as a follow-up writer, never held for a wave. A writer killed by an API error is resumed with `SendMessage`, never respawned. A blocker a writer reports (an unowned file, a missing store entry, an operator decision) becomes a tracked item at once, and the rest of the wave keeps moving.
 - **Model choice is by task SHAPE and CHALLENGE, never by language or domain.** Three tiers (operator ruling 2026-10-04: "Sonnet may be needed for a bit more advanced jobs"):
 Haiku for bounded READ-ONLY lookups and very small, low-risk follow-ups: search fan-out, "find every caller", bounded classification, and a one-line correction to something already read. Haiku is NOT routed write or implementation work (`D-M1`, 2026-09-23), and not an investigation whose verdict needs judgment: on 2026-10-04 four Haiku investigators returned three load-bearing claims that the lead then refuted.
 Sonnet for investigation that weighs evidence across files (root causes, consolidation surveys, "is this safe"), and for implementation writers whose oracle already exists (ports, sweeps, migrations, translations). Opus when the artifact created IS the oracle: new guards, new gates, schema design, multi-file planning, anything adversarial. The i18n naturalization pipeline is a script and keeps its own `--model haiku` default. **[docs/agent-reference/model-routing.md](docs/agent-reference/model-routing.md)** carries the full rule and worked examples.
@@ -159,7 +163,7 @@ Self-hosted infrastructure platform. Each machine runs Docker-based repositories
 ### Key Concepts
 
 - **Repository**: An isolated application deployment (e.g., `mail`, `gitlab`, `nextcloud`). Each repo has its own Docker daemon at `/var/run/rediacc/docker-<networkId>.sock`, loopback IP range (127.0.x.x/26), and mount at `/mnt/rediacc/mounts/<guid>/`.
-- **Fork**: `rdc repo fork <name> --tag <tag>` makes a new repo (`<name>:<tag>`) with a fresh GUID and networkId that shares the parent's data via BTRFS reflink. **Forks are near-instant and constant-time** regardless of repo size: a 100 GB repo and a 1 GB repo fork in the same seconds. Use forks freely as the per-test isolation unit, do NOT assume fork cost scales with repo size.
+- **Fork**: `rdc repo fork <name> --tag <tag>` makes a new repo (`<name>:<tag>`) with a fresh GUID and networkId that shares the parent's data via BTRFS reflink. **Forks are near-instant and constant-time** regardless of repo size: a 100 GB repo and a 1 GB repo fork in the same seconds. Use forks freely as the per-test isolation unit, and never assume fork cost scales with repo size.
 - **Renet**: Network orchestrator on the machine. Manages compose files, loopback IPs, Docker daemon lifecycle. CLI: `sudo renet list all --json`, `sudo renet compose -- up -d`.
 - **Rediaccfile**: Bash script with lifecycle functions (`up()`, `down()`, `info()`) sourced by renet during deployment.
 - **Config**: CLI configuration file for connecting to machines, and a complete "universe": each config is a flat JSON file (`~/.config/rediacc/<name>.json`, default `rediacc.json`) carrying its account server and keys under `account.*`, its machines/repos/credentials, and a unique ID and version number. Its token lives beside it at `api-token-<name>.json`. Multiple named configs are supported; `--config <name>` (or `REDIACC_CONFIG`) selects one, `rdc config current` shows the active one.
@@ -229,9 +233,9 @@ Bare `./rdc.sh` targets PRODUCTION. Local development is an explicit opt-in, `./
 `.npmrc` enforces supply-chain hardening: `ignore-scripts=true`, `allow-git=none`. The 24h dependency freshness window is NOT npm hardening: npm never enforces it, and it lives in `.ci/config/release-age.json` (`minimum_release_age_minutes`), where the repo's dependency gates read it. The `ignore-scripts` flag blocks all dependency lifecycle scripts; after every `npm install` or `npm ci`, run `npm run install:natives` to compile the three packages that genuinely need scripts (ssh2, cpu-features, esbuild). The script passes `--ignore-scripts=false`
 explicitly because `npm rebuild` otherwise silently respects the global flag and does nothing. Source of truth: `.ci/scripts/quality/check_npmrc.py`.
 
-### npm 11 is the only npm
+### One pinned npm
 
-npm 11, at the exact `NPM_VERSION` in `.devcontainer/toolchain.env`, is the only supported npm, locally and in CI. `.github/actions/setup-node-npm` installs it in every workflow and is the only permitted `actions/setup-node` site; the devcontainer and every Dockerfile stage that runs `npm ci` install it too. `check:ci-lockfile` resolves each lockfile under that npm and refuses one the pinned npm would rewrite; `npm run pins -- lockfiles [<dir>]` writes the form to commit, and every `npm run pins -- bump` runs that pass itself. Bump any pinned version with `npm run pins -- bump <id>`, the line each freshness gate prints (*Bumping anything* in [docs/agent-reference/ci-gates.md](docs/agent-reference/ci-gates.md)). The lockfile pass alone exits 0 without applying a hand-changed `overrides` entry (measured 2026-09-28 on npm 11.20.0), so an override moves through `bump`, which rewrites it and runs the update.
+npm, at the exact `NPM_VERSION` in `.devcontainer/toolchain.env`, is the only supported npm, locally and in CI. `.github/actions/setup-node-npm` installs it in every workflow and is the only permitted `actions/setup-node` site; the devcontainer and every Dockerfile stage that runs `npm ci` install it too. `check:ci-lockfile` resolves each lockfile under that npm and refuses one the pinned npm would rewrite; `npm run pins -- lockfiles [<dir>]` writes the form to commit, and every `npm run pins -- bump` runs that pass itself. Bump any pinned version with `npm run pins -- bump <id>`, the line each freshness gate prints (*Bumping anything* in [docs/agent-reference/ci-gates.md](docs/agent-reference/ci-gates.md)). The lockfile pass alone exits 0 without applying a hand-changed `overrides` entry (measured 2026-09-28 on npm 11.20.0), so an override moves through `bump`, which rewrites it and runs the update.
 
 ```bash
 # Install dependencies
@@ -261,13 +265,13 @@ Version source of truth: **git tags** (e.g., `v0.8.3`). No version bump commits;
 
 ## Release Channels
 
-Two channels, both production-quality: **edge** (released by CD on every merge to main, or by the agent's faster extra path `npm run release:local -- --channel edge`, which shares the R2 sentinel lock) and **stable** (the default, promoted from edge by `promote-stable.yml` after the 7-day soak; CI/CD only, and a stable deploy always needs `RELEASE_ASKED`).
+Two channels. **edge** serves the public eu/us/asia customers (one shared Worker set per region on `<r>.rediacc.cloud`) and is released with no soak on every merge to main, or by the agent's faster path `npm run release:local -- --channel edge` (shared R2 sentinel lock; `--branch-release` ships from a pushed branch head). **stable** is the CLI channel that enterprise company Workers ride, promoted from edge by `cd-release-stable.yml` after the 7-day soak (the `publish_stable` hotfix and the `release` PR label publish it with no soak) and released to companies through rings (`cd-enterprise-release.yml`); CI/CD only, and a stable deploy always needs `RELEASE_ASKED`.
 
 **[docs/agent-reference/release-process.md](docs/agent-reference/release-process.md)** carries the channel URLs, the R2 layout, the dispatch commands, and the local entry's flags, gates and rollback.
 
 ## Media Assets (tutorial/solution videos + tutorial-narration audio)
 
-Tutorial and solution videos and the tutorial-narration audio cache live in Cloudflare R2 (bucket `rediacc-www-media`, served at `media.rediacc.com`), not in git. A fresh checkout has none of them and does not need them for `npm run dev`: the site fetches from the CDN at runtime and the two CI gates check the manifest, not the filesystem.
+Tutorial and solution videos and the tutorial-narration audio cache live in Cloudflare R2 (bucket `media`, served at `media.rediacc.com`), not in git. A fresh checkout has none of them and does not need them for `npm run dev`: the site fetches from the CDN at runtime and the two CI gates check the manifest, not the filesystem.
 
 **[docs/agent-reference/media-assets.md](docs/agent-reference/media-assets.md)** carries the four prefixes, the pre-publish completeness gate that must never leave `publish-solutions.sh`, the audio-cache exception to the Cache Rule, the sync scripts, and both consequences of the 2026-08-23 history rewrite that changed every commit SHA in the repository.
 
@@ -281,7 +285,7 @@ CD (auto on CI success): promote Docker -> git tag -> GitHub Release -> R2 -> de
 npm run release:local -- --channel edge [--dry-run] [--workers-only --regions <list>]
 ```
 
-The mac and win SEAs and install legs of a local release run in the dispatched `local-release-assist.yml`.
+The mac and win SEAs and install legs of a local release run in the dispatched `ops-local-release-assist.yml`.
 
 **[docs/agent-reference/release-process.md](docs/agent-reference/release-process.md)** carries `release_mode`'s semantics (GitHub itself rejects anything but `patch`/`retry`), the hotfix and workers-only dispatch inputs, the 7-day soak / `force` behavior on the production promote, and the local entry's gates, order check, deploy records and rollback.
 
@@ -307,20 +311,20 @@ Scans: scripts/ci-runner/gates.lock.json, folded to one row per CI lane.
 
 | Where it runs | Registered | `gate: true` | Slow |
 |---|---|---|---|
-| (all lanes) | 392 | 376 | 71 |
-| local-only (CI never runs it) | 23 | 12 | 5 |
+| (all lanes) | 397 | 381 | 73 |
+| local-only (CI never runs it) | 23 | 12 | 4 |
 | step / build-renet | 2 | 2 | 0 |
 | step / proxy-image-smoke | 1 | 1 | 1 |
 | step / quality-account | 6 | 6 | 2 |
 | step / quality-branch | 12 | 12 | 5 |
 | step / quality-code | 108 | 108 | 14 |
-| step / quality-content | 47 | 47 | 4 |
-| step / quality-go | 15 | 15 | 4 |
-| step / quality-i18n | 40 | 38 | 4 |
+| step / quality-content | 49 | 49 | 4 |
+| step / quality-go | 16 | 16 | 4 |
+| step / quality-i18n | 41 | 39 | 4 |
 | step / quality-packages | 13 | 13 | 5 |
 | step / quality-pytest | 1 | 1 | 1 |
 | step / quality-security | 25 | 25 | 2 |
-| step / quality-static | 71 | 71 | 9 |
+| step / quality-static | 72 | 72 | 12 |
 | step / quality-wiring | 1 | 1 | 0 |
 | step / quality-www-build | 16 | 13 | 15 |
 | test (a gate test drives it) | 11 | 11 | 0 |
@@ -345,9 +349,11 @@ Scans: the `hooks` wiring in .claude/settings.json, folded to one row per event,
 | Stop | 1 | 1 |
 | SubagentStop | 1 | 1 |
 | TeammateIdle | 1 | 1 |
-| (all events) | 12 | 5 |
+| WorktreeCreate | 1 | 1 |
+| WorktreeRemove | 1 | 1 |
+| (all events) | 14 | 6 |
 | (tracked hook files nothing reaches) | - | 3 |
 
-10 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
+12 row(s). Generated by `npx tsx scripts/gen/gen-docs.ts --write`; do not hand-edit.
 
 <!-- <<< gen-docs -->

@@ -9,6 +9,7 @@ EVERY CASE GOES THROUGH THE PATH `main()` TAKES: `open_offenders`, `clock_scope`
 
 import importlib.util
 import io
+import json
 import pathlib
 
 import pytest
@@ -182,3 +183,188 @@ def test_github_actions_never_attempts_the_local_lookup(gate, tmp_path):
     assert calls == []
     assert body is None
     assert note == ""
+
+
+# ---- PUSH VERSUS MERGE (agent/plans/PLAN-ciquick-green-then-batch.md G1). Open boxes are backlog at push and a finding at the merge; a ticked box whose evidence does not resolve is red at push all the same. Every case runs the functions main() runs: clock_scope, split_by_scope, run_context, clock_verdict, tick_findings, key_of.
+
+
+def _verdict_keys(gate, context, base, head_rows, admitted=False):
+    scope, _notes, problem = gate.clock_scope(_plan_gate(HEAD), "/nonexistent", base, head_rows)
+    on, _off = gate.split_by_scope(gate.open_offenders(head_rows, FINISHED), scope)
+    findings, info = gate.clock_verdict(context, problem, on, admitted)
+    return {gate.key_of(f) for f in findings}, info
+
+
+def test_open_boxes_alone_do_not_refuse_a_push_and_stay_visible(gate):
+    keys, info = _verdict_keys(gate, gate.CONTEXT_PUSH, BASE, TWO)
+    assert keys == set(), "open boxes alone refused a push: %r" % keys
+    assert len(info) == 1, info
+    assert "P-A1 BACKLOG" in info[0]
+    assert HEAD + " (3)" in info[0]
+    assert SIDE + " (2)" in info[0]
+
+
+def test_open_boxes_still_refuse_in_the_merge_context(gate):
+    keys, info = _verdict_keys(gate, gate.CONTEXT_MERGE, BASE, TWO)
+    assert keys == TWO_KEYS
+    assert info == []
+
+
+def test_an_operational_reason_admits_at_the_merge(gate):
+    keys, info = _verdict_keys(gate, gate.CONTEXT_MERGE, BASE, TWO, admitted=True)
+    assert keys == set()
+    assert "Operational-Reason" in info[0]
+
+
+def test_a_scope_problem_refuses_a_push(gate):
+    findings, _info = gate.clock_verdict(gate.CONTEXT_PUSH, "a planted Depends-On cycle", [], False)
+    assert [f.split(":", 1)[0] for f in findings] == ["P-A1 NO SCOPE"]
+
+
+@pytest.mark.parametrize(
+    ("payload", "argv", "expected"),
+    [
+        ({"pull_request": {"draft": False}}, [], "merge"),
+        ({"pull_request": {"draft": True}}, [], "push"),
+        ({"ref": "refs/heads/main"}, [], "push"),
+        ({"pull_request": {"draft": True}}, ["--merge"], "merge"),
+    ],
+)
+def test_the_context_is_read_from_the_event_or_the_flag(gate, tmp_path, payload, argv, expected):
+    event = tmp_path / "event.json"
+    event.write_text(json.dumps(payload), encoding="utf-8")
+    context, why = gate.run_context(argv, {"GITHUB_EVENT_PATH": str(event)})
+    assert context == expected, why
+    assert why
+
+
+@pytest.mark.parametrize(
+    "payload", [{"pull_request": {}}, {"pull_request": {"draft": "no"}}, {"ref": "x"}]
+)
+def test_a_pull_request_payload_that_cannot_be_judged_is_the_merge(gate, tmp_path, payload):
+    """Fail closed (e8304e45.1): a pull_request event whose payload lacks a boolean `draft` is the stricter context, with the real reason."""
+    event = tmp_path / "event.json"
+    event.write_text(json.dumps(payload), encoding="utf-8")
+    env = {"GITHUB_EVENT_PATH": str(event), "GITHUB_EVENT_NAME": "pull_request"}
+    context, why = gate.run_context([], env)
+    assert context == gate.CONTEXT_MERGE, why
+    assert "fail closed" in why
+    assert "draft PR or not a pull_request" not in why
+
+
+@pytest.mark.parametrize("content", [None, "{not json"])
+def test_an_unreadable_pull_request_payload_is_the_merge_but_a_push_payload_is_not(
+    gate, tmp_path, content
+):
+    event = tmp_path / "event.json"
+    if content is not None:
+        event.write_text(content, encoding="utf-8")
+    pr_env = {"GITHUB_EVENT_PATH": str(event), "GITHUB_EVENT_NAME": "pull_request"}
+    context, why = gate.run_context([], pr_env)
+    assert context == gate.CONTEXT_MERGE, why
+    assert "cannot be read" in why
+    push_context, push_why = gate.run_context([], dict(pr_env, GITHUB_EVENT_NAME="push"))
+    assert push_context == gate.CONTEXT_PUSH, push_why
+
+
+def test_a_pull_request_run_with_no_payload_path_is_the_merge(gate):
+    """Review 0911a576.1: an empty GITHUB_EVENT_PATH on a pull_request run fails closed; on a push or a local run it is a push."""
+    context, why = gate.run_context(
+        [], {"GITHUB_EVENT_PATH": "", "GITHUB_EVENT_NAME": "pull_request"}
+    )
+    assert context == gate.CONTEXT_MERGE, why
+    assert (
+        gate.run_context([], {"GITHUB_EVENT_PATH": "", "GITHUB_EVENT_NAME": "push"})[0]
+        == gate.CONTEXT_PUSH
+    )
+    assert gate.run_context([], {})[0] == gate.CONTEXT_PUSH
+
+
+def test_a_push_event_carrying_a_pull_request_object_without_draft_stays_a_push(gate, tmp_path):
+    """Review 0911a576.2: the no-boolean-draft branch fails closed only for a pull_request event."""
+    event = tmp_path / "event.json"
+    event.write_text('{"pull_request": {"number": 7}}', encoding="utf-8")
+    push = gate.run_context([], {"GITHUB_EVENT_PATH": str(event), "GITHUB_EVENT_NAME": "push"})
+    assert push[0] == gate.CONTEXT_PUSH, push[1]
+    pr = gate.run_context(
+        [], {"GITHUB_EVENT_PATH": str(event), "GITHUB_EVENT_NAME": "pull_request"}
+    )
+    assert pr[0] == gate.CONTEXT_MERGE, pr[1]
+
+
+def _drive_main(gate, monkeypatch, capsys, argv):
+    """main() on the real tree's config and ledger, with the controls, the scope and the open-box set stood in: one plan on the clock with two open boxes."""
+    monkeypatch.delenv("GITHUB_EVENT_PATH", raising=False)
+    monkeypatch.delenv("GITHUB_EVENT_NAME", raising=False)
+    monkeypatch.setattr(gate, "controls_fired", lambda *_a, **_k: ([], gate.MIN_CONTROLS))
+    monkeypatch.setattr(gate, "prefetch_partial_clone", lambda _root: "")
+    monkeypatch.setattr(gate, "open_offenders", lambda _plans, _fin: [(HEAD, 2)])
+    monkeypatch.setattr(gate, "load_plan_gate", lambda: (_plan_gate(HEAD), ""))
+    monkeypatch.setattr(gate, "pr_body_for", lambda _o, _r=None: (None, ""))
+    monkeypatch.setattr(gate, "clock_scope", lambda *_a, **_k: ({HEAD: "queue head"}, [], ""))
+    gate.main(argv)
+    out = capsys.readouterr()
+    return out.out + out.err
+
+
+def test_main_with_merge_refuses_an_open_box_and_without_it_does_not(gate, monkeypatch, capsys):
+    merged = _drive_main(gate, monkeypatch, capsys, ["--merge"])
+    assert "P-A1 context: merge" in merged
+    assert "P-A1:" + HEAD in merged, merged
+    pushed = _drive_main(gate, monkeypatch, capsys, [])
+    assert "P-A1 context: push" in pushed
+    assert "P-A1:" + HEAD not in pushed, pushed
+    assert "P-A1 BACKLOG" in pushed
+
+
+def test_a_local_run_is_the_push_context(gate):
+    assert gate.run_context([], {})[0] == gate.CONTEXT_PUSH
+    assert gate.run_context(["--merge"], {})[0] == gate.CONTEXT_MERGE
+
+
+#: One box of SIDE moved open -> done on the branch, ticked after the baseline; one box of SIDE stays open.
+TICK_BASE = {SIDE: _row(["s1", "s2"])}
+TICK_HEAD = {SIDE: _row(["s2"], ["s1"])}
+TICK_ROW = {
+    "plan": SIDE,
+    "sig": "s1",
+    "head": "H0",
+    "verdict": "present",
+    "pointers": [["commit", "deadbeefcafe"]],
+}
+
+
+def _tick_keys(gate, evidence, row, resolves):
+    return {
+        gate.key_of(f)
+        for f in gate.tick_findings(
+            gate.moved_to_done(TICK_BASE, TICK_HEAD),
+            lambda _r, _s: evidence,
+            lambda _r, _s: row,
+            lambda _k, _t: (resolves, "ok" if resolves else "no such commit"),
+            lambda _r, _s: "C1",
+            lambda _c: "2026-11-08",
+            lambda _a, _b: True,
+            "2026-01-01",
+            lambda _c: None,
+            lambda _c: "",
+        )
+    }
+
+
+def test_a_ticked_box_whose_evidence_does_not_resolve_still_refuses_at_push(gate):
+    """In the push context P-A1 is silent on the box left open in SIDE, and the tick's own evidence is still judged: a pointer that does not resolve, a missing row and a missing evidence line each red."""
+    context, _why = gate.run_context([], {})
+    assert context == gate.CONTEXT_PUSH
+    pa1_keys, _info = _verdict_keys(gate, context, TICK_BASE, TICK_HEAD)
+    assert pa1_keys == set()
+    assert _tick_keys(gate, "ran the gate, exit 0", TICK_ROW, True) == set(), (
+        "CONTROL: a healthy tick was reported"
+    )
+    assert _tick_keys(gate, "ran the gate, exit 0", TICK_ROW, False) == {
+        gate.box_key("P-A3", SIDE, "s1", "commit:deadbeefcafe")
+    }
+    assert _tick_keys(gate, "ran the gate, exit 0", None, True) == {
+        gate.box_key("P-A2:no-row", SIDE, "s1")
+    }
+    assert _tick_keys(gate, "", TICK_ROW, True) == {gate.box_key("P-A2:no-evidence", SIDE, "s1")}

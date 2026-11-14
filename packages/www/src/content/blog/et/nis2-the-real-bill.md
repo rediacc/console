@@ -95,7 +95,7 @@ Lüngad on kattuvustest huvitavamad, sest lüngad on see, mida NIS2 pinnale toob
 
 Rediacc on üks juhtimistasand ühtse auditilogi, asendades nelja viiest kategooriast põhivõimaluse ise majutatud taristu jaoks.
 
-**Backup** töötab kahes režiimis. Kuum on crash-consistent BTRFS hetktõmmis. Seisakut pole. Külm teeb peata-hetktõmmis-käivita tsükli. Mõlemad ajastavad systemd taimeritega. Mõlemad kirjutavad sisuaadressitud tükksalvestusse, kuhu laaditakse üles ainult muutunud rakud, ja säilitus deklareeritakse repositooriumi liini kaupa. Mahud on LUKS-krüpteeritud. Operaator hoiab võtit. Rediacc OÜ ei näe kunagi lihtteksti. Vaata [Backup & Restore](/et/docs/backup-restore) ja [Cross Backup Strategy](/et/docs/cross-backup).
+**Backup** töötab kahes režiimis. Kuum on crash-consistent BTRFS hetktõmmis. Seisakut pole. Külm teeb peata-hetktõmmis-käivita tsükli. Mõlemad ajastavad systemd taimeritega. Mõlemad kirjutavad sisuaadressitud tükksalvestusse, kuhu laaditakse üles ainult muutunud rakud, ja säilitus deklareeritakse repositooriumi liini kaupa. Mahud on LUKS-krüpteeritud. Operaator hoiab võtit. Rediacc ei näe kunagi lihtteksti. Vaata [Backup & Restore](/et/docs/backup-restore) ja [Cross Backup Strategy](/et/docs/cross-backup).
 
 **DR**: sama primitiiv mis backup'il, lisaks `rdc repo migrate` masinate vahel andmete liigutamiseks, lisaks fork-primitiiv taastatud seisundi kiireks käivitamiseks paralleelmasinas. DR-sait võib olla teine Hetzner masin, OVH masin, kohapealne riiuliserver, kuhu iganes SSH ulatub. Andmete teel ei ole DR-tarnija pilve.
 

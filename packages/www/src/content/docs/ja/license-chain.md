@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: ja
-sourceHash: "d6d980d721be2373"
-sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
+sourceHash: "78e880294cc0bf15"
+sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
 ---
 
 # ライセンスチェーンと委任
@@ -118,7 +118,7 @@ Renetを実行する各マシンは`{licenseDir}/chain-state.json`（つまり`/
 
 ### 委任の仕組み
 
-1. EnterpriseアドミンがオンプレミスサーバーでEd25519キーペアを生成します。
+1. 管理者がオンプレミスサーバーでEd25519キーペアを生成します。
 2. アドミンが上流に委任証明書をリクエストします：
    ```
    POST /admin/delegation-certs
@@ -322,8 +322,8 @@ Retry-After: 78234
 
 新しい証明書がオンプレミスにアップロードされると、`/onprem/cert-upload`は新しい証明書の`genesisSequence`がローカル発行台帳の既知エントリにまだリンクしているかを検証します：
 
-- `cert.genesisSequence > localHead.sequence`の場合は`409 CHAIN_HEAD_BEHIND`を返します（上流がフォークしたチェーンにある）。
-- `cert.genesisSequence > 0`で、そのシーケンスのローカル台帳エントリの`chainHash`が`cert.genesisHash`と異なる場合は`409 CHAIN_FORK_ON_UPLOAD`を返します（ローカルチェーンが分岐した）。
+- `cert.genesisSequence > localHead.sequence`の場合は、コード`chain-ahead`で`409`を返します。
+- `cert.genesisSequence > 0`で、そのシーケンスのローカル台帳エントリの`chainHash`が`cert.genesisHash`と異なる場合は、コード`chain-fork`で`409`を返します。
 - それ以外の場合、証明書は受け入れられます。将来の発行は`localHead.sequence + 1`から続きます。
 
 これは**転送中に書き込みフリーズが不要**であることを意味します。チェーンは両側で自然に拡張されます。X.509証明書の更新が転送中のシリアル番号を処理する方法と同様です。

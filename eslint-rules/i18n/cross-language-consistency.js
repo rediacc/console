@@ -6,6 +6,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { isPluralGroup } from './shared/plural-group.js';
 import { resolveRequiredDirOption } from './shared/require-path-option.js';
 
 // Cache for loaded locale data
@@ -26,14 +27,18 @@ const getLanguageDirectories = (localesDir) => {
 /**
  * Flatten a JSON object to get all leaf keys
  */
-const flattenKeys = (obj, prefix = '') => {
+const flattenKeys = (obj, prefix = '', groups = new Set()) => {
   const keys = [];
 
   for (const [key, value] of Object.entries(obj)) {
     const fullPath = prefix ? `${prefix}.${key}` : key;
 
-    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
-      keys.push(...flattenKeys(value, fullPath));
+    if (isPluralGroup(value)) {
+      // One leaf per group: locales hold different CLDR category sets by design.
+      keys.push(fullPath);
+      groups.add(fullPath);
+    } else if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      keys.push(...flattenKeys(value, fullPath, groups));
     } else {
       keys.push(fullPath);
     }
@@ -41,6 +46,19 @@ const flattenKeys = (obj, prefix = '') => {
 
   return keys;
 };
+
+/** True when `key` is a plural group in the loaded locale keys. */
+const isGroup = (keys, key) => keys.groups?.has(key) === true;
+
+/** Every [messageId, key] difference between the source locale's keys and another locale's. */
+const keySetFindings = (englishKeys, langKeys) => [
+  ...[...englishKeys].filter((key) => !langKeys.has(key)).map((key) => ['missingInLanguage', key]),
+  // Same leaf, different shape: a plural group on one side, a plain string on the other.
+  ...[...englishKeys]
+    .filter((key) => langKeys.has(key) && isGroup(englishKeys, key) !== isGroup(langKeys, key))
+    .map((key) => ['shapeMismatch', key]),
+  ...[...langKeys].filter((key) => !englishKeys.has(key)).map((key) => ['extraInLanguage', key]),
+];
 
 /**
  * Load and flatten keys from a locale file
@@ -52,11 +70,16 @@ const loadLocaleKeys = (filePath) => {
 
   try {
     const content = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-    const keys = new Set(flattenKeys(content));
+    const groups = new Set();
+    const keys = new Set(flattenKeys(content, '', groups));
+    // Which leaves are plural groups: a group against a plain string is a shape mismatch.
+    keys.groups = groups;
     localeCache.set(filePath, keys);
     return keys;
   } catch {
-    return new Set();
+    const keys = new Set();
+    keys.groups = new Set();
+    return keys;
   }
 };
 
@@ -90,6 +113,8 @@ export const crossLanguageConsistency = {
         'Key "{{key}}" exists in {{source}} but is missing in {{language}}. See docs/i18n/CONVENTIONS.md.',
       extraInLanguage:
         'Key "{{key}}" exists in {{language}} but not in {{source}} (source of truth). See docs/i18n/CONVENTIONS.md.',
+      shapeMismatch:
+        'Key "{{key}}" is a plural group in one of {{source}} and {{language}} and a plain string in the other. See docs/i18n/CONVENTIONS.md.',
     },
   },
 
@@ -125,35 +150,9 @@ export const crossLanguageConsistency = {
      * file, so there is no position in this one to point at.
      */
     const reportKeySetDiff = (node, lang, englishKeys, langKeys) => {
-      // Find keys missing in this language
-      for (const key of englishKeys) {
-        if (!langKeys.has(key)) {
-          context.report({
-            node,
-            messageId: 'missingInLanguage',
-            data: {
-              key,
-              source: sourceLanguage,
-              language: lang,
-            },
-          });
-        }
-      }
-
-      // Find extra keys in this language (not in English)
-      for (const key of langKeys) {
-        if (!englishKeys.has(key)) {
-          context.report({
-            node,
-            messageId: 'extraInLanguage',
-            data: {
-              key,
-              source: sourceLanguage,
-              language: lang,
-            },
-          });
-        }
-      }
+      const data = (key) => ({ key, source: sourceLanguage, language: lang });
+      const report = (messageId, key) => context.report({ node, messageId, data: data(key) });
+      for (const [messageId, key] of keySetFindings(englishKeys, langKeys)) report(messageId, key);
     };
 
     return {

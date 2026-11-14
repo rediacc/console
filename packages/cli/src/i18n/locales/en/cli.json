@@ -19,6 +19,7 @@
   "warnings": {
     "licenseSignatureRefreshed": "Refreshed {{count}} repo license(s) with invalid signatures after renet update",
     "licenseSignatureRefreshFailed": "{{count}} repo license(s) have invalid signatures after renet update. Run: rdc subscription refresh -m <machine>",
+    "licenseForeignOriginSkipped": "License of {{repo}} on {{machine}} left untouched: it was issued by {{licenseOrigin}}, and this config's account server is {{configOrigin}}. Overwriting it from here breaks its renewal chain. To move the machine's licenses to {{configOrigin}}, run: rdc subscription refresh -m {{machine}} --adopt-origin",
     "secretNameSkipped": "Secret {{name}} is not a valid environment variable name; the session starts without it."
   },
   "commands": {
@@ -209,7 +210,12 @@
         "droppedRefs": "{{count}} dangling cross-reference(s) {{verb}} removed:",
         "nothingToPrune": "Nothing to prune: the config is already clean.",
         "dryRun": "Dry run: {{count}} change(s) would be applied. Re-run without --dry-run to commit.",
-        "completed": "Pruned {{count}} stale entry/entries from local config."
+        "completed": "Pruned {{count}} stale entry/entries from local config.",
+        "goneMachineReposOption": "Archive repository entries placed on a machine that is no longer in the config. Archived, not dropped: each keeps its credential and is restorable until the archive grace expires. Selects only this bucket: the cert-cache, archive and cross-reference buckets are skipped unless their own --*-only flag is also given.",
+        "foundGoneMachineRepos": "{{count}} repository entry/entries are placed on a machine that is no longer in the config:",
+        "archivedGoneMachineRepos": "{{count}} repository entry/entries {{verb}} archived (placed on a machine no longer in the config):",
+        "goneMachineReposHint": "Archive them with 'rdc config prune --gone-machine-repos'; each stays restorable until the archive grace expires.",
+        "droppedGoneMachineState": "{{count}} runtime record(s) naming a machine no longer in the config {{verb}} dropped:"
       },
       "init": {
         "description": "Create a new named config file",
@@ -386,7 +392,9 @@
           "fileNotice": "REDIACC_SECRET_STORE=file: this device's config storage key is kept in {{path}} (mode 0600), protected by file permissions only."
         },
         "status": {
-          "description": "Show remote connection status"
+          "description": "Show remote connection status",
+          "deviceKeyMissing": "This device can no longer open this config's remote storage: its key is gone (a restart can empty the key store). Enroll this device again with: rdc config remote enable",
+          "deviceCannotOpen": "This device cannot open this config's remote storage: its enrollment was rejected, for example after the key was rotated. Enroll this device again with: rdc config remote enable"
         },
         "masterPassword": {
           "description": "Manage this member's master password (the password key slot)",
@@ -426,7 +434,8 @@
           "pulling": "Pulling config from remote...",
           "pulled": "Config pulled",
           "success": "Config refreshed from remote (version {{version}}).",
-          "notEnabled": "Remote config is not enabled."
+          "notEnabled": "Remote config is not enabled.",
+          "replacedLocal": "Config \"{{config}}\": the local file differed from server version {{version}} and was replaced by it: {{changes}}"
         },
         "tokenRefresh": {
           "noLogin": "No login for {{apiUrl}} is stored on this device, so the config token could not be renewed automatically. Run \"rdc subscription login\" and retry, or run \"rdc config remote enable\" again.",
@@ -454,7 +463,10 @@
           "invalidVersion": "Version must be a positive whole number, got \"{{version}}\".",
           "alreadyCurrent": "Version {{version}} is already the current version of config \"{{config}}\"; there is nothing to restore.",
           "success": "Restored version {{restored}} of config \"{{config}}\" as version {{version}}."
-        }
+        },
+        "localEditsPushed": "Config \"{{config}}\": the local file held edits made since server version {{from}}; pushed them as version {{to}}: {{changes}}",
+        "localEditsConflict": "Config \"{{config}}\": the local file holds edits made since server version {{cached}} ({{changes}}), and the server has moved to version {{server}}. Nothing was overwritten. Copy the edits aside, run \"rdc config remote refresh\" to take version {{server}} (it replaces the local file), then apply them again.",
+        "localEditsUnverifiable": "Config \"{{config}}\": the local file differs from server version {{server}} ({{changes}}), and version {{cached}}, which it was cached from, could not be read back ({{reason}}), so a local edit cannot be told apart from a server change. Nothing was overwritten. Copy any edits aside, run \"rdc config remote refresh\" to take version {{server}} (it replaces the local file), then apply them again."
       },
       "field": {
         "description": "Pointer-addressed config field operations (get/set/unset/rotate/list). JSON Pointers (RFC 6901) like /credentials/cfDnsApiToken.",
@@ -533,6 +545,8 @@
         "description": "Rebuild runtime state from machine truth. Fixes stale attach and routing data.",
         "optionMachine": "Limit the reconcile to these machines",
         "optionAcceptObserved": "Rewrite a declared placement to match where the image actually is, but only when that is unambiguous (observed on exactly one machine). Duplicates stay conflicts.",
+        "noListing": "No listing was recorded for {{machine}}.",
+        "listFailed": "renet list all failed (exit {{exitCode}}).",
         "acceptObservedUnfiltered": "--accept-observed cannot be combined with --machine: a partial scan cannot prove a placement is unambiguous, so the rewrite would be a guess. Run 'rdc config reconcile --accept-observed' unfiltered."
       },
       "certCache": {
@@ -628,6 +642,21 @@
           "description": "List the config's access keys",
           "noKeys": "No access keys in this config. Add one with 'config access add'"
         }
+      },
+      "importMachine": {
+        "descriptionShort": "Copy a machine and its repositories from another config",
+        "description": "Copy one machine from another config into the active config: the machine entry when the active config lacks it, every repository placed on the machine with every tag, and each backup strategy bound to the machine. Nothing that already exists is overwritten. Equal entries are left alone, and a differing entry (a same-name repository with another GUID, a machine at another address) is refused. Any refusal writes nothing. The report names entries only and never prints a credential, key or GUID.",
+        "argMachine": "Machine name in the source config",
+        "optionFrom": "Config to copy from",
+        "optionDryRun": "Show what would be copied without writing",
+        "optionStrategyFromSource": "Replace a differing backup strategy with the source config's version instead of refusing it",
+        "machineMissing": "Machine \"{{machine}}\" is not in the source config.",
+        "sameConfig": "The source config \"{{name}}\" is the active config. Select the target with --config.",
+        "sourceMissing": "Config \"{{name}}\" does not exist.",
+        "targetMissing": "The active config \"{{name}}\" does not exist.",
+        "refused": "{{count}} entries differ from the source config; nothing was written.",
+        "summary": "{{count}} changes copied for machine \"{{machine}}\" from config \"{{from}}\".",
+        "summaryDryRun": "{{count}} changes would be copied for machine \"{{machine}}\" from config \"{{from}}\"."
       }
     },
     "machine": {
@@ -668,7 +697,41 @@
         "licensesSection": "\nLicenses:",
         "licensesSummary": "  {{valid}}/{{total}} valid, {{expired}} expired, {{mismatch}} machine mismatch, {{missing}} missing",
         "issuesSection": "\nIssues:",
-        "exitCode": "\nExit Code: {{code}}"
+        "exitCode": "\nExit Code: {{code}}",
+        "repoHealthSection": "\nRepository health:",
+        "repoHealthNoCheck": "  No check (no health() defined): {{repositories}}"
+      },
+      "repair": {
+        "description": "Run the safe fixes for a machine's health findings, then re-check (exit 0 nothing left, 1 warnings or operator items left, 2 an error left or a fix failed)",
+        "descriptionShort": "Run the safe fixes for a machine's health findings, then re-check",
+        "optionDryRun": "List the fixes that would run without running them",
+        "optionCode": "Only fix this finding code (repeatable)",
+        "optionWithBackup": "Allow auto-with-backup fixes, each after a successful snapshot of its repository",
+        "optionWindowOverride": "Run window-only fixes outside the maintenance window",
+        "optionSetWindow": "Store the machine's maintenance window (HH:MM-HH:MM, UTC) or clear it with off, then exit",
+        "header": "\nRepair of {{name}}:",
+        "nothingDue": "  No finding has a fix to run",
+        "runByHand": "    Run by hand: {{command}}",
+        "summary": "{{ran}} fix(es) ran, {{failed}} failed; {{remaining}} finding(s) remain",
+        "windowSet": "Maintenance window of {{name}} set to {{window}} UTC",
+        "windowCleared": "Maintenance window of {{name}} cleared; window-only fixes no longer run on their own",
+        "windowInvalid": "Invalid maintenance window \"{{window}}\": use HH:MM-HH:MM in UTC, or off",
+        "reasonNeedsBackup": "needs --with-backup (a snapshot runs first)",
+        "reasonOutsideWindow": "window-only, outside the maintenance window {{window}} UTC (--window-override runs it now)",
+        "reasonNoWindow": "window-only, and the machine has no maintenance window (set one with --set-window)",
+        "reasonSnapshotFailed": "the snapshot failed, so fixes that need a backup did not run: {{detail}}",
+        "reasonNoRepository": "the repository is not in this config",
+        "reasonNoNetworkIds": "the finding names no rediacc-docker supervisor, so a restart would reach every one on the machine",
+        "reasonNoAction": "no fix is known for this finding",
+        "resultOk": "fixed",
+        "resultFailed": "fix failed",
+        "resultPlanned": "would run",
+        "resultSkipped": "skipped",
+        "resultRefused": "refused",
+        "resultCancelled": "cancelled",
+        "resultGone": "already gone",
+        "resultCovered": "covered by an earlier fix",
+        "resultOperator": "operator decision"
       },
       "provision": {
         "description": "Provision a new machine on a cloud provider using OpenTofu",
@@ -703,7 +766,11 @@
         "destroyFailed": "Infrastructure destroy failed for {{name}}: {{error}}. Continuing with config removal (--force).",
         "dnsDeleted": "Deleted DNS record: {{type}} {{name}}",
         "dnsCleanedUp": "Removed {{count}} DNS record(s)",
-        "deactivateFailed": "Could not release the account activation slot for {{name}}: {{reason}}. The slot frees on its own 5 hours after the last activity."
+        "deactivateFailed": "Could not release the account activation slot for {{name}}: {{reason}}. The slot frees on its own 5 hours after the last activity.",
+        "optionArchiveRepos": "Archive the config entries of the repositories placed on this machine (credentials kept, restorable)",
+        "reposArchived": "Archived {{count}} repository entry/entries placed on {{machine}}: {{repos}}",
+        "reposLeft": "{{count}} repository entry/entries still name {{machine}}, which is no longer in this config: {{repos}}",
+        "reposLeftHint": "Archive them with 'rdc config prune --gone-machine-repos', or one at a time with 'rdc repo delete <name> -y'."
       },
       "prune": {
         "description": "Remove orphaned datastore resources and stale snapshots from a machine. The base run cleans renet-internal datastore artifacts (BTRFS subvolumes, lock files, tmpfiles). The optional flags below enable progressively narrower repo cleanups: --orphaned-repos uses the local CLI config as the only signal, while --prune-unknown additionally consults the renet .interim/state mirror so legitimate forks created by other tools survive even when missing from the local config. Both deletion paths run a mount-safety preflight; pass --force-delete-mounted to override.",
@@ -712,9 +779,8 @@
         "startingDatastore": "Scanning for orphaned datastore resources on {{machine}}...",
         "datastoreCompleted": "Datastore prune completed",
         "datastoreFailed": "Datastore prune failed",
-        "startingUnits": "Scanning for orphaned systemd units on {{machine}}...",
         "unitsCompleted": "Unit prune completed",
-        "unitsFailed": "Unit prune failed",
+        "orphanFormsNeedFinishedJob": "The prune job is still running, so the deletions of --orphaned-repos and --prune-unknown did not start. Run the command again once 'rdc job wait' reports it finished.",
         "orphanedReposOption": "Delete every repo image on the machine that is not in your local CLI config. Coarse: it also removes forks created by other tools that have no local config entry, even when their renet mirror correctly identifies them as forks. Use --prune-unknown for the narrower behavior that respects the mirror.",
         "orphanedReposStarting": "Scanning for orphaned repositories on {{machine}}...",
         "orphanedReposCompleted": "Pruned {{count}} orphaned repositories",
@@ -793,7 +859,6 @@
         "push": {
           "description": "Push infrastructure config to machine (Traefik proxy, router, Cloudflare DNS). Run 'machine infra set <machine>' first",
           "descriptionShort": "Push infrastructure config to machine",
-          "installingProxy": "Installing the router...",
           "success": "Infrastructure config pushed to \"{{name}}\""
         },
         "set": {
@@ -874,6 +939,10 @@
         "includeDockerOption": "Also restart each per-repo rediacc-docker-N supervisor (restarts that repo's containers)",
         "jsonOption": "Print the report as JSON",
         "nothingStale": "No renet daemon on '{{machine}}' runs a replaced binary.",
+        "repoNeedsDocker": "--include-docker is required with --repo: only a repo's supervisor is scoped",
+        "repoNoNetworkId": "Repository '{{repo}}' has no network id in this config; check it with rdc repo list",
+        "repoOption": "Limit the restart to one repo's supervisor (needs --include-docker)",
+        "repoRenetTooOld": "renet on '{{machine}}' predates --repo and refused the scope; nothing was restarted. Run rdc machine setup {{machine}} first",
         "starting": "Restarting renet daemons on '{{machine}}'..."
       },
       "scanKeys": {
@@ -900,7 +969,6 @@
         "containersUnhealthyFound": "{{count}} unhealthy container(s) found",
         "description": "Show a machine's system, repositories, containers, and services. Read-only: never updates renet on the machine; warns when its version differs.",
         "descriptionShort": "Show machine status",
-        "fetched": "Status fetched",
         "fetching": "Fetching status from {{machine}}...",
         "healthCheck": "Health check mode - exits with code 2 if any unhealthy",
         "infrastructure": "Infrastructure",
@@ -928,7 +996,9 @@
         "verifyFailureSection": "Failed Backup Verifies",
         "verifyFailureWarning": "{{count}} repository(ies) failed their last backup verify.",
         "missedTargetSection": "Repositories that missed their backup target",
-        "missedTargetWarning": "{{count}} repository(ies) missed their backup target on the latest run."
+        "missedTargetWarning": "{{count}} repository(ies) missed their backup target on the latest run.",
+        "licenseDetailUnreadable": "The listing carries no readable licence detail (renet predates the licenses section, or an entry is malformed), so blocked-backup and renewal state are unknown.",
+        "noMemoryCap": "{{count}} repositories run with no memory cap, so any one of them can take the host's memory: {{names}}. Set one with rdc repo policy set <ref> --memory-max <size>"
       },
       "gpu": {
         "descriptionShort": "Inspect a machine's GPUs and device grants",
@@ -1181,6 +1251,38 @@
         "completed": "Status retrieved",
         "failed": "Status check failed"
       },
+      "health": {
+        "description": "Run the repository's Rediaccfile health() checks and exit 0 (ok), 1 (warning) or 2 (error)",
+        "header": "\nHealth of {{repository}}:",
+        "levelOk": "✓ Healthy",
+        "levelWarning": "⚠ Warning",
+        "levelError": "✗ Error",
+        "levelNone": "– No check: no Rediaccfile defines health()",
+        "fileLine": "  {{file}}: {{level}} (exit {{exit}})",
+        "fileLevelOk": "ok",
+        "fileLevelWarning": "warning",
+        "fileLevelError": "error",
+        "failed": "Health check of {{repository}} failed: {{message}}",
+        "unsupported": "renet on {{machine}} predates repository health checks; update it with rdc machine setup {{machine}}",
+        "renetFailed": "renet could not run the health check"
+      },
+      "repair": {
+        "description": "Run the repository's Rediaccfile repair() functions that their declared class allows, then health() again (exit 0 ok, 1 warning, 2 error or a failed repair)",
+        "descriptionShort": "Run a repository's allowed Rediaccfile repair() functions, then re-check its health",
+        "optionDryRun": "Show which repair() would run, without running any",
+        "optionWithBackup": "Allow auto-with-backup repair() functions, after a successful snapshot of the repository",
+        "optionWindowOverride": "Run window-only repair() functions outside the machine's maintenance window",
+        "optionYes": "Run undeclared (operator-only) repair() functions without asking",
+        "header": "\nRepair of {{repository}}:",
+        "summary": "{{ran}} repair() ran, {{failed}} failed; health() is now {{level}}",
+        "withheldNeedsBackup": "auto-with-backup repair() functions did not run: pass --with-backup",
+        "withheldSnapshotFailed": "auto-with-backup repair() functions did not run: the snapshot failed",
+        "withheldNotConfirmed": "undeclared (operator-only) repair() functions did not run: they were not confirmed (--yes runs them)",
+        "confirmOperatorOnly": "These repair() functions declare no class and count as operator-only: {{files}}. Run them?",
+        "unreadable": "renet answered without a repair report",
+        "unsupported": "renet on {{machine}} predates repository repair; update it with rdc machine setup {{machine}}",
+        "renetFailed": "renet could not run the repair"
+      },
       "cat": {
         "description": "Read a bounded window of a file in a repository to stdout (diagnostics go to stderr).",
         "remoteFileOption": "File path to read, relative to the repository mount root",
@@ -1233,6 +1335,7 @@
         "starting": "Creating repository \"{{repository}}\" ({{size}}) on \"{{machine}}\"...",
         "registered": "Registered \"{{repository}}\" ({{guid}}, network {{networkId}})",
         "completed": "Repository created",
+        "stepsUnfinished": "repo create: {{name}} was created, but the step(s) {{steps}} did not finish; rdc job wait settles them.",
         "failed": "Repository creation failed",
         "rollback": "Rolled back config for \"{{repository}}\"",
         "alreadyExists": "Repository \"{{name}}\" already exists in config",
@@ -1273,7 +1376,9 @@
         "licenseRetireFailed": "Could not tell the account server that the license of \"{{repository}}\" is retired ({{reason}}). It stays counted in the server's license totals until retired.",
         "backupsPurged": "Deleted {{count}} cloud snapshot(s) of \"{{repository}}\" and freed {{bytes}}.",
         "purgeBackupsOption": "Also delete the repository's cloud backups now, instead of letting them expire",
-        "purgeForkRefused": "\"{{repository}}\" is a fork and shares its backup lineage with its parent, so --purge-backups would delete the parent's backups too. Delete the fork without it."
+        "purgeForkRefused": "\"{{repository}}\" is a fork and shares its backup lineage with its parent, so --purge-backups would delete the parent's backups too. Delete the fork without it.",
+        "confirmMachineGone": "Machine \"{{machine}}\" of repository \"{{repository}}\" is no longer in this config, so nothing on a machine is touched. Archive the config entry of \"{{repository}}\"?",
+        "machineGoneArchived": "Archived the config entry of \"{{repository}}\": its machine \"{{machine}}\" is no longer in this config, so no machine was contacted"
       },
       "commit": {
         "descriptionShort": "Freeze a working fork into a new immutable commit",
@@ -1319,7 +1424,11 @@
         "dryRunHint": "Re-run with --apply to delete them.",
         "deleted": "Deleted commit {{commit}}",
         "deleteFailed": "Failed to delete commit {{commit}}",
-        "applied": "Garbage collection complete: {{deleted}}/{{total}} commit(s) deleted"
+        "applied": "Garbage collection complete: {{deleted}}/{{total}} commit(s) deleted",
+        "started": "{{started}} of {{total}} deletion(s) are running as jobs; follow them with rdc job list.",
+        "partlyFailed": "{{failed}} of {{total}} commit(s) could not be deleted",
+        "noSummary": "The gc job printed no summary, so the totals are unknown. Run the dry run again to see what is left.",
+        "datastorePathUnsupported": "The datastore path {{path}} contains ',' or '@', which the job's list parameter cannot carry. Rename the path."
       },
       "fork": {
         "description": "Create a CoW (Copy-on-Write) fork of a repository. FORK IS NEAR-INSTANT AND CONSTANT-TIME regardless of repo size, BTRFS reflink clones the underlying image so a 100 GB repo and a 1 GB repo fork in the same ~seconds. The fork gets a NEW GUID, networkId, IP range, and auto-route domain ({service}-fork-{tag}.{repo}.{machine}.{baseDomain}) and is a fully independent copy. Online forking is supported, the parent can remain running. Fork inherits the parent's encryption credentials automatically. Use --checkpoint to capture CRIU process state before forking, the fork will auto-restore on first 'repo up' (in-memory state preserved). CROSS-MACHINE FORK: fork locally first, then transfer: (1) rdc repo fork <parent-ref> --tag <name>, (2) rdc repo push <fork-ref> --to <target-machine>, (3) rdc backup restore <fork-ref> --as <fork-name> -m <target-machine> --up. WARNING: do NOT use \"repo push\" alone to fork, it creates a raw copy with the SAME GUID (not an independent fork). Always fork first to get a new identity. Auto-routes use the repo name, so each fork gets a unique domain automatically.",
@@ -1462,6 +1571,7 @@
         "repoNotFound": "Repository not found: {{name}}",
         "invalidBool": "{{flag}} must be 'true' or 'false', got: {{value}}",
         "failed": "Policy operation failed",
+        "settingsNotHeld": "The settings read did not reach this process, so the limits cannot be merged into one document.",
         "set": {
           "description": "Set size policy fields. Only the flags you pass are changed; other stored fields keep their values. Enabling auto-grow requires --max-quota: the ceiling is your explicit consent to over-provision the pool",
           "descriptionShort": "Set size policy fields (machine default, or one repo by ref)",
@@ -1470,11 +1580,25 @@
           "growThresholdOption": "Filesystem used % that triggers a grow (default 85)",
           "growStepOption": "Growth per step: absolute (10G) or percent of quota (20%)",
           "autoTrimOption": "Enable scheduled trim (true/false)",
-          "trimIntervalOption": "Minimum hours between automatic trims (default 24)"
+          "trimIntervalOption": "Minimum hours between automatic trims (default 24)",
+          "memoryMaxOption": "Memory cap of the repository (e.g. 10G, or max to remove); at the cap one of its containers is OOM-killed, nothing outside it",
+          "memoryHighOption": "Memory throttle point of the repository (e.g. 8G, or max to remove)",
+          "cpuMaxOption": "CPU cap of the repository in cores (4, 2.5) or N%, or max to remove",
+          "ioMaxOption": "I/O cap of the repository's device: rbps=,wbps=,riops=,wiops= (any subset, e.g. rbps=200M,wbps=100M; KEY=max removes one), or max",
+          "pidsMaxOption": "Process cap of the repository (pids.max), or max to remove",
+          "ramVolumeOption": "Size of the repository's RAM volume at <mount>/.ram (e.g. 8G, or max to remove); the memory cap must stay 1G above it",
+          "clearLimitsOption": "Remove every limit and the RAM volume of the repository",
+          "forceOption": "Allow a memory cap below the repository's current memory use"
         },
         "get": {
           "description": "Show the stored machine default, the repository override (with a ref), and the effective merged policy the maintainer acts on",
           "descriptionShort": "Show size policy (machine default, repo override, effective)"
+        },
+        "limitsNeedRef": "Limit flags apply to one repository: give its ref (rdc repo policy set <ref> --memory-max 10G). The machine-wide form takes size-policy flags only",
+        "limits": {
+          "starting": "Applying the limits of \"{{repository}}\" on \"{{machine}}\"...",
+          "completed": "Limits of \"{{repository}}\"",
+          "failed": "Limit operation failed"
         }
       },
       "push": {
@@ -1661,12 +1785,18 @@
           "clean": "No drift on {{machine}}: every ref resolves and no orphan commits found",
           "danglingHeader": "{{count}} dangling ref(s) (point at a missing object):",
           "orphanHeader": "{{count}} orphan commit(s) (no ref reaches them):",
-          "orphanHint": "Reclaim orphans with: rdc repo gc --apply -m <machine>"
+          "orphanHint": "Reclaim orphans with: rdc repo gc --apply -m <machine>",
+          "noReport": "The fsck job on {{machine}} returned no object report, so nothing was compared."
         },
         "ownership": {
           "description": "Change repository directory ownership UID on the mounted volume (default: 7111). Use when containers need a specific UID to access repo files",
           "descriptionShort": "Change repository directory ownership UID",
           "uidOption": "Owner UID (default: 7111)",
+          "rootOwnedOption": "Hand root-owned files to the owner UID below directories owned by root or that UID, recording each in an undo manifest",
+          "dryRunOption": "With --root-owned: list the files that would change, and change nothing",
+          "undoOption": "With --root-owned: return the files in the undo manifest that the owner UID still owns to root",
+          "rootOwnedQualifiers": "--dry-run and --undo each apply only with --root-owned, and cannot be combined",
+          "rootOwnedDryRunSummary": "{{count}} root-owned entries under {{repository}} on {{machine}} would be handed to the owner UID; nothing changed.",
           "starting": "Setting ownership of \"{{repository}}\" on \"{{machine}}\"...",
           "completed": "Ownership updated",
           "failed": "Ownership update failed"
@@ -1787,6 +1917,37 @@
           "completed": "Revoked {{device}} from \"{{repository}}\"",
           "failed": "Device revoke failed"
         }
+      },
+      "permission": {
+        "descriptionShort": "Grant or revoke what a repository's Rediaccfile may reach",
+        "description": "Widen what a repository's Rediaccfile up() and down() may reach. They run as the unprivileged universal user; a grant adds a path (--path) or root with no privilege drop (--root). The machine enforces the grant, a Rediaccfile can only ask for one with a '# rediacc:needs' line, and a fork starts with none.",
+        "nothingToChange": "permission {{verb}} needs --root or --path",
+        "grant": {
+          "descriptionShort": "Give a repository's up() and down() more reach",
+          "description": "Let the repository's Rediaccfile up() and down() reach a path, or run as root. --root is refused to an agent unless the operator set REDIACC_ALLOW_GRAND_REPO before the agent started.",
+          "rootOption": "Run up() and down() as root, with no privilege drop",
+          "pathOption": "Absolute path up() and down() may reach, PATH[:ro|:rw] (read-only by default)",
+          "starting": "Granting \"{{repository}}\" on \"{{machine}}\"...",
+          "completed": "Granted \"{{repository}}\"",
+          "failed": "Permission grant failed"
+        },
+        "revoke": {
+          "descriptionShort": "Withdraw a path or root grant from a repository",
+          "description": "Withdraw a lifecycle path grant, or the root grant, from the repository. The next up() and down() run with what remains.",
+          "rootOption": "Withdraw the root grant",
+          "pathOption": "Absolute path to withdraw",
+          "starting": "Revoking \"{{repository}}\" on \"{{machine}}\"...",
+          "completed": "Revoked \"{{repository}}\"",
+          "failed": "Permission revoke failed"
+        },
+        "show": {
+          "descriptionShort": "Show a repository's lifecycle grant",
+          "description": "Show whether the repository's up() and down() run as root, and which paths they may reach.",
+          "starting": "Reading the grant of \"{{repository}}\" on \"{{machine}}\"...",
+          "completed": "Read the grant of \"{{repository}}\"",
+          "failed": "Could not read the grant",
+          "unreadable": "The machine's grant output could not be read"
+        }
       }
     },
     "backup": {
@@ -1797,9 +1958,11 @@
         "descriptionShort": "List the files a repository, or a stored snapshot with --at, contains",
         "empty": "{{name}} contains no files.",
         "failed": "Could not list {{name}}",
+        "fromNeedsAt": "--from names the backup store a snapshot is read from, so it needs --at.",
         "liveMountListing": "Snapshot {{snapshot}}'s listing was read from the live mount close to when it was taken, so it may differ slightly from the stored image. A restore returns the stored image exactly.",
         "noListing": "Snapshot {{snapshot}} of {{name}} has no stored file listing, so it cannot be browsed. Restore it to inspect its files.",
         "optionAt": "List the snapshot taken at or before this time, or this snapshot id (reads the chunk store)",
+        "optionFrom": "With --at, read the snapshot from this backup store instead of the best-ranked one",
         "optionDepth": "Limit descent to N levels (0 for unlimited)",
         "optionLimit": "Maximum entries to return (0 for unlimited)",
         "optionPath": "Limit the listing to this subtree",
@@ -1809,7 +1972,6 @@
       },
       "cancel": {
         "cancelled": "Cancelled {{name}}",
-        "cancelling": "Stopping {{name}}...",
         "description": "Cancel a running backup on a remote machine",
         "notRunning": "No backup running for strategy \"{{name}}\""
       },
@@ -1854,7 +2016,12 @@
         "optionAs": "Name for the restored repository (defaults to the artifact name)",
         "optionAt": "Restore a point-in-time: a snapshot id or an RFC3339 time (chunk-store restore)",
         "optionDatastore": "Restore into this named datastore (its attached machine hosts it)",
+        "optionFrom": "Read the snapshot from this backup store (default: the store with the newest verified snapshot, falling back to the next on a store failure)",
         "noSeedNeedsSnapshot": "--no-seed applies to restores from a chunk-store snapshot, and this repository has none.",
+        "fromNeedsSnapshot": "--from names a backup store, and this repository has no chunk-store snapshot to restore from it.",
+        "storeFallback": "Backup store {{failed}} could not serve the restore; trying {{next}}.",
+        "storeRankingUnreadable": "Could not read which backup store holds the newest snapshot ({{reason}}); reading the home store.",
+        "storeServed": "Read from backup store {{store}}.",
         "optionNoSeed": "Fetch every chunk from the store instead of reusing local anchors or repository images (proves the store is readable)",
         "optionUp": "Deploy the restored repository after the transfer",
         "placeRequired": "A restore artifact must name where it lives: use repo@place (for example shop:nightly@backup-1).",
@@ -1997,8 +2164,12 @@
           "optionBwlimit": "Upload bandwidth limit in bytes per second, with an optional K/M/G suffix (e.g., \"6M\", \"500K\")",
           "optionReadBwlimit": "Read cap for this strategy's snapshots: same units as --bwlimit; none clears it",
           "readBwlimitStrategyOnly": "--read-bwlimit applies to the whole strategy (the read is local to the machine); drop --destination.",
+          "targetNeedsDestination": "--target names the store of one destination; add --destination <name>.",
           "optionCron": "Cron schedule (e.g., \"0 * * * *\" for hourly)",
           "optionDestination": "Destination name within the strategy. Creates a Rediacc chunk-store destination",
+          "optionTarget": "Registered store id the destination writes to (default: home). Use with --destination",
+          "optionReplicateFrom": "Make the destination a replica: the account server copies this store into the destination's target, so the machine uploads nothing to it. Use with --destination and --target",
+          "replicateFromNeedsDestination": "--replicate-from names the source of one destination; add --destination <name>.",
           "optionDisable": "Disable the strategy or destination",
           "optionEnable": "Enable the strategy or destination",
           "optionExclude": "Exclude these repos from backup (comma-separated names)",
@@ -2038,10 +2209,19 @@
           "retentionDefaultNoPlan": "The plan could not be read, so no retention default was set. Declare one with --retention.",
           "dryRun": "Dry run: strategy \"{{strategy}}\" would change ({{changes}}). Nothing was written."
         },
+        "replication": {
+          "registered": "Replication: {{count}} rule(s) registered with the account server",
+          "removed": "Replication: {{count}} rule(s) removed from the account server",
+          "unsupported": "The account server has no replication rules (HTTP 404), so no copy will run. The strategy is saved; update the account server, then bind again.",
+          "notPushed": "Replication rules were not sent: no account token. Log in, then bind the strategy again.",
+          "failed": "Replication rule for lineage {{lineage}} into store {{target}} was refused: {{reason}}",
+          "syncFailed": "Replication rules could not be synced: {{reason}}"
+        },
         "bind": {
           "description": "Bind a backup strategy to a machine so its schedule is deployed there",
           "bound": "Backup strategy \"{{strategy}}\" bound to machine \"{{machine}}\"",
-          "alreadyBound": "Backup strategy \"{{strategy}}\" is already bound to machine \"{{machine}}\""
+          "alreadyBound": "Backup strategy \"{{strategy}}\" is already bound to machine \"{{machine}}\"",
+          "uncheckedTargets": "Store registration was not checked for: {{targets}}. The schedule refuses an unregistered store when the unit is written."
         },
         "unbind": {
           "description": "Unbind a backup strategy from a machine",
@@ -2122,6 +2302,8 @@
         "restoreTestNeedsCredential": "{{name}} has no credential in this config, so a restored copy could not be test-opened.",
         "restoreTestNoAnchor": "{{name}} has no backup anchor on its machine to restore. Take a snapshot first.",
         "restoreTestNoSpace": "Not enough room for the restore test of {{snapshot}}: it needs {{need}} bytes free and the datastore has {{free}}.",
+        "restoreTestSizeUnknown": "The size of snapshot {{snapshot}} is not in the account's index, so the room the restore test needs cannot be checked. Take a snapshot with rdc backup snapshot and try again.",
+        "restoreTestFreeUnknown": "The free space on the datastore of {{machine}} could not be read, so the room the restore test needs cannot be checked.",
         "verdictUnreadable": "The verify of {{name}} printed no readable verdict, so nothing was proven."
       },
       "snapshots": {
@@ -2157,7 +2339,9 @@
         "summaryError": "  error: {{error}}",
         "optionStore": "Rebuild the encrypted image straight from the backup store, with no machine. Needs an API token with the backup:read and backup:restore scopes in REDIACC_TOKEN",
         "optionAt": "With --store, the snapshot to fetch: a time (ISO 8601) or a snapshot id (default: the newest)",
+        "optionFrom": "With --store, read from this backup store instead of the best-ranked one; it never falls back to another store",
         "storeDone": "{{repo}}: fetched snapshot {{snapshot}} -> {{image}} ({{bytes}} bytes fetched)",
+        "storeCellsRoot": "Snapshot root check: {{outcome}}",
         "storeOfflineNote": "The copy is encrypted and cannot be opened on this OS; send it to a Linux machine with 'rdc backup upload'."
       },
       "upload": {
@@ -2192,7 +2376,11 @@
         "cancelExclusive": "--cancel cannot be combined with --dry-run",
         "cancelled": "The delayed purge of \"{{name}}\" was cancelled.",
         "nothingWaiting": "No purge of \"{{name}}\" was waiting.",
-        "delayed": "The purge of \"{{name}}\" is delayed: nothing was deleted, and it runs on {{when}} (UTC). Cancel it before then with: rdc backup purge {{name}} --cancel"
+        "delayed": "The purge of \"{{name}}\" is delayed: nothing was deleted, and it runs on {{when}} (UTC). Cancel it before then with: {{cancel}}",
+        "optionLineage": "Purge a backup lineage by its id (as `rdc backup usage` lists it) when its repository is no longer in this config",
+        "targetRequired": "Name exactly one target: a repository ref, or --lineage <guid> for a lineage whose repository is gone.",
+        "lineageOwned": "Lineage {{lineage}} belongs to \"{{name}}\" in this config. Purge it with: rdc backup purge {{name}}",
+        "confirmLineage": "This deletes all {{count}} stored snapshot(s) of lineage {{name}} ({{bytes}}) and cannot be undone. Type the lineage id to confirm:"
       },
       "check": {
         "description": "Prove a stored snapshot opens with the passphrase by restoring one file",
@@ -2210,9 +2398,11 @@
       },
       "tocKey": {
         "description": "Manage the browse-listing key of a repository",
-        "optionDryRun": "Report what would be done; touch nothing",
-        "optionReplace": "Replace a different key already on the machine (sends the passphrase to prove it)",
-        "syncDescription": "Install the repository's listing key on its machine, or replace a different one"
+        "sync": {
+          "description": "Install the repository's listing key on its machine, or replace a different one",
+          "optionDryRun": "Report what would be done; touch nothing",
+          "optionReplace": "Replace a different key already on the machine (sends the passphrase to prove it)"
+        }
       },
       "churn": {
         "description": "Measure how much of a repository image changes between runs, project the upload per cell size and recommend one. A reflink base is kept on the machine while it runs and is always removed.",
@@ -2312,6 +2502,7 @@
         "passwordRefused": "Headless login refused at {{step}} (HTTP {{status}}): {{error}}",
         "noSession": "The account server returned no session for the headless login.",
         "noSubscription": "The account has no subscription to mint a CLI token for.",
+        "backupNeedsTwoFactor": "Signed in without backup storage management. Turn on two-factor authentication in Settings at {{url}}, then sign in again.",
         "passwordSigningIn": "Signing in...",
         "passwordSignedIn": "Signed in",
         "success": "Logged in successfully",
@@ -2327,8 +2518,15 @@
         "regionPrompt": "Where should your data be stored?",
         "channelSynced": "Update channel set to {{channel}}.",
         "serverChanged": "Server changed. Previous session cleared.",
-        "edgeSeparator": "Edge Channel",
-        "machinesOverLimit": "  {{count}} machine slot(s) are over the limit."
+        "machinesOverLimit": "  {{count}} machine slot(s) are over the limit.",
+        "termsAccepted": "Terms of Service accepted: version {{version}}",
+        "termsPending": "Terms of Service not accepted yet. Accept them at {{url}}",
+        "termsPendingAccept": "Read them at {{url}} and accept them at {{acceptUrl}}"
+      },
+      "register": {
+        "description": "Create an account in the browser (email pre-filled) and log in",
+        "optionEmail": "Email address to pre-fill on the sign-up page",
+        "invalidEmail": "Enter a valid email address."
       },
       "logout": {
         "description": "Clear stored subscription token",
@@ -2343,20 +2541,39 @@
         "description": "Show subscription, and license state for a machine.",
         "parseFailed": "  Could not read remote machine status",
         "remote": "\nSubscription:",
-        "remotePlan": "  Plan:     {{plan}}",
-        "remoteStatus": "  Status:   {{status}}",
-        "remoteMachine": "    - {{id}}... (last seen: {{lastSeen}})",
+        "remotePlan": "  Plan: {{plan}}",
+        "remoteStatus": "  Status: {{status}}",
         "serverWouldUse": "Would use account server: {{server}}",
         "remoteMachineActivations": "  Machine slots: {{active}}/{{max}}",
         "remoteRepoLicenseIssuances": "  Monthly repo license issuances: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  Repo licenses: {{totalTrackedRepos}} tracked, {{validCount}} valid, {{refreshRecommendedCount}} refresh recommended, {{hardExpiredCount}} hard expired",
-        "remoteRepoLicensesInConfig": "  Repo licenses in this config: {{totalTrackedRepos}} tracked, {{validCount}} valid, {{refreshRecommendedCount}} refresh recommended, {{hardExpiredCount}} hard expired",
-        "remoteRepoLicensesNotInConfig": "  Repo licenses not in this config (deleted, forks or another config): {{count}}",
         "issuanceLimitReached": "Monthly repo license issuance limit reached for the current UTC calendar month.",
         "issuanceUsageHigh95": "Monthly repo license issuances are above 95% of the current UTC limit.",
         "issuanceUsageHigh80": "Monthly repo license issuances are above 80% of the current UTC limit.",
-        "remoteMachineOverLimit": "    - {{id}}... (last seen: {{lastSeen}}) OVER LIMIT",
-        "overLimitSummary": "  {{count}} machine(s) are soft-claimed beyond the machine-slot limit. Renewals still succeed; NEW repositories cannot be licensed until you free a slot or raise the limit."
+        "overLimitSummary": "  {{count}} machine(s) are soft-claimed beyond the machine-slot limit. Renewals still succeed; NEW repositories cannot be licensed until you free a slot or raise the limit.",
+        "licencesHeader": "  Licenses:",
+        "colGuid": "GUID",
+        "colHardExpiry": "Hard expiry",
+        "colKind": "Kind",
+        "colLastSeen": "Last seen",
+        "colMachine": "Machine",
+        "colName": "Name",
+        "colRefreshBy": "Refresh by",
+        "colRepo": "Repo",
+        "colState": "State",
+        "colWhere": "Where",
+        "elsewhereAbsent": "{{count}} not in this config ({{state}})",
+        "elsewhereDeleted": "{{count}} deleted ({{state}})",
+        "elsewhereSummary": "Elsewhere: {{items}}",
+        "listHint": "List them: rdc subscription status --all",
+        "noLiveLicences": "  No repository in this config has a license yet.",
+        "optionAll": "Also list the licenses of deleted repositories and of repositories not in this config",
+        "othersHeader": "  Deleted and unknown licenses:",
+        "overLimitCell": "OVER LIMIT",
+        "refreshHint": "Refresh with: rdc subscription refresh",
+        "retireHint": "Retire the hard-expired ones: rdc subscription retire --expired",
+        "whereAbsent": "not in this config",
+        "whereDeleted": "deleted"
       },
       "activation": {
         "status": {
@@ -2399,7 +2616,67 @@
           "refreshed": "Account state refreshed",
           "failed": "Could not read account state from the account server."
         },
-        "targetExclusive": "Pass at most one of -m or --repo. --repo derives its own machine from the ref."
+        "adoptOrigin": "Reissue licenses another account server issued from this config's account server, moving them over. Without it such licenses are left untouched.",
+        "adoptOriginNeedsTarget": "--adopt-origin moves the licenses of a whole machine: pass it with -m <machine>.",
+        "adoptOriginNeedsLogin": "--adopt-origin reissues licenses from this config's account server, which needs a login: run \"rdc subscription login\" first.",
+        "targetExclusive": "Pass at most one of -m or --repo. --repo derives its own machine from the ref.",
+        "noLogin": {
+          "renewing": "Renewing licenses with the licenses' own credentials...",
+          "renewed": "License renewal finished",
+          "none": "No installed repo licenses on this machine.",
+          "repoRenewed": "{{repositoryGuid}}: renewed",
+          "repoNotDue": "{{repositoryGuid}}: not due",
+          "repoNeedsLogin": "{{repositoryGuid}}: skipped, needs login ({{detail}})",
+          "repoFailed": "{{repositoryGuid}}: could not be renewed ({{detail}})",
+          "failed": "{{count}} license(s) could not be renewed; see the lines above. Logging in does not change this.",
+          "paidNote": "Without a login only licenses that renew on their own are renewed (FREE licenses); paid licenses need \"rdc subscription login\"."
+        }
+      },
+      "licenceState": {
+        "valid": "valid",
+        "refreshRecommended": "refresh recommended",
+        "hardExpired": "hard expired"
+      },
+      "retire": {
+        "tooShort": "Give at least 8 characters of the repository GUID: {{guid}}",
+        "notFound": "No license for \"{{guid}}\" in this account's license report.",
+        "ambiguous": "\"{{guid}}\" matches {{count}} licenses: {{matches}}. Give more characters.",
+        "inConfig": "{{name}} is still in this config and its license is {{state}}. A retired license stays retired, because a renewal does not bring the repository back. Use --force to retire it anyway.",
+        "needsYes": "Retiring a license needs confirmation, and stdin is not a terminal. Pass --yes to confirm.",
+        "confirm": "Retire the license of {{name}} ({{guid}}, {{state}})? A renewal will not bring it back.",
+        "success": "License retired: {{name}}",
+        "description": "Retire the license of a repository that is gone, so it leaves the license counts and notices.",
+        "argGuid": "Repository GUID, or at least 8 characters of one license in the account report",
+        "optionForce": "Retire a license whose repository is still in this config and not hard-expired",
+        "dryRunNeedsExpired": "--dry-run goes with --expired.",
+        "expiredConfirm": "Retire {{count}} licenses? A renewal will not bring them back.",
+        "expiredDryRun": "Dry run: nothing was retired.",
+        "expiredFailed": "Could not retire {{name}}: {{error}}",
+        "expiredList": "{{count}} hard-expired licenses of deleted or unknown repositories:",
+        "expiredNeedsConfig": "This config holds no repositories, so --expired cannot tell which licenses are gone. Select the config with --config.",
+        "expiredNone": "No hard-expired license of a deleted or unknown repository to retire.",
+        "expiredResult": "Retired {{retired}}, skipped {{skipped}} (live repositories), failed {{failed}}.",
+        "expiredWithGuid": "--expired retires every hard-expired license and takes no GUID.",
+        "needsGuidOrExpired": "Give a repository GUID, or --expired.",
+        "optionDryRun": "With --expired: list what would be retired and change nothing",
+        "optionExpired": "Retire every hard-expired license of a deleted repository or one not in this config"
+      },
+      "notices": {
+        "description": "List the account's notices: license expiry, backup health, renewals, certificates and Terms.",
+        "optionAll": "Include dismissed notices and every page, not only the last 30 days",
+        "optionUnread": "Only notices not yet read",
+        "optionMarkRead": "Mark the listed notices as read",
+        "empty": "No notices.",
+        "markedRead": "Marked {{count}} notice(s) as read.",
+        "more": "+{{count}} more",
+        "summary": {
+          "repoLicence": "{{hardExpired}} hard expired, {{refreshRecommended}} refresh recommended: {{names}}",
+          "backupHealth": "{{count}} backup health item(s)",
+          "licenceRenewal": "{{planCode}} renews on {{date}}",
+          "certExpiry": "{{track}} certificate {{number}} expires on {{date}}",
+          "evalExpiry": "{{planCode}} evaluation expires on {{date}}",
+          "termsNotice": "Terms {{version}} take effect on {{date}}"
+        }
       }
     },
     "shortcuts": {
@@ -2567,11 +2844,196 @@
         "container": "Start the executor server in container mode."
       }
     },
+    "server": {
+      "summary": "Install and run the self-hosted Rediacc account server",
+      "description": "Install the self-hosted Rediacc account server (Elite) as a repository on a machine, then check, upgrade, back up and license it. Not to be confused with `rdc serve`, which runs this CLI as an executor.",
+      "domainArgument": "Public domain of the installed server",
+      "optionMachine": "Machine the server runs on, when this device holds no install record for the domain",
+      "optionRepo": "Repository the server runs in (default: elite)",
+      "install": {
+        "summary": "Install the account server on a machine",
+        "description": "Install the self-hosted account server on an existing machine: check the machine, set up renet when it is missing, wait for DNS, configure TLS, create the repository, generate its keys on the machine, license it, start it and create the owner account. Every value has a flag; on a terminal a missing value is asked for. A rerun skips the steps that are already done.",
+        "machineArgument": "Configured machine to install on (or register one with --ip and --user)",
+        "optionIp": "Address of an existing server or LAN device to register first",
+        "optionUser": "SSH user on that machine",
+        "optionPort": "SSH port on that machine (default: 22)",
+        "optionName": "Name to register that machine under (default: server-<ip>)",
+        "optionDomain": "Public domain of the server, for example accounts.example.com",
+        "optionStoreDomain": "Public domain of its backup store (default: <name>-store.<rest of the domain>)",
+        "optionRepo": "Repository name (default: elite)",
+        "optionSize": "Repository size (default: 10G)",
+        "optionOwner": "Email of the owner account, created during the install (default: the logged-in account)",
+        "optionTls": "How the certificate is obtained: letsencrypt (HTTP-01), cloudflare (DNS-01) or byo (an existing certificate)",
+        "optionCfToken": "Cloudflare API token for DNS-01 (with --tls cloudflare)",
+        "optionCertEmail": "Email Let's Encrypt sends expiry notices to (default: the owner)",
+        "optionTlsCert": "Certificate file in PEM form (with --tls byo), covering both domains",
+        "optionTlsKey": "Private key file of that certificate (with --tls byo)",
+        "optionTlsCa": "CA certificate the server's certificate chains to, used for the health check",
+        "optionLicence": "auto: a certificate from the logged-in account, or the free tier when there is none; free: start on the free tier",
+        "optionCert": "Delegation certificate file for an offline install; it must name the key generated on the machine",
+        "optionImage": "Server image to run (default: ghcr.io/rediacc/server:latest)",
+        "optionImageFile": "Saved image archive (docker save) to ship instead of pulling",
+        "optionLocalImage": "Save the --image from the local Docker and ship it instead of pulling",
+        "optionNoDnsWait": "Print the DNS records without waiting for them to resolve",
+        "optionBwsProject": "Also copy the generated keys to this Bitwarden Secrets Manager project; without it no key leaves the machine",
+        "optionRotate": "With --bws-project, replace a stored value that differs instead of refusing",
+        "optionYes": "Ask nothing: take the defaults and refuse a missing value",
+        "help": "Steps, in order (each one is recorded, so a rerun skips what is done):\n  preflight  sudo -n, architecture, ports 80 and 443, disk space and clock skew\n  setup      rdc machine setup, when renet is missing\n  dns        print the A and AAAA records, then wait until both domains resolve to the machine\n  tls        Let's Encrypt, Cloudflare DNS-01, or an existing certificate\n  repo       create the repository and apply the elite template\n  keys       generate every key on the machine, into the repository's secrets.env\n  licence    --cert, else a certificate from the logged-in account, else the free tier\n  image      pull the image on the machine, or ship --image-file\n  up         start the server and wait for https://<domain>/health\n  owner      create the owner account\n\nA machine that is not registered yet is added with --ip and --user. A cloud VM is created first with rdc machine provision.\nThe DNS records are printed and never written to a customer zone.\nOn a terminal the install ends with a one-time recovery bundle. Store it somewhere safe: it is never logged and never part of --output json, and rdc server backup prints it again later.",
+        "step": "Step: {{step}}",
+        "skipped": "Step {{step}}: done earlier, skipped",
+        "done": "The account server is running at https://{{domain}}",
+        "freeTier": "{{domain}} runs on the free tier. Run `rdc server licence {{domain}}` to license it.",
+        "backupHint": "Save the recovery bundle with `rdc server backup {{domain}} --out <file>`. The owner's first password is in {{ownerFile}}.",
+        "examples": {
+          "brought": "Register an existing server by its address and install on it.",
+          "configured": "Install on a configured machine without any prompt.",
+          "lan": "Install on a LAN machine with an existing certificate, on the free tier."
+        }
+      },
+      "status": {
+        "description": "Show the health, tier, certificate and image of an installed server",
+        "certRefused": "REFUSED ({{reason}}) at {{at}}",
+        "certRefusedRun": "run: rdc server licence {{domain}}"
+      },
+      "backup": {
+        "description": "Print the recovery bundle (the keys) of an installed server, or write it to a file",
+        "optionOut": "Write the bundle to this file (mode 0600) instead of stdout",
+        "written": "Recovery bundle written to {{file}} (mode 0600)",
+        "examples": {
+          "out": "Save the recovery bundle to a file only its owner can read."
+        }
+      },
+      "upgrade": {
+        "description": "Upgrade an installed server: fork its repository as a rollback point, place the new image, apply the template again when the built-in one is newer, and restart",
+        "descriptionShort": "Upgrade an installed server, with a rollback fork",
+        "confirm": "Upgrade the account server at {{domain}}?",
+        "forking": "Forking the repository as rollback point {{tag}}",
+        "template": "Applying the elite template again (version {{from}} to {{to}})",
+        "templateCurrent": "The deployed template (version {{version}}) is current",
+        "done": "{{domain}} upgraded. Rollback point: {{rollback}}",
+        "migratingCert": "Moving the certificate from secrets.env into the cert inbox; the server applies it as it starts"
+      },
+      "licence": {
+        "description": "Move a free-tier server to a delegation certificate from the logged-in account, or from --cert",
+        "done": "{{domain}} is licensed under subscription {{subscription}}",
+        "certUnreadable": "Cannot read the certificate file {{file}}",
+        "certInvalid": "{{file}} is not a usable delegation certificate: {{error}}",
+        "keyMismatch": "{{file}} was issued for another key than the one generated on the machine. Issue a certificate for the machine's key.",
+        "issuedKeyMismatch": "The account server issued a certificate for another key than the one generated on the machine",
+        "noLogin": "No logged-in account: the server starts on the free tier",
+        "planDisallows": "The subscription cannot hold a delegation certificate ({{error}}); the server starts on the free tier",
+        "otherKey": "The subscription already holds an active delegation certificate for another key ({{certId}}). Revoke it in the portal, then run the install again. {{error}}",
+        "missingScope": "This login cannot issue a delegation certificate. Run `rdc subscription login` again as an owner or admin with 2FA, or install with --licence free.",
+        "offerFree": "Start the server on the free tier instead?",
+        "noCertForUpgrade": "No delegation certificate is available: log in with `rdc subscription login` as an owner or admin with 2FA, or pass --cert <file>",
+        "freeProbeHoldsCert": "The server answers as holding a certificate although none was installed",
+        "viaInbox": "The server applied the certificate from its cert inbox; no restart was needed",
+        "alreadyCurrent": "The server already holds this certificate ({{certId}}); nothing to apply",
+        "rejected": "The server rejected the certificate ({{reason}}): {{detail}}",
+        "noResult": "The server did not answer the certificate drop within {{seconds}} seconds; check that it is running",
+        "inboxBusy": "Another certificate is waiting in the server's cert inbox; try again once it is decided",
+        "confirmMismatch": "The server reports certificate {{actual}} instead of {{expected}}, so the new certificate is not in force",
+        "confirmSkipped": "No saved owner login ({{ownerFile}}), so the server's certificate could not be confirmed; its inbox answer is trusted",
+        "bootRefused": "The server refused its cert at boot ({{reason}}): {{detail}}",
+        "droppedCert": "Dropped cert {{certId}} into the inbox",
+        "noUpstreamKey": "The server has no UPSTREAM_PUBLIC_KEY, so it cannot check any cert and a new cert cannot help. Set UPSTREAM_PUBLIC_KEY in the secrets of {{domain}}, then run `rdc server upgrade {{domain}}`.",
+        "bootRefusalStays": "The cert was applied, but the server still reports a boot refusal ({{reason}}); check the server logs"
+      },
+      "bundle": {
+        "header": "Recovery bundle for {{domain}}. Keep it offline; it restores the server's keys.",
+        "once": "This recovery bundle is shown once. Store it somewhere safe now:",
+        "owner": "Owner account: {{email}}, first password: {{password}}"
+      },
+      "bws": {
+        "skipped": "No --bws-project: the keys stay on the machine only",
+        "done": "Keys backed up to Bitwarden Secrets Manager: {{created}} created, {{unchanged}} unchanged, {{rotated}} replaced",
+        "noToken": "No Bitwarden Secrets Manager token: set BWS_ACCESS_TOKEN or write it to the bws-access-token file in the config directory",
+        "listFailed": "bws secret list failed",
+        "noWriter": "--bws-project needs a console checkout: the write goes through private/account/scripts/rotation/bws-write.ts, which keeps the value off the command line",
+        "writeFailed": "Writing {{key}} to Bitwarden Secrets Manager failed",
+        "readFailed": "Reading the keys from the machine failed",
+        "badName": "Refusing a store name that is not opaque",
+        "differs": "{{key}} is already stored with a different value; pass --rotate to replace it"
+      },
+      "dns": {
+        "create": "Create these DNS records at the DNS provider:",
+        "waiting": "Waiting for the records to resolve...",
+        "resolved": "DNS resolves to the machine",
+        "notWaiting": "Not waiting for DNS",
+        "timeout": "These records still do not resolve: {{records}}",
+        "resolvesElsewhere": "{{name}} resolves to {{found}}, not {{want}}; fix the record first",
+        "written": "Wrote {{type}} {{name}} -> {{value}}"
+      },
+      "health": {
+        "failed": "https://{{domain}}/health answered {{status}}, not 200",
+        "noAnswer": "nothing",
+        "certMismatch": "The certificate for {{domain}} covers {{sans}}, not {{domain}}"
+      },
+      "image": {
+        "pulling": "Pulling {{image}} on the machine",
+        "pullFailed": "Pulling {{image}} failed: {{detail}}",
+        "saving": "Saving {{image}} from the local Docker",
+        "saveFailed": "docker save {{image}} failed"
+      },
+      "owner": {
+        "stepFailed": "{{step}} answered {{status}} {{error}}",
+        "raced": "The server's subscription {{box}} is not the certificate's {{cert}}: another account registered first"
+      },
+      "preflight": {
+        "refused": "{{machine}} is not ready:",
+        "noAnswer": "{{machine}} did not answer the preflight over SSH",
+        "noSudo": "sudo -n fails on {{machine}}; the SSH user needs passwordless sudo",
+        "arch": "Architecture {{arch}} is not supported (x86_64 or aarch64)",
+        "portBusy": "Port {{port}} is held by {{holder}}",
+        "disk": "{{free}} GiB free on the datastore, {{need}} GiB needed",
+        "clock": "The machine's clock is {{skew}} s off (at most {{max}} s); enable time sync"
+      },
+      "tls": {
+        "byoNeedsPair": "--tls byo needs --tls-cert and --tls-key",
+        "byoFailed": "Installing the certificate for {{host}} failed: {{detail}}",
+        "byoInstalled": "Certificate installed for {{host}}",
+        "cloudflareNeedsToken": "--tls cloudflare needs --cf-token"
+      },
+      "prompts": {
+        "machine": "Machine to install on",
+        "machineAddExisting": "Existing server or LAN device (IP and user)",
+        "provisionHint": "A cloud VM is created first with rdc machine provision.",
+        "machineIp": "IP address",
+        "machineUser": "SSH user",
+        "machinePort": "SSH port",
+        "machineName": "Name for this machine",
+        "domain": "Public domain of the server",
+        "storeDomain": "Public domain of its backup store",
+        "tls": "Certificate",
+        "tlsLetsencrypt": "Let's Encrypt (the machine answers on port 80)",
+        "tlsCloudflare": "Cloudflare DNS (API token)",
+        "tlsByo": "An existing certificate and key",
+        "cfToken": "Cloudflare API token",
+        "owner": "Owner account email",
+        "required": "A value is required"
+      },
+      "errors": {
+        "needsTTY": "{{flag}} is required when not running on a terminal",
+        "machineUnknown": "Machine {{machine}} is not in this config. Pass --ip and --user to register it.",
+        "machineNameTaken": "A machine named {{machine}} is already registered at {{ip}}; pick another --name",
+        "otherMachine": "{{domain}} was installed on {{machine}} from this device",
+        "repoExists": "Repository {{repo}} already exists on {{machine}} and was not created by this install; pass --repo <name>",
+        "repoUnknown": "Repository {{repo}} is not in this config",
+        "noRecord": "No install record for {{domain}} on this device; pass --machine (and --repo when it is not elite)",
+        "noDaemon": "Repository {{repo}} has no Docker daemon recorded yet",
+        "keygenNoKey": "The machine reported no Ed25519 public key",
+        "bundleIncomplete": "secrets.env on the machine lacks {{keys}}",
+        "boxScriptFailed": "The command on {{machine}} exited {{code}}: {{detail}}",
+        "rdcFailed": "{{command}} failed (exit {{code}})",
+        "certAndFree": "--cert and --licence free cannot be combined"
+      }
+    },
     "job": {
       "description": "Manage detached jobs on a machine: list them, check status, replay or follow their event logs, cancel one, or garbage-collect finished ones. A detached job runs under systemd on the machine, so it survives a dropped connection and can be re-attached to later.",
       "summary": "Manage detached jobs on a machine",
       "machineOption": "Target machine name",
       "idOption": "Job ID",
+      "stepsUnfinished": "{{verb}}: the job finished, but the step(s) {{steps}} did not; rdc job wait settles them.",
       "list": {
         "description": "List detached jobs on a machine, newest first",
         "empty": "No jobs on {{machine}}.",
@@ -2579,7 +3041,8 @@
           "basic": "List the jobs on a machine."
         },
         "machineOption": "Target machine name (omit to list this config's pending job tickets)",
-        "emptyTickets": "No pending jobs for this config."
+        "emptyTickets": "No pending jobs for this config.",
+        "allOption": "Include expired and dismissed tickets"
       },
       "status": {
         "description": "Show a detached job's status",
@@ -2639,7 +3102,28 @@
       },
       "steps": {
         "pending": "steps pending: rdc job wait {{jobId}}",
-        "pendingForConfig": "{{count}} steps pending for config {{config}}"
+        "pendingForConfig": "{{count}} steps pending for config {{config}}",
+        "abandoned": "job {{jobId}}: steps abandoned ({{reason}})",
+        "reason": {
+          "gone": "the job is gone from the machine",
+          "never-started": "it never started",
+          "age": "older than 7 days",
+          "dismissed": "dismissed"
+        }
+      },
+      "dismiss": {
+        "description": "Give up on job tickets locally: their owed steps are dropped and the ticket stops showing up. Makes no machine call and does not touch the job itself.",
+        "summary": "Give up on job tickets locally, with no machine call",
+        "idArg": "Job ids or request ids of the tickets to dismiss",
+        "staleOption": "Dismiss every pending ticket older than --older-than (default 24h)",
+        "olderThanOption": "With --stale, the minimum ticket age, e.g. 90m, 24h (default: 24h)",
+        "confirm": "Dismiss {{count}} ticket(s)? Their owed steps will never run.",
+        "dismissed": "Dismissed {{count}} ticket(s).",
+        "none": "No matching tickets.",
+        "invalidOlderThan": "--older-than must be a duration such as 90m or 24h (got \"{{value}}\")",
+        "needsTarget": "Name at least one job id, or pass --stale.",
+        "conflictingTargets": "Pass job ids, or --stale (with an optional --older-than), not both; --older-than needs --stale.",
+        "notFound": "No ticket for {{jobId}} in this config."
       }
     },
     "tools": {
@@ -2671,6 +3155,31 @@
         "checksumMismatch": "Checksum mismatch for {{url}}: expected {{expected}}, got {{actual}}. The download was deleted and nothing was installed.",
         "badArchive": "The downloaded archive cannot be used: {{reason}}"
       }
+    },
+    "version": {
+      "channel": "Update channel: {{channel}}",
+      "description": "Print the CLI version, platform, update channel and the active license: the plan when logged in, \"anonymous (FREE per repository)\" without a login, and \"unknown (server unreachable)\" when the account server cannot be reached. The --version flag still prints the bare version.",
+      "descriptionShort": "Show the CLI version, channel and active license",
+      "license": {
+        "anonymous": "anonymous (FREE per repository)",
+        "label": "License: {{license}}",
+        "unknown": "unknown (offline)",
+        "unreachable": "unknown (server unreachable)"
+      },
+      "platform": "Platform: {{platform}} {{arch}}"
+    },
+    "legal": {
+      "accepted": "Accepted: version {{version}} at {{at}} ({{method}})",
+      "acceptedUnreachable": "Accepted: unknown (server unreachable)",
+      "binding": "binding",
+      "credits": "Third-party notices: {{command}}",
+      "description": "Print the legal document links in the CLI language with the binding English links, the current Terms of Service version with its checksum and archive URL, the acceptance on record (from the account server when logged in, from this config when anonymous), and the contracting entity. Third-party notices are under rdc credits --licenses.",
+      "descriptionShort": "Show the legal documents, the Terms version and the acceptance on record",
+      "documentsTitle": "Legal documents:",
+      "entity": "Contracting entity: {{name}}, {{register}} {{code}}, VAT {{vat}}, {{address}}",
+      "notAccepted": "Accepted: not accepted",
+      "terms": "Terms of Service: version {{version}}, in force from {{effective}}",
+      "upcoming": "Upcoming version {{version}} takes effect on {{effective}}"
     }
   },
   "help": {
@@ -2747,7 +3256,13 @@
       "revealRequiresTty": "--reveal requires an interactive TTY; refusing to print sensitive value to a pipe.",
       "showRevealRequiresTty": "--reveal requires an interactive TTY; refusing to pipe plaintext to a non-TTY sink.",
       "rotateRequiresTty": "config field rotate requires interactive TTY confirmation; refusing in non-interactive context (set REDIACC_ALLOW_CONFIG_EDIT to override).",
-      "rotateNotSensitive": "Pointer \"{{pointer}}\" is not a sensitive field; use 'config field set' instead."
+      "rotateNotSensitive": "Pointer \"{{pointer}}\" is not a sensitive field; use 'config field set' instead.",
+      "rootGrantBlocked": "Agents cannot give \"{{name}}\" a root grant: its Rediaccfile would run without the privilege drop.\n\nUser: to allow it, set REDIACC_ALLOW_GRAND_REPO={{name}} (or * for all repos) in your terminal before starting the agent session.",
+      "rootGrantOverride": "Agent-initiated overrides are not accepted for the root grant of \"{{name}}\".\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO. Only the user can authorize this before the agent starts.",
+      "pathGrantBlocked": "Agents cannot change the path grants of the grand repository \"{{name}}\": its Rediaccfile would reach host paths the user never approved.\n\nUser: to allow it, set REDIACC_ALLOW_GRAND_REPO={{name}} (or * for all repos) in your terminal before starting the agent session. A fork needs no override.",
+      "pathGrantOverride": "Agent-initiated overrides are not accepted for a path grant on the grand repository \"{{name}}\".\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO. Only the user can authorize this before the agent starts.",
+      "limitsGrantBlocked": "Agents cannot change the resource limits of the grand repository \"{{name}}\": a lower cap can OOM-kill its containers.\n\nUser: to allow it, set REDIACC_ALLOW_GRAND_REPO={{name}} (or * for all repos) in your terminal before starting the agent session. A fork needs no override.",
+      "limitsGrantOverride": "Agent-initiated overrides are not accepted for a limit change on the grand repository \"{{name}}\".\n\nDo not attempt to set REDIACC_ALLOW_GRAND_REPO. Only the user can authorize this before the agent starts."
     },
     "authRequired": "Authentication required. Run: rdc subscription login",
     "cluster": {
@@ -2762,6 +3277,7 @@
       "declareNeedsProvider": "--declare-only records a cluster without provisioning it, so it needs --provider and --pool."
     },
     "config": {
+      "missingNamed": "Config \"{{name}}\" does not exist, so nothing was changed. Create it first with: rdc config init {{name}}",
       "machineNotFound": "Machine \"{{name}}\" not found in config. Available: {{available}}.",
       "invalidEmail": "Invalid email address: \"{{value}}\".",
       "noActiveConfig": "No active config",
@@ -2770,7 +3286,8 @@
     },
     "container": {
       "execFailed": "container_exec failed",
-      "logsFailed": "container_logs failed"
+      "logsFailed": "container_logs failed",
+      "unknown": "No container \"{{container}}\" in repository \"{{repository}}\". Containers: {{containers}}. Did you mean \"{{suggestion}}\"?"
     },
     "datastore": {
       "defaultIsImplicit": "the default datastore is implicit; these verbs manage additional named datastores.",
@@ -2790,22 +3307,29 @@
     },
     "invalidFunctionParams": "Invalid parameters for function \"{{function}}\": {{errors}}",
     "invalidKey": "Invalid key. Valid keys: {{keys}}",
+    "invalidOutputFormat": "Invalid output format \"{{value}}\". Allowed: {{allowed}}",
     "license": {
       "recoveryFailedTokenNotReady": "Your subscription token is not ready. Run: rdc subscription login, then retry.",
       "recoveryFailedNoKnownRepos": "Repositories were found on {{machine}} but none are tracked in your local config. List your tracked repos with `rdc repo list`, then retry.",
+      "foreignOriginSkipped": "skipped: issued by {{licenseOrigin}}, not this config's account server {{configOrigin}} (--adopt-origin moves it)",
       "recoveryFailedServerRejected": "The account server rejected license issuance for the repository on \"{{machine}}\". First error: {{error}}. Run: rdc subscription refresh --repo <repo-ref> for details.",
       "preflightTokenNotReady": "Subscription token is not ready. Run: rdc subscription login. Deploy to {{machine}} skipped.",
       "machineSlotLimit": "This placement needs {{needed}} more machine slot(s), and the subscription has {{free}} free ({{active}} of {{max}} in use). A slot is released automatically 5 hours after that machine's last activity, or immediately when the machine is removed. Raise the ceiling by upgrading the plan, or contact sales for a negotiated Enterprise or partner machine ceiling.",
       "partialPlacement": "The placement stopped part-way: {{placed}} machine(s) completed ({{placedNames}}) and {{remaining}} were never started ({{remainingNames}}). Nothing was rolled back, so the completed machines keep their repositories and their slots. Free a slot or raise the ceiling, then re-run: {{command}}",
-      "nothingProvisioned": "Nothing was provisioned: the repository was not created."
+      "nothingProvisioned": "Nothing was provisioned: the repository was not created.",
+      "backupStoreMismatch": "Refused: repository \"{{repo}}\" on {{machine}} holds a license issued by {{installed}}, so this backup command would use that account's backup store, not the store of {{expected}}, the account server of config \"{{config}}\". Run it with the config whose account server is {{installed}}.",
+      "backupStoreUnreadable": "Refused: the licenses installed for repository \"{{repo}}\" on {{machine}} could not be read, so it is unknown which account's backup store this backup command would use. Check that passwordless sudo works on {{machine}}, then retry."
     },
     "freeLicense": {
       "offerPrompt": "This command needs a license, and no login was found. Log in, or continue with a free license?",
       "offerLogin": "Log in to an account",
       "offerFree": "Continue with a free license (up to {{maxGb}} GB)",
-      "autoTaken": "No login found, so a free license is used (up to {{maxGb}} GB, no hosted backups). Create an account for more: {{url}}",
+      "autoTaken": "No login found, so a free license is used (up to {{maxGb}} GB, no hosted backups). Register a free account for Community limits ({{repoGb}} GB repositories, {{issuances}} licenses a month, {{backupGb}} GB hosted backup): {{url}}",
+      "defaultRegion": "No region chosen, so the free license comes from {{server}}. To choose another, pass --license-region <id> or set REDIACC_ACCOUNT_SERVER.",
+      "regionIgnored": "This config already uses {{server}}, so --license-region is ignored.",
       "issued": "Free license installed for this repository (up to {{maxGb}} GB).",
-      "noHostedBackup": "A free license has no hosted backups. Create an account and choose a paid plan to back up this repository: {{url}}"
+      "registerHint": "This free license has no hosted backups. Register a free account for Community limits ({{repoGb}} GB repositories, {{issuances}} licenses a month, {{backupGb}} GB hosted backup): {{url}}",
+      "noHostedBackup": "A free license has no hosted backups. Register a free account to get Community's hosted backup, or choose a paid plan for more: {{url}}"
     },
     "machineNotFound": "Machine \"{{name}}\" not found",
     "machineRequired": "Machine name required. Use --machine <name>",
@@ -2825,6 +3349,24 @@
           }
         }
       }
+    },
+    "jobs": {
+      "overlap": {
+        "refusedHead": "Refused: {{subject}}, {{origin}}.",
+        "warningHead": "Warning: {{subject}}, {{origin}}.",
+        "seeIt": "  See it: {{attach}}",
+        "subject": "{{what}} ({{doing}}{{scope}}) is {{state}}{{started}}",
+        "whatJob": "job {{id}}",
+        "onScope": " on {{scope}}",
+        "startedAt": ", started {{timestamp}}",
+        "originUnknown": "started by: unknown (older renet)",
+        "originStarted": "started by {{user}} via {{client}}{{config}}",
+        "originConfig": " (config {{name}})"
+      },
+      "refused": "Refused to start the job on '{{machine}}': {{holder}} holds the same scope.",
+      "holderJob": "job {{id}}",
+      "holderOther": "another job",
+      "orStopIt": "  Or stop it: rdc job cancel {{id}} -m {{machine}}"
     },
     "proxy": {
       "timeout": "The proxy executor at {{host}} did not answer within {{seconds}}s. Check that it is running, or raise REDIACC_PROXY_TIMEOUT_MS.",
@@ -2883,7 +3425,6 @@
       "remoteFileLocalNotDir": "When --remote-file is set, --local must be an existing directory: {{path}}",
       "remoteFileRequiresSingleFile": "--remote-file requires exactly one --local path that points at a file."
     },
-    "teamRequired": "Team name required. Use --team or set default with: rdc config set team <name>",
     "term": {
       "connectivityFailed": "Cannot reach {{host}}:{{port}}. {{error}}\n\nTroubleshooting:\n  - Check if the machine is powered on and connected to the network\n  - Verify the IP address is correct in the machine vault\n  - Ensure port {{port}} is not blocked by a firewall\n  - Try pinging the machine: ping {{host}}",
       "launchFailed": "Failed to launch terminal: {{error}}",
@@ -2898,8 +3439,16 @@
       "repoContextRequired": "Command requires repository context.\n\nDetected \"{{detected}}\" which needs DOCKER_HOST and repository environment variables.\nThese are only available when the target is a repository.\n\nInstead of:\n  rdc term connect {{machine}} -c \"{{command}}\"\n\nUse:\n  rdc term connect <repo-ref> -c \"{{command}}\"",
       "dockerComposeForbidden": "\"docker compose\" is not permitted in repository context.\n\nUse \"renet compose -- <args>\" instead so per-repo loopback IPs, host network injection, CRIU capabilities, and compose validation are applied. Running \"docker compose\" directly bypasses all of this and silently corrupts the deployment.\n\nFor orchestrated deploys, prefer: rdc repo up <repo-ref>",
       "fileWriteDetected": "File write detected ({{detected}}). Use rdc repo sync instead:\n  rdc repo sync upload <repo-ref> --local FILE --remote PATH\n\nrsync transfers files with delta compression, checksums, and proper permissions.",
+      "blankCommand": "The -c command is empty. Pass a command to run, or omit -c for an interactive shell.",
       "sshExitCode": "SSH exited with code {{code}}",
       "secretStagingFailed": "Could not stage the repository secrets on the machine (ssh exit code {{code}})."
+    },
+    "terms": {
+      "declined": "The Terms of Service were not accepted, so no free license was fetched.",
+      "required": "The Terms of Service have not been accepted for this account. Accept them at {{url}}, then run the command again.",
+      "requiredAccept": "Read them at {{url}} and accept them at {{acceptUrl}}, then run the command again.",
+      "requiredFree": "The Terms of Service were not accepted for this free license. Read them at {{url}}, then pass {{flag}} or set {{env}}.",
+      "upcoming": "New Terms of Service {{version}} take effect on {{effective}}. Read them at {{url}}."
     },
     "unknownCommand": "Unknown command \"{{command}}\". Available commands: {{available}}.",
     "unknownRegion": "Unknown region: {{region}}",
@@ -2948,6 +3497,7 @@
       "localSha256Mismatch": "{{image}} no longer matches the sha256 recorded when it was downloaded (expected {{expected}}, got {{actual}}). Download it again, or pass --skip-verify to send it anyway.",
       "registerFailed": "The image was placed on {{machine}} as {{guid}}, but registering it in the config failed: {{error}}. Find the unregistered image with: rdc machine prune {{machine}} --orphaned-repos --dry-run",
       "atNeedsStore": "--at only applies with --store.",
+      "fromNeedsStore": "--from only applies with --store.",
       "storeRefusesMachine": "--store reads the backup store directly and takes no -m <machine>.",
       "storeRefusesCheckpoint": "--store takes no --checkpoint; it never touches a machine.",
       "storeRefusesOption": "--store takes no {{option}}: that control belongs to the machine download; the store fetch has its own resume and verifies every chunk.",
@@ -2968,9 +3518,11 @@
       "noConfig": "No tofu configuration (main.tf.json) in {{path}}; the provision step that writes it did not run.",
       "belowFloor": "{{engine}} {{version}} at {{path}} is older than the minimum {{floor}}. Install the pinned OpenTofu with: rdc tools install tofu",
       "overrideUnusable": "REDIACC_TOFU is set to {{path}}, which does not run as OpenTofu or Terraform. Fix or unset it, or install the pinned OpenTofu with: rdc tools install tofu"
-    }
+    },
+    "delegationCertRefused": "The server's licence cert is refused ({{code}}); ask the operator to run: rdc server licence"
   },
   "options": {
+    "acceptTerms": "Accept the Terms of Service for a free license without asking (or set RDC_ACCEPT_TERMS=1)",
     "apiToken": "API token (rdt_...). Pass `-` to read it from stdin (keeps it out of the process list).",
     "artifactRef": "Backup artifact reference (repo[:tag][@place])",
     "background": "Run as a detached job on the machine: print its id and exit",
@@ -2997,7 +3549,9 @@
     "healthTimeout": "Per-attempt health-check timeout in seconds (default 30)",
     "healthWindow": "Total health-gate window in seconds (default 300)",
     "insiders": "Use VS Code Insiders settings",
+    "json": "Print machine-readable JSON",
     "lang": "Language override ({{languages}})",
+    "licenseRegion": "Account region that issues a free license when the config names no server (e.g. us, eu)",
     "licenses": "Print the full THIRD_PARTY_LICENSES text bundled with release builds",
     "localPath": "Local directory path (default: current directory)",
     "localPaths": "One or more local file or directory paths (default: current directory)",
@@ -3051,7 +3605,6 @@
     "sshPort": "SSH port",
     "sshUser": "SSH username",
     "strategyName": "Backup strategy name",
-    "team": "Team name",
     "urlOnly": "Print the VS Code URI instead of launching",
     "verifyChecksum": "Verify files using checksums after sync",
     "vmId": "Virtual machine ID",
@@ -3124,9 +3677,12 @@
       "datastore": "Datastore Management",
       "sync": "File Sync",
       "backup": "Backup & Restore",
+      "server": "Server Installation",
       "job": "Detached Jobs",
       "serve": "Executor Service",
-      "tools": "Local Tools"
+      "tools": "Local Tools",
+      "legal": "Legal Documents and Terms",
+      "version": "Version Information"
     },
     "errors": {
       "heading": "Common Error Messages",
@@ -3136,7 +3692,6 @@
         "noActiveConfig": "No config is active. Create one with `rdc config init`",
         "permissionDenied": "Your account lacks the required permissions",
         "machineRequired": "Specify a machine with `--machine` or set a config default",
-        "teamRequired": "Specify a team with `--team` or set a config default",
         "regionRequired": "Specify a region with `--region` or set a config default"
       }
     },

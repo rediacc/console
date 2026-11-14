@@ -1,6 +1,6 @@
 """wl_soakedpins: the Stop hook's "soaked pins available" advisory (agent/plans/PLAN-pins-command.md, T11).
 
-`.github/workflows/pins-soaked.yml` runs `npm run pins -- apply-soaked --json --out pins-soaked/` daily and uploads the directory as the `pins-soaked` artifact. A session that downloads it (`gh run download -n pins-soaked -D .ci/cache/pins-soaked`) or runs the verb itself with `--out .ci/cache/pins-soaked` leaves a `report.json` there. This module reads that file and nothing else: no network call, no subprocess, no git. A missing, unreadable, empty or stale report is silence, because the advisory describes work that could be done and "not measured" must never become a refusal to stop.
+`.github/workflows/ops-pins-soaked.yml` runs `npm run pins -- apply-soaked --json --out pins-soaked/` daily and uploads the directory as the `pins-soaked` artifact. A session that downloads it (`gh run download -n pins-soaked -D .ci/cache/pins-soaked`) or runs the verb itself with `--out .ci/cache/pins-soaked` leaves a `report.json` there. This module reads that file and nothing else: no network call, no subprocess, no git. A missing, unreadable, empty or stale report is silence, because the advisory describes work that could be done and "not measured" must never become a refusal to stop.
 
 The advisory is report-only. Its effort row (`soaked-pins` in .claude/config/effort.json) puts it at the smart level and above, and the check never blocks at any level.
 """

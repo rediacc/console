@@ -12,6 +12,8 @@ import {
   type RenetRun,
   runStoreFetch,
   type StoreFetchDeps,
+  storeCellsRootLine,
+  storeFetchJson,
 } from '../../services/backup-image/store-fetch.js';
 
 const LINEAGE = 'f6545d49-c46e-4c14-8006-0ad5b37f3e08';
@@ -78,10 +80,14 @@ describe('runStoreFetch', () => {
   it('resolves --at through the shared resolver, and the newest snapshot without it', async () => {
     const a = deps();
     await runStoreFetch({ ref: 'mail', dest: '/d/x.img', at: '2026-08-01T00:00:00Z' }, a.base);
-    expect(a.base.resolveSnapshot).toHaveBeenCalledWith(LINEAGE, '2026-08-01T00:00:00Z');
+    expect(a.base.resolveSnapshot).toHaveBeenCalledWith(LINEAGE, '2026-08-01T00:00:00Z', 'home');
     const b = deps();
     await runStoreFetch({ ref: 'mail', dest: '/d/x.img' }, b.base);
-    expect(b.base.resolveSnapshot).toHaveBeenCalledWith(LINEAGE, '2026-08-14T12:00:00.000Z');
+    expect(b.base.resolveSnapshot).toHaveBeenCalledWith(
+      LINEAGE,
+      '2026-08-14T12:00:00.000Z',
+      'home'
+    );
   });
 
   it('turns a 403 without a recognised code into the backup:restore message', async () => {
@@ -190,5 +196,55 @@ describe('backup download --store option refusals', () => {
     await expect(
       backup.parseAsync(['download', 'mail', '--to', '/tmp', '--at', 'now'], { from: 'user' })
     ).rejects.toThrow('errors.backupImage.atNeedsStore');
+  });
+});
+
+describe('storeFetchJson', () => {
+  it('keeps the engine root check from the renet record', () => {
+    const root = 'ab'.repeat(32);
+    const record = {
+      status: 'fetched',
+      bytesFetched: 42,
+      cellsRoot: 'verified',
+      cellsRootValue: root,
+    };
+    expect(storeFetchJson({ snapshotId: SNAP, dest: '/d.img', record, store: 'st1' })).toEqual({
+      status: 'fetched',
+      image: '/d.img',
+      snapshotId: SNAP,
+      bytesFetched: 42,
+      cellsRoot: 'verified',
+      cellsRootValue: root,
+    });
+  });
+
+  it('omits the root fields when the record has none', () => {
+    const out = storeFetchJson({
+      snapshotId: SNAP,
+      dest: '/d.img',
+      record: { status: 'fetched' },
+      store: 'st1',
+    });
+    expect(out).not.toHaveProperty('cellsRoot');
+    expect(out).not.toHaveProperty('cellsRootValue');
+  });
+});
+
+describe('storeCellsRootLine', () => {
+  it('names a verified root check', () => {
+    expect(storeCellsRootLine({ cellsRoot: 'verified' })).toBe(
+      'commands.backup.download.storeCellsRoot {"outcome":"verified"}'
+    );
+  });
+
+  it('prints nothing when no root was compared, rather than an "absent" check', () => {
+    expect(storeCellsRootLine({ cellsRoot: 'absent' })).toBeUndefined();
+    expect(storeCellsRootLine({})).toBeUndefined();
+  });
+
+  it('prints any other outcome, so a value renet adds later is not shown as nothing', () => {
+    expect(storeCellsRootLine({ cellsRoot: 'mismatch' })).toBe(
+      'commands.backup.download.storeCellsRoot {"outcome":"mismatch"}'
+    );
   });
 });

@@ -11,6 +11,10 @@ hooks rely on for that distinction, and inventing one on an unverified guess is 
     to, so the practical effect is worktree creation never happens there,
     which is exactly the "non-interactive: not allowed" requirement.
 
+THE SCOPE IS THIS REPOSITORY. "Unconditional" is about who asks, not about which repository: a typed `git worktree add` is refused when the repository it acts on has this checkout's git common dir (the main checkout, a lease, any linked tree) or one under it (a submodule's `.git/modules/*` store), and admitted for a scratch repository with a git common dir of its own, such as the `git init` under /tmp that `./run.sh backup-ref restore`'s printed recipe targets (#a8ae93bd, measured 2026-11-11: that recipe was refused in a throwaway repo). Every doubt refuses: no `cwd` on the event, a `-C` or `cd` directory the walk cannot know or that does not exist, any global option but `-C`/`-c`, a `GIT_*` variable on the run or in the hook's environment, an alias, a verb built at run time, git not answering, or a text match the walk did not account for. Only the direct shell form is scoped; a program or script that runs the phrase is refused as before (`_foreign_adds`).
+
+THE ONE TREE AN ASSISTANT MAY GET is a lease: `./run.sh worktree lease` makes a detached, locked tree under `.claude/worktrees` for a writer, and only GC removes it (agent/plans/PLAN-worktree-lease.md Design 6, the remove arm below). A clone of this origin is `block_origin_clone`'s refusal.
+
 Found live 2026-08-01: a session created a throwaway worktree+branch for a small doc edit mid-/pr-merge, then a second one for a NUL-byte gate fix, after the operator had already twice said to keep changes local instead. The operator then found six PRE-EXISTING worktrees holding real, unrelated work from other sessions sitting untouched in the same repo. Worktrees are cheap to
 create and easy to forget, and each one is a place uncommitted work can silently strand outside the one tree everyone actually watches.
 """
@@ -26,7 +30,8 @@ import tokenize
 import zipfile
 from typing import Any
 
-from rediacc_hooks import hookio, shellscan
+from rediacc_hooks import commit_policy, hookio, shellscan
+from rediacc_hooks.guards import _repo_scope
 
 CHAIN = "pre-bash"
 ORDER = 28
@@ -37,7 +42,9 @@ DEFECT = ("if hookio.grep_q(RUN_SH_CREATE, scan):", "if False:")
 # Command position: line start (or wrapper-payload line start), or after ; & | ( $( or a backtick. `git -C <path> worktree add ...` still matches since -C is a flag between `git` and `worktree`, not a new command.
 #
 # PORT NOTE. The bash writes this pattern inside DOUBLE quotes, so `\\\$\\(` reaches grep as `\$\(` and the backtick is bare. Here the pattern is a raw Python string, so the same ERE is spelled once instead of twice.
-GIT_AT_CMD = hookio.rx(r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+")
+GIT_AT_CMD = hookio.rx(
+    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+(=[^ ;&|]*|[{S}]+[^ ;&|]+)?)*[{S}]+"
+)
 
 WORKTREE_ADD = GIT_AT_CMD + hookio.rx(r"worktree[{S}]+add([{S}]|$)")
 
@@ -135,6 +142,157 @@ def runs_port_create(cmd):
         if (package and rest[:2] == ["worktree", "create"]) or (port and rest[:1] == ["create"]):
             return True
     return False
+
+
+# A LEASE TREE LEAVES ONLY THROUGH GC (agent/plans/PLAN-worktree-lease.md Design 6). `./run.sh worktree lease` makes a locked, detached tree under `.claude/worktrees`, and a hand-typed `git worktree remove` can delete a commit nothing has landed. So `git worktree remove|move|prune|lock|unlock` is refused when it names such a tree; the same verbs on any other path stay allowed, and so does a bare `git worktree prune`, which names no tree and skips a locked one.
+#
+# THREE WAYS TO NAME ONE. A path holding the two segments, as typed or once joined to the directory the run executes in (`cd .claude/worktrees && git worktree remove x`, `git -C .claude worktree remove worktrees/x`). A directory under the lease root as the run's own directory (`git -C .claude/worktrees/x worktree remove .`). And a bare suffix, because git resolves a unique path suffix to a tree: measured on git 2.53.0 in this checkout, `git worktree lock w2-proof` answered `'w2-proof' is already locked` while `no-such-tree-xyz` answered `is not a working tree`. Text alone cannot see that spelling, so the suffix is compared with the trees on disk, and only a relative word can be one.
+#
+# OUT OF REACH, stated so a green is not read as more: a path held in a variable (`git worktree remove "$X"`), a glob that hides the segments, a program that joins the segments at run time (`os.path.join('.claude', 'worktrees', 'x')`), a git alias. The lock is the second wall for those, since `remove` refuses a locked tree without `-f -f`. The program-text arm reads no run structure, so it refuses a program holding both the verb's argv and the root anywhere in its text, the same over-refusal every text arm here accepts.
+LEASE_DIR = ".claude/worktrees"
+LEASE_VERBS = frozenset(("remove", "move", "prune", "lock", "unlock"))
+LEASE_PATH = re.compile(r"(?:^|/)\.claude/worktrees(?:/|$)")
+ARGV_LEASE_VERB = re.compile(
+    r"""['"]worktree['"]\s*,\s*['"](?:remove|move|prune|lock|unlock)['"]"""
+)
+
+
+def _lease_names():
+    """The trees on disk under this checkout's lease root; none when the directory is absent."""
+    try:
+        return sorted(os.listdir(hookio.repo_root() / LEASE_DIR))
+    except OSError:
+        return []
+
+
+def names_lease(word, here, names):
+    """Does the operand `word`, in a run executing in `here`, name a lease tree? `names` is `_lease_names()`, passed in so the suffix arm can be driven without a tree on disk."""
+    if LEASE_PATH.search(os.path.normpath(os.path.join(here, word))):
+        return True
+    if word.startswith("/"):
+        return False
+    tail = os.path.normpath(word)
+    return any(("/%s/%s" % (LEASE_DIR, name)).endswith("/" + tail) for name in names)
+
+
+def _in_this_checkout(here):
+    """Is the run's directory `here` this checkout? A relative one is, since it joins the directory the hook runs in."""
+    if not os.path.isabs(here):
+        return True
+    root = str(hookio.repo_root())
+    return os.path.normpath(here) == root or os.path.normpath(here).startswith(root + os.sep)
+
+
+def runs_lease_verb(cmd):
+    """Does `cmd` run a `git worktree` verb in LEASE_VERBS that names a lease tree? Judged by run, so an `echo` or a commit message naming the command is an argument and stays allowed."""
+    names = None
+    for run_ in shellscan.every_run(cmd):
+        if run_.name.rsplit("/", 1)[-1] != "git":
+            continue
+        # A variable the walk knows a literal for is the word bash runs (#3dc774ff): `w=worktree; git $w remove .claude/worktrees/x` and `v=remove; git worktree $v ...` ran with rc 0 before.
+        argv = [_with_assigned_values(run_, w) for w in run_.argv]
+        at, where = shellscan._git_verb_at(argv)
+        if at is None or argv[at] != "worktree":
+            continue
+        args = argv[at + 1 :]
+        if not args or args[0] not in LEASE_VERBS:
+            continue
+        here = os.path.join(run_.cwd or "", where)
+        if LEASE_PATH.search(os.path.normpath(here or ".")):
+            return True
+        if names is None:
+            names = _lease_names()
+        # A run aimed at another checkout resolves a bare suffix against that checkout's trees, so this checkout's names say nothing about it.
+        known = names if _in_this_checkout(here) else []
+        if any(names_lease(w, here, known) for w in args[1:] if not w.startswith("-")):
+            return True
+    return False
+
+
+# THE REGEX ARM READS TEXT, AND A WORD BASH EXPANDS IS NOT TEXT (#3dc774ff). Measured 2026-11-06 through the dispatcher, each rc 0 before this arm: `w=worktree; git $w add x` (the verb in a variable), `git -c alias.wt=worktree wt add x` and its `GIT_CONFIG_KEY_0=alias.wt` twin (the verb behind an alias), and `f(){ git worktree "$@"; }; f add x` (the sub-verb from a function's arguments). The script arm already refused every one of them inside a file; typed at the prompt they ran.
+# So the git runs bash executes are walked: a variable the walk knows a literal for is put back, an alias set on the run (`-c alias.X=V`, the GIT_CONFIG_KEY_n/VALUE_n env pair) is expanded, and `worktree add` is refused. A verb, or a sub-verb after `worktree`, whose value the walk cannot know (a `$(...)`, an unresolved `$x`, `"$@"`) is refused when the command names `worktree` and a judged verb anywhere (`_could_spell`, the broad reading, file names included), so a word built at run time from text the command holds stays refused. `read w; git $w add x` names neither and stays out of reach, as any value only known at run time is.
+# The two word readers live in `_repo_scope`, which the scope resolver below shares with two other guards.
+_unknown_word = _repo_scope.unknown_word
+_git_aliases = _repo_scope.git_aliases
+
+
+def runs_worktree_add(cmd, depth=0):
+    """Does `cmd` run `git worktree add` through a word bash expands: a known variable, an alias the run sets, or a verb whose value the walk cannot know beside text that names the phrase?"""
+    for run_ in shellscan.every_run(cmd):
+        if run_.name.rsplit("/", 1)[-1] != "git":
+            continue
+        argv = [_with_assigned_values(run_, w) for w in run_.argv]
+        at, _ = shellscan._git_verb_at(argv)
+        if at is None:
+            continue
+        verb, rest = argv[at], argv[at + 1 :]
+        alias = _git_aliases(run_, argv, at).get(verb)
+        if alias is not None:
+            if alias.startswith("!"):
+                if depth < MAX_PROGRAM_DEPTH and shell_verdict(
+                    "%s %s" % (alias[1:], shlex.join(rest)), depth + 1
+                ):
+                    return True
+                continue
+            words = alias.split()
+            if words:
+                verb, rest = words[0], words[1:] + rest
+        if _unknown_word(verb):
+            if _could_spell(cmd):
+                return True
+            continue
+        if verb != "worktree" or not rest:
+            continue
+        if rest[0] == "add":
+            return True
+        if _unknown_word(rest[0]) and PHRASE_VERB.search(PHRASE_NOISE.sub("", cmd).lower()):
+            return True
+    return False
+
+
+# A SCRATCH REPOSITORY IS NOT A SECOND CHECKOUT OF THIS ONE (#a8ae93bd). Measured 2026-11-11: `git -C /tmp/tmp.X/work worktree add --detach /tmp/tmp.X/restored refs/backup-restored/...`, in a `git init` under /tmp with a local bare remote, was refused, and that is the exact command `./run.sh backup-ref restore` prints. The rule is about the console and its submodules, so the git arm is
+# scoped to the repository each `git worktree add` acts on: its git common dir, asked of git in the directory the run's `cd` and `-C` compose (`_repo_scope.git_targets`, which block_git_empty_commit and block_unlinked_commit_author share). That dir being this checkout's common dir, or under it (`modules/<path>` is a submodule's store), keeps the refusal. Everything the resolver cannot know keeps it too.
+def _pick_add(operands):
+    """`_repo_scope.git_targets`'s pick: judge `worktree add`, doubt a sub-verb the walk cannot know. The words after `add` are appended to `operands`, one list per judged run, in the order `git_targets` returns the targets."""
+
+    def pick(verb, rest):
+        if verb != "worktree" or not rest:
+            return False
+        if _unknown_word(rest[0]):
+            return None
+        if rest[0] != "add":
+            return False
+        operands.append(rest[1:])
+        return True
+
+    return pick
+
+
+def _foreign_adds(cmd, scan, base):
+    """Is every `git worktree add` the shell command `cmd` runs aimed at a repository that is neither this checkout nor one of its submodules, and creating its tree outside this checkout? `scan` is the text the regex arm read; `base` is the directory the command starts in, from the event. False whenever any part of the answer is unknown."""
+    if not base or not os.path.isabs(base) or not os.path.isdir(base):
+        return False
+    # The regex reads text the walk may not have turned into a run; a match the walk did not account for is one the resolver never judged.
+    matched = _repo_scope.text_matches(WORKTREE_ADD, scan)
+    operands: list[list[str]] = []
+    targets = _repo_scope.git_targets(cmd, base, _pick_add(operands), matched)
+    if targets is None or len(targets) != len(operands):
+        return False
+    root = str(hookio.repo_root())
+    ours = _repo_scope.common_dir(root)
+    if not ours:
+        return False
+    for target, words in zip(targets, operands, strict=True):
+        common = _repo_scope.common_dir(target)
+        if not common or commit_policy.is_inside(common, ours):
+            return False
+        # The new tree's path is an operand of the add, and a scratch repository may place it inside this checkout (`.claude/worktrees`, a submodule path): a word of the add that resolves into this tree keeps the refusal, an option or a branch name included, since the walk does not tell the path from them.
+        for word in words:
+            if _unknown_word(word) or word.startswith("~"):
+                return False
+            if commit_policy.is_inside(os.path.normpath(os.path.join(target, word)), root):
+                return False
+    return True
 
 
 # THE INTERPRETER SAILED PAST ALL THREE ARMS, the way the wrapper sailed past the literal one and the port past the wrapper. Measured 2026-10-09 through chain-head.sh before this arm existed, every one rc 0:
@@ -647,7 +805,7 @@ def _joined(seq):
     return " ".join(shlex.quote(e) if e is not None else "X" for e in seq)
 
 
-# A SCRIPT RUN BY PATH THAT NAMES THE PHRASE IS REFUSED, WHATEVER IT DOES WITH IT. A program the command line itself holds (`-c`, a heredoc, a here-string) is judged by every string it carries, because the command line IS the program. A script read from disk (`python3 x.py`, `node x.js`, `./x.py` by its shebang, `bash x.sh`, `source x.sh`, `./x.sh`) is refused when its text names `worktree` together with `add` or `create` (`_names_phrase`), and otherwise judged as a `-c` program is.
+# A SCRIPT RUN BY PATH THAT SPELLS THE PHRASE IS REFUSED, WHATEVER IT DOES WITH IT. A program the command line itself holds (`-c`, a heredoc, a here-string) is judged by every string it carries, because the command line IS the program. A script read from disk (`python3 x.py`, `node x.js`, `./x.py` by its shebang, `bash x.sh`, `source x.sh`, `./x.sh`) is refused when its text spells `worktree` BESIDE `add` or `create` (`_spells_invocation`, narrowed from two words anywhere by #a904d9f4), and otherwise judged as a `-c` program is.
 #
 # NO QUESTION OF WHETHER THE FILE CAN RUN ANYTHING. An earlier reading allowed a file that mentioned the phrase when a deny list of exec primitives, dynamic reaches and code-running modules found no way for it to run a command. Every round of review found a stdlib road the list missed (`operator.methodcaller("system", ...)(os)`, `timeit.timeit`, `doctest`, `zipimport`, `functools.partial`), so the list could not be completed and the guard failed open on whatever it lacked. A test that cannot be completed is not a guard.
 #
@@ -658,9 +816,52 @@ PHRASE_NOISE = re.compile(r"[\"'`\\]")
 
 
 def _names_phrase(text):
-    """Does a script's text name `worktree` together with `add` or `create`, in any case, anywhere in the file?"""
+    """Does a script's text name `worktree` together with `add` or `create`, in any case, anywhere in the file? The cheap reading: it decides whether a script is READ (`_shell_script`), never whether it is refused (`_spells_invocation` decides that)."""
     bare = PHRASE_NOISE.sub("", text).lower()
     return "worktree" in bare and bool(PHRASE_VERB.search(bare))
+
+
+# THE PHRASE MUST BE THE INVOCATION'S SHAPE, NOT TWO WORDS ANYWHERE (#a904d9f4). `_names_phrase` and `_could_spell` read `worktree` and a verb ANYWHERE in a text, and two refusals followed from that alone, both measured 2026-11-06: a lease writer's `python3 .ci/scripts/quality/check_commit_citations.py --selftest`, whose file held `g(root, "add", "-A")` and the word `worktree` in a comment, was refused as a script naming the phrase;
+# and a lead's `./run.sh worktree gc --write --id X && python3 "$CLAUDE_PROJECT_DIR"/.claude/hooks/stop/worklist.py --add ...` was refused as unjudgeable, `worktree` coming from the sanctioned run.sh verb and `add` from `--add`. A refusal now needs `worktree` and a judged verb ADJACENT, in either order, with only non-alphanumerics between them once quotes and backslashes are gone:
+# `git worktree add`, `['worktree', 'add']`, `"worktree" + " add"`, `printf "git %s add" worktree` (reversed), `block_worktree_add` all match, and `worktree gc ... --add` does not. The cost, stated: a script that keeps the two words apart (`W = "worktree"` and later `[git, W, "add"]`) is no longer refused on its text; it is still judged as a `-c` program is (`_code_verdict`), which folds a built string.
+INVOCATION_VERBS = ("add", "create")
+LEASE_INVOCATION_VERBS = ("add", "create", "remove", "move", "prune", "lock", "unlock")
+_SEP = r"[^a-z0-9]{0,16}"
+
+
+def _invocation_rx(verbs):
+    verb = r"(?<![a-z0-9])(?:%s)(?![a-z0-9])" % "|".join(verbs)
+    return re.compile(
+        r"(?<![a-z0-9])worktree%s%s|%s%sworktree(?![a-z0-9])" % (_SEP, verb, verb, _SEP)
+    )
+
+
+INVOCATION = _invocation_rx(INVOCATION_VERBS)
+LEASE_INVOCATION = _invocation_rx(LEASE_INVOCATION_VERBS)
+
+
+def _spells_invocation(text, lease=False):
+    """Does `text` hold `worktree` beside a judged verb (`add`/`create`, or with `lease` the lease verbs too), the shape an invocation has? The refusal test the script and unjudgeable arms apply."""
+    bare = PHRASE_NOISE.sub("", text).lower()
+    return bool((LEASE_INVOCATION if lease else INVOCATION).search(bare))
+
+
+# A FILE NAME IS NOT AN INVOCATION (#3dc774ff). This guard's own test file is `test-block_worktree_add.py`, so every command or script that named it held `worktree` beside `add`, and three were refused on 2026-11-06 for nothing but the name: a `worklist.py --review-mark ... <that file>:257` behind a `"$CLAUDE_PROJECT_DIR"` path, a `worklist.py --add-many` heredoc whose item text spelled it, and an untracked /tmp script that printed the path.
+# So the phrase readings the script arm and the `$`-path arm apply first replace each FILE-NAME token that names `worktree` with a neutral word: a run of path characters ending in a source or document extension, an optional `:line[:col]` after it. A bare `worktree` word, `alias.wt=worktree`, `"worktree", "add"` and `git worktree add ./x.py` are untouched: none of those words sits in a token that ends in such an extension. The fail-closed readings are NOT masked: a script whose content this hook cannot read (`cp <that file> b.py; python3 b.py`, a `$`-path operand that itself names the phrase) is still judged by every word the command holds, because there the name is the only evidence of what the file holds.
+# OUT OF REACH, stated so a green is not read as more: a script that builds the verb at run time out of a file name it holds (`basename`, `tr`, a `.replace`), the edge every built string already sits on; and a run whose verb word is unknown is judged by `runs_worktree_add` on the unmasked text.
+FILE_NAME = re.compile(
+    r"(?<![\w.+@~/-])[\w.+@~/-]*\."
+    r"(?:py|pyi|sh|bash|zsh|js|mjs|cjs|ts|mts|cts|tsx|jsx|json|jsonl|md|txt|toml|ya?ml|cfg|ini|lock|log|pl|rb|go|rs)"
+    r"(?::\d+)*(?![\w.+@~/-])",
+    re.IGNORECASE,
+)
+
+
+def _mask_file_names(text):
+    """`text` with every file-name token that names `worktree` replaced by a neutral word, so the phrase readings see an invocation and not a path."""
+    return FILE_NAME.sub(
+        lambda m: " FILE " if "worktree" in m.group(0).lower() else m.group(0), text
+    )
 
 
 # The word after `bash`/`sh` options that is the script it runs: what `shellscan._shell_payload` calls a "file" operand.
@@ -883,7 +1084,7 @@ def _redirect_verdict(family, word, cmd, cwd, depth):
         target = shellscan._script_path(word, run_cwd, cwd)
         if target in written:
             if written[target] is None:
-                if _could_spell(cmd):
+                if _spells_invocation(cmd, lease=True):
                     return "unjudgeable"
             else:
                 verdict = _file_verdict(family, written[target], depth + 1)
@@ -947,11 +1148,27 @@ def _pieces(node):
     return [None]
 
 
+def _lease_verb_slot(text):
+    """Does a lease path in built `text` leave an unknown piece where a verb can stand? That licenses `_filled` though the file names `worktree` nowhere else.
+
+    A piece standing as a word of its own outside the path, before or after it, is a command aimed at a lease whose verb is unknown (`'git -C .claude/worktrees/x ' + v + ' add'`, e59de231.1). So is a piece that ENDS the path glued to a character other than its separator (`'git -C .claude/worktrees/x' + v + ' add f'`, 8ca1d8ca.1): `v = " worktree"` closes the path and spells the verb, a hole the round-2 reading admitted as path text. A lease-name prefix is no exemption (`'.claude/worktrees/agent-' + name + ' add f'`, b66f5eee.1): `name = "x worktree"` spells the same verb. A piece after the separator (`'.claude/worktrees/' + name`) is the next component, and a piece followed by more of the path (`.claude/worktrees/agent-{x}/f`) is inside it; both are path text and license nothing (#7d3a5939). A piece after the separator can still carry a space at run time, as can `'git ' + v` with no lease path at all: no static reading tells those from the legitimate builders, and the guard admits them by design.
+    """
+    if UNKNOWN in LEASE_ROOT_TEXT.sub(" ", text):
+        return True
+    for m in LEASE_ROOT_TEXT.finditer(text):
+        head = m.group(0).rstrip(UNKNOWN)
+        if head != m.group(0) and not head.endswith("/"):
+            return True
+    return False
+
+
 def _filled(text, mentions):
     """The commands a built string can spell: its known text, and with each unknown piece or placeholder filled from FILLS when the file names `worktree` anywhere (`mentions`)."""
     text = PLACEHOLDER.sub(UNKNOWN, text)
     if UNKNOWN not in text:
         return [text]
+    if not mentions and LEASE_ROOT_TEXT.search(text):
+        mentions = _lease_verb_slot(text)
     if not mentions:
         return [text.replace(UNKNOWN, " ")]
     return [text.replace(UNKNOWN, " %s " % fill) for fill in FILLS]
@@ -978,16 +1195,44 @@ def _filled_sequences(sequences, mentions):
     """An argv list with an element the text does not hold, filled from FILLS when the file names `worktree`: `["git", "worktree", verb]` with `verb` bound by a loop."""
     for seq in sequences:
         yield seq
-        if mentions and None in seq:
+        # An element that is a lease path licenses the fill for its own argv, as `_filled` does for a string (e59de231.1).
+        leased = any(e is not None and LEASE_ROOT_TEXT.search(e) for e in seq)
+        if (mentions or leased) and None in seq:
             for fill in FILLS:
                 yield [fill if e is None else e for e in seq]
+
+
+# A LEASE PATH IS NOT A MENTION OF THE VERB (#7d3a5939). `.claude/worktrees/agent-x/f` holds the substring `worktree`, and that alone licensed `_filled` to complete any unknown piece of the program with `add`/`worktree`: `subprocess.run(['git','-C',d,'add','f'])` plus a print of a lease path was refused as `git worktree add`, with no worktree verb anywhere. The lease root is dropped before the reading; a bare `worktree` word, `worktree.py` and `alias.wt=worktree` are untouched, and a path that is the verb's own operand (`git worktree add .claude/worktrees/x`) still names the word `worktree` outside the path.
+LEASE_ROOT_TEXT = re.compile(r"\.claude/worktrees(?![\w-])(?:/[^\s'\"`]*)?")
+
+
+def _mentions_worktree(text):
+    """Does `text` name `worktree` outside a lease path (`.claude/worktrees[/...]`)?"""
+    return "worktree" in LEASE_ROOT_TEXT.sub(" ", text)
+
+
+def _code_mentions(code):
+    """Does Python `code` name `worktree` outside a comment (a string, a name, an attribute)? A comment runs nothing, so it does not license filling an unknown argv element with the verb (#a904d9f4: `# ... worktree ...` above `g(root, "add", "-A")` filled `["git", *args]` into `git worktree add`). Code that does not tokenize reads as naming it, the over-reading direction."""
+    if not _mentions_worktree(code):
+        return False
+    # A file name is masked inside a string only: a Python NAME or attribute spelled like one (`worktree.lock(...)`, `worktree.log`) is still a mention of the module (review 599bc50b.2).
+    try:
+        return any(
+            _mentions_worktree(
+                tok.string if tok.type == tokenize.NAME else _mask_file_names(tok.string)
+            )
+            for tok in tokenize.generate_tokens(io.StringIO(code).readline)
+            if tok.type != tokenize.COMMENT
+        )
+    except (tokenize.TokenError, SyntaxError, ValueError):
+        return True
 
 
 def _python_verdict(code, depth):
     """The arm a Python program text trips, or None. Python that does not parse runs nothing, but this module's own reading of a shell word may differ from bash's, so it falls back to the regex reading rather than to an allow."""
     try:
         tree = ast.parse(code)
-        mentions = "worktree" in code
+        mentions = _code_mentions(code)
         folds = _python_folds(tree, mentions)
     except (SyntaxError, ValueError, RecursionError, MemoryError):
         # fa5d11be.3: a program nested past the parser's recursion limit, or too large for it, is read like Python that does not parse: by the regex reading, which neither recurses nor allocates a tree. Not fail-open (its literals and argv shapes are still judged) and not a blanket refusal (a deep data structure is not a worktree add).
@@ -1046,24 +1291,26 @@ TEXT_JOIN_BEFORE = re.compile(r"(?:\+|(?<![\w.])\.|<<)\s*$")
 TEXT_INTERPOLATION = re.compile(r"\$\{[^{}]*\}|#\{[^{}]*\}|[$@]\w+")
 
 
-def _text_literals(code):
-    """Every literal the regex reading finds, a built one also as the commands `_filled` reads it to spell."""
-    mentions = "worktree" in code
+def _text_literals(code, mentions=None):
+    """Every literal the regex reading finds, a built one also as the commands `_filled` reads it to spell. `mentions` says whether the code names `worktree` outside a comment, the license to fill an unknown piece with the verb; None reads the raw text, comments included."""
+    if mentions is None:
+        mentions = _mentions_worktree(code)
     for m in itertools.chain(LITERAL.finditer(code), QUOTE_LIKE.finditer(code)):
         literal = " ".join(next(g for g in m.groups() if g is not None).split())
         yield literal
         built = TEXT_INTERPOLATION.sub(UNKNOWN, literal)
         if UNKNOWN in built:
             yield from _filled(built, mentions)
-        if mentions and TEXT_JOIN_AFTER.match(code, m.end()):
+        # A literal holding a lease path, joined to a piece after it, is read with that piece as `_filled` reads a built string, so the regex reading licenses a verb slot beside a lease path as the `ast` reading does (8ca1d8ca.1).
+        if (mentions or LEASE_ROOT_TEXT.search(built)) and TEXT_JOIN_AFTER.match(code, m.end()):
             yield from _filled(built + UNKNOWN, mentions)
         if mentions and TEXT_JOIN_BEFORE.search(code[max(0, m.start() - 16) : m.start()]):
             yield from _filled(UNKNOWN + built, mentions)
 
 
-def _text_verdict(code, depth):
-    """The arm a program text trips, read by regex: for a node/perl/ruby program, and for Python that `ast` cannot parse."""
-    for literal in _text_literals(code):
+def _text_verdict(code, depth, mentions=None):
+    """The arm a program text trips, read by regex: for a node/perl/ruby program, and for Python that `ast` cannot parse. `mentions` is `_text_literals`'s."""
+    for literal in _text_literals(code, mentions):
         verdict = shell_verdict(literal, depth)
         if verdict:
             return verdict
@@ -1073,18 +1320,24 @@ def _text_verdict(code, depth):
         return "port"
     if "rediacc_ci" in code and ARGV_WORKTREE_CREATE.search(code):
         return "port"
+    if LEASE_DIR in code and ARGV_LEASE_VERB.search(code):
+        return "lease"
     return None
 
 
-def _direct_verdict(cmd):
-    """The arm that refuses `cmd` as the shell reads it, before any program text is opened: "git", "run.sh", "port", or None."""
+def _direct_verdict(cmd, base=None):
+    """The arm that refuses `cmd` as the shell reads it, before any program text is opened: "git", "run.sh", "port", "lease", or None. `base`, the event's `cwd`, is given only for the command typed at the prompt, so the git arm admits a scratch repository there (`_foreign_adds`) and nowhere inside a program."""
     scan = shellscan._command_substitution(shellscan.scan_target(cmd))
-    if hookio.grep_q(WORKTREE_ADD, scan):
+    if (hookio.grep_q(WORKTREE_ADD, scan) or runs_worktree_add(cmd)) and not (
+        base and _foreign_adds(cmd, scan, base)
+    ):
         return "git"
     if hookio.grep_q(RUN_SH_CREATE, scan):
         return "run.sh"
     if runs_port_create(cmd):
         return "port"
+    if runs_lease_verb(cmd):
+        return "lease"
     return None
 
 
@@ -1094,12 +1347,304 @@ def _code_verdict(family, code, depth):
     if family == "shell":
         # `bun exec "<command line>"` runs its operand through Bun's shell, and a program fed to an evaluator on stdin may be one too: either is read as a command line.
         return shell_verdict(code, depth)
+    if family in SLASH_FAMILIES:
+        # A comment does not license filling a built string's hole with the verb, as `_code_mentions` reads it for Python (#1ecd3fec: check-deps.ts's comment `worktree` filled a `${name}` hole into `worktree add`).
+        return _text_verdict(
+            code, depth, _mentions_worktree(_slash_code_text(_mask_file_names(code)))
+        )
     return _text_verdict(code, depth)
 
 
+# A COMMENT RUNS NOTHING, AND IT IS ALL THE NARROWING DROPS (#a904d9f4, design review of dd6898eb0). Adjacency alone let a script keep the two words apart and still run the verb: a shell wrapper `wt(){ git worktree "$@"; }; wt add p`, an alias `git -c alias.wt=worktree wt add p`, the `GIT_CONFIG_KEY_0=alias.wt` form, a JS verb helper. So a script is still refused for naming the phrase ANYWHERE in its code, and only its comments are dropped first.
+# A COMMENT MARKER INSIDE A STRING IS NOT A COMMENT (review ba934aef.1). A quote-blind strip of `#...` after whitespace turned `echo " #"; git -c alias.wt=worktree wt add /p` into `echo "`, and the script was admitted; the JS `//` and `/* */` strip and the perl/ruby `#` strip lost code inside a string literal the same way. So comments are found by a scanner that tracks the quoting, and ANY construct the scanner does not model exactly returns the raw text: a parse that loses its place inside a string can only over-read (refuse), never strip code.
+# Python drops tokenize's COMMENT tokens (exact). A shell script (`_shell_code_text`) models `'...'`, `"..."`, backslash escapes and `#` at a word start after an unescaped space or tab; command and parameter substitution, backquotes, `$'...'`, arithmetic and heredocs keep the raw text. A JS-family script (`_slash_code_text`) models `'...'`, `"..."`, template literals with nested `${...}`, regex literals and the two comment forms; a `<` that may open JSX, a string or regex that meets a bare newline, and anything left open at the end keep the raw text. Perl and ruby (`q{}`, `qw()`, `%w[]`, `m#..#`, regex literals, heredocs) have no exact cheap reading, so their raw text is read, comments included: the over-reading direction, paid only by an untracked or edited script.
+SLASH_FAMILIES = ("node", "deno", "bun", "tsx")
+# ECMAScript LineTerminator: LF, CR, LINE SEPARATOR, PARAGRAPH SEPARATOR.
+JS_LINE_TERMINATORS = "\n\r\u2028\u2029"
+
+
+def _shell_code_text(text):
+    """A shell script's text with its `#` comments removed, or the raw text when it holds a construct this scanner does not read exactly."""
+    out: list[str] = []
+    i, n = 0, len(text)
+    boundary = True  # at a line start or after an unescaped space or tab, outside quotes
+    while i < n:
+        c = text[i]
+        if c == "#" and boundary:
+            while i < n and text[i] != "\n":
+                i += 1
+            continue
+        if c == "\\":
+            if i + 1 >= n:
+                return text
+            out.append(text[i : i + 2])
+            i += 2
+            boundary = False
+            continue
+        if c == "'":
+            end = text.find("'", i + 1)
+            if end < 0:
+                return text
+            out.append(text[i : end + 1])
+            i = end + 1
+            boundary = False
+            continue
+        if c == '"':
+            j = i + 1
+            while j < n and text[j] != '"':
+                if text[j] == "\\":
+                    j += 2
+                    continue
+                if text[j] == "`" or (text[j] == "$" and text[j + 1 : j + 2] in ("(", "{", "[")):
+                    return text
+                j += 1
+            if j >= n:
+                return text
+            out.append(text[i : j + 1])
+            i = j + 1
+            boundary = False
+            continue
+        if c == "`" or text.startswith("<<", i) or text.startswith("((", i):
+            return text
+        if c == "$" and text[i + 1 : i + 2] in ("(", "{", "[", "'", '"'):
+            return text
+        out.append(c)
+        boundary = c in " \t\n"
+        i += 1
+    return "".join(out)
+
+
+# EVERY REAL TYPESCRIPT FILE KEPT ITS COMMENTS (#1ecd3fec). The first cut of the JS scanner returned the raw text at the first backtick or `/`, and a real script holds both (a template literal, a regex, a division), so for node/tsx the comment drop above never happened: an edited scripts/gates/check-deps.ts, whose only `worktree` is the prose "see CLAUDE.md's worktree warning" in a comment and whose code calls `.add(`, was refused as naming the phrase (measured 2026-11-07, `npx tsx scripts/gates/check-deps.ts --selftest`, rc 2; rc 0 with the file unedited). So the scanner now reads a template literal (its `${...}` holes as code, nested), and a regex literal by the token before it, and keeps both in the code it returns.
+# A `/` WHOSE MEANING THE TOKEN BEFORE IT DOES NOT SETTLE (after `)`, `}`, `++` or `--`: `(a) / 2` is division, `if (a) /re/.test(s)` a regex) is read BOTH ways, and the code either reading leaves is kept, so a misread can only over-read. A `<` that may open JSX in an expression position, a string or regex meeting a bare newline, and anything left open at the end still return the raw text.
+SLASH_REGEX_AFTER = frozenset("(,=:[!&|?{};+-*%<>~^")
+SLASH_AMBIGUOUS_AFTER = frozenset((")", "}", "++", "--"))
+SLASH_KEYWORDS = frozenset(
+    (
+        "return",
+        "typeof",
+        "case",
+        "do",
+        "else",
+        "in",
+        "of",
+        "new",
+        "delete",
+        "void",
+        "throw",
+        "instanceof",
+        "yield",
+        "await",
+    )
+)
+SLASH_WORD = re.compile(r"[A-Za-z0-9_$\x80-\U0010ffff]+")
+
+# A SENTENCE IN A STRING RUNS NOTHING (#90988086). An edited scripts/gen/gen-docs.ts was refused until committed (measured 2026-11-10, `npx tsx` of an untracked copy, rc 2): its only `worktree` in code is the template text "in the index, absent from the worktree:", and `add` sits in unrelated code elsewhere in the file, so the comment-stripped phrase reading saw both. A string literal that reads as prose is dropped from that reading the way a comment is: it holds `worktree` (quotes and backslashes gone, as `_names_phrase` reads it), at least three words, no judged verb word, no `git` and no `alias`, and none of the marks in PROSE_MARKS.
+# Every literal an invocation is assembled from keeps at least one of those: a lone `"worktree"` argv word (one word), `"git worktree "` (git), `"-c alias.wt=worktree wt"` (alias, `=`), a shell wrapper (braces, `$`). A literal that is part prose and part piece of a command built at run time (`"the worktree is " + ...` split later) is the built-string edge every reading here already sits on. Shell, perl and ruby scripts keep every literal: there a string is as often a command as a sentence.
+PROSE_BAR = frozenset(("git", "alias", *LEASE_INVOCATION_VERBS))
+PROSE_MARKS = frozenset("=$`{}();|&<>")
+
+
+def _prose_literal(content):
+    """Does a string literal's content read as a sentence that mentions `worktree` and could not be a piece of a git command line? Such a literal is dropped from the script arm's phrase reading (`_code_text`)."""
+    bare = PHRASE_NOISE.sub("", content).lower()
+    if "worktree" not in bare or PROSE_MARKS & set(bare):
+        return False
+    words = re.findall(r"[a-z0-9]+", bare)
+    return len(words) >= 3 and not PROSE_BAR & set(words)
+
+
+def _kept_literal(literal, head, tail):
+    """`literal` as the JS scanner keeps it: its delimiters alone when the text between them (`head` characters in, `tail` from the end) is prose (`_prose_literal`), else unchanged."""
+    if _prose_literal(literal[head : len(literal) - tail]):
+        return literal[:head] + literal[len(literal) - tail :]
+    return literal
+
+
+def _slash_scan(text, ambiguous_regex):
+    """One reading of a JS-family text with its comments removed, an ambiguous `/` read as a regex when `ambiguous_regex`; None when the text holds a construct this reading does not place exactly."""
+    out: list[str] = []
+    i, n = 0, len(text)
+    # One brace depth per open code frame: the top level, then each `${` hole of a template literal.
+    frames = [0]
+    prev = ""
+    if text.startswith("#!"):
+        i = text.find("\n")
+        if i < 0:
+            return ""
+
+    def expression_start():
+        """Does the token before the scan point leave an expression to begin, where `/` opens a regex and `<` may open JSX? An ambiguous token answers `ambiguous_regex`."""
+        return (
+            prev == ""
+            or prev in SLASH_REGEX_AFTER
+            or prev in SLASH_KEYWORDS
+            or (prev in SLASH_AMBIGUOUS_AFTER and ambiguous_regex)
+        )
+
+    def template(at):
+        """Read template text from `at`: (index after it, True) at a `${` hole, (index after the closing backtick, False) at its end, None when it never ends."""
+        j = at
+        while j < n:
+            ch = text[j]
+            if ch == "\\":
+                j += 2
+                continue
+            if ch == "`":
+                return j + 1, False
+            if text.startswith("${", j):
+                return j + 2, True
+            j += 1
+        return None
+
+    while i < n:
+        c = text[i]
+        if c in " \t\r\n":
+            out.append(c)
+            i += 1
+            continue
+        if text.startswith("//", i):
+            # A JS line comment ends at ANY line terminator, CR and U+2028/U+2029 included (review d4393918.1); stopping at LF alone dropped the code after a bare CR as comment.
+            while i < n and text[i] not in JS_LINE_TERMINATORS:
+                i += 1
+            continue
+        if text.startswith("/*", i):
+            end = text.find("*/", i + 2)
+            if end < 0:
+                return None
+            out.append(" ")
+            i = end + 2
+            continue
+        if c in "'\"":
+            j = i + 1
+            while j < n and text[j] != c:
+                if text[j] == "\\":
+                    j += 2
+                    continue
+                if text[j] == "\n":
+                    return None
+                j += 1
+            if j >= n:
+                return None
+            out.append(_kept_literal(text[i : j + 1], 1, 1))
+            i = j + 1
+            prev = "lit"
+            continue
+        if c == "`" or (c == "}" and frames[-1] == 0 and len(frames) > 1):
+            if c == "}":
+                frames.pop()
+            read = template(i + 1)
+            if read is None:
+                return None
+            j, hole = read
+            out.append(_kept_literal(text[i:j], 1, 2 if hole else 1))
+            i = j
+            if hole:
+                frames.append(0)
+                prev = "{"
+            else:
+                prev = "lit"
+            continue
+        if c == "/":
+            regex = expression_start()
+            j, in_class = (i + 1, False) if regex else (n, False)
+            while j < n:
+                ch = text[j]
+                if ch == "\\":
+                    j += 2
+                    continue
+                if ch == "\n":
+                    break
+                if in_class:
+                    in_class = ch != "]"
+                elif ch == "[":
+                    in_class = True
+                elif ch == "/":
+                    break
+                j += 1
+            if j >= n or text[j] != "/":
+                # A regex literal cannot meet a newline: an ambiguous `/` with no close on its line is division, the only reading left; one the token before settled as a regex is a construct this reading does not place.
+                if regex and prev not in SLASH_AMBIGUOUS_AFTER:
+                    return None
+                out.append(c)
+                i += 1
+                prev = c
+                continue
+            j += 1
+            while j < n and text[j].isalpha():
+                j += 1
+            out.append(text[i:j])
+            i = j
+            prev = "lit"
+            continue
+        if c == "<" and re.match(r"[A-Za-z/>!]", text[i + 1 : i + 2]) and expression_start():
+            return None
+        word = SLASH_WORD.match(text, i)
+        if word:
+            out.append(word.group(0))
+            after_dot = prev == "."
+            i = word.end()
+            prev = word.group(0) if word.group(0) in SLASH_KEYWORDS and not after_dot else "lit"
+            continue
+        if c in "+-" and text.startswith(c * 2, i):
+            out.append(c * 2)
+            i += 2
+            prev = c * 2
+            continue
+        if c == "{":
+            frames[-1] += 1
+        elif c == "}":
+            frames[-1] -= 1
+        out.append(c)
+        i += 1
+        prev = c
+    if len(frames) > 1:
+        return None
+    return "".join(out)
+
+
+def _slash_code_text(text):
+    """A JS-family script's text with its `//` and `/* */` comments removed, or the raw text when it holds a construct this scanner does not read exactly. An ambiguous `/` is read both ways and the code of both readings is kept."""
+    as_division = _slash_scan(text, False)
+    as_regex = _slash_scan(text, True)
+    if as_division is None or as_regex is None:
+        return text
+    return as_division if as_division == as_regex else as_division + "\n" + as_regex
+
+
+# The tokens a Python literal's text arrives in: a whole string, and the text pieces of an f-string or t-string (3.12+, 3.14+), whose `{...}` holes are tokens of their own.
+PY_LITERAL_TOKENS = frozenset(
+    t
+    for t in (
+        tokenize.STRING,
+        getattr(tokenize, "FSTRING_MIDDLE", None),
+        getattr(tokenize, "TSTRING_MIDDLE", None),
+    )
+    if t is not None
+)
+
+
+def _code_text(family, text):
+    """`text` with the comments its `family` writes removed, and for Python and the JS family each prose string literal too (`_prose_literal`); the raw text for a family this does not read exactly or a text the family's scanner cannot place."""
+    if family == "python":
+        try:
+            return " ".join(
+                '""' if tok.type in PY_LITERAL_TOKENS and _prose_literal(tok.string) else tok.string
+                for tok in tokenize.generate_tokens(io.StringIO(text).readline)
+                if tok.type != tokenize.COMMENT
+            )
+        except (tokenize.TokenError, SyntaxError, ValueError):
+            return text
+    if family == "shell":
+        return _shell_code_text(text)
+    if family in SLASH_FAMILIES:
+        return _slash_code_text(text)
+    return text
+
+
 def _file_verdict(family, text, depth):
-    """The arm a script run by path trips: "script" when its text names the phrase (`_names_phrase`), else what the same text trips as a `-c` program (a built string folded, an implicit concatenation `ast` joins, the port's `cmd_create`), or for a shell script as a command line."""
-    if _names_phrase(text):
+    """The arm a script run by path trips: "script" when its text spells the invocation (`_spells_invocation`) or names the phrase anywhere outside a comment (`_names_phrase` of `_code_text`), else what the same text trips as a `-c` program (a built string folded, an implicit concatenation `ast` joins, the port's `cmd_create`), or for a shell script as a command line."""
+    masked = _mask_file_names(text)
+    if _spells_invocation(masked) or _names_phrase(_code_text(family, masked)):
         return "script"
     if family == "shell":
         return shell_verdict(text, depth)
@@ -1130,10 +1675,76 @@ def _program_verdict(cmd, depth, cwd=None):
 SHELL_SCRIPT_PREFILTER = re.compile(r"\b(?:sh|bash|dash|zsh|ash|ksh|source)\b|(?:^|[\s;&|(`])\.\s")
 
 
+def _with_assigned_values(run_, word):
+    """`word` with each `$NAME` or `${NAME}` the walk knows a literal value for at this run put back. A value holding shellscan's NUL-marked sentinel is unknown, so its `$` stays."""
+
+    def value(match):
+        held = (run_.vars or {}).get(match.group(1))
+        text = held[0] if isinstance(held, tuple) else None
+        return text if isinstance(text, str) and "\0" not in text else match.group(0)
+
+    return re.sub(r"\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?", value, word)
+
+
+# The variables a session's command inherits from the environment the hook runs in, so their value is known here: the harness sets CLAUDE_PROJECT_DIR for both. Put back only when the command never assigns the name (every mention of it is a `$NAME` or `${NAME}` expansion), so `CLAUDE_PROJECT_DIR=/tmp/x python3 $CLAUDE_PROJECT_DIR/p.py` and `read CLAUDE_PROJECT_DIR` keep it unknown.
+# Each name maps to its own reader, spelled out by name rather than `os.environ.get(name)` so the env registry sees which variable this module takes in; a name added without a reader is a syntax-level omission, not a silent None.
+SESSION_VARIABLES = {
+    "CLAUDE_PROJECT_DIR": lambda: os.environ.get("CLAUDE_PROJECT_DIR"),
+}
+
+
+def _session_value(name):
+    """The hook's own value of a SESSION_VARIABLES name."""
+    return SESSION_VARIABLES[name]()
+
+
+def _with_session_values(cmd, word):
+    """`word` with each SESSION_VARIABLES expansion the command does not reassign put back from the hook's own environment."""
+    for name in SESSION_VARIABLES:
+        held = _session_value(name)
+        if not held or "$" in held or len(re.findall(r"\$\{?%s\b" % name, cmd)) != cmd.count(name):
+            continue
+        word = held.join(re.split(r"\$(?:\{%s\}|%s\b)" % (name, name), word))
+    return word
+
+
 def _script_verdict(cmd, depth, cwd):
     if not (shellscan.PROGRAM_PREFILTER.search(cmd) or SHELL_SCRIPT_PREFILTER.search(cmd)):
         return None
     for run_ in shellscan.every_run(cmd):
+        # A SCRIPT PATH THE SHELL WILL EXPAND FAILED OPEN (measured 2026-11-04: `python3 $G/test-...` of a dirty file ran, where the literal path was refused), since the unexpanded path "does not exist". shellscan keeps the operand raw, so with no such words in the command's text, a value it assigns is put back and this one run judged again with the literal path, and a variable whose value is not known stays out of reach, as with any file named only at run time. A command whose text spells the words is unjudgeable whatever the value; the literal path is the way past that.
+        operand = _script_operand(run_, cmd, cwd) or ""
+        if "$" in operand:
+            known = _with_session_values(cmd, _with_assigned_values(run_, operand))
+            written = shellscan._written_scripts(cmd, run_, cwd)
+            # Text spelling the words decides first: the rebuilt run below carries no earlier write of this command, so a script this command writes is only caught here (review 3a4cc6d0.1). Two narrowings (#3dc774ff): a file name the command holds is not the phrase (`_mask_file_names`), though the operand naming it still is, since that name is all the hook knows of the script; and an operand that resolves IN FULL, in a command that writes no file before this run, is the literal path the rebuilt run below judges, so the words in its arguments or heredoc are data to a script the hook reads (`python3 "$CLAUDE_PROJECT_DIR"/.claude/hooks/stop/worklist.py --add ... "<the phrase>"`).
+            resolved = "$" not in known and not written
+            if not resolved and (
+                _spells_invocation(_mask_file_names(cmd), lease=True)
+                or _spells_invocation(operand, lease=True)
+            ):
+                return "unjudgeable"
+            # What this same command WROTE to the operand is judged as the script it is (design review of dd6898eb0): `printf 'git %s add %s\n' worktree /p > $G/a.sh; bash $G/a.sh` keeps the two words apart on the command line, and the rebuilt run below carries no earlier write. A write whose content the walk cannot read is unjudgeable once the command could spell a verb at all (the broad `_could_spell`, since the content is unknown): with no such word, `cat f > $G/b.sh; bash $G/b.sh` stays allowed, and UNJUDGEABLE_MESSAGE, which says the command names a worktree verb, stays true.
+            family = _interpreter_name(run_.name) or "shell"
+            for word in dict.fromkeys((operand, known)):
+                target = shellscan._script_path(word, run_.cwd, cwd)
+                if target in written:
+                    if written[target] is None:
+                        if _could_spell(cmd):
+                            return "unjudgeable"
+                        continue
+                    verdict = _file_verdict(family, written[target], depth + 1)
+                    if verdict:
+                        return verdict
+            if "$" not in known:
+                words = [known if w == operand else w for w in (run_.name, *run_.argv)]
+                typed = shlex.join(words)
+                if run_.cwd:
+                    typed = "cd %s && %s" % (shlex.quote(run_.cwd), typed)
+                verdict = _script_verdict(typed, depth, cwd)
+                if verdict:
+                    return verdict
+            continue
         if _unread_reason(run_, cmd, cwd):
             return "unread"
         if _reads_stdin_operand(run_):
@@ -1150,20 +1761,21 @@ def _script_verdict(cmd, depth, cwd):
             verdict = _file_verdict(family, text, depth + 1)
             if verdict:
                 return verdict
-        elif kind == "unjudgeable" and _could_spell(cmd):
+        elif kind == "unjudgeable" and _spells_invocation(cmd, lease=True):
             return "unjudgeable"
     return None
 
 
 def _could_spell(text):
     bare = re.sub(r"[\"'\\]", "", text)
-    return "worktree" in bare and ("add" in bare or "create" in bare)
+    # `move` is inside `remove` and `lock` inside `unlock`, so the tuple covers LEASE_VERBS.
+    return "worktree" in bare and any(v in bare for v in ("add", "create", "move", "prune", "lock"))
 
 
 def shell_verdict(cmd, depth=0):
-    """Which arm refuses the shell command `cmd`: "git", "run.sh", "port", or None, counting what any program inside it runs.
+    """Which arm refuses the shell command `cmd`: "git", "run.sh", "port", "lease", or None, counting what any program inside it runs.
 
-    Inside a program (depth > 0) a string that cannot spell `worktree` and one of `add`/`create` once quotes and backslashes are gone is skipped without a walk: every arm needs that word and one of those verbs, and a Python heredoc holds thousands of strings that are not commands (3,000 list literals naming `worktree list` took 2.9 s before the verb joined the filter).
+    Inside a program (depth > 0) a string that cannot spell `worktree` and one of the judged verbs (`add`, `create`, LEASE_VERBS) once quotes and backslashes are gone is skipped without a walk: every arm needs that word and one of those verbs, and a Python heredoc holds thousands of strings that are not commands (3,000 list literals naming `worktree list` took 2.9 s before the verb joined the filter).
     """
     if cmd == "":
         return None
@@ -1173,33 +1785,43 @@ def shell_verdict(cmd, depth=0):
 
 
 GIT_MESSAGE = (
-    "❌ BLOCKED: git worktree add is not run from here. Worktree creation needs the "
-    "operator to approve it explicitly THIS session, then run the command themselves via "
-    "the `!` prefix (bypasses this hook) -- do not ask the operator through chat and then "
-    "run it yourself, and never create one in an autonomous/cron-fired continuation with "
-    "no live operator to ask. Prefer working directly in the current checkout, a plain "
-    "`git clone`, or an existing worktree instead. If you believe you already have "
-    "explicit sign-off, hand the exact command back to the operator to run with `!`."
+    "❌ BLOCKED: git worktree add is not run from here. A writer that needs its own tree gets "
+    "a detached one from `./run.sh worktree lease`, and the lead stays in the current checkout. "
+    "A real second checkout needs the operator to approve it explicitly THIS session, then run "
+    "the command themselves via the `!` prefix (bypasses this hook): never ask through chat and "
+    "then run it here, and never create one in an autonomous/cron-fired continuation with no "
+    "live operator to ask. A clone of this origin is refused as well (`block_origin_clone`). "
+    "With explicit sign-off already given, hand the exact command back to the operator to run "
+    "with `!`."
 )
 
 RUN_SH_MESSAGE = (
     "❌ BLOCKED: `run.sh worktree create` creates a git worktree (and now a devbox "
     "container with it), so it is the same decision as `git worktree add` and carries the "
     "same rule: the operator approves it explicitly THIS session and runs it themselves "
-    "via the `!` prefix, which bypasses this hook. Do not ask through chat and then run it "
-    "yourself, and never in an autonomous/cron-fired continuation with no live operator to "
-    "ask. Prefer the current checkout or an existing worktree. `worktree list`, `switch`, "
-    "`remove` and `prune` are unaffected."
+    "via the `!` prefix, which bypasses this hook. Never ask through chat and then run it "
+    "here, and never in an autonomous/cron-fired continuation with no live operator to "
+    "ask. A writer's tree comes from `./run.sh worktree lease`; otherwise stay in the current "
+    "checkout. `worktree list`, `switch`, `remove` and `prune` are unaffected."
 )
 
 PORT_MESSAGE = (
     "❌ BLOCKED: this runs the Python worktree port's `create` (`rediacc_ci.dev.worktree`), "
     "which is `./run.sh worktree create` without the router: it runs `git worktree add` and "
     "brings a devbox up, so it carries the same rule. The operator approves it explicitly THIS "
-    "session and runs it themselves via the `!` prefix, which bypasses this hook. Do not ask "
-    "through chat and then run it yourself, and never in an autonomous/cron-fired continuation "
-    "with no live operator to ask. Prefer the current checkout or an existing worktree. The "
-    "port's `list`, `switch`, `remove` and `prune` are unaffected."
+    "session and runs it themselves via the `!` prefix, which bypasses this hook. Never ask "
+    "through chat and then run it here, and never in an autonomous/cron-fired continuation "
+    "with no live operator to ask. A writer's tree comes from `./run.sh worktree lease`; "
+    "otherwise stay in the current checkout. The port's `list`, `switch`, `remove` and `prune` "
+    "are unaffected."
+)
+
+LEASE_MESSAGE = (
+    "❌ BLOCKED: this runs `git worktree remove|move|prune|lock|unlock` on a lease tree under "
+    "`.claude/worktrees`, by its path or by the name git resolves to it. A lease leaves only "
+    "through `./run.sh worktree gc`, whose rules keep a commit nothing has landed, so a tree "
+    "moved or unlocked by hand can lose that work. `./run.sh worktree land <id>` prints how "
+    "its commits land first. The operator's `!` prefix bypasses this hook."
 )
 
 PROGRAM_NOTE = (
@@ -1274,7 +1896,40 @@ EDGE_CASES = [
     # Reads are none of this hook's business.
     ("listing worktrees is allowed", "git worktree list"),
     ("removing a worktree is allowed", "git worktree remove /tmp/wt"),
+    ("a variable script path naming the words", "python3 $G/test-block_worktree_add.py"),
+    ("control: a variable script path, no words", "python3 $G/unrelated.py"),
+    ("control: an assigned script path, no such file", "G=/no/such; python3 $G/unrelated.py"),
+    (
+        "a script this command writes through a variable",
+        "G=/d; printf 'git worktree add x' > $G/x.py; python3 $G/x.py",
+    ),
+    ("control: a bare name in another checkout", "git -C /other/repo worktree remove w2-proof"),
     ("run.sh doing something else", "./run.sh setup --check"),
+    # A lease tree leaves only through GC (Design 6): the verbs on its path are refused, the lease tool and the same verbs on any other path are not.
+    ("the lease tool is allowed", "./run.sh worktree lease"),
+    ("the lease listing is allowed", "./run.sh worktree leases --json"),
+    ("removing a lease tree", "git worktree remove .claude/worktrees/x"),
+    ("force-removing a lease tree", "git worktree remove --force /r/.claude/worktrees/x"),
+    ("unlocking a lease tree", "git worktree unlock .claude/worktrees/x"),
+    ("moving a lease tree", "git worktree move .claude/worktrees/x /tmp/x"),
+    ("a lease tree joined to -C", "git -C .claude worktree remove worktrees/x"),
+    ("a lease tree as the run's directory", "git -C .claude/worktrees/x worktree remove ."),
+    ("a lease tree joined to cd", "cd .claude/worktrees && git worktree lock x"),
+    (
+        "a lease tree in a python argv",
+        (
+            "python3 -c \"import subprocess; subprocess.run(['git','worktree','remove',"
+            "'.claude/worktrees/x'])\""
+        ),
+    ),
+    (
+        "a lease tree in a perl argv",
+        'perl -e \'system("git","worktree","unlock",".claude/worktrees/x")\'',
+    ),
+    ("control: a bare prune names no tree", "git worktree prune"),
+    ("control: a look-alike directory", "git worktree remove .claude/worktrees-old/x"),
+    ("control: a sentence naming the verb", "echo git worktree remove .claude/worktrees/x"),
+    ("control: listing the lease root", "ls .claude/worktrees"),
     ("prose is stripped before the scan", "echo 'git worktree add /tmp/wt'"),
     # RULE T (PLAN-retire-bash-oracles A4, A0 L9): GIT_AT_CMD's anchor is the copied `(^|[;&|(]|\$\(|`)`, which misses every reserved word, prefix builtin and leading redirect. These ran with rc 0 until `shellscan.lifted_commands`; the heredoc twin below them is data and stays allowed.
     ("L9 a brace group", "{ git worktree add /tmp/wt main; }"),
@@ -1358,11 +2013,12 @@ def run(ev):
         "git": GIT_MESSAGE,
         "run.sh": RUN_SH_MESSAGE,
         "port": PORT_MESSAGE,
+        "lease": LEASE_MESSAGE,
         "unjudgeable": UNJUDGEABLE_MESSAGE,
         "script": SCRIPT_MESSAGE,
         "unread": UNREAD_MESSAGE,
     }
-    verdict = _direct_verdict(cmd)
+    verdict = _direct_verdict(cmd, ev.field("cwd") or None)
     if verdict:
         ev.warn(messages[verdict])
         return hookio.DENY

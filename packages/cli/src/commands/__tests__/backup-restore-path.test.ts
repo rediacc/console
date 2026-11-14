@@ -9,6 +9,7 @@
 
 import { Command } from 'commander';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type { PlannedStep } from '../../services/jobs/steps-support.js';
 
 vi.mock('../../i18n/index.js', () => ({
   t: (key: string, params?: Record<string, unknown>) =>
@@ -61,11 +62,18 @@ vi.mock('../../utils/command-policy.js', () => ({
   CMD: { BACKUP_RESTORE: 'backup.restore' },
 }));
 
+// The failure the executor would render (it exits the process in agent mode); the fallback renders only the one that ends the run.
+const mockRenderFailure = vi.hoisted(() => vi.fn());
+vi.mock('../../utils/local-execution-failures.js', () => ({
+  renderLocalExecutionFailure: mockRenderFailure,
+}));
+
 const mockWarn = vi.hoisted(() => vi.fn());
 const mockSuccess = vi.hoisted(() => vi.fn());
+const mockInfo = vi.hoisted(() => vi.fn());
 vi.mock('../../services/core/output.js', () => ({
   outputService: {
-    info: vi.fn(),
+    info: mockInfo,
     success: mockSuccess,
     warn: mockWarn,
     error: vi.fn(),
@@ -152,6 +160,12 @@ describe('backup restore --path', () => {
     expect(options.job.steps).toEqual([
       expect.objectContaining({
         name: 'reportRestorePath',
+        on: 'success',
+        params: { repo: 'r', snapshot: SNAPSHOT },
+      }),
+      expect.objectContaining({
+        name: 'reportRestorePathFailure',
+        on: 'failure',
         params: { repo: 'r', snapshot: SNAPSHOT },
       }),
     ]);
@@ -249,14 +263,26 @@ describe('backup restore --path', () => {
     ['', 'pathNoListing'],
   ])('turns exit 18 (reason "%s") into exit code 18 and the %s message', async (reason, key) => {
     const payload = JSON.stringify({ code: 'NO_LISTING', ...(reason && { reason }) });
-    mockExecuteRepoFunction.mockResolvedValue({
-      success: false,
-      exitCode: 18,
-      stdout: '',
-      stderr: payload,
-    });
-
+    // The command itself plans the failure step: its name, its trigger and its params come from the real `backup restore --path` run, not from this test.
     await run(['r@m1', '--at', SNAPSHOT, '--path', '/a']);
+    const { job } = mockExecuteRepoFunction.mock.calls[0][4] as {
+      job: { steps: PlannedStep[] };
+    };
+    const planned = job.steps.find((step) => step.name === 'reportRestorePathFailure');
+    expect(planned?.params).toEqual({ repo: 'r', snapshot: SNAPSHOT });
+    // The trigger the command planned, not only the registry's.
+    expect(planned?.on).toBe('failure');
+    const { getStepDefinition, resolveStepHandler } = await import('../../services/jobs/steps.js');
+    expect(getStepDefinition('reportRestorePathFailure')?.on).toBe('failure');
+    const handler = await resolveStepHandler('reportRestorePathFailure');
+    await handler({
+      jobId: 'j1',
+      machine: 'm1',
+      params: planned?.params ?? {},
+      state: 'failed',
+      output: `${payload}\n`,
+      exitCode: 18,
+    });
 
     expect(process.exitCode).toBe(18);
     expect(mockWarn).toHaveBeenCalledTimes(1);
@@ -275,6 +301,53 @@ describe('backup restore --path', () => {
     expect(process.exitCode).toBe(19);
     expect(mockWarn).not.toHaveBeenCalled();
     expect(mockSuccess).not.toHaveBeenCalled();
+  });
+
+  // The record is what tells the operator that a path restore fetched a fraction of the image: 3 of 100 cells here.
+  it('prints the fetched-cells line from the record, selected below total', async () => {
+    await run(['r@m1', '--at', SNAPSHOT, '--path', '/a']);
+    const { job } = mockExecuteRepoFunction.mock.calls[0][4] as { job: { steps: PlannedStep[] } };
+    const planned = job.steps.find((step) => step.name === 'reportRestorePath');
+    expect(planned, 'the command planned no reportRestorePath step').toBeDefined();
+    const { resolveStepHandler } = await import('../../services/jobs/steps.js');
+    const handler = await resolveStepHandler('reportRestorePath');
+    expect(record.chunksFetched).toBeLessThan(record.cellsTotal);
+    await handler({
+      jobId: 'j1',
+      machine: 'm1',
+      params: planned?.params ?? {},
+      state: 'succeeded',
+      output: `${JSON.stringify(record)}\n`,
+      exitCode: 0,
+    });
+    expect(mockInfo).toHaveBeenCalledTimes(1);
+    expect(mockInfo.mock.calls[0][0]).toContain(
+      `commands.backup.restore.pathFetched {"selected":3,"total":100,`
+    );
+  });
+
+  // renet exits 19 (NO_SUCH_PATH) when the snapshot has a listing and the path is not in it. The failure step must not
+  // recast it as the exit-18 "no listing" warning, nor print a success; the 19 stays the process exit code.
+  it('keeps exit 19 for a path missing from a snapshot that has a listing', async () => {
+    await run(['r@m1', '--at', SNAPSHOT, '--path', '/nope']);
+    const { job } = mockExecuteRepoFunction.mock.calls[0][4] as { job: { steps: PlannedStep[] } };
+    const planned = job.steps.find((step) => step.name === 'reportRestorePathFailure');
+    expect(planned, 'the command planned no reportRestorePathFailure step').toBeDefined();
+    const { resolveStepHandler } = await import('../../services/jobs/steps.js');
+    const handler = await resolveStepHandler('reportRestorePathFailure');
+    process.exitCode = 19;
+    await handler({
+      jobId: 'j1',
+      machine: 'm1',
+      params: planned?.params ?? {},
+      state: 'failed',
+      output: `${JSON.stringify({ code: 'NO_SUCH_PATH', snapshotId: SNAPSHOT })}\n`,
+      exitCode: 19,
+    });
+    expect(process.exitCode).toBe(19);
+    expect(mockWarn).not.toHaveBeenCalled();
+    expect(mockSuccess).not.toHaveBeenCalled();
+    expect(mockInfo).not.toHaveBeenCalled();
   });
 
   it('with a cluster place and -m, runs on -m and scopes the stream to -m', async () => {
@@ -332,5 +405,130 @@ describe('backup restore --path', () => {
     const machines = mockExecuteRepoFunction.mock.calls.map((c) => [c[0], c[2]]);
     expect(machines).toContainEqual(['backup_verify', 'm1']);
     expect(machines).toContainEqual(['backup_restore_path', 'm2']);
+  });
+});
+
+describe('backup restore --path store fallback', () => {
+  const failed = (error: string) => ({ success: false, exitCode: 1, error, stdout: '' });
+  const ok = { success: true, exitCode: 0, stdout: JSON.stringify(record) };
+  const stores = () => mockExecuteRepoFunction.mock.calls.map((c) => c[3].store);
+  const toTargets = () => mockExecuteRepoFunction.mock.calls.map((c) => c[3].to);
+  const FALLBACK = `commands.backup.restore.storeFallback ${JSON.stringify({ failed: 'eu-west', next: 'home' })}`;
+  const ARGV = ['r@m1', '--at', SNAPSHOT, '--path', '/a', '--to', '/b'];
+
+  /** The account ranks eu-west ahead of home; the executor answers each attempt in turn, the last repeating. */
+  function answers(...results: Record<string, unknown>[]): void {
+    mockAccountServerFetch.mockImplementation((path: string) =>
+      Promise.resolve(
+        path.includes('/stores/lineage/')
+          ? {
+              stores: ['eu-west', 'home'].map((storeId) => ({
+                storeId,
+                newestSnapshotId: SNAPSHOT,
+                newestSnapshotAt: null,
+                lastVerifyOk: true,
+              })),
+            }
+          : undefined
+      )
+    );
+    let i = 0;
+    mockExecuteRepoFunction.mockImplementation(() => {
+      const result = results[Math.min(i, results.length - 1)];
+      i += 1;
+      return Promise.resolve(result);
+    });
+  }
+
+  it('falls back to the next store on a 5xx, asks for the same --to, and names the store that served', async () => {
+    answers(failed('HTTP 502 bad gateway'), ok);
+
+    await run(ARGV);
+
+    expect(stores()).toEqual(['eu-west', undefined]);
+    // renet stages the fetch and places under --to only after it, so the failed attempt wrote nothing there; the retry targets the same directory.
+    expect(toTargets()).toEqual(['/b', '/b']);
+    expect(mockWarn).toHaveBeenCalledWith(FALLBACK);
+    expect(mockInfo).toHaveBeenCalledWith(
+      `commands.backup.restore.storeServed ${JSON.stringify({ store: 'home' })}`
+    );
+    expect(mockRenderFailure).not.toHaveBeenCalled();
+    expect(mockExecuteRepoFunction.mock.calls.every((c) => c[4].failureIsAnswer === true)).toBe(
+      true
+    );
+  });
+
+  it('does not fall back after a copy-out that renet rolled back, which a second store cannot cure', async () => {
+    answers(failed('{"code":"ROLLED_BACK","message":"write failed: timed out (translated)"}'), ok);
+
+    await run(ARGV);
+
+    expect(stores()).toEqual(['eu-west']);
+    expect(mockRenderFailure).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not fall back when the snapshot is missing, and renders that failure', async () => {
+    answers(failed('snapshot snap-1 not found in the manifest index'), ok);
+
+    await run(ARGV);
+
+    expect(stores()).toEqual(['eu-west']);
+    expect(mockWarn).not.toHaveBeenCalled();
+    expect(mockRenderFailure).toHaveBeenCalledTimes(1);
+  });
+
+  it('never falls back from an explicit --from, even on a 5xx', async () => {
+    answers(failed('HTTP 503 service unavailable'), ok);
+
+    await run([...ARGV, '--from', 'eu-west']);
+
+    expect(stores()).toEqual(['eu-west']);
+    expect(mockWarn).not.toHaveBeenCalled();
+    expect(mockRenderFailure).toHaveBeenCalledTimes(1);
+  });
+
+  it('resolves a time inside each store tried: --from alone, and again on a fallback (item #acd03b8a)', async () => {
+    const IN_STORE: Record<string, string> = {
+      'eu-west': '20260814T110000Z-eeeeeeeeeeeeeeee',
+      home: '20260814T100000Z-hhhhhhhhhhhhhhhh',
+    };
+    const storeOf = (path: string) => new URL(path, 'https://x').searchParams.get('storeId');
+    mockAccountServerFetch.mockImplementation((path: string) => {
+      if (path.includes('/stores/lineage/')) {
+        return Promise.resolve({
+          stores: ['eu-west', 'home'].map((storeId) => ({
+            storeId,
+            newestSnapshotId: IN_STORE[storeId],
+            newestSnapshotAt: null,
+            lastVerifyOk: true,
+          })),
+        });
+      }
+      const snapshotId = IN_STORE[storeOf(path) ?? ''];
+      return Promise.resolve({ snapshotId, streamId: 's', hasIndex: true, createdAt: 'x' });
+    });
+    const restorePathCalls = () =>
+      mockExecuteRepoFunction.mock.calls.filter((c) => c[0] === 'backup_restore_path');
+    let i = 0;
+    mockExecuteRepoFunction.mockImplementation((fn: string) =>
+      Promise.resolve(fn !== 'backup_restore_path' || i++ > 0 ? ok : failed('HTTP 502 bad gateway'))
+    );
+    const time = ['r@m1', '--at', '2026-08-14T12:00:00Z', '--path', '/a', '--any-stream'];
+
+    await run(time);
+    expect(restorePathCalls().map((c) => [c[3].store, c[3].at])).toEqual([
+      ['eu-west', IN_STORE['eu-west']],
+      [undefined, IN_STORE.home],
+    ]);
+
+    mockExecuteRepoFunction.mockClear();
+    mockAccountServerFetch.mockClear();
+    await run([...time, '--from', 'home']);
+    const resolved = mockAccountServerFetch.mock.calls
+      .map((c) => c[0] as string)
+      .filter((p) => p.includes('/snapshots/resolve'))
+      .map(storeOf);
+    expect(resolved).toEqual(['home']);
+    expect(restorePathCalls().map((c) => c[3].at)).toEqual([IN_STORE.home]);
   });
 });

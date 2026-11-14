@@ -6,6 +6,15 @@
 
 The trailer is how an epic's review finds its work: `git log --grep='^PR-TASK: <id>'`. A commit with no trailer belongs to no epic, so it is reviewed by nobody and **nothing reports the gap**. That is strictly worse than the flat review's coverage map, which at least admits what it skipped.
 
+## Beside it in a lease: the box
+
+A writer's commit in a lease tree also names the plan box it serves, one trailer per box, beside `PR-TASK:`:
+
+    PR-TASK: <epic-id>
+    Plan-Box: <PLAN-file>.md#<sig8> clauses=<C1,C2,...|all>
+
+A commit serving no box says so with `Plan-Box: none -- <reason, at least 12 characters>`. `PR-TASK:` names an epic, which spans many boxes; `Plan-Box:` names the one box, so `./run.sh worktree land <id> --ticks` can print its tick after the picks (`git cherry-pick -x` keeps the trailer). The lease `commit-msg` hook and `land` refuse a missing or malformed trailer, a box that is not open, and a clause the box's map (agent/ledgers/plan-box-progress.jsonl) does not define. The one parser is `.claude/hooks/stop/wl_planbox.py`; the plan is agent/plans/PLAN-tick-tracking.md.
+
 ## Two enforcers, and only one of them is real
 
 `.claude/rediacc_hooks/guards/block_untagged_commit.py` catches the common case at the moment it is cheapest to fix. It reads an `-m` message, an `-F -` heredoc and an `-F <file>` on disk; only a piped stdin or a command-substituted message is **opaque to it**, and it deliberately ALLOWS what it cannot read rather than refusing a commit it cannot judge. That blind spot is stated in its own header, not hidden.

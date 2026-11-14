@@ -118,4 +118,18 @@ describe('guardMachineRemoval', () => {
     await expect(guardMachineRemoval('srv-1', false)).resolves.toBeUndefined();
     expect(mockWarn).not.toHaveBeenCalled();
   });
+
+  it('with --archive-repos neither refuses nor warns about the placements', async () => {
+    mockListRepositories.mockResolvedValue([
+      repo('web', { placement: { machine: 'srv-1' } }),
+      repo('api', { placement: { machine: 'srv-1' } }),
+    ]);
+    await expect(guardMachineRemoval('srv-1', false, true)).resolves.toBeUndefined();
+    expect(mockWarn).not.toHaveBeenCalled();
+  });
+
+  it('teaches --archive-repos in the refusal', () => {
+    const runs = machineRemovePlacementError('srv-1', ['web']).next?.options?.map((o) => o.run);
+    expect(runs).toContain('rdc machine remove srv-1 --archive-repos');
+  });
 });

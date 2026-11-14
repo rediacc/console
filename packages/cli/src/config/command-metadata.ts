@@ -60,22 +60,19 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       excludeOptions: ['follow', 'debug'],
     },
   },
-  // `--timeout` is a required field in the MCP schema (requiredArgs), so a call always bounds the wait; the tool is on the write budget (the longest) because a wait runs until its timeout, not for one quick read. Callers keep the duration under it.
+  // An agent cannot usefully block on a wait: job_status and job_logs poll, and the ticket envelope names them (PLAN-detached-jobs Design 12).
   'job wait': {
-    mcp: {
-      destructive: false,
-      idempotent: true,
-      timeout: 'write',
-      excludeOptions: ['debug'],
-      requiredArgs: ['timeout'],
-      descriptionOverride:
-        'Wait for a detached job to finish and return its outcome. timeout is required and must stay under 5m; a job still running at the timeout keeps running and can be waited on again',
-    },
+    mcpExcludeReason:
+      'An agent cannot usefully block until the job ends; poll with job_status and job_logs.',
   },
   'job cancel': {
     mcp: { destructive: true, idempotent: true, timeout: 'write', appendArgs: ['--yes'] },
   },
   'job gc': {
+    mcp: { destructive: true, idempotent: true, timeout: 'write', appendArgs: ['--yes'] },
+  },
+  // Dismissing drops this config's local ticket records (it never touches the machine's spool), so it is destructive to that record only and auto-confirms like gc.
+  'job dismiss': {
     mcp: { destructive: true, idempotent: true, timeout: 'write', appendArgs: ['--yes'] },
   },
 
@@ -105,6 +102,11 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   // A read-only probe. It was the one leaf with no classification at all, which fails closed (no MCP exposure) but leaves the question open rather than answered.
   'machine health': {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  // The repair verbs act on findings (restarts, prune, a repository's own repair() code); they run through the CLI, where the safety classes, the maintenance window and the journal apply, and the local ops refresher calls the CLI the same way.
+  'machine repair': {
+    mcpExcludeReason:
+      'Runs fixes on a machine (restarts, prune, repository repair()); use the CLI, where the safety classes, the maintenance window and the journal apply',
   },
   'machine list': {
     mcp: { destructive: false, idempotent: true, timeout: 'read' },
@@ -628,6 +630,13 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     },
   },
 
+  version: {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  legal: {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+
   'cluster rehearse': {
     mcpExcludeReason:
       'Boots an entire throwaway k3s control plane to dry-run a migration; expensive, and gated behind REDIACC_ALLOW_CLUSTER_OPS.',
@@ -635,6 +644,26 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
 
   serve: {
     mcpExcludeReason: 'Runs the executor daemon in the foreground until SIGINT; it never returns.',
+  },
+
+  // rdc server (PLAN-enterprise-tenants C7): status is a read; the rest install, restart or print the server's keys.
+  'server status': {
+    mcp: { destructive: false, idempotent: true, timeout: 'read' },
+  },
+  'server install': {
+    mcpExcludeReason:
+      'Long interactive install that registers machines, mints a licence and prints a one-time key bundle; use the CLI.',
+  },
+  'server upgrade': {
+    mcpExcludeReason: 'Forks, replaces the image and restarts the account server; use the CLI.',
+  },
+  'server backup': {
+    mcpExcludeReason:
+      "Prints the server's private keys; they must not land in an agent transcript.",
+  },
+  'server licence': {
+    mcpExcludeReason:
+      'Mints a delegation certificate and restarts the account server; use the CLI.',
   },
 
   'config set': {
@@ -654,6 +683,10 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       // an agent hitting a placement conflict should surface it, not resolve it.
       excludeOptions: ['debug', 'accept-observed'],
     },
+  },
+  'config import-machine': {
+    mcpExcludeReason:
+      'Copies a machine and its repositories between named configs; config mutation, use CLI directly',
   },
   'config rotate-cek': {
     mcpExcludeReason:
@@ -692,6 +725,20 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     grandGuard: true,
     mcpExcludeReason: 'Production swap; human decision.',
   },
+  'repo health': {
+    mcp: {
+      destructive: false,
+      idempotent: true,
+      timeout: 'read' as const,
+      repoArg: 'ref',
+      requiredArgs: ['ref'],
+      excludeOptions: ['debug', 'skip-router-restart'],
+    },
+  },
+  'repo repair': {
+    mcpExcludeReason:
+      "Runs a repository's own repair() code, operator-only ones after a prompt; use the CLI, where the classes and the prompt apply",
+  },
   'repo status': {
     mcp: {
       destructive: false,
@@ -702,6 +749,7 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       excludeOptions: ['debug', 'skip-router-restart'],
     },
   },
+
   'repo list': {
     mcp: {
       destructive: false,
@@ -844,6 +892,10 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
   // A device grant widens what a repository's containers may reach on the host, so granting and revoking are the operator's call, CLI-only; the read-only `machine gpu list` is exposed.
   'repo gpu': {
     mcpExcludeReason: 'Device grants widen host access for a repository. Use CLI directly',
+  },
+  // A lifecycle grant widens what a repository's Rediaccfile may reach on the host (a path, or root with no privilege drop), so it is the operator's call, CLI-only; `--root`, and `--path` on a grand repository, are further refused to an agent unless the operator set REDIACC_ALLOW_GRAND_REPO before the agent started.
+  'repo permission': {
+    mcpExcludeReason: 'Lifecycle grants widen host access for a repository. Use CLI directly',
   },
   // Gate B on the REPO arm of each connect leaf (the place arm is a machine shell,
   // class A). These were keyed 'term repo' / 'vscode repo', paths that never

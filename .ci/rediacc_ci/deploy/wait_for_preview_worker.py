@@ -19,7 +19,7 @@ import time
 import urllib.error
 import urllib.request
 
-from rediacc_ci.core import https
+from rediacc_ci.core import common, https
 
 SELF = "rediacc_ci.deploy.wait_for_preview_worker"
 
@@ -54,7 +54,9 @@ def _ready(preview_url: str) -> bool:
 
 
 def main(argv: list[str]) -> int:
-    del argv
+    refused = common.refuse_arguments(argv)
+    if refused is not None:
+        return refused
 
     override = os.environ.get("PREVIEW_URL_OVERRIDE", "")
     if override:

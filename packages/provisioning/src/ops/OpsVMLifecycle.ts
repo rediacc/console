@@ -54,9 +54,16 @@ export class OpsVMLifecycle {
    */
   private isInfrastructureError(output: string): boolean {
     const lowerOutput = output.toLowerCase();
+    // The disk-space refusal names /var/lib/libvirt/..., which matches the 'libvirt' pattern; it is a capacity problem, not a missing KVM stack.
+    if (this.isDiskSpaceRefusal(output)) return false;
     return OpsVMLifecycle.INFRASTRUCTURE_ERROR_PATTERNS.some((pattern) =>
       lowerOutput.includes(pattern.toLowerCase())
     );
+  }
+
+  /** renet's preflight refusals about the VM disk directory: too little room (`kvm.disk_dir_short`) or a RAM-backed filesystem (`kvm.disk_dir_tmpfs`). Both open with "Refusing to provision" and are the only lines that do (private/renet pkg/i18n/locales/en.go). */
+  private isDiskSpaceRefusal(output: string): boolean {
+    return output.includes('Refusing to provision');
   }
 
   /**
@@ -174,6 +181,13 @@ export class OpsVMLifecycle {
           '[OpsVMLifecycle] The fleet is half-provisioned; any error after this point describes the wreckage, not the cause.'
         );
         console.error('[OpsVMLifecycle] Last output:', combinedOutput.slice(-1000));
+        return { success: false, duration: Date.now() - startTime };
+      }
+
+      // Renet refused before touching any VM, so the readiness probe would pass on the old fleet; fail with renet's own words.
+      if (this.isDiskSpaceRefusal(combinedOutput)) {
+        console.error('[OpsVMLifecycle] ops up refused to provision - failing the reset');
+        console.error('[OpsVMLifecycle] Error output:', combinedOutput.trim());
         return { success: false, duration: Date.now() - startTime };
       }
 

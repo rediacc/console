@@ -1,8 +1,14 @@
+import { spawnSync } from 'node:child_process';
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  createSkipLineScan,
   displayName,
   formatSkippedWarning,
   parseSkippedEntries,
+  SKIP_SCAN_MAX_LINE,
   SKIPPED_NAMES_SHOWN,
   summarizeSkipped,
 } from '../rsync-skipped.js';
@@ -81,5 +87,55 @@ describe('displayName', () => {
 
   it('is applied to the names the warning shows', () => {
     expect(summarizeSkipped(['x\u001by']).shown).toEqual(['x\\x1by']);
+  });
+});
+
+describe('createSkipLineScan', () => {
+  it('keeps the skip lines, including one split across chunks, and drops the rest', () => {
+    const scan = createSkipLineScan();
+    scan.push('   1,024 100%  1.0MB/s 0:00:00 (xfr#1, to-chk=2/3)\nskipping non-regular');
+    scan.push(' file "link-a"\r   2,048 100%  1.0MB/s\nskipping non-regular file "b"');
+    expect(parseSkippedEntries(scan.text())).toEqual(['link-a', 'b']);
+    expect(scan.text()).not.toContain('xfr#');
+  });
+
+  it('holds nothing for a stream with no skip line, however long', () => {
+    const scan = createSkipLineScan();
+    for (let i = 0; i < 1000; i++) scan.push(`${i} 100% progress\n`);
+    expect(scan.text()).toBe('');
+  });
+
+  it('drops an overlong line that never ends, and reads the skip line after it', () => {
+    const scan = createSkipLineScan();
+    for (let i = 0; i < 20; i++) scan.push('x'.repeat(SKIP_SCAN_MAX_LINE / 2));
+    scan.push('tail of the overlong line\nskipping non-regular file "after"\n');
+    expect(parseSkippedEntries(scan.text())).toEqual(['after']);
+    expect(scan.text()).not.toContain('xxxx');
+  });
+});
+
+describe('parseSkippedEntries against a real rsync', () => {
+  const rsyncAvailable = spawnSync('rsync', ['--version']).status === 0;
+
+  it.skipIf(!rsyncAvailable)('names a config/ subdir that is a symlink, read from stdout', () => {
+    const root = mkdtempSync(join(tmpdir(), 'rsync-skip-'));
+    try {
+      mkdirSync(join(root, 'real'));
+      writeFileSync(join(root, 'real', 'app.conf'), 'x');
+      mkdirSync(join(root, 'src'));
+      writeFileSync(join(root, 'src', 'a.txt'), 'a');
+      symlinkSync(join(root, 'real'), join(root, 'src', 'config'));
+      mkdirSync(join(root, 'dst'));
+      const run = spawnSync(
+        'rsync',
+        ['-a', '--no-links', '--no-D', `${join(root, 'src')}/`, `${join(root, 'dst')}/`],
+        { encoding: 'utf8' }
+      );
+      expect(run.status).toBe(0);
+      // Which stream carries the message is rsync's choice; the scan reads both.
+      expect(parseSkippedEntries(`${run.stdout}\n${run.stderr}`)).toEqual(['config']);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

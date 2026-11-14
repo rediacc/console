@@ -120,3 +120,58 @@ def test_secret_reachability_refresh_does_not_read_a_failed_listing_as_empty(
     _fake(monkeypatch, mod, [(1, "", "gh: Server Error (HTTP 500)")])
     assert mod.refresh(tmp_path, tmp_path / "b.json") == 1
     assert not (tmp_path / "b.json").exists()
+
+
+def test_secret_reachability_gitlink_names_reads_gitmodules_outside_a_work_tree(
+    tmp_path: Path,
+) -> None:
+    """No git work tree: the submodules still come from `.gitmodules`, and a gitignored sibling is not among them (review bed805c0.1)."""
+    mod = _load("check_secret_reachability")
+    (tmp_path / "private" / "sub").mkdir(parents=True)
+    assert mod.gitlink_names(tmp_path) == set()
+    (tmp_path / ".gitmodules").write_text(
+        '[submodule "private/sub"]\n\tpath = private/sub\n\turl = https://x/sub.git\n',
+        encoding="utf-8",
+    )
+    assert mod.gitlink_names(tmp_path) == {"sub"}
+
+
+def test_secret_reachability_gitlink_names_ignores_a_trailing_comment(tmp_path: Path) -> None:
+    """A `# note` or `; note` after the path is a comment, not part of the name (review d2c48d38.1)."""
+    mod = _load("check_secret_reachability")
+    (tmp_path / ".gitmodules").write_text(
+        "[submodule a]\n\tpath = private/sub # note\n[submodule b]\n\tpath = private/two ; n\n"
+        "[submodule c]\n\tpath = private/three\n",
+        encoding="utf-8",
+    )
+    assert mod.gitlink_names(tmp_path) == {"sub", "two", "three"}
+
+
+def _refresh_in_archive(monkeypatch, tmp_path: Path) -> dict:
+    if importlib.util.find_spec("yaml") is None:
+        monkeypatch.setitem(sys.modules, "yaml", types.ModuleType("yaml"))
+    mod = _load("check_secret_reachability")
+    _fake(monkeypatch, mod, [(0, "", "")])
+    (tmp_path / "private" / "sibling" / ".git").mkdir(parents=True)
+    (tmp_path / "private" / "real" / ".git").mkdir(parents=True)
+    (tmp_path / ".gitmodules").write_text(
+        '[submodule "private/real"]\n\tpath = private/real\n\turl = https://x/real.git\n',
+        encoding="utf-8",
+    )
+    baseline = tmp_path / "b.json"
+    assert mod.refresh(tmp_path, baseline) == 0
+    return json.loads(baseline.read_text(encoding="utf-8"))["repos"]
+
+
+def test_secret_reachability_refresh_records_a_real_gitlink_outside_a_work_tree(
+    monkeypatch, tmp_path: Path
+):
+    """`refresh` on an extracted archive keeps a declared submodule's empty entry (review bed805c0.1: it was dropped with no git work tree)."""
+    assert _refresh_in_archive(monkeypatch, tmp_path).get("real") == {}
+
+
+def test_secret_reachability_refresh_records_no_bare_sibling_outside_a_work_tree(
+    monkeypatch, tmp_path: Path
+):
+    """`refresh` on an extracted archive records no `private/*` directory `.gitmodules` does not declare."""
+    assert "sibling" not in _refresh_in_archive(monkeypatch, tmp_path)

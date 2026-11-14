@@ -26,6 +26,7 @@ import {
   buildJobStartCommand,
   buildJobStatusCommand,
   InvalidJobIdError,
+  jobStartCommand,
 } from '../executor/job-client.js';
 import { buildRenetEnv } from '../executor/local-executor.js';
 import { STDIN_ENV_READER } from '../executor/renet-launch.js';
@@ -123,6 +124,55 @@ describe('buildJobStartCommand', () => {
     expect(startCommand({ isDevelopment: false, telemetryDisabled: false })).not.toContain(
       '--timeout'
     );
+  });
+
+  it('a command kind adds --command and its --args JSON as quoted words', () => {
+    const { command } = buildJobStartCommand({
+      remoteRenetPath: RENET,
+      env: buildRenetEnv({ isDevelopment: false, telemetryDisabled: false }),
+      command: { name: 'backup-unit', args: JSON.stringify({ units: ['rediacc-backup-a'] }) },
+    });
+
+    expect(command).toContain(`--command 'backup-unit' --args '{"units":["rediacc-backup-a"]}'`);
+  });
+
+  it('a hostile --args value stays inside one shell word', () => {
+    const { command } = buildJobStartCommand({
+      remoteRenetPath: RENET,
+      env: buildRenetEnv({ isDevelopment: false, telemetryDisabled: false }),
+      command: { name: 'setup', args: JSON.stringify({ datastore: "/x'; touch /pwned; '" }) },
+    });
+
+    expect(command).toContain(`--args '{"datastore":"/x'\\''; touch /pwned; '\\''"}'`);
+  });
+
+  it('a payload kind called with empty arguments names no --args, which renet would refuse', () => {
+    const { command } = buildJobStartCommand({
+      remoteRenetPath: RENET,
+      env: buildRenetEnv({ isDevelopment: false, telemetryDisabled: false }),
+      command: jobStartCommand('license-write', {}),
+    });
+
+    expect(command).toContain("--command 'license-write'");
+    expect(command).not.toContain('--args');
+  });
+
+  it('control: a kind with arguments keeps them as its --args JSON', () => {
+    expect(jobStartCommand('license-status', { datastore: '/d' })).toEqual({
+      name: 'license-status',
+      args: '{"datastore":"/d"}',
+    });
+  });
+
+  it('a command kind without arguments names no --args', () => {
+    const { command } = buildJobStartCommand({
+      remoteRenetPath: RENET,
+      env: buildRenetEnv({ isDevelopment: false, telemetryDisabled: false }),
+      command: { name: 'list-all' },
+    });
+
+    expect(command).toContain("--command 'list-all'");
+    expect(command).not.toContain('--args');
   });
 
   /**

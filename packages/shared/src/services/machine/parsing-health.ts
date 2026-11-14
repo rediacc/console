@@ -8,7 +8,6 @@ import {
   type ContainerInfo,
   getBlockDevices,
   getContainers,
-  getLicenseStatuses,
   getHealthSummary as getListHealthSummary,
   getServices,
   getSystemInfo,
@@ -16,6 +15,9 @@ import {
   type ServiceInfo,
   type SystemInfo,
 } from '../../renet-contract/data/list-types.generated.js';
+import { type FindingTarget, type HealthFinding, withFix } from './findings.js';
+import { type HealthCheckContext, issue, raise } from './health-context.js';
+import { checkLicenses } from './license-health.js';
 import { type MachineWithVaultStatus, parseListResult } from './parsing-types.js';
 
 /**
@@ -70,12 +72,8 @@ export interface MachineHealthResult {
   };
   /** Issues found during health check */
   issues: string[];
-}
-
-/** Health check context passed between helper functions */
-interface HealthCheckContext {
-  issues: string[];
-  exitCode: number;
+  /** The same issues as coded findings (D-remedy), each with its fix from the findings table */
+  findings: HealthFinding[];
 }
 
 /** Parse a percentage string like "85%" to a number */
@@ -144,9 +142,15 @@ function checkSystemUsage(
   const diskPct = parsePercent(systemDetails.diskPercent);
   const dsPct = parsePercent(systemDetails.datastorePercent);
 
-  checkUsageThreshold(memPct, 'Memory', 90, 80, ctx);
-  checkUsageThreshold(diskPct, 'Disk', 95, 85, ctx);
-  checkUsageThreshold(dsPct, 'Datastore', 95, 85, ctx);
+  checkUsageThreshold(memPct, 'Memory', 90, 80, ctx, {
+    code: 'memory.usage.high',
+    subject: 'memory',
+  });
+  checkUsageThreshold(diskPct, 'Disk', 95, 85, ctx, { code: 'disk.usage.high', subject: 'disk' });
+  checkUsageThreshold(dsPct, 'Datastore', 95, 85, ctx, {
+    code: 'datastore.usage.high',
+    subject: 'datastore',
+  });
 
   return systemDetails;
 }
@@ -157,16 +161,15 @@ function checkUsageThreshold(
   name: string,
   criticalThreshold: number,
   warningThreshold: number,
-  ctx: HealthCheckContext
+  ctx: HealthCheckContext,
+  finding: { code: string; subject: string; target?: FindingTarget }
 ): void {
   if (value === null) return;
 
   if (value > criticalThreshold) {
-    ctx.issues.push(`${name} usage critical: ${value}%`);
-    ctx.exitCode = Math.max(ctx.exitCode, 2);
+    issue(ctx, 2, `${name} usage critical: ${value}%`, finding);
   } else if (value > warningThreshold) {
-    ctx.issues.push(`${name} usage high: ${value}%`);
-    ctx.exitCode = Math.max(ctx.exitCode, 1);
+    issue(ctx, 1, `${name} usage high: ${value}%`, finding);
   }
 }
 
@@ -184,15 +187,42 @@ function checkContainers(
 
   if (healthSummary.containersUnhealthy > 0) {
     ctx.issues.push(`${healthSummary.containersUnhealthy} unhealthy container(s)`);
+    containerFindings(
+      ctx,
+      2,
+      'container.unhealthy',
+      containers.filter((c) => c.health?.status === 'unhealthy'),
+      'unhealthy'
+    );
+    // The summary and the findings filter the same container list, so they agree; the verdict never drops below the summary regardless.
     ctx.exitCode = Math.max(ctx.exitCode, 2);
   }
 
-  if (maxFailingStreak > 5) {
+  const looping = containers.filter((c) => /^restarting\b/i.test(c.status));
+  if (looping.length > 0) {
+    ctx.issues.push(`${looping.length} container(s) in restart loop`);
+    containerFindings(ctx, 3, 'container.restart-loop', looping, 'in a restart loop');
+  }
+
+  if (maxFailingStreak > 2) {
     ctx.issues.push(`Container health check failing streak: ${maxFailingStreak}`);
-    ctx.exitCode = Math.max(ctx.exitCode, 3);
-  } else if (maxFailingStreak > 2) {
-    ctx.issues.push(`Container health check failing streak: ${maxFailingStreak}`);
-    ctx.exitCode = Math.max(ctx.exitCode, 1);
+    // Each container carries its own streak's severity: over 5 is critical, 3 to 5 a warning.
+    const streakOf = (c: ContainerInfo): number => c.health?.failing_streak ?? 0;
+    const what = 'health check failing streak';
+    containerFindings(
+      ctx,
+      3,
+      'container.health-streak',
+      containers.filter((c) => streakOf(c) > 5),
+      what
+    );
+    containerFindings(
+      ctx,
+      1,
+      'container.health-streak',
+      containers.filter((c) => streakOf(c) > 2 && streakOf(c) <= 5),
+      what
+    );
   }
 
   return {
@@ -204,24 +234,48 @@ function checkContainers(
   };
 }
 
+/** One finding per container, naming it and its repository, so a fix can restart exactly that container. */
+function containerFindings(
+  ctx: HealthCheckContext,
+  exitCode: number,
+  code: string,
+  containers: ContainerInfo[],
+  what: string
+): void {
+  for (const c of containers) {
+    raise(ctx, exitCode, {
+      code,
+      subject: c.name,
+      detail: `Container ${c.name} ${what} (${c.status})`,
+      target: { container: c.name, repository: c.repository || undefined },
+    });
+  }
+}
+
 /** Check service health */
 function checkServices(
   services: ServiceInfo[],
   healthSummary: ReturnType<typeof getListHealthSummary>,
   ctx: HealthCheckContext
 ): MachineHealthResult['details']['services'] {
-  const restartingServices = services.filter(
-    (s) => s.restart_count > 3 || s.sub_state === 'auto-restart'
-  ).length;
+  const restarting = services.filter((s) => s.restart_count > 3 || s.sub_state === 'auto-restart');
+  const restartingServices = restarting.length;
 
   if (healthSummary.servicesFailed > 0) {
     ctx.issues.push(`${healthSummary.servicesFailed} failed service(s)`);
+    serviceFindings(
+      ctx,
+      2,
+      'service.failed',
+      services.filter((s) => s.active_state === 'failed'),
+      'failed'
+    );
     ctx.exitCode = Math.max(ctx.exitCode, 2);
   }
 
   if (restartingServices > 0) {
     ctx.issues.push(`${restartingServices} service(s) in restart loop`);
-    ctx.exitCode = Math.max(ctx.exitCode, 3);
+    serviceFindings(ctx, 3, 'service.restart-loop', restarting, 'keeps restarting');
   }
 
   return {
@@ -230,6 +284,25 @@ function checkServices(
     failed: healthSummary.servicesFailed,
     restarting: restartingServices,
   };
+}
+
+/** One finding per systemd unit, naming it, so the operator command restarts exactly that unit. */
+function serviceFindings(
+  ctx: HealthCheckContext,
+  exitCode: number,
+  code: string,
+  services: ServiceInfo[],
+  what: string
+): void {
+  for (const s of services) {
+    const unit = s.service_name || s.name;
+    raise(ctx, exitCode, {
+      code,
+      subject: unit,
+      detail: `Service ${unit} ${what} (restarts: ${s.restart_count})`,
+      target: { unit, repository: s.repository || undefined },
+    });
+  }
 }
 
 /** Storage metrics collected from block devices */
@@ -290,13 +363,17 @@ function checkStorage(
   const metrics = collectStorageMetrics(blockDevices);
 
   if (metrics.smartFailing > 0) {
-    ctx.issues.push(`${metrics.smartFailing} storage device(s) with SMART failure`);
-    ctx.exitCode = Math.max(ctx.exitCode, 3);
+    issue(ctx, 3, `${metrics.smartFailing} storage device(s) with SMART failure`, {
+      code: 'storage.smart.failing',
+      subject: 'storage',
+    });
   }
 
   if (metrics.maxTemperature !== null && metrics.maxTemperature > 60) {
-    ctx.issues.push(`Storage temperature high: ${metrics.maxTemperature}°C`);
-    ctx.exitCode = Math.max(ctx.exitCode, 1);
+    issue(ctx, 1, `Storage temperature high: ${metrics.maxTemperature}°C`, {
+      code: 'storage.temperature.high',
+      subject: 'storage',
+    });
   }
 
   return metrics;
@@ -315,10 +392,27 @@ function checkRepositories(
   };
 
   // Only repos that are SUPPOSED to be up count as a problem. A repo with autostart off is deliberately parked — reporting it as unhealthy every time is the same cry-wolf failure as flagging a virtual disk's unknown SMART state, and it buries the repos that really did fall over.
-  const unmountedCount = listResult.repositories.filter((r) => r.autostart && !r.mounted).length;
-  if (unmountedCount > 0) {
-    ctx.issues.push(`${unmountedCount} repository(ies) not mounted`);
-    ctx.exitCode = Math.max(ctx.exitCode, 1);
+  const unmounted = listResult.repositories.filter((r) => r.autostart && !r.mounted);
+  if (unmounted.length > 0) {
+    ctx.issues.push(`${unmounted.length} repository(ies) not mounted`);
+    for (const r of unmounted) {
+      raise(ctx, 1, {
+        code: 'repo.unmounted',
+        subject: r.repo_name ?? r.name,
+        detail: `Repository ${r.repo_name ?? r.name} is set to autostart but not mounted`,
+        target: { repository: r.name, networkId: r.network_id },
+      });
+    }
+  }
+
+  for (const repo of listResult.repositories) {
+    const pct = parsePercent(repo.disk_space?.use_percent ?? null);
+    if (pct === null) continue;
+    checkUsageThreshold(pct, `Repository ${repo.name} disk`, 95, 85, ctx, {
+      code: 'repo.disk.high',
+      subject: repo.repo_name ?? repo.name,
+      target: { repository: repo.name, networkId: repo.network_id },
+    });
   }
 
   return repositoryDetails;
@@ -333,6 +427,7 @@ function checkRepositories(
  * success.
  */
 const BACKUP_STALE_DAYS = 10;
+const MACHINE_SUBJECT_FALLBACK = 'machine';
 
 /**
  * Report repos whose backups have gone stale, or that were skipped outright.
@@ -347,102 +442,25 @@ function checkBackupCoverage(listResult: ListResult, ctx: HealthCheckContext): v
 
   const stale = coverage.repos.filter((r) => r.age_days >= BACKUP_STALE_DAYS);
   if (stale.length > 0) {
-    ctx.issues.push(
-      `${stale.length} repository(ies) not backed up in over ${BACKUP_STALE_DAYS} days`
+    issue(
+      ctx,
+      1,
+      `${stale.length} repository(ies) not backed up in over ${BACKUP_STALE_DAYS} days`,
+      {
+        code: 'backup.stale',
+        subject: 'backup',
+      }
     );
-    ctx.exitCode = Math.max(ctx.exitCode, 1);
   }
 
   // A repo with no successful backup on record AND a recorded skip is a real incident. Without the skip it is most likely newly created and simply has not had its first run yet — flagging that would fire on every new repo.
   const neverBackedUp = coverage.repos.filter((r) => r.age_days < 0 && Boolean(r.last_skipped_at));
   if (neverBackedUp.length > 0) {
-    ctx.issues.push(`${neverBackedUp.length} repository(ies) have never been backed up`);
-    ctx.exitCode = Math.max(ctx.exitCode, 2);
+    issue(ctx, 2, `${neverBackedUp.length} repository(ies) have never been backed up`, {
+      code: 'backup.never',
+      subject: 'backup',
+    });
   }
-}
-
-/**
- * Whether a licence has entered its refresh window.
- *
- * An absent or unparseable timestamp means "no window published" and must not be
- * read as overdue — the server owns this hint, and inventing urgency from a
- * missing field would fire on every machine whose licences predate the field.
- */
-function isPastRefreshWindow(refreshRecommendedAt: string | undefined): boolean {
-  if (!refreshRecommendedAt) return false;
-  const due = Date.parse(refreshRecommendedAt);
-  if (Number.isNaN(due)) return false;
-  return due <= Date.now();
-}
-
-/** Check license statuses */
-function checkLicenses(
-  listResult: ListResult,
-  ctx: HealthCheckContext
-): MachineHealthResult['details']['licenses'] {
-  const statuses = getLicenseStatuses(listResult);
-  const details = {
-    total: statuses.length,
-    valid: 0,
-    expired: 0,
-    machineMismatch: 0,
-    missing: 0,
-    invalidSignature: 0,
-  };
-
-  for (const s of statuses) {
-    switch (s.status) {
-      case 'valid':
-        details.valid++;
-        break;
-      case 'expired':
-        details.expired++;
-        break;
-      case 'machine_mismatch':
-        details.machineMismatch++;
-        break;
-      case 'missing':
-        details.missing++;
-        break;
-      case 'invalid_signature':
-      case 'sequence_regression':
-        details.invalidSignature++;
-        break;
-    }
-  }
-
-  // Licences carry a soft window (refreshRecommendedAt) before they hard-expire, so a lapse is predictable rather than sudden. Saying so while everything still works is the only warning that arrives in time to act on: once a licence actually expires, the backup has already started skipping that repo. Severity stays below expired — this is "action is due", not "something broke".
-  const dueForRefresh = statuses.filter(
-    (s) => s.runtimeValid && isPastRefreshWindow(s.refreshRecommendedAt)
-  ).length;
-  if (dueForRefresh > 0) {
-    ctx.issues.push(`${dueForRefresh} repo license(s) due for refresh`);
-  }
-
-  if (details.expired > 0) {
-    ctx.issues.push(`${details.expired} repo license(s) expired`);
-    ctx.exitCode = Math.max(ctx.exitCode, 1);
-  }
-  if (details.machineMismatch > 0) {
-    ctx.issues.push(`${details.machineMismatch} repo license(s) have machine ID mismatch`);
-    ctx.exitCode = Math.max(ctx.exitCode, 1);
-  }
-  if (details.invalidSignature > 0) {
-    ctx.issues.push(`${details.invalidSignature} repo license(s) have invalid signatures`);
-    ctx.exitCode = Math.max(ctx.exitCode, 2);
-  }
-  if (details.total > 0 && details.missing === details.total) {
-    ctx.issues.push('All repo licenses are missing');
-    ctx.exitCode = Math.max(ctx.exitCode, 2);
-  } else if (details.missing > 0) {
-    // A repo without a license is silently dropped from backups (the sync skips unlicensed repos and still exits 0), so a partial outage is exactly the
-    // case that needs saying out loud — previously only an all-missing estate
-    // raised anything, and losing 3 of 11 licenses reported nothing at all.
-    ctx.issues.push(`${details.missing} repo license(s) missing`);
-    ctx.exitCode = Math.max(ctx.exitCode, 1);
-  }
-
-  return details;
 }
 
 /** Get health message based on exit code */
@@ -475,10 +493,18 @@ export function getMachineHealth(machine: MachineWithVaultStatus): MachineHealth
       message: 'No status data available',
       details: getDefaultHealthDetails(),
       issues: ['No vault status data'],
+      findings: [
+        withFix({
+          code: 'machine.status.unavailable',
+          severity: 'error',
+          subject: machine.machineName ?? MACHINE_SUBJECT_FALLBACK,
+          detail: 'No vault status data',
+        }),
+      ],
     };
   }
 
-  const ctx: HealthCheckContext = { issues: [], exitCode: 0 };
+  const ctx: HealthCheckContext = { issues: [], findings: [], exitCode: 0 };
 
   const systemInfo = getSystemInfo(listResult);
   const containers = getContainers(listResult);
@@ -507,5 +533,6 @@ export function getMachineHealth(machine: MachineWithVaultStatus): MachineHealth
       licenses: licenseDetails,
     },
     issues: ctx.issues,
+    findings: ctx.findings,
   };
 }

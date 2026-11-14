@@ -70,3 +70,17 @@ def test_the_pointers_are_the_stamp_table() -> None:
     assert r2_promote.pointers("archlinux") == ("rediacc.conf",)
     assert r2_promote.pointers("apt") == r2_promote.pointers("apk") == ()
     assert r2_promote.POINTERS_GO_LAST is True
+
+
+def test_parse_listing_carries_the_unquoted_etag() -> None:
+    reply = {
+        "Contents": [
+            {
+                "Key": "p/a",
+                "Size": 1,
+                "LastModified": "2026-09-25T12:00:00+00:00",
+                "ETag": '"abc-2"',
+            }
+        ]
+    }
+    assert r2_promote.parse_listing(json.dumps(reply), "p/")[0].etag == "abc-2"

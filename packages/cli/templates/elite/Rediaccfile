@@ -1,0 +1,98 @@
+#!/bin/bash
+
+REQUIRED_VARS=(
+  ELITE_DOMAIN
+  ELITE_STORE_DOMAIN
+  TAG
+  RUSTFS_ACCESS_KEY
+  RUSTFS_SECRET_KEY
+  ACCOUNT_CONFIG_SERVER_KEY
+  ACCOUNT_ED25519_PRIVATE_KEY
+  ACCOUNT_ED25519_PUBLIC_KEY
+  ACCOUNT_X25519_PRIVATE_KEY
+  ACCOUNT_X25519_PUBLIC_KEY
+  ACCOUNT_SERVER_API_KEY
+  ACCOUNT_JWT_SECRET
+)
+
+load_secrets() {
+  if [[ ! -f secrets.env ]]; then
+    echo "secrets.env is missing; copy secrets.env.example and fill it in" >&2
+    return 1
+  fi
+  set -a
+  source ./secrets.env
+  set +a
+
+  local var
+  for var in "${REQUIRED_VARS[@]}"; do
+    if [[ -z "${!var:-}" ]]; then
+      echo "secrets.env: ${var} is not set" >&2
+      return 1
+    fi
+  done
+  # No cert is the free tier: the server boots without one and serves each repo licence
+  # through its /onprem/free-license relay until a cert arrives in data/web/cert-inbox/.
+  if [[ ! -f data/web/delegation-cert.json ]]; then
+    echo "no delegation cert: starting the free tier" >&2
+  fi
+}
+
+# Local-first image path. images/manifest.txt lists one "<tar file> <image ref>" pair per line.
+load_images() {
+  local image="${ELITE_IMAGE:-ghcr.io/rediacc/server:${TAG}}"
+  local tar ref served=0
+  for tar in images/*.tar; do
+    [[ -f "$tar" ]] || continue
+    ref=$(awk -v f="$(basename "$tar")" '$1 == f { print $2; exit }' images/manifest.txt 2>/dev/null)
+    if [[ -z "$ref" ]]; then
+      echo "images/manifest.txt has no ref for ${tar}" >&2
+      return 1
+    fi
+    if ! docker image inspect "$ref" >/dev/null 2>&1; then
+      docker load -i "$tar" || return 1
+    fi
+    # Served only once the ref is present: a tar that does not hold the manifest's ref serves nothing.
+    if [[ "$ref" == "$image" ]] && docker image inspect "$ref" >/dev/null 2>&1; then
+      served=1
+    fi
+  done
+
+  if [[ "$served" -eq 0 ]] && ! docker image inspect "$image" >/dev/null 2>&1; then
+    if [[ "${ELITE_OFFLINE:-}" == "1" ]]; then
+      echo "ELITE_OFFLINE=1: image ${image} is absent and no images/*.tar provides it" >&2
+      return 1
+    fi
+    docker pull "$image" || return 1
+  fi
+}
+
+up() {
+  load_secrets || return 1
+  mkdir -p data/web data/rustfs || return 1
+  # The cert inbox the server reads new certs from (rdc server licence drops them here).
+  mkdir -p -m 0700 data/web/cert-inbox || return 1
+  chmod 0700 data/web/cert-inbox || return 1
+  load_images || return 1
+
+  renet compose -- up -d
+}
+
+down() {
+  load_secrets || return 1
+  renet compose -- down
+}
+
+info() {
+  load_secrets || return 1
+  renet compose -- ps
+}
+
+health() {
+  load_secrets || return 1
+  local args=(-fsS --max-time 10 --resolve "${ELITE_DOMAIN}:443:127.0.0.1")
+  if [[ -n "${ELITE_CA_FILE:-}" ]]; then
+    args+=(--cacert "${ELITE_CA_FILE}")
+  fi
+  curl "${args[@]}" "https://${ELITE_DOMAIN}/health" >/dev/null
+}

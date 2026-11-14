@@ -3,6 +3,7 @@
  * Ported from desktop/src/cli/core/env_bootstrap.py and repository_env.py
  */
 
+import { DEFAULTS } from '@rediacc/shared/config';
 import { repoDockerSocketPath } from '@rediacc/shared/config/runtime-paths';
 import { t } from '../../i18n/index.js';
 import { repoTagFromName } from '../repository/repo-name.js';
@@ -56,7 +57,7 @@ export function buildRepositoryEnvironment(options: {
     datastore,
     repositoryPath,
     universalUser,
-    universalUserId = '1000',
+    universalUserId = DEFAULTS.REPOSITORY.UNIVERSAL_USER_ID,
     networkId = '',
     networkMode = 'bridge',
     tag,

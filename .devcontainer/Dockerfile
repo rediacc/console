@@ -10,7 +10,7 @@
 FROM mcr.microsoft.com/devcontainers/base:ubuntu-24.04
 
 ARG NODE_VERSION=24
-ARG GO_VERSION=1.27.3
+ARG GO_VERSION=1.27.4
 
 # EVERY NETWORK FETCH RETRIES, because one upstream hiccup must not kill a ten-minute
 # multi-arch build that gates every PR.
@@ -154,8 +154,10 @@ RUN find /etc/apt -name 'ubuntu.sources' -o -name 'sources.list' 2>/dev/null \
                 # falling back to a file when keyctl is missing (REDIACC_SECRET_STORE=file is
                 # the explicit opt-in). Without it every devbox would hit that refusal.
                 keyutils \
-                clang \
-                llvm \
+                # clang-18/llvm-18 pinned: renet's committed BPF objects (pkg/ebpf/*_bpfel.o)
+                # are byte-compared in CI against a clang 18 rebuild; a newer clang changes them.
+                clang-18 \
+                llvm-18 \
                 libbpf-dev \
                 linux-headers-generic \
                 # zstd: renet's build STAGES EMBEDDED ASSETS through it and refuses to
@@ -220,7 +222,7 @@ ENV NVM_DIR=/usr/local/share/nvm
 ENV NVM_SYMLINK_CURRENT=true
 
 # npm is replaced further down, after `COPY toolchain.env`, with the exact
-# NPM_VERSION pin: this image is where lockfiles get written, and npm 11 at that pin
+# NPM_VERSION pin: this image is where lockfiles get written, and npm at that pin
 # is the only npm the repo supports (check:ci-lockfile refuses any other writer's form).
 RUN mkdir -p "$NVM_DIR" \
     && curl -fsSL $CURL_RETRY https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash \
@@ -257,8 +259,8 @@ ARG TARGETARCH
 
 # Checksums from go.dev's own index: curl -s 'https://go.dev/dl/?mode=json&include=all'
 # | jq '.[]|select(.version=="go<V>")|.files[]|select(.os=="linux" and .kind=="archive")'
-ARG GO_SHA256_AMD64=65efbc80fdc1fa2cd2631cad5b481777a68e8725f34e89f50fc6ac714e379b40
-ARG GO_SHA256_ARM64=a06e99309dbcbdca1a8ccd2282c3ee146e55930886e26b4f1193269587165f49
+ARG GO_SHA256_AMD64=7226736c2339719cda28fbf3a54d71aa63bcefe376e98cef00034268dab24840
+ARG GO_SHA256_ARM64=3392582988a273a87ab5043ee1b2c9c17a2c3c00580bf9326c47a2e0aaaeac92
 # Downloaded to a file rather than streamed into tar: a stream cannot be verified
 # before it is extracted, which is the whole point of having a checksum.
 RUN case "$TARGETARCH" in \
@@ -482,8 +484,8 @@ USER root
 # Pinned to an exact release; the values below are whatever the last bump chose.
 # Bumping is a one-line edit per tool; there is deliberately no freshness gate on
 # these two, because a CLI whose version nothing depends on is not worth a red build.
-ARG CODEX_VERSION=0.166.0
-ARG GEMINI_CLI_VERSION=0.66.0
+ARG CODEX_VERSION=0.167.2
+ARG GEMINI_CLI_VERSION=0.68.0
 #
 # NPM_BEFORE is the release-age cutoff (`PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age
 # npm-before`, passed by every build site as a build-arg). A global install resolves its whole
@@ -530,6 +532,25 @@ RUN . /etc/rediacc/toolchain.env \
     && /tmp/aws/install \
     && rm -rf /tmp/aws /tmp/awscliv2.zip \
     && aws --version | grep -q "^aws-cli/${AWSCLI_VERSION} "
+
+# cosign -- the sigstore verifier `npm run pins -- bump` runs over a signed SHA256SUMS
+# (scripts/pins/signed-release.ts). Without it a bump of a cosign-signed pin (opentofu)
+# REFUSES. The release binary at COSIGN_VERSION, checked against the sha256 toolchain.env
+# records for this arch BEFORE it is made executable (the same asset and hash
+# .ci/bootstrap.sh install_cosign uses), and verified by the version it reports.
+RUN . /etc/rediacc/toolchain.env \
+    && : "${COSIGN_VERSION:?toolchain.env did not define COSIGN_VERSION}" \
+    && case "$(dpkg --print-architecture)" in \
+    amd64) COSIGN_ARCH=amd64 COSIGN_SHA="${COSIGN_SHA256_LINUX_AMD64:?}" ;; \
+    arm64) COSIGN_ARCH=arm64 COSIGN_SHA="${COSIGN_SHA256_LINUX_ARM64:?}" ;; \
+    *) echo "unsupported arch for cosign: $(dpkg --print-architecture)" >&2; exit 1 ;; \
+    esac \
+    && curl -fsSL $CURL_RETRY -o /tmp/cosign \
+        "https://github.com/sigstore/cosign/releases/download/v${COSIGN_VERSION}/cosign-linux-${COSIGN_ARCH}" \
+    && echo "${COSIGN_SHA}  /tmp/cosign" | sha256sum -c - \
+    && install -m 0755 /tmp/cosign /usr/local/bin/cosign \
+    && rm -f /tmp/cosign \
+    && cosign version | grep -q "^GitVersion: *v${COSIGN_VERSION}$"
 
 # glab — GitLab CLI (https://gitlab.com/gitlab-org/cli)
 ARG GLAB_VERSION=1.90.0
@@ -665,11 +686,13 @@ RUN ARCH=$(dpkg --print-architecture) \
 # devbox defeats the reason agent-browser is in this image, and a session probing a
 # CI failure locally reads three failures that are the PIN talking, not the code.
 #
-# Both sides are pinned now: the workflow names a version instead of `@latest`, and
-# this ARG names the same one. They must move together -- a devbox that disagrees
-# with CI is worse than one that is merely behind, because it answers confidently.
-ARG AGENT_BROWSER_VERSION=0.41.1
-RUN npm install -g agent-browser@${AGENT_BROWSER_VERSION} --before "${NPM_BEFORE}" \
+# CI cannot drift from this ARG: the Install agent-browser step of ci-quality.yml reads
+# the pin from this file (`rediacc_ci.ci.agent_browser_pin read`) instead of naming a
+# version of its own, so a bump here moves the devbox and CI together. A devbox that
+# disagreed with CI would be worse than one that is merely behind, because it answers
+# confidently.
+ARG AGENT_BROWSER_VERSION=0.43.0
+RUN npm install -g agent-browser@${AGENT_BROWSER_VERSION} --allow-scripts=agent-browser --before "${NPM_BEFORE}" \
     && npm cache clean --force
 
 # Pre-pull the matching chromium-headless-shell so the first `agent-browser

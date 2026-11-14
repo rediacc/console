@@ -43,6 +43,8 @@ It is the template for any future agent that earns a Haiku default: read-only, c
 
 `.claude/agents/effort-tuner.md` is `model: sonnet`, the second exception. Its shape is constant too: it runs `wl_effort_tune.py run`, tests the candidate table against the effort-table gate and the generated judge-rule tests, and weighs the numbers against the session's observations. The script and the gate are the oracle, so the judgment left is reading evidence across a few files, which is Sonnet's tier (ruling 2), and it writes nothing into the tree outside its own run directory (the candidate table it tests lives in a scratch copy, `.claude/agents/effort-tuner.md` step 2); `wl_effort_tune.py apply`, which writes promotions and appends proposal rows to the ledger, is the lead's step and not the tuner's.
 
+`.claude/agents/lesson-curator.md` is `model: sonnet`, the third exception, for the same reason: a constant shape around two oracles. It reads the pending hint proposals through `wl_hints.pending_proposals` and checks every enforcer pointer through `wl_lessons.pointer_problem`, then clusters what is left into ready HINTS or TRAPS diffs, or a gate, test or CLI brief per cluster. It writes only its own run directory, `agent/<me8>/lessons/e<epoch>/`; promoting a diff into the tree is the lead's step (PLAN-experience-feedback P2).
+
 The mechanism for the Haiku slice is the per-call `model` override on the `Agent` tool.
 
 ## The i18n note, and a 2026-08 interlude worth recording

@@ -94,6 +94,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { recordProblem } from './lib/gate-problems.js';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 
@@ -113,6 +114,33 @@ interface Pair {
   fanInFloor: number;
   /** Fewest `SUFFIXED_CHANNEL_PREFIXES` region-and-channel fan-ins the builder is known to use. */
   channelFanInFloor: number;
+  /**
+   * The one channel the step serves, when the workflow is single-channel. The step must then export
+   * `TARGET` as the literal `stable`, and the builder's reads of the OTHER channel's names (the
+   * `_EDGE` ones it reads only to refuse a cross-channel value) are not required exports. Exporting
+   * one is a finding: it would hand a stable Worker the other channel's credential.
+   */
+  channel?: 'STABLE';
+}
+
+/** True for a name that belongs to the channel opposite `channel`: an `_EDGE` spelling when the step serves STABLE. */
+export function isOtherChannelName(name: string, channel: 'STABLE'): boolean {
+  return channel === 'STABLE' && name.endsWith('_EDGE');
+}
+
+/** The finding for a required guard on a name of the channel the step does not serve, or null. */
+export function crossChannelGuardProblem(
+  pair: { builder: string; workflow: string; channel?: 'STABLE' },
+  stepLine: number,
+  g: { label: string; varName: string | null; line: number }
+): string | null {
+  if (g.varName === null || !pair.channel || !isOtherChannelName(g.varName, pair.channel)) {
+    return null;
+  }
+  return (
+    `    ${pair.builder}:${g.line}  guard demands "${g.label}", a name of the other channel, but ${pair.workflow}:${stepLine} serves only ${pair.channel} and never exports it.\n` +
+    `      The read-side skip for the other channel's names covers the cross-channel refusal reads only. A required guard on one would refuse every ${pair.channel} run.`
+  );
 }
 
 /**
@@ -122,7 +150,7 @@ interface Pair {
  *
  * Region-and-channel fan-ins (`SUFFIXED_CHANNEL_PREFIXES`), counted when channelFanInFloor was
  * added: 1/0/0, one prefix (`ACCOUNT_CONFIG_SERVER_KEY`) in the account builder and none in the
- * other two.
+ * other two. `ACCOUNT_BACKUP_STORE_KEK` raised the account builder to 2.
  */
 const PAIRS: Pair[] = [
   {
@@ -131,7 +159,8 @@ const PAIRS: Pair[] = [
     exportFloor: 35,
     readFloor: 25,
     fanInFloor: 4,
-    channelFanInFloor: 1,
+    channelFanInFloor: 2,
+    channel: 'STABLE',
   },
   {
     workflow: '.github/workflows/cd-deploy-worker.yml',
@@ -326,10 +355,47 @@ export function guardLabels(
   return out;
 }
 
+/** A YAML scalar as its value: a trailing ` # comment` and one pair of matching quotes removed, so `"stable"` and `stable # note` both read `stable`. A backslash escape inside double quotes (`\"`, `\\`) and a doubled quote inside single quotes (`''`) do not end the scalar; only those two escapes are decoded, any other stays as written. */
+export function scalarValue(raw: string): string {
+  const text = raw.trim();
+  if (text.startsWith('"')) {
+    let value = '';
+    for (let i = 1; i < text.length; i++) {
+      const ch = text[i];
+      if (ch === '\\' && i + 1 < text.length) {
+        const next = text[++i];
+        // Only `\"` and `\\` are decoded; any other escape (`\n`, `\t`) stays as written, so the value never reads as something the file did not say.
+        value += next === '"' || next === '\\' ? next : `\\${next}`;
+      } else if (ch === '"') {
+        return value;
+      } else {
+        value += ch;
+      }
+    }
+  } else if (text.startsWith("'")) {
+    let value = '';
+    for (let i = 1; i < text.length; i++) {
+      if (text[i] === "'") {
+        if (text[i + 1] === "'") {
+          value += "'";
+          i++;
+        } else {
+          return value;
+        }
+      } else {
+        value += text[i];
+      }
+    }
+  }
+  return text.replace(/\s+#.*$/, '').trim();
+}
+
 export interface StepEnv {
   stepName: string;
   stepLine: number;
   names: Map<string, number>;
+  /** The literal value of each env key, as written (a `${{ }}` expression stays as text). */
+  values: Map<string, string>;
   /** Which spelling of the builder the step's `run:` actually used. */
   invokedAs: 'path' | 'python-module';
 }
@@ -407,6 +473,7 @@ export function stepEnvNames(yamlText: string, builder: string): StepEnv | null 
     const envIdx = block.findIndex((l) => new RegExp(`^\\s{${keyIndent}}env:\\s*$`).test(l));
     if (envIdx < 0) return null;
     const names = new Map<string, number>();
+    const values = new Map<string, string>();
     let childIndent = -1;
     for (let k = envIdx + 1; k < block.length; k++) {
       const raw = block[k];
@@ -416,8 +483,11 @@ export function stepEnvNames(yamlText: string, builder: string): StepEnv | null 
       if (/^\s*#/.test(raw)) continue;
       if (childIndent < 0) childIndent = ind;
       if (ind !== childIndent) continue; // a block scalar's body, not a key
-      const m = /^\s*([A-Za-z_][A-Za-z0-9_]*):\s/.exec(raw);
-      if (m && !names.has(m[1])) names.set(m[1], from + k + 1);
+      const m = /^\s*([A-Za-z_][A-Za-z0-9_]*):\s(.*)$/.exec(raw);
+      if (m && !names.has(m[1])) {
+        names.set(m[1], from + k + 1);
+        values.set(m[1], scalarValue(m[2]));
+      }
     }
     const nameIdx = block.findIndex((l) => /^\s*-?\s*name:/.test(l));
     return {
@@ -425,6 +495,7 @@ export function stepEnvNames(yamlText: string, builder: string): StepEnv | null 
         nameIdx >= 0 ? block[nameIdx].replace(/^\s*-?\s*name:\s*/, '').trim() : '(unnamed step)',
       stepLine: from + 1,
       names,
+      values,
       invokedAs,
     };
   }
@@ -695,6 +766,74 @@ export function stepEnvNames(yamlText: string, builder: string): StepEnv | null 
     process.exit(1);
   }
 
+  // Single-channel pair: only the opposite channel's names are excused, and only for STABLE.
+  if (
+    !isOtherChannelName('ACCOUNT_CONFIG_SERVER_KEY_EU_EDGE', 'STABLE') ||
+    !isOtherChannelName('BACKUP_BUCKET_EDGE', 'STABLE') ||
+    isOtherChannelName('ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE', 'STABLE') ||
+    isOtherChannelName('ACCOUNT_JWT_SECRET', 'STABLE')
+  ) {
+    console.error(
+      'x instrument control: isOtherChannelName() must excuse exactly the _EDGE spellings for a STABLE step and nothing else, or a missing STABLE export would pass.'
+    );
+    process.exit(1);
+  }
+  // The guard branch, both directions: a required guard on an _EDGE name for a STABLE step is a finding; the same guard on a STABLE name, or with no channel, is not.
+  const fixturePair = { builder: 'b.py', workflow: 'w.yml', channel: 'STABLE' as const };
+  const edgeGuard = { label: 'BACKUP_BUCKET_EDGE', varName: 'BACKUP_BUCKET_EDGE', line: 3 };
+  const stableGuard = { label: 'BACKUP_BUCKET_STABLE', varName: 'BACKUP_BUCKET_STABLE', line: 4 };
+  if (
+    crossChannelGuardProblem(fixturePair, 9, edgeGuard) === null ||
+    crossChannelGuardProblem(fixturePair, 9, stableGuard) !== null ||
+    crossChannelGuardProblem({ builder: 'b.py', workflow: 'w.yml' }, 9, edgeGuard) !== null
+  ) {
+    console.error(
+      'x instrument control: crossChannelGuardProblem() must flag a required _EDGE guard for a STABLE step and nothing else, or the guard branch could never fire.'
+    );
+    process.exit(1);
+  }
+  // Quoted scalars: an escaped quote or a doubled quote stays inside the value.
+  const quoted: [string, string][] = [
+    ['"a\\"b" # note', 'a"b'],
+    ['"a\\\\b"', 'a\\b'],
+    ['"a\\nb"', 'a\\nb'],
+    ["'it''s' # note", "it's"],
+    ['"stable"', 'stable'],
+    ['stable # note', 'stable'],
+  ];
+  const badQuoted = quoted.filter(([raw, want]) => scalarValue(raw) !== want);
+  if (badQuoted.length > 0) {
+    console.error(
+      `x instrument control: scalarValue() misread ${JSON.stringify(badQuoted.map(([raw]) => [raw, scalarValue(raw)]))}; an escaped or doubled quote must not end the scalar.`
+    );
+    process.exit(1);
+  }
+  const targetFixture = stepEnvNames(
+    wfFixture.replace('          WORKER_NAME:', '          TARGET: stable\n          WORKER_NAME:'),
+    '.ci/rediacc_ci/deploy/set_fixture_secrets.py'
+  );
+  const spelled = ['"stable" # note', 'stable # note', "'stable'"].map((spelling) =>
+    stepEnvNames(
+      wfFixture.replace(
+        '          WORKER_NAME:',
+        `          TARGET: ${spelling}\n          WORKER_NAME:`
+      ),
+      '.ci/rediacc_ci/deploy/set_fixture_secrets.py'
+    )?.values.get('TARGET')
+  );
+  if (spelled.some((v) => v !== 'stable')) {
+    console.error(
+      `x instrument control: stepEnvNames() read a quoted or commented TARGET: stable as ${JSON.stringify(spelled)}; a valid single-channel step would be refused as drift.`
+    );
+    process.exit(1);
+  }
+  if (targetFixture?.values.get('TARGET') !== 'stable') {
+    console.error(
+      'x instrument control: stepEnvNames() did not read the literal value of TARGET; the single-channel check would reject every step or accept any.'
+    );
+    process.exit(1);
+  }
+
   // The failure direction, both halves, on the same fixture pair.
   const exported = new Set(step.names.keys());
   const renamed = new Set(['ACCOUNT_JWT_SECRETX', 'WORKER_NAME']);
@@ -807,8 +946,15 @@ for (const pair of PAIRS) {
   totalReads += reads.size;
   totalFanIns += fan.templates.length;
 
+  if (pair.channel && step.values.get('TARGET') !== 'stable') {
+    problems.push(
+      `    ${pair.workflow}:${step.stepLine} ("${step.stepName}") is declared single-channel (${pair.channel}) here but does not export TARGET as the literal stable (got ${JSON.stringify(step.values.get('TARGET') ?? null)}).\n` +
+        `      Either the step serves another channel again (then drop \`channel\` for this pair and export that channel's names), or TARGET drifted.`
+    );
+  }
   for (const [name, line] of allReads) {
     if (step.names.has(name)) continue;
+    if (pair.channel && isOtherChannelName(name, pair.channel)) continue;
     const ex = exemptFor(name, 'read-not-exported');
     if (ex) {
       fired.add(`${ex.name}|${ex.direction}`);
@@ -820,6 +966,14 @@ for (const pair of PAIRS) {
     );
   }
   for (const [name, line] of step.names) {
+    if (pair.channel && isOtherChannelName(name, pair.channel)) {
+      recordProblem(
+        problems,
+        `    ${pair.workflow}:${line}  exports ${name}, a name of the other channel, from a step that serves only ${pair.channel}.\n` +
+          `      The builder refuses a cross-channel value; the step must never supply one. Delete the export.`
+      );
+      continue;
+    }
     if (allReads.has(name)) continue;
     const ex = exemptFor(name, 'exported-not-read');
     if (ex) {
@@ -839,6 +993,8 @@ for (const pair of PAIRS) {
   for (const g of guardLabels(bText, reads, fanPrefixes)) {
     totalGuards += 1;
     if (g.varName === null) continue; // a fan-in RESULT; its label is the Worker key
+    const crossChannel = crossChannelGuardProblem(pair, step.stepLine, g);
+    if (crossChannel !== null) problems.push(crossChannel);
     if (g.label !== g.varName) {
       problems.push(
         `    ${pair.builder}:${g.line}  guard demands "${g.label}", but the port never reads that name from the environment.\n` +

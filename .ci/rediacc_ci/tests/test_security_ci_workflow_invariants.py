@@ -669,9 +669,9 @@ def test_unconditional_ancestors_and_conditional_descendants_pass():
 
 # ---- the release-order phase (PLAN-cd-errors-in-ci W5 + W4 pins; added after the twin, no differential) ----------
 #
-# CD run 37749637824 (v2.2.0): ci.yml sealed cli/v2.2.0/.released, cd-v2's post-publish install validation went red on a Rocky 9 DNF stall, and `tag-and-release`, the only job that created the git tag, was skipped. The pure cases below drive `analyse_release` over literal dicts in both directions; the subprocess cases drive the REAL files, including the real pre-fix cd-v2.yml.
+# CD run 37749637824 (v2.2.0): ci.yml sealed cli/v2.2.0/.released, cd-release-edge's post-publish install validation went red on a Rocky 9 DNF stall, and `tag-and-release`, the only job that created the git tag, was skipped. The pure cases below drive `analyse_release` over literal dicts in both directions; the subprocess cases drive the REAL files, including the real pre-fix cd-release-edge.yml.
 
-# The last commit whose cd-v2.yml carried the tag inside `tag-and-release`, behind validate-install-published and gated off on retry_mode. A full sha so it cannot become ambiguous.
+# The last commit whose cd-release-edge.yml carried the tag inside `tag-and-release`, behind validate-install-published and gated off on retry_mode. A full sha so it cannot become ambiguous.
 PRE_FIX_CD_COMMIT = "0e6af2d1cb918135c79c057ee9d29b5dfb276af1"
 
 TAG_RUN = 'git -c user.name="$N" tag -a "v${VERSION}" -m "v${VERSION}" "$CI_SHA"\ngit push origin "v${VERSION}"\n'
@@ -947,13 +947,13 @@ def cut_once(source: str, before: str, after: str) -> str:
     return source.replace(before, after)
 
 
-REAL_CD = ROOT / ".github/workflows/cd-v2.yml"
+REAL_CD = ROOT / ".github/workflows/cd-release-edge.yml"
 REAL_CI = ROOT / ".github/workflows/ci.yml"
 REAL_ACTION = ROOT / ".github/actions/app-token/action.yml"
 
 
 def test_the_real_pre_fix_cd_workflow_is_refused(tmp_path: pathlib.Path) -> None:
-    """THE HISTORICAL CONTROL: the cd-v2.yml that stranded v2.2.0's sentinel must be red, for both of its defects.
+    """THE HISTORICAL CONTROL: the cd-release-edge.yml that stranded v2.2.0's sentinel must be red, for both of its defects.
 
     Skipped, loudly, when the commit is unreachable (a shallow clone): a missing object is not evidence of a working gate.
     """
@@ -1025,11 +1025,11 @@ def test_the_real_init_checkout_losing_the_app_token_is_refused(tmp_path: pathli
 def test_a_real_dispatch_guard_that_differs_from_the_seal_is_refused(
     tmp_path: pathlib.Path,
 ) -> None:
-    """ci.yml side. CD_WORKFLOW_FILE is set to the real cd-v2 so the phase runs over the mutated ci.yml copy."""
+    """ci.yml side. CD_WORKFLOW_FILE is set to the real cd-release-edge so the phase runs over the mutated ci.yml copy."""
     text = cut_once(
         REAL_CI.read_text(encoding="utf-8"),
-        "      - name: Dispatch cd-v2 release\n        if: needs.initialize.outputs.skip_release != 'true'\n",
-        "      - name: Dispatch cd-v2 release\n        if: always()\n",
+        "      - name: Dispatch cd-release-edge release\n        if: needs.initialize.outputs.skip_release != 'true'\n",
+        "      - name: Dispatch cd-release-edge release\n        if: always()\n",
     )
     proc = run_real(
         tmp_path, WORKFLOW_FILE=text, CD_WORKFLOW_FILE=REAL_CD.read_text(encoding="utf-8")
@@ -1061,6 +1061,7 @@ REAL_JOB = {
     "check:ci-devcontainer-pins": "quality-go",
     "check:ci-real-provider-pins": "quality-go",
     "check:ci-go-deps": "quality-go",
+    "check:ci-ops-health": "quality-go",
     "check:actions": "quality-code",
     "check:ci-pin-freshness": "quality-code",
     "check:ci-external-links": "quality-content",
@@ -1238,9 +1239,14 @@ def test_the_real_workflow_holds_every_external_gate_hard(tmp_path: pathlib.Path
     ("before", "after", "gate"),
     [
         (
-            " no-external-quality check:ci-go-deps check:ci-embed-asset-freshness check:ci-devcontainer-pins check:ci-real-provider-pins\n",
-            " no-external-quality check:ci-go-deps check:ci-embed-asset-freshness check:ci-devcontainer-pins\n",
+            " no-external-quality check:ci-go-deps check:ci-ops-health check:ci-embed-asset-freshness check:ci-devcontainer-pins check:ci-real-provider-pins\n",
+            " no-external-quality check:ci-go-deps check:ci-ops-health check:ci-embed-asset-freshness check:ci-devcontainer-pins\n",
             "check:ci-real-provider-pins",
+        ),
+        (
+            " no-external-quality check:ci-go-deps check:ci-ops-health check:ci-embed-asset-freshness check:ci-devcontainer-pins check:ci-real-provider-pins\n",
+            " no-external-quality check:ci-go-deps check:ci-embed-asset-freshness check:ci-devcontainer-pins check:ci-real-provider-pins\n",
+            "check:ci-ops-health",
         ),
         (
             " no-external-quality check:deps check:ci-external-links check:ci-dkim-notify\n",
@@ -1345,7 +1351,7 @@ def test_a_conformant_preflight_trio_is_clean_and_reports_its_shape() -> None:
     assert findings == []
     assert shape == [
         "ci.yml job cd-preflight runs it on pull_request",
-        "cd-v2 init step 3 after the tag step 2",
+        "cd-release-edge init step 3 after the tag step 2",
         "housekeeping cleanup step 2 before cleanup step 3",
     ]
 
@@ -1483,7 +1489,7 @@ def test_every_preflight_kind_has_a_message() -> None:
     assert ci_workflow_invariants.preflight_message_for("invented", "j", files) is None
 
 
-REAL_HK = ROOT / ".github/workflows/housekeeping.yml"
+REAL_HK = ROOT / ".github/workflows/ops-housekeeping.yml"
 
 
 def test_a_push_only_preflight_on_the_real_ci_is_refused(tmp_path: pathlib.Path) -> None:
@@ -1828,7 +1834,7 @@ def test_a_pins_soaked_workflow_that_could_write_or_report_nothing_is_refused(mu
 
 
 def test_a_missing_pins_soaked_file_is_an_error_never_a_pass() -> None:
-    errors, info = ci_workflow_invariants._pins_soaked_phase("/nonexistent/pins-soaked.yml")
+    errors, info = ci_workflow_invariants._pins_soaked_phase("/nonexistent/ops-pins-soaked.yml")
     assert len(errors) == 1
     assert "nothing to check cannot pass" in errors[0]
     assert info == []
@@ -1842,7 +1848,7 @@ PINNED_CHECKOUT = "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1"
 
 
 def token_triple() -> list[dict]:
-    """The read-only checkout token the 2026-10-23 ruling admits, step for step as pins-soaked.yml wires it."""
+    """The read-only checkout token the 2026-10-23 ruling admits, step for step as ops-pins-soaked.yml wires it."""
     return [
         {
             "name": "Fetch secrets from Bitwarden",
@@ -2257,7 +2263,7 @@ def test_an_admitted_shape_in_another_case_is_refused_not_admitted(mutate) -> No
 
 # ---- the workflow-estate pins (2026-10-23; asked for by the Stop hook's regression judge) ----
 #
-# Two fixes landed that day that no check could catch. `pipe-no-pipefail` (commit 41437ea6f): cf-usage-report.yml piped its report into `tee` under GitHub's implicit `bash -e {0}`, which has no pipefail, so a failing report passed green. `dispatch-write-off-default-branch` (commit f8d184807): obs-ceph-autobump.yml's cd-token job could be dispatched from any branch. Each rule below is driven in both directions over literal documents, over the two pre-fix files read from git history, and over the real tree in the real invocation.
+# Two fixes landed that day that no check could catch. `pipe-no-pipefail` (commit 41437ea6f): ops-cf-usage-report.yml piped its report into `tee` under GitHub's implicit `bash -e {0}`, which has no pipefail, so a failing report passed green. `dispatch-write-off-default-branch` (commit f8d184807): ops-obs-ceph-autobump.yml's cd-token job could be dispatched from any branch. Each rule below is driven in both directions over literal documents, over the two pre-fix files read from git history, and over the real tree in the real invocation.
 
 PIPEFAIL_FIX = "41437ea6fec97878060164859b01984c1108d32a"
 DISPATCH_FIX = "f8d184807ca93051f04bd554b68adfddd5dd81d5"
@@ -2695,11 +2701,11 @@ def test_the_real_workflow_estate_holds() -> None:
 def test_planted_violations_in_a_copy_of_the_real_tree_go_red(tmp_path) -> None:
     """THE CONTROL ON THE REAL INVOCATION: the port's main over a copy of the real .github, with the two 2026-10-23 fixes reverted in place, names both files; the unplanted copy is the real tree's own verdict."""
     shutil.copytree(ROOT / ".github", tmp_path / ".github")
-    cf = tmp_path / ".github/workflows/cf-usage-report.yml"
+    cf = tmp_path / ".github/workflows/ops-cf-usage-report.yml"
     cf.write_text(
         cut_once(cf.read_text(encoding="utf-8"), "        shell: bash\n", ""), encoding="utf-8"
     )
-    obs = tmp_path / ".github/workflows/obs-ceph-autobump.yml"
+    obs = tmp_path / ".github/workflows/ops-obs-ceph-autobump.yml"
     obs.write_text(
         cut_once(
             obs.read_text(encoding="utf-8"),
@@ -2718,9 +2724,9 @@ def test_planted_violations_in_a_copy_of_the_real_tree_go_red(tmp_path) -> None:
         timeout=120,
     )
     assert proc.returncode == 1, proc.stderr
-    assert "pipe-no-pipefail: .github/workflows/cf-usage-report.yml: report step" in proc.stderr
+    assert "pipe-no-pipefail: .github/workflows/ops-cf-usage-report.yml: report step" in proc.stderr
     assert (
-        "dispatch-write-off-default-branch: .github/workflows/obs-ceph-autobump.yml: job land ("
+        "dispatch-write-off-default-branch: .github/workflows/ops-obs-ceph-autobump.yml: job land ("
         in proc.stderr
     )
 
@@ -2767,7 +2773,7 @@ def _local_table() -> list[_Row]:
             can_fail=False,
         ),
         _Row("tag-submodules", (*py, "rediacc_ci.release.tag_submodules")),
-        _Row("account-deploy", (*py, "rediacc_ci.deploy.deploy_account", "--target", "edge")),
+        _Row("account-deploy", (*py, "rediacc_ci.deploy.deploy_account", "--region", "eu")),
     ]
 
 
@@ -2806,6 +2812,14 @@ def test_local_order_refuses_a_stable_row_and_a_vacuous_table() -> None:
     assert _kinds(stable) == ["local-order-stable-step"]
     env_stable = [rows[0]._replace(env=(("CHANNEL", "stable"),)), *rows[1:]]
     assert _kinds(env_stable) == ["local-order-stable-step"]
+    # `--target stable` is the shared Worker set's module target, admitted; CHANNEL=stable on the same row still refuses.
+    target_row = _Row(
+        "proxy-deploy", ("python3", "-m", "rediacc_ci.deploy.deploy_proxy", "--target", "stable")
+    )
+    assert _kinds([*rows, target_row]) == []
+    assert _kinds([*rows, target_row._replace(env=(("CHANNEL", "stable"),))]) == [
+        "local-order-stable-step"
+    ]
     assert set(_kinds([])) == {
         "local-order-no-seal",
         "local-order-no-tag",
@@ -2827,7 +2841,7 @@ def test_local_stable_admitted_needs_a_named_refusal() -> None:
         @staticmethod
         def main(argv, root=None):
             del argv, root
-            sys.stderr.write("refused: promote-stable.yml\n")
+            sys.stderr.write("refused: cd-release-stable.yml\n")
             return 2
 
     class Admits(Refuses):

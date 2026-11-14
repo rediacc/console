@@ -5,7 +5,7 @@ Logic is in `rediacc_ci.quality.plan_lifecycle`, which pytest and this file's `-
 
 WHAT THIS GATE ADDS TO THE ONES ALREADY IN THE FAMILY. `check:ci-plan-housekeeping` asks how OLD a plan is, `check:ci-plan-boxes` asks whether its boxes survived, `check:ci-plan-record` asks whether a compaction record is honest. None of the three has ever asked WHERE a plan is or WHEN it leaves, which is why `agent/` accumulated 103 files at its root with no rule either way.
 
-NINE FINDINGS, EACH WITH A PLANTED CONTROL:
+TEN FINDINGS, EACH WITH A PLANTED CONTROL:
 
     F1  a plan at the legacy path rather than under agent/plans/**
     F2  the folder disagrees with `Status:`
@@ -16,6 +16,10 @@ NINE FINDINGS, EACH WITH A PLANTED CONTROL:
     F7  a citation resolving to neither a file nor a tombstone
     F8  a tombstone whose blob does not resolve
     F9  the vacuity floor
+    F10 a terminal plan past terminal_days that something still binds (an open box, an open
+        item citing it, an unfinished dependent), so the sweep F3 would demand refuses it
+
+F10 REPLACES F3 FOR A BOUND PLAN, AND IS AS FATAL AS F3 WAS. F3 names `--sweep --write` as the fix, and the sweep refuses a bound plan (`wl_planbind`, PLAN-plan-compaction-bindings CB3), so an F3 on a bound plan demanded a deletion the binding rule forbids. F10 names the bindings and their fixes instead. It is fatal with no baseline because `check:ci-plan-bindings` already reds, with no baseline, on every terminal plan a live binding holds: a tree where F10 fires is a tree that gate has already failed, so F10 cannot turn a green tree red. An open box that `wl_planbind` RELEASES (re-homed under a resolving `Ruling:`, or dropped by a closed operator ruling) does not bind; the sweep deletes such a plan and prints each released box with the note that released it, so a deleted `- [ ]` is never silent.
 
 F1 IS FATAL SINCE THE MIGRATION LANDED. It spent exactly one stage as an advisory, because a gate cannot red on the day it arrives over a tree where all 103 plans still sit at the legacy path: that is the shape that gets suppressed within a day, which is the failure docs/agent-reference/suppressions.md exists to prevent. The 103 moved in S4, so the escape hatch that made the
 advisory possible is gone rather than left behind switched off -- a flag whose only job is finished is a suppression waiting for a reader who does not know why it is there.
@@ -37,7 +41,7 @@ THE VERBS.
     --keep P --asked <YYYY-MM-DDTHH:MMZ>
                the operator kept P: write `Kept: <today> ASKED:<minute>` under Status:,
                which restarts P's backlog clock from today
-    --archive P --asked <YYYY-MM-DDTHH:MMZ>
+    --archive P --asked <YYYY-MM-DDTHH:MMZ> [--ruling #<id>]
                the operator archived P: set `Status: removed` with a `Removed-Why:` naming
                the answer, then --move it into _removed/, where the terminal clock takes over
     --update   write the tombstone section of agent/INDEX.md
@@ -424,10 +428,94 @@ def selftest() -> int:
         "abc000000",
     )
 
+    # B. A bound plan is never moved or swept (agent/plans/PLAN-plan-compaction-bindings.md, CB3). Red first: an open item citing the plan is refused and named; the twin with the item ticked, and a plan nothing cites, pass.
+    bound_rel = "agent/plans/_done/PLAN-closed.md"
+    other_rel = "agent/plans/_done/PLAN-other.md"
+    nowhere = pathlib.Path("/nonexistent-root")
+    bound_texts = {bound_rel: CLEAN_DONE}
+    open_item = {"id": "aa11bb22", "state": " ", "text": "finish PLAN-closed.md"}
+    refusal = _binding_refusal(nowhere, bound_rel, bound_texts, [open_item])
+    tally.check(
+        "B1 an open item citing the plan refuses and names it",
+        "#aa11bb22" in refusal and "PLAN-closed.md" in refusal,
+        True,
+    )
+    tally.check(
+        "B2 the same item ticked releases the plan",
+        _binding_refusal(nowhere, bound_rel, bound_texts, [dict(open_item, state="x")]),
+        "",
+    )
+    tally.check(
+        "B3 a plan nothing cites is not bound",
+        _binding_refusal(nowhere, bound_rel, bound_texts, []),
+        "",
+    )
+    free, held = _split_bound(
+        nowhere,
+        [bound_rel, other_rel],
+        dict(bound_texts, **{other_rel: CLEAN_DONE}),
+        [open_item],
+    )
+    tally.check(
+        "B4 sweep keeps the bound plan out of the due list and keeps the free one",
+        (free, held),
+        ([other_rel], [bound_rel]),
+    )
+    tally.check(
+        "B5 every expired plan bound: a dry run exits 0, --write exits 1, a free plan defers",
+        (
+            _all_bound_exit([], write=False),
+            _all_bound_exit([], write=True),
+            _all_bound_exit([other_rel], write=True),
+        ),
+        (0, 1, None),
+    )
+
+    # B6. F3 on a bound plan becomes F10 naming the binding (review 21dcc994.1): the sweep F3 demands would refuse it. The twin, nothing binding, keeps F3 and its sweep fix.
+    aged_f3 = PL.finding_f3(_plans([(bound_rel, CLEAN_DONE)], aged_ledger), CONFIG, TODAY)
+    boxed_done = plant(CLEAN_DONE, "- [x] one box", "- [ ] one box")
+    held_f3 = _hold_bound(nowhere, aged_f3, 40, {bound_rel: boxed_done}, [])
+    tally.check(
+        "B6 an aged plan its own open box binds is F10, naming the box, not F3",
+        (
+            _codes(held_f3),
+            "one box" in held_f3[0].message,
+            "--sweep --write` is not" in held_f3[0].message,
+        ),
+        ({"F10"}, True, True),
+    )
+    tally.check(
+        "B7 the same aged plan with nothing binding stays F3",
+        _codes(_hold_bound(nowhere, aged_f3, 40, {bound_rel: CLEAN_DONE}, [])),
+        {"F3"},
+    )
+
     return 0 if tally.report() else 1
 
 
 # --------------------------------------------------------------------------- The tree-reading half.
+
+
+def _planbind():
+    """`wl_planbind`, the one decision of what still binds to a plan, imported by name at call time like `_dependents`."""
+    paths.on_sys_path(paths.hooks_stop_dir())
+    return importlib.import_module("wl_planbind")
+
+
+def _binding_refusal(root: pathlib.Path, rel: str, texts=None, items=None) -> str:
+    """The refusal text naming every binding of `rel`, or "" when nothing holds it. `texts` and `items` replace the tree reads (the selftest's door)."""
+    pb = _planbind()
+    index_text = None if texts is None else ""
+    return pb.render(rel, pb.bindings(root, rel, texts=texts, items=items, index_text=index_text))
+
+
+def _split_bound(root: pathlib.Path, rels: list[str], texts=None, items=None):
+    """(free, bound): `rels` split by whether anything still binds to each."""
+    free: list[str] = []
+    bound: list[str] = []
+    for rel in rels:
+        (bound if _binding_refusal(root, rel, texts, items) else free).append(rel)
+    return free, bound
 
 
 def _gather(root: pathlib.Path):
@@ -444,6 +532,48 @@ def _gather(root: pathlib.Path):
     return plans, set(rels), stones
 
 
+def _hold_bound(
+    root: pathlib.Path, found: list[PL.Finding], terminal_days: int, texts=None, items=None
+):
+    """`found` with every F3 on a plan something still binds replaced by an F10 naming the bindings. The sweep F3 demands would refuse that plan, so F3's own fix is wrong for it. `texts` and `items` are the selftest's door, as in `_binding_refusal`."""
+    out: list[PL.Finding] = []
+    for finding in found:
+        refusal = _binding_refusal(root, finding.rel, texts, items) if finding.code == "F3" else ""
+        if not refusal:
+            out.append(finding)
+            continue
+        out.append(
+            PL.Finding(
+                "F10",
+                finding.rel,
+                "%s is past the %d-day terminal retention, but the sweep refuses it while "
+                "anything binds it, so F3's `--sweep --write` is not its fix. Release each "
+                "binding first: re-home an open box into a live plan (or tick it with "
+                "evidence), and close or re-home each item and dependent below.\n%s"
+                % (finding.rel, terminal_days, refusal),
+            )
+        )
+    return out
+
+
+def _released_boxes(text: str) -> list[str]:
+    """Each open box of a plan the sweep is about to delete, with the indented note lines under it (where a re-home or a `dropped by ruling #<id>` is written). The binding decision released every one of them, or the plan would not be due; printing them keeps a deleted `- [ ]` visible in the sweep's own output."""
+    paths.on_sys_path(paths.hooks_stop_dir())
+    rec = importlib.import_module("wl_planrec")
+    lines = text.splitlines()
+    out: list[str] = []
+    for index, raw, _body, sig in rec.open_boxes(text):
+        out.append("open box %s: %s" % (sig, raw.strip()))
+        indent = len(raw) - len(raw.lstrip())
+        for line in lines[index + 1 :]:
+            if not line.strip():
+                continue  # a note may follow a blank line; a box or heading ends it below
+            if rec.BOX_LINE_RE.match(line) or len(line) - len(line.lstrip()) <= indent:
+                break
+            out.append("  " + line.strip())
+    return out
+
+
 def run(root: pathlib.Path, config: dict) -> int:
     plans, existing, stones = _gather(root)
     found = PL.findings(
@@ -455,6 +585,7 @@ def run(root: pathlib.Path, config: dict) -> int:
         tombstones=stones,
         blob_resolves=PL.blob_resolves(root, {t.blob for t in stones}),
     )
+    found = _hold_bound(root, found, int(config["terminal_days"]))
     for finding in found:
         print("✗ %s %s" % (finding.code, finding.message), file=sys.stderr)
     if found:
@@ -548,13 +679,28 @@ def _print_question(plans: list[PL.Plan], config: dict, today: dt.date) -> int:
         )
         print("    keep:    python3 %s --keep %s --asked <YYYY-MM-DDTHH:MMZ>" % (_SELF, plan.rel))
         print(
-            "    archive: python3 %s --archive %s --asked <YYYY-MM-DDTHH:MMZ>" % (_SELF, plan.rel)
+            "    archive: python3 %s --archive %s --asked <YYYY-MM-DDTHH:MMZ> [--ruling #<id>]"
+            % (_SELF, plan.rel)
         )
     print(
         "  <YYYY-MM-DDTHH:MMZ> is the UTC minute the operator answered. Keep writes `Kept:` and "
         "restarts the clock; archive sets `Status: removed` and moves the plan into _removed/."
     )
     return len(stale)
+
+
+def _all_bound_exit(free: list[str], *, write: bool) -> int | None:
+    """The sweep's exit when bindings hold every expired plan, else None. A dry run that finds nothing deletable exits 0 as it did before bindings existed; `--write`, which asked for a deletion it cannot make, exits 1 (review 17f03293.1)."""
+    if free:
+        return None
+    return 1 if write else 0
+
+
+def _differs_from_head(root: pathlib.Path, rel: str) -> bool:
+    """True when `rel` is untracked or its working or staged text differs from HEAD: hashing it then names a blob no commit holds."""
+    if not gitx.git(["ls-files", "--error-unmatch", "--", rel], root=root).ok:
+        return True
+    return bool(gitx.git(["status", "--porcelain", "--", rel], root=root).stdout.strip())
 
 
 def sweep(root: pathlib.Path, config: dict, *, write: bool) -> int:
@@ -568,8 +714,57 @@ def sweep(root: pathlib.Path, config: dict, *, write: bool) -> int:
         )
         _print_question(plans, config, today)
         return 0
+    free, held = _split_bound(root, [plan.rel for plan in due])
+    for rel in held:
+        print("✗ %s is not swept:\n%s" % (rel, _binding_refusal(root, rel)), file=sys.stderr)
+    # THE TOMBSTONE BLOB MUST BE COMMITTED TEXT. It is `git hash-object` of the working file, so a plan edited since HEAD would be hashed into an object no commit holds and then deleted with its edit: F8 reds on that tombstone in every other clone. Such a plan waits for its commit.
+    dirty = [rel for rel in free if _differs_from_head(root, rel)]
+    # The sweep also deletes the live stub (agent/plans/<name>), so a stub carrying local edits holds its plan back for the same reason.
+    stub_dirty = []
+    for rel in free:
+        if rel in dirty:
+            continue
+        stub = "agent/plans/%s" % rel.rsplit("/", 1)[-1]
+        stub_path = root / stub
+        if (
+            stub != rel
+            and stub_path.is_file()
+            and PL.looks_like_stub(PL.read_probe(stub_path))
+            and _differs_from_head(root, stub)
+        ):
+            stub_dirty.append(rel)
+            print(
+                "✗ %s is not swept: its stub %s differs from HEAD (uncommitted edits), and the "
+                "sweep would delete them. Commit it, then sweep again." % (rel, stub),
+                file=sys.stderr,
+            )
+    dirty = dirty + stub_dirty
+    for rel in dirty[: len(dirty) - len(stub_dirty)]:
+        print(
+            "✗ %s is not swept: its text differs from HEAD (uncommitted or untracked), so its "
+            "tombstone blob would name text no commit holds. Commit it, then sweep again." % rel,
+            file=sys.stderr,
+        )
+    free = [rel for rel in free if rel not in dirty]
+    due = [plan for plan in due if plan.rel in free]
+    held_exit = _all_bound_exit(free, write=write)
+    if held_exit is not None:
+        print(
+            "✗ sweep: nothing was deleted; %d plan(s) held by bindings, %d held by uncommitted text"
+            % (len(held), len(dirty)),
+            file=sys.stderr,
+        )
+        return held_exit
     for plan in due:
         print("  %s (%s)" % (plan.rel, PL.classify(plan)))
+        released = _released_boxes((root / plan.rel).read_text(encoding="utf-8", errors="replace"))
+        if released:
+            print(
+                "    open box(es) the binding rule released (re-homed, or dropped by a closed "
+                "ruling); the tombstone blob keeps them:"
+            )
+            for line in released:
+                print("      %s" % line)
     if not write:
         print(
             "Refusing to delete %d file(s) without --write. A sweeper whose default is "
@@ -618,7 +813,7 @@ def sweep(root: pathlib.Path, config: dict, *, write: bool) -> int:
         "  Regenerate the ledgers: npm run check:ci-plan-boxes -- --update && npm run check:ci-plan-record -- --update"
     )
     _print_question(plans, config, today)
-    return 0
+    return 1 if dirty and write else 0
 
 
 def _answer_target(root: pathlib.Path, rel: str, asked: str, verb: str):
@@ -680,7 +875,38 @@ def keep(root: pathlib.Path, rel: str, asked: str) -> int:
     return 0
 
 
-def archive(root: pathlib.Path, rel: str, asked: str, config: dict) -> int:
+def _with_ruling_drops(text: str, rel: str, ruling: str, root: pathlib.Path):
+    """(new_text, error): `text` with `Ruling: #<id>` in the header when missing and `    dropped by ruling #<id>` under each open box, or an error when the id is not a closed item."""
+    paths.on_sys_path(paths.hooks_stop_dir())
+    pf = importlib.import_module("wl_planfile")
+    pr = importlib.import_module("wl_planrec")
+    iid = ruling.lstrip("#").lower()
+    states = pf.store_item_states(root)
+    state = states.get(iid)
+    if state is None:
+        return None, "--ruling #%s is not an item in the worklist store" % iid
+    if state not in pf.RULING_CLOSED:
+        return None, (
+            "--ruling #%s is still [%s]: an open or deferred item is a question, not a decision"
+            % (iid, state)
+        )
+    header = pf.ruling_line(text)
+    if header and iid not in pf.ruling_refs(header)[0]:
+        return None, (
+            "--ruling #%s differs from the plan's own `Ruling: %s`: the dropped-by lines would cite a ruling the header does not name"
+            % (iid, header)
+        )
+    out = text if header else PL._insert_under_status(text, "Ruling: #%s" % iid)
+    ok, why = pf.resolve_ruling(root, rel, out, states)
+    if not ok:
+        return None, "the plan's Ruling: does not resolve (%s)" % why
+    lines = out.splitlines(keepends=True)
+    for index, _raw, _body, _sig in sorted(pr.open_boxes(out), reverse=True):
+        lines.insert(index + 1, "    dropped by ruling #%s\n" % iid)
+    return "".join(lines), ""
+
+
+def archive(root: pathlib.Path, rel: str, asked: str, config: dict, ruling: str = "") -> int:
     """`--archive`: the operator archived a backlog plan, so it becomes `removed` and moves."""
     target = _answer_target(root, rel, asked, "--archive")
     if target is None:
@@ -690,7 +916,13 @@ def archive(root: pathlib.Path, rel: str, asked: str, config: dict) -> int:
         asked,
         plan.status,
     )
-    (root / rel).write_text(PL.with_archived(text, why), encoding="utf-8")
+    body = text
+    if ruling:
+        body, error = _with_ruling_drops(text, rel, ruling, root)
+        if body is None:
+            print("✗ %s; nothing was written" % error, file=sys.stderr)
+            return 2
+    (root / rel).write_text(PL.with_archived(body, why), encoding="utf-8")
     rc = move(root, rel, config)
     if rc != 0 and (root / rel).is_file() and not PL.looks_like_stub(PL.read_probe(root / rel)):
         # The move refused before touching the tree, so the plan goes back to the text it had.
@@ -798,6 +1030,10 @@ def move(root: pathlib.Path, rel: str, config: dict) -> int:
         return 1
     target_dir = PL.folder_for(PL.classify(plan))
     new_rel = "%s/%s" % (target_dir, rel.rsplit("/", 1)[-1])
+    bound = _binding_refusal(root, rel) if new_rel != rel else ""
+    if bound:
+        print("✗ %s\nNothing was moved." % bound, file=sys.stderr)
+        return 1
     if new_rel == rel:
         print("✓ %s is already in %s/" % (rel, target_dir))
         return 0
@@ -1006,7 +1242,9 @@ def main(argv: list[str]) -> int:
             if not target:
                 print("✗ --archive needs a plan path", file=sys.stderr)
                 return 2
-            return archive(root, target, _flag_value(argv, "--asked"), config)
+            return archive(
+                root, target, _flag_value(argv, "--asked"), config, _flag_value(argv, "--ruling")
+            )
         if "--retire-promoted" in argv:
             return retire_promoted(root)
         if "--sweep" in argv:

@@ -12,12 +12,13 @@
 # a README nobody reads when the build breaks:
 #   1. This repo's .npmrc sets ignore-scripts=true, so a plain `npm i -g agent-browser`
 #      installs the package and NEVER links the binary. It needs --allow-scripts.
-#   2. agent-browser declares engines.node >= 24 against our 22. Cosmetic: the bin symlink
-#      points at a prebuilt native binary and the JS shim never runs. npm still warns.
+#   2. agent-browser declares engines.node >= 24. The image ran node 22 until the node 26
+#      bump (1c6086bc), and npm warned; the bin symlink points at a prebuilt native binary,
+#      so the JS shim never ran either way. Node 26 satisfies the constraint.
 #   3. Chrome needs system libs. `agent-browser install --with-deps` wants root for the
 #      libs; running the BROWSER download as root puts it under /root where the runtime
 #      user cannot reach it. So: libs as root, browser as the runtime user, separately.
-FROM node:24-bookworm-slim
+FROM node:26-bookworm-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -38,14 +39,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # changes nothing about what gets installed today and everything about whether the
 # same Dockerfile builds the same image tomorrow.
 #
-# The same version is pinned in .devcontainer/Dockerfile and in the Install agent-browser step of
-# .github/workflows/ci-quality.yml; the three move together.
+# The same version is pinned in .devcontainer/Dockerfile; the Install agent-browser step of
+# .github/workflows/ci-quality.yml reads that pin (`rediacc_ci.ci.agent_browser_pin read`) instead of
+# carrying a third copy, so the two Dockerfiles move together and the workflow follows.
 #
 # NPM_BEFORE is the release-age cutoff (`PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age
 # npm-before`, passed by every build site as a build-arg). A global install resolves live, with
 # no lockfile, so --before holds it to versions at least one window old; an empty value fails
 # the build rather than installing unwindowed.
-ARG AGENT_BROWSER_VERSION=0.41.1
+ARG AGENT_BROWSER_VERSION=0.43.0
 ARG NPM_BEFORE
 RUN : "${NPM_BEFORE:?NPM_BEFORE is empty; build with --build-arg NPM_BEFORE set to the output of: PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age npm-before}" \
     && npm install -g --allow-scripts=agent-browser agent-browser@${AGENT_BROWSER_VERSION} \

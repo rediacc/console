@@ -36,12 +36,15 @@ const INTERACTIVE = 'interactive: needs the local terminal (section 24)';
 const LOCAL_SYNC = 'client rsync between the local filesystem and the machine (section 24)';
 const OPERATOR_CREDENTIAL =
   'several renet calls driven from the operator side with a credential or token the config holds, so there is no single machine job (section 24)';
+const SERVER_STEPS =
+  'runs each step as a separate child command and job, around short SSH steps (PLAN-enterprise-tenants C7)';
 const NO_RENET =
   'makes no renet call, so there is nothing to run as a job (section 24 not-proxyable row)';
 
 /** Machine-plane commands that do not become jobs, each with its section 24 reason. */
 export const JOB_EXCEPTIONS: Readonly<Record<string, string>> = {
   'job cancel': SPOOL,
+  'job dismiss': SPOOL,
   'job gc': SPOOL,
   'job list': SPOOL,
   'job logs': SPOOL,
@@ -75,6 +78,12 @@ export const JOB_EXCEPTIONS: Readonly<Record<string, string>> = {
   'machine scan-keys':
     'local ssh-keyscan; the config write is the command (section 24 not-proxyable row)',
   'datastore list': 'reads config and state only, with no machine call',
+  // The server verbs (PLAN-enterprise-tenants C7) orchestrate: each step is a child command (repo create, repo up, ...) that is its own job, or a short SSH read.
+  'server install': INTERACTIVE,
+  'server status': 'reads the box over SSH and HTTPS, with no renet call',
+  'server backup': 'reads the recovery bundle over SSH, with no renet call',
+  'server upgrade': SERVER_STEPS,
+  'server licence': SERVER_STEPS,
 };
 
 /**
@@ -97,4 +106,91 @@ export const CONVERTED: ReadonlySet<string> = new Set<string>([
   'repo pull',
   'repo push',
   'repo up',
+  // J16 (repo verbs outside J4, half B): one job each; the render, the mirror or the record is a step.
+  'repo canary create',
+  'repo canary remove',
+  'repo canary weight',
+  'repo cat',
+  'repo diff',
+  'repo gpu grant',
+  'repo gpu revoke',
+  'repo permission grant',
+  'repo permission revoke',
+  'repo permission show',
+  'repo list',
+  'repo policy get',
+  'repo policy set',
+  // One first job each, then a tail step that starts the further jobs, because a fork's licence needs the id the fork mints.
+  'repo replicate',
+  'repo replicate refresh',
+  'repo replicate remove',
+  // J16 (outside J4, half C): log and status are one read job each with the print as a step; merge is one job whose success step advances the working fork's tip; admin fsck is one repository_fsck job with its report as a step.
+  'repo admin fsck',
+  'repo log',
+  'repo merge',
+  'repo status',
+  // G3 (PLAN-health-checks-local): one repository_health read job, its verdict print a step.
+  'repo health',
+  // X2, X4 (PLAN-health-checks-local): chains of attached probe calls, so --background never detaches a call whose answer the next one reads.
+  'machine repair',
+  'repo repair',
+  // J16 (repo verbs outside J4, half A): one job each; delete and promote settle the config in a step, prune, trim and autostart list render in one. gc runs one job per deletion (no compound renet function yet).
+  'repo admin autostart disable',
+  'repo admin autostart enable',
+  'repo admin autostart list',
+  'repo admin ownership',
+  'repo admin template apply',
+  'repo admin validate',
+  'repo delete',
+  'repo exec',
+  'repo expand',
+  'repo gc',
+  'repo logs',
+  'repo promote',
+  'repo prune',
+  'repo resize',
+  'repo trim',
+  // J17: backup run is one backup-unit job; its ad-hoc form stages a oneshot unit first.
+  'backup run',
+  // J17: list is one backup_list read job with its table as a step; cancel is one backup-cancel job naming every unit; schedule is one backup-schedule job carrying the unit bodies as its stdin payload, with retention seeding and the DR nudge as steps.
+  'backup cancel',
+  'backup list',
+  'backup schedule',
+  // J17: browse is one backup_browse(_at) job with its listing print as a step; status is one backup-status job with its table as a step.
+  'backup browse',
+  'backup status',
+  // J18: one job each; the report, the converge pass and the failure tails are steps. status and health read one list-all job and render in a step; config reconcile runs one list-all job per machine and reconciles in the group's last step; provision runs one setup job after the tofu leg, with the infra record and push as steps.
+  'config reconcile',
+  'machine converge',
+  'machine gpu list',
+  'machine health',
+  'machine infra push',
+  'machine provision',
+  'machine prune',
+  'machine restart-services',
+  'machine setup',
+  'machine status',
+  // J20: subscription status -m is one license-status job and subscription refresh -m one license-scan job; the activation section, the license table and the account call with the license writes are their steps.
+  'subscription refresh',
+  'subscription status',
+  // J19: datastore verbs are one job each (attach relocation, fork --attach-to and delete on an attached datastore chain
+  // their later phases as steps); each cluster verb is one job per phase, one ticket per phase; a phase that touches every member (the ceph prerequisites of cluster create) starts one job per member under one ticket group (job-group.ts).
+  'cluster create',
+  'cluster evict',
+  'cluster fork',
+  'cluster join',
+  'cluster migrate',
+  'cluster rehearse',
+  'cluster scale',
+  'cluster snapshot create',
+  'cluster snapshot list',
+  'datastore attach',
+  'datastore create',
+  'datastore delete',
+  'datastore detach',
+  'datastore fork',
+  'datastore resize',
+  'datastore snapshot create',
+  'datastore snapshot list',
+  'datastore status',
 ]);

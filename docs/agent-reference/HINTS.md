@@ -13,12 +13,18 @@ Boundary with `docs/agent-reference/TRAPS.md`: TRAPS.md is what a session did no
     Hint-Id: <stable-kebab-case>
     Source: <pointer>[, <pointer>...]
     Status: active | retired
+    Proposal: <proposal-id>[, <proposal-id>...]   (optional)
+    Enforced-By: <kind>:<token>[, ...] | JUDGMENT-ONLY   (optional)
 
     <optional body paragraph: the incident or rule that paid for this hint, for
     the human reader only. The hook never displays a body.>
 
 The `## ` heading is the displayed text, so it must stand alone as a complete reminder. `Source:` pointers use the grammar `wl_planrec.resolve` already implements: `file:<path>[:<line>]`, `trap:<Trap-Id>`, `gate:<npm id>`, `plan:<slug>`. Only `Status: active` entries are eligible for display; a retired entry stays in the file with its history intact rather than being deleted. A
 `Hint-Id` is never renumbered and never reused after retirement.
+
+`Proposal:` names the hint proposals (agent/ledgers/hint-proposals.jsonl, ids printed by `worklist.py --hint-propose`) an entry promotes, and is the only thing that takes a proposal out of the pending count by promotion: text is never matched, so a reworded promotion without the line stays pending. A proposal that a guard, gate, test, trapguard rule, trap or commit carries instead leaves the count through `worklist.py --hint-resolve <me> <id> <kind>:<token>`, for as long as that pointer resolves. The read-only `lesson-curator` agent (.claude/agents/lesson-curator.md) drafts both.
+
+`Enforced-By:` names what enforces the hint mechanically, in the pointer grammar of TRAPS.md (`guard:`, `gate:`, `hook:`, `file:`, `shape:`), judged by `trap_registry.pointer_problem` and enforced by `check:ci-hint-corpus`, or says `JUDGMENT-ONLY` on purpose. An entry whose pointer resolves to an enforcer that has a test leaves the rotation at once, and the flip to `Status: retired` follows as a reviewed edit; an untested or dead enforcer keeps it in rotation. `worklist.py --lessons-sweep <me>` classifies every lesson in this file, TRAPS.md, the proposals and the memory notes.
 
 ## An order given in conversation is not tracked until it is in the store; worklist.py --add is what survives a restart and a compaction
 Hint-Id: record-the-order

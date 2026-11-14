@@ -7,6 +7,7 @@
     "build": "astro build",
     "typecheck": "astro sync && tsc --noEmit",
     "check:cta-bolt": "node scripts/check-cta-bolt-uniqueness.js",
+    "probe:region-picker": "tsx scripts/probe-region-picker.ts",
     "dev": "astro dev --ignore-lock",
     "generate:cli-docs": "npm run export:command-tree -w @rediacc/cli && node scripts/generate-cli-docs.js",
     "i18n:generate-client": "tsx scripts/generate-client-i18n.ts",

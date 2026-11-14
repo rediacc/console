@@ -21,20 +21,25 @@ type DatastoreStateRecord = NonNullable<
 
 export const MACHINE_CONVERSION_STEPS: StepDefinition[] = [
   // J18: machine verbs.
-  {
-    // `machine setup`: re-deploy repo keys, re-apply access keys, push infra (each non-fatal, as today).
-    name: 'postSetupMachineTasks',
-    on: 'success',
-    params: ['machine', 'debug'],
-    load: async () => {
-      const { postSetupMachineTasks } = await import('../../commands/machine/register.js');
-      return (ctx) =>
-        postSetupMachineTasks(
-          optStr(ctx.params, 'machine') ?? ctx.machine,
-          ctx.params.debug === true
-        );
-    },
-  },
+  // `machine setup`: the success tail (repo keys, access keys, infra push), the converge pass as the recorded successor, and the failure tail (the router refresh the upload owed).
+  privateStep(
+    'postSetupMachineTasks',
+    'success',
+    ['machine', 'debug'],
+    () => import('../../commands/machine/register.js')
+  ),
+  privateStep(
+    'convergeAfterSetup',
+    'success',
+    ['machine', 'converge', 'debug', 'datastore', 'routerRefreshDue'],
+    () => import('../../commands/machine/register.js')
+  ),
+  privateStep(
+    'settleSetupFailed',
+    'failure',
+    ['machine', 'datastore', 'routerRefreshDue'],
+    () => import('../../commands/machine/register.js')
+  ),
   {
     // `machine provision`: record the infra source once the setup job has run.
     name: 'setMachineInfra',
@@ -49,6 +54,25 @@ export const MACHINE_CONVERSION_STEPS: StepDefinition[] = [
         );
     },
   },
+  // J19: one command's jobs on several machines under one group; the gates settle the group's own steps once.
+  privateStep(
+    'groupMemberSucceeded',
+    'success',
+    ['group', 'expected', 'onSuccess', 'onFailure'],
+    () => import('./job-group.js')
+  ),
+  privateStep(
+    'groupMemberFailed',
+    'failure',
+    ['group', 'expected', 'onSuccess', 'onFailure'],
+    () => import('./job-group.js')
+  ),
+  privateStep(
+    'pushProvisionedInfra',
+    'success',
+    ['machine', 'debug'],
+    () => import('../provision/infra-provision.js')
+  ),
   {
     name: 'purgeExpiredArchives',
     on: 'success',
@@ -60,24 +84,39 @@ export const MACHINE_CONVERSION_STEPS: StepDefinition[] = [
       };
     },
   },
+  // `config reconcile`: each machine's job stores its listing in the group's scratch records; the group's last ticket
+  // carries the one step that reads them all and reconciles (success, or failure when the last machine's job failed).
   privateStep(
-    'reconcileConfigState',
+    'recordMachineListing',
     'success',
-    ['acceptObserved'],
+    ['group'],
     () => import('../../commands/config.js'),
     true
   ),
   privateStep(
+    'reconcileConfigState',
+    'success',
+    ['group', 'acceptObserved', 'dryRun', 'machines'],
+    () => import('../../commands/config.js'),
+    true
+  ),
+  privateStep(
+    'reconcileConfigStateFailed',
+    'failure',
+    ['group', 'acceptObserved', 'dryRun', 'machines'],
+    () => import('../../commands/config.js')
+  ),
+  privateStep(
     'settleConverge',
     'success',
-    [],
+    ['json'],
     () => import('../../commands/machine/converge.js'),
     true
   ),
   privateStep(
     'settleConvergeFailed',
     'failure',
-    [],
+    ['json'],
     () => import('../../commands/machine/converge.js'),
     true
   ),
@@ -93,32 +132,36 @@ export const MACHINE_CONVERSION_STEPS: StepDefinition[] = [
     'ensureMachineDns',
     'success',
     ['machine'],
-    () => import('../provision/infra-provision.js')
-  ),
-  privateStep(
-    'cleanupSshArtifacts',
-    'success',
-    ['machine'],
-    () => import('../../commands/machine/prune.js')
+    () => import('../provision/infra-provision.js'),
+    true
   ),
   privateStep(
     'renderPruneOutcome',
     'success',
-    ['dryRun'],
+    ['dryRun', 'orphaned'],
     () => import('../../commands/machine/prune.js'),
     true
   ),
   privateStep(
     'renderRestartServices',
     'success',
-    [],
+    ['json'],
     () => import('../../commands/machine/restart-services.js'),
     true
   ),
   privateStep(
     'renderMachineStatus',
     'success',
-    [],
+    [
+      'machine',
+      'sections',
+      'healthCheck',
+      'stabilityCheck',
+      'search',
+      'strict',
+      'storageHealth',
+      'syncCerts',
+    ],
     () => import('../../commands/machine/status.js'),
     true
   ),
@@ -135,6 +178,22 @@ export const MACHINE_CONVERSION_STEPS: StepDefinition[] = [
           str(ctx.params, 'datastore'),
           jsonParam<DatastoreRecord>(ctx.params, 'record')
         );
+    },
+  },
+  {
+    // Resize changes one field, and a job can outlive the plan, so the merge reads the record as it is now.
+    name: 'setDatastoreSize',
+    on: 'success',
+    params: ['datastore', 'size'],
+    load: async () => {
+      const { getDatastore, recordDatastore } = await import('../config/config-datastores.js');
+      return async (ctx) => {
+        const name = str(ctx.params, 'datastore');
+        await recordDatastore(name, {
+          ...(await getDatastore(name)),
+          size: str(ctx.params, 'size'),
+        });
+      };
     },
   },
   {
@@ -213,6 +272,33 @@ export const MACHINE_CONVERSION_STEPS: StepDefinition[] = [
       };
     },
   },
+  // Client-driven later phases of the datastore verbs (commands/datastore.ts): each makes machine calls that consume the job's output or follow it.
+  privateStep(
+    'relocateDatastore',
+    'success',
+    ['datastore', 'to', 'detach', 'writes', 'cowSize', 'force', 'noAuto', 'lastHolder', 'debug'],
+    () => import('../../commands/datastore.js'),
+    true
+  ),
+  privateStep(
+    'attachForkedDatastore',
+    'success',
+    ['datastore', 'to', 'writes', 'cowSize', 'debug'],
+    () => import('../../commands/datastore.js')
+  ),
+  privateStep(
+    'deleteDatastoreTail',
+    'success',
+    ['datastore', 'debug'],
+    () => import('../../commands/datastore.js')
+  ),
+  // The second phase of `cluster evict` (services/cluster/cluster-membership.ts).
+  privateStep(
+    'evictClusterTail',
+    'success',
+    ['member', 'cluster', 'startedAt', 'debug'],
+    () => import('../cluster/cluster-membership.js')
+  ),
   {
     // `cluster create` (KVM ids) and `cluster scale` (pool counts).
     name: 'updateClusterRecord',
@@ -295,16 +381,15 @@ export const MACHINE_CONVERSION_STEPS: StepDefinition[] = [
   privateStep(
     'reportClusterSnapshot',
     'success',
-    ['cluster', 'snapshot'],
-    () => import('../cluster/cluster-snapshot.js'),
-    true
+    ['cluster', 'snapshot', 'inInstant', 'outsideInstant'],
+    () => import('../cluster/cluster-snapshot.js')
   ),
 
   // J20: subscription verbs.
   privateStep(
     'renderSubscriptionRefresh',
     'success',
-    ['machine', 'repo'],
+    ['machine', 'repo', 'adoptOrigin'],
     () => import('../../commands/subscription-actions.js'),
     true
   ),

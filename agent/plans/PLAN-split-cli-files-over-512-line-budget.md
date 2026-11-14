@@ -27,8 +27,12 @@ Split each file by responsibility into sibling modules: no behaviour change, no 
 - [x] V1 The gate is green and the CLI suite passes. Accept: `npm run check:ci-max-lines` rc 0; `cd packages/cli && npx vitest run src` rc 0; `npx tsc --noEmit -p packages/cli/tsconfig.json` rc 0
     (ticked) 2026-10-31T00:54:00Z by d778be9d: commit:dec67cf6 scripts/gates/check-max-lines.ts:1; split in dec67cf6; npm run check:ci-max-lines rc 0, cd packages/cli && npx vitest run src 4479 passed, tsc rc 0
 
-- [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
+- [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench cli-bench
+    (ticked) 2026-11-10T14:06:35Z by d778be9d: live-proof lp-b342b187285c bench cli-bench rc=0 v=cli:f47a394037e51464b49970f977e3626925fc67b5
 
-- [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
+- [x] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
+    (reopened 2026-11-04) Unmet: the plan's LP-bench box is still open, and this CLI-only refactor never ran on hostinger, so the box's condition holds only vacuously. Receipt lp-effbd6da42f6 stays in the ledger.
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-11T06:40:52Z by d778be9d: live-proof lp-42e940315a84 hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13
+    (ticked) 2026-11-04T10:27:32Z by d778be9d: live-proof lp-effbd6da42f6 hostinger renet-live rc=0 v=renet@sha256:d627bf298b4ba89baa921ca3e04c3a94173d3e2211a7070d5ddd34a60d6440f2

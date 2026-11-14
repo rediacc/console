@@ -35,15 +35,35 @@ THE RULES, EACH WITH A PLANTED CONTROL IN `--selftest`:
         ledger line is LP5 too.
     LP6 a required plan reached a finished Status or `_done/` on this branch, after
         `baseline_at`, without a valid receipt per declared target, unless its
-        `Ruling:` line resolves and names the live-proof waiver.
+        `Ruling:` line resolves and names the live-proof waiver. An LP box already
+        ticked at the base, and ticked through the whole branch, was judged by LP4/LP5
+        on the branch that ticked it, so LP6 does not judge its receipt again.
+        THE DOOR for a finished plan that still owes a receipt is in place, and the
+        plan never moves: move its LP box back into the `_done/` plan byte-identical
+        (same signature, open), then `worklist.py --live-proof <me> <rel> <sig> --write
+        --tick` in the same commit. The recorder admits a `_done/` plan only for a
+        target `--owed` names, and LP4/LP5 judge the restored tick like any other.
     LP7 vacuity: the surface map or the live registry is empty or unparsable,
         `baseline_at` is unset or not a date, a surface admits a target that no
         registry check covers, an Accept line names a check the registry lacks, or
         zero required plans are derived while live plans' Owns plainly name surface
         paths, or LP4 to LP6 cannot run (no merge-base, or plan-boxes.json
-        unreadable at HEAD or at the base). ZERO parsed plans is CANNOT RUN (exit 77), never green.
+        unreadable at HEAD or at the base), or `tiers.live.github_waits` is empty
+        (LP8 would judge nothing). ZERO parsed plans is CANNOT RUN (exit 77), never green.
+    LP8 an open box of a live plan names a `tiers.live.github_waits` phrase (it waits
+        on GitHub: "released", "after the merge", "CD", "nightly", ...) and carries
+        neither `GitHub-only: <CD|CI parity|native-runner|soak|preview> -- <why, 20+
+        chars>` nor `Local-route: <runner>[, ...] -- <how, 20+ chars>` (runners from
+        `tiers.live.local_runners`), on its line or in an indented `(corrected ...)`
+        line under it; a malformed tag or route is LP8 too. A ticked box is not
+        judged. The rule is `wl_plandeps.github_wait_findings`, which the pre-edit
+        guard shares (agent/plans/PLAN-local-first-delivery.md Design L, operator
+        ruling R2: "The planner should really find no way to test/deploy locally to
+        go with github.").
 
-ADVISORY, printed every run, red or green: every `Live-Proof: none` on a required plan, and the PENDING (V7) set.
+ADVISORY, printed every run, red or green: every `Live-Proof: none` on a required plan, the PENDING (V7) set, and every WAIVED VM LADDER still owed a confirmation.
+
+WAIVED VM LADDERS (operator ruling 2026-11-10, `live_proof record --vm-waived ASKED:<minute>Z`). A ledger row whose `ladder` carries `waived` was recorded with no VM receipt admitting its head tree. It is CONFIRMED when a VERIFIED `vm:check` receipt that ran every VM phase the row's surfaces need (`live_tier.ladder_phases`) has the row's `ladder.head_tree` as its tree, or a head that descends from the row's head (through the rebase successor map); until then it prints `OWED-VM <row id> <plan> <target>` with the receipt count it searched. ADVISORY, not a finding, for two reasons: the VM receipts live in the gitignored `.ci/cache/vm-check/`, so CI's fresh clone reads zero of them and a finding there could never clear, while the same tree would read green on the one machine that ran vm:check; and the ruling keeps a box ticked on a waived receipt tickable, so the owed confirmation is what stays visible, every run, never folded into green. The summary line counts waived, confirmed and owed rows and the receipts read, so "0 receipt(s) read" says the confirmation was not judgeable here rather than that nothing is owed. LP5 still judges a waived row's shape (`validate_row`: the minute form, `head_tree` equal to the row's tree, no run id beside the waiver, a VM phase to waive).
 
 FORWARD-ONLY. LP4 to LP6 judge only transitions committed strictly after `baseline_at` (`.ci/config/proof-tiers.json` `tiers.live.baseline_at`), the device P-A2 uses: on the landing commit they are silent by construction. No allowlist and no suppression: the waiver is a named operator ruling, never a config entry.
 
@@ -57,6 +77,11 @@ Exit codes: 0 green, 1 findings, 2 a control failed or bad usage, 77 cannot run.
     --proof-map <path>    read baseline_at and the registry for LP7 from another map
                           (what-if; the surfaces themselves are the committed map's)
     --baseline-at <date>  override baseline_at (what-if)
+    --lp8-enforce         judge LP8 as findings for this run (default: LP8_ENFORCED)
+    --owed <rel>          the LP6 half alone for one plan: print `owed <rel> <target>` per
+                          declared target with no valid receipt. Exit 0 with lines, 1 when
+                          nothing is owed, 77 when LP6 cannot run (no merge-base, or
+                          plan-boxes.json unreadable). The recorder's `_done/` door reads it.
 
 ---- gate ----
 step: Plan live proof
@@ -98,6 +123,7 @@ try:
     import wl_planfile as PF
     from rediacc_ci.proof import live_tier as LT
     from rediacc_ci.proof import surfaces as S
+    from rediacc_ci.proof import vm_tier as VT
     from rediacc_ci.review import successor as SUCC
 except ImportError as _exc:  # pragma: no cover -- a tree without the hook or proof modules
     print(
@@ -114,12 +140,14 @@ REPO_ROOT = paths.repo_root()
 BOXES_REL = ".ci/config/plan-boxes.json"
 MAP_REL = ".ci/config/proof-tiers.json"
 CANNOT_RUN = 77
-CONTROL_FLOOR = 80
+CONTROL_FLOOR = 104
 LP_BOX_RE = re.compile(r"^LP-([A-Za-z0-9_-]+)\b(.*)$")
 LIVE_MARK = "[live]"
 # A Ruling line that waives the live proof names it in so many words.
 WAIVER_WORD_RE = re.compile(r"live[- ]proof", re.IGNORECASE)
 FINISHED_FOLDERS = ("agent/plans/_done",)
+# See the module docstring: box L4 of PLAN-local-first-delivery has landed, so LP8 is enforced; False would restore the advisory print path.
+LP8_ENFORCED = True
 
 
 class CannotRunError(RuntimeError):
@@ -186,6 +214,9 @@ class MapView:
     checks: dict[str, LT.Check]
     registry_error: str
     baseline_at: object
+    # LP8's inputs: `tiers.live.github_waits` and the ids of `tiers.live.local_runners`.
+    github_waits: tuple[str, ...] = ()
+    local_runners: tuple[str, ...] = ()
 
 
 def map_view(raw: object) -> MapView:
@@ -205,9 +236,17 @@ def map_view(raw: object) -> MapView:
         checks = LT.parse_checks(live)
     except LT.RegistryError as exc:
         error = str(exc)
+    waits: tuple[str, ...] = ()
+    runners: tuple[str, ...] = ()
     if isinstance(live, dict):
         baseline = live.get("baseline_at")
-    return MapView(live_of, checks, error, baseline)
+        raw_waits = live.get("github_waits")
+        if isinstance(raw_waits, list):
+            waits = tuple(w for w in raw_waits if isinstance(w, str) and w.strip())
+        raw_runners = live.get("local_runners")
+        if isinstance(raw_runners, dict):
+            runners = tuple(raw_runners)
+    return MapView(live_of, checks, error, baseline, waits, runners)
 
 
 def parse_baseline(value: object) -> dt.date | None:
@@ -234,6 +273,15 @@ def map_findings(view: MapView) -> list[Finding]:
                 MAP_REL,
                 "tiers.live.baseline_at is %r, not a YYYY-MM-DD date, so LP4 to LP6 have no "
                 "forward-only cut. Set it to the landing date." % (view.baseline_at,),
+            )
+        )
+    if not view.github_waits:
+        out.append(
+            Finding(
+                "LP7",
+                MAP_REL,
+                "tiers.live.github_waits is empty or missing, so LP8 judges no box; it is the "
+                "phrase list of a box that waits on GitHub (PLAN-local-first-delivery Design L)",
             )
         )
     out.extend(
@@ -449,6 +497,7 @@ class Oracles:
     done_commit_of: Callable[[str, str], str]
     date_of: Callable[[str], str]
     judge_row: Callable[[dict[str, Any], str], list[str]]
+    ticked_at_base: Callable[[str, str], bool] = lambda _r, _s: False
 
 
 def matching_rows(
@@ -562,14 +611,37 @@ def ruling_waives(plan: Plan, resolve: Callable[[Plan], tuple[bool, str]]) -> bo
 def _has_receipt(
     plan: Plan, target: str, rows: list[dict[str, Any]], commit: str, oracles: Oracles
 ) -> bool:
+    """Whether a row proves `target`, judged at the commit that ticked its box: staleness is read only there, so surface code landing between the tick and the close-out does not unprove it. A box still open (a `Ruling:` finish) has no tick, and its row is judged at the finishing `commit`. A box ticked at the base, and still ticked through the whole branch, was judged by LP4/LP5 on the branch that ticked it, so LP6 does not judge it again."""
     for t, box in lp_boxes(plan):
         accept = LT.accept_of(plan.text, box.line) if t == target else None
         if accept is None:
             continue
+        if oracles.ticked_at_base(plan.rel, box.sig):
+            return True
+        at = oracles.done_commit_of(plan.rel, box.sig) or commit
         for row in matching_rows(rows, plan.rel, box.sig, t, accept):
-            if not oracles.judge_row(row, commit):
+            if not oracles.judge_row(row, at):
                 return True
     return False
+
+
+def owed_targets(
+    plan: Plan,
+    rows: list[dict[str, Any]],
+    commit: str,
+    oracles: Oracles,
+    resolvers: tuple[Callable[[Plan], tuple[bool, str]], Callable[[Plan], tuple[bool, str]]],
+    baseline: object,
+) -> list[str]:
+    """The declared targets of one plan this branch finished in `commit` that have no valid receipt: LP6's per-plan judgement, which `finish_findings` words and `--owed` prints. [] when the finish is not after `baseline`, a `Ruling:` names the live-proof waiver, or the plan declares no target (a missing line and a `none` are judged by `finish_findings` itself, since neither owes a receipt for a target)."""
+    if not PI.after_baseline(baseline, oracles.date_of(commit) if commit else ""):
+        return []
+    if ruling_waives(plan, resolvers[0]):
+        return []
+    proof = plan.header.live_proof
+    if proof is None or proof.none:
+        return []
+    return [t for t in proof.targets if not _has_receipt(plan, t, rows, commit, oracles)]
 
 
 def finish_findings(
@@ -621,11 +693,12 @@ def finish_findings(
             Finding(
                 "LP6",
                 rel,
-                "finished in %s without a valid receipt for its declared target %s"
-                % (commit[:12], target),
+                "finished in %s without a valid receipt for its declared target %s; move its "
+                "LP box back into this plan byte-identical, then worklist.py --live-proof <me> "
+                "%s <sig> --write --tick in the same commit, or close under a Ruling: naming "
+                "the live-proof waiver" % (commit[:12], target, rel),
             )
-            for target in proof.targets
-            if not _has_receipt(plan, target, rows, commit, oracles)
+            for target in owed_targets(plan, rows, commit, oracles, resolvers, baseline)
         )
     return out
 
@@ -798,6 +871,131 @@ def read_rows(root: pathlib.Path) -> tuple[list[dict[str, Any]], list[Finding]]:
     return rows, bad
 
 
+# ----------------------------------------------------------------------------- waived VM ladders
+
+OWED_VM = "OWED-VM"
+CONFIRMED_VM = "CONFIRMED-VM"
+
+
+def waiver_of(row: dict[str, Any]) -> str | None:
+    """The `ASKED:` token a row's ladder was waived on, or None for a VM-admitted or unphased row."""
+    ladder = row.get("ladder")
+    waived = ladder.get("waived") if isinstance(ladder, dict) else None
+    return waived if isinstance(waived, str) and waived else None
+
+
+def vm_receipts(root: pathlib.Path) -> list[dict[str, Any]]:
+    """Every VERIFIED, schema-valid `vm:check` receipt under `.ci/cache/vm-check/` (`vm_tier.receipt_files`: `receipt.json` and the `<tree>.json` archives), each once."""
+    out: list[dict[str, Any]] = []
+    for path in VT.receipt_files(root):
+        try:
+            parsed = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if (
+            isinstance(parsed, dict)
+            and not VT.validate(parsed)
+            and parsed.get("status") == VT.VERIFIED
+            and parsed not in out
+        ):
+            out.append(parsed)
+    return out
+
+
+def _ran(receipt: dict[str, Any]) -> frozenset[str]:
+    phases = receipt.get("phases") or {}
+    return frozenset(
+        s for s in VT.SIDES if isinstance(phases.get(s), dict) and phases[s].get("ran")
+    )
+
+
+def row_phases(row: dict[str, Any], checks: dict[str, Any]) -> frozenset[str]:
+    """The VM phases a row's ladder stands for: `live_tier.ladder_phases` of its known surfaces and its check."""
+    names = row.get("surfaces")
+    known = (
+        [n for n in names if isinstance(n, str) and n in S.MAP.surfaces]
+        if isinstance(names, list)
+        else []
+    )
+    return LT.ladder_phases(known, checks.get(str((row.get("check") or {}).get("id"))))
+
+
+def confirming_receipt(
+    row: dict[str, Any],
+    receipts: Iterable[dict[str, Any]],
+    phases: frozenset[str],
+    descends: Callable[[str, str], bool],
+) -> dict[str, Any] | None:
+    """The first VERIFIED receipt that ran every phase in `phases` and covers the row: its tree is the row's `ladder.head_tree`, or its head descends from the row's head. None when no receipt confirms the waiver."""
+    tree = (row.get("ladder") or {}).get("head_tree")
+    head = str(row.get("head") or "")
+    for receipt in receipts:
+        if receipt.get("status") != VT.VERIFIED or not phases <= _ran(receipt):
+            continue
+        if (tree and receipt.get("tree") == tree) or descends(head, str(receipt.get("head") or "")):
+            return receipt
+    return None
+
+
+def waiver_notes(
+    rows: Iterable[dict[str, Any]],
+    receipts: list[dict[str, Any]],
+    checks: dict[str, Any],
+    descends: Callable[[str, str], bool],
+) -> tuple[list[str], dict[str, int]]:
+    """(advisory lines, counts) for every waived row: CONFIRMED-VM naming the receipt, or OWED-VM naming what would confirm it."""
+    notes: list[str] = []
+    counts = {"waived": 0, "confirmed": 0, "owed_vm": 0, "vm_receipts": len(receipts)}
+    for row in rows:
+        waived = waiver_of(row)
+        if waived is None:
+            continue
+        counts["waived"] += 1
+        name = "%s %s %s" % (row.get("id"), row.get("plan"), row.get("target"))
+        tree = str((row.get("ladder") or {}).get("head_tree") or row.get("tree") or "")
+        phases = row_phases(row, checks)
+        hit = confirming_receipt(row, receipts, phases, descends)
+        if hit is not None:
+            counts["confirmed"] += 1
+            notes.append(
+                "%s %s: waived %s, confirmed by VERIFIED vm:check %s (tree %s)"
+                % (CONFIRMED_VM, name, waived, hit.get("runId"), str(hit.get("tree"))[:12])
+            )
+            continue
+        counts["owed_vm"] += 1
+        notes.append(
+            "%s %s: recorded with the VM ladder waived (%s) at tree %s; no VERIFIED vm:check "
+            "receipt that ran the %s phase(s) for that tree or a descendant of head %s among the "
+            "%d on this machine (.ci/cache/vm-check/, gitignored). Run `npm run vm:check` from "
+            "that head or a later one"
+            % (
+                OWED_VM,
+                name,
+                waived,
+                tree[:12],
+                ", ".join(sorted(phases)) or "no",
+                str(row.get("head") or "")[:12],
+                len(receipts),
+            )
+        )
+    return notes, counts
+
+
+def descends_in(
+    root: pathlib.Path, successor_of: Callable[[str], str | None] | None
+) -> Callable[[str, str], bool]:
+    """`descends(old, new)`: `new` is `old` or a descendant of it in the checkout at `root`; an `old` a rebase rewrote is re-resolved through `successor_of` first."""
+
+    def descends(old: str, new: str) -> bool:
+        if not old or not new:
+            return False
+        if _git(root, "cat-file", "-e", old) is None and successor_of is not None:
+            old = successor_of(old) or old
+        return _git(root, "merge-base", "--is-ancestor", old, new) is not None
+
+    return descends
+
+
 # ----------------------------------------------------------------------------- the run
 
 
@@ -823,17 +1021,35 @@ class Context:
         return PF.resolve_ruling(str(self.root), plan.rel, plan.text, self.item_states())
 
 
-def _transition_oracles(ctx: Context, base: str, history: Callable[[], list]) -> Oracles:
+def _attests(ident: str, sig: str) -> Callable[[dict[str, Any]], bool]:
+    """Whether a plan-boxes document records `sig` done for the plan `ident`, by identity, the way matching_rows and finished_on_branch read a plan: keyed on the path, a plan ticked and then moved to `_done/` on one branch named the move as its tick."""
+
+    def attests(doc: dict[str, Any]) -> bool:
+        return any(
+            identity(r) == ident and isinstance(v, dict) and sig in (v.get("done_sigs") or [])
+            for r, v in (doc.get("plans") or {}).items()
+        )
+
+    return attests
+
+
+def _transition_oracles(
+    ctx: Context, base: str, history: Callable[[], list], base_plans: dict[str, Any]
+) -> Oracles:
     root = ctx.root
     checks = ctx.view.checks or LT.registry()
     successor_of = SUCC.lazy_successor_of(str(root), base, importlib.import_module("wl_planrec"))
 
     def done_commit_of(rel: str, sig: str) -> str:
-        def attests(doc: dict[str, Any]) -> bool:
-            row = (doc.get("plans") or {}).get(rel) or {}
-            return sig in (row.get("done_sigs") or [])
+        return first_of_latest_run(history(), _attests(identity(rel), sig))
 
-        return first_of_latest_run(history(), attests)
+    def ticked_at_base(rel: str, sig: str) -> bool:
+        # Ticked at the base and never reopened on the branch: the tick, and its receipt, belong to the branch that made it. A box reopened and ticked again here is judged.
+        attests = _attests(identity(rel), sig)
+        if not attests({"plans": base_plans}):
+            return False
+        h = history()
+        return not h or first_of_latest_run(h, attests) == h[0][0]
 
     def date_of(commit: str) -> str:
         # The author date, which a rebase keeps: the committer date would move every tick on a rebased branch past baseline_at.
@@ -861,7 +1077,7 @@ def _transition_oracles(ctx: Context, base: str, history: Callable[[], list]) ->
             inputs_at=inputs_at,
         )
 
-    return Oracles(done_commit_of, date_of, judge)
+    return Oracles(done_commit_of, date_of, judge, ticked_at_base)
 
 
 def _skip_finding(why: str) -> Finding:
@@ -873,36 +1089,17 @@ def _skip_finding(why: str) -> Finding:
     )
 
 
-def transitions(ctx: Context, base_override: str | None) -> tuple[list[Finding], str]:
-    """LP4 to LP6 and the summary line that says what they judged (or why they did not run)."""
-    root = ctx.root
-    base = base_of(root, base_override)
-    head_plans = boxes_at(root, None)
-    base_plans = boxes_at(root, base) if base else None
-    # A skip is a finding, never a green: with no base LP4 to LP6 judge nothing, and every tick on the branch would pass unchecked.
-    if not base:
-        why = "no merge-base to judge transitions against"
-        return [_skip_finding(why)], "SKIPPED: " + why
-    if head_plans is None or base_plans is None:
-        where = "HEAD" if head_plans is None else base[:12]
-        why = "%s is unreadable at %s" % (BOXES_REL, where)
-        return [_skip_finding(why)], "SKIPPED: " + why
-    memo: dict[str, list] = {}
+def is_finished(row: dict[str, Any], rel: str) -> bool:
+    """A plan-boxes row is finished by its Status or by sitting in a finished folder."""
+    return row.get("status") in PF.FINISHED_STATES or rel.rsplit("/", 1)[0] in FINISHED_FOLDERS
 
-    def history() -> list[tuple[str, dict[str, Any]]]:
-        if "h" not in memo:
-            memo["h"] = branch_history(root, base)
-        return memo["h"]
 
-    oracles = _transition_oracles(ctx, base, history)
-    tally: dict[str, int] = {}
-    judged = PI.moved_to_done(base_plans, head_plans)
-    found = tick_findings(judged, ctx.plans, ctx.rows, ctx.view.baseline_at, oracles, tally)
-    states = PF.FINISHED_STATES
-
-    def is_finished(row: dict[str, Any], rel: str) -> bool:
-        return row.get("status") in states or rel.rsplit("/", 1)[0] in FINISHED_FOLDERS
-
+def finished_pairs(
+    base_plans: dict[str, Any],
+    head_plans: dict[str, Any],
+    history: Callable[[], list[tuple[str, dict[str, Any]]]],
+) -> list[tuple[str, str]]:
+    """[(head rel, finishing commit)] for every plan this branch finished: the commit is the first of the latest unbroken run of branch commits in which the plan's identity reads finished ("" when the finish is uncommitted)."""
     pairs = []
     for rel in finished_on_branch(base_plans, head_plans, is_finished):
         ident = identity(rel)
@@ -917,6 +1114,56 @@ def transitions(ctx: Context, base_override: str | None) -> tuple[list[Finding],
             )
 
         pairs.append((rel, first_of_latest_run(history(), done)))
+    return pairs
+
+
+@dataclasses.dataclass
+class Branch:
+    """What LP4 to LP6 read from git: the merge-base, plan-boxes.json at it and at HEAD, and the memoised branch history."""
+
+    base: str
+    base_plans: dict[str, Any]
+    head_plans: dict[str, Any]
+    history: Callable[[], list[tuple[str, dict[str, Any]]]]
+
+
+def branch_of(root: pathlib.Path, base_override: str | None) -> Branch | str:
+    """The Branch, or the reason LP4 to LP6 cannot run (no merge-base, or plan-boxes.json unreadable)."""
+    base = base_of(root, base_override)
+    if not base:
+        return "no merge-base to judge transitions against"
+    head_plans = boxes_at(root, None)
+    base_plans = boxes_at(root, base)
+    if head_plans is None or base_plans is None:
+        where = "HEAD" if head_plans is None else base[:12]
+        return "%s is unreadable at %s" % (BOXES_REL, where)
+    memo: dict[str, list] = {}
+
+    def history() -> list[tuple[str, dict[str, Any]]]:
+        if "h" not in memo:
+            memo["h"] = branch_history(root, base)
+        return memo["h"]
+
+    return Branch(base, base_plans, head_plans, history)
+
+
+def transitions(ctx: Context, base_override: str | None) -> tuple[list[Finding], str]:
+    """LP4 to LP6 and the summary line that says what they judged (or why they did not run)."""
+    branch = branch_of(ctx.root, base_override)
+    # A skip is a finding, never a green: with no base LP4 to LP6 judge nothing, and every tick on the branch would pass unchecked.
+    if isinstance(branch, str):
+        return [_skip_finding(branch)], "SKIPPED: " + branch
+    base, base_plans, head_plans, history = (
+        branch.base,
+        branch.base_plans,
+        branch.head_plans,
+        branch.history,
+    )
+    oracles = _transition_oracles(ctx, base, history, base_plans)
+    tally: dict[str, int] = {}
+    judged = PI.moved_to_done(base_plans, head_plans)
+    found = tick_findings(judged, ctx.plans, ctx.rows, ctx.view.baseline_at, oracles, tally)
+    pairs = finished_pairs(base_plans, head_plans, history)
     found += finish_findings(
         pairs,
         ctx.plans,
@@ -942,8 +1189,26 @@ def transitions(ctx: Context, base_override: str | None) -> tuple[list[Finding],
     return found, line
 
 
+def github_wait_judged(
+    plans: Iterable[Plan], view: MapView, enforce: bool
+) -> tuple[list[Finding], list[str], int]:
+    """(findings, advisories, count) of LP8 over every live plan's open boxes. With `enforce` False each finding is an `ADVISORY LP8` line instead (see the module docstring)."""
+    found = [
+        Finding(code, plan.rel, msg)
+        for plan in plans
+        if plan.live
+        for code, msg in D.github_wait_findings(plan.text, view.github_waits, view.local_runners)
+    ]
+    if enforce:
+        return found, [], len(found)
+    return [], ["ADVISORY %s" % f for f in found], len(found)
+
+
 def evaluate(
-    root: pathlib.Path, view: MapView, base_override: str | None
+    root: pathlib.Path,
+    view: MapView,
+    base_override: str | None,
+    enforce_lp8: bool = LP8_ENFORCED,
 ) -> tuple[list[Finding], list[str], dict[str, Any]]:
     plans = load_plans(root, PF.FINISHED_STATES)
     live = [p for p in plans.values() if p.live]
@@ -975,8 +1240,21 @@ def evaluate(
         findings.extend(found)
         notes.extend(more)
         findings.extend(box_findings(plan, view.checks, view.live_of))
+    lp8_found, lp8_notes, lp8_count = github_wait_judged(live, view, enforce_lp8)
+    findings.extend(lp8_found)
+    notes.extend(lp8_notes)
     moved, line = transitions(ctx, base_override)
     findings.extend(moved)
+    base = base_of(root, base_override)
+    successor_of = (
+        SUCC.lazy_successor_of(str(root), base, importlib.import_module("wl_planrec"))
+        if base
+        else None
+    )
+    waived_notes, waived = waiver_notes(
+        rows, vm_receipts(root), view.checks or LT.registry(), descends_in(root, successor_of)
+    )
+    notes.extend(waived_notes)
     stats: dict[str, Any] = {
         "plans": len(plans),
         "live": len(live),
@@ -986,8 +1264,44 @@ def evaluate(
         "baseline_at": view.baseline_at,
         "pending": sum(n.startswith("PENDING") for n in notes),
         "transitions": line,
+        "lp8": lp8_count,
+        "lp8_mode": "enforced" if enforce_lp8 else "advisory until PLAN-local-first-delivery L4",
+        **waived,
     }
     return findings, notes, stats
+
+
+def owed(
+    root: pathlib.Path, view: MapView, base_override: str | None, rel: str
+) -> list[tuple[str, str]]:
+    """[(plan rel, target)] LP6 owes for the plan whose identity is `rel`'s: plans, rows and the map read the way `evaluate` reads them, then only the LP6 half. CannotRunError when LP6 cannot run, since an empty answer there would read as "nothing owed"."""
+    plans = load_plans(root, PF.FINISHED_STATES)
+    if not plans:
+        raise CannotRunError("zero plans parsed under %s" % (root / D.PLANS_DIR))
+    rows, _bad = read_rows(root)
+    ctx = Context(root, view, plans, rows)
+    branch = branch_of(root, base_override)
+    if isinstance(branch, str):
+        raise CannotRunError("LP6 cannot run (%s)" % branch)
+    oracles = _transition_oracles(ctx, branch.base, branch.history, branch.base_plans)
+    ident = identity(rel)
+    out: list[tuple[str, str]] = []
+    for head_rel, commit in finished_pairs(branch.base_plans, branch.head_plans, branch.history):
+        plan = plans.get(head_rel)
+        if identity(head_rel) != ident or plan is None or not plan.touched:
+            continue
+        out.extend(
+            (head_rel, target)
+            for target in owed_targets(
+                plan,
+                rows,
+                commit,
+                oracles,
+                (ctx.resolve_ruling, ctx.resolve_waiver),
+                view.baseline_at,
+            )
+        )
+    return out
 
 
 # ----------------------------------------------------------------------------- selftest
@@ -1103,6 +1417,62 @@ class _Suite:
         c.truthy("surface prefixes are derived from the map", "private/renet/cmd/" in pre)
         c.check("plainly_hit counts a surface-path Owns", plainly_hit([_fixture()], pre), 1)
         c.check("plainly_hit ignores docs Owns", plainly_hit([_fixture(owns="docs/x.md")], pre), 0)
+
+    def lp8(self) -> None:
+        c = self.c
+        raw = _complete_map()
+        del raw["tiers"]["live"]["github_waits"]
+        c.truthy(
+            "a map with no github_waits is LP7",
+            any("github_waits" in f.message for f in map_findings(map_view(raw))),
+        )
+
+        def judged(boxes: str, enforce: bool = True) -> tuple[list[str], int]:
+            plan = _fixture(owns="docs/x.md", proof=None, boxes=boxes)
+            found, notes, count = github_wait_judged([plan], self.full, enforce)
+            return (_codes(found) if enforce else notes), count
+
+        wait = "- [ ] T9 the edge check after the merge\n"
+        why = " -- only the CD pipeline deploys the edge channel"
+        c.check("an untagged after-the-merge box is LP8", judged(wait), (["LP8"], 1))
+        c.check(
+            "the same box tagged in a (corrected ...) line passes",
+            judged(wait + "  (corrected 2026-11-12, R2) GitHub-only: CD" + why + ")\n"),
+            ([], 0),
+        )
+        c.check(
+            "a Local-route correction naming a runner passes",
+            judged(wait + "  (corrected 2026-11-12, R2) Local-route: deploy-bench" + why + "\n"),
+            ([], 0),
+        )
+        c.check(
+            "a route naming no known runner is LP8",
+            judged(wait + "  (corrected 2026-11-12) Local-route: nowhere" + why + "\n"),
+            (["LP8"], 1),
+        )
+        c.check(
+            "a why under 20 characters is LP8",
+            judged(wait + "  (corrected 2026-11-12) GitHub-only: CD -- edge only\n"),
+            (["LP8"], 1),
+        )
+        c.check(
+            "an unknown kind is LP8",
+            judged(wait + "  (corrected) GitHub-only: later" + why + "\n"),
+            (["LP8"], 1),
+        )
+        c.check(
+            "a tag on a plain continuation line does not count",
+            judged(wait + "  GitHub-only: CD" + why + "\n"),
+            (["LP8"], 1),
+        )
+        c.check("a ticked box is not judged", judged(wait.replace("[ ]", "[x]")), ([], 0))
+        c.check("a box with no phrase passes", judged("- [ ] T9 deploy to bench\n"), ([], 0))
+        c.check("`cd` in a command is not CD", judged("- [ ] T9 `cd packages/www`\n"), ([], 0))
+        notes, count = judged(wait, enforce=False)
+        c.check("advisory mode: no finding, one ADVISORY LP8 note", (count, len(notes)), (1, 1))
+        c.truthy(
+            "the advisory note names LP8", bool(notes) and notes[0].startswith("ADVISORY LP8 ")
+        )
 
     def required_rules(self) -> None:
         c = self.c
@@ -1390,6 +1760,62 @@ class _Suite:
             ),
             [],
         )
+        tick_at = "1" * 40
+
+        def tick_only(_row: dict[str, Any], at: str) -> list[str]:
+            return [] if at == tick_at else ["surface code changed after the proof"]
+
+        c.check(
+            "finished after surface code moved past the tick: judged at the tick, silent",
+            finish_findings(
+                pair,
+                {_FX_DONE: done},
+                [{**row, "plan": _FX_DONE}],
+                _BASE,
+                Oracles(lambda _r, _s: tick_at, lambda _c: "2026-10-29T10:00:00Z", tick_only),
+                refused,
+            ),
+            [],
+        )
+        c.check(
+            "finished over an open box: no tick, so the finishing commit judges the row",
+            _codes(
+                finish_findings(
+                    pair,
+                    {_FX_DONE: done},
+                    [{**row, "plan": _FX_DONE}],
+                    _BASE,
+                    Oracles(lambda _r, _s: "", lambda _c: "2026-10-29T10:00:00Z", tick_only),
+                    refused,
+                )
+            ),
+            ["LP6"],
+        )
+
+        def at_base(flag: bool) -> Oracles:
+            return Oracles(
+                lambda _r, _s: _C,
+                lambda _c: "2026-10-29T10:00:00Z",
+                lambda _row, _at: ["the row fails a rule that landed after the tick"],
+                lambda _r, _s: flag,
+            )
+
+        c.check(
+            "finished with the LP box ticked at the base: judged on the branch that ticked it, silent",
+            finish_findings(pair, {_FX_DONE: done}, [], _BASE, at_base(True), refused),
+            [],
+        )
+        c.check(
+            "CONTROL: the same box ticked on this branch is judged, LP6",
+            _codes(finish_findings(pair, {_FX_DONE: done}, [], _BASE, at_base(False), refused)),
+            ["LP6"],
+        )
+        boxless = _fixture(boxes="", rel=_FX_DONE, status="done")
+        c.check(
+            "CONTROL: a declared target with no LP box is LP6 even when ticked_at_base says yes",
+            _codes(finish_findings(pair, {_FX_DONE: boxless}, [], _BASE, at_base(True), refused)),
+            ["LP6"],
+        )
         ruled = _fixture(
             rel=_FX_DONE, status="done", extra="Ruling: live-proof waived, operator #deadbeef\n"
         )
@@ -1472,6 +1898,55 @@ class _Suite:
             "c",
         )
 
+    def owed_door(self) -> None:
+        """The `_done/` door: a finished plan owes a target until its LP box comes back, is ticked, and a matching row the judge accepts proves it."""
+        c = self.c
+        oracles, row = self.oracles, self.row
+        resolvers = (_refused, _ok)
+        moved = _fixture(
+            rel=_FX_DONE, status="done", boxes="(moved 2026-11-08 to PLAN-other.md) LP-bench\n"
+        )
+        c.check(
+            "owed: a finished _done plan whose LP box was moved out owes its target",
+            owed_targets(moved, [], _C, oracles(), resolvers, _BASE),
+            ["bench"],
+        )
+        back = _fixture(rel=_FX_DONE, status="done", boxes=_GOOD_BOX.replace("- [ ]", "- [x]"))
+        sig = lp_boxes(back)[0][1].sig
+        mine = {**row, "plan": _FX_DONE, "box": sig}
+        c.check(
+            "owed: box restored and ticked with a matching accepted row owes nothing",
+            owed_targets(back, [mine], _C, oracles(), resolvers, _BASE),
+            [],
+        )
+        c.check(
+            "owed: CONTROL restored and ticked with no row still owes",
+            owed_targets(back, [], _C, oracles(), resolvers, _BASE),
+            ["bench"],
+        )
+        c.check(
+            "owed: CONTROL the restored tick with no row is LP4",
+            _codes(tick_findings([(_FX_DONE, sig)], {_FX_DONE: back}, [], _BASE, oracles())),
+            ["LP4"],
+        )
+        c.check(
+            "owed: CONTROL a row for another plan with the same sig and Accept is no receipt",
+            owed_targets(
+                back,
+                [{**mine, "plan": "agent/plans/PLAN-other.md"}],
+                _C,
+                oracles(),
+                resolvers,
+                _BASE,
+            ),
+            ["bench"],
+        )
+        c.check(
+            "owed: CONTROL a row the judge rejects still owes",
+            owed_targets(back, [mine], _C, oracles(problems=["bad id"]), resolvers, _BASE),
+            ["bench"],
+        )
+
     def forward_only(self) -> None:
         c = self.c
         day = dt.date(2026, 10, 28)
@@ -1500,6 +1975,64 @@ class _Suite:
         )
         c.check("not pending: never committed", pending_migration("p", {}, day), False)
 
+    def waivers(self) -> None:
+        c = self.c
+        tree, head, other_tree, other_head = "b" * 40, "a" * 40, "c" * 40, "d" * 40
+        waived = {
+            "id": "lp-0123456789ab",
+            "plan": _FX,
+            "target": "hostinger",
+            "head": head,
+            "tree": tree,
+            "surfaces": ["renet"],
+            "check": {"id": "renet-live"},
+            "ladder": {"vm": None, "waived": "ASKED:2026-11-10T13:38Z", "head_tree": tree},
+        }
+        plain = {**waived, "id": "lp-111111111111", "ladder": {"vm": "vmc-0"}}
+
+        def receipt(**over: Any) -> dict[str, Any]:
+            base = {
+                "status": VT.VERIFIED,
+                "tree": tree,
+                "head": head,
+                "runId": "vmc-1",
+                "phases": {"renet": {"required": True, "ran": True}},
+            }
+            base.update(over)
+            return base
+
+        def never(_old: str, _new: str) -> bool:
+            return False
+
+        def child(old: str, new: str) -> bool:
+            return (old, new) == (head, other_head)
+
+        def owed_of(receipts: list[dict[str, Any]], descends=never) -> int:
+            notes, _counts = waiver_notes([waived, plain], receipts, self.checks, descends)
+            return sum(n.startswith(OWED_VM) for n in notes)
+
+        elsewhere = receipt(tree=other_tree, head=other_head)
+        no_renet = receipt(phases={"renet": {"required": False, "ran": False}})
+        c.check(
+            "a waived row stands for the renet phase",
+            row_phases(waived, self.checks),
+            frozenset({"renet"}),
+        )
+        c.check("a waived row with no VM receipt is OWED-VM", owed_of([]), 1)
+        c.check("a VERIFIED receipt of its tree confirms it", owed_of([receipt()]), 0)
+        c.check(
+            "a VERIFIED receipt on a descendant head confirms it", owed_of([elsewhere], child), 0
+        )
+        c.check("a receipt of another tree and head stays owed", owed_of([elsewhere]), 1)
+        c.check("a receipt that did not run the renet phase stays owed", owed_of([no_renet]), 1)
+        c.check("a FAILED receipt of its tree stays owed", owed_of([receipt(status=VT.FAILED)]), 1)
+        notes, counts = waiver_notes([plain], [], self.checks, never)
+        c.check(
+            "a VM-admitted row prints nothing and counts as no waiver",
+            (notes, counts["waived"]),
+            ([], 0),
+        )
+
     def run(self) -> bool:
         for part in (
             self.map_rules,
@@ -1510,7 +2043,10 @@ class _Suite:
             self.transitions,
             self.judge,
             self.lp6,
+            self.owed_door,
             self.forward_only,
+            self.waivers,
+            self.lp8,
         ):
             part()
         return self.c.report()
@@ -1523,6 +2059,28 @@ def selftest() -> bool:
 # ----------------------------------------------------------------------------- main
 
 
+def _owed_main(root: pathlib.Path, view: MapView, base: str | None, rel: str) -> int:
+    """`--owed <rel>`: 0 with one `owed <rel> <target>` line per owed target, 1 when nothing is owed, 77 when LP6 cannot run."""
+    if parse_baseline(view.baseline_at) is None:
+        # No forward-only cut: every finish would read as exempt, which is "nothing owed" by default rather than by judgement.
+        print(
+            "CANNOT RUN: tiers.live.baseline_at is %r, not a date" % (view.baseline_at,),
+            file=sys.stderr,
+        )
+        return CANNOT_RUN
+    try:
+        found = owed(root, view, base, rel)
+    except CannotRunError as exc:
+        print("CANNOT RUN: %s" % exc, file=sys.stderr)
+        return CANNOT_RUN
+    for plan_rel, target in found:
+        print("owed %s %s" % (plan_rel, target))
+    if not found:
+        print("nothing owed: no LP6 finding on this branch for %s" % rel, file=sys.stderr)
+        return 1
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="check:ci-plan-live-proof (LP1 to LP7)")
     ap.add_argument("--selftest", action="store_true")
@@ -1530,6 +2088,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--base", default=None)
     ap.add_argument("--proof-map", default=None)
     ap.add_argument("--baseline-at", default=None)
+    ap.add_argument("--owed", default=None, metavar="REL")
+    ap.add_argument("--lp8-enforce", action="store_true")
     args = ap.parse_args(argv)
 
     if controls.controls_first("plan live proof", lambda: not selftest()):
@@ -1547,8 +2107,12 @@ def main(argv: list[str] | None = None) -> int:
     view = map_view(raw)
     if args.baseline_at is not None:
         view.baseline_at = args.baseline_at
+    if args.owed is not None:
+        return _owed_main(root, view, args.base, args.owed)
     try:
-        findings, notes, stats = evaluate(root, view, args.base)
+        findings, notes, stats = evaluate(
+            root, view, args.base, enforce_lp8=LP8_ENFORCED or args.lp8_enforce
+        )
     except CannotRunError as exc:
         print("CANNOT RUN: %s" % exc, file=sys.stderr)
         return CANNOT_RUN
@@ -1560,6 +2124,11 @@ def main(argv: list[str] | None = None) -> int:
         "baseline_at %(baseline_at)s" % stats
     )
     print("  transitions: %s" % stats["transitions"])
+    print("  github waits (LP8, %(lp8_mode)s): %(lp8)d open box finding(s)" % stats)
+    print(
+        "  waived VM ladders: %(waived)d row(s), %(confirmed)d confirmed, %(owed_vm)d owed "
+        "(%(vm_receipts)d VERIFIED vm:check receipt(s) read on this machine)" % stats
+    )
     if findings:
         for f in sorted(findings, key=lambda f: (f.code, f.rel, f.message)):
             print("  %s" % f, file=sys.stderr)

@@ -86,8 +86,10 @@ ESC_NR = built("bck-console-none")
 ESC_DL = built("bck-console-none")
 ESC_NV = built("bck-console-not-verified")
 ESC_MIRROR = built("bck-docs-only")
-# A second repository the scope cases push from with `git -C`.
+# A second repository the scope cases push from with `git -C`. A push publishes to its URL (#f2e3507a), so the admitted one sends to a repository none of the judged world's remotes name, and OUTSIDE_SAME keeps the fixture's own origin, the judged world's too, which is this checkout's push.
 OUTSIDE = built("bck-docs-only")
+G.VM._git(OUTSIDE, "remote", "set-url", "origin", "https://example.invalid/outside/scratch.git")
+OUTSIDE_SAME = built("bck-docs-only")
 
 
 def transcript(answer_ts):
@@ -184,6 +186,14 @@ CASES = [
         CONSOLE_NONE,
         None,
         False,
+        "",
+    ),
+    (
+        "a repository outside whose origin is this checkout's",
+        "git -C %s push origin 1008-1" % OUTSIDE_SAME,
+        CONSOLE_NONE,
+        None,
+        True,
         "",
     ),
     ("an empty command", "", CONSOLE_NONE, None, False, ""),
@@ -358,6 +368,17 @@ CASES = [
         True,
         "escape-blind",
     ),
+]
+
+# BOX G5 OF PLAN-local-first-delivery: the shared backup-ref cases (`_backup_push.CASES`), in a world whose range touches the console backup paths, so every push it does not admit is refused here.
+BP = importlib.import_module("rediacc_hooks.guards._backup_push")
+BACKUP_WORLDS = {
+    True: BP.plant(built("bck-console-none")),
+    False: BP.plant(built("bck-console-none"), pinned=False),
+}
+CASES += [
+    (label, command, BACKUP_WORLDS[pinned], None, not admitted, "")
+    for label, command, pinned, admitted in BP.CASES
 ]
 
 BROKEN_RUNNER = (

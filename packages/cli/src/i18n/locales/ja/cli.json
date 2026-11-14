@@ -11,9 +11,11 @@
         "descriptionShort": "リポジトリ（--at 指定時は保存済みスナップショット）のファイルを一覧表示する",
         "empty": "{{name}} にはファイルがありません。",
         "failed": "{{name}} を一覧表示できませんでした",
+        "fromNeedsAt": "--from はスナップショットの読み取り元のバックアップストアを指定するため、--at が必要です。",
         "liveMountListing": "スナップショット {{snapshot}} の一覧は、取得時刻の前後にライブマウントから読み取ったものです。そのため保存済みイメージとわずかに異なる場合があります。復元では保存済みイメージがそのまま戻ります。",
         "noListing": "{{name}} のスナップショット {{snapshot}} には保存済みのファイル一覧がないため、閲覧できません。ファイルを確認するには復元してください。",
         "optionAt": "この時刻以前に取得されたスナップショット、またはこのスナップショット ID を一覧表示する（チャンクストアを読み取ります）",
+        "optionFrom": "--at と併用して、最上位のストアではなくこのバックアップストアからスナップショットを読み取る",
         "optionDepth": "階層の深さをNレベルに制限する（0で無制限）",
         "optionLimit": "返すエントリの最大数（0で無制限）",
         "optionPath": "一覧表示をこのサブツリーに限定する",
@@ -23,7 +25,6 @@
       },
       "cancel": {
         "cancelled": "{{name}} をキャンセルしました",
-        "cancelling": "{{name}} を停止中...",
         "description": "リモートマシン上の実行中バックアップをキャンセル",
         "notRunning": "戦略 \"{{name}}\" に実行中のバックアップはありません"
       },
@@ -68,7 +69,12 @@
         "optionAs": "復元後のリポジトリ名（デフォルトはアーティファクト名）",
         "optionAt": "特定時点への復元: スナップショットIDまたはRFC3339形式の時刻（チャンクストアからの復元）",
         "optionDatastore": "この名前付きデータストアに復元する（アタッチ先のマシンがホストする）",
+        "optionFrom": "このバックアップストアからスナップショットを読み取る（デフォルト: 検証済みの最新スナップショットを持つストア。ストアで障害が起きた場合は次のストアに切り替え）",
         "noSeedNeedsSnapshot": "--no-seed はチャンクストアのスナップショットからの復元に適用されますが、このリポジトリにはスナップショットがありません。",
+        "fromNeedsSnapshot": "--from はバックアップストアを指定しますが、このリポジトリにはそこから復元できるチャンクストアのスナップショットがありません。",
+        "storeFallback": "バックアップストア {{failed}} では復元を処理できなかったため、{{next}} を試します。",
+        "storeRankingUnreadable": "どのバックアップストアに最新のスナップショットがあるかを読み取れませんでした（{{reason}}）。ホームストアから読み取ります。",
+        "storeServed": "バックアップストア {{store}} から読み取りました。",
         "optionNoSeed": "ローカルのアンカーやリポジトリイメージを再利用せず、すべてのチャンクをストアから取得する (ストアが読み取れることの証明になります)",
         "optionUp": "転送後に復元したリポジトリをデプロイする",
         "placementExclusive": "配置先フラグは --machine か --datastore のどちらか一方のみを指定してください",
@@ -207,7 +213,8 @@
         "bind": {
           "alreadyBound": "バックアップ戦略 \"{{strategy}}\" は既にマシン \"{{machine}}\" に紐付けられています",
           "bound": "バックアップ戦略 \"{{strategy}}\" をマシン \"{{machine}}\" に紐付けました",
-          "description": "バックアップ戦略をマシンに紐付け、そのスケジュールをそこにデプロイする"
+          "description": "バックアップ戦略をマシンに紐付け、そのスケジュールをそこにデプロイする",
+          "uncheckedTargets": "次のストアは登録状況を確認していません: {{targets}}。ユニットの書き込み時に、未登録のストアはスケジュールによって拒否されます。"
         },
         "description": "名前付きバックアップ戦略を管理（ホット/コールドモード、宛先、スケジュール）",
         "list": {
@@ -225,6 +232,14 @@
           "removed": "バックアップ戦略を削除しました",
           "unboundWarn": "戦略 \"{{strategy}}\" を削除し、次のマシンからバインドを解除しました: {{machines}}。これらのマシンにすでにデプロイ済みのタイマーは、そこで \"rdc backup schedule\" を実行するまで残ります。"
         },
+        "replication": {
+          "registered": "レプリケーション: {{count}} 件のルールをアカウントサーバーに登録しました",
+          "removed": "レプリケーション: {{count}} 件のルールをアカウントサーバーから削除しました",
+          "unsupported": "アカウントサーバーにレプリケーションルールがない (HTTP 404) ため、コピーは実行されません。ストラテジーは保存済みです。アカウントサーバーを更新してから、もう一度バインドしてください。",
+          "notPushed": "レプリケーションルールは送信されませんでした: アカウントトークンがありません。ログインしてから、ストラテジーをもう一度バインドしてください。",
+          "failed": "系列 {{lineage}} からストア {{target}} へのレプリケーションルールは拒否されました: {{reason}}",
+          "syncFailed": "レプリケーションルールを同期できませんでした: {{reason}}"
+        },
         "set": {
           "description": "バックアップ戦略を作成または更新",
           "examples": {
@@ -234,6 +249,9 @@
           "optionBwlimit": "アップロード帯域幅の上限（バイト/秒、K/M/G の接尾辞を指定可。例: \"6M\"、\"500K\"）",
           "optionCron": "cronスケジュール（例: \"0 * * * *\" で毎時実行）",
           "optionDestination": "戦略内の宛先名。Rediacc チャンクストア宛先が作成されます",
+          "optionTarget": "宛先の書き込み先となる登録済みストアID(デフォルト: home)。--destination と併用します",
+          "optionReplicateFrom": "宛先をレプリカにします。アカウントサーバーがこのストアを宛先のターゲットへコピーするため、マシンからは何もアップロードされません。--destination と --target と併用します",
+          "replicateFromNeedsDestination": "--replicate-from は 1 つの宛先のコピー元を指定します。--destination <name> を追加してください。",
           "optionDisable": "戦略または宛先を無効にする",
           "optionEnable": "戦略または宛先を有効にする",
           "optionExclude": "これらのリポジトリをバックアップから除外（カンマ区切りの名前）",
@@ -241,6 +259,7 @@
           "optionMode": "バックアップモード: \"hot\" はすべてを稼働させたままスナップショットを取得し、\"cold\" はスナップショット取得の瞬間だけコンテナを停止します",
           "optionReadBwlimit": "この戦略のスナップショットの読み取り速度上限。単位は --bwlimit と同じで、none を指定すると解除します",
           "readBwlimitStrategyOnly": "--read-bwlimit は戦略全体に適用されます (読み取りはマシン上でローカルに行われます)。--destination を外してください。",
+          "targetNeedsDestination": "--target は個々の宛先のストアを指定します。--destination <name> を追加してください。",
           "saved": "バックアップ戦略の設定を保存しました",
           "optionRetention": "スナップショットの保持設定。例: last=7,daily=7,weekly=4,monthly=6(\"none\" で解除)",
           "retentionInvalid": "--retention \"{{value}}\" は 名前=件数 の組の一覧ではありません。名前は last、hourly、daily、weekly、monthly、yearly で、それぞれ 1 回だけ使え、件数は整数です。例: last=7,daily=7",
@@ -336,6 +355,8 @@
         "restoreTestNeedsCredential": "この設定に {{name}} の認証情報がないため、復元したコピーを試験的に開けません。",
         "restoreTestNoAnchor": "{{name}} には、復元できるバックアップのアンカーがマシン上にありません。先にスナップショットを作成してください。",
         "restoreTestNoSpace": "{{snapshot}} の復元テストに必要な空き容量がありません。{{need}} バイトの空きが必要ですが、データストアには {{free}} しかありません。",
+        "restoreTestSizeUnknown": "スナップショット {{snapshot}} のサイズがアカウントのインデックスにないため、復元テストに必要な空き容量を確認できません。rdc backup snapshot でスナップショットを作成してから再試行してください。",
+        "restoreTestFreeUnknown": "{{machine}} のデータストアの空き容量を読み取れなかったため、復元テストに必要な空き容量を確認できません。",
         "verdictUnreadable": "{{name}} の検証は読み取れる判定を出力しなかったため、何も証明されていません。"
       },
       "snapshots": {
@@ -371,7 +392,9 @@
         "summaryError": "  エラー: {{error}}",
         "optionStore": "マシンを使わず、バックアップストアから暗号化イメージを直接再構築します。REDIACC_TOKEN に backup:read + backup:restore スコープ付きの API トークンが必要です",
         "optionAt": "--store と併用して取得するスナップショット。時刻 (ISO 8601) またはスナップショット ID (既定: 最新)",
+        "optionFrom": "--store と併用して、最上位のストアではなくこのバックアップストアから読み取る。他のストアには切り替わりません",
         "storeDone": "{{repo}}: スナップショット {{snapshot}} を取得しました -> {{image}} ({{bytes}} バイト取得)",
+        "storeCellsRoot": "スナップショットのルート検証: {{outcome}}",
         "storeOfflineNote": "このコピーは暗号化されており、この OS では開けません。'rdc backup upload' で Linux マシンへ送れます。"
       },
       "upload": {
@@ -406,7 +429,11 @@
         "cancelExclusive": "--cancel は --dry-run と併用できません",
         "cancelled": "\"{{name}}\" の遅延全消去を取り消しました。",
         "nothingWaiting": "\"{{name}}\" の待機中の全消去はありませんでした。",
-        "delayed": "\"{{name}}\" の全消去は遅延されています: 何も削除されておらず、{{when}} (UTC) に実行されます。それまでに取り消すには: rdc backup purge {{name}} --cancel"
+        "delayed": "\"{{name}}\" の全消去は遅延されています: 何も削除されておらず、{{when}} (UTC) に実行されます。それまでに取り消すには: {{cancel}}",
+        "optionLineage": "リポジトリがこの設定にもう無いバックアップ系列を、ID (`rdc backup usage` に表示されるもの) で全消去する",
+        "targetRequired": "対象を 1 つだけ指定してください: リポジトリ参照、またはリポジトリが既に無い系列の場合は --lineage <guid>。",
+        "lineageOwned": "系列 {{lineage}} はこの設定の「{{name}}」のものです。全消去するには: rdc backup purge {{name}}",
+        "confirmLineage": "系列 {{name}} の保存済みスナップショット {{count}} 件 ({{bytes}}) をすべて削除します。この操作は元に戻せません。確認のため系列 ID を入力してください:"
       },
       "check": {
         "description": "1つのファイルを復元して、スナップショットがパスフレーズで開くことを証明します",
@@ -424,9 +451,11 @@
       },
       "tocKey": {
         "description": "リポジトリの参照一覧キーを管理します",
-        "optionDryRun": "実行される内容を表示し、何にも触れません",
-        "optionReplace": "マシンにすでにある別のキーを置き換えます(証明のためパスフレーズを送信します)",
-        "syncDescription": "リポジトリの一覧キーをそのマシンにインストールするか、別のキーを置き換えます"
+        "sync": {
+          "description": "リポジトリの一覧キーをそのマシンにインストールするか、別のキーを置き換えます",
+          "optionDryRun": "実行される内容を表示し、何にも触れません",
+          "optionReplace": "マシンにすでにある別のキーを置き換えます(証明のためパスフレーズを送信します)"
+        }
       },
       "churn": {
         "description": "リポジトリのイメージが実行間でどれだけ変わるかを測定し、セルサイズごとのアップロード量を予測して推奨を示します。実行中はマシン上に reflink ベースを保持し、終了時に必ず削除します。",
@@ -784,13 +813,20 @@
         "removedCerts": "{{count}} 件の証明書キャッシュエントリが{{verb}}削除されました：",
         "removedOrphanRepos": "{{count}} 件のリポジトリエントリ（どのマシンにも配置されていません）が{{verb}}削除されました：",
         "scanning": "古い残留物のためにローカル設定をスキャンしています...",
-        "tooManyOnlyFlags": "--certs-only / --archives-only / --refs-only のうち最大 1 つを渡してください。"
+        "tooManyOnlyFlags": "--certs-only / --archives-only / --refs-only のうち最大 1 つを渡してください。",
+        "goneMachineReposOption": "構成にもう存在しないマシンに配置されたリポジトリエントリをアーカイブします。削除ではなくアーカイブで、各エントリは認証情報を保持し、アーカイブの猶予期間が切れるまで復元できます。このバケットのみを選択します。各自の --*-only オプションも渡さない限り、証明書キャッシュ、アーカイブ、相互参照のバケットはスキップされます。",
+        "foundGoneMachineRepos": "{{count}} 件のリポジトリエントリが、構成にもう存在しないマシンに配置されています:",
+        "archivedGoneMachineRepos": "{{count}} 件のリポジトリエントリ {{verb}} アーカイブ (構成にもう存在しないマシンに配置):",
+        "goneMachineReposHint": "'rdc config prune --gone-machine-repos' でアーカイブできます。各エントリはアーカイブの猶予期間が切れるまで復元可能です。",
+        "droppedGoneMachineState": "構成にもう存在しないマシンを指すランタイムレコード {{count}} 件 {{verb}} 削除:"
       },
       "reconcile": {
         "acceptObservedUnfiltered": "--accept-observed は --machine と組み合わせられません: 部分スキャンでは配置が一意であることを証明できないため、書き換えは推測になってしまいます。フィルタなしで 'rdc config reconcile --accept-observed' を実行してください。",
         "description": "マシン側の実態からランタイム状態を再構築する。古くなったアタッチ情報やルーティング情報を修正する",
         "optionAcceptObserved": "宣言された配置を、イメージが実際にある場所に一致するよう書き換える。ただしそれが一意である場合のみ（正確に 1 台のマシンで観測された場合）。重複は競合のままとなる。",
-        "optionMachine": "対象マシンを指定して reconcile を限定する"
+        "optionMachine": "対象マシンを指定して reconcile を限定する",
+        "noListing": "{{machine}} の一覧は記録されていません。",
+        "listFailed": "renet list all が失敗しました(終了コード {{exitCode}})。"
       },
       "recover": {
         "confirm": "設定 \"{{name}}\" をバックアップから復元しますか？",
@@ -894,11 +930,14 @@
           "notEnabled": "リモート設定は有効になっていません。",
           "pulled": "設定を取得済み",
           "pulling": "リモートから設定を取得中...",
-          "success": "リモートから設定を更新しました (バージョン {{version}})。"
+          "success": "リモートから設定を更新しました (バージョン {{version}})。",
+          "replacedLocal": "構成「{{config}}」: ローカルファイルはサーバーバージョン {{version}} と異なっていたため、置き換えました: {{changes}}"
         },
         "staleSlot": "キースロットが古くなっています（設定の暗号化キーがローテーションされました）。次のコマンドで再登録してください: rdc config remote enable",
         "status": {
-          "description": "リモート接続状態を表示"
+          "description": "リモート接続状態を表示",
+          "deviceKeyMissing": "このデバイスは、この設定のリモートストレージを開けなくなりました。鍵が失われています（再起動するとキーストアが空になることがあります）。次のコマンドでデバイスを登録し直してください: rdc config remote enable",
+          "deviceCannotOpen": "このデバイスは、この設定のリモートストレージを開けません。デバイスの登録が拒否されました（たとえば鍵のローテーション後）。次のコマンドでデバイスを登録し直してください: rdc config remote enable"
         },
         "masterPassword": {
           "description": "このメンバーのマスターパスワード（パスワードスロット）を管理",
@@ -977,7 +1016,10 @@
           "invalidVersion": "バージョンは正の整数で指定してください。指定された値: \"{{version}}\"",
           "alreadyCurrent": "バージョン {{version}} はすでに設定 \"{{config}}\" の現在のバージョンです。復元するものはありません。",
           "success": "設定 \"{{config}}\" のバージョン {{restored}} をバージョン {{version}} として復元しました。"
-        }
+        },
+        "localEditsPushed": "構成「{{config}}」: ローカルファイルにサーバーバージョン {{from}} 以降の編集がありました。バージョン {{to}} としてプッシュしました: {{changes}}",
+        "localEditsConflict": "構成「{{config}}」: ローカルファイルにサーバーバージョン {{cached}} 以降の編集があり ({{changes}})、サーバーはバージョン {{server}} に進んでいます。何も上書きしていません。編集内容を退避し、「rdc config remote refresh」でバージョン {{server}} を取得してから (ローカルファイルは置き換わります)、編集を再適用してください。",
+        "localEditsUnverifiable": "構成「{{config}}」: ローカルファイルがサーバーバージョン {{server}} と異なり ({{changes}})、キャッシュ元のバージョン {{cached}} を読み戻せませんでした ({{reason}})。そのため、ローカル編集とサーバー側の変更を区別できません。何も上書きしていません。編集内容を退避し、「rdc config remote refresh」でバージョン {{server}} を取得してから (ローカルファイルは置き換わります)、編集を再適用してください。"
       },
       "rotateCek": {
         "cancelled": "ローテーションをキャンセルしました。何も変更されていません",
@@ -1023,6 +1065,21 @@
           "description": "現在の SSH キー設定を表示する",
           "noKey": "SSH キーが設定されていません"
         }
+      },
+      "importMachine": {
+        "descriptionShort": "別の設定からマシンとそのリポジトリを取り込む",
+        "description": "別の設定から 1 台のマシンをアクティブな設定にコピーします。対象は、アクティブな設定にない場合のマシンエントリ、そのマシン上のすべてのリポジトリとその全タグ、マシンに割り当てられた各バックアップ戦略です。既存のものは上書きしません。同じ内容のエントリはそのままにし、内容が異なるエントリ（同名で GUID が違うリポジトリ、別アドレスのマシンなど）は拒否します。1 件でも拒否があれば何も書き込みません。レポートには名前だけが表示され、認証情報、鍵、GUID は一切出力されません。",
+        "argMachine": "コピー元の設定でのマシン名",
+        "optionFrom": "コピー元の設定",
+        "optionDryRun": "書き込まずに、コピーされる内容だけを表示する",
+        "optionStrategyFromSource": "内容が異なるバックアップ戦略を拒否せず、コピー元の設定の内容で置き換える",
+        "machineMissing": "マシン \"{{machine}}\" はコピー元の設定にありません。",
+        "sameConfig": "コピー元の設定 \"{{name}}\" はアクティブな設定と同じです。コピー先は --config で選択してください。",
+        "sourceMissing": "設定 \"{{name}}\" は存在しません。",
+        "targetMissing": "アクティブな設定 \"{{name}}\" は存在しません。",
+        "refused": "コピー元の設定と異なるエントリが {{count}} 件あるため、何も書き込んでいません。",
+        "summary": "設定 \"{{from}}\" からマシン \"{{machine}}\" の変更を {{count}} 件コピーしました。",
+        "summaryDryRun": "設定 \"{{from}}\" からマシン \"{{machine}}\" の変更が {{count}} 件コピーされます。"
       }
     },
     "credits": {
@@ -1206,7 +1263,8 @@
           "basic": "マシン上のジョブを一覧表示する"
         },
         "machineOption": "対象マシン名(省略すると、この設定の保留中ジョブのチケットを一覧表示)",
-        "emptyTickets": "この設定に保留中のジョブはありません。"
+        "emptyTickets": "この設定に保留中のジョブはありません。",
+        "allOption": "期限切れおよび却下済みのチケットも表示"
       },
       "logs": {
         "description": "デタッチジョブのイベントログを再生またはフォロー",
@@ -1226,6 +1284,7 @@
           "basic": "1つのジョブのステータスを表示する"
         }
       },
+      "stepsUnfinished": "{{verb}}: ジョブは終了しましたが、ステップ {{steps}} は完了していません。rdc job wait で完了させられます。",
       "summary": "マシン上のデタッチジョブを管理",
       "machineRequired": "この設定にはジョブ {{jobId}} のチケットがありません。実行場所を -m <machine> で指定してください。",
       "ticketMachineOption": "対象マシン名(この設定にジョブのチケットがあれば省略可)",
@@ -1248,7 +1307,28 @@
       },
       "steps": {
         "pending": "未実行のステップがあります: rdc job wait {{jobId}}",
-        "pendingForConfig": "設定 {{config}} の未実行ステップ: {{count}} 件"
+        "pendingForConfig": "設定 {{config}} の未実行ステップ: {{count}} 件",
+        "abandoned": "ジョブ {{jobId}}: ステップを破棄しました ({{reason}})",
+        "reason": {
+          "gone": "ジョブがマシン上に存在しません",
+          "never-started": "開始されませんでした",
+          "age": "7日より前",
+          "dismissed": "却下済み"
+        }
+      },
+      "dismiss": {
+        "description": "ジョブチケットをローカルで破棄します。未実行のステップは破棄され、チケットは表示されなくなります。マシンへの接続は行わず、ジョブ自体には触れません。",
+        "summary": "ジョブチケットをローカルで破棄する（マシン呼び出しなし）",
+        "idArg": "却下するチケットのジョブ ID またはリクエスト ID",
+        "staleOption": "--older-than より古い保留中のチケットをすべて却下 (既定: 24h)",
+        "olderThanOption": "--stale 指定時のチケットの最小経過時間 (例: 90m、24h。既定: 24h)",
+        "confirm": "{{count}} 件のチケットを却下しますか? 未実行のステップは実行されません。",
+        "dismissed": "{{count}} 件のチケットを却下しました。",
+        "none": "該当するチケットはありません。",
+        "invalidOlderThan": "--older-than は 90m や 24h のような期間で指定してください (指定値: \"{{value}}\")",
+        "needsTarget": "ジョブ ID を 1 つ以上指定するか、--stale を付けてください。",
+        "conflictingTargets": "ジョブ ID か --stale (任意で --older-than を併用) のどちらか一方を指定してください。--older-than は --stale と一緒にのみ使えます。",
+        "notFound": "この設定に {{jobId}} のチケットはありません。"
       }
     },
     "machine": {
@@ -1271,7 +1351,11 @@
         "dnsCleanedUp": "{{count}} 件のDNSレコードを削除しました",
         "dnsDeleted": "DNSレコードを削除しました: {{type}} {{name}}",
         "noState": "\"{{name}}\" のOpenTofu状態が見つかりません。手動で追加したマシンには 'config remove-machine' を使用してください。",
-        "optionForce": "確認プロンプトをスキップ"
+        "optionForce": "確認プロンプトをスキップ",
+        "optionArchiveRepos": "このマシンに配置されたリポジトリの構成エントリをアーカイブする (認証情報は保持され、復元可能)",
+        "reposArchived": "{{machine}} に配置されたリポジトリエントリ {{count}} 件をアーカイブしました: {{repos}}",
+        "reposLeft": "{{count}} 件のリポジトリエントリが、この構成にもう存在しない {{machine}} をまだ指しています: {{repos}}",
+        "reposLeftHint": "'rdc config prune --gone-machine-repos' でまとめて、または 'rdc repo delete <name> -y' で1件ずつアーカイブできます。"
       },
       "description": "リモートマシンの状態を調べる: システムリソース、実行中のコンテナ、systemd サービス、デプロイ済みリポジトリ、ヘルス診断。読み取り専用のクエリであり、リポジトリを変更するには `repo` を使用する。主なサブコマンド: status（--system、--containers、--repositories、--services で絞り込める完全な状態）、health、list、add、remove、setup、prune、provision、deprovision。",
       "descriptionShort": "リモートマシンの管理（status、health、list、add、remove、setup、prune）",
@@ -1302,7 +1386,41 @@
         "systemDisk": "  ディスク: {{percent}}",
         "systemMemory": "  メモリ: {{percent}}",
         "systemSection": "\nシステム:",
-        "systemUptime": "  稼働時間: {{uptime}}"
+        "systemUptime": "  稼働時間: {{uptime}}",
+        "repoHealthSection": "\nリポジトリの健全性:",
+        "repoHealthNoCheck": "  チェックなし (health() 未定義): {{repositories}}"
+      },
+      "repair": {
+        "description": "マシンのヘルス検出項目に対する安全な修正を実行し、再確認します (終了コード 0: 残りなし、1: 警告またはオペレーター対応が残る、2: エラーが残るか修正に失敗)",
+        "descriptionShort": "マシンのヘルス検査で見つかった問題に安全な修正を適用し、再検査します",
+        "optionDryRun": "実行される修正を、実行せずに一覧表示します",
+        "optionCode": "この検出コードだけを修正します (繰り返し指定可)",
+        "optionWithBackup": "auto-with-backup の修正を許可します。各修正はそのリポジトリのスナップショットが成功した後に実行されます",
+        "optionWindowOverride": "window=only の修正をメンテナンスウィンドウ外でも実行します",
+        "optionSetWindow": "マシンのメンテナンスウィンドウ (HH:MM-HH:MM、UTC) を保存するか、off で削除して終了します",
+        "header": "\n{{name}} の修復:",
+        "nothingDue": "  実行すべき修正がある検出項目はありません",
+        "runByHand": "    手動で実行: {{command}}",
+        "summary": "修正 {{ran}} 件を実行、失敗 {{failed}} 件。残りの検出項目 {{remaining}} 件",
+        "windowSet": "{{name}} のメンテナンスウィンドウを {{window}} UTC に設定しました",
+        "windowCleared": "{{name}} のメンテナンスウィンドウを削除しました。window=only の修正は自動では実行されなくなります",
+        "windowInvalid": "メンテナンスウィンドウ「{{window}}」が無効です。UTC の HH:MM-HH:MM か off を指定してください",
+        "reasonNeedsBackup": "--with-backup が必要です (先にスナップショットを取得します)",
+        "reasonOutsideWindow": "メンテナンスウィンドウ {{window}} UTC 内でのみ実行します (--window-override で今すぐ実行)",
+        "reasonNoWindow": "メンテナンスウィンドウ内でのみ実行しますが、このマシンにはウィンドウがありません (--set-window で設定)",
+        "reasonSnapshotFailed": "スナップショットに失敗したため、バックアップが必要な修正は実行しませんでした: {{detail}}",
+        "reasonNoRepository": "このリポジトリはこの設定にありません",
+        "reasonNoNetworkIds": "検出結果に rediacc-docker スーパーバイザーが指定されていないため、再起動するとマシン上のすべてに及びます",
+        "reasonNoAction": "この検出項目に対する修正は不明です",
+        "resultOk": "修正済み",
+        "resultFailed": "修正に失敗",
+        "resultPlanned": "実行予定",
+        "resultSkipped": "スキップ",
+        "resultRefused": "拒否",
+        "resultCancelled": "中止",
+        "resultGone": "すでに解消",
+        "resultCovered": "先の修正で対応済み",
+        "resultOperator": "オペレーターの判断が必要"
       },
       "infra": {
         "cert": {
@@ -1331,7 +1449,6 @@
         "push": {
           "description": "インフラ設定をマシンにプッシュします（Traefik プロキシ、ルーター、Cloudflare DNS）。先に 'machine infra set <machine>' を実行してください",
           "descriptionShort": "インフラ設定をマシンにプッシュする",
-          "installingProxy": "ルーターをインストール中...",
           "success": "\"{{name}}\" にインフラ設定をプッシュしました"
         },
         "set": {
@@ -1434,12 +1551,11 @@
         "previewEmpty": "孤立したデータストアリソースは見つかりませんでした",
         "pruneUnknownOption": "renet .interim/state ミラーが分類できないリポジトリのみを削除します（ローカル設定になく、かつフォークマークされたミラーがない）。--orphaned-repos より厳密に狭い：ミラーがそれらを識別する場合、設定なしのフォークは保持されます。プレミラーレガシー孤児と設定エントリが削除された古い grands は両方ともこのバケットに入ります。",
         "startingDatastore": "{{machine}} 上の孤立したデータストアリソースをスキャン中...",
-        "startingUnits": "{{machine}} 上の孤立した systemd ユニットをスキャン中...",
         "unitsCompleted": "ユニットの整理が完了しました",
-        "unitsFailed": "ユニットの整理に失敗しました",
         "unknownCompleted": "{{count}} 件の不明なリポジトリをクリーンアップしました",
         "unknownFound": "{{count}} 件の不明なリポジトリが見つかりました（マウント安全チェック後に {{deletable}} 件削除可能）",
-        "unknownStarting": "{{machine}} で不明なリポジトリをスキャンしています（ローカル設定になし + フォークマークされたミラーなし）..."
+        "unknownStarting": "{{machine}} で不明なリポジトリをスキャンしています（ローカル設定になし + フォークマークされたミラーなし）...",
+        "orphanFormsNeedFinishedJob": "prune ジョブがまだ実行中のため、--orphaned-repos と --prune-unknown の削除は開始していません。'rdc job wait' で完了を確認してから、もう一度コマンドを実行してください。"
       },
       "converge": {
         "autoFailed": "'{{machine}}' のランタイム収束に失敗しました: {{error}}。再開するには: {{command}}",
@@ -1495,6 +1611,10 @@
         "includeDockerOption": "各リポジトリの rediacc-docker-N スーパーバイザーも再起動する（そのリポジトリのコンテナが再起動されます）",
         "jsonOption": "レポートを JSON で出力",
         "nothingStale": "'{{machine}}' に置き換え済みのバイナリで動作している renet デーモンはありません。",
+        "repoNeedsDocker": "--repo には --include-docker が必要です。対象にできるのはリポジトリ単位のスーパーバイザーだけです",
+        "repoNoNetworkId": "このコンフィグでは、リポジトリ '{{repo}}' にネットワーク ID がありません。rdc repo list で確認してください",
+        "repoOption": "再起動を 1 つのリポジトリのスーパーバイザーに限定します（--include-docker が必要）",
+        "repoRenetTooOld": "'{{machine}}' の renet は --repo に未対応で、範囲指定を拒否しました。何も再起動していません。先に rdc machine setup {{machine}} を実行してください",
         "starting": "'{{machine}}' の renet デーモンを再起動しています..."
       },
       "scanKeys": {
@@ -1525,7 +1645,6 @@
           "basic": "マシンの完全なステータスを表示する",
           "containers": "マシン上で実行中のコンテナのみを表示する"
         },
-        "fetched": "ステータスを取得しました",
         "fetching": "{{machine}} からステータスを取得中...",
         "healthCheck": "健全性チェックモード - 不健全なものがある場合はコード2で終了します",
         "infrastructure": "インフラストラクチャ",
@@ -1549,7 +1668,9 @@
         "verifyFailureSection": "失敗したバックアップ検証",
         "verifyFailureWarning": "{{count}} 個のリポジトリが直近のバックアップ検証に失敗しました。",
         "missedTargetSection": "バックアップ目標を達成できなかったリポジトリ",
-        "missedTargetWarning": "{{count}} 件のリポジトリが直近の実行でバックアップ目標を達成できませんでした。"
+        "missedTargetWarning": "{{count}} 件のリポジトリが直近の実行でバックアップ目標を達成できませんでした。",
+        "licenseDetailUnreadable": "一覧に読み取れるライセンス詳細がありません（renet が licenses セクションより古いか、エントリの形式が不正です）。そのため、バックアップのブロック状態と更新状態は不明です。",
+        "noMemoryCap": "{{count}} 個のリポジトリがメモリ上限なしで動作しており、どれもホストのメモリを使い切る可能性があります: {{names}}。rdc repo policy set <ref> --memory-max <size> で上限を設定してください"
       },
       "gpu": {
         "descriptionShort": "マシンの GPU とデバイス付与を確認する",
@@ -1703,7 +1824,8 @@
           "description": "CLI 設定の ref（ブランチ、HEAD）を、マシン上に実際に存在するオブジェクトと照合して検証します。ダングリング ref（存在しないオブジェクトを指す ref）と孤立コミット（どの ref からも到達できない不変コミット）を報告します。読み取り専用です。",
           "descriptionShort": "設定の ref をマシン上のオブジェクトと照合する",
           "orphanHeader": "孤立コミット {{count}} 件（どの ref からも到達できません）:",
-          "orphanHint": "孤立コミットを回収するには: rdc repo gc --apply -m <machine>"
+          "orphanHint": "孤立コミットを回収するには: rdc repo gc --apply -m <machine>",
+          "noReport": "{{machine}} の fsck ジョブからオブジェクトのレポートが返らなかったため、比較は行われていません。"
         },
         "ownership": {
           "completed": "所有権を更新しました",
@@ -1711,7 +1833,12 @@
           "descriptionShort": "リポジトリディレクトリの所有者 UID を変更する",
           "failed": "所有権の更新に失敗しました",
           "starting": "\"{{machine}}\" で \"{{repository}}\" の所有権を設定中...",
-          "uidOption": "所有者UID（デフォルト: 7111）"
+          "uidOption": "所有者UID（デフォルト: 7111）",
+          "rootOwnedOption": "root またはその UID が所有するディレクトリ配下にある root 所有のファイルを所有者 UID に引き渡し、それぞれを取り消し用マニフェストに記録します",
+          "dryRunOption": "--root-owned と併用: 変更されるファイルを一覧表示し、何も変更しません",
+          "undoOption": "--root-owned と併用: 取り消し用マニフェストのうち、まだ所有者 UID が所有するファイルを root に戻します",
+          "rootOwnedQualifiers": "--dry-run と --undo は --root-owned と併用した場合にのみ有効で、同時には指定できません",
+          "rootOwnedDryRunSummary": "{{machine}} 上の {{repository}} 配下にある root 所有のエントリ {{count}} 件が所有者 UID に引き渡されます。変更は行われていません。"
         },
         "template": {
           "apply": {
@@ -1831,7 +1958,8 @@
         "sizeOption": "リポジトリサイズ（例: 10G、100G、1T）",
         "sizeRequiredDocker": "Docker リポジトリには --size が必須です（--machine、または Docker 用の --datastore）",
         "starting": "\"{{machine}}\" でリポジトリ \"{{repository}}\"（{{size}}）を作成中...",
-        "startingDatastore": "データストア \"{{datastore}}\"（{{machine}}）上にリポジトリ \"{{repository}}\" を作成中..."
+        "startingDatastore": "データストア \"{{datastore}}\"（{{machine}}）上にリポジトリ \"{{repository}}\" を作成中...",
+        "stepsUnfinished": "repo create: {{name}} は作成されましたが、ステップ {{steps}} は完了していません。rdc job wait で完了させられます。"
       },
       "delete": {
         "archived": "\"{{repository}}\" の資格情報をアーカイブしました",
@@ -1857,7 +1985,9 @@
         "licenseRetireFailed": "「{{repository}}」のライセンスが返却済みであることをアカウントサーバーに伝えられませんでした({{reason}})。返却されるまでは、サーバー側のライセンス合計に含まれたままになります。",
         "backupsPurged": "「{{repository}}」のクラウドスナップショットを {{count}} 件削除し、{{bytes}} を解放しました。",
         "purgeBackupsOption": "リポジトリのクラウドバックアップも、失効を待たずに今すぐ削除します",
-        "purgeForkRefused": "「{{repository}}」はフォークで、バックアップ系列を親と共有しているため、--purge-backups では親のバックアップも削除されます。このオプションなしでフォークを削除してください。"
+        "purgeForkRefused": "「{{repository}}」はフォークで、バックアップ系列を親と共有しているため、--purge-backups では親のバックアップも削除されます。このオプションなしでフォークを削除してください。",
+        "confirmMachineGone": "リポジトリ「{{repository}}」のマシン「{{machine}}」はこの構成にもう存在しないため、マシン上では何も変更しません。「{{repository}}」の構成エントリをアーカイブしますか?",
+        "machineGoneArchived": "「{{repository}}」の構成エントリをアーカイブしました: マシン「{{machine}}」はこの構成にもう存在しないため、どのマシンにも接続していません"
       },
       "description": "マシン上の暗号化リポジトリをデプロイ・管理する。主なサブコマンド: create、up（デプロイ）、down（停止）、fork（即時 CoW クローン）、delete、push/pull（バックアップ）、sync（ファイル転送）。ライフサイクル: repo create → repo up → repo down。アーキテクチャ、ルーティング、環境変数の詳細は rdc --help の Key Concepts を参照。",
       "descriptionShort": "マシン上の暗号化リポジトリをデプロイ・管理する",
@@ -1942,6 +2072,10 @@
       },
       "gc": {
         "applied": "ガベージコレクション完了: {{deleted}}/{{total}} 件のコミットを削除しました",
+        "started": "{{total}} 件中 {{started}} 件の削除がジョブとして実行中です。rdc job list で確認できます。",
+        "partlyFailed": "{{total}} 件のコミットのうち {{failed}} 件を削除できませんでした",
+        "noSummary": "gc ジョブが要約を出力しなかったため、合計は不明です。ドライランをもう一度実行して、残りを確認してください。",
+        "datastorePathUnsupported": "データストアのパス {{path}} に「,」または「@」が含まれており、ジョブのリストパラメーターでは扱えません。パスの名前を変更してください。",
         "applyOption": "到達不能なコミットを実際に削除する（既定はドライランのプレビュー）",
         "deleted": "コミット {{commit}} を削除しました",
         "deleteFailed": "コミット {{commit}} の削除に失敗しました",
@@ -2036,6 +2170,7 @@
         "description": "マシンのストレージメンテナが適用する自動サイズポリシーを管理する: リポジトリが満杯に近づくとクォータをオンラインで拡大し（max-quota を超えず、プール残量が少ないときは拡大しない）、スケジュールされたトリムを実行する。自動縮小はない。縮小には 'repo resize' を使用する。ref を省略すると、-m のマシン全体のデフォルトポリシーを対象とする",
         "descriptionShort": "自動サイズポリシーを管理（自動拡大、スケジュールトリム）",
         "failed": "ポリシー操作に失敗しました",
+        "settingsNotHeld": "設定の読み取りがこのプロセスに届かなかったため、制限を 1 つのドキュメントにまとめられません。",
         "get": {
           "description": "保存されたマシンデフォルト、リポジトリの上書き（ref 指定時）、メンテナが実際に適用するマージ済みの有効ポリシーを表示する",
           "descriptionShort": "サイズポリシーを表示（マシンデフォルト、リポジトリ上書き、有効値）"
@@ -2050,7 +2185,21 @@
           "growStepOption": "1 ステップの拡大量: 絶対値（10G）またはクォータの割合（20%）",
           "growThresholdOption": "拡大を引き起こすファイルシステム使用率 %（デフォルト 85）",
           "maxQuotaOption": "自動拡大の上限（例: 200G）。自動拡大には必須",
-          "trimIntervalOption": "自動トリムの最小間隔（時間、デフォルト 24）"
+          "trimIntervalOption": "自動トリムの最小間隔（時間、デフォルト 24）",
+          "memoryMaxOption": "リポジトリのメモリ上限（例: 10G、解除は max）。上限に達するとそのコンテナの 1 つが OOM で終了し、外部には影響しません",
+          "memoryHighOption": "リポジトリのメモリ抑制ポイント（例: 8G、解除は max）",
+          "cpuMaxOption": "リポジトリの CPU 上限（コア数 4、2.5 または N%、解除は max）",
+          "ioMaxOption": "リポジトリのデバイスの I/O 上限: rbps=、wbps=、riops=、wiops= の任意の組み合わせ（例: rbps=200M,wbps=100M。KEY=max で個別に解除）、または max",
+          "pidsMaxOption": "リポジトリのプロセス数上限（pids.max、解除は max）",
+          "ramVolumeOption": "<mount>/.ram に置くリポジトリの RAM ボリュームのサイズ（例: 8G、削除は max）。メモリ上限はこれより 1G 以上大きくする必要があります",
+          "clearLimitsOption": "リポジトリのすべての制限と RAM ボリュームを削除します",
+          "forceOption": "リポジトリの現在のメモリ使用量を下回るメモリ上限を許可します"
+        },
+        "limitsNeedRef": "制限フラグは 1 つのリポジトリに適用されます。その ref を指定してください（rdc repo policy set <ref> --memory-max 10G）。マシン全体の形式で使えるのはサイズポリシーのフラグだけです",
+        "limits": {
+          "starting": "「{{machine}}」 上の 「{{repository}}」 の制限を適用しています...",
+          "completed": "「{{repository}}」 の制限",
+          "failed": "制限の操作に失敗しました"
         }
       },
       "promote": {
@@ -2221,6 +2370,38 @@
         "failed": "ステータスの確認に失敗しました",
         "starting": "\"{{repository}}\" のステータスを \"{{machine}}\" で取得中..."
       },
+      "health": {
+        "description": "リポジトリの Rediaccfile の health() チェックを実行し、0 (正常)、1 (警告)、2 (エラー) で終了します",
+        "header": "\n{{repository}} の健全性:",
+        "levelOk": "✓ 正常",
+        "levelWarning": "⚠ 警告",
+        "levelError": "✗ エラー",
+        "levelNone": "– チェックなし: health() を定義した Rediaccfile がありません",
+        "fileLine": "  {{file}}: {{level}} (終了コード {{exit}})",
+        "fileLevelOk": "正常",
+        "fileLevelWarning": "警告",
+        "fileLevelError": "エラー",
+        "failed": "{{repository}} の健全性チェックに失敗しました: {{message}}",
+        "unsupported": "{{machine}} の renet はリポジトリの健全性チェックより古いバージョンです。rdc machine setup {{machine}} で更新してください",
+        "renetFailed": "renet が健全性チェックを実行できませんでした"
+      },
+      "repair": {
+        "description": "宣言されたクラスが許可するリポジトリの Rediaccfile の repair() 関数を実行し、その後 health() を再実行します (終了コード 0: ok、1: 警告、2: エラーまたは修復失敗)",
+        "descriptionShort": "リポジトリの Rediaccfile で許可された repair() 関数を実行し、ヘルスを再検査します",
+        "optionDryRun": "どの repair() が実行されるかを、何も実行せずに表示します",
+        "optionWithBackup": "リポジトリのスナップショットが成功した後に auto-with-backup の repair() 関数を許可します",
+        "optionWindowOverride": "window=only の repair() 関数をマシンのメンテナンスウィンドウ外でも実行します",
+        "optionYes": "クラスを宣言していない (operator-only) repair() 関数を確認なしで実行します",
+        "header": "\n{{repository}} の修復:",
+        "summary": "repair() を {{ran}} 件実行、失敗 {{failed}} 件。health() は現在 {{level}} です",
+        "withheldNeedsBackup": "auto-with-backup の repair() 関数は実行されませんでした。--with-backup を指定してください",
+        "withheldSnapshotFailed": "auto-with-backup の repair() 関数は実行されませんでした。スナップショットに失敗しました",
+        "withheldNotConfirmed": "クラスを宣言していない (operator-only) repair() 関数は確認されなかったため実行されませんでした (--yes で実行)",
+        "confirmOperatorOnly": "これらの repair() 関数はクラスを宣言しておらず operator-only として扱われます: {{files}}。実行しますか?",
+        "unreadable": "renet が修復レポートなしで応答しました",
+        "unsupported": "{{machine}} の renet は repository repair に対応していません。rdc machine setup {{machine}} で更新してください",
+        "renetFailed": "renet は修復を実行できませんでした"
+      },
       "sync": {
         "description": "リポジトリとファイルの同期（一括プッシュ/プル、ファイル転送）",
         "download": {
@@ -2318,6 +2499,37 @@
           "completed": "{{device}} を「{{repository}}」から取り消しました",
           "failed": "デバイスの取り消しに失敗しました"
         }
+      },
+      "permission": {
+        "descriptionShort": "リポジトリの Rediaccfile が到達できる範囲を付与または取り消す",
+        "description": "リポジトリの Rediaccfile の up() と down() が到達できる範囲を広げます。これらは権限のない汎用ユーザーとして実行されます。付与ではパス（--path）か、権限降格なしの root（--root）を追加します。付与はマシンが強制し、Rediaccfile が要求できるのは '# rediacc:needs' 行だけで、fork は付与なしで始まります。",
+        "nothingToChange": "permission {{verb}} には --root または --path が必要です",
+        "grant": {
+          "descriptionShort": "リポジトリの up() と down() の到達範囲を広げる",
+          "description": "リポジトリの Rediaccfile の up() と down() に、パスへの到達または root での実行を許可します。--root は、エージェント開始前にユーザーが REDIACC_ALLOW_GRAND_REPO を設定していない限り、エージェントには拒否されます。",
+          "rootOption": "権限降格なしで up() と down() を root として実行する",
+          "pathOption": "up() と down() が到達できる絶対パス。PATH[:ro|:rw] の形式（既定は読み取り専用）",
+          "starting": "「{{machine}}」 上の 「{{repository}}」 に付与しています...",
+          "completed": "「{{repository}}」 に付与しました",
+          "failed": "権限の付与に失敗しました"
+        },
+        "revoke": {
+          "descriptionShort": "リポジトリからパスまたは root の付与を取り消す",
+          "description": "ライフサイクルのパス付与、または root 付与をリポジトリから取り消します。次回の up() と down() は残った権限で実行されます。",
+          "rootOption": "root の付与を取り消す",
+          "pathOption": "取り消す絶対パス",
+          "starting": "「{{machine}}」 上の 「{{repository}}」 から取り消しています...",
+          "completed": "「{{repository}}」 から取り消しました",
+          "failed": "権限の取り消しに失敗しました"
+        },
+        "show": {
+          "descriptionShort": "リポジトリのライフサイクル付与を表示する",
+          "description": "リポジトリの up() と down() が root で実行されるか、どのパスに到達できるかを表示します。",
+          "starting": "「{{machine}}」 上の 「{{repository}}」 の付与を読み取っています...",
+          "completed": "「{{repository}}」 の付与を読み取りました",
+          "failed": "付与を読み取れませんでした",
+          "unreadable": "マシンの付与出力を読み取れませんでした"
+        }
       }
     },
     "serve": {
@@ -2334,6 +2546,190 @@
       "optionMode": "配置先: daemon（顧客ホスト）または container",
       "optionPort": "待ち受けるポート",
       "summary": "リモートクライアント向けのエグゼキューターとして実行"
+    },
+    "server": {
+      "summary": "セルフホストの Rediacc アカウントサーバーをインストールして実行する",
+      "description": "セルフホストの Rediacc アカウントサーバー (Elite) をマシン上のリポジトリとしてインストールし、確認、アップグレード、バックアップ、ライセンス付与を行います。この CLI をエグゼキューターとして動かす `rdc serve` とは別のものです。",
+      "domainArgument": "インストール済みサーバーの公開ドメイン",
+      "optionMachine": "サーバーが動作するマシン (このデバイスにそのドメインのインストール記録がない場合)",
+      "optionRepo": "サーバーが動作するリポジトリ (既定: elite)",
+      "install": {
+        "summary": "マシンにアカウントサーバーをインストールする",
+        "description": "既存のマシンにセルフホストのアカウントサーバーをインストールします。マシンの確認、renet がない場合のセットアップ、DNS の待機、TLS の設定、リポジトリの作成、マシン上でのキー生成、ライセンス付与、起動、オーナーアカウントの作成まで行います。すべての値にフラグがあり、ターミナルでは未指定の値を尋ねます。再実行すると完了済みのステップはスキップされます。",
+        "machineArgument": "インストール先の設定済みマシン (または --ip と --user で登録)",
+        "optionIp": "先に登録する既存サーバーまたは LAN デバイスのアドレス",
+        "optionUser": "そのマシンの SSH ユーザー",
+        "optionPort": "そのマシンの SSH ポート (既定: 22)",
+        "optionName": "そのマシンを登録する名前 (既定: server-<ip>)",
+        "optionDomain": "サーバーの公開ドメイン (例: accounts.example.com)",
+        "optionStoreDomain": "バックアップストアの公開ドメイン (既定: <name>-store.<ドメインの残り>)",
+        "optionRepo": "リポジトリ名 (既定: elite)",
+        "optionSize": "リポジトリのサイズ (既定: 10G)",
+        "optionOwner": "インストール中に作成するオーナーアカウントのメールアドレス (既定: ログイン中のアカウント)",
+        "optionTls": "証明書の取得方法: letsencrypt (HTTP-01)、cloudflare (DNS-01)、byo (既存の証明書)",
+        "optionCfToken": "DNS-01 用の Cloudflare API トークン (--tls cloudflare 指定時)",
+        "optionCertEmail": "Let's Encrypt が期限通知を送るメールアドレス (既定: オーナー)",
+        "optionTlsCert": "PEM 形式の証明書ファイル (--tls byo 指定時)。両方のドメインをカバーすること",
+        "optionTlsKey": "その証明書の秘密鍵ファイル (--tls byo 指定時)",
+        "optionTlsCa": "サーバー証明書のチェーン先の CA 証明書。ヘルスチェックに使用",
+        "optionLicence": "auto: ログイン中のアカウントの証明書、なければ無料プラン。free: 無料プランで開始",
+        "optionCert": "オフラインインストール用の委任証明書ファイル。マシン上で生成したキーを指定している必要があります",
+        "optionImage": "実行するサーバーイメージ (既定: ghcr.io/rediacc/server:latest)",
+        "optionImageFile": "pull せずに転送する保存済みイメージアーカイブ (docker save)",
+        "optionLocalImage": "ローカルの Docker から --image を保存し、pull せずに転送する",
+        "optionNoDnsWait": "名前解決を待たずに DNS レコードを表示する",
+        "optionBwsProject": "生成したキーをこの Bitwarden Secrets Manager プロジェクトにもコピーする。指定しなければキーはマシンの外に出ません",
+        "optionRotate": "--bws-project と併用し、値が異なる保存済みの項目を拒否せず置き換える",
+        "optionYes": "何も尋ねない: 既定値を使い、不足している値は拒否する",
+        "help": "ステップ (順番どおり。各ステップは記録されるため、再実行では完了済みがスキップされます):\n  preflight  sudo -n、アーキテクチャ、ポート 80 と 443、ディスク容量、時計のずれ\n  setup      renet がない場合の rdc machine setup\n  dns        A と AAAA レコードを表示し、両ドメインがマシンに解決されるまで待機\n  tls        Let's Encrypt、Cloudflare DNS-01、または既存の証明書\n  repo       リポジトリを作成し、elite テンプレートを適用\n  keys       すべてのキーをマシン上で生成し、リポジトリの secrets.env に保存\n  licence    --cert、なければログイン中のアカウントの証明書、なければ無料プラン\n  image      マシン上でイメージを pull、または --image-file を転送\n  up         サーバーを起動し、https://<domain>/health を待機\n  owner      オーナーアカウントを作成\n\n未登録のマシンは --ip と --user で追加します。クラウド VM は先に rdc machine provision で作成します。\nDNS レコードは表示のみで、お客様のゾーンには書き込みません。\nターミナルでは、インストールの最後にワンタイムのリカバリーバンドルが表示されます。安全な場所に保管してください。ログには残らず、--output json にも含まれません。後から rdc server backup で再表示できます。",
+        "step": "ステップ: {{step}}",
+        "skipped": "ステップ {{step}}: 以前に完了済みのためスキップ",
+        "done": "アカウントサーバーが https://{{domain}} で稼働しています",
+        "freeTier": "{{domain}} は無料プランで動作しています。`rdc server licence {{domain}}` を実行してライセンスを付与してください。",
+        "backupHint": "`rdc server backup {{domain}} --out <file>` でリカバリーバンドルを保存してください。オーナーの初期パスワードは {{ownerFile}} にあります。",
+        "examples": {
+          "brought": "既存のサーバーをアドレスで登録し、そこにインストールします。",
+          "configured": "設定済みのマシンにプロンプトなしでインストールします。",
+          "lan": "既存の証明書を使い、無料プランで LAN マシンにインストールします。"
+        }
+      },
+      "status": {
+        "description": "インストール済みサーバーのヘルス、プラン、証明書、イメージを表示する",
+        "certRefused": "拒否 ({{reason}}) {{at}}",
+        "certRefusedRun": "実行: rdc server licence {{domain}}"
+      },
+      "backup": {
+        "description": "インストール済みサーバーのリカバリーバンドル (キー) を表示、またはファイルに書き出す",
+        "optionOut": "stdout ではなく、このファイルにバンドルを書き出す (モード 0600)",
+        "written": "リカバリーバンドルを {{file}} に書き出しました (モード 0600)",
+        "examples": {
+          "out": "所有者だけが読めるファイルにリカバリーバンドルを保存します。"
+        }
+      },
+      "upgrade": {
+        "description": "インストール済みサーバーをアップグレードする: リポジトリをロールバックポイントとしてフォークし、新しいイメージを配置し、組み込みテンプレートが新しければ再適用して、再起動します",
+        "descriptionShort": "インストール済みサーバーをロールバック用フォーク付きでアップグレード",
+        "confirm": "{{domain}} のアカウントサーバーをアップグレードしますか?",
+        "forking": "リポジトリをロールバックポイント {{tag}} としてフォークしています",
+        "template": "elite テンプレートを再適用しています (バージョン {{from}} から {{to}})",
+        "templateCurrent": "デプロイ済みのテンプレート (バージョン {{version}}) は最新です",
+        "done": "{{domain}} をアップグレードしました。ロールバックポイント: {{rollback}}",
+        "migratingCert": "証明書を secrets.env から証明書の受け取りフォルダーへ移しています。サーバーは起動時に適用します"
+      },
+      "licence": {
+        "description": "無料プランのサーバーを、ログイン中のアカウントまたは --cert の委任証明書に切り替える",
+        "done": "{{domain}} はサブスクリプション {{subscription}} でライセンス付与されました",
+        "certUnreadable": "証明書ファイル {{file}} を読み取れません",
+        "certInvalid": "{{file}} は使用可能な委任証明書ではありません: {{error}}",
+        "keyMismatch": "{{file}} は、マシン上で生成されたキーとは別のキー用に発行されています。マシンのキー用の証明書を発行してください。",
+        "issuedKeyMismatch": "アカウントサーバーが、マシン上で生成されたキーとは別のキー用の証明書を発行しました",
+        "noLogin": "ログイン中のアカウントがありません: サーバーは無料プランで起動します",
+        "planDisallows": "このサブスクリプションでは委任証明書を保持できません ({{error}})。サーバーは無料プランで起動します",
+        "otherKey": "このサブスクリプションには、別のキー用の有効な委任証明書 ({{certId}}) がすでにあります。ポータルで失効させてから、インストールを再実行してください。{{error}}",
+        "missingScope": "このログインでは委任証明書を発行できません。オーナーまたは管理者として 2FA で `rdc subscription login` をやり直すか、--licence free でインストールしてください。",
+        "offerFree": "代わりに無料プランでサーバーを起動しますか?",
+        "noCertForUpgrade": "利用できる委任証明書がありません: オーナーまたは管理者として 2FA で `rdc subscription login` にログインするか、--cert <file> を指定してください",
+        "freeProbeHoldsCert": "証明書をインストールしていないのに、サーバーが証明書を保持しているかのように応答しています",
+        "viaInbox": "サーバーが証明書の受け取りフォルダーから証明書を適用しました。再起動は不要でした",
+        "alreadyCurrent": "サーバーはすでにこの証明書 ({{certId}}) を保持しています。適用するものはありません",
+        "rejected": "サーバーが証明書を拒否しました ({{reason}}): {{detail}}",
+        "noResult": "配置した証明書に {{seconds}} 秒以内にサーバーが応答しませんでした。サーバーが動作しているか確認してください",
+        "inboxBusy": "サーバーの証明書の受け取りフォルダーで別の証明書が処理待ちです。その結果が出てから再試行してください",
+        "confirmMismatch": "サーバーが報告している証明書は {{expected}} ではなく {{actual}} です。新しい証明書は有効になっていません",
+        "confirmSkipped": "保存済みのオーナーのログイン情報がない ({{ownerFile}}) ため、サーバーの証明書を確認できませんでした。受け取りフォルダーの応答を採用します",
+        "bootRefused": "サーバーは起動時に証明書を拒否しました ({{reason}}): {{detail}}",
+        "droppedCert": "証明書 {{certId}} をインボックスに置きました",
+        "noUpstreamKey": "サーバーに UPSTREAM_PUBLIC_KEY がないため、証明書を検証できず、新しい証明書でも解決しません。{{domain}} のシークレットに UPSTREAM_PUBLIC_KEY を設定し、`rdc server upgrade {{domain}}` を実行してください。",
+        "bootRefusalStays": "証明書は適用されましたが、サーバーはまだ起動時の拒否 ({{reason}}) を報告しています。サーバーのログを確認してください"
+      },
+      "bundle": {
+        "header": "{{domain}} のリカバリーバンドル。サーバーのキーを復元できるため、オフラインで保管してください。",
+        "once": "このリカバリーバンドルは一度だけ表示されます。今すぐ安全な場所に保管してください:",
+        "owner": "オーナーアカウント: {{email}}、初期パスワード: {{password}}"
+      },
+      "bws": {
+        "skipped": "--bws-project なし: キーはマシン上にのみ保持されます",
+        "done": "キーを Bitwarden Secrets Manager にバックアップしました: 作成 {{created}}、変更なし {{unchanged}}、置き換え {{rotated}}",
+        "noToken": "Bitwarden Secrets Manager のトークンがありません: BWS_ACCESS_TOKEN を設定するか、設定ディレクトリの bws-access-token ファイルに書き込んでください",
+        "listFailed": "bws secret list に失敗しました",
+        "noWriter": "--bws-project には console のチェックアウトが必要です: 書き込みは private/account/scripts/rotation/bws-write.ts を経由し、値をコマンドラインに出さないようにします",
+        "writeFailed": "{{key}} を Bitwarden Secrets Manager に書き込めませんでした",
+        "readFailed": "マシンからキーを読み取れませんでした",
+        "badName": "不透明でないストア名を拒否しました",
+        "differs": "{{key}} はすでに別の値で保存されています。置き換えるには --rotate を指定してください"
+      },
+      "dns": {
+        "create": "DNS プロバイダーで次の DNS レコードを作成してください:",
+        "waiting": "レコードが解決されるのを待っています...",
+        "resolved": "DNS がマシンに解決されました",
+        "notWaiting": "DNS を待機しません",
+        "timeout": "次のレコードはまだ解決されません: {{records}}",
+        "resolvesElsewhere": "{{name}} は {{want}} ではなく {{found}} に解決されます。先にレコードを修正してください",
+        "written": "{{type}} {{name}} -> {{value}} を書き込みました"
+      },
+      "health": {
+        "failed": "https://{{domain}}/health が 200 ではなく {{status}} を返しました",
+        "noAnswer": "応答なし",
+        "certMismatch": "{{domain}} の証明書は {{sans}} をカバーしていますが、{{domain}} はカバーしていません"
+      },
+      "image": {
+        "pulling": "マシン上で {{image}} を pull しています",
+        "pullFailed": "{{image}} の pull に失敗しました: {{detail}}",
+        "saving": "ローカルの Docker から {{image}} を保存しています",
+        "saveFailed": "docker save {{image}} に失敗しました"
+      },
+      "owner": {
+        "stepFailed": "{{step}} が {{status}} {{error}} を返しました",
+        "raced": "サーバーのサブスクリプション {{box}} が証明書のもの ({{cert}}) と一致しません: 別のアカウントが先に登録しました"
+      },
+      "preflight": {
+        "refused": "{{machine}} は準備ができていません:",
+        "noAnswer": "{{machine}} が SSH 経由の事前チェックに応答しませんでした",
+        "noSudo": "{{machine}} で sudo -n が失敗します。SSH ユーザーにはパスワードなしの sudo が必要です",
+        "arch": "アーキテクチャ {{arch}} は未対応です (x86_64 または aarch64)",
+        "portBusy": "ポート {{port}} は {{holder}} が使用中です",
+        "disk": "データストアの空き容量は {{free}} GiB で、{{need}} GiB が必要です",
+        "clock": "マシンの時計が {{skew}} 秒ずれています (許容は最大 {{max}} 秒)。時刻同期を有効にしてください"
+      },
+      "tls": {
+        "byoNeedsPair": "--tls byo には --tls-cert と --tls-key が必要です",
+        "byoFailed": "{{host}} の証明書のインストールに失敗しました: {{detail}}",
+        "byoInstalled": "{{host}} の証明書をインストールしました",
+        "cloudflareNeedsToken": "--tls cloudflare には --cf-token が必要です"
+      },
+      "prompts": {
+        "machine": "インストール先のマシン",
+        "machineAddExisting": "既存のサーバーまたは LAN デバイス (IP とユーザー)",
+        "provisionHint": "クラウド VM は先に rdc machine provision で作成します。",
+        "machineIp": "IP アドレス",
+        "machineUser": "SSH ユーザー",
+        "machinePort": "SSH ポート",
+        "machineName": "このマシンの名前",
+        "domain": "サーバーの公開ドメイン",
+        "storeDomain": "バックアップストアの公開ドメイン",
+        "tls": "証明書",
+        "tlsLetsencrypt": "Let's Encrypt (マシンがポート 80 で応答)",
+        "tlsCloudflare": "Cloudflare DNS (API トークン)",
+        "tlsByo": "既存の証明書とキー",
+        "cfToken": "Cloudflare API トークン",
+        "owner": "オーナーアカウントのメールアドレス",
+        "required": "値が必要です"
+      },
+      "errors": {
+        "needsTTY": "ターミナル以外で実行する場合は {{flag}} が必要です",
+        "machineUnknown": "マシン {{machine}} はこの設定にありません。登録するには --ip と --user を指定してください。",
+        "machineNameTaken": "{{machine}} という名前のマシンはすでに {{ip}} で登録されています。別の --name を指定してください",
+        "otherMachine": "{{domain}} はこのデバイスから {{machine}} にインストールされました",
+        "repoExists": "リポジトリ {{repo}} はすでに {{machine}} に存在し、このインストールで作成されたものではありません。--repo <name> を指定してください",
+        "repoUnknown": "リポジトリ {{repo}} はこの設定にありません",
+        "noRecord": "このデバイスに {{domain}} のインストール記録がありません。--machine を指定してください (elite 以外なら --repo も)",
+        "noDaemon": "リポジトリ {{repo}} には Docker デーモンがまだ記録されていません",
+        "keygenNoKey": "マシンから Ed25519 公開鍵が報告されませんでした",
+        "bundleIncomplete": "マシン上の secrets.env に {{keys}} がありません",
+        "boxScriptFailed": "{{machine}} 上のコマンドが {{code}} で終了しました: {{detail}}",
+        "rdcFailed": "{{command}} に失敗しました (終了コード {{code}})",
+        "certAndFree": "--cert と --licence free は併用できません"
+      }
     },
     "shortcuts": {
       "cancel": {
@@ -2367,10 +2763,10 @@
       "description": "ライセンスとサブスクリプショントークンを管理する。login でサインインし、status で確認し、refresh でライセンスを再発行する",
       "descriptionShort": "マシンライセンスとサブスクリプションの管理",
       "login": {
+        "backupNeedsTwoFactor": "バックアップストレージの管理権限なしでサインインしました。{{url}} の設定で二要素認証を有効にしてから、もう一度サインインしてください。",
         "channelSynced": "更新チャンネルを{{channel}}に設定しました。",
         "description": "WebポータルのAPIトークンで認証",
         "discoveringRegions": "利用可能なリージョンを検出中...",
-        "edgeSeparator": "Edge チャンネル",
         "emptyToken": "APIトークンを空にすることはできません（stdin からトークンが渡されませんでした）。",
         "expired": "認証がタイムアウトしました。もう一度お試しください。",
         "machines": "マシン: {{active}}/{{max}}",
@@ -2390,11 +2786,19 @@
         "regionSelected": "データリージョン: {{region}} ({{domain}})",
         "serverChanged": "サーバーが変更されました。以前のセッションはクリアされました。",
         "success": "ログイン成功",
+        "termsAccepted": "承諾済みの利用規約: バージョン {{version}}",
+        "termsPending": "利用規約はまだ承諾されていません。{{url}} で承諾してください",
+        "termsPendingAccept": "規約は {{url}} で確認し、{{acceptUrl}} で承諾してください",
         "tokenAndPassword": "--token と --password-stdin は同時に指定できません。",
         "totpRequired": "このアカウントでは二要素認証が必要です。{{field}} に現在のコードを設定してください。",
         "validated": "トークン検証済み",
         "validating": "トークンを検証中...",
         "waitingApproval": "ブラウザでの認証を待っています..."
+      },
+      "register": {
+        "description": "ブラウザでアカウントを作成（メール入力済み）してログイン",
+        "optionEmail": "登録ページに事前入力するメールアドレス",
+        "invalidEmail": "有効なメールアドレスを入力してください。"
       },
       "logout": {
         "description": "保存されたサブスクリプショントークンを削除する",
@@ -2424,7 +2828,21 @@
           "refreshing": "リポジトリライセンスを更新中..."
         },
         "success": "ライセンスが更新・インストールされました",
-        "targetExclusive": "-m または --repo のどちらか一方のみを指定してください。--repo は ref から自動的にマシンを決定します"
+        "adoptOrigin": "別のアカウントサーバーが発行したライセンスを、この設定のアカウントサーバーから再発行して移行します。指定しない場合、そうしたライセンスは変更されません",
+        "adoptOriginNeedsTarget": "--adopt-origin はマシン全体のライセンスを移行します。-m <machine> と一緒に指定してください",
+        "adoptOriginNeedsLogin": "--adopt-origin はこの設定のアカウントサーバーからライセンスを再発行するため、ログインが必要です。先に \"rdc subscription login\" を実行してください",
+        "targetExclusive": "-m または --repo のどちらか一方のみを指定してください。--repo は ref から自動的にマシンを決定します",
+        "noLogin": {
+          "renewing": "ライセンス自身の認証情報で更新しています...",
+          "renewed": "ライセンスの更新が完了しました",
+          "none": "このマシンにはインストール済みのリポジトリライセンスがありません。",
+          "repoRenewed": "{{repositoryGuid}}: 更新しました",
+          "repoNotDue": "{{repositoryGuid}}: 更新時期ではありません",
+          "repoNeedsLogin": "{{repositoryGuid}}: スキップしました。ログインが必要です ({{detail}})",
+          "repoFailed": "{{repositoryGuid}}: 更新できませんでした ({{detail}})",
+          "failed": "{{count}} 件のライセンスを更新できませんでした。上の行を確認してください。ログインしても結果は変わりません。",
+          "paidNote": "ログインなしで更新されるのは自己更新できるライセンス (FREE ライセンス) のみです。有料ライセンスには \"rdc subscription login\" が必要です。"
+        }
       },
       "repo": {
         "status": {
@@ -2446,16 +2864,81 @@
         "overLimitSummary": "  {{count}} 台のマシンがマシンスロットの上限を超えてソフト保持されています。更新は引き続き成功しますが、新規リポジトリはスロットを解放するか上限を引き上げるまでライセンスを取得できません。",
         "parseFailed": "  ライセンスファイルを解析できませんでした",
         "remote": "\nリモートサブスクリプション:",
-        "remoteMachine": "    - {{id}}... (最終確認: {{lastSeen}})",
         "remoteMachineActivations": "  マシンアクティベーション: {{active}}/{{max}}",
-        "remoteMachineOverLimit": "    - {{id}}…（最終確認: {{lastSeen}}）上限超過",
-        "remotePlan": "  プラン:     {{plan}}",
+        "remotePlan": "  プラン: {{plan}}",
         "remoteRepoLicenseIssuances": "  フローティングライセンス要求: {{used}}/{{limit}}",
         "remoteRepoLicenses": "  リポジトリライセンス: 追跡 {{totalTrackedRepos}}、有効 {{validCount}}、更新推奨 {{refreshRecommendedCount}}、完全失効 {{hardExpiredCount}}",
-        "remoteRepoLicensesInConfig": "  この構成のリポジトリライセンス: 追跡 {{totalTrackedRepos}}、有効 {{validCount}}、更新推奨 {{refreshRecommendedCount}}、完全失効 {{hardExpiredCount}}",
-        "remoteRepoLicensesNotInConfig": "  この構成にないリポジトリライセンス(削除済み、フォーク、または別の構成): {{count}}",
         "remoteStatus": "  ステータス: {{status}}",
-        "serverWouldUse": "使用するアカウントサーバー: {{server}}"
+        "serverWouldUse": "使用するアカウントサーバー: {{server}}",
+        "licencesHeader": "  ライセンス:",
+        "colGuid": "GUID",
+        "colHardExpiry": "完全失効日",
+        "colKind": "種類",
+        "colLastSeen": "最終確認",
+        "colMachine": "マシン",
+        "colName": "名前",
+        "colRefreshBy": "更新期限",
+        "colRepo": "リポジトリ",
+        "colState": "状態",
+        "colWhere": "場所",
+        "elsewhereAbsent": "この構成にないもの {{count}} 件({{state}})",
+        "elsewhereDeleted": "削除済み {{count}} 件({{state}})",
+        "elsewhereSummary": "その他: {{items}}",
+        "listHint": "一覧を表示: rdc subscription status --all",
+        "noLiveLicences": "  この構成のリポジトリには、まだライセンスがありません。",
+        "optionAll": "削除済みのリポジトリと、この構成にないリポジトリのライセンスも表示します",
+        "othersHeader": "  削除済みと不明のライセンス:",
+        "overLimitCell": "上限超過",
+        "refreshHint": "更新するには: rdc subscription refresh",
+        "retireHint": "完全に失効したものを返却: rdc subscription retire --expired",
+        "whereAbsent": "この構成にはありません",
+        "whereDeleted": "削除済み"
+      },
+      "licenceState": {
+        "valid": "有効",
+        "refreshRecommended": "更新を推奨",
+        "hardExpired": "完全に失効"
+      },
+      "retire": {
+        "tooShort": "リポジトリの GUID を 8 文字以上指定してください: {{guid}}",
+        "notFound": "このアカウントのライセンスレポートに「{{guid}}」のライセンスはありません。",
+        "ambiguous": "「{{guid}}」は {{count}} 件のライセンスに一致します: {{matches}}。もう少し長く指定してください。",
+        "inConfig": "{{name}} はこの構成にまだ存在し、ライセンスの状態は「{{state}}」です。返却したライセンスは更新しても元に戻らないため、そのままです。それでも返却するには --force を付けてください。",
+        "needsYes": "ライセンスの返却には確認が必要ですが、標準入力が端末ではありません。確認するには --yes を付けてください。",
+        "confirm": "{{name}}({{guid}}、{{state}})のライセンスを返却しますか?更新しても元には戻りません。",
+        "success": "ライセンスを返却しました: {{name}}",
+        "description": "存在しなくなったリポジトリのライセンスを返却し、ライセンス数とお知らせから外します。",
+        "argGuid": "リポジトリの GUID、またはアカウントレポートにあるライセンスの先頭 8 文字以上",
+        "optionForce": "リポジトリがこの構成に残っていて、完全失効していないライセンスも返却します",
+        "dryRunNeedsExpired": "--dry-run は --expired と一緒に使います。",
+        "expiredConfirm": "{{count}} 件のライセンスを返却しますか?更新しても元には戻りません。",
+        "expiredDryRun": "ドライラン: 何も返却していません。",
+        "expiredFailed": "{{name}} を返却できませんでした: {{error}}",
+        "expiredList": "削除済みまたは不明のリポジトリで完全に失効したライセンス {{count}} 件:",
+        "expiredNeedsConfig": "この構成にはリポジトリがないため、--expired では不要なライセンスを判別できません。--config で構成を選んでください。",
+        "expiredNone": "返却する対象の、削除済みまたは不明のリポジトリで完全に失効したライセンスはありません。",
+        "expiredResult": "返却 {{retired}} 件、スキップ {{skipped}} 件(稼働中のリポジトリ)、失敗 {{failed}} 件。",
+        "expiredWithGuid": "--expired は完全に失効したライセンスをすべて返却するため、GUID は指定できません。",
+        "needsGuidOrExpired": "リポジトリの GUID か --expired を指定してください。",
+        "optionDryRun": "--expired と併用: 返却される内容を一覧表示し、何も変更しません",
+        "optionExpired": "削除済み、またはこの構成にないリポジトリで完全に失効したライセンスをすべて返却します"
+      },
+      "notices": {
+        "description": "アカウントのお知らせを一覧表示します。ライセンスの期限、バックアップの状態、更新、証明書、利用規約が対象です。",
+        "optionAll": "非表示にしたお知らせと全ページを含めます(既定は直近 30 日分のみ)",
+        "optionUnread": "未読のお知らせのみ",
+        "optionMarkRead": "一覧に出したお知らせを既読にします",
+        "empty": "お知らせはありません。",
+        "markedRead": "{{count}} 件のお知らせを既読にしました。",
+        "more": "ほか {{count}} 件",
+        "summary": {
+          "repoLicence": "完全失効 {{hardExpired}} 件、更新推奨 {{refreshRecommended}} 件: {{names}}",
+          "backupHealth": "バックアップの状態に関する項目 {{count}} 件",
+          "licenceRenewal": "{{planCode}} は {{date}} に更新されます",
+          "certExpiry": "{{track}} 証明書 {{number}} は {{date}} に失効します",
+          "evalExpiry": "{{planCode}} の試用は {{date}} に終了します",
+          "termsNotice": "利用規約 {{version}} は {{date}} に発効します"
+        }
       }
     },
     "sync": {
@@ -2652,6 +3135,31 @@
         "checksumMismatch": "{{url}} のチェックサムが一致しません。期待値 {{expected}}、実際 {{actual}}。ダウンロードを削除し、何もインストールしていません。",
         "badArchive": "ダウンロードしたアーカイブは使用できません: {{reason}}"
       }
+    },
+    "version": {
+      "channel": "更新チャンネル: {{channel}}",
+      "description": "rdc のバージョン、プラットフォーム、更新チャンネル、有効なライセンスを表示します。ログイン済みならプラン、未ログインなら「匿名（リポジトリごとの FREE）」、アカウントサーバーに接続できない場合は「不明（サーバーに接続できません）」と表示します。--version フラグは従来どおりバージョンだけを表示します。",
+      "descriptionShort": "CLI のバージョン、チャンネル、有効なライセンスを表示します",
+      "license": {
+        "anonymous": "匿名（リポジトリごとの FREE）",
+        "label": "ライセンス: {{license}}",
+        "unknown": "不明（オフライン）",
+        "unreachable": "不明（サーバーに接続できません）"
+      },
+      "platform": "プラットフォーム: {{platform}} {{arch}}"
+    },
+    "legal": {
+      "accepted": "承諾済み: バージョン {{version}}、{{at}}（{{method}}）",
+      "acceptedUnreachable": "承諾済み: 不明（サーバーに接続できません）",
+      "binding": "正本",
+      "credits": "サードパーティの通知: {{command}}",
+      "description": "各言語の法的文書へのリンクと、拘束力のある英語版のリンク、現行の利用規約のバージョン（チェックサムとアーカイブ URL 付き）、記録済みの承諾（ログイン時はアカウントサーバー、未ログイン時はこの設定から）、契約当事者を表示します。サードパーティの通知は rdc credits --licenses にあります。",
+      "descriptionShort": "法的文書、利用規約のバージョン、承諾状況を表示します",
+      "documentsTitle": "法的文書:",
+      "entity": "契約当事者: {{name}}、{{register}} {{code}}、VAT {{vat}}、{{address}}",
+      "notAccepted": "承諾済み: 未承諾",
+      "terms": "利用規約: バージョン {{version}}、{{effective}} から有効",
+      "upcoming": "次のバージョン {{version}} は {{effective}} に発効します"
     }
   },
   "docs": {
@@ -2668,8 +3176,7 @@
         "machineRequired": "`--machine`でマシンを指定するか、コンテキストのデフォルトを設定してください",
         "noActiveConfig": "アクティブな設定がありません。`rdc config init` で作成してください",
         "permissionDenied": "アカウントに必要な権限がありません",
-        "regionRequired": "`--region`でリージョンを指定するか、コンテキストのデフォルトを設定してください",
-        "teamRequired": "`--team`でチームを指定するか、コンテキストのデフォルトを設定してください"
+        "regionRequired": "`--region`でリージョンを指定するか、コンテキストのデフォルトを設定してください"
       }
     },
     "frontmatter": {
@@ -2701,6 +3208,7 @@
     "pageTitle": "Rediacc CLIリファレンス",
     "sectionTitles": {
       "backup": "バックアップと復元",
+      "server": "サーバーのインストール",
       "cluster": "クラスター管理",
       "config": "設定管理",
       "credits": "サードパーティクレジット",
@@ -2719,7 +3227,9 @@
       "term": "SSHターミナルアクセス",
       "update": "CLIアップデート",
       "vscode": "VS Code統合",
-      "tools": "ローカルツール"
+      "tools": "ローカルツール",
+      "legal": "法的文書と利用規約",
+      "version": "バージョン情報"
     },
     "supplements": {
       "config": {
@@ -2767,7 +3277,13 @@
       "rotateNotSensitive": "ポインタ「{{pointer}}」は機密フィールドではありません。代わりに 'config field set' を使用してください。",
       "rotateRequiresTty": "config field rotate には対話型 TTY による確認が必要です。非対話型では拒否されます(上書きには REDIACC_ALLOW_CONFIG_EDIT を設定)。",
       "showReveal": "--reveal はエージェント環境ではブロックされます。秘匿された `rdc config show` または `rdc config field get --pointer <pointer> --digest` を使用してください。",
-      "showRevealRequiresTty": "--reveal には対話型 TTY が必要です。平文を非 TTY 先へ流すことは拒否します。"
+      "showRevealRequiresTty": "--reveal には対話型 TTY が必要です。平文を非 TTY 先へ流すことは拒否します。",
+      "rootGrantBlocked": "エージェントは 「{{name}}」 に root 付与を与えることはできません。Rediaccfile が権限降格なしで実行されてしまいます。\n\nユーザーへ: 許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（またはすべてのリポジトリに対して *）を設定してください。",
+      "rootGrantOverride": "「{{name}}」 の root 付与について、エージェントが行った上書きは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。エージェント開始前にユーザーのみがこれを承認できます。",
+      "pathGrantBlocked": "エージェントは grand リポジトリ「{{name}}」のパス付与を変更できません。Rediaccfile が、ユーザーが承認していないホストのパスに届いてしまいます。\n\nユーザーへ: 許可するには、エージェントセッション開始前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（またはすべてのリポジトリに対して *）を設定してください。フォークには上書きは不要です。",
+      "pathGrantOverride": "grand リポジトリ「{{name}}」のパス付与について、エージェントが行った上書きは受け付けられません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。エージェント開始前にユーザーのみがこれを承認できます。",
+      "limitsGrantBlocked": "エージェントはグランドリポジトリ「{{name}}」のリソース制限を変更できません。上限を下げるとそのコンテナが OOM で終了する可能性があります。\n\nユーザー: 許可するには、エージェントのセッションを開始する前にターミナルで REDIACC_ALLOW_GRAND_REPO={{name}}（すべてのリポジトリなら *）を設定してください。フォークには不要です。",
+      "limitsGrantOverride": "グランドリポジトリ「{{name}}」の制限変更では、エージェントが設定した上書きは受け付けません。\n\nREDIACC_ALLOW_GRAND_REPO を設定しようとしないでください。許可できるのは、エージェントの起動前のユーザーだけです。"
     },
     "authRequired": "認証が必要です。実行してください: rdc subscription login",
     "cluster": {
@@ -2782,6 +3298,7 @@
       "targetRequired": "対象のマシン（-m）またはクラスター（--cluster）のいずれかが必要です"
     },
     "config": {
+      "missingNamed": "config「{{name}}」が存在しないため、何も変更していません。先に次のコマンドで作成してください: rdc config init {{name}}",
       "invalidEmail": "無効なメールアドレス: \"{{value}}\"。",
       "machineNotFound": "マシン \"{{name}}\" が設定に見つかりません。利用可能: {{available}}。",
       "noActiveConfig": "アクティブな設定がありません",
@@ -2790,7 +3307,8 @@
     },
     "container": {
       "execFailed": "container_exec に失敗しました",
-      "logsFailed": "container_logs に失敗しました"
+      "logsFailed": "container_logs に失敗しました",
+      "unknown": "リポジトリ \"{{repository}}\" にコンテナ \"{{container}}\" はありません。利用可能なコンテナ: {{containers}}。\"{{suggestion}}\" ではありませんか？"
     },
     "datastore": {
       "defaultIsImplicit": "デフォルトデータストアは暗黙的な存在であり、ここでの各コマンドはそれ以外の名前付きデータストアを管理する。",
@@ -2810,12 +3328,16 @@
     },
     "invalidFunctionParams": "関数 \"{{function}}\" のパラメータが無効です: {{errors}}",
     "invalidKey": "無効なキーです。有効なキー: {{keys}}",
+    "invalidOutputFormat": "出力形式 \"{{value}}\" は無効です。使用できる値: {{allowed}}",
     "license": {
       "machineSlotLimit": "この配置にはあと {{needed}} 個のマシンスロットが必要ですが、サブスクリプションの空きは {{free}} 個です（{{max}} 個中 {{active}} 個使用中）。スロットはそのマシンの最終アクティビティから5時間後に自動的に解放されるか、マシンが削除されると即座に解放されます。プランをアップグレードして上限を引き上げるか、Enterprise または パートナーのマシン上限について営業にご相談ください。",
       "nothingProvisioned": "何もプロビジョニングされませんでした: リポジトリは作成されていません。",
+      "backupStoreMismatch": "拒否されました: {{machine}} 上のリポジトリ \"{{repo}}\" のライセンスは {{installed}} が発行したものです。このバックアップコマンドはそのアカウントのバックアップストアを使うことになり、構成 \"{{config}}\" のアカウントサーバー {{expected}} のストアは使いません。アカウントサーバーが {{installed}} の構成で実行してください。",
+      "backupStoreUnreadable": "拒否されました: {{machine}} 上のリポジトリ \"{{repo}}\" にインストールされているライセンスを読み取れなかったため、このバックアップコマンドがどのアカウントのバックアップストアを使うのか判断できません。{{machine}} でパスワードなしの sudo が使えることを確認してから、再試行してください。",
       "partialPlacement": "配置は途中で停止しました: {{placed}} 台のマシンが完了し（{{placedNames}}）、{{remaining}} 台は開始されませんでした（{{remainingNames}}）。ロールバックは行われていないため、完了したマシンはそのリポジトリとスロットを保持します。スロットを解放するか上限を引き上げてから、再実行してください: {{command}}",
       "preflightTokenNotReady": "サブスクリプショントークンの準備ができていません。実行してください: rdc subscription login。{{machine}} へのデプロイはスキップされました。",
       "recoveryFailedNoKnownRepos": "{{machine}} でリポジトリが見つかりましたが、ローカル設定で追跡されているものはありません。追跡中のリポジトリを確認するには `rdc repo list` を実行してから再試行してください。",
+      "foreignOriginSkipped": "スキップしました: 発行元は {{licenseOrigin}} で、この設定のアカウントサーバー {{configOrigin}} ではありません (--adopt-origin で移行できます)",
       "recoveryFailedServerRejected": "アカウントサーバーが \"{{machine}}\" 上のリポジトリのライセンス発行を拒否しました。最初のエラー: {{error}}。詳細は次を実行してください: rdc subscription refresh --repo <repo-ref>",
       "recoveryFailedTokenNotReady": "サブスクリプショントークンが準備できていません。実行してください: rdc subscription login、その後再試行してください。"
     },
@@ -2823,9 +3345,12 @@
       "offerPrompt": "このコマンドにはライセンスが必要ですが、ログインしていません。ログインしますか、それとも無料ライセンスで続けますか？",
       "offerLogin": "アカウントにログインする",
       "offerFree": "無料ライセンスで続ける（最大 {{maxGb}} GB）",
-      "autoTaken": "ログインしていないため、無料ライセンス（最大 {{maxGb}} GB、ホスト型バックアップなし）を使用します。さらに使うにはアカウントを作成してください: {{url}}",
+      "autoTaken": "ログインしていないため、無料ライセンス（最大 {{maxGb}} GB、ホスト型バックアップなし）を使用します。無料アカウントを登録すると Community の上限 (リポジトリあたり {{repoGb}} GB、月 {{issuances}} 件のライセンス、ホスト型バックアップ {{backupGb}} GB) が使えます：{{url}}",
+      "defaultRegion": "リージョンが選択されていないため、無料ライセンスは {{server}} から発行されます。別のリージョンを選ぶには、--license-region <id> を指定するか、REDIACC_ACCOUNT_SERVER を設定してください。",
+      "regionIgnored": "この設定はすでに {{server}} を使用しているため、--license-region は無視されます。",
       "issued": "このリポジトリに無料ライセンスをインストールしました（最大 {{maxGb}} GB）。",
-      "noHostedBackup": "無料ライセンスにはホスト型バックアップが含まれません。このリポジトリをバックアップするには、アカウントを作成して有料プランを選んでください: {{url}}"
+      "registerHint": "この無料ライセンスにはホスト型バックアップがありません。無料アカウントを登録すると Community の上限 (リポジトリあたり {{repoGb}} GB、月 {{issuances}} 件のライセンス、ホスト型バックアップ {{backupGb}} GB) が使えます：{{url}}",
+      "noHostedBackup": "無料ライセンスにはホスト型バックアップが含まれません。無料アカウントを登録するとCommunityのホスト型バックアップを利用できます。さらに必要な場合は有料プランを選んでください: {{url}}"
     },
     "machineNotFound": "マシン \"{{name}}\" が見つかりません",
     "machineRequired": "マシン名が必要です。--machine <name> を使用してください",
@@ -2903,7 +3428,6 @@
       "remoteFileLocalNotDir": "--remote-file を指定した場合、--local は既存のディレクトリである必要があります: {{path}}",
       "remoteFileRequiresSingleFile": "--remote-file には、ファイルを指す --local パスが正確に 1 つ必要です。"
     },
-    "teamRequired": "チーム名が必要です。--team を使用するか、次のコマンドでデフォルトを設定してください: rdc config set team <name>",
     "term": {
       "connectivityFailed": "{{host}}:{{port}} に到達できません。{{error}}\n\nトラブルシューティング:\n  - マシンの電源が入っていてネットワークに接続されていることを確認してください\n  - マシンボルトの IP アドレスが正しいことを確認してください\n  - ポート {{port}} がファイアウォールによってブロックされていないことを確認してください\n  - マシンに ping を試してください: ping {{host}}",
       "dockerComposeForbidden": "リポジトリコンテキストでは \"docker compose\" は許可されていません。\n\n代わりに \"renet compose -- <args>\" を使用してください。これによりリポジトリごとのループバック IP、ホストネットワーク注入、CRIU ケーパビリティ、および compose 検証が適用されます。\"docker compose\" を直接実行するとこれらすべてがバイパスされ、デプロイが静かに破損します。\n\nオーケストレーションされたデプロイには、次を推奨します: rdc repo up <repo-ref>",
@@ -2918,8 +3442,16 @@
       "sshCode127": "リモートマシンにコマンドが見つかりません",
       "sshCode130": "接続がユーザーによって終了されました (Ctrl+C)",
       "sshCode255": "SSH 接続に失敗しました - 考えられる原因:\n    - 認証に失敗しました (SSH キーの権限を確認してください)\n    - ホストキーの検証に失敗しました\n    - ネットワーク接続が切断されました\n    - リモート SSH サービスが実行されていません",
+      "blankCommand": "-c のコマンドが空です。実行するコマンドを指定するか、-c を省略して対話シェルを開いてください。",
       "sshExitCode": "SSH が終了コード {{code}} で終了しました",
       "secretStagingFailed": "マシン上にリポジトリのシークレットを準備できませんでした（ssh の終了コード {{code}}）。"
+    },
+    "terms": {
+      "declined": "利用規約が承諾されなかったため、無料ライセンスは取得されませんでした。",
+      "required": "このアカウントでは利用規約が承諾されていません。{{url}} で承諾してから、もう一度コマンドを実行してください。",
+      "requiredAccept": "規約は {{url}} で確認し、{{acceptUrl}} で承諾してから、もう一度コマンドを実行してください。",
+      "requiredFree": "この無料ライセンスでは利用規約が承諾されていません。{{url}} で内容を確認し、{{flag}} を付けるか {{env}} を設定してください。",
+      "upcoming": "新しい利用規約 {{version}} は {{effective}} に発効します。内容は {{url}} で確認できます。"
     },
     "unknownCommand": "不明なコマンド \"{{command}}\" です。利用可能なコマンド: {{available}}",
     "unknownRegion": "不明なリージョン: {{region}}",
@@ -2968,6 +3500,7 @@
       "localSha256Mismatch": "{{image}} がダウンロード時に記録した sha256 と一致しなくなりました（期待値 {{expected}}、実際 {{actual}}）。再ダウンロードするか、そのまま送信するには --skip-verify を指定してください。",
       "registerFailed": "イメージは {{machine}} に {{guid}} として配置されましたが、設定への登録に失敗しました: {{error}}。未登録のイメージは次のコマンドで確認できます: rdc machine prune {{machine}} --orphaned-repos --dry-run",
       "atNeedsStore": "--at は --store と併用した場合のみ有効です。",
+      "fromNeedsStore": "--from は --store と併用した場合のみ有効です。",
       "storeRefusesMachine": "--store はバックアップストアから直接読み取るため、-m <machine> は指定できません。",
       "storeRefusesCheckpoint": "--store はマシンに触れないため、--checkpoint は指定できません。",
       "storeRefusesOption": "--store では {{option}} を指定できません。これはマシン経由のダウンロード用の設定です。ストアからの取得は自動で再開し、すべてのチャンクを検証します。",
@@ -2988,7 +3521,26 @@
       "noConfig": "{{path}} に tofu の構成 (main.tf.json) がありません。これを書き出すプロビジョニング手順が実行されていません。",
       "belowFloor": "{{path}} の{{engine}} {{version}}は最低バージョン {{floor}} より古いです。次のコマンドで固定版のOpenTofuをインストールしてください: rdc tools install tofu",
       "overrideUnusable": "REDIACC_TOFU は {{path}} を指していますが、OpenTofuとしてもTerraformとしても実行できません。変数を修正または削除するか、次のコマンドで固定版のOpenTofuをインストールしてください: rdc tools install tofu"
-    }
+    },
+    "jobs": {
+      "overlap": {
+        "refusedHead": "拒否しました: {{subject}}、{{origin}}。",
+        "warningHead": "警告: {{subject}}、{{origin}}。",
+        "seeIt": "  確認するには: {{attach}}",
+        "subject": "{{what}}({{doing}}{{scope}})は{{state}}です{{started}}",
+        "whatJob": "ジョブ {{id}}",
+        "onScope": "({{scope}})",
+        "startedAt": "、開始 {{timestamp}}",
+        "originUnknown": "開始元: 不明(古い renet)",
+        "originStarted": "{{user}} が {{client}} から開始{{config}}",
+        "originConfig": "(設定 {{name}})"
+      },
+      "refused": "'{{machine}}' のジョブは開始されませんでした。{{holder}}が同じスコープを使用中です。",
+      "holderJob": "ジョブ {{id}}",
+      "holderOther": "別のジョブ",
+      "orStopIt": "  停止するには: rdc job cancel {{id}} -m {{machine}}"
+    },
+    "delegationCertRefused": "サーバーのライセンス証明書が拒否されています ({{code}})。運用担当者に次のコマンドの実行を依頼してください: rdc server licence"
   },
   "help": {
     "agentMode": "\n  エージェントモード\n    • フォークのみ: リポジトリに変更を加える前にフォークを作成する\n    • Grand（非フォーク）リポジトリはエージェントに対して読み取り専用\n    • ワークフロー: repo fork <repo> --tag <tag> -> repo up <repo>:<tag> -> term connect <repo>:<tag>\n    • リポジトリ ref（repo[:tag]）はそれ自体でマシンを決定するため、-m は不要\n    • JSON 出力は自動: すべてのコマンドが { success, data, errors, metrics } を返す\n    • 常に完全な JSON をパースし、JSON 出力に tail/head/grep を使わない\n    • フィルタフラグ（例: --repositories, --containers）でレスポンスサイズを削減する\n\n",
@@ -3041,6 +3593,7 @@
     }
   },
   "options": {
+    "acceptTerms": "無料ライセンスの利用規約を確認なしで承諾します（RDC_ACCEPT_TERMS=1 でも指定できます）",
     "apiToken": "APIトークン (rdt_...)。`-` を渡すと stdin から読み取ります（プロセス一覧に表示されません）。",
     "artifactRef": "バックアップアーティファクトの参照（repo[:tag][@place]）",
     "background": "マシン上でデタッチジョブとして実行する: ID を出力して終了する",
@@ -3067,7 +3620,9 @@
     "healthTimeout": "ヘルスチェック1回あたりのタイムアウト秒数（デフォルト 30）",
     "healthWindow": "ヘルスゲート全体のウィンドウ秒数（デフォルト 300）",
     "insiders": "VS Code Insiders 設定を使用する",
+    "json": "機械可読な JSON を出力します",
     "lang": "言語オーバーライド ({{languages}})",
+    "licenseRegion": "設定でサーバーが指定されていない場合に無料ライセンスを発行するアカウントのリージョン(例: us、eu)",
     "licenses": "リリースビルドに同梱される THIRD_PARTY_LICENSES の全文を表示する",
     "localPath": "ローカルディレクトリパス (デフォルト: 現在のディレクトリ)",
     "localPaths": "1 つ以上のローカルファイルまたはディレクトリのパス（既定: カレントディレクトリ）",
@@ -3121,7 +3676,6 @@
     "sshPort": "SSH ポート",
     "sshUser": "SSH ユーザー名",
     "strategyName": "バックアップ戦略名",
-    "team": "チーム名",
     "urlOnly": "VS Code URI を印刷して起動しない",
     "verifyChecksum": "同期後にチェックサムを使用してファイルを検証する",
     "vmId": "仮想マシン ID",
@@ -3164,6 +3718,7 @@
   "warnings": {
     "licenseSignatureRefreshed": "renet更新後、無効な署名を持つ{{count}}個のリポジトリライセンスを更新しました",
     "licenseSignatureRefreshFailed": "renet更新後、{{count}}個のリポジトリライセンスの署名が無効です。実行してください: rdc subscription refresh -m <machine>",
+    "licenseForeignOriginSkipped": "{{machine}} 上の {{repo}} のライセンスは変更していません。発行元は {{licenseOrigin}} ですが、この設定のアカウントサーバーは {{configOrigin}} です。ここで上書きすると更新の連鎖が壊れます。このマシンのライセンスを {{configOrigin}} に移すには、次を実行してください: rdc subscription refresh -m {{machine}} --adopt-origin",
     "secretNameSkipped": "シークレット {{name}} は環境変数名として無効なため、このシークレットなしでセッションを開始します。"
   }
 }

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Console executor orgs of one account target: list, verify, block, unblock (agent/plans/PLAN-console-executor-multi-org.md, Design items 2 and 4, box T1).
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.ops.executor_orgs list    --target edge|stable|bench [--region eu|us|asia]
+    PYTHONPATH=.ci python3 -m rediacc_ci.ops.executor_orgs list    --target stable|bench [--region eu|us|asia]
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.executor_orgs verify  --target T [--region R] --org A --org B
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.executor_orgs block   --target T [--region R] --org A
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.executor_orgs unblock --target T [--region R] --org A
@@ -30,6 +30,7 @@ from typing import TYPE_CHECKING
 from rediacc_ci import log, paths
 from rediacc_ci.core import wrangler
 from rediacc_ci.deploy import console_executor as target_mod
+from rediacc_ci.enterprise import control_db
 
 if TYPE_CHECKING:
     import pathlib
@@ -239,12 +240,21 @@ def _wrangler(
     return proc
 
 
+def d1_cause(stdout: str) -> str:
+    """`: <cause>` from the error wrangler's `--json` mode prints on stdout, or empty (control_db.stdout_error)."""
+    cause = control_db.stdout_error(stdout)
+    return ": " + cause if cause else ""
+
+
 def read_orgs(worker_dir: pathlib.Path, config: str, now: str) -> list[Verdict]:
     """Every org of the target with its verdict, read from D1."""
     database = database_name(worker_dir / config)
     proc = _wrangler(worker_dir, d1_argv(database, config))
     if proc.returncode != 0:
-        raise RefusedError("wrangler d1 execute on %s exited %d" % (database, proc.returncode))
+        raise RefusedError(
+            "wrangler d1 execute on %s exited %d%s"
+            % (database, proc.returncode, d1_cause(proc.stdout))
+        )
     rows = parse_rows(proc.stdout)
     if rows is None:
         raise RefusedError(
@@ -266,7 +276,10 @@ def write_org(worker_dir: pathlib.Path, config: str, command: str, org_id: str =
     database = database_name(worker_dir / config)
     proc = _wrangler(worker_dir, d1_argv(database, config, command), org_id)
     if proc.returncode != 0:
-        raise RefusedError("wrangler d1 execute on %s exited %d" % (database, proc.returncode))
+        raise RefusedError(
+            "wrangler d1 execute on %s exited %d%s"
+            % (database, proc.returncode, d1_cause(proc.stdout))
+        )
     if parse_rows(proc.stdout) is None:
         raise RefusedError(
             "UNVERIFIED: wrangler d1 execute on %s did not report every statement a success"
@@ -373,7 +386,7 @@ def _act(
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog=SELF, description=(__doc__ or "").splitlines()[0])
     parser.add_argument("action", choices=ACTIONS)
-    parser.add_argument("--target", required=True, help="edge, stable or bench")
+    parser.add_argument("--target", required=True, help="stable or bench")
     parser.add_argument("--region", default=None, help="eu, us or asia (bench: eu only)")
     parser.add_argument(
         "--org", action="append", default=None, help="org id or 8+ character prefix"

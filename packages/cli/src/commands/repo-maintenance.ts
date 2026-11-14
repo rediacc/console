@@ -5,7 +5,10 @@ import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
+import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
+import { bindStepHandler, planStep } from '../services/jobs/steps.js';
 import { handleError, ValidationError } from '../utils/errors.js';
+import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { parseRepositoryListOutput } from './repo-list-parser.js';
 
@@ -14,8 +17,8 @@ import { parseRepositoryListOutput } from './repo-list-parser.js';
  *  - repo gc:   reachability garbage-collection of unreachable immutable commits
  *  - repo fsck: validate config refs (branches/head) against machine objects
  *
- * Both reuse existing renet functions (repository_list, repository_delete), so
- * they add no new bridge surface. The machine is the object store; the CLI
+ * gc reads the machine with repository_list and --apply deletes through one
+ * repository_gc job; fsck reads it with one repository_fsck job. The machine is the object store; the CLI
  * config is the ref store (branches/head/headCommit + commitParent lineage).
  */
 
@@ -92,6 +95,8 @@ async function machineObjects(
       datastore,
       params: {},
       captureOutput: true,
+      // The deletion set below is computed from this listing, so `--background` leaves the read attached: a ticket handed back early would read as an empty machine and report every ref dangling.
+      probe: true,
     });
     if (!result.success || !result.stdout) continue;
     try {
@@ -107,6 +112,61 @@ async function machineObjects(
     }
   }
   return objects;
+}
+
+/** One line of the `repository_gc` job's stdout: `{"gc_result": {...}}` per candidate, then `{"gc_summary": {...}}`. */
+interface GcResultLine {
+  gc_result?: { guid: string; datastore: string; status: string; reason?: string };
+  gc_summary?: { total: number; deleted: number; skipped: number; failed: number };
+}
+
+/** The job's stdout as result lines; a line that is not one (a log line) is not a result. */
+function parseGcLines(output: string | undefined): GcResultLine[] {
+  const lines: GcResultLine[] = [];
+  for (const raw of (output ?? '').split('\n')) {
+    try {
+      const parsed = JSON.parse(raw) as GcResultLine;
+      if (parsed.gc_result || parsed.gc_summary) lines.push(parsed);
+    } catch {
+      // Not a result line.
+    }
+  }
+  return lines;
+}
+
+/** Print what the gc job did to each candidate, then the totals; returns renet's summary, or undefined when it printed none. A candidate renet skipped on re-check names the reason it gave. */
+function reportGcResults(output: string | undefined): GcResultLine['gc_summary'] {
+  let summary: GcResultLine['gc_summary'];
+  for (const line of parseGcLines(output)) {
+    const r = line.gc_result;
+    if (r?.status === 'deleted') {
+      outputService.success(t('commands.repo.gc.deleted', { commit: r.guid.slice(0, 12) }));
+    } else if (r?.status === 'failed') {
+      outputService.error(t('commands.repo.gc.deleteFailed', { commit: r.guid.slice(0, 12) }));
+    } else if (r) {
+      outputService.info(`  ${r.guid.slice(0, 12)}  ${r.status}: ${r.reason ?? ''}`);
+    }
+    if (line.gc_summary) summary = line.gc_summary;
+  }
+  if (summary && summary.failed === 0) {
+    outputService.success(
+      t('commands.repo.gc.applied', { deleted: summary.deleted, total: summary.total })
+    );
+  }
+  return summary;
+}
+
+bindStepHandler('reportRepoGc', ({ output }) => {
+  // The step runs on success only, where renet always ends with a summary; its absence means the output was not captured.
+  if (!reportGcResults(output)) outputService.warn(t('commands.repo.gc.noSummary'));
+  return Promise.resolve();
+});
+
+/** The candidate list and the fsck datastore list are comma-joined, and a candidate is `guid@datastore`, so a path holding either character would be split wrongly by renet. */
+function assertListSafePath(path: string): void {
+  if (/[,@]/.test(path)) {
+    throw new ValidationError(t('commands.repo.gc.datastorePathUnsupported', { path }));
+  }
 }
 
 /** repo gc -m <machine> [--apply], delete unreachable immutable commits. */
@@ -139,25 +199,42 @@ async function handleGc(options: {
       return;
     }
 
-    let deleted = 0;
+    // One `repository_gc` job for the whole set: the client computed the candidates from its config, and renet re-checks each one (present, immutable, unmounted) before it deletes it, so a ref set that moved since is never trusted. Each candidate carries its OWN recorded datastore (#74), not the machine default, because gc found it by enumerating those same mounts above.
+    const pairs: string[] = [];
     for (const c of candidates) {
-      const guid = c.config.repositoryGuid;
-      const result = await getExecutor().execute({
-        functionName: 'repository_delete',
-        machineName: options.machine,
-        // #74: the candidate's OWN recorded datastore, not the machine default, gc deletes objects it found by enumerating those same mounts above.
-        datastore: await recordedDatastoreMount(c.name),
-        params: { repository: guid },
-        debug: options.debug,
-      });
-      if (result.success) {
-        deleted++;
-        outputService.success(t('commands.repo.gc.deleted', { commit: guid.slice(0, 12) }));
-      } else {
-        outputService.error(t('commands.repo.gc.deleteFailed', { commit: guid.slice(0, 12) }));
-      }
+      const datastore = await recordedDatastoreMount(c.name);
+      if (datastore) assertListSafePath(datastore);
+      pairs.push(datastore ? `${c.config.repositoryGuid}@${datastore}` : c.config.repositoryGuid);
     }
-    outputService.success(t('commands.repo.gc.applied', { deleted, total: candidates.length }));
+    const outcome = await runCommandJob(
+      'repo gc',
+      {
+        functionName: 'repository_gc',
+        machineName: options.machine,
+        params: { candidates: pairs.join(',') },
+        debug: options.debug,
+        captureOutput: true,
+      },
+      [planStep('reportRepoGc', { machine: options.machine })]
+    );
+    if (outcome.kind === 'pending') {
+      outputService.info(
+        t('commands.repo.gc.started', { started: candidates.length, total: candidates.length })
+      );
+      const code = pendingExitCode(outcome);
+      if (code !== undefined) setExitCode(code);
+      return;
+    }
+    if (!outcome.result.success) {
+      // The step runs on success only; a failed delete still owes its per-candidate lines.
+      const summary = reportGcResults(outcome.result.stdout);
+      renderLocalExecutionFailure(
+        outcome.result,
+        summary && summary.failed > 0
+          ? t('commands.repo.gc.partlyFailed', { failed: summary.failed, total: summary.total })
+          : t('commands.repo.gc.deleteFailed', { commit: `${candidates.length} commit(s)` })
+      );
+    }
   } catch (error) {
     handleError(error);
   }
@@ -180,35 +257,104 @@ function findDanglingRefs(
   return dangling;
 }
 
-/** repo fsck -m <machine>, report config-ref vs machine-object drift. */
-async function handleFsck(options: { machine: string }): Promise<void> {
+const trimTrailingSlashes = (path: string): string => path.replace(/\/+$/, '') || '/';
+
+/**
+ * The objects the `repository_fsck` job found: every `{"fsck_present": {datastore, guids}}` line of its stdout, merged.
+ * A line that is not one (a log line) is skipped. `expected` is the datastores the job was asked to list besides its
+ * own: a report missing one of them is truncated, and undefined, like one with no line at all.
+ */
+export function parseFsckPresent(
+  output: string | undefined,
+  expected: string[] = []
+): Set<string> | undefined {
+  const present = new Set<string>();
+  const reportedDatastores = new Set<string>();
+  for (const raw of (output ?? '').split('\n')) {
+    try {
+      const parsed = JSON.parse(raw) as {
+        fsck_present?: { datastore?: string; guids?: string[] };
+      };
+      if (!parsed.fsck_present) continue;
+      reportedDatastores.add(trimTrailingSlashes(parsed.fsck_present.datastore ?? ''));
+      for (const guid of parsed.fsck_present.guids ?? []) present.add(guid);
+    } catch {
+      // Not a result line.
+    }
+  }
+  if (reportedDatastores.size === 0) return undefined;
+  return expected.every((datastore) => reportedDatastores.has(trimTrailingSlashes(datastore)))
+    ? present
+    : undefined;
+}
+
+/** Compare the config's refs with the objects the machine reported, print the drift, and exit 1 when there is any. */
+async function reportFsck(
+  machine: string,
+  output: string | undefined,
+  datastores: string
+): Promise<void> {
+  const repos = await configService.listRepositories();
+  const present = new Map<string, { mounted: boolean }>();
+  const reported = parseFsckPresent(output, datastores === '' ? [] : datastores.split(','));
+  // No fsck_present line, or none for a datastore the job was asked to list, means the report never fully arrived (empty or truncated output), which is not the same as an empty machine.
+  if (!reported) throw new Error(t('commands.repo.admin.fsck.noReport', { machine }));
+  for (const guid of reported) present.set(guid, { mounted: false });
+  const reachable = reachableCommits(repos);
+
+  const dangling = findDanglingRefs(repos, present);
+  // Orphan objects: an immutable commit present on the machine that no ref reaches.
+  const orphans = repos
+    .filter((r) => r.config.immutable && present.has(r.config.repositoryGuid))
+    .filter((r) => !reachable.has(r.config.repositoryGuid))
+    .map((r) => r.config.repositoryGuid);
+
+  if (dangling.length === 0 && orphans.length === 0) {
+    outputService.success(t('commands.repo.admin.fsck.clean', { machine }));
+    return;
+  }
+  if (dangling.length > 0) {
+    outputService.error(t('commands.repo.admin.fsck.danglingHeader', { count: dangling.length }));
+    for (const d of dangling) outputService.info(`  ${d.ref} -> ${d.guid.slice(0, 12)} (missing)`);
+  }
+  if (orphans.length > 0) {
+    outputService.info(t('commands.repo.admin.fsck.orphanHeader', { count: orphans.length }));
+    for (const g of orphans) outputService.info(`  ${g.slice(0, 12)}`);
+    outputService.info(t('commands.repo.admin.fsck.orphanHint'));
+  }
+  setExitCode(1);
+}
+
+bindStepHandler('reportRepoFsck', ({ machine, output, params }) =>
+  reportFsck(machine, output, typeof params.datastores === 'string' ? params.datastores : '')
+);
+
+/** repo fsck -m <machine>, report config-ref vs machine-object drift from one `repository_fsck` job. */
+async function handleFsck(options: { machine: string; debug?: boolean }): Promise<void> {
   try {
     const repos = await configService.listRepositories();
-    const present = await machineObjects(options.machine, repos);
-    const reachable = reachableCommits(repos);
-
-    const dangling = findDanglingRefs(repos, present);
-    // Orphan objects: an immutable commit present on the machine that no ref reaches.
-    const orphans = repos
-      .filter((r) => r.config.immutable && present.has(r.config.repositoryGuid))
-      .filter((r) => !reachable.has(r.config.repositoryGuid))
-      .map((r) => r.config.repositoryGuid);
-
-    if (dangling.length === 0 && orphans.length === 0) {
-      outputService.success(t('commands.repo.admin.fsck.clean', { machine: options.machine }));
+    // The job lists the default datastore and every mount the config records, so a repo family on a named datastore never reads as missing (#74).
+    const mounts = (await recordedMounts(repos)).filter((m): m is string => m !== undefined);
+    for (const mount of mounts) assertListSafePath(mount);
+    const outcome = await runCommandJob(
+      'repo admin fsck',
+      {
+        functionName: 'repository_fsck',
+        machineName: options.machine,
+        params: mounts.length > 0 ? { datastores: mounts.join(',') } : {},
+        debug: options.debug,
+        captureOutput: true,
+      },
+      [planStep('reportRepoFsck', { machine: options.machine, datastores: mounts.join(',') })]
+    );
+    if (outcome.kind === 'pending') {
+      const code = pendingExitCode(outcome);
+      if (code !== undefined) setExitCode(code);
       return;
     }
-    if (dangling.length > 0) {
-      outputService.error(t('commands.repo.admin.fsck.danglingHeader', { count: dangling.length }));
-      for (const d of dangling)
-        outputService.info(`  ${d.ref} -> ${d.guid.slice(0, 12)} (missing)`);
+    if (!outcome.result.success) {
+      renderLocalExecutionFailure(outcome.result, 'repository_fsck');
     }
-    if (orphans.length > 0) {
-      outputService.info(t('commands.repo.admin.fsck.orphanHeader', { count: orphans.length }));
-      for (const g of orphans) outputService.info(`  ${g.slice(0, 12)}`);
-      outputService.info(t('commands.repo.admin.fsck.orphanHint'));
-    }
-    setExitCode(1);
   } catch (error) {
     handleError(error);
   }
@@ -234,7 +380,8 @@ export function registerRepoMaintenanceCommands(repo: Command, admin: Command): 
     .summary(t('commands.repo.admin.fsck.descriptionShort'))
     .description(t('commands.repo.admin.fsck.description'))
     .requiredOption('-m, --machine <name>', t('commands.repo.machineOption'))
-    .action((options: { machine: string }) => {
+    .option('--debug', t('options.debug'))
+    .action((options: { machine: string; debug?: boolean }) => {
       if (!options.machine) throw new ValidationError(t('errors.machineRequiredLocal'));
       return handleFsck(options);
     });

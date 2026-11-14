@@ -28,7 +28,12 @@ import type {
 } from '../../types/index.js';
 import { outputService } from '../core/output.js';
 import { currentRequestConfig } from '../core/request-context.js';
-import { ConfigAccessService, dropAccessBindings } from './config-access.js';
+import {
+  applyDestinationRemoval,
+  applyDestinationUpsert,
+  applyStrategyUpdate,
+} from './backup-strategy-edits.js';
+import { ConfigAccessService, dropAccessBindings, hasAccessBindings } from './config-access.js';
 import {
   assertClusterMembersUnique,
   assertUniqueName,
@@ -41,16 +46,17 @@ import {
   writeClusterToStore,
 } from './config-cluster-logic.js';
 import { allocateNetworkIdInStore } from './config-network-id.js';
+import { boundArchive, takeArchivedRepository } from './config-resources-archive.js';
 import {
   assertNoCredentialCollision,
-  assertRestoredForkKeyIsExplicit,
   buildArchivedRecord,
   buildGuidMap,
   grandTagsOf,
   resolveDestructiveTargetFromRepos,
+  resolveLiveGrandKey,
   resolveRepoKey,
-  restoreArchivedRecord,
   withGpuDevices,
+  withLifecycleGrant,
 } from './config-resources-resolve.js';
 import type { ResourceState } from './resource-state.js';
 import { updateSyncedConfig } from './synced-write.js';
@@ -240,12 +246,8 @@ class ConfigService extends ConfigAccessService {
     // A removed machine keeps no access-key binding (PLAN-ssh-key-source-ranges Design 4). The
     // bindings go first, so a failed prune leaves the machine in place instead of orphaned bindings.
     const access = (await this.getCurrent())?.access;
-    const bound = Object.values(access?.keys ?? {}).some(
-      (key) => key.machines?.[machineName] !== undefined
-    );
-    if (bound) {
-      await this.updateAccess((current) => dropAccessBindings(current, machineName));
-    }
+    const bound = hasAccessBindings(access, machineName);
+    if (bound) await this.updateAccess((current) => dropAccessBindings(current, machineName));
 
     delete machines[machineName];
     try {
@@ -409,6 +411,18 @@ class ConfigService extends ConfigAccessService {
   }
 
   /**
+   * The live grand a bare name means, for a create's duplicate check: unlike
+   * `getRepository`, a family holding only forks of an absent grand has none.
+   */
+  async getLiveGrand(name: string): Promise<RepositoryConfig | undefined> {
+    const config = await this.getCurrent();
+    if (!config) return undefined;
+    const repos = (await this.getResourceState()).getRepositories();
+    const key = resolveLiveGrandKey(repos, name, grandTagsOf(config.resources?.repositories));
+    return key ? repos[key] : undefined;
+  }
+
+  /**
    * Resolve a repository reference to its actual config dictionary key.
    * Needed for mutation operations (remove, update networkId, etc.).
    */
@@ -459,35 +473,40 @@ class ConfigService extends ConfigAccessService {
 
     const deletedRepos = state.getDeletedRepositories();
     deletedRepos.push(buildArchivedRecord(repoName, repos[repoName]));
-    await state.setDeletedRepositories(deletedRepos);
+    await state.setDeletedRepositories(boundArchive(deletedRepos));
 
     delete repos[repoName];
     await state.setRepositories(repos);
+  }
+
+  /**
+   * Archive several repository entries in one write per bucket (a deprovisioned machine's repos):
+   * each keeps its GUID and credential in the archive, restorable with `config repository restore`.
+   * Keys not in the config are skipped; the archived keys are returned.
+   */
+  async archiveRepositories(repoKeys: string[]): Promise<string[]> {
+    await this.requireSelfHosted();
+    const state = await this.getResourceState();
+    const repos = state.getRepositories();
+    const archived = repoKeys.filter((key) => key in repos);
+    if (archived.length === 0) return [];
+
+    const deletedRepos = state.getDeletedRepositories();
+    for (const key of archived) deletedRepos.push(buildArchivedRecord(key, repos[key]));
+    await state.setDeletedRepositories(boundArchive(deletedRepos));
+
+    for (const key of archived) delete repos[key];
+    await state.setRepositories(repos);
+    return archived;
   }
 
   async restoreArchivedRepository(guid: string, name?: string): Promise<string> {
     await this.requireSelfHosted();
     const state = await this.getResourceState();
     const deletedRepos = state.getDeletedRepositories();
-    const index = deletedRepos.findIndex((r) => r.repositoryGuid === guid);
-    if (index === -1) throw new Error(`Archived repository with GUID "${guid}" not found`);
-
-    const archived = deletedRepos[index];
-    const restoredName = name ?? archived.name;
-    assertRestoredForkKeyIsExplicit(archived, restoredName);
-
     const repos = state.getRepositories();
-    if (restoredName in repos)
-      throw new Error(
-        `Repository "${restoredName}" already exists. Use --name to specify a different name.`
-      );
-    const repoConfig = restoreArchivedRecord(archived);
-    // This write bypasses addRepository, but the record it makes LIVE is subject to the same GUID-keyed credential map.
-    assertNoCredentialCollision(repos, restoredName, repoConfig);
-    repos[restoredName] = repoConfig;
+    const restoredName = takeArchivedRepository(repos, deletedRepos, guid, name);
     await state.setRepositories(repos);
-
-    deletedRepos.splice(index, 1);
     await state.setDeletedRepositories(deletedRepos);
     return restoredName;
   }
@@ -535,10 +554,9 @@ class ConfigService extends ConfigAccessService {
     strategyName: string,
     update: Partial<BackupStrategyConfig>
   ): Promise<void> {
-    await this.editBackupStrategies((strategies) => {
-      const existing = strategies[strategyName] ?? { destinations: [], schedule: '' };
-      strategies[strategyName] = { ...existing, ...update };
-    });
+    await this.editBackupStrategies((strategies) =>
+      applyStrategyUpdate(strategies, strategyName, update)
+    );
   }
 
   async removeBackupStrategy(strategyName: string): Promise<void> {
@@ -555,27 +573,15 @@ class ConfigService extends ConfigAccessService {
         `Backup strategy "${strategyName}" not found. Create it first with: rdc backup strategy set ${strategyName} --cron "..."`
       );
     }
-    await this.editBackupStrategies((strategies) => {
-      const strategy = strategies[strategyName] as BackupStrategyConfig | undefined;
-      if (!strategy) throw new Error(`Backup strategy "${strategyName}" not found`);
-      const destinations = [...strategy.destinations];
-      const idx = destinations.findIndex((d) => d.name === dest.name);
-      if (idx >= 0) destinations[idx] = { ...destinations[idx], ...dest };
-      else destinations.push(dest);
-      destinations.sort((a, b) => a.name.localeCompare(b.name));
-      strategies[strategyName] = { ...strategy, destinations };
-    });
+    await this.editBackupStrategies((strategies) =>
+      applyDestinationUpsert(strategies, strategyName, dest)
+    );
   }
 
   async removeBackupDestination(strategyName: string, destName: string): Promise<void> {
-    await this.editBackupStrategies((strategies) => {
-      if (!Object.hasOwn(strategies, strategyName)) return;
-      const strategy = strategies[strategyName];
-      strategies[strategyName] = {
-        ...strategy,
-        destinations: strategy.destinations.filter((d) => d.name !== destName),
-      };
-    });
+    await this.editBackupStrategies((strategies) =>
+      applyDestinationRemoval(strategies, strategyName, destName)
+    );
   }
 
   /**
@@ -665,6 +671,16 @@ class ConfigService extends ConfigAccessService {
   async setRepositoryGpuDevices(repoRef: string, devices: string[]): Promise<void> {
     const { key, state, repos } = await this.loadRepositoryForWrite(repoRef);
     repos[key] = withGpuDevices(repos[key], devices);
+    await state.setRepositories(repos);
+  }
+
+  /** Mirror a repository's lifecycle grant (root, paths) into `state.repos`; the default tier clears the mirror. */
+  async setRepositoryLifecycle(
+    repoRef: string,
+    grant: { root: boolean; paths: string[] }
+  ): Promise<void> {
+    const { key, state, repos } = await this.loadRepositoryForWrite(repoRef);
+    repos[key] = withLifecycleGrant(repos[key], grant);
     await state.setRepositories(repos);
   }
 }

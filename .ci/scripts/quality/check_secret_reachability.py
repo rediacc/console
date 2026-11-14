@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """A workflow may not reference a secret its repository cannot read.
 
-WHY THIS EXISTS. On 2026-08-07 it turned out that `Claude Review` had NEVER succeeded in rediacc/account or rediacc/renet -- every run since at least 2026-07-28 failed, including runs on `main`. Both repos carry a `claude-review.yml` that references `secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`. That
+WHY THIS EXISTS. On 2026-08-07 it turned out that `Claude Review` had NEVER succeeded in rediacc/account or rediacc/renet -- every run since at least 2026-07-28 failed, including runs on `main`. Both repos carry a `ops-claude-review.yml` that references `secrets.ANTHROPIC_CLAUDE_CODE_OAUTH_TOKEN`. That
 secret is an ORGANISATION secret with `visibility=selected`, and its
 selected-repositories list contains exactly one entry: `console`. So in those two repos the reference resolved to an empty string and the action aborted on environment validation.
 
@@ -125,7 +125,7 @@ def references(repo_root):
     for path in files:
         text = path.read_text(encoding="utf-8", errors="replace")
         declared = declared_secrets(text)
-        # A `#` COMMENT IS NOT A REFERENCE. Scanning raw text made the two the same thing, so a comment RECORDING that some `secrets.X` was removed reported as a live read of it -- the removal tripping the gate the removal satisfied. Measured 2026-09-09 on watchdog-monitor.yml: every real reference was repointed at Bitwarden and the gate still named CLAUDE_CODE_OAUTH_TOKEN, from
+        # A `#` COMMENT IS NOT A REFERENCE. Scanning raw text made the two the same thing, so a comment RECORDING that some `secrets.X` was removed reported as a live read of it -- the removal tripping the gate the removal satisfied. Measured 2026-09-09 on ops-watchdog-monitor.yml: every real reference was repointed at Bitwarden and the gate still named CLAUDE_CODE_OAUTH_TOKEN, from
         # the comment explaining why.
         #
         # The pressure that creates is the harm: the cheapest way to green is to delete the explanation, and then nobody knows why the credential went. Its sibling `scripts/gates/check-secret-scope.ts` carries the identical filter, added the same day
@@ -138,6 +138,17 @@ def references(repo_root):
             if m.group(1) not in BUILTIN and m.group(1) not in declared:
                 names.add(m.group(1))
     return names, len(files)
+
+
+def gitlink_names(root):
+    """The names of the `private/*` submodules `.gitmodules` declares. Read from the file rather than `git ls-files`, so an extracted archive (no git work tree) still tells a real gitlink from a gitignored sibling repo (review bed805c0.1)."""
+    try:
+        text = (pathlib.Path(root) / ".gitmodules").read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return set()
+    return set(
+        re.findall(r"^\s*path\s*=\s*private/([^\s#;]+)\s*(?:[#;].*)?$", text, flags=re.MULTILINE)
+    )
 
 
 def refresh(root, baseline_path):
@@ -226,8 +237,10 @@ def refresh(root, baseline_path):
         recorded[repo_name] = entry
 
     # A CHECKED-OUT submodule with no workflows is recorded with an EMPTY entry, not dropped: the record still knows the repo, so a CI checkout without submodules (where the directory is empty) stays CANNOT SEE instead of silently scanning console alone. account and renet reached this state on 2026-10-02 when their only workflows (the Claude Review callers) were removed.
+    # Only a declared submodule counts: a gitignored sibling repo (private/growth, private/generative) is never in a CI checkout, so recording it would make every clean clone CANNOT SEE it.
+    gitlinks = gitlink_names(root)
     for sub in sorted((root / "private").glob("*")):
-        if (sub / ".git").exists() and sub.name not in recorded:
+        if sub.name in gitlinks and (sub / ".git").exists() and sub.name not in recorded:
             recorded[sub.name] = {}
 
     baseline_path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")

@@ -22,6 +22,7 @@ import {
   isAgentEnvironment,
   isLegitimateWildcardOverride,
 } from '../utils/agent-guard.js';
+import { assertCommandNotBlank } from '../utils/command-blank.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { debugLog } from '../utils/debug.js';
 import { handleError, ValidationError } from '../utils/errors.js';
@@ -371,6 +372,7 @@ function splitTargetRoles(target: ConnectTarget): {
 }
 
 async function connectTerminal(targetRef: string, options: TermConnectOptions): Promise<void> {
+  assertCommandNotBlank(options);
   const startTime = Date.now();
 
   const target = await resolveConnectTarget(targetRef, { readOnly: true });

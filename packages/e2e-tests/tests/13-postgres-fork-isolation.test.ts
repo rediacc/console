@@ -127,7 +127,7 @@ test.describe
     });
 
     test('9. unmount repository', async () => {
-      const result = await runner.repositoryUnmount(repositoryName, datastorePath);
+      const result = await runner.repositoryUnmount(repositoryName, datastorePath, networkId);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
@@ -168,7 +168,7 @@ test.describe
 
     test('13. cleanup', async () => {
       await runner.repositoryDown(repositoryName, datastorePath, networkId);
-      await runner.repositoryUnmount(repositoryName, datastorePath);
+      await runner.repositoryUnmount(repositoryName, datastorePath, networkId);
       await runner.repositoryRm(repositoryName, datastorePath);
     });
   });
@@ -264,7 +264,7 @@ test.describe
     });
 
     test('6. unmount parent for forking', async () => {
-      const result = await runner.repositoryUnmount(parentRepoName, datastorePath);
+      const result = await runner.repositoryUnmount(parentRepoName, datastorePath, parentNetworkId);
       expect(runner.isSuccess(result)).toBe(true);
     });
 
@@ -439,12 +439,12 @@ test.describe
     test('19. cleanup', async () => {
       // Stop and remove fork
       await runner.repositoryDown(forkRepoName, datastorePath, forkNetworkId);
-      await runner.repositoryUnmount(forkRepoName, datastorePath);
+      await runner.repositoryUnmount(forkRepoName, datastorePath, forkNetworkId);
       await runner.repositoryRm(forkRepoName, datastorePath);
 
       // Stop and remove parent
       await runner.repositoryDown(parentRepoName, datastorePath, parentNetworkId);
-      await runner.repositoryUnmount(parentRepoName, datastorePath);
+      await runner.repositoryUnmount(parentRepoName, datastorePath, parentNetworkId);
       await runner.repositoryRm(parentRepoName, datastorePath);
     });
   });
@@ -521,7 +521,7 @@ test.describe
 
     test('3. stop and unmount parent for forking', async () => {
       await runner.repositoryDown(parentRepoName, datastorePath, parentNetworkId);
-      await runner.repositoryUnmount(parentRepoName, datastorePath);
+      await runner.repositoryUnmount(parentRepoName, datastorePath, parentNetworkId);
     });
 
     test('4. create fork A', async () => {
@@ -644,17 +644,17 @@ test.describe
     test('9. cleanup all repositories', async () => {
       // Cleanup fork B
       await runner.repositoryDown(forkBRepoName, datastorePath, forkBNetworkId);
-      await runner.repositoryUnmount(forkBRepoName, datastorePath);
+      await runner.repositoryUnmount(forkBRepoName, datastorePath, forkBNetworkId);
       await runner.repositoryRm(forkBRepoName, datastorePath);
 
       // Cleanup fork A
       await runner.repositoryDown(forkARepoName, datastorePath, forkANetworkId);
-      await runner.repositoryUnmount(forkARepoName, datastorePath);
+      await runner.repositoryUnmount(forkARepoName, datastorePath, forkANetworkId);
       await runner.repositoryRm(forkARepoName, datastorePath);
 
       // Cleanup parent
       await runner.repositoryDown(parentRepoName, datastorePath, parentNetworkId);
-      await runner.repositoryUnmount(parentRepoName, datastorePath);
+      await runner.repositoryUnmount(parentRepoName, datastorePath, parentNetworkId);
       await runner.repositoryRm(parentRepoName, datastorePath);
     });
   });
@@ -730,7 +730,7 @@ test.describe
 
     test('3. create fork', async () => {
       await runner.repositoryDown(parentRepoName, datastorePath, parentNetworkId);
-      await runner.repositoryUnmount(parentRepoName, datastorePath);
+      await runner.repositoryUnmount(parentRepoName, datastorePath, parentNetworkId);
 
       await runner.createRepositoryFork(parentRepoName, forkRepoName, datastorePath, forkNetworkId);
       await runner.repositoryMount(forkRepoName, TEST_PASSWORD, datastorePath, forkNetworkId);
@@ -770,7 +770,7 @@ test.describe
 
     test('6. cleanup', async () => {
       await runner.repositoryDown(forkRepoName, datastorePath, forkNetworkId);
-      await runner.repositoryUnmount(forkRepoName, datastorePath);
+      await runner.repositoryUnmount(forkRepoName, datastorePath, forkNetworkId);
       await runner.repositoryRm(forkRepoName, datastorePath);
 
       await runner.repositoryRm(parentRepoName, datastorePath);
@@ -854,7 +854,7 @@ test.describe
 
     test('3. create fork with all data', async () => {
       await runner.repositoryDown(parentRepoName, datastorePath, parentNetworkId);
-      await runner.repositoryUnmount(parentRepoName, datastorePath);
+      await runner.repositoryUnmount(parentRepoName, datastorePath, parentNetworkId);
 
       await runner.createRepositoryFork(parentRepoName, forkRepoName, datastorePath, forkNetworkId);
       await runner.repositoryMount(forkRepoName, TEST_PASSWORD, datastorePath, forkNetworkId);
@@ -902,11 +902,11 @@ test.describe
 
     test('7. cleanup', async () => {
       await runner.repositoryDown(forkRepoName, datastorePath, forkNetworkId);
-      await runner.repositoryUnmount(forkRepoName, datastorePath);
+      await runner.repositoryUnmount(forkRepoName, datastorePath, forkNetworkId);
       await runner.repositoryRm(forkRepoName, datastorePath);
 
       await runner.repositoryDown(parentRepoName, datastorePath, parentNetworkId);
-      await runner.repositoryUnmount(parentRepoName, datastorePath);
+      await runner.repositoryUnmount(parentRepoName, datastorePath, parentNetworkId);
       await runner.repositoryRm(parentRepoName, datastorePath);
     });
   });
@@ -1025,7 +1025,7 @@ test.describe
 
     test('5. cleanup', async () => {
       await runner.repositoryDown(repositoryName, datastorePath, networkId);
-      await runner.repositoryUnmount(repositoryName, datastorePath);
+      await runner.repositoryUnmount(repositoryName, datastorePath, networkId);
       await runner.repositoryRm(repositoryName, datastorePath);
     });
   });

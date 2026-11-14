@@ -384,12 +384,15 @@ def test_a_channel_with_a_space_is_one_argument_on_both_sides(tmp_path: pathlib.
     _assert_agree(old, new, "channel-with-space", old_calls, new_calls)
 
 
-def test_extra_arguments_are_ignored_by_both(tmp_path: pathlib.Path) -> None:
-    """The twin parses nothing at all, so `--dry-run` is NOT a dry run: it is silently ignored and the deletes happen. Driven so a port cannot invent a flag the callers do not have."""
-    old, new, old_calls, new_calls = run_both(tmp_path, ["--dry-run", "extra"])
-    assert old.returncode == 0
-    assert len(old_calls) == 12, "an ignored flag became a dry run"
-    _assert_agree(old, new, "extra-args", old_calls, new_calls)
+def test_extra_arguments_are_refused_where_the_twin_ignored_them(tmp_path: pathlib.Path) -> None:
+    """DELIBERATE DIVERGENCE, port only. The twin parsed nothing, so `--dry-run` was NOT a dry run and the deletes happened. The port refuses with exit 2 before any `aws` call; the control is the same fixture without arguments, which does make the 12 calls."""
+    control, control_calls = _run(PORT, tmp_path, [])
+    assert control.returncode == 0, control.stderr
+    assert len(control_calls) == 12, "the control is vacuous: the fixture makes no deletes"
+    refused, calls = _run(PORT, tmp_path, ["--dry-run", "extra"])
+    assert refused.returncode == 2, refused.stderr
+    assert calls == [], "a flag was accepted and a delete ran"
+    assert "unknown option(s) --dry-run extra" in refused.stderr
 
 
 def test_divergence_common_sh_interprets_backslash_escapes_in_the_channel(

@@ -368,7 +368,7 @@ function checkI18nCommandExamples(out: Violation[]): void {
       const before = out.length;
       validateInvocation(`packages/cli/src/i18n/locales/en/cli.json (${key})`, 0, invocation, out);
       for (let i = out.length - 1; i >= before; i--) {
-        const match = out[i].message.match(/unknown subcommand `([^`]+)`/);
+        const match = /unknown subcommand `([^`]+)`/.exec(out[i].message);
         if (match && isProseToken(match[1])) out.splice(i, 1);
       }
     }

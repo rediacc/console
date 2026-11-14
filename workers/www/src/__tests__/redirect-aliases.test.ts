@@ -1,7 +1,7 @@
-import { describe, test, expect } from 'vitest';
-import { EXACT, PATTERNS, ALLOWED_NON_MANIFEST_TARGETS, applyRedirect } from '../redirect-aliases';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { describe, expect, test } from 'vitest';
+import { ALLOWED_NON_MANIFEST_TARGETS, applyRedirect, EXACT, PATTERNS } from '../redirect-aliases';
 
 type ManifestEntry = {
   path: string;
@@ -151,12 +151,23 @@ describe('applyRedirect() — specific cases from the GSC 404 list', () => {
     expect(r!.via).toBe('pattern');
   });
 
-  test('EXACT wins over PATTERN: /terms-of-service/acceptable-use-policy -> 410 (not /acceptable-use-policy via pattern)', () => {
+  test('legal-concat pattern reaches the live AUP: /terms-of-service/acceptable-use-policy -> /acceptable-use-policy', () => {
     const r = applyRedirect('/terms-of-service/acceptable-use-policy');
     expect(r).not.toBeNull();
+    expect(r!.via).toBe('pattern');
+    expect(r!.status).toBe(301);
+    expect(r!.to).toBe('/acceptable-use-policy');
+  });
+
+  test('the live AUP page itself matches no rule, so ASSETS serves it', () => {
+    expect(applyRedirect('/acceptable-use-policy')).toBeNull();
+  });
+
+  test('EXACT wins over PATTERN: /contact takes its self-map, not the ^/[a-z]+ntact$ pattern', () => {
+    const r = applyRedirect('/contact');
+    expect(r).not.toBeNull();
     expect(r!.via).toBe('exact');
-    expect(r!.status).toBe(410);
-    expect(r!.to).toBeNull();
+    expect(r!.to).toBe('/contact');
   });
 
   test('unmatched path -> null', () => {

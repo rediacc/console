@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { t } from '../i18n/index.js';
 import { outputService } from '../services/core/output.js';
+import { setExitCode } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
 import { handleError, ValidationError } from '../utils/errors.js';
@@ -39,7 +40,14 @@ export function handleExecutionResult(result: {
   errorCode?: string;
   errorGuidance?: string;
   exitCode?: number;
+  state?: string;
 }): void {
+  // A job handed back (`--background`, a lost tail) is still running: nothing has completed.
+  // A failed result without an exit code is not a hand-back: it falls through to the failure rendering.
+  if (result.state === 'running' && (result.success || result.exitCode !== undefined)) {
+    if (!result.success && result.exitCode !== undefined) setExitCode(result.exitCode);
+    return;
+  }
   if (result.success) {
     outputService.success(
       t('commands.shortcuts.run.completedLocal', { duration: result.durationMs })

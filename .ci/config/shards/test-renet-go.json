@@ -1,7 +1,7 @@
 {
   "lane": "test-renet-go",
   "of": 2,
-  "generatedAt": "2026-11-02T10:25:32.788Z",
+  "generatedAt": "2026-11-06T04:46:37.970Z",
   "legs": [
     {
       "index": 1,
@@ -99,15 +99,18 @@
         "github.com/rediacc/renet/pkg/orchestration",
         "github.com/rediacc/renet/pkg/procwalk",
         "github.com/rediacc/renet/pkg/prune",
+        "github.com/rediacc/renet/pkg/ramvolume",
         "github.com/rediacc/renet/pkg/rbd",
         "github.com/rediacc/renet/pkg/rediaccfile",
         "github.com/rediacc/renet/pkg/repoguid",
+        "github.com/rediacc/renet/pkg/repolimits",
         "github.com/rediacc/renet/pkg/repomerge",
         "github.com/rediacc/renet/pkg/repository",
         "github.com/rediacc/renet/pkg/restorepath",
         "github.com/rediacc/renet/pkg/runpaths",
         "github.com/rediacc/renet/pkg/sandbox",
         "github.com/rediacc/renet/pkg/ssh",
+        "github.com/rediacc/renet/pkg/statfs",
         "github.com/rediacc/renet/pkg/storage",
         "github.com/rediacc/renet/pkg/telemetry",
         "github.com/rediacc/renet/pkg/thinpool",

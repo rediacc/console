@@ -1,7 +1,7 @@
 ---
-description: Drain the Promoted plans in agent/plans/QUEUE.md with parallel writers. One invocation gives every unfinished Promoted plan at least one writer, started while writer_cap has a free slot and queued once it has none, and three for a plan with more than five open boxes (split by thirds of its open boxes), filling writer_cap. Each writer gets a self-contained brief with the plan's Owns as its boundary and handles every box class itself (local, already done, bench, hostinger, post-merge, operator). A writer the concurrency guard refuses is queued, never dropped. The read-only survey is optional and lands in a file. Free text after the command narrows it to matching plans.
-argument-hint: "[filter: plan names or substrings, e.g. 'backup proxy'; omit for every unfinished Promoted plan]"
-allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(.claude/hooks/stop/worklist.py --plan-investigate:*), Bash(.claude/hooks/stop/worklist.py --plan-tick:*), Bash(.claude/hooks/stop/worklist.py --add:*), Bash(.claude/hooks/stop/worklist.py --lease:*), Bash(.claude/hooks/stop/worklist.py --update:*), Bash(git add:*), Bash(git commit:*), Bash(npm run login\:bench:*), Bash(git branch:*), Bash(git log:*), Bash(sed:*), Bash(grep:*), Bash(date:*), Bash(python3 -c:*)
+description: Drain the Promoted plans in agent/plans/QUEUE.md. One read-only survey sorts every open box into six groups first. Writers in leases take the code boxes only, grouped by the files a box touches, and land in one batch that is gated once. Live boxes run in the main checkout in three side-by-side queues: fleet, bench and hostinger, the last two started at once by any agent at any time. Writers, gates and fleet runs never share the local machine, and operator questions go in one batched ask. Free text after the command narrows it to matching plans.
+argument-hint: "[ask] [filter: plan names or substrings, e.g. 'backup proxy'; omit for every unfinished Promoted plan; 'ask' asks for risk/permit rulings that unblock stuck boxes]"
+allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(.claude/hooks/stop/worklist.py --plan-investigate:*), Bash(.claude/hooks/stop/worklist.py --plan-tick:*), Bash(.claude/hooks/stop/worklist.py --live-proof:*), Bash(.claude/hooks/stop/worklist.py --add:*), Bash(.claude/hooks/stop/worklist.py --add-many:*), Bash(.claude/hooks/stop/worklist.py --lease:*), Bash(.claude/hooks/stop/worklist.py --update:*), Bash(git add:*), Bash(git commit:*), Bash(npm run login\:bench:*), Bash(git branch:*), Bash(git log:*), Bash(sed:*), Bash(grep:*), Bash(date:*), Bash(uptime:*), Bash(nproc:*), Bash(python3 -c:*)
 ---
 
 ## The queue, gathered
@@ -15,92 +15,119 @@ allowed-tools: Bash(.claude/hooks/stop/worklist.py --list --open:*), Bash(.claud
 
 ## What to do
 
-**Drain, do not report, and do not survey first.** The operator types this instead of a long prompt; it means "every unfinished Promoted plan gets a writer now". Earlier versions surveyed first and then started a few hand-built batches, and run after run left most Promoted plans untouched. The output of one invocation is a writer on EVERY unfinished Promoted plan (or a queued item naming why it is not running yet), not a status essay. Rules of CLAUDE.md apply unchanged (rule 1 commits, rule 3 verification, rule 4 writer discipline).
+**Drain, do not report.** The operator types this instead of a long prompt, and one invocation is measured by boxes ticked and commits landed. An earlier round gave 25 writers to 30 plans and ticked nothing, because most open boxes were live runs that a lease cannot make. The rules of CLAUDE.md apply unchanged (rule 1 commits, rule 3 verification, rule 4 writer discipline).
 
-### 1. Pick the plans
+### 1. Classify before spawning
 
-Every Promoted plan whose row is not `done`, in table order (the order already puts prerequisites first). With a filter, keep only plans whose file name matches it. A plan whose `Depends-On:` prerequisite is unfinished still gets its writer when the prerequisite is also in this round; the writer's brief names the prerequisite, and the writer leaves boxes that need its output as `blocked-on-dep`. A plan whose prerequisite is outside the round and unfinished is skipped unless its boxes carry a `DEPS-WAIVED:` ruling.
+The round is every Promoted plan whose row is not `done`, in table order, narrowed by the filter. One background `general-purpose` agent (model `sonnet`, read-only) sorts every open box of the round and writes `/tmp/writers-now/<branch>-<UTC stamp>.md`: signature, group and file:line evidence per box, plus the files each G5 box touches. It returns the path and the per-group counts. Writers start only once it has returned; a survey that fails or stalls is restarted once, and then the lead reads the boxes itself.
 
-### 2. Build the roster, mechanically
+| Group | Meaning | Who takes it |
+|---|---|---|
+| G1 bench-rewordable | names edge or stable only as where it runs, including a GitHub wait with no `GitHub-only:` tag that names edge or stable | a recorded correction to bench, then the live queue |
+| G2 run now | a live run that can start today, including every other GitHub wait with no `GitHub-only:` tag: it runs on its local route | the live queue (section 7) |
+| G3 pipeline | tagged `GitHub-only: CD`, `CI parity`, `native-runner` or `preview`: it proves the pipeline, CI or a preview itself | nobody yet; named in the report |
+| G4 time | tagged `GitHub-only: soak`, or needs a data window | nobody yet; named in the report |
+| G5 code | real code or tests still to write | writers (section 2) |
+| G6 operator | a decision or access only the operator has | the batched ask (section 7) |
 
-The roster comes from the progress table and the plan files, not from a survey. For each picked plan, list its open boxes in file order with their 8-hex signatures (`open_sigs` in `.ci/config/plan-boxes.json`, or the `- [ ]` lines of the plan).
+**A GitHub wait is G2 until a tag says otherwise** (operator ruling R2 of 2026-11-11: "The planner should really find no way to test/deploy locally to go with github.", which Design L of the plan reads as: no box goes to GitHub while a local route exists). A box names a GitHub wait when its text matches a phrase of `tiers.live.github_waits` in `.ci/config/proof-tiers.json` ("released", "after the merge", "CD", "nightly", a CI or ct-tests run), read through `wl_plandeps.box_github_wait`. With no valid `GitHub-only:` tag on its line or in a `(corrected ...)` line, it is G2 and runs on a local route of its surface (`surfaces.<name>.local`: vm:check, hostinger, deploy_bench, the D1 clones, the e2e-local fleet), or G1 when it names edge or stable. A valid `Local-route:` correction makes it G2 on the runners it names. A valid `GitHub-only: <kind> -- <why>` tag decides the group by its kind alone: G4 for `soak`, G3 for `CD`, `CI parity`, `native-runner` and `preview`. "Waits for the merge" or "a CI run" is therefore never a reason the survey gives for G3 on an untagged box. The tag grammar and LP8 are in docs/agent-reference/plan-records.md.
 
-- **Five or fewer open boxes**: one writer takes them all.
-- **More than five open boxes**: three writers, each a contiguous third of the open boxes in file order (sizes differ by at most one).
-- **Free slots** are `writer_cap` minus the live writers counted by the gathered leases and this session's running agents.
-- **Order of starting**: first one writer per plan in table order (the first third for a split plan), then the second and third thirds in table order. Whatever does not fit in the free slots is queued (step 5), in that same order.
-- **Filling the cap**: when every planned writer fits and slots remain, the largest remaining share above five boxes splits into thirds again, repeated until the slots run out or no share is above five.
+`LP-<target> [live]` boxes are read mechanically, through `wl_liveproof.lp_boxes` and `parse_accept` (`.claude/hooks/stop/wl_liveproof.py`), which are exact. Every other tag is a hint. A writer's report overrides the survey: code it finds already present moves that box to G2, or closes it when the code was the whole box.
 
-Writers of the same plan share the plan's `Owns:` boundary (the concurrency guard judges plans, so siblings are not refused against each other), so the guard cannot keep two siblings out of one file. Writers run in the main checkout, NOT with `isolation: "worktree"`: a harness worktree is cut from `origin/main` with every submodule uninitialised (measured 2026-10-30: base 403f47b97, 1398 commits behind the live branch, `private/account`, `private/renet` and `private/elite` empty), so a writer there reads stale code and cannot run the submodule tests. Siblings are kept apart by their box ranges instead, and the clash that leaves is caught at commit time: the lead intersects the file lists the siblings of one plan report, and a file named by two is re-read whole and its hunks matched to each report before either is committed. Each sibling's brief still names the other siblings' box ranges, so such a file is rare: a file one sibling's boxes plainly need belongs to that sibling, and a writer that finds it must edit a sibling's file stops and puts the exact change in its report for the lead.
+A plan whose `Depends-On:` prerequisite is unfinished stays in the round when the prerequisite is too, and boxes needing its output wait. A prerequisite outside the round skips the plan unless its boxes carry a `DEPS-WAIVED:` ruling.
 
-### 3. The survey, optional and on disk
+### 2. The writer roster: G5 boxes only
 
-A survey helps only when it does not hold the writers back. When one is wanted, start a single background `general-purpose` agent (model `sonnet`, read-only) in the same message as the writers, never before them. It classifies every open box of the round into the classes of the brief below, with file:line evidence, and WRITES the result to `/tmp/writers-now/<branch>-<UTC stamp>.md`, returning only the path and per-class counts. The lead reads the counts, not the file. Writers are told the path and treat it as a hint, never as a reason to skip their own check of a box.
+Each box's signature and label are read together from the box parser, `wl_planrec.open_boxes` (`(line, raw, body, sig)` per box) or the `worklist.py` listing. `open_sigs` in `.ci/config/plan-boxes.json` is a sorted set, never a parallel list: zipped with a plan's `- [ ]` lines it pairs the wrong signature with each label, and that reached real briefs.
+
+Writers are grouped by the files a box touches, never by thirds of a plan: boxes sharing a file go to one writer, and a plan with only live boxes gets no writer. A brief's `Owns` names those files even past the plan's own `Owns:` line, because a box outside that line otherwise goes undone. Boxes of different plans that share a file go to one writer under the plan holding the most of them.
+
+Two hard limits bound the roster: the 20 concurrent subagents of the harness, and the 25 trees on disk at `writer_cap`. `.ci/rediacc_ci/dev/worktree_lease.py` counts finished trees too, so each is collected by `--id` as its report lands (section 6). Free slots are the smaller limit minus the running writers and the trees still on disk (`./run.sh worktree leases`).
+
+The route is `isolation: "worktree"` on the Agent call, which reaches a lease through the harness's create hook: a detached tree under `.claude/worktrees/<id>` at the live branch's tip, submodules at their gitlinks, dependencies seeded. Uncommitted work in the main checkout is not in it. Which writer gets a lease is not asked (`block_settled_questions`). Separate leases cannot corrupt each other: `block_plan_concurrency` turns an `Owns` overlap into a note for an isolated spawn (an exclusive plan's mutex still refuses an isolated spawn whose Owns overlap it), and a clash surfaces as a cherry-pick conflict at landing, where the lead re-reads the file whole and matches its hunks to each report.
+
+### 3. One thing at a time on the machine
+
+Writers, or gates, or a fleet run, never two of them: writers beside gates made load 70-90 and false timeouts. Before a wave, `uptime` is read against `nproc`, and a wave waits while load is above it. The order of a round is writers, landing, one gate run, then the fleet part of the live queue.
+
+Bench and hostinger runs are exempt from this rule and from that order (standing operator order, 2026-11-05: bench and hostinger are open to every agent at any time). Their work runs on remote machines, not this host, so they start at once, beside writers, gates or a fleet run, and never wait for a landing, a gate, a push, a merge or an operator answer. Any agent may run them: the lead, a live runner or a writer whose box needs one. Starting at once does not mean sharing a machine: two runs never touch the same bench or hostinger machine at the same time (section 7), and no lock enforces it, so a runner that finds another one on its machine queues behind it. A box needing a fleet VM still waits for the fleet; a box needing bench or hostinger never does. "Waiting on the fleet" is therefore never a reason to leave a bench or hostinger box idle.
 
 ### 4. Start the writers, all at once
 
-Every writer that fits is started in ONE message with parallel Agent calls, in the main checkout (step 2 says why not a worktree). Model: `sonnet` when the plan's open boxes implement against an existing oracle (ports, tests, sweeps, translations); `opus` when they create the oracle (a new gate, guard, schema or design). Never `haiku` for writes. A plan's `Concurrency: exclusive` is no reason to hold its writer back: it is started anyway, and `block_plan_concurrency` decides.
+Every writer that fits starts in ONE message with parallel Agent calls. Model: `sonnet` when its boxes implement against an existing oracle (ports, tests, sweeps, translations); `opus` when they create the oracle (a new gate, guard, schema or design). Never `haiku` for writes. A plan's `Concurrency: exclusive` is no reason to hold a writer back: it is started anyway, and `block_plan_concurrency` decides.
 
-Each brief stands alone, because the writer sees nothing else. Its first two lines are load-bearing for the guards and are copied from the plan header:
+Each brief stands alone, because the writer sees nothing else. Its first two lines are load-bearing for the guards. `Owns:` is comma-separated globs; a prose line is not read, and the refusal says so. A planless brief opens `Plan: none -- <reason>`, which serves no plan whatever items the brief names. A live runner of a writer type that edits nothing is briefed `Owns: none -- <reason>`, so it holds no plan while its transcript shows no edit:
 
 ```
 Plan: agent/plans/<PLAN-file>.md
-Owns: <the plan's Owns: globs, verbatim>
+Owns: <the plan's Owns: globs, verbatim, plus each file these boxes touch past them>
 
 PR-TASK <the plan's epic id>, repo <repo root>. Boxes (this writer's share, with signatures):
   <sig> <label>
   ...
-Siblings on this plan: <writer A: sigs ...; writer B: sigs ...>, or "none".
 Prerequisite in this round: <PLAN-x.md, or "none">.
-Survey hint, if present: </tmp/writers-now/...md>.
+Survey: </tmp/writers-now/...md>, a hint; the tree decides.
 
-Boundary: only files matching the Owns globs above. Any other file, or a file a sibling's boxes
-plainly need, is not edited: the exact change goes into the report for the lead.
+Boundary: only the files named by Owns above, plus the outputs of the one generator the Rules below admit. Any other file is not edited: the exact change goes into the report for the lead.
 
-Handle each box by its class, which this writer determines itself from the tree:
-- LOCAL: code, tests, docs or config doable in this checkout. Implement it and run its acceptance
-  command.
-- ALREADY-DONE: the tree already holds it. Change nothing; cite file:line or the commit, and run
-  the command that proves it.
-- BENCH: needs bench or edge. Land the code half, then run the box's own named accept command on
-  bench (`npm run login:bench` logs in headlessly; bench deploys are free). A run that rebuilds the
-  CLI (vm:check, a drill) or deploys edge is not run here: name the exact command for the lead.
-- HOSTINGER: needs the production hostinger machine. Land the code half and name the exact
-  acceptance command; the production machine is not touched by this writer.
-- POST-MERGE: needs main, a released CLI or renet, CD, a nightly or the stable promote. Land any
-  local half and name what closes the box after the merge.
-- OPERATOR: needs an operator decision or operator-only access. Change nothing; write the decision
-  as one question with the recommended option first.
-A box whose code landed but whose live accept is open is classified by its open half.
+Implement each box and run its acceptance command. A box the tree already holds changes nothing:
+cite file:line or the commit, and run the command that proves it. A box whose remaining half is a
+live run, a pipeline or a decision is not attempted: name the exact command or question.
 
-Rules: never commit; no git checkout, restore, stash, clean, reset or add; no regenerate or sync
-script (name it for the lead instead); never vitest from the repo root; no edits outside the
-boundary.
+Rules: no git checkout, restore, stash, clean, reset; no regenerate or sync script (name it for the lead instead), except the one generator the lease's own commit-policy hook names for the commit in hand (`npx tsx scripts/gen/gen-docs.ts --write` for a stale doc region, `npm run generate:cli-contract -w @rediacc/cli` for a stale CLI contract): run it in the lease and commit its outputs, because the hook refuses the commit without them (2026-11-10: three writers stopped short or packed new modules into one file to avoid it); never vitest from the repo root; no inline suppression. This tree is a lease:
+  - commit on the detached HEAD with `git commit -F <msg> -- <paths>`, a `PR-TASK:` trailer and one
+    Plan-Box trailer per box the commit serves (the lease commit-msg hook and `land` refuse without):
+      Plan-Box: <PLAN-file>.md#<sig8> clauses=<C1,C2,...|all>
+      Plan-Box: none -- <reason, at least 12 characters>
+    never push, never touch `agent/**` or a gitlink, never switch or create a branch;
+  - run `npm run ci -- --narrow` or named tests; ci:quick, vm:check and live_proof record refuse a lease;
+  - Python tests run with `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest <files> -q` (neither
+    the system python3 nor .venv has pytest, and `-p no:cacheprovider` fails on the repo's cache_dir); a lease is seeded with that binary, and one without it runs the main checkout's copy by absolute path with the lease as the working directory;
+  - report the commit shas; the lead lands them. A result worth keeping goes in a commit or the
+    report, because GC deletes the tree's ignored output with the tree.
 
-Report, one block per box signature:
-  <sig> <class> <done|partial|untouched|blocked-on-dep>
-  files: <changed paths>
-  commands: <each command run, with its exit code>
-  remains: <the half still open and the exact command or decision that closes it, or "nothing">
+Report: per box the commands run with their exit codes, then one TICK line per box signature,
+the line the lead's tools read (`wl_planbox.parse_tick`):
+  TICK <PLAN-file>.md#<sig8> <done|present|partial|untouched|blocked> commits=<lease shas|-> landed=<C1,C2|all|-> owed=<C3:live,C4:operator|->
+    close: <the exact command or question that closes what is owed, or "nothing">
+For example:
+  TICK PLAN-rediaccfile-unprivileged.md#afa91934 partial commits=ec099603d landed=C1 owed=C2:live
+    close: worklist.py --live-proof <me> agent/plans/PLAN-rediaccfile-unprivileged.md afa91934 --write --tick
 ```
 
-**Track** each writer as one worklist item (`--add`, text naming the plan and its box signatures), and lease it to the real agent id only after the Agent call returns it (`--lease <me> <id> +120 worker:<agent-id>`). `--plan-investigate` each box when its writer starts.
+**Track** the writers in one `--add-many <me>` call, one line per writer naming the plan and its box signatures, and lease each to the real agent id only after the Agent call returns it (`--lease <me> <id> +120 worker:<agent-id>`). `--plan-investigate` each box when its writer starts.
 
 ### 5. A refused writer is queued, never dropped
 
-A spawn refused by `block_agent_cap` (cap full) gets its item leased to `worker:queue` with the refusal in the note. A spawn refused by `block_plan_concurrency` (an exclusive plan, or an Owns overlap with a live writer) stays an open item, and `--update <me> <id> queued: refused by block_plan_concurrency behind <plan> (#<holding item>)` records the guard's exact refusal. Either way the brief is kept verbatim in the item's text or the round log, so the retry is a copy, not a rewrite. When a writer reports, the queue is retried in the order of step 2 before anything new starts.
+A spawn refused by `block_agent_cap` (cap full) gets its item leased to `worker:queue` with the refusal in the note. A spawn refused by `block_plan_concurrency` stays an open item, and `--update <me> <id> queued: refused by block_plan_concurrency behind <plan> (#<holding item>)` records the exact refusal. The brief is kept verbatim in the item's text or the round log, so the retry is a copy. When a writer reports, the queue is retried in roster order before anything new starts.
 
-### 6. As each writer reports
+### 6. Land in a batch, then gate once
 
-Spot-check against the artifact (rule 4), rerun its acceptance commands, run any regenerate it named, commit by path (submodules first, then the pointer), and `--plan-tick` each box it finished with the commit and the proof. An ALREADY-DONE box is closed with `--plan-investigate <me> <plan> <sig> present <kind>:<token> -- <evidence> --write` and then `--plan-tick`, after the cited evidence is checked (an agent's "already done" is a hypothesis). Settle the per-commit review findings, then start the next queued writer.
+As each report lands, spot-check it against the artifact (rule 4), then collect its tree: `./run.sh worktree land <id>` prints the `git cherry-pick -x` lines and the lead runs them, submodules first, reading each pick's exit code; then `./run.sh worktree land <id> --ticks` maps each lease commit to its landed sha and prints, per box its Plan-Box trailers name, the progress rows, a post-landing `--plan-investigate` line where the box has no row, and a ready `--plan-tick` where every clause is covered; `--ticks --run` writes the progress rows and runs only those ticks. `./run.sh worktree gc --write --id <id>` frees the slot. A box ticks with the landed sha, never the lease's own. A `present` box closes with `--plan-investigate <me> <plan> <sig> present <kind>:<token> -- <evidence> --write` and then `--plan-tick`, after the cited evidence is checked.
 
-### 7. Live and parked boxes
+Once the batch is landed, `ci:quick` runs once, with `vm:check -- --changed` beside it when the push range touches the VM trigger paths in `.ci/config/proof-tiers.json` (CLAUDE.md rule 1). Only the reviews, worklist, reggate and effort ledgers count as record-only (`.ci/policy/record-paths.json`): any other commit voids the `ci:quick` receipt, so a plan or STATE commit comes before the gate run, not after. Anything freshness-red is bumped before the batch, and `pins bump` takes `--task`.
 
-- A BENCH command a writer named runs as soon as nothing it needs is mid-edit (a vm:check or a drill rebuilds the CLI; no CLI writer runs beside one).
-- A HOSTINGER command runs by the lead, exactly as named; a step the plan does not name goes to the operator.
-- POST-MERGE boxes stay open and are named once in the report; they close after the merge.
-- OPERATOR questions from every writer become one batched `AskUserQuestion` (recommended option first), never one question per box.
+### 7. The live queue and the parked groups
+
+G1 boxes first get their recorded correction: the box line stays byte-identical so its signature holds, with a `(corrected ASKED:<minute>Z) <bench form>` line under it. A clause bench cannot prove is named in its own box, never dropped. They then run as G2.
+
+The live queue starts from `worklist.py --box-audit <me> --live-owed`: the boxes whose code landed and whose live or operator half is owed, a released item's half included. G2 boxes run in the main checkout, because leases refuse `vm:check` and `live_proof`. Three queues run side by side, each sequential within itself: fleet (local VMs), bench (`--config eu-bench`), and hostinger. Bench and hostinger start at once, whatever the fleet and the writers are doing (section 3); two runners never touch the same remote machine at the same time. Each box takes `--plan-investigate`, then `worklist.py --live-proof <me> <plan> <sig> --write --tick`, or the box's own command. The runner holds a real lease (`worker:<agent-id>`, or `worker:lead` beside a running background task), since `queue-slot` trips on `worker:queue` beside a free slot. A box ticks only after every clause is read, citing the landed commit and the run's exit code, and it states bench-only proof plainly.
+
+Hostinger runs without asking, and provisioning restarts its services. Production data is never wiped; a restore test's temporary `-rt` copy is the only deletion, and `repo list` and `backup usage` are compared before and after each step. `backup schedule` and `strategy bind` go through `eu-remote`, never `eu-bench`.
+
+G3 and G4 boxes stay open and are named once in the report. A G6 question goes in one batched `AskUserQuestion` with the recommended option first, only when no ruling settles it. There is no ask for what `feedback` memory already rules.
+
+### 7a. The permit ask: trading risk for time (opt-in)
+
+A round often stalls on boxes no writer or runner can move without a wider permit: a gate the recorder will not pass (no VERIFIED `vm:check`), a soak window, a production or destructive step, an external send, or a decision parked as G6. Steps 1 and 2 below run on every round, right after the survey returns, since the report (section 8) names their top reasons. Steps 3 and 4 run only when the arguments carry the word `ask` (any position; it is removed from the filter), and they run before any writer of section 4 starts, so the answers shape the round; the runs a permit unlocks then join the queues of sections 3 and 7 as those sections run.
+
+1. **Group the stuck boxes by the reason they cannot move**, from the survey's G3, G4 and G6 lines and the live boxes blocked on a gate, window or permit. Skip the reasons a merge or a CI run settles, which only a box tagged `GitHub-only:` may give. Count boxes per reason and keep the top ten.
+2. **Turn each reason into the permit that would move it**, phrased as the action the session would then take, with its consequence: for example a recorder waiver marked `--vm-waived ASKED:<minute>` that a later VERIFIED run confirms, a 2-hour window in place of a day, a production run on a named region, a destructive cleanup after its archive step, a real mail to a named address, or a parked decision taken now. A reason that a ruling or `feedback` memory already settles is acted on, not asked.
+3. **Ask in batches of up to four** with `AskUserQuestion`, the riskier permit first and labelled with its consequence, the conservative option beside it, and a free-text answer always possible. More than four reasons go in the next batch after the first is answered.
+4. **Record each answer before acting on it**: one round-log DECISIONS line with the operator's words and `ASKED:<minute>Z`, and one worklist item per permit granted naming the boxes it moves. Then start the runs the permits unlock, in the queues of sections 3 and 7.
+
+Without the word `ask`, steps 3 and 4 do not run, and the report (section 8) names the top stuck reasons in one line each, ending with "run `/writers-now ask` to be asked for the permits". With `ask` in away mode (`/awk`) the questions are refused, so step 3 parks each permit as a `[?]` whose DEFAULT is the conservative option instead of asking.
 
 ### 8. Report in one screen
 
-Writers running (plan, share, agent), writers queued with the refusal that holds each, boxes ticked this round with commits, and the boxes still open by class. No narration of the survey.
+Boxes ticked with their commits and commits landed lead the report. Then the writers running or queued with the refusal that holds each, the live box in progress, and the boxes still open by group. Then the top stuck reasons of section 7a, one line each with the permit that would move it (and the answers taken, when `ask` ran). No narration of the survey.

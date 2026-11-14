@@ -18,6 +18,7 @@ const healthy = {
   message: 'All systems healthy',
   details: {} as never,
   issues: [],
+  findings: [],
 };
 
 const hub = {

@@ -1,0 +1,1122 @@
+"""`./run.sh enterprise proof <verb>`: the claims each live box of agent/plans/PLAN-enterprise-isolation.md must see hold (box P1).
+
+ONE VERB PER LIVE BOX. `signer` (V1), `region-loss` (V2), `add` (V3), `routing` (V4), `release` (V5), `replay` (V6), `proxy` (V7), `cost` (V8), `renet` (V9), `github` (V10), `remove` (V11) and `keys` (X1). Each verb is a fixed list of claims over a `Lab`, the live world the proof drives. A claim that does not hold is printed `BROKEN` with what was seen, and the verb exits 1. A verb that records no claim at all also exits 1, because a proof that checked nothing is not a pass.
+
+EVERY REFUSAL HAS A CONTROL. A claim that something is refused is paired with the same request admitted where it should be: a token refused by the other company's Worker is first accepted by its own, a scope case refused by a signer sits beside a legitimate licence that signer issues. Without the control, a dead signer or a wrong host would pass every refusal claim.
+
+WHAT IS BROKEN IS PUT BACK. `signer` stops a signer, `region-loss` cuts a region (on bench, us and then eu) and `proxy` sets an allowlist; each restores in a `finally`, and a restore that fails is itself a broken claim, so a run never leaves bench quietly degraded. `signer` and `region-loss` restore through `_restore`: start the signer (or restore the region), settle until the caller is signed for again, start once more if it is not, and claim `<caller>: bench signing is restored`; a broken one names the `deploy_signer --target` run that puts bench back.
+
+A STATE CHANGE IS SETTLED, NOT SAMPLED. Cloudflare propagates a signer's stop and start over seconds: on 2026-11-12 one issue call right after the stop was still admitted. A claim whose answer a stop, a cut or a restart changes therefore goes through `settle`, which asks again every `SETTLE_INTERVAL_S` until the answer is the one claimed or `SETTLE_S` pass, and judges the last answer; a broken one names the wait. A claim the change must not move (the us company issuing and renewing with eu cut) is sampled once, so a refusal there is judged as it comes.
+
+A LAB ERROR IS A BROKEN CLAIM, NOT A TRACEBACK. A lab raises `LabError` (or an OS, value, lookup or timeout error) when a live step fails; the verb records it as broken under the claim it was serving and still restores. Any other exception is a defect in the proof or the lab and propagates.
+
+NAMES STAY OUT OF THE OUTPUT. Companies are printed by their opaque `c<hex>` id, and every claim and detail passes `Proof.hide`, which masks the labels, owner domains and hosts a verb registered; a record whose company is not an opaque id is printed by its position, never its value. `github` compares the run's logs and API answers against the fake company's name and hosts and, on a hit, prints the surface and the word's position in the list, never the word.
+
+THE LAB. `Lab` is the protocol the verbs need. The live binding is `rediacc_ci.enterprise.lab.build(bench=...)`, built over the add, lifecycle, deploy and ring modules (boxes C1, C2, D1, K2, S2); until that module exists, `main` exits 2 and names it rather than claiming anything. The tests drive every verb through a recording fake.
+
+EXIT CODES. 0 at least one claim held and none is broken (a skipped claim is reported and counted, and is neither held nor broken); 1 a claim is broken, or none held (none recorded, or every one skipped); 2 the proof could not start (usage, a verb run off bench, no live lab).
+"""
+
+from __future__ import annotations
+
+import argparse
+import dataclasses
+import functools
+import importlib
+import pathlib
+import re
+import sys
+import time
+from typing import TYPE_CHECKING, Protocol
+
+from rediacc_ci.core import toolchain
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable, Sequence
+
+SELF = "rediacc_ci.enterprise.proof"
+LAB_MODULE = "rediacc_ci.enterprise.lab"
+PRIVATE_KEY = "ACCOUNT_ED25519_PRIVATE_KEY"
+# packages/shared/src/subscription/constants.ts LICENSE_RENEW_PATH; the one path the allowlist exempts.
+LICENSE_RENEW_PATH = "/account/api/v1/licenses/renew"
+OPAQUE_ID = re.compile(r"^c[0-9a-f]{6,}$")
+HTTP_FORBIDDEN = 403
+# TEST-NET-1 (RFC 5737): no request comes from it, so an allowlist naming only it puts this machine off the list.
+FOREIGN_IP = "192.0.2.10"
+
+# The signer scope matrix of box S1: each is refused with its code, beside a legitimate licence and certificate that are issued.
+# The codes are private/account/src/services/license-signer.service.ts SignerRefusal, mirrored by signer-probe.service.ts.
+SCOPE_CODES: dict[str, str] = {
+    "foreign-subscription": "SIGNER_FOREIGN_SUBSCRIPTION",
+    "wrong-host": "SIGNER_WRONG_HOST",
+    "over-limit": "SIGNER_OVER_LIMIT",
+    "suspended": "SIGNER_SUSPENDED",
+    "raw-bytes": "SIGNER_REQUEST_MALFORMED",
+    "shared-enterprise": "SIGNER_PLAN_FORBIDDEN",
+    "certificate-over-ceiling": "SIGNER_CERT_OVER_CEILING",
+}
+SCOPE_CASES: tuple[str, ...] = tuple(SCOPE_CODES)
+# The cases a company caller (binding props `tier: enterprise`) is asked, mirroring signer-probe.service.ts SIGNER_PROBE_COMPANY_SCOPE_CASES. Its probe builds every request on the company's one subscription, so `suspended` (only the company's control row suspends it) and `shared-enterprise` (a company may sign ENTERPRISE) have no request.
+COMPANY_SCOPE_CODES: dict[str, str] = {
+    case: SCOPE_CODES[case]
+    for case in (
+        "foreign-subscription",
+        "wrong-host",
+        "over-limit",
+        "raw-bytes",
+        "certificate-over-ceiling",
+    )
+}
+# The named error an account server answers when its signer is out of reach (private/account/src/services/signer-client.ts).
+SIGNER_UNAVAILABLE = "SIGNER_UNAVAILABLE"
+REPLAY_KINDS: tuple[str, ...] = ("session", "api-token", "config-token", "e2e-envelope")
+GITHUB_SURFACES: tuple[str, ...] = ("logs", "jobs-api", "run-api", "step-summary")
+RELEASE_RINGS: tuple[str, ...] = ("canary", "small", "medium", "large")
+# The figures in the plan's *Limits*, which came through a summarizing tool; `cost` re-reads them.
+PLAN_LIMITS: dict[str, int] = {"workers_scripts": 500, "routes_per_zone": 1000}
+NOT_PROVEN_ON_BENCH: tuple[str, ...] = (
+    "a real network partition between Cloudflare regions",
+    "a D1 primary outage",
+    "a failure of Cloudflare's control plane",
+)
+# What the bench form of `region-loss` cannot prove beyond NOT_PROVEN_ON_BENCH. Bench places companies in eu only (deploy.console_executor.company_target refuses --company-bench outside eu), so no company can sit in us beside the eu one, and signer-bench-us has no caller. The live box that proves this clause needs a second-region deploy target, which bench does not have.
+BENCH_REGION_LOSS_GAPS: tuple[str, ...] = (
+    (
+        "cross-region placement: a company placed in a second region (its Workers, D1 and buckets "
+        "there, bound to that region's signer) keeps issuing and renewing while eu is lost; bench "
+        "places companies in eu only, so the survivor is the eu company with the us signer cut"
+    ),
+    (
+        "signer-bench-us signing after its restore: no bench caller binds it, so the restore is "
+        "read from its secret list holding the private key again, not from a renewal"
+    ),
+)
+# Why `signer` asks a company Worker nothing when its company has no control scope row (the lab's `unscoped_callers`).
+UNSCOPED_SKIP = (
+    "its company has no scope row in its control database (onboarded before onboarding wrote it), so its "
+    "signer answers SIGNER_UNKNOWN_COMPANY to every request; export it and remove it with --delete-data, "
+    "then add it again"
+)
+# Why `signer` asks a company Worker nothing when its company row outlives its account Worker (the lab's `gone_callers`).
+GONE_SKIP = (
+    "its account Worker no longer exists (an interrupted `enterprise remove` deleted it before the "
+    "company row turned removed); rerun `enterprise remove` for it"
+)
+# Why `signer` asks a company Worker nothing when it does not run the version edge runs: a company Worker keeps the code it was first deployed with until `enterprise release` redeploys it (`deploy_bench` redeploys account-bench only), so an older one answers for an older signer contract.
+STALE_SKIP = (
+    "its Worker runs %s, not the %s edge runs, so its answers describe older code; redeploy it with "
+    "`./run.sh enterprise release --bench --company <id>` and run the proof again; when the answer is "
+    "still SIGNER_FOREIGN_SUBSCRIPTION, its subscription id differs from the one onboarding now binds, "
+    "so remove it with --delete-data and add it again"
+)
+# The bench region every bench company sits in, and the other bench signer region the bench form cuts first.
+BENCH_COMPANY_REGION = "eu"
+BENCH_OTHER_REGION = "us"
+WORKFLOW_REMOVE = re.compile(r"enterprise\s+remove\b|enterprise\.lifecycle\b[^\n]*\bremove\b")
+MASK = "***"
+FREE_MAIL_DOMAIN = "gmail.com"
+# How long a judged state change may take to propagate, and how often `settle` asks again.
+SETTLE_S = 90
+SETTLE_INTERVAL_S = 5
+# The seams `settle` waits and reads time through; the tests swap both for a fake clock.
+sleep = time.sleep
+clock = time.monotonic
+
+
+class LabError(RuntimeError):
+    """A live step the lab could not complete."""
+
+
+LAB_ERRORS: tuple[type[Exception], ...] = (LabError, OSError, ValueError, LookupError, TimeoutError)
+# What building the live lab may raise, including an ImportError from inside the lab module.
+START_ERRORS: tuple[type[Exception], ...] = (*LAB_ERRORS, ImportError, AttributeError, TypeError)
+
+
+@dataclasses.dataclass(frozen=True)
+class Answer:
+    """One request's outcome: `ok`, or refused with `error`."""
+
+    ok: bool
+    error: str = ""
+    body: dict[str, str] = dataclasses.field(default_factory=dict)
+
+
+@dataclasses.dataclass(frozen=True)
+class Reply:
+    """An HTTPS fetch of a host: status, the Worker that answered, and the names on the certificate served."""
+
+    status: int
+    worker: str
+    cert_names: tuple[str, ...]
+
+
+@dataclasses.dataclass(frozen=True)
+class AddResult:
+    rc: int
+    company: str = ""
+    changed: tuple[str, ...] = ()
+    error: str = ""
+
+
+@dataclasses.dataclass(frozen=True)
+class ReleaseResult:
+    rc: int
+    stopped: str = ""
+    error: str = ""
+
+
+class Lab(Protocol):
+    """The live world a proof drives. Company arguments are opaque ids; callers are Worker names."""
+
+    # Workers, secrets and signers.
+    def account_workers(self, *, bench: bool) -> list[str]: ...
+    def signers(self, *, bench: bool) -> list[str]: ...
+    def secret_names(self, worker: str) -> list[str]: ...
+    def callers(self, *, bench: bool) -> list[str]: ...
+    def unscoped_callers(self, *, bench: bool) -> list[str]: ...
+    def gone_callers(self, *, bench: bool) -> list[str]: ...
+    def signer_of(self, caller: str) -> str: ...
+    def expected_props(self, caller: str) -> dict[str, str]: ...
+    def certificate_audited(self, signer: str, certificate_id: str) -> bool: ...
+    def stop_refusal(self, signer: str) -> str: ...
+    def stop_signer(self, signer: str) -> None: ...
+    def start_signer(self, signer: str) -> None: ...
+    def cut_region(self, region: str) -> None: ...
+    def restore_region(self, region: str) -> None: ...
+
+    # Companies.
+    def ensure_company(self, label: str, region: str, *, ring: str | None = None) -> str: ...
+    def caller_of(self, company: str) -> str: ...
+    def company_hosts(self, company: str) -> tuple[str, str]: ...
+    def company_words(self, company: str) -> list[str]: ...
+    def add(
+        self, label: str, *, owner: str, unlisted: bool, lookup_domain: str, kill_after: str = ""
+    ) -> AddResult: ...
+    def captured_mail(self, owner: str) -> list[str]: ...
+    def lookup(self, domain: str) -> str | None: ...
+    def export(self, company: str) -> int: ...
+    def remove(self, company: str, *, delete_data: bool, github_actions: bool) -> int: ...
+    def leftovers(self, company: str) -> list[str]: ...
+
+    # The caller-side signer probe (box V1): what a caller's signer sees and signs, asked through the caller.
+    def signer_props(self, caller: str) -> dict[str, str]: ...
+    def issue(self, caller: str, kind: str) -> Answer: ...
+    def renew(self, caller: str) -> Answer: ...
+    def current_licence_works(self, caller: str) -> bool: ...
+
+    # Routing.
+    def fetch(self, host: str) -> Reply: ...
+    def expected_worker(self, host: str) -> str: ...
+    def region_hosts(self, *, bench: bool) -> list[str]: ...
+    def specific_hosts(self) -> list[str]: ...
+    def cert_log_names(self) -> list[str]: ...
+    def turnstile_domains(self) -> list[str]: ...
+
+    # Releases.
+    def target_version(self) -> str: ...
+    def versions(self, targets: Sequence[str]) -> dict[str, str]: ...
+    def caller_version(self, caller: str) -> str: ...
+    def release(
+        self,
+        *,
+        skip_pauses: bool = False,
+        order: str = "",
+        plant_failure: str = "",
+        resume: str = "",
+    ) -> ReleaseResult: ...
+
+    # Tokens, proxy and executor.
+    def mint(self, company: str, kind: str) -> str: ...
+    def present(self, company: str, kind: str, artifact: str) -> Answer: ...
+    def container_app(self, company: str) -> str: ...
+    def durable_object(self, company: str) -> str: ...
+    def console_command(self, company: str) -> Answer: ...
+    def egress_ips(self) -> list[str]: ...
+    def set_allowlist(self, company: str, ips: Sequence[str]) -> None: ...
+    def request_from(self, company: str, *, method: str, path: str) -> int: ...
+
+    # Cost.
+    def deploy_records(self, *, bench: bool) -> list[dict[str, object]]: ...
+    def usage_rows(self, *, bench: bool) -> list[dict[str, object]]: ...
+    def image_rebuild_seconds(self) -> float: ...
+    def read_limits(self) -> dict[str, int]: ...
+
+    # Renet.
+    def fleet_machine(self) -> str: ...
+    def renet_version(self, machine: str) -> str: ...
+    def released_renet(self) -> str: ...
+    def run_verb(self, machine: str, *, mutating: bool) -> int: ...
+    def executor_upload(self, machine: str) -> Answer: ...
+    def renew_with(self, machine: str, *, renet: str, worker: str) -> Answer: ...
+
+    # GitHub.
+    def dispatch_release(self, company: str) -> str: ...
+    def run_surfaces(self, run_id: str) -> dict[str, str]: ...
+
+
+@dataclasses.dataclass(frozen=True)
+class Outcome:
+    claim: str
+    ok: bool
+    detail: str = ""
+    skipped: bool = False
+
+
+@dataclasses.dataclass
+class Proof:
+    """The claims one verb recorded, in order, and the notes it prints beside them."""
+
+    outcomes: list[Outcome] = dataclasses.field(default_factory=list)
+    notes: list[str] = dataclasses.field(default_factory=list)
+    hidden: list[str] = dataclasses.field(default_factory=list)
+
+    def hide(self, *words: str) -> None:
+        """Mask each word (case-insensitively) in every claim and detail recorded from now on."""
+        self.hidden.extend(w for w in words if w)
+
+    def masked(self, text: str) -> str:
+        for word in sorted(set(self.hidden), key=len, reverse=True):
+            text = re.sub(re.escape(word), MASK, text, flags=re.IGNORECASE)
+        return text
+
+    def check(self, claim: str, *, ok: object, detail: str = "") -> bool:
+        held = bool(ok)
+        self.outcomes.append(Outcome(self.masked(claim), held, "" if held else self.masked(detail)))
+        return held
+
+    def skip(self, claim: str, reason: str) -> None:
+        """Record a claim deliberately not checked, with why. It is neither held nor broken."""
+        self.outcomes.append(Outcome(self.masked(claim), True, self.masked(reason), skipped=True))
+
+    def admitted(self, claim: str, answer: Answer) -> bool:
+        return self.check(claim, ok=answer.ok, detail=f"refused: {answer.error or '(no error)'}")
+
+    def refused(
+        self, claim: str, answer: Answer, *, naming: str = "", waited: float | None = None
+    ) -> bool:
+        """`waited`: the answer is the last of a `settle` of that many seconds, which a broken detail names."""
+        tail = "" if waited is None else f" (still so after a {waited:g} s wait)"
+        if answer.ok:
+            return self.check(claim, ok=False, detail="admitted" + tail)
+        if not answer.error.strip():
+            return self.check(claim, ok=False, detail="refused with no error text" + tail)
+        if naming and naming not in answer.error:
+            return self.check(
+                claim, ok=False, detail=f"error does not name {naming}: {answer.error}{tail}"
+            )
+        return self.check(claim, ok=True)
+
+    def attempt(self, claim: str, action: Callable[[], object]) -> bool:
+        """Run a lab step; a lab error is a broken claim under `claim`."""
+        try:
+            action()
+        except LAB_ERRORS as exc:
+            return self.check(claim, ok=False, detail=f"{type(exc).__name__}: {exc}")
+        return self.check(claim, ok=True)
+
+    @property
+    def broken(self) -> list[Outcome]:
+        return [o for o in self.outcomes if not o.ok]
+
+    @property
+    def held(self) -> list[Outcome]:
+        return [o for o in self.outcomes if o.ok and not o.skipped]
+
+
+def settle[T](
+    probe: Callable[[], T],
+    done: Callable[[T], bool],
+    *,
+    timeout: float = SETTLE_S,
+    interval: float = SETTLE_INTERVAL_S,
+) -> T:
+    """Ask `probe` until `done` holds for its answer or `timeout` seconds pass, `interval` apart; return the last answer. An exception from `probe` propagates."""
+    deadline = clock() + timeout
+    answer = probe()
+    while not done(answer) and clock() < deadline:
+        sleep(interval)
+        answer = probe()
+    return answer
+
+
+def _names_unavailable(answer: Answer) -> bool:
+    return not answer.ok and SIGNER_UNAVAILABLE in answer.error
+
+
+def _start_and_settle(start: Callable[[], object], probe: Callable[[], Answer]) -> Answer:
+    """Run `start`, then settle `probe` until admitted. A lab error from either is a refused answer, never a raise: this runs in a `finally`."""
+    try:
+        start()
+    except LAB_ERRORS as exc:
+        return Answer(ok=False, error=f"start failed: {type(exc).__name__}: {exc}")
+
+    def asked() -> Answer:
+        try:
+            return probe()
+        except LAB_ERRORS as exc:
+            return Answer(ok=False, error=f"{type(exc).__name__}: {exc}")
+
+    return settle(asked, lambda a: a.ok)
+
+
+def _restore(lab: Lab, p: Proof, signer: str, caller: str, *, region: str = "") -> bool:
+    """Put bench signing back after a stop (or, with `region`, a cut): start, settle until `caller` is issued a licence (renewed, for a region), start once more if not, and claim the result, which is returned."""
+    if region:
+        start = functools.partial(lab.restore_region, region)
+        probe = functools.partial(lab.renew, caller)
+        action = "renewal"
+    else:
+        start = functools.partial(lab.start_signer, signer)
+        probe = functools.partial(lab.issue, caller, "licence")
+        action = "issuance"
+    answer = _start_and_settle(start, probe)
+    if not answer.ok:
+        first = answer
+        answer = _start_and_settle(start, probe)
+        if answer.ok:
+            # The restore held on the second start; the first one's failure stays on record.
+            p.notes.append(
+                f"{caller}: the first start did not restore {action} ({first.error or '(no error)'})"
+            )
+    target = signer.removeprefix("signer-")
+    return p.check(
+        f"{caller}: bench signing is restored",
+        ok=answer.ok,
+        detail=f"{action} still refused after two starts, each settled for {SETTLE_S} s "
+        f"({answer.error or '(no error)'}); run deploy_signer --target {target}",
+    )
+
+
+def _may_stop(lab: Lab, p: Proof, *signers: str) -> bool:
+    """Ask before any of `signers` is stopped or cut: bench carries production licences once `.ci/config/bench-production.json` declares a subscription (`rediacc_ci.ops.bench_production`), and a stopped bench signer stops their renewals. Each refusal is a broken claim, and the caller then stops nothing; a lab error is a refusal too."""
+    allowed = True
+    for signer in signers:
+        try:
+            refusal = lab.stop_refusal(signer)
+        except LAB_ERRORS as exc:
+            refusal = f"{type(exc).__name__}: {exc}"
+        allowed &= p.check(f"{signer} may be stopped", ok=not refusal, detail=refusal)
+    return allowed
+
+
+# -- the verbs --------------------------------------------------------------------
+
+
+def _no_key_on_account(lab: Lab, p: Proof, *, bench: bool) -> None:
+    workers = lab.account_workers(bench=bench)
+    p.check("account Workers are listed", ok=workers, detail="no account Worker found")
+    for w in workers:
+        try:
+            names = lab.secret_names(w)
+        except LAB_ERRORS as exc:
+            p.check(f"{w} lists its secrets", ok=False, detail=f"{type(exc).__name__}: {exc}")
+            continue
+        p.check(f"{w} lists its secrets", ok=names, detail="empty secret list")
+        p.check(f"{w} holds no {PRIVATE_KEY}", ok=PRIVATE_KEY not in names, detail="key present")
+    signers = lab.signers(bench=bench)
+    p.check("signers are listed", ok=signers, detail="no signer found")
+    for s in signers:
+        p.check(f"{s} holds {PRIVATE_KEY}", ok=PRIVATE_KEY in lab.secret_names(s), detail="absent")
+
+
+def _runs(running: str, target: str) -> bool:
+    """Whether a Worker's recorded version is at least `target`; an empty or unparseable one is not."""
+    try:
+        return bool(running) and toolchain.compare(running, target) >= 0
+    except toolchain.VersionError:
+        return False
+
+
+def verb_signer(lab: Lab, p: Proof, *, bench: bool) -> None:
+    """V1: the binding across Workers, props honoured, a licence issued and renewed per caller, scope refused (a company caller is asked `COMPANY_SCOPE_CODES`), no key on any account Worker, certificates through the signer, a stopped signer named (settled) while a current licence works, and signing restored. A company Worker whose company has no control scope row is skipped by name (`UNSCOPED_SKIP`), and nothing is stopped while bench carries production data (`_may_stop`)."""
+    _no_key_on_account(lab, p, bench=bench)
+    callers = lab.callers(bench=bench)
+    for gone in lab.gone_callers(bench=bench):
+        p.skip(f"{gone}: signing", GONE_SKIP)
+    for unscoped in lab.unscoped_callers(bench=bench):
+        p.skip(f"{unscoped}: signing", UNSCOPED_SKIP)
+    if not p.check("signer callers are listed", ok=callers, detail="no caller found"):
+        return
+    target = lab.target_version()
+    judged: list[str] = []
+    for caller in callers:
+        want = lab.expected_props(caller)
+        if want.get("tier") == "enterprise":
+            running = lab.caller_version(caller)
+            if not _runs(running, target):
+                p.skip(
+                    f"{caller}: signing", STALE_SKIP % (running or "no recorded version", target)
+                )
+                continue
+        judged.append(caller)
+    callers = judged
+    if not p.check("a signer caller is current", ok=callers, detail="every caller is stale"):
+        return
+    for caller in callers:
+        want, seen = lab.expected_props(caller), lab.signer_props(caller)
+        p.check(f"{caller}: the signer sees its binding props", ok=seen == want, detail=f"{seen}")
+        p.admitted(f"{caller}: a legitimate licence is issued", lab.issue(caller, "licence"))
+        p.admitted(f"{caller}: the licence is renewed", lab.renew(caller))
+        codes = COMPANY_SCOPE_CODES if want.get("tier") == "enterprise" else SCOPE_CODES
+        for case, code in codes.items():
+            p.refused(f"{caller}: {case} is refused", lab.issue(caller, case), naming=code)
+        cert = lab.issue(caller, "certificate")
+        if p.admitted(f"{caller}: a legitimate certificate is issued", cert):
+            cid = cert.body.get("id", "")
+            audited = bool(cid) and lab.certificate_audited(lab.signer_of(caller), cid)
+            p.check(f"{caller}: the certificate has an audit row", ok=audited, detail=f"id {cid!r}")
+
+    caller = callers[0]
+    signer = lab.signer_of(caller)
+    if not _may_stop(lab, p, signer):
+        return
+    if not p.attempt(f"{signer} stops", lambda: lab.stop_signer(signer)):
+        _restore(lab, p, signer, caller)
+        return
+    try:
+        p.refused(
+            f"{caller}: a stopped signer is named",
+            settle(lambda: lab.issue(caller, "licence"), _names_unavailable),
+            naming=SIGNER_UNAVAILABLE,
+            waited=SETTLE_S,
+        )
+        p.check(
+            f"{caller}: the current licence works with the signer stopped",
+            ok=lab.current_licence_works(caller),
+            detail="current licence refused",
+        )
+    finally:
+        _restore(lab, p, signer, caller)
+
+
+def _restore_uncalled_region(lab: Lab, p: Proof, region: str) -> bool:
+    """Put back a bench region no caller binds (signer-bench-us on bench): restore it, read its secret list for the private key, restore once more if it is absent, and claim the result. A lab error is a broken claim, never a raise: this runs in a `finally`."""
+    signer = f"signer-bench-{region}"
+
+    def attempt() -> str:
+        try:
+            lab.restore_region(region)
+            names = lab.secret_names(signer)
+        except LAB_ERRORS as exc:
+            return f"start failed: {type(exc).__name__}: {exc}"
+        return "" if PRIVATE_KEY in names else f"{PRIVATE_KEY} absent from its secret list"
+
+    error = attempt()
+    if error:
+        first = error
+        error = attempt()
+        if not error:
+            p.notes.append(f"{signer}: the first start did not restore it ({first})")
+    return p.check(
+        f"{signer}: bench signing is restored",
+        ok=not error,
+        detail=f"{error} after two starts; run deploy_signer --target bench-{region}",
+    )
+
+
+def _region_loss_bench(lab: Lab, p: Proof) -> None:
+    """The bench form of V2. Bench places companies in eu only, so a us company cannot exist; the property is proven at the signer, in both directions, with one eu company.
+
+    1. The eu company signs through signer-bench-eu (else cutting us would prove nothing about it).
+    2. signer-bench-us is cut and stays cut through step 4. The eu company issues and renews at once: losing the other region costs it nothing.
+    3. signer-bench-eu is cut: the eu company gets the named error (settled) and keeps its current licence; eu is restored (settled renewal).
+    4. With us still cut, the eu company issues and renews again. Sampled once, after step 3's settles, so the us cut has had at least that long to propagate (step 2's sample may precede it); skipped if eu did not come back, because a refusal then would be eu's, not us's.
+    5. us is restored, read from its secret list (no bench caller binds it).
+
+    Nothing is cut while either bench signer is refused a stop (`_may_stop`: bench carries production data).
+
+    NOT PROVEN HERE (BENCH_REGION_LOSS_GAPS): cross-region placement, a company placed in us surviving the loss of eu, because bench has no second deploy region."""
+    region, other = BENCH_COMPANY_REGION, BENCH_OTHER_REGION
+    signer = f"signer-bench-{region}"
+    if not _may_stop(lab, p, signer, f"signer-bench-{other}"):
+        return
+    caller = lab.caller_of(lab.ensure_company(f"proof-loss-{region}", region))
+    bound = lab.signer_of(caller)
+    if not p.check(
+        f"{region} company signs through {signer}", ok=bound == signer, detail=f"bound to {bound!r}"
+    ):
+        return
+    p.admitted(f"{region} company renews before the cut", lab.renew(caller))
+    if not p.attempt(f"{other} signer is cut", lambda: lab.cut_region(other)):
+        _restore_uncalled_region(lab, p, other)
+        return
+    try:
+        p.admitted(f"{region} company issues with {other} cut", lab.issue(caller, "licence"))
+        p.admitted(f"{region} company renews with {other} cut", lab.renew(caller))
+        if not p.attempt(f"{region} signer is cut", lambda: lab.cut_region(region)):
+            _restore(lab, p, signer, caller, region=region)
+            return
+        try:
+            p.refused(
+                f"{region} company gets the named error",
+                settle(lambda: lab.renew(caller), _names_unavailable),
+                naming=SIGNER_UNAVAILABLE,
+                waited=SETTLE_S,
+            )
+            p.check(
+                f"{region} company's current licence works with {region} cut",
+                ok=lab.current_licence_works(caller),
+                detail="current licence refused",
+            )
+        finally:
+            restored = _restore(lab, p, signer, caller, region=region)
+        late = f"after the {region} round trip"
+        if restored:
+            p.admitted(
+                f"{region} company issues with {other} cut, {late}", lab.issue(caller, "licence")
+            )
+            p.admitted(f"{region} company renews with {other} cut, {late}", lab.renew(caller))
+        else:
+            reason = (
+                f"{region} signing did not come back with {other} still cut, so a refusal "
+                f"would not be {other}'s alone"
+            )
+            p.skip(f"{region} company issues and renews with {other} cut, {late}", reason)
+    finally:
+        _restore_uncalled_region(lab, p, other)
+
+
+def verb_region_loss(lab: Lab, p: Proof, *, bench: bool) -> None:
+    """V2: with eu's bench signer cut (its control database stays, see deploy_signer), the us company issues and renews, the eu company gets the named error (settled) and keeps its licence, and restoring eu renews it again.
+
+    On bench (`bench=True`) this runs `_region_loss_bench`, because bench places companies in eu only and refuses to create the us company the form below needs; the form below stays for a deploy target with a second region."""
+    if bench:
+        _region_loss_bench(lab, p)
+        p.notes.extend(f"not proven on bench: {n}" for n in NOT_PROVEN_ON_BENCH)
+        p.notes.extend(f"not proven on bench: {n}" for n in BENCH_REGION_LOSS_GAPS)
+        return
+    eu = lab.caller_of(lab.ensure_company("proof-loss-eu", "eu"))
+    us = lab.caller_of(lab.ensure_company("proof-loss-us", "us"))
+    # Only bench runs this verb, and the lab cuts a region by stopping its bench signer.
+    eu_signer = "signer-bench-eu"
+    if not _may_stop(lab, p, eu_signer):
+        return
+    p.admitted("eu company renews before the cut", lab.renew(eu))
+    if not p.attempt("eu signer is cut", lambda: lab.cut_region("eu")):
+        _restore(lab, p, eu_signer, eu, region="eu")
+        return
+    try:
+        p.admitted("us company issues with eu cut", lab.issue(us, "licence"))
+        p.admitted("us company renews with eu cut", lab.renew(us))
+        p.refused(
+            "eu company gets the named error",
+            settle(lambda: lab.renew(eu), _names_unavailable),
+            naming=SIGNER_UNAVAILABLE,
+            waited=SETTLE_S,
+        )
+        p.check(
+            "eu company's current licence works with eu cut",
+            ok=lab.current_licence_works(eu),
+            detail="current licence refused",
+        )
+    finally:
+        _restore(lab, p, eu_signer, eu, region="eu")
+    p.notes.extend(f"not proven on bench: {n}" for n in NOT_PROVEN_ON_BENCH)
+
+
+def verb_add(lab: Lab, p: Proof, *, bench: bool) -> None:
+    """V3: a killed add resumes, a rerun changes nothing, owner mail is captured, the lookup hits a listed company and misses an unlisted one, a free-mail domain is refused."""
+    del bench
+    cases = (
+        ("listed", "proof-listed", "owner@proof-listed.example", False, "proof-listed.example"),
+        (
+            "unlisted",
+            "proof-unlisted",
+            "owner@proof-unlisted.example",
+            True,
+            "proof-unlisted.example",
+        ),
+    )
+    for role, label, owner, unlisted, domain in cases:
+        p.hide(label, owner, domain)
+        who = f"{role} company"
+        killed = lab.add(
+            label, owner=owner, unlisted=unlisted, lookup_domain=domain, kill_after="d1"
+        )
+        p.check(f"{who}: a killed add exits non-zero", ok=killed.rc != 0, detail="rc 0")
+        resumed = lab.add(label, owner=owner, unlisted=unlisted, lookup_domain=domain)
+        p.check(f"{who}: the add resumes", ok=resumed.rc == 0, detail=resumed.error)
+        again = lab.add(label, owner=owner, unlisted=unlisted, lookup_domain=domain)
+        p.check(
+            f"{who}: a rerun changes nothing",
+            ok=again.rc == 0 and not again.changed,
+            detail=f"rc {again.rc}, changed {list(again.changed)}",
+        )
+        p.check(f"{who}: owner mail is captured", ok=lab.captured_mail(owner), detail="no mail")
+        hit = lab.lookup(domain)
+        if hit:
+            p.hide(hit)
+        if unlisted:
+            p.check(f"{who}: the lookup misses", ok=hit is None, detail="lookup answered")
+        else:
+            host = lab.company_hosts(resumed.company)[0] if resumed.company else ""
+            p.hide(host)
+            detail = "lookup gave no host" if hit is None else "lookup gave another host"
+            p.check(f"{who}: the lookup hits", ok=bool(host) and hit == host, detail=detail)
+    p.hide(FREE_MAIL_DOMAIN, "proof-freemail")
+    free = lab.add(
+        "proof-freemail",
+        owner=f"owner@{FREE_MAIL_DOMAIN}",
+        unlisted=False,
+        lookup_domain=FREE_MAIL_DOMAIN,
+    )
+    p.check(
+        "a free-mail lookup domain is refused",
+        ok=free.rc != 0 and "free-mail" in free.error,
+        detail=f"rc {free.rc}: {free.error}",
+    )
+
+
+def _covers(names: Iterable[str], host: str) -> bool:
+    for name in names:
+        if name == host:
+            return True
+        if name.startswith("*.") and host.count(".") == name.count(".") and host.endswith(name[1:]):
+            return True
+    return False
+
+
+def verb_routing(lab: Lab, p: Proof, *, bench: bool) -> None:
+    """V4: the wildcard and routes reach each Worker, the certificate covers both company hosts, region hosts do not collide, specific records win, certificate logs lack company names, Turnstile covers the subdomains."""
+    companies = [lab.ensure_company(label, "eu") for label in ("proof-route-a", "proof-route-b")]
+    turnstile = lab.turnstile_domains()
+    logged = {n.lower() for n in lab.cert_log_names()}
+    company_workers: set[str] = set()
+    for cid in companies:
+        for host in lab.company_hosts(cid):
+            reply = lab.fetch(host)
+            want = lab.expected_worker(host)
+            company_workers.add(reply.worker)
+            p.check(
+                f"{cid}: {_role(host)} reaches its Worker",
+                ok=reply.worker == want,
+                detail=f"answered by {reply.worker!r}",
+            )
+            p.check(
+                f"{cid}: {_role(host)} certificate covers it",
+                ok=_covers(reply.cert_names, host),
+                detail=f"{list(reply.cert_names)}",
+            )
+            p.check(
+                f"{cid}: {_role(host)} is absent from certificate logs",
+                ok=host.lower() not in logged,
+                detail="host in a logged certificate",
+            )
+            p.check(
+                f"{cid}: Turnstile covers {_role(host)}",
+                ok=any(host == d or host.endswith("." + d) for d in turnstile),
+                detail="no Turnstile domain covers it",
+            )
+    for host in lab.region_hosts(bench=bench) + lab.specific_hosts():
+        reply = lab.fetch(host)
+        want = lab.expected_worker(host)
+        p.check(
+            f"{host} keeps its own Worker",
+            ok=reply.worker == want,
+            detail=f"answered by {reply.worker!r}",
+        )
+        p.check(
+            f"{host} is not a company Worker",
+            ok=reply.worker not in company_workers,
+            detail="collides with a company Worker",
+        )
+
+
+def _role(host: str) -> str:
+    return "proxy host" if host.split(".", 1)[0].endswith("-proxy") else "account host"
+
+
+def verb_release(lab: Lab, p: Proof, *, bench: bool) -> None:
+    """V5: four companies across the rings; a planted failure stops and names one, the later ring and the fast tier are unchanged, `--skip-pauses` without `--order` is refused, and a resume finishes."""
+    del bench
+    ids = {
+        ring: lab.ensure_company(f"proof-ring-{ring}", "eu", ring=ring) for ring in RELEASE_RINGS
+    }
+    targets = [*ids.values(), "fast"]
+    target = lab.target_version()
+    before = lab.versions(targets)
+
+    bare = lab.release(skip_pauses=True)
+    p.check("--skip-pauses without --order is refused", ok=bare.rc != 0, detail="rc 0")
+    p.check(
+        "the refused release changed nothing",
+        ok=lab.versions(targets) == before,
+        detail="versions moved",
+    )
+
+    planted = ids["medium"]
+    run = lab.release(plant_failure=planted)
+    p.check("a planted failure stops the release", ok=run.rc != 0, detail="rc 0")
+    p.check(
+        "the stop names the failed company",
+        ok=run.stopped == planted,
+        detail=f"named {run.stopped!r}",
+    )
+    after = lab.versions(targets)
+    for ring in ("canary", "small"):
+        p.check(
+            f"{ring} took {target} before the stop",
+            ok=after.get(ids[ring]) == target,
+            detail=f"runs {after.get(ids[ring])!r}",
+        )
+    for key in (ids["large"], "fast"):
+        p.check(
+            f"{key} is unchanged by the stop",
+            ok=after.get(key) == before.get(key),
+            detail=f"{before.get(key)!r} -> {after.get(key)!r}",
+        )
+
+    resumed = lab.release(resume=planted)
+    p.check("the resume finishes", ok=resumed.rc == 0, detail=resumed.error)
+    final = lab.versions(list(ids.values()))
+    p.check(
+        f"every ring runs {target} after the resume",
+        ok=all(final.get(c) == target for c in ids.values()),
+        detail=f"{final}",
+    )
+
+
+def verb_replay(lab: Lab, p: Proof, *, bench: bool) -> None:
+    """V6: sessions, API tokens, config tokens and E2E envelopes from one company fail on the other, and work on their own."""
+    del bench
+    a = lab.ensure_company("proof-replay-a", "eu")
+    b = lab.ensure_company("proof-replay-b", "eu")
+    for kind in REPLAY_KINDS:
+        art = lab.mint(a, kind)
+        p.admitted(f"{kind}: accepted by its own company", lab.present(a, kind, art))
+        p.refused(f"{kind}: refused by the other company", lab.present(b, kind, art))
+
+
+def verb_proxy(lab: Lab, p: Proof, *, bench: bool) -> None:
+    """V7: a container app and Durable Object per company, one company's token refused by the other's proxy, a console command runs, the allowlist blocks a foreign IP while renewal passes."""
+    del bench
+    a = lab.ensure_company("proof-proxy-a", "eu")
+    b = lab.ensure_company("proof-proxy-b", "eu")
+    apps = (lab.container_app(a), lab.container_app(b))
+    objs = (lab.durable_object(a), lab.durable_object(b))
+    p.check(
+        "each company has its own container app",
+        ok=all(apps) and apps[0] != apps[1],
+        detail=f"{apps}",
+    )
+    p.check(
+        "each company has its own Durable Object",
+        ok=all(objs) and objs[0] != objs[1],
+        detail=f"{objs}",
+    )
+    tok = lab.mint(a, "proxy-token")
+    p.admitted("a proxy token is accepted by its own proxy", lab.present(a, "proxy-token", tok))
+    p.refused("a proxy token is refused by the other proxy", lab.present(b, "proxy-token", tok))
+    try:
+        p.admitted("a console command runs", lab.console_command(a))
+    except LAB_ERRORS as exc:
+        # A console command that cannot run yet does not keep the allowlist claims from being checked.
+        p.check("a console command runs", ok=False, detail=f"{type(exc).__name__}: {exc}")
+
+    # One vantage point: the listed case is this machine on the list, the foreign cases this machine off it.
+    listed = [ip for ip in lab.egress_ips() if ip]
+    if not p.check(
+        "this machine's egress address is read",
+        ok=listed and FOREIGN_IP not in listed,
+        detail=f"{listed}",
+    ):
+        return
+    cases = (
+        ("a foreign IP is blocked on GET /", "GET", "/", True),
+        (
+            "a foreign IP is blocked on POST to another path",
+            "POST",
+            "/account/api/v1/auth/login",
+            True,
+        ),
+        ("a foreign IP is blocked on GET of the renew path", "GET", LICENSE_RENEW_PATH, True),
+        ("a foreign IP still reaches POST renew", "POST", LICENSE_RENEW_PATH, False),
+    )
+    try:
+        if p.attempt("the allowlist names this machine", lambda: lab.set_allowlist(a, listed)):
+            status = lab.request_from(a, method="GET", path="/")
+            p.check(
+                "a listed IP reaches GET /", ok=status != HTTP_FORBIDDEN, detail=f"status {status}"
+            )
+        if p.attempt(
+            "the allowlist names only a foreign address",
+            lambda: lab.set_allowlist(a, [FOREIGN_IP]),
+        ):
+            for claim, method, path, blocked in cases:
+                status = lab.request_from(a, method=method, path=path)
+                p.check(claim, ok=(status == HTTP_FORBIDDEN) == blocked, detail=f"status {status}")
+    finally:
+        p.attempt("the allowlist is cleared", lambda: lab.set_allowlist(a, []))
+
+
+def verb_cost(lab: Lab, p: Proof, *, bench: bool) -> None:
+    """V8: per-company cost and time from the deploy records and the usage report, the image rebuild measured, and the Cloudflare limits re-read against the plan's figures."""
+    records = lab.deploy_records(bench=bench)
+    p.check("deploy records exist", ok=records, detail="no record")
+    seconds: dict[str, float] = {}
+    for i, r in enumerate(records):
+        cid, dur = str(r.get("company", "")), r.get("duration_s")
+        opaque = bool(OPAQUE_ID.match(cid))
+        timed = isinstance(dur, (int, float)) and dur > 0
+        if not opaque:
+            p.hide(cid)
+        why = ("" if opaque else "company is not an opaque id; ") + (
+            "" if timed else "duration is missing or not positive"
+        )
+        p.check(
+            f"record {cid if opaque else f'#{i}'} has an opaque id and a duration",
+            ok=opaque and timed,
+            detail=why,
+        )
+        if opaque and timed and isinstance(dur, (int, float)):
+            seconds[cid] = seconds.get(cid, 0.0) + float(dur)
+    usage = {str(u.get("company", "")) for u in lab.usage_rows(bench=bench)}
+    for cid in sorted(seconds):
+        p.check(f"{cid} appears in the usage report", ok=cid in usage, detail="no usage row")
+        p.notes.append(f"{cid}: {seconds[cid]:.0f} s deploying")
+    rebuild = lab.image_rebuild_seconds()
+    p.check("the image rebuild is measured", ok=rebuild > 0, detail=f"{rebuild}")
+    p.notes.append(f"image rebuild: {rebuild:.0f} s")
+    limits = lab.read_limits()
+    for key, want in PLAN_LIMITS.items():
+        got = limits.get(key)
+        p.check(
+            f"Cloudflare {key} is still {want}",
+            ok=got == want,
+            detail=f"read {got!r}; the plan's Limits must change",
+        )
+
+
+def verb_renet(lab: Lab, p: Proof, *, bench: bool) -> None:
+    """V9: a mutating verb moves renet and a read-only one does not, an executor refuses to upload, and both directions of a spread release renew."""
+    del bench
+    m = lab.fleet_machine()
+    released = lab.released_renet()
+    before = lab.renet_version(m)
+    p.check(
+        "the machine starts behind the released renet",
+        ok=before != released,
+        detail=f"already on {released}",
+    )
+    p.check("a read-only verb runs", ok=lab.run_verb(m, mutating=False) == 0, detail="rc != 0")
+    p.check("a read-only verb leaves renet", ok=lab.renet_version(m) == before, detail="moved")
+    p.check("a mutating verb runs", ok=lab.run_verb(m, mutating=True) == 0, detail="rc != 0")
+    now = lab.renet_version(m)
+    p.check("a mutating verb moves renet", ok=now == released, detail=f"runs {now}")
+    p.refused("an executor refuses to upload renet", lab.executor_upload(m))
+    p.admitted(
+        "the previous renet renews against the new Worker",
+        lab.renew_with(m, renet="previous", worker="new"),
+    )
+    p.admitted(
+        "the new renet renews against the previous Worker",
+        lab.renew_with(m, renet="new", worker="previous"),
+    )
+
+
+def name_hits(surfaces: dict[str, str], words: Sequence[str]) -> list[str]:
+    """`<surface>: word #<i>` for each word found in a surface, case-insensitively. Never the word itself."""
+    out: list[str] = []
+    for surface in sorted(surfaces):
+        text = surfaces[surface].lower()
+        out.extend(f"{surface}: word #{i}" for i, w in enumerate(words) if w and w.lower() in text)
+    return out
+
+
+def verb_github(lab: Lab, p: Proof, *, bench: bool) -> None:
+    """V10: a release dispatched for a fake company by its opaque id leaves neither its name nor its hosts in the logs, the jobs API, the run API or the step summary."""
+    del bench
+    cid = lab.ensure_company("proof-github", "eu")
+    p.check("the dispatch input is opaque", ok=OPAQUE_ID.match(cid), detail="not c<hex>")
+    words = lab.company_words(cid)
+    if not p.check("the company's name and hosts are known", ok=words, detail="no words"):
+        return
+    run_id = lab.dispatch_release(cid)
+    surfaces = lab.run_surfaces(run_id)
+    for s in GITHUB_SURFACES:
+        p.check(f"surface {s} was read", ok=surfaces.get(s, "").strip(), detail="empty or missing")
+    hits = name_hits(surfaces, words)
+    p.check("no surface carries the name or a host", ok=not hits, detail="; ".join(hits))
+
+
+def _logical_lines(text: str) -> list[tuple[int, str]]:
+    """`(first line number, line)` with each backslash continuation joined into one line."""
+    out: list[tuple[int, str]] = []
+    start = 0
+    parts: list[str] = []
+    for n, line in enumerate(text.splitlines(), 1):
+        if not parts:
+            start = n
+        if line.rstrip().endswith("\\"):
+            parts.append(line.rstrip()[:-1])
+            continue
+        parts.append(line)
+        out.append((start, " ".join(parts)))
+        parts = []
+    if parts:
+        out.append((start, " ".join(parts)))
+    return out
+
+
+def workflow_files(root: pathlib.Path) -> list[pathlib.Path]:
+    """Workflows and composite actions: `.github/workflows/*.y*ml` and `.github/actions/**/action.y*ml`."""
+    gh = root / ".github"
+    return sorted([*(gh / "workflows").glob("*.y*ml"), *(gh / "actions").glob("**/action.y*ml")])
+
+
+def workflow_remove_calls(root: pathlib.Path) -> list[str]:
+    """Each `<file>:<line>` in a workflow or composite action calling `enterprise remove`; a continued command counts at its first line."""
+    out: list[str] = []
+    for path in workflow_files(root):
+        rel = path.relative_to(root / ".github")
+        for n, line in _logical_lines(path.read_text(encoding="utf-8")):
+            if WORKFLOW_REMOVE.search(line):
+                out.append(f"{rel}:{n}")
+    return out
+
+
+def _repo_root() -> pathlib.Path:
+    return pathlib.Path(__file__).resolve().parents[3]
+
+
+def verb_remove(lab: Lab, p: Proof, *, bench: bool, root: pathlib.Path | None = None) -> None:
+    """V11: remove refuses before an export and under GitHub Actions, removes an exported company with its data, and no workflow calls it."""
+    del bench
+    gone = lab.ensure_company("proof-remove", "eu")
+    kept = lab.ensure_company("proof-remove-ci", "eu")
+    p.check(
+        "remove refuses before an export",
+        ok=lab.remove(gone, delete_data=True, github_actions=False) != 0,
+        detail="rc 0",
+    )
+    exports = {"removed company": lab.export(gone), "kept company": lab.export(kept)}
+    failed = [who for who, rc in exports.items() if rc != 0]
+    p.check("the export completes", ok=not failed, detail=f"export failed for {failed}")
+    p.check(
+        "remove refuses under GITHUB_ACTIONS",
+        ok=lab.remove(kept, delete_data=True, github_actions=True) != 0,
+        detail="rc 0",
+    )
+    p.check("the refused company is intact", ok=lab.leftovers(kept), detail="nothing left")
+    p.check(
+        "remove with data completes",
+        ok=lab.remove(gone, delete_data=True, github_actions=False) == 0,
+        detail="rc != 0",
+    )
+    left = lab.leftovers(gone)
+    p.check("the removed company leaves nothing", ok=not left, detail=f"{left}")
+    base = root or _repo_root()
+    p.check(
+        "workflows were scanned",
+        ok=list((base / ".github" / "workflows").glob("*.y*ml")),
+        detail="no .github/workflows file found",
+    )
+    calls = workflow_remove_calls(base)
+    p.check("no workflow calls enterprise remove", ok=not calls, detail=", ".join(calls))
+
+
+def verb_keys(lab: Lab, p: Proof, *, bench: bool) -> None:
+    """X1: no account Worker holds the private key and every signer does; a licence is issued per caller on bench only, because a proof must not mint production licences (production records a skipped claim)."""
+    _no_key_on_account(lab, p, bench=bench)
+    callers = lab.callers(bench=bench)
+    p.check("signer callers are listed", ok=callers, detail="no caller found")
+    for caller in callers:
+        claim = f"{caller}: a licence is issued"
+        if bench:
+            p.admitted(claim, lab.issue(caller, "licence"))
+        else:
+            p.skip(claim, "bench-only: a proof does not mint production licences")
+
+
+VERBS: dict[str, Callable[..., None]] = {
+    "signer": verb_signer,
+    "region-loss": verb_region_loss,
+    "add": verb_add,
+    "routing": verb_routing,
+    "release": verb_release,
+    "replay": verb_replay,
+    "proxy": verb_proxy,
+    "cost": verb_cost,
+    "renet": verb_renet,
+    "github": verb_github,
+    "remove": verb_remove,
+    "keys": verb_keys,
+}
+# Verbs that run against production; every other verb drives fake companies and runs on bench only.
+PRODUCTION_VERBS: frozenset[str] = frozenset({"keys"})
+
+
+def run_verb(verb: str, lab: Lab, *, bench: bool, out: Callable[[str], None] = print) -> int:
+    """Run one verb and print its claims. 0 at least one held and none broken, 1 any broken or none held."""
+    p = Proof()
+    try:
+        VERBS[verb](lab, p, bench=bench)
+    except LAB_ERRORS as exc:
+        p.check(f"{verb} ran to the end", ok=False, detail=f"{type(exc).__name__}: {exc}")
+    for o in p.outcomes:
+        if o.skipped:
+            out(f"skipped {o.claim}: {o.detail}")
+        else:
+            out(f"ok      {o.claim}" if o.ok else f"BROKEN  {o.claim}: {o.detail}")
+    for note in p.notes:
+        out(f"note    {note}")
+    if not p.outcomes:
+        out(f"proof {verb}: no claim was recorded")
+        return 1
+    broken = len(p.broken)
+    skipped = sum(o.skipped for o in p.outcomes)
+    tail = f", {skipped} skipped" if skipped else ""
+    out(f"proof {verb}: {len(p.outcomes)} claim(s), {broken} broken{tail}")
+    if not p.held and not broken:
+        out(f"proof {verb}: no claim held, every claim was skipped")
+    return 0 if p.held and not broken else 1
+
+
+def load_lab(*, bench: bool) -> Lab | None:
+    try:
+        module = importlib.import_module(LAB_MODULE)
+    except ModuleNotFoundError as exc:
+        if exc.name != LAB_MODULE:
+            raise
+        return None
+    lab: Lab = module.build(bench=bench)
+    return lab
+
+
+def parse(argv: Sequence[str]) -> argparse.Namespace:
+    ap = argparse.ArgumentParser(
+        prog="./run.sh enterprise proof", description=__doc__.split("\n")[0]
+    )
+    ap.add_argument("verb", choices=sorted(VERBS))
+    ap.add_argument("--bench", action="store_true", help="run against bench with fake companies")
+    return ap.parse_args(list(argv))
+
+
+def main(argv: Sequence[str], *, lab: Lab | None = None) -> int:
+    try:
+        args = parse(argv)
+    except SystemExit as exc:
+        return 0 if exc.code == 0 else 2
+    if args.verb not in PRODUCTION_VERBS and not args.bench:
+        print(
+            f"{SELF}: proof {args.verb} drives fake companies and runs on bench only: add --bench",
+            file=sys.stderr,
+        )
+        return 2
+    try:
+        bound = lab if lab is not None else load_lab(bench=args.bench)
+    except START_ERRORS as exc:
+        print(f"{SELF}: could not start: {type(exc).__name__}: {exc}", file=sys.stderr)
+        return 2
+    if bound is None:
+        print(
+            f"{SELF}: no live lab: {LAB_MODULE} is not built yet; it binds the add, lifecycle, "
+            "deploy and ring modules (boxes C1, C2, D1, K2, S2), and nothing was claimed",
+            file=sys.stderr,
+        )
+        return 2
+    return run_verb(args.verb, bound, bench=args.bench)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main(sys.argv[1:]))

@@ -997,6 +997,43 @@ describe('ConfigFileStorage', () => {
       expect(await fileExists(join(testDir, 'test.json.bak'))).toBe(false);
     });
 
+    it('removes the config token file with the config', async () => {
+      await storage.init('test');
+      await fs.writeFile(join(testDir, 'api-token-test.json'), '{}');
+      await storage.delete('test');
+      expect(await fileExists(join(testDir, 'test.json'))).toBe(false);
+      expect(await fileExists(join(testDir, 'api-token-test.json'))).toBe(false);
+    });
+
+    it('leaves another config token file alone', async () => {
+      await storage.init('a');
+      await storage.init('b');
+      await fs.writeFile(join(testDir, 'api-token-a.json'), '{}');
+      await fs.writeFile(join(testDir, 'api-token-b.json'), '{}');
+      await storage.delete('a');
+      expect(await fileExists(join(testDir, 'api-token-a.json'))).toBe(false);
+      expect(await fileExists(join(testDir, 'api-token-b.json'))).toBe(true);
+    });
+
+    it('drops the cache entry even when removing the token file fails', async () => {
+      await storage.init('test');
+      const original = await storage.load('test');
+      await storage.save({ ...original, machine: 'cached-marker' }, 'test');
+      expect((await storage.load('test')).machine).toBe('cached-marker');
+      // A directory where the token file belongs: unlink fails with a non-ENOENT error.
+      await fs.mkdir(join(testDir, 'api-token-test.json'));
+      await expect(storage.delete('test')).rejects.toMatchObject({
+        code: expect.stringMatching(/^(EISDIR|EPERM)$/),
+      });
+      expect(await fileExists(join(testDir, 'test.json'))).toBe(false);
+      expect((await storage.load('test')).machine).not.toBe('cached-marker');
+    });
+
+    it('succeeds when the token file is missing', async () => {
+      await storage.init('test');
+      await expect(storage.delete('test')).resolves.toBeUndefined();
+    });
+
     it('should succeed deleting config even when no .bak exists', async () => {
       await storage.init('test');
       await expect(storage.delete('test')).resolves.toBeUndefined();

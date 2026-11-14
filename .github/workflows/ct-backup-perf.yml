@@ -1,7 +1,7 @@
 name: CT Backup Perf
 
 # Large-repository backup performance (box K10 of agent/plans/PLAN-backup-program.md): seeds
-# 50 GiB, runs a 256 MiB incremental against a byte, no-rehash and time budget, then deletes
+# 20 GiB, runs a 256 MiB incremental against a byte, no-rehash and time budget, then deletes
 # the anchor as a control (suite 31, packages/e2e-tests/tests/31-backup-large-repo.test.ts).
 #
 # WHY STANDALONE and not a ct-tests.yml job: check:ci-lane-budget judges every job reachable
@@ -12,7 +12,7 @@ name: CT Backup Perf
 
 on:
   schedule:
-    - cron: '30 2 * * *'
+    - cron: '30 2 * * 6'
   workflow_dispatch:
 
 # Every job below declares its own permissions, so this workflow-level default is
@@ -33,7 +33,7 @@ jobs:
       contents: read
       packages: read
     runs-on: ubuntu-latest
-    # 120: a 50 GiB seed, its snapshot, the incremental and the anchor-deleted control (a
+    # 120: a 20 GiB seed, its snapshot, the incremental and the anchor-deleted control (a
     # full rehash). The suite's own Playwright timeout is 100 minutes (inner < outer).
     timeout-minutes: 120
     env:
@@ -46,9 +46,12 @@ jobs:
       VM_DSK: '100'
       REDIACC_VM_DISK_DIR: /mnt/rediacc-vm
       BACKUP_LARGE_REPO_SUITE: '1'
+      # 20 GiB seed, weekly (Saturday). 8 GiB of worker RAM gives the page cache and the chunk pipeline room on the worker.
+      K10_SEED_GB: '20'
+      VM_RAM_WORKER: '8192'
     steps:
       # A dispatch on a feature branch would run the full job against code that is not what the
-      # nightly runs; fail loudly rather than skipping.
+      # weekly run; fail loudly rather than skipping.
       - name: Guard the dispatch to main
         if: github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main'
         env:
@@ -84,13 +87,13 @@ jobs:
           submodules: true
           token: ${{ steps.app-token.outputs.token }}
       - name: Login to GHCR
-        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ github.token }}
       - name: Login to Docker Hub
-        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
         with:
           username: ${{ env.BWS_DOCKERHUB_USERNAME }}
           password: ${{ env.BWS_DOCKERHUB_TOKEN }}
@@ -122,15 +125,15 @@ jobs:
       # Staged embed-assets cache, shared with Build (Renet) via the same key
       # (see ci-build-renet.yml). On a hit, build.sh's content-based receipt
       # makes embed_assets a verified no-op, skipping the ~10-25 min Docker
-      # builder staging. The go build stays on-runner in this job alone: the
-      # backup plane signs with a pair of its own (start_backup_plane), so renet
-      # is rebuilt with that key after the plane starts, and the run's shared
-      # production-keyed renet (agent/plans/PLAN-free-license.md F2) cannot serve.
+      # builder staging. The backup plane signs with a pair of its own
+      # (start_backup_plane, agent/plans/PLAN-production-key-only.md D6), so
+      # renet is rebuilt with that key after the plane starts; the first build
+      # below exists only because the plane needs VMs and they need a renet.
       - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         id: embed-cache
         with:
           path: private/renet/pkg/embed/assets
-          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json', 'private/renet/Dockerfile') }}
       # Pre-pulled only on a cache miss: a hit means build_renet's embed_assets
       # step is a verified no-op (see above), so the multi-arch base images this
       # exists to avoid buildx auth issues for are never fetched by that build.
@@ -154,7 +157,7 @@ jobs:
         if: always() && steps.build-renet.outputs.embed-cacheable == 'true'
         with:
           path: private/renet/pkg/embed/assets
-          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json', 'private/renet/Dockerfile') }}
       - name: Install renet
         run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
@@ -194,7 +197,7 @@ jobs:
           done
 
       - name: Create E2E Test Environment
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path /usr/bin/renet --output packages/e2e-tests/.env --vm-workers "11 12"
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path /usr/bin/renet --output packages/e2e-tests/.env --vm-workers "11 12" --vm-ram-worker "$VM_RAM_WORKER"
 
       # The suite's config has no globalSetup (it would reset a shared local
       # fleet), so nothing else brings the VMs up, and the backup plane probes

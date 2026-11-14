@@ -67,6 +67,14 @@ const PushStateSchema = z.record(
 const ReplicaSetSchema = z.object({
   repo: z.string(),
   /**
+   * `placing`: recorded before the first job and until the set is published, so a
+   * set that stopped part-way resumes on a rerun and can be removed. Absent on a
+   * set recorded before this field existed, which reads as `ready`.
+   */
+  phase: z.enum(['placing', 'ready']).optional(),
+  /** The snapshot a refresh is rolling the replicas to, so a rerun resumes on it. */
+  refreshing: z.string().optional(),
+  /**
    * The repo's GUID — its STORAGE identity (#93 ruling: storage speaks GUID,
    * k8s objects speak name). `repo create` stores the repo folder and its
    * volume images under `<ds>/repos/<guid>`, so every renet storage verb
@@ -180,6 +188,9 @@ export const StateSchema = z.object({
           registryPort: z.number().int().min(21000).max(28999).optional(),
           // CDI device names granted to this repository (`rdc repo gpu grant`); a mirror of the machine's grant store, which stays the enforcement point.
           gpuDevices: z.array(z.string()).optional(),
+          // The lifecycle grant of this repository (`rdc repo permission grant`): root, and the paths its Rediaccfile's up() and down() may reach. A mirror of the machine's grant store, which stays the enforcement point.
+          lifecycleRoot: z.boolean().optional(),
+          lifecyclePaths: z.array(z.string()).optional(),
           pushState: PushStateSchema.optional(),
           headCommit: z.string().optional(),
           commitMessage: z.string().optional(),
@@ -195,6 +206,21 @@ export const StateSchema = z.object({
 
   networkIds: z.object({ next: z.number().int().optional() }).optional(),
   certCache: z.record(z.string(), AcmeCertCacheSchema).optional(),
+
+  /**
+   * The Terms of Service acceptance the CLI gave for the anonymous Free License
+   * (PLAN-terms-acceptance Design 5). Host-local like `networkIds`: written via
+   * `updateState`, never pushed. Later FREE fetches send it again and the CLI asks
+   * once more only when a newer material version is declared.
+   */
+  terms: z
+    .object({
+      version: z.string(),
+      sha256: z.string(),
+      acceptedAt: z.string(),
+      method: z.enum(['cli-prompt', 'cli-flag-unattended']),
+    })
+    .optional(),
 
   /**
    * Host-local record of the last chunk-store backup activity per repo (keyed by

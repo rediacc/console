@@ -109,7 +109,11 @@
       "cookiePolicy": "Cookieポリシー",
       "refundPolicy": "返金ポリシー",
       "telemetryPolicy": "テレメトリポリシー",
-      "legalInformation": "法的情報"
+      "legalInformation": "法的情報",
+      "acceptableUsePolicy": "利用規定（AUP）",
+      "dataProcessingAgreement": "データ処理契約（DPA）",
+      "serviceLevelAgreement": "サービスレベル契約（SLA）",
+      "enterpriseLicense": "Enterpriseライセンス"
     },
     "legalDisclosure": {
       "summary": "{{companyName}} | 登録番号 {{registryCode}} | VAT {{vatNumber}} |",
@@ -331,7 +335,25 @@
     "subtitle": "アカウント、請求、設定は選択したリージョンに保存されます。",
     "reassurance": "サーバーデータとバックアップはお客様のインフラに残ります。",
     "footer": "最寄りのリージョン、または組織が必要とするリージョンを選択してください。",
-    "footerNote": "登録後は変更できません。"
+    "footerNote": "登録後は変更できません。",
+    "resolving": "リージョンを確認しています...",
+    "countdown": "{{seconds}}秒後に{{region}}へ移動します。",
+    "countdownAnnounce": "{{seconds}}秒後に{{region}}へ移動します。このまま留まるには「キャンセル」、別のリージョンを選ぶには「リージョンを変更」を選択してください。",
+    "cancel": "キャンセル",
+    "change": "リージョンを変更",
+    "enterprise": "エンタープライズのお客様ですか？",
+    "lookup": {
+      "description": "勤務先のメールアドレスを入力すると、所属組織のサインインが見つかります。",
+      "label": "勤務先のメールアドレス",
+      "placeholder": "you@company.com",
+      "privacy": "リージョンの検索に送信されるのはドメインのみです。メールアドレスは、サインインページへの事前入力にだけ使われます。",
+      "submit": "続行",
+      "checking": "確認中...",
+      "back": "リージョン選択に戻る",
+      "invalid": "company.com のような会社のドメインを入力してください。",
+      "miss": "このドメインに対応する会社のサインインは見つかりませんでした。代わりにリージョンを選択してください。",
+      "error": "現在検索を利用できません。代わりにリージョンを選択してください。"
+    }
   },
   "solutions": {
     "categories": {

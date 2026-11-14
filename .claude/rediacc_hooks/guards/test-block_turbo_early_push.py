@@ -103,8 +103,34 @@ UNREADABLE = world()
 # A submodule-shaped nested repository under private/.
 WITH_SUB = world()
 G.world(WITH_SUB / "private" / "renet")
-# A repository outside the console.
+# A real console submodule: `.gitmodules` names private/renet, so red-fix there may lean on the console's open PR for the same branch (worklist #29531257).
+SUB_LISTED = world()
+G.world(SUB_LISTED / "private" / "renet")
+(SUB_LISTED / ".gitmodules").write_text(
+    '[submodule "private/renet"]\n\tpath = private/renet\n'
+    "\turl = https://github.com/fixture/renet.git\n",
+    encoding="utf-8",
+)
+# 3e82900b.1: the same submodule on a detached HEAD, where the console is never asked, so the refusal must not claim it was.
+SUB_DETACHED = world()
+G.world(SUB_DETACHED / "private" / "renet")
+G._git(SUB_DETACHED / "private" / "renet", "checkout", "-q", "--detach")
+(SUB_DETACHED / ".gitmodules").write_text(
+    '[submodule "private/renet"]\n\tpath = private/renet\n'
+    "\turl = https://github.com/fixture/renet.git\n",
+    encoding="utf-8",
+)
+# `gh pr list` answers an open PR only in the console checkout: the submodule has none yet, the live case of console PR 605.
+GH_CONSOLE_ONLY = stub(
+    "#!/bin/sh\n"
+    'if [ "$1" = api ]; then echo \'{"data":{"repository":{"pullRequests":{"nodes":[]}}}}\'; '
+    "exit 0; fi\n"
+    'case "$PWD" in */private/*) exit 0;; esac\necho 605\n'
+)
+# A repository outside the console. A push publishes to its URL (#f2e3507a), so the admitted one sends to a repository none of the judged world's remotes name, and OUTSIDE_SAME keeps the fixture's own origin, the judged world's too, which is this checkout's push.
 OUTSIDE = world()
+G._git(OUTSIDE, "remote", "set-url", "origin", "https://example.invalid/outside/scratch.git")
+OUTSIDE_SAME = world()
 
 # ---- THE BATCH (operator ruling ASKED:2026-10-08T10:25Z): PLAN-fx-a is the queue head, so it is the branch's local batch; PLAN-fx-b is a later Promoted plan, still open, so condition (b) holds in every world below.
 TICKED = "- [x] FX1 a ticked box\n"
@@ -158,6 +184,14 @@ CASES = [
         OPEN_OLD,
         GH_NONE,
         False,
+        "",
+    ),
+    (
+        "a repository outside whose origin is this checkout's",
+        "git -C %s push origin 1008-1" % OUTSIDE_SAME,
+        OPEN_OLD,
+        GH_NONE,
+        True,
         "",
     ),
     ("an empty command", "", OPEN_OLD, GH_NONE, False, ""),
@@ -247,6 +281,59 @@ CASES = [
         GH_DOWN,
         False,
         "UNVERIFIED",
+    ),
+    # ---- red-fix in a submodule (worklist #29531257): the console's open PR on the same branch is the live PR
+    (
+        "red-fix submodule push, console PR open",
+        "cd private/renet && " + (R % "red-fix: console PR 605 needs the submodule half") + PUSH,
+        SUB_LISTED,
+        GH_CONSOLE_ONLY,
+        False,
+        "",
+    ),
+    (
+        "red-fix first submodule PR, console PR open",
+        "cd private/renet && "
+        + (R % "red-fix: console PR 605 needs the submodule half")
+        + "gh pr create --repo fixture/renet --head 1008-1 -t x -b y",
+        SUB_LISTED,
+        GH_CONSOLE_ONLY,
+        False,
+        "",
+    ),
+    (
+        "red-fix submodule PR, no open PR anywhere",
+        "cd private/renet && "
+        + (R % "red-fix: console PR 605 needs the submodule half")
+        + "gh pr create --repo fixture/renet --head 1008-1 -t x -b y",
+        SUB_LISTED,
+        GH_NONE,
+        True,
+        "has no open PR here or in the console",
+    ),
+    (
+        "red-fix submodule on a detached HEAD does not claim the console was checked",
+        "cd private/renet && " + (R % "red-fix: console PR 605 needs the submodule half") + PUSH,
+        SUB_DETACHED,
+        GH_NONE,
+        True,
+        "`(detached)` has no open PR, so",
+    ),
+    (
+        "red-fix nested repo not in .gitmodules, console PR open",
+        "cd private/renet && " + (R % "red-fix: console PR 605 needs the submodule half") + PUSH,
+        WITH_SUB,
+        GH_CONSOLE_ONLY,
+        True,
+        "has no open PR, so",
+    ),
+    (
+        "red-fix in the console with no open PR",
+        (R % "red-fix: lint red on the live PR, fixed here") + PUSH,
+        SUB_LISTED,
+        GH_NONE,
+        True,
+        "has no open PR, so",
     ),
     # ---- deadline
     (
@@ -403,6 +490,14 @@ CASES = [
         True,
         "reads this branch as `unreadable`",
     ),
+]
+
+# BOX G5 OF PLAN-local-first-delivery: the shared backup-ref cases (`_backup_push.CASES`), in a turbo world with an open Promoted box, so every push it does not admit is refused here.
+BP = importlib.import_module("rediacc_hooks.guards._backup_push")
+BACKUP_WORLDS = {True: BP.plant(world()), False: BP.plant(world(), pinned=False)}
+CASES += [
+    (label, command, BACKUP_WORLDS[pinned], GH_NONE, not admitted, "")
+    for label, command, pinned, admitted in BP.CASES
 ]
 
 BROKEN_RUNNER = (

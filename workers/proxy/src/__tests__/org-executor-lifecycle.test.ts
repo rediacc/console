@@ -319,6 +319,20 @@ describe('relocation', () => {
     expect(h.issuer.relocate).toHaveBeenCalledTimes(1);
   });
 
+  it('a retired-state write that throws synchronously still drains the instance and answers the report', async () => {
+    const h = harness({ throwPut: ['retired'] });
+    await h.ready;
+    await h.executor.pin(ORG, 0, 'light');
+    await report(h, T0 + MINUTE);
+    await report(h, T0 + 2 * MINUTE);
+
+    expect(await report(h, T0 + 3 * MINUTE)).toMatchObject({ count: 3, relocated: true });
+    await flush();
+    expect(h.container.destroys).toEqual(['relocated']);
+    expect(h.capacity.release).toHaveBeenCalledWith(LEASE);
+    expect(await h.executor.pin(ORG, 0, 'light')).toMatchObject({ code: 'EXECUTOR_RELOCATED' });
+  });
+
   it('two reports, then a third 11 minutes after the first, never relocate', async () => {
     const h = harness();
     await h.ready;

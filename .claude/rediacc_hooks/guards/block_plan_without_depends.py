@@ -43,6 +43,7 @@ VERDICT_DEFECT = ("problems = graph.check(rel)", "problems = []")
 LIVE_DEFECT = ("lprob = _live_findings(deps, conc, header, before_h, tree, rel, ev)", "lprob = []")
 
 STOP_DIR = pathlib.Path(__file__).resolve().parents[2] / "hooks" / "stop"
+REPO_ROOT = pathlib.Path(__file__).resolve().parents[3]
 PLAN_RE = re.compile(r"(?:^|/)agent/plans/PLAN-[^/]+\.md$")
 
 UNEXAMINED = (
@@ -379,6 +380,21 @@ def _owned_surfaces(conc, owns):
     return hits
 
 
+LP8_UNREAD = (
+    "block-plan-without-depends: the GitHub-wait phrase list of .ci/config/proof-tiers.json "
+    "could not be read; the LP8 check of %s passed UNEXAMINED. check:ci-plan-live-proof is the backstop."
+)
+
+
+def _github_wait_findings(deps, before_text, text, rel, ev):
+    """[(LP8, message)] for each open box this edit adds that waits on GitHub with no `GitHub-only:` tag or `Local-route:` correction (agent/plans/PLAN-local-first-delivery.md L2). The phrase list is read from this repo's map, as the surfaces are; an unreadable map warns and skips."""
+    cfg = deps.github_wait_config(REPO_ROOT)
+    if cfg is None:
+        ev.warn(LP8_UNREAD % rel)
+        return []
+    return deps.github_wait_introduced(before_text, text, *cfg)
+
+
 def _live_findings(deps, conc, header, before_h, tree, rel, ev):
     """[(code, message)] for the result's `Live-Proof:` line. See the module docstring: required only on a NEW plan whose Owns hit a surface; grammar findings only when the edit introduces them; a new or changed `none` must resolve its ruling."""
     is_new = before_h is None
@@ -531,6 +547,7 @@ def run(ev):
         problems = graph.check(rel)
         xprob = [(f.code, f.message) for f in conc.x_findings(header, text)]
         lprob = _live_findings(deps, conc, header, before_h, tree, rel, ev)
+        lprob += _github_wait_findings(deps, before_text, text, rel, ev)
         xprob += lprob
         if not problems and not xprob:
             return hookio.ALLOW

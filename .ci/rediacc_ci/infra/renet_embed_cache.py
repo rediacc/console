@@ -3,7 +3,7 @@
 
 WHY THIS EXISTS. Every save site used `if: always() && steps.embed-cache.outputs.cache-hit != 'true'`. When an EARLIER step failed, the restore step was skipped, `cache-hit` was empty, and the save stored the checkout's skeleton (`.gitkeep` files, 1.15 KiB) under the real key. Measured on PR #591: job 109920400971 (run 36724524175) failed at "Install CLI Globally" and saved that skeleton at 2026-09-30T14:11:26Z. Cache keys are immutable and a PR-scope entry shadows the main-scope one, so every later E2E job on that PR restored the skeleton, reported a HIT, failed build.sh's receipt check, restaged the Docker builder (~690 s instead of ~20 s), and skipped the save because it had "hit". Run 36817363458 was cancelled by the per-job budget for exactly that.
 
-The verdict is content-based, the same contract build.sh's `_embed_receipt_is_current` enforces: the receipt names the current lockfile's sha256, every listed asset is present with its recorded digest, no unlisted `.zst` sits beside them, and the list is not empty. A save is allowed only for a tree that passes it AND that this job staged itself (the restore ran and missed). Anything else (a skipped restore, a cancelled or failed staging, a restored entry) is never written back.
+The verdict is content-based, the same contract build.sh's `_embed_receipt_is_current` enforces: the receipt names the current lockfile's and Dockerfile's sha256, every listed asset is present with its recorded digest, no unlisted `.zst` sits beside them, and the list is not empty. A save is allowed only for a tree that passes it AND that this job staged itself (the restore ran and missed). Anything else (a skipped restore, a cancelled or failed staging, a restored entry) is never written back.
 
 CLI (for jobs that build renet some other way, e.g. ci-build-renet.yml):
 
@@ -45,9 +45,13 @@ def receipt_is_current(renet_src: pathlib.Path) -> bool:
     try:
         data = json.loads((assets / ".staged.json").read_text(encoding="utf-8"))
         lock_sha = _sha256_file(renet_src / "embed-assets.lock.json")
+        dockerfile_sha = _sha256_file(renet_src / "Dockerfile")
     except (OSError, ValueError):
         return False
     if not isinstance(data, dict) or data.get("lockfileSha256") != lock_sha:
+        return False
+    # The Dockerfile's stages compile the assets; build.sh checks it beside the lockfile.
+    if data.get("dockerfileSha256") != dockerfile_sha:
         return False
     listed = data.get("assets")
     # A receipt listing nothing must never satisfy the check (build.sh's last line).

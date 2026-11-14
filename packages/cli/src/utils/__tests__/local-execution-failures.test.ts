@@ -107,6 +107,25 @@ describe('renderLocalExecutionFailure', () => {
     expect(process.exitCode).toBe(10);
   });
 
+  it('carries the renet log tail as details in the json envelope', () => {
+    mockGetOutputFormat.mockReturnValue('json');
+    mockIsAgent.mockReturnValue(false);
+
+    renderLocalExecutionFailure(
+      {
+        error: 'function up failed in observability: signal: killed',
+        stderr: 'placing in cgroup\nstarting sandbox',
+        exitCode: 255,
+      },
+      'fallback'
+    );
+
+    const payload = JSON.parse(stdoutWrite.mock.calls[0][0] as string) as {
+      errors: { details?: string }[];
+    };
+    expect(payload.errors[0].details).toBe('placing in cgroup\nstarting sandbox');
+  });
+
   it('calls process.exit() in agent mode for json failures', () => {
     mockGetOutputFormat.mockReturnValue('json');
     mockIsAgent.mockReturnValue(true);

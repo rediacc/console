@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING
 
 from rediacc_ci import paths
 from rediacc_ci.core import curl_stdin
-from rediacc_ci.well_known import APEX_DOMAIN, CF_API_BASE
+from rediacc_ci.well_known import APEX_DOMAIN, CF_API_BASE, PRODUCT_DOMAIN
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -173,7 +173,7 @@ def apply_zone(
     zone: dict, wanted: list[dict], transport: Transport | None, dry_run: bool
 ) -> list[str]:
     """Reconcile one zone; returns the printed lines."""
-    name = zone.get("name", APEX_DOMAIN)
+    name = zone_name(zone)
     base = "%s/zones/%s/rulesets" % (CF_API_BASE, zone["zoneId"])
     lines: list[str] = []
     if transport is None:
@@ -239,10 +239,37 @@ def apply_zone(
     return lines
 
 
+# The zone's display name by domain key, so the config names no host literal (check:ci-literal-sources R1).
+ZONE_DOMAINS = {"apex": APEX_DOMAIN, "product": PRODUCT_DOMAIN}
+
+
+def zone_name(zone: dict) -> str:
+    """The zone's apex: an explicit `name`, else the `domain` key (`apex` or `product`), else the apex domain."""
+    if zone.get("name"):
+        return str(zone["name"])
+    domain = zone.get("domain", "apex")
+    if domain not in ZONE_DOMAINS:
+        raise ApplyError("zone %s names an unknown domain %r" % (zone.get("zoneId"), domain))
+    return ZONE_DOMAINS[domain]
+
+
+def refuse_foreign_hosts(zone: dict, hosts: list[str]) -> None:
+    """Refuse a zone whose name does not cover every account host: a rate rule naming hosts outside its zone matches nothing, and on 2026-11-08 the config still named the rediacc.com zone while every account route had moved to rediacc.cloud."""
+    name = zone_name(zone)
+    foreign = [h for h in hosts if h != name and not h.endswith("." + name)]
+    if foreign:
+        raise ApplyError(
+            "zone %s (%s) does not hold the account hosts %s; the rule would match nothing there"
+            % (zone.get("zoneId"), name, " ".join(foreign))
+        )
+
+
 def run(dry_run: bool, root: Path | None = None, transport: Transport | None = None) -> int:
     root = root or paths.repo_root()
     config = load_config(root)
     hosts = account_hosts(root)
+    for zone in config["zones"]:
+        refuse_foreign_hosts(zone, hosts)
     wanted = [rule_body(rule, hosts) for rule in config["rules"]]
     if transport is None and (not dry_run or has_credentials()):
         transport = curl_transport()

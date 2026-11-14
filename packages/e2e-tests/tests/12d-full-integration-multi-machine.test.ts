@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { DEFAULT_DATASTORE_PATH, TEST_PASSWORD } from '../src/constants';
+import { DEFAULT_DATASTORE_PATH, TEST_PASSWORD, DEFAULT_NETWORK_ID } from '../src/constants';
 import { e2eRepoGuid } from '../src/utils/licence';
 import { log } from '../src/utils/log';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
@@ -70,7 +70,7 @@ test.describe
     test.afterAll(async () => {
       // Cleanup: ensure repository is unmounted and deleted even if tests fail
       try {
-        await runner.repositoryUnmount(repositoryName, datastorePath);
+        await runner.repositoryUnmount(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
       } catch {
         /* ignore */
       }

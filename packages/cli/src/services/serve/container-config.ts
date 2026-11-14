@@ -54,7 +54,7 @@ interface PullResponse {
 }
 
 export interface ContainerConfigLoaderOptions {
-  /** Account server base URL, e.g. https://eu.rediacc.com */
+  /** Account server base URL, e.g. https://eu.rediacc.cloud */
   accountUrl: string;
   /** The executor's own account token. Must carry proxy:exec. */
   executorToken: string;
@@ -172,7 +172,7 @@ export function createContainerConfigLoader(
 }
 
 export interface ExecutorGrantRecorderOptions {
-  /** Account server base URL, e.g. https://eu.rediacc.com */
+  /** Account server base URL, e.g. https://eu.rediacc.cloud */
   accountUrl: string;
   /** The executor's own account token. Must carry proxy:exec. */
   executorToken: string;

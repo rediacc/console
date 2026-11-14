@@ -42,7 +42,12 @@
  *   tsx scripts/gen/gen-docs.ts --snapshot record the pre-port row SET (refuses to overwrite)
  *   tsx scripts/gen/gen-docs.ts --diff-snapshot   compare live rows against that record
  *   node scripts/gen/gen-docs.ts --affected    staged paths that could move a region, as JSON
+ *   node scripts/gen/gen-docs.ts --could-affect [paths]  which providers a path set could move
+ *                                              (paths from stdin, one per line, when none follow)
  *   tsx scripts/gen/gen-docs.ts --check-inputs prove every provider's declared `inputs` by trace
+ *
+ * `--could-affect` exists for the pre-agent guard `warn_writer_brief`, which asks it about a
+ * writer brief's `Owns:` paths before the writer starts.
  *
  * `--affected` and `--check-inputs` exist for the pre-commit hook in
  * .claude/rediacc_hooks/git/githooks.py, which refuses a commit that stages a provider input
@@ -60,7 +65,7 @@
  * is not it, so declaring a header here would register a gate that does not exist and turn
  * check:ci-gate-bind red. Registration is reported to the root driver instead.
  */
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import { createRequire, syncBuiltinESMExports } from 'node:module';
 import os from 'node:os';
@@ -755,6 +760,166 @@ function affected(): number {
   return 0;
 }
 
+/** One path a writer may edit, and why it could move a generated region. */
+export interface CouldHit {
+  path: string;
+  why: 'machinery' | 'target' | 'input';
+  providers: string[];
+}
+
+/**
+ * `--could-affect`: which providers a PATH SET could move, before any edit exists
+ * (agent/plans/PLAN-experience-feedback.md P4, box A3).
+ *
+ * The pre-agent guard `warn_writer_brief` asks this about a writer brief's `Owns:` paths, so the
+ * writer is told up front to run `--write` in its lease rather than learning it from the commit
+ * hook. It answers the same three questions as `--affected`, about a hypothetical change rather
+ * than a staged one: the path is one of the generator's own modules, a document carrying a region,
+ * or an input some provider's declared `inputs` could see.
+ *
+ * THE HYPOTHETICAL CHANGE IS AN ADD of the file as it stands now (before: absent, after: its
+ * current text), judged by each provider's `scope` and then its `moves`, as the commit hook's
+ * `providersReading` judges a staged path. That counts a listing-only provider for every path in
+ * its scope, since a writer may add or delete files in its Owns, and a content provider when the
+ * file's text matters to it today. Where an add answers too broadly (json-inventory: nearly every
+ * code file carries some `.json` token) the provider declares `could` instead, built from the
+ * helpers its `rows` calls. Neither foresees an edit that makes a file NEWLY matter; the commit
+ * hook still refuses that drift, so this is advice and the hook stays the gate.
+ */
+export function couldAffect(
+  root: string,
+  paths: readonly string[],
+  providers: readonly Provider[] = PROVIDERS
+): CouldHit[] {
+  const own = new Set(machinery(root));
+  const seams = diskSeams(root);
+  const hits: CouldHit[] = [];
+  for (const rel of [...new Set(paths)].sort(byCodePoint)) {
+    if (own.has(rel)) {
+      hits.push({ path: rel, why: 'machinery', providers: providers.map((p) => p.id) });
+      continue;
+    }
+    if (rel.endsWith('.md') && hasMarker(seams(rel))) {
+      hits.push({ path: rel, why: 'target', providers: [] });
+      continue;
+    }
+    const c: InputChange = { path: rel, status: 'A', before: () => null, after: () => seams(rel) };
+    const ids = providers
+      .filter((p) => {
+        const decl = p.inputs;
+        if (decl === undefined) return true;
+        if (!decl.scope(rel, seams)) return false;
+        if (decl.could !== undefined) return decl.could(rel, seams, root);
+        return decl.moves?.(c, seams) ?? true;
+      })
+      .map((p) => p.id);
+    if (ids.length > 0) hits.push({ path: rel, why: 'input', providers: ids });
+  }
+  return hits;
+}
+
+/**
+ * All of stdin, synchronously, from a file, a terminal or a PIPE.
+ *
+ * NOT `fs.readFileSync(0)`. On a pipe whose writer is still sending, fd 0 can be non-blocking and
+ * that call throws EAGAIN; the first cut of `--could-affect` caught it as "no stdin", so the spawn
+ * guard's 1,988 www paths read as zero and the refusal below named the wrong cause (2026-11-10).
+ * EAGAIN waits 5 ms and reads again; end of input ends the loop; anything else propagates.
+ */
+function readStdin(): string {
+  const chunks: Buffer[] = [];
+  const buf = Buffer.alloc(1 << 16);
+  const nap = new Int32Array(new SharedArrayBuffer(4));
+  for (;;) {
+    let n = 0;
+    try {
+      n = fs.readSync(0, buf, 0, buf.length, null);
+    } catch (err) {
+      const code = (err as NodeJS.ErrnoException).code;
+      if (code === 'EAGAIN') {
+        Atomics.wait(nap, 0, 0, 5);
+        continue;
+      }
+      if (code === 'EOF') break;
+      throw err;
+    }
+    if (n === 0) break;
+    chunks.push(Buffer.from(buf.subarray(0, n)));
+  }
+  return Buffer.concat(chunks).toString('utf-8');
+}
+
+/** A glob-looking argument that is really a path: on disk, or tracked (a bracketed route like `[slug].astro`). */
+function isLiteralPath(p: string): boolean {
+  if (fs.existsSync(path.join(ROOT, p))) return true;
+  return execFileSync('git', ['ls-files', '-z', '--', `:(literal)${p}`], { cwd: ROOT }).length > 0;
+}
+
+/**
+ * An argument with a glob character becomes the files it matches, tracked or not yet added (a `:(glob)` pathspec, so `**` works), unless the argument is itself an existing or tracked path (a bracketed route). The CLI used to judge a glob as a literal path, so `packages/www/src/**` read no file and the report said `affected: []` with exit 0: a green it never earned. A glob that matches nothing is named on stderr and contributes nothing.
+ */
+function expandGlobs(paths: string[]): string[] {
+  const out = new Set<string>();
+  for (const p of paths) {
+    if (!/[*?[]/.test(p) || isLiteralPath(p)) {
+      out.add(p);
+      continue;
+    }
+    const hit = execFileSync(
+      'git',
+      ['ls-files', '-z', '--cached', '--others', '--exclude-standard', '--', `:(glob)${p}`],
+      {
+        cwd: ROOT,
+        maxBuffer: 256 * 1024 * 1024,
+      }
+    )
+      .toString('utf-8')
+      .split('\0')
+      .filter((f) => f !== '');
+    if (hit.length === 0) {
+      console.error(
+        `${RED}✗${NC} --could-affect: the glob ${p} matches no tracked or untracked file`
+      );
+    }
+    for (const f of hit) out.add(f);
+  }
+  return [...out];
+}
+
+/** The CLI face of `couldAffect`: paths from argv after the flag, else one per stdin line; JSON on stdout. */
+function couldAffectMain(argv: string[]): number {
+  const at = argv.indexOf('--could-affect');
+  let paths = argv.slice(at + 1).filter((a) => !a.startsWith('--'));
+  if (paths.length === 0) {
+    const text = readStdin();
+    paths = text
+      .split('\n')
+      .map((l) => l.trim())
+      .filter((l) => l !== '');
+  }
+  paths = expandGlobs(paths);
+  if (paths.length === 0) {
+    // A verdict over zero paths would read as "nothing could move", which is a green it never earned.
+    console.error(
+      `${RED}✗${NC} --could-affect got no paths (argv after the flag, or one per stdin line); an answer over nothing would mean nothing.`
+    );
+    return 64;
+  }
+  const hits = couldAffect(ROOT, paths);
+  const ids = [...new Set(hits.flatMap((h) => h.providers))].sort(byCodePoint);
+  process.stdout.write(
+    `${JSON.stringify({
+      paths: new Set(paths).size,
+      providers: PROVIDERS.length,
+      affected: ids,
+      hits,
+      machinery: hits.some((h) => h.why === 'machinery'),
+      targets: hits.filter((h) => h.why === 'target').map((h) => h.path),
+    })}\n`
+  );
+  return 0;
+}
+
 /** A line no provider extracts anything from: no `BLOCKER:`, no `.json`, no path, no key. */
 const NEUTRAL = '\nneutral gen-docs inputs probe line\n';
 /** The selftest's opposite probe: a line every suppression census counts. */
@@ -930,9 +1095,7 @@ function selftest(): number {
   );
   ck(
     'no output embeds a timestamp, a duration or a run id',
-    !render(P, P.rows(''))
-      .join('\n')
-      .match(/\d{4}-\d{2}-\d{2}|\bms\b|run[ -]?id/i)
+    !/\d{4}-\d{2}-\d{2}|\bms\b|run[ -]?id/i.test(render(P, P.rows('')).join('\n'))
   );
 
   // --- THE control this whole phase turns on: a count passes where a set fails. ---
@@ -1089,6 +1252,129 @@ function selftest(): number {
     PROVIDERS.filter((p) => p.inputs === undefined).map((p) => p.id)
   );
 
+  // --- `--could-affect`, the spawn guard's question (PLAN-experience-feedback P4), controls first ---
+  const www = execFileSync('git', ['ls-files', '-z', 'packages/www/src/**'], {
+    cwd: ROOT,
+    maxBuffer: 256 * 1024 * 1024,
+  })
+    .toString('utf-8')
+    .split('\0')
+    .filter((f) => f !== '');
+  ck(`could-affect: the www source tree is seen at all (${www.length} path(s))`, www.length > 100);
+  const wwwHits = couldAffect(ROOT, www);
+  ck(
+    'control: an Owns of packages/www/src/** could move no provider and no region',
+    wwwHits.length === 0,
+    wwwHits.slice(0, 6)
+  );
+  const anyPath: Provider = { ...P, id: 'reads-everything', inputs: { scope: () => true } };
+  ck(
+    'planted: a provider scoped to every path makes that same www set fire',
+    couldAffect(ROOT, www, [anyPath]).length === www.length
+  );
+  const globbed = execFileSync(
+    process.execPath,
+    [path.join(ROOT, 'scripts/gen/gen-docs.ts'), '--could-affect', '.ci/config/env-manifes?.json'],
+    { cwd: ROOT }
+  ).toString('utf-8');
+  const globDoc = JSON.parse(globbed) as { affected: string[]; paths: number };
+  ck(
+    'the CLI expands a glob: a pattern naming the env manifest reaches the env-manifest provider',
+    globDoc.paths === 1 && globDoc.affected.includes('env-manifest'),
+    globDoc
+  );
+  const bracketed = JSON.parse(
+    execFileSync(
+      process.execPath,
+      [
+        path.join(ROOT, 'scripts/gen/gen-docs.ts'),
+        '--could-affect',
+        'packages/www/src/pages/[lang]/blog/[slug].astro',
+      ],
+      { cwd: ROOT }
+    ).toString('utf-8')
+  ) as { paths: number };
+  ck(
+    'the CLI keeps a bracketed literal path as that path, not a character class',
+    bracketed.paths === 1,
+    bracketed
+  );
+  const untracked = path.join(ROOT, 'scripts/gen/.selftest-untracked-probe.json');
+  fs.writeFileSync(untracked, '{}');
+  try {
+    const un = JSON.parse(
+      execFileSync(
+        process.execPath,
+        [
+          path.join(ROOT, 'scripts/gen/gen-docs.ts'),
+          '--could-affect',
+          'scripts/gen/.selftest-untracked-prob?.json',
+        ],
+        { cwd: ROOT }
+      ).toString('utf-8')
+    ) as { paths: number };
+    ck('the CLI expands a glob over a not-yet-added file like a literal one', un.paths === 1, un);
+  } finally {
+    fs.rmSync(untracked, { force: true });
+  }
+  // The zero-hit branch: a glob matching nothing names itself on stderr, and with no other path the answer is refused (64), never an empty verdict.
+  const zero = spawnSync(
+    process.execPath,
+    [path.join(ROOT, 'scripts/gen/gen-docs.ts'), '--could-affect', 'scripts/gen/no-such-fil?.json'],
+    { cwd: ROOT, encoding: 'utf-8' }
+  );
+  ck(
+    'the CLI names a glob that matches no file and refuses to answer over nothing',
+    zero.status === 64 &&
+      zero.stderr.includes(
+        'the glob scripts/gen/no-such-fil?.json matches no tracked or untracked file'
+      ) &&
+      zero.stdout === '',
+    { status: zero.status, stderr: zero.stderr, stdout: zero.stdout }
+  );
+  const env = couldAffect(ROOT, ['.ci/config/env-manifest.json']);
+  ck(
+    'the env manifest could move the env-manifest provider',
+    env.length === 1 && env[0]?.why === 'input' && env[0].providers.includes('env-manifest'),
+    env
+  );
+  const self = couldAffect(ROOT, ['scripts/lib/doc-providers.ts']);
+  ck(
+    "the generator's own module could move every provider",
+    self[0]?.why === 'machinery' && self[0].providers.length === PROVIDERS.length,
+    self
+  );
+  const target = couldAffect(ROOT, ['scripts/data/doc-registry.md']);
+  ck('a document carrying a region is named as a target', target[0]?.why === 'target', target);
+  // `could` is a declaration, so it is held to the rows: every file json-inventory names today must answer true.
+  const inv = providerById('json-inventory');
+  const named = new Set<string>();
+  for (const r of inv?.rows(ROOT) ?? []) {
+    named.add(r.key);
+    const m = /`([^`]+)`/.exec(r.cells[2] ?? '');
+    if (m) named.add(m[1] as string);
+  }
+  const unnamed = [...named].filter(
+    (f) => !couldAffect(ROOT, [f]).some((h) => h.providers.includes('json-inventory'))
+  );
+  ck(
+    `every file json-inventory's rows name today could move it (${named.size} file(s))`,
+    inv !== undefined && named.size > 0 && unnamed.length === 0,
+    unnamed.slice(0, 8)
+  );
+  const someNamer = [...named].find((f) => !f.endsWith('.json') && !f.endsWith('.jsonc'));
+  const deaf: Provider | undefined =
+    inv?.inputs === undefined
+      ? undefined
+      : { ...inv, inputs: { ...inv.inputs, could: () => false } };
+  ck(
+    'planted: a `could` answering false drops a real namer, which the check above would name',
+    deaf !== undefined &&
+      someNamer !== undefined &&
+      couldAffect(ROOT, [someNamer], [deaf]).length === 0,
+    someNamer
+  );
+
   // --- every provider must actually see the tree ---
   for (const p of PROVIDERS) {
     const t = traced(ROOT, () => p.rows(ROOT));
@@ -1123,6 +1409,7 @@ function main(argv: string[]): number {
   }
   if (argv.includes('--selftest')) return selftest() === 0 ? 0 : 1;
   if (argv.includes('--affected')) return affected();
+  if (argv.includes('--could-affect')) return couldAffectMain(argv);
   if (argv.includes('--check-inputs')) return checkInputs(ROOT);
   if (argv.includes('--re-record')) {
     const at = argv.indexOf('--re-record');

@@ -260,6 +260,10 @@ def load_metas(sub_dir):
             "name": str(info.get("name") or ""),
             "jsonl": meta.with_name("agent-%s.jsonl" % aid),
             "spawned": spawned,
+            # The harness records the writer's own tree here when it spawned one; "" is a main-tree writer.
+            "worktree": str(info.get("worktreePath") or ""),
+            # The harness's own mark, written as an agent ends and gone from the meta it rewrites on a resume.
+            "finished": info.get("finished") is True,
         }
     return out
 
@@ -584,10 +588,17 @@ def transcript_waiting(jsonl, now):
     For the callers with no fresh Stop event (the spawn guard, `--lease worker:queue`, `--status`): an agent whose last record ended the turn, written inside WAIT_HORIZON_MIN, with a background shell still armed. 2026-09-24: without this the estimate counted such an agent as finished until the next stop refreshed the event, so `--lease worker:queue` refused ("3 of 4 busy") in the same minute the spawn guard blocked at 4 of 4."""
     import wl_liveness as L
 
+    if not L._record_is_idle(last_record(jsonl)):
+        return ""
+    return transcript_armed(jsonl, now)
+
+
+def transcript_armed(jsonl, now):
+    """The shell id an agent still has armed, or "", WITHOUT asking whether its last record ended the turn.
+
+    For a caller whose own event proves the turn ended (the SubagentStop capture): the transcript's tail may not be flushed yet, so its last record can be an `api-request`, which `transcript_waiting`'s idle test reads as working. The WAIT_HORIZON_MIN and `armed_shells` checks are the same as `transcript_waiting`'s."""
     mt = _mtime(jsonl)
     if mt is None or now - mt > WAIT_HORIZON_MIN * 60:
-        return ""
-    if not L._record_is_idle(last_record(jsonl)):
         return ""
     armed = armed_shells(jsonl)
     return armed[-1] if armed else ""
@@ -716,6 +727,7 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     plan_holders: dict[str, list[str]] | None = None
     plan_serving: dict[str, set[str]] = {}
     plan_declared: dict[str, tuple[str, ...] | None] = {}
+    plan_isolated: set[str] = set()
     plan_error = ""
     xinfo = None
     order_key = queue_order
@@ -738,6 +750,8 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
                 served.update(p for p in (X.item_plan(r) for r in leases.get(w, ())) if p)
             plan_serving[aid] = served
             plan_declared[aid] = X.declared_owns(text)
+            if (metas.get(aid) or {}).get("worktree"):
+                plan_isolated.add(aid)
     except Exception as exc:
         plan_holders = None
         plan_error = "%s: %s" % (type(exc).__name__, str(exc)[:160])
@@ -746,7 +760,9 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
     if plan_holders is not None:
         plan_conflicts = [
             (aid, sorted(plan_serving[aid]), list(v.lines))
-            for aid, v in PO.conflicts(plan_serving, plan_holders, xinfo, plan_declared)
+            for aid, v in PO.conflicts(
+                plan_serving, plan_holders, xinfo, plan_declared, isolated=plan_isolated
+            )
         ]
 
     covered: list[Any] = []
@@ -907,7 +923,16 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
         row["age_min"] = None if not row["spawned"] else max(0.0, (now - row["spawned"]) / 60.0)
         row.pop("jsonl", None)
 
+    # THE REPORT EACH FINISHED WORKER LEFT (agent/plans/PLAN-tick-tracking.md Design 5, box T7): every dead row cites the worker's captured report id and the box sigs it names, and a coordinator's row lists each child (metas whose `parentAgentId` is that worker) the same way. A store that cannot be read cites nothing.
+    dead_cites = {}
+    if leased_dead:
+        try:
+            dead_cites = report_citations([(i, w) for i, w, _c in leased_dead], metas, start)
+        except (OSError, ValueError, ImportError, AttributeError, TypeError):
+            dead_cites = {}
+
     return {
+        "dead_cites": dead_cites,
         "state": state,
         "blind": blind,
         "rows": live,
@@ -942,12 +967,12 @@ def roster(event, fold, session_id, state_doc=None, cwd=None, verdicts=None, now
 
 # The commands whose PATH OPERANDS a Bash call writes, deletes or moves (agent/plans/PLAN-stop-hook-retro-20260925.md R20260925.1). A3 made 330 Bash calls against 78 Edits on 2026-09-24, and every edit the judge then asked the lead to sweep went through Bash: `sed -i` over the guards, two Python rewrites of baseline files, `git rm -r --cached` plus `rm -rf` of a directory.
 # NO `sed` HERE: an in-place editor (sed, gsed, `perl -i`) is read by `shellscan.in_place_edit` first in `_run_operands` (#6378e10e), and a sed that edits nothing in place writes nothing, so the generic arm must never see one.
-BASH_WRITE_VERBS = frozenset({"rm", "mv", "cp", "tee", "truncate", "install"})
+BASH_WRITE_VERBS = frozenset({"rm", "mv", "cp", "tee", "truncate", "install", "touch"})
 # `git <sub>` spellings whose operands are written.
 GIT_WRITE_SUBS = frozenset({"rm", "mv"})
 # A cheap prefilter: a command with none of these cannot write a file by any route read below, so the lexer never sees it.
 _BASH_MAYBE_WRITES = re.compile(
-    r">|\b(?:rm|mv|cp|sed|gsed|perl|tee|truncate|install|python3?|git)\b"
+    r">|\b(?:rm|mv|cp|sed|gsed|perl|tee|truncate|install|touch|python3?|git)\b"
 )
 # A Python body that writes, deletes or moves a file. Its presence makes every repo-path literal in the body count as written, which errs toward subtracting (Decision 2): a missed subtraction costs the lead a blocked turn, an extra one only defers the question to the writer's own tick.
 _PY_WRITES = re.compile(
@@ -1009,6 +1034,8 @@ def _run_operands(run, shellscan):
         return []
     if name == "truncate":
         return _operands(argv, takes_value=("-s", "-r"))
+    if name == "touch":
+        return _operands(argv, takes_value=("-d", "-t", "-r", "--date", "--reference"))
     if name in ("cp", "install"):
         target = _target_dir(argv)
         if target:
@@ -1362,8 +1389,16 @@ def _shellscan():
     return shellscan
 
 
+_LEASE_TREE = re.compile(r"^\.claude/worktrees/[^/]+/.")
+
+
+def in_lease_tree(path):
+    """A path inside a lease tree (`.claude/worktrees/<name>/...`): a writer's edit there is not dirt in the main tree. A path outside the repo, and the tree directory itself, are not."""
+    return bool(_LEASE_TREE.match(path))
+
+
 def edit_paths(jsonl, root):
-    """Every repo-relative path one transcript's tool calls changed: the `file_path` (or `notebook_path`) of every edit tool call, and since R20260925.1 every path a Bash call wrote, deleted or moved (`bash_write_paths`, joined to the record's own `cwd`). Paths outside `root` are kept absolute, which never matches a `git status` line and so subtracts nothing."""
+    """Every repo-relative path one transcript's tool calls changed: the `file_path` (or `notebook_path`) of every edit tool call, and since R20260925.1 every path a Bash call wrote, deleted or moved (`bash_write_paths`, joined to the record's own `cwd`). A path inside a lease tree (`.claude/worktrees/<name>/`) is dropped (`in_lease_tree`), so it subtracts nothing from the lead's fix-set. Paths outside `root` are kept absolute, which never matches a `git status` line and so subtracts nothing."""
     try:
         data = jsonl.read_bytes()
     except (OSError, AttributeError):
@@ -1388,12 +1423,14 @@ def edit_paths(jsonl, root):
                 continue
             path = str(inp.get("file_path") or inp.get("notebook_path") or "")
             if path:
-                out.add(path.removeprefix(base))
-    return out
+                # NORMALIZED FIRST: `<root>/.claude/x/../../../.claude/worktrees/<id>/f` names a lease file, and unnormalized it kept its `.claude/x/..` head, dodged `in_lease_tree`, and made block_commit_of_live_writer_file refuse a lease writer's own commit (2026-11-05).
+                # A relative spelling is normalized too: a `..` path that climbs back into a lease tree dodged the lease filter the same way.
+                out.add(os.path.normpath(path).removeprefix(base))
+    return {p for p in out if not in_lease_tree(p)}
 
 
 class WriterPaths(set):
-    """The paths the judge's tick-based fix-set subtracts, plus `by_tick`: {tick id: the paths of that ticked item's own lease workers}. A plain set to every caller that only subtracts; `wl_reggate.fixset_files` reads `by_tick` to answer a tick with its own writers' files (R20260925.2)."""
+    """The paths the judge's tick-based fix-set subtracts, plus `by_tick`: {tick id: the paths of that ticked item's own leased agents}, with the paths each agent edited inside a worktree lease tree left out (`in_lease_tree`: they are not dirt in the main tree). A plain set to every caller that only subtracts; `wl_reggate.fixset_files` reads `by_tick` to answer a tick with its own writers' files (R20260925.2)."""
 
     by_tick: dict
 
@@ -1760,6 +1797,86 @@ def row_line(row):
     )
 
 
+def _report_boxes(store, entry):
+    """[(sig, state, owed halves)] of one report index entry: its `boxes` field (T6), else its body through `wl_planbox.parse_tick`. None when the body had to be read and could not be, so a caller never reads an unread body as one naming no box."""
+    import wl_planbox
+
+    boxes = entry.get("boxes")
+    # A capped list (`boxes_capped`) lost a box; the body holds them all.
+    if not isinstance(boxes, list) or entry.get("boxes_capped"):
+        try:
+            body = (store / str(entry.get("body") or "")).read_text(
+                encoding="utf-8", errors="replace"
+            )
+        except OSError:
+            return None
+        boxes = [
+            {"sig": r.sig, "state": r.state, "owed": [list(x) for x in r.owed]}
+            for r in wl_planbox.parse_tick(body)
+        ]
+    out = []
+    for b in boxes:
+        if isinstance(b, dict) and b.get("sig"):
+            halves = sorted({str(x[1]) for x in b.get("owed") or [] if len(x) > 1})
+            out.append((str(b["sig"]), str(b.get("state") or "?"), halves))
+    return out
+
+
+def latest_report(entries, agent_id):
+    """The newest index entry captured for `agent_id` (its id is the agent's short id, or that id with a `-N` suffix), or None."""
+    import wl_report
+
+    rid = wl_report.short_id(agent_id)
+    hits = [e for e in entries if str(e["id"]) == rid or str(e["id"]).startswith(rid + "-")]
+    return hits[-1] if hits else None
+
+
+def _cite(store, entries, agent_id):
+    entry = latest_report(entries, agent_id)
+    if entry is None:
+        return "%s: no captured report" % agent_id, []
+    boxes = _report_boxes(store, entry)
+    if boxes is None:
+        return "%s: report %s, boxes unread (body %s could not be read)" % (
+            agent_id,
+            entry["id"],
+            entry.get("body") or "(none)",
+        ), []
+    sigs = " ".join(sig for sig, _st, _h in boxes) or "no box named"
+    return "%s: report %s, boxes %s" % (agent_id, entry["id"], sigs), boxes
+
+
+def report_citations(dead, metas, start, entries=None, store=None):
+    """{item id: [citation line]} for `[(item id, worker id)]`: the worker's report id and box sigs, then one line per child of a coordinator (a meta whose parent is the worker)."""
+    import wl_report
+
+    store = wl_report.store_root(start) if store is None else store
+    entries = wl_report.read_index(store) if entries is None else entries
+    kids = children_map(metas)
+    out = {}
+    for item, worker in dead:
+        lines = [_cite(store, entries, worker)[0]]
+        lines += ["child " + _cite(store, entries, k)[0] for k in sorted(kids.get(worker, []))]
+        out[item] = lines
+    return out
+
+
+def item_box_citations(text, entries, store):
+    """["report <rid> names box <sig> (<state>, owed <halves>)"] for each box sig `text` names that a captured report's TICK line names (the newest report per sig)."""
+    named = set(re.findall(r"(?<![0-9a-z])([0-9a-f]{8})(?![0-9a-z])", text or ""))
+    if not named:
+        return []
+    found = {}
+    for entry in entries:
+        for sig, state, halves in _report_boxes(store, entry) or []:
+            if sig in named:
+                found[sig] = (entry["id"], state, halves)
+    return [
+        "report %s names box %s (%s, owed %s)" % (rid, sig, state, ",".join(halves) or "nothing")
+        for sig, (rid, state, halves) in sorted(found.items())
+    ]
+
+
 def defect_rows(verdict):
     """{"cap", "silent", "unleased", "dead"}: the rendered rows each roster block quotes. Never truncated: a defect list is short by nature, and a capped one would hide the id the remedy needs."""
     rows = verdict.get("rows") or {}
@@ -1775,8 +1892,10 @@ def defect_rows(verdict):
             "    %s: last status %s ago via %s%s"
             % (w, _mins(age), src, "" if coverer == w else "; its live descendant is %s" % coverer)
         )
+    cites = verdict.get("dead_cites") or {}
     dead = [
-        "    #%s leased to worker:%s, which is not live and has no live descendant" % (i, w)
+        "    #%s leased to worker:%s, which is not live and has no live descendant%s"
+        % (i, w, "".join("\n      " + c for c in cites.get(i) or []))
         for i, w, _c in verdict.get("leased_dead") or []
     ]
     # MERGED (operator ruling 2026-09-24, "Evidence counts as status"): a worker whose newest evidence is STATUS_PING_MIN old is the same fact as a silent one, so its status row rides the silent block rather than a second key.

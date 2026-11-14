@@ -319,6 +319,8 @@ export async function viewOf(
     r.breaking !== undefined && w.mutant !== 'breaking-is-minor';
   const isMajor = (r: Release): boolean => {
     if (breaking(r)) return true;
+    // The pinned version with new content is no move at all, let alone a major (2026-11-06: node:26.13.0-slim re-pushed read as major-only).
+    if (r.redigest) return false;
     const a = insp.current === null ? null : majorOf(insp.current);
     const b = majorOf(r.version);
     return a === null || b === null || a !== b;
@@ -358,7 +360,7 @@ export async function viewOf(
       const r = pool.find((x) => x.version === v) as Release;
       if (
         !(sel.onlyInRange
-          ? !breaking(r) && inRange(insp.current, r.version)
+          ? !breaking(r) && (r.redigest === true || inRange(insp.current, r.version))
           : sel.allowMajor === true || !isMajor(r))
       )
         return {
@@ -381,7 +383,8 @@ export async function viewOf(
   }
   const admitted = pool.filter((r) =>
     sel.onlyInRange
-      ? !breaking(r) && inRange(insp.current, r.version)
+      ? // A re-digest is the pinned version with new content: its label (`<name>:<version>@<hex>`) is no version `inRange` can read, so it is admitted by what it is, and the soak judge below still holds it inside the window.
+        !breaking(r) && (r.redigest === true || inRange(insp.current, r.version))
       : sel.allowMajor === true || !isMajor(r)
   );
   for (const r of admitted) {

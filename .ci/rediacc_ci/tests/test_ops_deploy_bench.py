@@ -3,9 +3,11 @@
 A real local HTTP server stands in for the account Worker's POST /account/api/v1/auth/register (and 404s any other path), so the curl the module runs is the curl under test.
 """
 
+import inspect
 import json
 import subprocess
 import threading
+import tomllib
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from typing import Any
 
@@ -17,7 +19,11 @@ from rediacc_ci.well_known import BENCH_ORIGIN
 
 REGISTER_PATH = "/account/api/v1/auth/register"
 # The [assets] block deploy_bench requires before it builds the keyless portal (bench_assets_refusal).
-BENCH_ASSETS_TOML = '[assets]\ndirectory = "./bench/dist"\n'
+BENCH_ASSETS_TOML = (
+    '[assets]\ndirectory = "./bench/dist"\n'
+    '\n[[d1_databases]]\nbinding = "DB"\ndatabase_name = "account-bench"\n'
+    'database_id = "11111111-1111-4111-8111-111111111111"\n'
+)
 
 
 class _Server:
@@ -287,6 +293,8 @@ def test_deploy_seeds_the_root_after_the_secrets_push(monkeypatch, tmp_path):
     monkeypatch.setattr(deploy_bench.bench_preflight, "buckets", lambda _c: 0)
     monkeypatch.setattr(deploy_bench, "capture_bookmark", lambda _d: None)
     monkeypatch.setattr(deploy_bench, "_rotation_check", lambda _r: events.append("rotation"))
+    monkeypatch.setattr(deploy_bench, "_remove_retired_secrets", lambda _d: [])
+    monkeypatch.setattr(deploy_bench, "smoke", lambda: None)
 
     def fake_run(argv, *_a, **_k):
         events.append(" ".join(argv[:5]))
@@ -391,6 +399,8 @@ def test_a_missing_live_version_after_the_deploy_fails_the_deploy(monkeypatch, t
     monkeypatch.setattr(deploy_bench.bench_preflight, "buckets", lambda _c: 0)
     monkeypatch.setattr(deploy_bench, "capture_bookmark", lambda _d: None)
     monkeypatch.setattr(deploy_bench, "_rotation_check", lambda _r: None)
+    monkeypatch.setattr(deploy_bench, "_remove_retired_secrets", lambda _d: [])
+    monkeypatch.setattr(deploy_bench, "smoke", lambda: None)
     monkeypatch.setattr(deploy_bench, "_run", lambda *_a, **_k: "Current Version ID: " + VID)
     monkeypatch.setattr(deploy_bench, "_seed_and_report", lambda: None)
     wrote: list[str] = []
@@ -444,14 +454,15 @@ def test_captured_run_feeds_stdin_to_a_child_that_reads_it(tmp_path):
 
 def _bench_env(monkeypatch, **overrides):
     values = {
-        "ACCOUNT_ED25519_PRIVATE_KEY": "e1",
         "ACCOUNT_ED25519_PUBLIC_KEY": "e2",
         "ACCOUNT_X25519_PRIVATE_KEY": "x1",
         "ACCOUNT_X25519_PUBLIC_KEY": "x2",
         "ACCOUNT_SERVER_API_KEY": "ak",
         "ACCOUNT_JWT_SECRET": "jw",
         "FREE_LICENSE_HMAC_KEY": "hm",
+        "ACCOUNT_AE_READ_TOKEN": "ae-read",
         "ACCOUNT_CONFIG_SERVER_KEY": "ck",
+        "ACCOUNT_BACKUP_STORE_KEK": "kk",
         "ROOT_EMAIL": "root@example.invalid",
         "AWS_SES_ACCESS_KEY_ID": "sk",
         "AWS_SES_SECRET_ACCESS_KEY": "ss",
@@ -459,6 +470,9 @@ def _bench_env(monkeypatch, **overrides):
         "OBS_OTLP_CREDENTIALS": '{"user":"u","pass":"p"}',
         **overrides,
     }
+    # Both Stripe variables are cleared here, never inherited from the runner: a half-set pair on a lane (a webhook secret with no key) failed the whole-payload tests in the ci:quick clone, so a case that wants the pair passes both halves in `overrides`.
+    for name in ("STRIPE_SANDBOX_SECRET_KEY", "STRIPE_SANDBOX_WEBHOOK_SECRET"):
+        monkeypatch.delenv(name, raising=False)
     for name, value in values.items():
         monkeypatch.setenv(name, value)
     monkeypatch.setattr(deploy_bench, "_backup_values", lambda: ("https://e", "bk", "bs"))
@@ -471,6 +485,33 @@ def test_the_payload_carries_the_config_server_key(monkeypatch):
     payload = deploy_bench.secrets_payload()
     assert payload["ACCOUNT_CONFIG_SERVER_KEY"] == "ck"
     assert "CONFIG_SERVER_KEY" not in payload
+
+
+def test_the_payload_sender_defaults_to_the_product_zone_notify_host(monkeypatch):
+    """Without AWS_SES_FROM the bench Worker sends from noreply@notify.rediacc.cloud, and an explicit value wins."""
+    _bench_env(monkeypatch)
+    monkeypatch.delenv("AWS_SES_FROM", raising=False)
+    assert deploy_bench.secrets_payload()["AWS_SES_FROM"] == "noreply@notify.rediacc.cloud"
+    monkeypatch.setenv("AWS_SES_FROM", "x@example.test")
+    assert deploy_bench.secrets_payload()["AWS_SES_FROM"] == "x@example.test"
+
+
+def test_the_payload_carries_the_backup_store_kek(monkeypatch):
+    """The bench KEK reaches the Worker under its Worker name, and an empty one refuses the push."""
+    _bench_env(monkeypatch)
+    assert deploy_bench.secrets_payload()["ACCOUNT_BACKUP_STORE_KEK"] == "kk"
+    _bench_env(monkeypatch, ACCOUNT_BACKUP_STORE_KEK="")
+    with pytest.raises(deploy_bench.DeployError, match="ACCOUNT_BACKUP_STORE_KEK"):
+        deploy_bench.secrets_payload()
+
+
+def test_the_payload_carries_the_ae_read_token(monkeypatch):
+    """PLAN-d1-scaling W2: the bench Worker gets the Analytics Engine read token; an empty one refuses the push."""
+    _bench_env(monkeypatch)
+    assert deploy_bench.secrets_payload()["ACCOUNT_AE_READ_TOKEN"] == "ae-read"
+    _bench_env(monkeypatch, ACCOUNT_AE_READ_TOKEN="")
+    with pytest.raises(deploy_bench.DeployError, match="ACCOUNT_AE_READ_TOKEN"):
+        deploy_bench.secrets_payload()
 
 
 def test_the_payload_carries_the_free_license_hmac_key(monkeypatch):
@@ -493,8 +534,7 @@ def _deploy_bench_profile() -> dict:
     return supply["consumers"]["deploy-bench"]
 
 
-SIX = (
-    "ACCOUNT_ED25519_PRIVATE_KEY",
+FIVE = (
     "ACCOUNT_ED25519_PUBLIC_KEY",
     "ACCOUNT_X25519_PRIVATE_KEY",
     "ACCOUNT_X25519_PUBLIC_KEY",
@@ -503,12 +543,13 @@ SIX = (
 )
 
 
-def test_bench_binds_the_six_unaliased_production_names():
-    """Operator rulings 2026-10-27 and 2026-10-29: bench binds the unsuffixed production signing and session names, never a `_DEV` one."""
+def test_bench_binds_the_five_unaliased_production_names():
+    """Operator rulings 2026-10-27 and 2026-10-29: bench binds the unsuffixed production session names and the ED25519 public key, never a `_DEV` one and never the ED25519 private key (the signers hold it)."""
     required = _deploy_bench_profile()["required"]
-    for name in SIX:
+    for name in FIVE:
         assert name in required
-    assert not any(line.startswith(SIX) and "_DEV" in line for line in required)
+    assert not any(line.startswith(FIVE) and "_DEV" in line for line in required)
+    assert "ACCOUNT_ED25519_PRIVATE_KEY" not in required
 
 
 # --------------------------------------------------------------------------- The keyless bench portal never lands where production uploads from (2026-10-28) ---------------------------------------------------------------------------
@@ -554,6 +595,8 @@ def _deploy_world(monkeypatch, tmp_path, toml, events):
     monkeypatch.setattr(deploy_bench.bench_preflight, "buckets", lambda _c: 0)
     monkeypatch.setattr(deploy_bench, "capture_bookmark", lambda _d: None)
     monkeypatch.setattr(deploy_bench, "_rotation_check", lambda _r: None)
+    monkeypatch.setattr(deploy_bench, "_remove_retired_secrets", lambda _d: [])
+    monkeypatch.setattr(deploy_bench, "smoke", lambda: None)
     monkeypatch.setattr(deploy_bench, "_seed_and_report", lambda: None)
     monkeypatch.setattr(deploy_bench, "record_version", lambda *_a: None)
     monkeypatch.setattr(deploy_bench.deploy_record, "worker_version", lambda *_a: (True, "live"))
@@ -582,3 +625,181 @@ def test_a_bench_config_on_production_assets_stops_before_any_build_or_write(mon
     with pytest.raises(deploy_bench.DeployError, match=r"not \./bench/dist"):
         deploy_bench._deploy(deploy_bench.cf_auth.Auth(token="t"), tmp_path)
     assert events == []
+
+
+def test_a_queue_preflight_failure_refuses_before_any_build_or_write(monkeypatch, tmp_path):
+    """The replicate queues the bench Worker binds are checked (and created) before the build, the migrations and the deploy."""
+    events: list[list[str]] = []
+    _deploy_world(monkeypatch, tmp_path, BENCH_ASSETS_TOML, events)
+    seen: list[str] = []
+
+    def refuse(config, _env):
+        seen.append(config.name)
+        raise deploy_bench.deploy_account.QueuePreflightError("queue create failed")
+
+    monkeypatch.setattr(deploy_bench.deploy_account, "check_queues", refuse)
+    with pytest.raises(deploy_bench.DeployError, match="queue create failed"):
+        deploy_bench._deploy(deploy_bench.cf_auth.Auth(token="t"), tmp_path)
+    assert seen == [deploy_bench.CONFIG]
+    assert events == []
+
+
+def test_the_payload_carries_the_cloudflare_account_id(monkeypatch):
+    """The AE SQL reads need the account id the regional pusher also sends; the region-consistency gate compares the two key sets (review c5be449f.2)."""
+    _bench_env(monkeypatch)
+    assert deploy_bench.secrets_payload()["CLOUDFLARE_ACCOUNT_ID"] == deploy_bench.ACCOUNT_ID
+
+
+def _legal_entity_names() -> set[str]:
+    supply = json.loads(paths.from_root(".ci", "config", "secret-supply.json").read_text("utf-8"))
+    return set(supply["consumers"]["legal-entity"]["required"])
+
+
+def test_the_payload_carries_the_whole_legal_entity(monkeypatch):
+    """PLAN-terms-acceptance E2: the bench Worker gets every one of the ten separate SELLER_* entries the `legal-entity` profile requires, the commercial register's name among them, so bench renders the same contracting party as production. A seller map one name short is red here, by that name."""
+    _bench_env(monkeypatch, SELLER_REGISTER_NAME="Register X")
+    payload = deploy_bench.secrets_payload()
+    entity = _legal_entity_names()
+    assert len(entity) == 10
+    seller = {k for k in payload if k.startswith("SELLER_")}
+    assert seller == entity, "missing: %s, extra: %s" % (
+        sorted(entity - seller),
+        sorted(seller - entity),
+    )
+    assert payload["SELLER_REGISTER_NAME"] == "Register X"
+    assert set(_deploy_bench_profile()["optional"]) >= entity
+
+
+def test_portal_build_rebuilds_shared_packages_first():
+    """The portal bundles @rediacc/shared from packages/shared/dist, so the deploy builds it before vite runs; a stale dist shipped an empty consent notice to bench on 2026-11-11."""
+    src = inspect.getsource(deploy_bench._deploy)
+    build = src.index("local_common.ensure_packages_built()")
+    vite = src.index('"vite build",')
+    assert build < vite
+    # Control: the vite step is the one the portal build runs, so the order above is the order at run time.
+    assert src.count('"vite build",') == 1
+    assert src.count("local_common.ensure_packages_built()") == 1
+
+
+def test_a_failed_shared_build_refuses_the_deploy_before_vite():
+    """A False from the shared build raises DeployError ahead of the vite step, so a stale packages/shared/dist is never bundled."""
+    src = inspect.getsource(deploy_bench._deploy)
+    guard = src.index("if not local_common.ensure_packages_built():")
+    refusal = src.index("raise DeployError(", guard)
+    assert refusal < src.index('"vite build",')
+    assert "stale dist" in src[guard : refusal + 160]
+
+
+def _clear_stripe(monkeypatch):
+    monkeypatch.delenv("STRIPE_SANDBOX_SECRET_KEY", raising=False)
+    monkeypatch.delenv("STRIPE_SANDBOX_WEBHOOK_SECRET", raising=False)
+
+
+def test_a_sandbox_stripe_pair_is_bound_under_the_worker_names(monkeypatch, capsys):
+    _bench_env(
+        monkeypatch,
+        STRIPE_SANDBOX_SECRET_KEY="sk_test_abc",
+        STRIPE_SANDBOX_WEBHOOK_SECRET="whsec_abc",
+    )
+    payload = deploy_bench.secrets_payload()
+    assert payload["STRIPE_SANDBOX_SECRET_KEY"] == "sk_test_abc"
+    assert payload["STRIPE_SANDBOX_WEBHOOK_SECRET"] == "whsec_abc"
+    assert payload["STRIPE_SECRET_KEY"] == ""
+    assert payload["STRIPE_WEBHOOK_SECRET"] == ""
+    out = capsys.readouterr()
+    assert "sk_test_abc" not in out.out + out.err
+    assert "whsec_abc" not in out.out + out.err
+
+
+def test_the_live_stripe_names_in_the_environment_are_never_bound(monkeypatch):
+    _bench_env(monkeypatch, STRIPE_SECRET_KEY="sk_live_x", STRIPE_WEBHOOK_SECRET="whsec_x")
+    monkeypatch.delenv("STRIPE_SANDBOX_SECRET_KEY", raising=False)
+    monkeypatch.delenv("STRIPE_SANDBOX_WEBHOOK_SECRET", raising=False)
+    payload = deploy_bench.secrets_payload()
+    assert payload["STRIPE_SECRET_KEY"] == ""
+    assert payload["STRIPE_WEBHOOK_SECRET"] == ""
+
+
+def test_a_restricted_test_key_is_accepted(monkeypatch):
+    _bench_env(
+        monkeypatch,
+        STRIPE_SANDBOX_SECRET_KEY="rk_test_abc",
+        STRIPE_SANDBOX_WEBHOOK_SECRET="whsec_abc",
+    )
+    assert deploy_bench.secrets_payload()["STRIPE_SANDBOX_SECRET_KEY"] == "rk_test_abc"
+
+
+@pytest.mark.parametrize("key", ["sk_live_SECRETVALUE", "rk_live_SECRETVALUE", "garbage"])
+def test_a_non_test_stripe_key_is_refused_without_printing_it(monkeypatch, capsys, key):
+    _bench_env(
+        monkeypatch, STRIPE_SANDBOX_SECRET_KEY=key, STRIPE_SANDBOX_WEBHOOK_SECRET="whsec_SECRETHOOK"
+    )
+    with pytest.raises(deploy_bench.DeployError, match="not a Stripe test key") as err:
+        deploy_bench.secrets_payload()
+    out = capsys.readouterr()
+    shown = str(err.value) + out.out + out.err
+    assert "SECRETVALUE" not in shown
+    assert "SECRETHOOK" not in shown
+    assert key not in shown
+
+
+def test_an_absent_stripe_pair_keeps_the_blanks_and_says_so(monkeypatch, capsys):
+    _bench_env(monkeypatch)
+    _clear_stripe(monkeypatch)
+    payload = deploy_bench.secrets_payload()
+    for name in (
+        "STRIPE_SECRET_KEY",
+        "STRIPE_WEBHOOK_SECRET",
+        "STRIPE_SANDBOX_SECRET_KEY",
+        "STRIPE_SANDBOX_WEBHOOK_SECRET",
+    ):
+        assert payload[name] == ""
+    assert "Stripe sandbox pair absent" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    ("key", "hook", "missing"),
+    [
+        ("sk_test_abc", "", "STRIPE_SANDBOX_WEBHOOK_SECRET"),
+        ("", "whsec_abc", "STRIPE_SANDBOX_SECRET_KEY"),
+    ],
+)
+def test_a_half_set_stripe_pair_is_refused_by_name(monkeypatch, key, hook, missing):
+    _bench_env(monkeypatch, STRIPE_SANDBOX_SECRET_KEY=key, STRIPE_SANDBOX_WEBHOOK_SECRET=hook)
+    with pytest.raises(deploy_bench.DeployError, match=missing):
+        deploy_bench.secrets_payload()
+
+
+def _consent_switches(directory):
+    """{config or config#env: STRIPE_CONSENT_COLLECTION} over every account wrangler config in `directory`, each `[env.<name>.vars]` table read as a config of its own, since wrangler deploys it with --env."""
+    seen = {}
+    for config in sorted(directory.glob("wrangler*.toml")):
+        doc = tomllib.loads(config.read_text(encoding="utf-8"))
+        seen[config.name] = (doc.get("vars") or {}).get("STRIPE_CONSENT_COLLECTION")
+        for env_name, env in (doc.get("env") or {}).items():
+            seen["%s#%s" % (config.name, env_name)] = (env.get("vars") or {}).get(
+                "STRIPE_CONSENT_COLLECTION"
+            )
+    return seen
+
+
+def test_bench_turns_stripe_consent_collection_on_and_no_other_config_does():
+    """Bench bills only the STRIPE_SANDBOX_* pair, so it is where Checkout first asks for Terms consent (PLAN-terms-acceptance X2); a live account config that sets it has skipped that proof."""
+    seen = _consent_switches(paths.from_root("workers", "account"))
+    assert seen, "no account wrangler config found"
+    assert seen.get(deploy_bench.CONFIG) == "1", seen
+    # The regional benches (wrangler.bench-<r>.toml) bill the same sandbox pair and carry the switch too.
+    on = [name for name, value in seen.items() if value == "1"]
+    assert deploy_bench.CONFIG in on, seen
+    assert all(name.startswith("wrangler.bench") for name in on), seen
+
+
+def test_control_an_env_table_switch_is_seen(tmp_path):
+    (tmp_path / "wrangler.eu.toml").write_text(
+        '[vars]\nREGION = "eu"\n\n[env.preview.vars]\nSTRIPE_CONSENT_COLLECTION = "1"\n',
+        encoding="utf-8",
+    )
+    assert _consent_switches(tmp_path) == {
+        "wrangler.eu.toml": None,
+        "wrangler.eu.toml#preview": "1",
+    }

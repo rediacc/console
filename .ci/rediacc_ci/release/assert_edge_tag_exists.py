@@ -80,7 +80,7 @@ SELF = "rediacc_ci.release.assert_edge_tag_exists"
 VERSION_RE = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+([-+][0-9A-Za-z.-]+)?$")
 
 # `${GITHUB_REPOSITORY:-rediacc/console}` (:92) and
-# `${RELEASES_BUCKET:-rediacc-releases}` (:93). `:-` fires on unset OR empty.
+# `${RELEASES_BUCKET:-releases}` (:93). `:-` fires on unset OR empty.
 DEFAULT_REPO = GH_REPO
 DEFAULT_BUCKET = RELEASES_BUCKET
 

@@ -155,7 +155,7 @@ Writers: SC1, SC3, SC4, SC8 and SC14 start in parallel. SC2 follows SC1, SC3 and
     (ticked) 2026-10-03T13:07:41Z by d778be9d: commit:c360000d0 pr_plan_set read by plan_merge_refusal and clock_scope; 50 test_plan_gate passed, selftest 72 plants
 - [x] SC13a Real run on this plan's PR: a Stop event piped to `python3 .claude/hooks/stop/worklist.py` gives a decision with no `open-items` for items outside the PR plan set's epics, no plan-adopted for PLAN-stop-hook-retro-20260925, no plan-unimplemented for any plan outside the PR's plan set, the one N_PR_SCOPE line naming the PR, its plans and the next QUEUE.md plan, and no box whose `Depends on:` waits for a merge named as the next box. Files: none owned (evidence only). Depends on: SC1-SC12. Acceptance: the decision text quoted in the round log with the branch, PR number and head sha.
     (ticked) 2026-10-03T14:07:43Z by d778be9d: commit:67404aafc real Stop at 2250eaffd on PR #592: scoped line names the PR, both plans and next PLAN-plan-dependencies.md; no ceiling block; GR12 not named
-- [ ] SC13b Real run after the merge: the first stop on the merged branch blocks with `loop-next` naming the next QUEUE.md plan and the step-7 commands; after the cut, the push and `gh pr create`, the new PR's body reads that plan's `Plan:` line and `loop-next` is silent. Files: none owned (evidence only). Depends on: SC13a and this PR's merge. Acceptance: both decision blocks quoted in the round log with the branch, PR number and head sha.
+(moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) SC13b
 
 ## Verification
 

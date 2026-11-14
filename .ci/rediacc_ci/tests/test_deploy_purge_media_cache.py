@@ -317,12 +317,15 @@ def test_defect_a_transport_failure_is_a_silent_non_zero(tmp_path: pathlib.Path)
     )
 
 
-def test_extra_arguments_are_ignored_by_both(tmp_path: pathlib.Path) -> None:
-    """The twin parses nothing, so `--dry-run` is NOT a dry run: the purge happens. Driven so a port cannot invent a flag the callers do not have."""
-    old, new, old_calls, new_calls = run_both(tmp_path, ["--dry-run"])
-    assert old.returncode == 0
-    assert len(old_calls) == 1, "an ignored flag became a dry run"
-    _assert_agree(old, new, "extra-args", old_calls, new_calls)
+def test_extra_arguments_are_refused_where_the_twin_ignored_them(tmp_path: pathlib.Path) -> None:
+    """DELIBERATE DIVERGENCE, port only. The twin parsed nothing, so `--dry-run` was NOT a dry run and the purge happened. The port refuses with exit 2 before any call; the control is the same fixture without arguments, which does purge."""
+    control, control_calls = _run(PORT, tmp_path, [])
+    assert control.returncode == 0, control.stderr
+    assert len(control_calls) == 1, "the control is vacuous: the fixture makes no purge call"
+    refused, calls = _run(PORT, tmp_path, ["--dry-run"])
+    assert refused.returncode == 2, refused.stderr
+    assert calls == [], "a flag was accepted and a purge ran"
+    assert "unknown option(s) --dry-run" in refused.stderr
 
 
 def test_divergence_common_sh_interprets_backslash_escapes_in_the_cf_error(

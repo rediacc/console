@@ -183,24 +183,143 @@ function checkHreflangConsistency() {
   }
 }
 
-// ────────────────────────────────────────────────────────────────────────────── 5. Page files should include an H1 (directly or via known hero components) ──────────────────────────────────────────────────────────────────────────────
+// ──────────────────────────────────────────────────────────────────────────────
+// 5. Page files should include an H1 (directly or via known hero components)
+// ──────────────────────────────────────────────────────────────────────────────
+
+// Components that render the page's <h1> themselves, directly or via SPHero. `SPHomeHero` is the homepage's own hero, split out of the shared `SPHero` so the homepage could drop `min-height: 100dvh`; `SPWhyNow` is a section that became its own route and whose title is that route's subject. `LegalDocument` renders the h1 for every legal page.
+const H1_COMPONENTS = [
+  'SPHero',
+  'SPHomeHero',
+  'SPHomePage',
+  'SolutionPage',
+  'PersonaPage',
+  'ContentLayout',
+  'DocsLayout',
+  'ResourceBriefPage',
+  'SPWhyNow',
+  'LegalDocument',
+];
+
+/** Source with HTML comments, block comments and whole-line `//` comments removed, so a commented-out <h1> or component does not count. */
+function stripComments(source: string): string {
+  return source
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/^[ \t]*\/\/.*$/gm, '');
+}
+
+/** The allowlist vouches for a component by name, so each entry must itself still render an <h1>, directly or through another entry that does; without this, removing LegalDocument's <h1> would leave every legal page green. `sources` maps each entry to its file's text, or undefined when no such file exists. Delegation is a fixpoint grown from the entries with a direct <h1>, so two entries that only reference each other never vouch for one another, and `<DocsLayout` never matches `<DocsLayoutWrapper`. */
+export function h1AllowlistProblems(
+  components: readonly string[],
+  sources: ReadonlyMap<string, string | undefined>
+): string[] {
+  const problems: string[] = [];
+  const stripped = new Map<string, string>();
+  for (const comp of components) {
+    const source = sources.get(comp);
+    if (source === undefined) {
+      problems.push(
+        `${comp} is listed in h1Components but no ${comp}.astro exists under ${WWW_SRC} (renamed, moved or deleted).`
+      );
+    } else {
+      stripped.set(comp, stripComments(source));
+    }
+  }
+  const rendering = new Set<string>();
+  for (const [comp, source] of stripped) {
+    if (/<h1[\s>]/i.test(source)) rendering.add(comp);
+  }
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const [comp, source] of stripped) {
+      if (rendering.has(comp)) continue;
+      if ([...rendering].some((other) => new RegExp(`<${other}(?![\\w.-])`).test(source))) {
+        rendering.add(comp);
+        grew = true;
+      }
+    }
+  }
+  for (const comp of stripped.keys()) {
+    if (!rendering.has(comp)) {
+      problems.push(
+        `${comp} is listed in h1Components but renders no <h1> (directly or via another listed component).`
+      );
+    }
+  }
+  return problems;
+}
+
+/** Controls for h1AllowlistProblems: each plant must be refused for its own reason, naming its component, and the clean control must stay silent. */
+function h1AllowlistSelftest(): string[] {
+  const failures: string[] = [];
+  const srcs = (o: Record<string, string | undefined>) => new Map(Object.entries(o));
+  /** `want` is one [component, reason fragment] per expected problem, in any order. */
+  const expectProblems = (name: string, got: string[], want: [string, string][]) => {
+    if (got.length !== want.length) {
+      failures.push(
+        `${name}: wanted ${want.length} problem(s), got ${got.length}: ${got.join(' | ')}`
+      );
+      return;
+    }
+    for (const [comp, reason] of want) {
+      if (!got.some((p) => p.startsWith(`${comp} `) && p.includes(reason))) {
+        failures.push(`${name}: no problem naming ${comp} with "${reason}" in: ${got.join(' | ')}`);
+      }
+    }
+  };
+  expectProblems(
+    'control: direct h1 and clean delegation',
+    h1AllowlistProblems(['A', 'B'], srcs({ A: '<h1>x</h1>', B: '<A />' })),
+    []
+  );
+  expectProblems('plant: missing file', h1AllowlistProblems(['A'], srcs({ A: undefined })), [
+    ['A', 'exists under'],
+  ]);
+  expectProblems(
+    'plant: commented-out h1',
+    h1AllowlistProblems(
+      ['A', 'B', 'C'],
+      srcs({ A: '<!-- <h1>x</h1> -->', B: '/* <h1> */', C: '// <h1>' })
+    ),
+    [
+      ['A', 'renders no <h1>'],
+      ['B', 'renders no <h1>'],
+      ['C', 'renders no <h1>'],
+    ]
+  );
+  expectProblems(
+    'plant: mutual delegation with no h1',
+    h1AllowlistProblems(['A', 'B'], srcs({ A: '<B />', B: '<A />' })),
+    [
+      ['A', 'renders no <h1>'],
+      ['B', 'renders no <h1>'],
+    ]
+  );
+  expectProblems(
+    'plant: prefix of another component name',
+    h1AllowlistProblems(['A', 'B'], srcs({ A: '<h1>x</h1>', B: '<AWrapper />' })),
+    [['B', 'renders no <h1>']]
+  );
+  return failures;
+}
+
 function checkH1Presence() {
   console.log('Checking H1 presence in pages...');
 
-  // Components known to render an H1 (directly or via SPHero) Components that render the page's <h1> themselves. `SPHomeHero` is the homepage's own hero, split out of the shared `SPHero` so the homepage could
-  // drop `min-height: 100dvh`; `SPWhyNow` is a section that became its own route
-  // and whose title is that route's subject.
-  const h1Components = [
-    'SPHero',
-    'SPHomeHero',
-    'SPHomePage',
-    'SolutionPage',
-    'PersonaPage',
-    'ContentLayout',
-    'DocsLayout',
-    'ResourceBriefPage',
-    'SPWhyNow',
-  ];
+  const h1Components = H1_COMPONENTS;
+
+  for (const failure of h1AllowlistSelftest()) error('check-seo.ts', `selftest: ${failure}`);
+  const sources = new Map<string, string | undefined>();
+  const files = new Map<string, string>();
+  for (const comp of h1Components) {
+    const [file] = globSync(`${WWW_SRC}/**/${comp}.astro`);
+    sources.set(comp, file ? fs.readFileSync(file, 'utf-8') : undefined);
+    if (file) files.set(comp, file);
+  }
+  for (const problem of h1AllowlistProblems(h1Components, sources)) {
+    error(files.get(problem.split(' ')[0]) ?? WWW_SRC, problem);
+  }
 
   const pageFiles = globSync(`${PAGES_DIR}/\\[lang\\]/**/*.astro`);
 

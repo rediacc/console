@@ -51,6 +51,8 @@ const REPORT_GO = 'private/renet/cmd/renet/backup_report.go';
 const REPORT_FIELDS_GO = 'private/renet/cmd/renet/backup_snapshot_report.go';
 const RESTORE_SIZE_TS = 'packages/cli/src/services/executor/repo-license-context.ts';
 const RESTORE_TEST_TS = 'packages/cli/src/commands/backup-restore-test.ts';
+const RESTORE_SESSION_TS = 'packages/cli/src/commands/backup-image-deps.ts';
+const RESOLVE_AT_TS = 'packages/cli/src/commands/backup-restore-chunk.ts';
 
 interface Leg {
   /** Route path as mounted in the account's backups router. */
@@ -90,8 +92,121 @@ interface Leg {
    * leg names its own file, so the keys of one leg cannot be satisfied by another's speaker.
    */
   clientFiles?: string[];
+  /** The request schema is declared in the routes file, not backup.dto.ts (the restore-session body is route-local). */
+  requestInRoutes?: boolean;
   /** How the speaker spells a key, for one that is no Go JSON tag. Absent means clientNames. */
   keySpelling?: (key: string) => RegExp;
+  /**
+   * The slice of the speaker that is this leg's REQUEST, which the request keys are looked for in. A speaker that also
+   * holds other objects naming the same key (a response struct, another body) would otherwise keep the gate green after
+   * the request drops it. Null means the request cannot be found in the speaker, which is a finding. Absent means the
+   * whole speaker.
+   */
+  requestScope?: (speaker: string) => string | null;
+}
+
+/** A key of a TypeScript object literal the CLI sends as a JSON body. */
+const bodyKey = (key: string) => new RegExp(`[{,]\\s*${key}\\s*[:,}]`);
+
+/**
+ * The index just past the bracket that closes the one at `open` (`{`, `(` or `[`), with quoted text skipped so a brace
+ * inside a string does not count; -1 when it never closes.
+ */
+function closeOf(text: string, open: number): number {
+  let depth = 0;
+  for (let i = open; i < text.length; i++) {
+    const ch = text[i];
+    if (ch === "'" || ch === '"' || ch === '`') {
+      const close = text.indexOf(ch, i + 1);
+      if (close === -1) return -1;
+      i = close;
+    } else if (ch === '{' || ch === '(' || ch === '[') depth++;
+    else if (ch === '}' || ch === ')' || ch === ']') {
+      depth--;
+      if (depth === 0) return i + 1;
+    }
+  }
+  return -1;
+}
+
+/** The top-level properties of an object literal `{...}`: name to value text, a shorthand's value being its name. */
+function topLevelProps(object: string): Map<string, string> {
+  const props = new Map<string, string>();
+  const inner = object.slice(1, -1);
+  const segments: string[] = [];
+  let from = 0;
+  for (let i = 0; i < inner.length; i++) {
+    const ch = inner[i];
+    if (ch === "'" || ch === '"' || ch === '`' || ch === '{' || ch === '(' || ch === '[') {
+      const close =
+        ch === '{' || ch === '(' || ch === '[' ? closeOf(inner, i) : inner.indexOf(ch, i + 1) + 1;
+      if (close <= 0) break;
+      i = close - 1;
+    } else if (ch === ',') {
+      segments.push(inner.slice(from, i));
+      from = i + 1;
+    }
+  }
+  segments.push(inner.slice(from));
+  for (const segment of segments) {
+    const m = /^\s*([A-Za-z_$][\w$]*)\s*(?::([\s\S]*))?$/.exec(segment);
+    if (m) props.set(m[1], m[2] ?? m[1]);
+  }
+  return props;
+}
+
+/**
+ * The expression the CLI passes as `body:` to the POST to `call`: the route as a quoted string, then an options object
+ * read with balanced brackets (so a nested object before `method:` still matches), whose top-level `method` is `'POST'`.
+ * The body is that object's own top-level `body` property, so a ternary of two object literals is read whole, and a
+ * `body:` of a later call, or a `{ storeId` elsewhere in the file, is never read for a POST that sends none.
+ */
+function postBodyOf(call: string): (speaker: string) => string | null {
+  const escaped = call.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return (speaker) => {
+    // An earlier mention of the route (a comment, a constant, a GET) is passed over: only a POST's options count.
+    for (const hit of speaker.matchAll(new RegExp(`${escaped}['"\`]\\s*,\\s*\\{`, 'g'))) {
+      const open = hit.index + hit[0].length - 1;
+      const close = closeOf(speaker, open);
+      if (close === -1) continue;
+      const props = topLevelProps(speaker.slice(open, close));
+      if (!/^\s*['"]POST['"]\s*$/.test(props.get('method') ?? '')) continue;
+      const body = props.get('body');
+      return body === undefined ? null : `body: ${body}`;
+    }
+    return null;
+  };
+}
+
+/**
+ * The bodies of the named top-level TypeScript functions, joined: the slice of a speaker that builds one query, so a key
+ * named elsewhere in the file cannot stand in for it. Null when any of them is not defined.
+ */
+function tsFunctionBodies(...names: string[]): (speaker: string) => string | null {
+  return (speaker) => {
+    const bodies: string[] = [];
+    for (const name of names) {
+      const head = new RegExp(`^(?:export\\s+)?(?:async\\s+)?function\\s+${name}\\s*\\(`, 'm').exec(
+        speaker
+      );
+      if (!head) return null;
+      const paramsEnd = closeOf(speaker, head.index + head[0].length - 1);
+      if (paramsEnd === -1) return null;
+      const open = speaker.indexOf('{', paramsEnd);
+      const close = open === -1 ? -1 : closeOf(speaker, open);
+      if (close === -1) return null;
+      bodies.push(speaker.slice(open, close));
+    }
+    return bodies.join('\n');
+  };
+}
+
+/** The Go struct that is the session request body, comments dropped. */
+function sessionRequestStruct(speaker: string): string | null {
+  const at = speaker.indexOf('type sessionRequest struct {');
+  if (at === -1) return null;
+  const end = speaker.indexOf('\n}', at);
+  return end === -1 ? null : stripGoComments(speaker.slice(at, end));
 }
 
 /** A key of a query string the CLI composes. */
@@ -104,7 +219,9 @@ const LEGS: Leg[] = [
     requestSchema: 'backupSessionRequest',
     responseSchema: 'backupSessionResponse',
     // `intent` splits the session in two ('backup' | 'restore'). A restore session is the only credential a lapsed-but-retained subscription can get, so a client that cannot spell the field cannot restore at all.
-    requestKeys: ['license', 'machineId', 'intent'],
+    // `storeId` names the backup store the session is for (PLAN-backup-multi-target R2; renet sends it for a store other than home). A spelling the schema does not accept is stripped silently and every session opens on `home`.
+    requestKeys: ['license', 'machineId', 'intent', 'storeId'],
+    requestScope: sessionRequestStruct,
     responseKeys: ['token', 'subscriptionId', 'dataPlaneUrl', 'grantKind'],
   },
   {
@@ -244,6 +361,31 @@ const LEGS: Leg[] = [
     clientCall: /\.APIBase\(\)\s*\+\s*"\/reports"/,
     clientFiles: [REPORT_GO, REPORT_FIELDS_GO],
   },
+  // PLAN-backup-multi-target A3: the restore session names its store. The CLI sends `storeId` only on `download --store --from <id>`; a spelling the schema does not accept is stripped silently and the download reads `home` whatever the operator chose. The body schema is route-local, and the CLI does not read the echoed storeId, so no response key is pinned.
+  {
+    path: '/restore-session',
+    requestSchema: 'backupRestoreSessionRequest',
+    requestInRoutes: true,
+    responseSchema: null,
+    requestKeys: ['lineageGuid', 'storeId'],
+    responseKeys: [],
+    clientCall: /\/backups\/restore-session/,
+    clientFiles: [RESTORE_SESSION_TS],
+    keySpelling: bodyKey,
+    requestScope: postBodyOf('/backups/restore-session'),
+  },
+  // A time resolves inside the store a restore reads (PLAN-backup-multi-target C3 follow-up, item #acd03b8a): `storeId` rides the query resolveSnapshotAt builds, so a snapshot only another store holds is never handed to this one. A spelling the query schema does not accept is stripped silently and the resolve spans every store again, with no error.
+  {
+    path: '/snapshots/resolve',
+    requestSchema: 'backupSnapshotResolveQuery',
+    responseSchema: 'backupSnapshotResolveResponse',
+    requestKeys: ['lineage', 'storeId'],
+    responseKeys: [],
+    clientCall: /RESOLVE_ROUTE = '\/account\/api\/v1\/backups\/snapshots\/resolve'/,
+    clientFiles: [RESOLVE_AT_TS],
+    keySpelling: bodyKey,
+    requestScope: tsFunctionBodies('fetchResolved', 'resolveSnapshotAt'),
+  },
   // A delayed delete still restores until its time, and the resolve route hides it unless asked. The two by-id size reads ask: without it a restore of one is licensed at the minimum size, and a restore test refuses it for an unknown size.
   ...[RESTORE_SIZE_TS, RESTORE_TEST_TS].map(
     (file): Leg => ({
@@ -325,13 +467,14 @@ function read(rel: string): string {
 }
 
 /**
- * Top-level keys of a `export const <name> = z.object({...})` declaration.
+ * Top-level keys of a `const <name> = z.object({...})` declaration, exported or not (the restore-session body is a
+ * route-local const).
  * The formatter splits a refined schema as `z\n  .object({...})\n  .superRefine(fn)`
  * (backupGrantRequest since plan S5), so whitespace around `.object(` is allowed;
  * the walk below still starts at the object literal and ignores the refinement.
  */
 function zodKeys(source: string, schema: string): string[] | null {
-  const decl = new RegExp(`export const ${schema} = z\\s*\\.object\\(\\{`).exec(source);
+  const decl = new RegExp(`(?:export\\s+)?const ${schema} = z\\s*\\.object\\(\\{`).exec(source);
   if (!decl) return null;
   // Walk braces from the opening of the object literal so nested objects and unions do not truncate the scan early.
   // The opener is the match's last character: searching for the literal `z.object(` again would skip a split chain and land in the NEXT schema.
@@ -481,7 +624,10 @@ function checkLegs(
           'so nothing sends this request.'
       );
     }
-    const accepted = leg.requestSchema === null ? [] : zodKeys(dto, leg.requestSchema);
+    const accepted =
+      leg.requestSchema === null
+        ? []
+        : zodKeys(leg.requestInRoutes ? routes : dto, leg.requestSchema);
     if (accepted === null) {
       problems.push(
         `    ${leg.path}\n      request schema ${leg.requestSchema} not found in ${DTO_TS}.`
@@ -517,10 +663,19 @@ function checkLegs(
         }
       }
     }
-    for (const key of [...leg.requestKeys, ...leg.responseKeys]) {
-      const named = leg.keySpelling
-        ? leg.keySpelling(key).test(speaker)
-        : clientNames(speaker, key);
+    const requestText = leg.requestScope ? leg.requestScope(speaker) : speaker;
+    if (requestText === null) {
+      problems.push(
+        `    ${leg.path}\n      the request body is not found in ${speakerName}, so its keys are unchecked.`
+      );
+    }
+    // Independent checks: a key in both lists is looked for in the request slice AND in the whole speaker.
+    const keyChecks = [
+      ...leg.requestKeys.map((key) => ({ key, text: requestText ?? '' })),
+      ...leg.responseKeys.map((key) => ({ key, text: speaker })),
+    ];
+    for (const { key, text } of keyChecks) {
+      const named = leg.keySpelling ? leg.keySpelling(key).test(text) : clientNames(text, key);
       if (!named) {
         problems.push(
           `    ${leg.path} field "${key}"\n` +
@@ -729,7 +884,9 @@ if (clientCalls(releaseLeg, `// ${releaseSend}`) || clientCalls(releaseLeg, 'log
  * session.go text here so a leg falling back to that file reads as a blind arm.
  */
 const reportLeg = LEGS.find((leg) => leg.path === '/reports');
-const resolveLegs = LEGS.filter((leg) => leg.path === '/snapshots/resolve');
+const resolveLegs = LEGS.filter(
+  (leg) => leg.path === '/snapshots/resolve' && leg.requestKeys.includes('includeDeleted')
+);
 if (!reportLeg || resolveLegs.length !== 2) {
   console.error('✗ speaker control: the /reports leg or a /snapshots/resolve leg is gone.');
   process.exit(1);
@@ -760,6 +917,181 @@ for (const [leg, key, spell] of [
   }
 }
 
+/**
+ * Eighth control, the restore-session body: its schema is route-local, so a scan of
+ * backup.dto.ts alone finds nothing. It must pass with the key in both the route schema and
+ * the CLI body, and fail when either side drops it.
+ */
+const restoreLeg = LEGS.find((leg) => leg.path === '/restore-session');
+if (!restoreLeg) {
+  console.error('✗ restore-session control: the /restore-session leg is gone.');
+  process.exit(1);
+}
+{
+  const route = "'/restore-session'";
+  const schema = (keys: string) => `const ${restoreLeg.requestSchema} = z.object({\n${keys}});`;
+  const both = schema('  lineageGuid: z.string(),\n  storeId: z.string().optional(),\n');
+  const noStore = schema('  lineageGuid: z.string(),\n');
+  const call = '/backups/restore-session';
+  const post = (options: string) => `fetch('${call}', { method: 'POST', ${options} })`;
+  const speak = (body: string) => ({ [RESTORE_SESSION_TS]: post(`body: { ${body} }`) });
+  const run = (routeText: string, dtoText: string, body: string) =>
+    checkLegs([restoreLeg], routeText, dtoText, '', speak(body));
+  if (
+    run(`${route}\n${both}`, '', 'lineageGuid, storeId: store').length !== 0 ||
+    run(`${route}\n${noStore}`, '', 'lineageGuid, storeId: store').length === 0 ||
+    run(`${route}\n${both}`, '', 'lineageGuid').length === 0 ||
+    // storeId named elsewhere in the speaker (another body) must not stand in for the restore-session body.
+    checkLegs([restoreLeg], `${route}\n${both}`, '', '', {
+      [RESTORE_SESSION_TS]: `other: { storeId: x }\n${post('body: { lineageGuid }, headers: {}')}\nlater: { storeId: y }`,
+    }).length === 0 ||
+    // an earlier mention of the route (comment, constant, a GET with its own body) must not anchor the body: the real POST body lacks storeId.
+    checkLegs([restoreLeg], `${route}\n${both}`, '', '', {
+      [RESTORE_SESSION_TS]: `// the ${call} route\nconst u = '${call}';\nget(u, { body: { storeId: x } });\n${post('body: { lineageGuid }')}`,
+    }).length === 0 ||
+    // the same earlier mention must not hide a real body that does name it.
+    checkLegs([restoreLeg], `${route}\n${both}`, '', '', {
+      [RESTORE_SESSION_TS]: `// the ${call} route\nget('${call}', { body: { x: 1 } });\n${post('body: { lineageGuid, storeId: s }')}`,
+    }).length !== 0 ||
+    // the ternary of two literals the real client sends is read whole.
+    checkLegs([restoreLeg], `${route}\n${both}`, '', '', {
+      [RESTORE_SESSION_TS]: post(
+        'body: s === undefined ? { lineageGuid } : { lineageGuid, storeId: s }, x: 1'
+      ),
+    }).length !== 0 ||
+    // a nested object before `method:` must not hide the POST (1a0788d8.4).
+    checkLegs([restoreLeg], `${route}\n${both}`, '', '', {
+      [RESTORE_SESSION_TS]: `fetch('${call}', { headers: { a: '{' }, method: 'POST', body: { lineageGuid, storeId: s } })`,
+    }).length !== 0 ||
+    // a POST with no body must not borrow the body of a later, unrelated call (1a0788d8.3).
+    checkLegs([restoreLeg], `${route}\n${both}`, '', '', {
+      [RESTORE_SESSION_TS]: `${post('headers: {}')}\nother('/x', { method: 'POST', body: { lineageGuid, storeId: s } });`,
+    }).length === 0 ||
+    run(`${route}`, both, 'lineageGuid, storeId: store').length === 0
+  ) {
+    console.error('✗ restore-session control: storeId not pinned on both sides of the leg.');
+    process.exit(1);
+  }
+}
+
+/**
+ * Ninth control, the /session request slice (the sessionRequest struct): it must pass with every request key in
+ * the struct, and fail when the struct is missing, or lacks a key that another struct in the speaker names.
+ */
+const sessionLeg = LEGS.find((leg) => leg.path === '/session');
+if (!sessionLeg) {
+  console.error('✗ session-request control: the /session leg is gone.');
+  process.exit(1);
+}
+{
+  const lone: Leg = {
+    ...sessionLeg,
+    requestSchema: 'ctrl',
+    responseSchema: null,
+    responseKeys: [],
+  };
+  const accepts = `export const ctrl = z.object({\n${lone.requestKeys.map((key) => `  ${key}: z.string(),`).join('\n')}\n});`;
+  const field = (key: string) =>
+    `\t${key[0].toUpperCase()}${key.slice(1)} string \`json:"${key}"\``;
+  const struct = (name: string, keys: string[]) =>
+    `type ${name} struct {\n${keys.map(field).join('\n')}\n}\n`;
+  const run = (speaker: string) =>
+    checkLegs([lone], `'${lone.path}'`, accepts, `"${lone.path}"\n${speaker}`);
+  const all = struct('sessionRequest', lone.requestKeys);
+  const response = struct('sessionResponse', lone.requestKeys);
+  const dropped = lone.requestKeys.filter((key) => key !== 'storeId');
+  if (
+    run(all).length !== 0 ||
+    // the struct is gone, its keys named by another struct only.
+    run(response).length === 0 ||
+    // the struct is renamed (the slice anchor misses), keys named elsewhere.
+    run(`${struct('sessionBody', lone.requestKeys)}${response}`).length === 0 ||
+    // the struct lost storeId while a later struct still names it.
+    run(`${struct('sessionRequest', dropped)}${response}`).length === 0
+  ) {
+    console.error(
+      '✗ session-request control: a missing or mis-sliced sessionRequest struct went unreported.'
+    );
+    process.exit(1);
+  }
+}
+
+/**
+ * Tenth control, a key in both requestKeys and responseKeys of a requestScope leg: the request check reads the
+ * request slice and the response check reads the whole speaker, independently. A key named only outside the slice
+ * is one finding (the request's), not two.
+ */
+{
+  const both: Leg = {
+    path: '/control-both',
+    requestSchema: 'ctrl',
+    responseSchema: null,
+    requestKeys: ['shared'],
+    responseKeys: ['shared'],
+    requestScope: (speaker) => speaker.split('RESPONSE')[0],
+  };
+  const run = (speaker: string) =>
+    checkLegs(
+      [both],
+      `'/control-both'`,
+      'export const ctrl = z.object({ shared: z.string() });',
+      `"/control-both" ${speaker}`
+    );
+  if (
+    run('"shared" RESPONSE').length !== 0 ||
+    run('"other" RESPONSE "shared"').length !== 1 ||
+    run('"other" RESPONSE "other"').length !== 2
+  ) {
+    console.error(
+      '✗ key-scope control: a key in both request and response keys was not checked independently.'
+    );
+    process.exit(1);
+  }
+}
+
+/**
+ * Eleventh control, the store a time resolves in: the leg must pass with `storeId` in the query resolveSnapshotAt
+ * builds, and fail when the query schema drops it, when the speaker names it only outside the two functions that build
+ * the query, and when either function is gone.
+ */
+{
+  const leg = LEGS.find(
+    (l) => l.path === '/snapshots/resolve' && (l.clientFiles ?? []).includes(RESOLVE_AT_TS)
+  );
+  if (!leg) {
+    console.error('✗ resolve-store control: the /snapshots/resolve storeId leg is gone.');
+    process.exit(1);
+  }
+  const route = "'/snapshots/resolve'";
+  const query = (keys: string) =>
+    `export const backupSnapshotResolveQuery = z.object({\n${keys}});`;
+  const accepts = query('  lineage: guidSchema,\n  storeId: backupStoreIdSchema.optional(),\n');
+  const constant = "const RESOLVE_ROUTE = '/account/api/v1/backups/snapshots/resolve';";
+  const fetcher =
+    'async function fetchResolved(lineage: string, q: Q): Promise<E> {\n  const params = new URLSearchParams({ lineage });\n}';
+  const resolver = (stream: string) =>
+    `export async function resolveSnapshotAt(\n  lineage: string,\n  options: O = {}\n): Promise<string> {\n  const stream = { ${stream} };\n  return fetchResolved(lineage, stream);\n}`;
+  const speak = (text: string) => ({ [RESOLVE_AT_TS]: `${constant}\n${text}` });
+  const check = (dtoText: string, text: string) =>
+    checkLegs([{ ...leg, responseSchema: null }], route, dtoText, '', speak(text));
+  if (
+    check(accepts, `${fetcher}\n${resolver("anyStream: '1', storeId: options.store")}`).length !==
+      0 ||
+    check(
+      query('  lineage: guidSchema,\n'),
+      `${fetcher}\n${resolver("anyStream: '1', storeId: options.store")}`
+    ).length === 0 ||
+    check(accepts, `${fetcher}\n${resolver("anyStream: '1'")}\nconst other = { storeId: x };`)
+      .length === 0 ||
+    check(accepts, `${resolver("anyStream: '1', storeId: options.store")}`).length === 0
+  ) {
+    console.error(
+      '✗ resolve-store control: storeId on the resolve query is not pinned on both sides.'
+    );
+    process.exit(1);
+  }
+}
+
 // ── Real run ────────────────────────────────────────────────────────────────
 const routes = read(ROUTES_TS);
 const dto = read(DTO_TS);
@@ -776,6 +1108,8 @@ const problems = checkLegs(LEGS, routes, dto, client, {
   [REPORT_FIELDS_GO]: read(REPORT_FIELDS_GO),
   [RESTORE_SIZE_TS]: read(RESTORE_SIZE_TS),
   [RESTORE_TEST_TS]: read(RESTORE_TEST_TS),
+  [RESTORE_SESSION_TS]: read(RESTORE_SESSION_TS),
+  [RESOLVE_AT_TS]: read(RESOLVE_AT_TS),
 });
 
 if (!routes.includes(`'${SESSION_HEADER}'`)) {

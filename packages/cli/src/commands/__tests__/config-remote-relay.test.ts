@@ -122,7 +122,7 @@ const { registerRemoteCommands, rotateCek } = await import('../config-remote.js'
 // ─── helpers ──────────────────────────────────────────────────────────────
 
 interface Created {
-  body: { purpose: string; keyHash: string; pollVerifier: string };
+  body: { purpose: string; keyHash: string; nonceHash: string; pollVerifier: string };
   token?: string;
 }
 
@@ -276,6 +276,11 @@ describe('relay link', () => {
       new URLSearchParams(new URL(handle.url).hash.slice(1)).get('key') as string
     );
     expect(body.keyHash).toBe(await handoffKeyHash(spki));
+    // The page hashes the nonce text from the link fragment and compares it with this.
+    expect(body.nonceHash).toBe(
+      createHash('sha256').update(handle.nonce, 'utf8').digest('base64url')
+    );
+    expect(JSON.stringify(body)).not.toContain(handle.nonce);
     // The server hashes the RAW 32 secret bytes, not the base64url text (device-code.service.ts pollVerifierOf).
     const raw = Buffer.from(handle.pollSecret, 'base64url');
     expect(handle.pollSecret).toMatch(/^[\w-]{43}$/);

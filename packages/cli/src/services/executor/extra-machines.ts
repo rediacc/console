@@ -38,6 +38,7 @@ export async function resolveExtraMachines(
       port: machine.port,
       user: machine.user,
       datastore: machine.datastore,
+      knownHosts: machine.knownHosts,
     },
   };
 }

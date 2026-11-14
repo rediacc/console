@@ -15,7 +15,7 @@ import {
   shouldRunNotice,
   startNoticeCheck,
 } from '../finished-notice.js';
-import type { ClaimExec, StepRunnerDeps } from '../run-job.js';
+import { type ClaimExec, JobGoneError, runTicketSteps, type StepRunnerDeps } from '../run-job.js';
 import { planStep, toTicketSteps } from '../steps.js';
 import { TicketStore } from '../ticket-store.js';
 
@@ -38,7 +38,7 @@ function addFinished(state: 'succeeded' | 'failed' = 'succeeded'): void {
     machine: 'm1',
     verb: 'repo up',
     repo: 'web',
-    startedAt: '2026-01-01T00:00:00Z',
+    startedAt: new Date(Date.now() - 3_600_000).toISOString(),
     steps: toTicketSteps([planStep('postRepoUpTasks', { repo: 'web', machine: 'm1' })]),
   });
   store.append('started', 'r1', { jobId: JOB_ID, via: { kind: 'ssh' } });
@@ -118,6 +118,39 @@ describe('the notice under -o json', () => {
     expect(write).not.toHaveBeenCalled();
   });
 
+  it('drops a ticket whose repository left the config, instead of nagging on every command', async () => {
+    addFinished();
+    const write = vi.fn();
+    const repoExists = vi.fn(async () => false);
+    shouldRunNotice({
+      commandPath: 'repo list',
+      quiet: false,
+      format: 'json',
+      inExecutorRequest: false,
+    });
+    await finishNotice(() => ({ store, write, repoExists }));
+
+    expect(repoExists).toHaveBeenCalledWith('web');
+    expect(write).not.toHaveBeenCalled();
+    expect(store.pending()).toEqual([]);
+  });
+
+  it('keeps a ticket whose repository is still there, or could not be checked', async () => {
+    addFinished();
+    for (const answer of [true, undefined]) {
+      const write = vi.fn();
+      shouldRunNotice({
+        commandPath: 'repo list',
+        quiet: false,
+        format: 'json',
+        inExecutorRequest: false,
+      });
+      await finishNotice(() => ({ store, write, repoExists: async () => answer }));
+      expect(write).toHaveBeenCalledWith(`steps pending: rdc job wait ${JOB_ID}`);
+      expect(store.pending()).toHaveLength(1);
+    }
+  });
+
   it('a job command prints nothing', async () => {
     addFinished();
     const write = vi.fn();
@@ -178,6 +211,24 @@ describe('the notice in a text run', () => {
     expect(store.pending()).toHaveLength(1);
   });
 
+  it('a text run drops a ticket whose repository left the config before announcing it', async () => {
+    addFinished();
+    const runner = spyRunner();
+    const write = vi.fn();
+    shouldRunNotice({
+      commandPath: 'repo list',
+      quiet: false,
+      format: 'table',
+      inExecutorRequest: false,
+    });
+    startNoticeCheck({ ...noticeDeps(runner.deps, true, write), repoExists: async () => false });
+    await finishNotice();
+
+    expect(runner.claim).not.toHaveBeenCalled();
+    expect(write).not.toHaveBeenCalled();
+    expect(store.pending()).toEqual([]);
+  });
+
   it('announces a ticket that still owes a step once, then only the pending line', () => {
     addFinished();
     const write = vi.fn();
@@ -205,6 +256,37 @@ describe('the notice in a text run', () => {
     await runNoticeSteps(deps, 20_000);
     expect(runner.claim).not.toHaveBeenCalled();
     printFinishedNotices(deps);
+    expect(store.pending()).toHaveLength(1);
+  });
+});
+
+describe('a claim that fails', () => {
+  async function runWith(failure: Error) {
+    addFinished();
+    const runner = spyRunner();
+    runner.claim.mockRejectedValue(failure);
+    const ticket = store.find(JOB_ID);
+    if (!ticket) throw new Error('no ticket');
+    await runTicketSteps(
+      store,
+      ticket,
+      { state: 'succeeded', exitCode: 0, finishedAt: ticket.finishedAt },
+      runner.deps
+    );
+    return runner;
+  }
+
+  it('exiting 16 (job gone) expires the ticket as gone and prints one line', async () => {
+    const runner = await runWith(new JobGoneError(JOB_ID));
+    expect(store.find(JOB_ID)?.expiredReason).toBe('gone');
+    expect(store.pending()).toEqual([]);
+    expect(runner.deps.warn).toHaveBeenCalledTimes(1);
+    expect(runner.deps.warn).toHaveBeenCalledWith(expect.stringContaining('steps abandoned'));
+  });
+
+  it('any other error leaves the step pending', async () => {
+    await runWith(new Error('ssh dropped'));
+    expect(store.find(JOB_ID)?.expiredReason).toBeUndefined();
     expect(store.pending()).toHaveLength(1);
   });
 });

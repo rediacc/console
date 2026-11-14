@@ -311,6 +311,60 @@ def test_sweep_keeps_each_tombstone_past_a_later_failure(gate, tmp_path):
     gate.log_pass("a sweep stopped by a later plan keeps the rows of the plans it already deleted")
 
 
+def test_sweep_keeps_a_plan_whose_text_differs_from_head(gate, tmp_path):
+    """The tombstone's blob is `git hash-object` of the working file, so an uncommitted edit would be hashed into an object no commit holds and then deleted with the file: F8 reds on it in any other clone, and the edit is lost. Such a plan is held until it is committed; a clean one beside it is still swept."""
+    root = _seed(
+        tmp_path,
+        {
+            "agent/plans/_done/PLAN-a-clean.md": "# PLAN: clean\nStatus: done\nFirst-Seen: 2024-01-01\n",
+            "agent/plans/_done/PLAN-b-edited.md": "# PLAN: edited\nStatus: done\nFirst-Seen: 2024-01-01\n",
+        },
+    )
+    _ledger(
+        root,
+        {
+            "agent/plans/_done/PLAN-a-clean.md": {"moved_at": "2024-02-01"},
+            "agent/plans/_done/PLAN-b-edited.md": {"moved_at": "2024-02-01"},
+        },
+    )
+    edited = root / "agent/plans/_done/PLAN-b-edited.md"
+    edited.write_text(
+        edited.read_text(encoding="utf-8") + "an edit not yet committed\n", encoding="utf-8"
+    )
+    result = _gate(root, "--sweep", "--write")
+    gate.assert_exit(1, result, "a held plan makes the sweep exit 1")
+    gate.assert_contains(result.err, "PLAN-b-edited.md is not swept", "it names the held plan")
+    gate.assert_eq(edited.is_file(), True, "the edited plan and its edit stay")
+    gate.assert_eq(
+        (root / "agent/plans/_done/PLAN-a-clean.md").exists(), False, "the clean plan went"
+    )
+    index = (root / "agent/INDEX.md").read_text(encoding="utf-8")
+    gate.assert_not_contains(index, "PLAN-b-edited.md", "no tombstone names the held plan")
+    gate.log_pass("--sweep holds a plan whose working text differs from HEAD")
+
+
+def test_sweep_keeps_a_plan_whose_stub_has_local_edits(gate, tmp_path):
+    """The sweep deletes the live stub too, so a stub with uncommitted edits holds its plan and nothing is deleted."""
+    done = "agent/plans/_done/PLAN-gone.md"
+    stub_rel = "agent/plans/PLAN-gone.md"
+    stub = "# PLAN: gone\nStatus: moved\nMoved-To: %s\n" % done
+    root = _seed(
+        tmp_path,
+        {done: "# PLAN: gone\nStatus: done\nFirst-Seen: 2024-01-01\n", stub_rel: stub},
+    )
+    _ledger(root, {done: {"moved_at": "2024-02-01"}})
+    _git(root, "add", "-A")
+    _git(root, "commit", "-qm", "ledger")
+    (root / stub_rel).write_text(stub + "a local edit\n", encoding="utf-8")
+    result = _gate(root, "--sweep", "--write")
+    gate.assert_exit(1, result, "a held plan makes the sweep exit 1")
+    gate.assert_contains(result.err, "its stub", "the refusal names the stub")
+    gate.assert_contains(result.err, "1 held by uncommitted text", "the count is printed")
+    gate.assert_eq((root / done).is_file(), True, "the plan stays")
+    gate.assert_eq((root / stub_rel).is_file(), True, "the stub and its edit stay")
+    gate.log_pass("--sweep holds a plan whose stub carries local edits")
+
+
 def test_sweep_treats_an_undecodable_stub_as_no_stub(gate, tmp_path):
     root = _seed(
         tmp_path,
@@ -353,6 +407,100 @@ def test_sweep_with_write_deletes_and_leaves_a_tombstone(gate, tmp_path):
     gate.assert_exit(0, shown, "the tombstone blob must resolve")
     gate.assert_contains(shown.stdout, "Status: done", "and must hold the plan's own text")
     gate.log_pass("--sweep --write deletes the file and keeps its text in a resolvable blob")
+
+
+_BOXED_REL = "agent/plans/_done/PLAN-boxed.md"
+_GONE_REL = "agent/plans/_done/PLAN-gone.md"
+_BOX_LINE = "- [ ] P4 rehearsal dispatch with OBS blocked, recorded in the round log"
+
+
+def _aged_pair(tmp_path: pathlib.Path, boxed_text: str) -> pathlib.Path:
+    """Two terminal plans past retention: PLAN-boxed carries `boxed_text`, PLAN-gone carries no open box (the control)."""
+    root = _seed(
+        tmp_path,
+        {
+            _BOXED_REL: boxed_text,
+            _GONE_REL: "# PLAN: gone\nStatus: done\nFirst-Seen: 2024-01-01\n",
+        },
+    )
+    _ledger(root, {_BOXED_REL: {"moved_at": "2024-02-01"}, _GONE_REL: {"moved_at": "2024-02-01"}})
+    return root
+
+
+def test_an_aged_plan_its_open_box_binds_is_f10_and_is_never_swept(gate, tmp_path):
+    """Review 21dcc994.1, control first: past retention with no open box is F3 and is swept; the same age with an open box that binds is F10, names the box, and survives --sweep --write."""
+    root = _aged_pair(
+        tmp_path, "# PLAN: boxed\nStatus: done\nFirst-Seen: 2024-01-01\n\n%s\n" % _BOX_LINE
+    )
+    result = _gate(root)
+    gate.assert_exit(1, result, "both aged plans are findings")
+    gate.assert_contains(result.err, "F3 %s" % _GONE_REL, "the control: no open box stays F3")
+    gate.assert_contains(result.err, "F10 %s" % _BOXED_REL, "an open box turns F3 into F10")
+    gate.assert_contains(result.err, "P4 rehearsal dispatch", "F10 names the open box")
+    gate.assert_contains(result.err, "re-home an open box", "and the fix")
+    gate.assert_eq(
+        "F3 %s" % _BOXED_REL in result.err,
+        False,
+        "a bound plan is never told to run the sweep that refuses it",
+    )
+    swept = _gate(root, "--sweep", "--write")
+    gate.assert_contains(swept.err, "%s is not swept" % _BOXED_REL, "the sweep says why it skips")
+    gate.assert_eq((root / _BOXED_REL).exists(), True, "the plan with an open box is kept")
+    gate.assert_eq((root / _GONE_REL).exists(), False, "the control is swept")
+    gate.log_pass("an open box keeps an aged plan out of the sweep and out of F3")
+
+
+def test_a_box_dropped_by_a_closed_ruling_is_swept_and_printed(gate, tmp_path):
+    """The binding rule's release, kept visible: an open box dropped by a closed operator ruling no longer binds, so the plan is swept, and the sweep prints the box and the note that released it."""
+    root = _aged_pair(
+        tmp_path,
+        "# PLAN: boxed\nStatus: done\nRuling: #abcdef12\nFirst-Seen: 2024-01-01\n\n"
+        "%s\n    dropped by ruling #abcdef12\n" % _BOX_LINE,
+    )
+    _ruling_item(root, "abcdef12", "x")
+    swept = _gate(root, "--sweep", "--write")
+    gate.assert_exit(0, swept, "a released box does not hold the sweep")
+    gate.assert_eq((root / _BOXED_REL).exists(), False, "the plan is swept")
+    gate.assert_contains(swept.out, _BOX_LINE, "the sweep prints the released box")
+    gate.assert_contains(swept.out, "dropped by ruling #abcdef12", "and the note releasing it")
+    gate.log_pass("a dropped box is swept, and never silently")
+
+
+def test_a_released_boxes_note_after_a_blank_line_is_printed(gate, tmp_path):
+    """The note of a released box is printed even when a blank line separates it from the box; the next box's text is not read as this box's note."""
+    root = _aged_pair(
+        tmp_path,
+        "# PLAN: boxed\nStatus: done\nRuling: #abcdef12\nFirst-Seen: 2024-01-01\n\n"
+        "%s\n\n    dropped by ruling #abcdef12\n\n- [x] NEXTBOX finished work\n    NEXTNOTE\n"
+        % _BOX_LINE,
+    )
+    _ruling_item(root, "abcdef12", "x")
+    swept = _gate(root, "--sweep", "--write")
+    gate.assert_exit(0, swept, "a released box does not hold the sweep")
+    gate.assert_contains(
+        swept.out, "dropped by ruling #abcdef12", "a note after a blank line prints"
+    )
+    gate.assert_eq(
+        "NEXTBOX" in swept.out or "NEXTNOTE" in swept.out, False, "CONTROL: next box is not a note"
+    )
+    gate.log_pass("a note after a blank line is printed")
+
+
+def test_a_released_boxes_note_stops_at_unindented_text_and_a_nested_box(gate, tmp_path):
+    """A blank line does not extend the note: an unindented paragraph after it, and an indented checkbox under the box, are not printed as its note (review a7dc2ab5.1, a7dc2ab5.2)."""
+    root = _aged_pair(
+        tmp_path,
+        "# PLAN: boxed\nStatus: done\nRuling: #abcdef12\nFirst-Seen: 2024-01-01\n\n"
+        "%s\n    REALNOTE dropped by ruling #abcdef12\n    - [x] NESTEDBOX\n"
+        "    NESTEDTEXT\n\nUNINDENTEDPARA\n" % _BOX_LINE,
+    )
+    _ruling_item(root, "abcdef12", "x")
+    swept = _gate(root, "--sweep", "--write")
+    gate.assert_exit(0, swept, "a released box does not hold the sweep")
+    gate.assert_contains(swept.out, "REALNOTE", "the note under the box prints")
+    for stray in ("NESTEDBOX", "NESTEDTEXT", "UNINDENTEDPARA"):
+        gate.assert_eq(stray in swept.out, False, "CONTROL: %s is not the box's note" % stray)
+    gate.log_pass("the note stops at a nested box and at unindented text")
 
 
 def test_move_leaves_a_stub_and_stamps_both_clocks(gate, tmp_path):
@@ -476,19 +624,27 @@ def test_move_into_removed_is_refused_while_a_plan_depends_on_it(gate, tmp_path)
         {"agent/plans/PLAN-gone.md": _GONE, "agent/plans/PLAN-waiter.md": _WAITER},
     )
     _ledger(root, {"agent/plans/PLAN-gone.md": {"status": "removed", "open": 1, "done": 0}})
+    # Tick _GONE's own box so only the dependent binds.
+    _write(root, "agent/plans/PLAN-gone.md", _GONE.replace("- [ ] a box", "- [x] a box"))
+    _git(root, "add", "-A")
+    _git(root, "commit", "-qm", "tick")
     result = _gate(root, "--move", "agent/plans/PLAN-gone.md")
     gate.assert_exit(1, result, "a move that strands a dependent must be refused")
     gate.assert_contains(result.combined, "PLAN-waiter.md", "the dependent is printed")
     gate.assert_eq(
-        (root / "agent/plans/PLAN-gone.md").read_text(encoding="utf-8"), _GONE, "nothing moved"
+        (root / "agent/plans/PLAN-gone.md").read_text(encoding="utf-8"),
+        _GONE.replace("- [ ] a box", "- [x] a box"),
+        "nothing moved",
     )
     gate.log_pass("--move into _removed/ is refused and names the plan that still waits")
 
 
 def test_move_into_removed_is_allowed_with_no_dependents(gate, tmp_path):
-    """The passing twin of the case above: the same fixture without the waiting plan."""
-    root = _seed(tmp_path, {"agent/plans/PLAN-gone.md": _GONE})
-    _ledger(root, {"agent/plans/PLAN-gone.md": {"status": "removed", "open": 1, "done": 0}})
+    """The passing twin of the case above: the same fixture without the waiting plan, and with its box ticked, since an open box of its own also binds a plan (PLAN-plan-compaction-bindings CB3), which would refuse the move for a reason this test is not about."""
+    root = _seed(
+        tmp_path, {"agent/plans/PLAN-gone.md": _GONE.replace("- [ ] a box", "- [x] a box")}
+    )
+    _ledger(root, {"agent/plans/PLAN-gone.md": {"status": "removed", "open": 0, "done": 1}})
     result = _gate(root, "--move", "agent/plans/PLAN-gone.md")
     gate.assert_exit(0, result, "with nothing waiting the move must succeed")
     gate.assert_eq(
@@ -953,6 +1109,8 @@ def test_keep_writes_kept_and_the_plan_is_no_longer_stale(gate, tmp_path):
 
 def test_archive_moves_the_plan_into_removed_as_removed(gate, tmp_path):
     root = _stale_pair(tmp_path)
+    # An idle sketch with no box yet: an open box of its own would bind the plan (PLAN-plan-compaction-bindings CB3) and refuse the move, which test_archive_of_a_plan_with_an_open_box_is_refused covers.
+    _write(root, _IDLE_REL, _IDLE.replace("\n- [ ] a box\n", "\n"))
     result = _gate(root, "--archive", _IDLE_REL, "--asked", "2026-10-28T10:58Z")
     gate.assert_exit(0, result, "a well-formed archive answer is recorded")
     moved = root / "agent/plans/_removed/PLAN-idle.md"
@@ -971,13 +1129,102 @@ def test_archive_moves_the_plan_into_removed_as_removed(gate, tmp_path):
     gate.log_pass("--archive sets Status: removed and moves the plan into _removed/")
 
 
+def test_archive_of_a_plan_with_an_open_box_is_refused(gate, tmp_path):
+    """The binding rule reaches --archive too: an open box with no recorded drop holds the plan where it is, and the text is left as it was."""
+    root = _stale_pair(tmp_path)
+    result = _gate(root, "--archive", _IDLE_REL, "--asked", "2026-10-28T10:58Z")
+    gate.assert_exit(1, result, "an archive of a plan with an open box is refused")
+    gate.assert_contains(
+        result.err, "PLAN-idle.md is bound by 1 thing(s)", "the refusal names the binding"
+    )
+    gate.assert_eq((root / _IDLE_REL).read_text(encoding="utf-8"), _IDLE, "the text is restored")
+    gate.log_pass("--archive refuses a plan its own open box still binds")
+
+
 def test_archive_that_the_move_refuses_leaves_the_text_unchanged(gate, tmp_path):
-    root = _seed(tmp_path, {_IDLE_REL: _IDLE})
+    seeded = _IDLE.replace("\n- [ ] a box\n", "\n")
+    root = _seed(tmp_path, {_IDLE_REL: seeded})
     _ledger(root, {})
     result = _gate(root, "--archive", _IDLE_REL, "--asked", "2026-10-28T10:58Z")
     gate.assert_exit(1, result, "a terminal move with no ledger row is refused")
-    gate.assert_eq((root / _IDLE_REL).read_text(encoding="utf-8"), _IDLE, "the text is restored")
+    gate.assert_contains(result.err, "has no row in", "the refusal is the missing ledger row")
+    gate.assert_eq((root / _IDLE_REL).read_text(encoding="utf-8"), seeded, "the text is restored")
     gate.log_pass("an archive the move refuses leaves the plan exactly as it was")
+
+
+def _ruling_item(root: pathlib.Path, iid: str, state: str) -> None:
+    """A committed worklist store holding one item `iid` in `state`."""
+    events = [
+        {
+            "ev": "add",
+            "id": iid,
+            "at": "2026-10-01T00:00:00Z",
+            "by": "cafe0000",
+            "s": " ",
+            "o": "cafe0000",
+            # The dropping wording is what the bindings gate reads as a ruling over the plan's open box; it belongs only on an item that stands as a decision (closed), so an open one stays a plain question.
+            "t": "(cafe0000) operator ruling 2026-10-01: drop the plan's open box"
+            if state != " "
+            else "(cafe0000) a ruling",
+            "ns": 1,
+        },
+    ]
+    if state != " ":
+        events.append(
+            {
+                "ev": "state",
+                "id": iid,
+                "at": "2026-10-01T00:01:00Z",
+                "by": "cafe0000",
+                "s": state,
+                "note": "ASKED:2026-10-01T00:00Z",
+                "ns": 2,
+            }
+        )
+    _write(root, "agent/worklist/cafe0000.jsonl", "".join(json.dumps(e) + "\n" for e in events))
+    _git(root, "add", "-A")
+    _git(root, "commit", "-qm", "ruling item")
+
+
+def test_archive_with_a_closed_ruling_drops_the_open_boxes(gate, tmp_path):
+    root = _stale_pair(tmp_path)
+    _ruling_item(root, "abcdef12", "x")
+    result = _gate(
+        root, "--archive", _IDLE_REL, "--asked", "2026-10-28T10:58Z", "--ruling", "#abcdef12"
+    )
+    gate.assert_exit(0, result, "a closed ruling item archives a plan with an open box")
+    text = (root / "agent/plans/_removed/PLAN-idle.md").read_text(encoding="utf-8")
+    gate.assert_contains(text, "Ruling: #abcdef12", "the header names the ruling")
+    gate.assert_contains(
+        text, "- [ ] a box\n    dropped by ruling #abcdef12\n", "the box is dropped"
+    )
+    gate.log_pass("--archive --ruling drops each open box under a closed ruling item")
+
+
+def test_archive_with_an_open_ruling_item_is_refused(gate, tmp_path):
+    root = _stale_pair(tmp_path)
+    _ruling_item(root, "abcdef12", " ")
+    result = _gate(
+        root, "--archive", _IDLE_REL, "--asked", "2026-10-28T10:58Z", "--ruling", "#abcdef12"
+    )
+    gate.assert_exit(2, result, "an open item is a question, not a decision")
+    gate.assert_contains(result.err, "still [ ]", "the refusal says the item is open")
+    gate.assert_eq((root / _IDLE_REL).read_text(encoding="utf-8"), _IDLE, "nothing was written")
+    gate.log_pass("--archive --ruling refuses an item that is not closed")
+
+
+def test_archive_refuses_a_ruling_the_plan_header_does_not_name(gate, tmp_path):
+    root = _stale_pair(tmp_path)
+    _ruling_item(root, "abcdef12", "x")
+    other = _IDLE.replace("\n\n", "\nRuling: #fedcba98\n\n", 1)
+    _write(root, _IDLE_REL, other)
+    result = _gate(
+        root, "--archive", _IDLE_REL, "--asked", "2026-10-28T10:58Z", "--ruling", "#abcdef12"
+    )
+    gate.assert_exit(2, result, "a --ruling that differs from the header's is refused")
+    gate.assert_contains(result.err, "differs from the plan's own", "the refusal names the clash")
+    gate.assert_eq((root / _IDLE_REL).read_text(encoding="utf-8"), other, "nothing was written")
+    gate.log_pass("--archive --ruling refuses an id the header Ruling: does not name")
 
 
 def test_both_answer_verbs_refuse_without_a_well_formed_asked(gate, tmp_path):

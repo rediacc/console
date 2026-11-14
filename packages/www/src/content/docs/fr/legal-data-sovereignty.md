@@ -7,8 +7,8 @@ tags:
 subcategory: foundations
 order: 7
 language: fr
-sourceHash: "1e10165626ba3730"
-sourceCommit: "8b37b0a2c25c0ba7e5a8a63c8d3ed0da48b78a10"
+sourceHash: "af327ad5729b1cab"
+sourceCommit: "75e184930a3bbce02a1994f3d222c70f87d48f97"
 ---
 
 De nombreux pays exigent que les données personnelles de leurs citoyens soient stockées et traitées dans les frontières nationales. L'architecture auto-hébergée de Rediacc satisfait ces exigences par conception : les données restent sur votre machine, dans votre centre de données, dans votre juridiction. Aucune donnée ne quitte la machine pendant le clonage, et aucun SaaS tiers ne traite vos données.
@@ -88,4 +88,4 @@ Dans toutes les juridictions, l'équation de conformité est la même :
 
 ## Service hébergé : résidence régionale des données
 
-Pour les utilisateurs du service Rediacc hébergé (non auto-hébergé), la résidence des données est assurée par une infrastructure régionale. Trois régions sont disponibles : UE (Francfort), États-Unis (Virginie) et Asie-Pacifique (Tokyo). Chaque région exploite des bases de données et un stockage indépendants, sans flux de données entre régions. Les e-mails transactionnels sont envoyés via AWS SES ; l'UE et les États-Unis utilisent des points de terminaison régionaux dédiés, tandis que l'Asie-Pacifique utilise le point de terminaison de l'UE (eu-central-1). La région UE applique un contrôle juridictionnel au stockage R2. Consultez [Régions de données](/fr/docs/data-regions) pour le détail technique complet.
+Pour les utilisateurs du service Rediacc hébergé (non auto-hébergé), la résidence des données est assurée par une infrastructure régionale. Trois régions sont disponibles : Union européenne, Est de l'Amérique du Nord et Asie-Pacifique. Chaque région exploite des bases de données et un stockage indépendants, sans flux de données entre régions. Seul le stockage de configuration de l'EU est soumis à une juridiction garantie (la restriction juridictionnelle EU de Cloudflare R2) ; le placement de la base de données et le stockage US et Asie-Pacifique reposent sur des indications d'emplacement de Cloudflare, appliquées au mieux. Les emails transactionnels sont envoyés via AWS SES ; l'UE et les États-Unis utilisent des points de terminaison régionaux dédiés, l'Asie-Pacifique utilise celui de l'UE (eu-central-1). Voir [Régions de données](/fr/docs/data-regions) pour le détail technique complet.

@@ -162,13 +162,65 @@ def _local_project_start(event=None):
     return os.getcwd()
 
 
+def _local_git_dirs(tree):
+    """Self-contained twin of wl_core._git_dirs. Keep in lockstep."""
+    dotgit = tree / ".git"
+    try:
+        if dotgit.is_dir():
+            git_dir = dotgit.resolve()
+        else:
+            text = dotgit.read_text(encoding="utf-8").strip()
+            if not text.startswith("gitdir:"):
+                return None
+            git_dir = (tree / text[len("gitdir:") :].strip()).resolve()
+        commondir = git_dir / "commondir"
+        if not commondir.is_file():
+            return git_dir, git_dir
+        return git_dir, (git_dir / commondir.read_text(encoding="utf-8").strip()).resolve()
+    except (OSError, ValueError, RuntimeError):
+        return None
+
+
+def _local_lease_main(tree):
+    """Self-contained twin of wl_core.lease_main. Keep in lockstep.
+
+    The lease holder folder's own name stays unspelled in this file: naming it beside `--add` makes the checkout guard's script arm refuse every `python3 worklist.py` while this file differs from HEAD. The root section of this file's suite pins that.
+    """
+    tree = pathlib.Path(tree)
+    if tree.parent.parent.name != ".claude" or not (tree / ".git").is_file():
+        return None
+    mine = _local_git_dirs(tree)
+    if mine is None or mine[0] == mine[1] or mine[0].parent.parent != mine[1]:
+        return None
+    if mine[0].parent.name != tree.parent.name:
+        return None
+    main = tree.parents[2]
+    theirs = _local_git_dirs(main) if (main / ".git").exists() else None
+    return main if theirs is not None and theirs[1] == mine[1] else None
+
+
+def _plan_rel(root, given):
+    """The repo-relative spelling of a plan path, the form every plan verb and the ledger key on. `root` of a lease is the main checkout (`_local_lease_main`), so a path inside the lease names the same plan as its twin in the main checkout, and a path resolved against `root` alone would come back carrying the lease's own folder ahead of `agent/plans/...`."""
+    home = pathlib.Path(root).resolve()
+    path = pathlib.Path(given).resolve()
+    for tree in path.parents:
+        if (tree / ".git").exists():
+            if _local_lease_main(tree) == home:
+                return str(path.relative_to(tree))
+            break
+    try:
+        return str(path.relative_to(home))
+    except ValueError:
+        return given.lstrip("./")
+
+
 def _local_worklist_path(start):
     """Self-contained twin of wl_core.worklist_for, used ONLY by --path, the self-contained append modes and the broken-sibling block, so the queries every script depends on work even when every sibling is missing. Keep in lockstep with wl_core.worklist_for."""
     p = pathlib.Path(start).resolve()
     root = p
     for candidate in [p, *p.parents]:
         if (candidate / ".git").exists():
-            root = candidate
+            root = _local_lease_main(candidate) or candidate
             break
     d = pathlib.Path(os.environ.get("TMPDIR", "/tmp")) / "claude-worklist"
     d.mkdir(parents=True, exist_ok=True)
@@ -590,10 +642,7 @@ def _planrec_cli(argv):
             die("unknown flag %r\n\n%s" % (f, M.CLI_PLANREC_USAGE))
 
     # Accept an absolute or a ./-prefixed path and normalise to the repo-relative form every consumer uses. The ledger is keyed on that spelling, so a path that differs only in prefix would silently find no `done_sigs` and every box would record `abandoned` -- a wrong record produced by a right command.
-    try:
-        rel = str(pathlib.Path(rel).resolve().relative_to(pathlib.Path(root).resolve()))
-    except ValueError:
-        rel = rel.lstrip("./")
+    rel = _plan_rel(root, rel)
 
     if mode == "--plan-revive":
         try:
@@ -617,6 +666,9 @@ def _planrec_cli(argv):
         was = (pathlib.Path(root) / rel).stat().st_size
     try:
         text, notes = R.compact(root, rel, me, why=why, park=park)
+    except R.BoundError as exc:
+        die(M.CLI_PLANREC_BOUND % (exc, me, rel))
+        return
     except R.RecordError as exc:
         die(M.CLI_PLANREC_REFUSED % exc)
         return
@@ -708,8 +760,76 @@ def _hint_propose_cli(argv):
     if not text:
         die("an empty proposal names no lesson")
     root = C.project_root(C.project_start())
-    H.propose(root, me, text, source)
-    print("proposed: %s" % text[:80])
+    row = H.propose(root, me, text, source)
+    print("proposed: %s  (id %s)" % (text[:80], row["id"]))
+
+
+def _hint_resolve_cli(argv):
+    """--hint-resolve <me> <proposal-id> <kind>:<token>: record that a guard, gate, test, trapguard rule, trap or commit now carries a hint proposal (agent/plans/PLAN-experience-feedback.md P2).
+
+    Refuses an id no proposal carries and a pointer that does not resolve in this tree (wl_lessons.pointer_problem), so a resolution row starts out live. It still counts only while its pointer resolves: wl_hints.pending_proposals re-checks every stop, and a deleted guard puts its proposal back in the pending count. Writes agent/ledgers/hint-resolutions.jsonl and nothing else.
+    """
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    rest = argv[1:]
+    if len(rest) != 3:
+        die(M.CLI_HINT_RESOLVE_USAGE)
+    me, pid, pointer = rest
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+    root = C.project_root(C.project_start())
+    known = {r["id"]: r for r in H.proposals(root)}
+    if pid not in known:
+        die(M.CLI_HINT_RESOLVE_UNKNOWN % {"id": pid, "n": len(known)})
+    import wl_lessons as L
+
+    why = L.pointer_problem(root, pointer)
+    if why:
+        die(M.CLI_HINT_RESOLVE_DEAD % {"pointer": pointer, "why": why})
+    H.resolve_proposal(root, me, pid, pointer)
+    print("resolved: %s -> %s  (%s)" % (pid, pointer, known[pid]["text"][:60]))
+
+
+def _lessons_sweep_cli(argv):
+    """--lessons-sweep <me> [--memory-dir <dir>] [--json]: classify every lesson entry (TRAPS, HINTS, hint proposals, memory notes) as retire-now, encode-as-guard, encode-as-CI-gate, fix-the-tool or keep-as-prose (agent/plans/PLAN-experience-feedback.md P7).
+
+    READ-ONLY, memory notes included: retiring a note (moving its why into the enforcer's refusal text, then deleting it and its MEMORY.md line) is the lead's step. retire-now is the one mechanical verdict; every `basis: curator` row is provisional until the lesson-curator judges it. The memory directory defaults to the harness's one for this project root.
+    """
+    import json as _json
+
+    import wl_lessons as L
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    rest = argv[1:]
+    if not rest:
+        die(M.CLI_LESSONS_SWEEP_USAGE)
+    me, opts = rest[0], rest[1:]
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+    as_json, memdir = False, None
+    while opts:
+        flag = opts.pop(0)
+        if flag == "--json":
+            as_json = True
+        elif flag == "--memory-dir" and opts:
+            memdir = opts.pop(0)
+        else:
+            die(M.CLI_LESSONS_SWEEP_USAGE)
+    root = C.project_root(C.project_start())
+    memdir = memdir or str(L.default_memory_dir(root))
+    rows = L.sweep(root, memdir)
+    if as_json:
+        print(_json.dumps(rows, indent=1))
+    else:
+        print(L.render_sweep(rows, memdir))
 
 
 def _retro_brief_cli(argv):
@@ -812,9 +932,16 @@ def _plantick_dep_gate(planrec, root, rel, selector, evidence):
     if reason:
         return
     sig = None
-    with contextlib.suppress(OSError, planrec.RecordError):
+    with contextlib.suppress(OSError):
         text = (pathlib.Path(root) / rel).read_text(encoding="utf-8", errors="replace")
-        sig = planrec.select_box(planrec.open_boxes(text), selector)[3]
+        try:
+            sig = planrec.select_box(planrec.open_boxes(text), selector)[3]
+        except planrec.RecordError:
+            # No open box matches (already ticked, or a bad selector): the tick path names that exactly, where a dependency refusal would send the reader after the wrong cause.
+            return
+    if sig is not None and graph.writer_box_free(rel, sig):
+        # A ready `[writer]` box: its prerequisites hold only non-writer work (ruling KEEP), the verdict IDLE CAPACITY and --lease read.
+        return
     if sig is not None:
         row = planrec.investigation_for(root, rel, sig)
         if (
@@ -877,10 +1004,7 @@ def _plantick_cli(argv):
         if f.startswith("--"):
             die("unknown flag %r\n\n%s" % (f, M.CLI_PLANTICK_USAGE))
     evidence = " ".join(rest)
-    try:
-        rel = str(pathlib.Path(rel).resolve().relative_to(pathlib.Path(root).resolve()))
-    except ValueError:
-        rel = rel.lstrip("./")
+    rel = _plan_rel(root, rel)
 
     _plantick_dep_gate(R, root, rel, selector, evidence)
     try:
@@ -907,10 +1031,139 @@ def _plantick_cli(argv):
     )
 
 
+def _boxrow_cli(argv):
+    """--box-clauses / --box-progress <me> [<plan> <box> ... [--write]] (agent/plans/PLAN-tick-tracking.md Design 3, box T8).
+
+    The logic is wl_planbox's: `define_row` and `progress_row` resolve the box through `wl_planrec.open_boxes` and `select_box`, so a done or unknown sig is refused with exit 2 and nothing is written. A bare `<me>` is the listing. NEVER COMMITS, and no plan byte changes.
+    """
+    verb = argv[0]
+    usage = M.CLI_BOXCLAUSES_USAGE if verb == "--box-clauses" else M.CLI_BOXPROGRESS_USAGE
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    if len(argv) < 2:
+        die(usage)
+    me = argv[1]
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+
+    import wl_planbox as PB
+
+    root = C.project_root(C.project_start())
+    kind = "define" if verb == "--box-clauses" else "progress"
+    if len(argv) == 2:
+        sys.stdout.write(PB.listing(root, kind))
+        return
+    rest = [a for a in argv[2:] if a != "--write"]
+    write = "--write" in argv[2:]
+    for f in rest:
+        if f.startswith("--"):
+            die("unknown flag %r\n\n%s" % (f, usage))
+    try:
+        if kind == "define":
+            if len(rest) < 3:
+                die(usage)
+            row = PB.define_row(root, _plan_rel(root, rest[0]), rest[1], rest[2:], me[:8])
+        else:
+            if len(rest) != 5:
+                die(usage)
+            row = PB.progress_row(
+                root, _plan_rel(root, rest[0]), rest[1], rest[2], rest[3], rest[4], me[:8]
+            )
+    except PB.PlanBoxError as exc:
+        die(M.CLI_PLANREC_REFUSED % exc)
+        return
+    ledger = "/".join(PB.PROGRESS_REL)
+    if not write:
+        sys.stdout.write(M.CLI_BOXROW_DRY % {"ledger": ledger, "row": json.dumps(row)})
+        return
+    stored, written = PB.append_progress(root, row)
+    if not written:
+        sys.stdout.write(M.CLI_BOXROW_KEPT % {"ledger": ledger, "at": stored.get("at", "?")})
+        return
+    sys.stdout.write(M.CLI_BOXROW_WROTE % {"ledger": ledger, "row": json.dumps(stored)})
+
+
+def _release_live_owed(root, text, me, rid):
+    """Write and list the `live-owed` rows a release of item `rid` owes; returns 0, or 1 after naming the failure on stderr.
+
+    THE LIVE-OWED STATE (agent/plans/PLAN-tick-tracking.md Design 7, box T11): an item naming a box whose code landed and whose live or operator half is unproved leaves a `live-owed` progress row per such clause, so writers-now step 7 schedules the half instead of forgetting it. Nothing is printed when nothing is owed, so the release message stays byte-identical. A failure of the audit or the ledger write is SAID (review 0e0808a5.1): swallowed, it left the half unscheduled behind a release that read as complete.
+    """
+    try:
+        import wl_boxaudit as BA
+
+        rows = BA.release_live_owed(root, text, me[:8], rid)
+        for row in rows:
+            print(
+                "  live-owed %s#%s clause %s -> %s"
+                % (
+                    row["plan"].rsplit("/", 1)[-1],
+                    row["sig"],
+                    row["clause"],
+                    "/".join(BA.PB.PROGRESS_REL),
+                )
+            )
+    except Exception as exc:
+        sys.stderr.write(
+            "live-owed: NOT WRITTEN for #%s (%s: %s). The release itself is recorded; do not "
+            "repeat it. Any live or operator half its boxes owe is unscheduled: list them with "
+            "`worklist.py --box-audit %s --live-owed`.\n" % (rid, type(exc).__name__, exc, me)
+        )
+        return 1
+    return 0
+
+
+def _owed_for_state(root, prefix):
+    """The owed boxes a `--state` write must name (`wl_boxaudit.owned_owed_cached`), or None when the audit cannot run.
+
+    THE OWED-TICKS DEMAND (agent/plans/PLAN-tick-tracking.md T12): the audit is cached per HEAD, so a --state write pays it once per commit. An audit that cannot run demands nothing, so a broken audit never locks the one document built to survive compaction, but it says so on stderr rather than passing as "nothing owed" (review a94cd7a7.2).
+    """
+    try:
+        import wl_boxaudit as BA
+
+        return BA.owned_owed_cached(root, prefix)
+    except Exception as exc:
+        sys.stderr.write(
+            "owed ticks: UNCHECKED, the box audit failed (%s: %s); the section was not demanded "
+            "this write.\n" % (type(exc).__name__, exc)
+        )
+        return None
+
+
+def _boxaudit_cli(argv):
+    """--box-audit <me> [plan] [--sha <list>] [--live-owed] [--mixed-unsplit] [--all] (agent/plans/PLAN-tick-tracking.md Design 4, box T9).
+
+    Read-only: one verdict per open box from the landed trailers, the captured reports' TICK lines, the live-proof ledger, the investigation rows and the progress ledger, all in wl_boxaudit. Exit 0, or 1 when `--mixed-unsplit` lists a box, so the clause-map migration has a gate.
+    """
+
+    def die(msg):
+        print(msg, file=sys.stderr)
+        sys.exit(2)
+
+    if len(argv) < 2:
+        die(M.CLI_BOXAUDIT_USAGE)
+    me = argv[1]
+    if not C.PREFIX_RE.match(me):
+        die("bad prefix %r: pass YOUR session-id prefix first" % me)
+    _identity_or_die(me, die)
+
+    import wl_boxaudit as BA
+
+    root = C.project_root(C.project_start())
+    rest = [_plan_rel(root, a) if a.endswith(".md") else a for a in argv[2:]]
+    try:
+        sys.exit(BA.main(rest, me, root))
+    except ValueError as exc:
+        die("%s\n\n%s" % (exc, M.CLI_BOXAUDIT_USAGE))
+
+
 def _liveproof_cli(argv):
     """--live-proof <me> [<plan> <LP-box-sig> [--write] [--tick]] (agent/plans/PLAN-tested-on-bench.md, "Agent verb").
 
-    The logic is wl_liveproof's. This arm parses and checks `<me>` like every other verb, lists the open LP boxes when no plan is given (the --plan-tick listing shape), and hands wl_liveproof a `tick` that IS `_plantick_cli`, so a live-proof tick runs the same dependency gate, `wl_planrec.plan_tick` and paired plan-plus-ledger write as `--plan-tick`, never a second copy of them.
+    The logic is wl_liveproof's. This arm parses and checks `<me>` like every other verb, lists the open LP boxes when no plan is given (the --plan-tick listing shape), and hands wl_liveproof a `tick` that IS `_plantick_cli`, so a live-proof tick runs the same dependency gate, `wl_planrec.plan_tick` and paired plan-plus-ledger write as `--plan-tick`, never a second copy of them. A run that passes anything after `<me>` (a plan, with or without a box and flags) is refused from a lease tree, as the recorder itself refuses one: `root` is the main checkout there, so the recorder would otherwise run from the main tree's code and ledger. Only the bare open-box listing stays allowed.
     """
 
     def die(msg):
@@ -926,6 +1179,10 @@ def _liveproof_cli(argv):
         die("bad prefix %r: pass YOUR session-id prefix first" % me)
     _identity_or_die(me, die)
     root = pathlib.Path(C.project_root(C.project_start()))
+    if len(argv) > 2:
+        refusal = LP.lease_refusal(C.project_start())
+        if refusal:
+            die("live-proof REFUSED: %s" % refusal)
     if len(argv) == 2:
         print(LP.listing(root, CK.plan_records(root)))
         return
@@ -1079,10 +1336,7 @@ def _planpreflight_cli(argv):
 
     root = C.project_root(C.project_start())
     rel = rest[0]
-    try:
-        rel = str(pathlib.Path(rel).resolve().relative_to(pathlib.Path(root).resolve()))
-    except ValueError:
-        rel = rel.lstrip("./")
+    rel = _plan_rel(root, rel)
     path = pathlib.Path(root) / rel
     if not path.is_file():
         die("%s does not exist\n\n%s" % (rel, M.CLI_PLANPREFLIGHT_USAGE))
@@ -1123,7 +1377,7 @@ def _planpreflight_cli(argv):
 
 
 def _planinvestigate_cli(argv):
-    """--plan-investigate <me> <path> <box> <verdict> <kind>:<tok>... -- <note...> [--write].
+    """--plan-investigate <me> <path> <box> <verdict> [--owed <kind>] <kind>:<tok>... -- <note...> [--write].
 
     THE VERB THE OPERATOR ASKED FOR: "we must investigate if they're implemented before implement". Everything it does is re-derivation and none of it is trust -- see wl_planrec.plan_investigate. Ordinary shell quoting is the interface and no new parser is introduced; a bare `--` separates the pointer list from the note, the same way a shell separates a command's flags from its
     operands.
@@ -1171,6 +1425,15 @@ def _planinvestigate_cli(argv):
             )
         evidence = rest[k + 1]
         rest = rest[:k] + rest[k + 2 :]
+    # `--owed <kind>` is what a `partial` box still owes (wl_planrec.INV_OWED, required there on a live partial). Read BEFORE the bare `--`, like --evidence.
+    owed = None
+    cut_at = rest.index("--") if "--" in rest else len(rest)
+    if "--owed" in rest[:cut_at]:
+        k = rest.index("--owed")
+        if k + 1 >= cut_at:
+            die("--owed takes a kind (%s)\n\n%s" % ("|".join(R.INV_OWED), usage))
+        owed = rest[k + 1]
+        rest = rest[:k] + rest[k + 2 :]
     # THE NOTE IS EVERYTHING AFTER A BARE `--`, not "the last argument", because a note is a sentence and a sentence quoted as one argv entry is the shape nobody types correctly the first time.
     if "--" in rest:
         cut = rest.index("--")
@@ -1184,14 +1447,11 @@ def _planinvestigate_cli(argv):
     for f in pointer_tokens:
         if f.startswith("--"):
             die("unknown flag %r\n\n%s" % (f, usage))
-    try:
-        rel = str(pathlib.Path(rel).resolve().relative_to(pathlib.Path(root).resolve()))
-    except ValueError:
-        rel = rel.lstrip("./")
+    rel = _plan_rel(root, rel)
 
     try:
         row, resolved = R.plan_investigate(
-            root, rel, selector, verdict, pointer_tokens, note, me, retro=retro
+            root, rel, selector, verdict, pointer_tokens, note, me, retro=retro, owed=owed
         )
         # THE PLAN HALF of a late record, computed BEFORE anything is written so a refusal on it leaves the ledger untouched.
         retro_text = (
@@ -1240,9 +1500,11 @@ def _lead_transcript(me):
     return str(sub.parent.with_suffix(".jsonl")) if sub is not None else None
 
 
-def _log_tick_refusal(worklist, me, item_id, evidence, why):
+def _log_tick_refusal(worklist, me, item_id, evidence, why, also=()):
     """One row per refused `--tick` in `.tick-refusals-<me8>.jsonl`, so the next retro counts refusals without grepping a transcript (agent/plans/PLAN-stop-hook-retro-20260924.md R.8). A log that cannot be written never changes the refusal."""
     row = {"at": C.stamp_now(), "id": item_id, "why": why, "evidence": (evidence or "")[:300]}
+    if also:
+        row["also"] = list(also)
     log = worklist.with_suffix(".tick-refusals-%s.jsonl" % me[:8])
     with contextlib.suppress(OSError), log.open("a", encoding="utf-8") as fh:
         fh.write(json.dumps(row) + "\n")
@@ -1256,8 +1518,14 @@ CLI_TICK_NO_COMMIT_REF = (
     "REFUSED: the tick of #%s names no commit. Verified work is committed before its item is "
     "ticked (CLAUDE.md rule 1), so the evidence carries `commit:<sha>` (a commit reachable from "
     "HEAD in the console or a submodule) or `nocommit:<reason>` with the reason one of "
-    "no-tracked-change, research, operator-deferred (a named last-resort door also stands in).%s\n"
-    "    .claude/hooks/stop/worklist.py --tick <me> %s 'commit:<sha> <evidence>'"
+    "no-tracked-change, research, operator-deferred (a named last-resort door, or an ASKED: "
+    "the transcript confirms, also stands in).%s\n"
+    "    .claude/hooks/stop/worklist.py --tick <me> %s %s"
+)
+# The last line of both tick refusals: the two forms, so a refusal read through `tail -1` still names them.
+CLI_TICK_FORMS = (
+    "'<evidence> commit:<sha>'  or  "
+    "'<evidence> nocommit:no-tracked-change|research|operator-deferred'"
 )
 CLI_TICK_COMMIT_REF_DETAIL = {
     "unresolved": " commit:%s is not a commit reachable from HEAD in the console or any submodule.",
@@ -1265,17 +1533,21 @@ CLI_TICK_COMMIT_REF_DETAIL = {
 }
 
 
-def commit_ref_problem(root, text):
+def commit_ref_problem(root, text, transcript=None):
     """None when `text` carries a valid commit ref, else (kind, token): ("missing", "") for no ref at all, or a CLI_TICK_COMMIT_REF_DETAIL key and the offending token.
 
-    `commit:<sha>` must name a commit that `merge-base --is-ancestor <sha> HEAD` accepts in `root` or one of its submodules, so a fabricated or foreign sha is refused. `nocommit:<reason>` must use a reason from NOCOMMIT_REASONS, and a named door (`door:operator-only` and its siblings) stands in for one. Every ref in the text must pass: one real sha beside a fabricated one is still a fabricated claim."""
+    `commit:<sha>` must name a commit that `merge-base --is-ancestor <sha> HEAD` accepts in `root` or one of its submodules, so a fabricated or foreign sha is refused. `nocommit:<reason>` must use a reason from NOCOMMIT_REASONS, and a named door (`door:operator-only` and its siblings) stands in for one. Every ref in the text must pass: one real sha beside a fabricated one is still a fabricated claim.
+
+    An `ASKED:<minute>Z` that `CK._asked_in_transcript` verifies against `transcript` (the lead's) also stands in, the way a door does (R20261101.2): an operator ruling has no commit, and the answer is stronger evidence than an unrelated sha. A malformed or unmatched ASKED stands for nothing, and a `nocommit:` word outside the three reasons is still refused."""
     import wl_git
 
     shas = [m.group(1).lower() for m in COMMIT_REF_RE.finditer(text or "")]
     reasons = [m.group(1) for m in NOCOMMIT_RE.finditer(text or "")]
     if not shas and not reasons:
         # A named last-resort door (CK.DOOR_RE) already says why nothing was committed: the work was handed to the operator or lies outside this session's write access, and CLAUDE.md rule 2 closes such an item with the door alone.
-        return None if CK.DOOR_RE.search(text or "") else ("missing", "")
+        if CK.DOOR_RE.search(text or "") or CK._asked_in_transcript(text, transcript):
+            return None
+        return ("missing", "")
     for reason in reasons:
         if reason not in NOCOMMIT_REASONS:
             return ("reason", reason)
@@ -1389,8 +1661,72 @@ def _dep_note(root, text, fold, what):
         )
 
 
+def _prepared_mine(fold, me):
+    """This session's open items, tokenised once, for the near-duplicate warning of `--add` and `--add-many`. The matcher is the plan-box one, so "similar" means what a box-to-item match means."""
+    import wl_planfile as PF
+
+    return PF.prepare(
+        [
+            (r["id"], r["state"], r.get("text") or "")
+            for r in fold.items
+            if r["state"] not in PF.CLOSED_STATES
+            and C.owned_by_me(r.get("owner"), C.resolve_session_id() or me)
+        ]
+    )
+
+
+def _add_many_cli(argv, worklist, me):
+    """`--add-many <me>` with one item per stdin line: every line judged by `--add`'s rules against one fold, then one append, so a refused line writes nothing and 34 items cost one process instead of 34 slow ones."""
+    import wl_planfile as PF
+
+    if len(argv) > 2:
+        sys.stderr.write(M.CLI_ADD_MANY_USAGE)
+        sys.exit(2)
+    if sys.stdin.isatty():
+        sys.stderr.write(M.CLI_ADD_MANY_NO_BODY % " (stdin is a terminal)")
+        sys.exit(2)
+    body, arrived = _read_document()
+    if not arrived:
+        sys.stderr.write(
+            M.CLI_ADD_MANY_NO_BODY
+            % (" (stdin stayed open and silent for %gs)" % STATE_STDIN_WAIT_SECONDS)
+        )
+        sys.exit(2)
+    # One line per item on newlines alone: `splitlines` also breaks on form feeds and the like, which `--add` keeps.
+    lines = body.rstrip("\n")
+    texts = [line.strip() for line in lines.split("\n")] if lines else []
+    if not texts:
+        sys.stderr.write(M.CLI_ADD_MANY_NO_BODY % "")
+        sys.exit(2)
+    fold = S.load(worklist, sync=True)
+    refused = []
+    for number, text in enumerate(texts, 1):
+        reason = "an empty item tracks nothing" if not text else ""
+        if LH.blocked_by(text):
+            reason = LH.blocker_error("", text, fold.by_id)
+        if reason:
+            refused.append((number, reason))
+    if refused:
+        for number, reason in refused:
+            sys.stderr.write(M.CLI_ADD_MANY_REFUSED % (number, reason))
+        sys.stderr.write(M.CLI_ADD_MANY_NOTHING_WRITTEN % len(texts))
+        sys.exit(2)
+    prepared = _prepared_mine(fold, me)
+    hits = [PF.match_item(text, prepared) for text in texts]
+    ids = S.add_items(worklist, me, texts)
+    root = C.project_root(C.project_start())
+    for rid, text, hit in zip(ids, texts, hits, strict=True):
+        print("added #%s: %s" % (rid, text))
+        _dep_note(root, text, fold, "#%s" % rid)
+        if hit is not None:
+            print(
+                "WARNING: similar open item: #%s -- tick one if they track the same work" % hit[0],
+                file=sys.stderr,
+            )
+
+
 def _item_cli(argv, worklist):
-    """--add / --triage / --tick / --defer / --lease / --update / --list: the v10 item verbs. Exits non-zero on misuse, so a rejected write cannot be mistaken for a delivered one."""
+    """--add / --add-many / --triage / --tick / --defer / --lease / --update / --list: the v10 item verbs. Exits non-zero on misuse, so a rejected write cannot be mistaken for a delivered one."""
 
     def die(msg):
         print(msg, file=sys.stderr)
@@ -1435,7 +1771,7 @@ def _item_cli(argv, worklist):
                 )
             )
         return
-    if len(argv) < 3:
+    if len(argv) < (2 if mode == "--add-many" else 3):
         die(M.CLI_ITEM_USAGE)
     me = argv[1]
     if not C.PREFIX_RE.match(me):
@@ -1444,6 +1780,9 @@ def _item_cli(argv, worklist):
     if "wl_defersettle" not in _BROKEN and me == DS.ACTOR:
         die(M.CLI_RESERVED_ACTOR % me)
     _identity_or_die(me, die)
+    if mode == "--add-many":
+        _add_many_cli(argv, worklist, me)
+        return
     if mode == "--add":
         text = " ".join(argv[2:]).replace("\n", " ").strip()
         if not text:
@@ -1454,17 +1793,11 @@ def _item_cli(argv, worklist):
             if _berr:
                 print("REFUSED: %s" % _berr, file=sys.stderr)
                 sys.exit(2)
-        # A NEAR-DUPLICATE WARNS, and still adds (R20260925.7): on 2026-09-24 #48bc48b4 re-tracked #91224636's finding 49 seconds later. The matcher is the plan-box one, so "similar" means what a box-to-item match means.
+        # A NEAR-DUPLICATE WARNS, and still adds (R20260925.7): on 2026-09-24 #48bc48b4 re-tracked #91224636's finding 49 seconds later.
         import wl_planfile as PF
 
         fold = S.load(worklist, sync=True)
-        mine = [
-            (r["id"], r["state"], r.get("text") or "")
-            for r in fold.items
-            if r["state"] not in PF.CLOSED_STATES
-            and C.owned_by_me(r.get("owner"), C.resolve_session_id() or me)
-        ]
-        hit = PF.match_item(text, PF.prepare(mine))
+        hit = PF.match_item(text, _prepared_mine(fold, me))
         rid = S.add_item(worklist, me, text)
         print("added #%s: %s" % (rid, text))
         _dep_note(C.project_root(C.project_start()), text, fold, "#%s" % rid)
@@ -1516,20 +1849,56 @@ def _item_cli(argv, worklist):
     root = C.project_root(C.project_start())
     if mode == "--tick":
         _dep_gate(root, fold, rec, rest, "--tick")
-        if not rest or not CK.completion_evidence(root, rest, _lead_transcript(me)):
-            _log_tick_refusal(worklist, me, item_id, rest, "no-evidence")
-            die(M.CLI_TICK_NO_EVIDENCE % (item_id, CK.tick_refusal_hint(_lead_transcript(me))))
+        transcript = _lead_transcript(me)
+        # BOTH GATES ARE EVALUATED BEFORE EITHER REFUSES (R20261101.1): the evidence gate and the commit-reference gate used to answer one at a time, so a refusal named only the next requirement.
+        evidence_ok = bool(rest) and CK.completion_evidence(root, rest, transcript)
         # v16 THE DOOR GATE. completion_evidence passes on ANY URL by shape, so a bare issue link closed a finding: filing WAS a resolution, in code, whatever the prose said. An issue now settles an item only when the tick names the last-resort door that made filing the right answer. Shape-only; whether the door is TRUE is the judge's question, and every tick already flows into
         # that path.
-        if CK.issue_only_evidence(root, rest):
-            _log_tick_refusal(worklist, me, item_id, rest, "issue-without-door")
-            die(M.CLI_TICK_ISSUE_DOOR % item_id)
-        bad = commit_ref_problem(root, rest)
-        if bad is not None:
-            _log_tick_refusal(worklist, me, item_id, rest, "no-commit-ref")
-            kind, token = bad
+        bad = commit_ref_problem(root, rest, transcript)
+        if evidence_ok and CK.issue_only_evidence(root, rest):
+            _log_tick_refusal(
+                worklist,
+                me,
+                item_id,
+                rest,
+                "issue-without-door",
+                also=["no-commit-ref"] if bad else [],
+            )
+            text = M.CLI_TICK_ISSUE_DOOR % item_id
+            if bad is not None:
+                kind, token = bad
+                text += (
+                    "\nAlso unmet: the evidence names no commit.%s"
+                    "\n    .claude/hooks/stop/worklist.py --tick <me> %s %s"
+                    % (
+                        CLI_TICK_COMMIT_REF_DETAIL[kind] % token if token else "",
+                        item_id,
+                        CLI_TICK_FORMS,
+                    )
+                )
+            die(text)
+        if not evidence_ok or bad is not None:
+            kind, token = bad if bad is not None else ("", "")
             detail = CLI_TICK_COMMIT_REF_DETAIL[kind] % token if token else ""
-            die(CLI_TICK_NO_COMMIT_REF % (item_id, detail, item_id))
+            if not evidence_ok:
+                _log_tick_refusal(
+                    worklist,
+                    me,
+                    item_id,
+                    rest,
+                    "no-evidence",
+                    also=["no-commit-ref"] if bad else [],
+                )
+                text = M.CLI_TICK_NO_EVIDENCE % (item_id, CK.tick_refusal_hint(transcript))
+                if bad is not None:
+                    text += "\nAlso unmet: the evidence names no commit.%s" % detail
+                die(
+                    text
+                    + "\n    .claude/hooks/stop/worklist.py --tick <me> %s %s"
+                    % (item_id, CLI_TICK_FORMS)
+                )
+            _log_tick_refusal(worklist, me, item_id, rest, "no-commit-ref")
+            die(CLI_TICK_NO_COMMIT_REF % (item_id, detail, item_id, CLI_TICK_FORMS))
         rest = citable_tick_evidence(root, rest)
         S.set_state(worklist, me, item_id, "x", rest)
         print("ticked #%s (%s)" % (item_id, rest[:80]))
@@ -1653,6 +2022,8 @@ def _item_cli(argv, worklist):
                 "released #%s back to open; it is ordinary open work again, "
                 "claimed by no worker" % _rid
             )
+            if _release_live_owed(root, str(rec.get("text") or ""), me, _rid):
+                sys.exit(1)
             return
         _dep_gate(root, fold, rec, rest, "--lease")
         until_arg = argv[3]
@@ -2696,18 +3067,31 @@ def main():
             sys.stderr.write(M.CLI_STATE_WHOLE_DOC % prefix)
             sys.exit(2)
         # Refuse a section the Stop check would reject, with the SAME rule. Accept-then-reject leaves the one artifact designed to survive compaction broken while the session believes it is fine; refusing leaves the previous good document untouched.
-        verdict, detail = S.agent_state_shape(body)
-        if verdict == "waitled":
+        owed = _owed_for_state(root, prefix)
+        problems = S.agent_state_problems(body, owed)
+        verdict, detail = problems[0] if problems else ("ok", "")
+        if verdict == "waitled" and len(problems) == 1:
             # Its own message: the generic one talks about char limits, which says nothing about why leading with a watch is refused, and a refusal a session cannot act on is a refusal it routes around.
             _m = S.AGENT_NEXT_RE.search(body)
             _lead = S.agent_next_lead(body, _m.end())[1] if _m else ""
             sys.stderr.write(M.CLI_STATE_WAIT_LED % _lead[:120])
             sys.exit(2)
-        if verdict != "ok":
+        if problems:
+            # Every failing verdict at once (R20261101.3), so one attempt fixes them all.
+            if len(problems) > 1:
+                detail = "%d problems: %s" % (
+                    len(problems),
+                    "; ".join("%s: %s" % (v, d) for v, d in problems),
+                )
+                verdict = "+".join(v for v, _d in problems)
             sys.stderr.write(
                 M.CLI_STATE_REFUSED
                 % (verdict, detail, S.AGENT_STATE_MIN_CHARS, S.AGENT_STATE_MAX_CHARS)
             )
+            if any(v == "waitled" for v, _d in problems):
+                _m = S.AGENT_NEXT_RE.search(body)
+                _lead = S.agent_next_lead(body, _m.end())[1] if _m else ""
+                sys.stderr.write(M.CLI_STATE_WAIT_LED % _lead[:120])
             sys.exit(2)
         target = S.agent_state_path(root, prefix)
         # Session-scoped since the tree split: with one STATE.md per session a shared slot lets a PEER's write destroy the only copy of my replaced body. It used to carry the branch as well (findings 3688784930/3688787780, when the document itself was per branch); the branch left the document's path, so it left the slot's name with it.
@@ -3304,11 +3688,23 @@ def main():
     if sys.argv[1:2] == ["--live-proof"]:
         _liveproof_cli(sys.argv[1:])
         return
+    if sys.argv[1:2] and sys.argv[1] in ("--box-clauses", "--box-progress"):
+        _boxrow_cli(sys.argv[1:])
+        return
+    if sys.argv[1:2] == ["--box-audit"]:
+        _boxaudit_cli(sys.argv[1:])
+        return
     if sys.argv[1:2] == ["--plan-preflight"]:
         _planpreflight_cli(sys.argv[1:])
         return
     if sys.argv[1:2] == ["--hint-propose"]:
         _hint_propose_cli(sys.argv[1:])
+        return
+    if sys.argv[1:2] == ["--hint-resolve"]:
+        _hint_resolve_cli(sys.argv[1:])
+        return
+    if sys.argv[1:2] == ["--lessons-sweep"]:
+        _lessons_sweep_cli(sys.argv[1:])
         return
     if sys.argv[1:2] and sys.argv[1] in (
         "--review-mark",
@@ -3340,6 +3736,7 @@ def main():
         return
     if sys.argv[1:2] and sys.argv[1] in (
         "--add",
+        "--add-many",
         "--triage",
         "--tick",
         "--defer",

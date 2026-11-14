@@ -9,14 +9,16 @@ import { type ExecuteResult, getExecutor } from '../services/executor/executor-f
 import { pendingExitCode, runCommandJob } from '../services/jobs/command-job.js';
 import { bindStepHandler, type PlannedStep, planStep } from '../services/jobs/steps.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
+import { ensureTargetRepoLicense } from '../services/repo-migrate-license.js';
 import { assertCommandPolicy, CMD } from '../utils/command-policy.js';
-import { handleError, ValidationError } from '../utils/errors.js';
+import { getOutputFormat, handleError, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { type ResolvedRemote, resolveRemoteName } from '../utils/remote-resolve.js';
 import { recordedDatastoreMount } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { bwlimitParam } from './bwlimit-param.js';
 import { coerceCliParams, validateFunctionParams } from './function-params.js';
+import { settleHandedBack } from './repo-batch-utils.js';
 import { applyPullDeltaParams, applyPushDeltaParams } from './repo-delta.js';
 
 interface BackupRunOptions {
@@ -195,6 +197,8 @@ export async function postPushDeploy(
   }
   outputService.info(t('commands.repo.push.deploying', { repo, machine: targetName }));
   await deployRepoKeyIfNeeded(repo, targetName);
+  // A licence is bound to one machine and the transfer carries none, so a copy landing on a machine that never held this GUID has nothing for `repository_up` to validate (exit 10, `LICENSE_REQUIRED: missing: no license data`). The executor's own retry only counts as a recovery while ANY repo on the machine is licensed, which is why the same flags exited 0 on a machine that held another licensed repo. Issuing for THIS GUID here, as `repo migrate` does, does not depend on that.
+  await ensureTargetRepoLicense(repo, targetName);
   const upResult = await getExecutor().execute({
     functionName: 'repository_up',
     machineName: targetName,
@@ -202,6 +206,7 @@ export async function postPushDeploy(
     params: { repository: repo, mount: true },
     debug: options.debug as boolean | undefined,
   });
+  if (settleHandedBack(upResult)) return;
   if (upResult.success) {
     outputService.success(t('commands.repo.push.deployed', { repo, machine: targetName }));
   } else {
@@ -301,7 +306,7 @@ async function pushRepo(ref: string, options: Record<string, unknown>): Promise<
         repo: name,
         target: targetName,
         targetType: resolvedType,
-        json: !!execOptions.json,
+        format: getOutputFormat(),
       }),
       // retainBase is set only for machine targets; the commit-meta successor syncs an immutable commit's mirror to the target.
       ...(resolvedType === 'machine'
@@ -367,7 +372,7 @@ async function resolvePullSource(
 }
 
 /** Deploy repo on target machine after a backup pull. */
-async function postPullDeploy(
+export async function postPullDeploy(
   repo: string,
   targetMachine: string,
   options: Record<string, unknown>
@@ -388,6 +393,7 @@ async function postPullDeploy(
     params: { repository: repo, mount: true },
     debug: options.debug as boolean | undefined,
   });
+  if (settleHandedBack(upResult)) return;
   if (upResult.success) {
     outputService.success(t('commands.repo.pull.deployed', { repo, machine: targetMachine }));
   } else {

@@ -11,7 +11,7 @@ LIVE CALLERS OF THE TWIN, none repointed by this port:
     spawns `bash <SAMPLER> --out <tsv> --interval <n>` DETACHED and `unref`s it.
     This is the production path; `.github/actions/setup-workspace/action.yml:72`
     invokes the composite.
-  * `.github/workflows/profiler-probe.yml:54` and `:72` -- `--probe`.
+  * `.github/workflows/ops-profiler-probe.yml:54` and `:72` -- `--probe`.
   * `.ci/scripts/test/profiler-control.sh:50,121`.
   * `.ci/rediacc_ci/tests/gates/test_gate_profiler_report.py:59,703`. Its bash
     twin carried the same calls at
@@ -31,7 +31,7 @@ deliberately off (`:54-57` explains why), so `while (($# > 0))` never terminated
 100% of one core, no output on either stream, no exit. On ubuntu-slim that is the whole machine, and the production caller spawns the sampler `detached: true` with `child.unref()`, so nothing would reap it before the job's 6-hour ceiling. `PROFILER_MAX_SECONDS` could not help: it is evaluated inside the sample loop, which the spin never reached.
 
 BLAST RADIUS, COUNTED NOT ESTIMATED, AND THE FIRST COUNT WAS AN UNDERCOUNT. The twin has 14 real invocation sites (docstrings, this file and the ledgers excluded). TWELVE pass a value after `--out`/`--interval`: `.github/actions/profiler/index.js:117`, `.ci/scripts/test/profiler-control.sh:121`, `.ci/scripts/test/gates/test-profiler-report.sh:398,409,421,478,506` and its Python
-port `.ci/rediacc_ci/tests/gates/test_gate_profiler_report.py:548,568,592,656,703`. TWO use `--probe` only, `.github/workflows/profiler-probe.yml:54,72`. (W7 P5 census batch A8 later retired `test-profiler-report.sh`; the count above is the 2026-09-10 measurement and is left as it was taken.) ZERO were reachable; the defect was one hand-typed invocation away, and it failed
+port `.ci/rediacc_ci/tests/gates/test_gate_profiler_report.py:548,568,592,656,703`. TWO use `--probe` only, `.github/workflows/ops-profiler-probe.yml:54,72`. (W7 P5 census batch A8 later retired `test-profiler-report.sh`; the count above is the 2026-09-10 measurement and is left as it was taken.) ZERO were reachable; the defect was one hand-typed invocation away, and it failed
 SILENTLY, which is what made it worth fixing rather than noting. (A first pass wrote "8 and 2", having missed the five sites in the gate-test port;
 re-derived by enumerating every match rather than by recalling the earlier grep.) Every arm of the loop now consumes at least one argument, and a missing value is the exit 2 every other bad argument already got. `test_a_dangling_value_flag_exits_on_both_sides` pins it.
 
@@ -46,7 +46,7 @@ re-derived by enumerating every match rather than by recalling the earlier grep.
 010` on a fifo returned after 10.01s.
 Fixed with `INTERVAL=$((10#$INTERVAL))` right after the existing digits-only check.
 
-BLAST RADIUS: `.github/actions/profiler/action.yml:25` declares `interval` with default `'10'`, and the three live callers (`profiler-probe.yml:89,108,127`) all pass `'5'`. Zero were affected, and `interval: '08'` is an entirely ordinary thing to write in YAML.
+BLAST RADIUS: `.github/actions/profiler/action.yml:25` declares `interval` with default `'10'`, and the three live callers (`ops-profiler-probe.yml:89,108,127`) all pass `'5'`. Zero were affected, and `interval: '08'` is an entirely ordinary thing to write in YAML.
 
 (3) THE SAME OCTAL TRAP IN `PROFILER_DISK_EVERY_S`, one line down, found by sweeping for the sibling rather than fixing the instance. `is_num 08` is true and `[ 08 -ge 1 ]` is true because `test` parses base 10, so the guard on that line passed `08` through to the same `$(( ))` and produced the same two diagnostics and
 the same rc=1. Same fix, `DISK_EVERY_S=$((10#$DISK_EVERY_S))`; that knob keeps its

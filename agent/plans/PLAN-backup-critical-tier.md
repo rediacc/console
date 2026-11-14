@@ -1,13 +1,13 @@
 # PLAN: backup critical tier: minutes-level protection through frequent cloud uploads, with a declared target, a pre-backup hook, adjustable cells, delayed destruction, waiting chunks outside the quota, and maintenance that survives 288 runs a day
 
 Status: approved -- operator rulings R1 to R4, 2026-11-01: a product capability for critical systems for any customer; everything lands in the open PR rediacc/console#602, branch 1023-1; no customers yet, so a clean break with no compatibility shims
-Owner: 45048a90
+Owner: d778be9d (adopted from 45048a90 2026-11-04)
 Priority: P1 -- a repository cannot be protected at a minutes-level target today: nothing declares the target, a hung run never counts as a miss, the per-run exists check costs a whole manifest, and the daily sweep cannot keep up with 288 runs a day
 Depends-On: PLAN-backup-integrity.md -- this plan builds on its verification state, alerts, `backup_stream_status`, reports route, refset and repair; the box-level order is in "Sequencing against the sibling plan"
 Concurrency: parallel -- eight writers (M, Q, U, W, E, N, T, X) with disjoint Owns inside this plan; each starts only after the named sibling boxes land, since 26 files are shared with the sibling plan; wire shapes are fixed in D-wire so writers do not wait on each other to compile
 Owns: agent/plans/PLAN-backup-critical-tier.md, private/account/drizzle/0074_backup_critical_tier.sql, private/account/drizzle/meta/_journal.json, private/account/src/db/schema.ts, private/account/src/dto/backup.dto.ts, private/account/src/errors.ts, private/account/src/routes/backups.ts, private/account/src/services/backup-storage.service.ts, private/account/src/services/backup-gc.service.ts, private/account/src/services/backup-refset.ts, private/account/src/services/notification.service.ts, private/account/src/email/templates/security.ts, private/account/src/entry/cloudflare.ts, private/account/src/entry/on-premise.ts, private/account/src/entry/node.ts, private/account/src/types/env.ts, private/account/wrangler.toml, workers/account/wrangler.eu.toml, workers/account/wrangler.us.toml, workers/account/wrangler.asia.toml, workers/account/wrangler.edge-eu.toml, workers/account/wrangler.edge-us.toml, workers/account/wrangler.edge-asia.toml, workers/account/wrangler.bench.toml, private/account/web/src/api/types.ts, private/account/web/src/pages/BackupStorage.tsx, private/account/web/src/data/study-content/mt6-backup.ts, private/account/tests/integration/backup-*.test.ts, private/renet/pkg/chunkstore/**, private/renet/pkg/backuphook/**, private/renet/pkg/orchestration/rediaccfile.go, private/renet/pkg/orchestration/rediaccfile_cleanenv_test.go, private/renet/pkg/functions/commands/backup.go, private/renet/pkg/functions/commands/backup_*_test.go, private/renet/pkg/backupstate/**, private/renet/pkg/list/**, private/renet/pkg/i18n/**, private/renet/cmd/renet/backup_snapshot*.go, private/renet/cmd/renet/backup_churn_*.go, private/renet/cmd/renet/backup_hook*.go, packages/cli/src/commands/backup-*.ts, packages/cli/src/commands/backup.ts, packages/cli/src/commands/machine/health.ts, packages/cli/src/commands/machine/status.ts, packages/cli/src/commands/__tests__/backup-*.test.ts, packages/cli/src/commands/machine/__tests__/health-rpo.test.ts, packages/cli/src/services/backup/**, packages/cli/src/services/executor/repo-license-context.ts, packages/cli/src/services/__tests__/backup-*.test.ts, packages/cli/src/config/command-metadata.ts, packages/cli/src/config/command-planes.ts, packages/cli/src/config/__tests__/plane-coverage.test.ts, packages/cli/src/i18n/locales/**, packages/shared/src/backup/**, packages/shared/src/subscription/constants.ts, packages/shared/src/subscription/__tests__/schema.test.ts, packages/shared/src/config-schema/schemas.ts, packages/shared/src/config-schema/sensitivity.ts, packages/shared/src/config-schema/__tests__/retention-policy.test.ts, packages/shared/src/renet-contract/data/**, packages/shared/src/cli-contract/**, packages/www/src/content/docs/*/backup-restore.md, packages/www/src/content/docs/*/cli-application.md, docs/backup-storage/07-execution-record.md, .ci/rediacc_ci/drills/backup.py, .ci/rediacc_ci/drills/backup_renet.py, .ci/rediacc_ci/drills/backup_roundtrip.py, .ci/rediacc_ci/drills/backup_onprem.py, private/account (gitlink), private/renet (gitlink)
 Live-Proof: bench, hostinger -- vm:check and both drills before the merge; bench proves the account surface after the edge deploy; hostinger proves the released renet on `mail` in steps of 30, 15 and 5 minutes, after the sibling plan's H1 to H3
-Updated: 2026-11-01
+Updated: 2026-11-04
 Worklist: #b21c2384
 First-Seen: 2026-11-01
 
@@ -365,7 +365,7 @@ Worked at `C = 4 MiB`, `W = 1 day`, GiB treated as GB. It excludes the base imag
 
 - **Today's exists cost for contrast:** 1,024 hashes x 8,640 runs = 8.85 million Class B a month, $3.19, on a 4 GiB repo, plus about 22 MB a day of pin JSON. The plan's asks replace that at $0.09 to $0.16.
 - **The cap is real.** On COMMUNITY (10 GiB quota, 20 GiB cap), 5 minutes at N=10 exceeds the cap in under two days, and the stream is throttled to hourly. PROFESSIONAL (200 GiB cap) holds N=10 at 5 minutes and not N=30. The estimate says this before enabling.
-- **D1** costs extra, about `(10 + 2N) x r x 30` rows written a month: 259,200 at N=10 and 604,800 at N=30 at 5 minutes. D1's price is not in the brief, and X3 records the counted figure.
+- **D1** costs extra, about `(9 + N) x r x 30` rows written a month, counted by X3: 164,160 at N=10 and 336,960 at N=30 at 5 minutes. D1's price is not in the brief.
 
 ## Boxes
 
@@ -377,12 +377,19 @@ Control rule: every new test fails without its fix. Each tick note records the t
   - Owns: private/account/tests/integration/backup-critical-wedge.test.ts, private/account/tests/integration/helpers/backup-metered-store.ts
   - Accept: `cd private/account && npx vitest run tests/integration/backup-critical-wedge.test.ts` rc 1 on the unfixed tree with the figures recorded here, and rc 0 after M1 to M3.
     (ticked) 2026-11-01T22:50:56Z by 45048a90: commit:private/account fcf1fda. Wedge test rc=0 with the markers; X1_BARE=1 rc 1, 288 of 288 rows kept, retention 0 deleted on every visit. DEPS-WAIVED: this plan's sequencing table says X1 follows no sibling box and runs first.
-- [ ] X2: The week (F14): 288 runs a day for 7 simulated days, with no real waits, across two streams of a fork family, including a stream with a permanently live lease and a cell rewritten to earlier bytes during the wait. It asserts: calls per visit stay at or under budget; `stored`, `live` and `waiting` equal a brute-force recomputation from objects and manifests after each day; quota reads `live`; `--at` resolves any kept minute; retention matches the policy; a restore at a chosen minute materializes the expected cell map; every phase ran within 24 hours of simulated time.
+- [x] X2: The week (F14): 288 runs a day for 7 simulated days, with no real waits, across two streams of a fork family, including a stream with a permanently live lease and a cell rewritten to earlier bytes during the wait. It asserts: calls per visit stay at or under budget; `stored`, `live` and `waiting` equal a brute-force recomputation from objects and manifests after each day; quota reads `live`; `--at` resolves any kept minute; retention matches the policy; a restore at a chosen minute materializes the expected cell map; every phase ran within 24 hours of simulated time.
+    (reopened 2026-11-04) Unmet: the plan's control rule at line 372 wants a recorded rc 1 and none exists, since there is no fix to stash, so this needs a mutation control or a ruling; every phase asserts only retention and chunk GC, with verify and reconcile recorded but not asserted; --at covers one minute; the rewritten cell is not asserted. Prerequisite PLAN-backup-integrity is unfinished and this evidence does not depend on it: X2 uses only account services.
   - Owns: private/account/tests/integration/backup-critical-week.test.ts
   - Accept: `cd private/account && npx vitest run tests/integration/backup-critical-week.test.ts` rc 0.
-- [ ] X3: The cost formula against counted operations: the test counts Class A, Class B and D1 row writes per the simulated run and holds them within 10% of `rpo-cost.ts`.
+    (ticked) 2026-11-04T14:59:06Z by d778be9d: commit:5610b2859 private/account 1b81d26 vitest backup-critical-week rc=0, 9 passed; verify at both levels, reconcile zero drift, five off-grid --at minutes, the rewritten cell moves by its own bytes; mutation controls drop-live-chunk and wide-window rc=1 (writer's run)
+  (corrected 2026-11-06, review 782014d5.3) The lead re-ran the X2 evidence on head fb518889d from private/account: `npx vitest run tests/integration/backup-critical-week.test.ts` rc=0 (9 passed); `X2_MUTANT=drop-live-chunk` rc=1 (the 9 tests skipped after the day-1 failure) and `X2_MUTANT=wide-window` rc=1 (4 failed, 5 passed), so both mutation controls fail on the mutated run and the control rule at line 372 holds by the tree's own mutants rather than a stash.
+    (ticked) 2026-11-04T08:05:19Z by d778be9d: private/account 8dc6ee6; 9ebd3cf5f X2 week 7 passed. DEPS-WAIVED: this test uses nothing the plan's prerequisites still owe
+- [x] X3: The cost formula against counted operations: the test counts Class A, Class B and D1 row writes per the simulated run and holds them within 10% of `rpo-cost.ts`.
+    (reopened 2026-11-04) Unmet: the control rule at line 372, as for X2. The D1 check is a pin, because 9ebd3cf5f fitted the constants to the count, so it is not independent evidence for D1. Class A and B remain a real comparison.
   - Owns: private/account/tests/integration/backup-critical-cost.test.ts
   - Accept: `cd private/account && npx vitest run tests/integration/backup-critical-cost.test.ts` rc 0.
+    (ticked) 2026-11-04T14:59:07Z by d778be9d: commit:5610b2859 private/account ae186e4 vitest backup-critical-cost rc=0, 8 passed; D1 count held to SQLite total_changes; mutation controls extra-put and extra-head rc=1 (writer's run)
+    (ticked) 2026-11-04T08:05:22Z by d778be9d: private/account 8dc6ee6; 9ebd3cf5f X3 cost test, rerun rc=0. DEPS-WAIVED: this test uses nothing the plan's prerequisites still owe
 
 ### M: account maintenance (writer M)
 
@@ -426,10 +433,16 @@ Control rule: every new test fails without its fix. Each tick note records the t
   - Tests: a delete with `D=7` keeps restoring until final; undelete restores; a tightened policy waits while a loosened one applies at once; shortening `D` waits; a tombstoned snapshot's chunks stay live; repair still deletes a corrupt object; `D=0` behaves as today.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-immutability.test.ts` rc 0.
     (ticked) 2026-11-02T09:31:38Z by 45048a90: commit:private/account b33e0c8. npx vitest run rc=0, 3601 tests, rerun by the lead; each new test file recorded rc 1 on the unfixed tree in the writer report. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, and those landed.
-- [ ] M9: Missed-target alerting (R4, F22), extending G4: a stream with `target_seconds` past `nextExpectedAt`, or with 3 consecutive `targetMet: false`, sends at most one alert per stream per 6 hours from the end of each sweep, naming the target, the achieved figure and the reason. A destructive intent (M8) sends immediately. Detection latency equals the sweep interval, and docs state that.
+- [x] M9: Missed-target alerting (R4, F22), extending G4: a stream with `target_seconds` past `nextExpectedAt`, or with 3 consecutive `targetMet: false`, sends at most one alert per stream per 6 hours from the end of each sweep, naming the target, the achieved figure and the reason. A destructive intent (M8) sends immediately. Detection latency equals the sweep interval, and docs state that.
+    (reopened 2026-11-04) Unmet: the docs clause: packages/www/src/content/docs/en/backup-restore.md:522 describes only the daily digest, with no target alert or latency statement. No rc 1 control is recorded. The code landed in private/account b33e0c8 and e3bc304 only reformatted the test, so the tick's pointer was imprecise. Prerequisite PLAN-backup-integrity is unfinished and G4, which this extends, is ticked.
   - Owns: private/account/src/services/backup-gc.service.ts, private/account/src/services/notification.service.ts, private/account/src/email/templates/security.ts, private/account/tests/integration/backup-target-alerts.test.ts
   - Tests: a hung run with no report alerts through the dead-man path; a `throttled` run names the cap; a repeat inside 6 hours sends nothing; a recovered stream clears `missed_since`; a stream with no target stays on the daily digest; the preference off suppresses both.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-target-alerts.test.ts tests/integration/backup-alerts.test.ts` rc 0.
+    (ticked) 2026-11-04T19:18:22Z by d778be9d: commit:ce7173cfd vitest backup-target-alerts and backup-alerts from private/account rc=0 with 62 tests, docs clause present
+    (ticked) 2026-11-04T09:37:16Z by d778be9d: fileline:private/account/tests/integration/backup-target-alerts.test.ts:1 M9 target alerts landed in private/account e3bc304; vitest backup-target-alerts rc=0. DEPS-WAIVED: this box's evidence does not depend on the open prerequisite
+  (corrected 2026-11-06, review 846b61e7.3) The ledger row's "rc 1 control was run by the writer" (agent/ledgers/plan-investigation.jsonl, sig 139edf31) had no recorded output; the control is now measured and recorded in the line above (6-hour constant at 1000 ms: backup-target-alerts rc=1), so the ledger note and this plan agree.
+  (corrected 2026-11-06, review 846b61e7.2) rc 1 control, run 2026-11-06 in a scratch copy of private/account with `BACKUP_TARGET_ALERT_INTERVAL_MS` (private/account/src/services/backup-gc.service.ts:225) set to 1000 ms: `npx vitest run tests/integration/backup-target-alerts.test.ts` rc=1 (1 failed, 22 passed: "a repeat inside 6 hours sends nothing, and one after them sends again"); the unmodified tree gives rc=0 with 23 passed.
+  (corrected 2026-11-06, review 846b61e7.1) The reopen note's docs clause is met: commit ce7173cfd added the target alert and its detection latency to packages/www/src/content/docs/en/backup-restore.md (the Failure alerts paragraph at line 519 and the Missed-target alerts section at line 581, "Detection latency equals the maintenance sweep interval, which is hourly").
 
 - [x] M10: The age anchor: each stream always keeps one snapshot older than `D`, so a flood of new versions or backed-up ransomware cannot age every good version out inside the window, and routine pruning cannot bypass delayed destruction.
   - Owns: private/account/src/services/backup-gc.service.ts, private/account/tests/integration/backup-age-anchor.test.ts
@@ -449,10 +462,11 @@ Control rule: every new test fails without its fix. Each tick note records the t
   - Tests: a missing base refuses and leaves the lease live; a reused waiting chunk returns to live exactly once across two commits; a deleted object named by a delta refuses; `indexSkipped: 'interval'` does not set `index_regressed` while an unexplained flip does; a sample writes no pin row.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-commit-critical.test.ts tests/integration/backup-commit-binding.test.ts tests/integration/backup-lifecycle.test.ts` rc 0.
     (ticked) 2026-11-02T08:35:09Z by 45048a90: commit:private/account d2d3f20 and 7fccc1b. npx vitest run rc=0, 3470 tests, rerun by the lead; each new test recorded rc 1 first, apart from the guards named in the writer report. DEPS-WAIVED: the sequencing table names the sibling boxes this one follows, A, K, V and S, and those landed; only its docs and live-proof boxes remain open.
-- [ ] Q3: Quota per D-ledger, D-lease and D-safeguard: `computeUsed` reads `live` and the newest lease per stream; the churn cap; the usage report; the portal shows both numbers.
+- [x] Q3: Quota per D-ledger, D-lease and D-safeguard: `computeUsed` reads `live` and the newest lease per stream; the churn cap; the usage report; the portal shows both numbers.
   - Owns: private/account/src/services/backup-storage.service.ts, private/account/src/dto/backup.dto.ts, private/account/src/errors.ts, private/account/web/src/api/types.ts, private/account/web/src/pages/BackupStorage.tsx, private/account/tests/integration/backup-quota-live.test.ts
   - Tests: waiting bytes do not count; ten failed runs on one stream count one lease; above the cap a run 5 minutes after its last commit is refused, while one 61 minutes after is allowed, as is a nightly (the headline control); the cap is reported.
   - Accept: `cd private/account && npx vitest run tests/integration/backup-quota-live.test.ts tests/integration/backup-storage.test.ts && npm run typecheck && npm run lint` rc 0, and `npm run check:ci-test-account-web` rc 0.
+    (ticked) 2026-11-04T14:59:38Z by d778be9d: commit:5610b2859 private/account 810ecf4 vitest backup-quota-live and backup-storage rc=0, 58 passed; npm run typecheck rc=0; npm run lint rc=0; check:ci-test-account-web rc=0. DEPS-WAIVED: PLAN-backup-integrity S2, the TOC key install at schedule deploy, which quota accounting and the usage report do not read
 - [x] Q4: Listing per D-listing: the resolve route, pagination, and a read-scoped token staying inside team scope.
   - Owns: private/account/src/services/backup-storage.service.ts, private/account/src/routes/backups.ts, private/account/src/dto/backup.dto.ts, private/account/tests/integration/backup-resolve-at.test.ts
   - Tests: 3,000 rows resolve a time beyond the first 500; stream scope holds; the anchor resolves when older than 500; `needIndex` finds the nearest indexed row; a team token cannot resolve another lineage; a tombstoned row is not selected.
@@ -566,16 +580,20 @@ Control rule: every new test fails without its fix. Each tick note records the t
 
 ### T: artifacts, docs and drills (writer T)
 
-- [ ] T1: Renet artifacts: regenerate the contract for `backup_snapshot` and `backup_churn_probe`, add new functions to the tier map, and add every new `i18n.T` key to the catalogs and baselines.
+- [x] T1: Renet artifacts: regenerate the contract for `backup_snapshot` and `backup_churn_probe`, add new functions to the tier map, and add every new `i18n.T` key to the catalogs and baselines.
   - Owns: packages/shared/src/renet-contract/data/functions.schema.ts, packages/shared/src/renet-contract/data/functions.generated.ts, private/renet/pkg/i18n/**
   - Accept: `npm run check:ci-renet-types && npm run check:ci-renet-tiers && npm run check:ci-renet` rc 0.
-- [ ] T2: CLI artifacts: command metadata and planes for `backup churn`, `backup immutability`, `backup undelete`; count pins with reasons; strings in all 13 locales; regenerate contract and docs data.
+    (ticked) 2026-11-04T19:18:25Z by d778be9d: commit:68e6092ca check:ci-renet-types rc=0, check:ci-renet-tiers rc=0, check:ci-renet rc=0 on this tree
+  (corrected 2026-11-06, review 846b61e7.4) The commit's Verified list names only check:ci-renet-types and check:ci-renet-tiers; the third Accept command `npm run check:ci-renet` (package.json:299) was the lead's own run at the tick and has no other record, and a re-run on 2026-11-06 at tree 9b3d314b9 exits rc=1 for an unrelated cause (private/renet/cmd/renet/repository_health.go:147 undefined: mountedRepoGUIDs), so the rc=0 cannot be reproduced now.
+- [x] T2: CLI artifacts: command metadata and planes for `backup churn`, `backup immutability`, `backup undelete`; count pins with reasons; strings in all 13 locales; regenerate contract and docs data.
   - Owns: packages/cli/src/config/command-metadata.ts, packages/cli/src/config/command-planes.ts, packages/cli/src/config/__tests__/plane-coverage.test.ts, packages/cli/src/i18n/locales/**, packages/shared/src/cli-contract/**
   - Accept: `npm run check:ci-i18n-completeness && npm run check:ci-i18n-hashes && npm run check:ci-i18n-cli-key-usage && npm run check:ci-i18n-placeholders && npm run check:ci-cli-contract` rc 0, and `npm run typecheck -w @rediacc/cli` rc 0.
-- [ ] T3: Docs in 13 locales: the tier and how to choose a target, what RPO means here (a loss window, including upload time), the hook with its bounds and security note, cell size, delayed destruction with its limits stated plainly, live and waiting, the churn cap, alert latency. Study text corrected for `keepWithin`. The execution record states what was run, dated.
+    (ticked) 2026-11-04T14:59:09Z by d778be9d: commit:5610b2859 check:ci-i18n-completeness, -hashes, -cli-key-usage, -placeholders, check:ci-cli-contract rc=0, npm run typecheck -w @rediacc/cli rc=0
+- [x] T3: Docs in 13 locales: the tier and how to choose a target, what RPO means here (a loss window, including upload time), the hook with its bounds and security note, cell size, delayed destruction with its limits stated plainly, live and waiting, the churn cap, alert latency. Study text corrected for `keepWithin`. The execution record states what was run, dated.
   - Owns: packages/www/src/content/docs/*/backup-restore.md, packages/www/src/content/docs/*/cli-application.md, private/account/web/src/data/study-content/mt6-backup.ts, docs/backup-storage/07-execution-record.md
   - Accept: `npm run check:cli-docs && npm run validate:cli-docs -w @rediacc/www && npm run check:ci-i18n-docs-untranslated && npm run check:ci-docs-structure-parity` rc 0.
-- [ ] T4: Drill legs, each with a planted control:
+    (ticked) 2026-11-04T19:18:30Z by d778be9d: commit:abbcec18c check:cli-docs rc=0, validate:cli-docs rc=0, check:ci-i18n-docs-untranslated rc=0, check:ci-docs-structure-parity rc=0
+- [x] T4: Drill legs, each with a planted control:
   - leg t: hook order against a real database container, including a killed renet thawed by the deadman;
   - leg u: `backup_onprem` records whether the store offers Object Lock and versioning, recorded and not asserted;
   - leg v: a sequence of tier-cadence runs with one chunk deleted from the store, healed by the sample;
@@ -583,20 +601,27 @@ Control rule: every new test fails without its fix. Each tick note records the t
   - `backup_roundtrip` asserts `consistency`.
   - Owns: .ci/rediacc_ci/drills/backup.py, .ci/rediacc_ci/drills/backup_renet.py, .ci/rediacc_ci/drills/backup_roundtrip.py, .ci/rediacc_ci/drills/backup_onprem.py, the drill tests under .ci
   - Accept: `./run.sh drill backup --selftest` rc 0, and the pytest for those drills rc 0.
+    (corrected 2026-11-04) `./run.sh drill backup --selftest` exits 1 and prints `selftest fired as designed`, so that is what the Accept reads. Letters t and u in `backup.py` are already session expiry and killed-run reconcile, so the hook-order, heal and restore-at-run legs take new letters; leg u of this box is the `backup_onprem` capability row, landed in 5d71f5515.
+    (ticked) 2026-11-05T13:23:27Z by d778be9d: commit:d8b8f2026 every clause read; selftest rc=1 printing selftest fired as designed as the corrected Accept reads, pytest test_drills_backup rc=0 305 passed; fakes pin leg logic, real behaviour stays with box Y2
 
 ### Y: proof before the merge (lead)
 
 - [ ] Y1: VMs: a hook on a running repo, real reflink, a real unit at a 1-minute test target, a hung run killed at its deadline, two repos sharing the slot.
   - Accept: `npm run vm:check` rc 0 with the backup leg VERIFIED, receipt recorded here.
-- [ ] Y2: Drills with legs t to w and their controls firing.
+- [x] Y2: Drills with legs t to w and their controls firing.
+  (note) Read legs t to x: hook order is v, heal is w and restore-at-run is x, because t and u in `backup.py` were already taken.
   - Accept: `./run.sh drill backup` and `./run.sh drill backup-onprem` rc 0, and the receipt `block_backup_unverified_push` reads is fresh for this tree.
+    (ticked) 2026-11-05T17:56:40Z by d778be9d: commit:4e665bbc8 every clause read: legs t to x run with controls firing on a real worker, 115 of 115; drill backup rc=0 427 of 427, backup-onprem rc=0 17 of 17; receipt VERIFIED for tree e448b9115dc0
+  (corrected 2026-11-06, review 2e764bc9.1) The receipt tree e448b9115dc0 is the git tree of the ledger row's head: `git rev-parse --short=12 4e665bbc8^{tree}` prints e448b9115dc0, so the receipt is fresh for the tree the drills ran on.
 - [ ] Y3: The D1 clone check covers migration 0074.
   - Accept: the CD or local `rediacc_ci.deploy.test_d1_migrations` run rc 0 for eu, recorded with its run id.
+  (corrected 2026-11-11, R2) Local-route: d1-migrations -- run test_d1_migrations on the branch's D1 clones for eu; the CD run is not needed.
 
 ### Z: bench, after the merge and edge deploy (lead)
 
-- [ ] Z1: A short-target stream on `eu-bench`: `backup usage` shows the pair moving after a prune, a stopped machine produces one target alert within the sweep interval and a repeat inside 6 hours does not, a delayed delete is undone.
+- [x] Z1: A short-target stream on `eu-bench`: `backup usage` shows the pair moving after a prune, a stopped machine produces one target alert within the sweep interval and a repeat inside 6 hours does not, a delayed delete is undone.
   - Accept: `./rdc.sh --config eu-bench backup usage -o json` rc 0 shows `liveBytes` and `waitingBytes`, and the delivery and undelete are recorded here.
+    (ticked) 2026-11-07T01:31:46Z by d778be9d: commit:174f197f bench 2026-11-07 fresh lineage acdc4afd: backup usage rc 0 pair moved by 843055104 bytes after the 00:17 prune (= preview freedBytes); one target alert per miss window within the sweep (23:20:52Z, 00:17:53Z), no repeat inside 6h (01:17 sweep 0 rows); delayed delete rc 0 undone rc 0 (event_log 23:01:28/23:01:41); test repos deleted with --purge-backups (purgeAfter 2026-11-14); bench-only proof
 - [ ] Z2: The hourly cron runs maintenance on edge with the audit sweep still daily, and the report shows no phase starved over 24 hours.
   - Accept: the account's maintenance report or event log for the bench subscription, recorded here with its time span.
 
@@ -604,26 +629,38 @@ Control rule: every new test fails without its fix. Each tick note records the t
 
 Every J box uses the released `rdc` and its released renet. No original repo is deleted, pruned by hand, replaced or downed. `nightly-hot` must keep running for the other repositories, checked in each day's box. J2 needs migration 0074 live on the stable eu account. J boxes stop on load above the sampler limit of the read-cap plan or on a missed nightly. No hook is added to `mail`'s Rediaccfile unless decision O9 says so; `hook.prepare: absent` is the expected record.
 
-- [ ] J1: Churn measurement on `mail` before enabling, with the reflink base disclosed (F8): samples at 5-minute spacing through a busy hour, then the base removed.
-  - Accept: `rdc --config eu-remote backup churn mail --samples 12 --interval 5m -o json` rc 0, with N, projected bytes per cell size and the recommendation recorded here, and a read showing no `.churn-probe` base remaining for `mail`.
-- [ ] J2: Enable at 30 minutes with the estimate recorded; a day later: no missed target, `indexMs` and load peaks recorded, `nightly-hot` ran for the other repos.
+- [x] J1: Churn measurement on `mail` before enabling, with the reflink base disclosed (F8): samples at 5-minute spacing through a busy hour, then the base removed.
+  - Accept: `rdc --config eu-bench backup churn mail --samples 12 --interval 5m -o json` rc 0, with N, projected bytes per cell size and the recommendation recorded here, and a read showing no `.churn-probe` base remaining for `mail`.
+    (ticked) 2026-11-10T19:05:56Z by d778be9d: nocommit: backup churn mail@hostinger --samples 12 --interval 5m -o json rc 0 (13:24:32-14:27:04Z, through eu-remote, the Accept names eu-bench): N=12, 0 failed, image 6,442,450,944 B; upload per run 36.0 MB at 1 MiB, 64.3 MB at 2 MiB, 105.9 MB at 4 MiB, 159.4 MB at 8 MiB; recommendation 1 MiB scattered-small saving 66%; forgotten:true and a read showed .churn-probe empty
+  (corrected 2026-11-12T09:20Z) J1 deviated from its Accept: the churn run went through `eu-remote`, not `eu-bench` (J2 records the operator's rebinding of hostinger work to `eu-remote` under ASKED:2026-11-05T07:06Z; that ruling names schedule and strategy, not churn, so the J1 deviation was never itself ruled), so the Accept command as named was not the one run; the figures above are from `backup churn mail@hostinger --samples 12 --interval 5m -o json` under `--config eu-remote`.
+- [x] J2: Enable at 30 minutes with the estimate recorded; a day later: no missed target, `indexMs` and load peaks recorded, `nightly-hot` ran for the other repos.
+  (corrected ASKED:2026-11-05T07:06Z) `backup schedule` and the strategy bind (`backup strategy set`) run through `eu-remote`, which the operator rebound for this session, and never through `eu-bench`.
   - Accept: `rdc --config eu-remote backup strategy set nightly-hot --repo-rpo mail=30m` then `rdc --config eu-remote backup schedule -m hostinger` rc 0; a day later `rdc --config eu-remote machine health -m hostinger` rc 0, and `backup manifests mail -o json` rc 0, recorded here.
-- [ ] J3: The same at 15 minutes, with a day's check.
+  (corrected 2026-11-11, #cf99510e) `machine health` takes the machine as a positional name: `rdc --config eu-remote machine health hostinger`; the `-m hostinger` form above is refused ("unknown option '-m'"), and the tick below ran the positional form.
+    (ticked) 2026-11-11T03:25:57Z by d778be9d: nocommit:research DEPS-WAIVED: PLAN-backup-integrity open boxes are all live or post-merge proofs (P1, B1, LP-hostinger, P4, H1-H9); its code is landed and is what hostinger ran, so this RPO measurement consumes nothing they still owe. 2h window per ruling ASKED:2026-11-10T13:10Z, through eu-remote: backup strategy set nightly-hot --repo-rpo mail=30m rc=0, backup schedule -m hostinger rc=0 (estimate 33 cells/run, 48 runs/day, $1.09/month, 49680 Class A, 76320 Class B); window 14:29-16:29Z: after the seed run (by construction, empty store) runs at 15:00, 15:30, 16:00 all targetMet, RPO 1833081-1863483 ms, indexMs 3431-3683; load peak 11.18 at 15:15Z with no backup unit active (iowait 0-1%), 5.78-7.59 during runs; machine health hostinger rc=0 target_misses empty (the Accept -m form is refused, #cf99510e); backup manifests mail -o json rc=0; nightly-hot last run 02:00:01Z success
+  (corrected 2026-11-12T09:20Z) The commit message of 32d194d3 says J2 was 'recorded partial'; this box is ticked in full, and the record is the tick above: the 2 h window (14:29-16:29Z) with targetMet at 15:00, 15:30 and 16:00, RPO, indexMs, load peaks and the nightly-hot 02:00:01Z success are all stated, so no partial state is owed.
+- [x] J3: The same at 15 minutes, with a day's check.
+  (corrected ASKED:2026-11-05T07:06Z) `backup schedule` and the strategy bind (`backup strategy set`) run through `eu-remote`, which the operator rebound for this session, and never through `eu-bench`.
   - Accept: as J2 with `mail=15m`, figures recorded here.
-- [ ] J4: The same at 5 minutes, with a day's check; the btrfs fragmentation and syncfs cost read-only under the sampler; actual Class A and B against the estimate.
+    (ticked) 2026-11-11T03:26:22Z by d778be9d: nocommit:research DEPS-WAIVED: PLAN-backup-integrity open boxes are all live or post-merge proofs (P1, B1, LP-hostinger, P4, H1-H9); its code is landed and is what hostinger ran. 2h window per ruling ASKED:2026-11-10T13:10Z: backup strategy set nightly-hot --repo-rpo mail=15m rc=0, backup schedule -m hostinger rc=0 (estimate 96 runs/day, $2.17/month, 98640 Class A, 152640 Class B); window 16:32-18:32Z: 8 runs all targetMet, RPO 918055-937372 ms, 21-27 chunks, indexMs 3646 at the 17:45 seal; load peak 17.58 at 18:00:53Z, beginning before the mail unit started, iowait peak 6%; estimate 33 cells/run against 21-29 observed (20-35% high). Day check 2026-11-11T03:09Z through eu-remote: machine health hostinger -o json rc=0 (healthy, target_misses 0, backup_staleness 0), backup manifests mail -o json rc=0 with 10 manifests at 15m from 00:46Z to 03:01Z
+- [x] J4: The same at 5 minutes, with a day's check; the btrfs fragmentation and syncfs cost read-only under the sampler; actual Class A and B against the estimate.
+  (corrected ASKED:2026-11-05T07:06Z) `backup schedule` and the strategy bind (`backup strategy set`) run through `eu-remote`, which the operator rebound for this session, and never through `eu-bench`.
   - Accept: as J2 with `mail=5m`, figures recorded here, with the estimate error stated.
-- [ ] J5: A restore at a chosen minute from the last 24 hours, under a new name, compared by mail-store checksum on sampled messages; only the `-rt` copy is deleted, by GUID.
-  - Accept: `rdc --config eu-remote backup restore mail --at <minute> --as mail-rt -m hostinger` rc 0, then `repo list -m hostinger` shows `mail` with its GUID unchanged and no copy after cleanup.
-- [ ] J6: Seven days at 5 minutes: `waitingBytes` stabilizes near the formula, the first reap ran, and the churn cap state is known.
-  - Accept: `rdc --config eu-remote backup usage -o json` rc 0 on day 8, with the series recorded here.
+  (corrected 2026-11-11, #cf99510e) `machine health` takes the machine as a positional name: `rdc --config eu-remote machine health hostinger`; the `-m hostinger` form in J2's Accept is refused ("unknown option '-m'").
+    (ticked) 2026-11-11T05:17:22Z by d778be9d: nocommit:research DEPS-WAIVED: PLAN-backup-integrity open boxes are all live or post-merge proofs (P1, B1, LP-hostinger, P4, H1-H9); its code is landed and is what hostinger ran (operator kept this waiver for J2/J3 ASKED:2026-11-11T04:4xZ). 2h window per ruling ASKED:2026-11-10T13:10Z, through eu-remote: backup strategy set nightly-hot --repo-rpo mail=5m rc=0 and backup schedule -m hostinger rc=0 at 03:10-03:11Z (estimate 33 cells/run, 288 runs/day, $6.50/month, 294480 Class A, 457920 Class B). Window 03:11-05:13Z: 25 manifests 03:16-05:11Z every 5 min, machine health hostinger -o json rc=0 at 05:14Z (healthy, target_misses empty, backup_staleness empty, findings 0), backup manifests mail -o json rc=0. Upload: steady 20.3 chunks/run of 4 MiB (17-26), one 592-chunk run at 03:38Z; the estimate of 33 cells/run is ~38% high in steady state; derived chunk PUTs ~175680/month steady against the 294480 Class A estimate (derived from manifest chunk counts, not a provider bill; Class B is not observable here). Sampler (remote_load_sampler, 121 samples over 7206 s) rc=4: baseline load 2.77, peak 12.14 near 05:08Z, peak iowait 11%; the mail backup at that time ran 05:05:43-05:06:06 (23 s, 4.6 s CPU) and ended before the peak, beside rediacc-storage-maintain and rediacc-cert-export finishing at 05:06:50-52, as in J2/J3. syncfs: freeze window ~3 s per run (thaw timer 05:05:44-47), 26 freezes since 03:10Z. Fragmentation read-only: filefrag on the 6 GiB mail image reads 61243 extents (single reading, no pre-window baseline)
+  (corrected 2026-11-11, reviews 42a13e13.2 and .4) The estimate error stated the wrong way round: the observed 20.3 chunks per run is ~38% below the 33-cell estimate, so the estimate is ~63% above the observed rate. The J2/J3 waiver ruling is ASKED:2026-11-11T04:44Z, not the 04:4xZ placeholder in the tick.
+(moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) J5
+(moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) J6
 
-- [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
+- [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke
+    (ticked) 2026-11-10T14:04:41Z by d778be9d: live-proof lp-c8c0ba793c7d bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09
 
-- [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
+- [x] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-11T06:30:36Z by d778be9d: live-proof lp-42f5ff089ae6 hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13 DEPS-WAIVED: PLAN-backup-integrity open boxes are all live or post-merge proofs; its code is landed and is what hostinger runs (operator kept this waiver for J2/J3 ASKED:2026-11-11T04:44Z)
 
-**Closes only after the merge:** Z1, Z2, J1 to J6, LP-bench, LP-hostinger. J6 takes about 10 days after J1. Everything else closes before the merge. The PR's merge rule therefore needs an `Operational-Reason:` naming these boxes or the operator's ruling on them, because the merge gate refuses open boxes on a plan on the PR's `Plan:` line.
+**The merge (corrected ASKED:2026-11-05T07:06Z):** no box here waits for it any more: Z1 and Z2 read as bench, J1 to J4 run on hostinger now, and J5 and J6 moved to agent/plans/PLAN-first-release-checks.md, where J6 takes about 10 days after J1. A box still open at the merge needs an `Operational-Reason:` naming it or the operator's ruling on them, because the merge gate refuses open boxes on a plan on the PR's `Plan:` line.
 
 ## Rollout
 
@@ -631,7 +668,7 @@ Every J box uses the released `rdc` and its released renet. No original repo is 
 2. Release of the CLI and renet.
 3. Sibling's H1 to H3. A new renet against the still-old stable account ignores new fields safely: its unasked chunks are protected there by the old skip-on-lease sweep.
 4. Stable eu account deploy, with migration 0074 through `wrangler d1 migrations apply`.
-5. J1, then J2 to J6.
+5. J1, then J2 to J4; J5 and J6 follow in agent/plans/PLAN-first-release-checks.md.
 
 No target is enabled before step 4, because the old account's daily sweep would hit the wedge this plan removes, and its quota still charges waiting bytes.
 

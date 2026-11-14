@@ -1,6 +1,6 @@
 """`rediacc_ci.ci.freshness` (agent/plans/PLAN-ci-consolidation.md Part B, T8 and T9).
 
-FIXTURE-DRIVEN, NO NETWORK. Every check here is a `python -c` argv run under a `REDIACC_CI_ROOT` fixture tree, so the real subprocess path (cwd, PYTHONPATH, merged streams, exit codes) is exercised without reading GitHub. The real registry and the real wiring (housekeeping.yml's budget-check job, package.json's `check:ci-budget-freshness`) are read, never run.
+FIXTURE-DRIVEN, NO NETWORK. Every check here is a `python -c` argv run under a `REDIACC_CI_ROOT` fixture tree, so the real subprocess path (cwd, PYTHONPATH, merged streams, exit codes) is exercised without reading GitHub. The real registry and the real wiring (ops-housekeeping.yml's budget-check job, package.json's `check:ci-budget-freshness`) are read, never run.
 """
 
 from __future__ import annotations
@@ -432,7 +432,7 @@ def test_the_real_registry_names_exactly_the_two_live_artifacts():
 
 # --------------------------------------------------------------------------- T9: the wiring pins ---------------------------------------------------------------------------
 
-HOUSEKEEPING = REAL_ROOT / ".github" / "workflows" / "housekeeping.yml"
+HOUSEKEEPING = REAL_ROOT / ".github" / "workflows" / "ops-housekeeping.yml"
 OLD_CALLS = ("rediacc_ci.ci.budget_report", "rediacc_ci.ci.gate_costs")
 
 
@@ -440,7 +440,7 @@ def budget_job_findings(doc: dict[str, Any]) -> list[str]:
     """What is wrong with housekeeping's budget-check job, as parsed YAML. Pure, so the test can plant the old wiring into a copy."""
     job = (doc.get("jobs") or {}).get("budget-check")
     if not isinstance(job, dict):
-        return ["housekeeping.yml has no budget-check job"]
+        return ["ops-housekeeping.yml has no budget-check job"]
     steps = [s for s in job.get("steps") or [] if isinstance(s, dict)]
     out: list[str] = []
     callers = [s for s in steps if "rediacc_ci.ci.freshness" in str(s.get("run", ""))]

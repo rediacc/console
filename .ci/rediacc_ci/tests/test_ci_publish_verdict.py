@@ -1,6 +1,6 @@
 """`rediacc_ci.ci.publish_ci_verdict` and the non-blocking exclusions of the `CI Verdict` context (agent/plans/PLAN-ci-verdict.md, box D).
 
-NO NETWORK. The publisher's four GitHub calls go through an injectable object (`FakeGh` below), and `ci_diagnose` is injected through `main(loader=...)`, so these tests neither need W1's module to exist nor reach GitHub. The exclusion tests read the REAL tracked files (watchdog-monitor.yml, report-nightly-status.cjs, budget_report.py) and drive the real `evaluateBudget` under node, so a context added to one list and forgotten in another fails here.
+NO NETWORK. The publisher's four GitHub calls go through an injectable object (`FakeGh` below), and `ci_diagnose` is injected through `main(loader=...)`, so these tests neither need W1's module to exist nor reach GitHub. The exclusion tests read the REAL tracked files (ops-watchdog-monitor.yml, report-nightly-status.cjs, budget_report.py) and drive the real `evaluateBudget` under node, so a context added to one list and forgotten in another fails here.
 """
 
 from __future__ import annotations
@@ -357,7 +357,7 @@ def _root():
 
 
 def test_the_watchdog_excludes_the_verdict_context_and_its_publisher_job():
-    yml = (_root() / ".github/workflows/watchdog-monitor.yml").read_text(encoding="utf-8")
+    yml = (_root() / ".github/workflows/ops-watchdog-monitor.yml").read_text(encoding="utf-8")
     line = next(ln for ln in yml.splitlines() if "WATCHDOG_EXCLUDE_PATTERNS:" in ln)
     patterns = [p.strip() for p in line.split(":", 1)[1].strip().strip("'\"").split(",")]
     for name in ("CI Verdict", "Publish CI Verdict"):
@@ -390,7 +390,7 @@ console.log(JSON.stringify({names: r.jobViolations.map((v) => v.name),
 
 @pytest.mark.skipif(NODE is None, reason="node is not installed")
 def test_an_over_budget_verdict_job_never_violates_and_the_note_names_the_live_step():
-    yml = (_root() / ".github/workflows/watchdog-monitor.yml").read_text(encoding="utf-8")
+    yml = (_root() / ".github/workflows/ops-watchdog-monitor.yml").read_text(encoding="utf-8")
     line = next(ln for ln in yml.splitlines() if "WATCHDOG_EXCLUDE_PATTERNS:" in ln)
     patterns = [p.strip() for p in line.split(":", 1)[1].strip().strip("'\"").split(",")]
     now = 1_000_000_000_000

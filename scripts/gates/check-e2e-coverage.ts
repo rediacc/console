@@ -574,13 +574,14 @@ export function runControls(): string[] {
  * looking dark because a new leg flag is missing) surfaces as a LOUD false-red,
  * never a silent false-green, so this list failing behind the workflows is
  * self-announcing. Keep it in sync with the `include:` matrix env in
- * ct-tests.yml (FULL_INTEGRATION today; add CLI_SUITE when suite 23 lands).
+ * ct-tests.yml (FULL_INTEGRATION and CLI_SUITE).
  * NOTE: suites gated on `process.env.CI` directly (test-20 image-build) stay
  * excluded regardless — CI truthiness already drops them.
  */
 const CI_LEG_ENABLE_FLAGS: Record<string, string> = {
   CI: '1',
   FULL_INTEGRATION: '1',
+  CLI_SUITE: '1',
   // Suite 24 (cluster licensing). Set by the `Run E2E Tests (K8s Multinode)` step in ct-tests.yml, which starts an account server for it.
   //
   // WHAT THIS FLAG DOES NOT CLAIM. That step also passes `--grep-invert "licensing on the fleet"`, so suite 24's VM tier is excluded
@@ -612,8 +613,6 @@ const CI_LEG_ENABLE_FLAGS: Record<string, string> = {
 const PRODUCTION_DARK_SUITES: Record<string, string> = {
   'tests/20-image-build.test.ts':
     'BLOCKER: suite 20 builds VM images at about 35 minutes per test and no CI runner carries the image toolchain; it runs locally through playwright.image.config.ts (packages/e2e-tests/README.md "Deliberately not in CI", item 3).',
-  'tests/23-cli-migrate-routing.test.ts':
-    'BLOCKER: CLI_SUITE is declared empty on every ct-tests.yml matrix leg until a local two-worker validation of its rdc argv and machine registration lands (plan phase 5; the comment above the E2E Workers `include:` matrix names the one-line switch).',
   'tests/ops-lifecycle/18-ops-lifecycle.test.ts':
     'BLOCKER: these tests stop, start and reset the shared fleet the other suites run on, so no config selects them; ci-ops-test.yml drives ops setup, check, up, status and down on throwaway VMs, and the reset path (OpsManager.resetVMs) has no CI run at all.',
 };

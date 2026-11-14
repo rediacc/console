@@ -90,6 +90,24 @@ export function pinningHolders(
   return [...new Set(out)];
 }
 
+/** Every lockfile copy of `name` nested under a dependent of the tree rooted at `root` (`node_modules/` for the root, `<workspace>/node_modules/` for a workspace), in lockfile order: only these are governed by that tree's override, so a sibling workspace's own copy is not one. */
+function nestedCopies(
+  lock: Record<string, LockEntry> | null,
+  name: string,
+  root: string
+): Array<{ key: string; version: string }> {
+  const out: Array<{ key: string; version: string }> = [];
+  for (const [key, entry] of Object.entries(lock ?? {}))
+    if (
+      key.startsWith(root) &&
+      key.length > root.length + name.length &&
+      key.endsWith(`/node_modules/${name}`) &&
+      entry.version !== undefined
+    )
+      out.push({ key, version: entry.version });
+  return out;
+}
+
 /**
  * Every checked package of an `(update)` step that did not resolve to its judged version, split by what that means. `held` is a package npm left on an OLDER version than judged: nothing unjudged landed, the update simply could not move it, and `holders` names the installed copies whose declared range pins it (pinningHolders). Anything else (a newer version, or a package missing from the lockfile) is a freshness-window breach.
  */
@@ -103,24 +121,32 @@ export function updateMismatches(
     step.checks ?? step.packages.map((p) => ({ pkg: p }));
   for (const { pkg, workspace } of checks) {
     const nested = workspace ? lock?.[`${workspace}/node_modules/${pkg.name}`] : undefined;
-    const resolved = (nested ?? lock?.[`node_modules/${pkg.name}`])?.version;
-    if (resolved === pkg.latest) continue;
-    const held =
-      resolved !== undefined &&
-      parseVersion(resolved) !== null &&
-      parseVersion(pkg.latest) !== null &&
-      compareVersions(resolved, pkg.latest) < 0;
-    const holders = held ? pinningHolders(lock, pkg.name, resolved, pkg.latest) : [];
-    const line =
-      `${pkg.name}: judged ${pkg.latest}, installed ${resolved ?? '<not in package-lock.json>'}${nested ? ` (nested in ${workspace})` : ''}` +
-      (held
-        ? holders.length > 0
-          ? `; held back by ${holders.join(', ')}`
-          : "; held back, and no installed copy in package-lock.json pins it, so npm's own output above is the reason"
-        : '');
-    if (seen.has(line)) continue;
-    seen.add(line);
-    out.push({ line, held });
+    const top = (nested ?? lock?.[`node_modules/${pkg.name}`])?.version;
+    // npm may install the copy an override governs only nested when another dependent holds the top-level slot with a different line, so a missing hoisted entry is judged against every nested copy under the judged tree (`node_modules/<dependent>/node_modules/<name>` for the root, `<workspace>/node_modules/<dependent>/node_modules/<name>` for a workspace step) before it counts as missing. A copy outside that tree is another tree's own and is judged by that tree's check.
+    const copies: Array<{ key?: string; version: string | undefined }> =
+      top === undefined
+        ? nestedCopies(lock, pkg.name, workspace ? `${workspace}/node_modules/` : 'node_modules/')
+        : [{ version: top }];
+    if (copies.length === 0) copies.push({ version: undefined });
+    for (const { key: copyKey, version: resolved } of copies) {
+      if (resolved === pkg.latest) continue;
+      const held =
+        resolved !== undefined &&
+        parseVersion(resolved) !== null &&
+        parseVersion(pkg.latest) !== null &&
+        compareVersions(resolved, pkg.latest) < 0;
+      const holders = held ? pinningHolders(lock, pkg.name, resolved, pkg.latest) : [];
+      const line =
+        `${pkg.name}: judged ${pkg.latest}, installed ${resolved ?? '<not in package-lock.json>'}${nested ? ` (nested in ${workspace})` : ''}${copyKey ? ` (only nested, at ${copyKey})` : ''}` +
+        (held
+          ? holders.length > 0
+            ? `; held back by ${holders.join(', ')}`
+            : "; held back, and no installed copy in package-lock.json pins it, so npm's own output above is the reason"
+          : '');
+      if (seen.has(line)) continue;
+      seen.add(line);
+      out.push({ line, held });
+    }
   }
   return out;
 }

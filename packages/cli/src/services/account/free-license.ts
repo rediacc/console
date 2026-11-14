@@ -17,18 +17,31 @@
  */
 
 import { DEFAULTS } from '@rediacc/shared/config';
+import { WK_BENCH_ORIGIN } from '@rediacc/shared/config/well-known.generated';
+import { BAKED_IN_REGIONS } from '@rediacc/shared/regions';
+import { PLAN_LIMITS } from '@rediacc/shared/subscription';
+import { configFileStorage } from '../../adapters/config-file-storage.js';
 import { t } from '../../i18n/index.js';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
 import { isAgentEnvironment } from '../../utils/agent-guard.js';
 import { ValidationError } from '../../utils/errors.js';
 import { askChoice } from '../../utils/prompt.js';
+import { promptRegionSelection } from '../../utils/region-prompt.js';
 import { shellQuote } from '../../utils/shell-quote.js';
+import { getEffectiveConfigName } from '../config/config-name.js';
+import { updateConfigAtPointer } from '../config/synced-write.js';
 import { outputService } from '../core/output.js';
 import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { accountServerFetch } from './account-client.js';
+import { assertActiveConfigExists } from './active-config-guard.js';
 import { readLocalMachineId, readRemoteMachineId, writeRepoLicense } from './license-machine.js';
-import { getSubscriptionServerUrl, getSubscriptionTokenState } from './subscription-auth.js';
+import {
+  getConfiguredServerUrl,
+  getSubscriptionServerUrl,
+  getSubscriptionTokenState,
+} from './subscription-auth.js';
+import { ensureTermsAcceptance } from './terms.js';
 
 export const FREE_LICENSE_PATH = '/account/api/v1/licenses/free';
 /** The account server's refusal code when a FREE blob asks for a backup session. */
@@ -44,15 +57,48 @@ let chosenAuthority: LicenseAuthority | undefined;
 /** The signup link the server returned with the last FREE licence. */
 let serverSignupUrl: string | undefined;
 
+/** The server picked for this run when the config named none (a region pick or the default). */
+let chosenServerUrl: string | undefined;
+/** The `--license-region` id set by the command layer for this process. */
+let requestedRegion: string | undefined;
+
+/** The CLI-only region id that maps to the bench account server. Never listed anywhere. */
+const HIDDEN_BENCH_REGION_ID = 'bench';
+/** Whether this process already told the user what registering gives. */
+let registerHintShown = false;
+
+/** The Community numbers, read from PLAN_LIMITS so they follow the plan table. */
+function communityHintVars(): Record<string, string | number> {
+  return {
+    repoGb: PLAN_LIMITS.COMMUNITY.maxRepositorySizeGb,
+    issuances: PLAN_LIMITS.COMMUNITY.maxRepoLicenseIssuancesPerMonth,
+    backupGb: PLAN_LIMITS.COMMUNITY.storageQuotaBytes / 1024 ** 3,
+    url: freeLicenseSignupUrl(),
+  };
+}
+
 /** Test seam: forget the process-wide choice and signup link. */
 export function resetFreeLicenseStateForTests(): void {
+  registerHintShown = false;
   chosenAuthority = undefined;
   serverSignupUrl = undefined;
+  chosenServerUrl = undefined;
+  requestedRegion = undefined;
+}
+
+/** Record the `--license-region <id>` flag so the free path honours it without every caller threading it. */
+export function setFreeLicenseRegion(regionId: string | undefined): void {
+  requestedRegion = regionId;
+}
+
+/** The account server a FREE licence is issued by and renews at: the run's pick, else the configured one. */
+function freeLicenseServerUrl(): string {
+  return getSubscriptionServerUrl(chosenServerUrl);
 }
 
 /** The account page a FREE user signs up at: the server's own answer, else the configured server's login page. */
 function freeLicenseSignupUrl(): string {
-  return serverSignupUrl ?? `${getSubscriptionServerUrl()}/account/login`;
+  return serverSignupUrl ?? `${freeLicenseServerUrl()}/account/login`;
 }
 
 function autoTakesFree(): boolean {
@@ -64,25 +110,31 @@ function autoTakesFree(): boolean {
  *
  * - A ready token: `token`, nothing is asked.
  * - An agent or `--yes` (REDIACC_YES=1): `free`, with a warning naming the cap
- *   and the signup link (R11).
+ *   and the signup link (R11), but only with `--accept-terms` or `RDC_ACCEPT_TERMS=1`
+ *   (`ensureTermsAcceptance` refuses before any network call otherwise).
  * - A terminal: the operator picks a login (`login` runs, then `token`) or a
- *   free licence.
+ *   free licence, which asks the Terms y/N first.
  * - Neither: `login` runs non-interactively (it prints the device-code URL),
  *   which is what this path did before FREE existed.
  */
 export async function resolveLicenseAuthority(
-  login: () => Promise<unknown>
+  login: () => Promise<unknown>,
+  options: { region?: string } = {}
 ): Promise<LicenseAuthority> {
   if (getSubscriptionTokenState().kind === 'ready') return 'token';
   if (chosenAuthority === 'free') return 'free';
 
   if (autoTakesFree()) {
+    // The terms come first: an unattended run without `--accept-terms` refuses before any network call.
+    await ensureTermsAcceptance();
+    await chooseFreeLicenseRegion(options.region ?? requestedRegion, false);
     outputService.warn(
       t('errors.freeLicense.autoTaken', {
-        url: freeLicenseSignupUrl(),
+        ...communityHintVars(),
         maxGb: FREE_LICENSE_MAX_SIZE_GB,
       })
     );
+    registerHintShown = true;
     chosenAuthority = 'free';
     return 'free';
   }
@@ -96,6 +148,8 @@ export async function resolveLicenseAuthority(
       },
     ]);
     if (choice === 'free') {
+      await ensureTermsAcceptance();
+      await chooseFreeLicenseRegion(options.region ?? requestedRegion, true);
       chosenAuthority = 'free';
       return 'free';
     }
@@ -104,6 +158,56 @@ export async function resolveLicenseAuthority(
   await login();
   chosenAuthority = 'token';
   return 'token';
+}
+
+/** Persist the picked server as the active config's account server, so renewals and a later login agree. */
+async function saveAccountServer(serverUrl: string): Promise<void> {
+  const configName = getEffectiveConfigName();
+  if (!(await configFileStorage.exists(configName))) return;
+  await updateConfigAtPointer(configName, '/account/accountServer', (cfg) => ({
+    ...cfg,
+    account: { ...(cfg.account ?? {}), accountServer: serverUrl },
+  }));
+}
+
+/**
+ * Pick the region a FREE licence comes from, only when no server is configured (env, config,
+ * or a stored login; `--license-region` is the pick itself, so it never counts as configured): `--license-region <id>` names it, a terminal is
+ * asked (timezone suggestion as the default), anything else keeps the default and says how to choose. A configured server is never
+ * asked about and never overwritten.
+ */
+async function chooseFreeLicenseRegion(
+  regionId: string | undefined,
+  interactive: boolean
+): Promise<void> {
+  const named = regionId === undefined ? undefined : findRegion(regionId);
+  const configured = getConfiguredServerUrl();
+  if (configured) {
+    if (named && named.origin !== configured) {
+      outputService.warn(t('errors.freeLicense.regionIgnored', { server: configured }));
+    }
+    return;
+  }
+  const canAsk = interactive && process.stdin.isTTY === true && process.stdout.isTTY === true;
+  if (!named && !canAsk) {
+    chosenServerUrl = undefined;
+    outputService.info(t('errors.freeLicense.defaultRegion', { server: freeLicenseServerUrl() }));
+    return;
+  }
+  // The pick is saved into the active config below: refuse before the prompt when there is none to save into.
+  await assertActiveConfigExists();
+  chosenServerUrl = named
+    ? named.origin
+    : `https://${(await promptRegionSelection(BAKED_IN_REGIONS)).domain}`;
+  await saveAccountServer(chosenServerUrl);
+}
+
+/** The region with this id (the hidden `bench` id included); an unknown id is refused. */
+function findRegion(regionId: string): { origin: string } {
+  if (regionId === HIDDEN_BENCH_REGION_ID) return { origin: WK_BENCH_ORIGIN };
+  const region = BAKED_IN_REGIONS.find((r) => r.id === regionId);
+  if (!region) throw new ValidationError(t('errors.unknownRegion', { region: regionId }));
+  return { origin: `https://${region.domain}` };
 }
 
 export interface FreeLicenseParams {
@@ -120,13 +224,16 @@ export interface FreeLicenseParams {
  * (the per-address window, the per-machine cap, a reused GUID, a size above
  * 3 GB) propagates with its own message, which names the signup link.
  */
-export function issueFreeRepoLicense(
+export async function issueFreeRepoLicense(
+  machineName: string,
   machine: MachineConfig,
   sshPrivateKey: string,
   params: FreeLicenseParams,
   remoteRenetPath?: string,
   sharedSftp?: SFTPClient
 ): Promise<void> {
+  // Settled before any machine or network read: an unattended run without the flag stops here.
+  const termsAcceptance = await ensureTermsAcceptance();
   return withSharedOrPooledSftp(
     sharedSftp,
     sftpConfigForMachine(machine, sshPrivateKey),
@@ -141,7 +248,7 @@ export function issueFreeRepoLicense(
       }>(FREE_LICENSE_PATH, {
         method: 'POST',
         noAuth: true,
-        serverUrl: getSubscriptionServerUrl(),
+        serverUrl: freeLicenseServerUrl(),
         body: {
           machineId,
           clientMachineId,
@@ -150,11 +257,16 @@ export function issueFreeRepoLicense(
           kind: params.kind,
           requestedSizeGb: params.requestedSizeGb,
           datastoreId: params.datastoreId,
+          termsAcceptance,
         },
       });
       if (signupUrl) serverSignupUrl = signupUrl;
-      await writeRepoLicense(sftp, params.repositoryGuid, license, params.datastoreId);
+      await writeRepoLicense(machineName, params.repositoryGuid, license, params.datastoreId);
       outputService.info(t('errors.freeLicense.issued', { maxGb: FREE_LICENSE_MAX_SIZE_GB }));
+      if (!registerHintShown) {
+        registerHintShown = true;
+        outputService.info(t('errors.freeLicense.registerHint', communityHintVars()));
+      }
     }
   );
 }

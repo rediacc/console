@@ -24,16 +24,14 @@ export interface RegionInfo {
   id: string;
   label: string;
   domain: string;
-  edgeDomain: string;
   default: boolean;
 }
 
 export const BAKED_IN_REGIONS: RegionInfo[] = regionsData.regions.map(
-  (r: { id: string; label: string; domain: string; edgeDomain: string; default: boolean }) => ({
+  (r: { id: string; label: string; domain: string; default: boolean }) => ({
     id: r.id,
     label: r.label,
     domain: r.domain,
-    edgeDomain: r.edgeDomain,
     default: r.default,
   })
 );

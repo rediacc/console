@@ -6,7 +6,7 @@
  * has two halves that must name the same bucket:
  *
  *   1. the native R2 binding `BACKUP_BUCKET`, declared per deployment in
- *      workers/account/wrangler.<channel><region>.toml — this is what the
+ *      workers/account/wrangler.<region>.toml — this is what the
  *      Worker reads, lists and GCs;
  *   2. the presign signer built in
  *      private/account/src/services/backup-chunk-store.ts (createBackupPlane's
@@ -46,8 +46,12 @@
  * branch: an empty Bucket makes every presign throw at request time while a non-null minter
  * keeps the cron warning silent, so the branch must build the minter only from all four
  * values. A bench row holds wrangler.bench.toml's BACKUP_BUCKET binding to a non-empty
- * bucket and refuses a `rediacc-backups-` literal in .ci/rediacc_ci/ops/deploy_bench.py, which
- * derives the bucket from that binding.
+ * bucket and refuses a backup bucket literal (`backups-bench`, or a prefixed `rediacc-backups-…`)
+ * in .ci/rediacc_ci/ops/deploy_bench.py, which derives the bucket from that binding.
+ *
+ * ONE SHARED SET (PLAN-product-domain-rename W6). The stable and edge pairs collapsed into one
+ * shared Worker per region, so each region has one deployment, `wrangler.<region>.toml` against
+ * regions.json `backupR2`, and the shared bucket names carry no `rediacc-` prefix.
  *
  * Run: npx tsx scripts/gates/check-backup-bucket-conformance.ts
  *
@@ -66,6 +70,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { joinReport } from '../lib/console.js';
+import { recordProblem } from './lib/gate-problems.js';
 
 const ROOT = join(fileURLToPath(new URL('.', import.meta.url)), '..', '..');
 
@@ -75,7 +80,6 @@ const BINDING = 'BACKUP_BUCKET';
 interface RegionRecord {
   id: string;
   backupR2?: { name?: string };
-  edgeBackupR2?: { name?: string };
   r2Jurisdiction?: string | null;
 }
 
@@ -126,7 +130,10 @@ export function extractBinding(
     if (sawBinding && m[1] === 'bucket_name') bucket = m[2];
     if (sawBinding && m[1] === 'jurisdiction') jurisdiction = m[2];
   }
-  return { bucket: sawBinding || bucket !== null ? bucket : null, jurisdiction };
+  return {
+    bucket: sawBinding || bucket !== null ? bucket : null,
+    jurisdiction,
+  };
 }
 
 // ── Control: the extractor, both directions, before it is trusted ──────────
@@ -204,9 +211,13 @@ export function emptyFallbacks(branch: string): string[] {
   return branch.match(re) ?? [];
 }
 
-/** A hardcoded backup bucket name in the bench deploy tool. */
+/**
+ * A hardcoded backup bucket name in the bench deploy tool: the shared `backups-<name>` and any
+ * prefixed spelling (`rediacc-backups-…`). The old `/rediacc-backups-[\w-]+/` never matched the
+ * shared names, so a `backups-bench` literal passed silently (PLAN-product-domain-rename W6).
+ */
 export function benchLiterals(py: string): string[] {
-  return py.match(/rediacc-backups-[\w-]+/g) ?? [];
+  return py.match(/[\w-]*\bbackups-[\w-]+/g) ?? [];
 }
 
 {
@@ -257,7 +268,12 @@ export function benchLiterals(py: string): string[] {
     console.error('✗ source-shape control: a source without the markers was not refused.');
     process.exit(1);
   }
-  if (benchLiterals('x = "rediacc-backups-bench"').length !== 1 || benchLiterals('x = 1').length) {
+  if (
+    benchLiterals('x = "backups-bench"').length !== 1 ||
+    benchLiterals('x = "rediacc-backups-bench"').length !== 1 ||
+    benchLiterals('x = 1').length ||
+    benchLiterals('url = "/backups/usage"').length
+  ) {
     console.error('✗ bench control: the literal scan is wrong in one direction.');
     process.exit(1);
   }
@@ -313,26 +329,20 @@ const deployments: Deployment[] = [];
 for (const r of regions) {
   const jur = r.r2Jurisdiction ?? null;
   deployments.push({
-    label: `stable/${r.id}`,
+    label: r.id,
     toml: `workers/account/wrangler.${r.id}.toml`,
     declared: r.backupR2?.name,
     declaredJurisdiction: jur,
   });
-  deployments.push({
-    label: `edge/${r.id}`,
-    toml: `workers/account/wrangler.edge-${r.id}.toml`,
-    declared: r.edgeBackupR2?.name,
-    declaredJurisdiction: jur,
-  });
 }
 
-// Anti-vacuity floor: three regions x two channels. If regions.json ever loses a region this
+// Anti-vacuity floor: three regions, one shared deployment each. If regions.json ever loses a region this
 // trips rather than silently checking less. The bench binding is judged by its own row above,
 // so a missing bench binding prints its specific problem instead of tripping this count.
-const EXPECTED = 6;
+const EXPECTED = 3;
 if (deployments.length !== EXPECTED) {
   console.error(
-    `✗ expected ${EXPECTED} deployments (3 regions x stable+edge), built ${deployments.length}.\n` +
+    `✗ expected ${EXPECTED} deployments (3 regions, one shared Worker each), built ${deployments.length}.\n` +
       '  Either regions.json changed shape or this gate is out of date. Refusing to\n' +
       '  report a verdict over a set this gate does not recognise.'
   );
@@ -352,10 +362,8 @@ for (const d of deployments) {
     continue;
   }
   if (!d.declared) {
-    problems.push(
-      `    ${d.label}: regions.json names no backup bucket ` +
-        `(backupR2/edgeBackupR2), but the binding says "${bucket}"`
-    );
+    const named = `${d.label}: regions.json names no backup bucket (backupR2)`;
+    recordProblem(problems, `    ${named}, but the binding says "${bucket}"`);
     continue;
   }
   if (d.declared !== bucket) {
@@ -379,7 +387,7 @@ if (problems.length > 0) {
       '  — the backup simply is not there when someone restores.\n\n',
       '  Fix by making regions.json match the bindings (or the bindings match\n',
       '  regions.json), then re-run. Do NOT reintroduce a global ACCOUNT_BACKUP_S3_BUCKET secret:\n',
-      '  one global name against six bindings is the defect this gate exists for.'
+      '  one global name against per-region bindings is the defect this gate exists for.'
     )
   );
   process.exit(1);

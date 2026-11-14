@@ -6,7 +6,7 @@
 
 The recovery path the release-state drift gate names for "cli sentinel present, git tag missing". A sentinel exists only if `write-release-sentinel` completed, so the bytes count as released by the invariant; when the downstream tag never happened the operator either re-runs CD to create the tag (preferred, keeps the bytes) or scrubs the sentinel and the bytes with this tool so the version number is freed. Dry-run is the default; deletion needs `--execute`. Deletions are not recoverable (the bucket is assumed unversioned).
 
-Env (required): `CLOUDFLARE_R2_ACCESS_KEY_ID`, `CLOUDFLARE_R2_SECRET_ACCESS_KEY`, `CLOUDFLARE_R2_ENDPOINT`; `RELEASES_BUCKET` optional (default `rediacc-releases`). The aws CLI does the S3 calls, through `rediacc_ci.core.release_state_validator` for the sentinel probe.
+Env (required): `CLOUDFLARE_R2_ACCESS_KEY_ID`, `CLOUDFLARE_R2_SECRET_ACCESS_KEY`, `CLOUDFLARE_R2_ENDPOINT`; `RELEASES_BUCKET` optional (default `releases`). The aws CLI does the S3 calls, through `rediacc_ci.core.release_state_validator` for the sentinel probe.
 
 RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in `tests/test_ops_scrub_sentinel.py` that fails on the bash behaviour).
 

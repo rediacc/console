@@ -179,7 +179,7 @@ def make_fixture(gate, tmp_path) -> Fixture:
 
 
 def assert_dispatched(gate, fixture: Fixture, msg: str) -> None:
-    gate.assert_contains(fixture.out, "DRY-RUN: gh workflow run cd-v2.yml", msg)
+    gate.assert_contains(fixture.out, "DRY-RUN: gh workflow run cd-release-edge.yml", msg)
     gate.assert_contains(fixture.out, "ci_run_id=999", "the run id is passed through")
 
 
@@ -196,7 +196,7 @@ def test_bump_none_skips_the_release(gate, tmp_path):
     fx.pulls_for(SHA, merged_pr(561, "bump-none"))
     fx.run()
     gate.assert_exit(0, fx, "the decision must never fail the sentinel job")
-    assert_not_dispatched(gate, fx, "a bump-none PR must NOT dispatch cd-v2")
+    assert_not_dispatched(gate, fx, "a bump-none PR must NOT dispatch cd-release-edge")
     gate.assert_contains(
         fx.out, "::notice title=Release skipped::", "it announces the skip as an annotation"
     )
@@ -220,7 +220,7 @@ def test_an_unlabelled_pr_releases(gate, tmp_path):
     fx.pulls_for(SHA, merged_pr(561, ""))
     fx.run()
     gate.assert_exit(0, fx, "a normal release path exits clean")
-    assert_dispatched(gate, fx, "an unlabelled PR must dispatch cd-v2")
+    assert_dispatched(gate, fx, "an unlabelled PR must dispatch cd-release-edge")
     gate.assert_not_contains(fx.out, "Release skipped", "and say nothing about skipping")
     gate.log_pass("CONTROL: no bump-none => the release dispatches as before")
 
@@ -232,7 +232,7 @@ def test_the_rest_of_the_bump_family_still_releases(gate, tmp_path):
         fx.setup()
         fx.pulls_for(SHA, merged_pr(561, label))
         fx.run()
-        assert_dispatched(gate, fx, "%s must still dispatch cd-v2" % label)
+        assert_dispatched(gate, fx, "%s must still dispatch cd-release-edge" % label)
     gate.log_pass("CONTROL: bump-minor and bump-major size the release, they do not skip it")
 
 
@@ -501,7 +501,7 @@ def test_ci_yml_wires_the_script(gate):
     )
     gate.assert_not_contains(
         job,
-        "gh workflow run cd-v2.yml",
+        "gh workflow run cd-release-edge.yml",
         "and the inline dispatch is gone, so there is only ONE place the decision can be made",
     )
     gate.assert_contains(job, "GH_TOKEN", "the script still gets its token")
@@ -528,7 +528,7 @@ def test_ci_yml_decides_before_it_seals(gate):
     broken = (
         "      - name: Write release sentinels\n"
         "        run: .ci/scripts/deploy/write-release-sentinel.sh --version v1.2.27\n"
-        "      - name: Dispatch cd-v2 release\n"
+        "      - name: Dispatch cd-release-edge release\n"
         "        run: python3 -m rediacc_ci.ci.dispatch_release --decide-only"
     )
     found = ordering_violations(broken)
@@ -553,7 +553,7 @@ def test_ci_yml_guards_fail_toward_releasing(gate):
     broken = (
         "      - name: Write release sentinels\n"
         "        if: steps.release-decision.outputs.skip_release == 'true'\n"
-        "      - name: Dispatch cd-v2 release\n"
+        "      - name: Dispatch cd-release-edge release\n"
         "        if: steps.release-decision.outputs.skip_release == 'true'"
     )
     found = polarity_violations(broken)
@@ -567,7 +567,7 @@ def test_ci_yml_guards_fail_toward_releasing(gate):
     broken = (
         "      - name: Write release sentinels\n"
         "        run: .ci/scripts/deploy/write-release-sentinel.sh\n"
-        "      - name: Dispatch cd-v2 release\n"
+        "      - name: Dispatch cd-release-edge release\n"
         "        if: steps.release-decision.outputs.skip_release != 'true'"
     )
     found = polarity_violations(broken)

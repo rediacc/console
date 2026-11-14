@@ -259,22 +259,70 @@ const MATRIX: Record<string, ScheduledStrategy> = {
       },
     },
   },
+  // One command per destination: the first on home (no `--store`), the second carrying `--store offsite`.
   twoDestinations: {
     schedule: '0 3 * * *',
-    destinations: [hosted, { ...hosted, name: 'chunks-b' }],
+    destinations: [hosted, { kind: 'hosted-service', name: 'offsite', target: 'offsite' }],
   },
 };
 
+const RENET_PATH = '/usr/lib/rediacc/renet/current/renet';
+
+/**
+ * The renet commands of one ExecStart. A unit with several destinations runs them in one isolating `sh -c`
+ * (isolateCommands: `rc=0; <cmd> || rc=1; ... exit $$rc`), and each command inside must parse like a bare one. Any
+ * other ExecStart must be a bare renet command, so a wrapper of another shape (double quotes, bash, env) throws
+ * rather than hiding its commands from this contract.
+ */
+function renetCommandsOf(execStart: string): string[] {
+  const wrapper = /^\/bin\/sh -c '(.*)'$/.exec(execStart);
+  if (!wrapper) {
+    // Anything else must be a bare renet command; a shell or env wrapper of another shape would otherwise pass unparsed.
+    // A shell separator, redirection or command substitution after the renet path would hide a second command or a changed stream from the flag check.
+    assertBareRenetCommand(execStart);
+    return [execStart];
+  }
+  const parts = wrapper[1].split('; ');
+  const commands = parts.slice(1, -1);
+  if (
+    parts[0] !== 'rc=0' ||
+    parts.at(-1) !== 'exit $$rc' ||
+    commands.length < 2 ||
+    !commands.every((c) => c.endsWith(' || rc=1'))
+  ) {
+    throw new Error(`unrecognized isolating wrapper: ${execStart}`);
+  }
+  const bare = commands.map((c) => c.slice(0, -' || rc=1'.length));
+  // A command inside the wrapper is held to the same shape as a bare one: a redirection or substitution there would change a stream or hide a command from the flag check just the same.
+  for (const c of bare) assertBareRenetCommand(c);
+  return bare;
+}
+
+function assertBareRenetCommand(command: string): void {
+  if (!command.startsWith(`${RENET_PATH} `) || /[;&|<>`\n]|\$\(/.test(command)) {
+    throw new Error(
+      `unrecognized ExecStart (neither a bare renet command nor the isolating wrapper): ${command}`
+    );
+  }
+}
+
 function generatedExecStarts(): string[] {
   const strategies = Object.entries(MATRIX).map(([name, cfg]) => ({ name, config: cfg }));
+  // renetHasStoreFlag: the renet this contract reads declares `--store`, so the generator emits it; a renet without it
+  // fails the parse below on `unknown flag: --store`.
   const units = computeDesiredUnits(
     machineUnitSpecs(strategies, config, 'm1'),
-    '/usr/lib/rediacc/renet/current/renet'
+    RENET_PATH,
+    undefined,
+    undefined,
+    true
   );
   const lines: string[] = [];
   for (const unit of units.values()) {
     for (const line of unit.serviceContent.split('\n')) {
-      if (line.startsWith('ExecStart=')) lines.push(line.slice('ExecStart='.length));
+      if (line.startsWith('ExecStart=')) {
+        lines.push(...renetCommandsOf(line.slice('ExecStart='.length)));
+      }
     }
   }
   return lines;
@@ -295,6 +343,8 @@ describe('scheduled ExecStart lines parse against renet backup snapshot (G9)', (
     expect(set.snapshot.flags.get('hook-failure')).toBe('String');
     expect(set.snapshot.flags.get('index-every')).toBe('Duration');
     expect(set.snapshot.flags.get('cell-bytes')).toBe('Int64');
+    expect(set.snapshot.flags.get('store')).toBe('String');
+    expect(set.report.flags.get('store')).toBe('String');
     expect(set.snapshot.guidOnly.has('repo')).toBe(true);
     expect(set.verify.flags.get('level')).toBe('String');
     expect(set.verify.flags.get('next-due')).toBe('String');
@@ -354,6 +404,22 @@ describe('scheduled ExecStart lines parse against renet backup snapshot (G9)', (
     ]);
   });
 
+  it('two destinations render one snapshot each, home without --store and the other with it', () => {
+    const snapshots = generatedExecStarts().filter(
+      (l) => l.split(' ')[2] === 'snapshot' && !l.includes(' --repo ')
+    );
+    const offsite = snapshots.find((l) => l.includes(' --store offsite'));
+    expect(offsite).toBeDefined();
+    // The home destination's command is the same line without the flag.
+    expect(snapshots).toContain(offsite?.replace(' --store offsite', ''));
+    expect(
+      snapshots.filter((l) => l.includes(' --store ')).every((l) => l.includes(' --store offsite'))
+    ).toBe(true);
+    expect(argvProblems('/r backup snapshot --store', set)).toEqual([
+      'flag needs an argument: --store',
+    ]);
+  });
+
   it('the pre-G1 output, a repo NAME on --repo, is refused (control)', () => {
     expect(
       argvProblems(
@@ -361,6 +427,24 @@ describe('scheduled ExecStart lines parse against renet backup snapshot (G9)', (
         set
       )
     ).toEqual(['--repo takes repository GUIDs only, got "mail"']);
+  });
+
+  it('an ExecStart with a shell separator, redirection or substitution after the renet path is refused (control)', () => {
+    for (const separator of [';', '&', '&&', '|', '||', '>', '<', '$(', '`', '\n']) {
+      expect(() =>
+        renetCommandsOf(`${RENET_PATH} backup snapshot --datastore /d ${separator} evil`)
+      ).toThrow(/unrecognized ExecStart/);
+    }
+    expect(renetCommandsOf(`${RENET_PATH} backup snapshot --datastore /d`)).toHaveLength(1);
+  });
+
+  it('a redirection or substitution inside the isolating wrapper is refused (control)', () => {
+    const ok = `${RENET_PATH} backup snapshot --datastore /d`;
+    const wrap = (a: string) => `/bin/sh -c 'rc=0; ${a} || rc=1; ${ok} || rc=1; exit $$rc'`;
+    expect(renetCommandsOf(wrap(ok))).toHaveLength(2);
+    for (const bad of ['> /tmp/x', '< /tmp/x', '$(id)', '`id`', '&& evil']) {
+      expect(() => renetCommandsOf(wrap(`${ok} ${bad}`))).toThrow(/unrecognized ExecStart/);
+    }
   });
 
   it('an ambiguous bandwidth limit, a non-integer parallelism and an unknown flag are refused (control)', () => {

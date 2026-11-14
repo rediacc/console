@@ -77,7 +77,9 @@ def test_the_secret_payload_reads_the_environment_and_never_logs_it(
         "ACCOUNT_SERVER_API_KEY",
         "ACCOUNT_JWT_SECRET",
         "FREE_LICENSE_HMAC_KEY",
+        "ACCOUNT_AE_READ_TOKEN",
         "ACCOUNT_CONFIG_SERVER_KEY",
+        "ACCOUNT_BACKUP_STORE_KEK",
     ):
         monkeypatch.setenv(name, "v-" + name)
     monkeypatch.setenv("ROOT_EMAIL", "root@example.invalid")
@@ -89,12 +91,15 @@ def test_the_secret_payload_reads_the_environment_and_never_logs_it(
     monkeypatch.setenv("ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY", "bench-secret")
     monkeypatch.setenv("OBS_OTLP_CREDENTIALS", json.dumps({"user": "u", "pass": "p"}))
     monkeypatch.delenv("ACCOUNT_BACKUP_S3_BUCKET", raising=False)
+    # The sandbox pair is pinned empty so a value left in the process environment by an earlier test cannot make it half-set.
+    monkeypatch.setenv("STRIPE_SANDBOX_SECRET_KEY", "")
+    monkeypatch.setenv("STRIPE_SANDBOX_WEBHOOK_SECRET", "")
     payload = deploy_bench.secrets_payload()
-    assert len(payload) == 31
+    assert len(payload) == 37
     assert payload["ACCOUNT_BACKUP_S3_ENDPOINT"] == "https://r2.invalid"
     assert payload["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID"] == "bench-id"
     assert payload["ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"] == "bench-secret"
-    assert payload["ACCOUNT_BACKUP_S3_BUCKET"] == "rediacc-backups-bench"
+    assert payload["ACCOUNT_BACKUP_S3_BUCKET"] == "backups-bench"
     assert payload["STRIPE_SECRET_KEY"] == ""
     monkeypatch.delenv("ACCOUNT_JWT_SECRET")
     with pytest.raises(deploy_bench.DeployError, match="ACCOUNT_JWT_SECRET missing"):
@@ -114,7 +119,9 @@ def test_deploy_bench_refuses_the_account_wide_r2_token_as_a_backup_credential(
         "ACCOUNT_SERVER_API_KEY",
         "ACCOUNT_JWT_SECRET",
         "FREE_LICENSE_HMAC_KEY",
+        "ACCOUNT_AE_READ_TOKEN",
         "ACCOUNT_CONFIG_SERVER_KEY",
+        "ACCOUNT_BACKUP_STORE_KEK",
     ):
         monkeypatch.setenv(name, "v-" + name)
     monkeypatch.setenv("ROOT_EMAIL", "root@example.invalid")
@@ -330,12 +337,12 @@ def test_the_d1_bookmark_and_restore_command_print_before_the_migrations(
         "d1",
         "time-travel",
         "info",
-        "account-db-bench",
+        "account-bench",
     ]
     out = capsys.readouterr()
     assert BOOKMARK in out.out + out.err
     assert (
-        "cd workers/account && npx --no-install wrangler d1 time-travel restore account-db-bench --bookmark=%s"
+        "cd workers/account && npx --no-install wrangler d1 time-travel restore account-bench --bookmark=%s"
         % BOOKMARK
         in out.out
     )

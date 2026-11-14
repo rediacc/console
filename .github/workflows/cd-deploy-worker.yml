@@ -1,17 +1,16 @@
 name: Deploy WWW Worker
 
 # Reusable workflow for deploying the www Worker (marketing site + embedded
-# account portal) to the edge or stable channel.
-# Both channels are production-quality; "stable" serves www.rediacc.com, "edge"
-# serves edge.rediacc.com. Called by Release workflow (edge, and stable for
-# hotfixes) and promote-stable.yml (stable, after soak).
+# account portal).
+# One shared www Worker serves www.rediacc.com, built from edge. Called by the edge release
+# workflow (cd-release-edge.yml) only.
 # Builds pages + account portal from source at the specified git ref, then deploys.
 
 on:
   workflow_call:
     inputs:
       target:
-        description: 'Deploy channel: edge or stable'
+        description: 'Label for the job name and the GitHub environment'
         required: true
         type: string
       ref:
@@ -46,7 +45,7 @@ jobs:
       contents: read
     environment:
       name: ${{ inputs.target }}
-      url: ${{ inputs.target == 'stable' && 'https://www.rediacc.com' || 'https://edge.rediacc.com' }}
+      url: https://www.rediacc.com
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -69,8 +68,6 @@ jobs:
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
             CLOUDFLARE_TURNSTILE_SECRET_KEY > BWS_CLOUDFLARE_TURNSTILE_SECRET_KEY
             GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
-            STRIPE_SANDBOX_SECRET_KEY > BWS_STRIPE_SANDBOX_SECRET_KEY
-            STRIPE_SANDBOX_WEBHOOK_SECRET > BWS_STRIPE_SANDBOX_WEBHOOK_SECRET
             STRIPE_SECRET_KEY > BWS_STRIPE_SECRET_KEY
             STRIPE_WEBHOOK_SECRET_EU > BWS_STRIPE_WEBHOOK_SECRET_EU
             GITHUB_APP_ID > BWS_APP_ID
@@ -87,6 +84,7 @@ jobs:
             SELLER_EMAIL > BWS_SELLER_EMAIL
             SELLER_NAME > BWS_SELLER_NAME
             SELLER_POSTAL_CODE > BWS_SELLER_POSTAL_CODE
+            SELLER_REGISTER_NAME > BWS_SELLER_REGISTER_NAME
             SELLER_REGISTRATION_NUMBER > BWS_SELLER_REGISTRATION_NUMBER
             SELLER_VAT_NUMBER > BWS_SELLER_VAT_NUMBER
 
@@ -114,6 +112,25 @@ jobs:
         run: npm install && npm run install:natives && cd ../.. && npm run install:natives
         working-directory: private/account
 
+      - name: Legal entity projection matches Bitwarden
+        # PLAN-terms-acceptance Design 1: no Worker deploy goes out while
+        # packages/shared/src/legal/entity.generated.* trails the vault. The ten
+        # SELLER_* values come from the fetch above, and REDIACC_BWS_PROFILES tells
+        # rediacc_ci.legal.entity they are already bound. It prints field names only.
+        env:
+          REDIACC_BWS_PROFILES: legal-entity
+          SELLER_ADDRESS_LINE1: ${{ env.BWS_SELLER_ADDRESS_LINE1 }}
+          SELLER_ADDRESS_LINE2: ${{ env.BWS_SELLER_ADDRESS_LINE2 }}
+          SELLER_CITY: ${{ env.BWS_SELLER_CITY }}
+          SELLER_COUNTRY: ${{ env.BWS_SELLER_COUNTRY }}
+          SELLER_EMAIL: ${{ env.BWS_SELLER_EMAIL }}
+          SELLER_NAME: ${{ env.BWS_SELLER_NAME }}
+          SELLER_POSTAL_CODE: ${{ env.BWS_SELLER_POSTAL_CODE }}
+          SELLER_REGISTER_NAME: ${{ env.BWS_SELLER_REGISTER_NAME }}
+          SELLER_REGISTRATION_NUMBER: ${{ env.BWS_SELLER_REGISTRATION_NUMBER }}
+          SELLER_VAT_NUMBER: ${{ env.BWS_SELLER_VAT_NUMBER }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.legal.entity verify
+
       - name: Build shared packages
         run: npm run build:packages
 
@@ -134,6 +151,17 @@ jobs:
           # Single global CDN domain for tutorial/solution videos -- same value
           # for edge, stable, and PR previews. See .ci/docs/r2-media-setup.md.
           PUBLIC_VIDEO_CDN_BASE_URL: ${{ env.WK_MEDIA_ORIGIN }}
+          # The same widget the portal uses. Seven www forms read it at build time,
+          # and the servers verify every token, so a keyless build refuses every
+          # visitor (contact, newsletter, region lookup: production 2026-11-12).
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ env.BWS_TURNSTILE_SITE_KEY }}
+
+      - name: Pages carry the Turnstile site key
+        run: |
+          test -n "$PUBLIC_TURNSTILE_SITE_KEY" || { echo "::error::TURNSTILE_SITE_KEY resolved empty; refusing to deploy www forms nobody can submit"; exit 1; }
+          grep -rqF -- "$PUBLIC_TURNSTILE_SITE_KEY" packages/www/dist/assets || { echo "::error::packages/www/dist/assets does not contain the Turnstile site key"; exit 1; }
+        env:
+          PUBLIC_TURNSTILE_SITE_KEY: ${{ env.BWS_TURNSTILE_SITE_KEY }}
 
       - name: Copy pages to www worker assets
         run: |
@@ -178,19 +206,20 @@ jobs:
 
       - name: Deploy Worker
         # Each module is spelled out so check:ci-inner-timeout-reachable can
-        # read both modules' timers; a `-m rediacc_ci.deploy.${{ ... }}` hid
-        # which one runs. The two names are resolve_www_deploy_target's only
-        # outputs, and anything else is refused rather than guessed.
+        # read the module's timers; a `-m rediacc_ci.deploy.${{ ... }}` hid
+        # which one runs. deploy_www is resolve_www_deploy_target's only
+        # output, and anything else is refused rather than guessed.
         run: |
           case "$DEPLOY_SCRIPT" in
             deploy_www) PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_www ;;
-            deploy_edge) PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_edge ;;
             *) echo "::error::unknown deploy script '$DEPLOY_SCRIPT'"; exit 1 ;;
           esac
         env:
           DEPLOY_SCRIPT: ${{ steps.target.outputs.script }}
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
+          # deploy_www refuses a www dist that lacks this key (www_sitekey_refusal).
+          TURNSTILE_SITE_KEY: ${{ env.BWS_TURNSTILE_SITE_KEY }}
 
       # Step-scoped (.ci/config/bws-step-scoped.json, check:ci-bws-step-scope): this
       # fetch serves the next step only, and the scrub after it blanks the key.
@@ -232,25 +261,14 @@ jobs:
           SELLER_POSTAL_CODE: ${{ env.BWS_SELLER_POSTAL_CODE }}
           SELLER_REGISTRATION_NUMBER: ${{ env.BWS_SELLER_REGISTRATION_NUMBER }}
           SELLER_VAT_NUMBER: ${{ env.BWS_SELLER_VAT_NUMBER }}
-          # BOTH of these are per CHANNEL, not per region: stable gets the live EU
-          # credentials, edge the sandbox ones (set_www_worker_secrets.py). The
-          # unsuffixed store entries are pre-regional leftovers and are NOT the
-          # source here. Restoring the ternary on the KEY was a P1 fix: it
-          # had been rebuilt flat while the webhook kept its branch, so an EDGE
-          # deploy would have configured the www Worker with the LIVE Stripe key
-          # against a SANDBOX webhook secret -- fail-OPEN, and a pair no code path
-          # expects. The map names a secret; it never says which branch reads it.
-          #
-          # Post-rename spelling: the live key COLLAPSED to STRIPE_SECRET_KEY
-          # (one value served all three regions), so HEAD's STRIPE_SECRET_KEY_EU
-          # no longer exists. The WEBHOOK secrets did not collapse -- those are
-          # genuinely per region -- which is why only one side changed.
-          STRIPE_SECRET_KEY: ${{ inputs.target == 'stable'
-            && env.BWS_STRIPE_SECRET_KEY
-            || env.BWS_STRIPE_SANDBOX_SECRET_KEY }}
-          STRIPE_WEBHOOK_SECRET: ${{ inputs.target == 'stable'
-            && env.BWS_STRIPE_WEBHOOK_SECRET_EU
-            || env.BWS_STRIPE_SANDBOX_WEBHOOK_SECRET }}
+          # The one www Worker (www.rediacc.com) takes live billing on every
+          # target, so the live key and the live EU webhook secret are used
+          # unconditionally. The two are read as a pair from the same branch: a
+          # live key with a sandbox webhook secret would fail OPEN. The unsuffixed
+          # webhook store entry is a pre-regional leftover and is NOT the source.
+          # The sandbox pair stays for local dev and E2E, never here.
+          STRIPE_SECRET_KEY: ${{ env.BWS_STRIPE_SECRET_KEY }}
+          STRIPE_WEBHOOK_SECRET: ${{ env.BWS_STRIPE_WEBHOOK_SECRET_EU }}
         # workers/www holds the only node_modules/.bin/wrangler this job installs, and
         # `npx --no-install wrangler` resolves a local binary only, so the step runs
         # there (the same failure took Deploy Preview down in run 41348962671).
@@ -268,5 +286,4 @@ jobs:
         run: npx tsx scripts/verify-webhook.ts ${{ steps.target.outputs.sandbox }} --expected-url "https://${{ steps.target.outputs.domain }}/account/api/v1/webhooks/stripe"
         working-directory: private/account
         env:
-          STRIPE_SECRET_KEY: ${{ inputs.target == 'stable' && env.BWS_STRIPE_SECRET_KEY || '' }}
-          STRIPE_SANDBOX_SECRET_KEY: ${{ inputs.target != 'stable' && env.BWS_STRIPE_SANDBOX_SECRET_KEY || '' }}
+          STRIPE_SECRET_KEY: ${{ env.BWS_STRIPE_SECRET_KEY }}

@@ -138,8 +138,25 @@ describe('command plane coverage', () => {
     // 196 -> 199, machine 105 -> 108: `backup repair`, `backup check` and `backup toc-key sync` (PLAN-backup-integrity) drive a machine.
     //
     // 199 -> 203, machine 108 -> 109, other 34 -> 37: `backup immutability show`, `backup immutability set` and `backup undelete` (PLAN-backup-critical-tier N4) are accountServerFetch calls against the control plane, so `other`; `backup churn` (N5) drives the churn probe on a machine and keeps the backup domain's machine plane.
-    expect(COMMANDS.length).toBe(203);
-    expect(counts).toEqual({ config: 57, machine: 109, other: 37 });
+    //
+    // 203 -> 206, machine 109 -> 112: `repo permission grant`, `revoke` and `show` (PLAN-rediaccfile-unprivileged U10) reach a machine, where the repository's lifecycle grant lives.
+    //
+    // 206 -> 207, machine 112 -> 113: `repo health` (PLAN-health-checks-local G3) runs the repositories' health() on a machine.
+    //
+    // 207 -> 209, machine 113 -> 115: `repo repair` and `machine repair` (PLAN-health-checks-local X2, X4) run renet functions on the machine.
+    //
+    // 209 -> 210, machine 115 -> 116: `job dismiss` (PLAN-renet-restart-cycle-defects D4) forgets local job tickets; it carries the machine plane of the job domain.
+    //
+    // 210 -> 212, other 37 -> 39: `version` (build, channel and licence facts) and `legal` (the entity and the accepted Terms, read from the local state or the account server) never reach a machine.
+    // 212 -> 213, other 39 -> 40: `subscription register` starts the device-code authorisation against the account server, never a machine, so it inherits `subscription`'s `other` plane.
+    //
+    // 213 -> 215, other 40 -> 42: `subscription notices` and `subscription retire` (PLAN-account-notices) go through the account server, so they take `subscription`'s `other` plane.
+    //
+    // 215 -> 220, machine 116 -> 121: `rdc server install|status|upgrade|backup|licence` (PLAN-enterprise-tenants C7) all reach the machine over SSH.
+    //
+    // 220 -> 221, config 57 -> 58: `config import-machine` (PLAN-hostinger-to-bench Design 5) reads one config file and writes another on the workstation, never a machine, so it keeps the config domain's default plane.
+    expect(COMMANDS.length).toBe(221);
+    expect(counts).toEqual({ config: 58, machine: 121, other: 42 });
   });
 
   it('records the interactive commands', () => {
@@ -156,6 +173,7 @@ describe('command plane coverage', () => {
       'ops ssh',
       'repo tunnel',
       'serve',
+      'server install',
       'term connect',
       'vscode connect',
     ]);
@@ -192,7 +210,12 @@ describe('command plane coverage', () => {
     // 99 -> 101: `backup download` and `backup upload` are machine-plane and non-interactive; PROXY_EXCLUSIONS keeps them local.
     // 101 -> 104: `backup repair`, `backup check` and `backup toc-key sync` are machine-plane and non-interactive.
     // 104 -> 105: `backup churn` (PLAN-backup-critical-tier N5) is machine-plane and non-interactive; it holds no credential or token, so it needs no PROXY_EXCLUSIONS entry unless the lead rules that a multi-hour verb must stay local.
-    expect(machineNonInteractive.length).toBe(105);
+    // 105 -> 108: the three `repo permission` leaves are machine-plane and non-interactive.
+    // 108 -> 109: `repo health` is machine-plane and non-interactive.
+    // 109 -> 111: `repo repair` and `machine repair` are machine-plane and non-interactive.
+    // 111 -> 112: `job dismiss` is machine-plane and non-interactive (it confirms only without --yes).
+    // 112 -> 116: `server status|upgrade|backup|licence` are machine-plane and non-interactive; PROXY_EXCLUSIONS keeps them local (the caller's install record and keys).
+    expect(machineNonInteractive.length).toBe(116);
   });
 
   it('plane and interactive entries all point at real commands', () => {

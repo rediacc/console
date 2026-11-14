@@ -61,7 +61,7 @@ with the script name:
 This port prints the `VAR: msg` half, on the same stream, with the same exit status 1. Identical ruling to `deploy/delete_r2_channel.py`. The ORDER of the guards is kept, and `require_cmd aws` runs BEFORE all five, so a run missing both the binary and every variable names the binary.
 
 `:?` IS AN UNSET-OR-EMPTY TEST: `CHANNEL=` refuses exactly as an absent CHANNEL
-does. Driven, because a port testing `"CHANNEL" in os.environ` would sail past it and then sync every package format to `s3://rediacc-releases/apt//`.
+does. Driven, because a port testing `"CHANNEL" in os.environ` would sail past it and then sync every package format to `s3://releases/apt//`.
 
 -----------------------------------------------------------------------------
 RULE T DELTA: A TRANSIENT R2 FAILURE IS RETRIED (#4175e786)
@@ -275,16 +275,16 @@ def cp_argv(source: str, channel: str, name: str, endpoint: str) -> list[str]:
 def sed_argv(channel: str, source: str) -> list[str]:
     """The two channel substitutions (:145-147).
 
-    The first rewrites the shell default (`REDIACC_CHANNEL:-stable`), the second
-    the PowerShell one (`} else { "stable" }`), so a copy under `cli/<channel>/`
+    The first rewrites the shell default (`REDIACC_CHANNEL:-edge`), the second
+    the PowerShell one (`} else { "edge" }`), the forms the www installers ship, so a copy under `cli/<channel>/`
     installs from `<channel>` unless the caller says otherwise.
     """
     return [
         "sed",
         "-e",
-        "s|REDIACC_CHANNEL:-stable|REDIACC_CHANNEL:-%s|g" % channel,
+        "s|REDIACC_CHANNEL:-edge|REDIACC_CHANNEL:-%s|g" % channel,
         "-e",
-        's|} else { "stable" }|} else { "%s" }|g' % channel,
+        's|} else { "edge" }|} else { "%s" }|g' % channel,
         source,
     ]
 
@@ -674,7 +674,9 @@ def _prune_trees(channel: str, endpoint: str, current: str) -> None:
 
 
 def main(argv: list[str]) -> int:
-    del argv  # the twin takes no argv, and says so at :62
+    refused = common.refuse_arguments(argv)
+    if refused is not None:
+        return refused
 
     try:
         awscli.require()

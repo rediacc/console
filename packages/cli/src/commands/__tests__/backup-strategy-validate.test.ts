@@ -74,16 +74,16 @@ describe('backup strategy bind refuses what schedule would refuse (G8)', () => {
         destinations: [hosted, { kind: 'storage', name: 'old', enabled: false }],
       },
     };
-    await expect(assertStrategyBindable('s')).resolves.toBeUndefined();
+    await expect(assertStrategyBindable('s')).resolves.toEqual([]);
   });
 
   it('admits an exclude list, which the schedule renders as --exclude-repo <guid> (G1)', async () => {
     strategies = { s: { schedule: '0 3 * * *', exclude: ['mail'], destinations: [hosted] } };
-    await expect(assertStrategyBindable('s')).resolves.toBeUndefined();
+    await expect(assertStrategyBindable('s')).resolves.toEqual([]);
   });
 
   it('admits a schedulable strategy (control)', async () => {
     strategies = { s: { schedule: '0 3 * * *', bandwidthLimit: '6M', destinations: [hosted] } };
-    await expect(assertStrategyBindable('s')).resolves.toBeUndefined();
+    await expect(assertStrategyBindable('s')).resolves.toEqual([]);
   });
 });

@@ -19,6 +19,7 @@ const healthy = {
   message: 'All systems healthy',
   details: {} as never,
   issues: [] as string[],
+  findings: [],
 };
 
 const repo = (over: Record<string, unknown>) => ({

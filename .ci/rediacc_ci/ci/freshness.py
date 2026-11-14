@@ -5,7 +5,7 @@
     PYTHONPATH=.ci python3 -m rediacc_ci.ci.freshness --list
     PYTHONPATH=.ci python3 -m rediacc_ci.ci.freshness --refresh <artifact>
 
-THE REGISTRY is `.ci/config/freshness.json` (its `$comment` carries the schema). Each entry names one `artifact`, the `producers` that rewrite it, the `check` that compares it with fresh measurements, whether that check needs the `network`, and the `cadence`s it runs at. Before this module the two artifacts (lane-durations.json and gate-costs.json) were checked by two commands chained in package.json and two steps in housekeeping.yml, and gate_costs appended to a report budget_report's step had opened: two writers of one file, and a third artifact would have meant a third copy of each.
+THE REGISTRY is `.ci/config/freshness.json` (its `$comment` carries the schema). Each entry names one `artifact`, the `producers` that rewrite it, the `check` that compares it with fresh measurements, whether that check needs the `network`, and the `cadence`s it runs at. Before this module the two artifacts (lane-durations.json and gate-costs.json) were checked by two commands chained in package.json and two steps in ops-housekeeping.yml, and gate_costs appended to a report budget_report's step had opened: two writers of one file, and a third artifact would have meant a third copy of each.
 
 `--check` runs every entry whose `cadence` names the asked cadence, each from the repo root with PYTHONPATH=<root>/.ci, and exits 1 when any check exits non-zero (the summary line prints the sum of their exit codes). It is the ONLY writer of `--report-to`, which gets one section per artifact, passing or not, so a reader of a red report sees which artifact failed and what the green ones said.
 

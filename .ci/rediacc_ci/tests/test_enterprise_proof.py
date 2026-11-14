@@ -1,0 +1,1344 @@
+"""`rediacc_ci.enterprise.proof` (agent/plans/PLAN-enterprise-isolation.md box P1): each verb passes against a healthy recording fake, exits non-zero on each broken claim, and puts back what it broke."""
+
+from __future__ import annotations
+
+import dataclasses
+import pathlib
+from typing import TYPE_CHECKING, cast
+
+import pytest
+
+from rediacc_ci.enterprise import proof
+from rediacc_ci.enterprise.proof import AddResult, Answer, LabError, ReleaseResult, Reply
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+DOMAIN = "bench.example"
+OK = Answer(ok=True)
+# An opaque-shaped company id no lab created (c and 16 characters), built so no hex literal reads as a commit citation.
+FOREIGN_COMPANY = "c" + "0" * 16
+
+
+def refused(error: str = "refused by scope") -> Answer:
+    return Answer(ok=False, error=error)
+
+
+# The scope cases a company Worker's probe has no request for (signer-probe.service.ts), held apart from proof.COMPANY_SCOPE_CODES so a wrong proof constant is caught.
+COMPANY_UNREACHABLE = ("suspended", "shared-enterprise")
+
+
+@dataclasses.dataclass
+class FakeLab:
+    """A healthy bench, recording every call. Each test breaks one thing."""
+
+    calls: list[str] = dataclasses.field(default_factory=list)
+    companies: dict[str, tuple[str, str | None]] = dataclasses.field(default_factory=dict)
+    secrets: dict[str, list[str]] = dataclasses.field(default_factory=dict)
+    props_override: dict[str, dict[str, str]] = dataclasses.field(default_factory=dict)
+    admit_cases: set[str] = dataclasses.field(default_factory=set)
+    stopped: set[str] = dataclasses.field(default_factory=set)
+    cut: set[str] = dataclasses.field(default_factory=set)
+    licence_survives: bool = True
+    raise_on: str = ""
+    stopped_error_names_signer: bool = True
+    wrong_codes: dict[str, str] = dataclasses.field(default_factory=dict)
+    # Propagation: after a stop, start, cut or restore, this many issue calls still answer the old state.
+    lag: int = 0
+    # A start (or restore) that runs without error and leaves the signer refusing.
+    restart_breaks: bool = False
+    # A cross-region dependency: with the us signer cut, every caller is refused, eu ones included.
+    us_cut_breaks_eu: bool = False
+    # The region each ensure_company call asked for, in order.
+    regions: list[str] = dataclasses.field(default_factory=list)
+    # Company account Workers whose company has no control scope row.
+    unscoped: list[str] = dataclasses.field(default_factory=list)
+    gone: list[str] = dataclasses.field(default_factory=list)
+    secret_fails: list[str] = dataclasses.field(default_factory=list)
+    # company Worker -> the version it last rolled out; an absent one has no rollout row.
+    caller_versions: dict[str, str] = dataclasses.field(default_factory=dict)
+    # signer -> why it must not be stopped (bench_production declares a subscription).
+    stop_refusals: dict[str, str] = dataclasses.field(default_factory=dict)
+    _lag_left: int = 0
+    _old: tuple[frozenset[str], frozenset[str]] = (frozenset(), frozenset())
+    # add
+    added: dict[str, str] = dataclasses.field(default_factory=dict)
+    rerun_changes: tuple[str, ...] = ()
+    unlisted_hits: bool = False
+    free_mail_admitted: bool = False
+    # routing
+    wrong_worker: str = ""
+    logged_host: str = ""
+    turnstile: list[str] = dataclasses.field(default_factory=lambda: [DOMAIN])
+    # release
+    version: dict[str, str] = dataclasses.field(default_factory=dict)
+    skip_without_order_admitted: bool = False
+    stop_names: str = ""
+    fast_moves_on_stop: bool = False
+    # replay / proxy
+    cross_accepts: str = ""
+    shared_container: bool = False
+    allowlist: list[str] = dataclasses.field(default_factory=list)
+    renew_blocked_by_allowlist: bool = False
+    egress: list[str] = dataclasses.field(default_factory=lambda: ["203.0.113.7"])
+    listed_blocked: bool = False
+    console_raises: bool = False
+    # cost
+    limits: dict[str, int] = dataclasses.field(default_factory=lambda: dict(proof.PLAN_LIMITS))
+    usage_missing: bool = False
+    # renet
+    renet: str = "1.0.0"
+    read_only_moves: bool = False
+    upload_admitted: bool = False
+    # github
+    leak_surface: str = ""
+    empty_surface: str = ""
+    # remove
+    exported: set[str] = dataclasses.field(default_factory=set)
+    removed: set[str] = dataclasses.field(default_factory=set)
+    removes_under_gha: bool = False
+    leaves_d1: bool = False
+
+    def _rec(self, name: str) -> None:
+        self.calls.append(name)
+        if self.raise_on == name:
+            msg = f"{name} failed"
+            raise LabError(msg)
+
+    # -- workers and signers
+    def account_workers(self, *, bench: bool) -> list[str]:
+        self._rec("account_workers")
+        base = ["account-bench"] if bench else ["account-eu", "account-us", "account-asia"]
+        return base + [f"account-{c}" for c in self.companies]
+
+    def signers(self, *, bench: bool) -> list[str]:
+        self._rec("signers")
+        return (
+            ["signer-bench-eu", "signer-bench-us"]
+            if bench
+            else ["signer-eu", "signer-us", "signer-asia"]
+        )
+
+    def secret_names(self, worker: str) -> list[str]:
+        self._rec("secret_names")
+        if worker in self.secret_fails:
+            msg = f"wrangler secret list for {worker} exited 1"
+            raise LabError(msg)
+        if worker in self.secrets:
+            return self.secrets[worker]
+        if worker.startswith("signer-"):
+            # A stopped or cut signer has had its private key deleted.
+            if worker in self.stopped or self._region(worker) in self.cut:
+                return ["ACCOUNT_ED25519_PUBLIC_KEY"]
+            return [proof.PRIVATE_KEY, "ACCOUNT_ED25519_PUBLIC_KEY"]
+        return ["ACCOUNT_ED25519_PUBLIC_KEY", "ACCOUNT_JWT_SECRET"]
+
+    def callers(self, *, bench: bool) -> list[str]:
+        self._rec("callers")
+        return ["account-bench", "account-cabc123"] if bench else ["account-eu", "account-us"]
+
+    def caller_version(self, caller: str) -> str:
+        self._rec("caller_version")
+        return self.caller_versions.get(caller, "0.9.1")
+
+    def signer_of(self, caller: str) -> str:
+        return (
+            "signer-bench-eu" if caller.endswith(("bench", "cabc123", "eu")) else "signer-bench-us"
+        )
+
+    def signer_props(self, caller: str) -> dict[str, str]:
+        self._rec("signer_props")
+        return self.props_override.get(caller, self.expected_props(caller))
+
+    def expected_props(self, caller: str) -> dict[str, str]:
+        return {"tier": "enterprise" if caller.endswith("cabc123") else "shared", "caller": caller}
+
+    @staticmethod
+    def _region(signer: str) -> str:
+        return signer.rsplit("-", 1)[-1]
+
+    def _transition(self) -> None:
+        """Remember the state before a stop, start, cut or restore, which the next `lag` issue calls still see."""
+        self._old = (frozenset(self.stopped), frozenset(self.cut))
+        self._lag_left = self.lag
+
+    def issue(self, caller: str, kind: str) -> Answer:
+        self._rec(f"issue:{kind}")
+        if kind in COMPANY_UNREACHABLE and self.expected_props(caller)["tier"] == "enterprise":
+            # signer-probe.service.ts: a company Worker has no request for this case and answers 400.
+            raise LabError(f"{caller}: the signer probe ({kind}) answered HTTP 400")
+        signer = self.signer_of(caller)
+        stopped, cut = self.stopped, self.cut
+        if self._lag_left > 0:
+            self._lag_left -= 1
+            stopped, cut = set(self._old[0]), set(self._old[1])
+        if (
+            signer in stopped
+            or self._region(signer) in cut
+            or (self.us_cut_breaks_eu and "us" in cut)
+        ):
+            if self.stopped_error_names_signer:
+                return refused(f"{proof.SIGNER_UNAVAILABLE}: {signer}")
+            return refused("upstream is unreachable")
+        if kind in proof.SCOPE_CASES:
+            if kind in self.admit_cases:
+                return OK
+            return refused(self.wrong_codes.get(kind, proof.SCOPE_CODES[kind]))
+        if kind == "certificate":
+            return Answer(ok=True, body={"id": "cert-1"})
+        return OK
+
+    def certificate_audited(self, signer: str, certificate_id: str) -> bool:
+        self._rec("certificate_audited")
+        return bool(signer) and certificate_id == "cert-1"
+
+    def current_licence_works(self, caller: str) -> bool:
+        del caller
+        self._rec("current_licence_works")
+        return self.licence_survives
+
+    def renew(self, caller: str) -> Answer:
+        self._rec("renew")
+        return self.issue(caller, "licence")
+
+    def unscoped_callers(self, *, bench: bool) -> list[str]:
+        self._rec("unscoped_callers")
+        return list(self.unscoped) if bench else []
+
+    def gone_callers(self, *, bench: bool) -> list[str]:
+        self._rec("gone_callers")
+        return list(self.gone) if bench else []
+
+    def stop_refusal(self, signer: str) -> str:
+        self._rec("stop_refusal")
+        return self.stop_refusals.get(signer, "")
+
+    def stop_signer(self, signer: str) -> None:
+        self._rec("stop_signer")
+        self._transition()
+        self.stopped.add(signer)
+
+    def start_signer(self, signer: str) -> None:
+        self._rec("start_signer")
+        self._transition()
+        if not self.restart_breaks:
+            self.stopped.discard(signer)
+
+    def cut_region(self, region: str) -> None:
+        self._rec("cut_region")
+        self._transition()
+        self.cut.add(region)
+
+    def restore_region(self, region: str) -> None:
+        self._rec("restore_region")
+        self._transition()
+        if not self.restart_breaks:
+            self.cut.discard(region)
+
+    # -- companies
+    def ensure_company(self, label: str, region: str, *, ring: str | None = None) -> str:
+        self._rec("ensure_company")
+        cid = "c" + format(abs(hash(label)) % (16**8), "08x")
+        self.companies[cid] = (label, ring)
+        self.version.setdefault(cid, "0.9.0")
+        self.version.setdefault("fast", "0.9.1")
+        self.regions.append(region)
+        return cid
+
+    def caller_of(self, company: str) -> str:
+        return f"account-{company}-{'us' if 'us' in self.companies[company][0] else 'eu'}"
+
+    def company_hosts(self, company: str) -> tuple[str, str]:
+        label = self.companies[company][0] if company in self.companies else company
+        return (f"{label}.{DOMAIN}", f"{label}-proxy.{DOMAIN}")
+
+    def company_words(self, company: str) -> list[str]:
+        return [self.companies[company][0], *self.company_hosts(company)]
+
+    def add(
+        self, label: str, *, owner: str, unlisted: bool, lookup_domain: str, kill_after: str = ""
+    ) -> AddResult:
+        self._rec(f"add:{kill_after or 'run'}")
+        del owner, unlisted
+        if lookup_domain == proof.FREE_MAIL_DOMAIN and not self.free_mail_admitted:
+            return AddResult(rc=2, error="free-mail domain refused")
+        if kill_after:
+            return AddResult(rc=137, error="killed")
+        cid = self.ensure_company(label, "eu")
+        changed = self.rerun_changes if label in self.added else ("control", "d1", "buckets")
+        self.added[label] = cid
+        return AddResult(rc=0, company=cid, changed=changed)
+
+    def captured_mail(self, owner: str) -> list[str]:
+        return [f"invitation to {owner}"]
+
+    def lookup(self, domain: str) -> str | None:
+        label = domain.removesuffix(".example")
+        if label == "proof-unlisted" and not self.unlisted_hits:
+            return None
+        return f"{label}.{DOMAIN}"
+
+    def export(self, company: str) -> int:
+        self._rec("export")
+        self.exported.add(company)
+        return 0
+
+    def remove(self, company: str, *, delete_data: bool, github_actions: bool) -> int:
+        self._rec(f"remove:gha={github_actions}")
+        del delete_data
+        if company not in self.exported or (github_actions and not self.removes_under_gha):
+            return 2
+        self.removed.add(company)
+        return 0
+
+    def leftovers(self, company: str) -> list[str]:
+        if company in self.removed:
+            return ["d1"] if self.leaves_d1 else []
+        return ["control", "d1", "buckets"]
+
+    # -- routing
+    def fetch(self, host: str) -> Reply:
+        self._rec("fetch")
+        worker = self.expected_worker(host)
+        if self.wrong_worker and host.startswith(self.wrong_worker):
+            worker = "account-bench"
+        return Reply(200, worker, (f"*.{DOMAIN}", DOMAIN))
+
+    def expected_worker(self, host: str) -> str:
+        label = host.split(".", 1)[0]
+        if label.endswith("-proxy"):
+            return f"proxy-{label.removesuffix('-proxy')}"
+        return f"account-{label}"
+
+    def region_hosts(self, *, bench: bool) -> list[str]:
+        return [f"bench.{DOMAIN}"] if bench else [f"eu.{DOMAIN}"]
+
+    def specific_hosts(self) -> list[str]:
+        return [f"www.{DOMAIN}"]
+
+    def cert_log_names(self) -> list[str]:
+        return [f"*.{DOMAIN}", DOMAIN] + ([self.logged_host] if self.logged_host else [])
+
+    def turnstile_domains(self) -> list[str]:
+        return self.turnstile
+
+    # -- releases
+    def target_version(self) -> str:
+        return "0.9.1"
+
+    def versions(self, targets: Sequence[str]) -> dict[str, str]:
+        return {t: self.version.get(t, "") for t in targets}
+
+    def _ring_ids(self) -> dict[str, str]:
+        return {ring: cid for cid, (_, ring) in self.companies.items() if ring}
+
+    def release(
+        self,
+        *,
+        skip_pauses: bool = False,
+        order: str = "",
+        plant_failure: str = "",
+        resume: str = "",
+    ) -> ReleaseResult:
+        self._rec("release")
+        if skip_pauses and not order and not self.skip_without_order_admitted:
+            return ReleaseResult(rc=2, error="--skip-pauses needs --order")
+        ids = self._ring_ids()
+        if plant_failure:
+            for ring in proof.RELEASE_RINGS:
+                if ids[ring] == plant_failure:
+                    break
+                self.version[ids[ring]] = "0.9.1"
+            if self.fast_moves_on_stop:
+                self.version["fast"] = "0.9.2"
+            return ReleaseResult(rc=1, stopped=self.stop_names or plant_failure)
+        for cid in ids.values():
+            self.version[cid] = "0.9.1"
+        del resume
+        return ReleaseResult(rc=0)
+
+    # -- tokens, proxy, executor
+    def mint(self, company: str, kind: str) -> str:
+        return f"{kind}@{company}"
+
+    def present(self, company: str, kind: str, artifact: str) -> Answer:
+        self._rec(f"present:{kind}")
+        if artifact.endswith(company) or kind == self.cross_accepts:
+            return OK
+        return refused("unknown token")
+
+    def container_app(self, company: str) -> str:
+        return "app-shared" if self.shared_container else f"app-{company}"
+
+    def durable_object(self, company: str) -> str:
+        return f"do-{company}"
+
+    def console_command(self, company: str) -> Answer:
+        del company
+        if self.console_raises:
+            msg = "not built yet: V7 (console)"
+            raise LabError(msg)
+        return OK
+
+    def egress_ips(self) -> list[str]:
+        return list(self.egress)
+
+    def set_allowlist(self, company: str, ips: Sequence[str]) -> None:
+        del company
+        self._rec(f"set_allowlist:{len(ips)}")
+        self.allowlist = list(ips)
+
+    def request_from(self, company: str, *, method: str, path: str) -> int:
+        """Every request comes from this machine, `egress[0]`."""
+        del company
+        self._rec("request_from")
+        exempt = method == "POST" and path == proof.LICENSE_RENEW_PATH
+        off_list = bool(self.allowlist) and self.egress[0] not in self.allowlist
+        if self.allowlist and self.listed_blocked:
+            return 403
+        if off_list and (self.renew_blocked_by_allowlist or not exempt):
+            return 403
+        return 200
+
+    # -- cost
+    def deploy_records(self, *, bench: bool) -> list[dict[str, object]]:
+        del bench
+        return [{"company": cid, "duration_s": 42.0} for cid in [FOREIGN_COMPANY, *self.companies]]
+
+    def usage_rows(self, *, bench: bool) -> list[dict[str, object]]:
+        del bench
+        return (
+            []
+            if self.usage_missing
+            else [{"company": cid} for cid in [FOREIGN_COMPANY, *self.companies]]
+        )
+
+    def image_rebuild_seconds(self) -> float:
+        return 310.0
+
+    def read_limits(self) -> dict[str, int]:
+        return self.limits
+
+    # -- renet
+    def fleet_machine(self) -> str:
+        return "vm1"
+
+    def renet_version(self, machine: str) -> str:
+        del machine
+        return self.renet
+
+    def released_renet(self) -> str:
+        return "1.1.0"
+
+    def run_verb(self, machine: str, *, mutating: bool) -> int:
+        del machine
+        self._rec(f"run_verb:{mutating}")
+        if mutating or self.read_only_moves:
+            self.renet = "1.1.0"
+        return 0
+
+    def executor_upload(self, machine: str) -> Answer:
+        del machine
+        return OK if self.upload_admitted else refused("executor may not upload renet")
+
+    def renew_with(self, machine: str, *, renet: str, worker: str) -> Answer:
+        del machine, renet, worker
+        return OK
+
+    # -- github
+    def dispatch_release(self, company: str) -> str:
+        del company
+        self._rec("dispatch_release")
+        return "run-1"
+
+    def run_surfaces(self, run_id: str) -> dict[str, str]:
+        del run_id
+        out = {s: f"{s}: release *** finished" for s in proof.GITHUB_SURFACES}
+        if self.leak_surface:
+            label = next(label for label, _ in self.companies.values())
+            out[self.leak_surface] += f" deploying {label.upper()}.{DOMAIN}"
+        if self.empty_surface:
+            out[self.empty_surface] = ""
+        return out
+
+
+@pytest.fixture(autouse=True)
+def fake_clock(monkeypatch: pytest.MonkeyPatch) -> list[float]:
+    """`settle` waits on a fake clock: no test sleeps, and a sleep moves the clock by its length."""
+    now = [0.0]
+
+    def fake_sleep(seconds: float) -> None:
+        now[0] += seconds
+
+    monkeypatch.setattr(proof, "sleep", fake_sleep)
+    monkeypatch.setattr(proof, "clock", lambda: now[0])
+    return now
+
+
+def run(verb: str, lab: FakeLab, *, bench: bool = True) -> tuple[int, list[str]]:
+    lines: list[str] = []
+    rc = proof.run_verb(verb, cast("proof.Lab", lab), bench=bench, out=lines.append)
+    return rc, lines
+
+
+def broken(lines: list[str]) -> list[str]:
+    return [line for line in lines if line.startswith("BROKEN")]
+
+
+# -- every verb holds on a healthy fake ------------------------------------------
+
+
+@pytest.mark.parametrize("verb", sorted(proof.VERBS))
+def test_every_verb_passes_on_a_healthy_lab(verb: str) -> None:
+    rc, lines = run(verb, FakeLab(), bench=verb not in proof.PRODUCTION_VERBS)
+    assert broken(lines) == []
+    assert rc == 0, lines
+    assert lines[-1].startswith(f"proof {verb}: ")
+
+
+def test_the_verbs_are_the_twelve_live_boxes() -> None:
+    assert set(proof.VERBS) == {
+        "signer",
+        "region-loss",
+        "add",
+        "routing",
+        "release",
+        "replay",
+        "proxy",
+        "cost",
+        "renet",
+        "github",
+        "remove",
+        "keys",
+    }
+
+
+# -- each broken claim exits non-zero --------------------------------------------
+
+
+def _key_on_account() -> FakeLab:
+    lab = FakeLab()
+    lab.secrets["account-bench"] = [proof.PRIVATE_KEY, "ACCOUNT_JWT_SECRET"]
+    return lab
+
+
+BREAKS: list[tuple[str, FakeLab, str]] = [
+    ("signer", _key_on_account(), f"account-bench holds no {proof.PRIVATE_KEY}"),
+    (
+        "signer",
+        FakeLab(secrets={"signer-bench-us": ["X"]}),
+        f"signer-bench-us holds {proof.PRIVATE_KEY}",
+    ),
+    ("signer", FakeLab(props_override={"account-bench": {"tier": "enterprise"}}), "binding props"),
+    ("signer", FakeLab(admit_cases={"raw-bytes"}), "raw-bytes is refused"),
+    ("signer", FakeLab(admit_cases={"shared-enterprise"}), "shared-enterprise is refused"),
+    ("signer", FakeLab(admit_cases={"certificate-over-ceiling"}), "certificate-over-ceiling"),
+    # A refusal for another reason (here the probe's own wrong row) is not the scope refusal claimed.
+    (
+        "signer",
+        FakeLab(wrong_codes={"suspended": "SIGNER_FOREIGN_SUBSCRIPTION"}),
+        "suspended is refused",
+    ),
+    ("signer", FakeLab(licence_survives=False), "current licence works"),
+    ("signer", FakeLab(stopped_error_names_signer=False), "a stopped signer is named"),
+    ("region-loss", FakeLab(licence_survives=False), "current licence works with eu cut"),
+    ("add", FakeLab(rerun_changes=("d1",)), "a rerun changes nothing"),
+    ("add", FakeLab(unlisted_hits=True), "unlisted company: the lookup misses"),
+    ("add", FakeLab(free_mail_admitted=True), "free-mail lookup domain is refused"),
+    ("routing", FakeLab(wrong_worker="proof-route-a-proxy"), "proxy host reaches its Worker"),
+    ("routing", FakeLab(logged_host=f"proof-route-b.{DOMAIN}"), "absent from certificate logs"),
+    ("routing", FakeLab(turnstile=["other.example"]), "Turnstile covers"),
+    ("release", FakeLab(skip_without_order_admitted=True), "--skip-pauses without --order"),
+    ("release", FakeLab(stop_names="cdeadbeef"), "the stop names the failed company"),
+    ("release", FakeLab(fast_moves_on_stop=True), "fast is unchanged by the stop"),
+    ("replay", FakeLab(cross_accepts="config-token"), "config-token: refused by the other"),
+    ("proxy", FakeLab(cross_accepts="proxy-token"), "refused by the other proxy"),
+    ("proxy", FakeLab(shared_container=True), "own container app"),
+    ("proxy", FakeLab(renew_blocked_by_allowlist=True), "still reaches POST renew"),
+    ("proxy", FakeLab(listed_blocked=True), "a listed IP reaches GET /"),
+    ("proxy", FakeLab(egress=[]), "egress address is read"),
+    ("proxy", FakeLab(egress=[proof.FOREIGN_IP]), "egress address is read"),
+    ("cost", FakeLab(limits={"workers_scripts": 100, "routes_per_zone": 1000}), "workers_scripts"),
+    ("cost", FakeLab(usage_missing=True), "appears in the usage report"),
+    ("renet", FakeLab(read_only_moves=True), "a read-only verb leaves renet"),
+    ("renet", FakeLab(upload_admitted=True), "executor refuses to upload"),
+    ("renet", FakeLab(renet="1.1.0"), "starts behind the released renet"),
+    ("github", FakeLab(leak_surface="jobs-api"), "no surface carries the name"),
+    ("github", FakeLab(empty_surface="step-summary"), "surface step-summary was read"),
+    ("remove", FakeLab(removes_under_gha=True), "remove refuses under GITHUB_ACTIONS"),
+    ("remove", FakeLab(leaves_d1=True), "the removed company leaves nothing"),
+    ("keys", _key_on_account(), "holds no"),
+]
+
+
+@pytest.mark.parametrize(("verb", "lab", "claim"), BREAKS, ids=[f"{v}:{c}" for v, _, c in BREAKS])
+def test_a_broken_claim_exits_non_zero_and_is_named(verb: str, lab: FakeLab, claim: str) -> None:
+    if verb == "keys":
+        lab.secrets["account-eu"] = [proof.PRIVATE_KEY]
+    rc, lines = run(verb, lab, bench=verb not in proof.PRODUCTION_VERBS)
+    assert rc == 1
+    assert any(claim in line for line in broken(lines)), broken(lines)
+
+
+def test_every_verb_has_at_least_one_break_case() -> None:
+    assert {v for v, _, _ in BREAKS} == set(proof.VERBS)
+
+
+# -- issue and renew per caller, the scope matrix per tier ---------------------------
+
+
+def test_a_company_caller_is_asked_only_the_company_scope_cases() -> None:
+    lab = FakeLab()
+    rc, lines = run("signer", lab)
+    assert rc == 0, lines
+    held = [line for line in lines if line.startswith("ok")]
+    for case in proof.COMPANY_SCOPE_CODES:
+        assert any(f"account-cabc123: {case} is refused" in line for line in held)
+    assert not any("account-cabc123: suspended" in line for line in lines)
+    # Control: the shared caller is still asked the whole matrix.
+    for case in proof.SCOPE_CODES:
+        assert any(f"account-bench: {case} is refused" in line for line in held)
+
+
+def test_asking_a_company_caller_the_shared_matrix_breaks(monkeypatch) -> None:
+    """The tier switch is load-bearing: with the shared matrix planted for every caller, the company probe's 400 breaks the run."""
+    monkeypatch.setattr(proof, "COMPANY_SCOPE_CODES", proof.SCOPE_CODES)
+    rc, lines = run("signer", FakeLab())
+    assert rc == 1
+    assert any(
+        "account-cabc123: the signer probe (suspended) answered HTTP 400" in line
+        for line in broken(lines)
+    )
+
+
+def test_the_company_matrix_is_the_shared_one_less_the_unreachable_cases() -> None:
+    assert set(proof.COMPANY_SCOPE_CODES) == set(proof.SCOPE_CODES) - set(COMPANY_UNREACHABLE)
+    assert all(
+        proof.COMPANY_SCOPE_CODES[c] == proof.SCOPE_CODES[c] for c in proof.COMPANY_SCOPE_CODES
+    )
+
+
+def test_each_caller_renews_and_a_refused_renewal_is_broken() -> None:
+    lab = FakeLab()
+    rc, lines = run("signer", lab)
+    assert rc == 0, lines
+    for caller in ("account-bench", "account-cabc123"):
+        assert any(
+            line.startswith("ok") and line.endswith(f"{caller}: the licence is renewed")
+            for line in lines
+        ), lines
+
+    class RenewRefused(FakeLab):
+        def renew(self, caller: str) -> Answer:
+            self._rec("renew")
+            return refused("SIGNER_OVER_LIMIT") if caller.endswith("cabc123") else OK
+
+    rc, lines = run("signer", RenewRefused())
+    assert rc == 1
+    assert [line for line in broken(lines) if "the licence is renewed" in line] == [
+        line for line in broken(lines) if "account-cabc123: the licence is renewed" in line
+    ]
+    assert any("account-cabc123: the licence is renewed" in line for line in broken(lines))
+
+
+# -- what is broken is put back --------------------------------------------------
+
+
+def test_signer_restarts_the_stopped_signer_even_when_the_lab_fails_mid_proof() -> None:
+    lab = FakeLab(raise_on="current_licence_works")
+    rc, lines = run("signer", lab)
+    assert rc == 1
+    assert lab.calls.index("stop_signer") < lab.calls.index("start_signer")
+    assert lab.stopped == set()
+    assert any("ran to the end" in line for line in broken(lines))
+
+
+def test_region_loss_restores_eu_when_a_claim_raises() -> None:
+    lab = FakeLab(raise_on="current_licence_works")
+    rc, _ = run("region-loss", lab)
+    assert rc == 1
+    assert "restore_region" in lab.calls
+    assert lab.cut == set()
+
+
+def test_region_loss_records_what_bench_cannot_prove() -> None:
+    _, lines = run("region-loss", FakeLab())
+    notes = [line for line in lines if line.startswith("note")]
+    assert len(notes) == len(proof.NOT_PROVEN_ON_BENCH) + len(proof.BENCH_REGION_LOSS_GAPS)
+    assert any("cross-region placement" in line for line in notes)
+    # control: the second-region form names only the three bench limits
+    _, other = run("region-loss", FakeLab(), bench=False)
+    assert len([line for line in other if line.startswith("note")]) == len(
+        proof.NOT_PROVEN_ON_BENCH
+    )
+
+
+def test_signer_names_and_skips_a_company_without_a_scope_row() -> None:
+    """account-probe500 had no control scope row; the lab lists it apart, and the proof prints it skipped by name, never tested as a signer failure."""
+    lab = FakeLab(unscoped=["account-probe500"])
+    rc, lines = run("signer", lab)
+    assert rc == 0, lines
+    skipped = [line for line in lines if line.startswith("skipped account-probe500: signing:")]
+    assert len(skipped) == 1, lines
+    assert "SIGNER_UNKNOWN_COMPANY" in skipped[0]
+    assert "remove it with --delete-data" in skipped[0]
+    assert not any("account-probe500" in line for line in lines if not line.startswith("skipped"))
+    # control: with every company scoped nothing is skipped
+    rc, lines = run("signer", FakeLab())
+    assert rc == 0, lines
+    assert not any(line.startswith("skipped") for line in lines)
+
+
+def test_signer_skips_a_company_whose_account_worker_is_gone_by_name() -> None:
+    """account-probe500's Worker was deleted by an interrupted remove while its row stayed; the proof names it skipped with the reason."""
+    rc, lines = run("signer", FakeLab(gone=["account-probe500"]))
+    assert rc == 0, lines
+    skipped = [line for line in lines if line.startswith("skipped account-probe500: signing:")]
+    assert len(skipped) == 1, lines
+    assert "no longer exists" in skipped[0]
+    # control: nothing gone, nothing skipped
+    _, lines = run("signer", FakeLab())
+    assert not any(line.startswith("skipped") for line in lines)
+
+
+def test_signer_records_a_failing_secret_list_as_a_broken_claim_and_goes_on() -> None:
+    """One failing `wrangler secret list` must not abort the proof: it is one broken claim, and the other claims still run."""
+    rc, lines = run("signer", FakeLab(companies={"a": ("a", None)}, secret_fails=["account-a"]))
+    assert rc == 1, lines
+    assert any(
+        line.startswith("BROKEN") and "account-a lists its secrets" in line for line in lines
+    )
+    assert any(
+        "account-bench lists its secrets" in line and line.startswith("ok") for line in lines
+    )
+    assert any("signers are listed" in line for line in lines)
+    # control: without the failure the same lab is clean
+    rc, _ = run("signer", FakeLab(companies={"a": ("a", None)}))
+    assert rc == 0
+
+
+def test_signer_skips_a_stale_company_caller_by_name_and_judges_a_current_one() -> None:
+    """A company Worker older than the edge version answers for older code; it is skipped with the redeploy command, never tested as a signer failure."""
+    lab = FakeLab(caller_versions={"account-cabc123": "0.8.0"})
+    rc, lines = run("signer", lab)
+    assert rc == 0, lines
+    skipped = [line for line in lines if line.startswith("skipped account-cabc123: signing:")]
+    assert len(skipped) == 1, lines
+    assert "0.8.0" in skipped[0]
+    assert "0.9.1" in skipped[0]
+    assert "enterprise release --bench --company" in skipped[0]
+    assert "SIGNER_FOREIGN_SUBSCRIPTION" in skipped[0]
+    assert "add it again" in skipped[0]
+    assert not any("account-cabc123" in line for line in lines if not line.startswith("skipped"))
+    # a company with no recorded rollout is skipped the same way
+    rc, lines = run("signer", FakeLab(caller_versions={"account-cabc123": ""}))
+    assert rc == 0, lines
+    assert any("no recorded version" in line for line in lines if line.startswith("skipped"))
+    # control: a current caller is judged and nothing is skipped
+    rc, lines = run("signer", FakeLab())
+    assert rc == 0, lines
+    assert not any(line.startswith("skipped") for line in lines)
+    assert any("account-cabc123: a legitimate licence is issued" in line for line in lines)
+
+
+def test_signer_asks_no_version_of_a_shared_caller() -> None:
+    lab = FakeLab()
+    run("signer", lab)
+    assert lab.calls.count("caller_version") == 1
+
+
+# -- a bench carrying production data is never cut ------------------------------
+
+PRODUCTION = "bench carries production data (.ci/config/bench-production.json): subscription x"
+
+
+def test_bench_region_loss_cuts_nothing_while_bench_carries_production_data() -> None:
+    lab = FakeLab(stop_refusals={"signer-bench-eu": PRODUCTION, "signer-bench-us": PRODUCTION})
+    rc, lines = run("region-loss", lab)
+    assert rc == 1
+    named = broken(lines)
+    assert any(
+        line.startswith("BROKEN  signer-bench-eu may be stopped:") and PRODUCTION in line
+        for line in named
+    ), named
+    for call in ("cut_region", "restore_region", "stop_signer", "start_signer", "ensure_company"):
+        assert call not in lab.calls, (call, lab.calls)
+    # control: with nothing declared, both signers may be stopped and the cut runs
+    healthy = FakeLab()
+    rc, lines = run("region-loss", healthy)
+    assert rc == 0, lines
+    assert any(line.startswith("ok      signer-bench-eu may be stopped") for line in lines)
+    assert "cut_region" in healthy.calls
+
+
+def test_bench_region_loss_cuts_nothing_when_only_the_us_signer_is_refused() -> None:
+    lab = FakeLab(stop_refusals={"signer-bench-us": PRODUCTION})
+    rc, _ = run("region-loss", lab)
+    assert rc == 1
+    assert "cut_region" not in lab.calls
+
+
+def test_signer_stops_nothing_while_bench_carries_production_data() -> None:
+    lab = FakeLab(stop_refusals={"signer-bench-eu": PRODUCTION})
+    rc, lines = run("signer", lab)
+    assert rc == 1
+    assert "stop_signer" not in lab.calls
+    assert "start_signer" not in lab.calls
+    assert any("signer-bench-eu may be stopped" in line for line in broken(lines))
+
+
+def test_a_stop_refusal_that_raises_is_a_refusal_and_cuts_nothing() -> None:
+    class Unreadable(FakeLab):
+        def stop_refusal(self, signer: str) -> str:
+            raise proof.LabError(f"cannot read the declaration for {signer}")
+
+    lab = Unreadable()
+    rc, lines = run("region-loss", lab)
+    assert rc == 1
+    assert "cut_region" not in lab.calls
+    assert any("cannot read the declaration" in line for line in broken(lines))
+
+
+# -- the bench form of region-loss: eu only, the property proven at the signer ---
+
+
+def test_bench_region_loss_never_asks_for_a_company_outside_eu() -> None:
+    """Bench refuses --region us for a company (a55df8872f), so the bench form must not ask for one."""
+    lab = FakeLab()
+    rc, lines = run("region-loss", lab)
+    assert rc == 0, lines
+    assert lab.regions == ["eu"]
+    # control: the second-region form still places its survivor in us
+    other = FakeLab()
+    rc, lines = run("region-loss", other, bench=False)
+    assert rc == 0, lines
+    assert other.regions == ["eu", "us"]
+
+
+def test_bench_region_loss_cuts_us_before_eu_and_restores_both() -> None:
+    lab = FakeLab()
+    rc, lines = run("region-loss", lab)
+    assert rc == 0, lines
+    assert lab.cut == set()
+    ok = [line for line in lines if line.startswith("ok")]
+    assert any("signer-bench-us: bench signing is restored" in line for line in ok)
+    for late in ("", ", after the eu round trip"):
+        assert any(line.endswith(f"eu company issues with us cut{late}") for line in ok), ok
+        assert any(line.endswith(f"eu company renews with us cut{late}") for line in ok), ok
+    assert any("eu company gets the named error" in line for line in ok)
+
+
+def test_bench_region_loss_breaks_when_the_us_cut_reaches_the_eu_company() -> None:
+    """A cross-region dependency (the eu company refused while only us is cut) breaks the survivor claims."""
+    rc, lines = run("region-loss", FakeLab(us_cut_breaks_eu=True))
+    assert rc == 1
+    named = broken(lines)
+    assert any(line.startswith("BROKEN  eu company issues with us cut:") for line in named), named
+    assert any(line.startswith("BROKEN  eu company renews with us cut:") for line in named), named
+    # control: a healthy lab holds both
+    rc, lines = run("region-loss", FakeLab())
+    assert rc == 0, lines
+
+
+def test_bench_region_loss_refuses_an_eu_company_bound_to_another_signer() -> None:
+    """Cutting us proves nothing about a company that does not sign through signer-bench-eu."""
+
+    class BoundElsewhere(FakeLab):
+        def signer_of(self, caller: str) -> str:
+            return "signer-bench-us" if caller.endswith("-eu") else super().signer_of(caller)
+
+    lab = BoundElsewhere()
+    rc, lines = run("region-loss", lab)
+    assert rc == 1
+    assert any("eu company signs through signer-bench-eu" in line for line in broken(lines))
+    assert "cut_region" not in lab.calls
+
+
+def test_bench_region_loss_restores_us_when_the_eu_cut_fails() -> None:
+    class EuCutFails(FakeLab):
+        def cut_region(self, region: str) -> None:
+            if region == "eu":
+                self._rec("cut_region:eu")
+                raise LabError("eu cut failed")
+            super().cut_region(region)
+
+    lab = EuCutFails()
+    rc, lines = run("region-loss", lab)
+    assert rc == 1
+    assert lab.cut == set()
+    assert any(line.startswith("BROKEN  eu signer is cut") for line in lines)
+    assert any(
+        line.startswith("ok      signer-bench-us: bench signing is restored") for line in lines
+    )
+
+
+def test_bench_region_loss_breaks_when_us_keeps_no_key_after_its_restore() -> None:
+    lab = FakeLab(secrets={"signer-bench-us": ["ACCOUNT_ED25519_PUBLIC_KEY"]})
+    rc, lines = run("region-loss", lab)
+    assert rc == 1
+    restored = [
+        line for line in broken(lines) if "signer-bench-us: bench signing is restored" in line
+    ]
+    assert len(restored) == 1, broken(lines)
+    assert "deploy_signer --target bench-us" in restored[0]
+
+
+def test_proxy_lists_this_machine_then_only_the_foreign_address() -> None:
+    lab = FakeLab()
+    rc, _ = run("proxy", lab)
+    assert rc == 0
+    sets = [c for c in lab.calls if c.startswith("set_allowlist")]
+    assert sets == ["set_allowlist:1", "set_allowlist:1", "set_allowlist:0"]
+
+
+def test_an_unbuilt_console_command_still_checks_the_allowlist() -> None:
+    lab = FakeLab(console_raises=True)
+    rc, lines = run("proxy", lab)
+    assert rc == 1
+    assert any("console command" in line for line in broken(lines))
+    assert any(line.startswith("ok") and "still reaches POST renew" in line for line in lines)
+
+
+def test_proxy_clears_the_allowlist_after_the_proof() -> None:
+    lab = FakeLab(renew_blocked_by_allowlist=True)
+    run("proxy", lab)
+    assert lab.calls[-1] == "set_allowlist:0"
+    assert lab.allowlist == []
+
+
+def test_a_failed_restore_is_a_broken_claim() -> None:
+    lab = FakeLab(raise_on="start_signer")
+    rc, lines = run("signer", lab)
+    assert rc == 1
+    restored = [line for line in broken(lines) if "bench signing is restored" in line]
+    assert len(restored) == 1, broken(lines)
+    assert "start failed: LabError: start_signer failed" in restored[0]
+    assert lab.calls.count("start_signer") == 2
+
+
+def test_a_restore_that_holds_on_the_second_start_keeps_the_first_failure_on_record() -> None:
+    """Review 08c6fde4.2: a passing restore still says the first start failed."""
+
+    class FirstStartFails(FakeLab):
+        def start_signer(self, signer: str) -> None:
+            if self.calls.count("start_signer") == 0:
+                self._rec("start_signer")
+                raise LabError("first start failed")
+            super().start_signer(signer)
+
+    lab = FirstStartFails()
+    rc, lines = run("signer", lab)
+    assert rc == 0, lines
+    assert lab.calls.count("start_signer") == 2
+    notes = [
+        line for line in lines if line.startswith("note") and "first start did not restore" in line
+    ]
+    assert len(notes) == 1, lines
+    assert "first start failed" in notes[0]
+    # control: a restore that holds on the first start leaves no such note
+    _rc, clean = run("signer", FakeLab())
+    assert not [line for line in clean if "first start did not restore" in line]
+
+
+def test_a_first_start_refused_with_no_error_text_notes_no_error() -> None:
+    """Review 2bd4e400.1: an empty refusal on the first start is noted as '(no error)', never blank."""
+
+    class SilentUntilSecondStart(FakeLab):
+        def issue(self, caller: str, kind: str) -> Answer:
+            if 0 < self.calls.count("start_signer") < 2:
+                return Answer(ok=False, error="")
+            return super().issue(caller, kind)
+
+    lab = SilentUntilSecondStart()
+    rc, lines = run("signer", lab)
+    assert rc == 0, lines
+    notes = [line for line in lines if "first start did not restore" in line]
+    assert len(notes) == 1, lines
+    assert notes[0].endswith("(no error))")
+
+
+# -- a judged state change is settled, not sampled -------------------------------
+
+
+@pytest.mark.parametrize("verb", ["signer", "region-loss"])
+def test_a_lagging_lab_passes_once_the_state_settles(verb: str, fake_clock: list[float]) -> None:
+    """On 2026-11-12 one issue call right after the stop was still admitted; three such calls pass."""
+    lab = FakeLab(lag=3)
+    rc, lines = run(verb, lab)
+    assert broken(lines) == []
+    assert rc == 0, lines
+    assert any("bench signing is restored" in line and line.startswith("ok") for line in lines)
+    assert fake_clock[0] > 0
+    assert lab.stopped == set()
+    assert lab.cut == set()
+
+
+def test_a_clean_lab_never_waits(fake_clock: list[float]) -> None:
+    for verb in ("signer", "region-loss"):
+        rc, _ = run(verb, FakeLab())
+        assert rc == 0
+    assert fake_clock[0] == 0
+
+
+def test_a_restart_that_leaves_signing_refused_is_broken_and_names_the_deploy() -> None:
+    lab = FakeLab(restart_breaks=True)
+    rc, lines = run("signer", lab)
+    assert rc == 1
+    restored = [line for line in broken(lines) if "bench signing is restored" in line]
+    assert len(restored) == 1, broken(lines)
+    assert "deploy_signer --target bench-eu" in restored[0]
+    assert lab.calls.count("start_signer") == 2
+
+
+def test_a_region_restore_that_leaves_both_regions_down_names_each_deploy() -> None:
+    """The bench region-loss form cuts us and eu; a restart that brings neither back is two broken restores, each naming its own deploy, each started twice."""
+    lab = FakeLab(restart_breaks=True)
+    rc, lines = run("region-loss", lab)
+    assert rc == 1
+    restored = [line for line in broken(lines) if "bench signing is restored" in line]
+    assert len(restored) == 2, broken(lines)
+    assert any("deploy_signer --target bench-eu" in line for line in restored)
+    assert any(
+        line.startswith("BROKEN  signer-bench-us") and "deploy_signer --target bench-us" in line
+        for line in restored
+    )
+    assert lab.calls.count("restore_region") == 4
+    # With eu not back, the us-cut survivor claims are skipped, never judged.
+    assert any(
+        line.startswith("skipped eu company issues and renews with us cut, after the eu round trip")
+        for line in lines
+    )
+
+
+def test_lag_beyond_the_settle_window_breaks_the_stopped_claim_naming_the_wait() -> None:
+    lab = FakeLab(lag=10 * proof.SETTLE_S)
+    rc, lines = run("signer", lab)
+    assert rc == 1
+    named = [line for line in broken(lines) if "a stopped signer is named" in line]
+    assert len(named) == 1, broken(lines)
+    assert f"after a {proof.SETTLE_S} s wait" in named[0]
+
+
+def test_settle_returns_the_first_answer_done_holds_for(fake_clock: list[float]) -> None:
+    answers = iter([1, 2, 3, 4])
+    assert proof.settle(lambda: next(answers), lambda a: a == 3) == 3
+    assert fake_clock[0] == 2 * proof.SETTLE_INTERVAL_S
+
+
+def test_settle_gives_up_after_the_timeout_with_the_last_answer(fake_clock: list[float]) -> None:
+    calls: list[int] = []
+
+    def probe() -> int:
+        calls.append(1)
+        return len(calls)
+
+    last = proof.settle(probe, lambda _a: False, timeout=20, interval=5)
+    assert last == len(calls) == 5
+    assert fake_clock[0] == 20
+
+
+def test_settle_lets_a_probe_error_propagate() -> None:
+    def probe() -> int:
+        msg = "probe failed"
+        raise LabError(msg)
+
+    with pytest.raises(LabError, match="probe failed"):
+        proof.settle(probe, lambda _a: True)
+
+
+def test_a_failed_stop_restores_and_claims_nothing_about_the_stopped_state() -> None:
+    lab = FakeLab(raise_on="stop_signer")
+    rc, lines = run("signer", lab)
+    assert rc == 1
+    assert "start_signer" in lab.calls
+    assert not any("stopped signer is named" in line for line in lines)
+
+
+# -- refusals need their controls ------------------------------------------------
+
+
+def test_replay_presents_each_artifact_to_its_own_company_first() -> None:
+    lab = FakeLab()
+    run("replay", lab)
+    presents = [c for c in lab.calls if c.startswith("present:")]
+    assert presents == [f"present:{k}" for k in proof.REPLAY_KINDS for _ in (0, 1)]
+
+
+def test_refused_without_error_text_is_broken() -> None:
+    p = proof.Proof()
+    assert not p.refused("x", Answer(ok=False, error="  "))
+    assert not p.refused("y", OK)
+    assert p.refused("z", Answer(ok=False, error="signer-eu down"), naming="signer-eu")
+
+
+def test_a_verb_that_records_nothing_is_not_a_pass(monkeypatch: pytest.MonkeyPatch) -> None:
+    def silent(lab: proof.Lab, p: proof.Proof, *, bench: bool) -> None:
+        del lab, p, bench
+
+    monkeypatch.setitem(proof.VERBS, "signer", silent)
+    rc, lines = run("signer", FakeLab())
+    assert rc == 1
+    assert lines == ["proof signer: no claim was recorded"]
+
+
+# -- names stay out of the output ------------------------------------------------
+
+
+def test_github_names_the_surface_and_position_never_the_word() -> None:
+    lab = FakeLab(leak_surface="logs")
+    rc, lines = run("github", lab)
+    assert rc == 1
+    text = "\n".join(lines).lower()
+    assert "logs: word #" in text
+    assert "proof-github" not in text
+    assert DOMAIN not in text
+
+
+def test_name_hits_is_case_insensitive() -> None:
+    hits = proof.name_hits({"a": "x ACME y", "b": "clean"}, ["acme", "", "none"])
+    assert hits == ["a: word #0"]
+
+
+# -- the workflow scan is real ---------------------------------------------------
+
+
+def test_workflow_scan_finds_a_remove_call(tmp_path: pathlib.Path) -> None:
+    wf = tmp_path / ".github" / "workflows"
+    wf.mkdir(parents=True)
+    (wf / "a.yml").write_text(
+        "steps:\n  - run: ./run.sh enterprise remove cabc\n", encoding="utf-8"
+    )
+    (wf / "b.yaml").write_text("steps:\n  - run: ./run.sh enterprise release\n", encoding="utf-8")
+    assert proof.workflow_remove_calls(tmp_path) == ["workflows/a.yml:2"]
+
+
+def test_no_workflow_in_this_tree_calls_enterprise_remove() -> None:
+    root = pathlib.Path(__file__).resolve().parents[3]
+    assert list((root / ".github" / "workflows").glob("*.yml"))
+    assert proof.workflow_remove_calls(root) == []
+
+
+def test_remove_fails_when_no_workflow_is_found(tmp_path: pathlib.Path) -> None:
+    p = proof.Proof()
+    proof.verb_remove(cast("proof.Lab", FakeLab()), p, bench=True, root=tmp_path)
+    assert any(o.claim == "workflows were scanned" and not o.ok for o in p.outcomes)
+
+
+# -- main ------------------------------------------------------------------------
+
+
+def test_main_refuses_a_bench_verb_off_bench(capsys: pytest.CaptureFixture[str]) -> None:
+    assert proof.main(["signer"], lab=cast("proof.Lab", FakeLab())) == 2
+    assert "bench only" in capsys.readouterr().err
+
+
+def test_main_runs_keys_against_production() -> None:
+    lab = FakeLab()
+    assert proof.main(["keys"], lab=cast("proof.Lab", lab)) == 0
+    assert "account_workers" in lab.calls
+
+
+def test_main_runs_a_bench_verb_with_bench() -> None:
+    assert proof.main(["replay", "--bench"], lab=cast("proof.Lab", FakeLab())) == 0
+
+
+def test_main_names_the_missing_lab(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(proof, "LAB_MODULE", "rediacc_ci.enterprise.no_such_lab_for_test")
+    assert proof.main(["signer", "--bench"]) == 2
+    err = capsys.readouterr().err
+    assert "no live lab" in err
+    assert "nothing was claimed" in err
+
+
+def test_main_usage_errors_exit_two() -> None:
+    assert proof.main(["no-such-verb"]) == 2
+    assert proof.main([]) == 2
+
+
+# -- review 5b19ed43: names, startup, scans, side effects -------------------------
+
+REAL_NAME = "Acme Holdings"
+REAL_HOST = "acme-holdings.customer.example"
+
+
+@dataclasses.dataclass
+class RealNamedRecords(FakeLab):
+    def deploy_records(self, *, bench: bool) -> list[dict[str, object]]:
+        del bench
+        return [{"company": REAL_NAME, "duration_s": 5.0, "host": REAL_HOST}]
+
+
+@dataclasses.dataclass
+class LeakyAdd(FakeLab):
+    def add(
+        self, label: str, *, owner: str, unlisted: bool, lookup_domain: str, kill_after: str = ""
+    ) -> AddResult:
+        res = super().add(
+            label,
+            owner=owner,
+            unlisted=unlisted,
+            lookup_domain=lookup_domain,
+            kill_after=kill_after,
+        )
+        if res.rc:
+            return dataclasses.replace(res, error=f"{label} at {label}.{DOMAIN} failed")
+        return res
+
+    def lookup(self, domain: str) -> str | None:
+        return f"{domain}.elsewhere.example"
+
+
+@dataclasses.dataclass
+class FailingExport(FakeLab):
+    exported_for: list[str] = dataclasses.field(default_factory=list)
+
+    def export(self, company: str) -> int:
+        self.exported_for.append(company)
+        return 1
+
+
+@dataclasses.dataclass
+class KeptExportFails(FakeLab):
+    def export(self, company: str) -> int:
+        super().export(company)
+        return 1 if self.companies[company][0].endswith("-ci") else 0
+
+
+def test_cost_masks_a_company_that_is_not_an_opaque_id() -> None:
+    rc, lines = run("cost", RealNamedRecords())
+    text = "\n".join(lines)
+    assert rc == 1
+    assert any("record #0" in line for line in broken(lines)), broken(lines)
+    assert REAL_NAME.lower() not in text.lower()
+    assert REAL_HOST not in text
+
+
+def test_add_keeps_labels_hosts_and_domains_out_of_the_output() -> None:
+    rc, lines = run("add", LeakyAdd(unlisted_hits=True))
+    text = "\n".join(lines).lower()
+    assert rc == 1
+    assert broken(lines)
+    for word in ("proof-listed", "proof-unlisted", "proof-freemail", "elsewhere.example"):
+        assert word not in text, word
+
+
+def test_add_prints_no_label_on_a_healthy_run() -> None:
+    rc, lines = run("add", FakeLab())
+    assert rc == 0
+    assert "proof-" not in "\n".join(lines)
+
+
+def test_main_exits_two_when_the_live_lab_fails_to_build(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    class Broken:
+        @staticmethod
+        def build(*, bench: bool) -> None:
+            del bench
+            msg = "no bench credentials"
+            raise LabError(msg)
+
+    monkeypatch.setattr(proof.importlib, "import_module", lambda _name: Broken)
+    assert proof.main(["signer", "--bench"]) == 2
+    err = capsys.readouterr().err
+    assert "could not start" in err
+    assert "no bench credentials" in err
+
+
+def test_workflow_scan_joins_backslash_continuations(tmp_path: pathlib.Path) -> None:
+    wf = tmp_path / ".github" / "workflows"
+    wf.mkdir(parents=True)
+    (wf / "a.yml").write_text(
+        "steps:\n  - run: ./run.sh enterprise \\\n      remove cabc\n  - run: echo hi\n",
+        encoding="utf-8",
+    )
+    assert proof.workflow_remove_calls(tmp_path) == ["workflows/a.yml:2"]
+
+
+def test_workflow_scan_reads_composite_actions(tmp_path: pathlib.Path) -> None:
+    act = tmp_path / ".github" / "actions" / "tidy"
+    act.mkdir(parents=True)
+    (act / "action.yml").write_text(
+        "runs:\n  steps:\n    - run: ./run.sh enterprise remove c1\n", encoding="utf-8"
+    )
+    (tmp_path / ".github" / "workflows").mkdir()
+    assert proof.workflow_remove_calls(tmp_path) == ["actions/tidy/action.yml:3"]
+    p = proof.Proof()
+    proof.verb_remove(cast("proof.Lab", FakeLab()), p, bench=True, root=tmp_path)
+    assert any(o.claim == "no workflow calls enterprise remove" and not o.ok for o in p.outcomes)
+
+
+def test_remove_reports_which_export_failed() -> None:
+    _, lines = run("remove", KeptExportFails())
+    assert any("export failed for ['kept company']" in line for line in broken(lines)), lines
+
+
+def test_remove_calls_both_exports_even_when_the_first_fails() -> None:
+    lab = FailingExport()
+    _, lines = run("remove", lab)
+    assert len(lab.exported_for) == 2
+    assert any("removed company" in line and "kept company" in line for line in broken(lines))
+
+
+def test_keys_mints_no_licence_in_production() -> None:
+    lab = FakeLab()
+    rc, lines = run("keys", lab, bench=False)
+    assert rc == 0
+    assert "issue:licence" not in lab.calls
+    assert any(line.startswith("skipped") and "bench-only" in line for line in lines)
+    assert "skipped" in lines[-1]
+
+
+def test_keys_issues_licences_on_bench() -> None:
+    lab = FakeLab()
+    rc, lines = run("keys", lab, bench=True)
+    assert rc == 0
+    assert "issue:licence" in lab.calls
+    assert not any(line.startswith("skipped") for line in lines)
+
+
+def test_a_run_of_only_skipped_claims_does_not_exit_zero() -> None:
+    def only_skips(lab: object, p: proof.Proof, *, bench: bool) -> None:
+        del lab, bench
+        p.skip("a: licence", "bench-only")
+
+    proof.VERBS["only-skips-for-test"] = only_skips
+    try:
+        lines: list[str] = []
+        lab = cast("proof.Lab", FakeLab())
+        rc = proof.run_verb("only-skips-for-test", lab, bench=False, out=lines.append)
+    finally:
+        del proof.VERBS["only-skips-for-test"]
+    assert rc == 1
+    assert "1 skipped" in lines[-2]
+    assert "no claim held" in lines[-1]
+
+
+def test_a_production_keys_run_counts_its_held_claims_apart_from_skips() -> None:
+    p = proof.Proof()
+    proof.verb_keys(cast("proof.Lab", FakeLab()), p, bench=False)
+    assert p.held
+    licence = [o for o in p.outcomes if "licence is issued" in o.claim]
+    assert licence, "the licence claims were not recorded at all"
+    assert all(o.skipped for o in licence)
+    assert not any(o.skipped for o in p.held)
+
+
+def test_remove_fails_when_only_composite_actions_exist(tmp_path: pathlib.Path) -> None:
+    act = tmp_path / ".github" / "actions" / "tidy"
+    act.mkdir(parents=True)
+    (act / "action.yml").write_text("runs:\n  steps:\n    - run: echo hi\n", encoding="utf-8")
+    p = proof.Proof()
+    proof.verb_remove(cast("proof.Lab", FakeLab()), p, bench=True, root=tmp_path)
+    assert any(o.claim == "workflows were scanned" and not o.ok for o in p.outcomes)
+
+
+def test_a_composite_action_named_workflows_keeps_its_path(tmp_path: pathlib.Path) -> None:
+    act = tmp_path / ".github" / "actions" / "workflows"
+    act.mkdir(parents=True)
+    (act / "action.yml").write_text(
+        "runs:\n  steps:\n    - run: ./run.sh enterprise remove c1\n", encoding="utf-8"
+    )
+    assert proof.workflow_remove_calls(tmp_path) == ["actions/workflows/action.yml:3"]

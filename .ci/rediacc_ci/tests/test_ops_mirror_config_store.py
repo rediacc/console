@@ -1,6 +1,6 @@
 """Tests for `rediacc_ci.ops.mirror_config_store`.
 
-The planner and the generated SQL run against two sqlite databases built from `private/account/drizzle/*.sql` (M1-M3). The apply path runs end to end against a fake `npx` on PATH that answers `wrangler d1 execute` from those same sqlite files and `wrangler r2 object get|put` from a scratch directory, recording every argv (M4). No Cloudflare credential and no network.
+The planner and the generated SQL run against two sqlite databases built from `private/account/drizzle/*.sql` (M1-M3). The apply path runs end to end against a fake `wrangler` on PATH that answers `wrangler d1 execute` from those same sqlite files and `wrangler r2 object get|put` from a scratch directory, recording every argv (M4). No Cloudflare credential and no network.
 """
 
 from __future__ import annotations
@@ -12,6 +12,7 @@ import os
 import shlex
 import sqlite3
 import stat
+import subprocess
 import typing
 from urllib.parse import urlparse
 
@@ -37,7 +38,7 @@ ORG = "org00000-aaaa-4bbb-8ccc-000000000001"
 CUST = "cust0000-aaaa-4bbb-8ccc-000000000001"
 OWNER = "user0000-aaaa-4bbb-8ccc-00000000000a"
 OTHER = "user0000-aaaa-4bbb-8ccc-00000000000b"
-EDGE_USER = "edgeuser-aaaa-4bbb-8ccc-00000000000e"
+BENCH_USER = "benchuser-aaaa-4bbb-8ccc-00000000000e"
 TEAM = "team0000-aaaa-4bbb-8ccc-000000000001"
 TEAM_UNUSED = "team0000-aaaa-4bbb-8ccc-000000000002"
 SUB = "sub00000-aaaa-4bbb-8ccc-000000000001"
@@ -66,24 +67,25 @@ KEYS = list(BLOBS)
 NEVER_SHOWN = [*SECRETS.values(), *WRAPPED.values(), EMAIL, EMAIL_HASH, "PWHASH-zz"]
 
 SRC = mod.End(
-    "eu-stable",
+    "eu",
     "stable",
     "eu",
     "wrangler.eu.toml",
-    "account-db-eu",
-    "rediacc-configs-eu",
+    "account-eu",
+    "configs-eu",
     "eu",
-    "rediacc-account-eu",
+    "account-eu",
 )
 DST = mod.End(
-    "eu-edge",
-    "edge",
+    "bench",
+    "bench",
     "eu",
-    "wrangler.edge-eu.toml",
-    "edge-account-db-eu",
-    "edge-rediacc-configs-eu",
-    "eu",
-    "edge-rediacc-account-eu",
+    "wrangler.bench.toml",
+    "account-bench",
+    "configs-bench",
+    "",
+    "account-bench",
+    BENCH_HOST,
 )
 
 
@@ -149,13 +151,13 @@ def user(conn: sqlite3.Connection, uid: str, email: str) -> None:
     )
 
 
-def edge_org(conn: sqlite3.Connection, org_id: str, cust: str) -> None:
+def bench_org(conn: sqlite3.Connection, org_id: str, cust: str) -> None:
     ins(
         conn,
         "organizations",
         id=org_id,
-        name="edge",
-        owner_user_id="edge-owner",
+        name="bench",
+        owner_user_id="bench-owner",
         customer_id=cust,
         created_at=NOW,
         updated_at=NOW,
@@ -332,8 +334,8 @@ class NoDefault(Sqlite):
 
 @pytest.fixture
 def dbs(tmp_path: pathlib.Path) -> tuple[sqlite3.Connection, sqlite3.Connection]:
-    src = build_db(tmp_path / "account-db-eu.sqlite")
-    dst = build_db(tmp_path / "edge-account-db-eu.sqlite")
+    src = build_db(tmp_path / "account-eu.sqlite")
+    dst = build_db(tmp_path / "account-bench.sqlite")
     seed_stable(src)
     return src, dst
 
@@ -377,7 +379,7 @@ def test_plan_names_counts_and_prefixes_only(dbs) -> None:
         in text
     )
     assert "config_tokens 1" in text
-    assert "require_passkey: 1 on eu-stable, written 0 on eu-edge" in text
+    assert "require_passkey: 1 on eu, written 0 on bench" in text
     assert "r2: 4 object(s)" in text
     assert sorted(plan.r2_keys) == sorted(KEYS)
     assert [r["id"] for r in plan.rows("subscriptions")] == [SUB]
@@ -454,12 +456,12 @@ def _seed_sub(conn: sqlite3.Connection) -> None:
 
 
 def _seed_team(conn: sqlite3.Connection) -> None:
-    edge_org(conn, "edge-org-0001", "edge-cust-1")
+    bench_org(conn, "bench-org-0001", "bench-cust-1")
     ins(
         conn,
         "teams",
         id=TEAM,
-        org_id="edge-org-0001",
+        org_id="bench-org-0001",
         name="t",
         slug="t",
         created_at=NOW,
@@ -468,12 +470,12 @@ def _seed_team(conn: sqlite3.Connection) -> None:
 
 
 def _seed_store(conn: sqlite3.Connection) -> None:
-    edge_org(conn, "edge-org-0001", "edge-cust-1")
+    bench_org(conn, "bench-org-0001", "bench-cust-1")
     ins(
         conn,
         "config_stores",
         id=STORE,
-        org_id="edge-org-0001",
+        org_id="bench-org-0001",
         sdk_master="m",
         server_secret="s",
         encrypted_org_passphrase="e",
@@ -482,17 +484,17 @@ def _seed_store(conn: sqlite3.Connection) -> None:
     )
 
 
-CONFLICT = "edge holds identity rows that conflict with this copy: "
+CONFLICT = "bench holds identity rows that conflict with this copy: "
 COLLISIONS = [
     (
         "org id, other customer",
-        lambda c: edge_org(c, ORG, "other-cust-1"),
+        lambda c: bench_org(c, ORG, "other-cust-1"),
         CONFLICT + r"organizations row org00000 differs in owner_user_id",
     ),
     (
         "customer id under another org id",
-        lambda c: edge_org(c, "edge-org-0001", CUST),
-        CONFLICT + r"organizations \(customer_id\) is held by another edge row",
+        lambda c: bench_org(c, "bench-org-0001", CUST),
+        CONFLICT + r"organizations \(customer_id\) is held by another bench row",
     ),
     (
         "subscription id, other org",
@@ -500,9 +502,9 @@ COLLISIONS = [
         CONFLICT + r"subscriptions row sub00000 differs in org_id",
     ),
     ("team id, other org", _seed_team, CONFLICT + r"teams row team0000 differs in org_id, slug"),
-    ("store id", _seed_store, r"edge already holds rows this copy would write: store id"),
+    ("store id", _seed_store, r"bench already holds rows this copy would write: store id"),
 ]
-VALUES_NEVER_SHOWN = ("other-cust-1", "x-cust", "edge-org-0001", "edge-owner", EMAIL_HASH)
+VALUES_NEVER_SHOWN = ("other-cust-1", "x-cust", "bench-org-0001", "bench-owner", EMAIL_HASH)
 
 
 @pytest.mark.parametrize(
@@ -529,17 +531,17 @@ def test_case_a_user_id_taken_under_another_email_refuses(dbs) -> None:
 
 LEGACY_ROW = "SRV-PASSPHRASE-VALUE-zz"
 TAGGED_ROW = "csk1.abcdef12.SRV-PASSPHRASE-VALUE-zz"
-EDGE_KID = "abcdef12"
-EDGE_KEY_ENV = "ACCOUNT_CONFIG_SERVER_KEY_EU_EDGE"
+ROW_KID = "abcdef12"
+BENCH_KEY_ENV = "ACCOUNT_CONFIG_SERVER_KEY_BENCH"
 NEW = {"ACCOUNT_CONFIG_SERVER_KEY"}
 
 
 def _no_kid() -> tuple[str, str | None]:
-    raise AssertionError("the edge kid must not be computed here")
+    raise AssertionError("the bench kid must not be computed here")
 
 
-def _edge(kid: str | None):
-    return lambda: (EDGE_KEY_ENV, kid)
+def _bench(kid: str | None):
+    return lambda: (BENCH_KEY_ENV, kid)
 
 
 def _check(src_names: set[str], dst_names: set[str], value: object, kid=_no_kid) -> str:
@@ -549,12 +551,10 @@ def _check(src_names: set[str], dst_names: set[str], value: object, kid=_no_kid)
 
 
 def test_server_key_presence_mismatch_refuses() -> None:
-    assert "sealed under the edge key" in _check(
-        {"CONFIG_SERVER_KEY"}, {"CONFIG_SERVER_KEY"} | NEW, TAGGED_ROW, _edge(EDGE_KID)
+    assert "sealed under the bench key" in _check(
+        {"CONFIG_SERVER_KEY"}, {"CONFIG_SERVER_KEY"} | NEW, TAGGED_ROW, _bench(ROW_KID)
     )
-    with pytest.raises(
-        mod.RefusedError, match="CONFIG_SERVER_KEY is set on rediacc-account-eu and absent"
-    ):
+    with pytest.raises(mod.RefusedError, match="CONFIG_SERVER_KEY is set on account-eu and absent"):
         _check({"CONFIG_SERVER_KEY"}, set(), LEGACY_ROW)
     with pytest.raises(mod.RefusedError, match="unknown"):
         mod.check_server_key({SRC.worker: set()}, SRC, DST, LEGACY_ROW, _no_kid)
@@ -571,28 +571,28 @@ def test_untagged_row_refuses_whatever_the_workers_hold(src_names, dst_names) ->
 
 def test_tagged_row_without_the_key_on_either_worker_refuses() -> None:
     with pytest.raises(mod.RefusedError, match="does not hold ACCOUNT_CONFIG_SERVER_KEY"):
-        _check(NEW, set(), "csk1.%s.Zm9v" % EDGE_KID)
+        _check(NEW, set(), "csk1.%s.Zm9v" % ROW_KID)
 
 
-def test_a_row_not_sealed_under_the_edge_key_refuses() -> None:
-    """Each channel holds its own key, so a row sealed under the stable key (any kid but edge's) cannot open on edge."""
+def test_a_row_not_sealed_under_the_bench_key_refuses() -> None:
+    """Each channel holds its own key, so a row sealed under the stable key (any kid but bench's) cannot open on bench."""
     with pytest.raises(
         mod.RefusedError,
-        match="kid 99999999, not the edge key's kid abcdef12: it would not open on edge-rediacc-account-eu, and no step reseals it under the target's key yet",
+        match=r"kid 99999999, not the bench key's kid abcdef12: it would not open on account-bench, and the reseal \(reseal_server_key\) did not seal it",
     ):
-        _check(NEW, NEW, "csk1.99999999.Zm9v", _edge(EDGE_KID))
+        _check(NEW, NEW, "csk1.99999999.Zm9v", _bench(ROW_KID))
 
 
-def test_a_row_sealed_under_the_edge_key_passes() -> None:
-    line = _check(NEW, NEW, "csk1.%s.Zm9v" % EDGE_KID, _edge(EDGE_KID))
-    assert "sealed under the edge key (kid abcdef12)" in line
+def test_a_row_sealed_under_the_bench_key_passes() -> None:
+    line = _check(NEW, NEW, "csk1.%s.Zm9v" % ROW_KID, _bench(ROW_KID))
+    assert "sealed under the bench key (kid abcdef12)" in line
 
 
-def test_tagged_row_without_the_edge_key_in_the_environment_names_the_variable_read() -> None:
+def test_tagged_row_without_the_bench_key_in_the_environment_names_the_variable_read() -> None:
     with pytest.raises(
-        mod.RefusedError, match="edge key is not in the environment.*" + EDGE_KEY_ENV
+        mod.RefusedError, match="bench key is not in the environment.*" + BENCH_KEY_ENV
     ):
-        _check(NEW, NEW, "csk1.%s.Zm9v" % EDGE_KID, _edge(None))
+        _check(NEW, NEW, "csk1.%s.Zm9v" % ROW_KID, _bench(None))
 
 
 def test_store_without_a_passphrase_needs_no_kid() -> None:
@@ -605,10 +605,10 @@ def test_config_server_key_id_matches_the_worker_vector() -> None:
 
 
 def test_key_kid_is_the_kid_of_the_environment_key(monkeypatch) -> None:
-    monkeypatch.setenv(EDGE_KEY_ENV, "kid-vector-key")
-    assert mod.key_kid(paths.repo_root(), DST) == (EDGE_KEY_ENV, "9025a7ba")
-    monkeypatch.delenv(EDGE_KEY_ENV)
-    assert mod.key_kid(paths.repo_root(), DST) == (EDGE_KEY_ENV, None)
+    monkeypatch.setenv(BENCH_KEY_ENV, "kid-vector-key")
+    assert mod.key_kid(paths.repo_root(), DST) == (BENCH_KEY_ENV, "9025a7ba")
+    monkeypatch.delenv(BENCH_KEY_ENV)
+    assert mod.key_kid(paths.repo_root(), DST) == (BENCH_KEY_ENV, None)
 
 
 def test_key_kid_names_the_variable_from_the_region_secret_suffix(tmp_path, monkeypatch) -> None:
@@ -616,13 +616,13 @@ def test_key_kid_names_the_variable_from_the_region_secret_suffix(tmp_path, monk
     (tmp_path / "regions.json").write_text(
         json.dumps({"regions": [{"id": "eu", "secretSuffix": "EUR"}]}), encoding="utf-8"
     )
-    monkeypatch.delenv("ACCOUNT_CONFIG_SERVER_KEY_EUR_EDGE", raising=False)
-    assert mod.key_kid(tmp_path, DST) == ("ACCOUNT_CONFIG_SERVER_KEY_EUR_EDGE", None)
+    monkeypatch.delenv("ACCOUNT_CONFIG_SERVER_KEY_EUR_STABLE", raising=False)
+    assert mod.key_kid(tmp_path, SRC) == ("ACCOUNT_CONFIG_SERVER_KEY_EUR_STABLE", None)
 
 
 def test_secret_names_reads_the_listing(monkeypatch) -> None:
     def fetch(_method, path, _token, _body=None):
-        if "edge-" in path:
+        if DST.worker in path:
             return [{"name": "API_KEY", "type": "secret_text"}]
         return [{"name": "CONFIG_SERVER_KEY", "type": "secret_text"}]
 
@@ -642,60 +642,62 @@ def test_secret_names_refuses_when_the_listing_fails(monkeypatch) -> None:
 
 def test_schema_parity_passes_on_identical_schemas(dbs) -> None:
     (line,) = mod.schema_parity(Sqlite(dbs[0]), Sqlite(dbs[1]))
-    assert "all applied on edge" in line
+    assert "all applied on bench" in line
 
 
-def test_schema_parity_refuses_a_stable_migration_edge_lacks(dbs) -> None:
+def test_schema_parity_refuses_a_stable_migration_bench_lacks(dbs) -> None:
     src, dst = dbs
     ins(src, "d1_migrations", name="9999_future.sql", applied_at=NOW)
-    with pytest.raises(mod.RefusedError, match=r"not applied on edge.*9999_future"):
+    with pytest.raises(mod.RefusedError, match=r"not applied on bench.*9999_future"):
         mod.schema_parity(Sqlite(src), Sqlite(dst))
 
 
-def test_schema_parity_refuses_a_stable_column_edge_lacks(dbs) -> None:
+def test_schema_parity_refuses_a_stable_column_bench_lacks(dbs) -> None:
     src, dst = dbs
     src.execute("ALTER TABLE config_entries ADD COLUMN future_col text")
-    with pytest.raises(mod.RefusedError, match=r"config_entries\.future_col is missing on edge"):
+    with pytest.raises(mod.RefusedError, match=r"config_entries\.future_col is missing on bench"):
         mod.schema_parity(Sqlite(src), Sqlite(dst))
 
 
-def test_schema_parity_refuses_an_edge_only_not_null_column_without_default(dbs) -> None:
+def test_schema_parity_refuses_a_bench_only_not_null_column_without_default(dbs) -> None:
     src, dst = dbs
-    dst.execute("ALTER TABLE config_key_slots ADD COLUMN edge_only text NOT NULL DEFAULT 'x'")
+    dst.execute("ALTER TABLE config_key_slots ADD COLUMN bench_only text NOT NULL DEFAULT 'x'")
     mod.schema_parity(Sqlite(src), Sqlite(dst))
     with pytest.raises(
         mod.RefusedError,
-        match=r"config_key_slots\.edge_only is NOT NULL with no default on edge only",
+        match=r"config_key_slots\.bench_only is NOT NULL with no default on bench only",
     ):
-        mod.schema_parity(Sqlite(src), NoDefault(dst, "edge_only"))
+        mod.schema_parity(Sqlite(src), NoDefault(dst, "bench_only"))
 
 
 def test_ends_refuse_a_stable_write_target() -> None:
-    src = mod.resolve_end(ROOT, "eu-stable")
-    dst = mod.resolve_end(ROOT, "eu-edge")
+    src = mod.resolve_end(ROOT, "eu")
+    dst = mod.resolve_end(ROOT, "bench")
     assert (src.database, src.bucket, src.jurisdiction) == (
-        "account-db-eu",
-        "rediacc-configs-eu",
+        "account-eu",
+        "configs-eu",
         "eu",
     )
     assert (dst.database, dst.bucket, dst.worker) == (
-        "edge-account-db-eu",
-        "edge-rediacc-configs-eu",
-        "edge-rediacc-account-eu",
+        "account-bench",
+        "configs-bench",
+        "account-bench",
     )
     mod.check_ends(ROOT, src, dst)
-    with pytest.raises(mod.RefusedError, match="must be an edge end"):
+    with pytest.raises(mod.RefusedError, match="the target must be bench"):
         mod.check_ends(ROOT, src, src)
     with pytest.raises(mod.RefusedError, match="must be a stable end"):
         mod.check_ends(ROOT, dst, dst)
     with pytest.raises(mod.RefusedError, match="one region"):
-        mod.check_ends(ROOT, src, mod.resolve_end(ROOT, "us-edge"))
+        mod.check_ends(ROOT, src, dataclasses.replace(dst, region="us"))
+    with pytest.raises(mod.RefusedError, match="the target must be bench"):
+        mod.check_ends(ROOT, src, mod.resolve_end(ROOT, "us"))
     with pytest.raises(mod.RefusedError, match="stable bucket"):
-        mod.check_ends(ROOT, src, dataclasses.replace(dst, bucket="rediacc-configs-us"))
+        mod.check_ends(ROOT, src, dataclasses.replace(dst, bucket="configs-us"))
     with pytest.raises(mod.RefusedError, match="stable database"):
-        mod.check_ends(ROOT, src, dataclasses.replace(dst, database="account-db-us"))
-    with pytest.raises(mod.RefusedError, match="known region"):
-        mod.resolve_end(ROOT, "mars-edge")
+        mod.check_ends(ROOT, src, dataclasses.replace(dst, database="account-us"))
+    with pytest.raises(mod.RefusedError, match="known region id or bench"):
+        mod.resolve_end(ROOT, "mars")
 
 
 # ---- M3: case A and case B on two sqlite databases --------------------------
@@ -712,7 +714,7 @@ STORE_COLS = (
 )
 
 
-def _assert_mirrored(src: sqlite3.Connection, dst: sqlite3.Connection, edge_user: str) -> None:
+def _assert_mirrored(src: sqlite3.Connection, dst: sqlite3.Connection, bench_user: str) -> None:
     store_s = rows(src, "SELECT * FROM config_stores")[0]
     store_d = rows(dst, "SELECT * FROM config_stores")[0]
     for col in STORE_COLS:
@@ -723,11 +725,11 @@ def _assert_mirrored(src: sqlite3.Connection, dst: sqlite3.Connection, edge_user
     slots_d = rows(dst, "SELECT * FROM config_key_slots ORDER BY id")
     assert sorted(r["method"] for r in slots_d) == ["password", "recovery"]
     for r in slots_d:
-        assert r["user_id"] == edge_user
+        assert r["user_id"] == bench_user
         for col in ("wrapped_cek", "kdf_params", "cek_generation", "config_store_id"):
             assert r[col] == slots_s[r["id"]][col]
     (ident,) = rows(dst, "SELECT * FROM config_user_identities")
-    assert ident["user_id"] == edge_user
+    assert ident["user_id"] == bench_user
     assert ident["x25519_public_key"] == "X25519-PUB-1"
     assert ident["storage_key_id"] == "SK-1"
     for col in (
@@ -742,7 +744,7 @@ def _assert_mirrored(src: sqlite3.Connection, dst: sqlite3.Connection, edge_user
     entries = "SELECT * FROM config_entries ORDER BY id"
     assert rows(dst, entries) == rows(src, entries)
     vers = {r["id"]: r for r in rows(dst, "SELECT * FROM config_versions")}
-    assert vers[VER_OWNER]["created_by_user_id"] == edge_user
+    assert vers[VER_OWNER]["created_by_user_id"] == bench_user
     assert vers[VER_OTHER]["created_by_user_id"] is None
     for vid in (VER_OWNER, VER_OTHER):
         src_v = rows(src, "SELECT * FROM config_versions WHERE id = ?", vid)[0]
@@ -750,9 +752,9 @@ def _assert_mirrored(src: sqlite3.Connection, dst: sqlite3.Connection, edge_user
         got = dict(vers[vid])
         got.pop("created_by_user_id")
         assert got == src_v
-    assert rows(dst, "SELECT owner_user_id FROM organizations")[0]["owner_user_id"] == edge_user
-    assert [r["user_id"] for r in rows(dst, "SELECT user_id FROM org_memberships")] == [edge_user]
-    assert [r["user_id"] for r in rows(dst, "SELECT user_id FROM team_memberships")] == [edge_user]
+    assert rows(dst, "SELECT owner_user_id FROM organizations")[0]["owner_user_id"] == bench_user
+    assert [r["user_id"] for r in rows(dst, "SELECT user_id FROM org_memberships")] == [bench_user]
+    assert [r["user_id"] for r in rows(dst, "SELECT user_id FROM team_memberships")] == [bench_user]
     assert count(dst, "config_tokens") == 0
     assert rows(dst, "SELECT id FROM users WHERE id = ?", OTHER) == []
     (event,) = rows(dst, "SELECT * FROM event_log")
@@ -772,23 +774,70 @@ def test_case_a_copies_the_operator_with_the_same_id(dbs) -> None:
     apply_sql(dst, sql)
     _assert_mirrored(src, dst, OWNER)
     (u,) = rows(dst, "SELECT * FROM users")
-    assert u == rows(src, "SELECT * FROM users WHERE id = ?", OWNER)[0]
+    expected = rows(src, "SELECT * FROM users WHERE id = ?", OWNER)[0]
+    assert u == {**expected, **mod.TOTP_CLEARED}
     mod.verify(plan, Sqlite(dst), set())
 
 
-def test_case_b_remaps_the_operator_to_the_edge_user(dbs) -> None:
+def _enable_totp(conn: sqlite3.Connection) -> None:
+    conn.execute(
+        "UPDATE users SET totp_secret = ?, totp_backup_hashes = ?, totp_enabled = 1 WHERE id = ?",
+        ("tsk1.abc.xxx", '["h1","h2"]', OWNER),
+    )
+    conn.commit()
+
+
+def test_case_a_clears_totp_on_the_copied_operator_and_says_so(dbs) -> None:
     src, dst = dbs
-    user(dst, EDGE_USER, EMAIL)
+    _enable_totp(src)
+    plan = plan_for(src, dst)
+    assert plan.case == "A"
+    assert any(line.startswith("identity: TOTP cleared") for line in plan.lines)
+    assert "tsk1.abc.xxx" not in "\n".join(plan.lines)
+    apply_sql(dst, mod.plan_sql(plan))
+    (u,) = rows(dst, "SELECT * FROM users")
+    assert u["totp_secret"] is None
+    assert u["totp_backup_hashes"] is None
+    assert u["totp_enabled"] == 0
+    source_row = rows(src, "SELECT * FROM users WHERE id = ?", OWNER)[0]
+    assert source_row["totp_enabled"] == 1
+    for col, value in source_row.items():
+        if col not in mod.TOTP_CLEARED:
+            assert u[col] == value, col
+    assert count(dst, "config_key_slots") == 2
+    assert count(dst, "organizations") == 1
+
+
+def test_case_b_leaves_the_bench_users_totp_alone(dbs) -> None:
+    src, dst = dbs
+    _enable_totp(src)
+    user(dst, BENCH_USER, EMAIL)
+    dst.execute(
+        "UPDATE users SET totp_secret = 'tsk1.bench.own', totp_enabled = 1 WHERE id = ?",
+        (BENCH_USER,),
+    )
+    dst.commit()
+    plan = plan_for(src, dst)
+    assert plan.case == "B"
+    assert not any("TOTP cleared" in line for line in plan.lines)
+    apply_sql(dst, mod.plan_sql(plan))
+    (u,) = rows(dst, "SELECT totp_secret, totp_enabled FROM users")
+    assert u == {"totp_secret": "tsk1.bench.own", "totp_enabled": 1}
+
+
+def test_case_b_remaps_the_operator_to_the_bench_user(dbs) -> None:
+    src, dst = dbs
+    user(dst, BENCH_USER, EMAIL)
     dst.commit()
     plan = plan_for(src, dst)
     assert plan.case == "B"
     assert plan.rows("users") == []
-    assert any("case B" in line and mod.prefix(EDGE_USER) in line for line in plan.lines)
+    assert any("case B" in line and mod.prefix(BENCH_USER) in line for line in plan.lines)
     sql = mod.plan_sql(plan)
     assert OWNER not in sql
     apply_sql(dst, sql)
-    _assert_mirrored(src, dst, EDGE_USER)
-    assert [r["id"] for r in rows(dst, "SELECT id FROM users")] == [EDGE_USER]
+    _assert_mirrored(src, dst, BENCH_USER)
+    assert [r["id"] for r in rows(dst, "SELECT id FROM users")] == [BENCH_USER]
     mod.verify(plan, Sqlite(dst), set())
 
 
@@ -804,13 +853,13 @@ def test_require_passkey_off_on_stable_is_kept(tmp_path) -> None:
 def test_a_collision_at_write_time_aborts_with_nothing_written(dbs) -> None:
     src, dst = dbs
     plan = plan_for(src, dst)
-    # A row lands on edge between the plan and the write: plain INSERT fails and the batch writes nothing.
-    edge_org(dst, "edge-org-0009", "edge-cust-9")
+    # A row lands on bench between the plan and the write: plain INSERT fails and the batch writes nothing.
+    bench_org(dst, "bench-org-0009", "bench-cust-9")
     ins(
         dst,
         "teams",
         id=TEAM,
-        org_id="edge-org-0009",
+        org_id="bench-org-0009",
         name="t",
         slug="t",
         created_at=NOW,
@@ -855,7 +904,7 @@ CLONE_ORDER = (
 
 
 def clone_identity(src: sqlite3.Connection, dst: sqlite3.Connection, tables: set[str]) -> None:
-    """Copy the operator's identity rows of `tables` from stable to edge under the same ids, as an edge D1 once cloned from stable holds them."""
+    """Copy the operator's identity rows of `tables` from stable to bench under the same ids, as an bench D1 once cloned from stable holds them."""
     for table, where, value in CLONE_ORDER:
         if table in tables:
             (row,) = rows(src, mod.q("SELECT * FROM @T@ WHERE ", t=mod.ident(table)) + where, value)
@@ -866,7 +915,7 @@ def clone_identity(src: sqlite3.Connection, dst: sqlite3.Connection, tables: set
 ALL_IDENTITY = {t for t, _, _ in CLONE_ORDER}
 
 
-def test_identity_rows_matching_on_edge_are_reused_not_written(dbs) -> None:
+def test_identity_rows_matching_on_bench_are_reused_not_written(dbs) -> None:
     src, dst = dbs
     clone_identity(src, dst, ALL_IDENTITY)
     before = {
@@ -874,7 +923,7 @@ def test_identity_rows_matching_on_edge_are_reused_not_written(dbs) -> None:
     }
     plan = plan_for(src, dst)
     assert plan.case == "B"
-    assert plan.edge_user_id == OWNER
+    assert plan.target_user_id == OWNER
     for table in ALL_IDENTITY:
         assert plan.rows(table) == [], table
     assert sorted(plan.reused) == sorted(
@@ -883,7 +932,7 @@ def test_identity_rows_matching_on_edge_are_reused_not_written(dbs) -> None:
     )  # fmt: skip
     text = "\n".join(plan.lines)
     assert (
-        "reused on edge (never updated): users 1, organizations 1, subscriptions 1, "
+        "reused on bench (never updated): users 1, organizations 1, subscriptions 1, "
         "org_memberships 1, teams 1, team_memberships 1" in text
     )
     sql = mod.plan_sql(plan)
@@ -940,7 +989,7 @@ def test_a_unique_key_held_under_another_id_refuses(dbs) -> None:
     ins(
         dst,
         "org_memberships",
-        id="om-edge-other-id",
+        id="om-bench-other-id",
         org_id=ORG,
         user_id=OWNER,
         role="root",
@@ -948,7 +997,7 @@ def test_a_unique_key_held_under_another_id_refuses(dbs) -> None:
     )
     dst.commit()
     with pytest.raises(
-        mod.RefusedError, match=r"org_memberships \(org_id, user_id\) is held by another edge row"
+        mod.RefusedError, match=r"org_memberships \(org_id, user_id\) is held by another bench row"
     ):
         plan_for(src, dst)
 
@@ -969,7 +1018,7 @@ def test_a_mix_of_reused_and_inserted_identity_rows(dbs) -> None:
     text = "\n".join(plan.lines)
     assert "teams 1, team_memberships 1" in text
     assert (
-        "reused on edge (never updated): users 1, organizations 1, subscriptions 1, org_memberships 1"
+        "reused on bench (never updated): users 1, organizations 1, subscriptions 1, org_memberships 1"
         in text
     )
     apply_sql(dst, mod.plan_sql(plan))
@@ -1001,7 +1050,7 @@ def test_rollback_deletes_only_inserted_rows_and_keeps_reused_ones(dbs) -> None:
         assert count(dst, table) == 0, table
 
 
-def test_a_reused_subscription_not_live_on_edge_is_noted(dbs) -> None:
+def test_a_reused_subscription_not_live_on_bench_is_noted(dbs) -> None:
     src, dst = dbs
     clone_identity(src, dst, {"users", "organizations", "subscriptions"})
     dst.execute("UPDATE subscriptions SET status = 'cancelled' WHERE id = ?", (SUB,))
@@ -1009,31 +1058,31 @@ def test_a_reused_subscription_not_live_on_edge_is_noted(dbs) -> None:
     plan = plan_for(src, dst)
     assert ("subscriptions", SUB) in plan.reused
     assert any(
-        "subscriptions: reused %s is cancelled on edge (not live)" % mod.prefix(SUB) in line
+        "subscriptions: reused %s is cancelled on bench (not live)" % mod.prefix(SUB) in line
         for line in plan.lines
     )
     apply_sql(dst, mod.plan_sql(plan))
     assert rows(dst, "SELECT status FROM subscriptions")[0]["status"] == "cancelled"
 
 
-def test_edge_subscriptions_of_the_customer_without_the_org_refuse(dbs) -> None:
+def test_bench_subscriptions_of_the_customer_without_the_org_refuse(dbs) -> None:
     src, dst = dbs
-    ins(dst, "subscriptions", id="sub-edge-stray-0001", customer_id=CUST, type="trial", status="active",
+    ins(dst, "subscriptions", id="sub-bench-stray-0001", customer_id=CUST, type="trial", status="active",
         max_activations=1, created_at=NOW, updated_at=NOW)  # fmt: skip
     dst.commit()
-    with pytest.raises(mod.RefusedError, match=r"subscriptions \(customer_id\) has 1 edge row"):
+    with pytest.raises(mod.RefusedError, match=r"subscriptions \(customer_id\) has 1 bench row"):
         plan_for(src, dst)
 
 
-# ---- M4: the apply path against a fake npx -----------------------------------
+# ---- M4: the apply path against a fake wrangler -----------------------------------
 
-FAKE_NPX = r"""#!/usr/bin/env python3
+FAKE_WRANGLER = r"""#!/usr/bin/env python3
 import json, os, pathlib, shutil, sqlite3, sys
 argv = sys.argv[1:]
 with open(os.environ["FAKE_LOG"], "a") as f:
-    f.write(json.dumps(["npx"] + argv) + "\n")
-assert argv[:2] == ["--no-install", "wrangler"]
-args = argv[2:]
+    # two filler words keep the logged argv indices of the old `npx --no-install wrangler` prefix
+    f.write(json.dumps(["wrangler", "-", "-"] + argv) + "\n")
+args = argv
 def opt(name):
     return args[args.index(name) + 1]
 dbdir = pathlib.Path(os.environ["FAKE_DB_DIR"])
@@ -1094,17 +1143,16 @@ def fake(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, dbs) -> dict:
         conn.close()
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir()
-    npx = bin_dir / "npx"
-    npx.write_text(FAKE_NPX, encoding="utf-8")
-    npx.chmod(npx.stat().st_mode | stat.S_IXUSR)
-    # `wrangler.require` proves a wrangler is reachable (local install or PATH) before it runs npx; the Pytest lane
-    # installs no workers/account node_modules, so the fake bin dir carries the PATH entry the real resolver wants.
+    # `wrangler.require` returns the absolute path of the wrangler it found (npx reads no PATH); the Pytest lane
+    # installs no workers/account node_modules, so the fake is the `wrangler` on PATH and is run by that path.
     stub = bin_dir / "wrangler"
-    stub.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    stub.write_text(FAKE_WRANGLER, encoding="utf-8")
     stub.chmod(stub.stat().st_mode | stat.S_IXUSR)
+    # A seeded checkout has a real workers/account install, which `binary` prefers over PATH and would reach Cloudflare.
+    monkeypatch.setattr(mod.wrangler_cmd, "local_binary", lambda _cwd: None)
     r2 = tmp_path / "r2"
     for key, data in BLOBS.items():
-        obj = r2 / "eu__rediacc-configs-eu" / key
+        obj = r2 / "eu__configs-eu" / key
         obj.parent.mkdir(parents=True, exist_ok=True)
         obj.write_bytes(data)
     log = tmp_path / "calls.jsonl"
@@ -1118,7 +1166,7 @@ def fake(tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, dbs) -> dict:
         monkeypatch.delenv(name, raising=False)
     monkeypatch.setattr(mod, "secret_names", lambda _t, _a, workers: {w: set(NEW) for w in workers})
     # The row is sealed under kid abcdef12; both targets read it back as their own key's kid.
-    monkeypatch.setattr(mod, "key_kid", lambda _root, _end: (EDGE_KEY_ENV, EDGE_KID))
+    monkeypatch.setattr(mod, "key_kid", lambda _root, _end: (BENCH_KEY_ENV, ROW_KID))
     return {"log": log, "r2": r2, "dir": tmp_path}
 
 
@@ -1130,7 +1178,7 @@ def _db(fake: dict, name: str) -> sqlite3.Connection:
     return connect(fake["dir"] / (name + ".sqlite"))
 
 
-BASE = ["--from", "eu-stable", "--to", "eu-edge"]
+BASE = ["--from", "eu", "--to", "bench"]
 
 
 def _apply_argv(fake: dict) -> list[str]:
@@ -1139,7 +1187,7 @@ def _apply_argv(fake: dict) -> list[str]:
         "--store",
         STORE,
         "--apply",
-        "--i-understand-edge-write",
+        "--i-understand-bench-write",
         "--out-dir",
         str(fake["dir"] / "out"),
     ]
@@ -1158,14 +1206,15 @@ def _kind(call: list) -> str:
 def test_dry_run_reads_only(fake, capsys) -> None:
     assert mod.main([*BASE, "--store", STORE]) == 0
     kinds = {_kind(c) for c in _calls(fake["log"])}
-    # The edge-object probe is a read-only get; nothing is put, bookmarked or written.
+    # The bench-object probe is a read-only get; nothing is put, bookmarked or written.
     assert kinds == {"read", "r2-get"}
     out = capsys.readouterr()
     text = out.out + out.err
+    assert "r2: none of the 4 object(s) exists on configs-bench yet" in text
     assert "dry run: nothing written" in text
     for secret in [*NEVER_SHOWN, "cf-token-secret-value"]:
         assert secret not in text
-    assert count(_db(fake, "edge-account-db-eu"), "config_stores") == 0
+    assert count(_db(fake, "account-bench"), "config_stores") == 0
 
 
 def test_apply_takes_the_bookmark_first_then_r2_then_one_file(fake, capsys) -> None:
@@ -1179,26 +1228,29 @@ def test_apply_takes_the_bookmark_first_then_r2_then_one_file(fake, capsys) -> N
     assert kinds.count("r2-put") == len(BLOBS)
     for c in calls:
         if _kind(c) == "r2-put":
-            assert c[6].startswith("edge-rediacc-configs-eu/")
-            assert c[c.index("--jurisdiction") + 1] == "eu"
+            assert c[6].startswith("configs-bench/")
+            assert "--jurisdiction" not in c
+            assert c[c.index("--config") + 1] == "wrangler.bench.toml"
             assert "--remote" in c
         if _kind(c) == "file":
-            assert c[5] == "edge-account-db-eu"
+            assert c[5] == "account-bench"
             assert "--remote" in c
     for key, data in BLOBS.items():
-        assert (fake["r2"] / "eu__edge-rediacc-configs-eu" / key).read_bytes() == data
-    _assert_mirrored(_db(fake, "account-db-eu"), _db(fake, "edge-account-db-eu"), OWNER)
+        assert (fake["r2"] / "configs-bench" / key).read_bytes() == data
+    _assert_mirrored(_db(fake, "account-eu"), _db(fake, "account-bench"), OWNER)
     out = fake["dir"] / "out"
     assert (out / "rollback.sh").is_file()
     assert not (out / "insert.sql").exists()
     assert (out / "rollback.sql").stat().st_mode & 0o777 == 0o600
     sh = (out / "rollback.sh").read_text(encoding="utf-8")
-    assert sh.count("r2 object delete edge-rediacc-configs-eu/") == len(BLOBS)
-    assert " rediacc-configs-eu/" not in sh
+    assert sh.count("r2 object delete configs-bench/") == len(BLOBS)
+    assert " configs-eu/" not in sh
+    assert "--jurisdiction" not in sh
+    assert "--config wrangler.bench.toml" in sh
     text = capsys.readouterr()
     shown = text.out + text.err
     assert (
-        "time-travel restore edge-account-db-eu --bookmark=00000001-00000002-00000003-0123456789abcdef"
+        "time-travel restore account-bench --bookmark=00000001-00000002-00000003-0123456789abcdef"
         in shown
     )
     assert "verified:" in shown
@@ -1218,24 +1270,24 @@ def test_r2_read_back_mismatch_stops_before_d1(fake, monkeypatch) -> None:
     monkeypatch.setenv("FAKE_R2_CORRUPT", "1")
     assert mod.main(_apply_argv(fake)) == 1
     assert "file" not in {_kind(c) for c in _calls(fake["log"])}
-    assert count(_db(fake, "edge-account-db-eu"), "config_stores") == 0
+    assert count(_db(fake, "account-bench"), "config_stores") == 0
 
 
 def test_bad_arguments_touch_nothing(fake) -> None:
     assert mod.main([*BASE, "--store", STORE, "--apply"]) == 2
     assert (
-        mod.main([*BASE, "--store", STORE, "--apply", "--dry-run", "--i-understand-edge-write"])
+        mod.main([*BASE, "--store", STORE, "--apply", "--dry-run", "--i-understand-bench-write"])
         == 2
     )
     assert mod.main(BASE) == 2
-    assert mod.main(["--from", "eu-edge", "--to", "eu-stable", "--store", STORE]) == 1
+    assert mod.main(["--from", "bench", "--to", "eu", "--store", STORE]) == 1
     assert _calls(fake["log"]) == []
 
 
 def test_list_stores_is_read_only(fake, capsys) -> None:
     assert mod.main([*BASE, "--list-stores"]) == 0
     (call,) = _calls(fake["log"])
-    assert call[5] == "account-db-eu"
+    assert call[5] == "account-eu"
     text = capsys.readouterr()
     assert mod.prefix(STORE) in text.out + text.err
     assert STORE not in text.out + text.err
@@ -1283,14 +1335,9 @@ def test_cf_auth_group_and_secret_supply_consumer_are_wired() -> None:
     consumer = spec["consumers"]["mirror-config-store"]
     assert consumer["required"] == ["CF_GLOBAL_API_KEY", "CF_EMAIL"]
     # Review 6247005b.2: a csk1 row makes check_server_key read the target's own key.
-    assert consumer["optional"] == [
-        "ACCOUNT_CONFIG_SERVER_KEY_EU_EDGE",
-        "ACCOUNT_CONFIG_SERVER_KEY_US_EDGE",
-        "ACCOUNT_CONFIG_SERVER_KEY_ASIA_EDGE",
-        "ACCOUNT_CONFIG_SERVER_KEY_BENCH",
-    ]
+    assert "ACCOUNT_CONFIG_SERVER_KEY_BENCH" in consumer["optional"]
     assert mod.PURPOSE == mod.PROFILE == "mirror-config-store"
-    assert "python3 -m rediacc_ci.ops.mirror_config_store --from eu-stable --to eu-edge" in (
+    assert "python3 -m rediacc_ci.ops.mirror_config_store --from eu --to bench" in (
         mod.__doc__ or ""
     )
 
@@ -1324,7 +1371,7 @@ def test_wrangler_json_error_shows_its_message_not_the_closing_brace() -> None:
 
 
 def test_wrangler_json_error_survives_a_banner_holding_a_brace() -> None:
-    out = 'Using config {wrangler.edge-eu.toml}\n{\n  "error": {"text": "D1_ERROR: boom"}\n}\n'
+    out = 'Using config {wrangler.bench-eu.toml}\n{\n  "error": {"text": "D1_ERROR: boom"}\n}\n'
     assert mod._wrangler_error(out) == "D1_ERROR: boom"
 
 
@@ -1400,9 +1447,9 @@ def test_rollback_sh_quotes_and_uses_an_absolute_sql_path(dbs, tmp_path, monkeyp
     assert words[words.index("--file") + 1] == str(tmp_path / "out dir" / "rollback.sql")
 
 
-def test_an_object_already_on_edge_refuses_before_any_write(fake, capsys) -> None:
+def test_an_object_already_on_bench_refuses_before_any_write(fake, capsys) -> None:
     key = KEYS[0]
-    obj = fake["r2"] / "eu__edge-rediacc-configs-eu" / key
+    obj = fake["r2"] / "configs-bench" / key
     obj.parent.mkdir(parents=True, exist_ok=True)
     obj.write_bytes(b"pre-existing")
     assert mod.main(_apply_argv(fake)) == 1
@@ -1419,7 +1466,7 @@ def test_an_unclassifiable_r2_probe_refuses(fake, monkeypatch) -> None:
     assert not {_kind(c) for c in _calls(fake["log"])} & {"r2-put", "file"}
 
 
-def test_a_missing_edge_bucket_refuses_instead_of_reading_as_absent(
+def test_a_missing_bench_bucket_refuses_instead_of_reading_as_absent(
     fake, monkeypatch, capsys
 ) -> None:
     monkeypatch.setenv("FAKE_R2_GET_FAIL", "1")
@@ -1427,7 +1474,7 @@ def test_a_missing_edge_bucket_refuses_instead_of_reading_as_absent(
     assert mod.main([*BASE, "--store", STORE]) == 1
     assert not {_kind(c) for c in _calls(fake["log"])} & {"r2-put", "file"}
     text = capsys.readouterr()
-    assert "bucket edge-rediacc-configs-eu does not exist" in text.out + text.err
+    assert "bucket configs-bench does not exist" in text.out + text.err
 
 
 def test_a_short_secret_is_masked_as_a_whole_token_only(dbs) -> None:
@@ -1448,8 +1495,8 @@ def test_a_short_secret_is_masked_as_a_whole_token_only(dbs) -> None:
 
 def test_a_legacy_key_name_on_both_workers_still_checks_the_kid() -> None:
     names = {"CONFIG_SERVER_KEY"} | NEW
-    with pytest.raises(mod.RefusedError, match="not the edge key's kid abcdef12"):
-        _check(names, names, "csk1.99999999.Zm9v", _edge(EDGE_KID))
+    with pytest.raises(mod.RefusedError, match="not the bench key's kid abcdef12"):
+        _check(names, names, "csk1.99999999.Zm9v", _bench(ROW_KID))
 
 
 def test_read_source_tolerates_a_source_without_the_newest_tables(dbs) -> None:
@@ -1459,13 +1506,13 @@ def test_read_source_tolerates_a_source_without_the_newest_tables(dbs) -> None:
     assert source["store"]["id"] == STORE
 
 
-def test_edge_billing_ids_differ_and_the_identity_rows_are_still_reused(dbs) -> None:
-    """Edge bills through a separate Stripe account, so the same org and subscription carry another customer_id there."""
+def test_bench_billing_ids_differ_and_the_identity_rows_are_still_reused(dbs) -> None:
+    """Bench bills through a separate Stripe account, so the same org and subscription carry another customer_id there."""
     src, dst = dbs
     clone_identity(src, dst, ALL_IDENTITY)
     dst.execute("PRAGMA foreign_keys = OFF")
-    dst.execute("UPDATE organizations SET customer_id = 'cust-edge-0001'")
-    dst.execute("UPDATE subscriptions SET customer_id = 'cust-edge-0001'")
+    dst.execute("UPDATE organizations SET customer_id = 'cust-bench-0001'")
+    dst.execute("UPDATE subscriptions SET customer_id = 'cust-bench-0001'")
     dst.commit()
     plan = plan_for(src, dst)
     assert not plan.rows("organizations")
@@ -1479,10 +1526,10 @@ BENCH = mod.End(
     "bench",
     "eu",
     "wrangler.bench.toml",
-    "account-db-bench",
-    "rediacc-configs-bench",
+    "account-bench",
+    "configs-bench",
     "",
-    "rediacc-account-bench",
+    "account-bench",
     BENCH_HOST,
 )
 BENCH_KEY_ENV = "ACCOUNT_CONFIG_SERVER_KEY_BENCH"
@@ -1493,20 +1540,20 @@ SRC_RP = dataclasses.replace(SRC, rp_id=EU_HOST)
 def test_bench_resolves_from_its_own_wrangler_config() -> None:
     """regions.json does not list bench: its database, bucket, Worker, REGION and RP ID come from wrangler.bench.toml."""
     assert mod.resolve_end(ROOT, "bench") == BENCH
-    src = mod.resolve_end(ROOT, "eu-stable")
+    src = mod.resolve_end(ROOT, "eu")
     assert src == SRC_RP
     mod.check_ends(ROOT, src, BENCH)
     with pytest.raises(mod.RefusedError, match="must be a stable end"):
         mod.check_ends(ROOT, BENCH, BENCH)
     with pytest.raises(mod.RefusedError, match="one region"):
-        mod.check_ends(ROOT, mod.resolve_end(ROOT, "us-stable"), BENCH)
+        mod.check_ends(ROOT, mod.resolve_end(ROOT, "us"), BENCH)
     with pytest.raises(mod.RefusedError, match="stable bucket"):
-        mod.check_ends(ROOT, src, dataclasses.replace(BENCH, bucket="rediacc-configs-eu"))
+        mod.check_ends(ROOT, src, dataclasses.replace(BENCH, bucket="configs-eu"))
     with pytest.raises(mod.RefusedError, match="stable database"):
-        mod.check_ends(ROOT, src, dataclasses.replace(BENCH, database="account-db-eu"))
+        mod.check_ends(ROOT, src, dataclasses.replace(BENCH, database="account-eu"))
     with pytest.raises(mod.RefusedError, match="names no Worker"):
         mod.check_ends(ROOT, src, dataclasses.replace(BENCH, worker=""))
-    with pytest.raises(mod.RefusedError, match="or bench"):
+    with pytest.raises(mod.RefusedError, match="known region id or bench"):
         mod.resolve_end(ROOT, "eu-bench")
 
 
@@ -1519,18 +1566,14 @@ def bench_plan(src: sqlite3.Connection, dst: sqlite3.Connection) -> mod.Plan:
 def test_a_bench_plan_names_bench_and_both_rp_ids(dbs) -> None:
     plan = bench_plan(*dbs)
     text = "\n".join(plan.lines)
-    assert "mirror eu-stable -> bench" in text
+    assert "mirror eu -> bench" in text
+    assert "require_passkey: 1 on eu, written 0 on bench (bench is password/recovery only)" in text
     assert (
-        "require_passkey: 1 on eu-stable, written 0 on bench (bench is password/recovery only)"
+        "passkeys do not carry over: WebAuthn RP ID %s on eu, %s on bench" % (EU_HOST, BENCH_HOST)
         in text
     )
-    assert (
-        "passkeys do not carry over: WebAuthn RP ID %s on eu-stable, %s on bench"
-        % (EU_HOST, BENCH_HOST)
-        in text
-    )
-    assert "r2: 4 object(s) rediacc-configs-eu -> rediacc-configs-bench (no jurisdiction)" in text
-    assert "customer_id copied from eu-stable as it is" in text
+    assert "r2: 4 object(s) configs-eu -> configs-bench (no jurisdiction)" in text
+    assert "customer_id copied from eu as it is" in text
     assert all(r["passkey_credential_id"] is None for r in plan.rows("config_user_identities"))
     assert {r["method"] for r in plan.rows("config_key_slots")} == {"password", "recovery"}
     for secret in [*NEVER_SHOWN, STORE, ORG, OWNER, CUST]:
@@ -1557,7 +1600,7 @@ def test_bench_customer_ids_are_not_compared_and_the_rows_are_reused(dbs) -> Non
 
 def test_bench_conflicts_name_bench(dbs) -> None:
     src, dst = dbs
-    edge_org(dst, ORG, "other-cust-1")
+    bench_org(dst, ORG, "other-cust-1")
     with pytest.raises(
         mod.RefusedError,
         match=r"bench holds identity rows that conflict with this copy: organizations row",
@@ -1584,13 +1627,13 @@ def _bench_kid() -> tuple[str, str | None]:
 
 
 def test_bench_server_key_checks_read_the_bench_worker_and_key() -> None:
-    with pytest.raises(mod.RefusedError, match=r"untagged .* hand rediacc-account-bench a store"):
+    with pytest.raises(mod.RefusedError, match=r"untagged .* hand account-bench a store"):
         _bench_check(NEW, NEW, LEGACY_ROW)
     line = _bench_check(NEW, NEW, "csk1.%s.Zm9v" % BENCH_KID, _bench_kid)
     assert "sealed under the bench key (kid bbbbbbbb)" in line
     with pytest.raises(
         mod.RefusedError,
-        match="not the bench key's kid bbbbbbbb: it would not open on rediacc-account-bench, and no step reseals",
+        match="not the bench key's kid bbbbbbbb: it would not open on account-bench, and the reseal",
     ):
         _bench_check(NEW, NEW, "csk1.99999999.Zm9v", _bench_kid)
     with pytest.raises(
@@ -1606,52 +1649,259 @@ def test_key_kid_for_bench_reads_the_bench_variable(monkeypatch) -> None:
     assert mod.key_kid(ROOT, BENCH) == (BENCH_KEY_ENV, None)
 
 
-def _bench_db(fake: dict) -> None:
-    build_db(fake["dir"] / "account-db-bench.sqlite").close()
-
-
-BENCH_BASE = ["--from", "eu-stable", "--to", "bench"]
-
-
-def test_a_bench_dry_run_reads_only(fake, capsys) -> None:
-    _bench_db(fake)
-    assert mod.main([*BENCH_BASE, "--store", STORE]) == 0
-    assert {_kind(c) for c in _calls(fake["log"])} == {"read", "r2-get"}
-    shown = "".join(capsys.readouterr())
-    assert "r2: none of the 4 object(s) exists on rediacc-configs-bench yet" in shown
-    assert count(_db(fake, "account-db-bench"), "config_stores") == 0
-
-
-def test_a_bench_apply_writes_bench_without_a_jurisdiction(fake, capsys) -> None:
-    _bench_db(fake)
-    argv = [*BENCH_BASE, "--store", STORE, "--apply", "--i-understand-edge-write",
-            "--out-dir", str(fake["dir"] / "out")]  # fmt: skip
-    assert mod.main(argv) == 0
-    calls = _calls(fake["log"])
-    kinds = [_kind(c) for c in calls]
-    assert kinds.index("bookmark") < kinds.index("r2-put") < kinds.index("file")
-    for c in calls:
-        if _kind(c) == "r2-put":
-            assert c[6].startswith("rediacc-configs-bench/")
-            assert "--jurisdiction" not in c
-            assert c[c.index("--config") + 1] == "wrangler.bench.toml"
-        if _kind(c) in ("file", "bookmark"):
-            assert "account-db-bench" in c
-    for key, data in BLOBS.items():
-        assert (fake["r2"] / "rediacc-configs-bench" / key).read_bytes() == data
-    _assert_mirrored(_db(fake, "account-db-eu"), _db(fake, "account-db-bench"), OWNER)
-    sh = (fake["dir"] / "out" / "rollback.sh").read_text(encoding="utf-8")
-    assert sh.count("r2 object delete rediacc-configs-bench/") == len(BLOBS)
-    assert "--jurisdiction" not in sh
-    assert "--config wrangler.bench.toml" in sh
-    shown = "".join(capsys.readouterr())
-    assert "bench D1 bookmark taken before any write" in shown
-    assert "time-travel restore account-db-bench --bookmark=" in shown
-    for secret in [*NEVER_SHOWN, "cf-token-secret-value"]:
-        assert secret not in shown
+BENCH_BASE = ["--from", "eu", "--to", "bench"]
 
 
 def test_a_bench_apply_without_the_ack_names_the_target(fake, capsys) -> None:
     assert mod.main([*BENCH_BASE, "--store", STORE, "--apply"]) == 2
     assert "--apply writes the bench database and bucket" in "".join(capsys.readouterr())
     assert _calls(fake["log"]) == []
+
+
+# ---- R1: the reseal of config layer 3 (PLAN-config-mirror-reseal) ------------
+
+SRC_KEY_ENV = "ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE"
+SRC_KEY_VALUE = "SOURCE-KEY-MATERIAL-zz"
+DST_KEY_VALUE = "TARGET-KEY-MATERIAL-zz"
+TARGET_KID = "0fbf017a"
+RESEALED_ROW = "csk1.%s.RESEALED-BODY-zz" % TARGET_KID
+KIDS = {SRC.name: (SRC_KEY_ENV, ROW_KID), DST.name: (BENCH_KEY_ENV, TARGET_KID)}
+
+
+def _kids(**override: tuple[str, str | None]):
+    table = {**KIDS, **override}
+    return lambda _root, end: table[end.name]
+
+
+class FakeReseal:
+    """Stands in for `reseal_proc` (the account script): records each call, checks the keys reach it only through the environment, and seals under the target kid unless told to refuse."""
+
+    def __init__(self, code: int = 0, answer: dict | None = None, err: str = "") -> None:
+        self.calls: list[tuple[tuple[str, str], dict]] = []
+        self.code, self.answer, self.err = code, answer, err
+
+    def __call__(self, _root, names, payload):
+        assert os.environ.get(names[0]) == SRC_KEY_VALUE
+        assert os.environ.get(names[1]) == DST_KEY_VALUE
+        doc = json.loads(payload)
+        self.calls.append((names, doc))
+        if self.code:
+            return self.code, "", self.err
+        answer = self.answer or {
+            "source_kid": ROW_KID,
+            "target_kid": TARGET_KID,
+            "rows": [{"id": r["id"], "old_kid": ROW_KID, "new": RESEALED_ROW} for r in doc["rows"]],
+        }
+        return 0, json.dumps(answer), ""
+
+
+@pytest.fixture
+def keys(monkeypatch: pytest.MonkeyPatch) -> FakeReseal:
+    monkeypatch.setenv(SRC_KEY_ENV, SRC_KEY_VALUE)
+    monkeypatch.setenv(BENCH_KEY_ENV, DST_KEY_VALUE)
+    monkeypatch.setattr(mod, "key_kid", _kids())
+    proc = FakeReseal()
+    monkeypatch.setattr(mod, "reseal_proc", proc)
+    return proc
+
+
+def test_a_foreign_kid_row_is_resealed_and_then_passes_the_kid_check(keys) -> None:
+    value, line = mod.reseal_server_key(ROOT, SRC, DST, STORE, TAGGED_ROW)
+    assert value == RESEALED_ROW
+    assert keys.calls == [
+        ((SRC_KEY_ENV, BENCH_KEY_ENV), {"rows": [{"id": STORE, "value": TAGGED_ROW}]})
+    ]
+    assert line is not None
+    assert "opened under the stable key (%s, kid %s)" % (SRC_KEY_ENV, ROW_KID) in line
+    assert "sealed under the bench key (%s, kid %s)" % (BENCH_KEY_ENV, TARGET_KID) in line
+    # The unresealed row still refuses; the resealed one passes the same check.
+    with pytest.raises(mod.RefusedError, match="not the bench key's kid %s" % TARGET_KID):
+        _check(NEW, NEW, TAGGED_ROW, _bench(TARGET_KID))
+    assert "sealed under the bench key (kid %s)" % TARGET_KID in _check(
+        NEW, NEW, value, _bench(TARGET_KID)
+    )
+
+
+def test_a_row_whose_kid_is_not_the_source_keys_refuses_before_the_script(
+    keys, monkeypatch
+) -> None:
+    monkeypatch.setattr(mod, "key_kid", _kids(eu=(SRC_KEY_ENV, "77777777")))
+    with pytest.raises(
+        mod.RefusedError,
+        match=r"sealed under kid abcdef12, but the stable key \(%s\) is kid 77777777: the row does not open under the source key"
+        % SRC_KEY_ENV,
+    ):
+        mod.reseal_server_key(ROOT, SRC, DST, STORE, TAGGED_ROW)
+    assert keys.calls == []
+
+
+@pytest.mark.usefixtures("keys")
+def test_a_row_the_script_cannot_open_under_the_source_key_refuses_without_key_material(
+    monkeypatch,
+) -> None:
+    proc = FakeReseal(
+        code=1,
+        err="reseal-config-server-key: store %s (kid %s) does not open under the source key %s\n"
+        % (STORE[:8], ROW_KID, SRC_KEY_VALUE),
+    )
+    monkeypatch.setattr(mod, "reseal_proc", proc)
+    with pytest.raises(mod.RefusedError) as info:
+        mod.reseal_server_key(ROOT, SRC, DST, STORE, TAGGED_ROW)
+    text = str(info.value)
+    assert "refused (exit 1)" in text
+    assert "does not open under the source key" in text
+    for secret in (SRC_KEY_VALUE, DST_KEY_VALUE, TAGGED_ROW):
+        assert secret not in text
+
+
+def test_a_missing_source_key_refuses_naming_the_variable(keys, monkeypatch) -> None:
+    monkeypatch.setattr(mod, "key_kid", _kids(eu=(SRC_KEY_ENV, None)))
+    with pytest.raises(
+        mod.RefusedError, match=r"stable key is not in the environment \(%s\)" % SRC_KEY_ENV
+    ):
+        mod.reseal_server_key(ROOT, SRC, DST, STORE, TAGGED_ROW)
+    assert keys.calls == []
+
+
+@pytest.mark.parametrize(
+    ("value", "dst_kid"),
+    [
+        (None, TARGET_KID),
+        (LEGACY_ROW, TARGET_KID),
+        ("csk1.%s.Zm9v" % TARGET_KID, TARGET_KID),
+        (TAGGED_ROW, None),
+    ],
+    ids=["no-row", "untagged", "already-target", "no-target-key"],
+)
+def test_nothing_to_reseal_leaves_the_row_for_the_kid_check(
+    keys, monkeypatch, value, dst_kid
+) -> None:
+    monkeypatch.setattr(mod, "key_kid", _kids(bench=(BENCH_KEY_ENV, dst_kid)))
+    assert mod.reseal_server_key(ROOT, SRC, DST, STORE, value) == (value, None)
+    assert keys.calls == []
+
+
+@pytest.mark.parametrize(
+    "answer",
+    [
+        {
+            "source_kid": ROW_KID,
+            "target_kid": "11111111",
+            "rows": [{"id": STORE, "new": "csk1.11111111.x"}],
+        },
+        {
+            "source_kid": ROW_KID,
+            "target_kid": TARGET_KID,
+            "rows": [{"id": "other-store", "new": RESEALED_ROW}],
+        },
+        {
+            "source_kid": ROW_KID,
+            "target_kid": TARGET_KID,
+            "rows": [{"id": STORE, "new": TAGGED_ROW}],
+        },
+        {"source_kid": ROW_KID, "target_kid": TARGET_KID},
+    ],
+    ids=["wrong-target-kid", "wrong-row", "not-resealed", "no-rows"],
+)
+@pytest.mark.usefixtures("keys")
+def test_a_reseal_answer_that_does_not_hold_up_refuses(monkeypatch, answer) -> None:
+    monkeypatch.setattr(mod, "reseal_proc", FakeReseal(answer=answer))
+    with pytest.raises(mod.RefusedError, match="the reseal of store store000"):
+        mod.reseal_server_key(ROOT, SRC, DST, STORE, TAGGED_ROW)
+
+
+def test_a_resealing_dry_run_writes_nothing_and_prints_no_key(fake, keys, capsys) -> None:
+    assert mod.main([*BASE, "--store", STORE]) == 0
+    assert {_kind(c) for c in _calls(fake["log"])} == {"read", "r2-get"}
+    assert len(keys.calls) == 1
+    out = capsys.readouterr()
+    text = out.out + out.err
+    assert "reseal: server_recoverable_org_passphrase opened under the stable key" in text
+    assert "the store's row is sealed under the bench key (kid %s)" % TARGET_KID in text
+    assert "dry run: nothing written" in text
+    for secret in [
+        *NEVER_SHOWN,
+        RESEALED_ROW,
+        SRC_KEY_VALUE,
+        DST_KEY_VALUE,
+        "cf-token-secret-value",
+    ]:
+        assert secret not in text
+    assert count(_db(fake, "account-bench"), "config_stores") == 0
+
+
+def test_a_resealing_apply_writes_the_resealed_row(fake, keys, capsys) -> None:
+    # `keys` after `fake`: it replaces the fixture's single-kid key_kid with the per-end one.
+    assert mod.main(_apply_argv(fake)) == 0
+    assert len(keys.calls) == 1
+    got = rows(
+        _db(fake, "account-bench"),
+        "SELECT server_recoverable_org_passphrase AS v FROM config_stores WHERE id = ?",
+        STORE,
+    )
+    assert got == [{"v": RESEALED_ROW}]
+    out = capsys.readouterr()
+    for secret in (RESEALED_ROW, SRC_KEY_VALUE, DST_KEY_VALUE):
+        assert secret not in out.out + out.err
+
+
+SEAL_HELPER = """import { sealServerSecret } from %s;
+const sealed = await sealServerSecret(process.env.SEAL_KEY!, new TextEncoder().encode(process.env.SEAL_PLAIN!), process.env.SEAL_STORE!);
+process.stdout.write(sealed);
+"""
+
+
+def test_the_real_reseal_script_round_trips_under_the_workers_crypto(tmp_path, monkeypatch) -> None:
+    """The account's own script end to end: a row sealed by the Worker's own `sealServerSecret` under one key comes back sealed under the other, and a body sealed under a third key refuses. Skipped only where private/account has no node_modules (the Pytest lane installs none)."""
+    tsx = ROOT.joinpath(*mod.RESEAL_TSX)
+    if not tsx.is_file():
+        pytest.skip("private/account has no node_modules")
+    # .mts: an ES module wherever it lands, so its top-level await compiles outside any package.json.
+    helper = tmp_path / "seal.mts"
+    module = ROOT / "private" / "account" / "src" / "services" / "config-server-key.ts"
+    helper.write_text(SEAL_HELPER % json.dumps(str(module)), encoding="utf-8")
+
+    def seal(key: str, plain: str) -> str:
+        env = {**os.environ, "SEAL_KEY": key, "SEAL_PLAIN": plain, "SEAL_STORE": STORE}
+        proc = subprocess.run(
+            [str(tsx), str(helper)],
+            cwd=ROOT / "private" / "account",
+            env=env,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return proc.stdout.strip()
+
+    monkeypatch.setenv(SRC_KEY_ENV, SRC_KEY_VALUE)
+    monkeypatch.setenv(BENCH_KEY_ENV, DST_KEY_VALUE)
+    row = seal(SRC_KEY_VALUE, "org-passphrase-plaintext")
+    assert row.startswith("csk1.%s." % mod.config_server_key_id(SRC_KEY_VALUE))
+    value, line = mod.reseal_server_key(ROOT, SRC, DST, STORE, row)
+    assert isinstance(value, str)
+    assert value.startswith("csk1.%s." % mod.config_server_key_id(DST_KEY_VALUE))
+    assert line is not None
+    assert "org-passphrase-plaintext" not in line
+    # 15e396bf.1: the body opens under the TARGET key, not just the right kid prefix: resealing it back (target as source) succeeds, and a body sealed under a wrong key under the right kid is refused.
+    monkeypatch.setenv(SRC_KEY_ENV, DST_KEY_VALUE)
+    monkeypatch.setenv(BENCH_KEY_ENV, SRC_KEY_VALUE)
+    back, _ = mod.reseal_server_key(ROOT, SRC, DST, STORE, value)
+    assert isinstance(back, str)
+    assert back.startswith("csk1.%s." % mod.config_server_key_id(SRC_KEY_VALUE))
+    wrong_body = "csk1.%s.%s" % (
+        mod.config_server_key_id(DST_KEY_VALUE),
+        seal("SOME-OTHER-KEY", "x").split(".", 2)[2],
+    )
+    # 707bbb8f.1: pinned to the open failure, so a refusal for another reason (a parse failure, a kid mismatch) does not pass for it.
+    with pytest.raises(mod.RefusedError, match="does not open under the source key"):
+        mod.reseal_server_key(ROOT, SRC, DST, STORE, wrong_body)
+    monkeypatch.setenv(SRC_KEY_ENV, SRC_KEY_VALUE)
+    monkeypatch.setenv(BENCH_KEY_ENV, DST_KEY_VALUE)
+    forged = "csk1.%s.%s" % (
+        mod.config_server_key_id(SRC_KEY_VALUE),
+        seal("SOME-OTHER-KEY", "x").split(".", 2)[2],
+    )
+    with pytest.raises(mod.RefusedError, match="does not open under the source key") as info:
+        mod.reseal_server_key(ROOT, SRC, DST, STORE, forged)
+    for secret in (SRC_KEY_VALUE, DST_KEY_VALUE, forged):
+        assert secret not in str(info.value)

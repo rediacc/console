@@ -46,7 +46,7 @@ describe('rdc job command surface', () => {
     expect(job).toBeDefined();
 
     const verbs = job?.commands.map((c) => c.name()).sort();
-    expect(verbs).toEqual(['cancel', 'gc', 'list', 'logs', 'status', 'wait']);
+    expect(verbs).toEqual(['cancel', 'dismiss', 'gc', 'list', 'logs', 'status', 'wait']);
   });
 
   /**

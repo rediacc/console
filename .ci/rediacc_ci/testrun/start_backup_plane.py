@@ -2,29 +2,34 @@
 
     PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane [--port <n>] [--worker <n>] [--rebuild-renet | --no-rebuild-renet]
     PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane --verify-renet <binary> [--verify-renet <binary> ...]
+    PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane [options] -- <command> [args...]
 
 Five steps, each fatal on failure (the drill `drills.backup_local_plane` only warns on a bucket failure, since it starts a dev gateway that may reuse an existing bucket; a CI leg has nothing to reuse, so a missing bucket would surface minutes later as a presign error):
 
   1. RustFS on port 9100 (`account_lifecycle.start_rustfs`, published on every interface, so the bridge address below reaches it) and the `rediacc-backups-probe` bucket. NEVER `rediacc-backups`, the production name.
   2. The bridge address of the VM network (`wire.bridge_host("192.168.111")`). It is the host in the published account server URL (the licence's renewalUrl is stamped from it) and in ACCOUNT_BACKUP_S3_ENDPOINT, since SigV4 signs the Host header and the presigned URLs are dialled from the VM.
-  3. ONE ED25519 signing pair, generated here (`start_account.generate_keys`) and handed to the account server through ACCOUNT_ED25519_PRIVATE_KEY / ACCOUNT_ED25519_PUBLIC_KEY. `rdc repo create` files the licence blob under the SIGNER's fingerprint (`/var/lib/rediacc/license/repos/<guid>/<fingerprint>.json`) and renet's license-status, snapshot and restore verbs look up the fingerprint of the key the build BAKED (private/renet/pkg/license/preferred.go), so a server with a throwaway key of its own signs licences no renet build can find. With `--rebuild-renet` (the default off Actions; in CI the workflow rebuilds after this step) renet is rebuilt with the public half exported, and every staged binary is checked to bake it (`--verify-renet`, below).
+  3. ONE ED25519 signing pair, generated here (`start_account.generate_keys`) and handed to the account server through ACCOUNT_ED25519_PRIVATE_KEY / ACCOUNT_ED25519_PUBLIC_KEY. `rdc repo create` files the licence blob under the SIGNER's fingerprint (`/var/lib/rediacc/license/repos/<guid>/<fingerprint>.json`) and renet's license-status, snapshot and restore verbs look up the fingerprint of the key the build BAKED (private/renet/pkg/license/preferred.go), so a server with a throwaway key of its own signs licences no renet build can find. With `--rebuild-renet` (the default off Actions; in CI the workflow rebuilds after this step) renet is rebuilt with the public half exported, and the staged binaries are COPIED into a directory only this run uses (`pin_renet`), checked there to bake it (`--verify-renet`, below), and exported as RENET_BINARY_PATH, so a rebuild of `private/renet/bin` by another job cannot swap the key under the suite.
   4. `start_account` with the backup scopes, `--advertise-host <bridge>` and the ACCOUNT_BACKUP_S3_* environment. It publishes the public half as ACCOUNT_ED25519_PUBLIC_KEY (in `$GITHUB_ENV` under Actions, where the rebuild step reads it). The private half is never printed or written.
   5. Two requests from the worker VM over SSH: `/health` on the advertised URL, and any HTTP answer from ACCOUNT_BACKUP_S3_ENDPOINT (RustFS answers 403 to an anonymous GET). No CI job had a VM call a service on the runner before, so an unreachable account server or RustFS fails here instead of as a timeout inside a test.
 
-The suite's S3 credentials are exported as E2E_BACKUP_S3_KEY and E2E_BACKUP_S3_SECRET: appended to `$GITHUB_ENV` (and masked) under Actions, otherwise only their names are printed. Their values are never printed.
+The suite's S3 credentials are exported as E2E_BACKUP_S3_KEY and E2E_BACKUP_S3_SECRET: appended to `$GITHUB_ENV` (and masked, only when `GITHUB_ACTIONS` is true) when `$GITHUB_ENV` is set, otherwise only their names are printed. Their values are never printed. A local run exports nothing to a shell, so a chained command cannot see them: put it after `--` and it is exec'd with the full environment (account server, token, public key, S3 credentials, RENET_BINARY_PATH) once the plane is up, e.g. `start_backup_plane -- npm run e2e -- --test 31-backup-large-repo`. The GITHUB_ENV writes are unchanged.
 
 `--verify-renet <binary>` does nothing but the preflight: it reads the key baked into each binary from its build info (`go version -m`, the `-X .../keys.ProductionPublicKey=` ldflag) and refuses, naming both fingerprints, when it is not ACCOUNT_ED25519_PUBLIC_KEY. The workflow runs it after its rebuild.
 """
 
 from __future__ import annotations
 
+import contextlib
 import dataclasses
 import os
 import pathlib
 import shlex
+import shutil
 import signal
 import subprocess
 import sys
+import tempfile
+import time
 from typing import TYPE_CHECKING
 
 from rediacc_ci import log, paths
@@ -42,13 +47,17 @@ DEFAULT_WORKER = "11"
 SCOPES = "license:read,license:activate,subscription:read,backup:read,backup:manage"
 USAGE = (
     "usage: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane [--port <n>] [--worker <n>] [--rebuild-renet | --no-rebuild-renet]\n"
-    "       PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane --verify-renet <binary> [--verify-renet <binary> ...]"
+    "       PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane --verify-renet <binary> [--verify-renet <binary> ...]\n"
+    "       PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_backup_plane [options] -- <command> [args...]"
 )
 PROBE_TIMEOUT = 20
 PUBLIC_KEY_ENV = "ACCOUNT_ED25519_PUBLIC_KEY"
 PRIVATE_KEY_ENV = "ACCOUNT_ED25519_PRIVATE_KEY"
 # The binaries a local rebuild stages: the host one and the two the CLI pushes to a machine of either architecture.
 STAGED_RENETS = ("renet", "renet-linux-amd64", "renet-linux-arm64")
+# The directory `pin_renet` makes per run. The suite runs from it after this process execs, so it cannot be removed here; the next pin removes every such directory older than PINNED_MAX_AGE_S, whichever run or job made it. That is safe because the longest suite on the plane holds a job ceiling of 120 minutes (playwright.backup-large-repo.config.ts), so a directory past four hours belongs to a finished run. Four hours, not a day: each directory holds about 600 MB of renet binaries, and where /tmp is tmpfs that is RAM (five day-old directories held 3 GB on 2026-11-08 when the host ran out of memory).
+PINNED_PREFIX = "renet-backup-plane-"
+PINNED_MAX_AGE_S = 4 * 60 * 60
 # The build-info reader is shared with the release gate (`rediacc_ci.release.renet_key_gate`).
 SPKI_ED25519_HEADER = renet_key_gate.SPKI_ED25519_HEADER
 
@@ -63,9 +72,18 @@ class Options:
     worker: str
     rebuild_renet: bool
     verify: list[str] = dataclasses.field(default_factory=list)
+    command: list[str] = dataclasses.field(default_factory=list)
 
 
 def parse(argv: Sequence[str]) -> Options:
+    # Everything after a bare `--` is the follow-on command (`--exec`-style): run with the plane's environment once the plane is up.
+    command: list[str] = []
+    if "--" in argv:
+        split = list(argv).index("--")
+        command = list(argv[split + 1 :])
+        argv = argv[:split]
+        if not command:
+            raise ValueError("-- needs a command to run")
     values = {"port": os.environ.get("ACCOUNT_API_PORT") or DEFAULT_PORT, "worker": DEFAULT_WORKER}
     flags = {"--port": "port", "--worker": "worker"}
     # In CI the workflow rebuilds renet after this step (it needs renet to bring the VMs up first), so the rebuild here is a local default.
@@ -90,7 +108,7 @@ def parse(argv: Sequence[str]) -> Options:
     for name, value in values.items():
         if not (value.isascii() and value.isdigit()):
             raise ValueError(f"--{name} must be a number, got {value!r}")
-    return Options(values["port"], values["worker"], rebuild, verify)
+    return Options(values["port"], values["worker"], rebuild, verify, command)
 
 
 def key_fingerprint(public_key: str) -> str:
@@ -166,6 +184,66 @@ def staged_renets() -> list[str]:
     return [str(bin_dir / name) for name in STAGED_RENETS if (bin_dir / name).is_file()]
 
 
+def pin_root() -> str:
+    """Where pinned renet copies live: `$RUNNER_TEMP` on Actions, else the gitignored `.ci/cache/backup-plane-pins` on disk.
+
+    Not the system temp directory: on a host whose /tmp is a RAM tmpfs (this WSL host, 2026-11-13) each run's ~600 MB copy stayed in memory until a later run pruned it, and three of them sat in /tmp at a global out-of-memory kill."""
+    runner_temp = os.environ.get("RUNNER_TEMP")
+    root = runner_temp or str(paths.repo_root() / ".ci" / "cache" / "backup-plane-pins")
+    os.makedirs(root, exist_ok=True)
+    return root
+
+
+def prune_pinned(now: float | None = None) -> None:
+    """Remove the pinned directories of earlier runs that are more than PINNED_MAX_AGE_S old."""
+    cutoff = (time.time() if now is None else now) - PINNED_MAX_AGE_S
+    root = pin_root()
+    for name in os.listdir(root):
+        path = os.path.join(root, name)
+        with contextlib.suppress(OSError):
+            if (
+                name.startswith(PINNED_PREFIX)
+                and os.path.isdir(path)
+                and os.stat(path).st_mtime < cutoff
+            ):
+                shutil.rmtree(path, ignore_errors=True)
+
+
+def pin_renet(
+    binaries: Sequence[str],
+    public_key: str,
+    run: Callable[..., subprocess.CompletedProcess] = subprocess.run,
+) -> str:
+    """Copy the rebuilt renet binaries into a directory only this run uses, verify the COPIES bake `public_key`, and return the host binary's path.
+
+    `private/renet/bin` is shared: any `npm run ci`, `vm:check` or build in the same checkout rebuilds it WITHOUT the plane's key, and the CLI then syncs that binary to the workers, so every licence the plane signed is filed under a fingerprint the machine does not look up (`LICENSE_REQUIRED: missing: no license data` right after `License activated`; measured 2026-11-05, suite 26 K4). The CLI picks `renet-linux-<arch>` from the directory of the host binary (`renet-provisioner.ts`), so the three staged names travel together. A mismatch raises before anything is exported."""
+    by_name = {os.path.basename(b): b for b in binaries}
+    if "renet" not in by_name:
+        raise PlaneError("the renet rebuild staged no host `renet` binary to pin")
+    prune_pinned()
+    pinned = tempfile.mkdtemp(prefix=PINNED_PREFIX, dir=pin_root())
+    try:
+        for name, source in by_name.items():
+            shutil.copy2(source, os.path.join(pinned, name))
+        for name in by_name:
+            verify_renet(os.path.join(pinned, name), public_key, run)
+    except BaseException:
+        shutil.rmtree(pinned, ignore_errors=True)
+        raise
+    return os.path.join(pinned, "renet")
+
+
+def export_renet_path(path: str) -> None:
+    """RENET_BINARY_PATH for the suite: appended to `$GITHUB_ENV` when set, else printed as an `export` line (a path is not a secret)."""
+    github_env = os.environ.get("GITHUB_ENV")
+    if github_env:
+        with open(github_env, "a", encoding="utf-8") as handle:
+            handle.write(f"RENET_BINARY_PATH={path}\n")
+        log.info("exported RENET_BINARY_PATH to $GITHUB_ENV")
+        return
+    print(f"export RENET_BINARY_PATH={path}")
+
+
 def account_env(k: dict[str, str], bridge: str) -> dict[str, str]:
     """The environment that points the account server's backup plane at the local RustFS, spelled as the VM dials it."""
     return {
@@ -178,7 +256,7 @@ def account_env(k: dict[str, str], bridge: str) -> dict[str, str]:
 
 def start_storage(k: dict[str, str]) -> None:
     """RustFS plus the probe bucket; both must be there afterwards."""
-    if k["PROBE_BUCKET"] == backup_local_plane.PRODUCTION_BUCKET:
+    if backup_local_plane.is_production_bucket(k["PROBE_BUCKET"]):
         raise PlaneError(f"PROBE_BUCKET is the production bucket name {k['PROBE_BUCKET']!r}")
     account_lifecycle.start_rustfs()
     if not account.rustfs_alive(int(k["RUSTFS_PORT"])):
@@ -222,12 +300,14 @@ def probe_from_vm(
 
 
 def export_credentials(k: dict[str, str]) -> None:
-    """E2E_BACKUP_S3_KEY / E2E_BACKUP_S3_SECRET for the suite. Values go to `$GITHUB_ENV` only, masked; stdout carries names."""
+    """E2E_BACKUP_S3_KEY / E2E_BACKUP_S3_SECRET for the suite. Values go to `$GITHUB_ENV` only, masked on Actions and never printed anywhere else; stdout carries names."""
     pairs = {"E2E_BACKUP_S3_KEY": k["RUSTFS_KEY"], "E2E_BACKUP_S3_SECRET": k["RUSTFS_SECRET"]}
     github_env = os.environ.get("GITHUB_ENV")
     if github_env:
-        for value in pairs.values():
-            print(f"::add-mask::{value}")
+        # A `::add-mask::<value>` line is a workflow command only the Actions runner consumes; anywhere else it is the secret in plain text in a terminal or a captured log.
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            for value in pairs.values():
+                print(f"::add-mask::{value}")
         with open(github_env, "a", encoding="utf-8") as handle:
             for name, value in pairs.items():
                 handle.write(f"{name}={value}\n")
@@ -238,6 +318,20 @@ def export_credentials(k: dict[str, str]) -> None:
     log.info(
         "set the two names above to RUSTFS_KEY and RUSTFS_SECRET (dev default: docker-compose.yml)"
     )
+
+
+def exec_follow_on(
+    command: Sequence[str],
+    k: dict[str, str],
+    execvpe: Callable[..., object] = os.execvpe,
+) -> None:
+    """Replace this process with `command`, run with the plane's environment: what a local run cannot get from `$GITHUB_ENV`.
+
+    The environment already holds the account and S3 variables, the signing pair's public half and, with `--rebuild-renet`, RENET_BINARY_PATH (set in-process by `run` and `start_account.publish`); the suite's two S3 credentials are added here. Nothing is printed. The account server runs in its own session, so it outlives the exec."""
+    env = dict(os.environ)
+    env["E2E_BACKUP_S3_KEY"] = k["RUSTFS_KEY"]
+    env["E2E_BACKUP_S3_SECRET"] = k["RUSTFS_SECRET"]
+    execvpe(command[0], list(command), env)
 
 
 def stop_account() -> None:
@@ -269,6 +363,7 @@ def run(opts: Options) -> int:
     if opts.verify:
         return verify_only(opts.verify)
     k = backup_local_plane.knobs(dict(os.environ))
+    pinned: str | None = None
     try:
         start_storage(k)
         bridge = wire.bridge_host(NET_BASE)
@@ -284,8 +379,8 @@ def run(opts: Options) -> int:
             binaries = staged_renets()
             if not binaries:
                 raise PlaneError("the renet rebuild staged no binary under private/renet/bin")
-            for binary in binaries:
-                verify_renet(binary, public_key)
+            pinned = pin_renet(binaries, public_key)
+            os.environ["RENET_BINARY_PATH"] = pinned
         else:
             log.info(
                 f"renet not rebuilt here; the caller rebuilds it with {PUBLIC_KEY_ENV} and runs --verify-renet"
@@ -304,9 +399,17 @@ def run(opts: Options) -> int:
             stop_account()
             raise
         export_credentials(k)
+        if pinned:
+            export_renet_path(pinned)
     except PlaneError as exc:
         log.error(str(exc))
         return 1
+    if opts.command:
+        try:
+            exec_follow_on(opts.command, k)
+        except OSError as exc:
+            log.error(f"could not run {opts.command[0]}: {exc}")
+            return 127
     return 0
 
 

@@ -1,13 +1,13 @@
 # PLAN: backup integrity: retention honours verification, every run proves its identity, restore proves the passphrase, failures alert, and a whole image can be proven
 
 Status: approved -- operator ruling 2026-11-01: everything lands in the open PR rediacc/console#602, branch 1023-1, in the same PR; no customers yet, so a clean break with no compatibility shims
-Owner: 45048a90
+Owner: d778be9d (adopted from 45048a90 2026-11-04)
 Priority: P1 -- repeated bad nights can evict every good version, a replaced or unopenable image can be stored or restored as success, a bad chunk is never repaired, and no failure reaches a person
 Depends-On: no-dep -- every code box is inside this plan; box H5 closes box N4b of agent/plans/PLAN-backup-program.md, and H1 supplies the live read that box R1 of that plan asks for
 Concurrency: parallel -- eight writers (A, G, K, L, V, C, S, D) with disjoint Owns; order in "Writer split and order"; wire shapes are fixed in Design so writers do not wait on each other to compile
 Owns: agent/plans/PLAN-backup-integrity.md, private/account/drizzle/0073_backup_integrity.sql, private/account/drizzle/meta/_journal.json, private/account/src/db/schema.ts, private/account/src/dto/backup.dto.ts, private/account/src/errors.ts, private/account/src/routes/backups.ts, private/account/src/routes/configs.ts, private/account/src/entry/on-premise.ts, private/account/src/services/backup-storage.service.ts, private/account/src/services/backup-store-conformance.ts, private/account/src/services/backup-gc.service.ts, private/account/src/services/backup-refset.ts, private/account/src/services/backup-merkle.ts, private/account/src/services/notification.service.ts, private/account/src/services/email.service.ts, private/account/src/services/reminder.service.ts, private/account/src/services/communication.service.ts, private/account/src/types/communication.ts, private/account/src/email/templates/security.ts, private/account/web/src/api/types.ts, private/account/web/src/pages/Notifications.tsx, private/account/tests/integration/backup-*.test.ts, private/renet/pkg/chunkstore/**, private/renet/pkg/luks/**, private/renet/pkg/repository/mount.go, private/renet/pkg/orchestration/workflows.go, private/renet/pkg/credentials/**, private/renet/pkg/functions/executor_local.go, private/renet/pkg/functions/commands/backup.go, private/renet/pkg/backupstate/**, private/renet/pkg/list/**, private/renet/pkg/i18n/**, private/renet/cmd/renet/backup_*.go, private/renet/cmd/renet/repository_limits.go, packages/cli/src/commands/backup-*.ts, packages/cli/src/commands/backup.ts, packages/cli/src/commands/machine/health.ts, packages/cli/src/commands/machine/status.ts, packages/cli/src/commands/__tests__/backup-*.test.ts, packages/cli/src/services/jobs/**, packages/cli/src/services/backup/**, packages/cli/src/services/__tests__/backup-*.test.ts, packages/cli/src/config/command-metadata.ts, packages/cli/src/config/command-planes.ts, packages/cli/src/config/__tests__/plane-coverage.test.ts, packages/cli/src/i18n/locales/**, packages/shared/src/backup/**, packages/shared/src/config-schema/schemas.ts, packages/shared/src/config-schema/sensitivity.ts, packages/shared/src/renet-contract/data/**, packages/shared/src/cli-contract/**, packages/www/src/content/docs/*/backup-restore.md, packages/www/src/content/docs/*/cli-application.md, docs/backup-storage/07-execution-record.md, .ci/rediacc_ci/drills/backup.py, .ci/rediacc_ci/drills/backup_renet.py, .ci/rediacc_ci/drills/backup_roundtrip.py, .ci/rediacc_ci/drills/backup_onprem.py, private/account (gitlink), private/renet (gitlink)
 Live-Proof: bench, hostinger -- vm:check and both backup drills before the merge; bench proves the account surface after the edge deploy; hostinger proves the released renet after the release, read-only or on copies only
-Updated: 2026-11-01
+Updated: 2026-11-04
 Worklist: #11c0d336, #f5f6ef74
 First-Seen: 2026-11-01
 
@@ -349,10 +349,13 @@ V1 to V6 share `backup.go`, `backup_snapshot.go` and `backup_restore.go`, and on
   - Owns: packages/shared/src/backup/toc-key.ts, packages/shared/src/backup/__tests__/toc-key.test.ts, packages/shared/src/backup/__tests__/toc_key_vectors.json
   - Accept: `npx vitest run --root packages/shared src/backup/__tests__/toc-key.test.ts` rc 0.
     (ticked) 2026-11-02T03:24:48Z by 45048a90: commit:ce8749873. toc-key vectors from renet pass, vitest rc=0; each new test recorded rc 1 first.
-- [ ] S2: Install at schedule deploy (F6): in `pushBackupSchedule`, after renet is provisioned, each repo in scope gets `status`, then a comparison. Missing: install the public half. Equal: silent. Different: a loud warning naming the repo, and no overwrite. Lineage from `grandGuid`, else the repository GUID. A repo with no credential warns. `rdc backup toc-key sync <repo> [--replace]` re-issues on demand, and `--replace` carries the passphrase to L1's proof. A scan after the install reports repositories with a key but neither keyfile nor mount as getting no listing.
-  - Owns: packages/cli/src/services/backup/backup-schedule.ts, packages/cli/src/services/backup/backup-toc-key.ts, packages/cli/src/commands/backup-toc-key.ts, packages/cli/src/services/__tests__/backup-toc-key.test.ts
+- [x] S2: Install at schedule deploy (F6): in `pushBackupSchedule`, after renet is provisioned, each repo in scope gets `status`, then a comparison. Missing: install the public half. Equal: silent. Different: a loud warning naming the repo, and no overwrite. Lineage from `grandGuid`, else the repository GUID. A repo with no credential warns. `rdc backup toc-key sync <repo> [--replace]` re-issues on demand, and `--replace` carries the passphrase to L1's proof. A scan after the install reports repositories with a key but neither keyfile nor mount as getting no listing.
+    (reopened 2026-11-04) Unmet: the Accept as written exits 1, No test files found, since src/services/__tests__/backup-toc-key.test.ts does not exist; the real files are packages/cli/src/services/backup/backup-schedule-toc-key.ts and its tests, 16 passed, so the Owns and Accept need correcting; the scan clause has no post-install scan in packages/cli/src/services/backup/backup-schedule.ts:364 and no test.
+  - Owns: packages/cli/src/services/backup/backup-schedule.ts, packages/cli/src/services/backup/backup-schedule-toc-key.ts, packages/cli/src/services/backup/backup-toc-key.ts, packages/cli/src/commands/backup-toc-key.ts, packages/cli/src/services/__tests__/backup-schedule-toc-key.test.ts, packages/cli/src/commands/__tests__/backup-toc-key.test.ts
   - Tests: nothing but the public line leaves the CLI on the deploy path, asserted over every transport call; a mismatch never overwrites without `--replace`; a dry run touches nothing.
-  - Accept: `npm run test:unit -w @rediacc/cli -- src/services/__tests__/backup-toc-key.test.ts` rc 0.
+  - Accept: `cd packages/cli && npx vitest run src/services/__tests__/backup-schedule-toc-key.test.ts src/commands/__tests__/backup-toc-key.test.ts` rc 0. (corrected 2026-11-04: the first Accept named a test file that does not exist.)
+    (ticked) 2026-11-04T16:24:51Z by d778be9d: commit:58e5d26f7 installTocKeys after provisioning at packages/cli/src/services/backup/backup-schedule.ts:386, tocKeyWarnings scan at :405, sync verb in packages/cli/src/commands/backup-toc-key.ts:2; vitest of both suites rc=0 with 18 tests covering public line only, no overwrite without --replace, dry run, lineage, no credential, scan
+    (ticked) 2026-11-04T07:43:34Z by d778be9d: commit:ce8749873 toc-key vitest rc=0
 - [x] S3: Units (F9, F12): the service runs verify after the snapshot (same scope flags; a failed snapshot stops it), and `OnFailure=rediacc-backup-alert@%n.service` runs `renet backup report`. A new daily verify timer at a staggered offset runs `backup verify --level full --next-due 7d` under `CPUQuota=100%`. A strategy `verify` block (`spotAfterRun`, `deepSchedule`, `off`) goes through schema, sensitivity and validation. Reconcile and removal handle the new units.
   - Owns: packages/cli/src/services/backup/backup-schedule-unit-generator.ts, packages/cli/src/services/backup/backup-schedule-execute.ts, packages/cli/src/services/backup/backup-schedule-reconcile.ts, packages/cli/src/services/backup/backup-strategy-validate.ts, packages/shared/src/config-schema/schemas.ts, packages/shared/src/config-schema/sensitivity.ts, packages/cli/src/services/__tests__/backup-schedule-chunkstore.test.ts, packages/cli/src/services/__tests__/backup-schedule.test.ts
   - Tests: rendered unit text for each case; the alert template carries no secret; removing a strategy removes all its units; `off` renders neither.
@@ -369,12 +372,18 @@ V1 to V6 share `backup.go`, `backup_snapshot.go` and `backup_restore.go`, and on
   - Owns: packages/cli/src/config/command-metadata.ts, packages/cli/src/config/command-planes.ts, packages/cli/src/config/__tests__/plane-coverage.test.ts, packages/cli/src/i18n/locales/**, packages/shared/src/cli-contract/**
   - Accept: `npm run check:ci-i18n-completeness && npm run check:ci-i18n-hashes && npm run check:ci-i18n-cli-key-usage && npm run check:ci-i18n-placeholders && npm run check:ci-cli-contract` rc 0, and `npm run typecheck -w @rediacc/cli` rc 0.
     (ticked) 2026-11-02T08:01:49Z by 45048a90: commit:f5bc56d80 with 29c70f4c7. check:ci-i18n-completeness, check:ci-i18n-hashes, check:ci-i18n-cli-key-usage, check:ci-i18n-placeholders, check:ci-cli-contract and typecheck rc=0, rerun 2026-11-02.
-- [ ] D3: Docs: the verification ladder and schedule, restore's passphrase statement, repair and salvage with what is safe, TOC keys and the no-listing case, the alert preference, in all 13 locales. docs/backup-storage/07-execution-record.md records tier B's real result (P3), with each claim dated.
+- [x] D3: Docs: the verification ladder and schedule, restore's passphrase statement, repair and salvage with what is safe, TOC keys and the no-listing case, the alert preference, in all 13 locales. docs/backup-storage/07-execution-record.md records tier B's real result (P3), with each claim dated.
+    (reopened 2026-11-04) Unmet: docs/backup-storage/07-execution-record.md holds no tier B result, which waits on P3. The tick cited a different command set from the Accept; the Accept rerun was rc 0 four times. Also open: check:ci-prose-style fails R19 at packages/www/src/content/docs/en/backup-restore.md:419, a line from f6c04c7b9.
   - Owns: packages/www/src/content/docs/*/backup-restore.md, packages/www/src/content/docs/*/cli-application.md, docs/backup-storage/07-execution-record.md
   - Accept: `npm run check:cli-docs && npm run validate:cli-docs -w @rediacc/www && npm run check:ci-i18n-docs-untranslated && npm run check:ci-docs-structure-parity` rc 0.
-- [ ] D4: Drill legs, each with a planted control: leg p (identity refuses a swapped image, restore refuses a wrong passphrase and places nothing, in `backup_renet`), leg q (retention keeps a verified snapshot through bad nights), leg r (repair deletes a corrupt chunk, re-uploads it, and `--store` is clean), leg s (duplicate PUT and wrong checksum on the real store, named so a tier B run reads as R2's proof). `backup_roundtrip` asserts `passphraseCheck`. `backup_onprem` runs the conformance preflight against RustFS and a non-conforming fake.
+    (ticked) 2026-11-07T07:11:41Z by d778be9d: commit:e374ae49b rc=0 Accept chain (check:cli-docs, validate:cli-docs, check:ci-i18n-docs-untranslated, check:ci-docs-structure-parity) rc=0; tier B result at docs/backup-storage/07-execution-record.md:163 dated 2026-11-06; the R19 long line once at packages/www/src/content/docs/en/backup-restore.md:419 is gone
+    (ticked) 2026-11-04T07:43:29Z by d778be9d: commit:f6c04c7b9 freshness --strict-all, search index, structure parity, untranslated rc=0
+  (corrected 2026-11-07, review 4e3db673.1) The "Unmet" lines of the 2026-11-04 reopen above are closed by the 2026-11-07T07:11:41Z tick: the tier B result is at docs/backup-storage/07-execution-record.md:163 ("6.1 Tier B result (2026-11-06)"), the Accept chain was rerun rc=0, and the R19 line is addressed by the next annotation; the reopen text is history and is not rewritten.
+  (live record 2026-11-07, review 4e3db673.2) The R19 closure is evidenced on 2026-11-07, not only asserted: packages/www/src/content/docs/en/backup-restore.md:419 no longer holds a long line (its text is ordinary short prose about keeping a copy of the config, and a scan of that file finds no sentence over 384 characters), and `npm run -s check:ci-prose-style` exits rc=0 (no new findings) on HEAD d6b25f9a4. The Accept chain itself does not run check:ci-prose-style, and the fix's own commit is not cited in the tick.
+- [x] D4: Drill legs, each with a planted control: leg p (identity refuses a swapped image, restore refuses a wrong passphrase and places nothing, in `backup_renet`), leg q (retention keeps a verified snapshot through bad nights), leg r (repair deletes a corrupt chunk, re-uploads it, and `--store` is clean), leg s (duplicate PUT and wrong checksum on the real store, named so a tier B run reads as R2's proof). `backup_roundtrip` asserts `passphraseCheck`. `backup_onprem` runs the conformance preflight against RustFS and a non-conforming fake.
   - Owns: .ci/rediacc_ci/drills/backup.py, .ci/rediacc_ci/drills/backup_renet.py, .ci/rediacc_ci/drills/backup_roundtrip.py, .ci/rediacc_ci/drills/backup_onprem.py, the drill tests under .ci
-  - Accept: `./run.sh drill backup --selftest` rc 0, and the pytest for those drills rc 0.
+  - Accept: `./run.sh drill backup --selftest` exits 1 and prints `selftest fired as designed`, and the pytest for those drills rc 0. (corrected 2026-11-04: the selftest's planted failure makes its exit non-zero on purpose.)
+    (ticked) 2026-11-04T16:24:55Z by d778be9d: commit:58e5d26f7 legs at .ci/rediacc_ci/drills/backup.py:2770 :2906 :2997 :3196, leg p in .ci/rediacc_ci/drills/backup_renet.py:268; selftest exit 1 with fired as designed; pytest of backup drills rc=0 with 258 tests
 
 ### P: proof before the merge (lead)
 
@@ -383,46 +392,65 @@ V1 to V6 share `backup.go`, `backup_snapshot.go` and `backup_restore.go`, and on
 - [x] P2: Drills: `./run.sh drill backup` and `./run.sh drill backup-onprem`, with new legs p to s and their controls firing.
   - Accept: both rc 0; the receipt `block_backup_unverified_push` reads is fresh for this tree.
     (ticked) 2026-11-02T08:01:50Z by 45048a90: commit:ebd89f860. ./run.sh drill backup rc=0 and ./run.sh drill backup-onprem rc=0; receipt VERIFIED with legs a to s and onprem true; each new leg has a planted control, in commit 075c90af3.
-- [ ] P3: R2 tier B (needs decision O1): `./run.sh drill backup --legs a,s` with `DRILL_STORE_*` on the probe bucket, proving a duplicate PUT answers 412 and a wrong checksum is refused. The result corrects the grants.go comment and 07-execution-record.md in the same commit. If R2 refuses a wrong checksum differently than documented, that is a finding, not a retune.
+- [x] P3: R2 tier B (needs decision O1): `./run.sh drill backup --legs a,s` with `DRILL_STORE_*` on the probe bucket, proving a duplicate PUT answers 412 and a wrong checksum is refused. The result corrects the grants.go comment and 07-execution-record.md in the same commit. If R2 refuses a wrong checksum differently than documented, that is a finding, not a retune.
+  (corrected ASKED:2026-11-05T07:06Z) Decision O1 is settled: `DRILL_STORE_*` points at the existing `backups-bench` bucket and its bench keys, not a separate probe bucket.
   - Accept: the command rc 0, the status codes recorded here.
+    (ticked) 2026-11-06T16:36:46Z by d778be9d: commit:5357e04f8 drill backup --legs a,s on backups-bench rc=0 24/24, duplicate_put=412 wrong_checksum=400; comment and record corrected in the same unit (f51aa5e + 5357e04f8); bench-only proof
+  (note 2026-11-06) "The same commit" holds at the console level: grants.go lives in the renet submodule, so its fix is renet f51aa5e, and console 5357e04f8 carries the record and the pointer move to it as one commit.
 - [ ] P4: The D1 clone check covers migration 0073.
   - Accept: the CD or local `rediacc_ci.deploy.test_d1_migrations` run rc 0 for eu, recorded with its run id.
+  (corrected 2026-11-11, R2) Local-route: d1-migrations -- run test_d1_migrations on the branch's D1 clones for eu; the CD run is not needed.
 
 ### B: bench, after the merge and edge deploy (lead)
 
-- [ ] B1: A replayed bad night and alert on `eu-bench`: a failed verify and a stopped nightly produce one digest email; a repeat that day produces none.
+- [x] B1: A replayed bad night and alert on `eu-bench`: a failed verify and a stopped nightly produce one digest email; a repeat that day produces none.
+  (corrected ASKED:2026-11-05T07:06Z) "After the merge and edge deploy" in the section heading no longer applies: bench runs the branch head through `deploy_bench`, and the Accept already reads as bench.
   - Accept: `./rdc.sh --config eu-bench backup manifests <repo> -o json` rc 0 shows the states, and the delivery is recorded here.
-- [ ] B2: Repair on bench with a chunk corrupted through the store's credentials.
+  (corrected 2026-11-11, R2) Local-route: deploy-bench, bench-cli -- deploy the branch to bench and replay the bad night through eu-bench, no merge or nightly needed.
+    (ticked) 2026-11-13T03:16:20Z by d778be9d: eu-bench replay: one digest (row 13740552, email 79334c81), none on repeat, cleanup passed; residue lineages 6d718f71/17cfecf5 at storedBytes 0 chunkCount 0 in backup usage rc=0 03:09Z 2026-11-13; bench-only commit:c916259a7d
+    (accept) `./rdc.sh --config eu-bench backup manifests b1-integ-0aba78:latest -o json` rc 0: snapshot 20261112T195605Z-f6defb9b0a9be54b of lineage 6d718f71, verificationState verified, verificationLevel store, verifiedAt 2026-11-12T21:20:53Z, deletedAt null.
+- [x] B2: Repair on bench with a chunk corrupted through the store's credentials.
+  (corrected ASKED:2026-11-05T07:06Z) "After the merge and edge deploy" in the section heading no longer applies: bench runs the branch head through `deploy_bench`, and the Accept already reads as bench.
   - Accept: `./rdc.sh --config eu-bench backup repair <repo>` rc 0, then `backup verify <repo> --store` rc 0.
+    (ticked) 2026-11-06T17:40:07Z by d778be9d: commit:f5bc56d80 bench 2026-11-06 fresh lineage 3495cb83: chunk corrupted via store keys, verify --store rc 1 corrupt 1, backup repair rc 0, verify --store rc 0 checked 157 corrupt []; repo and its store objects deleted after; bench-only proof
+    (correction 2026-11-07) The cleanup claim above holds: the run removed the lineage objects through the store credentials, and R2 lists only the account's `v/refset` under lineage 3495cb83 (HEAD of each of the 3 manifest keys 404). The D1 rows and the usage ledger (189 chunks) stay until `purge_after` 2026-11-13T17:30Z, so every hourly sweep logged `backup_gc_lineage_unreadable` and `backup_verify_lineage_unreadable` for the missing manifests; the account now stays quiet while a purge is due (#6a4fe39f). An earlier line here said the chunks were still stored; that was the ledger, not the bucket (#3f1d34d7).
 
 ### H: hostinger, after the release (lead)
 
-Every H box uses the released `rdc` and its released renet. Mutating steps run only under a released renet. No original repo is deleted, pruned, replaced or downed. Only copies named `*-rt` are deleted, by GUID.
+Every H box uses the branch-built `rdc` and renet while edge and stable are on hold (corrected ASKED:2026-11-05T07:06Z, it read as the released ones), and `backup schedule` goes through `eu-remote` as H3 says. No original repo is deleted, pruned, replaced or downed. Only copies named `*-rt` are deleted, by GUID.
 
 - [ ] H1: The released CLI reads `eu-remote` (F13), which also gives box R1 of PLAN-backup-program.md its live read.
-  - Accept: `rdc --version` shows a release newer than 2.4.0, and `rdc --config eu-remote backup strategy list -o json` rc 0 with rows on stdout.
-- [ ] H2: Read first: for each of the 10 mounted repositories, the CLI-computed key equals the machine's key where one exists. A mismatch stops the box and is reported, with no overwrite.
-  - Accept: `rdc --config eu-remote backup toc-key sync <repo> --dry-run -o json` rc 0 for each, results recorded.
+  (note) Runs through `eu-bench`, not `eu-remote`: PLAN-tested-on-bench ruling 1 as extended on 2026-11-04. The text above keeps the old name because a box's first 120 characters are its identity.
+  - Accept: `rdc --version` shows a release newer than 2.4.0, and `rdc --config eu-bench backup strategy list -o json` rc 0 with rows on stdout.
+  (corrected 2026-11-11, R2) Local-route: bench-cli -- build the branch CLI and run backup strategy list through eu-bench; a release is not needed to read it.
+- [x] H2: Read first: for each of the 10 mounted repositories, the CLI-computed key equals the machine's key where one exists. A mismatch stops the box and is reported, with no overwrite.
+  - Accept: `rdc --config eu-bench backup toc-key sync <repo> --dry-run -o json` rc 0 for each, results recorded.
+    (ticked) 2026-11-12T04:15:47Z by d778be9d: 2026-11-12 hostinger via eu-bench (bench/hostinger-only proof): rdc backup toc-key sync <repo>@hostinger --dry-run -o json rc 0 for all 11 repos (mautic demo-heartbeat mail hermes marketing observability erpnext gitlab nextcloud demo-stackoverflow miscellaneous; miscellaneous rc 1 ECONNRESET once then rc 0), machineKeyEqual true outcome unchanged, no overwrite
 - [ ] H3: Re-deploy the schedule; public keys are installed, and units show verify and `OnFailure=`.
+  (corrected ASKED:2026-11-05T07:06Z) `backup schedule` runs through `eu-remote`, which the operator rebound for this session, and never through `eu-bench`.
   - Accept: `rdc --config eu-remote backup schedule -m hostinger` rc 0, and `backup status -m hostinger` rc 0.
-- [ ] H4: The next nightly: 10 repositories have `hasIndex` true and `indexStatus` sealed. demo-heartbeat is reported plainly: it has neither keyfile nor mount, so it gets no listing, and the warning is in its unit journal. Spot ran after the snapshot, and reports reached the account after the stable deploy.
-  - Accept: `rdc --config eu-remote backup manifests <repo> -o json` rc 0 per repo, recorded here.
+(moved ASKED:2026-11-05T07:06Z to agent/plans/PLAN-first-release-checks.md) H4
 - [ ] H5: N4b single-file restore to a scratch directory on a repository with a listing, then tick box N4b in agent/plans/PLAN-backup-program.md.
-  - Accept: `rdc --config eu-remote backup restore <repo> --at <snapshot> --path <file> --to <scratch>` rc 0, with the checksum equal to a read of the live file taken for comparison.
+  - Accept: `rdc --config eu-bench backup restore <repo> --at <snapshot> --path <file> --to <scratch>` rc 0, with the checksum equal to a read of the live file taken for comparison.
 - [ ] H6: A deep verify of one mid-size repo under the sampler: scope usage stays at one core (CPUQuota=100%), and machine-wide busy CPU is recorded before and during.
-  - Accept: `rdc --config eu-remote backup verify <repo> --deep` rc 0, figures recorded here.
-- [ ] H7: A restore test of demo-heartbeat (2 GB): only the `-rt` copy is deleted.
-  - Accept: `rdc --config eu-remote backup verify demo-heartbeat --restore-test` rc 0, then `repo list -m hostinger` shows the original with its GUID unchanged and no copy.
+  - Accept: `rdc --config eu-bench backup verify <repo> --deep` rc 0, figures recorded here.
+- [x] H7: A restore test of demo-heartbeat (2 GB): only the `-rt` copy is deleted.
+  - Accept: `rdc --config eu-bench backup verify demo-heartbeat --restore-test` rc 0, then `repo list -m hostinger` shows the original with its GUID unchanged and no copy.
+    (ticked) 2026-11-12T05:12:26Z by d778be9d: 2026-11-12 hostinger via eu-remote (hostinger-only proof, remote renet unchanged): rdc backup verify demo-heartbeat@hostinger --restore-test -o json rc 0, status proven, compare identical (sha256 2788bb37 both sides), cleanup deleted (copy restoretest-b092d2c4 deleted by the tool). repo list -m hostinger before and after identical (13 repos, GUIDs unchanged, original 1b8e6a28 present, no copy). Files /tmp/hostinger-run/r2-h7.json r2-before-repos.json r2-after-h7-repos.json
 - [ ] H8: `rdc backup check` on one listed repo marks a snapshot `proven`, and `backup verify demo-heartbeat --store` runs one real full pass on the smallest lineage.
   - Accept: both rc 0; `backup manifests` shows the states.
 - [ ] H9: The alert path through a harmless planted failure: `renet backup report --test` from the released binary, with no repository involved.
+  (corrected ASKED:2026-11-05T07:06Z) "The released binary" reads as the branch-built binary: `renet backup report --test` from the branch renet, still with no repository involved. The Accept stands.
   - Accept: the command rc 0, and the digest's receipt recorded here.
+  (corrected 2026-11-11, R2) Local-route: hostinger -- run renet backup report --test from the branch renet build on the real hostinger machine.
 
-- [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
+- [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke
+    (ticked) 2026-11-10T14:04:57Z by d778be9d: live-proof lp-4df668cbb3ef bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09
 
-- [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
+- [x] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-11T06:32:30Z by d778be9d: live-proof lp-78e6c1cbfedf hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13
 
 **Closes only after the merge:** B1, B2, H1 to H9, LP-bench, LP-hostinger. Everything else closes before it. The PR's merge rule therefore needs an `Operational-Reason:` naming these boxes or the operator's ruling on them, because the merge gate refuses open boxes on a plan on the PR's `Plan:` line.
 

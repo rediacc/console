@@ -99,7 +99,11 @@ test.describe
 
     // Note: repository_create leaves repo mounted, so unmount first before testing mount
     test('2a. unmount repository before mount test', async () => {
-      const result = await runner.repositoryUnmount(repositoryName, datastorePath);
+      const result = await runner.repositoryUnmount(
+        repositoryName,
+        datastorePath,
+        DEFAULT_NETWORK_ID
+      );
       expect(runner.isSuccess(result)).toBe(true);
     });
 
@@ -131,7 +135,11 @@ test.describe
     });
 
     test('7. cleanup: unmount and remove repository', async () => {
-      const unmountResult = await runner.repositoryUnmount(repositoryName, datastorePath);
+      const unmountResult = await runner.repositoryUnmount(
+        repositoryName,
+        datastorePath,
+        DEFAULT_NETWORK_ID
+      );
       expect(runner.isSuccess(unmountResult)).toBe(true);
 
       const rmResult = await runner.repositoryRm(repositoryName, datastorePath);
@@ -335,7 +343,11 @@ test.describe
     });
 
     test('8. cleanup: unmount and remove repository', async () => {
-      const unmountResult = await runner.repositoryUnmount(repositoryName, datastorePath);
+      const unmountResult = await runner.repositoryUnmount(
+        repositoryName,
+        datastorePath,
+        DEFAULT_NETWORK_ID
+      );
       expect(runner.isSuccess(unmountResult)).toBe(true);
 
       const rmResult = await runner.repositoryRm(repositoryName, datastorePath);
@@ -345,5 +357,109 @@ test.describe
     test('9. daemon_teardown: tear down daemon service', async () => {
       const result = await runner.daemonTeardown(DEFAULT_NETWORK_ID);
       expect(runner.isSuccess(result)).toBe(true);
+    });
+  });
+
+/**
+ * Rediaccfile privileges: up() runs as the universal user, so a file it creates belongs to that user and `sudo` in it is refused (PLAN-rediaccfile-unprivileged T2).
+ */
+test.describe
+  .serial('Rediaccfile Privileges @bridge @integration', () => {
+    let runner: RenetFunctionsTestRunner;
+    const repositoryName = e2eRepoGuid();
+    const datastorePath = DEFAULT_DATASTORE_PATH;
+    const mountPath = `${datastorePath}/mounts/${repositoryName}`;
+    let created = false;
+
+    const ownerProbe = [
+      '#!/bin/bash',
+      'up() {',
+      '  id -u > "$REDIACC_WORKING_DIR/up-uid.out"',
+      '  : > "$REDIACC_WORKING_DIR/up-created.out"',
+      '  stat -c %u "$REDIACC_WORKING_DIR/up-created.out" > "$REDIACC_WORKING_DIR/up-owner.out"',
+      '}',
+      'down() { :; }',
+      '',
+    ].join('\n');
+
+    const sudoProbe = [
+      '#!/bin/bash',
+      'up() {',
+      '  sudo -n true > "$REDIACC_WORKING_DIR/sudo.out" 2>&1',
+      '  echo "rc=$?" >> "$REDIACC_WORKING_DIR/sudo.out"',
+      '}',
+      'down() { :; }',
+      '',
+    ].join('\n');
+
+    const read = async (name: string): Promise<string> => {
+      const result = await runner.executeOnWorker(`sudo cat ${mountPath}/${name}`);
+      return result.stdout.trim();
+    };
+
+    test.beforeAll(async () => {
+      runner = RenetFunctionsTestRunner.forWorker();
+      await runner.resetWorkerState();
+      await runner.datastoreInitPool('10G', datastorePath, true);
+    });
+
+    test('1. create repository', async () => {
+      const result = await runner.repositoryNew(repositoryName, '1G', TEST_PASSWORD, datastorePath);
+      expect(runner.isSuccess(result)).toBe(true);
+      created = true;
+    });
+
+    test('2. up() file is owned by the universal user', async () => {
+      const written = await runner.writeFileToRepository(
+        repositoryName,
+        'Rediaccfile',
+        ownerProbe,
+        datastorePath
+      );
+      expect(written.code).toBe(0);
+      const up = await runner.repositoryUp(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
+      expect(runner.isSuccess(up)).toBe(true);
+      const uid = await read('up-uid.out');
+      expect(uid).toMatch(/^[1-9][0-9]*$/);
+      expect(await read('up-owner.out')).toBe(uid);
+    });
+
+    test('3. sudo in up() is refused', async () => {
+      const written = await runner.writeFileToRepository(
+        repositoryName,
+        'Rediaccfile',
+        sudoProbe,
+        datastorePath
+      );
+      expect(written.code).toBe(0);
+      const up = await runner.repositoryUp(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
+      expect(runner.isSuccess(up), runner.getCombinedOutput(up)).toBe(true);
+      const out = await read('sudo.out');
+      expect(out).toContain('no new privileges');
+      expect(out).not.toContain('rc=0');
+    });
+
+    // A serial describe skips every test after a failure, so the cleanup is a hook: a failed
+    // test 2 or 3 still unmounts the repository and stops the daemon.
+    test.afterAll(async () => {
+      // Every step runs whatever the earlier ones answered or threw: a failed unmount must not leave the daemon running, so the verdicts are asserted together at the end. Unmount and rm are asserted only for a repository test 1 created, so a failure before it is not buried under errors about state that never existed.
+      const attempt = async (
+        step: () => Promise<Parameters<typeof runner.isSuccess>[0]>
+      ): Promise<boolean> => {
+        try {
+          return runner.isSuccess(await step());
+        } catch {
+          return false;
+        }
+      };
+      const unmount = await attempt(() =>
+        runner.repositoryUnmount(repositoryName, datastorePath, DEFAULT_NETWORK_ID)
+      );
+      const rm = await attempt(() => runner.repositoryRm(repositoryName, datastorePath));
+      const teardown = await attempt(() => runner.daemonTeardown(DEFAULT_NETWORK_ID));
+      expect(
+        { unmount: !created || unmount, rm: !created || rm, teardown },
+        'cleanup steps'
+      ).toEqual({ unmount: true, rm: true, teardown: true });
     });
   });

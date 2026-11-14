@@ -20,6 +20,8 @@ HOOKS = HERE.parents[1]
 DISPATCH = str(HOOKS / "dispatch.py")
 STEM = "block_roundlog_truncate"
 LOG = "agent/pr-babysit-1008-1.md"
+# A program that truncates every round-log glob match, held in a string for a code runner (ffbd9211.4 rows).
+_HELD = "import glob\nfor p in glob.glob('agent/*.md'):\n    open(p, 'w').write('')"
 
 CASES = [
     ("truncate through an assigned name", "L=%s; echo x > $L" % LOG, True),
@@ -96,6 +98,117 @@ CASES = [
         "python3 - <<'PY'\nimport glob\nfor p in glob.glob('/home/u/console/**', recursive=True):\n    open(p, 'w').write('')\nPY",
         True,
     ),
+    # #6fdc7136: a program held as DATA in a string literal is not a write. The first control is the live probe (refused rc 2 on 2026-11-10: the quote regex read `'*.md'` out of the triple-quoted program as a literal of its own); the refusals make the same call for real.
+    (
+        "a write call held in a triple-quoted literal",
+        "cd .claude && python3 -c \"\nfrom rediacc_hooks.guards import block_review_file_shell_write as g\nprog='''from pathlib import Path\nfor p in Path('agent').rglob('*.md'):\n    p.write_text(p.read_text().replace('a', 'b'))'''\nprint(g._python_writes_review(prog))\n\"",
+        False,
+    ),
+    (
+        "a write call held in a literal and printed",
+        "python3 - <<'PY'\nimport json\nprog = '''p = open('agent/*.md')\np.write_text(p.read_text().replace('a','b'))'''\nprint(json.dumps(prog))\nPY",
+        False,
+    ),
+    (
+        "a write call on a globbed listing under agent",
+        "python3 -c \"\nfrom pathlib import Path\nfor p in Path('agent').rglob('*.md'):\n    p.write_text(p.read_text().replace('a', 'b'))\n\"",
+        True,
+    ),
+    (
+        "a write call on a round log",
+        "python3 - <<'PY'\nimport pathlib\np = pathlib.Path('%s')\np.write_text(p.read_text().replace('a','b'))\nPY"
+        % LOG,
+        True,
+    ),
+    # 39b711fa.1: a program held in a literal and RUN is code. The six refusals were allowed (rc 0) at 39b711fa66, where the whole held program was one constant.
+    (
+        "a round-log glob write handed to exec",
+        "python3 - <<'PY'\nexec('''import glob\nfor p in glob.glob('agent/*.md'):\n    open(p, 'w').write('')''')\nPY",
+        True,
+    ),
+    (
+        "a round-log glob write bound to a name and compiled",
+        "python3 - <<'PY'\nprog = '''import glob\nfor p in glob.glob('agent/*.md'):\n    open(p, 'w').write('')'''\nexec(compile(prog, 'x', 'exec'))\nPY",
+        True,
+    ),
+    (
+        "a round-log glob write run through an alias of exec",
+        "python3 - <<'PY'\nf = exec\nf('''import glob\nfor p in glob.glob('agent/*.md'):\n    open(p, 'w').write('')''')\nPY",
+        True,
+    ),
+    (
+        "a round-log glob write concatenated into exec",
+        "python3 - <<'PY'\nhead = 'import glob\\n'\nexec(head + 'for p in glob.glob(\"agent/*.md\"):\\n    open(p, \"w\").write(\"\")')\nPY",
+        True,
+    ),
+    (
+        "a round-log glob write held two levels deep",
+        "python3 - <<'PY'\nexec(\"exec('''import glob\\\\nfor p in glob.glob(\\\\'agent/*.md\\\\'):\\\\n    open(p, \\\\'w\\\\').write(\\\\'\\\\')''')\")\nPY",
+        True,
+    ),
+    (
+        "a held program that does not parse, run by exec",
+        "python3 - <<'PY'\nexec('''print 'python 2'\nimport glob\nfor p in glob.glob('agent/*.md'):\n    open(p, 'w').write('')''')\nPY",
+        True,
+    ),
+    (
+        "exec of a held program that writes outside any log directory",
+        "python3 - <<'PY'\nexec('''import glob\nfor p in glob.glob('workers/src/*.ts'):\n    open(p, 'w').write('')''')\nPY",
+        False,
+    ),
+    # 39b711fa.3: python that does not parse is read by the quote regex, so its round-log glob stays in play (refused at 39b711fa66 too, but by no row; the two fallback mutants each turn the refusal).
+    (
+        "python that does not parse writing a round-log glob",
+        "python3 - <<'PY'\nprint 'python 2'\nimport glob\nfor p in glob.glob('agent/*.md'):\n    open(p, 'w').write('')\nPY",
+        True,
+    ),
+    (
+        "python that does not parse writing outside any log directory",
+        "python3 - <<'PY'\nprint 'python 2'\nimport glob\nfor p in glob.glob('workers/src/*.ts'):\n    open(p, 'w').write('')\nPY",
+        False,
+    ),
+    # ffbd9211.4: exec reached through the builtins module however it is named. The six refusals were allowed (rc 0) at ffbd92113d, which read only `builtins.` and `__builtins__.`.
+    (
+        "a round-log glob write run by exec of an aliased builtins",
+        "python3 - <<'PY'\nimport builtins as b\nb.exec(%r)\nPY" % _HELD,
+        True,
+    ),
+    (
+        "a round-log glob write run by exec imported from builtins under a name",
+        "python3 - <<'PY'\nfrom builtins import exec as run\nrun(%r)\nPY" % _HELD,
+        True,
+    ),
+    (
+        "a round-log glob write run by exec of __import__('builtins')",
+        "python3 - <<'PY'\n__import__('builtins').exec(%r)\nPY" % _HELD,
+        True,
+    ),
+    (
+        "a round-log glob write run by exec of a name bound to import_module('builtins')",
+        "python3 - <<'PY'\nimport importlib\nb = importlib.import_module('builtins')\nb.exec(%r)\nPY"
+        % _HELD,
+        True,
+    ),
+    (
+        "a round-log glob write run by getattr of the builtins module",
+        "python3 - <<'PY'\ngetattr(__import__('builtins'), 'exec')(%r)\nPY" % _HELD,
+        True,
+    ),
+    (
+        "a round-log glob write run by a literal subscript of vars(builtins)",
+        "python3 - <<'PY'\nimport builtins as b\nvars(b)['exec'](%r)\nPY" % _HELD,
+        True,
+    ),
+    (
+        "a round-log glob write printed through an aliased builtins",
+        "python3 - <<'PY'\nimport builtins as b\nb.print(%r)\nPY" % _HELD,
+        False,
+    ),
+    (
+        "a round-log glob write handed to exec of a module that is not builtins",
+        "python3 - <<'PY'\nimport shelltools as b\nb.exec(%r)\nPY" % _HELD,
+        False,
+    ),
 ]
 
 # The two readers overlap (each alone refuses the same rows), so the plant takes both.
@@ -126,9 +239,93 @@ MUTANTS = [
         "any glob literal puts a log in play (#63109cf2)",
         [
             (
-                '        and _glob_reaches_log_dir(m.group(0)[1:-1], code + "\\n" + (context or ""))\n',
+                '        and _glob_reaches_log_dir(literal, code + "\\n" + (context or ""))\n',
                 "",
             ),
+        ],
+    ),
+    (
+        "python literals read by the quote regex (#6fdc7136)",
+        [
+            (
+                '    if family != "python":\n        return code, None\n',
+                "    return code, None\n",
+            ),
+        ],
+    ),
+    (
+        "a program run by exec read as one constant (39b711fa.1)",
+        [
+            (
+                "    if _runs_code(tree):\n        for literal, at in held:\n            literals.extend(_held_literals(literal, at, 1))\n",
+                "",
+            ),
+        ],
+    ),
+    (
+        "a held program not read past one level (39b711fa.1)",
+        [
+            (
+                "        for text in held:\n            literals.extend(_held_literals(text, at, depth + 1))\n",
+                "        pass\n",
+            ),
+        ],
+    ),
+    (
+        "a held program that does not parse yields no literal (39b711fa.1)",
+        [("        return _quoted_literals(program, at)\n", "        return []\n")],
+    ),
+    (
+        "python that does not parse yields no literal (39b711fa.3)",
+        [
+            (
+                "    except (SyntaxError, ValueError, RecursionError):\n        return code, None\n    starts = [0",
+                "    except (SyntaxError, ValueError, RecursionError):\n        return code, []\n    starts = [0",
+            ),
+        ],
+    ),
+    (
+        "the quote regex fallback reads nothing (39b711fa.3)",
+        [("        literals = _quoted_literals(code)\n", "        literals = []\n")],
+    ),
+    (
+        "the builtins module read under its own names only (ffbd9211.4)",
+        [
+            (
+                "    aliases = _builtins_aliases(tree)\n",
+                '    aliases = {"builtins", "__builtins__"}\n',
+            )
+        ],
+    ),
+    (
+        "a call returning builtins not read as the module (ffbd9211.4)",
+        [
+            (
+                '    return name in ("__import__", "import_module")\n',
+                "    return False\n",
+            )
+        ],
+    ),
+    (
+        "a runner imported from builtins under a name not read (ffbd9211.4)",
+        [
+            (
+                '            and node.module == "builtins"\n',
+                '            and node.module == ""\n',
+            )
+        ],
+    ),
+    (
+        "a runner named to getattr not read (ffbd9211.4)",
+        [('            and node.func.id == "getattr"\n', '            and node.func.id == ""\n')],
+    ),
+    (
+        "a runner named in a subscript not read (ffbd9211.4)",
+        [
+            (
+                "            isinstance(node, ast.Subscript)\n            and isinstance(node.slice, ast.Constant)\n",
+                "            False\n            and isinstance(node.slice, ast.Constant)\n",
+            )
         ],
     ),
 ]

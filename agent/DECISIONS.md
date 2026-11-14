@@ -68,12 +68,12 @@ The last one is the licence half. It cannot stop a bad substitution and does not
 | D-S8 | R2 token `backup-s3-20260901T103133Z` is kept, then narrowed to the backup buckets only | agent/plans/PLAN-secret-namespace-migration.md:210 | live | | Three further ruling rounds sit at agent/plans/PLAN-secret-namespace-migration.md:158, :170 and :193 and have no id of their own |
 | D-S9 | Mint the five; ASIA stays absent on purpose | agent/plans/PLAN-secret-namespace-migration.md:1570 | live | | |
 | D-S10 | Both backup families are renamed and `CLOUDFLARE_` comes off the S3 family | agent/plans/PLAN-secret-namespace-migration.md:1172 | live | | Overturns the `BACKUP_S3_* -> CLOUDFLARE_R2_BACKUP_*` row that ruling round `8ter` had accepted the same day |
-| D-W1 | Stay on GitHub Free; the pipeline target is ~35 minutes, the per-job budget 15 | agent/plans/PLAN-ci-time-budget.md:343 | live | | Revised the same day from "Team plan" |
-| D-W2 | For budgeted jobs the lane gate (p90 <= 12, timeout <= 15) supersedes the 1.5x headroom rule | agent/plans/PLAN-ci-time-budget.md:347 | live | | The plan's recommendation, taken by the operator |
-| D-W3 | The two long K8s tests stay whole as named, operator-approved lane-gate exemptions | agent/plans/PLAN-ci-time-budget.md:345 | live | | Revised from the checkpoint split |
-| D-W4 | The OPS tutorials become independent and shard like tests | agent/plans/PLAN-ci-time-budget.md:344 | live | | Cross-tutorial state is no longer exercised |
-| D-W5 | The budget is enforced on PRs and main together | agent/plans/PLAN-ci-time-budget.md:346 | live | | Revised from PRs-first |
-| D-W6 | ops-tests drops quality/review-gate from its needs; review-gate stays on stage-artifacts | agent/plans/PLAN-ci-time-budget.md:347 | live | | The plan's recommendation, taken by the operator |
+| D-W1 | Stay on GitHub Free; the pipeline target is ~35 minutes, the per-job budget 15 | agent/INDEX.md:713 | live | | Revised the same day from "Team plan"; the plan was swept 2026-11-09 and its text is in blob f1ba29d0ea |
+| D-W2 | For budgeted jobs the lane gate (p90 <= 12, timeout <= 15) supersedes the 1.5x headroom rule | agent/INDEX.md:713 | live | | The plan's recommendation, taken by the operator; the plan was swept 2026-11-09 and its text is in blob f1ba29d0ea |
+| D-W3 | The two long K8s tests stay whole as named, operator-approved lane-gate exemptions | agent/INDEX.md:713 | live | | Revised from the checkpoint split; the plan was swept 2026-11-09 and its text is in blob f1ba29d0ea |
+| D-W4 | The OPS tutorials become independent and shard like tests | agent/INDEX.md:713 | live | | Cross-tutorial state is no longer exercised; the plan was swept 2026-11-09 and its text is in blob f1ba29d0ea |
+| D-W5 | The budget is enforced on PRs and main together | agent/INDEX.md:713 | live | | Revised from PRs-first; the plan was swept 2026-11-09 and its text is in blob f1ba29d0ea |
+| D-W6 | ops-tests drops quality/review-gate from its needs; review-gate stays on stage-artifacts | agent/INDEX.md:713 | live | | The plan's recommendation, taken by the operator; the plan was swept 2026-11-09 and its text is in blob f1ba29d0ea |
 
 ## Adding a row
 

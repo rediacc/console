@@ -1,10 +1,14 @@
 import { TELEMETRY_SUBSCRIPTION_SOURCES } from '@rediacc/shared/telemetry';
+import { t } from '../../i18n/index.js';
 import type { SFTPClient } from '../../remote/sftp/index.js';
 import type { MachineConfig } from '../../types/index.js';
-import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
+import { ValidationError } from '../../utils/errors.js';
+import { expectedAccountServerOrigin } from '../backup/backup-store-universe.js';
 import { outputService } from '../core/output.js';
+import { sftpConfigForMachine, withSharedOrPooledSftp } from '../machine/machine-connection.js';
 import { telemetryService } from '../telemetry/telemetry.js';
 import { accountServerFetch } from './account-client.js';
+import { freeLicensesToAdopt, reposWithForeignLicenseOrigin } from './license-batch.js';
 import {
   clusterIdFor,
   DEFAULT_DATASTORE,
@@ -116,22 +120,14 @@ export function readMachineActivationStatus(
 }
 
 export function readRuntimeRepoLicenseStatuses(
-  machine: MachineConfig,
-  sshPrivateKey: string,
-  remoteRenetPath?: string,
-  sharedSftp?: SFTPClient
+  machineName: string,
+  machine: MachineConfig
 ): Promise<RuntimeRepoLicenseStatus[]> {
-  return withSharedOrPooledSftp(
-    sharedSftp,
-    sftpConfigForMachine(machine, sshPrivateKey),
-    async (sftp) => {
-      const datastore = machine.datastore ?? DEFAULT_DATASTORE;
-      return await scanRemoteLicenseStatuses(sftp, datastore, remoteRenetPath);
-    }
-  );
+  return scanRemoteLicenseStatuses(machineName, machine.datastore ?? DEFAULT_DATASTORE);
 }
 
 export function issueRepoLicense(
+  machineName: string,
   machine: MachineConfig,
   sshPrivateKey: string,
   params: {
@@ -179,7 +175,7 @@ export function issueRepoLicense(
       );
       // The blob must land in the population renet reads for THIS datastore,
       // which is the same identity that was just stamped into the payload.
-      await writeRepoLicense(sftp, params.repositoryGuid, license, params.datastoreId);
+      await writeRepoLicense(machineName, params.repositoryGuid, license, params.datastoreId);
       return true;
     }
   );
@@ -204,20 +200,22 @@ export function issueRepoLicense(
  * datastore's identity both in the payload and in the store path.
  */
 async function readRepoLicenseInputs(
-  sftp: SFTPClient,
+  machineName: string,
   datastore: string,
   repositoryGuid: string,
-  remoteRenetPath?: string
+  callerDatastoreId?: string
 ): Promise<{
   luksUuid?: string;
   storageFingerprint?: string;
   datastoreId?: string;
   datastorePath?: string;
   requestedSizeGb?: number;
+  currentRenewalUrl?: string;
+  currentSubscriptionId?: string;
 }> {
   let scanned: Awaited<ReturnType<typeof scanRemoteRepoLicenses>>;
   try {
-    scanned = await scanRemoteRepoLicenses(sftp, datastore, remoteRenetPath);
+    scanned = await scanRemoteRepoLicenses(machineName, datastore);
   } catch (error) {
     // A scan that throws proves no identity either: issuing from here would bind the licence to nothing, so it refuses on the same path as a scan with no entry.
     throw new RepoIdentityUnreadableError(
@@ -225,7 +223,11 @@ async function readRepoLicenseInputs(
       error instanceof Error ? error.message : String(error)
     );
   }
-  const entry = scanned.find((repo) => repo.repositoryGuid === repositoryGuid);
+  // A byte-clone fork keeps its parent's GUID, and the scan walks the primary datastore and then the attached ones by name, so a replica attached beside its parent is listed after it. The first entry alone would license that fork under the parent's datastore id.
+  const entry =
+    scanned.find(
+      (repo) => repo.repositoryGuid === repositoryGuid && repo.datastoreId === callerDatastoreId
+    ) ?? scanned.find((repo) => repo.repositoryGuid === repositoryGuid);
   if (!entry) {
     // The scan answered and this repository is not in it. renet's scan is fail-closed: an image whose LUKS header cannot be read gets no entry rather than a fingerprint minted in place of its UUID. Issuing from here would bind the licence to no identity at all, so refuse.
     throw new RepoIdentityUnreadableError(repositoryGuid);
@@ -237,7 +239,45 @@ async function readRepoLicenseInputs(
     // The mount the machine itself reports for this repo. Better than anything the client can derive, and it is the datastore the size probe below must measure when the scan could not price the repo.
     datastorePath: entry.datastorePath,
     requestedSizeGb: entry.requestedSizeGb,
+    // The account server that issued the installed licence, read from the same scan entry, so the foreign-origin check costs no second scan.
+    currentRenewalUrl: entry.currentRenewalUrl,
+    currentSubscriptionId: entry.currentSubscriptionId,
   };
+}
+
+/**
+ * Refuse to reissue a licence whose `renewalUrl` names another account server than this config's, unless `adoptOrigin`.
+ * A reissue from here writes this server's blob over it with this server's sequence, which renet refuses as
+ * `sequence_regression` when the other server's chain is ahead. A licence with no `renewalUrl` names no origin.
+ */
+function assertRepoLicenseOriginAllowed(
+  machineName: string,
+  repositoryGuid: string,
+  currentRenewalUrl: string | undefined,
+  currentSubscriptionId: string | undefined,
+  adoptOrigin: boolean
+): void {
+  if (adoptOrigin || !currentRenewalUrl) return;
+  const entries = [
+    { repositoryGuid, requestedSizeGb: 0, currentRenewalUrl, currentSubscriptionId },
+  ];
+  const foreign = reposWithForeignLicenseOrigin(entries, machineName);
+  if (!foreign.has(repositoryGuid)) return;
+  if (freeLicensesToAdopt(entries, foreign, machineName).has(repositoryGuid)) return;
+  let licenseOrigin = currentRenewalUrl;
+  try {
+    licenseOrigin = new URL(currentRenewalUrl).origin;
+  } catch {
+    // An unparseable renewalUrl is reported as written.
+  }
+  throw new ValidationError(
+    t('errors.license.foreignOriginSkipped', {
+      repo: repositoryGuid,
+      machine: machineName,
+      licenseOrigin,
+      configOrigin: expectedAccountServerOrigin() ?? '',
+    })
+  );
 }
 
 /** The machine's license scan failed, or answered without this repository, so its identity cannot be read. */
@@ -255,6 +295,7 @@ class RepoIdentityUnreadableError extends Error {
 }
 
 export function refreshRepoLicenseIdentity(
+  machineName: string,
   machine: MachineConfig,
   sshPrivateKey: string,
   params: {
@@ -264,12 +305,14 @@ export function refreshRepoLicenseIdentity(
     requestedSizeGb?: number;
     /**
      * The datastore identity the CALLER already resolved (the placement it just
-     * provisioned into). A fallback, not an override: the scan below is the
-     * better answer because it reads the repo's actual home. It matters when
-     * the scan lists the repo without a datastore identity, where dropping to
-     * none would write the reissue to the unscoped path that renet does not
-     * read for a datastore-resident repo. A scan that fails or omits the repo
-     * refuses the reissue before this is read.
+     * provisioned into). It picks the scan entry when the scan lists this GUID
+     * in several datastores, which a fork attached beside its parent does. Past
+     * that it is a fallback, not an override: the scan is the better answer
+     * because it reads the repo's actual home. The fallback matters when the
+     * scan lists the repo without a datastore identity, where dropping to none
+     * would write the reissue to the unscoped path that renet does not read for
+     * a datastore-resident repo. A scan that fails or omits the repo refuses
+     * the reissue before this is read.
      */
     datastoreId?: string;
     /**
@@ -285,6 +328,11 @@ export function refreshRepoLicenseIdentity(
      * the reissue silently asked for the 1 GB floor.
      */
     datastoreMount?: string;
+    /**
+     * Reissue even when the installed licence names another account server than this config's. Only the explicit
+     * moves set it (`subscription refresh --repo --adopt-origin`, a migration); without it such a licence is refused.
+     */
+    adoptOrigin?: boolean;
   },
   remoteRenetPath?: string,
   sharedSftp?: SFTPClient
@@ -301,17 +349,24 @@ export function refreshRepoLicenseIdentity(
       let scanned: Awaited<ReturnType<typeof readRepoLicenseInputs>>;
       try {
         scanned = await readRepoLicenseInputs(
-          sftp,
+          machineName,
           datastore,
           params.repositoryGuid,
-          remoteRenetPath
+          params.datastoreId
         );
       } catch (error) {
         if (!(error instanceof RepoIdentityUnreadableError)) throw error;
         outputService.warn(error.message);
         return false;
       }
-      const { datastoreMount, ...issueParams } = params;
+      const { datastoreMount, adoptOrigin, ...issueParams } = params;
+      assertRepoLicenseOriginAllowed(
+        machineName,
+        params.repositoryGuid,
+        scanned.currentRenewalUrl,
+        scanned.currentSubscriptionId,
+        adoptOrigin === true
+      );
       const requestedSizeGb =
         params.requestedSizeGb ??
         scanned.requestedSizeGb ??
@@ -322,6 +377,7 @@ export function refreshRepoLicenseIdentity(
           datastore,
         ]));
       return issueRepoLicense(
+        machineName,
         machine,
         sshPrivateKey,
         {

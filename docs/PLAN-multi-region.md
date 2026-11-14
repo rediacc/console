@@ -32,7 +32,7 @@ Status: **SUPERSEDED / HISTORICAL** | Created: 2026-04-04 | Superseded: 2026-08-
 
 - Created `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY_EU`, `STRIPE_WEBHOOK_SECRET_EU` GitHub secrets
 - Created `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY_US`, `STRIPE_WEBHOOK_SECRET_US` GitHub secrets
-- **Both EU and US point to the same Stripe account** (Rediacc OU via SPEL, Ireland) for now
+- **Both EU and US point to the same Stripe account** (the seller entity, via SPEL, Ireland) for now
 - When a US entity is created (e.g., via Stripe Atlas), swap the `_US` secrets to the new account's keys -- zero code changes
 - Sandbox secrets (`STRIPE_SANDBOX_*`) stay unsuffixed (single sandbox, not regional)
 - Updated all workflow references: `cd-deploy-worker.yml`, `cd-v2.yml`, `promote-stable.yml`
@@ -42,7 +42,7 @@ Status: **SUPERSEDED / HISTORICAL** | Created: 2026-04-04 | Superseded: 2026-08-
 
 ## Problem
 
-Rediacc is an Estonian company (Rediacc OU, Tallinn). All customer data must be stored in the region the customer chooses. The current architecture stores everything in a single set of Cloudflare resources with no region distinction:
+Rediacc is an Estonian company (Tallinn). All customer data must be stored in the region the customer chooses. The current architecture stores everything in a single set of Cloudflare resources with no region distinction:
 
 | Resource | Current Name | Current Location |
 |---|---|---|
@@ -485,6 +485,6 @@ No code changes. Set up the external infrastructure that takes time.
 
 6. **Edge sandbox Stripe?** Currently edge uses `STRIPE_SANDBOX_SECRET_KEY`. With multi-region, edge-eu uses the sandbox key, edge-us may or may not need a separate sandbox. Recommendation: single sandbox (EU edge only) for simplicity. US edge can share the same sandbox or have its own.
 
-7. **Seller entity per-region?** Currently `SELLER_NAME=Rediacc OU` (Estonian). For US invoices, should the seller entity be a US subsidiary? This is a business/legal decision, not a technical one. For now, same entity across regions.
+7. **Seller entity per-region?** Currently `SELLER_NAME=<from bws>` (the seller entity, rendered from packages/shared/src/legal/entity.generated.json; Estonian). For US invoices, should the seller entity be a US subsidiary? This is a business/legal decision, not a technical one. For now, same entity across regions.
 
 8. **Admin email routing?** `ROOT_EMAIL` (admin alerts for disputes, refunds) currently goes to `muhammed@rediacc.com`. With multi-region, admin alerts from US Worker also go to the same email. This is fine unless there's a need for regional admin separation.

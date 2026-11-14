@@ -229,14 +229,15 @@ def wl(tmp_path):
 
 def test_the_stop_hook_writes_rows_to_the_project_ledger(wl):
     assert wl.cli("--add", ME, "(%s) do the thing" % ME).rc == 0
-    wl.settings(effort="low")
+    # `open-items` blocks from smart since 35afbb54e (tuner e8); at low it only advises, so no block row is written.
+    wl.settings(effort="smart")
     for _ in range(4):
         wl.say("still going")
         assert wl.run().decision == "block"
     path = wl.proj / "agent" / "ledgers" / "effort-outcomes.jsonl"
     rows = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()]
     keys = {(r["key"], r["verdict"], r["level"]) for r in rows}
-    assert ("open-items", "block", "low") in keys, rows
+    assert ("open-items", "block", "smart") in keys, rows
     assert all(r["outcome"] in OUT.OUTCOMES for r in rows if r.get("kind") == "outcome")
 
 

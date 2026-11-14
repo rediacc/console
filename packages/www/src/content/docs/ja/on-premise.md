@@ -8,11 +8,93 @@ tags:
 subcategory: setup
 order: 5
 language: ja
-sourceHash: "2c3ac4a96a028b3f"
-sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
+sourceHash: "6b60637180f58cc2"
+sourceCommit: "c477e296238c19495f4a07ef6c5a62f15e942f90"
 ---
 
 Rediaccは完全に独自インフラ上で運用できます。スタンドアロンDockerイメージには、アカウントサーバー、ウェブポータル、マーケティングサイト、およびCLIディストリビューションエンドポイントが含まれます。Rediaccのホスト型サービスへの外部依存は不要です。
+
+## rdcでインストールする
+
+`rdc server install`は、CLIがSSHで到達できるマシンに、アカウントサーバーをリポジトリとしてインストールします。1つのコマンドで、マシンの確認、renetのセットアップ、DNS、TLS、キー生成、ライセンス、起動、オーナーアカウントの作成までを行います。すべての値にフラグがあります。ターミナルでは不足している値を尋ね、`--yes`を付けると何も尋ねず、不足した値は拒否されます。各ステップは記録されるため、再実行では完了済みのステップが省略されます。
+
+ステップは次の順です。`preflight`(パスワードなしのsudo、アーキテクチャ、80番と443番ポート、ディスク容量、時計のずれ)、`setup`(renetがない場合のみ`rdc machine setup`)、`dns`、`tls`、`repo`、`keys`、`licence`、`image`、`up`、`owner`。
+
+### 既存のマシンを優先する
+
+インストール先は、すでに存在するマシンです。データセンターのサーバーでも、LAN上の機器でも構いません。設定済みのマシンは引数で指定します。まだ登録されていないマシンは、アドレスで追加します。
+
+```bash
+rdc server install --ip 203.0.113.10 --user admin --domain accounts.example.com
+rdc server install server-1 --domain accounts.example.com --owner owner@example.com --yes
+```
+
+`--port`と`--name`で、SSHポートとマシンの登録名を指定します。クラウドVMは事前に`rdc machine provision`で作成します。インストール自体がVMを作成することはありません。
+
+### DNS
+
+インストールは、サーバーのドメインとバックアップストアのドメイン(`--store-domain`、既定値は`<名前>-store.<ドメインの残り>`)のAレコードとAAAAレコードを表示し、両方がマシンに解決されるまで待ちます。ゾーンにレコードが書き込まれることはありません。`--no-dns-wait`はレコードを表示してそのまま進むため、ローカルのリゾルバーが提供するLAN内の名前に向いています。
+
+### TLS
+
+`--tls`は3つの方式から1つを選びます。
+
+| 方式 | 必要なもの | 備考 |
+|---|---|---|
+| `letsencrypt` | 80番と443番ポートにインターネットから到達できること | HTTP-01チャレンジ。`--cert-email`が有効期限の通知を受け取ります。既定値はオーナーです。 |
+| `cloudflare` | `--cf-token` | CloudflareのAPIトークンによるDNS-01チャレンジ。 |
+| `byo` | `--tls-cert`と`--tls-key` | 両方のドメインをカバーする既存のPEM証明書。`--tls-ca`は、ヘルスチェックが信頼するCAを指定します。 |
+
+```bash
+rdc server install lab --domain lab.example.internal --tls byo \
+  --tls-cert host.crt --tls-key host.key --tls-ca ca.crt \
+  --licence free --no-dns-wait --yes
+```
+
+### イメージ
+
+イメージのステップでは、既定でマシン上に`ghcr.io/rediacc/server:latest`をpullします。`--image`で別の参照を選べます。`--image-file`は`docker save`で作成したtarを送り、`--local-image`はローカルのDockerから`--image`を保存して送ります。どちらもマシンからレジストリへアクセスする必要がありません。
+
+### ライセンスと無料プラン
+
+`--licence auto`(既定)は、ログイン中のアカウントの委任証明書を使い、なければ無料プランで起動します。`--licence free`は常に無料プランで起動します。インストールコマンドが存在する前にログインしたアカウントは、適切なスコープを得るために`rdc subscription login`を再実行する必要があります。
+
+アカウントサーバーへの経路がないマシンでは、`--cert <file>`で別の場所で取得した委任証明書を渡せます。証明書にはマシン上で生成されたキーが指定されている必要があるため、通常は先に無料プランでインストールし、その後に証明書を適用します。
+
+```bash
+rdc server install server-1 --domain accounts.example.com --licence free --yes
+rdc server licence accounts.example.com --cert delegation-cert.json
+```
+
+`rdc server licence`は、無料プランのサーバーを、ログイン中のアカウントまたは`--cert`の証明書に切り替えます。サーバーが何を検証するかは、後述のライセンスのセクションのステップ3に記載しています。
+
+### リカバリーバンドル
+
+すべてのキーはマシン上で生成され、リポジトリの`secrets.env`にのみ書き込まれます。ターミナルでは、インストールの最後に一度だけリカバリーバンドルを表示します。内容は、委任されたキーペア、アカウント設定サーバーのキー、オブジェクトストレージの認証情報です。バンドルはログに記録されず、`--output json`にも含まれません。ターミナルがない場合は表示されず、最後の行で`rdc server backup`が案内されます。
+
+```bash
+rdc server backup accounts.example.com --out elite-recovery.env
+```
+
+`--out`はファイルをモード0600で書き込みます。指定しない場合、バンドルはstdoutに出力されます。インストール時の`--bws-project <id>`は、キーをBitwarden Secrets Managerのプロジェクトにもコピーし、`--rotate`は保存済みの異なる値を置き換えます。`--bws-project`がない場合、キーがサーバーの外へ出るのは、インストール時に表示されるリカバリーバンドルと、`rdc server backup --out`が書き込むファイルだけです。
+
+### ステータス
+
+```bash
+rdc server status accounts.example.com
+```
+
+ステータスには、サーバーのヘルス、プラン、証明書、イメージが表示されます。このデバイスにドメインのインストール記録がない場合は、`--machine`と`--repo`で対象を指定します。
+
+### アップデート
+
+| コンポーネント | コマンド |
+|---|---|
+| CLI | `rdc update` |
+| マシン上のrenet | `rdc machine setup <machine>` |
+| サーバーイメージとテンプレート | `rdc server upgrade <domain>` |
+
+`rdc server upgrade`は、リポジトリをロールバック用にforkし、新しいイメージを配置し、組み込みのテンプレートが新しければ再適用して、再起動します。インストールと同様に`--image`、`--image-file`、`--local-image`を受け付けるため、エアギャップのマシンは保存したイメージのtarからアップグレードできます。
 
 ## Dockerイメージ
 
@@ -170,19 +252,19 @@ ON_PREMISE_PUBLIC_KEY=$(openssl pkey -in onprem-private.pem -pubout -outform DER
 
 ### 3. オンプレミスサーバーへの証明書のインストール
 
-ダウンロードした`.json`を既知のパスに保存し、オンプレミスから参照します：
+サーバーは委任証明書を、データボリューム上の1つのファイル`/data/delegation-cert.json`（パスは`DELEGATION_CERT_PATH`で指定）から読み込みます。証明書そのものを保持する環境変数はありません。`rdc server install`はダウンロードした証明書をそこに置き、`rdc server licence`は後からそれを差し替えます。
 
 ```bash
-DELEGATION_CERT_PATH=/etc/rediacc/delegation-cert.json
+rdc server install <domain> --cert delegation-cert.json
+rdc server licence <domain> --cert delegation-cert.json
+rdc server status <domain>
 ```
 
-または、一時的なコンテナ/Dockerシークレットのワークフローでは、証明書をbase64で環境変数に埋め込みます：
+どちらのコマンドも、証明書を証明書インボックス（`data/web/cert-inbox/new.json`）経由で稼働中のサーバーに渡します。サーバーは証明書を検証し、`applied.json`または`rejected.json`で応答します。コマンドは新しい証明書IDを`rdc server status`で確認します（ステップ6の`cert-status`と同じデータです）。`rdc server upgrade`も同じインボックスを使います。サーバーは`DELEGATION_CERT_BASE64`を読み込まなくなりました。アップグレードの1ステップが、`secrets.env`に残っていた値をインボックスへ移すため、インボックス導入前にインストールしたボックスでも証明書は保持されます。
 
-```bash
-DELEGATION_CERT_BASE64=$(base64 -w 0 < delegation-cert.json)
-```
+サーバーは起動時に証明書を読み込み、ライセンスの署名に使う鍵と照合します。署名鍵のフィンガープリントが証明書の`delegatedPublicKey`のフィンガープリントと一致している必要があります。証明書が認めていない鍵で署名したライセンスは、どのマシンでも検証できないためです。署名鍵ペアと証明書の`delegatedPublicKey`は常に一致させてください。
 
-起動時に、ロードされた証明書が実際にサーバーがライセンスの署名に使用している鍵とは異なる鍵に委任している場合、サーバーは起動を拒否します（FATALログと非ゼロの終了コード）：署名鍵のフィンガープリントと証明書の`delegatedPublicKey`のフィンガープリントを比較し、一致しない場合は処理を中断します。これは、証明書が認可していない鍵で署名されたライセンスがすべてのマシンで検証不能になってしまうためです。署名用のキーペアと証明書の`delegatedPublicKey`は常に同期させてください。
+起動時にサーバーが拒否した証明書（署名不正、鍵の不一致、`UPSTREAM_PUBLIC_KEY`の欠如、ファイルの破損）があっても、サーバーは停止しません。サーバーは無料プランで起動し、問題のファイルを元のファイルの隣の`delegation-cert.rejected.json`に移します。有効な証明書が入るまで、リポジトリのライセンス署名は`503 DELEGATION_CERT_REFUSED`を返し、`rdc server status`には`cert REFUSED (reason)`と表示されます。有効な証明書を指定して`rdc server licence`を実行すると復旧できます。期限切れの証明書は引き続き読み込まれ、拒否されずに段階的に機能が縮退します。
 
 ### 4. 上流検証と自動更新の設定（オプション、推奨）
 
@@ -232,11 +314,25 @@ RENEW_THRESHOLD_DAYS=14
 
 #### 証明書アップロードの失敗モード
 
-| コード | 原因 | 修正方法 |
+`POST /onprem/cert-upload`は成功すると`{uploaded: true, bootstrap, certId}`を返します。拒否された証明書には`{error, code}`が返り、`error`に詳細、`code`に下表の理由のいずれかが入ります。適用または拒否された証明書はすべてログに記録され、ボックスの所有者にメールで通知されます。
+
+`rdc server licence`は、SSHで証明書をボックスのインボックス（`data/web/cert-inbox`）に置き、`applied.json`または`rejected.json`を読み戻します。その後、`cert-status`で新しい証明書IDを確認します。拒否の理由は同じ表のものに加え、インボックス自身が返す`not-a-regular-file`と`too-large`があります。
+
+| コード | HTTP | 原因 |
 |---|---|---|
-| `CHAIN_HEAD_BEHIND` | 新しい証明書の`genesisSequence`がローカルチェーンヘッドより進んでいる | 上流がフォークしたチェーンにある - 調査が必要 |
-| `CHAIN_FORK_ON_UPLOAD` | 証明書の`genesisSequence`でのローカル台帳エントリがローカル台帳と一致しない | ローカルチェーンが上流から分岐している - 調査が必要 |
-| `Signature verification failed` | 証明書が設定済みの`UPSTREAM_PUBLIC_KEY`で署名されていない | `UPSTREAM_PUBLIC_KEY`が上流マスター公開鍵と一致しているか確認する |
+| `malformed` | 400 | アップロードされたものが有効な証明書ではない |
+| `bad-signature` | 400 | 証明書が設定済みの`UPSTREAM_PUBLIC_KEY`で署名されていない |
+| `wrong-key` | 400 | 証明書がこのオンプレミスとは別の鍵向けに発行されている |
+| `expired` | 400 | 証明書がすでに`validUntil`を過ぎている |
+| `not-newer` | 409 | 証明書が現在有効なものより新しくない |
+| `other-subscription` | 409 | 証明書が別のサブスクリプションのものである |
+| `chain-ahead` | 409 | 証明書の`genesisSequence`がローカルチェーンヘッドより進んでいる |
+| `chain-fork` | 409 | 証明書の`genesisSequence`でのチェーンハッシュがローカル台帳と一致しない |
+| `no-upstream-key` | 500 | `UPSTREAM_PUBLIC_KEY`が設定されていない |
+| `write-failed` | 500 | 証明書をディスクに書き込めなかった |
+| `adoption-failed` | 500 | 書き込んだ証明書をサーバーが読み込めなかった |
+
+`bad-signature`の場合は、`UPSTREAM_PUBLIC_KEY`が上流マスター公開鍵と一致しているか確認します。`no-upstream-key`の場合は、`UPSTREAM_PUBLIC_KEY`を設定します。
 
 ### 6. ステータスとモニタリング
 
@@ -258,9 +354,8 @@ curl https://onprem.example.com/account/api/v1/onprem/cert-status \
 | `ON_PREMISE_MODE` | はい | `true`に設定するとオンプレミスのルートサブセットが有効になる |
 | `ON_PREMISE_PRIVATE_KEY` | はい | 委任署名用のBase64 PKCS8 Ed25519秘密鍵 |
 | `ON_PREMISE_PUBLIC_KEY` | はい | Base64 SPKI Ed25519公開鍵（証明書の`delegatedPublicKey`と一致する必要がある） |
-| `DELEGATION_CERT_PATH` | いずれか一方 | 署名済み証明書JSONのファイルシステムパス |
-| `DELEGATION_CERT_BASE64` | いずれか一方 | Base64エンコードされた証明書JSON（ファイルパスの代替） |
-| `UPSTREAM_PUBLIC_KEY` | `UPSTREAM_API_KEY`が設定されている場合、または`/onprem/cert-upload`が機能するために必須 | 上流マスター公開鍵のBase64 SPKI。欠如している場合は起動時にfail-fast。 |
+| `DELEGATION_CERT_PATH` | オプション | 署名済み証明書JSONのファイルシステムパス。デフォルトはデータボリューム上の`/data/delegation-cert.json`。証明書は手作業ではなく`rdc server licence`で差し替えます。 |
+| `UPSTREAM_PUBLIC_KEY` | `UPSTREAM_API_KEY`が設定されている場合、または`/onprem/cert-upload`が機能するために必須 | 上流マスター公開鍵のBase64 SPKI。ない場合、サーバーは起動時にすべての証明書を拒否し（`no-upstream-key`）、ステップ3で説明するとおり無料プランで動作します。 |
 | `UPSTREAM_URL` | 自動更新に必要 | 上流アカウントサーバーのベースURL（例：`https://www.rediacc.com`） |
 | `UPSTREAM_API_KEY` | 自動更新に必要 | `delegation:renew`スコープのAPIトークン。ポータルから取得 - ステップ4を参照。 |
 | `AUTO_RENEW_INTERVAL_HOURS` | オプション | デフォルト24。証明書の更新が必要かどうか確認する間隔。 |

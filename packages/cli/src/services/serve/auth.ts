@@ -38,7 +38,7 @@ export interface IntrospectionResponse {
 }
 
 export interface AuthVerifierOptions {
-  /** Base URL of the account server, e.g. https://eu.rediacc.com */
+  /** Base URL of the account server, e.g. https://eu.rediacc.cloud */
   accountUrl: string;
   /** The executor's own token. Must carry the proxy:exec scope. */
   executorToken: string;

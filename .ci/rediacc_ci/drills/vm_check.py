@@ -4,7 +4,7 @@
     npm run vm:check -- [--changed] --dry-run [--paths <path>[,...]]
     ./run.sh drill vmcheck [same flags]
 
-AREAS. `.ci/config/proof-tiers.json` `tiers.vm.areas` (agent/plans/PLAN-renet-change-test-triggers.md Design item 3) splits the renet surface into license, functions, migrate, multi-vm, ceph, kube and backup. The areas a change touches are read from the same diff as the sides, with or without `--changed` (a full run cannot be the way past an area); an unresolved push base selects every area. A `vmcheck` leg names steps of this battery and runs on its worker fleet (the license area's A0 and A2.3 run even when the account side is not required). A `receipt` leg is judged by that receipt (the backup area by the backup-check receipt). An `external` leg (an e2e suite on a fleet of its own) runs after the base battery, under the same fleet lock, and only when the battery has no finding (`_external_legs`): this run's forks are torn down first, because an e2e global setup can recreate the VMs; the leg's fleet is reused when every ip runs, else brought up with its `up` recipe (`fleet_up_plan` admits only `[VAR=value ...] ./rdc.sh ops up [flags]`, so a prose recipe is NOT_VERIFIED, never skipped); A0 has already made sure the dev gateway answers, which the e2e setup licenses against through .account-state; the leg's commands run from the console root under the suites' scrubbed environment, the last judged by `classify_e2e` from its exit code and TextFileReporter's per-test lines, and the outcome is one `X.<leg id>` row (a failed test is a failed assertion, a fleet, setup or empty run is NOT_VERIFIED). Then XR proves the parent grand is still on the worker and recreates it when the e2e setup removed it. After the run each leg is judged (`judge_areas`, recorded as the receipt's `areas`), and any leg not proven turns a VERIFIED run into NOT_VERIFIED `area-not-verified`, naming the leg, its fleet and the exact commands. A renet path in no area gets the base battery alone.
+AREAS. `.ci/config/proof-tiers.json` `tiers.vm.areas` (agent/plans/PLAN-renet-change-test-triggers.md Design item 3) splits the renet surface into license, functions, migrate, multi-vm, ceph, kube and backup. The areas a change touches are read from the same diff as the sides, with or without `--changed` (a full run cannot be the way past an area); an unresolved push base selects every area. A `vmcheck` leg names steps of this battery and runs on its worker fleet (the license area's A0 and A2.3 run even when the account side is not required). A `receipt` leg is judged by that receipt (the backup area by the backup-check receipt). An `external` leg (an e2e suite on a fleet of its own) runs after the base battery, under the same fleet lock, and only when the battery has no finding (`_external_legs`): this run's forks are torn down first, because an e2e global setup can recreate the VMs; the leg's fleet is reused when every ip runs, else brought up with its `up` recipe (`fleet_up_plan` admits only `[VAR=value ...] ./rdc.sh ops up [flags]`, so a prose recipe is NOT_VERIFIED, never skipped); a running worker whose recipe sets VM_DSK=<N> must have a root disk of N GiB or more (`_undersized`, one ssh per VM), else the leg is NOT_VERIFIED `fleet-disk-too-small` naming `ops down` and the recipe, since `ops up` leaves a running VM alone and, like P3's `fleet-os-mismatch`, nothing here tears a running fleet down; A0 has already made sure the dev gateway answers, which the e2e setup licenses against through .account-state; the leg's commands run from the console root under the suites' scrubbed environment, the last judged by `classify_e2e` from its exit code and TextFileReporter's per-test lines, and the outcome is one `X.<leg id>` row (a failed test is a failed assertion, a fleet, setup or empty run is NOT_VERIFIED). Then XR proves the parent grand is still on the worker and recreates it when the e2e setup removed it. After the run each leg is judged (`judge_areas`, recorded as the receipt's `areas`), and any leg not proven turns a VERIFIED run into NOT_VERIFIED `area-not-verified`, naming the leg, its fleet and the exact commands. A renet path in no area gets the base battery alone.
 
 `--dry-run` prints the plan (the hits, the phases and their steps, each area's legs, suites and CI jobs, and the best verdict the run could reach) and touches nothing; `--paths` replaces the diff with the given console-relative paths, to ask what a change WOULD select.
 
@@ -12,13 +12,14 @@ Design 2 of agent/plans/PLAN-vm-check.md and Design 3 of agent/plans/PLAN-accoun
 
 PHASES. There are two sides, the trigger's `renet` and `account` (`rediacc_ci.proof.surfaces.SIDES`, the VM phases of `.ci/config/proof-tiers.json`). With `--changed` the sides of `Changed.sides` are required; with no `--changed`, or a push base that cannot be resolved, both are. The renet phase is P5 and V1.1-V1.7; the account phase is A1.1-A1.4, A0 and A2.1-A2.3. P0-P4 and T run on every run, P1 included, because the license drill deploys renet too and the receipt check needs `renet.built == renet.pointer` even on an account-only receipt. `phases.<side>.ran` is true only when every step of that phase recorded a row and every such row is ok. The steps, in run order:
 
-  A1  account only, before P0, so the fleet lock is not held for the suites: A1.1 `npm run check:ci-account-server`, A1.2 `npm run check:ci-test-account-web`, A1.3 `npm --prefix private/account run typecheck`, A1.4 `npm --prefix private/account run typecheck:web`. Each is one assertion row with its rc and ms; a non-zero rc is a failed row carrying the last three output lines. All four run, and any failure ends the run FAILED before any VM is touched.
+  A1  account only. A worker thread starts the suites before P0 and they run beside P0-P3, which need no suite result; A2 runs beside the thread (the drills need no suite result) and the thread is joined after A2 and before P5, and the main thread then records the rows in the order below (so they follow A2's rows), so a red suite no longer stops the run before a VM is touched: it ends the run FAILED at the join, and T tears down what P0-P3 and A2 made. SIGINT and SIGTERM kill the suites' process group. A1.1 `npm run check:ci-account-server`, A1.2 `npm run check:ci-test-account-web`, A1.3 `npm --prefix private/account run typecheck`, A1.4 `npm --prefix private/account run typecheck:web`. Each is one assertion row with its rc and ms; a non-zero rc is a failed row carrying the last three output lines. All four run, and any failure ends the run FAILED at the join.
   P0  an exclusive flock on `rediacc-vm-check.lock` in the per-user runtime directory, waited for up to `--wait` seconds (`fleet-busy`). A run that gives up there judged nothing while a holder may still be running, so it writes neither `receipt.json` nor the tree archive: its record goes to `runs/<run id>/receipt.json` (`vm_tier.write_run_record`), and the summary prints where.
   P1  `go version -m private/renet/bin/renet` must carry the submodule HEAD as `vcs.revision` and `vcs.modified=false`; one `./rdc.sh --version` rebuild is tried before `renet-build-mismatch`.
   A0  account only. The dev gateway does not hot-reload, so it is reused only when it is healthy, the `started=` and `gateway_port=` of `.account-state` equal the record `.ci/cache/vm-check/gateway.json` this runner wrote when it last started one, and that record's `account` equals `rediacc_ci.proof.surfaces.account_worktree_digest`. Otherwise `lib.Drill.restart_gateway` starts it with its log at `.ci/cache/vm-check/gateway.log`, the record is rewritten (mode `started`, or `restarted` when a gateway was already answering), and `detach_gateway` leaves it running after the run for the next one to reuse. A restart rotates every dev password and may move the port, and the run says so. A start that fails, or a gateway still unhealthy after it, is `account-gateway` with the log tail.
   P4  chooses the config every later CLI call runs under. The stored token is used when `subscription status` accepts it; that verb exits non-zero when the config holds no token at all (before 2026-10-15 it exited 0 printing "Not logged in", so P4 read an absent token as a valid one and `repo create` then refused with "Subscription token required"). Otherwise a token is minted on the running dev gateway for the dedicated login ACCOUNT_LOGIN, with a password generated per run and held in memory (`account-unavailable`). The token reaches `rdc` only as REDIACC_TOKEN in the child environment, beside REDIACC_ACCOUNT_SERVER naming the gateway that minted it: never on argv, never in the config, never printed, never in the receipt, never in a suite's or a drill's environment. A minted token also puts every later CLI call under the dev config (RDC_DEV=1, which makes `./rdc.sh` seed ~/.config/rediacc/dev.json with the gateway's address and E2E key and select it), since the default config carries the production server's E2E key and a dev-gateway response then fails "Decryption failed" (2026-10-15T05:4xZ). The operator's default config is never written on that path; a valid stored token keeps it. The minted token names the gateway at this host's address on the VM network (`wire.bridge_host`, 192.168.111.254), never localhost: the CLI sends every licence request there and the account stamps each licence's renewalUrl from that request, so a localhost token left every fork's and the grand's blob unrenewable from the worker (2026-10-20). With no interface on that network yet (a cold fleet) the token is minted on localhost for the fleet steps and re-minted on the bridge address right after P2, before anything issues a licence. The subscription of ACCOUNT_LOGIN is kept across runs (`subscription_reuse_refusal` names when it is recreated instead), since `/test/ensure-subscription` deletes it and with it every licence an earlier run issued.
   P2  `/dev/kvm` and `virsh` (`no-kvm`); `rdc ops status -o json`: the bridge (.1) and the worker (.11) both running is REUSE, neither is COLD (`ops up --basic`), anything else is `fleet-unavailable`. The worker's machine name comes from `machine list` (`worker-not-in-config`). Under the dev config a worker absent from it is registered as OPS_WORKER_NAME (`machine add`), and a `--machine` name absent from it is `worker-not-in-config` naming the command; a dev config that cannot be listed ("Decryption failed") is `account-unavailable`.
-  P3  `machine scan-keys <worker>` before any other ssh, then the worker's /etc/os-release, which under `--os` must match a reused fleet (`fleet-os-mismatch`). A config with no SSH key (`config ssh show` says `embedded: no`) gets the key the ops VMs authorize (`config ssh set --key`, the license drill's step), since the CLI would otherwise offer ~/.ssh/id_rsa or id_ed25519, which the VMs reject; a config holding another key is never overwritten, and a failing `config ssh show` leaves the config alone and lets P5 judge. P3's own os-release probe uses the drill's key, not the CLI's, so its failure stays `fleet-unavailable`; the CLI's key is first used at P5, where an ssh authentication refusal is `worker-ssh-key`.
+  P3  `machine scan-keys <worker>` before any other ssh, then the worker's /etc/os-release, which under `--os` must match a reused fleet (`fleet-os-mismatch`). A config with no SSH key (`config ssh show` says `embedded: no`) gets the key the ops VMs authorize (`config ssh set --key`, the license drill's step), since the CLI would otherwise offer ~/.ssh/id_rsa or id_ed25519, which the VMs reject; a config holding another key is never overwritten, and a failing `config ssh show` leaves the config alone and lets P5 judge. P3's own os-release probe uses the drill's key, not the CLI's, so its failure stays `fleet-unavailable`; the CLI's key is first used by the leftover check's `repo list`, where an ssh authentication refusal is `worker-ssh-key`.
+      Then, also on an `--only` run and before any step creates anything, the LEFTOVER CHECK (`find_fleet_leftovers`): renet's repository list and every `rediacc-docker-*.service` read as root on the worker (`inventory_script`), the newest earlier receipt (`prior_receipt`) and the run's `repo list`. A worker repository counts when the earlier receipt's teardown named it (by guid or name) or its name is this harness's (`harness_repo_name`); a live daemon counts when no repository of the run's config has its network id. Any of them ends the run NOT_VERIFIED `fleet-leftovers`, naming each one with `sudo renet repository delete --name <guid> --force --stop-docker --datastore /mnt/rediacc --network-id <N>` (or `systemctl disable --now` for a daemon with no repository); nothing is deleted, and the leftovers ride into T's leftovers so the next run names them until they are gone. An unreadable inventory is `fleet-leftovers` too, since unchecked is not clean. The one exemption, said aloud, is a config-listed `<parent>:vmc-` fork older than an hour, which P5's sweep deletes on the same run (2026-11-06: run 7 failed U1, K1.5 and K1.9 on run 6's orphan fork and its U2 parent, not on its own tree).
   A2  account only, against the worker: A2.1 `PYTHONPATH=.ci python3 -m rediacc_ci.drills.universe --no-restart`, A2.2 `PYTHONPATH=.ci python3 -m rediacc_ci.drills.transfer --no-restart`, A2.3 `PYTHONPATH=.ci python3 -m rediacc_ci.drills.license --legs c,d,e,f --no-restart --seed-repo --vm <worker ip>`. Each drill is judged by its summary line (`%d assertions: %d passed, %d failed`, `classify_drill`): a failed assertion is a failed row naming the drill and the failed assertions by number and description (the row's `failedAssertions`, and the head of its evidence); rc 0 with a positive count and the PASSED line is ok; a SKIPPED line, 0 assertions, or rc 0 with no summary line at all is `account-drill-skipped`; anything else, such as a non-zero rc with no summary (a preflight `SystemExit`), is `account-drill-setup`. All three run; a failed row ends the run FAILED, otherwise the first could-not-judge class ends it NOT_VERIFIED. A2 runs before P5 because the license drill deploys `bin/renet` to the worker, and P5 re-uploads that same binary before the V-steps; there is one licensed build, so neither rebuilds it.
   P5  renet only. The parent must be a grand on the worker. When it is missing and the worker's configured address is on the ops VM network (OPS_VM_NETWORK, the predicate of packages/cli/src/utils/ops-vm.ts), the check creates it with `repo create <parent> -m <worker> --size 2G` under P4's credential, says so and records the creation as a P5 row: the ops VMs are development-only (operator ruling 2026-10-15, .claude/agents/ops-vms.md), so that step is never an operator's. A failed create is `parent-grand-missing` naming the CLI's error; on any other worker a missing grand stays `parent-grand-missing` naming the command for the operator. Stale `vmc-` forks of the parent older than an hour are deleted on every path once `repo list` answers, before the grand is judged (a missing grand that is then created included), nothing else is touched.
   V1.1-V1.7  renet only: two forks, cross-repo read-only denial, the positive set, isolation, sync round trip, VS Code URL and SFTP confinement.
@@ -31,7 +32,7 @@ VERDICTS. VERIFIED exit 0 (assertions ran, none failed, every required phase ran
 
 EVIDENCE. Each A1 suite's and A2 drill's full stdout and stderr is kept in `.ci/cache/vm-check/runs/<run id>/<step>-<name>.log` (the newest RUNS_KEEP run directories are kept), its row carries that path as `log`, and the receipt carries the directory as `runDir`. A row's `evidence` stays clipped to 200 bytes, so the log is where a failure is read in full.
 
-`--changed` evaluates `rediacc_ci.proof.surfaces` against the push base in worktree mode; `--base <ref>` replaces that base with the named ref (recorded as `trigger.base`, `via` `--base`; an unknown ref exits with a message and runs nothing), which is how a run on `main` diffs against a tag; with no hit it prints the no-op line, writes no receipt and exits 0. The receipt is schema 3 (`rediacc_ci.proof.vm_tier`): the shared envelope (`tier`, `tree`, `head`, `dirty`, `inputs`, `surfaces`, `submodules`, `renet`) plus `phases`, `gateway` and `trigger.sides`. Receipts of an earlier schema no longer count, and a run that finds some says so once.
+`--changed` evaluates `rediacc_ci.proof.surfaces` in worktree mode against the newest commit on the branch whose own receipt the push guard admits, recorded as `trigger.verifiedBase`, or against the push base when there is none (`with_verified_base`, agent/plans/PLAN-vmcheck-incremental.md V2); `--base <ref>` replaces that base with the named ref (recorded as `trigger.base`, `via` `--base`; an unknown ref exits with a message and runs nothing), which is how a run on `main` diffs against a tag; with no hit it prints the no-op line, writes no receipt and exits 0. The receipt is schema 3 (`rediacc_ci.proof.vm_tier`): the shared envelope (`tier`, `tree`, `head`, `dirty`, `inputs`, `surfaces`, `submodules`, `renet`) plus `phases`, `gateway` and `trigger.sides`. Receipts of an earlier schema no longer count, and a run that finds some says so once.
 
 The whole flow runs through `Host` and `Account`, so the tests drive it with a fake host and a fake account and never reach a VM, a gateway or a suite.
 """
@@ -45,6 +46,7 @@ import datetime
 import fcntl
 import hashlib
 import http.cookiejar
+import importlib
 import json
 import os
 import pathlib
@@ -55,16 +57,21 @@ import shutil
 import signal
 import subprocess
 import sys
+import threading
 import time
 import traceback
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol
 
 from rediacc_ci import log, paths
+from rediacc_ci.core import prepare_lock
 from rediacc_ci.drills import (
     backup_check_trigger,
     converge_preflight,
+    down_before_kill,
     gpu_grants,
     lib,
+    lifecycle_privilege,
+    repo_resources,
     session_teardown,
     tenant_isolation,
     upgrade_converge,
@@ -118,8 +125,8 @@ STALE_CONFIG_ENTRY = "already exists in config"
 
 TAG_PREFIX = "vmc"
 STALE_FORK_S = 3600
-# Forks A and B of V1.1, I1's throwaway fork C (tenant_isolation.fork_c_tag), and G1's forks D and E (gpu_grants.fork_tags).
-FORK_TAG = re.compile(r"^vmc-(\d{8})-([0-9a-f]{6})-[a-e]$")
+# Forks A and B of V1.1, I1's throwaway fork C (tenant_isolation.fork_c_tag), G1's forks D and E (gpu_grants.fork_tags), and L1's fork F (lifecycle_privilege.fork_tag).
+FORK_TAG = re.compile(r"^vmc-(\d{8})-([0-9a-f]{6})-[a-j]$")
 MOUNTS = DATASTORE_PATH + "/mounts"
 GUARDED_FILE = ".rediacc.json"
 READ_ONLY = "Read-only file system"
@@ -132,6 +139,13 @@ SYNC_BIG_BYTES = 1024 * 1024
 # The raw probes: read-only, and the only ssh/sftp argv this module builds besides `sftp -b` below.
 PROBE_RENET_HASH = "renet hash"
 PROBE_OS_RELEASE = '. /etc/os-release && printf "%s %s\\n" "$ID" "$VERSION_ID"'
+# A VM's root disk in bytes: the virtio disk the ops VMs boot from, else the whole disk under the root mount (`lsblk -s` walks from the root partition down to its disk, the smallest one when an LVM root spans several, and `findmnt -v` drops a btrfs `[/subvol]` suffix lsblk would refuse; a filesystem size from `df` would read below the disk size and refuse a worker built at exactly VM_DSK).
+PROBE_ROOT_DISK = (
+    "lsblk -b -d -n -o SIZE /dev/vda 2>/dev/null"
+    ' || lsblk -b -n -s -o SIZE,TYPE "$(findmnt -n -v -o SOURCE /)"'
+    " | awk '$2 == \"disk\" {print $1}' | sort -n | head -n 1"
+)
+GIB = 1 << 30
 # No `-q`: an alias that does not resolve or a key ssh refuses must reach the row's evidence.
 SFTP_BATCH = ("sftp", "-o", "BatchMode=yes")
 # A refused sftp leg counts as confinement only when the server says so; a dropped connection or a missing path is not a refusal.
@@ -268,6 +282,10 @@ EXTRA_RENET_STEPS: tuple[tuple[str, tuple[str, ...], Callable[[Any], None]], ...
     session_teardown.STEP,
     converge_preflight.STEP,
     gpu_grants.STEP,
+    lifecycle_privilege.STEP,
+    down_before_kill.STEP,
+    repo_resources.STEP_K2,
+    repo_resources.STEP_K3,
 )
 # Every step id of a phase; the phase ran only when each recorded a row and every such row is ok.
 PHASE_STEPS: dict[str, tuple[str, ...]] = {
@@ -306,6 +324,8 @@ FLEET_UP_TIMEOUT_S = 1800
 # The flags a fleet's `up` recipe may pass to `./rdc.sh ops up` (packages/cli/src/commands/ops/up.ts); `--os` takes a value.
 OPS_UP_FLAGS = frozenset(("--basic", "--parallel", "--lite", "--skip-orchestration", "--force"))
 OPS_UP_VALUE_FLAGS = frozenset(("--os", "--backend"))
+# How rdc.sh and the CLI mark their own progress lines on stderr (`→ Starting CLI`, `✓ Renet available`).
+CLI_STARTUP_MARKS = ("→ ", "✓ ")
 ENV_ASSIGNMENT = re.compile(r"^([A-Z][A-Z0-9_]*)=(.*)$", re.DOTALL)
 # One finished test as TextFileReporter logs it (`[<iso>] <title path> (<s>s, <status>)`); a retried test logs once per attempt and the last line wins.
 E2E_TEST_LINE = re.compile(
@@ -319,10 +339,32 @@ E2E_FAILED = "failed"
 E2E_NOT_VERIFIED = "not-verified"
 
 
+def fleet_up_plans(fleet: trigger.Fleet) -> list[tuple[dict[str, str], list[str]]] | None:
+    """The plan of each recipe a fleet declares, its own group first, or None when any recipe is not runnable."""
+    plans = [recipe_plan(recipe) for recipe in (fleet.up, *fleet.also_up)]
+    return None if any(p is None for p in plans) else [p for p in plans if p is not None]
+
+
 def fleet_up_plan(fleet: trigger.Fleet) -> tuple[dict[str, str], list[str]] | None:
-    """(environment, `./rdc.sh` argv) of a fleet's `up` recipe, or None when the recipe is not the machine-runnable shape `[VAR=value ...] ./rdc.sh ops up [flags]` (the second-group fleet's two-step prose recipe is not)."""
+    """The plan of a fleet's own `up` recipe."""
+    return recipe_plan(fleet.up)
+
+
+def plan_ips(
+    fleet: trigger.Fleet, plans: Sequence[tuple[dict[str, str], list[str]]], index: int
+) -> list[str]:
+    """The fleet's ips one plan brings up: a recipe naming VM_NET_BASE owns that subnet, and the plan naming none owns the rest."""
+    base = plans[index][0].get("VM_NET_BASE", "")
+    if base:
+        return [ip for ip in fleet.ips if ip.startswith(base + ".")]
+    others = [p[0]["VM_NET_BASE"] for p in plans if p[0].get("VM_NET_BASE")]
+    return [ip for ip in fleet.ips if not any(ip.startswith(o + ".") for o in others)]
+
+
+def recipe_plan(recipe: str) -> tuple[dict[str, str], list[str]] | None:
+    """(environment, `./rdc.sh` argv) of a fleet's `up` recipe, or None when the recipe is not the machine-runnable shape `[VAR=value ...] ./rdc.sh ops up [flags]` (`test_every_mapped_fleet_is_runnable` holds the live map to it)."""
     try:
-        words = shlex.split(fleet.up)
+        words = shlex.split(recipe)
     except ValueError:
         return None
     env: dict[str, str] = {}
@@ -342,6 +384,48 @@ def fleet_up_plan(fleet: trigger.Fleet) -> tuple[dict[str, str], list[str]] | No
         elif flag not in OPS_UP_FLAGS:
             return None
     return env, args
+
+
+def disk_bytes(out: str) -> int | None:
+    """The byte count `PROBE_ROOT_DISK` printed (its last integer line), or None when it printed none."""
+    numbers = [line.strip() for line in out.splitlines() if line.strip().isdigit()]
+    return int(numbers[-1]) if numbers else None
+
+
+def disk_floors(
+    fleet: trigger.Fleet, plans: Sequence[tuple[dict[str, str], list[str]]]
+) -> list[tuple[str, int, int]]:
+    """(ip, GiB, plan index) for every worker VM whose plan sets VM_DSK=<GiB>: a fleet already running with smaller disks is not the fleet the recipe asks for. The bridge of each plan (`.1`, or `.<VM_BRIDGE>`) is not a worker."""
+    floors: list[tuple[str, int, int]] = []
+    for index, (env, _args) in enumerate(plans):
+        size = env.get("VM_DSK", "")
+        if not size.isdigit():
+            continue
+        bridge = env.get("VM_BRIDGE", BRIDGE_SUFFIX.lstrip("."))
+        floors += [
+            (ip, int(size), index)
+            for ip in plan_ips(fleet, plans, index)
+            if ip.rsplit(".", 1)[-1] != bridge
+        ]
+    return floors
+
+
+def loose_disk_floors(fleet: trigger.Fleet) -> list[tuple[str, int, int]]:
+    """(ip, GiB, 0) for every worker of a fleet whose up recipes are not the machine-runnable shape: the smallest `VM_DSK=<GiB>` any of its recipes spells, since which recipe brought up which VM is not known. A fleet below even that is not the fleet any recipe asks for."""
+    sizes = [
+        int(m.group(1))
+        for recipe in (fleet.up, *fleet.also_up)
+        for m in [re.search(r"\bVM_DSK=(\d+)\b", recipe)]
+        if m
+    ]
+    if not sizes:
+        return []
+    bridge = BRIDGE_SUFFIX.lstrip(".")
+    return [(ip, min(sizes), 0) for ip in fleet.ips if ip.rsplit(".", 1)[-1] != bridge]
+
+
+def spell_recipe(env: Mapping[str, str], args: Sequence[str]) -> str:
+    return " ".join(["%s=%s" % (k, shlex.quote(v)) for k, v in env.items()] + ["./rdc.sh", *args])
 
 
 def classify_e2e(res: Result) -> tuple[str, str, list[str]]:
@@ -476,6 +560,99 @@ def external_legs(areas: Collection[str]) -> list[tuple[str, trigger.Leg]]:
         for leg in trigger.MAP.areas[name].legs
         if leg.kind == trigger.LEG_EXTERNAL
     ]
+
+
+def recipe_env(fleet: trigger.Fleet) -> dict[str, str]:
+    """The environment of a fleet's own `up` recipe ({} when it is not runnable). A leg runs under it because an e2e global setup recreates the VMs with `renet ops up --force` and reads sizes such as VM_DSK only from the environment, so a leg run without it rebuilds its fleet at the defaults."""
+    plan = fleet_up_plan(fleet)
+    return dict(plan[0]) if plan is not None else {}
+
+
+SKIP_RESET_MARK = "BRIDGE_TEST_SKIP_RESET=1"
+_ENV_WORD = re.compile(r"""[A-Za-z_][A-Za-z0-9_]*=(?:"[^"\s]*"|'[^'\s]*'|[^\s"'])*$""")
+_OPERATOR_CHARS = frozenset("();<>|&")
+# Words that may precede the `VAR=value` words of a command without ending the prefix: `env A=1 cmd` and `export A=1`.
+_PREFIX_WORDS = frozenset({"env", "export"})
+
+
+def _command_tokens(line: str) -> list[str] | None:
+    """The shell tokens of one command line, quotes left on so a quoted word is told apart from a bare one and a quoted `;` or `#` stays inside its word, a `#` outside quotes dropping the rest of the line, and each run of control-operator characters (`&&`, `||`, `;`, `|`, `&`) a token of its own. None when the line does not tokenize (an unterminated quote)."""
+    tokens: list[str] = []
+    word: list[str] = []
+    quote = ""
+    i = 0
+
+    def flush() -> None:
+        if word:
+            tokens.append("".join(word))
+            word.clear()
+
+    while i < len(line):
+        ch = line[i]
+        if quote:
+            word.append(ch)
+            if ch == "\\" and quote == '"' and i + 1 < len(line):
+                i += 1
+                word.append(line[i])
+            elif ch == quote:
+                quote = ""
+        elif ch == "\\" and i + 1 < len(line):
+            word.extend((ch, line[i + 1]))
+            i += 1
+        elif ch in "\"'":
+            quote = ch
+            word.append(ch)
+        elif ch == "#" and (not word or set(word) <= _OPERATOR_CHARS):
+            # A comment starts only at the start of a word (or right after an operator), so `URL=http://h/#x` keeps its tail.
+            break
+        elif ch.isspace():
+            flush()
+        elif ch in _OPERATOR_CHARS:
+            if not (word and set(word) <= _OPERATOR_CHARS):
+                flush()
+            word.append(ch)
+        else:
+            if word and set(word) <= _OPERATOR_CHARS:
+                flush()
+            word.append(ch)
+        i += 1
+    if quote:
+        return None
+    flush()
+    return tokens
+
+
+def leg_skips_reset(leg: trigger.Leg) -> bool:
+    """Whether a leg runs its suite on the VMs as found (BRIDGE_TEST_SKIP_RESET=1) instead of recreating them first. The mark counts only as a whole word in the leading `VAR=value` prefix of one command, after an optional `env` or `export`, so an echo, a quoted string, a quoted mark, a comment or `BRIDGE_TEST_SKIP_RESET=10` does not classify a leg as reuse. A quoted value holding a space (`A="x y" VAR=1 cmd`), a leading redirection (`2>/dev/null VAR=1 cmd`) or an env option (`env -i VAR=1 cmd`) ends the prefix: such a leg is unsupported and counts as a resetting leg."""
+    for line in leg.cmd:
+        tokens = _command_tokens(line)
+        if tokens is None:
+            continue
+        in_prefix = True
+        for token in tokens:
+            if token and set(token) <= set("();<>|&"):
+                in_prefix = True
+                continue
+            if not in_prefix:
+                continue
+            if token in _PREFIX_WORDS:
+                continue
+            if not _ENV_WORD.match(token):
+                in_prefix = False
+                continue
+            if token == SKIP_RESET_MARK:
+                return True
+    return False
+
+
+def order_legs(legs: Sequence[tuple[str, trigger.Leg]]) -> list[tuple[str, trigger.Leg]]:
+    """`legs` with those whose fleet recipe sizes the disk (VM_DSK) first, and within that group only the legs that skip the VM reset before the legs that reset, map order kept otherwise. Another leg's e2e setup resets every VM at the default disk, so a leg that reuses a sized VM must run before any reset; and a resetting leg leaves its own data on the datastore (fleet run 14: k8s-15 left backup-large-2g 9.4 GB of the 13.2 GB its 12G repository needs), so the reuse legs of the sized group also come before its resetting legs. The legs outside the sized group keep map order."""
+
+    def key(al: tuple[str, trigger.Leg]) -> tuple[bool, bool]:
+        sized = "VM_DSK" in recipe_env(trigger.MAP.fleets[al[1].fleet])
+        return (not sized, sized and not leg_skips_reset(al[1]))
+
+    return sorted(legs, key=key)
 
 
 def judge_areas(
@@ -613,6 +790,13 @@ def only_deps(
     return deps
 
 
+def phase_ran_in(rows: Sequence[Mapping[str, Any]], side: str) -> bool:
+    """True only when every step of the phase `side` recorded a row in `rows` and every such row is ok."""
+    wanted = PHASE_STEPS[side]
+    mine = [r for r in rows if r.get("id") in wanted]
+    return {r["id"] for r in mine} == set(wanted) and all(r.get("verdict") == "ok" for r in mine)
+
+
 def verdict(
     assertions: int,
     failures: list[str],
@@ -658,11 +842,229 @@ def verdict(
     return receipt_mod.VERIFIED, None
 
 
+# --------------------------------------------------------------------------- fleet leftovers
+
+# The class a run ends with when the worker still holds what an earlier run left behind: a repository of this harness, or a Docker daemon no repository of the run's config owns. Run 7 (2026-11-06, vmc-11060626-bbced0) failed U1, K1.5 and K1.9 on run 6's orphan fork 285f6dc4 (network 31744) and its parent 643b9a9d (network 31680), which converge reported stale_unhandled, not on its own tree.
+FLEET_LEFTOVERS = "fleet-leftovers"
+_UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+_DOCKER_UNIT = re.compile(r"^rediacc-docker-(\d+)\.service$")
+INVENTORY_REPOS_BEGIN = "VMC-INVENTORY-REPOS-BEGIN"
+INVENTORY_REPOS_END = "VMC-INVENTORY-REPOS-END"
+INVENTORY_DONE = "VMC-INVENTORY-DONE"
+# The ACTIVE states of a unit whose daemon is running or about to.
+_LIVE_UNIT_STATES = frozenset({"active", "activating", "reloading"})
+
+
+def harness_repo_name(parent: str) -> re.Pattern[str]:
+    """The repository names this harness creates on the worker: the parent's `vmc-` forks (V1.1, I1, G1, L1, K2, K3), U1's and U2's `u1base-`/`u2base-` grands and their forks, and K1's and L1's `k1-vmc-`/`l1-vmc-` grands and their forks. The parent grand itself is not one: it is kept across runs."""
+    return re.compile(
+        r"^(?:%s:vmc-|u[12]base-[0-9a-f]{6}(?::|$)|k1-vmc-|l1-vmc-)" % re.escape(parent)
+    )
+
+
+def inventory_script(datastore: str = DATASTORE_PATH) -> str:
+    """Root on the worker: renet's own list of the repositories on the datastore (JSON, between two markers), then one `UNIT <name> <active>` line per `rediacc-docker-*.service` systemd knows, then INVENTORY_DONE. The marker is what tells "nothing there" from "the probe never ran": `parse_inventory` returns None without it."""
+    return (
+        "set -eu; "
+        # Captured first so a failing command aborts under `set -e` before the marker; a pipe would hand on the last command's status.
+        "repos=$(renet list repositories --json --datastore %(ds)s); "
+        "units=$(systemctl list-units 'rediacc-docker-*.service' --all --no-legend --plain); "
+        "echo %(begin)s; printf '%%s\\n' \"$repos\"; echo %(end)s; "
+        'printf \'%%s\\n\' "$units" | awk \'NF {print "UNIT " $1 " " $3}\'; '
+        "echo %(done)s"
+        % {
+            "ds": shlex.quote(datastore),
+            "begin": INVENTORY_REPOS_BEGIN,
+            "end": INVENTORY_REPOS_END,
+            "done": INVENTORY_DONE,
+        }
+    )
+
+
+def parse_inventory(text: str) -> tuple[list[dict[str, Any]], dict[int, str]] | None:
+    """(repositories, {network id: ACTIVE state}) from an `inventory_script` run; None when its done marker is missing or the repository JSON is unreadable. An empty datastore prints `null` or `[]`, both an empty list."""
+    lines = text.splitlines()
+    stripped = [ln.strip() for ln in lines]
+    if INVENTORY_DONE not in stripped or INVENTORY_REPOS_BEGIN not in stripped:
+        return None
+    start = stripped.index(INVENTORY_REPOS_BEGIN)
+    if INVENTORY_REPOS_END not in stripped[start:]:
+        return None
+    end = start + stripped[start:].index(INVENTORY_REPOS_END)
+    try:
+        parsed = json.loads("\n".join(lines[start + 1 : end]).strip() or "null")
+    except ValueError:
+        return None
+    if parsed is None:
+        parsed = []
+    if not isinstance(parsed, list):
+        return None
+    repos = [r for r in parsed if isinstance(r, dict)]
+    units: dict[int, str] = {}
+    for line in stripped[end + 1 :]:
+        parts = line.split()
+        if len(parts) >= 2 and parts[0] == "UNIT":
+            match = _DOCKER_UNIT.match(parts[1])
+            if match:
+                units[int(match.group(1))] = parts[2] if len(parts) > 2 else ""
+    return repos, units
+
+
+def leftover_command(guid: str, network_id: int | None) -> str:
+    """The exact command that removes one leftover on the worker. A daemon with no repository behind it is stopped and disabled by unit name."""
+    if not guid:
+        return "sudo systemctl disable --now rediacc-docker-%d" % (network_id or 0)
+    return "sudo renet repository delete --name %s --force --stop-docker --datastore %s%s" % (
+        guid,
+        DATASTORE_PATH,
+        " --network-id %d" % network_id if network_id else "",
+    )
+
+
+@dataclasses.dataclass(frozen=True)
+class Leftover:
+    """One thing an earlier run left on the worker: what it is, why it counts, and the command that removes it."""
+
+    what: str
+    why: str
+    guid: str
+    network_id: int | None
+
+    def line(self) -> str:
+        return "%s (%s): %s" % (self.what, self.why, leftover_command(self.guid, self.network_id))
+
+
+def receipt_leftover_refs(receipt: Mapping[str, Any] | None) -> tuple[frozenset[str], list[str]]:
+    """(the guids and repository names a prior receipt's teardown leftovers and undeleted forks name, the leftover lines). Names are the whitespace- or paren-delimited words holding a `:` (a fork's `parent:tag`); a bare word is never taken for a name, because a worker repository called `state` or `grand` would then read as a leftover of the receipt's prose, and a harness grand without a `:` is found by `harness_repo_name` instead."""
+    if not isinstance(receipt, dict):
+        return frozenset(), []
+    teardown = receipt.get("teardown")
+    raw = teardown.get("leftovers") if isinstance(teardown, dict) else None
+    lines = [x for x in (raw if isinstance(raw, list) else []) if isinstance(x, str)]
+    refs: set[str] = set()
+    for line in lines:
+        refs.update(_UUID.findall(line))
+        refs.update(w for w in re.split(r"[\s(),;]+", line) if ":" in w)
+    forks = receipt.get("forks")
+    for fork in forks if isinstance(forks, list) else []:
+        if isinstance(fork, dict) and fork.get("created") and not fork.get("deleted"):
+            guid = str(fork.get("guid") or "")
+            if guid:
+                refs.add(guid)
+    return frozenset(refs), lines
+
+
+def _network_id(value: object) -> int | None:
+    with contextlib.suppress(TypeError, ValueError):
+        nid = int(str(value))
+        return nid if nid > 0 else None
+    return None
+
+
+def find_fleet_leftovers(
+    prior: Mapping[str, Any] | None,
+    repos: Sequence[Mapping[str, Any]],
+    units: Mapping[int, str],
+    config_entries: Sequence[Mapping[str, Any]],
+    parent: str,
+    now: float,
+    p5_sweeps: bool = True,
+) -> tuple[list[Leftover], list[str]]:
+    """(the leftovers on the worker, the exemptions said aloud). Run under the fleet lock, before this run created anything, so nothing of a live run can be on the worker. A worker repository counts when a prior receipt's teardown named it (by guid or name), or when its name is this harness's (`harness_repo_name`).
+    A live `rediacc-docker-<N>` daemon counts when no repository of the run's config has network id N (a crashed delete keeps the daemon after the repository is gone). The one exemption is a `<parent>:vmc-` fork the run's config lists that is older than STALE_FORK_S, and only when `p5_sweeps` says this run reaches P5: the P5 sweep deletes it through the CLI on this very run, and it is named in the second list so the exemption stays visible. A run that skips P5 (account-only, or `--only` without P5) exempts nothing."""
+    refs, _lines = receipt_leftover_refs(prior)
+    harness = harness_repo_name(parent)
+    config_names = {str(e.get("name", "")) for e in config_entries}
+    config_nids = {
+        nid
+        for e in config_entries
+        if (nid := _network_id(e.get("networkId", e.get("network_id")))) is not None
+    }
+    found: list[Leftover] = []
+    exempt: list[str] = []
+    seen_nids: set[int] = set()
+    for repo in repos:
+        guid = str(repo.get("name") or "")
+        name = str(repo.get("repo_name") or "")
+        nid = _network_id(repo.get("network_id"))
+        named = guid in refs or (bool(name) and name in refs)
+        ours = bool(name) and harness.match(name) is not None
+        if not (named or ours):
+            continue
+        fork_parent, _, tag = name.partition(":")
+        match = FORK_TAG.match(tag)
+        if p5_sweeps and fork_parent == parent and match and name in config_names:
+            age = stamp_age_s(match.group(1), now)
+            if age is not None and age > STALE_FORK_S:
+                exempt.append("%s (left to the P5 sweep, older than %d s)" % (name, STALE_FORK_S))
+                continue
+        if nid is not None:
+            seen_nids.add(nid)
+        found.append(
+            Leftover(
+                "repository %s%s network %s" % (guid, " (%s)" % name if name else "", nid or "?"),
+                "named by the previous run's teardown leftovers"
+                if named
+                else "this harness's naming, and no run holds the fleet",
+                guid,
+                nid,
+            )
+        )
+    repo_by_nid = {
+        nid: str(r.get("name") or "")
+        for r in repos
+        if (nid := _network_id(r.get("network_id"))) is not None
+    }
+    for nid, state in sorted(units.items()):
+        if state not in _LIVE_UNIT_STATES or nid in config_nids or nid in seen_nids:
+            continue
+        guid = repo_by_nid.get(nid, "")
+        found.append(
+            Leftover(
+                "daemon rediacc-docker-%d (%s)"
+                % (nid, "repository %s" % guid if guid else "no repository on the datastore"),
+                "%s, and no repository of the run's config has network id %d" % (state, nid),
+                guid,
+                nid,
+            )
+        )
+    return found, exempt
+
+
+def leftovers_detail(leftovers: Sequence[Leftover], machine: str) -> str:
+    """The NOT_VERIFIED detail: every leftover with the command that removes it. Refused, never deleted here: an orphan can hold data the next reader needs."""
+    return (
+        "%s holds %d leftover(s) of an earlier run, which would fail this run's converge steps on state it did not make; remove each, then rerun: %s"
+        % (machine, len(leftovers), "; ".join(x.line() for x in leftovers))
+    )
+
+
+def prior_receipt(root: pathlib.Path) -> dict[str, Any] | None:
+    """The newest record of an earlier run: `receipt.json` or a `runs/<runId>/receipt.json`, by `finishedAt`. Read as plain JSON, not through the schema check, so a receipt of an earlier schema still names its leftovers."""
+    folder = receipt_mod.receipt_dir(root)
+    paths = [
+        folder / receipt_mod.LATEST,
+        *sorted(folder.glob("%s/*/%s" % (RUNS_DIR, receipt_mod.LATEST))),
+    ]
+    best: dict[str, Any] | None = None
+    for path in paths:
+        with contextlib.suppress(OSError, ValueError):
+            doc = json.loads(path.read_text(encoding="utf-8"))
+            if isinstance(doc, dict) and (
+                best is None or str(doc.get("finishedAt", "")) > str(best.get("finishedAt", ""))
+            ):
+                best = doc
+    return best
+
+
 # --------------------------------------------------------------------------- the outside world
 
 
 class Host:
     """Every effect the check has outside this process. The tests replace it whole."""
+
+    _suite_lock = threading.Lock()
+    _suite_groups: ClassVar[set[int]] = set()
 
     def run(
         self,
@@ -686,6 +1088,52 @@ class Host:
             err = exc.stderr if isinstance(exc.stderr, str) else ""
             return Result(124, "", err + "\ntimed out after %ss" % timeout, self._ms(started))
         return Result(proc.returncode, proc.stdout, proc.stderr, self._ms(started))
+
+    def run_suite(
+        self,
+        argv: Sequence[str],
+        env: Mapping[str, str] | None = None,
+        timeout: float | None = None,
+    ) -> Result:
+        """`run` for an A1 suite that runs on a worker thread: the child leads its own process group, which `kill_suites` can end from the main thread (npm and the test runners under it die with it, not just npm)."""
+        started = time.monotonic()
+        try:
+            proc = subprocess.Popen(
+                list(argv),
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                env=dict(env) if env is not None else None,
+                start_new_session=True,
+            )
+        except OSError as exc:
+            return Result(127, "", "%s: %s" % (argv[0], exc.strerror or exc), self._ms(started))
+        with self._suite_lock:
+            self._suite_groups.add(proc.pid)
+        try:
+            out, err = proc.communicate(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            self._kill_group(proc.pid)
+            out, err = proc.communicate()
+            return Result(
+                124, out or "", (err or "") + "\ntimed out after %ss" % timeout, self._ms(started)
+            )
+        finally:
+            with self._suite_lock:
+                self._suite_groups.discard(proc.pid)
+        return Result(proc.returncode, out, err, self._ms(started))
+
+    def kill_suites(self) -> None:
+        """SIGKILL the process group of every suite `run_suite` still has running."""
+        with self._suite_lock:
+            groups = list(self._suite_groups)
+        for pid in groups:
+            self._kill_group(pid)
+
+    @staticmethod
+    def _kill_group(pid: int) -> None:
+        with contextlib.suppress(OSError):
+            os.killpg(pid, signal.SIGKILL)
 
     @staticmethod
     def _ms(started: float) -> int:
@@ -937,6 +1385,22 @@ def _data_list(raw: str) -> list[dict[str, Any]]:
     return [d for d in data if isinstance(d, dict)]
 
 
+# The rc `VmCheck.repo_list` gives a `repo list` that exited 0 without a list on stdout (sysexits EX_DATAERR). Every caller reads rc != 0 as a failed list, so an empty or clipped stdout, or a pending job ticket, no longer reads as a machine with no repositories (vm:check run vmc-11100841-450cef, K2.6).
+LIST_UNREADABLE_RC = 65
+
+
+def list_problem(out: str) -> str:
+    """Why `out` is not a `repo list -o json` answer, empty when it is one: an envelope whose `data` is an array, or a bare array."""
+    if not out.strip():
+        return "stdout is empty"
+    parsed = wire.parse(out)
+    if parsed is wire.MISSING:
+        return "stdout is not JSON"
+    if isinstance(parsed, list) or isinstance(wire.lookup(parsed, "data"), list):
+        return ""
+    return "stdout JSON carries no data array"
+
+
 def os_matches(image: str, os_id: str, version: str) -> bool:
     """`ubuntu-24.04` against /etc/os-release's `ubuntu 24.04`; `rocky-9` against `rocky 9.4`."""
     distro, _, wanted = image.rpartition("-")
@@ -999,6 +1463,43 @@ def first_line(text: str) -> str:
 def last_lines(text: str, count: int = 3) -> str:
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     return " | ".join(lines[-count:])
+
+
+def envelope_errors(out: str) -> str:
+    """The error messages of a CLI JSON envelope on stdout, empty when `out` is not one. Its raw tail is the metrics block, which says nothing."""
+    try:
+        doc = json.loads(out)
+    except (ValueError, TypeError):
+        return ""
+    if not isinstance(doc, dict):
+        return ""
+    errors = doc.get("errors")
+    if not isinstance(errors, list):
+        return ""
+    msgs = [
+        " ".join(str(e.get("message") or e.get("code") or e).split())
+        for e in errors
+        if isinstance(e, dict)
+    ]
+    return " | ".join(msgs[:3])
+
+
+def remote_evidence(res: Result) -> str:
+    """A failed remote command's evidence, stderr first: `term connect` puts the remote stderr on stderr and a JSON envelope on stdout, and the envelope's tail filled the 200-byte evidence (2026-10-15). The CLI's own startup lines on stderr go unless nothing else is there, because they filled it ahead of a refusal (2026-11-04), and the envelope gives its error messages rather than its tail. When stderr holds only startup lines, stdout leads, so those lines cannot fill the evidence ahead of the envelope's errors (vm:check run vmc-11100841-450cef)."""
+    remote = "\n".join(
+        ln for ln in res.err.splitlines() if not ln.lstrip().startswith(CLI_STARTUP_MARKS)
+    )
+    stdout = envelope_errors(res.out) or last_lines(res.out) or "<empty>"
+    if remote.strip():
+        return "rc=%d stderr: %s | stdout: %s" % (res.rc, last_lines(remote), stdout)
+    return "rc=%d stdout: %s | stderr: %s" % (res.rc, stdout, last_lines(res.err) or "<empty>")
+
+
+def _renet_binary_missing(why: str) -> bool:
+    """Whether an `rdc` failure says the worker has no renet binary at all (a freshly recreated ops VM), as opposed to any other refusal."""
+    # GNU env quotes the path with ASCII ' in the C locale and with U+2018/U+2019 in a UTF-8 one
+    # (a recreated fleet, 2026-11-12: "env: ‘/usr/lib/rediacc/renet/0.0.0-dev/renet’: No such file").
+    return re.search(r"/renet['’]?: No such file or directory", why) is not None
 
 
 def rdc_failure(res: Result) -> str:
@@ -1083,7 +1584,7 @@ class Options:
     selftest: bool = False
     keep_work: bool = False
     net_base: str = DEFAULT_NET_BASE
-    # `--only <id>[,...]` runs P0 plus the named steps alone, to iterate one step without a full run; a run so narrowed writes a run record, never receipt.json, and never reaches VERIFIED (`_finish`), so the push guard never admits it.
+    # `--only <id>[,...]` runs P0 plus the named steps alone, to iterate one step without a full run; a run so narrowed writes a run record, never receipt.json, and is never VERIFIED itself (`_finish`). When it names only steps the FAILED receipt of its tree failed, and keeps that receipt's tree and build identity, its rows merge into that receipt, which is re-judged whole (`_merge_into_failed`, `vm_tier.merge_refusal`).
     only: frozenset[str] = frozenset()
     # `--dry-run` prints what the run would prove (sides, phases, areas and their legs) and touches nothing: no lock, no fleet, no gateway, no receipt.
     dry_run: bool = False
@@ -1094,6 +1595,11 @@ class Options:
 def only_step_ids() -> frozenset[str]:
     """The step ids `--only` accepts: every terminal step of `VmCheck._ONLY_DEPS`, and P5. The infra chain (P0-P4) always runs, so it is not nameable."""
     return frozenset(VmCheck._ONLY_DEPS) | {"P5"}
+
+
+def only_leg_ids() -> frozenset[str]:
+    """The `external` leg ids `--only` accepts, so one e2e suite or fleet leg can be iterated without the whole battery."""
+    return frozenset(leg.id for _area, leg in external_legs(trigger.AREAS))
 
 
 def parse_args(argv: Sequence[str], environ: Mapping[str, str] | None = None) -> Options:
@@ -1128,11 +1634,11 @@ def parse_args(argv: Sequence[str], environ: Mapping[str, str] | None = None) ->
     if ns.base is not None and not ns.changed:
         parser.error("--base only applies with --changed")
     only = frozenset(s.strip() for s in ns.only.split(",") if s.strip())
-    unknown = sorted(only - only_step_ids())
+    known = only_step_ids() | only_leg_ids()
+    unknown = sorted(only - known)
     if unknown:
         parser.error(
-            "--only names no step: %s (known: %s)"
-            % (", ".join(unknown), ", ".join(sorted(only_step_ids())))
+            "--only names no step: %s (known: %s)" % (", ".join(unknown), ", ".join(sorted(known)))
         )
     return Options(
         changed=ns.changed,
@@ -1256,6 +1762,10 @@ class VmCheck:
         # The areas of `tiers.vm.areas` the change touches (always evaluated against the push base, with or without `--changed`, so a full run cannot skip an area's legs), and their legs' verdicts after the run.
         self.areas: frozenset[str] = frozenset()
         self.area_results: dict[str, dict[str, Any]] = {}
+        # The A1 suites run on a worker thread beside P0-P3 (`a1_start`); it only collects results, and the main thread records them at `a1_join`.
+        self.a1_thread: threading.Thread | None = None
+        self.a1_results: list[tuple[str, str, str | None, Result]] = []
+        self.a1_error: Exception | None = None
         # Both phases unless `--changed` narrows them.
         self.phases: dict[str, dict[str, bool]] = {
             side: {"required": True, "ran": False} for side in trigger.SIDES
@@ -1305,7 +1815,7 @@ class VmCheck:
         log_path: str = "",
         failed: Sequence[str] = (),
     ) -> bool:
-        """One ledger row. `ok` None is a skip; `assertion` counts it towards the verdict's ledger. `log_path` (the kept full output) and `failed` (a drill's failed assertions) are added to the row only when given."""
+        """One ledger row. `ok` None is a skip; `assertion` counts it towards the verdict's ledger. `log_path` (the kept full output) and `failed` (a drill's failed assertions) are added to the row only when given. A row that did not pass and names no `evidence` takes `remote_evidence(res)`, the stderr tail and the envelope's errors: the evidence is clipped to its first EVIDENCE_MAX bytes, and the head of stdout plus stderr was the CLI's startup lines, which dropped the cause (vm:check run vmc-11100841-450cef, K2.6)."""
         verdict_text = "skip" if ok is None else ("ok" if ok else "FAIL")
         row = {
             "id": step_id,
@@ -1313,7 +1823,9 @@ class VmCheck:
             "rc": res.rc if res is not None else 0,
             "verdict": verdict_text,
             "ms": res.ms if res is not None else 0,
-            "evidence": self._clean(evidence or (res.text() if res is not None and not ok else "")),
+            "evidence": self._clean(
+                evidence or (remote_evidence(res) if res is not None and not ok else "")
+            ),
         }
         if log_path:
             row["log"] = log_path
@@ -1387,6 +1899,8 @@ class VmCheck:
             env["REDIACC_ACCOUNT_SERVER"] = self.account_server
         if self.dev_config:
             env["RDC_DEV"] = "1"
+        # A development CLI holds the machine's renet by default (renetHold 'dev', since 2026-11-05), so `repo fork --up` no longer uploads the branch build and V1.1 found the worker on an older renet (2026-11-11). The worker is a development-only ops VM, so the run lifts the hold for its own calls; an explicit REDIACC_NO_PROVISION from the caller is kept.
+        env.setdefault("REDIACC_NO_PROVISION", "0")
         return env
 
     def drill_env(self) -> dict[str, str]:
@@ -1423,12 +1937,7 @@ class VmCheck:
         return self.rdc("term", "connect", fork, "-c", command, extra_env=extra_env)
 
     def remote_evidence(self, res: Result) -> str:
-        """A failed remote command's evidence, stderr first: `term connect` puts the remote stderr on stderr and a JSON envelope on stdout, and the envelope alone filled the 200-byte evidence (2026-10-15)."""
-        return "rc=%d stderr: %s | stdout: %s" % (
-            res.rc,
-            last_lines(res.err) or "<empty>",
-            last_lines(res.out) or "<empty>",
-        )
+        return remote_evidence(res)
 
     def probe(self, command: str) -> Result:
         return self.host.run(
@@ -1453,8 +1962,31 @@ class VmCheck:
         return "%s/%s" % (MOUNTS, self.guids.get(tag, "<unknown>"))
 
     def repo_list(self) -> tuple[Result, list[dict[str, Any]]]:
+        """`repo list -m <machine> -o json` and its entries. A list that failed comes back with its rc and no entries; one that exited 0 without a list on stdout (`list_problem`) comes back as LIST_UNREADABLE_RC with the reason as the last stderr line, which `rdc_failure` and `remote_evidence` both read."""
         res = self.rdc("repo", "list", "-m", self.machine, "-o", "json", refuse=False)
-        return res, _data_list(res.out) if res.rc == 0 else []
+        if res.rc != 0 and _renet_binary_missing(rdc_failure(res)):
+            # A freshly recreated ops VM has no renet yet, and `repo list` runs through renet, so the first list (P3's leftover check or P5) fails before any step installs one; `machine setup` installs the branch renet, then the list is read again.
+            self.say(
+                "        %s has no renet binary yet; installing it with ./rdc.sh machine setup %s"
+                % (self.machine, self.machine)
+            )
+            setup = self.rdc("machine", "setup", self.machine, timeout=1800)
+            if setup.rc != 0:
+                raise NotVerifiedError(
+                    "fleet-unavailable",
+                    "repo list -m %s found no renet binary, and ./rdc.sh machine setup %s failed rc=%d: %s"
+                    % (self.machine, self.machine, setup.rc, rdc_failure(setup)),
+                )
+            res = self.rdc("repo", "list", "-m", self.machine, "-o", "json", refuse=False)
+        if res.rc != 0:
+            return res, []
+        problem = list_problem(res.out)
+        if problem:
+            unread = "repo list exited 0 but its %s" % problem
+            return dataclasses.replace(
+                res, rc=LIST_UNREADABLE_RC, err=(res.err + "\n" + unread).strip()
+            ), []
+        return res, _data_list(res.out)
 
     # ------------------------------------------------------------------ the run
 
@@ -1523,7 +2055,13 @@ class VmCheck:
                 "areas": list(trigger.AREAS),
             }
             return True
-        changed = trigger.changed_paths(self.root, base.merge_base, "worktree")
+        verified = None
+        if not self.opts.base:
+            base, verified = with_verified_base(self.root, git, base)
+        merge_base = base.merge_base
+        if merge_base is None:
+            raise RuntimeError("a verified base keeps the merge base it was built on")
+        changed = trigger.changed_paths(self.root, merge_base, "worktree")
         # A touched change always names a side (a hit carries its side, an unknown range its submodule's); none at all would be a trigger defect, so it costs both phases rather than none.
         sides = set(changed.sides) or set(trigger.SIDES)
         self.areas = changed.areas
@@ -1534,6 +2072,8 @@ class VmCheck:
             "sides": sorted(sides),
             "areas": [a for a in trigger.AREAS if a in changed.areas],
         }
+        if verified is not None:
+            self.trigger_info["verifiedBase"] = {"head": verified[0], "tree": verified[1]}
         if not changed.touched:
             self.say(
                 "vm:check: no trigger path changed since %s (via %s); nothing to verify"
@@ -1653,8 +2193,26 @@ class VmCheck:
         if self.opts.only:
             self._steps_only()
             return
+        self._require_receipts()
         self._battery()
         self._external_legs()
+
+    def _require_receipts(self) -> None:
+        """Stop before any VM work when a touched area's `receipt` leg cannot pass: the leg is judged last and no step here can produce it, so the run could only end NOT_VERIFIED after all its VM work."""
+        for name in trigger.AREAS:
+            if name not in self.areas:
+                continue
+            legs = [leg for leg in trigger.MAP.areas[name].legs if leg.kind == trigger.LEG_RECEIPT]
+            if not legs:
+                continue
+            # The receipt check reads the root and the tree, not the leg, so it runs once per area.
+            ok, message = self.receipt_fn(self.root, self.tree)
+            if not ok:
+                raise NotVerifiedError(
+                    "receipt-first",
+                    "%s/%s: %s; produce it first with: %s"
+                    % (name, legs[0].id, message, " && ".join(legs[0].cmd)),
+                )
 
     def _battery(self) -> None:
         """The base battery: A1, the infra chain, A0, A2 and the renet phase, as the required sides and the touched areas' `vmcheck` legs ask."""
@@ -1675,9 +2233,9 @@ class VmCheck:
                 "vm:check: area legs run here: %s"
                 % (", ".join(sorted(wanted)) if wanted else "none beyond the phases")
             )
-        # A1 before P0: the suites hold no fleet lock, and a red suite stops the run before any VM is touched.
-        if account and not self.a1_suites():
-            return
+        # A1 starts before P0 on a worker thread and runs beside P0-P3: the suites need no fleet, so their 97 s hide behind fleet setup. A red suite no longer stops the run before a VM is touched; it ends the run FAILED at `a1_join`, after A2 and before P5, and T tears down what P0-P3 and A2 made.
+        if account:
+            self.a1_start()
         self.p0_lock()
         self.p1_renet()
         # An external leg's e2e global setup licenses its repositories on the local dev gateway (packages/e2e-tests/src/utils/licence.ts ensureAccountToken reads .account-state), so A0 runs for it too, and before P4: a restart rotates the dev passwords the minted token depends on.
@@ -1688,9 +2246,13 @@ class VmCheck:
         self.p2_fleet()
         self.p4_rebind()
         self.p3_keys()
+        self.p3_leftovers()
+        # A2 runs BEFORE the join, beside the A1 worker: the drills need P4, the gateway and the fleet, not the suites' results. The suites are in-memory vitest and `tsc --noEmit` (no port, no database file, no write to the worker), and the preparation lock orders any rebuild a drill's `./rdc.sh` needs behind them. A red A1 still ends the run, now after A2 instead of before it; its rows are recorded at the join, so they follow A2's.
         # A2 before P5: the license drill deploys bin/renet and P5 re-uploads the same binary; neither rebuilds it.
-        if account and not self.a2_drills():
-            return
+        if account:
+            a2_ok = self.a2_drills()
+            if not self.a1_join() or not a2_ok:
+                return
         if not account and area_a2 and not self.a2_drills(area_a2):
             return
         if not renet:
@@ -1715,14 +2277,17 @@ class VmCheck:
             % ", ".join(sorted(self.opts.only))
         )
         account_named = any(s.startswith("A") for s in self.opts.only) or self._only_wants("A0")
+        legs_named = self.opts.only & only_leg_ids()
         self.p0_lock()
         self.p1_renet()
-        if account_named or self._only_wants("A0"):
+        # A leg's e2e global setup licenses its repositories on the local dev gateway, as in `_battery`.
+        if account_named or legs_named or self._only_wants("A0"):
             self.a0_gateway()
         self.p4_account()
         self.p2_fleet()
         self.p4_rebind()
         self.p3_keys()
+        self.p3_leftovers()
         if account_named:
             self.a1_suites()
             self.a2_drills()
@@ -1747,14 +2312,20 @@ class VmCheck:
         for step_id, _deps, _fn in EXTRA_RENET_STEPS:
             if self._only_wants(step_id):
                 self.extra_fns[step_id](self)
+        self._external_legs(legs_named)
 
     # ------------------------------------------------------------------ X: the external legs
 
-    def _external_legs(self) -> None:
-        """Run every `external` leg of the touched areas, after the base battery and under the same fleet lock: tear this run's forks down first (an e2e global setup may recreate the VMs), bring each leg's fleet up (or reuse it when every ip already runs), run the leg's commands from the console root, record one `X.<leg id>` row, then prove the parent grand is still on the worker and recreate it when it is not. A run whose battery already has a finding skips them: its verdict cannot become VERIFIED, and an e2e run costs minutes to an hour."""
-        legs = external_legs(self.areas)
+    def _external_legs(self, named: Collection[str] | None = None) -> None:
+        """Run every `external` leg of the touched areas (with `named`, the named legs of any area, touched or not: naming a leg is the request to run it), after the base battery and under the same fleet lock: tear this run's forks down first (an e2e global setup may recreate the VMs), bring each leg's fleet up (or reuse it when every ip already runs), run the leg's commands from the console root, record one `X.<leg id>` row, then prove the parent grand is still on the worker and recreate it when it is not. A run whose battery already has a finding skips them: its verdict cannot become VERIFIED, and an e2e run costs minutes to an hour."""
+        legs = (
+            external_legs(self.areas)
+            if named is None
+            else [(area, leg) for area, leg in external_legs(trigger.AREAS) if leg.id in named]
+        )
         if not legs:
             return
+        legs = order_legs(legs)
         if self.failures:
             self.say(
                 "vm:check: %d external leg(s) not run: the base battery already failed (%s)"
@@ -1774,45 +2345,116 @@ class VmCheck:
 
     def _ensure_fleet(self, fleet: trigger.Fleet) -> tuple[str, str]:
         """("", how) when every ip of `fleet` runs, reusing it or bringing it up with its `up` recipe; (why, "") when it cannot be had. Ops VMs are development-only, so bringing a fleet up is never an operator's step; `ops up` without `--force` leaves a running VM alone (renet skipRunningVM), so a superset topology only adds VMs. A fleet this check brings up is left up for the next run, unless the base fleet was cold, whose `ops down` in T takes everything down."""
-        plan = fleet_up_plan(fleet)
-        env = plan[0] if plan is not None else {}
-        status = self.rdc("ops", "status", "-o", "json", extra_env=env)
-        if status.rc != 0:
-            return "ops status rc=%d: %s" % (status.rc, rdc_failure(status)), ""
-        running = lib.running_ips(status.out)
+        plans = fleet_up_plans(fleet)
+        running: list[str] = []
+        for env in [p[0] for p in plans] if plans is not None else [{}]:
+            status = self.rdc("ops", "status", "-o", "json", extra_env=env)
+            if status.rc != 0:
+                return "ops status rc=%d: %s" % (status.rc, rdc_failure(status)), ""
+            running += lib.running_ips(status.out)
+        small = self._undersized(fleet, plans, running)
+        if small:
+            return small, ""
         if set(fleet.ips) <= set(running):
-            self.ips = running
+            self.ips = list(running) if plans is None else self._own_group(plans, running)
             return "", "fleet %s reused (%s running)" % (fleet.name, " ".join(fleet.ips))
         missing = [ip for ip in fleet.ips if ip not in running]
-        if plan is None:
+        if plans is None:
             return (
                 "fleet %s needs %s, which do not run, and its up recipe is not the machine-runnable"
                 " shape `[VAR=value ...] ./rdc.sh ops up [flags]`, so vm:check cannot bring it up: %s"
                 % (fleet.name, " ".join(missing), fleet.up),
                 "",
             )
-        args = list(plan[1])
         image = self.opts.os_image or self.environ.get("VM_IMAGE") or ""
-        if image and "--os" not in args:
-            args += ["--os", image]
-        spelled = " ".join(
-            ["%s=%s" % (k, shlex.quote(v)) for k, v in env.items()] + ["./rdc.sh", *args]
-        )
-        self.say("        fleet %s: %s not running; %s" % (fleet.name, " ".join(missing), spelled))
-        res = self.rdc(*args, timeout=FLEET_UP_TIMEOUT_S, extra_env=env)
-        if res.rc != 0:
-            return "%s rc=%d after %d s: %s" % (
-                spelled,
-                res.rc,
-                res.ms // 1000,
-                rdc_failure(res),
-            ), ""
-        running = lib.running_ips(self.rdc("ops", "status", "-o", "json", extra_env=env).out)
+        spelled_all: list[str] = []
+        total_ms = 0
+        for index, (env, plan_args) in enumerate(plans):
+            if not [ip for ip in plan_ips(fleet, plans, index) if ip in missing]:
+                continue
+            args = list(plan_args)
+            if image and "--os" not in args:
+                args += ["--os", image]
+            spelled = spell_recipe(env, args)
+            spelled_all.append(spelled)
+            self.say(
+                "        fleet %s: %s not running; %s" % (fleet.name, " ".join(missing), spelled)
+            )
+            res = self.rdc(*args, timeout=FLEET_UP_TIMEOUT_S, extra_env=env)
+            total_ms += res.ms
+            if res.rc != 0:
+                return "%s rc=%d after %d s: %s" % (
+                    spelled,
+                    res.rc,
+                    res.ms // 1000,
+                    rdc_failure(res),
+                ), ""
+        spelled = " && ".join(spelled_all)
+        running = []
+        for env, _args in plans:
+            running += lib.running_ips(self.rdc("ops", "status", "-o", "json", extra_env=env).out)
         still = [ip for ip in fleet.ips if ip not in running]
         if still:
             return "%s exited 0 but %s still do not run" % (spelled, " ".join(still)), ""
-        self.ips = running
-        return "", "fleet %s brought up with %s in %d s" % (fleet.name, spelled, res.ms // 1000)
+        self.ips = self._own_group(plans, running)
+        return "", "fleet %s brought up with %s in %d s" % (fleet.name, spelled, total_ms // 1000)
+
+    def _undersized(
+        self,
+        fleet: trigger.Fleet,
+        plans: Sequence[tuple[dict[str, str], list[str]]] | None,
+        running: Sequence[str],
+    ) -> str:
+        """Why a running fleet is not the one its recipe asks for, or "" when it is: each running worker whose plan sets VM_DSK=<N> must have a root disk of at least N GiB (one ssh per VM). With no runnable recipe (`plans` is None) there is no plan, and the smallest VM_DSK from `loose_disk_floors` is the floor. `ops up` without `--force` leaves a running VM alone, so bringing the fleet up cannot grow it, and like P3's `fleet-os-mismatch` the check never tears a running fleet down: it refuses, naming the commands that recreate it."""
+        short: list[str] = []
+        down: list[int] = []
+        floors = loose_disk_floors(fleet) if plans is None else disk_floors(fleet, plans)
+        for ip, gib, index in floors:
+            if ip not in running:
+                continue
+            res = self.host.run(
+                vm_ssh.ssh_argv(self.ssh_user, self.ssh_key, ip, PROBE_ROOT_DISK),
+                env=self.environ,
+                timeout=60,
+            )
+            size = disk_bytes(res.out) if res.rc == 0 else None
+            if size is None:
+                return (
+                    "fleet-disk-unreadable: fleet %s asks VM_DSK=%d, and the root disk of %s is unreadable over ssh (rc=%d): %s"
+                    % (fleet.name, gib, ip, res.rc, last_lines(res.err or res.out))
+                )
+            if size < gib * GIB:
+                short.append("%s has %.1f GiB of VM_DSK=%d" % (ip, size / GIB, gib))
+                if index not in down:
+                    down.append(index)
+        if not short:
+            return ""
+        commands: list[str] = []
+        if plans is None:
+            commands = ["./rdc.sh ops down", fleet.up]
+        else:
+            for index in down:
+                env, args = plans[index]
+                commands += [spell_recipe(env, ["ops", "down"]), spell_recipe(env, args)]
+        # The row's evidence is clipped to EVIDENCE_MAX bytes, so the commands come first and the reasoning goes to the run's output.
+        self.say(
+            "        fleet %s is not reused: `ops up` leaves a running VM alone and vm:check never tears a running fleet down"
+            % fleet.name
+        )
+        return "fleet-disk-too-small: recreate fleet %s with `%s`: %s" % (
+            fleet.name,
+            " && ".join(commands),
+            "; ".join(short),
+        )
+
+    @staticmethod
+    def _own_group(
+        plans: Sequence[tuple[dict[str, str], list[str]]],
+        running: Sequence[str],
+    ) -> list[str]:
+        """The running VMs of the fleet's primary group: later steps of the run address that group, never a further one."""
+        others = [p[0]["VM_NET_BASE"] for p in plans[1:] if p[0].get("VM_NET_BASE")]
+        return [ip for ip in running if not any(ip.startswith(o + ".") for o in others)]
 
     def _run_external_leg(self, area: str, leg: trigger.Leg) -> bool:
         """One external leg: its fleet, then each of its commands in order through `bash -c` from the console root, under the suites' scrubbed environment (no minted token, no RDC_DEV: the e2e setup finds the dev gateway through .account-state itself). Every command before the last must exit 0; the last is the e2e run, judged by `classify_e2e`. Returns True when any command ran (the fleet may since have been reset)."""
@@ -1825,7 +2467,7 @@ class VmCheck:
             self.steps[-1]["outcome"] = OUTCOME_NOT_VERIFIED
             return False
         self.say("        %s; running %s" % (how, leg.id))
-        env = self.drill_env()
+        env = {**self.drill_env(), **recipe_env(fleet)}
         root = shlex.quote(str(self.root))
         total_ms = 0
         res = Result(0)
@@ -2118,6 +2760,56 @@ class VmCheck:
             )
         self.record("P3", "host keys pinned for %s (%s)" % (self.machine, self.fleet_os), True)
 
+    def p3_leftovers(self) -> None:
+        """Refuse a worker that still holds an earlier run's leftovers (`find_fleet_leftovers`), before any step creates anything: NOT_VERIFIED FLEET_LEFTOVERS naming each one and its cleanup command. Nothing is deleted here. An inventory that cannot be read is unchecked, so it refuses too. The leftovers ride into this run's teardown leftovers, so the next run's prior receipt still names them until they are gone."""
+        prior = prior_receipt(self.root)
+        _refs, prior_lines = receipt_leftover_refs(prior)
+        argv = vm_ssh.ssh_argv(
+            self.ssh_user,
+            self.ssh_key,
+            self.worker_ip,
+            "sudo sh -c %s" % shlex.quote(inventory_script()),
+        )
+        res = self.host.run(argv, env=self.environ, timeout=180)
+        inventory = parse_inventory(res.out) if res.rc == 0 else None
+        if inventory is None:
+            raise NotVerifiedError(
+                FLEET_LEFTOVERS,
+                "the worker's repository and daemon inventory is unreadable (rc=%d: %s), so leftovers of an earlier run are unchecked%s"
+                % (
+                    res.rc,
+                    last_lines(res.err) or last_lines(res.out) or "no output",
+                    "; the previous run left: %s" % ", ".join(prior_lines) if prior_lines else "",
+                ),
+            )
+        repos, units = inventory
+        listed, entries = self.repo_list()
+        if listed.rc != 0:
+            # Without the run's own repositories no daemon can be told from an orphan, so the check stops here, with the class P5 would have named.
+            raise self._repo_list_refusal(listed)
+        p5_sweeps = (
+            self._only_wants("P5") if self.opts.only else bool(self.phases[SIDE_RENET]["required"])
+        )
+        found, exempt = find_fleet_leftovers(
+            prior, repos, units, entries, self.opts.parent, self.host.now(), p5_sweeps
+        )
+        if exempt:
+            self.say("        leftover check exempts: %s" % ", ".join(exempt))
+        if prior_lines and not found:
+            self.say(
+                "        the previous run left %d item(s); none remains on %s"
+                % (len(prior_lines), self.machine)
+            )
+        if found:
+            self.sweep_leftovers.extend("left by an earlier run: %s" % x.line() for x in found)
+            raise NotVerifiedError(FLEET_LEFTOVERS, leftovers_detail(found, self.machine))
+        self.record(
+            "P3",
+            "no leftovers of an earlier run on %s (%d repositories, %d docker units inspected)"
+            % (self.machine, len(repos), len(units)),
+            True,
+        )
+
     def p4_account(self) -> None:
         stored = self.rdc("subscription", "status", "-o", "json")
         if stored.rc == 0:
@@ -2192,23 +2884,27 @@ class VmCheck:
         self.minted_on_loopback = False
         self._mint_on(addr)
 
+    def _repo_list_refusal(self, res: Result) -> NotVerifiedError:
+        """The NOT_VERIFIED a failed `repo list` ends the run with: `worker-ssh-key` naming the key the ops VMs authorize when the worker refused the CLI's key, else `fleet-unavailable`. The CLI's key is first used here (P3's leftover check, then P5)."""
+        why = rdc_failure(res)
+        return NotVerifiedError(
+            "worker-ssh-key" if "authentication methods failed" in why else "fleet-unavailable",
+            "repo list -m %s rc=%d: %s%s"
+            % (
+                self.machine,
+                res.rc,
+                why,
+                "; the worker refused the CLI's SSH key, and the key the ops VMs authorize is "
+                "%s (./rdc.sh config ssh set --key %s)" % (self.ssh_key, self.ssh_key)
+                if "authentication methods failed" in why
+                else "",
+            ),
+        )
+
     def p5_parent(self) -> None:
         res, entries = self.repo_list()
         if res.rc != 0:
-            why = rdc_failure(res)
-            raise NotVerifiedError(
-                "worker-ssh-key" if "authentication methods failed" in why else "fleet-unavailable",
-                "repo list -m %s rc=%d: %s%s"
-                % (
-                    self.machine,
-                    res.rc,
-                    why,
-                    "; the worker refused the CLI's SSH key, and the key the ops VMs authorize is "
-                    "%s (./rdc.sh config ssh set --key %s)" % (self.ssh_key, self.ssh_key)
-                    if "authentication methods failed" in why
-                    else "",
-                ),
-            )
+            raise self._repo_list_refusal(res)
         names = [str(e.get("name", "")) for e in entries]
         # The sweep runs before the grand is judged, so stale forks beside a missing grand go too (review 8b3374e0.2: the create path returned before it).
         swept, sweep = self._sweep_stale_forks(
@@ -2353,12 +3049,11 @@ class VmCheck:
                     rdc_failure(forget),
                     re.MULTILINE,
                 )
+                # The per-ref deletes clear the whole family, so a bare forget after them finds nothing ("is not in this config") and must not run: the last per-ref result is the verdict.
                 for ref in refs:
                     forget = self.rdc("repo", "delete", ref, "--archive-config", "-y", timeout=600)
                     if forget.rc != 0:
                         break
-                else:
-                    forget = self.rdc(*forget_args, timeout=600)
             if forget.rc != 0:
                 raise NotVerifiedError(
                     "parent-grand-missing",
@@ -2443,24 +3138,95 @@ class VmCheck:
         for step_id, script, package in ACCOUNT_SUITES:
             if self.opts.only and not self._only_wants(step_id):
                 continue
-            prefix = self.root / package if package else self.root
-            res = self.host.run(
-                ["npm", "--prefix", str(prefix), "run", script], env=env, timeout=SUITE_TIMEOUT_S
-            )
-            ok = res.rc == 0
-            spelled = "npm %srun %s" % ("--prefix %s " % package if package else "", script)
-            self.check(
-                step_id,
-                "%s (%d s)" % (spelled, res.ms // 1000),
-                ok,
-                res,
-                "" if ok else "rc=%d: %s" % (res.rc, last_lines(res.text())),
-                log_path=self.keep_log(step_id, script, ["npm", "run", script], res),
-            )
-            green = green and ok
+            res = self.host.run(self._suite_argv(script, package), env=env, timeout=SUITE_TIMEOUT_S)
+            green = self._record_suite(step_id, script, package, res) and green
         if not green:
-            self.say("        an account suite is red; no VM is touched")
+            self.say("        an account suite is red")
         return green
+
+    def _prepare_argv(self) -> list[str]:
+        """The A1 thread's first call: the node floor, `ensure_deps` and `ensure_packages_built` of this checkout, each a no-op when its stamp holds."""
+        return [
+            sys.executable or "python3",
+            "-m",
+            "rediacc_ci.core.local_common",
+            "prepare-node-deps-packages",
+        ]
+
+    def _suite_argv(self, script: str, package: str | None) -> list[str]:
+        prefix = self.root / package if package else self.root
+        return ["npm", "--prefix", str(prefix), "run", script]
+
+    def _record_suite(self, step_id: str, script: str, package: str | None, res: Result) -> bool:
+        ok = res.rc == 0
+        spelled = "npm %srun %s" % ("--prefix %s " % package if package else "", script)
+        self.check(
+            step_id,
+            "%s (%d s)" % (spelled, res.ms // 1000),
+            ok,
+            res,
+            "" if ok else "rc=%d: %s" % (res.rc, last_lines(res.text())),
+            log_path=self.keep_log(step_id, script, ["npm", "run", script], res),
+        )
+        return ok
+
+    def a1_start(self) -> None:
+        """Start the four account suites on a worker thread. The thread only runs them and keeps each result; every row is recorded by `a1_join` on the main thread, so the ledger is never written from two threads."""
+        env = self.drill_env()
+
+        def collect() -> None:
+            try:
+                # The dependencies and the shared packages are prepared FIRST, and the suites then run holding the checkout's preparation lock shared: A0's `./run.sh account dev`, running beside them, finds the stamps current, and a rebuild it still needs waits until the suites are done instead of deleting `packages/shared/dist` under a running vitest (worklist #6fbf7fa3, `core.prepare_lock`).
+                prep = self.host.run_suite(self._prepare_argv(), env=env, timeout=SUITE_TIMEOUT_S)
+                if prep.rc != 0:
+                    raise RuntimeError(
+                        "preparing the dependencies and shared packages exited %d: %s"
+                        % (prep.rc, last_lines(prep.text()))
+                    )
+                with prepare_lock.held(str(self.root), shared=True):
+                    for step_id, script, package in ACCOUNT_SUITES:
+                        res = self.host.run_suite(
+                            self._suite_argv(script, package), env=env, timeout=SUITE_TIMEOUT_S
+                        )
+                        self.a1_results.append((step_id, script, package, res))
+            except CRASHES as exc:  # reported at the join, never lost in the thread
+                self.a1_error = exc
+
+        self.a1_thread = threading.Thread(target=collect, name="vm-check-a1", daemon=True)
+        self.a1_thread.start()
+
+    def a1_join(self) -> bool:
+        """Wait for the A1 thread and record its rows in ACCOUNT_SUITES order, with the ids and fields of the serial run; True when all four exited 0. A thread that crashed re-raises here."""
+        thread, self.a1_thread = self.a1_thread, None
+        if thread is None:
+            return True
+        thread.join()
+        if self.a1_error is not None:
+            raise RuntimeError(
+                "the A1 suite thread crashed: %s: %s"
+                % (type(self.a1_error).__name__, self.a1_error)
+            )
+        if len(self.a1_results) != len(ACCOUNT_SUITES):
+            # The thread died on something CRASHES does not name, with suites still to run: recording the rows that exist would let A2 and P5 proceed with A1 incomplete.
+            raise RuntimeError(
+                "the A1 suite thread ended after %d of %d suites without reporting an error"
+                % (len(self.a1_results), len(ACCOUNT_SUITES))
+            )
+        green = True
+        for step_id, script, package, res in self.a1_results:
+            green = self._record_suite(step_id, script, package, res) and green
+        self.a1_results = []
+        if not green:
+            self.say("        an account suite is red; the run ends here, before P5")
+        return green
+
+    def a1_stop(self) -> None:
+        """An early end (a signal, a crash, a step that could not judge): kill the suites' process groups and wait for the thread. Nothing is recorded, since the run judged nothing about A1."""
+        thread, self.a1_thread = self.a1_thread, None
+        if thread is None:
+            return
+        self.host.kill_suites()
+        thread.join(timeout=30)
 
     def _gateway_paths(self) -> tuple[pathlib.Path, pathlib.Path]:
         folder = receipt_mod.receipt_dir(self.root)
@@ -2758,7 +3524,7 @@ class VmCheck:
     ) -> bool:
         res = self.shell(ref, command, extra_env)
         ok = res.rc == 0
-        return self.check("V1.3", "A: %s" % desc, ok, res, "" if ok else self.remote_evidence(res))
+        return self.check("V1.3", "A: %s" % desc, ok, res)
 
     def _upload_compose(self, ref: str) -> bool:
         """The minimal compose file, synced into fork A's mount root; the grand stays as it is."""
@@ -3140,6 +3906,7 @@ class VmCheck:
                 signal.signal(sig, old)
 
     def _teardown(self) -> None:
+        self.a1_stop()
         leftovers: list[str] = list(self.sweep_leftovers)
         try:
             leftovers.extend(self._teardown_steps())
@@ -3255,9 +4022,7 @@ class VmCheck:
 
     def phase_ran(self, side: str) -> bool:
         """True only when every step of the phase recorded a row and every such row is ok."""
-        wanted = PHASE_STEPS[side]
-        rows = [r for r in self.steps if r["id"] in wanted]
-        return {r["id"] for r in rows} == set(wanted) and all(r["verdict"] == "ok" for r in rows)
+        return phase_ran_in(self.steps, side)
 
     def _finish(self) -> int:
         for side in trigger.SIDES:
@@ -3293,13 +4058,15 @@ class VmCheck:
                 },
             )
         path: pathlib.Path | None = None
+        record: dict[str, Any] | None = None
         if self.tree and self.inputs and (self.lock_lost or self.opts.only):
-            # A lock loser's or an `--only` run's record is for the record only: the holder's receipt.json and tree archive stay as they are.
+            # A lock loser's or an `--only` run's record is for the record only: the holder's receipt.json and tree archive stay as they are. An `--only` run that held the lock may then merge into the FAILED receipt of its tree (`_merge_into_failed`), under the rules of `vm_tier.merge_refusal`.
             fresh = not self.run_dir().is_dir()
             self.run_dir().mkdir(parents=True, exist_ok=True)
             if fresh:
                 self._prune_runs()
-            path = receipt_mod.write_run_record(self.root, self._receipt(status, reason))
+            record = self._receipt(status, reason)
+            path = receipt_mod.write_run_record(self.root, record)
         elif self.tree and self.inputs:
             path = receipt_mod.write(self.root, self._receipt(status, reason))
         else:
@@ -3313,8 +4080,101 @@ class VmCheck:
                         "detail": "HEAD^{tree} or the inputs digest is unreadable, so no receipt could be written",
                     },
                 )
+        # A merge is tried before the summary: when it succeeds, its line is this run's verdict, and the narrowed run's own NOT_VERIFIED summary would contradict it (review 3dd946ff.2). A refused merge leaves the run's summary as the verdict.
+        if record is not None and self.opts.only and not self.lock_lost:
+            merged = self._merge_into_failed(record)
+            if merged is not None:
+                return EXIT_CODES[merged]
         self._summary(status, reason, path)
         return EXIT_CODES[status]
+
+    def _merge_into_failed(self, run: dict[str, Any]) -> str | None:
+        """V1 of agent/plans/PLAN-vmcheck-incremental.md: merge this `--only` run's record into the FAILED receipt archived for the same tree, then judge the merged ledger with the verdict, phases and area legs a full run uses. Writes the merged receipt and returns its status when it is VERIFIED or still FAILED; returns None, writing nothing, when `vm_tier.merge_refusal` refuses or the merged ledger would be NOT_VERIFIED (a step the FAILED run never reached, an area leg it never ran)."""
+        base = receipt_mod.read_archive(self.root, self.tree)
+        if base is None:
+            self.say(
+                "  --only merge: no receipt is archived for tree %s, so nothing takes this run"
+                % self.tree[:12]
+            )
+            return None
+        refusal = receipt_mod.merge_refusal(base, run)
+        if refusal is not None:
+            self.say("  --only merge refused: %s" % refusal)
+            return None
+        areas = list((base.get("trigger") or {}).get("areas") or [])
+        unknown = [a for a in areas if a not in trigger.AREAS]
+        if unknown:
+            self.say(
+                "  --only merge refused: the FAILED receipt names areas this map does not know (%s); run the whole check"
+                % ", ".join(map(str, unknown))
+            )
+            return None
+        steps = receipt_mod.merge_steps(base["steps"], run["steps"], frozenset(run["only"]))
+        phases = {
+            side: {
+                "required": bool((base["phases"].get(side) or {}).get("required")),
+                "ran": phase_ran_in(steps, side),
+            }
+            for side in trigger.SIDES
+        }
+        failures = [
+            "%s: %s (%s)" % (r.get("id"), r.get("desc", ""), r.get("evidence", ""))
+            for r in steps
+            if r.get("verdict") == "FAIL"
+        ]
+        assertions = sum(1 for r in steps if r.get("verdict") in ("ok", "FAIL"))
+        status, reason = verdict(assertions, failures, None, [], phases)
+        fleet = base.get("fleet") or {}
+        results = judge_areas(
+            frozenset(areas),
+            steps,
+            lambda _receipt: self.receipt_fn(self.root, self.tree),
+            list(fleet.get("ips") or []) if fleet.get("mode") else None,
+        )
+        short = area_shortfall(results)
+        if short and status == receipt_mod.VERIFIED:
+            status, reason = (
+                receipt_mod.NOT_VERIFIED,
+                {
+                    "class": "area-not-verified",
+                    "detail": "%d area leg(s) not proven: %s" % (len(short), "; ".join(short)),
+                },
+            )
+        if status == receipt_mod.NOT_VERIFIED:
+            self.say(
+                "  --only merge not written: the merged ledger would be NOT_VERIFIED (%s: %s); the FAILED receipt of tree %s stays, so run the whole check"
+                % (
+                    reason["class"] if reason else "?",
+                    reason["detail"] if reason else "",
+                    self.tree[:12],
+                )
+            )
+            return None
+        merged = {
+            **base,
+            "status": status,
+            "reason": reason,
+            "steps": steps,
+            "phases": phases,
+            "areas": results,
+            "merged": [*(base.get("merged") or []), receipt_mod.merge_entry(run)],
+        }
+        path = receipt_mod.write(self.root, merged)
+        self.say(
+            "  --only %s merged into the FAILED receipt of tree %s (run %s): now %s%s"
+            % (
+                ", ".join(sorted(run["only"])),
+                self.tree[:12],
+                base.get("runId"),
+                status,
+                "" if reason is None else " (%s)" % reason["detail"],
+            )
+        )
+        self.say(
+            "  receipt: %s"
+            % (path.relative_to(self.root) if path.is_relative_to(self.root) else path)
+        )
+        return status
 
     def _receipt(self, status: str, reason: dict[str, str] | None) -> dict[str, Any]:
         finished = self.host.now()
@@ -3376,6 +4236,8 @@ class VmCheck:
                 if self.run_id and self.run_dir().is_dir()
                 else None
             ),
+            # The steps an `--only` run named, which `vm_tier.merge_refusal` reads; absent on a full run.
+            **({"only": sorted(self.opts.only)} if self.opts.only else {}),
             "startedAt": _iso(self.started_at),
             "finishedAt": _iso(finished),
             "wallMs": int((self.host.monotonic() - self.started_mono) * 1000),
@@ -3510,6 +4372,31 @@ def plan_lines(changed: trigger.Changed | None, sides: Collection[str]) -> list[
     return lines
 
 
+def with_verified_base(
+    root: pathlib.Path,
+    git: Callable[[Sequence[str]], str | None],
+    base: trigger.BaseResolution,
+) -> tuple[trigger.BaseResolution, tuple[str, str] | None]:
+    """V2 of agent/plans/PLAN-vmcheck-incremental.md: the base `--changed` diffs against when no `--base` is given. That is the newest commit in `base.merge_base..HEAD` whose own receipt the push guard admits (`surfaces.newest_verified_base` with `vm_tier.verified_base_admits`), so a batch after a VERIFIED run selects only what changed since it; with no such commit, `base` itself. The second value is that (commit, tree), which the receipt records as `trigger.verifiedBase`: the guard admits a side this run skips only through it (`vm_tier.admit`'s chain)."""
+    if base.merge_base is None:
+        return base, None
+    verified = trigger.newest_verified_base(
+        git, base.merge_base, receipt_mod.verified_base_admits(root, base.merge_base)
+    )
+    if verified is None:
+        return base, None
+    return (
+        trigger.BaseResolution(
+            verified[0],
+            "the newest VERIFIED receipt on the branch, tree %s" % verified[1][:12],
+            verified[0],
+            base.tried,
+            base.warnings,
+        ),
+        verified,
+    )
+
+
 def dry_run(root: pathlib.Path, opts: Options, out=None) -> int:
     """`--dry-run`: print what the run would prove and touch nothing (no lock, no fleet, no gateway, no receipt). Exit 0 when the plan was read; 2 when the diff could not be read at all, since a plan over an unreadable change would be a guess."""
     stream = out if out is not None else sys.stdout
@@ -3537,6 +4424,8 @@ def dry_run(root: pathlib.Path, opts: Options, out=None) -> int:
             base = trigger.BaseResolution(opts.base, "--base", commit, (opts.base,), ())
         else:
             base = trigger.push_base(git, branch if branch and branch != "HEAD" else None)
+            if opts.changed and base.merge_base is not None:
+                base, _verified = with_verified_base(root, git, base)
         if base.merge_base is None:
             say(
                 "vm:check: no push base resolved (tried %s): both phases and every area"
@@ -3591,6 +4480,24 @@ def selftest(out=None) -> int:
     return EXIT_FAILED
 
 
+# These start no gateway and write no receipt, so a lease may run them.
+LEASE_SAFE_FLAGS = frozenset({"--selftest", "--dry-run", "-h", "--help"})
+
+
+def lease_refusal(root: pathlib.Path, argv: Sequence[str]) -> str | None:
+    """Why a run may not start from `root`, or None. Judged before the arguments, so an arg error in a main checkout proves the refusal let it through."""
+    if LEASE_SAFE_FLAGS.intersection(argv):
+        return None
+    paths.on_sys_path(paths.hooks_stop_dir(paths.CI_DIR.parent))
+    main_tree = importlib.import_module("wl_core").lease_main(root)
+    if main_tree is None:
+        return None
+    return (
+        "%s: REFUSED: %s is a lease of %s, and full gates run only in the main checkout at landing: a run restarts the shared dev gateway, and the push guards read the receipt from there. Land the commits, then run npm run vm:check in %s. --dry-run and --selftest stay allowed in a lease."
+        % (NAME, root, main_tree, main_tree)
+    )
+
+
 def main(
     argv: Sequence[str],
     *,
@@ -3611,6 +4518,10 @@ def main(
     extra_fns: Mapping[str, Callable[[VmCheck], None]] | None = None,
     receipt_fn: Callable[[pathlib.Path, str], tuple[bool, str]] = backup_receipt_admits,
 ) -> int:
+    refusal = lease_refusal(root or paths.repo_root(), argv)
+    if refusal is not None:
+        log.error(refusal)
+        return EXIT_FAILED
     opts = parse_args(argv, environ)
     if opts.selftest:
         return selftest(out)

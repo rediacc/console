@@ -15,7 +15,19 @@ Residue: <what the instruments do not reach>   mandatory when JUDGMENT-ONLY
 Documented-In: <anchor>            optional, 0..n lines, one anchor each, only after Residue:
 ```
 
-A pointer is `gate:<npm check id>`, `hook:<trapguard rule id>`, `guard:<guard stem>`, or `file:<path>` / `file:<path>:<line>`. Every pointer must RESOLVE and must be LIVE, because the cheapest thing to name under a coverage gate is an instrument that cannot fire. A `guard:` pointer is live when the guard has its own `test-<stem>.py` suite, or both a firing and a silent case in `hookcases.py`.
+A pointer is `gate:<npm check id>`, `hook:<trapguard rule id>`, `guard:<guard stem>`, `shape:<trap id>`, or `file:<path>` / `file:<path>:<line>`. Every pointer must RESOLVE and must be LIVE, because the cheapest thing to name under a coverage gate is an instrument that cannot fire. A `guard:` pointer is live when the guard has its own `test-<stem>.py` suite, or both a firing and a silent case in `hookcases.py`.
+
+A lesson about one command shape enforces itself with `Shape:` lines after `Residue:`, and `shape:<its own id>` names them. `block_shape_lessons` (pre-bash) refuses or warns on a `pre:` shape, and trapguard's `shape-lessons` rule adds a note after a `post` shape whose output also matches. Each shape carries samples in both directions, and a shape whose regex does not compile or whose samples misbehave is not loaded and reds this gate:
+
+```
+Shape: pre:refuse <regex>    or pre:warn <regex>; searched against each command bash runs, as `name arg ...`
+Shape: post <regex>          with Shape-Output: <regex>, searched in stdout and stderr
+Shape-Fires: <sample>        1..n; a post sample is `<command> => <output>`
+Shape-Silent: <sample>       1..n
+Shape-Say: <text>            optional: the sentence the refusal or note leads with
+```
+
+Memory notes carry the same lines; `.claude/hooks/trapguard/shapes.py` holds the full grammar.
 
 `Documented-In:` names where a lesson is written down. It never counts as enforcement, and each anchor must resolve to the lesson's text, not merely to a place:
 
@@ -535,9 +547,9 @@ So the build succeeding is NOT evidence that the build built what you wrote. The
 ## The review tooling comes from `main`, the workflow comes from the PR
 Trap-Id: review-scripts-come-from-main
 Enforced-By: JUDGMENT-ONLY
-Residue: Live again since the 2026-10-03 restore (agent/plans/PLAN-github-pr-review-restore.md): `claude-review.yml` comes from the PR and checks `rediacc_ci.review` out of `main` into `.review-scripts`, so a new arm or module is unusable until merged. Nothing compares a step's arm against main's copy of the package.
+Residue: Live again since the 2026-10-03 restore (agent/plans/PLAN-github-pr-review-restore.md): `ops-claude-review.yml` comes from the PR and checks `rediacc_ci.review` out of `main` into `.review-scripts`, so a new arm or module is unusable until merged. Nothing compares a step's arm against main's copy of the package.
 
-A workflow step may only call review-gate arms that **already exist on main**. `claude-review.yml` checks the review package out with `ref: main, path: .review-scripts` and runs `PYTHONPATH=.review-scripts/.ci python3 -P -m rediacc_ci.review.claude_review_gate`, deliberately, so PR-authored review code can never execute. The workflow file itself comes from the PR. (The reusable workflow that carried this before its 2026-10-02 deletion did the same.)
+A workflow step may only call review-gate arms that **already exist on main**. `ops-claude-review.yml` checks the review package out with `ref: main, path: .review-scripts` and runs `PYTHONPATH=.review-scripts/.ci python3 -P -m rediacc_ci.review.claude_review_gate`, deliberately, so PR-authored review code can never execute. The workflow file itself comes from the PR. (The reusable workflow that carried this before its 2026-10-02 deletion did the same.)
 
 Cost: run `30552035566`. A step called a `--record-invocation` arm added on the
 branch; `git show origin/main:<the review gate script> | grep -c record-invocation` returned 0, so the step failed instantly and took the review job red.
@@ -953,8 +965,15 @@ See `.ci/scripts/test/gates/test-scope-gate-outputs.sh:254` for the fixed instan
 
 ## `date +%s%3N` returns NANOSECONDS under uutils coreutils, and CI will never tell you
 Trap-Id: date-precision-digit-under-uutils
-Enforced-By: JUDGMENT-ONLY
-Residue: GitHub runners ship GNU coreutils, so any gate for this is green there forever. `git grep 'date +%s%[0-9]*N'` is a sweep a human runs, and only a precision digit compared against a threshold is a defect.
+Enforced-By: shape:date-precision-digit-under-uutils
+Residue: the shape warns on a `date` the Bash call itself runs; a precision digit inside a script file the call runs (`bash test.sh`) is not seen, and GitHub runners ship GNU coreutils, so `git grep 'date +%s%[0-9]*N'` stays the sweep for committed scripts.
+Shape: pre:warn ^date\b.*%[0-9]+N
+Shape-Say: `date` with a precision digit (%3N) returns NANOSECONDS under uutils coreutils (0.8 here); use bash's EPOCHREALTIME for milliseconds
+Shape-Fires: date +%s%3N
+Shape-Fires: t=$(date -u +%H:%M:%S.%3N); echo $t
+Shape-Silent: date +%s
+Shape-Silent: date +%s%N
+Shape-Silent: echo "date +%s%3N"
 
 **GNU `date` honours the precision digit in `%3N` (milliseconds). uutils coreutils — the Rust reimplementation, shipping by default on more and more systems, 0.8.0 on this host — IGNORES it and returns the full nine digits.** Same command, same flags, a number a million times larger.
 
@@ -1767,6 +1786,19 @@ A SECOND, sharper version of the same gap: a completed `isolation: "worktree"` a
 lost except its own working directory having changed underneath it. Seen live 2026-09-15: a docker-cutover writer's first pass made no changes (blocked on a stale base, see above), and resuming it to retry landed it directly in the shared tree, mid-push by an unrelated live session. It noticed only because it re-ran `pwd` and `git worktree list` before acting, per its own task
 instructions to re-verify state before a consequential step -- an agent that trusted its original briefing's "you are isolated" premise instead would have edited the shared tree believing itself alone in it. Re-verify the working directory and `git worktree list` after ANY resume of a worktree-isolated agent, not only after its first dispatch.
 
+CLOSED BY THE LEASE ROUTE, once the harness create hook is wired (PLAN-worktree-lease W5): the hook hands every `isolation: "worktree"` spawn a lease from `./run.sh worktree lease`, cut at the live branch's tip with submodules at their gitlinks, so the stale `origin/main` base and the empty submodules no longer arise. Until that hook is in `.claude/settings.json`, the three checks above stay the test. The resume hazard in the paragraph above is unchanged: a reclaimed tree still drops a resumed agent into the primary checkout.
+
+---
+
+## A linked submodule tree shares the live module's config, so a config write in a lease lands in the live checkout
+Trap-Id: lease-shared-submodule-config
+Enforced-By: JUDGMENT-ONLY
+Residue: nothing checks a `git config` write made from inside a lease's submodule tree; `block_lease_boundary` refuses push, branch and landing verbs, not a config edit, and only the lead's reading of the lease's report catches one.
+
+A lease's submodules are linked worktrees of the live `.git/modules/private/<name>` stores (PLAN-worktree-lease W0, candidate A), not clones. A linked worktree has its own HEAD and index but reads the module's single `config`: `remote.*`, `core.hooksPath`, `user.*`, `core.worktree`, `branch.*` and `extensions` are the live checkout's too. A writer in a lease that runs `git config <key> <value>` in a submodule, or `git remote set-url`, `git remote add` or `git branch --set-upstream-to`, changes the live submodule at the same moment, and nothing about the lease's isolation says so. The same holds for a hand-set `core.hooksPath`: the live module already carries the one that points at `.claude/rediacc_hooks/git`, so a lease needs none, and a different value breaks the live tree's hooks as well.
+
+The tree that looked isolated is therefore not isolated for config, refs under `refs/heads` and `refs/tags`, and the object store. A fetch from a remote or a `git gc` run in a lease acts on the live store. Leave config alone from a lease; a change that is genuinely needed goes in the writer's report for the lead to apply in the main checkout. Reading config is safe.
+
 ---
 
 ## A control proves the mutant is detectable, not that the check will ever see the mutant's shape
@@ -1940,12 +1972,14 @@ so in the same report that discloses the workaround, because the workaround's ow
 
 ## The wake timer dies before it fires when its Bash timeout is not above its sleep
 Trap-Id: wake-timer-timeout-above-sleep
-Enforced-By: file:.claude/hooks/stop/wl_checks.py
-Residue: nothing reads the Bash call's timeout, so a wake timer started with the harness default is killed before it fires.
+Enforced-By: guard:block_short_wake_timeout, file:.claude/hooks/stop/wl_checks.py
+Residue:
 Documented-In: text:CLAUDE.md a `timeout` above its sleep
 Documented-In: text:CLAUDE.md as a background Bash call
 
 The wake timer exists because the harness re-invokes a session only when a background task exits. Started with the harness's own 30-minute default timeout around a 30-minute sleep, the call is killed just before it would have fired, so a stop that waits on hung work never ends. The `timeout` passed to the Bash call has to sit above the timer's sleep (2400000 ms for the default).
+
+The same arm fails three more ways that look armed: behind a shell `&` (on 2026-11-10 one was appended to an unrelated command, so the Bash call returned at once and the orphaned timer's exit woke nothing), chained with other work in one call, or run in the foreground. Since 2026-11-10 `block_short_wake_timeout` refuses all four in the pre-bash chain, reading the required timeout from `wl_wake.harness_timeout_ms`, and names the one correct form: the arm alone in its own Bash call, `run_in_background: true`, `timeout: 2400000`.
 
 ## ci:quick drops a touched slow gate and the push goes out unverified
 Trap-Id: ci-quick-drops-touched-slow-gate
@@ -1998,10 +2032,18 @@ A citation of a bare file name resolves against nothing once the file moves or a
 
 ## -p no:cacheprovider under --strict-config collects nothing
 Trap-Id: no-cacheprovider-vs-strict-config
-Enforced-By: JUDGMENT-ONLY
-Residue: a nested pytest run against the repo's ini with `-p no:cacheprovider` exits 4 and collects nothing; nothing refuses it.
+Enforced-By: shape:no-cacheprovider-vs-strict-config
+Residue: the note follows a Bash call that ran pytest with `-p no:cacheprovider` and printed the empty run; a nested run inside a script or a gate whose output the session never reads is not seen, and nothing refuses the flag up front.
 Documented-In: text:.ci/rediacc_ci/tests/gates/test_twin_parity.py Disabling that plugin UNREGISTERS the `cache_dir` ini key
 Documented-In: text:pyproject.toml --strict-config  an unknown key in THIS table is an error
+Shape: post ^(?:\S*/)?(?:pytest|python[0-9.]*\s.*-m\s*pytest)\b.*\s-p\s*no:cacheprovider(?:\s|$)
+Shape-Output: no tests ran|Unknown config option: cache_dir
+Shape-Say: `-p no:cacheprovider` unregisters the `cache_dir` ini key, so under the repo's --strict-config pytest exits 4 having collected NOTHING; drop the flag and rerun
+Shape-Fires: pytest -q -p no:cacheprovider tests/ => no tests ran in 0.10s
+Shape-Fires: python3 -m pytest -p no:cacheprovider x.py => ERROR: Unknown config option: cache_dir
+Shape-Silent: pytest -q -p no:cacheprovider tests/ => 12 passed in 0.40s
+Shape-Silent: pytest -q tests/ => no tests ran in 0.01s
+Shape-Silent: echo pytest -p no:cacheprovider => no tests ran
 
 Disabling pytest's cacheprovider plugin also unregisters its `cache_dir` ini key. Under the repo's `--strict-config`, the ini's `cache_dir` then counts as an unknown key, so a nested pytest run with `-p no:cacheprovider` exits 4 and collects nothing. The empty run looks like a pass to anything that reads only the exit status of a later step.
 
@@ -2039,3 +2081,26 @@ Documented-In: doc:docs/agent-reference/bench-login.md#Whose step it is
 On 2026-10-30 `./rdc.sh --config eu-bench machine status hostinger` answered that the config token "could not be renewed because this device's login is tied to another network address" and told the reader to run a command in an interactive terminal and enter the code from an authenticator app. The text is right for a person at a terminal. A session read it as a step only the operator could take and asked the operator for the TOTP, though `npm run login:bench` derives that code from the vault and is agent-allowed for `eu-bench`.
 
 The CLI cannot carry the pointer itself: it is the shipped product and knows nothing of this repository's tooling. So the remedy sits where a session meets the text: the live-proof recorder runs `npm run login:bench` once and retries, a trapguard note names it after any `eu-bench` rdc call that printed the error, and `block_settled_questions` refuses the question. Before asking the operator for anything a CLI message tells a human to do, check whether a repository tool already does it.
+
+## A plan closed with live bindings orphans the work that cited it
+Trap-Id: plan-closed-with-live-bindings
+Enforced-By: gate:check:ci-plan-bindings, file:.claude/hooks/stop/wl_planbind.py
+Residue: a binding written only in prose (a plan named without its file name, a box described in words) is not seen; a box signature binds only an item that names no other plan, because identical box lines in different plans share one signature.
+Documented-In: doc:agent/plans/PLAN-plan-compaction-bindings.md#Operator ruling (2026-10-03), condensed
+
+On 2026-10-03 seven plans sat compacted in `_done/` with open boxes, and the worklist items that cited them reached the operator as "no live box: keep or drop?": the work had been closed by moving its document, not by finishing it. Compaction, `--move` and `--sweep` checked the plan's own status and nothing that pointed at it. `wl_planbind.bindings` now names every open box, open item, unfinished dependent and citing box, the three verbs refuse while it is non-empty, and the gate fails any closed plan that still has one.
+
+
+## A bench 403 is the IP allowlist, never a rate limit
+Trap-Id: bench-403-read-as-rate-limit
+Enforced-By: file:.claude/hooks/stop/wl_benchblock.py, file:.ci/rediacc_ci/ops/ops_health.py
+Residue: the hint keys on a bench config or bench host in the COMMAND, so a script that reaches bench without naming either (a wrapper whose own argv carries neither) shows the 403 with no note; `bench_access preflight` covers `ci:quick` only.
+Documented-In: text:.ci/rediacc_ci/ops/bench_access.py whose bench request answers Cloudflare's own 403 page
+
+On 2026-11-10 `./rdc.sh --config eu-bench` answered `{"errors":[{"code":"GENERAL_ERROR","message":"HTTP 403"}]}` on stdout with nothing but progress lines on stderr. A session read the 403 as a rate limit, wrote "bench rate-limits this IP until 2026-11-12" onto worklist items, and left bench work idle for hours.
+
+The 403 was Cloudflare's own block page. Bench sits behind ONE WAF custom rule that allows a short IP list (`.ci/rediacc_ci/ops/bench_access.py`): each entry expires 7 days after it was added, and this machine's egress IP rotates nightly, so falling off the list is routine and nothing about it waits out. The fix is one command, `PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access add-current`, then a rerun.
+
+A second, different refusal follows it: with the new IP allowed, the eu-bench login is still tied to the old one, and the CLI asks for an authenticator code. That is the agent's own step too: `npm run login:bench` moves the login headlessly (see the `human-remedy-read-as-operator-step` entry above).
+
+A post-bash hint (`.claude/hooks/stop/wl_benchblock.py`) now names both commands on every output that shows either refusal from a bench command, and the ops-health machines check appends the allowlist command to a bench 403. Before recording any "rate limit" against bench, look for Cloudflare's "Attention Required" page or a bare `HTTP 403`: a rate limit answers 429.

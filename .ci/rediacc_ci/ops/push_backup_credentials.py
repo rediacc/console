@@ -1,13 +1,13 @@
 """Push one environment's backup key pair to ONE account Worker, outside a release, with a health check on both sides.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.ops.push_backup_credentials --target stable|edge|bench [--region eu|us|asia] [--dry-run]
+    PYTHONPATH=.ci python3 -m rediacc_ci.ops.push_backup_credentials --target stable|bench [--region eu|us|asia] [--dry-run]
 
 WHY IT EXISTS. Each environment's Workers presign backup grants with their own bucket-scoped key pair (agent/plans/PLAN-backup-credential-isolation.md). Stable Workers receive secrets only on promote-stable and bench only on a full deploy_bench, so rotating the pair on a live Worker needs a narrow tool that touches nothing else: the four `ACCOUNT_BACKUP_S3_*` secrets of one Worker, one Worker per run.
 
 THE STEPS, IN ORDER, AND EACH REFUSAL STOPS THE RUN BEFORE THE NEXT STEP:
 
   1. Re-execute under the `backup-push-<target>` Bitwarden profile (.ci/config/secret-supply.json) unless it is already bound. That profile binds ONLY that environment's pair, renamed to the two names the Worker reads, the shared endpoint, and the Workers deploy token.
-  2. Resolve the Worker, its bucket and its host from regions.json (stable, edge) or workers/account/wrangler.bench.toml (bench), and cross-check the Worker's own wrangler config: its `name` and its `BACKUP_BUCKET` binding must be the same Worker and bucket, or the push would hand a Worker a bucket it is not bound to.
+  2. Resolve the Worker, its bucket and its host from regions.json (stable, the shared set of a region) or workers/account/wrangler.bench.toml (bench), and cross-check the Worker's own wrangler config: its `name` and its `BACKUP_BUCKET` binding must be the same Worker and bucket, or the push would hand a Worker a bucket it is not bound to.
   3. Check that the three bound values are present (names only), and that no `ACCOUNT_BACKUP_S3_*_{STABLE,EDGE,BENCH}` name is in the environment: under the profile there is none, so one there means the run is holding a second environment's key.
   4. `portal_health` for the Worker's host. Red refuses: a push onto a broken portal would leave nothing to compare the after-check with.
   5. `wrangler secret list` (names only). The four names must already be there, because this tool replaces values and never adds a secret; a Worker missing one needs a deploy.
@@ -38,7 +38,7 @@ from rediacc_ci.core import wrangler
 from rediacc_ci.deploy import set_account_worker_secrets
 from rediacc_ci.ops import portal_health
 
-TARGETS = ("stable", "edge", "bench")
+TARGETS = ("stable", "bench")
 PROFILE_PREFIX = "backup-push-"
 # The four Worker secrets this tool writes, in the order the bulk document carries them.
 PUSHED = (
@@ -121,16 +121,8 @@ def plan(target: str, region: str | None, root=None) -> Plan:
     if region not in regions:
         raise UsageError("unknown region %r (regions.json has %s)" % (region, ", ".join(regions)))
     entry = regions[region]
-    if target == "stable":
-        worker, bucket, host = entry["workerName"], entry["backupR2"]["name"], entry["domain"]
-        config = "wrangler.%s.toml" % region
-    else:
-        worker, bucket, host = (
-            entry["edgeWorkerName"],
-            entry["edgeBackupR2"]["name"],
-            entry["edgeDomain"],
-        )
-        config = "wrangler.edge-%s.toml" % region
+    worker, bucket, host = entry["workerName"], entry["backupR2"]["name"], entry["domain"]
+    config = "wrangler.%s.toml" % region
     jurisdiction = entry.get("r2Jurisdiction") or ""
     bound_worker, bound_bucket, bound_jurisdiction = _config_binding(worker_dir / config)
     if (bound_worker, bound_bucket, bound_jurisdiction) != (worker, bucket, jurisdiction):
@@ -360,7 +352,7 @@ def build_parser() -> argparse.ArgumentParser:
         description=(__doc__ or "").splitlines()[0],
     )
     parser.add_argument("--target", required=True, choices=TARGETS)
-    parser.add_argument("--region", default=None, help="one regions.json id (stable and edge)")
+    parser.add_argument("--region", default=None, help="one regions.json id (stable only)")
     parser.add_argument(
         "--dry-run", action="store_true", help="read-only steps only; write nothing"
     )

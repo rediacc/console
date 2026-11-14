@@ -6,16 +6,28 @@ LOCAL CONFIG ONLY. `git config --local core.hooksPath <abs>` changes nothing for
 
 IDEMPOTENT, like every phase (`.ci/lib/setup.sh:17`): a repository already pointing at the directory is left alone, so a second run does no work. A submodule that is not checked out (no `.git` entry) is skipped, the same best-effort stance `init-submodules.sh` takes for a developer without access to every private submodule.
 
+THE BACKUP REMOTES RIDE THIS PHASE. After the hooks path, `backup_remotes.py` beside this file adds a `gitlab` remote at its pinned URL to each checked-out pinned submodule (box G4 of agent/plans/PLAN-local-first-delivery.md), since the backup refs it serves are pushed by these hooks.
+
 A DIFFERENT EXISTING VALUE IS REPLACED AND SAID SO. There is no other hooks directory in this repository (no husky, no lefthook, no `.githooks`; `.git/hooks` holds only samples), so a foreign value is a leftover rather than a second tool, and leaving it would leave the policy silently unenforced.
 """
 
 from __future__ import annotations
 
+import importlib.util
 import pathlib
 import subprocess
+import sys
 
 HOOKS_REL = (".claude", "rediacc_hooks", "git")
-HOOK_NAMES = ("commit-msg", "reference-transaction", "pre-push", "pre-commit")
+HOOK_NAMES = (
+    "commit-msg",
+    "reference-transaction",
+    "pre-push",
+    "pre-commit",
+    "post-commit",
+    "post-rewrite",
+    "post-merge",
+)
 
 
 def hooks_dir(root: pathlib.Path) -> pathlib.Path:
@@ -93,7 +105,25 @@ def install(root: pathlib.Path, say=print) -> int:
             say("git hooks: %s: core.hooksPath %s -> %s" % (rel, value, want))
         else:
             say("git hooks: %s: core.hooksPath -> %s" % (rel, want))
+    if _backup_remotes().install(root, say=say) != 0:
+        failed += 1
     return 1 if failed else 0
+
+
+def _backup_remotes():
+    """`backup_remotes.py` beside this file, loaded BY PATH: this module is itself loaded by path from guard tests that put no `.ci` on sys.path. The step runs inside this phase because the backup refs it serves are pushed by these hooks (box G4 of PLAN-local-first-delivery)."""
+    name = "rediacc_setup_backup_remotes"
+    module = sys.modules.get(name)
+    if module is None:
+        spec = importlib.util.spec_from_file_location(
+            name, pathlib.Path(__file__).with_name("backup_remotes.py")
+        )
+        if spec is None or spec.loader is None:
+            raise RuntimeError("backup_remotes.py is missing beside %s" % __file__)
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[name] = module
+        spec.loader.exec_module(module)
+    return module
 
 
 def check_row(root: pathlib.Path) -> tuple[str, bool]:

@@ -114,8 +114,12 @@ export class RepositoryMethods {
     });
   }
 
-  repositoryUnmount(name: string, datastorePath?: string, networkId?: string): Promise<ExecResult> {
-    // Like mount: without networkId the harness default rides along, which is wrong for a repo on another network.
+  repositoryUnmount(
+    name: string,
+    datastorePath: string | undefined,
+    networkId: string
+  ): Promise<ExecResult> {
+    // Required: a missing id would fall back to the harness default and stop the wrong daemon.
     return this.testFunction({
       function: 'repository_unmount',
       repository: name,
@@ -145,6 +149,22 @@ export class RepositoryMethods {
   repositoryList(datastorePath?: string): Promise<ExecResult> {
     return this.testFunction({
       function: 'repository_list',
+      datastorePath,
+    });
+  }
+
+  repositoryFsck(datastorePath?: string): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_fsck',
+      datastorePath,
+    });
+  }
+
+  /** machine_prune with dry_run: the datastore and unit phases report, nothing is removed. */
+  machinePruneDryRun(datastorePath?: string): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'machine_prune',
+      dryRun: true,
       datastorePath,
     });
   }
@@ -212,6 +232,35 @@ export class RepositoryMethods {
       function: 'repository_health',
       repository: name,
       datastorePath,
+    });
+  }
+
+  /** repository_repair: runs health() then the allowed repair() functions of the repo's Rediaccfile; `dryRun` plans only. */
+  repositoryRepair(
+    name: string,
+    opts: {
+      allowClasses?: string;
+      inWindow?: boolean;
+      dryRun?: boolean;
+      datastorePath?: string;
+    } = {}
+  ): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'repository_repair',
+      repository: name,
+      allowClasses: opts.allowClasses,
+      inWindow: opts.inWindow,
+      dryRun: opts.dryRun,
+      datastorePath: opts.datastorePath,
+    });
+  }
+
+  /** proxy_acme_fix: anchors colliding ACME challenge names and restarts Traefik; `dryRun` reports only. */
+  proxyAcmeFix(opts: { dryRun?: boolean; restart?: boolean } = {}): Promise<ExecResult> {
+    return this.testFunction({
+      function: 'proxy_acme_fix',
+      dryRun: opts.dryRun,
+      restart: opts.restart,
     });
   }
 

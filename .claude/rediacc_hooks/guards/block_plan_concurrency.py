@@ -4,20 +4,25 @@ THE ASK (operator, 2026-09-25, section X): "The concurrency field is really abou
 
 THE DECISION, for an Agent or Task call (the rules are `wl_planconc.spawn_verdict`, shared with the roster's queue):
   1. not a spawn, or a read-only type (`wl_roster.read_only_types`, as the cap guard) -> ALLOW;
-  2. S = the plans the spawn serves (`spawn_plans`: a `Plan: PLAN-x.md` line, else the `#<id>` items it names, else a bare
-     `PLAN-x.md [<8hex>]`); L = the plans live writers serve (`live_plans`: this session's live writers through their first
-     prompts, every session's fresh leases on plan-linked items), minus S;
+  2. S = the plans the spawn serves (`spawn_plans`: none for a `Plan: none -- <reason>` line, else a `Plan: PLAN-x.md` line, else
+     the `#<id>` items it names, else a bare `PLAN-x.md [<8hex>]`); L = the plans live writers serve (`live_plans`: this
+     session's live writers through their first prompts, every session's fresh leases on plan-linked items), minus S;
+  2b. a live agent of a writer type whose brief says `Owns: none` and whose transcript shows no edit is a reader, not a holder:
+     it serves no plan in L, a same-session lease to it holds nothing, and an allowed spawn's stderr names it (#55b1f90b);
   3. DENY when a plan in L is `Concurrency: exclusive` (the mutex);
   4. DENY when a plan in S is exclusive and L is not empty (decision D5: a mutex taken while others hold files is no mutex);
-  5. DENY when S's Owns and L's Owns share a path, naming both globs and one witness path;
+  5. DENY when S's Owns and L's Owns share a path, naming both globs and one witness path; a spawn the harness isolates in its own tree is ALLOWED with a stderr note naming the witness instead (the lease plan's W12, a lead decision awaiting the operator's look), since a clash then surfaces at landing. Steps 3, 4 and the header refusals still apply to it;
   6. a planless spawn is judged on its own `Owns:` line when it declares one, refused under a live exclusive plan unless that
-     line is disjoint, and ALLOWED with a stderr note when it declares nothing (decision D4).
+     line is disjoint, and ALLOWED with a stderr note when it declares nothing (decision D4). An `Owns:` line that does not
+     parse reads as nothing declared, and every refusal or note built on that says the line was not read and why.
 
 The writer cap still applies first: `block_agent_cap` is ORDER 3 and `block_focus_spawn` ORDER 4 on the same chain.
 
+SAME-MESSAGE SPAWNS (#105d59a7, the lease plan's W13). A sibling started by the same message has no meta and no Stop event yet, so the roster cannot list it: on 2026-11-04 three writers passed this guard with real Owns overlaps. Each admitted writer spawn therefore appends a claim (`wl_planconc.claim_gate`), and L above includes the unexpired claims of every session whose agent has not appeared. Read, decide and append sit inside one flock, so either hook order is safe. The cap is decided here too, because a count read at ORDER 3 and a claim appended at ORDER 5 would leave two racing spawns both under it: this session's live writers plus its claims must stay under `wl_roster.writer_cap`. As the last guard of the chain that can REFUSE, nothing behind it can refuse a spawn it claimed: the one guard behind it, `warn_writer_brief` (ORDER 6, PLAN-experience-feedback P1/P4), never exits 2, and its own suite asserts rc 0 on every case.
+
 THE X FIELDS ARE MANDATORY (PLAN-plan-priority-concurrency.md T11): a missing Owns fails closed as `**` and a spawn for such a plan is refused.
 
-FAILS OPEN, LOUDLY, when it cannot see: a module that will not import, a store that will not fold, or a writer estimate that is blind with no cross-session lease visible either. The Stop hook's roster recounts from the authoritative event (PLAN-plan-priority-concurrency T8, `roster-concurrency`).
+FAILS OPEN, LOUDLY, when it cannot see: a module that will not import, a store that will not fold, a writer estimate that is blind with no cross-session lease or claim visible either, or a claim file that cannot be locked or read (judged then without its siblings). The Stop hook's roster recounts from the authoritative event (PLAN-plan-priority-concurrency T8, `roster-concurrency`).
 
 NO ENVIRONMENT READ. This file is a sealed module in `.ci/policy/worklist-env-registry.json`. The payload's own `cwd` and `session_id` locate the session.
 
@@ -29,6 +34,7 @@ import json
 import os
 import pathlib
 import tempfile
+import time
 
 from rediacc_hooks import hookio, syspath
 
@@ -40,6 +46,10 @@ ORDER = 5
 DEFECT = ("return _refuse(event, verdict, kind, MUTEX_EXITS)", "return hookio.ALLOW")
 
 STOP_DIR = pathlib.Path(__file__).resolve().parents[2] / "hooks" / "stop"
+# The Agent tool's `isolation` value that gives a spawn its own tree.
+ISOLATED_SPAWN = "worktree"
+# How long a spawn waits on the claim lock before failing open; each holder keeps it for milliseconds.
+LOCK_WAIT_S = 30
 
 # ---- the differential's world: a tree with an exclusive plan E held by a peer's fresh lease ------
 WORLD = os.path.join(tempfile.gettempdir(), "rediacc-guard-planconc-world")
@@ -139,13 +149,38 @@ Do one of these:
   - stop the holder (TaskStop <id>) and release its lease
 """
 
+CAP_EXITS = """
+Do one of these:
+  - queue the work until a slot frees, naming its brief and files in the todo list:
+      .claude/hooks/stop/worklist.py --lease <me> <id> +120 worker:queue
+  - dispatch read-only work as subagent_type Plan or Explore, which the cap does not count
+  - do the work inline in this session
+"""
+
+# Printed when a refusal's holder is a claim, which has no task id to stop.
+CLAIM_NOTE = """
+A `spawn claim` is a sibling admitted moments ago, with no agent on disk yet. It clears when that agent appears and expires by itself; a refused spawn sent again after it has started is judged on the live writer.
+"""
+
 HEAD = {
+    "cap": "BLOCKED: this %r writer would pass the writer cap, counting the spawns of this message.",
     "mutex": "BLOCKED: a live plan holds the mutex, so this %r writer does not start.",
     "mutex-own": "BLOCKED: this %r writer serves an exclusive plan, and other plans are live.",
     "overlap": "BLOCKED: this %r writer would edit files a live plan already owns.",
     "no-owns": "BLOCKED: this %r writer serves a plan that declares no Owns, which fails closed.",
     "owns-none": "BLOCKED: this %r writer serves a plan that declares it edits nothing.",
 }
+
+# A spawn's `Owns:` line that did not parse: it was judged as declaring nothing, and the reader is told why.
+OWNS_UNREAD = (
+    "this spawn's Owns: line was not read (%s); write comma-separated globs, e.g. Owns: a/**, b.py"
+)
+
+UNSEEN_CLAIMS = (
+    "plan-concurrency: the spawn claims could not be read (%s: %s), so this %r spawn was judged\n"
+    "without its same-message siblings. The Stop hook's roster recounts plan concurrency from the\n"
+    "authoritative event on the next stop.\n"
+)
 
 UNEXAMINED = (
     "plan-concurrency: %s, so this %r spawn was ALLOWED unchecked. The Stop hook's roster\n"
@@ -157,9 +192,9 @@ def _refuse(event, verdict, kind, exits):
     head = HEAD.get(
         verdict.kind, "BLOCKED: this %r writer breaks plan concurrency (" + verdict.kind + ")."
     )
-    event.warn_raw(
-        "%s\n\n%s\n%s" % (head % kind, "\n".join("  " + ln for ln in verdict.lines), exits)
-    )
+    facts = "\n".join("  " + ln for ln in verdict.lines)
+    note = CLAIM_NOTE if "spawn claim" in facts or verdict.kind == "cap" else ""
+    event.warn_raw("%s\n\n%s\n%s%s" % (head % kind, facts, exits, note))
     return hookio.DENY
 
 
@@ -173,6 +208,8 @@ def run(event):
     cwd = str(doc.get("cwd") or event.cwd)
     session_id = str(doc.get("session_id") or "")
     text = "%s\n%s" % (tool_input.get("description") or "", tool_input.get("prompt") or "")
+    isolated = tool_input.get("isolation") == ISOLATED_SPAWN
+    entered = time.time()
     syspath.on_sys_path(STOP_DIR)
     try:
         import wl_core as C
@@ -184,21 +221,23 @@ def run(event):
         if kind in wl_roster.read_only_types(root):
             return hookio.ALLOW
         declared = X.declared_owns(text)
+        owns_problem = X.owns_line_problem(text) if declared is None else None
         names_work = bool(X.spawn_plans(text) or LH.item_refs(text))
         # THE CHEAP PATH: a spawn that names no plan, no item and no Owns can only be refused by a live mutex, and there is none anywhere unless some plan declares one. Reading ~40 plan heads costs milliseconds; a full fold costs ~0.5 s.
-        if not names_work and declared is None and not X.exclusive_plans(root):
-            event.warn_raw(
-                "plan-concurrency: a planless %r writer declares no `Owns:` line, so its files are not "
-                "checked against live plans (add `Plan: PLAN-x.md` or `Owns: <globs>` to the prompt).\n"
-                % kind
-            )
-            return hookio.ALLOW
-        import wl_store as S
+        cheap = not names_work and declared is None and not X.exclusive_plans(root)
+        serving: set[str] = set()
+        live: dict[str, list[str]] | None = X.LivePlans()
+        if not cheap:
+            import wl_store as S
 
-        fold = S.load(C.worklist_for(C.project_start({"cwd": cwd})), sync=False)
-        by_id = {r["id"]: r for r in fold.items if isinstance(r, dict) and r.get("id")}
-        serving = X.spawn_plans(text, by_id)
-        live = X.live_plans(cwd, session_id, fold)
+            fold = S.load(C.worklist_for(C.project_start({"cwd": cwd})), sync=False)
+            by_id = {r["id"]: r for r in fold.items if isinstance(r, dict) and r.get("id")}
+            serving = X.spawn_plans(text, by_id)
+            live = X.live_plans(cwd, session_id, fold)
+        rows, metas = wl_roster.live_estimate(cwd, session_id)
+        writers = sum(1 for r in rows or () if r.get("writer"))
+        cap = wl_roster.writer_cap(root)
+        claims_path = C.worklist_for(C.project_start({"cwd": cwd})).with_suffix(X.CLAIMS_SUFFIX)
     except Exception as exc:
         event.warn_raw(
             UNEXAMINED
@@ -208,7 +247,70 @@ def run(event):
             )
         )
         return hookio.ALLOW
-    if live is None:
+
+    judged_against: list[dict] = []
+
+    def judge(claims):
+        pending = X.unconsumed(claims, metas, session_id)
+        judged_against[:] = pending
+        # Blind with no claim either: nothing to judge against, as the failing-open line below says.
+        if cheap or (live is None and not pending):
+            verdict = X.Verdict(True, "unjudged")
+        else:
+            verdict = X.spawn_verdict(
+                serving,
+                X.with_claims(live, pending),
+                lambda base: X.plan_x(root, base),
+                declared,
+                root=root,
+                isolated=isolated,
+            )
+        if not verdict.allow:
+            return verdict
+        return X.cap_verdict(writers, pending, session_id, cap) or verdict
+
+    row = X.claim_row(
+        session_id, serving, declared, tool_input.get("description"), isolated, entered
+    )
+    try:
+        verdict = X.claim_gate(claims_path, judge, row, LOCK_WAIT_S)
+    except Exception as exc:
+        event.warn_raw(UNSEEN_CLAIMS % (type(exc).__name__, str(exc)[:160], kind))
+        verdict = judge([])
+    if owns_problem and not verdict.allow:
+        verdict = X.Verdict(
+            verdict.allow,
+            verdict.kind,
+            (*verdict.lines, OWNS_UNREAD % owns_problem),
+            verdict.note,
+        )
+    if verdict.kind in ("mutex", "mutex-own"):
+        return _refuse(event, verdict, kind, MUTEX_EXITS)
+    if verdict.kind == "cap":
+        return _refuse(event, verdict, kind, CAP_EXITS)
+    if not verdict.allow:
+        return _refuse(event, verdict, kind, OVERLAP_EXITS)
+    if cheap:
+        event.warn_raw(
+            "plan-concurrency: a planless %r writer declares no `Owns:` line, so its files are not "
+            "checked against live plans (add `Plan: PLAN-x.md` or `Owns: <globs>` to the prompt).\n"
+            % kind
+        )
+    if owns_problem:
+        event.warn_raw("plan-concurrency: %s.\n" % (OWNS_UNREAD % owns_problem))
+    readers = getattr(live, "readers", None) or []
+    if readers:
+        event.warn_raw(
+            "plan-concurrency: %d live agent(s) of a writer type hold no plan, briefed `Owns: none` with no edit: %s.\n"
+            % (len(readers), "; ".join(readers))
+        )
+    if live is None and judged_against and not cheap:
+        event.warn_raw(
+            "plan-concurrency: no live writer could be counted for session %r, so this %r spawn was judged against the %d unexpired sibling claim(s) only. The Stop hook's roster\n"
+            "recounts plan concurrency from the authoritative event on the next stop.\n"
+            % (session_id, kind, len(judged_against))
+        )
+    elif live is None:
         event.warn_raw(
             UNEXAMINED
             % (
@@ -217,12 +319,6 @@ def run(event):
                 kind,
             )
         )
-        return hookio.ALLOW
-    verdict = X.spawn_verdict(serving, live, lambda base: X.plan_x(root, base), declared, root=root)
-    if verdict.kind in ("mutex", "mutex-own"):
-        return _refuse(event, verdict, kind, MUTEX_EXITS)
-    if not verdict.allow:
-        return _refuse(event, verdict, kind, OVERLAP_EXITS)
     if verdict.note:
         event.warn_raw("plan-concurrency: %s.\n" % verdict.note)
     return hookio.ALLOW

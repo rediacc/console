@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+"""A git hook shim: loads githooks.py beside it BY FILE and runs the hook this file is named for (see that module's docstring)."""
+
+import importlib.util
+import pathlib
+
+_SPEC = importlib.util.spec_from_file_location(
+    "githooks", pathlib.Path(__file__).resolve().parent / "githooks.py"
+)
+if _SPEC is None or _SPEC.loader is None:
+    raise SystemExit("commit-policy hook: githooks.py is missing beside %s" % __file__)
+_MODULE = importlib.util.module_from_spec(_SPEC)
+_SPEC.loader.exec_module(_MODULE)
+_MODULE.shim(__file__)

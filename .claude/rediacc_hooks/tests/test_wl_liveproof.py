@@ -241,6 +241,69 @@ def test_machine_argument_reaches_the_recorder(root):
     assert argv[argv.index("--machine") + 1] == "eu-1"
 
 
+ASKED = "ASKED:2026-11-10T13:38Z"
+
+
+def _run_waived(root, *args, transcript="/t/lead.jsonl"):
+    rec, tick = FakeRecorder(root), FakeTick()
+    seen = []
+
+    def resolve(me):
+        seen.append(me)
+        return transcript
+
+    rc = LP.run(
+        root,
+        ME,
+        list(args),
+        tick=tick,
+        recorder=rec,
+        precheck=lambda *_a: None,
+        transcript=resolve,
+    )
+    return rc, rec, tick, seen
+
+
+@pytest.mark.parametrize("form", [("--vm-waived", ASKED), ("--vm-waived=" + ASKED,)])
+def test_vm_waived_reaches_the_recorder_with_the_lead_transcript(root, form):
+    sig = _sig(PLAN, "LP-hostinger")
+    rc, rec, tick, seen = _run_waived(root, REL, sig, *form, "--write", "--tick")
+    assert rc == 0
+    argv = rec.calls[0]
+    assert argv[argv.index("--vm-waived") + 1] == ASKED
+    assert argv[argv.index("--transcript") + 1] == "/t/lead.jsonl"
+    assert argv[argv.index("--box") + 1] == sig, "the token is not read as the box"
+    assert seen == [ME]
+    assert len(tick.calls) == 1
+
+
+def test_vm_waived_with_no_resolvable_transcript_still_reaches_the_recorder_which_refuses(root):
+    _rc, rec, _tick, _seen = _run_waived(
+        root, REL, _sig(PLAN, "LP-hostinger"), "--vm-waived", ASKED, transcript=None
+    )
+    argv = rec.calls[0]
+    assert argv[argv.index("--vm-waived") + 1] == ASKED
+    assert "--transcript" not in argv, (
+        "no transcript is passed as none, and the recorder names the refusal"
+    )
+
+
+@pytest.mark.parametrize("args", [("--vm-waived",), ("--vm-waived=",), ("--vm-waived", "--write")])
+def test_vm_waived_without_a_value_is_refused_before_the_recorder(root, capsys, args):
+    rc, rec, tick, _seen = _run_waived(root, REL, _sig(PLAN, "LP-hostinger"), *args)
+    assert rc == 2
+    assert rec.calls == []
+    assert tick.calls == []
+    assert "--vm-waived needs ASKED:<YYYY-MM-DDTHH:MM>Z" in capsys.readouterr().err
+
+
+def test_no_vm_waived_passes_no_waiver(root):
+    _rc, rec, _tick, seen = _run_waived(root, REL, _sig(PLAN, "LP-hostinger"))
+    assert "--vm-waived" not in rec.calls[0]
+    assert "--transcript" not in rec.calls[0]
+    assert seen == [], "the transcript is resolved only for a waiver"
+
+
 def test_recorder_failure_surfaces_rc_and_stderr_and_never_ticks(root, capsys):
     sig = _sig(PLAN, "LP-bench")
     rec = FakeRecorder(root, rc=1, err="NOT_VERIFIED not-live: the live version moved\n")
@@ -329,6 +392,26 @@ def test_evidence_reads_the_check_rc_from_the_row():
         assert LP.evidence(row) == "live-proof lp-1 bench account-smoke rc=unknown v=v9"
 
 
+@pytest.mark.parametrize(
+    ("version", "shown"),
+    [
+        ("renet:abc1234@sha256:ff", "renet@sha256:ff"),
+        ("renet:ABC1234DEF@sha256:ff", "renet@sha256:ff"),
+        ("renet:" + "a" * 64 + "@x", "renet@x"),
+        ("renet:abc12@x", "renet:abc12@x"),
+        ("v9", "v9"),
+    ],
+)
+def test_evidence_strips_the_renet_commit_from_the_version(version, shown):
+    row = {
+        "id": "lp-1",
+        "target": "bench",
+        "check": {"id": "c", "rc": 0},
+        "deploy": {"version_id": version},
+    }
+    assert LP.evidence(row) == "live-proof lp-1 bench c rc=0 v=%s" % shown
+
+
 @pytest.mark.parametrize("bad_rc", [None, 0.0, "0", True])
 def test_null_check_rc_is_never_a_pass_and_tick_refuses(root, capsys, bad_rc):
     class NullRc(FakeRecorder):
@@ -378,14 +461,42 @@ def test_refusals_run_no_recorder(root, capsys, args, needle):
     assert needle in capsys.readouterr().err
 
 
-def test_a_plan_outside_the_live_folder_is_refused(root, capsys):
+def test_a_done_plan_reaches_the_recorder_which_decides(root):
+    """A `_done/` plan is the recorder's to admit or refuse (it asks LP6 what the plan still owes), so the verb hands it over unchanged."""
     done = root / "agent" / "plans" / "_done" / "PLAN-old.md"
     done.parent.mkdir()
-    done.write_text(PLAN, encoding="utf-8")
+    done.write_text(PLAN.replace("Status: in-progress", "Status: done"), encoding="utf-8")
     rc, rec, _tick = _run(root, "agent/plans/_done/PLAN-old.md", "LP-bench")
+    assert rc == 0
+    argv = rec.calls[0]
+    assert argv[argv.index("--plan") + 1] == "agent/plans/_done/PLAN-old.md"
+
+
+@pytest.mark.parametrize(
+    "rel", ["agent/plans/_removed/PLAN-old.md", "agent/plans/_done/nested/PLAN-old.md", "PLAN-x.md"]
+)
+def test_a_plan_outside_the_admitted_folders_is_refused(root, capsys, rel):
+    path = root / rel
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(PLAN, encoding="utf-8")
+    rc, rec, _tick = _run(root, str(path), "LP-bench")
     assert rc == 2
     assert rec.calls == []
-    assert "not a live plan" in capsys.readouterr().err
+    assert "is not a plan under agent/plans/" in capsys.readouterr().err
+
+
+def test_a_stub_names_its_moved_to_path(root, capsys):
+    stub = root / "agent" / "plans" / "PLAN-gone.md"
+    stub.write_text(
+        "# PLAN: gone\n\nStatus: moved\nMoved-To: agent/plans/_done/PLAN-gone.md\n",
+        encoding="utf-8",
+    )
+    rc, rec, _tick = _run(root, "agent/plans/PLAN-gone.md", "LP-bench")
+    assert rc == 2
+    assert rec.calls == []
+    assert "a stub; its plan is agent/plans/_done/PLAN-gone.md, pass that path" in (
+        capsys.readouterr().err
+    )
 
 
 def test_bare_plan_name_resolves_under_agent_plans(root):
@@ -410,3 +521,45 @@ def test_cli_with_no_arguments_prints_usage_and_exits_nonzero():
     assert got.returncode == 2
     assert "usage: worklist.py --live-proof <me>" in got.stderr
     assert got.stdout == ""
+
+
+def _fake_lease(tmp_path: pathlib.Path) -> pathlib.Path:
+    main = tmp_path / "main"
+    admin = main / ".git" / "worktrees" / "lease1"
+    admin.mkdir(parents=True)
+    (admin / "commondir").write_text("../..\n", encoding="utf-8")
+    lease = main / ".claude" / "worktrees" / "lease1"
+    lease.mkdir(parents=True)
+    (lease / ".git").write_text("gitdir: %s\n" % admin, encoding="utf-8")
+    return lease
+
+
+def test_a_lease_start_refuses_recording_and_names_the_main_checkout(tmp_path):
+    lease = _fake_lease(tmp_path)
+    why = LP.lease_refusal(lease / "sub")
+    assert why is not None
+    assert "is a lease of" in why
+    assert str(tmp_path / "main") in why
+
+
+def test_a_main_checkout_start_is_not_refused(tmp_path):
+    (tmp_path / "plain" / ".git").mkdir(parents=True)
+    assert LP.lease_refusal(tmp_path / "plain") is None
+
+
+def test_cli_from_a_lease_refuses_before_any_recorder(tmp_path):
+    lease = _fake_lease(tmp_path)
+    env = wlfix.scrubbed_environ()
+    env["CLAUDE_PROJECT_DIR"] = str(lease)
+    got = subprocess.run(
+        [sys.executable, str(wlfix.STOP_DIR / "worklist.py"), "--live-proof", ME, REL, "abcd1234"],
+        capture_output=True,
+        text=True,
+        env=env,
+        cwd=str(lease),
+        stdin=subprocess.DEVNULL,
+        check=False,
+        timeout=60,
+    )
+    assert got.returncode == 2
+    assert "is a lease of" in got.stderr

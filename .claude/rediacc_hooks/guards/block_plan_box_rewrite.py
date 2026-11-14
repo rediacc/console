@@ -515,7 +515,7 @@ def run(ev):
     try:
         created = commit_policy.created_dirs(cmd, base)
         for commit in commits:
-            repo = commit_policy.run_repo(commit, base, created)
+            repo = commit_policy.run_repo(commit, base, created, root)
             if not repo or not commit_policy.is_inside(repo, root):
                 continue
             paths = commit_policy.judged_paths(commit, cmd, repo, base)

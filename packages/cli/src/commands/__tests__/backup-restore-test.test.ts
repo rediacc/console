@@ -226,7 +226,19 @@ describe('backup verify --restore-test', () => {
   it('fails closed when the free space cannot be read', async () => {
     mocks.sftpExec.mockResolvedValue('not a number');
     await expect(run(['verify', 'shop', '--restore-test'])).rejects.toThrow(
-      'commands.backup.verify.restoreTestNoSpace'
+      'commands.backup.verify.restoreTestFreeUnknown'
+    );
+    expect(mocks.addRepository).not.toHaveBeenCalled();
+  });
+
+  it('names the unknown size, not a shortage, when the index has no row for the anchor', async () => {
+    mocks.fetch.mockImplementation((url: string) =>
+      url.includes('/verification')
+        ? Promise.resolve({ snapshotId: SNAP, verificationState: 'proven' })
+        : Promise.reject(Object.assign(new Error('not found'), { status: 404 }))
+    );
+    await expect(run(['verify', 'shop', '--restore-test'])).rejects.toThrow(
+      'commands.backup.verify.restoreTestSizeUnknown'
     );
     expect(mocks.addRepository).not.toHaveBeenCalled();
   });

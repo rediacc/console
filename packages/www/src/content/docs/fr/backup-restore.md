@@ -8,8 +8,8 @@ tags:
 subcategory: data-protection
 order: 7
 language: fr
-sourceHash: "243d934efa7d9d54"
-sourceCommit: "bce8a19575adcea557863af16ab2e00dee1f3886"
+sourceHash: "677e95e38761776f"
+sourceCommit: "d1141cb40538b792a1c385b399ef948033e3139a"
 ---
 
 # Sauvegarde et restauration
@@ -45,6 +45,8 @@ C'est de cette seule décision que découlent les propriétés.
 
 Le quota est compté en **octets physiques uniques stockés** : ce qui est réellement conservé après déduplication, pas la somme de ce que vos instantanés représentent logiquement. Trente instantanés d'un dépôt qui change lentement coûtent presque comme un seul. `rdc backup usage` affiche les octets stockés par rapport à votre quota, un nombre par abonnement qui commence à 10 Go sur une offre Community.
 
+Une machine sous licence gratuite n'a pas de sauvegarde hébergée, et les verbes de sauvegarde la refusent avec un message de mise à niveau. Créez un compte (le forfait Community est gratuit), connectez-y la machine et ses sauvegardes compteront dans les 10 Go de stockage hébergé.
+
 ### Ce dont les instantanés ont besoin
 
 L'envoi d'un instantané passe par le serveur de compte, qui autorise chaque exécution par rapport à la licence installée du dépôt et remet à la machine une autorisation d'écriture de courte durée. Cette voie nécessite donc un serveur de compte que la machine peut atteindre et un dépôt sous licence. Sans eux, l'instantané est refusé plutôt que discrètement ignoré, et `rdc backup manifests`, `rdc backup usage` et `rdc backup retention` n'ont rien à lire.
@@ -59,9 +61,9 @@ Le push et le pull de machine à machine n'ont besoin ni de l'un ni de l'autre. 
 - **Ce n'est pas une réplication continue.** Un instantané est un point que vous avez pris, et vous pouvez perdre tout ce qui a été écrit depuis le dernier. Combien dépend de la fréquence à laquelle vous l'exécutez.
 - **Les objets stockés sont en écriture unique, pas un WORM certifié.** Les cellules sont écrites avec une condition de création seule, l'autorisation qu'obtient une machine ne peut rien supprimer, et les suppressions se font côté serveur selon la politique de rétention. C'est une vraie barrière contre une machine compromise qui détruirait ses propres sauvegardes. Ce n'est pas une certification de conformité, et ce n'est pas audité comme telle.
 
-### Un seul type de destination
+### Destinations
 
-Les sauvegardes dans le stockage fragmenté n'ont qu'un seul type de destination : un stockage fragmenté hébergé par le service, atteint via le serveur de comptes. Il n'existe aucun registre de points de terminaison de stockage externes, donc `--to` et `--from` sur `repo push` et `repo pull` ne désignent qu'une machine.
+Une stratégie peut écrire dans le store `home`, dans une seconde région hébergée ou dans un bucket client enregistré, et chaque destination est son propre point de récupération. Les stores, la désignation du store d'une destination, la restauration avec `--from` et l'état par destination sont décrits sur la page [Destinations de sauvegarde](/fr/docs/backup-destinations). `--to` et `--from` sur `repo push` et `repo pull` ne désignent toujours qu'une machine.
 
 ### Commandes de stockage fragmenté
 
@@ -92,6 +94,7 @@ rdc backup usage
 | `--dry-run` | Planification seule : pas d'envoi. Indique ce qui serait déplacé |
 | `--cold` | Arrêter les conteneurs, geler, redémarrer, puis envoyer. Ne se combine pas avec `--dry-run` |
 | `--reseed` | Ne pas faire confiance à l'ancre locale et envoyer un inventaire complet. Renvoie tout et recharge le quota |
+| `--accept-identity-change` | Adopter l'image comme nouvelle base quand son identité LUKS a changé ou qu'elle a rétréci. Envoie un instantané complet, et une exécution planifiée ne l'applique jamais |
 | `--read-bwlimit <limit>` | Plafond de la vitesse à laquelle l'instantané lit l'image sur le disque, dans les mêmes unités que `--bwlimit` (par défaut `50M`, `0` = illimité) |
 | `--hash-parallelism <n>` | Nombre de workers de hachage (par défaut `1`, `0` = un par CPU, jusqu'à `16`) |
 | `--debug` | Activer la sortie détaillée |
@@ -305,6 +308,7 @@ Une stratégie peut déclarer la politique des dépôts qu'elle couvre : `rdc ba
 | `--keep-weekly <n>` | Conserver l'instantané le plus récent de chacune de ces semaines |
 | `--keep-monthly <n>` | Conserver l'instantané le plus récent de chacun de ces mois |
 | `--keep-yearly <n>` | Conserver l'instantané le plus récent de chacune de ces années |
+| `--keep-within <duration>` | Conserver tous les instantanés dont l'âge, par rapport au plus récent du flux, ne dépasse pas cette durée, par exemple `24h` ; la durée se mesure depuis l'instantané le plus récent et non depuis maintenant, si bien qu'un flux à l'arrêt ne supprime rien de sa fenêtre |
 | `--stream <id>` | Appliquer la politique à un seul flux de sauvegarde plutôt qu'à la valeur par défaut du dépôt entier |
 
 Donnez au moins une règle. `set` remplace chaque paramètre au lieu de fusionner, donc la politique complète est transmise à chaque appel. `set` sans règles est refusé plutôt que traité comme « ne rien conserver », car supprimer une politique, c'est précisément à cela que sert `clear`. `clear` retire la politique déclarée, si bien que la valeur par défaut du forfait ou du serveur s'applique de nouveau ; cela ne signifie jamais « ne rien conserver » ni « tout conserver ».
@@ -325,6 +329,8 @@ rdc backup restore my-app@server-1 --as my-app --machine server-1 --up
 
 Une heure se résout uniquement parmi les instantanés de ce dépôt sur sa machine source. Les instantanés écrits par d'autres machines ou par des forks de la même lignée ne sont pas pris en compte, sauf si `--any-stream` élargit volontairement la recherche. Quand le flux propre du dépôt ne peut pas être déterminé, la restauration est refusée et demande `--any-stream` au lieu de deviner.
 
+Lorsque plusieurs stores contiennent le dépôt, la restauration lit le store dont l'instantané le plus récent a passé la dernière vérification, et passe au store suivant quand un store échoue. `--from <storeId>` lit un seul store nommé et ne bascule jamais. Voir [Destinations de sauvegarde](/fr/docs/backup-destinations).
+
 Restaurer sous un nouveau nom avec `--as` n'écrase rien, si bien qu'un exercice de restauration est sûr à exécuter sur une machine en direct. Restaurer sur un nom déjà existant est refusé.
 
 | Option | Description |
@@ -334,14 +340,19 @@ Restaurer sous un nouveau nom avec `--as` n'écrase rien, si bien qu'un exercice
 | `-m, --machine <machine>` | Machine sur laquelle restaurer |
 | `--datastore <name>` | Restaurer dans ce datastore nommé, dont la machine attachée l'héberge |
 | `--at <time>` | Restaurer un point dans le temps : un id d'instantané ou une heure RFC 3339 |
+| `--from <storeId>` | Lire l'instantané depuis ce store de sauvegarde. Sans cette option, le store qui détient l'instantané vérifié le plus récent est lu, puis le suivant en cas d'échec d'un store. Avec `--from`, il n'y a pas de repli |
 | `--any-stream` | Avec `--at`, considère aussi les instantanés d'autres machines et de forks de cette lignée |
 | `--up` | Déployer le dépôt restauré après le transfert |
+| `--allow-unopenable` | Placer l'image même si la phrase secrète du dépôt ne l'ouvre pas (instantané antérieur à un changement de phrase secrète) |
+| `--salvage` | Poursuivre malgré les chunks perdus ou corrompus et laisser leurs cellules comme trous. Nécessite `--as` |
 | `--health-window <seconds>` | Durée d'observation de la santé du dépôt déployé |
 | `--health-timeout <seconds>` | Durée d'attente qu'il devienne sain |
 | `-y, --yes` | Ignorer la confirmation |
 | `--debug` | Activer la sortie détaillée |
 
 Restaurer un dépôt nécessite son identifiant LUKS, qui vit dans votre configuration. Si vous avez activé le stockage de configuration, cet identifiant revient avec votre configuration sur une machine neuve. Sinon, gardez une copie de la configuration quelque part que la machine défaillante n'emportera pas avec elle.
+
+Une restauration vérifie la phrase secrète avant de placer quoi que ce soit. Une fois l'image assemblée et sa taille et son en-tête LUKS validés, la phrase secrète de la configuration tente d'ouvrir l'image à titre d'essai. Si elle s'ouvre, la restauration annonce un succès. Sinon, la restauration échoue et ne place rien, et l'image assemblée reste en attente pour qu'une nouvelle tentative avec la bonne phrase secrète ne la télécharge pas de nouveau. Un instantané pris avant un changement de phrase secrète ne s'ouvre qu'avec l'ancienne ; `--allow-unopenable` place malgré tout une telle image et indique qu'elle n'a pas été ouverte.
 
 ### Prouvez la restauration sur chaque machine
 
@@ -368,6 +379,132 @@ rdc repo pull shop:nightly@server-1 --from server-2
 ```
 
 Les listes d'options complètes se trouvent sous [Envoyer une sauvegarde vers une autre machine](#push-a-backup-to-another-machine) et [Récupérer une sauvegarde depuis une autre machine](#pull-a-backup-from-another-machine).
+
+## Vérifier et réparer les sauvegardes
+
+Un instantané envoyé n'est pas encore un instantané qui se restaure. Chaque instantané porte un état de vérification, que les contrôles ci-dessous font évoluer.
+
+### L'échelle de vérification
+
+| État | Défini par | Prouve |
+|------|------------|--------|
+| `unverified` | Chaque nouvel instantané | Rien encore |
+| `verified` | Le contrôle ponctuel après une exécution, `--deep`, ou un passage `--store` sans erreur | L'ancre de la machine ou les chunks stockés correspondent à leurs empreintes. Le système de fichiers à l'intérieur n'est pas jugé |
+| `proven` | `rdc backup check`, ou `--restore-test` | La phrase secrète ouvre un vrai contenu |
+| `failed` | Tout contrôle qui a trouvé un problème | À ne pas utiliser comme référence |
+
+Un instantané `failed` le reste jusqu'à ce qu'un contrôle portant sur les mêmes données réussisse. La rétention conserve l'instantané `verified` le plus récent et l'instantané `proven` le plus récent de chaque flux qui n'est pas `failed`, en plus du nombre d'instantanés à garder, si bien qu'une série de mauvaises nuits ne peut pas évincer toutes les bonnes versions. La suppression de l'un de ces deux instantanés est refusée.
+
+```bash
+rdc backup verify my-app --deep
+rdc backup verify my-app --store
+rdc backup verify my-app --restore-test
+```
+
+`--deep` recalcule l'empreinte de chaque cellule sur la machine. `--store` demande au serveur de recalculer l'empreinte de chaque chunk stocké et de nommer ceux qui manquent ou sont corrompus. `--restore-test` restaure l'instantané de l'ancre sous un nom jetable directement depuis le stockage, le compare, enregistre le résultat et supprime la copie. Les trois options ne se combinent pas.
+
+### Calendrier de vérification
+
+`rdc backup schedule` ajoute la vérification aux unités qu'il génère. Le service d'instantané se termine par un contrôle ponctuel de cellules tirées au hasard, et un instantané en échec n'est jamais vérifié. Un minuteur quotidien, à une heure décalée, lance une vérification complète d'un dépôt par exécution sous `CPUQuota=100%`, en parcourant les dépôts à tour de rôle : le cycle est le plus grand entre 7 et le nombre de dépôts, en nuits. Un bloc `verify` facultatif de la stratégie règle cela avec `spotAfterRun`, `deepSchedule` (une expression cron) et `off`, qui ne génère ni le contrôle ponctuel ni le minuteur.
+
+Les unités planifiées ne détiennent aucune phrase secrète par conception, donc les deux contrôles qui en ont besoin, `rdc backup check` et `--restore-test`, s'exécutent depuis la CLI, là où se trouve la configuration. Une fois par mois pour le premier et une fois par trimestre pour le second est un rythme raisonnable.
+
+### Prouver la phrase secrète
+
+```bash
+rdc backup check my-app
+```
+
+`rdc backup check` ouvre avec la phrase secrète la liste stockée d'un instantané récent, restaure un fichier dans un répertoire temporaire, le compare à la taille indiquée et enregistre `proven` ou `failed`. Seul le répertoire temporaire est supprimé. `--path <file>` choisit le fichier ; par défaut, c'est le plus petit fichier non vide. Un instantané sans liste stockée est signalé clairement et n'est pas `proven`.
+
+### Réparation et récupération
+
+```bash
+rdc backup repair my-app --dry-run
+rdc backup repair my-app
+rdc backup restore my-app --at <snapshot-id> --as my-app-salvage --salvage
+```
+
+La clé d'un chunk est l'empreinte de ses octets : un objet stocké dont l'empreinte ne correspond pas à sa clé ne pourra jamais satisfaire une restauration. `rdc backup repair` demande au serveur de relire chaque objet endommagé, de ne le supprimer que s'il est toujours erroné, puis renvoie la cellule depuis l'ancre de cette machine après avoir recalculé son empreinte. La commande refuse de s'exécuter tant qu'une sauvegarde détient la lignée, nomme les instantanés qui utilisaient les chunks endommagés et les marque `failed`. Un chunk que l'ancre de la machine ne contient pas ne peut pas être réparé, et la commande se termine avec un code non nul. `--dry-run` ne modifie rien.
+
+`--salvage` sert pour un instantané impossible à réparer. Il ne restaure que sous un nouveau nom avec `--as`, jamais par-dessus un dépôt existant, écrit chaque cellule défectueuse comme un trou, liste les trous par plage d'octets et se termine avec un code non nul et le statut `restored-damaged`. Un trou dans l'en-tête LUKS rend l'image impossible à ouvrir, et le rapport le dit. Un fichier isolé, éloigné de toute cellule défectueuse, se restaure toujours proprement avec `--path`.
+
+### Clés de liste
+
+La liste de navigation d'un instantané est scellée avec une clé publique, de sorte que la machine puisse l'écrire sans détenir la phrase secrète. La CLI dérive cette clé de l'identifiant du dépôt et installe la moitié publique au déploiement du calendrier. Si une machine détient déjà une clé différente, un avertissement est émis avec le nom du dépôt, et la clé n'est pas écrasée.
+
+```bash
+rdc backup toc-key sync my-app --dry-run
+rdc backup toc-key sync my-app --replace
+```
+
+`--replace` installe la clé dérivée à la place d'une clé différente et envoie la phrase secrète pour le prouver. Un dépôt qui détient une clé mais n'a ni fichier de clé ni montage n'obtient aucune liste, et le journal de l'unité le signale. Un tel instantané se restaure quand même en entier ; seuls la navigation et `rdc backup check` ont besoin de la liste.
+
+### Alertes d'échec
+
+Un instantané ou une vérification en échec parvient au compte par un rapport d'échec, et un flux qui cesse de rapporter au-delà de son délai de grâce est signalé lui aussi. Le compte envoie un e-mail récapitulatif par abonnement et par jour, selon la préférence de santé des sauvegardes de la page Notifications du portail, activée par défaut. `rdc machine health` affiche une vérification en échec comme un avertissement et se termine avec un code non nul. Un flux avec une cible déclarée qui n'a rien signalé à l'heure prévue de son prochain passage, ou dont les trois derniers passages ont chacun manqué la cible, envoie sa propre alerte, au plus une par flux et par période de 6 heures, indiquant la cible, la valeur atteinte et la raison. Le délai de détection est celui du balayage de maintenance, soit une heure, de sorte qu'une alerte peut arriver jusqu'à une heure après le manquement. Un flux sans cible reste dans le résumé quotidien.
+
+## Sauvegardes de niveau critique
+
+Un dépôt qui doit perdre des minutes plutôt qu'une journée déclare une cible de protection. Les instantanés s'exécutent alors à courte cadence, les cellules modifiées sont envoyées à chaque passage, et le compte surveille la cible.
+
+### Déclarer une cible
+
+```bash
+# Mesurer ce qui change entre deux exécutions, puis lire la projection et la recommandation de taille de cellule.
+rdc backup churn mail --samples 12 --interval 5m
+
+# Déclarer un objectif de 15 minutes pour un dépôt sur une stratégie.
+rdc backup strategy set nightly-hot --repo-rpo mail=15m
+
+# Ou un seul objectif pour chaque dépôt couvert par la stratégie (5m au minimum ; none le supprime).
+rdc backup strategy set nightly-hot --rpo 15m
+```
+
+La cible est une fenêtre de perte : le temps écoulé entre la dernière modification qu'une restauration peut récupérer et une panne, durée de l'envoi comprise. Un passage qui se termine après la cible compte comme manqué, même si l'instantané lui-même a réussi. `rdc machine health` affiche la valeur atteinte à côté de la cible. La définition d'une cible affiche une estimation du coût mensuel d'après la mesure du churn ; un dépôt sans mesure est refusé tant que `rdc backup churn <repo>` n'a pas été exécuté, ou que `--no-estimate` n'est pas passé. `--dry-run` montre le changement sans l'écrire.
+
+Un passage ne demande au stockage que les cellules modifiées depuis l'instantané précédent, plus un échantillon tournant de 16 cellules inchangées que le stockage doit toujours détenir. Une cellule échantillonnée manquante oblige ce passage à tout demander et à renvoyer ce qui a disparu. Un dépôt inchangé enregistre un passage `unchanged` au lieu d'un nouvel instantané. Chaque passage est borné par une échéance : un passage bloqué est tué et compte comme manqué, au lieu d'arrêter silencieusement le minuteur.
+
+Les dépôts d'une même machine partagent un seul créneau d'exécution, si bien que deux cibles ne lancent jamais deux envois en même temps.
+
+### Hook de pré-sauvegarde
+
+Un dépôt peut mettre son application au repos autour du gel. Deux fonctions facultatives de son Rediaccfile s'en chargent.
+
+```bash
+backup_prepare() { docker exec db psql -c "CHECKPOINT"; }
+backup_finish()  { :; }
+```
+
+Lors d'un passage à chaud, `backup_prepare` s'exécute, le système de fichiers est synchronisé et cloné par reflink, puis `backup_finish` s'exécute toujours ensuite, même après l'échec de prepare. Le hachage et l'envoi ne démarrent qu'après le retour de `backup_finish`, de sorte que l'application n'est jamais retenue pendant l'envoi. Chaque fonction a un délai de 30 secondes par défaut et de 300 au maximum, et une fonction qui dépasse son délai est tuée avec tout son groupe de processus. Les écritures qu'un hook retient prennent fin au retour de `backup_finish`. Si renet lui-même est tué, un minuteur armé avant le hook exécute `backup_finish` dans un délai de deux fois le délai imparti plus 30 secondes. Un instantané passé par le hook est enregistré comme `app-quiesced` ; sans hook, il est `crash-consistent`. Un passage à froid n'utilise jamais le hook, puisqu'il arrête lui-même les services.
+
+Remarque de sécurité : le hook est du code du dépôt. Il s'exécute avec un environnement construit, et non celui de l'unité de sauvegarde, de sorte que les identifiants de sauvegarde lui restent invisibles. Docker n'est accessible que par le proxy de politique du dépôt, avec ses restrictions en vigueur. Un hook qui échoue ou dépasse son délai est enregistré avec son résultat (`failed`, `timeout`) et signalé, et un finish arrivé à expiration déclenche une alerte immédiate, car l'application peut encore être au repos.
+
+### Taille des cellules
+
+L'image est découpée par défaut en cellules de 4 MiB. Un dépôt d'écritures petites et dispersées, comme une boîte de messagerie, envoie bien moins d'octets avec 1 MiB, alors que de grosses écritures groupées ne gagnent rien à une cellule plus petite et ne font que multiplier les requêtes. `rdc backup churn` recommande une taille d'après le profil d'écriture mesuré, et `--repo-cell-size mail=1M` l'applique. Changer la taille des cellules réamorce le dépôt : chaque cellule est renvoyée et facturée comme active jusqu'à ce que la rétention supprime l'ancienne chaîne, et les forks restés sur l'ancienne grille cessent de dédupliquer. Un passage planifié ne modifie jamais la grille de lui-même. Une taille qui découperait l'image en plus de 262 144 cellules est refusée, car l'élagage est différé au-delà (256 GiB à 1 MiB).
+
+### Destruction différée
+
+```bash
+rdc backup immutability show
+rdc backup immutability set 7
+rdc backup undelete <snapshot-id>
+```
+
+Avec une fenêtre de `D` jours (0 à 30), la suppression d'un instantané, la purge d'un dépôt et un changement de rétention qui conserve moins attendent tous `D` jours avant de prendre effet, et chacun peut être annulé d'ici là (`rdc backup undelete`, `purge --cancel`). Un instantané supprimé reste restaurable pendant son attente. Un changement qui conserve davantage s'applique immédiatement, et le raccourcissement ou la désactivation de la fenêtre elle-même attend l'écoulement de l'ancienne fenêtre. Chacune de ces actions notifie immédiatement le propriétaire et les administrateurs. Les octets disparaissent après la fenêtre et le délai d'attente de 7 jours, soit `D + 7` jours après la demande.
+
+Les limites sont énoncées sans détour. Ce mécanisme est appliqué par le serveur du compte, et non par le stockage d'objets : ce n'est pas un stockage WORM et aucun verrou de bucket ou d'objet n'est utilisé. Il ne protège pas contre un propriétaire ou un administrateur qui laisse passer la fenêtre, ni contre la perte du stockage lui-même, puisqu'il n'existe pas de seconde destination. La réparation supprime immédiatement un objet corrompu, car un nouveau hachage prouve qu'il est défectueux, et chaque réparation est journalisée et signalée. La fusion d'une chaîne de manifestes réécrit l'historique sans retirer aucun état restaurable. Un abonnement résilié avec conservation à la résiliation suit son propre balayage de 60 jours.
+
+### Stockage actif et en attente
+
+`rdc backup usage` rapporte deux valeurs. **Actif** correspond à ce que les instantanés conservés peuvent restaurer, et lui seul est imputé sur le quota de l'offre. **En attente** désigne le stockage qu'aucun instantané conservé ne référence plus et qui attend un délai de grâce de 7 jours avant suppression ; il n'est pas facturé, et le résumé d'utilisation l'affiche comme en attente de suppression.
+
+Le stockage en attente n'est pas illimité. Le plafond de churn est le double du quota de l'offre. Au-delà, un flux qui a validé il y a moins de 60 minutes se voit refuser un nouvel envoi tant que le stockage en attente n'a pas diminué, la machine enregistre le passage comme `throttled`, et il compte comme une cible manquée avec le plafond pour raison. Un flux qui s'exécute toutes les heures ou plus lentement n'est jamais refusé.
+
+### Alertes de cible manquée
+
+Un flux avec une cible envoie sa propre alerte lorsqu'il dépasse son prochain passage attendu ou qu'il a manqué trois passages de suite, au plus une par flux et par période de 6 heures, sans attendre le résumé quotidien. L'alerte indique la cible, la valeur atteinte et la raison. Le délai de détection est celui du balayage de maintenance, soit une heure, de sorte qu'une alerte peut arriver jusqu'à une heure après le manquement. Une demande destructive soumise à la destruction différée notifie immédiatement.
 
 ## Sauvegardes planifiées
 

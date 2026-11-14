@@ -36,6 +36,8 @@ serves its UI from the same origin as the data, so there is no third-party page 
 **One container per worktree, on a stable port.** The port block is derived from the worktree's absolute path (`derive_slot`/`find_port_block` in `.ci/rediacc_ci/core/ports.py`), so a bookmarked URL survives a reboot and two worktrees never collide. A running container is authoritative for its own ports; the `.devbox-state` file is only a cache, and the container is found by the
 `com.rediacc.devbox.worktree` label rather than by name.
 
+**A lease is a tree without a devbox.** `./run.sh worktree lease` makes a detached, locked tree under `.claude/worktrees/<id>` for a writer (verbs: `lease`, `pin`, `leases`, `land`, `gc`; `./run.sh worktree lease --help` has the options). It brings up no devbox, no tmux and no branch. Submodules are linked at their gitlinks, and the seed is `node_modules` by `cp -al`, `.ci/cache/toolchain`, `.ci/cache/bin` and `.venv` by symlink, `private/renet/bin` and `private/bin` by `cp -al`, `packages/shared/dist` copied when `packages/shared` is clean in the main tree and built in the lease otherwise, and `packages/e2e-tests/.env*` copied with their modes. The tree is capped by `writer_cap`, finished and unlanded trees included, so an unlanded tree is the pressure to land. A commit in it is pinned under `refs/worktrees/<id>` by the `post-commit` shim, and the pin never leaves the machine. Landing is the lead's, from the main checkout, through the lines `./run.sh worktree land <id>` prints; `./run.sh worktree gc --write` removes only a tree with nothing dirty and nothing unlanded, and the tree's ignored output (a log, a `.ci/cache` run, an edited `.env`) goes with it. The `/tmp` clone of this origin that older notes recommend for a pristine tree is refused (`block_origin_clone`).
+
 **The container runs as the host operator.** The published image keeps its `vscode` user at UID/GID 7111, because renet's hub runs the same image and chowns its workspaces to `config.RediaccUID`.
 So `devbox_ensure_uid_image` (`rediacc_ci.core.devbox`) derives a thin local image, `rediacc/devbox:uid<UID>-gid<GID>-<base id 12>-<Dockerfile.uid sha256 12>`, from `.devcontainer/Dockerfile.uid`, which renumbers `vscode` to the host ids and chowns `/home/vscode`, `/opt/openvscode-server` and `/go` at BUILD time.
 It runs once per operator per base image (501 s measured 2026-09-27: 337 s of chown copy-up, then 162 s exporting the layer) and before `docker run`, so it never races the readiness probe; it is skipped when the base ids already match, and is reused while its tag exists; a re-pulled base (new id) or an edited `Dockerfile.uid` (new hash) re-derives on the next `devbox up`.
@@ -48,6 +50,63 @@ The repo is bind-mounted at its IDENTICAL host path (never `/workspace`): a git 
 
 **`node_modules` is not shared between host and container** — the host and the image have different glibc versions, and `install:natives` builds against whichever one it runs on. `REDIACC_NPM_RUNTIME` is part of the `ensure_deps` stamp so switching sides forces one honest reinstall instead of a loader error.
 
+## Backup refs on GitLab
+
+Unpushed work gets an off-machine copy under `refs/backup/<branch>/` on the repository's own GitLab project (Design G of `agent/plans/PLAN-local-first-delivery.md`). The refs are a backup, never a publication: nothing on that project counts as pushed.
+
+### Ref kinds
+
+| Ref | Written | Mutability |
+|---|---|---|
+| `live` | Created at HEAD by the first sync of a branch, then fast-forwarded by every later sync | Moves forward only, except that a rewrite deletes it and recreates it at HEAD |
+| `daily-<YYYY-MM-DD>` | Created at HEAD by the first sync of each UTC day | Immutable |
+| `pre-rewrite-<YYYYMMDDTHHMMZ>` | When HEAD no longer descends from `live` (amend, rebase): keeps the old `live` tip, then `live` restarts at HEAD | Immutable |
+
+The rewrite is one `--atomic` push that creates the `pre-rewrite-*` ref and deletes `live`, followed by a push creating `live` at HEAD. No push is ever forced. `main`, a detached HEAD and a lease tree are never backed up.
+
+### Triggers
+
+The post-commit, post-rewrite and post-merge hooks start `.ci/rediacc_ci/dev/backup_ref.py sync` detached, and the hook returns at once. Output goes to `<git-dir>/rediacc-backup/log`. A failed sync is retried by the next trigger, since the worker always pushes the current tip. `./run.sh backup-ref sync` runs the same worker by hand.
+
+### Retention
+
+`daily-*` refs are kept 90 days and `pre-rewrite-*` refs 30 days (`BACKUP_RETENTION_DAYS` in `.claude/rediacc_hooks/git/githooks.py`). The pre-push hook deletes a snapshot only once the stamp in its name is past that age. `live` is deleted only in the push that creates the `pre-rewrite-*` ref at its old tip.
+
+### Where the remote points
+
+Each repository's `gitlab` remote is pinned to `https://gitlab.rediacc.io<path>` by `BACKUP_PATHS`, beside `MIRROR_PATH`:
+
+| Repository | Project path |
+|---|---|
+| console | `/rediacc-org/github/console.git` |
+| `private/renet` | `/rediacc-org/github/renet.git` |
+| `private/account` | `/rediacc-org/github/account.git` |
+| `private/elite` | `/rediacc-org/github/elite.git` |
+
+`rediacc_ci.setup.backup_remotes` adds the submodule remotes during setup. The pre-push hook refuses `refs/backup/**` to any other URL (`origin` included) and refuses a push that mixes backup refs with other refs.
+
+### Why a fetch never writes `refs/remotes/gitlab/*`
+
+Every "is it published" question in the tree (`--not --remotes`, the pre-push session scan, `block_unpushed_submodule_pin`) reads a remote-tracking ref as published. A fetched backup ref would make unpushed commits look published. The remote is therefore added with `--no-tags`, no fetch refspec and `skipFetchAll`, and the worker reads the remote with `ls-remote`.
+
+### The `backup-ref` verbs
+
+`./run.sh backup-ref <verb>` acts on the repository the current directory sits in, or on each `--repo console|renet|account|elite` (`--all` takes every one).
+
+| Verb | Does |
+|---|---|
+| `sync` | Runs the worker the hooks start |
+| `list` | Prints every backup ref as `<branch>/<leaf>`, its kind, age and short oid |
+| `restore <branch>/<leaf>` | Fetches the ref into `refs/backup-restored/<branch>/<leaf>` and prints the detached checkout command for it. It never writes `refs/heads/*` or `refs/remotes/*` |
+| `prune [--write]` | Lists the `daily-*` and `pre-rewrite-*` refs past retention; `--write` deletes them in one atomic push. `live` is never deleted |
+| `status [--cached]` | Exit 1 when `live` trails HEAD by more than 50 commits, or when the oldest commit it lacks is more than 6 h old. `--cached` reads the oid the last sync recorded, with no network |
+
+A restore is checked out in the operator's own tree, and an agent's second tree comes from a lease. The Stop hook's `backup-lag` advisory runs `status --cached`.
+
+### Leases
+
+A lease tree never pushes and never starts the worker. Its commits reach the backup when the lead lands them in the main checkout and a hook fires there.
+
 ## The `./rdc.sh` wrappers
 
 ### `./rdc.sh` targets production by default (`RDC_DEV=1` for local dev)
@@ -56,7 +115,8 @@ Bare `./rdc.sh` behaves like an installed `rdc`: the default config `~/.config/r
 there are no `.rdc-dev/` or `.rdc-bench/` token files.
 
 Local development against the dev gateway is an explicit opt-in: `./rdc.sh --dev <command>` (or `RDC_DEV=1 ./rdc.sh <command>`). `--dev` reads the gateway port from `.account-state` and the X25519 public key from the running gateway's `/.well-known/server-info`, seeds or patches `~/.config/rediacc/dev.json` with them, runs with `REDIACC_CONFIG=dev`, and fails fast if `./run.sh account dev` isn't running. Bench is just
-another config now: `./rdc.sh --config eu-bench <command>` replaces the old `RDC_BENCH=1`, and `npm run login:bench` logs it in (docs/agent-reference/bench-login.md). There is no `RDC_PROD` or `RDC_BENCH` any more. The renet build is the one licence-enforcing build in every wrapper mode (production key baked, `ACCOUNT_ED25519_PUBLIC_KEY` required).
+another config now: `./rdc.sh --config eu-bench <command>` replaces the old `RDC_BENCH=1`, and `npm run login:bench` logs it in (docs/agent-reference/bench-login.md). A bench request that answers 403 (Cloudflare's "Attention Required" page, or `GENERAL_ERROR: HTTP 403` from the CLI) means this machine's IP fell off the bench allowlist, never a rate limit: run `PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access add-current`, and when the login then refuses because the IP address changed, run `npm run login:bench`.
+There is no `RDC_PROD` or `RDC_BENCH` any more. The renet build is the one licence-enforcing build in every wrapper mode (production key baked, `ACCOUNT_ED25519_PUBLIC_KEY` required).
 
 `npm run vm:check` records the dev gateway it starts in `.ci/cache/vm-check/gateway.json` (port, start time and an account worktree digest) and writes the gateway log to `.ci/cache/vm-check/gateway.log`; the gateway stays running after the run and is reused only while the record matches `.account-state` and the account worktree.
 
@@ -187,10 +247,10 @@ rdc run -f container_restart -m <machine> --param repository=<repo> --param cont
 
 | Script | Purpose |
 |--------|---------|
-| `python3 -m rediacc_ci.ops.deploy_bench` (run with `PYTHONPATH=.ci`) | Deploy account worker to `bench.rediacc.com` (internal-only D1 testing env) |
+| `python3 -m rediacc_ci.ops.deploy_bench` (run with `PYTHONPATH=.ci`) | Deploy account worker to `bench.rediacc.cloud` (internal-only D1 testing env) |
 | `python3 -m rediacc_ci.ops.reset_bench` (run with `PYTHONPATH=.ci`) | Wipe bench D1 + R2 + worker secrets |
 | `python3 -m rediacc_ci.ops.backup_d1` (run with `PYTHONPATH=.ci`) | Export production/edge D1 databases to `.backups/` |
-| `python3 -m rediacc_ci.ops.bench_access add-current\|list\|add\|remove\|clear\|disable` (run with `PYTHONPATH=.ci`) | Bench IP allowlist: one zone WAF rule, 5 IPs at most, oldest evicted, each IP expires 7 days after it was added (stamp kept in the rule description, refreshed by re-adding); IPv6 is stored as the /64 prefix (a hand CIDR only /64 to /128), and under WSL `add-current` also asks the Windows host for its egress addresses; a 403 from a bench host means run `add-current` (the two health paths stay open for `telemetry-probe.yml`). `npm run ci:quick` runs `preflight` first: it probes bench from here and from the Windows host and runs `add-current` only on a 403, skips under `CI=true`, and never fails the run |
+| `python3 -m rediacc_ci.ops.bench_access add-current\|list\|add\|remove\|clear\|disable` (run with `PYTHONPATH=.ci`) | Bench IP allowlist: one zone WAF rule, 5 IPs at most, oldest evicted, each IP expires 7 days after it was added (stamp kept in the rule description, refreshed by re-adding); IPv6 is stored as the /64 prefix (a hand CIDR only /64 to /128), and under WSL `add-current` also asks the Windows host for its egress addresses; a 403 from a bench host means run `add-current` (the two health paths stay open for `ops-telemetry-probe.yml`). `npm run ci:quick` runs `preflight` first: it probes bench from here and from the Windows host and runs `add-current` only on a 403, skips under `CI=true`, and never fails the run |
 | `rediacc_ci.ops.cf_auth` | Shared Cloudflare auth helpers for the bench and backup operator scripts |
 
 ## Secret Rotation (`./run.sh rotation`)
@@ -211,12 +271,12 @@ Secret rotation lives in `private/account/scripts/rotation/` (private submodule)
 
 Slugs: `ses-eu`, `ses-us`, `ses-asia`, `ses-bench`, `cf-cd`, `cf-r2`, `cf-r2-media`, `cf-breakpoint`, `turnstile`, `turnstile-bench`, `otlp-eu`, `otlp-us`, `otlp-asia`, `otlp-bench`, `dkim-notify`.
 
-`cf-r2-media` is bucket-scoped (`rediacc-www-media` only, not account-wide like `cf-r2`) — least-privilege token for the www video-media pipeline, see `.ci/docs/r2-media-setup.md`.
+`cf-r2-media` is bucket-scoped (`media` only, not account-wide like `cf-r2`) — least-privilege token for the www video-media pipeline, see `.ci/docs/r2-media-setup.md`.
 
 `cf-breakpoint` (secret `CLOUDFLARE_BREAKPOINT_TUNNEL_TOKEN`) is the on-demand debug box's Cloudflare token: Tunnel edit + Access apps/policies edit at the account level, DNS edit scoped to the **`rediacc.io` zone only**, and nothing else — no Workers, D1, R2 or Pages. It is deliberately NOT `cf-cd`: a breakpoint session's whole purpose is to put a human on a shell, so anything in
 that job's environment is readable by that human, and `cf-cd` would make one debug session equivalent to production Worker-deploy and D1-delete rights. See `.ci/breakpoint/README.md`.
 
-`dkim-notify` is the BYODKIM RSA-2048 keypair applied to every regional SES identity for `notify.rediacc.com`. One private key, one Cloudflare TXT record at `<selector>._domainkey.notify.rediacc.com`, three SES regions (eu/us/asia). To rotate, stage the PEM via `DKIM_NOTIFY_PRIVATE_KEY_PATH=<path>` and run `./run.sh rotation rotate dkim-notify`. The tool publishes the DNS, applies
+`dkim-notify` is the BYODKIM RSA-2048 keypair applied to every regional SES identity for `notify.rediacc.cloud`. One private key, one Cloudflare TXT record at `<selector>._domainkey.notify.rediacc.cloud`, three SES regions (eu/us/asia). To rotate, stage the PEM via `DKIM_NOTIFY_PRIVATE_KEY_PATH=<path>` and run `./run.sh rotation rotate dkim-notify`. The tool publishes the DNS, applies
 the key to all three regions, smoke-tests propagation, and updates the manifest atomically. If `DKIM_NOTIFY_PRIVATE_KEY_PATH` is unset, a fresh keypair is generated in-memory (acceptable for bench experiments only — production rotations must stage the PEM so the key can be backed up to 1Password before the process exits).
 
 Auth: `AWS_IAM_ADMIN_ACCESS_KEY_ID`/`AWS_IAM_ADMIN_SECRET_ACCESS_KEY` for AWS IAM admin, `CLOUDFLARE_API_TOKEN` (or `CF_GLOBAL_API_KEY`+`CF_EMAIL`) for Cloudflare, authenticated `gh` CLI for GitHub secrets.

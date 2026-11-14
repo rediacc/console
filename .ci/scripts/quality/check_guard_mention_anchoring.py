@@ -127,6 +127,10 @@ FRAGMENTS: dict[tuple[str, str], str] = {
         "BLOCKER: extracts the `name.ext` tail from REDIR_TARGET and ASSIGN_TARGET matches; a file-name shape with no literal "
         "word, applied to text the anchored harvest already selected."
     ),
+    ("block_roundlog_truncate.py", "_QUOTED"): (
+        "BLOCKER: an extractor of quoted string literals, run only over program text the guard's walk already chose "
+        "(`_quoted_literals`, the reading for a program the parser cannot read); a quote shape with no literal word."
+    ),
     ("block_blanket_git_add.py", "END"): (
         "BLOCKER: the end-of-clause tail (`$`, a separator or a redirect) concatenated after the anchored GIT_ADD prefix; "
         "only the composed BLANKET_* patterns are matchers, and they are anchored."
@@ -166,6 +170,11 @@ FRAGMENTS: dict[tuple[str, str], str] = {
         "BLOCKER: a `${}`, `#{}`, `$name` or `@name` interpolation inside a literal found in program text, replaced by "
         "`.sub()` with the unknown marker that `_filled` completes; it rewrites a literal and never reads the command."
     ),
+    ("block_worktree_add.py", "SLASH_WORD"): (
+        "BLOCKER: an identifier run (`[A-Za-z0-9_$...]+`) the JS comment scanner `_slash_code_text` matches to tell a "
+        "keyword such as `return` from a value before an ambiguous `/`; it reads script text the guard already loaded, "
+        "never the command, has no literal word for a sentence to mention, and never decides a refusal on its own."
+    ),
     ("block_blanket_git_add.py", "BARE_DDASH"): (
         "BLOCKER: an optional ` -- ` concatenated between GIT_ADD's anchored prefix and END; it is a piece of the composed "
         "BLANKET_* patterns, never searched on its own."
@@ -181,6 +190,11 @@ FRAGMENTS: dict[tuple[str, str], str] = {
     ("block_prose_style_commit.py", "PARAM"): (
         "BLOCKER: a `$name`/`${name}` expansion parser used by `.sub()` to substitute assigned values into the commit "
         "text before linting; it rewrites text and decides nothing itself."
+    ),
+    ("block_protected_files.py", "_PLAIN_REF"): (
+        "BLOCKER: a `$name`/`${name}` expansion parser used by `.sub()` in `_assigned` to replace a typed word's variables "
+        "with the literal values an earlier statement of the same command gave them; it rewrites a word the walk already "
+        "located and decides nothing itself."
     ),
     ("block_suppressions_shell_write.py", "_SED_SUB"): (
         "BLOCKER: parses a sed `s<d>pat<d>rep<d>` expression from argv of an in-place sed already aimed at a suppression "

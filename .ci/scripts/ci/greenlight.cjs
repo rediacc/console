@@ -173,6 +173,9 @@ const CLOSURES = {
     paths: VM_E2E_PATHS,
   },
   // ct-tests.yml `test-e2e-backup-browse-at`, suite 27 under playwright.backup-browse-at.config.ts. Its own lane so a scope decision about K8s Multinode cannot skip it. Over-inclusive on purpose: VM_E2E_PATHS already names .ci/rediacc_ci (start_backup_plane.py, start_account.py, account_lifecycle.py), packages/e2e-tests (the suite, the config, src/utils/backup) and the renet/cli build chain.
+  // The job is gated on `(inputs.full_suite == 'true' && inputs.run_e2e_backup_browse_at != 'false') || inputs.backup_changed == 'true'`
+  // (J6: a push or PR that changes a backup path runs it too, and ct-backup-nightly.yml runs it nightly). The closure is unchanged: a run where it was skipped
+  // under the scope engine still has no evidence for it, and one where backup_changed ran it has.
   e2e_backup_browse_at: {
     jobNames: ['E2E Backup Browse-At'],
     submodules: VM_E2E_SUBMODULES,

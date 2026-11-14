@@ -14,6 +14,7 @@ import {
 } from '@rediacc/shared/config-schema';
 import { getConfigDir } from '@rediacc/shared/paths';
 import lockfile from 'proper-lockfile';
+import { getSubscriptionTokenFile } from '../services/account/subscription-auth.js';
 import { currentRequestConfig, type RequestConfigScope } from '../services/core/request-context.js';
 import {
   decryptConfigFields,
@@ -524,6 +525,8 @@ export class ConfigFileStorage {
       }
       throw new Error(`Config "${name}" not found`);
     }
+    // The config file is gone: the cache entry goes with it even when a later unlink fails.
+    this.cache.delete(name);
     try {
       await fs.unlink(this.getBackupPath(name));
     } catch (error) {
@@ -531,7 +534,13 @@ export class ConfigFileStorage {
         throw error;
       }
     }
-    this.cache.delete(name);
+    try {
+      await fs.unlink(getSubscriptionTokenFile(name, this.configDir));
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+        throw error;
+      }
+    }
   }
 
   /**

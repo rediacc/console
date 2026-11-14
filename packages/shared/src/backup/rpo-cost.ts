@@ -22,6 +22,9 @@ export const DEFAULT_GRACE_DAYS = 7;
 export const DEFAULT_SAMPLED_HASHES = 16;
 /** Commit HEADs, the manifest body read and the prune read each run: the fixed part of Class B. */
 const FIXED_CLASS_B_PER_RUN = 4;
+/** D1 rows written per run apart from the cells, and per changed cell (counted by backup-critical-cost.test.ts: 9 + N, which replaced the plan's 10 + 2N once a routine run wrote one coalesced event). */
+const D1_ROWS_FIXED_PER_RUN = 9;
+const D1_ROWS_PER_CHANGED_CELL = 1;
 /** A month is 30 days for the estimate, as in the plan's table. */
 const DAYS_PER_MONTH = 30;
 /** The churn cap is twice the plan's quota (D-safeguard). */
@@ -68,6 +71,8 @@ export interface RpoCostEstimate {
   runsPerDay: number;
   classAPerRun: number;
   classBPerRun: number;
+  /** D1 rows written per run, counted per run (9 + N). */
+  d1RowsPerRun: number;
   monthlyClassA: number;
   monthlyClassB: number;
   monthlyClassAUsd: number;
@@ -125,6 +130,7 @@ export function estimateRpoCost(input: RpoCostInput): RpoCostEstimate {
     runsPerDay,
     classAPerRun,
     classBPerRun,
+    d1RowsPerRun: D1_ROWS_FIXED_PER_RUN + D1_ROWS_PER_CHANGED_CELL * input.changedCells,
     monthlyClassA,
     monthlyClassB,
     monthlyClassAUsd,

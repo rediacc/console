@@ -19,14 +19,14 @@ behind `REDIACC_ALLOW_CLUSTER_OPS`; hidden `run` unchanged, absolutely agent-blo
 
 ## 1. The tree — AS BUILT (verified against the live CLI, 2026-07-13)
 
-This is no longer a target. It is a transcript of the shipped tree, generated from `packages/cli/scripts/command-tree.json` and checked in BOTH directions: every leaf below exists in the CLI, and every leaf in the CLI appears below. **189 contract commands** (105 machine-plane, 55 config-plane, 29 other; 93 proxyCapable). `run` is hidden and held out of the contract.
+This is no longer a target. It is a transcript of the shipped tree, generated from `packages/cli/scripts/command-tree.json` and checked in BOTH directions: every leaf below exists in the CLI, and every leaf in the CLI appears below. **210 contract commands** (116 machine-plane, 57 config-plane, 37 other; 97 proxyCapable). `run` is hidden and held out of the contract.
 
 ```
-rdc config:     init list show current delete set clear recover prune edit reconcile rotate-cek
+rdc config:     init list show current delete set clear recover prune edit reconcile rotate-cek import-machine
                 access {add remove ranges list}
                 field {get set unset rotate list}    audit {log tail verify}
                 remote {enable disable status refresh versions restore master-password {change}}    ssh {set show remove}
-rdc machine:    add remove list status setup scan-keys health prune converge restart-services
+rdc machine:    add remove list status setup scan-keys health repair prune converge restart-services
                 provision deprovision
                 access {set remove show push}
                 provider {add remove list}    gpu {list}
@@ -34,7 +34,7 @@ rdc machine:    add remove list status setup scan-keys health prune converge res
 rdc datastore:  create list status attach detach fork snapshot {create list} resize delete
 rdc repo:       create up down status list delete fork push pull migrate promote prune
                 secret {get list set unset}    sync {upload download status}
-                cat diff logs exec tunnel
+                cat diff logs exec tunnel health repair
                 replicate {status remove refresh}          (the parent also runs: `replicate <ref>`)
                 commit branch checkout log merge gc
                 resize expand trim policy {set get}
@@ -42,21 +42,23 @@ rdc repo:       create up down status list delete fork push pull migrate promote
                        template {list apply}  archive {list restore purge}}
                 canary {create status weight remove}
                 gpu {grant revoke}
+                permission {grant revoke show}
 rdc cluster:    create scale join evict destroy status kubeconfig snapshot {create list}
                 fork migrate rehearse
 rdc backup:     strategy {set remove list show bind unbind}  retention {set clear preview}  snapshots {delete}  schedule  run  status  cancel  list  snapshot  restore  verify  manifests  usage  browse  download  upload  purge  reconcile  check  repair  toc-key {sync}  immutability {show set}  undelete  churn
+rdc server:     install status upgrade backup licence
 rdc term:       connect
 rdc vscode:     connect list cleanup check serve {status stop}
 rdc ops:        up down status ssh setup check
-rdc subscription: login logout status refresh proxy-token
-rdc job:        list status logs cancel gc wait     (see §9)
+rdc subscription: login register logout status notices retire refresh proxy-token
+rdc job:        list status logs cancel gc wait dismiss   (see §9)
 rdc tools:      install list
-rdc doctor | credits | update | serve | mcp serve | run (hidden)
+rdc doctor | credits | update | version | legal | serve | mcp serve | run (hidden)
 ```
 
 ### 1.1 Where the shipped tree differs from the tree this section used to draw
 
-Twenty-one differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the last ten are later additions.
+Thirty-two differences. The first six are deliberate and each is traceable to a ruling. The seventh IS drift, and is recorded as such: it is what this gate exists to catch. The next two are a whole program landing after this transcript was drawn, and the rest are later additions.
 
 | Was drawn as | Shipped as | Why |
 |---|---|---|
@@ -80,10 +82,18 @@ Twenty-one differences. The first six are deliberate and each is traceable to a 
 | `config` with no `access` | `config access {add remove ranges list}` | PLAN-ssh-key-source-ranges: the config-wide registry of SSH keys and their allowed IPv4 and IPv6 source ranges. `add --hosted-executor` attaches the ranges of the hosted executor; `ranges` edits a key's ranges and `list` reads them. |
 | `machine` with no `access` | `machine access {set remove show push}` | PLAN-ssh-key-source-ranges: assigns a key to a machine with per-machine range overrides, shows the access lines in effect, and `push` writes them to the machine (`--dry-run` previews; a push that would lock out the current session is refused). All four run on the machine side or edit the config, so they are machine-plane. |
 | `repo` with no `prune` | `repo prune` | PLAN-repo-docker-storage-prune: classifies a repository's Docker storage (unused images, build cache, stopped containers, orphan overlay2 directories) and reclaims it. It is a dry run unless `--apply`, and `--apply --offline` also stops the repository's daemon for the run. It runs on the machine, so it is machine-plane and proxy-capable. |
+| no `server` noun | `server {install status upgrade backup licence}` | Installs the self-hosted account server (Elite) as a repository on a machine, then checks, upgrades (forking a rollback point first), backs up and licenses it. A whole program landing after this transcript was drawn; `rdc serve` (the executor) is a different thing. |
+| `repo` with no `permission` | `repo permission {grant revoke show}` | A repository's Rediaccfile `up()` and `down()` run as the unprivileged universal user; `grant` widens what they may reach (a path with `--path`, or root with `--root`), `revoke` narrows it and `show` prints the grant in effect. Each runs a repository_permission_* renet function on the machine holding the repository, so all three are machine-plane and proxy-capable. |
 | `config remote` with no `master-password` | `config remote master-password change` | Config storage: re-wraps the config key from the device's enrollment under a new password slot, after a re-authentication step, and verifies that the new password unlocks the store. |
 | `backup` with no image transfer | `backup {download upload purge reconcile}` | The backup-local-image work: `download` copies a repository's image from a machine to a local directory or external drive (rsync delta, resumable, sha256-verified) and `upload` sends such an image to a machine and registers it as a new repository. `purge` deletes every stored snapshot of a repository from the chunk store while keeping the repository, and `reconcile` resets the repository's stored-bytes ledger to what the store holds, never deleting a chunk. All four postdate this transcript. |
 | `job {list,status,logs,cancel,gc}` | `job {list,status,logs,cancel,gc,wait}` | `job wait` resumes following a job from its ticket, acknowledges it and exits with the job's own exit code, so a script can follow a `--background` job without polling `job status`. |
 | no `tools` noun | `tools {install list}` | PLAN-cli-tofu-toolchain: `install` downloads the pinned OpenTofu release, checks its SHA-256 against the checksum built into the CLI and places the binary in the CLI's tools directory; `list` shows the provisioning engine the CLI would run and each OpenTofu version found, with its source. A tool is neither a machine, a repository nor a job, so the verbs get a noun of their own. |
+| `machine` and `repo` with no health repair verbs | `repo health`, `repo repair` + `machine repair` | PLAN-health-checks-local: `repo health` runs a repository's Rediaccfile `health()` checks and exits 0 (ok), 1 (warning) or 2 (error); `repo repair` runs the `repair()` functions their declared class allows and then `health()` again; `machine repair` runs the safe fixes for a machine's health findings and re-checks, and `--set-window` stores the machine's maintenance window. |
+| `job {list,status,logs,cancel,gc,wait}` | `job {list,status,logs,cancel,gc,wait,dismiss}` | PLAN-renet-restart-cycle-defects D4: `dismiss <id...>` or `dismiss --stale [--older-than]` gives up local job tickets (an `expired` event with reason dismissed), with no machine call, so a ticket whose job is gone stops printing "steps pending" on every command. Not drift: the verb landed with the ticket-expiry fix (e573d1e0d) after this transcript. |
+| no `version` or `legal` commands | `version` + `legal` | PLAN-terms-acceptance Design 7: `version` prints the CLI version, platform, update channel and the active licence; `legal` prints the document URLs for the user's language, the current terms version and the accepted version, and the licensor and contracting entity. Both take only `--json`, so they are leaves with no noun of their own. `--version` is unchanged. |
+| no `subscription register` | `subscription register --email <address> [--server <url>]` | A first-time user without an account starts from the CLI: `register` validates the address, picks the region, and runs the same device-code authorisation as `login` with the email attached, then prints the login summary. A leaf under the existing `subscription` noun. |
+| no `subscription notices` or `subscription retire` | `subscription notices` + `subscription retire <guid>` | PLAN-account-notices: `notices` lists the account's notices (licence expiry, backup health and the like) without opening the portal, and `retire` retires a repository's licence by GUID on the account server. Both are leaves under the existing `subscription` noun. |
+| no `config import-machine` | `config import-machine <machine> --from <config> [--dry-run] [--strategy-from-source]` | PLAN-hostinger-to-bench Design 5: moving a machine between named configs by hand-editing JSON dropped its datastores, repositories and backup bindings, and a name clash silently overwrote the target's entry. The verb plans the whole import first (machine, datastores, strategies, bindings, repositories, tags), refuses a clash on a different identity, and writes nothing under `--dry-run`. |
 
 Four families were built by operator commits AFTER this tree was drawn. They exist in the live CLI today, so P4 recontracts them; it does not invent them. **All four were ruled on 2026-07-13** (spec/03 §9) and are folded into the §1 tree above:
 

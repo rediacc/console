@@ -236,8 +236,7 @@ test.describe
     // A stopped k3s node leaves KERNEL mounts behind in TWO places: submounts UNDER the datastore mount (kubelet pod volumes), and containerd overlays mounted at /run/k3s/containerd/... whose lowerdir/upperdir point INTO the datastore — the latter hold it busy from OUTSIDE its path. `kube uninstall` / `kube prep_fork` (cgroup-kill) unwind neither, so the datastore release is then
     // CORRECTLY refused by the no-lazy-success guard (spec 03 §2b, "target is busy"). The suite unwinds what it created; the missing product porcelain (a shared node-side teardown that unwinds before release) is gate finding #20.
     //
-    // Match the datastore path ANYWHERE on the /proc/mounts line (mountpoint, device, OR overlay options), take the MOUNTPOINT field, exclude the datastore mount itself (that one is `datastore detach`'s to release cleanly), and detach deepest-first. Repeat, because unwinding one layer can expose another. NOTE ON SHELL FORM: executeViaBridge relays through THREE shells (local sh →
-    // bridge sh → target sh) and escapeForNestedSSH escapes only backslashes and quotes, NOT `$` — a shell variable or `$(...)` here would be expanded on the LOCAL host, not on the VM. So the selection is kept variable-free and every path is interpolated by TypeScript.
+    // Match the datastore path ANYWHERE on the /proc/mounts line (mountpoint, device, OR overlay options), take the MOUNTPOINT field, exclude the datastore mount itself (that one is `datastore detach`'s to release cleanly), and detach deepest-first. Repeat, because unwinding one layer can expose another. Every path is interpolated by TypeScript, so the selection needs no shell variable.
     const unwindSubmounts = async (
       runner: RenetFunctionsTestRunner,
       mount: string

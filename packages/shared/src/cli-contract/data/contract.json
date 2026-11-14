@@ -74,6 +74,17 @@
           "label": "List the snapshot taken at or before this time, or this snapshot id (reads the chunk store)"
         },
         {
+          "flags": "--from <storeId>",
+          "long": "from",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.browse.optionFrom",
+          "label": "With --at, read the snapshot from this backup store instead of the best-ranked one"
+        },
+        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,
@@ -434,6 +445,17 @@
           "tier": "advanced",
           "descriptionKey": "commands.backup.download.optionAt",
           "label": "With --store, the snapshot to fetch: a time (ISO 8601) or a snapshot id (default: the newest)"
+        },
+        {
+          "flags": "--from <storeId>",
+          "long": "from",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.download.optionFrom",
+          "label": "With --store, read from this backup store instead of the best-ranked one; it never falls back to another store"
         }
       ],
       "positionals": [
@@ -712,6 +734,17 @@
       "label": "Delete every stored backup snapshot of a repository from the chunk store at once. The repository itself is kept.",
       "options": [
         {
+          "flags": "--lineage <guid>",
+          "long": "lineage",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.purge.optionLineage",
+          "label": "Purge a backup lineage by its id (as `rdc backup usage` lists it) when its repository is no longer in this config"
+        },
+        {
           "flags": "--dry-run",
           "long": "dry-run",
           "valueTaking": false,
@@ -750,7 +783,7 @@
         {
           "name": "repo-ref",
           "kind": "repo-ref",
-          "required": true,
+          "required": false,
           "variadic": false,
           "descriptionKey": "options.repoRef",
           "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
@@ -948,6 +981,17 @@
           "tier": "advanced",
           "descriptionKey": "commands.backup.restore.optionAt",
           "label": "Restore a point-in-time: a snapshot id or an RFC3339 time (chunk-store restore)"
+        },
+        {
+          "flags": "--from <storeId>",
+          "long": "from",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.restore.optionFrom",
+          "label": "Read the snapshot from this backup store (default: the store with the newest verified snapshot, falling back to the next on a store failure)"
         },
         {
           "flags": "--any-stream",
@@ -1941,6 +1985,28 @@
           "label": "Destination name within the strategy. Creates a Rediacc chunk-store destination"
         },
         {
+          "flags": "--target <storeId>",
+          "long": "target",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.strategy.set.optionTarget",
+          "label": "Registered store id the destination writes to (default: home). Use with --destination"
+        },
+        {
+          "flags": "--replicate-from <storeId>",
+          "long": "replicate-from",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.backup.strategy.set.optionReplicateFrom",
+          "label": "Make the destination a replica: the account server copies this store into the destination's target, so the machine uploads nothing to it. Use with --destination and --target"
+        },
+        {
           "flags": "--cron <expression>",
           "long": "cron",
           "valueTaking": true,
@@ -2257,7 +2323,7 @@
       "domain": "backup",
       "group": "INFRASTRUCTURE",
       "plane": "machine",
-      "descriptionKey": "commands.backup.tocKey.syncDescription",
+      "descriptionKey": "commands.backup.tocKey.sync.description",
       "label": "Install the repository's listing key on its machine, or replace a different one",
       "options": [
         {
@@ -2268,7 +2334,7 @@
           "mandatory": false,
           "defaultValue": null,
           "tier": "advanced",
-          "descriptionKey": "commands.backup.tocKey.optionReplace",
+          "descriptionKey": "commands.backup.tocKey.sync.optionReplace",
           "label": "Replace a different key already on the machine (sends the passphrase to prove it)"
         },
         {
@@ -2279,7 +2345,7 @@
           "mandatory": false,
           "defaultValue": null,
           "tier": "advanced",
-          "descriptionKey": "commands.backup.tocKey.optionDryRun",
+          "descriptionKey": "commands.backup.tocKey.sync.optionDryRun",
           "label": "Report what would be done; touch nothing"
         }
       ],
@@ -4321,6 +4387,73 @@
     {
       "path": [
         "config",
+        "import-machine"
+      ],
+      "pathKey": "config import-machine",
+      "domain": "config",
+      "group": "TOOLS",
+      "plane": "config",
+      "descriptionKey": "commands.config.importMachine.description",
+      "label": "Copy one machine from another config into the active config: the machine entry when the active config lacks it, every repository placed on the machine with every tag, and each backup strategy bound to the machine. Nothing that already exists is overwritten. Equal entries are left alone, and a differing entry (a same-name repository with another GUID, a machine at another address) is refused. Any refusal writes nothing. The report names entries only and never prints a credential, key or GUID.",
+      "options": [
+        {
+          "flags": "--from <config>",
+          "long": "from",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "tier": "common",
+          "descriptionKey": "commands.config.importMachine.optionFrom",
+          "label": "Config to copy from"
+        },
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.importMachine.optionDryRun",
+          "label": "Show what would be copied without writing"
+        },
+        {
+          "flags": "--strategy-from-source",
+          "long": "strategy-from-source",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.importMachine.optionStrategyFromSource",
+          "label": "Replace a differing backup strategy with the source config's version instead of refusing it"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "machine",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.config.importMachine.argMachine",
+          "label": "Machine name in the source config"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Copies a machine and its repositories between named configs; config mutation, use CLI directly",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Runs entirely against the local config and never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "machine",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "config",
         "init"
       ],
       "pathKey": "config init",
@@ -4400,10 +4533,10 @@
           "label": "Create a named configuration profile."
         },
         {
-          "command": "rdc config init staging --server https://eu.rediacc.com",
+          "command": "rdc config init staging --server https://eu.rediacc.cloud",
           "values": {
             "name": "staging",
-            "server": "https://eu.rediacc.com"
+            "server": "https://eu.rediacc.cloud"
           },
           "descriptionKey": "commands.config.init.examples.withServer",
           "label": "Create a profile pointed at a specific account server."
@@ -4538,6 +4671,17 @@
           "tier": "advanced",
           "descriptionKey": "commands.config.prune.orphanReposOption",
           "label": "Remove repository entries that are placed on no machine. Each entry holds that repo's credential and SSH key, so this is unrecoverable. Run 'rdc config reconcile' first so placement reflects the machines."
+        },
+        {
+          "flags": "--gone-machine-repos",
+          "long": "gone-machine-repos",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.config.prune.goneMachineReposOption",
+          "label": "Archive repository entries placed on a machine that is no longer in the config. Archived, not dropped: each keeps its credential and is restorable until the archive grace expires. Selects only this bucket: the cert-cache, archive and cross-reference buckets are skipped unless their own --*-only flag is also given."
         },
         {
           "flags": "--grace-days <days>",
@@ -6162,6 +6306,77 @@
     {
       "path": [
         "job",
+        "dismiss"
+      ],
+      "pathKey": "job dismiss",
+      "domain": "job",
+      "group": "EXECUTION",
+      "plane": "machine",
+      "descriptionKey": "commands.job.dismiss.description",
+      "label": "Give up on job tickets locally: their owed steps are dropped and the ticket stops showing up. Makes no machine call and does not touch the job itself.",
+      "options": [
+        {
+          "flags": "--stale",
+          "long": "stale",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.job.dismiss.staleOption",
+          "label": "Dismiss every pending ticket older than --older-than (default 24h)"
+        },
+        {
+          "flags": "--older-than <duration>",
+          "long": "older-than",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "format": "integer",
+          "tier": "advanced",
+          "descriptionKey": "commands.job.dismiss.olderThanOption",
+          "label": "With --stale, the minimum ticket age, e.g. 90m, 24h (default: 24h)"
+        },
+        {
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.yes",
+          "label": "Skip confirmation prompt"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "job-id",
+          "kind": "job-id",
+          "required": false,
+          "variadic": true,
+          "descriptionKey": "commands.job.dismiss.idArg",
+          "label": "Job ids or request ids of the tickets to dismiss"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": true,
+      "idempotent": true,
+      "timeout": "write",
+      "timeoutMs": 300000,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "job",
         "gc"
       ],
       "pathKey": "job gc",
@@ -6251,6 +6466,17 @@
           "tier": "common",
           "descriptionKey": "commands.job.list.machineOption",
           "label": "Target machine name (omit to list this config's pending job tickets)"
+        },
+        {
+          "flags": "--all",
+          "long": "all",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.job.list.allOption",
+          "label": "Include expired and dismissed tickets"
         }
       ],
       "positionals": [],
@@ -6541,14 +6767,49 @@
         "block",
         "attach"
       ],
-      "destructive": false,
-      "idempotent": true,
-      "timeout": "write",
-      "timeoutMs": 300000,
+      "mcpExcludeReason": "An agent cannot usefully block until the job ends; poll with job_status and job_logs.",
       "interactive": false,
       "proxyCapable": true,
       "detachable": false,
       "machineOption": "machine",
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "legal"
+      ],
+      "pathKey": "legal",
+      "domain": "legal",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.legal.description",
+      "label": "Print the legal document links in the CLI language with the binding English links, the current Terms of Service version with its checksum and archive URL, the acceptance on record (from the account server when logged in, from this config when anonymous), and the contracting entity. Third-party notices are under rdc credits --licenses.",
+      "options": [
+        {
+          "flags": "--json",
+          "long": "json",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.json",
+          "label": "Print machine-readable JSON"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
       "repoOption": null,
       "machinePositional": null,
       "repoPositional": null
@@ -6992,6 +7253,17 @@
           "label": "Skip confirmation prompt"
         },
         {
+          "flags": "--archive-repos",
+          "long": "archive-repos",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.deprovision.optionArchiveRepos",
+          "label": "Archive the config entries of the repositories placed on this machine (credentials kept, restorable)"
+        },
+        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,
@@ -7086,20 +7358,7 @@
       "plane": "machine",
       "descriptionKey": "commands.machine.health.description",
       "label": "Check machine health for CI/CD pipelines",
-      "options": [
-        {
-          "flags": "-t, --team <name>",
-          "long": "team",
-          "short": "t",
-          "valueTaking": true,
-          "variadic": false,
-          "mandatory": false,
-          "defaultValue": null,
-          "tier": "advanced",
-          "descriptionKey": "options.team",
-          "label": "Team name"
-        }
-      ],
+      "options": [],
       "positionals": [
         {
           "name": "name",
@@ -8191,6 +8450,17 @@
           "tier": "advanced",
           "descriptionKey": "commands.machine.remove.forceOption",
           "label": "Remove the machine even if repositories are placed on it or backup strategies are bound to it, leaving those references dangling."
+        },
+        {
+          "flags": "--archive-repos",
+          "long": "archive-repos",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.deprovision.optionArchiveRepos",
+          "label": "Archive the config entries of the repositories placed on this machine (credentials kept, restorable)"
         }
       ],
       "positionals": [
@@ -8226,6 +8496,94 @@
     {
       "path": [
         "machine",
+        "repair"
+      ],
+      "pathKey": "machine repair",
+      "domain": "machine",
+      "group": "INFRASTRUCTURE",
+      "plane": "machine",
+      "descriptionKey": "commands.machine.repair.description",
+      "label": "Run the safe fixes for a machine's health findings, then re-check (exit 0 nothing left, 1 warnings or operator items left, 2 an error left or a fix failed)",
+      "options": [
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.repair.optionDryRun",
+          "label": "List the fixes that would run without running them"
+        },
+        {
+          "flags": "--code <code>",
+          "long": "code",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.repair.optionCode",
+          "label": "Only fix this finding code (repeatable)"
+        },
+        {
+          "flags": "--with-backup",
+          "long": "with-backup",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.repair.optionWithBackup",
+          "label": "Allow auto-with-backup fixes, each after a successful snapshot of its repository"
+        },
+        {
+          "flags": "--window-override",
+          "long": "window-override",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.repair.optionWindowOverride",
+          "label": "Run window-only fixes outside the maintenance window"
+        },
+        {
+          "flags": "--set-window <window>",
+          "long": "set-window",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.repair.optionSetWindow",
+          "label": "Store the machine's maintenance window (HH:MM-HH:MM, UTC) or clear it with off, then exit"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "name",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.name",
+          "label": "Resource name"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Runs fixes on a machine (restarts, prune, repository repair()); use the CLI, where the safety classes, the maintenance window and the journal apply",
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "name",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "machine",
         "restart-services"
       ],
       "pathKey": "machine restart-services",
@@ -8245,6 +8603,20 @@
           "tier": "advanced",
           "descriptionKey": "commands.machine.restartServices.includeDockerOption",
           "label": "Also restart each per-repo rediacc-docker-N supervisor (restarts that repo's containers)"
+        },
+        {
+          "flags": "--repo <name>",
+          "long": "repo",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "repo"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.machine.restartServices.repoOption",
+          "label": "Limit the restart to one repo's supervisor (needs --include-docker)"
         },
         {
           "flags": "--json",
@@ -8277,7 +8649,7 @@
       "proxyCapable": true,
       "detachable": true,
       "machineOption": null,
-      "repoOption": null,
+      "repoOption": "repo",
       "machinePositional": "name",
       "repoPositional": null
     },
@@ -9350,6 +9722,17 @@
           "tier": "common",
           "descriptionKey": "commands.repo.machineOption",
           "label": "Target machine name"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
         }
       ],
       "positionals": [],
@@ -9390,6 +9773,39 @@
           "tier": "advanced",
           "descriptionKey": "commands.repo.admin.ownership.uidOption",
           "label": "Owner UID (default: 7111)"
+        },
+        {
+          "flags": "--root-owned",
+          "long": "root-owned",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.admin.ownership.rootOwnedOption",
+          "label": "Hand root-owned files to the owner UID below directories owned by root or that UID, recording each in an undo manifest"
+        },
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.admin.ownership.dryRunOption",
+          "label": "With --root-owned: list the files that would change, and change nothing"
+        },
+        {
+          "flags": "--undo",
+          "long": "undo",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.admin.ownership.undoOption",
+          "label": "With --root-owned: return the files in the undo manifest that the owner UID still owns to root"
         },
         {
           "flags": "--debug",
@@ -11318,6 +11734,65 @@
     {
       "path": [
         "repo",
+        "health"
+      ],
+      "pathKey": "repo health",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "plane": "machine",
+      "descriptionKey": "commands.repo.health.description",
+      "label": "Run the repository's Rediaccfile health() checks and exit 0 (ok), 1 (warning) or 2 (error)",
+      "options": [
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        },
+        {
+          "flags": "--skip-router-restart",
+          "long": "skip-router-restart",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.skipRouterRestart",
+          "label": "Skip restarting the route server after binary update"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "repoArg": "ref",
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "repo",
         "list"
       ],
       "pathKey": "repo list",
@@ -11884,6 +12359,184 @@
     {
       "path": [
         "repo",
+        "permission",
+        "grant"
+      ],
+      "pathKey": "repo permission grant",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "plane": "machine",
+      "descriptionKey": "commands.repo.permission.grant.description",
+      "label": "Let the repository's Rediaccfile up() and down() reach a path, or run as root. --root is refused to an agent unless the operator set REDIACC_ALLOW_GRAND_REPO before the agent started.",
+      "options": [
+        {
+          "flags": "--root",
+          "long": "root",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.permission.grant.rootOption",
+          "label": "Run up() and down() as root, with no privilege drop"
+        },
+        {
+          "flags": "--path <path>",
+          "long": "path",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "format": "path",
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.permission.grant.pathOption",
+          "label": "Absolute path up() and down() may reach, PATH[:ro|:rw] (read-only by default)"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "repo",
+        "permission",
+        "revoke"
+      ],
+      "pathKey": "repo permission revoke",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "plane": "machine",
+      "descriptionKey": "commands.repo.permission.revoke.description",
+      "label": "Withdraw a lifecycle path grant, or the root grant, from the repository. The next up() and down() run with what remains.",
+      "options": [
+        {
+          "flags": "--root",
+          "long": "root",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.permission.revoke.rootOption",
+          "label": "Withdraw the root grant"
+        },
+        {
+          "flags": "--path <path>",
+          "long": "path",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "format": "path",
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.permission.revoke.pathOption",
+          "label": "Absolute path to withdraw"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "repo",
+        "permission",
+        "show"
+      ],
+      "pathKey": "repo permission show",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "plane": "machine",
+      "descriptionKey": "commands.repo.permission.show.description",
+      "label": "Show whether the repository's up() and down() run as root, and which paths they may reach.",
+      "options": [
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "repo",
         "policy",
         "get"
       ],
@@ -12029,6 +12682,94 @@
           "tier": "advanced",
           "descriptionKey": "commands.repo.policy.set.trimIntervalOption",
           "label": "Minimum hours between automatic trims (default 24)"
+        },
+        {
+          "flags": "--memory-max <size>",
+          "long": "memory-max",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.policy.set.memoryMaxOption",
+          "label": "Memory cap of the repository (e.g. 10G, or max to remove); at the cap one of its containers is OOM-killed, nothing outside it"
+        },
+        {
+          "flags": "--memory-high <size>",
+          "long": "memory-high",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.policy.set.memoryHighOption",
+          "label": "Memory throttle point of the repository (e.g. 8G, or max to remove)"
+        },
+        {
+          "flags": "--cpu-max <cores>",
+          "long": "cpu-max",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.policy.set.cpuMaxOption",
+          "label": "CPU cap of the repository in cores (4, 2.5) or N%, or max to remove"
+        },
+        {
+          "flags": "--io-max <limits>",
+          "long": "io-max",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.policy.set.ioMaxOption",
+          "label": "I/O cap of the repository's device: rbps=,wbps=,riops=,wiops= (any subset, e.g. rbps=200M,wbps=100M; KEY=max removes one), or max"
+        },
+        {
+          "flags": "--pids-max <count>",
+          "long": "pids-max",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.policy.set.pidsMaxOption",
+          "label": "Process cap of the repository (pids.max), or max to remove"
+        },
+        {
+          "flags": "--ram-volume <size>",
+          "long": "ram-volume",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.policy.set.ramVolumeOption",
+          "label": "Size of the repository's RAM volume at <mount>/.ram (e.g. 8G, or max to remove); the memory cap must stay 1G above it"
+        },
+        {
+          "flags": "--clear-limits",
+          "long": "clear-limits",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.policy.set.clearLimitsOption",
+          "label": "Remove every limit and the RAM volume of the repository"
+        },
+        {
+          "flags": "--force",
+          "long": "force",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.policy.set.forceOption",
+          "label": "Allow a memory cap below the repository's current memory use"
         },
         {
           "flags": "-m, --machine <name>",
@@ -12635,6 +13376,95 @@
       "timeoutMs": 300000,
       "repoArg": "ref",
       "grandGuard": true,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "repo",
+        "repair"
+      ],
+      "pathKey": "repo repair",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "plane": "machine",
+      "descriptionKey": "commands.repo.repair.description",
+      "label": "Run the repository's Rediaccfile repair() functions that their declared class allows, then health() again (exit 0 ok, 1 warning, 2 error or a failed repair)",
+      "options": [
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.repair.optionDryRun",
+          "label": "Show which repair() would run, without running any"
+        },
+        {
+          "flags": "--with-backup",
+          "long": "with-backup",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.repair.optionWithBackup",
+          "label": "Allow auto-with-backup repair() functions, after a successful snapshot of the repository"
+        },
+        {
+          "flags": "--window-override",
+          "long": "window-override",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.repair.optionWindowOverride",
+          "label": "Run window-only repair() functions outside the machine's maintenance window"
+        },
+        {
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.repair.optionYes",
+          "label": "Run undeclared (operator-only) repair() functions without asking"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.repoRef",
+          "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Runs a repository's own repair() code, operator-only ones after a prompt; use the CLI, where the classes and the prompt apply",
       "interactive": false,
       "proxyCapable": true,
       "detachable": true,
@@ -14189,7 +15019,6 @@
         }
       ],
       "keywords": [
-        "server",
         "daemon",
         "executor",
         "host",
@@ -14202,6 +15031,697 @@
       "detachable": false,
       "machineOption": null,
       "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "server",
+        "backup"
+      ],
+      "pathKey": "server backup",
+      "domain": "server",
+      "group": "TOOLS",
+      "plane": "machine",
+      "descriptionKey": "commands.server.backup.description",
+      "label": "Print the recovery bundle (the keys) of an installed server, or write it to a file",
+      "options": [
+        {
+          "flags": "--out <file>",
+          "long": "out",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.backup.optionOut",
+          "label": "Write the bundle to this file (mode 0600) instead of stdout"
+        },
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.optionMachine",
+          "label": "Machine the server runs on, when this device holds no install record for the domain"
+        },
+        {
+          "flags": "--repo <name>",
+          "long": "repo",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "repo"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.optionRepo",
+          "label": "Repository the server runs in (default: elite)"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "domain",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.server.domainArgument",
+          "label": "Public domain of the installed server"
+        }
+      ],
+      "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc server backup accounts.example.com --out elite-recovery.env",
+          "values": {
+            "domain": "accounts.example.com",
+            "out": "elite-recovery.env"
+          },
+          "descriptionKey": "commands.server.backup.examples.out",
+          "label": "Save the recovery bundle to a file only its owner can read."
+        }
+      ],
+      "mcpExcludeReason": "Prints the server's private keys; they must not land in an agent transcript.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Writes the recovery bundle (the server's keys) to the caller's terminal or file; through an executor the keys would cross another machine. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": "machine",
+      "repoOption": "repo",
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "server",
+        "install"
+      ],
+      "pathKey": "server install",
+      "domain": "server",
+      "group": "TOOLS",
+      "plane": "machine",
+      "descriptionKey": "commands.server.install.description",
+      "label": "Install the self-hosted account server on an existing machine: check the machine, set up renet when it is missing, wait for DNS, configure TLS, create the repository, generate its keys on the machine, license it, start it and create the owner account. Every value has a flag; on a terminal a missing value is asked for. A rerun skips the steps that are already done.",
+      "options": [
+        {
+          "flags": "--ip <address>",
+          "long": "ip",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionIp",
+          "label": "Address of an existing server or LAN device to register first"
+        },
+        {
+          "flags": "--user <name>",
+          "long": "user",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionUser",
+          "label": "SSH user on that machine"
+        },
+        {
+          "flags": "--port <port>",
+          "long": "port",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "format": "port",
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionPort",
+          "label": "SSH port on that machine (default: 22)"
+        },
+        {
+          "flags": "--name <name>",
+          "long": "name",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionName",
+          "label": "Name to register that machine under (default: server-<ip>)"
+        },
+        {
+          "flags": "--domain <host>",
+          "long": "domain",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionDomain",
+          "label": "Public domain of the server, for example accounts.example.com"
+        },
+        {
+          "flags": "--store-domain <host>",
+          "long": "store-domain",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionStoreDomain",
+          "label": "Public domain of its backup store (default: <name>-store.<rest of the domain>)"
+        },
+        {
+          "flags": "--repo <name>",
+          "long": "repo",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "repo"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.install.optionRepo",
+          "label": "Repository name (default: elite)"
+        },
+        {
+          "flags": "--size <size>",
+          "long": "size",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "format": "size",
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionSize",
+          "label": "Repository size (default: 10G)"
+        },
+        {
+          "flags": "--owner <email>",
+          "long": "owner",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionOwner",
+          "label": "Email of the owner account, created during the install (default: the logged-in account)"
+        },
+        {
+          "flags": "--tls <method>",
+          "long": "tls",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "choices": [
+            "letsencrypt",
+            "cloudflare",
+            "byo"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.install.optionTls",
+          "label": "How the certificate is obtained: letsencrypt (HTTP-01), cloudflare (DNS-01) or byo (an existing certificate)"
+        },
+        {
+          "flags": "--cf-token <token>",
+          "long": "cf-token",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionCfToken",
+          "label": "Cloudflare API token for DNS-01 (with --tls cloudflare)"
+        },
+        {
+          "flags": "--cert-email <email>",
+          "long": "cert-email",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionCertEmail",
+          "label": "Email Let's Encrypt sends expiry notices to (default: the owner)"
+        },
+        {
+          "flags": "--tls-cert <file>",
+          "long": "tls-cert",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionTlsCert",
+          "label": "Certificate file in PEM form (with --tls byo), covering both domains"
+        },
+        {
+          "flags": "--tls-key <file>",
+          "long": "tls-key",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionTlsKey",
+          "label": "Private key file of that certificate (with --tls byo)"
+        },
+        {
+          "flags": "--tls-ca <file>",
+          "long": "tls-ca",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionTlsCa",
+          "label": "CA certificate the server's certificate chains to, used for the health check"
+        },
+        {
+          "flags": "--licence <mode>",
+          "long": "licence",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "choices": [
+            "auto",
+            "free"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.install.optionLicence",
+          "label": "auto: a certificate from the logged-in account, or the free tier when there is none; free: start on the free tier"
+        },
+        {
+          "flags": "--cert <file>",
+          "long": "cert",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionCert",
+          "label": "Delegation certificate file for an offline install; it must name the key generated on the machine"
+        },
+        {
+          "flags": "--image <ref>",
+          "long": "image",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionImage",
+          "label": "Server image to run (default: ghcr.io/rediacc/server:latest)"
+        },
+        {
+          "flags": "--image-file <tar>",
+          "long": "image-file",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionImageFile",
+          "label": "Saved image archive (docker save) to ship instead of pulling"
+        },
+        {
+          "flags": "--local-image",
+          "long": "local-image",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionLocalImage",
+          "label": "Save the --image from the local Docker and ship it instead of pulling"
+        },
+        {
+          "flags": "--no-dns-wait",
+          "long": "no-dns-wait",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionNoDnsWait",
+          "label": "Print the DNS records without waiting for them to resolve"
+        },
+        {
+          "flags": "--bws-project <id>",
+          "long": "bws-project",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionBwsProject",
+          "label": "Also copy the generated keys to this Bitwarden Secrets Manager project; without it no key leaves the machine"
+        },
+        {
+          "flags": "--rotate",
+          "long": "rotate",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionRotate",
+          "label": "With --bws-project, replace a stored value that differs instead of refusing"
+        },
+        {
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionYes",
+          "label": "Ask nothing: take the defaults and refuse a missing value"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "machine",
+          "kind": "machine",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "commands.server.install.machineArgument",
+          "label": "Configured machine to install on (or register one with --ip and --user)"
+        }
+      ],
+      "hasSubcommands": false,
+      "examples": [
+        {
+          "command": "rdc server install --ip 203.0.113.10 --user admin --domain accounts.example.com",
+          "values": {
+            "ip": "203.0.113.10",
+            "user": "admin",
+            "domain": "accounts.example.com"
+          },
+          "descriptionKey": "commands.server.install.examples.brought",
+          "label": "Register an existing server by its address and install on it."
+        },
+        {
+          "command": "rdc server install server-1 --domain accounts.example.com --owner owner@example.com --yes",
+          "values": {
+            "machine": "server-1",
+            "domain": "accounts.example.com",
+            "owner": "owner@example.com",
+            "yes": "true"
+          },
+          "descriptionKey": "commands.server.install.examples.configured",
+          "label": "Install on a configured machine without any prompt."
+        },
+        {
+          "command": "rdc server install lab --domain lab.example.internal --tls byo --tls-cert host.crt --tls-key host.key --tls-ca ca.crt --licence free --no-dns-wait --yes",
+          "values": {
+            "machine": "lab",
+            "domain": "lab.example.internal",
+            "tls": "byo",
+            "tls-cert": "host.crt",
+            "tls-key": "host.key",
+            "tls-ca": "ca.crt",
+            "licence": "free",
+            "no-dns-wait": "true",
+            "yes": "true"
+          },
+          "descriptionKey": "commands.server.install.examples.lan",
+          "label": "Install on a LAN machine with an existing certificate, on the free tier."
+        }
+      ],
+      "keywords": [
+        "elite",
+        "self-hosted",
+        "on-premise",
+        "onprem"
+      ],
+      "mcpExcludeReason": "Long interactive install that registers machines, mints a licence and prints a one-time key bundle; use the CLI.",
+      "interactive": true,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Needs a terminal or never returns on its own (interactive shell, editor, tunnel, stream, or daemon), so a headless executor cannot run it. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": "repo",
+      "machinePositional": "machine",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "server",
+        "licence"
+      ],
+      "pathKey": "server licence",
+      "domain": "server",
+      "group": "TOOLS",
+      "plane": "machine",
+      "descriptionKey": "commands.server.licence.description",
+      "label": "Move a free-tier server to a delegation certificate from the logged-in account, or from --cert",
+      "options": [
+        {
+          "flags": "--cert <file>",
+          "long": "cert",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionCert",
+          "label": "Delegation certificate file for an offline install; it must name the key generated on the machine"
+        },
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.optionMachine",
+          "label": "Machine the server runs on, when this device holds no install record for the domain"
+        },
+        {
+          "flags": "--repo <name>",
+          "long": "repo",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "repo"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.optionRepo",
+          "label": "Repository the server runs in (default: elite)"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "domain",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.server.domainArgument",
+          "label": "Public domain of the installed server"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Mints a delegation certificate and restarts the account server; use the CLI.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Mints the certificate with the caller's login and records it in the caller's local install record; a remote executor holds neither. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": "machine",
+      "repoOption": "repo",
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "server",
+        "status"
+      ],
+      "pathKey": "server status",
+      "domain": "server",
+      "group": "TOOLS",
+      "plane": "machine",
+      "descriptionKey": "commands.server.status.description",
+      "label": "Show the health, tier, certificate and image of an installed server",
+      "options": [
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.optionMachine",
+          "label": "Machine the server runs on, when this device holds no install record for the domain"
+        },
+        {
+          "flags": "--repo <name>",
+          "long": "repo",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "repo"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.optionRepo",
+          "label": "Repository the server runs in (default: elite)"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "domain",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.server.domainArgument",
+          "label": "Public domain of the installed server"
+        }
+      ],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Finds the server through the caller's local install record; a remote executor holds none. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": "machine",
+      "repoOption": "repo",
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "server",
+        "upgrade"
+      ],
+      "pathKey": "server upgrade",
+      "domain": "server",
+      "group": "TOOLS",
+      "plane": "machine",
+      "descriptionKey": "commands.server.upgrade.description",
+      "label": "Upgrade an installed server: fork its repository as a rollback point, place the new image, apply the template again when the built-in one is newer, and restart",
+      "options": [
+        {
+          "flags": "--image <ref>",
+          "long": "image",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionImage",
+          "label": "Server image to run (default: ghcr.io/rediacc/server:latest)"
+        },
+        {
+          "flags": "--image-file <tar>",
+          "long": "image-file",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionImageFile",
+          "label": "Saved image archive (docker save) to ship instead of pulling"
+        },
+        {
+          "flags": "--local-image",
+          "long": "local-image",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionLocalImage",
+          "label": "Save the --image from the local Docker and ship it instead of pulling"
+        },
+        {
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionYes",
+          "label": "Ask nothing: take the defaults and refuse a missing value"
+        },
+        {
+          "flags": "-m, --machine <name>",
+          "long": "machine",
+          "short": "m",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "machine"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.optionMachine",
+          "label": "Machine the server runs on, when this device holds no install record for the domain"
+        },
+        {
+          "flags": "--repo <name>",
+          "long": "repo",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "kinds": [
+            "repo"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.optionRepo",
+          "label": "Repository the server runs in (default: elite)"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "domain",
+          "kind": "plain",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.server.domainArgument",
+          "label": "Public domain of the installed server"
+        }
+      ],
+      "hasSubcommands": false,
+      "mcpExcludeReason": "Forks, replaces the image and restarts the account server; use the CLI.",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Drives child commands and the caller's local install record (and --local-image, the caller's Docker); a remote executor would act from its own. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": "machine",
+      "repoOption": "repo",
       "machinePositional": null,
       "repoPositional": null
     },
@@ -14291,6 +15811,63 @@
     {
       "path": [
         "subscription",
+        "notices"
+      ],
+      "pathKey": "subscription notices",
+      "domain": "subscription",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.subscription.notices.description",
+      "label": "List the account's notices: license expiry, backup health, renewals, certificates and Terms.",
+      "options": [
+        {
+          "flags": "--all",
+          "long": "all",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.subscription.notices.optionAll",
+          "label": "Include dismissed notices and every page, not only the last 30 days"
+        },
+        {
+          "flags": "--unread",
+          "long": "unread",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.subscription.notices.optionUnread",
+          "label": "Only notices not yet read"
+        },
+        {
+          "flags": "--mark-read",
+          "long": "mark-read",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.subscription.notices.optionMarkRead",
+          "label": "Mark the listed notices as read"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "subscription",
         "proxy-token"
       ],
       "pathKey": "subscription proxy-token",
@@ -14363,6 +15940,17 @@
           "tier": "common",
           "descriptionKey": "options.repoRef",
           "label": "Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)"
+        },
+        {
+          "flags": "--adopt-origin",
+          "long": "adopt-origin",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.subscription.refresh.adoptOrigin",
+          "label": "Reissue licenses another account server issued from this config's account server, moving them over. Without it such licenses are left untouched."
         }
       ],
       "positionals": [],
@@ -14372,6 +15960,119 @@
       "detachable": true,
       "machineOption": "machine",
       "repoOption": "repo",
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "subscription",
+        "register"
+      ],
+      "pathKey": "subscription register",
+      "domain": "subscription",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.subscription.register.description",
+      "label": "Create an account in the browser (email pre-filled) and log in",
+      "options": [
+        {
+          "flags": "--email <address>",
+          "long": "email",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "tier": "common",
+          "descriptionKey": "commands.subscription.register.optionEmail",
+          "label": "Email address to pre-fill on the sign-up page"
+        },
+        {
+          "flags": "--server <url>",
+          "long": "server",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "format": "url",
+          "tier": "advanced",
+          "descriptionKey": "options.serverUrl",
+          "label": "Account server URL"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "subscription",
+        "retire"
+      ],
+      "pathKey": "subscription retire",
+      "domain": "subscription",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.subscription.retire.description",
+      "label": "Retire the license of a repository that is gone, so it leaves the license counts and notices.",
+      "options": [
+        {
+          "flags": "--force",
+          "long": "force",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.subscription.retire.optionForce",
+          "label": "Retire a license whose repository is still in this config and not hard-expired"
+        },
+        {
+          "flags": "--expired",
+          "long": "expired",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.subscription.retire.optionExpired",
+          "label": "Retire every hard-expired license of a deleted repository or one not in this config"
+        },
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.subscription.retire.optionDryRun",
+          "label": "With --expired: list what would be retired and change nothing"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "guid",
+          "kind": "plain",
+          "required": false,
+          "variadic": false,
+          "descriptionKey": "commands.subscription.retire.argGuid",
+          "label": "Repository GUID, or at least 8 characters of one license in the account report"
+        }
+      ],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
       "machinePositional": null,
       "repoPositional": null
     },
@@ -14401,6 +16102,17 @@
           "tier": "common",
           "descriptionKey": "options.machine",
           "label": "Machine name"
+        },
+        {
+          "flags": "--all",
+          "long": "all",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.subscription.status.optionAll",
+          "label": "Also list the licenses of deleted repositories and of repositories not in this config"
         }
       ],
       "positionals": [],
@@ -14659,6 +16371,44 @@
         "self-update"
       ],
       "mcpExcludeReason": "CLI self-update, not a remote operation",
+      "interactive": false,
+      "proxyCapable": false,
+      "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",
+      "detachable": false,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "version"
+      ],
+      "pathKey": "version",
+      "domain": "version",
+      "group": "TOOLS",
+      "plane": "other",
+      "descriptionKey": "commands.version.description",
+      "label": "Print the CLI version, platform, update channel and the active license: the plan when logged in, \"anonymous (FREE per repository)\" without a login, and \"unknown (server unreachable)\" when the account server cannot be reached. The --version flag still prints the bare version.",
+      "options": [
+        {
+          "flags": "--json",
+          "long": "json",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.json",
+          "label": "Print machine-readable JSON"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "destructive": false,
+      "idempotent": true,
+      "timeout": "read",
+      "timeoutMs": 120000,
       "interactive": false,
       "proxyCapable": false,
       "proxyBlockedReason": "Local tooling that never reaches a machine, so there is nothing to proxy. Run it without --proxy.",

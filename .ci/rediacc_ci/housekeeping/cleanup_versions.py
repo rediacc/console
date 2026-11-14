@@ -8,7 +8,7 @@ Usage: cleanup_versions.py [--days N] [--versions N] [--dry-run]
 -----------------------------------------------------------------------------
 THIS PORT IS WHAT RUNS NIGHTLY; THE BASH TWIN IS THE PARITY REFERENCE.
 -----------------------------------------------------------------------------
-`.github/workflows/housekeeping.yml` runs `python3 -m rediacc_ci.housekeeping.cleanup_versions`. The bash twin `cleanup-versions.sh` is kept for the differential test below, which pins this port's behaviour against it.
+`.github/workflows/ops-housekeeping.yml` runs `python3 -m rediacc_ci.housekeeping.cleanup_versions`. The bash twin `cleanup-versions.sh` is kept for the differential test below, which pins this port's behaviour against it.
 
     differential: `.ci/rediacc_ci/tests/test_housekeeping_cleanup_versions.py`
     K=5 ledger:   `.ci/shadow/w7p6-cleanup-versions.observations.jsonl`
@@ -134,7 +134,8 @@ DEFAULT_KEEP_VERSIONS = str(retention_contract.KEEP_RELEASES)
 
 GITHUB_ORG = "rediacc"
 TAG_REPOS = ("console", "renet")
-GHCR_PACKAGES = ("renet", "rdc", "server")
+# `ci-vm-bake` is the private package `ci-vm-bake.yml` pushes every baked VM image to (one tag per distro and bake key). It takes the same keep-newest-N-and-14-days window as the release images: a pruned key is only re-baked by the next run that probes it.
+GHCR_PACKAGES = ("renet", "rdc", "server", "ci-vm-bake")
 DEPLOYMENT_REPOS = ("console",)
 BRANCH_REPOS = ("console", "renet", "account", "elite", "homebrew-tap", "sql")
 
@@ -148,7 +149,7 @@ CF_PAGES_PROJECT = "rediacc"
 # The one product that writes `.released` sentinels (`write_release_sentinel.PRODUCT`). A strict-semver tag of RELEASE_REPO lives exactly as long as `<this>/<tag>/.released` does; see `release_tag_held_by_r2`.
 SENTINEL_PRODUCT = "cli"
 
-# `R2_BUCKET="${RELEASES_BUCKET:-rediacc-releases}"`. constants.sh has already
+# `R2_BUCKET="${RELEASES_BUCKET:-releases}"`. constants.sh has already
 # defaulted RELEASES_BUCKET by the time the twin reads it, so the two `:-` defaults are the same value twice.
 DEFAULT_R2_BUCKET = RELEASES_BUCKET
 R2_RETENTION_DAYS = 7
@@ -157,13 +158,13 @@ R2_ORPHAN_VERSION_AGE_DAYS = 14
 R2_PR_MAX_AGE_DAYS = 3
 # 8f's window: the npm tarballs kept per channel (`npm/<channel>/rediacc-cli-<semver>.tgz`). The four package trees are not 8f's any more: each publish prunes them to what its index lists (`upload_repos_to_r2`, `r2_promote.prune_tree`; operator ruling 2026-10-06, "Current version only").
 R2_NPM_KEEP_VERSIONS = 20
-# 8g's window: the newest `--versions` (DEFAULT_KEEP_VERSIONS, which is retention_contract.KEEP_RELEASES) `v<semver>/` folders per format directory, plus whatever `edge` and `stable` currently point at; `cli/` is the directory whose channel manifests name them. Operator ruling 2026-10-23 ("Keep N newest releases"): rediacc-releases held 142.7 GB of the account's 151 GB.
+# 8g's window: the newest `--versions` (DEFAULT_KEEP_VERSIONS, which is retention_contract.KEEP_RELEASES) `v<semver>/` folders per format directory, plus whatever `edge` and `stable` currently point at; `cli/` is the directory whose channel manifests name them. Operator ruling 2026-10-23 ("Keep N newest releases"): the releases bucket held 142.7 GB of the account's 151 GB.
 _R2_CHANNEL_POINTER_DIR = "cli"
 
 GH_RUNS_KEEP_PER_WORKFLOW = 100
 GH_RUNS_RETENTION_DAYS = 30
 GH_RUNS_RETENTION_DAYS_WATCHDOG = 7
-WATCHDOG_PATH = ".github/workflows/watchdog-monitor.yml"
+WATCHDOG_PATH = ".github/workflows/ops-watchdog-monitor.yml"
 GH_RUNS_MAX_PAGES_PER_WORKFLOW = 10
 
 # A workflow stays in the Actions sidebar until it has ZERO runs, so the keep-newest floor above would hold a REMOVED workflow (its file no longer on the default branch) there forever. Phase 10 drops the floor for one and keeps only GH_RUNS_RETENTION_DAYS. A workflow is removed only when its path lies under this directory and the default branch's listing of it was read and does not hold that exact path.
@@ -3401,7 +3402,7 @@ class Housekeeping:
     def cleanup_workflow_runs(self) -> None:
         """`cleanup_workflow_runs` (:1673-1813).
 
-        THE VACUOUS-GREEN CHECK at the end is the reason this phase is worth reading twice. It deleted nothing for `watchdog-monitor.yml` for months and reported success, because the scan window (MAX_PAGES x 100 runs) never reached back as far as the retention threshold. The warning fires only when the LISTING was truncated (all GH_RUNS_MAX_PAGES_PER_WORKFLOW pages came back full) and even the oldest run it holds is inside retention, so a young low-volume workflow with nothing to reap stays quiet, and so does a window whose old runs failed to delete or ran into the budget.
+        THE VACUOUS-GREEN CHECK at the end is the reason this phase is worth reading twice. It deleted nothing for `ops-watchdog-monitor.yml` for months and reported success, because the scan window (MAX_PAGES x 100 runs) never reached back as far as the retention threshold. The warning fires only when the LISTING was truncated (all GH_RUNS_MAX_PAGES_PER_WORKFLOW pages came back full) and even the oldest run it holds is inside retention, so a young low-volume workflow with nothing to reap stays quiet, and so does a window whose old runs failed to delete or ran into the budget.
 
         LIST FIRST, THEN DELETE (intentional delta, Rule T). The runs listing is offset-paged, and the twin deleted each page's reapable runs before reading the next page, so every delete moved a later run onto a page already read and it went unseen until a later night. `_list_runs` reads the whole capped window before the first delete, as Phases 3 and 5 do; the cap is unchanged, so a night still reads at most 1,000 runs of a workflow, and the listing of the workflow whose deletes exhaust the budget is the only one read in full without being worked through. A spent budget lists nothing.
 

@@ -214,6 +214,33 @@ def render(rows, scope, session_id, named=None):
     return "\n".join(lines)
 
 
+# A deferral that holds the whole plan set. When every open box of the PR's set waits on one operator decision (a run the harness reserved for the operator, a purchase), the block re-fired every stop with nothing to act on (2026-11-08, ten stops on #1b86eb2f). A `[?]` of this session whose question carries this tag turns the block into an advisory naming it, but only while `deferral_holds` admits it: a DEFAULT and a recorded WHY, inside its window. Past the window the hook orders the DEFAULT executed, and the block returns.
+GATE_TAG = "GATES: pr-plan-set"
+
+
+def deferral_holds(r, age_min, window_min, has_default):
+    """True while a tagged deferral may hold the set: it carries a DEFAULT and a recorded WHY, and its window is still open. Past the window the hook already orders the DEFAULT executed, so the hold ends with it; a [?] with no DEFAULT or WHY never holds, so a bare tagged question cannot silence the block."""
+    just = r.get("just") if isinstance(r.get("just"), dict) else {}
+    return (
+        bool(has_default(str(r.get("line") or "")))
+        and bool(just.get("why"))
+        and age_min is not None
+        and age_min < window_min
+    )
+
+
+def gating_deferral(items, session_id, owned_by_me, holds):
+    """The id of this session's open `[?]` whose question carries GATE_TAG and that `holds` admits (deferral_holds, bound by the caller to the clock and the window), or "" when none does."""
+    for r in items or ():
+        if r.get("state") != "?" or not owned_by_me(r.get("owner"), session_id):
+            continue
+        if not any(GATE_TAG in str(r.get(k) or "") for k in ("lastnote", "text", "line")):
+            continue
+        if holds(r):
+            return str(r.get("id") or "")
+    return ""
+
+
 def evaluate(root, scope, session_id, live=False, read_text=None):
     """(state, text, detail) for one stop: `block` while a plan of `scope` has an open box and `live` is False, `advisory` for the same with a background task of this session running, `silent` otherwise.
 

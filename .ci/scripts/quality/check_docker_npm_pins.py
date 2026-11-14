@@ -113,7 +113,7 @@ def unpinned_specs(args: str) -> list[str]:
     out = []
     prev_flag_wants_value = False
     for tok in args.split():
-        # A FLAG'S ARGUMENT IS NOT A PACKAGE. `npm install --prefix private/account` read `private/account` as an unpinned package name and reported cleanup-preview.yml as a finding -- caught the moment the gate started scanning workflows, where `--prefix` and `-w` are common and Dockerfiles
+        # A FLAG'S ARGUMENT IS NOT A PACKAGE. `npm install --prefix private/account` read `private/account` as an unpinned package name and reported ops-cleanup-preview.yml as a finding -- caught the moment the gate started scanning workflows, where `--prefix` and `-w` are common and Dockerfiles
         # had none. A long flag with no `=` takes the next token; that one rule
         # covers --prefix, --workspace, --registry, --omit and the rest.
         if prev_flag_wants_value:

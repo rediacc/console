@@ -95,7 +95,7 @@ Die Lücken sind interessanter als die Überschneidungen, denn die Lücken sind 
 
 Rediacc ist eine Control Plane mit einem einheitlichen Audit-Log, die die Kernfunktionen von vier der fünf Kategorien für selbst gehostete Infrastruktur ersetzt.
 
-**Backup** läuft in zwei Modi. Hot ist ein crash-konsistenter BTRFS-Snapshot. Kein Ausfallzeit. Cold macht einen Stop-Snapshot-Start-Zyklus. Beide planen auf systemd-Timern. Beide schreiben in einen inhaltsadressierten Chunk-Store, in den nur geänderte Zellen hochgeladen werden, und die Aufbewahrung wird pro Repository-Lineage festgelegt. Volumes sind LUKS-verschlüsselt. Der Betreiber hält den Schlüssel. Rediacc OÜ sieht niemals Klartext. Siehe [Backup & Restore](/de/docs/backup-restore) und [Cross Backup Strategy](/de/docs/cross-backup).
+**Backup** läuft in zwei Modi. Hot ist ein crash-konsistenter BTRFS-Snapshot. Kein Ausfallzeit. Cold macht einen Stop-Snapshot-Start-Zyklus. Beide planen auf systemd-Timern. Beide schreiben in einen inhaltsadressierten Chunk-Store, in den nur geänderte Zellen hochgeladen werden, und die Aufbewahrung wird pro Repository-Lineage festgelegt. Volumes sind LUKS-verschlüsselt. Der Betreiber hält den Schlüssel. Rediacc sieht niemals Klartext. Siehe [Backup & Restore](/de/docs/backup-restore) und [Cross Backup Strategy](/de/docs/cross-backup).
 
 **DR**: Gleiche Primitive wie beim Backup, plus `rdc repo migrate` für maschinenübergreifende Datenbewegung, plus das Fork-Primitiv für den schnellen Aufbau des wiederhergestellten Zustands auf einer parallelen Maschine. Der DR-Standort kann eine andere Hetzner-Maschine, eine OVH-Maschine, ein On-Premises-Rack oder jeder andere per SSH erreichbare Standort sein. Kein DR-Anbieter-Cloud in der Datenpfad.
 

@@ -55,6 +55,7 @@ Live-Proof: bench, hostinger -- the account surface (the regenerated list-types 
     (ticked) 2026-10-30T21:00:29Z by d778be9d: commit:3fae9817 packages/www/src/content/docs/en/monitoring.md:202; grep docker_available over packages and private/renet prints 0
 - [ ] V1 Run the vm:check renet side with the multi-vm area. Accept: `npm run vm:check -- --changed` gives VERIFIED and receipt `areas.multi-vm` ok
 - [ ] H1 After the renet deploy, re-measure hermes on hostinger. Both verbs must agree: status `docker_running:true` and list `docker_running:true, containers_running:false, container_count:0`. Then stop hermes's daemon out of band and both must read false. Accept: `./rdc.sh repo status hermes -m hostinger -o json | jq .docker_running && ./rdc.sh repo list -m hostinger -o json | jq '.[]|select(.name|test("hermes"))|{docker_running,containers_running,container_count}'`
+  (corrected 2026-11-12T04:44Z, measured) `repo status` takes a ref, not `-m`: `rdc repo status [options] <ref>` (`./rdc.sh repo status --help`), and `-o json` wraps the answer in `data`. The Accept's first half reads `./rdc.sh --config eu-bench repo status hermes@hostinger -o json | jq .data.docker_running`; the second half's `repo list -m hostinger` stands.
 
 ## Risks
 - R3 adds one socket probe per `repo status` (`docker version`, with a timeout of SocketCheckTimeout). list adds nothing, because it reuses its socket map.
@@ -68,8 +69,10 @@ Live-Proof: bench, hostinger -- the account surface (the regenerated list-types 
 - /home/developer/console/private/renet/cmd/renet/repository_reconcile.go
 - /home/developer/console/packages/shared/src/renet-contract/data/list-types.generated.ts
 
-- [ ] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
+- [x] LP-hostinger [live] Fresh hostinger receipt through worklist.py --live-proof, after this plan's hostinger-deployable boxes land.
   Accept: live-proof hostinger renet-live machine=hostinger
+    (ticked) 2026-11-11T06:38:32Z by d778be9d: live-proof lp-fa289a26155c hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13
 
-- [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
+- [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke
+    (ticked) 2026-11-10T14:06:20Z by d778be9d: live-proof lp-29cfa95d25be bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09

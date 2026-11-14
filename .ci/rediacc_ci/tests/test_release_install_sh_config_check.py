@@ -121,8 +121,17 @@ def _twin(fixture: pathlib.Path) -> subprocess.CompletedProcess[str]:
         done = _run(TWIN, fixture)
         return done.returncode, done.stdout, done.stderr
 
+    def port() -> tuple[int, str, str]:
+        # The port seam: a re-record from the port after the twin is gone (`regolden --source port`).
+        done = _run(PORT, fixture)
+        return done.returncode, done.stdout, done.stderr
+
     rc, out, err = diff.twin_call(
-        str(TWIN.relative_to(ROOT)), ["install.sh mutation=%s" % body], go, work=(str(fixture),)
+        str(TWIN.relative_to(ROOT)),
+        ["install.sh mutation=%s" % body],
+        go,
+        port=port,
+        work=(str(fixture),),
     )
     return subprocess.CompletedProcess([str(TWIN)], rc, out, err)
 
@@ -204,8 +213,8 @@ def test_a_wrong_default_account_server_is_caught(tmp_path: pathlib.Path) -> Non
     assert old.stderr == (
         BAD_GLYPH
         + (
-            "worker_channel_only: got channel=edge accountServer=https://V1.invalid; "
-            "expected channel=edge accountServer=" + SITE_ORIGIN + "\n"
+            "worker_channel_only: got channel=stable accountServer=https://V1.invalid; "
+            "expected channel=stable accountServer=" + SITE_ORIGIN + "\n"
         )
     )
     assert_same(old, new)
@@ -231,8 +240,10 @@ def test_a_config_that_is_never_written_is_caught(tmp_path: pathlib.Path) -> Non
     )
     old, new = run_both(fixture)
     assert old.returncode == 1
-    assert old.stderr == (
-        BAD_GLYPH + "worker_server_only: expected rediacc.json, but none was written\n"
+    # Every case with a server now sits on the edge default, so the mutated early return fires for all three.
+    assert old.stderr == "".join(
+        BAD_GLYPH + "%s: expected rediacc.json, but none was written\n" % name
+        for name in ("worker_full", "worker_server_only", "worker_full_with_server_info")
     )
     assert_same(old, new)
 

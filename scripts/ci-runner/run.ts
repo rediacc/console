@@ -83,6 +83,7 @@ import {
 import { stepDurationsMs } from './lanes';
 import { learnedSelftest } from './learned-selftest';
 import { grantFromEnv, leaseClientSelftest, openLease, type RunnerLease } from './lease-client';
+import { seedReceipt } from './lease-seed';
 import {
   cappedChanged,
   type GateLedger,
@@ -93,6 +94,7 @@ import {
   openLedger,
   outcomeOf,
 } from './ledger';
+import { localWarnSelftest, softenLocalWarn, warnedExitCodeFor, warnedFor } from './local-warn';
 import { GATES, type GateSpec } from './manifest';
 import {
   buildGraph,
@@ -104,7 +106,7 @@ import {
   runPool,
   type Sched,
 } from './pool';
-import { NO_CARRY_ENV, quickCloneSelftest } from './quick-clone';
+import { leaseMainOf, NO_CARRY_ENV, quickCloneSelftest } from './quick-clone';
 import {
   admitTouched,
   type DropKind,
@@ -776,7 +778,7 @@ function slowClosure(specs: readonly GateSpec[]): Set<string> {
 const ROTATION_UNPRICED_MS = 60_000;
 
 /**
- * THE SLOW ROTATION (housekeeping.yml's gate-cost capture). `--quick` runs a slow gate only when the day's diff touches it, so a nightly capture of the quick lane measured 3 of 69 slow gates (capture 37294996911) and most went unmeasured for weeks. Bucket i of N is that night's share: the slow gates sorted by cost (CI step p90, else ROTATION_UNPRICED_MS) and dealt longest first onto the lightest bucket (LPT), so N consecutive nights measure every one and no night carries two of the longest. Deterministic for a given lane-durations.json, which is what lets a rotation index taken from the date mean anything.
+ * THE SLOW ROTATION (ops-housekeeping.yml's gate-cost capture). `--quick` runs a slow gate only when the day's diff touches it, so a nightly capture of the quick lane measured 3 of 69 slow gates (capture 37294996911) and most went unmeasured for weeks. Bucket i of N is that night's share: the slow gates sorted by cost (CI step p90, else ROTATION_UNPRICED_MS) and dealt longest first onto the lightest bucket (LPT), so N consecutive nights measure every one and no night carries two of the longest. Deterministic for a given lane-durations.json, which is what lets a rotation index taken from the date mean anything.
  */
 export function rotationBucket(
   ids: readonly string[],
@@ -1402,6 +1404,23 @@ async function fileAppears(file: string, ms: number): Promise<boolean> {
   return false;
 }
 
+/** A gate normally dies within well under a second of its runner being SIGKILLed; a host at load 15 has been seen to miss a fixed 3 s. The bound is generous on purpose: the control still fails when the gate truly survives, only later. */
+const RUNNER_DEATH_BOUND_MS = 20_000;
+
+/** Poll until `pid` is gone; the elapsed ms when it went, or null when it was still alive at `boundMs`. */
+export async function waitGone(
+  pid: number,
+  boundMs: number,
+  alive: (pid: number) => boolean
+): Promise<number | null> {
+  const start = Date.now();
+  while (Date.now() - start < boundMs) {
+    if (!alive(pid)) return Date.now() - start;
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  return alive(pid) ? null : Date.now() - start;
+}
+
 /** SIGKILL the pid a planted gate wrote, so a broken check never leaves its plant running. */
 function killPidFile(file: string): void {
   try {
@@ -1588,12 +1607,33 @@ async function runnerProcessSelftest(): Promise<{ assertions: number; failures: 
     );
     killed9.child.kill('SIGKILL');
     await killed9.done;
-    const kDeadline = Date.now() + 3_000;
-    while (pidAlive(kGate) && Date.now() < kDeadline) await new Promise((r) => setTimeout(r, 50));
+    const goneAfter = await waitGone(kGate, RUNNER_DEATH_BOUND_MS, pidAlive);
     require_(
-      Number.isInteger(kGate) && !pidAlive(kGate),
-      `a gate must die within 3 s of its runner being SIGKILLed, pid ${kGate} is still alive`
+      Number.isInteger(kGate) && goneAfter !== null,
+      `a gate must die within ${RUNNER_DEATH_BOUND_MS / 1000} s of its runner being SIGKILLed (it normally takes well under 1 s; the bound only absorbs host load), pid ${kGate} was still alive after ${RUNNER_DEATH_BOUND_MS} ms`
     );
+    // THE PLANT: a gate that survives its runner (here a process in its own session, outside the watcher's group) must make waitGone report null, or the control above could never go red. Short bound; the plant is killed at once.
+    const survivor = spawn('tail', ['-f', '/dev/null'], { stdio: 'ignore', detached: true });
+    // Node reports a failed spawn (ENOENT for a missing `tail`) asynchronously, as an 'error' event; wait for 'spawn' or 'error' before reading the outcome, or the message below would always say "nothing". The listener also keeps a missing binary from aborting the selftest as an unhandled event.
+    const survivorSpawnError = await new Promise<Error | null>((resolve) => {
+      survivor.once('error', (e) => resolve(e));
+      survivor.once('spawn', () => resolve(null));
+    });
+    require_(
+      survivorSpawnError === null && survivor.pid !== undefined,
+      `CONTROL: the plant needs the tail binary, spawn said ${String(survivorSpawnError ?? 'nothing')}`
+    );
+    const survivorPid = survivor.pid ?? Number.NaN;
+    const survivorGone = await waitGone(survivorPid, 600, pidAlive);
+    require_(
+      survivorGone === null,
+      `CONTROL: waitGone must report null for a gate that survives (plant pid ${survivorPid}), got ${survivorGone}`
+    );
+    try {
+      survivor.kill('SIGKILL');
+    } catch {
+      /* gone */
+    }
     killPidFile(kPid);
 
     const [t, sig] = await Promise.all([timed.done, signalled.done]);
@@ -2003,6 +2043,38 @@ async function selftest(): Promise<number> {
     receiptPathFor(parseArgs(['--quick'])) === RECEIPT_PATH,
     "CONTROL: without --receipt-out the receipt stays in this checkout's own cache"
   );
+  // A lease's --narrow reads the main checkout's receipt, which the seed copies; no receipt is no copy and no failure.
+  {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ci-runner-lease-receipt-'));
+    const rel = path.relative(REPO_ROOT, RECEIPT_PATH);
+    const live = path.join(dir, 'live');
+    const lease = path.join(dir, 'lease');
+    try {
+      fs.mkdirSync(lease);
+      seedReceipt(lease, live);
+      require_(
+        !fs.existsSync(path.join(lease, rel)),
+        'CONTROL: a main checkout with no receipt seeds none into the lease'
+      );
+      fs.mkdirSync(path.dirname(path.join(live, rel)), { recursive: true });
+      fs.writeFileSync(path.join(live, rel), '{"failed":[]}');
+      seedReceipt(lease, live);
+      require_(
+        fs.readFileSync(path.join(lease, rel), 'utf8') === '{"failed":[]}',
+        "the seed must copy the main checkout's receipt to the path --narrow reads in the lease"
+      );
+    } finally {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+  }
+  require_(
+    wholeLane('/main') === '`npm run ci:quick` in /main' && narrowScript('/main') === 'ci',
+    'in a lease the narrow messages must name the main checkout and the script a lease can run'
+  );
+  require_(
+    wholeLane(undefined) === '`npm run ci:quick`' && narrowScript(undefined) === 'ci:quick',
+    'CONTROL: outside a lease the narrow messages name ci:quick and no other checkout'
+  );
   let relRefused = false;
   try {
     parseArgs(['--receipt-out', 'relative/receipt.json']);
@@ -2353,6 +2425,59 @@ async function selftest(): Promise<number> {
   // --quick DIFF SELECTION (quick-select.ts). The pure half: touch, import closure, npm script change, the mutant matcher, the budget, the base fallback.
   const qs = quickSelectSelftest(os.tmpdir(), matchesAny);
   for (const f of qs.failures) require_(false, `quick-select: ${f}`);
+  // THE LOCAL ADVISORY GATE (local-warn.ts): warning in the quick lane, still blocking in CI, read from the real manifest and workflow.
+  const lw = localWarnSelftest(REPO_ROOT, GATES);
+  for (const f of lw.failures) require_(false, `local-warn: ${f}`);
+  // THE RECEIPT CARRIES THE SOFTENED RUN: `warned` and the real exit code reach the gate's receipt entry, the verdict stays ok with exitCode 0, and an unsoftened gate carries neither.
+  {
+    const spec = GATES.find((g) => g.gate);
+    if (spec === undefined) {
+      require_(false, 'local-warn receipt: the manifest has no gate to build a receipt entry from');
+    } else {
+      const soft = new Map<string, string>();
+      const codes = new Map<string, number | null>();
+      soft.set(spec.id, `${spec.id} exited 7; fixture`);
+      codes.set(spec.id, 7);
+      const input = {
+        specs: [spec],
+        results: [{ id: spec.id, status: 'ok', exitCode: 7 }],
+        carry: new Map<string, PriorGate>(),
+        hashes: new Map<string, GateHash>(),
+        findings: {},
+        tree: 'fixture',
+        disposable: false,
+      };
+      const warnedEntry = receiptGates({ ...input, warned: soft, warnedCodes: codes })[spec.id];
+      const plainEntry = receiptGates({ ...input, warned: new Map(), warnedCodes: new Map() })[
+        spec.id
+      ];
+      require_(
+        warnedEntry?.verdict === 'ok' &&
+          warnedEntry.exitCode === 0 &&
+          warnedEntry.warned === `${spec.id} exited 7; fixture` &&
+          warnedEntry.warnedExitCode === 7,
+        `local-warn receipt: a softened gate's entry must keep verdict ok and exitCode 0 and carry warned and warnedExitCode 7, got ${JSON.stringify(warnedEntry)}`
+      );
+      // A gate killed by a signal has no exit code: its warnedExitCode is null, never 0 (the entry's own exitCode stays 0, the verdict being ok).
+      const killedEntry = receiptGates({
+        ...input,
+        warned: soft,
+        warnedCodes: new Map<string, number | null>([[spec.id, null]]),
+      })[spec.id];
+      require_(
+        killedEntry?.verdict === 'ok' &&
+          killedEntry.exitCode === 0 &&
+          killedEntry.warnedExitCode === null,
+        `local-warn receipt: a softened gate killed by a signal must carry warnedExitCode null, got ${JSON.stringify(killedEntry)}`
+      );
+      require_(
+        plainEntry !== undefined &&
+          plainEntry.warned === undefined &&
+          plainEntry.warnedExitCode === undefined,
+        `local-warn receipt: an unsoftened gate carries neither field, got ${JSON.stringify(plainEntry)}`
+      );
+    }
+  }
   // END TO END THROUGH select() ITSELF, so the lane wiring is under test and not only the helper: a touched slow gate is selected, an untouched one deferred, the fast gate kept. The leaves are real files with no relative imports, so neither can reach the other's closure.
   {
     // Each fixture DECLARES paths that match nothing in the diff: a slow gate without paths is selected by any change (quick-select rule 4), which would hide whether the leaf rule selected it.
@@ -3098,6 +3223,10 @@ interface ReceiptGate extends PriorGate {
   filesHash: string;
   inputs: { globs: string[]; files: string[]; scripts: string[] };
   verdict: 'ok' | 'fail' | 'blocked' | 'deferred' | 'ciOnly';
+  /** Set on a gate the local quick lane downgraded from red (local-warn.ts): verdict stays `ok`, which is all the push guard admits, and this names what failed. */
+  warned?: string;
+  /** With `warned`: the real exit code of the softened run (null when killed), since `exitCode` reads 0 there. */
+  warnedExitCode?: number | null;
 }
 
 function gitOut(args: readonly string[]): string {
@@ -3428,6 +3557,9 @@ function receiptGates(input: {
   tree: string;
   /** Only a disposable clone's hashes are a statement about the judged bytes; elsewhere inputHash is null. */
   disposable: boolean;
+  /** The local-warn records to read; this run's by default. A selftest passes its own. */
+  warned?: ReadonlyMap<string, string>;
+  warnedCodes?: ReadonlyMap<string, number | null>;
 }): Record<string, ReceiptGate> {
   const out: Record<string, ReceiptGate> = {};
   const byResult = new Map(input.results.map((r) => [r.id, r]));
@@ -3455,10 +3587,18 @@ function receiptGates(input: {
       out[spec.id] = {
         ...base,
         verdict,
-        exitCode: ran.exitCode,
+        // A softened gate is ok with exit code 0; the real code rides in warnedExitCode.
+        exitCode:
+          verdict === 'ok' && warnedFor(spec.id, input.warned) !== undefined ? 0 : ran.exitCode,
         findings: verdict === 'fail' ? (input.findings[spec.id] ?? null) : null,
         judgedTree: input.tree,
         carriedFrom: null,
+        ...(warnedFor(spec.id, input.warned) === undefined
+          ? {}
+          : {
+              warned: warnedFor(spec.id, input.warned),
+              warnedExitCode: warnedExitCodeFor(spec.id, input.warnedCodes),
+            }),
       };
     } else if (spec.gate) {
       out[spec.id] = {
@@ -4061,14 +4201,18 @@ async function runGraph(
       // A width someone chose (--jobs) or a grant this runner was launched under is a ceiling on this run, not a figure to improve on: only a run sized to the machine may spend the machine's idle.
       idleCoreMs:
         opts.jobs === undefined && grantFromEnv() === undefined ? cpuSampler.idleCoreMs : undefined,
-      exec: (spec, grant: Grant) =>
-        execGate(spec, {
-          cwd: REPO_ROOT,
-          mergeOutput: opts.mergeOutput,
-          ...PROFILE_OPTS,
-          grant,
-          timeoutMs: limits.get(spec.id),
-        }),
+      exec: async (spec, grant: Grant) =>
+        softenLocalWarn(
+          spec,
+          opts.quick && opts.lane === undefined,
+          await execGate(spec, {
+            cwd: REPO_ROOT,
+            mergeOutput: opts.mergeOutput,
+            ...PROFILE_OPTS,
+            grant,
+            timeoutMs: limits.get(spec.id),
+          })
+        ),
       // Start lines under --json too, where they go to stderr: a serial capture otherwise shows nothing between the plan and the end, and a hang cannot be told from a slow gate.
       onStart:
         opts.verbose || opts.json
@@ -4523,6 +4667,16 @@ function defaultEventsFile(opts: Options, runId: string): string {
   return path.join(dir, `${runId}.jsonl`);
 }
 
+/** The whole lane, named where it can run: `ci:quick` is refused in a lease, whose main checkout is where the receipt comes from. */
+function wholeLane(main: string | undefined): string {
+  return main === undefined ? '`npm run ci:quick`' : `\`npm run ci:quick\` in ${main}`;
+}
+
+/** The script a narrow set runs under here: `ci:quick` routes to a refusal in a lease, and `ci` does not. */
+function narrowScript(main: string | undefined): string {
+  return main === undefined ? 'ci:quick' : 'ci';
+}
+
 /**
  * THE NARROW SET (agent/plans/PLAN-gate-scheduling-learned.md section 5): F, the last receipt's fails carried-reds.json does not cover; C, the learned clusters holding any of them; T, the gates whose inputs the fix touched, quick-select.ts rules 1-3 against receipt.head..working tree (rule 4, "no paths means touched", is excluded on purpose: it would select every path-less gate on any edit); A, the gates the changed classes are associated with. Pure over its inputs except the git and file reads it names.
  */
@@ -4540,7 +4694,7 @@ function narrowPlan(
   } catch {
     return {
       lines: [],
-      error: `ci-runner: --narrow needs the last receipt at ${dest}; run \`npm run ci:quick\` first`,
+      error: `ci-runner: --narrow needs the last receipt at ${dest}; run ${wholeLane(leaseMainOf(REPO_ROOT))} first`,
     };
   }
   const gates = specs.filter((s) => s.gate);
@@ -4625,11 +4779,10 @@ function narrowPlan(
   if (ids.size === 0)
     return {
       lines,
-      error:
-        'ci-runner: --narrow found nothing to run: no non-carried fail, no touched gate, no cluster or association. Run the whole lane: npm run ci:quick',
+      error: `ci-runner: --narrow found nothing to run: no non-carried fail, no touched gate, no cluster or association. Run the whole lane: ${wholeLane(leaseMainOf(REPO_ROOT))}`,
     };
   lines.push(
-    `  run it: npm run ci:quick -- --narrow   (the same set: npx tsx scripts/ci-runner/run.ts --only ${[...ids].join(',')})\n`
+    `  run it: npm run ${narrowScript(leaseMainOf(REPO_ROOT))} -- --narrow  (the same set: npx tsx scripts/ci-runner/run.ts --only ${[...ids].join(',')})\n`
   );
   return { ids, lines };
 }

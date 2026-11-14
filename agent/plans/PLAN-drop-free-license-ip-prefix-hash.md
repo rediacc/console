@@ -31,5 +31,6 @@ Drop the column. The hash is needed only to count requests per address inside th
 
 - [ ] L1 [live] Bench: the account deploy applies 0072 (`deploy_bench`), and `wrangler d1 execute` (read-only `PRAGMA table_info(free_license_issuances)`) on the bench D1 shows no ip_prefix_hash. Accept: the PRAGMA output recorded here
 
-- [ ] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
+- [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke
+    (ticked) 2026-11-10T14:05:39Z by d778be9d: live-proof lp-24fcd53da0e7 bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09

@@ -8,11 +8,93 @@ tags:
 subcategory: setup
 order: 5
 language: zh
-sourceHash: "2c3ac4a96a028b3f"
-sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
+sourceHash: "6b60637180f58cc2"
+sourceCommit: "c477e296238c19495f4a07ef6c5a62f15e942f90"
 ---
 
 Rediacc 可以完全运行在您自己的基础设施上。独立 Docker 镜像包含账户服务器、Web 管理门户、营销网站和 CLI 分发端点，无需依赖 Rediacc 托管服务。
+
+## 使用 rdc 安装
+
+`rdc server install` 把账户服务器作为仓库安装到 CLI 能通过 SSH 访问的机器上。一条命令涵盖机器检查、renet 设置、DNS、TLS、密钥生成、授权、启动和所有者账户。每个值都有对应的标志。在终端中,缺失的值会被询问;使用 `--yes` 时不会询问任何内容,缺失的值会被拒绝。每个步骤都会被记录,因此重新运行会跳过已完成的部分。
+
+步骤依次为:`preflight`(免密 sudo、架构、80 和 443 端口、磁盘空间、时钟偏差)、`setup`(仅在缺少 renet 时运行 `rdc machine setup`)、`dns`、`tls`、`repo`、`keys`、`licence`、`image`、`up` 和 `owner`。
+
+### 优先使用现有机器
+
+安装的目标是已经存在的机器:数据中心的服务器或局域网中的设备。已配置的机器以参数形式给出。尚未注册的机器通过地址添加:
+
+```bash
+rdc server install --ip 203.0.113.10 --user admin --domain accounts.example.com
+rdc server install server-1 --domain accounts.example.com --owner owner@example.com --yes
+```
+
+`--port` 和 `--name` 分别设置 SSH 端口和机器的注册名称。云虚拟机需先用 `rdc machine provision` 创建;安装本身从不创建虚拟机。
+
+### DNS
+
+安装会打印服务器域名及其备份存储域名(`--store-domain`,默认为 `<名称>-store.<域名其余部分>`)的 A 和 AAAA 记录,然后等待两者都解析到该机器。记录绝不会被写入任何区域。`--no-dns-wait` 打印记录后直接继续,适合由本地解析器提供的局域网名称。
+
+### TLS
+
+`--tls` 从三种方式中选择一种:
+
+| 方式 | 需要 | 说明 |
+|---|---|---|
+| `letsencrypt` | 80 和 443 端口可从互联网访问 | HTTP-01 质询。`--cert-email` 接收到期通知;默认为所有者。 |
+| `cloudflare` | `--cf-token` | 通过 Cloudflare API 令牌完成 DNS-01 质询。 |
+| `byo` | `--tls-cert` 和 `--tls-key` | 覆盖两个域名的现有 PEM 证书。`--tls-ca` 指定健康检查所信任的 CA。 |
+
+```bash
+rdc server install lab --domain lab.example.internal --tls byo \
+  --tls-cert host.crt --tls-key host.key --tls-ca ca.crt \
+  --licence free --no-dns-wait --yes
+```
+
+### 镜像
+
+镜像步骤默认在机器上拉取 `ghcr.io/rediacc/server:latest`。`--image` 选择其他引用。`--image-file` 传送由 `docker save` 生成的 tar,`--local-image` 则从本地 Docker 保存 `--image` 并传送。两者都不需要机器访问镜像仓库。
+
+### 授权与免费版
+
+`--licence auto`(默认)使用已登录账户的委托证书,没有时以免费版启动。`--licence free` 始终以免费版启动。在安装命令出现之前登录的账户,需要重新运行 `rdc subscription login` 才能获得正确的 scope。
+
+对于无法连接账户服务器的机器,`--cert <file>` 接受在别处获得的委托证书。证书必须指明机器上生成的密钥,因此通常的顺序是先以免费版安装,再应用证书:
+
+```bash
+rdc server install server-1 --domain accounts.example.com --licence free --yes
+rdc server licence accounts.example.com --cert delegation-cert.json
+```
+
+`rdc server licence` 把免费版服务器切换到已登录账户或 `--cert` 提供的证书。服务器会检查什么,见下文授权部分的第 3 步。
+
+### 恢复包
+
+所有密钥都在机器上生成,并且只写入仓库的 `secrets.env`。在终端中,安装结束时会一次性打印恢复包:委托密钥对、账户配置服务器密钥和对象存储凭据。恢复包不会写入日志,也不属于 `--output json` 的内容。没有终端时不会打印,结尾一行会提示 `rdc server backup`。
+
+```bash
+rdc server backup accounts.example.com --out elite-recovery.env
+```
+
+`--out` 以 0600 模式写入文件;不带它时,恢复包输出到 stdout。安装时的 `--bws-project <id>` 还会把密钥复制到 Bitwarden Secrets Manager 项目,`--rotate` 会替换与之不同的已存储值。没有 `--bws-project` 时,密钥只会通过安装时输出的恢复包和 `rdc server backup --out` 写入的文件离开服务器。
+
+### 状态
+
+```bash
+rdc server status accounts.example.com
+```
+
+状态显示服务器的健康状况、套餐、证书和镜像。设备上没有该域名的安装记录时,用 `--machine` 和 `--repo` 指明目标。
+
+### 更新
+
+| 组件 | 命令 |
+|---|---|
+| CLI | `rdc update` |
+| 机器上的 renet | `rdc machine setup <machine>` |
+| 服务器镜像和模板 | `rdc server upgrade <domain>` |
+
+`rdc server upgrade` 会 fork 仓库作为回退点,放置新镜像,在内置模板更新时重新应用模板,然后重启。它与安装一样接受 `--image`、`--image-file` 和 `--local-image`,因此隔离网络的机器可以从保存的镜像 tar 升级。
 
 ## Docker 镜像
 
@@ -170,19 +252,19 @@ ON_PREMISE_PUBLIC_KEY=$(openssl pkey -in onprem-private.pem -pubout -outform DER
 
 ### 3. 在本地部署服务器上安装证书
 
-将下载的 `.json` 保存到已知路径，并在本地部署中指向该文件：
+服务器只从数据卷上的一个文件读取委托证书：`/data/delegation-cert.json`（路径由 `DELEGATION_CERT_PATH` 指定）。没有任何环境变量承载证书本身。`rdc server install` 会把下载的证书放到该位置，之后可用 `rdc server licence` 替换：
 
 ```bash
-DELEGATION_CERT_PATH=/etc/rediacc/delegation-cert.json
+rdc server install <domain> --cert delegation-cert.json
+rdc server licence <domain> --cert delegation-cert.json
+rdc server status <domain>
 ```
 
-或者，对于临时容器 / Docker secrets 工作流，可将证书以 base64 形式嵌入环境变量：
+两条命令都通过证书收件箱（`data/web/cert-inbox/new.json`）把证书交给运行中的服务器。服务器验证证书后，以 `applied.json` 或 `rejected.json` 作答，命令再用 `rdc server status` 确认新证书的 id（与第 6 步的 `cert-status` 数据相同）。`rdc server upgrade` 使用同一个收件箱。服务器不再读取 `DELEGATION_CERT_BASE64`：升级中有一步会把遗留在 `secrets.env` 里的值移入收件箱，因此在收件箱出现之前安装的机器也能保留其证书。
 
-```bash
-DELEGATION_CERT_BASE64=$(base64 -w 0 < delegation-cert.json)
-```
+服务器在启动时加载证书，并与它签署许可证所用的密钥核对：签名密钥的指纹必须与证书中 `delegatedPublicKey` 的指纹一致，因为用证书未授权的密钥签署的许可证无法在任何机器上通过验证。请保持签名密钥对与证书的 `delegatedPublicKey` 一致。
 
-启动时，如果加载的证书所委托的密钥与服务器实际用于签署许可证的密钥不同，服务器将拒绝启动（记录 FATAL 日志并以非零状态退出）：它会比较签名密钥的指纹与证书 `delegatedPublicKey` 的指纹，一旦不匹配就中止，因为使用证书未授权的密钥签署的许可证在任何机器上都将无法通过验证。请始终保持签名密钥对与证书的 `delegatedPublicKey` 同步。
+服务器在启动时拒绝的证书（签名无效、密钥不符、缺少 `UPSTREAM_PUBLIC_KEY` 或文件格式错误）不会使其停止。服务器会以免费版启动，并把有问题的文件移到原文件旁的 `delegation-cert.rejected.json`。在有效证书就位之前，仓库许可证签署会返回 `503 DELEGATION_CERT_REFUSED`，`rdc server status` 会显示 `cert REFUSED (reason)`。用有效证书运行 `rdc server licence` 即可修复。已过期的证书仍会加载：它会平滑降级，而不是被拒绝。
 
 ### 4. 配置上游验证与自动续期（可选但推荐）
 
@@ -232,11 +314,25 @@ RENEW_THRESHOLD_DAYS=14
 
 #### 证书上传失败代码
 
-| 代码 | 原因 | 解决方法 |
+`POST /onprem/cert-upload` 成功时返回 `{uploaded: true, bootstrap, certId}`。证书被拒绝时返回 `{error, code}`，其中 `error` 为详细信息，`code` 为下表中的某个原因。每张已应用或被拒绝的证书都会记入日志，并通过邮件通知该机器的所有者。
+
+`rdc server licence` 通过 SSH 把证书放入机器的收件箱（`data/web/cert-inbox`），再读回 `applied.json` 或 `rejected.json`，然后通过 `cert-status` 确认新的证书 ID。被拒绝时的原因与下表相同，另外还有收件箱自身给出的 `not-a-regular-file` 和 `too-large`。
+
+| 代码 | HTTP | 原因 |
 |---|---|---|
-| `CHAIN_HEAD_BEHIND` | 新证书的 `genesisSequence` 超过本地链头 | 上游处于分叉链上，请调查 |
-| `CHAIN_FORK_ON_UPLOAD` | 证书 `genesisSequence` 处的链哈希与本地账本不匹配 | 本地链已与上游分叉，请调查 |
-| `Signature verification failed` | 证书未由配置的 `UPSTREAM_PUBLIC_KEY` 签名 | 检查 `UPSTREAM_PUBLIC_KEY` 是否与上游主公钥匹配 |
+| `malformed` | 400 | 上传的内容不是有效证书 |
+| `bad-signature` | 400 | 证书不是由已配置的 `UPSTREAM_PUBLIC_KEY` 签名的 |
+| `wrong-key` | 400 | 证书是为另一把密钥签发的，不属于这个本地部署 |
+| `expired` | 400 | 证书已超过其 `validUntil` |
+| `not-newer` | 409 | 证书并不比当前生效的证书更新 |
+| `other-subscription` | 409 | 证书属于另一个订阅 |
+| `chain-ahead` | 409 | 证书的 `genesisSequence` 超过本地链头 |
+| `chain-fork` | 409 | 证书 `genesisSequence` 处的链哈希与本地账本不匹配 |
+| `no-upstream-key` | 500 | 未配置 `UPSTREAM_PUBLIC_KEY` |
+| `write-failed` | 500 | 无法将证书写入磁盘 |
+| `adoption-failed` | 500 | 服务器无法加载已写入的证书 |
+
+对于 `bad-signature`，请检查 `UPSTREAM_PUBLIC_KEY` 是否与上游主公钥一致。对于 `no-upstream-key`，请设置 `UPSTREAM_PUBLIC_KEY`。
 
 ### 6. 状态与监控
 
@@ -258,9 +354,8 @@ curl https://onprem.example.com/account/api/v1/onprem/cert-status \
 | `ON_PREMISE_MODE` | 是 | 设为 `true` 以启用本地部署路由子集 |
 | `ON_PREMISE_PRIVATE_KEY` | 是 | Base64 PKCS8 Ed25519 私钥，用于委托签名 |
 | `ON_PREMISE_PUBLIC_KEY` | 是 | Base64 SPKI Ed25519 公钥（须与证书的 `delegatedPublicKey` 匹配） |
-| `DELEGATION_CERT_PATH` | 二选一 | 已签名证书 JSON 文件的文件系统路径 |
-| `DELEGATION_CERT_BASE64` | 二选一 | Base64 编码的证书 JSON（文件路径的替代方案） |
-| `UPSTREAM_PUBLIC_KEY` | 若设置了 `UPSTREAM_API_KEY` 或需要 `/onprem/cert-upload` 正常工作则必填 | 上游主公钥的 Base64 SPKI，缺失时启动快速失败 |
+| `DELEGATION_CERT_PATH` | 可选 | 已签名证书 JSON 文件的文件系统路径。默认为数据卷上的 `/data/delegation-cert.json`。请用 `rdc server licence` 替换证书，不要手动改动。 |
+| `UPSTREAM_PUBLIC_KEY` | 若设置了 `UPSTREAM_API_KEY` 或需要 `/onprem/cert-upload` 正常工作则必填 | 上游主公钥的 Base64 SPKI，缺失时服务器会在启动时拒绝所有证书（`no-upstream-key`），并按免费版运行，详见第 3 步 |
 | `UPSTREAM_URL` | 用于自动续期 | 上游账户服务器基础 URL，例如 `https://www.rediacc.com` |
 | `UPSTREAM_API_KEY` | 用于自动续期 | `delegation:renew` 范围的 API 令牌，通过门户获取，见第 4 步 |
 | `AUTO_RENEW_INTERVAL_HOURS` | 可选 | 默认 24。检查证书是否需要续期的间隔小时数 |

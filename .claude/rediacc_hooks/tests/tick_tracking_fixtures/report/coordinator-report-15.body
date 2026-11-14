@@ -1,0 +1,143 @@
+---
+agent_id: a465aa7e2ca09a227
+agent_type: general-purpose
+agent_name: general-purpose
+session: sess1
+branch: testbr
+at: 2026-11-05T20:44:55Z
+source: hook
+sends: 21
+open_boxes: 0
+transcript: (fixture)
+bytes: 8459
+---
+
+## SendMessage 1 -> a635cc4b6dd601c16  (2026-11-05T20:21:43.000Z)
+_Add TICK block requirement_
+
+Brief addition (operator order): the report must end with a TICK block naming the plan file, the box signature and the clauses each commit serves. Writer 0.
+Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. 
+
+## SendMessage 2 -> a0beb760a1e27209b  (2026-11-05T20:21:45.000Z)
+_Add TICK block requirement_
+
+Brief addition (operator order): the report must end with a TICK block naming the plan file, the box signature and the clauses each commit serves. Writer 1.
+Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. 
+
+## SendMessage 3 -> aac07d2c0740d7c03  (2026-11-05T20:21:47.000Z)
+_Add TICK block requirement_
+
+Brief addition (operator order): the report must end with a TICK block naming the plan file, the box signature and the clauses each commit serves. Writer 2.
+Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. 
+
+## SendMessage 4 -> a281a444f9659b0f4  (2026-11-05T20:21:49.000Z)
+_Add TICK block requirement_
+
+Brief addition (operator order): the report must end with a TICK block naming the plan file, the box signature and the clauses each commit serves. Writer 3.
+Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. 
+
+## SendMessage 5 -> a304cc2efb31ef327  (2026-11-05T20:21:51.000Z)
+_Add TICK block requirement_
+
+Brief addition (operator order): the report must end with a TICK block naming the plan file, the box signature and the clauses each commit serves. Writer 4.
+Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. 
+
+## SendMessage 6 -> ae25ce201db041416  (2026-11-05T20:21:53.000Z)
+_Add TICK block requirement_
+
+Brief addition (operator order): the report must end with a TICK block naming the plan file, the box signature and the clauses each commit serves. Writer 5.
+Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. 
+
+## SendMessage 7 -> a805d0856637d0ae0  (2026-11-05T20:21:55.000Z)
+_Add TICK block requirement_
+
+Brief addition (operator order): the report must end with a TICK block naming the plan file, the box signature and the clauses each commit serves. Writer 6.
+Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. 
+
+## SendMessage 8 -> aa1f3ec829e2252dd  (2026-11-05T20:21:57.000Z)
+_Add TICK block requirement_
+
+Brief addition (operator order): the report must end with a TICK block naming the plan file, the box signature and the clauses each commit serves. Writer 7.
+Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. 
+
+## SendMessage 9 -> a8dfefc76f725f3df  (2026-11-05T20:21:59.000Z)
+_Add TICK block requirement_
+
+Brief addition (operator order): the report must end with a TICK block naming the plan file, the box signature and the clauses each commit serves. Writer 8.
+Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. 
+
+## SendMessage 10 -> af626a288146a982c  (2026-11-05T20:22:01.000Z)
+_Add TICK block requirement_
+
+Brief addition (operator order): the report must end with a TICK block naming the plan file, the box signature and the clauses each commit serves. Writer 9.
+Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. 
+
+## SendMessage 11 -> ae36cbf9bfe346c13  (2026-11-05T20:22:03.000Z)
+_Add TICK block requirement_
+
+Brief addition (operator order): the report must end with a TICK block naming the plan file, the box signature and the clauses each commit serves. Writer 10.
+Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. 
+
+## SendMessage 12 -> aa1f3ec829e2252dd  (2026-11-05T20:26:13.000Z)
+_Ruling on stale generated docs_
+
+Coordinator ruling for this lease: if the commit hook refuses for stale generated docs, report it rather than running the regenerate script.
+Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. 
+
+## SendMessage 13 -> a0beb760a1e27209b  (2026-11-05T20:26:23.000Z)
+_Ruling on stale generated docs_
+
+Coordinator ruling for this lease: if the commit hook refuses for stale generated docs, report it rather than running the regenerate script.
+Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. 
+
+## SendMessage 14 -> aac07d2c0740d7c03  (2026-11-05T20:26:33.000Z)
+_Ruling on stale generated docs_
+
+Coordinator ruling for this lease: if the commit hook refuses for stale generated docs, report it rather than running the regenerate script.
+Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. 
+
+## SendMessage 15 -> a8dfefc76f725f3df  (2026-11-05T20:26:43.000Z)
+_Ruling on stale generated docs_
+
+Coordinator ruling for this lease: if the commit hook refuses for stale generated docs, report it rather than running the regenerate script.
+Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. 
+
+## SendMessage 16 -> a635cc4b6dd601c16  (2026-11-05T20:26:53.000Z)
+_Ruling on stale generated docs_
+
+Coordinator ruling for this lease: if the commit hook refuses for stale generated docs, report it rather than running the regenerate script.
+Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. 
+
+## SendMessage 17 -> a805d0856637d0ae0  (2026-11-05T20:27:03.000Z)
+_Ruling on stale generated docs_
+
+Coordinator ruling for this lease: if the commit hook refuses for stale generated docs, report it rather than running the regenerate script.
+Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. 
+
+## SendMessage 18 -> a281a444f9659b0f4  (2026-11-05T20:27:13.000Z)
+_Ruling on stale generated docs_
+
+Coordinator ruling for this lease: if the commit hook refuses for stale generated docs, report it rather than running the regenerate script.
+Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. 
+
+## SendMessage 19 -> af626a288146a982c  (2026-11-05T20:27:23.000Z)
+_Ruling on stale generated docs_
+
+Coordinator ruling for this lease: if the commit hook refuses for stale generated docs, report it rather than running the regenerate script.
+Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. 
+
+## SendMessage 20 -> a304cc2efb31ef327  (2026-11-05T20:27:33.000Z)
+_Ruling on env registration_
+
+Coordinator ruling: run the env registration for the new flag, then re-run the narrow check.
+Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. 
+
+## SendMessage 21 -> af626a288146a982c  (2026-11-05T20:27:43.000Z)
+_Ruling on the boundary_
+
+Coordinator ruling: the boundary now also covers the matching test directory; keep to it.
+Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. Synthetic fixture text. 
+
+## Final message
+
+Load is 25-31 on 24 cores, right at the limit, with five narrow runs going at once. That is still under the 70-90 band that caused false timeouts before, so they keep running. Still waiting on the drill writer, the compose drill, the census tool, the e2e case and the nightly fix.

@@ -15,7 +15,7 @@ import re
 import threading
 import time
 import zipfile
-from typing import Any
+from typing import Any, cast
 
 import pytest
 
@@ -567,6 +567,14 @@ def _fake_compute(**overrides):
         "missing_artifact_lanes": [],
     }
     base.update(overrides)
+    # Every entry a fake measures carries `MIN_DRIFT_RUNS` runs of evidence unless the test says otherwise, so a test about merging or drift is not silently turned into a test about thin samples.
+    if "measured_runs" not in overrides:
+        base["measured_runs"] = {
+            section: dict.fromkeys(
+                cast("dict[str, Any]", base.get(section) or {}), br.MIN_DRIFT_RUNS
+            )
+            for section in ("jobs", "job_p90_minutes", "gate_step_p90_seconds", "variant_costs")
+        }
 
     def compute(_repo, _workflow, _branch, _limit):
         return base
@@ -1675,7 +1683,9 @@ def test_fetch_runs_query_bound_and_age_check_agree_at_the_edge(monkeypatch, cap
 
     monkeypatch.setattr(br.gh_retry, "api_json", server)
     now = br._iso_to_epoch("2026-10-07T10:50:00Z")
-    result = br.fetch_runs("o/r", "housekeeping.yml", "schedule", "main", "completed", 10, now=now)
+    result = br.fetch_runs(
+        "o/r", "ops-housekeeping.yml", "schedule", "main", "completed", 10, now=now
+    )
     assert [r["id"] for r in result] == [2]
     assert "sample limit" not in capsys.readouterr().err
 
@@ -2226,6 +2236,147 @@ def test_refresh_lane_durations_merges_job_p90_minutes_with_existing(tmp_path):
         "Quality / Content": 3.0,
         "Tests + Infra / E2E K8s Ceph": 14.0,
     }
+
+
+def _one_run_night(**overrides):
+    """The 2026-11-07 shape: a 14-day window holding one pull_request run (41769535457), measured against the table the 11-03 refresh wrote. Every entry the fake measures has one run of evidence unless `measured_runs` says otherwise."""
+    measured = {
+        "jobs": {"test-e2e-workers": 2.2},
+        "job_p90_minutes": {
+            "Quality / Branch": 3.5,
+            "Build (Renet) / Renet (Full)": 6.2,
+            "Brand New Job": 1.0,
+        },
+        "gate_step_p90_seconds": {"check:ci-plan-live-proof": 3.0, "check:ci-max-lines": 5.0},
+    }
+    runs = {section: dict.fromkeys(values, 1) for section, values in measured.items()}
+    return _fake_compute(
+        **measured,
+        measured_runs=overrides.pop("measured_runs", runs),
+        sampled_runs=[{"id": 41769535457, "updated_at": "2026-11-04T05:05:10Z"}],
+        **overrides,
+    )
+
+
+def _the_11_03_table():
+    return {
+        "refreshed_at": "2026-11-03T10:13:26Z",
+        "concurrency": 20,
+        "jobs": {"test-e2e-workers": 3.1},
+        "units": {},
+        "job_p90_minutes": {"Quality / Branch": 10.3, "Build (Renet) / Renet (Full)": 7.0},
+        "job_p90_plans": {"Quality / Branch": ["aaaaaaaaaaaaaaaa"]},
+        "gate_step_p90_seconds": {"check:ci-plan-live-proof": 69.3, "check:ci-max-lines": 5.3},
+    }
+
+
+def test_a_one_run_refresh_keeps_every_committed_job_and_gate_step_and_names_them(tmp_path, capsys):
+    """One run is one runner: a refresh on it moves no `jobs`, `job_p90_minutes` or `gate_step_p90_seconds` entry the table already holds, either direction (69.3 s -> 3.0 s down, 7.0 m -> 6.2 m down, the fixed cost up), writes a name new to the table, keeps a kept name's plan entry, and says how many runs it read rather than the limit."""
+    path = _fixture_tree(tmp_path, {})
+    path.write_text(json.dumps(_the_11_03_table()))
+    assert br.refresh_lane_durations(path, limit=10, compute=_one_run_night()) == 0
+    data = json.loads(path.read_text())
+    assert data["jobs"] == {"test-e2e-workers": 3.1}
+    assert data["job_p90_minutes"] == {
+        "Quality / Branch": 10.3,
+        "Build (Renet) / Renet (Full)": 7.0,
+        "Brand New Job": 1.0,  # new to the table: written from one run
+    }
+    assert data["job_p90_plans"] == {"Quality / Branch": ["aaaaaaaaaaaaaaaa"]}
+    steps = data["gate_step_p90_seconds"]
+    assert steps.get("check:ci-plan-live-proof") == 69.3
+    assert steps.get("check:ci-max-lines") == 5.3
+    captured = capsys.readouterr()
+    assert "refreshed from 1 sampled run(s)" in captured.out
+    assert "10 sampled run(s)" not in captured.out
+    assert (
+        "2 job_p90_minutes entr(ies) measured by fewer than 2 sampled run(s) KEEP" in captured.err
+    )
+    assert "2 gate_step_p90_seconds entr(ies)" in captured.err
+    assert "1 jobs entr(ies)" in captured.err
+
+
+def test_a_refresh_on_two_runs_rewrites_the_same_entries(tmp_path):
+    """CONTROL: the identical measurement with two runs behind every entry moves them all, so the keep rule is the evidence count and nothing else."""
+    path = _fixture_tree(tmp_path, {})
+    path.write_text(json.dumps(_the_11_03_table()))
+    two = {
+        "jobs": {"test-e2e-workers": 2},
+        "job_p90_minutes": {"Quality / Branch": 2, "Build (Renet) / Renet (Full)": 2},
+        "gate_step_p90_seconds": {"check:ci-plan-live-proof": 2, "check:ci-max-lines": 2},
+    }
+    assert br.refresh_lane_durations(path, limit=10, compute=_one_run_night(measured_runs=two)) == 0
+    data = json.loads(path.read_text())
+    assert data["jobs"] == {"test-e2e-workers": 2.2}
+    assert data["job_p90_minutes"]["Quality / Branch"] == 3.5
+    assert data["job_p90_minutes"]["Build (Renet) / Renet (Full)"] == 6.2
+    assert "Quality / Branch" not in data.get("job_p90_plans", {}), (
+        "a re-measured name drops its old plan"
+    )
+    steps = data["gate_step_p90_seconds"]
+    assert steps.get("check:ci-plan-live-proof") == 3.0
+    assert steps.get("check:ci-max-lines") == 5.0
+
+
+def test_refreshed_on_evidence_counts_absent_evidence_as_none():
+    assert br.refreshed_on_evidence({"a": 1.0}, {"a": 2.0, "b": 3.0}, {}) == (
+        {"a": 1.0, "b": 3.0},
+        ["a"],
+    )
+    assert br.refreshed_on_evidence({"a": 1.0}, {"a": 2.0}, {"a": br.MIN_DRIFT_RUNS}) == (
+        {"a": 2.0},
+        [],
+    )
+
+
+def test_a_check_judges_a_job_fixed_cost_drift_only_on_two_runs(tmp_path, capsys):
+    """The check holds a job to the refresh's evidence: a one-run 29% move is counted thin and printed, never a finding, and the same move on two runs is (the CONTROL). A check after a one-run refresh is therefore green on that sample."""
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps(_committed(jobs={"test-e2e-workers": 3.1})))
+    thin = _fake_compute(
+        jobs={"test-e2e-workers": 2.2}, measured_runs={"jobs": {"test-e2e-workers": 1}}
+    )
+    assert br.check_lane_durations(path, limit=10, compute=thin) == 0
+    assert "1 job lane(s) measured: 0 judged for drift, 1 thin" in capsys.readouterr().out
+    two = _fake_compute(
+        jobs={"test-e2e-workers": 2.2}, measured_runs={"jobs": {"test-e2e-workers": 2}}
+    )
+    assert br.check_lane_durations(path, limit=10, compute=two) == 1
+    # And the ceiling is not an evidence question: a one-run leg over 12 minutes is still red.
+    over = _fake_compute(
+        jobs={"test-e2e-workers": 12.5}, measured_runs={"jobs": {"test-e2e-workers": 1}}
+    )
+    assert br.check_lane_durations(path, limit=10, compute=over) == 1
+
+
+def test_gate_step_seconds_counts_the_runs_behind_each_step(tmp_path, monkeypatch):
+    monkeypatch.setattr(
+        br, "_exclusive_ci_steps", lambda _root: {"g": ("quality-branch", "Plan live proof")}
+    )
+    pattern = re.compile(r"^Quality / Branch$")
+
+    def run(seconds):
+        return [
+            {
+                "name": "Quality / Branch",
+                "conclusion": "success",
+                "steps": [
+                    {
+                        "name": "Plan live proof",
+                        "conclusion": "success",
+                        "started_at": "2026-11-04T03:55:00Z",
+                        "completed_at": "2026-11-04T03:55:%02dZ" % seconds,
+                    }
+                ],
+            }
+        ]
+
+    runs: dict[str, int] = {}
+    assert br.gate_step_seconds(tmp_path, {"quality-branch": pattern}, [run(3)], runs) == {"g": 3.0}
+    assert runs == {"g": 1}
+    runs.clear()
+    br.gate_step_seconds(tmp_path, {"quality-branch": pattern}, [run(3), run(40), []], runs)
+    assert runs == {"g": 2}
 
 
 def test_refresh_lane_durations_still_refuses_when_only_job_p90_minutes_would_be_empty(tmp_path):
@@ -2800,6 +2951,94 @@ def test_refresh_writes_measured_variant_costs(tmp_path):
     assert json.loads(path.read_text())["variantCosts"] == measured
 
 
+def test_a_refresh_moves_a_priced_variant_lane_only_on_two_runs(tmp_path, capsys):
+    """variantCosts follows the other sections' evidence rule at lane level: one run of leg logs keeps a lane the table prices (named), two runs replace it, and a lane new to the table is written from one."""
+    prior = {"test-e2e-workers": {"ubuntu-24.04": {"fixedMinutes": 5.4, "units": {}}}}
+    measured = {
+        "test-e2e-workers": {"ubuntu-24.04": {"fixedMinutes": 4.37, "units": {}}},
+        "ops-tutorials": {"linux-amd64": {"fixedMinutes": 3.34, "units": {}}},
+    }
+    for runs, expected_e2e in ((1, 5.4), (2, 4.37)):
+        path = tmp_path / ("lane-durations-%d.json" % runs)
+        path.write_text(
+            json.dumps({"concurrency": 20, "jobs": {}, "units": {}, "variantCosts": prior})
+        )
+        compute = _fake_compute(
+            variant_costs=measured,
+            measured_runs={"variant_costs": {"test-e2e-workers": runs, "ops-tutorials": 1}},
+        )
+        assert br.refresh_lane_durations(path, limit=10, compute=compute) == 0
+        written = json.loads(path.read_text())["variantCosts"]
+        assert written["test-e2e-workers"]["ubuntu-24.04"]["fixedMinutes"] == expected_e2e
+        assert written["ops-tutorials"]["linux-amd64"]["fixedMinutes"] == 3.34
+        err = capsys.readouterr().err
+        assert ("1 variantCosts entr(ies)" in err) is (runs == 1)
+
+
+def test_a_refresh_counts_variant_evidence_per_variant_not_per_lane(tmp_path):
+    """One lane, two variants: ubuntu-24.04 priced from two runs moves, fedora-43 priced from one run keeps its committed value."""
+    prior = {
+        "test-e2e-workers": {
+            "ubuntu-24.04": {"fixedMinutes": 5.4, "units": {}},
+            "fedora-43": {"fixedMinutes": 6.0, "units": {}},
+        }
+    }
+    measured = {
+        "test-e2e-workers": {
+            "ubuntu-24.04": {"fixedMinutes": 4.37, "units": {}},
+            "fedora-43": {"fixedMinutes": 3.0, "units": {}},
+        }
+    }
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps({"concurrency": 20, "jobs": {}, "units": {}, "variantCosts": prior}))
+    compute = _fake_compute(
+        variant_costs=measured,
+        measured_runs={
+            "variant_costs": {"test-e2e-workers": 2},
+            "variant_entries": {
+                "test-e2e-workers/ubuntu-24.04": 2,
+                "test-e2e-workers/fedora-43": 1,
+            },
+        },
+    )
+    assert br.refresh_lane_durations(path, limit=10, compute=compute) == 0
+    written = json.loads(path.read_text())["variantCosts"]["test-e2e-workers"]
+    assert written["ubuntu-24.04"]["fixedMinutes"] == 4.37
+    assert written["fedora-43"]["fixedMinutes"] == 6.0
+
+
+def test_a_lane_with_two_thin_variants_is_counted_as_two_entries(tmp_path, capsys):
+    """The kept-on-thin summary counts `variantCosts` entries, one `lane/variant` each, so a lane with two thin variants reads 2 and names both."""
+    prior = {
+        "test-e2e-workers": {
+            "ubuntu-24.04": {"fixedMinutes": 5.4, "units": {}},
+            "fedora-43": {"fixedMinutes": 6.0, "units": {}},
+        }
+    }
+    measured = {
+        "test-e2e-workers": {
+            "ubuntu-24.04": {"fixedMinutes": 4.37, "units": {}},
+            "fedora-43": {"fixedMinutes": 3.0, "units": {}},
+        }
+    }
+    path = tmp_path / "lane-durations.json"
+    path.write_text(json.dumps({"concurrency": 20, "jobs": {}, "units": {}, "variantCosts": prior}))
+    compute = _fake_compute(
+        variant_costs=measured,
+        measured_runs={
+            "variant_costs": {"test-e2e-workers": 1},
+            "variant_entries": {
+                "test-e2e-workers/ubuntu-24.04": 1,
+                "test-e2e-workers/fedora-43": 1,
+            },
+        },
+    )
+    assert br.refresh_lane_durations(path, limit=10, compute=compute) == 0
+    err = capsys.readouterr().err
+    assert "2 variantCosts entr(ies)" in err
+    assert "test-e2e-workers/fedora-43, test-e2e-workers/ubuntu-24.04" in err
+
+
 def test_cached_variant_log_fetches_once_and_caches_only_the_filtered_lines(tmp_path):
     calls = []
 
@@ -2865,6 +3104,7 @@ def test_collect_variant_costs_prices_each_variant_from_its_own_legs_logs(tmp_pa
         "test-e2e-workers": re.compile(r"^Tests \+ Infra / E2E Workers \(.+?, .+?/8\)$"),
         "ops-vm-provision": re.compile(r"^OPS Tests / OPS Provision \(.+?, .+?/.+?\)$"),
     }
+    runs: dict[str, int] = {}
     costs, legs = br.collect_variant_costs(
         "o/r",
         [[e2e, ops, failed]],
@@ -2873,9 +3113,26 @@ def test_collect_variant_costs_prices_each_variant_from_its_own_legs_logs(tmp_pa
         bucket_titles=_BUCKETS,
         fetch_log=fetch,
         cache_dir=tmp_path / "cache",
+        runs=runs,
     )
     assert sorted(fetched) == [11, 12]  # the failed leg is never read
     assert legs == {"test-e2e-workers": 1, "ops-tutorials": 1}
+    assert runs == {"test-e2e-workers": 1, "ops-tutorials": 1}
+    # The same e2e leg in a second run is a second run of evidence; the failed leg still counts for nothing.
+    again = dict(e2e, id=14)
+    logs[14] = _E2E_FIXTURE_LOG
+    runs.clear()
+    br.collect_variant_costs(
+        "o/r",
+        [[e2e, ops, failed], [again]],
+        pats,
+        tmp_path,
+        bucket_titles=_BUCKETS,
+        fetch_log=fetch,
+        cache_dir=tmp_path / "cache",
+        runs=runs,
+    )
+    assert runs == {"test-e2e-workers": 2, "ops-tutorials": 1}
     assert costs["test-e2e-workers"]["fedora-43"]["legExtraMinutes"] == {"1": 0.5}
     assert costs["test-e2e-workers"]["fedora-43"]["units"] == {
         "e2e-workers:01-system-checks.test.ts": 10000,
@@ -3321,3 +3578,67 @@ def test_prefer_todays_leg_matches_only_the_name_s_own_lane():
     samples = {"Q / X (4/4)": [("today4", 6.0), ("today4", 5.0), ("old4", 14.8)]}
     p90, _ = br.prefer_todays_leg({"Q / X (4/4)": 13.0}, samples, set(), today, _PLAN_PATTERNS)
     assert p90 == {"Q / X (4/4)": 13.0}
+
+
+# --------------------------------------------------------------------------- a run whose jobs stay unreadable on a server fault is skipped and named ---------------------------------------------------------------------------
+
+
+def test_jobs_or_skip_skips_a_502_names_it_and_still_raises_a_401(monkeypatch, capsys):
+    def boom(stderr):
+        def _fetch(_repo, _run_id):
+            raise br.ghx.GhError(["gh", "api"], 1, stderr, br.ghx.FAILURE_FAILED)
+
+        return _fetch
+
+    monkeypatch.setattr(br, "fetch_jobs", boom("gh: Server Error (HTTP 502)"))
+    assert br._jobs_or_skip("o/r", 36670172984) is None
+    assert "skipped run 36670172984: jobs unreadable after" in capsys.readouterr().err
+
+    monkeypatch.setattr(br, "fetch_jobs", boom("gh: Bad credentials (HTTP 401)"))
+    with pytest.raises(br.ghx.GhError):
+        br._jobs_or_skip("o/r", 1)
+
+    monkeypatch.setattr(br, "fetch_jobs", lambda _r, _i: [{"id": 1}])
+    assert br._jobs_or_skip("o/r", 2) == [{"id": 1}]
+
+
+def _sample(monkeypatch, pr_jobs, main_jobs):
+    """compute_lane_durations over one PR run and one main-push run whose job reads answer `pr_jobs` / `main_jobs` (None is a skipped, unreadable run)."""
+    runs = {
+        "pull_request": [{"id": 1, "created_at": "2026-09-28T13:19:13Z", "head_branch": "b"}],
+        "push": [{"id": 2, "created_at": "2026-09-28T13:19:13Z", "head_branch": "main"}],
+    }
+    answers = {1: pr_jobs, 2: main_jobs}
+    monkeypatch.setattr(br, "fetch_runs", lambda _r, _w, event, *_a, **_k: runs[event])
+    monkeypatch.setattr(br, "_jobs_or_skip", lambda _repo, run_id: answers[run_id])
+    monkeypatch.setattr(br, "lane_display_patterns", lambda *_a: {})
+    monkeypatch.setattr(br, "collect_unit_durations", lambda *_a, **_k: ({}, []))
+
+
+def test_compute_lane_durations_refuses_when_every_pr_run_is_unreadable(monkeypatch, tmp_path):
+    """81670a34.1: the new all-unreadable raise on the PR sample."""
+    _sample(monkeypatch, None, [])
+    with pytest.raises(br.ghx.GhError, match="every sampled PR run's jobs were unreadable"):
+        br.compute_lane_durations(
+            root=tmp_path, list_artifacts=lambda *_a: [], download=lambda *_a: b""
+        )
+
+
+def test_compute_lane_durations_refuses_when_every_main_push_run_is_unreadable(
+    monkeypatch, tmp_path
+):
+    """81670a34.2: the same raise on the main-push sample; a readable PR run alone does not excuse it."""
+    _sample(monkeypatch, [], None)
+    with pytest.raises(br.ghx.GhError, match="every sampled main-push run's jobs were unreadable"):
+        br.compute_lane_durations(
+            root=tmp_path, list_artifacts=lambda *_a: [], download=lambda *_a: b""
+        )
+
+
+def test_compute_lane_durations_accepts_two_readable_samples(monkeypatch, tmp_path):
+    """CONTROL: with both samples readable nothing raises and the PR run read is the one sampled."""
+    _sample(monkeypatch, [], [])
+    computed = br.compute_lane_durations(
+        root=tmp_path, list_artifacts=lambda *_a: [], download=lambda *_a: b""
+    )
+    assert [r["id"] for r in computed["sampled_runs"]][:1] == [1]

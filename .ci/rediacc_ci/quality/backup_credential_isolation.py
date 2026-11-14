@@ -1,6 +1,6 @@
 r"""check:ci-backup-credential-isolation -- each environment's account Workers hold only their own bucket-scoped backup key, and nothing account-wide stands in for it.
 
-WHY. Until 2026-10-15 `deploy_bench` filled every empty `ACCOUNT_BACKUP_S3_*` value from the account-wide R2 token, and the deploy-bench profile supplied only that token, so the public bench Worker held a key that reaches every bucket in the account; every other Worker shared one hand-minted pair. agent/plans/PLAN-backup-credential-isolation.md splits the credential into three bucket-scoped tokens (stable, edge, bench), each limited to object read and write on its own environment's backup buckets. This gate pins the split in the tree, so a later edit cannot quietly re-widen it. It reads NAMES only: configuration files, workflow files and one Python module's string constants. No value is read from anywhere, and none could be printed.
+WHY. Until 2026-10-15 `deploy_bench` filled every empty `ACCOUNT_BACKUP_S3_*` value from the account-wide R2 token, and the deploy-bench profile supplied only that token, so the public bench Worker held a key that reaches every bucket in the account; every other Worker shared one hand-minted pair. agent/plans/PLAN-backup-credential-isolation.md split the credential into bucket-scoped tokens, each limited to object read and write on its own environment's backup buckets. Since the product-domain rename (agent/plans/PLAN-product-domain-rename.md) one shared Worker set per region serves the product, so two tokens remain: stable (the shared set's `backups-<region>` buckets) and bench. The edge token and its `_EDGE` names are retired, and a reference to them is a finding. This gate pins the split in the tree, so a later edit cannot quietly re-widen it. It reads NAMES only: configuration files, workflow files and one Python module's string constants. No value is read from anywhere, and none could be printed.
 
 THE RULES, each with a plant in the controls that must turn it red:
 
@@ -12,22 +12,25 @@ THE RULES, each with a plant in the controls that must turn it red:
                       `ACCOUNT_BACKUP_S3_*` name.
   profile-pair        a profile binding `ACCOUNT_BACKUP_S3_ACCESS_KEY_ID` or
                       `..._SECRET_ACCESS_KEY` takes both halves from ONE environment
-                      suffix (`_STABLE`, `_EDGE`, `_BENCH`), never the unsuffixed
-                      store entry and never two environments. Census: deploy-bench
-                      binds bench, backup-push-<env> binds <env>.
-  workflow-pair       no workflow or action requests the unsuffixed pair or the
-                      `_BENCH` pair; a `_STABLE` request sits in a bws-secrets step whose
-                      `if:` is exactly `inputs.target == 'stable'`, an `_EDGE` request in
-                      one whose `if:` is exactly `inputs.target != 'stable'`. Census: at
-                      least one of each is seen.
+                      suffix (`_STABLE`, `_BENCH`), never the unsuffixed store
+                      entry, never the retired `_EDGE` (or any other) suffix and
+                      never two environments. Census: deploy-bench binds bench,
+                      backup-push-<env> binds <env>.
+  workflow-pair       no workflow or action requests the unsuffixed pair, the `_BENCH`
+                      pair or a retired `_EDGE` (or any other) pair; a `_STABLE` request
+                      sits in a bws-secrets step with NO `if:`, because every run of the
+                      account deploy serves the one shared Worker set, and a run that
+                      skipped the fetch would push an empty key. Census: at least one
+                      `_STABLE` fetch is seen.
   workflow-source     no workflow env value or bws-secrets spec feeds an
                       `ACCOUNT_BACKUP_S3_*` name from `CLOUDFLARE_R2_*` or
                       `CLOUDFLARE_API_TOKEN` (as `env.BWS_...`, `secrets....` or a
                       `run:` assignment).
-  rotation-scopes     `private/account/scripts/rotation/r2-backup-tokens.json`: the three
-                      slugs exist, their BWS names are pairwise disjoint and carry their
-                      own suffix, their bucket sets equal regions.json `backupR2`
-                      (stable), `edgeBackupR2` (edge) and wrangler.bench.toml's
+  rotation-scopes     `private/account/scripts/rotation/r2-backup-tokens.json`: the two
+                      slugs exist and no other `cf-r2-backup-*` slug does (the retired
+                      `cf-r2-backup-edge` included), their BWS names are pairwise
+                      disjoint and carry their own suffix, their bucket sets equal
+                      regions.json `backupR2` (stable) and wrangler.bench.toml's
                       BACKUP_BUCKET (bench) with matching jurisdictions, and no entry
                       carries an account or zone permission.
 
@@ -59,17 +62,16 @@ BENCH_TOML_REL = "workers/account/wrangler.bench.toml"
 SCOPES_REL = "private/account/scripts/rotation/r2-backup-tokens.json"
 SUBMODULE_REL = "private/account"
 
-ENVS = ("STABLE", "EDGE", "BENCH")
+ENVS = ("STABLE", "BENCH")
 SLUGS = {
     "STABLE": "cf-r2-backup-stable",
-    "EDGE": "cf-r2-backup-edge",
     "BENCH": "cf-r2-backup-bench",
 }
+SLUG_PREFIX = "cf-r2-backup-"
 PAIR = ("ACCOUNT_BACKUP_S3_ACCESS_KEY_ID", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY")
 SHARED = "ACCOUNT_BACKUP_S3_ENDPOINT"
-PAIR_RE = re.compile(
-    r"^(ACCOUNT_BACKUP_S3_(?:ACCESS_KEY_ID|SECRET_ACCESS_KEY))(?:_(STABLE|EDGE|BENCH))?$"
-)
+# Any suffix is captured, so a retired environment's name (`_EDGE`) is seen and refused rather than silently ignored.
+PAIR_RE = re.compile(r"^(ACCOUNT_BACKUP_S3_(?:ACCESS_KEY_ID|SECRET_ACCESS_KEY))(?:_([A-Z0-9]+))?$")
 WIDE_STORE_RE = re.compile(r"^CLOUDFLARE_")
 # A value expression that reaches an account-wide Cloudflare credential, in any of the spellings a workflow uses.
 WIDE_REF_RE = re.compile(
@@ -78,15 +80,12 @@ WIDE_REF_RE = re.compile(
 )
 RUN_ASSIGN_RE = re.compile(r"\bACCOUNT_BACKUP_S3_[A-Z_]*=([^\s;&|]*)")
 BWS_ACTION = "./.github/actions/bws-secrets"
-STABLE_IF = "inputs.target == 'stable'"
-EDGE_IF = "inputs.target != 'stable'"
 BUCKET_PERMS = frozenset(
     {"Workers R2 Storage Bucket Item Read", "Workers R2 Storage Bucket Item Write"}
 )
 PROFILE_CENSUS = {
     "deploy-bench": "BENCH",
     "backup-push-stable": "STABLE",
-    "backup-push-edge": "EDGE",
     "backup-push-bench": "BENCH",
 }
 RULES = (
@@ -184,7 +183,18 @@ def profile_findings(consumers: dict) -> tuple[list[Finding], int]:
                         "profile-pair",
                         where,
                         "%s > %s binds the unsuffixed store entry, the shared pair the split "
-                        "retires; bind %s_<STABLE|EDGE|BENCH> > %s" % (store, local, half, half),
+                        "retires; bind %s_<STABLE|BENCH> > %s" % (store, local, half, half),
+                    )
+                )
+                continue
+            if env not in ENVS:
+                out.append(
+                    Finding(
+                        "profile-pair",
+                        where,
+                        "%s > %s binds the %s pair, an environment with no backup token (the "
+                        "edge token is retired with the product-domain rename); bind %s_<%s>"
+                        % (store, local, env, half, "|".join(ENVS)),
                     )
                 )
                 continue
@@ -279,9 +289,9 @@ def _env_maps(doc: dict) -> list[tuple[str, dict]]:
 
 
 def workflow_findings(rel: str, text: str) -> tuple[list[Finding], dict[str, int]]:
-    """Findings for one workflow-shaped file, and the census: how many stable and edge pair fetches it holds."""
+    """Findings for one workflow-shaped file, and the census: how many stable pair fetches it holds."""
     out: list[Finding] = []
-    census = {"STABLE": 0, "EDGE": 0}
+    census = {"STABLE": 0}
     try:
         doc = workflows.parse(text) or {}
     except ValueError as exc:
@@ -317,8 +327,7 @@ def workflow_findings(rel: str, text: str) -> tuple[list[Finding], dict[str, int
                             "workflow-pair",
                             where,
                             "requests the unsuffixed %s, the shared pair the split retires; fetch "
-                            "%s_STABLE under `if: %s` or %s_EDGE under `if: %s`"
-                            % (store, store, STABLE_IF, store, EDGE_IF),
+                            "%s_STABLE in a step with no `if:`" % (store, store),
                         )
                     )
                 elif env == "BENCH":
@@ -330,20 +339,28 @@ def workflow_findings(rel: str, text: str) -> tuple[list[Finding], dict[str, int
                             "only, and no workflow may hold it" % store,
                         )
                     )
-                else:
-                    want = STABLE_IF if env == "STABLE" else EDGE_IF
-                    if condition != want:
-                        out.append(
-                            Finding(
-                                "workflow-pair",
-                                where,
-                                "requests %s under `if: %s`; it must be fetched only under "
-                                "`if: %s`, so the other channel's run never holds it"
-                                % (store, condition or "(none)", want),
-                            )
+                elif env != "STABLE":
+                    out.append(
+                        Finding(
+                            "workflow-pair",
+                            where,
+                            "requests %s, the pair of an environment with no backup token (the "
+                            "edge token is retired with the product-domain rename); the shared "
+                            "Worker set takes the _STABLE pair" % store,
                         )
-                    else:
-                        fetched.add(env)
+                    )
+                elif condition:
+                    out.append(
+                        Finding(
+                            "workflow-pair",
+                            where,
+                            "requests %s under `if: %s`; every account deploy serves the one "
+                            "shared Worker set, so the _STABLE pair is fetched with no `if:` and a "
+                            "run that skipped it would push an empty key" % (store, condition),
+                        )
+                    )
+                else:
+                    fetched.add(env)
             for env in fetched:
                 census[env] += 1
         run = str(step.get("run") or "")
@@ -387,7 +404,6 @@ def expected_buckets(regions: list[dict], bench_toml: str) -> dict[str, set[tupl
         )
     return {
         "STABLE": {(r["backupR2"]["name"], r.get("r2Jurisdiction") or "") for r in regions},
-        "EDGE": {(r["edgeBackupR2"]["name"], r.get("r2Jurisdiction") or "") for r in regions},
         "BENCH": bench_set,
     }
 
@@ -450,6 +466,17 @@ def scope_findings(doc: object, expected: dict[str, set[tuple[str, str]]]) -> li
             v for v in doc.values() if isinstance(v, dict) and any(s in v for s in SLUGS.values())
         ]
         table = nested[0] if len(nested) == 1 else table
+    known = set(SLUGS.values())
+    out.extend(
+        Finding(
+            "rotation-scopes",
+            where,
+            "slug %s is not a backup token any more (the edge token is retired with the "
+            "product-domain rename); delete its entry and revoke the token" % slug,
+        )
+        for slug in sorted(str(k) for k in table)
+        if slug.startswith(SLUG_PREFIX) and slug not in known
+    )
     owners: dict[str, list[str]] = {}
     for env, slug in SLUGS.items():
         entry = table.get(slug)
@@ -535,26 +562,24 @@ def gather(root: pathlib.Path) -> Report:
     files = workflows.call_sites(root)
     if not files:
         raise CannotRunError("no workflow file under %s/.github" % root)
-    census = {"STABLE": 0, "EDGE": 0}
+    census = {"STABLE": 0}
     for path in files:
         rel = path.relative_to(root).as_posix()
         found, seen = workflow_findings(rel, path.read_text(encoding="utf-8"))
         report.findings += found
         for env, n in seen.items():
             census[env] += n
-    for env, cond in (("STABLE", STABLE_IF), ("EDGE", EDGE_IF)):
-        if not census[env]:
-            report.findings.append(
-                Finding(
-                    "workflow-pair",
-                    ".github/workflows",
-                    "no bws-secrets step fetches the %s pair under `if: %s`: either the account "
-                    "deploy stopped fetching it or this gate is blind to it" % (env, cond),
-                )
+    if not census["STABLE"]:
+        report.findings.append(
+            Finding(
+                "workflow-pair",
+                ".github/workflows",
+                "no bws-secrets step fetches the STABLE pair with no `if:`: either the account "
+                "deploy stopped fetching it or this gate is blind to it",
             )
+        )
     report.shape["workflow files"] = len(files)
     report.shape["stable fetches"] = census["STABLE"]
-    report.shape["edge fetches"] = census["EDGE"]
 
     regions = json.loads((root / REGIONS_REL).read_text(encoding="utf-8"))["regions"]
     expected = expected_buckets(regions, (root / BENCH_TOML_REL).read_text(encoding="utf-8"))
@@ -646,9 +671,6 @@ FIX_SUPPLY = """{
   "backup-push-stable": {"required": ["CLOUDFLARE_API_TOKEN", "ACCOUNT_BACKUP_S3_ENDPOINT",
     "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE > ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"], "optional": []},
-  "backup-push-edge": {"required": ["CLOUDFLARE_API_TOKEN", "ACCOUNT_BACKUP_S3_ENDPOINT",
-    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
-    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE > ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"], "optional": []},
   "backup-push-bench": {"required": ["CLOUDFLARE_API_TOKEN", "ACCOUNT_BACKUP_S3_ENDPOINT",
     "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH > ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"], "optional": []}
@@ -668,19 +690,11 @@ jobs:
             ACCOUNT_BACKUP_S3_ENDPOINT > BWS_ACCOUNT_BACKUP_S3_ENDPOINT
             CLOUDFLARE_API_TOKEN > BWS_CLOUDFLARE_API_TOKEN
       - name: Fetch stable
-        if: inputs.target == 'stable'
         uses: ./.github/actions/bws-secrets
         with:
           secrets: |
             ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE > BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE
             ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE > BWS_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE
-      - name: Fetch edge
-        if: ${{ inputs.target != 'stable' }}
-        uses: ./.github/actions/bws-secrets
-        with:
-          secrets: |
-            ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE > BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE
-            ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE > BWS_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE
       - name: Set secrets
         env:
           CLOUDFLARE_API_TOKEN: ${{ env.BWS_CLOUDFLARE_API_TOKEN }}
@@ -690,18 +704,8 @@ jobs:
 """
 
 FIX_REGIONS: list[dict] = [
-    {
-        "id": "eu",
-        "backupR2": {"name": "b-eu"},
-        "edgeBackupR2": {"name": "edge-b-eu"},
-        "r2Jurisdiction": "eu",
-    },
-    {
-        "id": "us",
-        "backupR2": {"name": "b-us"},
-        "edgeBackupR2": {"name": "edge-b-us"},
-        "r2Jurisdiction": None,
-    },
+    {"id": "eu", "backupR2": {"name": "b-eu"}, "r2Jurisdiction": "eu"},
+    {"id": "us", "backupR2": {"name": "b-us"}, "r2Jurisdiction": None},
 ]
 FIX_BENCH_TOML = '[[r2_buckets]]\nbinding = "CONFIG_BUCKET"\nbucket_name = "c-bench"\n[[r2_buckets]]\nbinding = "BACKUP_BUCKET"\nbucket_name = "b-bench"\n'
 PERMS = '["Workers R2 Storage Bucket Item Read", "Workers R2 Storage Bucket Item Write"]'
@@ -712,12 +716,9 @@ FIX_SCOPES = """{
     "cf-r2-backup-stable": {"environment": "stable",
       "buckets": [{"name": "b-eu", "jurisdiction": "eu"}, {"name": "b-us"}],
       "bitwardenSecretNames": ["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE", "ACCOUNT_BACKUP_S3_ENDPOINT"]},
-    "cf-r2-backup-edge": {"environment": "edge",
-      "buckets": [{"name": "edge-b-eu", "jurisdiction": "eu"}, {"name": "edge-b-us"}],
-      "bitwardenSecretNames": ["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE", "ACCOUNT_BACKUP_S3_ENDPOINT"]},
     "cf-r2-backup-bench": {"environment": "bench", "account": [],
       "buckets": [{"name": "b-bench"}],
-      "bitwardenSecretNames": ["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH"]}
+      "bitwardenSecretNames": ["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH", "ACCOUNT_BACKUP_S3_ENDPOINT"]}
   }
 }""" % {"p": PERMS}
 
@@ -738,10 +739,10 @@ def selftest() -> bool:
     )
     clean_profiles, binding = profile_findings(json.loads(FIX_SUPPLY))
     check("CONTROL: one environment's pair per profile is clean", clean_profiles == [])
-    check("CONTROL: and the census sees the four profiles binding a pair", binding == 4)
+    check("CONTROL: and the census sees the three profiles binding a pair", binding == 3)
     clean_wf, census = workflow_findings("f.yml", FIX_WORKFLOW)
-    check("CONTROL: channel-conditioned fetches are clean", clean_wf == [])
-    check("CONTROL: and both channel fetches are counted", census == {"STABLE": 1, "EDGE": 1})
+    check("CONTROL: an unconditional stable fetch is clean", clean_wf == [])
+    check("CONTROL: and the stable fetch is counted", census == {"STABLE": 1})
     check(
         "CONTROL: disjoint, bucket-scoped token scopes are clean",
         scope_findings(json.loads(FIX_SCOPES), expected) == [],
@@ -787,7 +788,7 @@ def selftest() -> bool:
     )
     planted = plant(
         FIX_SUPPLY,
-        '"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID"',
+        '"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID"',
         '"CLOUDFLARE_API_TOKEN > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID"',
     )
     check(
@@ -799,7 +800,7 @@ def selftest() -> bool:
     planted = plant(
         FIX_SUPPLY,
         '"ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH > ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"], "optional": []},\n  "reset-bench"',
-        '"ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE > ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"], "optional": []},\n  "reset-bench"',
+        '"ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE > ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"], "optional": []},\n  "reset-bench"',
     )
     found = profile_findings(json.loads(planted))[0]
     check(
@@ -828,25 +829,57 @@ def selftest() -> bool:
         '"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",\n    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE',
         '"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",\n    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE',
     )
+    found = profile_findings(json.loads(planted))[0]
     check(
-        "PLANT profile-pair: backup-push-stable binding the edge pair is a finding",
+        "PLANT profile-pair: backup-push-stable binding the retired edge pair is a finding",
+        any("backup-push-stable" in f.where and "must bind the STABLE" in f.what for f in found),
+    )
+    check(
+        "PLANT profile-pair: and the _EDGE store name itself is named as retired",
+        any("no backup token" in f.what and "_EDGE" in f.what for f in found),
+    )
+    planted = plant(
+        FIX_SUPPLY,
+        '"reset-bench"',
+        '"backup-push-edge": {"required": ["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID", '
+        '"ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE > ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"], "optional": []},\n  "reset-bench"',
+    )
+    check(
+        "PLANT profile-pair: a revived backup-push-edge profile is a finding",
         any(
-            "backup-push-stable" in f.where and "must bind the STABLE" in f.what
+            "backup-push-edge" in f.where and "no backup token" in f.what
             for f in profile_findings(json.loads(planted))[0]
         ),
     )
 
     # ---- workflow-pair
-    planted = plant(FIX_WORKFLOW, "if: inputs.target == 'stable'", "if: inputs.target != 'stable'")
+    planted = plant(
+        FIX_WORKFLOW,
+        "      - name: Fetch stable\n",
+        "      - name: Fetch stable\n        if: inputs.target == 'stable'\n",
+    )
     found, census = workflow_findings("f.yml", planted)
     check(
-        "PLANT workflow-pair: the stable pair under the edge condition is a finding",
+        "PLANT workflow-pair: the stable pair under a channel condition is a finding",
         "workflow-pair" in _rules(found),
     )
-    planted = plant(FIX_WORKFLOW, "        if: inputs.target == 'stable'\n", "")
     check(
-        "PLANT workflow-pair: the stable pair with no condition is a finding",
-        "workflow-pair" in _rules(workflow_findings("f.yml", planted)[0]),
+        "PLANT workflow-pair: and a conditioned fetch is not counted",
+        census == {"STABLE": 0},
+    )
+    planted = plant(
+        FIX_WORKFLOW,
+        "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE > BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE\n            ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE > BWS_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE",
+        "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE > BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE\n            ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE > BWS_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE",
+    )
+    found, census = workflow_findings("f.yml", planted)
+    check(
+        "PLANT workflow-pair: a request for the retired edge pair is a finding",
+        any("_EDGE" in f.what and "no backup token" in f.what for f in found),
+    )
+    check(
+        "PLANT workflow-pair: and with the stable fetch gone, the census counts none",
+        census == {"STABLE": 0},
     )
     planted = plant(
         FIX_WORKFLOW,
@@ -859,21 +892,12 @@ def selftest() -> bool:
     )
     planted = plant(
         FIX_WORKFLOW,
-        "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE > BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE",
-        "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH > BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH",
+        "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE > BWS_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE",
+        "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE > BWS_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE\n            ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH > BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH",
     )
     check(
         "PLANT workflow-pair: a request for the bench pair is a finding",
         any("_BENCH" in f.what for f in workflow_findings("f.yml", planted)[0]),
-    )
-    planted = plant(
-        FIX_WORKFLOW,
-        "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE > BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE\n            ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE > BWS_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE",
-        "ROOT_EMAIL",
-    )
-    check(
-        "PLANT workflow-pair: with the edge fetch gone, the census counts no edge fetch",
-        workflow_findings("f.yml", planted)[1]["EDGE"] == 0,
     )
 
     # ---- workflow-source
@@ -918,7 +942,7 @@ def selftest() -> bool:
     planted = plant(
         FIX_SCOPES,
         '"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH"',
-        '"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE"',
+        '"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE"',
     )
     found = scope_findings(json.loads(planted), expected)
     check(
@@ -934,9 +958,7 @@ def selftest() -> bool:
         "PLANT rotation-scopes: a stable token missing a regional bucket is a finding",
         "rotation-scopes" in _rules(scope_findings(json.loads(planted), expected)),
     )
-    planted = plant(
-        FIX_SCOPES, '[{"name": "edge-b-eu", "jurisdiction": "eu"}', '[{"name": "edge-b-eu"}'
-    )
+    planted = plant(FIX_SCOPES, '[{"name": "b-eu", "jurisdiction": "eu"}', '[{"name": "b-eu"}')
     check(
         "PLANT rotation-scopes: an EU bucket without its jurisdiction is a finding",
         "rotation-scopes" in _rules(scope_findings(json.loads(planted), expected)),
@@ -955,11 +977,27 @@ def selftest() -> bool:
         "PLANT rotation-scopes: the bench token reaching a stable bucket is a finding",
         "rotation-scopes" in _rules(scope_findings(json.loads(planted), expected)),
     )
-    planted = plant(FIX_SCOPES, '"cf-r2-backup-edge"', '"cf-r2-backup-edgy"')
+    planted = plant(FIX_SCOPES, '"cf-r2-backup-bench"', '"cf-r2-backup-benchy"')
+    found = scope_findings(json.loads(planted), expected)
     check(
         "PLANT rotation-scopes: a missing slug is a finding",
+        any("cf-r2-backup-bench is missing" in f.what for f in found),
+    )
+    check(
+        "PLANT rotation-scopes: and the unknown slug beside it is a finding too",
+        any("cf-r2-backup-benchy is not a backup token" in f.what for f in found),
+    )
+    planted = plant(
+        FIX_SCOPES,
+        '    "cf-r2-backup-bench"',
+        '    "cf-r2-backup-edge": {"environment": "edge", "buckets": [{"name": "edge-b-eu"}],\n'
+        '      "bitwardenSecretNames": ["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE"]},\n'
+        '    "cf-r2-backup-bench"',
+    )
+    check(
+        "PLANT rotation-scopes: the retired edge slug left in the file is a finding",
         any(
-            "cf-r2-backup-edge is missing" in f.what
+            "cf-r2-backup-edge is not a backup token" in f.what
             for f in scope_findings(json.loads(planted), expected)
         ),
     )

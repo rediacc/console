@@ -127,6 +127,9 @@ def _admit(world: World, rev: str = "HEAD") -> bct.Verdict:
         (bct.console_hit, "packages/cli/src/commands/repo-backup-list.ts", True),
         (bct.console_hit, "packages/cli/src/services/backup/dr-nudge.ts", True),
         (bct.console_hit, ".ci/rediacc_ci/drills/backup.py", True),
+        (bct.console_hit, ".ci/rediacc_ci/drills/backup_renet.py", True),
+        (bct.console_hit, ".ci/rediacc_ci/drills/backup_roundtrip.py", True),
+        (bct.console_hit, ".ci/rediacc_ci/drills/backup_onprem.py", True),
         (bct.console_hit, "packages/cli/src/commands/__tests__/backup-storage.test.ts", False),
         (bct.console_hit, "packages/cli/src/commands/repo-create-delete.ts", False),
         (bct.console_hit, ".ci/rediacc_ci/drills/backup_check_trigger.py", False),
@@ -140,6 +143,7 @@ def _admit(world: World, rev: str = "HEAD") -> bct.Verdict:
         (bct.renet_hit, "cmd/renet/sandbox_exec.go", False),
         (bct.account_hit, "src/services/backup-gc.service.ts", True),
         (bct.account_hit, "src/entry/on-premise.ts", True),
+        (bct.account_hit, "src/routes/test.ts", True),
         (bct.account_hit, "drizzle/0049_backup_storage.sql", True),
         (bct.account_hit, "src/routes/licenses.ts", False),
         (bct.account_hit, "tests/integration/backup-lifecycle.test.ts", False),
@@ -569,3 +573,127 @@ def test_the_onprem_runner_records_the_onprem_half(monkeypatch):
     )
     assert backup_onprem.main([]) == 0
     assert calls == [(bct.ONPREM_HALF, 0, [])]
+
+
+# --------------------------------------------------------------------------- a refused or partial run (#dd677829)
+
+
+def test_a_partial_passing_run_leaves_a_verified_receipt_alone(tmp_path):
+    w = World(tmp_path / "c")
+    bct.record_drill(_drill(w), bct.LEGS_HALF, 0, bct.REQUIRED_LEGS)
+    bct.record_drill(_drill(w), bct.ONPREM_HALF, 0)
+    before = (w.root / bct.CACHE_DIR / bct.LATEST).read_text()
+    assert _admit(w).ok
+
+    assert (
+        bct.record_drill(_drill(w), bct.LEGS_HALF, 0, ["a", "b", "t", "u", "v", "w", "x"]) is None
+    )
+    assert (w.root / bct.CACHE_DIR / bct.LATEST).read_text() == before
+    assert _admit(w).ok
+
+
+def test_a_partial_run_that_stopped_early_leaves_a_verified_receipt_alone(tmp_path):
+    w = World(tmp_path / "c")
+    bct.record_drill(_drill(w), bct.LEGS_HALF, 0, bct.REQUIRED_LEGS)
+    bct.record_drill(_drill(w), bct.ONPREM_HALF, 0)
+    assert bct.record_drill(_drill(w, count=0), bct.LEGS_HALF, 1, ["t", "u"]) is None
+    assert _admit(w).ok
+
+
+def _verified(w):
+    bct.record_drill(_drill(w), bct.LEGS_HALF, 0, bct.REQUIRED_LEGS)
+    bct.record_drill(_drill(w), bct.ONPREM_HALF, 0)
+    assert _admit(w).ok
+    return (w.root / bct.CACHE_DIR / bct.LATEST).read_text()
+
+
+def test_a_partial_run_over_uncommitted_edits_keeps_the_trees_verified_receipt(tmp_path):
+    """#815e6225: the partial run's digest differs from the full run's, yet the tree's verdict stays."""
+    w = World(tmp_path / "c")
+    before = _verified(w)
+    _write(w.root, CONSOLE_FILE, "an uncommitted edit under the partial run\n")
+    assert bct.record_drill(_drill(w), bct.LEGS_HALF, 0, ["a", "n"]) is None
+    assert (w.root / bct.CACHE_DIR / bct.LATEST).read_text() == before
+    assert _latest(w)["status"] == bct.VERIFIED
+    assert (w.root / bct.CACHE_DIR / ("%s.json" % w.tree())).read_text() == before
+
+
+def test_a_partial_run_over_a_moved_renet_checkout_keeps_the_trees_verified_receipt(tmp_path):
+    w = World(tmp_path / "c")
+    before = _verified(w)
+    sub = w.root / bct.RENET_SUBMODULE
+    _write(sub, RENET_FILE, "package chunkstore // edited under the partial run\n")
+    assert bct.record_drill(_drill(w), bct.LEGS_HALF, 0, ["a", "s"]) is None
+    assert (w.root / bct.CACHE_DIR / bct.LATEST).read_text() == before
+
+
+def test_a_full_run_that_fails_replaces_the_verified_receipt(tmp_path):
+    """CONTROL: a full selection is never protected."""
+    w = World(tmp_path / "c")
+    _verified(w)
+    path = bct.record_drill(_drill(w, count=0), bct.LEGS_HALF, 1, bct.REQUIRED_LEGS)
+    assert path is not None
+    assert _latest(w)["status"] == bct.NOT_VERIFIED
+    assert _admit(w).code == "not-verified"
+
+
+def test_a_partial_run_that_failed_is_still_recorded(tmp_path):
+    """CONTROL: the rule above hides nothing, a leg that really failed replaces the VERIFIED verdict."""
+    w = World(tmp_path / "c")
+    bct.record_drill(_drill(w), bct.LEGS_HALF, 0, bct.REQUIRED_LEGS)
+    bct.record_drill(_drill(w), bct.ONPREM_HALF, 0)
+    path = bct.record_drill(_drill(w, failures=2), bct.LEGS_HALF, 1, ["a", "u"])
+    assert path is not None
+    assert _latest(w)["status"] == bct.FAILED
+    assert _admit(w).code == "failed"
+
+
+def test_a_partial_run_with_no_verified_receipt_on_file_is_still_recorded(tmp_path):
+    """CONTROL: with nothing VERIFIED to protect, the partial run writes its NOT_VERIFIED receipt as before."""
+    w = World(tmp_path / "c")
+    assert bct.record_drill(_drill(w), bct.LEGS_HALF, 0, ["a", "g"]) is not None
+    assert _latest(w)["status"] == bct.NOT_VERIFIED
+
+
+def test_a_partial_run_does_not_protect_a_receipt_of_another_tree(tmp_path):
+    """CONTROL: only a VERIFIED receipt for this exact checkout is protected."""
+    w = World(tmp_path / "c")
+    bct.record_drill(_drill(w), bct.LEGS_HALF, 0, bct.REQUIRED_LEGS)
+    bct.record_drill(_drill(w), bct.ONPREM_HALF, 0)
+    _write(w.root, CONSOLE_FILE, "export const a = 2;\n")
+    w.commit("a second tree")
+    assert bct.record_drill(_drill(w), bct.LEGS_HALF, 0, ["a", "g"]) is not None
+    assert _latest(w)["tree"] == w.tree()
+    assert _latest(w)["status"] == bct.NOT_VERIFIED
+
+
+@pytest.mark.parametrize(
+    "legs", [["t", "u", "v", "w", "x"], ["a", "t"], ["a", "w"], ["u"], ["x"], ["v"]]
+)
+def test_a_refused_leg_selection_writes_no_receipt(monkeypatch, legs):
+    calls = []
+    monkeypatch.setattr(backup.Backup, "teardown_hook", lambda _self: None)
+    monkeypatch.setattr(bct, "record_drill", lambda *args, **_kwargs: calls.append(args))
+    assert backup.main(["--legs", ",".join(legs)]) == 1
+    assert calls == []
+
+
+def test_the_refusal_names_the_legs_that_were_selected(monkeypatch, capsys):
+    monkeypatch.setattr(backup.Backup, "teardown_hook", lambda _self: None)
+    monkeypatch.setattr(bct, "record_drill", lambda *_args, **_kwargs: None)
+    assert backup.main(["--legs", "a,t,u,v,w,x"]) == 1
+    captured = capsys.readouterr()
+    text = captured.out + captured.err
+    assert "Legs t to x need --renet" in text
+    assert "b to o" not in text
+    assert "b-f" not in text
+
+
+def test_a_leg_selection_that_runs_still_records(monkeypatch):
+    """CONTROL: the refusal flag is what suppresses the record, not the runner."""
+    calls = []
+    monkeypatch.setattr(backup.Backup, "run_all", _passing_run_all)
+    monkeypatch.setattr(backup.Backup, "teardown_hook", lambda _self: None)
+    monkeypatch.setattr(bct, "record_drill", lambda *args, **_kwargs: calls.append(args))
+    assert backup.main(["--legs", "a,g"]) == 0
+    assert len(calls) == 1

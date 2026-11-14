@@ -20,6 +20,7 @@ import { parseDurationSeconds, rpoProblem } from '../backup/duration.js';
 import { ValidationError } from '../errors/index.js';
 import { PolicyDocumentSchema } from '../policy/schema.js';
 import { AccessSchema } from './access.js';
+import { ClusterConfigSchema, ClusterKvmSchema, ClusterPoolSchema } from './cluster-schema.js';
 import {
   absolutePath,
   datastoreRef,
@@ -231,6 +232,14 @@ const MachineClusterRefSchema = z.object({
   pool: resourceName,
 });
 
+// A machine's maintenance window, `HH:MM-HH:MM` in UTC (it may wrap midnight): window-only repair fixes run only inside it (D-remedy).
+const MaintenanceWindowSchema = z
+  .string()
+  .regex(
+    /^([01]\d|2[0-3]):[0-5]\d-([01]\d|2[0-3]):[0-5]\d$/,
+    'Maintenance window must be HH:MM-HH:MM (UTC)'
+  );
+
 const MachineConfigSchema = z.object({
   ip: ipOrHostname,
   user: z.string().min(1, 'SSH user cannot be empty'),
@@ -240,65 +249,7 @@ const MachineConfigSchema = z.object({
   infra: InfraConfigSchema.optional(),
   backupStrategies: z.array(z.string()).optional(),
   cluster: MachineClusterRefSchema.optional(),
-});
-
-// =============================================================================
-// Cluster (a named set of node pools; members materialize into resources.machines)
-// =============================================================================
-
-const ClusterPoolDiskSchema = z.object({
-  purpose: z.string().min(1),
-  size: z.string().min(1),
-  count: z.number().int().min(1).optional(),
-});
-
-const ClusterPoolSchema = z.object({
-  name: resourceName,
-  role: z.enum(['ceph', 'k8s-server', 'k8s-agent', 'hyperconverged']),
-  count: z.number().int().min(1),
-  size: z.string().optional(),
-  disks: z.array(ClusterPoolDiskSchema).optional(),
-  labels: z.record(z.string(), z.string()).optional(),
-});
-
-const ClusterNetworkSchema = z.object({
-  primitive: z.string().min(1),
-  cidr: z.string().optional(),
-  mtu: z.number().int().optional(),
-});
-
-const ClusterKubernetesSchema = z.object({
-  distro: z.enum(['k3s', 'external']).optional(),
-  version: z.string().optional(),
-});
-
-const ClusterRegistrySchema = z.object({
-  enabled: z.boolean().optional(),
-  upstreams: z.array(z.string()).optional(),
-});
-
-const ClusterCephRefSchema = z.object({
-  pool: z.string().optional(),
-});
-
-// Local KVM topology. `renet ops` addresses VMs by numeric id; `memberIds` (the booted-VM allocation ledger) has moved to `state.clusters[*].memberIds` (R2-F2) so per-boot allocation churn no longer bumps the version counter.
-const ClusterKvmSchema = z.object({
-  netName: z.string().min(1),
-  netBase: z.string().min(1),
-  netOffset: z.number().int().min(0).optional(),
-  controlId: z.number().int().min(1),
-  dockerRegistry: z.string().optional(),
-});
-
-const ClusterConfigSchema = z.object({
-  provider: z.string().min(1),
-  network: ClusterNetworkSchema.optional(),
-  pools: z.array(ClusterPoolSchema).min(1, 'A cluster needs at least one pool'),
-  kubernetes: ClusterKubernetesSchema.optional(),
-  registry: ClusterRegistrySchema.optional(),
-  ceph: ClusterCephRefSchema.optional(),
-  controlNode: resourceName.optional(),
-  kvm: ClusterKvmSchema.optional(),
+  maintenanceWindow: MaintenanceWindowSchema.optional(),
 });
 
 // =============================================================================
@@ -312,19 +263,61 @@ const backupDestinationCommon = {
   bandwidthLimit: z.string().optional(),
 };
 
+/** A backup store id: a lowercase slug (`home`, `eu-west`, `office-rustfs`), unique per subscription. */
+export const BACKUP_STORE_ID_PATTERN = /^[a-z0-9](?:[a-z0-9-]{0,62})$/;
+
+const removedDestinationField = (field: string) =>
+  z.never({
+    error: `A backup destination no longer carries \`${field}\`: bucket credentials live on the account server. Register the store (\`POST /backups/stores\`) and name it with \`target\`.`,
+  });
+
 /**
- * A backup destination: the content-addressed chunk store. Absent `endpoint` =
- * the Rediacc-hosted plane (server-stamped URL, license-blob auth, nothing in
- * config); set `endpoint` for a customer S3 / self-hosted elite plane whose
- * credentials ride a container-level `vaultContent` bag. Destinations of the
- * removed `storage` kind (or without a `kind`) are refused.
+ * A backup destination: the content-addressed chunk store. `target` names a store
+ * registered on the account server (absent = `home`, the store every subscription
+ * has), so no bucket credential sits in a config file. The removed `endpoint` and
+ * `vaultContent` fields are refused with a message naming the replacement, and so
+ * are destinations of the removed `storage` kind (or without a `kind`).
  */
-export const BackupDestinationSchema = z.object({
-  kind: z.literal('hosted-service'),
-  ...backupDestinationCommon,
-  endpoint: z.string().optional(),
-  vaultContent: z.record(z.string(), z.unknown()).optional(),
-});
+export const BackupDestinationSchema = z
+  .object({
+    kind: z.literal('hosted-service'),
+    ...backupDestinationCommon,
+    target: z
+      .string()
+      .regex(
+        BACKUP_STORE_ID_PATTERN,
+        'A backup target is a store id: lowercase letters, digits and dashes'
+      )
+      .optional(),
+    /** `upload` (absent) takes a machine snapshot into `target`; `replicate` has the account server copy `from` into `target`, so the machine uploads once. */
+    mode: z.enum(['upload', 'replicate']).optional(),
+    /** The source store of a replicate destination. Required for `replicate`, refused for `upload`. */
+    from: z
+      .string()
+      .regex(
+        BACKUP_STORE_ID_PATTERN,
+        'A replication source is a store id: lowercase letters, digits and dashes'
+      )
+      .optional(),
+    endpoint: removedDestinationField('endpoint').optional(),
+    vaultContent: removedDestinationField('vaultContent').optional(),
+  })
+  .superRefine((dest, ctx) => {
+    if (dest.mode === 'replicate' && dest.from === undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['from'],
+        message: 'A replicate destination needs `from`, the store it copies from',
+      });
+    }
+    if (dest.mode !== 'replicate' && dest.from !== undefined) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['from'],
+        message: '`from` belongs to a replicate destination; set `mode: replicate` or drop it',
+      });
+    }
+  });
 
 /**
  * GFS-style retention policy for a strategy's manifests.
@@ -661,6 +654,8 @@ export type RepositoryConfig = RepoRecord & {
   networkId?: number;
   registryPort?: number;
   gpuDevices?: string[];
+  lifecycleRoot?: boolean;
+  lifecyclePaths?: string[];
   pushState?: RepoRuntimeState['pushState'];
   headCommit?: string;
   commitMessage?: string;

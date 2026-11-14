@@ -1,7 +1,7 @@
 # PLAN: opt-in exact browse listing (sealed TOC) for password-mounted, non-autostart repositories
 
 Status: proposed -- filed for later; the operator accepted the live-mount listing (renet fb9cf01) as near-exact on 2026-10-21, asked for a plan to make it exact, and ruled the same day that the mechanism must be OPTIONAL, OFF by default, and switched on per repository from rdc
-Depends-On: PLAN-chunk-store-browse-toc-and-remote.md
+Depends-On: no-dep -- PLAN-chunk-store-browse-toc-and-remote.md is finished (11 of 11 boxes ticked, merged with PR #601 on 2026-10-23)
 First-Seen: 2026-10-21
 Owner: d778be9d
 Priority: P3 -- low: restore never reads the index, so restored bytes are already right; only browse-at fidelity improves, and only for repositories whose operator opts in
@@ -66,8 +66,9 @@ It builds on the chunk-store plan's Stage-2 TOC writer (sealSnapshotTOC, Listing
 - [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
     (ticked) 2026-10-30T06:16:08Z by d778be9d: live-proof lp-076c620439de bench account-smoke rc=0 v=b0ffdd76-1edb-40a0-9517-ed940f8b3981
-- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+- [x] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree; ASK the operator first, because provisioning a branch renet restarts the router and daemons.
   - Accept: `live-proof hostinger renet-live`
+    (ticked) 2026-11-11T06:35:07Z by d778be9d: live-proof lp-004c72a1edfc hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13
 
 ## Rollback
 

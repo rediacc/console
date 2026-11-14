@@ -11,7 +11,7 @@ THE THREE CONDITIONS, each read through the reader the Stop hook and the merge g
       TURBO_PUSH_REASON='<kind>: <why, 20+ chars>' git push -u origin <branch>
 
     ci-cd     a plan needs a check only CI/CD runs; the why names the plan (basename or slug) and its box
-    red-fix   a fix for a red on the live PR; an OPEN PR for the branch must exist (`gh pr list --head`)
+    red-fix   a fix for a red on the live PR; an OPEN PR for the branch must exist (`gh pr list --head`). In a console submodule (a path `.gitmodules` names) the console's open PR for the same branch name counts too: the submodule PR is what the red console PR needs, so it cannot exist yet when its first push or `gh pr create` runs (worklist #29531257, console PR 605, 2026-11-11)
     deadline  production or CD state that cannot wait; the why names it
     backup    the oldest unpushed commit (`origin/<branch>..HEAD`, or `origin/main..HEAD` before the first push) is older than `backup_push_h` hours (QUEUE.md, default 4; 0 turns the valve off). Never admits `gh pr create`: a backup is a push with no PR, which triggers no CI.
 
@@ -30,11 +30,13 @@ FAILS OPEN, LOUDLY, when QUEUE.md or a plan cannot be read, or `wl_planqueue` ca
 
 import datetime
 import json
+import os
 import pathlib
 import re
 import time
 
 from rediacc_hooks import commit_policy, hookio, plan_gate, shellscan, syspath
+from rediacc_hooks.guards import _backup_push
 
 CHAIN = "pre-bash"
 OWN_SUITE = True
@@ -114,7 +116,7 @@ def world(
     (path / QUEUE_REL).write_text(queue, encoding="utf-8")
     (path / "agent/plans/PLAN-fx-a.md").write_text(FIXTURE_PLAN % box, encoding="utf-8")
     _git(path, "init", "-q", "--initial-branch=main")
-    _git(path, "remote", "add", "origin", "https://github.com/fixture/console.git")
+    _git(path, "remote", "add", "origin", _backup_push.OTHER_ORIGIN)
     _git(path, "commit", "-q", "--allow-empty", "-m", "seed", env_date=date)
     _git(path, "update-ref", "refs/remotes/origin/main", "HEAD")
     _git(path, "checkout", "-q", "-b", "1008-1")
@@ -219,7 +221,7 @@ def _acts(cmd, root, base):
         _, _, args = commit_policy.git_split(run.argv)
         if _skipped(args):
             continue
-        repo = commit_policy.scoped_repo(run, base, root, created)
+        repo = commit_policy.scoped_repo(run, base, root, created, cmd)
         if repo and not commit_policy.is_inside(repo, root):
             continue
         out.append(
@@ -310,7 +312,35 @@ def _named_plan(why, open_plans):
     return ""
 
 
-def _judge(ev, act, repo, reason, open_plans, backup_h):
+def _is_submodule(root, repo):
+    """Whether `repo` is a checkout of a submodule the console's `.gitmodules` names."""
+    if not repo or not root or os.path.realpath(repo) == os.path.realpath(root):
+        return False
+    if not os.path.isfile(os.path.join(root, ".gitmodules")):
+        return False
+    out = commit_policy.git(
+        ["config", "-f", ".gitmodules", "--get-regexp", r"^submodule\..*\.path$"], cwd=root
+    )
+    real = os.path.realpath(repo)
+    for line in (out or "").splitlines():
+        parts = line.split(None, 1)
+        if len(parts) == 2 and os.path.realpath(os.path.join(root, parts[1])) == real:
+            return True
+    return False
+
+
+def _open_prs(repo, branch):
+    """The open PR numbers `gh` lists for `branch` in the repository checked out at `repo`; raises `GhUnavailableError`."""
+    return commit_policy._gh_lines(
+        repo,
+        [
+            *("pr", "list", "--head", branch, "--state", "open"),
+            *("--json", "number", "--jq", ".[].number"),
+        ],
+    )
+
+
+def _judge(ev, act, repo, reason, open_plans, backup_h, root=""):
     """(kind, why) when admitted, else (None, the refusal line)."""
     if reason is None:
         return None, "no `%s=` on it" % REASON_ENV
@@ -329,21 +359,10 @@ def _judge(ev, act, repo, reason, open_plans, backup_h):
     if kind == "red-fix":
         branch = commit_policy.current_branch(repo)
         try:
-            prs = commit_policy._gh_lines(
-                repo,
-                [
-                    "pr",
-                    "list",
-                    "--head",
-                    branch,
-                    "--state",
-                    "open",
-                    "--json",
-                    "number",
-                    "--jq",
-                    ".[].number",
-                ],
-            )
+            prs = _open_prs(repo, branch)
+            # A submodule's first PR is what a red console PR on the same branch needs, so the console's open PR stands for the live PR there.
+            if not prs and branch and _is_submodule(root, repo):
+                prs = _open_prs(root, branch)
         except commit_policy.GhUnavailableError as exc:
             ev.warn(
                 "block-turbo-early-push: `gh` could not say whether `%s` has an open PR (%s); "
@@ -354,8 +373,12 @@ def _judge(ev, act, repo, reason, open_plans, backup_h):
         if not prs:
             return (
                 None,
-                "`red-fix`, but `%s` has no open PR, so there is no red on a live PR to fix"
-                % (branch or "(detached)"),
+                "`red-fix`, but `%s` has no open PR%s, so there is no red on a live PR to fix"
+                % (
+                    branch or "(detached)",
+                    # The console is looked up only for a named branch, so a detached HEAD checked nothing there.
+                    " here or in the console" if branch and _is_submodule(root, repo) else "",
+                ),
             )
     if kind == "backup":
         if act == "pr-create":
@@ -652,7 +675,8 @@ starts) needs a real operational reason while Promoted plans are still open.
 An operational reason goes on the command itself, `<kind>: <why, %(min)d+ chars>`:
 
     ci-cd     a plan needs a check only CI/CD runs; name the plan and its box
-    red-fix   a fix for a red on the live PR (an open PR for the branch is required)
+    red-fix   a fix for a red on the live PR (an open PR for the branch is required;
+              in a submodule, the console's open PR on the same branch counts)
     deadline  production or CD state that cannot wait; name it
     backup    the oldest unpushed commit is older than backup_push_h (%(h)s h here);
               a plain push only, never `gh pr create`
@@ -669,6 +693,9 @@ The operator's own `!` command does not pass through this guard.
 def run(ev):
     cmd = ev.raw("tool_input", "command")
     if cmd in ("", "null"):
+        return hookio.ALLOW
+    # A push of nothing but `refs/backup/**` to its repository's pin is the git-level pre-push hook's to judge (box G5 of PLAN-local-first-delivery, `_backup_push`).
+    if _backup_push.admitted(ev, cmd):
         return hookio.ALLOW
     root = ev.env("CLAUDE_PROJECT_DIR") or hookio.git_out(["rev-parse", "--show-toplevel"])
     if not root:
@@ -698,7 +725,7 @@ def run(ev):
     refusals = []
     focus = False  # read once, only when a push would be refused
     for act, repo, reason, spelling, args in acts:
-        kind, why = _judge(ev, act, repo, reason, open_plans, backup_h)
+        kind, why = _judge(ev, act, repo, reason, open_plans, backup_h, root)
         if kind is None and act == "push":
             if focus is False:
                 focus = _merge_phase(ev, root, str(ev.field("session_id") or ""))

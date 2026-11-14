@@ -1,4 +1,8 @@
-import { randomUUID } from 'node:crypto';
+import { execFileSync } from 'node:child_process';
+import { createHash, randomUUID } from 'node:crypto';
+import { createReadStream, mkdtempSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { expect, test } from '@playwright/test';
 import {
   ACCOUNT_SERVER,
@@ -20,6 +24,7 @@ import {
   repoIdentity,
   restoreLedger,
   seam,
+  unmountRepo,
   workers,
 } from '../src/utils/backup/chunkCliHarness';
 import { corruptStoredChunk, storeAccessFromEnv } from '../src/utils/backup/chunkCorruption';
@@ -32,6 +37,7 @@ import {
   scheduleServiceUnit,
   seededRestoreViolations,
 } from '../src/utils/backup/chunkScenarios';
+import { teardownRepos } from '../src/utils/backup/repoTeardown';
 import {
   type BackupManifest,
   type BackupUsage,
@@ -296,7 +302,8 @@ test.describe
         const others = baseline.lineages.filter((l) => l.lineageGuid !== plantedLineage);
         const otherBytes = others.reduce((sum, l) => sum + l.storedBytes, 0);
         const otherChunks = others.reduce((sum, l) => sum + l.chunkCount, 0);
-        const over = quotaBytes + 4096;
+        // The quota compares USED bytes, which leave out the waiting bytes retention already released and carry the adjustment, so a stored figure of quota + 4096 is only over the limit on a server whose waiting bytes are zero. A rerun against one account server is not that server (test K3's retention sweep leaves waiting bytes behind), so the planted stored figure adds them back.
+        const over = quotaBytes + 4096 + baseline.waitingBytes - baseline.usageAdjustment;
         const plantedBytes = over - otherBytes;
         expect(plantedBytes, 'the account already exceeds its quota for real').toBeGreaterThan(0);
 
@@ -465,7 +472,7 @@ test.describe
           `sudo dd if=/dev/urandom of="${DS}/mounts/${repo.guid}/${fileName}" ${dd} conv=notrunc status=none && sync`
         );
         expect(write.code, `planting the write: ${w1.getCombinedOutput(write)}`).toBe(0);
-        const unmounted = await w1.repositoryUnmount(repo.guid, DS);
+        const unmounted = await w1.repositoryUnmount(repo.guid, DS, repo.networkId);
         expect(
           unmounted.code,
           `unmounting ${repo.guid}: ${w1.getCombinedOutput(unmounted).slice(-800)}`
@@ -497,7 +504,7 @@ test.describe
       test.afterAll(async () => {
         // Test 4 leaves the subscription OVER LIMIT, which refuses every upload on the account — the restore tier's own seed included.
         await restoreLedger(cli, subscriptionId);
-        await cli.run(['repo', 'delete', REPO_NAME, '-y']).catch(() => undefined);
+        await teardownRepos({ cli, workers: [{ label: M1, runner: w1 }] });
       });
 
       test('0. the run verb is really registered ON THE MACHINE', async () => {
@@ -589,7 +596,12 @@ test.describe
         expect(subscriptionId).not.toBe('');
         const res = await seam('seed-backup-ledger', {
           subscriptionId,
-          storedBytes: (usage.json?.data?.quotaBytes ?? 0) + 1,
+          // Stored plus what used bytes leave out (waiting bytes) minus the adjustment they carry: one byte past the quota in USED terms on any server, not only a fresh one.
+          storedBytes:
+            (usage.json?.data?.quotaBytes ?? 0) +
+            1 +
+            (usage.json?.data?.waitingBytes ?? 0) -
+            (usage.json?.data?.usageAdjustment ?? 0),
           chunkCount: usage.json?.data?.chunkCount ?? 1,
           overLimit: true,
         });
@@ -726,8 +738,13 @@ test.describe
       });
 
       test.afterAll(async () => {
-        await cli.run(['repo', 'delete', RESTORED_NAME, '-y']).catch(() => undefined);
-        await cli.run(['repo', 'delete', REPO_NAME, '-y']).catch(() => undefined);
+        await teardownRepos({
+          cli,
+          workers: [
+            { label: M1, runner: w1 },
+            { label: M2, runner: w2 },
+          ],
+        });
       });
 
       test('1. the restore verb is really registered on the machine', async () => {
@@ -833,6 +850,8 @@ test.describe
       let forkSnapshotId = '';
       let forkBack: ProvisionedRepo | undefined;
       const cleanup: (() => Promise<unknown>)[] = [];
+      /** GUIDs created by raw verbs on a worker, which the CLI config never holds. */
+      const rawGuids: string[] = [];
 
       const imageSha = async (runner: RenetFunctionsTestRunner, guid: string): Promise<string> => {
         const r = await runner.executeViaBridge(
@@ -886,7 +905,7 @@ test.describe
           `sudo dd if=/dev/urandom of="${DS}/mounts/${target.guid}/${fileName}" ${CELL_WRITE} conv=notrunc status=none && sync`
         );
         expect(write.code, `write into ${target.guid}: ${runner.getCombinedOutput(write)}`).toBe(0);
-        const unmounted = await runner.repositoryUnmount(target.guid, DS);
+        const unmounted = await runner.repositoryUnmount(target.guid, DS, target.networkId);
         expect(
           unmounted.code,
           `unmounting ${target.guid}: ${runner.getCombinedOutput(unmounted).slice(-600)}`
@@ -921,20 +940,29 @@ test.describe
       });
 
       test.afterAll(async () => {
-        for (const step of cleanup.reverse()) await step().catch(() => undefined);
-        await seam('backup/maintenance', {}).catch(() => undefined);
-        for (const name of [
-          CORRUPT_BACK,
-          CORRUPT_NAME,
-          COLD_BACK,
-          COLD_NAME,
-          FORK_BACK,
-          PRIME_BACK,
-          SAME_NAME,
-          REPO_NAME,
-        ]) {
-          await cli.run(['repo', 'delete', name, '-y']).catch(() => undefined);
+        const failures: string[] = [];
+        for (const step of cleanup.reverse()) {
+          await step().catch((error: unknown) => {
+            failures.push(
+              `cleanup step: ${error instanceof Error ? error.message : String(error)}`
+            );
+          });
         }
+        await seam('backup/maintenance', {}).catch((error: unknown) => {
+          failures.push(`backup/maintenance seam: ${String(error)}`);
+        });
+        // By GUID on both workers, mounted ones included; throws with everything it could not remove.
+        await teardownRepos({
+          cli,
+          workers: [
+            { label: M1, runner: w1 },
+            { label: M2, runner: w2 },
+          ],
+          extraGuids: rawGuids,
+        }).catch((error: unknown) => {
+          failures.push(error instanceof Error ? error.message : String(error));
+        });
+        expect(failures, 'suite teardown failed').toEqual([]);
       });
 
       test('K5. a same-machine restore leaves the source byte-identical', async () => {
@@ -963,6 +991,7 @@ test.describe
           `the CLI restore that licenses the lineage on the second machine: ${bothChannels(prime).slice(-1000)}`
         ).toBe(0);
         const target = randomUUID();
+        rawGuids.push(target);
         cleanup.push(async () => {
           await w2.executeViaBridge(
             `sudo rm -f "${DS}/repositories/${target}" "${DS}/repositories/.restore-${target}"`
@@ -1005,7 +1034,7 @@ test.describe
         expect(fork.code, `repo fork: ${bothChannels(fork).slice(-1000)}`).toBe(0);
         forkIdentity = repoIdentity(cli, REPO_NAME, FORK_TAG);
         expect(forkIdentity.guid, 'the fork reused the parent guid').not.toBe(repo.guid);
-        await w1.repositoryUnmount(forkIdentity.guid, DS).catch(() => undefined);
+        await unmountRepo(w1, forkIdentity);
 
         await churnOn(w1, forkIdentity, 'fork-only.bin');
         const record = await snapshotOf(w1, forkIdentity.guid);
@@ -1022,7 +1051,7 @@ test.describe
           M2,
           forkSnapshotId
         );
-        expect(restore.code, `fork restore: ${bothChannels(restore).slice(-1200)}`).toBe(0);
+        expect(restore.code, `fork restore: ${bothChannels(restore).slice(-4000)}`).toBe(0);
         forkBack = repoIdentity(cli, FORK_BACK);
         expect(await imageSha(w2, forkBack.guid), 'the restored fork is not byte-identical').toBe(
           forkSha
@@ -1127,7 +1156,7 @@ test.describe
           'up() {\n    renet compose -- up -d\n}\n\ndown() {\n    renet compose -- down\n}\n';
         cleanup.push(async () => {
           await w1.repositoryDown(cold.guid, DS, cold.networkId);
-          await w1.repositoryUnmount(cold.guid, DS);
+          await w1.repositoryUnmount(cold.guid, DS, cold.networkId);
         });
 
         await w1.daemonSetup(cold.networkId).catch(() => undefined);
@@ -1172,7 +1201,7 @@ test.describe
         const restore = await cliRestore(`${COLD_NAME}@${M1}`, COLD_BACK, M2, committed.snapshotId);
         expect(restore.code, `cold restore: ${bothChannels(restore).slice(-1200)}`).toBe(0);
         const back = repoIdentity(cli, COLD_BACK);
-        cleanup.push(async () => w2.repositoryUnmount(back.guid, DS));
+        cleanup.push(async () => w2.repositoryUnmount(back.guid, DS, back.networkId));
         const remount = await w2.repositoryMount(back.guid, back.credential, DS, back.networkId);
         expect(
           remount.code,
@@ -1191,6 +1220,7 @@ test.describe
         await churnOn(w1, repo, 'l5.bin');
         const latest = await snapshotOf(w1, repo.guid);
         const target = randomUUID();
+        rawGuids.push(target);
         cleanup.push(async () => {
           await w2.executeViaBridge(
             `sudo rm -f "${DS}/repositories/${target}" "${DS}/repositories/.restore-${target}"`
@@ -1277,6 +1307,316 @@ test.describe
         // Local verify checks the machine's anchor against the journal, not the bucket (backup_verify.go: store-side verification is the server's scrub), so it stays green. This pins that scope rather than leaving it a surprise.
         const verify = await cli.run(['backup', 'verify', CORRUPT_NAME, '--deep']);
         expect(verify.code, `verify after repair: ${bothChannels(verify).slice(-600)}`).toBe(0);
+      });
+
+      // ---- E2: CPU ceiling and read cap, on a real systemd scope ----
+
+      /** systemd prints CPUQuotaPerSecUSec as a duration ("250ms", "1s", "1.5s"); this reads it as seconds. */
+      const quotaSeconds = (raw: string): number => {
+        const m = /^(\d+(?:\.\d+)?)(ms|s|min)?$/.exec(raw.trim());
+        if (!m) return Number.NaN;
+        const n = Number(m[1]);
+        if (m[2] === 'ms') return n / 1000;
+        return m[2] === 'min' ? n * 60 : n;
+      };
+
+      /** Polls every run-*.scope on the machine for `seconds` and returns each distinct CPUQuotaPerSecUSec seen. */
+      const pollScopeQuotas = async (seconds: number): Promise<string[]> => {
+        const script = [
+          `end=$((SECONDS + ${seconds}))`,
+          'while [ $SECONDS -lt $end ]; do',
+          "  for u in $(systemctl list-units 'run-*.scope' --no-legend --plain | awk '{print $1}'); do",
+          '    systemctl show "$u" -p CPUQuotaPerSecUSec --value',
+          '  done',
+          '  sleep 0.3',
+          'done',
+        ].join('\n');
+        const put = await w1.executeViaBridge('cat > /tmp/e2e-scope-poll.sh', undefined, {
+          stdin: script,
+        });
+        expect(put.code, 'staging the scope poller').toBe(0);
+        const polled = await w1.executeViaBridge(
+          'sudo bash /tmp/e2e-scope-poll.sh | sort -u',
+          (seconds + 60) * 1000
+        );
+        return polled.stdout
+          .split('\n')
+          .map((l) => l.trim())
+          .filter((l) => l && l !== 'infinity');
+      };
+
+      const CAP_NAME = `e2ebk-cap-${tag}`;
+      const CAP_BYTES_PER_S = 8_000_000;
+      const CAP_IMAGE_MIB = 256;
+      // E2c: the data written into the image, and the image that holds it with room for btrfs overhead.
+      const CAP_FILL_MIB = 300;
+      const CAP_FILL_IMAGE_MIB = 512;
+      const CAP_FLOOR_S = 30;
+
+      const workerCpus = async (): Promise<number> => {
+        const n = Number((await w1.executeViaBridge('nproc')).stdout.trim().split('\n').pop());
+        expect(n, 'nproc on the worker').toBeGreaterThan(0);
+        return n;
+      };
+
+      test('E2a. backup snapshot --cpu-limit 25 holds the scope at 0.25 x nproc seconds and records it', async () => {
+        const nproc = await workerCpus();
+        cleanup.push(async () => {
+          await cli.run(['repo', 'delete', CAP_NAME, '-y']);
+        });
+        await provisionRepo(cli, w1, CAP_NAME, M1, `${CAP_IMAGE_MIB}M`);
+        // A read cap keeps the run alive long enough for the poller to see the scope.
+        const poll = pollScopeQuotas(CAP_FLOOR_S + 15);
+        const run = await cli.run([
+          'backup',
+          'snapshot',
+          `${CAP_NAME}@${M1}`,
+          '--cpu-limit',
+          '25',
+          '--read-bwlimit',
+          '8M',
+        ]);
+        const seen = await poll;
+        expect(run.code, `backup snapshot --cpu-limit 25: ${bothChannels(run).slice(-800)}`).toBe(
+          0
+        );
+        const expected = 0.25 * nproc;
+        expect(
+          seen.map(quotaSeconds).some((q) => Math.abs(q - expected) < 0.01),
+          `no scope carried CPUQuotaPerSecUSec = ${expected}s (nproc ${nproc}); saw ${JSON.stringify(seen)}`
+        ).toBe(true);
+        expect(run.stdout + run.stderr, 'the snapshot record names no cpuQuota').toMatch(
+          new RegExp(`"cpuQuota"\\s*:\\s*"${Math.round(25 * nproc)}%"`)
+        );
+      });
+
+      test('E2b. the unit file of a bound strategy carries the CPUQuota of its limit', async () => {
+        const name = `e2e-e2b-${tag}`;
+        cleanup.push(async () => {
+          await cli.run(['backup', 'strategy', 'unbind', name, '-m', M1]);
+          await cli.run(['backup', 'strategy', 'remove', name]);
+          await cli.run(['backup', 'schedule', '-m', M1]);
+        });
+        // K7's strategy still holds the destination name `hosted` until the describe's teardown, and a destination name is unique across strategies, so it is released first.
+        // Nothing after E2b reads K7's strategy (its own cleanup runs at the describe's teardown and tolerates it gone), so it needs no restore; a failed release is named here instead of surfacing as a misleading `strategy set` error.
+        const unbound = await cli.run(['backup', 'strategy', 'unbind', STRATEGY, '-m', M1]);
+        expect(
+          unbound.code,
+          `releasing ${STRATEGY}, unbind: ${bothChannels(unbound).slice(-600)}`
+        ).toBe(0);
+        const removed = await cli.run(['backup', 'strategy', 'remove', STRATEGY]);
+        expect(
+          removed.code,
+          `releasing ${STRATEGY}, remove: ${bothChannels(removed).slice(-600)}`
+        ).toBe(0);
+        const set = await cli.run([
+          'backup',
+          'strategy',
+          'set',
+          name,
+          '--destination',
+          'hosted',
+          '--cron',
+          '0 4 * * *',
+          '--include',
+          REPO_NAME,
+        ]);
+        expect(set.code, `strategy set: ${bothChannels(set).slice(-600)}`).toBe(0);
+        // --cpu-limit applies to the whole strategy, so the CLI refuses it beside --destination: a second set carries it.
+        const limit = await cli.run(['backup', 'strategy', 'set', name, '--cpu-limit', '25']);
+        expect(limit.code, `strategy set --cpu-limit: ${bothChannels(limit).slice(-600)}`).toBe(0);
+        const bind = await cli.run(['backup', 'strategy', 'bind', name, '-m', M1]);
+        expect(bind.code, `strategy bind: ${bothChannels(bind).slice(-600)}`).toBe(0);
+        const schedule = await cli.run(['backup', 'schedule', '-m', M1]);
+        expect(schedule.code, `backup schedule: ${bothChannels(schedule).slice(-600)}`).toBe(0);
+        const nproc = await workerCpus();
+        const unit = await w1.executeViaBridge(
+          `sudo cat /etc/systemd/system/${scheduleServiceUnit(name)}`
+        );
+        expect(unit.stdout, 'the unit file has no CPUQuota line').toContain(
+          `CPUQuota=${Math.round(25 * nproc)}%`
+        );
+      });
+
+      test(`E2c. --read-bwlimit 8M on a ${CAP_FILL_IMAGE_MIB} MiB image holding ${CAP_FILL_MIB} MiB takes at least ${CAP_FLOOR_S} s`, async () => {
+        // E2a ran its snapshot under the cap on a 256 MiB image; a fresh repo holding real data (CAP_FILL_IMAGE_MIB) is the clean measurement.
+        const name = `${CAP_NAME}-b`;
+        cleanup.push(async () => {
+          await cli.run(['repo', 'delete', name, '-y']);
+        });
+        // The uploader reads only the cells that hold data (a fresh image is mostly zero: 15 of 64 cells were read, which is 62.9 MB and 8 s at 8 MB/s), so the floor needs the image to HOLD more than 30 s x 8 MB/s of data.
+        const repo = await provisionRepo(cli, w1, name, M1, `${CAP_FILL_IMAGE_MIB}M`);
+        // Registered after the delete above, so it runs first: a failed fill or unmount below must not leave the image mounted under `repo delete`.
+        cleanup.push(async () => w1.repositoryUnmount(repo.guid, DS, repo.networkId));
+        const mounted = await w1.repositoryMount(repo.guid, repo.credential, DS, repo.networkId);
+        expect(
+          mounted.code,
+          `mounting ${repo.guid}: ${w1.getCombinedOutput(mounted).slice(-600)}`
+        ).toBe(0);
+        const write = await w1.executeViaBridge(
+          `sudo dd if=/dev/urandom of="${DS}/mounts/${repo.guid}/fill.bin" bs=1M count=${CAP_FILL_MIB} conv=notrunc status=none && sync`,
+          600_000
+        );
+        expect(write.code, `fill ${repo.guid}: ${w1.getCombinedOutput(write)}`).toBe(0);
+        const unmounted = await w1.repositoryUnmount(repo.guid, DS, repo.networkId);
+        expect(
+          unmounted.code,
+          `unmounting ${repo.guid}: ${w1.getCombinedOutput(unmounted).slice(-600)}`
+        ).toBe(0);
+        const started = Date.now();
+        const run = await cli.run(['backup', 'snapshot', `${name}@${M1}`, '--read-bwlimit', '8M']);
+        const seconds = (Date.now() - started) / 1000;
+        expect(run.code, `capped snapshot: ${bothChannels(run).slice(-800)}`).toBe(0);
+        expect(
+          seconds,
+          `${CAP_FILL_MIB} MiB of data at ${CAP_BYTES_PER_S} B/s took ${seconds}s; record: ${run.stdout.slice(-2500)}`
+        ).toBeGreaterThanOrEqual(CAP_FLOOR_S);
+      });
+
+      // ---- E3: local image, the regression form of local-image L1 ----
+
+      const IMG_NAME = `e2ebk-img-${tag}`;
+      const IMG_COPY = `${IMG_NAME}-copy`;
+
+      const snapshotDirs = async (): Promise<string[]> => {
+        const r = await w1.executeViaBridge(
+          `sudo ls -A "${DS}/repositories" | grep '^\\.snapshot-' || true`
+        );
+        return r.stdout.split('\n').filter(Boolean);
+      };
+
+      const sha256OfFile = (file: string): Promise<string> =>
+        new Promise((resolve, reject) => {
+          const hash = createHash('sha256');
+          createReadStream(file)
+            .on('data', (chunk) => hash.update(chunk))
+            .on('end', () => resolve(hash.digest('hex')))
+            .on('error', reject);
+        });
+
+      test('E3a/b. an INT-interrupted download leaves no .snapshot-*; the rerun and an upload --as are byte-identical', async () => {
+        const dir = mkdtempSync(path.join(os.tmpdir(), 'e2e-bdl-'));
+        cleanup.push(async () => {
+          await cli.run(['repo', 'delete', IMG_NAME, '-y']);
+        });
+        await provisionRepo(cli, w1, IMG_NAME, M1, '256M');
+
+        // 4M/s over a 256 MiB image runs about a minute, so the INT at 8 s lands mid-transfer.
+        const child = cli.spawn([
+          'backup',
+          'download',
+          `${IMG_NAME}@${M1}`,
+          '--to',
+          dir,
+          '--bwlimit',
+          '4M',
+        ]);
+        const exit = new Promise<number | null>((resolve) => child.on('close', resolve));
+        await new Promise((r) => setTimeout(r, 8000));
+        child.kill('SIGINT');
+        expect(await exit, 'the download ended 0 before the interrupt').not.toBe(0);
+        // The machine drops the snapshot of an interrupted export within 90 s.
+        const deadline = Date.now() + 90_000;
+        let left = await snapshotDirs();
+        while (left.length > 0 && Date.now() < deadline) {
+          await new Promise((r) => setTimeout(r, 3000));
+          left = await snapshotDirs();
+        }
+        expect(left, 'an interrupted download left a .snapshot-* on the machine').toEqual([]);
+
+        const rerun = await cli.run(['backup', 'download', `${IMG_NAME}@${M1}`, '--to', dir]);
+        expect(rerun.code, `rerun: ${bothChannels(rerun).slice(-800)}`).toBe(0);
+        const down = await cli.run(['repo', 'down', `${IMG_NAME}@${M1}`]);
+        expect(down.code, `repo down: ${bothChannels(down).slice(-400)}`).toBe(0);
+        const guid = repoIdentity(cli, IMG_NAME).guid;
+        const machineSha = await imageSha(w1, guid);
+        const found = execFileSync('find', [dir, '-name', `${IMG_NAME}.*.img`, '-type', 'f'], {
+          encoding: 'utf8',
+        })
+          .split('\n')
+          .filter(Boolean);
+        expect(
+          found,
+          `expected exactly one ${IMG_NAME}.*.img under ${dir}, found: ${found.join(', ')}`
+        ).toHaveLength(1);
+        const file = found[0];
+        expect(await sha256OfFile(file), 'the downloaded file differs from the machine image').toBe(
+          machineSha
+        );
+
+        cleanup.push(async () => {
+          await cli.run(['repo', 'delete', IMG_COPY, '-y']);
+        });
+        // No --up here: mounting rewrites the btrfs superblock inside the LUKS image, so a hash taken after the repo came up differs from the source whatever the upload did (measured: the sha after `--up` differed). The copy is hashed as uploaded, then brought up.
+        const up = await cli.run(['backup', 'upload', file, '--to', M1, '--as', IMG_COPY]);
+        expect(up.code, `upload --as: ${bothChannels(up).slice(-800)}`).toBe(0);
+        const copy = repoIdentity(cli, IMG_COPY);
+        expect(copy.guid, 'upload --as kept the source GUID').not.toBe(guid);
+        expect(await imageSha(w1, copy.guid), 'the uploaded copy differs from the source').toBe(
+          machineSha
+        );
+        // `repo up` cannot stand in for `--up`: the copy has no licence until the upload's own deploy step files one, so a second upload carries the "comes up" half.
+        const IMG_UP = `${IMG_COPY}-up`;
+        cleanup.push(async () => {
+          await cli.run(['repo', 'delete', IMG_UP, '-y']);
+        });
+        const upped = await cli.run(['backup', 'upload', file, '--to', M1, '--as', IMG_UP, '--up']);
+        expect(upped.code, `upload --as --up: ${bothChannels(upped).slice(-3000)}`).toBe(0);
+      });
+
+      test('E3c. a kill -9 of export leaves a stale transfer that prune removes, and prune spares a held .lock', async () => {
+        expect(await snapshotDirs(), 'a stale snapshot is present before the kill').toEqual([]);
+        const dir = mkdtempSync(path.join(os.tmpdir(), 'e2e-bdl-kill-'));
+        const child = cli.spawn([
+          'backup',
+          'download',
+          `${IMG_NAME}@${M1}`,
+          '--to',
+          dir,
+          '--bwlimit',
+          '2M',
+        ]);
+        const exit = new Promise((resolve) => child.on('close', resolve));
+        await new Promise((r) => setTimeout(r, 10_000));
+        // The bracketed first letter keeps the pattern from matching the shell that runs pkill.
+        await w1.executeViaBridge(`sudo pkill -9 -f '[r]enet backup export'`);
+        child.kill('SIGKILL');
+        await exit;
+        // A SIGKILLed process can take a moment to leave the table.
+        const alive = await w1.executeViaBridge(
+          `for _ in 1 2 3 4 5; do pgrep -f '[r]enet backup export' >/dev/null || exit 0; sleep 1; done; pgrep -f '[r]enet backup export'`
+        );
+        expect(alive.stdout.trim(), 'renet backup export survived the kill -9').toBe('');
+        expect(
+          (await snapshotDirs()).length,
+          'killing export left no stale .snapshot-* to prune'
+        ).toBeGreaterThan(0);
+
+        // A held lock must survive the same prune.
+        const lockPath = `${DS}/repositories/.lock-${randomUUID()}`;
+        const holder = await w1.executeViaBridge(
+          `sudo bash -c 'touch "${lockPath}"; nohup flock -x "${lockPath}" sleep 120 >/dev/null 2>&1 &'`
+        );
+        expect(holder.code, 'holding the lock').toBe(0);
+        try {
+          const dry = await cli.run(['machine', 'prune', M1, '--dry-run']);
+          expect(bothChannels(dry), 'prune --dry-run does not list the stale snapshot').toContain(
+            '.snapshot-'
+          );
+          const pruned = await cli.run(['machine', 'prune', M1]);
+          expect(pruned.code, `machine prune: ${bothChannels(pruned).slice(-600)}`).toBe(0);
+          expect(await snapshotDirs(), 'prune left the stale snapshot').toEqual([]);
+          const lock = await w1.executeViaBridge(
+            `sudo test -e "${lockPath}" && echo kept || echo gone`
+          );
+          expect(lock.stdout.trim(), 'prune deleted a .lock file that a process still held').toBe(
+            'kept'
+          );
+        } finally {
+          await w1.executeViaBridge(
+            `sudo pkill -f '[f]lock -x ${lockPath}'; sudo rm -f "${lockPath}"`
+          );
+        }
       });
     }
   });

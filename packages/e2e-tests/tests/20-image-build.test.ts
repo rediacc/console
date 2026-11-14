@@ -12,13 +12,13 @@ import { log } from '../src/utils/log';
  * 3. Run customization script (install Docker, etc.)
  * 4. Convert to compressed qcow2
  *
- * Supported OSes (10 total):
- * - Debian family: Ubuntu 24.04, Debian 12
- * - RHEL family: CentOS 10-Stream, Fedora 43/42, Oracle 9/8, Rocky 9
- * - SUSE family: openSUSE 15.6/15.5
+ * Supported OSes (5 total, built with `renet ops image build --os <name>`):
+ * - Debian family: Ubuntu 24.04, Debian 13
+ * - RHEL family: Fedora 43, Oracle Linux 10
+ * - SUSE family: openSUSE Leap 16.0
  *
  * Test execution:
- *   # Build all images (~3-4 hours)
+ *   # Build all images (~1-2 hours)
  *   npx playwright test 20-image-build.test.ts --grep "@slow"
  *
  *   # Build specific family
@@ -169,7 +169,7 @@ test.describe('Image Validation @image @validate', () => {
     }
 
     // This test always passes - it's informational
-    expect(summary.total).toBe(10);
+    expect(summary.total).toBe(5);
   });
 
   for (const image of CONFIGURED_IMAGES) {
@@ -268,14 +268,14 @@ test.describe('Distro Family Coverage @image @coverage', () => {
 // =============================================================================
 
 test.describe('Image Configuration @image @config', () => {
-  test('should have 10 configured images', () => {
-    expect(CONFIGURED_IMAGES.length).toBe(10);
+  test('should have 5 configured images', () => {
+    expect(CONFIGURED_IMAGES.length).toBe(5);
   });
 
   test('should have correct distro family distribution', () => {
     expect(DISTRO_FAMILIES.debian.length).toBe(2); // Ubuntu, Debian
-    expect(DISTRO_FAMILIES.rhel.length).toBe(6); // CentOS, Fedora x2, Oracle x2, Rocky
-    expect(DISTRO_FAMILIES.suse.length).toBe(2); // openSUSE x2
+    expect(DISTRO_FAMILIES.rhel.length).toBe(2); // Fedora, Oracle
+    expect(DISTRO_FAMILIES.suse.length).toBe(1); // openSUSE
   });
 
   test('all images should have valid URLs', () => {
@@ -304,17 +304,17 @@ test.describe('Image Configuration @image @config', () => {
 // =============================================================================
 
 test.describe('Build All Images @image @slow @all', () => {
-  // This test builds all images sequentially Expected duration: ~3-4 hours
-  test.setTimeout(5 * 60 * 60 * 1000); // 5 hours
+  // This test builds all images sequentially Expected duration: ~1-2 hours
+  test.setTimeout(5 * 60 * 60 * 1000); // 5 hours (upper bound)
 
-  test('should build all 10 configured images', async () => {
+  test('should build all 5 configured images', async () => {
     const helper = new ImageTestHelper();
 
     log('\n=== Building All Images ===');
     log(`Total images: ${CONFIGURED_IMAGES.length}`);
-    log('This will take approximately 3-4 hours...\n');
+    log('This will take approximately 1-2 hours...\n');
 
-    const results = await helper.buildAllImages(false);
+    const results = await helper.buildAllImages();
 
     let successCount = 0;
     let failCount = 0;
@@ -333,6 +333,6 @@ test.describe('Build All Images @image @slow @all', () => {
     log(`\nTotal: ${successCount} succeeded, ${failCount} failed`);
 
     // Allow some failures but require majority success
-    expect(successCount).toBeGreaterThanOrEqual(7); // At least 7 of 10
+    expect(successCount).toBeGreaterThanOrEqual(4); // At least 4 of 5
   });
 });

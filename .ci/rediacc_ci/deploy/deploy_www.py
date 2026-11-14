@@ -5,8 +5,11 @@ Deploys the www marketing Worker to Cloudflare. Two lanes, chosen by whether `--
 
   * PRODUCTION (no `--name`): one `npx wrangler deploy` against
     `workers/www/wrangler.toml` as it stands. No D1 is involved; the account API
-    on www.rediacc.com is served by the regional `rediacc-account-*` workers.
-  * PREVIEW (`--name pr-379`): mint a per-PR D1 database `account-db-pr-379`,
+    on www.rediacc.com is served by the regional `account-<region>` workers.
+    Before it, `www_sitekey_refusal` refuses a `workers/www/dist` whose pages do
+    not carry the bound `TURNSTILE_SITE_KEY` (2026-11-12, every www form refused
+    every visitor). The twin had no such refusal; its goldens cover only keyed runs.
+  * PREVIEW (`--name pr-379`): mint a per-PR D1 database `account-pr-379`,
     DELETING any existing one first for a clean slate, write a generated
     `wrangler.preview.toml` naming that database, apply the account migrations
     to it, deploy, and remove the generated config.
@@ -84,6 +87,7 @@ from __future__ import annotations
 
 import contextlib
 import os
+import re
 import subprocess
 import sys
 import typing
@@ -110,13 +114,21 @@ PREVIEW_CONFIG = "wrangler.preview.toml"
 # `PR_NUM="${ARG_NAME#pr-}"` and `DB_NAME="account-db-pr-${PR_NUM}"`
 # (twin :64-65). The prefix strip is a `#` expansion, so it removes `pr-` only when the name actually starts with it (fact 3 in the module docstring).
 NAME_PREFIX = "pr-"
-DB_NAME_TEMPLATE = "account-db-pr-%s"
+DB_NAME_TEMPLATE = "account-pr-%s"
 
 # `--location eeur` (twin :82). Hard-coded in the twin; every preview database lands in the same region.
 D1_LOCATION = "eeur"
 
 # The two names twin :69 refuses to delete. Unreachable, which is fact 1.
-PROTECTED_DATABASES = ("account-db", "edge-account-db")
+# The `-j` names are the databases created under a jurisdiction (PLAN-d1-eu-jurisdiction Design 1): protected before they exist, so the guard never lags the repoint.
+PROTECTED_DATABASES = (
+    "account-eu",
+    "account-us",
+    "account-asia",
+    "account-bench",
+    "account-eu-j",
+    "account-bench-j",
+)
 
 # The `sed` address at twin :52 and the `jq` program at twin :57, verbatim.
 JSON_START_SED = "/^[[:space:]]*[{[]/,$p"
@@ -182,6 +194,15 @@ binding = "DB"
 database_name = "%s"
 database_id = "%s"
 migrations_dir = "../../private/account/drizzle"
+
+# The account Worker refuses to serve with a licence private key set and requires this binding
+# (private/account src/entry/cloudflare.ts requireSignerOnly). The preview signs through the bench
+# signer and holds no key; signer-bench-eu is deployed first (rediacc_ci.deploy.deploy_signer).
+[[services]]
+binding = "LICENSE_SIGNER"
+service = "signer-bench-eu"
+entrypoint = "LicenseSigner"
+props = { tier = "shared", region = "eu" }
 """
 )
 
@@ -198,7 +219,7 @@ def strip_newlines(token: str) -> str:
 
 
 def db_name_for(worker_name: str) -> str:
-    """`PR_NUM="${ARG_NAME#pr-}"; DB_NAME="account-db-pr-${PR_NUM}"` (twin :64-65).
+    """`PR_NUM="${ARG_NAME#pr-}"; DB_NAME="account-pr-${PR_NUM}"` (twin :64-65, renamed from `account-db-pr-`).
 
     `removeprefix` IS the `#` expansion: it strips only when the prefix is present and leaves everything else alone. That is fact 3 in the module docstring, and it is why `--name staging` is accepted.
     """
@@ -206,9 +227,9 @@ def db_name_for(worker_name: str) -> str:
 
 
 def is_protected(db_name: str) -> bool:
-    """`[[ "$DB_NAME" == "account-db" || "$DB_NAME" == "edge-account-db" ]]` (twin :69).
+    """`[[ "$DB_NAME" == "account-db" || "$DB_NAME" == "edge-account-db" ]]` (twin :69), over the shared databases that replaced those two names.
 
-    Exact string comparison against two literals. Unreachable from `db_name_for`, which is fact 1; exported so the differential can assert both halves rather than assert the sentence.
+    Exact string comparison against the literals. Unreachable from `db_name_for`, which is fact 1; exported so the differential can assert both halves rather than assert the sentence.
     """
     return db_name in PROTECTED_DATABASES
 
@@ -308,6 +329,69 @@ def get_d1_uuid(db_name: str) -> str:
     return jq.stdout.decode("utf-8", "surrogateescape").rstrip("\n")
 
 
+PEPPER_ENV = "ENTERPRISE_LOOKUP_PEPPER"
+
+# The www pages' client bundles, relative to the worker directory: Astro writes them to `dist/assets` (packages/www astro.config build.assets) and the deploy copies `packages/www/dist` into `workers/www/dist`. The portal's own bundles sit under `dist/account/assets`, which a non-recursive glob here does not read.
+WWW_ASSETS = ("dist", "assets")
+SITEKEY_SHAPE = re.compile(r"^0x[0-9A-Za-z_-]{16,}$")
+WWW_REBUILD_HINT = (
+    'rebuild with PUBLIC_TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY" npm run build -w @rediacc/www'
+    " and copy packages/www/dist into workers/www/dist"
+)
+
+
+def www_sitekey_refusal(worker_dir: pathlib.Path, env: typing.Mapping[str, str]) -> str | None:
+    """None when the built www pages under `dist/assets` carry the Turnstile site key the environment binds, else the refusal line.
+
+    Seven www forms (contact, newsletter, lead magnet, partner application, ROI calculator, region lookup) read `PUBLIC_TURNSTILE_SITE_KEY` at build time, and the servers behind them verify every token, so a keyless build refuses every visitor (production 2026-11-12). Only the production lane calls this: a PR preview's pages come from the keyless `build-www` artifact on purpose.
+    """
+    key = (env.get("TURNSTILE_SITE_KEY") or "").strip()
+    if not key:
+        return (
+            "TURNSTILE_SITE_KEY is not bound, so the www pages cannot be checked for the captcha"
+            " widget; run under the deploy-workers profile"
+        )
+    if not SITEKEY_SHAPE.match(key):
+        return "TURNSTILE_SITE_KEY does not look like a Turnstile sitekey (0x...)"
+    assets = worker_dir.joinpath(*WWW_ASSETS)
+    bundles = sorted(assets.glob("*.js")) if assets.is_dir() else []
+    if not bundles:
+        return "no built www pages at %s; %s" % (assets, WWW_REBUILD_HINT)
+    for bundle in bundles:
+        if key in bundle.read_text(encoding="utf-8", errors="replace"):
+            return None
+    return (
+        "the built www pages at %s (%d bundles) carry no Turnstile site key, so every www form"
+        " would refuse every visitor; %s" % (assets, len(bundles), WWW_REBUILD_HINT)
+    )
+
+
+def pepper_put_argv() -> list[str]:
+    """`npx wrangler secret put ENTERPRISE_LOOKUP_PEPPER`: the value arrives on stdin, never on argv."""
+    return [*wrangler.ARGV, "secret", "put", PEPPER_ENV]
+
+
+def _push_pepper() -> int:
+    """Push the enterprise-lookup HMAC pepper as a Worker secret, when the run carries one.
+
+    The www Worker's enterprise-lookup route keys its KV records with this pepper (`workers/www/src/enterprise-lookup.ts`), and `rediacc_ci.ops.enterprise_lookup` holds the same value, so a Worker without it answers every lookup as unconfigured. The `deploy-workers` profile in `.ci/config/secret-supply.json` lists the name as required, so a release run that reaches this point always has it; a run without it (the twin's differential, a hand deploy) skips the push and says nothing, which keeps the twin's streams unchanged.
+    """
+    pepper = os.environ.get("ENTERPRISE_LOOKUP_PEPPER", "")
+    if not pepper:
+        return 0
+    log.step("Pushing the %s Worker secret" % PEPPER_ENV)
+    sys.stdout.flush()
+    sys.stderr.flush()
+    return subprocess.run(pepper_put_argv(), input=pepper.encode("utf-8"), check=False).returncode
+
+
+def _deploy_production() -> int:
+    status = _run(production_deploy_argv())
+    if status != 0:
+        return status
+    return _push_pepper()
+
+
 def _run(argv: list[str]) -> int:
     """One child with BOTH streams inherited, as the twin leaves them.
 
@@ -366,9 +450,13 @@ def _preview(worker_name: str, worker_dir: pathlib.Path) -> int:
     return 0
 
 
+# Every `ARG_*` key `main` reads; any other flag is refused before a side effect.
+ACCEPTED_ARGS = frozenset({"ARG_NAME"})
+
+
 def main(argv: list[str]) -> int:
     try:
-        args = common.parse_args(argv)
+        args = common.parse_args(argv, allowed=ACCEPTED_ARGS)
     except common.RefusalError as exc:
         # THE DIVERGENCE: bash names common.sh's path and line here.
         print("%s: %s" % (SELF, exc.lines[0]), file=sys.stderr, flush=True)
@@ -417,9 +505,17 @@ def main(argv: list[str]) -> int:
     if worker_name:
         return _preview(worker_name, worker_dir)
 
+    # Before the production deploy, never after: a keyless www dist refuses every form submission.
+    refusal = www_sitekey_refusal(
+        worker_dir, {"TURNSTILE_SITE_KEY": os.environ.get("TURNSTILE_SITE_KEY", "")}
+    )
+    if refusal:
+        log.error(refusal)
+        return 1
+
     log.step("Deploying www production worker...")
     return deploy_record.record_www_deploy(
-        worker_dir, PRODUCTION_CONFIG, "www-stable", lambda: _run(production_deploy_argv())
+        worker_dir, PRODUCTION_CONFIG, "www-stable", _deploy_production
     )
 
 

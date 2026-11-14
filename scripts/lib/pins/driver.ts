@@ -39,7 +39,15 @@ export interface Release {
    * release itself and says so here; the core reads the release-age window only when this is
    * absent. `why` is printed beside a refusal.
    */
-  verdict?: { eligible: boolean; why: string };
+  verdict?: { eligible: boolean; why: string; clearsAt?: number | null };
+  /**
+   * The SAME version again with new content: a Docker Official Image tag re-pushed under another
+   * index digest (scripts/lib/pins/drivers/docker.ts THE RE-DIGEST). The version text differs
+   * from `current` only by the digest label, so scripts/lib/pins/status.ts never reads it as a
+   * major: a plain `bump <id>` takes it once its verdict is eligible, and while it is not, a
+   * driver verdict that carries `clearsAt` names the instant `when` and the gates print.
+   */
+  redigest?: true;
   /**
    * The driver's own rule says this release opens a BREAKING line though its leading number is
    * the pinned one's (a Go minor line, 1.26 -> 1.27, changes the `go` directive of every go.mod).
@@ -302,6 +310,10 @@ export interface Fixture {
       published: string | null;
       values?: Record<string, string>;
       breaking?: { line: string; why: string };
+      /** Release.redigest, so the core's re-digest rule runs under a fixture. */
+      redigest?: true;
+      /** Release.verdict, `clearsAt` as an ISO instant. */
+      verdict?: { eligible: boolean; why: string; clearsAt?: string };
     }>
   >;
   /** Commands the stub runner answers: the first whose regex matches the command line wins; `out` is what it prints, and `events` the lines it writes to the file the command's `--events <file>` names. */
@@ -377,6 +389,17 @@ function fixtureDriver(name: Driver): PinDriver {
           version: r.version,
           publishedMs: r.published === null ? null : Date.parse(r.published),
           ...(r.breaking ? { breaking: r.breaking } : {}),
+          ...(r.redigest ? { redigest: true as const } : {}),
+          ...(r.verdict
+            ? {
+                verdict: {
+                  eligible: r.verdict.eligible,
+                  why: r.verdict.why,
+                  clearsAt:
+                    r.verdict.clearsAt === undefined ? null : Date.parse(r.verdict.clearsAt),
+                },
+              }
+            : {}),
         })),
       });
     },

@@ -106,6 +106,20 @@ describe('buildLocalVault', () => {
       const w2 = vault.extra_machines.worker2;
       expect(w2.port).toBe(2222);
     });
+
+    it("carries each peer's own host key lines, never the focal machine's", () => {
+      const opts = {
+        ...baseOpts(),
+        extraMachines: {
+          pinned: { ip: '10.0.0.2', user: 'admin', knownHosts: '10.0.0.2 ssh-ed25519 PEER' },
+          unknown: { ip: '10.0.0.3', user: 'admin' },
+        },
+      };
+      const vault = JSON.parse(buildLocalVault(opts));
+      expect(vault.extra_machines.pinned.known_hosts).toBe('10.0.0.2 ssh-ed25519 PEER');
+      // No recorded key stays empty, so a verb that pins refuses instead of trusting another machine's lines.
+      expect(vault.extra_machines.unknown.known_hosts).toBe('');
+    });
   });
 
   describe('repositories', () => {

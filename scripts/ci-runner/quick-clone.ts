@@ -36,23 +36,85 @@ const LINKED_CACHES = ['.ci/cache/toolchain', '.ci/cache/bin', '.venv'];
 /** Copied once, when the clone has none: seeds its own measurement history. */
 const SEEDED_FILES = ['.ci/cache/gate-durations.json'];
 /**
- * Ignored build output a gate reads and no gate in its lane builds, hard-link copied when the live directory moves. The go build behind `private/renet/bin` is a prerequisite only of slow gates, while check:ci-no-rclone-embedded refuses an empty scan and check:ci-proxy-ops-host-check exits 77 without the binary, and check:ci-proxy-image-smoke stages `private/bin` (all measured in clone runs). The live tree's own run reads this same output, so the clone is no staler than it. A gate that rebuilds one replaces the clone's name, not the shared inode.
+ * Ignored build output a gate reads and no gate in its lane builds, re-seeded when the live directory moves: hard-link copied by default, or copied for real where an entry sets `link: false` (the renet embed assets). The go build behind `private/renet/bin` is a prerequisite only of slow gates, while check:ci-no-rclone-embedded refuses an empty scan and check:ci-proxy-ops-host-check exits 77 without the binary, and check:ci-proxy-image-smoke stages `private/bin` (all measured in clone runs). The live tree's own run reads this same output, so the clone is no staler than it. A hard-linked entry relies on a rebuild replacing the clone's name, not the shared inode; an entry whose rebuild may rewrite in place is copied instead.
  */
-const SEEDED_BUILDS = ['private/renet/bin', 'private/bin'];
+export interface SeededBuild {
+  path: string;
+  /** Hard links by default; `false` seeds a real copy, for output a rebuild may rewrite in place (a rewrite through a shared inode would reach the live tree). */
+  link?: boolean;
+}
+const SEEDED_BUILDS: readonly SeededBuild[] = [
+  // Hard-linked: the go build and the stage step behind these write a new file and replace the name, which leaves the shared inode alone.
+  { path: 'private/renet/bin' },
+  { path: 'private/bin' },
+  // The staged renet embed assets (rsync, zot, k3s ...): gitignored, built by `./build.sh embed_assets`, read by check:ci-embed-asset-versions. A kept clone held its first copy for weeks after the pins moved, so the gate judged stale versions the live tree no longer had.
+  // A real copy: a rebuild of the assets may rewrite a file in place, and through a hard link that write would corrupt the live tree's copy.
+  { path: 'private/renet/pkg/embed/assets', link: false },
+];
 /** Flags a whole-lane run in the clone keeps; every other flag names a narrowed or hand-made run. */
 const PASS_THROUGH_FLAGS = new Set(['--verbose', '--merge-output']);
 const PASS_THROUGH_VALUE_FLAGS = new Set(['--jobs', '--gate-timeout']);
 
 export type Route =
   | { kind: 'clone'; pass: string[]; noCarry: boolean }
-  | { kind: 'here'; why: string; pass: string[] };
+  | { kind: 'here'; why: string; pass: string[] }
+  | { kind: 'refused'; why: string };
 
-/** Where this invocation runs. Only a plain whole-lane run goes to the clone: CI has no second tree to protect, and `--list`, `--only`, `--narrow` and a hand-given `--receipt-out` each already say what they want judged. */
-export function routeOf(args: readonly string[], env: NodeJS.ProcessEnv): Route {
+/** A checkout's git directory and common directory, read from its files with no subprocess. */
+function gitDirsOf(tree: string): { gitDir: string; common: string } | undefined {
+  const dotgit = path.join(tree, '.git');
+  try {
+    let gitDir: string;
+    if (fs.statSync(dotgit).isDirectory()) gitDir = fs.realpathSync(dotgit);
+    else {
+      const text = fs.readFileSync(dotgit, 'utf8').trim();
+      if (!text.startsWith('gitdir:')) return undefined;
+      gitDir = fs.realpathSync(path.resolve(tree, text.slice('gitdir:'.length).trim()));
+    }
+    const commondir = path.join(gitDir, 'commondir');
+    if (!fs.existsSync(commondir)) return { gitDir, common: gitDir };
+    const common = fs.readFileSync(commondir, 'utf8').trim();
+    return { gitDir, common: fs.realpathSync(path.resolve(gitDir, common)) };
+  } catch {
+    return undefined;
+  }
+}
+
+/** The checkout holding `tree` when `tree` is its lease, `<main>/.claude/worktrees/<id>`. The twin of `lease_main` in .claude/hooks/stop/wl_core.py: position and git's word together. */
+export function leaseMainOf(tree: string): string | undefined {
+  const holder = path.dirname(tree);
+  if (path.basename(path.dirname(holder)) !== '.claude') return undefined;
+  if (!fs.statSync(path.join(tree, '.git'), { throwIfNoEntry: false })?.isFile()) return undefined;
+  const mine = gitDirsOf(tree);
+  if (mine === undefined || mine.gitDir === mine.common) return undefined;
+  const admin = path.dirname(mine.gitDir);
+  if (path.dirname(admin) !== mine.common || path.basename(admin) !== path.basename(holder))
+    return undefined;
+  const main = path.dirname(path.dirname(holder));
+  return gitDirsOf(main)?.common === mine.common ? main : undefined;
+}
+
+/** Where this invocation runs. A lease runs nothing here, whatever the flags: `cloneDirFor` keys on the checkout path, so each lease would make a kept clone, and the receipt the push guards read comes from the main checkout at landing. Only a plain whole-lane run goes to the clone: CI has no second tree to protect, and `--list`, `--only`, `--narrow` and a hand-given `--receipt-out` each already say what they want judged. */
+export function routeOf(args: readonly string[], env: NodeJS.ProcessEnv, live: string): Route {
+  const main = leaseMainOf(live);
+  if (main !== undefined) {
+    return {
+      kind: 'refused',
+      why: `${live} is a lease of ${main}, and full gates run only in the main checkout at landing, where the push guards read their receipt. Land the commits, then run npm run ci:quick in ${main}. npm run ci -- --narrow and named tests stay allowed in a lease.`,
+    };
+  }
   if (env[IN_CLONE_ENV] === '1')
-    return { kind: 'here', why: 'already inside the kept clone', pass: [...args] };
+    return {
+      kind: 'here',
+      why: 'already inside the kept clone',
+      pass: [...args],
+    };
   if (env.CI === 'true' || env.GITHUB_ACTIONS === 'true')
-    return { kind: 'here', why: 'CI checks out one clean tree already', pass: [...args] };
+    return {
+      kind: 'here',
+      why: 'CI checks out one clean tree already',
+      pass: [...args],
+    };
   if (args.includes('--here')) {
     return {
       kind: 'here',
@@ -68,7 +130,11 @@ export function routeOf(args: readonly string[], env: NodeJS.ProcessEnv): Route 
       i++;
       continue;
     }
-    return { kind: 'here', why: `${pass[i]} is not a whole-lane run`, pass: [...args] };
+    return {
+      kind: 'here',
+      why: `${pass[i]} is not a whole-lane run`,
+      pass: [...args],
+    };
   }
   return { kind: 'clone', pass, noCarry };
 }
@@ -272,6 +338,39 @@ export function lockDifference(lockText: string, hiddenText: string): string | u
   return undefined;
 }
 
+/**
+ * Does each package the hidden lockfile names sit on disk at the version the hidden lockfile records? Undefined means yes, or nothing to judge; a string names the first difference.
+ *
+ * The hidden lockfile alone cannot answer, because `npm install --package-lock-only` rewrites it without touching node_modules (measured under npm 11.21.0: after a wrangler bump the hidden lock read 4.157.0 while node_modules/wrangler/package.json stayed 4.156.2). `lockDifference` then reports a match, and the stale files get hard-linked into every clone. A package whose directory holds no package.json is a difference too, unless it is optional or a peer: a lockfile-only rewrite can add a nested package to both lockfiles and leave node_modules without it, and `lockDifference` compares the two lockfiles only, never the disk. An unparseable package.json is not judged.
+ */
+export function installedDifference(projectDir: string, hiddenText: string): string | undefined {
+  const hidden =
+    (JSON.parse(hiddenText) as { packages?: Record<string, HiddenPackage> }).packages ?? {};
+  for (const [key, entry] of Object.entries(hidden)) {
+    if (entry.link === true || entry.version === undefined || !key.startsWith('node_modules/'))
+      continue;
+    let onDisk: string | undefined;
+    try {
+      onDisk = (
+        JSON.parse(fs.readFileSync(path.join(projectDir, key, 'package.json'), 'utf8')) as {
+          version?: string;
+        }
+      ).version;
+    } catch (error) {
+      if (
+        (error as NodeJS.ErrnoException).code === 'ENOENT' &&
+        entry.optional !== true &&
+        entry.peer !== true
+      )
+        return `${key} is in the hidden lockfile but not on disk`;
+      continue;
+    }
+    if (onDisk !== undefined && onDisk !== entry.version)
+      return `${key} is on disk at ${onDisk}, its hidden lockfile says ${entry.version}`;
+  }
+  return undefined;
+}
+
 /** Every `<dir>/node_modules` the live tree holds for a tracked `<dir>/package.json` at `commit`, grouped under the lockfile directory that owns it. A workspace member without its own lockfile belongs to the nearest ancestor with one. */
 export function dependencyGroups(
   tracked: readonly string[],
@@ -352,7 +451,8 @@ export function syncDependencies(
     const lockText = fs.readFileSync(path.join(clone, dir, 'package-lock.json'), 'utf8');
     const hiddenPath = path.join(live, dir, 'node_modules', '.package-lock.json');
     const hiddenText = fs.existsSync(hiddenPath) ? fs.readFileSync(hiddenPath, 'utf8') : '{}';
-    const difference = lockDifference(lockText, hiddenText);
+    const difference =
+      lockDifference(lockText, hiddenText) ?? installedDifference(path.join(live, dir), hiddenText);
     const digest = createHash('sha256')
       .update(difference === undefined ? `link\n${hiddenText}` : `install\n${lockText}`)
       .digest('hex');
@@ -405,14 +505,19 @@ function syncCaches(clone: string, live: string): void {
   }
 }
 
-/** Name, size and mtime of a directory's top level: what a rebuild moves. Recorded apart from the copy, because a file in the copy is the same inode as the live one, so an in-place write there would compare equal to itself. */
-function fingerprint(dir: string): string {
+/** Path, size and mtime of every entry under a directory (stat only, no content read): what a rebuild moves. Each directory contributes its own relative name, so an added or removed empty subdirectory moves it too. A rebuild that rewrites a file in place leaves the parent directory's mtime alone, so a top-level listing would miss it. Recorded apart from the copy, because a file in the copy is the same inode as the live one, so an in-place write there would compare equal to itself. */
+export function fingerprint(dir: string, prefix = ''): string {
   return fs
     .readdirSync(dir)
     .sort((x, y) => Number(x > y) - Number(x < y))
     .map((name) => {
-      const stat = fs.lstatSync(path.join(dir, name));
-      return `${name}:${stat.size}:${stat.mtimeMs}`;
+      const full = path.join(dir, name);
+      const stat = fs.lstatSync(full);
+      if (stat.isDirectory()) {
+        const inner = fingerprint(full, `${prefix}${name}/`);
+        return inner === '' ? `${prefix}${name}/` : `${prefix}${name}/\n${inner}`;
+      }
+      return `${prefix}${name}:${stat.size}:${stat.mtimeMs}`;
     })
     .join('\n');
 }
@@ -421,7 +526,7 @@ function fingerprint(dir: string): string {
 export function syncBuilds(
   clone: string,
   live: string,
-  builds: readonly string[] = SEEDED_BUILDS
+  builds: readonly SeededBuild[] = SEEDED_BUILDS
 ): void {
   const recordPath = `${clone}.builds.json`;
   let record: Record<string, string> = {};
@@ -430,7 +535,7 @@ export function syncBuilds(
   } catch {
     record = {};
   }
-  for (const build of builds) {
+  for (const { path: build, link = true } of builds) {
     const source = path.join(live, build);
     if (!fs.existsSync(source)) continue;
     const dest = path.join(clone, build);
@@ -438,7 +543,7 @@ export function syncBuilds(
     if (fs.existsSync(dest) && record[build] === seen) continue;
     cloneFs.remove(dest);
     cloneFs.ensureDir(path.dirname(dest));
-    sh('cp', ['-al', source, dest], live);
+    sh('cp', [link ? '-al' : '-a', source, dest], live);
     record[build] = seen;
   }
   cloneFs.putState(recordPath, `${JSON.stringify(record, null, 2)}\n`);
@@ -681,7 +786,10 @@ export function summaryLines(input: {
   return lines;
 }
 
-function readReceipt(file: string): { receipt?: ReceiptShape; mtimeMs: number } {
+function readReceipt(file: string): {
+  receipt?: ReceiptShape;
+  mtimeMs: number;
+} {
   try {
     return {
       receipt: JSON.parse(fs.readFileSync(file, 'utf8')) as ReceiptShape,
@@ -746,7 +854,13 @@ async function selftestThenLane(
 /** Whichever tree ran, the end of a whole-lane run is the same: judge what it left. */
 function finishWhole(
   seams: QuickSeams,
-  input: { runnerExit: number; startedAt: number; setupMs: number; tree: string; where: string }
+  input: {
+    runnerExit: number;
+    startedAt: number;
+    setupMs: number;
+    tree: string;
+    where: string;
+  }
 ): number {
   const receiptPath = path.join(seams.live, RECEIPT_REL);
   const { receipt, mtimeMs } = readReceipt(receiptPath);
@@ -769,7 +883,11 @@ function finishWhole(
 
 export async function quickMain(args: readonly string[], seams: QuickSeams): Promise<number> {
   const startedAt = seams.now();
-  const route = routeOf(args, seams.env);
+  const route = routeOf(args, seams.env, seams.live);
+  if (route.kind === 'refused') {
+    seams.log(`ci:quick: REFUSED: ${route.why}\n`);
+    return 1;
+  }
   const lane = ['--quick', ...route.pass];
   if (route.kind === 'here') {
     const whole = route.pass.length === 0;
@@ -897,24 +1015,26 @@ export async function quickCloneSelftest(
   };
   try {
     // ROUTING: a plain run goes to the clone, and only a plain run does.
+    const routeAt = (args: readonly string[], env: NodeJS.ProcessEnv): Route =>
+      routeOf(args, env, root);
     const plain = {} as NodeJS.ProcessEnv;
-    check(routeOf([], plain).kind === 'clone', 'a plain ci:quick must route to the clone');
+    check(routeAt([], plain).kind === 'clone', 'a plain ci:quick must route to the clone');
     check(
-      routeOf(['--jobs', '4', '--verbose'], plain).kind === 'clone',
+      routeAt(['--jobs', '4', '--verbose'], plain).kind === 'clone',
       'a flag that keeps the lane whole must still route to the clone'
     );
     for (const flag of ['--list', '--only', '--narrow', '--receipt-out', '--here'])
-      check(routeOf([flag], plain).kind === 'here', `${flag} must stay in this checkout`);
+      check(routeAt([flag], plain).kind === 'here', `${flag} must stay in this checkout`);
     check(
-      routeOf(['--here'], plain).pass.length === 0,
+      (routeAt(['--here'], plain) as { pass: string[] }).pass.length === 0,
       "--here is this wrapper's flag and must not reach the runner, which refuses an unknown one"
     );
     check(
-      routeOf([], { CI: 'true' } as NodeJS.ProcessEnv).kind === 'here',
+      routeAt([], { CI: 'true' } as NodeJS.ProcessEnv).kind === 'here',
       'CI must not make a second tree'
     );
     check(
-      routeOf([], { [IN_CLONE_ENV]: '1' } as NodeJS.ProcessEnv).kind === 'here',
+      routeAt([], { [IN_CLONE_ENV]: '1' } as NodeJS.ProcessEnv).kind === 'here',
       'a run inside the clone must not recurse'
     );
 
@@ -944,14 +1064,14 @@ export async function quickCloneSelftest(
     );
     check(moved.GIT_DIR === undefined, 'GIT_DIR would aim every git call at the live repository');
     check(moved[NO_CARRY_ENV] === '1', 'a fresh clone must tell the runner it holds no outputs');
-    const askedFresh = routeOf(['--no-carry', '--verbose'], plain);
+    const askedFresh = routeAt(['--no-carry', '--verbose'], plain);
     check(
       askedFresh.kind === 'clone' && askedFresh.noCarry && askedFresh.pass.join() === '--verbose',
       "--no-carry is this wrapper's flag: it must stay in the clone and not reach the runner"
     );
     check(
-      routeOf(['--verbose'], plain).kind === 'clone' &&
-        (routeOf([], plain) as { noCarry: boolean }).noCarry === false,
+      routeAt(['--verbose'], plain).kind === 'clone' &&
+        (routeAt([], plain) as { noCarry: boolean }).noCarry === false,
       'CONTROL: a plain run keeps the carry'
     );
 
@@ -977,6 +1097,41 @@ export async function quickCloneSelftest(
     check(
       lockDifference(lockOf('1.0.0'), '{}') !== undefined,
       'an empty install must not match the lockfile'
+    );
+    // THE DISK MATCH: the hidden lockfile can name a package node_modules does not hold.
+    const diskRoot = path.join(root, 'disk-match');
+    write(path.join(diskRoot, 'node_modules', 'a', 'package.json'), '{"version":"1.0.0"}\n');
+    const hiddenDisk = (extra: Record<string, HiddenPackage>): string =>
+      JSON.stringify({ packages: { 'node_modules/a': { version: '1.0.0' }, ...extra } });
+    check(
+      installedDifference(diskRoot, hiddenDisk({})) === undefined,
+      'a hidden lockfile matching the disk must match'
+    );
+    check(
+      installedDifference(
+        diskRoot,
+        hiddenDisk({ 'node_modules/a/node_modules/n': { version: '1.0.0' } })
+      ) !== undefined,
+      'a nested package the hidden lockfile names and the disk lacks must not match'
+    );
+    check(
+      installedDifference(
+        diskRoot,
+        hiddenDisk({ 'node_modules/o': { version: '1.0.0', optional: true } })
+      ) === undefined,
+      'CONTROL: an optional package absent from disk is legitimate'
+    );
+    check(
+      installedDifference(
+        diskRoot,
+        hiddenDisk({ 'node_modules/p': { version: '1.0.0', peer: true } })
+      ) === undefined,
+      'CONTROL: a peer package absent from disk is legitimate'
+    );
+    check(
+      installedDifference(diskRoot, hiddenDisk({ 'node_modules/p': { version: '1.0.0' } })) !==
+        undefined,
+      'CONTROL: the same package, neither optional nor peer, absent from disk must not match'
     );
     const groups = dependencyGroups(
       [
@@ -1027,9 +1182,12 @@ export async function quickCloneSelftest(
     git(live, 'checkout', '-q', '-b', 'topic');
     // A live install, holding the lockfile's version and a workspace link: `@x/shared` must resolve inside the clone.
     write(path.join(live, 'node_modules', 'dep', 'index.js'), 'dep\n');
+    write(path.join(live, 'node_modules', 'dep', 'package.json'), '{"version":"1.0.0"}\n');
     write(
       path.join(live, 'node_modules', '.package-lock.json'),
-      JSON.stringify({ packages: { 'node_modules/dep': { version: '1.0.0' } } })
+      JSON.stringify({
+        packages: { 'node_modules/dep': { version: '1.0.0' } },
+      })
     );
     fs.mkdirSync(path.join(live, 'node_modules', '@x'), { recursive: true });
     fs.symlinkSync('../../packages/shared', path.join(live, 'node_modules', '@x', 'shared'));
@@ -1115,7 +1273,9 @@ export async function quickCloneSelftest(
     // A KEPT CLONE: a new commit arrives, the gate's leftovers go, the build output stays.
     write(path.join(clone, 'stray.txt'), 'a gate left this\n');
     write(path.join(clone, '.ci', 'cache', 'build-output'), 'kept\n');
-    fs.mkdirSync(path.join(clone, 'node_modules', '.cache'), { recursive: true });
+    fs.mkdirSync(path.join(clone, 'node_modules', '.cache'), {
+      recursive: true,
+    });
     write(path.join(clone, 'kept.txt'), 'a gate rewrote this\n');
     write(path.join(live, 'second.txt'), 'second\n');
     git(live, 'add', 'second.txt');
@@ -1139,7 +1299,9 @@ export async function quickCloneSelftest(
     // A MOVED LOCKFILE gets a real install in the clone, never the live node_modules.
     write(
       path.join(live, 'package-lock.json'),
-      JSON.stringify({ packages: { 'node_modules/dep': { version: '2.0.0' } } })
+      JSON.stringify({
+        packages: { 'node_modules/dep': { version: '2.0.0' } },
+      })
     );
     git(live, 'add', 'package-lock.json');
     git(live, 'commit', '-q', '-m', 'bump', '--', 'package-lock.json');
@@ -1158,8 +1320,28 @@ export async function quickCloneSelftest(
       `a lockfile the live install does not hold must install in the clone, got ${installed.join()}`
     );
 
+    // A HIDDEN LOCKFILE THAT MOVED WITHOUT ITS PACKAGES (`npm install --package-lock-only` rewrites it and leaves node_modules): the lock and the hidden lock agree, the files do not, and the clone must install.
+    write(path.join(live, 'node_modules', 'dep', 'package.json'), '{"version":"1.0.0"}\n');
+    write(
+      path.join(live, 'node_modules', '.package-lock.json'),
+      JSON.stringify({ packages: { 'node_modules/dep': { version: '2.0.0' } } })
+    );
+    const stale: string[] = [];
+    prepareClone({ live, clone, seams: { install: (dir) => void stale.push(dir) } });
+    check(
+      stale.length === 1 && stale[0] === clone,
+      `a hidden lockfile ahead of the installed package must install in the clone, got ${stale.join()}`
+    );
+    write(path.join(live, 'node_modules', 'dep', 'package.json'), '{"version":"2.0.0"}\n');
+    const matching: string[] = [];
+    prepareClone({ live, clone, seams: { install: (dir) => void matching.push(dir) } });
+    check(
+      matching.length === 0,
+      `CONTROL: a package on disk at the hidden lockfile's version must be linked, got ${matching.join()}`
+    );
+
     // A SEEDED BUILD: copied once, kept while the stamp holds, and never a shared name.
-    const buildSpec = ['out/bin'];
+    const buildSpec: SeededBuild[] = [{ path: 'out/bin' }];
     const buildLive = path.join(root, 'build-live');
     const buildClone = path.join(root, 'build-clone');
     write(path.join(buildLive, 'out', 'bin', 'tool'), 'v1\n');
@@ -1187,6 +1369,69 @@ export async function quickCloneSelftest(
     check(
       fs.readFileSync(path.join(buildClone, 'out', 'bin', 'tool'), 'utf8') === 'v1\n',
       'a moved live output must refresh the copy'
+    );
+
+    // EMBED ASSETS: a clone holding stale staged assets is refreshed from the live copy, in place-rewritten nested files included; a live tree with none leaves the clone as it is.
+    check(
+      SEEDED_BUILDS.some((b) => b.path === 'private/renet/pkg/embed/assets' && b.link === false),
+      'the renet embed assets must be a seeded real copy, never hard links'
+    );
+    const assetSpec: SeededBuild[] = [{ path: 'private/renet/pkg/embed/assets', link: false }];
+    const assetLive = path.join(root, 'asset-live');
+    const assetClone = path.join(root, 'asset-clone');
+    const assetFile = (tree: string): string =>
+      path.join(tree, assetSpec[0].path, 'amd64', 'base', 'rsync');
+    write(assetFile(assetClone), 'rsync 3.5.1\n');
+    fs.mkdirSync(assetLive, { recursive: true });
+    syncBuilds(assetClone, assetLive, assetSpec);
+    check(
+      fs.readFileSync(assetFile(assetClone), 'utf8') === 'rsync 3.5.1\n',
+      'CONTROL: a live tree without embed assets must leave the clone untouched'
+    );
+    write(assetFile(assetLive), 'rsync 3.5.2\n');
+    syncBuilds(assetClone, assetLive, assetSpec);
+    check(
+      fs.readFileSync(assetFile(assetClone), 'utf8') === 'rsync 3.5.2\n',
+      'stale embed assets in the clone must be refreshed from the live tree'
+    );
+    // A fresh inode, as a rebuild that replaces the name writes it: only the nested directory's mtime moves, never the top level's.
+    fs.rmSync(assetFile(assetLive));
+    write(assetFile(assetLive), 'rsync 3.5.3 replaced\n');
+    syncBuilds(assetClone, assetLive, assetSpec);
+    check(
+      fs.readFileSync(assetFile(assetClone), 'utf8') === 'rsync 3.5.3 replaced\n',
+      'a nested asset replaced under an unmoved top level must refresh the clone'
+    );
+    // The same inode rewritten in place: size and mtime move, so the fingerprint does, and the copy shares no inode with the live file.
+    const beforeInPlace = fingerprint(path.join(assetLive, assetSpec[0].path));
+    fs.writeFileSync(assetFile(assetLive), 'rsync 3.5.4 in place, longer\n');
+    check(
+      fingerprint(path.join(assetLive, assetSpec[0].path)) !== beforeInPlace,
+      'a same-inode in-place rewrite must move the fingerprint'
+    );
+    syncBuilds(assetClone, assetLive, assetSpec);
+    check(
+      fs.readFileSync(assetFile(assetClone), 'utf8') === 'rsync 3.5.4 in place, longer\n',
+      'an in-place rewrite of a live asset must refresh the clone'
+    );
+    fs.writeFileSync(assetFile(assetClone), 'clobbered in the clone\n');
+    check(
+      fs.readFileSync(assetFile(assetLive), 'utf8') === 'rsync 3.5.4 in place, longer\n',
+      'an in-place write to the clone copy must leave the live asset unchanged'
+    );
+    // An empty directory moves the fingerprint.
+    const emptyBefore = fingerprint(path.join(assetLive, assetSpec[0].path));
+    fs.mkdirSync(path.join(assetLive, assetSpec[0].path, 'empty-dir'));
+    check(
+      fingerprint(path.join(assetLive, assetSpec[0].path)) !== emptyBefore,
+      'an added empty subdirectory must move the fingerprint'
+    );
+    // An empty directory nested in an empty directory: the old listing returned '' for both shapes.
+    const nestedBefore = fingerprint(path.join(assetLive, assetSpec[0].path));
+    fs.mkdirSync(path.join(assetLive, assetSpec[0].path, 'empty-dir', 'deeper'));
+    check(
+      fingerprint(path.join(assetLive, assetSpec[0].path)) !== nestedBefore,
+      'an empty subdirectory added inside an empty directory must move the fingerprint'
     );
 
     // THE CLONE MAY NOT BE THE CHECKOUT IT JUDGES, or sit inside it: its setup discards tracked edits.
@@ -1239,7 +1484,12 @@ export async function quickCloneSelftest(
     check(await acquireLock(lockPath, note, 0, 1), "a dead holder's lock must be taken over");
 
     // THE VERDICT: exit 0 needs a judged, green receipt.
-    const green: ReceiptShape = { whole: true, headTree: 'T', exitCode: 0, failed: [] };
+    const green: ReceiptShape = {
+      whole: true,
+      headTree: 'T',
+      exitCode: 0,
+      failed: [],
+    };
     check(wholeExit(0, green) === 0, 'CONTROL: a green run over a green receipt exits 0');
     check(
       wholeExit(0, { ...green, exitCode: 1, failed: ['g'] }) === 1,
@@ -1261,13 +1511,24 @@ export async function quickCloneSelftest(
       'a receipt advanced to this tree is judged'
     );
 
+    const linkedTree = (main: string, rel: string): string => {
+      const tree = path.join(main, rel);
+      git(main, 'worktree', 'add', '-q', '--detach', tree);
+      return tree;
+    };
+
     // THE ORCHESTRATOR, routing and fallback, through its seams.
     const drive = async (over: {
       prepare?: (input: PrepareInput) => Prepared;
       receipt?: ReceiptShape;
       args?: string[];
       env?: NodeJS.ProcessEnv;
-    }): Promise<{ exit: number; calls: { cwd: string; args: string[] }[]; log: string }> => {
+      lease?: boolean;
+    }): Promise<{
+      exit: number;
+      calls: { cwd: string; args: string[] }[];
+      log: string;
+    }> => {
       const scratch = fs.mkdtempSync(path.join(root, 'drive-'));
       git(root, 'init', '-q', '-b', 'main', scratch);
       write(path.join(scratch, 'a.txt'), 'a\n');
@@ -1276,8 +1537,9 @@ export async function quickCloneSelftest(
       const tree = git(scratch, 'rev-parse', 'HEAD^{tree}');
       const calls: { cwd: string; args: string[] }[] = [];
       let log = '';
+      const live = over.lease === true ? linkedTree(scratch, '.claude/worktrees/x') : scratch;
       const exit = await quickMain(over.args ?? [], {
-        live: scratch,
+        live,
         env: { HOME: root, ...over.env } as NodeJS.ProcessEnv,
         log: (text) => {
           log += text;
@@ -1297,7 +1559,10 @@ export async function quickCloneSelftest(
           if (over.receipt !== undefined && runArgs[0] === '--quick')
             write(
               path.join(scratch, RECEIPT_REL),
-              JSON.stringify({ ...over.receipt, headTree: over.receipt.headTree ?? tree })
+              JSON.stringify({
+                ...over.receipt,
+                headTree: over.receipt.headTree ?? tree,
+              })
             );
           return Promise.resolve(0);
         },
@@ -1306,7 +1571,12 @@ export async function quickCloneSelftest(
       });
       return { exit, calls, log };
     };
-    const greenAtTree = { whole: true, exitCode: 0, failed: [], gates: {} } as ReceiptShape;
+    const greenAtTree = {
+      whole: true,
+      exitCode: 0,
+      failed: [],
+      gates: {},
+    } as ReceiptShape;
     const routed = await drive({ receipt: greenAtTree });
     check(routed.exit === 0, `a green clone run must exit 0, got ${routed.exit}: ${routed.log}`);
     check(
@@ -1381,6 +1651,84 @@ export async function quickCloneSelftest(
     check(
       listed.exit === 0 && listed.calls[1]?.args.join(' ') === '--quick --list',
       `--list must run in this checkout with no receipt required: ${JSON.stringify(listed.calls)}`
+    );
+
+    // A LEASE: refused before any lock or clone, with the real prepareClone behind the seam so a regression would really make the directory.
+    const clonesUnder = (name: string): string =>
+      path.join(root, name, 'rediacc', 'ci-quick-clones');
+    const cacheEnv = (name: string): NodeJS.ProcessEnv =>
+      ({ XDG_CACHE_HOME: path.join(root, name) }) as NodeJS.ProcessEnv;
+    for (const args of [[], ['--here'], ['--list'], ['--no-carry']]) {
+      const leased = await drive({
+        lease: true,
+        args,
+        prepare: prepareClone,
+        env: cacheEnv('lease-cache'),
+      });
+      const shown = `[${args.join(' ')}]`;
+      check(leased.exit === 1, `a lease ${shown} must exit 1, got ${leased.exit}: ${leased.log}`);
+      check(
+        leased.log.includes('REFUSED') && leased.log.includes('main checkout at landing'),
+        `a lease ${shown} must say why it is refused: ${leased.log}`
+      );
+      check(leased.calls.length === 0, `a lease ${shown} must run no gate`);
+    }
+    check(
+      !fs.existsSync(path.join(root, 'lease-cache')),
+      'a lease must create nothing under ci-quick-clones'
+    );
+    const leasedInCi = await drive({
+      lease: true,
+      env: { CI: 'true' } as NodeJS.ProcessEnv,
+    });
+    check(
+      leasedInCi.exit === 1 && leasedInCi.calls.length === 0,
+      'CI=true must not open a lease to the lane'
+    );
+    const mainRun = await drive({
+      prepare: prepareClone,
+      env: cacheEnv('main-cache'),
+      receipt: greenAtTree,
+    });
+    check(
+      mainRun.calls.length === 2 &&
+        mainRun.calls.every((c) => c.cwd.startsWith(clonesUnder('main-cache'))) &&
+        fs.readdirSync(clonesUnder('main-cache')).length > 0,
+      `CONTROL: the main checkout must still route to a real clone, got ${JSON.stringify(mainRun.calls)}: ${mainRun.log}`
+    );
+
+    // WHAT IS A LEASE: the position and git's word, each alone is not enough.
+    const leaseFixture = fs.mkdtempSync(path.join(root, 'lease-'));
+    git(root, 'init', '-q', '-b', 'main', leaseFixture);
+    write(path.join(leaseFixture, 'a.txt'), 'a\n');
+    git(leaseFixture, 'add', '-A');
+    git(leaseFixture, 'commit', '-q', '-m', 'a');
+    const leaseTree = linkedTree(leaseFixture, '.claude/worktrees/y');
+    check(
+      routeOf([], plain, leaseTree).kind === 'refused' && leaseMainOf(leaseTree) === leaseFixture,
+      'a linked tree under .claude/worktrees is a lease of its main checkout'
+    );
+    check(routeOf([], plain, leaseFixture).kind === 'clone', 'CONTROL: the main checkout is none');
+    check(
+      routeOf([], plain, linkedTree(leaseFixture, '.worktrees/0128-1')).kind === 'clone',
+      "an operator's .worktrees tree keeps its route"
+    );
+    const standalone = path.join(leaseFixture, '.claude', 'worktrees', 'z');
+    git(root, 'init', '-q', '-b', 'main', standalone);
+    check(leaseMainOf(standalone) === undefined, 'a plain repository there has no shared store');
+    const elsewhere = fs.mkdtempSync(path.join(root, 'other-'));
+    git(root, 'init', '-q', '-b', 'main', elsewhere);
+    write(path.join(elsewhere, 'a.txt'), 'a\n');
+    git(elsewhere, 'add', '-A');
+    git(elsewhere, 'commit', '-q', '-m', 'a');
+    check(
+      leaseMainOf(
+        linkedTree(
+          elsewhere,
+          path.relative(elsewhere, path.join(leaseFixture, '.claude/worktrees/w'))
+        )
+      ) === undefined,
+      'CONTROL: a tree at the right position from another repository is no lease of it'
     );
   } catch (err) {
     failures.push(`threw: ${(err as Error).stack ?? String(err)}`);

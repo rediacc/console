@@ -43,8 +43,15 @@ def test_bench_captures_outgoing_email_and_names_itself_bench():
 
 
 def test_no_other_config_carries_a_captcha_or_test_switch():
-    others = [p for p in CONFIGS if p.name != "wrangler.bench.toml"]
-    assert len(others) >= 6
+    # The regional benches (wrangler.bench-<r>.toml) carry the switches by design, like wrangler.bench.toml.
+    others = [p for p in CONFIGS if not p.name.startswith("wrangler.bench")]
+    # The floor keeps the sweep from reading nothing: one config per shared region (eu, us, asia) since the edge and stable pair retired with the product-domain rename.
+    assert len(others) >= 3
+    assert {r for r in ("eu", "us", "asia") if any(f".{r}." in p.name for p in others)} == {
+        "eu",
+        "us",
+        "asia",
+    }
     for path in others:
         found = [
             "%s:%s" % (where, k)
@@ -77,7 +84,9 @@ def test_deploy_secrets_never_push_the_switch(monkeypatch: pytest.MonkeyPatch) -
         "ACCOUNT_X25519_PUBLIC_KEY",
         "ACCOUNT_SERVER_API_KEY",
         "ACCOUNT_JWT_SECRET",
+        "ACCOUNT_AE_READ_TOKEN",
         "ACCOUNT_CONFIG_SERVER_KEY",
+        "ACCOUNT_BACKUP_STORE_KEK",
         "FREE_LICENSE_HMAC_KEY",
     ):
         monkeypatch.setenv(name, "v-" + name)

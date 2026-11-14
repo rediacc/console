@@ -1,9 +1,50 @@
 /**
- * Entries rsync refuses to carry, read from its stderr.
+ * Entries rsync refuses to carry, read from its output (the sender prints them on stdout).
  *
  * A privileged sync runs with `--no-links --no-D`, so symlinks, devices and specials are dropped and rsync reports each one as `skipping non-regular file "<name>"` while still exiting 0.
  */
-const SKIPPED_PATTERN = /^skipping non-regular file "(.*)"\s*$/gm;
+const SKIPPED_PATTERN = /(?:^|\r)skipping non-regular file "(.*)"\s*$/gm;
+
+/** The longest unterminated tail kept. A skip line is a path (at most PATH_MAX) and a fixed prefix, so a longer tail is no skip line. */
+export const SKIP_SCAN_MAX_LINE = 8192;
+
+/**
+ * Keeps only the "skipping non-regular file" lines of a stream that arrives in chunks, so a long sync with progress
+ * output holds those lines and one partial line, not every byte rsync printed. A line split across chunks is joined first.
+ * A tail longer than SKIP_SCAN_MAX_LINE without a line end is dropped through to its end, so a stream that never
+ * emits one cannot grow the carry or be re-copied on every push without bound.
+ */
+export function createSkipLineScan(): { push(chunk: string): void; text(): string } {
+  const kept: string[] = [];
+  let carry = '';
+  let discarding = false;
+  const keep = (line: string): void => {
+    if (line.includes('skipping non-regular file')) kept.push(line);
+  };
+  return {
+    push(chunk: string): void {
+      let incoming = chunk;
+      if (discarding) {
+        // The rest of an overlong line is dropped up to its end; a chunk with no line end is dropped whole.
+        const end = incoming.search(/[\r\n]/);
+        if (end === -1) return;
+        incoming = incoming.slice(end);
+        discarding = false;
+      }
+      const lines = `${carry}${incoming}`.split(/[\r\n]/);
+      carry = lines.pop() ?? '';
+      for (const line of lines) keep(line);
+      if (carry.length > SKIP_SCAN_MAX_LINE) {
+        carry = '';
+        discarding = true;
+      }
+    },
+    text(): string {
+      const tail = carry.includes('skipping non-regular file') ? [carry] : [];
+      return [...kept, ...tail].join('\n');
+    },
+  };
+}
 
 /** Names shown in the warning before the rest is summarised as a count. */
 export const SKIPPED_NAMES_SHOWN = 5;

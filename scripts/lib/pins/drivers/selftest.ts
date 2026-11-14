@@ -24,6 +24,7 @@ import { REPO_ROOT } from '../../repo-root.js';
 // the entry point would evaluate the table before the drivers finish (see ./index.ts).
 import { type DriverContext, type PinPlan, PlanRefused } from '../driver.js';
 import { loadRegistry, type PinEntry, type PinRegistry } from '../registry.js';
+import { soakClearsAt, iso as soakIso } from '../soak.js';
 import { majorLineOf } from '../status.js';
 import { actionsDriver } from './actions.js';
 import { cephImageDriver } from './cephimage.js';
@@ -1017,6 +1018,7 @@ async function dockerCases(
       ri.current === 'node:26.13.0-slim' &&
       ri.releases.length === 1 &&
       redig?.verdict?.eligible === true &&
+      !redig.verdict.why.includes('--major') &&
       majorLineOf(rdLabel) === 26,
     detail: JSON.stringify(ri),
   });
@@ -1061,6 +1063,21 @@ async function dockerCases(
     name: 'docker: a re-push inside the release-age window is offered but not eligible',
     ok: freshRd.releases.length === 1 && freshRd.releases[0].verdict?.eligible === false,
     detail: JSON.stringify(freshRd.releases),
+  });
+  // #3bb2d9bc: a re-digest is the pinned version, never a major, and its deferral names when it clears.
+  const clears = soakClearsAt(FRESH, DAY);
+  out.push({
+    name: 'docker: a re-digest is marked redigest (the core never reads it as a major), and a series move is not',
+    ok: redig?.redigest === true && pi.releases.every((r) => r.redigest === undefined),
+    detail: JSON.stringify({ redig, series: pi.releases }),
+  });
+  out.push({
+    name: 'docker: a re-digest inside the window carries the instant the shared window clears, in its verdict and its why',
+    ok:
+      clears !== null &&
+      freshRd.releases[0]?.verdict?.clearsAt === clears &&
+      freshRd.releases[0].verdict.why.includes(soakIso(clears)),
+    detail: JSON.stringify({ clears, releases: freshRd.releases }),
   });
   return out;
 }

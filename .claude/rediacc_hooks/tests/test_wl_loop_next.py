@@ -10,6 +10,7 @@ from __future__ import annotations
 import datetime
 import json
 import pathlib
+import re
 import subprocess
 import types
 
@@ -558,8 +559,9 @@ def test_lf2_a_ready_local_batch_blocks_with_the_batch_open_sequence(lrepo):
     text, blocking = wl_checks.loop_next_text(st, lrepo, {}, False, me="d778be9d")
     assert blocking is True, text
     assert text.startswith("LOOP NEXT: the turbo batch on %s is complete" % BRANCH), text
+    # PLAN-ciquick-green-then-batch G4: the batch opens with ci:quick alone; the duplicate `npm run ci` step is gone.
+    assert not re.search(r"npm run ci(?![:\w-])(?!\s+--\s+--narrow\b)", text), text
     order = [
-        "npm run ci   ",
         "npm run ci:quick",
         "droppedTouched",
         "rediacc_ci.testrun.e2e --workers 1",
@@ -666,7 +668,10 @@ def test_lf8_the_judge_sanitiser_strips_a_pr_order_only_in_a_local_batch():
 
 
 def test_lf8_the_judge_paragraph_rides_only_a_filling_local_batch(lrepo):
-    assert wl_checks._judge_local_batch(lstate(lrepo), lrepo) == {"finished": 1, "batch": 3}
+    got = wl_checks._judge_local_batch(lstate(lrepo), lrepo)
+    assert got is not None
+    # The box facts ride along (agent/plans/PLAN-stop-hook-retro-20261110.md R20261110.2).
+    assert (got["finished"], got["batch"], got["open"]) == (1, 3, len(got["rows"]))
     assert wl_checks._judge_local_batch(ready(lrepo), lrepo) is None
     assert wl_checks._judge_local_batch(lstate(lrepo, turbo_push="pr"), lrepo) is None
     assert wl_checks._judge_local_batch(None, lrepo) is None

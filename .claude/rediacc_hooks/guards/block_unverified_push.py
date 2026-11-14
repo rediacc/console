@@ -15,6 +15,8 @@ A RECORD-ONLY COMMIT ADVANCES THE RECEIPT INSTEAD OF VOIDING IT (agent/plans/PLA
 diff is recomputed here with `git diff --no-renames`, never read from the step's own `paths`, must lie inside the record globs of .ci/policy/record-paths.json as committed in the pushed tree, and every reader gate of the touched globs must appear in the step's `gates` at exit 0, or red and listed in `failed` so the carry rule judges it. A path outside the set still voids the
 receipt. The extra git calls run only on the branch that refused before, so the common push stays one `rev-parse` and one file read.
 
+A COMMIT THAT ONLY SHRINKS .ci/config/carried-reds.json ADVANCES TOO (agent/plans/PLAN-ciquick-green-then-batch.md G3). Every tick that changes a carried key set edits that file, and each edit voided the receipt and forced a whole run. The file is a record path with derived readers, but a step touching it is admitted only by `carried_shrink_refusal`: the step touches that file alone, both blobs are read from git and parse, the carry at the new tree excuses nothing the old one did not (an entry added, keys added, or a switch between `"*"` and keys all refuse), and no dropped excuse still covers a red in the receipt. Removing an excuse can only make the push verdict stricter, so a shrink needs no new lane, only its readers; the rule is in this guard, not the policy, so no policy edit turns the carry file into a plain record.
+
 A LIVE BRANCH BEHIND origin/main IS REFUSED TOO (operator finding 2026-10-03). PR #592's first CI run went red only on Quality / Branch because main had moved three commits after 1003-1 was cut, and the push clone's origin/main was stale. Once the receipt allows, `behind_base_refusal` fetches origin/main itself (a stale ref would pass the ancestry test vacuously) and refuses an MMDD-N push to origin that does not contain it, printing the REBASE LOCALLY recipe CI prints. A fetch that fails or times out cannot judge, says so and allows.
 
 =============================================================================
@@ -38,6 +40,7 @@ import sys
 from typing import Any
 
 from rediacc_hooks import commit_policy, hookio, shellscan, syspath
+from rediacc_hooks.guards import _backup_push
 
 CHAIN = "pre-bash"
 # Re-keyed from 39 to 40 on 2026-09-22 to make room for block_push_to_protected_branch.py at 39: "this branch may not be pushed to at all" is checked before "is this tree gate-verified".
@@ -47,7 +50,7 @@ ORDER = 39
 DEFECT = ("confined = not outside", "confined = True")
 
 PUSH_AT_COMMAND_POS = hookio.rx(
-    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+([{S}]+[^ ;&|]+)?)*[{S}]+push([{S}]|$)"
+    r"(^|[;&|(]|\$\(|`)[{S}]*git([{S}]+-[A-Za-z-]+(=[^ ;&|]*|[{S}]+[^ ;&|]+)?)*[{S}]+push([{S}]|$)"
 )
 
 
@@ -632,15 +635,15 @@ def _carried_at_head(root):
         proc = subprocess.run(
             ["git", "-C", root, "show", "HEAD:%s" % CARRIED_REL],
             capture_output=True,
-            text=True,
             check=False,
         )
     except OSError:
         return None
     if proc.returncode != 0:
         return None
+    # UnicodeDecodeError is a ValueError, so a non-UTF-8 blob is the corrupt-file case below.
     try:
-        return json.loads(proc.stdout)
+        return json.loads(proc.stdout.decode("utf-8"))
     except ValueError as exc:
         return {UNPARSEABLE: str(exc)[:120]}
 
@@ -1019,7 +1022,6 @@ def _record_policy_at(root, tree):
         proc = subprocess.run(
             ["git", "-C", root, "show", "%s:%s" % (tree, RECORD_POLICY_REL)],
             capture_output=True,
-            text=True,
             check=False,
         )
     except OSError as exc:
@@ -1027,7 +1029,7 @@ def _record_policy_at(root, tree):
     if proc.returncode != 0:
         return [], "the pushed tree has no %s" % RECORD_POLICY_REL
     try:
-        doc = json.loads(proc.stdout)
+        doc = json.loads(proc.stdout.decode("utf-8"))
     except ValueError:
         return [], "%s in the pushed tree does not parse" % RECORD_POLICY_REL
     return parse_record_policy(doc)
@@ -1067,6 +1069,113 @@ def keyed_carry_vouches(reader, step, judged):
     return isinstance(carried, set) and set(recorded) <= carried
 
 
+def carried_widening(old, new):
+    """Every way the carry map `new` excuses more than `old` (both `parse_carried` maps), one phrase each; [] when `new` carries nothing `old` did not. PURE. A test plant forces it to [] to show the addition world's refusal is this check at work.
+
+    Judged on the EFFECTIVE carry, after the reason bar, so an entry whose reason is lengthened past REASON_MIN counts as added, and a reworded reason that changes nothing carried counts as nothing. A switch between `"*"` and keys is refused in both directions: it is a rewrite of what the gate is excused for, and a rewrite is when a full run should judge it.
+    """
+    out = []
+    for gate in sorted(new):
+        was, now = old.get(gate), new[gate]
+        if was is None:
+            out.append("adds a carry for %s" % gate)
+        elif (was == "*") != (now == "*"):
+            out.append('switches %s between "*" and keys' % gate)
+        elif isinstance(now, set) and isinstance(was, set) and now - was:
+            out.append("adds key(s) to %s: %s" % (gate, ", ".join(sorted(now - was))))
+    return out
+
+
+def removed_still_red(old, new, judged):
+    """Every excuse `old` holds and `new` drops that still covers a red in the receipt, one phrase each. PURE.
+
+    A whole-gate removal is still red when the receipt lists the gate in `failed`. A key removal is still red when the gate is in `failed` and the receipt's findings for it hold the key, or hold no parsable list at all, which cannot show the key gone.
+    """
+    out = []
+    for gate in sorted(old):
+        was, now = old[gate], new.get(gate)
+        if gate not in judged["failed"]:
+            continue
+        if was == "*":
+            if now is None:
+                out.append("%s (its whole-gate carry)" % gate)
+            continue
+        dropped = was - now if isinstance(now, set) else set(was) if now is None else set()
+        if not dropped:
+            continue
+        emitted = judged["findings"].get(gate)
+        if not isinstance(emitted, list):
+            out.append(
+                "%s (the receipt records no finding keys to show %s gone)"
+                % (gate, ", ".join(sorted(dropped)))
+            )
+            continue
+        hit = sorted(dropped & {k for k in emitted if isinstance(k, str)})
+        if hit:
+            out.append("%s: %s" % (gate, ", ".join(hit)))
+    return out
+
+
+def _carried_at_tree(root, tree):
+    """(`parse_carried` map, None) for carried-reds.json as committed in `tree`, or (None, why). An absent or broken file is a why, never an empty map: a step that creates or corrupts the carry file is not a shrink."""
+    try:
+        proc = subprocess.run(
+            ["git", "-C", root, "show", "%s:%s" % (tree, CARRIED_REL)],
+            capture_output=True,
+            check=False,
+        )
+    except OSError as exc:
+        return None, "git could not read %s at %s (%s)" % (CARRIED_REL, tree[:12], exc)
+    if proc.returncode != 0:
+        return None, "tree %s has no %s" % (tree[:12], CARRIED_REL)
+    # Bytes, decoded here: a blob that is not valid UTF-8 is a why naming it, never a UnicodeDecodeError out of the guard.
+    try:
+        text = proc.stdout.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        return None, "%s at tree %s is not valid UTF-8 (%s)" % (CARRIED_REL, tree[:12], exc)
+    try:
+        doc = json.loads(text)
+    except ValueError as exc:
+        doc = {UNPARSEABLE: str(exc)}
+    carried, error = parse_carried(doc)
+    if error is not None:
+        return None, "at tree %s: %s" % (tree[:12], error)
+    return carried, None
+
+
+def carried_shrink_refusal(root, frm, to, paths, judged):
+    """Why a step touching carried-reds.json is not a SHRINK of it, else None (G3, agent/plans/PLAN-ciquick-green-then-batch.md).
+
+    The file is a record (.ci/policy/record-paths.json) only for a commit that can make the push verdict stricter and never laxer: the step touches that file and nothing else, both trees carry a well-formed file, read here from git rather than from any claim in the step, `new` excuses nothing `old` did not (`carried_widening`), and no excuse it drops still covers a red in the receipt (`removed_still_red`; carried_verdict would refuse that push anyway, and here it is named at the step). This rule holds whatever the record policy says, so a policy edit cannot turn the carry file into a plain record.
+    """
+    others = sorted(p for p in paths if p != CARRIED_REL)
+    if others:
+        return (
+            "it edits %s together with %d other path(s) (%s); a carry-file step must touch that file alone.\n"
+            "  Commit the shrink of the carry file on its own, or re-run npm run ci:quick."
+            % (CARRIED_REL, len(others), ", ".join(others[:5]))
+        )
+    old, why = _carried_at_tree(root, frm)
+    if why is None:
+        new, why = _carried_at_tree(root, to)
+    if why is not None:
+        return "it edits %s, and the edit cannot be judged a shrink: %s." % (CARRIED_REL, why)
+    widened = carried_widening(old, new)
+    if widened:
+        return (
+            "it WIDENS %s: %s.\n"
+            "  A step may only remove carries; an added or widened excuse needs a new gate run."
+            % (CARRIED_REL, "; ".join(widened))
+        )
+    red = removed_still_red(old, new, judged)
+    if red:
+        return (
+            "it removes excuses from %s that still cover reds in the receipt: %s.\n"
+            "  Fix the finding first, or keep its carry." % (CARRIED_REL, "; ".join(red))
+        )
+    return None
+
+
 def step_refusal(root, step, records, judged):
     """Why one advance does not carry the receipt from its `from` to its `to`, else None.
 
@@ -1093,6 +1202,10 @@ def step_refusal(root, step, records, judged):
                 " and %d more" % (len(outside) - 5) if len(outside) > 5 else "",
             )
         )
+    if CARRIED_REL in paths:
+        why = carried_shrink_refusal(root, frm, to, paths, judged)
+        if why is not None:
+            return why
     readers = sorted({r for rec in matched.values() if rec is not None for r in rec["readers"]})
     gates = step.get("gates")
     gates = gates if isinstance(gates, dict) else {}
@@ -1748,6 +1861,10 @@ def run(ev):
         return hookio.ALLOW
     cmd, scan = state
 
+    # A push of nothing but `refs/backup/**` to its repository's pin is the git-level pre-push hook's to judge (box G5 of PLAN-local-first-delivery, `_backup_push`).
+    if _backup_push.admitted(ev, cmd):
+        return hookio.ALLOW
+
     # Command position, so prose about pushing is not a push. Same anchor as block-untagged-commit.sh; see lib/command-scan.sh for why the raw string is never matched directly.
     if not hookio.grep_q(PUSH_AT_COMMAND_POS, scan):
         return hookio.ALLOW
@@ -1767,7 +1884,7 @@ def run(ev):
 
     # ANOTHER REPO'S PUSH IS NOT THIS TREE'S BUSINESS, and it was being refused as though it were. Reproduced 2026-09-01: `git -C <scratch-repo> push origin main` exited 2 here, because the gate-run stamp compared below belongs to CONSOLE and the scratch tree can never match it. The message then reads as "your gates are stale" about a repo the gates were never run against. Same
     # class as block-untagged-commit.sh:52-69; the resolution now lives in lib/command-scan.sh rather than being written a third time.
-    if shellscan.target_root(scan, root, verb="push") != "":
+    if shellscan.target_root(scan, root, verb="push", cmd=cmd) != "":
         return hookio.ALLOW
 
     # THE SHELL'S OWN WORKING DIRECTORY NAMES THE REPO TOO, not only `-C`/`cd` in the command. A plain `git push origin 0923-1` run with the tool's cwd already inside private/account was judged against the CONSOLE receipt and refused as "a different tree" (#e83d9ba9, 2026-09-25). A payload cwd whose top level is not this root's is another repository's push.

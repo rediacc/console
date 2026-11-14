@@ -1,28 +1,16 @@
 /**
  * Machine Status Service
  *
- * Fetches full machine status by SSHing in and running `renet list all --json`.
+ * Fetches full machine status as one `list-all` command-kind job (`renet list all --json`).
  * Returns the parsed ListResult for display by the command layer.
  */
 
 import { NETWORK_DEFAULTS } from '@rediacc/shared/config';
 import type { ListResult } from '@rediacc/shared/renet-contract/data/list-types.generated';
 import { isListResult } from '@rediacc/shared/renet-contract/data/list-types.generated';
-import { isDevBuild } from '../../utils/platform.js';
-import { shellQuote } from '../../utils/shell-quote.js';
-import {
-  type RuntimeRepoLicenseStatus,
-  readRuntimeRepoLicenseStatuses,
-} from '../account/license.js';
 import { configService } from '../config/config-resources.js';
-import { outputService } from '../core/output.js';
-import { writeStderr } from '../core/request-context.js';
-import { buildRenetEnv } from '../executor/local-executor.js';
-import { type RenetEnv, type RenetLaunch, sudoRenet } from '../executor/renet-launch.js';
-import { acquireRemoteRenet } from '../renet/renet-execution.js';
-import { fetchOtlpCredentials } from '../telemetry/otlp-credentials.js';
-import { isTelemetryDisabled } from '../telemetry/telemetry.js';
-import { machineConnections } from './machine-connection.js';
+import { getExecutor } from '../executor/executor-factory.js';
+import type { ExecuteOptions } from '../executor/types.js';
 
 interface FetchStatusOptions {
   debug?: boolean;
@@ -31,36 +19,38 @@ interface FetchStatusOptions {
 }
 
 /**
- * Build the `renet list all` invocation. Exported for unit testing, the
- * caller-provided sections filter must propagate into `--sections`.
- */
-export function buildListCommand(params: {
-  env: RenetEnv;
-  remoteRenetPath: string;
-  datastore: string;
-  sections?: string[];
-}): RenetLaunch {
-  const sectionsFlag =
-    params.sections && params.sections.length > 0 ? ` --sections ${params.sections.join(',')}` : '';
-  return sudoRenet(
-    params.env,
-    `${shellQuote(params.remoteRenetPath)} list all --datastore ${shellQuote(params.datastore)} --json${sectionsFlag}`
-  );
-}
-
-/**
- * Fetch full machine status via SSH.
+ * Fetch full machine status as one `list-all` job (PLAN-detached-jobs J18).
  *
  * Flow:
  * 1. Load machine config from local context
- * 2. Resolve remote renet (read-only, never uploads; warns on drift)
- * 3. SSH: run `sudo renet list all --datastore <path> --json`
- * 4. Parse JSON output as ListResult
+ * 2. One `list-all` command-kind job: the executor resolves the remote renet read-only (never replaces it) and
+ *    renet runs `list all --datastore <path> --json` inside the job
+ * 3. Parse the captured JSON output as ListResult
+ *
+ * The sections filter rides the job's `--args`. A read has no ticket steps, the caller renders.
  */
 export async function fetchMachineStatus(
   machineName: string,
   options: FetchStatusOptions = {}
 ): Promise<ListResult> {
+  const result = await getExecutor().execute({
+    ...(await machineStatusJob(machineName, options)),
+    // The caller reads the listing now: `--background` must not hand back a ticket in its place.
+    probe: true,
+  });
+  if (!result.success) {
+    throw new Error(
+      `renet list all failed (exit ${result.exitCode}): ${result.stderr ?? result.error ?? ''}`
+    );
+  }
+  return parseMachineStatus(result.stdout);
+}
+
+/** The `list-all` job of one machine: the executor options a caller hands to `execute` or to `runCommandJob` with its own steps. */
+export async function machineStatusJob(
+  machineName: string,
+  options: FetchStatusOptions = {}
+): Promise<ExecuteOptions> {
   const localConfig = await configService.getLocalConfig();
   const machine = localConfig.machines[machineName];
   if (!machine) {
@@ -68,118 +58,30 @@ export async function fetchMachineStatus(
     throw new Error(`Machine "${machineName}" not found. Available: ${available}`);
   }
 
-  const lease = await machineConnections.acquire(machineName);
+  const args: Record<string, string> = {
+    datastore: machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH,
+  };
+  if (options.sections && options.sections.length > 0) args.sections = options.sections.join(',');
 
-  try {
-    // Resolve the remote renet read-only: status never replaces the machine's binary
-    if (options.debug) {
-      outputService.info(`Checking renet on ${machine.ip}...`);
-    }
-
-    // Fetch OTLP creds the same way `rdc run` / `repo up` do via local-executor, so the spawned renet sends its own telemetry to otlp.rediacc.io, keeping `machine query` consistent with other paths that shell out to renet. This is an independent, unauthenticated HTTP round-trip to the account server: it depends on neither the machine nor the renet check, so run it concurrently
-    // with that check rather than sequentially after it. It never throws (default-deny to null), so Promise.all cannot reject on the telemetry branch. Respect the opt-out short-circuit so we skip the fetch entirely when disabled.
-    const telemetryOff = isTelemetryDisabled();
-    const otlpCredsPromise = telemetryOff ? Promise.resolve(null) : fetchOtlpCredentials();
-
-    const [{ remotePath: remoteRenetPath }, otlpCreds] = await Promise.all([
-      acquireRemoteRenet(
-        'read-only',
-        { renetPath: localConfig.renetPath },
-        machine,
-        lease.sshPrivateKey,
-        { debug: options.debug, machineName }
-      ),
-      otlpCredsPromise,
-    ]);
-
-    const env = buildRenetEnv({
-      isDevelopment: isDevBuild(),
-      telemetryDisabled: telemetryOff,
-      otlpCreds,
-    });
-    const { command: cmd, stdinPrefix } = buildListCommand({
-      env,
-      remoteRenetPath,
-      datastore: machine.datastore ?? NETWORK_DEFAULTS.DATASTORE_PATH,
-      sections: options.sections,
-    });
-
-    if (options.debug) {
-      outputService.info(`[status] Running: ${cmd}`);
-    }
-
-    // Execute over the shared connection
-    const sftp = await lease.ensure();
-
-    let stdout = '';
-    let stderr = '';
-
-    const exitCode = await sftp.execStreaming(cmd, {
-      ...(stdinPrefix && { stdin: stdinPrefix }),
-      onStdout: (data) => {
-        stdout += data.toString();
-      },
-      onStderr: (data) => {
-        stderr += data.toString();
-        if (options.debug) {
-          writeStderr(data);
-        }
-      },
-    });
-
-    if (exitCode !== 0) {
-      throw new Error(`renet list all failed (exit ${exitCode}): ${stderr}`);
-    }
-
-    const parsed: unknown = JSON.parse(stdout);
-    if (!isListResult(parsed)) {
-      throw new Error('Failed to parse renet output: unexpected format');
-    }
-
-    return parsed;
-  } finally {
-    lease.release();
-  }
+  return {
+    functionName: 'list-all',
+    machineName,
+    commandKind: { name: 'list-all', args },
+    debug: options.debug,
+    captureOutput: true,
+  };
 }
 
-/**
- * The licensing detail `renet list` does not carry: which datastore each repo's
- * license lives in, the blocked-backup marker, and what the last unattended
- * renewal did.
- *
- * It is a second, deliberately separate read because `list`'s licenses section
- * is a generated contract shared with other consumers, while these three fields
- * come from `repository license-status`, which is also the only reader of the
- * machine-wide marker tree and renewal state. It runs over the SAME pooled
- * connection, so the cost is one exec of a local-only command.
- *
- * Best-effort by contract: an older renet that does not know `--all-datastores`
- * (or a machine with an unreadable datastore) must degrade the license table,
- * never fail `machine status`.
- */
-export async function fetchRepoLicenseDetail(
-  machineName: string
-): Promise<RuntimeRepoLicenseStatus[]> {
+/** The captured stdout of a `list-all` job as a ListResult; anything else is a parse failure. */
+export function parseMachineStatus(stdout: string | undefined): ListResult {
+  let parsed: unknown;
   try {
-    const lease = await machineConnections.acquire(machineName);
-    try {
-      const { remotePath } = await acquireRemoteRenet(
-        'read-only',
-        await configService.getLocalConfig(),
-        lease.machine,
-        lease.sshPrivateKey,
-        { machineName }
-      );
-      return await readRuntimeRepoLicenseStatuses(
-        lease.machine,
-        lease.sshPrivateKey,
-        remotePath,
-        await lease.ensure()
-      );
-    } finally {
-      lease.release();
-    }
+    parsed = JSON.parse(stdout ?? '');
   } catch {
-    return [];
+    throw new Error('Failed to parse renet output: not JSON');
   }
+  if (!isListResult(parsed)) {
+    throw new Error('Failed to parse renet output: unexpected format');
+  }
+  return parsed;
 }

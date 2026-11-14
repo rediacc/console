@@ -312,12 +312,51 @@ def project_root(start):
     Resolves from WHEREVER IT IS POINTED, deliberately. It cannot tell a repo
     from a repo nested inside one, and it must not try -- see project_start(),
     which is what every caller should be pointing it at.
+
+    One redirect: a lease tree answers with the checkout that holds it (lease_main).
     """
     p = pathlib.Path(start).resolve()
     for candidate in [p, *p.parents]:
         if (candidate / ".git").exists():
-            return candidate
+            return lease_main(candidate) or candidate
     return p
+
+
+def _git_dirs(tree):
+    """(git dir, common dir) of a checkout, read from its files, or None. A hot path, so no subprocess."""
+    dotgit = tree / ".git"
+    try:
+        if dotgit.is_dir():
+            git_dir = dotgit.resolve()
+        else:
+            text = dotgit.read_text(encoding="utf-8").strip()
+            if not text.startswith("gitdir:"):
+                return None
+            git_dir = (tree / text[len("gitdir:") :].strip()).resolve()
+        commondir = git_dir / "commondir"
+        if not commondir.is_file():
+            return git_dir, git_dir
+        return git_dir, (git_dir / commondir.read_text(encoding="utf-8").strip()).resolve()
+    except (OSError, ValueError, RuntimeError):
+        return None
+
+
+def lease_main(tree):
+    """The checkout holding `tree` when `tree` is its lease, `<main>/.claude/worktrees/<id>`, else None (agent/plans/PLAN-worktree-lease.md Design 4).
+
+    A lease has one store, the main checkout's. The rule needs position AND git's word: a linked tree's git dir is `<common>/worktrees/<id>` with a `commondir` file, and `<main>` shares that common dir. A `.git` file into `modules/` has no `commondir`, an operator's `.worktrees/<MMDD-N>` is not under `.claude`, and both keep their own root. The admin directory's name is compared rather than a literal so worklist.py's twin stays identical to this.
+    """
+    tree = pathlib.Path(tree)
+    if tree.parent.parent.name != ".claude" or not (tree / ".git").is_file():
+        return None
+    mine = _git_dirs(tree)
+    if mine is None or mine[0] == mine[1] or mine[0].parent.parent != mine[1]:
+        return None
+    if mine[0].parent.name != tree.parent.name:
+        return None
+    main = tree.parents[2]
+    theirs = _git_dirs(main) if (main / ".git").exists() else None
+    return main if theirs is not None and theirs[1] == mine[1] else None
 
 
 def projects_dir(root):

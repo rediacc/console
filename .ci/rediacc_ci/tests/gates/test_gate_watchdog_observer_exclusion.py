@@ -3,7 +3,7 @@
 The watchdog must never read an OBSERVER check as a failed CI job.
 
 WHY: on 2026-07-31 (run 30660765759) a push deadlocked on an observer check (the since-retired review status check). Its check-run FAILED, correctly; it landed in the same github-actions check suite as the CI jobs; the watchdog's failure scan counted it and force-cancelled the run whose green the observer was waiting for. `CI Verdict` (ci-verdict.yml) is an
-observer of the same kind. The fix is one config line (`WATCHDOG_EXCLUDE_PATTERNS` in watchdog-monitor.yml), and this gate is what stops that line from quietly losing an entry and reintroducing the cycle.
+observer of the same kind. The fix is one config line (`WATCHDOG_EXCLUDE_PATTERNS` in ops-watchdog-monitor.yml), and this gate is what stops that line from quietly losing an entry and reintroducing the cycle.
 
 CONTROL-FIRST, per the house rule: the checker is proven to FIRE on a planted copy missing one exclusion BEFORE it is run against the real workflow.
 
@@ -15,7 +15,7 @@ import re
 
 from rediacc_ci import paths
 
-WORKFLOW = paths.from_root(".github", "workflows", "watchdog-monitor.yml")
+WORKFLOW = paths.from_root(".github", "workflows", "ops-watchdog-monitor.yml")
 
 # The names an observer check can carry. Each is a check that lands in the same check suite as the CI jobs and is NOT one of them.
 # `Review Complete`, `Review Status` and `Claude Review` are the PR review's checks (PLAN-github-pr-review-restore), posted by their own workflows after Console CI: observers of the run, never part of it. Review Complete is a required check on main again (operator ruling 2026-10-03), which ci-trace and the Stop hook enforce; the watchdog must still never cancel Console CI over it.

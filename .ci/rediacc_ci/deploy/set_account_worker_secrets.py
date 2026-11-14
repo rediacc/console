@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Port of `.ci/scripts/deploy/set-account-worker-secrets.sh`.
 
-Pushes thirty runtime secrets into ONE regional account Worker in a single `wrangler secret bulk` call. The twin's header carries the reason the call is bulk and not thirty `secret put`s: each `put` mints a new Worker version, and on an assets-bound Worker a new version disassociates the static assets the deploy just uploaded.
+Pushes thirty-five runtime secrets into ONE regional account Worker in a single `wrangler secret bulk` call. The twin's header carries the reason the call is bulk and not thirty-five `secret put`s: each `put` mints a new Worker version, and on an assets-bound Worker a new version disassociates the static assets the deploy just uploaded.
 
 THIS IS THE THIRD AND LARGEST MEMBER OF A FAMILY, and the differences from the other two are the whole content of the port. `set-preview-worker-secrets.sh` (15 keys) and `set-www-worker-secrets.sh` (24 keys) MARSHAL: they read a name, they write that name. This one DECIDES, four times over, and every decision is a place a port can be quietly wrong:
 
@@ -106,8 +106,13 @@ import os
 import re
 import subprocess
 import sys
+from typing import TYPE_CHECKING
 
+from rediacc_ci import paths
 from rediacc_ci.core import common, wrangler
+
+if TYPE_CHECKING:
+    import pathlib
 
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
 SELF = "rediacc_ci.deploy.set_account_worker_secrets"
@@ -158,9 +163,13 @@ BACKUP_PAIR_EDGE = (
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE",
 )
 
-# The region-and-channel fan-ins, `<PREFIX>_<SUFFIX>_<CHANNEL>`: one vault name per region and channel, none shared. `read_env` reads both channels of this run's region so `config_server_key` can refuse the other one. A tuple, as `SUFFIXED_PREFIXES` is, because `check:ci-builder-env-contract` reads the prefixes from it and expands each over the three regions and both channels to meet the six names cd-deploy-account.yml exports.
-SUFFIXED_CHANNEL_PREFIXES: tuple[str, ...] = ("ACCOUNT_CONFIG_SERVER_KEY",)
+# The region-and-channel fan-ins, `<PREFIX>_<SUFFIX>_<CHANNEL>`: one vault name per region and channel, none shared. `read_env` reads both channels of this run's region so `config_server_key` can refuse the other one. A tuple, as `SUFFIXED_PREFIXES` is, because `check:ci-builder-env-contract` reads the prefixes from it and expands each over the three regions and both channels to meet the six names per prefix (twelve for the two prefixes) that cd-deploy-account.yml exports.
+SUFFIXED_CHANNEL_PREFIXES: tuple[str, ...] = (
+    "ACCOUNT_CONFIG_SERVER_KEY",
+    "ACCOUNT_BACKUP_STORE_KEK",
+)
 CONFIG_KEY_PREFIX = SUFFIXED_CHANNEL_PREFIXES[0]
+BACKUP_KEK_PREFIX = SUFFIXED_CHANNEL_PREFIXES[1]
 CHANNEL_STABLE = "STABLE"
 CHANNEL_EDGE = "EDGE"
 
@@ -174,7 +183,7 @@ BACKUP_PAIR_REFUSAL: tuple[str, ...] = (
 # The four lines of the bucket refusal (:151-154). The first is dynamic; the other three are byte for byte, including their two-space indent.
 BUCKET_REFUSAL: tuple[str, ...] = (
     "  Expected BACKUP_BUCKET_STABLE / BACKUP_BUCKET_EDGE from the deploy",
-    "  matrix (regions.json backupR2/edgeBackupR2). Refusing to deploy a",
+    "  matrix (regions.json backupR2). Refusing to deploy a",
     "  Worker that would presign against an empty bucket name.",
 )
 
@@ -190,18 +199,20 @@ GUARD_EXPLANATION: tuple[str, ...] = (
     "  drives, so this refuses to deploy instead. Check the secret store for that name.",
 )
 
-# The thirty `--arg <var> <value>` pairs (the twin's twenty-nine at :219-247, plus the config server key) in the twin's ORDER, which is also the key order of the object it builds (:248-277). ORDER IS OBSERVABLE: it is the byte order of the document on wrangler's stdin, and the differential re-derives this list from the twin's source and compares.
+# The thirty-five `--arg <var> <value>` pairs (the twin's at :219-247, plus the port's own additions: the config server key, the register name and the sales-digest recipient) in the twin's ORDER, which is also the key order of the object it builds (:248-277). ORDER IS OBSERVABLE: it is the byte order of the document on wrangler's stdin, and the differential re-derives this list from the twin's source and compares.
 #
 # (Worker key, jq variable, environment variable read for it). The third field is EMPTY for the ten values this script COMPUTES rather than reads, and those ten are the whole difference between this script and its two siblings: `resolve` is where each one is decided. ACCOUNT_BACKUP_S3_BUCKET and the backup key pair come from the channel, so none of the three is read under its own name; ACCOUNT_CONFIG_SERVER_KEY comes from the region and the channel.
 KEYS: tuple[tuple[str, str, str], ...] = (
-    ("ACCOUNT_ED25519_PRIVATE_KEY", "ed25519_priv", "ACCOUNT_ED25519_PRIVATE_KEY"),
     ("ACCOUNT_ED25519_PUBLIC_KEY", "ed25519_pub", "ACCOUNT_ED25519_PUBLIC_KEY"),
     ("ACCOUNT_X25519_PRIVATE_KEY", "x25519_priv", "ACCOUNT_X25519_PRIVATE_KEY"),
     ("ACCOUNT_X25519_PUBLIC_KEY", "x25519_pub", "ACCOUNT_X25519_PUBLIC_KEY"),
     ("ACCOUNT_SERVER_API_KEY", "api_key", "ACCOUNT_SERVER_API_KEY"),
     ("ACCOUNT_JWT_SECRET", "jwt", "ACCOUNT_JWT_SECRET"),
     ("FREE_LICENSE_HMAC_KEY", "free_license_hmac", "FREE_LICENSE_HMAC_KEY"),
+    ("ACCOUNT_AE_READ_TOKEN", "ae_read_token", "ACCOUNT_AE_READ_TOKEN"),
+    ("CLOUDFLARE_ACCOUNT_ID", "cf_account_id", "CLOUDFLARE_ACCOUNT_ID"),
     ("ACCOUNT_CONFIG_SERVER_KEY", "config_server_key", ""),
+    ("ACCOUNT_BACKUP_STORE_KEK", "backup_store_kek", ""),
     ("STRIPE_SECRET_KEY", "stripe", ""),
     ("STRIPE_WEBHOOK_SECRET", "stripe_wh", ""),
     ("ROOT_EMAIL", "admin", "ROOT_EMAIL"),
@@ -219,12 +230,14 @@ KEYS: tuple[tuple[str, str, str], ...] = (
     ("SELLER_NAME", "seller_name", "SELLER_NAME"),
     ("SELLER_VAT_NUMBER", "seller_vat", "SELLER_VAT_NUMBER"),
     ("SELLER_REGISTRATION_NUMBER", "seller_reg", "SELLER_REGISTRATION_NUMBER"),
+    ("SELLER_REGISTER_NAME", "seller_register", "SELLER_REGISTER_NAME"),
     ("SELLER_ADDRESS_LINE1", "seller_addr1", "SELLER_ADDRESS_LINE1"),
     ("SELLER_ADDRESS_LINE2", "seller_addr2", "SELLER_ADDRESS_LINE2"),
     ("SELLER_CITY", "seller_city", "SELLER_CITY"),
     ("SELLER_POSTAL_CODE", "seller_postal", "SELLER_POSTAL_CODE"),
     ("SELLER_COUNTRY", "seller_country", "SELLER_COUNTRY"),
     ("SELLER_EMAIL", "seller_email", "SELLER_EMAIL"),
+    ("SALES_NOTIFY_EMAIL", "sales_notify", "SALES_NOTIFY_EMAIL"),
 )
 
 # The sixteen unconditional `_require_nonempty` calls (the twin's fifteen at :198-212, plus the config server key last), in order. The FIRST empty one ends the run, so the order is observable in the message.
@@ -235,13 +248,14 @@ KEYS: tuple[tuple[str, str, str], ...] = (
 # THE NAME IN THE MESSAGE IS THE WORKER KEY, NOT ALWAYS THE VARIABLE TO GO LOOKING FOR. For the four fan-ins the store holds `<NAME>_<SUFFIX>`, so "Check the secret store for that name" is one suffix short of the truth on AWS_SES_ACCESS_KEY_ID, AWS_SES_SECRET_ACCESS_KEY, OBS_OTLP_CREDENTIALS and STRIPE_WEBHOOK_SECRET. Reproduced, and reported to the driver rather than repaired
 # here.
 REQUIRED_NONEMPTY: tuple[str, ...] = (
-    "ACCOUNT_ED25519_PRIVATE_KEY",
     "ACCOUNT_ED25519_PUBLIC_KEY",
     "ACCOUNT_X25519_PRIVATE_KEY",
     "ACCOUNT_X25519_PUBLIC_KEY",
     "ACCOUNT_SERVER_API_KEY",
     "ACCOUNT_JWT_SECRET",
     "FREE_LICENSE_HMAC_KEY",
+    "ACCOUNT_AE_READ_TOKEN",
+    "CLOUDFLARE_ACCOUNT_ID",
     "ROOT_EMAIL",
     "AWS_SES_ACCESS_KEY_ID",
     "AWS_SES_SECRET_ACCESS_KEY",
@@ -252,6 +266,7 @@ REQUIRED_NONEMPTY: tuple[str, ...] = (
     "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
     "ACCOUNT_CONFIG_SERVER_KEY",
+    "ACCOUNT_BACKUP_STORE_KEK",
 )
 
 # The two demanded on the stable channel only (:213-216). On edge the twin has already blanked both, so demanding them there would refuse every edge deploy.
@@ -289,7 +304,7 @@ class ScriptRefusalError(Exception):
 
 
 class GuardError(ScriptRefusalError):
-    """One `_require_nonempty` firing (:185-193): three stderr lines, exit 1; four for ACCOUNT_CONFIG_SERVER_KEY, whose fourth line names its per-region, per-channel store entry."""
+    """One `_require_nonempty` firing (:185-193): three stderr lines, exit 1; four for ACCOUNT_CONFIG_SERVER_KEY and ACCOUNT_BACKUP_STORE_KEK, whose fourth line names its per-region, per-channel store entry."""
 
     def __init__(self, name: str, worker: str, target: str, suffix: str) -> None:
         self.name = name
@@ -298,17 +313,21 @@ class GuardError(ScriptRefusalError):
             % (SELF, name, worker, target, suffix),
             *GUARD_EXPLANATION,
         ]
-        if name == "ACCOUNT_CONFIG_SERVER_KEY":
+        store_prefix = {
+            "ACCOUNT_CONFIG_SERVER_KEY": CONFIG_KEY_PREFIX,
+            "ACCOUNT_BACKUP_STORE_KEK": BACKUP_KEK_PREFIX,
+        }.get(name)
+        if store_prefix:
             # The Worker key is fed from a per-region, per-channel store entry, so the name above is not one the store holds.
             channel = CHANNEL_STABLE if target == STABLE else CHANNEL_EDGE
-            lines.append("  Its store entry is %s_%s_%s." % (CONFIG_KEY_PREFIX, suffix, channel))
+            lines.append("  Its store entry is %s_%s_%s." % (store_prefix, suffix, channel))
         super().__init__(*lines)
 
 
 def read_env() -> dict[str, str]:
     """Every variable the twin reads, ONE EXPLICIT `os.environ.get` PER NAME.
 
-    NO `dict(os.environ)` ALIAS, deliberately. The AST scanner behind `.ci/config/python-env-registry.json` records the literal NAME at the call site and cannot see through an alias, so a wholesale copy would register this module as reading nothing at all while it reads thirty-two names by hand plus six it constructs.
+    NO `dict(os.environ)` ALIAS, deliberately. The AST scanner behind `.ci/config/python-env-registry.json` records the literal NAME at the call site and cannot see through an alias, so a wholesale copy would register this module as reading nothing at all while it reads thirty-seven names by hand plus the eight it constructs.
 
     UNSET AND EMPTY ARE THE SAME CASE THROUGHOUT, so a plain `str` per name is
     faithful: every read in the twin is `"${NAME:-}"`, `"${NAME:?...}"` or a
@@ -325,13 +344,15 @@ def read_env() -> dict[str, str]:
         "BACKUP_BUCKET_STABLE": os.environ.get("BACKUP_BUCKET_STABLE", ""),
         "BACKUP_BUCKET_EDGE": os.environ.get("BACKUP_BUCKET_EDGE", ""),
         "R2_JURISDICTION": os.environ.get("R2_JURISDICTION", ""),
-        "ACCOUNT_ED25519_PRIVATE_KEY": os.environ.get("ACCOUNT_ED25519_PRIVATE_KEY", ""),
         "ACCOUNT_ED25519_PUBLIC_KEY": os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY", ""),
         "ACCOUNT_X25519_PRIVATE_KEY": os.environ.get("ACCOUNT_X25519_PRIVATE_KEY", ""),
         "ACCOUNT_X25519_PUBLIC_KEY": os.environ.get("ACCOUNT_X25519_PUBLIC_KEY", ""),
         "ACCOUNT_SERVER_API_KEY": os.environ.get("ACCOUNT_SERVER_API_KEY", ""),
         "ACCOUNT_JWT_SECRET": os.environ.get("ACCOUNT_JWT_SECRET", ""),
         "FREE_LICENSE_HMAC_KEY": os.environ.get("FREE_LICENSE_HMAC_KEY", ""),
+        "ACCOUNT_AE_READ_TOKEN": os.environ.get("ACCOUNT_AE_READ_TOKEN", ""),
+        # The account whose Analytics Engine datasets the SQL API reads (PLAN-d1-scaling A2).
+        "CLOUDFLARE_ACCOUNT_ID": os.environ.get("CLOUDFLARE_ACCOUNT_ID", ""),
         "ROOT_EMAIL": os.environ.get("ROOT_EMAIL", ""),
         "AWS_SES_REGION": os.environ.get("AWS_SES_REGION", ""),
         "AWS_SES_FROM": os.environ.get("AWS_SES_FROM", ""),
@@ -354,12 +375,15 @@ def read_env() -> dict[str, str]:
         "SELLER_NAME": os.environ.get("SELLER_NAME", ""),
         "SELLER_VAT_NUMBER": os.environ.get("SELLER_VAT_NUMBER", ""),
         "SELLER_REGISTRATION_NUMBER": os.environ.get("SELLER_REGISTRATION_NUMBER", ""),
+        "SELLER_REGISTER_NAME": os.environ.get("SELLER_REGISTER_NAME", ""),
         "SELLER_ADDRESS_LINE1": os.environ.get("SELLER_ADDRESS_LINE1", ""),
         "SELLER_ADDRESS_LINE2": os.environ.get("SELLER_ADDRESS_LINE2", ""),
         "SELLER_CITY": os.environ.get("SELLER_CITY", ""),
         "SELLER_POSTAL_CODE": os.environ.get("SELLER_POSTAL_CODE", ""),
         "SELLER_COUNTRY": os.environ.get("SELLER_COUNTRY", ""),
         "SELLER_EMAIL": os.environ.get("SELLER_EMAIL", ""),
+        # The sales digest recipient (PLAN-licence-expiry-notices N2); optional, the digest skips with a warning when it is empty.
+        "SALES_NOTIFY_EMAIL": os.environ.get("SALES_NOTIFY_EMAIL", ""),
     }
     # THE FOUR REGION FAN-INS. The name is constructed, so the registry records
     # the EXPRESSION rather than a literal, exactly as the twin's `${!var}` is
@@ -425,15 +449,24 @@ def config_server_key(env: dict[str, str], target: str, suffix: str) -> str:
 
     Raises `ScriptRefusalError` when the other channel's name for this region carries a value. An EMPTY own name is not refused here: `check_nonempty` names the Worker key, in its turn.
     """
+    return _channel_key(env, CONFIG_KEY_PREFIX, "config server key", target, suffix)
+
+
+def backup_store_kek(env: dict[str, str], target: str, suffix: str) -> str:
+    """The ACCOUNT_BACKUP_STORE_KEK for TARGET's channel and SUFFIX's region, resolved exactly as `config_server_key` is: `ACCOUNT_BACKUP_STORE_KEK_<SUFFIX>_STABLE` on stable, `_EDGE` otherwise, and a refusal when the other channel's name is also set."""
+    return _channel_key(env, BACKUP_KEK_PREFIX, "backup store KEK", target, suffix)
+
+
+def _channel_key(env: dict[str, str], prefix: str, label: str, target: str, suffix: str) -> str:
     own_channel, other_channel = (
         (CHANNEL_STABLE, CHANNEL_EDGE) if target == STABLE else (CHANNEL_EDGE, CHANNEL_STABLE)
     )
-    own = "%s_%s_%s" % (CONFIG_KEY_PREFIX, suffix, own_channel)
-    other = "%s_%s_%s" % (CONFIG_KEY_PREFIX, suffix, other_channel)
+    own = "%s_%s_%s" % (prefix, suffix, own_channel)
+    other = "%s_%s_%s" % (prefix, suffix, other_channel)
     if env.get(other, ""):
         raise ScriptRefusalError(
-            "%s: TARGET=%s takes its config server key from %s only, and %s is also set."
-            % (SELF, target, own, other),
+            "%s: TARGET=%s takes its %s from %s only, and %s is also set."
+            % (SELF, target, label, own, other),
             "  Each channel and region has its own key (the deploy workflow fetches one name",
             "  per run). Refusing to deploy with a key that belongs to another environment.",
         )
@@ -478,6 +511,7 @@ def resolve(env: dict[str, str]) -> dict[str, str]:
     backup_akid, backup_secret = backup_pair(env, target)
 
     config_key = config_server_key(env, target, suffix)
+    store_kek = backup_store_kek(env, target, suffix)
 
     backup_endpoint = apply_jurisdiction(
         env.get("ACCOUNT_BACKUP_S3_ENDPOINT", ""), env.get("R2_JURISDICTION", "")
@@ -496,6 +530,7 @@ def resolve(env: dict[str, str]) -> dict[str, str]:
             "backup_akid": backup_akid,
             "backup_secret": backup_secret,
             "config_server_key": config_key,
+            "backup_store_kek": store_kek,
         }
     )
     return values
@@ -584,14 +619,21 @@ def wrangler_argv(worker_name: str) -> list[str]:
     return [*wrangler.ARGV, "secret", "bulk", "--name", worker_name]
 
 
+def worker_dir() -> pathlib.Path:
+    """`workers/account`, whose `node_modules/.bin/wrangler` the release installs. `wrangler.ARGV` is `npx --no-install`, which resolves only a local binary at or above its cwd and never PATH, so from any other directory it dies on `npx canceled due to missing packages` (finding e69747ea, sibling of the www pusher's fc8ad2fd)."""
+    return paths.repo_root() / "workers" / "account"
+
+
 def _wrangler(argv: list[str], payload: str) -> int:
-    """The right half of the pipe. BOTH streams inherited, as the twin leaves them: wrangler's own output is the entire visible result of a good run."""
-    proc = subprocess.run(argv, input=payload, text=True, check=False)
+    """The right half of the pipe. BOTH streams inherited, as the twin leaves them: wrangler's own output is the entire visible result of a good run. It starts in `worker_dir()`; jq, the left half, runs where the caller stands."""
+    proc = subprocess.run(argv, input=payload, text=True, check=False, cwd=worker_dir())
     return proc.returncode
 
 
 def main(argv: list[str]) -> int:
-    del argv  # the twin parses nothing; extra arguments are ignored by both
+    refused = common.refuse_arguments(argv)
+    if refused is not None:
+        return refused
 
     # ORDER IS OBSERVABLE: `require_cmd jq` runs first, so a run missing both binaries names jq, and both run BEFORE the three `:?` refusals.
     for tool in ("jq", "npx"):

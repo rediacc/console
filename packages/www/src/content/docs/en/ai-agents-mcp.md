@@ -130,7 +130,7 @@ export REDIACC_ALLOW_GRAND_REPO='gitlab'   # one repo
 claude   # or cursor, gemini, etc.
 ```
 
-The override is verified against the process ancestry: it only counts when it was already present in the environment of the agent process itself, which means you exported it before the agent (and the MCP server it spawned) started. An agent cannot grant itself access by setting the variable mid-session. There is deliberately no server flag for this: a flag in the MCP server arguments carries no proof of who put it there, while the ancestry check does. Machine-level access (such as `term connect -m <machine>` without a repo) still requires `*`; a list of repo names does not unlock it.
+The override is verified against the process ancestry: it only counts when it was already present in the environment of the agent process itself, which means you exported it before the agent (and the MCP server it spawned) started. An agent cannot grant itself access by setting the variable mid-session. There is deliberately no server flag for this: a flag in the MCP server arguments carries no proof of who put it there, while the ancestry check does. Machine-level access (such as `term connect <machine>` without a repo) still requires `*`; a list of repo names does not unlock it.
 
 ### Per-repo SSH keys and server-side sandbox
 

@@ -16,11 +16,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { flattenAndHash } from '../lib/crc32.js';
+import { isEntryPoint } from '../lib/entry-point.js';
 import { getLatestCommitForFile } from '../lib/translation-diff.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-interface LocaleConfig {
+export interface LocaleConfig {
   name: string;
   dir: string;
   multipleNamespaces: boolean;
@@ -93,7 +94,7 @@ function sortObjectKeys(obj: Record<string, string>): Record<string, string> {
 /**
  * Process a locale directory and generate hash manifest
  */
-function processLocaleDir(config: LocaleConfig): Record<string, string> | null {
+export function processLocaleDir(config: LocaleConfig): Record<string, string> | null {
   const { name, dir, multipleNamespaces, flatFiles } = config;
 
   // Flat layout: {dir}/en.json instead of {dir}/en/*.json
@@ -156,21 +157,43 @@ function processLocaleDir(config: LocaleConfig): Record<string, string> | null {
   return allHashes;
 }
 
+const REPO_ROOT = path.resolve(__dirname, '..', '..');
+
+function defaultResolveCommit(englishSourcePath: string): string | null {
+  return getLatestCommitForFile(REPO_ROOT, path.relative(REPO_ROOT, englishSourcePath));
+}
+
 /**
- * Write hash manifest file
+ * Write hash manifest file, unless its hashes are unchanged
  */
-function writeHashManifest(
+export function writeHashManifest(
   dir: string,
   hashes: Record<string, string>,
   name: string,
-  config: LocaleConfig
+  config: LocaleConfig,
+  resolveCommit: (englishSourcePath: string) => string | null = defaultResolveCommit
 ): string {
+  const outputPath = path.join(dir, HASH_FILENAME);
+
+  // An unchanged manifest stays byte-identical: sourceCommit (the latest commit touching the English
+  // source) moves on commits that change no hash, so it is only restamped when the hashes change.
+  if (fs.existsSync(outputPath)) {
+    try {
+      const existing = JSON.parse(fs.readFileSync(outputPath, 'utf-8')) as HashManifest;
+      if (JSON.stringify(existing.hashes) === JSON.stringify(sortObjectKeys(hashes))) {
+        console.log(`   ${name}: unchanged (${Object.keys(hashes).length} keys)`);
+        return outputPath;
+      }
+    } catch {
+      // unreadable manifest: fall through and rewrite it
+    }
+  }
+
   // Resolve sourceCommit: latest git commit that touched the English source files
-  const repoRoot = path.resolve(__dirname, '..', '..');
   const englishSourcePath = config.flatFiles
-    ? path.relative(repoRoot, path.join(dir, `${SOURCE_LANG}.json`))
-    : path.relative(repoRoot, path.join(dir, SOURCE_LANG));
-  const sourceCommit = getLatestCommitForFile(repoRoot, englishSourcePath) ?? undefined;
+    ? path.join(dir, `${SOURCE_LANG}.json`)
+    : path.join(dir, SOURCE_LANG);
+  const sourceCommit = resolveCommit(englishSourcePath) ?? undefined;
 
   // Note: We intentionally omit timestamps to reduce merge conflicts
   const manifest: HashManifest = {
@@ -183,7 +206,7 @@ function writeHashManifest(
     hashes: sortObjectKeys(hashes),
   };
 
-  const outputPath = path.join(dir, HASH_FILENAME);
+  // tree-write: safe the target is the caller's output path; check:ci-i18n-sync enters this module through the control's import and passes a mkdtemp fixture dir (hashes-control-*), never the repo manifest
   fs.writeFileSync(outputPath, JSON.stringify(manifest, null, 2) + '\n');
 
   console.log(`   ${name}: ${Object.keys(hashes).length} keys -> ${outputPath}`);
@@ -221,7 +244,9 @@ async function main(): Promise<void> {
   console.log('Commit these files along with your translation changes.');
 }
 
-main().catch((err: unknown) => {
-  console.error('Error generating hashes:', err);
-  process.exit(1);
-});
+if (isEntryPoint(import.meta.filename)) {
+  main().catch((err: unknown) => {
+    console.error('Error generating hashes:', err);
+    process.exit(1);
+  });
+}

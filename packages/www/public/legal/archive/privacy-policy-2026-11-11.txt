@@ -1,0 +1,111 @@
+Our Privacy Commitment
+Effective Date: November 11, 2026
+
+1. Introduction
+
+Rediacc ("we", "us", or "our") operates the website www.rediacc.com <https://www.rediacc.com/> and the Rediacc infrastructure automation platform. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you visit our website or use our services.
+
+We are committed to protecting your privacy and handling your data transparently. If you do not agree with the terms of this Privacy Policy, please discontinue use of our website and services.
+
+2. Information We Collect
+
+We collect minimal information necessary to provide our services. The categories of data we collect depend on how you interact with us.
+
+2.1 Contact Form Data
+
+When you submit our contact form, we collect your name, email address, subject of inquiry, and message content. This data is sent directly to our email address and is not stored in a database on our servers.
+
+2.2 Account Data
+
+When you create a Rediacc account to use our platform, we collect your name, email address, organization name, and billing information. Payment processing is handled by our third-party payment processor; we do not store full credit card numbers.
+
+2.3 Analytics Data
+
+We use Plausible Analytics <https://plausible.io/>, a privacy-focused, cookieless analytics tool. Plausible does not use cookies, does not collect personal data, and is fully compliant with GDPR, CCPA, and PECR. Analytics data includes page views, referral sources, browser type, and country-level location, all without identifying individual visitors.
+
+2.4 Cookies
+
+We use a single functional cookie (rediacc_lang) to remember your language preference across visits. This cookie is strictly necessary for the website to function as expected and does not track you or collect personal data. For more details, see our Cookie Policy <https://www.rediacc.com/en/cookie-policy>.
+
+2.5 Product Telemetry Data
+
+Our software products (CLI and Renet Agent) collect usage telemetry to improve product quality, performance, and reliability. Telemetry data includes technical information such as application version, operating system, performance metrics, feature usage patterns, and error reports. Personal identifiers are anonymized before collection: email addresses are reduced to domain only, user IDs are hashed and truncated, and passwords or secrets are never collected. Telemetry from our website and account service also includes city-level location (city and region), taken from Cloudflare's edge and kept for 7 days.
+
+Telemetry is enabled by default in our CLI, and can be disabled in all products. For complete details on what each product collects and how to opt out, see our Telemetry Policy <https://www.rediacc.com/en/telemetry-policy>.
+
+2.6 Free License Requests
+
+When a machine asks for a Free License without an account, we store a keyed hash of the requesting IP address (the whole IPv4 address, or the /64 prefix of an IPv6 address), never the address itself, and only in the per-address counter, where it is deleted after 72 hours. The licence record holds the machine and repository identifiers the request carries and no IP data. The legal basis is our legitimate interest in preventing abuse of a free service.
+
+2.7 Acceptance Records
+
+When the Terms of Service are accepted, we keep a record of the acceptance as evidence of the contract: the document and its version, the checksum of the accepted text, the exact consent wording shown and its language, the method used (portal checkbox, payment checkout, CLI prompt or unattended CLI flag) and the time. For an account, the record also holds the IP address and user agent of the request, and for a payment checkout the checkout session identifier.
+
+For a Free License accepted without an account, the record holds the machine-based identifier the licence already uses, a keyed hash of the client machine identifier and the CLI version, and no IP address or other network data.
+
+The legal bases are the performance of the contract (GDPR Article 6(1)(b)) and compliance with our legal obligations and the establishment, exercise or defence of legal claims (GDPR Article 6(1)(c) and (f)).
+
+3. How We Use Your Information
+
+We use the information we collect for the following purposes:
+
+- To respond to your inquiries submitted through the contact form
+- To provide, operate, and maintain the Rediacc platform
+- To process transactions and send related billing information
+- To send service-related communications (e.g., security updates, maintenance notices)
+- To understand website usage patterns through aggregated, anonymous analytics
+- To diagnose errors, improve product performance, and guide product development through anonymized usage telemetry (see our Telemetry Policy <https://www.rediacc.com/en/telemetry-policy>)
+- To comply with legal obligations and enforce our Terms of Service
+
+4. Data Sharing and Third Parties
+
+We do not sell, trade, or rent your personal data to third parties. We may share information with:
+
+- Service providers (subprocessors) who host and operate our platform, deliver email and process payments, bound by contractual obligations to protect your data. The current list, with each provider's role and location, is in our Data Processing Agreement <https://www.rediacc.com/en/data-processing-agreement>
+- Plausible Analytics for cookieless, anonymized website analytics (no personal data is shared)
+- Telemetry processing for anonymized product usage data, which is transmitted to our own telemetry endpoint within the EU for aggregation and analysis. No telemetry data is shared with third parties (see our Telemetry Policy <https://www.rediacc.com/en/telemetry-policy>)
+- Law enforcement if required by law, regulation, or valid legal process
+
+5. Data Retention
+
+Contact form submissions are retained in our email system for as long as necessary to respond to your inquiry and maintain correspondence records. Account data is retained for the duration of your active account plus 30 days after account deletion to allow for recovery. Billing records are retained as required by applicable tax and accounting laws.
+
+Plausible analytics data is aggregated and does not contain personal data, so data retention policies do not apply to it.
+
+Product telemetry data is retained as raw traces for up to 90 days for debugging purposes. Aggregated telemetry metrics are retained for up to 12 months and then deleted. For details, see our Telemetry Policy <https://www.rediacc.com/en/telemetry-policy>.
+
+Acceptance records of an account are kept for the life of the account plus three (3) years, which is the general limitation period for contractual claims under Estonian law. Acceptance records of a Free License are kept for three (3) years from acceptance. Both are then deleted automatically.
+
+6. Your Rights
+
+Depending on your jurisdiction, you may have the following rights regarding your personal data:
+
+- Access: Request a copy of the personal data we hold about you
+- Correction: Request correction of inaccurate or incomplete data
+- Deletion: Request deletion of your personal data
+- Portability: Request a machine-readable copy of your data
+- Objection: Object to the processing of your data for specific purposes
+- Restriction: Request that we restrict processing of your data
+- Opt-out of telemetry: Disable product telemetry at any time using the mechanisms described in our Telemetry Policy <https://www.rediacc.com/en/telemetry-policy>
+
+To exercise any of these rights, contact us at contact@rediacc.com <mailto:contact@rediacc.com>. We will respond within 30 days.
+
+7. Data Security
+
+We implement industry-standard security measures to protect your data, including encryption in transit (TLS 1.2+), encryption at rest, access controls, and regular security audits. However, no method of electronic storage or transmission is 100% secure, and we cannot guarantee absolute security.
+
+8. International Data Transfers
+
+Your information may be transferred to and processed in countries other than your country of residence. These countries may have different data protection laws. When we transfer data internationally, we ensure appropriate safeguards are in place, including Standard Contractual Clauses where applicable.
+
+9. Children's Privacy
+
+Our services are intended for people who are at least 18 years old and are not directed to children. We do not knowingly collect personal data from anyone under 18. If we become aware that we have collected such data, we will delete it promptly.
+
+10. Changes to This Policy
+
+We may update this Privacy Policy from time to time. Changes are posted on this page with an updated effective date, and material changes are also notified by email to account holders at least thirty (30) days before they take effect. Changes to how acceptance of the Terms of Service works follow the change procedure in the Terms of Service <https://www.rediacc.com/en/terms-of-service>.
+
+Questions?
+
+If you have questions about this Privacy Policy or our data practices, contact us at contact@rediacc.com <mailto:contact@rediacc.com>.

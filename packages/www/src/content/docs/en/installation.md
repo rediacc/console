@@ -175,10 +175,10 @@ rdc update --channel edge      # Switch to edge channel
 rdc update --channel stable    # Switch back to stable
 ```
 
-Install directly from the edge channel:
+The one-line installers on www.rediacc.com install the edge channel. To install the stable channel, set `REDIACC_CHANNEL`:
 
 ```bash
-REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
+REDIACC_CHANNEL=stable curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 For package managers, replace `stable` with `edge` in the repository URL:
@@ -195,7 +195,7 @@ docker pull ghcr.io/rediacc/rdc:edge
 
 The channel applies uniformly across all delivery methods:
 
-- **Install scripts**: `REDIACC_CHANNEL` env var selects the channel
+- **Install scripts**: the www one-line installers default to `edge`; the `REDIACC_CHANNEL` env var selects another channel
 - **Package repos**: `releases.rediacc.com/{format}/{channel}/`
 - **Docker tags**: `ghcr.io/rediacc/rdc:{channel}`
 - **CLI updates**: `rdc update` checks the channel configured during install

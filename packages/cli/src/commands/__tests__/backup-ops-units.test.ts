@@ -1,10 +1,7 @@
 /**
- * `backup run`, `backup cancel` and `backup status` reach every unit a strategy renders as: the base
+ * `backup cancel` and `backup status` reach every unit a strategy renders as: the base
  * unit, one per datastore (`.ds.`) and one per repository with its own cadence (`.repo.`).
- *
- * Before the wiring they only knew `rediacc-backup-<strategy>.service`, so a strategy split across
- * datastores could be neither triggered nor cancelled per unit, and an ad-hoc run built its commands
- * without the GUID resolution `backup schedule` applies.
+ * `backup run` is covered by job-plan-backup.test.ts.
  */
 import { Command } from 'commander';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
@@ -28,21 +25,22 @@ vi.mock('../../services/config/config-resources.js', () => ({
         ssh: { privateKeyPath: '/k' },
       }),
     listBackupStrategies: () => Promise.resolve({ nightly: STRATEGY }),
+    listRepositories: () => Promise.resolve([]),
   },
 }));
 
 const schedule = vi.hoisted(() => ({
   units: ['nightly', 'nightly.ds.fast', 'nightly.repo.gitlab'],
-  buildStrategyCommandsForMachine: vi.fn(),
-  reportBackupScheduleStatus: vi.fn(),
+  expectedStatusUnits: vi.fn(),
 }));
 vi.mock('../../services/backup/backup-schedule.js', () => ({
   expectedScheduleUnits: () =>
     Promise.resolve(
       schedule.units.map((unitName) => ({ unitName, strategyName: 'nightly', schedule: '' }))
     ),
-  buildStrategyCommandsForMachine: schedule.buildStrategyCommandsForMachine,
-  reportBackupScheduleStatus: schedule.reportBackupScheduleStatus,
+  buildStrategyCommandsForMachine: vi.fn(),
+  expectedStatusUnits: schedule.expectedStatusUnits,
+  renderBackupScheduleStatus: vi.fn(),
   sanitizeBackupOutput: (s: string) => s,
 }));
 
@@ -58,11 +56,12 @@ const machine = vi.hoisted(() => ({
   subState: 'dead',
   runExit: 0,
 }));
-/** The machine: `systemctl cat` prints for a deployed unit, `is-active` answers from `running`. */
+/** The machine: the systemd directory lists each deployed unit, `is-active` answers from `running`. */
 function fakeExecStreaming(cmd: string, opts: { onStdout: (d: string) => void }): Promise<number> {
   machine.commands.push(cmd);
-  const cat = /^systemctl cat rediacc-backup-(.+)\.service/.exec(cmd);
-  if (cat && machine.deployed.has(cat[1])) opts.onStdout('[Unit]\n');
+  if (cmd.startsWith('sudo -n ls -1')) {
+    opts.onStdout([...machine.deployed].map((u) => `rediacc-backup-${u}.service\n`).join(''));
+  }
   const active = /^systemctl is-active (\S+)/.exec(cmd);
   if (active) opts.onStdout(machine.running.has(active[1]) ? 'active\n' : 'inactive\n');
   if (cmd.startsWith('systemctl show -p SubState')) opts.onStdout(`${machine.subState}\n`);
@@ -81,10 +80,16 @@ vi.mock('../../services/machine/machine-connection.js', () => ({
 vi.mock('../../services/core/output.js', () => ({
   outputService: { info: vi.fn(), success: vi.fn(), warn: vi.fn() },
 }));
-vi.mock('../../utils/errors.js', () => ({
+vi.mock('../../utils/errors.js', async (orig) => ({
+  ...(await orig<Record<string, unknown>>()),
   handleError: (error: unknown) => {
     throw error;
   },
+}));
+const jobs = vi.hoisted(() => ({ runCommandJob: vi.fn() }));
+vi.mock('../../services/jobs/command-job.js', () => ({
+  runCommandJob: jobs.runCommandJob,
+  pendingExitCode: vi.fn(),
 }));
 
 const { registerBackupOpsCommands } = await import('../backup-ops.js');
@@ -101,99 +106,49 @@ beforeEach(() => {
   machine.commands.length = 0;
   machine.subState = 'dead';
   machine.runExit = 0;
-  schedule.buildStrategyCommandsForMachine.mockReset();
-  schedule.reportBackupScheduleStatus.mockReset();
-});
-
-describe('backup run', () => {
-  it('starts every deployed unit of the strategy, the .ds. and .repo. ones included', async () => {
-    for (const unit of schedule.units) machine.deployed.add(unit);
-
-    await rdcBackup('run', '-m', 'm1');
-
-    const starts = machine.commands.filter((c) => c.startsWith('sudo systemctl start'));
-    expect(starts).toEqual([
-      'sudo systemctl start rediacc-backup-nightly.service',
-      'sudo systemctl start rediacc-backup-nightly.ds.fast.service',
-      'sudo systemctl start rediacc-backup-nightly.repo.gitlab.service',
-    ]);
-    expect(schedule.buildStrategyCommandsForMachine).not.toHaveBeenCalled();
-  });
-
-  it('runs ad hoc with the GUID-resolved commands when no unit is deployed', async () => {
-    schedule.buildStrategyCommandsForMachine.mockResolvedValue(['/r/renet backup snapshot x']);
-
-    await rdcBackup('run', 'nightly', '-m', 'm1');
-
-    expect(schedule.buildStrategyCommandsForMachine).toHaveBeenCalledWith(
-      'm1',
-      'nightly',
-      STRATEGY,
-      '/r/renet'
-    );
-    const adhoc = machine.commands.find((c) => c.startsWith('sudo systemd-run'));
-    expect(adhoc).toContain('--unit=rediacc-backup-nightly-adhoc');
-    expect(adhoc).toContain('/r/renet backup snapshot x');
-  });
+  schedule.expectedStatusUnits.mockReset();
+  schedule.expectedStatusUnits.mockResolvedValue([
+    { unitName: 'nightly', strategyName: 'nightly', schedule: '' },
+  ]);
+  jobs.runCommandJob.mockReset();
+  jobs.runCommandJob.mockResolvedValue({ kind: 'finished', result: { success: true } });
 });
 
 describe('backup cancel', () => {
   it('stops a running .repo. unit of the named strategy', async () => {
-    machine.running.add('rediacc-backup-nightly.repo.gitlab.service');
+    jobs.runCommandJob.mockResolvedValue({
+      kind: 'finished',
+      result: { success: true, stdout: 'cancelled rediacc-backup-nightly.repo.gitlab.service\n' },
+    });
 
     await rdcBackup('cancel', 'nightly', '-m', 'm1');
 
-    const stops = machine.commands.filter((c) => c.startsWith('sudo systemctl stop'));
-    expect(stops).toEqual(['sudo systemctl stop rediacc-backup-nightly.repo.gitlab.service']);
-  });
-});
-
-describe('backup status', () => {
-  it('reports through the per-unit schedule status', async () => {
-    await rdcBackup('status', '-m', 'm1');
-
-    expect(schedule.reportBackupScheduleStatus).toHaveBeenCalledWith('m1', undefined);
+    // One backup-cancel job names every unit of the strategy and its ad-hoc unit, and no client stop runs.
+    expect(jobs.runCommandJob).toHaveBeenCalledTimes(1);
+    expect(jobs.runCommandJob.mock.calls[0][1]).toMatchObject({
+      functionName: 'backup-cancel',
+      commandKind: {
+        name: 'backup-cancel',
+        args: {
+          units: [
+            'rediacc-backup-nightly',
+            'rediacc-backup-nightly.ds.fast',
+            'rediacc-backup-nightly.repo.gitlab',
+            'rediacc-backup-nightly-adhoc',
+          ],
+        },
+      },
+    });
     expect(machine.commands).toEqual([]);
   });
 });
 
-describe('backup run ad hoc re-run', () => {
-  it('clears an exited ad-hoc unit before systemd-run', async () => {
-    schedule.buildStrategyCommandsForMachine.mockResolvedValue(['/r/renet backup snapshot x']);
-    await rdcBackup('run', 'nightly', '-m', 'm1');
-    const stopAt = machine.commands.findIndex((c) => c.includes('reset-failed'));
-    const runAt = machine.commands.findIndex((c) => c.startsWith('sudo systemd-run'));
-    expect(stopAt).toBeGreaterThan(-1);
-    expect(stopAt).toBeLessThan(runAt);
-  });
+describe('backup status', () => {
+  it('reads the units through one backup-status job and touches the machine by no other route', async () => {
+    await rdcBackup('status', '-m', 'm1');
 
-  it('refuses while the ad-hoc unit is still running', async () => {
-    schedule.buildStrategyCommandsForMachine.mockResolvedValue(['/r/renet backup snapshot x']);
-    machine.subState = 'running';
-    await expect(rdcBackup('run', 'nightly', '-m', 'm1')).rejects.toThrow(/still running/);
-    expect(machine.commands.some((c) => c.startsWith('sudo systemd-run'))).toBe(false);
-  });
-
-  it.each(['auto-restart', 'reload', 'stop-sigterm'])(
-    'refuses while the ad-hoc unit is in the transitional state %s',
-    async (subState) => {
-      schedule.buildStrategyCommandsForMachine.mockResolvedValue(['/r/renet backup snapshot x']);
-      machine.subState = subState;
-      await expect(rdcBackup('run', 'nightly', '-m', 'm1')).rejects.toThrow(/still running/);
-      expect(machine.commands.some((c) => c.startsWith('sudo systemctl stop'))).toBe(false);
-    }
-  );
-
-  it.each(['exited', 'failed'])('clears a finished ad-hoc unit in state %s', async (subState) => {
-    schedule.buildStrategyCommandsForMachine.mockResolvedValue(['/r/renet backup snapshot x']);
-    machine.subState = subState;
-    await rdcBackup('run', 'nightly', '-m', 'm1');
-    expect(machine.commands.some((c) => c.startsWith('sudo systemd-run'))).toBe(true);
-  });
-
-  it('exits non-zero when systemd-run fails', async () => {
-    schedule.buildStrategyCommandsForMachine.mockResolvedValue(['/r/renet backup snapshot x']);
-    machine.runExit = 1;
-    await expect(rdcBackup('run', 'nightly', '-m', 'm1')).rejects.toThrow(/Failed to start/);
+    expect(schedule.expectedStatusUnits).toHaveBeenCalledWith('m1', undefined);
+    expect(jobs.runCommandJob).toHaveBeenCalledTimes(1);
+    expect(machine.commands).toEqual([]);
   });
 });

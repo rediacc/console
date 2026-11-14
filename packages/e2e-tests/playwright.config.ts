@@ -133,5 +133,7 @@ export default test.defineConfig({
     ...(process.env.BACKUP_LARGE_REPO_SUITE === '1'
       ? [{ name: 'test-31', testMatch: '31-*.test.ts' }]
       : []),
+    // Detached jobs on a worker (suite 32, PLAN-jobs-backup-real-machine-tests E1): two concurrent `renet job start/claim` processes against one spool, asserted on machine state. Unconditional: it needs only a worker VM, which every E2E Workers leg has.
+    { name: 'test-32', testMatch: '32-*.test.ts' },
   ],
 });

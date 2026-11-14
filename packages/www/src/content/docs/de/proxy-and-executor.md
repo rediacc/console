@@ -8,8 +8,8 @@ tags:
 subcategory: architecture
 order: 4
 language: de
-sourceHash: "e56214cd4086bafa"
-sourceCommit: "bdc23e25069b375d647226af615a925adcd124e3"
+sourceHash: "7230a907205b8c84"
+sourceCommit: "9f58d83e01b4d46f8ce31af467a203b4d195e801"
 ---
 
 # Proxy & Executor
@@ -62,6 +62,19 @@ Der `access`-Bereich der Konfiguration enthält die erlaubten IPv4- und IPv6-Que
 `machine setup` wendet die Zugriffszeilen erneut an, sodass eine neu aufgebaute Maschine ihre Einschränkungen zurückerhält.
 
 Ein Push, der die aktuelle SSH-Sitzung aussperren würde, weil deren Adresse außerhalb der Bereiche des verwendeten Schlüssels liegt, wird mit `ACCESS_LOCKOUT` abgelehnt, und es wird nichts geschrieben. Ein Push wird mit `ACCESS_FILE_CHANGED` abgelehnt, wenn sich die Datei auf der Maschine zwischenzeitlich geändert hat; es wurde nichts angewendet, daher kann der Push gefahrlos wiederholt werden.
+
+## Jobs, Tickets und Polling
+
+Jeder Befehl der Maschinenebene läuft auf der Maschine als Job: eine systemd-Unit, die renet verwaltet und deren Status und Ereignisprotokoll in einem Spool auf der Maschine liegen. Eine abgebrochene Verbindung stoppt die Arbeit daher nie, und jeder Client kann den Job über seine ID wieder aufnehmen.
+
+- **Das Attach-Fenster.** Der Executor streamt die Ereignisse eines Jobs bis zu 20 Sekunden lang und sendet bei ruhigem Stream alle 10 Sekunden eine Heartbeat-Zeile. Ein Job, der innerhalb des Fensters endet, liefert sein Ergebnis in derselben Anfrage. Ein längerer Job liefert ein Ergebnis mit `state: running` und der Job-ID, nach einer `job`-Zeile mit der Maschine und allen überlappenden Jobs.
+- **Polling.** Der Client fragt danach per `GET /v1/jobs/<id>/poll` die Ereignisse nach der zuletzt gesehenen Zeile samt Status des Jobs ab und wartet zwischen leeren Antworten länger. `POST /v1/jobs/<id>/cancel` bricht den Job ab. Beide Routen wenden dieselbe Richtlinie an wie der Befehl, der den Job gestartet hat, und das Polling, das als Erstes einen Endzustand sieht, schreibt das Audit-Ereignis genau einmal.
+- **Tickets.** Jeder Aufruf schreibt außerdem ein Ticket in das Konfigurationsverzeichnis der CLI (`jobs/<config>.jsonl`). `rdc job wait <id>` wartet auf einen Job und endet mit dessen Exit-Code; `rdc job list`, `status`, `logs`, `cancel` und `gc` verwalten den Rest. Strg+C während des Mitverfolgens löst die Verbindung, ohne abzubrechen, und beendet mit 130. Ein Mitverfolgen, dessen Verbindung nicht wiederhergestellt werden konnte, endet mit 16 und behält das Ticket.
+- **Schritte.** Arbeit, die auf einen Job folgt, etwa ein Ergebnis in der Konfiguration zu vermerken oder eine Liste auszugeben, ist ein Schritt, der im Ticket und im Spool steht. Ein Schritt läuft einmal, dort, wo der Job zuerst als beendet erkannt wird: im Befehl selbst, in `rdc job wait`, im Hinweis des nächsten Befehls oder im Polling des Executors. Der Anspruch wird auf der Maschine erhoben, sodass zwei Beobachter nie denselben Schritt ausführen.
+- **Überschneidungen.** Ein Start, der sich mit einem laufenden Job auf demselben Repository oder derselben Maschine überschneidet, gibt eine Warnung mit dem Befehl aus, der sich an den laufenden Job anhängt. Lehnt die Überschneidungsrichtlinie den Start ab, endet der Befehl mit 15 (`BUSY`), und die Ablehnung nennt die überlappenden Jobs in `overlaps`.
+- **Schritte, solange der Client fort ist.** Ein Erfolgsschritt läuft nur, wenn der Job `succeeded` ist, ein Fehlschlagschritt wie ein Rollback nur, wenn er `failed` ist oder abgebrochen wurde. Endet ein Job innerhalb des Attach-Fensters, behält der Executor das Attach auch nach dem Trennen seines Clients bei und führt die Schritte aus; so schließt ein kurzer Befehl, dessen Client die Antwort verloren hat, seine Schritte trotzdem ab. Schritte laufen nur für einen Beobachter, dessen Konfiguration der Konfiguration entspricht, die den Job gestartet hat (der Executor, der das Attach hält, führt sie unter dieser Konfiguration aus, daher passt das Gate); jede andere Konfiguration zeigt `N steps pending for config <name>`. Der Hinweis des nächsten Befehls führt offene Schritte bis zu 20 Sekunden nach dessen eigener Ausgabe aus, und nur in einem interaktiven Textlauf. Unter `-o json`, `-q` oder MCP führt er nichts aus und gibt `steps pending: rdc job wait <id>` auf stderr aus. Solange kein Beobachter das Ende des Jobs gesehen hat, läuft der Dienst weiter, die Schritte warten jedoch: DNS-Namen, Zertifikatsabgleich und URL-Liste nach `repo up`, die Backup-Zeitpläne nach Fork, Migration oder Restore sowie der Basiseintrag, der den nächsten Push zum Delta macht. `rdc job list` zeigt `steps pending`, bis sie gelaufen sind.
+- **Ausnahmen.** Interaktive Befehle (`term connect`, `repo tunnel`, `vscode connect`, `repo exec -i` und `repo logs -f`), clientseitige Übertragungen (`repo sync upload`, `download` und `status` sowie `backup upload` und `download`), die `job`-Befehle, `serve`, `vscode serve status` und `stop` sowie Befehle ohne renet-Aufruf wie `cluster kubeconfig` und `machine access push` laufen nicht als Jobs. Die lokalen OpenTofu-Abschnitte von `machine provision` und `deprovision` laufen wie bisher auf dem Client. Jeder andere Befehl der Maschinenebene ist ein Job.
+- **Aufbewahrung.** Ein beendeter reiner Lese-Job wird eine Stunde lang aufbewahrt, jeder andere beendete Job sieben Tage. Ein Job mit einem Schritt, den niemand beansprucht hat, bleibt unabhängig von seiner Klasse sieben Tage erhalten, und ein laufender Job wird nie entfernt. Der Spool hält höchstens 2000 beendete Jobs und 256 MiB, dabei gehen die ältesten beendeten Jobs zuerst; die Obergrenzen überspringen einen Job mit unbeanspruchtem Schritt, bis seine sieben Tage um sind. Die Bereinigung läuft beim Start eines Jobs, höchstens einmal pro Stunde. Die systemd-Unit des Jobs wird beim ersten Statusabruf oder Bereinigungslauf gestoppt, der den Job als beendet sieht.
 
 ## Verwandte Seiten
 

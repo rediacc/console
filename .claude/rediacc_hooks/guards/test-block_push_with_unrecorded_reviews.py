@@ -96,8 +96,16 @@ def fake(findings, verdict=None):
     return reviewer
 
 
-HIGH = [{"severity": "high", "file": "f.py", "line": 1, "claim": "breaks on the empty path"}]
-LOW = [{"severity": "low", "file": "f.py", "line": 1, "claim": "naming"}]
+HIGH = [
+    {
+        "severity": "high",
+        "file": "f.py",
+        "line": 1,
+        "claim": "breaks on the empty path",
+        "class": "other",
+    }
+]
+LOW = [{"severity": "low", "file": "f.py", "line": 1, "claim": "naming", "class": "other"}]
 
 
 def record(rv, repo, sha):

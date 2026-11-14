@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 8
 language: es
-sourceHash: "d6d980d721be2373"
-sourceCommit: "fc24769cfd0684622952395c5bafe44e6180530d"
+sourceHash: "78e880294cc0bf15"
+sourceCommit: "efe70511ff54915df2e9d32567330f17ca6b4a88"
 ---
 
 # Cadena de Licencias y Delegación
@@ -118,7 +118,7 @@ Un certificado de delegación contiene:
 
 ### Cómo funciona la delegación
 
-1. El administrador Enterprise genera un par de claves Ed25519 en el servidor on-premise.
+1. El administrador genera un par de claves Ed25519 en el servidor on-premise.
 2. El administrador solicita un certificado de delegación al upstream:
    ```
    POST /admin/delegation-certs
@@ -322,8 +322,8 @@ Un manifiesto de solicitud de renovación captura el encabezado de la cadena en 
 
 Cuando el nuevo certificado se sube de vuelta al on-premise, `/onprem/cert-upload` valida que el `genesisSequence` del nuevo certificado todavía enlaza con una entrada conocida en el libro de contabilidad de emisión local:
 
-- Si `cert.genesisSequence > localHead.sequence` devuelve `409 CHAIN_HEAD_BEHIND` (el upstream está en una cadena bifurcada).
-- Si `cert.genesisSequence > 0` y la entrada del libro de contabilidad local en esa secuencia tiene un `chainHash` diferente al `cert.genesisHash` devuelve `409 CHAIN_FORK_ON_UPLOAD` (la cadena local ha divergido).
+- Si `cert.genesisSequence > localHead.sequence` devuelve `409` con el código `chain-ahead`.
+- Si `cert.genesisSequence > 0` y la entrada del libro de contabilidad local en esa secuencia tiene un `chainHash` diferente al `cert.genesisHash` devuelve `409` con el código `chain-fork`.
 - En caso contrario, el certificado se acepta. Las emisiones futuras continúan desde `localHead.sequence + 1`.
 
 Esto significa que **no se requiere congelación de escritura durante el tránsito**. La cadena se extiende naturalmente en ambos lados. Es análogo a cómo la renovación de certificados X.509 maneja números de serie en vuelo.

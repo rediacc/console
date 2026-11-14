@@ -7,8 +7,14 @@
 // with OTLP env vars, or constructing an exporter. All three should skip
 // when this returns true.
 
-import { metrics as metricsApi, type Span, SpanStatusCode, type Tracer } from '@opentelemetry/api';
-import { type Logger, SeverityNumber } from '@opentelemetry/api-logs';
+import {
+  type Logger,
+  metrics as metricsApi,
+  SeverityNumber,
+  type Span,
+  SpanStatusCode,
+  type Tracer,
+} from '@opentelemetry/api';
 import { type PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { type NodeSDK } from '@opentelemetry/sdk-node';
 import { DEFAULTS, UPDATE_DEFAULTS } from '@rediacc/shared/config';
@@ -29,6 +35,12 @@ import {
 } from './profiling.js';
 import { currentRequestTelemetry } from './request-telemetry.js';
 import { buildUserAttributes, flattenAttributes } from './telemetry-attrs.js';
+
+/** `rediacc.proxy.route` for a span opened inside an executor request (PLAN-detached-jobs Design 13); empty outside one. */
+function routeAttribute(): Record<string, string> {
+  const route = currentRequestTelemetry()?.route;
+  return route ? { 'rediacc.proxy.route': route } : {};
+}
 
 /**
  * Pure env-var check for whether the user has opted out of telemetry.
@@ -75,6 +87,8 @@ class CliTelemetryService {
   private readonly sessionId: string;
   private userContext: Partial<UserContext> = {};
   private readonly activeSpans: Map<string, Span> = new Map();
+  /** Key of the command span this process opened without a request key (the CLI's one command). */
+  private processSpanKey: string | undefined;
   private pendingShutdown: Promise<void> | null = null;
   /**
    * OTLP basic-auth token (base64-encoded `user:pass`), set by
@@ -282,15 +296,38 @@ class CliTelemetryService {
         'cli.version': CLI_VERSION,
         'session.id': this.sessionId,
         ...this.getUserAttributes(),
+        ...routeAttribute(),
       });
 
       this.activeSpans.set(options?.spanKey ?? commandName, span);
+      if (options?.spanKey === undefined) this.processSpanKey = commandName;
 
       // Log command start
       this.emitLog(SeverityNumber.INFO, `Command started: ${commandName}`, {
         'cli.command': commandName,
         'cli.version': CLI_VERSION,
       });
+    } catch {
+      // Fail silently
+    }
+  }
+
+  /**
+   * Add attributes to the command span now open: the request's own span inside a
+   * served dispatch, else the process's one command span. Nothing happens when no
+   * span is open or telemetry is off, so a caller never checks first.
+   */
+  annotateCommand(attributes: Record<string, string | number | boolean>): void {
+    if (!this.isEnabled) {
+      return;
+    }
+
+    try {
+      const key = currentRequestTelemetry()?.open?.spanKey ?? this.processSpanKey;
+      if (key === undefined) {
+        return;
+      }
+      this.activeSpans.get(key)?.setAttributes(attributes);
     } catch {
       // Fail silently
     }

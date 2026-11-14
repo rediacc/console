@@ -36,6 +36,8 @@ export function tapExecutor(inner: Executor): Executor {
 
   return {
     execute(options: ExecuteOptions): Promise<ExecuteResult> {
+      // Renet's raw `output` is the caller's answer only for the call that asked for it live (`passthroughOutput`: repo exec, repo logs) or under --debug; every other call's output is dropped, as a local run drops it, and its `result.stdout` still travels on the wire. The decision is per CALL: it used to be one flag per dispatch, so `repo up --debug` turned it on and the later machine-wide `list-all` read of postRepoUpTasks streamed every repository's containers and labels into the fork's output (bench, 2026-11-05).
+      const forwardOutput = options.passthroughOutput === true || options.debug === true;
       return inner.execute({
         ...options,
         eventsMode: true,
@@ -44,6 +46,7 @@ export function tapExecutor(inner: Executor): Executor {
         onEvent: (event, line) => {
           // The command's own handler still runs: it is what builds the timeline that ends up in the result. The tap is additive. The spool-line ordinal (present only on a detached replay) is carried through both, so the serve route can forward it for exactly-once re-attach dedup.
           options.onEvent?.(event, line);
+          if (event.type === 'output' && !forwardOutput) return;
           emit(event, line);
         },
       });

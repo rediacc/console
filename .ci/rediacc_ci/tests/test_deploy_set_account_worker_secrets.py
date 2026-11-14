@@ -29,6 +29,7 @@ from rediacc_ci.deploy import set_account_worker_secrets as port
 from rediacc_ci.deploy import set_preview_worker_secrets as preview
 from rediacc_ci.deploy import set_www_worker_secrets as www
 from rediacc_ci.tests import differential as diff
+from rediacc_ci.tests.ops_cf_harness import R2_ENDPOINT
 from rediacc_ci.tests.twin_names import as_twin
 
 if typing.TYPE_CHECKING:
@@ -45,20 +46,21 @@ FIXTURE_ENV = {
     "WORKER_NAME": "rediacc-account-eu",
     "TARGET": "stable",
     "SUFFIX": "EU",
-    "ACCOUNT_ED25519_PRIVATE_KEY": "e1",
     "ACCOUNT_ED25519_PUBLIC_KEY": "e2",
     "ACCOUNT_X25519_PRIVATE_KEY": "x1",
     "ACCOUNT_X25519_PUBLIC_KEY": "x2",
     "ACCOUNT_SERVER_API_KEY": "ak",
     "ACCOUNT_JWT_SECRET": "jw",
     "FREE_LICENSE_HMAC_KEY": "hm",
+    "ACCOUNT_AE_READ_TOKEN": "ae",
+    "CLOUDFLARE_ACCOUNT_ID": "acct",
     "ROOT_EMAIL": "root@example.invalid",
     "AWS_SES_ACCESS_KEY_ID_EU": "sk-eu",
     "AWS_SES_SECRET_ACCESS_KEY_EU": "ss-eu",
     "AWS_SES_REGION": "eu-central-1",
     "CLOUDFLARE_TURNSTILE_SECRET_KEY": "ts",
     "OBS_OTLP_CREDENTIALS_EU": '{"user":"u-eu","pass":"p-eu"}',
-    "ACCOUNT_BACKUP_S3_ENDPOINT": "https://acct.r2.cloudflarestorage.com",
+    "ACCOUNT_BACKUP_S3_ENDPOINT": R2_ENDPOINT,
     "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": "bk",
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY": "bs",
     "BACKUP_BUCKET_STABLE": "rediacc-backups-eu",
@@ -71,7 +73,6 @@ FIXTURE_ENV = {
 # The variable to BLANK in order to make a given guard fire, under SUFFIX=EU.
 # For four of them it is not the name the guard prints; see the module docstring.
 GUARD_SOURCE = {
-    "ACCOUNT_ED25519_PRIVATE_KEY": "ACCOUNT_ED25519_PRIVATE_KEY",
     "ACCOUNT_ED25519_PUBLIC_KEY": "ACCOUNT_ED25519_PUBLIC_KEY",
     "ACCOUNT_X25519_PRIVATE_KEY": "ACCOUNT_X25519_PRIVATE_KEY",
     "ACCOUNT_X25519_PUBLIC_KEY": "ACCOUNT_X25519_PUBLIC_KEY",
@@ -132,6 +133,17 @@ def _bin(tmp_path: pathlib.Path, name: str, *, drop: str = "") -> str:
     return str(stub)
 
 
+def _as_twin_result(result):
+    """The port's answer in the twin's spelling (`as_twin`), the form the goldens hold: the re-record seam (`regolden --source port`)."""
+    proc, *rest = result
+    return (
+        subprocess.CompletedProcess(
+            proc.args, proc.returncode, as_twin(proc.stdout), as_twin(proc.stderr)
+        ),
+        *rest,
+    )
+
+
 def _run(
     subject: pathlib.Path,
     tmp_path: pathlib.Path,
@@ -152,12 +164,16 @@ def _run(
         TWIN_REL,
         parts,
         lambda: _run_live(subject, tmp_path, drop=drop, drop_env=drop_env, **extra),
+        port=lambda: _as_twin_result(
+            _run_live(PORT, tmp_path, drop=drop, drop_env=drop_env, **extra)
+        ),
         work=(tmp_path,),
     )
 
 
 # THE ONE PLACE THE TWO SIDES ARE HANDED DIFFERENT ENVIRONMENTS, and it is a rename, not a value change. The twin read one unsuffixed backup key pair for every Worker; the port reads the run's own channel's pair (`ACCOUNT_BACKUP_S3_*_STABLE` on stable, `_EDGE` otherwise) and never reads the unsuffixed one (agent/plans/PLAN-backup-credential-isolation.md B2). So the port side receives the twin's values under its channel's names, after `drop_env`, and every golden key, which is built from the twin's arguments, is unchanged. The port-only cases below drive the raw names with `translate=False`.
 CONFIG_KEY = "ck"
+KEK_VALUE = "k" * 40
 RETIRED_PAIR = ("ACCOUNT_BACKUP_S3_ACCESS_KEY_ID", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY")
 
 
@@ -173,13 +189,21 @@ def _as_port_env(env: dict[str, str]) -> dict[str, str]:
         out.setdefault(
             "%s_%s_%s" % (port.CONFIG_KEY_PREFIX, out["SUFFIX"], channel_name), CONFIG_KEY
         )
+        out.setdefault(
+            "%s_%s_%s" % (port.BACKUP_KEK_PREFIX, out["SUFFIX"], channel_name), KEK_VALUE
+        )
     return out
 
 
 def _without_config_key(calls: str) -> str:
-    """The recorded call with the two document lines the twin never had removed (the config server key and the free-licence HMAC key)."""
+    """The recorded call with the document lines the twin never had removed: the free-licence HMAC key, the AE read token, the Cloudflare account id, the backup store KEK, the config server key, the commercial register's name and the sales-digest recipient (the document's last key, so its line and the comma before it go)."""
+    calls = calls.replace('  "SELLER_REGISTER_NAME": "",\n', "")
     calls = calls.replace('  "FREE_LICENSE_HMAC_KEY": "hm",\n', "")
-    return calls.replace('  "ACCOUNT_CONFIG_SERVER_KEY": "%s",\n' % CONFIG_KEY, "")
+    calls = calls.replace('  "ACCOUNT_AE_READ_TOKEN": "ae",\n', "")
+    calls = calls.replace('  "CLOUDFLARE_ACCOUNT_ID": "acct",\n', "")
+    calls = calls.replace('  "ACCOUNT_BACKUP_STORE_KEK": "%s",\n' % KEK_VALUE, "")
+    calls = calls.replace('  "ACCOUNT_CONFIG_SERVER_KEY": "%s",\n' % CONFIG_KEY, "")
+    return re.sub(r',\n  "SALES_NOTIFY_EMAIL": "[^\n]*"\n\}', "\n}", calls)
 
 
 def _run_live(
@@ -276,7 +300,6 @@ def test_the_bulk_call_and_its_document_are_pinned_in_full(tmp_path: pathlib.Pat
     )
     assert document(old_calls) == (
         "{\n"
-        '  "ACCOUNT_ED25519_PRIVATE_KEY": "e1",\n'
         '  "ACCOUNT_ED25519_PUBLIC_KEY": "e2",\n'
         '  "ACCOUNT_X25519_PRIVATE_KEY": "x1",\n'
         '  "ACCOUNT_X25519_PUBLIC_KEY": "x2",\n'
@@ -376,7 +399,7 @@ def test_a_region_without_a_jurisdiction_keeps_the_default_host(tmp_path: pathli
     }
     old, new, old_calls, new_calls = run_both(tmp_path, **us)
     doc = document(old_calls)
-    assert '"ACCOUNT_BACKUP_S3_ENDPOINT": "https://acct.r2.cloudflarestorage.com"' in doc
+    assert f'"ACCOUNT_BACKUP_S3_ENDPOINT": "{R2_ENDPOINT}"' in doc
     assert '"AWS_SES_ACCESS_KEY_ID": "sk-us"' in doc
     _assert_agree(old, new, "no-jurisdiction", old_calls, new_calls)
 
@@ -409,7 +432,7 @@ def test_an_empty_bucket_is_refused_on_both_channels(tmp_path: pathlib.Path) -> 
         assert old.stderr == (
             f"set-account-worker-secrets.sh: no backup bucket for TARGET={target}.\n"
             "  Expected BACKUP_BUCKET_STABLE / BACKUP_BUCKET_EDGE from the deploy\n"
-            "  matrix (regions.json backupR2/edgeBackupR2). Refusing to deploy a\n"
+            "  matrix (regions.json backupR2). Refusing to deploy a\n"
             "  Worker that would presign against an empty bucket name.\n"
         )
         assert old_calls == "", f"{target}: a refused run still called wrangler"
@@ -419,28 +442,34 @@ def test_an_empty_bucket_is_refused_on_both_channels(tmp_path: pathlib.Path) -> 
 def test_the_bucket_guard_precedes_every_value_guard(tmp_path: pathlib.Path) -> None:
     """ORDER IS OBSERVABLE. With the bucket AND the first secret both empty, the message a caller reads is the bucket's."""
     old, new, old_calls, new_calls = run_both(
-        tmp_path, BACKUP_BUCKET_STABLE="", ACCOUNT_ED25519_PRIVATE_KEY=""
+        tmp_path, BACKUP_BUCKET_STABLE="", ACCOUNT_ED25519_PUBLIC_KEY=""
     )
     assert old.stderr.startswith("set-account-worker-secrets.sh: no backup bucket")
     assert "is EMPTY" not in old.stderr
     _assert_agree(old, new, "bucket-first", old_calls, new_calls)
 
 
-# The two guards the twin never had; neither has a golden, and each has a port-only test.
-PORT_ONLY_GUARDS = ("ACCOUNT_CONFIG_SERVER_KEY", "FREE_LICENSE_HMAC_KEY")
+# The guards the twin never had; neither has a golden, and each has a port-only test.
+PORT_ONLY_GUARDS = (
+    "ACCOUNT_CONFIG_SERVER_KEY",
+    "ACCOUNT_BACKUP_STORE_KEK",
+    "FREE_LICENSE_HMAC_KEY",
+    "ACCOUNT_AE_READ_TOKEN",
+    "CLOUDFLARE_ACCOUNT_ID",
+)
 
 
 def test_every_one_of_the_seventeen_guards_fires_with_its_own_name(
     tmp_path: pathlib.Path,
 ) -> None:
-    """SEVENTEEN CASES ON STABLE, ONE PER GUARD, each driven EMPTY rather than absent, and each blanking the variable the value really comes from rather than the name the guard prints."""
+    """SIXTEEN CASES ON STABLE, ONE PER TWIN GUARD (the port-only guards in PORT_ONLY_GUARDS have their own tests; the function name keeps `seventeen` because the twin goldens are keyed on it), each driven EMPTY rather than absent, and each blanking the variable the value really comes from rather than the name the guard prints."""
     # The config server key is the port's own sixteenth guard; the twin has no golden for it, and `test_an_empty_config_server_key_is_refused_by_its_worker_key` drives it.
     demanded = tuple(
         name
         for name in port.REQUIRED_NONEMPTY + port.REQUIRED_NONEMPTY_STABLE
         if name not in PORT_ONLY_GUARDS
     )
-    assert len(demanded) == 17
+    assert len(demanded) == 16
     for name in demanded:
         case = tmp_path / f"guard-{name}"
         case.mkdir()
@@ -480,7 +509,7 @@ def test_the_first_empty_guard_wins_and_the_rest_never_run(tmp_path: pathlib.Pat
     blanks = dict.fromkeys(GUARD_SOURCE.values(), "")
     old, new, old_calls, new_calls = run_both(tmp_path, **blanks)
     assert old.stderr.startswith(
-        "set-account-worker-secrets.sh: ACCOUNT_ED25519_PRIVATE_KEY is EMPTY"
+        "set-account-worker-secrets.sh: ACCOUNT_ED25519_PUBLIC_KEY is EMPTY"
     )
     assert old.stderr.count("is EMPTY") == 1
     _assert_agree(old, new, "first-guard-wins", old_calls, new_calls)
@@ -622,11 +651,16 @@ def test_a_non_ascii_secret_is_byte_identical_through_both(tmp_path: pathlib.Pat
 
 def test_the_three_sibling_scripts_are_not_the_same_script() -> None:
     """THE ASSUMPTION THAT WOULD PORT THIS ONE WRONG, refuted in one place. This is the only member of the family that decides anything, and every difference below is driven by a test above."""
-    assert len(port.KEYS) == 31
+    assert len(port.KEYS) == 35
     assert len(www.KEYS) == 24
-    assert len(preview.KEYS) == 15
-    assert len(port.REQUIRED_NONEMPTY) == 17
+    assert len(preview.KEYS) == 14
+    assert len(port.REQUIRED_NONEMPTY) == 19
     assert len(port.REQUIRED_NONEMPTY_STABLE) == 2
+    # 8c715164.2: the ten SELLER_* entries (the register name included) are optional here by design: the legal-entity profile and check_bws_map own their completeness, so none is in a non-empty guard list.
+    assert not [
+        n for n in port.REQUIRED_NONEMPTY + port.REQUIRED_NONEMPTY_STABLE if n.startswith("SELLER_")
+    ]
+    assert "SELLER_REGISTER_NAME" in {key for key, _var, _src in port.KEYS}
     # Neither sibling has a conditional guard list, a channel, or a fan-in.
     assert not hasattr(www, "REQUIRED_NONEMPTY_STABLE")
     assert not hasattr(preview, "REQUIRED_NONEMPTY_STABLE")
@@ -636,7 +670,7 @@ def test_the_three_sibling_scripts_are_not_the_same_script() -> None:
     assert port.GUARD_EXPLANATION == www.GUARD_EXPLANATION
     assert port.GUARD_EXPLANATION != preview.GUARD_EXPLANATION
     # The four backup-plane keys are this script's alone.
-    backup = [key for key, _var, _source in port.KEYS if key.startswith("ACCOUNT_BACKUP_")]
+    backup = [key for key, _var, _source in port.KEYS if key.startswith("ACCOUNT_BACKUP_S3_")]
     assert len(backup) == 4
     assert not [key for key, _var in www.KEYS if key.startswith("ACCOUNT_BACKUP_")]
     # OBS_OTLP_CREDENTIALS too: neither sibling carries telemetry credentials.
@@ -659,7 +693,7 @@ def test_pure_helpers() -> None:
     assert port.SELF == "rediacc_ci.deploy.set_account_worker_secrets"
 
     # apply_jurisdiction, all four arms.
-    plain = "https://acct.r2.cloudflarestorage.com"
+    plain = R2_ENDPOINT
     assert port.apply_jurisdiction(plain, "") == plain
     assert port.apply_jurisdiction(plain, "eu") == "https://acct.eu.r2.cloudflarestorage.com"
     labelled = "https://acct.eu.r2.cloudflarestorage.com"
@@ -677,12 +711,12 @@ def test_pure_helpers() -> None:
     argv = port.jq_argv()
     assert argv[0] == "jq"
     assert len(argv) == 2, "the program only; the values travel on stdin"
-    assert argv[-1].startswith("{ACCOUNT_ED25519_PRIVATE_KEY: .ed25519_priv")
-    assert argv[-1].endswith("SELLER_EMAIL: .seller_email}")
+    assert argv[-1].startswith("{ACCOUNT_ED25519_PUBLIC_KEY: .ed25519_pub")
+    assert argv[-1].endswith("SALES_NOTIFY_EMAIL: .sales_notify}")
     document = json.loads(port.jq_input({"seller_city": "Delft"}))
     assert list(document) == [var for _key, var, _source in port.KEYS]
     assert document["seller_city"] == "Delft"
-    assert document["ed25519_priv"] == "", "an absent value is the empty string"
+    assert document["ed25519_pub"] == "", "an absent value is the empty string"
 
     assert port.wrangler_argv("rediacc-account-us") == [
         "npx",
@@ -827,6 +861,9 @@ def _port_raw(tmp_path: pathlib.Path, **extra: str):
     if not any(name.startswith(port.CONFIG_KEY_PREFIX + "_") for name in extra):
         channel = "STABLE" if extra.get("TARGET", FIXTURE_ENV["TARGET"]) == port.STABLE else "EDGE"
         extra = {"ACCOUNT_CONFIG_SERVER_KEY_EU_" + channel: CONFIG_KEY, **extra}
+    if not any(name.startswith(port.BACKUP_KEK_PREFIX + "_") for name in extra):
+        channel = "STABLE" if extra.get("TARGET", FIXTURE_ENV["TARGET"]) == port.STABLE else "EDGE"
+        extra = {"ACCOUNT_BACKUP_STORE_KEK_EU_" + channel: KEK_VALUE, **extra}
     return _run_env(PORT, tmp_path, "", drop, extra, translate=False)
 
 
@@ -927,6 +964,7 @@ def test_the_config_server_key_follows_the_region(tmp_path: pathlib.Path) -> Non
         STRIPE_WEBHOOK_SECRET_US="whsec_us",
         ACCOUNT_CONFIG_SERVER_KEY_US_STABLE="key-us",
         ACCOUNT_CONFIG_SERVER_KEY_EU_STABLE="key-eu",
+        ACCOUNT_BACKUP_STORE_KEK_US_STABLE=KEK_VALUE,
     )
     assert proc.returncode == 0, proc.stderr
     assert json.loads(document(calls))["ACCOUNT_CONFIG_SERVER_KEY"] == "key-us"
@@ -967,7 +1005,80 @@ def test_an_empty_config_server_key_is_refused_by_its_worker_key(
     assert "ACCOUNT_CONFIG_SERVER_KEY is EMPTY for" in proc.stderr
     # The printed Worker key is not a store name, so the refusal names the store entry too.
     assert "Its store entry is %s." % name in proc.stderr
-    assert port.REQUIRED_NONEMPTY[-1] == "ACCOUNT_CONFIG_SERVER_KEY"
+    assert "ACCOUNT_CONFIG_SERVER_KEY" in port.REQUIRED_NONEMPTY
+
+
+KEK_STABLE = "ACCOUNT_BACKUP_STORE_KEK_EU_STABLE"
+KEK_EDGE = "ACCOUNT_BACKUP_STORE_KEK_EU_EDGE"
+
+
+def test_the_backup_store_kek_is_pushed_under_the_worker_name(tmp_path: pathlib.Path) -> None:
+    """The vault name carries region and channel; the Worker secret is `ACCOUNT_BACKUP_STORE_KEK` and nothing else."""
+    for target, name, other in (
+        ("stable", KEK_STABLE, KEK_EDGE),
+        ("edge", KEK_EDGE, KEK_STABLE),
+    ):
+        case = tmp_path / target
+        case.mkdir()
+        proc, calls = _port_raw(case, TARGET=target, **_pair_for(target), **{name: "kek-" + target})
+        assert proc.returncode == 0, proc.stderr
+        doc = json.loads(document(calls))
+        assert doc["ACCOUNT_BACKUP_STORE_KEK"] == "kek-" + target
+        assert other not in doc
+        assert name not in doc
+
+
+def test_the_backup_store_kek_follows_the_region(tmp_path: pathlib.Path) -> None:
+    """With SUFFIX=US the EU name is ignored and the US one is pushed."""
+    proc, calls = _port_raw(
+        tmp_path,
+        SUFFIX="US",
+        **STABLE_PAIR,
+        AWS_SES_ACCESS_KEY_ID_US="sk-us",
+        AWS_SES_SECRET_ACCESS_KEY_US="ss-us",
+        OBS_OTLP_CREDENTIALS_US='{"user":"u","pass":"p"}',
+        STRIPE_WEBHOOK_SECRET_US="whsec_us",
+        ACCOUNT_CONFIG_SERVER_KEY_US_STABLE="key-us",
+        ACCOUNT_BACKUP_STORE_KEK_US_STABLE="kek-us",
+        ACCOUNT_BACKUP_STORE_KEK_EU_STABLE="kek-eu",
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert json.loads(document(calls))["ACCOUNT_BACKUP_STORE_KEK"] == "kek-us"
+
+
+@pytest.mark.parametrize(
+    ("target", "own", "stray"),
+    [("stable", KEK_STABLE, KEK_EDGE), ("edge", KEK_EDGE, KEK_STABLE)],
+)
+def test_the_other_channels_backup_store_kek_is_refused(
+    tmp_path: pathlib.Path, target: str, own: str, stray: str
+) -> None:
+    proc, calls = _port_raw(
+        tmp_path, TARGET=target, **_pair_for(target), **{own: "own-value", stray: "stray-value"}
+    )
+    assert proc.returncode == 1
+    assert calls == ""
+    first = proc.stderr.splitlines()[0]
+    assert first.startswith(
+        "%s: TARGET=%s takes its backup store KEK from %s only" % (port.SELF, target, own)
+    )
+    assert first.endswith("%s is also set." % stray)
+    for value in ("own-value", "stray-value"):
+        assert value not in proc.stderr
+        assert value not in proc.stdout
+
+
+@pytest.mark.parametrize("target", ["stable", "edge"])
+def test_an_empty_backup_store_kek_is_refused_by_its_worker_key(
+    tmp_path: pathlib.Path, target: str
+) -> None:
+    name = KEK_STABLE if target == "stable" else KEK_EDGE
+    proc, calls = _port_raw(tmp_path, TARGET=target, **_pair_for(target), **{name: ""})
+    assert proc.returncode == 1
+    assert calls == ""
+    assert "ACCOUNT_BACKUP_STORE_KEK is EMPTY for" in proc.stderr
+    assert "Its store entry is %s." % name in proc.stderr
+    assert port.REQUIRED_NONEMPTY[-1] == "ACCOUNT_BACKUP_STORE_KEK"
 
 
 def test_the_free_license_hmac_key_is_pushed_and_demanded(tmp_path: pathlib.Path) -> None:
@@ -982,6 +1093,24 @@ def test_the_free_license_hmac_key_is_pushed_and_demanded(tmp_path: pathlib.Path
     assert calls == ""
     assert "FREE_LICENSE_HMAC_KEY is EMPTY for" in proc.stderr
     assert port.REQUIRED_NONEMPTY.count("FREE_LICENSE_HMAC_KEY") == 1
+
+
+@pytest.mark.parametrize("name", ["ACCOUNT_AE_READ_TOKEN", "CLOUDFLARE_ACCOUNT_ID"])
+def test_the_analytics_engine_guards_are_pushed_and_demanded(
+    tmp_path: pathlib.Path, name: str
+) -> None:
+    """Port-only (review a3adea22.1): the value is pushed under its own name, and an empty one is refused with no wrangler call, the name on stderr and nothing on stdout."""
+    ok, calls = _port_raw(tmp_path, **_pair_for("stable"))
+    assert ok.returncode == 0, ok.stderr
+    assert json.loads(document(calls))[name]
+    refused = tmp_path / "refused"
+    refused.mkdir()
+    proc, calls = _port_raw(refused, **_pair_for("stable"), **{name: ""})
+    assert proc.returncode == 1
+    assert calls == ""
+    assert "%s is EMPTY for" % name in proc.stderr
+    assert proc.stdout == ""
+    assert port.REQUIRED_NONEMPTY.count(name) == 1
 
 
 def test_config_server_key_helper() -> None:
@@ -1043,3 +1172,47 @@ def test_no_secret_value_reaches_any_child_argv(monkeypatch: pytest.MonkeyPatch)
         if name != "OBS_OTLP_CREDENTIALS_EU":
             assert value in wrangler_stdin, "%s never reached wrangler's stdin" % name
     assert "SENTINEL-otlp-pass" in wrangler_stdin
+
+
+def test_wrangler_starts_in_the_worker_directory(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Finding e69747ea: `npx --no-install wrangler` run from the caller's directory finds no pinned install ("npx canceled due to missing packages"); only workers/account carries it."""
+    for name, value in _as_port_env(FIXTURE_ENV).items():
+        monkeypatch.setenv(name, value)
+    monkeypatch.setattr(port.common, "require_cmd", lambda *_a, **_k: "/bin/true")
+    real_run = subprocess.run
+    cwds: dict[str, object] = {}
+
+    def recording_run(argv, **kw):
+        cwds[argv[0]] = kw.get("cwd")
+        if argv[0] == "npx":
+            return subprocess.CompletedProcess(argv, 0)
+        return real_run(argv, **kw)
+
+    monkeypatch.setattr(port.subprocess, "run", recording_run)
+    assert port.main([]) == 0
+    assert cwds["npx"] == port.paths.repo_root() / "workers" / "account"
+    assert (port.paths.repo_root() / "workers" / "account").is_dir()
+    # THE CONTROL: jq, the left half of the pipe, still runs where the caller stands.
+    assert cwds["jq"] is None
+
+
+def test_the_seller_map_is_the_whole_legal_entity() -> None:
+    """PLAN-terms-acceptance E2: the regional pusher sends every one of the ten separate SELLER_* entries the `legal-entity` profile requires, and each regional profile requires all ten, so an account Worker never renders a partial contracting party. A map or profile one name short is red here, by that name."""
+    supply = json.loads((ROOT / ".ci" / "config" / "secret-supply.json").read_text("utf-8"))
+    entity = set(supply["consumers"]["legal-entity"]["required"])
+    assert len(entity) == 10
+    assert "SELLER_REGISTER_NAME" in entity
+    seller = {key for key, _var, _source in port.KEYS if key.startswith("SELLER_")}
+    assert seller == entity, "missing: %s, extra: %s" % (
+        sorted(entity - seller),
+        sorted(seller - entity),
+    )
+    for key, _var, source in port.KEYS:
+        if key.startswith("SELLER_"):
+            assert source == key, "%s is read under its own name" % key
+    for region in ("eu", "us", "asia"):
+        required = set(supply["consumers"]["account-secrets-%s" % region]["required"])
+        assert entity <= required, "account-secrets-%s lacks %s" % (
+            region,
+            sorted(entity - required),
+        )

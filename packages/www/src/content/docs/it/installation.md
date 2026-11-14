@@ -1,6 +1,6 @@
 ---
-sourceHash: "f80f4bf22d4accf1"
-sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
+sourceHash: "dee69e89a962aa32"
+sourceCommit: "9900c15aaef286077bf72464af2a52f248a555c5"
 title: "Installazione"
 description: "Installa la CLI Rediacc su Linux, macOS o Windows. È sufficiente un singolo comando e l'installazione è completata in pochi secondi."
 category: "Guides"
@@ -177,10 +177,10 @@ rdc update --channel edge      # Passa al canale edge
 rdc update --channel stable    # Torna al canale stable
 ```
 
-Installa direttamente dal canale edge:
+Gli installer a riga singola di www.rediacc.com installano il canale edge. Per installare il canale stable, imposta `REDIACC_CHANNEL`:
 
 ```bash
-REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
+REDIACC_CHANNEL=stable curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 Per i gestori di pacchetti, sostituisci `stable` con `edge` nell'URL del repository:
@@ -197,7 +197,7 @@ docker pull ghcr.io/rediacc/rdc:edge
 
 Il canale si applica uniformemente a tutti i metodi di distribuzione:
 
-- **Script di installazione**: la variabile d'ambiente `REDIACC_CHANNEL` seleziona il canale
+- **Script di installazione**: gli installer a riga singola di www usano `edge` per impostazione predefinita; la variabile d'ambiente `REDIACC_CHANNEL` seleziona un altro canale
 - **Repository dei pacchetti**: `releases.rediacc.com/{format}/{channel}/`
 - **Tag Docker**: `ghcr.io/rediacc/rdc:{channel}`
 - **Aggiornamenti CLI**: `rdc update` controlla il canale configurato durante l'installazione

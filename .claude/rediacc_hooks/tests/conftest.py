@@ -27,3 +27,16 @@ def sc(tmp_path):
     scratch = Scratch(tmp_path / "case")
     yield scratch
     scratch.close_handles()
+
+
+@pytest.fixture(autouse=True)
+def _no_ambient_git_config(tmp_path_factory, monkeypatch):
+    """Git reads no global or system config in the hook suite.
+
+    A CI job whose App token writes a global `url.*.insteadOf` turns the guards' rewrite doubt on for every case: PR 605 run 43317534585 failed `test_push_elsewhere`'s control row on it, and the guard control suites run by `test_hooks_delegates` fail the same way under that config. A test that needs a git setting writes it into its own repository."""
+    empty = tmp_path_factory.getbasetemp() / "empty-gitconfig"
+    if not empty.exists():
+        empty.write_text("", encoding="utf-8")
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(empty))
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+    monkeypatch.delenv("GIT_CONFIG_COUNT", raising=False)

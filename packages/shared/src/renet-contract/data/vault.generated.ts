@@ -102,7 +102,7 @@ export interface RenetVault {
   /** Repository info by name */
   repositories?: Record<string, RepositoryInfo>;
   /** Start precondition renet job start checks against the machine */
-  expect?: 'repo_present' | 'repo_absent' | 'repo_unmounted';
+  expect?: 'repo_present' | 'repo_absent' | 'repo_unmounted' | 'ceph_datastores_exist';
   /** Organization and API context */
   context?: ContextSection;
   /** User preferences for task execution */

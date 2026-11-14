@@ -271,8 +271,10 @@ R2's changes:
 
 ## Tasks
 
-- [ ] P0 [lead] Plan lint. Run the two gates on this file.
+- [x] P0 [lead] Plan lint. Run the two gates on this file.
+    (audit note 2026-11-04) Both gates rerun rc 0; they judge repo-wide, and citations judge added lines only. Depends-On no-dep, so the waiver was vacuous, and the plan-file pointer at line 1 proves only that the file exists.
   Owns: agent/plans/PLAN-backup-local-image.md. Accept: `python3 .ci/scripts/quality/check_plan_citations.py` rc 0 and `python3 .ci/scripts/quality/check_plan_deps.py` rc 0.
+    (ticked) 2026-11-04T09:36:19Z by d778be9d: fileline:agent/plans/PLAN-backup-local-image.md:1 P0 plan record; check_plan_citations and check_plan_deps rc=0. DEPS-WAIVED: this box's evidence does not depend on the open prerequisite
 
 - [x] R1 [writer] renet `backup export` and `backup import` (Design 2, 8).
   - Both are new cobra commands in their own files, registered in private/renet/cmd/renet/backup.go.
@@ -411,7 +413,7 @@ R2's changes:
   Owns: agent/plans/PLAN-backup-local-image.md. Accept: each step's command, rc, timing, `literalBytes` and both sha256 values recorded under "Live records"; step 1 rc 130, every other step rc 0.
 
 - [ ] L2 [live] hostinger, after L1 and with the branch renet provisioned. ASK the operator first: provisioning a branch renet restarts the router and daemons. Steps:
-  1. `./rdc.sh backup download mail@hostinger --to /tmp/rdc-bdl --config eu-remote`. Expect rc 0, state `complete`, and the sha256 compare passing.
+  1. `./rdc.sh backup download mail@hostinger --to /tmp/rdc-bdl --config eu-bench`. Expect rc 0, state `complete`, and the sha256 compare passing.
   2. The same command again. Expect rc 0 and `literalBytes` recorded.
   3. Before, during and after the run: the load and iowait sampler of agent/plans/PLAN-snapshot-read-io-cap.md, and `machine status` showing 0 transfer snapshots after each run.
   No upload runs on production.
@@ -420,8 +422,10 @@ R2's changes:
 - [x] LP-bench [live] Fresh bench receipt (PLAN-tested-on-bench ruling 3): deploy this branch to bench with deploy_bench, then record and tick through worklist.py --live-proof.
   - Accept: `live-proof bench account-smoke`
     (ticked) 2026-10-30T06:16:42Z by d778be9d: live-proof lp-a5a6c2416537 bench account-smoke rc=0 v=b0ffdd76-1edb-40a0-9517-ed940f8b3981
-- [ ] LP-hostinger [live] Fresh hostinger receipt through --config eu-bench (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree. ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+- [x] LP-hostinger [live] Fresh hostinger receipt through --config eu-remote (PLAN-tested-on-bench ruling 3), after a VERIFIED npm run vm:check -- --changed on the same tree. ASK the operator first, because provisioning a branch renet restarts the router and daemons.
+  (note) Runs through `eu-bench`, not `eu-remote`: PLAN-tested-on-bench ruling 1 as extended on 2026-11-04. The text above keeps the old name because a box's first 120 characters are its identity.
   - Accept: `live-proof hostinger renet-live`
+    (ticked) 2026-11-11T06:33:01Z by d778be9d: live-proof lp-d0eafc23530b hostinger renet-live rc=0 v=renet@sha256:4d1c0da322ddbdc4fce38739cc289d54468efcc333fbb4bc13e85cfc9377be13
 
 ## Open questions for the operator
 

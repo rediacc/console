@@ -18,9 +18,10 @@
  * that the CLI's recovery framework watches for.
  */
 
-import { WK_ACCOUNT_DEV_PORT } from '@rediacc/shared/config/well-known.generated';
+import { WK_ACCOUNT_DEV_PORT, WK_BENCH_ORIGIN } from '@rediacc/shared/config/well-known.generated';
 import type { MockInstance } from 'vitest';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { LISTING_COMPLETE_MARKER } from '../backup/backup-store-universe.js';
 
 const {
   mockConnect,
@@ -102,6 +103,8 @@ vi.mock('../account/license-refresh-state.js', () => ({
 
 vi.mock('../account/subscription-auth.js', () => ({
   getSubscriptionTokenState: mockGetSubscriptionTokenState,
+  // The backup-session verbs carry the config's account-server origin to renet (--expect-account-server).
+  getSubscriptionServerUrl: () => WK_BENCH_ORIGIN,
 }));
 
 vi.mock('../account/subscription-device-auth.js', () => ({
@@ -184,6 +187,9 @@ function installedLicence(repositoryGuid: string, datastoreId?: string) {
  */
 function storeReports(licensed: ReturnType<typeof installedLicence>[]) {
   mockExec.mockImplementation((command: string) => {
+    // The backup store pre-flight's licence listing: complete, with no licence installed.
+    if (command.includes(LISTING_COMPLETE_MARKER))
+      return Promise.resolve(`${LISTING_COMPLETE_MARKER}\n`);
     if (command.includes('datastore list --json')) {
       return Promise.resolve(JSON.stringify([{ name: 'tier1', datastoreId: DATASTORE_ID }]));
     }
@@ -237,6 +243,9 @@ describe('backup restore: licensing the target machine', () => {
     );
     mockExecStreaming.mockResolvedValue(0);
     mockExec.mockImplementation((command: string) => {
+      // The backup store pre-flight's licence listing: complete, with no licence installed.
+      if (command.includes(LISTING_COMPLETE_MARKER))
+        return Promise.resolve(`${LISTING_COMPLETE_MARKER}\n`);
       if (command.includes('datastore list --json')) {
         return Promise.resolve(JSON.stringify([{ name: 'tier1', datastoreId: DATASTORE_ID }]));
       }
@@ -271,7 +280,7 @@ describe('backup restore: licensing the target machine', () => {
   it('licenses the SOURCE guid, in the TARGET datastore scope', async () => {
     await localExecutorService.execute(restoreOptions);
 
-    expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({
+    expect(mockIssueRepoLicense.mock.calls[0][3]).toMatchObject({
       // Not a carrier, not a fresh guid, not the target NAME: the source guid, which is the licence `repository_up` will look for after `--up`, guid-specifically and with no any-repo fallback.
       repositoryGuid: SOURCE_GUID,
       grandGuid: SOURCE_GUID,
@@ -294,7 +303,7 @@ describe('backup restore: licensing the target machine', () => {
       params: { ...restoreOptions.params, lineage: SOURCE_GUID },
     });
 
-    expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({
+    expect(mockIssueRepoLicense.mock.calls[0][3]).toMatchObject({
       repositoryGuid: FORK_CHILD_GUID,
       grandGuid: SOURCE_GUID,
       kind: 'fork',
@@ -305,7 +314,7 @@ describe('backup restore: licensing the target machine', () => {
   it('sizes the licence from the snapshot manifest, rounded up', async () => {
     await localExecutorService.execute(restoreOptions);
 
-    expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({ requestedSizeGb: 13 });
+    expect(mockIssueRepoLicense.mock.calls[0][3]).toMatchObject({ requestedSizeGb: 13 });
     // The lookup is exact, not "newest": the 999 GB decoy manifest in the same lineage must not be the one that was read.
     expect(mockAccountServerFetch).toHaveBeenCalledWith(
       `/account/api/v1/backups/snapshots/resolve?lineage=${SOURCE_GUID}&anchorSnapshotId=${SNAPSHOT_ID}&includeDeleted=1`
@@ -323,7 +332,7 @@ describe('backup restore: licensing the target machine', () => {
     const result = await localExecutorService.execute(restoreOptions);
 
     expect(result.success).toBe(true);
-    expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({ requestedSizeGb: 1 });
+    expect(mockIssueRepoLicense.mock.calls[0][3]).toMatchObject({ requestedSizeGb: 1 });
     expect(warnSpy.mock.calls.map((c) => String(c[0])).join('\n')).toContain(
       'Could not read the size of snapshot'
     );
@@ -358,7 +367,7 @@ describe('backup restore: licensing the target machine', () => {
     await localExecutorService.execute(restoreOptions);
 
     expect(mockIssueRepoLicense).toHaveBeenCalledTimes(1);
-    expect(mockIssueRepoLicense.mock.calls[0][2]).toMatchObject({ repositoryGuid: SOURCE_GUID });
+    expect(mockIssueRepoLicense.mock.calls[0][3]).toMatchObject({ repositoryGuid: SOURCE_GUID });
   });
 
   // T5c, nor is it "the right guid, anywhere". A blob in a different datastore population is one renet will not read for this restore.
@@ -436,6 +445,9 @@ describe('backup restore: licensing the target machine', () => {
   // T5f, an older renet that does not know `--repo` fails the probe, and a probe that cannot answer means "issue", never "refuse".
   it('issues when the store probe fails', async () => {
     mockExec.mockImplementation((command: string) => {
+      // The backup store pre-flight's licence listing: complete, with no licence installed.
+      if (command.includes(LISTING_COMPLETE_MARKER))
+        return Promise.resolve(`${LISTING_COMPLETE_MARKER}\n`);
       if (command.includes('datastore list --json')) {
         return Promise.resolve(JSON.stringify([{ name: 'tier1', datastoreId: DATASTORE_ID }]));
       }
@@ -469,7 +481,7 @@ describe('backup restore: licensing the target machine', () => {
     expect(mockExecStreaming).toHaveBeenCalledTimes(2);
     // Once in the pre-flight, once in recovery: both for the SOURCE guid.
     expect(mockIssueRepoLicense).toHaveBeenCalledTimes(2);
-    expect(mockIssueRepoLicense.mock.calls[1][2]).toMatchObject({ repositoryGuid: SOURCE_GUID });
+    expect(mockIssueRepoLicense.mock.calls[1][3]).toMatchObject({ repositoryGuid: SOURCE_GUID });
     expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
   });
 
@@ -493,7 +505,7 @@ describe('backup restore: licensing the target machine', () => {
     expect(result.success).toBe(true);
     expect(mockExecStreaming).toHaveBeenCalledTimes(2);
     expect(mockIssueRepoLicense).toHaveBeenCalledTimes(2);
-    expect(mockIssueRepoLicense.mock.calls[1][2]).toMatchObject({ repositoryGuid: SOURCE_GUID });
+    expect(mockIssueRepoLicense.mock.calls[1][3]).toMatchObject({ repositoryGuid: SOURCE_GUID });
     expect(mockRefreshRepoLicensesBatch).not.toHaveBeenCalled();
   });
 });

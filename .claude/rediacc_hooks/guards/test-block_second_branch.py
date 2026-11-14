@@ -16,6 +16,10 @@ import subprocess
 import sys
 import tempfile
 
+import _hookpath
+
+from rediacc_hooks.guards import _backup_push as BP
+
 HERE = pathlib.Path(__file__).resolve().parent
 DISPATCH = str(HERE.parent / "dispatch.py")
 STEM = "block_second_branch"
@@ -213,6 +217,16 @@ CASES = [
         False,
     ),
     ("an empty command", "", FEATURE, GH_EMPTY, False),
+]
+
+# BOX G5 OF PLAN-local-first-delivery: the shared backup-ref cases (`_backup_push.CASES`) in a feature checkout, where every remote BRANCH other than the live one is refused. A destination outside `refs/heads/` names no branch (`commit_policy.push_destinations`), so a backup-only push the predicate does not admit was allowed before G5 and still is; what this guard must keep refusing is the case naming `refs/heads/`, mixed or not.
+BACKUP_WORLDS = {
+    True: BP.plant(make_repo("0923-1")),
+    False: BP.plant(make_repo("0923-1"), pinned=False),
+}
+CASES += [
+    (label, command, BACKUP_WORLDS[pinned], GH_EMPTY, not admitted and "refs/heads/" in command)
+    for label, command, pinned, admitted in BP.CASES
 ]
 
 BROKEN_RUNNER = (

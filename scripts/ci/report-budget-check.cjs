@@ -1,6 +1,6 @@
 // Post a CI time budget check failure (PLAN-ci-time-budget T3.3) to the SAME rolling "nightly is red" issue thread report-nightly-status.cjs already keeps -- reusing its label/title constants (read-only import; this file never edits that one) rather than opening a second thread for what is really one "CI health" surface.
 //
-// WHY A SEPARATE POSTER AND NOT reportNightlyStatus ITSELF. That function reads NIGHTLY_RUN_ID/CONCLUSION/EVENT from a `workflow_run: completed` payload of "Console CI"; housekeeping.yml's own 03:00 cron is a DIFFERENT trigger with no such payload, so this posts its own dated section onto the same issue instead of forcing an unrelated trigger shape through that function's env contract.
+// WHY A SEPARATE POSTER AND NOT reportNightlyStatus ITSELF. That function reads NIGHTLY_RUN_ID/CONCLUSION/EVENT from a `workflow_run: completed` payload of "Console CI"; ops-housekeeping.yml's own 03:00 cron is a DIFFERENT trigger with no such payload, so this posts its own dated section onto the same issue instead of forcing an unrelated trigger shape through that function's env contract.
 //
 // Env: BUDGET_CHECK_SUMMARY_PATH - a file holding budget_report.py --check's own stdout+stderr
 //
@@ -48,7 +48,7 @@ const reportBudgetCheck = async ({ github, context, core }) => {
       summary,
       '```',
       '',
-      '<sub>Posted automatically by PLAN-ci-time-budget T3.3 (housekeeping.yml, daily 03:00 UTC).',
+      '<sub>Posted automatically by PLAN-ci-time-budget T3.3 (ops-housekeeping.yml, daily 03:00 UTC).',
       'A leg over 12 minutes, or a committed estimate drifting more than 25% from measured,',
       'means .ci/config/lane-durations.json needs `budget_report.py --refresh`; a gate-cost',
       'finding (the `gate_costs` lines) means .ci/config/gate-costs.json needs `gate_costs.py --refresh`.</sub>',

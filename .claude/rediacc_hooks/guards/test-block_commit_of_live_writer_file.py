@@ -51,6 +51,7 @@ SEEDED = (
     "src/live.ts",
     "src/done.ts",
     "src/other.ts",
+    "src/lease.ts",
     "lib/child.py",
     "lib/grand.py",
     "docs/a.md",
@@ -109,6 +110,14 @@ guard.write_session(
             "",
         ),
         (DONE, "suite finished writer", [str(REPO / "src/done.ts")], False, ""),
+        # A lease writer edits inside its own tree; the commit names the same file in the main tree.
+        (
+            "asuiteleasewriter0006",
+            "suite lease writer",
+            [str(REPO / ".claude/worktrees/x/src/lease.ts")],
+            True,
+            "",
+        ),
         (
             "asuitenestwriter00005",
             "suite nested-submodule writer",
@@ -121,6 +130,14 @@ guard.write_session(
         # Finished under a finished parent, two levels below the live writer.
         (GRAND, "suite grand-writer", [str(REPO / "lib/grand.py")], False, CHILD),
     ],
+)
+# The same file edited in the main tree, by a live writer of another session.
+MAIN_SESSION = "c0ffee11-live-writer-suite-000000000000"
+guard.write_session(
+    CONFIG,
+    REPO,
+    MAIN_SESSION,
+    [("asuitemainwriter0007", "suite main-tree writer", [str(REPO / "src/lease.ts")], True, "")],
 )
 # A session directory with no subagents is an honest empty roster, not an unreadable one.
 EMPTY_SESSION = "e0e0e0e0-live-writer-suite-000000000000"
@@ -176,6 +193,22 @@ CASES = [
         SESSION,
     ),
     ("a directory pathspec covers it", "git commit -F m -- src/", None, True, LIVE, SESSION),
+    (
+        "a lease writer's own-tree edit does not claim the main-tree file",
+        "git commit -F m -- src/lease.ts",
+        None,
+        False,
+        "",
+        SESSION,
+    ),
+    (
+        "CONTROL: a main-tree writer on the same file is still refused",
+        "git commit -F m -- src/lease.ts",
+        None,
+        True,
+        "asuitemainwriter0007",
+        MAIN_SESSION,
+    ),
     # ---- a gitlink pathspec commits the submodule pointer, never the submodule's files (#e59c13a0)
     (
         "a submodule root pathspec does not cover its files",

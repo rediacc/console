@@ -48,6 +48,9 @@ vi.mock('../../services/config/config-resources.js', () => ({
         if (prop === 'getRepository') {
           return async (key: string) => repos.get(key);
         }
+        if (prop === 'listRepositories') {
+          return async () => [...repos].map(([name, config]) => ({ name, config }));
+        }
         return (...args: unknown[]) => {
           configWrites.push(`${prop}(${JSON.stringify(args)})`);
         };
@@ -295,7 +298,11 @@ describe('backup purge', () => {
     expect(deleteCalls()).toHaveLength(1);
     expect(mockSuccess).not.toHaveBeenCalled();
     const warned = mockTCalls.find((c) => c.key === 'commands.backup.purge.delayed');
-    expect(warned?.params).toMatchObject({ name: 'shop', when: '2026-11-09 08:00' });
+    expect(warned?.params).toMatchObject({
+      name: 'shop',
+      when: '2026-11-09 08:00',
+      cancel: 'rdc backup purge shop --cancel',
+    });
     expect(mockTCalls.some((c) => c.key === 'commands.backup.purge.usageDelta')).toBe(false);
   });
 
@@ -389,6 +396,101 @@ describe('backup purge', () => {
     mockPolicy.mockRejectedValue(new Error('errors.agent.grandGuard'));
     await expect(run(['shop', '-y'])).rejects.toThrow('errors.agent.grandGuard');
     expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  describe('--lineage, for a lineage whose repository is gone (#1e9cacce)', () => {
+    beforeEach(() => {
+      // The repository was deleted without --purge-backups: no config entry owns the lineage.
+      repos.clear();
+    });
+
+    it('-y purges the named lineage without a repo ref and without prompting', async () => {
+      await run(['--lineage', LINEAGE, '-y']);
+
+      const deletes = deleteCalls();
+      expect(deletes).toHaveLength(1);
+      expect(deletes[0][0]).toBe(`/account/api/v1/backups/lineages/${LINEAGE}`);
+      expect(mockResolveRef).not.toHaveBeenCalled();
+      expect(mockAskInput).not.toHaveBeenCalled();
+      expect(mockPolicy).toHaveBeenCalledWith('backup purge', undefined, LINEAGE);
+      expect(mockSuccess).toHaveBeenCalledWith('commands.backup.purge.success');
+      expect(configWrites).toEqual([]);
+    });
+
+    it('asks for the lineage id, and anything else cancels', async () => {
+      mockAskInput.mockResolvedValue('shop');
+      await run(['--lineage', LINEAGE]);
+      expect(mockTCalls.some((c) => c.key === 'commands.backup.purge.confirmLineage')).toBe(true);
+      expect(deleteCalls()).toHaveLength(0);
+
+      mockAskInput.mockResolvedValue(LINEAGE);
+      await run(['--lineage', LINEAGE]);
+      expect(deleteCalls()).toHaveLength(1);
+    });
+
+    it('a lineage a config repository still owns is refused before any account call', async () => {
+      repos.set('shop', { repositoryGuid: LINEAGE });
+      await expect(run(['--lineage', LINEAGE, '-y'])).rejects.toThrow(
+        'commands.backup.purge.lineageOwned'
+      );
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('a fork in the config owns its grand lineage too', async () => {
+      repos.set('shop:fork', { repositoryGuid: 'fork-guid', grandGuid: LINEAGE });
+      await expect(run(['--lineage', LINEAGE, '-y'])).rejects.toThrow(
+        'commands.backup.purge.lineageOwned'
+      );
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it('a delayed purge names the cancel by lineage', async () => {
+      const served = mockFetch.getMockImplementation() as (...a: unknown[]) => Promise<unknown>;
+      mockFetch.mockImplementation((path: string, init?: { method?: string }) =>
+        init?.method === 'DELETE'
+          ? Promise.resolve({
+              lineageGuid: LINEAGE,
+              done: false,
+              delayed: true,
+              purgeAfter: '2026-11-09T08:00:00.000Z',
+              freedBytes: 0,
+              deletedSnapshots: 0,
+              deletedChunks: 0,
+              deletedBytes: 0,
+            })
+          : served(path, init)
+      );
+      await run(['--lineage', LINEAGE, '-y']);
+      const warned = mockTCalls.find((c) => c.key === 'commands.backup.purge.delayed');
+      expect(warned?.params.cancel).toBe(`rdc backup purge --lineage ${LINEAGE} --cancel`);
+    });
+
+    it('--cancel posts the cancel route for the named lineage', async () => {
+      mockFetch.mockResolvedValue({ lineageGuid: LINEAGE, cancelled: true });
+      await run(['--lineage', LINEAGE, '--cancel']);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch.mock.calls[0][0]).toBe(
+        `/account/api/v1/backups/lineages/${LINEAGE}/purge/cancel`
+      );
+    });
+
+    it('--cancel runs while a fork of the deleted repository still holds the lineage', async () => {
+      repos.set('shop:fork', { repositoryGuid: 'fork-guid', grandGuid: LINEAGE });
+      mockFetch.mockResolvedValue({ lineageGuid: LINEAGE, cancelled: true });
+      await run(['--lineage', LINEAGE, '--cancel']);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(mockFetch.mock.calls[0][0]).toBe(
+        `/account/api/v1/backups/lineages/${LINEAGE}/purge/cancel`
+      );
+    });
+
+    it('neither a ref nor --lineage, or both, is refused before any account call', async () => {
+      await expect(run(['-y'])).rejects.toThrow('commands.backup.purge.targetRequired');
+      await expect(run(['shop', '--lineage', LINEAGE, '-y'])).rejects.toThrow(
+        'commands.backup.purge.targetRequired'
+      );
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
   });
 
   it('a lineage with nothing stored sends no DELETE', async () => {

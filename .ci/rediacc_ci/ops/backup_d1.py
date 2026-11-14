@@ -1,8 +1,8 @@
 """Port of `scripts/ops/backup-d1.sh` (148 lines): export the account D1 databases to `.backups/`.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_d1 [--dry-run] [--self-destruct] [production|edge]
+    PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_d1 [--dry-run] [--self-destruct] [shared|bench|production|edge]
 
-Writes `.backups/production/account-db-<region>-<UTC stamp>.sql` and `.backups/edge/edge-account-db-<region>-<UTC stamp>.sql`, one `wrangler d1 export --remote` per region. One timestamp covers the whole run so a regional set groups as a unit. Auth is `cf_auth` (a ready `CF_MANAGEMENT_TOKEN`, or the Global API Key pair from which a scoped token is minted).
+Writes `.backups/shared/account-<region>-<UTC stamp>.sql` (the default: the one shared database of each region), `.backups/bench/account-bench-<UTC stamp>.sql` (`bench`), and, for archiving the databases the rename retired before they are deleted, `.backups/production/account-db-<region>-<UTC stamp>.sql` (`production`) and `.backups/edge/edge-account-db-<region>-<UTC stamp>.sql` (`edge`), one `wrangler d1 export --remote` per region. One timestamp covers the whole run so a regional set groups as a unit. Auth is `cf_auth` (a ready `CF_MANAGEMENT_TOKEN`, or the Global API Key pair from which a scoped token is minted).
 
 RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in `tests/test_ops_backup_d1.py` that fails on the bash behaviour).
 
@@ -17,20 +17,48 @@ THE PRE-SIGNED URL FILTER IS KEPT. Wrangler prints a pre-signed R2 URL valid for
 from __future__ import annotations
 
 import datetime
+import json
 import shutil
 import subprocess
 import sys
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import wrangler
-from rediacc_ci.ops import cf_auth
+from rediacc_ci.ops import bench_preflight, cf_auth
 
 ACCOUNT_ID = cf_auth.DEFAULT_ACCOUNT_ID
 REGIONS = ("eu", "us", "asia")
+# The shared set and bench are the live databases; the production and edge prefixes name the databases the rename retired, kept only so each can be archived before it is deleted.
 PROD_DB_PREFIX = "account-db"
 EDGE_DB_PREFIX = "edge-account-db"
-USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_d1 [--dry-run] [--self-destruct] [production|edge]"
+USAGE = "Usage: PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_d1 [--dry-run] [--self-destruct] [shared|bench|production|edge]"
 FILTERED = ("r2.cloudflarestorage.com", "valid for one hour")
+
+
+def shared_databases() -> list[str]:
+    """The live database of each region, as regions.json names it (`d1.name`: `account-<r>`, with `-j` once the database was created under a jurisdiction)."""
+    with open(paths.repo_root() / "regions.json", encoding="utf-8") as fh:
+        rows = {r["id"]: r for r in json.load(fh)["regions"]}
+    return [rows[r]["d1"]["name"] for r in REGIONS]
+
+
+def bench_database() -> str:
+    """The bench database, as wrangler.bench.toml's DB binding names it."""
+    return bench_preflight.bench_names().database_name
+
+
+def export_plan(target: str) -> list[tuple[str, str]]:
+    """The (set, database) pairs one run exports. No target (or `shared`) is the live shared set only: the retired `production` and `edge` sets are archived by naming them."""
+    plan: list[tuple[str, str]] = []
+    if target in ("", "shared"):
+        plan += [("shared", name) for name in shared_databases()]
+    if target == "bench":
+        plan.append(("bench", bench_database()))
+    if target == "production":
+        plan += [("production", "%s-%s" % (PROD_DB_PREFIX, r)) for r in REGIONS]
+    if target == "edge":
+        plan += [("edge", "%s-%s" % (EDGE_DB_PREFIX, r)) for r in REGIONS]
+    return plan
 
 
 def _human_size(size: int) -> str:
@@ -43,10 +71,11 @@ def _human_size(size: int) -> str:
 
 
 def _export(env: dict[str, str], db_name: str, out_file: str) -> int:
-    """Run the wrangler export, echoing its output minus the pre-signed URL lines; return its exit status."""
+    """Run the wrangler export, echoing its output minus the pre-signed URL lines; return its exit status. It starts in `workers/account`, the install `npx --no-install` finds (finding e69747ea)."""
     proc = subprocess.Popen(
         [*wrangler.ARGV, "d1", "export", db_name, "--remote", "--output=%s" % out_file],
         env=env,
+        cwd=paths.repo_root() / "workers" / "account",
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
@@ -91,6 +120,10 @@ def main(argv: list[str]) -> int:
             dry_run = True
         elif arg == "--self-destruct":
             self_destruct = True
+        elif arg == "shared":
+            target = "shared"
+        elif arg == "bench":
+            target = "bench"
         elif arg in ("production", "prod"):
             target = "production"
         elif arg == "edge":
@@ -125,11 +158,7 @@ def main(argv: list[str]) -> int:
         log.step("D1 Database Backup (per-region)")
         if dry_run:
             log.warn("DRY-RUN mode: no exports will be performed")
-        plan = []
-        if target in ("", "production"):
-            plan += [("production", "%s-%s" % (PROD_DB_PREFIX, r)) for r in REGIONS]
-        if target in ("", "edge"):
-            plan += [("edge", "%s-%s" % (EDGE_DB_PREFIX, r)) for r in REGIONS]
+        plan = export_plan(target)
         for env_name, db_name in plan:
             if not _backup_database(env, backup_dir, stamp, env_name, db_name, dry_run):
                 return 1

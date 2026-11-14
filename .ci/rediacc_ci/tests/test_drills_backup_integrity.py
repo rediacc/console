@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import base64
+import contextlib
 import hashlib
 import http.client
 import json
@@ -14,6 +15,7 @@ import urllib.error
 
 import pytest
 
+from rediacc_ci.core import dockerx
 from rediacc_ci.drills import backup
 from rediacc_ci.drills import backup_onprem as onprem
 from rediacc_ci.drills import backup_renet as renet
@@ -196,3 +198,27 @@ def test_the_new_legs_are_registered_and_need_the_plane() -> None:
         opts = backup.Options()
         opts.legs = leg
         assert opts.needs_plane()
+
+
+@pytest.mark.parametrize(
+    "reason", ["unreachable: the docker socket is held by something that is not the engine", None]
+)
+def test_preflight_tools_prints_the_docker_reason(
+    reason: str | None,
+    tmp_path: pathlib.Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    # The plane legs refuse with dockerx's own sentence; a usable docker (None, the control) prints no docker line.
+    sub = make_backup(tmp_path, monkeypatch)
+    assert sub.o.needs_plane()
+    monkeypatch.setattr(dockerx, "cannot_run_reason", lambda *_a, **_k: reason)
+    with contextlib.suppress(SystemExit):
+        sub.preflight_tools()
+    captured = capsys.readouterr()
+    text = captured.out + captured.err
+    if reason:
+        assert "Docker is not usable" in text
+        assert reason in text
+    else:
+        assert "Docker is not usable" not in text

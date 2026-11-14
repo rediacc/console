@@ -109,7 +109,11 @@
       "cookiePolicy": "Küpsiste poliitika",
       "refundPolicy": "Tagastuspoliitika",
       "telemetryPolicy": "Telemetria poliitika",
-      "legalInformation": "Õiguslik teave"
+      "legalInformation": "Õiguslik teave",
+      "acceptableUsePolicy": "Lubatud kasutuse poliitika",
+      "dataProcessingAgreement": "Andmetöötluslepe",
+      "serviceLevelAgreement": "Teenusetaseme leping",
+      "enterpriseLicense": "Enterprise-litsents"
     },
     "legalDisclosure": {
       "summary": "{{companyName}} | Registrikood {{registryCode}} | KM-number {{vatNumber}} |",
@@ -331,7 +335,25 @@
     "subtitle": "Sinu konto, arveldus ja konfiguratsioonid jäävad valitud piirkonda.",
     "reassurance": "Sinu serverite andmed ja varukoopiad jäävad sinu enda infrastruktuuri.",
     "footer": "Vali endale lähim piirkond või see, mida sinu organisatsioon nõuab.",
-    "footerNote": "Pärast registreerumist ei saa seda muuta."
+    "footerNote": "Pärast registreerumist ei saa seda muuta.",
+    "resolving": "Otsime sinu piirkonda...",
+    "countdown": "Suuname sind piirkonda {{region}} {{seconds}} sekundi pärast.",
+    "countdownAnnounce": "Suuname sind piirkonda {{region}} {{seconds}} sekundi pärast. Vali Tühista, et siia jääda, või Muuda piirkonda, et valida mõni teine.",
+    "cancel": "Tühista",
+    "change": "Muuda piirkonda",
+    "enterprise": "Ettevõttekunde?",
+    "lookup": {
+      "description": "Sisesta oma töö e-posti aadress, et leida oma organisatsiooni sisselogimine.",
+      "label": "Töö e-posti aadress",
+      "placeholder": "sina@firma.ee",
+      "privacy": "Piirkonna leidmiseks saadetakse ainult domeen. Sinu e-posti aadress täidab ainult sisselogimislehe ette.",
+      "submit": "Jätka",
+      "checking": "Kontrollin...",
+      "back": "Tagasi piirkondade juurde",
+      "invalid": "Sisesta ettevõtte domeen, näiteks company.com.",
+      "miss": "Selle domeeni jaoks ei leitud ettevõtte sisselogimist. Vali hoopis piirkond.",
+      "error": "Otsing pole praegu saadaval. Vali hoopis piirkond."
+    }
   },
   "solutions": {
     "categories": {

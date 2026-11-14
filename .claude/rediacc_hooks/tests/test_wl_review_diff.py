@@ -5,6 +5,7 @@ A commit that carries `agent/reviews/<branch>/<sha>.md` beside its own change us
 
 from __future__ import annotations
 
+import contextlib
 import os
 import subprocess
 
@@ -58,3 +59,308 @@ def test_control_the_commits_own_change_is_still_sent_whole(tmp_path):
     diff, _total, _files, _cut = R.capped_diff(str(repo), sha, 100_000)
     assert "diff --git a/tool.py b/tool.py" in diff
     assert "print('changed')" in diff
+
+
+def test_move_search_note_says_so_when_the_commits_cannot_be_counted(monkeypatch):
+    """Review 21ac17b2.1: a failing `git rev-list --count` read as 0 commits, so the refusal omitted the cut-short sentence. CONTROL: a short counted range stays silent."""
+    monkeypatch.setattr(R, "git", lambda *_a, **_k: (0, "3\n"))
+    assert R.move_search_note("r", "b" * 12, "f" * 12) == ""
+    monkeypatch.setattr(R, "git", lambda *_a, **_k: (128, ""))
+    assert "could not count" in R.move_search_note("r", "b" * 12, "f" * 12)
+    monkeypatch.setattr(R, "git", lambda *_a, **_k: (0, "many\n"))
+    assert "could not count" in R.move_search_note("r", "b" * 12, "f" * 12)
+    monkeypatch.setattr(R, "git", lambda *_a, **_k: (0, "%d\n" % (R.MOVE_MAX_COMMITS + 5)))
+    assert "read only the newest" in R.move_search_note("r", "b" * 12, "f" * 12)
+
+
+def _commit_files(tmp_path, name, files):
+    """A repo whose last commit writes `files` ({path: text}) over a base commit; returns (repo, sha)."""
+    repo = tmp_path / name
+    repo.mkdir()
+    _git(repo, "init", "-q", "--initial-branch=main")
+    (repo / "README.md").write_text("base\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "base")
+    for rel, text in files.items():
+        path = repo / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "change")
+    return repo, _git(repo, "rev-parse", "HEAD")
+
+
+def _cfg():
+    """The console's real config: a scratch repo carries none of its own."""
+    return R.load_config(R.CONSOLE_ROOT)
+
+
+def test_control_a_code_only_commit_diff_is_unchanged(tmp_path):
+    repo, sha = _commit_files(tmp_path, "c", {"a.py": "x = 1\n"})
+    diff, _total, files, cut = R.capped_diff(str(repo), sha, 100_000)
+    assert "diff --git a/a.py b/a.py" in diff
+    assert files == 1
+    assert cut == []
+
+
+def test_a_queue_record_leaves_the_diff_and_the_code_stays(tmp_path):
+    repo, sha = _commit_files(tmp_path, "q", {"a.py": "x = 1\n", "agent/plans/QUEUE.md": "queue\n"})
+    diff, _total, files, _cut = R.capped_diff(str(repo), sha, 100_000)
+    assert "a.py" in diff
+    assert "QUEUE.md" not in diff
+    assert files == 1
+
+
+def test_the_other_skip_paths_leave_the_diff(tmp_path):
+    repo, sha = _commit_files(
+        tmp_path,
+        "o",
+        {
+            "a.py": "x = 1\n",
+            "agent/s1/STATE.md": "s\n",
+            "agent/ledgers/census-x.jsonl": "{}\n",
+            ".ci/config/plan-boxes.json": "{}\n",
+            "agent/worklist/events.jsonl": "{}\n",
+        },
+    )
+    diff, _total, files, _cut = R.capped_diff(str(repo), sha, 100_000)
+    for gone in ("STATE.md", "ledgers", "plan-boxes", "worklist"):
+        assert gone not in diff
+    assert files == 1
+
+
+def test_skip_globs_union_the_record_paths_read_at_runtime(tmp_path):
+    (tmp_path / ".ci" / "policy").mkdir(parents=True)
+    (tmp_path / ".ci" / "policy" / "record-paths.json").write_text(
+        '{"records": [{"glob": "agent/worklist/*.jsonl", "except": []}]}'
+    )
+    skips = R.skip_globs(str(tmp_path), {"review_skip_globs": ["agent/ledgers/plan-*.jsonl"]})
+    assert R.is_skipped_path("agent/worklist/e.jsonl", skips)
+    assert R.is_skipped_path("agent/ledgers/plan-b.jsonl", skips)
+    assert R.is_skipped_path("agent/reviews/b/clean.jsonl", skips)
+    assert not R.is_skipped_path("a.py", skips)
+    assert not R.is_skipped_path("agent/worklist/sub/e.jsonl", skips)
+
+
+def test_skip_globs_without_the_policy_import_keep_the_config_globs(tmp_path, monkeypatch, capsys):
+    real = R.importlib.import_module
+
+    def broken(name, *a, **kw):
+        if name == "wl_proc":
+            raise ImportError("planted: wl_proc is not importable")
+        return real(name, *a, **kw)
+
+    (tmp_path / ".ci" / "policy").mkdir(parents=True)
+    (tmp_path / ".ci" / "policy" / "record-paths.json").write_text(
+        '{"records": [{"glob": "agent/worklist/*.jsonl", "except": []}]}'
+    )
+    cfg = {"review_skip_globs": ["agent/ledgers/plan-*.jsonl"]}
+    # CONTROL: with the import intact the record-paths glob is read.
+    with_policy = R.skip_globs(str(tmp_path), cfg)
+    assert R.is_skipped_path("agent/worklist/e.jsonl", with_policy)
+    assert "record-paths globs not loaded" not in capsys.readouterr().err
+    monkeypatch.setattr(R.importlib, "import_module", broken)
+    skips = R.skip_globs(str(tmp_path), cfg)
+    err = capsys.readouterr().err
+    assert "record-paths globs not loaded" in err, err
+    assert "planted: wl_proc" in err, err
+    assert R.is_skipped_path("agent/ledgers/plan-b.jsonl", skips)
+    assert R.is_skipped_path("agent/reviews/b/clean.jsonl", skips)
+    assert not R.is_skipped_path("agent/worklist/e.jsonl", skips)
+    assert not R.is_skipped_path("a.py", skips)
+
+
+def test_a_record_only_commit_is_skipped_without_a_model_call(tmp_path):
+    repo, sha = _commit_files(
+        tmp_path, "r", {"agent/plans/QUEUE.md": "queue\n", "agent/s1/STATE.md": "s\n"}
+    )
+
+    def no_model(*_a):
+        raise AssertionError("a record-only commit reached the model")
+
+    path = R.run_review(
+        repo, "console", sha, "1110-1", reviewer=no_model, cfg=_cfg(), log=lambda _m: None
+    )
+    assert path is not None
+    assert R.read_ledger(path)[0][0].verdict == "skipped (record-only)"
+
+
+def test_control_a_mixed_commit_still_reaches_the_model_with_only_the_code(tmp_path):
+    repo, sha = _commit_files(tmp_path, "m", {"a.py": "x = 1\n", "agent/plans/QUEUE.md": "queue\n"})
+    seen = []
+
+    def model(prompt, *_a):
+        seen.append(prompt)
+        return {"verdict": "clean", "findings": [], "labels": None}, ""
+
+    R.run_review(repo, "console", sha, "1110-2", reviewer=model, cfg=_cfg(), log=lambda _m: None)
+    assert len(seen) == 1
+    assert "a.py" in seen[0]
+    assert "QUEUE.md" not in seen[0]
+
+
+def test_a_skip_glob_that_would_cover_code_is_refused(tmp_path):
+    """Review 623c29ce.1: the skip list lives in files a commit can edit, so a glob reaching code is refused."""
+    (tmp_path / ".ci" / "policy").mkdir(parents=True)
+    (tmp_path / ".ci" / "policy" / "record-paths.json").write_text('{"records": []}')
+    for bad in ("**", "agent/**", "*.py", ".ci/config/*.json", "packages/**", ".ci/policy/*.json"):
+        skips = R.skip_globs(str(tmp_path), {"review_skip_globs": [bad]})
+        for code in (
+            "a.py",
+            "agent/plans/PLAN-y.md",
+            ".ci/config/commit-review.json",
+            ".ci/policy/record-paths.json",
+        ):
+            assert not R.is_skipped_path(code, skips), (bad, code)
+    # CONTROL: the real record globs stay admitted.
+    for good in (
+        "agent/plans/QUEUE.md",
+        "agent/*/STATE.md",
+        "agent/ledgers/plan-*.jsonl",
+        ".ci/config/plan-boxes.json",
+    ):
+        assert R.admissible_skip_glob(good), good
+    skips = R.skip_globs(str(tmp_path), {"review_skip_globs": ["agent/*/STATE.md"]})
+    assert R.is_skipped_path("agent/s1/STATE.md", skips)
+
+
+def test_a_commit_widening_the_skip_list_is_still_reviewed(tmp_path):
+    """The commit that writes "**" into the skip list is itself reviewed, and the "**" is refused."""
+    repo, sha = _commit_files(
+        tmp_path, "w", {".ci/config/commit-review.json": '{"review_skip_globs": ["**"]}\n'}
+    )
+    seen = []
+
+    def model(*a):
+        seen.append(a)
+        raise RuntimeError("stop after the call")
+
+    with contextlib.suppress(RuntimeError):
+        R.run_review(
+            repo, "console", sha, "1110-1", reviewer=model, cfg=_cfg(), log=lambda _m: None
+        )
+    assert seen, "a commit that widens the skip list must reach the model"
+
+
+def test_the_stat_honours_a_skip_globs_except_like_the_diff(tmp_path):
+    """Review 623c29ce.2: a path a skip glob's `except` keeps is listed in the stat as in the diff, and a covered one leaves both."""
+    (tmp_path / ".ci" / "policy").mkdir(parents=True)
+    (tmp_path / ".ci" / "policy" / "record-paths.json").write_text(
+        '{"records": [{"glob": "agent/worklist/*.jsonl", "except": ["agent/worklist/keep.jsonl"]}]}'
+    )
+    skips = R.skip_globs(str(tmp_path), {"review_skip_globs": []})
+    paths = ["agent/worklist/e.jsonl", "agent/worklist/keep.jsonl", "a.py"]
+    assert R.stat_paths(paths, skips) == ["agent/worklist/keep.jsonl", "a.py"]
+    # CONTROL: with no skip covering them, every path stays.
+    assert R.stat_paths(["a.py", "b.py"], skips) == ["a.py", "b.py"]
+
+
+def test_a_skip_glob_admits_only_record_files(tmp_path):
+    """Review c8abe868.1: the rule is positive, so a code-extension glob under a record root is refused."""
+    for bad in (
+        "agent/**/*.py",
+        "agent/**",
+        "agent/plans/*.md",
+        "agent/*.*",
+        ".ci/config/effort.json",
+        ".ci/config/*.json",
+        "agent/x/*.json*",
+        "agent/**/*.json",
+        "agent/*/*.json",
+        "agent/*.json",
+        "agent/x/**/*.jsonl",
+        "agent/?/*.json",
+        "agent/[!x]/*.json",
+        "agent/x?/*.jsonl",
+    ):
+        assert not R.admissible_skip_glob(bad), bad
+    for good in (
+        "agent/plans/QUEUE.md",
+        "agent/*/STATE.md",
+        "agent/ledgers/plan-*.jsonl",
+        "agent/worklist/*.jsonl",
+        ".ci/config/plan-boxes.json",
+        ".ci/config/carried-reds.json",
+    ):
+        assert R.admissible_skip_glob(good), good
+    # CONTROL: the review records stay skipped even though "agent/reviews/**" is not admissible by shape.
+    (tmp_path / ".ci" / "policy").mkdir(parents=True)
+    (tmp_path / ".ci" / "policy" / "record-paths.json").write_text('{"records": []}')
+    skips = R.skip_globs(str(tmp_path), {"review_skip_globs": ["agent/**/*.py"]})
+    assert R.is_skipped_path("agent/reviews/b/clean.jsonl", skips)
+    assert not R.is_skipped_path("agent/tools/x.py", skips)
+
+
+def test_the_stat_lists_glob_named_paths_as_themselves(tmp_path):
+    """Review 60c6a9aa.1/.2: a path with glob characters is listed as itself, and a skipped sibling stays out."""
+    repo, sha = _commit_files(
+        tmp_path,
+        "g",
+        {"x[a].py": "x = 1\n", "xa.py": "y = 2\n", "agent/plans/QUEUE.md": "queue\n"},
+    )
+    seen = []
+
+    def model(prompt, *_a):
+        seen.append(prompt)
+        raise RuntimeError("stop after the call")
+
+    with contextlib.suppress(RuntimeError):
+        R.run_review(
+            repo, "console", sha, "1110-1", reviewer=model, cfg=_cfg(), log=lambda _m: None
+        )
+    assert seen, "the mixed commit must reach the model"
+    stat = seen[0].split("diff --git", 1)[0]
+    assert "x[a].py" in stat
+    assert "xa.py" in stat
+    assert "QUEUE.md" not in stat
+
+
+def test_numstat_rows_keep_a_tab_in_a_path_whole(tmp_path):
+    """Review 046b15f9.3: only the first two tabs separate the counts, so a path holding a tab stays whole."""
+    repo, sha = _commit_files(tmp_path, "t", {"a\tb.py": "x = 1\n"})
+    assert R.numstat_rows(str(repo), sha) == [("a\tb.py", "1", "0")]
+
+
+def test_numstat_rows_is_none_when_git_fails_and_the_prompt_says_so(tmp_path):
+    """Review 046b15f9.4: a failed numstat read is not an empty stat; it is logged and named in the prompt."""
+    repo, sha = _commit_files(tmp_path, "f", {"a.py": "x = 1\n"})
+    assert R.numstat_rows(str(repo), "0" * 40) is None
+    seen: list[str] = []
+    logs: list[str] = []
+
+    def model(prompt, *_a):
+        seen.append(prompt)
+        raise RuntimeError("stop after the call")
+
+    real = R.numstat_rows
+    R.numstat_rows = lambda *_a: None
+    try:
+        with contextlib.suppress(RuntimeError):
+            R.run_review(
+                repo, "console", sha, "1110-1", reviewer=model, cfg=_cfg(), log=logs.append
+            )
+    finally:
+        R.numstat_rows = real
+    assert seen
+    assert "(unavailable: git show --numstat failed)" in seen[0]
+    assert any("numstat failed" in m for m in logs)
+
+
+def test_render_stat_lists_kept_paths_with_counts_binary_and_a_total():
+    """Review 046b15f9.5: one `path | +a -d` line per kept row, a binary counts as "-", skipped rows leave, and a total closes."""
+    rows = [("a.py", "3", "1"), ("img.png", "-", "-"), ("agent/x.jsonl", "9", "0")]
+    assert R.render_stat(rows, ["a.py", "img.png"]) == (
+        "a.py | +3 -1\nimg.png | +- --\n2 file(s) changed"
+    )
+    assert R.render_stat(rows, []) == ""
+
+
+def test_a_rename_lists_only_its_new_path(tmp_path):
+    """Review 046b15f9.5: `git show --numstat -z` gives a rename as old and new path fields; the stat lists the new one."""
+    repo, _sha = _commit_files(tmp_path, "r", {"old.py": "line\n" * 20})
+    _git(repo, "mv", "old.py", "new.py")
+    _git(repo, "commit", "-q", "-m", "rename")
+    sha = _git(repo, "rev-parse", "HEAD")
+    rows = R.numstat_rows(str(repo), sha)
+    assert [r[0] for r in rows] == ["new.py"]
+    assert R.render_stat(rows, ["new.py"]) == "new.py | +0 -0\n1 file(s) changed"

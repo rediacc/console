@@ -164,14 +164,14 @@ def test_result_var_for_matches_tr() -> None:
 
 
 def test_the_exempt_set_matches_the_twins_block_entry_for_entry() -> None:
-    """The exempt job names and their reasons: the twin's five pinned against its frozen text, plus the declared additions (pr-labels, duplicate-run).
+    """The exempt job names and their reasons: the twin's five pinned against its frozen text, plus the declared additions (pr-labels, duplicate-run, report-schedule).
 
     A port that dropped one would silently widen the gate by one job. A port that ADDED one would silently narrow it, which is worse, so the comparison is a set equality against the twin rather than a floor.
     """
     twin_pairs = allowlist.pairs(allowlist.parse_text(TWIN_EXEMPT_BLOCK))
     assert len(twin_pairs) == 5
-    # DECLARED additions after the twin retired: pr-labels (d16bc52d2), downstream of the aggregator by design, and duplicate-run (ad738360a), upstream of initialize with no verdict to aggregate. Any other difference, an addition or a reworded reason, still fails.
-    declared = {"pr-labels", "duplicate-run"}
+    # DECLARED additions after the twin retired: pr-labels (d16bc52d2), downstream of the aggregator by design, duplicate-run (ad738360a), upstream of initialize with no verdict to aggregate, and report-schedule (PLAN-health-checks-local D3), downstream of the aggregator and schedule-only, which posts the weekly verdict. Any other difference, an addition or a reworded reason, still fails.
+    declared = {"pr-labels", "duplicate-run", "report-schedule"}
     port = ja.exempt_entries()
     assert {k: v for k, v in port.items() if k not in declared} == twin_pairs
     assert set(port) - set(twin_pairs) == declared

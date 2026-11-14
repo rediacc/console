@@ -1,21 +1,23 @@
 """The live-proof recorder (agent/plans/PLAN-tested-on-bench.md Design item 4): run one registry check against bench or hostinger and, on a VERIFIED run, append its receipt row to the committed ledger.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof record --plan <rel> --box <sig> --target bench|hostinger --check <id> [--region eu] [--machine <alias>] [--by <session>] [--write]
+    PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof record --plan <rel> --box <sig> --target bench|hostinger --check <id> [--region eu] [--machine <alias>] [--by <session>] [--vm-waived ASKED:<YYYY-MM-DDTHH:MM>Z [--transcript <path>]] [--write]
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.live_proof verify [--plan <rel>]
 
 RECORD. A dry run is the default; `--write` appends the row to `agent/ledgers/live-proof.jsonl`, and only a VERIFIED row. Every run, refused or not, keeps its full log at `.ci/cache/live-proof/<id>.log` (gitignored) and prints the id. There is no `--retro` (operator ruling 3): every receipt is a fresh run. Exit 0 VERIFIED, 1 FAILED or NOT_VERIFIED (nothing written), 2 a request the registry or the plan refuses (nothing run).
 
 What a request must name, all checked before anything runs: a live plan under `agent/plans/` whose `Live-Proof:` line declares the target; an open box of that plan (`--box`, its signature) whose `Accept: live-proof <target> <check-id> [args]` sub-line names this target, check and arguments; a registry check that runs on the target (`tiers.live.checks`, fixed argv, no passthrough); a machine alias from `tiers.live.targets.<target>.machines`, if any; and at least one surface the plan's Owns hit (`surfaces.owns_surfaces`) that the check covers and the target admits. Those surfaces are the row's.
 
+THE `_done/` DOOR (operator ruling #827dc647). A finished plan directly under `agent/plans/_done/` is admitted only when `check_plan_live_proof.py --owed <rel>` names the target (LP6 says this branch finished it without that receipt), the plan is not a stub, and the plan its `(moved <when> to <plan>) LP-<target>` note names (in the working text or at HEAD) no longer holds the box open. Only that plan is read: box signatures repeat across plans whose LP box text is templated. The plan never moves: its LP box comes back byte-identical and is recorded and ticked in place, and every check below applies unchanged. An `--owed` that cannot answer refuses the request. `_removed/` is never admitted.
+
 Then, in order, each a refusal that stops the run:
   1. identity: `receipt.identity` of those surfaces (a renet-hash check rebuilds `bin/renet` once through its registry `rebuild` argv), judged by `receipt.identity_refusal` (dirty-tree, checkout-mismatch, modified-checkout, build-mismatch, modified-build);
-  2. the ladder: a row surface with a VM phase needs `vm_tier.admit` to admit the head tree (no live run before the ops VMs pass it); the row records the VM run id;
-  3. the deploy record (bench-cache): `.ci/cache/live-deploys/bench.json` must exist, keep the identity rules itself, and be cut from the head;
+  2. the ladder: a VM phase of `live_tier.ladder_phases` (a row surface's, or the renet phase of a renet-hash deploy, which provisions renet on a real machine even for a CLI-only plan) needs `vm_tier.admit` to admit the head tree (no live run before the ops VMs pass it); the row records the VM run id. `--vm-waived ASKED:<minute>Z` (operator ruling 2026-11-10: a full vm:check takes hours and restarts on any commit) lets a run the ladder refuses go on: the token must have the minute shape and match an AskUserQuestion answer in the lead transcript (`wl_checks._asked_in_transcript`, the proof `block_vm_unverified_push` and `release.local_gates --force-asked` use; the transcript is `--transcript` or `$REDIACC_TRANSCRIPT_PATH`, and none proves nothing), both checked before anything runs. The row then records `ladder: {"vm": null, "waived": "<token>", "head_tree": <tree>}`, a waived receipt forever, and `check:ci-plan-live-proof` names it owed until a VERIFIED vm:check receipt covers that tree or a descendant.
+  3. the deploy record (bench-cache: `.ci/cache/live-deploys/bench.json`, which deploy_bench writes; bench-proxy-cache: `.ci/cache/live-deploys/proxy-bench.json`, which `deploy_proxy --target bench` writes after its smoke passes) must exist, keep the identity rules itself over the surfaces its deploy script records, and be cut from the head;
   4. the steps, in registry order; a non-zero exit is FAILED. `stale-binary-empty` needs `stale_binary == []` in the JSON answer, `renet-hash` needs the remote hash to equal the local sha256 (else `not-live`);
-  5. live confirmation: bench-cache asks wrangler for the version serving 100% and refuses `not-live` when it is not the recorded one; renet-hash is confirmed by step 4; an `unrecorded` check can confirm nothing and is NOT_VERIFIED;
+  5. live confirmation: bench-cache and bench-proxy-cache ask wrangler for the version serving 100% (account-bench through `workers/account`, proxy-bench through `workers/proxy`) and refuse `not-live` when it is not the recorded one or cannot be read; renet-hash is confirmed by step 4; an `unrecorded` check can confirm nothing and is NOT_VERIFIED;
   6. secrets: the log is scrubbed of every secret-named environment value (`core.secrets.redact_env`), a secret shape in the row refuses, and `deploy_record.refuse_secret_values` runs over the row.
 
-A bench-cache check needs Cloudflare credentials for the wrangler read; without them the recorder re-executes itself under the `deploy-bench` Bitwarden profile, as deploy_bench does. Bench is IP-restricted: run `PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access add-current` first, or the server-info step answers 403.
+A bench-cache or bench-proxy-cache check needs Cloudflare credentials for the wrangler read; without them the recorder re-executes itself under its deploy script's Bitwarden profile (`deploy-bench`, `deploy-proxy-bench`), as that script does. Bench is IP-restricted: run `PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access add-current` first, or the server-info step answers 403.
 
 THE eu-bench LOGIN IS THE RECORDER'S OWN STEP (operator order 2026-10-30). An eu-bench rdc step that fails because the login is tied to another network address, or is absent (`login_bench.login_needed`), runs `npm run login:bench` once and retries that step; the log keeps the failed answer, the login and the retry. The login runs on a DRY RUN too (no `--write`): a dry run executes the registry steps like a written one, so a needed eu-bench login, with its bench IP-allowlist refresh (`bench_access add-current`), happens on every `record` call; `verify` runs no step and never logs in. A login that fails leaves the step FAILED and the message names the remedy. Nobody is asked for an authenticator code.
 
@@ -38,7 +40,7 @@ from typing import TYPE_CHECKING, Any
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import jsonl_append, secrets
-from rediacc_ci.deploy import deploy_record
+from rediacc_ci.deploy import deploy_proxy, deploy_record, proxy_configs
 from rediacc_ci.ops import cf_auth, deploy_bench, login_bench
 from rediacc_ci.proof import live_tier as LT
 from rediacc_ci.proof import receipt as R
@@ -46,12 +48,23 @@ from rediacc_ci.proof import surfaces as S
 from rediacc_ci.proof import vm_tier
 from rediacc_ci.review import successor as SUCC
 
+paths.on_sys_path(paths.hooks_stop_dir(paths.CI_DIR.parent))
+wl_core = importlib.import_module("wl_core")
+
 if TYPE_CHECKING:
     import pathlib
     from collections.abc import Callable, Mapping, Sequence
 
 PLANS_DIR = "agent/plans/"
-BENCH_PROFILE = deploy_bench.PROFILE
+DONE_DIR = "agent/plans/_done/"
+LP_GATE = (".ci", "scripts", "quality", "check_plan_live_proof.py")
+# `check_plan_live_proof.py --owed` exit codes: 0 with `owed <rel> <target>` lines, 1 nothing owed.
+OWED_NONE = 1
+OWED_TIMEOUT_S = 300
+# The note a plan keeps where an LP box was carried out of it: `(moved 2026-11-08 to agent/plans/PLAN-x.md) LP-hostinger`.
+MOVED_NOTE_RE = re.compile(
+    r"\(moved [^)]*?\bto (agent/plans/[\w./-]+?\.md)\)\s*LP-([A-Za-z0-9_-]+)"
+)
 BY_MAX = 32
 EXIT_VERIFIED = 0
 EXIT_REFUSED = 1
@@ -59,12 +72,52 @@ EXIT_USAGE = 2
 CODE_LADDER = "ladder"
 CODE_FAILED = "check-failed"
 CODE_LEAK = "secret-shape"
+# The env var `release.local_gates` reads the lead transcript from, for the same ASKED proof.
+TRANSCRIPT_ENV = "REDIACC_TRANSCRIPT_PATH"
 TIMEOUT_RC = 124
 # login_bench waits for a fresh TOTP window, refreshes the IP allowlist and runs up to four rdc children.
 LOGIN_TIMEOUT_S = 600
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 
 D = importlib.import_module("wl_plandeps")
+
+
+@dataclasses.dataclass(frozen=True)
+class DeployCache:
+    """A deploy kind whose deploy script records the version it put live: the record's path and surfaces, the Worker and how wrangler is asked what serves it, and the Bitwarden profile that script runs under."""
+
+    label: str
+    record: tuple[str, ...]
+    surfaces: tuple[str, ...]
+    worker: str
+    worker_dir: tuple[str, ...]
+    config: str
+    profile: str
+    remedy: str
+
+
+CACHES = {
+    LT.BENCH_CACHE: DeployCache(
+        "bench",
+        deploy_bench.VERSION_RECORD,
+        deploy_bench.BENCH_SURFACES,
+        deploy_bench.WORKER_NAME,
+        ("workers", "account"),
+        deploy_bench.CONFIG,
+        deploy_bench.PROFILE,
+        "run deploy_bench from this head",
+    ),
+    LT.BENCH_PROXY_CACHE: DeployCache(
+        "bench proxy",
+        deploy_proxy.BENCH_VERSION_RECORD,
+        deploy_proxy.BENCH_RECORD_SURFACES,
+        deploy_proxy.BENCH_WORKER,
+        deploy_proxy.WORKER_SUBDIR,
+        proxy_configs.BENCH_CONFIG,
+        deploy_proxy.BENCH_PROFILE,
+        "run `deploy_proxy --target bench` from this head",
+    ),
+}
 
 
 class RequestError(ValueError):
@@ -100,6 +153,40 @@ def run_subprocess(
     return Result(proc.returncode, proc.stdout or "", proc.stderr or "")
 
 
+def _lp6_owed(root: pathlib.Path, rel: str) -> frozenset[str]:
+    """The targets LP6 says the finished plan `rel` still owes on this branch, read from `check_plan_live_proof.py --owed`, the gate's own judgement. Any answer but 0 with owed lines or 1 (77 when the gate cannot reach a merge-base, a failed control, a crash) raises RequestError: a door that cannot ask stays shut."""
+    gate = root.joinpath(*LP_GATE)
+    argv = [sys.executable, str(gate), "--root", str(root), "--owed", rel]
+    result = run_subprocess(argv, root, OWED_TIMEOUT_S)
+    if result.rc == OWED_NONE:
+        return frozenset()
+    found = [
+        parts[2]
+        for parts in (ln.split() for ln in result.stdout.splitlines())
+        if len(parts) == 3 and parts[0] == "owed"
+    ]
+    if result.rc != 0 or not found:
+        tail = (result.stderr.strip() or result.stdout.strip())[-600:]
+        raise RequestError(
+            f"cannot ask LP6 what {rel} owes: `{' '.join(argv[1:])}` exited {result.rc}"
+            f"{' with no owed line' if result.rc == 0 else ''}; {tail or '(no output)'}"
+        )
+    return frozenset(found)
+
+
+def asked_in_transcript(token: str, transcript: str | None) -> bool:
+    """True when the `ASKED:` minute `token` matches an AskUserQuestion answer in `transcript`: `wl_checks._asked_in_transcript`, the one ASKED proof the push guard and the release gate share. No transcript proves nothing."""
+    if not transcript:
+        return False
+    try:
+        wl_checks = importlib.import_module("wl_checks")
+    except ImportError as exc:
+        raise RequestError(
+            f"--vm-waived cannot be proven: wl_checks does not import ({exc})"
+        ) from exc
+    return bool(wl_checks._asked_in_transcript(token, transcript))
+
+
 @dataclasses.dataclass
 class World:
     """Everything the recorder reaches outside the process, replaceable in tests."""
@@ -107,8 +194,13 @@ class World:
     run: Callable[..., Result] = run_subprocess
     read_build: Callable[[pathlib.Path], str | None] = S.go_version_m
     admit: Callable[..., R.Verdict] = vm_tier.admit
+    owed: Callable[[pathlib.Path, str], frozenset[str]] = _lp6_owed
     now: Callable[[], str] = lambda: datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
     environ: Mapping[str, str] = dataclasses.field(default_factory=lambda: dict(os.environ))
+    asked: Callable[[str, str | None], bool] = asked_in_transcript
+    transcript: str | None = dataclasses.field(
+        default_factory=lambda: os.environ.get(TRANSCRIPT_ENV)
+    )
 
 
 @dataclasses.dataclass(frozen=True)
@@ -120,6 +212,7 @@ class Request:
     region: str | None = None
     machine: str | None = None
     by: str = ""
+    vm_waived: str | None = None
 
 
 @dataclasses.dataclass
@@ -143,10 +236,65 @@ class _Plan:
     accept: LT.Accept
 
 
-def _read_plan(root: pathlib.Path, req: Request, check: LT.Check) -> _Plan:
+def _is_done_plan(rel: str) -> bool:
+    """A plan file directly under `agent/plans/_done/`: the one finished folder whose plan can still owe a receipt (never `_removed/`, never a climb out)."""
+    rest = rel[len(DONE_DIR) :]
+    return rel.startswith(DONE_DIR) and rest.endswith(".md") and "/" not in rest and ".." not in rel
+
+
+def _interim_homes(root: pathlib.Path, rel: str, text: str, target: str) -> list[str]:
+    """The plans a `(moved <when> to <plan>) LP-<target>` note in `rel` names, read from the working text and from HEAD's (the note is replaced when the box comes back, and HEAD still holds it until that commit lands). A path whose plan has since moved to `_done/` is followed there."""
+    head = S.make_git(root)(["show", f"HEAD:{rel}"]) or ""
+    out: list[str] = []
+    for m in MOVED_NOTE_RE.finditer(text + "\n" + head):
+        if m.group(2) != target:
+            continue
+        home = m.group(1)
+        if not (root / home).is_file():
+            home = DONE_DIR + home.rsplit("/", 1)[-1]
+        if home != rel and home not in out:
+            out.append(home)
+    return out
+
+
+def _open_elsewhere(root: pathlib.Path, homes: Sequence[str], sig: str) -> str | None:
+    """The first interim home that still holds box `sig` OPEN, or None. A box moved back into a `_done/` plan must leave the plan it was moved to: two open copies are two places it could be ticked.
+
+    Only the plans a move note names are read, never every plan: box signatures are not unique across plans. A templated box (`LP-hostinger [live] Fresh hostinger receipt through --config eu-bench ...`) reads the same in eleven live plans on 2026-11-10, so a tree-wide scan refused every restore."""
+    for home in homes:
+        try:
+            text = (root / home).read_text(encoding="utf-8")
+        except OSError:
+            continue
+        if any(b.sig == sig and not b.done for b in D.plan_boxes(text)):
+            return home
+    return None
+
+
+def _done_door(root: pathlib.Path, req: Request, world: World, header: Any, text: str) -> None:
+    """Admit a finished `_done/` plan only for a target LP6 says it still owes, and only when the box is not still open in another plan; RequestError otherwise. The plan never moves: its box comes back byte-identical and is recorded and ticked in place (operator ruling #827dc647)."""
     rel = req.plan
+    try:
+        finished = header.status in D.finished_states()
+    except ImportError:
+        finished = False
+    if not finished or req.target not in world.owed(root, rel):
+        raise RequestError(
+            f"{rel} is not a live plan, and no LP6 finding on this branch owes it a {req.target} receipt"
+        )
+    elsewhere = _open_elsewhere(root, _interim_homes(root, rel, text, req.target), req.box)
+    if elsewhere is not None:
+        raise RequestError(f"box {req.box} is still open in {elsewhere}; move it, do not copy it")
+
+
+def _read_plan(root: pathlib.Path, req: Request, check: LT.Check, world: World) -> _Plan:
+    rel = req.plan
+    done = _is_done_plan(rel)
     if not (
-        rel.startswith(PLANS_DIR) and rel.endswith(".md") and "/_" not in rel and ".." not in rel
+        rel.startswith(PLANS_DIR)
+        and rel.endswith(".md")
+        and ("/_" not in rel or done)
+        and ".." not in rel
     ):
         raise RequestError(f"--plan {rel!r} is not a live plan under {PLANS_DIR}")
     try:
@@ -156,14 +304,17 @@ def _read_plan(root: pathlib.Path, req: Request, check: LT.Check) -> _Plan:
     header = D.parse_header(text)
     if D.is_stub_header(header):
         raise RequestError(f"{rel} is a stub, not a live plan")
-    try:
-        finished = header.status in D.finished_states()
-    except ImportError:
-        finished = False
-    if finished:
-        raise RequestError(
-            f"{rel} is finished (Status: {header.status}); a receipt closes an open box"
-        )
+    if done:
+        _done_door(root, req, world, header, text)
+    else:
+        try:
+            finished = header.status in D.finished_states()
+        except ImportError:
+            finished = False
+        if finished:
+            raise RequestError(
+                f"{rel} is finished (Status: {header.status}); a receipt closes an open box"
+            )
     proof = header.live_proof
     if proof is None or req.target not in proof.targets:
         declared = ", ".join(proof.targets) if proof is not None and proof.targets else "none"
@@ -269,15 +420,16 @@ def _wrangler_env(environ: Mapping[str, str]) -> dict[str, str] | None:
     return env
 
 
-def _bench_live_version(root: pathlib.Path, world: World, log_: _Log) -> str | None:
+def _live_version(root: pathlib.Path, cache: DeployCache, world: World, log_: _Log) -> str | None:
+    """The version wrangler reports serving 100% on the cache's Worker; None when it cannot be read, which the caller refuses."""
     env = _wrangler_env(world.environ)
-    argv = deploy_record.deployments_argv(deploy_bench.CONFIG)
+    argv = deploy_record.deployments_argv(cache.config)
     if env is None:
         log_.add(
             "# no Cloudflare credentials for the wrangler read (CLOUDFLARE_API_TOKEN or CF_GLOBAL_API_KEY + CF_EMAIL)"
         )
         return None
-    result = world.run(argv, root / "workers" / "account", LT.DEFAULT_TIMEOUT_S, env)
+    result = world.run(argv, root.joinpath(*cache.worker_dir), LT.DEFAULT_TIMEOUT_S, env)
     log_.run("confirm", argv, result)
     if result.rc != 0:
         return None
@@ -285,22 +437,27 @@ def _bench_live_version(root: pathlib.Path, world: World, log_: _Log) -> str | N
     return version if parsed else None
 
 
-def _bench_record(root: pathlib.Path, run: _Run) -> str | None:
-    """Fill run.deploy from bench.json; the refusal message, or None."""
-    path = root.joinpath(*deploy_bench.VERSION_RECORD)
+def _cache_record(root: pathlib.Path, cache: DeployCache, run: _Run) -> str | None:
+    """Fill run.deploy from the cache's deploy record; the refusal message, or None."""
+    rel = "/".join(cache.record)
     try:
-        record = json.loads(path.read_text(encoding="utf-8"))
+        record = json.loads(root.joinpath(*cache.record).read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
-        return f"no bench deploy record at {'/'.join(deploy_bench.VERSION_RECORD)} ({exc.__class__.__name__}); run deploy_bench from this head"
+        return f"no {cache.label} deploy record at {rel} ({exc.__class__.__name__}); {cache.remedy}"
     if not isinstance(record, dict):
-        return "the bench deploy record is not an object"
+        return f"the {cache.label} deploy record is not an object"
+    worker = record.get("worker", cache.worker)
+    if worker != cache.worker:
+        return (
+            f"the {cache.label} deploy record at {rel} names Worker {worker!r}, not {cache.worker}"
+        )
     run.deploy["version_id"] = record.get("version_id")
     run.deploy["deployed_head"] = record.get("head")
-    refused = R.identity_refusal(record, deploy_bench.BENCH_SURFACES)
+    refused = R.identity_refusal(record, cache.surfaces)
     if refused is not None:
-        return f"the bench deploy was cut from an unclean tree ({refused.code}: {refused.message})"
+        return f"the {cache.label} deploy was cut from an unclean tree ({refused.code}: {refused.message})"
     if record.get("head") != run.ident["head"]:
-        return f"bench serves a deploy cut from {str(record.get('head'))[:12]}, not the head {run.ident['head'][:12]}"
+        return f"{cache.label} serves a deploy cut from {str(record.get('head'))[:12]}, not the head {run.ident['head'][:12]}"
     return None
 
 
@@ -452,6 +609,24 @@ def _validate_request(req: Request, checks: dict[str, LT.Check]) -> LT.Check:
     return check
 
 
+def _check_waiver(req: Request, world: World) -> None:
+    """Refuse a `--vm-waived` token that is not the minute shape or that no operator answer in the transcript proves; RequestError before anything runs."""
+    token = req.vm_waived
+    if token is None:
+        return
+    if not LT.WAIVED_RE.fullmatch(token):
+        raise RequestError(f"--vm-waived {token!r} is not ASKED:<YYYY-MM-DDTHH:MM>Z")
+    if not world.asked(token, world.transcript):
+        where = (
+            f"the transcript {world.transcript}"
+            if world.transcript
+            else f"no transcript (pass --transcript <path> or set ${TRANSCRIPT_ENV})"
+        )
+        raise RequestError(
+            f"--vm-waived {token} matches no AskUserQuestion answer in {where}; the ladder is not waived"
+        )
+
+
 def record(
     root: pathlib.Path,
     req: Request,
@@ -464,7 +639,8 @@ def record(
     world = world or World()
     checks = LT.registry() if checks is None else checks
     check = _validate_request(req, checks)
-    plan = _read_plan(root, req, check)
+    _check_waiver(req, world)
+    plan = _read_plan(root, req, check, world)
     req = dataclasses.replace(req, by=_by(req, world.environ))
     names = LT.row_surfaces(plan.touched, check, req.target)
     if not names:
@@ -477,9 +653,10 @@ def record(
         f"# live-proof {req.plan} box {req.box} target {req.target} check {check.id} surfaces {','.join(names)}"
     )
     ident = _identity(root, check, req, names, world, log_)
+    cache = CACHES.get(check.deploy)
     deploy = {
         "surface": LT.DEPLOY_SURFACE[check.deploy],
-        "worker": deploy_bench.WORKER_NAME if check.deploy == LT.BENCH_CACHE else None,
+        "worker": cache.worker if cache is not None else None,
         "version_id": None,
         "source": None,
         "deployed_head": None,
@@ -489,22 +666,27 @@ def record(
     refused = R.identity_refusal(ident, LT.judge_surfaces(names, check))
     if refused is not None:
         return _refuse(run, root, world, R.NOT_VERIFIED, refused.code, refused.message)
-    phases = S.phases_for(names)
+    phases = LT.ladder_phases(names, check)
     if phases:
         verdict = world.admit(root, ident["tree"], S.inputs(root, ident["tree"]), phases)
         if not verdict.ok:
-            return _refuse(
-                run,
-                root,
-                world,
-                R.NOT_VERIFIED,
-                CODE_LADDER,
-                f"no VM receipt admits the head tree ({verdict.code}: {verdict.message})",
+            message = f"no VM receipt admits the head tree ({verdict.code}: {verdict.message})"
+            if phases - S.phases_for(names):
+                message += (
+                    f"; check {check.id} needs a VM receipt that ran the "
+                    f"{', '.join(sorted(phases - S.phases_for(names)))} phase: a full `npm run vm:check` runs every phase"
+                )
+            if req.vm_waived is None:
+                return _refuse(run, root, world, R.NOT_VERIFIED, CODE_LADDER, message)
+            log_.add(
+                f"# ladder waived {req.vm_waived}: {message}; owed: a VERIFIED vm:check for tree {ident['tree']} or a descendant"
             )
-        run.ladder = {"vm": (verdict.receipt or {}).get("runId")}
-    if check.deploy == LT.BENCH_CACHE:
-        deploy["source"] = LT.BENCH_CACHE
-        why = _bench_record(root, run)
+            run.ladder = {"vm": None, "waived": req.vm_waived, "head_tree": ident["tree"]}
+        else:
+            run.ladder = {"vm": (verdict.receipt or {}).get("runId")}
+    if cache is not None:
+        deploy["source"] = check.deploy
+        why = _cache_record(root, cache, run)
         if why is not None:
             return _refuse(run, root, world, R.NOT_VERIFIED, R.NOT_LIVE, why)
     relogged = False
@@ -534,10 +716,11 @@ def _confirm(root: pathlib.Path, run: _Run, world: World) -> str | None:
     """Set deploy.confirmed_live from the live side; the refusal message, or None."""
     kind = run.check.deploy
     head = run.ident["head"]
-    if kind == LT.BENCH_CACHE:
-        live = _bench_live_version(root, world, run.log)
+    cache = CACHES.get(kind)
+    if cache is not None:
+        live = _live_version(root, cache, world, run.log)
         if not live or live != run.deploy["version_id"]:
-            return f"bench serves version {live or '<unknown>'}, not the recorded {run.deploy['version_id']}"
+            return f"{cache.label} serves version {live or '<unknown>'}, not the recorded {run.deploy['version_id']}"
     elif kind == LT.RENET_HASH:
         renet = run.ident.get("renet") or {}
         run.deploy.update(
@@ -579,7 +762,11 @@ def _judge_and_write(run: _Run, root: pathlib.Path, world: World, write: bool) -
         ledger.parent.mkdir(parents=True, exist_ok=True)
         jsonl_append.append_lines(ledger, path.parent / "ledger.lock", [row])
         written = True
-    return Outcome(R.VERIFIED, "ok", f"VERIFIED {row['id']}", row, path, written)
+    message = f"VERIFIED {row['id']}"
+    waived = run.ladder.get("waived")
+    if waived:
+        message += f" (VM ladder waived {waived}; owed: a VERIFIED vm:check for tree {row['tree'][:12]} or a descendant)"
+    return Outcome(R.VERIFIED, "ok", message, row, path, written)
 
 
 # ----------------------------------------------------------------------------- verify
@@ -593,6 +780,11 @@ def _base(root: pathlib.Path) -> str:
         if got:
             return got
     return ""
+
+
+def _basename(rel: str) -> str:
+    """A plan's identity across its folders: a row recorded at `agent/plans/` or `agent/plans/_done/` names the same plan, as check_plan_live_proof.matching_rows reads it."""
+    return rel.rsplit("/", 1)[-1]
 
 
 def verify(
@@ -618,7 +810,7 @@ def verify(
             bad += 1
             lines.append(f"INVALID line {entry.lineno}: {entry.error}")
             continue
-        if plan is not None and entry.row.get("plan") != plan:
+        if plan is not None and _basename(str(entry.row.get("plan") or "")) != _basename(plan):
             continue
         judged += 1
         problems = LT.validate_row(entry.row, checks=checks, root=root, successor_of=successor_of)
@@ -627,7 +819,9 @@ def verify(
             bad += 1
             lines.append(f"INVALID line {entry.lineno} {name}: " + "; ".join(problems))
         else:
-            lines.append(f"ok {name} v={(entry.row.get('deploy') or {}).get('version_id')}")
+            waived = (entry.row.get("ladder") or {}).get("waived")
+            mark = f" vm=waived:{waived}" if waived else ""
+            lines.append(f"ok {name} v={(entry.row.get('deploy') or {}).get('version_id')}{mark}")
     lines.append(f"{judged} row(s) judged, {bad} invalid")
     if plan is not None and judged == 0:
         lines.append(f"no receipt row for {plan}")
@@ -638,15 +832,17 @@ def verify(
 # ----------------------------------------------------------------------------- command line
 
 
-def _needs_profile(check: LT.Check | None, environ: Mapping[str, str]) -> bool:
-    if check is None or check.deploy != LT.BENCH_CACHE:
-        return False
-    if BENCH_PROFILE in (environ.get("REDIACC_BWS_PROFILES") or "").split(","):
-        return False
-    return _wrangler_env(environ) is None
+def _profile_for(check: LT.Check | None, environ: Mapping[str, str]) -> str | None:
+    """The Bitwarden profile to re-execute under for the check's wrangler read: its deploy script's, unless it is already bound or credentials are present. None for a kind with no read."""
+    cache = CACHES.get(check.deploy) if check is not None else None
+    if cache is None:
+        return None
+    if cache.profile in (environ.get("REDIACC_BWS_PROFILES") or "").split(","):
+        return None
+    return cache.profile if _wrangler_env(environ) is None else None
 
 
-def _reexec_under_profile(argv: list[str]) -> int:
+def _reexec_under_profile(argv: list[str], profile: str) -> int:
     env = dict(os.environ)
     ci = str(paths.repo_root() / ".ci")
     env["PYTHONPATH"] = ci + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
@@ -657,7 +853,7 @@ def _reexec_under_profile(argv: list[str]) -> int:
             "rediacc_ci.core.bws_env",
             "exec",
             "--profile",
-            BENCH_PROFILE,
+            profile,
             "--",
             sys.executable,
             "-m",
@@ -686,31 +882,72 @@ def _parser() -> argparse.ArgumentParser:
     rec.add_argument(
         "--by", default="", help="session prefix (default: the environment's session id)"
     )
+    rec.add_argument(
+        "--vm-waived",
+        default=None,
+        metavar="ASKED:<YYYY-MM-DDTHH:MM>Z",
+        help="go on when no VM receipt admits the head tree, on a proven operator answer; the row records the waiver",
+    )
+    rec.add_argument(
+        "--transcript",
+        default=None,
+        help=f"the lead transcript --vm-waived is proven against (default: ${TRANSCRIPT_ENV})",
+    )
     rec.add_argument("--write", action="store_true", help="append a VERIFIED row to the ledger")
     ver = sub.add_parser("verify", help="judge the ledger rows")
     ver.add_argument("--plan", default=None)
     return parser
 
 
+def lease_refusal(root, argv):
+    """Why a run may not start from `root`, or None. `verify` runs no step and writes nothing; `record` runs live checks and appends to the ledger only with `--write`. Judged before the arguments, so an arg error in a main checkout proves the refusal let it through."""
+    if argv[:1] == ["verify"] or {"-h", "--help"}.intersection(argv):
+        return None
+    main_tree = wl_core.lease_main(root)
+    if main_tree is None:
+        return None
+    return (
+        "live_proof: REFUSED: %s is a lease of %s, and live proof runs only in the main checkout at landing: its identity is that tree's head and its ledger is that tree's. Land the commits, then run record in %s. verify stays allowed in a lease."
+        % (root, main_tree, main_tree)
+    )
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
-    args = _parser().parse_args(argv)
     root = paths.repo_root()
+    refusal = lease_refusal(root, argv)
+    if refusal is not None:
+        log.error(refusal)
+        return EXIT_REFUSED
+    args = _parser().parse_args(argv)
     if args.verb == "verify":
         code, lines = verify(root, args.plan)
         for line in lines:
             print(line)
         return code
-    req = Request(args.plan, args.box, args.target, args.check, args.region, args.machine, args.by)
+    req = Request(
+        args.plan,
+        args.box,
+        args.target,
+        args.check,
+        args.region,
+        args.machine,
+        args.by,
+        args.vm_waived,
+    )
     try:
         checks = LT.registry()
     except (LT.RegistryError, S.MapError) as exc:
         log.error(f"the check registry cannot be read: {exc}")
         return EXIT_USAGE
-    if _needs_profile(checks.get(req.check), os.environ):
-        return _reexec_under_profile(argv)
+    profile = _profile_for(checks.get(req.check), os.environ)
+    if profile is not None:
+        return _reexec_under_profile(argv, profile)
     try:
-        outcome = record(root, req, write=args.write, checks=checks)
+        world = World()
+        if args.transcript:
+            world.transcript = args.transcript
+        outcome = record(root, req, write=args.write, checks=checks, world=world)
     except RequestError as exc:
         log.error(str(exc))
         return EXIT_USAGE

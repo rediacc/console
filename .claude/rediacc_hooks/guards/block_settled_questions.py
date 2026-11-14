@@ -5,7 +5,7 @@ THE PROBLEM, in the operator's words: "I don't know why you ask this question on
 They are right that the document is not enough. Anthropic's own guidance says so: "CLAUDE.md content is delivered as a user message after the system prompt, not as part of the system prompt itself... there's no guarantee of strict compliance", and "If the instruction is something that must run at a specific point... write it as a hook instead. Hooks execute as shell commands at
 fixed lifecycle events and apply regardless of what Claude decides to do." So this is a hook.
 
-WHAT IT REFUSES, and nothing more: a PERMISSION-SEEKING question about committing, branching, pushing, opening a PR or merging, OR a routing question about where a task's work should happen (new worktree vs. the current checkout). CLAUDE.md settles all of those the same way -- "verified work is committed right away, in small reviewable commits on the single current branch" (session default 1, 2026-09-25), "ask for the big-bang, not for permission to
+WHAT IT REFUSES, and nothing more: a PERMISSION-SEEKING question about committing, branching, pushing, opening a PR or merging, OR a routing question about where a task's work should happen (new worktree, a lease, or the current checkout). The lead stays in the main checkout and writers get leases through /writers-now (agent/plans/PLAN-worktree-lease.md Design 6), so the routing question stays settled now that a lease exists. CLAUDE.md settles all of those the same way -- "verified work is committed right away, in small reviewable commits on the single current branch" (session default 1, 2026-09-25), "ask for the big-bang, not for permission to
 patch one thing", and (2026-09-16, live) "[a worktree/branch routing question] shouldn't have asked ... it has big-bang answering usually" -- so asking costs the operator a round trip to repeat a rule they already wrote down.
 
 AND PUSH TIMING (operator ruling ASKED:2026-10-08T10:25Z, "It should not be even askable also for other/future sessions as well"): a question asking WHEN or WHETHER to push or open the PR, in any spelling, including which `TURBO_PUSH_REASON` kind to give. `block_turbo_early_push` and the Stop hook decide that between them (a complete local batch pushes and opens its PR with no reason; an incomplete one is refused with its open boxes named), so it gets its own answer, PUSH_MESSAGE, and is checked before the permission rule. The PUSH TIMING block below carries the shapes and the measurement that motivated them.
@@ -91,6 +91,24 @@ SENTENCE_END = r"(?<=[.?!;])\s+|\n"
 # ---- NOUN USE: "the main push" is an event, not an action ---- The same measurement's sibling: "Should we cap the main push job at 18?" has both conditions in one clause, and `push` there names a CI trigger, not something the assistant is asking leave to do. An object occurrence directly after one of these event modifiers is skipped. The list is closed and short on purpose: `the`/`a`
 # are NOT in it, so the lowercased `should i open the pr?` still refuses.
 NOUN_MODIFIER = r"(^|[^a-z])(main|nightly|ci|edge|stable|every|each|per|on)[ -]$"
+
+# ---- LEASE ROUTING: which writer gets a lease is /writers-now's answer, not a question ----
+# Measured 2026-11-04: "Should this writer get a lease?" passed (rc 0), because its subject is no pronoun PERMISSION knows and `lease` is no OBJECT. `lease` stays out of OBJECT on purpose: renewing a lease on a worklist item is the worklist's `--lease`, and leasing a VM is neither, and a wider OBJECT would refuse both. So this is its own shape, a writer as the subject or the thing leased, then a lease; the CLAUSE anchor reads what sits between them, so "Should the writer say why a lease exists?" passes.
+LEASE_ROUTING = (
+    r"(?<![a-z])(should|shall|can|may|must) "
+    r"(((this|the|that|each|every|these|those|a|an) )?([a-z-]+ )?"
+    r"(writer|writers|agent|agents|subagent|subagents|task|tasks|work|fix)"
+    r"|(i|we) (give|use|spawn|run|put|start|create|make|open|cut))"
+    r"(?P<between>( [a-z-]+){0,5}?) (a |an |its |their |own |the |new |separate )*lease(?![a-z])"
+    r"|(?<![a-z])lease or (the )?(main|current)(?![a-z])"
+    r"|(?<![a-z])(main|current) (tree|checkout) or (a )?(new )?lease(?![a-z])"
+)
+# A worklist item's lease is not a tree: review fbe4c449.1 measured a question about extending a worklist lease, and one about using the lease on an item, both refused. The two control rows in EDGE_CASES hold the spellings.
+LEASE_ON_AN_ITEM = (
+    r"(?<![a-z])(worklist|renew|renews|renewing|extend|extends|extending|release|releasing)"
+    r"( (the|this|that|its|their|a|an|item|item's|worklist))* lease(?![a-z])"
+    r"|(?<![a-z])lease (on|for) (this|the|that|an|each) (item|box|task)(?![a-z])"
+)
 
 # ---- A HEADER CARRIES THE OBJECT only when it IS the object ---- The bash original joined headers into the same string so a question whose header named the action ("Commit" over a bare go-ahead question) still refused. That join is also what let one question's object meet another question's permission. A header now counts only when it is essentially just the git action (an
 # optional verb and article, then the object), so a topic chip like "Push strategy" or "Renet budget" never supplies an object.
@@ -183,14 +201,22 @@ BENCH_NAMED = r"(^|[^a-z0-9_-])(eu-bench|bench\.rediacc\.com|bench)([^a-z0-9_-]|
 BENCH_LOGIN_ASK = (
     r"totp|authenticator|2fa|two-factor|one-time (pass)?code|verification code|"
     r"(6|six)-digit|(^|[^a-z])otp([^a-z]|$)|"
-    r"(log|sign) (it |eu-bench |bench )?(back )?in(to)?([^a-z]|$)|"
+    r"(log|sign)(ging|ged|ing|ed)? (it |eu-bench |bench )?(back )?in(to)?([^a-z]|$)|"
     r"login(?![ _-]?(test|tests|flow|flows|script|scripts|module|tool|helper|logic|function|handler|bug|doc|docs|code path)([^a-z]|$))|re-?auth"
 )
 # Addressed to the operator, or asking leave: without it "Is the bench TOTP derivation RFC 6238?" is a fact question and "Should the bench login flow support us-bench?" a design one, and both pass.
 BENCH_ASK_SHAPE = r"(^|[^a-z])(you|your|please|operator|(should|shall|may|can) (i|we))([^a-z]|$)"
-# The vault is the operator's genuine door; `login_bench` (the module, not the npm script) is a design discussion about the tool.
+# The vault is the operator's genuine door; `login_bench` (the module, not the npm script) is a design discussion about the tool. A sentence naming eu-remote opens this door only when it is not aimed at bench (BENCH_LOGIN_AIMED below): it is then about the config only the operator's authenticator opens, and `login:bench` is no answer to it (a 2026-11-04 question about eu-remote reads was refused here).
 BENCH_OPERATOR_DOOR = (
     r"placeholder|seed|bitwarden|(^|[^a-z])bws([^a-z]|$)|vault|machine token|rotate|login_bench"
+)
+EU_REMOTE_DOOR = r"(^|[^a-z0-9_-])eu-remote([^a-z0-9_-]|$)"
+# An eu-remote sentence that still aims the login or code at bench is the bench ask with eu-remote only as a comparison (a log-into-eu-bench ask ending "same as eu-remote", review bcee4974.1), so the eu-remote door does not open for it.
+BENCH_LOGIN_AIMED = (
+    r"(re-?)?(log|sign)(ging|ged|ing|ed)?[ -]?((it|me|us|back) +)*in(to| to)? (the )?(eu-bench|bench)([^a-z0-9_-]|$)"
+    r"|re-?auth[a-z]* (the )?(eu-bench|bench)([^a-z0-9_-]|$)"
+    r"|(^|[^a-z0-9_-])(eu-bench|bench)('s)? (login|totp|authenticator|2fa|otp|verification code|code)"
+    r"|(totp|authenticator|2fa|otp|code) (code )?(for|of|from) (the )?(eu-bench|bench)([^a-z0-9_-]|$)"
 )
 
 _ASCII_LOWER = str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")
@@ -215,9 +241,11 @@ a rule the operator has written down twice.
   Findings rule: "Ask for the big-bang, not for permission to patch one thing...
   put the whole cluster into a single plan ... and ask to run it."
 
-  Worktree/branch routing: default to the checkout the session is already in.
-  `git worktree add` stays hook-blocked from the assistant's own Bash tool
-  regardless, so a new one only ever comes from the operator's own `!` prefix.
+  Worktree/branch routing: the lead stays in the checkout the session is already
+  in, and a writer's tree is a lease it gets through /writers-now
+  (`./run.sh worktree lease`). `git worktree add` stays hook-blocked from the
+  assistant's own Bash tool regardless, so a real second checkout only ever comes
+  from the operator's own `!` prefix.
 
 Proceed with the documented default: commit each verified unit on the current
 branch, push on the documented cadence, and if a decision genuinely needs the
@@ -301,6 +329,24 @@ EDGE_CASES = [
     ("new worktree or continue", "New worktree or continue in the current checkout?"),
     ("which branch should this go on", "Which branch should this go on?"),
     ("which worktree should", "Which worktree should I use for this?"),
+    # 2026-11-04, Design 6 of PLAN-worktree-lease: a lease does not reopen the routing question. The first row is the one the plan pins.
+    ("should this writer get a lease", "Should this writer get a lease?"),
+    ("should the agent run in a lease", "Should the agent run in a lease?"),
+    ("should we give it a lease", "Should we give this writer a lease?"),
+    ("lease or the main checkout", "A lease or the main checkout for this fix?"),
+    ("the current tree or a lease", "The current tree or a lease?"),
+    # CONTROLS: a lease that is not routing, and a sentence about one.
+    ("control: renewing a worklist lease", "Should I renew the lease on this item?"),
+    ("control: leasing a machine", "Can I lease a VM for the drill?"),
+    ("control: a sentence about a lease", "Should the writer explain why a lease exists?"),
+    ("control: a fact about a lease", "Did the writer get a lease?"),
+    (
+        "a lease with the word extend elsewhere",
+        "Should a writer get a lease to extend the worklist?",
+    ),
+    ("a lease a few words after extend", "Should the writer extend the worklist and get a lease?"),
+    ("control: extending a worklist lease", "Should the agent extend the worklist lease?"),
+    ("control: using an item's lease", "Should I use the lease on this item?"),
     ("can I push", "Can I push?"),
     ("should I open the pr", "Should I open the PR?"),
     ("push to main is still an action", "Should I push to main now?"),
@@ -543,6 +589,8 @@ def _bench_login(text):
     for sentence in re.split(r"(?<=[.?!])\s+", text):
         if re.search(BENCH_OPERATOR_DOOR, sentence):
             continue
+        if re.search(EU_REMOTE_DOOR, sentence) and not re.search(BENCH_LOGIN_AIMED, sentence):
+            continue
         ask = re.search(BENCH_LOGIN_ASK, sentence)
         if ask:
             return ask.group(0)
@@ -551,6 +599,13 @@ def _bench_login(text):
 
 def _judge(sentence, header_object):
     """(permission, object) when this sentence asks leave for a settled action, else None."""
+    lease = re.search(LEASE_ROUTING, sentence)
+    if (
+        lease
+        and not re.search(CLAUSE, lease.group("between") or "")
+        and not re.search(LEASE_ON_AN_ITEM, sentence)
+    ):
+        return lease.group(0), "lease"
     perm = re.search(PERMISSION, sentence)
     if perm is None:
         return None

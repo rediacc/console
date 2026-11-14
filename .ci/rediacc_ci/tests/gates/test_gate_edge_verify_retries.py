@@ -5,7 +5,7 @@ Assert the edge smoke test cannot be failed by ONE unlucky sample.
 WHY THIS EXISTS, AND WHY IT IS A PR GATE. On 2026-08-08 release run 31234422166 deployed edge successfully and then failed `edge.rediacc.com footer does not render v1.2.19` -- while edge was ALREADY serving v1.2.19. The assertion sampled an eventually-consistent CDN exactly once, moments after the deploy, and lost the race. The failure cascaded: `Tag & GitHub Release` was skipped,
 so a good release shipped with NO git tag and NO GitHub Release.
 
-`verify_edge_endpoints.py` (the port that replaced `verify-edge-endpoints.sh`) runs ONLY from cd-v2.yml, which is dispatch-only and main-only. So the DEPLOY it verifies genuinely cannot be exercised on a PR -- and that was the reasoning that nearly left this unguarded. The reasoning was wrong. The defect was never "edge served the wrong version"; it was "the assertion samples once". That is a property of the script, and its retry engine can be driven against a fake predicate on any PR, with no deploy at all.
+`verify_edge_endpoints.py` (the port that replaced `verify-edge-endpoints.sh`) runs ONLY from cd-release-edge.yml, which is dispatch-only and main-only. So the DEPLOY it verifies genuinely cannot be exercised on a PR -- and that was the reasoning that nearly left this unguarded. The reasoning was wrong. The defect was never "edge served the wrong version"; it was "the assertion samples once". That is a property of the script, and its retry engine can be driven against a fake predicate on any PR, with no deploy at all.
 
 WHAT IT ASSERTS
   1. RETRIES     a surface that is stale then correct is ACCEPTED (the incident).

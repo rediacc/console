@@ -15,7 +15,7 @@ WHAT IT DOES, one claim per row:
 NOT PROVEN HERE, said plainly: the fake boots prove the boot line, not `BACKUP_STORE_NONCONFORMING` at grant time, which needs the session described next (`tests/integration/backup-store-conformance.test.ts` covers that refusal). A backup session needs a licence from a delegated deployment (a delegation cert from the upstream key), and this drill boots without one; the session, grant and restore legs run against the dev gateway in `rediacc_ci.drills.backup`. The recipe a live P14 run (PLAN-backup-program, the offline plane) proved for the delegated leg:
   a. Register an account on the dev gateway and give it a subscription that can hold a cert.
   b. Mint a throwaway Ed25519 pair (SPKI and PKCS8, base64) and `POST /account/api/v1/portal/delegation-certs` with `{subscriptionId, delegatedPublicKey: <SPKI>, validDays}` (`private/account/src/routes/portal-delegation-certs.ts`); the response's `cert` is the signed cert, signed by the gateway's key (the production key from the store).
-  c. Boot `src/entry/on-premise.ts` with `ACCOUNT_ED25519_PRIVATE_KEY`/`ACCOUNT_ED25519_PUBLIC_KEY` AND `ON_PREMISE_PRIVATE_KEY`/`ON_PREMISE_PUBLIC_KEY` all set to that pair, `DELEGATION_CERT_BASE64` set to the base64 of the `cert` JSON, and `UPSTREAM_PUBLIC_KEY` set to the gateway's public key.
+  c. Boot `src/entry/on-premise.ts` with `ACCOUNT_ED25519_PRIVATE_KEY`/`ACCOUNT_ED25519_PUBLIC_KEY` AND `ON_PREMISE_PRIVATE_KEY`/`ON_PREMISE_PUBLIC_KEY` all set to that pair, `DELEGATION_CERT_PATH` set to `<dir>/delegation-cert.json`, the `cert` JSON dropped as `<dir>/cert-inbox/new.json` (`{"requestId": ..., "cert": ...}`) before the boot, and `UPSTREAM_PUBLIC_KEY` set to the gateway's public key. The boot scan applies the drop before the server serves and answers `<dir>/cert-inbox/applied.json` (`src/services/cert-inbox.service.ts`); the server reads no cert from the environment.
   d. Register on the on-premise server. Boot adopts the cert (`src/services/onprem-subscription.service.ts`): the first registration, or the root org's existing subscription, takes the cert's subscriptionId, plan and limits, so its licences are covered by the embedded cert and a licence-checking renet carrying that key accepts them.
 
 NO NEW ENVIRONMENT READS. The child inherits this process's environment (the same one `./run.sh drill` gives the dev gateway); every value it adds is set here, and the store credentials reach it through that environment and never through an argv.
@@ -56,6 +56,7 @@ USAGE_PATH = "/account/api/v1/backups/usage"
 BOOT_TRIES = 90
 BOOT_INTERVAL_S = 1.0
 HTTP_OK = 200
+HTTP_FORBIDDEN = 403
 HTTP_UNAUTHORIZED = 401
 HTTP_NOT_FOUND = 404
 # Names of the entry's own boot line and the refusal an unconfigured plane gives.
@@ -68,6 +69,11 @@ ABSENT_ROUTES = ("/account/api/v1/test/ensure-login", "/account/api/v1/admin/sub
 PREFLIGHT_PREFIX = "Backup store preflight: "
 PREFLIGHT_TRIES = 30
 FAKE_BUCKET = "onprem-fake"
+# The two capabilities leg u records, each as the query that asks and the marker only a real answer carries.
+CAPABILITIES = (
+    ("object-lock", "object-lock", "<ObjectLockEnabled>Enabled</ObjectLockEnabled>"),
+    ("versioning", "versioning", "<Status>Enabled</Status>"),
+)
 
 
 def free_port() -> int:
@@ -226,6 +232,17 @@ def route_verdict(status: int, body: str) -> str:
     return "other-%d" % status
 
 
+def capability_verdict(status: int, body: str, marker: str) -> str:
+    """`supported`, `unsupported`, `unreachable` or `denied` for one S3 capability query. `supported` needs a 200 whose body carries the capability's own marker (an answer that merely exists proves nothing); status 0 means nothing answered; a 403 is `denied`, the key lacking the read permission, which says nothing about the store; any other answer is `unsupported`, which covers a store that returns NotImplemented or an empty configuration."""
+    if status == 0:
+        return "unreachable"
+    if status == HTTP_FORBIDDEN:
+        return "denied"
+    if status == HTTP_OK and marker in body:
+        return "supported"
+    return "unsupported"
+
+
 def http_status(port: int, method: str, path: str) -> tuple[int, str]:
     """(status, body) of one request to the local server; (0, error) when nothing answered."""
     conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
@@ -328,6 +345,36 @@ class OnPrem:
             str(d.code),
             "planted control: the same probe against a closed port FAILS, so a pass above can be a fail",
         )
+
+    def capability_row(self) -> None:
+        """Leg u: record whether the store offers Object Lock and versioning. Recorded and never asserted, since a store without them is a valid on-prem store; the planted control is the verdict function itself, which must tell a real answer from a bare 200 and from a dead port."""
+        d = self.d
+        d.step("%s: Object Lock and versioning, recorded and not asserted" % STEP_LABEL)
+        d.assert_equal(
+            "supported",
+            capability_verdict(
+                HTTP_OK, "<ObjectLockEnabled>Enabled</ObjectLockEnabled>", CAPABILITIES[0][2]
+            ),
+            "planted control: an Enabled configuration reads as supported",
+        )
+        d.assert_equal(
+            "unsupported",
+            capability_verdict(HTTP_OK, "", CAPABILITIES[0][2]),
+            "planted control: a bare 200 with no configuration reads as unsupported",
+        )
+        d.assert_equal(
+            "unreachable",
+            capability_verdict(0, "connection refused", CAPABILITIES[0][2]),
+            "planted control: a dead port reads as unreachable, never as a verdict on the store",
+        )
+        for name, query, marker in CAPABILITIES:
+            url = "%s/%s?%s" % (self.endpoint, self.bucket, query)
+            headers = wire.sigv4_headers(
+                "GET", url, b"", S3_REGION, self.access_key, self.secret_key
+            )
+            code, body = wire.http_call("GET", url, b"", headers, json_body=False)
+            verdict = capability_verdict(code, str(body), marker)
+            d.note("STORE-CAPABILITY %s: %s (HTTP %d)" % (name, verdict, code))
 
     def start_server(
         self, endpoint: str = "", bucket: str = "", log_name: str = "onprem-server.log"
@@ -479,6 +526,7 @@ class OnPrem:
         self.setup_store()
         try:
             self.probe_row()
+            self.capability_row()
             if self.start_server():
                 self.server_rows()
                 self.preflight_row()

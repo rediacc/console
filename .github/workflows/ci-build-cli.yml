@@ -1,4 +1,4 @@
-name: Console CI - Build (CLI Executables)
+name: CI - Build (CLI Executables)
 
 on:
   workflow_call:

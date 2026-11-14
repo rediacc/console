@@ -2,7 +2,7 @@
 
 THE ASK (operator, 2026-09-25, section X): "Rank the work, not just order it. [...] The concurrency field is really about files. 'Exclusive' is only needed when two plans touch the same files [...] Declaring the owned paths lets the hook decide instead of relying on a label." The grammar of the three header lines lives in `wl_plandeps` (one grammar); this module is what the lines MEAN.
 
-FOUR THINGS, each a pure function over parsed headers plus one reader of the live world:
+FIVE THINGS, each a pure function over parsed headers plus one reader of the live world:
 
   normalize_owns / owns_overlap   section 4: an EXACT, symbolic glob-intersection test. It needs no `git ls-files`
                                   and covers files that do not exist yet, and every "yes" comes with one concrete
@@ -14,6 +14,8 @@ FOUR THINGS, each a pure function over parsed headers plus one reader of the liv
                                   `block_plan_concurrency.py` and (T8/T9) the roster and the queue lease.
   rank / held / order_key         section 2: dependencies, then held after unheld (prerequisites excepted), then operator
                                   priority, then AI priority, then age.
+  claim_gate / with_claims        the spawns admitted but not yet on disk as agents: read, decide and append under one
+                                  lock, so siblings of one message see each other (#105d59a7).
 
 SEALED. Reads no environment variable and imports only the standard library and `wl_plandeps` at import time; `wl_roster`, `wl_leasehelp` and `wl_core` are imported inside `live_plans`, the one function that reads the live world. `.ci/policy/worklist-env-registry.json` lists this file under `sealed_modules`, so an environment read added here is CI red: a knob that retuned what counts as an overlap would be an escape hatch by another name.
 """
@@ -21,8 +23,11 @@ SEALED. Reads no environment variable and imports only the standard library and 
 from __future__ import annotations
 
 import dataclasses
+import json
+import os
 import pathlib
 import re
+import time
 from typing import Any
 
 import wl_plandeps as D
@@ -45,8 +50,14 @@ UNLINKED_RANK = (4, 2)
 UNRANKED = (4, 4)
 # The Status that sorts a plan after every unheld one (agent/plans/PLAN-stop-hook-one-plan-scope.md Design 6, worklist #93798daa).
 HELD_STATUS = "held"
+# How long an admitted spawn holds its claim with no agent meta to show for it: the pre-agent chain's own hook timeout in .claude/settings.json, the longest a sibling's hook can still be running.
+CLAIM_TTL_S = 180
+# The claim file's suffix beside the worklist's per-machine sidecars.
+CLAIMS_SUFFIX = ".spawnclaims"
 
 PLAN_LINE_RE = re.compile(r"^Plan:[ \t]*(\S.*?)[ \t]*$", re.MULTILINE)
+# A `Plan: none -- <reason>` value: the spawn serves no plan, so no item ref or plan-link token elsewhere in the brief makes it serve one.
+PLAN_NONE_RE = re.compile(r"^none\b", re.IGNORECASE)
 PROMPT_OWNS_RE = re.compile(r"^Owns:[ \t]*(\S.*?)[ \t]*$", re.MULTILINE)
 BASENAME_RE = re.compile(r"^(?:.*/)?(PLAN-[A-Za-z0-9._-]+\.md)$")
 
@@ -493,9 +504,13 @@ def item_plan(rec: dict) -> str | None:
 
 
 def spawn_plans(text: str, by_id: dict | None = None) -> set[str]:
-    """Section 3: the plans a spawn's prompt+description serves. An explicit `Plan: PLAN-x.md[, PLAN-y.md]` line wins; else every `#<id>` that names an item linked to a plan; else every bare `PLAN-x.md [<8hex>]` token."""
+    """Section 3: the plans a spawn's prompt+description serves. A `Plan: none -- <reason>` line serves none, whatever else the brief names; an explicit `Plan: PLAN-x.md[, PLAN-y.md]` line wins; else every `#<id>` that names an item linked to a plan; else every bare `PLAN-x.md [<8hex>]` token."""
     text = str(text or "")
     out: set[str] = set()
+    if any(
+        PLAN_NONE_RE.match(m.group(1).split(" -- ")[0].strip()) for m in PLAN_LINE_RE.finditer(text)
+    ):
+        return out
     for m in PLAN_LINE_RE.finditer(text):
         for tok in m.group(1).split(","):
             b = _base(tok.split(" -- ")[0])
@@ -525,6 +540,19 @@ def declared_owns(text: str) -> tuple[str, ...] | None:
     if errors or owns is None:
         return None
     return owns.globs
+
+
+def owns_line_problem(text: str) -> str | None:
+    """Why a spawn's `Owns:` line could not be read, or None when it reads or is absent. `declared_owns` reads a malformed line as none, so a refusal built on that None names this reason (#55b1f90b: a prose Owns line was refused as unknown files with no word about the line)."""
+    m = PROMPT_OWNS_RE.search(str(text or ""))
+    if not m:
+        return None
+    owns, errors = D.parse_owns(m.group(1))
+    if errors:
+        return "; ".join(str(e) for e in errors)
+    if owns is None:
+        return "the line parses to nothing"
+    return None
 
 
 # ---------------------------------------------------------------- reading plan headers on the spawn path
@@ -599,10 +627,13 @@ class LivePlans(dict):
     """`live_plans`' map ({plan basename: [holder, ...]}) carrying `owns`: {plan basename: the union of the `Owns:` lines its live holders' prompts declare}, present only for a plan whose EVERY holder declared one (#f412fdb8). A holder seen only through a lease has no prompt to read, so its plan keeps the whole plan Owns. A dict, so every caller that reads holders is unchanged; `spawn_verdict` reads `owns` with getattr, so a plain dict means no narrowing."""
 
     owns: dict[str, tuple[str, ...]]
+    # Live agents of a writer type that hold no plan: each brief says `Owns: none` and its transcript shows no edit (#55b1f90b).
+    readers: list[str]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.owns = {}
+        self.readers = []
 
 
 def live_plans(cwd, session_id, fold, now=None) -> dict[str, list[str]] | None:
@@ -621,13 +652,25 @@ def live_plans(cwd, session_id, fold, now=None) -> dict[str, list[str]] | None:
     # Per plan, each holder's declared Owns (None when it declared none or is a lease without a prompt).
     declared: dict[str, list[tuple[str, ...] | None]] = {}
     live_ids: set[str] = set()
+    readers: list[str] = []
     for row in rows or []:
         if not row.get("writer"):
             continue
-        live_ids.add(row["id"])
         meta = metas.get(row["id"]) or {}
         prompt = LH.first_prompt(meta.get("jsonl")) if meta.get("jsonl") else ""
         text = "%s\n%s" % (row.get("desc") or "", prompt)
+        # A writer TYPE briefed `Owns: none` that has made no edit is a reader (a live run, a probe): it holds no plan, and a
+        # same-session lease to it falls out below with it. One edit makes it a holder again (#55b1f90b).
+        if (
+            declared_owns(text) == ()
+            and meta.get("jsonl")
+            and wl_roster.full_edit_count(meta["jsonl"]) == 0
+        ):
+            readers.append(
+                "reader %s (%s): declares Owns none, no edit" % (row["id"], row.get("type") or "?")
+            )
+            continue
+        live_ids.add(row["id"])
         for plan in sorted(spawn_plans(text, by_id)):
             holders.setdefault(plan, []).append(
                 "writer %s (%s)" % (row["id"], row.get("type") or "?")
@@ -665,6 +708,7 @@ def live_plans(cwd, session_id, fold, now=None) -> dict[str, list[str]] | None:
     if rows is None and not peers:
         return None
     out = LivePlans(holders)
+    out.readers = readers
     for plan, owns in declared.items():
         if owns and all(o for o in owns):
             out.owns[plan] = tuple(dict.fromkeys(g for o in owns if o for g in o))
@@ -710,10 +754,14 @@ def narrowed_owns(declared, plan_globs) -> tuple[str, ...] | None:
     return None
 
 
-def spawn_verdict(serving, live, xinfo, declared=None, gitlinks=None, root=None) -> Verdict:
+def spawn_verdict(
+    serving, live, xinfo, declared=None, gitlinks=None, root=None, isolated=False
+) -> Verdict:
     """Section 5a steps 2-6 as one pure decision.
 
     `serving` is the set of plan basenames the spawn serves; `live` is live_plans' map; `xinfo(base) -> PlanX`; `declared` is the spawn's own Owns globs or None. A missing Owns fails closed as `**`. `gitlinks` is the set of submodule roots whose bare name in an Owns line is a pointer bump (default: read once per call from the `.gitmodules` of `root`, the checkout the caller judges, else the root this file sits in). The root is a parameter, not an environment read: this module is sealed against env knobs (.ci/policy/worklist-env-registry.json), so the guard passes the project root it already resolved.
+
+    `isolated` is a spawn with its own tree: two trees cannot corrupt each other and a clash surfaces at landing, so an overlap is a note naming the witness. Every other refusal stands.
 
     A planless spawn is judged on `declared`. A spawn serving plans is judged on `declared` as written when it declares one, else on the plans' whole Owns; a live plan likewise on `live.owns[plan]` when `live` is a `LivePlans` whose holders all declared one inside the plan's Owns. The mutex rules never narrow the LIVE side: a live exclusive plan refuses a spawn whose files are unknown or overlap the plan's whole Owns, and an exclusive plan cannot start while any other plan is live.
     """
@@ -783,6 +831,7 @@ def spawn_verdict(serving, live, xinfo, declared=None, gitlinks=None, root=None)
         )
     if gitlinks is None:
         gitlinks = _submodule_roots(pathlib.Path(root) if root else _REPO_ROOT)
+    isolated_notes: list[str] = []
     for p in sorted(xl):
         whole = _owns_of(xl[p])
         theirs = narrowed_owns(live_owns.get(p), whole) or whole
@@ -796,6 +845,12 @@ def spawn_verdict(serving, live, xinfo, declared=None, gitlinks=None, root=None)
         ]
         if hits:
             ga, gb, w = hits[0]
+            if isolated:
+                isolated_notes.append(
+                    "this isolated spawn claims `%s` and %s claims `%s`; both claim `%s`"
+                    % (ga, p, gb, w)
+                )
+                continue
             return Verdict(
                 False,
                 "overlap",
@@ -805,9 +860,135 @@ def spawn_verdict(serving, live, xinfo, declared=None, gitlinks=None, root=None)
                     *(["judged " + "; ".join(narrow_notes)] if narrow_notes else []),
                 ),
             )
+    if isolated_notes:
+        return Verdict(
+            True,
+            "overlap-isolated",
+            (),
+            "; ".join(isolated_notes) + ", which surfaces as a cherry-pick conflict at landing",
+        )
     if narrow_notes:
         return Verdict(True, "ok", (), "judged " + "; ".join(narrow_notes))
     return Verdict(True, "ok")
+
+
+# ---------------------------------------------------------------- spawns admitted in one message
+
+
+def claim_row(session_id, serving, declared, desc, isolated, entered) -> dict:
+    """One admitted spawn. `entered` is when its hook began and `at` (set under the lock) when it decided, so two rows whose spans cross prove the harness ran the hooks in parallel."""
+    return {
+        "session": str(session_id or ""),
+        "plans": sorted(serving or ()),
+        "owns": list(declared) if declared else None,
+        "desc": str(desc or ""),
+        "isolated": bool(isolated),
+        "entered": entered,
+    }
+
+
+def read_claims(path, now) -> list[dict]:
+    """The unexpired rows. A missing file is none; a torn or foreign line is skipped; any other read trouble raises for the caller to report."""
+    try:
+        text = pathlib.Path(path).read_text(encoding="utf-8", errors="replace")
+    except FileNotFoundError:
+        return []
+    out = []
+    for line in text.splitlines():
+        try:
+            row = json.loads(line)
+            if isinstance(row, dict) and float(row["until"]) > now:
+                out.append(row)
+        except (ValueError, KeyError, TypeError):
+            continue
+    return out
+
+
+def claim_gate(path, judge, row, wait, now=None) -> Verdict:
+    """`judge(unexpired claims) -> Verdict` under one exclusive lock, and `row` appended when it allows, so read, decide and append are one step whichever order the harness runs its hooks in. The rewrite drops expired rows. Raises when the lock stays held past `wait` seconds or the file cannot be read or written; the caller fails open, loudly."""
+    import fcntl
+
+    path = pathlib.Path(path)
+    with path.with_name(path.name + ".lock").open("a", encoding="utf-8") as lock:
+        deadline = time.monotonic() + wait
+        while True:
+            try:
+                fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                break
+            except BlockingIOError:
+                if time.monotonic() >= deadline:
+                    raise TimeoutError("its lock stayed held for %s s" % wait) from None
+                time.sleep(0.02)
+        at = time.time() if now is None else now
+        claims = read_claims(path, at)
+        verdict = judge(claims)
+        if verdict.allow:
+            kept = [*claims, {**row, "at": at, "until": at + CLAIM_TTL_S}]
+            tmp = path.with_name("%s.%d.tmp" % (path.name, os.getpid()))
+            tmp.write_text("".join(json.dumps(r) + "\n" for r in kept), encoding="utf-8")
+            os.replace(tmp, path)
+        return verdict
+
+
+def unconsumed(claims, metas, session_id) -> list[dict]:
+    """The claims with no agent yet: a meta of this session with the claim's description, written at or after the claim, is that spawn, now the roster's to count or to call finished. Each meta answers for one claim. A spawn with no description is claimed with an empty one and matches a meta with none, so it stops counting once its agent exists like any other. A peer's claim can only expire, since `metas` are this session's."""
+    spare = sorted(
+        ((m.get("desc") or "", m.get("spawned") or 0) for m in (metas or {}).values()),
+        key=lambda d: d[1],
+    )
+    out = []
+    for claim in claims:
+        hit = None
+        if claim.get("session") == session_id:
+            want = str(claim.get("desc") or "")
+            hit = next(
+                (d for d in spare if d[0] == want and d[1] >= float(claim.get("at") or 0)),
+                None,
+            )
+        if hit is None:
+            out.append(claim)
+        else:
+            spare.remove(hit)
+    return out
+
+
+def with_claims(live, claims, now=None) -> LivePlans:
+    """`live` plus each claim's plans as a holder, with the narrowing `live_plans` would give the same writer: a plan keeps a declared Owns only while every holder declared one. A planless claim is no holder, as a planless writer is not in `live_plans`."""
+    now = time.time() if now is None else now
+    out = LivePlans((p, list(h)) for p, h in (live or {}).items())
+    out.owns = dict(getattr(live, "owns", None) or {})
+    for claim in claims:
+        owns = tuple(claim.get("owns") or ())
+        label = "spawn claim %r (session %s, %d s ago)" % (
+            str(claim.get("desc") or "")[:40],
+            str(claim.get("session") or "?")[:8],
+            max(0, now - float(claim.get("at") or now)),
+        )
+        for plan in claim.get("plans") or ():
+            fresh = plan not in out
+            out.setdefault(plan, []).append(label)
+            if owns and fresh:
+                out.owns[plan] = owns
+            elif owns and plan in out.owns:
+                out.owns[plan] = tuple(dict.fromkeys((*out.owns[plan], *owns)))
+            else:
+                out.owns.pop(plan, None)
+    return out
+
+
+def cap_verdict(writers, claims, session_id, cap) -> Verdict | None:
+    """The refusal when this session's live writers plus its unstarted claims already fill the cap, else None. Only a claim adds anything here: with none, `block_agent_cap` has judged the same count. Per session, as `wl_roster`'s count is."""
+    mine = sum(1 for c in claims if c.get("session") == session_id)
+    if not mine or writers + mine < cap:
+        return None
+    return Verdict(
+        False,
+        "cap",
+        (
+            "%d live writer(s) and %d same-message spawn(s) fill writer_cap %d, so this would be writer number %d"
+            % (writers, mine, cap, writers + mine + 1),
+        ),
+    )
 
 
 # ---------------------------------------------------------------- ranking

@@ -36,6 +36,7 @@ const healthy = {
   message: 'All systems healthy',
   details: {} as never,
   issues: [],
+  findings: [],
 };
 
 describe('a 5-minute target goes stale at T + grace, in seconds', () => {

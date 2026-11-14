@@ -189,10 +189,14 @@
       "summary": "{{companyName}} | Registrikood {{registryCode}} | KM-number {{vatNumber}} |"
     },
     "legalLinks": {
+      "acceptableUsePolicy": "Lubatud kasutuse poliitika",
       "cookiePolicy": "Küpsiste poliitika",
+      "dataProcessingAgreement": "Andmetöötluslepe",
+      "enterpriseLicense": "Enterprise-litsents",
       "legalInformation": "Õiguslik teave",
       "privacyPolicy": "Privaatsuspoliitika",
       "refundPolicy": "Tagastuspoliitika",
+      "serviceLevelAgreement": "Teenusetaseme leping",
       "telemetryPolicy": "Telemetria poliitika",
       "termsOfService": "Teenuse tingimused"
     },
@@ -321,6 +325,106 @@
     "errorRequiredEmail": "Palun sisestage oma e-posti aadress."
   },
   "pages": {
+    "acceptableUsePolicy": {
+      "contact": {
+        "description": "Kui teil on küsimusi selle lubatud kasutuse poliitika kohta või peate kuritarvitamisest teatama, võtke meiega ühendust aadressil <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>.",
+        "title": "Küsimusi?"
+      },
+      "hero": {
+        "effectiveDate": "Jõustumiskuupäev: 11. november 2026",
+        "title": "Lubatud kasutuse poliitika"
+      },
+      "meta": {
+        "description": "Rediacc CLI, Renet agendi, kontoportaali ja majutatud teenuste kasutamise reeglid: keelatud sisu, keelatud tegevused, rikkumistest teatamine ja jõustamine.",
+        "keywords": "lubatud kasutuse poliitika, AUP, keelatud kasutus, kuritarvitamine, Rediacc",
+        "title": "Lubatud kasutuse poliitika: keelatud tegevused | Rediacc"
+      },
+      "related": {
+        "title": "Seotud poliitikad"
+      },
+      "sections": {
+        "changes": {
+          "content": [
+            "Rediacc võib seda poliitikat uuendada <a href=\"terms-of-service\">teenuse kasutustingimuste</a> muutmise korra alusel."
+          ],
+          "id": "changes",
+          "title": "8. Selle poliitika muudatused"
+        },
+        "enforcement": {
+          "content": [
+            "Rediacc võib kahtlustatavaid rikkumisi uurida. Olenevalt tõsidusest võib Rediacc klienti hoiatada, sisule platvormil juurdepääsu eemaldada või keelata, keelduda litsentse väljastamast või pikendamast, konto peatada või lõpetada ning ebaseadusliku tegevuse pädevatele asutustele teatada. Kus see on otstarbekas ja seaduslik, teatab Rediacc enne tegutsemist ette ja annab võimaluse rikkumine kõrvaldada, välja arvatud juhul, kui rikkumine kujutab vahetut ohtu teenustele, teistele või Rediaccile."
+          ],
+          "id": "enforcement",
+          "title": "7. Jõustamine"
+        },
+        "platformAbuse": {
+          "content": ["Keelatud on järgmine:"],
+          "id": "platform-abuse",
+          "items": [
+            "litsentsi kinnitamisest, masinaaktiveerimise piirangutest, päringupiirangutest, suuruspiirangutest või muudest tehnilistest piirangutest möödaminek või selle katsed",
+            "tasuta litsentside või kontode hankimine hulgi, vahelduvate võrguaadresside või masinatunnuste abil või muul viisil, mis on mõeldud tasuta litsentsi piirangutest kõrvalehoidmiseks",
+            "platvormi segamine või sellele põhjendamatu koormuse tekitamine või selle kasutamine viisil, mis halvendab teenust teistele",
+            "teenuste edasimüümine, levitamine või pakkumine kolmandatele osapooltele hallatud teenusena ilma Rediacc eelneva kirjaliku nõusolekuta",
+            "konto mandaatide või API tokenite jagamine väljaspool konto volitatud kasutajaid"
+          ],
+          "title": "4. Platvormi ja tasuta pakettide kuritarvitamine"
+        },
+        "prohibitedActivities": {
+          "content": ["Teenuseid ei tohi kasutada selleks, et:"],
+          "id": "prohibited-activities",
+          "items": [
+            "saada või püüda saada loata juurdepääsu mis tahes süsteemile, võrgule, kontole või andmetele, sealhulgas Rediacc omadele",
+            "skaneerida, sondeerida, läbistustestida või koormustestida Rediacc infrastruktuuri ilma Rediacc eelneva kirjaliku loata",
+            "korraldada või hõlbustada teenusetõkestusründeid või käitada avatud proksisid, avatud releesid või anonüümimisteenuseid kuritarvitamise eesmärgil",
+            "saata soovimatuid massiteateid (rämpsposti) või tegeleda andmepüügi või pettusega",
+            "kaevandada krüptovaluutat platvormil või majutatud varukoopiasalvestuses",
+            "esineda mis tahes isiku või üksusena või esitada seotuse kohta valeteavet",
+            "rikkuda ekspordikontrolli või sanktsioonide õigusakte",
+            "rikkuda mis tahes kohaldatavat õigusakti või eeskirja"
+          ],
+          "title": "3. Keelatud tegevused"
+        },
+        "prohibitedContent": {
+          "content": [
+            "Teenuseid ei tohi kasutada järgmise salvestamiseks, majutamiseks, levitamiseks ega töötlemiseks:"
+          ],
+          "id": "prohibited-content",
+          "items": [
+            "laste seksuaalse väärkohtlemise materjal või sisu, mis ekspluateerib alaealisi seksuaalselt või seab nad ohtu",
+            "sisu, mis rikub või õigusvastaselt omastab teiste intellektuaalomandi-, privaatsus- või muid õigusi",
+            "pahavara, kahjutarkvara, spioonitarkvara, botneti juhtserverid või muu kood, mis on mõeldud süsteemide või andmete kahjustamiseks",
+            "sisu, mis on ebaseaduslik seal, kus seda majutatakse või kus sellele ligi pääsetakse, sealhulgas terroristlik sisu ja ebaseaduslik vihakõne",
+            "isikuandmed, mida töödeldakse ilma õigusliku aluseta"
+          ],
+          "title": "2. Keelatud sisu"
+        },
+        "reporting": {
+          "content": [
+            "Selle poliitika kahtlustatavatest rikkumistest võib teatada aadressile <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> teemaga \"Abuse\". Autoriõiguse kaebuste puhul järgitakse <a href=\"terms-of-service\">teenuse kasutustingimuste</a> jaotises \"Autoriõiguse kaebused\" kirjeldatud korda. Ebaseadusliku sisu teateid käsitletakse ELi digiteenuste määruse alusel, kui see kehtib."
+          ],
+          "id": "reporting",
+          "title": "6. Rikkumistest teatamine"
+        },
+        "scope": {
+          "content": [
+            "See lubatud kasutuse poliitika (\"poliitika\") kehtib kõigile, kes kasutavad {{legalName}} (\"Rediacc\") teenuseid, sealhulgas CLI-d, Renet agenti, kontoportaali, API-t, majutatud varukoopiasalvestust ja tasuta litsentsi. See on <a href=\"terms-of-service\">teenuse kasutustingimuste</a> osa ning seal määratletud mõistetel on siin sama tähendus. See leht on koostatud inglise keeles. Tõlked on esitatud üksnes mugavuse huvides; kui tõlge erineb ingliskeelsest versioonist, kehtib ingliskeelne versioon.",
+            "Kliendiandmed jäävad masinatele, mida Rediacc ei kontrolli. See poliitika kehtib siiski selle kohta, mida teenustega juurutatakse, ning klient vastutab iga volitatud kasutaja ja iga automatiseerimise eest, mis tegutseb tema konto all või tema masinatel."
+          ],
+          "id": "scope",
+          "title": "1. Reguleerimisala"
+        },
+        "security": {
+          "content": [
+            "Heas usus tehtud turvauuringuid tervitatakse, kui neist teatatakse aadressile <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> teemaga \"Security\", need väldivad privaatsusrikkumisi, andmete hävitamist ja teenuse halvendamist ning piirduvad kontode ja masinatega, mis kuuluvad uurijale. Rediacc ei võta meetmeid uuringute vastu, mis neid tingimusi järgivad."
+          ],
+          "id": "security-research",
+          "title": "5. Turvauuringud"
+        }
+      },
+      "toc": {
+        "title": "Sisukord"
+      }
+    },
     "blog": {
       "allArticles": "Kõik artiklid",
       "featured": "Esiletoodud artiklid",
@@ -487,6 +591,12 @@
                 "Seda küpsist käsitletakse ELi ePrivacy direktiivi kohaselt \"hädavajalikuna\", kuna see on hädavajalik veebisaidi toimimiseks vastavalt teie soovile. Selle küpsise jaoks ei ole nõusolekuribal vaja kuvada."
               ],
               "title": "3.1 Keele-eelistuse küpsis"
+            },
+            "regionStorage": {
+              "content": [
+                "<strong>Nimi:</strong> <code>rediacc_region</code><br><strong>Tüüp:</strong> Esimese osapoole brauseri kohalik salvestusruum, mitte küpsis, hädavajalik<br><strong>Kestus:</strong> Kuni teie brauseriandmete kustutamiseni<br><strong>Eesmärk:</strong> Jätab meelde teie valitud konto piirkonna (Euroopa, Ameerika Ühendriigid või Aasia ja Vaikse ookeani piirkond), et sisselogimislehel saaks selle eelvalida. See jääb teie brauserisse ja veebisait ei saada seda kunagi meie serveritesse."
+              ],
+              "title": "3.2 Piirkonna eelistus (kohalik salvestusruum)"
             }
           },
           "title": "3. Meie kasutatavad küpsised"
@@ -534,6 +644,155 @@
             "<strong>Sõrmejälgede võtmine</strong> - me ei kasuta brauseri ega seadme sõrmejälgede võtmise tehnikaid"
           ],
           "title": "4. Mida me ei kasuta"
+        }
+      },
+      "toc": {
+        "title": "Sisukord"
+      }
+    },
+    "dataProcessingAgreement": {
+      "contact": {
+        "description": "Selle andmetöötluslepinguga seotud küsimuste korral või alltöötleja vastu vastuväite esitamiseks võtke meiega ühendust aadressil <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>.",
+        "title": "Küsimusi?"
+      },
+      "hero": {
+        "effectiveDate": "Jõustumiskuupäev: 11. november 2026",
+        "title": "Andmetöötluslepe"
+      },
+      "meta": {
+        "description": "GDPRi artikli 28 andmetöötlustingimused Rediacc ärikliendile: juhised, turvalisus, alltöötlejad, edastamised, rikkumisest teatamine ja kustutamine.",
+        "keywords": "andmetöötluslepe, DPA, GDPR, artikkel 28, alltöötlejad, standardsed lepingutingimused, Rediacc",
+        "title": "Andmetöötluslepe (GDPRi artikkel 28) | Rediacc"
+      },
+      "related": {
+        "title": "Seotud poliitikad"
+      },
+      "sections": {
+        "attribution": {
+          "content": [
+            "Osad sellest DPA-st on kohandatud dokumendist Common Paper Data Processing Agreement Standard Terms Version 1.1 (<a href=\"https://commonpaper.com/standards/data-processing-agreement/1.1\">commonpaper.com/standards/data-processing-agreement/1.1</a>), mille on avaldanud Common Paper, Inc. litsentsi Creative Commons Attribution 4.0 International (<a href=\"https://creativecommons.org/licenses/by/4.0/\">CC BY 4.0</a>) alusel. Teksti on muudetud: see on ümber struktureeritud, lühendatud ja teenustele kohandatud. Common Paper, Inc. ei kinnita seda DPA-d."
+          ],
+          "id": "attribution",
+          "title": "14. Selle DPA allikas"
+        },
+        "audits": {
+          "content": [
+            "Rediacc teeb kliendile kättesaadavaks teabe, mis on vajalik GDPR artikli 28 järgimise tõendamiseks, peamiselt kirjalike vastustena mõistlikele turvaküsimustikele ning Rediacc ja tema alltöötlejate olemasolevate auditiaruannete ja sertifikaatide kaudu. Kui see teave ei piisa või järelevalveasutus seda nõuab, võib klient oma kulul auditi läbi viia, andes sellest kolmkümmend (30) päeva ette teada, tööaja jooksul, mitte rohkem kui kord aastas, konfidentsiaalsuskohustuste all ja nii, et see ei häiri teenuseid ega teisi kliente."
+          ],
+          "id": "audits",
+          "title": "12. Auditid"
+        },
+        "breach": {
+          "content": [
+            "Rediacc teavitab klienti põhjendamatu viivituseta ja igal juhul seitsmekümne kahe (72) tunni jooksul pärast seda, kui ta on saanud teada kliendi isikuandmeid mõjutavast isikuandmetega seotud rikkumisest. Teade kirjeldab teadaolevas ulatuses rikkumise laadi, mõjutatud andmesubjektide ja kirjete kategooriaid ning ligikaudset arvu, tõenäolisi tagajärgi ning võetud või kavandatud meetmeid. Rediacc võtab mõistlikke samme rikkumise piiramiseks ja kõrvaldamiseks."
+          ],
+          "id": "breach",
+          "title": "10. Isikuandmetega seotud rikkumine"
+        },
+        "confidentiality": {
+          "content": [
+            "Rediacc tagab, et iga kliendi isikuandmete töötlemiseks volitatud isikut seob konfidentsiaalsuskohustus."
+          ],
+          "id": "confidentiality",
+          "title": "5. Konfidentsiaalsus"
+        },
+        "dataSubjectRights": {
+          "content": [
+            "Rediacc edastab kliendile viivitamata iga andmesubjekti taotluse kliendi isikuandmete kohta ega vasta sellele ise, välja arvatud kliendi juhiste alusel. Võttes arvesse töötlemise laadi, aitab Rediacc klienti selliste taotlustega tegelemisel ja tema kohustuste täitmisel GDPR artiklite 32 kuni 36 alusel, sealhulgas andmekaitsealaste mõjuhinnangute ja eelnevate konsultatsioonide puhul."
+          ],
+          "id": "data-subject-rights",
+          "title": "9. Andmesubjekti taotlused ja abi"
+        },
+        "definitions": {
+          "id": "definitions",
+          "items": [
+            "<strong>\"Andmekaitseõigus\"</strong> tähendab ELi isikuandmete kaitse üldmäärust (määrus (EL) 2016/679, \"GDPR\"), Ühendkuningriigi GDPR-i ja mis tahes muud andmekaitseõigust, mida kohaldatakse selle DPA kohasele töötlemisele.",
+            "<strong>\"Kliendi isikuandmed\"</strong> tähendab isikuandmeid, mida Rediacc töötleb kliendi nimel platvormi osutamisel, näiteks kliendi kutsutud volitatud kasutajate ja meeskonnaliikmete nimed ja e-posti aadressid ning krüpteeritud andmed, mida klient platvormil hoiab.",
+            "<strong>\"Isikuandmetega seotud rikkumine\"</strong>, <strong>\"töötlemine\"</strong>, <strong>\"vastutav töötleja\"</strong>, <strong>\"volitatud töötleja\"</strong> ja <strong>\"andmesubjekt\"</strong> on GDPR-is antud tähendusega.",
+            "<strong>\"SCC\"</strong> tähendab Euroopa Komisjoni rakendusotsusega (EL) 2021/914 kinnitatud standardseid lepingutingimusi.",
+            "<strong>\"Alltöötleja\"</strong> tähendab kolmandat osapoolt, kelle Rediacc on kaasanud kliendi isikuandmete töötlemiseks."
+          ],
+          "title": "2. Mõisted"
+        },
+        "deletion": {
+          "content": [
+            "Teenuste lõppedes võib klient eksportida kliendi isikuandmed kolmekümne (30) päeva jooksul. Seejärel kustutab Rediacc kliendi isikuandmed aktiivsetest süsteemidest ja üheksakümne (90) päeva jooksul varukoopiatest, välja arvatud juhul, kui õigus kohustab Rediacci neid säilitama."
+          ],
+          "id": "deletion",
+          "title": "11. Kustutamine või tagastamine"
+        },
+        "details": {
+          "id": "details",
+          "items": [
+            "<strong>Teema ja eesmärk:</strong> platvormi osutamine, sealhulgas konto ja meeskonna haldus, litsentside väljastamine, krüpteeritud konfiguratsioonisalvestus, majutatud varukoopiasalvestus ja tugi",
+            "<strong>Kestus:</strong> teenuse kasutustingimuste kehtivusaeg ning jaotises 11 sätestatud kustutamisperiood",
+            "<strong>Töötlemise laad:</strong> kogumine, säilitamine, edastamine, päringute tegemine ja kustutamine",
+            "<strong>Andmesubjektide kategooriad:</strong> kliendi volitatud kasutajad, kutsutud meeskonnaliikmed ja partnerite kontaktisikud",
+            "<strong>Isikuandmete kategooriad:</strong> nimed, e-posti aadressid, organisatsioon ja roll, autentimisandmed (paroolide räsid, pääsuvõtmete (passkey) avalikud võtmed), seansside võrguaadressid ja kasutajaagendid ning kõik isikuandmed krüpteeritud andmetes, mida klient platvormil hoiab",
+            "<strong>Eriliigid:</strong> ei ole ette nähtud; klient ei tohi platvormil krüpteerimata kujul hoida eriliigilisi andmeid"
+          ],
+          "title": "4. Töötlemise üksikasjad"
+        },
+        "instructions": {
+          "content": [
+            "Rediacc töötleb kliendi isikuandmeid ainult kliendi dokumenteeritud juhiste alusel, milleks on teenuse kasutustingimused, see DPA ning kliendi teenuste kasutus ja seadistus, kui õigus ei nõua teisiti; sel juhul teavitab Rediacc klienti enne töötlemist, kui õigus seda ei keela. Rediacc teavitab klienti, kui ta leiab, et juhis rikub andmekaitseõigust."
+          ],
+          "id": "instructions",
+          "title": "3. Töötlemine juhiste alusel"
+        },
+        "liability": {
+          "content": [
+            "Kummagi poole vastutuse suhtes selle DPA alusel kehtivad teenuse kasutustingimuste piirangud, välja arvatud juhul, kui andmekaitseõigus seda ei luba. Kui see DPA on teenuse kasutustingimustega vastuolus, kehtib kliendi isikuandmete töötlemisel see DPA; kui SCC on selle DPA-ga vastuolus, kehtivad SCC."
+          ],
+          "id": "liability",
+          "title": "13. Vastutus ja ülimuslikkus"
+        },
+        "scope": {
+          "content": [
+            "See andmetöötluslepe (\"DPA\") on osa <a href=\"terms-of-service\">teenuse kasutustingimustest</a> {{legalName}} (\"Rediacc\", \"volitatud töötleja\") ja kliendi vahel, kui klient kasutab teenuseid ettevõttena ja Rediacc töötleb kliendi isikuandmeid kliendi nimel. Teenuse kasutustingimustes määratletud mõistetel on siin sama tähendus. See leht on koostatud inglise keeles. Tõlked on esitatud üksnes mugavuse huvides; kui tõlge erineb ingliskeelsest versioonist, kehtib ingliskeelne versioon.",
+            "Kliendi isikuandmete puhul on klient vastutav töötleja (või oma vastutava töötleja nimel tegutsev volitatud töötleja) ning Rediacc on volitatud töötleja (või alltöötleja). Konto-, arveldus- ja nõustumiskirjete ning telemetria andmete puhul on Rediacc iseseisev vastutav töötleja, nagu on kirjeldatud <a href=\"privacy-policy\">privaatsuspoliitikas</a>, ning see DPA sellele töötlemisele ei kehti.",
+            "Kliendi masinatel olevaid kliendiandmeid Rediacc ei töötle. Krüpteeritud konfiguratsioonisalvestus ja majutatud varukoopiad krüpteeritakse võtmetega, mida Rediaccil ei ole, seega Rediacc salvestab need andmeplokid, kuid ei saa nende sisu lugeda."
+          ],
+          "id": "scope",
+          "title": "1. Reguleerimisala ja rollid"
+        },
+        "security": {
+          "content": [
+            "Rediacc rakendab GDPR artikli 32 kohaselt asjakohaseid tehnilisi ja korralduslikke meetmeid, sealhulgas:"
+          ],
+          "id": "security",
+          "items": [
+            "krüpteerimine edastamisel (TLS 1.2 või uuem) ja puhkeolekus ning konfiguratsioonisalvestuse ja majutatud varukoopiate kliendipoolne krüpteerimine võtmetega, mida Rediaccil ei ole",
+            "juurdepääs tootmissüsteemidele on piiratud volitatud töötajatega ja nõuab mitmefaktorilist autentimist",
+            "klientide andmete loogiline eraldamine ja piirkondlik andmesalvestus",
+            "tootmissüsteemide logimine ja jälgimine ning turvameetmete regulaarne testimine"
+          ],
+          "title": "6. Turvalisus"
+        },
+        "subprocessors": {
+          "content": [
+            "Klient lubab Rediaccil kaasata alltöötlejaid. Rediacc kehtestab igale alltöötlejale andmekaitsekohustused, mis ei ole vähem kaitsvad kui see DPA, ning vastutab oma alltöötlejate tegevuse eest. Praegused alltöötlejad on:"
+          ],
+          "content2": [
+            "Rediacc annab vähemalt kolmkümmend (30) päeva ette teada enne alltöötleja lisamist või asendamist, uuendades seda lehte ja teavitades konto e-posti aadressi. Klient võib selle aja jooksul esitada vastuväite mõistlikel andmekaitseteemalistel põhjustel. Kui pooled ei suuda vastuväidet lahendada, võib klient mõjutatud teenused lõpetada ja saada lõpetamisele järgneva perioodi eest ettemakstud tasud tagasi.",
+            "Veebisaidi analüütika (Plausible) ei töötle kliendi isikuandmeid ja kuulub privaatsuspoliitika alla."
+          ],
+          "id": "subprocessors",
+          "items": [
+            "<strong>Cloudflare, Inc.</strong> (Ameerika Ühendriigid; ülemaailmne võrk): kontoportaali ja API majutamine (Workers), kontoandmebaas (D1), majutatud varukoopia- ja objektisalvestus (R2), sisuedastus ja DNS ning vormide robotikaitse (Turnstile)",
+            "<strong>Amazon Web Services, Inc.</strong> (Amazon Simple Email Service AWS-i piirkonnas, mis teenindab kliendi konto piirkonda): tehinguliste e-kirjade, näiteks sisselogimislinkide, teadete ja arvete edastamine",
+            "<strong>Stripe, Inc. ja tema sidusettevõtted</strong> (Ameerika Ühendriigid ja Iirimaa): maksete töötlemine, tellimuste arveldamine, arvete esitamine ja maksude arvutamine tasuliste tellimuste puhul",
+            "<strong>Hostinger</strong> (virtuaalserverid Euroopa Liidus): telemetria ja jälgitavuse lõpp-punkti (<code>otlp.rediacc.io</code>) majutamine, mis võtab vastu telemetria andmeid ja teenuselogisid"
+          ],
+          "title": "7. Alltöötlejad"
+        },
+        "transfers": {
+          "content": [
+            "Kui kliendi isikuandmeid edastatakse Euroopa Majanduspiirkonnast väljapoole riiki, millel ei ole piisavuse otsust, lisatakse SCC viitamise teel sellesse DPA-sse: teine moodul (vastutavalt töötlejalt volitatud töötlejale), kui klient on vastutav töötleja, ja kolmas moodul (volitatud töötlejalt volitatud töötlejale), kui klient on volitatud töötleja. SCC puhul: kohaldatakse valikulist liitumisklauslit (klausel 7); kohaldatakse klausli 9 punkti a varianti 2 (üldine luba) jaotises 7 sätestatud etteteatamisajaga; klausli 11 valikulist sõnastust ei kohaldata; klauslites 17 ja 18 valitud õigus ja kohtud on riigi {{country}} omad; I ja II lisa täidetakse selle DPA jaotistega 1, 4 ja 6 ning III lisa jaotisega 7.",
+            "Ühendkuningriigi GDPR-i alla kuuluvate edastamiste puhul kohaldatakse koos SCC-ga Ühendkuningriigi teabevolinik välja antud rahvusvahelise andmeedastuse lisa (International Data Transfer Addendum). Rediacc tugineb ELi ja USA andmekaitseraamistikule (EU-US Data Privacy Framework) nende alltöötlejate puhul, kes on selle alusel sertifitseeritud."
+          ],
+          "id": "transfers",
+          "title": "8. Rahvusvahelised edastamised"
         }
       },
       "toc": {
@@ -723,6 +982,139 @@
       },
       "sections": {
         "cli": "Käsurea liides (CLI)"
+      }
+    },
+    "enterpriseLicense": {
+      "contact": {
+        "description": "Enterprise-litsentsimise kohta küsimuste korral või tellimusvormi taotlemiseks võtke meiega ühendust aadressil <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>.",
+        "title": "Küsimusi?"
+      },
+      "hero": {
+        "effectiveDate": "Jõustumiskuupäev: 11. november 2026",
+        "title": "Enterprise-tarkvaralitsents"
+      },
+      "meta": {
+        "description": "Tellimusvormi alusel müüdavate Rediacc Enterprise-tellimuste litsentsitingimused: isehostitud kontoserverid, aktiveerimispiirangud, tugi ja kontrollimine.",
+        "keywords": "enterprise-litsents, tarkvara litsentsileping, ettevõttesisene, tellimusvorm, Rediacc Enterprise",
+        "title": "Enterprise-litsentsi tingimused isehostimiseks | Rediacc"
+      },
+      "related": {
+        "title": "Seotud poliitikad"
+      },
+      "sections": {
+        "attribution": {
+          "content": [
+            "Osad sellest litsentsist on kohandatud dokumendist Common Paper Software License Agreement Standard Terms Version 1.1 (<a href=\"https://commonpaper.com/standards/software-license-agreement/1.1\">commonpaper.com/standards/software-license-agreement/1.1</a>), mille on avaldanud Common Paper, Inc. litsentsi Creative Commons Attribution 4.0 International (<a href=\"https://creativecommons.org/licenses/by/4.0/\">CC BY 4.0</a>) alusel. Teksti on muudetud: see on ümber struktureeritud, lühendatud ja teenustele kohandatud. Common Paper, Inc. ei kinnita seda litsentsi."
+          ],
+          "id": "attribution",
+          "title": "15. Selle litsentsi allikas"
+        },
+        "definitions": {
+          "id": "definitions",
+          "items": [
+            "<strong>\"Litsentsitud tarkvara\"</strong> tähendab ettevõttesisest tarkvara ja, kui tellimusvorm selle sisaldab, isehostitud kontoserveri tarkvara platvormi käitamiseks kliendi enda infrastruktuuris, objektkoodina, koos Rediacc pakutavate uuendustega.",
+            "<strong>\"Aktiveerimiste ülempiir\"</strong> tähendab masinate maksimaalset arvu, millel võib korraga olla aktiveerimine, nagu on märgitud tellimusvormis, või 25, kui seda ei ole märgitud.",
+            "<strong>\"Tellimuse periood\"</strong> tähendab tellimusvormis märgitud perioodi, sealhulgas pikendusi.",
+            "<strong>\"Partner\"</strong> tähendab edasimüüjat või teenusepakkujat, kellele Rediacc on andnud volituse Enterprise-tellimusi müüa."
+          ],
+          "title": "2. Mõisted"
+        },
+        "delivery": {
+          "content": [
+            "Rediacc tarnib litsentsitud tarkvara elektrooniliselt. Litsentsid on allkirjastatud failid, mida litsentsitud tarkvara kinnitab, sealhulgas võrguühenduseta. Isehostitud kontoserver töötab oma litsentsi alusel ning salvestab kliendi lepingu aktsepteerimise tellimusvormi kaudu, mitte platvormi veebipõhise nõustumisvoo kaudu."
+          ],
+          "id": "delivery",
+          "title": "5. Tarne, litsentsifailid ja kinnitamine"
+        },
+        "fees": {
+          "content": [
+            "Tasud, arveldus ja maksetingimused on märgitud tellimusvormis. Kui tellimusvorm ei ütle teisiti, tuleb arved tasuda kolmekümne (30) päeva jooksul, tasud on ilma maksudeta ning tellimuse perioodi tasusid ei saa tühistada ega tagastada, välja arvatud nii, nagu see litsents või teenuse kasutustingimused ette näevad."
+          ],
+          "id": "fees",
+          "title": "7. Tasud ja maksmine"
+        },
+        "general": {
+          "content": [
+            "Sellele litsentsile kohaldatakse teenuse kasutustingimuste ekspordikontrolli, kohaldatava õiguse, vaidluste lahendamise ja üldtingimuste sätteid, kui tellimusvorm ei sätesta muid tingimusi. Teenuse kasutustingimuste vahekohtu jaotis kehtib ainult klientidele, kelle põhitegevuskoht on Ameerika Ühendriikides."
+          ],
+          "id": "general",
+          "title": "14. Eksport, kohaldatav õigus ja üldtingimused"
+        },
+        "grant": {
+          "content": [
+            "Käesolevat litsentsi järgides ja tasud makstes annab Rediacc kliendile tellimuse perioodiks mitteainuõigusliku, üleantamatu, alamlitsentsimatu litsentsi paigaldada ja kasutada litsentsitud tarkvara kliendi omandis või kontrolli all olevas infrastruktuuris kuni aktiveerimiste ülempiirini, üksnes kliendi ja tema sidusettevõtete sisemisteks äriliseks eesmärkideks. Töövõtjad võivad litsentsitud tarkvara kasutada kliendi nimel ning klient vastutab nende eest."
+          ],
+          "id": "grant",
+          "title": "3. Litsentsi andmine"
+        },
+        "indemnity": {
+          "content": [
+            "Rediacc kohustus kaitsta rikkumisnõuete eest, mis on sätestatud teenuse kasutustingimustes, kehtib litsentsitud tarkvara suhtes."
+          ],
+          "id": "indemnity",
+          "title": "11. Rikkumiskaitse"
+        },
+        "liability": {
+          "content": [
+            "Kehtib teenuse kasutustingimuste vastutuse piirang, välja arvatud et ülempiiriks on tellimusvormi alusel tellimuse eest makstud või makstavad tasud kaheteistkümne (12) kuu jooksul enne nõude aluseks olnud sündmust, kui tellimusvorm ei sätesta teist summat."
+          ],
+          "id": "liability",
+          "title": "10. Vastutuse piiramine"
+        },
+        "ownership": {
+          "content": [
+            "Rediacc ja tema litsentsiandjad omavad litsentsitud tarkvara ja kõiki sellega seotud intellektuaalomandi õigusi või neil on õigus seda litsentsida. Litsentsitud tarkvara litsentsitakse, mitte ei müüda, ning ühtegi õigust ei anta peale selles litsentsis selgesõnaliselt märgitute."
+          ],
+          "id": "ownership",
+          "title": "8. Omand"
+        },
+        "restrictions": {
+          "content": [
+            "Kehtivad teenuse kasutustingimuste piirangud. Lisaks ei ületa klient aktiveerimiste ülempiiri, ei käita isehostitud kontoserverit kellegi teise kui kliendi ja tema sidusettevõtete jaoks ega paku litsentsitud tarkvara kolmandatele osapooltele majutatud või hallatud teenusena, kui tellimusvorm seda selgesõnaliselt ei luba."
+          ],
+          "id": "restrictions",
+          "title": "4. Piirangud"
+        },
+        "scope": {
+          "content": [
+            "See Enterprise-tarkvaralitsents (\"litsents\") kehtib Enterprise-tellimustele, mis on ostetud ettevõttelt {{legalName}} (\"Rediacc\") või Rediacc volitatud partneri kaudu tellimusvormi alusel. Litsents, tellimusvorm ja <a href=\"terms-of-service\">teenuse kasutustingimused</a> moodustavad koos selle tellimuse lepingu. Vastuolu korral kehtib esmalt tellimusvorm, seejärel see litsents ja seejärel teenuse kasutustingimused. See leht on koostatud inglise keeles. Tõlked on esitatud üksnes mugavuse huvides; kui tõlge erineb ingliskeelsest versioonist, kehtib ingliskeelne versioon.",
+            "Kui Enterprise-tellimus ostetakse partneri kaudu, lepivad tasud ja maksetingimused kokku klient ja partner ning litsentsiõigused ja piirangud annab Rediacc selle litsentsi alusel."
+          ],
+          "id": "scope",
+          "title": "1. Reguleerimisala ja tellimusvorm"
+        },
+        "support": {
+          "content": [
+            "Rediacc või partner osutab tuge ja uuendusi tellimusvormis märgitud tasemel. Kui taset ei ole märgitud, osutatakse tuge e-posti teel tööpäevadel ning litsentsitud tarkvara uuendused tehakse kättesaadavaks tellimuse perioodi jooksul."
+          ],
+          "id": "support",
+          "title": "6. Tugi ja uuendused"
+        },
+        "term": {
+          "content": [
+            "See litsents kehtib tellimuse perioodi jooksul. Kumbki pool võib selle lõpetada olulise rikkumise tõttu, mida ei ole kõrvaldatud kolmekümne (30) päeva jooksul pärast kirjalikku teatist. Lõppemisel või lõpetamisel lõpetab klient litsentsitud tarkvara kasutamise, välja arvatud et juba töötavad hoidlad jätkavad tööd Kogukonna paketi funktsioonitasemel, ning kustutab taotluse korral litsentsifailid."
+          ],
+          "id": "term",
+          "title": "13. Kehtivus ja lõpetamine"
+        },
+        "verification": {
+          "content": [
+            "Litsentsitud tarkvara teatab aktiveerimiste arvu litsentsiteenusele või, võrguühenduseta isehostitud kontoserveri puhul, peab kohalikke aktiveerimiskirjeid. Mõistliku taotluse korral, mitte rohkem kui kord aastas, kinnitab klient kirjalikult oma aktiveerimiste arvu. Kui klient ületab aktiveerimiste ülempiiri, lepivad pooled kokku muudetud tellimusvormi ja klient tasub ülemäärase kasutuse eest tasud tellimusvormis märgitud määradega."
+          ],
+          "id": "verification",
+          "title": "12. Kontrollimine"
+        },
+        "warranty": {
+          "content": [
+            "Rediacc garanteerib, et üheksakümmend (90) päeva pärast tarnet vastab litsentsitud tarkvara oluliselt oma dokumentatsioonile. Kliendi ainus õiguskaitsevahend selle garantii rikkumise korral on see, et Rediacc parandab mittevastavuse või, kui Rediacc ei suuda seda mõistliku aja jooksul teha, kumbki pool võib mõjutatud tellimuse lõpetada ja Rediacc tagastab tellimuse ülejäänud perioodi eest ettemakstud tasud.",
+            "VÄLJA ARVATUD SEE PIIRATUD GARANTII, ANTAKSE LITSENTSITUD TARKVARA \"SELLISENA NAGU ON\" JA KEHTIB TEENUSE KASUTUSTINGIMUSTE GARANTIIDE VÄLJAJÄTMINE."
+          ],
+          "id": "warranty",
+          "title": "9. Piiratud garantii"
+        }
+      },
+      "toc": {
+        "title": "Sisukord"
       }
     },
     "home": {
@@ -1829,11 +2221,6 @@
           }
         ]
       },
-      "edgeChannel": {
-        "cta": "Uuri Edge kanalit",
-        "description": "Edge kanal saab uued funktsioonid esimesena ja pakub kaks korda suuremaid piire kui stabiilne kanal.",
-        "heading": "Proovi Edge versioon"
-      },
       "faq": {
         "heading": "Korduma kippuvad küsimused",
         "items": [
@@ -1873,7 +2260,7 @@
       },
       "freeLicense": {
         "cta": "Paigalda Rediacc",
-        "description": "Iga masin saab ilma registreerumata tasuta litsentsi ühele repositooriumile: kuni 3 GB, kehtib 48 tundi ja seda saab tasuta pikendada nii tihti kui vaja. Kui see aegub, töötavad käivitatud repositooriumid edasi; uued repositooriumid ja majutatud varukoopiad vajavad tasulist paketti.",
+        "description": "Iga masin saab ilma registreerumata tasuta litsentsi ühele repositooriumile: kuni 3 GB, kehtib 48 tundi ja seda saab tasuta pikendada nii tihti kui vaja. Kui see aegub, töötavad käivitatud repositooriumid edasi. Majutatud varukoopiaid see ei sisalda. Tasuta konto registreerimisega liigud Community plaanile: repositooriumid kuni 10 GB, 100 litsentsi väljastust kuus ja 10 GB majutatud varukoopiaid. Tasulised plaanid lähevad veelgi kaugemale.",
         "heading": "Proovi ilma kontota"
       },
       "hero": {
@@ -2072,7 +2459,7 @@
         "title": "Küsimused?"
       },
       "hero": {
-        "effectiveDate": "Jõustumiskuupäev: 1. veebruar 2026",
+        "effectiveDate": "Jõustumiskuupäev: 11. november 2026",
         "title": "Meie privaatsuskohustus"
       },
       "meta": {
@@ -2086,14 +2473,14 @@
       "sections": {
         "changes": {
           "content": [
-            "Võime seda privaatsuspoliitikat aeg-ajalt uuendada. Muudatused avaldatakse sellel lehel koos uuendatud jõustumiskuupäevaga. Soovitame seda poliitikat perioodiliselt üle vaadata. Meie veebisaidi või teenuste jätkuv kasutamine pärast muudatusi kujutab endast muudetud poliitikaga nõustumist."
+            "Võime seda privaatsuspoliitikat aeg-ajalt uuendada. Muudatused avaldatakse sellel lehel uuendatud jõustumiskuupäevaga ning olulistest muudatustest teavitatakse kontode omanikke lisaks e-kirjaga vähemalt kolmkümmend (30) päeva enne nende jõustumist. Teenuse kasutustingimuste aktsepteerimise korra muudatuste suhtes kehtib <a href=\"terms-of-service\">teenuse kasutustingimuste</a> muutmise kord."
           ],
           "id": "changes",
           "title": "10. Muudatused selles poliitikas"
         },
         "childrenPrivacy": {
           "content": [
-            "Meie teenused ei ole suunatud alla 16-aastastele isikutele. Me ei kogu teadlikult isikuandmeid lastelt. Kui saame teada, et oleme kogunud andmeid alla 16-aastaselt lapselt, kustutame need viivitamata."
+            "Meie teenused on mõeldud vähemalt 18-aastastele inimestele ega ole suunatud lastele. Me ei kogu teadlikult isikuandmeid alla 18-aastastelt. Kui saame teada, et oleme selliseid andmeid kogunud, kustutame need viivitamata."
           ],
           "id": "children-privacy",
           "title": "9. Laste privaatsus"
@@ -2102,7 +2489,8 @@
           "content": [
             "Kontaktivormi esitused säilitatakse meie e-posti süsteemis nii kaua, kui on vajalik teie päringule vastamiseks ja kirjavahetuse registrite haldamiseks. Kontoandmeid säilitatakse teie aktiivse konto kestuse ajal pluss 30 päeva pärast konto kustutamist, et võimaldada taastamist. Arvelduse andmeid säilitatakse vastavalt kohaldatavatele maksu- ja raamatupidamisseadustele.",
             "Plausible'i analüütikaandmed on koondatud ega sisalda isikuandmeid, seega andmete säilitamise poliitikad ei kehti nende suhtes.",
-            "Tootetelemetria andmeid säilitatakse töötlemata jälgedena kuni 90 päeva silumise eesmärgil. Koondatud telemetria mõõdikuid säilitatakse kuni 12 kuud ja seejärel kustutatakse. Lisateavet leiate meie <a href=\"telemetry-policy\">telemetria poliitikast</a>."
+            "Tootetelemetria andmeid säilitatakse töötlemata jälgedena kuni 90 päeva silumise eesmärgil. Koondatud telemetria mõõdikuid säilitatakse kuni 12 kuud ja seejärel kustutatakse. Lisateavet leiate meie <a href=\"telemetry-policy\">telemetria poliitikast</a>.",
+            "Konto nõustumiskirjeid säilitatakse konto kehtivuse ajal ja lisaks kolm (3) aastat, mis on Eesti õiguses lepinguliste nõuete üldine aegumistähtaeg. Tasuta litsentsi nõustumiskirjeid säilitatakse kolm (3) aastat alates nõustumisest. Mõlemad kustutatakse seejärel automaatselt."
           ],
           "id": "data-retention",
           "title": "5. Andmete säilitamine"
@@ -2120,7 +2508,7 @@
           ],
           "id": "data-sharing",
           "items": [
-            "<strong>Teenusepakkujad</strong>, kes aitavad meie platvormi käitada (nt pilve hostimine, maksete töötlemine), kes on seotud lepinguliste kohustustega teie andmete kaitsmiseks",
+            "<strong>Teenusepakkujad (alltöötlejad)</strong>, kes majutavad ja käitavad meie platvormi, edastavad e-kirju ja töötlevad makseid ning keda seovad lepingulised kohustused teie andmeid kaitsta. Praegune nimekiri koos iga pakkuja rolli ja asukohaga on meie <a href=\"data-processing-agreement\">andmetöötlusleppes</a>",
             "<strong>Plausible Analytics</strong> küpsisevaba, anonümiseeritud veebisaidi analüütika jaoks (isikuandmeid ei jagata)",
             "<strong>Telemetria töötlemine</strong> - anonümiseeritud toote kasutusandmed edastatakse meie enda telemetria lõpp-punkti ELis koondamiseks ja analüüsimiseks. Ühtegi telemetria andmed ei jagata kolmandate osapooltega (vt meie <a href=\"telemetry-policy\">telemetria poliitikat</a>)",
             "<strong>Õiguskaitseasutused</strong>, kui seda nõuab seadus, määrus või kehtiv õiguslik menetlus"
@@ -2183,6 +2571,14 @@
                 "Kui masin taotleb tasuta litsentsi ilma kontota, salvestame taotleva IP-aadressi võtmega räsi (kogu IPv4-aadressi või IPv6-aadressi /64 prefiksi), mitte kunagi aadressi ennast, ja ainult aadressipõhises loenduris, kust see kustutatakse 72 tunni pärast. Litsentsikirje sisaldab taotluses olevaid masina- ja repositooriumi identifikaatoreid ega sisalda IP-andmeid. Õiguslik alus on meie õigustatud huvi vältida tasuta teenuse kuritarvitamist."
               ],
               "title": "2.6 Tasuta litsentsi taotlused"
+            },
+            "acceptanceRecords": {
+              "content": [
+                "Kui teenuse kasutustingimustega nõustutakse, säilitame nõustumise kirje lepingu tõendina: dokument ja selle versioon, nõustutud teksti kontrollsumma, kuvatud nõusolekuteksti täpne sõnastus ja keel, kasutatud meetod (portaali märkeruut, maksevorm, CLI päring või järelevalveta CLI lipp) ja aeg. Konto puhul sisaldab kirje ka päringu IP-aadressi ja kasutajaagenti ning maksevormi puhul makseseansi tunnust.",
+                "Ilma kontota aktsepteeritud tasuta litsentsi puhul sisaldab kirje masinapõhist tunnust, mida litsents juba kasutab, kliendimasina tunnuse võtmega räsi ja CLI versiooni ning mitte IP-aadressi ega muid võrguandmeid.",
+                "Õiguslikud alused on lepingu täitmine (GDPR artikli 6 lõike 1 punkt b) ning meie õiguslike kohustuste täitmine ja õigusnõuete koostamine, esitamine või kaitsmine (GDPR artikli 6 lõike 1 punktid c ja f)."
+              ],
+              "title": "2.7 Nõustumiskirjed"
             }
           },
           "title": "2. Kogutav teave"
@@ -2768,7 +3164,7 @@
     },
     "resourcesNis2Directive": {
       "about": {
-        "body": "Rediacc on Eestis registreeritud (OÜ 17363830, KM EE102920091) isehostitav infrastruktuuriplatvorm. Selle kokkuvõtte koostas Rediacc oma NIS2 sisuprogrammi raames. Täiendavad juhendid kirjeldavad, kuidas Rediacc käsitleb direktiivi konkreetseid artikleid, sealhulgas lüngad, kus Rediacc ei ole lahendus (sertifikaadid puuduvad; GRC kihti pole; Article 23 aruandlust ei haldata; portaalipoolne MFA). Avaliku võimekuse kaardistuse jaoks vaata dokumentatsioonis {nis2DoraLink}.",
+        "body": "Rediacc on isehostitud infrastruktuuriplatvorm; ettevõtte registreerimisandmed on õigusteabe lehel. See kokkuvõte koostati meie NIS2 sisuprogrammi raames. Ülaltoodud kaasjuhendid kirjeldavad, kuidas Rediacc käsitleb direktiivi üksikuid artikleid, sealhulgas lünki, kus Rediacc ei ole lahendus (sertifikaate veel ei ole; GRC kihti ei ole; hallatud artikli 23 aruandlust ei ole; MFA ainult portaalis). Avaliku võimekuse vastendamise kohta vaadake dokumentatsioonis {nis2DoraLink}.",
         "cta": "Saada meile oma hankija-küsimustik või eelmise aasta kolm suurimat turvalisuseelarve-rida. Vastame meie enda serveril jooksvalt lahenduselt kirjalikult, sealhulgas lüngadega. Või laadi PDF alla ja edasta see kolleegile.",
         "downloadButton": "Laadi PDF alla",
         "heading": "Selle kokkuvõtte kohta"
@@ -2940,6 +3336,102 @@
         "threeYearRoi": "3-aastane ROI"
       },
       "title": "Kui palju saab Rediacc teie organisatsioonile säästa?"
+    },
+    "serviceLevelAgreement": {
+      "contact": {
+        "description": "Selle teenusetaseme lepinguga seotud küsimuste korral või teenusekrediidi taotlemiseks võtke meiega ühendust aadressil <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>.",
+        "title": "Küsimusi?"
+      },
+      "hero": {
+        "effectiveDate": "Jõustumiskuupäev: 11. november 2026",
+        "title": "Teenusetaseme leping"
+      },
+      "meta": {
+        "description": "Rediacc kontoportaali ja API igakuine kättesaadavuse lubadus tasuliste tellimuste puhul ning teenusekrediidid, mida kohaldatakse selle täitmata jätmisel.",
+        "keywords": "teenusetaseme leping, SLA, tööaeg, kättesaadavus, teenusekrediit, Rediacc",
+        "title": "Teenusetaseme leping: tööaeg ja krediidid | Rediacc"
+      },
+      "related": {
+        "title": "Seotud poliitikad"
+      },
+      "sections": {
+        "attribution": {
+          "content": [
+            "Osad sellest SLA-st on kohandatud dokumendist Common Paper Service Level Agreement Standard Terms Version 2.0 (<a href=\"https://commonpaper.com/standards/service-level-agreement/2.0\">commonpaper.com/standards/service-level-agreement/2.0</a>), mille on avaldanud Common Paper, Inc. litsentsi Creative Commons Attribution 4.0 International (<a href=\"https://creativecommons.org/licenses/by/4.0/\">CC BY 4.0</a>) alusel. Teksti on muudetud: see on ümber struktureeritud, lühendatud ja teenustele kohandatud. Common Paper, Inc. ei kinnita seda SLA-d."
+          ],
+          "id": "attribution",
+          "title": "8. Selle SLA allikas"
+        },
+        "claims": {
+          "content": [
+            "Teenusekrediidi saamiseks peab klient saatma taotluse aadressile <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> teemaga \"SLA credit\" kolmekümne (30) päeva jooksul pärast mõjutatud kuu lõppu, märkides katkestuse kuupäevad ja kellaajad ning mõjutatud päringud. Rediacc kinnitab või lükkab taotluse tagasi oma seire põhjal kolmekümne (30) päeva jooksul. Maksmata tasudega kliendil ei ole õigust teenusekrediitidele."
+          ],
+          "id": "claims",
+          "title": "6. Teenusekrediidi taotlemine"
+        },
+        "commitment": {
+          "content": [
+            "Rediacc teeb kaubanduslikult mõistlikke jõupingutusi, et kaetud teenus oleks kättesaadav igakuise tööaja protsendiga vähemalt 99,5%."
+          ],
+          "id": "commitment",
+          "title": "3. Kättesaadavuse lubadus"
+        },
+        "credits": {
+          "content": [
+            "Kui igakuine tööaja protsent langeb lubadusest allapoole, on kliendil õigus järgmisele teenusekrediidile:"
+          ],
+          "content2": [
+            "Kuu teenusekrediidid kokku ei ületa 25% igakuisest tasust. Teenusekrediite arvestatakse tulevaste arvete vastu, neid ei maksta välja sularahas, neid ei saa üle anda ja need aeguvad tellimuse lõppedes."
+          ],
+          "id": "credits",
+          "items": [
+            "alla 99,5%, kuid vähemalt 99,0%: 10% igakuisest tasust",
+            "alla 99,0%: 25% igakuisest tasust"
+          ],
+          "title": "4. Teenusekrediidid"
+        },
+        "definitions": {
+          "id": "definitions",
+          "items": [
+            "<strong>\"Katkestus\"</strong> tähendab vähemalt viit (5) järjestikust minutit kestvat perioodi, mille jooksul kaetud teenus tagastab serveriviga või ei vasta vähemalt viiele protsendile kehtivatest päringutest, mõõdetuna Rediacc seirega.",
+            "<strong>\"Igakuine tööaja protsent\"</strong> tähendab kalendrikuu minutite koguarvu, millest on lahutatud katkestuse minutid, jagatuna selle kuu minutite koguarvuga, jättes välja jaotises 5 nimetatud sündmuste minutid.",
+            "<strong>\"Igakuine tasu\"</strong> tähendab mõjutatud kuu eest tellimuse eest makstud tasu (aastaarvelduse puhul üht kaheteistkümnendikku aastatasust).",
+            "<strong>\"Teenusekrediit\"</strong> tähendab krediiti, mis arvutatakse igakuise tasu protsendina ja arvestatakse tulevaste tasude vastu."
+          ],
+          "title": "2. Mõisted"
+        },
+        "exclusions": {
+          "content": ["Katkestus ei hõlma kättesaamatust, mille põhjustas:"],
+          "id": "exclusions",
+          "items": [
+            "vähemalt nelikümmend kaheksa (48) tundi ette teatatud plaaniline hooldus, kuni neli (4) tundi kuus",
+            "turvaaugu või käimasoleva ründe kõrvaldamiseks vajalik hädahooldus",
+            "sündmused, mis on väljaspool Rediacc mõistlikku kontrolli, sealhulgas interneti, kolmandate osapoolte võrkude või Rediacc poolt kaasamata pakkujate rikked",
+            "kliendi masinad, võrgud, tarkvara, konfiguratsioon või mandaadid või kliendi või tema volitatud kasutajate tegevus või tegevusetus",
+            "peatamine või lõpetamine teenuse kasutustingimuste alusel või kasutus lubatud kasutuse poliitikat rikkudes",
+            "eksperimentaalsed funktsioonid või kliendi toetamata ettevõttesisese tarkvara versiooni kasutamine"
+          ],
+          "title": "5. Erandid"
+        },
+        "scope": {
+          "content": [
+            "See teenusetaseme leping (\"SLA\") on osa <a href=\"terms-of-service\">teenuse kasutustingimustest</a> {{legalName}} (\"Rediacc\") ja tasulise tellimusega klientide (Professional, Äri või Enterprise, kui tellimusvorm ei sätesta muid tingimusi) vahel. See ei kehti tasuta litsentsi, Kogukonna paketi, prooviperioodide ega eksperimentaalsete funktsioonide kohta. See leht on koostatud inglise keeles. Tõlked on esitatud üksnes mugavuse huvides; kui tõlge erineb ingliskeelsest versioonist, kehtib ingliskeelne versioon.",
+            "SLA hõlmab kontoportaali ja konto API kättesaadavust kliendi piirkonnas (\"kaetud teenus\"). See ei hõlma kunagi kliendi masinaid, hoidlaid, võrke ega neil töötavat ettevõttesisest tarkvara, mis töötavad kaetud teenusest sõltumatult: töötavad hoidlad jätkavad tööd, kui kaetud teenus ei ole kättesaadav."
+          ],
+          "id": "scope",
+          "title": "1. Reguleerimisala"
+        },
+        "soleRemedy": {
+          "content": [
+            "<strong>Teenusekrediidid on kliendi ainus ja ainuõiguslik õiguskaitsevahend ning Rediacc kogu vastutus kättesaadavuse lubaduse täitmata jätmise eest.</strong> Korduvad rikked seda ei muuda, välja arvatud et klient, kelle igakuine tööaja protsent langeb kolme (3) järjestikuse kuu jooksul alla 99,0%, võib tellimuse lõpetada ja saada ülejäänud perioodi eest ettemakstud tasud tagasi."
+          ],
+          "id": "sole-remedy",
+          "title": "7. Ainus õiguskaitsevahend"
+        }
+      },
+      "toc": {
+        "title": "Sisukord"
+      }
     },
     "solutionPages": {
       "aiPentesting": {
@@ -4544,7 +5036,7 @@
           },
           "steps": [
             {
-              "description": "Juurutage oma riistvaras, oma EL-i IaaS-i teenusepakkujas või mis tahes kombinatsioonis. Rediacc OÜ on asutatud Eestis; USA emaettevõte puudub, USA juhtimistasand puudub, CLOUD Act-i kokkupuutepind puudub.",
+              "description": "Juurutage oma riistvaras, oma EL-i IaaS-i teenusepakkujas või mis tahes kombinatsioonis. Rediacc on Eesti ettevõte; USA emaettevõte puudub, USA juhtimistasand puudub, CLOUD Act-i kokkupuutepind puudub.",
               "icon": "server",
               "title": "Hostib"
             },
@@ -9159,7 +9651,6 @@
           "title": "Mida maksab teile aeglane paikamine?",
           "withAnnual": "",
           "withoutTag": "Ilma Rediaccita",
-          "withResults": {},
           "withTag": "Rediacciga"
         },
         "hero": {
@@ -9524,298 +10015,448 @@
         "title": "Küsimused?"
       },
       "hero": {
-        "effectiveDate": "Jõustumiskuupäev: 15. märts 2026",
-        "title": "Tingimused"
+        "effectiveDate": "Jõustumiskuupäev: 11. november 2026",
+        "title": "Teenuse kasutustingimused"
       },
       "meta": {
-        "description": "Vaadake üle Rediacc infrastruktuuri automatiseerimise platvormi, CLI tööriistade ja seotud teenuste kasutamist reguleerivad tingimused.",
-        "keywords": "teenuse kasutustingimused, kliendileping, tarkvara litsents, Rediacc, infrastruktuuri platvorm, SaaS tingimused, CLI litsents",
+        "description": "Rediacc CLI, Renet agendi, kontoportaali ja seotud teenuste tingimused: tarkvaralitsents, tasud, vastutus ja vaidluste lahendamine.",
+        "keywords": "teenuse kasutustingimused, kliendileping, tarkvara litsents, Rediacc, infrastruktuuri platvorm, SaaS tingimused, CLI litsents, vahekohus",
         "title": "Teenuse kasutustingimused - õiguslik kokkulepe | Rediacc"
       },
       "related": {
         "title": "Seotud põhimõtted"
       },
       "sections": {
+        "acceptableUse": {
+          "content": [
+            "Teie teenuste kasutus peab vastama <a href=\"acceptable-use-policy\">lubatud kasutuse poliitikale</a>, mis on nende tingimuste osa. Te vastutate oma masinatel juurutatud sisu ja rakenduste ning oma volitatud kasutajate käitumise eest."
+          ],
+          "id": "acceptable-use",
+          "title": "11. Lubatud kasutus"
+        },
         "acceptance": {
           "content": [
-            "Kasutades mis tahes osa teenustest - sealhulgas CLI allalaadimist, Renet agendi paigaldamist masinale, konto loomist või platvormi kasutamist - nõustute olema seotud käesolevate teenuse kasutustingimustega (\"tingimused\"). Kui kasutate teenuseid organisatsiooni nimel, kinnitate ja garanteerite, et teil on volitused siduda see organisatsioon käesolevate tingimustega ja viited \"teile\" või \"kliendile\" hõlmavad seda organisatsiooni.",
-            "Kui te ei nõustu käesolevate tingimustega, ei tohi te teenuseid kasutada. Käesolevad tingimused moodustavad õiguslikult siduva lepingu teie ja Rediacc OÜ vahel (registrikood 17363830), Eestis registreeritud ettevõte aadressil Harju maakond, Tallinn, Kesklinna linnaosa, Tartu mnt 67/1-13b, 10115, Eesti (\"Rediacc\", \"meie\" või \"meid\")."
+            "Käesolevad teenuse kasutustingimused (\"tingimused\") on õiguslikult siduv leping teie ja Rediacc vahel. Nõustute tingimustega selgesõnalise toiminguga: märkides nõustumise ruudu konto loomisel või selle järgmisel kasutamisel, nõustudes maksevormis, vastates CLI nõustumispäringule jaatavalt või edastades lipu <code>--accept-terms</code> või määrates <code>RDC_ACCEPT_TERMS=1</code>, kui CLI töötab järelevalveta. Iga nõustumine salvestatakse koos nende tingimuste versiooni, aja ja kasutatud meetodiga.",
+            "Kui nõustute tingimustega organisatsiooni nimel, kinnitate, et teil on volitus seda organisatsiooni siduda, ning \"teie\" ja \"klient\" tähendavad siis seda organisatsiooni. Kui teil sellist volitust ei ole või te ei nõustu tingimustega, ärge nendega nõustuge ja ärge teenuseid kasutage.",
+            "Nende tingimuste osaks on järgmised dokumendid: <a href=\"acceptable-use-policy\">lubatud kasutuse poliitika</a>, <a href=\"refund-policy\">tagastuspoliitika</a>, ärikliendi puhul <a href=\"data-processing-agreement\">andmetöötluslepe</a>, tasuliste tellimuste puhul <a href=\"service-level-agreement\">teenusetaseme leping</a> ning Enterprise-klientide puhul <a href=\"enterprise-license\">Enterprise-tarkvaralitsents</a> ja tellimusvorm. <a href=\"privacy-policy\">Privaatsuspoliitika</a> ja <a href=\"telemetry-policy\">telemetria poliitika</a> selgitavad, kuidas isikuandmeid ja telemetria andmeid käsitletakse.",
+            "Need tingimused on koostatud inglise keeles. Tõlked on esitatud üksnes mugavuse huvides. Kui tõlge erineb ingliskeelsest versioonist, kehtib ingliskeelne versioon."
           ],
           "id": "acceptance",
-          "title": "2. Tingimuste aktsepteerimine"
+          "title": "2. Leping ja nõustumine"
         },
-        "accounts": {
+        "attribution": {
           "content": [
-            "Platvormi kasutamiseks ja tellimuste haldamiseks peate looma konto. Nõustute esitama registreerimise ajal täpset, ajakohast ja täielikku teavet ning hoidma seda ajakohasena. Olete ainuisikuliselt vastutav:"
+            "Osad nendest tingimustest on kohandatud dokumentidest Common Paper Terms of Service ja Common Paper Cloud Service Agreement Standard Terms Version 2.1 (<a href=\"https://commonpaper.com/standards/cloud-service-agreement/2.1\">commonpaper.com/standards/cloud-service-agreement/2.1</a>), mille on avaldanud Common Paper, Inc. litsentsi Creative Commons Attribution 4.0 International (<a href=\"https://creativecommons.org/licenses/by/4.0/\">CC BY 4.0</a>) alusel. Teksti on muudetud: see on ümber struktureeritud, ühendatud teenuste jaoks koostatud sätetega (sealhulgas vahekohtu, ekspordi, autoriõiguse ja nõustumise jaotised) ning kohandatud teenustele. Common Paper, Inc. ei kinnita neid tingimusi."
           ],
-          "content2": [
-            "Peate meid viivitamata teavitama aadressil <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>, kui kahtlustate oma konto volitamata juurdepääsu. Jätame endale õiguse peatada või kustutada kontod, mis on olnud rohkem kui kaksteist (12) kuud mitteaktiivsed või mille puhul usume põhjendatult, et neid kasutatakse käesolevate tingimuste rikkumiseks."
-          ],
-          "id": "accounts",
-          "items": [
-            "Oma konto mandaatide, API märgiste ja juurdepääsuvõtmete kaitsmise eest",
-            "Kõigi tegevuste eest, mis toimuvad teie konto all või teie volitatud kasutajate kaudu",
-            "Tagamaks, et volitatud kasutajad järgivad käesolevaid tingimusi",
-            "Oma konfiguratsioonifailide konfidentsiaalsuse säilitamise eest, sealhulgas SSH privaatvõtmed ja krüpteerimismandaadid"
-          ],
-          "title": "4. Kontod ja registreerimine"
+          "id": "attribution",
+          "title": "28. Nende tingimuste allikas"
         },
         "changes": {
           "content": [
-            "Võime käesolevaid tingimusi aeg-ajalt uuendada. Teavitame teid olulistest muudatustest, postitades uuendatud tingimused oma veebisaidile uue jõustumiskuupäevaga ning muudatuste puhul, mis mõjutavad oluliselt teie õigusi, e-kirja teel teie kontoga seotud aadressile vähemalt kolmkümmend (30) päeva enne nende jõustumist.",
-            "Teie teenuste jätkuv kasutamine pärast uuendatud tingimuste jõustumist kujutab endast muudetud tingimustega nõustumist. Kui te ei nõustu uuendatud tingimustega, peate lõpetama teenuste kasutamise ja tühistama oma tellimuse enne muudatuste jõustumist."
+            "Rediacc võib neid tingimusi uuendada. Iga versioon avaldatakse koos versioonitunnuse, jõustumiskuupäeva ja kontrollsummaga ning varasemad versioonid jäävad kättesaadavaks sellel lehel viidatud arhiivis.",
+            "Olulise muudatuse korral teavitab Rediacc teid e-kirjaga konto aadressil ja veebisaidil vähemalt kolmkümmend (30) päeva enne selle jõustumist. Oluline muudatus seob teid alles siis, kui nõustute sellega jaotises 2 kirjeldatud selgesõnalise toiminguga; seni võib Rediacc piirata juurdepääsu platvormile ja litsentside väljastamist uue versiooni läbivaatamiseks ja aktsepteerimiseks vajalike sammudega. Kui te ei nõustu, võite teenuste kasutamise lõpetada ja tellimuse tühistada ning muudatuse jõustumisele järgneva perioodi eest ettemakstud tasud tagastatakse.",
+            "Muudatus, mis ei ole oluline, näiteks parandus või selgitus, mis ei vähenda teie õigusi, jõustub avaldamisel."
           ],
           "id": "changes",
-          "title": "19. Muudatused käesolevates tingimustes"
+          "title": "24. Nende tingimuste muudatused"
         },
-        "dataOwnership": {
+        "confidentiality": {
           "content": [
-            "<strong>Teie omab oma kliendiandmeid.</strong> Kuna ettevõttesisene tarkvara salvestab kliendiandmed teie kontrollitavatele masinatele, krüpteerituna mandaatidega, mis kuuluvad ainult teile, ei ole Rediaccil juurdepääsu teie kliendiandmetele puhkeolekus. Me ei pääse juurde, ei kasuta ega jaga teie kliendiandmeid, välja arvatud juhul, kui see on rangelt vajalik teenuste osutamiseks (näiteks teie algatatud platvormi API päringute töötlemine).",
-            "Konto teavet (e-post, organisatsiooni nimi, arveldusandmed) töödeldakse kooskõlas meie <a href=\"privacy-policy\">privaatsuspoliitikaga</a>. Konto lõpetamisel saate eksportida oma konto andmeid kolmekümne (30) päeva jooksul. Pärast kolmkümmend (30) päeva kustutame teie konto andmed meie aktiivsetest süsteemidest. Teie masinatel olevad kliendiandmed ei ole mõjutatud konto lõpetamisest - need jäävad teie infrastruktuurile teie kontrolli all.",
-            "Vastavalt ELi andmeseadusele (määrus 2023/2854), kui kasutate platvormi pilvefunktsioone, on teil õigus vahetada teenusepakkujat või migreeruda omahosting seadistusele. Teie kliendiandmed salvestatakse teie oma masinatele ja on alati teie kontrolli all. Platvormi salvestatud konto andmed ja konfiguratsioon saab eksportida standardsetel, masinloetavatel vormingutel. Pakume mõistlikku abi mis tahes üleminekuperioodil, kuni kolmkümmend (30) päeva pärast teie taotlust."
+            "\"Konfidentsiaalne teave\" tähendab mitteavalikku teavet, mille üks pool on teisele avaldanud ning mis on märgitud konfidentsiaalseks või mida tuleks mõistlikult konfidentsiaalseks pidada, sealhulgas mitteavalikud hinnad, tellimusvormid ja turvateave. See ei hõlma teavet, mis on või saab avalikuks ilma saaja süüta, mida saaja juba teadis või arendas iseseisvalt või mille ta sai seaduslikult kolmandalt isikult ilma konfidentsiaalsuskohustuseta.",
+            "Saaja kasutab avaldaja konfidentsiaalset teavet ainult nende tingimuste täitmiseks, kaitseb seda vähemalt mõistliku hoolega ja avaldab seda ainult oma töötajatele, töövõtjatele ja nõustajatele, kes seda teadma peavad ning keda seovad sarnased kohustused, või kui seadus seda nõuab, teatades sellest ette seal, kus see on seaduslikult lubatud."
           ],
-          "id": "data-ownership",
-          "title": "11. Teie andmed ja krüpteerimine"
+          "id": "confidentiality",
+          "title": "17. Konfidentsiaalsus"
+        },
+        "copyright": {
+          "content": [
+            "Rediacc austab intellektuaalomandi õigusi ja vastab väidetava rikkumise teadetele USA digitaalse aastatuhande autoriõiguse seaduse (17 U.S.C. 512) ja ELi digiteenuste määruse alusel. Saatke teated aadressile <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> teemaga \"Copyright notice\". Teade peab sisaldama:"
+          ],
+          "content2": [
+            "Isik, kelle materjal eemaldati, võib saata vastuteate samale aadressile teabega, mida nõuab 17 U.S.C. 512(g)(3). Rediacc sulgeb asjakohastel juhtudel korduvate rikkujate kontod. Kuna kliendiandmed jäävad masinatele, mida Rediacc ei kontrolli, ei pruugi Rediacc saada materjali otse eemaldada ning võib selle asemel teate kliendile edastada ja tegutseda jaotise 21 alusel."
+          ],
+          "id": "copyright",
+          "items": [
+            "autoriõiguse omaniku või tema nimel tegutsemiseks volitatud isiku füüsilist või elektroonilist allkirja",
+            "väidetavalt rikutud autoriõigusega kaitstud teose kirjeldust",
+            "väidetavalt rikkuva materjali kirjeldust ja teavet, mis on mõistlikult piisav selle leidmiseks",
+            "teie kontaktandmeid, sealhulgas e-posti aadressi",
+            "avaldust, et usute heas usus, et autoriõiguse omanik, tema esindaja või õigus ei ole kasutamist lubanud",
+            "avaldust valeütluste andmise karistuse ähvardusel, et teate teave on õige ja et olete volitatud omaniku nimel tegutsema"
+          ],
+          "title": "23. Autoriõiguse kaebused (DMCA)"
+        },
+        "customerData": {
+          "content": [
+            "<strong>Kliendiandmed kuuluvad teile.</strong> Kliendiandmed jäävad teie kontrollitavatele masinatele, krüpteerituna mandaatidega, mis on ainult teil. Rediaccil ei ole juurdepääsu puhkeolekus kliendiandmetele ning ta ei pääse neile ligi, ei kasuta ega jaga neid, välja arvatud ulatuses, mis on rangelt vajalik teie taotletud teenuste osutamiseks.",
+            "Ettevõttesisene tarkvara kasutab hoidla andmete jaoks LUKS-i täisketta krüpteerimist ning krüpteeritud konfiguratsioonisalvestus ja majutatud varukoopiad krüpteeritakse teie seadmetes tuletatud võtmetega (nullteadmusega krüpteerimine). <strong>Rediacc ei saa neid võtmeid lugeda, lähtestada ega taastada. Krüpteerimismandaatide, ülemparooli, pääsuvõtmete (passkey) ja taastekoodide kaotamine tähendab nende kaitstavate andmete kaotamist ning Rediacc ei saa neid taastada.</strong>",
+            "<strong>Varukoopiad on teie vastutus.</strong> Te vastutate oma kliendiandmete ja konfiguratsiooni ajakohaste varukoopiate hoidmise eest, olenemata sellest, kas kasutate majutatud varukoopiasalvestust. Majutatud varukoopiasalvestus, kui see kuulub teie paketti, on vahend selle tegemiseks, mitte garantii, et andmeid saab taastada.",
+            "Konto sulgemisel saab konto andmeid eksportida kolmekümne (30) päeva jooksul ning seejärel kustutatakse need aktiivsetest süsteemidest. Lõpetamine ei mõjuta kliendiandmeid teie masinatel. ELi andmeakti (määrus 2023/2854) alusel võite vahetada teenusepakkujat või minna üle täielikult isehostitud lahendusele, konto andmeid saab eksportida masinloetavas vormingus ning Rediacc osutab mõistlikku abi kuni kolmkümmend (30) päeva pärast taotlust."
+          ],
+          "id": "customer-data",
+          "title": "13. Kliendiandmed, krüpteerimine ja varukoopiad"
+        },
+        "customerResponsibilities": {
+          "content": ["Te vastutate üksi järgmise eest:"],
+          "id": "customer-responsibilities",
+          "items": [
+            "teie masinate turvalisus, käitamine ja hooldus, sealhulgas SSH-juurdepääs, tulemüürid, operatsioonisüsteemi uuendused ja füüsiline turvalisus",
+            "iga skript, CI-torujuhe, tehisintellekti agent ja muu automatiseerimine, mis käivitab CLI-d või kutsub platvormi teie mandaatidega või teie masinatel, ning kõik, mida see teeb",
+            "automatiseerimise antud nõustumised: kui kasutatakse <code>--accept-terms</code> või <code>RDC_ACCEPT_TERMS=1</code>, siduvad need tingimused seda, kes automatiseerimist käitab, ning isikut või organisatsiooni, kes selle seadistas, loetakse nendega nõustunuks",
+            "vastavus kõigi teie infrastruktuuris juurutatud kolmanda osapoole tarkvara litsentsidele"
+          ],
+          "title": "12. Teie serverid, agendid ja automatiseerimine"
         },
         "definitions": {
           "content": ["Järgmised mõisted kehtivad käesolevates teenuse kasutustingimustes:"],
           "id": "definitions",
           "items": [
-            "<strong>\"Konto\"</strong> tähendab kasutajakontot, mille loote platvormi kasutamiseks ja tellimuse haldamiseks.",
-            "<strong>\"Volitatud kasutaja\"</strong> tähendab isikut, kellele on antud juurdepääs teenustele teie konto alusel, sealhulgas meeskonnaliikmed, töötajad ja töövõtjad, kes tegutsevad teie nimel.",
-            "<strong>\"Renet agent\"</strong> tähendab Rediacc serveripoolset agenti, mis töötab teie masinatel krüpteeritud salvestuse, konteineri orkestratsiooni ja infrastruktuuri toimingute haldamiseks.",
-            "<strong>\"CLI\"</strong> tähendab teie tööjaamal paigaldatud Rediacc käsurea liidest (<code>rdc</code>).",
-            "<strong>\"Konfiguratsioon\"</strong> tähendab teie tööjaamal salvestatud kohalikke konfiguratsioonifaile, mis sisaldavad masina ühenduse üksikasju, krüpteerimismandaate ja muid operatiivseid seadistusi.",
-            "<strong>\"Kliendiandmed\"</strong> tähendab kõiki andmeid, sisu, faile, konteinereid, konfiguratsioone ja rakendusi, mida juurutate, salvestate või töötlete oma masinatel teenuste abil. Kliendiandmed ei hõlma konto teavet ega telemetria andmeid.",
-            "<strong>\"Masin\"</strong> tähendab serverit või virtuaalmasinat, mis kuulub teile või mida te kontrollite ning millele Renet agent on paigaldatud.",
-            "<strong>\"Ettevõttesisene tarkvara\"</strong> tähendab teie infrastruktuurile paigaldatud tarkvarakomponente, sealhulgas CLI, Renet agent ja töölauarakendus.",
-            "<strong>\"Platvorm\"</strong> tähendab Rediacc veebirakendust, kontoiportaali ja kõiki pilves hostiitud teenuseid, mida Rediacc pakub.",
+            "<strong>\"Konto\"</strong> tähendab kasutajakontot, mis on loodud platvormile juurdepääsuks ja tellimuse haldamiseks.",
+            "<strong>\"Volitatud kasutaja\"</strong> tähendab isikut, kellele on antud juurdepääs teenustele konto alusel, sealhulgas meeskonnaliikmed, töötajad ja töövõtjad, kes tegutsevad kliendi nimel.",
+            "<strong>\"CLI\"</strong> tähendab Rediacc käsurea liidest (<code>rdc</code>).",
+            "<strong>\"Konfiguratsioon\"</strong> tähendab tööjaamas olevaid konfiguratsioonifaile, mis sisaldavad masinaga ühendumise andmeid, krüpteerimismandaate ja muid tööseadistusi.",
+            "<strong>\"Klient\"</strong> või <strong>\"teie\"</strong> tähendab isikut, kes nõustub käesolevate tingimustega, või, kui see isik nõustub organisatsiooni nimel, seda organisatsiooni.",
+            "<strong>\"Kliendiandmed\"</strong> tähendab kõiki andmeid, sisu, faile, konteinereid, konfiguratsioone ja rakendusi, mida teenuste abil masinatel juurutatakse, salvestatakse või töödeldakse. Kliendiandmed ei hõlma konto teavet ega telemetria andmeid.",
+            "<strong>\"Dokumentatsioon\"</strong> tähendab veebisaidil <a href=\"https://www.rediacc.com\">www.rediacc.com</a> avaldatud kasutusjuhendeid ja teatmematerjale.",
+            "<strong>\"Tasuta litsents\"</strong> tähendab hoidla litsentsi, mille iga masin saab CLI kaudu hankida ilma kontota, nagu on kirjeldatud jaotises 6.1.",
+            "<strong>\"Masin\"</strong> tähendab serverit või virtuaalmasinat, mis kuulub kliendile või mida klient kontrollib ning millele on paigaldatud Renet agent.",
+            "<strong>\"Ettevõttesisene tarkvara\"</strong> tähendab kliendi infrastruktuurile paigaldatud tarkvara, sealhulgas CLI-d ja Renet agenti.",
+            "<strong>\"Tellimusvorm\"</strong> tähendab Enterprise-tellimuse tellimisdokumenti, mis viitab käesolevatele tingimustele.",
+            "<strong>\"Platvorm\"</strong> tähendab Rediacc kontoportaali, selle API-t ja kõiki Rediacc pakutavaid pilvemajutatud teenuseid.",
+            "<strong>\"Renet agent\"</strong> tähendab Rediacc serveripoolset agenti, mis töötab masinatel krüpteeritud salvestuse, konteinerite orkestreerimise ja infrastruktuuritoimingute haldamiseks.",
             "<strong>\"Hoidla\"</strong> tähendab Renet agendi hallatud isoleeritud rakenduse juurutust, mis koosneb krüpteeritud kettakuvandist, pühendatud Dockeri deemonist ja seotud konteineritest.",
-            "<strong>\"Teenused\"</strong> tähendab koos ettevõttesisest tarkvara, platvormi, dokumentatsiooni ja kõiki seotud professionaalseid teenuseid, mida Rediacc pakub.",
-            "<strong>\"Tellimus\"</strong> tähendab teie valitud paketi taset (Kogukond, Professional, Äri või Enterprise), mis määrab teie juurdepääsu funktsioonidele ja ressursside piirangutele.",
-            "<strong>\"Telemetria andmed\"</strong> tähendab anonümiseeritud kasutusandmeid, mida teenused koguvad vastavalt meie <a href=\"telemetry-policy\">telemetria poliitikale</a>."
+            "<strong>\"Teenused\"</strong> tähendab koos ettevõttesisest tarkvara, platvormi, dokumentatsiooni ja kõiki Rediacc pakutavaid seotud teenuseid.",
+            "<strong>\"Tellimus\"</strong> tähendab kontole valitud paketti (Kogukond, Professional, Äri või Enterprise), mis määrab juurdepääsu funktsioonidele ja ressursipiirangutele.",
+            "<strong>\"Telemetria andmed\"</strong> tähendab teenuste kogutud kasutusandmeid, nagu on kirjeldatud <a href=\"telemetry-policy\">telemetria poliitikas</a>."
           ],
           "title": "1. Mõisted"
         },
-        "experimentalFeatures": {
+        "eligibility": {
           "content": [
-            "Teatud teenuste funktsioonid võivad olla tähistatud kui \"eksperimentaalne\", \"beetaversioon\" või \"eelvaade\" (koos \"eksperimentaalsed funktsioonid\"). Eksperimentaalsed funktsioonid pakutakse hindamise eesmärgil ja võivad olla mittetäielikud, ebastabiilsed või muutuda ilma ette teatamata.",
-            "Eksperimentaalsed funktsioonid pakutakse \"nagu on\" ilma igasuguse garantiita. Võime eksperimentaalseid funktsioone igal ajal muuta või lõpetada ilma eelneva teatiseta ja me ei vastuta kahjude eest, mis tulenevad teie kasutamisest või tuginemisest eksperimentaalsetele funktsioonidele."
+            "Käesolevate tingimustega nõustumiseks või teenuste kasutamiseks peate olema vähemalt 18-aastane ja suuteline sõlmima siduvat lepingut. Teenused ei ole suunatud alla 18-aastastele. Tingimustega nõustudes kinnitate, et vastate nendele nõuetele ning et jaotises 22 kirjeldatud õigusaktid ei keela teil teenuseid saada."
           ],
-          "id": "experimental-features",
-          "title": "8. Eksperimentaalsed funktsioonid"
+          "id": "eligibility",
+          "title": "4. Sobivus"
+        },
+        "exportControl": {
+          "content": [
+            "Ettevõttesisene tarkvara sisaldab krüpteerimist. See on liigitatud USA ekspordihalduse eeskirjade (Export Administration Regulations) ekspordikontrolli klassifikatsiooninumbri (ECCN) 5D992.c alla massiturul müüdava krüpteerimistarkvarana ning sellele kohalduvad Euroopa Liidu (sealhulgas määrus (EL) 2021/821), Ameerika Ühendriikide ja teiste riikide ekspordi- ja kahesuguse kasutusega kaupade kontrolli õigusaktid.",
+            "Te ei ekspordi, reekspordi, ei anna üle ega kasuta teenuseid: (a) üheski riigis või piirkonnas, mille suhtes kehtivad ulatuslikud ELi, ÜRO või USA sanktsioonid või embargod, ega sinna; (b) isiku poolt või isiku jaoks, kes on ELi, ÜRO, Ühendkuningriigi või USA sanktsioonide või keelatud isikute nimekirjas, või kes kuulub sellisele isikule või keda selline isik kontrollib; või (c) mis tahes lõppkasutuseks, mida need õigusaktid keelavad, sealhulgas massihävitusrelvade jaoks. Kinnitate, et te ei ole selline isik ega asu sellises riigis või piirkonnas. Rediacc võib teenused peatada või lõpetada, kui see on nende õigusaktide järgimiseks vajalik."
+          ],
+          "id": "export-control",
+          "title": "22. Ekspordikontroll ja sanktsioonid"
+        },
+        "fees": {
+          "id": "fees",
+          "subsections": {
+            "autoRenewal": {
+              "content": [
+                "<strong>Tasulised tellimused pikenevad automaatselt iga arveldusperioodi lõpus samaks perioodiks ja sel ajal kehtiva hinnaga ning registreeritud maksemeetodilt võetakse iga pikendamise ajal tasu, kuni te tellimuse tühistate.</strong> Võite tühistada igal ajal kontoportaalis või kirjutades aadressil <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>. Tühistamine peatab järgmise pikendamise; tasulised funktsioonid jäävad kättesaadavaks jooksva arveldusperioodi lõpuni. Rediacc saadab enne iga aastast pikendamist meeldetuletuse konto e-posti aadressile."
+              ],
+              "title": "7.3 Automaatne pikendamine"
+            },
+            "billing": {
+              "content": [
+                "Tasulised tellimused algavad 14-päevase tasuta prooviperioodiga. Registreerumisel on vaja maksemeetodit ja esimene tasu võetakse prooviperioodi lõppedes. Enne prooviperioodi lõppu tühistamine ei maksa midagi.",
+                "Tasulisi tellimusi arveldatakse ette kuu- või aastapõhiselt. Aastaarveldusel pakutakse 15% allahindlust kaheteistkümne (12) kuu kuuhinna pealt. Kõik tasud on märgitud USA dollarites. Makseid töötleb Stripe; Rediacc ei salvesta maksekaardi täielikke andmeid. Enterprise-tasud määratakse tellimusvormis.",
+                "Rediacc võib oma hindu muuta kolmekümne (30) päeva etteteatamisega. Hinnamuudatus jõustub järgmise arveldusperioodi alguses, mitte kunagi jooksva perioodi ajal, ning te võite enne selle jõustumist tühistada."
+              ],
+              "title": "7.1 Tasud ja arveldus"
+            },
+            "gracePeriod": {
+              "content": [
+                "Ettevõttesisene tarkvara kontrollib tellimust perioodiliselt. Kui kontrollimine ebaõnnestub võrguprobleemi, aegunud tellimuse või maksmata jätmise tõttu, kehtib kolmepäevane (3) lisaaeg. Pärast seda töötab ettevõttesisene tarkvara Kogukonna funktsioonitasemel, kuni tellimus taastatakse. Töötavad hoidlad jätkavad tööd."
+              ],
+              "title": "7.5 Litsentsi kinnitamine ja lisaaeg"
+            },
+            "refunds": {
+              "content": [
+                "Osaliste arveldusperioodide eest proportsionaalseid tagasimakseid ei tehta, välja arvatud <a href=\"refund-policy\">tagastuspoliitikas</a> kirjeldatud juhtudel või kui seadus seda nõuab."
+              ],
+              "title": "7.4 Tagasimaksed"
+            },
+            "taxes": {
+              "content": [
+                "Kõik tasud on ilma maksudeta. Te vastutate kõigi teie tellimuselt võetavate maksude, tollimaksude ja lõivude eest, välja arvatud Rediacc netotulu maksud. Kus seadus seda nõuab, kogub Rediacc maksud (sealhulgas ELi käibemaksu) ja tasub need ning need on arvel eristatud."
+              ],
+              "title": "7.2 Maksud"
+            }
+          },
+          "title": "7. Tasud, maksud, pikendamine ja tagasimaksed"
+        },
+        "freeAndBeta": {
+          "content": [
+            "Tasuta litsents, Kogukonna pakett, prooviperioodid ja iga funktsioon, mis on märgitud \"eksperimentaalseks\", \"beetaks\" või \"eelvaateks\" (koos \"tasuta teenused\"), antakse hindamiseks ning isiklikuks või sisemiseks kasutuseks. Tasuta teenused võivad olla poolikud, ebastabiilsed, piiratud või ette teatamata muudetavad.",
+            "TASUTA TEENUSED ANTAKSE \"SELLISENA NAGU ON\", ILMA MIS TAHES LIIKI GARANTIITA JA ILMA TEENUSETASEME LUBADUSETA. Rediacc võib mis tahes tasuta teenust igal ajal muuta, piirata või lõpetada. Seaduse lubatud ulatuses on Rediacc kogu vastutus tasuta teenuste eest piiratud sajaga USA dollariga (USD 100)."
+          ],
+          "id": "free-and-beta",
+          "title": "10. Tasuta litsents, tasuta paketid ja eksperimentaalsed funktsioonid"
+        },
+        "general": {
+          "id": "general",
+          "items": [
+            "<strong>Kogu kokkulepe.</strong> Need tingimused koos jaotises 2 loetletud dokumentide ja iga tellimusvormiga on kogu teie ja Rediacc vaheline kokkulepe teenuste kohta ning asendavad kõik varasemad sellekohased kokkulepped. Kui tellimusvorm on nende tingimustega vastuolus, kehtib selle tellimuse puhul tellimusvorm.",
+            "<strong>Üleandmine.</strong> Te ei tohi neid tingimusi üle anda ilma Rediacc eelneva kirjaliku nõusolekuta. Rediacc võib need tingimused üle anda sidusettevõttele või asjaomase äritegevuse või vara kõigi või peaaegu kõigi osade ühinemise, omandamise või müügi korral, teatades sellest teile.",
+            "<strong>Vääramatu jõud.</strong> Kumbki pool ei vastuta viivituse või täitmata jätmise eest, mille on põhjustanud tema mõistliku kontrolli alt väljas olevad sündmused, välja arvatud maksekohustused.",
+            "<strong>Teated.</strong> Rediacc saadab teated konto e-posti aadressile või kontoportaali kaudu. Teated Rediaccile saadetakse aadressile <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>.",
+            "<strong>Elektrooniline lepingu sõlmimine.</strong> Nõustute, et selgesõnalise elektroonilise toiminguga nõustumine, sealhulgas teie seadistatud automatiseerimise kaudu, on kehtiv allkiri ja et nõustumise elektroonilised kirjed on tõendina lubatavad.",
+            "<strong>Eraldatavus ja loobumata jätmine.</strong> Kui mõni säte tunnistatakse täitmisele pööramatuks, kohaldatakse seda lubatud maksimaalses ulatuses ning nende tingimuste ülejäänud osa jääb kehtima. Sätte jõustamata jätmine ei ole sellest loobumine.",
+            "<strong>Sõltumatud pooled.</strong> Pooled on sõltumatud töövõtjad. Miski nendes tingimustes ei loo ühingu-, esindus- ega töösuhet ning kolmandatest isikutest kasusaajaid ei ole."
+          ],
+          "title": "27. Üldtingimused"
         },
         "governingLaw": {
           "content": [
-            "Käesolevaid tingimusi reguleerib ja tõlgendatakse vastavalt Eesti Vabariigi seadustele, arvestamata seaduste konfliktide põhimõtteid. Kõik käesolevatest tingimustest tulenevad või nendega seotud vaidlused alluvad Tallinna Harju Maakohtu ainupädevusele.",
-            "Olenemata eelnevast, võib kumbki pool taotleda ettekirjutust või muud õiguskaitsevahendit mis tahes pädevas kohtus, et vältida intellektuaalomandi õiguste või konfidentsiaalsuskohustuste tegelikku või ähvardavat rikkumist, omastamist või rikkumist."
+            "Käesolevate tingimuste ning nendest või nendega seoses tekkivate vaidluste suhtes kohaldatakse Eesti Vabariigi õigust, välja arvatud selle rahvusvahelise eraõiguse normid ja ÜRO rahvusvahelise kaubamüügi lepingute konventsioon. Jaotist 26 arvestades on Harju Maakohtul (Harju Maakohus) Tallinnas, Eestis, ainupädevus.",
+            "Kui olete tarbija, ei jäta see õigusvalik teid ilma teie elukohariigi õiguse imperatiivsete sätetega antud kaitsest ning võite esitada hagi ka oma elukohariigi kohtutes, kui see õigus seda lubab. ELi tarbijad võivad kasutada ka kohaldatava õiguse alusel kättesaadavaid ELi vaidluste veebipõhise lahendamise võimalusi.",
+            "Kumbki pool võib taotleda esialgset õiguskaitset või muud õiglusest tulenevat abinõu mis tahes pädevalt kohtult, et ennetada intellektuaalomandi õiguste tegelikku või ähvardavat rikkumist või konfidentsiaalsuse rikkumist."
           ],
           "id": "governing-law",
-          "title": "18. Reguleeriv seadus ja vaidlused"
+          "title": "25. Kohaldatav õigus ja kohtud"
         },
         "indemnification": {
           "id": "indemnification",
           "subsections": {
             "byCustomer": {
               "content": [
-                "Nõustute hüvitama, kaitsma ja hoidma Rediacci ning tema ametnikke, direktoreid, töötajaid ja agente kahjutuna kolmandate osapoolte nõuete, kahjude, kaotuste või kulude (sealhulgas mõistlikud advokaaditeenuste tasud) eest, mis tulenevad: (a) teie teenuste kasutamisest; (b) teie teenuste abil juurutatud sisust või rakendustest; (c) teie käesolevate tingimuste rikkumisest; või (d) teie kohaldatava seaduse või kolmanda osapoole õiguste rikkumisest."
+                "Te hüvitate, kaitsete ja vabastate vastutusest Rediacci ning tema litsentsiandjaid, juhte, direktoreid, töötajaid ja esindajaid mis tahes kolmanda osapoole nõude ning sellest tulenevate kahjude, kaotuste ja kulude (sealhulgas mõistlike õigusabikulude) eest, mis tulenevad: (a) teie kliendiandmetest või teie masinatel juurutatud sisust ja rakendustest; (b) teenuste kasutamisest käesolevate tingimuste või lubatud kasutuse poliitika rikkumisega; (c) teie mandaatidega või teie masinatel käitatud automatiseerimisest; või (d) mis tahes õigusakti või kolmanda osapoole õiguse rikkumisest. See jaotis ei kehti tarbijate suhtes, kui nende elukohariigi õigus seda ei luba."
               ],
-              "title": "16.1 Teie poolt"
+              "title": "20.1 Kliendi poolt"
             },
             "byRediacc": {
               "content": [
-                "Rediacc hüvitab, kaitseb ja hoiab teid kahjutuna mis tahes kolmanda osapoole nõude eest, et Rediacc pakutud ettevõttesisene tarkvara või platvorm rikub kolmanda osapoole kehtivat intellektuaalomandi õigust, tingimusel et teie: (a) teavitate Rediacci nõudest viivitamata; (b) annate Rediaccile ainukontrolli kaitsmise ja kokkuleppe üle; ja (c) osutatate mõistlikku koostööd Rediacc kulul.",
-                "Kui teenused muutuvad või Rediacc arvates tõenäoliselt muutuvad rikkumise nõude subjektiks, võib Rediacc oma valikul: (i) hankida teile õiguse jätkata teenuste kasutamist; (ii) asendada või muuta mõjutatud komponenti nii, et see ei riku enam; või (iii) kui ei (i) ega (ii) pole kaubanduslikult teostatav, lõpetada mõjutatud tellimuse ja hüvitada ettemakstud, kasutamata tasud.",
-                "Rediaccil ei ole kohustusi selle jaotise alusel nõuete eest, mis tulenevad: teie teenuste muutmistest, teenuste kasutamisest kombinatsioonis Rediacc poolt mitte pakutava kolmanda osapoole tarkvaraga või teenuste kasutamisest käesolevate tingimuste rikkumisena."
+                "Tasuliste tellimuste puhul kaitseb Rediacc teid mis tahes kolmanda osapoole nõude eest, et ettevõttesisene tarkvara või platvorm, sellisena nagu Rediacc seda pakub, rikub selle kolmanda osapoole intellektuaalomandi õigust, ning maksab lõplikult välja mõistetud või kokkuleppes kokku lepitud kahjud, tingimusel et te: (a) teavitate Rediacci nõudest viivitamata; (b) annate Rediaccile ainukontrolli kaitse ja kokkuleppe üle; ning (c) osutate mõistlikku koostööd Rediacc kulul.",
+                "Kui teenustest saab selline nõue või Rediacc arvates võib saada, võib Rediacc: (i) hankida teile õiguse neid edasi kasutada; (ii) muuta või asendada mõjutatud komponendi nii, et see ei riku õigusi; või (iii) kui kumbki ei ole kaubanduslikult teostatav, lõpetada mõjutatud tellimuse ja tagastada ettemakstud kasutamata tasud.",
+                "Rediaccil ei ole selle jaotise alusel kohustusi nõuete osas, mis tulenevad teie tehtud muudatustest, kombineerimisest tarkvara või andmetega, mida Rediacc ei ole pakkunud, tasuta teenustest või tingimuste rikkumisega kasutamisest. See jaotis sisaldab Rediacc kogu vastutust rikkumisnõuete eest."
               ],
-              "title": "16.2 Rediacc poolt"
+              "title": "20.2 Rediacc poolt"
             }
           },
-          "title": "16. Hüvitamine"
+          "title": "20. Hüvitamine"
         },
         "intellectualProperty": {
           "content": [
-            "Teenused - sealhulgas ettevõttesisene tarkvara, platvorm, dokumentatsioon, API-d, kujundused ja kogu Rediacc pakutav sisu - kuuluvad Rediacc OÜ-le ja on kaitstud Eesti, Euroopa Liidu ja kohaldatavate rahvusvaheliste lepingute intellektuaalomandi seadustega. Välja arvatud käesolevates tingimustes sõnaselgelt antud litsentsid, ei ole kaasas muid õigusi ega litsentse.",
-            "Teile kuuluvad kõik õigused, tiitel ja huvi teie kliendiandmetes ning kõiges sisus ja rakendustes, mida loote teenuste abil. Platvormi kasutades annate Rediaccile piiratud, ülemaailmse, royalty-vaba litsentsi teie konto teavet hostida, töödelda ja kuvada ainult selleks, et pakkuda teile teenuseid. See litsents lõpeb, kui kustutate oma konto.",
-            "Võime koguda ja kasutada anonümiseeritud, koondatud andmeid, mis on tuletatud teie teenuste kasutamisest (sealhulgas telemetria andmed) toote täiustamiseks, analüütikaks ja võrdlusuuringuteks. Sellised koondatud andmed ei tuvasta teid ega ühtegi üksikut kasutajat."
+            "Rediacc ja tema litsentsiandjad omavad teenuseid, sealhulgas ettevõttesisest tarkvara, platvormi, dokumentatsiooni, API-sid, kujundust ja kogu Rediacc pakutavat sisu, või neil on õigus neid litsentsida, samuti kõiki nendega seotud intellektuaalomandi õigusi. Välja arvatud käesolevates tingimustes selgesõnaliselt antud litsentsid, ei anta ühtegi õigust ega litsentsi, ei kaudselt ega muul viisil.",
+            "Teile jäävad kõik õigused teie kliendiandmetele ning teie loodud sisule ja rakendustele. Annate Rediaccile piiratud, ülemaailmse ja tasuta litsentsi teie konto teabe majutamiseks, töötlemiseks ja kuvamiseks üksnes teenuste osutamiseks teile; see litsents lõpeb, kui teie konto kustutatakse.",
+            "Võite anda Rediaccile teenuste kohta tagasisidet või ettepanekuid (\"tagasiside\"), kuid see ei ole kohustuslik. Tagasiside antakse \"SELLISENA NAGU ON\" ning Rediacc võib seda vabalt kasutada ilma piirangute ja kohustusteta. Rediacc võib kasutus- ja telemetria andmeid kasutada ka anonümiseeritud, koondatud kujul teenuste käitamiseks, täiustamiseks ja kaitsmiseks; need andmed ei tuvasta teid ega ühtegi üksikisikut."
           ],
           "id": "intellectual-property",
-          "title": "12. Intellektuaalomand"
+          "title": "15. Intellektuaalomand ja tagasiside"
         },
         "limitationOfLiability": {
           "content": [
-            "KOHALDATAVA SEADUSEGA LUBATUD MAKSIMAALSES ULATUSES EI VASTUTA REDIACC, TEMA SIDUSETTEVÕTTED, AMETNIKUD, DIREKTORID, TÖÖTAJAD EGA AGENDID ÜHELGI JUHUL KAUDSETE, JUHUSLIKE, ERILISTE, TAGAJÄRGEDEST TULENEVATE VÕI KARISTUSLIKE KAHJUDE EEST EGA SAAMATA JÄÄNUD KASUMI, TULU, ANDMETE, KASUTUSE VÕI FIRMAVÄÄRTUSE EEST, MIS TULENEB KÄESOLEVATEST TINGIMUSTEST VÕI ON SEOTUD TEIE TEENUSTE KASUTAMISEGA, OLENEMATA VASTUTUSE TEOORIAST JA SELLEST, KAS REDIACCILE ON TEATATUD SELLISTE KAHJUDE VÕIMALIKKUSEST VÕI MITTE.",
-            "REDIACC KOGU KOONDVASTUTUS KÕIGI KÄESOLEVATEST TINGIMUSTEST VÕI TEENUSTEST TULENEVATE VÕI NENDEGA SEOTUD NÕUETE EEST EI ÜLETA SUUREMAT JÄRGMISTEST: (A) TEIE REDIACCILE MAKSTUD KOGUSUMMA KAHETEISTKÜMNE (12) KUU JOOKSUL ENNE NÕUDE ALUSE SÜNDMUST; VÕI (B) SADA USA DOLLARIT (100 $).",
-            "JAOTISTE 14 JA 15 PIIRANGUD JA VÄLISTUSED EI KEHTI: (A) HOOLETUSEST PÕHJUSTATUD SURMA VÕI KEHAVIGASTUSTE EEST VASTUTUSE KORRAL; (B) PETTUSE VÕI PETLIKU VALEESITUSE EEST VASTUTUSE KORRAL; (C) TAHTLIKU RIKKUMISE (TAHTLIK RIKKUMINE) VÕI RASKE HOOLETUSE (RASKE HOOLETUS) EEST VASTUTUSE KORRAL EESTI VÕLAÕIGUSSEADUSE KOHASELT; VÕI (D) MIS TAHES MUDE VASTUTUSE KORRAL, MIDA EI SAA VÄLISTADA VÕI PIIRATA KOHALDATAVA SEADUSE ALUSEL."
+            "KOHALDATAVA ÕIGUSE LUBATUD MAKSIMAALSES ULATUSES EI VASTUTA REDIACC, TEMA LITSENTSIANDJAD, SIDUSETTEVÕTTED, JUHID, DIREKTORID, TÖÖTAJAD EGA ESINDAJAD MIS TAHES ÜMBERKAUDSETE, JUHUSLIKE, ERILISTE, TULENEVATE VÕI KARISTUSLIKE KAHJUDE EEST EGA KASUMI, TULU, ANDMETE, KASUTUSVÕIMALUSE VÕI ÄRIKUULSUSE KAOTUSE EEST, MIS TULENEVAD KÄESOLEVATEST TINGIMUSTEST VÕI TEENUSTEST VÕI ON NENDEGA SEOTUD, OLENEMATA VASTUTUSE ÕIGUSLIKUST ALUSEST JA ISEGI SIIS, KUI NEID ON SELLISE KAHJU VÕIMALUSEST TEAVITATUD.",
+            "REDIACC KOGUVASTUTUS KÕIGI KÄESOLEVATEST TINGIMUSTEST VÕI TEENUSTEST TULENEVATE VÕI NENDEGA SEOTUD NÕUETE EEST EI ÜLETA TASUSID, MIS TE OLETE REDIACCILE TEENUSTE EEST MAKSNUD KAKSTEIST (12) KUUD ENNE NÕUDE ALUSEKS OLNUD SÜNDMUST, VÕI, KUI TE EI MAKSNUD SELLEL PERIOODIL TASUSID, SADA USA DOLLARIT (USD 100).",
+            "JAOTISTES 18 JA 19 SISALDUVAID PIIRANGUID EI KOHALDATA: (A) HOOLETUSEST PÕHJUSTATUD SURMA VÕI ISIKUKAHJU EEST VASTUTAMISELE; (B) PETTUSELE VÕI PETLIKULE ESITLUSELE; (C) TAHTLIKULE RIKKUMISELE (TAHTLIK RIKKUMINE) VÕI RASKELE HOOLETUSELE (RASKE HOOLETUS) EESTI VÕLAÕIGUSSEADUSE (VÕLAÕIGUSSEADUS) TÄHENDUSES; EGA (D) MUULE VASTUTUSELE, MIDA KOHALDATAVA ÕIGUSE ALUSEL EI SAA VÄLJA JÄTTA EGA PIIRATA."
           ],
           "id": "limitation-of-liability",
-          "title": "15. Vastutuse piiramine"
+          "title": "19. Vastutuse piiramine"
         },
-        "onPremiseLicense": {
+        "parties": {
           "content": [
-            "Vastavalt käesolevatele tingimustele ja teie aktiivsele tellimusele annab Rediacc teile piiratud, mitteeksklusiivse, mitteallliitsentsitava, mitteülekantava, tühistatava litsentsi paigaldada ja kasutada ettevõttesisest tarkvara (CLI, Renet agent ja töölauarakendus) ainult teie sisemistel ärilistel eesmärkidel tellimuse perioodi jooksul."
+            "Teenuseid osutab {{legalName}}, ettevõte, mis on registreeritud riigis {{country}} registris {{registerName}} registrikoodiga {{registryCode}}; käibemaksukohustuslase number {{vatNumber}}; registrijärgne aadress {{registeredAddress}} (\"Rediacc\", \"meie\" või \"meid\").",
+            "Rediacc ja tema litsentsiandjad omavad teenuseid ja neis sisalduvat tarkvara või neil on õigus neid litsentsida. Rediacc litsentsib ettevõttesisese tarkvara ja annab juurdepääsu platvormile teile käesolevate tingimuste alusel."
           ],
-          "id": "on-premise-license",
+          "id": "parties",
+          "title": "3. Lepingupooled ja tarkvara omand"
+        },
+        "plans": {
+          "content": [
+            "Teenuseid pakutakse järgmiste pakettide alusel. Iga paketi praegused piirangud on avaldatud hinnalehel."
+          ],
+          "id": "plans",
           "subsections": {
-            "encryptionCredentials": {
+            "clusters": {
               "content": [
-                "Ettevõttesisene tarkvara kasutab hoidla andmete jaoks LUKS täisketta krüpteerimist. Krüpteerimismandaadid genereeritakse kohapeal ja salvestatakse eranditult teie konfiguratsioonifailides teie tööjaamal. <strong>Rediaccil puudub juurdepääs teie krüpteerimismandaatidele ja me ei suuda teie andmeid taastada, kui need kaotate.</strong> Teie vastutate ainuisikuliselt oma konfiguratsioonifailide ja krüpteerimismandaatide varundamise eest."
+                "<strong>\"Klaster\"</strong> tähendab kahte või enamat masinat, mida teenuste abil käitatakse koos ühtse salvestus- või arvutusvaramuna. <strong>\"Sõlm\"</strong> tähendab ühte klastri liikmeks olevat masinat. Sõlm on käesolevate tingimuste tähenduses igas mõttes masin ja iga sõlm kulutab ühe masinaaktiveerimise. Klastreid ei koondata ega soodustata: viiest sõlmest koosnev klaster kulutab viis masinaaktiveerimist.",
+                "<strong>Masinaaktiveerimiste ülempiir</strong> tähendab masinate maksimaalset arvu, millel võib korraga olla aktiveerimine. See on tellimusele märgitud. Avaldatud paketinumbrid on standardsed vaikeväärtused; tellimusvormis või partnerilepingus kokku lepitud ülempiir asendab selle tellimuse vaikeväärtuse. Klasterdamine on saadaval ainult Enterprise-lepingute ja partnerilepingute alusel.",
+                "Masinaaktiveerimine kulub, kui hoidla luuakse, kopeeritakse või paigutatakse masinale, ning vabastatakse automaatselt pärast tegevusetuse perioodi. Üksnes infrastruktuuri ehitamine, sealhulgas klastri loomine ja sellega sõlmede liitmine, aktiveerimist ei kuluta.",
+                "Kui kõik aktiveerimised on kasutusel, võib Rediacc keelduda täiendava masina aktiveerimisest. Masinad, millel juba on aktiveerimine, jätkavad tööd ja võivad oma olemasolevaid litsentse uuendada ning Rediacc võib sellised uuendused ülempiiri ületamisena registreerida ja teiega tellimuse korrastamiseks ühendust võtta."
               ],
-              "title": "6.3 Krüpteerimine ja mandaadid"
+              "title": "6.5 Masinaaktiveerimised, klastrid ja sõlmed"
             },
-            "installation": {
+            "community": {
               "content": [
-                "Renet agent töötab teie masinatel kõrgendatud (juur) õigustega krüpteeritud mahtude, konteineri käituste ja süsteemiteenuste haldamiseks. Teie vastutate ainuisikuliselt oma masinate turvalisuse eest, sealhulgas SSH juurdepääs, tulemüüri konfiguratsioon, operatsioonisüsteemi uuendused ja füüsiline turvalisus. Rediacc ei pääse teie masinatele kaugjuurde, välja arvatud juhul, kui te seda toetuse eesmärgil sõnaselgelt taotlete."
+                "Kogukond on registreeritud konto tasuta pakett. See sisaldab selle jaoks avaldatud funktsioone ja piiranguid, üksnes kogukonnatuge ega sisalda teenusetaseme lubadust. Konto naaseb Kogukonna paketile, kui prooviperiood või tasuline tellimus lõpeb."
               ],
-              "title": "6.1 Paigaldamine ja masina juurdepääs"
+              "title": "6.2 Kogukonna pakett"
             },
-            "restrictions": {
-              "content": ["Te ei tohi:"],
-              "items": [
-                "Pöördprojekteerida, dekompileerida, lahtimonteerida ega muul viisil püüda tuletada Renet agendi kahendmooduli või mis tahes muu mitte-avatud lähtekoodiga ettevõttesisese tarkvara komponendi lähtekoodi",
-                "Levitada, allliitsentsida, rentida, liisida ega laenata ettevõttesisest tarkvara kolmandale osapoolele",
-                "Eemaldada, muuta ega varjata ühtegi ettevõttesisese tarkvara omandiõiguse teadet, märgistust ega märki",
-                "Kasutada ettevõttesisest tarkvara konkureeriva toote või teenuse loomiseks",
-                "Mööda hiilida ega keelata ettevõttesisese tarkvara litsentsi valideerimist, telemetriat ega turvamehhanisme",
-                "Ületada oma tellimuse paketi masina aktiveerimise piire"
+            "enterprise": {
+              "content": [
+                "Enterprise-tellimusi müüakse Rediacc partnerite kaudu või otse tellimusvormi alusel. Enterprise-tellimuse suhtes kehtivad käesolevad tingimused, Enterprise-tarkvaralitsents ja tellimusvorm. Tellimusvorm määrab masinaaktiveerimiste ülempiiri; kui ülempiiri ei ole läbi räägitud, kehtib 25 masinaaktiveerimist."
               ],
-              "title": "6.2 Piirangud"
+              "title": "6.4 Enterprise-pakett"
+            },
+            "freeLicense": {
+              "content": [
+                "Iga masin saab CLI kaudu ilma kontota hankida ühe hoidla tasuta litsentsi. Tasuta litsents katab ühe kuni 3 GB suuruse hoidla, kehtib 48 tundi ja seda saab tasuta pikendada. See ei sisalda majutatud varukoopiasalvestust. Väljastamine on väärkasutuse vältimiseks piiratud masina ja võrguaadressi kohta. Tasuta litsents antakse jaotise 10 alusel ning sellega ei kaasne garantiid ega teenusetaseme lubadust."
+              ],
+              "title": "6.1 Tasuta litsents"
+            },
+            "paid": {
+              "content": [
+                "Professional ja Äri on tasulised tellimused, mida ostetakse kontoportaali kaudu. Need sisaldavad nende jaoks avaldatud funktsioone, piiranguid ja tuge ning teenusetaseme lepingut."
+              ],
+              "title": "6.3 Tasulised tellimused"
             }
           },
-          "title": "6. Ettevõttesisese tarkvara litsents"
+          "title": "6. Paketid"
         },
-        "platformLicense": {
+        "platform": {
           "content": [
-            "Vastavalt käesolevatele tingimustele ja teie aktiivsele tellimusele annab Rediacc teile piiratud, mitteeksklusiivse, mitteülekantava litsentsi platvormi kasutada tellimuse perioodi jooksul. Võite anda juurdepääsu oma organisatsiooni volitatud kasutajatele.",
-            "Jätame endale õiguse platvormi funktsioone igal ajal muuta, uuendada või lõpetada. Praktilise võimaluse korral teavitame teile olulisematest muudatustest ette. Muudatused ei vähenda oluliselt teie praeguse tellimuse paketi põhifunktsionaalsust aktiivse tasulise arvestusperioodi jooksul.",
-            "Püüame tagada platvormi kõrge kättesaadavuse, kuid ei garanteeri katkematut juurdepääsu. Platvorm võib olla ajutiselt kättesaamatu hoolduse, uuenduste või meie kontrolli väliste asjaolude tõttu."
+            "Nende tingimuste kohaselt annab Rediacc teile piiratud, mitteainuõigusliku, üleantamatu õiguse platvormile ligi pääseda ja seda kasutada teie tellimuse ajal. Võite anda juurdepääsu volitatud kasutajatele ja vastutate nende käesolevate tingimuste täitmise eest.",
+            "Te vastutate konto mandaatide, API tokenite, pääsuvõtmete (passkey) ja taastekoodide turvalisuse, kogu teie kontol toimuva tegevuse ning kahtlustatavast loata juurdepääsust viivitamata aadressil <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> teavitamise eest. Rediacc võib peatada või kustutada kontod, mis on olnud mitteaktiivsed üle kaheteistkümne (12) kuu.",
+            "Rediacc võib platvormi funktsioone muuta, uuendada või lõpetada. Kus see on otstarbekas, annab Rediacc olulistest muudatustest ette teada ning muudatus ei vähenda oluliselt tasulise tellimuse põhifunktsionaalsust tasutud arveldusperioodi ajal. Välja arvatud tasuliste tellimuste teenusetaseme leping, ei garanteeri Rediacc katkematut juurdepääsu."
           ],
-          "id": "platform-license",
-          "title": "7. Platvormi litsents"
+          "id": "platform",
+          "title": "9. Juurdepääs platvormile"
+        },
+        "privacy": {
+          "content": [
+            "Isikuandmeid käsitletakse nii, nagu on kirjeldatud <a href=\"privacy-policy\">privaatsuspoliitikas</a>. Kui kasutate teenuseid ettevõttena ja Rediacc töötleb isikuandmeid teie nimel, kehtib <a href=\"data-processing-agreement\">andmetöötluslepe</a>, mis on nende tingimuste osa.",
+            "Ettevõttesisene tarkvara ja platvorm koguvad telemetria andmeid, nagu on kirjeldatud <a href=\"telemetry-policy\">telemetria poliitikas</a>, mis selgitab, mida iga toode kogub ja kuidas enne andmete saatmist loobuda. CI keskkondades keelatakse telemetria automaatselt."
+          ],
+          "id": "privacy",
+          "title": "14. Privaatsus, andmetöötlus ja telemetria"
         },
         "serviceDescription": {
           "content": [
             "Rediacc pakub omahosting serverikeskkondade haldamiseks infrastruktuuri automatiseerimise platvormi. Teenused koosnevad:"
           ],
           "content2": [
-            "Teile kättesaadavad konkreetsed funktsioonid, ressursside piirangud ja võimalused sõltuvad teie tellimuse paketist. Meie veebisaidil ja dokumentatsioonis olevad funktsioonide kirjeldused kirjeldavad iga paketi kavandatavat funktsionaalsust, kuid ei kujuta endast siduvaid jõudlusgarantiisid."
+            "Saadaolevad funktsioonid, ressursipiirangud ja võimalused sõltuvad tellimusest või litsentsist. Veebisaidi ja dokumentatsiooni funktsioonikirjeldused kirjeldavad iga paketi kavandatud funktsionaalsust ega ole siduvad jõudlusgarantiid, välja arvatud nii, nagu teenusetaseme leping näeb ette tasuliste tellimuste puhul."
           ],
           "id": "service-description",
           "items": [
-            "<strong>Ettevõttesisene tarkvara:</strong> CLI (<code>rdc</code>), Renet agent ja töölauarakendus - paigaldatud teie tööjaamadele ja masinatele krüpteeritud, isoleeritud konteineri juurutuste orkestratsiooni jaoks",
-            "<strong>Platvorm:</strong> Veebirakendus ja kontoiportaal tellimuse haldamiseks, meeskonnakoostööks ja (kui saadaval) pilves infrastruktuuri haldamiseks",
-            "<strong>Professionaalsed teenused:</strong> Valikuline konsulteerimine, migreerimisabi ja juurutuse tugi, mis allub eraldi teenuslepingutele"
+            "<strong>Ettevõttesisene tarkvara:</strong> CLI (<code>rdc</code>) ja Renet agent, mis paigaldatakse tööjaamadele ja masinatele krüpteeritud ja isoleeritud konteinerijuurutuste orkestreerimiseks",
+            "<strong>Platvorm:</strong> kontoportaal ja API litsentside väljastamiseks, tellimuste haldamiseks, meeskonnatööks, krüpteeritud konfiguratsioonisalvestuseks ja, kui see on saadaval, majutatud varukoopiasalvestuseks",
+            "<strong>Professionaalsed teenused:</strong> valikuline konsultatsioon, migreerimisabi ja juurutustugi, mille suhtes kehtivad eraldi teenuslepingud"
           ],
-          "title": "3. Teenuste kirjeldus"
+          "title": "5. Teenuste kirjeldus"
         },
-        "subscriptions": {
-          "content": ["Rediacc pakub mitmeid tellimuse pakette:"],
-          "id": "subscriptions",
-          "items": [
-            "<strong>Community</strong> (tasuta): 1 masina aktiveerimine, põhifunktsioonid, kogukonna tugi. See on vaikeplaan, kuhu teie konto langeb tagasi pärast prooviperioodi või tasulise Tellimuse lõppemist.",
-            "<strong>Professional</strong>: 1 masina aktiveerimine, auditi logimine, prioriteetne tugi, kohandatud bränding",
-            "<strong>Business</strong>: 1 masina aktiveerimine, hajutatud salvestus, täiustatud analüütika, pühendatud edukonsultant",
-            "<strong>Enterprise</strong>: pühendatud infrastruktuur, kohandatud integratsioonid, 24/7 tugi ja teie tellimuses kokku lepitud masina aktiveerimise lagi. Kui lage ei lepita kokku, kehtib 25 masina aktiveerimist. Enterprise't müüakse meie partnerite kaudu."
-          ],
+        "softwareLicense": {
+          "id": "software-license",
           "subsections": {
-            "billing": {
+            "grant": {
               "content": [
-                "Tasulised tellimused (Professional ja Business) algavad 14-päevase tasuta prooviperioodiga. Registreerumisel esitate makseviisi ning esimene tasu võetakse, kui prooviperiood lõpeb. Tühistamine enne prooviperioodi lõppu on tasuta. Kui tühistate prooviperioodi ajal, tühistate tasulise tellimuse hiljem või makse ebaõnnestub, naaseb teie konto tasuta Community tasemele.",
-                "Tasulisi tellimusi arveldatakse igakuiselt või aastas ette. Aastane arveldamine pakutakse 15% allahindlusega kaheteistkümne (12) kuu igakuisest hinnast. Kõik tasud on USA dollarites. Makset töötleb meie kolmanda osapoole maksetöötleja (Stripe); me ei salvesta täielikke maksekaardiandmeid.",
-                "Jätame endale õiguse muuta oma hinnakujundust kolmekümne (30) päeva etteteatamisega. Hinnamuutused ei mõjuta teie praegust arvestusperioodi. Kui te ei nõustu hinnamuutusega, võite oma tellimuse tühistada enne järgmist arvestusperioodi."
+                "Nende tingimuste kohaselt annab Rediacc teile piiratud, mitteainuõigusliku, üleantamatu, alamlitsentsimatu ja tühistatava litsentsi paigaldada ja kasutada ettevõttesisest tarkvara (CLI-d ja Renet agenti) teie kontrollitavatel masinatel ja tööjaamades üksnes teie sisemisteks äri- või isiklikeks eesmärkideks, teie tellimuse või tasuta litsentsi piirides ning seni, kuni see kehtib."
               ],
-              "title": "5.1 Arveldamine"
+              "title": "8.1 Litsentsi andmine"
             },
-            "clusters": {
+            "installation": {
               "content": [
-                "<strong>\"Klaster\"</strong> tähendab kahte või enamat Masinat, mida käitate koos Teenuste kaudu ühtse salvestus- või arvutusressursi kogumina. <strong>\"Sõlm\"</strong> tähendab üht Masinat, mis on Klastri liige. Sõlm on nende Tingimuste kõigil eesmärkidel Masin, ja iga Sõlm kulutab ühe masina aktiveerimise. Klastreid ei koondata ega diskonteerita: viiest Sõlmest koosnev Klaster kulutab viis masina aktiveerimist.",
-                "Teie <strong>masina aktiveerimise lagi</strong> on maksimaalne arv Masinaid, mis võivad korraga aktiveeringut hoida. See on kirjas teie Tellimuses ja selle määrab teie tellimus. Ülalnimetatud paketiarvud on standardsed, läbiräägitamata vaikeväärtused; tellimuses või partnerlepingus kokkulepitud lagi asendab vaikeväärtuse selle Tellimuse puhul. Klastrite loomine on saadaval vaid Enterprise'i ja partnerlepingute alusel.",
-                "Masina aktiveerimine kulub, kui Repositoorium luuakse, kopeeritakse või paigutatakse Masinale, ja see vabastatakse automaatselt pärast tegevusetuse perioodi. Ainult infrastruktuuri ülesehitamine, sealhulgas Klastri loomine ja Sõlmede sellega ühendamine, ei kuluta aktiveeringut.",
-                "Kui kõik aktiveeringud on juba kasutuses, võib Rediacc keelduda täiendava Masina aktiveerimisest. Masinad, mis juba hoiavad aktiveeringut, jätkavad tööd ja võivad oma olemasolevaid litsentse uuendada, ning Rediacc võib selliseid uuendusi registreerida teie lae ületamisena. Rediacc võib teiega ühendust võtta, et teie Tellimust kooskõlastada, kui masina aktiveerimise lagi on püsivalt ületatud."
+                "Renet agent töötab masinatel kõrgendatud (root) õigustega, et hallata krüpteeritud köiteid, konteinerite käituskeskkondi ja süsteemiteenuseid. Rediacc ei pääse teie masinatele kaugjuurdepääsuga ligi, välja arvatud juhul, kui te seda toe saamiseks selgesõnaliselt taotlete."
               ],
-              "title": "5.5 Masina aktiveerimine, klastrid ja sõlmed"
+              "title": "8.3 Paigaldamine ja juurdepääs masinatele"
             },
-            "gracePeriod": {
+            "restrictions": {
               "content": [
-                "Ettevõttesisene tarkvara valideerib perioodiliselt teie tellimuse olekut. Kui valideerimine ebaõnnestub (võrguprobleemide, aegunud tellimuse või maksmata jätmise tõttu), kehtib kolme (3) päevane ajapikendus. Pärast ajapikendust töötab ettevõttesisene tarkvara kogukonna paketti funktsioonide tasemel, kuni tellimuse olek on taastatud."
+                "Välja arvatud juhul, kui need tingimused seda selgesõnaliselt lubavad, te ei tee ega luba teistel teha järgmist:"
               ],
-              "title": "5.4 Litsentsi valideerimine ja ajapikendus"
+              "items": [
+                "dekompileerida, lahti võtta, pöördprojekteerida ega muul viisil püüda saada ettevõttesisese tarkvara avaldamata komponendi lähtekoodi, välja arvatud ulatuses, milles kohaldatav õigus seda sellest piirangust hoolimata selgesõnaliselt lubab",
+                "kopeerida, muuta, uuesti levitada, alamlitsentsida, rentida, laenutada või müüa ettevõttesisest tarkvara ega teha seda kolmandale osapoolele kättesaadavaks",
+                "eemaldada, muuta või varjata teenustel olevaid omanditeateid",
+                "kasutada teenuseid konkureeriva toote või teenuse loomiseks",
+                "mööda minna teenuste litsentsi kinnitamisest, aktiveerimispiirangust, päringupiirangust või turvamehhanismist või need keelata või hankida tasuta litsentse viisil, mis on mõeldud nende piirangutest kõrvalehoidmiseks",
+                "kasutada teenuseid lubatud kasutuse poliitikat või mis tahes õigusakti rikkudes"
+              ],
+              "title": "8.4 Piirangud"
             },
-            "renewalCancellation": {
+            "sourceLicense": {
               "content": [
-                "Tasulised tellimused uuenevad automaatselt iga arvestusperioodi lõpus kehtiva hinnaga, kui te ei tühista enne uuendamise kuupäeva. <strong>Tasulisele paketile tellides lubate korduva tasu võtmist oma makseviisilt, kuni tühistate.</strong> Võite igal ajal tühistada kontoiportaali kaudu või võttes meiega ühendust aadressil <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>. Tühistamisel jäätate juurdepääsu tasulistele funktsioonidele kuni praeguse arvestusperioodi lõpuni. Osalisi arvestusperioodide tagastusi ei väljastata, välja arvatud meie <a href=\"refund-policy\">tagastuspoliitikas</a> kirjeldatult. Saadame uuendamisteate teie konto e-posti aadressile enne iga aastast uuendamist."
+                "Kui Rediacc avaldab teenuste lähtekoodi, tehakse see kättesaadavaks Rediacc Source License (RSL) 1.0 alusel, mis lubab selle vaatamist ja uurimist üksnes hariduslikel, uurimis- ja mittekaubanduslikel eesmärkidel. RSL ei anna õigust tarkvara käitada, muuta ega levitada; õigus ettevõttesisest tarkvara käitada tuleneb ainult jaotisest 8.1."
               ],
-              "title": "5.3 Uuendamine ja tühistamine"
-            },
-            "taxes": {
-              "content": [
-                "Kõik tasud on ilma kohaldatavate maksudeta. Teie vastutate kõigi maksude, tollimaksude ja lõivude eest, mille maksuhaldurid teie tellimusele kehtestab, välja arvatud Rediacc puhastulul põhinevad maksud. Kui seadus nõuab, kogub ja kannab Rediacc üle kohaldatavad maksud (sealhulgas EL KM) ja need loetletakse teie arvel."
-              ],
-              "title": "5.2 Maksud"
+              "title": "8.2 Lähtekood"
             }
           },
-          "title": "5. Tellimused, arveldamine ja maksmine"
-        },
-        "telemetry": {
-          "content": [
-            "Ettevõttesisene tarkvara ja platvorm koguvad anonümiseeritud telemetria andmeid toote kvaliteedi parandamiseks, vigade diagnoosimiseks ja kasutamise mustrite mõistmiseks. Telemetria on privaatsust säilitav disainilt: isikutuvastajad anonümiseeritakse enne edastamist ja kõiki telemetria andmeid töödeldakse Euroopa Liidus asuval infrastruktuuril.",
-            "Telemetria on CLI-s ja veebirakenduses vaikimisi lubatud. Saate keelata telemetria enne andmete saatmist, kasutades tootespetsiifilisi mehhanisme, mis on kirjeldatud meie <a href=\"telemetry-policy\">telemetria poliitikas</a>, mis kirjeldab täpselt, milliseid andmeid iga toode kogub ja kuidas kogumist keelata. Telemetria on automaatselt keelatud CI keskkondades ja töölauarakenduses.",
-            "Jurisdiktsioonides, mis nõuavad telemetria kogumiseks lõppseadmetel selgesõnalist nõusolekut (sealhulgas teie jurisdiktsioonis rakendatava ePrivacy direktiivi kohaselt), peaksite oma telemetria eelistused konfigureerima enne ettevõttesisese tarkvara esmakordset kasutamist. Teie jätkuv teenuste kasutamine lubatud telemetriaga kujutab endast teie nõusolekut <a href=\"telemetry-policy\">telemetria poliitikas</a> kirjeldatud kogumisele."
-          ],
-          "id": "telemetry",
-          "title": "10. Telemetria ja andmete kogumine"
+          "title": "8. Tarkvaralitsents"
         },
         "termination": {
           "content": [
-            "Võite oma tellimuse igal ajal tühistada kontoiportaali kaudu või võttes meiega ühendust aadressil <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>. Võime peatada või lõpetada teie juurdepääsu teenustele, kui rikute oluliselt käesolevaid tingimusi, kohaldades kolmekümne (30) päevast kirjalikku etteteatamist ja võimalust parandada, välja arvatud juhul, kui rikkumine kujutab vahetut turvaohtu või hõlmab ebaseaduslikku tegevust.",
+            "Need tingimused kehtivad teie esimesest nõustumisest kuni teie konto sulgemise ja teenuste kasutamise lõpetamiseni. Võite tellimuse tühistada ja konto sulgeda igal ajal kontoportaalis või kirjutades aadressil <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>.",
+            "Rediacc võib platvormile juurdepääsu viivitamata peatada või keelduda litsentse väljastamast, kui: (a) makse on üle kolmekümne (30) päeva hilinenud; (b) teie kasutus rikub lubatud kasutuse poliitikat või kujutab turvalisuse- või õiguslikku riski Rediaccile, teenustele või teistele; või (c) õigus seda nõuab. Rediacc piirab peatamise mõistlikult vajalikuga ja tühistab selle, kui põhjus on kõrvaldatud.",
+            "Kumbki pool võib need tingimused lõpetada olulise rikkumise tõttu, mida teine pool ei ole kolmekümne (30) päeva jooksul pärast kirjalikku teatist kõrvaldanud. Rediacc võib need viivitamata lõpetada, kui rikkumine on ebaseaduslik tegevus või seda ei saa kõrvaldada. Rediacc võib tasuta teenuse igal ajal lõpetada.",
             "Lõpetamisel:"
           ],
           "id": "termination",
           "items": [
-            "Teie litsents ettevõttesisese tarkvara ja platvormi kasutamiseks lõpeb praeguse arvestusperioodi lõpus (või koheselt rikkumise korral)",
-            "Teie masinatel olevad kliendiandmed jäävad teie kontrolli alla - Rediaccil puudub võimalus nendele ligi pääseda või neid kustutada",
-            "Konto andmeid säilitatakse kolmkümmend (30) päeva eksportimise võimaldamiseks, seejärel kustutatakse meie aktiivsetest süsteemidest",
-            "Jaotised 1 (Mõisted), 11 (Teie andmed), 12 (Intellektuaalomand), 14 (Garantiid), 15 (Vastutus), 16 (Hüvitamine) ja 18 (Reguleeriv seadus) kehtivad ka pärast lõpetamist"
+            "teie litsents ettevõttesisesele tarkvarale ja juurdepääs platvormile lõpevad praeguse arveldusperioodi lõpus või, rikkumise tõttu lõpetamise korral, viivitamata",
+            "kliendiandmed teie masinatel jäävad teie kontrolli alla; Rediaccil puudub võimalus neile ligi pääseda või neid kustutada",
+            "konto andmeid säilitatakse kolmkümmend (30) päeva eksportimiseks ning seejärel kustutatakse aktiivsetest süsteemidest, välja arvatud kirjed, mida Rediacc peab säilitama seaduse või privaatsuspoliitika alusel",
+            "Jaotised 1, 3, 12, 13, 15 ja 17 kuni 27 jäävad kehtima"
           ],
-          "title": "17. Lõpetamine"
+          "title": "21. Kehtivus, peatamine ja lõpetamine"
         },
         "thirdPartyComponents": {
           "content": [
-            "Ettevõttesisene tarkvara võib paigaldada, konfigureerida või suhelda teie masinatel kolmanda osapoole avatud lähtekoodiga tarkvaraga, sealhulgas Docker, konteineri käitused ja salvestuse sünkroonimise tööriistad. Neid kolmanda osapoole komponente reguleerivad nende vastavad litsentsid ja pakutakse \"nagu on\" ilma Rediacc garantiita.",
-            "Rediacc ei võta vastutust kolmanda osapoole komponentide funktsionaalsuse, turvalisuse ega kättesaadavuse eest. Teie vastutate teie infrastruktuurile juurutatud kolmanda osapoole tarkvara litsentside ülevaatamise ja järgimise eest."
+            "Ettevõttesisene tarkvara sisaldab või paigaldab kolmandate osapoolte avatud lähtekoodiga komponente, näiteks Dockerit, konteinerite käituskeskkondi ja salvestuse sünkroonimise tööriistu. Neid komponente reguleerivad nende enda litsentsid, mille loetleb käsk <code>rdc credits --licenses</code>, ning need antakse \"SELLISENA NAGU ON\" ilma Rediacc garantiita. Rediacc ei vastuta kolmandate osapoolte teenuste eest, mille valite teenustega ühendada."
           ],
           "id": "third-party-components",
-          "title": "13. Kolmanda osapoole komponendid"
+          "title": "16. Kolmandate osapoolte komponendid"
         },
-        "useRestrictions": {
+        "usArbitration": {
           "content": [
-            "Nõustute, et teie ja teie volitatud kasutajad ei kasuta teenuseid järgmisteks:"
+            "<strong>See jaotis kehtib ainult siis, kui elate Ameerika Ühendriikides või teie organisatsiooni põhitegevuskoht on Ameerika Ühendriikides. See nõuab vaidluste lahendamist individuaalses siduvas vahekohtumenetluses ning loobub õigusest vandekohtu menetlusele ja kollektiivhagis osalemisest. Lugege see hoolikalt läbi.</strong> See ei kehti Euroopa Liidu ega mujal väljaspool Ameerika Ühendriike asuvate kasutajate suhtes."
           ],
-          "content2": [
-            "Teie vastutate ainuisikuliselt sisu ja rakenduste eest, mille juurutate oma masinatel teenuste abil. Jätame endale õiguse peatada või lõpetada juurdepääsu platvormile, kui usume põhjendatult, et nende piirangute rikkumine on toimunud."
-          ],
-          "id": "use-restrictions",
-          "items": [
-            "Pahavara, viiruste, lunavara või muu kahjuliku koodi juurutamine, hostimine või levitamine",
-            "Krüptoraha kaevandamine, peer-to-peer failijagamise võrgud või avatud proxy teenused",
-            "Kolmandate osapoolte intellektuaalomandi, privaatsuse või muude õiguste rikkumine või omastamine",
-            "Soovimatu kaubandusliku teabe (rämpspost) saatmine või andmepüügirünnakud",
-            "Volitamata nõrkuste skannimine, läbitungimistestimine või koormuskatsetamine Rediacc infrastruktuuri vastu",
-            "Isiku või üksuse esindumine või oma kuuluvuse valeesitamine",
-            "Kohaldatava seaduse, määruse või kolmanda osapoole õiguste rikkumine",
-            "Teenuste edasimüük, levitamine või kättesaadavaks tegemine kolmandatele osapooltele hallatavas teenuse pakkumises ilma meie eelneva kirjaliku nõusolekuta"
-          ],
-          "title": "9. Kasutamispiirangud"
+          "id": "us-arbitration",
+          "subsections": {
+            "agreement": {
+              "content": [
+                "Mis tahes vaidlus, nõue või erimeelsus teie ja Rediacc vahel, mis tuleneb käesolevatest tingimustest või teenustest või on nendega seotud ja mida ei lahendata mitteametlikult, lahendatakse siduvas individuaalses vahekohtumenetluses, mida korraldab American Arbitration Association (\"AAA\") oma tarbijavahekohtu eeskirjade (eraisikutele) või kaubandusvahekohtu eeskirjade (organisatsioonidele) alusel, nagu seda käesolev jaotis muudab. Kui Rediacci vastu esitatakse kakskümmend viis (25) või rohkem sarnast nõuet sama või kooskõlastatult tegutsevate esindajate poolt või nende abiga, kohaldatakse ka AAA massivahekohtumenetluse täiendavaid eeskirju (Mass Arbitration Supplementary Rules). AAA eeskirjad on kättesaadavad aadressil <a href=\"https://www.adr.org\">www.adr.org</a>.",
+                "Kõik vahekohtus lahendatavuse küsimused otsustab vahekohtunik, mitte kohus, välja arvatud et jaotisi 26.4 ja 26.7 puudutavad küsimused otsustab kohus. Vahekohtumenetlus toimub videokonverentsi teel või maakonnas (county), kus te elate, kui pooled ei lepi kokku teisiti. Vahekohtunik võib mõista välja sama individuaalse õiguskaitse, mida kohus võiks mõista, kuid ainult õiguskaitset taotleva üksikpoole kasuks ja ainult ulatuses, mis on vajalik selle poole individuaalse nõude jaoks. Selle jaotise tõlgendamist ja täitmist reguleerib USA föderaalne vahekohtuseadus (Federal Arbitration Act)."
+              ],
+              "title": "26.2 Vahekohtu kokkulepe"
+            },
+            "classWaiver": {
+              "content": [
+                "<strong>TE JA REDIACC LOOBUTE IGA ÜKS ÕIGUSEST VANDEKOHTU MENETLUSELE JA NÕUSTUTE, ET VAIDLUSI LAHENDATAKSE AINULT INDIVIDUAALSELT, MITTE HAGEJA VÕI GRUPI LIIKMENA MIS TAHES KOLLEKTIIV-, ÜHENDATUD VÕI ESINDUSMENETLUSES.</strong> Vahekohtunik ei tohi ühendada rohkem kui ühe isiku nõudeid, välja arvatud juhul, kui massivahekohtumenetluse täiendavad eeskirjad näevad ette selle haldamise."
+              ],
+              "title": "26.4 Kollektiivhagist ja vandekohtu menetlusest loobumine"
+            },
+            "fees": {
+              "content": [
+                "AAA esitamis-, haldus- ja vahekohtuniku tasude maksmine järgib AAA eeskirju. Üksiku tarbija nõude puhul 10 000 USD või vähem tasub need tasud Rediacc, välja arvatud juhul, kui vahekohtunik leiab, et nõue on põhjendamatu või esitatud sobimatul eesmärgil."
+              ],
+              "title": "26.3 Tasud"
+            },
+            "informal": {
+              "content": [
+                "Enne vahekohtumenetluse või väiksemate nõuete kohtuasja alustamist peab vaidlusega pool saatma teisele kirjaliku teatise, mis kirjeldab vaidlust ja taotletavat õiguskaitset (Rediaccile aadressil <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a>; teile teie konto e-posti aadressil). Pooled püüavad vaidlust heas usus mitteametlikult lahendada kuuskümmend (60) päeva pärast teatise kättesaamist, sealhulgas kummagi poole taotlusel individuaalse kõne kaudu. Sel ajal aegumistähtajad peatuvad."
+              ],
+              "title": "26.1 Esmalt mitteametlik lahendamine"
+            },
+            "optOut": {
+              "content": [
+                "Võite sellest vahekohtu kokkuleppest loobuda, saates e-kirja aadressile <a href=\"mailto:contact@rediacc.com\">contact@rediacc.com</a> teemaga \"Arbitration opt out\", märkides oma nime, konto e-posti aadressi (või tasuta litsentsi puhul käsu <code>rdc legal</code> näidatud masina tunnuse) ning et loobute vahekohtumenetlusest, kolmekümne (30) päeva jooksul pärast nende tingimustega esmakordset nõustumist. Loobumine ei mõjuta ühtegi muud nende tingimuste osa. Kui loobute, kohaldatakse teie vaidlustele jaotist 25.",
+                "Kui Rediacc teeb sellesse jaotisse olulise muudatuse, võite muudatuse tagasi lükata, saates sama teatise kolmekümne (30) päeva jooksul pärast muudatuse jõustumist, mille korral kehtib edasi selle jaotise versioon, millega viimati nõustusite."
+              ],
+              "title": "26.6 Loobumisõigus"
+            },
+            "severability": {
+              "content": [
+                "Kui jaotises 26.4 sisalduv kollektiivhagist loobumine tunnistatakse konkreetse nõude või õiguskaitse taotluse osas täitmisele pööramatuks, eraldatakse see nõue või taotlus ning selle otsustab kohus jaotise 25 alusel pärast kõigi teiste nõuete vahekohtumenetlust, mitte vahekohtus. Kui avalikku huvi kaitsva esialgse õiguskaitse nõudest ei saa kohaldatava õiguse alusel loobuda ega seda vahekohtus lahendada (sealhulgas kohtuasja <em>McGill v. Citibank, N.A.</em>, 2 Cal. 5th 945 (2017) alusel), eraldatakse see nõue, peatatakse individuaalsete nõuete vahekohtumenetluse lõpuni ja lahendab kohus. Ülejäänud jaotis jääb kehtima."
+              ],
+              "title": "26.7 Eraldatavus"
+            },
+            "smallClaims": {
+              "content": [
+                "Kumbki pool võib selle asemel esitada individuaalse nõude väiksemate nõuete kohtule maakonnas, kus te elate, või muule väiksemate nõuete lahendamiseks pädevale kohtule, kui nõue jääb sellesse kohtusse ja seda menetletakse ainult individuaalselt."
+              ],
+              "title": "26.5 Väiksemate nõuete erand"
+            }
+          },
+          "title": "26. Vahekohus ja kollektiivhagist loobumine Ameerika Ühendriikide kasutajatele"
         },
         "warranties": {
           "content": [
-            "KOHALDATAVA SEADUSEGA LUBATUD MAKSIMAALSES ULATUSES PAKUTAKSE TEENUSEID \"NAGU ON\" JA \"NAGU KÄTTESAADAV\". REDIACC VÄLISTAB KÕIK GARANTIID, OLENEMATA SELLEST, KAS NEED ON SELGESÕNALISED, KAUDSED VÕI SEADUSJÄRGSED, SEALHULGAS, KUID MITTE AINULT KAUDSED GARANTIID KAUBASTATAVUSE, KONKREETSEKS EESMÄRGIKS SOBIVUSE, MITTERIIVAMISE JA KÕIGI TEHINGUTE KURSUSE VÕI KAUBANDUSE KASUTUSE TULENEVATE GARANTIIDE SUHTES.",
-            "EELNEVA PIIRAMATA EI GARANTEERI REDIACC, ET: (A) TEENUSED VASTAVAD TEIE NÕUETELE VÕI OOTUSTELE; (B) TEENUSED ON KATKEMATUD, ÕIGEAEGSED, TURVALISED VÕI VEAVABAD; (C) TEENUSTEST SAADUD TULEMUSED ON TÄPSED VÕI USALDUSVÄÄRSED; VÕI (D) TEENUSTE PUUDUSED PARANDATAKSE.",
-            "KÄESOLEVATES TINGIMUSTES EI VÄLISTA EGA PIIRA MIDAGI VASTUTUST: (A) HOOLETUSEST PÕHJUSTATUD SURMA VÕI KEHAVIGASTUSTE EEST; (B) PETTUSE VÕI PETLIKU VALEESITUSE EEST; VÕI (C) VASTUTUSE EEST, MIDA EI SAA VÄLISTADA VÕI PIIRATA EESTI VÕLAÕIGUSSEADUSE ALUSEL, SEALHULGAS VASTUTUS TAHTLIKU RIKKUMISE VÕI RASKE HOOLETUSE EEST.",
-            "Tunnustate, et ettevõttesisene tarkvara töötab teie masinatel kõrgendatud õigustega ja võtate enda kanda kõik riskid, mis on seotud selle paigaldamise ja käitamisega teie infrastruktuuril. Meie dokumentatsioonis ja turundusmaterjalis olevad funktsioonide kirjeldused, jõudluse mõõdikud ja taastumisaja hinnangud kirjeldavad kavandatavat funktsionaalsust ega ole siduvad jõudlusgarantiid."
+            "KOHALDATAVA ÕIGUSE LUBATUD MAKSIMAALSES ULATUSES ANTAKSE TEENUSED \"SELLISENA NAGU ON\" JA \"NAGU SAADAVAL\". REDIACC JA TEMA LITSENTSIANDJAD JÄTAVAD VÄLJA KÕIK GARANTIID JA TINGIMUSED, OLGU NEED SELGESÕNALISED, KAUDSED VÕI SEADUSEJÄRGSED, SEALHULGAS KAUDSE MÜÜDAVUSE, KINDLAKS OTSTARBEKS SOBIVUSE, OMANDIÕIGUSE JA RIKKUMATA JÄTMISE GARANTII NING KÕIK ÄRITEGEVUSE VÕI KAUPLEMISTAVAST TULENEVAD GARANTIID.",
+            "ILMA ÜLALTOODUT PIIRAMATA EI GARANTEERI REDIACC, ET: (A) TEENUSED VASTAVAD TEIE NÕUETELE; (B) TEENUSED ON KATKESTUSTETA, ÕIGEAEGSED, TURVALISED VÕI VEATA; (C) MIS TAHES ANDMED SÄILIVAD VÕI NEID SAAB TAASTADA; VÕI (D) MIS TAHES VIGA PARANDATAKSE.",
+            "TE TUNNISTATE, ET ETTEVÕTTESISENE TARKVARA TÖÖTAB TEIE MASINATEL KÕRGENDATUD ÕIGUSTEGA JA ET TE VÕTATE ENDALE KÕIK SELLE PAIGALDAMISE JA KASUTAMISEGA TEIE INFRASTRUKTUURIS KAASNEVAD RISKID.",
+            "Mõned jurisdiktsioonid ei luba teatud garantiide väljajätmist. Kui olete tarbija, jäävad teile kehtima õigused, mille annab teie elukohariigi õigus ja millest ei saa lepinguga loobuda."
           ],
           "id": "warranties",
-          "title": "14. Garantiide välistamine"
+          "title": "18. Garantiide väljajätmine"
         }
       },
       "toc": {
@@ -9824,9 +10465,27 @@
     }
   },
   "regionPicker": {
+    "cancel": "Tühista",
+    "change": "Muuda piirkonda",
+    "countdown": "Suuname sind piirkonda {{region}} {{seconds}} sekundi pärast.",
+    "countdownAnnounce": "Suuname sind piirkonda {{region}} {{seconds}} sekundi pärast. Vali Tühista, et siia jääda, või Muuda piirkonda, et valida mõni teine.",
+    "enterprise": "Ettevõttekunde?",
     "footer": "Vali endale lähim piirkond või see, mida sinu organisatsioon nõuab.",
     "footerNote": "Pärast registreerumist ei saa seda muuta.",
+    "lookup": {
+      "back": "Tagasi piirkondade juurde",
+      "checking": "Kontrollin...",
+      "description": "Sisesta oma töö e-posti aadress, et leida oma organisatsiooni sisselogimine.",
+      "error": "Otsing pole praegu saadaval. Vali hoopis piirkond.",
+      "invalid": "Sisesta ettevõtte domeen, näiteks company.com.",
+      "label": "Töö e-posti aadress",
+      "miss": "Selle domeeni jaoks ei leitud ettevõtte sisselogimist. Vali hoopis piirkond.",
+      "placeholder": "sina@firma.ee",
+      "privacy": "Piirkonna leidmiseks saadetakse ainult domeen. Sinu e-posti aadress täidab ainult sisselogimislehe ette.",
+      "submit": "Jätka"
+    },
     "reassurance": "Sinu serverite andmed ja varukoopiad jäävad sinu enda infrastruktuuri.",
+    "resolving": "Otsime sinu piirkonda...",
     "subtitle": "Sinu konto, arveldus ja konfiguratsioonid jäävad valitud piirkonda.",
     "title": "Vali oma konto piirkond"
   },
@@ -9886,5 +10545,13 @@
     "footer": "Äri käib minutitega. Aga testikeskkond päivadel.",
     "overline": "Miks nüüd",
     "title": "Maailm jookseb ruttu. Sinu testiversioon jääb jalgu."
+  },
+  "legal": {
+    "consent": {
+      "cliPrompt": "Tasuta litsents nõuab ettevõtte {{legalName}} teenuse kasutustingimustega nõustumist aadressil {{termsUrl}} koos privaatsuspoliitikaga aadressil {{privacyUrl}}; Ameerika Ühendriikide kasutajate puhul nõuavad tingimused individuaalset vahekohtumenetlust ja loobuvad kollektiivhagidest. Kas nõustute tingimustega?",
+      "cliRefusal": "Tasuta litsents nõuab ettevõtte {{legalName}} teenuse kasutustingimustega nõustumist aadressil {{termsUrl}} koos privaatsuspoliitikaga aadressil {{privacyUrl}}; Ameerika Ühendriikide kasutajate puhul nõuavad tingimused individuaalset vahekohtumenetlust ja loobuvad kollektiivhagidest. See käivitus on järelevalveta, seega ei nõustutud ega laaditud midagi alla. Nõustumiseks edastage --accept-terms või määrake RDC_ACCEPT_TERMS=1; ainult --yes ei tähenda nõustumist. Tingimused seovad seda, kes seda automatiseerimist käitab.",
+      "stripeCheckout": "Nõustun ettevõtte {{legalName}} teenuse kasutustingimustega ({{termsUrl}}) ja olen privaatsuspoliitikaga ({{privacyUrl}}) tutvunud. Ameerika Ühendriikide kasutajad nõustuvad siduva individuaalse vahekohtumenetlusega ja loobuvad kollektiivhagidest. Tellimus pikeneb automaatselt iga arveldusperioodi lõpus ja maksemeetodilt võetakse tasu kuni tühistamiseni; järgmise tasu peatamiseks tühistage tellimus igal ajal kontoportaalis enne pikendamise kuupäeva.",
+      "webCheckbox": "Nõustun ettevõtte {{legalName}} teenuse kasutustingimustega ({{termsUrl}}) ja olen privaatsuspoliitikaga ({{privacyUrl}}) tutvunud. Kui asun Ameerika Ühendriikides, nõustun, et vaidlused lahendatakse siduvas individuaalses vahekohtumenetluses, ning loobun õigusest vandekohtu menetlusele ja kollektiivhagis osalemisest, nagu tingimustes kirjeldatud."
+    }
   }
 }

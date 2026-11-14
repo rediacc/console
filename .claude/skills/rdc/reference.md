@@ -10,6 +10,7 @@ List detached jobs on a machine, newest first
 **Options:**
 
 - `-m, --machine <name>`: Target machine name (omit to list this config's pending job tickets)
+- `--all`: Include expired and dismissed tickets
 
 > MCP tool
 
@@ -55,6 +56,18 @@ Resume following a job from its ticket, then acknowledge it and exit with the jo
 
 - `-m, --machine <name>`: Target machine name (optional when this config holds a ticket for the job)
 - `--timeout <duration>`: Stop waiting after this long (30s, 5m, 2h; a bare number is seconds). The job keeps running.
+
+> MCP excluded: An agent cannot usefully block until the job ends; poll with job_status and job_logs.
+
+### rdc job dismiss [job-id]
+
+Give up on job tickets locally: their owed steps are dropped and the ticket stops showing up. Makes no machine call and does not touch the job itself.
+
+**Options:**
+
+- `--stale`: Dismiss every pending ticket older than --older-than (default 24h)
+- `--older-than <duration>`: With --stale, the minimum ticket age, e.g. 90m, 24h (default: 24h)
+- `-y, --yes`: Skip confirmation prompt
 
 > MCP tool
 
@@ -104,6 +117,7 @@ Remove a machine from the config. Does not touch the machine itself.
 
 - `-y, --yes`: Skip confirmation prompt
 - `--force`: Remove the machine even if repositories are placed on it or backup strategies are bound to it, leaving those references dangling.
+- `--archive-repos`: Archive the config entries of the repositories placed on this machine (credentials kept, restorable)
 
 > MCP tool
 
@@ -166,11 +180,21 @@ Show a machine's system, repositories, containers, and services. Read-only: neve
 
 Check machine health for CI/CD pipelines
 
+> MCP tool
+
+### rdc machine repair <name>
+
+Run the safe fixes for a machine's health findings, then re-check (exit 0 nothing left, 1 warnings or operator items left, 2 an error left or a fix failed)
+
 **Options:**
 
-- `-t, --team <name>`: Team name
+- `--dry-run`: List the fixes that would run without running them
+- `--code <code>`: Only fix this finding code (repeatable)
+- `--with-backup`: Allow auto-with-backup fixes, each after a successful snapshot of its repository
+- `--window-override`: Run window-only fixes outside the maintenance window
+- `--set-window <window>`: Store the machine's maintenance window (HH:MM-HH:MM, UTC) or clear it with off, then exit
 
-> MCP tool
+> MCP excluded: Runs fixes on a machine (restarts, prune, repository repair()); use the CLI, where the safety classes, the maintenance window and the journal apply
 
 ### rdc machine provision <name>
 
@@ -196,6 +220,7 @@ Destroy a cloud-provisioned machine and remove from config
 **Options:**
 
 - `--force`: Skip confirmation prompt
+- `--archive-repos`: Archive the config entries of the repositories placed on this machine (credentials kept, restorable)
 - `--debug`: Enable debug output
 
 > MCP tool
@@ -248,6 +273,7 @@ Roll the renet daemons that still run a replaced binary onto the installed one, 
 **Options:**
 
 - `--include-docker`: Also restart each per-repo rediacc-docker-N supervisor (restarts that repo's containers)
+- `--repo <name>`: Limit the restart to one repo's supervisor (needs --include-docker)
 - `--json`: Print the report as JSON
 
 > MCP tool
@@ -401,6 +427,8 @@ Create or update a backup strategy
 **Options:**
 
 - `--destination <name>`: Destination name within the strategy. Creates a Rediacc chunk-store destination
+- `--target <storeId>`: Registered store id the destination writes to (default: home). Use with --destination
+- `--replicate-from <storeId>`: Make the destination a replica: the account server copies this store into the destination's target, so the machine uploads nothing to it. Use with --destination and --target
 - `--cron <expression>`: Cron schedule (e.g., "0 * * * *" for hourly)
 - `--mode <mode>`: Backup mode: "hot" snapshots while everything keeps running, "cold" stops the containers for the moment the snapshot is taken
 - `--bwlimit <limit>`: Upload bandwidth limit in bytes per second, with an optional K/M/G suffix (e.g., "6M", "500K")
@@ -410,8 +438,8 @@ Create or update a backup strategy
 - `--exclude <repos>`: Exclude these repos from backup (comma-separated names)
 - `--retention <spec>`: Snapshot retention, for example last=7,daily=7,weekly=4,monthly=6 ("none" removes it)
 - `--rpo <duration>`: Declared protection target, for example 15m (at least 5m; none clears it)
-- `--repo-rpo <ref=duration>`: Per-repo target as <ref>=<duration>, repeatable (none removes it); name:* is the family (default: )
-- `--repo-cell-size <ref=size>`: Per-repository cell size as <ref>=<size>, repeatable. A change re-seeds the repository (default: )
+- `--repo-rpo <ref=duration>`: Per-repo target as <ref>=<duration>, repeatable (none removes it); name:* is the family
+- `--repo-cell-size <ref=size>`: Per-repository cell size as <ref>=<size>, repeatable. A change re-seeds the repository
 - `--no-estimate`: Skip the churn and cost estimate
 - `--dry-run`: Show what would change and write nothing
 - `--enable`: Enable the strategy or destination
@@ -550,6 +578,7 @@ List the files a repository contains. By default this is a local read-only walk 
 - `--depth <n>`: Limit descent to N levels (0 for unlimited)
 - `--limit <n>`: Maximum entries to return (0 for unlimited)
 - `--at <time|snapshot>`: List the snapshot taken at or before this time, or this snapshot id (reads the chunk store)
+- `--from <storeId>`: With --at, read the snapshot from this backup store instead of the best-ranked one
 - `--debug`: Enable debug output
 
 > MCP tool
@@ -715,6 +744,7 @@ Copy repository images from a machine to a local directory or an external drive.
 - `--skip-space-check`: Warn instead of refusing when the target may not have enough free space
 - `--store`: Rebuild the encrypted image straight from the backup store, with no machine. Needs an API token with the backup:read and backup:restore scopes in REDIACC_TOKEN
 - `--at <time|snapshot>`: With --store, the snapshot to fetch: a time (ISO 8601) or a snapshot id (default: the newest)
+- `--from <storeId>`: With --store, read from this backup store instead of the best-ranked one; it never falls back to another store
 
 > agent: fork-only | MCP excluded: Requires local filesystem paths on the MCP host. Run it from the CLI.
 
@@ -746,6 +776,7 @@ Turn a backup artifact into a live repository. Placement is stated here.
 - `-m, --machine <name>`: Machine name
 - `--datastore <name>`: Restore into this named datastore (its attached machine hosts it)
 - `--at <time>`: Restore a point-in-time: a snapshot id or an RFC3339 time (chunk-store restore)
+- `--from <storeId>`: Read the snapshot from this backup store (default: the store with the newest verified snapshot, falling back to the next on a store failure)
 - `--any-stream`: With --at, also consider snapshots written by other machines and forks of this lineage (default: only this repo on its source machine)
 - `--no-seed`: Fetch every chunk from the store instead of reusing local anchors or repository images (proves the store is readable)
 - `--allow-unopenable`: Place the image even if the repository passphrase does not open it (a snapshot from before a passphrase change)
@@ -760,12 +791,13 @@ Turn a backup artifact into a live repository. Placement is stated here.
 
 > MCP tool | agent: fork-only
 
-### rdc backup purge <repo-ref>
+### rdc backup purge [repo-ref]
 
 Delete every stored backup snapshot of a repository from the chunk store at once. The repository itself is kept.
 
 **Options:**
 
+- `--lineage <guid>`: Purge a backup lineage by its id (as `rdc backup usage` lists it) when its repository is no longer in this config
 - `--dry-run`: Show what would be done without making changes
 - `-y, --yes`: Skip confirmation prompt
 - `--cancel`: Cancel a delayed purge before it takes effect
@@ -1182,6 +1214,31 @@ List repositories on a machine
 
 > MCP tool
 
+### rdc repo health <ref>
+
+Run the repository's Rediaccfile health() checks and exit 0 (ok), 1 (warning) or 2 (error)
+
+**Options:**
+
+- `--debug`: Enable debug output
+- `--skip-router-restart`: Skip restarting the route server after binary update
+
+> MCP tool
+
+### rdc repo repair <ref>
+
+Run the repository's Rediaccfile repair() functions that their declared class allows, then health() again (exit 0 ok, 1 warning, 2 error or a failed repair)
+
+**Options:**
+
+- `--dry-run`: Show which repair() would run, without running any
+- `--with-backup`: Allow auto-with-backup repair() functions, after a successful snapshot of the repository
+- `--window-override`: Run window-only repair() functions outside the machine's maintenance window
+- `-y, --yes`: Run undeclared (operator-only) repair() functions without asking
+- `--debug`: Enable debug output
+
+> MCP excluded: Runs a repository's own repair() code, operator-only ones after a prompt; use the CLI, where the classes and the prompt apply
+
 ### rdc repo cat <ref>
 
 Read a bounded window of a file in a repository to stdout (diagnostics go to stderr).
@@ -1318,6 +1375,7 @@ Validate the CLI config refs (branches, HEAD) against the objects actually prese
 **Options:**
 
 - `-m, --machine <name>`: Target machine name
+- `--debug`: Enable debug output
 
 > MCP tool
 
@@ -1371,6 +1429,9 @@ Change repository directory ownership UID on the mounted volume (default: 7111).
 **Options:**
 
 - `--uid <uid>`: Owner UID (default: 7111)
+- `--root-owned`: Hand root-owned files to the owner UID below directories owned by root or that UID, recording each in an undo manifest
+- `--dry-run`: With --root-owned: list the files that would change, and change nothing
+- `--undo`: With --root-owned: return the files in the undo manifest that the owner UID still owns to root
 - `--debug`: Enable debug output
 - `--skip-router-restart`: Skip restarting the route server after binary update
 
@@ -1486,6 +1547,14 @@ Set size policy fields. Only the flags you pass are changed; other stored fields
 - `--grow-step <step>`: Growth per step: absolute (10G) or percent of quota (20%)
 - `--auto-trim <bool>`: Enable scheduled trim (true/false)
 - `--trim-interval <hours>`: Minimum hours between automatic trims (default 24)
+- `--memory-max <size>`: Memory cap of the repository (e.g. 10G, or max to remove); at the cap one of its containers is OOM-killed, nothing outside it
+- `--memory-high <size>`: Memory throttle point of the repository (e.g. 8G, or max to remove)
+- `--cpu-max <cores>`: CPU cap of the repository in cores (4, 2.5) or N%, or max to remove
+- `--io-max <limits>`: I/O cap of the repository's device: rbps=,wbps=,riops=,wiops= (any subset, e.g. rbps=200M,wbps=100M; KEY=max removes one), or max
+- `--pids-max <count>`: Process cap of the repository (pids.max), or max to remove
+- `--ram-volume <size>`: Size of the repository's RAM volume at <mount>/.ram (e.g. 8G, or max to remove); the memory cap must stay 1G above it
+- `--clear-limits`: Remove every limit and the RAM volume of the repository
+- `--force`: Allow a memory cap below the repository's current memory use
 - `-m, --machine <name>`: Target machine name
 - `--debug`: Enable debug output
 
@@ -1764,6 +1833,34 @@ Withdraw a CDI device from the repository's containers. Containers that already 
 - `--device <cdi-name>`: Fully qualified CDI device name (e.g. nvidia.com/gpu=all)
 - `--debug`: Enable debug output
 
+### rdc repo permission grant <ref>
+
+Let the repository's Rediaccfile up() and down() reach a path, or run as root. --root is refused to an agent unless the operator set REDIACC_ALLOW_GRAND_REPO before the agent started.
+
+**Options:**
+
+- `--root`: Run up() and down() as root, with no privilege drop
+- `--path <path>`: Absolute path up() and down() may reach, PATH[:ro|:rw] (read-only by default)
+- `--debug`: Enable debug output
+
+### rdc repo permission revoke <ref>
+
+Withdraw a lifecycle path grant, or the root grant, from the repository. The next up() and down() run with what remains.
+
+**Options:**
+
+- `--root`: Withdraw the root grant
+- `--path <path>`: Absolute path to withdraw
+- `--debug`: Enable debug output
+
+### rdc repo permission show <ref>
+
+Show whether the repository's up() and down() run as root, and which paths they may reach.
+
+**Options:**
+
+- `--debug`: Enable debug output
+
 ## Tools
 
 ### rdc config init [name]
@@ -1841,6 +1938,7 @@ Remove dead weight from the local config file at ~/.config/rediacc/<config>.json
 - `--refs-only`: Restrict to dangling cross-references (machine→strategy, strategy→repo excludes/includes). Skips cert-cache and archives. Mutually exclusive with --certs-only and --archives-only.
 - `--purge-archived`: Drop ALL archived repositories regardless of age, not just those past grace. Equivalent to running 'rdc repo admin archive purge' for every archived repo. Use only when you're sure you don't need any of the stashed credentials for restore.
 - `--orphan-repos`: Remove repository entries that are placed on no machine. Each entry holds that repo's credential and SSH key, so this is unrecoverable. Run 'rdc config reconcile' first so placement reflects the machines.
+- `--gone-machine-repos`: Archive repository entries placed on a machine that is no longer in the config. Archived, not dropped: each keeps its credential and is restorable until the archive grace expires. Selects only this bucket: the cert-cache, archive and cross-reference buckets are skipped unless their own --*-only flag is also given.
 - `--grace-days <days>`: Override the archive grace window (in days) for this invocation. Falls back to defaults.pruneGraceDays in the config, then to 7 if neither is set.
 
 > MCP tool
@@ -2061,6 +2159,18 @@ Verify the integrity of the SHA-256 hash chain across all audit entries
 
 > MCP tool
 
+### rdc config import-machine <machine>
+
+Copy one machine from another config into the active config: the machine entry when the active config lacks it, every repository placed on the machine with every tag, and each backup strategy bound to the machine. Nothing that already exists is overwritten. Equal entries are left alone, and a differing entry (a same-name repository with another GUID, a machine at another address) is refused. Any refusal writes nothing. The report names entries only and never prints a credential, key or GUID.
+
+**Options:**
+
+- `--from <config>`: Config to copy from
+- `--dry-run`: Show what would be copied without writing
+- `--strategy-from-source`: Replace a differing backup strategy with the source config's version instead of refusing it
+
+> MCP excluded: Copies a machine and its repositories between named configs; config mutation, use CLI directly
+
 ### rdc doctor
 
 Run diagnostic checks on the CLI environment: Node.js version, renet binary availability, config file validity, SSH key status, and network connectivity. Outputs a structured health report with pass/fail indicators.
@@ -2079,6 +2189,26 @@ Print the third-party components bundled with rdc: the binaries renet embeds and
 
 - `--licenses`: Print the full THIRD_PARTY_LICENSES text bundled with release builds
 - `--output <format>`: Output format (json)
+
+> MCP tool
+
+### rdc legal
+
+Print the legal document links in the CLI language with the binding English links, the current Terms of Service version with its checksum and archive URL, the acceptance on record (from the account server when logged in, from this config when anonymous), and the contracting entity. Third-party notices are under rdc credits --licenses.
+
+**Options:**
+
+- `--json`: Print machine-readable JSON
+
+> MCP tool
+
+### rdc version
+
+Print the CLI version, platform, update channel and the active license: the plan when logged in, "anonymous (FREE per repository)" without a login, and "unknown (server unreachable)" when the account server cannot be reached. The --version flag still prints the bare version.
+
+**Options:**
+
+- `--json`: Print machine-readable JSON
 
 > MCP tool
 
@@ -2182,6 +2312,15 @@ Authenticate via browser or API token
 - `--password-stdin`: Sign in headlessly with the account password read from stdin (REDIACC_LOGIN_EMAIL required)
 - `--server <url>`: Account server URL
 
+### rdc subscription register
+
+Create an account in the browser (email pre-filled) and log in
+
+**Options:**
+
+- `--email <address>`: Email address to pre-fill on the sign-up page
+- `--server <url>`: Account server URL
+
 ### rdc subscription logout
 
 Clear stored subscription token
@@ -2201,6 +2340,27 @@ Show subscription, and license state for a machine.
 **Options:**
 
 - `-m, --machine <name>`: Machine name
+- `--all`: Also list the licenses of deleted repositories and of repositories not in this config
+
+### rdc subscription notices
+
+List the account's notices: license expiry, backup health, renewals, certificates and Terms.
+
+**Options:**
+
+- `--all`: Include dismissed notices and every page, not only the last 30 days
+- `--unread`: Only notices not yet read
+- `--mark-read`: Mark the listed notices as read
+
+### rdc subscription retire [guid]
+
+Retire the license of a repository that is gone, so it leaves the license counts and notices.
+
+**Options:**
+
+- `--force`: Retire a license whose repository is still in this config and not hard-expired
+- `--expired`: Retire every hard-expired license of a deleted repository or one not in this config
+- `--dry-run`: With --expired: list what would be retired and change nothing
 
 ### rdc subscription refresh
 
@@ -2210,6 +2370,7 @@ Refresh licenses from the account server.
 
 - `-m, --machine <name>`: Machine name
 - `--repo <ref>`: Repository ref: name, or name:tag, optionally with @machine (for example shop or shop:test)
+- `--adopt-origin`: Reissue licenses another account server issued from this config's account server, moving them over. Without it such licenses are left untouched.
 
 ### rdc mcp serve
 
@@ -2231,3 +2392,86 @@ Run this process as an executor so clients can run commands through it instead o
 - `--mode <mode>`: Placement: daemon (customer host) or container (default: daemon)
 
 > MCP excluded: Runs the executor daemon in the foreground until SIGINT; it never returns.
+
+### rdc server install [machine]
+
+Install the self-hosted account server on an existing machine: check the machine, set up renet when it is missing, wait for DNS, configure TLS, create the repository, generate its keys on the machine, license it, start it and create the owner account. Every value has a flag; on a terminal a missing value is asked for. A rerun skips the steps that are already done.
+
+**Options:**
+
+- `--ip <address>`: Address of an existing server or LAN device to register first
+- `--user <name>`: SSH user on that machine
+- `--port <port>`: SSH port on that machine (default: 22)
+- `--name <name>`: Name to register that machine under (default: server-<ip>)
+- `--domain <host>`: Public domain of the server, for example accounts.example.com
+- `--store-domain <host>`: Public domain of its backup store (default: <name>-store.<rest of the domain>)
+- `--repo <name>`: Repository name (default: elite)
+- `--size <size>`: Repository size (default: 10G)
+- `--owner <email>`: Email of the owner account, created during the install (default: the logged-in account)
+- `--tls <method>`: How the certificate is obtained: letsencrypt (HTTP-01), cloudflare (DNS-01) or byo (an existing certificate)
+- `--cf-token <token>`: Cloudflare API token for DNS-01 (with --tls cloudflare)
+- `--cert-email <email>`: Email Let's Encrypt sends expiry notices to (default: the owner)
+- `--tls-cert <file>`: Certificate file in PEM form (with --tls byo), covering both domains
+- `--tls-key <file>`: Private key file of that certificate (with --tls byo)
+- `--tls-ca <file>`: CA certificate the server's certificate chains to, used for the health check
+- `--licence <mode>`: auto: a certificate from the logged-in account, or the free tier when there is none; free: start on the free tier
+- `--cert <file>`: Delegation certificate file for an offline install; it must name the key generated on the machine
+- `--image <ref>`: Server image to run (default: ghcr.io/rediacc/server:latest)
+- `--image-file <tar>`: Saved image archive (docker save) to ship instead of pulling
+- `--local-image`: Save the --image from the local Docker and ship it instead of pulling
+- `--no-dns-wait`: Print the DNS records without waiting for them to resolve
+- `--bws-project <id>`: Also copy the generated keys to this Bitwarden Secrets Manager project; without it no key leaves the machine
+- `--rotate`: With --bws-project, replace a stored value that differs instead of refusing
+- `-y, --yes`: Ask nothing: take the defaults and refuse a missing value
+
+> MCP excluded: Long interactive install that registers machines, mints a licence and prints a one-time key bundle; use the CLI.
+
+### rdc server status <domain>
+
+Show the health, tier, certificate and image of an installed server
+
+**Options:**
+
+- `-m, --machine <name>`: Machine the server runs on, when this device holds no install record for the domain
+- `--repo <name>`: Repository the server runs in (default: elite)
+
+> MCP tool
+
+### rdc server upgrade <domain>
+
+Upgrade an installed server: fork its repository as a rollback point, place the new image, apply the template again when the built-in one is newer, and restart
+
+**Options:**
+
+- `--image <ref>`: Server image to run (default: ghcr.io/rediacc/server:latest)
+- `--image-file <tar>`: Saved image archive (docker save) to ship instead of pulling
+- `--local-image`: Save the --image from the local Docker and ship it instead of pulling
+- `-y, --yes`: Ask nothing: take the defaults and refuse a missing value
+- `-m, --machine <name>`: Machine the server runs on, when this device holds no install record for the domain
+- `--repo <name>`: Repository the server runs in (default: elite)
+
+> MCP excluded: Forks, replaces the image and restarts the account server; use the CLI.
+
+### rdc server backup <domain>
+
+Print the recovery bundle (the keys) of an installed server, or write it to a file
+
+**Options:**
+
+- `--out <file>`: Write the bundle to this file (mode 0600) instead of stdout
+- `-m, --machine <name>`: Machine the server runs on, when this device holds no install record for the domain
+- `--repo <name>`: Repository the server runs in (default: elite)
+
+> MCP excluded: Prints the server's private keys; they must not land in an agent transcript.
+
+### rdc server licence <domain>
+
+Move a free-tier server to a delegation certificate from the logged-in account, or from --cert
+
+**Options:**
+
+- `--cert <file>`: Delegation certificate file for an offline install; it must name the key generated on the machine
+- `-m, --machine <name>`: Machine the server runs on, when this device holds no install record for the domain
+- `--repo <name>`: Repository the server runs in (default: elite)
+
+> MCP excluded: Mints a delegation certificate and restarts the account server; use the CLI.

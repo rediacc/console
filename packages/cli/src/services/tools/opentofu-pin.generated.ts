@@ -4,13 +4,13 @@
 // equal to the recorded scripts/pins/data/opentofu/SHA256SUMS. Template: scripts/pins/opentofu-pin.ts.
 
 export const OPENTOFU_PIN = {
-  version: '1.13.2',
+  version: '1.13.9',
   assets: {
-    'linux-amd64': { url: 'https://github.com/opentofu/opentofu/releases/download/v1.13.2/tofu_1.13.2_linux_amd64.zip', sha256: '723bebb0df8411daff1e5fc3862e28ff5581fe5634087f4c29a9aa41d78208b5' },
-    'linux-arm64': { url: 'https://github.com/opentofu/opentofu/releases/download/v1.13.2/tofu_1.13.2_linux_arm64.zip', sha256: '6e815c58a09ee957de606ff48cefad082942e70afc43b737ff975654c54ec453' },
-    'darwin-amd64': { url: 'https://github.com/opentofu/opentofu/releases/download/v1.13.2/tofu_1.13.2_darwin_amd64.zip', sha256: '2093d0f881d911eb133cf51d2d7e09f22da71b1e6465c60826a314d217b0b84e' },
-    'darwin-arm64': { url: 'https://github.com/opentofu/opentofu/releases/download/v1.13.2/tofu_1.13.2_darwin_arm64.zip', sha256: 'cb46112c095f1c4da721b6a18c8368f67341896a62205d1c117299e85993af61' },
-    'windows-amd64': { url: 'https://github.com/opentofu/opentofu/releases/download/v1.13.2/tofu_1.13.2_windows_amd64.zip', sha256: '88b5cbb12e3a7402b0b1fe148790477fb6193cd8201864fa7fb0bd8e6417ee0e' },
-    'windows-arm64': { url: 'https://github.com/opentofu/opentofu/releases/download/v1.13.2/tofu_1.13.2_windows_arm64.zip', sha256: '2732778a32f01cdc275fb656844ec554d7817866988ce8ec61120969255b6537' },
+    'linux-amd64': { url: 'https://github.com/opentofu/opentofu/releases/download/v1.13.9/tofu_1.13.9_linux_amd64.zip', sha256: 'bc44eb6b06446ba83bd4072114891987f590f66cca712737a7f1147c50c539ce' },
+    'linux-arm64': { url: 'https://github.com/opentofu/opentofu/releases/download/v1.13.9/tofu_1.13.9_linux_arm64.zip', sha256: '04f7c93828b859d420269ed30f923ffebf09157b5d7fb95bf8d88a4d208b7fa3' },
+    'darwin-amd64': { url: 'https://github.com/opentofu/opentofu/releases/download/v1.13.9/tofu_1.13.9_darwin_amd64.zip', sha256: 'ac5505dd19d896f327d0ab727d4b853413c694931a7602b31f93c3a3e9d46d00' },
+    'darwin-arm64': { url: 'https://github.com/opentofu/opentofu/releases/download/v1.13.9/tofu_1.13.9_darwin_arm64.zip', sha256: '29ba2f4c78556a8d25476e5070fe4745495ef649c4a3b827170eb7436d23feb3' },
+    'windows-amd64': { url: 'https://github.com/opentofu/opentofu/releases/download/v1.13.9/tofu_1.13.9_windows_amd64.zip', sha256: 'b23a811741911baa829aa7d3d3718626c549e8934546822b0e9b99b9fba75e4e' },
+    'windows-arm64': { url: 'https://github.com/opentofu/opentofu/releases/download/v1.13.9/tofu_1.13.9_windows_arm64.zip', sha256: 'e5ff898e17c455fc099a46f02e3f5002d13efeb6d8e72449f7446f2a81ac9e04' },
   },
 } as const;

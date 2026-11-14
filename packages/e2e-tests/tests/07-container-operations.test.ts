@@ -85,7 +85,7 @@ test.describe('Container Operations @bridge', () => {
     await runner.repositoryDown(testRepo, datastorePath, networkId);
 
     // Unmount and delete repository
-    await runner.repositoryUnmount(testRepo, datastorePath);
+    await runner.repositoryUnmount(testRepo, datastorePath, networkId);
     await runner.repositoryRm(testRepo, datastorePath);
 
     // Teardown daemon
@@ -239,6 +239,29 @@ test.describe('Container Operations @bridge', () => {
       /healthy|warming|unhealthy|unknown/
     );
   });
+
+  test('repository_repair plans a repair run without running any repair()', async () => {
+    const result = await runner.repositoryRepair(testRepo, {
+      allowClasses: 'auto-safe',
+      dryRun: true,
+      datastorePath,
+    });
+    // The RepairReport JSON (renet cmd/renet/repository_repair.go) names how many repair() functions ran; a dry run plans only, so none ran and none failed.
+    const out = runner.getCombinedOutput(result);
+    expect(out).toMatch(/"ran":\s*0/);
+    expect(out).toMatch(/"failed":\s*0/);
+  });
+
+  test('proxy_acme_fix dry run reports collisions or names the missing proxy config', async () => {
+    const result = await runner.proxyAcmeFix({ dryRun: true });
+    // renet proxy acme-fix --json answers with a Result carrying `collisions` (exit 0), or fails (non-zero) naming config.env on a machine whose proxy has none. Anything else (an unknown function, a bad flag, a zero exit without the Result) is a regression.
+    const out = runner.getCombinedOutput(result);
+    if (result.code === 0) {
+      expect(out).toMatch(/"collisions"/);
+    } else {
+      expect(out).toMatch(/config\.env/);
+    }
+  });
 });
 
 /**
@@ -302,7 +325,7 @@ test.describe
       await runner.repositoryDown(repositoryName, datastorePath, networkId);
 
       // Unmount and delete repository
-      await runner.repositoryUnmount(repositoryName, datastorePath);
+      await runner.repositoryUnmount(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
       await runner.repositoryRm(repositoryName, datastorePath);
 
       // Teardown daemon
@@ -576,7 +599,7 @@ test.describe('Multiple Container Operations @bridge', () => {
     await runner.repositoryDown(repositoryName, datastorePath, networkId);
 
     // Unmount and delete repository
-    await runner.repositoryUnmount(repositoryName, datastorePath);
+    await runner.repositoryUnmount(repositoryName, datastorePath, DEFAULT_NETWORK_ID);
     await runner.repositoryRm(repositoryName, datastorePath);
 
     // Teardown daemon

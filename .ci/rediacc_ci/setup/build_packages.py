@@ -12,6 +12,11 @@ That is the entire justification for a `rm -rf` in a setup script, and it is loa
 tsbuildinfo files together is what makes the following build unconditional.
 
 -----------------------------------------------------------------------------
+THE ATOMIC SWAP (a deliberate departure from the twin, 2026-11-11)
+-----------------------------------------------------------------------------
+The twin deletes `packages/shared/dist` and then builds, so a reader (a vitest run importing `@rediacc/shared`) between the two steps finds no dist. This port builds the shared package into `packages/shared/dist.build-<pid>` (`--outDir` and `--tsBuildInfoFile` point into it, so the tsbuildinfo travels with the output) and swaps it over `dist` with `renameat2(RENAME_EXCHANGE)`, or a rename aside where the exchange is unavailable. A failed build leaves the old `dist` untouched and the staging directory is always removed. `packages/provisioning` is built afterwards, as the second half of `build:packages`; its `tsc` rewrites its own `dist` in place and no reader depends on it mid-build, so it is not staged. Goldens were re-recorded with `--source port`.
+
+-----------------------------------------------------------------------------
 THE VERIFICATION IS A WARNING, NOT A CHECK. REPRODUCED, AND REPORTED
 -----------------------------------------------------------------------------
 `build-packages.sh:29-35` loops over a one-element list of expected outputs and, when the directory is absent, prints
@@ -58,6 +63,8 @@ STREAMS ARE INHERITED FOR npm, NEVER CAPTURED. `npm run build:packages` is a `ts
 
 from __future__ import annotations
 
+import ctypes
+import errno
 import glob
 import os
 import pathlib
@@ -68,12 +75,16 @@ import sys
 from rediacc_ci import log
 from rediacc_ci.core import common
 
-# The npm script the twin runs (build-packages.sh:21). One string, so the differential's expected call log and the code cannot drift.
-BUILD_SCRIPT = "build:packages"
-
 # The two arguments of the `rm -rf` (build-packages.sh:19), in the twin's order. The second is a PATTERN and is glob-expanded; the first is a literal path.
 DIST_DIR = "packages/shared/dist"
 TSBUILDINFO_GLOB = "packages/shared/*.tsbuildinfo"
+
+# The shared package is built into `dist.build-<pid>` next to `dist` and swapped in, so a reader never finds `dist` missing (see `swap_into_place`). The two workspace builds are what the `build:packages` script in package.json chains, split so the first can be given an `--outDir`.
+SHARED_WORKSPACE = "@rediacc/shared"
+DEPENDENT_WORKSPACES = ("@rediacc/provisioning",)
+STAGE_PREFIX = DIST_DIR + ".build-"
+TSBUILDINFO_NAME = "tsconfig.tsbuildinfo"
+RENAME_EXCHANGE = 2  # linux/fs.h
 
 # `PACKAGES=("packages/shared/dist")` (build-packages.sh:30). A tuple of one,
 # kept as a sequence because the twin kept it as an array: the loop below is the twin's loop, and collapsing it to a single `if` would hide that the script was written to check more than one thing and never did.
@@ -100,6 +111,74 @@ def remove_path(path: str) -> None:
         shutil.rmtree(path)
 
 
+def _exchange(a: str, b: str) -> bool:
+    """`renameat2(a, b, RENAME_EXCHANGE)`: swap two paths of any type in one atomic step. False where the call is unavailable (not Linux, an old libc, a filesystem that lacks it)."""
+    if not sys.platform.startswith("linux"):
+        return False
+    try:
+        fn = ctypes.CDLL(None, use_errno=True).renameat2
+    except (AttributeError, OSError):
+        return False
+    at_fdcwd = -100
+    rc = fn(at_fdcwd, os.fsencode(a), at_fdcwd, os.fsencode(b), RENAME_EXCHANGE)
+    if rc == 0:
+        return True
+    err = ctypes.get_errno()
+    if err in (errno.ENOSYS, errno.EINVAL, errno.ENOTSUP):
+        return False
+    raise OSError(err, os.strerror(err), a)
+
+
+def swap_into_place(staged: str, target: str) -> None:
+    """Make `staged` the content of `target` with no instant at which `target` is missing, then remove what `target` held.
+
+    * `target` absent: one `os.rename`, which is atomic.
+    * Otherwise `RENAME_EXCHANGE` swaps the two paths in one step; the old copy is then at `staged` and is removed.
+    * Without the exchange, a directory `target` is renamed aside and `staged` renamed into its place. That leaves the gap of two syscalls (microseconds), the least a platform without an atomic exchange allows; a non-directory `target` (a stale file or link) is unlinked first, since a directory cannot be renamed over it.
+    """
+    if not os.path.lexists(target):
+        os.rename(staged, target)
+        return
+    if _exchange(staged, target):
+        remove_path(staged)
+        return
+    if os.path.islink(target) or not os.path.isdir(target):
+        os.unlink(target)
+        os.rename(staged, target)
+        return
+    aside = "%s.old-%d" % (target, os.getpid())
+    os.rename(target, aside)
+    os.rename(staged, target)
+    remove_path(aside)
+
+
+def _pid_alive(pid: int) -> bool:
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return False
+    except PermissionError:
+        return True
+    return True
+
+
+def remove_dead_stages(root: pathlib.Path | None = None) -> None:
+    """Remove `dist.build-<pid>` directories a killed build left behind, never one whose process is still running."""
+    base = pathlib.Path.cwd() if root is None else pathlib.Path(root)
+    for path in glob.glob(str(base / STAGE_PREFIX) + "*"):
+        suffix = path.rsplit("-", 1)[-1]
+        if suffix.isdigit() and not _pid_alive(int(suffix)):
+            remove_path(path)
+    # A process killed between the two renames of the no-exchange swap leaves `dist` missing and the old copy at `dist.old-<pid>`: restore it when `dist` is absent, otherwise it is only debris.
+    for path in glob.glob(str(base / DIST_DIR) + ".old-*"):
+        suffix = path.rsplit("-", 1)[-1]
+        if suffix.isdigit() and not _pid_alive(int(suffix)):
+            if not os.path.lexists(base / DIST_DIR):
+                os.rename(path, base / DIST_DIR)
+            else:
+                remove_path(path)
+
+
 def clean_targets(root: pathlib.Path | None = None) -> list[str]:
     """Every path the twin's `rm -rf` would actually act on, in its order.
 
@@ -112,6 +191,37 @@ def clean_targets(root: pathlib.Path | None = None) -> list[str]:
     return [DIST_DIR, *[os.path.relpath(m, base) for m in matches]]
 
 
+def build_into(stage: str) -> bool:
+    """Build the shared package into `stage`, swap it over `dist` when the build succeeded, then build the dependents. A failed shared build removes nothing: `dist` stays as it was. A failed dependent build comes after the swap step: when the shared build emitted output `dist` already holds it, and when it emitted nothing `dist` still holds the old output; either way the dependent is named in the error. A shared build that emitted nothing warns and leaves `dist` alone (pinned by the twin golden)."""
+    # A fresh `stage` makes the build unconditional, which is what the tsbuildinfo wipe exists for; the build info lives in it and travels with the swap.
+    out = os.path.abspath(stage)
+    shared = [
+        "npm", "run", "build", "-w", SHARED_WORKSPACE, "--",
+        "--outDir", out, "--tsBuildInfoFile", os.path.join(out, TSBUILDINFO_NAME),
+    ]  # fmt: skip
+    if subprocess.run(common.launchable(shared), check=False).returncode != 0:
+        return False
+    swapped = os.path.isdir(stage)
+    if swapped:
+        swap_into_place(stage, DIST_DIR)
+    else:
+        log.warn("Shared build emitted nothing; keeping the existing %s" % DIST_DIR)
+    for workspace in DEPENDENT_WORKSPACES:
+        argv = ["npm", "run", "build", "-w", workspace]
+        if subprocess.run(common.launchable(argv), check=False).returncode != 0:
+            log.error(
+                "Failed to build %s (%s)"
+                % (
+                    workspace,
+                    "the shared package was already rebuilt and swapped"
+                    if swapped
+                    else "the shared build emitted nothing, so dist is the old output",
+                )
+            )
+            return False
+    return True
+
+
 def main(argv: list[str]) -> int:
     # THE TWIN PARSES NOTHING. `build-packages.sh` has no `parse_args` call and no `case` loop; its usage line reads `build-packages.sh` with no options. Every argument is therefore ignored, including `--help`, and that is reproduced rather than improved: an argparse here would exit 2 on `--help` where the twin builds the packages.
     del argv
@@ -122,14 +232,22 @@ def main(argv: list[str]) -> int:
 
     # Silent unless DEBUG=true. Fact 2 above.
     log.debug("Cleaning TypeScript build cache...")
+    remove_dead_stages()
+    # `dist` is NOT removed: it is rebuilt beside itself and swapped. The other targets are `*.tsbuildinfo` files no reader opens, so they go as before.
     for target in clean_targets():
-        remove_path(target)
+        if target != DIST_DIR:
+            remove_path(target)
 
-    if subprocess.run(common.launchable(["npm", "run", BUILD_SCRIPT]), check=False).returncode == 0:
-        log.info("Shared packages built successfully")
-    else:
+    stage = "%s%d" % (STAGE_PREFIX, os.getpid())
+    remove_path(stage)
+    try:
+        built = build_into(stage)
+    finally:
+        remove_path(stage)
+    if not built:
         log.error("Failed to build shared packages")
         return 1
+    log.info("Shared packages built successfully")
 
     for pkg in EXPECTED_OUTPUTS:
         if os.path.isdir(pkg):

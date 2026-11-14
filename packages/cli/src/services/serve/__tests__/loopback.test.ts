@@ -761,7 +761,7 @@ describe('proxy loopback', () => {
     expect(calls).toHaveLength(0);
   });
 
-  // ─── Detach: the kind:'job' line and the re-attach route ───────────────────
+  // ─── Detach: the kind:'job' line and the poll route ───────────────────
 
   it('emits a kind:job line before the events when the executor detaches', async () => {
     // A fake that detaches: it announces the job, then streams ordinal-tagged events exactly as LocalExecutorService replays a detached job's spool.
@@ -781,7 +781,8 @@ describe('proxy loopback', () => {
     });
 
     // The job announcement leads, before the first event, so a client can re-attach even if the connection drops before any event arrives.
-    expect(jobs).toEqual([{ jobId: 'j18c1c04dd251ce26-0ccf9fe5', sinceLine: 0 }]);
+    expect(jobs).toHaveLength(1);
+    expect(jobs[0]).toMatchObject({ jobId: 'j18c1c04dd251ce26-0ccf9fe5', sinceLine: 0 });
     const kinds = lines.map((l) => l.kind);
     expect(kinds[0]).toBe('job');
     expect(kinds.indexOf('job')).toBeLessThan(kinds.indexOf('event'));
@@ -794,43 +795,43 @@ describe('proxy loopback', () => {
     expect(lines.filter((l) => l.kind === 'event').map((l) => l.line)).toEqual([1, 2]);
   });
 
-  it('re-attach route rejects a job id renet could not have minted, before any SSH', async () => {
+  it('poll route rejects a job id renet could not have minted, before any SSH', async () => {
     const { executor } = fakeExecutor([]);
     boot({ executor });
 
     // A bad id would be interpolated into a remote shell command, so assertJobId runs before anything reaches a machine: this is a 400, not a stream.
-    const res = await fetch(`${baseUrl}/v1/jobs/not-a-real-id/events?machine=hostinger`, {
+    const res = await fetch(`${baseUrl}/v1/jobs/not-a-real-id/poll?machine=hostinger`, {
       headers: { authorization: `Bearer ${OWNER_TOKEN}` },
     });
     expect(res.status).toBe(400);
     expect(((await res.json()) as { error?: string }).error).toMatch(/job id/i);
   });
 
-  it('re-attach route needs a token and a machine', async () => {
+  it('poll route needs a token and a machine', async () => {
     const { executor } = fakeExecutor([]);
     boot({ executor });
     const id = 'j18c1c04dd251ce26-0ccf9fe5';
 
-    const noToken = await fetch(`${baseUrl}/v1/jobs/${id}/events?machine=hostinger`);
+    const noToken = await fetch(`${baseUrl}/v1/jobs/${id}/poll?machine=hostinger`);
     expect(noToken.status).toBe(401);
 
-    const noMachine = await fetch(`${baseUrl}/v1/jobs/${id}/events`, {
+    const noMachine = await fetch(`${baseUrl}/v1/jobs/${id}/poll`, {
       headers: { authorization: `Bearer ${OWNER_TOKEN}` },
     });
     expect(noMachine.status).toBe(400);
   });
 
-  it('re-attach route denies on the job logs policy, scoped to the machine', async () => {
+  it('poll route denies on the job logs policy, scoped to the machine', async () => {
     const { executor } = fakeExecutor([]);
     boot({
       executor,
-      // An allowlist that does not include `job *`, so re-attaching (which the route authorizes as `job logs`) is denied.
+      // An allowlist that does not include `job *`, so polling (which the route authorizes as `job logs`) is denied.
       loadConfig: () =>
         Promise.resolve(baseConfig({ version: 1, defaults: { commands: { allow: ['repo *'] } } })),
     });
 
     const res = await fetch(
-      `${baseUrl}/v1/jobs/j18c1c04dd251ce26-0ccf9fe5/events?machine=hostinger`,
+      `${baseUrl}/v1/jobs/j18c1c04dd251ce26-0ccf9fe5/poll?machine=hostinger`,
       { headers: { authorization: `Bearer ${OWNER_TOKEN}` } }
     );
     expect(res.status).toBe(403);

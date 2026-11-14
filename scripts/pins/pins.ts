@@ -1735,6 +1735,127 @@ const CASES: Record<string, Case> = {
       },
     ];
   },
+  async nonRootLockInstall(m) {
+    // `install --package-lock-only` rewrites node_modules/.package-lock.json and moves no package (measured 2026-11-05: workers/account's wrangler stayed 4.156.2 under a hidden lock reading 4.157.0). The runner plays npm that way, so only a real `ci` moves what is installed. node_modules stays unignored here, so an accounting that reached the install would name it.
+    const OLD = '4.156.2';
+    const NEW = '4.157.0';
+    const lockOf = (v: string): string => `{ "lockfileVersion": 3, "wrangler": "${v}" }\n`;
+    const world = (name: string, relocked: string[], gateRc: number) => {
+      const fx = fixtureTree();
+      for (const d of ['workers/app', 'workers/bare', 'workers/natives']) {
+        fs.mkdirSync(path.join(fx.root, d), { recursive: true });
+        fx.write(
+          `${d}/package.json`,
+          d === 'workers/natives' ? '{ "scripts": { "install:natives": "x" } }\n' : '{}\n'
+        );
+        fx.write(`${d}/package-lock.json`, lockOf(OLD));
+      }
+      fs.mkdirSync(path.join(fx.root, 'workers/natives/node_modules'), { recursive: true });
+      sh(fx.root, 'add', '-A');
+      sh(
+        fx.root,
+        '-c',
+        'user.email=fx@example.invalid',
+        '-c',
+        'user.name=fx',
+        'commit',
+        '-qm',
+        'x'
+      );
+      const installed = path.join(fx.root, 'workers/app/node_modules/wrangler/version');
+      fs.mkdirSync(path.dirname(installed), { recursive: true });
+      fs.writeFileSync(installed, OLD);
+      const runner: Runner = (cmd, cwd) => {
+        const lock = path.join(cwd, 'package-lock.json');
+        const hidden = path.join(cwd, 'node_modules/.package-lock.json');
+        if (cmd === 'relock') for (const f of relocked) fx.write(f, lockOf(NEW));
+        else if (cmd.endsWith(' install --package-lock-only --ignore-scripts')) {
+          if (fs.existsSync(path.dirname(hidden))) fs.copyFileSync(lock, hidden);
+        } else if (/ ci( --ignore-scripts)?$/.test(cmd) && cwd !== fx.root) {
+          const version = /"wrangler": "([^"]+)"/.exec(fs.readFileSync(lock, 'utf8'))?.[1] ?? '';
+          fs.mkdirSync(path.dirname(installed), { recursive: true });
+          fs.writeFileSync(installed, version);
+          fs.copyFileSync(lock, hidden);
+        } else if (cmd.startsWith('npm run ci')) return { rc: gateRc, out: '' };
+        return { rc: 0, out: '' };
+      };
+      const plans = directPlans(fx, [
+        {
+          label: 'relock',
+          run: 'relock',
+          cwd: '.',
+          writes: relocked.map((file) => ({ repo: '.', file })),
+        },
+      ]);
+      if (gateRc !== 0) plans[0].entry.gates = ['check:fixture-tool'];
+      const res = runTransaction(plans, directTxn(fx, name, runner, m));
+      const ran = res.commands.map((c) => `${c.cwd}: ${c.cmd}`);
+      return {
+        res,
+        ran,
+        on: fs.readFileSync(installed, 'utf8'),
+        bareInstalled: fs.existsSync(path.join(fx.root, 'workers/bare/node_modules')),
+      };
+    };
+    const NPM = 'npx -y npm@11.20.0';
+    const CI = `workers/app: ${NPM} ci --ignore-scripts`;
+    const NATIVES = `.: ${NPM} run install:natives`;
+    const app = 'workers/app/package-lock.json';
+    const bare = 'workers/bare/package-lock.json';
+    const one = world('nonroot-green', [app, bare], 0);
+    const both = world('nonroot-root', [app, 'package-lock.json'], 0);
+    const red = world('nonroot-red', [app], 1);
+    const natives = world('nonroot-natives', ['workers/natives/package-lock.json'], 0);
+    return [
+      {
+        name: 'txn: a non-root project that declares install:natives runs it after its npm ci, in its own directory, and only it',
+        ok:
+          natives.ran.includes(`workers/natives: ${NPM} run install:natives`) &&
+          !natives.ran.includes(NATIVES) &&
+          !one.ran.some((c) => c.startsWith('workers/app:') && c.endsWith('install:natives')),
+        detail: natives.ran.join(' | '),
+      },
+      {
+        name: 'txn: a changed non-root lock runs npm ci --ignore-scripts in its installed directory, so the install matches the lock, and a directory with no node_modules is left uninstalled',
+        ok:
+          one.res.ok &&
+          one.on === NEW &&
+          one.ran.includes(CI) &&
+          !one.ran.some((c) => c.startsWith('workers/bare:') && / ci\b/.test(c)) &&
+          !one.bareInstalled,
+        detail: `ok=${one.res.ok} ${one.res.failure} installed=${one.on} ${one.ran.join(' | ')}`,
+      },
+      {
+        name: 'txn: the install a non-root lock takes stays out of the undeclared-writes accounting and of the run changes, even where git would show node_modules',
+        ok:
+          one.res.ok &&
+          one.res.leftAlone.length === 0 &&
+          !one.res.changes.some((c) => c.paths.some((p) => p.includes('node_modules'))),
+        detail: `left=${one.res.leftAlone} ${JSON.stringify(one.res.changes)}`,
+      },
+      {
+        name: 'txn: the root install:natives stays at the root: a non-root lock alone never runs it, and a root lock beside one runs it once there',
+        ok:
+          !one.ran.includes(NATIVES) &&
+          both.ran.filter((c) => c.endsWith('install:natives')).length === 1 &&
+          both.ran.includes(NATIVES) &&
+          both.ran.includes(`.: ${NPM} ci`) &&
+          both.ran.includes(CI) &&
+          both.on === NEW,
+        detail: `one=${one.ran.join(' | ')} both=${both.ran.join(' | ')}`,
+      },
+      {
+        name: 'txn: a red run reinstalls a non-root directory from its restored lock with lifecycle scripts off, since the root .npmrc does not reach it',
+        ok:
+          !red.res.ok &&
+          red.on === OLD &&
+          red.ran.filter((c) => c === CI).length === 2 &&
+          !red.ran.includes(`workers/app: ${NPM} ci`) &&
+          red.res.resynced.includes('workers/app'),
+        detail: `${red.res.failure} installed=${red.on} resynced=${red.res.resynced} ${red.ran.join(' | ')}`,
+      },
+    ];
+  },
   async npmbump(m) {
     const fx = fixtureTree((f) => {
       f.steps = {
@@ -1783,7 +1904,17 @@ const CASES: Record<string, Case> = {
       f.commands.push({ match: '^sneaky$', rc: 0, writes: { 'stray.txt': 'x\n' } });
     });
     const r = await runCli(['bump', 'embed:tool'], withMutant(fx, m));
+    const hooked = fixtureTree((f) => {
+      f.steps = { 'embed:tool': [{ label: 'hooked', run: 'hooked', cwd: '.', writes: [] }] };
+      f.commands.push({ match: '^hooked$', rc: 0, writes: { 'agent/ledgers/x.jsonl': 'x\n' } });
+    });
+    const appended = await runCli(['bump', 'embed:tool'], withMutant(hooked, m));
     return [
+      {
+        name: 'bump: a hook appending under agent/ while a step runs does not fail the run',
+        ok: appended.rc === 0,
+        detail: `rc=${appended.rc} ${appended.err}`,
+      },
       {
         name: 'bump: a step that changes a file it did not declare fails the run; the file is named and left, the sites restored',
         ok:
@@ -2124,6 +2255,101 @@ const CASES: Record<string, Case> = {
         name: 'breaking: apply-soaked leaves the breaking line',
         ok: soaked.rc === 0 && only.read('private/renet/Dockerfile').includes('ZED_VERSION=2.0.0'),
         detail: `rc=${soaked.rc} ${soaked.err} ${only.read('private/renet/Dockerfile')}`,
+      },
+    ];
+  },
+  // A RE-DIGEST (#3bb2d9bc): the pinned version again with new content, labelled the way the docker driver labels one (`<name>:<version>@<hex>`, which majorOf cannot read), is never a major.
+  async redigest(m) {
+    const label = `fx:1.0.0@${'b'.repeat(12)}`;
+    const clears = '2026-10-16T00:00:00Z';
+    const tree = (eligible: boolean) =>
+      fixtureTree((fx) => {
+        fx.releases['embed:tool'] = [
+          {
+            version: label,
+            published: '2026-10-14T06:00:00Z',
+            redigest: true,
+            values: { version: '1.0.0', 'sha256:amd64': SHA('b') },
+            verdict: eligible
+              ? { eligible: true, why: 'a re-digest of fx 1.0.0, past the window' }
+              : {
+                  eligible: false,
+                  why: `a re-digest of fx 1.0.0, inside the release-age window until ${clears}`,
+                  clearsAt: clears,
+                },
+          },
+          { version: '1.0.0', published: '2026-09-01T00:00:00Z' },
+        ];
+      });
+    const waiting = tree(false);
+    const ready = tree(true);
+    const plan = await runCli(['plan', 'embed:tool'], withMutant(waiting, m));
+    const st = await runCli(['status', 'embed:tool', '--json'], withMutant(waiting, m));
+    const when = await runCli(['when', 'embed:tool'], withMutant(waiting, m));
+    const take = await runCli(['plan', 'embed:tool', '--json'], withMutant(ready, m));
+    const soakedRun = await runCli(
+      ['apply-soaked', '--json', '--out', path.join(ready.root, 'out')],
+      withMutant(ready, m)
+    );
+    const soakedWaiting = await runCli(
+      ['apply-soaked', '--json', '--out', path.join(waiting.root, 'out')],
+      withMutant(waiting, m)
+    );
+    const v = st.rc === 0 ? (JSON.parse(st.out) as { pins: PinView[] }).pins[0] : null;
+    const to =
+      take.rc === 0
+        ? (JSON.parse(take.out) as { plans: Array<{ id: string; to: string }> }).plans.find(
+            (p) => p.id === 'embed:tool'
+          )?.to
+        : undefined;
+    return [
+      {
+        name: 'redigest: a plain plan over a re-digest inside the window reports it deferred, never major-only',
+        ok:
+          !`${plan.out}${plan.err}`.includes('major') &&
+          `${plan.out}${plan.err}`.includes('deferred') &&
+          `${plan.out}${plan.err}`.includes(label),
+        detail: `rc=${plan.rc} ${plan.out} ${plan.err}`,
+      },
+      {
+        name: 'redigest: status reads a re-digest inside the window as deferred, with the instant the driver dated',
+        ok:
+          v !== null &&
+          v.state === 'deferred' &&
+          v.deferred?.version === label &&
+          v.deferred.clearsAt === Date.parse(clears) &&
+          v.eligibleMajors.length === 0,
+        detail: JSON.stringify(v),
+      },
+      {
+        name: 'redigest: when names the clear time and the plain bump line, not "no release is waiting"',
+        ok:
+          when.rc === 0 &&
+          when.out.includes(`${label} clears the release-age window at ${clears}`) &&
+          when.out.includes(
+            `DEFAULT: on or after ${clears} run \`npm run pins -- bump embed:tool\``
+          ),
+        detail: `rc=${when.rc} ${when.out} ${when.err}`,
+      },
+      {
+        name: 'redigest: past the window a plain plan (no --major) takes the re-digest',
+        ok: to === label,
+        detail: `rc=${take.rc} ${take.err} ${take.out.slice(0, 400)}`,
+      },
+      {
+        // The re-digest is the pinned version, so the unattended run treats it as it treats any non-major.
+        name: 'redigest: apply-soaked past the window takes the re-digest, as it takes any non-major',
+        // The file itself is the proof: the re-digest's sha256 is written into the Dockerfile, not just named somewhere in the output.
+        ok: soakedRun.rc === 0 && ready.read('Dockerfile').includes(`TOOL_SHA256=${SHA('b')}`),
+        detail: `rc=${soakedRun.rc} ${soakedRun.err} ${soakedRun.out.slice(0, 400)}`,
+      },
+      {
+        name: 'redigest: CONTROL: apply-soaked inside the window leaves the re-digest unwritten',
+        ok:
+          soakedWaiting.rc === 0 &&
+          waiting.read('Dockerfile').includes(`TOOL_SHA256=${SHA('a')}`) &&
+          !waiting.read('Dockerfile').includes(SHA('b')),
+        detail: `rc=${soakedWaiting.rc} ${soakedWaiting.err} ${waiting.read('Dockerfile')}`,
       },
     ];
   },

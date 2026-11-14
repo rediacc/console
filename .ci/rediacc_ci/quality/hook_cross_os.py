@@ -209,6 +209,25 @@ SCOPES = (
         ),
     ),
     Scope(
+        name="review-stdin-anchor",
+        files=(
+            ".claude/rediacc_hooks/guards/block_review_file_shell_write.py",
+            # Its test names the default /proc spelling on purpose: pinning that default, and its override, is what it checks.
+            ".claude/rediacc_hooks/tests/test_guard_stdin_procfs_seams.py",
+        ),
+        classes=("procfs",),
+        env="REDIACC_REVIEW_STDIN_PROCFS",
+        why=(
+            "A RECOGNISED path, as in worktree-stdin-anchor: this guard treats "
+            "`/proc/self/fd/0` among a command's file operands as one spelling of the "
+            "run's own stdin, so a review file fed on stdin is not mistaken for a read "
+            "listing, and never opens it. On a machine with no procfs at /proc a "
+            "hard-coded spelling would stop recognising the local one, so the root is "
+            "named once from the environment. Its own scope, so it can go dead "
+            "independently of the worktree guard's."
+        ),
+    ),
+    Scope(
         name="release-run-procfs",
         files=(".claude/rediacc_hooks/git/release_run.py",),
         classes=("procfs",),

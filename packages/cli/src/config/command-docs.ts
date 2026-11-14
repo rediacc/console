@@ -395,6 +395,28 @@ export const COMMAND_EXAMPLES: Record<string, readonly CommandExampleDef[]> = {
     { command: 'rdc serve --port 8080', descriptionKey: 'commands.serve.examples.customPort' },
     { command: 'rdc serve --mode container', descriptionKey: 'commands.serve.examples.container' },
   ],
+  'server install': [
+    {
+      command: 'rdc server install --ip 203.0.113.10 --user admin --domain accounts.example.com',
+      descriptionKey: 'commands.server.install.examples.brought',
+    },
+    {
+      command:
+        'rdc server install server-1 --domain accounts.example.com --owner owner@example.com --yes',
+      descriptionKey: 'commands.server.install.examples.configured',
+    },
+    {
+      command:
+        'rdc server install lab --domain lab.example.internal --tls byo --tls-cert host.crt --tls-key host.key --tls-ca ca.crt --licence free --no-dns-wait --yes',
+      descriptionKey: 'commands.server.install.examples.lan',
+    },
+  ],
+  'server backup': [
+    {
+      command: 'rdc server backup accounts.example.com --out elite-recovery.env',
+      descriptionKey: 'commands.server.backup.examples.out',
+    },
+  ],
 };
 
 export const COMMAND_KEYWORDS: Record<string, readonly string[]> = {
@@ -448,7 +470,8 @@ export const COMMAND_KEYWORDS: Record<string, readonly string[]> = {
   'job cancel': ['kill', 'stop', 'abort', 'terminate'],
   // ── config / server / diagnostics ────────────────────────────────────────
   'config init': ['setup', 'create', 'configure', 'profile'],
-  serve: ['server', 'daemon', 'executor', 'host', 'api'],
+  serve: ['daemon', 'executor', 'host', 'api'],
+  'server install': ['elite', 'self-hosted', 'on-premise', 'onprem'],
   doctor: ['diagnose', 'check', 'troubleshoot', 'health'],
   update: ['upgrade', 'version', 'self-update'],
 };

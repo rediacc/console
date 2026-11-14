@@ -8,8 +8,8 @@ tags:
 subcategory: platform
 order: 3
 language: pt
-sourceHash: "c03afe9324e59b45"
-sourceCommit: "080291626bc44ee7bc452f029b614dfd5c6ca319"
+sourceHash: "9efeb1e2b1f9c8db"
+sourceCommit: "c477e296238c19495f4a07ef6c5a62f15e942f90"
 ---
 
 Quando cria uma conta Rediacc, escolhe uma região de dados. Todos os seus dados permanecem nessa região. Esta escolha é permanente e não pode ser alterada após o registo. Nenhum caminho de migração existe. Escolha com base em onde os seus dados precisam residir legalmente, não em onde estão os seus servidores atualmente.
@@ -18,15 +18,19 @@ Quando cria uma conta Rediacc, escolhe uma região de dados. Todos os seus dados
 
 | Região | Localização | Domínio |
 |---|---|---|
-| **Europa (EU)** | Frankfurt, Alemanha | `eu.rediacc.com` |
-| **Estados Unidos (US)** | Virgínia, EUA | `us.rediacc.com` |
-| **Ásia-Pacífico** | Tóquio, Japão | `asia.rediacc.com` |
+| **Europa (EU)** | União Europeia | `eu.rediacc.cloud` |
+| **Estados Unidos (US)** | Leste da América do Norte | `us.rediacc.cloud` |
+| **Ásia-Pacífico** | Ásia-Pacífico | `asia.rediacc.cloud` |
 
-A sua região é detetada automaticamente a partir do fuso horário aquando do registo. Pode substituir a sugestão no seletor de região.
+A coluna de localização indica uma região da Cloudflare, não uma cidade com centro de dados. A Cloudflare não promete nenhuma cidade.
+
+O produto funciona nestes domínios `rediacc.cloud`. Toda a documentação e o website de marketing estão em `www.rediacc.com`, que o encaminha para a região certa a partir do seletor de região.
+
+No registo, o seletor sugere uma região com base na sua localização, que pode confirmar ou alterar. No início de sessão, encaminha-o para a sua região após uma breve contagem decrescente que pode cancelar ou alterar. Se a sua empresa tem uma implementação própria, a opção «Cliente Enterprise?» leva-o até lá a partir do seu e-mail profissional. Só o domínio é enviado para encontrar a região; o e-mail serve apenas para preencher previamente a página de início de sessão.
 
 ## O Que Fica na Sua Região
 
-Estes tipos de dados são armazenados e processados exclusivamente na região escolhida:
+Estes tipos de dados são armazenados e processados na região que escolher, exceto o e-mail transacional da Ásia-Pacífico, que é enviado através do endpoint da UE (veja abaixo a infraestrutura regional para saber o que está garantido):
 
 - **Dados da conta**: e-mail, nome, organização, membros de equipa
 - **Registos de faturação e subscrição**: plano, ativações, emissões de licenças
@@ -38,27 +42,28 @@ Estes tipos de dados são armazenados e processados exclusivamente na região es
 Estes elementos não são específicos de nenhuma região:
 
 - **Artefactos de lançamento da CLI**: binários públicos alojados numa CDN global
-- **Website de marketing**: servido globalmente a partir de localizações de edge
+- **Website de marketing e documentação**: `www.rediacc.com`, servido globalmente a partir de localizações de edge
 - **Processamento de pagamentos Stripe**: gerido pela própria infraestrutura da Stripe ao abrigo do seu acordo de processamento de dados
 
 ## Infraestrutura Regional
 
 | Componente | EU | US | Ásia |
 |---|---|---|---|
-| Base de dados (D1) | Europa de Leste (EEUR) | América do Norte Oriental (ENAM) | Ásia-Pacífico (APAC) |
-| Armazenamento de configurações (R2) | Jurisdição EU | US | Ásia-Pacífico |
+| Base de dados (D1) | Indicação Europa de Leste (EEUR) | Indicação Leste da América do Norte (ENAM) | Indicação Ásia-Pacífico (APAC) |
+| Armazenamento de configurações (R2) | Jurisdição da UE (garantida) | Sem jurisdição (melhor esforço) | Sem jurisdição (melhor esforço) |
 | E-mail (SES) | Frankfurt (eu-central-1) | Virgínia (us-east-1) | Frankfurt (eu-central-1) |
+
+Apenas o armazenamento de configuração da UE fica sujeito a uma jurisdição garantida: a Cloudflare mantém dentro da UE os objetos R2 sob a jurisdição da UE. A colocação da base de dados D1 e o armazenamento de US e Ásia-Pacífico usam indicações de localização, aplicadas com o melhor esforço. A Cloudflare não garante que funcionem na região indicada.
 
 Cada região executa infraestrutura independente. Não existem consultas entre regiões nem fluxos de dados entre regiões.
 
 ## Garantias de Dados da EU
 
-Escute: se está sujeito a requisitos de residência de dados europeus, a região EU adiciona garantias específicas:
+Se está sujeito a requisitos europeus de residência de dados, a região EU oferece uma garantia firme e uma colocação de melhor esforço:
 
-- **Base de dados D1**: executa na Europa de Leste (dica de localização EEUR)
-- **Armazenamento de configurações R2**: utiliza imposição jurisdicional da EU (garantia contratual, não apenas uma dica de localização)
+- **Base de dados D1**: colocada com a indicação de localização EEUR (Europa de Leste), de melhor esforço e sem garantia
+- **Armazenamento de configuração R2**: sujeito à jurisdição da UE, que a Cloudflare garante (uma restrição firme, não apenas uma indicação de localização)
 - **E-mail**: enviado a partir de Frankfurt (eu-central-1)
-- **Decisão de adequação mútua EU-Japão (2019)**: permite fluxos de dados conformes para a infraestrutura da região Ásia
 
 Para o mapeamento detalhado do RGPD, consulte [Conformidade com o RGPD](/pt/docs/legal-gdpr).
 
@@ -81,7 +86,7 @@ Para detalhes sobre a arquitetura de cifração, consulte [Armazenamento de Conf
 Propriedades técnicas da arquitetura regional:
 
 - **Bases de dados separadas por região**: cada região tem a sua própria base de dados Cloudflare D1. Sem consultas entre regiões.
-- **Armazenamento separado por região**: cada região tem o seu próprio bucket R2. A EU utiliza imposição jurisdicional.
+- **Armazenamento separado por região**: cada região tem o seu próprio bucket R2. Apenas o bucket da EU fica sujeito a uma jurisdição; US e Ásia-Pacífico são colocados com o melhor esforço.
 - **Entrega de e-mail via AWS SES**: os e-mails transacionais são enviados via AWS SES. A EU e os EUA utilizam endpoints regionais dedicados; a Ásia-Pacífico encaminha através do endpoint da EU (eu-central-1).
 - **Um utilizador, uma região**: uma conta de utilizador existe numa única região. Não pode abranger múltiplas regiões.
 - **Isolamento de webhooks**: os eventos de webhook da Stripe são recebidos por todos os workers regionais, mas apenas processados pela região que detém o registo do cliente.

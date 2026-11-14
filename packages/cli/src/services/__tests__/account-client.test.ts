@@ -75,10 +75,10 @@ describe('fetchServerInfo', () => {
       json: () => Promise.resolve(mockResponse),
     });
 
-    await fetchServerInfo(`https://${regionOf('eu').edgeDomain}`);
+    await fetchServerInfo(`https://${regionOf('eu').domain}`);
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      `https://${regionOf('eu').edgeDomain}/account/api/v1/.well-known/server-info`,
+      `https://${regionOf('eu').domain}/account/api/v1/.well-known/server-info`,
       expect.objectContaining({
         headers: expect.objectContaining({ 'User-Agent': expect.stringContaining('rdc/') }),
       })
@@ -122,7 +122,7 @@ describe('fetchServerInfo', () => {
       json: () => Promise.resolve(mockResponse),
     });
 
-    const info = await fetchServerInfo(`https://${regionOf('eu').edgeDomain}`);
+    const info = await fetchServerInfo(`https://${regionOf('eu').domain}`);
     expect(info.environment).toBe('edge');
     expect(info.updateChannel).toBe('edge');
     expect(info.minCliVersion).toBe('0.9.0');

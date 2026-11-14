@@ -134,3 +134,21 @@ describe('handleError round-trip (JSON envelope)', () => {
     expect(env.errors[0].details).toEqual(['known: shop, mail']);
   });
 });
+
+describe('namedFailureOf', () => {
+  it('names a provisioner refusal by its RENET_ code, with its guidance and no connect target', async () => {
+    const { namedFailureOf } = await import('../errors.js');
+    const refusal = new CliExitError('RENET_DOWNGRADE_REFUSED', 'older renet', {
+      guidance: 'run rdc update',
+    });
+    expect(namedFailureOf(refusal)).toEqual({
+      errorCode: 'RENET_DOWNGRADE_REFUSED',
+      guidance: 'run rdc update',
+    });
+  });
+
+  it('leaves a coded error outside the RENET_ family to the caller', async () => {
+    const { namedFailureOf } = await import('../errors.js');
+    expect(namedFailureOf(new CliExitError('BUSY', 'locked'))).toBeUndefined();
+  });
+});

@@ -33,7 +33,7 @@ def _by_file(name):
 controls = _by_file("controls")
 runtmp = _by_file("runtmp")
 
-CONTROL_FLOOR = 330  # 320 before the review 9450761b and dfb34f9d controls (submodule overlap, one .gitmodules read, the serving-plan mutex and Owns-none exclusive); 319 before the 2026-10-28 disjoint-writer control (an exclusive plan refuses only an overlap); 271 before PLAN-tested-on-bench V3 added the 48 Live-Proof grammar and waiver controls; 253 before PLAN-plan-preflight PF1 added the eight Revalidated controls; 90 before PLAN-plan-priority-concurrency T1/T2 added the X grammar, set_x, linked_plan (now read by wl_planconc.item_plan), the overlap table, spawn_verdict and order_key controls; 216 before the X_FIELDS_REQUIRED migration flag and its "not judged before the migration" control were deleted
+CONTROL_FLOOR = 336  # 330 before the #55b1f90b controls (Plan none serves no plan, owns_line_problem both ways, a disjoint planless spawn beside a live exclusive); 320 before the review 9450761b and dfb34f9d controls (submodule overlap, one .gitmodules read, the serving-plan mutex and Owns-none exclusive); 319 before the 2026-10-28 disjoint-writer control (an exclusive plan refuses only an overlap); 271 before PLAN-tested-on-bench V3 added the 48 Live-Proof grammar and waiver controls; 253 before PLAN-plan-preflight PF1 added the eight Revalidated controls; 90 before PLAN-plan-priority-concurrency T1/T2 added the X grammar, set_x, linked_plan (now read by wl_planconc.item_plan), the overlap table, spawn_verdict and order_key controls; 216 before the X_FIELDS_REQUIRED migration flag and its "not judged before the migration" control were deleted
 T = controls.Controls("plandeps", floor=CONTROL_FLOOR)
 check = T.check
 
@@ -764,6 +764,12 @@ check(
     X.spawn_plans("Plan: PLAN-a.md, PLAN-b.md\n#abcd1234", BY_ID),
     {"PLAN-a.md", "PLAN-b.md"},
 )
+# Review 499fb754.1: the documented rule, pinned. A `Plan: none` line serves none, whatever else the brief names.
+check(
+    "spawn_plans: a Plan: none line wins over an explicit plan line",
+    X.spawn_plans("Plan: PLAN-e.md\nPlan: none -- a reader", BY_ID),
+    set(),
+)
 check(
     "spawn_plans: #refs resolve through items",
     X.spawn_plans("work #abcd1234 and #beef5678", BY_ID),
@@ -774,6 +780,23 @@ check("spawn_plans: a bare link token", X.spawn_plans("PLAN-z.md [0badcafe]"), {
 check("spawn_plans: a bare mention is nothing", X.spawn_plans("read PLAN-z.md first"), set())
 check("declared_owns: a prompt line", X.declared_owns("do x\nOwns: a/**, b.py\n"), ("a/**", "b.py"))
 check("declared_owns: none declared", X.declared_owns("do x"), None)
+check(
+    "spawn_plans: Plan none ignores a plan-linked item ref",
+    X.spawn_plans("Plan: none -- tracked finding #abcd1234", BY_ID),
+    set(),
+)
+check(
+    "spawn_plans: Plan none ignores a plan-link token",
+    X.spawn_plans("Plan: none -- a finding\nsee PLAN-z.md [0badcafe]", BY_ID),
+    set(),
+)
+check(
+    "owns_line_problem: a prose line is named",
+    X.owns_line_problem("Owns: whatever files") is not None,
+    True,
+)
+check("owns_line_problem: a glob list reads", X.owns_line_problem("Owns: a/**, b.py"), None)
+check("owns_line_problem: no line is no problem", X.owns_line_problem("no line"), None)
 
 # --------------------------------------------------------------------------- spawn_verdict (section 5a), pure.
 
@@ -805,6 +828,11 @@ def sv(serving, live, declared=None):
 
 LIVE_E = {"PLAN-e.md": ["writer a1b2c3d4 (general-purpose)"]}
 LIVE_F = {"PLAN-f.md": ["lease #abcd1234 worker:w1"]}
+check(
+    "verdict: a planless spawn with disjoint Owns starts beside a live exclusive",
+    sv(set(), LIVE_E, declared=("c/x.py",)).allow,
+    True,
+)
 check(
     "verdict m1: a live exclusive refuses a plan whose Owns overlap its own",
     sv({"PLAN-o.md"}, LIVE_E).kind,
@@ -847,6 +875,67 @@ check(
     "overlap",
 )
 check("verdict n1: Owns none refuses a writer", sv({"PLAN-n.md"}, {}).kind, "owns-none")
+
+# The stop-side backstop (wl_planorder.conflicts): an overlap is a note when EITHER writer has its own tree, a mutex holds regardless.
+_po_spec = importlib.util.spec_from_file_location(
+    "wl_planorder", pathlib.Path(__file__).with_name("wl_planorder.py")
+)
+if _po_spec is None or _po_spec.loader is None:
+    raise AssertionError("wl_planorder.py is not importable beside this suite")
+PO = importlib.util.module_from_spec(_po_spec)
+_po_spec.loader.exec_module(PO)
+_LIVE_FG = {
+    "PLAN-f.md": ["writer aaaa1111 (general-purpose)"],
+    "PLAN-g.md": ["writer bbbb2222 (general-purpose)"],
+}
+_SERV_FG = {"aaaa1111": {"PLAN-f.md"}, "bbbb2222": {"PLAN-g.md"}}
+check(
+    "backstop c1: two writers sharing a tree with overlapping Owns are both named",
+    sorted(a for a, _ in PO.conflicts(_SERV_FG, _LIVE_FG, xi)),
+    ["aaaa1111", "bbbb2222"],
+)
+check(
+    "backstop c2: a main-checkout writer overlapping an isolated one is not named",
+    PO.conflicts(_SERV_FG, _LIVE_FG, xi, isolated={"bbbb2222"}),
+    [],
+)
+check(
+    "backstop c3: a live exclusive still holds a writer even when it is isolated",
+    [
+        (a, v.kind)
+        for a, v in PO.conflicts(
+            {"aaaa1111": {"PLAN-o.md"}, "cccc3333": {"PLAN-e.md"}},
+            {
+                "PLAN-o.md": ["writer aaaa1111 (general-purpose)"],
+                "PLAN-e.md": ["writer cccc3333 (general-purpose)"],
+            },
+            xi,
+            isolated={"cccc3333"},
+        )
+        if a == "aaaa1111"
+    ],
+    [("aaaa1111", "mutex")],
+)
+check(
+    "backstop c4: a shared-tree overlap beside an isolated exclusive still reports the mutex",
+    [
+        (a, v.kind)
+        for a, v in PO.conflicts(
+            {"aaaa1111": {"PLAN-o.md"}, "bbbb2222": {"PLAN-o.md"}, "cccc3333": {"PLAN-e.md"}},
+            {
+                "PLAN-o.md": [
+                    "writer aaaa1111 (general-purpose)",
+                    "writer bbbb2222 (general-purpose)",
+                ],
+                "PLAN-e.md": ["writer cccc3333 (general-purpose)"],
+            },
+            xi,
+            isolated={"cccc3333"},
+        )
+        if a == "aaaa1111"
+    ],
+    [("aaaa1111", "mutex")],
+)
 check(
     "verdict D4: planless, nothing declared, no exclusive: allow with a note",
     (sv(set(), LIVE_F).allow, bool(sv(set(), LIVE_F).note)),
@@ -1527,6 +1616,27 @@ check(
         lp_root, "agent/plans/PLAN-w.md", some(lpv("bench -- the account smoke check")[0]), {}
     )[0],
     True,
+)
+
+# dd7d6799.2: an empty runner list means no runner is known, so a route is refused; None leaves the names unchecked.
+LP8_ROUTE_BOX = (
+    "- [ ] T9 the edge check after the merge\n"
+    "  (corrected 2026-11-12) Local-route: nowhere -- the branch proves it from this machine\n"
+)
+check(
+    "LP8: no known runner (empty list) refuses a Local-route",
+    len(D.github_wait_findings(LP8_ROUTE_BOX, ["after the merge"], [])),
+    1,
+)
+check(
+    "LP8: runners None leaves the route names unchecked",
+    D.github_wait_findings(LP8_ROUTE_BOX, ["after the merge"], None),
+    [],
+)
+check(
+    "LP8: a listed runner clears the route",
+    D.github_wait_findings(LP8_ROUTE_BOX, ["after the merge"], ["nowhere"]),
+    [],
 )
 
 T.exit()

@@ -694,16 +694,29 @@ def _from_json(value):
 
 
 def twin_tuple(
-    twin: str, parts: list[str], bash, *, files=(), work=(), label: str | None = None
+    twin: str,
+    parts: list[str],
+    bash,
+    *,
+    files=(),
+    port=None,
+    work=(),
+    label: str | None = None,
 ) -> tuple:
     """`twin_run` for a harness whose bash side returns `(rc, out, err, *more)`.
 
-    Many differentials return more than the streams: a `gh` call log, the bytes of a written file, a list of pushed tags. `more` is recorded as ONE JSON record under `<key>|more` and decoded back on compare, so a list stays a list and a string stays a string, and the call site keeps its own tuple shape after the twin is deleted. `files` are paths the twin writes, handled as `twin_run` handles them.
+    Many differentials return more than the streams: a `gh` call log, the bytes of a written file, a list of pushed tags. `more` is recorded as ONE JSON record under `<key>|more` and decoded back on compare, so a list stays a list and a string stays a string, and the call site keeps its own tuple shape after the twin is deleted. `files` are paths the twin writes, handled as `twin_run` handles them. `port` is the optional re-record seam, a zero-argument callable answering the same `(rc, out, err, *more)` from the port.
     """
     box: dict[str, list] = {}
 
     def run() -> Answer:
         result = tuple(bash())
+        box["more"] = list(result[3:])
+        return int(result[0]), result[1] or "", result[2] or ""
+
+    def run_port() -> Answer:
+        # The re-record seam: `port()` answers `(rc, out, err, *more)` for the same case, once the twin is deleted.
+        result = tuple(port())
         box["more"] = list(result[3:])
         return int(result[0]), result[1] or "", result[2] or ""
 
@@ -713,6 +726,7 @@ def twin_tuple(
         run,
         files=files,
         extras={"more": lambda: json.dumps(_to_json(box["more"]), sort_keys=True)},
+        port=run_port if port is not None else None,
         work=work,
         label=label,
     )
@@ -752,24 +766,37 @@ def twin_work(args, kw) -> tuple[str, ...]:
     return tuple(str(p) for p in found)
 
 
-def twin_result(twin: str, parts: list[str], fn, *, files=(), work=(), label: str | None = None):
+def twin_result(
+    twin: str, parts: list[str], fn, *, files=(), port=None, work=(), label: str | None = None
+):
     """`twin_tuple` for a harness that returns a `CompletedProcess`, a `(CompletedProcess, *more)` tuple, a `(rc, out, err, *more)` tuple, or a dict of JSON-able observables; the same shape comes back in compare mode, so the call site does not change.
 
-    The usual conversion of a differential whose `_run(subject, ...)` drives both sides: rename it `_run_live`, and route the twin through this seam in a new `_run`.
+    The usual conversion of a differential whose `_run(subject, ...)` drives both sides: rename it `_run_live`, and route the twin through this seam in a new `_run`. `port` is the optional re-record seam, a zero-argument callable answering the same shapes from the port.
     """
 
-    def bash():
-        result = fn()
-        if isinstance(result, dict):
-            return (0, "", "", "dict", result)
-        if isinstance(result, subprocess.CompletedProcess):
-            return (result.returncode, result.stdout, result.stderr, "proc")
-        if result and isinstance(result[0], subprocess.CompletedProcess):
-            proc = result[0]
-            return (proc.returncode, proc.stdout, proc.stderr, "proc+", *result[1:])
-        return (*result[:3], "tuple", *result[3:])
+    def adapt(source):
+        def bash():
+            result = source()
+            if isinstance(result, dict):
+                return (0, "", "", "dict", result)
+            if isinstance(result, subprocess.CompletedProcess):
+                return (result.returncode, result.stdout, result.stderr, "proc")
+            if result and isinstance(result[0], subprocess.CompletedProcess):
+                proc = result[0]
+                return (proc.returncode, proc.stdout, proc.stderr, "proc+", *result[1:])
+            return (*result[:3], "tuple", *result[3:])
 
-    rc, out, err, shape, *more = twin_tuple(twin, parts, bash, files=files, work=work, label=label)
+        return bash
+
+    rc, out, err, shape, *more = twin_tuple(
+        twin,
+        parts,
+        adapt(fn),
+        files=files,
+        port=adapt(port) if port is not None else None,
+        work=work,
+        label=label,
+    )
     if shape == "dict":
         return more[0]
     if shape == "proc":

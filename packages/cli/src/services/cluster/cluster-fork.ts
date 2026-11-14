@@ -17,6 +17,7 @@ import { auditService } from '../core/audit.js';
 import { outputService } from '../core/output.js';
 import { getExecutor } from '../executor/executor-factory.js';
 import { parseCapturedJson } from '../executor/local-executor.js';
+import { ClusterPhasePendingError, runClusterPhase } from './cluster-job.js';
 import {
   allocateAgentNetworkId,
   assertDestNotRunningOwnK3s,
@@ -34,6 +35,7 @@ import {
   resolveK8sMembers,
   serverUrl,
 } from './cluster-kube.js';
+import { describeMigrateAttachFailure, type RollbackState } from './cluster-migrate-messages.js';
 
 export interface ForkClusterOptions {
   tag: string;
@@ -402,8 +404,8 @@ export async function rehearseCluster(
       debug: options.debug,
     });
   } catch (err) {
-    // A failed fork/gate still tries to discard whatever partial state exists.
-    await discardRehearsal(destControl, clusterName, tag, options.debug);
+    // A failed fork/gate still tries to discard whatever partial state exists. A discard still running must not replace the failure being reported.
+    await discardRehearsal(destControl, clusterName, tag, options.debug).catch(warnPendingTeardown);
     throw err;
   }
 
@@ -467,10 +469,18 @@ async function tryDispatch(
   debug?: boolean
 ): Promise<void> {
   try {
-    await getExecutor().execute({ functionName, machineName, params, debug });
+    await runClusterPhase(functionName, machineName, params, { debug });
   } catch (err) {
+    // A phase still running has not failed: the next teardown call must not start beside it.
+    if (err instanceof ClusterPhasePendingError) throw err;
     outputService.warn(`  discard: ${functionName} on ${machineName} failed (continuing): ${err}`);
   }
+}
+
+/** A teardown that did not finish, still running or failed, leaves a warning, so the failure that started the teardown is the one reported. */
+function warnPendingTeardown(err: unknown): void {
+  const detail = err instanceof ClusterPhasePendingError ? err.message : String(err);
+  outputService.warn(`  teardown not finished: ${detail}`);
 }
 
 export interface MigrateClusterOptions {
@@ -574,14 +584,23 @@ export async function migrateCluster(
       { debug: options.debug }
     );
   } catch (attachErr) {
-    await rollbackMigrateToSource(control, controlDs, controlDsMount, options.debug);
+    let rollback: RollbackState = 'rolled-back';
+    await rollbackMigrateToSource(control, controlDs, controlDsMount, options.debug).catch(
+      (rollbackErr: unknown) => {
+        rollback = rollbackErr instanceof ClusterPhasePendingError ? 'running' : 'failed';
+        warnPendingTeardown(rollbackErr);
+      }
+    );
     throw new Error(
-      `cluster migrate "${clusterName}" failed at the destination attach and was ROLLED BACK to ` +
-        `"${control.name}" (control datastore re-attached + control plane restarted). The dest's ` +
-        `adopted record is harmless (registry-only) and is reused on retry. If the source did not ` +
-        `recover, on ${control.name} run: renet datastore attach --name ${controlDs} --force, then ` +
-        `renet kube identity-rewrite --mount-path ${controlDsMount} --operation migrate --new-node-ip ` +
-        `${control.ip}. Original error: ${attachErr instanceof Error ? attachErr.message : String(attachErr)}`
+      describeMigrateAttachFailure({
+        clusterName,
+        rollback,
+        controlName: control.name,
+        controlDs,
+        controlDsMount,
+        controlIp: control.ip,
+        original: attachErr instanceof Error ? attachErr.message : String(attachErr),
+      })
     );
   }
 
@@ -683,8 +702,10 @@ async function verifyDatastoreRegistered(
  * Best-effort rollback after a failed destination attach: re-attach the control
  * datastore on the SOURCE (force-fencing any partial dest holder) and restart its
  * control plane via an identity rewrite to its OWN IP (operation=migrate preserves
- * the CA and starts the k3s unit prep_fork stopped). Every step is best-effort so a
- * secondary failure still surfaces the original error + manual recovery path.
+ * the CA and starts the k3s unit prep_fork stopped). Both steps are tried even when
+ * the first fails, so a secondary failure still surfaces the original error + manual
+ * recovery path; a step that failed makes this reject, so the caller does not report
+ * a rollback that did not happen.
  */
 async function rollbackMigrateToSource(
   control: K8sMember,
@@ -692,11 +713,22 @@ async function rollbackMigrateToSource(
   controlDsMount: string,
   debug?: boolean
 ): Promise<void> {
-  await tryDispatch('datastore_attach', control.name, { name: controlDs, force: true }, debug);
-  await tryDispatch(
-    'kube_identity_rewrite',
-    control.name,
-    { mount_path: controlDsMount, operation: 'migrate', mode: 'server', new_node_ip: control.ip },
-    debug
-  );
+  const steps: [string, Record<string, unknown>][] = [
+    ['datastore_attach', { name: controlDs, force: true }],
+    [
+      'kube_identity_rewrite',
+      { mount_path: controlDsMount, operation: 'migrate', mode: 'server', new_node_ip: control.ip },
+    ],
+  ];
+  const failures: string[] = [];
+  for (const [functionName, params] of steps) {
+    try {
+      await runClusterPhase(functionName, control.name, params, { debug });
+    } catch (err) {
+      // A phase still running has not failed: the next step must not start beside it.
+      if (err instanceof ClusterPhasePendingError) throw err;
+      failures.push(`${functionName} on ${control.name} failed: ${err}`);
+    }
+  }
+  if (failures.length > 0) throw new Error(failures.join('; '));
 }

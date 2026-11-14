@@ -1,6 +1,12 @@
 import { t } from '../i18n/index.js';
 import { accountServerFetch } from '../services/account/account-client.js';
 import { assertHostedBackupAccount } from '../services/account/free-license.js';
+import {
+  type AttemptFailure,
+  HOME_STORE,
+  storeParam,
+} from '../services/backup/backup-store-pick.js';
+import { configService } from '../services/config/config-resources.js';
 import { outputService } from '../services/core/output.js';
 import { setExitCode } from '../services/core/request-context.js';
 import { getExecutor } from '../services/executor/executor-factory.js';
@@ -11,6 +17,7 @@ import {
 } from '../services/jobs/command-job.js';
 import { bindStepHandler, type PlannedStep, planStep } from '../services/jobs/steps.js';
 import { deployRepoKeyIfNeeded } from '../services/repo/repo-key-deployment.js';
+import { compositeKey } from '../utils/config-schema.js';
 import { getOutputFormat, ValidationError } from '../utils/errors.js';
 import { renderLocalExecutionFailure } from '../utils/local-execution-failures.js';
 import { executeRepoFunction } from '../utils/repo-executor.js';
@@ -81,6 +88,8 @@ function parseAtTime(at: string, scope: StreamScope): Date {
 export interface ResolveOptions {
   /** Prefer a snapshot with a stored listing: the nearest one at or before the time, with the gap stated. */
   indexed?: boolean;
+  /** Resolve inside this backup store only, so the snapshot answered is one it holds; absent searches every store. */
+  store?: string;
 }
 
 /**
@@ -106,9 +115,11 @@ export async function resolveSnapshotAt(
 
   // Resolving a time reads the hosted snapshot index, which a Free License (or no login) does not have.
   assertHostedBackupAccount();
-  const stream = scope.anyStream
-    ? { anyStream: '1' }
-    : { anchorSnapshotId: scope.anchorSnapshotId };
+  // The store rides every lookup below, the refusal's probe and the indexed fallback included.
+  const stream = {
+    ...(scope.anyStream ? { anyStream: '1' } : { anchorSnapshotId: scope.anchorSnapshotId }),
+    storeId: options.store,
+  };
   const whenIso = when.toISOString();
   const chosen = await fetchResolved(lineage, { ...stream, at: whenIso });
   if (!chosen) return refuseNoSnapshot(lineage, scope, stream, at);
@@ -178,7 +189,13 @@ export type StreamScope =
  * The snapshot the SOURCE machine's journal anchors for this repo, read through
  * `backup_verify` (the verb already reports it). Undefined when the machine has
  * no committed snapshot, its verify fails, or the verdict cannot be read;
- * the streamUnknown refusal names both causes.
+ * the caller's refusal names the causes.
+ *
+ * A failed probe is the CALLER's refusal to make, so it is not rendered as a
+ * command failure: that rendering exits the process in agent mode, before the
+ * caller could refuse in its own words or unwind anything, and it showed only
+ * renet's "see records above" line while the records sat in captured stdout.
+ * The record itself is printed here instead, on stderr.
  */
 export async function readSourceAnchor(
   source: { repoName: string; machine: string },
@@ -190,16 +207,25 @@ export async function readSourceAnchor(
     source.machine,
     { level: 'spot' },
     // A probe: the anchor decides which snapshot `--at` restores, so `--background` must not hand back a ticket here.
-    { debug, captureOutput: true, probe: true },
+    { debug, captureOutput: true, probe: true, failureIsAnswer: true },
     {
       starting: t('commands.backup.verify.starting', { name: source.repoName, level: 'spot' }),
       completed: t('commands.backup.verify.completed', { name: source.repoName }),
       failed: t('commands.backup.verify.failed', { name: source.repoName }),
     }
   );
-  if (!result.success) return undefined;
   const verdict = parseVerifyVerdict(result.stdout) as { snapshotId?: string } | undefined;
-  return verdict?.snapshotId;
+  if (result.success) return verdict?.snapshotId;
+  outputService.warn(t('commands.backup.verify.failed', { name: source.repoName }));
+  outputService.warn(verdict ? JSON.stringify(verdict) : probeFailureText(result));
+  return undefined;
+}
+
+/** What a probe that printed no record has to say: its error, else its stderr. */
+function probeFailureText(result: { error?: string; stderr?: string }): string {
+  if (result.error) return result.error;
+  const stderr = result.stderr?.trim();
+  return stderr ? stderr : '-';
 }
 
 /**
@@ -221,6 +247,29 @@ export async function streamScopeFor(args: {
 }
 
 /**
+ * The resolver of the snapshot a whole-image chunk restore places, one store at a time: the stream
+ * scope (the source machine's anchor, unless `--any-stream` or an explicit snapshot id) is read once,
+ * here, and each store the restore tries resolves the time inside itself. Called before the target
+ * is registered, so the probe's refusal leaves nothing to roll back, and the store fallback resolves
+ * each store before that store's attempt registers anything.
+ */
+export async function chunkSnapshotResolver(args: {
+  lineage: string;
+  at: string;
+  anyStream: boolean;
+  source: { repoName: string; machine: string };
+  debug?: boolean;
+}): Promise<(store: string) => Promise<string>> {
+  const scope = await streamScopeFor(args);
+  return (store) => resolveSnapshotAt(args.lineage, args.at, scope, { store });
+}
+
+/** A chunk restore's outcome: a failure is returned only when the caller's `deferIf` accepted it. */
+export type ChunkRestoreResult =
+  | { ok: true }
+  | { ok: false; failure: AttemptFailure; rendered: boolean };
+
+/**
  * Run `backup_restore` for a point-in-time restore from the chunk store, and
  * unwind the just-registered record on failure exactly as the pull path does,
  * so a retry is not blocked by target-exists.
@@ -230,26 +279,32 @@ export async function runChunkRestore(args: {
   targetMachine: string;
   datastore: string | undefined;
   lineage: string;
-  at: string;
-  anyStream: boolean;
+  /** Resolved inside `store` by {@link chunkSnapshotResolver} before the target was registered. */
+  snapshotId: string;
   noSeed: boolean;
   /** Place an image the repository passphrase did not open (renet keeps the staged copy otherwise). */
   allowUnopenable?: boolean;
   /** Continue past lost or corrupt chunks, leaving their cells as holes; only into a new name. */
   salvage?: boolean;
-  source: { repoName: string; machine: string };
+  /** The backup store to read from; absent or `home` is the home store. */
+  store?: string;
+  /** A failed outcome this accepts is returned instead of rendered, so the caller can try another store. */
+  deferIf?: (failure: AttemptFailure) => boolean | Promise<boolean>;
   debug?: boolean;
   after: PlannedStep[];
-}): Promise<void> {
-  const { targetName, targetMachine, datastore, lineage, at, anyStream, noSeed, source, debug } =
-    args;
-  const scope = await streamScopeFor({ at, anyStream, source, debug });
-  const snapshotId = await resolveSnapshotAt(lineage, at, scope);
+}): Promise<ChunkRestoreResult> {
+  const { targetName, targetMachine, datastore, lineage, snapshotId, noSeed, debug } = args;
 
   outputService.info(
     t('commands.backup.restore.restoringSnapshot', { name: targetName, snapshot: snapshotId })
   );
-  await deployRepoKeyIfNeeded(targetName, targetMachine);
+  try {
+    await deployRepoKeyIfNeeded(targetName, targetMachine);
+  } catch (error) {
+    // The job never started, so its rollback step never runs: drop the registration here, as the pull route does.
+    await configService.removeRepository(compositeKey(targetName, 'latest')).catch(() => undefined);
+    throw error;
+  }
   const outcome = await runCommandJob(
     'backup restore',
     {
@@ -264,6 +319,7 @@ export async function runChunkRestore(args: {
         no_seed: noSeed,
         ...(args.allowUnopenable ? { allow_unopenable: true } : {}),
         ...(args.salvage ? { salvage: true } : {}),
+        ...storeParam(args.store ?? HOME_STORE),
       },
       debug,
       // The record on stdout carries the restore's measurements; without capture they are dropped.
@@ -275,7 +331,15 @@ export async function runChunkRestore(args: {
       ...args.after,
     ]
   );
+  if (outcome.kind === 'finished' && !outcome.result.success) {
+    const { exitCode, error, errorCode, stdout, stderr } = outcome.result;
+    const failure = { exitCode, error, errorCode, stdout, stderr };
+    if (await args.deferIf?.(failure)) return { ok: false, failure, rendered: false };
+    settleRestore(outcome, targetName, targetMachine);
+    return { ok: false, failure, rendered: true };
+  }
   settleRestore(outcome, targetName, targetMachine);
+  return { ok: true };
 }
 
 /**

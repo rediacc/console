@@ -10,6 +10,7 @@ interface ImageRsyncModule {
   buildImageRsyncArgs(opts: {
     direction: 'download' | 'upload';
     freshDest: boolean;
+    sparseDest?: boolean;
     sshCommand: string;
     bwlimitKiBps?: number;
     remoteRsyncPath?: string;
@@ -38,6 +39,18 @@ describe('buildImageRsyncArgs', () => {
     expect(m.buildImageRsyncArgs({ ...base, direction: 'upload', freshDest: false })).not.toContain(
       '--sparse'
     );
+  });
+
+  it('drops --sparse for a fresh destination whose filesystem stores no holes', async () => {
+    const m = await load();
+    // exFAT through WSL drvfs: --sparse measured 146 s against 27 s for 300 MiB (2026-11-13).
+    expect(
+      m.buildImageRsyncArgs({ ...base, direction: 'download', freshDest: true, sparseDest: false })
+    ).not.toContain('--sparse');
+    // Control: a sparse-capable fresh destination keeps it.
+    expect(
+      m.buildImageRsyncArgs({ ...base, direction: 'download', freshDest: true, sparseDest: true })
+    ).toContain('--sparse');
   });
 
   it('always carries the resume and convergence flags, never -a or --times', async () => {

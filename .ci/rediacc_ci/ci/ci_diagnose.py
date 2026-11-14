@@ -34,15 +34,16 @@ REVIEW_CONTEXTS = ("Review Complete", "Review Status", "Claude Review")
 REVIEW_JOB_CONTEXTS = ("Review Status", "Claude Review")
 # Never a CI result, whatever their conclusion. "CI Verdict" is this module's own published diagnosis, "Publish CI Verdict" is the job that posts it, and REVIEW_JOB_CONTEXTS report through Review Complete. Exact names, never substrings, so Console CI's own "Review Gate" stays blocking.
 NONBLOCKING_CONTEXTS = frozenset({CHECK_NAME, PUBLISH_JOB_NAME, *REVIEW_JOB_CONTEXTS})
-# The watchdog's own exclusions (WATCHDOG_EXCLUDE_PATTERNS in .github/workflows/watchdog-monitor.yml): aggregators and observers, never the first failure of a Console CI run. All of REVIEW_CONTEXTS stay here, Review Complete included: the review runs in its own workflows after CI, so it observes a Console CI run rather than belonging to it, and its required-check verdict is read by ci-trace and the Stop hook (wl_ci.py), not by the watchdog. Matched as substrings; none of REVIEW_CONTEXTS is a substring of "Review Gate".
+# The watchdog's own exclusions (WATCHDOG_EXCLUDE_PATTERNS in .github/workflows/ops-watchdog-monitor.yml): aggregators and observers, never the first failure of a Console CI run. All of REVIEW_CONTEXTS stay here, Review Complete included: the review runs in its own workflows after CI, so it observes a Console CI run rather than belonging to it, and its required-check verdict is read by ci-trace and the Stop hook (wl_ci.py), not by the watchdog. Matched as substrings; none of REVIEW_CONTEXTS is a substring of "Review Gate".
 WATCHDOG_EXCLUDED = ("Watchdog", "CI Complete", *REVIEW_CONTEXTS)
-# DOWNSTREAM OF A VERDICT, never the cause of one. Console CI jobs that read another job's result and fail BECAUSE it failed: every job whose `needs:` holds `ci-complete` in .github/workflows/ci.yml (Pipeline Sentinel, Finalize Release Sentinel, PR Labels) and the install legs' own roll-up. Main push run 37394654719 attempt 2 (2026-10-06) had exactly two failures, CI Complete and Pipeline Sentinel, both reporting a
+# DOWNSTREAM OF A VERDICT, never the cause of one. Console CI jobs that read another job's result and fail BECAUSE it failed: every job whose `needs:` holds `ci-complete` in .github/workflows/ci.yml (Pipeline Sentinel, Finalize Release Sentinel, PR Labels, Report schedule) and the install legs' own roll-up. Main push run 37394654719 attempt 2 (2026-10-06) had exactly two failures, CI Complete and Pipeline Sentinel, both reporting a
 # Validate Promotion that hit its 15 min timeout, and `--why` named Pipeline Sentinel as the first failure. test_ci_diagnose pins this list against ci.yml's `needs:` graph, so a new downstream job cannot slip in as a root cause. Matched as substrings, like WATCHDOG_EXCLUDED.
 DOWNSTREAM_JOBS = (
     "Pipeline Sentinel",
     "Finalize Release Sentinel",
     "PR Labels",
     "Install Methods Complete",
+    "Report schedule",
 )
 AGGREGATORS = (*WATCHDOG_EXCLUDED, *DOWNSTREAM_JOBS)
 CAUSE_KINDS = (
@@ -190,6 +191,14 @@ SIGNATURES = (
         "code",
         re.compile(r"\bpin\(s\) are behind upstream\b"),
         "a pinned version is behind upstream (the message names the bump command)",
+        0,
+    ),
+    # `npm audit`'s allowlist check (rediacc_ci.security.audit). Security job 127846206473 (run 42182422300) failed on a stale allowlist entry and read `bitwarden-5xx`, because a gate's success line carried the count 520 beside `bws`.
+    (
+        "audit-finding",
+        "code",
+        re.compile(r"\u2717 (?:Stale allowlist entry|Allowlist problems found)"),
+        "npm audit's allowlist check failed (delete the stale entry or fix the dependency)",
         0,
     ),
     ("go-fail", "code", re.compile(r"^--- FAIL: "), "a Go test failed", 0),
@@ -382,6 +391,7 @@ class HttpFetcher:
             with self._open(url, True, False) as resp:
                 return resp.read().decode("utf-8", "replace"), ""
         except urllib.error.HTTPError as exc:
+            exc.close()
             location = exc.headers.get("Location") if exc.code in (301, 302, 303, 307) else None
             if not location:
                 return None, "HTTP %s for %s" % (exc.code, path)
@@ -790,6 +800,12 @@ def _sig_hit(line):
     body = SHORT_TS_RE.sub("", TS_RE.sub("", line, count=1), count=1)
     if RETRY_NOTE_RE.search(body):
         return None
+    # A line a gate marks as a pass is no failure signature: `\u2713 bws map: ..., 520 env.BWS_* read(s)` matched the Bitwarden 5xx row on its COUNT.
+    # A line that carries a failure mark after its pass mark is read from that mark on: the pass part (and any count in it) is no signature, the failure part is.
+    if body.lstrip().startswith("\u2713"):
+        if "\u2717" not in body:
+            return None
+        body = body[body.index("\u2717") :]
     for sid, cat, rx, label, min_s in SIGNATURES:
         m = rx.search(body)
         if not m:

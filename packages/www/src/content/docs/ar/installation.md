@@ -8,8 +8,8 @@ tags:
 subcategory: setup
 order: 1
 language: ar
-sourceHash: "f80f4bf22d4accf1"
-sourceCommit: "018665c7c35e0bea3349818b12a5906828240a29"
+sourceHash: "dee69e89a962aa32"
+sourceCommit: "9900c15aaef286077bf72464af2a52f248a555c5"
 ---
 
 # التثبيت
@@ -177,10 +177,10 @@ rdc update --channel edge      # التبديل إلى قناة edge
 rdc update --channel stable    # العودة إلى قناة stable
 ```
 
-التثبيت مباشرة من قناة edge:
+تثبّت برامج التثبيت ذات السطر الواحد على www.rediacc.com قناة edge. لتثبيت قناة stable، عيّن `REDIACC_CHANNEL`:
 
 ```bash
-REDIACC_CHANNEL=edge curl -fsSL https://www.rediacc.com/install.sh | bash
+REDIACC_CHANNEL=stable curl -fsSL https://www.rediacc.com/install.sh | bash
 ```
 
 لمديري الحزم، استبدل `stable` بـ `edge` في عنوان URL للمستودع:
@@ -197,7 +197,7 @@ docker pull ghcr.io/rediacc/rdc:edge
 
 تُطبّق القناة بشكل موحد عبر جميع طرق التوزيع:
 
-- **سكريبتات التثبيت**: متغير البيئة `REDIACC_CHANNEL` يحدد القناة
+- **سكريبتات التثبيت**: تستخدم برامج التثبيت ذات السطر الواحد في www القناة `edge` افتراضيًا، ويحدد متغير البيئة `REDIACC_CHANNEL` قناة أخرى
 - **مستودعات الحزم**: `releases.rediacc.com/{التنسيق}/{القناة}/`
 - **علامات Docker**: `ghcr.io/rediacc/rdc:{القناة}`
 - **تحديثات CLI**: يتحقق `rdc update` من القناة المُعدّة أثناء التثبيت

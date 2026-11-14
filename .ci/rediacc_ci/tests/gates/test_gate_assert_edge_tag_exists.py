@@ -2,9 +2,9 @@
 
 The subject is `rediacc_ci.release.assert_edge_tag_exists`, the port of the retired `.ci/scripts/release/assert-edge-tag-exists.sh` (PLAN-retire-bash-oracles B3); the bash's answers are frozen in `goldens/twins/release.assert-edge-tag-exists.jsonl`.
 
-`promote-stable` must refuse to promote a version that does not fully exist -- and must refuse just as loudly when it CANNOT TELL whether it exists.
+`cd-release-stable` must refuse to promote a version that does not fully exist -- and must refuse just as loudly when it CANNOT TELL whether it exists.
 
-WHY THIS EXISTS. `cli/edge/manifest.json` advertised 1.3.1 with no v1.3.1 tag, no GitHub Release and no `cli/v1.3.1/.released`. `promote-stable.yml` would have copied those bytes to stable and retagged Docker `:stable` FIRST and only then failed on `ref: v1.3.1` while checking out for the three regional deploys -- a half-applied production release. This drives the precondition that
+WHY THIS EXISTS. `cli/edge/manifest.json` advertised 1.3.1 with no v1.3.1 tag, no GitHub Release and no `cli/v1.3.1/.released`. `cd-release-stable.yml` would have copied those bytes to stable and retagged Docker `:stable` FIRST and only then failed on `ref: v1.3.1` while checking out for the three regional deploys -- a half-applied production release. This drives the precondition that
 turns that ordering into a loud no-op.
 
 WHAT IT ASSERTS, with a fake `gh` and a fake `aws` (no network, no promotion):
@@ -26,7 +26,7 @@ NO PATTERN SUBSTITUTION OF A LIVE LINE, and that is the point of the anchors: a 
 
 THE MUTANT NEEDS NO SANDBOX. The module imports `rediacc_ci` through PYTHONPATH and derives nothing from its own location, so a copy in a bare temp directory runs exactly as the original does; the liveness probe below still refuses a mutant that merely crashes.
 
-STATED BLIND SPOT, carried over verbatim: this cannot see whether `promote-stable.yml` actually RUNS the script, nor whether it runs BEFORE the first promotion write. A precondition wired after the promotion is worth nothing. That step-order assertion belongs to the workflow-invariant gate (plan T2), not here.
+STATED BLIND SPOT, carried over verbatim: this cannot see whether `cd-release-stable.yml` actually RUNS the script, nor whether it runs BEFORE the first promotion write. A precondition wired after the promotion is worth nothing. That step-order assertion belongs to the workflow-invariant gate (plan T2), not here.
 
 NO `xdist_group`. Every case builds its own fixture tree under pytest's `tmp_path` and passes PATH per invocation as an ENV OVERLAY rather than mutating this process's own PATH, so two of these in one worker cannot see each other's fakes.
 """

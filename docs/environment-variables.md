@@ -56,7 +56,7 @@ Tokens obtained interactively are stored per config at `<configDir>/api-token-<c
 | `REDIACC_UPDATE_INTERVAL_HOURS` | Auto-update check cooldown. |
 | `REDIACC_SSH_LINGER_MS` | SSH connection-pool idle linger. |
 | `REDIACC_PROVISION_LOCK_TIMEOUT_MS` | Renet provisioning lock timeout. |
-| `REDIACC_ALLOW_DOWNGRADE` | Permits renet binary downgrade during provisioning. |
+| `REDIACC_ALLOW_DOWNGRADE` | Permits a renet replacement the provisioner refuses by default: a downgrade, a release binary over a dev build, or a binary whose build stamp it cannot verify. An executor never uploads, with or without it. |
 | `REDIACC_ALLOW_DIRTY_RENET` | Permits uploading a dev renet binary built from a source tree with uncommitted or untracked changes. Mutating verbs only; read-only verbs never upload. |
 | `REDIACC_SKIP_ROUTER_RESTART` / `REDIACC_SKIP_SETUP_CHECK` | Renet execution skips (advanced). The router-restart skip affects mutating verbs only: read-only verbs never replace renet or restart the router. |
 | `REDIACC_DEFAULT_OUTPUT` | Default output format when `--output` is unset. |

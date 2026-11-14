@@ -5,19 +5,24 @@
  * calls that consume it live in `license.ts` and `license-batch.ts`.
  */
 
+import { randomUUID } from 'node:crypto';
+import { dirname, join } from 'node:path';
 import { DEFAULTS } from '@rediacc/shared/config';
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
+import { getConfigDir } from '@rediacc/shared/paths';
 import { isValidPublicKeyId } from '@rediacc/shared/subscription';
 import type { SFTPClient } from '../../remote/sftp/index.js';
+import { ERROR_CODES } from '../../types/errors.js';
 import type { MachineConfig } from '../../types/index.js';
+import { CliExitError } from '../../utils/cli-exit-error.js';
 import { shellQuote } from '../../utils/shell-quote.js';
 import { outputService } from '../core/output.js';
+import { getExecutor } from '../executor/executor-factory.js';
 import type { RemoteRepoLicenseScanEntry, RuntimeRepoLicenseStatus } from './license-types.js';
 
-const LICENSE_DIR = '/var/lib/rediacc/license';
-const REPO_LICENSE_DIR = `${LICENSE_DIR}/repos`;
-const DATASTORE_LICENSE_DIR = `${LICENSE_DIR}/datastores`;
 const CLIENT_MACHINE_ID_PATH = '/etc/machine-id';
+const CLIENT_MACHINE_ID_DBUS_PATH = '/var/lib/dbus/machine-id';
+const CLIENT_INSTALL_ID_FILE = 'client-machine-id';
 export const DEFAULT_DATASTORE = WK_DATASTORE_PATH;
 
 /**
@@ -103,9 +108,149 @@ export async function readLocalMachineId(): Promise<string> {
     if (!match) throw new Error('Failed to read macOS IOPlatformUUID');
     return createHash('sha256').update(match[1].trim()).digest('hex');
   }
-  // Linux
+  return readLinuxClientMachineId();
+}
+
+export interface LinuxClientIdSources {
+  /** Host identity files, tried in order. */
+  hostPaths: string[];
+  /** Where a generated per-install id is kept when no host file exists. */
+  installIdPath: string;
+}
+
+/**
+ * The client id on Linux. The account server stores `clientMachineId` as the
+ * identity of the CLIENT host (it rides the signed blob and the audit log; it
+ * is never compared, renet only carries the field). The licensed machine is
+ * identified separately by `machineId`, read remotely as root.
+ *
+ * A caller without a host id is normal, not broken: a proxied command runs in
+ * the executor container, which has no /etc/machine-id. It then uses a
+ * generated id persisted in the CLI config dir, so the same install reports
+ * the same client. When even that cannot be written, the failure is a named
+ * PRECONDITION_MISMATCH, never a raw ENOENT.
+ */
+export async function readLinuxClientMachineId(
+  sources: LinuxClientIdSources = {
+    hostPaths: [CLIENT_MACHINE_ID_PATH, CLIENT_MACHINE_ID_DBUS_PATH],
+    installIdPath: join(getConfigDir(), CLIENT_INSTALL_ID_FILE),
+  }
+): Promise<string> {
+  // writeFile and mkdir are read only on the fallback path: a caller with a host id
+  // (and a test that mocks node:fs/promises with readFile alone) never touches them.
+  const fsp = await import('node:fs/promises');
+  const { readFile } = fsp;
+  let unreadable: CliExitError | undefined;
+  for (const path of sources.hostPaths) {
+    const id = await readFile(path, 'utf-8').then(
+      (v) => v.trim(),
+      (error: unknown) => {
+        // Only an absent file means "no host id". An unreadable one (EACCES, EISDIR) is remembered and reported once no later candidate yields an id, since falling back to the generated id would make this host report an id other than its real one.
+        if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
+          unreadable ??= new CliExitError(
+            ERROR_CODES.PRECONDITION_MISMATCH,
+            `Cannot read the client machine id at ${path} (${error instanceof Error ? error.message : String(error)}).`
+          );
+        }
+        return '';
+      }
+    );
+    if (id) return id;
+  }
+  if (unreadable) throw unreadable;
+  const existing = await readFile(sources.installIdPath, 'utf-8').then(
+    (v) => v.trim(),
+    () => ''
+  );
+  if (/^[a-f0-9]{64}$/.test(existing)) return existing;
+  const generated = `${randomUUID()}${randomUUID()}`.replaceAll('-', '').slice(0, 64);
+  try {
+    return await persistInstallId(sources.installIdPath, generated);
+  } catch (error) {
+    throw new CliExitError(
+      ERROR_CODES.PRECONDITION_MISMATCH,
+      `No client machine id: ${sources.hostPaths.join(' and ')} are missing and a generated one could not be saved to ${sources.installIdPath} (${error instanceof Error ? error.message : String(error)}). Make the CLI config directory writable.`
+    );
+  }
+}
+
+/** Save a generated id with an exclusive create: of two first runs racing here, one id is persisted and both calls get it. */
+async function persistInstallId(path: string, generated: string): Promise<string> {
+  const fsp = await import('node:fs/promises');
+  try {
+    await fsp.mkdir(dirname(path), { recursive: true, mode: 0o700 });
+    await fsp.writeFile(path, `${generated}\n`, { mode: 0o600, flag: 'wx' });
+    return generated;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'EEXIST') {
+      const persisted = await readRacedInstallId(path);
+      if (persisted) return persisted;
+      // Nothing valid ever appeared: the file is a corrupt leftover, not a winner's. One racer replaces it under an exclusive lock file, so two runs never both overwrite it with their own ids.
+      return replaceCorruptInstallId(path, generated);
+    }
+    throw error;
+  }
+}
+
+/** How long a replace lock may stand before it is taken for a crashed holder's. */
+const REPLACE_LOCK_STALE_MS = 5000;
+
+/**
+ * One attempt at the replace lock. Undefined when the lock is now held; otherwise the id the holder persisted while
+ * this run waited, or '' when the holder has not written one (a lock past REPLACE_LOCK_STALE_MS is then removed as a
+ * crashed holder's, so the caller contends again).
+ */
+async function tryReplaceLock(path: string, lockPath: string): Promise<string | undefined> {
+  const fsp = await import('node:fs/promises');
+  try {
+    await fsp.writeFile(lockPath, '', { mode: 0o600, flag: 'wx' });
+    return undefined;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error;
+  }
+  const persisted = await readRacedInstallId(path);
+  if (persisted) return persisted;
+  const lock = await fsp.stat(lockPath).catch(() => undefined);
+  if (lock && Date.now() - lock.mtimeMs > REPLACE_LOCK_STALE_MS) {
+    await fsp.rm(lockPath, { force: true });
+  }
+  return '';
+}
+
+/**
+ * Replace a corrupt id file: the lock holder re-checks, then writes; a racer that lost the lock waits for what the
+ * holder wrote. A lock older than REPLACE_LOCK_STALE_MS is taken for a crashed holder's and removed, and the racer then
+ * contends for the lock again. The holder's critical section is one read and one write, so a holder stalled past that
+ * age is the accepted limit of an age-based lock; the write is still the holder's own id or a valid one a racer left,
+ * and the holder re-reads the file under the lock before it overwrites.
+ */
+async function replaceCorruptInstallId(path: string, generated: string): Promise<string> {
+  const fsp = await import('node:fs/promises');
+  const lockPath = `${path}.replace`;
+  for (;;) {
+    const outcome = await tryReplaceLock(path, lockPath);
+    if (outcome === undefined) break;
+    if (outcome) return outcome;
+  }
+  try {
+    const current = (await fsp.readFile(path, 'utf-8').catch(() => '')).trim();
+    if (/^[a-f0-9]{64}$/.test(current)) return current;
+    await fsp.writeFile(path, `${generated}\n`, { mode: 0o600 });
+    return generated;
+  } finally {
+    await fsp.rm(lockPath, { force: true });
+  }
+}
+
+/** The id a racing first run persisted. The winner may still be writing, so a few short reads cover the gap between its create and its write. */
+async function readRacedInstallId(path: string): Promise<string | undefined> {
   const { readFile } = await import('node:fs/promises');
-  return (await readFile(CLIENT_MACHINE_ID_PATH, 'utf-8')).trim();
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const persisted = (await readFile(path, 'utf-8').catch(() => '')).trim();
+    if (/^[a-f0-9]{64}$/.test(persisted)) return persisted;
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  return undefined;
 }
 
 /**
@@ -174,29 +319,41 @@ export async function measureRepoSizeGb(
 }
 
 /**
- * `--all-datastores` on every scan, and it is a correctness fix rather than a
- * convenience: without it a scan sees only the machine's primary datastore, so
- * every repo living in a NAMED datastore was invisible to `subscription
- * refresh` and to the license table. Those repos still expire, still block
- * backups, and still need renewal; they were simply never looked at. renet
- * folds the primary and every attached named datastore into one array, tagging
- * each entry with the datastore it came from.
+ * One licence command-kind job (`license-status`, `license-scan`, `license-write`), awaited here: the caller
+ * needs the answer before it goes on, so `probe` keeps `--background` from handing back a ticket in its place.
+ *
+ * renet passes `--all-datastores` on both reads, and that is a correctness fix rather than a convenience:
+ * without it a scan sees only the machine's primary datastore, so every repo living in a NAMED datastore was
+ * invisible to `subscription refresh` and to the license table. Those repos still expire, still block backups,
+ * and still need renewal; they were simply never looked at. renet folds the primary and every attached named
+ * datastore into one array, tagging each entry with the datastore it came from.
  */
-function licenseScanCommand(
-  verb: 'license-scan' | 'license-status',
-  renetPath: string,
-  datastore: string
-): string {
-  return `sudo ${shellQuote(renetPath)} repository ${verb} --datastore ${shellQuote(datastore)} --all-datastores --output json`;
+async function runLicenseJob(
+  machineName: string,
+  name: 'license-scan' | 'license-status' | 'license-write',
+  args: Record<string, unknown>,
+  payload?: string
+): Promise<string> {
+  const result = await getExecutor().execute({
+    functionName: name,
+    machineName,
+    commandKind: { name, args, ...(payload === undefined ? {} : { payload }) },
+    captureOutput: true,
+    probe: true,
+  });
+  if (!result.success) {
+    throw new Error(
+      `renet ${name} failed on ${machineName} (exit ${result.exitCode}): ${result.stderr ?? result.error ?? ''}`.trim()
+    );
+  }
+  return result.stdout ?? '';
 }
 
 export async function scanRemoteLicenseStatuses(
-  sftp: SFTPClient,
-  datastore: string,
-  remoteRenetPath?: string
+  machineName: string,
+  datastore: string
 ): Promise<RuntimeRepoLicenseStatus[]> {
-  const renetPath = remoteRenetPath ?? DEFAULTS.CONTEXT.RENET_BINARY;
-  const output = await sftp.exec(licenseScanCommand('license-status', renetPath, datastore));
+  const output = await runLicenseJob(machineName, 'license-status', { datastore });
   const parsed = JSON.parse(output) as unknown;
   return Array.isArray(parsed) ? (parsed as RuntimeRepoLicenseStatus[]) : [];
 }
@@ -216,30 +373,8 @@ export function clusterIdFor(machine: MachineConfig): string | undefined {
   return machine.cluster?.cluster;
 }
 
-/**
- * Where a repo's license files live on the machine, mirroring THE SCOPE RULE in
- * renet's `RepoLicenseBaseDir` (pkg/license/store.go):
- *
- *   - no datastore identity (the plain default datastore, which carries no
- *     descriptor) → the legacy unscoped `repos/<guid>/` population;
- *   - an identity → ONLY `datastores/<id>/repos/<guid>/`.
- *
- * Getting this wrong is silent and expensive rather than loud: renet reads one
- * population and one only, so a license written to the other path reads as
- * `missing`, the CLI auto-reissues, and the pair spins reissuing forever while
- * burning the monthly issuance quota. A malformed identity degrades to unscoped
- * exactly as renet's does, so both sides agree on where a corrupt descriptor
- * puts the file.
- */
-function repoLicenseDirFor(repositoryGuid: string, datastoreId?: string): string {
-  if (!isDatastoreScopedId(datastoreId)) {
-    return `${REPO_LICENSE_DIR}/${repositoryGuid}`;
-  }
-  return `${DATASTORE_LICENSE_DIR}/${datastoreId}/repos/${repositoryGuid}`;
-}
-
 export async function writeRepoLicense(
-  sftp: SFTPClient,
+  machineName: string,
   repositoryGuid: string,
   license: unknown,
   datastoreId?: string
@@ -260,29 +395,24 @@ export async function writeRepoLicense(
     );
   }
 
-  const repoDir = repoLicenseDirFor(repositoryGuid, datastoreId);
-  const repoLicenseFile = `${repoDir}/${publicKeyId}.json`;
-  await sftp.exec(`sudo mkdir -p "${repoDir}"`);
-  await sftp.execStreaming(`sudo tee "${repoLicenseFile}" > /dev/null`, {
-    stdin: JSON.stringify(license, null, 2),
-  });
-  await sftp.exec(`sudo chmod 640 "${repoLicenseFile}"`);
-  // GC the legacy flat file only. Files for other keyIds are never touched ,
-  // that no-clobber property is what lets universes coexist. The flat file
-  // predates both the per-key layout and datastore scoping, so it is removed
-  // from the unscoped root regardless of which population we just wrote to:
-  // renet reads it in neither case, and leaving it behind only confuses the
-  // next person to look in that directory.
-  await sftp.exec(`sudo rm -f "${REPO_LICENSE_DIR}/${repositoryGuid}.json"`);
+  // renet installs the blob into the population the datastore identity selects (the scope rule is `license.InstallRepoLicense`, pkg/license/store.go): a missing or malformed identity means the legacy unscoped layout, other signers' files stay, and the legacy flat file goes. A wrong scope reads as `missing` and spins reissue forever, which is why the identity is sent only when it is usable. The blob rides as the job's payload, never an argument.
+  await runLicenseJob(
+    machineName,
+    'license-write',
+    {},
+    JSON.stringify({
+      repositoryGuid,
+      ...(isDatastoreScopedId(datastoreId) ? { datastoreId } : {}),
+      license,
+    })
+  );
 }
 
 export async function scanRemoteRepoLicenses(
-  sftp: SFTPClient,
-  datastore: string,
-  remoteRenetPath?: string
+  machineName: string,
+  datastore: string
 ): Promise<RemoteRepoLicenseScanEntry[]> {
-  const renetPath = remoteRenetPath ?? DEFAULTS.CONTEXT.RENET_BINARY;
-  const output = await sftp.exec(licenseScanCommand('license-scan', renetPath, datastore));
+  const output = await runLicenseJob(machineName, 'license-scan', { datastore });
   const parsed = JSON.parse(output) as RemoteRepoLicenseScanEntry[];
   return Array.isArray(parsed) ? parsed : [];
 }

@@ -10,7 +10,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.ops import apply_cf_waf_rules as w
-from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, APEX_DOMAIN, BENCH_ORIGIN
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, BENCH_ORIGIN, PRODUCT_DOMAIN
 
 if TYPE_CHECKING:
     import pathlib
@@ -62,10 +62,9 @@ def test_hosts_come_from_every_account_worker_config() -> None:
     hosts = w.account_hosts(ROOT)
     bench = BENCH_ORIGIN.removeprefix("https://")
     eu = ACCOUNT_DEFAULT_ORIGIN.removeprefix("https://")
-    for host in (bench, eu, "us.%s" % APEX_DOMAIN, "asia.%s" % APEX_DOMAIN):
+    for host in (bench, eu, "us.%s" % PRODUCT_DOMAIN, "asia.%s" % PRODUCT_DOMAIN):
         assert host in hosts
-    for region in ("eu", "us", "asia"):
-        assert "edge-%s.%s" % (region, APEX_DOMAIN) in hosts
+    assert not [h for h in hosts if h.startswith("edge-")], "the edge hosts are gone"
     for host in hosts:
         assert '"%s"' % host in wanted()["expression"]
 
@@ -167,6 +166,21 @@ def test_a_config_with_duplicate_refs_is_refused(tmp_path: pathlib.Path) -> None
     (tmp_path / w.CONFIG_REL).write_text(json.dumps(cfg), encoding="utf-8")
     with pytest.raises(w.ApplyError, match="unique"):
         w.load_config(tmp_path)
+
+
+def test_a_zone_that_does_not_hold_the_account_hosts_is_refused() -> None:
+    """The 2026-11-08 shape: the apex zone named while every account route is on the product domain."""
+    hosts = ["bench." + PRODUCT_DOMAIN, "eu." + PRODUCT_DOMAIN]
+    with pytest.raises(w.ApplyError, match="does not hold the account hosts"):
+        w.refuse_foreign_hosts({"zoneId": "z", "domain": "apex"}, hosts)
+    w.refuse_foreign_hosts({"zoneId": "z", "domain": "product"}, [*hosts, PRODUCT_DOMAIN])
+    with pytest.raises(w.ApplyError, match="unknown domain"):
+        w.zone_name({"zoneId": "z", "domain": "nope"})
+
+
+def test_the_shipped_zone_holds_every_account_host() -> None:
+    for zone in CONFIG["zones"]:
+        w.refuse_foreign_hosts(zone, w.account_hosts(ROOT))
 
 
 def test_no_worker_config_is_refused(tmp_path: pathlib.Path) -> None:

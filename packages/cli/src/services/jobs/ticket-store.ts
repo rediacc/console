@@ -52,7 +52,21 @@ export type TicketKind =
   | 'acknowledged'
   | 'announced'
   | 'then-started'
-  | 'step-done';
+  | 'step-done'
+  | 'expired';
+
+/** Why a ticket was given up on: its job is gone, never started, too old, or dismissed by the operator. */
+export type ExpiredReason = 'gone' | 'never-started' | 'age' | 'dismissed';
+
+const EXPIRED_REASONS = [
+  'gone',
+  'never-started',
+  'age',
+  'dismissed',
+] as const satisfies readonly ExpiredReason[];
+
+/** The reason an expiry event carries when it names none. */
+const DEFAULT_EXPIRED_REASON: ExpiredReason = 'age';
 
 export type TicketState = 'starting' | 'running' | 'succeeded' | 'failed' | 'cancelled' | 'unknown';
 
@@ -99,6 +113,8 @@ export interface TicketEvent {
   steps?: TicketStep[];
   /** The step a `step-done` event reports. */
   step?: string;
+  /** Why an `expired` event gave the ticket up. */
+  reason?: ExpiredReason;
 }
 
 /** The folded view of one request id. */
@@ -121,6 +137,8 @@ export interface Ticket {
   steps: TicketStep[];
   stepsDone: string[];
   acknowledged: boolean;
+  /** Set once an `expired` event closed the ticket (it is acknowledged too, so compaction drops it). */
+  expiredReason?: ExpiredReason;
   /** The finished notice was printed once; a ticket still owing a step gets only the pending line afterwards. */
   announced: boolean;
   /** Timestamp of the last event that observed the job (seen or finished). */
@@ -199,6 +217,9 @@ export function sanitizeEvent(
   if (typeof input.lastSeenLine === 'number') event.lastSeenLine = input.lastSeenLine;
   if (typeof input.exitCode === 'number') event.exitCode = input.exitCode;
   if (typeof input.state === 'string') event.state = input.state as TicketState;
+  if (EXPIRED_REASONS.includes(input.reason as ExpiredReason)) {
+    event.reason = input.reason as ExpiredReason;
+  }
   event.via = cleanVia(input.via);
   event.then = cleanThen(input.then);
   event.steps = cleanSteps(input.steps);
@@ -252,8 +273,18 @@ const COPIED_FIELDS = [
 
 /** Per-kind effect on the folded ticket. Kinds with no entry only copy fields. */
 const KIND_EFFECTS: Partial<Record<TicketKind, (t: Ticket, e: TicketEvent) => void>> = {
+  // A retried start after a refusal may make the job the refusal did not, so the refusal's acknowledgement no longer holds.
+  // A ticket that already has a job keeps its acknowledgement: the retry dedupes onto that job, whose notice was printed.
+  starting: (t) => {
+    if (!t.jobId) t.acknowledged = false;
+  },
   started: (t, e) => {
     if (!isTerminalTicketState(t.state)) t.state = e.state ?? STATE_RUNNING;
+    // An expiry as never-started was a guess from renet's silence; the job existing after all revives the ticket. Other reasons stand.
+    if (t.expiredReason === 'never-started') {
+      t.expiredReason = undefined;
+      t.acknowledged = false;
+    }
   },
   seen: (t, e) => {
     t.lastCheckedAt = e.ts;
@@ -267,6 +298,10 @@ const KIND_EFFECTS: Partial<Record<TicketKind, (t: Ticket, e: TicketEvent) => vo
   },
   acknowledged: (t) => {
     t.acknowledged = true;
+  },
+  expired: (t, e) => {
+    t.acknowledged = true;
+    t.expiredReason = e.reason ?? DEFAULT_EXPIRED_REASON;
   },
   announced: (t) => {
     t.announced = true;
@@ -372,6 +407,11 @@ export class TicketStore {
 
   tickets(): Ticket[] {
     return foldEvents(this.readEvents());
+  }
+
+  /** Every ticket, expired ones included, newest first (`rdc job list --all`). */
+  all(): Ticket[] {
+    return this.tickets().sort((a, b) => (b.startedAt ?? '').localeCompare(a.startedAt ?? ''));
   }
 
   /** Tickets that are pending or finished and not yet acknowledged, newest first. */

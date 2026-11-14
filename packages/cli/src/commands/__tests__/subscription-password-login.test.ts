@@ -13,6 +13,7 @@ vi.mock('../../i18n/index.js', () => ({
     vars ? `${key}:${Object.values(vars).join(':')}` : key,
 }));
 
+const { outputService } = await import('../../services/core/output.js');
 const { loginWithPassword, resolvePasswordLoginInput, wantsPasswordLogin } = await import(
   '../../services/account/subscription-password-auth.js'
 );
@@ -35,7 +36,22 @@ interface Call {
   cookie?: string;
 }
 
-type Opts = { twoFactor?: boolean; memberRefusedPrivileged?: boolean };
+type Opts = {
+  twoFactor?: boolean;
+  memberRefusedPrivileged?: boolean;
+  /** The account has no 2FA, so the server refuses a mint carrying backup:manage. */
+  backupNeedsTwoFactor?: boolean;
+};
+
+function mintRoute(body: Record<string, unknown> | undefined, opts: Opts): Response {
+  const scopes = (body?.scopes ?? []) as string[];
+  if (opts.backupNeedsTwoFactor && scopes.includes('backup:manage')) {
+    return reply({ error: 'Two-factor authentication is required', twoFactorRequired: true }, 403);
+  }
+  return opts.memberRefusedPrivileged && scopes.includes('audit:write')
+    ? reply({ error: 'no', code: 'INSUFFICIENT_ORG_ROLE' }, 403)
+    : reply({ token: 'rdt_minted' }, 201);
+}
 
 function route(path: string, body: Record<string, unknown> | undefined, opts: Opts): Response {
   if (path === '/auth/login') {
@@ -47,12 +63,7 @@ function route(path: string, body: Record<string, unknown> | undefined, opts: Op
   if (path === '/portal/me') {
     return reply({ subscription: { id: 'sub-1' }, activeTeam: { id: 'team-1' } });
   }
-  if (path === '/api-tokens') {
-    const scopes = (body?.scopes ?? []) as string[];
-    return opts.memberRefusedPrivileged && scopes.includes('audit:write')
-      ? reply({ error: 'no', code: 'INSUFFICIENT_ORG_ROLE' }, 403)
-      : reply({ token: 'rdt_minted' }, 201);
-  }
+  if (path === '/api-tokens') return mintRoute(body, opts);
   return reply({ error: 'unexpected' }, 404);
 }
 
@@ -83,6 +94,7 @@ describe('headless subscription login', () => {
     }
   });
   afterEach(() => {
+    vi.restoreAllMocks();
     vi.unstubAllGlobals();
     for (const k of ENV_KEYS) {
       if (saved[k] === undefined) delete process.env[k];
@@ -135,6 +147,47 @@ describe('headless subscription login', () => {
     const err = await loginWithPassword(SERVER, input).catch((e: Error) => e);
     expect((err as Error).message).toContain('REDIACC_LOGIN_TOTP');
     expect(calls.map((c) => c.url)).toEqual(['/auth/login']);
+  });
+
+  it('signs in without backup:manage and says why when the account has no 2FA', async () => {
+    process.env.REDIACC_LOGIN_EMAIL = 'a@b.co';
+    process.env.REDIACC_LOGIN_PASSWORD = PASSWORD;
+    const warn = vi.spyOn(outputService, 'warn').mockImplementation(() => undefined);
+    const calls = stubServer({ backupNeedsTwoFactor: true });
+    const input = await resolvePasswordLoginInput(false);
+    await expect(loginWithPassword(SERVER, input)).resolves.toBe('rdt_minted');
+    const mints = calls.filter((c) => c.url === '/api-tokens');
+    expect(mints).toHaveLength(2);
+    expect(mints[1].body?.scopes).not.toContain('backup:manage');
+    expect(mints[1].body?.scopes).toContain('audit:write');
+    expect(warn).toHaveBeenCalledWith(
+      `commands.subscription.login.backupNeedsTwoFactor:${SERVER}/account/settings`
+    );
+  });
+
+  it('mints once and stays quiet when the account has 2FA (control)', async () => {
+    process.env.REDIACC_LOGIN_EMAIL = 'a@b.co';
+    process.env.REDIACC_LOGIN_PASSWORD = PASSWORD;
+    process.env.REDIACC_LOGIN_TOTP = CODE;
+    const warn = vi.spyOn(outputService, 'warn').mockImplementation(() => undefined);
+    const calls = stubServer({ twoFactor: true });
+    const input = await resolvePasswordLoginInput(false);
+    await loginWithPassword(SERVER, input);
+    expect(calls.map((c) => c.url)).toContain('/auth/2fa/verify');
+    expect(calls.filter((c) => c.url === '/api-tokens')).toHaveLength(1);
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('a plain member whose backup scopes need 2FA falls back to the base scopes after the 2FA refusal', async () => {
+    process.env.REDIACC_LOGIN_EMAIL = 'a@b.co';
+    process.env.REDIACC_LOGIN_PASSWORD = PASSWORD;
+    const calls = stubServer({ backupNeedsTwoFactor: true, memberRefusedPrivileged: true });
+    const input = await resolvePasswordLoginInput(false);
+    await expect(loginWithPassword(SERVER, input)).resolves.toBe('rdt_minted');
+    const mints = calls.filter((c) => c.url === '/api-tokens');
+    expect(mints).toHaveLength(3);
+    expect(mints[2].body?.scopes).not.toContain('audit:write');
+    expect(mints[2].body?.scopes).toContain('config:enroll');
   });
 
   it('retries the mint without privileged scopes for a plain member', async () => {
