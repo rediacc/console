@@ -907,6 +907,31 @@ def test_bench_region_loss_restores_both_signers_when_a_cut_raises_a_non_lab_err
     assert "restore_region" in lab.calls
 
 
+def test_region_loss_form_restores_eu_when_its_cut_raises_a_non_lab_error() -> None:
+    """Review 7b908fbe.1: the non-bench form (bench=False) restores the eu signer when `cut_region` half-applies and raises a non-LAB error."""
+
+    class CutRaises(FakeLab):
+        def cut_region(self, region: str) -> None:
+            super().cut_region(region)
+            msg = "unexpected"
+            raise RuntimeError(msg)
+
+    lab = CutRaises()
+    with pytest.raises(RuntimeError, match="unexpected"):
+        run("region-loss", lab, bench=False)
+    assert lab.cut == set()
+    assert "restore_region" in lab.calls
+
+
+def test_region_loss_form_restores_eu_after_a_clean_cut() -> None:
+    """Control for 7b908fbe.1: with no error the form still restores the signer it cut."""
+    lab = FakeLab()
+    rc, _ = run("region-loss", lab, bench=False)
+    assert rc == 0
+    assert lab.cut == set()
+    assert "restore_region" in lab.calls
+
+
 def test_stop_that_raises_a_non_lab_error_still_restarts_the_signer() -> None:
     class StopRaises(FakeLab):
         def stop_signer(self, signer: str) -> None:

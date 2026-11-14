@@ -583,7 +583,7 @@ def _region_loss_bench(lab: Lab, p: Proof) -> None:
 def verb_region_loss(lab: Lab, p: Proof, *, bench: bool) -> None:
     """V2: with eu's bench signer cut (its control database stays, see deploy_signer), the us company issues and renews, the eu company gets the named error (settled) and keeps its licence, and restoring eu renews it again.
 
-    On bench (`bench=True`) this runs `_region_loss_bench`, because bench places companies in eu only and refuses to create the us company the form below needs; the form below stays for a deploy target with a second region."""
+    On bench (`bench=True`) this runs `_region_loss_bench`, because bench places companies in eu only and refuses to create the us company the form below needs; the form below stays for a target that can place a company in us (its cut still stops the bench eu signer, the only cut `deploy_signer.cut_region` makes)."""
     if bench:
         _region_loss_bench(lab, p)
         p.notes.extend(f"not proven on bench: {n}" for n in NOT_PROVEN_ON_BENCH)
@@ -591,7 +591,7 @@ def verb_region_loss(lab: Lab, p: Proof, *, bench: bool) -> None:
         return
     eu = lab.caller_of(lab.ensure_company("proof-loss-eu", "eu"))
     us = lab.caller_of(lab.ensure_company("proof-loss-us", "us"))
-    # A deploy target with a second region runs this form; the lab cuts a region by stopping its bench signer (`cut_region`).
+    # This form needs a company in us, so it runs where companies can be placed in a second region. Cutting a region is bench-only (`deploy_signer.cut_region` stops the bench signer), so eu_signer is the bench signer name on every target.
     eu_signer = "signer-bench-eu"
     if not _may_stop(lab, p, eu_signer):
         return
