@@ -1,4 +1,4 @@
-import { existsSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -37,8 +37,39 @@ describe('local lock on a filesystem without hard links', () => {
     const info = acquireLocalLock(lockPath, { pid: 4242, host: 'h1', isPidAlive: () => true });
     expect(JSON.parse(readFileSync(lockPath, 'utf8'))).toEqual(info);
     expect(existsSync(lockPath)).toBe(true);
+    expect(readdirSync(dir)).toEqual(['app.latest.lock']);
     releaseLocalLock(lockPath, { pid: 4242, host: 'h1' });
     expect(existsSync(lockPath)).toBe(false);
+  });
+
+  it.each(['EPERM', 'ENOTSUP', 'EOPNOTSUPP', 'ENOSYS'])(
+    'takes the exclusive-create fallback when link() answers %s',
+    (code) => {
+      linkCode.value = code;
+      const info = acquireLocalLock(lockPath, { pid: 7, host: 'h1', isPidAlive: () => true });
+      expect(JSON.parse(readFileSync(lockPath, 'utf8'))).toEqual(info);
+      expect(readdirSync(dir)).toEqual(['app.latest.lock']);
+    }
+  );
+
+  it('takes over an empty lock a crash left behind once it is past the grace period', () => {
+    writeFileSync(lockPath, '');
+    const info = acquireLocalLock(lockPath, {
+      pid: 8,
+      host: 'h1',
+      isPidAlive: () => true,
+      unreadableGraceMs: -1,
+    });
+    expect(JSON.parse(readFileSync(lockPath, 'utf8')).pid).toBe(info.pid);
+    expect(readdirSync(dir)).toEqual(['app.latest.lock']);
+  });
+
+  it('control: still refuses a fresh unreadable lock, which a live run may be writing', () => {
+    writeFileSync(lockPath, '');
+    expect(() =>
+      acquireLocalLock(lockPath, { pid: 8, host: 'h1', isPidAlive: () => true })
+    ).toThrow(/unreadable/);
+    expect(readFileSync(lockPath, 'utf8')).toBe('');
   });
 
   it('still refuses a live holder', () => {

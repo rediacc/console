@@ -22,8 +22,9 @@ export interface ImageRsyncArgsOptions {
   freshDest: boolean;
   /**
    * The destination filesystem stores holes (preflight's `probeSparse`). False drops `--sparse`: on
-   * exFAT, FAT or a WSL drvfs mount it saves nothing and turns every zero run into a seek and a short
-   * write, which measured 5x slower onto a WSL-mounted exFAT drive (146 s against 27 s for 300 MiB).
+   * a filesystem that stores no holes (exFAT and FAT, and a WSL drvfs mount when the probe finds it
+   * so) it saves nothing and turns every zero run into a seek and a short write, which measured 5x
+   * slower onto a WSL-mounted exFAT drive (146 s against 27 s for 300 MiB).
    * Omitted keeps the old behaviour.
    */
   sparseDest?: boolean;

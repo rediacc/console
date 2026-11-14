@@ -11,11 +11,20 @@
 
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WK_DATASTORE_PATH } from '@rediacc/shared/config/well-known.generated';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { localImagePaths, readImageState } from '../../services/backup-image/state.js';
+
+const probe = vi.hoisted(() => ({ sparse: true, dirs: [] as string[] }));
+vi.mock('../../services/backup-image/preflight.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../services/backup-image/preflight.js')>()),
+  probeSparse: (dir: string) => {
+    probe.dirs.push(dir);
+    return probe.sparse;
+  },
+}));
 
 interface Ready {
   snapshot: string;
@@ -232,6 +241,48 @@ describe('runDownload', () => {
     expect(st?.complete?.sha256).toBe(DIGEST);
     expect(st?.complete?.verify).toBe('sha256+rsync');
     expect(calls.at(-1)).toBe('quit');
+  });
+
+  describe('the --sparse wiring of the rsync argv', () => {
+    const argvOf = async (): Promise<string[]> => {
+      const m = await load();
+      let argv: string[] = [];
+      const deps = baseDeps({
+        runRsync: (req) => {
+          argv = req.args;
+          writeFileSync(req.dest, 'image');
+          return Promise.resolve({ exitCode: 0, literalBytes: 1, matchedBytes: 2 });
+        },
+      });
+      await m.runDownload(opts(), deps);
+      return argv;
+    };
+
+    beforeEach(() => {
+      probe.dirs = [];
+    });
+
+    it('passes --sparse to a fresh destination on a filesystem that stores holes', async () => {
+      probe.sparse = true;
+      expect(await argvOf()).toContain('--sparse');
+      expect(probe.dirs).toContain(dirname(paths().image));
+    });
+
+    it('drops --sparse when the probe of the image directory finds no holes', async () => {
+      probe.sparse = false;
+      expect(await argvOf()).not.toContain('--sparse');
+      expect(probe.dirs).toContain(dirname(paths().image));
+    });
+
+    it('probes once less for a destination that already exists (the space preflight probes either way)', async () => {
+      probe.sparse = true;
+      await argvOf();
+      const fresh = probe.dirs.length;
+      probe.dirs = [];
+      const argv = await argvOf();
+      expect(argv).not.toContain('--sparse');
+      expect(probe.dirs.length).toBe(fresh - 1);
+    });
   });
 
   it('a sha256 mismatch leaves the state incomplete and fails the run', async () => {

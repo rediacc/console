@@ -63,11 +63,13 @@ describe('startImportSession staging check', () => {
   });
 
   it('refuses an unplaced reply whose staging path is unsafe (control)', async () => {
-    await expect(open(ready({ placed: false, staging: '/mnt/x y;id' }))).rejects.toThrow();
+    await expect(open(ready({ placed: false, staging: '/mnt/x y;id' }))).rejects.toThrow(
+      /Refusing staging .*\/mnt\/x y;id/
+    );
   });
 
   it('refuses an unplaced reply with no staging path (control)', async () => {
-    await expect(open(ready({ fresh: true }))).rejects.toThrow();
+    await expect(open(ready({ fresh: true }))).rejects.toThrow(/Refusing staging/);
   });
 
   it('accepts an unplaced reply with a safe staging path (control)', async () => {

@@ -17,6 +17,7 @@ import {
   openSync,
   readFileSync,
   renameSync,
+  statSync,
   unlinkSync,
   writeSync,
 } from 'node:fs';
@@ -237,7 +238,6 @@ function unlinkQuietly(path: string): void {
   }
 }
 
-/** Writes `body` to a new 0600 file, fsynced; the file is removed again when any step fails. */
 /** Errors a filesystem without hard links (exFAT, FAT32, some network mounts) answers `link()` with. */
 const NO_HARDLINK_CODES = new Set(['EPERM', 'ENOTSUP', 'EOPNOTSUPP', 'ENOSYS']);
 
@@ -245,7 +245,8 @@ const NO_HARDLINK_CODES = new Set(['EPERM', 'ENOTSUP', 'EOPNOTSUPP', 'ENOSYS']);
  * Publishes `body` at `dest` exclusively: a hard link of the durable temp file when the filesystem
  * has hard links, else an O_EXCL create of `dest` written in place. Both refuse with EEXIST when
  * `dest` exists. The fallback can show `dest` briefly empty, which `readLock` reads as an unreadable
- * lock and refuses, never as a free one.
+ * lock and refuses, never as a free one. A crash inside that window leaves the empty file behind,
+ * which `clearDeadHolder` takes over once it is older than `UNREADABLE_LOCK_GRACE_MS`.
  */
 function publishExclusive(tmp: string, dest: string, body: string): void {
   try {
@@ -257,6 +258,7 @@ function publishExclusive(tmp: string, dest: string, body: string): void {
   writeDurableTemp(dest, body);
 }
 
+/** Writes `body` to a new 0600 file, fsynced; the file is removed again when any step fails. */
 function writeDurableTemp(tmp: string, body: string): void {
   const fd = openSync(tmp, 'wx', 0o600);
   try {
@@ -415,7 +417,12 @@ export interface LockDeps {
   beforePublish?: () => void;
   /** Test seam: runs after a dead holder was read, before its lock is moved aside. */
   beforeTakeover?: () => void;
+  /** An unreadable lock older than this is an abandoned half-written one; defaults to `UNREADABLE_LOCK_GRACE_MS`. */
+  unreadableGraceMs?: number;
 }
+
+/** A live run finishes writing its lock in milliseconds, so an unreadable one this old is a crash's leftover. */
+const UNREADABLE_LOCK_GRACE_MS = 10_000;
 
 export class ImageLockError extends Error {
   constructor(
@@ -471,8 +478,10 @@ function uniqueSibling(path: string, kind: string): string {
 
 /**
  * Creates the lock file exclusively; false when it already exists. The body is written to a
- * temp file first and hard-linked into place (link fails with EEXIST like O_EXCL), so the lock
- * is never visible without its holder: a crash leaves at most a stray temp file, never an empty lock.
+ * temp file first and hard-linked into place (link fails with EEXIST like O_EXCL), so on a
+ * filesystem with hard links the lock is never visible without its holder: a crash leaves at most
+ * a stray temp file. Without hard links `publishExclusive` writes the lock in place, and a crash
+ * mid-write can leave an empty lock, which a later run takes over after a grace period.
  */
 function tryCreateLock(lockPath: string, info: LockInfo, deps: LockDeps): boolean {
   const tmp = uniqueSibling(lockPath, 'tmp');
@@ -499,7 +508,7 @@ function sameHolder(a: LockInfo, b: LockInfo | null): boolean {
  * of them move it, and the content check catches a run that moved a fresh lock another run had just
  * created in its place, which is put back. True when the dead lock is gone and creation may retry.
  */
-function takeOver(lockPath: string, dead: LockInfo): boolean {
+function takeOver(lockPath: string, dead: LockInfo | null): boolean {
   const grave = uniqueSibling(lockPath, 'stale');
   try {
     renameSync(lockPath, grave);
@@ -508,7 +517,8 @@ function takeOver(lockPath: string, dead: LockInfo): boolean {
     throw error;
   }
   const moved = readLock(grave);
-  if (sameHolder(dead, moved)) {
+  // A null `dead` is an unreadable lock: it is the same one only while it is still unreadable.
+  if (dead === null ? moved === null : sameHolder(dead, moved)) {
     unlinkQuietly(grave);
     return true;
   }
@@ -541,6 +551,14 @@ export function acquireLocalLock(lockPath: string, deps: LockDeps = {}): LockInf
   throw new ImageLockError(`could not take ${lockPath}`, readLock(lockPath));
 }
 
+function isAbandonedUnreadable(lockPath: string, graceMs = UNREADABLE_LOCK_GRACE_MS): boolean {
+  try {
+    return Date.now() - statSync(lockPath).mtimeMs > graceMs;
+  } catch {
+    return false;
+  }
+}
+
 /**
  * After a create found the lock taken: returns once the lock is gone (it vanished, or its dead
  * holder was moved aside) so creation may retry; throws when a live or foreign holder keeps it.
@@ -553,6 +571,11 @@ function clearDeadHolder(
 ): void {
   const holder = readLock(lockPath);
   if (holder === null && !existsSync(lockPath)) return;
+  if (holder === null && isAbandonedUnreadable(lockPath, deps.unreadableGraceMs)) {
+    deps.beforeTakeover?.();
+    if (!takeOver(lockPath, null)) throw lockRefusal(lockPath, readLock(lockPath));
+    return;
+  }
   if (holder === null || !isTakeoverable(holder, host, alive)) {
     throw lockRefusal(lockPath, holder);
   }
