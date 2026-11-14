@@ -712,7 +712,69 @@ def lane_display_patterns(
         for callee_id, callee_rec in callee_jobs.items():
             base = "%s / %s" % (caller_display, callee_rec["name"])
             patterns[callee_id] = _display_name_pattern(base, callee_rec["has_matrix"])
+    # `_display_name_pattern` drops a hard-coded `/<n>` leg count from the shape, so two lanes whose names differ only in that count compile to one pattern and `prune_names_to_leg_counts` could not tell whose leg a name is. No such pair exists today; a new one is refused here, with both lane ids, rather than attributed to whichever lane comes first.
+    by_shape: dict[str, str] = {}
+    for lane, pattern in patterns.items():
+        other = by_shape.setdefault(pattern.pattern, lane)
+        if other != lane:
+            raise ValueError(
+                "lanes %r and %r have display names that match the same pattern (%s); their names may differ by more than a leg count"
+                % (other, lane, pattern.pattern)
+            )
     return patterns
+
+
+def lanes_passing_also(root: Path, workflow: str = DEFAULT_WORKFLOW) -> dict[str, bool]:
+    """`{job id: whether its block passes `--also` to the E2E runner on a non-comment line}` for every callee job of `workflow`, read the way `lane_display_patterns` reads the same files. `--also` is how a leg takes suites its shard manifest does not name, which is the only source of a variant's `legExtraMinutes`; a job without it carries none."""
+    ci_jobs = parse_workflow_jobs((root / ".github" / "workflows" / workflow).read_text("utf-8"))
+    out: dict[str, bool] = {}
+    for rec in ci_jobs.values():
+        callee = rec["uses"]
+        if not callee:
+            continue
+        callee_path = root / callee.removeprefix("./")
+        if not callee_path.is_file():
+            continue
+        current: str | None = None
+        in_jobs = False
+        for line in callee_path.read_text(encoding="utf-8").splitlines():
+            if line == "jobs:":
+                in_jobs = True
+                continue
+            if not in_jobs:
+                continue
+            if line and not line.startswith(" "):
+                break
+            header = _JOB_HEADER_RE.match(line)
+            if header:
+                current = header.group(1)
+                out[current] = False
+            elif current is not None and "--also" in line and not line.lstrip().startswith("#"):
+                out[current] = True
+    return out
+
+
+def drop_stale_leg_extras(
+    variant_costs: Mapping[str, Any], passes_also: Mapping[str, bool]
+) -> tuple[dict[str, Any], list[str]]:
+    """`(variantCosts minus every legExtraMinutes of a lane whose job no longer passes `--also`, one note per dropped entry)`. `merge_variant_costs` keeps an unmeasured extra, and a pre-split run still in the window measures it again, so without this the extra of suites that moved to their own job (ruling #12755b25) comes back on every refresh. A lane whose job `passes_also` does not name is left alone: nothing says its extras are stale."""
+    out: dict[str, Any] = {}
+    notes: list[str] = []
+    for lane, variants in variant_costs.items():
+        job_id = VARIANT_LANE_JOBS.get(lane)
+        if job_id is None or passes_also.get(job_id, True):
+            out[lane] = variants
+            continue
+        lane_out: dict[str, Any] = {}
+        for variant, cost in variants.items():
+            if "legExtraMinutes" in cost:
+                notes.append(
+                    "variantCosts[%s][%s].legExtraMinutes: DROPPED %s; job %s passes no --also"
+                    % (lane, variant, cost["legExtraMinutes"], job_id)
+                )
+            lane_out[variant] = {k: v for k, v in cost.items() if k != "legExtraMinutes"}
+        out[lane] = lane_out
+    return out, notes
 
 
 # vCPUs of a GitHub-hosted standard runner in a PUBLIC repository (docs.github.com "GitHub-hosted runners": ubuntu-latest, ubuntu-24.04, ubuntu-22.04 are 4 vCPU / 16 GB; a private repository gets 2). The repo is public (`gh repo view --json isPrivate`, 2026-10-05). A label absent here has no derivable count.
@@ -2568,6 +2630,12 @@ def refresh_lane_durations(
         if not measured_variants[lane]:
             del measured_variants[lane]
     variant_costs, variant_notes = merge_variant_costs(existing_variants, measured_variants)
+    try:
+        passes_also = lanes_passing_also(repo_root_for_pruning, workflow)
+    except FileNotFoundError:
+        passes_also = {}
+    variant_costs, dropped_notes = drop_stale_leg_extras(variant_costs, passes_also)
+    variant_notes = [*variant_notes, *dropped_notes]
     for note in variant_notes:
         log.warn("budget_report --refresh: %s" % note)
     for lane, legs in sorted((computed.get("variant_legs") or {}).items()):
@@ -2593,10 +2661,10 @@ def refresh_lane_durations(
     updated["job_p90_minutes"], kept_on_thin["job_p90_minutes"] = refreshed_on_evidence(
         existing_p90, computed["job_p90_minutes"], p90_runs, MIN_VARIANT_RUNS
     )
-    # Leg names the current shard manifests no longer ship are dropped from both name-keyed tables (a workflow missing from this tree leaves the patterns empty, which prunes nothing).
+    # Leg names the current shard manifests no longer ship are dropped from both name-keyed tables. A workflow missing from this tree (a `--lane-durations` path outside a repo) leaves the patterns empty, which prunes nothing; any other read failure, and an ambiguous pattern pair, surface.
     try:
         leg_patterns = lane_display_patterns(repo_root_for_pruning, workflow)
-    except OSError:
+    except FileNotFoundError:
         leg_patterns = {}
     updated["job_p90_minutes"] = prune_names_to_leg_counts(
         updated["job_p90_minutes"], repo_root_for_pruning, leg_patterns

@@ -3883,3 +3883,195 @@ def test_prune_names_to_leg_counts_drops_legs_the_manifest_no_longer_ships(tmp_p
     }
     # No manifest for the lane: nothing is judged stale.
     assert br.prune_names_to_leg_counts(table, tmp_path / "none", pats) == table
+
+
+def _write_workflows(root, jobs):
+    """A ci.yml whose `tests` caller reaches a callee workflow with `jobs` (`{job id: (name, step lines)}`)."""
+    workflows = root / ".github" / "workflows"
+    workflows.mkdir(parents=True, exist_ok=True)
+    (workflows / "ci.yml").write_text(
+        "name: ci\njobs:\n  tests:\n    name: Tests + Infra\n    uses: ./.github/workflows/ct.yml\n"
+    )
+    body = "name: ct\njobs:\n"
+    for job_id, (name, steps) in jobs.items():
+        body += "  %s:\n    name: %s\n    runs-on: ubuntu-24.04\n    steps:\n%s" % (
+            job_id,
+            name,
+            "".join("      %s\n" % step for step in steps),
+        )
+    (workflows / "ct.yml").write_text(body)
+
+
+_E2E_JOB_NAME = "E2E Workers (${{ matrix.os-image }}, ${{ matrix.shard }}/9)"
+_E2E_LEG_8 = "Tests + Infra / E2E Workers (ubuntu-24.04, 1/8)"
+_E2E_LEG_9 = "Tests + Infra / E2E Workers (ubuntu-24.04, 1/9)"
+
+
+def _lane_durations_path(root):
+    path = root / ".ci" / "config" / "lane-durations.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
+
+
+def test_refresh_prunes_a_stale_leg_name_from_both_name_keyed_tables(tmp_path):
+    """4f21712d.1: the wiring, not only `prune_names_to_leg_counts`, drops a leg name the manifest no longer ships from `job_p90_minutes` and `job_p90_plans`."""
+    _write_workflows(tmp_path, {"test-e2e-workers": (_E2E_JOB_NAME, ["- run: x"])})
+    shards = tmp_path / ".ci" / "config" / "shards"
+    shards.mkdir(parents=True)
+    (shards / "test-e2e-workers.json").write_text(
+        json.dumps({"lane": "test-e2e-workers", "of": 9, "legs": [{"index": 1, "ids": ["a"]}]})
+    )
+    path = _lane_durations_path(tmp_path)
+    path.write_text(
+        json.dumps(
+            {
+                "refreshed_at": "2026-01-01T00:00:00Z",
+                "concurrency": 20,
+                "job_p90_minutes": {_E2E_LEG_8: 9.0, "Kept": 1.0},
+                "job_p90_plans": {_E2E_LEG_8: ["old"], "Kept": ["k"]},
+            }
+        )
+    )
+    compute = _fake_compute(job_p90_minutes={_E2E_LEG_9: 7.0}, job_p90_plans={_E2E_LEG_9: ["new"]})
+    assert br.refresh_lane_durations(path, limit=10, compute=compute) == 0
+    data = json.loads(path.read_text())
+    # Silent control: the current-count leg and an unrelated name survive.
+    assert data["job_p90_minutes"] == {_E2E_LEG_9: 7.0, "Kept": 1.0}
+    assert data["job_p90_plans"] == {_E2E_LEG_9: ["new"], "Kept": ["k"]}
+
+
+def test_refresh_keeps_leg_names_unpruned_when_the_workflow_is_missing(tmp_path):
+    """CONTROL for 4f21712d.1 and .4: a tree with no workflow prunes nothing."""
+    path = _lane_durations_path(tmp_path)
+    path.write_text(
+        json.dumps(
+            {
+                "refreshed_at": "2026-01-01T00:00:00Z",
+                "concurrency": 20,
+                "job_p90_minutes": {_E2E_LEG_8: 9.0},
+            }
+        )
+    )
+    compute = _fake_compute(job_p90_minutes={_E2E_LEG_9: 7.0})
+    assert br.refresh_lane_durations(path, limit=10, compute=compute) == 0
+    assert json.loads(path.read_text())["job_p90_minutes"] == {_E2E_LEG_8: 9.0, _E2E_LEG_9: 7.0}
+
+
+def test_refresh_surfaces_a_workflow_read_failure_other_than_a_missing_file(tmp_path):
+    """4f21712d.4: only a missing workflow disables leg pruning; an unreadable one is an error, not a silent skip."""
+    workflows = tmp_path / ".github" / "workflows"
+    (workflows / "ci.yml").mkdir(parents=True)  # a directory where the file should be
+    path = _lane_durations_path(tmp_path)
+    path.write_text(json.dumps({"refreshed_at": "2026-01-01T00:00:00Z", "concurrency": 20}))
+    compute = _fake_compute(job_p90_minutes={_E2E_LEG_9: 7.0})
+    with pytest.raises(IsADirectoryError, match=r"ci\.yml"):
+        br.refresh_lane_durations(path, limit=10, compute=compute)
+
+
+def test_the_lane_level_run_count_excludes_unmapped_rows(tmp_path, monkeypatch):
+    """4f21712d.2: a row with no sampled run backs no run, at lane level as at variant level. Every collected leg is mapped, so run index 0 is declared the unmapped marker to reach that branch."""
+
+    def collect(runs):
+        jobs = [
+            [_job(_E2E_LEG_8, "2026-09-28T13:53:34Z", "2026-09-28T14:07:34Z", job_id=100 + i)]
+            for i in range(2)
+        ]
+        pats = {"test-e2e-workers": re.compile(r"^Tests \+ Infra / E2E Workers \(.+?, .+?/\d+\)$")}
+        br.collect_variant_costs(
+            "o/r",
+            jobs,
+            pats,
+            tmp_path,
+            bucket_titles={},
+            fetch_log=lambda _repo, _job_id: "x\n",
+            cache_dir=tmp_path / "cache",
+            runs=runs,
+        )
+        return runs
+
+    monkeypatch.setattr(
+        br,
+        "e2e_variant_measurement",
+        lambda _job, _text, _ids, _titles: {
+            "variant": "ubuntu-24.04",
+            "leg": 1,
+            "fixed_minutes": 5.0,
+            "extra_minutes": None,
+            "units": {},
+        },
+    )
+    assert collect({}) == {"test-e2e-workers": 2}  # control: both runs count
+    monkeypatch.setattr(br, "UNMAPPED_RUN", 0)
+    assert collect({}) == {"test-e2e-workers": 1}
+
+
+def test_lane_display_patterns_refuses_two_lanes_that_differ_only_in_the_leg_count(tmp_path):
+    """4f21712d.3: `/8` and `/9` compile to one pattern, so the pair is refused with both lane ids instead of attributing a name to the first lane."""
+    _write_workflows(
+        tmp_path,
+        {
+            "lane-a": ("Same (${{ matrix.shard }}/8)", ["- run: x"]),
+            "lane-b": ("Same (${{ matrix.shard }}/9)", ["- run: x"]),
+        },
+    )
+    with pytest.raises(ValueError, match=r"lane-a.*lane-b"):
+        br.lane_display_patterns(tmp_path)
+
+
+def test_lane_display_patterns_accepts_lanes_with_distinct_stems(tmp_path):
+    """CONTROL for 4f21712d.3."""
+    _write_workflows(
+        tmp_path,
+        {
+            "lane-a": ("Alpha (${{ matrix.shard }}/8)", ["- run: x"]),
+            "lane-b": ("Beta (${{ matrix.shard }}/9)", ["- run: x"]),
+        },
+    )
+    assert sorted(br.lane_display_patterns(tmp_path)) == ["lane-a", "lane-b"]
+
+
+def _refresh_with_extra(tmp_path, steps, measured_extra):
+    _write_workflows(tmp_path, {"test-e2e-workers": (_E2E_JOB_NAME, steps)})
+    path = _lane_durations_path(tmp_path)
+    prior = {
+        "test-e2e-workers": {
+            "fedora-43": {"fixedMinutes": 7.22, "legExtraMinutes": {"1": 3.03}, "units": {}}
+        }
+    }
+    path.write_text(
+        json.dumps(
+            {"refreshed_at": "2026-01-01T00:00:00Z", "concurrency": 20, "variantCosts": prior}
+        )
+    )
+    measured = {"test-e2e-workers": {"fedora-43": {"fixedMinutes": 7.0, "units": {}}}}
+    if measured_extra:
+        measured["test-e2e-workers"]["fedora-43"]["legExtraMinutes"] = {"1": 3.5}
+    compute = _fake_compute(variant_costs=measured, variant_legs={"test-e2e-workers": 3})
+    assert br.refresh_lane_durations(path, limit=10, compute=compute) == 0
+    return json.loads(path.read_text())["variantCosts"]["test-e2e-workers"]["fedora-43"]
+
+
+@pytest.mark.parametrize("measured_extra", [False, True])
+def test_refresh_drops_a_leg_extra_for_a_job_that_passes_no_also(tmp_path, measured_extra):
+    """#cbc3511e: the extra is dropped whether it is the committed one kept unmeasured or a pre-split run measured it again."""
+    cost = _refresh_with_extra(tmp_path, ["- run: runner --shard 1/9"], measured_extra)
+    assert "legExtraMinutes" not in cost
+    assert cost["fixedMinutes"] == 7.0
+
+
+def test_refresh_keeps_a_leg_extra_for_a_job_that_still_passes_also(tmp_path):
+    """CONTROL for #cbc3511e: a job that passes `--also` keeps its extra, the prior value when unmeasured and the measured one otherwise."""
+    steps = ["- run: runner --shard 1/9 --also a.ts"]
+    assert _refresh_with_extra(tmp_path, steps, False)["legExtraMinutes"] == {"1": 3.03}
+    assert _refresh_with_extra(tmp_path, steps, True)["legExtraMinutes"] == {"1": 3.5}
+
+
+def test_lanes_passing_also_ignores_a_comment_that_names_the_flag(tmp_path):
+    _write_workflows(
+        tmp_path,
+        {
+            "with-also": ("A", ["- run: r --also x.ts"]),
+            "comment-only": ("B", ["# the old --also suites left", "- run: r"]),
+        },
+    )
+    assert br.lanes_passing_also(tmp_path) == {"with-also": True, "comment-only": False}
