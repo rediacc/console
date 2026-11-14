@@ -298,11 +298,16 @@ class LiveLab:
         try:
             return tuple(lifecycle.missing_buckets(self._context(lifecycle), name))
         except lifecycle.LifecycleError as exc:
-            raise proof.LabError("company %s: %s" % (name, exc)) from None
+            raise proof.LabError("company %s: %s" % (name, _with_project_hint(exc))) from None
 
     def _recreate(self, row: dict) -> None:
-        """Take out a proof company whose control database has no `scope` row, so `ensure_company` adds it afresh: export it (remove needs a verified export), then remove it with its data. Such a company was onboarded before onboarding wrote the scope row; its control-row step is recorded done, so a resumed add never writes the row, and its signer answers SIGNER_UNKNOWN_COMPANY to every request. A step that fails is a LabError naming the company, never a silent test of the broken one."""
+        """Take out a proof company whose control database has no `scope` row, so `ensure_company` adds it afresh: export it (remove needs a verified export), then remove it with its data. Such a company was onboarded before onboarding wrote the scope row; its control-row step is recorded done, so a resumed add never writes the row, and its signer answers SIGNER_UNKNOWN_COMPANY to every request. Only a `proof-*` company is taken out (its data is deleted, so a company the lab did not create is refused, as it never gets the accept flag either). A step that fails is a LabError naming the company, never a silent test of the broken one."""
         cid = str(row["id"])
+        if not str(row.get("name", "")).startswith(PROOF_COMPANY_PREFIX):
+            raise proof.LabError(
+                "company %s has no control scope row and is not a proof company (%s*), so the lab never removes its data; "
+                "take it out by hand" % (cid, PROOF_COMPANY_PREFIX)
+            )
         if self.export(cid, accept_missing=self._lost_buckets(row)) != 0:
             raise proof.LabError(
                 "company %s has no control scope row and its export failed, so it is not recreated; "
@@ -394,7 +399,7 @@ class LiveLab:
         try:
             lifecycle.export(self._context(lifecycle), name, **extra)
         except lifecycle.LifecycleError as exc:
-            print("enterprise export: %s" % exc, file=sys.stderr)
+            print("enterprise export: %s" % _with_project_hint(exc), file=sys.stderr)
             return 1
         return 0
 
@@ -405,9 +410,20 @@ class LiveLab:
         try:
             lifecycle.remove(ctx, name, delete_data=delete_data, confirm=name)
         except lifecycle.LifecycleError as exc:
-            print("enterprise remove: %s" % exc, file=sys.stderr)
+            print("enterprise remove: %s" % _with_project_hint(exc), file=sys.stderr)
             return 1
         return 0
+
+
+def _with_project_hint(exc: Exception) -> str:
+    """`exc`'s text, naming the variable to set when the lifecycle refused for want of `--bws-project` and the lab passed none because `ENTERPRISE_PROOF_BWS_PROJECT` is unset (the lab's equivalent of the flag)."""
+    text = str(exc)
+    if "--bws-project" in text and not os.environ.get(BWS_PROJECT_ENV):
+        return "%s (the proof lab passes the project from %s, which is not set)" % (
+            text,
+            BWS_PROJECT_ENV,
+        )
+    return text
 
 
 def build(*, bench: bool, **seams: Any) -> LiveLab:
@@ -443,15 +459,12 @@ class Proc:
 
 
 def _cause(done: Proc, *names: str) -> str:
-    """`: <wrangler's stated cause>` for an error message, empty when wrangler stated none; each of `names` (the Worker, key or domain the call was given) is masked, because wrangler echoes what it was asked about and a Worker name can carry a company name."""
-    tail = control_db.failure_tail(done.stdout, done.stderr)
-    for name in names:
-        if name:
-            tail = re.sub(re.escape(name), "<name>", tail, flags=re.IGNORECASE)
+    """`: <wrangler's stated cause>` for an error message, empty when wrangler stated none; each of `names` (the Worker, key or domain the call was given) is masked as a whole token (`control_db.mask_names`), because wrangler echoes what it was asked about and a Worker name can carry a company name."""
+    tail = control_db.mask_names(control_db.failure_tail(done.stdout, done.stderr), names)
     return ": " + tail if tail else ""
 
 
-# (argv, cwd, extra env) -> Proc. Streams are captured, never echoed: they can carry a company name.
+# (argv, cwd, extra env) -> Proc. Streams are captured and never echoed whole: they can carry a company name, so an error quotes only `_cause`, which masks the names the call was given.
 Runner = Callable[[Sequence[str], "pathlib.Path | None", "dict[str, str] | None"], Proc]
 # (absolute API path, starting with `/`) -> the decoded `result`.
 Api = Callable[[str], Any]

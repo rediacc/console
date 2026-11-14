@@ -130,6 +130,19 @@ def mask_values(text: str, params: Sequence[object]) -> str:
     return text
 
 
+def mask_names(text: str, names: Sequence[str]) -> str:
+    """`text` with each of `names` (a Worker, bucket, domain, key or company label the failed call was given) replaced by `<name>`, case-insensitively and only where it stands as a whole token: a name of one or two characters never rewrites the letters inside ordinary words."""
+    for name in names:
+        if name:
+            text = re.sub(
+                r"(?<![A-Za-z0-9])%s(?![A-Za-z0-9])" % re.escape(name),
+                "<name>",
+                text,
+                flags=re.IGNORECASE,
+            )
+    return text
+
+
 def _failure(what: str, done: Completed, params: Sequence[object] = ()) -> ControlDbError:
     tail = failure_tail(done.stdout, done.stderr, params)
     return ControlDbError("%s exited %d%s" % (what, done.rc, ": " + tail if tail else ""))

@@ -8,6 +8,7 @@ import json
 import pathlib
 import re
 import socket
+import sqlite3
 import subprocess
 import sys
 import threading
@@ -21,7 +22,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.core import https
 from rediacc_ci.deploy import deploy_signer
-from rediacc_ci.enterprise import lab, onboarding, proof
+from rediacc_ci.enterprise import lab, onboarding, proof, registry
 from rediacc_ci.ops import enterprise_lookup
 from rediacc_ci.well_known import BENCH_ORIGIN, GH_API_BASE, PRODUCT_DOMAIN
 
@@ -162,6 +163,66 @@ def _bound(fake: FakeAdd) -> lab.LiveLab:
     return _lab(adder=fake, finder=fake.find, resolver=fake.by_id)
 
 
+def test_add_and_ensure_company_pass_the_contract_limits_to_the_add_path():
+    """Review 1032b1fc.1: dropping max_machines or max_storage_gb from either Request would leave the add refused at check_request."""
+    fake = FakeAdd()
+    built = _bound(fake)
+    built.add(
+        "proof-listed", owner="o@proof-listed.example", unlisted=False,
+        lookup_domain="proof-listed.example",
+    )  # fmt: skip
+    built.ensure_company("proof-limits", "eu")
+    assert len(fake.calls) == 2
+    for req, _stop in fake.calls:
+        assert req.max_machines == lab.PROOF_MAX_MACHINES
+        assert req.max_storage_gb == lab.PROOF_MAX_STORAGE_GB
+        onboarding.check_request(req)
+
+
+def test_caller_version_resolves_the_live_company_not_a_removed_row_of_the_same_name(monkeypatch):
+    """Review cff65af6.1: a re-onboarded name has a removed row and a live one; the caller's version is the live row's."""
+    built = _lab()
+    rows = [
+        {"id": "c00000000000000aa", "name": "acme", "region": "eu", "state": "removed"},
+        {"id": "c00000000000000bb", "name": "acme", "region": "eu", "state": "active"},
+    ]
+    monkeypatch.setattr(built, "_registry", lambda: types.SimpleNamespace(companies=lambda: rows))
+    asked: list[list[str]] = []
+
+    def versions(ids):
+        asked.append(list(ids))
+        return {i: "v-" + i for i in ids}
+
+    monkeypatch.setattr(built, "versions", versions)
+    assert built.caller_version("account-acme") == "v-c00000000000000bb"
+    assert asked == [["c00000000000000bb"]]
+    # control: a name with only a removed row has no caller version
+    rows[1]["state"] = "removed"
+    assert built.caller_version("account-acme") == ""
+
+
+def test_a_missing_bws_project_refusal_names_the_variable_the_lab_reads(monkeypatch, capsys):
+    """Review 668a96ec.2: the lab passes `--bws-project` from ENTERPRISE_PROOF_BWS_PROJECT, so a refusal for want of it names that variable."""
+
+    class Refusing:
+        class LifecycleError(Exception):
+            pass
+
+        def export(self, _ctx, _name, **_kw):
+            raise self.LifecycleError(
+                "--bws-project names the enterprise bws project this verb reads"
+            )
+
+    built, adder = _with_lifecycle(monkeypatch, Refusing())
+    adder.companies["proof-x"] = {"id": "c00000000000000aa", "name": "proof-x", "region": "eu", "state": "active"}  # fmt: skip
+    monkeypatch.delenv(lab.BWS_PROJECT_ENV, raising=False)
+    assert built.export("c00000000000000aa") == 1
+    assert lab.BWS_PROJECT_ENV in capsys.readouterr().err
+    monkeypatch.setenv(lab.BWS_PROJECT_ENV, "proj")
+    assert built.export("c00000000000000aa") == 1
+    assert lab.BWS_PROJECT_ENV not in capsys.readouterr().err
+
+
 def test_add_maps_the_outcome_and_passes_kill_after():
     fake = FakeAdd()
     got = _bound(fake).add(
@@ -252,11 +313,17 @@ def test_a_proof_company_with_a_deleted_bucket_is_exported_accepting_it(monkeypa
     assert exports == [{"accept_missing_buckets": ("configs-proof-loss-eu",)}]
 
 
-def test_a_company_that_is_not_a_proof_company_never_gets_the_accept_flag(monkeypatch):
-    """Control: even with a 404 bucket, a company the lab did not create is exported plain."""
-    fake = _recreate_with_lost_bucket(monkeypatch, "acme")
-    exports = [kw for v, _c, _n, kw in fake.calls if v == "export"]
-    assert exports == [{}]
+def test_a_company_that_is_not_a_proof_company_is_never_removed(monkeypatch):
+    """Review 04fc27d4.1: with no scope row, a company the lab did not create is refused before any export or remove (remove deletes data), so it never gets the accept flag either."""
+    fake = FakeLifecycle()
+    fake.missing["acme"] = ["configs-acme"]
+    built, adder = _with_lifecycle(monkeypatch, fake)
+    adder.companies["acme"] = {"id": "c00000000000000aa", "name": "acme", "region": "eu", "state": "active"}  # fmt: skip
+    built._scoped = lambda _row: False
+    with pytest.raises(proof.LabError, match="not a proof company"):
+        built.ensure_company("acme", "eu")
+    assert fake.calls == []
+    assert adder.calls == []
 
 
 def test_a_proof_company_whose_buckets_all_exist_is_exported_plain(monkeypatch):
@@ -280,12 +347,31 @@ def test_a_proof_company_without_a_scope_row_whose_export_fails_is_a_lab_error(m
 
 
 def test_the_live_scope_check_reads_the_companys_own_control_database(monkeypatch):
+    """Review 04fc27d4.2: the fake answers from the SQL it is given, over the real control schema, so a query of the wrong table finds nothing."""
     seen: list[tuple[str, str, list]] = []
+    dbs: dict[str, sqlite3.Connection] = {}
+    for name in ("control-bench-eu", "control-bench-us"):
+        conn = sqlite3.connect(":memory:")
+        conn.row_factory = sqlite3.Row
+        conn.executescript(registry.migration_sql())
+        dbs[name] = conn
+    now = "2026-11-14T00:00:00Z"
+    for cid, name, database in (
+        ("c00000000000000aa", "unscoped-co", "control-bench-eu"),
+        ("c00000000000000bb", "scoped-co", "control-bench-us"),
+    ):
+        dbs[database].execute(
+            "INSERT INTO companies (id, name, region, state, created_at, updated_at) VALUES (?, ?, ?, 'active', ?, ?)",
+            (cid, name, database.rsplit("-", 1)[1], now, now),
+        )
+    dbs["control-bench-us"].execute(
+        "INSERT INTO scope (company_id, subscription_id, renewal_host, max_machines, max_storage_gb, max_expiry_days) VALUES ('c00000000000000bb', 's', 'h', 1, 1, 1)"
+    )
 
     def transport():
         def run(database, sql, params):
             seen.append((database, sql, params))
-            return [] if params == ["c00000000000000aa"] else [{"subscription_id": "s"}]
+            return [dict(r) for r in dbs[database].execute(sql, params)]
 
         return run
 
@@ -295,6 +381,7 @@ def test_the_live_scope_check_reads_the_companys_own_control_database(monkeypatc
     assert built._scoped({"id": "c00000000000000bb", "region": "us"}) is True
     assert [d for d, _s, _p in seen] == ["control-bench-eu", "control-bench-us"]
     assert all(s == lab.SUBSCRIPTION_SQL for _d, s, _p in seen)
+    assert "FROM scope" in lab.SUBSCRIPTION_SQL
     with pytest.raises(proof.LabError, match="no control database"):
         built._scoped({"id": "c00000000000000cc", "region": "asia"})
 
@@ -654,6 +741,33 @@ def test_wrangler_cause_masks_the_worker_the_call_named():
             call()
         assert "acmecorp" not in str(err.value)
         assert "no worker <name> here" in str(err.value)
+
+
+def test_lookup_failure_masks_the_key_the_domain_and_the_namespace():
+    """Review 7d3107c6.1: the lookup call site hands _cause its key, domain and namespace id, and each is masked wherever wrangler echoes it."""
+    key = _key_add("acme.example")
+
+    def broken(_argv, _cwd, _env):
+        text = "bad key %s for acme.example in ns-1234 (Authentication error)" % key
+        return lab.Proc(1, "", text)
+
+    with pytest.raises(proof.LabError) as err:
+        lab.lookup("acme.example", run=broken, pepper="pep", namespace_id="ns-1234")
+    assert str(err.value).endswith(
+        "exited 1: bad key <name> for <name> in <name> (Authentication error)"
+    )
+    assert key not in str(err.value)
+
+
+def test_a_short_masked_name_rewrites_only_whole_tokens():
+    """Review 7d3107c6.2 and 304248ab.2: a one-letter name never rewrites the letters inside words."""
+
+    def broken(_argv, _cwd, _env):
+        return lab.Proc(1, "", "a bad namespace for a")
+
+    with pytest.raises(proof.LabError) as err:
+        lab.worker_versions("a", run=broken)
+    assert str(err.value).endswith("exited 1: <name> bad namespace for <name>")
 
 
 def test_wrangler_cause_leaves_text_that_names_no_worker_alone():
@@ -3272,7 +3386,7 @@ def test_a_probe_that_is_not_answering_is_never_a_refusal(status):
         lab.issue("account-bench", "raw-bytes", probe=probe, licences={})
 
 
-@pytest.mark.parametrize("answer", [{}, {"error": "SIGNER_X"}, {"ok": "no"}])
+@pytest.mark.parametrize("answer", [{}, {"error": "SIGNER_X"}, {"ok": "no"}, None, [], "ok"])
 def test_a_probe_answer_without_a_verdict_is_a_lab_error(answer):
     probe, _ = _probe({"licence": (200, answer)})
     with pytest.raises(proof.LabError, match="no verdict"):

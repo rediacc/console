@@ -625,9 +625,10 @@ def _listed(listing: Any, name: str) -> bool:
 
 
 def _cause(done: Any, label: str) -> str:
-    """`: <wrangler's stated cause>` for an error message, with the company label masked because wrangler echoes the resource name."""
+    """`: <wrangler's stated cause>` for an error message, with the company label masked as a whole token (`control_db.mask_names`) because wrangler echoes the resource name."""
     tail = control_db.failure_tail(done.stdout or "", done.stderr or "")
-    return ": " + tail.replace(label, "<name>") if tail else ""
+    tail = control_db.mask_names(tail, [label])
+    return ": " + tail if tail else ""
 
 
 def live_actions(

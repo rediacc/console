@@ -432,6 +432,12 @@ def test_live_buckets_step_names_the_cause_of_a_create_failure_with_the_label_ma
     assert "deprecated" not in text
 
 
+def test_a_short_label_is_masked_as_a_whole_token_only():
+    """Review 304248ab.2: a two-character plan name does not rewrite the letters inside other words of wrangler's cause."""
+    cause = onboarding._cause(Proc(1, "", "bucket ab-x for ab is a bad abacus"), "ab")
+    assert cause == ": bucket <name>-x for <name> is a bad abacus"
+
+
 def test_live_buckets_step_names_the_cause_of_a_list_failure():
     def runner(argv, *, cwd=None):
         del cwd
