@@ -1984,12 +1984,11 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 20,
-      "done": 2,
+      "open": 19,
+      "done": 3,
       "open_sigs": [
         "0e4aa275",
         "17c5e0bc",
-        "3ddb7a48",
         "3f19e559",
         "3f42fea0",
         "4265bd6d",
@@ -2009,6 +2008,7 @@
         "f8c4c1ae"
       ],
       "done_sigs": [
+        "3ddb7a48",
         "69ae15c5",
         "858df377"
       ]

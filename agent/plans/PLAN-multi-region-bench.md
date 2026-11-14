@@ -262,7 +262,8 @@ Cost per run: the heavy month's metered lines prorated to a one-day run, (112.08
 ## Boxes
 
 ### Phase 0: decision and read-only checks
-- [ ] Q0 [lead] Operator cost decision on this plan (persistent us and asia, the eu bench renamed bench-eu, Q1 and Q2 answered), recorded in Status with the ASKED minute; then the plan joins QUEUE.md Promoted. Accept: `npm run check:ci-plan-record` rc 0
+- [x] Q0 [lead] Operator cost decision on this plan (persistent us and asia, the eu bench renamed bench-eu, Q1 and Q2 answered), recorded in Status with the ASKED minute; then the plan joins QUEUE.md Promoted. Accept: `npm run check:ci-plan-record` rc 0
+    (ticked) 2026-11-14T17:52:58Z by d778be9d: operator approval recorded in Status (ASKED:2026-11-13T13:55Z) and the plan is Promoted entry 74; npm run check:ci-plan-record rc=0 on 1a79db6a9a+; review d81ab2c3.1
 - [ ] V0 [live] Read-only Cloudflare inventory, no write: Worker script count, custom domains in the rediacc.cloud zone, the zone plan and WAF custom rule count, the certificate pack covering `proxy.bench.rediacc.cloud` (`GET /zones/<id>/ssl/certificate_packs`), container image storage, and the jurisdiction and location of `control-bench-us`; results go into Context. Accept: each read rc 0 and the six figures are recorded with their date
 
 ### Phase 1: writers (file-disjoint groups)
