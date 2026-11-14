@@ -146,8 +146,10 @@ DRIFT_THRESHOLD = 0.25
 #   3. MATERIALITY. The move, divided by the lane's `unitParallelism`, is at least `MATERIAL_LEG_MS` of leg wall, and it is over `DRIFT_THRESHOLD` of the committed value. A smaller move changes no reader's answer; many of them in one leg are judged as that leg's sum, by the same two numbers.
 # A refresh writes the p90 of the window, which sits between the median and the max, so a check that follows a refresh on the same sample has no drift finding by construction (test_a_check_after_a_refresh_on_the_same_sample_is_green).
 MIN_DRIFT_RUNS = 2
-# A variant's fixedMinutes is the p90 over its legs, and legs of one run share that run's runner and mirror conditions (an apt slowdown inside the guest VMs hits every leg of a run alike). MEASURED 2026-11-14 on 5 sampled runs, 2 of which had successful E2E legs: ubuntu-24.04 fixedMinutes 5.4 -> 12.78, one run's transient apt slowness, because the p90 of ~16 legs from 2 runs is that run's second-worst leg, and committing it put 47 legs over 12 min in check:ci-lane-budget. So a variant the table already prices moves on 3 runs, one more than the 2 a unit or job entry needs: with 2 runs the p90 is still one run's tail. 3 runs is a floor, not immunity: at about 8 legs per run, 24 legs put the p90 near the 3rd-highest leg, so one bad run with 3 or more slow legs can still set it; what 3 runs buys is that a single run can no longer be ALL of the sample. The check never reads variantCosts (`compute_for_check` skips their logs), so there is no drift verdict to align; the refresh is the only judge.
+# A variant's fixedMinutes is the p90 over its legs, and legs of one run share that run's runner and mirror conditions (an apt slowdown inside the guest VMs hits every leg of a run alike). MEASURED 2026-11-14 on 5 sampled runs, 2 of which had successful E2E legs: ubuntu-24.04 fixedMinutes 5.4 -> 12.78, one run's transient apt slowness, because the p90 of ~16 legs from 2 runs is that run's second-worst leg, and committing it put 47 legs over 12 min in check:ci-lane-budget. So a variant the table already prices moves on 3 runs, one more than the 2 a unit or job entry needs: with 2 runs the p90 is still one run's tail. 3 runs is a floor, not immunity: at about 8 legs per run, 24 legs put the p90 near the 3rd-highest leg, so one bad run with 3 or more slow legs can still set it unless `VARIANT_OUTLIER_RUN_FACTOR` drops that run; what 3 runs buys is that a single run can no longer be ALL of the sample. The check never reads variantCosts (`compute_for_check` skips their logs), so there is no drift verdict to align; the refresh is the only judge.
 MIN_VARIANT_RUNS = 3
+# Run-level outlier rule, the part MIN_VARIANT_RUNS cannot give (its comment above names the gap). A run whose median leg fixed cost for a variant is more than this factor over the median of the OTHER runs' medians is a slow-runner day (every leg of it shares the cause), and its legs stay out of that variant's fixedMinutes; it needs MIN_VARIANT_RUNS runs to judge, since with fewer there is no majority to be an outlier against. MEASURED 2026-11-14 on ubuntu-24.04: run 43360983417's four legs (fixed 9.7, 10.5, 12.6, 14.6 min, median 11.6) against 6.3 and 5.0 for the other two runs gave fixedMinutes 11.77 over the 15 legs; without that run the p90 is 6.4. Units and leg extras are not filtered (an extra is real work a leg does, a unit's p90 has its own run-count rule).
+VARIANT_OUTLIER_RUN_FACTOR = 1.5
 # Half a minute of leg wall: check-lane-budget.ts `REBALANCE_ADVISORY_MIN` (0.5 minutes), read from that file by test_the_materiality_floor_is_the_lane_budget_gates_own_advisory_threshold so the two cannot part.
 MATERIAL_LEG_MS = 30_000
 # D-W2/T3.4: the two direct (non-lane-sharded) ci.yml jobs job-timeout-baseline.json used to cover, now `job_max_seconds`' own baseline. See check_job_timeout_headroom.py.
@@ -1380,6 +1382,25 @@ def ops_variant_measurement(job: dict[str, Any], log_text: str) -> dict[str, Any
     }
 
 
+def _without_slow_runs(rows: Sequence[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+    """`rows` minus every leg of a run whose median fixed cost is over `VARIANT_OUTLIER_RUN_FACTOR` times the median of the other runs' medians (see that constant). Rows without a `run` key, or fewer than `MIN_VARIANT_RUNS` runs, are returned whole."""
+    by_run: dict[Any, list[float]] = {}
+    for r in rows:
+        if r.get("run") is None:
+            return list(rows)
+        by_run.setdefault(r["run"], []).append(float(r["fixed_minutes"]))
+    if len(by_run) < MIN_VARIANT_RUNS:
+        return list(rows)
+    medians = {run: statistics.median(vals) for run, vals in by_run.items()}
+    slow = {
+        run
+        for run, med in medians.items()
+        if med
+        > VARIANT_OUTLIER_RUN_FACTOR * statistics.median(m for k, m in medians.items() if k != run)
+    }
+    return [r for r in rows if r["run"] not in slow]
+
+
 def aggregate_variant_costs(
     measurements: Mapping[str, Sequence[Mapping[str, Any]]],
 ) -> dict[str, dict[str, dict[str, Any]]]:
@@ -1392,7 +1413,9 @@ def aggregate_variant_costs(
         lane_out: dict[str, dict[str, Any]] = {}
         for variant, vrows in sorted(by_variant.items()):
             cost: dict[str, Any] = {
-                "fixedMinutes": round(_percentile([r["fixed_minutes"] for r in vrows], 90), 2)
+                "fixedMinutes": round(
+                    _percentile([r["fixed_minutes"] for r in _without_slow_runs(vrows)], 90), 2
+                )
             }
             extras: dict[int, list[float]] = {}
             unit_samples: dict[str, list[float]] = {}
@@ -1524,6 +1547,7 @@ def collect_variant_costs(
         if row is None:
             unpriced += 1
             continue
+        row["run"] = run_of.get(id(job), -1)
         measurements.setdefault(lane, []).append(row)
         priced_runs.setdefault(lane, set()).add(run_of.get(id(job), -1))
         priced_variant_runs.setdefault("%s/%s" % (lane, row["variant"]), set()).add(

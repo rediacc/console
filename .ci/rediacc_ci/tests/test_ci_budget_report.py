@@ -3717,3 +3717,79 @@ def test_compute_lane_durations_accepts_two_readable_samples(monkeypatch, tmp_pa
         root=tmp_path, list_artifacts=lambda *_a: [], download=lambda *_a: b""
     )
     assert [r["id"] for r in computed["sampled_runs"]][:1] == [1]
+
+
+def _fixed_rows(by_run: dict[int, list[float]], variant: str = "ubuntu-24.04") -> list[dict]:
+    return [
+        {
+            "variant": variant,
+            "leg": 2,
+            "fixed_minutes": f,
+            "extra_minutes": None,
+            "units": {},
+            "run": run,
+        }
+        for run, vals in by_run.items()
+        for f in vals
+    ]
+
+
+# Run 43360983417's ubuntu-24.04 legs against the two ordinary runs (measured 2026-11-14): the pooled p90 was 11.77.
+_UBUNTU_RUNS = {
+    1: [6.56, 6.31, 5.69, 4.94, 6.36],
+    2: [6.02, 10.54, 12.58, 9.69, 14.56],
+    3: [4.33, 5.40, 4.96, 5.49, 4.69],
+}
+
+
+def test_a_slow_run_does_not_set_a_variants_fixed_cost():
+    out = br.aggregate_variant_costs({"test-e2e-workers": _fixed_rows(_UBUNTU_RUNS)})
+    assert out["test-e2e-workers"]["ubuntu-24.04"]["fixedMinutes"] == 6.38
+
+
+def test_the_slow_run_rule_leaves_a_uniform_sample_a_thin_sample_and_unstamped_rows_alone():
+    uniform = {1: [5.0, 6.0, 7.0], 2: [5.5, 6.5, 7.5], 3: [5.2, 6.2, 7.2]}
+    pooled = br._percentile([f for vals in uniform.values() for f in vals], 90)
+    assert br._without_slow_runs(_fixed_rows(uniform)) == _fixed_rows(uniform)
+    out = br.aggregate_variant_costs({"l": _fixed_rows(uniform)})
+    assert out["l"]["ubuntu-24.04"]["fixedMinutes"] == round(pooled, 2)
+    two_runs = {k: v for k, v in _UBUNTU_RUNS.items() if k != 3}
+    assert br._without_slow_runs(_fixed_rows(two_runs)) == _fixed_rows(two_runs)
+    unstamped = [{k: v for k, v in r.items() if k != "run"} for r in _fixed_rows(_UBUNTU_RUNS)]
+    assert br._without_slow_runs(unstamped) == unstamped
+
+
+def test_collect_variant_costs_stamps_each_leg_with_its_run_and_skips_a_log_without_spans(
+    tmp_path, monkeypatch
+):
+    shards = tmp_path / ".ci" / "config" / "shards"
+    shards.mkdir(parents=True)
+    (shards / "test-e2e-workers.json").write_text(
+        json.dumps(
+            {
+                "lane": "test-e2e-workers",
+                "of": 8,
+                "legs": [{"index": 1, "ids": sorted(_MANIFEST_IDS)}],
+            }
+        )
+    )
+    name = "Tests + Infra / E2E Workers (fedora-43, 1/8)"
+    good = _job(name, "2026-09-28T13:53:34Z", "2026-09-28T14:07:34Z", job_id=21)
+    spanless = _job(name, "2026-09-28T13:53:34Z", "2026-09-28T14:07:34Z", job_id=22)
+    logs = {21: _E2E_FIXTURE_LOG, 22: "2026-09-28T13:53:40.1Z setup only, no test lines\n"}
+    pats = {"test-e2e-workers": re.compile(r"^Tests \+ Infra / E2E Workers \(.+?, .+?/8\)$")}
+    seen: dict[str, list] = {}
+    monkeypatch.setattr(br, "aggregate_variant_costs", lambda m: seen.update(m) or {})
+    runs: dict[str, int] = {}
+    _costs, legs = br.collect_variant_costs(
+        "o/r",
+        [[spanless], [good]],
+        pats,
+        tmp_path,
+        bucket_titles=_BUCKETS,
+        fetch_log=lambda _repo, job_id: logs[job_id],
+        runs=runs,
+    )
+    assert legs == {"test-e2e-workers": 1}
+    assert runs == {"test-e2e-workers": 1}
+    assert [r["run"] for r in seen["test-e2e-workers"]] == [1]
