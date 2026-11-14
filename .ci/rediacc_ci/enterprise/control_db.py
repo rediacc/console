@@ -119,7 +119,7 @@ MASK_RAW_MIN = 6
 def mask_values(text: str, params: Sequence[object]) -> str:
     """`text` with every string value in `params` replaced by `<value>`.
 
-    A value echoed as a SQL literal (quoted, its single quotes doubled) is always masked. The bare forms (as written, or with the quotes doubled) are masked only for a value of `MASK_RAW_MIN` characters or more, so a short or common bound value (`s`, `companies`) does not rewrite unrelated words of wrangler's cause."""
+    A value echoed as a SQL literal (quoted, its single quotes doubled) is always masked. The bare forms (as written, or with the quotes doubled) are masked anywhere in the text for a value of `MASK_RAW_MIN` characters or more; a shorter value is masked bare only where it stands as a whole token, so it never rewrites the letters inside ordinary words of wrangler's cause."""
     for value in params:
         if isinstance(value, str) and value:
             doubled = value.replace("'", "''")
@@ -127,6 +127,11 @@ def mask_values(text: str, params: Sequence[object]) -> str:
             if len(value) >= MASK_RAW_MIN:
                 for form in (doubled, value):
                     text = text.replace(form, "<value>")
+            else:
+                for form in {doubled, value}:
+                    text = re.sub(
+                        r"(?<![A-Za-z0-9])%s(?![A-Za-z0-9])" % re.escape(form), "<value>", text
+                    )
     return text
 
 

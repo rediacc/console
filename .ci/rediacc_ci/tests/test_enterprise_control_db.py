@@ -310,8 +310,10 @@ def test_a_failed_query_masks_the_values_it_bound_when_wrangler_echoes_the_sql()
 def test_a_bound_value_straddling_the_line_cut_is_masked_before_the_cut():
     """Review 11150eee.1: the mask runs on the whole line, then the line is cut, so no prefix of a value survives."""
     value = "acme'corp"
-    echoed = "x" * (control_db.TAIL_WIDTH - 4) + value.replace("'", "''")
-    run = _failing('near "%s": syntax error' % echoed)
+    lead = 'near "'
+    # The value starts 4 characters before the cut, so the cut keeps only `acme` of it: the old cut-then-mask order leaves that prefix unmasked.
+    pad = "x" * (control_db.TAIL_WIDTH - 4 - len(lead))
+    run = _failing(lead + pad + value.replace("'", "''") + '": syntax error')
     with pytest.raises(control_db.ControlDbError) as err:
         control_db.query("control-eu", "SELECT 1 WHERE name = ?", [value], runner=run)
     assert "acme" not in str(err.value)
@@ -335,7 +337,13 @@ def test_a_short_bound_value_does_not_rewrite_ordinary_words():
     assert "no such table: companies near <value>" in str(err.value)
 
 
-def test_a_unique_on_another_column_is_not_the_inline_name_unique():
+def test_a_short_bound_value_echoed_bare_is_masked_as_a_whole_token():
+    """Review 9fa7b56d.2: a value under MASK_RAW_MIN characters that D1 echoes unquoted is masked where it stands alone."""
+    run = _failing("no row for ab in table companies, about ab")
+    with pytest.raises(control_db.ControlDbError) as err:
+        control_db.query("control-eu", "SELECT 1 WHERE name = ?", ["ab"], runner=run)
+    # control: the same letters inside `about` stay
+    assert "no row for <value> in table companies, about <value>" in str(err.value)
     """Review cff65af6.2: only a UNIQUE on `name` selects the rebuild."""
     sql = "CREATE TABLE companies (id TEXT PRIMARY KEY, name TEXT NOT NULL, slug TEXT UNIQUE)"
 
