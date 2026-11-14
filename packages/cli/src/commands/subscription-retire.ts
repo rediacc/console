@@ -9,7 +9,6 @@ import { t } from '../i18n/index.js';
 import { fetchSubscriptionLicenseReportOrThrow } from '../services/account/license.js';
 import {
   expiredRetireTargets,
-  LICENCE_STATE_KEYS,
   type LicenceRow,
   licenceDisplayName,
   licenceRows,
@@ -25,7 +24,7 @@ import {
   assertSubscriptionScopeMatchesConfig,
   unreadyTokenDiagnostic,
 } from './subscription-actions.js';
-import { printOtherLicences } from './subscription-status-view.js';
+import { licenceStateLabel, printOtherLicences } from './subscription-status-view.js';
 
 /** A GUID prefix shorter than this matches too many licenses to name one. */
 const MIN_GUID_PREFIX = 8;
@@ -133,7 +132,7 @@ async function retireOne(
   const names = await readRepoNames();
   const entry = names.get(guid);
   const name = licenceDisplayName(guid, names);
-  const state = t(LICENCE_STATE_KEYS[licence.freshness]);
+  const state = licenceStateLabel(licence.freshness);
 
   if (entry && !entry.deleted && licence.freshness !== 'hard_expired' && !options.force) {
     throw new ValidationError(t('commands.subscription.retire.inConfig', { name, state }));

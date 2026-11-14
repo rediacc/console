@@ -21,6 +21,13 @@ function printTable(rows: Cell[], columns: Column[]): void {
   outputService.print(outputService.format(rows, 'table', columns), 'table');
 }
 
+/** The label of a freshness; one the server sends that matches no key is shown as the raw value, never as `undefined`. */
+export function licenceStateLabel(freshness: LicenceRow['freshness']): string {
+  return Object.hasOwn(LICENCE_STATE_KEYS, freshness)
+    ? t(LICENCE_STATE_KEYS[freshness])
+    : String(freshness);
+}
+
 const day = (value: string | null): string => value?.slice(0, 10) ?? '-';
 
 function liveCell(row: LicenceRow): Cell {
@@ -28,7 +35,7 @@ function liveCell(row: LicenceRow): Cell {
     repo: String(row.name),
     machine: row.machine ?? '-',
     kind: row.kind ?? '-',
-    state: t(LICENCE_STATE_KEYS[row.freshness]),
+    state: licenceStateLabel(row.freshness),
     refreshBy: day(row.refreshRecommendedAt),
     hardExpiry: day(row.hardExpiresAt),
   };
@@ -43,7 +50,7 @@ function otherCell(row: LicenceRow): Cell {
     guid: shortGuid(row.guid),
     name: row.name ?? '-',
     kind: row.kind ?? '-',
-    state: t(LICENCE_STATE_KEYS[row.freshness]),
+    state: licenceStateLabel(row.freshness),
     hardExpiry: day(row.hardExpiresAt),
     where: t(where),
   };
@@ -69,7 +76,9 @@ const FRESHNESS_URGENCY: Record<LicenceRow['freshness'], number> = {
 };
 
 function urgencyOf(freshness: LicenceRow['freshness']): number {
-  return FRESHNESS_URGENCY[freshness] ?? Number.MAX_SAFE_INTEGER;
+  return Object.hasOwn(FRESHNESS_URGENCY, freshness)
+    ? FRESHNESS_URGENCY[freshness]
+    : Number.MAX_SAFE_INTEGER;
 }
 
 /** `1 deleted (valid), 107 not in this config (hard expired)`: the others counted by presence and state. */
@@ -91,7 +100,7 @@ export function elsewhereItems(others: LicenceRow[]): string[] {
         row.presence === 'deleted'
           ? 'commands.subscription.status.elsewhereDeleted'
           : 'commands.subscription.status.elsewhereAbsent',
-        { count, state: t(LICENCE_STATE_KEYS[row.freshness]) }
+        { count, state: licenceStateLabel(row.freshness) }
       )
     );
 }

@@ -44,10 +44,34 @@ describe('elsewhereItems ordering', () => {
     ]);
   });
 
-  it('ranks a freshness the server sends that matches no key after every known one, in a stable order', () => {
-    const rows = [row('absent', 'surprise'), row('absent', 'valid'), row('absent', 'hard_expired')];
+  it('ranks freshness values that match no key after every known one, keeping input order among them', () => {
+    const rows = [
+      row('absent', 'surprise'),
+      row('absent', 'valid'),
+      row('absent', 'other'),
+      row('absent', 'hard_expired'),
+    ];
     const forward = elsewhereItems(rows);
-    expect(forward.map((i) => i.split(':')[2])).toEqual(['hardExpired', 'valid', 'undefined']);
-    expect(elsewhereItems([...rows].reverse())).toEqual(forward);
+    expect(forward.map((i) => i.split(':')[2])).toEqual([
+      'hardExpired',
+      'valid',
+      'surprise',
+      'other',
+    ]);
+    const reversed = elsewhereItems([...rows].reverse());
+    expect(reversed.map((i) => i.split(':')[2])).toEqual([
+      'hardExpired',
+      'valid',
+      'other',
+      'surprise',
+    ]);
   });
+
+  it.each(['toString', 'constructor', '__proto__'])(
+    'ranks the inherited name %s as unknown, not as a function',
+    (name) => {
+      const items = elsewhereItems([row('absent', name), row('absent', 'valid')]);
+      expect(items.map((i) => i.split(':')[2])).toEqual(['valid', name]);
+    }
+  );
 });
