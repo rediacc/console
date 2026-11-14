@@ -247,7 +247,7 @@ Shows current version, update channel, and auto-update configuration.
 #### Release Channels
 
 ```bash
-rdc update --channel edge      # Continuously deployed production updates
-rdc update --channel stable    # Promoted from edge after 7-day soak (default)
+rdc update --channel edge      # Continuously deployed production updates (default)
+rdc update --channel stable    # Promoted from edge after 7-day soak
 rdc update --status            # Show current channel and version info
 ```

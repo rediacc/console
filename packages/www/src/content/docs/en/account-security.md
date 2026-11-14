@@ -104,12 +104,12 @@ Every API request passes through all applicable layers in sequence. A request to
 ### Update Channels
 
 The CLI supports two release channels:
-- **stable** (default): Promoted from edge after a 7-day soak; choose this for a conservative upgrade cadence
-- **edge**: Continuously deployed production, updated on every merge to main
+- **edge** (default): Continuously deployed production, updated on every merge to main
+- **stable**: Promoted from edge after a 7-day soak; choose this for a conservative upgrade cadence
 
 ```bash
-rdc update --channel edge      # Switch to edge
-rdc update --channel stable    # Switch back to stable
+rdc update --channel stable    # Switch to stable
+rdc update --channel edge      # Switch back to edge
 rdc update --status            # Show current channel
 ```
 
