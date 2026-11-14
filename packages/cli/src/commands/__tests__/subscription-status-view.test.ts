@@ -44,7 +44,7 @@ describe('elsewhereItems ordering', () => {
     ]);
   });
 
-  it('ranks freshness values that match no key after every known one, keeping input order among them', () => {
+  it('ranks freshness values that match no key after every known one, by name, whatever the input order', () => {
     const rows = [
       row('absent', 'surprise'),
       row('absent', 'valid'),
@@ -55,16 +55,11 @@ describe('elsewhereItems ordering', () => {
     expect(forward.map((i) => i.split(':')[2])).toEqual([
       'hardExpired',
       'valid',
-      'surprise',
-      'other',
-    ]);
-    const reversed = elsewhereItems([...rows].reverse());
-    expect(reversed.map((i) => i.split(':')[2])).toEqual([
-      'hardExpired',
-      'valid',
       'other',
       'surprise',
     ]);
+    // Review 6af0546d.1: the server's row order must not reorder the line.
+    expect(elsewhereItems([...rows].reverse())).toEqual(forward);
   });
 
   it.each(['toString', 'constructor', '__proto__'])(

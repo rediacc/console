@@ -68,7 +68,7 @@ export function printOtherLicences(rows: LicenceRow[]): void {
   ]);
 }
 
-/** Most urgent first. The Record type makes a renamed or new freshness a compile error; a value the server sends that matches no key ranks last (`urgencyOf`). */
+/** Most urgent first. The Record type makes a renamed or new freshness a compile error; a value the server sends that matches no key ranks last (`urgencyOf`), and such values order by name among themselves. */
 const FRESHNESS_URGENCY: Record<LicenceRow['freshness'], number> = {
   hard_expired: 0,
   refresh_recommended: 1,
@@ -93,7 +93,11 @@ export function elsewhereItems(others: LicenceRow[]): string[] {
   return [...counts.values()]
     .sort((a, b) => {
       if (a.row.presence !== b.row.presence) return a.row.presence === 'deleted' ? -1 : 1;
-      return urgencyOf(a.row.freshness) - urgencyOf(b.row.freshness);
+      const byUrgency = urgencyOf(a.row.freshness) - urgencyOf(b.row.freshness);
+      // Values that share a rank (unknown freshness strings) order by name, so the line never depends on the server's row order (review 6af0546d.1).
+      return byUrgency !== 0
+        ? byUrgency
+        : String(a.row.freshness).localeCompare(String(b.row.freshness));
     })
     .map(({ row, count }) =>
       t(
