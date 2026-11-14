@@ -551,6 +551,86 @@ def _portal_ok(_tree, _env):
     return 0
 
 
+@pytest.fixture(autouse=True)
+def _no_live_cloudflare_read(monkeypatch):
+    """The deploy step's orphan check reads Cloudflare; every test but the orphan ones runs with an account holding none."""
+    monkeypatch.setattr(onboarding, "live_cf_rows", lambda _path: [])
+
+
+def _cf_rows(apps, namespaces):
+    def rows(path):
+        return {
+            "/containers/applications": apps,
+            "/workers/durable_objects/namespaces": namespaces,
+        }[path]
+
+    return rows
+
+
+def _deploy_with(tmp_path, rows):
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    ran = []
+
+    def deploy(module, _argv):
+        ran.append(module)
+        return 0
+
+    actions = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        portal=_portal_ok,
+        deploy=deploy,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+        cf_rows=rows,
+    )
+    return ctx, actions, ran
+
+
+def test_deploy_refuses_an_orphan_container_application_before_any_deploy(tmp_path):
+    ctx, actions, ran = _deploy_with(
+        tmp_path,
+        _cf_rows(
+            [
+                {
+                    "id": "orphan1",
+                    "name": "proxy-acme-orgexecutor",
+                    "durable_objects": {"namespace_id": "ns-dead"},
+                }
+            ],
+            [],
+        ),
+    )
+    with pytest.raises(onboarding.OnboardingError, match=r"orphan1 is an orphan"):
+        actions["deploy"](ctx)
+    assert ran == []
+
+
+def test_deploy_ignores_another_companys_orphan_application(tmp_path):
+    other = {
+        "id": "other1",
+        "name": "proxy-zzz-orgexecutor",
+        "durable_objects": {"namespace_id": "ns-gone"},
+    }
+    ctx, actions, ran = _deploy_with(tmp_path, _cf_rows([other], []))
+    actions["deploy"](ctx)
+    assert len(ran) == 3
+
+
+def test_deploy_accepts_the_companys_own_live_application(tmp_path):
+    own = {
+        "id": "own1",
+        "name": "proxy-acme-orgexecutor",
+        "durable_objects": {"namespace_id": "ns-own"},
+    }
+    namespaces = [{"id": "ns-own", "script": "proxy-acme", "class": "OrgExecutor"}]
+    ctx, actions, ran = _deploy_with(tmp_path, _cf_rows([own], namespaces))
+    actions["deploy"](ctx)
+    assert len(ran) == 3
+
+
 def test_live_deploy_step_deploys_proxy_then_account_with_each_own_config(tmp_path):
     _tree(tmp_path)
     actions = onboarding.live_actions(runner=None, out_root=tmp_path)

@@ -11,6 +11,7 @@ from functools import lru_cache
 from urllib.parse import urlparse
 
 from rediacc_ci import paths, well_known
+from rediacc_ci.deploy import proxy_configs
 
 MIN_LENGTH = 3
 MAX_LENGTH = 30  # the `-proxy` host must still fit a 63-character label with room to spare
@@ -117,3 +118,13 @@ def hosts(name: str, domain: str) -> tuple[str, str]:
     if not isinstance(domain, str) or not _is_domain(domain):
         raise CompanyNameError("%r is not a domain to host %r under" % (domain, name))
     return "%s.%s" % (name, domain), "%s%s.%s" % (name, PROXY_SUFFIX, domain)
+
+
+def proxy_worker(name: str) -> str:
+    """The company's proxy Worker."""
+    return "proxy-%s" % name
+
+
+def proxy_container_app(name: str) -> str:
+    """The Cloudflare container application wrangler creates for the proxy Worker's executor class: `<Worker>-<class, lowercase>`."""
+    return "%s-%s" % (proxy_worker(name), proxy_configs.DURABLE_CLASS.lower())

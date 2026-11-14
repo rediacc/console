@@ -102,6 +102,12 @@ class FakeCloudflare:
             {"id": "r-none", "pattern": "x.%s/*" % PRODUCT_DOMAIN},
         ]
         self.d1 = {"account-acme": "1111-uuid", "account-eu": "2222-uuid"}
+        # Container applications: the company's executor application, and another company's.
+        self.apps = {
+            "app-acme": "proxy-acme-orgexecutor",
+            "app-acme-two": "proxy-acme-two-orgexecutor",
+            "app-eu": "proxy-eu-orgexecutor",
+        }
         # The company's backup queue (consumed by its account Worker), its dead-letter queue, and another company's queue.
         self.queues: dict[str, dict[str, str | None]] = {
             "q-main": {"name": "backup-replicate-acme", "consumer": "account-acme"},
@@ -148,6 +154,14 @@ class FakeCloudflare:
                     "errors": [{"code": 10064, "message": "worker is a queue consumer"}],
                 }
             self.workers.discard(name)
+            return {"success": True, "result": None}
+        if method == "GET" and path == base + "/containers/applications":
+            return {
+                "success": True,
+                "result": [{"id": i, "name": n} for i, n in self.apps.items()],
+            }
+        if method == "DELETE" and path.startswith(base + "/containers/applications/"):
+            self.apps.pop(path.rsplit("/", 1)[1], None)
             return {"success": True, "result": None}
         if method == "GET" and path.startswith(base + "/queues?"):
             qrows = [
@@ -536,8 +550,42 @@ def test_undeploy_deletes_proxy_then_account_and_skips_an_absent_worker(monkeypa
     assert rig.teardown.done == [
         "undeploy zone routes (already gone)",
         "undeploy proxy worker (already gone)",
+        "undeploy proxy container application",
         "undeploy account worker",
     ]
+
+
+def test_undeploy_deletes_the_container_application_after_the_proxy_worker_and_only_that_one(
+    monkeypatch,
+):
+    rig = Rig(monkeypatch)
+    rig.teardown.undeploy(_company())
+    deletes = [c[1] for c in rig.cf.calls if c[0] == "DELETE" and "/containers/" in c[1]]
+    assert deletes == ["/accounts/%s/containers/applications/app-acme" % ACCOUNT]
+    order = [c[1] for c in rig.cf.calls if c[0] == "DELETE"]
+    proxy = next(i for i, p in enumerate(order) if "scripts/proxy-acme?" in p)
+    assert proxy < order.index(deletes[0])
+    # The control: another company's application, and one whose name merely starts with this one's, stay.
+    assert rig.cf.apps == {
+        "app-acme-two": "proxy-acme-two-orgexecutor",
+        "app-eu": "proxy-eu-orgexecutor",
+    }
+
+
+def test_a_rerun_with_the_container_application_gone_deletes_nothing_and_says_so(monkeypatch):
+    rig = Rig(monkeypatch)
+    del rig.cf.apps["app-acme"]
+    rig.teardown.undeploy(_company())
+    assert not [c for c in rig.cf.calls if c[0] == "DELETE" and "/containers/" in c[1]]
+    assert "undeploy proxy container application (already gone)" in rig.teardown.done
+
+
+def test_a_refused_container_application_delete_carries_cloudflares_message(monkeypatch):
+    rig = Rig(monkeypatch)
+    rig.cf.fail.add(("DELETE", "/containers/applications/"))
+    with pytest.raises(lifecycle.LifecycleError, match="container application delete") as err:
+        rig.teardown.undeploy(_company())
+    assert "boom acme" in str(err.value)
 
 
 def test_undeploy_deletes_only_the_companys_zone_routes_before_its_workers(monkeypatch):
@@ -546,7 +594,10 @@ def test_undeploy_deletes_only_the_companys_zone_routes_before_its_workers(monke
     deletes = [c[1] for c in rig.cf.calls if c[0] == "DELETE"]
     routes = "/zones/%s/workers/routes/" % ZONE
     assert deletes[:2] == [routes + "r-acct", routes + "r-proxy"]
-    assert all("/workers/scripts/" in d or "/queues/" in d for d in deletes[2:])
+    assert all(
+        "/workers/scripts/" in d or "/queues/" in d or "/containers/applications/" in d
+        for d in deletes[2:]
+    )
     assert [r["id"] for r in rig.cf.routes] == ["r-eu", "r-none"]
     assert rig.teardown.done[0] == "undeploy zone routes"
 
@@ -843,12 +894,17 @@ def test_full_remove_with_delete_data_tears_down_everything(tmp_path, monkeypatc
     assert len(rig.kv) == 1
     assert _state(conn) == "removed"
     assert [r["id"] for r in rig.cf.routes] == ["r-eu", "r-none"]
-    assert rig.teardown.done[:4] == [
+    assert rig.teardown.done[:5] == [
         "undeploy zone routes",
         "undeploy proxy worker",
+        "undeploy proxy container application",
         "undeploy account worker",
         "drop lookup",
     ]
+    assert rig.cf.apps == {
+        "app-acme-two": "proxy-acme-two-orgexecutor",
+        "app-eu": "proxy-eu-orgexecutor",
+    }
 
 
 def test_remove_without_delete_data_keeps_d1_buckets_tokens_and_secrets(tmp_path, monkeypatch):
@@ -906,9 +962,10 @@ def test_a_failing_step_stops_the_rest_names_what_ran_and_a_rerun_resumes(tmp_pa
     before = len(rig.cf.calls)
     lifecycle.remove(ctx, "acme", delete_data=True, confirm="acme")
     assert _state(conn) == "removed"
-    assert rig2.done[:3] == [
+    assert rig2.done[:4] == [
         "undeploy zone routes (already gone)",
         "undeploy proxy worker (already gone)",
+        "undeploy proxy container application (already gone)",
         "undeploy account worker (already gone)",
     ]
     assert "revoke backup token (already gone)" in rig2.done

@@ -23,7 +23,7 @@ from typing import Any
 
 from rediacc_ci.core import bws_env
 from rediacc_ci.core import wrangler as wrangler_mod
-from rediacc_ci.enterprise import secrets
+from rediacc_ci.enterprise import names, secrets
 from rediacc_ci.enterprise.lifecycle import BucketMissingError, LifecycleError, Target
 from rediacc_ci.ops import cf_auth, enterprise_lookup
 from rediacc_ci.well_known import PRODUCT_DOMAIN
@@ -367,6 +367,27 @@ class CloudflareTeardown:
         self._do("undeploy zone routes", company.id, lambda: self._drop_routes(company))
         for label, worker in worker_names(company):
             self._do("undeploy %s" % label, company.id, step_for(worker, label == "account worker"))
+            if label == "proxy worker":
+                self._do(
+                    "undeploy proxy container application",
+                    company.id,
+                    lambda: self._drop_container_app(company),
+                )
+
+    def _drop_container_app(self, company: Target) -> str | None:
+        """Delete the company's container application by id, matched on its exact name; deleting the Worker leaves it behind, bound to a Durable Object namespace that no longer exists. `GONE` when it is not listed."""
+        wanted = names.proxy_container_app(company.name)
+        what = "the container application listing"
+        rows = _rows(_ok(self._http("GET", self._account("/containers/applications")), what), what)
+        ids = [
+            str(r["id"])
+            for r in rows
+            if isinstance(r, dict) and r.get("name") == wanted and r.get("id")
+        ]
+        for app_id in ids:
+            path = "/containers/applications/%s" % urllib.parse.quote(app_id)
+            _ok(self._http("DELETE", self._account(path)), "the container application delete")
+        return None if ids else GONE
 
     def _company_queues(self, company: Target) -> list[dict[str, Any]]:
         """The company's backup queue and its dead-letter queue as `{queue_id, consumers}`, matched by exact name."""

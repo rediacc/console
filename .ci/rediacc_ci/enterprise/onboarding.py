@@ -36,7 +36,7 @@ from rediacc_ci.core import https, wrangler
 from rediacc_ci.deploy import console_executor
 from rediacc_ci.deploy import proxy_configs as pc
 from rediacc_ci.enterprise import configs, control_db, dns, names, proof, registry, secrets
-from rediacc_ci.ops import enterprise_lookup
+from rediacc_ci.ops import cf_auth, enterprise_lookup
 from rediacc_ci.well_known import PRODUCT_DOMAIN
 
 STEPS: tuple[str, ...] = (
@@ -564,6 +564,61 @@ def region_entry(region: str, root: pathlib.Path | None = None) -> dict:
     raise OnboardingError("no region %r in regions.json" % region)
 
 
+CfRows = Callable[[str], list]
+"""One GET of an account-scoped Cloudflare path (`/containers/applications`), answering the `result` rows."""
+
+
+def orphan_container_app(name: str, rows: CfRows) -> str | None:
+    """The id of a container application named for the company's proxy Worker whose Durable Object namespace is none of that Worker's, else None. Such an application outlived a removed company (its Worker and namespace are gone), and wrangler deploy would adopt it by name and fail half-applied. Only the application of exactly this company's name is looked at."""
+    wanted = names.proxy_container_app(name)
+    apps = [
+        a
+        for a in rows("/containers/applications")
+        if isinstance(a, dict) and a.get("name") == wanted
+    ]
+    if not apps:
+        return None
+    owned = {
+        str(n.get("id", ""))
+        for n in rows("/workers/durable_objects/namespaces")
+        if isinstance(n, dict)
+        and n.get("script") == names.proxy_worker(name)
+        and n.get("class") == pc.DURABLE_CLASS
+    }
+    for app in apps:
+        if str((app.get("durable_objects") or {}).get("namespace_id", "")) not in owned:
+            return str(app.get("id", ""))
+    return None
+
+
+def live_cf_rows(path: str) -> list:
+    """The live `CfRows`, read-only, under CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID."""
+    token = os.environ.get("CLOUDFLARE_API_TOKEN", "")
+    account = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "") or CF_ACCOUNT_ID
+    if not token:
+        raise OnboardingError("the container application check needs CLOUDFLARE_API_TOKEN")
+    try:
+        answer = cf_auth.curl_json(
+            "GET",
+            "%s/accounts/%s%s" % (cf_auth.CF_API_BASE, account, path),
+            ["-H", "Authorization: Bearer %s" % token],
+        )
+    except cf_auth.CfAuthError:
+        raise OnboardingError("the Cloudflare read of %s failed" % path) from None
+    result = answer.get("result")
+    if answer.get("success") is not True or not isinstance(result, list):
+        errors = answer.get("errors")
+        text = (
+            "; ".join(str(e.get("message")) for e in errors if isinstance(e, dict))
+            if isinstance(errors, list)
+            else ""
+        )
+        raise OnboardingError(
+            "Cloudflare refused the read of %s (%s)" % (path, text or "no message")
+        )
+    return result
+
+
 def _listed(listing: Any, name: str) -> bool:
     """Whether `name` stands as a whole token in a `wrangler ... list` output, so `backup-replicate-acme` never matches `backup-replicate-acme-dlq`."""
     return re.search(r"(?<![\w-])%s(?![\w-])" % re.escape(name), listing.stdout or "") is not None
@@ -592,6 +647,7 @@ def live_actions(
     post: AccountPost | None = None,
     env: Mapping[str, str] | None = None,
     api_key_of: Callable[[str], str] | None = None,
+    cf_rows: CfRows | None = None,
 ) -> dict[str, Action]:
     """The production action of every step, each external call through the seam its argument names."""
     run_cmd = runner or run_captured
@@ -602,6 +658,7 @@ def live_actions(
     wildcard = ensure_dns or dns.ensure
     put = lookup_put or enterprise_lookup.put
     send = post or account_post
+    read_cf = cf_rows or live_cf_rows
 
     def account_call(ctx: Context, route: str, body: dict) -> tuple[int, dict]:
         """One authenticated call to the company's account host under the company's own key: the one the `secrets` step generated and pushed to that Worker, never the shared ACCOUNT_SERVER_API_KEY of the caller's environment, which the company Worker answers with 401. The key is read here, so a step that never runs needs none."""
@@ -776,6 +833,12 @@ def live_actions(
         plan = ctx.plan
         # The proxy deploy smoke-tests the company's proxy host, so its DNS record must exist before the deploy, not after the `route` step.
         claim_wildcard(plan)
+        orphan = orphan_container_app(plan.name, read_cf)
+        if orphan:
+            raise OnboardingError(
+                "company %s: container application %s is an orphan, left by a removed company: it belongs to no Durable Object namespace of this company's proxy Worker, and the proxy deploy would adopt it by name and fail half-applied; delete it with DELETE /accounts/<account>/containers/applications/%s, then rerun"
+                % (plan.company_id, orphan, orphan)
+            )
         proxy_path, account_path = files(plan)
         tree = root if root is not None else paths.repo_root()
 
