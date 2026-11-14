@@ -376,7 +376,7 @@ def _mut(inputs: rco.Inputs, mutate) -> rco.Inputs:
 @pytest.mark.parametrize(
     ("field", "value"),
     [
-        ("host", BENCH_ORIGIN),
+        ("host", BENCH_ORIGIN.removeprefix("https://")),
         ("workerName", "account-bench"),
         ("queue", "backup-replicate-bench"),
         ("signerWorkerName", "signer-bench-eu"),
@@ -406,9 +406,15 @@ def test_a_us_bench_placed_away_from_production_us_fires() -> None:
     def jurisdiction(i):
         _row(i, "us")["bench"]["r2Jurisdiction"] = "eu"
 
-    for plant in (d1_location, r2_hint, jurisdiction):
+    # Each plant names the one carrier it must fire on, and the other carrier must stay quiet.
+    for plant, hit, quiet in (
+        (d1_location, "bench-us", "bench-asia"),
+        (r2_hint, "bench-asia", "bench-us"),
+        (jurisdiction, "bench-us", "bench-asia"),
+    ):
         new = _new(inputs, targets, found, _regions_plant(plant))
-        assert ("bench-us", "regions") in new or ("bench-asia", "regions") in new
+        assert (hit, "regions") in new
+        assert (quiet, "regions") not in new
 
 
 def test_a_bench_object_missing_a_key_or_sharing_a_rate_limit_fires() -> None:

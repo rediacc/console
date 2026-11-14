@@ -557,8 +557,8 @@ def test_a_rejected_inbox_drop_fails_its_row(harness) -> None:
     assert any("boot scan applied the cert" in desc for desc in failed(run))
 
 
-def test_the_row_reads_our_answer_when_both_answer_files_exist(harness) -> None:
-    """6ef2ef77.1: two files concatenated used to parse as nothing and fail the row; now the document naming our request decides."""
+def test_the_row_reads_our_answer_when_the_output_holds_two_documents(harness) -> None:
+    """6ef2ef77.1: the answer command's output holds one document per file; the harness feeds that output as one string (the raw two-file case is the shell-script test below), and the document naming our request decides."""
     other = json.dumps({"requestId": "someone-else", "reason": "wrong-key"})
     run = harness(elite_answers=[("applied.json", ok(other + "\n" + APPLIED + "\n"))])
     assert not any("boot scan applied the cert" in desc for desc in failed(run))
@@ -578,6 +578,8 @@ def test_the_answer_script_separates_two_files_with_a_newline(tmp_path, monkeypa
     out = subprocess.run(
         ["sh", "-c", ec.inbox_answer_script()], capture_output=True, text=True, check=True
     ).stdout
+    # The newline after each file is the point: adjacent objects would still parse, so the bytes are compared.
+    assert out == '{"requestId": "x", "certId": "c"}\n{"requestId": "y", "reason": "r"}\n'
     assert [d["requestId"] for d in ec.inbox_answers(out)] == ["x", "y"]
     (tmp_path / "applied.json").unlink()
     (tmp_path / "rejected.json").unlink()

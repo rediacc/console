@@ -229,8 +229,10 @@ def test_report_states_how_many_items_were_scanned(monkeypatch, capsys):
 
 
 class _Resp:
-    def __init__(self, body: bytes, fail_read: bool = False):
+    def __init__(self, body: bytes, fail_read: bool = False, status: int | None = None):
         self.body, self.fail_read = body, fail_read
+        if status is not None:  # left unset, the caller's getattr default (200) applies
+            self.status = status
 
     def __enter__(self):
         return self
@@ -295,6 +297,45 @@ def test_an_empty_2xx_delete_answer_is_success(monkeypatch):
     """A Worker custom-domain DELETE answers 200 with an empty body (live 2026-11-13: the first cf_retire run stopped on it)."""
     _patch_urlopen(monkeypatch, lambda: _Resp(b""))
     assert cfl.request("DELETE", "/accounts/a/workers/domains/d", TOKEN)["success"] is True
+
+
+@pytest.mark.parametrize("status", [200, 201, 204, 299])
+def test_an_empty_delete_answer_is_success_across_the_2xx_range(monkeypatch, status):
+    _patch_urlopen(monkeypatch, lambda: _Resp(b"", status=status))
+    assert cfl.request("DELETE", "/p", TOKEN)["success"] is True
+
+
+@pytest.mark.parametrize("status", [199, 300, 302])
+def test_an_empty_delete_answer_outside_2xx_is_not_success(monkeypatch, status):
+    """b28631e8.2: the 200 <= status < 300 gate, not just the default 200."""
+    _patch_urlopen(monkeypatch, lambda: _Resp(b"", status=status))
+    with pytest.raises(cfl.CfError, match="non-JSON"):
+        cfl.request("DELETE", "/p", TOKEN)
+
+
+def test_an_empty_get_answer_is_not_success(monkeypatch):
+    _patch_urlopen(monkeypatch, lambda: _Resp(b"", status=200))
+    with pytest.raises(cfl.CfError, match="non-JSON"):
+        cfl.request("GET", "/p", TOKEN)
+
+
+@pytest.mark.parametrize("status", [429, 500, 502, 503, 504])
+def test_each_retryable_status_is_retried_then_succeeds(monkeypatch, status):
+    """e4e6087d.2: removing any one of RETRY_STATUSES turns its case red."""
+    calls = {"n": 0}
+
+    def flaky():
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise urllib.error.HTTPError(
+                "u", status, "x", email.message.Message(), io.BytesIO(b"<html>x</html>")
+            )
+        return _Resp(b'{"success": true, "result": null}')
+
+    _patch_urlopen(monkeypatch, flaky)
+    monkeypatch.setattr(cfl.time, "sleep", lambda _s: None)
+    assert cfl.request("GET", "/p", TOKEN)["success"] is True
+    assert calls["n"] == 2
 
 
 def test_a_429_is_retried_then_succeeds(monkeypatch):

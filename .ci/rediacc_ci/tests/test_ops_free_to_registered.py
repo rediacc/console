@@ -1,7 +1,9 @@
 """rediacc_ci.ops.free_to_registered with the network, the CLI and D1 faked: step order, the address pattern, the missing-mail refusal and a cleanup scoped to one email."""
 
 import json
+import os
 import re
+import signal
 import time
 import urllib.parse
 from datetime import UTC, datetime
@@ -855,11 +857,18 @@ def test_a_refused_code_in_two_windows_still_names_the_seed():
 
 def test_a_process_whose_grandchild_keeps_the_output_open_is_a_timeout(tmp_path):
     """bfbeef8c.1/.2: the pump outliving the join is a DrillError, not the returncode."""
-    script = _stub(tmp_path, 'sleep 4 &\necho "%s"\nexit 0\n' % URL_LINE)
-    job = ftr._Process(["x"], {}, program=script)
-    assert job.read_url() == URL_LINE.strip()
-    with pytest.raises(ftr.DrillError, match="output stayed open"):
-        job.finish(1)
+    pidfile = tmp_path / "grandchild.pid"
+    body = 'sleep 15 &\necho $! > %s\necho "%s"\nexit 0\n' % (pidfile, URL_LINE)
+    job = ftr._Process(["x"], {}, program=_stub(tmp_path, body))
+    try:
+        assert job.read_url() == URL_LINE.strip()
+        with pytest.raises(ftr.DrillError, match="output stayed open"):
+            job.finish(1)
+    finally:
+        # f2e5369d.1: end the grandchild and join the pump here, so its pipe closes inside this test and not in a later one.
+        os.kill(int(pidfile.read_text()), signal.SIGKILL)
+        job._pump.join(timeout=10)
+        assert not job._pump.is_alive()
 
 
 def test_the_pump_closes_the_output_pipe_once_the_process_ends(tmp_path):

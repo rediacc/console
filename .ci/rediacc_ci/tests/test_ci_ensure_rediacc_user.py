@@ -16,12 +16,18 @@ def _fake(uid: str, gid: str):
 def test_a_user_with_another_uid_is_refused(monkeypatch, capsys):
     monkeypatch.setattr(eru, "_out", _fake("1001", eru.ID))
     assert eru.main() == 1
-    assert "not uid/gid" in capsys.readouterr().out
+    out = capsys.readouterr().out
+    assert out.startswith("::error::")
+    assert "not uid/gid" in out
 
 
-def test_a_user_with_another_gid_is_refused(monkeypatch):
+def test_a_user_with_another_gid_is_refused(monkeypatch, capsys):
     monkeypatch.setattr(eru, "_out", _fake(eru.ID, "1001"))
     assert eru.main() == 1
+    out = capsys.readouterr().out
+    assert out.startswith("::error::")
+    assert "not uid/gid" in out
+    assert "gid=1001" in out
 
 
 def test_a_user_with_the_expected_ids_passes(monkeypatch, capsys):

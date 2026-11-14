@@ -149,6 +149,14 @@ def test_add_names_the_hosts_the_rule_covers_and_list_does_not(capsys):
     assert "rule covers" not in capsys.readouterr().out
 
 
+def test_the_add_command_names_the_covered_hosts_too(capsys):
+    """81117cd2.1: `add <ip>` shares the print with add-current; dropping it from that path goes red."""
+    api = FakeCloudflare()
+    assert _run(api, "add", "198.51.100.9") == 0
+    out = capsys.readouterr().out
+    assert f"rule covers: {BENCH_ORIGIN.removeprefix('https://')}, {PROXY_BENCH_HOST}" in out
+
+
 def test_the_rule_blocks_without_a_custom_response():
     """The Free plan refuses a custom response (live 2026-10-26: `not entitled to use a custom response`), so the rule is a plain block and the hint lives in the tooling."""
     api = FakeCloudflare()

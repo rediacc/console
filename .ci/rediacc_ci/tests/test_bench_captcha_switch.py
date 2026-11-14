@@ -62,6 +62,24 @@ def test_no_other_config_carries_a_captcha_or_test_switch():
         assert not found, "%s sets %s" % (path.name, found)
 
 
+def test_every_bench_config_that_carries_a_switch_names_itself_bench():
+    """1302c19b.1: the regional benches (bench-us, bench-asia) are swept too.
+
+    A switch is safe only in a config whose ENVIRONMENT is "bench", the one value the account server admits it for.
+    A bench that dropped ENVIRONMENT, or a non-bench config renamed into the pattern, goes red.
+    """
+    benches = [p for p in CONFIGS if p.name.startswith("wrangler.bench")]
+    assert {p.name for p in benches} >= {
+        "wrangler.bench.toml",
+        "wrangler.bench-us.toml",
+        "wrangler.bench-asia.toml",
+    }
+    for path in benches:
+        for where, table in _every_vars_table(path).items():
+            if any(k in table for k in SWITCHES):
+                assert _vars(path).get("ENVIRONMENT") == "bench", "%s %s" % (path.name, where)
+
+
 def test_the_sweep_reads_environment_tables_too(tmp_path: Path) -> None:
     # Control for the sweep above: a switch under [env.<name>.vars] is found, so the sweep is not blind to it.
     config = tmp_path / "wrangler.test.toml"

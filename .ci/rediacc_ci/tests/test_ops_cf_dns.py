@@ -59,7 +59,8 @@ def ensure(http, **kw):
     }
     args.update(kw)
     unknown = set(args) - {*ENSURE_KEYS, "dry_run"}
-    assert not unknown, "ensure() would drop %s" % sorted(unknown)
+    if unknown:  # a raise, not an assert: python -O must not strip the refusal
+        raise AssertionError("ensure() would drop %s" % sorted(unknown))
     return cf_dns.ensure_record(
         http=http,
         zone=str(args["zone"]),
@@ -179,6 +180,22 @@ def test_records_reads_every_page():
     assert len(cf_dns.records(ZONE, None, http)) == cf_dns.PAGE_SIZE + 1
     assert len(seen) == 2
     assert len(cf_dns.records(ZONE, None, Rec([{"id": "x"}]))) == 1
+
+
+def test_records_stops_at_total_pages():
+    """dabfd4e9.2: result_info.total_pages ends the loop even when the last page is full."""
+    seen: list[str] = []
+
+    def http(_method, path, _body=None):
+        seen.append(path)
+        return {
+            "success": True,
+            "result": [{"id": str(i), "type": "A"} for i in range(cf_dns.PAGE_SIZE)],
+            "result_info": {"total_pages": 1},
+        }
+
+    assert len(cf_dns.records(ZONE, None, http)) == cf_dns.PAGE_SIZE
+    assert len(seen) == 1
 
 
 def test_ensure_helper_refuses_a_keyword_it_would_drop():

@@ -354,16 +354,18 @@ def test_the_live_plan_names_the_rename_objects():
 class ThrottledCf(FakeCf):
     """A FakeCf whose object DELETEs answer 429 a set number of times per key before they succeed, or answer another status for ever."""
 
-    def __init__(self, throttles: int = 0, status: int = 429):
+    def __init__(self, throttles: int = 0, status: int = 429, retry_after: float | None = None):
         super().__init__()
-        self.throttles, self.status = throttles, status
+        self.throttles, self.status, self.retry_after = throttles, status, retry_after
         self.attempts: dict = {}
 
     def delete(self, path, jurisdiction=None):
         if "/objects/" in path:
             n = self.attempts[path] = self.attempts.get(path, 0) + 1
             if self.status != 429 or n <= self.throttles:
-                raise cfl.CfError("DELETE %s: HTTP %s" % (path, self.status), self.status)
+                raise cfl.CfError(
+                    "DELETE %s: HTTP %s" % (path, self.status), self.status, self.retry_after
+                )
         return super().delete(path, jurisdiction)
 
 
@@ -398,7 +400,17 @@ def test_a_429_storm_on_one_object_eventually_succeeds(tree, pauses):
     assert run(tree, cf, "delete", "--write", "--no-archive", ASKED) == 0
     assert cf.buckets[("rediacc-configs-eu", "eu")] == []
     assert len(pauses) >= cr.THROTTLE_ROUNDS
-    assert all(p >= cr.THROTTLE_PAUSE_S for p in pauses)
+    # A throttle pauses the doubled step (cfl.backoff_s), so a single un-doubled 30 s pause is red.
+    assert all(p >= cr.THROTTLE_PAUSE_S * cfl.THROTTLE_FACTOR for p in pauses)
+
+
+def test_a_429_pause_honours_the_retry_after_the_error_carries(tree, pauses):
+    """358dc107.2: the Retry-After reaches cf_retire's pause, above the doubled step."""
+    longer = cr.THROTTLE_PAUSE_S * cfl.THROTTLE_FACTOR * 1.5
+    cf = ThrottledCf(throttles=1, retry_after=longer)
+    assert run(tree, cf, "delete", "--write", "--no-archive", ASKED) == 0
+    assert pauses
+    assert all(p >= longer for p in pauses)
 
 
 def test_a_429_that_never_clears_stops_the_run_after_the_rounds(tree, pauses, capsys):

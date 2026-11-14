@@ -551,3 +551,32 @@ def test_a_404_for_an_existing_bucket_without_cors_is_empty_settings():
     """Control: the same 404 on a bucket that exists stays an empty CORS list."""
     settings = bc.Settings(FakeSettingsApi({}), {}, "acct")
     assert settings.read("real", "eu")["cors"] == []
+
+
+def test_a_cors_delete_404_on_a_missing_bucket_is_an_error():
+    """d6cb6530.2: the DELETE path calls _require_bucket too, so writing no-CORS settings to a typo bucket fails."""
+    api = FakeSettingsApi({}, missing=frozenset({"typo"}))
+    wanted: dict[str, list] = {"cors": [], "lifecycle": [], "notifications": []}
+    with pytest.raises(bc.CopyError, match="bucket typo does not exist"):
+        bc.Settings(api, {}, "acct").write("typo", "eu", wanted)
+
+
+def test_a_cors_delete_on_an_existing_bucket_succeeds():
+    """Control: the same write on a bucket that exists clears CORS and puts the lifecycle."""
+    api = FakeSettingsApi({})
+    wanted: dict[str, list] = {"cors": [], "lifecycle": [], "notifications": []}
+    bc.Settings(api, {}, "acct").write("real", "eu", wanted)
+    assert [c[0] for c in api.calls if c[2].endswith("/cors")] == ["DELETE"]
+
+
+def test_a_probe_that_fails_without_a_404_does_not_name_the_bucket_missing():
+    """d6cb6530.2: only the probe's own 404 proves absence; the settings 404 stands as no configuration otherwise."""
+
+    def transport(_method, url, _headers, _body):
+        if url.endswith("/cors"):
+            return 404, {"success": False}
+        if url.endswith("/buckets/real"):
+            return 500, {"success": False}
+        return 200, {"success": True, "result": {}}
+
+    assert bc.Settings(transport, {}, "acct").read("real", "eu")["cors"] == []
