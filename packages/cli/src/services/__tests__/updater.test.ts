@@ -190,7 +190,7 @@ describe('services/updater', () => {
     it('defaults to UPDATE_DEFAULTS.CHANNEL when no signal is present', () => {
       delete process.env.REDIACC_UPDATE_CHANNEL;
       vi.mocked(readAccountPointer).mockReturnValue({});
-      expect(resolveChannel()).toBe('stable');
+      expect(resolveChannel()).toBe('edge');
     });
   });
 

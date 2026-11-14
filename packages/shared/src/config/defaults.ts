@@ -689,7 +689,7 @@ export const UPDATE_DEFAULTS = {
   PROVIDER: 'generic' as const,
 
   /** Default update channel */
-  CHANNEL: 'stable' as const,
+  CHANNEL: 'edge' as const,
 } as const;
 
 /**
