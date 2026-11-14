@@ -499,7 +499,12 @@ def test_a_fresh_database_needs_no_rebuild_and_ensure_is_a_noop_on_it():
     assert not again.migrated
     assert not any("--file" in c for c in fake.calls)
     assert conn.execute("SELECT name, sql FROM sqlite_master ORDER BY name").fetchall() == before
+    _insert(conn, "c5eed", "seed-co", "active")
+    snapshot = conn.execute("SELECT name, sql FROM sqlite_master ORDER BY name").fetchall()
+    rows = conn.execute("SELECT * FROM companies ORDER BY id").fetchall()
     control_db.apply_name_rebuild("control-bench-eu", runner=fake)
+    assert conn.execute("SELECT name, sql FROM sqlite_master ORDER BY name").fetchall() == snapshot
+    assert conn.execute("SELECT * FROM companies ORDER BY id").fetchall() == rows
     _insert(conn, "caaa1", "x-co", "removed")
     _insert(conn, "cbbb2", "x-co", "active")
     with pytest.raises(sqlite3.IntegrityError, match="UNIQUE"):
