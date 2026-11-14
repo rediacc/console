@@ -10,12 +10,13 @@ import subprocess
 import typing
 
 from rediacc_ci import paths
+from rediacc_ci.well_known import RELEASES_ORIGIN
 
 if typing.TYPE_CHECKING:
     import pathlib
 
 INSTALL_SH = paths.repo_root() / "packages" / "www" / "public" / "install.sh"
-DEFAULT_URL = "https://releases.rediacc.com"
+DEFAULT_URL = RELEASES_ORIGIN
 CUSTOM_URL = "https://releases.example.test/custom"
 CONFIG = '{"schemaVersion":3,"machines":{"m":{}},"account":{"accountServer":"https://x"}}\n'
 # Tools the sourced script and the function touch; `jq` is deliberately absent.

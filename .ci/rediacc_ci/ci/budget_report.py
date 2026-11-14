@@ -677,17 +677,18 @@ def _display_name_pattern(name: str, has_matrix: bool) -> re.Pattern[str]:
     if _TEMPLATE_RE.search(name):
         parts = _TEMPLATE_RE.split(name)
         # A `/<n>` right after a template is the leg COUNT the workflow hard-codes (`${{ matrix.shard }}/9`). It is not part of the shape: runs from before a leg-count change carry the old n, and a pattern pinned to the current n prices no leg until runs with the new one exist (the e2e lane went /8 -> /9 and the stock refresh priced none of it).
-        pattern = ".+?".join(
-            (r"/\d+" + re.escape(part[len(_LEG_COUNT_RE.match(part).group(0)) :]))
-            if i and _LEG_COUNT_RE.match(part)
-            else re.escape(part)
-            for i, part in enumerate(parts)
-        )
+        pattern = ".+?".join(_template_part(i, part) for i, part in enumerate(parts))
     else:
         pattern = re.escape(name)
         if has_matrix:
             pattern += r"(?: \([^)]*\))?"
     return re.compile("^%s$" % pattern)
+
+
+def _template_part(i, part):
+    """One literal segment of a templated job name, escaped; a leading `/<n>` after a template (every segment but the first) matches any leg count."""
+    count = _LEG_COUNT_RE.match(part) if i else None
+    return (r"/\d+" + re.escape(part[count.end() :])) if count else re.escape(part)
 
 
 def lane_display_patterns(

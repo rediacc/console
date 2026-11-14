@@ -1,6 +1,6 @@
 import { parse } from 'yaml';
 import { describe, expect, it } from 'vitest';
-import { TEMPLATES } from '../embedded.generated';
+import { TEMPLATES } from '../embedded.generated.js';
 
 type EnvFileEntry = string | { path: string; required?: boolean };
 

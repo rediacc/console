@@ -509,7 +509,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-d1-eu-jurisdiction.md` | approved | 87 | 19 | 3 | 19660 |
 | `agent/plans/PLAN-d1-scaling.md` | approved | 219 | 12 | 19 | 45816 |
 | `agent/plans/PLAN-deletion-budget.md` | draft | 388 | 28 | 0 | 53439 |
-| `agent/plans/PLAN-detached-jobs.md` | approved | 1064 | 7 | 33 | 194645 |
+| `agent/plans/PLAN-detached-jobs.md` | approved | 1064 | 7 | 33 | 194647 |
 | `agent/plans/PLAN-devbox-uid-derived-image.md` | compacted | 36 | 0 | 0 | 2750 |
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
 | `agent/plans/PLAN-docker-pin-digest.md` | executing | 119 | 0 | 9 | 19984 |

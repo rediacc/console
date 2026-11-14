@@ -555,7 +555,7 @@ def _rebound_names(tree):
 
 def _bindings(tree):
     """`{name: [value, ...]}` for every plain, annotated, augmented or walrus assignment to a bare name."""
-    out = {}
+    out: dict[str, list[ast.expr]] = {}
     for node in ast.walk(tree):
         if isinstance(node, ast.Assign):
             pairs = [(target, node.value) for target in node.targets]
@@ -603,7 +603,8 @@ def _handed_sequences(tree):
             out.add(id(node))
             for arg in list(node.args) + [keyword.value for keyword in node.keywords]:
                 hand(arg)
-    bindings, done = _bindings(tree), set()
+    bindings = _bindings(tree)
+    done: set[str] = set()
     while names - done:
         name = (names - done).pop()
         done.add(name)

@@ -8,6 +8,7 @@ import os
 import pathlib
 import subprocess
 import sys
+import typing
 
 import pytest
 
@@ -351,7 +352,7 @@ class _Root:
 
 def test_a_bare_absent_private_is_no_source_of_ours(tmp_path):
     # Review c804bc45.2: `private` alone is a plain superproject directory, never a repository; an absent `private/<name>` and `.git/...` still count.
-    world = _Root(tmp_path)
+    world = typing.cast("block_origin_clone.World", _Root(tmp_path))
     judge = block_origin_clone.World.is_source_of_ours
     assert not (tmp_path / "private").exists()
     assert judge(world, str(tmp_path / "private")) is False

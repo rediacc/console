@@ -3907,12 +3907,6 @@ _E2E_LEG_8 = "Tests + Infra / E2E Workers (ubuntu-24.04, 1/8)"
 _E2E_LEG_9 = "Tests + Infra / E2E Workers (ubuntu-24.04, 1/9)"
 
 
-def _lane_durations_path(root):
-    path = root / ".ci" / "config" / "lane-durations.json"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    return path
-
-
 def test_refresh_prunes_a_stale_leg_name_from_both_name_keyed_tables(tmp_path):
     """4f21712d.1: the wiring, not only `prune_names_to_leg_counts`, drops a leg name the manifest no longer ships from `job_p90_minutes` and `job_p90_plans`."""
     _write_workflows(tmp_path, {"test-e2e-workers": (_E2E_JOB_NAME, ["- run: x"])})

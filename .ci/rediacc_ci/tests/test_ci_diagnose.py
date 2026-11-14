@@ -77,7 +77,9 @@ def the_job():
 # ---- the real run ---------------------------------------------------------------
 
 
-def test_the_real_run_reads_cancelled_by_the_watchdog_budget(tmp_path):
+def test_the_real_run_reads_cancelled_by_the_watchdog_budget(tmp_path, monkeypatch):
+    # The recorded run's job name carries its leg count ("1/8"), and check:ci-budget-freshness prunes names the shard manifests no longer ship, so a leg-count change removes that row from the committed lane-durations.json. The table is injected here; test_p90_table_reads_the_committed_lane_durations covers the committed read.
+    monkeypatch.setattr(D, "_p90_table", lambda: {the_job()["name"]: 8.6})
     fetch = FakeFetch(real_routes(), real_texts())
     d = D.diagnose(fetch, RUN, attempt=1, cache_dir=tmp_path)
     assert d["schema"] == "ci-verdict/v1"
@@ -94,16 +96,17 @@ def test_the_real_run_reads_cancelled_by_the_watchdog_budget(tmp_path):
     assert ff["step"] == "Run E2E Tests (Workers)"
     assert ff["category"] == "infra-likely"
     assert ff["signature"] == "slow-setup"
-    # The p90 comes from the COMMITTED lane-durations.json, which check:ci-budget-freshness keeps current, so the expected value is read from the same table rather than pinned: the pinned 540 (9.0m) went stale on the 2026-10-04 refresh (8.6m), a true drift and not a regression.
-    recorded = D._p90_table().get(the_job()["name"])
-    assert isinstance(recorded, (int, float)), (
-        "the job must have a recorded p90 in lane-durations.json"
-    )
-    assert ff["p90_s"] == round(float(recorded) * 60), (
-        "the job's recorded p90 must be quoted beside its 1069 s step"
+    assert ff["p90_s"] == 516, (
+        "the job's recorded p90 (8.6 min) must be quoted beside its 1069 s step"
     )
     assert any("(916s)" in ln for ln in ff["excerpt"]), ff["excerpt"]
     assert d["next"] == ".ci/scripts/ci/ci-trace.py --job %s --errors" % JOB
+
+
+def test_p90_table_reads_the_committed_lane_durations():
+    table = D._p90_table()
+    assert table, "lane-durations.json must carry a non-empty job_p90_minutes table"
+    assert all(isinstance(v, (int, float)) for v in table.values()), table
 
 
 def test_the_real_run_names_the_900_second_silence(tmp_path):
