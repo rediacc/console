@@ -22,4 +22,4 @@ Body-Sig: cb4c5938ae918e22
 Anchor: in-diff
 Claim: The multi-region-bench ledger row changes its third count from 2 to 3 while the only box change in the diff is one tick (open boxes 20 to 19); the diff does not show what that column counts, so the regenerated value is not explained by this commit.
 Class: other
-Resolution: open
+Resolution: not-a-bug | agent/INDEX.md:465 heads that table "lines / open / ticked / bytes", so the third count is the ticked column: Q0 went from open to ticked in this commit, open 20->19 and ticked 2->3, which is exactly the one tick the diff shows | d778be9d 2026-11-14T18:00:48Z
