@@ -15,6 +15,8 @@ WHAT THE REAL HALF NEEDS. The enrolled checkers run the repository's own generat
 
 from __future__ import annotations
 
+import fcntl
+import hashlib
 import importlib.util
 import json
 import os
@@ -24,6 +26,7 @@ import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
 
 import pytest
 
@@ -436,19 +439,11 @@ def _link_build_products(repo: pathlib.Path) -> None:
             dst.symlink_to(src)
 
 
-def _prefetch_main_plans() -> int:
-    """Make every `agent/plans` blob of origin/main present in this checkout, and return how many were absent.
+# What the plan blob prefetch did in this worker, quoted by the plan-renders assertion: its failure is otherwise invisible, since pytest shows a module fixture's stderr only when that fixture's own first test fails.
+PREFETCH_REPORT: list[str] = []
 
-    The fixture reaches this checkout's objects through alternates and has no promisor remote of its own, so in a blobless clone (CI's `filter: blob:none`) a plan blob of origin/main that was never fetched is unreadable there: `git show origin/main:<plan>` fails, `check_plan_record.main_view` returns None, and RF refuses every fully ticked plan instead of warning (run 41318476899). One batched fetch by oid, which a full clone never needs."""
-    listed = subprocess.run(
-        ["git", "-C", str(REPO_ROOT), "ls-tree", "-r", "origin/main", "--", "agent/plans"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    oids = [row.split()[2] for row in listed.stdout.splitlines() if len(row.split()) >= 3]
-    if not oids:
-        return 0
+
+def _missing_blobs(oids: list[str]) -> list[str]:
     checked = subprocess.run(
         ["git", "-C", str(REPO_ROOT), "cat-file", "--batch-check=%(objectname) %(objecttype)"],
         input="\n".join(oids) + "\n",
@@ -457,9 +452,37 @@ def _prefetch_main_plans() -> int:
         check=False,
         env={**os.environ, "GIT_NO_LAZY_FETCH": "1"},
     )
-    missing = [r.split()[0] for r in checked.stdout.splitlines() if r.endswith(" missing")]
-    if missing:
-        # A slow or failed fetch must not error the module-scoped fixture: the plan-renders case alone depends on these blobs, and its own failure names them.
+    return [r.split()[0] for r in checked.stdout.splitlines() if r.endswith(" missing")]
+
+
+def _prefetch_main_plans() -> int:
+    """Make every `agent/plans` blob of origin/main present in this checkout, and return how many were absent.
+
+    The fixture reaches this checkout's objects through alternates and has no promisor remote of its own, so in a blobless clone (CI's `filter: blob:none`) a plan blob of origin/main that was never fetched is unreadable there: `git show origin/main:<plan>` fails, `check_plan_record.main_view` returns None, and RF refuses every fully ticked plan instead of warning (run 41318476899). One batched fetch by oid, which a full clone never needs.
+
+    Every xdist worker builds its own module world and runs this at once against the same checkout, so the fetch is serialized by a file lock and the missing set is read again under it; whatever still fails is recorded in PREFETCH_REPORT (run 43617661791 refused three plans whose main copies have open boxes, with nothing to say why)."""
+    listed = subprocess.run(
+        ["git", "-C", str(REPO_ROOT), "ls-tree", "-r", "origin/main", "--", "agent/plans"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    oids = [row.split()[2] for row in listed.stdout.splitlines() if len(row.split()) >= 3]
+    if not oids:
+        PREFETCH_REPORT.append(
+            "origin/main lists no agent/plans blob (ls-tree rc %d)" % listed.returncode
+        )
+        return 0
+    if not _missing_blobs(oids):
+        return 0
+    key = hashlib.sha256(str(REPO_ROOT).encode()).hexdigest()[:12]
+    lock_path = pathlib.Path(tempfile.gettempdir()) / ("plan-blob-prefetch-%s.lock" % key)
+    with open(lock_path, "w") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        missing = _missing_blobs(oids)
+        if not missing:
+            return 0
+        # A slow or failed fetch must not error the module-scoped fixture: the plan-renders case alone depends on these blobs, and its own failure quotes PREFETCH_REPORT.
         try:
             got = subprocess.run(
                 [
@@ -479,9 +502,18 @@ def _prefetch_main_plans() -> int:
                 timeout=300,
             )
             if got.returncode != 0:
-                print("plan blob prefetch failed: %s" % got.stderr.strip(), file=sys.stderr)
+                PREFETCH_REPORT.append(
+                    "plan blob prefetch failed (rc %d): %s"
+                    % (got.returncode, got.stderr.strip()[-500:])
+                )
         except subprocess.TimeoutExpired:
-            print("plan blob prefetch timed out", file=sys.stderr)
+            PREFETCH_REPORT.append("plan blob prefetch timed out after 300 s")
+        still = _missing_blobs(oids)
+        if still:
+            PREFETCH_REPORT.append(
+                "%d of %d origin/main plan blob(s) still absent after the fetch"
+                % (len(still), len(missing))
+            )
     return len(missing)
 
 
@@ -559,9 +591,10 @@ def _enrolled_allowed(w, entry: dict, tag: str) -> tuple[bool, str]:
         check=False,
         timeout=600,
     )
-    assert made.returncode == 0, "`%s` failed in the fixture:\n%s" % (
+    assert made.returncode == 0, "`%s` failed in the fixture:\n%s\nplan blob prefetch: %s" % (
         entry["generator"],
         (made.stderr or made.stdout)[-2000:],
+        "; ".join(PREFETCH_REPORT) or "no failure recorded",
     )
     outputs = [p for p in _changed(w) if GA.matches(p, tuple(entry["outputs"]))]
     assert outputs, (
