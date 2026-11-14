@@ -222,7 +222,7 @@ ENV NVM_DIR=/usr/local/share/nvm
 ENV NVM_SYMLINK_CURRENT=true
 
 # npm is replaced further down, after `COPY toolchain.env`, with the exact
-# NPM_VERSION pin: this image is where lockfiles get written, and npm 11 at that pin
+# NPM_VERSION pin: this image is where lockfiles get written, and npm at that pin
 # is the only npm the repo supports (check:ci-lockfile refuses any other writer's form).
 RUN mkdir -p "$NVM_DIR" \
     && curl -fsSL $CURL_RETRY https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash \

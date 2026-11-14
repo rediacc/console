@@ -12,8 +12,9 @@
 # a README nobody reads when the build breaks:
 #   1. This repo's .npmrc sets ignore-scripts=true, so a plain `npm i -g agent-browser`
 #      installs the package and NEVER links the binary. It needs --allow-scripts.
-#   2. agent-browser declares engines.node >= 24 against our 22. Cosmetic: the bin symlink
-#      points at a prebuilt native binary and the JS shim never runs. npm still warns.
+#   2. agent-browser declares engines.node >= 24. The image ran node 22 until the node 26
+#      bump (1c6086bc), and npm warned; the bin symlink points at a prebuilt native binary,
+#      so the JS shim never ran either way. Node 26 satisfies the constraint.
 #   3. Chrome needs system libs. `agent-browser install --with-deps` wants root for the
 #      libs; running the BROWSER download as root puts it under /root where the runtime
 #      user cannot reach it. So: libs as root, browser as the runtime user, separately.
