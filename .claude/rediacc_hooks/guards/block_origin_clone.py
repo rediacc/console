@@ -10,7 +10,7 @@ THE SAME ACT. `gh repo clone`, `gh repo fork --clone`, and outside this checkout
 
 STRUCTURALLY UNTOUCHED. ci:quick's clone, the release clone, `renet-execution`, `gate_model`, `obs_ceph_autobump` and every test harness run `git clone` in a subprocess no PreToolUse hook sees. A clone over `ssh`, `docker exec` or `rdc term` makes no tree on this machine and is not walked.
 
-PROGRAM TEXT. `block_worktree_add.interpreter_programs` hands over what a command gives an interpreter: every string of a program the command line holds is judged. A script run by path, or read on stdin from a file, is read too, and a tracked one unchanged from HEAD is not. In a Python script by path only what a call is handed and argv-shaped lists count, so a table of commands in a test is data. A script the hook cannot read is `block_worktree_add`'s refusal, earlier in the chain.
+PROGRAM TEXT. `block_worktree_add.interpreter_programs` hands over what a command gives an interpreter: every string of a program the command line holds is judged. A script run by path, or read on stdin from a file, is read too, and a tracked one unchanged from HEAD is not. In a Python script by path only what a call is handed and argv-shaped lists count, so a table of commands in a test is data. A script the hook cannot read is `block_worktree_add`'s refusal, earlier in the chain, and is refused here too when the command spells a clone verb as a word or names an untracked or changed file whose text does; `quick-clone.ts` is a name, not a verb (#82053b3b).
 
 OUT OF REACH, stated: a string built at run time. A source the walk cannot expand is judged only when the command also names a way to ours (`rev-parse --show-toplevel`, `pwd`, an origin), because `git clone "$T/a"` over a fresh `mktemp` is a fixture. A plain `cp -a` of the tree, `parallel`, and config set outside the command line are not read either.
 
@@ -139,6 +139,8 @@ ARGV_GIT = re.compile(
 )
 PLAIN_NOISE = re.compile(r"[\"'\\]")
 SPELLABLE = ("clone", "fetch", "pull", "remote", "submodule")
+# A verb as a word: bounded by anything but a filename character, so `quick-clone.ts`, `ci-quick-clones/` and `clone_d1.py` are names, not verbs. `--clone` (`gh repo fork`) and `git-clone` (git's own executable) are the two dashed spellings that are verbs.
+VERB_WORD = re.compile(r"(?:(?<![\w.-])|(?<=--)|(?<=git-))(?:%s)(?![\w.-])" % "|".join(SPELLABLE))
 OUTSIDE_VERBS = frozenset(("fetch", "pull", "remote", "submodule"))
 
 MESSAGE = (
@@ -574,6 +576,29 @@ def _script_file(target):
     return (None, None) if programs._tracked_unchanged(target) else (text, "file")
 
 
+def _names_a_verb(cmd, world):
+    """Does `cmd` spell a clone verb as a word, or name a readable, untracked-or-changed file whose text does?
+
+    The whole text is read, not only the runs' words, because a verb written into the unread script sits in a heredoc body, a `sed` expression or an assignment as often as in an argv. A file the command names is read the way a script run by path is: a source copied or `cat`'d into the unread script carries its verbs under any name, and a tracked unchanged one is exempt.
+    """
+    if VERB_WORD.search(PLAIN_NOISE.sub("", cmd)):
+        return True
+    try:
+        words = shlex.split(cmd)
+    except ValueError:
+        words = cmd.split()
+    for word in dict.fromkeys(words):
+        if "$" in word or "`" in word or word.startswith("-"):
+            continue
+        target = os.path.join(world.base, os.path.expanduser(word))
+        if not os.path.isfile(target):
+            continue
+        text = _script_file(target)[0]
+        if text and VERB_WORD.search(PLAIN_NOISE.sub("", text)):
+            return True
+    return False
+
+
 def _by_path_reason(cmd, world, depth):
     if not (shellscan.PROGRAM_PREFILTER.search(cmd) or programs.SHELL_SCRIPT_PREFILTER.search(cmd)):
         return None
@@ -587,7 +612,7 @@ def _by_path_reason(cmd, world, depth):
         if kind not in ("file", "unjudgeable"):
             text, kind = _shell_script_text(run_, world)
             family = "shell"
-        if kind == "unjudgeable" and _could_spell(cmd):
+        if kind == "unjudgeable" and _names_a_verb(cmd, world):
             return "this runs a script the hook cannot judge, and the command names a clone verb."
         if kind == "file" and text and _could_spell(text):
             why = _program_reason(family, text, world, depth, by_path=True)
