@@ -775,9 +775,10 @@ export function summaryLines(input: {
       const from = receipt?.gates?.[id]?.carriedFrom;
       return from !== undefined && from !== null;
     });
+    // The runner never carries a red (run.ts decideCarry), so a red with carriedFrom set means the receipt was not written by that runner: say so instead of trusting it.
     if (carriedRed.length > 0)
       lines.push(
-        `ci:quick: carried, not re-judged, because their inputs have not changed: ${carriedRed.join(', ')}. If the cause lay outside the tree, re-judge with: npm run ci:quick -- --no-carry\n`
+        `ci:quick: INVARIANT BROKEN: these reds name a carried verdict, but the runner re-judges every red: ${carriedRed.join(', ')}. Judge every gate fresh with: npm run ci:quick -- --no-carry\n`
       );
     lines.push(
       'ci:quick: repair in this checkout with the narrow set, which judges the working tree and writes no receipt:\n  npm run ci -- --narrow\n'
@@ -1636,16 +1637,17 @@ export async function quickCloneSelftest(
       },
     });
     check(
-      /carried, not re-judged[^\n]*check:old\.[^\n]*--no-carry/.test(carriedRedRun.log) &&
-        !/carried, not re-judged[^\n]*check:new/.test(carriedRedRun.log),
-      `a red that only carried must be named as carried, with the way to judge it again: ${carriedRedRun.log}`
+      carriedRedRun.exit === 1 &&
+        /INVARIANT BROKEN[^\n]*: check:old\.[^\n]*--no-carry/.test(carriedRedRun.log) &&
+        !/INVARIANT BROKEN[^\n]*check:new/.test(carriedRedRun.log),
+      `a red receipt entry with carriedFrom set breaks the never-carry-a-red invariant and must be named as such, with the fresh run: ${carriedRedRun.log}`
     );
     const redFresh = await drive({
       receipt: { ...greenAtTree, exitCode: 1, failed: ['check:new'] },
     });
     check(
-      !redFresh.log.includes('carried, not re-judged'),
-      'CONTROL: a red judged this run must not be called carried'
+      !redFresh.log.includes('INVARIANT BROKEN') && !redFresh.log.includes('carried, not re-judged'),
+      'CONTROL: a red judged this run breaks no invariant'
     );
     const listed = await drive({ args: ['--list'] });
     check(

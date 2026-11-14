@@ -3461,7 +3461,7 @@ interface IncrementalInput {
 }
 
 /**
- * The carry decision, pure. Only a disposable clone carries (the tree is then the bytes the gates read); anywhere else every selected gate runs.
+ * The carry decision, pure. Only a disposable clone carries (the tree is then the bytes the gates read); anywhere else every selected gate runs. Only a green carries: a gate whose prior verdict was anything but `ok` runs again whatever its input hash, because a red can come from outside the tree (an environment that killed the gate, a timeout) and a carried red would stay red until a full `--no-carry` run.
  */
 function decideCarry(input: {
   disposable: boolean;
@@ -3469,15 +3469,20 @@ function decideCarry(input: {
   hashes: Map<string, GateHash>;
   selected: string[];
   salt: string;
-}): { carry: Map<string, PriorGate>; run: string[] } {
-  if (!input.disposable) return { carry: new Map(), run: [...input.selected] };
-  return planCarry(input.prior, input.hashes, input.selected, input.salt);
+}): { carry: Map<string, PriorGate>; run: string[]; rejudged: string[] } {
+  if (!input.disposable) return { carry: new Map(), run: [...input.selected], rejudged: [] };
+  const planned = planCarry(input.prior, input.hashes, input.selected, input.salt);
+  const carry = new Map([...planned.carry].filter(([, pg]) => pg.verdict === 'ok'));
+  const rejudged = [...planned.carry.keys()].filter((id) => !carry.has(id));
+  return { carry, run: input.selected.filter((id) => !carry.has(id)), rejudged };
 }
 
 /** Hashes every gate at the judged tree, then decides which selected gates keep the prior verdict. */
 function incrementalPlan(input: IncrementalInput): {
   carry: Map<string, PriorGate>;
   run: string[];
+  /** Selected gates whose input hash matched but whose prior verdict was red, so they run instead of carrying. */
+  rejudged: string[];
   hashes: Map<string, GateHash>;
   salt: string;
 } {
@@ -3518,7 +3523,7 @@ function incrementalInputOf(
   };
 }
 
-/** `failed`, `findings` and `exitCode` over fresh AND carried verdicts, so a carried red stays red and still clears carried-reds.json by exact key. */
+/** `failed`, `findings` and `exitCode` over fresh AND carried verdicts. `decideCarry` carries only greens, so a carried entry is never `fail`; one that is still counts as failed rather than vanishing from `failed`. */
 function mergeVerdicts(
   results: ReadonlyArray<{ id: string; status: string }>,
   freshExit: number,
@@ -3757,23 +3762,42 @@ function incrementalSelftest(tmpDir: string): { failures: string[]; assertions: 
       'CONTROL: the untouched gate stays carried when only the other input moves'
     );
 
-    // INCREMENTAL-PROOF-3: a planted red stays red when carried.
+    // INCREMENTAL-PROOF-3: a planted red is never carried; an unchanged failing gate runs again.
     const redFirst = plan(t3, null);
     const rRed = receiptOf(t3, redFirst, { 'g:b': 'fail' });
     const sameTree = plan(t3, rRed);
-    const carriedRed = sameTree.carry.get('g:b');
     check(
-      carriedRed?.verdict === 'fail',
-      'INCREMENTAL-PROOF-3: an unchanged failing gate is carried as fail, never as ok'
+      sameTree.run.includes('g:b') && !sameTree.carry.has('g:b'),
+      `INCREMENTAL-PROOF-3: an unchanged failing gate must re-run, never carry; carried ${[...sameTree.carry.keys()].join()} ran ${sameTree.run.join()}`
     );
-    const merged = mergeVerdicts([], 0, {}, sameTree.carry);
+    check(
+      [...sameTree.carry.values()].every((pg) => pg.verdict === 'ok'),
+      `INCREMENTAL-PROOF-3: every carried verdict is ok, got ${JSON.stringify([...sameTree.carry])}`
+    );
+    check(
+      sameTree.hashes.get('g:b')?.inputHash === rRed.gates['g:b'].inputHash,
+      "INCREMENTAL-PROOF-3: the red's input hash is unchanged, so only its verdict sends it to run"
+    );
+    check(
+      sameTree.carry.get('g:a')?.verdict === 'ok' && sameTree.carry.get('g:none')?.verdict === 'ok',
+      `CONTROL: the unchanged green gates beside the red still carry as ok; carried ${[...sameTree.carry.keys()].join()} ran ${sameTree.run.join()}`
+    );
+    check(
+      sameTree.rejudged.join() === 'g:b' && identical.rejudged.length === 0,
+      `rejudged names exactly the red at unchanged inputs and is empty when nothing was red, got ${sameTree.rejudged.join()} / ${identical.rejudged.join()}`
+    );
+    const blockedPrior: PriorReceipt = {
+      ...rRed,
+      gates: { ...rRed.gates, 'g:a': { ...rRed.gates['g:a'], verdict: 'blocked', exitCode: null } },
+    };
+    check(
+      plan(t3, blockedPrior).run.includes('g:a'),
+      'INCREMENTAL-PROOF-3: a gate whose prior verdict was blocked re-runs'
+    );
+    const merged = mergeVerdicts([], 0, {}, new Map([['g:b', rRed.gates['g:b']]]));
     check(
       merged.failed.join() === 'g:b' && merged.exitCode === 1,
-      `INCREMENTAL-PROOF-3: a carried fail must stay in failed with exitCode 1, got ${JSON.stringify(merged)}`
-    );
-    check(
-      merged.findings['g:b']?.join() === 'g:b:key',
-      'INCREMENTAL-PROOF-3: a carried fail keeps its findings, so carried-reds.json can still match it by key'
+      `a fail entry handed to mergeVerdicts as carried still counts as failed with exitCode 1, got ${JSON.stringify(merged)}`
     );
     check(
       mergeVerdicts([], 0, {}, new Map()).exitCode === 0,
@@ -4969,8 +4993,9 @@ async function main(): Promise<number> {
       if (disposable) {
         const uncarriable = plan.run.filter((id) => hashes.get(id)?.inputHash === null).length;
         humanOut(
-          `incremental: ${carry.size} carried, ${plan.run.length} run (${uncarriable} that may never carry: an env entry, carry-exempt.json, or such a prerequisite)\n`
+          `incremental: ${carry.size} carried, ${plan.run.length} run (${uncarriable} that may never carry: an env entry, carry-exempt.json, or such a prerequisite; ${plan.rejudged.length} red at unchanged inputs, re-judged because a red never carries)\n`
         );
+        if (plan.rejudged.length > 0) humanOut(`  re-judged: ${plan.rejudged.join(', ')}\n`);
         const named = [...carry.keys()].slice(0, 10);
         if (named.length > 0)
           humanOut(
