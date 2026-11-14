@@ -24,7 +24,7 @@ from typing import Any
 from rediacc_ci.core import bws_env
 from rediacc_ci.core import wrangler as wrangler_mod
 from rediacc_ci.enterprise import secrets
-from rediacc_ci.enterprise.lifecycle import LifecycleError, Target
+from rediacc_ci.enterprise.lifecycle import BucketMissingError, LifecycleError, Target
 from rediacc_ci.ops import cf_auth, enterprise_lookup
 from rediacc_ci.well_known import PRODUCT_DOMAIN
 
@@ -191,7 +191,7 @@ class CloudflareExporter:
     def bucket_keys(self, company: Target, bucket: str) -> list[str]:
         keys = list_keys(self._s3_for(company, bucket), bucket)
         if keys is None:
-            raise LifecycleError(
+            raise BucketMissingError(
                 "listing company bucket %s answered HTTP 404; the bucket is missing" % bucket
             )
         return keys
@@ -293,11 +293,13 @@ class CloudflareTeardown:
         lookup_run: enterprise_lookup.Runner | None = None,
         lookup_namespace: str = enterprise_lookup.NAMESPACE_ID,
         r2_jurisdiction: str | None = None,
+        token_http: Http | None = None,
     ) -> None:
         if not account_id:
             raise LifecycleError("no Cloudflare account id")
         self.account_id = account_id
         self._http = http
+        self._token_http = token_http
         self._s3 = s3
         self._company_s3 = company_s3
         self._secrets = secrets
@@ -445,14 +447,20 @@ class CloudflareTeardown:
 
     def revoke_tokens(self, company: Target) -> None:
         names = {backup_token_name(company), configs_token_name(company)}
+        token_http = self._token_http
 
         def step() -> str | None:
+            if token_http is None:
+                raise LifecycleError(
+                    "CF_MANAGEMENT_TOKEN is not set (bound by --profile %s); the company tokens are user-level, so the account token cannot list them"
+                    % secrets.MINT_PROFILE
+                )
             stale: list[str] = []
             page, pages = 1, 1
             while page <= pages:
                 what = "the token listing"
                 path = "/user/tokens?page=%d&per_page=50" % page
-                answer = _ok(self._http("GET", path), what)
+                answer = _ok(token_http("GET", path), what)
                 rows = _rows(answer, what)
                 stale += [
                     str(r["id"])
@@ -462,7 +470,7 @@ class CloudflareTeardown:
                 pages = _pages(answer, rows, 50, page)
                 page += 1
             for token_id in stale:
-                _ok(self._http("DELETE", "/user/tokens/%s" % token_id), "the token delete")
+                _ok(token_http("DELETE", "/user/tokens/%s" % token_id), "the token delete")
             return None if stale else GONE
 
         self._do("revoke backup token", company.id, step)

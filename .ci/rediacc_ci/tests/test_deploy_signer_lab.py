@@ -81,12 +81,24 @@ def companies(_bench: bool) -> list[dict]:
     return [{"id": "c0123456789abcdef", "name": "acme", "region": "us", "state": "active"}]
 
 
+def _deployed(*names: str):
+    return lambda: set(names)
+
+
+ALL_DEPLOYED = _deployed(
+    "account-bench", "account-acme", "account-probe500", "account-proof-loss-eu"
+)
+
+
 def test_account_workers_bench_lists_account_bench_then_the_companies():
-    assert ds.account_workers(bench=True, companies=companies) == ["account-bench", "account-acme"]
+    assert ds.account_workers(bench=True, companies=companies, present=ALL_DEPLOYED) == [
+        "account-bench",
+        "account-acme",
+    ]
 
 
 def test_account_workers_production_lists_each_region():
-    got = ds.account_workers(bench=False, companies=lambda _b: [])
+    got = ds.account_workers(bench=False, companies=lambda _b: [], present=ALL_DEPLOYED)
     assert got[0].startswith("account-")
     assert "account-bench" not in got
     assert len(got) == len(ds.load_region_ids(ds._root()))
@@ -196,26 +208,61 @@ def _scoped_to(*pairs: tuple[str, str]):
 def test_callers_ask_only_companies_with_a_scope_row_and_name_the_rest():
     """account-probe500 had no scope row, and every claim for it failed with SIGNER_UNKNOWN_COMPANY (2026-11-13)."""
     scoped = _scoped_to(("eu", "c00000000000000bb"))
-    assert ds.callers(bench=True, companies=_companies, scoped=scoped) == [
+    assert ds.callers(bench=True, companies=_companies, scoped=scoped, present=ALL_DEPLOYED) == [
         "account-bench",
         "account-proof-loss-eu",
     ]
-    assert ds.unscoped_callers(bench=True, companies=_companies, scoped=scoped) == [
-        "account-probe500"
-    ]
+    assert ds.unscoped_callers(
+        bench=True, companies=_companies, scoped=scoped, present=ALL_DEPLOYED
+    ) == ["account-probe500"]
     # A scope row in another region's control database is not the company's: the signer joins within one database.
     elsewhere = _scoped_to(("us", "c00000000000000aa"), ("eu", "c00000000000000bb"))
-    assert ds.unscoped_callers(bench=True, companies=_companies, scoped=elsewhere) == [
-        "account-probe500"
-    ]
+    assert ds.unscoped_callers(
+        bench=True, companies=_companies, scoped=elsewhere, present=ALL_DEPLOYED
+    ) == ["account-probe500"]
     # control: every company scoped, none named; account_workers still lists all of them for the key check
     every = _scoped_to(*(("eu", r["id"]) for r in COMPANIES))
-    assert ds.unscoped_callers(bench=True, companies=_companies, scoped=every) == []
-    assert ds.account_workers(bench=True, companies=_companies) == [
+    assert (
+        ds.unscoped_callers(bench=True, companies=_companies, scoped=every, present=ALL_DEPLOYED)
+        == []
+    )
+    assert ds.account_workers(bench=True, companies=_companies, present=ALL_DEPLOYED) == [
         "account-bench",
         "account-probe500",
         "account-proof-loss-eu",
     ]
+
+
+def test_a_company_whose_account_worker_is_gone_is_neither_listed_nor_a_caller():
+    """account-probe500's row outlived its Worker, and `wrangler secret list` for it exited 1 (2026-11-13)."""
+    present = _deployed("account-bench", "account-proof-loss-eu")
+    every = _scoped_to(*(("eu", r["id"]) for r in COMPANIES))
+    assert ds.gone_callers(bench=True, companies=_companies, present=present) == [
+        "account-probe500"
+    ]
+    assert ds.account_workers(bench=True, companies=_companies, present=present) == [
+        "account-bench",
+        "account-proof-loss-eu",
+    ]
+    assert ds.callers(bench=True, companies=_companies, scoped=every, present=present) == [
+        "account-bench",
+        "account-proof-loss-eu",
+    ]
+    assert ds.unscoped_callers(
+        bench=True, companies=_companies, scoped=_scoped_to(), present=present
+    ) == ["account-proof-loss-eu"]
+    # control: every Worker deployed, none is gone
+    assert ds.gone_callers(bench=True, companies=_companies, present=ALL_DEPLOYED) == []
+
+
+def test_default_present_reads_the_workers_listing(monkeypatch):
+    monkeypatch.setattr(
+        ds, "default_api", lambda: lambda _path: [{"id": "account-a"}, {"id": "signer-x"}]
+    )
+    assert ds.default_present() == {"account-a", "signer-x"}
+    monkeypatch.setattr(ds, "default_api", lambda: lambda _path: {"oops": 1})
+    with pytest.raises(proof.LabError, match="no list"):
+        ds.default_present()
 
 
 def test_no_company_reads_no_scope():

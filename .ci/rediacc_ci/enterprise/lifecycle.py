@@ -15,6 +15,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import sys
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Protocol
@@ -42,6 +43,10 @@ Out = Callable[[str], None]
 
 class LifecycleError(RuntimeError):
     """A refusal or a failed step. Messages name the step and the error type, never a secret value."""
+
+
+class BucketMissingError(LifecycleError):
+    """A company bucket the exporter listed does not exist (HTTP 404)."""
 
 
 @dataclass(frozen=True)
@@ -318,12 +323,37 @@ def _write(
         folder = folder.parent
 
 
+def _kept_mid_removal(ctx: Context, company: Target) -> bool:
+    """Whether `remove --delete-data` already began deleting this company's data (the `CHECKED` mark equals a verified export's timestamp) and a bucket it deletes first is gone. Then the earlier export is the only copy of that bucket, so it is kept: a fresh export would overwrite it with a shortfall. A missing bucket without the mark is a real error, which the export itself raises."""
+    try:
+        exported_at = verify_export(ctx, company)
+        if (ctx.export_root / company.id / CHECKED).read_text() != exported_at:
+            return False
+    except (LifecycleError, OSError):
+        return False
+    for bucket in company.buckets:
+        try:
+            ctx.exporter.bucket_keys(company, bucket)
+        except BucketMissingError:
+            return True
+        except secrets.SEAM_ERRORS:
+            return False
+    return False
+
+
 def export(ctx: Context, name: str) -> pathlib.Path:
-    """Dump the D1 database, copy both buckets and keep the durable secrets under `<export_root>/<company id>/`. The manifest, with `complete` and a hash per file, is written last, so an interrupted export never looks finished."""
+    """Dump the D1 database, copy both buckets and keep the durable secrets under `<export_root>/<company id>/`. The manifest, with `complete` and a hash per file, is written last, so an interrupted export never looks finished. A company whose removal already deleted a bucket keeps its earlier completed export (`_kept_mid_removal`), with a note on stderr."""
     _refuse_ci(ctx)
     company = load_company(ctx, name)
     target = ctx.export_root / company.id
     manifest_path = target / MANIFEST
+    if _kept_mid_removal(ctx, company):
+        print(
+            "enterprise export: company %s is mid-removal and a bucket is already deleted; the completed export of %s is kept"
+            % (company.id, verify_export(ctx, company)),
+            file=sys.stderr,
+        )
+        return target
     failed = ""
     try:
         # An older export must not vouch for a half-written new one.

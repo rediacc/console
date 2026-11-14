@@ -97,6 +97,11 @@ UNSCOPED_SKIP = (
     "signer answers SIGNER_UNKNOWN_COMPANY to every request; export it and remove it with --delete-data, "
     "then add it again"
 )
+# Why `signer` asks a company Worker nothing when its company row outlives its account Worker (the lab's `gone_callers`).
+GONE_SKIP = (
+    "its account Worker no longer exists (an interrupted `enterprise remove` deleted it before the "
+    "company row turned removed); rerun `enterprise remove` for it"
+)
 # Why `signer` asks a company Worker nothing when it does not run the version edge runs: a company Worker keeps the code it was first deployed with until `enterprise release` redeploys it (`deploy_bench` redeploys account-bench only), so an older one answers for an older signer contract.
 STALE_SKIP = (
     "its Worker runs %s, not the %s edge runs, so its answers describe older code; redeploy it with "
@@ -169,6 +174,7 @@ class Lab(Protocol):
     def secret_names(self, worker: str) -> list[str]: ...
     def callers(self, *, bench: bool) -> list[str]: ...
     def unscoped_callers(self, *, bench: bool) -> list[str]: ...
+    def gone_callers(self, *, bench: bool) -> list[str]: ...
     def signer_of(self, caller: str) -> str: ...
     def expected_props(self, caller: str) -> dict[str, str]: ...
     def certificate_audited(self, signer: str, certificate_id: str) -> bool: ...
@@ -400,7 +406,11 @@ def _no_key_on_account(lab: Lab, p: Proof, *, bench: bool) -> None:
     workers = lab.account_workers(bench=bench)
     p.check("account Workers are listed", ok=workers, detail="no account Worker found")
     for w in workers:
-        names = lab.secret_names(w)
+        try:
+            names = lab.secret_names(w)
+        except LAB_ERRORS as exc:
+            p.check(f"{w} lists its secrets", ok=False, detail=f"{type(exc).__name__}: {exc}")
+            continue
         p.check(f"{w} lists its secrets", ok=names, detail="empty secret list")
         p.check(f"{w} holds no {PRIVATE_KEY}", ok=PRIVATE_KEY not in names, detail="key present")
     signers = lab.signers(bench=bench)
@@ -421,6 +431,8 @@ def verb_signer(lab: Lab, p: Proof, *, bench: bool) -> None:
     """V1: the binding across Workers, props honoured, a licence issued and renewed per caller, scope refused (a company caller is asked `COMPANY_SCOPE_CODES`), no key on any account Worker, certificates through the signer, a stopped signer named (settled) while a current licence works, and signing restored. A company Worker whose company has no control scope row is skipped by name (`UNSCOPED_SKIP`), and nothing is stopped while bench carries production data (`_may_stop`)."""
     _no_key_on_account(lab, p, bench=bench)
     callers = lab.callers(bench=bench)
+    for gone in lab.gone_callers(bench=bench):
+        p.skip(f"{gone}: signing", GONE_SKIP)
     for unscoped in lab.unscoped_callers(bench=bench):
         p.skip(f"{unscoped}: signing", UNSCOPED_SKIP)
     if not p.check("signer callers are listed", ok=callers, detail="no caller found"):

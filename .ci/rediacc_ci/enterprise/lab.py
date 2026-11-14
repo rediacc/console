@@ -89,7 +89,8 @@ SEAMS: dict[str, Seam] = {
 
 _GROUPS: dict[str, tuple[str, ...]] = {
     "S2": (
-        "account_workers", "signers", "secret_names", "callers", "unscoped_callers", "signer_of",
+        "account_workers", "signers", "secret_names", "callers", "unscoped_callers", "gone_callers",
+        "signer_of",
         "expected_props", "certificate_audited",
         "stop_refusal", "stop_signer", "start_signer", "cut_region", "restore_region",
     ),

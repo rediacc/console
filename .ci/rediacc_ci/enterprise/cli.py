@@ -323,11 +323,20 @@ def _live_teardown(
         token = _credentials(error, env)
         if not bws_project:
             raise error("--bws-project names the enterprise bws project whose entries are deleted")
+        mint_token = env.get("CF_MANAGEMENT_TOKEN", "")
+        if not mint_token:
+            raise error(
+                "CF_MANAGEMENT_TOKEN is not set (bound by --profile %s): `remove` revokes the company tokens the mint created, and only that user-level token lists them"
+                % secrets.MINT_PROFILE
+            )
         s3, jurisdiction, endpoint = _r2(error, region, env, seams)
         list_rows, delete = (seams.bws or _live_bws_pair(error, env))(bws_project, env)
         return la.CloudflareTeardown(
             account_id=env[ACCOUNT_ENV],
             http=(seams.http or la.cloudflare_http)(["-H", "Authorization: Bearer %s" % token]),
+            token_http=(seams.http or la.cloudflare_http)(
+                ["-H", "Authorization: Bearer %s" % mint_token]
+            ),
             s3=s3,
             company_s3=_company_s3(error, store, endpoint, seams),
             secrets=la.BwsDeleter(bws_project, list_rows=list_rows, delete=delete),

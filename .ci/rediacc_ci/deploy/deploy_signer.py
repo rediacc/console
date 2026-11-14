@@ -482,6 +482,8 @@ Companies = typing.Callable[[bool], list[dict]]
 Scoped = typing.Callable[[bool], set[tuple[str, str]]]
 # (caller, action in issue|renew|current, kind) -> Answer.
 Probe = typing.Callable[[str, str, str], proof.Answer]
+# The names of the account's deployed Workers. The tests swap it for a set.
+Present = typing.Callable[[], set[str]]
 
 
 def _no_probe(caller: str, action: str, kind: str) -> proof.Answer:
@@ -544,12 +546,46 @@ def _shared_workers(bench: bool) -> list[str]:
     )
 
 
-def account_workers(*, bench: bool, companies: Companies = default_companies) -> list[str]:
-    """Every account Worker whose secret list must hold no private key: the shared ones, then each live company's."""
-    return [
-        *_shared_workers(bench),
-        *(COMPANY_WORKER_PREFIX + str(r["name"]) for r in companies(bench)),
-    ]
+def default_present() -> set[str]:
+    """The names of the deployed Workers (`GET /accounts/{id}/workers/scripts`)."""
+    rows = default_api()("/workers/scripts")
+    if not isinstance(rows, list):
+        raise proof.LabError("the Workers listing answered no list")
+    return {str(r["id"]) for r in rows if isinstance(r, dict) and r.get("id")}
+
+
+def _live_rows(
+    bench: bool, companies: Companies, present: Present | None
+) -> tuple[list[dict], list[str]]:
+    """(the live companies whose account Worker exists, the account Workers that no longer do). A company row outlives its Worker while `enterprise remove` runs, and a Worker that is gone has no secret list to read."""
+    rows = companies(bench)
+    if not rows:
+        return [], []
+    deployed = (present or default_present)()
+    live: list[dict] = []
+    gone: list[str] = []
+    for r in rows:
+        worker = COMPANY_WORKER_PREFIX + str(r["name"])
+        if worker in deployed:
+            live.append(r)
+        else:
+            gone.append(worker)
+    return live, gone
+
+
+def account_workers(
+    *, bench: bool, companies: Companies = default_companies, present: Present | None = None
+) -> list[str]:
+    """Every account Worker whose secret list must hold no private key: the shared ones, then each live company's whose Worker still exists (`gone_callers` names the rest)."""
+    live, _ = _live_rows(bench, companies, present)
+    return [*_shared_workers(bench), *(COMPANY_WORKER_PREFIX + str(r["name"]) for r in live)]
+
+
+def gone_callers(
+    *, bench: bool, companies: Companies = default_companies, present: Present | None = None
+) -> list[str]:
+    """Each company row's account Worker that no longer exists (a removal deleted the Worker before the row turned `removed`)."""
+    return _live_rows(bench, companies, present)[1]
 
 
 SCOPED_SQL = "SELECT company_id FROM scope"
@@ -565,10 +601,10 @@ def default_scoped(bench: bool) -> set[tuple[str, str]]:
 
 
 def _company_callers(
-    bench: bool, companies: Companies, scoped: Scoped
+    bench: bool, companies: Companies, scoped: Scoped, present: Present | None = None
 ) -> tuple[list[str], list[str]]:
-    """Each live company's account Worker, split into those whose company has a control scope row and those without one."""
-    rows = companies(bench)
+    """Each live company's deployed account Worker, split into those whose company has a control scope row and those without one."""
+    rows, _ = _live_rows(bench, companies, present)
     held = scoped(bench) if rows else set()
     with_row: list[str] = []
     without: list[str] = []
@@ -579,18 +615,26 @@ def _company_callers(
 
 
 def callers(
-    *, bench: bool, companies: Companies = default_companies, scoped: Scoped | None = None
+    *,
+    bench: bool,
+    companies: Companies = default_companies,
+    scoped: Scoped | None = None,
+    present: Present | None = None,
 ) -> list[str]:
     """The Workers that ask a signer: every shared account Worker, and each live company's whose control database holds its scope row. A company without one is never asked, since every answer would be SIGNER_UNKNOWN_COMPANY; `unscoped_callers` names those."""
-    with_row, _ = _company_callers(bench, companies, scoped or default_scoped)
+    with_row, _ = _company_callers(bench, companies, scoped or default_scoped, present)
     return [*_shared_workers(bench), *with_row]
 
 
 def unscoped_callers(
-    *, bench: bool, companies: Companies = default_companies, scoped: Scoped | None = None
+    *,
+    bench: bool,
+    companies: Companies = default_companies,
+    scoped: Scoped | None = None,
+    present: Present | None = None,
 ) -> list[str]:
     """Each live company's account Worker whose control database holds no scope row (a company onboarded before onboarding wrote it)."""
-    _, without = _company_callers(bench, companies, scoped or default_scoped)
+    _, without = _company_callers(bench, companies, scoped or default_scoped, present)
     return without
 
 

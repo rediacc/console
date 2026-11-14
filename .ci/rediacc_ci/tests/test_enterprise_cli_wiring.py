@@ -94,13 +94,14 @@ class Rig:
         self.company_s3_calls: list[tuple[str, str]] = []
         self.company_key_ids: list[str] = []
         self.http_calls: list[tuple[str, str]] = []
+        self.credentials: list[tuple[str, str]] = []
         self.deleted: list[str] = []
         self.kv: list[list[str]] = []
         self.seams = cli.LiveSeams(
             wrangler=lambda _cwd, _env: self._wrangler,
             s3=self._s3_factory,
             company_s3=self._company_s3_factory,
-            http=lambda _headers: self._http,
+            http=self._http_factory,
             bws=lambda _project, _env: (self._rows, self._delete),
             lookup_run=self._kv,
         )
@@ -137,6 +138,13 @@ class Rig:
             if method == "GET" and "?" in path:
                 return 200, b"<ListBucketResult><IsTruncated>false</IsTruncated></ListBucketResult>"
             return 404, b""
+
+        return call
+
+    def _http_factory(self, headers: list[str]) -> Any:
+        def call(method: str, path: str, body: str | None = None, extra: Any = ()) -> dict:
+            self.credentials.append((path, headers[-1]))
+            return self._http(method, path, body, extra)
 
         return call
 
@@ -236,6 +244,9 @@ def test_export_without_the_company_key_in_the_store_names_the_entry(rig, capsys
     assert not any(p.startswith("backups-acme") for _m, p in rig.company_s3_calls)
 
 
+REMOVE_ENV = {**CF_ENV, "CF_MANAGEMENT_TOKEN": "mgmt-token"}
+
+
 def test_remove_reaches_a_real_cloudflare_teardown(rig):
     assert _export(rig, CF_ENV) == 0
     argv = [
@@ -243,10 +254,29 @@ def test_remove_reaches_a_real_cloudflare_teardown(rig):
         *("--bws-project", PROJECT, "--export-root", str(rig.tmp / "x")),
         *("--lookup-domain", DOMAIN),
     ]
-    assert cli.main(argv, context=rig.context(CF_ENV)) == 0
+    assert cli.main(argv, context=rig.context(REMOVE_ENV)) == 0
+    # The user-level token list goes out under the management token the mint used, and every account call under the account token.
+    user = {c for p, c in rig.credentials if p.startswith("/user/tokens")}
+    account = {c for p, c in rig.credentials if p.startswith("/accounts/")}
+    assert user == {"Authorization: Bearer mgmt-token"}
+    assert account == {"Authorization: Bearer cf-token"}
     assert any("/accounts/%s/" % ACCOUNT in p for _m, p in rig.http_calls)
     assert rig.kv
     assert rig.kv[0][:3] == ["kv", "key", "delete"]
+
+
+def test_remove_without_the_management_token_refuses_before_any_call(rig, capsys):
+    assert _export(rig, CF_ENV) == 0
+    argv = [
+        *("remove", "acme", "--delete-data", "--confirm", "acme"),
+        *("--bws-project", PROJECT, "--export-root", str(rig.tmp / "x")),
+        *("--lookup-domain", DOMAIN),
+    ]
+    assert cli.main(argv, context=rig.context(CF_ENV)) == 1
+    said = _said(capsys)
+    assert "CF_MANAGEMENT_TOKEN is not set" in said
+    assert "enterprise-mint" in said
+    assert rig.http_calls == []
 
 
 @pytest.mark.parametrize("missing", [cli.CF_API_ENV, cli.ACCOUNT_ENV])

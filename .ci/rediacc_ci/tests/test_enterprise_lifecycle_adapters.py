@@ -252,6 +252,20 @@ class FakeWrangler:
         return self.rc
 
 
+class AccountScoped:
+    """The account-level credential (CLOUDFLARE_API_TOKEN): Cloudflare answers a `/user/tokens` call with error 9109."""
+
+    def __init__(self, inner: FakeCloudflare) -> None:
+        self.inner = inner
+
+    def __call__(self, method, path, body=None, extra_headers=()):
+        if path.startswith("/user/tokens"):
+            raise lifecycle.LifecycleError(
+                "the token listing refused (error codes 9109: Valid user-level authentication not found)"
+            )
+        return self.inner(method, path, body, extra_headers)
+
+
 class Rig:
     def __init__(self, monkeypatch, *, domains=(DOMAIN,)) -> None:
         monkeypatch.setenv(enterprise_lookup.PEPPER_ENV, PEPPER)
@@ -269,7 +283,8 @@ class Rig:
         self.domains = list(domains)
         self.teardown = la.CloudflareTeardown(
             account_id=ACCOUNT,
-            http=self.cf,
+            http=AccountScoped(self.cf),
+            token_http=self.cf,
             s3=self.s3,
             secrets=la.BwsDeleter(PROJECT, list_rows=self.bws.list_rows, delete=self.bws.delete),
             lookup_domains=lambda _company: self.domains,
@@ -639,6 +654,34 @@ def test_revoke_tokens_deletes_only_this_companys_backup_token_across_pages(monk
     ]
 
 
+def test_revoke_tokens_lists_with_the_user_level_credential_not_the_account_one(monkeypatch):
+    """2026-11-13: the listing went out under the account token and Cloudflare answered 9109 for all five companies."""
+    rig = Rig(monkeypatch)
+    rig.teardown.revoke_tokens(_company())
+    gets = [c[1] for c in rig.cf.calls if c[0] == "GET" and c[1].startswith("/user/tokens")]
+    assert gets, "no token listing reached the user-level transport"
+    # control: the account-level transport alone cannot list them
+    account_only = la.CloudflareTeardown(
+        account_id=ACCOUNT,
+        http=AccountScoped(rig.cf),
+        token_http=AccountScoped(rig.cf),
+        s3=rig.s3,
+        secrets=la.BwsDeleter(PROJECT, list_rows=rig.bws.list_rows, delete=rig.bws.delete),
+        lookup_domains=lambda _company: rig.domains,
+        lookup_run=rig.kv_run,
+        r2_jurisdiction="eu",
+    )
+    with pytest.raises(lifecycle.LifecycleError, match="9109"):
+        account_only.revoke_tokens(_company())
+
+
+def test_revoke_tokens_names_the_missing_management_token(monkeypatch):
+    rig = Rig(monkeypatch)
+    rig.teardown._token_http = None
+    with pytest.raises(lifecycle.LifecycleError, match="CF_MANAGEMENT_TOKEN is not set"):
+        rig.teardown.revoke_tokens(_company())
+
+
 def test_revoke_tokens_follows_a_full_page_when_the_answer_omits_result_info(monkeypatch):
     """Review 7b8701ca.2: the token walk keeps going past page 1 while the page came back full."""
     rig = Rig(monkeypatch)
@@ -852,6 +895,7 @@ def test_a_failing_step_stops_the_rest_names_what_ran_and_a_rerun_resumes(tmp_pa
     rig2 = la.CloudflareTeardown(
         account_id=ACCOUNT,
         http=rig.cf,
+        token_http=rig.cf,
         s3=rig.s3,
         secrets=la.BwsDeleter(PROJECT, list_rows=rig.bws.list_rows, delete=rig.bws.delete),
         lookup_domains=lambda _c: [DOMAIN],

@@ -53,6 +53,8 @@ class FakeLab:
     regions: list[str] = dataclasses.field(default_factory=list)
     # Company account Workers whose company has no control scope row.
     unscoped: list[str] = dataclasses.field(default_factory=list)
+    gone: list[str] = dataclasses.field(default_factory=list)
+    secret_fails: list[str] = dataclasses.field(default_factory=list)
     # company Worker -> the version it last rolled out; an absent one has no rollout row.
     caller_versions: dict[str, str] = dataclasses.field(default_factory=dict)
     # signer -> why it must not be stopped (bench_production declares a subscription).
@@ -119,6 +121,9 @@ class FakeLab:
 
     def secret_names(self, worker: str) -> list[str]:
         self._rec("secret_names")
+        if worker in self.secret_fails:
+            msg = f"wrangler secret list for {worker} exited 1"
+            raise LabError(msg)
         if worker in self.secrets:
             return self.secrets[worker]
         if worker.startswith("signer-"):
@@ -199,6 +204,10 @@ class FakeLab:
     def unscoped_callers(self, *, bench: bool) -> list[str]:
         self._rec("unscoped_callers")
         return list(self.unscoped) if bench else []
+
+    def gone_callers(self, *, bench: bool) -> list[str]:
+        self._rec("gone_callers")
+        return list(self.gone) if bench else []
 
     def stop_refusal(self, signer: str) -> str:
         self._rec("stop_refusal")
@@ -678,6 +687,34 @@ def test_signer_names_and_skips_a_company_without_a_scope_row() -> None:
     rc, lines = run("signer", FakeLab())
     assert rc == 0, lines
     assert not any(line.startswith("skipped") for line in lines)
+
+
+def test_signer_skips_a_company_whose_account_worker_is_gone_by_name() -> None:
+    """account-probe500's Worker was deleted by an interrupted remove while its row stayed; the proof names it skipped with the reason."""
+    rc, lines = run("signer", FakeLab(gone=["account-probe500"]))
+    assert rc == 0, lines
+    skipped = [line for line in lines if line.startswith("skipped account-probe500: signing:")]
+    assert len(skipped) == 1, lines
+    assert "no longer exists" in skipped[0]
+    # control: nothing gone, nothing skipped
+    _, lines = run("signer", FakeLab())
+    assert not any(line.startswith("skipped") for line in lines)
+
+
+def test_signer_records_a_failing_secret_list_as_a_broken_claim_and_goes_on() -> None:
+    """One failing `wrangler secret list` must not abort the proof: it is one broken claim, and the other claims still run."""
+    rc, lines = run("signer", FakeLab(companies={"a": ("a", None)}, secret_fails=["account-a"]))
+    assert rc == 1, lines
+    assert any(
+        line.startswith("BROKEN") and "account-a lists its secrets" in line for line in lines
+    )
+    assert any(
+        "account-bench lists its secrets" in line and line.startswith("ok") for line in lines
+    )
+    assert any("signers are listed" in line for line in lines)
+    # control: without the failure the same lab is clean
+    rc, _ = run("signer", FakeLab(companies={"a": ("a", None)}))
+    assert rc == 0
 
 
 def test_signer_skips_a_stale_company_caller_by_name_and_judges_a_current_one() -> None:

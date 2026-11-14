@@ -349,6 +349,54 @@ def test_a_failed_reexport_removes_the_older_manifest(w):
     assert not (w.ctx.export_root / ACME / "manifest.json").exists()
 
 
+def _bucket_gone(w, bucket):
+    del w.buckets[bucket]
+
+    def keys(_company, name):
+        if name == bucket:
+            raise lifecycle.BucketMissingError("listing company bucket %s answered HTTP 404" % name)
+        return sorted(w.buckets[name])
+
+    w.bucket_keys = keys
+
+
+def test_export_keeps_the_completed_export_when_removal_already_deleted_a_bucket(w, capsys):
+    """2026-11-13: a partial remove left configs-<name> deleted, and the lab's export before the resume failed with HTTP 404."""
+    _exported(w)
+    folder = w.ctx.export_root / ACME
+    manifest_before = (folder / "manifest.json").read_text()
+    exported_at = json.loads(manifest_before)["exported_at"]
+    (folder / lifecycle.CHECKED).write_text(exported_at)
+    _bucket_gone(w, "configs-acme")
+    assert lifecycle.export(w.ctx, "acme") == folder
+    assert "completed export" in capsys.readouterr().err
+    assert (folder / "manifest.json").read_text() == manifest_before
+    company = lifecycle.load_company(w.ctx, "acme")
+    assert lifecycle.verify_export(w.ctx, company) == exported_at
+
+
+def test_export_of_a_healthy_company_with_a_missing_bucket_still_fails(w):
+    """Control: no removal mark, so a bucket that is missing is an error, with or without an older export."""
+    _exported(w)
+    _bucket_gone(w, "configs-acme")
+    with pytest.raises(lifecycle.LifecycleError, match="HTTP 404"):
+        lifecycle.export(w.ctx, "acme")
+    assert not (w.ctx.export_root / ACME / "manifest.json").exists()
+
+
+def test_export_after_a_mark_re_exports_when_every_bucket_still_exists(w):
+    """Control: a remove that failed before any bucket went (the mark exists) still re-exports fresh data."""
+    _exported(w)
+    folder = w.ctx.export_root / ACME
+    exported_at = json.loads((folder / "manifest.json").read_text())["exported_at"]
+    (folder / lifecycle.CHECKED).write_text(exported_at)
+    w.buckets["backups-acme"]["new"] = b"x"
+    lifecycle.export(w.ctx, "acme")
+    assert "new" in {
+        o["key"] for o in json.loads((folder / "manifest.json").read_text())["objects"]
+    }
+
+
 def test_export_refuses_under_github_actions(tmp_path):
     w = World(tmp_path, env={"GITHUB_ACTIONS": "true"})
     with pytest.raises(lifecycle.LifecycleError, match="GITHUB_ACTIONS"):
