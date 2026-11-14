@@ -331,20 +331,49 @@ def _kept_mid_removal(ctx: Context, company: Target) -> bool:
             return False
     except (LifecycleError, OSError):
         return False
+    transient = ""
     for bucket in company.buckets:
         try:
             ctx.exporter.bucket_keys(company, bucket)
         except BucketMissingError:
             return True
-        except secrets.SEAM_ERRORS:
-            return False
+        except secrets.SEAM_ERRORS as exc:
+            # One unreadable bucket must not decide the verdict: a later bucket may be the missing one.
+            transient = transient or "%s (%s)" % (bucket, type(exc).__name__)
+    if transient:
+        raise LifecycleError(
+            "export refused: listing bucket %s failed and no other bucket proved missing, so whether removal already deleted data is unknown; retry"
+            % transient
+        )
     return False
 
 
-def export(ctx: Context, name: str) -> pathlib.Path:
-    """Dump the D1 database, copy both buckets and keep the durable secrets under `<export_root>/<company id>/`. The manifest, with `complete` and a hash per file, is written last, so an interrupted export never looks finished. A company whose removal already deleted a bucket keeps its earlier completed export (`_kept_mid_removal`), with a note on stderr."""
+MISSING_REASON = "missing at export"
+
+
+def missing_buckets(ctx: Context, name: str) -> list[str]:
+    """The buckets of company `name` whose listing answers 404 right now, for the caller that decides which of them `export` may accept (`--accept-missing-bucket`). A listing that fails any other way raises."""
+    company = load_company(ctx, name)
+    gone: list[str] = []
+    for bucket in company.buckets:
+        try:
+            _step("missing-bucket probe: list bucket", ctx.exporter.bucket_keys, company, bucket)
+        except BucketMissingError:
+            gone.append(bucket)
+    return gone
+
+
+def export(ctx: Context, name: str, *, accept_missing_buckets: Sequence[str] = ()) -> pathlib.Path:
+    """Dump the D1 database, copy both buckets and keep the durable secrets under `<export_root>/<company id>/`. The manifest, with `complete` and a hash per file, is written last, so an interrupted export never looks finished. A company whose removal already deleted a bucket keeps its earlier completed export (`_kept_mid_removal`), with a note on stderr. A bucket named in `accept_missing_buckets` is exported as a recorded gap (`missing_buckets` in the manifest) when it answers 404, and refused when it exists, so the flag never hides data."""
     _refuse_ci(ctx)
     company = load_company(ctx, name)
+    accepted = sorted(set(accept_missing_buckets))
+    for bucket in accepted:
+        if bucket not in company.buckets:
+            raise LifecycleError(
+                "--accept-missing-bucket %s is not a bucket of company %s (%s)"
+                % (bucket, company.id, ", ".join(company.buckets))
+            )
     target = ctx.export_root / company.id
     manifest_path = target / MANIFEST
     if _kept_mid_removal(ctx, company):
@@ -364,10 +393,23 @@ def export(ctx: Context, name: str) -> pathlib.Path:
         _write(target / DUMP, dump, root=target)
         files[DUMP] = _sha(dump)
         objects: list[dict[str, str]] = []
+        gaps: list[dict[str, str]] = []
         for bucket in company.buckets:
-            for index, key in enumerate(
-                _step("export failed: list bucket", ctx.exporter.bucket_keys, company, bucket)
-            ):
+            try:
+                keys = _step(
+                    "export failed: list bucket", ctx.exporter.bucket_keys, company, bucket
+                )
+            except BucketMissingError:
+                if bucket not in accepted:
+                    raise
+                gaps.append({"bucket": bucket, "reason": MISSING_REASON, "at": ctx.now()})
+                continue
+            if bucket in accepted:
+                raise LifecycleError(
+                    "export failed: --accept-missing-bucket %s refused: the bucket exists, so it is exported, never skipped"
+                    % bucket
+                )
+            for index, key in enumerate(keys):
                 data = _step(
                     "export failed: get object", ctx.exporter.get_object, company, bucket, key
                 )
@@ -392,6 +434,8 @@ def export(ctx: Context, name: str) -> pathlib.Path:
             "objects": objects,
             "secret_names": sorted(kept),
         }
+        if gaps:
+            manifest["missing_buckets"] = gaps
         manifest_tmp = target / (MANIFEST + ".tmp")
         _write(manifest_tmp, json.dumps(manifest, indent=2, sort_keys=True).encode(), root=target)
         os.replace(manifest_tmp, manifest_path)
@@ -432,6 +476,11 @@ def verify_export(ctx: Context, company: Target) -> str:
         raise LifecycleError(
             "the export manifest lists no secrets file; run `enterprise export` again"
         )
+    for gap in manifest.get("missing_buckets") or []:
+        if not isinstance(gap, dict) or gap.get("bucket") not in company.buckets:
+            raise LifecycleError(
+                "the export manifest records a missing bucket that is not one of this company's; run `enterprise export` again"
+            )
     for entry in manifest.get("objects") or []:
         if not isinstance(entry, dict) or entry.get("file") not in files:
             raise LifecycleError(
@@ -467,13 +516,18 @@ def _refuse_stale_export(ctx: Context, company: Target) -> None:
     if _sha(fresh) != manifest["files"][DUMP]:
         raise LifecycleError("the database of company %s %s" % (company.id, again))
     held = {(o.get("bucket"), o.get("key")) for o in manifest.get("objects") or []}
-    now = {
-        (bucket, key)
-        for bucket in company.buckets
-        for key in _step(
-            "stale-export check: list bucket", ctx.exporter.bucket_keys, company, bucket
-        )
-    }
+    gone = {g.get("bucket") for g in manifest.get("missing_buckets") or []}
+    now: set[tuple[Any, Any]] = set()
+    for bucket in company.buckets:
+        try:
+            keys = _step(
+                "stale-export check: list bucket", ctx.exporter.bucket_keys, company, bucket
+            )
+        except BucketMissingError:
+            if bucket in gone:
+                continue  # recorded as missing at export and still missing: nothing to compare
+            raise
+        now.update((bucket, key) for key in keys)
     if now != held:
         raise LifecycleError("the buckets of company %s %s" % (company.id, again))
 
@@ -574,9 +628,11 @@ def cmd_update(ctx: Context, name: str, *, out: Out = print, **changes: Any) -> 
     return 0
 
 
-def cmd_export(ctx: Context, name: str, *, out: Out = print) -> int:
+def cmd_export(
+    ctx: Context, name: str, *, accept_missing_buckets: Sequence[str] = (), out: Out = print
+) -> int:
     try:
-        path = export(ctx, name)
+        path = export(ctx, name, accept_missing_buckets=accept_missing_buckets)
     except REFUSALS as exc:
         out("enterprise export: %s" % exc)
         return 1

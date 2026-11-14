@@ -54,6 +54,7 @@ if TYPE_CHECKING:
     import types
 
 ADD_REGION = "eu"
+PROOF_COMPANY_PREFIX = "proof-"  # every company the lab creates is labelled `proof-<what>` (proof.py `ensure_company` calls)
 PROOF_STORAGE_GB = 10
 # The contract limits a proof company is added with (`onboarding.Request.max_machines` and `max_storage_gb`).
 PROOF_MAX_MACHINES = 50
@@ -288,10 +289,21 @@ class LiveLab:
             rc=out.rc, company=out.company_id, changed=tuple(out.changed), error=out.error
         )
 
+    def _lost_buckets(self, row: dict) -> tuple[str, ...]:
+        """The buckets of a lab proof company that answer 404, which its recreating export may accept as recorded gaps (an earlier partial remove deleted them, and the company is the lab's own throwaway). Any company not named `proof-*` gets none, so the safety default holds for it."""
+        name = str(row.get("name", ""))
+        if not name.startswith(PROOF_COMPANY_PREFIX):
+            return ()
+        lifecycle = self._lifecycle()
+        try:
+            return tuple(lifecycle.missing_buckets(self._context(lifecycle), name))
+        except lifecycle.LifecycleError as exc:
+            raise proof.LabError("company %s: %s" % (name, exc)) from None
+
     def _recreate(self, row: dict) -> None:
         """Take out a proof company whose control database has no `scope` row, so `ensure_company` adds it afresh: export it (remove needs a verified export), then remove it with its data. Such a company was onboarded before onboarding wrote the scope row; its control-row step is recorded done, so a resumed add never writes the row, and its signer answers SIGNER_UNKNOWN_COMPANY to every request. A step that fails is a LabError naming the company, never a silent test of the broken one."""
         cid = str(row["id"])
-        if self.export(cid) != 0:
+        if self.export(cid, accept_missing=self._lost_buckets(row)) != 0:
             raise proof.LabError(
                 "company %s has no control scope row and its export failed, so it is not recreated; "
                 "take it out by hand (./run.sh enterprise export %s --bench, then ./run.sh enterprise remove %s --bench --delete-data --confirm %s)"
@@ -375,11 +387,12 @@ class LiveLab:
         )
         return result
 
-    def export(self, company: str) -> int:
+    def export(self, company: str, *, accept_missing: Sequence[str] = ()) -> int:
         lifecycle = self._lifecycle()
         name = str(self._row(company)["name"])
+        extra = {"accept_missing_buckets": tuple(accept_missing)} if accept_missing else {}
         try:
-            lifecycle.export(self._context(lifecycle), name)
+            lifecycle.export(self._context(lifecycle), name, **extra)
         except lifecycle.LifecycleError as exc:
             print("enterprise export: %s" % exc, file=sys.stderr)
             return 1

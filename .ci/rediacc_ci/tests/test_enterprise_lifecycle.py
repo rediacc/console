@@ -397,6 +397,133 @@ def test_export_after_a_mark_re_exports_when_every_bucket_still_exists(w):
     }
 
 
+def _flaky_then_gone(w, flaky, gone):
+    """`flaky` lists with a transient error, `gone` answers 404, the rest list normally."""
+
+    def keys(_company, name):
+        if name == flaky:
+            raise OSError("r2 hiccup")
+        if name == gone:
+            raise lifecycle.BucketMissingError("listing company bucket %s answered HTTP 404" % name)
+        return sorted(w.buckets[name])
+
+    w.bucket_keys = keys
+
+
+def _marked(w):
+    _exported(w)
+    folder = w.ctx.export_root / ACME
+    exported_at = json.loads((folder / "manifest.json").read_text())["exported_at"]
+    (folder / lifecycle.CHECKED).write_text(exported_at)
+    return folder
+
+
+def _all_gone(w):
+    def keys(_company, name):
+        raise lifecycle.BucketMissingError("listing company bucket %s answered HTTP 404" % name)
+
+    w.bucket_keys = keys
+
+
+def test_a_transient_listing_error_does_not_hide_a_later_missing_bucket(w, capsys):
+    """Review b0c6da9f.1: the scan stopped at the first transient error, so a later 404 was never seen."""
+    folder = _marked(w)
+    before = (folder / "manifest.json").read_text()
+    _flaky_then_gone(w, flaky="configs-acme", gone="backups-acme")
+    assert lifecycle.export(w.ctx, "acme") == folder
+    assert "completed export" in capsys.readouterr().err
+    assert (folder / "manifest.json").read_text() == before
+
+
+def test_a_transient_listing_error_with_no_missing_bucket_is_raised_named(w):
+    folder = _marked(w)
+
+    def keys(_company, _name):
+        raise OSError("r2 hiccup")
+
+    w.bucket_keys = keys
+    with pytest.raises(lifecycle.LifecycleError, match=r"configs-acme \(OSError\)"):
+        lifecycle.export(w.ctx, "acme")
+    assert (folder / "manifest.json").exists()
+
+
+def test_a_missing_bucket_before_a_transient_error_still_keeps_the_export(w, capsys):
+    """Control: the 404 comes first, as before."""
+    folder = _marked(w)
+    _flaky_then_gone(w, flaky="backups-acme", gone="configs-acme")
+    assert lifecycle.export(w.ctx, "acme") == folder
+    assert "completed export" in capsys.readouterr().err
+
+
+def test_export_accepting_a_missing_bucket_records_the_gap(w):
+    _bucket_gone(w, "configs-acme")
+    folder = lifecycle.export(w.ctx, "acme", accept_missing_buckets=["configs-acme"])
+    manifest = json.loads((folder / "manifest.json").read_text())
+    assert manifest["complete"] is True
+    assert manifest["missing_buckets"] == [
+        {"bucket": "configs-acme", "reason": "missing at export", "at": NOW}
+    ]
+    assert {o["bucket"] for o in manifest["objects"]} == {"backups-acme"}
+    company = lifecycle.load_company(w.ctx, "acme")
+    assert lifecycle.verify_export(w.ctx, company) == NOW
+
+
+def test_export_without_the_flag_records_no_gap_key(w):
+    folder = lifecycle.export(w.ctx, "acme")
+    assert "missing_buckets" not in json.loads((folder / "manifest.json").read_text())
+
+
+def test_accepting_a_bucket_that_exists_is_refused(w):
+    with pytest.raises(lifecycle.LifecycleError, match="the bucket exists"):
+        lifecycle.export(w.ctx, "acme", accept_missing_buckets=["configs-acme"])
+    assert not (w.ctx.export_root / ACME / "manifest.json").exists()
+
+
+def test_accepting_a_missing_bucket_does_not_excuse_the_other_one(w):
+    _all_gone(w)
+    with pytest.raises(lifecycle.LifecycleError, match="backups-acme answered HTTP 404"):
+        lifecycle.export(w.ctx, "acme", accept_missing_buckets=["configs-acme"])
+    assert not (w.ctx.export_root / ACME / "manifest.json").exists()
+
+
+def test_accepting_a_name_that_is_not_a_bucket_of_the_company_is_refused(w):
+    with pytest.raises(lifecycle.LifecycleError, match="not a bucket of company"):
+        lifecycle.export(w.ctx, "acme", accept_missing_buckets=["configs-globex"])
+    assert w.calls == []
+
+
+def test_remove_accepts_an_export_with_a_recorded_gap(w):
+    _bucket_gone(w, "configs-acme")
+    lifecycle.export(w.ctx, "acme", accept_missing_buckets=["configs-acme"])
+    result = lifecycle.remove(w.ctx, "acme", delete_data=True, confirm="acme")
+    assert result.data_deleted
+    assert w.state("eu", ACME) == "removed"
+
+
+def test_remove_refuses_a_gap_bucket_that_came_back_with_data(w):
+    _bucket_gone(w, "configs-acme")
+    lifecycle.export(w.ctx, "acme", accept_missing_buckets=["configs-acme"])
+    w.buckets["configs-acme"] = {"late": b"x"}
+    w.bucket_keys = lambda _c, name: sorted(w.buckets[name])
+    with pytest.raises(lifecycle.LifecycleError, match="buckets of company"):
+        lifecycle.remove(w.ctx, "acme", delete_data=True, confirm="acme")
+    assert w.mutating() == []
+
+
+def test_remove_after_an_export_without_a_gap_still_fails_on_a_missing_bucket(w):
+    """Control: no recorded gap, so a 404 at the stale check is not excused."""
+    _exported(w)
+    _bucket_gone(w, "configs-acme")
+    with pytest.raises(lifecycle.LifecycleError, match="HTTP 404"):
+        lifecycle.remove(w.ctx, "acme", delete_data=True, confirm="acme")
+
+
+def test_missing_buckets_lists_only_the_buckets_that_answer_404(w):
+    assert lifecycle.missing_buckets(w.ctx, "acme") == []
+    _bucket_gone(w, "configs-acme")
+    assert lifecycle.missing_buckets(w.ctx, "acme") == ["configs-acme"]
+
+
 def test_export_refuses_under_github_actions(tmp_path):
     w = World(tmp_path, env={"GITHUB_ACTIONS": "true"})
     with pytest.raises(lifecycle.LifecycleError, match="GITHUB_ACTIONS"):

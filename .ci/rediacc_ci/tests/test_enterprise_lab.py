@@ -236,6 +236,38 @@ def test_ensure_company_recreates_a_proof_company_without_a_scope_row(monkeypatc
     assert len(adder.calls) == 1
 
 
+def _recreate_with_lost_bucket(monkeypatch, name):
+    fake = FakeLifecycle()
+    fake.missing[name] = ["configs-" + name]
+    built, adder = _with_lifecycle(monkeypatch, fake)
+    adder.companies[name] = {"id": "c00000000000000aa", "name": name, "region": "eu", "state": "active"}  # fmt: skip
+    built._scoped = lambda _row: False
+    built.ensure_company(name, "eu")
+    return fake
+
+
+def test_a_proof_company_with_a_deleted_bucket_is_exported_accepting_it(monkeypatch):
+    fake = _recreate_with_lost_bucket(monkeypatch, "proof-loss-eu")
+    exports = [kw for v, _c, _n, kw in fake.calls if v == "export"]
+    assert exports == [{"accept_missing_buckets": ("configs-proof-loss-eu",)}]
+
+
+def test_a_company_that_is_not_a_proof_company_never_gets_the_accept_flag(monkeypatch):
+    """Control: even with a 404 bucket, a company the lab did not create is exported plain."""
+    fake = _recreate_with_lost_bucket(monkeypatch, "acme")
+    exports = [kw for v, _c, _n, kw in fake.calls if v == "export"]
+    assert exports == [{}]
+
+
+def test_a_proof_company_whose_buckets_all_exist_is_exported_plain(monkeypatch):
+    fake = FakeLifecycle()
+    built, adder = _with_lifecycle(monkeypatch, fake)
+    adder.companies["proof-loss-eu"] = {"id": "c00000000000000aa", "name": "proof-loss-eu", "region": "eu", "state": "active"}  # fmt: skip
+    built._scoped = lambda _row: False
+    built.ensure_company("proof-loss-eu", "eu")
+    assert [kw for v, _c, _n, kw in fake.calls if v == "export"] == [{}]
+
+
 def test_a_proof_company_without_a_scope_row_whose_export_fails_is_a_lab_error(monkeypatch):
     built, adder = _with_lifecycle(monkeypatch, FakeLifecycle(refuse={"export"}))
     adder.companies["proof-loss-eu"] = {
@@ -316,15 +348,18 @@ class FakeLifecycle(types.SimpleNamespace):
         pass
 
     def __init__(self, refuse: set[str] | None = None):
-        super().__init__(calls=[], refuse=set(refuse or ()))
+        super().__init__(calls=[], refuse=set(refuse or ()), missing={})
 
     def _maybe(self, verb, ctx, name, **kw):
         self.calls.append((verb, ctx, name, kw))
         if verb in self.refuse or (ctx.env or {}).get("GITHUB_ACTIONS"):
             raise self.LifecycleError("%s refused" % verb)
 
-    def export(self, ctx, name):
-        self._maybe("export", ctx, name)
+    def export(self, ctx, name, **kw):
+        self._maybe("export", ctx, name, **kw)
+
+    def missing_buckets(self, _ctx, name):
+        return list(self.missing.get(name, ()))
 
     def remove(self, ctx, name, *, delete_data, confirm=None):
         self._maybe("remove", ctx, name, delete_data=delete_data, confirm=confirm)

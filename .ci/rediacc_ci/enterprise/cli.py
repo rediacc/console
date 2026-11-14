@@ -7,7 +7,7 @@
     ./run.sh enterprise update <company> [--max-machines N] [--max-storage-gb N] [--max-expiry-days N]
         [--allow-ip <ip|cidr>]... [--clear-allow-ips] [--ring R --ring-reason T] [--bench]
     ./run.sh enterprise suspend <company> [--resume] [--bench]
-    ./run.sh enterprise export <company> [--export-root <dir>] [--bws-project <id>] [--bench]
+    ./run.sh enterprise export <company> [--accept-missing-bucket <bucket>]... [--export-root <dir>] [--bws-project <id>] [--bench]
     ./run.sh enterprise remove <company> [--delete-data --confirm <company>] [--export-root <dir>]
         [--lookup-domain <d>]... [--bws-project <id>] [--bench]
     ./run.sh enterprise configs-key <company> --bws-project <id> [--bench]
@@ -409,6 +409,14 @@ def _lifecycle_parser(verb: str) -> argparse.ArgumentParser:
     else:
         ap.add_argument("--export-root", type=pathlib.Path, default=None)
         ap.add_argument("--bws-project", default="")
+        if verb == "export":
+            ap.add_argument(
+                "--accept-missing-bucket",
+                action="append",
+                default=None,
+                metavar="BUCKET",
+                help="export without BUCKET when it answers 404 (its data is already gone, for example after a partial remove) and record the gap in the manifest; refused for a bucket that exists. Repeatable.",
+            )
         if verb == "remove":
             ap.add_argument("--delete-data", action="store_true")
             ap.add_argument("--confirm", default=None)
@@ -438,7 +446,12 @@ def lifecycle_main(
     if verb == "suspend":
         return int(lifecycle.cmd_suspend(ctx, args.company, resume=args.resume))
     if verb == "export":
-        return int(lifecycle.cmd_export(ctx, args.company))
+        accepted = {"accept_missing_buckets": args.accept_missing_bucket or ()}
+        return int(
+            lifecycle.cmd_export(
+                ctx, args.company, **(accepted if args.accept_missing_bucket else {})
+            )
+        )
     if verb == "remove":
         return int(
             lifecycle.cmd_remove(

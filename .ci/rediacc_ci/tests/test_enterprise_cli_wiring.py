@@ -475,3 +475,26 @@ def test_configs_key_without_the_management_token_refuses_naming_it(rig, monkeyp
     assert _configs_key(rig, monkeypatch, store, None) == 1
     assert "CF_MANAGEMENT_TOKEN" in _said(capsys)
     assert store.created == []
+
+
+def test_export_wires_accept_missing_bucket_through_repeatably(monkeypatch):
+    seen: dict = {}
+
+    class Spy:
+        @staticmethod
+        def cmd_export(_ctx, company, **kw):
+            seen.update(company=company, **kw)
+            return 0
+
+    real = cli._module
+    monkeypatch.setattr(cli, "_module", lambda name: Spy if name == cli.LIFECYCLE else real(name))
+
+    def ctx(*_a, **_k):
+        return object()
+
+    twice = ["--accept-missing-bucket", "configs-acme", "--accept-missing-bucket", "backups-acme"]
+    assert cli.main(["export", "acme", *twice], context=ctx) == 0
+    assert list(seen["accept_missing_buckets"]) == ["configs-acme", "backups-acme"]
+    seen.clear()
+    assert cli.main(["export", "acme"], context=ctx) == 0
+    assert "accept_missing_buckets" not in seen
