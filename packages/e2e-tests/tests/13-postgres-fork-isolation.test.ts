@@ -6,6 +6,7 @@ import {
   FORK_NETWORK_ID_B,
   TEST_PASSWORD,
 } from '../src/constants';
+import { skipWithoutLandlock } from '../src/utils/landlock';
 import { e2eRepoGuid } from '../src/utils/licence';
 import { log } from '../src/utils/log';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
@@ -46,6 +47,7 @@ test.describe
 
     test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
+      await skipWithoutLandlock(runner);
       await runner.resetWorkerState();
       await runner.datastoreInitPool('10G', datastorePath, true);
       // No pre-started daemon here: repositoryUp below claims `networkId` and brings up its own per-network daemon. A daemonSetup/daemonStart pre-start races that claim with a bare, repo-less one on the SAME id -- "network ID 9152 is already in use (holder: daemon)" -- since a running repo-less daemon is a real claimant (netid_guard.go). Same fix as private/renet commit 2a1f641.
@@ -190,6 +192,7 @@ test.describe
 
     test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
+      await skipWithoutLandlock(runner);
       await runner.resetWorkerState();
       await runner.datastoreInitPool('12G', datastorePath, true);
       // No pre-started daemons here: each repositoryUp below claims its own networkId (parent or fork) and brings up that per-network daemon itself. Pre-starting bare, repo-less daemons on the SAME ids races those claims -- "network ID ... already in use (holder: daemon)" -- since a running repo-less daemon is a real claimant (netid_guard.go). Same fix as private/renet commit 2a1f641.
@@ -470,6 +473,7 @@ test.describe
 
     test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
+      await skipWithoutLandlock(runner);
       await runner.resetWorkerState();
       await runner.datastoreInitPool('10G', datastorePath, true);
       // No pre-started daemons here: each repositoryUp below claims its own networkId (parent or a fork) and brings up that per-network daemon itself. Pre-starting bare, repo-less daemons on the SAME ids races those claims -- "network ID ... already in use (holder: daemon)" -- since a running repo-less daemon is a real claimant (netid_guard.go). Same fix as private/renet commit 2a1f641.
@@ -679,6 +683,7 @@ test.describe
 
     test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
+      await skipWithoutLandlock(runner);
       await runner.resetWorkerState();
       await runner.datastoreInitPool('10G', datastorePath, true);
       // No pre-started daemons here: each repositoryUp below claims its own networkId (parent or fork) and brings up that per-network daemon itself. Pre-starting bare, repo-less daemons on the SAME ids races those claims -- "network ID ... already in use (holder: daemon)" -- since a running repo-less daemon is a real claimant (netid_guard.go). Same fix as private/renet commit 2a1f641.
@@ -797,6 +802,7 @@ test.describe
 
     test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
+      await skipWithoutLandlock(runner);
       await runner.resetWorkerState();
       await runner.datastoreInitPool('10G', datastorePath, true);
       // No pre-started daemons here: each repositoryUp below claims its own networkId (parent or fork) and brings up that per-network daemon itself. Pre-starting bare, repo-less daemons on the SAME ids races those claims -- "network ID ... already in use (holder: daemon)" -- since a running repo-less daemon is a real claimant (netid_guard.go). Same fix as private/renet commit 2a1f641.
@@ -925,6 +931,7 @@ test.describe
 
     test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
+      await skipWithoutLandlock(runner);
       await runner.resetWorkerState();
       await runner.datastoreInitPool('10G', datastorePath, true);
       // No pre-started daemon here: repositoryUp below claims `networkId` and brings up its own per-network daemon. A daemonSetup/daemonStart pre-start races that claim with a bare, repo-less one on the SAME id -- "network ID 9152 is already in use (holder: daemon)" -- since a running repo-less daemon is a real claimant (netid_guard.go). Same fix as private/renet commit 2a1f641.

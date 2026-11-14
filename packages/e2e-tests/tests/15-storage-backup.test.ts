@@ -9,6 +9,7 @@ import {
   TEST_USER,
   DEFAULT_NETWORK_ID,
 } from '../src/constants';
+import { skipWithoutLandlock } from '../src/utils/landlock';
 import { e2eRepoGuid } from '../src/utils/licence';
 import { peerKnownHostsArg } from '../src/utils/renet-functions/peerKnownHosts';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
@@ -187,6 +188,7 @@ test.describe
 
     test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
+      await skipWithoutLandlock(runner);
       await runner.ensureDatastoreReady(DEFAULT_DATASTORE_PATH);
       const created = await runner.repositoryNew(guid, '256M', password, DEFAULT_DATASTORE_PATH);
       expect(

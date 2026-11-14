@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { LANDLOCK_INACTIVE_BY_DEFAULT } from '../src/utils/landlock';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /**
@@ -21,14 +22,6 @@ import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunc
  * - machine_check_cli, machine_fix_groups, machine_converge_runtime (dry run)
  * Note: datastore_status is tested in 03-datastore-lifecycle.test.ts
  */
-
-/**
- * OS images whose default boot leaves Landlock out of the active LSM list, so `renet sandbox-exec --detect` reports
- * NOT AVAILABLE and repo-key shells refuse there by design. Measured on the CI matrix (run 39640583259, 2026-10-21):
- * Oracle Linux 10 UEK 6.12 boots with `lsm=lockdown,capability,yama,selinux,bpf,ima,evm` and logs
- * "landlock: Disabled but requested by user space"; Ubuntu 24.04, Debian 13, Fedora 43 and openSUSE 16.0 report ABI 4-7.
- */
-const LANDLOCK_INACTIVE_BY_DEFAULT = new Set(['ol-10']);
 
 test.describe('System Functions @bridge @smoke', () => {
   let runner: RenetFunctionsTestRunner;

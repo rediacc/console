@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID } from '../src/constants';
+import { skipWithoutLandlock } from '../src/utils/landlock';
 import { e2eRepoGuid } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
@@ -41,6 +42,7 @@ test.describe('Container Operations @bridge', () => {
 
   test.beforeAll(async () => {
     runner = RenetFunctionsTestRunner.forWorker();
+    await skipWithoutLandlock(runner);
     await runner.resetWorkerState();
 
     // 1. Initialize datastore
@@ -280,6 +282,7 @@ test.describe
 
     test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
+      await skipWithoutLandlock(runner);
       await runner.resetWorkerState();
 
       // 1. Initialize datastore
@@ -550,6 +553,7 @@ test.describe('Multiple Container Operations @bridge', () => {
 
   test.beforeAll(async () => {
     runner = RenetFunctionsTestRunner.forWorker();
+    await skipWithoutLandlock(runner);
     await runner.resetWorkerState();
 
     // 1. Initialize datastore

@@ -6,6 +6,7 @@ import {
   FORK_NETWORK_ID_A,
   TEST_PASSWORD,
 } from '../src/constants';
+import { skipWithoutLandlock } from '../src/utils/landlock';
 import { e2eRepoGuid, installRepoLicence } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
@@ -84,6 +85,7 @@ test.describe
 
     test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
+      await skipWithoutLandlock(runner);
       // Defense in depth alongside the resetWorkerState()+datastoreInitPool(force) below: if CRIU turns out to be unavailable this beforeAll returns before either of those run, and whichever suite ran before this one in project order (fixed by playwright.config.ts, not by shard/grep order -- console worklist ea76a8c5) may already have wiped the shared worker's datastore. Cheap when already ready; re-runs `renet setup` only after a wipe.
       await runner.ensureDatastoreReady(datastorePath);
       const criuCheck = await runner.checkCriu();

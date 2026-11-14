@@ -6,6 +6,7 @@ import { expect, test } from '@playwright/test';
 import { getSSHPrivateKeyPath } from '@rediacc/provisioning';
 import { DS } from '../src/utils/backup/chunkCliHarness';
 import { CliRunner } from '../src/utils/CliRunner';
+import { skipWithoutLandlock } from '../src/utils/landlock';
 import { loginCliToAccount } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
@@ -161,6 +162,7 @@ test.describe
       cli = CliRunner.create();
       w1 = RenetFunctionsTestRunner.forWorker(1);
       w2 = RenetFunctionsTestRunner.forWorker(2);
+      await skipWithoutLandlock(w1);
 
       // Isolated e2e-cli config (NEVER the default) + register both machines. Recreated from SCRATCH each run: the config records the fleet's host keys, and a config that outlives an ops down/up carries the PREVIOUS fleet's keys — every connection then fails host-key verification (found live: preflight red while the bridge probes were green). TRANSCRIPT-CONFIRM: SSH key/user +
       // whether a datastore attach step is needed before repo create in the config-v3 model.
