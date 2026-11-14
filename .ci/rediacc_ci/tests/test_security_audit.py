@@ -862,7 +862,8 @@ def test_an_old_npm_is_upgraded_before_signature_verification(fx: Fixture) -> No
 def test_an_npm_of_another_minor_is_moved_to_the_pin(fx: Fixture) -> None:
     """A major-only test (`startswith("11.")`) let the pin and the running npm disagree, and reinstalled npm on every run once the pin moved to 12."""
     major = NPM_PIN.split(".", 1)[0]
-    other = "%s.0.0" % major if NPM_PIN != "%s.0.0" % major else "%s.0.1" % major
+    zero = "%s.0.0" % major
+    other = zero if zero != NPM_PIN else "%s.0.1" % major
     fx.data("npm.version", "%s\n" % other)
     fx.data("npm.install.out", "changed 1 package\n")
     run = run_gate(fx)

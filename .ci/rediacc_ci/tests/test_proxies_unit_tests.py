@@ -147,6 +147,7 @@ def run_both(
 ) -> tuple[subprocess.CompletedProcess[str], subprocess.CompletedProcess[str]]:
     env = _env(fixture, path)
     kwargs: diff.RunKwargs = {"env": env, "cwd": str(fixture), "capture_output": True, "text": True}
+
     def port() -> subprocess.CompletedProcess[str]:
         return subprocess.run(
             ["python3", "-m", PORT_MODULE, *args], timeout=300, check=False, **kwargs

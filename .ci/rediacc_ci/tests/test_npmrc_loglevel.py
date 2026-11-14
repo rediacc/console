@@ -5,11 +5,14 @@ npm 12 logs every `npm run` and `npx` as `npm notice run ...` lines on stderr, w
 
 from __future__ import annotations
 
-import pathlib
 import subprocess
+import typing
 
 from rediacc_ci import paths
 from rediacc_ci.quality import npmrc
+
+if typing.TYPE_CHECKING:
+    import pathlib
 
 ROOT = paths.repo_root()
 

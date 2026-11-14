@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-13T10:51:42.664Z",
+  "generatedAt": "2026-11-14T07:19:35.117Z",
   "legs": [
     {
       "index": 1,
@@ -652,6 +652,7 @@
         "pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_image.py",
         "pytest:.ci/rediacc_ci/tests/test_named_paths.py",
         "pytest:.ci/rediacc_ci/tests/test_native.py",
+        "pytest:.ci/rediacc_ci/tests/test_npmrc_loglevel.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_apply_cf_redirect_rules.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_cf_dns.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_cf_usage_report.py",
