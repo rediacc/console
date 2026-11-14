@@ -62,6 +62,26 @@ def test_no_other_config_carries_a_captcha_or_test_switch():
         assert not found, "%s sets %s" % (path.name, found)
 
 
+def _switch_tables_outside_bench(path: Path) -> list[str]:
+    """The vars tables of `path` that carry a switch without their own ENVIRONMENT = "bench". Wrangler does not inherit `vars` into a named environment (https://developers.cloudflare.com/workers/wrangler/environments/: vars "are non-inheritable, and must be specified per environment"), so an [env.<name>.vars] table is judged on its own value alone."""
+    return [
+        where
+        for where, table in _every_vars_table(path).items()
+        if any(k in table for k in SWITCHES) and table.get("ENVIRONMENT") != "bench"
+    ]
+
+
+def test_an_environment_table_with_a_switch_must_name_bench_itself(tmp_path: Path) -> None:
+    """e4d3b408.2: a top-level ENVIRONMENT = "bench" is not inherited by [env.<name>.vars]; the table that names bench itself is the control."""
+    config = tmp_path / "wrangler.bench.toml"
+    config.write_text(
+        '[vars]\nENVIRONMENT = "bench"\nEMAIL_CAPTURE_D1 = "true"\n\n'
+        '[env.a.vars]\nEMAIL_CAPTURE_D1 = "true"\n\n'
+        '[env.b.vars]\nENVIRONMENT = "bench"\nEMAIL_CAPTURE_D1 = "true"\n'
+    )
+    assert _switch_tables_outside_bench(config) == ["env.a.vars"]
+
+
 def test_every_bench_config_that_carries_a_switch_names_itself_bench():
     """1302c19b.1: the regional benches (bench-us, bench-asia) are swept too.
 
@@ -75,11 +95,7 @@ def test_every_bench_config_that_carries_a_switch_names_itself_bench():
         "wrangler.bench-asia.toml",
     }
     for path in benches:
-        top = _vars(path).get("ENVIRONMENT")
-        for where, table in _every_vars_table(path).items():
-            if any(k in table for k in SWITCHES):
-                # 0f926f33.2: an [env.<name>.vars] table deploys with its own ENVIRONMENT (its own value, else the inherited top-level one).
-                assert table.get("ENVIRONMENT", top) == "bench", "%s %s" % (path.name, where)
+        assert not _switch_tables_outside_bench(path), path.name
 
 
 def test_the_sweep_reads_environment_tables_too(tmp_path: Path) -> None:

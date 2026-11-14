@@ -673,6 +673,23 @@ def test_containers_listing_without_paging_metadata_is_an_error_not_a_truncation
     assert cfl.followed("/c", TOKEN, lambda _p, _t: counted) == [{"id": 1}]
 
 
+def test_containers_follow_pages_counted_from_total_count_and_per_page():
+    """Review d2516ba8.1: with no total_pages, ceil(total_count / per_page) pages are read; the one-page case above is the control."""
+    seen: list = []
+
+    def get(path, _token):
+        seen.append(path)
+        n = int(path.rsplit("=", 1)[1]) if "page=" in path else 1
+        return {
+            "success": True,
+            "result": [{"id": n}],
+            "result_info": {"total_count": 25, "per_page": 10},
+        }
+
+    assert [c["id"] for c in cfl.followed("/c", TOKEN, get)] == [1, 2, 3]
+    assert seen == ["/c", "/c?page=2", "/c?page=3"]
+
+
 def test_containers_follow_every_page_the_listing_reports():
     """Review 49117485.5."""
     seen: list = []

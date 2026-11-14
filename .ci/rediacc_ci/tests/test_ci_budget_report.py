@@ -4091,7 +4091,10 @@ def test_lanes_passing_also_keeps_a_flag_before_a_comment_and_a_quoted_hash(tmp_
             "glued": ("C", ["- run: r a#b --also x"]),
             # 2c7b1a1f.1: a quote right after a flow indicator opens a span, so its ` #` hides nothing.
             "flow": ("D", ['- run: ["r # x --also", "y"]']),
+            # d4f29b8f.2: the quote follows a space here, so this one holds on the old code too; `flow-brace` is the case that needs the `{` branch.
             "flow-map": ("E", ["- run: {a: 'r # --also'}"]),
+            "flow-brace": ("F", ["- run: {'r # --also': 1}"]),
+            "flow-comma": ("G", ["- run: [a,'r # --also']"]),
         },
     )
     assert br.lanes_passing_also(tmp_path) == {
@@ -4100,7 +4103,15 @@ def test_lanes_passing_also_keeps_a_flag_before_a_comment_and_a_quoted_hash(tmp_
         "glued": True,
         "flow": True,
         "flow-map": True,
+        "flow-brace": True,
+        "flow-comma": True,
     }
+
+
+def test_lanes_passing_also_a_quote_after_a_comma_in_a_plain_scalar_hides_no_comment(tmp_path):
+    """d4f29b8f.1: outside a flow collection a `,` opens no quote, so the trailing comment naming the flag is still a comment."""
+    _write_workflows(tmp_path, {"job": ("A", ["- run: echo a,'x # --also"])})
+    assert br.lanes_passing_also(tmp_path) == {"job": False}
 
 
 def test_drop_stale_leg_extras_keeps_a_lane_whose_job_the_workflow_does_not_name():
