@@ -757,6 +757,40 @@ def test_a_teardown_refusal_that_quotes_the_company_name_is_masked_in_remove(w):
         lifecycle.remove(w.ctx, "acme", delete_data=False)
 
 
+def test_a_non_cloudflare_teardown_error_that_quotes_the_company_name_is_masked_in_remove(w):
+    """Review df42ac74.2: remove masks the company name in every LifecycleError of a step, not only a Cloudflare refusal. CONTROL: export keeps the same package message unmasked (its bucket names are printed on purpose)."""
+    _exported(w)
+    w.undeploy = lambda _c: (_ for _ in ()).throw(
+        lifecycle.LifecycleError("listing company bucket configs-acme answered HTTP 500")
+    )
+    with pytest.raises(lifecycle.LifecycleError) as caught:
+        lifecycle.remove(w.ctx, "acme", delete_data=False)
+    assert "acme" not in str(caught.value)
+    assert "listing company bucket configs-<name> answered HTTP 500" in str(caught.value)
+    assert caught.value.__context__ is None
+
+
+def test_a_masked_refusal_chains_no_unmasked_exception(w):
+    """Review df42ac74.1: _step raises the masked refusal outside its except block, so neither __cause__ nor __context__ holds the original text."""
+
+    def refused(_company):
+        raise lifecycle.CloudflareRefusalError("no worker acme")
+
+    company = lifecycle.load_company(w.ctx, "acme")
+    with pytest.raises(lifecycle.CloudflareRefusalError) as caught:
+        lifecycle._step("undeploy", refused, company)
+    assert str(caught.value) == "no worker <name>"
+    assert caught.value.__cause__ is None
+    assert caught.value.__context__ is None
+    # control: a refusal naming no company is re-raised untouched
+    with pytest.raises(lifecycle.CloudflareRefusalError, match=r"^quota exceeded$"):
+        lifecycle._step(
+            "undeploy",
+            lambda _c: (_ for _ in ()).throw(lifecycle.CloudflareRefusalError("quota exceeded")),
+            company,
+        )
+
+
 def test_a_remove_that_fails_before_deleting_data_leaves_no_mark_and_rechecks(w):
     """Review e2c4a3a7.1: a failure before the first bucket deletion (here the undeploy) writes no mark, so a later change to the company is caught on the rerun."""
     _exported(w)

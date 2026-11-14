@@ -143,20 +143,21 @@ def _step(what: str, fn: Callable[..., Any], *args: Any) -> Any:
     """Run one seam call; a failure keeps only its type, because its text may quote a value. Raised outside the except block so no seam exception is chained.
 
     A CloudflareRefusalError keeps its text, since it quotes Cloudflare's own message and error codes, but the name of every company the call was handed is masked in it: Cloudflare's message can name the company, and the operator's output carries the id only (review 668a96ec.1, for export and remove alike). Every other LifecycleError is this package's own message, which names buckets and steps on purpose, and passes unchanged."""
+    masked = ""
     try:
         return fn(*args)
     except CloudflareRefusalError as exc:
         names = [arg.name for arg in args if isinstance(arg, Target)]
-        if not names:
+        text = str(exc)
+        masked = control_db.mask_names(text, names) if names else text
+        if masked == text:
             raise
-        masked = control_db.mask_names(str(exc), names)
-        if masked == str(exc):
-            raise
-        raise CloudflareRefusalError(masked) from None
     except LifecycleError:
         raise
     except secrets.SEAM_ERRORS as exc:
         failed = type(exc).__name__
+    if masked:
+        raise CloudflareRefusalError(masked)
     raise LifecycleError("%s failed (%s)" % (what, failed))
 
 
@@ -582,7 +583,14 @@ def remove(
     steps: list[str] = []
 
     def run(what: str, fn: Callable[..., Any], *args: Any) -> None:
-        _step(what, fn, *args)
+        refusal = ""
+        try:
+            _step(what, fn, *args)
+        except LifecycleError as exc:
+            # Every error of a remove step masks the company name (a Cloudflare message, or a bucket name `configs-<company>`): the operator's output carries the id only. Raised below, outside the except block, so nothing is chained.
+            refusal = control_db.mask_names(str(exc), [company.name]) or str(exc)
+        if refusal:
+            raise LifecycleError(refusal)
         steps.append(what)
 
     run("undeploy", ctx.teardown.undeploy, company)
