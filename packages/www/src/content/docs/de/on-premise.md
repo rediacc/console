@@ -76,7 +76,7 @@ Alle Schlüssel entstehen auf der Maschine und landen nur in der `secrets.env` d
 rdc server backup accounts.example.com --out elite-recovery.env
 ```
 
-`--out` schreibt die Datei mit Modus 0600; ohne dieses Flag geht das Bundle auf stdout. `--bws-project <id>` bei der Installation kopiert die Schlüssel zusätzlich in ein Bitwarden-Secrets-Manager-Projekt, und `--rotate` ersetzt einen abweichenden gespeicherten Wert. Ohne `--bws-project` verlassen die Schlüssel den Server nur im Wiederherstellungs-Bundle, das die Installation ausgibt, und in der Datei, die `rdc server backup --out` schreibt.
+`--out` schreibt die Datei mit Modus 0600; ohne dieses Flag geht das Bundle auf stdout. `--bws-project <id>` bei der Installation kopiert die Schlüssel zusätzlich in ein Bitwarden-Secrets-Manager-Projekt, und `--rotate` ersetzt einen abweichenden gespeicherten Wert. Ohne `--bws-project` verlassen die Schlüssel den Server nur im Wiederherstellungs-Bundle, das die Installation ausgibt, und in dem, das `rdc server backup` erzeugt, in der `--out`-Datei oder auf stdout.
 
 ### Status
 

@@ -76,7 +76,7 @@ rdc server licence accounts.example.com --cert delegation-cert.json
 rdc server backup accounts.example.com --out elite-recovery.env
 ```
 
-`--out` записывает файл с режимом 0600; без него пакет уходит в stdout. `--bws-project <id>` при установке дополнительно копирует ключи в проект Bitwarden Secrets Manager, а `--rotate` заменяет отличающееся сохранённое значение. Без `--bws-project` ключи покидают сервер только в пакете восстановления, который выводит установка, и в файле, который записывает `rdc server backup --out`.
+`--out` записывает файл с режимом 0600; без него пакет уходит в stdout. `--bws-project <id>` при установке дополнительно копирует ключи в проект Bitwarden Secrets Manager, а `--rotate` заменяет отличающееся сохранённое значение. Без `--bws-project` ключи покидают сервер только в пакете восстановления, который выводит установка, и в том, который создаёт `rdc server backup`, в файле `--out` или в stdout.
 
 ### Состояние
 

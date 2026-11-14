@@ -76,7 +76,7 @@ rdc server licence accounts.example.com --cert delegation-cert.json
 rdc server backup accounts.example.com --out elite-recovery.env
 ```
 
-`--out`はファイルをモード0600で書き込みます。指定しない場合、バンドルはstdoutに出力されます。インストール時の`--bws-project <id>`は、キーをBitwarden Secrets Managerのプロジェクトにもコピーし、`--rotate`は保存済みの異なる値を置き換えます。`--bws-project`がない場合、キーがサーバーの外へ出るのは、インストール時に表示されるリカバリーバンドルと、`rdc server backup --out`が書き込むファイルだけです。
+`--out`はファイルをモード0600で書き込みます。指定しない場合、バンドルはstdoutに出力されます。インストール時の`--bws-project <id>`は、キーをBitwarden Secrets Managerのプロジェクトにもコピーし、`--rotate`は保存済みの異なる値を置き換えます。`--bws-project`がない場合、キーがサーバーの外へ出るのは、インストール時に表示されるリカバリーバンドルと、`rdc server backup`が生成するバンドル(`--out`のファイルまたはstdout)だけです。
 
 ### ステータス
 

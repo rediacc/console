@@ -35,7 +35,7 @@ Neid andmetüüpe salvestatakse ja töödeldakse teie valitud regioonis, välja 
 - **Kontoandmed**: e-post, nimi, organisatsioon, meeskonnaliikmesused
 - **Arveldus- ja tellimiskirjed**: plaan, aktiveerimised, litsentsi väljastamised
 - **Krüpteeritud konfiguratsiooniplokid**: nullteadmiste krüpteering, kliendipoolne. Server ei suuda neid dekrüpteerida.
-- **Tehingulised e-kirjad**: parooli lähtestamine, maagialingid, teavitused. Saadetakse regionaalsest e-posti lõpp-punktist.
+- **Tehingulised e-kirjad**: parooli lähtestamine, maagialingid, teavitused. Saadetakse regionaalsest e-posti lõpp-punktist, välja arvatud Aasia ja Vaikse ookeani piirkond, mis kasutab ELi lõpp-punkti.
 
 ## Mis on globaalne
 

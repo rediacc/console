@@ -76,7 +76,7 @@ Toutes les clés sont générées sur la machine et écrites uniquement dans le 
 rdc server backup accounts.example.com --out elite-recovery.env
 ```
 
-`--out` écrit le fichier en mode 0600 ; sans lui, le lot part sur stdout. `--bws-project <id>` à l'installation copie aussi les clés dans un projet Bitwarden Secrets Manager, et `--rotate` remplace une valeur stockée différente. Sans `--bws-project`, les clés ne quittent le serveur que dans le lot de récupération affiché par l'installation et dans le fichier écrit par `rdc server backup --out`.
+`--out` écrit le fichier en mode 0600 ; sans lui, le lot part sur stdout. `--bws-project <id>` à l'installation copie aussi les clés dans un projet Bitwarden Secrets Manager, et `--rotate` remplace une valeur stockée différente. Sans `--bws-project`, les clés ne quittent le serveur que dans le lot de récupération affiché par l'installation et dans celui que produit `rdc server backup`, dans le fichier `--out` ou sur stdout.
 
 ### État
 

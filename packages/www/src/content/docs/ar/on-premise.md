@@ -76,7 +76,7 @@ rdc server licence accounts.example.com --cert delegation-cert.json
 rdc server backup accounts.example.com --out elite-recovery.env
 ```
 
-يكتب `--out` الملف بصلاحيات 0600؛ وبدونه تذهب الحزمة إلى stdout. ينسخ `--bws-project <id>` عند التثبيت المفاتيح أيضًا إلى مشروع في Bitwarden Secrets Manager، ويستبدل `--rotate` قيمة مخزَّنة مختلفة. وبدون `--bws-project` لا تغادر المفاتيح الخادم إلا في حزمة الاسترداد التي يطبعها التثبيت وفي الملف الذي يكتبه `rdc server backup --out`.
+يكتب `--out` الملف بصلاحيات 0600؛ وبدونه تذهب الحزمة إلى stdout. ينسخ `--bws-project <id>` عند التثبيت المفاتيح أيضًا إلى مشروع في Bitwarden Secrets Manager، ويستبدل `--rotate` قيمة مخزَّنة مختلفة. وبدون `--bws-project` لا تغادر المفاتيح الخادم إلا في حزمة الاسترداد التي يطبعها التثبيت وفي الحزمة التي ينتجها `rdc server backup`، سواء في ملف `--out` أو على stdout.
 
 ### الحالة
 

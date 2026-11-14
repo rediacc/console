@@ -35,7 +35,7 @@ Estos tipos de datos se almacenan y procesan en la región que elijas, salvo que
 - **Datos de cuenta**: correo electrónico, nombre, organización, membresías de equipo
 - **Registros de facturación y suscripción**: plan, activaciones, emisiones de licencias
 - **Blobs de configuración cifrados**: cifrados del lado del cliente con conocimiento cero. El servidor no puede descifrarlos.
-- **Correos electrónicos transaccionales**: restablecimientos de contraseña, magic links, notificaciones. Enviados desde un endpoint de correo regional.
+- **Correos electrónicos transaccionales**: restablecimientos de contraseña, magic links, notificaciones. Enviados desde un endpoint de correo regional, salvo Asia-Pacífico, que usa el endpoint de la UE.
 
 ## Qué Es Global
 

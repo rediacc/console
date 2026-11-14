@@ -35,7 +35,7 @@ Questi tipi di dati sono archiviati ed elaborati nella regione scelta, tranne ch
 - **Dati dell'account**: email, nome, organizzazione, appartenenza ai team
 - **Registrazioni di fatturazione e abbonamento**: piano, attivazioni, emissioni di licenze
 - **Blob di configurazione cifrati**: cifrati lato client con crittografia zero-knowledge. Il server non può decifrarli.
-- **Email transazionali**: reimpostazione password, magic link, notifiche. Inviate da un endpoint email regionale.
+- **Email transazionali**: reimpostazione password, magic link, notifiche. Inviate da un endpoint email regionale, tranne per l'Asia-Pacifico, che usa l'endpoint UE.
 
 ## Cosa È Globale
 

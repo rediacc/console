@@ -76,7 +76,7 @@ rdc server licence accounts.example.com --cert delegation-cert.json
 rdc server backup accounts.example.com --out elite-recovery.env
 ```
 
-`--out`은 파일을 0600 모드로 기록하며, 지정하지 않으면 번들은 stdout으로 나갑니다. 설치 시 `--bws-project <id>`는 키를 Bitwarden Secrets Manager 프로젝트에도 복사하고, `--rotate`는 저장된 값이 다를 때 교체합니다. `--bws-project`가 없으면 키는 설치가 출력하는 복구 번들과 `rdc server backup --out`이 쓰는 파일에 담겨서만 서버를 떠납니다.
+`--out`은 파일을 0600 모드로 기록하며, 지정하지 않으면 번들은 stdout으로 나갑니다. 설치 시 `--bws-project <id>`는 키를 Bitwarden Secrets Manager 프로젝트에도 복사하고, `--rotate`는 저장된 값이 다를 때 교체합니다. `--bws-project`가 없으면 키는 설치가 출력하는 복구 번들과 `rdc server backup`이 만드는 번들(`--out` 파일 또는 stdout)에 담겨서만 서버를 떠납니다.
 
 ### 상태
 

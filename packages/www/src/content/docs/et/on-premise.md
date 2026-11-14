@@ -76,7 +76,7 @@ Kõik võtmed luuakse masinas ja kirjutatakse ainult hoidla `secrets.env` faili.
 rdc server backup accounts.example.com --out elite-recovery.env
 ```
 
-`--out` kirjutab faili režiimiga 0600; ilma selleta läheb pakett stdout'i. Paigalduse `--bws-project <id>` kopeerib võtmed lisaks Bitwarden Secrets Manageri projekti ja `--rotate` asendab erineva salvestatud väärtuse. Ilma `--bws-project`'ita lahkuvad võtmed serverist ainult taastepaketis, mille paigaldus välja prindib, ja failis, mille kirjutab `rdc server backup --out`.
+`--out` kirjutab faili režiimiga 0600; ilma selleta läheb pakett stdout'i. Paigalduse `--bws-project <id>` kopeerib võtmed lisaks Bitwarden Secrets Manageri projekti ja `--rotate` asendab erineva salvestatud väärtuse. Ilma `--bws-project`'ita lahkuvad võtmed serverist ainult taastepaketis, mille paigaldus välja prindib, ja selles, mille `rdc server backup` toodab, `--out`-failis või stdout'is.
 
 ### Olek
 

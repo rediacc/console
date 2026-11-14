@@ -35,7 +35,7 @@ Bu veri türleri seçtiğiniz bölgede depolanır ve işlenir; yalnızca Asya Pa
 - **Hesap verileri**: e-posta, ad, organizasyon, takım üyelikleri
 - **Faturalama ve abonelik kayıtları**: plan, aktivasyonlar, lisans düzenlemeleri
 - **Şifreli yapılandırma blob'ları**: sıfır bilgi şifrelenmiş, istemci tarafında. Sunucu bunların şifresini çözemez.
-- **İşlemsel e-postalar**: parola sıfırlama, magic link'ler, bildirimler. Bölgesel e-posta uç noktasından gönderilir.
+- **İşlemsel e-postalar**: parola sıfırlama, magic link'ler, bildirimler. Bölgesel e-posta uç noktasından gönderilir; yalnızca Asya Pasifik bunun yerine AB uç noktasını kullanır.
 
 ## Global Olanlar
 

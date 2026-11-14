@@ -76,7 +76,7 @@ Todas las claves se generan en la máquina y se escriben solo en el `secrets.env
 rdc server backup accounts.example.com --out elite-recovery.env
 ```
 
-`--out` escribe el archivo con modo 0600; sin él, el paquete va a stdout. `--bws-project <id>` en la instalación copia además las claves a un proyecto de Bitwarden Secrets Manager, y `--rotate` sustituye un valor almacenado que difiera. Sin `--bws-project`, las claves salen del servidor solo en el paquete de recuperación que imprime la instalación y en el archivo que escribe `rdc server backup --out`.
+`--out` escribe el archivo con modo 0600; sin él, el paquete va a stdout. `--bws-project <id>` en la instalación copia además las claves a un proyecto de Bitwarden Secrets Manager, y `--rotate` sustituye un valor almacenado que difiera. Sin `--bws-project`, las claves salen del servidor solo en el paquete de recuperación que imprime la instalación y en el que genera `rdc server backup`, en el archivo de `--out` o en stdout.
 
 ### Estado
 

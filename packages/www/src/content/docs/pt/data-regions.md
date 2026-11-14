@@ -35,7 +35,7 @@ Estes tipos de dados são armazenados e processados na região que escolher, exc
 - **Dados da conta**: e-mail, nome, organização, membros de equipa
 - **Registos de faturação e subscrição**: plano, ativações, emissões de licenças
 - **Blobs de configuração cifrados**: cifrados pelo cliente com conhecimento zero. O servidor não consegue descifrá-los.
-- **E-mails transacionais**: reposições de palavra-passe, links mágicos, notificações. Enviados a partir de um endpoint de e-mail regional.
+- **E-mails transacionais**: reposições de palavra-passe, links mágicos, notificações. Enviados a partir de um endpoint de e-mail regional, exceto na Ásia-Pacífico, que usa o endpoint da UE.
 
 ## O Que É Global
 

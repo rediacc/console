@@ -76,7 +76,7 @@ Tüm anahtarlar makinede üretilir ve yalnızca deponun `secrets.env` dosyasına
 rdc server backup accounts.example.com --out elite-recovery.env
 ```
 
-`--out` dosyayı 0600 kipiyle yazar; verilmezse paket stdout'a gider. Kurulumdaki `--bws-project <id>` anahtarları ayrıca bir Bitwarden Secrets Manager projesine kopyalar, `--rotate` ise farklı olan kayıtlı bir değerin yerini alır. `--bws-project` olmadan anahtarlar sunucudan yalnızca kurulumun yazdırdığı kurtarma paketiyle ve `rdc server backup --out` komutunun yazdığı dosyayla çıkar.
+`--out` dosyayı 0600 kipiyle yazar; verilmezse paket stdout'a gider. Kurulumdaki `--bws-project <id>` anahtarları ayrıca bir Bitwarden Secrets Manager projesine kopyalar, `--rotate` ise farklı olan kayıtlı bir değerin yerini alır. `--bws-project` olmadan anahtarlar sunucudan yalnızca kurulumun yazdırdığı kurtarma paketiyle ve `rdc server backup` komutunun ürettiği paketle (`--out` dosyası ya da stdout) çıkar.
 
 ### Durum
 

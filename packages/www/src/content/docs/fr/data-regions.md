@@ -35,7 +35,7 @@ Ces types de données sont stockés et traités dans la région que vous avez ch
 - **Données de compte** : email, nom, organisation, appartenances aux équipes
 - **Enregistrements de facturation et d'abonnement** : plan, activations, émissions de licences
 - **Blobs de configuration chiffrés** : chiffrement zéro-connaissance côté client. Le serveur ne peut pas les déchiffrer.
-- **Emails transactionnels** : réinitialisation de mot de passe, liens magiques, notifications. Envoyés depuis un point de terminaison email régional.
+- **Emails transactionnels** : réinitialisation de mot de passe, liens magiques, notifications. Envoyés depuis un point de terminaison email régional, sauf pour l'Asie-Pacifique, qui utilise celui de l'UE.
 
 ## Ce qui est global
 

@@ -35,7 +35,7 @@ Diese Datentypen werden in Ihrer gewählten Region gespeichert und verarbeitet, 
 - **Kontodaten**: E-Mail, Name, Organisation, Teammitgliedschaften
 - **Abrechnungs- und Abonnementdatensätze**: Plan, Aktivierungen, Lizenzausstellungen
 - **Verschlüsselte Konfigurationsblobs**: Zero-Knowledge-verschlüsselt, clientseitig. Der Server kann sie nicht entschlüsseln.
-- **Transaktions-E-Mails**: Passwortzurücksetzungen, Magic-Links, Benachrichtigungen. Werden von einem regionalen E-Mail-Endpunkt gesendet.
+- **Transaktions-E-Mails**: Passwortzurücksetzungen, Magic-Links, Benachrichtigungen. Werden von einem regionalen E-Mail-Endpunkt gesendet, außer für Asien-Pazifik, das den EU-Endpunkt nutzt.
 
 ## Was global ist
 

@@ -76,7 +76,7 @@ rdc server licence accounts.example.com --cert delegation-cert.json
 rdc server backup accounts.example.com --out elite-recovery.env
 ```
 
-`--out` 以 0600 模式写入文件;不带它时,恢复包输出到 stdout。安装时的 `--bws-project <id>` 还会把密钥复制到 Bitwarden Secrets Manager 项目,`--rotate` 会替换与之不同的已存储值。没有 `--bws-project` 时,密钥只会通过安装时输出的恢复包和 `rdc server backup --out` 写入的文件离开服务器。
+`--out` 以 0600 模式写入文件;不带它时,恢复包输出到 stdout。安装时的 `--bws-project <id>` 还会把密钥复制到 Bitwarden Secrets Manager 项目,`--rotate` 会替换与之不同的已存储值。没有 `--bws-project` 时,密钥只会通过安装时输出的恢复包和 `rdc server backup` 生成的恢复包(`--out` 文件或 stdout)离开服务器。
 
 ### 状态
 
