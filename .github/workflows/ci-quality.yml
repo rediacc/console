@@ -1847,7 +1847,7 @@ jobs:
         run: |
           AGENT_BROWSER_VERSION="$(PYTHONPATH=.ci python3 -m rediacc_ci.ci.agent_browser_pin read)"
           before="$(PYTHONPATH=.ci python3 -m rediacc_ci.core.release_age npm-before)"
-          (cd "$HOME" && npm install -g "agent-browser@$AGENT_BROWSER_VERSION" --ignore-scripts=false --before "${before}")
+          (cd "$HOME" && npm install -g "agent-browser@$AGENT_BROWSER_VERSION" --ignore-scripts=false --allow-scripts=agent-browser --before "${before}")
 
       # A silent-install failure (a broken postinstall, a PATH the shell that
       # ran npm install cannot see, a platform binary that never got selected)

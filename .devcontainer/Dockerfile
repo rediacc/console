@@ -692,7 +692,7 @@ RUN ARCH=$(dpkg --print-architecture) \
 # disagreed with CI would be worse than one that is merely behind, because it answers
 # confidently.
 ARG AGENT_BROWSER_VERSION=0.43.0
-RUN npm install -g agent-browser@${AGENT_BROWSER_VERSION} --before "${NPM_BEFORE}" \
+RUN npm install -g agent-browser@${AGENT_BROWSER_VERSION} --allow-scripts=agent-browser --before "${NPM_BEFORE}" \
     && npm cache clean --force
 
 # Pre-pull the matching chromium-headless-shell so the first `agent-browser

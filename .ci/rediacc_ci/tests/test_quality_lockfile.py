@@ -68,11 +68,11 @@ def test_discovery_finds_a_lockfile_beside_a_pruned_node_modules(tmp_path: pathl
     assert lf.discover(tmp_path) == _bash_discover(tmp_path)
 
 
-def test_the_pin_is_the_toolchain_pin_and_is_npm_11() -> None:
-    """ONE npm, read from `.devcontainer/toolchain.env` rather than written into the gate, and it is an exact 11.x."""
+def test_the_pin_is_the_toolchain_pin_and_is_npm_12() -> None:
+    """ONE npm, read from `.devcontainer/toolchain.env` rather than written into the gate, and it is an exact 12.x."""
     pin = lf.npm_pin(paths.repo_root())
     assert lf.EXACT_VERSION_RE.match(pin), pin
-    assert pin.split(".")[0] == lf.NPM_MAJOR == "11"
+    assert pin.split(".")[0] == lf.NPM_MAJOR == "12"
 
 
 def test_the_real_tree_installs_the_pin_everywhere() -> None:

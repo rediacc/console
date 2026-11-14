@@ -27,7 +27,7 @@ WHAT THIS GATE PROVES, AND WHAT IT DOES NOT. Three properties per lockfile, and 
 
   C. CANONICAL FORM. A scratch mirror of the lockfile, its `package.json`, its `.npmrc` and every workspace or `file:` manifest it names is rewritten with `npm install --package-lock-only --ignore-scripts` under the same pin, and any byte difference is a refusal. The committed file is never written. This is what ends the npm-10-vs-npm-11 oscillation for good: a lockfile written by any other npm (npm 10's 27 `"dev": true` lines under `node_modules/tsx/**`, or npm 10's nested `@esbuild/*` platform entries that npm 11 prunes) is refused with the one command that fixes it, instead of being accepted by one probe and argued with by the next.
 
-  D. CI RUNS THAT npm. Node bundles its own npm (npm 10 under Node 22, an unpinned 11.x minor under Node 24), so every `actions/setup-node` step installs with that npm unless something replaces it. The only permitted setup-node site is `.github/actions/setup-node-npm/action.yml`, which installs and verifies the pin; `NPM_VERSION` must be an exact 11.x; every Dockerfile stage (submodules included) that installs a project tree must first install `npm@${NPM_VERSION}`, every `ARG NPM_VERSION=` must equal the pin, and the devcontainer, where lockfiles get written, must install it too.
+  D. CI RUNS THAT npm. Node bundles its own npm (npm 10 under Node 22, an unpinned 11.x minor under Node 24), so every `actions/setup-node` step installs with that npm unless something replaces it. The only permitted setup-node site is `.github/actions/setup-node-npm/action.yml`, which installs and verifies the pin; `NPM_VERSION` must be an exact 12.x; every Dockerfile stage (submodules included) that installs a project tree must first install `npm@${NPM_VERSION}`, every `ARG NPM_VERSION=` must equal the pin, and the devcontainer, where lockfiles get written, must install it too.
 
   E. EVERY GLOBAL INSTALL IS WINDOWED. `npm install -g <spec>` resolves its whole tree live: no lockfile applies, and npm does not enforce `minimum_release_age_minutes`. On 2026-09-30 (PR #591 run 36724524175) CI fetched source-map-js 1.2.2 three minutes after it was published, where the lockfile pins 1.2.1. So every `npm install -g` / `npm i -g` in a workflow, a composite action, a Dockerfile (submodules
   included) and a `.ci` shell script must carry `--before`, whose value comes from `rediacc_ci.core.release_age` (the `npm-before` verb, or an `NPM_BEFORE` build-arg in an image). A backslash-continued line is read as one command, so a flag on the next physical line counts. Python call sites build argv lists this text scan cannot read; their own tests assert the flag.
@@ -99,7 +99,7 @@ from rediacc_ci.core import pins, toolchain
 from rediacc_ci.well_known import ETC_DIR
 
 # The npm major every lockfile is written in and every lane installs with (issue #587). CLAUDE.md's npm section is the prose half of this constant; the exact version is `NPM_VERSION` in `.devcontainer/toolchain.env`, and this only bounds it.
-NPM_MAJOR = "11"
+NPM_MAJOR = "12"
 
 # The file name discovered everywhere. Named once so the discovery and the messages cannot drift apart.
 LOCK_NAME = "package-lock.json"
@@ -674,7 +674,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 # The fixture's pin and the composite it needs, written by CONSTRUCTION so rewording the real files cannot void a control.
-FIXTURE_PIN = "11.20.0"
+FIXTURE_PIN = "12.2.2"
 FIXTURE_COMPOSITE = (
     "runs:\n  using: composite\n  steps:\n"
     "    - uses: actions/setup-node@0000000000000000000000000000000000000000\n"
@@ -1050,7 +1050,7 @@ def selftest() -> int:
 
         scaffold(root, pin="10.9.8")
         ctl.check("PLANT: an npm 10 pin reds", run(), 1)
-        scaffold(root, pin="11")
+        scaffold(root, pin="12")
         ctl.check("PLANT: a pin that is not an exact version reds", run(), 1)
         scaffold(root)
         ctl.check("CONTROL: the restored tree is clean again", run(), 0)
