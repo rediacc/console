@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { expect, test } from '@playwright/test';
 import { WK_RUNTIME_DIR } from '@rediacc/shared/config/well-known.generated';
-import { DEFAULT_DATASTORE_PATH, FORK_NETWORK_ID_A } from '../src/constants';
+import { DEFAULT_DATASTORE_PATH } from '../src/constants';
 import { e2eRepoGuid, installRepoLicence } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
@@ -341,7 +341,8 @@ test.describe
     // Cases 5 to 7 share one holder: a job for a real repository, frozen while still non-terminal.
     const REPO = e2eRepoGuid();
     const OTHER = e2eRepoGuid();
-    const OTHER_NETWORK_ID = String(FORK_NETWORK_ID_A);
+    // A per-run id in 3500-3999: the fixed fork ids (9216, 9280) belong to other tests' repositories that can still be mounted on this machine, and renet refuses to take a held id over (exit 17); test 30 draws from 3000-3499.
+    const OTHER_NETWORK_ID = String(3500 + (Date.now() % 500));
     let holder: Handle | undefined;
 
     test('5. a repo-exclusive start while a job holds the repository exits 15 naming the holder', async () => {
