@@ -61,15 +61,19 @@ export function printOtherLicences(rows: LicenceRow[]): void {
   ]);
 }
 
-/** Most urgent first; written out so a renamed or new freshness cannot silently reorder the summary. */
+/** Most urgent first. The Record type makes a renamed or new freshness a compile error; a value the server sends that matches no key ranks last (`urgencyOf`). */
 const FRESHNESS_URGENCY: Record<LicenceRow['freshness'], number> = {
   hard_expired: 0,
   refresh_recommended: 1,
   valid: 2,
 };
 
+function urgencyOf(freshness: LicenceRow['freshness']): number {
+  return FRESHNESS_URGENCY[freshness] ?? Number.MAX_SAFE_INTEGER;
+}
+
 /** `1 deleted (valid), 107 not in this config (hard expired)`: the others counted by presence and state. */
-function elsewhereItems(others: LicenceRow[]): string[] {
+export function elsewhereItems(others: LicenceRow[]): string[] {
   const counts = new Map<string, { row: LicenceRow; count: number }>();
   for (const row of others) {
     const key = `${row.presence}/${row.freshness}`;
@@ -80,7 +84,7 @@ function elsewhereItems(others: LicenceRow[]): string[] {
   return [...counts.values()]
     .sort((a, b) => {
       if (a.row.presence !== b.row.presence) return a.row.presence === 'deleted' ? -1 : 1;
-      return FRESHNESS_URGENCY[a.row.freshness] - FRESHNESS_URGENCY[b.row.freshness];
+      return urgencyOf(a.row.freshness) - urgencyOf(b.row.freshness);
     })
     .map(({ row, count }) =>
       t(

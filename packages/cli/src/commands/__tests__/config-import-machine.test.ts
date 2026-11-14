@@ -15,6 +15,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const configHome = mkdtempSync(join(tmpdir(), 'rdc-import-machine-'));
 const priorXdgConfigHome = process.env.XDG_CONFIG_HOME;
+const priorRediaccConfig = process.env.REDIACC_CONFIG;
 process.env.XDG_CONFIG_HOME = configHome;
 delete process.env.REDIACC_CONFIG;
 
@@ -169,8 +170,11 @@ function status(name: string, kind?: string): string | undefined {
   return report().rows.find((r) => r.name === name && (!kind || r.kind === kind))?.status;
 }
 
-async function refusal(args: string[]): Promise<InstanceType<typeof CliExitError>> {
-  const err = await run(args).catch((e: unknown) => e);
+async function refusal(
+  args: string[],
+  format = 'json'
+): Promise<InstanceType<typeof CliExitError>> {
+  const err = await run(args, format).catch((e: unknown) => e);
   expect(err).toBeInstanceOf(CliExitError);
   return err as InstanceType<typeof CliExitError>;
 }
@@ -188,6 +192,8 @@ beforeEach(async () => {
 afterAll(() => {
   if (priorXdgConfigHome === undefined) delete process.env.XDG_CONFIG_HOME;
   else process.env.XDG_CONFIG_HOME = priorXdgConfigHome;
+  if (priorRediaccConfig === undefined) delete process.env.REDIACC_CONFIG;
+  else process.env.REDIACC_CONFIG = priorRediaccConfig;
   rmSync(configHome, { recursive: true, force: true });
 });
 
@@ -351,7 +357,8 @@ describe('config import-machine', () => {
       },
     });
     const err = await refusal(['hostinger', '--from', SRC]);
-    await run(['hostinger', '--from', SRC, '--dry-run'], 'table').catch(() => undefined);
+    const dryErr = await refusal(['hostinger', '--from', SRC, '--dry-run'], 'table');
+    expect(dryErr.exitCode).toBe(12);
 
     const emitted = JSON.stringify([
       out.print.mock.calls,
@@ -360,6 +367,8 @@ describe('config import-machine', () => {
       out.warn.mock.calls,
       err.message,
       err.details,
+      dryErr.message,
+      dryErr.details,
     ]);
     expect(emitted).toContain('mail:pre-dms17');
     for (const s of SECRET_STRINGS) expect(emitted).not.toContain(s);

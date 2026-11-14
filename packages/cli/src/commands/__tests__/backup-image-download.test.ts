@@ -179,6 +179,7 @@ beforeEach(() => {
   calls = [];
   opened = 0;
   quits = 0;
+  probe.sparse = true;
 });
 afterEach(() => {
   rmSync(to, { recursive: true, force: true });

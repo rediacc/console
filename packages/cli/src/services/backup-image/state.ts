@@ -551,11 +551,26 @@ export function acquireLocalLock(lockPath: string, deps: LockDeps = {}): LockInf
   throw new ImageLockError(`could not take ${lockPath}`, readLock(lockPath));
 }
 
+/**
+ * Whether an unreadable lock is an abandoned half-written one. Its mtime is read against the mtime of
+ * a probe file made beside it, so both come from the clock of the filesystem that holds the lock: a
+ * network or exFAT mount stamping files on a clock that differs from this host's cannot make a live
+ * run's fresh empty lock look old.
+ */
 function isAbandonedUnreadable(lockPath: string, graceMs = UNREADABLE_LOCK_GRACE_MS): boolean {
+  const probe = `${lockPath}.clock-${process.pid}-${randomBytes(4).toString('hex')}`;
   try {
-    return Date.now() - statSync(lockPath).mtimeMs > graceMs;
+    const lockMtime = statSync(lockPath).mtimeMs;
+    closeSync(openSync(probe, 'w'));
+    return statSync(probe).mtimeMs - lockMtime > graceMs;
   } catch {
     return false;
+  } finally {
+    try {
+      unlinkSync(probe);
+    } catch {
+      // The probe was never made or is already gone; nothing is left to clean up.
+    }
   }
 }
 

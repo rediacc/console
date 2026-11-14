@@ -251,8 +251,9 @@ describe('REGION_META', () => {
   });
 
   it('points every card at a flag file that exists', () => {
-    for (const meta of Object.values(REGION_META)) {
-      expect(existsSync(join(__dirname, '../../../public', meta?.flagSrc ?? ''))).toBe(true);
+    for (const [region, meta] of Object.entries(REGION_META)) {
+      expect(meta?.flagSrc, `${region} has no flagSrc`).toBeTruthy();
+      expect(existsSync(join(__dirname, '../../../public', meta?.flagSrc as string))).toBe(true);
     }
   });
 });

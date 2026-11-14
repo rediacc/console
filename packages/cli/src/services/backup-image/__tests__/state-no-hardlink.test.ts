@@ -72,6 +72,20 @@ describe('local lock on a filesystem without hard links', () => {
     expect(readFileSync(lockPath, 'utf8')).toBe('');
   });
 
+  it('control: judges a lock by the filesystem clock, so a skewed host clock cannot make a fresh one look old', () => {
+    writeFileSync(lockPath, '');
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(Date.now() + 3_600_000);
+    try {
+      expect(() =>
+        acquireLocalLock(lockPath, { pid: 8, host: 'h1', isPidAlive: () => true })
+      ).toThrow(/unreadable/);
+    } finally {
+      vi.useRealTimers();
+    }
+    expect(readdirSync(dir)).toEqual(['app.latest.lock']);
+  });
+
   it('still refuses a live holder', () => {
     acquireLocalLock(lockPath, { pid: 1, host: 'h1', isPidAlive: () => true });
     expect(() =>
