@@ -53,6 +53,8 @@ if typing.TYPE_CHECKING:  # pragma: no cover - annotations only
     import pathlib
 
 ROOT = paths.repo_root()
+# The npm every lane installs; the fixture's npm answers it unless a case says otherwise.
+NPM_PIN = toolchain.pin_for("npm", toolchain.load_pins(ROOT / ".devcontainer" / "toolchain.env"))
 PORT_REL = ".ci/rediacc_ci/security/audit.py"
 PORT = ROOT / PORT_REL
 
@@ -495,7 +497,7 @@ def fx(tmp_path: pathlib.Path) -> Fixture:
         path.write_text(body, encoding="utf-8")
         path.chmod(0o755)
 
-    fixture.data("npm.version", "11.17.0\n")
+    fixture.data("npm.version", "%s\n" % NPM_PIN)
     fixture.data("npm.cache", "%s/fake/npmcache\n" % root)
     fixture.data("npm.signatures.exit", "0\n")
     fixture.data("npm.signatures.out", "audited 1200 packages\n")
@@ -850,9 +852,29 @@ def test_an_old_npm_is_upgraded_before_signature_verification(fx: Fixture) -> No
     fx.data("npm.install.out", "added 1 package\n")
     run = run_gate(fx)
     assert run.exit == 0
-    assert "⚠ Upgrading npm to 11.x for Sigstore attestation key compatibility" in run.stdout
-    pin = toolchain.pin_for("npm", toolchain.load_pins(ROOT / ".devcontainer" / "toolchain.env"))
-    assert "call: npm install -g npm@%s --no-audit --no-fund" % pin in run.calls
+    assert (
+        "⚠ Upgrading npm to the pinned npm@%s for Sigstore attestation key compatibility" % NPM_PIN
+        in run.stdout
+    )
+    assert "call: npm install -g npm@%s --no-audit --no-fund" % NPM_PIN in run.calls
+
+
+def test_an_npm_of_another_minor_is_moved_to_the_pin(fx: Fixture) -> None:
+    """A major-only test (`startswith("11.")`) let the pin and the running npm disagree, and reinstalled npm on every run once the pin moved to 12."""
+    major = NPM_PIN.split(".", 1)[0]
+    other = "%s.0.0" % major if NPM_PIN != "%s.0.0" % major else "%s.0.1" % major
+    fx.data("npm.version", "%s\n" % other)
+    fx.data("npm.install.out", "changed 1 package\n")
+    run = run_gate(fx)
+    assert run.exit == 0
+    assert "call: npm install -g npm@%s --no-audit --no-fund" % NPM_PIN in run.calls
+
+
+def test_the_pinned_npm_is_never_reinstalled(fx: Fixture) -> None:
+    """Reinstalling the running npm removes its binary for a moment; concurrent gates then exit 127."""
+    run = run_gate(fx)
+    assert run.exit == 0
+    assert not any(c.startswith("call: npm install -g") for c in run.calls)
 
 
 def test_a_failed_npm_upgrade_ends_the_run_with_npms_status(fx: Fixture) -> None:
