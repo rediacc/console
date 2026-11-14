@@ -114,12 +114,12 @@ CONTAINER_SETTINGS_PENDING = "Container application settings were not fully appl
 
 def deploy_with_settings_retry(argv: list[str]) -> tuple[int, str]:
     """`wrangler deploy`, rerun once when wrangler reports the container settings still pending, which its own message says a rerun finishes. Any other failure, or a second pending answer, is returned as it is."""
-    status, output = _run_tee(argv)
+    status, output = _run_tee(argv, merge_stderr=True)
     if status != 0 and CONTAINER_SETTINGS_PENDING in output:
         log.warn(
             "wrangler reports the container settings not fully applied; rerunning the same deploy once"
         )
-        status, output = _run_tee(argv)
+        status, output = _run_tee(argv, merge_stderr=True)
     return status, output
 
 
@@ -481,9 +481,11 @@ def _run(argv: list[str], *, env: dict[str, str] | None = None) -> int:
     return subprocess.run(argv, check=False, env=env).returncode
 
 
-def _run_tee(argv: list[str]) -> tuple[int, str]:
-    """One child whose stdout is copied to this stdout line by line AND kept; stderr inherited."""
-    with subprocess.Popen(argv, stdout=subprocess.PIPE, text=True) as proc:
+def _run_tee(argv: list[str], merge_stderr: bool = False) -> tuple[int, str]:
+    """One child whose stdout is copied to this stdout line by line AND kept; stderr inherited, or with `merge_stderr` folded into the same kept stream (wrangler prints its errors on stderr, so a caller that reads an error must merge)."""
+    with subprocess.Popen(
+        argv, stdout=subprocess.PIPE, stderr=subprocess.STDOUT if merge_stderr else None, text=True
+    ) as proc:
         kept = []
         for line in proc.stdout or ():
             sys.stdout.write(line)

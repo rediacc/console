@@ -2158,7 +2158,8 @@ def test_a_pending_container_settings_answer_reruns_the_deploy_once(monkeypatch)
         (0, "Current Version ID: 11111111-2222-3333-4444-555555555555"),
     ]
 
-    def fake(argv):
+    def fake(argv, merge_stderr=False):
+        assert merge_stderr, "the retry must read stderr, where wrangler prints the message"
         calls.append(argv)
         return answers[len(calls) - 1]
 
@@ -2172,7 +2173,8 @@ def test_a_pending_container_settings_answer_reruns_the_deploy_once(monkeypatch)
 def test_control_another_failure_is_not_retried(monkeypatch):
     calls = []
 
-    def fake(argv):
+    def fake(argv, merge_stderr=False):
+        assert merge_stderr, "the retry must read stderr, where wrangler prints the message"
         calls.append(argv)
         return 1, "Authentication error [code: 10000]"
 
@@ -2185,7 +2187,8 @@ def test_control_another_failure_is_not_retried(monkeypatch):
 def test_a_second_pending_answer_is_returned_not_looped(monkeypatch):
     calls = []
 
-    def fake(argv):
+    def fake(argv, merge_stderr=False):
+        assert merge_stderr, "the retry must read stderr, where wrangler prints the message"
         calls.append(argv)
         return 1, "Container application settings were not fully applied"
 
@@ -2193,3 +2196,19 @@ def test_a_second_pending_answer_is_returned_not_looped(monkeypatch):
     status, _ = port.deploy_with_settings_retry(["wrangler", "deploy"])
     assert status == 1
     assert len(calls) == 2
+
+
+def test_run_tee_with_merge_keeps_stderr_lines():
+    """The 2026-11-14 miss: wrangler prints the pending-settings error on stderr, which the plain tee never kept."""
+    code = "import sys; print('out'); print('Container application settings were not fully applied', file=sys.stderr); sys.exit(1)"
+    status, output = port._run_tee([sys.executable, "-c", code], merge_stderr=True)
+    assert status == 1
+    assert port.CONTAINER_SETTINGS_PENDING in output
+
+
+def test_control_run_tee_without_merge_keeps_stdout_only():
+    code = "import sys; print('out'); print('err-line', file=sys.stderr)"
+    status, output = port._run_tee([sys.executable, "-c", code])
+    assert status == 0
+    assert "out" in output
+    assert "err-line" not in output
