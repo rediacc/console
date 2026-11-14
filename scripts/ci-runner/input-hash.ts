@@ -320,7 +320,12 @@ export function planCarry(
       });
     } else {
       run.push(id);
-      if (usable && pg?.verdict === 'fail' && cur?.inputHash != null && pg.inputHash === cur.inputHash)
+      if (
+        usable &&
+        pg?.verdict === 'fail' &&
+        cur?.inputHash != null &&
+        pg.inputHash === cur.inputHash
+      )
         rejudged.push(id);
     }
   }

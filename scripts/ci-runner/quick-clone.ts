@@ -1638,7 +1638,9 @@ export async function quickCloneSelftest(
     });
     check(
       carriedRedRun.exit === 1 &&
-        /STALE RECEIPT[^\n]*: check:old\.[^\n]*An old receipt[^\n]*--no-carry/.test(carriedRedRun.log) &&
+        /STALE RECEIPT[^\n]*: check:old\.[^\n]*An old receipt[^\n]*--no-carry/.test(
+          carriedRedRun.log
+        ) &&
         !/STALE RECEIPT[^\n]*check:new/.test(carriedRedRun.log),
       `a red receipt entry with carriedFrom set is read as a receipt from before the never-carry rule and must be named as such, with the fresh run: ${carriedRedRun.log}`
     );
