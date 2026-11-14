@@ -201,8 +201,11 @@ cleanup_legacy_state() {
 write_install_config() {
     local default_channel="edge"
     local default_releases="https://releases.rediacc.com"
-    # Nothing to record in the plain default case; a custom releases URL is
-    # always recorded because the CLI reads it only from the config.
+    # Nothing to record in the plain default case. A custom releases URL counts as
+    # non-default because the CLI reads it only from the config; it is recorded
+    # when no config exists and when jq merges into an existing one. With an
+    # existing config and no jq the config stays untouched, so the URL is only
+    # reported (see the no-jq branch below), never silently dropped.
     if [[ -z "${SERVER_URL:-}" && "${CHANNEL:-$default_channel}" == "$default_channel" && "${RELEASES_URL:-$default_releases}" == "$default_releases" ]]; then
         return 0
     fi
@@ -283,6 +286,11 @@ write_install_config() {
             echo "    rdc update --channel $CHANNEL"
             if [[ -n "${SERVER_URL:-}" ]]; then
                 echo "    rdc subscription login --server $SERVER_URL"
+            fi
+            if [[ -n "$custom_releases" ]]; then
+                echo "  The CLI reads a custom releases URL only from the config, so add"
+                echo "    \"releasesUrl\": \"$custom_releases\""
+                echo "  to the \"account\" object in $config_file, or install jq and re-run."
             fi
             return 0
         fi
