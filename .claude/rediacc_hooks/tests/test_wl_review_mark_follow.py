@@ -560,6 +560,8 @@ def test_a_source_named_with_glob_characters_is_matched_literally(tmp_path, monk
     for n in range(3):
         _commit(repo, "neighbour %d" % n, **{"i.py": "x = %d\n" % n})
     assert R.move_search_note(str(repo), reviewed, "HEAD", "[id].py") == ""
+    # bf83ba68.1: with the cap at 2, a glob read of `[id].py` fills the log with the 3 newer `i.py` commits and loses the move.
+    assert R.moved_successors(repo, "[id].py", reviewed, "HEAD") == {"moved.py"}
 
 
 def test_the_cut_short_note_counts_the_commits_of_a_found_successor(tmp_path, monkeypatch):
