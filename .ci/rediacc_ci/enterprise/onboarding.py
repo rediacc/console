@@ -425,7 +425,8 @@ def build_portal(tree: pathlib.Path, env: Mapping[str, str]) -> int:
     child = dict(env)
     for bind in step.binds:
         source, _, target = bind.partition(" > ")
-        child[target] = env[source].strip()
+        # Only the sitekey is stripped (the guard above reads it stripped); any other bound value passes as it is.
+        child[target] = env[source].strip() if source == SITEKEY_ENV else env[source]
     child.update(step.env)
     return subprocess.call(
         list(step.argv), cwd=str(tree / step.cwd.removeprefix("clone:")), env=child
@@ -530,7 +531,7 @@ BODY_LIMIT = 500
 
 
 def _json_body(raw: bytes) -> dict:
-    """The JSON object of a reply body; a body that is not one comes back as `{BODY_TEXT_KEY: <its text>}`, so a Worker's plain-text or HTML 500 reaches the error message instead of being dropped."""
+    """The JSON object of a reply body; a non-empty body that is not one comes back as `{BODY_TEXT_KEY: <its text>}`, so a Worker's plain-text or HTML 500 reaches the error message instead of being dropped, and an empty or whitespace-only body comes back as `{}`."""
     try:
         data = json.loads(raw or b"{}")
     except ValueError:
@@ -542,17 +543,21 @@ def _json_body(raw: bytes) -> dict:
 
 
 def _body_tail(payload: dict, secrets_in_reply: tuple[str, ...]) -> str:
-    """`: <reply body>` cut to BODY_LIMIT characters, with the API key masked; empty when the reply had no body."""
+    """`: <reply body>` cut to BODY_LIMIT characters, with the API key masked as written and as JSON escapes it; empty when the reply had no body. A payload whose only field is a string `BODY_TEXT_KEY` is the plain text `_json_body` wrapped; a JSON object with other fields is always printed whole."""
     if not payload:
         return ""
+    plain = len(payload) == 1 and isinstance(payload.get(BODY_TEXT_KEY), str)
     text = (
         str(payload[BODY_TEXT_KEY])
-        if BODY_TEXT_KEY in payload
-        else json.dumps(payload, sort_keys=True)
+        if plain
+        else json.dumps(payload, sort_keys=True, ensure_ascii=False)
     )
     for secret in secrets_in_reply:
         if secret:
-            text = text.replace(secret, "<redacted>")
+            # A JSON-rendered body escapes a quote, a backslash or a control character, so the escaped spelling is masked too.
+            escaped = (json.dumps(secret, ensure_ascii=False)[1:-1], json.dumps(secret)[1:-1])
+            for form in (secret, *escaped):
+                text = text.replace(form, "<redacted>")
     return ": " + text[:BODY_LIMIT]
 
 
@@ -591,22 +596,24 @@ def orphan_container_app(name: str, rows: CfRows) -> str | None:
     return None
 
 
-def live_cf_rows(path: str) -> list:
-    """The live `CfRows`, read-only, under CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID."""
-    token = os.environ.get("CLOUDFLARE_API_TOKEN", "")
-    account = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "") or CF_ACCOUNT_ID
-    if not token:
-        raise OnboardingError("the container application check needs CLOUDFLARE_API_TOKEN")
+CF_PAGE_SIZE = 100
+CF_MAX_PAGES = 1000
+
+
+def _cf_page(path: str, page: int, token: str, account: str) -> dict:
+    """One page of a read-only account-scoped GET, the decoded body; a refusal or a non-list `result` is an OnboardingError naming the path."""
+    url = "%s/accounts/%s%s?per_page=%d&page=%d" % (
+        cf_auth.CF_API_BASE,
+        account,
+        path,
+        CF_PAGE_SIZE,
+        page,
+    )
     try:
-        answer = cf_auth.curl_json(
-            "GET",
-            "%s/accounts/%s%s" % (cf_auth.CF_API_BASE, account, path),
-            ["-H", "Authorization: Bearer %s" % token],
-        )
+        answer = cf_auth.curl_json("GET", url, ["-H", "Authorization: Bearer %s" % token])
     except cf_auth.CfAuthError:
         raise OnboardingError("the Cloudflare read of %s failed" % path) from None
-    result = answer.get("result")
-    if answer.get("success") is not True or not isinstance(result, list):
+    if answer.get("success") is not True or not isinstance(answer.get("result"), list):
         errors = answer.get("errors")
         text = (
             "; ".join(str(e.get("message")) for e in errors if isinstance(e, dict))
@@ -616,7 +623,30 @@ def live_cf_rows(path: str) -> list:
         raise OnboardingError(
             "Cloudflare refused the read of %s (%s)" % (path, text or "no message")
         )
-    return result
+    return answer
+
+
+def live_cf_rows(path: str) -> list:
+    """The live `CfRows`, read-only, under CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID; every page of the listing (the answer's `total_pages`, else until a short page), so an application or namespace past the first page is seen."""
+    token = os.environ.get("CLOUDFLARE_API_TOKEN", "")
+    account = os.environ.get("CLOUDFLARE_ACCOUNT_ID", "") or CF_ACCOUNT_ID
+    if not token:
+        raise OnboardingError("the container application check needs CLOUDFLARE_API_TOKEN")
+    rows: list = []
+    page = 1
+    while True:
+        answer = _cf_page(path, page, token, account)
+        batch = answer["result"]
+        rows.extend(batch)
+        info = answer.get("result_info")
+        total = info.get("total_pages") if isinstance(info, dict) else None
+        pages = total if isinstance(total, int) else 0
+        done = page >= pages if pages > 0 else len(batch) < CF_PAGE_SIZE
+        if done:
+            return rows
+        if page >= CF_MAX_PAGES:
+            raise OnboardingError("the Cloudflare listing of %s did not end" % path)
+        page += 1
 
 
 def _listed(listing: Any, name: str) -> bool:

@@ -125,6 +125,7 @@ class FakeCloudflare:
         self.fail: set[tuple[str, str]] = set()
         self.token_page = 2
         self.d1_page = 100
+        self.apps_page = 100
         self.omit_info = False
         self.ignore_page = False
 
@@ -155,10 +156,16 @@ class FakeCloudflare:
                 }
             self.workers.discard(name)
             return {"success": True, "result": None}
-        if method == "GET" and path == base + "/containers/applications":
+        if method == "GET" and path.startswith(base + "/containers/applications?"):
+            args = urllib.parse.parse_qs(path.split("?", 1)[1])
+            page = int(args.get("page", ["1"])[0])
+            rows = [{"id": i, "name": n} for i, n in self.apps.items()]
+            per = self.apps_page
+            pages = max(1, -(-len(rows) // per))
             return {
                 "success": True,
-                "result": [{"id": i, "name": n} for i, n in self.apps.items()],
+                "result": rows[(page - 1) * per : page * per],
+                "result_info": {"total_pages": pages},
             }
         if method == "DELETE" and path.startswith(base + "/containers/applications/"):
             self.apps.pop(path.rsplit("/", 1)[1], None)
@@ -553,6 +560,18 @@ def test_undeploy_deletes_proxy_then_account_and_skips_an_absent_worker(monkeypa
         "undeploy proxy container application",
         "undeploy account worker",
     ]
+
+
+def test_undeploy_finds_a_container_application_on_a_later_page(monkeypatch):
+    """Review 95a4308f.4: an application past the first page is deleted, not reported as already gone."""
+    rig = Rig(monkeypatch)
+    rig.cf.apps_page = 1
+    rig.teardown.undeploy(_company())
+    deletes = [c[1] for c in rig.cf.calls if c[0] == "DELETE" and "/containers/" in c[1]]
+    assert deletes == ["/accounts/%s/containers/applications/app-acme" % ACCOUNT]
+    assert "undeploy proxy container application" in rig.teardown.done
+    pages = [c[1] for c in rig.cf.calls if c[0] == "GET" and "/containers/applications?" in c[1]]
+    assert len(pages) == 3
 
 
 def test_undeploy_deletes_the_container_application_after_the_proxy_worker_and_only_that_one(

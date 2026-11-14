@@ -375,15 +375,22 @@ class CloudflareTeardown:
                 )
 
     def _drop_container_app(self, company: Target) -> str | None:
-        """Delete the company's container application by id, matched on its exact name; deleting the Worker leaves it behind, bound to a Durable Object namespace that no longer exists. `GONE` when it is not listed."""
+        """Delete the company's container application by id, matched on its exact name; deleting the Worker leaves it behind, bound to a Durable Object namespace that no longer exists. `GONE` when it is not listed on any page of the listing."""
         wanted = names.proxy_container_app(company.name)
         what = "the container application listing"
-        rows = _rows(_ok(self._http("GET", self._account("/containers/applications")), what), what)
-        ids = [
-            str(r["id"])
-            for r in rows
-            if isinstance(r, dict) and r.get("name") == wanted and r.get("id")
-        ]
+        ids: list[str] = []
+        page, pages = 1, 1
+        while page <= pages:
+            path = "/containers/applications?per_page=100&page=%d" % page
+            answer = _ok(self._http("GET", self._account(path)), what)
+            rows = _rows(answer, what)
+            ids += [
+                str(r["id"])
+                for r in rows
+                if isinstance(r, dict) and r.get("name") == wanted and r.get("id")
+            ]
+            pages = _pages(answer, rows, 100, page)
+            page += 1
         for app_id in ids:
             path = "/containers/applications/%s" % urllib.parse.quote(app_id)
             _ok(self._http("DELETE", self._account(path)), "the container application delete")

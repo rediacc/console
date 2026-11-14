@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import email.message
 import http.client
+import importlib
 import io
 import json
 import os
@@ -19,6 +20,8 @@ from rediacc_ci import __main__ as entry
 from rediacc_ci import paths
 from rediacc_ci.core import run_verbs, wrangler
 from rediacc_ci.enterprise import cli, dns, lab, onboarding, registry
+
+_REAL_LIVE_CF_ROWS = onboarding.live_cf_rows
 
 T0 = "2026-11-09T00:00:00Z"
 IDS = iter("c%016x" % n for n in range(1, 10_000))
@@ -563,6 +566,81 @@ def _no_live_cloudflare_read(monkeypatch):
     monkeypatch.setattr(onboarding, "live_cf_rows", lambda _path: [])
 
 
+class _CfBodies:
+    """A fake `cf_auth.curl_json` answering canned bodies in order, recording each URL."""
+
+    def __init__(self, *bodies):
+        self.bodies = list(bodies)
+        self.urls = []
+
+    def __call__(self, _method, url, _headers):
+        self.urls.append(url)
+        return self.bodies.pop(0)
+
+
+@pytest.fixture
+def real_cf_rows(monkeypatch):
+    """The autouse stub is lifted for the tests of live_cf_rows itself."""
+    monkeypatch.setattr(onboarding, "live_cf_rows", _REAL_LIVE_CF_ROWS)
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "t")
+
+
+@pytest.mark.usefixtures("real_cf_rows")
+def test_live_cf_rows_follows_every_page(monkeypatch):
+    """Review 95a4308f.3: an application on page two is read."""
+    fake = _CfBodies(
+        {"success": True, "result": [{"id": "a"}], "result_info": {"total_pages": 2}},
+        {"success": True, "result": [{"id": "b"}], "result_info": {"total_pages": 2}},
+    )
+    monkeypatch.setattr(onboarding.cf_auth, "curl_json", fake)
+    assert onboarding.live_cf_rows("/containers/applications") == [{"id": "a"}, {"id": "b"}]
+    assert [u.rsplit("page=", 1)[1] for u in fake.urls] == ["1", "2"]
+
+
+@pytest.mark.usefixtures("real_cf_rows")
+def test_live_cf_rows_stops_at_a_short_page_without_a_page_count(monkeypatch):
+    fake = _CfBodies({"success": True, "result": [{"id": "a"}]})
+    monkeypatch.setattr(onboarding.cf_auth, "curl_json", fake)
+    assert onboarding.live_cf_rows("/x") == [{"id": "a"}]
+    assert len(fake.urls) == 1
+
+
+@pytest.mark.parametrize(
+    ("body", "match"),
+    [
+        (
+            {"success": False, "errors": [{"message": "no scope"}]},
+            "refused the read of /x .no scope.",
+        ),
+        ({"success": True, "result": {"not": "a list"}}, "refused the read of /x .no message."),
+    ],
+)
+@pytest.mark.usefixtures("real_cf_rows")
+def test_live_cf_rows_refuses_a_failed_or_malformed_answer(monkeypatch, body, match):
+    """Review 95a4308f.2: the error branches name the path and Cloudflare's message."""
+    monkeypatch.setattr(onboarding.cf_auth, "curl_json", _CfBodies(body))
+    with pytest.raises(onboarding.OnboardingError, match=match):
+        onboarding.live_cf_rows("/x")
+
+
+@pytest.mark.usefixtures("real_cf_rows")
+def test_live_cf_rows_turns_an_auth_failure_into_an_onboarding_error(monkeypatch):
+    def boom(*_a):
+        raise onboarding.cf_auth.CfAuthError("curl failed with the token in it")
+
+    monkeypatch.setattr(onboarding.cf_auth, "curl_json", boom)
+    with pytest.raises(onboarding.OnboardingError, match="the Cloudflare read of /x failed") as err:
+        onboarding.live_cf_rows("/x")
+    assert "token" not in str(err.value)
+
+
+@pytest.mark.usefixtures("real_cf_rows")
+def test_live_cf_rows_needs_the_token(monkeypatch):
+    monkeypatch.delenv("CLOUDFLARE_API_TOKEN", raising=False)
+    with pytest.raises(onboarding.OnboardingError, match="needs CLOUDFLARE_API_TOKEN"):
+        onboarding.live_cf_rows("/x")
+
+
 def _cf_rows(apps, namespaces):
     def rows(path):
         return {
@@ -1058,13 +1136,18 @@ def test_live_account_call_accepts_any_2xx(status):
 
 
 @pytest.mark.parametrize(
-    ("status", "payload", "tail"),
-    [(500, {}, ""), (302, {}, ""), (403, {"code": "NOPE"}, " (NOPE)")],
+    ("status", "payload", "tail", "body"),
+    [
+        (500, {}, "", ""),
+        (302, {}, "", ""),
+        (403, {"code": "NOPE"}, " (NOPE)", ': {"code": "NOPE"}'),
+    ],
 )
-def test_live_account_call_refuses_a_non_2xx_with_or_without_a_code(status, payload, tail):
+def test_live_account_call_refuses_a_non_2xx_with_or_without_a_code(status, payload, tail, body):
     with pytest.raises(onboarding.OnboardingError) as caught:
         _account_actions(FakeAccount(status, payload))["bootstrap"](_seeded_ctx(World()))
-    assert ("refused with HTTP %d%s on POST " % (status, tail)) in str(caught.value)
+    expected = "refused with HTTP %d%s on POST /account/api/v1/subscriptions/enterprise/bootstrap%s"
+    assert str(caught.value).endswith(expected % (status, tail, body))
 
 
 def test_live_account_call_names_the_path_and_the_body_of_a_refusal():
@@ -1085,6 +1168,50 @@ def test_live_account_call_truncates_the_body_and_masks_the_key():
     assert "k-secret" not in message
     assert "<redacted>" in message
     assert len(message) < 800
+
+
+def test_body_tail_masks_a_key_that_json_escapes():
+    """Review 61885324.2: a key with a quote, a backslash or a non-ASCII character appears escaped in the rendered body and is masked in that spelling too."""
+    key = 'k"x\\y\u00e9z'
+    tail = onboarding._body_tail({"error": "bad key " + key}, (key,))
+    assert tail == ': {"error": "bad key <redacted>"}'
+
+
+def test_a_json_object_with_a_text_field_is_printed_whole():
+    """Review 61885324.4: only the wrapper `_json_body` makes (one string field) prints as plain text."""
+    tail = onboarding._body_tail({"_text": "a", "code": "X"}, ())
+    assert tail == ': {"_text": "a", "code": "X"}'
+    assert onboarding._body_tail({"_text": "plain"}, ()) == ": plain"
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        (b"Internal Server Error", {"_text": "Internal Server Error"}),
+        (b'{"ok": true}', {"ok": True}),
+        (b"", {}),
+        (b"  \n", {}),
+    ],
+)
+def test_json_body_wraps_plain_text_and_leaves_an_empty_body_empty(raw, expected):
+    """Review 61885324.1 and .3: a non-JSON reply keeps its text, a blank one is {}."""
+    assert onboarding._json_body(raw) == expected
+
+
+def test_account_post_keeps_a_non_json_success_body(monkeypatch):
+    """Review 61885324.1: the success path returns the plain text of a 2xx non-JSON reply."""
+
+    class Reply(io.BytesIO):
+        status = 200
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_a):
+            return False
+
+    monkeypatch.setattr(onboarding.https, "urlopen", lambda *_a, **_k: Reply(b"created"))
+    assert onboarding.account_post("https://h/x", "k", {}) == (200, {"_text": "created"})
 
 
 def test_live_account_call_control_a_bodyless_refusal_adds_no_tail():
@@ -1690,3 +1817,28 @@ def test_build_portal_binds_the_sitekey_stripped(tmp_path, monkeypatch):
     monkeypatch.setattr(onboarding.subprocess, "call", call)
     assert onboarding.build_portal(tmp_path, {"TURNSTILE_SITE_KEY": "  0xKEY\n"}) == 0
     assert calls[0]["VITE_TURNSTILE_SITE_KEY"] == "0xKEY"
+
+
+def test_build_portal_strips_only_the_sitekey_among_its_binds(tmp_path, monkeypatch):
+    """Review 4894e625.1: another bound variable keeps its surrounding whitespace."""
+    local = importlib.import_module("rediacc_ci.release.local")
+    step = types.SimpleNamespace(
+        id=onboarding.PORTAL_STEP,
+        binds=("TURNSTILE_SITE_KEY > VITE_TURNSTILE_SITE_KEY", "OTHER_VALUE > VITE_OTHER"),
+        env=(),
+        argv=("true",),
+        cwd="",
+    )
+    monkeypatch.setattr(local, "STEPS", [step])
+    calls = []
+
+    def call(_argv, *, cwd, env):
+        del cwd
+        calls.append(env)
+        return 0
+
+    monkeypatch.setattr(onboarding.subprocess, "call", call)
+    env = {"TURNSTILE_SITE_KEY": " 0xKEY ", "OTHER_VALUE": "  keep \n"}
+    assert onboarding.build_portal(tmp_path, env) == 0
+    assert calls[0]["VITE_TURNSTILE_SITE_KEY"] == "0xKEY"
+    assert calls[0]["VITE_OTHER"] == "  keep \n"
