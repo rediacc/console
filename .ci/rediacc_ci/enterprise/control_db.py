@@ -6,11 +6,11 @@ EVERY CALL GOES THROUGH WRANGLER, spelled by `core.wrangler.ARGV`, from a neutra
 
 IDEMPOTENT. `ensure` lists the account's databases first and creates only a missing one, then applies the migration only when the `companies` table is absent, so a second run changes nothing. The migration's `CREATE TABLE` statements have no `IF NOT EXISTS`, which is why the table probe decides rather than a blind re-apply.
 
-A REMOVED COMPANY FREES ITS NAME. 0001 now declares the partial unique index `companies_live_name ON companies(name) WHERE state <> 'removed'` directly, so a fresh database is right from the start and a removed row's name can be reused. Databases created before that change still carry the old inline `name TEXT NOT NULL UNIQUE` (a removed row kept its name forever and `enterprise add` of the same name failed at the control-row insert, 2026-11-14, proof-loss-eu), so `ensure` keeps a LEGACY REBUILD (`NAME_REBUILD_SQL`) that runs whenever the stored table definition still carries an inline UNIQUE: same columns, same rows and ids, the constraint replaced by the partial index. It is a no-op on a database that already has the index, and can be deleted once every control database (bench and production, all regions) has passed through an `ensure` since 0001 changed. The removed row keeps its name, so `export` and `list --all` still find it by name.
+A REMOVED COMPANY FREES ITS NAME. 0001 now declares the partial unique index `companies_live_name ON companies(name) WHERE state <> 'removed'` directly, so a fresh database is right from the start and a removed row's name can be reused. Databases created before that change still carry the old inline `name TEXT NOT NULL UNIQUE` (a removed row kept its name forever and `enterprise add` of the same name failed at the control-row insert, 2026-11-14, proof-loss-eu), so `ensure` keeps a LEGACY REBUILD (`NAME_REBUILD_SQL`) that runs whenever the stored table definition still carries an inline UNIQUE: same columns, same rows and ids, the constraint replaced by the partial index. It is a no-op on a database that already has the index, and can be deleted once every control database (bench and production, all regions) has passed through an `ensure` since 0001 changed. The removed row keeps its name and id, so `list --all` still lists it beside a live row of the same name; `export` and `remove` resolve a name to the live row only (`registry.Registry.find`).
 
 THE QUERY TRANSPORT. `transport(runner)` is the `registry.Query` the registry and `enterprise add` read and write through: `wrangler d1 execute <db> --remote --json --command <sql>`. wrangler binds no parameters, so `bind` inlines each `?` as a quoted literal (single quotes doubled), counting placeholders outside string literals only and refusing a count mismatch.
 
-A FAILED CALL CARRIES WRANGLER'S STATED CAUSE (`failure_tail`): the `error` of its `--json` stdout, then its last stderr lines (`stderr_tail`: ANSI stripped, blank lines dropped, the last three lines, each cut to 200 characters). Query rows are never quoted, because they hold company labels, and a failed query masks every string value it bound (`mask_values`), because D1 can echo the inlined SQL in an error.
+A FAILED CALL CARRIES WRANGLER'S STATED CAUSE (`failure_tail`): the `error` of its `--json` stdout, then its last stderr lines (`stderr_tail`: ANSI stripped, blank lines dropped, the last three lines, each cut to 200 characters). Query rows are never quoted, because they hold company labels, and a failed query masks every string value it bound (`mask_values`, applied to each line BEFORE the cut), because D1 can echo the inlined SQL in an error; a short bound value is masked only as a quoted SQL literal, so it does not rewrite ordinary words.
 
 THE TOKEN IS CHECKED UP FRONT. wrangler refuses the Global API Key non-interactively, so `require_token` refuses a missing CLOUDFLARE_API_TOKEN naming the `enterprise` profile of .ci/config/secret-supply.json, before the first call (`main`, `ensure` and `transport` when they run over the production runner, which covers `add`, `control` and the proof readers).
 """
@@ -37,6 +37,7 @@ SELF = "rediacc_ci.enterprise.control_db"
 TABLE_PROBE = "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'companies'"
 TABLE_SQL_PROBE = "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'companies'"
 LIVE_NAME_INDEX = "companies_live_name"
+NAME_UNIQUE = re.compile(r"\bname\b[^,]*\bUNIQUE\b", re.IGNORECASE)
 # D1 enforces foreign keys and ignores `PRAGMA foreign_keys`; `defer_foreign_keys` holds the checks to the end of the statement batch. The old rows are copied aside, the table is dropped and recreated under its own name, and the rows are inserted back, which is what clears the deferred violations of the child tables' references (a rename of a new table into place would not).
 # LEGACY: only for control databases created from the old 0001 (inline UNIQUE on name); a database from the current 0001 never reaches it. Delete with `name_unique_inline` once every control database has been through `ensure`.
 NAME_REBUILD_SQL = """PRAGMA defer_foreign_keys = on;
@@ -68,7 +69,7 @@ Runner = Callable[..., Completed]
 
 
 class ControlDbError(RuntimeError):
-    """A control database step failed; the message names the database and quotes wrangler's stated cause (`failure_tail`), with the values a query bound masked."""
+    """A control database step failed; the message names the database and, when wrangler ran and failed, quotes its stated cause (`failure_tail`) with the values a query bound masked. A refusal raised before or without a wrangler call (`require_token`, a created database missing from the listing) carries its own text and no cause."""
 
 
 AUTH_ENV = "CLOUDFLARE_API_TOKEN"
@@ -78,9 +79,9 @@ TAIL_WIDTH = 200
 ANSI = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]")
 
 
-def stderr_tail(text: str) -> str:
-    """The last meaningful lines of wrangler's stderr, ANSI stripped, joined by ` | `; empty when there are none."""
-    lines = [ANSI.sub("", raw).strip() for raw in text.splitlines()]
+def stderr_tail(text: str, params: Sequence[object] = ()) -> str:
+    """The last meaningful lines of wrangler's stderr, ANSI stripped, the values in `params` masked BEFORE each line is cut (a value straddling the cut would otherwise survive as a prefix), joined by ` | `; empty when there are none."""
+    lines = [mask_values(ANSI.sub("", raw).strip(), params) for raw in text.splitlines()]
     kept = [line[:TAIL_WIDTH] for line in lines if line]
     return " | ".join(kept[-TAIL_LINES:])
 
@@ -88,7 +89,7 @@ def stderr_tail(text: str) -> str:
 DEPRECATION = re.compile(r"^Using \"[A-Z_]+\" environment variable\. This is deprecated")
 
 
-def stdout_error(text: str) -> str:
+def stdout_error(text: str, params: Sequence[object] = ()) -> str:
     """The error wrangler's `--json` mode prints on stdout (`{"error": {"text", "notes"}}`), joined by ` | `; empty when stdout holds none.
 
     A failed `d1 execute --json` writes its cause there, so a stderr holding only the CF_EMAIL deprecation notice hid it (2026-11-12, `proof signer --bench`)."""
@@ -101,28 +102,36 @@ def stdout_error(text: str) -> str:
         return ""
     parts = [str(err.get("text") or "")]
     parts += [str(n.get("text") or "") for n in err.get("notes") or [] if isinstance(n, dict)]
-    return " | ".join(p[:TAIL_WIDTH] for p in parts if p)
+    return " | ".join(mask_values(p, params)[:TAIL_WIDTH] for p in parts if p)
 
 
-def failure_tail(stdout: str, stderr: str) -> str:
-    """wrangler's stated cause: the `--json` stdout error then the stderr tail without the CF_EMAIL deprecation line, joined by ` | `; empty when neither holds one."""
+def failure_tail(stdout: str, stderr: str, params: Sequence[object] = ()) -> str:
+    """wrangler's stated cause: the `--json` stdout error then the stderr tail without the CF_EMAIL deprecation line, joined by ` | `, the values in `params` masked; empty when neither holds one."""
     kept = "\n".join(
         line for line in stderr.splitlines() if not DEPRECATION.match(ANSI.sub("", line).strip())
     )
-    return " | ".join(t for t in (stdout_error(stdout), stderr_tail(kept)) if t)
+    return " | ".join(t for t in (stdout_error(stdout, params), stderr_tail(kept, params)) if t)
+
+
+MASK_RAW_MIN = 6
 
 
 def mask_values(text: str, params: Sequence[object]) -> str:
-    """`text` with every string value in `params` replaced by `<value>`, as written raw or with its single quotes doubled."""
+    """`text` with every string value in `params` replaced by `<value>`.
+
+    A value echoed as a SQL literal (quoted, its single quotes doubled) is always masked. The bare forms (as written, or with the quotes doubled) are masked only for a value of `MASK_RAW_MIN` characters or more, so a short or common bound value (`s`, `companies`) does not rewrite unrelated words of wrangler's cause."""
     for value in params:
         if isinstance(value, str) and value:
-            for form in (value.replace("'", "''"), value):
-                text = text.replace(form, "<value>")
+            doubled = value.replace("'", "''")
+            text = text.replace("'%s'" % doubled, "<value>")
+            if len(value) >= MASK_RAW_MIN:
+                for form in (doubled, value):
+                    text = text.replace(form, "<value>")
     return text
 
 
 def _failure(what: str, done: Completed, params: Sequence[object] = ()) -> ControlDbError:
-    tail = mask_values(failure_tail(done.stdout, done.stderr), params)
+    tail = failure_tail(done.stdout, done.stderr, params)
     return ControlDbError("%s exited %d%s" % (what, done.rc, ": " + tail if tail else ""))
 
 
@@ -137,9 +146,9 @@ def require_token(environ: Mapping[str, str] | None = None) -> None:
 
 
 def name_unique_inline(database: str, *, runner: Runner) -> bool:
-    """True when the stored `companies` definition still carries the inline UNIQUE on `name` (the pre-rebuild form)."""
+    """True when the stored `companies` definition still carries the inline UNIQUE on the `name` column (the pre-rebuild form); a UNIQUE on any other column does not count."""
     rows = query(database, TABLE_SQL_PROBE, [], runner=runner)
-    return bool(rows) and "UNIQUE" in str(rows[0].get("sql") or "").upper()
+    return bool(rows) and bool(NAME_UNIQUE.search(str(rows[0].get("sql") or "")))
 
 
 def apply_name_rebuild(database: str, *, runner: Runner) -> None:

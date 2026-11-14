@@ -307,6 +307,47 @@ def test_a_failed_query_masks_the_values_it_bound_when_wrangler_echoes_the_sql()
     assert "syntax error" in str(err.value)
 
 
+def test_a_bound_value_straddling_the_line_cut_is_masked_before_the_cut():
+    """Review 11150eee.1: the mask runs on the whole line, then the line is cut, so no prefix of a value survives."""
+    value = "acme'corp"
+    echoed = "x" * (control_db.TAIL_WIDTH - 4) + value.replace("'", "''")
+    run = _failing('near "%s": syntax error' % echoed)
+    with pytest.raises(control_db.ControlDbError) as err:
+        control_db.query("control-eu", "SELECT 1 WHERE name = ?", [value], runner=run)
+    assert "acme" not in str(err.value)
+    assert "'corp" not in str(err.value)
+
+
+def test_the_bare_raw_form_of_a_long_bound_value_is_masked_too():
+    """Review 11150eee.3: a value echoed bare (its quote not doubled) is masked by the raw form."""
+    run = _failing("bad value acme'corp in the statement")
+    with pytest.raises(control_db.ControlDbError) as err:
+        control_db.query("control-eu", "SELECT 1 WHERE name = ?", ["acme'corp"], runner=run)
+    assert "acme" not in str(err.value)
+    assert "bad value <value> in the statement" in str(err.value)
+
+
+def test_a_short_bound_value_does_not_rewrite_ordinary_words():
+    """Review 11150eee.2: a one-letter value masks only its quoted literal, never the letters inside words."""
+    run = _failing("no such table: companies near 's'")
+    with pytest.raises(control_db.ControlDbError) as err:
+        control_db.query("control-eu", "SELECT 1 WHERE name = ?", ["s"], runner=run)
+    assert "no such table: companies near <value>" in str(err.value)
+
+
+def test_a_unique_on_another_column_is_not_the_inline_name_unique():
+    """Review cff65af6.2: only a UNIQUE on `name` selects the rebuild."""
+    sql = "CREATE TABLE companies (id TEXT PRIMARY KEY, name TEXT NOT NULL, slug TEXT UNIQUE)"
+
+    def runner(argv, *, cwd=None):
+        del argv, cwd
+        return control_db.Completed(0, json.dumps([{"results": [{"sql": sql}]}]), "")
+
+    assert not control_db.name_unique_inline("control-eu", runner=runner)
+    sql = "CREATE TABLE companies (id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE, slug TEXT)"
+    assert control_db.name_unique_inline("control-eu", runner=runner)
+
+
 def test_a_failed_query_leaves_a_cause_that_quotes_no_bound_value_alone():
     """THE CONTROL: the masking touches only what was bound."""
     run = _failing("no such table: companies")
@@ -476,6 +517,9 @@ def test_a_removed_name_can_be_added_again_but_a_live_duplicate_is_refused():
     found = reg.find("gone-co")
     assert found is not None
     assert found["id"] == "cccc3"
+    # The removed row keeps its name: the full read (what `list --all` shows) holds both.
+    held = [(r["id"], r["state"]) for r in reg.companies() if r["name"] == "gone-co"]
+    assert sorted(held) == [("cbbb2", "removed"), ("cccc3", "onboarding")]
 
 
 def test_the_migration_alone_creates_the_partial_unique_index():
