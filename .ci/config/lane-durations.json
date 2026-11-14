@@ -1270,6 +1270,13 @@
           "why": "19 needs the VMs 18 brings up (19-rustfs-operations.test.ts header)"
         }
       ],
+      "onLeg": [
+        {
+          "unit": "e2e-workers:02-machine-setup.test.ts",
+          "leg": 2,
+          "why": "the fresh-install test: ct-tests.yml's `shard: 2` include sets stock-image on leg 2 of every distro, so only leg 2 boots the stock image and runs a full renet setup"
+        }
+      ],
       "notOnLeg": [
         {
           "unit": "e2e-workers:06-daemon-operations.test.ts",

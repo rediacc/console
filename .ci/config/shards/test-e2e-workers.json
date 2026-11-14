@@ -1,7 +1,7 @@
 {
   "lane": "test-e2e-workers",
   "of": 9,
-  "generatedAt": "2026-11-14T13:15:16.006Z",
+  "generatedAt": "2026-11-14T13:44:03.318Z",
   "legs": [
     {
       "index": 1,
@@ -12,9 +12,9 @@
     {
       "index": 2,
       "ids": [
-        "e2e-workers:04-repository-lifecycle.test.ts",
-        "e2e-workers:11-multi-machine.test.ts",
-        "e2e-workers:21-local-executor.test.ts"
+        "e2e-workers:02-machine-setup.test.ts",
+        "e2e-workers:14-vault-builder.test.ts",
+        "e2e-workers:17-repo-branching.test.ts"
       ]
     },
     {
@@ -30,23 +30,23 @@
       "index": 4,
       "ids": [
         "e2e-workers:03-datastore-lifecycle.test.ts",
-        "e2e-workers:17-repo-branching.test.ts"
+        "e2e-workers:11-multi-machine.test.ts",
+        "e2e-workers:13-postgres-fork-isolation.test.ts#part3"
       ]
     },
     {
       "index": 5,
       "ids": [
-        "e2e-workers:13-postgres-fork-isolation.test.ts#part2",
-        "e2e-workers:14-vault-builder.test.ts",
+        "e2e-workers:04-repository-lifecycle.test.ts",
         "e2e-workers:28-dockerd-privilege-gate.test.ts"
       ]
     },
     {
       "index": 6,
       "ids": [
-        "e2e-workers:02-machine-setup.test.ts",
         "e2e-workers:10-backup-checkpoint.test.ts",
-        "e2e-workers:13-postgres-fork-isolation.test.ts#part3"
+        "e2e-workers:13-postgres-fork-isolation.test.ts#part2",
+        "e2e-workers:21-local-executor.test.ts"
       ]
     },
     {

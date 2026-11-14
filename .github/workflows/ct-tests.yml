@@ -416,7 +416,10 @@ jobs:
             cli-suite: ''
           # Fresh-install coverage (PLAN-ci-prebaked-vm-images 2c): shard 2 of
           # every distro boots the STOCK image on every run and so still runs a
-          # full `renet setup`. This entry names only
+          # full `renet setup`; it holds 02-machine-setup, pinned there by the
+          # onLeg rule in .ci/config/lane-durations.json's rebalanceConstraints,
+          # so a rebalance cannot move the fresh-install test off the stock
+          # image. This entry names only
           # `shard`, so GitHub merges `stock-image` onto the five shard-2 legs.
           - shard: 2
             stock-image: '1'
