@@ -726,13 +726,15 @@ def lane_display_patterns(
 
 
 def _without_yaml_comment(line: str) -> str:
-    """`line` without a trailing YAML comment: a `#` at the start or preceded by whitespace, outside single and double quotes. A quote opens a span only at the start of a token (the line start or after whitespace), so an apostrophe inside a plain word (`it's`) opens none."""
+    """`line` without a trailing YAML comment: a `#` at the start or preceded by whitespace, outside single and double quotes. A quote opens a span only at the start of a token (the line start, after whitespace, or after a flow indicator `[`, `{` or `,`), so an apostrophe inside a plain word (`it's`) opens none."""
     quote = ""
     for index, char in enumerate(line):
         if quote:
             if char == quote:
                 quote = ""
-        elif char in "'\"" and (index == 0 or line[index - 1].isspace()):
+        elif char in "'\"" and (
+            index == 0 or line[index - 1].isspace() or line[index - 1] in "[{,"
+        ):
             quote = char
         elif char == "#" and (index == 0 or line[index - 1].isspace()):
             return line[:index]

@@ -4089,9 +4089,18 @@ def test_lanes_passing_also_keeps_a_flag_before_a_comment_and_a_quoted_hash(tmp_
             "before": ("A", ["- run: r --also x # why"]),
             "quoted": ("B", ["- run: r 'a # b' --also x"]),
             "glued": ("C", ["- run: r a#b --also x"]),
+            # 2c7b1a1f.1: a quote right after a flow indicator opens a span, so its ` #` hides nothing.
+            "flow": ("D", ['- run: ["r # x --also", "y"]']),
+            "flow-map": ("E", ["- run: {a: 'r # --also'}"]),
         },
     )
-    assert br.lanes_passing_also(tmp_path) == {"before": True, "quoted": True, "glued": True}
+    assert br.lanes_passing_also(tmp_path) == {
+        "before": True,
+        "quoted": True,
+        "glued": True,
+        "flow": True,
+        "flow-map": True,
+    }
 
 
 def test_drop_stale_leg_extras_keeps_a_lane_whose_job_the_workflow_does_not_name():
