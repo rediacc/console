@@ -10,7 +10,7 @@ Deliberate differences from the twin (Rule T), each with a test that fails on th
   4. UNKNOWN SCENARIO NAMES ARE REFUSED UP FRONT. The twin ran the scenarios before the bad name and only then exited 2. The usage text also promised `up-to-date`, `force`, `stage-apply` and `concurrent`, which never existed; it lists the seven real ones.
   5. `reinstall` RAN `install.sh` WITH THE HOST'S XDG_* VARIABLES, unlike `fresh_install`. A runner with `XDG_DATA_HOME` set would migrate the wrong directory. Both paths now share one environment.
   6. COLOUR ONLY ON A TTY: the twin printed escape sequences into captured logs.
-  7. A SCENARIO THAT NEVER REACHED THE FIXTURE PASSED. rdc reads its releases URL only from the config install.sh writes, so a lost config sent every `rdc update` to production and the scenarios passed against it. `run_rdc_fetching` fails a fetching command that left the fixture's request count unchanged.
+  7. A SCENARIO THAT NEVER REACHED THE FIXTURE PASSED. The CLI takes its releases URL only from the config install.sh writes, so a lost config sent every `rdc update` to production and the scenarios passed against it. `run_rdc_fetching` fails a fetching command that left the fixture's request count unchanged.
 """
 
 import dataclasses
