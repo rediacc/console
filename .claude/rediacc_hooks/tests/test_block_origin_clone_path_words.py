@@ -305,6 +305,8 @@ PATHY_TABLE = 'SPELLABLE = ("clone", ".", "fetch", "pull")\n'
         # Review 2e01f0d2.1: a `**` expansion on a builtin no keyword makes call code, and on `dict`, hands the table nothing.
         PATHY_TABLE + "opts = {}\nn = len(SPELLABLE, **opts)",
         PATHY_TABLE + "opts = {}\nprint(dict(**opts), len(SPELLABLE))",
+        # Control for 2a494086.1: a one-argument `type` only reads the table's type.
+        PATHY_TABLE + "print(type(SPELLABLE))",
     ],
 )
 def test_a_verb_table_only_a_pure_builtin_takes_is_data(cwd, body):
@@ -339,6 +341,9 @@ def test_a_verb_table_a_pure_builtin_takes_in_a_script_by_path_is_data(cwd, tmp_
         + "class C(type):\n    def __instancecheck__(cls, o):\n        run_git(o)\nisinstance(ARGV, C)",
         NAMED_ARGV + "print(ARGV, file=writer)",
         NAMED_ARGV + 'print(ARGV, **{"file": writer})',
+        # Review 2a494086.1: a three-argument `type` creates a class, and the bases' `__init_subclass__` takes every keyword.
+        NAMED_ARGV + 'type("C", (Base,), {}, **{"k": ARGV})',
+        NAMED_ARGV + 'type("C", (Base,), {"argv": ARGV})',
     ],
 )
 def test_a_named_clone_argv_reaching_a_call_through_a_builtin_is_refused(cwd, body):

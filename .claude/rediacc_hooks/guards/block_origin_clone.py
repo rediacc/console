@@ -599,6 +599,10 @@ def _handed_sequences(tree):
             return "key" in keys or None in keys
         if func.id == "print":
             return "file" in keys or None in keys
+        if func.id == "type":
+            # `type(x)` reads a type; `type(name, bases, ns, **kw)` creates a class, which runs the bases'
+            # `__init_subclass__` (handed every keyword) and the metaclass: program code (review 2a494086.1).
+            return len(call.args) > 1 or bool(call.keywords)
         return False
 
     for node in ast.walk(tree):
