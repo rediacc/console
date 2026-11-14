@@ -283,15 +283,16 @@ export interface PriorReceipt {
   gates: Record<string, PriorGate>;
 }
 
-/** Which selected gates keep the prior verdict and which run. A carried `fail` stays `fail`. */
+/** Which selected gates keep the prior verdict and which run. Only an `ok` carries: a prior `fail` at unchanged inputs re-runs and is named in `rejudged`, because an environment-caused red (a killed npm, a starved gate) must not outlive its cause, and a real red reproduces. */
 export function planCarry(
   prior: PriorReceipt | null,
   current: Map<string, GateHash>,
   selected: string[],
   salt: string
-): { carry: Map<string, PriorGate>; run: string[] } {
+): { carry: Map<string, PriorGate>; run: string[]; rejudged: string[] } {
   const carry = new Map<string, PriorGate>();
   const run: string[] = [];
+  const rejudged: string[] = [];
   const usable =
     prior !== null &&
     prior.schema === SCHEMA &&
@@ -307,7 +308,7 @@ export function planCarry(
       cur !== undefined &&
       cur.inputHash !== null &&
       pg.inputHash === cur.inputHash &&
-      (pg.verdict === 'ok' || pg.verdict === 'fail')
+      pg.verdict === 'ok'
     ) {
       carry.set(id, {
         ...pg,
@@ -319,9 +320,11 @@ export function planCarry(
       });
     } else {
       run.push(id);
+      if (usable && pg?.verdict === 'fail' && cur?.inputHash != null && pg.inputHash === cur.inputHash)
+        rejudged.push(id);
     }
   }
-  return { carry, run };
+  return { carry, run, rejudged };
 }
 
 function must(cond: boolean, message: string): void {
@@ -502,7 +505,14 @@ export function inputHashSelftest(tmpDir: string): void {
       'a changed hash and a null hash re-run'
     );
     const failPlan = planCarry(mkPrior('fail'), h3, sel, salt);
-    must(failPlan.carry.get('g:src')?.verdict === 'fail', 'an equal-hash fail carries as fail');
+    must(
+      !failPlan.carry.has('g:src') && failPlan.run.includes('g:src'),
+      'an equal-hash fail re-runs, never carries'
+    );
+    must(
+      failPlan.rejudged.join() === 'g:src' && okPlan.rejudged.length === 0,
+      `rejudged names the equal-hash fail and nothing for an ok prior, got ${failPlan.rejudged.join()} / ${okPlan.rejudged.join()}`
+    );
     const blocked = planCarry(mkPrior('blocked'), h3, sel, salt);
     must(!blocked.carry.has('g:src'), 'a blocked verdict never carries');
     const saltPlan = planCarry(mkPrior('ok', { saltHash: 'different' }), h3, sel, salt);

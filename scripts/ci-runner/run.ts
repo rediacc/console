@@ -3461,7 +3461,7 @@ interface IncrementalInput {
 }
 
 /**
- * The carry decision, pure. Only a disposable clone carries (the tree is then the bytes the gates read); anywhere else every selected gate runs. Only a green carries: a gate whose prior verdict was anything but `ok` runs again whatever its input hash, because a red can come from outside the tree (an environment that killed the gate, a timeout) and a carried red would stay red until a full `--no-carry` run.
+ * The carry decision, pure. Only a disposable clone carries (the tree is then the bytes the gates read); anywhere else every selected gate runs. Inside a clone `planCarry` (input-hash.ts) decides, and only a green carries there: a red at unchanged inputs re-runs and comes back in `rejudged`.
  */
 function decideCarry(input: {
   disposable: boolean;
@@ -3471,10 +3471,7 @@ function decideCarry(input: {
   salt: string;
 }): { carry: Map<string, PriorGate>; run: string[]; rejudged: string[] } {
   if (!input.disposable) return { carry: new Map(), run: [...input.selected], rejudged: [] };
-  const planned = planCarry(input.prior, input.hashes, input.selected, input.salt);
-  const carry = new Map([...planned.carry].filter(([, pg]) => pg.verdict === 'ok'));
-  const rejudged = [...planned.carry.keys()].filter((id) => !carry.has(id));
-  return { carry, run: input.selected.filter((id) => !carry.has(id)), rejudged };
+  return planCarry(input.prior, input.hashes, input.selected, input.salt);
 }
 
 /** Hashes every gate at the judged tree, then decides which selected gates keep the prior verdict. */
