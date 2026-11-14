@@ -1,3 +1,5 @@
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { BAKED_IN_REGIONS } from '@rediacc/shared/regions';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -15,6 +17,7 @@ import {
   regionForCountry,
   regionForTimeZone,
 } from '../RegionPickerModal';
+import { REGION_META } from '../region-picker/regionStore';
 
 const regions: Region[] = BAKED_IN_REGIONS;
 
@@ -235,5 +238,21 @@ describe('LookupPrivacyNote', () => {
     const single = 'Only the domain is looked up.';
     const html = renderToStaticMarkup(<LookupPrivacyNote text={single} lang="en" />);
     expect(html).toBe(`<p class="region-picker-footer-note">${single}</p>`);
+  });
+});
+
+describe('REGION_META', () => {
+  it('does not imply a country for the Asia Pacific card', () => {
+    expect(REGION_META.asia).toEqual({
+      flagSrc: '/assets/images/flags/apac.svg',
+      flagAlt: 'Globe',
+      location: 'Asia Pacific',
+    });
+  });
+
+  it('points every card at a flag file that exists', () => {
+    for (const meta of Object.values(REGION_META)) {
+      expect(existsSync(join(__dirname, '../../../public', meta?.flagSrc ?? ''))).toBe(true);
+    }
   });
 });

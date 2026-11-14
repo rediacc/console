@@ -33,7 +33,7 @@ These data types are stored and processed in the chosen region, except that Asia
 - **Account data**: email, name, organization, team memberships
 - **Billing and subscription records**: plan, activations, license issuances
 - **Encrypted configuration blobs**: zero-knowledge encrypted, client-side. The server cannot decrypt them.
-- **Transactional emails**: password resets, magic links, notifications. Sent from a regional email endpoint.
+- **Transactional emails**: password resets, magic links, notifications. Sent from a regional email endpoint, except Asia Pacific, which uses the EU endpoint.
 
 ## What Is Global
 

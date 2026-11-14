@@ -74,7 +74,7 @@ All keys are generated on the machine and written only to the repository's `secr
 rdc server backup accounts.example.com --out elite-recovery.env
 ```
 
-`--out` writes the file with mode 0600; without it, the bundle goes to stdout. `--bws-project <id>` on the install also copies the keys to a Bitwarden Secrets Manager project, and `--rotate` replaces a stored value that differs. Without `--bws-project`, the keys leave the server only in the recovery bundle the install prints and in the file `rdc server backup --out` writes.
+`--out` writes the file with mode 0600; without it, the bundle goes to stdout. `--bws-project <id>` on the install also copies the keys to a Bitwarden Secrets Manager project, and `--rotate` replaces a stored value that differs. Without `--bws-project`, the keys leave the server only in the recovery bundle the install prints and in the one `rdc server backup` produces, in the `--out` file or on stdout.
 
 ### Status
 
