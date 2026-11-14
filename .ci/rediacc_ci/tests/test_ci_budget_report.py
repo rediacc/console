@@ -3793,3 +3793,93 @@ def test_collect_variant_costs_stamps_each_leg_with_its_run_and_skips_a_log_with
     assert legs == {"test-e2e-workers": 1}
     assert runs == {"test-e2e-workers": 1}
     assert [r["run"] for r in seen["test-e2e-workers"]] == [1]
+
+
+def test_display_name_pattern_accepts_any_leg_count_after_a_template():
+    pattern = br._display_name_pattern(
+        "Tests + Infra / E2E Workers (${{ matrix.os-image }}, ${{ matrix.shard }}/9)", False
+    )
+    assert pattern.match("Tests + Infra / E2E Workers (ubuntu-24.04, 3/8)")
+    assert pattern.match("Tests + Infra / E2E Workers (ubuntu-24.04, 3/9)")
+    assert not pattern.match("Tests + Infra / E2E Workers (ubuntu-24.04, 3/x)")
+
+
+def _collect_with_fixed(tmp_path, monkeypatch, fixed_by_run):
+    name = "Tests + Infra / E2E Workers (ubuntu-24.04, 1/8)"
+    jobs = [
+        [_job(name, "2026-09-28T13:53:34Z", "2026-09-28T14:07:34Z", job_id=100 + i)]
+        for i in range(len(fixed_by_run))
+    ]
+    by_id = {100 + i: f for i, f in enumerate(fixed_by_run)}
+    monkeypatch.setattr(
+        br,
+        "e2e_variant_measurement",
+        lambda job, _text, _ids, _titles: {
+            "variant": "ubuntu-24.04",
+            "leg": 1,
+            "fixed_minutes": by_id[job["id"]],
+            "extra_minutes": None,
+            "units": {},
+        },
+    )
+    pats = {"test-e2e-workers": re.compile(r"^Tests \+ Infra / E2E Workers \(.+?, .+?/\d+\)$")}
+    variant_runs: dict[str, int] = {}
+    br.collect_variant_costs(
+        "o/r",
+        jobs,
+        pats,
+        tmp_path,
+        bucket_titles={},
+        fetch_log=lambda _repo, _job_id: "x\n",
+        cache_dir=tmp_path / "cache",
+        variant_runs=variant_runs,
+    )
+    return variant_runs
+
+
+def test_a_variant_left_with_two_runs_after_the_outlier_drop_counts_two(tmp_path, monkeypatch):
+    # 3 runs, one 3x slower than the others: the price comes from 2 runs, below MIN_VARIANT_RUNS.
+    counted = _collect_with_fixed(tmp_path, monkeypatch, [5.0, 5.2, 15.0])
+    assert counted == {"test-e2e-workers/ubuntu-24.04": 2}
+    assert counted["test-e2e-workers/ubuntu-24.04"] < br.MIN_VARIANT_RUNS
+
+
+def test_a_variant_left_with_three_runs_after_the_outlier_drop_counts_three(tmp_path, monkeypatch):
+    counted = _collect_with_fixed(tmp_path, monkeypatch, [5.0, 5.2, 5.1, 15.0])
+    assert counted == {"test-e2e-workers/ubuntu-24.04": 3}
+
+
+def test_unmapped_rows_stay_out_of_the_outlier_judgement_and_are_kept():
+    rows = _fixed_rows({1: [5.0, 5.1], 2: [5.2, 5.3], 3: [5.1, 5.0]})
+    unmapped = _fixed_rows({br.UNMAPPED_RUN: [30.0, 31.0, 32.0]})
+    # Pooled as one pseudo-run, the 30+ rows would be judged an outlier run and dropped; they are not judged.
+    assert br._without_slow_runs(rows + unmapped) == rows + unmapped
+    # And they do not hide a real outlier run among the mapped ones.
+    slow = _fixed_rows({1: [5.0], 2: [5.1], 3: [15.0]})
+    assert br._without_slow_runs(slow + unmapped) == _fixed_rows({1: [5.0], 2: [5.1]}) + unmapped
+
+
+def test_prune_names_to_leg_counts_drops_legs_the_manifest_no_longer_ships(tmp_path):
+    shards = tmp_path / ".ci" / "config" / "shards"
+    shards.mkdir(parents=True)
+    (shards / "test-e2e-workers.json").write_text(
+        json.dumps({"lane": "test-e2e-workers", "of": 9, "legs": [{"index": 1, "ids": ["a"]}]})
+    )
+    pats = {
+        "test-e2e-workers": re.compile(r"^Tests \+ Infra / E2E Workers \(.+?, .+?/\d+\)$"),
+        "quality-code": re.compile(r"^Quality / Code(?: \([^)]*\))?$"),
+    }
+    table = {
+        "Tests + Infra / E2E Workers (ubuntu-24.04, 1/8)": 1.0,
+        "Tests + Infra / E2E Workers (ubuntu-24.04, 1/9)": 2.0,
+        "Tests + Infra / E2E Workers (ubuntu-24.04, 10/9)": 3.0,
+        "Quality / Code (1)": 4.0,
+        "Initialize": 5.0,
+    }
+    assert br.prune_names_to_leg_counts(table, tmp_path, pats) == {
+        "Tests + Infra / E2E Workers (ubuntu-24.04, 1/9)": 2.0,
+        "Quality / Code (1)": 4.0,
+        "Initialize": 5.0,
+    }
+    # No manifest for the lane: nothing is judged stale.
+    assert br.prune_names_to_leg_counts(table, tmp_path / "none", pats) == table

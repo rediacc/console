@@ -666,6 +666,7 @@ def critical_path(graph: dict[str, set[str]], jobs: list[dict[str, Any]]) -> lis
 # T3.2: mapping a LANE (a job's YAML key, e.g. "quality-pytest") to the regex that matches its REAL Actions API display name, and computing each lane's fixed setup cost.
 
 _TEMPLATE_RE = re.compile(r"\$\{\{.*?\}\}")
+_LEG_COUNT_RE = re.compile(r"/\d+")
 
 
 def _display_name_pattern(name: str, has_matrix: bool) -> re.Pattern[str]:
@@ -674,7 +675,14 @@ def _display_name_pattern(name: str, has_matrix: bool) -> re.Pattern[str]:
     A `${{ ... }}` template segment becomes a non-greedy wildcard: the workflow names the SHAPE, the API fills in the real matrix values. A job with NO template but a real `strategy: matrix:` (`has_matrix`) instead gets an OPTIONAL `" (<anything>)"` tail, because that is what the Actions API auto-appends when a matrixed job's name does not already vary per combination -- see `_STRATEGY_RE`'s own comment for the measured example. A job with neither matches its name VERBATIM, so an unsharded lane like `quality-content` is never accidentally satisfied by a same-prefixed sharded one.
     """
     if _TEMPLATE_RE.search(name):
-        pattern = ".+?".join(re.escape(part) for part in _TEMPLATE_RE.split(name))
+        parts = _TEMPLATE_RE.split(name)
+        # A `/<n>` right after a template is the leg COUNT the workflow hard-codes (`${{ matrix.shard }}/9`). It is not part of the shape: runs from before a leg-count change carry the old n, and a pattern pinned to the current n prices no leg until runs with the new one exist (the e2e lane went /8 -> /9 and the stock refresh priced none of it).
+        pattern = ".+?".join(
+            (r"/\d+" + re.escape(part[len(_LEG_COUNT_RE.match(part).group(0)) :]))
+            if i and _LEG_COUNT_RE.match(part)
+            else re.escape(part)
+            for i, part in enumerate(parts)
+        )
     else:
         pattern = re.escape(name)
         if has_matrix:
@@ -1382,12 +1390,20 @@ def ops_variant_measurement(job: dict[str, Any], log_text: str) -> dict[str, Any
     }
 
 
+# The `run` stamp of a row whose job is not in `run_of`: it belongs to no sampled run.
+UNMAPPED_RUN = -1
+
+
 def _without_slow_runs(rows: Sequence[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
-    """`rows` minus every leg of a run whose median fixed cost is over `VARIANT_OUTLIER_RUN_FACTOR` times the median of the other runs' medians (see that constant). Rows without a `run` key, or fewer than `MIN_VARIANT_RUNS` runs, are returned whole."""
+    """`rows` minus every leg of a run whose median fixed cost is over `VARIANT_OUTLIER_RUN_FACTOR` times the median of the other runs' medians (see that constant). Rows without a `run` key, or fewer than `MIN_VARIANT_RUNS` runs, are returned whole.
+
+    A row stamped `UNMAPPED_RUN` belongs to no sampled run, so it is left out of the judgement (pooled, they would form one pseudo-run that could be called an outlier or could hide one) and is always kept."""
     by_run: dict[Any, list[float]] = {}
     for r in rows:
         if r.get("run") is None:
             return list(rows)
+        if r["run"] == UNMAPPED_RUN:
+            continue
         by_run.setdefault(r["run"], []).append(float(r["fixed_minutes"]))
     if len(by_run) < MIN_VARIANT_RUNS:
         return list(rows)
@@ -1547,12 +1563,19 @@ def collect_variant_costs(
         if row is None:
             unpriced += 1
             continue
-        row["run"] = run_of.get(id(job), -1)
+        row["run"] = run_of.get(id(job), UNMAPPED_RUN)
         measurements.setdefault(lane, []).append(row)
-        priced_runs.setdefault(lane, set()).add(run_of.get(id(job), -1))
-        priced_variant_runs.setdefault("%s/%s" % (lane, row["variant"]), set()).add(
-            run_of.get(id(job), -1)
-        )
+    # The run evidence is counted over the rows the price is drawn from: a run `_without_slow_runs` drops no longer backs the figure, so a variant left with fewer than MIN_VARIANT_RUNS runs after the drop is a thin sample. An unmapped row backs no run.
+    for lane, lane_rows in measurements.items():
+        by_variant: dict[str, list[Mapping[str, Any]]] = {}
+        for row in lane_rows:
+            by_variant.setdefault(row["variant"], []).append(row)
+            if row["run"] != UNMAPPED_RUN:
+                priced_runs.setdefault(lane, set()).add(row["run"])
+        for variant, vrows in by_variant.items():
+            priced_variant_runs[f"{lane}/{variant}"] = {
+                r["run"] for r in _without_slow_runs(vrows) if r["run"] != UNMAPPED_RUN
+            }
     if runs is not None:
         runs.update({lane: len(indexes) for lane, indexes in priced_runs.items()})
     if variant_runs is not None:
@@ -2372,6 +2395,23 @@ def refreshed_on_evidence(
     return out, sorted(kept)
 
 
+def prune_names_to_leg_counts(
+    table: Mapping[str, Any], root: Path, patterns: Mapping[str, re.Pattern[str]]
+) -> dict[str, Any]:
+    """`table` (display name -> value) minus every leg name whose `i/n` the lane's committed shard manifest no longer ships: `n` other than its `of`, or `i` past it. The same reasoning as `prune_units_to_manifests`: the merge keeps a name this sample did not measure, so after a leg-count change (e2e /8 -> /9) the old names stay forever beside the new ones and describe legs that no longer exist. A name that matches no lane pattern, carries no `i/n`, or belongs to a lane with no readable manifest is kept."""
+    today = today_leg_hashes(root, patterns)
+    kept: dict[str, Any] = {}
+    for name, value in table.items():
+        lane = next((ln for ln, pat in patterns.items() if pat.match(name)), None)
+        leg = _LEG_INDEX_RE.search(name)
+        if lane in today and leg is not None and leg.group(2) is not None:
+            of, _legs = today[lane]
+            if of is not None and (int(leg.group(2)) != of or int(leg.group(1)) > of):
+                continue
+        kept[name] = value
+    return kept
+
+
 def prune_units_to_manifests(units: dict[str, Any], root: Path) -> dict[str, Any]:
     """Drop a unit id its lane's committed manifest no longer names.
 
@@ -2553,6 +2593,14 @@ def refresh_lane_durations(
     updated["job_p90_minutes"], kept_on_thin["job_p90_minutes"] = refreshed_on_evidence(
         existing_p90, computed["job_p90_minutes"], p90_runs, MIN_VARIANT_RUNS
     )
+    # Leg names the current shard manifests no longer ship are dropped from both name-keyed tables (a workflow missing from this tree leaves the patterns empty, which prunes nothing).
+    try:
+        leg_patterns = lane_display_patterns(repo_root_for_pruning, workflow)
+    except OSError:
+        leg_patterns = {}
+    updated["job_p90_minutes"] = prune_names_to_leg_counts(
+        updated["job_p90_minutes"], repo_root_for_pruning, leg_patterns
+    )
     # A name kept on a thin sample keeps its plan entry too: its p90 still describes the samples that entry names.
     rewritten = [
         name
@@ -2564,6 +2612,7 @@ def refresh_lane_durations(
         rewritten,
         {n: v for n, v in (computed.get("job_p90_plans") or {}).items() if n in set(rewritten)},
     )
+    plans = prune_names_to_leg_counts(plans, repo_root_for_pruning, leg_patterns)
     if plans:
         updated["job_p90_plans"] = plans
     gate_steps, kept_on_thin["gate_step_p90_seconds"] = refreshed_on_evidence(
