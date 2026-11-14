@@ -61,7 +61,7 @@ export class OpsVMLifecycle {
     );
   }
 
-  /** renet's preflight refusals about the VM disk directory: too little room (`kvm.disk_dir_short`) or a RAM-backed filesystem (`kvm.disk_dir_tmpfs`). Both open with "Refusing to provision" and are the only lines that do (private/renet pkg/i18n/locales/en.go). */
+  /** renet's preflight refusals about the VM disk directory: too little room (`kvm.disk_dir_short`) or a RAM-backed filesystem (`kvm.disk_dir_tmpfs`). Both carry "Refusing to provision" and are the only renet lines that do (private/renet pkg/i18n/locales/en.go); the match is a substring check, since renet prefixes them with "cluster startup failed: ". */
   private isDiskSpaceRefusal(output: string): boolean {
     return output.includes('Refusing to provision');
   }

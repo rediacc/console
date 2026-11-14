@@ -46,7 +46,7 @@ describe('resetVMs reports a disk-space refusal verbatim', () => {
     expect(vmExecutor.waitForVM).not.toHaveBeenCalled();
   });
 
-  it('reports the tmpfs refusal the same way, the other line that opens with the phrase', async () => {
+  it('reports the tmpfs refusal the same way, the other line that carries the phrase', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => undefined);
     const { lifecycle, vmExecutor } = build(
       'cluster startup failed: Refusing to provision: VM disk directory /dev/shm/vms is on a RAM-backed filesystem (tmpfs/ramfs); disks there fill memory and pause the VMs.'
