@@ -1,7 +1,7 @@
 {
   "lane": "test-e2e-workers",
   "of": 9,
-  "generatedAt": "2026-11-14T13:00:12.345Z",
+  "generatedAt": "2026-11-14T13:15:16.006Z",
   "legs": [
     {
       "index": 1,
@@ -13,17 +13,15 @@
       "index": 2,
       "ids": [
         "e2e-workers:04-repository-lifecycle.test.ts",
-        "e2e-workers:10-backup-checkpoint.test.ts",
+        "e2e-workers:11-multi-machine.test.ts",
         "e2e-workers:21-local-executor.test.ts"
       ]
     },
     {
       "index": 3,
       "ids": [
-        "e2e-workers:01-system-checks.test.ts",
-        "e2e-workers:03-datastore-lifecycle.test.ts",
-        "e2e-workers:13-postgres-fork-isolation.test.ts#part1",
-        "e2e-workers:16-setup-installation-params.test.ts",
+        "e2e-workers:05-rediaccfiles-updown.test.ts",
+        "e2e-workers:06-daemon-operations.test.ts",
         "e2e-workers:18-ops-workflow.test.ts",
         "e2e-workers:19-rustfs-operations.test.ts"
       ]
@@ -31,22 +29,23 @@
     {
       "index": 4,
       "ids": [
-        "e2e-workers:17-repo-branching.test.ts",
-        "e2e-workers:29-proxy-local-executor.test.ts"
+        "e2e-workers:03-datastore-lifecycle.test.ts",
+        "e2e-workers:17-repo-branching.test.ts"
       ]
     },
     {
       "index": 5,
       "ids": [
-        "e2e-workers:02-machine-setup.test.ts",
         "e2e-workers:13-postgres-fork-isolation.test.ts#part2",
+        "e2e-workers:14-vault-builder.test.ts",
         "e2e-workers:28-dockerd-privilege-gate.test.ts"
       ]
     },
     {
       "index": 6,
       "ids": [
-        "e2e-workers:06-daemon-operations.test.ts",
+        "e2e-workers:02-machine-setup.test.ts",
+        "e2e-workers:10-backup-checkpoint.test.ts",
         "e2e-workers:13-postgres-fork-isolation.test.ts#part3"
       ]
     },
@@ -54,22 +53,23 @@
       "index": 7,
       "ids": [
         "e2e-workers:07-container-operations.test.ts",
-        "e2e-workers:25-backup-chunk-store.test.ts",
-        "e2e-workers:30-gpu-device-grants.test.ts"
+        "e2e-workers:16-setup-installation-params.test.ts",
+        "e2e-workers:29-proxy-local-executor.test.ts"
       ]
     },
     {
       "index": 8,
       "ids": [
-        "e2e-workers:11-multi-machine.test.ts",
-        "e2e-workers:15-storage-backup.test.ts"
+        "e2e-workers:01-system-checks.test.ts",
+        "e2e-workers:15-storage-backup.test.ts",
+        "e2e-workers:25-backup-chunk-store.test.ts"
       ]
     },
     {
       "index": 9,
       "ids": [
-        "e2e-workers:05-rediaccfiles-updown.test.ts",
-        "e2e-workers:14-vault-builder.test.ts",
+        "e2e-workers:13-postgres-fork-isolation.test.ts#part1",
+        "e2e-workers:30-gpu-device-grants.test.ts",
         "e2e-workers:32-detached-jobs.test.ts"
       ]
     }
