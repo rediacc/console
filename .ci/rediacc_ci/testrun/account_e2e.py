@@ -450,6 +450,8 @@ class Run:
             "PORT": self.api_port,
             # TEST_MODE is the only opener for the /test/* seed and email-capture routes; deployed Workers never set it.
             "TEST_MODE": "true",
+            # The Terms gate (private/account src/middleware/terms.ts, on by default) answers 403 TERMS_ACCEPTANCE_REQUIRED to every signed-in call of a user who has not accepted the Terms, and the e2e users never do; TERMS_GATE=false is honoured only under TEST_MODE, as in tests/integration/helpers/test-db.ts.
+            "TERMS_GATE": "false",
         }
         if listen_secret:
             env["STRIPE_WEBHOOK_SECRET"] = listen_secret

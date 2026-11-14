@@ -134,6 +134,8 @@ def gateway_environment(k: dict[str, str], environ: dict[str, str]) -> dict[str,
             "CONFIG_R2_ACCESS_KEY_ID": k["RUSTFS_KEY"],
             "CONFIG_R2_SECRET_ACCESS_KEY": k["RUSTFS_SECRET"],
             "TEST_MODE": "true",
+            # The drill's users never accept the Terms; the gate (on by default) would 403 their signed-in calls. Honoured only under TEST_MODE.
+            "TERMS_GATE": "false",
         }
     )
     return child
