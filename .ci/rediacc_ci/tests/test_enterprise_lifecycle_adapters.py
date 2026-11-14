@@ -1084,3 +1084,31 @@ def test_cloudflare_http_failure_withholds_the_path(monkeypatch):
         http("GET", "/accounts/x/workers/scripts/account-acme")
     assert "acme" not in str(caught.value)
     assert caught.value.__context__ is None
+
+
+def test_a_cloudflare_refusal_is_the_type_the_lifecycle_masks():
+    """Review 668a96ec.1: _ok quotes Cloudflare's own message, which can name the company. It raises CloudflareRefusalError, the one LifecycleError that lifecycle._step masks, so a refusal that reverted to a plain LifecycleError would print the company name again. CONTROL: a success answer passes through, and a non-object stays a plain LifecycleError, since it quotes nothing."""
+    with pytest.raises(lifecycle.CloudflareRefusalError, match="error codes 7003: no worker acme"):
+        la._ok(
+            {"success": False, "errors": [{"code": 7003, "message": "no worker acme"}]},
+            "the undeploy",
+        )
+    company = _company()
+    with pytest.raises(lifecycle.CloudflareRefusalError) as caught:
+        lifecycle._step(
+            "undeploy",
+            lambda _c: la._ok(
+                {
+                    "success": False,
+                    "errors": [{"code": 7003, "message": "no worker %s" % company.name}],
+                },
+                "the undeploy",
+            ),
+            company,
+        )
+    assert company.name not in str(caught.value)
+    assert "no worker <name>" in str(caught.value)
+    assert la._ok({"success": True, "result": 1}, "x") == {"success": True, "result": 1}
+    with pytest.raises(lifecycle.LifecycleError) as plain:
+        la._ok(["not", "an", "object"], "x")
+    assert type(plain.value) is lifecycle.LifecycleError
