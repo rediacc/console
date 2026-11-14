@@ -583,14 +583,15 @@ def remove(
     steps: list[str] = []
 
     def run(what: str, fn: Callable[..., Any], *args: Any) -> None:
-        refusal = ""
+        failure: tuple[type[LifecycleError], str] | None = None
         try:
             _step(what, fn, *args)
         except LifecycleError as exc:
-            # Every error of a remove step masks the company name (a Cloudflare message, or a bucket name `configs-<company>`): the operator's output carries the id only. Raised below, outside the except block, so nothing is chained.
-            refusal = control_db.mask_names(str(exc), [company.name]) or str(exc)
-        if refusal:
-            raise LifecycleError(refusal)
+            # Every error of a remove step masks the company name (a Cloudflare message, or a bucket name `configs-<company>`): the operator's output carries the id only. The error keeps its type, and is raised below, outside the except block, so nothing is chained. A failure with empty text is still a failure.
+            text = str(exc)
+            failure = (type(exc), control_db.mask_names(text, [company.name]) or text)
+        if failure is not None:
+            raise failure[0](failure[1])
         steps.append(what)
 
     run("undeploy", ctx.teardown.undeploy, company)

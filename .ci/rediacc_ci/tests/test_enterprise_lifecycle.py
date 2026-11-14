@@ -768,6 +768,30 @@ def test_a_non_cloudflare_teardown_error_that_quotes_the_company_name_is_masked_
     assert "acme" not in str(caught.value)
     assert "listing company bucket configs-<name> answered HTTP 500" in str(caught.value)
     assert caught.value.__context__ is None
+    # control: export reaches the same package message unmasked (its bucket names are printed on purpose)
+    w.bucket_keys = lambda _c, _b: (_ for _ in ()).throw(
+        lifecycle.LifecycleError("listing company bucket configs-acme answered HTTP 500")
+    )
+    with pytest.raises(lifecycle.LifecycleError, match=r"bucket configs-acme answered HTTP 500$"):
+        lifecycle.export(w.ctx, "acme")
+
+
+def test_remove_keeps_the_type_of_a_failed_step(w):
+    """Review dff3706d.2: a CloudflareRefusalError from a remove step reaches the caller as that type, masked."""
+    _exported(w)
+    w.undeploy = lambda _c: (_ for _ in ()).throw(
+        lifecycle.CloudflareRefusalError("no worker acme")
+    )
+    with pytest.raises(lifecycle.CloudflareRefusalError, match=r"^no worker <name>$"):
+        lifecycle.remove(w.ctx, "acme", delete_data=False)
+
+
+def test_remove_stops_on_a_failed_step_with_empty_text(w):
+    """Review dff3706d.1: a step that fails with no message is still a failure, so remove neither continues nor reports success."""
+    _exported(w)
+    w.undeploy = lambda _c: (_ for _ in ()).throw(lifecycle.LifecycleError(""))
+    with pytest.raises(lifecycle.LifecycleError):
+        lifecycle.remove(w.ctx, "acme", delete_data=False)
 
 
 def test_a_masked_refusal_chains_no_unmasked_exception(w):

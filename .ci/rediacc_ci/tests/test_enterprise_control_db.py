@@ -344,6 +344,9 @@ def test_a_short_bound_value_echoed_bare_is_masked_as_a_whole_token():
         control_db.query("control-eu", "SELECT 1 WHERE name = ?", ["ab"], runner=run)
     # control: the same letters inside `about` stay
     assert "no row for <value> in table companies, about <value>" in str(err.value)
+
+
+def test_a_unique_on_another_column_is_not_the_inline_name_unique():
     """Review cff65af6.2: only a UNIQUE on `name` selects the rebuild."""
     sql = "CREATE TABLE companies (id TEXT PRIMARY KEY, name TEXT NOT NULL, slug TEXT UNIQUE)"
 
