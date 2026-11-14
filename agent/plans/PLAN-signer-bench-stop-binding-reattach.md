@@ -6,7 +6,7 @@ Priority: P1 -- each run of `enterprise proof signer --bench` (V1) or region-los
 Depends-On: no-dep -- builds on landed code
 Concurrency: parallel -- disjoint from every other plan except PLAN-enterprise-isolation.md (executing), which also owns deploy_signer.py and proof.py; one writer takes both files
 Owns: agent/plans/PLAN-signer-bench-stop-binding-reattach.md, .ci/rediacc_ci/deploy/deploy_signer.py, .ci/rediacc_ci/enterprise/proof.py, .ci/rediacc_ci/tests/test_deploy_signer_lab.py, .ci/rediacc_ci/tests/test_enterprise_proof.py
-Live-Proof: bench -- `./run.sh enterprise proof signer --bench`, then `region-loss --bench`, each rc 0, then account-smoke shows account-bench still issuing
+Live-Proof: bench -- `./run.sh enterprise proof signer --bench`, then `region-loss --bench`, each rc 0, each proof claiming bench signing is restored
 First-Seen: 2026-11-12
 
 ## Context
@@ -32,4 +32,4 @@ Stop by deleting the key secret, settle each judged state with bounded polling, 
   Accept: `PYTHONPATH=.ci .ci/cache/toolchain/uv-tools/bin/pytest .ci/rediacc_ci/tests/test_enterprise_proof.py -q` rc 0. FakeLab gains `lag` (issue calls still answering the old state after a stop or start) and `restart_breaks` (start leaves the signer refusing): lag=3 passes rc 0 for signer and region-loss while planted single-shot judging fires; restart_breaks gives rc 1 with "bench signing is restored" broken, naming `deploy_signer --target`, and start_signer called twice; lag beyond SETTLE_S breaks the stopped claim naming the 90 s wait. Control: a clean FakeLab passes rc 0 and the existing tests stay green. No test sleeps.
     (ticked) 2026-11-13T07:51:25Z by d778be9d: commit:08c6fde495bf proof settle helper + restore in both finally blocks; enterprise proof signer --bench 22/22
 - [ ] LP-bench [live] Under the deploy-bench, deploy-workers and deploy-signer profiles, `./run.sh enterprise proof signer --bench` then `region-loss --bench`, each rc 0 with no deploy_bench between them, then the receipt.
-  Accept: live-proof bench account-smoke
+  Accept: live-proof bench enterprise-proof

@@ -875,6 +875,7 @@ def test_the_committed_map_parses_with_every_named_surface() -> None:
         "account-worker",
         "proxy",
         "www",
+        "enterprise",
     }
     assert trig.SIDES == ("renet", "account")
     assert trig.MAP.phases["renet"] == {"renet", "cli-remote"}

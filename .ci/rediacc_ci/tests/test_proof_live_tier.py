@@ -122,7 +122,14 @@ def _account_row(ladder: dict[str, Any] | None = None) -> dict[str, Any]:
 
 def test_the_committed_registry_parses_with_fixed_argv_only() -> None:
     checks = LT.registry()
-    assert set(checks) == {"account-smoke", "proxy-ready", "cli-bench", "www-smoke", "renet-live"}
+    assert set(checks) == {
+        "account-smoke",
+        "proxy-ready",
+        "cli-bench",
+        "www-smoke",
+        "renet-live",
+        "enterprise-proof",
+    }
     for check in checks.values():
         for step in check.steps:
             assert step.argv[0] not in LT.REFUSED_PROGRAMS
