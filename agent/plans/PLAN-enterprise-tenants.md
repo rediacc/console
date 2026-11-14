@@ -60,7 +60,7 @@ Already ruled (ASKED:2026-11-12T10:33Z):
 - R2. acme's owner is muhammed@rediacc.com, with 10 GB storage.
 - R3. On-prem `acme.rediacc.io` runs on hostinger as an rdc repo behind the existing proxy. The install becomes a customer-grade `rdc` flow: `rdc machine setup`, then rdc deploys Elite as a repo with domain, TLS, delegation cert and first account.
 - R4. The on-prem delegation cert comes from bench.
-- R5-R8 (ASKED:2026-11-12T11:15Z, 12:2xZ). R5: the verb is `rdc server install [machine] [--domain ...]` plus `rdc server status|upgrade|backup|licence`, not `rdc onprem`. Every value has a flag, and on a TTY a missing value is asked for, like packages/cli/src/utils/region-prompt.ts:17-24 (inquirer lazy-loaded). The prompts are: machine pick-or-add (`rdc machine setup` when renet is missing), domain and store domain with a DNS wait that never writes a customer zone, TLS method, and owner email (default: the logged-in account), with the owner created in the same run. R6: the licence comes from the logged-in config through a new token-scoped route that mints the cert and the auto-renew token. With no login, or a plan without delegation, the server starts on a built-in free tier and is upgraded later with `rdc server licence`; `--cert <file>` stays for offline installs. R7: Let's Encrypt HTTP-01 is renet's default resolver when no CF token is set, Cloudflare DNS-01 is used with a token, and bring-your-own cert/key is supported. Certificates are per-host only, never a wildcard; C3 becomes unconditional. R8: keys are generated on the box and never leave it, the install prints a one-time recovery bundle, and `rdc server backup` exports it later. Together these answer Q6-Q10 and Q12, and Q5 for customers. Q11 (whether the image is public) stays open.
+- R5-R8 (ASKED:2026-11-12T11:15Z, 11:39Z). R5: the verb is `rdc server install [machine] [--domain ...]` plus `rdc server status|upgrade|backup|licence`, not `rdc onprem`. Every value has a flag, and on a TTY a missing value is asked for, like packages/cli/src/utils/region-prompt.ts:17-24 (inquirer lazy-loaded). The prompts are: machine pick-or-add (`rdc machine setup` when renet is missing), domain and store domain with a DNS wait that never writes a customer zone, TLS method, and owner email (default: the logged-in account), with the owner created in the same run. R6: the licence comes from the logged-in config through a new token-scoped route that mints the cert and the auto-renew token. With no login, or a plan without delegation, the server starts on a built-in free tier and is upgraded later with `rdc server licence`; `--cert <file>` stays for offline installs. R7: Let's Encrypt HTTP-01 is renet's default resolver when no CF token is set, Cloudflare DNS-01 is used with a token, and bring-your-own cert/key is supported. Certificates are per-host only, never a wildcard; C3 becomes unconditional. R8: keys are generated on the box and never leave it, the install prints a one-time recovery bundle, and `rdc server backup` exports it later. Together these answer Q6-Q10 and Q12, and Q5 for customers. Q11 (whether the image is public) stays open.
 
 Still open. Each has a recommended default; the short list for the operator is at the end.
 - Q1. acme is `--unlisted`? Default yes, because of the lookup finding in Context.
@@ -153,6 +153,7 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - Owns: none.
   - Accept: `./rdc.sh --config eu-bench machine status hostinger` rc 0, and the findings recorded here.
     (ticked) 2026-11-12T11:23:18Z by d778be9d: read-only survey by agent a96b35961c3384251, findings in its investigation row; machine status hostinger rc 0. DEPS-WAIVED: read-only survey that reads state and changes nothing
+    (findings, recorded 2026-11-14T17:30Z, review fa68c0af.1, copied from the Q0 investigation row of 2026-11-12T11:23Z, agent a96b35961c3384251): rediacc.cloud has no `*` record and no zone routes; Universal SSL is active and covers `*.rediacc.cloud`; `*.rediacc.io` is a wildcard DNS-only record to hostinger, so acme.rediacc.io already resolves there; gitlab.rediacc.io serves a per-host Let's Encrypt cert; hostinger runs renet 4d1c0da with 180G disk and 14.7G RAM free, and its proxy holds CF_DNS_API_TOKEN; the hostinger baseline is 13 repos; no enterprise bws project existed; the bench subscription is BUSINESS with delegationCerts and no certs yet; portal reads need a cookie session.
 
 ### Wave 1: writers, disjoint
 
@@ -237,6 +238,7 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - Accept: `./rdc.sh repo create hoprobe -m <ops-vm> --size 1G` rc 0 under the acme.rediacc.io login, with `drills.backup_elite_compose.licence_problem` empty on the issued licence.
 
 ### Wave 3: customer-grade flow, after HO1 is green and Q6-Q12 are answered
+(corrected 2026-11-14T17:30Z, review 0f12623a.1) Q11 (whether the image is public) stays open under R8, so Wave 3 waits on HO1 and on Q6-Q10 and Q12; Q11 gates nothing in it.
 
 - [x] C1 [writer] `rdc onprem install|status|upgrade|cert` in TS, porting P2's steps. Keys are generated on the box. `--cert` and `--upstream` per Q9. Customer DNS is printed and verified, never written. i18n keys in every locale.
   - Owns: packages/cli/src/commands/onprem.ts (new), packages/cli/src/services/onprem/** (new), packages/cli/src/config/command-planes.ts, packages/shared/src/cli-contract/data/i18n/*.json, packages/cli/src/commands/__tests__/onprem*.test.ts (new).
@@ -252,6 +254,7 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
       - the air-gapped flow: bundle, prerequisites (Q14), the two-trip licence, BYO TLS/CA, LAN DNS, time sync;
       - updates: CLI, renet, template VERSION, image, and air-gapped via a new bundle.
       Runs after C11.
+  (corrected 2026-11-14T17:30Z, review e005cba4.1) C2 runs after C11, as the 12:55Z correction above says, because it documents C11's air-gapped flow; the Wave 3 order moves C2 from 3b to 3c, after C11.
 - [x] C3 [writer] Only if Q7 is ruled yes: an HTTP-01 resolver when `CF_DNS_API_TOKEN` is empty.
   - Owns: private/renet/pkg/proxy/infra.go, private/renet/pkg/proxy/infra_test.go.
   - Accept: `(cd private/renet && go test ./pkg/proxy/...)` rc 0.
@@ -274,6 +277,7 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - Owns: private/account/src/routes/delegation.ts, private/account/src/routes/portal-delegation-certs.ts, private/account/src/types/api-token.ts, private/account/src/services/device-code.service.ts, packages/shared/src/subscription/types.ts, packages/shared/src/subscription/constants.ts, private/account/tests/integration/delegation-issue*.test.ts (new).
   - Accept: `(cd private/account && npx vitest run tests/integration/delegation-issue)` rc 0. The cases cover: token without the scope 403, member 403, FREE plan 402/403, same key idempotent, other key 409, and a session cookie alone rejected.
     (ticked) 2026-11-12T12:32:06Z by d778be9d: commit:22695c1cfd delegation:issue route with 2FA; account vitest 4340 rc 0
+    (corrected 2026-11-14T17:30Z, review 0e5fca4a.1) The plan gate and the FREE-plan 402/403 case above were dropped by the ruling ASKED:2026-11-12T13:07Z: every plan may self-host, and c167e0ddc9 removed the plan gates. PLAN_ALLOWS_DELEGATION_CERT does not exist in packages/shared or private/account.
 - [x] C5 [writer] The anonymous on-prem free tier: design, then build (R6).
   - Design first, as a new "Free tier (no certificate)" section in private/account/docs/runtime/on-premise-licensing.md covering quotas, abuse limits and the upgrade path.
   - Reuse PLAN-free-license and its code where possible: packages/cli/src/services/account/free-license.ts (BAKED_IN_REGIONS region pick :201-208), PLAN_LIMITS.FREE (packages/shared/src/subscription/constants.ts:35-39, 3 GB, no hosted backup), and the per-IP window in private/account/src/services/free-license.service.ts:238-292. Note that PLAN-drop-free-license-ip-prefix-hash is moving that window.
@@ -283,6 +287,7 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - Owns: private/account/docs/runtime/on-premise-licensing.md, private/account/src/services/onprem-free-tier.service.ts (new), private/account/src/routes/on-premise-status.ts, packages/shared/src/subscription/onprem-free-tier.ts (new), private/account/tests/integration/onprem-free-tier*.test.ts (new).
   - Accept: `(cd private/account && npx vitest run tests/integration/onprem-free-tier)` rc 0, `grep -c "## Free tier (no certificate)" private/account/docs/runtime/on-premise-licensing.md` prints 1, and `npm run -s check:ci-prose-style` rc 0.
     (ticked) 2026-11-12T12:32:07Z by d778be9d: commit:a3c61197b5 on-prem free tier; account vitest rc 0
+    (corrected 2026-11-14T17:30Z, review 0f12623a.3) R6 and the line above agree: with no login an ONLINE server starts on the free tier, whose repo licences come from the upstream `POST /licenses/free`; an OFFLINE server cannot reach that upstream, so with no cert it refuses and names `--cert`.
 - [x] C6 [writer] renet: per-host certificates and bring-your-own (R7).
   - A custom FQDN domain today gets `*.<baseDomain>` SANs (private/renet/pkg/router/routes.go:244-246 into wildcardTLSConfig :110-122), and certResolver is auto-added at :433-447. Instead, a router for a custom domain or an explicit Host label gets `domains: [{main: <host>}]` with no wildcard.
   - In HTTP-01 mode, renet's own base-domain auto-routes get no resolver, so no wildcard order is ever placed.
@@ -290,6 +295,7 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - Owns: private/renet/pkg/router/routes.go, private/renet/pkg/router/routes_test.go, private/renet/pkg/proxy/usercert.go (new), private/renet/pkg/proxy/usercert_test.go (new), private/renet/cmd/renet/proxy_cert.go (new), private/renet/cmd/renet/proxy_cert_test.go (new).
   - Accept: `(cd private/renet && go test ./pkg/router/... ./pkg/proxy/... ./cmd/renet/...)` rc 0, and `grep -c '"\*\." + domainBase' private/renet/pkg/router/routes.go` unchanged only on the base-domain path (a test asserts no wildcard SAN for an FQDN custom domain).
     (ticked) 2026-11-12T12:32:30Z by d778be9d: commit:012193560e renet d2d92844 per-host certs and BYO; go test pkg/router pkg/proxy pkg/i18n rc 0
+    (corrected 2026-11-14T17:30Z, review 0f12623a.4) The grep count cannot show the SAN property; the tests that do are private/renet/pkg/router/routes_test.go:18 (TestCustomFQDNGetsPerHostCert: main is the FQDN and the cert carries no SANs) and private/renet/pkg/router/routes_test.go:57 (http01_per_host).
 - [x] C7 [writer] `rdc server install|status|upgrade|backup|licence` in TS, porting P2's steps. Runs after C4 and C5 (wire shapes); supersedes C1.
   - install takes `[machine] --domain --store-domain --repo --size --owner --tls letsencrypt|cloudflare|byo --cf-token --tls-cert --tls-key --cert <file> --licence auto|free --image --yes`.
   - Interactive prompts live in utils/server-prompts.ts. They load inquirer lazily and exit with the region-prompt TTY error when not on a TTY (packages/cli/src/utils/region-prompt.ts:17-24). Machine pick-or-add reuses `machine add --ip --user` (packages/cli/src/commands/machine/register.ts:141-147), and `machine setup` runs when renet is missing.
@@ -316,6 +322,7 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - Accept: `git submodule status private/account private/renet` shows the merged C3-C6 commits, and `./rdc.sh --config eu-bench machine status hostinger` reports the released renet version.
   (corrected 2026-11-12T11:58Z) Local-route: hostinger -- the C3-C6 submodule commits ride the 1104-1 branch and land as gitlink commits here (no merge needed); the renet build reaches hostinger through `npm run release:local -- --channel edge` and then `./rdc.sh --config eu-bench machine setup hostinger`, so nothing waits on GitHub.
   (corrected 2026-11-12T12:55Z) The renet bump and release also carry C10.
+  (corrected 2026-11-14T17:30Z, review 0f12623a.2) The 11:58Z correction supersedes the header's 'after their submodule PRs merge': the C3-C6 commits land as gitlink commits on this branch, and nothing waits on a submodule merge.
 - [ ] CL2 [live] On hostinger after C7 and C8: the free tier, licence upgrade and recovery bundle.
   - Run `rdc server install hostinger --config eu-bench --repo acme-free --domain acme-free.rediacc.io --licence free --yes`, then `rdc server licence acme-free.rediacc.io`.
   - The upgrade needs a bench subscription with no active cert. Each subscription allows one (packages/shared/src/subscription/constants.ts:388), and HO1 holds the operator's. Use a second bench subscription, or revoke after HO2.
@@ -331,6 +338,7 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
 - 3b: C7 and C2, after C4 and C5 land, then C8.
 - Live: CL1, CL2, CL3 after C8. C1 is not run.
 - (corrected 2026-11-12T12:55Z) 3a += C12. 3b = C7, C9, C10 (disjoint), then C2. 3c = C11. Live: CL1, CL2, CL3, then CL4, CL5 after C8.
+- (corrected 2026-11-14T17:30Z, review e005cba4.1) C2 moves from 3b to 3c, after C11: 3b = C7, C9, C10; 3c = C11, then C2.
 - [ ] G3 [writer] Wave-3 Owns are disjoint per writer wave.
   - Owns: none.
   - Accept: `grep -c "Owns:" agent/plans/PLAN-enterprise-tenants.md` is unchanged by any 3a/3b box, and the plan-concurrency check rc 0.
@@ -376,7 +384,7 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - `rdc server upgrade <domain> [--bundle <dir>]`: fork, new image (pull, or bundle tar), template re-apply per Q19, update TAG/ELITE_IMAGE, `repo up`.
   - Owns: packages/cli/src/commands/server.ts, packages/cli/src/services/server/**, packages/cli/src/commands/machine/register.ts, packages/cli/src/commands/__tests__/server*.test.ts, packages/shared/src/cli-contract/data/i18n/*.json
   - Accept: `(cd packages/cli && npx vitest run src/commands/__tests__/server src/services/server)` rc 0 (cases: checksum tamper refused, CLI mismatch refused, offline + free refused, cert key mismatch refused, upgrade re-applies only on a newer VERSION, local-edit refusal), and `npm run check:ci-cli-contract` rc 0.
-  (corrected 2026-11-12T13:15Z) (operator rulings ASKED:2026-11-12T13:00Z and 14:2xZ) Offline licence = request/response with a long-lived certificate: the box writes a public-key request, any online machine or the portal mints the cert, it is carried back; offline certs last up to 365 days per plan, the box warns 30 days before expiry, and after expiry it soft-degrades (no new repo licences; running services keep working). Every plan may self-host (operator 2026-11-12; plan gates removed in c167e0ddc9). Offline packages are prerequisites only (C10). The lab subscription for CL4/CL5 is a dedicated bench subscription.
+  (corrected 2026-11-12T13:15Z) (operator rulings ASKED:2026-11-12T13:00Z and 13:07Z) Offline licence = request/response with a long-lived certificate: the box writes a public-key request, any online machine or the portal mints the cert, it is carried back; offline certs last up to 365 days per plan, the box warns 30 days before expiry, and after expiry it soft-degrades (no new repo licences; running services keep working). Every plan may self-host (operator 2026-11-12; plan gates removed in c167e0ddc9). Offline packages are prerequisites only (C10). The lab subscription for CL4/CL5 is a dedicated bench subscription.
 
 - [x] C12 [writer] Lab helpers: air-gap a VM and a throwaway CA.
   - `python -m rediacc_ci.onprem.airgap apply|remove|check --vm <ip>`, ops network only, refusing anything outside 192.168.111.0/24 (.ci/rediacc_ci/drills/vm_check.py:119):
@@ -388,6 +396,7 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_onprem_airgap.py` rc 0 (recorded ssh transport; rules text; refuses a non-ops IP).
   - Can run now (wave 3a).
     (ticked) 2026-11-12T13:16:44Z by d778be9d: commit:bf0bded8be airgap and testca helpers; pytest test_onprem_airgap 19 passed rc 0
+    (corrected 2026-11-14T17:30Z, review 0e5fca4a.4) 1a0a206df4 moved the helpers to .ci/rediacc_ci/lab/airgap.py and .ci/rediacc_ci/lab/testca.py (invoked as `python -m rediacc_ci.lab.airgap`), and the test to .ci/rediacc_ci/tests/test_lab_airgap.py; the box line keeps the paths it was ticked with.
 
 - [ ] CL4 [live] Air-gapped install on ops VM .12, after C8 (with C10), C11 and C12.
   - Fleet: `VM_WORKERS='11 12' VM_CEPH_NODES='' ./rdc.sh ops up` (private/renet/pkg/infra/opsconfig/config.go:699-713).

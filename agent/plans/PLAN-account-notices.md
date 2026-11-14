@@ -127,10 +127,15 @@ Facts checked 2026-11-12 by the planning agent (file:line as read on 1104-1; a w
   Local-route: vm-check, d1-migrations, deploy-bench -- the branch tree is proved on the fleet, 0084 is applied to regional clones, and the tree is deployed to bench from this checkout
   Owns: none (runs only). Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.test_d1_migrations` rc 0 naming 0084, and deploy_bench rc 0.
     (ticked) 2026-11-13T04:33:47Z by d778be9d: vm:check VERIFIED; test_d1_migrations rc=0 with 0084 on all 3 regional clones; deploy_bench rc=0 commit:ae788bf597
+    (corrected 2026-11-14T17:30Z, review 4d1486b6.2) commit:ae788bf597 is the tree X1 and X2 ran on; the commit message's X1 4c40f768 and X2 1c252d1d are the code commits that tree contains.
 - [x] X2 [lead] The bench drill on the deployed tree, with the bell checked in the bench portal.
   Local-route: deploy-bench, bench-cli -- the drill drives the bench account server and the CLI built from this tree
   Owns: none. Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.notices_drill` rc 0, printing every step with rc=0 and cleanup rc=0.
     (ticked) 2026-11-13T04:33:49Z by d778be9d: notices_drill rc=0 on bench, 12/12 steps incl. unread-count 1 (the API the bell reads; bell UI not opened); bench-only commit:ae788bf597
+    (corrected 2026-11-14T17:30Z, review 4d1486b6.1) the tick covers the drill (12/12 steps, rc 0); the bell was read through the unread-count API, not in the portal UI, so the portal check moves to the open box X2b below.
+- [ ] X2b [live] The bell in the bench portal on the deployed tree: logged in to the bench portal as the drill's account, the header bell shows the unread count the drill left, and opening it lists the notice. Split from X2 (2026-11-14T17:30Z, review 4d1486b6.1).
+  Accept: a browser-probe run against the bench portal records the bell count and the listed notice title, with a screenshot path.
+
 - [ ] LP-bench [live] A fresh bench receipt after X2, recorded and ticked through `worklist.py --live-proof`.
   Accept: live-proof bench account-smoke
 - [ ] P1 [lead] Production deploy of the account Workers in eu, us and asia through the deploy skill, only after LP-bench is VERIFIED (operator ASKED:2026-11-12T05:57Z).
