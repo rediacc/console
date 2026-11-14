@@ -126,3 +126,52 @@ def test_a_copied_source_with_no_verb_is_allowed(tmp_path):
     script = tmp_path / "y.py"
     cmd = "cp %s %s && sed -i s/a/b/ %s && python3 %s" % (source, script, script, script)
     assert _run(cmd) == (0, "")
+
+
+@pytest.mark.parametrize("extra", [" --remote", " git-fetch", " /usr/lib/git-core/git-pull"])
+def test_every_spellable_verb_counts_in_both_dashed_spellings(tmp_path, extra):
+    # Review 97b8666f.1: `--` and `git-` admit every verb in SPELLABLE, not only clone.
+    _, cmd = _unread(tmp_path)
+    rc, err = _run(cmd + extra)
+    assert rc == 2
+    assert "cannot judge" in err
+
+
+def _tracked_helper(tmp_path):
+    """A committed file holding the verb pair, in a scratch repository of its own."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    helper = repo / "helper.sh"
+    helper.write_text("git clone https://example.invalid/a.git /y\n", encoding="utf-8")
+    git = [
+        "git",
+        "-C",
+        str(repo),
+        "-c",
+        "core.hooksPath=/dev/null",
+        "-c",
+        "user.name=t",
+        "-c",
+        "user.email=t@t",
+    ]
+    for args in (["init", "-q"], ["add", "helper.sh"], ["commit", "-q", "-m", "a"]):
+        subprocess.run([*git, *args], check=True, capture_output=True)
+    return helper
+
+
+def test_a_modified_tracked_file_holding_a_verb_beside_an_unread_run_is_refused(tmp_path):
+    # Review 97b8666f.2: a tracked file changed from HEAD is read like an untracked one.
+    helper = _tracked_helper(tmp_path)
+    helper.write_text(helper.read_text(encoding="utf-8") + "echo more\n", encoding="utf-8")
+    _, cmd = _unread(tmp_path)
+    rc, err = _run("%s %s" % (cmd, helper))
+    assert rc == 2
+    assert MARK in err
+    assert "cannot judge" in err
+
+
+def test_an_unchanged_tracked_file_holding_a_verb_beside_an_unread_run_is_allowed(tmp_path):
+    # The control: the same file, tracked and unchanged from HEAD, is exempt.
+    helper = _tracked_helper(tmp_path)
+    _, cmd = _unread(tmp_path)
+    assert _run("%s %s" % (cmd, helper)) == (0, "")

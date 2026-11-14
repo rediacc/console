@@ -139,7 +139,7 @@ ARGV_GIT = re.compile(
 )
 PLAIN_NOISE = re.compile(r"[\"'\\]")
 SPELLABLE = ("clone", "fetch", "pull", "remote", "submodule")
-# A verb as a word: bounded by anything but a filename character, so `quick-clone.ts`, `ci-quick-clones/` and `clone_d1.py` are names, not verbs. `--clone` (`gh repo fork`) and `git-clone` (git's own executable) are the two dashed spellings that are verbs.
+# A verb as a word: bounded by anything but a filename character, so `quick-clone.ts`, `ci-quick-clones/` and `clone_d1.py` are names, not verbs. Two dashed spellings are verbs too, for every verb in SPELLABLE: after `--` (`gh repo fork --clone`, and so `--remote`, `--pull`) and after `git-` (git's own executables, `git-clone`, `git-fetch`, `git-pull`, `git-remote`, `git-submodule`). Only a run the hook cannot judge reads this, so the wider reading is the safe one: each `git-<verb>` is the same act as `git <verb>`, and the cost of the rest is a refusal of a script that could not be read anyway (review 97b8666f.1).
 VERB_WORD = re.compile(r"(?:(?<![\w.-])|(?<=--)|(?<=git-))(?:%s)(?![\w.-])" % "|".join(SPELLABLE))
 OUTSIDE_VERBS = frozenset(("fetch", "pull", "remote", "submodule"))
 
