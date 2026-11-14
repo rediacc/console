@@ -45,6 +45,10 @@ class LifecycleError(RuntimeError):
     """A refusal or a failed step. Messages name the step and the error type, never a secret value."""
 
 
+class CloudflareRefusalError(LifecycleError):
+    """Cloudflare answered without success; the text quotes Cloudflare's own message, which can name the company, so `_step` masks the company name in it."""
+
+
 class BucketMissingError(LifecycleError):
     """A company bucket the exporter listed does not exist (HTTP 404)."""
 
@@ -136,9 +140,19 @@ def _refuse_ci(ctx: Context) -> None:
 
 
 def _step(what: str, fn: Callable[..., Any], *args: Any) -> Any:
-    """Run one seam call; a failure keeps only its type, because its text may quote a value. Raised outside the except block so no seam exception is chained."""
+    """Run one seam call; a failure keeps only its type, because its text may quote a value. Raised outside the except block so no seam exception is chained.
+
+    A CloudflareRefusalError keeps its text, since it quotes Cloudflare's own message and error codes, but the name of every company the call was handed is masked in it: Cloudflare's message can name the company, and the operator's output carries the id only (review 668a96ec.1, for export and remove alike). Every other LifecycleError is this package's own message, which names buckets and steps on purpose, and passes unchanged."""
     try:
         return fn(*args)
+    except CloudflareRefusalError as exc:
+        names = [arg.name for arg in args if isinstance(arg, Target)]
+        if not names:
+            raise
+        masked = control_db.mask_names(str(exc), names)
+        if masked == str(exc):
+            raise
+        raise CloudflareRefusalError(masked) from None
     except LifecycleError:
         raise
     except secrets.SEAM_ERRORS as exc:
@@ -568,12 +582,7 @@ def remove(
     steps: list[str] = []
 
     def run(what: str, fn: Callable[..., Any], *args: Any) -> None:
-        try:
-            _step(what, fn, *args)
-        except LifecycleError as exc:
-            # A Cloudflare refusal quotes its own message, which can name the company; the operator's output carries the id only.
-            masked = control_db.mask_names(str(exc), [company.name])
-            raise LifecycleError(masked) from None
+        _step(what, fn, *args)
         steps.append(what)
 
     run("undeploy", ctx.teardown.undeploy, company)

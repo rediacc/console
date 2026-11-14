@@ -24,7 +24,12 @@ from typing import Any
 from rediacc_ci.core import bws_env
 from rediacc_ci.core import wrangler as wrangler_mod
 from rediacc_ci.enterprise import names, secrets
-from rediacc_ci.enterprise.lifecycle import BucketMissingError, LifecycleError, Target
+from rediacc_ci.enterprise.lifecycle import (
+    BucketMissingError,
+    CloudflareRefusalError,
+    LifecycleError,
+    Target,
+)
 from rediacc_ci.ops import cf_auth, enterprise_lookup
 from rediacc_ci.well_known import PRODUCT_DOMAIN
 
@@ -89,7 +94,7 @@ def _ok(answer: object, what: str) -> Mapping[str, Any]:
         raise LifecycleError("Cloudflare answered %s with a non-object" % what)
     if answer.get("success") is not True:
         text = _messages(answer)
-        raise LifecycleError(
+        raise CloudflareRefusalError(
             "Cloudflare refused %s (error codes %s%s)"
             % (what, _codes(answer), ": " + text if text else "")
         )

@@ -711,12 +711,40 @@ def test_a_resumed_delete_data_remove_is_not_judged_against_its_own_deletions(w)
     assert w.state("eu", ACME) == "removed"
 
 
+def test_an_export_refusal_that_quotes_the_company_name_is_masked(w):
+    """Review 668a96ec.1's sibling: export reaches the same adapters, so a Cloudflare message naming the company is masked there too. CONTROL: a message that names no company is raised as it is."""
+
+    def refused(_company, _bucket):
+        raise lifecycle.CloudflareRefusalError(
+            "Cloudflare refused it (error codes 10006: bucket of acme)"
+        )
+
+    w.bucket_keys = refused
+    with pytest.raises(lifecycle.LifecycleError) as caught:
+        lifecycle.export(w.ctx, "acme")
+    assert "acme" not in str(caught.value)
+    assert "error codes 10006: bucket of <name>" in str(caught.value)
+    w.bucket_keys = lambda _c, _b: (_ for _ in ()).throw(
+        lifecycle.CloudflareRefusalError("quota exceeded")
+    )
+    with pytest.raises(lifecycle.LifecycleError, match=r"(^|: )quota exceeded$"):
+        lifecycle.export(w.ctx, "acme")
+    # control: this package's own message names the bucket on purpose and is not masked
+    w.bucket_keys = lambda _c, _b: (_ for _ in ()).throw(
+        lifecycle.LifecycleError("bucket configs-acme is gone")
+    )
+    with pytest.raises(lifecycle.LifecycleError, match=r"(^|: )bucket configs-acme is gone$"):
+        lifecycle.export(w.ctx, "acme")
+
+
 def test_a_teardown_refusal_that_quotes_the_company_name_is_masked_in_remove(w):
     """Review 668a96ec.1: Cloudflare's own message reaches the error, and the company name in it does not."""
     _exported(w)
 
     def refused(_company):
-        raise lifecycle.LifecycleError("Cloudflare refused it (error codes 7003: no worker acme)")
+        raise lifecycle.CloudflareRefusalError(
+            "Cloudflare refused it (error codes 7003: no worker acme)"
+        )
 
     w.undeploy = refused
     with pytest.raises(lifecycle.LifecycleError) as caught:
