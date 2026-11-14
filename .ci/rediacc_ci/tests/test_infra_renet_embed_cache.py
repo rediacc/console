@@ -284,8 +284,7 @@ def test_python_and_build_sh_agree(tmp_path, mutate):
 
 # ---------------------------------------------------------------------------
 # embed_assets itself, driven against a fake `docker` on a fake assets tree.
-# Origin: the 2026-11-14 restage printed `zstd: can't stat ... -- ignored` four
-# times and still ended "Embedded assets ready" with a current receipt.
+# Origin: the 2026-11-14 restage printed `zstd: can't stat ... -- ignored` four times and still ended "Embedded assets ready" with a current receipt.
 # ---------------------------------------------------------------------------
 
 FAKE_DOCKER = """#!/bin/bash
