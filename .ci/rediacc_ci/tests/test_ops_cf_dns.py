@@ -188,6 +188,8 @@ def test_records_stops_at_total_pages():
 
     def http(_method, path, _body=None):
         seen.append(path)
+        # 0f926f33.3: a reader that ignored total_pages would keep asking; fail it fast instead of hanging.
+        assert len(seen) <= 1, "records() read past total_pages: %s" % seen
         return {
             "success": True,
             "result": [{"id": str(i), "type": "A"} for i in range(cf_dns.PAGE_SIZE)],
@@ -209,6 +211,20 @@ def test_a_short_intermediate_page_does_not_end_the_read_when_total_pages_says_m
         return {"success": True, "result": pages[page], "result_info": {"total_pages": 3}}
 
     assert [r["id"] for r in cf_dns.records(ZONE, None, http)] == ["a", "b", "c"]
+    assert len(seen) == 3
+
+
+def test_an_empty_intermediate_page_still_ends_the_read_at_total_pages():
+    """a251284d.1: total_pages bounds the read, so an empty page 2 of 3 costs three requests, not MAX_PAGES and an error."""
+    pages = {1: [{"id": "a"}], 2: [], 3: [{"id": "c"}]}
+    seen: list[str] = []
+
+    def http(_method, path, _body=None):
+        seen.append(path)
+        page = int(path.rsplit("page=", 1)[1])
+        return {"success": True, "result": pages[page], "result_info": {"total_pages": 3}}
+
+    assert [r["id"] for r in cf_dns.records(ZONE, None, http)] == ["a", "c"]
     assert len(seen) == 3
 
 

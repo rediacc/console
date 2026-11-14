@@ -819,6 +819,17 @@ def test_disable_with_pins_deletes_the_rule_and_the_next_add_writes_the_pins_bac
     assert _stored_ips(api) == [PIN4, PIN6, "198.51.100.9"]
 
 
+def test_after_disable_add_writes_the_pins_back_and_remove_refuses():
+    """a251284d.2: the module doc names `add` and `remove` after `disable`; `add` restores the pins, `remove` has no rule to edit."""
+    api = _pinned_rule_api()
+    assert _run(api, "disable") == 0
+    with pytest.raises(ba.AccessError, match="not in the allowlist"):
+        _run(api, "remove", "198.51.100.7")
+    assert api.ruleset["rules"] == []
+    assert _run(api, "add", "198.51.100.9") == 0
+    assert _stored_ips(api) == [PIN4, PIN6, "198.51.100.9"]
+
+
 def test_a_hand_deleted_pin_returns_on_the_next_add_current():
     api = _pinned_rule_api()
     api.mine()[0]["expression"] = ba.expression(HOSTS, ["198.51.100.7"])
