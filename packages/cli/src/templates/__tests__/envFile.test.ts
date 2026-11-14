@@ -20,14 +20,23 @@ const envFileEntries = (compose: Compose): { service: string; path: string; opti
     );
   });
 
-const shippedOrCreated = (files: Record<string, string>, path: string): boolean => {
-  if (path in files) return true;
+/** Body of `up() { ... }`: the templates close each function with a `}` in column 0. */
+const upBody = (rediaccfile: string): string =>
+  /^up\(\)\s*\{\n([\s\S]*?)^\}/m.exec(rediaccfile)?.[1] ?? '';
+
+/** True when a non-comment line of up() redirects into exactly `path` (not `path.bak`). */
+const createdByUp = (rediaccfile: string, path: string): boolean => {
   const escaped = path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const creator = new RegExp(`>\\s*\\.?/?${escaped}\\b`);
-  return Object.entries(files).some(
-    ([name, body]) => /^Rediaccfile$/.test(name) && creator.test(body)
-  );
+  const creator = new RegExp(`>>?\\s*["']?\\.?/?${escaped}(?![\\w.-])`);
+  return upBody(rediaccfile)
+    .split('\n')
+    .filter((line) => !/^\s*#/.test(line))
+    .some((line) => creator.test(line));
 };
+
+const shippedOrCreated = (files: Record<string, string>, path: string): boolean =>
+  path in files ||
+  Object.entries(files).some(([name, body]) => name === 'Rediaccfile' && createdByUp(body, path));
 
 describe('embedded template env_file entries', () => {
   it('single-service declares secrets.env as optional', () => {
@@ -52,5 +61,26 @@ describe('embedded template env_file entries', () => {
       }
     }
     expect(seen).toBeGreaterThan(0);
+  });
+});
+
+describe('createdByUp', () => {
+  const file = (up: string): string =>
+    `#!/bin/bash\n\nup() {\n${up}\n}\n\ndown() {\n  echo x > .env\n}\n`;
+
+  it('counts a redirect inside up()', () => {
+    expect(createdByUp(file('  cat > .env <<EOF\nA=1\nEOF'), '.env')).toBe(true);
+  });
+
+  it('ignores a comment-only mention in up()', () => {
+    expect(createdByUp(file('  # writes > .env later'), '.env')).toBe(false);
+  });
+
+  it('ignores a write in another function', () => {
+    expect(createdByUp(file('  true'), '.env')).toBe(false);
+  });
+
+  it('does not match a longer file name', () => {
+    expect(createdByUp(file('  cp a > .env.bak'), '.env')).toBe(false);
   });
 });

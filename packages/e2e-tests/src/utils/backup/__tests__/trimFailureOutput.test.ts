@@ -44,4 +44,14 @@ describe('trimFailureOutput', () => {
     expect(trimmed).toContain('chars elided');
     expect(trimmed).not.toContain(out);
   });
+
+  it.each([
+    ['ab', 0],
+    ['ab', 1],
+  ])('clamps the short output %j to maxChars %i', (out, maxChars) => {
+    const trimmed = trimFailureOutput(out, maxChars);
+    expect(trimmed).toBe(
+      `${out.slice(0, maxChars)}\n[... ${out.length - maxChars} chars elided ...]`
+    );
+  });
 });

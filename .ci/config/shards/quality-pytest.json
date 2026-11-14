@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-14T12:53:16.890Z",
+  "generatedAt": "2026-11-14T12:55:33.959Z",
   "legs": [
     {
       "index": 1,
@@ -834,6 +834,7 @@
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_retry_failed_runs.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_ci_env.py",
         "pytest:.ci/rediacc_ci/tests/test_infra_vm_bake_key.py",
+        "pytest:.ci/rediacc_ci/tests/test_install_sh_no_jq.py",
         "pytest:.ci/rediacc_ci/tests/test_onprem_template_parity.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_backup_bucket_scope_probe.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_backup_meter_replay.py",

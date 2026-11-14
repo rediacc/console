@@ -135,12 +135,16 @@ const DIAGNOSTIC_LINE = /licen[sc]e|refus|error|exit code|failed/i;
 /**
  * Trim a failed command's output for an assertion message without losing the line that explains the failure.
  * Output within `maxChars` is kept whole; longer output keeps its head and tail (a quarter of `maxChars` each, at least one char) plus the diagnostic lines of the elided middle, each capped at 600 chars.
+ * An output too short to split into head and tail (at most two edges) keeps its first `maxChars` chars and a marker, so a tiny `maxChars` is never exceeded by more than the marker.
  * The diagnostic lines together are capped at `maxChars`; when that cap cuts them, a marker says how many chars were dropped.
  */
 export const trimFailureOutput = (output: string, maxChars = 8000): string => {
   if (output.length <= maxChars) return output;
   const edge = Math.max(1, Math.floor(maxChars / 4));
-  if (output.length <= edge * 2) return output;
+  if (output.length <= edge * 2) {
+    const kept = output.slice(0, maxChars);
+    return `${kept}\n[... ${output.length - kept.length} chars elided ...]`;
+  }
   const head = output.slice(0, edge);
   const tail = output.slice(output.length - edge);
   const diagnostics = output
@@ -285,7 +289,12 @@ export interface DatastoreSizeOps {
 /** A filesystem reports slightly less than its image; a shortfall below this is not a smaller store. */
 const DATASTORE_SIZE_SLACK_BYTES = 256 * 1024 * 1024;
 
-const SIZE_UNITS: Record<string, number> = { K: 1024, M: 1024 ** 2, G: 1024 ** 3, T: 1024 ** 4 };
+const SIZE_UNITS: Record<string, number> = {
+  K: 1024,
+  M: 1024 ** 2,
+  G: 1024 ** 3,
+  T: 1024 ** 4,
+};
 
 /** Parse a renet size string (`32G`, `500M`, `1024`) into bytes. */
 export const parseSizeBytes = (size: string): number => {
