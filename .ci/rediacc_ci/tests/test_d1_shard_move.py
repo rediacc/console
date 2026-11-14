@@ -520,6 +520,9 @@ def test_fetch_pages_a_without_rowid_table_in_full_row_order(tmp_path: pathlib.P
             seen.append(sql)
             return db.query(sql)
 
+        def batch(self, statements: list[str]) -> None:
+            db.batch(statements)
+
     rows = mod.fetch(Recording(), "w", ["a", "b"], "b >= 0")
     assert len(rows) == total
     assert len({r["a"] for r in rows}) == total
