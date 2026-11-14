@@ -1379,8 +1379,8 @@
   {
     "id": "search-2889",
     "content": "Update-Kanäle",
-    "body": "Die CLI unterstützt zwei Release-Kanäle: stable (Standard): Nach 7-tägiger Einlaufphase von Edge befördert; wählen Sie diesen Kanal für eine konservative Update-Kadenz edge: Neueste Funktionen, bei jedem Release aktualisiert rdc update --channel edge # Zu edge wechseln rdc update --channel stable # Zurück zu stable rdc update --status # Aktuellen Kanal anzeigen",
-    "excerpt": "Die CLI unterstützt zwei Release-Kanäle: stable (Standard): Nach 7-tägiger Einlaufphase von Edge befördert; wählen Sie diesen Kanal für eine konservat...",
+    "body": "Die CLI unterstützt zwei Release-Kanäle: edge (Standard): Neueste Funktionen, bei jedem Release aktualisiert stable: Nach 7-tägiger Einlaufphase von Edge befördert; wählen Sie diesen Kanal für eine konservative Update-Kadenz rdc update --channel stable # Zu stable wechseln rdc update --channel edge # Zurück zu edge rdc update --status # Aktuellen Kanal anzeigen",
+    "excerpt": "Die CLI unterstützt zwei Release-Kanäle: edge (Standard): Neueste Funktionen, bei jedem Release aktualisiert stable: Nach 7-tägiger Einlaufphase von E...",
     "category": "Documentation",
     "page": "/de/docs/account-security",
     "fragment": "update-channels",
@@ -16145,7 +16145,7 @@
   {
     "id": "search-4161",
     "content": "Update-Status",
-    "body": "rdc update --status Zeigt die aktuelle Version, den Update-Kanal und die Auto-Update-Konfiguration an. #### Release-Kanäle rdc update --channel edge # Kontinuierlich bereitgestellte Produktions-Updates rdc update --channel stable # Nach 7-tägiger Erprobung von edge befördert (Standard) rdc update --status # Zeigt aktuellen Kanal und Versionsinformationen an",
+    "body": "rdc update --status Zeigt die aktuelle Version, den Update-Kanal und die Auto-Update-Konfiguration an. #### Release-Kanäle rdc update --channel edge # Kontinuierlich bereitgestellte Produktions-Updates (Standard) rdc update --channel stable # Nach 7-tägiger Erprobung von edge befördert rdc update --status # Zeigt aktuellen Kanal und Versionsinformationen an",
     "excerpt": "rdc update --status Zeigt die aktuelle Version, den Update-Kanal und die Auto-Update-Konfiguration an. #### Release-Kanäle rdc update --channel edge #...",
     "category": "Documentation",
     "page": "/de/docs/tools",

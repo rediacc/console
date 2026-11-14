@@ -1379,8 +1379,8 @@
   {
     "id": "search-19831",
     "content": "更新渠道",
-    "body": "CLI支持两个发布渠道： stable（默认）：经过 7 天浸泡期后从 edge 升级而来；若偏好保守的升级节奏请选择此通道 edge：最新功能，每次发布时更新 rdc update --channel edge # Switch to edge rdc update --channel stable # Switch back to stable rdc update --status # Show current channel",
-    "excerpt": "CLI支持两个发布渠道： stable（默认）：经过 7 天浸泡期后从 edge 升级而来；若偏好保守的升级节奏请选择此通道 edge：最新功能，每次发布时更新 rdc update --channel edge # Switch to edge rdc update --channel stabl...",
+    "body": "CLI支持两个发布渠道： edge（默认）：最新功能，每次发布时更新 stable：经过 7 天浸泡期后从 edge 升级而来；若偏好保守的升级节奏请选择此通道 rdc update --channel stable # 切换到 stable rdc update --channel edge # 切回 edge rdc update --status # Show current channel",
+    "excerpt": "CLI支持两个发布渠道： edge（默认）：最新功能，每次发布时更新 stable：经过 7 天浸泡期后从 edge 升级而来；若偏好保守的升级节奏请选择此通道 rdc update --channel stable # 切换到 stable rdc update --channel edge #...",
     "category": "Documentation",
     "page": "/zh/docs/account-security",
     "fragment": "update-channels",
@@ -16145,8 +16145,8 @@
   {
     "id": "search-21103",
     "content": "更新状态",
-    "body": "rdc update --status 显示当前版本、更新通道和自动更新配置。 #### 发布通道 rdc update --channel edge # 连续部署的生产更新 rdc update --channel stable # 从 edge 经过 7 天稳定期后提升（默认） rdc update --status # 显示当前通道和版本信息",
-    "excerpt": "rdc update --status 显示当前版本、更新通道和自动更新配置。 #### 发布通道 rdc update --channel edge # 连续部署的生产更新 rdc update --channel stable # 从 edge 经过 7 天稳定期后提升（默认） rdc upda...",
+    "body": "rdc update --status 显示当前版本、更新通道和自动更新配置。 #### 发布通道 rdc update --channel edge # 连续部署的生产更新（默认） rdc update --channel stable # 从 edge 经过 7 天稳定期后提升 rdc update --status # 显示当前通道和版本信息",
+    "excerpt": "rdc update --status 显示当前版本、更新通道和自动更新配置。 #### 发布通道 rdc update --channel edge # 连续部署的生产更新（默认） rdc update --channel stable # 从 edge 经过 7 天稳定期后提升 rdc upda...",
     "category": "Documentation",
     "page": "/zh/docs/tools",
     "fragment": "update-status",

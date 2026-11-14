@@ -1379,8 +1379,8 @@
   {
     "id": "search-1350",
     "content": "قنوات التحديث",
-    "body": "يدعم CLI قناتي اصدار: stable (الافتراضي): تمت الترقية من edge بعد فترة نقع لمدة 7 أيام؛ اختر هذه القناة للحصول على وتيرة ترقية محافظة edge: احدث الميزات، يتم التحديث عند كل اصدار rdc update --channel edge # Switch to edge rdc update --channel stable # Switch back to stable rdc update --status # Show current channel",
-    "excerpt": "يدعم CLI قناتي اصدار: stable (الافتراضي): تمت الترقية من edge بعد فترة نقع لمدة 7 أيام؛ اختر هذه القناة للحصول على وتيرة ترقية محافظة edge: احدث الميز...",
+    "body": "يدعم CLI قناتي اصدار: edge (الافتراضي): احدث الميزات، يتم التحديث عند كل اصدار stable: تمت الترقية من edge بعد فترة نقع لمدة 7 أيام؛ اختر هذه القناة للحصول على وتيرة ترقية محافظة rdc update --channel stable # التبديل إلى stable rdc update --channel edge # العودة إلى edge rdc update --status # Show current channel",
+    "excerpt": "يدعم CLI قناتي اصدار: edge (الافتراضي): احدث الميزات، يتم التحديث عند كل اصدار stable: تمت الترقية من edge بعد فترة نقع لمدة 7 أيام؛ اختر هذه القناة ل...",
     "category": "Documentation",
     "page": "/ar/docs/account-security",
     "fragment": "update-channels",
@@ -16145,7 +16145,7 @@
   {
     "id": "search-2622",
     "content": "حالة التحديث",
-    "body": "rdc update --status عرض الإصدار الحالي وقناة التحديث وتكوين التحديث التلقائي. #### قنوات الإصدار rdc update --channel edge # التحديثات المنشورة بشكل مستمر للإنتاج rdc update --channel stable # الإصدارات المعززة من edge بعد 7 أيام من التثبيت (الافتراضي) rdc update --status # عرض القناة الحالية ومعلومات الإصدار",
+    "body": "rdc update --status عرض الإصدار الحالي وقناة التحديث وتكوين التحديث التلقائي. #### قنوات الإصدار rdc update --channel edge # التحديثات المنشورة بشكل مستمر للإنتاج (الافتراضي) rdc update --channel stable # الإصدارات المعززة من edge بعد 7 أيام من التثبيت rdc update --status # عرض القناة الحالية ومعلومات الإصدار",
     "excerpt": "rdc update --status عرض الإصدار الحالي وقناة التحديث وتكوين التحديث التلقائي. #### قنوات الإصدار rdc update --channel edge # التحديثات المنشورة بشكل م...",
     "category": "Documentation",
     "page": "/ar/docs/tools",

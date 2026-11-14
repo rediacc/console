@@ -1534,8 +1534,8 @@
   {
     "id": "search-4428",
     "content": "Update Channels",
-    "body": "The CLI supports two release channels: stable (default): Promoted from edge after a 7-day soak; choose this for a conservative upgrade cadence edge: Continuously deployed production, updated on every merge to main rdc update --channel edge # Switch to edge rdc update --channel stable # Switch back to stable rdc update --status # Show current channel",
-    "excerpt": "The CLI supports two release channels: stable (default): Promoted from edge after a 7-day soak; choose this for a conservative upgrade cadence edge: C...",
+    "body": "The CLI supports two release channels: edge (default): Continuously deployed production, updated on every merge to main stable: Promoted from edge after a 7-day soak; choose this for a conservative upgrade cadence rdc update --channel stable # Switch to stable rdc update --channel edge # Switch back to edge rdc update --status # Show current channel",
+    "excerpt": "The CLI supports two release channels: edge (default): Continuously deployed production, updated on every merge to main stable: Promoted from edge aft...",
     "category": "Documentation",
     "page": "/en/docs/account-security",
     "fragment": "update-channels",
@@ -16447,7 +16447,7 @@
   {
     "id": "search-5713",
     "content": "Update Status",
-    "body": "rdc update --status Shows current version, update channel, and auto-update configuration. #### Release Channels rdc update --channel edge # Continuously deployed production updates rdc update --channel stable # Promoted from edge after 7-day soak (default) rdc update --status # Show current channel and version info",
+    "body": "rdc update --status Shows current version, update channel, and auto-update configuration. #### Release Channels rdc update --channel edge # Continuously deployed production updates (default) rdc update --channel stable # Promoted from edge after 7-day soak rdc update --status # Show current channel and version info",
     "excerpt": "rdc update --status Shows current version, update channel, and auto-update configuration. #### Release Channels rdc update --channel edge # Continuous...",
     "category": "Documentation",
     "page": "/en/docs/tools",

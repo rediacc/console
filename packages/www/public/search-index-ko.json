@@ -1379,8 +1379,8 @@
   {
     "id": "search-13675",
     "content": "업데이트 채널",
-    "body": "CLI는 두 가지 릴리스 채널을 지원합니다: stable (기본값): 7일 소크 기간 후 edge에서 승격됩니다. 보수적인 업그레이드 주기를 원할 때 선택하세요 edge: 지속적으로 배포되는 프로덕션으로, main에 병합될 때마다 업데이트됩니다 rdc update --channel edge # edge로 전환 rdc update --channel stable # stable로 돌아가기 rdc update --status # 현재 채널 표시",
-    "excerpt": "CLI는 두 가지 릴리스 채널을 지원합니다: stable (기본값): 7일 소크 기간 후 edge에서 승격됩니다. 보수적인 업그레이드 주기를 원할 때 선택하세요 edge: 지속적으로 배포되는 프로덕션으로, main에 병합될 때마다 업데이트됩니다 rdc update --...",
+    "body": "CLI는 두 가지 릴리스 채널을 지원합니다: edge (기본값): 지속적으로 배포되는 프로덕션으로, main에 병합될 때마다 업데이트됩니다 stable: 7일 소크 기간 후 edge에서 승격됩니다. 보수적인 업그레이드 주기를 원할 때 선택하세요 rdc update --channel stable # stable로 전환 rdc update --channel edge # edge로 돌아가기 rdc update --status # 현재 채널 표시",
+    "excerpt": "CLI는 두 가지 릴리스 채널을 지원합니다: edge (기본값): 지속적으로 배포되는 프로덕션으로, main에 병합될 때마다 업데이트됩니다 stable: 7일 소크 기간 후 edge에서 승격됩니다. 보수적인 업그레이드 주기를 원할 때 선택하세요 rdc update --...",
     "category": "Documentation",
     "page": "/ko/docs/account-security",
     "fragment": "update-channels",
@@ -16145,8 +16145,8 @@
   {
     "id": "search-14947",
     "content": "업데이트 상태",
-    "body": "rdc update --status 현재 버전, 업데이트 채널, 자동 업데이트 구성을 표시합니다. #### 릴리스 채널 rdc update --channel edge # 지속적으로 배포되는 프로덕션 업데이트 rdc update --channel stable # 7일 soak 후 edge에서 승격됨 (기본값) rdc update --status # 현재 채널 및 버전 정보 표시",
-    "excerpt": "rdc update --status 현재 버전, 업데이트 채널, 자동 업데이트 구성을 표시합니다. #### 릴리스 채널 rdc update --channel edge # 지속적으로 배포되는 프로덕션 업데이트 rdc update --channel stable # 7일 s...",
+    "body": "rdc update --status 현재 버전, 업데이트 채널, 자동 업데이트 구성을 표시합니다. #### 릴리스 채널 rdc update --channel edge # 지속적으로 배포되는 프로덕션 업데이트 (기본값) rdc update --channel stable # 7일 soak 후 edge에서 승격됨 rdc update --status # 현재 채널 및 버전 정보 표시",
+    "excerpt": "rdc update --status 현재 버전, 업데이트 채널, 자동 업데이트 구성을 표시합니다. #### 릴리스 채널 rdc update --channel edge # 지속적으로 배포되는 프로덕션 업데이트 (기본값) rdc update --channel stable...",
     "category": "Documentation",
     "page": "/ko/docs/tools",
     "fragment": "update-status",

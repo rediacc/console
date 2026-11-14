@@ -1379,8 +1379,8 @@
   {
     "id": "search-12136",
     "content": "アップデートチャンネル",
-    "body": "CLIは2つのリリースチャンネルをサポートしています： stable（デフォルト）：7日間のソーク期間を経てedgeから昇格。保守的なアップグレード周期を希望する場合にこちらを選択 edge：最新機能、リリースごとに更新 rdc update --channel edge # Switch to edge rdc update --channel stable # Switch back to stable rdc update --status # Show current channel",
-    "excerpt": "CLIは2つのリリースチャンネルをサポートしています： stable（デフォルト）：7日間のソーク期間を経てedgeから昇格。保守的なアップグレード周期を希望する場合にこちらを選択 edge：最新機能、リリースごとに更新 rdc update --channel edge # Switch to e...",
+    "body": "CLIは2つのリリースチャンネルをサポートしています： edge（デフォルト）：最新機能、リリースごとに更新 stable：7日間のソーク期間を経てedgeから昇格。保守的なアップグレード周期を希望する場合にこちらを選択 rdc update --channel stable # stable に切り替え rdc update --channel edge # edge に戻す rdc update --status # Show current channel",
+    "excerpt": "CLIは2つのリリースチャンネルをサポートしています： edge（デフォルト）：最新機能、リリースごとに更新 stable：7日間のソーク期間を経てedgeから昇格。保守的なアップグレード周期を希望する場合にこちらを選択 rdc update --channel stable # stable に切...",
     "category": "Documentation",
     "page": "/ja/docs/account-security",
     "fragment": "update-channels",
@@ -16145,8 +16145,8 @@
   {
     "id": "search-13408",
     "content": "アップデートステータス",
-    "body": "rdc update --status 現在のバージョン、アップデートチャンネル、および自動アップデートの設定を表示します。 #### リリースチャンネル rdc update --channel edge # 継続的にデプロイされる本番環境アップデート rdc update --channel stable # エッジから7日間のテスト後にプロモート（デフォルト） rdc update --status # 現在のチャンネルとバージョン情報を表示",
-    "excerpt": "rdc update --status 現在のバージョン、アップデートチャンネル、および自動アップデートの設定を表示します。 #### リリースチャンネル rdc update --channel edge # 継続的にデプロイされる本番環境アップデート rdc update --channel s...",
+    "body": "rdc update --status 現在のバージョン、アップデートチャンネル、および自動アップデートの設定を表示します。 #### リリースチャンネル rdc update --channel edge # 継続的にデプロイされる本番環境アップデート（デフォルト） rdc update --channel stable # エッジから7日間のテスト後にプロモート rdc update --status # 現在のチャンネルとバージョン情報を表示",
+    "excerpt": "rdc update --status 現在のバージョン、アップデートチャンネル、および自動アップデートの設定を表示します。 #### リリースチャンネル rdc update --channel edge # 継続的にデプロイされる本番環境アップデート（デフォルト） rdc update --ch...",
     "category": "Documentation",
     "page": "/ja/docs/tools",
     "fragment": "update-status",

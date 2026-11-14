@@ -1379,8 +1379,8 @@
   {
     "id": "search-7519",
     "content": "Uuenduskanalid",
-    "body": "CLI toetab kahte väljalaskekanali: stable (vaikimisi): Tõstetud edge'ist pärast 7-päevast leotust; valige see konservatiivse uuenduskaadentsi jaoks edge: Pidevalt juurutatud tootmine, uuendatakse igal ühendamisel peaharusse rdc update --channel edge # Lülitu edge-kanalile rdc update --channel stable # Lülitu tagasi stable-kanalile rdc update --status # Kuva praegune kanal",
-    "excerpt": "CLI toetab kahte väljalaskekanali: stable (vaikimisi): Tõstetud edge'ist pärast 7-päevast leotust; valige see konservatiivse uuenduskaadentsi jaoks ed...",
+    "body": "CLI toetab kahte väljalaskekanali: edge (vaikimisi): Pidevalt juurutatud tootmine, uuendatakse igal ühendamisel peaharusse stable: Tõstetud edge'ist pärast 7-päevast leotust; valige see konservatiivse uuenduskaadentsi jaoks rdc update --channel stable # Lülitu stable-kanalile rdc update --channel edge # Lülitu tagasi edge-kanalile rdc update --status # Kuva praegune kanal",
+    "excerpt": "CLI toetab kahte väljalaskekanali: edge (vaikimisi): Pidevalt juurutatud tootmine, uuendatakse igal ühendamisel peaharusse stable: Tõstetud edge'ist p...",
     "category": "Documentation",
     "page": "/et/docs/account-security",
     "fragment": "update-channels",
@@ -16145,7 +16145,7 @@
   {
     "id": "search-8791",
     "content": "Uuenduse olek",
-    "body": "rdc update --status Kuvab praeguse versiooni, uuenduskanali ja automaatse uuendamise konfiguratsiooni. #### Väljalaskekanalid rdc update --channel edge # Pidevalt juurutatavad tootmisuuendused rdc update --channel stable # Edutatud edge'ist pärast 7-päevast leotamist (vaikimisi) rdc update --status # Kuva praegune kanal ja versiooni info",
+    "body": "rdc update --status Kuvab praeguse versiooni, uuenduskanali ja automaatse uuendamise konfiguratsiooni. #### Väljalaskekanalid rdc update --channel edge # Pidevalt juurutatavad tootmisuuendused (vaikimisi) rdc update --channel stable # Edutatud edge'ist pärast 7-päevast leotamist rdc update --status # Kuva praegune kanal ja versiooni info",
     "excerpt": "rdc update --status Kuvab praeguse versiooni, uuenduskanali ja automaatse uuendamise konfiguratsiooni. #### Väljalaskekanalid rdc update --channel edg...",
     "category": "Documentation",
     "page": "/et/docs/tools",

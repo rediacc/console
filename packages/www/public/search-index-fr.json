@@ -1379,8 +1379,8 @@
   {
     "id": "search-9058",
     "content": "Canaux de mise à jour",
-    "body": "La CLI prend en charge deux canaux de publication : stable (par défaut) : Promu depuis edge après une période de stabilisation de 7 jours ; choisissez ce canal pour une cadence de mise à jour conservatrice edge : Dernières fonctionnalités, mis à jour à chaque publication rdc update --channel edge # Passer à edge rdc update --channel stable # Revenir à stable rdc update --status # Afficher le canal actuel",
-    "excerpt": "La CLI prend en charge deux canaux de publication : stable (par défaut) : Promu depuis edge après une période de stabilisation de 7 jours ; choisissez...",
+    "body": "La CLI prend en charge deux canaux de publication : edge (par défaut) : Dernières fonctionnalités, mis à jour à chaque publication stable : Promu depuis edge après une période de stabilisation de 7 jours ; choisissez ce canal pour une cadence de mise à jour conservatrice rdc update --channel stable # Passer à stable rdc update --channel edge # Revenir à edge rdc update --status # Afficher le canal actuel",
+    "excerpt": "La CLI prend en charge deux canaux de publication : edge (par défaut) : Dernières fonctionnalités, mis à jour à chaque publication stable : Promu depu...",
     "category": "Documentation",
     "page": "/fr/docs/account-security",
     "fragment": "update-channels",
@@ -16145,7 +16145,7 @@
   {
     "id": "search-10330",
     "content": "État des mises à jour",
-    "body": "rdc update --status Affiche la version actuelle, le canal de mise à jour et la configuration de la mise à jour automatique. #### Canaux de publication rdc update --channel edge # Mises à jour continuelles en production rdc update --channel stable # Promu à partir d'edge après 7 jours de test (par défaut) rdc update --status # Afficher le canal actuel et les informations de version",
+    "body": "rdc update --status Affiche la version actuelle, le canal de mise à jour et la configuration de la mise à jour automatique. #### Canaux de publication rdc update --channel edge # Mises à jour continuelles en production (par défaut) rdc update --channel stable # Promu à partir d'edge après 7 jours de test rdc update --status # Afficher le canal actuel et les informations de version",
     "excerpt": "rdc update --status Affiche la version actuelle, le canal de mise à jour et la configuration de la mise à jour automatique. #### Canaux de publication...",
     "category": "Documentation",
     "page": "/fr/docs/tools",

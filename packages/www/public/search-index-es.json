@@ -1379,8 +1379,8 @@
   {
     "id": "search-5980",
     "content": "Canales de actualización",
-    "body": "La CLI admite dos canales de lanzamiento: stable (predeterminado): Promovido desde edge tras un período de prueba de 7 días; elige este canal para una cadencia de actualización conservadora edge: Últimas funciones, actualizado en cada lanzamiento rdc update --channel edge # Cambiar a edge rdc update --channel stable # Volver a stable rdc update --status # Mostrar canal actual",
-    "excerpt": "La CLI admite dos canales de lanzamiento: stable (predeterminado): Promovido desde edge tras un período de prueba de 7 días; elige este canal para una...",
+    "body": "La CLI admite dos canales de lanzamiento: edge (predeterminado): Últimas funciones, actualizado en cada lanzamiento stable: Promovido desde edge tras un período de prueba de 7 días; elige este canal para una cadencia de actualización conservadora rdc update --channel stable # Cambiar a stable rdc update --channel edge # Volver a edge rdc update --status # Mostrar canal actual",
+    "excerpt": "La CLI admite dos canales de lanzamiento: edge (predeterminado): Últimas funciones, actualizado en cada lanzamiento stable: Promovido desde edge tras...",
     "category": "Documentation",
     "page": "/es/docs/account-security",
     "fragment": "update-channels",
@@ -16145,7 +16145,7 @@
   {
     "id": "search-7252",
     "content": "Estado de Actualización",
-    "body": "rdc update --status Muestra la versión actual, el canal de actualización y la configuración de actualización automática. #### Canales de Lanzamiento rdc update --channel edge # Actualizaciones de producción implementadas continuamente rdc update --channel stable # Promovido desde edge después de 7 días de prueba (predeterminado) rdc update --status # Mostrar canal actual e información de versión",
+    "body": "rdc update --status Muestra la versión actual, el canal de actualización y la configuración de actualización automática. #### Canales de Lanzamiento rdc update --channel edge # Actualizaciones de producción implementadas continuamente (predeterminado) rdc update --channel stable # Promovido desde edge después de 7 días de prueba rdc update --status # Mostrar canal actual e información de versión",
     "excerpt": "rdc update --status Muestra la versión actual, el canal de actualización y la configuración de actualización automática. #### Canales de Lanzamiento r...",
     "category": "Documentation",
     "page": "/es/docs/tools",

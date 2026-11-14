@@ -1379,8 +1379,8 @@
   {
     "id": "search-18292",
     "content": "Güncelleme Kanalları",
-    "body": "CLI iki yayın kanalını destekler: stable (varsayılan): 7 günlük bekleme süresinin ardından edge'den terfi ettirilir; muhafazakar bir yükseltme temposu için bu kanalı seçin edge: En son özellikler, her sürümde güncellenir rdc update --channel edge # Edge'e geç rdc update --channel stable # Stable'a geri dön rdc update --status # Geçerli kanalı göster",
-    "excerpt": "CLI iki yayın kanalını destekler: stable (varsayılan): 7 günlük bekleme süresinin ardından edge'den terfi ettirilir; muhafazakar bir yükseltme temposu...",
+    "body": "CLI iki yayın kanalını destekler: edge (varsayılan): En son özellikler, her sürümde güncellenir stable: 7 günlük bekleme süresinin ardından edge'den terfi ettirilir; muhafazakar bir yükseltme temposu için bu kanalı seçin rdc update --channel stable # Stable'a geç rdc update --channel edge # Edge'e geri dön rdc update --status # Geçerli kanalı göster",
+    "excerpt": "CLI iki yayın kanalını destekler: edge (varsayılan): En son özellikler, her sürümde güncellenir stable: 7 günlük bekleme süresinin ardından edge'den t...",
     "category": "Documentation",
     "page": "/tr/docs/account-security",
     "fragment": "update-channels",
@@ -16145,7 +16145,7 @@
   {
     "id": "search-19564",
     "content": "Güncelleme Durumu",
-    "body": "rdc update --status Mevcut sürümü, güncelleme kanalını ve otomatik güncelleme yapılandırmasını gösterir. #### Yayın Kanalları rdc update --channel edge # Sürekli dağıtılan üretim güncellemeleri rdc update --channel stable # Edge'den 7 gün sonra tercih edilen (varsayılan) rdc update --status # Mevcut kanal ve sürüm bilgisini göster",
+    "body": "rdc update --status Mevcut sürümü, güncelleme kanalını ve otomatik güncelleme yapılandırmasını gösterir. #### Yayın Kanalları rdc update --channel edge # Sürekli dağıtılan üretim güncellemeleri (varsayılan) rdc update --channel stable # Edge'den 7 gün sonra tercih edilen rdc update --status # Mevcut kanal ve sürüm bilgisini göster",
     "excerpt": "rdc update --status Mevcut sürümü, güncelleme kanalını ve otomatik güncelleme yapılandırmasını gösterir. #### Yayın Kanalları rdc update --channel edg...",
     "category": "Documentation",
     "page": "/tr/docs/tools",
