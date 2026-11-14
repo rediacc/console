@@ -1010,9 +1010,13 @@ def test_control_row_registers_the_scope_the_signer_reads_and_bootstrap_sends_it
     world = World()
     ctx = _ctx(world)
     onboarding.write_control_row(ctx)
+    first = world.rows(ctx.plan.database, "SELECT * FROM scope")
     onboarding.write_control_row(ctx)
     rows = world.rows(ctx.plan.database, "SELECT * FROM scope")
     assert len(rows) == 1
+    # A rerun keeps the row the first run wrote, its subscription id included (captured after run one, not read back from the same database).
+    assert rows == first
+    assert first[0]["subscription_id"]
     assert rows[0]["company_id"] == "c0123456789abcdef"
     assert rows[0]["renewal_host"] == ctx.plan.hosts[0]
     assert rows[0]["max_expiry_days"] > 365

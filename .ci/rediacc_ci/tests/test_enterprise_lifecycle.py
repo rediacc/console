@@ -479,6 +479,31 @@ def test_accepting_a_bucket_that_exists_is_refused(w):
     assert not (w.ctx.export_root / ACME / "manifest.json").exists()
 
 
+def test_accepting_an_existing_bucket_leaves_the_earlier_completed_export_in_place(w):
+    """Review f7962a63.2: the refusal comes before the earlier manifest and mark are unlinked, so remove still has its completed export."""
+    folder = _marked(w)
+    before = (folder / "manifest.json").read_text()
+    with pytest.raises(lifecycle.LifecycleError, match="the bucket exists"):
+        lifecycle.export(w.ctx, "acme", accept_missing_buckets=["configs-acme"])
+    assert (folder / "manifest.json").read_text() == before
+    assert (folder / lifecycle.CHECKED).exists()
+    company = lifecycle.load_company(w.ctx, "acme")
+    assert lifecycle.verify_export(w.ctx, company)
+
+
+def test_the_kept_export_path_refuses_an_accepted_bucket_that_exists(w):
+    """Review f7962a63.1: with the mark matching a verified export and backups-acme gone, accepting the EXISTING configs-acme is refused, not silently accepted."""
+    folder = _marked(w)
+    before = (folder / "manifest.json").read_text()
+    _bucket_gone(w, "backups-acme")
+    with pytest.raises(lifecycle.LifecycleError, match="configs-acme refused: the bucket exists"):
+        lifecycle.export(w.ctx, "acme", accept_missing_buckets=["configs-acme"])
+    assert (folder / "manifest.json").read_text() == before
+    # control: accepting the bucket that is gone keeps the completed export
+    assert lifecycle.export(w.ctx, "acme", accept_missing_buckets=["backups-acme"]) == folder
+    assert (folder / "manifest.json").read_text() == before
+
+
 def test_accepting_a_missing_bucket_does_not_excuse_the_other_one(w):
     _all_gone(w)
     with pytest.raises(lifecycle.LifecycleError, match="backups-acme answered HTTP 404"):
@@ -635,7 +660,7 @@ def test_remove_with_delete_data_deletes_everything_after_undeploy(w):
 
 
 def test_remove_revokes_the_tokens_only_after_the_buckets_are_emptied(w):
-    """The company's own backups key lists and empties its bucket, so the revoke that ends the key comes last of the data steps."""
+    """The company's own backups key lists and empties its buckets, so the revoke that ends the key comes after the last bucket delete (the D1 delete and the secret deletes may follow it)."""
     _exported(w)
     lifecycle.remove(w.ctx, "acme", delete_data=True, confirm="acme")
     order = [c[0] for c in w.calls if c[0] in ("delete_bucket", "revoke_tokens", "delete_d1")]
@@ -684,6 +709,24 @@ def test_a_resumed_delete_data_remove_is_not_judged_against_its_own_deletions(w)
     w.bucket_keys = lambda _company, _bucket: []
     lifecycle.remove(w.ctx, "acme", delete_data=True, confirm="acme")
     assert w.state("eu", ACME) == "removed"
+
+
+def test_a_teardown_refusal_that_quotes_the_company_name_is_masked_in_remove(w):
+    """Review 668a96ec.1: Cloudflare's own message reaches the error, and the company name in it does not."""
+    _exported(w)
+
+    def refused(_company):
+        raise lifecycle.LifecycleError("Cloudflare refused it (error codes 7003: no worker acme)")
+
+    w.undeploy = refused
+    with pytest.raises(lifecycle.LifecycleError) as caught:
+        lifecycle.remove(w.ctx, "acme", delete_data=False)
+    assert "acme" not in str(caught.value)
+    assert "error codes 7003: no worker <name>" in str(caught.value)
+    # control: a message that names no company is printed as it is
+    w.undeploy = lambda _c: (_ for _ in ()).throw(lifecycle.LifecycleError("quota exceeded"))
+    with pytest.raises(lifecycle.LifecycleError, match=r"^quota exceeded$"):
+        lifecycle.remove(w.ctx, "acme", delete_data=False)
 
 
 def test_a_remove_that_fails_before_deleting_data_leaves_no_mark_and_rechecks(w):

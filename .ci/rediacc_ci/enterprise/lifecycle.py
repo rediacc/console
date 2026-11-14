@@ -21,7 +21,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Protocol
 
 from rediacc_ci.deploy import proxy_configs as pc
-from rediacc_ci.enterprise import registry, secrets
+from rediacc_ci.enterprise import control_db, registry, secrets
 
 if TYPE_CHECKING:
     import pathlib
@@ -364,7 +364,7 @@ def missing_buckets(ctx: Context, name: str) -> list[str]:
 
 
 def export(ctx: Context, name: str, *, accept_missing_buckets: Sequence[str] = ()) -> pathlib.Path:
-    """Dump the D1 database, copy both buckets and keep the durable secrets under `<export_root>/<company id>/`. The manifest, with `complete` and a hash per file, is written last, so an interrupted export never looks finished. A company whose removal already deleted a bucket keeps its earlier completed export (`_kept_mid_removal`), with a note on stderr. A bucket named in `accept_missing_buckets` is exported as a recorded gap (`missing_buckets` in the manifest) when it answers 404, and refused when it exists, so the flag never hides data."""
+    """Dump the D1 database, copy both buckets and keep the durable secrets under `<export_root>/<company id>/`. The manifest, with `complete` and a hash per file, is written last, so an interrupted export never looks finished. A company whose removal already deleted a bucket keeps its earlier completed export (`_kept_mid_removal`), with a note on stderr. A bucket named in `accept_missing_buckets` is exported as a recorded gap (`missing_buckets` in the manifest) when it answers 404, and refused when it exists (before any earlier export is touched, and on the kept-export path too), so the flag never hides data. The kept export is returned as it is: its manifest is not rewritten, so an accepted gap is recorded only by an export that runs."""
     _refuse_ci(ctx)
     company = load_company(ctx, name)
     accepted = sorted(set(accept_missing_buckets))
@@ -374,6 +374,16 @@ def export(ctx: Context, name: str, *, accept_missing_buckets: Sequence[str] = (
                 "--accept-missing-bucket %s is not a bucket of company %s (%s)"
                 % (bucket, company.id, ", ".join(company.buckets))
             )
+    # Checked before anything is unlinked or returned: an accepted bucket that exists is refused up front, so a refused export leaves the company's earlier completed export in place and a kept export never accepts an existing bucket silently.
+    for bucket in accepted:
+        try:
+            _step("export failed: list bucket", ctx.exporter.bucket_keys, company, bucket)
+        except BucketMissingError:
+            continue
+        raise LifecycleError(
+            "export failed: --accept-missing-bucket %s refused: the bucket exists, so it is exported, never skipped"
+            % bucket
+        )
     target = ctx.export_root / company.id
     manifest_path = target / MANIFEST
     if _kept_mid_removal(ctx, company):
@@ -558,7 +568,12 @@ def remove(
     steps: list[str] = []
 
     def run(what: str, fn: Callable[..., Any], *args: Any) -> None:
-        _step(what, fn, *args)
+        try:
+            _step(what, fn, *args)
+        except LifecycleError as exc:
+            # A Cloudflare refusal quotes its own message, which can name the company; the operator's output carries the id only.
+            masked = control_db.mask_names(str(exc), [company.name])
+            raise LifecycleError(masked) from None
         steps.append(what)
 
     run("undeploy", ctx.teardown.undeploy, company)
