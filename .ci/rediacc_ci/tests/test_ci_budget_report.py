@@ -9,7 +9,6 @@ T3.1 ALSO CLOSES `scripts/gates/check-lane-budget.ts`'s own BLOCKER, so several 
 
 from __future__ import annotations
 
-import inspect
 import io
 import json
 import re
@@ -2320,7 +2319,7 @@ def test_a_refresh_on_enough_runs_rewrites_the_same_entries(tmp_path):
 
 
 def test_a_job_p90_priced_from_two_runs_keeps_its_committed_value(tmp_path, capsys):
-    """2026-11-14: two sampled runs priced the ubuntu E2E legs from one run's guest-VM apt slowdown (15-18 m against a 12 m budget). A committed job p90 now moves only on `MIN_VARIANT_RUNS` runs; `jobs` and gate steps still move on `MIN_DRIFT_RUNS` (the CONTROL that the stricter rule is scoped)."""
+    """2026-11-14: a committed job p90 moves only on `MIN_VARIANT_RUNS` runs, so a thin sample cannot reprice a leg (the over-budget ubuntu legs that day had 3+ runs and are not changed by it); `jobs` and gate steps still move on `MIN_DRIFT_RUNS` (the CONTROL that the stricter rule is scoped)."""
     path = _fixture_tree(tmp_path, {})
     path.write_text(json.dumps(_the_11_03_table()))
     runs = {
@@ -2354,7 +2353,7 @@ def test_refreshed_on_evidence_counts_absent_evidence_as_none():
     )
 
 
-def test_a_check_judges_a_job_fixed_cost_drift_only_on_three_runs(tmp_path, capsys):
+def test_a_check_judges_a_job_fixed_cost_drift_from_two_runs_not_one(tmp_path, capsys):
     """The check holds a job to the refresh's evidence: a one-run 29% move is counted thin and printed, never a finding, and the same move on two runs is (the CONTROL). A check after a one-run refresh is therefore green on that sample."""
     path = tmp_path / "lane-durations.json"
     path.write_text(json.dumps(_committed(jobs={"test-e2e-workers": 3.1})))
@@ -3063,11 +3062,24 @@ def test_a_variant_priced_from_one_run_keeps_its_value_and_two_runs_do_not_move_
             assert "variantCosts entr(ies)" not in err
 
 
-def test_the_check_never_judges_variant_costs():
-    """`--check` computes without variant logs (`compute_for_check`), so variantCosts has no drift verdict: a thin variant is never flagged, and neither is a well sampled one."""
-    source = inspect.getsource(br.check_lane_durations)
-    assert "variantCosts" not in source
-    assert "variant_costs" not in source
+def test_the_check_never_judges_variant_costs(tmp_path):
+    """`--check` computes without variant logs, so variantCosts has no drift verdict: a variant whose measured fixedMinutes moved 137% is no finding, at one run or at `MIN_VARIANT_RUNS`. CONTROL: the same move on a job entry is."""
+    path = tmp_path / "lane-durations.json"
+    committed = {"test-e2e-workers": {"ubuntu-24.04": {"fixedMinutes": 5.4, "units": {}}}}
+    drifted = {"test-e2e-workers": {"ubuntu-24.04": {"fixedMinutes": 12.78, "units": {}}}}
+    path.write_text(json.dumps(_committed(jobs={"j": 5.0}, variantCosts=committed)))
+    for runs in (1, br.MIN_VARIANT_RUNS):
+        compute = _fake_compute(
+            jobs={"j": 5.0},
+            variant_costs=drifted,
+            measured_runs={
+                "jobs": {"j": runs},
+                "variant_costs": {"test-e2e-workers": runs},
+            },
+        )
+        assert br.check_lane_durations(path, limit=10, compute=compute) == 0
+    control = _fake_compute(jobs={"j": 11.0})
+    assert br.check_lane_durations(path, limit=10, compute=control) == 1
 
 
 def test_a_lane_with_two_thin_variants_is_counted_as_two_entries(tmp_path, capsys):
