@@ -12,12 +12,12 @@ interface Env extends LookupEnv {
   ASSETS: Fetcher;
   // Only bound in PR previews (deploy-www.sh mints account-db-pr-N and injects the binding via wrangler.preview.toml). On stable / edge, /account/api/* is served by the regional workers, so DB is absent here and the branch below 410s.
   DB?: D1Database;
-  // Service binding to the EU regional account worker. Used to forward the public marketing endpoints (contact submit, newsletter subscribe) so the forms on www.rediacc.com / edge.rediacc.com can reach a DB-bound backend without cross-origin CORS. Bound on stable + edge wrangler configs, absent on PR previews (which serve via env.DB instead).
+  // Service binding to the EU regional account worker. Used to forward the public marketing endpoints (contact submit, newsletter subscribe) so the forms on www.rediacc.com can reach a DB-bound backend without cross-origin CORS. Bound on stable + edge wrangler configs, absent on PR previews (which serve via env.DB instead).
   ACCOUNT?: Fetcher;
   [key: string]: unknown;
 }
 
-// --------------------------------------------------------------------------- Preview origin rewriting --------------------------------------------------------------------------- On non-stable hostnames (edge.rediacc.com, pr-397.rediacc.workers.dev), rewrite https://www.rediacc.com → the current origin in all text responses so that install commands, canonical URLs, sitemaps, etc.
+// --------------------------------------------------------------------------- Preview origin rewriting --------------------------------------------------------------------------- On non-stable hostnames (a PR preview such as pr-397.rediacc.workers.dev), rewrite https://www.rediacc.com → the current origin in all text responses so that install commands, canonical URLs, sitemaps, etc.
 // reflect the preview domain. Stable (www.rediacc.com) traffic is unaffected — on that hostname isPreview is false and rewriteOrigin() is skipped. ---------------------------------------------------------------------------
 
 const WWW_ORIGIN = WK_SITE_ORIGIN;
