@@ -24,13 +24,13 @@ const envFileEntries = (compose: Compose): { service: string; path: string; opti
 const upBody = (rediaccfile: string): string =>
   /^up\(\)\s*\{\n([\s\S]*?)^\}/m.exec(rediaccfile)?.[1] ?? '';
 
-/** True when a non-comment line of up() redirects into exactly `path` (not `path.bak`). */
+/** True when a line of up(), with its comment stripped, redirects into exactly `path` (not `path.bak`). A `#` after whitespace starts a comment, which is how the templates write them; a `#` inside quotes is not expected in these Rediaccfiles. */
 const createdByUp = (rediaccfile: string, path: string): boolean => {
   const escaped = path.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const creator = new RegExp(`>>?\\s*["']?\\.?/?${escaped}(?![\\w.-])`);
   return upBody(rediaccfile)
     .split('\n')
-    .filter((line) => !/^\s*#/.test(line))
+    .map((line) => line.replace(/(^|\s)#.*$/, ''))
     .some((line) => creator.test(line));
 };
 
@@ -70,6 +70,10 @@ describe('createdByUp', () => {
 
   it('counts a redirect inside up()', () => {
     expect(createdByUp(file('  cat > .env <<EOF\nA=1\nEOF'), '.env')).toBe(true);
+  });
+
+  it('ignores a redirect inside a trailing comment (review ff7e55e6.1)', () => {
+    expect(createdByUp(file('  cp a b # > .env'), '.env')).toBe(false);
   });
 
   it('ignores a comment-only mention in up()', () => {
