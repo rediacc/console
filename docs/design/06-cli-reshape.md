@@ -19,7 +19,7 @@ behind `REDIACC_ALLOW_CLUSTER_OPS`; hidden `run` unchanged, absolutely agent-blo
 
 ## 1. The tree — AS BUILT (verified against the live CLI, 2026-07-13)
 
-This is no longer a target. It is a transcript of the shipped tree, generated from `packages/cli/scripts/command-tree.json` and checked in BOTH directions: every leaf below exists in the CLI, and every leaf in the CLI appears below. **210 contract commands** (116 machine-plane, 57 config-plane, 37 other; 97 proxyCapable). `run` is hidden and held out of the contract.
+This is no longer a target. It is a transcript of the shipped tree, generated from `packages/cli/scripts/command-tree.json` and checked in BOTH directions: every leaf below exists in the CLI, and every leaf in the CLI appears below. **221 contract commands** (121 machine-plane, 58 config-plane, 42 other; the counts `plane-coverage.test.ts` pins). `run` is hidden and held out of the contract.
 
 ```
 rdc config:     init list show current delete set clear recover prune edit reconcile rotate-cek import-machine
