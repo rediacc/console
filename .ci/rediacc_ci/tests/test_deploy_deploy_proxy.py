@@ -2146,3 +2146,50 @@ def test_record_bench_returns_1_and_logs_when_the_tree_moved(
     )
     assert "moved during the deploy" in capsys.readouterr().err
     assert not _bench_record(world.root).exists()
+
+
+def test_a_pending_container_settings_answer_reruns_the_deploy_once(monkeypatch):
+    calls = []
+    answers = [
+        (
+            1,
+            "The Worker version was deployed, but its Durable Object-managed Container application settings were not fully applied. Re-run",
+        ),
+        (0, "Current Version ID: 11111111-2222-3333-4444-555555555555"),
+    ]
+
+    def fake(argv):
+        calls.append(argv)
+        return answers[len(calls) - 1]
+
+    monkeypatch.setattr(port, "_run_tee", fake)
+    status, output = port.deploy_with_settings_retry(["wrangler", "deploy"])
+    assert status == 0
+    assert len(calls) == 2
+    assert "Current Version ID" in output
+
+
+def test_control_another_failure_is_not_retried(monkeypatch):
+    calls = []
+
+    def fake(argv):
+        calls.append(argv)
+        return 1, "Authentication error [code: 10000]"
+
+    monkeypatch.setattr(port, "_run_tee", fake)
+    status, _ = port.deploy_with_settings_retry(["wrangler", "deploy"])
+    assert status == 1
+    assert len(calls) == 1
+
+
+def test_a_second_pending_answer_is_returned_not_looped(monkeypatch):
+    calls = []
+
+    def fake(argv):
+        calls.append(argv)
+        return 1, "Container application settings were not fully applied"
+
+    monkeypatch.setattr(port, "_run_tee", fake)
+    status, _ = port.deploy_with_settings_retry(["wrangler", "deploy"])
+    assert status == 1
+    assert len(calls) == 2

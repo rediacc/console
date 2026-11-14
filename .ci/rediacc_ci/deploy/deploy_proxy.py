@@ -107,6 +107,21 @@ STAGE_SUBDIR = "stage"
 
 # `Current Version ID: <uuid>`, as wrangler 4 prints it after a deploy.
 VERSION_ID_RE = re.compile(r"Current Version ID:\s*([0-9A-Za-z][0-9A-Za-z-]*)")
+# wrangler's own instruction when a first container rollout lands the Worker version but not the Container
+# application settings (measured 2026-11-14 on a fresh company proxy): rerunning the same deploy finishes it.
+CONTAINER_SETTINGS_PENDING = "Container application settings were not fully applied"
+
+
+def deploy_with_settings_retry(argv: list[str]) -> tuple[int, str]:
+    """`wrangler deploy`, rerun once when wrangler reports the container settings still pending, which its own message says a rerun finishes. Any other failure, or a second pending answer, is returned as it is."""
+    status, output = _run_tee(argv)
+    if status != 0 and CONTAINER_SETTINGS_PENDING in output:
+        log.warn(
+            "wrangler reports the container settings not fully applied; rerunning the same deploy once"
+        )
+        status, output = _run_tee(argv)
+    return status, output
+
 
 SMOKE_PASSED = (
     "Smoke test passed: /v1/health 200, unauthenticated /v1/server-info 401, "
@@ -1272,7 +1287,7 @@ def main(argv: list[str]) -> int:
     log.step(
         "Deploying %s and its container image (config: %s)..." % (shown(spec.name), shown(config))
     )
-    status, output = _run_tee(deploy_argv(config, overrides))
+    status, output = deploy_with_settings_retry(deploy_argv(config, overrides))
     if status != 0:
         return status
     version_id = parse_version_id(output)
