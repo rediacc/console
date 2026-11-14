@@ -356,7 +356,9 @@ def _gates(refusals: list[str]):
     def gates(root, version, ctx):
         del root, ctx
         assert version == "9.9.9"
-        return local.GateResult(list(refusals), ["local-gates: clone: not judged under --dry-run"])
+        return local.GateResult(
+            list(refusals), ["local-gates: clone: not judged under --dry-run"], unjudged=1
+        )
 
     return gates
 
@@ -548,6 +550,33 @@ def test_a_failed_branch_read_is_named_unread_with_its_reason(tmp_path: pathlib.
     assert blank["branch_read"]
 
 
+def test_the_dry_run_names_a_failed_branch_read(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Review 01f2a26f.1: the dry run prints why origin's branches could not be read."""
+    monkeypatch.setattr(local, "prereq_refusals", no_prereqs)
+    monkeypatch.setenv("RELEASE_ASKED", "ASKED:2026-11-13T05:02Z")
+    monkeypatch.setattr(
+        local,
+        "branch_context",
+        lambda *_a: {
+            "branch_release": "true",
+            "branch": "unread",
+            "branch_read": "ls-remote timed out",
+            "asked": "",
+            "build_meta": "+unread.01234567",
+        },
+    )
+    local.main(
+        ["--channel", "edge", "--workers-only", "--dry-run", "--branch-release"],
+        runner=FakeRunner(VERSION_ANSWERS),
+        gates=lambda _r, _v, _c: local.GateResult([], []),
+    )
+    assert "branch release: origin's branches could not be read: ls-remote timed out" in (
+        capsys.readouterr().out
+    )
+
+
 def test_the_dry_run_describes_every_child_command(tmp_path: pathlib.Path) -> None:
     ctx = local.Context(clone=str(tmp_path / "c"), version="9.9.9", releases_origin="https://x")
     steps = [
@@ -589,11 +618,14 @@ def test_the_dry_run_states_an_ancestry_it_cannot_judge(
     unknown = _dry_ancestry(monkeypatch, tmp_path, None)
     assert any("not judged under --dry-run" in n and "ancestor" in n for n in unknown.notes)
     assert unknown.notes[-1] == "verdict=True"
+    # 943b7b90.2: the clone and the ancestry are the two gates not judged, counted as a field.
+    assert unknown.unjudged == 2
     # Controls: a definite answer is passed through and no note is added.
     for verdict in (True, False):
         known = _dry_ancestry(monkeypatch, tmp_path, verdict)
         assert not any("ancestor" in n for n in known.notes)
         assert known.notes[-1] == "verdict=%s" % verdict
+        assert known.unjudged == 1
 
 
 def _env_of(steps: list[local.Step], step_id: str, ctx: local.Context, key: str) -> str:

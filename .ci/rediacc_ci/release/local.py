@@ -1327,6 +1327,8 @@ def profile_keys(profiles: Sequence[str]) -> list[str]:
 class GateResult:
     refusals: list[str]
     notes: list[str]
+    # How many gates the dry run could not judge; counted where the note is written, never read back out of the note text.
+    unjudged: int = 0
 
 
 def _ls_remote_main(root: pathlib.Path) -> tuple[str | None, str]:
@@ -1402,7 +1404,7 @@ def dry_gates(root: pathlib.Path, version: str | None, ctx: Context) -> GateResu
         % base
         for base in ancestry_unjudged
     )
-    return GateResult([r.line() for r in refusals], notes)
+    return GateResult([r.line() for r in refusals], notes, 1 + len(ancestry_unjudged))
 
 
 def paths_rel(root: pathlib.Path, path: pathlib.Path) -> str:
@@ -2543,7 +2545,7 @@ def dry_run(
     if refusals:
         print("refused: %d refusal(s): %s" % (len(refusals), ", ".join(_codes(refusals))))
         return 1
-    unjudged = sum("not judged" in note for note in result.notes)
+    unjudged = result.unjudged
     print(
         "admitted: every %sgate passes%s; the run above is what `npm run release:local -- --channel edge%s` executes"
         % (

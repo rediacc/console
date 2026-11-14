@@ -2212,3 +2212,95 @@ def test_control_run_tee_without_merge_keeps_stdout_only():
     assert status == 0
     assert "out" in output
     assert "err-line" not in output
+
+
+def test_run_tee_with_merge_copies_the_stderr_lines_to_this_stdout(capsys):
+    """Review e1d98fe8.1: a merged stderr line leaves this process on stdout, which is the changed destination."""
+    code = "import sys; print('err-line', file=sys.stderr)"
+    port._run_tee([sys.executable, "-c", code], merge_stderr=True)
+    captured = capsys.readouterr()
+    assert "err-line" in captured.out
+    assert "err-line" not in captured.err
+
+
+# ---- review d39e851d.2 and 0c280db0.1: main's company path, in process ----
+
+
+def _company_main(monkeypatch, tmp_path, *flags, version_flag=("--version", "1.2.3")):
+    """Run `main` for a stubbed company down to the smoke; returns (status, calls) with every external step replaced."""
+    calls: list[str] = []
+    version = "11111111-2222-3333-4444-555555555555"
+    proxy_config = tmp_path / "wrangler.toml"
+    proxy_config.write_text("", encoding="utf-8")
+    company = types.SimpleNamespace(
+        company_id="c1",
+        proxy_config=proxy_config,
+        profile_target="stable",
+        mask=lambda text: text,
+        region="eu",
+    )
+    spec = types.SimpleNamespace(name="proxy-c1", config="wrangler.toml", routes=["p.example"])
+    monkeypatch.setattr(port.console_executor, "company_from_values", lambda *_a: company)
+    monkeypatch.setattr(port, "select_company", lambda *_a: (spec, ""))
+    monkeypatch.setattr(port, "override_refusals", lambda *_a: [])
+    monkeypatch.setattr(port, "stage_release", lambda *_a: 0)
+    monkeypatch.setattr(port, "forward_only_state", lambda *_a, **_k: (False, None))
+    monkeypatch.setattr(port, "deployed_version", lambda _c: version)
+    monkeypatch.setattr(port, "revert_line", lambda *_a: "REVERT")
+    monkeypatch.setattr(port.os, "chdir", lambda _p: None)
+    monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "x")
+
+    def fake_tee(_argv, merge_stderr=False):
+        # Reached only through deploy_with_settings_retry, which reads stderr: a main that calls _run_tee bare passes False.
+        assert merge_stderr
+        calls.append("deploy")
+        return 0, "Current Version ID: %s" % version
+
+    def fake_smoke(*_a):
+        calls.append("smoke")
+        return 0
+
+    monkeypatch.setattr(port, "_run_tee", fake_tee)
+    monkeypatch.setattr(port, "smoke", fake_smoke)
+    argv = [
+        "--company",
+        "acme",
+        "--company-id",
+        "c1",
+        "--company-domain",
+        "x.example",
+        "--region",
+        "eu",
+        "--proxy-config",
+        str(proxy_config),
+        *version_flag,
+        *flags,
+    ]
+    return port.main(argv), calls
+
+
+def test_main_deploys_through_the_settings_retry_and_smokes_without_defer(monkeypatch, tmp_path):
+    status, calls = _company_main(monkeypatch, tmp_path)
+    assert status == 0
+    assert calls == ["deploy", "smoke"]
+
+
+def test_defer_smoke_deploys_and_skips_the_smoke_and_records_no_smoke_rc(monkeypatch, tmp_path):
+    record = tmp_path / "record.json"
+    status, calls = _company_main(monkeypatch, tmp_path, "--defer-smoke", "--record", str(record))
+    assert status == 0
+    assert calls == ["deploy"]
+    assert json.loads(record.read_text(encoding="utf-8"))["smoke_rc"] is None
+
+
+ROLLBACK_ID = "11111111-2222-3333-4444-555555555555"
+
+
+@pytest.mark.parametrize("flag", [["--smoke-only"], ["--rollback", ROLLBACK_ID], ["--dry-run"]])
+def test_defer_smoke_is_refused_beside_smoke_only_rollback_and_dry_run(
+    monkeypatch, tmp_path, flag, capsys
+):
+    status, calls = _company_main(monkeypatch, tmp_path, "--defer-smoke", *flag, version_flag=())
+    assert status == 1
+    assert calls == []
+    assert "--defer-smoke needs a plain deploy" in capsys.readouterr().err

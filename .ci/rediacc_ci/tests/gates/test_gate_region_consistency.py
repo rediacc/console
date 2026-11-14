@@ -219,6 +219,16 @@ def test_a_d1_written_as_a_bare_string_is_a_missing_jurisdiction_key():
     assert [f for f in found if "d1 carries no jurisdiction key" in f.message]
 
 
+def test_a_null_or_absent_d1_is_a_missing_jurisdiction_key():
+    """1026b842.1: a None d1 value and a row with no d1 at all are the same missing key."""
+    _targets, found = rco.targets_from(_regions_with_d1(None))
+    assert [f for f in found if "d1 carries no jurisdiction key" in f.message]
+    doc = copy.deepcopy(json.loads((ROOT / "regions.json").read_text(encoding="utf-8")))
+    doc["regions"][0].pop("d1", None)
+    _targets, found = rco.targets_from(doc)
+    assert [f for f in found if "d1 carries no jurisdiction key" in f.message]
+
+
 def test_a_d1_dict_with_the_key_has_no_such_finding():
     """Control: the dict form carrying `jurisdiction` raises no missing-key finding."""
     _targets, found = rco.targets_from(_regions_with_d1({"name": "x", "jurisdiction": None}))
