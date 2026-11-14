@@ -1161,7 +1161,7 @@ class Audit:
         want = npm_pin()
         if "npm@" + version.strip() != want:
             advisory.log_warn(
-                "Upgrading npm to the pinned %s for Sigstore attestation key compatibility" % want
+                "Moving npm to the pinned %s for Sigstore attestation key compatibility" % want
             )
             proc = spawn(["npm", "install", "-g", want, "--no-audit", "--no-fund"], line=387)
             if proc.returncode != 0:

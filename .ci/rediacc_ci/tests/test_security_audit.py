@@ -853,7 +853,7 @@ def test_an_old_npm_is_upgraded_before_signature_verification(fx: Fixture) -> No
     run = run_gate(fx)
     assert run.exit == 0
     assert (
-        "⚠ Upgrading npm to the pinned npm@%s for Sigstore attestation key compatibility" % NPM_PIN
+        "⚠ Moving npm to the pinned npm@%s for Sigstore attestation key compatibility" % NPM_PIN
         in run.stdout
     )
     assert "call: npm install -g npm@%s --no-audit --no-fund" % NPM_PIN in run.calls
