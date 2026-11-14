@@ -638,7 +638,8 @@ down() {
     image: nginx:1.31.1-alpine
     container_name: app
     env_file:
-      - secrets.env
+      - path: secrets.env
+        required: false
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - ./config:/etc/nginx/conf.d:ro
