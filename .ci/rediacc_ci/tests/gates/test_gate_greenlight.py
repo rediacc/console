@@ -773,11 +773,12 @@ def want_workers(cand: str, gitlinks: dict | None = None) -> str:
     )
 
 
-# PLAN-ci-time-budget T2.12 shards each of the five distro legs nine ways (ruling #d7502b7d): 45 API jobs, plus the two E2E Full Integration legs (ruling #12755b25) on the same closure. The full-integration legs come first so ALL_FIVE[-1] stays a workers leg.
+# PLAN-ci-time-budget T2.12 shards each of the five distro legs nine ways (ruling #d7502b7d): 45 API jobs, plus the three E2E Full Integration legs (ruling #12755b25: ubuntu in two, fedora in one) on the same closure. The full-integration legs come first so ALL_FIVE[-1] stays a workers leg.
 DISTROS = ("ubuntu-24.04", "debian-13", "fedora-43", "opensuse-16.0", "oracle-10")
 ALL_LEGS = (
-    "E2E Full Integration (ubuntu-24.04)",
-    "E2E Full Integration (fedora-43)",
+    "E2E Full Integration (ubuntu-24.04, 1/2)",
+    "E2E Full Integration (ubuntu-24.04, 2/2)",
+    "E2E Full Integration (fedora-43, 1/1)",
     *(f"E2E Workers ({d}, {i}/9)" for d in DISTROS for i in range(1, 10)),
 )
 ALL_FIVE = tuple(f"{leg}=success" for leg in ALL_LEGS)
@@ -799,14 +800,14 @@ def test_matrix_key_needs_every_leg(gate):
     # `wc -l` on the twin's `printf '%s\n'` counts the legs, one per line.
     gate.assert_eq(
         len([ln for ln in result.out.split("\n") if ln != ""]),
-        47,
-        "e2e_workers declares forty-seven matrix legs (five distros x nine shards, plus two full-integration legs)",
+        48,
+        "e2e_workers declares forty-eight matrix legs (five distros x nine shards, plus three full-integration legs)",
     )
 
     # FIRE 1: one leg absent from the run entirely.
     cand = matrix_candidate(*ALL_FIVE[:-1])
     v = ev(gate, want_workers(cand))
-    gate.assert_eq(jget(v, "greenlit"), "false", "46 green legs out of 47 must NOT greenlight")
+    gate.assert_eq(jget(v, "greenlit"), "false", "47 green legs out of 48 must NOT greenlight")
     gate.assert_contains(
         jget(v, "trail"),
         "job-not-run@E2E Workers (oracle-10, 9/9)",

@@ -283,13 +283,6 @@ export const JOB_BUDGET_CAPS: readonly JobCap[] = [
     ruling:
       'Operator ruling #23e93715 (ASKED 2026-10-19T06:57Z, "Raise caps for now"): cold renet builds on branch 1008-1 (run 39177571049 embed assets 820 s cold, run 39188334570 23-29 s warm; cache key is the embed-assets lockfile hash only) put the refreshed p90 of Renet embed assets at 12.4 (12.3 in the E2E Dependency Probe); p90 13 / timeout 15 (its timeout-minutes in ct-tests.yml and ci-ops-test.yml)',
   },
-  {
-    job: 'test-e2e-full-integration',
-    p90Minutes: 16,
-    timeoutMinutes: 20,
-    ruling:
-      'Operator ruling #12755b25 (ASKED 2026-11-14T13:33Z, "Own job"): 12a/12b/12d/13b and suite 23 left leg 1 of E2E Workers for their own job on ubuntu-24.04 and fedora-43. Its ubuntu leg is priced at 15.7 (JOB_P90_SEEDS: the leg-1 fixed cost plus the --also span it carried), suite 23 alone measuring 5.6m of that (job 132425794764), so no split of the five suites over these two distros fits 12; p90 16 / timeout 20, the timeout E2E Workers runs under (#153aace7), revisited at the first refresh that measures the job',
-  },
 ];
 
 /**
@@ -307,13 +300,19 @@ export interface JobP90Seed {
 }
 export const JOB_P90_SEEDS: readonly JobP90Seed[] = [
   {
-    label: 'Tests + Infra / E2E Full Integration (ubuntu-24.04)',
-    minutes: 15.7,
+    label: 'Tests + Infra / E2E Full Integration (ubuntu-24.04, 1/2)',
+    minutes: 10.9,
     derivation:
-      'ruling #12755b25: lane-durations.json variantCosts test-e2e-workers ubuntu-24.04 fixedMinutes 6.38 (an E2E Workers leg setup, which this job repeats) + legExtraMinutes "1" 9.32 (the --also span 12a/12b/12d/13b/23 added to leg 1, refresh 2026-11-14T13:15Z), the extra removed from the lane with the move',
+      'ruling #12755b25 ("Split 23, no cap"): lane-durations.json variantCosts test-e2e-workers ubuntu-24.04 fixedMinutes 6.38 (an E2E Workers leg setup, which this job repeats) + suite 23a 3.40 (tests 1-9 with the beforeAll, the worst of runs 43317534585, 43360983417, 43585926477 attempt 2) + 12a 0.65 and 12b 0.18 (their spans in job 132425794764, first test to the next file\'s first test) + 0.30 for the afterAll 23a now pays itself (suite 23 paid one, 38.6 s, which also swept the 23b GUIDs 23a never creates) = 10.91',
   },
   {
-    label: 'Tests + Infra / E2E Full Integration (fedora-43)',
+    label: 'Tests + Infra / E2E Full Integration (ubuntu-24.04, 2/2)',
+    minutes: 11.3,
+    derivation:
+      "ruling #12755b25 (\"Split 23, no cap\"): fixedMinutes 6.38 as leg 1/2 + suite 23b 3.20 (tests 10-12 with the afterAll, the worst of the same three runs) + 12d 0.32 and 13b 1.26 (their spans in job 132425794764, 13b's with its afterAll) = 11.16, + the beforeAll 23b now pays itself (under 0.1: suite 23's first test started 3.6 s after suite 14's last, job 132425794764), rounded up to 11.3",
+  },
+  {
+    label: 'Tests + Infra / E2E Full Integration (fedora-43, 1/1)',
     minutes: 10.25,
     derivation:
       'ruling #12755b25: lane-durations.json variantCosts test-e2e-workers fedora-43 fixedMinutes 7.22 + legExtraMinutes "1" 3.03 (the --also span 12a/12b/12d/13b added to leg 1, refresh 2026-11-14T13:15Z), the extra removed from the lane with the move',

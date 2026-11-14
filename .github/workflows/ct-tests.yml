@@ -648,19 +648,25 @@ jobs:
   # ubuntu-24.04's leg 1 at 15.8m against the 12-minute lane budget. Setup,
   # artifacts and needs are an E2E Workers leg's, so this job boots the same
   # baked image the workers legs do; it is priced by check-lane-budget.ts's
-  # check 2 under its own display name (JOB_P90_SEEDS until a refresh measures
-  # it, and JOB_BUDGET_CAPS for its ceiling).
+  # check 2 under each leg's display name (JOB_P90_SEEDS until a refresh
+  # measures it) against the 12-minute budget, with no cap.
   #
   # 12a/12b/12d (composition suites) + 13b (live CRIU fork): composition logic
-  # is distro-agnostic, so two legs are the honest floor, one apt-family
+  # is distro-agnostic, so two distros are the honest floor, one apt-family
   # (ubuntu) + one rpm-family (fedora). CRIU_EXPECTED=1 turns 13b's "CRIU
   # absent" guard into a hard failure.
   #
-  # CLI_SUITE (suite 23, the rdc-driven migrate-routing e2e) runs on the ubuntu
-  # leg only: its routing logic is distro-agnostic. Fedora declares it empty
-  # because actionlint flags a matrix property a leg never declares.
+  # CLI_SUITE (suites 23a and 23b, the rdc-driven migrate e2e) runs on ubuntu
+  # only: its routing logic is distro-agnostic. Ubuntu is two legs (operator
+  # ruling #12755b25, "Split 23, no cap"): suite 23 alone spanned 5.6m, so its
+  # two halves go one per leg with the composition suites spread around them.
+  # 23a and 23b must not share a fleet at the same time (23a's unfiltered
+  # `config reconcile` asserts on every repo in the shared e2e-cli config);
+  # separate legs are separate runners and fleets. Every suite still runs
+  # exactly once per distro. Fedora declares cli-suite empty because
+  # actionlint flags a matrix property a leg never declares.
   test-e2e-full-integration:
-    name: E2E Full Integration (${{ matrix.os-image }})
+    name: E2E Full Integration (${{ matrix.os-image }}, ${{ matrix.part }})
     # Logs into ghcr with github.token and PULLS only, as an E2E Workers leg.
     permissions:
       contents: read
@@ -668,21 +674,32 @@ jobs:
     needs: [renet-embed-assets]
     if: inputs.full_suite == 'true' && inputs.run_e2e_workers != 'false' && inputs.renet_built != 'false'
     runs-on: ubuntu-latest
-    timeout-minutes: 20 # JOB_BUDGET_CAPS ruling #12755b25 (the ubuntu leg is priced at 15.7m)
+    timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         include:
           - os-image: ubuntu-24.04
+            part: 1/2
+            leg-id: ubuntu-24.04-1
             cli-suite: '1'
+            suites: 23a-cli-migrate-routing.test.ts 12a-full-integration-repository.test.ts 12b-full-integration-checkpoint.test.ts
+          - os-image: ubuntu-24.04
+            part: 2/2
+            leg-id: ubuntu-24.04-2
+            cli-suite: '1'
+            suites: 23b-cli-migrate-ordering.test.ts 12d-full-integration-multi-machine.test.ts 13b-live-fork-checkpoint.test.ts
           - os-image: fedora-43
+            part: 1/1
+            leg-id: fedora-43-1
             cli-suite: ''
+            suites: 12a-full-integration-repository.test.ts 12b-full-integration-checkpoint.test.ts 12d-full-integration-multi-machine.test.ts 13b-live-fork-checkpoint.test.ts
     env:
       CI: 'true'
       BRIDGE_TIMEOUT: 240000
       VM_BRIDGE: '1'
       VM_WORKERS: '11 12'
-      # The same kill switch as E2E Workers: 'off' sends both legs to the stock image.
+      # The same kill switch as E2E Workers: 'off' sends every leg to the stock image.
       VM_BAKE: 'on'
       VM_CEPH_NODES: ''
       VM_IMAGE: ${{ matrix.os-image }}
@@ -844,13 +861,15 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path /usr/bin/renet --output packages/e2e-tests/.env
 
       - name: Run E2E Tests (Full Integration)
-        # Plain mode, the suite files named: FULL_INTEGRATION=1 and CLI_SUITE
-        # (job env) are what playwright.config.ts reads to select them on CI.
+        # Plain mode, the leg's suite files named: FULL_INTEGRATION=1 and
+        # CLI_SUITE (job env) are what playwright.config.ts reads to collect
+        # them on CI, and --fail-on-skip turns a suite that collects nothing
+        # into a failure.
         env:
-          CLI_ALSO: ${{ matrix.cli-suite == '1' && '23-cli-migrate-routing.test.ts' || '' }}
+          LEG_SUITES: ${{ matrix.suites }}
         run: |
           ARGS=()
-          for f in 12a-full-integration-repository.test.ts 12b-full-integration-checkpoint.test.ts 12d-full-integration-multi-machine.test.ts 13b-live-fork-checkpoint.test.ts ${CLI_ALSO}; do ARGS+=(--test "$f"); done
+          for f in ${LEG_SUITES}; do ARGS+=(--test "$f"); done
           PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --fail-on-skip "${ARGS[@]}"
 
       # On failure, each VM's libvirt state, console and guest journal go into the upload below (see the collector's docstring).
@@ -860,12 +879,12 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.diagnostics.collect_vm_diagnostics
 
       - if: always()
-        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-full-integration-${{ matrix.os-image }}" --status ${{ job.status }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-full-integration-${{ matrix.leg-id }}" --status ${{ job.status }}
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
-          name: test-e2e-full-integration-${{ matrix.os-image }}-${{ github.sha }}
+          name: test-e2e-full-integration-${{ matrix.leg-id }}-${{ github.sha }}
           path: |
             ${{ runner.temp }}/complete.txt
             ${{ runner.temp }}/vm-diagnostics/
@@ -885,7 +904,7 @@ jobs:
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         if: always()
         with:
-          name: unit-durations-test-e2e-full-integration-${{ matrix.os-image }}-${{ github.sha }}
+          name: unit-durations-test-e2e-full-integration-${{ matrix.leg-id }}-${{ github.sha }}
           path: packages/e2e-tests/reports/bridge-logs/unit-durations*.json
           retention-days: 3
           if-no-files-found: ignore

@@ -142,9 +142,10 @@ const CLOSURES = {
       'E2E Workers (oracle-10, 7/9)',
       'E2E Workers (oracle-10, 8/9)',
       'E2E Workers (oracle-10, 9/9)',
-      // test-e2e-full-integration (operator ruling #12755b25): the suites that rode leg 1's --also, on the same closure, as two legs of their own.
-      'E2E Full Integration (ubuntu-24.04)',
-      'E2E Full Integration (fedora-43)',
+      // test-e2e-full-integration (operator ruling #12755b25): the suites that rode leg 1's --also, on the same closure, as legs of their own; ubuntu is two legs since suite 23 split into 23a and 23b ("Split 23, no cap").
+      'E2E Full Integration (ubuntu-24.04, 1/2)',
+      'E2E Full Integration (ubuntu-24.04, 2/2)',
+      'E2E Full Integration (fedora-43, 1/1)',
     ],
     submodules: VM_E2E_SUBMODULES,
     // 348e25fcb (spec W T2.12) shards this leg nine ways per distro (eight until #d7502b7d) off this manifest (ct-tests.yml:430); the other seven VM/E2E keys have no shard manifest of their own, so it is added on top of the shared list rather than into it. Found by test_gate_greenlight_closure_trace.py.

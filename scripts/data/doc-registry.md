@@ -1608,7 +1608,6 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `CLAUDE_PID` | harness | - |
 | `CLAUDE_PROJECT_DIR` | harness | - |
 | `CLAUDE_TRANSCRIPT_PATH` | harness | - |
-| `CLI_ALSO` | ci-runner | - |
 | `CLI_SUITE` | harness | - |
 | `CLI_VERSION` | ci-runner | - |
 | `CLOUDFLARE_ACCOUNT_ID` | secret | - |
@@ -1892,6 +1891,7 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `LANGUAGE_POLICY_ROOT` | gate-seam | - |
 | `LC_ALL` | machine-local | - |
 | `LC_CTYPE` | machine-local | - |
+| `LEG_SUITES` | ci-runner | - |
 | `LINODE_API_TOKEN` | secret | - |
 | `LIVE_CONSOLE_D1_DATABASE` | secret | - |
 | `LIVE_CONSOLE_EDGE_ASIA_D1_DATABASE` | secret | - |
