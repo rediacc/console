@@ -22,16 +22,16 @@ Body-Sig: 6c947f9b7cd54a86
 Anchor: in-diff
 Claim: _missing_blobs never checks the rc of `git cat-file --batch-check`; if that command fails, stdout is empty, the function returns [], and _prefetch_main_plans returns 0 with nothing recorded in PREFETCH_REPORT, so the plan-renders message reads 'no failure recorded' for the very failure this commit set out to surface.
 Class: swallowed-error
-Resolution: open
+Resolution: fixed e8f2d68ee3bae305a5f468ef3a859ceb3a88e56f | d778be9d 2026-11-14T17:47:14Z
 
 ### 0ebbba45.2 [medium] .claude/rediacc_hooks/tests/test_githook_generated_artifacts.py:480
 Anchor: in-diff
 Claim: The new lock, re-check under lock, fetch-failure, timeout and still-absent report branches are not exercised by any test: the local run only reaches the early `if not _missing_blobs(oids): return 0` return, so a regression in the locked path would pass locally and only show up (if at all) in the next blob:none CI run.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed e8f2d68ee3bae305a5f468ef3a859ceb3a88e56f | d778be9d 2026-11-14T17:47:14Z
 
 ### 0ebbba45.3 [low] .claude/rediacc_hooks/tests/test_githook_generated_artifacts.py:476
 Anchor: in-diff
 Claim: tempfile.gettempdir() is used for the lock file with no fallback; if the temp directory is not writable, open() raises inside the module-scoped fixture and every case errors, with no PREFETCH_REPORT entry explaining it.
 Class: other
-Resolution: open
+Resolution: fixed e8f2d68ee3bae305a5f468ef3a859ceb3a88e56f | d778be9d 2026-11-14T17:47:14Z

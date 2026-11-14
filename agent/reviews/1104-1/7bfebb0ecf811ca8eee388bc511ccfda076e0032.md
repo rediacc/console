@@ -22,4 +22,4 @@ Body-Sig: f392cb330d4e00fa
 Anchor: in-diff
 Claim: The Concurrency header (line 6) says the writers and P0 do not wait on PLAN-d1-eu-jurisdiction and 'only C2 does', but the Wave 2 header on this line makes all of wave 2 (L1-L5) wait for that plan's bench wave to be ticked, so a reader cannot tell when L1 may start.
 Class: other
-Resolution: open
+Resolution: fixed d81ab2c39d50740afd8f4eba4c4285055abeb050 | d778be9d 2026-11-14T17:34:59Z
