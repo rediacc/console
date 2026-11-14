@@ -1,20 +1,15 @@
-## SESSION d778be9d 2026-11-14T14:43:44Z
-
-# STATE d778be9d (2026-11-14 ~14:50Z, branch 1104-1, PR #605)
-
-## Where things stand
-- Pushed head 38ae9cb0; ~90 local commits since, all landed and verified per unit. PR run 43585926477 had 28 reds; every cause is fixed locally (cluster #4889018a): Terms gate, CI git identity, external link, renet fsck, e2e 07/32, oracle Landlock skips, update flow (install.sh + CLI default edge), networking template, Browse-At diagnostics, docs default channel, CI duration refresh + outlier rule, 9 e2e legs / 7 ops legs, full-integration own job, test-unit 2 shards, suite 23 split 23a/23b with no cap (operator rulings #d7502b7d, #12755b25), plus 4 review-finding rounds.
-- Last landed: guard 4c1ac1fc (round 4 done, #d5d311f4 ticked). Open below-high findings on a2d3c0bf and 32dbd841 (fix before merge, not before push).
+## SESSION d778be9d 2026-11-14T18:04:07Z
 
 ## Next action
-1. Run `npm run ci:quick` alone (background, ~30 min); fix any red (check:format/lint/python-lint/env-manifest first).
-2. Run `npm run vm:check -- --changed` (renet changed; its cli-migrate-23 leg is the first live run of 23a/23b).
-3. Push: `git -C private/renet push origin 1104-1`, account likewise if ahead, then console, each with TURBO_PUSH_REASON='red-fix: PR #605 CI cluster fixes'.
-4. Watch with `.ci/scripts/ci/ci-trace.py --wait`; then #88ac738c (networking tutorial, Browse-At LICENSE_REQUIRED line).
+Run `npm run ci:quick` alone on the review-drain batch (HEAD after 06c2c07141), then `npm run vm:check -- --changed` (renet moved: a65806a2, c42dc048), then push renet, account, console with TURBO_PUSH_REASON='red-fix: PR #605 CI cluster fixes and review drain'. Watch with `.ci/scripts/ci/ci-trace.py --wait --timeout 38m --worklist-item 4889018a` (background, timeout 2400000). The last PR run (43617661791 on 3cb024c0) was red only on Quality / Pytest (2/5): test_githook_generated_artifacts plan-renders refused RF because the CI fixture could not read main's plan blobs; fixed by serializing the prefetch (0ebbba453b, e8f2d68ee3), unproven until CI runs it.
 
 ## Big pieces
-PLAN-d1-eu-jurisdiction.md, PLAN-first-release-checks.md, PLAN-multi-region-bench.md, PLAN-enterprise-tenants.md, PLAN-deletion-budget.md, PLAN-d1-scaling.md, PLAN-hostinger-to-bench.md, PLAN-health-checks-local.md, PLAN-enterprise-isolation.md. The PR's own CI comes first.
+- Review-finding drain #12a2797b: 330 open below-threshold findings went to 68, 28, 9, then a handful, across three lease-writer waves (9, 5, 4 writers) plus lead fixes. Each landed commit draws a smaller round. Two highs were found and fixed on the way (2a494086.1 -> 109da352cd, 109da352.1 -> 1a79db6a9a). Remaining open after this batch: fa39834c.1, aa64a33e.1 and whatever 4d07d37e and 06c2c071 draw; low, fix after the push.
+- Tool fix: the review move search read only the newest 60 commits of a range (ab7e9e286d, then bf83ba682d counts successors and uses literal pathspecs).
+- New open boxes from honest plan corrections: PLAN-detached-jobs J18b [live] (older-renet setup control on an ops VM) and PLAN-account-notices X2b [live] (bell in the bench portal, browser-probe).
 
 ## Owed ticks
-- PLAN-enterprise-isolation.md #2878e08d #a8892e0c #0a6e5712 #e8b5ad6f #6041744e #f4b49503 #0fbd62dc #cc583290 #b343464b (V2 #cdf29e6f needs a bench-us company, #b6ad6de2)
-- PLAN-health-checks-local.md #85f55665; PLAN-proxy-cd-six-targets.md #abe9b4eb; PLAN-production-key-only.md #6a1ca4a4; PLAN-backup-program.md #0a237b2e #575e0098 #07955f58
+- #4889018a stays open until the PR run is green.
+- #12a2797b closes when wl_review.py --check reports no open finding.
+- #88ac738c (networking tutorial and Browse-At live check) after the push.
+- Check whether bench D1 applied account migration 0087 under its one-day name 0089 (e73058f -> 67f6709 on 2026-11-13).
