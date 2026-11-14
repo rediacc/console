@@ -851,43 +851,44 @@ _PREFIX_OPERAND = frozenset(("timeout",))
 # (`sshpass` has no such reader and is a plain prefix above.) The launched command is walked into an analysis of its own (`_Run.launched`): `lifted_commands` puts it on a line of its own, where every anchored text guard sees it at command position, while `_analyse(cmd).runs` stays the list it always was. Before this, three guards named `npx`, `sshpass` and `find -exec` inside their own anchors (`(npx[S]+)?`, `(sshpass ...)?`, `(find ... -exec ...)?`), three copies that still missed: `npx -y node packages/cli/dist/cli.js` and `find . -exec node cli-bundle.js \;` were both allowed (measured 2026-10-09).
 # WHERE AN npm LAUNCH STARTS IS npm's OWN PARSE, PORTED (#31ed6c5f). `npx`, `npm exec`, `npm exe` and `npm x` all run the program named by the first operand npm's option parser leaves after `exec`, so the walk asks the same parser. Two lists of value options came before this one and both lost: a hand-picked seven missed `--loglevel` (#32e75fa4), and the complete table that replaced it could not see that npm's
 # parser, `nopt`, accepts any unique PREFIX of an option name, so `npx --logl silent node packages/cli/dist/cli.js` read `silent` as the program and block_cli_bundle allowed it (rc 0, 2026-10-09; 442 `--` prefixes take a value). `npm exec -- node ...` and `npm x node ...` were not launchers at all (rc 0 the same day).
-# So the port is of npm's two passes, not of their answers. `_npx_argv` is `bin/npx-cli.js`'s loop (it splices `--` in front of the first word it takes for the program, expanding shorthands and skipping a value it guesses at), and `_nopt` is `nopt`'s `parse` with npm's option types: unique-prefix abbreviations, shorthand bundles, `--no-`, `--key=value`, and the per-type rule for whether the next word is a value. The tables below are npm 11.20.0's, the version
+# So the port is of npm's two passes, not of their answers. `_npx_argv` is `bin/npx-cli.js`'s loop (it splices `--` in front of the first word it takes for the program, expanding shorthands and skipping a value it guesses at), and `_nopt` is `nopt`'s `parse` with npm's option types: unique-prefix abbreviations, shorthand bundles, `--no-`, `--key=value`, and the per-type rule for whether the next word is a value. The tables below are npm 12.2.2's, the version
 # `.devcontainer/toolchain.env` pins. `tests/test_bash_semantics.py::test_npm_launch_matches_npm` asks that npm, with its `lib/cli.js` stubbed so nothing runs, what it would execute for every option spelling it accepts (every name, every unique prefix, one dash and two, `=value` and a separate word, behind `npx`, `npm exec` and `npm x`), and fails when the walk answers differently or when a table here and npm's own disagree.
 # An option's type, as nopt reads it: "B" Boolean (a switch, which takes the next word only when that word is `true` or `false`), "S" String (it takes the next word unless that word looks like an option), "V" any other single type (it takes the next word whatever it is), and for a list of types "A" followed by "b" (Boolean: a switch that may still take a value), "n" (null: a following `false` makes it a switch), "s" (String), "N" (Number) and one "|x" per literal string x. `local-address` lists this machine's own addresses, which no table can carry, so it is spelled "|<address>" and any address-shaped word matches it.
 _NPM_TYPES = {
     "B": (
-        "all allow-same-version allow-scripts-pending allow-scripts-pin audit bin-links bypass-2fa "
-        "commit-hooks dangerously-allow-all-scripts description dev diff-ignore-all-space "
-        "diff-name-only diff-no-prefix diff-text dry-run engine-strict force foreground-scripts "
-        "format-package-lock fund git-tag-version global global-style if-present ignore-scripts "
-        "include-attestations include-staged include-workspace-root init-private install-links json "
-        "legacy-bundling legacy-peer-deps link long offline omit-lockfile-registry-resolved "
-        "package-lock package-lock-only packages-all parseable prefer-dedupe prefer-offline "
-        "prefer-online progress provenance read-only rebuild-bundle save save-bundle save-dev "
-        "save-exact save-optional save-peer save-prod shrinkwrap sign-git-commit sign-git-tag "
-        "strict-allow-scripts strict-peer-deps strict-ssl timing unicode update-notifier usage "
-        "version versions workspaces-update"
+        "all allow-same-version allow-scripts-pending allow-scripts-pin allow-unused-patches "
+        "audit bin-links bypass-2fa commit-hooks dangerously-allow-all-scripts description dev "
+        "diff-ignore-all-space diff-name-only diff-no-prefix diff-text dry-run engine-strict "
+        "force foreground-scripts format-package-lock fund git-tag-version global global-style "
+        "if-present ignore-existing ignore-extension ignore-patch-failures ignore-scripts "
+        "include-attestations include-staged include-workspace-root init-private install-links "
+        "json keep-edit-dir legacy-bundling legacy-peer-deps link long offline "
+        "omit-lockfile-registry-resolved package-lock package-lock-only packages-all parseable "
+        "prefer-dedupe prefer-offline prefer-online progress provenance read-only rebuild-bundle "
+        "save save-bundle save-dev save-exact save-optional save-peer save-prod sign-git-commit "
+        "sign-git-tag strict-allow-scripts strict-npmrc strict-peer-deps strict-ssl timing "
+        "unicode update-notifier usage version versions workspaces-update"
     ),
     "S": (
-        "call diff-dst-prefix diff-src-prefix editor git heading init-author-email init-author-name "
-        "init-license init-type init.author.email init.author.name init.license message "
-        "pack-destination preid save-prefix scope searchexclude searchopts shell tag "
-        "tag-version-prefix user-agent viewer"
+        "call diff-dst-prefix diff-src-prefix editor git heading init-author-email "
+        "init-author-name init-license init-type init.author.email init.author.name init.license "
+        "message pack-destination patches-dir preid save-prefix scope searchexclude searchopts "
+        "shell tag tag-version-prefix user-agent viewer"
     ),
     "V": (
         "cache cache-max cache-min cafile diff-unified fetch-retries fetch-retry-factor "
-        "fetch-retry-maxtimeout fetch-retry-mintimeout fetch-timeout globalconfig init-module "
-        "init-version init.module init.version logs-max maxsockets node-gyp prefix provenance-file "
-        "registry searchlimit searchstaleness umask userconfig"
+        "fetch-retry-maxtimeout fetch-retry-mintimeout fetch-timeout global-ignore-file "
+        "globalconfig init-module init-version init.module init.version logs-max maxsockets "
+        "node-gyp prefix provenance-file registry searchlimit searchstaleness umask userconfig"
     ),
     "Ans": (
         "_auth ca cert cidr cpu key libc name node-options orgs os otp packages password scopes "
-        "script-shell token-description"
+        "script-shell to token-description"
     ),
     "As": "allow-scripts diff min-release-age-exclude noproxy package workspace",
     "Abn": "expect-results optional production workspaces yes",
     "AnN": "depth expect-result-count expires min-release-age which",
-    "An": "before https-proxy logs-dir proxy",
+    "An": "before edit-dir extension-file https-proxy logs-dir proxy",
     "A|all|none|root": "allow-directory allow-file allow-git allow-remote",
     "A|": "init-author-url init.author.url",
     "Abns": "browser",
