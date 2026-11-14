@@ -1089,3 +1089,35 @@ def test_credentials_present_run_in_process_with_no_reexec(monkeypatch):
         dr.main(["before", "--target", "stable", "--region", "eu", "--account-only", "--out", "x"])
         == 0
     )
+
+
+def test_branch_release_records_get_their_own_keys(monkeypatch):
+    """Two branch releases of one live version (different heads) do not collide; the plain key is unchanged."""
+    plain = dr.record_key("3.0.1", "edge", "www-edge", "global", None)
+    assert plain == "release-records/v3.0.1/edge/deploy-record-www-edge-global.json"
+    one = dr.record_key("3.0.1", "edge", "www-edge", "global", "1104-1.01234567")
+    two = dr.record_key("3.0.1", "edge", "www-edge", "global", "1104-1.89abcdef")
+    assert len({plain, one, two}) == 3
+    assert one.endswith("/edge/branch-1104-1.01234567/deploy-record-www-edge-global.json")
+    # The environment spelling `release:local` hands its children.
+    monkeypatch.setenv(dr.BRANCH_KEY_ENV, "1104-1.89abcdef")
+    assert dr.record_key("3.0.1", "edge", "www-edge", "global") == two
+    monkeypatch.setenv(dr.BRANCH_KEY_ENV, "../escape")
+    with pytest.raises(dr.RecordError, match="not a branch label"):
+        dr.record_key("3.0.1", "edge", "www-edge", "global")
+
+
+@pytest.mark.usefixtures("world")
+def test_two_branch_releases_neither_refuse_and_a_plain_second_write_does(monkeypatch):
+    monkeypatch.setenv("CLOUDFLARE_R2_ENDPOINT", "https://r2.example.invalid")
+    record = {"version": "3.0.1"}
+    for label in ("1104-1.01234567", "1104-1.89abcdef"):
+        monkeypatch.setenv(dr.BRANCH_KEY_ENV, label)
+        dr.sink_record(record, "r2", "edge", "www-edge", "global")
+    monkeypatch.setenv(dr.BRANCH_KEY_ENV, "1104-1.01234567")
+    with pytest.raises(dr.RecordError, match="written once"):
+        dr.sink_record(record, "r2", "edge", "www-edge", "global")
+    monkeypatch.delenv(dr.BRANCH_KEY_ENV)
+    dr.sink_record(record, "r2", "edge", "www-edge", "global")
+    with pytest.raises(dr.RecordError, match="written once"):
+        dr.sink_record(record, "r2", "edge", "www-edge", "global")

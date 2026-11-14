@@ -1293,6 +1293,10 @@ def child_env(step: Step, ctx: Context, root: pathlib.Path) -> dict[str, str]:
     env = {k: v for k, v in os.environ.items() if k != "PYTHONPYCACHEPREFIX"}
     env["PYTHONPATH"] = str(tree_root / ".ci")
     env["BWS_ENV_ROOT"] = str(root)
+    # The clone's toolchain cache is empty: the aws resolver borrows this checkout's (core.awscli rung 3).
+    env[awscli.TOOLCHAIN_ROOT_ENV] = str(root)
+    if ctx.get("branch_release"):
+        env[deploy_record.BRANCH_KEY_ENV] = ctx["build_meta"].lstrip("+")
     out = ctx.get("out")
     if out:
         env["GITHUB_OUTPUT"] = str(pathlib.Path(out) / ("github-output-%s" % step.id))

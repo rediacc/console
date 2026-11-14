@@ -1717,3 +1717,19 @@ def test_assist_failed_run_names_only_a_red_dispatch_of_this_sha_since_the_dispa
     assert local.assist_failed_run(SHA, since) == "5"
     monkeypatch.setattr(local, "_gh_json", lambda _args: None)
     assert local.assist_failed_run(SHA, since) == ""
+
+
+def test_children_borrow_the_main_toolchain_and_a_branch_release_names_its_record_keys(
+    tmp_path: pathlib.Path,
+) -> None:
+    root = _tmp_root(tmp_path)
+    ctx = local.base_context(root, ["eu"], True)
+    ctx.update(version="9.9.9")
+    steps = local.plan(["eu"], workers_only=True, branch_release=True)
+    (step,) = [s for s in steps if s.id == "www-deploy"]
+    plain = local.child_env(step, ctx, root)
+    assert plain[local.awscli.TOOLCHAIN_ROOT_ENV] == str(root)
+    assert local.deploy_record.BRANCH_KEY_ENV not in plain
+    ctx.update(local.branch_context(root, HEAD_SHA, "ASKED:2026-11-13T05:02Z", _heads()))
+    branch = local.child_env(step, ctx, root)
+    assert branch[local.deploy_record.BRANCH_KEY_ENV] == "1104-1.01234567"
