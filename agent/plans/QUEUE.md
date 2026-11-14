@@ -82,20 +82,20 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 877 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 889 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
-  - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 128 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
+  - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 132 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a671f62936a84d43d.
-- Leased items: 26: #000fcf57 (worker:a537aa63388e0aca9, d778be9d), #0eecc43c (worker:a537aa63388e0aca9, d778be9d), #14adbaec (worker:a537aa63388e0aca9, d778be9d), #1f64af37 (worker:a537aa63388e0aca9, d778be9d), #22e2ca84 (worker:a537aa63388e0aca9, d778be9d), #2c00ac36 (worker:a537aa63388e0aca9, d778be9d), #2c4b1eec (worker:a537aa63388e0aca9, d778be9d), #418319bf (worker:a537aa63388e0aca9, d778be9d), #4be994ad (worker:a537aa63388e0aca9, d778be9d), #5ac354e6 (worker:a537aa63388e0aca9, d778be9d), #5cd4f7ce (worker:a537aa63388e0aca9, d778be9d), #63c267ff (worker:a537aa63388e0aca9, d778be9d), and 14 more.
+- Writers: 3 live of writer_cap 25 (session d778be9d): worker:a671f62936a84d43d, worker:ae5d290922bedbe39, worker:a81ff7ec6e933f02f.
+- Leased items: 29: #000fcf57 (worker:a537aa63388e0aca9, d778be9d), #02389657 (worker:3214822, d778be9d), #0eecc43c (worker:a537aa63388e0aca9, d778be9d), #14adbaec (worker:a537aa63388e0aca9, d778be9d), #1e74ec30 (worker:ae5d290922bedbe39, d778be9d), #1f64af37 (worker:a537aa63388e0aca9, d778be9d), #22e2ca84 (worker:a537aa63388e0aca9, d778be9d), #2c00ac36 (worker:a537aa63388e0aca9, d778be9d), #2c4b1eec (worker:a537aa63388e0aca9, d778be9d), #418319bf (worker:a537aa63388e0aca9, d778be9d), #4be994ad (worker:a537aa63388e0aca9, d778be9d), #5ac354e6 (worker:a537aa63388e0aca9, d778be9d), and 17 more.
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 24 of 74 plans done, 1143 of 1379 boxes done (82%).
+Promoted: 25 of 74 plans done, 1144 of 1379 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -169,7 +169,7 @@ Promoted: 24 of 74 plans done, 1143 of 1379 boxes done (82%).
 | 68 | PLAN-enterprise-tenants.md | 16/47 | 31 open |
 | 69 | PLAN-licence-expiry-notices.md | 6/7 | 1 open |
 | 70 | PLAN-onprem-relicence-inbox.md | 10/13 | 3 open |
-| 71 | PLAN-signer-bench-stop-binding-reattach.md | 2/3 | 1 open |
+| 71 | PLAN-signer-bench-stop-binding-reattach.md | 3/3 | done |
 | 72 | PLAN-d1-eu-jurisdiction.md | 3/22 | 19 open |
 | 73 | PLAN-hostinger-to-bench.md | 5/22 | 17 open |
 | 74 | PLAN-multi-region-bench.md | 2/22 | 20 open |
