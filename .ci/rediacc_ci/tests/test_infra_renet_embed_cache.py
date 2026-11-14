@@ -7,6 +7,7 @@ The receipt check is also driven against build.sh's own `_embed_receipt_is_curre
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import os
@@ -314,6 +315,7 @@ def _embed(
     noop: str = "",
     build_sh: pathlib.Path = BUILD_SH,
     timeout_s: int | None = None,
+    base_path: str | None = None,
 ):
     bindir = tmp_path / "fakebin"
     bindir.mkdir(exist_ok=True)
@@ -324,7 +326,7 @@ def _embed(
     recipe.write_text(_sha((src / "Dockerfile").read_bytes()) + "\n", encoding="utf-8")
     script = (
         'source "$1" || true; set +e; SCRIPT_DIR="$2"; EMBED_LOCKFILE="$2/embed-assets.lock.json"; '
-        'PATH="$3:$PATH"; export FAKE_RECIPE_FILE="$4" FAKE_CP_FAIL="$5" FAKE_CP_NOOP="$6"; '
+        'PATH="$3:$7"; export FAKE_RECIPE_FILE="$4" FAKE_CP_FAIL="$5" FAKE_CP_NOOP="$6"; '
         "embed_assets --force"
     )
     cmd = [
@@ -338,12 +340,11 @@ def _embed(
         str(recipe),
         fail,
         noop,
+        base_path if base_path is not None else os.environ.get("PATH", "/usr/bin:/bin"),
     ]
     if timeout_s is not None:
-        # The result is None only when THIS call outlived its timeout (it was
-        # waiting); any exit code, 124 and 137 included, is a real result.
-        # A new session lets the whole group (the subshell holding fd 9 and any
-        # child) die with it.
+        # The result is None only when THIS call outlived its timeout (it was waiting); any exit code, 124 and 137 included, is a real result.
+        # A new session lets the whole group (the subshell holding fd 9 and any child) die with it.
         with subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
@@ -423,7 +424,10 @@ def test_control_the_pre_fix_build_sh_stages_over_a_vanished_raw_file(tmp_path):
         check=False,
     )
     if shown.returncode != 0:
-        pytest.fail(f"private/renet has no revision {PREFIX_REV}: {shown.stderr}")
+        # A shallow or partial submodule checkout lacks the old revision; the control cannot run, and says so.
+        pytest.skip(
+            f"private/renet has no revision {PREFIX_REV} (shallow checkout?): {shown.stderr.strip()}"
+        )
     old = tmp_path / "build-pre-fix.sh"
     old.write_text(shown.stdout, encoding="utf-8")
     src = _skeleton(tmp_path)
@@ -451,8 +455,47 @@ def test_a_second_staging_waits_while_one_holds_the_tree(tmp_path):
         )
     finally:
         # flock's `sleep` child inherits the lock fd: kill the whole group.
-        os.killpg(holder.pid, signal.SIGKILL)
+        with contextlib.suppress(ProcessLookupError):
+            os.killpg(holder.pid, signal.SIGKILL)
         holder.wait()
     done = _embed(src, tmp_path)
     assert done is not None
     assert done.returncode == 0
+
+
+def _path_without(tool: str, tmp_path: pathlib.Path) -> str:
+    """A PATH holding a symlink to every executable on the current PATH except `tool`, so build.sh sees every other tool."""
+    farm = tmp_path / ("path-without-" + tool)
+    farm.mkdir()
+    for entry in os.environ.get("PATH", "/usr/bin:/bin").split(os.pathsep):
+        if not entry or not os.path.isdir(entry):
+            continue
+        for name in os.listdir(entry):
+            target = os.path.join(entry, name)
+            if name != tool and not (farm / name).exists() and os.access(target, os.X_OK):
+                (farm / name).symlink_to(target)
+    return str(farm)
+
+
+@needs_embed_tools
+def test_a_host_without_flock_stages_unlocked_and_says_so(tmp_path):
+    """Review 59c3f980.1: without a flock binary embed_assets still stages, and prints one note that it is not serialized."""
+    src = _skeleton(tmp_path)
+    done = _embed(src, tmp_path, base_path=_path_without("flock", tmp_path))
+    assert done is not None
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert "flock not found" in done.stdout + done.stderr
+    assert rec.receipt_is_current(src)
+
+
+@needs_embed_tools
+@pytest.mark.skipif(shutil.which("flock") is None, reason="needs flock")
+def test_a_missing_assets_directory_is_created_before_the_lock(tmp_path):
+    """Review 59c3f980.1: the assets directory is created before locking, so a fresh tree is locked and staged rather than skipping the lock."""
+    src = _skeleton(tmp_path)
+    shutil.rmtree(rec.assets_dir(src))
+    done = _embed(src, tmp_path)
+    assert done is not None
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert "flock not found" not in done.stdout + done.stderr
+    assert rec.receipt_is_current(src)
