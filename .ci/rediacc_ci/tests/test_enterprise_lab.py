@@ -477,7 +477,8 @@ class NoProjectLifecycle(FakeLifecycle):
     def missing_buckets(self, _ctx, _name):
         raise self.LifecycleError("--bws-project names the enterprise bws project this verb reads")
 
-    def remove(self, _ctx, _name, **_kw):
+    def remove(self, ctx, name, *, delete_data, confirm=None):
+        self.calls.append(("remove", ctx, name, {"delete_data": delete_data, "confirm": confirm}))
         raise self.LifecycleError("--bws-project names the enterprise bws project this verb reads")
 
 
