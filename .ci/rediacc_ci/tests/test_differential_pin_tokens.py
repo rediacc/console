@@ -62,6 +62,18 @@ def test_record_folds_the_current_pin_and_compare_restores_it():
     assert diff.pin_unfold(NFPM_STEM, recorded) == "ensure-nfpm: fetching nfpm 9.9.9 for x86_64\n"
 
 
+@pytest.mark.usefixtures("bumped")
+def test_record_writes_the_token_and_the_next_compare_restores_the_pin(monkeypatch):
+    monkeypatch.setattr(diff, "RECORDED", {})
+    monkeypatch.setattr(diff, "RECORDED_TWINS", {})
+    text = "ensure-nfpm: fetching nfpm 9.9.9 for x86_64\n"
+    diff._record(NFPM_TWIN, "case-key", (0, text, text), ())
+    rc, out, err = diff.RECORDED[NFPM_STEM]["case-key"]
+    assert (rc, out, err) == (0, text.replace("9.9.9", TOKEN), text.replace("9.9.9", TOKEN))
+    assert "9.9.9" not in out + err
+    assert diff.pin_unfold(NFPM_STEM, out) == text
+
+
 def test_only_a_whole_version_folds():
     pins = {"NFPM_VERSION": "2.49.0"}
     text = "v2.49.0 '2.49.0' 12.49.0 2.49.0.1 2.49.01 2.49.0."
