@@ -140,7 +140,8 @@ ARGV_GIT = re.compile(
 PLAIN_NOISE = re.compile(r"[\"'\\]")
 SPELLABLE = ("clone", "fetch", "pull", "remote", "submodule")
 # A verb as a word: bounded by anything but a filename character, so `quick-clone.ts`, `ci-quick-clones/` and `clone_d1.py` are names, not verbs. Two dashed spellings are verbs too, for every verb in SPELLABLE: after `--` (`gh repo fork --clone`, and so `--remote`, `--pull`) and after `git-` (git's own executables, `git-clone`, `git-fetch`, `git-pull`, `git-remote`, `git-submodule`). Only a run the hook cannot judge reads this, so the wider reading is the safe one: each `git-<verb>` is the same act as `git <verb>`, and the cost of the rest is a refusal of a script that could not be read anyway (review 97b8666f.1).
-VERB_WORD = re.compile(r"(?:(?<![\w.-])|(?<=--)|(?<=git-))(?:%s)(?![\w.-])" % "|".join(SPELLABLE))
+# Each dashed prefix starts at a word boundary too, so `digit-clone`, `legit-pull` and `foo--fetch` are names while `/usr/lib/git-core/git-pull` still counts (review 91768330.1).
+VERB_WORD = re.compile(r"(?<![\w.-])(?:--|git-)?(?:%s)(?![\w.-])" % "|".join(SPELLABLE))
 OUTSIDE_VERBS = frozenset(("fetch", "pull", "remote", "submodule"))
 
 MESSAGE = (
@@ -303,6 +304,20 @@ class World:
         first = rel.split(os.sep, 1)[0]
         return rel == "." or first in ALWAYS_OURS or os.path.exists(os.path.join(self.root, first))
 
+    def is_source_of_ours(self, real):
+        """Does a clone SOURCE name this checkout or its git directory? A place test is too wide for a source: from a run standing below the root (a package directory, a lease under `.claude/worktrees/`) every bare word resolves under an existing top-level entry, so `fetch` read as a source was "ours" (#11ad5926). git clones only a source that exists, so a source must exist, apart from a path under `.git` and an absent submodule directory (`private/<name>`)."""
+        common = self.common()
+        if common and commit_policy.is_inside(real, common):
+            return True
+        if not commit_policy.is_inside(real, self.root):
+            return False
+        if os.path.exists(real):
+            return True
+        rel = os.path.relpath(real, os.path.realpath(self.root))
+        parts = rel.split(os.sep)
+        # In a lease `.git` is a file, so `.git/modules/...` names the module store only by its spelling.
+        return parts[0] == ".git" or rel == "private" or (parts[0] == "private" and len(parts) == 2)
+
 
 def _config_urls(config, section):
     if not os.path.isfile(config):
@@ -346,7 +361,7 @@ def _expand_typed(word, world, directory):
 
 def _judge_local(path, directory, world, hops):
     real = os.path.realpath(os.path.join(directory, path))
-    if world.is_place_of_ours(real):
+    if world.is_source_of_ours(real):
         return "`%s` is a path in this checkout or its git directory" % path
     if hops >= MAX_HOPS:
         return None
@@ -487,6 +502,28 @@ def _judge_gh(run_, world):
     return "`gh repo %s`: %s." % (words[1], why) if why else None
 
 
+def _sequence_nodes(tree):
+    """`programs._sequences`, each list paired with the node it came from: a list, tuple or set literal, or a call (its positional arguments)."""
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.List, ast.Tuple, ast.Set)):
+            yield node, [programs._const_str(e) for e in node.elts]
+        elif isinstance(node, ast.Call) and node.args:
+            yield node, [programs._const_str(a) for a in node.args]
+
+
+def _handed_sequences(tree):
+    """The ids of every call, and of every list, tuple or set literal a call is handed as an argument, positional or keyword."""
+    out = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Call):
+            out.add(id(node))
+            for arg in list(node.args) + [keyword.value for keyword in node.keywords]:
+                value = arg.value if isinstance(arg, ast.Starred) else arg
+                if isinstance(value, (ast.List, ast.Tuple, ast.Set)):
+                    out.add(id(value))
+    return out
+
+
 def _python_reasons(code, world, depth, by_path):
     try:
         tree = ast.parse(code)
@@ -520,11 +557,13 @@ def _python_reasons(code, world, depth, by_path):
                 why = _python_reasons(program, world, depth + 1, by_path)
                 if why:
                     return why
-    for seq in programs._sequences(tree):
+    handed = _handed_sequences(tree)
+    for node, seq in _sequence_nodes(tree):
         if not seq:
             continue
-        # A helper taking the verb's argv: `sh('git', ['clone', ...])`.
-        words = ["git", *seq] if seq[0] in ("clone", "fetch", "pull") else seq
+        # A helper taking the verb's argv: `sh('git', ['clone', ...])`. Only a sequence a call is handed reads so; a literal standing alone, like `SPELLABLE = ("clone", "fetch", ...)`, is a table of words, not a git argv (#11ad5926).
+        verb_first = seq[0] in ("clone", "fetch", "pull") and id(node) in handed
+        words = ["git", *seq] if verb_first else seq
         if words[0] == "git" and any(e is not None for e in words[1:]):
             why = _walk(programs._joined(words), world, depth + 1)
             if why:

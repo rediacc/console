@@ -11,14 +11,17 @@ import sys
 
 import pytest
 
+from rediacc_hooks import wellknown
+from rediacc_hooks.guards import block_origin_clone
+
 HOOKS = pathlib.Path(__file__).resolve().parents[1]
 DISPATCH = str(HOOKS / "dispatch.py")
 ROOT = HOOKS.parents[1]
 MARK = "ASKED:2026-11-04T10:15Z"
 
 
-def _run(cmd):
-    payload = {"tool_name": "Bash", "tool_input": {"command": cmd}, "cwd": str(ROOT)}
+def _run(cmd, cwd=ROOT):
+    payload = {"tool_name": "Bash", "tool_input": {"command": cmd}, "cwd": str(cwd)}
     proc = subprocess.run(
         [sys.executable, DISPATCH, "block_origin_clone"],
         input=json.dumps(payload),
@@ -128,13 +131,87 @@ def test_a_copied_source_with_no_verb_is_allowed(tmp_path):
     assert _run(cmd) == (0, "")
 
 
-@pytest.mark.parametrize("extra", [" --remote", " git-fetch", " /usr/lib/git-core/git-pull"])
+@pytest.mark.parametrize(
+    "extra",
+    [
+        " %s%s" % (prefix, verb)
+        for verb in block_origin_clone.SPELLABLE
+        for prefix in ("--", "git-", "/usr/lib/git-core/git-")
+    ],
+)
 def test_every_spellable_verb_counts_in_both_dashed_spellings(tmp_path, extra):
-    # Review 97b8666f.1: `--` and `git-` admit every verb in SPELLABLE, not only clone.
+    # Review 97b8666f.1: `--` and `git-` admit every verb in SPELLABLE, not only clone (review 91768330.2: every verb, both spellings).
     _, cmd = _unread(tmp_path)
     rc, err = _run(cmd + extra)
     assert rc == 2
     assert "cannot judge" in err
+
+
+@pytest.mark.parametrize("extra", [" digit-clone", " legit-pull", " foo--fetch", " x.git-remote"])
+def test_a_dashed_verb_inside_a_longer_word_is_a_name(tmp_path, extra):
+    # Review 91768330.1: a dashed prefix counts only where it starts a word.
+    _, cmd = _unread(tmp_path)
+    assert _run(cmd + extra) == (0, "")
+
+
+# #11ad5926: a stdin heredoc holding a tuple of verb words, run from a directory below the root, was refused as `git clone fetch pull ...` with `fetch` judged a path in this checkout.
+SUBDIR = ROOT / "packages" / "cli"
+ORIGIN = "%s/%s.git" % (wellknown.GH_ORIGIN, wellknown.GH_REPO)
+TUPLE_HEREDOC = (
+    "python3 - <<'EOF'\n"
+    'SPELLABLE = ("clone", "fetch", "pull", "remote", "submodule")\n'
+    "print(SPELLABLE)\n"
+    "EOF"
+)
+
+
+def _heredoc(body):
+    return "python3 - <<'EOF'\n%s\nEOF" % body
+
+
+def test_the_subdirectory_exists_and_holds_no_fetch():
+    # The rows below stand in this directory; a bare `fetch` there must name nothing.
+    assert SUBDIR.is_dir()
+    assert not (SUBDIR / "fetch").exists()
+
+
+@pytest.mark.parametrize("cwd", [ROOT, SUBDIR])
+def test_a_tuple_of_verb_words_in_a_heredoc_is_allowed(cwd):
+    assert _run(TUPLE_HEREDOC, cwd=cwd) == (0, "")
+
+
+@pytest.mark.parametrize("cwd", [ROOT, SUBDIR])
+def test_a_standalone_list_starting_with_clone_is_data(cwd):
+    # `private` exists, so only the argv reading made this a clone.
+    assert _run(_heredoc('X = ["clone", "private"]'), cwd=cwd) == (0, "")
+
+
+@pytest.mark.parametrize("cwd", [ROOT, SUBDIR])
+@pytest.mark.parametrize(
+    "body",
+    [
+        'import subprocess\nsubprocess.run(["git", "clone", "%s", "/tmp/x"])' % ORIGIN,
+        'X = ("git", "clone", "%s", "/tmp/x")' % ORIGIN,
+        'sh("git", ["clone", "%s", "/tmp/x"])' % ORIGIN,
+        'run(argv=["clone", "%s", "/tmp/x"])' % ORIGIN,
+    ],
+)
+def test_a_heredoc_that_builds_a_clone_of_the_origin_is_refused(cwd, body):
+    rc, err = _run(_heredoc(body), cwd=cwd)
+    assert rc == 2
+    assert MARK in err
+    assert "origin or mirror" in err
+
+
+def test_a_bare_word_is_not_a_local_path_when_nothing_is_there():
+    assert _run("git clone fetch /tmp/oc-y", cwd=SUBDIR) == (0, "")
+
+
+@pytest.mark.parametrize("source", [".", "..", "../../private/renet", "../../.git"])
+def test_an_existing_path_of_this_checkout_is_still_ours_from_below(source):
+    rc, err = _run("git clone %s /tmp/oc-y" % source, cwd=SUBDIR)
+    assert rc == 2
+    assert "is a path in this checkout" in err
 
 
 def _tracked_helper(tmp_path):
