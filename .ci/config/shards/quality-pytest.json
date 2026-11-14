@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-14T10:38:11.149Z",
+  "generatedAt": "2026-11-14T10:51:45.090Z",
   "legs": [
     {
       "index": 1,
@@ -341,6 +341,7 @@
         "pytest:.ci/rediacc_ci/tests/test_vitest_cache_isolation.py",
         "pytest:.ci/rediacc_ci/tests/test_vm_check_list_evidence.py",
         "pytest:.ci/rediacc_ci/tests/test_xdist_groups.py",
+        "pytest:.claude/rediacc_hooks/tests/test_block_origin_clone_path_words.py",
         "pytest:.claude/rediacc_hooks/tests/test_bulk_review_records.py",
         "pytest:.claude/rediacc_hooks/tests/test_gh_flag_spellings.py",
         "pytest:.claude/rediacc_hooks/tests/test_githook_backup_ref.py",
