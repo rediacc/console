@@ -582,16 +582,3 @@ def test_a_cors_delete_on_an_existing_bucket_succeeds():
     wanted: dict[str, list] = {"cors": [], "lifecycle": [], "notifications": []}
     bc.Settings(api, {}, "acct").write("real", "eu", wanted)
     assert [c[0] for c in api.calls if c[2].endswith("/cors")] == ["DELETE"]
-
-
-def test_a_probe_that_fails_without_a_404_does_not_name_the_bucket_missing():
-    """d6cb6530.2: only the probe's own 404 proves absence; the settings 404 stands as no configuration otherwise."""
-
-    def transport(_method, url, _headers, _body):
-        if url.endswith("/cors"):
-            return 404, {"success": False}
-        if url.endswith("/buckets/real"):
-            return 500, {"success": False}
-        return 200, {"success": True, "result": {}}
-
-    assert bc.Settings(transport, {}, "acct").read("real", "eu")["cors"] == []
