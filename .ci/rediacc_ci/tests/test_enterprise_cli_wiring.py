@@ -521,7 +521,7 @@ def test_configs_key_without_a_bws_project_refuses_naming_the_flag(rig, monkeypa
 
 
 @pytest.mark.parametrize(
-    "error", [OSError("unreadable"), ValueError("malformed"), KeyError("regions")]
+    "error", [OSError("unreadable"), cli.onboarding.OnboardingError("regions.json is malformed")]
 )
 def test_configs_key_with_an_unreadable_regions_file_fails_cleanly(rig, monkeypatch, capsys, error):
     """Review 0dc0f341.3: a bad regions.json is the 'failed:' line and exit 1, never a traceback."""
@@ -534,6 +534,26 @@ def test_configs_key_with_an_unreadable_regions_file_fails_cleanly(rig, monkeypa
     assert _configs_key(rig, monkeypatch, store, minter) == 1
     assert "configs-key failed" in _said(capsys)
     assert store.created == []
+
+
+@pytest.mark.parametrize("body", ["{not json", '{"nope": 1}', '{"regions": [{"x": 1}]}', "[]"])
+def test_region_entry_names_a_malformed_regions_file(tmp_path, body):
+    """Review 204faecb.1: region_entry turns a malformed file into an OnboardingError, so configs_key_main need not catch bare ValueError or KeyError."""
+    (tmp_path / "regions.json").write_text(body, encoding="utf-8")
+    with pytest.raises(cli.onboarding.OnboardingError, match=r"regions\.json is malformed"):
+        cli.onboarding.region_entry("eu", tmp_path)
+
+
+@pytest.mark.parametrize("error", [KeyError("bug"), ValueError("bug")])
+def test_configs_key_lets_a_programming_error_surface(rig, monkeypatch, error):
+    """Review 204faecb.1 control: a bare KeyError or ValueError from the mint step is a bug and keeps its traceback."""
+
+    def broken(*_args, **_kwargs):
+        raise error
+
+    monkeypatch.setattr(cli.secrets, "ensure_configs_key", broken)
+    with pytest.raises(type(error)):
+        _configs_key(rig, monkeypatch, MintStore(holds_configs=False), RecordingMinter())
 
 
 def test_configs_key_without_the_management_token_refuses_naming_it(rig, monkeypatch, capsys):

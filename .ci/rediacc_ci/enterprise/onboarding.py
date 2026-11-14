@@ -562,10 +562,14 @@ def _body_tail(payload: dict, secrets_in_reply: tuple[str, ...]) -> str:
 
 
 def region_entry(region: str, root: pathlib.Path | None = None) -> dict:
-    data = json.loads(((root or paths.repo_root()) / "regions.json").read_text(encoding="utf-8"))
-    for entry in data["regions"]:
-        if str(entry["id"]) == region:
-            return dict(entry)
+    path = (root or paths.repo_root()) / "regions.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        for entry in data["regions"]:
+            if str(entry["id"]) == region:
+                return dict(entry)
+    except (ValueError, KeyError, TypeError) as exc:
+        raise OnboardingError("regions.json is malformed (%s)" % type(exc).__name__) from None
     raise OnboardingError("no region %r in regions.json" % region)
 
 

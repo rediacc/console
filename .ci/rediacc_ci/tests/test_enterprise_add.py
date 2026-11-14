@@ -441,6 +441,20 @@ def test_a_short_label_is_masked_as_a_whole_token_only():
     assert cause == ": bucket <name>-x for <name> is a bad abacus"
 
 
+def test_every_name_derived_from_the_label_is_masked_and_another_identifier_is_not():
+    """Review bc35c3f0.3: names.py joins the label to its prefix or suffix with `-` or `.`, so every derived name carries it as a whole token and is masked; a different identifier that merely starts with the same letters is not the company's name and stays."""
+    derived = [
+        onboarding.names.proxy_worker("acme"),
+        onboarding.names.proxy_container_app("acme"),
+        onboarding.names.hosts("acme", "example.com")[1],
+    ]
+    cause = onboarding._cause(Proc(1, "", "failed: %s; other acmecorp" % " ".join(derived)), "acme")
+    assert "acme " not in cause
+    assert "acme-" not in cause
+    assert cause.count("<name>") == 3
+    assert cause.endswith("other acmecorp")
+
+
 def test_live_buckets_step_names_the_cause_of_a_list_failure():
     def runner(argv, *, cwd=None):
         del cwd
@@ -603,6 +617,30 @@ def test_live_cf_rows_stops_at_a_short_page_without_a_page_count(monkeypatch):
     monkeypatch.setattr(onboarding.cf_auth, "curl_json", fake)
     assert onboarding.live_cf_rows("/x") == [{"id": "a"}]
     assert len(fake.urls) == 1
+
+
+@pytest.mark.usefixtures("real_cf_rows")
+def test_live_cf_rows_gives_up_on_a_listing_that_never_ends(monkeypatch):
+    """Review 558ee735.1: a listing of full pages with no page count stops at CF_MAX_PAGES with an error naming the path."""
+    monkeypatch.setattr(onboarding, "CF_MAX_PAGES", 3)
+    full = {"success": True, "result": [{"id": str(i)} for i in range(onboarding.CF_PAGE_SIZE)]}
+    fake = _CfBodies(full, full, full, full)
+    monkeypatch.setattr(onboarding.cf_auth, "curl_json", fake)
+    with pytest.raises(onboarding.OnboardingError, match="listing of /x did not end"):
+        onboarding.live_cf_rows("/x")
+    assert len(fake.urls) == 3
+
+
+@pytest.mark.usefixtures("real_cf_rows")
+def test_live_cf_rows_reads_a_listing_that_ends_on_the_last_allowed_page(monkeypatch):
+    """Control for 558ee735.1: a listing whose last page is CF_MAX_PAGES is read whole, not refused."""
+    monkeypatch.setattr(onboarding, "CF_MAX_PAGES", 2)
+    pages = [
+        {"success": True, "result": [{"id": "a"}], "result_info": {"total_pages": 2}},
+        {"success": True, "result": [{"id": "b"}], "result_info": {"total_pages": 2}},
+    ]
+    monkeypatch.setattr(onboarding.cf_auth, "curl_json", _CfBodies(*pages))
+    assert onboarding.live_cf_rows("/x") == [{"id": "a"}, {"id": "b"}]
 
 
 @pytest.mark.parametrize(
@@ -1182,7 +1220,7 @@ def test_body_tail_masks_a_key_that_json_escapes():
 
 
 def test_a_json_object_with_a_text_field_is_printed_whole():
-    """Review 61885324.4: only the wrapper `_json_body` makes (one string field) prints as plain text."""
+    """Review 61885324.4: an object with a field besides `_text` prints whole; an object whose only field is a string `_text` (the `_json_body` wrapper, or a server object of that same shape) prints as plain text."""
     tail = onboarding._body_tail({"_text": "a", "code": "X"}, ())
     assert tail == ': {"_text": "a", "code": "X"}'
     assert onboarding._body_tail({"_text": "plain"}, ()) == ": plain"

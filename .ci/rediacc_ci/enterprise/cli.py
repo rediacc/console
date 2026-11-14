@@ -537,8 +537,6 @@ def configs_key_main(
         secrets.SecretsError,
         onboarding.OnboardingError,
         OSError,
-        ValueError,
-        KeyError,
     ) as exc:
         print("%s: configs-key failed: %s" % (SELF, exc), file=sys.stderr)
         return 1
