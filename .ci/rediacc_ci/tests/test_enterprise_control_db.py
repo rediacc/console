@@ -49,9 +49,9 @@ class FakeWrangler:
                 return control_db.Completed(1, "", "authentication error")
             conn = self.dbs[name]
             if "--file" in rest:
-                conn.executescript(
-                    pathlib.Path(rest[rest.index("--file") + 1]).read_text(encoding="utf-8")
-                )
+                # D1 runs a file as one batch (one transaction, no BEGIN allowed in it), which is what holds `defer_foreign_keys` until the end.
+                script = pathlib.Path(rest[rest.index("--file") + 1]).read_text(encoding="utf-8")
+                conn.executescript("BEGIN;\n%s\nCOMMIT;" % script)
                 return control_db.Completed(0, json.dumps([{"results": [], "success": True}]), "")
             sql = rest[rest.index("--command") + 1]
             try:
@@ -385,3 +385,83 @@ def test_a_json_mode_error_on_stdout_is_named_and_the_deprecation_notice_dropped
     assert "no such table: audit" in text
     assert "A request to the Cloudflare API failed." in text
     assert "CF_EMAIL" not in text
+
+
+def _insert(conn: sqlite3.Connection, cid: str, name: str, state: str = "active") -> None:
+    conn.execute(
+        "INSERT INTO companies (id, name, region, state, unlisted, created_at, updated_at) "
+        "VALUES (?, ?, 'eu', ?, 0, 't', 't')",
+        (cid, name, state),
+    )
+    conn.commit()
+
+
+def _legacy_database() -> tuple[FakeWrangler, sqlite3.Connection]:
+    """A control database at the 0001 schema (inline UNIQUE on name) holding one live and one removed company with a child row."""
+    fake = FakeWrangler({"control-bench-eu": "00000000-0000-4000-8000-000000000001"})
+    conn = fake.dbs["control-bench-eu"]
+    conn.executescript(registry.migration_sql())
+    _insert(conn, "caaa1", "live-co")
+    _insert(conn, "cbbb2", "gone-co", "removed")
+    conn.execute("INSERT INTO onboarding VALUES ('cbbb2', 'd1', 'done', NULL, 't')")
+    conn.commit()
+    return fake, conn
+
+
+def test_ensure_rebuilds_a_legacy_companies_table_and_keeps_its_rows():
+    fake, conn = _legacy_database()
+    result = control_db.ensure("eu", bench=True, runner=fake)
+    assert result.migrated
+    rows = {r["id"]: (r["name"], r["state"]) for r in conn.execute("SELECT * FROM companies")}
+    assert rows == {"caaa1": ("live-co", "active"), "cbbb2": ("gone-co", "removed")}
+    assert conn.execute("SELECT count(*) FROM onboarding").fetchone()[0] == 1
+    assert not control_db.name_unique_inline("control-bench-eu", runner=fake)
+    index = conn.execute(
+        "SELECT sql FROM sqlite_master WHERE name = ?", (control_db.LIVE_NAME_INDEX,)
+    ).fetchone()
+    assert index is not None
+    assert "WHERE state <> 'removed'" in index["sql"]
+
+
+def test_the_rebuild_keeps_foreign_keys_whole_with_enforcement_on():
+    fake, conn = _legacy_database()
+    conn.execute("PRAGMA foreign_keys = ON")
+    control_db.ensure("eu", bench=True, runner=fake)
+    assert conn.execute("PRAGMA foreign_key_check").fetchall() == []
+    with pytest.raises(sqlite3.IntegrityError):
+        conn.execute("INSERT INTO onboarding VALUES ('cnone', 'd1', 'done', NULL, 't')")
+
+
+def test_ensure_is_idempotent_over_the_rebuild():
+    fake, conn = _legacy_database()
+    control_db.ensure("eu", bench=True, runner=fake)
+    before = [dict(r) for r in conn.execute("SELECT * FROM companies ORDER BY id")]
+    fake.calls.clear()
+    again = control_db.ensure("eu", bench=True, runner=fake)
+    assert not again.migrated
+    assert not any("--file" in c for c in fake.calls)
+    assert [dict(r) for r in conn.execute("SELECT * FROM companies ORDER BY id")] == before
+
+
+def test_a_fresh_database_ends_without_the_inline_unique():
+    fake = FakeWrangler()
+    control_db.ensure("eu", bench=True, runner=fake)
+    assert not control_db.name_unique_inline("control-bench-eu", runner=fake)
+
+
+def test_a_removed_name_can_be_added_again_but_a_live_duplicate_is_refused():
+    fake, conn = _legacy_database()
+    # Control: before the rebuild the removed name is held forever.
+    with pytest.raises(sqlite3.IntegrityError, match="UNIQUE"):
+        _insert(conn, "cccc3", "gone-co", "onboarding")
+    control_db.ensure_all(bench=True, runner=fake)
+    _insert(conn, "cccc3", "gone-co", "onboarding")
+    with pytest.raises(sqlite3.IntegrityError, match="UNIQUE"):
+        _insert(conn, "cddd4", "gone-co", "active")
+    with pytest.raises(sqlite3.IntegrityError, match="UNIQUE"):
+        _insert(conn, "ceee5", "live-co", "onboarding")
+    # The registry sees the live row only.
+    reg = registry.Registry(control_db.transport(fake), bench=True)
+    found = reg.find("gone-co")
+    assert found is not None
+    assert found["id"] == "cccc3"

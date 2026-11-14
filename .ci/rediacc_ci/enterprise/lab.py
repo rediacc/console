@@ -353,7 +353,7 @@ class LiveLab:
     def caller_version(self, caller: str) -> str:
         """The version a company Worker last rolled out (the upgrade proof's source, `versions`), or "" when its company has no deployed rollout row or `caller` is no company's Worker."""
         name = caller.removeprefix("account-")
-        row = next((r for r in self._companies() if r["name"] == name), None)
+        row = self._live_find(name)
         if row is None:
             return ""
         return str(self.versions([str(row["id"])]).get(str(row["id"]), ""))

@@ -6,6 +6,8 @@ EVERY CALL GOES THROUGH WRANGLER, spelled by `core.wrangler.ARGV`, from a neutra
 
 IDEMPOTENT. `ensure` lists the account's databases first and creates only a missing one, then applies the migration only when the `companies` table is absent, so a second run changes nothing. The migration's `CREATE TABLE` statements have no `IF NOT EXISTS`, which is why the table probe decides rather than a blind re-apply.
 
+A REMOVED COMPANY FREES ITS NAME. 0001 declares `name TEXT NOT NULL UNIQUE`, so a removed row kept its name forever and `enterprise add` of the same name failed at the control-row insert (2026-11-14, proof-loss-eu). `ensure` therefore also rebuilds `companies` (`NAME_REBUILD_SQL`) whenever the stored table definition still carries an inline UNIQUE: same columns, same rows and ids, the unique constraint replaced by the partial unique index `companies_live_name ON companies(name) WHERE state <> 'removed'`. The rebuild lives here rather than in 0001 (a submodule file), runs after 0001 on a fresh database too, and is skipped once the inline UNIQUE is gone, so a rerun changes nothing. The removed row keeps its name, so `export` and `list --all` still find it by name.
+
 THE QUERY TRANSPORT. `transport(runner)` is the `registry.Query` the registry and `enterprise add` read and write through: `wrangler d1 execute <db> --remote --json --command <sql>`. wrangler binds no parameters, so `bind` inlines each `?` as a quoted literal (single quotes doubled), counting placeholders outside string literals only and refusing a count mismatch.
 
 A FAILED CALL CARRIES WRANGLER'S STATED CAUSE (`failure_tail`): the `error` of its `--json` stdout, then its last stderr lines (`stderr_tail`: ANSI stripped, blank lines dropped, the last three lines, each cut to 200 characters). Query rows are never quoted, because they hold company labels, and a failed query masks every string value it bound (`mask_values`), because D1 can echo the inlined SQL in an error.
@@ -33,6 +35,26 @@ from rediacc_ci.ops import bench_preflight
 
 SELF = "rediacc_ci.enterprise.control_db"
 TABLE_PROBE = "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'companies'"
+TABLE_SQL_PROBE = "SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'companies'"
+LIVE_NAME_INDEX = "companies_live_name"
+# D1 enforces foreign keys and ignores `PRAGMA foreign_keys`; `defer_foreign_keys` holds the checks to the end of the statement batch. The old rows are copied aside, the table is dropped and recreated under its own name, and the rows are inserted back, which is what clears the deferred violations of the child tables' references (a rename of a new table into place would not).
+NAME_REBUILD_SQL = """PRAGMA defer_foreign_keys = on;
+CREATE TABLE companies_save AS SELECT id, name, region, state, unlisted, created_at, updated_at FROM companies;
+DROP TABLE companies;
+CREATE TABLE companies (
+  id TEXT PRIMARY KEY CHECK (id GLOB 'c[0-9a-f]*' AND id NOT GLOB 'c*[^0-9a-f]*'),
+  name TEXT NOT NULL,
+  region TEXT NOT NULL CHECK (region IN ('eu','us','asia')),
+  state TEXT NOT NULL DEFAULT 'onboarding' CHECK (state IN ('onboarding','active','suspended','removed')),
+  unlisted INTEGER NOT NULL DEFAULT 0 CHECK (unlisted IN (0,1)),
+  created_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL
+);
+INSERT INTO companies (id, name, region, state, unlisted, created_at, updated_at)
+  SELECT id, name, region, state, unlisted, created_at, updated_at FROM companies_save;
+DROP TABLE companies_save;
+CREATE UNIQUE INDEX companies_live_name ON companies(name) WHERE state <> 'removed';
+"""
 
 
 class Completed(NamedTuple):
@@ -111,6 +133,22 @@ def require_token(environ: Mapping[str, str] | None = None) -> None:
             "`PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile %s -- <command>`"
             % (AUTH_ENV, PROFILE)
         )
+
+
+def name_unique_inline(database: str, *, runner: Runner) -> bool:
+    """True when the stored `companies` definition still carries the inline UNIQUE on `name` (the pre-rebuild form)."""
+    rows = query(database, TABLE_SQL_PROBE, [], runner=runner)
+    return bool(rows) and "UNIQUE" in str(rows[0].get("sql") or "").upper()
+
+
+def apply_name_rebuild(database: str, *, runner: Runner) -> None:
+    """Rebuild `companies` so the name is unique among live rows only."""
+    with tempfile.TemporaryDirectory(prefix="control-db-sql-") as tmp:
+        path = pathlib.Path(tmp) / "companies-live-name.sql"
+        path.write_text(NAME_REBUILD_SQL, encoding="utf-8")
+        done = _call(runner, execute_argv(database, file=str(path)))
+    if done.rc != 0:
+        raise _failure("rebuilding companies in %s" % database, done)
 
 
 class Ensured(NamedTuple):
@@ -334,6 +372,9 @@ def ensure(region: str, *, bench: bool, runner: Runner = run_wrangler) -> Ensure
     applied = False
     if not migrated(database, runner=runner):
         apply_migration(database, runner=runner)
+        applied = True
+    if name_unique_inline(database, runner=runner):
+        apply_name_rebuild(database, runner=runner)
         applied = True
     return Ensured(database, uuid, created, applied)
 
