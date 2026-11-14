@@ -810,6 +810,15 @@ def test_clear_refuses_while_anything_is_pinned_and_works_without_pins():
     assert _stored(api) == []
 
 
+def test_disable_with_pins_deletes_the_rule_and_the_next_add_writes_the_pins_back():
+    """e3c2d2ef.2: `disable` is the one verb that drops pins, on purpose; they return with the next mutating run."""
+    api = _pinned_rule_api()
+    assert _run(api, "disable") == 0
+    assert api.ruleset["rules"] == []
+    assert _run(api, "add-current", detect=lambda: ["198.51.100.9"]) == 0
+    assert _stored_ips(api) == [PIN4, PIN6, "198.51.100.9"]
+
+
 def test_a_hand_deleted_pin_returns_on_the_next_add_current():
     api = _pinned_rule_api()
     api.mine()[0]["expression"] = ba.expression(HOSTS, ["198.51.100.7"])

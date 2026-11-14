@@ -66,6 +66,7 @@ def test_a_declared_entry_is_loaded(tmp_path):
         {"protected": "x"},
         {},
         {"protected": [{"subscription_id": "not-a-uuid"}]},
+        {"protected": [{"subscription_id": SUB + "\n"}]},
         {"protected": [{"machine": "hostinger"}]},
     ],
 )

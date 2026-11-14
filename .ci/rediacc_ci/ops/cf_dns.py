@@ -86,7 +86,11 @@ def records(zone: str, name: str | None, http: Http) -> list[dict]:
         found = list(_result(body, "listing DNS records") or [])
         out += found
         total = (body.get("result_info") or {}).get("total_pages")
-        if len(found) < PAGE_SIZE or (isinstance(total, int) and page >= total):
+        # The listing's own page count decides when it names one; a short page ends the read only when it names none.
+        if isinstance(total, int):
+            if page >= total:
+                return out
+        elif len(found) < PAGE_SIZE:
             return out
     raise DnsError("listing DNS records: more than %d pages" % MAX_PAGES)
 

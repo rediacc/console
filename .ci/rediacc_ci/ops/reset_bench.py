@@ -6,7 +6,7 @@ DESTRUCTIVE. It drops every table of the bench D1 database (`account-bench`) and
 
 Auth is `cf_auth`. As in the bash, the credential is destroyed on the way out whether the run succeeded or not, a pre-supplied `CF_MANAGEMENT_TOKEN` included (the scoped token is treated as single-use for this script).
 
-PRODUCTION GUARD. While `.ci/config/bench-production.json` declares a subscription, every mode exits 2 before the profile re-exec and before any credential is read; with the declaration present, a second check after the token is minted refuses when the live D1 holds `backup_manifests` rows of a declared subscription (`bench_production`). There is no override flag.
+PRODUCTION GUARD. While `.ci/config/bench-production.json` declares a subscription, every mode exits 2 before the profile re-exec and before any credential is read; a second check after the token is minted (`bench_production.d1_refusal`) refuses when the live D1 holds `backup_manifests` rows of a declared subscription. While the static refusal stands that check is never reached with a declaration, so it is the backstop that takes over if the static refusal is ever relaxed to allow a mode (the reached case is its own test with `reset_refusal` patched out). There is no override flag.
 
 RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in `tests/test_ops_reset_bench.py` that fails on the bash behaviour).
 

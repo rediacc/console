@@ -317,7 +317,7 @@ def scope_where(table: str, columns: list[str], scope: Scope) -> str | None:
 def fetch(db: Executor, table: str, columns: list[str], where: str | None) -> list[dict]:
     """Every row matching `where`, paged in a stable order.
 
-    The order is every column by position, not `rowid`: a WITHOUT ROWID table (`backup_waiting_chunks`, 0087) has no rowid, and a full-row order is unique for any table whose primary key is among its columns.
+    The order is every column by position, not `rowid`: a WITHOUT ROWID table (`backup_waiting_chunks`, 0087) has no rowid, and a full-row order is unique for any table whose primary key is among its columns. The cost: each page sorts the matching rows, so a read of N rows over N/PAGE pages is roughly quadratic in N; tenant tables here are small enough, and a table that outgrows that wants a keyset page on its primary key.
     """
     if where is None:
         return []

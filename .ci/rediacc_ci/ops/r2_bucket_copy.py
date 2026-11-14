@@ -371,17 +371,24 @@ class Settings:
         return answer.get("result")
 
     def _require_bucket(self, path: str, headers: Mapping[str, str]) -> None:
-        """A 404 on a settings path is "no configuration" only when the bucket itself exists; a wrong bucket name or jurisdiction answers 404 too, and must not read as empty settings."""
+        """A 404 on a settings path is "no configuration" only when the bucket probe answers 2xx; a wrong bucket name or jurisdiction answers 404 too, and a probe that fails any other way is an error, neither reads as empty settings."""
         found = re.search(r"/r2/buckets/([^/]+)/|/event_notifications/r2/([^/]+)/", path)
         if found is None:
             return
         bucket = found.group(1) or found.group(2)
         url = "%s/accounts/%s/r2/buckets/%s" % (CF_API_BASE, self.account, bucket)
         status, _answer = self.transport("GET", url, dict(headers), None)
+        jurisdiction = headers.get(JURISDICTION_HEADER) or "default"
         if status == 404:
             raise CopyError(
                 "bucket %s does not exist (jurisdiction %s): its settings cannot be read"
-                % (bucket, headers.get(JURISDICTION_HEADER) or "default")
+                % (bucket, jurisdiction)
+            )
+        # Only a 2xx proves the bucket is there; a 403, a 5xx or a transport failure (status 0) proves nothing, and reading the settings 404 as empty on it would pass a failed read.
+        if not 200 <= status < 300:
+            raise CopyError(
+                "the probe of bucket %s (jurisdiction %s) answered %s, so its settings cannot be read"
+                % (bucket, jurisdiction, status or "nothing")
             )
 
     def _list(self, path: str, jurisdiction: str | None, key: str) -> list:

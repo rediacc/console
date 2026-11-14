@@ -198,6 +198,20 @@ def test_records_stops_at_total_pages():
     assert len(seen) == 1
 
 
+def test_a_short_intermediate_page_does_not_end_the_read_when_total_pages_says_more():
+    """Review dabfd4e9.1: the listing's page count wins over the page length."""
+    pages = {1: [{"id": "a"}], 2: [{"id": "b"}], 3: [{"id": "c"}]}
+    seen: list[str] = []
+
+    def http(_method, path, _body=None):
+        seen.append(path)
+        page = int(path.rsplit("page=", 1)[1])
+        return {"success": True, "result": pages[page], "result_info": {"total_pages": 3}}
+
+    assert [r["id"] for r in cf_dns.records(ZONE, None, http)] == ["a", "b", "c"]
+    assert len(seen) == 3
+
+
 def test_ensure_helper_refuses_a_keyword_it_would_drop():
     """Review 09b714f6.1: an extra keyword fails loudly instead of passing without being exercised."""
     with pytest.raises(AssertionError, match="ttl"):

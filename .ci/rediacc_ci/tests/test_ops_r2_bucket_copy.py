@@ -547,6 +547,21 @@ def test_a_404_for_a_missing_bucket_is_an_error_not_empty_settings():
         settings.read("typo", "eu")
 
 
+@pytest.mark.parametrize("status", [403, 500, 0])
+def test_a_probe_that_fails_without_a_404_raises_naming_the_status_and_the_bucket(status):
+    """d6cb6530.1 and its sibling: only a 2xx probe means present and only a 404 means missing."""
+
+    def api(_method, url, _headers, _body):
+        if url.endswith("/r2/buckets/b"):
+            return status, {"success": False}
+        return 404, {"success": False}
+
+    with pytest.raises(bc.CopyError, match="probe of bucket b") as err:
+        bc.Settings(api, {}, "acct").read("b", "eu")
+    assert str(status or "nothing") in str(err.value)
+    assert "does not exist" not in str(err.value)
+
+
 def test_a_404_for_an_existing_bucket_without_cors_is_empty_settings():
     """Control: the same 404 on a bucket that exists stays an empty CORS list."""
     settings = bc.Settings(FakeSettingsApi({}), {}, "acct")

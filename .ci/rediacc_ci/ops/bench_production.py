@@ -3,7 +3,7 @@
 Bench signs with the production key, and once a production machine backs up through bench (hostinger), a bench wipe or a drill cleanup could remove the only off-site copy, and a stopped bench signer stops its licence renewals. Four refusals read this one declaration:
 
   1. `reset_refusal` -- reset_bench refuses every mode (exit 2) while the file declares anything, before any credential is read.
-  2. `d1_refusal` -- reset_bench also refuses when the live bench D1 holds `backup_manifests` rows of a declared subscription; the read runs after the token is minted and before the confirmation, so it is the second layer when the declaration is present.
+  2. `d1_refusal` -- reset_bench also refuses when the live bench D1 holds `backup_manifests` rows of a declared subscription; the read runs after the token is minted and before the confirmation, so it is the backstop behind `reset_refusal`: reached only if that static refusal is relaxed, since `reset_bench` exits 2 on any declaration first.
   3. `refuse_ids` -- the drills' cleanup refuses to delete rows of a declared subscription and deletes nothing.
   4. `signer_stop_refusal` -- the enterprise proofs' signer stop and region cut (`rediacc_ci.deploy.deploy_signer.stop_signer`, reached by `enterprise proof signer --bench` and `region-loss --bench`) refuse every bench signer while the file declares anything, before any secret is deleted.
 
@@ -25,7 +25,8 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
 
 CONFIG_REL = ".ci/config/bench-production.json"
-UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+# `\Z`, not `$`: `$` also matches before a trailing newline, and a declared id carrying one would never equal the newline-free D1 id.
+UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\Z")
 # The exit code of a production refusal, distinct from a failed run (1).
 REFUSAL_EXIT = 2
 # `$ids` is filled only with validated UUID literals (`manifest_query`).
