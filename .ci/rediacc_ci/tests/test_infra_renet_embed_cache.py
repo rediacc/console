@@ -9,8 +9,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import pathlib
 import shutil
+import signal
 import subprocess
 import time
 
@@ -294,9 +296,9 @@ case "$1" in
   rm) ;;
   cp)
     dest="$3"
-    case "$FAKE_CP:$(basename "$dest")" in
-      *:"$FAKE_CP_FAIL") exit 1 ;;
-      *:"$FAKE_CP_NOOP") exit 0 ;;
+    case "$(basename "$dest")" in
+      "$FAKE_CP_FAIL") exit 1 ;;
+      "$FAKE_CP_NOOP") exit 0 ;;
     esac
     printf 'fresh:%s' "$(basename "$dest")" > "$dest"
     ;;
@@ -310,7 +312,7 @@ def _embed(
     *,
     fail: str = "",
     noop: str = "",
-    pre: str = "",
+    build_sh: pathlib.Path = BUILD_SH,
     timeout_s: int | None = None,
 ):
     bindir = tmp_path / "fakebin"
@@ -323,15 +325,14 @@ def _embed(
     script = (
         'source "$1" || true; set +e; SCRIPT_DIR="$2"; EMBED_LOCKFILE="$2/embed-assets.lock.json"; '
         'PATH="$3:$PATH"; export FAKE_RECIPE_FILE="$4" FAKE_CP_FAIL="$5" FAKE_CP_NOOP="$6"; '
-        + pre
-        + " embed_assets --force"
+        "embed_assets --force"
     )
     cmd = [
         "bash",
         "-c",
         script,
         "bash",
-        str(BUILD_SH),
+        str(build_sh),
         str(src),
         str(bindir),
         str(recipe),
@@ -339,20 +340,39 @@ def _embed(
         noop,
     ]
     if timeout_s is not None:
-        # `timeout` kills the whole staging; the result is None when it had to.
-        proc = subprocess.run(
-            ["timeout", "--kill-after=1", str(timeout_s), *cmd],
-            capture_output=True,
+        # The result is None only when THIS call outlived its timeout (it was
+        # waiting); any exit code, 124 and 137 included, is a real result.
+        # A new session lets the whole group (the subshell holding fd 9 and any
+        # child) die with it.
+        with subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
             text=True,
-            check=False,
-        )
-        return None if proc.returncode in (124, 137) else proc
+            start_new_session=True,
+        ) as proc:
+            try:
+                out, err = proc.communicate(timeout=timeout_s)
+            except subprocess.TimeoutExpired:
+                os.killpg(proc.pid, signal.SIGKILL)
+                proc.communicate()
+                return None
+        return subprocess.CompletedProcess(cmd, proc.returncode, out, err)
     return subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=120)
 
 
+_MISSING_EMBED_TOOLS = [
+    what
+    for what, present in (
+        ("the private/renet submodule (build.sh)", BUILD_SH.is_file()),
+        ("jq", shutil.which("jq") is not None),
+        ("zstd", shutil.which("zstd") is not None),
+    )
+    if not present
+]
 needs_embed_tools = pytest.mark.skipif(
-    not BUILD_SH.is_file() or shutil.which("jq") is None or shutil.which("zstd") is None,
-    reason="needs the private/renet submodule, jq and zstd",
+    bool(_MISSING_EMBED_TOOLS),
+    reason="embed_assets tests need " + ", ".join(_MISSING_EMBED_TOOLS or ["nothing"]),
 )
 
 
@@ -390,22 +410,27 @@ def test_a_raw_file_that_vanishes_before_compression_is_a_hard_error(tmp_path):
     assert not (rec.assets_dir(src) / ".staged.json").exists()
 
 
+PREFIX_REV = "5e0987c6"
+
+
 @needs_embed_tools
-def test_control_a_bare_zstd_loop_under_if_not_context_passes_silently(tmp_path):
-    """The old compress loop: zstd exits 1 on a missing input, but errexit is off inside `if ! embed_assets`, so the loop carried on and the function returned 0."""
-    script = (
-        'old() { set -e; zstd -19 -T0 -q --rm -f "$1"; echo reached-the-receipt; }; '
-        'if ! old "$1"; then echo FAILED; else echo PASSED; fi'
-    )
-    proc = subprocess.run(
-        ["bash", "-c", script, "bash", str(tmp_path / "absent-linux-amd64")],
+def test_control_the_pre_fix_build_sh_stages_over_a_vanished_raw_file(tmp_path):
+    """CONTROL, driving the real build.sh at its pre-fix revision (renet 5e0987c6): the bare `zstd` loop saw a missing input, errexit is off under `if ! embed_assets`, and the function still returned 0 with a receipt. The same input fails in the current build.sh (the test above)."""
+    shown = subprocess.run(
+        ["git", "-C", str(BUILD_SH.parent), "show", f"{PREFIX_REV}:build.sh"],
         capture_output=True,
         text=True,
         check=False,
     )
-    assert "PASSED" in proc.stdout
-    assert "reached-the-receipt" in proc.stdout
-    assert "ignored" in proc.stderr
+    if shown.returncode != 0:
+        pytest.fail(f"private/renet has no revision {PREFIX_REV}: {shown.stderr}")
+    old = tmp_path / "build-pre-fix.sh"
+    old.write_text(shown.stdout, encoding="utf-8")
+    src = _skeleton(tmp_path)
+    proc = _embed(src, tmp_path, noop="criu-linux-arm64", build_sh=old)
+    assert proc.returncode == 0, proc.stderr
+    assert "Embedded assets ready" in proc.stdout
+    assert (rec.assets_dir(src) / ".staged.json").is_file()
 
 
 @needs_embed_tools
@@ -413,17 +438,20 @@ def test_control_a_bare_zstd_loop_under_if_not_context_passes_silently(tmp_path)
 def test_a_second_staging_waits_while_one_holds_the_tree(tmp_path):
     src = _skeleton(tmp_path)
     assets = rec.assets_dir(src)
-    holder = subprocess.Popen(["flock", str(assets), "sleep", "30"])
+    holder = subprocess.Popen(["flock", str(assets), "sleep", "30"], start_new_session=True)
     try:
-        for _ in range(50):
+        for _ in range(100):
             if subprocess.run(["flock", "-n", str(assets), "true"], check=False).returncode != 0:
                 break
             time.sleep(0.1)
+        else:
+            pytest.fail("the holder never took the lock on the assets tree")
         assert _embed(src, tmp_path, timeout_s=2) is None, (
             "embed_assets ran while another staging held the tree"
         )
     finally:
-        holder.kill()
+        # flock's `sleep` child inherits the lock fd: kill the whole group.
+        os.killpg(holder.pid, signal.SIGKILL)
         holder.wait()
     done = _embed(src, tmp_path)
     assert done is not None
