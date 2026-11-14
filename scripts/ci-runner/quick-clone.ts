@@ -775,10 +775,10 @@ export function summaryLines(input: {
       const from = receipt?.gates?.[id]?.carriedFrom;
       return from !== undefined && from !== null;
     });
-    // The runner never carries a red (run.ts decideCarry), so a red with carriedFrom set means the receipt was not written by that runner: say so instead of trusting it.
+    // The runner never carries a red (run.ts decideCarry), but a receipt written before that rule did: a red naming a carried verdict is most likely such an old receipt, so say that and how to clear it rather than blaming the runner.
     if (carriedRed.length > 0)
       lines.push(
-        `ci:quick: INVARIANT BROKEN: these reds name a carried verdict, but the runner re-judges every red: ${carriedRed.join(', ')}. Judge every gate fresh with: npm run ci:quick -- --no-carry\n`
+        `ci:quick: STALE RECEIPT: these reds name a carried verdict, which the current runner never writes (it re-judges every red), so the receipt most likely predates that rule: ${carriedRed.join(', ')}. An old receipt can trigger this; clear it by judging every gate fresh with: npm run ci:quick -- --no-carry. If a fresh run writes the same shape again, the runner itself is broken.\n`
       );
     lines.push(
       'ci:quick: repair in this checkout with the narrow set, which judges the working tree and writes no receipt:\n  npm run ci -- --narrow\n'
@@ -1638,16 +1638,16 @@ export async function quickCloneSelftest(
     });
     check(
       carriedRedRun.exit === 1 &&
-        /INVARIANT BROKEN[^\n]*: check:old\.[^\n]*--no-carry/.test(carriedRedRun.log) &&
-        !/INVARIANT BROKEN[^\n]*check:new/.test(carriedRedRun.log),
-      `a red receipt entry with carriedFrom set breaks the never-carry-a-red invariant and must be named as such, with the fresh run: ${carriedRedRun.log}`
+        /STALE RECEIPT[^\n]*: check:old\.[^\n]*An old receipt[^\n]*--no-carry/.test(carriedRedRun.log) &&
+        !/STALE RECEIPT[^\n]*check:new/.test(carriedRedRun.log),
+      `a red receipt entry with carriedFrom set is read as a receipt from before the never-carry rule and must be named as such, with the fresh run: ${carriedRedRun.log}`
     );
     const redFresh = await drive({
       receipt: { ...greenAtTree, exitCode: 1, failed: ['check:new'] },
     });
     check(
-      !redFresh.log.includes('INVARIANT BROKEN') && !redFresh.log.includes('carried, not re-judged'),
-      'CONTROL: a red judged this run breaks no invariant'
+      !redFresh.log.includes('STALE RECEIPT') && !redFresh.log.includes('carried, not re-judged'),
+      'CONTROL: a red judged this run is not called a stale receipt'
     );
     const listed = await drive({ args: ['--list'] });
     check(
