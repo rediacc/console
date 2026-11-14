@@ -37,7 +37,17 @@ from rediacc_ci import paths
 from rediacc_ci.core import bws_env
 from rediacc_ci.core import wrangler as wrangler_mod
 from rediacc_ci.deploy import proxy_configs as pc
-from rediacc_ci.enterprise import control_db, dns, onboarding, proof, registry, secrets
+from rediacc_ci.enterprise import (
+    configs,
+    control_db,
+    dns,
+    lifecycle,
+    names,
+    onboarding,
+    proof,
+    registry,
+    secrets,
+)
 from rediacc_ci.enterprise import lifecycle_adapters as la
 from rediacc_ci.ops import enterprise_lookup
 
@@ -525,12 +535,33 @@ def configs_key_main(
     return 0
 
 
+EXPECTED_ERRORS: tuple[type[Exception], ...] = (
+    control_db.ControlDbError,
+    lifecycle.LifecycleError,
+    secrets.SecretsError,
+    onboarding.OnboardingError,
+    registry.RegistryUnreachableError,
+    configs.ConfigError,
+    dns.DnsClaimError,
+    names.CompanyNameError,
+    proof.LabError,
+)
+
 # --- dispatch --------------------------------------------------------------------
 
 
 def main(
     argv: Sequence[str], *, add: Add | None = None, context: Callable[..., Any] | None = None
 ) -> int:
+    """Run one verb; an error the enterprise package raises on purpose becomes one stderr line and rc 1, anything else keeps its traceback."""
+    try:
+        return _dispatch(argv, add=add, context=context)
+    except EXPECTED_ERRORS as exc:
+        print("%s: %s" % (SELF, exc), file=sys.stderr)
+        return 1
+
+
+def _dispatch(argv: Sequence[str], *, add: Add | None, context: Callable[..., Any] | None) -> int:
     args = list(argv)
     if not args:
         print(USAGE, file=sys.stderr)
