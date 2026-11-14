@@ -193,10 +193,10 @@
               "id": "cli-migrate-23",
               "kind": "external",
               "fleet": "two-workers",
-              "what": "suite 23, rdc-driven repo migrate routing across two workers",
+              "what": "suites 23a and 23b, rdc-driven repo migrate routing and ordering across two workers",
               "cmd": [
                 "PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path \"$PWD/private/renet/bin/renet\" --output packages/e2e-tests/.env --vm-workers \"11 12\"",
-                "CLI_SUITE=1 BRIDGE_TEST_SKIP_RESET=1 PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test 23-cli-migrate-routing --fail-on-skip"
+                "CLI_SUITE=1 BRIDGE_TEST_SKIP_RESET=1 PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --test 23a-cli-migrate-routing --test 23b-cli-migrate-ordering --fail-on-skip"
               ]
             },
             {
@@ -212,7 +212,8 @@
           ],
           "suites": [
             "packages/e2e-tests/tests/migrate/18-dual-group-migrate.test.ts",
-            "packages/e2e-tests/tests/23-cli-migrate-routing.test.ts"
+            "packages/e2e-tests/tests/23a-cli-migrate-routing.test.ts",
+            "packages/e2e-tests/tests/23b-cli-migrate-ordering.test.ts"
           ],
           "ci_jobs": ["e2e_migrate", "e2e_workers"]
         },

@@ -61,7 +61,7 @@ predates the verb skips loudly rather than going green on a variable. The projec
 
 All four tiers fail CLOSED: absent prerequisites with no declaration are a RED, not a skip. Declare an intentional omission with `E2E_EXPECT_NO_ACCOUNT_SERVER`, `E2E_EXPECT_NO_CHUNK_ENGINE`, `E2E_EXPECT_NO_CHUNK_RESTORE` or `E2E_EXPECT_NO_CHUNK_BROWSE_AT` (the BROWSE-AT tier: a snapshot's sealed listing read back with `rdc backup browse --at`).
 
-8. **Suite 23 (CLI migrate routing).** Runs on shard 1 of the E2E Workers `ubuntu-24.04` leg with `CLI_SUITE=1`. Locally: `npm run vm:check -- --only cli-migrate-23`.
+8. **Suites 23a and 23b (CLI migrate routing and ordering).** Run with `CLI_SUITE=1` on the two `ubuntu-24.04` legs of E2E Full Integration, one suite per leg: both write the e2e-cli config and 23a asserts that an unfiltered `config reconcile` reports no conflict, so they never share a fleet at the same time. Locally: `npm run vm:check -- --only cli-migrate-23` runs both in turn.
 
 9. **`packages/json`'s Rediaccfile template suite** (`packages/json/test-templates.sh`,
 28 templates). Not an e2e suite, listed here because this is the repo's one discoverable index of "runs nowhere in CI, and here is why" — leaving it undocumented is how an unrun suite reads as a passing one.
