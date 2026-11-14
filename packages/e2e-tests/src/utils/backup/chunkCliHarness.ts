@@ -367,7 +367,10 @@ export const provisionRepo = async (
   size = '1G'
 ): Promise<ProvisionedRepo> => {
   const create = await cli.run(['repo', 'create', name, '-m', machine, '--size', size]);
-  expect(create.code, `repo create ${name} (exit ${create.code}):\n--- stderr ---\n${trimFailureOutput(create.stderr)}\n--- stdout ---\n${trimFailureOutput(create.stdout)}`).toBe(0);
+  expect(
+    create.code,
+    `repo create ${name} (exit ${create.code}):\n--- stderr ---\n${trimFailureOutput(create.stderr)}\n--- stdout ---\n${trimFailureOutput(create.stdout)}`
+  ).toBe(0);
 
   const cfg = readCliConfig(cli);
   const family = cfg.resources?.repositories?.[name];
