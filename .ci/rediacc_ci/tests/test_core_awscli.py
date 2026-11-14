@@ -273,3 +273,17 @@ def test_a_release_clone_with_an_empty_cache_borrows_the_main_checkouts_pinned_a
     _fake(pinned, "1.0.0")
     awscli._PROBED.clear()
     assert awscli.resolve(root=clone) is None
+
+
+def test_the_clones_own_valid_cache_wins_over_a_borrowed_one(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    main, clone, empty = tmp_path / "main", tmp_path / "clone", tmp_path / "path"
+    empty.mkdir()
+    monkeypatch.delenv(awscli.ENV_KEY, raising=False)
+    monkeypatch.setenv("PATH", str(empty))
+    monkeypatch.setenv(awscli.TOOLCHAIN_ROOT_ENV, str(main))
+    awscli._PROBED.clear()
+    _fake(awscli.cache_binary(PIN, main))
+    own = _fake(awscli.cache_binary(PIN, clone))
+    assert awscli.resolve(root=clone) == str(own)

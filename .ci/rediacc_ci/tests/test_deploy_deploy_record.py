@@ -1105,6 +1105,9 @@ def test_branch_release_records_get_their_own_keys(monkeypatch):
     monkeypatch.setenv(dr.BRANCH_KEY_ENV, "../escape")
     with pytest.raises(dr.RecordError, match="not a branch label"):
         dr.record_key("3.0.1", "edge", "www-edge", "global")
+    # A trailing newline is not a label: `$` would have let it through.
+    with pytest.raises(dr.RecordError, match="not a branch label"):
+        dr.record_key("3.0.1", "edge", "www-edge", "global", "1104-1.01234567\n")
 
 
 @pytest.mark.usefixtures("world")

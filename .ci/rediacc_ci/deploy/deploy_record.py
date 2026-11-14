@@ -371,7 +371,7 @@ SECRET_NAME_RE = re.compile(
 
 # A branch release (`release:local --branch-release`) deploys under the live version, so its records would collide with the last release's or with a second branch release's. It names `<branch>.<sha8>` here and its records go under `branch-<that>/`; a normal release leaves it unset, and its key and write-once rule are unchanged.
 BRANCH_KEY_ENV = "DEPLOY_RECORD_BRANCH"
-BRANCH_KEY_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9.-]*$")
+BRANCH_KEY_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9.-]*")
 
 
 def record_key(
@@ -381,7 +381,7 @@ def record_key(
         branch = os.environ.get(BRANCH_KEY_ENV) or None
     sub = ""
     if branch is not None:
-        if not BRANCH_KEY_RE.match(branch):
+        if not BRANCH_KEY_RE.fullmatch(branch):
             raise RecordError("%s=%r is not a branch label" % (BRANCH_KEY_ENV, branch))
         sub = "branch-%s/" % branch
     return "%sv%s/%s/%sdeploy-record-%s-%s.json" % (

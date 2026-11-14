@@ -1733,3 +1733,14 @@ def test_children_borrow_the_main_toolchain_and_a_branch_release_names_its_recor
     ctx.update(local.branch_context(root, HEAD_SHA, "ASKED:2026-11-13T05:02Z", _heads()))
     branch = local.child_env(step, ctx, root)
     assert branch[local.deploy_record.BRANCH_KEY_ENV] == "1104-1.01234567"
+
+
+def test_a_normal_release_does_not_inherit_the_operators_record_branch(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv(local.deploy_record.BRANCH_KEY_ENV, "stray.01234567")
+    root = _tmp_root(tmp_path)
+    ctx = local.base_context(root, ["eu"], True)
+    ctx.update(version="9.9.9")
+    (step,) = [s for s in local.plan(["eu"], workers_only=True) if s.id == "www-deploy"]
+    assert local.deploy_record.BRANCH_KEY_ENV not in local.child_env(step, ctx, root)
