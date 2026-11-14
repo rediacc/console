@@ -130,6 +130,28 @@ export const parseEnvelope = (raw: string, stderr = ''): Partial<CliEnvelope<unk
 /** Both channels: the CLI's refusals arrive on stderr. */
 export const bothChannels = (r: { stdout: string; stderr: string }): string => r.stdout + r.stderr;
 
+const DIAGNOSTIC_LINE = /licen[sc]e|refus|error|exit code|failed/i;
+
+/**
+ * Trim a failed command's output for an assertion message without losing the line that explains the failure.
+ * Output within `maxChars` is kept whole; longer output keeps its head and tail plus every diagnostic line from the elided middle, with a marker saying how much was dropped.
+ */
+export const trimFailureOutput = (output: string, maxChars = 8000): string => {
+  if (output.length <= maxChars) return output;
+  const edge = Math.floor(maxChars / 4);
+  const head = output.slice(0, edge);
+  const tail = output.slice(-edge);
+  const middle = output
+    .slice(edge, output.length - edge)
+    .split('\n')
+    .filter((line) => DIAGNOSTIC_LINE.test(line))
+    .map((line) => (line.length > 600 ? `${line.slice(0, 600)}...` : line))
+    .join('\n')
+    .slice(0, maxChars);
+  const dropped = output.length - head.length - tail.length;
+  return `${head}\n[... ${dropped} chars elided; diagnostic lines from the elided span follow ...]\n${middle}\n[... end of elided span ...]\n${tail}`;
+};
+
 /**
  * Stand a CLI up against this account server, in its own config namespace, logged in
  * (licence.ts loginCliToAccount), so `repo create` can issue the licence renet demands.
@@ -345,7 +367,7 @@ export const provisionRepo = async (
   size = '1G'
 ): Promise<ProvisionedRepo> => {
   const create = await cli.run(['repo', 'create', name, '-m', machine, '--size', size]);
-  expect(create.code, `repo create ${name}: ${bothChannels(create).slice(-1200)}`).toBe(0);
+  expect(create.code, `repo create ${name} (exit ${create.code}):\n--- stderr ---\n${trimFailureOutput(create.stderr)}\n--- stdout ---\n${trimFailureOutput(create.stdout)}`).toBe(0);
 
   const cfg = readCliConfig(cli);
   const family = cfg.resources?.repositories?.[name];
