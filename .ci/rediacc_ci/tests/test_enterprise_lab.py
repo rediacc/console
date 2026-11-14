@@ -347,7 +347,7 @@ def test_a_proof_company_without_a_scope_row_whose_export_fails_is_a_lab_error(m
 
 
 def test_the_live_scope_check_reads_the_companys_own_control_database(monkeypatch):
-    """Review 04fc27d4.2: the fake answers from the SQL it is given, over the real control schema, so a query of the wrong table finds nothing."""
+    """Review 04fc27d4.2: the fake answers from the SQL it is given, over the real control schema, so a query of the wrong table raises sqlite's 'no such table' and fails the test."""
     seen: list[tuple[str, str, list]] = []
     dbs: dict[str, sqlite3.Connection] = {}
     for name in ("control-bench-eu", "control-bench-us"):
@@ -469,6 +469,45 @@ def _with_lifecycle(monkeypatch, fake):
         ),
     )
     return built, adder
+
+
+class NoProjectLifecycle(FakeLifecycle):
+    """A lifecycle whose remove and missing_buckets refuse for want of `--bws-project`."""
+
+    def missing_buckets(self, _ctx, _name):
+        raise self.LifecycleError("--bws-project names the enterprise bws project this verb reads")
+
+    def remove(self, _ctx, _name, **_kw):
+        raise self.LifecycleError("--bws-project names the enterprise bws project this verb reads")
+
+
+_COMPANY_ROW = {"id": "c00000000000000aa", "name": "proof-x", "region": "eu", "state": "active"}
+
+
+def test_a_missing_bws_project_refusal_of_remove_names_the_variable(monkeypatch, capsys):
+    """Review bc35c3f0.1: the hint is wired into `remove` as well as `export`."""
+    built, adder = _with_lifecycle(monkeypatch, NoProjectLifecycle())
+    adder.companies["proof-x"] = dict(_COMPANY_ROW)
+    monkeypatch.delenv(lab.BWS_PROJECT_ENV, raising=False)
+    assert built.remove("c00000000000000aa", delete_data=True, github_actions=False) == 1
+    assert lab.BWS_PROJECT_ENV in capsys.readouterr().err
+    # control: with the variable set the refusal is quoted as it stands
+    monkeypatch.setenv(lab.BWS_PROJECT_ENV, "proj")
+    assert built.remove("c00000000000000aa", delete_data=True, github_actions=False) == 1
+    assert lab.BWS_PROJECT_ENV not in capsys.readouterr().err
+
+
+def test_a_missing_bws_project_refusal_of_the_bucket_check_names_the_variable(monkeypatch):
+    """Review bc35c3f0.1: the hint is wired into `_lost_buckets`, whose LabError names the variable."""
+    built, _adder = _with_lifecycle(monkeypatch, NoProjectLifecycle())
+    monkeypatch.delenv(lab.BWS_PROJECT_ENV, raising=False)
+    with pytest.raises(proof.LabError, match=lab.BWS_PROJECT_ENV):
+        built._lost_buckets(dict(_COMPANY_ROW))
+    # control: with the variable set the message does not name it
+    monkeypatch.setenv(lab.BWS_PROJECT_ENV, "proj")
+    with pytest.raises(proof.LabError) as err:
+        built._lost_buckets(dict(_COMPANY_ROW))
+    assert lab.BWS_PROJECT_ENV not in str(err.value)
 
 
 def test_export_and_remove_open_the_store_of_the_proof_bws_project(monkeypatch):
