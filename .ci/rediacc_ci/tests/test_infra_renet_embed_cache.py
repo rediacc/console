@@ -472,7 +472,7 @@ def _path_without(tool: str, tmp_path: pathlib.Path) -> str:
             continue
         for name in os.listdir(entry):
             target = os.path.join(entry, name)
-            if name != tool and not (farm / name).exists() and os.access(target, os.X_OK):
+            if name != tool and not os.path.lexists(farm / name) and os.access(target, os.X_OK):
                 (farm / name).symlink_to(target)
     return str(farm)
 
@@ -484,7 +484,7 @@ def test_a_host_without_flock_stages_unlocked_and_says_so(tmp_path):
     done = _embed(src, tmp_path, base_path=_path_without("flock", tmp_path))
     assert done is not None
     assert done.returncode == 0, done.stdout + done.stderr
-    assert "flock not found" in done.stdout + done.stderr
+    assert (done.stdout + done.stderr).count("flock not found") == 1
     assert rec.receipt_is_current(src)
 
 
