@@ -39,6 +39,17 @@ CONSTANTS = ROOT / ".ci" / "config" / "constants.sh"
 WELL_KNOWN = ROOT / ".ci" / "config" / "well-known.env"
 TOOLCHAIN_ENV = ROOT / ".devcontainer" / "toolchain.env"
 
+
+def _nfpm_pin(constants: pathlib.Path) -> str:
+    """The pin is read, never restated: a literal here went red on the 2.48.0 to 2.49.0 bump (08f98901)."""
+    text = constants.read_text(encoding="utf-8")
+    match = re.search(r'^readonly NFPM_VERSION="([^"]+)"$', text, re.MULTILINE)
+    assert match is not None, "%s no longer pins NFPM_VERSION" % constants
+    return match.group(1)
+
+
+NFPM_PIN = _nfpm_pin(CONSTANTS)
+
 TWIN_REL = ".ci/scripts/build/ensure-nfpm.sh"
 PORT_REL = ".ci/rediacc_ci/build/ensure_nfpm.py"
 
@@ -253,7 +264,7 @@ def test_cold_cache_downloads_verifies_and_prints_the_cache_dir(
     old, new = run_both(fixture)
     assert old.returncode == 0, old.stderr
     assert old.stdout == "%s\n" % (fixture / ".ci" / "cache" / "bin")
-    assert old.stderr == "ensure-nfpm: fetching nfpm 2.48.0 for x86_64\n"
+    assert old.stderr == "ensure-nfpm: fetching nfpm %s for x86_64\n" % NFPM_PIN
     assert_same(old, new)
     # The port really extracted, not merely reported.
     assert os.access(str(fixture / ".ci" / "cache" / "bin" / "nfpm"), os.X_OK)
@@ -265,7 +276,7 @@ def test_a_failing_curl_exits_with_curls_own_status(tmp_path: pathlib.Path) -> N
     old, new = run_both(fixture)
     assert old.returncode == 22
     assert old.stdout == ""
-    assert old.stderr == "ensure-nfpm: fetching nfpm 2.48.0 for x86_64\n"
+    assert old.stderr == "ensure-nfpm: fetching nfpm %s for x86_64\n" % NFPM_PIN
     assert_same(old, new)
     assert not (fixture / ".ci" / "cache").exists(), "the cache dir is created only after the sum"
 
@@ -337,7 +348,7 @@ def test_defect_1_a_warm_cache_is_never_checked_against_the_pin(
         check=False,
     )
     assert "1.0.0-stale" in stale.stdout
-    assert 'readonly NFPM_VERSION="2.48.0"' in CONSTANTS.read_text(encoding="utf-8")
+    assert NFPM_PIN != "1.0.0-stale", "the pin and the stale cache must really differ"
 
 
 def test_defect_2_any_nfpm_on_path_wins_over_the_pin(tmp_path: pathlib.Path) -> None:
