@@ -1,4 +1,12 @@
-import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import {
+  existsSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  utimesSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -6,10 +14,19 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // A filesystem without hard links (exFAT, FAT32) answers link() with EPERM; a WSL-mounted
 // exFAT drive refused every `rdc backup download` lock on 2026-11-13 this way.
 const linkCode = { value: 'EPERM' as string | null };
+const probeDenied = { value: false };
 vi.mock('node:fs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs')>();
   return {
     ...actual,
+    openSync: (path: string, ...rest: unknown[]) => {
+      if (probeDenied.value && String(path).includes('.clock-')) {
+        const error = new Error('EACCES: open') as NodeJS.ErrnoException;
+        error.code = 'EACCES';
+        throw error;
+      }
+      return (actual.openSync as (...args: unknown[]) => number)(path, ...rest);
+    },
     linkSync: (src: string, dest: string) => {
       if (linkCode.value) {
         const error = new Error(`${linkCode.value}: link`) as NodeJS.ErrnoException;
@@ -30,6 +47,7 @@ describe('local lock on a filesystem without hard links', () => {
     dir = mkdtempSync(join(tmpdir(), 'bdl-nolink-'));
     lockPath = join(dir, 'app.latest.lock');
     linkCode.value = 'EPERM';
+    probeDenied.value = false;
   });
   afterEach(() => rmSync(dir, { recursive: true, force: true }));
 
@@ -84,6 +102,24 @@ describe('local lock on a filesystem without hard links', () => {
       vi.useRealTimers();
     }
     expect(readdirSync(dir)).toEqual(['app.latest.lock']);
+  });
+
+  it('judges an old unreadable lock by the host clock when no probe file can be made', () => {
+    writeFileSync(lockPath, '');
+    const old = new Date(Date.now() - 3_600_000);
+    utimesSync(lockPath, old, old);
+    probeDenied.value = true;
+    const info = acquireLocalLock(lockPath, { pid: 9, host: 'h1', isPidAlive: () => true });
+    expect(JSON.parse(readFileSync(lockPath, 'utf8')).pid).toBe(info.pid);
+    expect(readdirSync(dir)).toEqual(['app.latest.lock']);
+  });
+
+  it('control: with no probe file, a fresh unreadable lock is still refused', () => {
+    writeFileSync(lockPath, '');
+    probeDenied.value = true;
+    expect(() =>
+      acquireLocalLock(lockPath, { pid: 9, host: 'h1', isPidAlive: () => true })
+    ).toThrow(/unreadable/);
   });
 
   it('still refuses a live holder', () => {
