@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-14T10:35:40.057Z",
+  "generatedAt": "2026-11-14T10:38:11.149Z",
   "legs": [
     {
       "index": 1,
@@ -445,6 +445,7 @@
         "pytest:.ci/rediacc_ci/tests/test_deploy_write_once_guard.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_write_release_sentinel.py",
         "pytest:.ci/rediacc_ci/tests/test_dev_worktree_lease_walkers.py",
+        "pytest:.ci/rediacc_ci/tests/test_differential_pin_tokens.py",
         "pytest:.ci/rediacc_ci/tests/test_differential_tmp_roots.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_argv_secrets.py",
         "pytest:.ci/rediacc_ci/tests/test_drills_backup_leg_l.py",

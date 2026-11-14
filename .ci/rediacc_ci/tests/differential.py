@@ -409,6 +409,57 @@ def host_unfold(
     return text
 
 
+# --------------------------------------------------------------------------- Pin variance: a toolchain pin the twin printed ---------------------------------------------------------------------------
+#
+# Some twins print a pinned version they read from `.ci/config/constants.sh` (`ensure-nfpm: fetching nfpm 2.49.0 for x86_64`). Frozen literally, every pin bump turns the golden red although nothing about the twin changed: the 2.48.0 to 2.49.0 nfpm bump (08f98901) broke eight cases and needed a hand edit of two goldens (49e18888), since these call sites cannot re-record.
+# `PIN_TOKENS` names, per golden stem, the pins its answers print. At RECORD time `pin_fold` replaces the CURRENT value of each with `<PIN:NAME>`; at COMPARE time `pin_unfold` writes the current value back. Only the listed stems are touched, and only a whole version (never the inside of `12.49.0` or `2.49.0.1`), so a golden that happens to hold the same digits is never rewritten.
+
+PIN_TOKENS: dict[str, tuple[str, ...]] = {
+    "build.ensure-nfpm": ("NFPM_VERSION",),
+    "test.proxies.proxy-ensure-nfpm": ("NFPM_VERSION",),
+}
+CONSTANTS_SH = paths.repo_root() / ".ci" / "config" / "constants.sh"
+
+
+def pin_token(name: str) -> str:
+    return "<PIN:%s>" % name
+
+
+def pin_values(names: tuple[str, ...], constants: pathlib.Path | None = None) -> dict[str, str]:
+    """`{name: value}` from the `readonly NAME="value"` lines of `constants` (the repo's `constants.sh` by default). A listed pin that is missing is an error, never an empty fold."""
+    text = (constants or CONSTANTS_SH).read_text(encoding="utf-8")
+    values = {}
+    for name in names:
+        m = re.search(r'^readonly %s="([^"]+)"' % re.escape(name), text, re.MULTILINE)
+        if m is None:
+            raise RuntimeError(
+                '%s has no `readonly %s="..."` line' % (constants or CONSTANTS_SH, name)
+            )
+        values[name] = m.group(1)
+    return values
+
+
+def _stem_pins(stem: str, pins: dict[str, str] | None) -> dict[str, str]:
+    names = PIN_TOKENS.get(stem, ())
+    if not names:
+        return {}
+    return pins if pins is not None else pin_values(names)
+
+
+def pin_fold(stem: str, text: str, pins: dict[str, str] | None = None) -> str:
+    """Record time: each current pin value of `stem` becomes its token. `pins` overrides what `constants.sh` says."""
+    for name, value in _stem_pins(stem, pins).items():
+        text = re.sub(r"(?<![\d.])%s(?!\d|\.\d)" % re.escape(value), pin_token(name), text)
+    return text
+
+
+def pin_unfold(stem: str, text: str, pins: dict[str, str] | None = None) -> str:
+    """Compare time: each token of `stem` becomes the CURRENT pin value."""
+    for name, value in _stem_pins(stem, pins).items():
+        text = text.replace(pin_token(name), value)
+    return text
+
+
 # --------------------------------------------------------------------------- The recorder: what a golden holds that NO token marks ---------------------------------------------------------------------------
 #
 # `host_fold` runs at RECORD time, so it covers only the variance somebody had already met when a golden was frozen. The twins are deleted and their goldens are final, so a variance met LATER cannot become a token without rewriting a frozen answer. On 2026-10-13 run 38389205702 was the first in which the three pytest legs ran to the end on GitHub's runner, and it met four at once, all invisible on the recording host because that host IS the recorder:
@@ -579,8 +630,9 @@ def golden_answer(twin: str, key: str, work: tuple[str, ...] = ()) -> Answer:
             'add it with `%s %s --source port --reason "<why>"` and review the diff.'
             % (golden_stem(twin), key, REGOLDEN_VERB, twin)
         )
-    out = goldenio.decode_field(row.get("out", ""))
-    err = goldenio.decode_field(row.get("err", ""))
+    stem = golden_stem(twin)
+    out = pin_unfold(stem, goldenio.decode_field(row.get("out", "")))
+    err = pin_unfold(stem, goldenio.decode_field(row.get("err", "")))
     return int(row["rc"]), unfold(host_unfold(out), work), unfold(host_unfold(err), work)
 
 
@@ -589,8 +641,8 @@ def _record(twin: str, key: str, answer: Answer, work: tuple[str, ...]) -> None:
     rc, out, err = answer
     RECORDED.setdefault(stem, {})[key] = (
         rc,
-        host_fold(fold(out, work)),
-        host_fold(fold(err, work)),
+        pin_fold(stem, host_fold(fold(out, work))),
+        pin_fold(stem, host_fold(fold(err, work))),
     )
     RECORDED_TWINS[stem] = str(twin)
 
