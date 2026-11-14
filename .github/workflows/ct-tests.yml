@@ -233,7 +233,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ env.BWS_CLOUDFLARE_ACCOUNT_ID }}
 
   test-unit:
-    name: Unit
+    name: Unit (${{ matrix.shard }}/2)
     # Checkout, with the private submodules on the readonly-preset App token.
     # No registry, no GitHub API.
     permissions:
@@ -241,6 +241,15 @@ jobs:
     if: inputs.full_suite == 'true' && inputs.run_unit != 'false'
     runs-on: ubuntu-slim
     timeout-minutes: 14
+    # Two legs (operator ruling #12755b25, ASKED:2026-11-14T13:33Z, "Shard into
+    # 2"): the unsharded job measured p90 12.4m, 10.4m of it vitest (job
+    # 132425661241). Each leg runs every suite with vitest --shard=<i>/2
+    # (rediacc_ci.testrun.unit --shard), so every test file runs in exactly one
+    # leg; check-lane-budget.ts prices each leg in JOB_P90_SEEDS until measured.
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -271,7 +280,7 @@ jobs:
           build-packages: 'true'
       - name: Install the pinned OpenTofu for the CLI tofu tests
         run: npx tsx packages/cli/scripts/install-pinned-tofu.ts
-      - run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.unit
+      - run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.unit --shard "${{ matrix.shard }}/2"
 
   # The ONE job here that stages renet's embed assets on a cache miss; every job
   # below that restores the renet-embed-assets cache `needs:` it, so each of them

@@ -318,6 +318,17 @@ export const JOB_P90_SEEDS: readonly JobP90Seed[] = [
     derivation:
       'ruling #12755b25: lane-durations.json variantCosts test-e2e-workers fedora-43 fixedMinutes 7.22 + legExtraMinutes "1" 3.03 (the --also span 12a/12b/12d/13b added to leg 1, refresh 2026-11-14T13:15Z), the extra removed from the lane with the move',
   },
+  {
+    label: 'Tests + Infra / Unit (1/2)',
+    minutes: 7.2,
+    derivation:
+      'ruling #12755b25 ("Shard into 2"): the unsharded job p90 12.4 = 1.9 of steps outside the runner step (job 132425661241: 12m16s wall, runner step 10m24s) + 10.5 of vitest; every suite now runs with vitest --shard=<i>/2, so each leg pays 1.9 + 10.5 / 2',
+  },
+  {
+    label: 'Tests + Infra / Unit (2/2)',
+    minutes: 7.2,
+    derivation: 'ruling #12755b25 ("Shard into 2"): the same derivation as Unit (1/2)',
+  },
 ];
 
 /** The samples check 2 judges one call site by: its measured display names, or, when it has none, the seeds its pattern matches. */

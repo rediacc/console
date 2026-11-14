@@ -64,3 +64,33 @@ def test_delta_unknown_argument_is_refused(tmp_path: pathlib.Path) -> None:
     assert new.code == 2
     assert not new.calls
     assert "Unknown option: --coverge" in new.err
+
+
+def py(tmp_path: pathlib.Path, args: list[str]) -> ts.Outcome:
+    return ts.run_side(ts.py_cmd(MODULE, *args), tmp_path / "py", ("npm",), ts.py_env(None))
+
+
+def test_delta_shard_reaches_every_suite(tmp_path: pathlib.Path) -> None:
+    # Ruling #12755b25 ("Shard into 2"): every suite takes the same vitest --shard, so each test file runs in exactly one leg and the legs together are the unsharded run.
+    plain = py(tmp_path / "plain", [])
+    for i in (1, 2):
+        leg = py(tmp_path / f"leg{i}", ["--shard", f"{i}/2"])
+        assert leg.code == 0
+        assert [c["argv"] for c in leg.calls] == [
+            [*c["argv"], "--", f"--shard={i}/2"] for c in plain.calls
+        ]
+
+
+def test_delta_shard_refuses_a_malformed_value(tmp_path: pathlib.Path) -> None:
+    for i, args in enumerate(
+        (
+            ["--shard"],
+            ["--shard", "3/2"],
+            ["--shard", "0/2"],
+            ["--shard", "1"],
+            ["--shard", "1/2", "--shard", "2/2"],
+        )
+    ):
+        new = py(tmp_path / str(i), args)
+        assert new.code == 2, args
+        assert not new.calls, args

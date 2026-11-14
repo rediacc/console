@@ -775,8 +775,10 @@ def want_workers(cand: str, gitlinks: dict | None = None) -> str:
 
 # PLAN-ci-time-budget T2.12 shards each of the five distro legs nine ways (ruling #d7502b7d): 45 API jobs, plus the two E2E Full Integration legs (ruling #12755b25) on the same closure. The full-integration legs come first so ALL_FIVE[-1] stays a workers leg.
 DISTROS = ("ubuntu-24.04", "debian-13", "fedora-43", "opensuse-16.0", "oracle-10")
-ALL_LEGS = ("E2E Full Integration (ubuntu-24.04)", "E2E Full Integration (fedora-43)") + tuple(
-    f"E2E Workers ({d}, {i}/9)" for d in DISTROS for i in range(1, 10)
+ALL_LEGS = (
+    "E2E Full Integration (ubuntu-24.04)",
+    "E2E Full Integration (fedora-43)",
+    *(f"E2E Workers ({d}, {i}/9)" for d in DISTROS for i in range(1, 10)),
 )
 ALL_FIVE = tuple(f"{leg}=success" for leg in ALL_LEGS)
 

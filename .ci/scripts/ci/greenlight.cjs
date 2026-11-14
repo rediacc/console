@@ -484,7 +484,8 @@ const CLOSURES = {
   },
   // ct-tests.yml:183 `test-unit`. Last: at 14 minutes on ubuntu-slim it is the cheapest key in the table, so it is the one to starve if the budget dies.
   unit: {
-    jobNames: ['Unit'],
+    // Two legs since operator ruling #12755b25 ("Shard into 2"), each running every suite with vitest --shard=<i>/2.
+    jobNames: ['Unit (1/2)', 'Unit (2/2)'],
     // NO LONGER EMPTY. The job took a bare checkout until the suite failed with ENOENT on private/renet/pkg/prune/datastore.go: datastore-prune-parser asserts the CLI's prune fixtures cover every kind renet reports, by parsing that Go source, and throws rather than skipping when it is absent. renet is therefore a HARD dependency of this key -- a change to
     // DatastorePrunableResources must re-run these tests, or the fixtures drift and nothing says so.
     //
