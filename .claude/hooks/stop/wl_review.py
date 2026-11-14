@@ -3360,10 +3360,21 @@ def _diff_lines(text):
     return removed, added
 
 
-def move_search_note(repo, base, fix, anchored):
-    """A refusal sentence when `moved_successors` could not read every commit of `base..fix` that touches the anchored file (it takes the newest MOVE_MAX_COMMITS of them), else "" (review 4bcec972.2: a move older than that was never seen and nothing said so)."""
+def _literal_pathspecs(paths):
+    """`paths` as git pathspecs that match only themselves: a bare pathspec is a glob, so a file named `[id].tsx` also matched `i.tsx` and `d.tsx`, whose commits were read as its own (review ab7e9e28.2)."""
+    return [":(literal)%s" % path for path in sorted(paths)]
+
+
+def move_search_note(repo, base, fix, anchored, successors=()):
+    """A refusal sentence when `moved_successors` could not read every commit of `base..fix` that touches the anchored file or a successor it found (it takes the newest MOVE_MAX_COMMITS of them), else "" (review 4bcec972.2: a move older than that was never seen and nothing said so; review ab7e9e28.1: from round 2 on the search reads the successors' commits too, so they are counted too)."""
     rc, out = git(
-        repo, "rev-list", "--count", "--no-merges", "%s..%s" % (base, fix), "--", anchored
+        repo,
+        "rev-list",
+        "--count",
+        "--no-merges",
+        "%s..%s" % (base, fix),
+        "--",
+        *_literal_pathspecs({anchored, *successors}),
     )
     if rc != 0 or not out.strip().isdigit():
         # An uncounted range may be longer than the search reads: say so instead of reading as complete (review 21ac17b2.1).
@@ -3407,7 +3418,7 @@ def moved_successors(repo, anchored, base, fix):
             str(MOVE_MAX_COMMITS),
             "%s..%s" % (base, fix),
             "--",
-            *sorted(sources),
+            *_literal_pathspecs(sources),
         )
         grew = False
         for sha in out.split() if rc == 0 else []:
@@ -3644,7 +3655,7 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
                     fix[:12],
                     finding.file,
                     _norm_stem(finding.file),
-                    move_search_note(repo, review.sha, fix, finding.file),
+                    move_search_note(repo, review.sha, fix, finding.file, moved_to),
                     "" if test_path else TEST_OPTION_HINT,
                 )
             )

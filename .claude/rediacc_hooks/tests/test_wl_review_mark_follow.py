@@ -541,3 +541,39 @@ def test_control_an_importing_test_without_the_test_flag_is_refused(tmp_path):
     )
     with pytest.raises(ValueError, match="does not touch"):
         R.mark(repo, BRANCH, fid, "fixed", [fix], ME)
+
+
+def test_a_source_named_with_glob_characters_is_matched_literally(tmp_path, monkeypatch):
+    """Review ab7e9e28.2: a bare pathspec is a glob, so a source `[id].py` also matched `i.py` and `d.py` (git tries the literal path first, so it still matched itself) and their commits were read and counted as the source's own. CONTROL: the source itself is still found and traced."""
+    repo = _repo(tmp_path)
+    reviewed = _commit(repo, "feat", **{"[id].py": "def run():\n%s" % BODY})
+    _commit(
+        repo,
+        "refactor: extract",
+        **{
+            "[id].py": "def run():\n    return reconcile()\n",
+            "moved.py": "def reconcile():\n%s" % BODY,
+        },
+    )
+    assert R.moved_successors(repo, "[id].py", reviewed, "HEAD") == {"moved.py"}
+    monkeypatch.setattr(R, "MOVE_MAX_COMMITS", 2)
+    for n in range(3):
+        _commit(repo, "neighbour %d" % n, **{"i.py": "x = %d\n" % n})
+    assert R.move_search_note(str(repo), reviewed, "HEAD", "[id].py") == ""
+
+
+def test_the_cut_short_note_counts_the_commits_of_a_found_successor(tmp_path, monkeypatch):
+    """Review ab7e9e28.1: from round 2 the log reads the commits touching every found successor, so a successor with more commits than the cap cut the search short while the anchored file's own count stayed under it and the refusal read as complete. CONTROL: a successor within the cap leaves the note empty."""
+    repo, reviewed = _moved_world(tmp_path)
+    monkeypatch.setattr(R, "MOVE_MAX_COMMITS", 3)
+    successors = {"config_reconcile.py"}
+    assert R.move_search_note(str(repo), reviewed, "HEAD", "config.py", successors) == ""
+    for n in range(3):
+        _commit(
+            repo,
+            "noise %d" % n,
+            config_reconcile_dot_py="def reconcile():\n%s# %d\n" % (BODY, n),
+        )
+    assert R.move_search_note(str(repo), reviewed, "HEAD", "config.py") == ""
+    note = R.move_search_note(str(repo), reviewed, "HEAD", "config.py", successors)
+    assert "read only the newest 3 of the 4 commits" in note
