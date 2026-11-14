@@ -568,11 +568,11 @@ def _fake_compute(**overrides):
         "missing_artifact_lanes": [],
     }
     base.update(overrides)
-    # Every entry a fake measures carries `MIN_DRIFT_RUNS` runs of evidence unless the test says otherwise, so a test about merging or drift is not silently turned into a test about thin samples.
+    # Every entry a fake measures carries enough runs for the strictest keep rule (`MIN_VARIANT_RUNS`, which `variantCosts` and `job_p90_minutes` use) unless the test says otherwise, so a test about merging or drift is not silently turned into a test about thin samples.
     if "measured_runs" not in overrides:
         base["measured_runs"] = {
             section: dict.fromkeys(
-                cast("dict[str, Any]", base.get(section) or {}), br.MIN_DRIFT_RUNS
+                cast("dict[str, Any]", base.get(section) or {}), br.MIN_VARIANT_RUNS
             )
             for section in ("jobs", "job_p90_minutes", "gate_step_p90_seconds", "variant_costs")
         }
@@ -2291,19 +2291,19 @@ def test_a_one_run_refresh_keeps_every_committed_job_and_gate_step_and_names_the
     assert "refreshed from 1 sampled run(s)" in captured.out
     assert "10 sampled run(s)" not in captured.out
     assert (
-        "2 job_p90_minutes entr(ies) measured by fewer than 2 sampled run(s) KEEP" in captured.err
+        "2 job_p90_minutes entr(ies) measured by fewer than 3 sampled run(s) KEEP" in captured.err
     )
     assert "2 gate_step_p90_seconds entr(ies)" in captured.err
     assert "1 jobs entr(ies)" in captured.err
 
 
-def test_a_refresh_on_two_runs_rewrites_the_same_entries(tmp_path):
-    """CONTROL: the identical measurement with two runs behind every entry moves them all, so the keep rule is the evidence count and nothing else."""
+def test_a_refresh_on_enough_runs_rewrites_the_same_entries(tmp_path):
+    """CONTROL: the identical measurement with enough runs behind every entry moves them all (two for `jobs` and gate steps, three for `job_p90_minutes`), so the keep rule is the evidence count and nothing else."""
     path = _fixture_tree(tmp_path, {})
     path.write_text(json.dumps(_the_11_03_table()))
     two = {
         "jobs": {"test-e2e-workers": 2},
-        "job_p90_minutes": {"Quality / Branch": 2, "Build (Renet) / Renet (Full)": 2},
+        "job_p90_minutes": {"Quality / Branch": 3, "Build (Renet) / Renet (Full)": 3},
         "gate_step_p90_seconds": {"check:ci-plan-live-proof": 2, "check:ci-max-lines": 2},
     }
     assert br.refresh_lane_durations(path, limit=10, compute=_one_run_night(measured_runs=two)) == 0
@@ -2317,6 +2317,30 @@ def test_a_refresh_on_two_runs_rewrites_the_same_entries(tmp_path):
     steps = data["gate_step_p90_seconds"]
     assert steps.get("check:ci-plan-live-proof") == 3.0
     assert steps.get("check:ci-max-lines") == 5.0
+
+
+def test_a_job_p90_priced_from_two_runs_keeps_its_committed_value(tmp_path, capsys):
+    """2026-11-14: two sampled runs priced the ubuntu E2E legs from one run's guest-VM apt slowdown (15-18 m against a 12 m budget). A committed job p90 now moves only on `MIN_VARIANT_RUNS` runs; `jobs` and gate steps still move on `MIN_DRIFT_RUNS` (the CONTROL that the stricter rule is scoped)."""
+    path = _fixture_tree(tmp_path, {})
+    path.write_text(json.dumps(_the_11_03_table()))
+    runs = {
+        "jobs": {"test-e2e-workers": br.MIN_DRIFT_RUNS},
+        "job_p90_minutes": {"Quality / Branch": 2, "Build (Renet) / Renet (Full)": 2},
+        "gate_step_p90_seconds": {"check:ci-plan-live-proof": 2, "check:ci-max-lines": 2},
+    }
+    assert br.MIN_DRIFT_RUNS == 2 < br.MIN_VARIANT_RUNS
+    assert (
+        br.refresh_lane_durations(path, limit=10, compute=_one_run_night(measured_runs=runs)) == 0
+    )
+    data = json.loads(path.read_text())
+    assert data["job_p90_minutes"]["Quality / Branch"] == 10.3
+    assert data["job_p90_minutes"]["Build (Renet) / Renet (Full)"] == 7.0
+    assert data["jobs"] == {"test-e2e-workers": 2.2}
+    assert data["gate_step_p90_seconds"].get("check:ci-plan-live-proof") == 3.0
+    assert (
+        "job_p90_minutes entr(ies) measured by fewer than 3 sampled run(s) KEEP"
+        in capsys.readouterr().err
+    )
 
 
 def test_refreshed_on_evidence_counts_absent_evidence_as_none():

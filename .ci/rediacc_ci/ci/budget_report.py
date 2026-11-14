@@ -2331,15 +2331,16 @@ def refreshed_on_evidence(
     committed: Mapping[str, float],
     measured: Mapping[str, float],
     runs: Mapping[str, int],
+    min_runs: int = MIN_DRIFT_RUNS,
 ) -> tuple[dict[str, float], list[str]]:
-    """`(the entries a refresh writes, the ids it kept on a thin sample)` for `jobs`, `job_p90_minutes` and `gate_step_p90_seconds`: `refreshed_units`' rule, counted in `runs` (how many sampled runs measured each id; absent is zero). An entry the table already holds moves only on `MIN_DRIFT_RUNS` runs, either direction; an id new to the table is written from one.
+    """`(the entries a refresh writes, the ids it kept on a thin sample)` for `jobs`, `job_p90_minutes` and `gate_step_p90_seconds`: `refreshed_units`' rule, counted in `runs` (how many sampled runs measured each id; absent is zero). An entry the table already holds moves only on `min_runs` runs (`MIN_DRIFT_RUNS` unless the caller asks for more), either direction; an id new to the table is written from one. `job_p90_minutes` asks for `MIN_VARIANT_RUNS`: check-lane-budget.ts judges each leg on it, and on 2026-11-14 two runs priced the ubuntu E2E legs from one run's guest-VM apt slowdown (15-18 m against a 12 m budget).
 
     WHY. These three were rewritten from any sample, one run included. MEASURED 2026-11-07: the 14-day pull_request window held one Console CI run (41769535457, a 23-commit PR), and recomputed on it the refresh writes check:ci-plan-live-proof's step at 3.0 s over a committed 69.3 s and Quality / Branch at 3.5 m over 10.3 m. check-gate-manifest.ts judges `slow` on that step and check-lane-budget.ts judges every job on these p90s, so one runner's numbers set a tier and a lane verdict.
     """
     out = dict(committed)
     kept: list[str] = []
     for key, value in measured.items():
-        if key in committed and runs.get(key, 0) < MIN_DRIFT_RUNS:
+        if key in committed and runs.get(key, 0) < min_runs:
             if committed[key] != value:
                 kept.append(key)
             continue
@@ -2526,13 +2527,13 @@ def refresh_lane_durations(
     existing_p90 = existing.get("job_p90_minutes", {})
     p90_runs = evidence.get("job_p90_minutes") or {}
     updated["job_p90_minutes"], kept_on_thin["job_p90_minutes"] = refreshed_on_evidence(
-        existing_p90, computed["job_p90_minutes"], p90_runs
+        existing_p90, computed["job_p90_minutes"], p90_runs, MIN_VARIANT_RUNS
     )
     # A name kept on a thin sample keeps its plan entry too: its p90 still describes the samples that entry names.
     rewritten = [
         name
         for name in computed["job_p90_minutes"]
-        if name not in existing_p90 or p90_runs.get(name, 0) >= MIN_DRIFT_RUNS
+        if name not in existing_p90 or p90_runs.get(name, 0) >= MIN_VARIANT_RUNS
     ]
     plans = merged_job_p90_plans(
         existing.get("job_p90_plans") or {},
@@ -2555,7 +2556,9 @@ def refresh_lane_durations(
                 % (
                     len(ids),
                     table_key,
-                    MIN_VARIANT_RUNS if table_key == "variantCosts" else MIN_DRIFT_RUNS,
+                    MIN_VARIANT_RUNS
+                    if table_key in ("variantCosts", "job_p90_minutes")
+                    else MIN_DRIFT_RUNS,
                     ", ".join(ids[:3]),
                     ", ..." if len(ids) > 3 else "",
                 )
