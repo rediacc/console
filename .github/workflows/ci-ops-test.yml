@@ -56,7 +56,7 @@ jobs:
         id: embed-cache
         with:
           path: private/renet/pkg/embed/assets
-          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json', 'private/renet/Dockerfile') }}
           lookup-only: true
       # Everything below runs on a miss only, and is the consumers' own chain.
       - name: Login to Docker Hub
@@ -89,7 +89,7 @@ jobs:
         if: always() && steps.build-renet.outputs.embed-cacheable == 'true'
         with:
           path: private/renet/pkg/embed/assets
-          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json', 'private/renet/Dockerfile') }}
 
   # ── Full VM provisioning test (KVM available) ──────────────────
   ops-vm-provision:
@@ -277,7 +277,7 @@ jobs:
         id: embed-cache
         with:
           path: private/renet/pkg/embed/assets
-          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json', 'private/renet/Dockerfile') }}
       # Pre-pulled only on a cache miss: a hit makes build_renet's embed_assets
       # step a verified no-op, so these base images are never fetched.
       - name: Pre-pull Docker base images (avoid buildx auth issues)

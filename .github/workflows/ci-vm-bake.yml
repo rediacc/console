@@ -91,7 +91,7 @@ jobs:
         id: embed-cache
         with:
           path: private/renet/pkg/embed/assets
-          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json', 'private/renet/Dockerfile') }}
       - name: Pre-pull Docker base images (avoid buildx auth issues)
         if: steps.embed-cache.outputs.cache-hit != 'true'
         run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64

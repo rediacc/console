@@ -53,6 +53,7 @@ def _skeleton(tmp_path: pathlib.Path) -> pathlib.Path:
     lock_bytes = json.dumps(LOCK).encode()
     src.mkdir(parents=True)
     (src / "embed-assets.lock.json").write_bytes(lock_bytes)
+    (src / "Dockerfile").write_text("FROM ubuntu:26.10 AS rsync-builder-amd64\n", encoding="utf-8")
     assets = rec.assets_dir(src)
     for d in ("", "amd64", "amd64/base", "amd64/cluster", "arm64", "arm64/base", "arm64/cluster"):
         (assets / d).mkdir(parents=True, exist_ok=True)
@@ -71,6 +72,7 @@ def _staged(tmp_path: pathlib.Path) -> pathlib.Path:
         entries[rel] = {"sha256": _sha(payload)}
     receipt = {
         "lockfileSha256": _sha((src / "embed-assets.lock.json").read_bytes()),
+        "dockerfileSha256": _sha((src / "Dockerfile").read_bytes()),
         "assets": entries,
     }
     (assets / ".staged.json").write_text(json.dumps(receipt), encoding="utf-8")
@@ -88,6 +90,23 @@ def test_the_checkout_skeleton_is_not_current(tmp_path):
 def test_a_lockfile_change_invalidates_the_receipt(tmp_path):
     src = _staged(tmp_path)
     (src / "embed-assets.lock.json").write_text(json.dumps({**LOCK, "bump": 1}), encoding="utf-8")
+    assert not rec.receipt_is_current(src)
+
+
+def test_a_dockerfile_change_invalidates_the_receipt(tmp_path):
+    """A base image or configure flag changes the compiled bytes; the lockfile alone missed renet 5e0987c6."""
+    src = _staged(tmp_path)
+    assert rec.receipt_is_current(src)
+    (src / "Dockerfile").write_text("FROM ubuntu:24.04 AS rsync-builder-amd64\n", encoding="utf-8")
+    assert not rec.receipt_is_current(src)
+
+
+def test_a_receipt_without_the_dockerfile_digest_is_not_current(tmp_path):
+    src = _staged(tmp_path)
+    path = rec.assets_dir(src) / ".staged.json"
+    receipt = json.loads(path.read_text(encoding="utf-8"))
+    del receipt["dockerfileSha256"]
+    path.write_text(json.dumps(receipt), encoding="utf-8")
     assert not rec.receipt_is_current(src)
 
 
@@ -111,7 +130,11 @@ def test_an_unlisted_extra_asset_invalidates_the_receipt(tmp_path):
 
 def test_an_empty_receipt_never_satisfies(tmp_path):
     src = _skeleton(tmp_path)
-    receipt = {"lockfileSha256": _sha((src / "embed-assets.lock.json").read_bytes()), "assets": {}}
+    receipt = {
+        "lockfileSha256": _sha((src / "embed-assets.lock.json").read_bytes()),
+        "dockerfileSha256": _sha((src / "Dockerfile").read_bytes()),
+        "assets": {},
+    }
     (rec.assets_dir(src) / ".staged.json").write_text(json.dumps(receipt), encoding="utf-8")
     assert not rec.receipt_is_current(src)
 
@@ -230,6 +253,10 @@ def test_a_receipt_written_by_build_sh_is_accepted_by_both(tmp_path):
         pytest.param(
             lambda s: (s / "embed-assets.lock.json").write_text("{}", encoding="utf-8"),
             id="lock-changed",
+        ),
+        pytest.param(
+            lambda s: (s / "Dockerfile").write_text("FROM ubuntu:24.04\n", encoding="utf-8"),
+            id="dockerfile-changed",
         ),
     ],
 )

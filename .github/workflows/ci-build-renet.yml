@@ -103,7 +103,7 @@ jobs:
         id: embed-cache
         with:
           path: private/renet/pkg/embed/assets
-          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json', 'private/renet/Dockerfile') }}
 
       # QEMU lets the Docker builder image's arm64 stages run on this amd64
       # runner (arm64 CRIU comes from a Debian .deb, so this is package
@@ -193,7 +193,7 @@ jobs:
         if: always() && steps.embed-verdict.outputs.embed-cacheable == 'true'
         with:
           path: private/renet/pkg/embed/assets
-          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json', 'private/renet/Dockerfile') }}
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
         with:
@@ -267,7 +267,7 @@ jobs:
         id: embed-cache
         with:
           path: private/renet/pkg/embed/assets
-          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json', 'private/renet/Dockerfile') }}
       - name: Login to Docker Hub
         if: steps.embed-cache.outputs.cache-hit != 'true'
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
@@ -291,7 +291,7 @@ jobs:
         if: always() && steps.build-renet.outputs.embed-cacheable == 'true'
         with:
           path: private/renet/pkg/embed/assets
-          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json', 'private/renet/Dockerfile') }}
 
   # Extract renet binaries from existing bridge image when build is skipped.
   # Linux binaries come from the cached bridge image; Darwin and Windows binaries

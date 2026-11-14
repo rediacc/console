@@ -133,7 +133,7 @@ jobs:
         id: embed-cache
         with:
           path: private/renet/pkg/embed/assets
-          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json', 'private/renet/Dockerfile') }}
       # Pre-pulled only on a cache miss: a hit means build_renet's embed_assets
       # step is a verified no-op (see above), so the multi-arch base images this
       # exists to avoid buildx auth issues for are never fetched by that build.
@@ -157,7 +157,7 @@ jobs:
         if: always() && steps.build-renet.outputs.embed-cacheable == 'true'
         with:
           path: private/renet/pkg/embed/assets
-          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json') }}
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json', 'private/renet/Dockerfile') }}
       - name: Install renet
         run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
 
