@@ -866,7 +866,9 @@ def test_a_process_whose_grandchild_keeps_the_output_open_is_a_timeout(tmp_path)
             job.finish(1)
     finally:
         # f2e5369d.1: end the grandchild and join the pump here, so its pipe closes inside this test and not in a later one.
-        os.kill(int(pidfile.read_text()), signal.SIGKILL)
+        # 0f926f33.1: a stub that failed before writing the pidfile must not replace the original failure with a FileNotFoundError.
+        if pidfile.exists():
+            os.kill(int(pidfile.read_text()), signal.SIGKILL)
         job._pump.join(timeout=10)
         assert not job._pump.is_alive()
 

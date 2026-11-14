@@ -512,8 +512,16 @@ def test_fetch_pages_a_without_rowid_table_in_full_row_order(tmp_path: pathlib.P
     db = mod.SqliteExecutor(tmp_path / "w.db")
     db.batch(["CREATE TABLE w (a TEXT, b INTEGER, PRIMARY KEY (a, b)) WITHOUT ROWID"])
     total = mod.PAGE * 2 + 7
-    with sqlite3.connect(tmp_path / "w.db") as conn:
-        conn.executemany("INSERT INTO w VALUES (?, ?)", [("k%05d" % i, i) for i in range(total)])
+    # ec245a75.1: the connection manager commits but does not close, so close it explicitly.
+    conn = sqlite3.connect(tmp_path / "w.db")
+    try:
+        with conn:
+            # Inserted in reverse so a fetch that returned storage or insertion order, not (a, b) order, is caught.
+            conn.executemany(
+                "INSERT INTO w VALUES (?, ?)", [("k%05d" % i, i) for i in reversed(range(total))]
+            )
+    finally:
+        conn.close()
     seen: list[str] = []
 
     class Recording:
@@ -527,6 +535,8 @@ def test_fetch_pages_a_without_rowid_table_in_full_row_order(tmp_path: pathlib.P
     rows = mod.fetch(Recording(), "w", ["a", "b"], "b >= 0")
     assert len(rows) == total
     assert len({r["a"] for r in rows}) == total
+    # c48a7570.1: the rows come back sorted by (a, b), not merely complete.
+    assert [(r["a"], r["b"]) for r in rows] == [("k%05d" % i, i) for i in range(total)]
     assert len(seen) == 3
     assert all("ORDER BY 1, 2 " in sql and "rowid" not in sql for sql in seen)
     with pytest.raises(sqlite3.OperationalError):

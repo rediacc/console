@@ -75,9 +75,11 @@ def test_every_bench_config_that_carries_a_switch_names_itself_bench():
         "wrangler.bench-asia.toml",
     }
     for path in benches:
+        top = _vars(path).get("ENVIRONMENT")
         for where, table in _every_vars_table(path).items():
             if any(k in table for k in SWITCHES):
-                assert _vars(path).get("ENVIRONMENT") == "bench", "%s %s" % (path.name, where)
+                # 0f926f33.2: an [env.<name>.vars] table deploys with its own ENVIRONMENT (its own value, else the inherited top-level one).
+                assert table.get("ENVIRONMENT", top) == "bench", "%s %s" % (path.name, where)
 
 
 def test_the_sweep_reads_environment_tables_too(tmp_path: Path) -> None:
