@@ -344,6 +344,8 @@ def test_a_verb_table_a_pure_builtin_takes_in_a_script_by_path_is_data(cwd, tmp_
         # Review 2a494086.1: a three-argument `type` creates a class, and the bases' `__init_subclass__` takes every keyword.
         NAMED_ARGV + 'type("C", (Base,), {}, **{"k": ARGV})',
         NAMED_ARGV + 'type("C", (Base,), {"argv": ARGV})',
+        # Review 109da352.1: a starred positional hides the argument count.
+        NAMED_ARGV + 'type(*["C", (Base,), {"argv": ARGV}])',
     ],
 )
 def test_a_named_clone_argv_reaching_a_call_through_a_builtin_is_refused(cwd, body):
