@@ -60,6 +60,12 @@
       "live": ["bench"],
       "local": ["www-local"],
       "renet_build": false
+    },
+    "enterprise": {
+      "globs": [".ci/rediacc_ci/enterprise/**", ".ci/rediacc_ci/deploy/deploy_signer.py"],
+      "live": ["bench"],
+      "local": ["enterprise-bench"],
+      "renet_build": false
     }
   },
   "exclude": [
@@ -410,6 +416,13 @@
         "www-local": {
           "what": "the site built and served from this tree (no bench www Worker exists yet; see tiers.live.checks.www-smoke)",
           "run": ["cd packages/www && npm run build && npm run preview"]
+        },
+        "enterprise-bench": {
+          "what": "the Enterprise tooling run from this tree against bench: the signer proof (V1) and the region-loss proof (V2), each of which stops or cuts a bench signer and restores it; the lab reads the enterprise bws project id from ENTERPRISE_PROOF_BWS_PROJECT",
+          "run": [
+            "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile enterprise --profile deploy-signer -- python3 -m rediacc_ci.enterprise.proof signer --bench",
+            "PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile enterprise --profile deploy-signer -- python3 -m rediacc_ci.enterprise.proof region-loss --bench"
+          ]
         }
       },
       "github_waits": [
@@ -475,6 +488,16 @@
           "steps": [
             {"id": "status", "expect": "stale-binary-empty", "argv": ["./rdc.sh", "--config", "{config}", "machine", "status", "{machine}", "-o", "json"], "timeout_s": 900},
             {"id": "hash", "expect": "renet-hash", "argv": ["./rdc.sh", "--config", "{config}", "term", "connect", "{machine}", "-c", "/usr/lib/rediacc/renet/current/renet hash"]}
+          ]
+        },
+        "enterprise-proof": {
+          "targets": ["bench"],
+          "surfaces": ["enterprise"],
+          "deploy": "tooling",
+          "what": "the Enterprise tooling of the clean head tree drives bench itself: `enterprise proof signer --bench` then `enterprise proof region-loss --bench`, each under the enterprise and deploy-signer profiles and each rc 0 (a broken claim, or none held, exits 1); each proof restores the signer it stopped or cut and claims bench signing is back. The lab reads ENTERPRISE_PROOF_BWS_PROJECT from the recorder's environment",
+          "steps": [
+            {"id": "signer", "argv": ["python3", "-m", "rediacc_ci.core.bws_env", "exec", "--profile", "enterprise", "--profile", "deploy-signer", "--", "python3", "-m", "rediacc_ci.enterprise.proof", "signer", "--bench"], "timeout_s": 1800},
+            {"id": "region-loss", "argv": ["python3", "-m", "rediacc_ci.core.bws_env", "exec", "--profile", "enterprise", "--profile", "deploy-signer", "--", "python3", "-m", "rediacc_ci.enterprise.proof", "region-loss", "--bench"], "timeout_s": 1800}
           ]
         }
       },

@@ -1,6 +1,8 @@
 """`rediacc_ci.ops.live_proof`: `record` over a real fixture checkout with recording fakes for curl, wrangler, `go version -m` and rdc, and `verify` over the ledger.
 
 The fixture is the console-with-two-submodules `World` of test_proof_surfaces plus a plan file with one LP box per check. The fakes answer by argv and record every call, so each case can say what ran and what did not. Every refusal case passes on a healthy control before its plant.
+
+The enterprise section (worklist #f16700aa) also pins the map's `enterprise` surface and `enterprise-proof` check: a plan owning only the Enterprise tooling resolves to that check and to no other, and the map as it stood before (`_old_raw`) reads the same plan as touching no surface.
 """
 
 from __future__ import annotations
@@ -78,6 +80,7 @@ class Fake:
             "hash": LP.Result(0, BIN_SHA + "\n", ""),
             "version": LP.Result(0, "0.0.0-dev\n", ""),
             "deploy_proxy": LP.Result(0, "smoke ok\n", ""),
+            "enterprise": LP.Result(0, "28 held, 0 broken\n", ""),
             "login": LP.Result(0, "eu-bench is logged in to %s\n" % BENCH_ORIGIN, ""),
         }
         # Per-key answers consumed in order before `answers` applies, for a step that fails once and then passes.
@@ -106,6 +109,8 @@ class Fake:
             return "wrangler"
         if "deploy_proxy" in " ".join(argv):
             return "deploy_proxy"
+        if "rediacc_ci.enterprise.proof" in argv:
+            return "enterprise"
         for word in ("subscription", "status", "--version"):
             if word in argv:
                 return word.lstrip("-")
@@ -1170,3 +1175,177 @@ def test_the_command_line_takes_vm_waived_and_transcript() -> None:
         ]
     )
     assert (args.vm_waived, args.transcript) == (ASKED, "/t/x.jsonl")
+
+
+# ------------------------------------------------------------------ the enterprise tooling (worklist #f16700aa)
+
+ENTERPRISE_OWNS = "Owns: .ci/rediacc_ci/enterprise/**, .ci/rediacc_ci/deploy/deploy_signer.py"
+ENTERPRISE_BOXES = """
+- [ ] LP-bench [live] the enterprise proofs on bench
+  - Accept: live-proof bench enterprise-proof
+- [ ] LP-bench [live] the account smoke on an enterprise plan
+  - Accept: live-proof bench account-smoke
+"""
+
+
+ENTERPRISE_GLOBS = [".ci/rediacc_ci/enterprise/**"]
+SIGNER_GLOBS = [".ci/rediacc_ci/deploy/deploy_signer.py", ".ci/rediacc_ci/enterprise/proof.py"]
+ENTERPRISE_PATHS = [".ci/rediacc_ci/enterprise/proof.py", ".ci/rediacc_ci/deploy/deploy_signer.py"]
+
+
+def _old_raw() -> dict[str, Any]:
+    """The committed map as it stood before #f16700aa: no `enterprise` surface, runner or check."""
+    raw = json.loads(S.MAP_PATH.read_text(encoding="utf-8"))
+    del raw["surfaces"]["enterprise"]
+    del raw["tiers"]["live"]["local_runners"]["enterprise-bench"]
+    del raw["tiers"]["live"]["checks"]["enterprise-proof"]
+    return raw
+
+
+@pytest.mark.parametrize("owns", [ENTERPRISE_GLOBS, SIGNER_GLOBS])
+def test_enterprise_owns_resolve_to_the_enterprise_check_and_not_to_account_smoke(
+    owns: list[str],
+) -> None:
+    touched = S.owns_surfaces(owns)
+    assert set(touched) == {"enterprise"}, touched
+    checks = LT.registry()
+    assert LT.row_surfaces(touched, checks["enterprise-proof"], "bench") == ["enterprise"]
+    assert LT.row_surfaces(touched, checks["account-smoke"], "bench") == []
+
+
+def test_the_old_map_reads_the_enterprise_owns_as_touching_no_surface(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    old = S.parse_map(_old_raw())
+    monkeypatch.setattr(S, "MAP", old)
+    assert S.owns_surfaces(ENTERPRISE_GLOBS) == {}
+    assert S.owns_surfaces(SIGNER_GLOBS) == {}
+    assert "enterprise-proof" not in LT.parse_checks(old.live)
+
+
+def test_a_change_to_the_enterprise_tooling_reaches_its_surface_and_no_vm_phase() -> None:
+    changed = S.changed_from_paths(ENTERPRISE_PATHS)
+    assert changed.surfaces == frozenset({"enterprise"})
+    assert changed.sides == frozenset(), "the VM trigger paths are unmoved"
+    assert changed.hits == ()
+    assert S.phases_for(["enterprise"]) == frozenset()
+    tests_only = S.changed_from_paths([".ci/rediacc_ci/tests/test_enterprise_proof.py"])
+    assert tests_only.surfaces == frozenset(), "a test file of the tooling proves nothing live"
+
+
+def test_the_enterprise_check_runs_both_proofs_on_bench_under_the_two_profiles() -> None:
+    check = LT.registry()["enterprise-proof"]
+    assert check.targets == ("bench",)
+    assert check.surfaces == frozenset({"enterprise"})
+    assert check.deploy == LT.TOOLING
+    assert LT.DEPLOY_SURFACE[LT.TOOLING] == "enterprise"
+    runs = LT.expand(check, "bench")
+    assert [r.step.id for r in runs] == ["signer", "region-loss"]
+    for run, verb in zip(runs, ("signer", "region-loss"), strict=True):
+        split = run.argv.index("--")
+        assert run.argv[:3] == ("python3", "-m", "rediacc_ci.core.bws_env")
+        assert run.argv[split + 1 :] == (
+            "python3",
+            "-m",
+            "rediacc_ci.enterprise.proof",
+            verb,
+            "--bench",
+        )
+        assert {"enterprise", "deploy-signer"} <= set(run.argv[:split])
+    with pytest.raises(LT.RegistryError, match="not 'hostinger'"):
+        LT.expand(check, "hostinger")
+    surface = S.MAP.surfaces["enterprise"]
+    assert (surface.live, surface.local) == (("bench",), ("enterprise-bench",))
+    runner = S.MAP.local_runners["enterprise-bench"]
+    assert any("enterprise.proof signer --bench" in line for line in runner.run)
+    assert any("enterprise.proof region-loss --bench" in line for line in runner.run)
+
+
+def test_a_tooling_version_is_the_head_and_nothing_else() -> None:
+    rx = LT.VERSION_RES[LT.TOOLING]
+    assert rx.match("tooling:" + "a" * 40)
+    assert not rx.match("cli:" + "a" * 40), "a CLI tree version is not a tooling one"
+    assert not rx.match("tooling:main")
+
+
+def _enterprise_plan(bed: Bed) -> dict[str, str]:
+    """Narrow the fixture plan's Owns to the Enterprise tooling, the shape of PLAN-signer-bench-stop-binding-reattach, and add one box per check; the new boxes' signatures by text."""
+    text = (
+        PLAN.replace(
+            "Owns: packages/cli/src/**, private/account/src/**, private/renet/cmd/**",
+            ENTERPRISE_OWNS,
+        )
+        + ENTERPRISE_BOXES
+    )
+    assert ENTERPRISE_OWNS in text
+    _write(bed.root, PLAN_REL, text)
+    _commit(bed.root, "enterprise plan")
+    return {b.body.split("] ", 1)[1]: b.sig for b in LP.D.plan_boxes(text) if not b.done}
+
+
+def test_an_enterprise_only_plan_records_the_enterprise_proof_from_the_head_tree(
+    bed: Bed,
+) -> None:
+    sigs = _enterprise_plan(bed)
+    admit = _Recorder()
+    req = LP.Request(PLAN_REL, sigs["the enterprise proofs on bench"], "bench", "enterprise-proof")
+    out = bed.record(req, admit=admit, write=True)
+    assert out.status == R.VERIFIED, out.message
+    assert out.row is not None
+    assert out.row["surfaces"] == ["enterprise"]
+    assert out.row["deploy"] == {
+        "surface": "enterprise",
+        "worker": None,
+        "version_id": f"tooling:{out.row['head']}",
+        "source": "tree",
+        "deployed_head": out.row["head"],
+        "confirmed_live": True,
+    }
+    assert admit.phases == [], "the enterprise surface has no VM phase, so no VM run is asked for"
+    assert out.row["ladder"] == {"vm": None}
+    ran = [c for c in bed.fake.calls if bed.fake.key(c) == "enterprise"]
+    assert [c[c.index("--") + 4] for c in ran] == ["signer", "region-loss"]
+    assert bed.fake.ran("wrangler") == 0, "a tooling deploy asks wrangler nothing"
+    code, lines = LP.verify(bed.root, PLAN_REL)
+    assert code == 0, lines
+
+
+def test_a_broken_enterprise_proof_fails_and_stops_before_region_loss(bed: Bed) -> None:
+    sigs = _enterprise_plan(bed)
+    req = LP.Request(PLAN_REL, sigs["the enterprise proofs on bench"], "bench", "enterprise-proof")
+    bed.fake.queued["enterprise"] = [LP.Result(1, "BROKEN a stopped signer is named\n", "")]
+    out = bed.record(req, write=True)
+    assert (out.status, out.code) == (R.FAILED, LP.CODE_FAILED)
+    assert "step signer exited 1" in out.message
+    assert bed.fake.ran("enterprise") == 1
+    assert bed.ledger() == []
+
+
+def test_account_smoke_still_covers_none_of_an_enterprise_only_plan(bed: Bed) -> None:
+    sigs = _enterprise_plan(bed)
+    bed.bench_json()
+    req = LP.Request(
+        PLAN_REL, sigs["the account smoke on an enterprise plan"], "bench", "account-smoke"
+    )
+    with pytest.raises(LP.RequestError, match=r"touches \['enterprise'\]; check account-smoke"):
+        bed.record(req)
+    assert bed.fake.calls == []
+
+
+def test_the_old_map_refused_an_enterprise_only_plan_as_touching_no_surface(
+    bed: Bed, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The control: before #f16700aa the map had no enterprise surface and the registry no enterprise-proof check, so the LP-bench box could not be recorded at all."""
+    sigs = _enterprise_plan(bed)
+    monkeypatch.setattr(S, "MAP", S.parse_map(_old_raw()))
+    old = LT.parse_checks(S.MAP.live)
+    assert "enterprise-proof" not in old
+    req = LP.Request(PLAN_REL, sigs["the enterprise proofs on bench"], "bench", "enterprise-proof")
+    with pytest.raises(LP.RequestError, match=r"not in tiers\.live\.checks"):
+        bed.record(req, checks=old)
+    smoke = LP.Request(
+        PLAN_REL, sigs["the account smoke on an enterprise plan"], "bench", "account-smoke"
+    )
+    with pytest.raises(LP.RequestError, match="touches no surface; check account-smoke"):
+        bed.record(smoke, checks=old)
+    assert bed.fake.calls == []
