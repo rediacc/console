@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: ko
-sourceHash: "48538a4c661c9f72"
-sourceCommit: "bd0278084119bc8dc23fe6a5b62857284c3b8e47"
+sourceHash: "55c979711279a92e"
+sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
 ---
 
 ### 인증
@@ -106,12 +106,12 @@ Rediacc는 세 가지 독립적인 권한 레이어를 사용합니다:
 ### 업데이트 채널
 
 CLI는 두 가지 릴리스 채널을 지원합니다:
-- **stable** (기본값): 7일 소크 기간 후 edge에서 승격됩니다. 보수적인 업그레이드 주기를 원할 때 선택하세요
-- **edge**: 지속적으로 배포되는 프로덕션으로, main에 병합될 때마다 업데이트됩니다
+- **edge** (기본값): 지속적으로 배포되는 프로덕션으로, main에 병합될 때마다 업데이트됩니다
+- **stable**: 7일 소크 기간 후 edge에서 승격됩니다. 보수적인 업그레이드 주기를 원할 때 선택하세요
 
 ```bash
-rdc update --channel edge      # edge로 전환
-rdc update --channel stable    # stable로 돌아가기
+rdc update --channel stable    # stable로 전환
+rdc update --channel edge      # edge로 돌아가기
 rdc update --status            # 현재 채널 표시
 ```
 

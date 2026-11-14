@@ -8,8 +8,8 @@ tags:
 subcategory: cli-tools
 order: 9
 language: it
-sourceHash: "3c5f1e7f8063438b"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "87078fbf0b283224"
+sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
 ---
 
 # Strumenti
@@ -246,7 +246,7 @@ Mostra la versione corrente, il canale di aggiornamento e la configurazione dell
 #### Canali di Rilascio
 
 ```bash
-rdc update --channel edge      # Aggiornamenti di produzione continuamente distribuiti
-rdc update --channel stable    # Promosso da edge dopo 7 giorni di maturazione (predefinito)
+rdc update --channel edge      # Aggiornamenti di produzione continuamente distribuiti (predefinito)
+rdc update --channel stable    # Promosso da edge dopo 7 giorni di maturazione
 rdc update --status            # Mostra il canale corrente e le informazioni sulla versione
 ```

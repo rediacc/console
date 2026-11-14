@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: fr
-sourceHash: "48538a4c661c9f72"
-sourceCommit: "bd0278084119bc8dc23fe6a5b62857284c3b8e47"
+sourceHash: "55c979711279a92e"
+sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
 ---
 
 ### Authentification
@@ -106,12 +106,12 @@ Chaque requête API passe par toutes les couches applicables en séquence. Une r
 ### Canaux de mise à jour
 
 La CLI prend en charge deux canaux de publication :
-- **stable** (par défaut) : Promu depuis edge après une période de stabilisation de 7 jours ; choisissez ce canal pour une cadence de mise à jour conservatrice
-- **edge** : Dernières fonctionnalités, mis à jour à chaque publication
+- **edge** (par défaut) : Dernières fonctionnalités, mis à jour à chaque publication
+- **stable** : Promu depuis edge après une période de stabilisation de 7 jours ; choisissez ce canal pour une cadence de mise à jour conservatrice
 
 ```bash
-rdc update --channel edge      # Passer à edge
-rdc update --channel stable    # Revenir à stable
+rdc update --channel stable    # Passer à stable
+rdc update --channel edge      # Revenir à edge
 rdc update --status            # Afficher le canal actuel
 ```
 

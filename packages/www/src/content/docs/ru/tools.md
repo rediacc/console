@@ -8,8 +8,8 @@ tags:
 subcategory: cli-tools
 order: 9
 language: ru
-sourceHash: "3c5f1e7f8063438b"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "87078fbf0b283224"
+sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
 ---
 
 # Инструменты
@@ -246,7 +246,7 @@ rdc update --status
 #### Каналы выпуска
 
 ```bash
-rdc update --channel edge      # Непрерывно развёртываемые обновления для продакшена
-rdc update --channel stable    # Продвигается из edge после 7-дневной стабилизации (по умолчанию)
+rdc update --channel edge      # Непрерывно развёртываемые обновления для продакшена (по умолчанию)
+rdc update --channel stable    # Продвигается из edge после 7-дневной стабилизации
 rdc update --status            # Показать текущий канал и информацию о версии
 ```

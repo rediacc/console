@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: et
-sourceHash: "48538a4c661c9f72"
-sourceCommit: "bd0278084119bc8dc23fe6a5b62857284c3b8e47"
+sourceHash: "55c979711279a92e"
+sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
 ---
 
 ### Autentimine
@@ -106,12 +106,12 @@ Iga API-päring läbib järjestikku kõik kohaldatavad kihid. Meeskonnale piirat
 ### Uuenduskanalid
 
 CLI toetab kahte väljalaskekanali:
-- **stable** (vaikimisi): Tõstetud edge'ist pärast 7-päevast leotust; valige see konservatiivse uuenduskaadentsi jaoks
-- **edge**: Pidevalt juurutatud tootmine, uuendatakse igal ühendamisel peaharusse
+- **edge** (vaikimisi): Pidevalt juurutatud tootmine, uuendatakse igal ühendamisel peaharusse
+- **stable**: Tõstetud edge'ist pärast 7-päevast leotust; valige see konservatiivse uuenduskaadentsi jaoks
 
 ```bash
-rdc update --channel edge      # Lülitu edge-kanalile
-rdc update --channel stable    # Lülitu tagasi stable-kanalile
+rdc update --channel stable    # Lülitu stable-kanalile
+rdc update --channel edge      # Lülitu tagasi edge-kanalile
 rdc update --status            # Kuva praegune kanal
 ```
 

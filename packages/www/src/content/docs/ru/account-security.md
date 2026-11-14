@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: ru
-sourceHash: "48538a4c661c9f72"
-sourceCommit: "bd0278084119bc8dc23fe6a5b62857284c3b8e47"
+sourceHash: "55c979711279a92e"
+sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
 ---
 
 ### Аутентификация
@@ -106,12 +106,12 @@ Rediacc использует три независимых уровня разр
 ### Каналы обновлений
 
 CLI поддерживает два канала выпуска:
-- **stable** (по умолчанию): Продвигается из edge после 7-дневного периода выдержки; выберите этот канал для консервативного темпа обновлений
-- **edge**: Последние функции, обновляется с каждым выпуском
+- **edge** (по умолчанию): Последние функции, обновляется с каждым выпуском
+- **stable**: Продвигается из edge после 7-дневного периода выдержки; выберите этот канал для консервативного темпа обновлений
 
 ```bash
-rdc update --channel edge      # Switch to edge
-rdc update --channel stable    # Switch back to stable
+rdc update --channel stable    # Переключиться на stable
+rdc update --channel edge      # Вернуться на edge
 rdc update --status            # Show current channel
 ```
 

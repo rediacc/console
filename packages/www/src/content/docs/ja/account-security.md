@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: ja
-sourceHash: "48538a4c661c9f72"
-sourceCommit: "bd0278084119bc8dc23fe6a5b62857284c3b8e47"
+sourceHash: "55c979711279a92e"
+sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
 ---
 
 ### 認証
@@ -106,12 +106,12 @@ Rediaccは3つの独立した権限レイヤーを使用します：
 ### アップデートチャンネル
 
 CLIは2つのリリースチャンネルをサポートしています：
-- **stable**（デフォルト）：7日間のソーク期間を経てedgeから昇格。保守的なアップグレード周期を希望する場合にこちらを選択
-- **edge**：最新機能、リリースごとに更新
+- **edge**（デフォルト）：最新機能、リリースごとに更新
+- **stable**：7日間のソーク期間を経てedgeから昇格。保守的なアップグレード周期を希望する場合にこちらを選択
 
 ```bash
-rdc update --channel edge      # Switch to edge
-rdc update --channel stable    # Switch back to stable
+rdc update --channel stable    # stable に切り替え
+rdc update --channel edge      # edge に戻す
 rdc update --status            # Show current channel
 ```
 

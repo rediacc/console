@@ -8,8 +8,8 @@ tags:
 subcategory: cli-tools
 order: 9
 language: ja
-sourceHash: "3c5f1e7f8063438b"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "87078fbf0b283224"
+sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
 ---
 
 # ツール
@@ -246,7 +246,7 @@ rdc update --status
 #### リリースチャンネル
 
 ```bash
-rdc update --channel edge      # 継続的にデプロイされる本番環境アップデート
-rdc update --channel stable    # エッジから7日間のテスト後にプロモート（デフォルト）
+rdc update --channel edge      # 継続的にデプロイされる本番環境アップデート（デフォルト）
+rdc update --channel stable    # エッジから7日間のテスト後にプロモート
 rdc update --status            # 現在のチャンネルとバージョン情報を表示
 ```

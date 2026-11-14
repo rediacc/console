@@ -8,8 +8,8 @@ tags:
 subcategory: account
 order: 13
 language: it
-sourceHash: "48538a4c661c9f72"
-sourceCommit: "bd0278084119bc8dc23fe6a5b62857284c3b8e47"
+sourceHash: "55c979711279a92e"
+sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
 ---
 
 ### Autenticazione
@@ -106,12 +106,12 @@ Ogni richiesta API passa attraverso tutti i livelli applicabili in sequenza. Una
 ### Canali di aggiornamento
 
 La CLI supporta due canali di rilascio:
-- **stable** (predefinito): Promosso da edge dopo un periodo di maturazione di 7 giorni; sceglilo per un ciclo di aggiornamento conservativo
-- **edge**: Distribuzione continua in produzione, aggiornato a ogni merge nel main
+- **edge** (predefinito): Distribuzione continua in produzione, aggiornato a ogni merge nel main
+- **stable**: Promosso da edge dopo un periodo di maturazione di 7 giorni; sceglilo per un ciclo di aggiornamento conservativo
 
 ```bash
-rdc update --channel edge      # Passa a edge
-rdc update --channel stable    # Torna a stable
+rdc update --channel stable    # Passa a stable
+rdc update --channel edge      # Torna a edge
 rdc update --status            # Mostra il canale corrente
 ```
 

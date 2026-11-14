@@ -8,8 +8,8 @@ tags:
 subcategory: cli-tools
 order: 9
 language: ar
-sourceHash: "3c5f1e7f8063438b"
-sourceCommit: "3fb35b9a33c7e8ec6753ecd56231f2018e8f4803"
+sourceHash: "87078fbf0b283224"
+sourceCommit: "b39f3ac8c45abda7c2352e34ec9c3305eda9e946"
 ---
 
 # الأدوات
@@ -246,7 +246,7 @@ rdc update --status
 #### قنوات الإصدار
 
 ```bash
-rdc update --channel edge      # التحديثات المنشورة بشكل مستمر للإنتاج
-rdc update --channel stable    # الإصدارات المعززة من edge بعد 7 أيام من التثبيت (الافتراضي)
+rdc update --channel edge      # التحديثات المنشورة بشكل مستمر للإنتاج (الافتراضي)
+rdc update --channel stable    # الإصدارات المعززة من edge بعد 7 أيام من التثبيت
 rdc update --status            # عرض القناة الحالية ومعلومات الإصدار
 ```
