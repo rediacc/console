@@ -9,6 +9,7 @@ T3.1 ALSO CLOSES `scripts/gates/check-lane-budget.ts`'s own BLOCKER, so several 
 
 from __future__ import annotations
 
+import inspect
 import io
 import json
 import re
@@ -2329,7 +2330,7 @@ def test_refreshed_on_evidence_counts_absent_evidence_as_none():
     )
 
 
-def test_a_check_judges_a_job_fixed_cost_drift_only_on_two_runs(tmp_path, capsys):
+def test_a_check_judges_a_job_fixed_cost_drift_only_on_three_runs(tmp_path, capsys):
     """The check holds a job to the refresh's evidence: a one-run 29% move is counted thin and printed, never a finding, and the same move on two runs is (the CONTROL). A check after a one-run refresh is therefore green on that sample."""
     path = tmp_path / "lane-durations.json"
     path.write_text(json.dumps(_committed(jobs={"test-e2e-workers": 3.1})))
@@ -2951,14 +2952,14 @@ def test_refresh_writes_measured_variant_costs(tmp_path):
     assert json.loads(path.read_text())["variantCosts"] == measured
 
 
-def test_a_refresh_moves_a_priced_variant_lane_only_on_two_runs(tmp_path, capsys):
-    """variantCosts follows the other sections' evidence rule at lane level: one run of leg logs keeps a lane the table prices (named), two runs replace it, and a lane new to the table is written from one."""
+def test_a_refresh_moves_a_priced_variant_lane_only_on_three_runs(tmp_path, capsys):
+    """variantCosts follows the other sections' evidence rule at lane level: fewer than `MIN_VARIANT_RUNS` runs of leg logs keep a lane the table prices (named), three replace it, and a lane new to the table is written from one."""
     prior = {"test-e2e-workers": {"ubuntu-24.04": {"fixedMinutes": 5.4, "units": {}}}}
     measured = {
         "test-e2e-workers": {"ubuntu-24.04": {"fixedMinutes": 4.37, "units": {}}},
         "ops-tutorials": {"linux-amd64": {"fixedMinutes": 3.34, "units": {}}},
     }
-    for runs, expected_e2e in ((1, 5.4), (2, 4.37)):
+    for runs, expected_e2e in ((1, 5.4), (2, 5.4), (3, 4.37)):
         path = tmp_path / ("lane-durations-%d.json" % runs)
         path.write_text(
             json.dumps({"concurrency": 20, "jobs": {}, "units": {}, "variantCosts": prior})
@@ -2972,11 +2973,11 @@ def test_a_refresh_moves_a_priced_variant_lane_only_on_two_runs(tmp_path, capsys
         assert written["test-e2e-workers"]["ubuntu-24.04"]["fixedMinutes"] == expected_e2e
         assert written["ops-tutorials"]["linux-amd64"]["fixedMinutes"] == 3.34
         err = capsys.readouterr().err
-        assert ("1 variantCosts entr(ies)" in err) is (runs == 1)
+        assert ("1 variantCosts entr(ies)" in err) is (runs < br.MIN_VARIANT_RUNS)
 
 
 def test_a_refresh_counts_variant_evidence_per_variant_not_per_lane(tmp_path):
-    """One lane, two variants: ubuntu-24.04 priced from two runs moves, fedora-43 priced from one run keeps its committed value."""
+    """One lane, two variants: ubuntu-24.04 priced from three runs moves, fedora-43 priced from two runs keeps its committed value."""
     prior = {
         "test-e2e-workers": {
             "ubuntu-24.04": {"fixedMinutes": 5.4, "units": {}},
@@ -2994,10 +2995,10 @@ def test_a_refresh_counts_variant_evidence_per_variant_not_per_lane(tmp_path):
     compute = _fake_compute(
         variant_costs=measured,
         measured_runs={
-            "variant_costs": {"test-e2e-workers": 2},
+            "variant_costs": {"test-e2e-workers": 3},
             "variant_entries": {
-                "test-e2e-workers/ubuntu-24.04": 2,
-                "test-e2e-workers/fedora-43": 1,
+                "test-e2e-workers/ubuntu-24.04": 3,
+                "test-e2e-workers/fedora-43": 2,
             },
         },
     )
@@ -3005,6 +3006,44 @@ def test_a_refresh_counts_variant_evidence_per_variant_not_per_lane(tmp_path):
     written = json.loads(path.read_text())["variantCosts"]["test-e2e-workers"]
     assert written["ubuntu-24.04"]["fixedMinutes"] == 4.37
     assert written["fedora-43"]["fixedMinutes"] == 6.0
+
+
+def test_a_variant_priced_from_one_run_keeps_its_value_and_two_runs_do_not_move_it(
+    tmp_path, capsys
+):
+    """The incident shape: a priced variant whose legs came from one transient run (5.4 -> 12.78) keeps its committed fixedMinutes and is named as kept; at `MIN_VARIANT_RUNS` runs it is re-priced. CONTROL: the old two-run rule (`MIN_DRIFT_RUNS`) would have re-priced it from two."""
+    prior = {"test-e2e-workers": {"ubuntu-24.04": {"fixedMinutes": 5.4, "units": {}}}}
+    measured = {"test-e2e-workers": {"ubuntu-24.04": {"fixedMinutes": 12.78, "units": {}}}}
+    assert br.MIN_VARIANT_RUNS == 3
+    assert br.MIN_DRIFT_RUNS < br.MIN_VARIANT_RUNS
+    for runs, expected in ((1, 5.4), (2, 5.4), (3, 12.78), (4, 12.78)):
+        path = tmp_path / ("ld-%d.json" % runs)
+        path.write_text(
+            json.dumps({"concurrency": 20, "jobs": {}, "units": {}, "variantCosts": prior})
+        )
+        compute = _fake_compute(
+            variant_costs=measured,
+            measured_runs={
+                "variant_costs": {"test-e2e-workers": runs},
+                "variant_entries": {"test-e2e-workers/ubuntu-24.04": runs},
+            },
+        )
+        assert br.refresh_lane_durations(path, limit=10, compute=compute) == 0
+        written = json.loads(path.read_text())["variantCosts"]["test-e2e-workers"]
+        assert written["ubuntu-24.04"]["fixedMinutes"] == expected
+        err = capsys.readouterr().err
+        if expected == 5.4:
+            assert "fewer than 3 sampled run(s) KEEP" in err
+            assert "test-e2e-workers/ubuntu-24.04" in err
+        else:
+            assert "variantCosts entr(ies)" not in err
+
+
+def test_the_check_never_judges_variant_costs():
+    """`--check` computes without variant logs (`compute_for_check`), so variantCosts has no drift verdict: a thin variant is never flagged, and neither is a well sampled one."""
+    source = inspect.getsource(br.check_lane_durations)
+    assert "variantCosts" not in source
+    assert "variant_costs" not in source
 
 
 def test_a_lane_with_two_thin_variants_is_counted_as_two_entries(tmp_path, capsys):

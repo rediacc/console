@@ -146,6 +146,8 @@ DRIFT_THRESHOLD = 0.25
 #   3. MATERIALITY. The move, divided by the lane's `unitParallelism`, is at least `MATERIAL_LEG_MS` of leg wall, and it is over `DRIFT_THRESHOLD` of the committed value. A smaller move changes no reader's answer; many of them in one leg are judged as that leg's sum, by the same two numbers.
 # A refresh writes the p90 of the window, which sits between the median and the max, so a check that follows a refresh on the same sample has no drift finding by construction (test_a_check_after_a_refresh_on_the_same_sample_is_green).
 MIN_DRIFT_RUNS = 2
+# A variant's fixedMinutes is the p90 over its legs, and legs of one run share that run's runner and mirror conditions (an apt slowdown inside the guest VMs hits every leg of a run alike). MEASURED 2026-11-14 on 5 sampled runs, 2 of which had successful E2E legs: ubuntu-24.04 fixedMinutes 5.4 -> 12.78, one run's transient apt slowness, because the p90 of ~16 legs from 2 runs is that run's second-worst leg, and committing it put 47 legs over 12 min in check:ci-lane-budget. So a variant the table already prices moves on 3 runs, one more than the 2 a unit or job entry needs: with 2 runs the p90 is still one run's tail, with 3 a transient run no longer sets it. The check never reads variantCosts (`compute_for_check` skips their logs), so there is no drift verdict to align; the refresh is the only judge.
+MIN_VARIANT_RUNS = 3
 # Half a minute of leg wall: check-lane-budget.ts `REBALANCE_ADVISORY_MIN` (0.5 minutes), read from that file by test_the_materiality_floor_is_the_lane_budget_gates_own_advisory_threshold so the two cannot part.
 MATERIAL_LEG_MS = 30_000
 # D-W2/T3.4: the two direct (non-lane-sharded) ci.yml jobs job-timeout-baseline.json used to cover, now `job_max_seconds`' own baseline. See check_job_timeout_headroom.py.
@@ -2483,7 +2485,7 @@ def refresh_lane_durations(
     if "rebalanceConstraints" in existing:
         updated["rebalanceConstraints"] = existing["rebalanceConstraints"]
     # variantCosts is MEASURED (collect_variant_costs) and merged so nothing the sample missed is dropped: an unmeasured lane, variant, leg extra or unit keeps its prior value, and every such keep is printed.
-    # A variant the table already prices moves only on `MIN_DRIFT_RUNS` runs of leg logs, the rule the other measured sections follow: one run's legs all ran on one day's runners. The count is per variant (`variant_entries`): a lane whose legs price ubuntu-24.04 from two runs and fedora-43 from one moves the first and keeps the second, which `merge_variant_costs` names. A variant the table does not price yet is written from one run.
+    # A variant the table already prices moves only on `MIN_VARIANT_RUNS` runs of leg logs (one more than `MIN_DRIFT_RUNS`, see its comment): one run's legs all ran on one day's runners. The count is per variant (`variant_entries`): a lane whose legs price ubuntu-24.04 from two runs and fedora-43 from one moves the first and keeps the second, which `merge_variant_costs` names. A variant the table does not price yet is written from one run.
     existing_variants = existing.get("variantCosts") or {}
     variant_runs = evidence.get("variant_costs") or {}
     entry_runs = evidence.get("variant_entries") or {}
@@ -2495,7 +2497,7 @@ def refresh_lane_durations(
             if variant not in (existing_variants[lane] or {}):
                 continue
             seen = entry_runs.get("%s/%s" % (lane, variant), variant_runs.get(lane, 0))
-            if seen < MIN_DRIFT_RUNS:
+            if seen < MIN_VARIANT_RUNS:
                 del measured_variants[lane][variant]
                 kept_on_thin.setdefault("variantCosts", []).append("%s/%s" % (lane, variant))
         if not measured_variants[lane]:
@@ -2553,7 +2555,7 @@ def refresh_lane_durations(
                 % (
                     len(ids),
                     table_key,
-                    MIN_DRIFT_RUNS,
+                    MIN_VARIANT_RUNS if table_key == "variantCosts" else MIN_DRIFT_RUNS,
                     ", ".join(ids[:3]),
                     ", ..." if len(ids) > 3 else "",
                 )
