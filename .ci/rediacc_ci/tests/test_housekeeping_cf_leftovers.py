@@ -229,10 +229,8 @@ def test_report_states_how_many_items_were_scanned(monkeypatch, capsys):
 
 
 class _Resp:
-    def __init__(self, body: bytes, fail_read: bool = False, status: int | None = None):
-        self.body, self.fail_read = body, fail_read
-        if status is not None:  # left unset, the caller's getattr default (200) applies
-            self.status = status
+    def __init__(self, body: bytes, fail_read: bool = False, status: int = 200):
+        self.body, self.fail_read, self.status = body, fail_read, status
 
     def __enter__(self):
         return self
@@ -302,7 +300,7 @@ def test_an_empty_2xx_delete_answer_is_success(monkeypatch):
 @pytest.mark.parametrize("status", [200, 201, 204, 299])
 def test_an_empty_delete_answer_is_success_across_the_2xx_range(monkeypatch, status):
     _patch_urlopen(monkeypatch, lambda: _Resp(b"", status=status))
-    assert cfl.request("DELETE", "/p", TOKEN)["success"] is True
+    assert cfl.request("DELETE", "/accounts/a/workers/domains/d", TOKEN)["success"] is True
 
 
 @pytest.mark.parametrize("status", [199, 300, 302])
@@ -310,7 +308,7 @@ def test_an_empty_delete_answer_outside_2xx_is_not_success(monkeypatch, status):
     """b28631e8.2: the 200 <= status < 300 gate, not just the default 200."""
     _patch_urlopen(monkeypatch, lambda: _Resp(b"", status=status))
     with pytest.raises(cfl.CfError, match="non-JSON"):
-        cfl.request("DELETE", "/p", TOKEN)
+        cfl.request("DELETE", "/accounts/a/workers/domains/d", TOKEN)
 
 
 def test_an_empty_get_answer_is_not_success(monkeypatch):
@@ -336,6 +334,99 @@ def test_each_retryable_status_is_retried_then_succeeds(monkeypatch, status):
     monkeypatch.setattr(cfl.time, "sleep", lambda _s: None)
     assert cfl.request("GET", "/p", TOKEN)["success"] is True
     assert calls["n"] == 2
+
+
+def test_control_an_empty_2xx_delete_elsewhere_is_still_a_failure(monkeypatch):
+    """Review b28631e8.1: the empty-body rule is the custom-domain path's only."""
+    _patch_urlopen(monkeypatch, lambda: _Resp(b""))
+    with pytest.raises(cfl.CfError, match="non-JSON"):
+        cfl.request("DELETE", "/accounts/a/r2/buckets/b", TOKEN)
+
+
+def test_control_an_empty_delete_without_a_status_is_not_success(monkeypatch):
+    """Review b28631e8.3: a response that carries no status is not read as a 2xx."""
+
+    class NoStatus:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_a):
+            return False
+
+        def read(self):
+            return b""
+
+    _patch_urlopen(monkeypatch, NoStatus)
+    with pytest.raises(AttributeError):
+        cfl.request("DELETE", "/accounts/a/workers/domains/d", TOKEN)
+
+
+def _http(code: int, body: bytes = b"<html>x</html>"):
+    return urllib.error.HTTPError("u", code, "x", email.message.Message(), io.BytesIO(body))
+
+
+def test_a_persistent_429_raises_after_the_last_attempt(monkeypatch):
+    """Review e4e6087d.1: three pauses, four calls, then the error."""
+    calls = {"n": 0}
+
+    def throttled():
+        calls["n"] += 1
+        raise _http(429)
+
+    _patch_urlopen(monkeypatch, throttled)
+    monkeypatch.setattr(cfl.time, "sleep", lambda _s: None)
+    with pytest.raises(cfl.CfError) as err:
+        cfl.request("GET", "/r2/x", TOKEN)
+    assert err.value.status == 429
+    assert calls["n"] == len(cfl.RETRY_PAUSES_S) + 1
+
+
+def test_a_persistent_5xx_raises_after_the_last_attempt(monkeypatch):
+    calls = {"n": 0}
+
+    def broken():
+        calls["n"] += 1
+        raise _http(503)
+
+    _patch_urlopen(monkeypatch, broken)
+    monkeypatch.setattr(cfl.time, "sleep", lambda _s: None)
+    with pytest.raises(cfl.CfError) as err:
+        cfl.request("DELETE", "/r2/x", TOKEN)
+    assert err.value.status == 503
+    assert calls["n"] == len(cfl.RETRY_PAUSES_S) + 1
+
+
+def test_a_delete_that_404s_after_a_5xx_retry_is_already_deleted(monkeypatch):
+    """Review e4e6087d.3: the first attempt may have taken effect before the gateway answered."""
+    answers = iter([_http(502), _http(404, b'{"success": false, "errors": []}')])
+
+    def behaviour():
+        raise next(answers)
+
+    _patch_urlopen(monkeypatch, behaviour)
+    monkeypatch.setattr(cfl.time, "sleep", lambda _s: None)
+    assert cfl.request("DELETE", "/r2/x", TOKEN)["success"] is True
+
+
+def test_control_a_404_is_an_error_without_a_prior_5xx_or_after_a_429_or_on_a_get(monkeypatch):
+    for first in (None, 429):
+        answers = iter(([_http(first)] if first else []) + [_http(404, b'{"success": false}')])
+
+        def behaviour(answers=answers):
+            raise next(answers)
+
+        _patch_urlopen(monkeypatch, behaviour)
+        monkeypatch.setattr(cfl.time, "sleep", lambda _s: None)
+        with pytest.raises(cfl.CfError):
+            cfl.request("DELETE", "/r2/x", TOKEN)
+    answers = iter([_http(502), _http(404, b'{"success": false}')])
+
+    def get_behaviour():
+        raise next(answers)
+
+    _patch_urlopen(monkeypatch, get_behaviour)
+    with pytest.raises(cfl.CfError):
+        cfl.request("GET", "/r2/x", TOKEN)
 
 
 def test_a_429_is_retried_then_succeeds(monkeypatch):
@@ -533,3 +624,46 @@ def test_retry_after_is_capped_and_a_bad_value_is_ignored():
     assert cfl.retry_after_s("99999") == cfl.RETRY_AFTER_CAP_S
     assert cfl.retry_after_s("Wed, 21 Oct 2026 07:28:00 GMT") is None
     assert cfl.retry_after_s(None) is None
+
+
+def test_a_retry_after_that_is_not_finite_is_ignored():
+    """Review 358dc107.3: nan and inf parse as floats and are no wait."""
+    assert cfl.retry_after_s("nan") is None
+    assert cfl.retry_after_s("inf") is None
+    assert cfl.retry_after_s("-3") == 0.0
+
+
+def test_pages_listing_without_total_pages_is_an_error_not_a_partial_count():
+    """Review 49117485.6."""
+
+    def page(items, info):
+        return lambda _path, _token: {"success": True, "result": items, "result_info": info}
+
+    with pytest.raises(cfl.CfError, match="total_pages"):
+        cfl.listing_by_page("/p", TOKEN, page([{"name": "a"}], {}))
+    assert cfl.listing_by_page("/p", TOKEN, page([], {})) == []
+    seen: list = []
+
+    def counted(path, _token):
+        seen.append(path)
+        n = int(path.rsplit("=", 1)[1])
+        return {
+            "success": True,
+            "result": [{"n": n}],
+            "result_info": {"total_count": 25, "per_page": 10},
+        }
+
+    assert [i["n"] for i in cfl.listing_by_page("/p", TOKEN, counted)] == [1, 2, 3]
+
+
+def test_containers_follow_every_page_the_listing_reports():
+    """Review 49117485.5."""
+    seen: list = []
+
+    def get(path, _token):
+        seen.append(path)
+        n = int(path.rsplit("=", 1)[1]) if "page=" in path else 1
+        return {"success": True, "result": [{"id": n}], "result_info": {"total_pages": 3}}
+
+    assert [c["id"] for c in cfl.followed("/c", TOKEN, get)] == [1, 2, 3]
+    assert seen == ["/c", "/c?page=2", "/c?page=3"]

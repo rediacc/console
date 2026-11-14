@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import urllib.parse
 
@@ -226,6 +227,7 @@ def test_a_data_holder_without_archive_is_refused(tree, capsys):
 
 def test_a_verified_archive_record_admits_a_data_holder(tree):
     cf = FakeCf()
+    cf.namespaces = []
     rec = cr.archive_path(tree, "r2", "rediacc-configs-eu")
     rec.parent.mkdir(parents=True)
     rec.write_text(json.dumps({"verified": True}))
@@ -425,3 +427,103 @@ def test_control_a_403_stops_the_run_at_once(tree, pauses, capsys):
     assert run(tree, cf, "delete", "--write", "--no-archive", ASKED) == 1
     assert pauses == []
     assert "HTTP 403" in capsys.readouterr().err
+
+
+def test_a_worker_with_a_durable_object_namespace_is_refused_without_the_waiver(tree, capsys):
+    """Review 49117485.1: `?force=true` destroys the namespace's storage, which no archive step reads."""
+    cf = FakeCf()
+    assert run(tree, cf, "delete", "--write") == 1
+    assert cf.deletes == []
+    out = capsys.readouterr().out
+    assert "REFUSED worker    rediacc-proxy-eu" in out
+    assert "Durable Object namespace" in out
+    assert run(tree, cf, "delete", "--write", "--no-archive", ASKED) == 0
+    assert any("scripts/rediacc-proxy-eu?force=true" in d[0] for d in cf.deletes)
+
+
+# --- the archive gate (review 49117485.2) ----------------------------------------------------------
+
+
+class _Auth:
+    created = False
+
+
+def _d1(monkeypatch, tmp_path, content: bytes | None, rc: int = 0):
+    monkeypatch.setattr(cr.cf_auth, "resolve", lambda _a: _Auth())
+    monkeypatch.setattr(cr.cf_auth, "wrangler_env", lambda _a, _b: {})
+
+    def export(_env, _name, out):
+        if content is not None:
+            with open(out, "wb") as fh:
+                fh.write(content)
+        return rc
+
+    monkeypatch.setattr(cr.backup_d1, "_export", export)
+    # One directory per call: the export file name carries a one-second stamp.
+    return cr.archive_d1("db", tmp_path / ("out%d" % len(list(tmp_path.glob("out*")))))
+
+
+def test_archive_d1_is_verified_only_for_a_clean_export_holding_a_table(monkeypatch, tmp_path):
+    assert _d1(monkeypatch, tmp_path, b"CREATE TABLE t (x);")["verified"] is True
+    assert _d1(monkeypatch, tmp_path, b"-- empty")["verified"] is False
+    assert _d1(monkeypatch, tmp_path, b"CREATE TABLE t (x);", rc=1)["verified"] is False
+    assert _d1(monkeypatch, tmp_path, None)["verified"] is False
+
+
+class _Obj:
+    def __init__(self, rel, size, etag=""):
+        self.rel, self.size, self.etag = rel, size, etag
+
+
+def _r2(monkeypatch, objs, remote: dict, tmp_path):
+    class Transfers:
+        def __init__(self, *_a, **_k):
+            pass
+
+        def list_tree(self, _prefix):
+            return objs
+
+    monkeypatch.setattr(cr.rbc, "default_endpoint", lambda: "http://e")
+    monkeypatch.setattr(cr.r2_promote, "Transfers", Transfers)
+
+    def fetch(_ep, _bucket, key, path):
+        with open(path, "wb") as fh:
+            fh.write(remote[key])
+        return {}
+
+    monkeypatch.setattr(cr.rbc, "fetch_object", fetch)
+    return cr.archive_r2_dir("b", None, tmp_path / "dir"), None
+
+
+def test_archive_r2_dir_checks_size_etag_and_never_verifies_an_empty_bucket(monkeypatch, tmp_path):
+    data = b"hello"
+    md5 = hashlib.md5(data, usedforsecurity=False).hexdigest()
+    good, _ = _r2(monkeypatch, [_Obj("a", 5, md5)], {"a": data}, tmp_path)
+    assert good["verified"] is True
+    assert good["keys"]["a"] == hashlib.sha256(data).hexdigest()
+    short, _ = _r2(monkeypatch, [_Obj("a", 9, md5)], {"a": data}, tmp_path / "s")
+    assert short["verified"] is False
+    assert short["mismatches"] == ["a"]
+    wrong, _ = _r2(monkeypatch, [_Obj("a", 5, "0" * 32)], {"a": data}, tmp_path / "w")
+    assert wrong["verified"] is False
+    assert wrong["mismatches"] == ["a"]
+    multi, _ = _r2(monkeypatch, [_Obj("a", 5, "abc-2")], {"a": data}, tmp_path / "m")
+    assert multi["verified"] is True
+    empty, _ = _r2(monkeypatch, [], {}, tmp_path / "e")
+    assert empty["verified"] is False
+
+
+def test_archive_r2_bucket_needs_a_clean_copy_and_no_differences(monkeypatch):
+    class Transfers:
+        def __init__(self, *_a, **_k):
+            pass
+
+        def list_tree(self, _prefix):
+            return [_Obj("a", 1)]
+
+    monkeypatch.setattr(cr.rbc, "default_endpoint", lambda: "http://e")
+    monkeypatch.setattr(cr.r2_promote, "Transfers", Transfers)
+    for rc, diffs, verified in ((0, [], True), (0, ["a"], False), (2, [], False)):
+        monkeypatch.setattr(cr.rbc, "copy", lambda *_a, rc=rc: rc)
+        monkeypatch.setattr(cr.rbc, "deep_differences", lambda *_a, diffs=diffs: diffs)
+        assert cr.archive_r2_bucket("b", None, "dst")["verified"] is verified

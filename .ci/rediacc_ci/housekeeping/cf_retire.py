@@ -5,13 +5,13 @@
       python3 -m rediacc_ci.housekeeping.cf_retire archive NAME (--dir DIR | --to-bucket BUCKET)
       python3 -m rediacc_ci.housekeeping.cf_retire delete  [--only NAME ...] [--write] [--no-archive ASKED:<YYYY-MM-DDTHH:MM>Z]
 
-THE RETIRED SET has one source, the rename plan and the retired-terms record, and no hand-kept list beside them. A name is retired when it is (1) a "Before" name of the plan's Names table, with `<r>` read as eu, us or asia, `<n>` as a number, and a bare `-bench` cell continuing the name before it; (2) a full match of a `.ci/config/retired-terms.json` pattern; (3) a pre-rename prefix form, `rediacc-<x>` or `edge-rediacc-<x>`, of a name `<x>` a tracked wrangler config or regions.json carries (the old queues `rediacc-backup-replicate-eu` and kin); or (4) the Pages project the L11 box names. Durable Object namespaces and container applications follow their Worker: a namespace whose Worker is retired, and a container application whose namespace belongs to a retired Worker or whose name is `<retired Worker>-<class>` (the orphaned `*-executorcontainer` apps). A custom domain or route goes when its Worker does.
+THE RETIRED SET has one source, the rename plan and the retired-terms record, and no hand-kept list beside them. A name is retired when it is (1) a "Before" name of the plan's Names table, with `<r>` read as eu, us or asia, `<n>` as a number, and a bare `-bench` cell continuing the name before it; (2) a full match of a `.ci/config/retired-terms.json` pattern; (3) a pre-rename prefix form, `rediacc-<x>` or `edge-rediacc-<x>`, of any string value `<x>` a tracked wrangler config or regions.json carries (a Worker, binding or bucket name, a var: `RetiredSet.declared` collects every value) (the old queues `rediacc-backup-replicate-eu` and kin); or (4) the Pages project the L11 box names. Durable Object namespaces and container applications follow their Worker: a namespace whose Worker is retired, and a container application whose namespace belongs to a retired Worker or whose name is `<retired Worker>-<class>` (the orphaned `*-executorcontainer` apps). A custom domain or route goes when its Worker does.
 
 KEPT whatever the set says: every name the Names table lists as "Unchanged", `rediacc-public-data` (operator ruling ASKED:2026-11-13T10:07Z), and every `*-proof-loss-*` drill object. An Enterprise company's objects (`account-<c>`, `proxy-<c>`, ...) carry no pre-rename name and fall outside the set by construction.
 
 ORDER. unbind (custom domains, routes) -> Workers, with their Durable Object namespaces (`?force=true`) -> container applications by id -> queues -> D1 -> R2 (emptied, then deleted, through the bucket's jurisdiction) -> Pages.
 
-REFUSALS. `delete --write` changes nothing when any planned object (1) is still named by a tracked config (`cf_leftovers.reference_texts`: the wrangler configs, regions.json, `.ci/config/**` less the retired-terms record), (2) is still bound by a Worker outside the retired set (a service, D1, R2 or queue binding, a producer or consumer), or (3) holds data (a D1 with tables, an R2 bucket with objects) and has no verified archive record under `.ci/state/cf-retire/archive/`, unless the run carries `--no-archive ASKED:<minute>Z` naming the operator's answer that waives the archive. `--only` naming a name outside the retired set is refused, and every mutating call re-checks the name against the set before it is sent.
+REFUSALS. `delete --write` changes nothing when any planned object (1) is still named by a tracked config (`cf_leftovers.reference_texts`: the wrangler configs, regions.json, `.ci/config/**` less the retired-terms record), (2) is still bound by a Worker outside the retired set (a service, D1, R2 or queue binding, a producer or consumer), (3) holds data (a D1 with tables, an R2 bucket with objects) and has no verified archive record under `.ci/state/cf-retire/archive/`, or (4) is a Worker with a Durable Object namespace (`?force=true` destroys the namespace's storage, which no archive step can read), unless the run carries `--no-archive ASKED:<minute>Z` naming the operator's answer that waives the archive. `--only` naming a name outside the retired set is refused, and every mutating call re-checks the name against the set before it is sent.
 
 DRY RUN IS THE DEFAULT. `plan` and `delete` without `--write` send GETs only. `delete --write` prints each action before it runs and appends it, with its outcome, to `.ci/state/cf-retire/<UTC stamp>-delete.jsonl`. `archive` writes `.ci/state/cf-retire/archive/<kind>-<name>.json`: a D1 through `rediacc_ci.ops.backup_d1`'s wrangler export (verified: a non-empty file holding CREATE TABLE, its sha256 recorded); an R2 bucket either to a local directory (each key downloaded with `r2_bucket_copy.fetch_object`, its size and single-part ETag checked, its sha256 recorded and re-read from disk) or to another bucket (`r2_bucket_copy.copy`, then a per-key sha256 comparison of both sides).
 
@@ -51,7 +51,7 @@ ASKED_RE = re.compile(r"ASKED:\d{4}-\d{2}-\d{2}T\d{2}:\d{2}Z")
 STEPS = ("unbind", "worker", "container", "queue", "d1", "r2", "pages")
 # R2 throttles a wide emptying (16 parallel DELETEs drew 429 on 8,823 objects, live 2026-11-13), so the default is narrow.
 EMPTY_WORKERS = 4
-# After a whole call still fails on 429, the run pauses this long (jittered) and retries it, up to THROTTLE_ROUNDS times, before giving up.
+# After a whole call still fails on 429, the run pauses `cfl.backoff_s(THROTTLE_PAUSE_S)` (twice this, 60 s, or the server's Retry-After when longer, plus up to 25 % jitter) and retries it, up to THROTTLE_ROUNDS times, before giving up.
 THROTTLE_PAUSE_S = 30.0
 THROTTLE_ROUNDS = 4
 
@@ -346,6 +346,12 @@ def judge_refusals(root, acts: list[Action], no_archive: str | None) -> int:
             a.refusals.append(
                 "holds data and has no verified archive record "
                 "(archive it, or pass --no-archive ASKED:<minute>Z)"
+            )
+        if a.step == "worker" and a.namespaces and not no_archive:
+            a.refusals.append(
+                "has Durable Object namespace(s) %s whose storage `?force=true` destroys "
+                "and no archive step reads (pass --no-archive ASKED:<minute>Z)"
+                % ", ".join(a.namespaces)
             )
     return sum(1 for a in acts if a.refusals)
 

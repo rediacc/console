@@ -12,7 +12,7 @@ PLAN-cloudflare-spend-guard T7, widened for PLAN-product-domain-rename L11. Ever
   do         a Durable Object namespace whose Worker no wrangler config names
   pages      a Pages project whose name no wrangler config or regions.json carries
 
-Each row carries the object's id, `referenced:` (the tracked config files that still name it: `workers/**/wrangler*.toml`, regions.json and `.ci/config/**`, the retired-terms record excepted, since naming a retired name is its job) and `bound:` (the custom domains, routes, service, D1, R2 and queue bindings of other Workers, and the queue producers and consumers that still point at it). A referenced or bound leftover is not safe to delete as it stands; `rediacc_ci.housekeeping.cf_retire` is the path that deletes, and it refuses both.
+Each row carries the object's id, `referenced:` (the tracked config files that still name it: `workers/*/wrangler*.toml`, `private/account/wrangler*.toml`, regions.json and `.ci/config/**`, the retired-terms record excepted, since naming a retired name is its job) and `bound:` (the custom domains, routes, service, D1, R2 and queue bindings of other Workers, and the queue producers and consumers that still point at it). A referenced or bound leftover is not safe to delete as it stands; `rediacc_ci.housekeeping.cf_retire` is the path that deletes, and it refuses both.
 
 Masking (agent/plans/PLAN-enterprise-isolation.md, N2): the housekeeping log is public, and an Enterprise company's Workers, routes and hosts carry its name and are named by no tracked config, so every one of them would print here as a leftover. Each printed line goes through `rediacc_ci.quality.enterprise_leak.Masker`, which turns a company label into `<company-N>` and leaves every public name as it is; a company-shaped leftover says so in its line, since the control database, not a wrangler config, accounts for it. `--unmasked` prints real names for a local run and is refused under `GITHUB_ACTIONS`; a masker that cannot be built is exit 1, the same as an unreadable listing.
 
@@ -27,6 +27,7 @@ from __future__ import annotations
 import dataclasses
 import fnmatch
 import json
+import math
 import os
 import re
 import secrets
@@ -56,7 +57,7 @@ PAGE = 100
 
 
 class CfError(Exception):
-    """A Cloudflare read that failed; the message names the path and Cloudflare's own errors."""
+    """A Cloudflare call that failed, a read or a DELETE; the message names the path and Cloudflare's own errors."""
 
     def __init__(self, message: str, status: int | None = None, retry_after: float | None = None):
         super().__init__(message)
@@ -64,6 +65,7 @@ class CfError(Exception):
         self.retry_after = retry_after
 
 
+WORKER_DOMAIN_PATH = "/workers/domains/"
 RETRY_STATUSES = frozenset({429, 500, 502, 503, 504})
 RETRY_PAUSES_S = (2.0, 5.0, 15.0)
 # A throttle (429) backs off longer than a 5xx: twice the step, never less than the server's Retry-After (capped), plus jitter.
@@ -80,6 +82,8 @@ def retry_after_s(raw: str | None) -> float | None:
         value = float(str(raw).strip())
     except ValueError:
         return None
+    if not math.isfinite(value):
+        return None
     return min(max(value, 0.0), RETRY_AFTER_CAP_S)
 
 
@@ -92,19 +96,28 @@ def backoff_s(exc: CfError, pause: float) -> float:
 
 
 def request(method: str, path: str, token: str, jurisdiction: str | None = None) -> dict:
-    """`_request_once`, retried after a pause on a rate limit or a 5xx (Cloudflare throttles a bucket emptied many calls at a time, and its 429 page is not JSON). Every other failure raises at once."""
+    """`_request_once`, retried after a pause on a rate limit or a 5xx (Cloudflare throttles a bucket emptied many calls at a time, and its 429 page is not JSON). Every other failure raises at once. A DELETE retried after a 5xx may find its first attempt took effect (the gateway answered, the origin acted), so a 404 on such a retry reads as already deleted; a 429 was never processed and gets no such reading."""
+    server_error_seen = False
     for pause in RETRY_PAUSES_S:
         try:
             return _request_once(method, path, token, jurisdiction)
         except CfError as exc:
             if exc.status not in RETRY_STATUSES:
+                if method == "DELETE" and exc.status == 404 and server_error_seen:
+                    return {"success": True, "result": None}
                 raise
+            server_error_seen = server_error_seen or exc.status != 429
             time.sleep(backoff_s(exc, pause))
-    return _request_once(method, path, token, jurisdiction)
+    try:
+        return _request_once(method, path, token, jurisdiction)
+    except CfError as exc:
+        if method == "DELETE" and exc.status == 404 and server_error_seen:
+            return {"success": True, "result": None}
+        raise
 
 
 def _request_once(method: str, path: str, token: str, jurisdiction: str | None = None) -> dict:
-    """One API call, returning the decoded body and raising CfError on any failure. The only network call here; `cf_retire` sends its DELETEs through it. `jurisdiction` sets the `cf-r2-jurisdiction` header an R2 call needs to see an `eu` bucket."""
+    """One API call, returning the decoded body (a synthetic `{"success": True, "result": None}` for a Worker custom-domain DELETE that answers 2xx with an empty body) and raising CfError on any failure. The only network call here; `cf_retire` sends its DELETEs through it. `jurisdiction` sets the `cf-r2-jurisdiction` header an R2 call needs to see an `eu` bucket."""
     retry_after = None
     headers = {"Authorization": "Bearer " + token}
     if jurisdiction is not None:
@@ -113,7 +126,7 @@ def _request_once(method: str, path: str, token: str, jurisdiction: str | None =
         req = https.build_request(CF_API_BASE + path, headers=headers, method=method)
         with https.urlopen(req, timeout=30) as resp:
             raw = resp.read()
-            status = getattr(resp, "status", 200)
+            status = resp.status
     except urllib.error.HTTPError as exc:
         status = exc.code
         retry_after = retry_after_s(exc.headers.get("Retry-After") if exc.headers else None)
@@ -129,8 +142,13 @@ def _request_once(method: str, path: str, token: str, jurisdiction: str | None =
         # URLError, a timeout and a connection reset while reading the body are all OSErrors.
         raise CfError("%s %s: %s" % (method, path, exc)) from None
     else:
-        # Some DELETEs (a Worker custom domain) answer 200 with an empty body; that is success, not a garbled answer.
-        if method == "DELETE" and 200 <= status < 300 and not raw.strip():
+        # The Worker custom-domain DELETE answers 200 with an empty body; that is success, not a garbled answer. Every other path keeps the JSON rule, so an empty answer there is still a failure.
+        if (
+            method == "DELETE"
+            and WORKER_DOMAIN_PATH in path
+            and 200 <= status < 300
+            and not raw.strip()
+        ):
             return {"success": True, "result": None}
     try:
         body = json.loads(raw)
@@ -282,11 +300,30 @@ def listing_by_page(path: str, token: str, get=fetch) -> list:
     page = 1
     while True:
         body = get("%s%spage=%d" % (path, sep, page), token)
-        items.extend(body.get("result") or [])
-        total = (body.get("result_info") or {}).get("total_pages") or 1
+        chunk = body.get("result") or []
+        items.extend(chunk)
+        info = body.get("result_info") or {}
+        total = info.get("total_pages")
+        if total is None and info.get("total_count") and info.get("per_page"):
+            total = math.ceil(info["total_count"] / info["per_page"])
+        if total is None:
+            if chunk:
+                raise CfError("%s: listing carries no total_pages, so its end is unknown" % path)
+            return items
         if page >= total:
             return items
         page += 1
+
+
+def followed(path: str, token: str, get=fetch) -> list:
+    """Every `result` item of a path read plainly first (the containers listing documents no paging parameters): when its `result_info` says more pages remain, they are read with `page` alone."""
+    body = get(path, token)
+    items = list(body.get("result") or [])
+    total = (body.get("result_info") or {}).get("total_pages") or 1
+    sep = "&" if "?" in path else "?"
+    for page in range(2, total + 1):
+        items.extend(get("%s%spage=%d" % (path, sep, page), token).get("result") or [])
+    return items
 
 
 def r2_buckets(account: str, token: str, get=fetch) -> list[dict]:
@@ -389,7 +426,7 @@ def read_inventory(account: str, token: str, get=fetch, with_bindings: bool = Tr
         routes.extend(
             (zid, zname, r) for r in listing("/zones/%s/workers/routes" % zid, token, get)
         )
-    containers = get("/accounts/%s/containers/applications" % account, token).get("result") or []
+    containers = followed("/accounts/%s/containers/applications" % account, token, get)
     return Inventory(
         scripts=scripts,
         bindings=bindings,

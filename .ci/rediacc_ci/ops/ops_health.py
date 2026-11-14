@@ -900,11 +900,37 @@ def sources_of(check: str, entry: dict) -> dict:
     return {"local-%s" % check: (entry.get("state") or UNKNOWN, entry.get("detail") or "")}
 
 
-def transitions(old: dict, new: dict, now: datetime.datetime) -> list:
-    """Ledger rows for every source whose state differs from the cache's last one (first sight included)."""
+def ledger_states(root: pathlib.Path) -> dict:
+    """source -> the `to` of its newest `transition` row in the ledger; empty when the ledger is absent or unreadable. The cache is gitignored and loses sources (a new cache, a machine missing from the last machines run); the ledger remembers them."""
+    out: dict = {}
+    try:
+        lines = (root / LEDGER_REL).read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return out
+    for line in lines:
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if (
+            isinstance(row, dict)
+            and row.get("kind") == "transition"
+            and isinstance(row.get("source"), str)
+            and row.get("to") is not None
+        ):
+            out[row["source"]] = row["to"]
+    return out
+
+
+def transitions(
+    old: dict, new: dict, now: datetime.datetime, ledger_last: dict | None = None
+) -> list:
+    """Ledger rows for every source whose state differs from its last one: the cache's, else `ledger_last`'s (the ledger's newest `to` for the source), else none (first sight, `from` null). A source the ledger already records in the new state appends nothing."""
     rows = []
+    ledger_last = ledger_last or {}
     for source, (state, detail) in sorted(new.items()):
-        before = (old.get(source) or (None, ""))[0]
+        cached = old.get(source)
+        before = cached[0] if cached else ledger_last.get(source)
         if before != state:
             rows.append(
                 {
@@ -1194,7 +1220,7 @@ def refresh(
     new_sources: dict = {}
     for name, entry in fresh.items():
         new_sources.update(sources_of(name, entry))
-    ledger_rows = transitions(old_sources, new_sources, now)
+    ledger_rows = transitions(old_sources, new_sources, now, ledger_states(root))
     if "machines" in fresh:
         ledger_rows += repair_rows(fresh["machines"], now)
     ledger_error = append_ledger(root, ledger_rows)

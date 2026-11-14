@@ -1179,3 +1179,51 @@ def test_a_failed_repair_still_prefers_the_envelope_error_then_stderr():
     err = json.dumps({"success": False, "data": None, "errors": [{"code": "E", "message": "nope"}]})
     assert _repair(err, "stderr text") == "machine repair rc 2: E: nope"
     assert _repair("{}", "stderr text") == "machine repair rc 2: stderr text"
+
+
+# --- the ledger as the previous state when the cache lost a source (review 05da784c.1-.4) ----------
+
+LEDGER_NOW = datetime.datetime(2026, 11, 14, 8, 0, 0, tzinfo=datetime.UTC)
+
+
+def test_cache_missing_ledger_green_new_green_appends_no_row():
+    assert oh.transitions({}, {"s": ("green", "ok")}, LEDGER_NOW, {"s": "green"}) == []
+
+
+def test_cache_missing_ledger_green_new_red_names_green_as_the_from():
+    rows = oh.transitions({}, {"s": ("red", "down")}, LEDGER_NOW, {"s": "green"})
+    assert [(r["from"], r["to"]) for r in rows] == [("green", "red")]
+
+
+def test_control_the_cache_wins_over_the_ledger():
+    old = {"s": ("red", "")}
+    rows = oh.transitions(old, {"s": ("green", "up")}, LEDGER_NOW, {"s": "green"})
+    assert [(r["from"], r["to"]) for r in rows] == [("red", "green")]
+    assert (
+        oh.transitions({"s": ("green", "")}, {"s": ("green", "up")}, LEDGER_NOW, {"s": "red"}) == []
+    )
+
+
+def test_no_cache_and_no_ledger_is_first_sight_from_null():
+    rows = oh.transitions({}, {"s": ("green", "ok")}, LEDGER_NOW, {})
+    assert [(r["from"], r["to"]) for r in rows] == [(None, "green")]
+    assert oh.transitions({}, {"s": ("green", "ok")}, LEDGER_NOW) == rows
+
+
+def test_ledger_states_reads_the_newest_transition_per_source(tmp_path):
+    ledger = tmp_path / oh.LEDGER_REL
+    ledger.parent.mkdir(parents=True)
+    ledger.write_text(
+        "\n".join(
+            json.dumps(r)
+            for r in (
+                {"kind": "transition", "source": "a", "from": None, "to": "red"},
+                {"kind": "repair", "source": "a", "to": "ignored"},
+                {"kind": "transition", "source": "a", "from": "red", "to": "green"},
+                {"kind": "transition", "source": "b", "from": None, "to": "unknown"},
+            )
+        )
+        + "\nnot json\n"
+    )
+    assert oh.ledger_states(tmp_path) == {"a": "green", "b": "unknown"}
+    assert oh.ledger_states(tmp_path / "nowhere") == {}
