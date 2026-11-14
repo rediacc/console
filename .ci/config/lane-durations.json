@@ -79,8 +79,8 @@
     "summed test durations, which leave out beforeAll/afterAll work (07-container-operations: 0.77m of tests, 3.23m of wall",
     "on opensuse); fixedMinutes is the job wall minus every file's span, which is the steps before 'Run E2E Tests', the",
     "globalSetup VM reset (renet ops up --force: 1.5m median on debian, 3.1-4.1m on fedora, opensuse and oracle), the renet,",
-    "RustFS and datastore setup after it, and the post steps; legExtraMinutes '1' is the span of 12a/12b/12d/13b, which",
-    "ct-tests.yml adds to leg 1 of the two full-integration distros. ops-tutorials: fixedMinutes is the job wall minus the",
+    "RustFS and datastore setup after it, and the post steps; no leg carries legExtraMinutes since 12a/12b/12d/13b and 23",
+    "left leg 1 for their own job, test-e2e-full-integration (operator ruling #12755b25, 2026-11-14). ops-tutorials: fixedMinutes is the job wall minus the",
     "tutorial durations (every step outside the tutorials, from runner setup through ops up and the post steps, the same on",
     "every shard, so no legExtraMinutes), and the tutorials' own costs are the top-level units. Checked against job_p90_minutes: every E2E Workers leg within",
     "0.83m and every OPS Provision leg within 0.8m (npx tsx scripts/gates/check-lane-budget.ts --table).",
@@ -1276,13 +1276,6 @@
           "leg": 2,
           "why": "the fresh-install test: ct-tests.yml's `shard: 2` include sets stock-image on leg 2 of every distro, so only leg 2 boots the stock image and runs a full renet setup"
         }
-      ],
-      "notOnLeg": [
-        {
-          "unit": "e2e-workers:06-daemon-operations.test.ts",
-          "leg": 1,
-          "why": "leg 1 carries 12a/12b/12d/13b on the full-integration distros, and 12a failed right after 06 on both (ct-tests.yml, Run E2E Tests)"
-        }
       ]
     }
   },
@@ -1325,9 +1318,6 @@
       },
       "fedora-43": {
         "fixedMinutes": 7.22,
-        "legExtraMinutes": {
-          "1": 3.03
-        },
         "units": {
           "e2e-workers:01-system-checks.test.ts": 10490,
           "e2e-workers:02-machine-setup.test.ts": 7435,
@@ -1415,9 +1405,6 @@
       },
       "ubuntu-24.04": {
         "fixedMinutes": 6.38,
-        "legExtraMinutes": {
-          "1": 9.32
-        },
         "units": {
           "e2e-workers:01-system-checks.test.ts": 11758,
           "e2e-workers:02-machine-setup.test.ts": 6799,

@@ -143,7 +143,8 @@ permissions: {}
 jobs:
   # ============================================================================
   # COLUMN 4: TESTS + INFRA
-  # Jobs: migration-test, test-unit, test-e2e-workers, test-e2e-ceph,
+  # Jobs: migration-test, test-unit, test-e2e-workers,
+  #       test-e2e-full-integration, test-e2e-ceph,
   #       test-e2e-ceph-workers, renet-pkg-scope, renet-pkg-matrix,
   #       test-e2e-ceph-workers-rpm, test-e2e-k8s, test-e2e-k8s-ceph,
   #       test-e2e-k8s-multinode, test-e2e-migrate, test-e2e-backup-browse-at,
@@ -381,10 +382,10 @@ jobs:
         # .ci/config/shards/test-e2e-workers.json (LPT by measured/estimated
         # per-file duration; the file's own `#part1/2/3` describe-group split
         # keeps 13-postgres-fork-isolation, the single heaviest file at 8.1m,
-        # from forcing its leg over budget alone). `include:` below has no
-        # `shard` key, so GitHub Actions merges `full-integration`/`cli-suite`
-        # onto every shard of the two distros it names, exactly as before
-        # sharding existed.
+        # from forcing its leg over budget alone). Every leg runs exactly its
+        # placed units: the FULL_INTEGRATION and CLI_SUITE suites run in
+        # test-e2e-full-integration below, their own job (operator ruling
+        # #12755b25, ASKED:2026-11-14T13:33Z).
         shard: [1, 2, 3, 4, 5, 6, 7, 8, 9]
         os-image:
           - ubuntu-24.04
@@ -400,20 +401,6 @@ jobs:
           #   packages/www/src/content/docs/en/limits.md (Why not Rocky 10?)
           #   packages/www/src/content/docs/en/troubleshooting.md (btrfs module missing)
         include:
-          # FULL_INTEGRATION legs: 12a/12b/12d (composition suites) + 13b (live
-          # CRIU fork). Composition logic is distro-agnostic, so two legs are the
-          # honest floor — one apt-family (ubuntu) + one rpm-family (fedora).
-          # CRIU_EXPECTED=1 turns 13b's "CRIU absent" guard into a hard failure.
-          #
-          # CLI_SUITE (suite 23, the rdc-driven migrate-routing e2e) runs on the
-          # ubuntu leg only: its routing logic is distro-agnostic. Fedora declares
-          # it empty because actionlint flags a matrix property a leg never declares.
-          - os-image: ubuntu-24.04
-            full-integration: '1'
-            cli-suite: '1'
-          - os-image: fedora-43
-            full-integration: '1'
-            cli-suite: ''
           # Fresh-install coverage (PLAN-ci-prebaked-vm-images 2c): shard 2 of
           # every distro boots the STOCK image on every run and so still runs a
           # full `renet setup`; it holds 02-machine-setup, pinned there by the
@@ -433,9 +420,6 @@ jobs:
       VM_BAKE: 'on'
       VM_CEPH_NODES: ''
       VM_IMAGE: ${{ matrix.os-image }}
-      FULL_INTEGRATION: ${{ matrix.full-integration }}
-      CRIU_EXPECTED: ${{ matrix.full-integration }}
-      CLI_SUITE: ${{ matrix.cli-suite }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -591,26 +575,9 @@ jobs:
         run: PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path /usr/bin/renet --output packages/e2e-tests/.env
 
       - name: Run E2E Tests (Workers)
-        # T2.12: shard 1 also carries the FULL_INTEGRATION-only composition
-        # suites (12a/12b/12d/13b) on the two distros that set full-integration
-        # -- they stay off the sharded plan (their own cost is unmeasured) and
-        # ride whichever leg has the most headroom instead of a leg of their own.
-        # Leg 1, not 7: on leg 7 (run for b45276a49) 12a's "new: create
-        # repository" failed right after 06-daemon-operations on both
-        # full-integration distros, while beside 13-postgres-fork-isolation and
-        # 14 on leg 6 it had passed; leg 1 holds only 22 (.ci/config/shards/test-e2e-workers.json), kept free of 06 by its notOnLeg rule in lane-durations.json.
-        # Suite 23 rides leg 1 of the leg that sets cli-suite, the same way.
-        env:
-          CLI_ALSO: ${{ matrix.cli-suite == '1' && '23-cli-migrate-routing.test.ts' || '' }}
         run: |
-          # Each flag adds its own suites, so a leg that sets cli-suite without full-integration still runs suite 23.
-          FULL_ALSO="${{ matrix.full-integration == '1' && '12a-full-integration-repository.test.ts,12b-full-integration-checkpoint.test.ts,12d-full-integration-multi-machine.test.ts,13b-live-fork-checkpoint.test.ts' || '' }}"
-          EXTRA="${FULL_ALSO}${FULL_ALSO:+${CLI_ALSO:+,}}${CLI_ALSO}"
-          ALSO=()
-          [[ "${{ matrix.shard }}" == '1' && -n "$EXTRA" ]] && ALSO=(--also "$EXTRA")
           PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --fail-on-skip \
-            --shard-manifest .ci/config/shards/test-e2e-workers.json --shard "${{ matrix.shard }}/9" \
-            "${ALSO[@]}"
+            --shard-manifest .ci/config/shards/test-e2e-workers.json --shard "${{ matrix.shard }}/9"
 
       # On failure, each VM's libvirt state, console and guest journal go into the upload below (see the collector's docstring).
       - name: Collect VM diagnostics
@@ -645,6 +612,271 @@ jobs:
         if: always()
         with:
           name: unit-durations-test-e2e-workers-${{ matrix.os-image }}-s${{ matrix.shard }}-${{ github.sha }}
+          path: packages/e2e-tests/reports/bridge-logs/unit-durations*.json
+          retention-days: 3
+          if-no-files-found: ignore
+
+      # ops up runs unprivileged here (the harness spawns renet directly), so
+      # the chown is normally a no-op — kept for parity with the other cached
+      # jobs and as a guard should the harness ever run under sudo.
+      - name: Fix VM image ownership for cache save
+        if: always() && steps.bake.outputs.hit != 'true'
+        run: sudo chown -R "$(whoami)" "$RUNNER_TEMP/renet/disks" 2>/dev/null || true
+
+      # The save guard: a baked leg never saves. Its restore step was skipped,
+      # so cache-hit is empty, and without the hit test it would save an empty
+      # $RUNNER_TEMP/renet/disks under the stock key.
+      - name: Save VM base image cache
+        if: always() && steps.bake.outputs.hit != 'true' && steps.vm-image-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks
+          key: ${{ steps.vm-image-key.outputs.key }}
+
+  # The FULL_INTEGRATION and CLI_SUITE suites, in a job of their own (operator
+  # ruling #12755b25, ASKED:2026-11-14T13:33Z, "Own job"). They used to ride
+  # `--also` on leg 1 of test-e2e-workers on these two distros, which put
+  # ubuntu-24.04's leg 1 at 15.8m against the 12-minute lane budget. Setup,
+  # artifacts and needs are an E2E Workers leg's, so this job boots the same
+  # baked image the workers legs do; it is priced by check-lane-budget.ts's
+  # check 2 under its own display name (JOB_P90_SEEDS until a refresh measures
+  # it, and JOB_BUDGET_CAPS for its ceiling).
+  #
+  # 12a/12b/12d (composition suites) + 13b (live CRIU fork): composition logic
+  # is distro-agnostic, so two legs are the honest floor, one apt-family
+  # (ubuntu) + one rpm-family (fedora). CRIU_EXPECTED=1 turns 13b's "CRIU
+  # absent" guard into a hard failure.
+  #
+  # CLI_SUITE (suite 23, the rdc-driven migrate-routing e2e) runs on the ubuntu
+  # leg only: its routing logic is distro-agnostic. Fedora declares it empty
+  # because actionlint flags a matrix property a leg never declares.
+  test-e2e-full-integration:
+    name: E2E Full Integration (${{ matrix.os-image }})
+    # Logs into ghcr with github.token and PULLS only, as an E2E Workers leg.
+    permissions:
+      contents: read
+      packages: read
+    needs: [renet-embed-assets]
+    if: inputs.full_suite == 'true' && inputs.run_e2e_workers != 'false' && inputs.renet_built != 'false'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20 # JOB_BUDGET_CAPS ruling #12755b25 (the ubuntu leg is priced at 15.7m)
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os-image: ubuntu-24.04
+            cli-suite: '1'
+          - os-image: fedora-43
+            cli-suite: ''
+    env:
+      CI: 'true'
+      BRIDGE_TIMEOUT: 240000
+      VM_BRIDGE: '1'
+      VM_WORKERS: '11 12'
+      # The same kill switch as E2E Workers: 'off' sends both legs to the stock image.
+      VM_BAKE: 'on'
+      VM_CEPH_NODES: ''
+      VM_IMAGE: ${{ matrix.os-image }}
+      FULL_INTEGRATION: '1'
+      CRIU_EXPECTED: '1'
+      CLI_SUITE: ${{ matrix.cli-suite }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Fetch secrets from Bitwarden
+        # LIVE: the BWS_ values below are read by this job's steps, flipped from
+        # secrets.* by the cutover. The secrets.* reads that remain are the
+        # comparator's, which must keep reading GitHub or it compares a value with
+        # itself and passes forever.
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            GITHUB_APP_PRIVATE_KEY > BWS_GITHUB_APP_PRIVATE_KEY
+            DOCKERHUB_TOKEN > BWS_DOCKERHUB_TOKEN
+            DOCKERHUB_USERNAME > BWS_DOCKERHUB_USERNAME
+            GITHUB_APP_ID > BWS_APP_ID
+      - uses: ./.github/actions/app-token
+        id: app-token
+        with:
+          client-id: ${{ env.BWS_APP_ID }}
+          private-key: ${{ env.BWS_GITHUB_APP_PRIVATE_KEY }}
+          repositories: console,renet,account,elite,homebrew-tap
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          submodules: true
+          token: ${{ steps.app-token.outputs.token }}
+      - name: Login to GHCR
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          username: ${{ env.BWS_DOCKERHUB_USERNAME }}
+          password: ${{ env.BWS_DOCKERHUB_TOKEN }}
+      - name: Propagate Docker Hub credentials to root
+        run: sudo mkdir -p /root/.docker && sudo cp ~/.docker/config.json /root/.docker/config.json
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: 'stable'
+          cache: true
+          cache-dependency-path: private/renet/go.sum
+      # T2.3 (PLAN-ci-time-budget): started in the background here, joined
+      # immediately before Setup KVM Host, so the cleanup overlaps the setup
+      # work in between instead of blocking it in the foreground.
+      - name: Free Disk Space (start)
+        uses: ./.github/actions/free-disk-space
+      # `account: 'true'` because every VM/E2E job here starts the per-run
+      # account server from private/account before it installs renet
+      # (agent/plans/PLAN-free-license.md R2): there is one licensed renet,
+      # and a repository it creates needs a licence that server signs. The
+      # cost is accepted: the setup cache key hashes the three account
+      # lockfiles, so an account-side dependency change invalidates it.
+      - uses: ./.github/actions/setup-workspace
+        with:
+          account: 'true'
+          build-packages: 'true'
+      - run: PYTHONPATH=.ci python3 -m rediacc_ci.build.build_cli
+      - name: Install CLI Globally
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.setup.install_cli_global
+
+      # The per-run account server (agent/plans/PLAN-production-key-only.md
+      # D6). It mints this run's ED25519 pair and exports the PUBLIC half as
+      # ACCOUNT_ED25519_PUBLIC_KEY, with REDIACC_ACCOUNT_SERVER and
+      # E2E_ACCOUNT_API_TOKEN, to $GITHUB_ENV; renet is built after it with that
+      # key, so every licence this server signs verifies under the renet the
+      # leg deploys. The production private key never reaches this job.
+      - name: Start the per-run account server
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.testrun.start_account --port 4900
+      # This leg's renet, built AFTER the account server so it bakes the
+      # per-run public key start_account just exported to $GITHUB_ENV
+      # (agent/plans/PLAN-production-key-only.md D6); build_renet's key gate
+      # refuses a binary that does not bake it. The embed assets come from the
+      # renet-embed-assets cache this job needs, so the build is the go build
+      # alone; restore-only, the stager job is the one writer.
+      - uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        id: embed-cache
+        with:
+          path: private/renet/pkg/embed/assets
+          key: renet-embed-assets-${{ hashFiles('private/renet/embed-assets.lock.json', 'private/renet/Dockerfile') }}
+      # Pre-pulled only on a cache miss: a hit makes build_renet's embed_assets
+      # step a verified no-op, so these base images are never fetched.
+      - name: Pre-pull Docker base images (avoid buildx auth issues)
+        if: steps.embed-cache.outputs.cache-hit != 'true'
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.docker_prepull debian:bookworm=linux/amd64 debian:bookworm-slim=linux/arm64 ubuntu:24.04=linux/amd64 ubuntu:24.04=linux/arm64
+      - name: Build renet with the per-run key
+        id: build-renet
+        env:
+          RENET_EMBED_CACHE_HIT: ${{ steps.embed-cache.outputs.cache-hit }}
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.build_renet
+      - name: Install renet
+        run: sudo cp "$RENET_BINARY" /usr/bin/renet && sudo chmod +x /usr/bin/renet
+
+      # Pre-baked image (PLAN-ci-prebaked-vm-images 2b): pull the image for
+      # this tree's bake key from ghcr.io/rediacc/ci-vm-bake into its own
+      # disks dir. A hit exports REDIACC_OPS_DISKS_PATH, BAKED_IMAGE_KEY and
+      # RENET_SETUP_OFFLINE=1, which the harness and the renet it spawns
+      # inherit. Any miss (no package for the key, as on a PR that changes a
+      # key input, or a failed pull) leaves hit != 'true' and the stock steps
+      # below run exactly as before. Skipped on the
+      # nightly schedule (every leg on stock) and with VM_BAKE=off.
+      # The fetch installs its pinned oras itself and exits 0 on every miss,
+      # its own pull timeout (8 min) included, so no failure here ends the leg.
+      # ghcr.io/rediacc/ci-vm-bake is private: without this login every pull
+      # answers "unauthorized", a miss, and the leg silently runs stock forever.
+      # oras reads the docker credential store the action writes.
+      - name: Login to GHCR for the baked image
+        if: github.event_name != 'schedule' && env.VM_BAKE != 'off'
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ github.token }}
+      - name: Fetch baked VM image
+        id: bake
+        if: github.event_name != 'schedule' && env.VM_BAKE != 'off'
+        timeout-minutes: 12
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.infra.vm_bake_image fetch --distro "${{ matrix.os-image }}" --dest "$RUNNER_TEMP/renet/disks-baked"
+
+      # VM base-image cache, one entry per matrix distro, used only when no
+      # baked image was fetched. The disks dir is cached whole; since renet
+      # e599aa3 it holds only the VM_IMAGE distro
+      # (EnsureBaseImage used to fetch the Ubuntu default on every leg).
+      # Monthly key: several of these URLs are moving
+      # pointers. Restored before any sudo step touches $RUNNER_TEMP/renet so
+      # extraction happens as the runner user.
+      - name: Compute VM image cache key
+        if: steps.bake.outputs.hit != 'true'
+        id: vm-image-key
+        run: echo "key=vm-base-image-e2e-${{ matrix.os-image }}-$(date -u +%Y-%m)" >> "$GITHUB_OUTPUT"
+      - name: Restore VM base image cache
+        if: steps.bake.outputs.hit != 'true'
+        id: vm-image-cache
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: ${{ runner.temp }}/renet/disks
+          key: ${{ steps.vm-image-key.outputs.key }}
+
+      - name: Free Disk Space (wait)
+        uses: ./.github/actions/free-disk-space
+        with:
+          mode: wait
+
+      - name: Prefer archive.ubuntu.com
+        uses: ./.github/actions/apt-mirror
+
+      - name: Setup KVM Host
+        run: sudo "$RENET_BINARY" ops host setup
+
+      - name: Create E2E Test Environment
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.env.create_e2e_env --renet-path /usr/bin/renet --output packages/e2e-tests/.env
+
+      - name: Run E2E Tests (Full Integration)
+        # Plain mode, the suite files named: FULL_INTEGRATION=1 and CLI_SUITE
+        # (job env) are what playwright.config.ts reads to select them on CI.
+        env:
+          CLI_ALSO: ${{ matrix.cli-suite == '1' && '23-cli-migrate-routing.test.ts' || '' }}
+        run: |
+          ARGS=()
+          for f in 12a-full-integration-repository.test.ts 12b-full-integration-checkpoint.test.ts 12d-full-integration-multi-machine.test.ts 13b-live-fork-checkpoint.test.ts ${CLI_ALSO}; do ARGS+=(--test "$f"); done
+          PYTHONPATH=.ci python3 -m rediacc_ci.testrun.e2e --workers 1 --fail-on-skip "${ARGS[@]}"
+
+      # On failure, each VM's libvirt state, console and guest journal go into the upload below (see the collector's docstring).
+      - name: Collect VM diagnostics
+        if: failure()
+        timeout-minutes: 6
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.diagnostics.collect_vm_diagnostics
+
+      - if: always()
+        run: PYTHONPATH=.ci python3 -m rediacc_ci.ci_signal.create_complete --name "e2e-full-integration-${{ matrix.os-image }}" --status ${{ job.status }}
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        if: always()
+        with:
+          name: test-e2e-full-integration-${{ matrix.os-image }}-${{ github.sha }}
+          path: |
+            ${{ runner.temp }}/complete.txt
+            ${{ runner.temp }}/vm-diagnostics/
+            packages/e2e-tests/reports/bridge/
+            packages/e2e-tests/reports/bridge-logs/
+          retention-days: 3
+          if-no-files-found: ignore
+
+      # T1.6 (PLAN-ci-time-budget): per-spec-file durations, for budget_report.py
+      # --refresh (T3.2) to read. A dedicated, separately-named upload rather than
+      # folding into the artifact above: budget_report.py matches an artifact by
+      # the `unit-durations-<lane>-` NAME PREFIX alone, and this leg's own
+      # runner (rediacc_ci.testrun.e2e) starts `npx playwright test`, whose T1.6
+      # reporter (packages/e2e-tests/playwright.config.ts) writes `unit-durations*.json` -- all of them are
+      # globbed into this one artifact, and parse_unit_duration_artifact sums the
+      # durations of same-named units across every member it finds.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7.0.2
+        if: always()
+        with:
+          name: unit-durations-test-e2e-full-integration-${{ matrix.os-image }}-${{ github.sha }}
           path: packages/e2e-tests/reports/bridge-logs/unit-durations*.json
           retention-days: 3
           if-no-files-found: ignore

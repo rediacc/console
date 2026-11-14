@@ -95,6 +95,8 @@ const JOB_BUDGET_CAPS = [
   { job: 'E2E Ceph Workers non-apt', budgetMin: 20 },
   // Operator ruling #153aace7 (2026-09-30): measured maxima sit at or over 15.
   { job: 'E2E Workers', budgetMin: 20 },
+  // Operator ruling #12755b25 (2026-11-14, "Own job"): the --also suites that left E2E Workers leg 1, priced at 15.7 on ubuntu; its timeout-minutes in ct-tests.yml is 20.
+  { job: 'E2E Full Integration', budgetMin: 20 },
   { job: 'E2E Ceph Workers', budgetMin: 20 },
   // Ruling #4b9be429 (2026-10-22, "Raise limits to measured"): E2E Ceph p90 14 / timeout 15, its timeout-minutes in ct-tests.yml. Exact match only, so it never reaches "E2E Ceph Workers".
   { job: 'E2E Ceph', budgetMin: 15 },

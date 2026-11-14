@@ -773,9 +773,11 @@ def want_workers(cand: str, gitlinks: dict | None = None) -> str:
     )
 
 
-# PLAN-ci-time-budget T2.12 shards each of the five distro legs eight ways: 40 API jobs.
+# PLAN-ci-time-budget T2.12 shards each of the five distro legs nine ways (ruling #d7502b7d): 45 API jobs, plus the two E2E Full Integration legs (ruling #12755b25) on the same closure. The full-integration legs come first so ALL_FIVE[-1] stays a workers leg.
 DISTROS = ("ubuntu-24.04", "debian-13", "fedora-43", "opensuse-16.0", "oracle-10")
-ALL_LEGS = tuple(f"E2E Workers ({d}, {i}/8)" for d in DISTROS for i in range(1, 9))
+ALL_LEGS = ("E2E Full Integration (ubuntu-24.04)", "E2E Full Integration (fedora-43)") + tuple(
+    f"E2E Workers ({d}, {i}/9)" for d in DISTROS for i in range(1, 10)
+)
 ALL_FIVE = tuple(f"{leg}=success" for leg in ALL_LEGS)
 
 
@@ -795,32 +797,32 @@ def test_matrix_key_needs_every_leg(gate):
     # `wc -l` on the twin's `printf '%s\n'` counts the legs, one per line.
     gate.assert_eq(
         len([ln for ln in result.out.split("\n") if ln != ""]),
-        40,
-        "e2e_workers declares forty matrix legs (five distros x eight shards)",
+        47,
+        "e2e_workers declares forty-seven matrix legs (five distros x nine shards, plus two full-integration legs)",
     )
 
     # FIRE 1: one leg absent from the run entirely.
     cand = matrix_candidate(*ALL_FIVE[:-1])
     v = ev(gate, want_workers(cand))
-    gate.assert_eq(jget(v, "greenlit"), "false", "39 green legs out of 40 must NOT greenlight")
+    gate.assert_eq(jget(v, "greenlit"), "false", "46 green legs out of 47 must NOT greenlight")
     gate.assert_contains(
         jget(v, "trail"),
-        "job-not-run@E2E Workers (oracle-10, 8/8)",
+        "job-not-run@E2E Workers (oracle-10, 9/9)",
         "and the trail must name the leg that was missing",
     )
 
     # FIRE 2: all five present, one of them SKIPPED. This is the shape a reduced run leaves behind, and it is the one that must never chain.
-    cand = matrix_candidate(*legs_with("E2E Workers (fedora-43, 3/8)", "skipped"))
+    cand = matrix_candidate(*legs_with("E2E Workers (fedora-43, 3/9)", "skipped"))
     v = ev(gate, want_workers(cand))
     gate.assert_eq(jget(v, "greenlit"), "false", "one skipped leg out of five must NOT greenlight")
     gate.assert_contains(
         jget(v, "trail"),
-        "job-not-run@E2E Workers (fedora-43, 3/8)",
+        "job-not-run@E2E Workers (fedora-43, 3/9)",
         "named as the skipped leg, not as a generic refusal",
     )
 
     # FIRE 3: one leg red.
-    cand = matrix_candidate(*legs_with("E2E Workers (debian-13, 5/8)", "failure"))
+    cand = matrix_candidate(*legs_with("E2E Workers (debian-13, 5/9)", "failure"))
     v = ev(gate, want_workers(cand))
     gate.assert_eq(jget(v, "greenlit"), "false", "one failed leg out of five must NOT greenlight")
 

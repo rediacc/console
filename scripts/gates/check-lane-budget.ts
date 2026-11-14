@@ -31,7 +31,9 @@
  *      2026-09-28 ruling); a job with no p90 is UNCHECKED, which is a finding with
  *      no exception: a job a PR runs is measured from a PR run (operator ruling 2026-10-14
  *      retired the one label-gated exception with the label itself). A priced lane's matrix
- *      legs are judged in the lane and skipped here.
+ *      legs are judged in the lane and skipped here. The one stand-in is `JOB_P90_SEEDS`: a
+ *      job a ruling carved out of measured work is priced from those measurements, with the
+ *      derivation, until a refresh measures it, and a seed is a finding once measured.
  *   3. Single unit: a unit whose own cost plus the lane's fixed cost exceeds 12 minutes
  *      is red even alone, "indivisible", unless `LANE_BUDGET_EXEMPTIONS` names it (D-W3).
  *      An exemption whose test file or job has gone is itself a finding.
@@ -281,7 +283,78 @@ export const JOB_BUDGET_CAPS: readonly JobCap[] = [
     ruling:
       'Operator ruling #23e93715 (ASKED 2026-10-19T06:57Z, "Raise caps for now"): cold renet builds on branch 1008-1 (run 39177571049 embed assets 820 s cold, run 39188334570 23-29 s warm; cache key is the embed-assets lockfile hash only) put the refreshed p90 of Renet embed assets at 12.4 (12.3 in the E2E Dependency Probe); p90 13 / timeout 15 (its timeout-minutes in ct-tests.yml and ci-ops-test.yml)',
   },
+  {
+    job: 'test-e2e-full-integration',
+    p90Minutes: 16,
+    timeoutMinutes: 20,
+    ruling:
+      'Operator ruling #12755b25 (ASKED 2026-11-14T13:33Z, "Own job"): 12a/12b/12d/13b and suite 23 left leg 1 of E2E Workers for their own job on ubuntu-24.04 and fedora-43. Its ubuntu leg is priced at 15.7 (JOB_P90_SEEDS: the leg-1 fixed cost plus the --also span it carried), suite 23 alone measuring 5.6m of that (job 132425794764), so no split of the five suites over these two distros fits 12; p90 16 / timeout 20, the timeout E2E Workers runs under (#153aace7), revisited at the first refresh that measures the job',
+  },
 ];
+
+/**
+ * Check 2's SEEDED p90s: a job a ruling created by moving MEASURED work out of a measured job, priced from those
+ * measurements until `budget_report.py --refresh` samples it under its own display name. A seed is consulted only for a
+ * call site no `job_p90_minutes` entry matches, so a measurement always wins, and a seed is itself a finding once its
+ * label is measured (delete it) or matches no call site (the job it priced is gone). Nothing is seeded without the
+ * derivation from committed or logged measurements; a job with neither stays UNCHECKED (operator ruling #5a954657).
+ */
+export interface JobP90Seed {
+  /** The Actions display name the job reports under, exactly as `job_p90_minutes` would key it. */
+  label: string;
+  minutes: number;
+  derivation: string;
+}
+export const JOB_P90_SEEDS: readonly JobP90Seed[] = [
+  {
+    label: 'Tests + Infra / E2E Full Integration (ubuntu-24.04)',
+    minutes: 15.7,
+    derivation:
+      'ruling #12755b25: lane-durations.json variantCosts test-e2e-workers ubuntu-24.04 fixedMinutes 6.38 (an E2E Workers leg setup, which this job repeats) + legExtraMinutes "1" 9.32 (the --also span 12a/12b/12d/13b/23 added to leg 1, refresh 2026-11-14T13:15Z), the extra removed from the lane with the move',
+  },
+  {
+    label: 'Tests + Infra / E2E Full Integration (fedora-43)',
+    minutes: 10.25,
+    derivation:
+      'ruling #12755b25: lane-durations.json variantCosts test-e2e-workers fedora-43 fixedMinutes 7.22 + legExtraMinutes "1" 3.03 (the --also span 12a/12b/12d/13b added to leg 1, refresh 2026-11-14T13:15Z), the extra removed from the lane with the move',
+  },
+];
+
+/** The samples check 2 judges one call site by: its measured display names, or, when it has none, the seeds its pattern matches. */
+export function samplesWithSeeds(
+  site: { id: string; pattern: RegExp },
+  measured: Readonly<Record<string, number>>,
+  seeds: readonly JobP90Seed[] = JOB_P90_SEEDS
+): { samples: JobSample[]; seeded: boolean } {
+  const out: JobSample[] = [];
+  for (const [label, minutes] of Object.entries(measured))
+    if (site.pattern.test(label)) out.push({ job: site.id, label, minutes });
+  if (out.length > 0) return { samples: out, seeded: false };
+  const fromSeeds = seeds
+    .filter((s) => site.pattern.test(s.label))
+    .map((s) => ({ job: site.id, label: s.label, minutes: s.minutes }));
+  return { samples: fromSeeds, seeded: fromSeeds.length > 0 };
+}
+
+/** A seed whose label is now measured, or that no call site's pattern matches, is a finding: the seed has done its job, or priced a job that is gone. */
+export function staleSeedFindings(
+  seeds: readonly JobP90Seed[],
+  measured: Readonly<Record<string, number>>,
+  patterns: readonly RegExp[]
+): string[] {
+  const out: string[] = [];
+  for (const s of seeds) {
+    if (measured[s.label] !== undefined)
+      out.push(
+        `JOB_P90_SEEDS seeds "${s.label}", which job_p90_minutes now measures (${measured[s.label]}m). Delete the seed.`
+      );
+    else if (!patterns.some((p) => p.test(s.label)))
+      out.push(
+        `JOB_P90_SEEDS seeds "${s.label}", which matches no job of ${CI_WORKFLOW} and its callees. Delete the seed.`
+      );
+  }
+  return out;
+}
 
 /*
  * D-W2 (2026-09-30): every job of ci.yml and its callees is budgeted HERE, "Stage Artifacts"
@@ -2434,10 +2507,13 @@ async function main(): Promise<number> {
     for (const x of out) matchedLabels.add(x.label);
     return out;
   };
+  // A seed (JOB_P90_SEEDS) stands in only for a call site nothing measured; its label is never a measured one, so matchedLabels stays a record of measurements.
+  const seededSites: string[] = [];
   const samplesForCallSite = (site: CallSite): JobSample[] => {
-    const out = samplesForSite(site, measured);
-    for (const x of out) matchedLabels.add(x.label);
-    return out;
+    const { samples, seeded } = samplesWithSeeds(site, measured);
+    if (seeded) seededSites.push(site.site);
+    else for (const x of samples) matchedLabels.add(x.label);
+    return samples;
   };
   if (runnerJobs.length === 0) {
     console.error(
@@ -2782,6 +2858,13 @@ async function main(): Promise<number> {
       findings.push(`JOB_BUDGET_CAPS names job ${c.job}, which no workflow defines. Delete it.`);
     }
   }
+  findings.push(
+    ...staleSeedFindings(
+      JOB_P90_SEEDS,
+      measured,
+      sites.map((x) => x.pattern)
+    )
+  );
 
   const timeoutList = [...timeoutSites.values()];
   if (CHECK7_ENABLED) findings.push(...timeoutFindings(timeoutList));
@@ -2838,6 +2921,7 @@ async function main(): Promise<number> {
     `${judgedSiteCount}/${sites.filter((x) => !priced.has(x.id)).length} other call site(s) judged (${neverRun.length} never run for their caller's literal with: inputs) ` +
     `(${judgedSamples.length} display-name sample(s); ${unmatched.length} measured name(s) match no current job), ` +
     `${LANE_BUDGET_EXEMPTIONS.length} unit exemption(s), ${JOB_BUDGET_CAPS.length} job cap(s), ` +
+    `seeded p90 (JOB_P90_SEEDS, until measured): ${seededSites.join(', ') || 'none'}, ` +
     `${timeoutList.length} job timeout-minutes read (check 7), ` +
     `${embedRestoring} embed-assets cache consumer(s) in ${walkedTexts.size} workflow(s) (check 8); ` +
     `inert: ${inert.join(', ') || 'none'}; ${driftNote}; ` +
@@ -3060,6 +3144,45 @@ async function selftest(): Promise<number> {
         JOB_BUDGET_CAPS.every((c) => /2026-09-28|#[0-9a-f]{8}/.test(c.ruling)),
     },
     // --- check 2: job-level p90 and the 2026-09-28 exemption caps ----------------
+    {
+      name: 'MATCH (seeds): an unmeasured call site is judged by the seed its pattern matches, and a measured one ignores the seed',
+      ok: (() => {
+        const site = {
+          id: 'x',
+          pattern: displayNamePattern(['T'], 'X (${{ matrix.d }})', true),
+        };
+        const seeds = [{ label: 'T / X (a)', minutes: 20, derivation: 'fixture' }];
+        const fromSeed = samplesWithSeeds(site, {}, seeds);
+        const fromMeasure = samplesWithSeeds(site, { 'T / X (a)': 5 }, seeds);
+        return (
+          fromSeed.seeded &&
+          fromSeed.samples.length === 1 &&
+          judgeJobSamples(fromSeed.samples).length === 1 &&
+          !fromMeasure.seeded &&
+          fromMeasure.samples[0]?.minutes === 5
+        );
+      })(),
+    },
+    {
+      name: 'FIRES (seeds): a seed whose label is measured, or matches no call site, is a finding; a live unmeasured one is not',
+      ok: (() => {
+        const seeds = [
+          { label: 'T / Measured', minutes: 1, derivation: 'fixture' },
+          { label: 'T / Gone', minutes: 1, derivation: 'fixture' },
+          { label: 'T / Live', minutes: 1, derivation: 'fixture' },
+        ];
+        const f = staleSeedFindings(seeds, { 'T / Measured': 2 }, [/^T \/ (Measured|Live)$/]);
+        return (
+          f.length === 2 &&
+          f.some((x) => x.includes('"T / Measured"') && x.includes('now measures')) &&
+          f.some((x) => x.includes('"T / Gone"') && x.includes('matches no job'))
+        );
+      })(),
+    },
+    {
+      name: 'CONTROL: every live seed carries a derivation naming its ruling',
+      ok: JOB_P90_SEEDS.every((s) => /#[0-9a-f]{8}/.test(s.derivation)),
+    },
     {
       name: 'MATCH: an exempt job (E2E K8s Ceph) at 19.8m is under its 20m cap',
       ok: jobBudgetFindings({ 'test-e2e-k8s-ceph': 19.8 }).length === 0,
@@ -4098,7 +4221,8 @@ async function selftest(): Promise<number> {
       })(),
     },
     {
-      name: 'CONTROL: the live rebalanceConstraints names both hand-kept rules (18/19 together, 06 off leg 1)',
+      // 06 off leg 1 left with the --also suites it guarded (ruling #12755b25); 02 on leg 2 keeps the fresh-install test on the stock-image leg (review finding ba428f22.1).
+      name: 'CONTROL: the live rebalanceConstraints names both hand-kept rules (18/19 together, 02 on leg 2)',
       ok: (() => {
         const c: Record<string, RebalanceConstraints | undefined> =
           liveDurations.rebalanceConstraints ?? {};
@@ -4108,11 +4232,17 @@ async function selftest(): Promise<number> {
               t.units.some((u) => u.includes('18-ops')) &&
               t.units.some((u) => u.includes('19-rustfs'))
           ) &&
-          (c['test-e2e-workers']?.notOnLeg ?? []).some(
-            (p) => p.unit.includes('06-daemon') && p.leg === 1
+          (c['test-e2e-workers']?.onLeg ?? []).some(
+            (p) => p.unit.includes('02-machine-setup') && p.leg === 2
           )
         );
       })(),
+    },
+    {
+      name: 'CONTROL: no live E2E Workers variant carries a legExtraMinutes, since the --also suites left leg 1 (ruling #12755b25)',
+      ok: Object.values(liveDurations.variantCosts?.['test-e2e-workers'] ?? {}).every(
+        (v) => v.legExtraMinutes === undefined
+      ),
     },
     ...(await liveRebalanceControls(liveDurations)),
     {
