@@ -278,6 +278,7 @@ describe('subscription retire --expired', () => {
   afterEach(() => {
     setTty(originalTty);
     process.exitCode = undefined;
+    setOutputFormat('table');
   });
 
   const retiredGuids = () =>
@@ -313,6 +314,17 @@ describe('subscription retire --expired', () => {
     expect(mockConfirm).not.toHaveBeenCalled();
     expect(tables[0]).toHaveLength(3);
     expect(infos.join()).toContain('expiredDryRun');
+  });
+
+  it('--dry-run under -o json prints the would-retire list and changes nothing', async () => {
+    setOutputFormat('json');
+    await executeSubscriptionRetire(undefined, { ...opts, dryRun: true, yes: true });
+    expect(mockFetch).not.toHaveBeenCalled();
+    expect(mockPrint).toHaveBeenCalledTimes(1);
+    const [payload, format] = mockPrint.mock.calls[0];
+    expect(format).toBe('json');
+    expect(payload).toMatchObject({ retired: [], failed: [], dryRun: true });
+    expect(payload.would).toHaveLength(3);
   });
 
   it('exits non-zero when any retire failed, after trying the rest', async () => {

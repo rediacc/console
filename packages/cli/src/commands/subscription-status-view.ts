@@ -61,6 +61,13 @@ export function printOtherLicences(rows: LicenceRow[]): void {
   ]);
 }
 
+/** Most urgent first; written out so a renamed or new freshness cannot silently reorder the summary. */
+const FRESHNESS_URGENCY: Record<LicenceRow['freshness'], number> = {
+  hard_expired: 0,
+  refresh_recommended: 1,
+  valid: 2,
+};
+
 /** `1 deleted (valid), 107 not in this config (hard expired)`: the others counted by presence and state. */
 function elsewhereItems(others: LicenceRow[]): string[] {
   const counts = new Map<string, { row: LicenceRow; count: number }>();
@@ -73,7 +80,7 @@ function elsewhereItems(others: LicenceRow[]): string[] {
   return [...counts.values()]
     .sort((a, b) => {
       if (a.row.presence !== b.row.presence) return a.row.presence === 'deleted' ? -1 : 1;
-      return a.row.freshness.localeCompare(b.row.freshness);
+      return FRESHNESS_URGENCY[a.row.freshness] - FRESHNESS_URGENCY[b.row.freshness];
     })
     .map(({ row, count }) =>
       t(
