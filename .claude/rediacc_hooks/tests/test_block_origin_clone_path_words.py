@@ -327,6 +327,8 @@ def test_a_verb_table_a_pure_builtin_takes_in_a_script_by_path_is_data(cwd, tmp_
         "def print(*a):\n    sh('git', *a)\n" + NAMED_ARGV + "print(*ARGV)",
         "from helpers import run_git as len\n" + NAMED_ARGV + "len(ARGV)",
         NAMED_ARGV + "sorted([ARGV], key=run_git)",
+        NAMED_ARGV + 'sorted([ARGV], **{"key": run_git})',
+        NAMED_ARGV + "sorted([ARGV], **dict(key=run_git))",
         NAMED_ARGV + "list(map(run_git, [ARGV]))",
     ],
 )

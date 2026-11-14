@@ -592,6 +592,10 @@ def _handed_sequences(tree):
         func = call.func
         if not (isinstance(func, ast.Name) and func.id in pure):
             return True
+        # A `**mapping` expansion can carry any keyword, `key=` included (`sorted(x, **{"key": f})`), so a pure builtin
+        # called with one is not judged pure (review 4c1ac1fc.1).
+        if any(k.arg is None for k in call.keywords):
+            return True
         return func.id in ("sorted", "min", "max") and any(k.arg == "key" for k in call.keywords)
 
     for node in ast.walk(tree):
