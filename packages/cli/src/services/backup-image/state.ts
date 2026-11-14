@@ -467,7 +467,7 @@ function lockRefusal(lockPath: string, holder: LockInfo | null): ImageLockError 
   return new ImageLockError(
     holder
       ? `another run holds ${lockPath} (pid ${holder.pid} on ${holder.host})`
-      : `${lockPath} exists and is unreadable`,
+      : `${lockPath} exists and is unreadable; if no run is writing it, remove it by hand`,
     holder
   );
 }
@@ -557,9 +557,10 @@ export function acquireLocalLock(lockPath: string, deps: LockDeps = {}): LockInf
  * network or exFAT mount stamping files on a clock that differs from this host's cannot make a live
  * run's fresh empty lock look old. When the probe cannot be made or read, the lock is not taken
  * over: the filesystem's clock is unknown, and judging the lock by this host's clock instead would let
- * a mount whose clock runs behind make a live run's fresh lock look old (review ee0ca8b1.1). A
- * directory too read-only or too full for a probe file cannot take a new lock either, so the
- * refusal, which names the lock path, loses nothing.
+ * a mount whose clock runs behind make a live run's fresh lock look old (review ee0ca8b1.1). The
+ * cost is that an abandoned lock in such a directory is never cleared automatically: the refusal
+ * names the path and says to remove it by hand (review 5ea6a6f0.1). A directory too read-only or
+ * too full for a probe file usually cannot take a new lock either.
  */
 function isAbandonedUnreadable(lockPath: string, graceMs = UNREADABLE_LOCK_GRACE_MS): boolean {
   let lockMtime: number;
