@@ -555,8 +555,11 @@ export function acquireLocalLock(lockPath: string, deps: LockDeps = {}): LockInf
  * Whether an unreadable lock is an abandoned half-written one. Its mtime is read against the mtime of
  * a probe file made beside it, so both come from the clock of the filesystem that holds the lock: a
  * network or exFAT mount stamping files on a clock that differs from this host's cannot make a live
- * run's fresh empty lock look old. When no probe can be made, the lock's age is judged by this
- * host's clock instead.
+ * run's fresh empty lock look old. When the probe cannot be made or read, the lock is not taken
+ * over: the filesystem's clock is unknown, and judging the lock by this host's clock instead would let
+ * a mount whose clock runs behind make a live run's fresh lock look old (review ee0ca8b1.1). A
+ * directory too read-only or too full for a probe file cannot take a new lock either, so the
+ * refusal, which names the lock path, loses nothing.
  */
 function isAbandonedUnreadable(lockPath: string, graceMs = UNREADABLE_LOCK_GRACE_MS): boolean {
   let lockMtime: number;
@@ -570,9 +573,9 @@ function isAbandonedUnreadable(lockPath: string, graceMs = UNREADABLE_LOCK_GRACE
     closeSync(openSync(probe, 'w'));
     return statSync(probe).mtimeMs - lockMtime > graceMs;
   } catch {
-    // No probe could be made (a read-only or full directory): judge the lock by this host's clock
-    // rather than call an old unreadable lock fresh forever.
-    return Date.now() - lockMtime > graceMs;
+    // The probe could not be created, stat-ed or closed: with no filesystem clock to compare against,
+    // the lock's age is unknown, so it is not called abandoned (review ee0ca8b1.1, .2).
+    return false;
   } finally {
     try {
       unlinkSync(probe);

@@ -104,14 +104,17 @@ describe('local lock on a filesystem without hard links', () => {
     expect(readdirSync(dir)).toEqual(['app.latest.lock']);
   });
 
-  it('judges an old unreadable lock by the host clock when no probe file can be made', () => {
+  it('refuses an old unreadable lock when no probe file can be made, since the mount clock is unknown', () => {
+    // Review ee0ca8b1.1: a mount whose clock runs behind would stamp a live run's fresh lock in the past,
+    // so with no probe the host clock cannot tell an abandoned lock from a live one.
     writeFileSync(lockPath, '');
     const old = new Date(Date.now() - 3_600_000);
     utimesSync(lockPath, old, old);
     probeDenied.value = true;
-    const info = acquireLocalLock(lockPath, { pid: 9, host: 'h1', isPidAlive: () => true });
-    expect(JSON.parse(readFileSync(lockPath, 'utf8')).pid).toBe(info.pid);
-    expect(readdirSync(dir)).toEqual(['app.latest.lock']);
+    expect(() =>
+      acquireLocalLock(lockPath, { pid: 9, host: 'h1', isPidAlive: () => true })
+    ).toThrow(/unreadable/);
+    expect(readFileSync(lockPath, 'utf8')).toBe('');
   });
 
   it('control: with no probe file, a fresh unreadable lock is still refused', () => {
