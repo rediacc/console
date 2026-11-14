@@ -858,7 +858,13 @@ def test_a_refused_code_in_two_windows_still_names_the_seed():
 def test_a_process_whose_grandchild_keeps_the_output_open_is_a_timeout(tmp_path):
     """bfbeef8c.1/.2: the pump outliving the join is a DrillError, not the returncode."""
     pidfile = tmp_path / "grandchild.pid"
-    body = 'sleep 15 &\necho $! > %s\necho "%s"\nexit 0\n' % (pidfile, URL_LINE)
+    # 4d768d72.1: the pid goes in through a rename, so a read sees a complete pid or no file, never a truncated one.
+    body = 'sleep 15 &\necho $! > %s.tmp && mv %s.tmp %s\necho "%s"\nexit 0\n' % (
+        pidfile,
+        pidfile,
+        pidfile,
+        URL_LINE,
+    )
     job = ftr._Process(["x"], {}, program=_stub(tmp_path, body))
     try:
         assert job.read_url() == URL_LINE.strip()
@@ -867,7 +873,7 @@ def test_a_process_whose_grandchild_keeps_the_output_open_is_a_timeout(tmp_path)
     finally:
         # f2e5369d.1: end the grandchild and join the pump here, so its pipe closes inside this test and not in a later one.
         # 0f926f33.1: a stub that failed before writing the pidfile must not replace the original failure with a FileNotFoundError.
-        # e4d3b408.3: a pidfile still being written reads empty, so only a complete number is killed.
+        # e4d3b408.3: the stub renames the pidfile into place, so an existing file holds a complete pid.
         text = pidfile.read_text().strip() if pidfile.exists() else ""
         if text.isdigit():
             os.kill(int(text), signal.SIGKILL)

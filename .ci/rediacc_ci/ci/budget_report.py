@@ -726,7 +726,7 @@ def lane_display_patterns(
 
 
 def _without_yaml_comment(line: str) -> str:
-    """`line` without a trailing YAML comment: a `#` at the start or preceded by whitespace, outside single and double quotes. A quote opens a span only at the start of a token (the line start or after whitespace), or, inside a flow collection, after `[`, `{` or `,`; a flow collection opens at a `[` or `{` that starts the value (after `:` or `-`, or nested), so an apostrophe inside a plain word (`it's`) or after a comma in a plain scalar (`a,'x`) opens none."""
+    """`line` without a trailing YAML comment: a `#` at the start or preceded by whitespace, outside single and double quotes. A quote opens a span only at the start of a token (the line start or after whitespace), or, inside a flow collection, after `[`, `{` or `,`; a flow collection opens at a `[` or `{` that starts the value (after `: ` or `- `, at the line start, or nested; review 4d768d72.4: a `:[` glued inside a plain scalar opens none), so an apostrophe inside a plain word (`it's`) or after a comma in a plain scalar (`a,'x`) opens none."""
     quote = ""
     depth = 0
     for index, char in enumerate(line):
@@ -738,7 +738,9 @@ def _without_yaml_comment(line: str) -> str:
             index == 0 or line[index - 1].isspace() or (depth and line[index - 1] in "[{,")
         ):
             quote = char
-        elif char in "[{" and (depth or not before or before[-1] in ":-"):
+        elif char in "[{" and (
+            depth or not before or (before[-1] in ":-" and line[index - 1].isspace())
+        ):
             depth += 1
         elif char in "]}" and depth:
             depth -= 1

@@ -4091,7 +4091,9 @@ def test_lanes_passing_also_keeps_a_flag_before_a_comment_and_a_quoted_hash(tmp_
             "glued": ("C", ["- run: r a#b --also x"]),
             # 2c7b1a1f.1: a quote right after a flow indicator opens a span, so its ` #` hides nothing.
             "flow": ("D", ['- run: ["r # x --also", "y"]']),
-            # d4f29b8f.2: the quote follows a space here, so this one holds on the old code too; `flow-brace` is the case that needs the `{` branch.
+            # Regression rows, not controls (reviews 4d768d72.2, .3): flow-map's quote follows a space, and flow-brace and flow-comma
+            # pass under the old unconditional rule too. The controls that fail without the flow-depth rule are the plain-scalar
+            # test below (`a,'x`) and the glued-colon test (`a:[`).
             "flow-map": ("E", ["- run: {a: 'r # --also'}"]),
             "flow-brace": ("F", ["- run: {'r # --also': 1}"]),
             "flow-comma": ("G", ["- run: [a,'r # --also']"]),
@@ -4106,6 +4108,12 @@ def test_lanes_passing_also_keeps_a_flag_before_a_comment_and_a_quoted_hash(tmp_
         "flow-brace": True,
         "flow-comma": True,
     }
+
+
+def test_lanes_passing_also_a_colon_glued_into_a_plain_scalar_opens_no_flow(tmp_path):
+    """4d768d72.4: `a:[` is a plain scalar, not a value start, so the `,'` after it opens no quote and the trailing comment naming the flag stays a comment."""
+    _write_workflows(tmp_path, {"job": ("A", ["- run: echo a:[b,'x # --also"])})
+    assert br.lanes_passing_also(tmp_path) == {"job": False}
 
 
 def test_lanes_passing_also_a_quote_after_a_comma_in_a_plain_scalar_hides_no_comment(tmp_path):
