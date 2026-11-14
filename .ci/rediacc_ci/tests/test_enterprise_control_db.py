@@ -396,11 +396,22 @@ def _insert(conn: sqlite3.Connection, cid: str, name: str, state: str = "active"
     conn.commit()
 
 
+def _legacy_migration_sql() -> str:
+    """The pre-change 0001: the current file with the partial index swapped back for the inline UNIQUE."""
+    sql = registry.migration_sql()
+    index = "CREATE UNIQUE INDEX companies_live_name ON companies(name) WHERE state <> 'removed';"
+    assert index in sql
+    assert "name TEXT NOT NULL,\n" in sql
+    return sql.replace(index, "").replace(
+        "name TEXT NOT NULL,\n", "name TEXT NOT NULL UNIQUE,\n", 1
+    )
+
+
 def _legacy_database() -> tuple[FakeWrangler, sqlite3.Connection]:
     """A control database at the 0001 schema (inline UNIQUE on name) holding one live and one removed company with a child row."""
     fake = FakeWrangler({"control-bench-eu": "00000000-0000-4000-8000-000000000001"})
     conn = fake.dbs["control-bench-eu"]
-    conn.executescript(registry.migration_sql())
+    conn.executescript(_legacy_migration_sql())
     _insert(conn, "caaa1", "live-co")
     _insert(conn, "cbbb2", "gone-co", "removed")
     conn.execute("INSERT INTO onboarding VALUES ('cbbb2', 'd1', 'done', NULL, 't')")
@@ -465,3 +476,31 @@ def test_a_removed_name_can_be_added_again_but_a_live_duplicate_is_refused():
     found = reg.find("gone-co")
     assert found is not None
     assert found["id"] == "cccc3"
+
+
+def test_the_migration_alone_creates_the_partial_unique_index():
+    conn = sqlite3.connect(":memory:")
+    conn.executescript(registry.migration_sql())
+    _insert(conn, "caaa1", "same-co", "active")
+    with pytest.raises(sqlite3.IntegrityError, match="UNIQUE"):
+        _insert(conn, "cbbb2", "same-co", "onboarding")
+    _insert(conn, "cccc3", "gone-co", "removed")
+    _insert(conn, "cddd4", "gone-co", "active")
+    _insert(conn, "ceee5", "gone-co", "removed")
+
+
+def test_a_fresh_database_needs_no_rebuild_and_ensure_is_a_noop_on_it():
+    fake = FakeWrangler()
+    control_db.ensure("eu", bench=True, runner=fake)
+    conn = fake.dbs["control-bench-eu"]
+    before = conn.execute("SELECT name, sql FROM sqlite_master ORDER BY name").fetchall()
+    fake.calls.clear()
+    again = control_db.ensure("eu", bench=True, runner=fake)
+    assert not again.migrated
+    assert not any("--file" in c for c in fake.calls)
+    assert conn.execute("SELECT name, sql FROM sqlite_master ORDER BY name").fetchall() == before
+    control_db.apply_name_rebuild("control-bench-eu", runner=fake)
+    _insert(conn, "caaa1", "x-co", "removed")
+    _insert(conn, "cbbb2", "x-co", "active")
+    with pytest.raises(sqlite3.IntegrityError, match="UNIQUE"):
+        _insert(conn, "cccc3", "x-co", "active")
