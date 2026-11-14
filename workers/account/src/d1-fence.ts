@@ -123,14 +123,16 @@ function topLevelTokens(sql: string): string[] {
 /** Whether a tokenised PRAGMA only reads: no `=`, no writing name, and a parenthesised argument only on an inspection pragma. */
 function pragmaReads(tokens: string[]): boolean {
   if (tokens.includes('=') || tokens.some((t) => WRITING_PRAGMAS.has(t))) return false;
-  // `PRAGMA name(value)` is the other spelling of a set.
-  return !tokens.includes('(') || READING_PRAGMA_CALLS.has(tokens[1] ?? '');
+  // `PRAGMA name(value)` is the other spelling of a set; the name is the word before the `(`, so `PRAGMA main.table_info(x)` is judged by `TABLE_INFO`.
+  const open = tokens.indexOf('(');
+  return open === -1 || READING_PRAGMA_CALLS.has(tokens[open - 1] ?? '');
 }
 
 /**
  * True when `sql` cannot write: one `SELECT`, `VALUES`, `EXPLAIN`, a `WITH` whose
  * main statement is a SELECT or VALUES, or a `PRAGMA` with no `=` that is not one
- * of the writing ones. Anything else, several statements included, is a write.
+ * of the writing ones and takes no parenthesised argument unless it is an
+ * inspection pragma (`READING_PRAGMA_CALLS`). Anything else, several statements included, is a write.
  */
 export function isReadOnlySql(sql: string): boolean {
   const tokens = topLevelTokens(sql);
