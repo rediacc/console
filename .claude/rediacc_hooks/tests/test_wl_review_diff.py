@@ -64,13 +64,13 @@ def test_control_the_commits_own_change_is_still_sent_whole(tmp_path):
 def test_move_search_note_says_so_when_the_commits_cannot_be_counted(monkeypatch):
     """Review 21ac17b2.1: a failing `git rev-list --count` read as 0 commits, so the refusal omitted the cut-short sentence. CONTROL: a short counted range stays silent."""
     monkeypatch.setattr(R, "git", lambda *_a, **_k: (0, "3\n"))
-    assert R.move_search_note("r", "b" * 12, "f" * 12) == ""
+    assert R.move_search_note("r", "b" * 12, "f" * 12, "config.py") == ""
     monkeypatch.setattr(R, "git", lambda *_a, **_k: (128, ""))
-    assert "could not count" in R.move_search_note("r", "b" * 12, "f" * 12)
+    assert "could not count" in R.move_search_note("r", "b" * 12, "f" * 12, "config.py")
     monkeypatch.setattr(R, "git", lambda *_a, **_k: (0, "many\n"))
-    assert "could not count" in R.move_search_note("r", "b" * 12, "f" * 12)
+    assert "could not count" in R.move_search_note("r", "b" * 12, "f" * 12, "config.py")
     monkeypatch.setattr(R, "git", lambda *_a, **_k: (0, "%d\n" % (R.MOVE_MAX_COMMITS + 5)))
-    assert "read only the newest" in R.move_search_note("r", "b" * 12, "f" * 12)
+    assert "read only the newest" in R.move_search_note("r", "b" * 12, "f" * 12, "config.py")
 
 
 def _commit_files(tmp_path, name, files):

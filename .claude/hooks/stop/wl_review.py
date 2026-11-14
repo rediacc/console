@@ -3360,9 +3360,11 @@ def _diff_lines(text):
     return removed, added
 
 
-def move_search_note(repo, base, fix):
-    """A refusal sentence when `moved_successors` could not read every commit of `base..fix` (it takes the newest MOVE_MAX_COMMITS), else "" (review 4bcec972.2: a move older than that was never seen and nothing said so)."""
-    rc, out = git(repo, "rev-list", "--count", "--no-merges", "%s..%s" % (base, fix))
+def move_search_note(repo, base, fix, anchored):
+    """A refusal sentence when `moved_successors` could not read every commit of `base..fix` that touches the anchored file (it takes the newest MOVE_MAX_COMMITS of them), else "" (review 4bcec972.2: a move older than that was never seen and nothing said so)."""
+    rc, out = git(
+        repo, "rev-list", "--count", "--no-merges", "%s..%s" % (base, fix), "--", anchored
+    )
     if rc != 0 or not out.strip().isdigit():
         # An uncounted range may be longer than the search reads: say so instead of reading as complete (review 21ac17b2.1).
         return (
@@ -3375,11 +3377,14 @@ def move_search_note(repo, base, fix):
     total = int(out.strip())
     if total <= MOVE_MAX_COMMITS:
         return ""
-    return " (the move search read only the newest %d of the %d commits in %s..%s)" % (
-        MOVE_MAX_COMMITS,
-        total,
-        base[:12],
-        fix[:12],
+    return (
+        " (the move search read only the newest %d of the %d commits in %s..%s that touch the file)"
+        % (
+            MOVE_MAX_COMMITS,
+            total,
+            base[:12],
+            fix[:12],
+        )
     )
 
 
@@ -3387,6 +3392,8 @@ def moved_successors(repo, anchored, base, fix):
     """The files that received code the anchored file lost in `base..fix`: a file is a successor when at least MOVE_MIN_LINES of its added lines, and at least half of them, are lines the same commit removed from the anchored file (or from an earlier successor).
 
     `git log --follow` sees a whole-file rename only, and `-C` a copy of at least half a file: neither sees a function extracted into a neighbour (0477d0c75 moved 246 lines of config.ts into config-reconcile.ts, which git reads as a 32% copy). The anchored file is never its own successor.
+
+    Only a commit that touches a source can move lines out of it, so the log is limited to the sources: the MOVE_MAX_COMMITS cap then counts those commits, not every commit of a long range (bf0bded8.2: the onprem/ -> lab/ move sat beyond the newest 60 of 207 commits, and the fix in lab/testca.py was refused).
     """
     sources = {anchored}
     found: set[str] = set()
@@ -3399,6 +3406,8 @@ def moved_successors(repo, anchored, base, fix):
             "-n",
             str(MOVE_MAX_COMMITS),
             "%s..%s" % (base, fix),
+            "--",
+            *sorted(sources),
         )
         grew = False
         for sha in out.split() if rc == 0 else []:
@@ -3635,7 +3644,7 @@ def mark(root, branch, finding_id, kind, args, me, items=None, now=None, asked_o
                     fix[:12],
                     finding.file,
                     _norm_stem(finding.file),
-                    move_search_note(repo, review.sha, fix),
+                    move_search_note(repo, review.sha, fix, finding.file),
                     "" if test_path else TEST_OPTION_HINT,
                 )
             )

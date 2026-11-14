@@ -147,7 +147,9 @@ def test_a_refusal_says_when_the_move_search_was_cut_short(tmp_path, monkeypatch
     repo, reviewed = _moved_world(tmp_path)
     fid = _record(repo, reviewed, "config.py", "the late record lands in a dropped group")
     for n in range(3):
-        _commit(repo, "noise %d" % n, **{"noise%d_dot_py" % n: "x = %d\n" % n})
+        _commit(
+            repo, "noise %d" % n, config_dot_py="def run():\n    return reconcile()\n# %d\n" % n
+        )
     fix = _commit(repo, "fix: elsewhere", other_dot_py="x = 1\n")
     with pytest.raises(ValueError, match=r"does not touch config\.py") as plain:
         R.mark(repo, BRANCH, fid, "fixed", [fix], ME)
@@ -156,6 +158,29 @@ def test_a_refusal_says_when_the_move_search_was_cut_short(tmp_path, monkeypatch
     with pytest.raises(ValueError, match=r"the move search read only the newest 2 of the") as cut:
         R.mark(repo, BRANCH, fid, "fixed", [fix], ME)
     assert "move search" in str(cut.value)
+
+
+def test_a_move_older_than_the_cap_is_found_past_commits_that_never_touch_the_file(
+    tmp_path, monkeypatch
+):
+    """bf0bded8.2: the move sat behind more unrelated commits than the search reads, so a fix in the file the code moved to was refused. Commits that never touch a source are skipped, so the cap counts only commits that could move code. CONTROL: an unrelated fix past the same noise is still refused, with no cut-short sentence (only one commit in the range touches config.py)."""
+    monkeypatch.setattr(R, "MOVE_MAX_COMMITS", 2)
+    repo, reviewed = _moved_world(tmp_path)
+    fid = _record(repo, reviewed, "config.py", "the late record lands in a dropped group")
+    for n in range(3):
+        _commit(repo, "noise %d" % n, **{"noise%d_dot_py" % n: "x = %d\n" % n})
+    other = _commit(repo, "fix: elsewhere", other_dot_py="x = 1\n")
+    with pytest.raises(ValueError, match=r"does not touch config\.py") as refused:
+        R.mark(repo, BRANCH, fid, "fixed", [other], ME)
+    assert "move search" not in str(refused.value)
+    fix = _commit(
+        repo, "fix: reconcile", config_reconcile_dot_py="def reconcile():\n%s# fixed\n" % BODY
+    )
+    R.mark(repo, BRANCH, fid, "fixed", [fix], ME)
+    assert (
+        "fixed %s" % fix
+        in R.read_review(R.review_path(repo, BRANCH, reviewed))[0].findings[0].resolution
+    )
 
 
 def test_a_two_line_overlap_is_no_move(tmp_path):
