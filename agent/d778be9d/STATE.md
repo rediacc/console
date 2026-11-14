@@ -1,22 +1,25 @@
-## SESSION d778be9d 2026-11-14T04:52:37Z
+## SESSION d778be9d 2026-11-14T12:07:11Z
 
-# STATE d778be9d (2026-11-14 ~04:50Z)
+# STATE d778be9d (2026-11-14, branch 1104-1, PR #605)
+
+## Where things stand
+- Pushed head 38ae9cb0 (account 8157be1d, renet b4405a48, elite e88ffe0; elite 1104-1 had never been pushed, which broke CI Initialize until 11:3xZ).
+- PR #605 run 43585926477 attempt 2 @ 38ae9cb0: 28 red jobs, cluster item #4889018a. Fixed locally since: Terms gate in e2e backends 6325a494; CI git identity d1a28260; External links d2b234e9; renet fsck image repos (renet ead4da4a, gitlink 43138541); e2e test 07 unescape e650e807 (cause inferred); e2e test 32 own network id bb2c45a4; clone guard c804bc45 + 21761c0f.
+- In flight: update-flow writer af4bff55dbd374d94 (install.sh custom releases URL, CLI default channel edge, fixture-request hardening); investigator a999a5c16dde2e28c (oracle-10 05/13/5-8, Browse-At exit 10, OPS Provision 4/6).
+- CI time budget freshness: #1e74ec30, refresh once healthy runs enter the sample (thin-sample rules 4c452250, ea5d87e8 landed).
 
 ## Next action
-1. Land the major-upgrade lease agent-a537aa63388e0aca9, submodules first: `git -C private/account cherry-pick -x 9901644 f399613`, `git -C private/renet cherry-pick -x 71d9d39b`, then console `git cherry-pick -x 4d1d968a5e 2b29f9a687 0d76234717`, then commit both gitlinks. Install npm 12.2.2 on the host (`npm install -g npm@12.2.2`), rerun `npm install && npm run install:natives`.
-2. Fix two pytest groups before ci:quick: (a) test_bash_semantics.py npm launch tables in .claude/rediacc_hooks are keyed to npm 11; update for 12.2.2; (b) 8 nfpm tests (test_build_ensure_nfpm.py, test_proxies_ensure_nfpm.py) already fail on HEAD before landing; likely the toolchain:nfpm bump in 08f98901 drifted the site from the pin.
-3. Then ci:quick alone (check:test-cli times out only under load), then vm:check --changed (renet base 26.10: rsync on OpenSSL 4 + jitterentropy; cover repo sync, backup push/pull, migrate, embed assets, distro matrix), then push 1104-1 (no operator override needed).
-
-## Done today
-- Edge publish eu/us/asia from the branch (deploys and smokes rc=0; after-records refused write-once, #73347598).
-- Bench proofs GREEN: signer --bench 28/0, region-loss --bench 14/0, via f8e1e5a4, 0dc0f341, 668a96ec, b0c6da9f, f7962a63, cff65af6 (control-bench-eu migrated), 0c280db0, e1d98fe8, 95a4308f; four orphaned container applications deleted; five old proof companies removed.
-- Date-rollover reds fixed (pins, CRIU 4.3.1, env registry, prose, plan sweep f074c592).
-- Operator ruling 2026-11-14: majors now (#418319bf).
+1. Land the update-flow writer and the investigator's findings (writers for any code fix), each spot-checked, tested on the landed tree, ticked, tree collected.
+2. Close every per-commit review finding of the landed commits, then run npm run ci:quick alone and npm run vm:check -- --changed (renet build.sh and fsck changed), then push submodules first and the console with TURBO_PUSH_REASON='red-fix: PR #605 CI cluster'.
+3. Watch the PR run with .ci/scripts/ci/ci-trace.py --wait; fix what remains.
 
 ## Big pieces
-- Major upgrades landing and validation (#418319bf).
-- PLAN-multi-region-bench W3-W6, M1-M4.
-- PLAN-hostinger-to-bench C-steps.
+PLAN-d1-eu-jurisdiction.md, PLAN-first-release-checks.md, PLAN-multi-region-bench.md, PLAN-enterprise-tenants.md, PLAN-deletion-budget.md, PLAN-d1-scaling.md, PLAN-hostinger-to-bench.md, PLAN-health-checks-local.md, PLAN-enterprise-isolation.md. This session's work today served d1-eu W1-W3 and enterprise-isolation V1; the PR's own CI comes first.
 
 ## Owed ticks
-- LP-bench 89d70106: receipt recorder refuses (account-smoke covers no surface the plan touches), #f16700aa.
+Live-owed boxes (code landed, live half owed), from worklist.py --box-audit d778be9d:
+- PLAN-enterprise-isolation.md #2878e08d #a8892e0c #0a6e5712 #e8b5ad6f #6041744e #f4b49503 #0fbd62dc #cc583290 #b343464b (bench live proofs; V2 #cdf29e6f needs a bench-us company, #b6ad6de2)
+- PLAN-health-checks-local.md #85f55665
+- PLAN-proxy-cd-six-targets.md #abe9b4eb
+- PLAN-production-key-only.md #6a1ca4a4
+- PLAN-backup-program.md #0a237b2e #575e0098 #07955f58
