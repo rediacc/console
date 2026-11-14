@@ -133,6 +133,8 @@ def _env(fixture: pathlib.Path, path: str | None = None) -> dict[str, str]:
         #
         # Five identical bytes of difference that belong to npm's release schedule, not to either implementation. It appeared the night npm 12 shipped (CI job 104641293034) and would otherwise recur at every future npm release, on whichever subject happened to run first.
         "npm_config_update_notifier": "false",
+        # The repo's `.npmrc` sets loglevel=warn and this fixture lives outside it. npm 12 logs every run as `npm notice run ...` on stderr where npm 11 printed a `> pkg@ver script` banner on stdout; with notices off the npm under test answers as the repo's own runs do.
+        "npm_config_loglevel": "warn",
         "LC_ALL": "C",
         "LANG": "C",
         "PYTHONPATH": str(fixture / ".ci"),
@@ -145,16 +147,21 @@ def run_both(
 ) -> tuple[subprocess.CompletedProcess[str], subprocess.CompletedProcess[str]]:
     env = _env(fixture, path)
     kwargs: diff.RunKwargs = {"env": env, "cwd": str(fixture), "capture_output": True, "text": True}
+    def port() -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            ["python3", "-m", PORT_MODULE, *args], timeout=300, check=False, **kwargs
+        )
+
     old = diff.twin_result(
         TWIN_REL,
         [repr(["bash", str(fixture / TWIN_REL), *args])],
         lambda: subprocess.run(
             ["bash", str(fixture / TWIN_REL), *args], timeout=300, check=False, **kwargs
         ),
+        port=port,
         work=(fixture.parent,),
     )
-    new = subprocess.run(["python3", "-m", PORT_MODULE, *args], timeout=300, check=False, **kwargs)
-    return old, new
+    return old, port()
 
 
 def assert_same(
