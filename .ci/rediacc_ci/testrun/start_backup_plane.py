@@ -197,10 +197,14 @@ def pin_root() -> str:
 def prune_pinned(now: float | None = None) -> None:
     """Remove the pinned directories of earlier runs that are more than PINNED_MAX_AGE_S old, in `pin_root()` and in the system temp directory where runs before 2026-11-13 left theirs (RAM-backed on some hosts, so they would otherwise stay until a reboot)."""
     cutoff = (time.time() if now is None else now) - PINNED_MAX_AGE_S
-    for root in dict.fromkeys((pin_root(), tempfile.gettempdir())):
+    primary = pin_root()
+    for root in dict.fromkeys((primary, tempfile.gettempdir())):
         try:
             names = os.listdir(root)
-        except OSError:
+        except OSError as exc:
+            # The run's own pin directory must be readable (an unreadable one raises, as it did before the legacy sweep existed); only the system temp directory, a best-effort sweep of old runs' leftovers, may be skipped.
+            if root == primary:
+                raise PlaneError(f"cannot list the pin directory {root}: {exc}") from exc
             continue
         for name in names:
             path = os.path.join(root, name)

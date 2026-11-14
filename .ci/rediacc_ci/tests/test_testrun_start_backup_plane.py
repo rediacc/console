@@ -459,6 +459,21 @@ def test_a_prune_also_clears_a_stale_pin_left_in_the_system_temp(
     assert other.exists()
 
 
+def test_prune_names_an_unreadable_pin_root_and_skips_an_unreadable_system_tmp(
+    tmp_path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Review 2c7b1a1f.2: the run's pin directory failing to list is a PlaneError; the system temp directory is the only skip."""
+    pins = tmp_path / "pins"
+    pins.mkdir()
+    gone = tmp_path / "gone"
+    monkeypatch.setattr(tempfile, "tempdir", str(gone))
+    monkeypatch.setattr(plane, "pin_root", lambda: str(pins))
+    plane.prune_pinned()
+    monkeypatch.setattr(plane, "pin_root", lambda: str(gone))
+    with pytest.raises(plane.PlaneError, match="cannot list the pin directory"):
+        plane.prune_pinned()
+
+
 def test_pin_needs_the_host_binary(tmp_path) -> None:
     (tmp_path / "renet-linux-amd64").write_text("r")
     with pytest.raises(plane.PlaneError, match="host `renet`"):
