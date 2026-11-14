@@ -328,7 +328,8 @@ async function runImportMachine(
 
   if (options.dryRun || plan.refusals > 0 || plan.changes === 0) {
     render(plan, meta, format);
-    if (plan.refusals > 0 && !options.dryRun) throw refusalError(plan);
+    // A dry run exits like the real run would, so a script can gate on the preview.
+    if (plan.refusals > 0) throw refusalError(plan);
     return;
   }
 

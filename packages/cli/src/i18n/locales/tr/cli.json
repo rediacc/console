@@ -1068,7 +1068,7 @@
       },
       "importMachine": {
         "descriptionShort": "Bir makineyi depolarıyla birlikte başka bir yapılandırmadan aktar",
-        "description": "Bir makineyi başka bir yapılandırmadan etkin yapılandırmaya kopyalar: etkin yapılandırmada yoksa makine kaydını, makinede bulunan her depoyu tüm etiketleriyle ve makineye bağlı her yedekleme stratejisini. Var olan hiçbir şeyin üzerine yazılmaz. Aynı olan kayıtlara dokunulmaz, farklı olanlar reddedilir (aynı adlı ama başka GUID'li bir depo, başka adresteki bir makine gibi). Tek bir ret bile olsa hiçbir şey yazılmaz. Rapor yalnızca adları gösterir; hiçbir kimlik bilgisini, anahtarı ya da GUID'i yazdırmaz.",
+        "description": "Bir makineyi başka bir yapılandırmadan etkin yapılandırmaya kopyalar: etkin yapılandırmada yoksa makine kaydını, makinede bulunan her depoyu tüm etiketleriyle ve makineye bağlı her yedekleme stratejisini. Var olan hiçbir şeyin üzerine yazılmaz; yalnızca --strategy-from-source ile farklı bir yedekleme stratejisi değiştirilir. Aynı olan kayıtlara dokunulmaz, farklı olanlar reddedilir (aynı adlı ama başka GUID'li bir depo, başka adresteki bir makine gibi). Tek bir ret bile olsa hiçbir şey yazılmaz. Rapor yalnızca adları gösterir; hiçbir kimlik bilgisini, anahtarı ya da GUID'i yazdırmaz.",
         "argMachine": "Kaynak yapılandırmadaki makine adı",
         "optionFrom": "Kopyalanacak kaynak yapılandırma",
         "optionDryRun": "Hiçbir şey yazmadan nelerin kopyalanacağını göster",

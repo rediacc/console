@@ -92,7 +92,7 @@ function locatorOptions(command: Command): Command {
     .option('--repo <name>', t('commands.server.optionRepo'));
 }
 
-/** The marker's `at` as `YYYY-MM-DD HH:MMZ` in UTC, whatever offset it carries; `?` when it is absent or not a date. */
+/** The marker's `at` as `YYYY-MM-DD HH:MMZ` in UTC, whatever offset it carries; `?` when it is absent, and the raw text when it is not a date. */
 function refusedAt(raw: string): string {
   const date = new Date(raw);
   if (!raw || Number.isNaN(date.getTime())) return raw || '?';

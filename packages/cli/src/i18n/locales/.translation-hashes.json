@@ -3,7 +3,7 @@
     "algorithm": "crc32",
     "sourceLanguage": "en",
     "keyCount": 2860,
-    "sourceCommit": "3cbf695ba106dee11b0998fd03ecd46b91519ed5"
+    "sourceCommit": "1e1e161e6448848c6c959ef1079fc895507a2032"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -579,7 +579,7 @@
     "commands.config.field.unset.optionPointer": "07c80cc7",
     "commands.config.field.unset.success": "f65e4cd3",
     "commands.config.importMachine.argMachine": "1a720d53",
-    "commands.config.importMachine.description": "52b69afd",
+    "commands.config.importMachine.description": "0e5e0d3c",
     "commands.config.importMachine.descriptionShort": "a6d9a3f1",
     "commands.config.importMachine.machineMissing": "305b7df4",
     "commands.config.importMachine.optionDryRun": "7d3e4bde",

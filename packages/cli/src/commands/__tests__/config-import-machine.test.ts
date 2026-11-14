@@ -14,6 +14,7 @@ import { Command } from 'commander';
 import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const configHome = mkdtempSync(join(tmpdir(), 'rdc-import-machine-'));
+const priorXdgConfigHome = process.env.XDG_CONFIG_HOME;
 process.env.XDG_CONFIG_HOME = configHome;
 delete process.env.REDIACC_CONFIG;
 
@@ -185,6 +186,8 @@ beforeEach(async () => {
 });
 
 afterAll(() => {
+  if (priorXdgConfigHome === undefined) delete process.env.XDG_CONFIG_HOME;
+  else process.env.XDG_CONFIG_HOME = priorXdgConfigHome;
   rmSync(configHome, { recursive: true, force: true });
 });
 
@@ -294,6 +297,48 @@ describe('config import-machine', () => {
     expect(sync.calls).toEqual([]);
   });
 
+  it('--dry-run exits 12 when the plan holds a refusal, and still writes nothing', async () => {
+    await seed(DST, {
+      repositories: {
+        ops: {
+          ...sourceResources().repositories!.ops,
+          tags: { latest: { repositoryGuid: GUID_OTHER } },
+        },
+      },
+    });
+    const before = raw(DST);
+    const err = await refusal(['hostinger', '--from', SRC, '--dry-run']);
+    expect(err.exitCode).toBe(12);
+    expect(err.details).toContain('tag ops:latest: guid-differs');
+    expect(report().refusals).toBe(1);
+    expect(raw(DST)).toBe(before);
+    expect(sync.calls).toEqual([]);
+  });
+
+  it('copies a family placed through a local datastore anchored on the machine, with the datastore', async () => {
+    const src = sourceResources();
+    await seed(SRC, {
+      ...src,
+      datastores: { pool: { backend: { kind: 'local', machine: 'hostinger', path: '/mnt/pool' } } },
+      repositories: {
+        ...src.repositories,
+        viaPool: {
+          placement: { datastore: 'pool' },
+          grand: 'latest',
+          tags: { latest: { repositoryGuid: GUID_OTHER, credential: 'cred-pool' } },
+        },
+      },
+    });
+    await run(['hostinger', '--from', SRC]);
+    const dst = await load(DST);
+    expect(dst.repositories?.viaPool?.placement).toEqual({ datastore: 'pool' });
+    expect(dst.datastores?.pool).toEqual({
+      backend: { kind: 'local', machine: 'hostinger', path: '/mnt/pool' },
+    });
+    expect(status('pool', 'datastore')).toBe('added');
+    expect(status('viaPool:latest')).toBe('added');
+  });
+
   it('never prints a credential, key or GUID value, in JSON or table output, on success or refusal', async () => {
     await run(['hostinger', '--from', SRC], 'json');
     await run(['hostinger', '--from', SRC], 'table');
@@ -306,7 +351,7 @@ describe('config import-machine', () => {
       },
     });
     const err = await refusal(['hostinger', '--from', SRC]);
-    await run(['hostinger', '--from', SRC, '--dry-run'], 'table');
+    await run(['hostinger', '--from', SRC, '--dry-run'], 'table').catch(() => undefined);
 
     const emitted = JSON.stringify([
       out.print.mock.calls,

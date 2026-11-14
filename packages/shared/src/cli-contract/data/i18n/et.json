@@ -571,7 +571,7 @@
   "commands.config.field.unset.optionPointer": "JSON-osuti väljale (nt /credentials/cfDnsApiToken)",
   "commands.config.field.unset.success": "Eemaldati {{pointer}}",
   "commands.config.importMachine.argMachine": "Masina nimi lähtekonfiguratsioonis",
-  "commands.config.importMachine.description": "Kopeerib ühe masina teisest konfiguratsioonist aktiivsesse: masina kirje, kui aktiivses konfiguratsioonis seda pole, iga sellel masinal asuva hoidla kõigi siltidega ja iga masinaga seotud varundusstrateegia. Olemasolevat ei kirjutata kunagi üle. Samasugused kirjed jäävad puutumata, erinevad lükatakse tagasi (sama nimega hoidla teise GUID-iga, masin teisel aadressil). Kui midagi lükatakse tagasi, ei kirjutata midagi. Aruanne näitab ainult nimesid ega trüki kunagi välja mandaate, võtmeid ega GUID-e.",
+  "commands.config.importMachine.description": "Kopeerib ühe masina teisest konfiguratsioonist aktiivsesse: masina kirje, kui aktiivses konfiguratsioonis seda pole, iga sellel masinal asuva hoidla kõigi siltidega ja iga masinaga seotud varundusstrateegia. Olemasolevat ei kirjutata kunagi üle, välja arvatud erinev varundusstrateegia võtmega --strategy-from-source. Samasugused kirjed jäävad puutumata, erinevad lükatakse tagasi (sama nimega hoidla teise GUID-iga, masin teisel aadressil). Kui midagi lükatakse tagasi, ei kirjutata midagi. Aruanne näitab ainult nimesid ega trüki kunagi välja mandaate, võtmeid ega GUID-e.",
   "commands.config.importMachine.descriptionShort": "Too masin koos hoidlatega teisest konfiguratsioonist üle",
   "commands.config.importMachine.machineMissing": "Masinat \"{{machine}}\" lähtekonfiguratsioonis ei ole.",
   "commands.config.importMachine.optionDryRun": "Näita, mida kopeeritaks, ilma midagi kirjutamata",

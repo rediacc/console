@@ -1068,7 +1068,7 @@
       },
       "importMachine": {
         "descriptionShort": "Too masin koos hoidlatega teisest konfiguratsioonist üle",
-        "description": "Kopeerib ühe masina teisest konfiguratsioonist aktiivsesse: masina kirje, kui aktiivses konfiguratsioonis seda pole, iga sellel masinal asuva hoidla kõigi siltidega ja iga masinaga seotud varundusstrateegia. Olemasolevat ei kirjutata kunagi üle. Samasugused kirjed jäävad puutumata, erinevad lükatakse tagasi (sama nimega hoidla teise GUID-iga, masin teisel aadressil). Kui midagi lükatakse tagasi, ei kirjutata midagi. Aruanne näitab ainult nimesid ega trüki kunagi välja mandaate, võtmeid ega GUID-e.",
+        "description": "Kopeerib ühe masina teisest konfiguratsioonist aktiivsesse: masina kirje, kui aktiivses konfiguratsioonis seda pole, iga sellel masinal asuva hoidla kõigi siltidega ja iga masinaga seotud varundusstrateegia. Olemasolevat ei kirjutata kunagi üle, välja arvatud erinev varundusstrateegia võtmega --strategy-from-source. Samasugused kirjed jäävad puutumata, erinevad lükatakse tagasi (sama nimega hoidla teise GUID-iga, masin teisel aadressil). Kui midagi lükatakse tagasi, ei kirjutata midagi. Aruanne näitab ainult nimesid ega trüki kunagi välja mandaate, võtmeid ega GUID-e.",
         "argMachine": "Masina nimi lähtekonfiguratsioonis",
         "optionFrom": "Konfiguratsioon, millest kopeerida",
         "optionDryRun": "Näita, mida kopeeritaks, ilma midagi kirjutamata",
