@@ -168,9 +168,26 @@ def account_refusals(
         "vars.%s is not one a company account config may carry" % key
         for key in sorted(
             set(variables)
-            - {"REGION", "ENVIRONMENT", "WEBAUTHN_RP_ID", "WEBAUTHN_ORIGIN", "ALLOW_IPS"}
+            - {
+                "REGION",
+                "ENVIRONMENT",
+                "WEBAUTHN_RP_ID",
+                "WEBAUTHN_ORIGIN",
+                "ALLOW_IPS",
+                "EMAIL_CAPTURE_D1",
+            }
         )
     )
+    # The capture store exists only when EMAIL_CAPTURE_D1 is on AND the Worker is bench (private/account/src/services/email-capture.service.ts), so a bench company carries both and no other company carries the switch.
+    capture = variables.get("EMAIL_CAPTURE_D1")
+    if variables.get("ENVIRONMENT") == "bench":
+        if capture != "true":
+            out.append(
+                "vars.EMAIL_CAPTURE_D1 is %r, not 'true': a bench company captures no mail"
+                % capture
+            )
+    elif capture is not None:
+        out.append("vars.EMAIL_CAPTURE_D1 is set outside a bench company; it stores live links")
     if "ALLOW_IPS" in variables:
         reason = pc.allow_ips_refusal(variables["ALLOW_IPS"])
         if reason:

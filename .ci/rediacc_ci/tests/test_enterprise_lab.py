@@ -705,18 +705,23 @@ def test_a_failed_d1_read_is_a_lab_error_not_an_empty_list():
 
 
 class Kv:
-    def __init__(self, store: dict[str, str], rc_missing: int = 0):
+    """A fake wrangler KV: `list --prefix` answers the JSON list, `get` the value; `get` on a missing key exits 1 with the 404 text wrangler 4.162 prints."""
+
+    def __init__(self, store: dict[str, str]):
         self.store = store
-        self.rc_missing = rc_missing
         self.argv: list[list[str]] = []
 
     def __call__(self, argv, cwd, env):
         del cwd, env
         self.argv.append(list(argv))
+        if "list" in argv:
+            prefix = argv[argv.index("--prefix") + 1]
+            names = [{"name": k} for k in self.store if k.startswith(prefix)]
+            return lab.Proc(0, json.dumps(names), "")
         key = argv[argv.index("get") + 1]
         if key in self.store:
             return lab.Proc(0, self.store[key] + "\n", "")
-        return lab.Proc(self.rc_missing, "Value not found\n", "")
+        return lab.Proc(1, "", "Failed to fetch /accounts/x/storage/kv: 404: Not Found")
 
 
 def _key_add(domain: str) -> str:
@@ -730,10 +735,28 @@ def test_lookup_hits_the_stored_host():
     assert "acme.example" not in " ".join(kv.argv[0]), "the domain never reaches argv"
 
 
-@pytest.mark.parametrize("rc", [0, 1])
-def test_lookup_misses_an_absent_key_whatever_wrangler_exits(rc):
-    """Control: a domain with no entry misses."""
-    assert lab.lookup("other.example", run=Kv({}, rc_missing=rc), pepper="pep") is None
+def test_lookup_misses_an_absent_key_from_the_empty_list():
+    """A domain with no entry misses through the empty key list, never reading the key (wrangler 4.162 exits 1 on a `get` of a missing key)."""
+    kv = Kv({})
+    assert lab.lookup("other.example", run=kv, pepper="pep") is None
+    assert ["list" in a for a in kv.argv] == [True]
+    assert "--prefix" in kv.argv[0]
+
+
+def test_lookup_list_fault_is_a_lab_error_not_a_miss():
+    def denied(_argv, _cwd, _env):
+        return lab.Proc(1, "", "Authentication error")
+
+    with pytest.raises(proof.LabError, match="kv key list exited 1: Authentication error"):
+        lab.lookup("other.example", run=denied, pepper="pep")
+
+
+def test_lookup_list_that_is_no_json_list_is_a_lab_error():
+    def odd(_argv, _cwd, _env):
+        return lab.Proc(0, "{}", "")
+
+    with pytest.raises(proof.LabError, match="no JSON list"):
+        lab.lookup("other.example", run=odd, pepper="pep")
 
 
 def test_lookup_answers_none_for_free_mail_without_a_read():
@@ -758,7 +781,7 @@ def test_lookup_failure_without_a_stated_cause_adds_nothing():
 
     with pytest.raises(proof.LabError) as err:
         lab.lookup("acme.example", run=broken, pepper="pep")
-    assert str(err.value) == "wrangler kv key get exited 1"
+    assert str(err.value) == "wrangler kv key list exited 1"
 
 
 def test_worker_versions_and_rollback_failures_name_wrangler_cause():
@@ -3503,11 +3526,24 @@ def test_a_us_bench_callers_probe_goes_to_the_us_bench_host_not_the_eu_one():
     assert lab.bench_origin("account-acme") == ""
 
 
-def test_bench_workers_cover_every_declared_bench_and_the_deployable_ones_only_on_request():
+def test_bench_workers_cover_every_declared_bench_and_the_deployable_ones_only_on_request(
+    tmp_path, monkeypatch
+):
+    """Hermetic: the committed regions.json marks every bench deployable once the last region lands, so a strict-subset check on it would go stale."""
+
+    def bench(r, deployable):
+        return {
+            "workerName": "account-bench-" + r,
+            "proxyWorkerName": "proxy-bench-" + r,
+            "deployable": deployable,
+        }
+
+    doc = {"regions": [{"bench": bench("eu", True)}, {"bench": bench("us", False)}, {}]}
+    (tmp_path / "regions.json").write_text(json.dumps(doc), encoding="utf-8")
+    monkeypatch.setattr(lab, "root", lambda: tmp_path)
     declared = lab.bench_workers()
-    assert {"account-bench", "proxy-bench", "account-bench-us", "proxy-bench-asia"} <= declared
-    assert lab.bench_workers(deployable_only=True) < declared
-    assert "account-bench" in lab.bench_workers(deployable_only=True)
+    assert declared == {"account-bench-eu", "proxy-bench-eu", "account-bench-us", "proxy-bench-us"}
+    assert lab.bench_workers(deployable_only=True) == {"account-bench-eu", "proxy-bench-eu"}
 
 
 def test_the_certificate_id_rides_the_answer_body():
@@ -3753,3 +3789,15 @@ def test_live_add_without_the_bws_project_passes_no_provisioner(monkeypatch):
 def test_live_add_with_an_empty_bws_project_passes_no_provisioner(monkeypatch):
     # Review e8770edd.1: an empty value is unset, never a project named "".
     assert _drive_live_add(monkeypatch, "")["provision"] is None
+
+
+def test_lookup_get_fault_after_a_listed_key_is_a_lab_error():
+    key = _key_add("acme.example")
+
+    def flaky(argv, _cwd, _env):
+        if "list" in argv:
+            return lab.Proc(0, json.dumps([{"name": key}]), "")
+        return lab.Proc(1, "", "Authentication error")
+
+    with pytest.raises(proof.LabError, match="kv key get exited 1: Authentication error"):
+        lab.lookup("acme.example", run=flaky, pepper="pep")

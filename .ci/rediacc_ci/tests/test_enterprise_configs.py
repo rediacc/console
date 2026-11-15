@@ -280,3 +280,34 @@ def test_shared_account_configs_still_bind_a_shared_tier_signer(name):
     signer = [s for s in cfg["services"] if s["binding"] == "LICENSE_SIGNER"]
     assert len(signer) == 1
     assert signer[0]["props"]["tier"] == "shared"
+
+
+def _bench_account(capture):
+    text = _gen(bench=True).account.replace('ENVIRONMENT = "stable"', 'ENVIRONMENT = "bench"')
+    if capture is not None:
+        text = text.replace(
+            'ENVIRONMENT = "bench"', 'ENVIRONMENT = "bench"\nEMAIL_CAPTURE_D1 = "%s"' % capture
+        )
+    return text
+
+
+def _refusals(text, bench):
+    return configs.account_refusals(
+        "acme", "eu", text, company_id=COMPANY_ID, bench=bench, root=ROOT
+    )
+
+
+def test_a_bench_company_account_config_needs_the_mail_capture_switch():
+    assert _refusals(_bench_account("true"), True) == []
+    missing = _refusals(_bench_account(None), True)
+    assert any("EMAIL_CAPTURE_D1" in r and "captures no mail" in r for r in missing)
+    assert any("EMAIL_CAPTURE_D1" in r for r in _refusals(_bench_account("false"), True))
+
+
+def test_a_non_bench_company_account_config_refuses_the_mail_capture_switch():
+    """Control: the stable config is clean, and the switch on it is refused."""
+    assert _refusals(_gen().account, False) == []
+    text = _gen().account.replace(
+        'ENVIRONMENT = "stable"', 'ENVIRONMENT = "stable"\nEMAIL_CAPTURE_D1 = "true"'
+    )
+    assert any("outside a bench company" in r for r in _refusals(text, False))

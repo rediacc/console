@@ -631,16 +631,15 @@ def edge_version(*, fetch: Fetch = http_get, base: pathlib.Path | None = None) -
 #
 # The `enterprise proof add` readers (agent/plans/PLAN-enterprise-isolation.md, box V3): the owner mail a bench company captured (box A1's group) and the www lookup entry (box V3's group). SEAMS binds both by name.
 #
-# `captured_mail(owner)` reads `captured_emails` (private/account/src/services/email-capture.service.ts), the bench-only copy of every outgoing mail, in each live bench company's own D1 `account-<name>`: `enterprise add --bench` writes `ENVIRONMENT = "bench"` into the company config, so the invitation box A1 sends lands there. It answers the subjects of the mails sent to `owner`, never a body, because a body carries the invitation token.
+# `captured_mail(owner)` reads `captured_emails` (private/account/src/services/email-capture.service.ts), the bench-only copy of every outgoing mail, in each live bench company's own D1 `account-<name>`: `enterprise add --bench` writes `ENVIRONMENT = "bench"` and `EMAIL_CAPTURE_D1 = "true"` (the capture store needs both) into the company config, so the invitation box A1 sends lands there. It answers the subjects of the mails sent to `owner`, never a body, because a body carries the invitation token.
 #
-# `lookup(domain)` reads the entry the lookup writer (`rediacc_ci.ops.enterprise_lookup.put`) stored: the KV key is the HMAC of the normalized domain under `ENTERPRISE_LOOKUP_PEPPER`, read with `wrangler kv key get --remote` from `workers/www`. It answers the host, or None for a miss, and None without a read for a malformed or free-mail domain, the same answers the www Worker gives (`workers/www/src/enterprise-lookup.ts`). The public route needs a Turnstile token the proof cannot solve, so the store the route reads is read instead.
+# `lookup(domain)` reads the entry the lookup writer (`rediacc_ci.ops.enterprise_lookup.put`) stored: the KV key is the HMAC of the normalized domain under `ENTERPRISE_LOOKUP_PEPPER`, looked up with `wrangler kv key list --prefix` and read with `wrangler kv key get --remote` from `workers/www`. It answers the host, or None for a miss, and None without a read for a malformed or free-mail domain, the same answers the www Worker gives (`workers/www/src/enterprise-lookup.ts`). The public route needs a Turnstile token the proof cannot solve, so the store the route reads is read instead.
 
 
 CAPTURED_SQL = "SELECT subject FROM captured_emails WHERE recipient = ? ORDER BY created_at"
 WWW_REL = ("workers", "www")
 # The directory a `deployments list` / `rollback` call starts in: `npx --no-install` finds only a `node_modules/.bin/wrangler` at or above its cwd, and the repository root (run_process's default) has none (finding e69747ea). `--name` selects the Worker, and `workers/account` holds no default wrangler config.
 WRANGLER_REL = ("workers", "account")
-NOT_FOUND = "value not found"
 
 
 def captured_mail(
@@ -682,16 +681,42 @@ def lookup(
     except enterprise_lookup.LookupRefusedError:
         return None
     key = enterprise_lookup.lookup_key(pepper if pepper is not None else _pepper(), d)
-    argv = [*wrangler.ARGV, "kv", "key", "get", key, "--namespace-id", namespace_id, "--remote"]
-    done = run(argv, root().joinpath(*WWW_REL), None)
-    text = done.stdout.strip()
-    if NOT_FOUND in (text + "\n" + done.stderr).lower():
+    cwd = root().joinpath(*WWW_REL)
+    # `kv key get` reports a missing key as an exit-1 "Failed to fetch ... 404" (wrangler 4.162), which a real fault also exits with, so absence is read from the key list: an empty list is a miss, a nonzero exit is a fault.
+    listed = run(
+        [
+            *wrangler.ARGV,
+            "kv",
+            "key",
+            "list",
+            "--namespace-id",
+            namespace_id,
+            "--remote",
+            "--prefix",
+            key,
+        ],
+        cwd,
+        None,
+    )
+    if listed.rc != 0:
+        raise proof.LabError(
+            "wrangler kv key list exited %d%s" % (listed.rc, _cause(listed, key, d, namespace_id))
+        )
+    try:
+        entries = json.loads(listed.stdout)
+    except ValueError:
+        raise proof.LabError("wrangler kv key list printed no JSON list") from None
+    if not isinstance(entries, list):
+        raise proof.LabError("wrangler kv key list printed no JSON list")
+    if not entries:
         return None
+    argv = [*wrangler.ARGV, "kv", "key", "get", key, "--namespace-id", namespace_id, "--remote"]
+    done = run(argv, cwd, None)
     if done.rc != 0:
         raise proof.LabError(
             "wrangler kv key get exited %d%s" % (done.rc, _cause(done, key, d, namespace_id))
         )
-    return text or None
+    return done.stdout.strip() or None
 
 
 # ==== box V4: routing, certificates and Turnstile (`proof routing`)

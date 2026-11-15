@@ -365,11 +365,13 @@ def test_live_configs_step_writes_both_files_and_bench_sets_the_environment(tmp_
     actions["configs"](_ctx(World(bench=True), d1, bench=True))
     account = (tmp_path / "workers/account/enterprise.acme.toml").read_text()
     assert 'ENVIRONMENT = "bench"' in account
+    assert account.count('EMAIL_CAPTURE_D1 = "true"') == 1
     assert (tmp_path / "workers/proxy/enterprise.acme.toml").exists()
     actions["configs"](_ctx(World(), d1))
     assert (
         'ENVIRONMENT = "stable"' in (tmp_path / "workers/account/enterprise.acme.toml").read_text()
     )
+    assert "EMAIL_CAPTURE_D1" not in (tmp_path / "workers/account/enterprise.acme.toml").read_text()
 
 
 def test_live_configs_step_refuses_without_a_d1_id(tmp_path):

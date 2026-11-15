@@ -780,7 +780,10 @@ def live_actions(
             raise OnboardingError(
                 "company %s: the account config has no single ENVIRONMENT line" % plan.company_id
             )
-        text = text.replace(line, 'ENVIRONMENT = "%s"' % plan.environment)
+        # A bench Worker captures mail only with ENVIRONMENT "bench" AND EMAIL_CAPTURE_D1 "true" (email-capture.service.ts).
+        text = text.replace(
+            line, 'ENVIRONMENT = "%s"\nEMAIL_CAPTURE_D1 = "true"' % plan.environment
+        )
         reasons = configs.account_refusals(
             plan.name,
             plan.region,
