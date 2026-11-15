@@ -39,7 +39,7 @@ The overrides (each level's bundle value in brackets for `high`):
 A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turbo.
 
 ```stop-hook
-effort: quiet
+effort: smart
 turbo: on
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
@@ -54,7 +54,7 @@ backup_push_h: 4 -- operator 2026-10-08: backup push valve, no PR
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--phase`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: effort quiet; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge off; cadence on; agent_hint off; agent_pushback off.
+- Mode: effort smart; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge core; cadence on; agent_hint on; agent_pushback on.
 - Phase: merge on PR #602 (branch 1023-1, session 45048a90, since 2026-11-03T09:46:12Z, past its 24-hour limit).
 - Branch: 1104-1, PR #605 open.
 - Plans on the PR (6):
@@ -82,20 +82,20 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 1057 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1063 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
-  - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 145 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
+  - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 147 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a0e60bc6d56b79279.
-- Leased items: 29: #000fcf57 (worker:a537aa63388e0aca9, d778be9d), #02389657 (worker:2854747, d778be9d), #0eecc43c (worker:a537aa63388e0aca9, d778be9d), #14adbaec (worker:a537aa63388e0aca9, d778be9d), #1f64af37 (worker:a537aa63388e0aca9, d778be9d), #22e2ca84 (worker:a537aa63388e0aca9, d778be9d), #2c00ac36 (worker:a537aa63388e0aca9, d778be9d), #2c4b1eec (worker:a537aa63388e0aca9, d778be9d), #418319bf (worker:a537aa63388e0aca9, d778be9d), #4889018a (worker:bo85rxf2q, d778be9d), #4be994ad (worker:a537aa63388e0aca9, d778be9d), #5ac354e6 (worker:a537aa63388e0aca9, d778be9d), and 17 more.
+- Writers: 0 live of writer_cap 25 (session d778be9d).
+- Leased items: 3: #4889018a (worker:b2lyon7ae, d778be9d), #9146d3f4 (worker:af06d689b47a56c60, d778be9d), #ab9c68b1 (worker:a537aa63388e0aca9, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 25 of 74 plans done, 1149 of 1381 boxes done (83%).
+Promoted: 25 of 75 plans done, 1149 of 1395 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -173,6 +173,7 @@ Promoted: 25 of 74 plans done, 1149 of 1381 boxes done (83%).
 | 72 | PLAN-d1-eu-jurisdiction.md | 3/22 | 19 open |
 | 73 | PLAN-hostinger-to-bench.md | 5/22 | 17 open |
 | 74 | PLAN-multi-region-bench.md | 7/22 | 15 open |
+| 75 | PLAN-root-api-token.md | 0/14 | 14 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
@@ -249,6 +250,7 @@ Promoted: 25 of 74 plans done, 1149 of 1381 boxes done (83%).
 72. agent/plans/PLAN-d1-eu-jurisdiction.md -- operator rulings 2026-11-13 ("Migrate now (Recommended)" ASKED:2026-11-13T07:11Z; "we should also have eu jurisdiction for all bench objects"; window "NOW"): the production eu account D1 reports jurisdiction None, so EU residency rests on a best-effort hint; bench rehearses first; epic #5eb69cff; P0
 73. agent/plans/PLAN-hostinger-to-bench.md -- operator ruling 2026-11-13 (move hostinger to bench on a path that needs no operator present): eu-remote stops agents at the operator authenticator on every IP change; hostinger re-homes to eu-bench with a reset guard, pinned allowlist entries and a credential escrow; rediacc-backups-eu deletion waits on C7; P0
 74. agent/plans/PLAN-multi-region-bench.md -- operator ruling ASKED:2026-11-13T13:55Z (always-on us and asia benches, us/asia objects copy production placement, all three hosts named bench-<region>.rediacc.cloud with the eu bench migrated off bench.rediacc.cloud): one bench per production region for region proofs and Cloudflare regional-incident rehearsal; cost $0.00 idle, $0.18 typical, $2.44 heavy per month
+75. agent/plans/PLAN-root-api-token.md -- operator ruling ASKED:2026-11-15T17:07Z ("Root API token (Recommended)": agents act as root on stable/edge through a root-scoped, IP-bound, expiring token with a TOTP session; no captcha bypass; one portal mint by the operator)
 
 ## Generated
 

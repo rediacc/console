@@ -460,7 +460,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 228 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 229 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -581,6 +581,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-rest-graphql-guard-parity.md` | compacted | 54 | 0 | 8 | 4010 |
 | `agent/plans/PLAN-resumable-rebase-executor.md` | compacted | 36 | 0 | 0 | 2212 |
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
+| `agent/plans/PLAN-root-api-token.md` | approved | 302 | 14 | 0 | 39851 |
 | `agent/plans/PLAN-runtime-caller-identity.md` | compacted | 39 | 0 | 0 | 2546 |
 | `agent/plans/PLAN-sandbox-tenant-separation.md` | approved | 123 | 1 | 7 | 25158 |
 | `agent/plans/PLAN-scope-bws-signing-key-to-consuming-step.md` | executing | 129 | 2 | 8 | 11346 |
@@ -693,7 +694,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 | `agent/plans/_removed/PLAN-uncommitted-work-exposure-check.md` | removed | 107 | 0 | 0 | 15888 |
 
-228 plan(s), 165 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+229 plan(s), 166 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
 
 ## Expired plans
 
