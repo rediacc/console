@@ -111,7 +111,13 @@ def test_one_failing_check_is_rc_1_and_names_its_artifact_in_the_report(
     assert "drifted 40%" in text, "the failing check's stderr reaches the report"
     assert "=== a/ok.json: PASS (rc 0) ===" in text, "the green artifact's section is kept"
     assert "1 of 2 artifact(s) FAILED (exit codes sum 1): b/stale.json (rc 1)" in text
-    assert "b/stale.json (rc 1)" in capsys.readouterr().err
+    err = capsys.readouterr().err
+    assert "b/stale.json (rc 1)" in err
+    # The verdict names the refresh command for the failed artifact only (the green one gets none).
+    assert (
+        "refresh: PYTHONPATH=.ci python3 -m rediacc_ci.ci.freshness --refresh b/stale.json" in err
+    )
+    assert "--refresh a/ok.json" not in err
 
 
 def test_exit_codes_are_summed_in_the_verdict_but_the_process_exits_1(

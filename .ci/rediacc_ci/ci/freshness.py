@@ -326,6 +326,11 @@ def check(
                 ", ".join("%s (rc %d)" % f for f in failed),
             )
         )
+        # The refresh takes one artifact and no --cadence; the verdict names the exact command so a reader does not guess its form.
+        verdict += "".join(
+            "  refresh: PYTHONPATH=.ci python3 -m rediacc_ci.ci.freshness --refresh %s\n" % artifact
+            for artifact, _rc in failed
+        )
         sys.stderr.write(verdict)
     else:
         verdict = (
