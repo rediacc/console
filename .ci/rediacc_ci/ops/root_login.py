@@ -28,6 +28,7 @@ from __future__ import annotations
 import http.client
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -71,11 +72,20 @@ Runner = Callable[[Sequence[str], Mapping[str, str]], int]
 
 
 class RootLoginError(RuntimeError):
-    """A refusal or a failed step; `rc` is the exit status. The message never carries a secret."""
+    """A refusal or a failed step; `rc` is the exit status. Our own text names no secret value; text quoted from the server is masked by `masked` before `main` prints it."""
 
     def __init__(self, message: str, rc: int = 1):
         super().__init__(message)
         self.rc = rc
+
+
+def masked(text: str, env: Mapping[str, str]) -> str:
+    """`text` with the password, the seed, both token entries and any `rdr_` token replaced by a `<NAME>` mark, so a server answer that echoes one never reaches a log."""
+    for name in (PW_ENV, SEED_ENV, VAULT_ENTRY, VAULT_ENTRY_NEW):
+        value = env.get(name) or ""
+        if value and value != PLACEHOLDER:
+            text = text.replace(value, "<%s>" % name)
+    return re.sub(r"%s[0-9A-Za-z]+" % re.escape(VALUE_PREFIX), "<root token>", text)
 
 
 def _bws_entry(name: str) -> str:
@@ -206,7 +216,7 @@ class Session:
             for header in resp.headers.get_all("Set-Cookie") or []:
                 name, _, rest = header.partition("=")
                 self.cookies[name.strip()] = rest.partition(";")[0]
-        except OSError as exc:
+        except (OSError, http.client.HTTPException) as exc:
             raise RootLoginError(
                 "POST %s%s reached no answer (%s)" % (API_PATH, route, type(exc).__name__)
             ) from None
@@ -274,17 +284,8 @@ def open_session(
     sleep = sleep or time.sleep
     status, answer = api.post("login", {"email": values[EMAIL_ENV], "password": values[PW_ENV]})
     if status != 200:
-        # The server's own code and message carry no secret and say why (a captcha requirement, a lockout, a refused password); guessing "password refused" for every non-200 hid that.
-        err = answer.get("error")
-        if isinstance(err, str):
-            code, message = "", err
-        else:
-            body = err if isinstance(err, dict) else answer
-            code, message = str(body.get("code") or ""), str(body.get("message") or "")
-        raise RootLoginError(
-            "POST /auth/login answered HTTP %d%s%s"
-            % (status, " %s" % code if code else "", ": %s" % message[:200] if message else "")
-        )
+        # The server's own code and message say why (a captcha requirement, a lockout, a refused password); guessing "password refused" for every non-200 hid that. They are untrusted text bound for a CI log, so `main` masks every secret value out of a refusal before it prints (`masked`).
+        raise RootLoginError("POST /auth/login answered %s" % _describe(status, answer, values))
     if answer.get("requiresTwoFactor"):
         challenge = answer.get("challengeToken")
         if not isinstance(challenge, str):
@@ -332,8 +333,10 @@ def _answer_error(answer: dict) -> tuple[str, str]:
     return str(body.get("code") or ""), str(message or "")
 
 
-def _describe(status: int, answer: dict) -> str:
+def _describe(status: int, answer: dict, env: Mapping[str, str] | None = None) -> str:
+    """`HTTP <status> [<code>][: <message>]` of an answer, the message masked of the secret values in `env` (default the process environment) before it is cut to 200 characters, so a value split by the cut does not leave its head behind."""
     code, message = _answer_error(answer)
+    message = masked(message, os.environ if env is None else env)
     return "HTTP %d%s%s" % (
         status,
         " %s" % code if code else "",
@@ -382,7 +385,7 @@ class AdminClient:
             conn.request(method, API_ROOT + route, payload, headers)
             resp = conn.getresponse()
             status, raw = resp.status, resp.read()
-        except OSError as exc:
+        except (OSError, http.client.HTTPException) as exc:
             raise RootLoginError(
                 "%s %s%s reached no answer (%s)"
                 % (method, API_ROOT, route.split("?", 1)[0], type(exc).__name__)
@@ -666,7 +669,7 @@ def main(
         if opts.rotate or auto:
             rotate(client, os.environ, capture)
     except RootLoginError as exc:
-        log.error(str(exc))
+        log.error(masked(str(exc), os.environ))
         return exc.rc
     return 0
 

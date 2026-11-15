@@ -36,12 +36,16 @@ class _Account:
         login_status: int = 200,
         login_error: object = None,
         cookie: bool = True,
+        login_payload: dict | None = None,
+        verify_statuses: tuple[int, ...] = (),
     ):
         self.accept = accept
         self.two_factor = two_factor
         self.login_status = login_status
         self.login_error = login_error
         self.cookie = cookie
+        self.login_payload = login_payload
+        self.verify_statuses = list(verify_statuses)
         self.bodies: list[tuple[str, dict]] = []
         outer = self
 
@@ -60,6 +64,8 @@ class _Account:
                         payload = {"requiresTwoFactor": True, "challengeToken": CHALLENGE}
                     elif status == 200:
                         cookie = outer.cookie
+                    elif outer.login_payload is not None:
+                        payload = outer.login_payload
                     elif outer.login_error is not None:
                         payload = {"error": outer.login_error}
                 elif route == "2fa/verify":
@@ -67,6 +73,8 @@ class _Account:
                         body.get("challengeToken") == CHALLENGE and body.get("code") in outer.accept
                     )
                     status, cookie = (200, True) if ok else (401, False)
+                    if outer.verify_statuses:
+                        status, cookie = outer.verify_statuses.pop(0), False
                 raw = json.dumps(payload).encode()
                 self.send_response(status)
                 self.send_header("Content-Type", "application/json")
@@ -714,3 +722,138 @@ def test_instant_reads_epoch_milliseconds_and_iso():
     assert root_login._instant("2026-11-15T17:00:00Z") == datetime(2026, 11, 15, 17, tzinfo=UTC)
     assert root_login._instant("not a time") is None
     assert root_login._instant(True) is None
+
+
+def test_a_rate_limit_or_fault_on_the_password_challenge_is_not_a_refused_code(account_factory):
+    """6ff21f1b.2: a 429 or 5xx on 2fa/verify is a fault to rerun later, never a refused code to retry from the next window."""
+    first = account_factory(set(), verify_statuses=(429,))
+    now, sleep, slept = _now_sleep()
+    with pytest.raises(root_login.RootLoginError, match="HTTP 429: a rate-limit or server fault"):
+        root_login.open_session(first.origin, _values(), now, sleep)
+    assert [r for r, _ in first.bodies].count("2fa/verify") == 1
+    assert slept == []
+    # the second window's answer is judged the same way
+    second = account_factory(set(), verify_statuses=(401, 503))
+    now, sleep, _ = _now_sleep()
+    with pytest.raises(root_login.RootLoginError, match="HTTP 503: a rate-limit or server fault"):
+        root_login.open_session(second.origin, _values(), now, sleep)
+    assert [r for r, _ in second.bodies].count("2fa/verify") == 2
+    # control: a plain refusal twice is still the stale-seed message, not a fault
+    plain = account_factory(set())
+    now, sleep, _ = _now_sleep()
+    with pytest.raises(root_login.RootLoginError, match="refused in two consecutive"):
+        root_login.open_session(plain.origin, _values(), now, sleep)
+
+
+@pytest.mark.parametrize(
+    ("payload", "quoted"),
+    [
+        (
+            {"code": "CAPTCHA_REQUIRED", "message": "solve it"},
+            "HTTP 400 CAPTCHA_REQUIRED: solve it",
+        ),
+        ({"error": 7, "message": "odd error field"}, "HTTP 400: odd error field"),
+        ({"error": None, "code": "LOCKED"}, "HTTP 400 LOCKED"),
+    ],
+)
+def test_a_login_refusal_without_an_error_object_reads_code_and_message_from_the_top(
+    account_factory, payload, quoted
+):
+    """b2978e7c.2: the fallback reads `code` and `message` from the answer body when `error` is absent or neither an object nor a string."""
+    account = account_factory(set(), login_status=400, login_payload=payload)
+    now, sleep, _ = _now_sleep()
+    with pytest.raises(root_login.RootLoginError) as caught:
+        root_login.open_session(account.origin, _values(), now, sleep)
+    assert quoted in str(caught.value)
+
+
+def test_a_server_message_that_echoes_a_secret_is_masked_before_it_is_printed(
+    account_factory, monkeypatch, capsys
+):
+    """b2978e7c.1: the server's message goes to a CI log, so the claim that it carries no secret is enforced by masking, not assumed."""
+    echoed = {
+        "error": {
+            "code": "BAD",
+            "message": "password %s and seed %s refused" % (PASSWORD, SEED),
+        }
+    }
+    account = account_factory(set(), login_status=401, login_payload=echoed)
+    monkeypatch.setattr(root_login, "origin_for", lambda *_: account.origin)
+    monkeypatch.setattr(root_login, "_reexec_under_profile", lambda *_: None)
+    for name, value in _values().items():
+        monkeypatch.setenv(name, value)
+    assert root_login.main(["--target", "edge", "--region", "eu", "--password"]) == 1
+    err = capsys.readouterr().err
+    assert "HTTP 401 BAD: password <ROOT_PASSWORD> and seed <ROOT_TOTP_SEED> refused" in err
+    assert PASSWORD not in err
+    assert SEED not in err
+    # control: a message with no secret in it is quoted whole
+    plain = account_factory(set(), login_status=401, login_error="bad password")
+    monkeypatch.setattr(root_login, "origin_for", lambda *_: plain.origin)
+    assert root_login.main(["--target", "edge", "--region", "eu", "--password"]) == 1
+    assert "HTTP 401: bad password" in capsys.readouterr().err
+
+
+def test_masked_hides_a_secret_the_200_character_cut_would_split_and_any_root_token():
+    env = {"ROOT_PASSWORD": "p" * 190 + "SECRETTAIL", "ROOT_API_TOKEN": "rdr_" + "ab" * 32}
+    described = root_login._describe(
+        401, {"error": {"code": "X", "message": "m" + env["ROOT_PASSWORD"]}}, env
+    )
+    assert "SECRET" not in described
+    assert "<ROOT_PASSWORD>" in described
+    assert root_login.masked("sent rdr_0123abcd and more", {}) == "sent <root token> and more"
+    placeholder = {"ROOT_PASSWORD": root_login.PLACEHOLDER}
+    assert root_login.masked(root_login.PLACEHOLDER, placeholder) == root_login.PLACEHOLDER
+
+
+class _Truncating:
+    """A server that promises a body and closes after one byte: http.client raises IncompleteRead, an HTTPException that is no OSError."""
+
+    def __init__(self):
+        class Handler(BaseHTTPRequestHandler):
+            def log_message(self, *args):
+                pass
+
+            def _truncate(self):
+                length = int(self.headers.get("Content-Length") or 0)
+                if length:
+                    self.rfile.read(length)
+                self.send_response(200)
+                self.send_header("Content-Length", "1000")
+                self.end_headers()
+                self.wfile.write(b"{")
+
+            def do_GET(self):
+                self._truncate()
+
+            def do_POST(self):
+                self._truncate()
+
+            def do_DELETE(self):
+                self._truncate()
+
+        self.server = HTTPServer(("127.0.0.1", 0), Handler)
+        self.origin = "http://127.0.0.1:%d" % self.server.server_port
+        threading.Thread(target=self.server.serve_forever, daemon=True).start()
+
+    def close(self) -> None:
+        self.server.shutdown()
+        self.server.server_close()
+
+
+def test_a_truncated_answer_is_a_named_refusal_not_a_traceback():
+    """91e01289.1: IncompleteRead is an HTTPException, not an OSError; it used to escape main as a traceback."""
+    server = _Truncating()
+    try:
+        now, sleep, _ = _now_sleep()
+        with pytest.raises(
+            root_login.RootLoginError, match=r"POST .*login reached no answer \(IncompleteRead\)"
+        ):
+            root_login.open_session(server.origin, _values(), now, sleep)
+        with pytest.raises(
+            root_login.RootLoginError,
+            match=r"GET .*admin/stats reached no answer \(IncompleteRead\)",
+        ):
+            root_login.AdminClient(server.origin, "rdr_" + "00" * 32).get("/admin/stats")
+    finally:
+        server.close()
