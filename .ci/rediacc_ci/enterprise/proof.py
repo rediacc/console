@@ -79,7 +79,7 @@ NOT_PROVEN_ON_BENCH: tuple[str, ...] = (
     "a D1 primary outage",
     "a failure of Cloudflare's control plane",
 )
-# What the bench form of `region-loss` cannot prove beyond NOT_PROVEN_ON_BENCH. Bench places companies in eu only (deploy.console_executor.company_target refuses --company-bench outside eu), so no company can sit in us beside the eu one, and signer-bench-us has no caller. The live box that proves this clause needs a second-region deploy target, which bench does not have.
+# What the one-region bench form of `region-loss` cannot prove beyond NOT_PROVEN_ON_BENCH. While only one bench region is deployable (regions.json `bench.deployable`; `lab.bench_company_regions()` names one), no company can sit in a second region beside the eu one, and signer-bench-us has no caller. Once two bench regions are deployable the two-region form (`_region_loss_bench_placed`) places a company in each and these gaps do not apply.
 BENCH_REGION_LOSS_GAPS: tuple[str, ...] = (
     (
         "cross-region placement: a company placed in a second region (its Workers, D1 and buckets "
@@ -171,6 +171,7 @@ class Lab(Protocol):
     # Workers, secrets and signers.
     def account_workers(self, *, bench: bool) -> list[str]: ...
     def signers(self, *, bench: bool) -> list[str]: ...
+    def bench_company_regions(self) -> list[str]: ...
     def secret_names(self, worker: str) -> list[str]: ...
     def callers(self, *, bench: bool) -> list[str]: ...
     def unscoped_callers(self, *, bench: bool) -> list[str]: ...
@@ -580,11 +581,66 @@ def _region_loss_bench(lab: Lab, p: Proof) -> None:
         _restore_uncalled_region(lab, p, other)
 
 
+def _region_loss_bench_placed(lab: Lab, p: Proof, regions: Sequence[str]) -> None:
+    """The two-region bench form of V2: a company is placed in each deployable bench region (eu and us, then asia), and each region's signer is cut in turn while the companies of the other regions keep issuing and renewing.
+
+    1. Every region's company signs through its own region's bench signer (else a cut proves nothing about it), and renews before any cut.
+    2. For each region R in order: signer-bench-R is cut; every other region's company issues and renews at once; R's company gets the named error (settled) and keeps its current licence; R is restored (settled renewal, started again once if needed). The restore sits in a `finally`, so a cut that raises still puts its signer back.
+
+    Nothing is cut while any region's bench signer is refused a stop (`_may_stop`: bench carries production data), which checks every signer before the first cut."""
+    signers = {r: f"signer-bench-{r}" for r in regions}
+    if not _may_stop(lab, p, *signers.values()):
+        return
+    callers: dict[str, str] = {}
+    for region in regions:
+        caller = lab.caller_of(lab.ensure_company(f"proof-loss-{region}", region))
+        bound = lab.signer_of(caller)
+        if not p.check(
+            f"{region} company signs through {signers[region]}",
+            ok=bound == signers[region],
+            detail=f"bound to {bound!r}",
+        ):
+            return
+        callers[region] = caller
+    for region, caller in callers.items():
+        p.admitted(f"{region} company renews before the cut", lab.renew(caller))
+    for cut in regions:
+        survivors = [r for r in regions if r != cut]
+        # The cut sits inside a try whose finally restores it, so a non-LAB error from `cut_region` itself still puts the signer back.
+        try:
+            if not p.attempt(f"{cut} signer is cut", functools.partial(lab.cut_region, cut)):
+                return
+            for region in survivors:
+                p.admitted(
+                    f"{region} company issues with {cut} cut",
+                    lab.issue(callers[region], "licence"),
+                )
+                p.admitted(f"{region} company renews with {cut} cut", lab.renew(callers[region]))
+            p.refused(
+                f"{cut} company gets the named error",
+                settle(functools.partial(lab.renew, callers[cut]), _names_unavailable),
+                naming=SIGNER_UNAVAILABLE,
+                waited=SETTLE_S,
+            )
+            p.check(
+                f"{cut} company's current licence works with {cut} cut",
+                ok=lab.current_licence_works(callers[cut]),
+                detail="current licence refused",
+            )
+        finally:
+            _restore(lab, p, signers[cut], callers[cut], region=cut)
+
+
 def verb_region_loss(lab: Lab, p: Proof, *, bench: bool) -> None:
     """V2: with eu's bench signer cut (its control database stays, see deploy_signer), the us company issues and renews, the eu company gets the named error (settled) and keeps its licence, and restoring eu renews it again.
 
-    On bench (`bench=True`) this runs `_region_loss_bench`, because bench places companies in eu only and refuses to create the us company the form below needs; the form below stays for a target that can place a company in us (its cut still stops the bench eu signer, the only cut `deploy_signer.cut_region` makes)."""
+    On bench (`bench=True`) the form depends on how many bench regions can hold a company (`lab.bench_company_regions()`): two or more run `_region_loss_bench_placed`, a company in each region and a cut of each in turn, so the cross-region placement clause is proven and no gap is noted; one runs `_region_loss_bench`, the eu company proven at the signer in both directions, with the cross-region gap noted. The form below stays for a target that can place a company in us (its cut still stops the bench eu signer)."""
     if bench:
+        regions = lab.bench_company_regions()
+        if len(regions) >= 2:
+            _region_loss_bench_placed(lab, p, regions)
+            p.notes.extend(f"not proven on bench: {n}" for n in NOT_PROVEN_ON_BENCH)
+            return
         _region_loss_bench(lab, p)
         p.notes.extend(f"not proven on bench: {n}" for n in NOT_PROVEN_ON_BENCH)
         p.notes.extend(f"not proven on bench: {n}" for n in BENCH_REGION_LOSS_GAPS)

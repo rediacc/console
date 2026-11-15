@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import json
 import sqlite3
 
 import pytest
 
+from rediacc_ci import paths
 from rediacc_ci.enterprise import registry
 
 NOW = "2026-11-08T00:00:00Z"
@@ -70,7 +72,11 @@ def test_schema_refuses_a_non_opaque_company_id():
 def test_databases_per_region_and_bench():
     assert registry.databases()["eu"] == "control-eu"
     assert set(registry.databases()) >= {"eu", "us", "asia"}
-    assert registry.databases(bench=True) == {"eu": "control-bench-eu", "us": "control-bench-us"}
+    # Bench: one control database per deployable bench region of regions.json (the us and asia benches join once marked deployable).
+    doc = json.loads((paths.repo_root() / "regions.json").read_text())
+    deployable = [r["id"] for r in doc["regions"] if (r.get("bench") or {}).get("deployable")]
+    assert deployable
+    assert registry.databases(bench=True) == {r: "control-bench-%s" % r for r in deployable}
 
 
 def test_reads_all_regions():

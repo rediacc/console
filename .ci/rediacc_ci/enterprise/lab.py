@@ -48,7 +48,7 @@ from rediacc_ci.housekeeping import cf_leftovers
 from rediacc_ci.ops import bench_access, cf_usage_report, enterprise_lookup, login_bench, totp
 from rediacc_ci.ops import observability_volume as ov
 from rediacc_ci.release import local
-from rediacc_ci.well_known import BENCH_ORIGIN, CF_API_BASE, PRODUCT_DOMAIN
+from rediacc_ci.well_known import CF_API_BASE, PRODUCT_DOMAIN
 
 if TYPE_CHECKING:
     import types
@@ -90,7 +90,7 @@ SEAMS: dict[str, Seam] = {
 
 _GROUPS: dict[str, tuple[str, ...]] = {
     "S2": (
-        "account_workers", "signers", "secret_names", "callers", "unscoped_callers", "gone_callers",
+        "account_workers", "signers", "bench_company_regions", "secret_names", "callers", "unscoped_callers", "gone_callers",
         "signer_of",
         "expected_props", "certificate_audited",
         "stop_refusal", "stop_signer", "start_signer", "cut_region", "restore_region",
@@ -708,7 +708,28 @@ def lookup(
 WORKERS_REL = "workers"
 # The proxy template renders a company config; its tokens are not TOML until rendered.
 TEMPLATE = "wrangler.template.toml"
-BENCH_WORKERS = ("account-bench", "proxy-bench")
+
+
+def bench_objects(*, deployable_only: bool = False) -> list[dict]:
+    """The regions.json `bench` object of every region that has one (only the deployable benches with `deployable_only`): the benches whose Workers and hosts exist."""
+    doc = json.loads((root() / "regions.json").read_text(encoding="utf-8"))
+    return [
+        r["bench"]
+        for r in doc["regions"]
+        if isinstance(r.get("bench"), dict)
+        and (r["bench"].get("deployable") or not deployable_only)
+    ]
+
+
+def bench_workers(*, deployable_only: bool = False) -> set[str]:
+    """The shared bench Workers, `account-bench[-<r>]` and `proxy-bench[-<r>]`, of the declared (or deployable) benches."""
+    return {
+        str(b[k])
+        for b in bench_objects(deployable_only=deployable_only)
+        for k in ("workerName", "proxyWorkerName")
+    }
+
+
 TURNSTILE_WIDGET = "rediacc-console"
 CRT_SH = "https://crt.sh/?q=%s&output=json"
 TLS_TIMEOUT_S = 30
@@ -838,9 +859,9 @@ def expected_worker(
     return worker
 
 
-def _shared_workers(bench: bool) -> set[str]:
+def _shared_workers(bench: bool, *, deployable_only: bool = True) -> set[str]:
     if bench:
-        return set(BENCH_WORKERS)
+        return bench_workers(deployable_only=deployable_only)
     doc = json.loads((root() / "regions.json").read_text(encoding="utf-8"))
     return {str(r[k]) for r in doc["regions"] for k in ("workerName", "proxyWorkerName")}
 
@@ -853,7 +874,7 @@ def region_hosts(
 
 
 def specific_hosts(*, declared: Callable[[], dict[str, str]] = declared_hosts) -> list[str]:
-    shared = _shared_workers(True) | _shared_workers(False)
+    shared = _shared_workers(True, deployable_only=False) | _shared_workers(False)
     return sorted(
         h
         for h, w in declared().items()
@@ -1654,7 +1675,7 @@ def e2e_envelope(
 #
 # A signer Worker has no route, so the proof asks a caller to ask it: `POST /account/api/v1/subscriptions/signer-probe` on the caller's own host (private/account/src/services/signer-probe.service.ts) makes one canned request through that Worker's `LICENSE_SIGNER` binding and answers `{ok, body, props}` or `{ok: false, error: <code>}`. The route answers on bench alone (404 elsewhere, before any key is read) and under the answering Worker's own `ACCOUNT_SERVER_API_KEY`.
 #
-# TWO KINDS OF CALLER. `account-bench` answers on `BENCH_ORIGIN` under the shared key, which the `enterprise` profile (`PROFILE`) binds alongside the Cloudflare pair. A bench company's `account-<name>` answers on its own account host (`names.hosts`) under the company's own key, read from the enterprise bws project (`store_api_key`); every bench company Worker carries `ENVIRONMENT = "bench"` and binds `LICENSE_SIGNER` through workers/account/enterprise.template.toml. Any other caller is a `LabError` before a request is sent. A company Worker builds its requests on its own subscription, so of the scope cases it is asked only `proof.COMPANY_SCOPE_CODES`.
+# TWO KINDS OF CALLER. A bench region's account Worker (`account-bench`, `account-bench-<r>`) answers on that region's bench host (regions.json `bench.host`) under the shared key, which the `enterprise` profile (`PROFILE`) binds alongside the Cloudflare pair. A bench company's `account-<name>` answers on its own account host (`names.hosts`) under the company's own key, read from the enterprise bws project (`store_api_key`); every bench company Worker carries `ENVIRONMENT = "bench"` and binds `LICENSE_SIGNER` through workers/account/enterprise.template.toml. Any other caller is a `LabError` before a request is sent. A company Worker builds its requests on its own subscription, so of the scope cases it is asked only `proof.COMPANY_SCOPE_CODES`.
 #
 # RENEWAL. `renew(caller)` sends the licence last issued to the caller in this run back as the `renew` kind, and the account server signs its successor (next sequence, chained to the presented payload) through the same binding; an admitted renewal becomes the caller's current licence. A caller with no licence yet is issued one first, and a refused issue is the renewal's answer.
 #
@@ -1663,7 +1684,7 @@ def e2e_envelope(
 # A REFUSAL IS A SIGNER CODE OR NOTHING. A 200 with `ok: false` is a refusal and carries the code (`SIGNER_*`, or `LICENCE_*` for `verify`); any other status, or a body without a verdict, is a `LabError`, so a probe that is down, unauthorised or unmounted never passes a refusal claim. An admitted `licence` was checked by the account server against its public key (payload, key id and Ed25519 signature) before it answered, and is kept per caller for `current_licence_works`, which sends it back as the `verify` kind: no signer is asked, so it answers while the signer is stopped.
 
 SIGNER_PROBE_PATH = "/account/api/v1/subscriptions/signer-probe"
-BENCH_CALLER = "account-bench"
+BENCH_CALLER = "account-bench"  # the home bench's account Worker; the other regions' are `account-bench-<r>` (`bench_origin`)
 SERVER_API_KEY_ENV = "ACCOUNT_SERVER_API_KEY"
 # The kinds `issue` asks for; the route's own list is private/account/src/services/signer-probe.service.ts SIGNER_PROBE_KINDS.
 ISSUE_KINDS: tuple[str, ...] = ("licence", "certificate", *proof.SCOPE_CASES)
@@ -1677,6 +1698,14 @@ def reset_licences(licences: dict[str, dict[str, str]] = _LICENCES) -> None:
     licences.clear()
 
 
+def bench_origin(caller: str) -> str:
+    """`https://<host>` of the bench region whose account Worker is `caller`, or "" when it is none's."""
+    for b in bench_objects():
+        if b["workerName"] == caller:
+            return "https://%s" % b["host"]
+    return ""
+
+
 def _probe_target(
     caller: str,
     *,
@@ -1684,14 +1713,15 @@ def _probe_target(
     api_key: ApiKey,
     env: Mapping[str, str] | None,
 ) -> tuple[str, str]:
-    """(origin, API key) of the caller's probe route: account-bench under the shared key, a live bench company's account Worker under the company's own."""
-    if caller == BENCH_CALLER:
+    """(origin, API key) of the caller's probe route: a bench region's account Worker (`account-bench`, `account-bench-us`, ...) at its own host under the shared key, a live bench company's account Worker under the company's own."""
+    shared_host = bench_origin(caller)
+    if shared_host:
         key = (os.environ if env is None else env).get(SERVER_API_KEY_ENV, "")
         if not key:
             raise proof.LabError(
                 "%s is not set (bws_env exec --profile %s)" % (SERVER_API_KEY_ENV, PROFILE)
             )
-        return BENCH_ORIGIN, key
+        return shared_host, key
     name = caller.removeprefix("account-")
     row = next(
         (
@@ -1703,8 +1733,8 @@ def _probe_target(
     )
     if row is None:
         raise proof.LabError(
-            "%s: no signer probe to ask (neither %s nor a live bench company's account Worker)"
-            % (caller, BENCH_CALLER)
+            "%s: no signer probe to ask (neither a bench account Worker, %s, nor a live bench company's account Worker)"
+            % (caller, ", ".join(sorted(b["workerName"] for b in bench_objects())))
         )
     return "https://%s" % names.hosts(name, PRODUCT_DOMAIN)[0], api_key(str(row["id"]))
 

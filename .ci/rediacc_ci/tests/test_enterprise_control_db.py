@@ -12,6 +12,12 @@ from rediacc_ci.core import wrangler
 from rediacc_ci.enterprise import control_db, registry
 
 
+@pytest.fixture(autouse=True)
+def _two_deployable_benches(monkeypatch):
+    """These tests place bench companies in eu and us; the real regions.json marks the us bench not deployable until box L1 of PLAN-multi-region-bench.md, so its control database is not in the registry yet."""
+    monkeypatch.setattr(registry, "bench_region_ids", lambda: ["eu", "us"])
+
+
 class FakeWrangler:
     """`wrangler d1 list|create|execute` over in-memory sqlite. Records every argv and cwd."""
 
@@ -102,29 +108,72 @@ def test_create_argv_prefers_the_jurisdiction_over_the_location_hint():
 
 def _jurisdictional_root(tmp_path: pathlib.Path) -> pathlib.Path:
     rows = [
-        {"id": "eu", "d1": {"name": "account-eu-j", "location": "eeur", "jurisdiction": "eu"}},
-        {"id": "us", "d1": {"name": "account-us", "location": "enam", "jurisdiction": None}},
+        {
+            "id": "eu",
+            "default": True,
+            "d1": {"name": "account-eu-j", "location": "eeur", "jurisdiction": "eu"},
+            "bench": {},
+        },
+        {
+            "id": "us",
+            "d1": {"name": "account-us", "location": "enam", "jurisdiction": None},
+            "bench": {},
+        },
+        {"id": "asia", "d1": {"name": "account-asia", "location": "apac", "jurisdiction": None}},
     ]
     (tmp_path / "regions.json").write_text(json.dumps({"regions": rows}), encoding="utf-8")
-    bench = tmp_path.joinpath(*control_db.bench_preflight.BENCH_CONFIG_REL)
-    bench.parent.mkdir(parents=True)
-    bench.write_text(
+    home = tmp_path.joinpath(*control_db.bench_preflight.BENCH_CONFIG_REL)
+    home.parent.mkdir(parents=True)
+    home.write_text(
         '[[d1_databases]]\nbinding = "DB"\ndatabase_name = "account-bench-j"\n'
         '[[r2_buckets]]\nbinding = "CONFIG_BUCKET"\nbucket_name = "configs-bench"\n'
         'jurisdiction = "eu"\n',
         encoding="utf-8",
     )
+    # The us bench keeps its production placement: a location hint, no jurisdiction.
+    (home.parent / "wrangler.bench-us.toml").write_text(
+        '[[d1_databases]]\nbinding = "DB"\ndatabase_name = "account-bench-us"\n'
+        '[[r2_buckets]]\nbinding = "CONFIG_BUCKET"\nbucket_name = "configs-bench-us"\n',
+        encoding="utf-8",
+    )
     return tmp_path
 
 
-def test_jurisdiction_comes_from_the_region_row_and_the_bench_toml(tmp_path):
+def test_jurisdiction_comes_from_the_region_row_and_the_regions_own_bench_toml(tmp_path):
     root = _jurisdictional_root(tmp_path)
     assert control_db.jurisdiction("eu", root=root) == "eu"
     assert control_db.jurisdiction("us", root=root) == ""
-    # Bench has no row: the bench toml's jurisdiction applies to both bench control databases.
-    assert control_db.jurisdiction("us", bench=True, root=root) == "eu"
+    # Each bench takes the jurisdiction its own region's bench toml declares: eu's is eu, us's has none.
+    assert control_db.jurisdiction("eu", bench=True, root=root) == "eu"
+    assert control_db.jurisdiction("us", bench=True, root=root) == ""
     with pytest.raises(control_db.ControlDbError, match="no region"):
         control_db.jurisdiction("mars", root=root)
+    with pytest.raises(control_db.ControlDbError, match="no bench object"):
+        control_db.jurisdiction("asia", bench=True, root=root)
+
+
+def test_bench_config_path_is_the_home_toml_or_the_regions_own(tmp_path):
+    root = _jurisdictional_root(tmp_path)
+    assert control_db.bench_config_path("eu", root).name == "wrangler.bench.toml"
+    assert control_db.bench_config_path("us", root).name == "wrangler.bench-us.toml"
+
+
+def test_registry_bench_regions_are_the_deployable_benches_of_regions_json(tmp_path, monkeypatch):
+    def write(us_deployable: bool) -> None:
+        rows = [
+            {"id": "eu", "bench": {"deployable": True}},
+            {"id": "us", "bench": {"deployable": us_deployable}},
+            {"id": "asia"},
+        ]
+        (tmp_path / "regions.json").write_text(json.dumps({"regions": rows}), encoding="utf-8")
+
+    write(False)
+    monkeypatch.undo()
+    monkeypatch.setattr(registry.paths, "repo_root", lambda: tmp_path)
+    assert registry.bench_region_ids() == ["eu"]
+    assert registry.databases(True) == {"eu": "control-bench-eu"}
+    write(True)
+    assert registry.databases(True) == {"eu": "control-bench-eu", "us": "control-bench-us"}
 
 
 def test_the_real_tree_creates_under_a_location_hint_until_the_repoint():
@@ -141,15 +190,20 @@ def test_a_jurisdictional_region_creates_its_control_database_with_the_jurisdict
     control_db.ensure_database("control-eu", "eu", runner=fake)
     assert [*wrangler.ARGV, "d1", "create", "control-eu", "--jurisdiction", "eu"] in fake.calls
     bench = FakeWrangler()
-    control_db.ensure_database("control-bench-us", "us", runner=bench, bench=True)
+    control_db.ensure_database("control-bench-eu", "eu", runner=bench, bench=True)
     assert [
         *wrangler.ARGV,
         "d1",
         "create",
-        "control-bench-us",
+        "control-bench-eu",
         "--jurisdiction",
         "eu",
     ] in bench.calls
+    # Per region (PLAN-multi-region-bench Q1): the us bench copies production placement, a location hint and no jurisdiction.
+    us = FakeWrangler()
+    control_db.ensure_database("control-bench-us", "us", runner=us, bench=True)
+    assert [*wrangler.ARGV, "d1", "create", "control-bench-us", "--location", "enam"] in us.calls
+    assert not any("--jurisdiction" in c for c in us.calls)
 
 
 def test_ensure_creates_migrates_and_reports_for_bench_eu():

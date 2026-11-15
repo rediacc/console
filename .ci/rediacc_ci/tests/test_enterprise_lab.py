@@ -32,6 +32,12 @@ REAL_RUN = subprocess.run
 
 
 @pytest.fixture(autouse=True)
+def _two_deployable_benches(monkeypatch):
+    """These tests place bench companies in eu and us; the real regions.json marks the us bench not deployable until box L1 of PLAN-multi-region-bench.md, so its control database is not in the registry yet."""
+    monkeypatch.setattr(registry, "bench_region_ids", lambda: ["eu", "us"])
+
+
+@pytest.fixture(autouse=True)
 def no_network(monkeypatch):
     """No test in this file reaches a child process, an HTTPS request or a TLS socket (a loopback connection, the stub server's, is the one allowed): the live readers take fakes."""
 
@@ -937,7 +943,7 @@ def test_the_tracked_tree_reads(tmp_path):
     hosts = lab.declared_hosts()
     assert hosts["bench.%s" % D_ROUTING] == "account-bench"
     assert lab.region_hosts(bench=True) == sorted(
-        h for h, w in hosts.items() if w in lab.BENCH_WORKERS
+        h for h, w in hosts.items() if w in lab.bench_workers(deployable_only=True)
     )
 
 
@@ -3484,6 +3490,24 @@ def test_an_admitted_licence_without_its_signed_parts_is_a_lab_error():
     probe, _ = _probe({"licence": (200, {"ok": True, "body": {"payload": "x"}})})
     with pytest.raises(proof.LabError, match="no signed parts"):
         lab.issue("account-bench", "licence", probe=probe, licences={})
+
+
+def test_a_us_bench_callers_probe_goes_to_the_us_bench_host_not_the_eu_one():
+    """Per-region bench (PLAN-multi-region-bench W4): `account-bench-us` is asked on its own host, and every bench region's account Worker has one."""
+    probe, call = _probe({"whoami": (200, {"ok": True, "body": {}, "props": SHARED_PROPS})})
+    lab.signer_props("account-bench-us", probe=probe)
+    assert call.requests[0][1] == "https://bench-us." + PRODUCT_DOMAIN + lab.SIGNER_PROBE_PATH
+    assert lab.bench_origin("account-bench") == BENCH_ORIGIN
+    assert lab.bench_origin("account-bench-asia") == "https://bench-asia." + PRODUCT_DOMAIN
+    # control: a company Worker is no bench region's account Worker
+    assert lab.bench_origin("account-acme") == ""
+
+
+def test_bench_workers_cover_every_declared_bench_and_the_deployable_ones_only_on_request():
+    declared = lab.bench_workers()
+    assert {"account-bench", "proxy-bench", "account-bench-us", "proxy-bench-asia"} <= declared
+    assert lab.bench_workers(deployable_only=True) < declared
+    assert "account-bench" in lab.bench_workers(deployable_only=True)
 
 
 def test_the_certificate_id_rides_the_answer_body():

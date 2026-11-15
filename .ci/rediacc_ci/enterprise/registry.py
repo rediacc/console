@@ -18,7 +18,6 @@ from rediacc_ci import paths
 Query = Callable[[str, str, list], list[dict]]
 
 MIGRATION_REL = "private/account/control/migrations/0001_control.sql"
-BENCH_REGIONS = ("eu", "us")
 
 
 class RegistryUnreachableError(RuntimeError):
@@ -42,10 +41,20 @@ def region_ids() -> list[str]:
     return [str(r["id"]) for r in data["regions"]]
 
 
+def bench_region_ids() -> list[str]:
+    """The regions whose bench is deployable (regions.json `bench.deployable`): a bench whose objects do not exist has no control database to read or create, so a company cannot be placed there yet."""
+    data = json.loads((paths.repo_root() / "regions.json").read_text())
+    return [
+        str(r["id"])
+        for r in data["regions"]
+        if isinstance(r.get("bench"), dict) and r["bench"].get("deployable")
+    ]
+
+
 def databases(bench: bool = False) -> dict[str, str]:
-    """Region id -> control database name. Bench has two signers, so two databases."""
+    """Region id -> control database name. Bench has one control database per deployable bench region."""
     if bench:
-        return {r: control_database(r, True) for r in BENCH_REGIONS}
+        return {r: control_database(r, True) for r in bench_region_ids()}
     return {r: control_database(r) for r in region_ids()}
 
 

@@ -27,6 +27,12 @@ T0 = "2026-11-09T00:00:00Z"
 IDS = iter("c%016x" % n for n in range(1, 10_000))
 
 
+@pytest.fixture(autouse=True)
+def _two_deployable_benches(monkeypatch):
+    """These tests place bench companies in eu and us; the real regions.json marks the us bench not deployable until box L1 of PLAN-multi-region-bench.md, so its control database is not in the registry yet."""
+    monkeypatch.setattr(registry, "bench_region_ids", lambda: ["eu", "us"])
+
+
 def _db() -> sqlite3.Connection:
     conn = sqlite3.connect(":memory:")
     conn.row_factory = sqlite3.Row
@@ -118,6 +124,19 @@ def _run(world, req, rec, **kw):
 
 
 # --- validation ------------------------------------------------------------------
+
+
+def test_a_bench_company_is_placed_only_in_a_deployable_bench_region(monkeypatch):
+    """`enterprise add --bench --region us` works once the us bench is deployable (a bench-us account Worker exists), and is refused naming the bench regions until then."""
+    monkeypatch.setattr(registry, "bench_region_ids", lambda: ["eu"])
+    with pytest.raises(
+        onboarding.OnboardingError, match=r"--region us is not a region of bench \(eu\)"
+    ):
+        onboarding.check_request(_req(bench=True, region="us"))
+    monkeypatch.setattr(registry, "bench_region_ids", lambda: ["eu", "us"])
+    onboarding.check_request(_req(bench=True, region="us"))
+    # control: the production check is untouched by the bench list
+    onboarding.check_request(_req(region="us"))
 
 
 @pytest.mark.parametrize(

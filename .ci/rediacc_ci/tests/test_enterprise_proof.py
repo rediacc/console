@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import dataclasses
 import pathlib
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import pytest
 
@@ -49,6 +49,8 @@ class FakeLab:
     restart_breaks: bool = False
     # A cross-region dependency: with the us signer cut, every caller is refused, eu ones included.
     us_cut_breaks_eu: bool = False
+    # The regions a bench company can be placed in; one keeps the single-region bench form, two or more run the placed form.
+    bench_regions: list[str] = dataclasses.field(default_factory=lambda: ["eu"])
     # The region each ensure_company call asked for, in order.
     regions: list[str] = dataclasses.field(default_factory=list)
     # Company account Workers whose company has no control scope row.
@@ -120,6 +122,10 @@ class FakeLab:
             if bench
             else ["signer-eu", "signer-us", "signer-asia"]
         )
+
+    def bench_company_regions(self) -> list[str]:
+        self._rec("bench_company_regions")
+        return list(self.bench_regions)
 
     def secret_names(self, worker: str) -> list[str]:
         self._rec("secret_names")
@@ -812,6 +818,92 @@ def test_a_stop_refusal_that_raises_is_a_refusal_and_cuts_nothing() -> None:
     assert rc == 1
     assert "cut_region" not in lab.calls
     assert any("cannot read the declaration" in line for line in broken(lines))
+
+
+# -- the two-region bench form of region-loss: a company in each region, each signer cut in turn ---
+
+
+def placed(**kw: Any) -> FakeLab:
+    return FakeLab(bench_regions=["eu", "us"], **kw)
+
+
+def test_two_region_bench_places_a_company_in_each_region_and_notes_no_gap() -> None:
+    lab = placed()
+    rc, lines = run("region-loss", lab)
+    assert rc == 0, lines
+    assert lab.regions == ["eu", "us"]
+    assert lab.cut == set()
+    notes = [line for line in lines if line.startswith("note")]
+    assert len(notes) == len(proof.NOT_PROVEN_ON_BENCH)
+    assert not any("cross-region placement" in line for line in notes)
+    ok = [line for line in lines if line.startswith("ok")]
+    for cut, survivor in (("eu", "us"), ("us", "eu")):
+        assert any(line.endswith(f"{survivor} company issues with {cut} cut") for line in ok), ok
+        assert any(line.endswith(f"{survivor} company renews with {cut} cut") for line in ok), ok
+        assert any(line.endswith(f"{cut} company gets the named error") for line in ok), ok
+    assert len([line for line in ok if "bench signing is restored" in line]) == 2
+    # control: the single-region form places only the eu company
+    one = FakeLab()
+    run("region-loss", one)
+    assert one.regions == ["eu"]
+
+
+def test_two_region_bench_breaks_when_a_cut_reaches_the_other_regions_company() -> None:
+    rc, lines = run("region-loss", placed(us_cut_breaks_eu=True))
+    assert rc == 1
+    assert any(line.startswith("BROKEN  eu company issues with us cut:") for line in broken(lines))
+    # control: a healthy lab holds every claim
+    rc, _ = run("region-loss", placed())
+    assert rc == 0
+
+
+def test_two_region_bench_cuts_nothing_when_any_signer_is_refused() -> None:
+    lab = placed(stop_refusals={"signer-bench-us": PRODUCTION})
+    rc, lines = run("region-loss", lab)
+    assert rc == 1
+    assert "cut_region" not in lab.calls
+    assert "ensure_company" not in lab.calls
+    assert any(line.startswith("BROKEN  signer-bench-us may be stopped") for line in lines)
+
+
+def test_two_region_bench_refuses_a_company_bound_to_another_regions_signer() -> None:
+    class BoundElsewhere(FakeLab):
+        def signer_of(self, caller: str) -> str:
+            del caller
+            return "signer-bench-eu"
+
+    lab = BoundElsewhere(bench_regions=["eu", "us"])
+    rc, lines = run("region-loss", lab)
+    assert rc == 1
+    assert any("us company signs through signer-bench-us" in line for line in broken(lines))
+    assert "cut_region" not in lab.calls
+
+
+@pytest.mark.parametrize("failing", ["us", "eu"])
+def test_two_region_bench_restores_the_signer_when_its_cut_raises_a_non_lab_error(
+    failing: str,
+) -> None:
+    class CutRaises(FakeLab):
+        def cut_region(self, region: str) -> None:
+            super().cut_region(region)
+            if region == failing:
+                msg = "unexpected"
+                raise RuntimeError(msg)
+
+    lab = CutRaises(bench_regions=["eu", "us"])
+    with pytest.raises(RuntimeError, match="unexpected"):
+        run("region-loss", lab)
+    assert lab.cut == set()
+    assert "restore_region" in lab.calls
+
+
+def test_two_region_bench_names_each_regions_deploy_when_a_restore_fails() -> None:
+    lab = placed(restart_breaks=True)
+    rc, lines = run("region-loss", lab)
+    assert rc == 1
+    restored = [line for line in broken(lines) if "bench signing is restored" in line]
+    assert restored, broken(lines)
+    assert any("deploy_signer --target bench-eu" in line for line in restored)
 
 
 # -- the bench form of region-loss: eu only, the property proven at the signer ---

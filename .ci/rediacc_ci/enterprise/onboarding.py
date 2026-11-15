@@ -6,7 +6,7 @@ VALIDATION RUNS EVERY TIME, before any step: the name (`names.check`), the regio
 
 RESUMABLE. A company already registered under the name is resumed under its own opaque id: each step recorded `done` is skipped, a `failed` step runs again, and the details recorded by earlier steps (the D1 id) reach the later ones. A rerun of a finished add runs nothing and reports nothing changed. `stop_after` ends the run after the named step with rc 1, which is how the proof's killed run is made.
 
-BENCH. `--bench` selects `control-bench-<region>` (eu and us), the signer `signer-bench-<region>` and `ENVIRONMENT = "bench"` in the account config, so the bench mail capture applies.
+BENCH. `--bench` selects `control-bench-<region>` (each deployable bench region of regions.json), the signer `signer-bench-<region>` and `ENVIRONMENT = "bench"` in the account config, so the bench mail capture applies.
 
 NAMES STAY LOCAL. Progress lines and step errors carry the opaque id; a step error that quotes the label is masked by `console_executor.mask_label` before it is returned.
 

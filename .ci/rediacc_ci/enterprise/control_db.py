@@ -245,15 +245,28 @@ def location(region: str, root: pathlib.Path | None = None) -> str:
     raise ControlDbError("no region %r in regions.json" % region)
 
 
+def bench_config_path(region: str, root: pathlib.Path | None = None) -> pathlib.Path:
+    """The account config of REGION's bench: `wrangler.bench.toml` for the home region (regions.json `default`), `wrangler.bench-<r>.toml` for the others. A region with no `bench` object is refused."""
+    base = root or paths.repo_root()
+    data = json.loads((base / "regions.json").read_text(encoding="utf-8"))
+    for entry in data["regions"]:
+        if str(entry["id"]) == region:
+            if not isinstance(entry.get("bench"), dict):
+                raise ControlDbError("region %r has no bench object in regions.json" % region)
+            name = (
+                "wrangler.bench.toml" if entry.get("default") else "wrangler.bench-%s.toml" % region
+            )
+            return base.joinpath(*bench_preflight.BENCH_CONFIG_REL[:-1], name)
+    raise ControlDbError("no region %r in regions.json" % region)
+
+
 def jurisdiction(region: str, *, bench: bool = False, root: pathlib.Path | None = None) -> str:
     """The D1 jurisdiction a new database of REGION is created under ("" for a location hint only).
 
-    A shared region takes its regions.json `d1.jurisdiction`; bench has no row and takes the jurisdiction wrangler.bench.toml declares for its buckets, so the whole bench is one jurisdiction (PLAN-d1-eu-jurisdiction Design 1).
+    A shared region takes its regions.json `d1.jurisdiction`; a bench takes the jurisdiction its own region's bench account config declares for its buckets, so each bench is one jurisdiction (PLAN-d1-eu-jurisdiction Design 1; per region since PLAN-multi-region-bench).
     """
     if bench:
-        return bench_preflight.bench_names(
-            (root or paths.repo_root()).joinpath(*bench_preflight.BENCH_CONFIG_REL)
-        ).config_jurisdiction
+        return bench_preflight.bench_names(bench_config_path(region, root)).config_jurisdiction
     data = json.loads(((root or paths.repo_root()) / "regions.json").read_text(encoding="utf-8"))
     for entry in data["regions"]:
         if str(entry["id"]) == region:
@@ -417,7 +430,9 @@ def main(argv: Sequence[str], *, runner: Runner = run_wrangler) -> int:
         prog="./run.sh enterprise control", description="create and migrate the control databases"
     )
     ap.add_argument("action", choices=["ensure"])
-    ap.add_argument("--bench", action="store_true", help="control-bench-<region> (eu, us)")
+    ap.add_argument(
+        "--bench", action="store_true", help="control-bench-<region> (each deployable bench region)"
+    )
     ap.add_argument("--region", default=None, help="one region instead of every region")
     try:
         args = ap.parse_args(list(argv))
