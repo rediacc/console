@@ -3,9 +3,9 @@
 # asia row of regions.json; `rediacc_ci.quality.region_consistency_offline` and `rediacc_ci.deploy.proxy_configs`
 # refuse a drift.
 #
-# NOT DEPLOYABLE YET: `database_id` is the placeholder TO-BE-CREATED-L1 and regions.json marks this bench
-# `deployable: false`. The objects are created by box L1 (D1 `account-bench-asia` with location apac, R2, queues), which
-# replaces the placeholder and flips the flag in one commit; the consistency gate refuses either alone.
+# The objects were created by box L2 on 2026-11-15 (D1 `account-bench-asia` with location apac, R2 `configs-bench-asia`
+# and `backups-bench-asia` with hint apac, queues `backup-replicate-bench-asia` and its dlq); that commit set the database
+# id and regions.json `deployable: true` together, which the consistency gate requires.
 # Differences from account-asia: ENVIRONMENT = "bench", no captcha, e-mail capture in D1, keyless portal in ./bench/dist.
 
 name = "account-bench-asia"
@@ -74,7 +74,7 @@ run_worker_first = ["/*"]
 [[d1_databases]]
 binding = "DB"
 database_name = "account-bench-asia"
-database_id = "TO-BE-CREATED-L1"
+database_id = "403b3efe-dd91-4a7e-b2af-4431c84c7b78"
 migrations_dir = "../../private/account/drizzle"
 
 # Production asia placement: no jurisdiction, location hint apac at creation (regions.json bench.r2Location).

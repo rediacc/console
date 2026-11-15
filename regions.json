@@ -96,7 +96,7 @@
         "rateLimits": { "audit": "1106", "config": "1206" },
         "otlp": "bench",
         "config": "asia-bench",
-        "deployable": false
+        "deployable": true
       }
     }
   ]
