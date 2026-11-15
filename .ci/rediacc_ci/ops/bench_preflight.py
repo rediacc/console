@@ -29,6 +29,17 @@ def config_name(region: str = DEFAULT_REGION) -> str:
     return "wrangler.bench.toml" if region == DEFAULT_REGION else "wrangler.bench-%s.toml" % region
 
 
+def profile_for(base: str, region: str = DEFAULT_REGION) -> str:
+    """The Bitwarden profile of REGION's bench: BASE (`deploy-bench`, `bench-login`) for the home region, `<base>-<region>` for the others, whose specs map that bench's own `_US`/`_ASIA` entries onto the names the tools read."""
+    return base if region == DEFAULT_REGION else "%s-%s" % (base, region)
+
+
+def foreign_profiles(base: str, region: str, bound: list[str]) -> list[str]:
+    """The profiles in BOUND that belong to another bench region of BASE. `bws_env exec` never overwrites a name already set, so a run for REGION under one of them would keep the other bench's values silently; the caller refuses instead."""
+    mine = profile_for(base, region)
+    return [p for p in bound if p != mine and (p == base or p.startswith(base + "-"))]
+
+
 def config_rel(region: str = DEFAULT_REGION) -> tuple[str, str, str]:
     return ("workers", "account", config_name(region))
 

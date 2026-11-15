@@ -165,7 +165,7 @@ def test_the_deploy_removes_retired_secrets_then_smokes(monkeypatch, tmp_path):
 def test_smoke_failing_on_500_makes_main_exit_nonzero(monkeypatch, capsys):
     with pytest.raises(deploy_bench.DeployError, match=r"server-info answered 500"):
         deploy_bench.smoke(lambda _u: 500, lambda _s: None)
-    monkeypatch.setattr(deploy_bench, "_reexec_under_profile", lambda _a: None)
+    monkeypatch.setattr(deploy_bench, "_reexec_under_profile", lambda _a, _r="eu": None)
     monkeypatch.setattr(deploy_bench.shutil, "which", lambda _c: "/bin/x")
     auth = deploy_bench.cf_auth.Auth(token="t")
     monkeypatch.setattr(deploy_bench.cf_auth, "resolve", lambda _a: auth)

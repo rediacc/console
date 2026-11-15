@@ -6,16 +6,16 @@
 
 `--region` picks the bench; `--server` and `--config` may only repeat that region's own values. A regional bench has no recorded store entry, so `config remote enable` runs without `--config-id` for it and its first link creates the entry.
 
-BENCH ONLY (operator order 2026-10-27). The run refuses, with a named error and exit 2, any server other than the selected region's bench origin and any rdc config other than that region's, before it reads a credential. The one exception is the internal `--mail-token` child entry, which the re-enrolment starts under the `deploy-bench` profile: it reads the Cloudflare keys to query the hardcoded bench D1 and prints one reauth token. Edge and stable keep human login; no profile binds an account for them.
+BENCH ONLY (operator order 2026-10-27). The run refuses, with a named error and exit 2, any server other than the selected region's bench origin and any rdc config other than that region's, before it reads a credential. The one exception is the internal `--mail-token` child entry, which the re-enrolment starts under its bench's deploy profile (`deploy-bench`, `deploy-bench-<region>`): it reads the Cloudflare keys to query that bench's D1 and prints one reauth token. Edge and stable keep human login; no profile binds an account for them.
 
 THE STEPS, in order:
 
-  1. Re-execute under the `bench-login` Bitwarden profile (`rediacc_ci.core.bws_env exec`), unless it is already bound. The profile binds ROOT_EMAIL, BENCH_ROOT_PASSWORD, BENCH_ROOT_TOTP_SEED and BENCH_STORE_MASTER_PASSWORD.
+  1. Re-execute under the bench's own login profile (`rediacc_ci.core.bws_env exec`), unless it is already bound: `bench-login` for eu, `bench-login-<region>` for the others, which map that bench's `_US`/`_ASIA` entries onto the same names. The profile binds ROOT_EMAIL, BENCH_ROOT_PASSWORD, BENCH_ROOT_TOTP_SEED and BENCH_STORE_MASTER_PASSWORD. Another bench's login profile already bound is refused with exit 2, because `bws_env exec` never overwrites a name already set.
   2. Refuse a value that is unset or still the placeholder `PLACEHOLDER-operator-fills`, naming its Bitwarden entry, before anything else runs.
   3. Refresh the bench IP allowlist (`rediacc_ci.ops.bench_access add-current`, which binds its own `bench-access` profile). The four bench values are removed from that child's environment.
   3b. Probe the account with its own password login (`POST /auth/login`, the same route the CLI uses). Three outcomes:
       - A TOTP challenge: the code from the seed is spent on `POST /auth/2fa/verify`; a first refusal (a 4xx) is retried once with the next window's code; a 429 or 5xx is a rate-limit or server fault and stops at once with a fault message, never the stale-seed one (the account refuses a code already spent, so a second run inside one window is refused with a good seed), and a second refusal is the STALE-SEED refusal (TOTP is on but the seed in `BENCH_ROOT_TOTP_SEED` is not the one the account holds, because the mirror cleared it and it was re-enrolled elsewhere), a LoginError that names the remedy and does not retry again.
-      - No challenge, because TOTP is off (`mirror_config_store` copies the operator row with TOTP cleared, since `users.totp_secret` is sealed per Worker): the run RE-ENROLS through the account's own API with the session the probe just opened. `POST /auth/2fa/setup` and `/auth/2fa/enable` need an elevated session, and the only headless elevation is the reauth mail: `POST /auth/reauth`, the link read from the bench D1 `captured_emails` (kind `reauth`, a child under `bws_env exec --profile deploy-bench` that prints only the token to this process), `POST /auth/reauth/verify`. The new seed is written to Bitwarden as `BENCH_ROOT_TOTP_SEED` (`bws_env store-from-env`, the value in the writer's child environment as `BENCH_ROOT_TOTP_SEED_NEW`; argv names that variable and never holds the value) BEFORE `/auth/2fa/enable`, so a failed write leaves TOTP off and the next run enrols again, never an enabled account whose seed was lost. The backup codes the enable answers are dropped unread.
+      - No challenge, because TOTP is off (`mirror_config_store` copies the operator row with TOTP cleared, since `users.totp_secret` is sealed per Worker): the run RE-ENROLS through the account's own API with the session the probe just opened. `POST /auth/2fa/setup` and `/auth/2fa/enable` need an elevated session, and the only headless elevation is the reauth mail: `POST /auth/reauth`, the link read from the bench D1 `captured_emails` (kind `reauth`, a child under `bws_env exec --profile deploy-bench` (`deploy-bench-<region>` for another bench) that prints only the token to this process), `POST /auth/reauth/verify`. The new seed is written to that bench's own Bitwarden entry, `BENCH_ROOT_TOTP_SEED` for eu and `BENCH_ROOT_TOTP_SEED_<REGION>` for the others (`seed_entry`; `bws_env store-from-env`, the value in the writer's child environment as `BENCH_ROOT_TOTP_SEED_NEW`; argv names that variable and never holds the value) BEFORE `/auth/2fa/enable`, so a failed write leaves TOTP off and the next run enrols again, never an enabled account whose seed was lost. The backup codes the enable answers are dropped unread.
   3c. In the same session, accept the current Terms of Service when the account's acceptance does not satisfy them (`GET`/`POST /portal/terms[/accept]`, the version and digest the server reports; operator ruling ASKED:2026-11-11T17:38Z, bench only).
   4. Compute the six-digit TOTP code in memory (`rediacc_ci.ops.totp`), waiting for the next 30 s window when fewer than `MIN_WINDOW_LEFT` seconds remain, then run `./rdc.sh --config eu-bench subscription login --server <BENCH_ORIGIN>` with REDIACC_LOGIN_EMAIL, REDIACC_LOGIN_PASSWORD and REDIACC_LOGIN_TOTP in the child environment.
   5. Always run `./rdc.sh --config eu-bench config remote enable --master-password --config-id <CONFIG_ID> --api-url <BENCH_ORIGIN>` with REDIACC_STORE_MASTER_PASSWORD in the child environment; `config remote status` is not consulted, because it reports "connected" even when this device has lost its key for the store (the Linux kernel keyring is empty after a restart; measured 2026-11-10). Exit 0 is done: a first link, or this device enrolled again against the same store. Exit 2 is done only when the output says the config is linked and this device can already open it (the CLI's "this device can open it, so there is nothing to enable" refusal); any other failure exits 1 naming the step.
@@ -43,7 +43,7 @@ from urllib.parse import urlsplit
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import wrangler
-from rediacc_ci.ops import deploy_bench, totp
+from rediacc_ci.ops import bench_preflight, deploy_bench, totp
 from rediacc_ci.well_known import BENCH_ORIGIN
 
 PROFILE = "bench-login"
@@ -111,6 +111,11 @@ USAGE = "usage: login_bench [--region %s] [--server URL] [--config NAME]" % "|".
 # THE LOGIN IS THE AGENT'S OWN STEP (operator order 2026-10-30). When an eu-bench command fails because the login is tied to another network address, the CLI tells a human to type an authenticator code in a terminal; an agent read that as an operator step and asked for the code. This run is the remedy, so callers that drive eu-bench (`rediacc_ci.ops.live_proof`) run it once and retry.
 REMEDY = "npm run login:bench"
 REMEDY_ARGV = ("npm", "run", "--silent", "login:bench")
+
+
+def seed_entry(region: str) -> str:
+    """The Bitwarden entry holding REGION's root TOTP seed: `BENCH_ROOT_TOTP_SEED` for the home bench, `BENCH_ROOT_TOTP_SEED_<REGION>` for the others (the store names the `bench-login-<region>` profile maps onto TOTP_SEED_ENV). A re-enrolled seed goes to its own bench's entry, never over another bench's."""
+    return TOTP_SEED_ENV if region == HOME_REGION else "%s_%s" % (TOTP_SEED_ENV, region.upper())
 
 
 def remedy_for(region: str) -> tuple[str, tuple[str, ...]]:
@@ -392,7 +397,7 @@ def _d1_rows(sql: str, target: Target | None = None) -> list[dict]:
 
 
 def mail_token_main(email: str, since: str, region: str = HOME_REGION) -> int:
-    """`--mail-token`, run under the deploy-bench profile: print the newest reauth token mailed to `email` since `since` (and nothing else), or exit 1. The stdout is read by the parent process only."""
+    """`--mail-token`, run under its bench's deploy profile (`deploy-bench`, `deploy-bench-<region>`): print the newest reauth token mailed to `email` since `since` (and nothing else), or exit 1. The stdout is read by the parent process only."""
     sql = MAIL_QUERY % (_sql_literal(email), _sql_literal(since))
     for attempt in range(MAIL_ATTEMPTS):
         if attempt:
@@ -419,7 +424,7 @@ def _mail_token(
     capture: Capture,
     region: str = HOME_REGION,
 ) -> str:
-    """The reauth token from bench's captured mail, through a child under the deploy-bench profile."""
+    """The reauth token from the bench's captured mail, through a child under that bench's deploy profile."""
     child = _with_ci_path(env)
     child[EMAIL_ENV] = email
     rc, out = capture(
@@ -429,7 +434,7 @@ def _mail_token(
             "rediacc_ci.core.bws_env",
             "exec",
             "--profile",
-            D1_PROFILE,
+            bench_preflight.profile_for(D1_PROFILE, region),
             "--",
             sys.executable,
             "-m",
@@ -493,21 +498,22 @@ def reenrol(
     # Stored first: a failed write leaves TOTP off, so the next run enrols again.
     write_env = _with_ci_path(env)
     write_env[TOTP_SEED_NEW_ENV] = secret
-    log.step("Storing the new TOTP seed as %s (bws_env store-from-env)" % TOTP_SEED_ENV)
+    entry = seed_entry(region)
+    log.step("Storing the new TOTP seed as %s (bws_env store-from-env)" % entry)
     rc, out = capture(
         [
             sys.executable,
             "-m",
             "rediacc_ci.core.bws_env",
             "store-from-env",
-            "%s > %s" % (TOTP_SEED_ENV, TOTP_SEED_NEW_ENV),
+            "%s > %s" % (entry, TOTP_SEED_NEW_ENV),
         ],
         write_env,
     )
     if rc != 0:
         raise LoginError(
             "writing %s to Bitwarden failed (exit %d); TOTP stays off on the account"
-            % (_bws_entry(TOTP_SEED_ENV), rc)
+            % (_bws_entry(entry), rc)
         )
     if out:
         print(out, end="" if out.endswith("\n") else "\n")
@@ -769,9 +775,21 @@ def login(
     log.success("%s is logged in to %s" % (config, server))
 
 
-def _reexec_under_profile(argv: Sequence[str], run: Runner) -> int | None:
-    """This entry point under the bench-login profile; None when the profile is already bound."""
-    if PROFILE in (os.environ.get("REDIACC_BWS_PROFILES") or "").split(","):
+def _reexec_under_profile(
+    argv: Sequence[str], run: Runner, region: str = HOME_REGION
+) -> int | None:
+    """This entry point under REGION's login profile (`bench-login`, `bench-login-<region>`); None when that profile is already bound. LoginError rc 2 when another bench's login profile is bound: `bws_env exec` keeps a name already set, so the run would sign in to this bench with that bench's password and seed."""
+    bound = [p for p in (os.environ.get("REDIACC_BWS_PROFILES") or "").split(",") if p]
+    profile = bench_preflight.profile_for(PROFILE, region)
+    foreign = bench_preflight.foreign_profiles(PROFILE, region, bound)
+    if foreign:
+        raise LoginError(
+            "login:bench --region %s refuses to run under %s: that profile binds another bench's "
+            "credentials and bws_env exec never overwrites a name already set; run it from an "
+            "unbound shell" % (region, ", ".join(foreign)),
+            rc=2,
+        )
+    if profile in bound:
         return None
     env = dict(os.environ)
     ci = str(paths.repo_root() / ".ci")
@@ -783,7 +801,7 @@ def _reexec_under_profile(argv: Sequence[str], run: Runner) -> int | None:
             "rediacc_ci.core.bws_env",
             "exec",
             "--profile",
-            PROFILE,
+            profile,
             "--",
             sys.executable,
             "-m",
@@ -804,8 +822,8 @@ def main(argv: Sequence[str] | None = None, run: Runner = _subprocess_runner) ->
         return 0
     try:
         # The bench-only refusal runs before the profile is entered, so a wrong target never reads a credential.
-        parse_target(args)
-        rebound = _reexec_under_profile(args, run)
+        target = parse_target(args)
+        rebound = _reexec_under_profile(args, run, target.region)
         if rebound is not None:
             return rebound
         login(args, os.environ, run)

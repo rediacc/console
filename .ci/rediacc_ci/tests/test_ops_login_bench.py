@@ -186,6 +186,29 @@ def test_unbound_it_reexecutes_under_the_bench_login_profile(monkeypatch):
     assert argv[-2:] == ["-m", "rediacc_ci.ops.login_bench"]
 
 
+def test_unbound_a_us_run_reexecutes_under_the_us_login_profile(monkeypatch):
+    """`bench-login` binds the eu bench's password and seed; a us run under it signed in to bench-us with the eu credentials."""
+    monkeypatch.delenv("REDIACC_BWS_PROFILES", raising=False)
+    runner = FakeRunner()
+    assert login_bench.main(["--region", "us"], runner) == 0
+    argv = runner.calls[0][0]
+    assert argv[argv.index("--profile") + 1] == "bench-login-us"
+    assert argv[-2:] == ["--region", "us"]
+
+
+def test_another_benchs_login_profile_bound_is_refused(monkeypatch):
+    """`bws_env exec` keeps a name already set, so nesting bench-login-us under bench-login would keep the eu values."""
+    monkeypatch.setenv("REDIACC_BWS_PROFILES", "bench-login")
+    with pytest.raises(login_bench.LoginError, match="refuses to run under bench-login") as caught:
+        login_bench._reexec_under_profile(["--region", "us"], FakeRunner(), "us")
+    assert caught.value.rc == 2
+
+
+def test_the_home_profile_bound_runs_an_eu_login_in_place(monkeypatch):
+    monkeypatch.setenv("REDIACC_BWS_PROFILES", "bench-login")
+    assert login_bench._reexec_under_profile([], FakeRunner(), "eu") is None
+
+
 # ---- placeholder and missing values ---------------------------------------------
 
 
@@ -578,6 +601,8 @@ def test_the_writer_argv_carries_names_never_the_seed(capsys):
     )
     write = next(a for a in captured if "store-from-env" in a)
     assert write[-1] == "BENCH_ROOT_TOTP_SEED > BENCH_ROOT_TOTP_SEED_NEW"
+    mail = next(a for a in captured if login_bench.MAIL_MODE in a)
+    assert mail[mail.index("--profile") + 1] == "deploy-bench"
     out, err = capsys.readouterr()
     for secret in (NEW_SEED, SEED, "bk-1111", "tok-reauth-1", VALUES[login_bench.PW_ENV]):
         assert secret not in out + err
@@ -996,3 +1021,41 @@ def test_the_mail_mode_reads_the_regional_database(monkeypatch, capsys):
     assert argv[argv.index("execute") + 1] == _regions_bench()["asia"]["d1"]["name"]
     assert argv[argv.index("--config") + 1] == "wrangler.bench-asia.toml"
     assert capsys.readouterr().out == "abc_1\n"
+
+
+def test_a_us_reenrolment_writes_the_us_seed_entry_never_the_eu_one():
+    """The re-enrolled seed went to BENCH_ROOT_TOTP_SEED whatever the region, overwriting the eu bench's seed with the us account's."""
+    api = FakeApi(challenge=False)
+    captured: list[list[str]] = []
+    runner = FakeRunner()
+    cap = EnrolCapture(runner)
+
+    def capture(argv, env):
+        captured.append(list(argv))
+        return cap(argv, env)
+
+    login_bench.login(
+        ["--region", "us"],
+        _env(),
+        runner,
+        now=lambda: FIXED_NOW,
+        sleep=lambda _s: None,
+        capture=capture,
+        api=api,
+    )
+    write = next(a for a in captured if "store-from-env" in a)
+    assert write[-1] == "BENCH_ROOT_TOTP_SEED_US > BENCH_ROOT_TOTP_SEED_NEW"
+    mail = next(a for a in captured if login_bench.MAIL_MODE in a)
+    assert mail[mail.index("--profile") + 1] == "deploy-bench-us"
+
+
+@pytest.mark.parametrize(
+    ("region", "entry"),
+    [
+        ("eu", "BENCH_ROOT_TOTP_SEED"),
+        ("us", "BENCH_ROOT_TOTP_SEED_US"),
+        ("asia", "BENCH_ROOT_TOTP_SEED_ASIA"),
+    ],
+)
+def test_seed_entry_names_each_benchs_own_entry(region, entry):
+    assert login_bench.seed_entry(region) == entry

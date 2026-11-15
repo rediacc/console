@@ -505,10 +505,22 @@ def capture_bookmark(worker_dir, region: str = DEFAULT_REGION) -> str | None:
     return bookmark
 
 
-def _reexec_under_profile(argv: list[str]) -> int | None:
-    """Run the same entry point under the deploy-bench Bitwarden profile and return its exit status; None when already bound."""
-    profiles = (os.environ.get("REDIACC_BWS_PROFILES") or "").split(",")
-    if PROFILE in profiles:
+class ForeignProfileError(DeployError):
+    """Another bench region's deploy profile is already bound in this environment."""
+
+
+def _reexec_under_profile(argv: list[str], region: str = DEFAULT_REGION) -> int | None:
+    """Run the same entry point under REGION's deploy profile (`deploy-bench`, `deploy-bench-<region>`) and return its exit status; None when that profile is already bound. ForeignProfileError when another bench region's profile is bound, because `bws_env exec` keeps a name already set and the run would push that bench's keys to this one."""
+    profiles = [p for p in (os.environ.get("REDIACC_BWS_PROFILES") or "").split(",") if p]
+    profile = bench_preflight.profile_for(PROFILE, region)
+    foreign = bench_preflight.foreign_profiles(PROFILE, region, profiles)
+    if foreign:
+        raise ForeignProfileError(
+            "deploy_bench --region %s refuses to run under %s: that profile binds another bench's "
+            "keys and bws_env exec never overwrites a name already set; run it from an unbound shell"
+            % (region, ", ".join(foreign))
+        )
+    if profile in profiles:
         return None
     root = paths.repo_root()
     env = dict(os.environ)
@@ -521,7 +533,7 @@ def _reexec_under_profile(argv: list[str]) -> int | None:
             "rediacc_ci.core.bws_env",
             "exec",
             "--profile",
-            PROFILE,
+            profile,
             "--",
             sys.executable,
             "-m",
@@ -1168,7 +1180,26 @@ def main(argv: list[str]) -> int:
         if shutil.which(cmd) is None:
             log.error("Required command '%s' is not available" % cmd)
             return 1
-    rebound = _reexec_under_profile(original)
+    try:
+        if len(regions) > 1:
+            # One child per region, each under that bench's own profile: one environment cannot hold two benches' keys.
+            bound = [p for p in (os.environ.get("REDIACC_BWS_PROFILES") or "").split(",") if p]
+            held = bench_preflight.foreign_profiles(PROFILE, "", bound)
+            if held:
+                raise ForeignProfileError(
+                    "deploy_bench --region all starts one child per bench under its own profile and "
+                    "refuses to run under %s; run it from an unbound shell" % ", ".join(held)
+                )
+            worst = 0
+            for each in regions:
+                log.step("Bench region %s" % each)
+                rc = _reexec_under_profile(["--region", each], each)
+                worst = worst or (rc or 0)
+            return worst
+        rebound = _reexec_under_profile(original, regions[0])
+    except ForeignProfileError as exc:
+        log.error(str(exc))
+        return 2
     if rebound is not None:
         return rebound
     if seed_only or password_only:
@@ -1185,10 +1216,7 @@ def main(argv: list[str]) -> int:
         log.error(str(exc))
         return 1
     try:
-        for each in regions:
-            if len(regions) > 1:
-                log.step("Bench region %s" % each)
-            _deploy(auth, root, each)
+        _deploy(auth, root, regions[0])
     except (DeployError, cf_auth.CfAuthError) as exc:
         for line in str(exc).splitlines():
             log.error(line)

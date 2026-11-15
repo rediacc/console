@@ -154,9 +154,15 @@ def test_seeding_a_region_posts_to_that_regions_host(monkeypatch):
     ]
 
 
-def _main_world(monkeypatch, root):
+def _main_world(monkeypatch, root, children=None):
+    """`children` collects the region of each re-exec; the stub returns None (profile bound) so a single-region run proceeds in process."""
     monkeypatch.setattr(deploy_bench.shutil, "which", lambda _c: "/usr/bin/true")
-    monkeypatch.setattr(deploy_bench, "_reexec_under_profile", lambda _a: None)
+
+    def reexec(_argv, region="eu"):
+        if children is not None:
+            children.append(region)
+
+    monkeypatch.setattr(deploy_bench, "_reexec_under_profile", reexec)
     monkeypatch.setattr(deploy_bench.paths, "repo_root", lambda: root)
     monkeypatch.setattr(deploy_bench.cf_auth, "resolve", lambda _a: deploy_bench.cf_auth.Auth("t"))
     monkeypatch.setattr(deploy_bench.cf_auth, "self_destruct", lambda _a: None)
@@ -165,21 +171,82 @@ def _main_world(monkeypatch, root):
     return ran
 
 
-def test_region_all_deploys_each_deployable_region(monkeypatch, tmp_path):
+def test_region_all_runs_one_child_per_deployable_region(monkeypatch, tmp_path):
+    """Each region deploys in its own child under its own profile; the parent deploys nothing itself."""
     _regions_root(tmp_path, us_deployable=True)
-    ran = _main_world(monkeypatch, tmp_path)
+    children: list[str] = []
+    ran = _main_world(monkeypatch, tmp_path, children)
     assert deploy_bench.main(["--region", "all"]) == 0
-    assert ran[0] == "eu"
-    assert "us" in ran
+    assert children == ["eu", "us"]
+    assert ran == []
 
 
 def test_region_all_skips_a_not_deployable_region_by_name(monkeypatch, tmp_path, capsys):
     _regions_root(tmp_path, us_deployable=False)
-    ran = _main_world(monkeypatch, tmp_path)
+    children: list[str] = []
+    _main_world(monkeypatch, tmp_path, children)
     assert deploy_bench.main(["--region", "all"]) == 0
-    assert "us" not in ran
-    assert "eu" in ran
+    assert children == ["eu"]
     assert "skipping bench us" in capsys.readouterr().err
+
+
+def test_region_all_returns_the_first_failing_childs_status(monkeypatch, tmp_path):
+    _regions_root(tmp_path, us_deployable=True)
+    _main_world(monkeypatch, tmp_path)
+    monkeypatch.setattr(
+        deploy_bench, "_reexec_under_profile", lambda _a, r="eu": 0 if r == "eu" else 3
+    )
+    assert deploy_bench.main(["--region", "all"]) == 3
+
+
+def test_region_all_under_a_bound_bench_profile_is_refused(monkeypatch, tmp_path):
+    _regions_root(tmp_path, us_deployable=True)
+    children: list[str] = []
+    _main_world(monkeypatch, tmp_path, children)
+    monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-bench")
+    assert deploy_bench.main(["--region", "all"]) == 2
+    assert children == []
+
+
+def _reexec_argv(monkeypatch, region, bound=""):
+    seen: list[list[str]] = []
+
+    class Done:
+        returncode = 0
+
+    monkeypatch.setenv("REDIACC_BWS_PROFILES", bound)
+
+    def run(argv, **_k):
+        seen.append(argv)
+        return Done()
+
+    monkeypatch.setattr(deploy_bench.subprocess, "run", run)
+    rc = deploy_bench._reexec_under_profile(["--region", region], region)
+    return rc, seen
+
+
+def test_a_us_deploy_reexecutes_under_the_us_profile(monkeypatch):
+    """deploy-bench binds the eu bench's server key, KEK, S3 pair and root password; a us deploy under it pushed those to account-bench-us."""
+    rc, seen = _reexec_argv(monkeypatch, "us")
+    assert rc == 0
+    assert seen[0][seen[0].index("--profile") + 1] == "deploy-bench-us"
+
+
+def test_an_eu_deploy_keeps_the_unsuffixed_profile(monkeypatch):
+    _rc, seen = _reexec_argv(monkeypatch, "eu")
+    assert seen[0][seen[0].index("--profile") + 1] == "deploy-bench"
+
+
+def test_a_us_deploy_under_the_eu_profile_is_refused(monkeypatch):
+    """`bws_env exec` keeps a name already set, so nesting deploy-bench-us under deploy-bench would keep the eu keys."""
+    with pytest.raises(deploy_bench.ForeignProfileError, match="deploy-bench"):
+        _reexec_argv(monkeypatch, "us", bound="deploy-bench")
+
+
+def test_the_own_profile_bound_runs_in_place(monkeypatch):
+    rc, seen = _reexec_argv(monkeypatch, "us", bound="deploy-bench-us,bench-access")
+    assert rc is None
+    assert seen == []
 
 
 def test_the_default_run_deploys_eu_only(monkeypatch, tmp_path):
