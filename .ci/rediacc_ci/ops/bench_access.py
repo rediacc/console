@@ -525,10 +525,13 @@ def _print_list(
     entries: list[Entry] | None,
     now: datetime.datetime | None = None,
     pinned: typing.Collection[str] = (),
+    hosts: typing.Sequence[str] = (),
 ) -> None:
     if entries is None:
         print("no bench allowlist rule: bench is open to every IP")
         return
+    if hosts:
+        print("rule covers: " + ", ".join(hosts))
     print("bench allowlist (oldest first, at most %d unpinned):" % MAX_IPS)
     for ip, at in entries:
         if ip in pinned:
@@ -557,7 +560,7 @@ def run(
 ) -> int:
     """Run one verb against `api`; 0 on success. Raises AccessError."""
     if command == "list":
-        _print_list(current_entries(api), clock(), load_pinned(root))
+        _print_list(current_entries(api), clock(), load_pinned(root), bench_hosts(root))
         return 0
     if command == "verify-pinned":
         return _verify_pinned(current_entries(api), load_pinned(root))
@@ -609,12 +612,10 @@ def run(
         raise AccessError("unknown command %r" % command)
     ips = with_pins([e for e in ips if e[0] in pins] + free, pins, now)
     save(api, hosts, ips)
-    if command in ("add-current", "add"):
-        # A 403 on a host outside this list (the retired bench.rediacc.com, still bound to the old workers behind a frozen rule) is not fixed by this run; name what it does cover.
-        print("rule covers: " + ", ".join(hosts))
     if not ips:
         log.warn("the list is empty: every bench request but the health paths is blocked")
-    _print_list(ips, now, pins)
+    # A 403 on a host outside this list (the retired bench.rediacc.com, still bound to the old workers behind a frozen rule) is not fixed by a run here; `_print_list` names the hosts the rule does cover, for every verb that prints the list.
+    _print_list(ips, now, pins, hosts)
     return 0
 
 

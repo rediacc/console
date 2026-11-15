@@ -137,7 +137,7 @@ def test_first_add_creates_the_rule_holding_the_callers_ip(capsys):
     assert "198.51.100.7" in capsys.readouterr().out
 
 
-def test_add_names_the_hosts_the_rule_covers_and_list_does_not(capsys):
+def test_add_and_list_name_the_hosts_the_rule_covers(capsys):
     """Review 2026-11-13: a 403 on bench.rediacc.com (the retired host, frozen rule on the old zone) survived add-current with no hint that the live hosts are the .cloud ones."""
     api = FakeCloudflare()
     _run(api, "add-current")
@@ -146,7 +146,15 @@ def test_add_names_the_hosts_the_rule_covers_and_list_does_not(capsys):
     assert f"rule covers: {bench_host}, {PROXY_BENCH_HOST}" in out
     assert "bench.rediacc.com" not in out
     _run(api, "list")
-    assert "rule covers" not in capsys.readouterr().out
+    assert f"rule covers: {bench_host}, {PROXY_BENCH_HOST}" in capsys.readouterr().out
+
+
+def test_list_without_a_rule_names_no_covered_hosts(capsys):
+    """Control: with no rule there is nothing covered, only the open-bench line."""
+    _run(FakeCloudflare(), "list")
+    out = capsys.readouterr().out
+    assert "rule covers" not in out
+    assert "bench is open to every IP" in out
 
 
 def test_the_add_command_names_the_covered_hosts_too(capsys):
