@@ -2595,7 +2595,7 @@
         },
         "optionBundle": "Võrguta komplekti kaust, mille kirjutas 'rdc server bundle'",
         "optionOffline": "Paigalda võrguta valikust --bundle: ühtegi päringut ülesvoolu, registrisse ega paketihaldurisse ei tehta",
-        "helpOffline": "Võrguühenduseta keskkond: koosta pakett võrgus käsuga rdc server bundle --out <dir>. rdc server install --offline --bundle <dir> kontrollib paketti, laadib proxy kujutise, seadistab masina ilma võrguta ega pöördu millegi välise poole. Paigaldus peatub litsentsi sammu juures ja kirjutab päringu: väljasta sertifikaat võrgus käsuga rdc server licence mint ja käivita siis uuesti võtmega --cert."
+        "helpOffline": "Võrguühenduseta keskkond: koosta pakett võrgus käsuga rdc server bundle --out <dir>. rdc server install --offline --bundle <dir> kontrollib paketti, laadib proxy kujutise, seadistab masina ilma võrguta ega pöördu millegi välise poole. Paigaldus peatub litsentsi sammu juures ja kirjutab päringu: väljasta sertifikaat võrgus (käsk rdc server licence mint) ja käivita siis uuesti võtmega --cert."
       },
       "status": {
         "description": "Näita paigaldatud serveri tervist, taset, sertifikaati ja kujutist",

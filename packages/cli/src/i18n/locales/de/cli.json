@@ -2595,7 +2595,7 @@
         },
         "optionBundle": "Offline-Bundle-Verzeichnis, das 'rdc server bundle' geschrieben hat",
         "optionOffline": "Ohne Internetzugang aus --bundle installieren: kein Zugriff auf Upstream, Registry oder Paketquellen",
-        "helpOffline": "Air-Gap: Das Bundle online mit rdc server bundle --out <dir> erstellen. rdc server install --offline --bundle <dir> prüft es, lädt das Proxy-Image, richtet die Maschine offline ein und ruft nichts Externes auf. Die Installation hält beim Lizenzschritt an und schreibt eine Anfrage: online mit rdc server licence mint ein Zertifikat ausstellen, dann mit --cert erneut starten."
+        "helpOffline": "Air-Gap: Das Bundle online mit rdc server bundle --out <dir> erstellen. rdc server install --offline --bundle <dir> prüft es, lädt das Proxy-Image, richtet die Maschine offline ein und ruft nichts Externes auf. Die Installation hält beim Lizenzschritt an und schreibt eine Anfrage: online ein Zertifikat ausstellen (rdc server licence mint), dann mit --cert erneut starten."
       },
       "status": {
         "description": "Zustand, Stufe, Zertifikat und Image eines installierten Servers anzeigen",

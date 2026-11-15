@@ -2595,7 +2595,7 @@
         },
         "optionBundle": "'rdc server bundle' ile oluşturulan çevrimdışı paket dizini",
         "optionOffline": "--bundle ile ağsız kur: üst kaynak, kayıt defteri veya paket yöneticisi çağrısı yapılmaz",
-        "helpOffline": "İzole ağ: paketi internet erişimi olan bir makinede rdc server bundle --out <dir> ile oluşturun. rdc server install --offline --bundle <dir> paketi doğrular, proxy imajını yükler, makineyi çevrimdışı kurar ve dışarıya hiçbir çağrı yapmaz. Kurulum lisans adımında durup bir istek dosyası yazar: rdc server licence mint ile çevrimiçi bir sertifika üretin, ardından --cert ile yeniden çalıştırın."
+        "helpOffline": "İzole ağ: paketi internet erişimi olan bir makinede rdc server bundle --out <dir> ile oluşturun. rdc server install --offline --bundle <dir> paketi doğrular, proxy imajını yükler, makineyi çevrimdışı kurar ve dışarıya hiçbir çağrı yapmaz. Kurulum lisans adımında durup bir istek dosyası yazar: çevrimiçi bir sertifika üretin (rdc server licence mint), ardından --cert ile yeniden çalıştırın."
       },
       "status": {
         "description": "Kurulu bir sunucunun sağlığını, katmanını, sertifikasını ve imajını göster",

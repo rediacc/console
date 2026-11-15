@@ -2595,7 +2595,7 @@
         },
         "optionBundle": "Diretório do pacote offline gerado por 'rdc server bundle'",
         "optionOffline": "Instalar sem rede a partir de --bundle: sem acesso a upstream, registry ou gerenciador de pacotes",
-        "helpOffline": "Ambiente isolado: crie o bundle com internet usando rdc server bundle --out <dir>. rdc server install --offline --bundle <dir> verifica o bundle, carrega a imagem do proxy, configura a máquina offline e não chama nada externo. A instalação para na etapa da licença e grava uma solicitação: emita um certificado online com rdc server licence mint e execute de novo com --cert."
+        "helpOffline": "Ambiente isolado: crie o bundle com internet usando rdc server bundle --out <dir>. rdc server install --offline --bundle <dir> verifica o bundle, carrega a imagem do proxy, configura a máquina offline e não chama nada externo. A instalação para na etapa da licença e grava uma solicitação: emita um certificado online (rdc server licence mint) e execute de novo com --cert."
       },
       "status": {
         "description": "Mostrar a saúde, o plano, o certificado e a imagem de um servidor instalado",

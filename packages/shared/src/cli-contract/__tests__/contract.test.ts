@@ -280,6 +280,7 @@ describe('CLI contract', () => {
       'repo push --strategy=auto|physical|shared',
       'repo secret set --mode=env|file',
       'serve --mode=daemon|container',
+      'server bundle --arch=amd64|arm64',
       'server install --licence=auto|free',
       'server install --tls=letsencrypt|cloudflare|byo',
       'vscode connect --server-provider=openvscode|code-server',
