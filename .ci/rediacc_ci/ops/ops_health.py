@@ -797,7 +797,7 @@ def served_not_after(host: str, port: int, timeout: float) -> datetime.datetime 
 
 
 def refresh_tls_probes(doc: dict, cfg: dict, now: datetime.datetime, handshake: Handshake) -> None:
-    """Let the served certificate decide a `tls:<host>[:<port>]` probe whose CT answer is older than it (the Worker cannot read a peer certificate). Edits `doc` in place, and recomputes the verdict when a probe changed."""
+    """Let the served certificate decide every `tls:<host>[:<port>]` probe whose Worker handshake succeeded (the Worker cannot read a peer certificate, so it answers from Certificate Transparency, which can be stale or unreachable). A CT answer that is missing (certspotter in outage, crt.sh timing out: the probe is `unknown`), older, or equal is replaced by the served certificate's own expiry (reviews 091c4c29.1 and the 2026-11-15 outage, when a dozen hosts were unknown). A probe whose handshake failed, and a handshake that fails here, change nothing. Edits `doc` in place, and recomputes the verdict when a probe changed."""
     probes = doc.get("probes")
     if not isinstance(probes, list):
         return
@@ -808,12 +808,13 @@ def refresh_tls_probes(doc: dict, cfg: dict, now: datetime.datetime, handshake: 
         if not isinstance(probe, dict):
             continue
         ident = TLS_PROBE_ID.match(str(probe.get("probe") or ""))
-        ct_hit = CT_EXPIRY.search(str(probe.get("detail") or ""))
-        if not ident or not ct_hit:
+        detail = str(probe.get("detail") or "")
+        if not ident or not detail.startswith("handshake ok"):
             continue
-        ct_at = parse_iso(ct_hit.group(1))
+        ct_hit = CT_EXPIRY.search(detail)
+        ct_at = parse_iso(ct_hit.group(1)) if ct_hit else None
         served = handshake(ident.group(1), int(ident.group(2) or 443), HANDSHAKE_TIMEOUT_S)
-        if ct_at is None or served is None or served <= ct_at:
+        if served is None:
             continue
         days = int((served - now).total_seconds() // 86400)
         verdict = (
@@ -825,8 +826,13 @@ def refresh_tls_probes(doc: dict, cfg: dict, now: datetime.datetime, handshake: 
         )
         probe["state"] = GREEN if verdict == "ok" else RED
         probe["detail"] = (
-            "served certificate expires %s, %d day(s) (local handshake, later than the CT answer %s): %s"
-            % (iso(served), days, iso(ct_at), verdict)
+            "served certificate expires %s, %d day(s) (local handshake; CT answer %s): %s"
+            % (
+                iso(served),
+                days,
+                iso(ct_at) if ct_at else "unavailable",
+                verdict,
+            )
         )
         changed = True
     if not changed:

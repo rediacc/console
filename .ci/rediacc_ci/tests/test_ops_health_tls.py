@@ -75,7 +75,7 @@ def test_served_detail_says_the_served_certificate_decided():
     oh.refresh_tls_probes(doc, CFG, NOW, Served(JAN_2027))
     detail = doc["probes"][0]["detail"]
     assert "served certificate expires 2027-01-15T00:00:00Z" in detail
-    assert "later than the CT answer %s" % STALE_CT in detail
+    assert "CT answer %s" % STALE_CT in detail
 
 
 def test_served_certificate_that_is_itself_near_expiry_stays_red():
@@ -94,9 +94,32 @@ def test_failed_handshake_changes_nothing():
     assert STALE_CT in out["detail"]
 
 
-def test_control_served_not_later_than_ct_changes_nothing():
-    out = check(web([probe()]), Served(datetime.datetime(2026, 12, 6, tzinfo=datetime.UTC)))
+def test_served_certificate_equal_to_the_ct_date_still_decides():
+    """091c4c29.1: an equal date used to be skipped, leaving the Worker's answer; the served date now decides, so a certificate 20 days out is red on its own expiry."""
+    out = check(web([probe()]), Served(datetime.datetime(2026, 12, 5, 10, 24, tzinfo=datetime.UTC)))
     assert out["rc"] == 1
+    assert "local handshake" in out["detail"], out
+
+
+def test_unknown_probe_with_no_ct_date_is_judged_by_the_served_certificate():
+    """2026-11-15: certspotter 503 and crt.sh timing out left a dozen hosts unknown, and an unknown probe makes the verdict unknown."""
+    unknown = probe(
+        "tls:gitlab.rediacc.io",
+        state="unknown",
+        detail='handshake ok; days to expiry unknown for issuer "Let\'s Encrypt" (certspotter answered 503; The operation was aborted due to timeout)',
+    )
+    out = check(web([unknown], verdict="unknown"), Served(JAN_2027))
+    assert out["rc"] == 0, out
+
+
+def test_control_a_failed_worker_handshake_is_never_overruled():
+    failed = probe(
+        "tls:gitlab.rediacc.io", state="red", detail="handshake failed: connection refused"
+    )
+    hs = Served(JAN_2027)
+    out = check(web([failed]), hs)
+    assert out["rc"] == 1
+    assert hs.calls == []
 
 
 def test_non_tls_and_unparsed_probes_are_not_handshaken():
