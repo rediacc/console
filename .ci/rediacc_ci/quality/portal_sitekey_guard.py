@@ -427,7 +427,7 @@ def bench_findings(
             "%s: the vite build must write to portal_out_dir(worker_dir) and nowhere else (found --outDir %s)"
             % (DEPLOY_BENCH_REL, outdirs or "none")
         )
-    if "bench_assets_refusal(worker_dir)" not in bench_source:
+    if "bench_assets_refusal(worker_dir, region)" not in bench_source:
         out.append(
             "%s: the build no longer checks wrangler.bench.toml's [assets] first (bench_assets_refusal)"
             % DEPLOY_BENCH_REL
@@ -543,7 +543,7 @@ def main(argv):
     smoke = portal_smoke(worker_dir / config, os.environ)
 """
 _BENCH_OK = """
-    refusal = bench_assets_refusal(worker_dir)
+    refusal = bench_assets_refusal(worker_dir, region)
     out_dir = portal_out_dir(worker_dir)
     _run(
         ["npx", "--no-install", "vite", "build", "--outDir", str(out_dir)],
@@ -701,7 +701,7 @@ def _local_selftest() -> bool:
     expect(
         "a deploy_bench build that skips bench_assets_refusal was not reported",
         bench_findings(
-            _BENCH_OK.replace("bench_assets_refusal(worker_dir)", "None"), _BENCH_OUT, _CONFIGS
+            _BENCH_OK.replace("bench_assets_refusal(worker_dir, region)", "None"), _BENCH_OUT, _CONFIGS
         ),
         True,
     )
