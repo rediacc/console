@@ -277,12 +277,13 @@ Unchanged. login_bench keeps the password and TOTP path, and root_login has no b
   - Accept: `(cd private/account && npx vitest run tests/integration/admin-root-token-coverage.test.ts tests/integration/admin.test.ts tests/integration/version-policy.test.ts tests/integration/partner-admin-detail.test.ts tests/integration/admin-sales-digest-run.test.ts tests/integration/root-console-block.test.ts)` rc 0, `(cd private/account && npm run typecheck)` rc 0, and `grep -c "sessionAuth()" $(ls private/account/src/routes/root*.ts | grep -v root-api-tokens)` prints 0 for every file.
   (corrected 2026-11-15T18:57Z) The grep excludes routes/root-api-tokens.ts, whose three portal token routes keep sessionAuth() by Design 3-4: `grep -c "sessionAuth()" $(ls private/account/src/routes/root*.ts | grep -v root-api-tokens)` prints 0 for every file.
     (ticked) 2026-11-15T19:01:34Z by d778be9d: commit:5b6f329157 vitest admin-root-token-coverage admin version-policy partner-admin-detail admin-sales-digest-run root-console-block 127 passed; typecheck rc=0; corrected grep 0 for every switched factory
-- [ ] D1 [writer] Docs:
+- [x] D1 [writer] Docs:
   - private/account/CLAUDE.md: the root token under Roles Layer 1 and a short "Root API token" section covering the kind, session, bind, rotation, revocation and events.
   - docs/agent-reference/bench-login.md "Stable and edge root": token mode, the refresh path, the region rule and the one operator step.
   - private/account/docs/secrets/rotation.md: a ROOT_API_TOKEN row covering self-rotation, the yearly re-mint and the revoke steps.
   - Owns: private/account/CLAUDE.md, docs/agent-reference/bench-login.md, private/account/docs/secrets/rotation.md.
   - Accept: `grep -c "ROOT_API_TOKEN" docs/agent-reference/bench-login.md` prints at least 1, `grep -c "root_token.session_opened" private/account/CLAUDE.md` prints at least 1, and `npm run -s check:ci-prose-style` rc 0.
+    (ticked) 2026-11-15T21:11:34Z by d778be9d: commit:cce6d17b73 grep ROOT_API_TOKEN 5, grep root_token.session_opened 1, check:ci-prose-style rc=0
 
 ### Live queue: production eu, in order, after the PR merges and CD's edge deploy is green
 
