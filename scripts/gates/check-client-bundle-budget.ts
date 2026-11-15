@@ -88,6 +88,8 @@ const DEFAULT_BUDGET = 500_000;
  * locale: those are charged as their largest member (`te`, 5,193 B, on that build), see
  * `localeAlternatives`. Deferred total as this gate reports it: 277,290 B. Ejecting the skin to shed weight was measured at 2,786 lines plus a
  * Tailwind 4.3 toolchain this site does not have.
+ *
+ * VIDEO.JS 10.4.0, 2026-11-15: the player chunk grew 278,082 -> 291,366 B plus two new lazy sub-chunks (`text-cues`, `parse-vtt`, 3,802 B), and the gate read 316,291 B. 15,886 B of that was never the player: the site's own catalog slice, a locale choice the EAGER React chunk makes at load, which phase 3 used to charge here. It is charged eager now (see phase 3), and astro.config.mjs aliases `react-compiler-runtime` to React 19's own, which drops the polyfill's unreachable fallback from the player chunk.
  */
 const DEFERRED_CEILING = 300_000;
 
@@ -109,6 +111,8 @@ export interface BundleMeasurement {
   /** Locale-alternative maps: what each costs as charged (its largest member) and in total. */
   alternatives: {
     importer: string;
+    /** The importer was reached by static edges, so its charge is EAGER. See phase 3. */
+    eager: boolean;
     members: number;
     chargedBytes: number;
     totalBytes: number;
@@ -314,8 +318,13 @@ export function measurePage(dist: string, pageRel: string): BundleMeasurement {
   // PHASE 3: each locale-alternative group, charged as its LARGEST member's closure. A
   // member's closure is every file it reaches by ANY edge that no earlier phase claimed, so
   // a pack importing a shared base (pt -> pt-br) is charged with that base included.
+  //
+  // THE CHARGE LANDS IN THE IMPORTER'S PHASE, and until 2026-11-15 every group landed in DEFERRED. That put the site's own catalog slice (`src/i18n/react.ts`, a keyed map inside the eager React chunk, awaited at the TOP LEVEL before any island renders, so fetched on every page load) under the player's deferred ceiling: 15,886 B of every-visitor cost was missing from the eager figure and counted against the click-to-play player instead.
+  // A choice made by code the visitor has already downloaded is charged eager, for the reason the dual-reach rule above gives: eager is the conservative answer when the gate cannot see when an import() runs. Nothing leaves the measurement; the charge moves from one budget to the other.
+  const eagerUrls = new Set(files.filter((f) => !f.deferred).map((f) => f.url));
   const alternatives: BundleMeasurement['alternatives'] = [];
   for (const [id, g] of groups) {
+    const eager = eagerUrls.has(g.importer);
     const closures = g.members.map((member) => {
       const local = new Map<string, number>();
       const stack = [member];
@@ -338,11 +347,12 @@ export function measurePage(dist: string, pageRel: string): BundleMeasurement {
     if (union.size === 0) continue;
     for (const [url, bytes] of union) {
       seen.add(url);
-      if (bytes > 0) files.push({ url, bytes, deferred: true, alternative: id });
+      if (bytes > 0) files.push({ url, bytes, deferred: !eager, alternative: id });
     }
     const largest = closures.reduce((a, b) => (b.bytes > a.bytes ? b : a));
     alternatives.push({
       importer: g.importer,
+      eager,
       members: g.members.length,
       chargedBytes: largest.bytes,
       totalBytes: [...union.values()].reduce((a, b) => a + b, 0),
@@ -350,14 +360,16 @@ export function measurePage(dist: string, pageRel: string): BundleMeasurement {
     });
   }
 
-  const sum = (want: boolean) =>
-    files.reduce((a, f) => a + (f.deferred === want && !f.alternative ? f.bytes : 0), 0);
+  /** Ordinary files of one phase, plus the charge of every alternatives group in that phase. */
+  const sum = (deferred: boolean) =>
+    files.reduce((a, f) => a + (f.deferred === deferred && !f.alternative ? f.bytes : 0), 0) +
+    alternatives.reduce((a, g) => a + (g.eager === !deferred ? g.chargedBytes : 0), 0);
 
   return {
     page: pageRel,
     bytes: files.reduce((a, f) => a + f.bytes, 0),
     eagerBytes: sum(false),
-    deferredBytes: sum(true) + alternatives.reduce((a, g) => a + g.chargedBytes, 0),
+    deferredBytes: sum(true),
     files: files.sort((a, b) => b.bytes - a.bytes),
     missing,
     unresolvable,
@@ -580,6 +592,38 @@ function selftest(): boolean {
     `bytes=${loc.bytes} eager=${loc.eagerBytes} total=${g.totalBytes}`
   );
   check(
+    'CONTROL: a locale map inside a DEFERRED importer is charged to DEFERRED',
+    g.eager === false && locTag('/assets/pt.js')?.deferred === true,
+    JSON.stringify({ group: g, pt: locTag('/assets/pt.js') })
+  );
+
+  // AN EAGER IMPORTER'S LOCALE MAP. The shape of `src/i18n/react.ts`: the keyed catalog map sits in a chunk the page loads statically and is awaited before any island renders, so its charge is eager. Until 2026-11-15 the gate charged it to DEFERRED, under the player's ceiling, and the eager figure was short by the largest catalog.
+  write(
+    'assets/cat-entry.js',
+    'var cat={de:()=>l(()=>import(`./cat-de.js`),[]),ru:()=>l(()=>import(`./cat-ru.js`),[])};await cat.de();'
+  );
+  write('assets/cat-de.js', `export default "${'c'.repeat(1_500)}";`);
+  write('assets/cat-ru.js', `export default "${'r'.repeat(2_500)}";`);
+  write(
+    'en/catalog.html',
+    '<html><body><script src="/assets/cat-entry.js"></script></body></html>'
+  );
+  const cat = measurePage(dist, 'en/catalog.html');
+  const cg = cat.alternatives[0];
+  check(
+    'PLANT: a locale map inside an EAGER importer is charged to EAGER, at its largest member',
+    cat.alternatives.length === 1 &&
+      cg.eager === true &&
+      cat.eagerBytes === size('assets/cat-entry.js') + size('assets/cat-ru.js') &&
+      cat.deferredBytes === 0,
+    JSON.stringify({ eager: cat.eagerBytes, deferred: cat.deferredBytes, groups: cat.alternatives })
+  );
+  check(
+    'PLANT: its members are tagged eager, so no report lists them as deferred chunks',
+    cat.files.filter((f) => f.alternative).every((f) => f.deferred === false),
+    JSON.stringify(cat.files)
+  );
+  check(
     'isLanguageTag knows a region tag and refuses a route name',
     isLanguageTag('zh-tw') &&
       isLanguageTag('pt-br') &&
@@ -674,7 +718,8 @@ function main(): void {
     console.log(
       `✓ Every locale homepage is within the ${budget.toLocaleString()} B eager budget ` +
         `(worst: ${worst.locale} at ${worst.eagerBytes.toLocaleString()} B across ` +
-        `${worst.files.filter((f) => !f.deferred).length} file(s)).`
+        `${worst.files.filter((f) => !f.deferred && !f.alternative).length} file(s) ` +
+        `plus ${worst.alternatives.filter((a) => a.eager).length} eager locale choice(s)).`
     );
     const defFiles = worstDef.files.filter((f) => f.deferred && !f.alternative);
     console.log(
@@ -686,7 +731,7 @@ function main(): void {
     );
     for (const a of worstDef.alternatives)
       console.log(
-        `  Locale alternatives in ${a.importer}: ${a.members} pack(s), ${a.totalBytes.toLocaleString()} B ` +
+        `  Locale alternatives in ${a.importer} (${a.eager ? 'EAGER' : 'deferred'}): ${a.members} pack(s), ${a.totalBytes.toLocaleString()} B ` +
           `in the graph, charged ${a.chargedBytes.toLocaleString()} B (the largest, ${a.largest}): ` +
           `a visitor loads the one for the page's locale.`
       );
@@ -714,6 +759,7 @@ function main(): void {
       console.error(
         `  /${m.locale}/  ${m.deferredBytes.toLocaleString()} B = ${chunks.length} chunk(s)` +
           m.alternatives
+            .filter((a) => !a.eager)
             .map(
               (a) =>
                 ` + ${a.chargedBytes.toLocaleString()} B (the largest of ${a.members} locale packs)`
@@ -741,19 +787,23 @@ function main(): void {
       console.error(
         `  /${m.locale}/  ${m.eagerBytes.toLocaleString()} B eager  ` +
           `(${(m.eagerBytes / budget).toFixed(1)}x budget, ` +
-          `${m.files.filter((f) => !f.deferred).length} file(s); ` +
+          `${m.files.filter((f) => !f.deferred && !f.alternative).length} file(s); ` +
           `+${m.deferredBytes.toLocaleString()} B deferred)`
       );
     }
     const worst = over.reduce((a, b) => (a.eagerBytes > b.eagerBytes ? a : b));
     console.error(`\n  Largest EAGER chunks on /${worst.locale}/:`);
-    for (const f of worst.files.filter((f) => !f.deferred).slice(0, 5)) {
+    for (const f of worst.files.filter((f) => !f.deferred && !f.alternative).slice(0, 5)) {
       console.error(`    ${f.bytes.toLocaleString()} B  ${f.url}`);
     }
+    for (const a of worst.alternatives.filter((g) => g.eager)) {
+      console.error(
+        `    ${a.chargedBytes.toLocaleString()} B  the largest of ${a.members} locale packs in ${a.importer}`
+      );
+    }
     console.error(
-      `\npackages/www/src/i18n/utils.ts imports all thirteen locale catalogs STATICALLY, so\n` +
-        `every visitor downloads every language. Chunk them per locale and this figure drops\n` +
-        `by roughly the twelve catalogs nobody on the page can read.`
+      `\n  Eager is everything a visitor downloads before interacting, including a locale choice\n` +
+        `  an eagerly loaded chunk makes. Move weight behind an interaction, or remove it.`
     );
   }
   process.exit(1);
