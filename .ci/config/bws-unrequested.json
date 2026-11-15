@@ -491,14 +491,6 @@
     "BENCH_STORE_MASTER_PASSWORD_ASIA": {
       "kind": "no-github-twin",
       "reason": "The master password of the bench remote config store, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login` for `config remote enable --master-password`. Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
-    },
-    "ROOT_PASSWORD": {
-      "kind": "no-github-twin",
-      "reason": "The production root principal's login password shared by stable and edge, read only by rediacc_ci.ops.root_login under `bws_env exec --profile root-login`. Root logins are run locally and by no workflow, so no GitHub secret of that name exists to shadow."
-    },
-    "ROOT_TOTP_SEED": {
-      "kind": "no-github-twin",
-      "reason": "The base32 TOTP seed of the production root account shared by stable and edge, read only by rediacc_ci.ops.root_login under `bws_env exec --profile root-login`, which derives the six-digit code in memory (rediacc_ci.ops.totp). Root logins are run locally and by no workflow, so no GitHub secret of that name exists to shadow."
     }
   },
   "no_fetch_jobs": {}
