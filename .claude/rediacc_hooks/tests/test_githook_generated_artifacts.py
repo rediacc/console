@@ -84,6 +84,7 @@ def test_the_registry_enrols_something():
     ids = [a.id for a in GA.enrolled(artifacts)]
     assert "cli-contract" in ids, ids
     assert "plan-renders" in ids, ids
+    assert "skill-reference" in ids, ids
 
 
 # --------------------------------------------------------------------------- the mechanism, in a tiny repository

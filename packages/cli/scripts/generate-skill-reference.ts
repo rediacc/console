@@ -11,8 +11,13 @@
  *
  * Usage:
  *   npx tsx packages/cli/scripts/generate-skill-reference.ts > reference.md
+ *   npx tsx packages/cli/scripts/generate-skill-reference.ts --write
+ *   npx tsx packages/cli/scripts/generate-skill-reference.ts --check
+ *
+ * `--check` writes nothing: it exits 0 when the committed reference equals the render and STALE_EXIT when it differs or is missing.
+ * The generated-artifacts pre-commit hook runs it (`skill-reference` in .ci/config/generated-artifacts.json).
  */
-import { writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import type { Command } from 'commander';
 import { cli } from '../src/cli.js';
@@ -192,12 +197,26 @@ function generateReferenceMarkdown(commands: CommandCapability[]): string {
   return lines.join('\n');
 }
 
+/**
+ * The `--check` exit for a stale or missing reference, `commit.stale_exit` of `skill-reference` in .ci/config/generated-artifacts.json.
+ * Not 1, because Node exits 1 on an uncaught error: a generator that crashes must reach the hook as UNCHECKED, never as a stale reference whose printed fix is this same crashing generator.
+ */
+const STALE_EXIT = 3;
+
 // STDOUT BY DEFAULT, because rdc.sh captures it into a temp file and only swaps it in when it looks right. `--write` is for a person running `npm run generate:skill-reference`, which used to print the reference and leave .claude/skills/rdc/reference.md untouched.
 const markdown = generateReferenceMarkdown(walkCommands(cli));
-if (process.argv.includes('--write')) {
-  const target = fileURLToPath(
-    new URL('../../../.claude/skills/rdc/reference.md', import.meta.url)
-  );
+const target = fileURLToPath(new URL('../../../.claude/skills/rdc/reference.md', import.meta.url));
+if (process.argv.includes('--check')) {
+  const committed = existsSync(target) ? readFileSync(target, 'utf8') : null;
+  if (committed === markdown) {
+    process.stderr.write(`${target} is current\n`);
+  } else {
+    process.stderr.write(
+      `${target} ${committed === null ? 'is missing' : 'differs from the render of the CLI command tree'}; regenerate it: npm run generate:skill-reference -w @rediacc/cli\n`
+    );
+    process.exit(STALE_EXIT);
+  }
+} else if (process.argv.includes('--write')) {
   writeFileSync(target, markdown);
   process.stderr.write(`wrote ${target}\n`);
 } else {
