@@ -9,9 +9,9 @@ WHAT IT READS, all from the account GraphQL endpoint (token permission "Account 
   - `r2OperationsAdaptiveGroups`: requests per action over the billing month so far, folded into Class A and Class B (an action it does not know counts as Class A, the dearer one).
   - `d1StorageAdaptiveGroups`: the latest daily size per database.
   - `workersInvocationsAdaptive`: requests and CPU (`cpuTimeUs` summed, shown in ms) per script over the billing month so far.
-  - `containersMetricsAdaptiveGroups`: per Containers application (one per proxy target's container class) over the billing month so far, `sum{cpuTimeSec}` (active vCPU-seconds, what Cloudflare bills CPU on) and `sum{allocatedMemory}` (provisioned byte-seconds, shown as GiB-seconds, what it bills memory on). The estimated cost is those seconds at the published rates (developers.cloudflare.com/containers/pricing, read 2026-10-26: 0.0000025 USD per GiB-second, 0.000020 USD per vCPU-second), without the monthly included amounts, so it is an upper bound. Cloudflare offers no usage alert for Containers (cf-spend-guard.json `notifications.unavailable.containers`), so this is the alarm: an application over `containers_memory_gib_seconds_month`, `containers_vcpu_seconds_month` or the estimated-USD `containers_target_usd_month` (memory plus vCPU together) is an `OVER` line that names the estimated cost, and the run exits 1. Zero container rows is not an error (a month can have no usage); a failed read is exit 2. The application id is the only name the dataset carries.
+  - `containersMetricsAdaptiveGroups`: per Containers application (one per proxy target's container class) over the billing month so far, `sum{cpuTimeSec}` (active vCPU-seconds, what Cloudflare bills CPU on) and `sum{allocatedMemory}` (provisioned byte-seconds, shown as GiB-seconds, what it bills memory on). The estimated cost is those seconds at the published rates (developers.cloudflare.com/containers/pricing, read 2026-10-26: 0.0000025 USD per GiB-second, 0.000020 USD per vCPU-second), without the monthly included amounts, so it is an upper bound. Cloudflare offers no usage alert for Containers (cf-spend-guard.json `notifications.unavailable.containers`), so this is the alarm: an application over `containers_memory_gib_seconds_month`, `containers_vcpu_seconds_month` or the estimated-USD `containers_target_usd_month` (memory plus vCPU together) is an `OVER` line that names the estimated cost, and the run exits 1. Zero container rows is not an error (a month can have no usage); a failed read is exit 2. The dataset carries only the application id, so the run also reads `GET /accounts/<id>/containers/applications` (a failed read is exit 2) and holds an application named `<bench proxyWorkerName>-orgexecutor` (regions.json) to `containers_bench_target_usd_month` instead of `containers_target_usd_month`, its `OVER` line ending in `bench proxy`.
 
-CEILINGS come only from the `report` object of `.ci/config/cf-spend-guard.json` (a missing key is an error): workers_requests_month, workers_cpu_ms_month, r2_storage_bytes, r2_class_a_month, r2_class_b_month, d1_storage_bytes. Each is compared with the account total, and the per-item lines are for reading. The two container ceilings, containers_memory_gib_seconds_month and containers_vcpu_seconds_month, are compared with EACH application instead, since the budget is per target; `containers_target_usd_month` bounds each application's estimated memory plus vCPU cost; `containers_total_usd_month` bounds the estimated cost summed over all applications.
+CEILINGS come only from the `report` object of `.ci/config/cf-spend-guard.json` (a missing key is an error): workers_requests_month, workers_cpu_ms_month, r2_storage_bytes, r2_class_a_month, r2_class_b_month, d1_storage_bytes. Each is compared with the account total, and the per-item lines are for reading. The two container ceilings, containers_memory_gib_seconds_month and containers_vcpu_seconds_month, are compared with EACH application instead, since the budget is per target; `containers_target_usd_month` bounds each application's estimated memory plus vCPU cost; `containers_total_usd_month` bounds the estimated cost summed over all applications. `containers_bench_target_usd_month` is the per-application ceiling for a bench proxy application.
 
 THE LOG LINE is counted over seven days in Loki (through the Grafana datasource proxy, `OBS_GRAFANA_READ_TOKEN`); when Loki cannot answer, the Workers Observability telemetry query counts it instead. When neither answers the run is exit 2, because a guard that cannot look has not passed.
 
@@ -55,6 +55,8 @@ CEILING_KEYS = (
     "containers_total_usd_month",
     # Per-application estimated USD (memory plus vCPU).
     "containers_target_usd_month",
+    # The same per-application estimate for a bench proxy application, a fifth of a production target.
+    "containers_bench_target_usd_month",
 )
 
 # https://developers.cloudflare.com/containers/pricing/ (read 2026-10-26), Workers Paid, USD.
@@ -104,6 +106,48 @@ QUERIES = {
 
 class ReportError(Exception):
     """A read that failed outright (exit 2)."""
+
+
+REGIONS_REL = "regions.json"
+CONTAINER_PAGE_SIZE = 100
+CONTAINER_MAX_PAGES = 100
+
+
+def bench_container_app_names(root: Path | None = None) -> frozenset[str]:
+    """The container application name of every bench proxy Worker in regions.json (`<proxyWorkerName>-orgexecutor`, what wrangler creates for the executor class); a missing file or a row without a bench proxy Worker name is an error."""
+    path = (root or Path(__file__).resolve().parents[3]) / REGIONS_REL
+    try:
+        regions = json.loads(path.read_text())["regions"]
+        return frozenset("%s-orgexecutor" % r["bench"]["proxyWorkerName"] for r in regions)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise ReportError(
+            "%s cannot give the bench proxy Workers: %s: %s"
+            % (REGIONS_REL, type(exc).__name__, exc)
+        ) from exc
+
+
+def container_app_names(
+    transport: ov.Transport, headers: Mapping[str, str], account: str
+) -> dict[str, str]:
+    """application id to application name, from every page of `GET /accounts/<id>/containers/applications`; the GraphQL dataset carries only the id, so the name decides which ceiling an application is held to. A refusal or a malformed page is a ReportError."""
+    names: dict[str, str] = {}
+    for page in range(1, CONTAINER_MAX_PAGES + 1):
+        url = "%s/accounts/%s/containers/applications?per_page=%d&page=%d" % (
+            CF_API_BASE,
+            account,
+            CONTAINER_PAGE_SIZE,
+            page,
+        )
+        status, body = transport("GET", url, dict(headers), None)
+        rows = body.get("result") if isinstance(body, dict) else None
+        if status != 200 or not isinstance(rows, list):
+            raise ReportError("containers application listing: answered %s" % (status or "nothing"))
+        for row in rows:
+            if isinstance(row, dict) and row.get("id") and row.get("name"):
+                names[str(row["id"])] = str(row["name"])
+        if len(rows) < CONTAINER_PAGE_SIZE:
+            return names
+    raise ReportError("containers application listing: more than %d pages" % CONTAINER_MAX_PAGES)
 
 
 def load_ceilings(root: Path | None = None) -> dict[str, float]:
@@ -273,6 +317,8 @@ def run(
         d1 = graphql(transport, headers, account, "d1", now)
         workers = graphql(transport, headers, account, "workers", now)
         containers = graphql(transport, headers, account, "containers", now)
+        app_names = container_app_names(transport, headers, account)
+        bench_apps = bench_container_app_names()
     except (ReportError, ov.VolumeError) as exc:
         print("cf_usage_report: %s" % exc, file=err)
         return 2
@@ -371,6 +417,7 @@ def run(
     cpu_cap = ceilings["containers_vcpu_seconds_month"]
     total_cap = ceilings["containers_total_usd_month"]
     target_cap = ceilings["containers_target_usd_month"]
+    bench_cap = ceilings["containers_bench_target_usd_month"]
     total_cost = 0.0
     for name in sorted(apps):
         a = apps[name]
@@ -379,10 +426,12 @@ def run(
             + a["vcpu_s"] * CONTAINERS_USD_PER_VCPU_SECOND
         )
         total_cost += cost
-        bad = a["gib_s"] > mem_cap or a["vcpu_s"] > cpu_cap or cost > target_cap
+        is_bench = app_names.get(name) in bench_apps
+        app_cap = bench_cap if is_bench else target_cap
+        bad = a["gib_s"] > mem_cap or a["vcpu_s"] > cpu_cap or cost > app_cap
         over += 1 if bad else 0
         print(
-            "%s containers.app.%s gib_seconds=%d (ceiling %d) vcpu_seconds=%d (ceiling %d) est_cost_usd=%.2f (ceiling %.2f)"
+            "%s containers.app.%s gib_seconds=%d (ceiling %d) vcpu_seconds=%d (ceiling %d) est_cost_usd=%.2f (ceiling %.2f)%s"
             % (
                 "OVER" if bad else "OK  ",
                 name,
@@ -391,7 +440,8 @@ def run(
                 a["vcpu_s"],
                 cpu_cap,
                 cost,
-                target_cap,
+                app_cap,
+                " bench proxy" if is_bench else "",
             ),
             file=out,
         )

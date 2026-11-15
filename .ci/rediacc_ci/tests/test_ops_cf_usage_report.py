@@ -29,7 +29,13 @@ CONTAINER_CEILINGS = {
     "containers_vcpu_seconds_month": 2_500_000,
     "containers_total_usd_month": 350,
     "containers_target_usd_month": 50,
+    "containers_bench_target_usd_month": 10,
 }
+
+APPLICATIONS = [
+    {"id": "app1", "name": "proxy-eu-orgexecutor"},
+    {"id": "bench1", "name": "proxy-bench-orgexecutor"},
+]
 
 DATA = {
     "r2StorageAdaptiveGroups": [
@@ -79,6 +85,8 @@ class Fake:
         self.loki_down = loki_down
         self.telemetry = telemetry
         self.gql_status = gql_status
+        self.apps = APPLICATIONS
+        self.apps_status = 200
         self.calls: list = []
 
     def __call__(self, method, url, headers, body):
@@ -92,6 +100,11 @@ class Fake:
                 "data": {"viewer": {"accounts": [{name: self.data[name]}]}},
                 "errors": None,
             }
+        if "/containers/applications" in url:
+            page = int(urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)["page"][0])
+            if self.apps_status != 200:
+                return self.apps_status, None
+            return 200, {"result": self.apps if page == 1 else []}
         if "/uid/loki/" in url:
             if self.loki_down:
                 return 502, None
@@ -334,3 +347,55 @@ def test_a_target_at_20_usd_memory_plus_20_usd_vcpu_is_not_over():
     rc, text = go(Fake(data=_one_app(20, 20)), TARGET_CEILINGS)
     assert rc == 0, text
     assert "OK   containers.app.app1" in text
+
+
+def _app_usd(app_id: str, usd: float) -> dict:
+    """A container row whose estimated cost is `usd`, all of it memory."""
+    return DATA | {
+        "containersMetricsAdaptiveGroups": [
+            {
+                "dimensions": {"applicationId": app_id},
+                "sum": {
+                    "cpuTimeSec": 0.0,
+                    "allocatedMemory": usd / ur.CONTAINERS_USD_PER_GIB_SECOND * 2**30,
+                },
+            }
+        ]
+    }
+
+
+def test_a_bench_proxy_application_at_12_usd_is_over_its_10_usd_ceiling():
+    rc, text = go(Fake(data=_app_usd("bench1", 12)), TARGET_CEILINGS)
+    assert rc == 1, text
+    assert "OVER containers.app.bench1" in text
+    assert "est_cost_usd=12.00 (ceiling 10.00) bench proxy" in text
+
+
+def test_a_production_proxy_application_at_12_usd_stays_under_its_50_usd_ceiling():
+    rc, text = go(Fake(data=_app_usd("app1", 12)), TARGET_CEILINGS)
+    assert rc == 0, text
+    assert "OK   containers.app.app1" in text
+    assert "(ceiling 50.00)" in text
+    assert "bench proxy" not in text
+
+
+def test_a_bench_proxy_application_at_8_usd_is_not_over():
+    rc, text = go(Fake(data=_app_usd("bench1", 8)), TARGET_CEILINGS)
+    assert rc == 0, text
+    assert "OK   containers.app.bench1" in text
+
+
+def test_a_failed_application_listing_is_exit_2(capsys):
+    fake = Fake()
+    fake.apps_status = 403
+    rc, _ = go(fake)
+    assert rc == 2
+    assert "containers application listing: answered 403" in capsys.readouterr().err
+
+
+def test_every_bench_proxy_worker_of_regions_json_is_a_bench_application():
+    assert ur.bench_container_app_names() == {
+        "proxy-bench-orgexecutor",
+        "proxy-bench-us-orgexecutor",
+        "proxy-bench-asia-orgexecutor",
+    }

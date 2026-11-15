@@ -309,6 +309,27 @@
           ".ci/rediacc_ci/tests/test_ops_cf_notifications.py"
         ]
       }
+    },
+    {
+      "id": "cf.containers_bench_target_usd_month",
+      "unit": "usd",
+      "min": 1,
+      "max": 10000,
+      "why": "Estimated Containers spend per bench proxy application (memory plus vCPU) per month: the weekly report's ceiling, a fifth of a production target's.",
+      "copies": [
+        {
+          "file": ".ci/config/cf-spend-guard.json",
+          "json_path": "/report/containers_bench_target_usd_month"
+        }
+      ],
+      "reason_paths": [],
+      "tests": {
+        "gates": [],
+        "pytest": [
+          ".ci/rediacc_ci/tests/test_ops_cf_usage_report.py",
+          ".ci/rediacc_ci/tests/test_ops_cf_notifications.py"
+        ]
+      }
     }
   ]
 }
