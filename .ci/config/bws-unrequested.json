@@ -230,7 +230,7 @@
     },
     "BENCH_ROOT_PASSWORD": {
       "kind": "no-github-twin",
-      "reason": "The bench root principal's login password (rediacc_ci.ops.deploy_bench ROOT_LOGIN_ENV), bound only by `bws_env exec --profile deploy-bench` for the local seed-root and reset-root flows. Bench is deliberately not deployed by any workflow, so no GitHub secret of that name exists to shadow."
+      "reason": "The bench root principal's login password (rediacc_ci.ops.deploy_bench ROOT_LOGIN_ENV), bound by `bws_env exec --profile deploy-bench` for the local seed-root and reset-root flows and by `--profile bench-login` for the root session the login and drills open. Bench is deliberately not deployed by any workflow, so no GitHub secret of that name exists to shadow."
     },
     "LIVE_CONSOLE_D1_DATABASE": {
       "kind": "no-github-twin",
@@ -368,21 +368,13 @@
       "kind": "no-github-twin",
       "reason": "The live console probes (private/account/e2e/tests/27-console/27-91-live-two-orgs.test.ts, 27-90-live-executor.test.ts) against edge-asia run only locally through `bws_env exec --profile live-console-edge-asia`; no workflow runs them yet, so no GitHub secret of that name exists to shadow."
     },
-    "REDIACC_BENCH_EMAIL": {
+    "BENCH_ROOT_TOTP_SEED": {
       "kind": "no-github-twin",
-      "reason": "The operator's own bench login address, read only by rediacc_ci.ops.login_bench (`npm run login:bench`) under `bws_env exec --profile bench-login`. Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow."
+      "reason": "The base32 TOTP seed of the bench root account, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login`, which derives the six-digit code in memory (rediacc_ci.ops.totp). Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow."
     },
-    "REDIACC_BENCH_PASSWORD": {
+    "BENCH_STORE_MASTER_PASSWORD": {
       "kind": "no-github-twin",
-      "reason": "The operator's own bench login password, read only by rediacc_ci.ops.login_bench (`npm run login:bench`) under `bws_env exec --profile bench-login` and handed to the CLI in its child environment. Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow."
-    },
-    "REDIACC_BENCH_TOTP_SEED": {
-      "kind": "no-github-twin",
-      "reason": "The base32 TOTP seed of the operator's bench account, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login`, which derives the six-digit code in memory (rediacc_ci.ops.totp). Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow."
-    },
-    "REDIACC_BENCH_MASTER_PASSWORD": {
-      "kind": "no-github-twin",
-      "reason": "The master password of the eu-bench remote config store, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login` for `config remote enable --master-password`. Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow."
+      "reason": "The master password of the bench remote config store, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login` for `config remote enable --master-password`. Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow."
     },
     "LIVE_CONSOLE_EDGE_US_ORG_C_EMAIL": {
       "kind": "no-github-twin",

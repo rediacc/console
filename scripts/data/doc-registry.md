@@ -1008,7 +1008,7 @@ Scans: every tracked path under .ci/, grouped by directory.
 | .ci/rediacc_ci/infra | 21 | .py 21 |
 | .ci/rediacc_ci/lab | 3 | .py 3 |
 | .ci/rediacc_ci/legal | 2 | .py 2 |
-| .ci/rediacc_ci/ops | 51 | .py 51 |
+| .ci/rediacc_ci/ops | 52 | .py 52 |
 | .ci/rediacc_ci/pr | 2 | .py 2 |
 | .ci/rediacc_ci/private | 10 | .py 10 |
 | .ci/rediacc_ci/proof | 5 | .py 5 |
@@ -1509,6 +1509,8 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `BEFORE_SHA` | ci-runner | - |
 | `BENCH` | ci-runner | - |
 | `BENCH_ROOT_PASSWORD` | secret | - |
+| `BENCH_ROOT_TOTP_SEED` | secret | - |
+| `BENCH_STORE_MASTER_PASSWORD` | secret | - |
 | `BINARY_PATH` | ci-runner | - |
 | `BOT` | tombstone | - |
 | `BP_ACCESS_EMAILS` | harness | - |
@@ -2140,10 +2142,6 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `REDIACC_ALLOW_DOWNGRADE` | product-runtime | - |
 | `REDIACC_ALLOW_GRAND_REPO` | product-runtime | - |
 | `REDIACC_API_TOKEN` | tombstone | tombstone proof: `packages/cli/src/__tests__/env-tombstones.test.ts` |
-| `REDIACC_BENCH_EMAIL` | secret | - |
-| `REDIACC_BENCH_MASTER_PASSWORD` | secret | - |
-| `REDIACC_BENCH_PASSWORD` | secret | - |
-| `REDIACC_BENCH_TOTP_SEED` | secret | - |
 | `REDIACC_BWS_PROFILES` | harness | - |
 | `REDIACC_CI_REGOLDEN` | harness | - |
 | `REDIACC_CI_REGOLDEN_ONLY` | harness | - |
@@ -2295,6 +2293,8 @@ Scans: the shard classification in `.ci/config/env-manifest.json`, the committed
 | `REVIEW_OUTCOME` | ci-runner | - |
 | `ROLLBACK_OUTCOME` | ci-runner | - |
 | `ROOT_EMAIL` | secret | - |
+| `ROOT_PASSWORD` | secret | - |
+| `ROOT_TOTP_SEED` | secret | - |
 | `ROTATION_BOUND` | gate-seam | - |
 | `ROTATION_RC` | ci-runner | - |
 | `ROUND` | tombstone | - |

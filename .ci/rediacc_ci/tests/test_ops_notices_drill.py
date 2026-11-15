@@ -396,7 +396,7 @@ def test_a_refused_first_verify_is_retried_once_with_the_next_window(tmp_path, c
 def test_two_refused_verifies_fail_naming_the_seed(tmp_path, capsys):
     fake, rc, out = drill(tmp_path, capsys, two_factor=True, verify=(401, 401))
     assert rc == 1
-    assert "REDIACC_BENCH_TOTP_SEED" in out.err
+    assert "BENCH_ROOT_TOTP_SEED" in out.err
     assert len(fake.verified) == 2
     assert fake.runs == 0
 

@@ -32,14 +32,14 @@ The `bench-login` consumer in `.ci/config/secret-supply.json` binds four Bitward
 
 | Name | Holds | Reaches the CLI as |
 |---|---|---|
-| `REDIACC_BENCH_EMAIL` | the operator's bench login address | `REDIACC_LOGIN_EMAIL` |
-| `REDIACC_BENCH_PASSWORD` | the operator's bench login password | `REDIACC_LOGIN_PASSWORD` |
-| `REDIACC_BENCH_TOTP_SEED` | the base32 TOTP seed of that account | `REDIACC_LOGIN_TOTP`, the derived code only |
-| `REDIACC_BENCH_MASTER_PASSWORD` | the master password of the eu-bench remote config store | `REDIACC_STORE_MASTER_PASSWORD` |
+| `ROOT_EMAIL` | the root address, the same on every environment | `REDIACC_LOGIN_EMAIL` |
+| `BENCH_ROOT_PASSWORD` | the bench root password (its own, not the production one) | `REDIACC_LOGIN_PASSWORD` |
+| `BENCH_ROOT_TOTP_SEED` | the base32 TOTP seed of the bench root, server-generated and written back by the re-enrol path | `REDIACC_LOGIN_TOTP`, the derived code only |
+| `BENCH_STORE_MASTER_PASSWORD` | the master password of the eu-bench remote config store | `REDIACC_STORE_MASTER_PASSWORD` |
 
 Every value travels by name in a child's environment. None is put on argv, printed or logged, and each `rdc` child receives only the values its own step needs. `RDC_DEV`, `REDIACC_CONFIG`, `REDIACC_TOKEN` and `REDIACC_ACCOUNT_SERVER` are dropped from every child, so an inherited dev selection cannot point the login at another server or config. The allowlist child receives none of the four.
 
-`PYTHONPATH=.ci python3 -m rediacc_ci.ops.totp` runs the RFC 6238 Appendix B self-check and, with `REDIACC_BENCH_TOTP_SEED` set, confirms the seed decodes. It prints only `ok` lines, never the seed or a code.
+`PYTHONPATH=.ci python3 -m rediacc_ci.ops.totp` runs the RFC 6238 Appendix B self-check and, with `BENCH_ROOT_TOTP_SEED` set, confirms the seed decodes. It prints only `ok` lines, never the seed or a code.
 
 ## Bench signs licences with the production key
 
@@ -50,3 +50,7 @@ The X25519 pair stays DEV. It is the E2E envelope key, not the licence signer, a
 The `deploy-proxy-bench` profile binds the production ED25519 public key too, so the renet the bench proxy image builds verifies a production-signed bench licence; the bench proxy was redeployed with it on 2026-10-27 (version 5622d50c).
 
 A TOTP step is accepted once per user (account 8c656b6). Two runs that log in within the same 30 s step collide: the second is refused "Invalid verification code". Nothing waits automatically: a caller that runs a second TOTP-using command right after `npm run login:bench` (for example `rdc config remote master-password change`) must itself wait for the next 30 s step before computing the codes, or it is refused before anything is written.
+
+## Stable and edge root
+
+Stable and edge share one production root pair in every region: `ROOT_EMAIL`, `ROOT_PASSWORD` and `ROOT_TOTP_SEED`, bound by the `root-login` profile. `PYTHONPATH=.ci python3 -m rediacc_ci.ops.root_login --target stable|edge --region eu|us|asia` signs in, answers the TOTP challenge from the seed and prints only `root session opened (<target> <region>)`. The bench root keeps its own password and seed.

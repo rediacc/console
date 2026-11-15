@@ -202,8 +202,8 @@ def test_a_placeholder_value_is_refused_naming_its_bitwarden_entry(name):
 
 def test_the_refusal_names_the_entry_uuid():
     with pytest.raises(login_bench.LoginError) as caught:
-        login_bench.read_values(_env(REDIACC_BENCH_PASSWORD=login_bench.PLACEHOLDER))
-    assert "59049d02-7e18-46b7-a6fd-b4f0011b2ecc" in str(caught.value)
+        login_bench.read_values(_env(BENCH_ROOT_PASSWORD=login_bench.PLACEHOLDER))
+    assert "21c84f5c-b971-4c72-9b1d-b4ef01013db8" in str(caught.value)
 
 
 @pytest.mark.parametrize("name", login_bench.SOURCE_NAMES)
@@ -220,7 +220,7 @@ def test_a_missing_value_is_refused(name):
 
 def test_a_bad_seed_is_refused_without_echoing_it():
     with pytest.raises(login_bench.LoginError) as caught:
-        login_bench.read_values(_env(REDIACC_BENCH_TOTP_SEED="ABC18"))
+        login_bench.read_values(_env(BENCH_ROOT_TOTP_SEED="ABC18"))
     assert caught.value.rc == 2
     assert "ABC18" not in str(caught.value)
 
@@ -467,7 +467,7 @@ class EnrolCapture:
         if "store-from-env" in argv:
             self.order.append("bws")
             self.envs.append(dict(env))
-            return self.write_rc, "REDIACC_BENCH_TOTP_SEED MATCH\n"
+            return self.write_rc, "BENCH_ROOT_TOTP_SEED MATCH\n"
         if login_bench.MAIL_MODE in argv:
             self.order.append("mail")
             self.envs.append(dict(env))
@@ -577,7 +577,7 @@ def test_the_writer_argv_carries_names_never_the_seed(capsys):
         api=api,
     )
     write = next(a for a in captured if "store-from-env" in a)
-    assert write[-1] == "REDIACC_BENCH_TOTP_SEED > REDIACC_BENCH_TOTP_SEED_NEW"
+    assert write[-1] == "BENCH_ROOT_TOTP_SEED > BENCH_ROOT_TOTP_SEED_NEW"
     out, err = capsys.readouterr()
     for secret in (NEW_SEED, SEED, "bk-1111", "tok-reauth-1", VALUES[login_bench.PW_ENV]):
         assert secret not in out + err
@@ -626,7 +626,7 @@ def test_two_refused_windows_are_the_stale_seed_refusal_and_do_not_loop():
     message = str(caught.value)
     assert "stale" in message
     assert "two consecutive 30 s windows" in message
-    assert "REDIACC_BENCH_TOTP_SEED" in message
+    assert "BENCH_ROOT_TOTP_SEED" in message
     assert SEED not in message
     assert [r for r, _b in api.calls] == ["login", "2fa/verify", "2fa/verify"]
     assert [a[-1] for a, _e in runner.calls] == ["add-current"]
