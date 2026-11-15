@@ -33,7 +33,7 @@ const ARCH_OF: Record<string, 'amd64' | 'arm64'> = {
 export class AwaitingCert extends ServerError {}
 
 /** What an air-gapped install refuses up front: anything that needs the internet, or contradicts the bundle. */
-export function offlineOptionProblems(opts: InstallOptions): string[] {
+function offlineOptionProblems(opts: InstallOptions): string[] {
   const problems: string[] = [];
   if (!opts.bundle) problems.push(t('commands.server.offline.needsBundle'));
   if (opts.licence === 'free') problems.push(t('commands.server.offline.noFree'));

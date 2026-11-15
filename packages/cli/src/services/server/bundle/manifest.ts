@@ -35,7 +35,7 @@ export interface BundleManifest {
 }
 
 /** sha256 over the built-in elite template's files, in path order. */
-export function templateSha256(): string {
+function templateSha256(): string {
   const files = templateFiles();
   const hash = createHash('sha256');
   for (const path of Object.keys(files).sort((a, b) => Number(a > b) - Number(a < b))) {

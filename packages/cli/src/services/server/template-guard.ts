@@ -10,7 +10,7 @@ import { templateFiles } from './common.js';
 import type { ServerDeps } from './types.js';
 
 /** The files the built-in elite template writes. */
-export function templateFileNames(): string[] {
+function templateFileNames(): string[] {
   return Object.keys(templateFiles()).sort((a, b) => Number(a > b) - Number(a < b));
 }
 
