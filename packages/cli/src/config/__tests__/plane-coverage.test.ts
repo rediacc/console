@@ -155,8 +155,9 @@ describe('command plane coverage', () => {
     // 215 -> 220, machine 116 -> 121: `rdc server install|status|upgrade|backup|licence` (PLAN-enterprise-tenants C7) all reach the machine over SSH.
     //
     // 220 -> 221, config 57 -> 58: `config import-machine` (PLAN-hostinger-to-bench Design 5) reads one config file and writes another on the workstation, never a machine, so it keeps the config domain's default plane.
-    expect(COMMANDS.length).toBe(221);
-    expect(counts).toEqual({ config: 58, machine: 121, other: 42 });
+    // 221 -> 223, other 42 -> 44: `server bundle` (local docker, local files) and `server licence mint` (account server under the caller's login) reach no machine (PLAN-enterprise-tenants C11).
+    expect(COMMANDS.length).toBe(223);
+    expect(counts).toEqual({ config: 58, machine: 121, other: 44 });
   });
 
   it('records the interactive commands', () => {

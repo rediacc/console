@@ -162,6 +162,9 @@ export const COMMAND_PLANES: Record<string, PlaneMeta> = {
   // ── server ──────────────────────────────────────────────────────────── The self-hosted account server as a repo: every verb reaches the machine over SSH (services/server/box.ts); `status` also probes the server's HTTPS health endpoint and `licence` mints its cert through the account server (`delegation/issue`), with `repo up` run as a child `rdc`. `install` is interactive: it asks for missing values on a TTY, prints the one-time recovery bundle only there, and drives child `rdc` and local `docker`, none of which an executor could do on the caller's behalf.
   server: { plane: 'machine' },
   'server install': { plane: 'machine', interactive: true },
+  // bundle runs local docker and writes local files; mint calls the account server under the caller's login: neither reaches a machine.
+  'server bundle': { plane: 'other' },
+  'server licence mint': { plane: 'other' },
 };
 
 /** Indexed for lookup: a Map.get() is honestly optional, a Record index is not. */

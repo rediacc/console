@@ -2478,6 +2478,8 @@ Mint a licence certificate for an offline box's request (run online, logged in)
 - `--request <file>`: The delegation request file the offline install wrote
 - `--out <file>`: File to write the certificate to
 
+> MCP excluded: Mints a delegation certificate under the caller's login for a box's key; use the CLI.
+
 ### rdc server bundle
 
 Build an offline bundle (images, renet, manifest, checksums) for an air-gapped install. Run it on a machine with internet access.
@@ -2488,3 +2490,5 @@ Build an offline bundle (images, renet, manifest, checksums) for an air-gapped i
 - `--arch <arch>`: Target architecture of the box (default: amd64)
 - `--tag <tag>`: Server image tag to bundle
 - `--image <ref>`: Bundle this local image instead of pulling a tag
+
+> MCP excluded: Pulls and saves several GB of images with the local Docker and writes them to disk; use the CLI.

@@ -661,6 +661,14 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
     mcpExcludeReason:
       "Prints the server's private keys; they must not land in an agent transcript.",
   },
+  'server bundle': {
+    mcpExcludeReason:
+      'Pulls and saves several GB of images with the local Docker and writes them to disk; use the CLI.',
+  },
+  'server licence mint': {
+    mcpExcludeReason:
+      "Mints a delegation certificate under the caller's login for a box's key; use the CLI.",
+  },
   'server licence': {
     mcpExcludeReason:
       'Mints a delegation certificate and restarts the account server; use the CLI.',

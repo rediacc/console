@@ -7,7 +7,7 @@ order: 2
 language: zh
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/zh/cli.json
-sourceHash: "505feb83df0a1561"
+sourceHash: "7f0cafe4c8dacfa6"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -1065,6 +1065,7 @@ rdc machine setup <name> [options]
 | `--datastore-path <path>` | {{t:cli.commands.machine.setup.datastoreOption}} | {{t:cli.docs.optionLabels.no}} | `/mnt/rediacc` |
 | `--datastore-size <size>` | {{t:cli.commands.machine.setup.datastoreSizeOption}} | {{t:cli.docs.optionLabels.no}} | `95%` |
 | `--no-converge` | {{t:cli.commands.machine.setup.noConvergeOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--offline` | {{t:cli.commands.machine.setup.offlineOption}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
@@ -3436,6 +3437,8 @@ rdc server install [machine] [options]
 | `--image-file <tar>` | {{t:cli.commands.server.install.optionImageFile}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--local-image` | {{t:cli.commands.server.install.optionLocalImage}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--no-dns-wait` | {{t:cli.commands.server.install.optionNoDnsWait}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--offline` | {{t:cli.commands.server.install.optionOffline}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--bundle <dir>` | {{t:cli.commands.server.install.optionBundle}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--bws-project <id>` | {{t:cli.commands.server.install.optionBwsProject}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--rotate` | {{t:cli.commands.server.install.optionRotate}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-y, --yes` | {{t:cli.commands.server.install.optionYes}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -3486,6 +3489,8 @@ rdc server upgrade <domain> [options]
 | `--image <ref>` | {{t:cli.commands.server.install.optionImage}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--image-file <tar>` | {{t:cli.commands.server.install.optionImageFile}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--local-image` | {{t:cli.commands.server.install.optionLocalImage}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--bundle <dir>` | {{t:cli.commands.server.upgrade.optionBundle}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--force` | {{t:cli.commands.server.upgrade.optionForce}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-y, --yes` | {{t:cli.commands.server.install.optionYes}} | {{t:cli.docs.optionLabels.no}} | - |
 | `-m, --machine <name>` | {{t:cli.commands.server.optionMachine}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--repo <name>` | {{t:cli.commands.server.optionRepo}} | {{t:cli.docs.optionLabels.no}} | - |
@@ -3496,15 +3501,36 @@ rdc server upgrade <domain> [options]
 
 {{t:cli.commands.server.licence.description}}
 
+<a id="cli-local-server-licence-mint"></a>
+#### mint
+
+{{t:cli.commands.server.licence.mint.description}}
+
 ```bash
-rdc server licence <domain> [options]
+rdc server licence mint [options]
 ```
 
 | {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
 |------|-------------|----------|---------|
-| `--cert <file>` | {{t:cli.commands.server.install.optionCert}} | {{t:cli.docs.optionLabels.no}} | - |
-| `-m, --machine <name>` | {{t:cli.commands.server.optionMachine}} | {{t:cli.docs.optionLabels.no}} | - |
-| `--repo <name>` | {{t:cli.commands.server.optionRepo}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--request <file>` | {{t:cli.commands.server.licence.mint.optionRequest}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--out <file>` | {{t:cli.commands.server.licence.mint.optionOut}} | {{t:cli.docs.optionLabels.yes}} | - |
+
+
+<a id="cli-local-server-bundle"></a>
+### 13.6 bundle
+
+{{t:cli.commands.server.bundle.description}}
+
+```bash
+rdc server bundle [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--out <dir>` | {{t:cli.commands.server.bundle.optionOut}} | {{t:cli.docs.optionLabels.yes}} | - |
+| `--arch <arch>` | {{t:cli.commands.server.bundle.optionArch}} | {{t:cli.docs.optionLabels.no}} | `amd64` |
+| `--tag <tag>` | {{t:cli.commands.server.bundle.optionTag}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--image <ref>` | {{t:cli.commands.server.bundle.optionImage}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ---

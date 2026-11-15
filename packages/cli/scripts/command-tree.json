@@ -389,6 +389,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--offline",
+              "descriptionKey": "commands.machine.setup.offlineOption",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
@@ -7341,6 +7347,18 @@
               "defaultValue": null
             },
             {
+              "flags": "--offline",
+              "descriptionKey": "commands.server.install.optionOffline",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--bundle <dir>",
+              "descriptionKey": "commands.server.install.optionBundle",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--bws-project <id>",
               "descriptionKey": "commands.server.install.optionBwsProject",
               "mandatory": false,
@@ -7415,6 +7433,18 @@
             {
               "flags": "--local-image",
               "descriptionKey": "commands.server.install.optionLocalImage",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--bundle <dir>",
+              "descriptionKey": "commands.server.upgrade.optionBundle",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--force",
+              "descriptionKey": "commands.server.upgrade.optionForce",
               "mandatory": false,
               "defaultValue": null
             },
@@ -7511,6 +7541,59 @@
               "defaultValue": null
             }
           ],
+          "subcommands": [
+            {
+              "name": "mint",
+              "descriptionKey": "commands.server.licence.mint.description",
+              "options": [
+                {
+                  "flags": "--request <file>",
+                  "descriptionKey": "commands.server.licence.mint.optionRequest",
+                  "mandatory": true,
+                  "defaultValue": null
+                },
+                {
+                  "flags": "--out <file>",
+                  "descriptionKey": "commands.server.licence.mint.optionOut",
+                  "mandatory": true,
+                  "defaultValue": null
+                }
+              ],
+              "arguments": [],
+              "subcommands": []
+            }
+          ]
+        },
+        {
+          "name": "bundle",
+          "descriptionKey": "commands.server.bundle.description",
+          "options": [
+            {
+              "flags": "--out <dir>",
+              "descriptionKey": "commands.server.bundle.optionOut",
+              "mandatory": true,
+              "defaultValue": null
+            },
+            {
+              "flags": "--arch <arch>",
+              "descriptionKey": "commands.server.bundle.optionArch",
+              "mandatory": false,
+              "defaultValue": "amd64"
+            },
+            {
+              "flags": "--tag <tag>",
+              "descriptionKey": "commands.server.bundle.optionTag",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
+              "flags": "--image <ref>",
+              "descriptionKey": "commands.server.bundle.optionImage",
+              "mandatory": false,
+              "defaultValue": null
+            }
+          ],
+          "arguments": [],
           "subcommands": []
         }
       ]
