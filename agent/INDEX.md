@@ -464,7 +464,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
-| `agent/plans/PLAN-account-notices.md` | approved | 157 | 3 | 14 | 43579 |
+| `agent/plans/PLAN-account-notices.md` | approved | 157 | 3 | 14 | 43585 |
 | `agent/plans/PLAN-add-chunkstore-backup-verb.md` | compacted | 64 | 0 | 0 | 5651 |
 | `agent/plans/PLAN-add-js-extensions-shared.md` | compacted | 50 | 0 | 0 | 4285 |
 | `agent/plans/PLAN-agent-hints-implementation.md` | compacted | 60 | 0 | 0 | 4623 |
@@ -506,7 +506,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-console-executor-multi-org.md` | approved | 377 | 1 | 17 | 67459 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-converge-preflight-and-repo-recovery.md` | executing | 94 | 0 | 19 | 34124 |
-| `agent/plans/PLAN-d1-eu-jurisdiction.md` | approved | 91 | 19 | 3 | 20594 |
+| `agent/plans/PLAN-d1-eu-jurisdiction.md` | approved | 91 | 19 | 3 | 20597 |
 | `agent/plans/PLAN-d1-scaling.md` | approved | 219 | 12 | 19 | 45816 |
 | `agent/plans/PLAN-deletion-budget.md` | draft | 388 | 28 | 0 | 53439 |
 | `agent/plans/PLAN-detached-jobs.md` | approved | 1068 | 8 | 33 | 195366 |
@@ -548,7 +548,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-local-first-delivery.md` | approved | 117 | 1 | 14 | 26550 |
 | `agent/plans/PLAN-local-release.md` | approved | 295 | 0 | 14 | 25607 |
 | `agent/plans/PLAN-localize-cheat-sheet-rendering.md` | compacted | 50 | 0 | 0 | 4436 |
-| `agent/plans/PLAN-multi-region-bench.md` | approved | 330 | 12 | 11 | 53857 |
+| `agent/plans/PLAN-multi-region-bench.md` | approved | 330 | 12 | 11 | 53893 |
 | `agent/plans/PLAN-nightly-retry-and-watchdog-noise.md` | compacted | 39 | 0 | 0 | 2744 |
 | `agent/plans/PLAN-npm-ci-parallel-parity.md` | compacted | 40 | 0 | 0 | 3252 |
 | `agent/plans/PLAN-onprem-relicence-inbox.md` | approved | 79 | 3 | 10 | 13676 |
@@ -581,7 +581,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-rest-graphql-guard-parity.md` | compacted | 54 | 0 | 8 | 4010 |
 | `agent/plans/PLAN-resumable-rebase-executor.md` | compacted | 36 | 0 | 0 | 2212 |
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
-| `agent/plans/PLAN-root-api-token.md` | approved | 311 | 9 | 5 | 41760 |
+| `agent/plans/PLAN-root-api-token.md` | approved | 311 | 9 | 5 | 41895 |
 | `agent/plans/PLAN-runtime-caller-identity.md` | compacted | 39 | 0 | 0 | 2546 |
 | `agent/plans/PLAN-sandbox-tenant-separation.md` | approved | 123 | 1 | 7 | 25158 |
 | `agent/plans/PLAN-scope-bws-signing-key-to-consuming-step.md` | executing | 129 | 2 | 8 | 11346 |
