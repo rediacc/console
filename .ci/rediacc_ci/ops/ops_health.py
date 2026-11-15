@@ -773,31 +773,89 @@ def targets_drift(served_sha: object, env: dict, runner: Runner) -> tuple[int, s
     return 0, ""
 
 
-# A served-certificate read: (host, port, timeout_s) -> notAfter, or None when the handshake failed.
-Handshake = Callable[[str, int, float], "datetime.datetime | None"]
+@dataclasses.dataclass(frozen=True)
+class ServedCertificate:
+    """What one verifying handshake read: the certificate's `notAfter` and its issuer, flattened to the text of every issuer name field."""
+
+    not_after: datetime.datetime
+    issuer: str
+
+
+# A served-certificate read: (host, port, timeout_s) -> the certificate, or None when the handshake or the read failed.
+Handshake = Callable[[str, int, float], "ServedCertificate | None"]
 TLS_PROBE_ID = re.compile(r"^tls:([a-z0-9.-]+)(?::(\d+))?$")
 CT_EXPIRY = re.compile(r"(?:expires|newest) (\d{4}-\d\d-\d\dT[\d:.]+Z)")
+# The Worker names the issuer scope of a probe in its detail: `issuer "<filter>"`, or `any issuer`.
+CT_ISSUER_SCOPE = re.compile(r'\bissuer "([^"]+)"')
 HANDSHAKE_TIMEOUT_S = 8.0
 
 
-def served_not_after(host: str, port: int, timeout: float) -> datetime.datetime | None:
-    """The `notAfter` of the certificate `host:port` serves, read with a verifying handshake; None when the handshake or the read fails."""
+def served_certificate(host: str, port: int, timeout: float) -> ServedCertificate | None:
+    """The `notAfter` and issuer of the certificate `host:port` serves, read with a verifying handshake; None when the handshake or the read fails."""
     try:
         with (
             socket.create_connection((host, port), timeout=timeout) as raw,
             ssl.create_default_context().wrap_socket(raw, server_hostname=host) as tls,
         ):
             cert = tls.getpeercert()
-        stamp = cert["notAfter"] if cert else None
-        if not isinstance(stamp, str):
+        stamp = cert.get("notAfter") if cert else None
+        if not cert or not isinstance(stamp, str):
             return None
-        return datetime.datetime.fromtimestamp(ssl.cert_time_to_seconds(stamp), datetime.UTC)
+        issuer = " ".join(
+            "%s=%s" % pair for rdn in cert.get("issuer", ()) for pair in rdn if len(pair) == 2
+        )
+        return ServedCertificate(
+            datetime.datetime.fromtimestamp(ssl.cert_time_to_seconds(stamp), datetime.UTC), issuer
+        )
     except (OSError, ssl.SSLError, ValueError, KeyError):
         return None
 
 
+def ingest_max_age_h(source: str, cfg: dict) -> float | None:
+    """The `ingest.max_age_h` of one source, by the Worker's rule (workers/ops-health/src/config.ts): an exact key, then the longest `<prefix>*` key, then `default`; None when the table names none."""
+    table = (cfg.get("ingest") or {}).get("max_age_h") or {}
+    if source in table and not source.endswith("*"):
+        return float(table[source])
+    best: tuple[int, float] | None = None
+    for key, hours in table.items():
+        prefix = key[:-1]
+        if (
+            key.endswith("*")
+            and source.startswith(prefix)
+            and (best is None or len(prefix) > best[0])
+        ):
+            best = (len(prefix), float(hours))
+    if best:
+        return best[1]
+    return float(table["default"]) if "default" in table else None
+
+
+def recompute_verdict(doc: dict, cfg: dict, now: datetime.datetime) -> str:
+    """The Worker's verdict rule (workers/ops-health/src/state.ts `verdict`) over the probes as the refresh has edited them: red when a probe is red or a FRESH ingest entry is red (an entry older than its `max_age_h` is ignored, and an unknown entry never decides); unknown when no cron ran, the last one is stale, there are no probes or one is unknown; green otherwise. With no `ingest.max_age_h` table every red entry counts as fresh."""
+    probes = [p for p in doc.get("probes") or [] if isinstance(p, dict)]
+    if any(p.get("state") == RED for p in probes):
+        return RED
+    for entry in doc.get("ingest") or []:
+        if not isinstance(entry, dict) or entry.get("state") != RED:
+            continue
+        at = parse_iso(entry.get("at"))
+        limit = ingest_max_age_h(str(entry.get("source") or ""), cfg)
+        if limit is None or (at is not None and (now - at).total_seconds() <= limit * 3600):
+            return RED
+    last = parse_iso(doc.get("last_cron_at"))
+    if last is None or (now - last).total_seconds() > stale_min(cfg) * 60:
+        return UNKNOWN
+    if not probes or any(p.get("state") == UNKNOWN for p in probes):
+        return UNKNOWN
+    return GREEN
+
+
 def refresh_tls_probes(doc: dict, cfg: dict, now: datetime.datetime, handshake: Handshake) -> None:
-    """Let the served certificate decide every `tls:<host>[:<port>]` probe whose Worker handshake succeeded (the Worker cannot read a peer certificate, so it answers from Certificate Transparency, which can be stale or unreachable). A CT answer that is missing (certspotter in outage, crt.sh timing out: the probe is `unknown`), older, or equal is replaced by the served certificate's own expiry (reviews 091c4c29.1 and the 2026-11-15 outage, when a dozen hosts were unknown). A probe whose handshake failed, and a handshake that fails here, change nothing. Edits `doc` in place, and recomputes the verdict when a probe changed."""
+    """Let the served certificate decide every `tls:<host>[:<port>]` probe whose Worker handshake succeeded (the Worker cannot read a peer certificate, so it answers from Certificate Transparency, which can be stale or unreachable).
+
+    Whatever the CT answer is, missing (certspotter in outage, crt.sh timing out: the probe is `unknown`), older, equal or later, the served certificate's own expiry replaces it: the served certificate is what clients see, and CT can list a renewed certificate that is not installed yet (reviews 091c4c29.1, a0f45d3d.1 and the 2026-11-15 outage, when a dozen hosts were unknown).
+
+    A probe whose Worker answer is scoped to an issuer (`issuer "<name>"`) is replaced only by a served certificate that name matches, since a certificate from another CA (a Cloudflare edge certificate in front of an origin one) says nothing about the scoped issuance. A probe whose handshake failed, and a handshake that fails here, change nothing. Edits `doc` in place, and recomputes the verdict when a probe changed."""
     probes = doc.get("probes")
     if not isinstance(probes, list):
         return
@@ -816,7 +874,10 @@ def refresh_tls_probes(doc: dict, cfg: dict, now: datetime.datetime, handshake: 
         served = handshake(ident.group(1), int(ident.group(2) or 443), HANDSHAKE_TIMEOUT_S)
         if served is None:
             continue
-        days = int((served - now).total_seconds() // 86400)
+        scope = CT_ISSUER_SCOPE.search(detail)
+        if scope and scope.group(1).lower() not in served.issuer.lower():
+            continue
+        days = int((served.not_after - now).total_seconds() // 86400)
         verdict = (
             "red: critical, under %d" % crit
             if days < crit
@@ -828,23 +889,15 @@ def refresh_tls_probes(doc: dict, cfg: dict, now: datetime.datetime, handshake: 
         probe["detail"] = (
             "served certificate expires %s, %d day(s) (local handshake; CT answer %s): %s"
             % (
-                iso(served),
+                iso(served.not_after),
                 days,
                 iso(ct_at) if ct_at else "unavailable",
                 verdict,
             )
         )
         changed = True
-    if not changed:
-        return
-    ingest = [e for e in doc.get("ingest") or [] if isinstance(e, dict)]
-    states = [p.get("state") for p in probes if isinstance(p, dict)]
-    if RED in states or any(e.get("state") == RED for e in ingest):
-        doc["verdict"] = RED
-    elif UNKNOWN in states:
-        doc["verdict"] = UNKNOWN
-    else:
-        doc["verdict"] = GREEN
+    if changed:
+        doc["verdict"] = recompute_verdict(doc, cfg, now)
 
 
 def offbox_check(
@@ -854,7 +907,7 @@ def offbox_check(
     runner: Runner,
     now: datetime.datetime,
     with_targets: bool,
-    handshake: Handshake = served_not_after,
+    handshake: Handshake = served_certificate,
 ) -> dict:
     """{rc, state, detail, last_cron_at, verdict, stale, read_at}."""
     doc, error = read_status(worker_url(cfg, env), env.get(READ_CREDENTIAL_ENV) or "", fetch)

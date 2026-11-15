@@ -1,4 +1,4 @@
-"""The local refresh lets a served certificate overrule an older Certificate Transparency answer (the Worker cannot read a peer certificate)."""
+"""The local refresh lets the served certificate decide a handshake-ok tls probe (the Worker cannot read a peer certificate), within the probe's issuer scope, and recomputes the verdict by the Worker's own rule."""
 
 from __future__ import annotations
 
@@ -6,6 +6,7 @@ import datetime
 import json
 import pathlib
 
+from rediacc_ci import paths
 from rediacc_ci.ops import ops_health as oh
 
 NOW = datetime.datetime(2026, 11, 15, 12, 0, tzinfo=datetime.UTC)
@@ -46,20 +47,25 @@ def no_run(*_args) -> oh.Result:
     raise AssertionError("no rdc call expected")
 
 
-def check(fetch, handshake):
-    return oh.offbox_check(CFG, ENV, fetch, no_run, NOW, False, handshake=handshake)
+def check(fetch, handshake, cfg=CFG):
+    return oh.offbox_check(cfg, ENV, fetch, no_run, NOW, False, handshake=handshake)
+
+
+LETS_ENCRYPT = "countryName=US organizationName=Let's Encrypt commonName=R10"
+GTS = "countryName=US organizationName=Google Trust Services commonName=WE1"
 
 
 class Served:
-    """A fake handshake answering one notAfter (or None for a failed handshake)."""
+    """A fake handshake answering one notAfter and issuer (or None for a failed handshake)."""
 
-    def __init__(self, date):
+    def __init__(self, date, issuer=LETS_ENCRYPT):
         self.date = date
+        self.issuer = issuer
         self.calls: list = []
 
     def __call__(self, host, port, timeout):
         self.calls.append((host, port, timeout))
-        return self.date
+        return None if self.date is None else oh.ServedCertificate(self.date, self.issuer)
 
 
 def test_later_served_certificate_clears_a_stale_ct_red():
@@ -145,5 +151,102 @@ def test_another_red_probe_keeps_the_verdict_red():
     assert out["rc"] == 1
 
 
-def test_served_not_after_reads_a_failed_connection_as_none():
-    assert oh.served_not_after("127.0.0.1", 1, 0.5) is None
+def test_served_certificate_reads_a_failed_connection_as_none():
+    assert oh.served_certificate("127.0.0.1", 1, 0.5) is None
+
+
+def test_a_served_certificate_earlier_than_the_ct_date_decides_a_green_ct_red():
+    """a0f45d3d.1: the host serves a certificate that expires before the newest CT one (a renewal not installed yet), so clients see the earlier expiry."""
+    ct_green = (
+        'handshake ok; newest certificate (issuer "Let\'s Encrypt", cache) expires '
+        "2027-06-01T00:00:00Z, 198 day(s)"
+    )
+    served = datetime.datetime(2026, 11, 20, tzinfo=datetime.UTC)
+    out = check(web([probe(state="green", detail=ct_green)], verdict="green"), Served(served))
+    assert out["rc"] == 1
+    assert "served certificate expires 2026-11-20T00:00:00Z" in out["detail"]
+    assert "critical, under 7" in out["detail"]
+    # control: a served certificate as late as the CT one stays green
+    out = check(
+        web([probe(state="green", detail=ct_green)], verdict="green"),
+        Served(datetime.datetime(2027, 6, 1, tzinfo=datetime.UTC)),
+    )
+    assert out["rc"] == 0
+
+
+def test_a_served_certificate_from_another_issuer_never_overrules_an_issuer_scoped_answer():
+    """091c4c29.5: the probe is scoped to the origin's Let's Encrypt issuance, so a Cloudflare edge certificate says nothing about it."""
+    out = check(web([probe()]), Served(JAN_2027, issuer=GTS))
+    assert out["rc"] == 1
+    assert STALE_CT in out["detail"]
+    # control: the same certificate from the scoped issuer decides
+    assert check(web([probe()]), Served(JAN_2027))["rc"] == 0
+    # control: an `any issuer` answer takes whichever issuer the host serves
+    any_issuer = probe(
+        state="unknown",
+        detail="handshake ok; days to expiry unknown for any issuer (certspotter answered 503)",
+    )
+    assert check(web([any_issuer], verdict="unknown"), Served(JAN_2027, issuer=GTS))["rc"] == 0
+
+
+def _with_ingest(rows, probes=None, verdict="red"):
+    doc = status(probes if probes is not None else [probe()], verdict)
+    doc["ingest"] = rows
+
+    def fetch(_method, _url, _headers, _body):
+        return oh.Reply(200, json.dumps(doc))
+
+    return fetch
+
+
+def _ingest(source, state, hours_old):
+    return {
+        "source": source,
+        "state": state,
+        "at": oh.iso(NOW - datetime.timedelta(hours=hours_old)),
+        "detail": "x",
+    }
+
+
+def test_a_fresh_red_ingest_entry_keeps_the_verdict_red_after_a_probe_clears():
+    out = check(_with_ingest([_ingest("local-machine-x", "red", 1)]), Served(JAN_2027))
+    assert out["rc"] == 1
+    assert out["verdict"] == "red"
+
+
+def test_a_stale_red_ingest_entry_is_ignored_as_the_worker_ignores_it():
+    """The Worker counts a red entry only while it is younger than its `max_age_h` (local-* is 24 h)."""
+    configured = oh.load_config(paths.repo_root())
+    stale = _with_ingest([_ingest("local-machine-x", "red", 30)])
+    out = check(stale, Served(JAN_2027), configured)
+    assert out["rc"] == 0
+    assert out["verdict"] == "green"
+    # control: the same entry counts when it is younger than the limit, and with no table at all
+    assert (
+        check(_with_ingest([_ingest("local-machine-x", "red", 3)]), Served(JAN_2027), configured)[
+            "rc"
+        ]
+        == 1
+    )
+    assert check(stale, Served(JAN_2027))["rc"] == 1
+
+
+def test_an_unknown_ingest_entry_never_decides_the_verdict():
+    """091c4c29.4: the Worker's verdict reads probes for unknown and ingest only for red, so an unknown entry beside green probes is green there too."""
+    out = check(_with_ingest([_ingest("local-machine-x", "unknown", 1)]), Served(JAN_2027))
+    assert out["rc"] == 0
+    assert out["verdict"] == "green"
+
+
+def test_a_cleared_probe_beside_an_unknown_one_leaves_the_verdict_unknown():
+    other = probe("https:x", "unknown", "slow")
+    out = check(_with_ingest([], probes=[probe(), other], verdict="red"), Served(JAN_2027))
+    assert out["verdict"] == "unknown"
+    assert out["rc"] == 2
+
+
+def test_a_stale_cron_stays_unknown_after_a_probe_changes():
+    doc = status([probe(state="unknown", detail=STALE_DETAIL)], "unknown")
+    doc["last_cron_at"] = oh.iso(NOW - datetime.timedelta(hours=3))
+    oh.refresh_tls_probes(doc, CFG, NOW, Served(JAN_2027))
+    assert doc["verdict"] == "unknown"
