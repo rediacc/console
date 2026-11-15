@@ -185,7 +185,9 @@ ANSI = re.compile(r"\x1b\[[0-9;]*m")
 class World:
     """One scratch tree, one fake PATH, one call log."""
 
-    def __init__(self, tmp: pathlib.Path):
+    def __init__(self, tmp: pathlib.Path, bws_profiles: str = "deploy-bench"):
+        # The profile the twins' environment names. It is part of every golden case key, so a twin recorded with `deploy-bench` keeps its key, and only the deploy-bench family asks for the region's own profile.
+        self.bws_profiles = bws_profiles
         self.root = tmp / "root"
         self.bin = tmp / "bin"
         self.log = tmp / "calls.jsonl"
@@ -257,7 +259,7 @@ class World:
             "FAKE_ROOT": str(self.root),
             "REDIACC_CI_ROOT": str(self.root),
             "PYTHONPATH": str(ROOT / ".ci"),
-            "REDIACC_BWS_PROFILES": "deploy-bench-eu",
+            "REDIACC_BWS_PROFILES": self.bws_profiles,
         }
         env.update(extra)
         return env

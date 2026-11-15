@@ -28,7 +28,7 @@ GLOBAL_ENV = {"CF_GLOBAL_API_KEY": "gk", "CF_EMAIL": "ops@example.invalid"}
 
 @pytest.fixture
 def world(tmp_path: pathlib.Path) -> h.World:
-    scratch = h.World(tmp_path)
+    scratch = h.World(tmp_path, bws_profiles="deploy-bench-eu")
     # deploy_bench reads the bench bucket from the BACKUP_BUCKET binding (PLAN-backup-presign-bucket-require-and-wrangler-vars B4), which the harness's minimal bench config does not declare.
     config = scratch.root / "workers/account/wrangler.bench-eu.toml"
     config.write_text(
