@@ -22,8 +22,10 @@ When the request is ambiguous about regions or components, settle it from the ta
 |---|---|---|---|---|
 | account | `account-<region>` | `<region>.rediacc.cloud` | `workers/account/wrangler.<region>.toml` | `account-<region>` |
 | account (bench) | `account-bench` | `bench.rediacc.cloud` | `workers/account/wrangler.bench.toml` | `account-bench` |
+| account (bench us, asia) | `account-bench-<region>` | `bench-<region>.rediacc.cloud` | `workers/account/wrangler.bench-<region>.toml` | `account-bench-<region>` |
 | proxy | `proxy-<region>` | `proxy.<region>.rediacc.cloud` | `workers/proxy/wrangler.<region>.toml` | none |
 | proxy (bench) | `proxy-bench` | `proxy.bench.rediacc.cloud` | `workers/proxy/wrangler.bench.toml` | none |
+| proxy (bench us, asia) | `proxy-bench-<region>` | `proxy.bench-<region>.rediacc.cloud` | `workers/proxy/wrangler.bench-<region>.toml` | none |
 | www | `www` | `www.rediacc.com`, shipped with the edge release | `workers/www/wrangler.toml` | none |
 
 Regions, hosts and bucket names (`configs-<region>`, `backups-<region>`) live in `regions.json`. The proxy Workers deploy through `release:local` (`deploy_proxy` with `workers/proxy/wrangler.<target>.toml`); section 4a covers the per-region steps. The bench proxy stays manual. The public eu/us/asia customers ride the edge channel with no soak. The CLI's `stable` channel (R2 `stable/`) is promoted by `cd-release-stable.yml` and reaches enterprise company Workers (`<company>.rediacc.cloud`) through the release rings of `cd-enterprise-release.yml`, not through this skill.
@@ -51,7 +53,7 @@ Watch a run with the ci-watch skill (`.ci/scripts/ci/ci-trace.py --wait --run <i
 
 **eu.** Every eu deploy records the rollback handle and the D1 bookmark in its deploy record.
 
-**Bench.** `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench` stays as it is, and so does the bench proxy (section 4a, `deploy_proxy --target bench`). A raw `wrangler deploy` on a bench or preview config is refused: its module is the path.
+**Bench.** `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench [--region eu|us|asia]` deploys one bench (the us and asia ones bind the `deploy-bench-us|asia` profiles and their `_BENCH_US|_BENCH_ASIA` store entries). The bench proxy takes the same `--region` (section 4a, `deploy_proxy --target bench --region <r>`). A raw `wrangler deploy` on a bench or preview config is refused: its module is the path.
 
 ## 3. Local path: the credentials (bws)
 

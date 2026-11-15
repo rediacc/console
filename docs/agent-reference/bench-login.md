@@ -39,6 +39,17 @@ The `bench-login` consumer in `.ci/config/secret-supply.json` binds four Bitward
 
 Every value travels by name in a child's environment. None is put on argv, printed or logged, and each `rdc` child receives only the values its own step needs. `RDC_DEV`, `REDIACC_CONFIG`, `REDIACC_TOKEN` and `REDIACC_ACCOUNT_SERVER` are dropped from every child, so an inherited dev selection cannot point the login at another server or config. The allowlist child receives none of the four.
 
+## One bench per region
+
+The us and asia benches (`us-bench`, `asia-bench`, hosts from `regions.json` `bench`) log in with `npm run login:bench -- --region us|asia`. Each bench keeps its own root password, TOTP seed and store master password, named with the region suffix and bound by a region profile under the names `login_bench` reads:
+
+| Profile | Entries |
+|---|---|
+| `bench-login-us` | `ROOT_EMAIL`, `BENCH_ROOT_PASSWORD_US`, `BENCH_ROOT_TOTP_SEED_US`, `BENCH_STORE_MASTER_PASSWORD_US` |
+| `bench-login-asia` | `ROOT_EMAIL`, `BENCH_ROOT_PASSWORD_ASIA`, `BENCH_ROOT_TOTP_SEED_ASIA`, `BENCH_STORE_MASTER_PASSWORD_ASIA` |
+
+`deploy-bench-us|asia` and `backup-push-bench-us|asia` bind the region's `ACCOUNT_CONFIG_SERVER_KEY_BENCH_<R>`, `ACCOUNT_BACKUP_STORE_KEK_BENCH_<R>`, `ACCOUNT_BACKUP_S3_*_BENCH_<R>` and `BENCH_ROOT_PASSWORD_<R>`; the rest of each set is shared with the eu bench. The region entries are `optional` in those profiles until box L1 of `agent/plans/PLAN-multi-region-bench.md` writes them to the store. `WK_BENCH_ORIGIN` in `.ci/config/well-known.env` stays the eu bench's origin; the other benches' hosts come from `regions.json`.
+
 `PYTHONPATH=.ci python3 -m rediacc_ci.ops.totp` runs the RFC 6238 Appendix B self-check and, with `BENCH_ROOT_TOTP_SEED` set, confirms the seed decodes. It prints only `ok` lines, never the seed or a code.
 
 ## Bench signs licences with the production key
