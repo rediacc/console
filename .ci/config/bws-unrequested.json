@@ -36,14 +36,38 @@
     "entry reds instead of sitting there looking considered."
   ],
   "exemptions": {
-    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE": {"kind": "no-github-twin", "reason": "The retired edge backup pair (token cf-r2-backup-edge, agent/plans/PLAN-product-domain-rename.md). Since the rename one shared Worker set per region takes the _STABLE pair, so no workflow or profile requests it, and check:ci-backup-credential-isolation refuses one that does. It stays mapped until the token is revoked and the vault entry deleted (rename L11)."},
-    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE": {"kind": "no-github-twin", "reason": "The retired edge backup pair (token cf-r2-backup-edge, agent/plans/PLAN-product-domain-rename.md). Since the rename one shared Worker set per region takes the _STABLE pair, so no workflow or profile requests it, and check:ci-backup-credential-isolation refuses one that does. It stays mapped until the token is revoked and the vault entry deleted (rename L11)."},
-    "ACCOUNT_BACKUP_STORE_KEK_EU_EDGE": {"kind": "no-github-twin", "reason": "The eu edge Worker's value, retired with the product-domain rename (agent/plans/PLAN-product-domain-rename.md W10): the shared account-eu Worker seals under the EU_STABLE value, because its config objects were seeded from the stable bucket, so no workflow or profile requests this name. It stays mapped until the vault entry is deleted (rename L11)."},
-    "ACCOUNT_CONFIG_SERVER_KEY_EU_EDGE": {"kind": "no-github-twin", "reason": "The eu edge Worker's value, retired with the product-domain rename (agent/plans/PLAN-product-domain-rename.md W10): the shared account-eu Worker seals under the EU_STABLE value, because its config objects were seeded from the stable bucket, so no workflow or profile requests this name. It stays mapped until the vault entry is deleted (rename L11)."},
-    "ACCOUNT_BACKUP_STORE_KEK_US_STABLE": {"kind": "no-github-twin", "reason": "The old stable Worker's value for this region, retired with the product-domain rename (agent/plans/PLAN-product-domain-rename.md W10): the shared Worker for this region seeds from the edge database and config bucket, so cd-deploy-account.yml and the account-secrets-<region> profile fetch the region's _EDGE store value under this name as the LOCAL variable, and nothing requests this store entry. It stays mapped until the vault entry is deleted (rename L11)."},
-    "ACCOUNT_BACKUP_STORE_KEK_ASIA_STABLE": {"kind": "no-github-twin", "reason": "The old stable Worker's value for this region, retired with the product-domain rename (agent/plans/PLAN-product-domain-rename.md W10): the shared Worker for this region seeds from the edge database and config bucket, so cd-deploy-account.yml and the account-secrets-<region> profile fetch the region's _EDGE store value under this name as the LOCAL variable, and nothing requests this store entry. It stays mapped until the vault entry is deleted (rename L11)."},
-    "ACCOUNT_CONFIG_SERVER_KEY_US_STABLE": {"kind": "no-github-twin", "reason": "The old stable Worker's value for this region, retired with the product-domain rename (agent/plans/PLAN-product-domain-rename.md W10): the shared Worker for this region seeds from the edge database and config bucket, so cd-deploy-account.yml and the account-secrets-<region> profile fetch the region's _EDGE store value under this name as the LOCAL variable, and nothing requests this store entry. It stays mapped until the vault entry is deleted (rename L11)."},
-    "ACCOUNT_CONFIG_SERVER_KEY_ASIA_STABLE": {"kind": "no-github-twin", "reason": "The old stable Worker's value for this region, retired with the product-domain rename (agent/plans/PLAN-product-domain-rename.md W10): the shared Worker for this region seeds from the edge database and config bucket, so cd-deploy-account.yml and the account-secrets-<region> profile fetch the region's _EDGE store value under this name as the LOCAL variable, and nothing requests this store entry. It stays mapped until the vault entry is deleted (rename L11)."},
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE": {
+      "kind": "no-github-twin",
+      "reason": "The retired edge backup pair (token cf-r2-backup-edge, agent/plans/PLAN-product-domain-rename.md). Since the rename one shared Worker set per region takes the _STABLE pair, so no workflow or profile requests it, and check:ci-backup-credential-isolation refuses one that does. It stays mapped until the token is revoked and the vault entry deleted (rename L11)."
+    },
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE": {
+      "kind": "no-github-twin",
+      "reason": "The retired edge backup pair (token cf-r2-backup-edge, agent/plans/PLAN-product-domain-rename.md). Since the rename one shared Worker set per region takes the _STABLE pair, so no workflow or profile requests it, and check:ci-backup-credential-isolation refuses one that does. It stays mapped until the token is revoked and the vault entry deleted (rename L11)."
+    },
+    "ACCOUNT_BACKUP_STORE_KEK_EU_EDGE": {
+      "kind": "no-github-twin",
+      "reason": "The eu edge Worker's value, retired with the product-domain rename (agent/plans/PLAN-product-domain-rename.md W10): the shared account-eu Worker seals under the EU_STABLE value, because its config objects were seeded from the stable bucket, so no workflow or profile requests this name. It stays mapped until the vault entry is deleted (rename L11)."
+    },
+    "ACCOUNT_CONFIG_SERVER_KEY_EU_EDGE": {
+      "kind": "no-github-twin",
+      "reason": "The eu edge Worker's value, retired with the product-domain rename (agent/plans/PLAN-product-domain-rename.md W10): the shared account-eu Worker seals under the EU_STABLE value, because its config objects were seeded from the stable bucket, so no workflow or profile requests this name. It stays mapped until the vault entry is deleted (rename L11)."
+    },
+    "ACCOUNT_BACKUP_STORE_KEK_US_STABLE": {
+      "kind": "no-github-twin",
+      "reason": "The old stable Worker's value for this region, retired with the product-domain rename (agent/plans/PLAN-product-domain-rename.md W10): the shared Worker for this region seeds from the edge database and config bucket, so cd-deploy-account.yml and the account-secrets-<region> profile fetch the region's _EDGE store value under this name as the LOCAL variable, and nothing requests this store entry. It stays mapped until the vault entry is deleted (rename L11)."
+    },
+    "ACCOUNT_BACKUP_STORE_KEK_ASIA_STABLE": {
+      "kind": "no-github-twin",
+      "reason": "The old stable Worker's value for this region, retired with the product-domain rename (agent/plans/PLAN-product-domain-rename.md W10): the shared Worker for this region seeds from the edge database and config bucket, so cd-deploy-account.yml and the account-secrets-<region> profile fetch the region's _EDGE store value under this name as the LOCAL variable, and nothing requests this store entry. It stays mapped until the vault entry is deleted (rename L11)."
+    },
+    "ACCOUNT_CONFIG_SERVER_KEY_US_STABLE": {
+      "kind": "no-github-twin",
+      "reason": "The old stable Worker's value for this region, retired with the product-domain rename (agent/plans/PLAN-product-domain-rename.md W10): the shared Worker for this region seeds from the edge database and config bucket, so cd-deploy-account.yml and the account-secrets-<region> profile fetch the region's _EDGE store value under this name as the LOCAL variable, and nothing requests this store entry. It stays mapped until the vault entry is deleted (rename L11)."
+    },
+    "ACCOUNT_CONFIG_SERVER_KEY_ASIA_STABLE": {
+      "kind": "no-github-twin",
+      "reason": "The old stable Worker's value for this region, retired with the product-domain rename (agent/plans/PLAN-product-domain-rename.md W10): the shared Worker for this region seeds from the edge database and config bucket, so cd-deploy-account.yml and the account-secrets-<region> profile fetch the region's _EDGE store value under this name as the LOCAL variable, and nothing requests this store entry. It stays mapped until the vault entry is deleted (rename L11)."
+    },
     "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH": {
       "kind": "no-github-twin",
       "reason": "The bench-scoped backup pair (agent/plans/PLAN-backup-credential-isolation.md, token cf-r2-backup-bench), bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench and `--profile backup-push-bench` for rediacc_ci.ops.push_backup_credentials. Bench is deliberately not deployed by any workflow, and check:ci-backup-credential-isolation refuses a workflow that requests this pair."
@@ -411,6 +435,70 @@
     "HOSTINGER_REPO_CREDENTIALS_ESCROW": {
       "kind": "no-github-twin",
       "reason": "The escrow of hostinger's repository credentials outside bench (agent/plans/PLAN-hostinger-to-bench.md Design 6): one JSON object, repository name to {repositoryGuid, credential} per tag. Bound only by `bws_env exec --profile hostinger-escrow` (.ci/config/secret-supply.json) from an operator workstation, written from eu-bench's hostinger tags and read back for a restore; no workflow requests it."
+    },
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_US": {
+      "kind": "no-github-twin",
+      "reason": "The bench-scoped backup pair (agent/plans/PLAN-backup-credential-isolation.md, token cf-r2-backup-bench), bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench and `--profile backup-push-bench` for rediacc_ci.ops.push_backup_credentials. Bench is deliberately not deployed by any workflow, and check:ci-backup-credential-isolation refuses a workflow that requests this pair. This is the us region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+    },
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_ASIA": {
+      "kind": "no-github-twin",
+      "reason": "The bench-scoped backup pair (agent/plans/PLAN-backup-credential-isolation.md, token cf-r2-backup-bench), bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench and `--profile backup-push-bench` for rediacc_ci.ops.push_backup_credentials. Bench is deliberately not deployed by any workflow, and check:ci-backup-credential-isolation refuses a workflow that requests this pair. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+    },
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH_US": {
+      "kind": "no-github-twin",
+      "reason": "The bench-scoped backup pair (agent/plans/PLAN-backup-credential-isolation.md, token cf-r2-backup-bench), bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench and `--profile backup-push-bench` for rediacc_ci.ops.push_backup_credentials. Bench is deliberately not deployed by any workflow, and check:ci-backup-credential-isolation refuses a workflow that requests this pair. This is the us region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+    },
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH_ASIA": {
+      "kind": "no-github-twin",
+      "reason": "The bench-scoped backup pair (agent/plans/PLAN-backup-credential-isolation.md, token cf-r2-backup-bench), bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench and `--profile backup-push-bench` for rediacc_ci.ops.push_backup_credentials. Bench is deliberately not deployed by any workflow, and check:ci-backup-credential-isolation refuses a workflow that requests this pair. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+    },
+    "ACCOUNT_BACKUP_STORE_KEK_BENCH_US": {
+      "kind": "no-github-twin",
+      "reason": "The bench backup store KEK, bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench push; bench deploys never run in GitHub CI, so no workflow requests it. This is the us region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+    },
+    "ACCOUNT_BACKUP_STORE_KEK_BENCH_ASIA": {
+      "kind": "no-github-twin",
+      "reason": "The bench backup store KEK, bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench push; bench deploys never run in GitHub CI, so no workflow requests it. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+    },
+    "ACCOUNT_CONFIG_SERVER_KEY_BENCH_US": {
+      "kind": "no-github-twin",
+      "reason": "The bench config server key (agent/plans/PLAN-config-server-key.md K2/K3), bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench push; bench deploys never run in GitHub CI, so no workflow requests it. This is the us region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+    },
+    "ACCOUNT_CONFIG_SERVER_KEY_BENCH_ASIA": {
+      "kind": "no-github-twin",
+      "reason": "The bench config server key (agent/plans/PLAN-config-server-key.md K2/K3), bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench push; bench deploys never run in GitHub CI, so no workflow requests it. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+    },
+    "BENCH_ROOT_PASSWORD_US": {
+      "kind": "no-github-twin",
+      "reason": "The bench root principal's login password (rediacc_ci.ops.deploy_bench ROOT_LOGIN_ENV), bound by `bws_env exec --profile deploy-bench` for the local seed-root and reset-root flows and by `--profile bench-login` for the root session the login and drills open. Bench is deliberately not deployed by any workflow, so no GitHub secret of that name exists to shadow. This is the us region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+    },
+    "BENCH_ROOT_PASSWORD_ASIA": {
+      "kind": "no-github-twin",
+      "reason": "The bench root principal's login password (rediacc_ci.ops.deploy_bench ROOT_LOGIN_ENV), bound by `bws_env exec --profile deploy-bench` for the local seed-root and reset-root flows and by `--profile bench-login` for the root session the login and drills open. Bench is deliberately not deployed by any workflow, so no GitHub secret of that name exists to shadow. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+    },
+    "BENCH_ROOT_TOTP_SEED_US": {
+      "kind": "no-github-twin",
+      "reason": "The base32 TOTP seed of the bench root account, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login`, which derives the six-digit code in memory (rediacc_ci.ops.totp). Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow. This is the us region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+    },
+    "BENCH_ROOT_TOTP_SEED_ASIA": {
+      "kind": "no-github-twin",
+      "reason": "The base32 TOTP seed of the bench root account, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login`, which derives the six-digit code in memory (rediacc_ci.ops.totp). Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+    },
+    "BENCH_STORE_MASTER_PASSWORD_US": {
+      "kind": "no-github-twin",
+      "reason": "The master password of the bench remote config store, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login` for `config remote enable --master-password`. Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow. This is the us region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+    },
+    "BENCH_STORE_MASTER_PASSWORD_ASIA": {
+      "kind": "no-github-twin",
+      "reason": "The master password of the bench remote config store, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login` for `config remote enable --master-password`. Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+    },
+    "ROOT_PASSWORD": {
+      "kind": "no-github-twin",
+      "reason": "The production root principal's login password shared by stable and edge, read only by rediacc_ci.ops.root_login under `bws_env exec --profile root-login`. Root logins are run locally and by no workflow, so no GitHub secret of that name exists to shadow."
+    },
+    "ROOT_TOTP_SEED": {
+      "kind": "no-github-twin",
+      "reason": "The base32 TOTP seed of the production root account shared by stable and edge, read only by rediacc_ci.ops.root_login under `bws_env exec --profile root-login`, which derives the six-digit code in memory (rediacc_ci.ops.totp). Root logins are run locally and by no workflow, so no GitHub secret of that name exists to shadow."
     }
   },
   "no_fetch_jobs": {}
