@@ -95,7 +95,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 25 of 75 plans done, 1156 of 1396 boxes done (82%).
+Promoted: 25 of 75 plans done, 1157 of 1396 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -152,7 +152,7 @@ Promoted: 25 of 75 plans done, 1156 of 1396 boxes done (82%).
 | 51 | PLAN-renet-docker-running-semantics.md | 13/15 | 2 open |
 | 52 | PLAN-product-domain-rename.md | 24/28 | 4 open |
 | 53 | PLAN-website-routing-and-mail.md | 15/20 | 5 open |
-| 54 | PLAN-enterprise-isolation.md | 21/34 | 13 open |
+| 54 | PLAN-enterprise-isolation.md | 22/34 | 12 open |
 | 55 | PLAN-renet-restart-cycle-defects.md | 6/7 | 1 open |
 | 56 | PLAN-drop-free-license-ip-prefix-hash.md | 5/6 | 1 open |
 | 57 | PLAN-stop-hook-retro-20261101.md | 4/4 | done |
