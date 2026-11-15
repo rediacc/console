@@ -320,7 +320,7 @@ def test_loki_selector_matches_every_deployed_worker_name():
     pattern = re.compile(selector_match.group(1))
     names = []
     for kind in ("account", "proxy"):
-        for region in ("eu", "us", "asia", "bench"):
+        for region in ("eu", "us", "asia", "bench-eu"):
             config = root / "workers" / kind / f"wrangler.{region}.toml"
             found = re.search(r'^name = "([^"]+)"', config.read_text(), re.MULTILINE)
             assert found, config

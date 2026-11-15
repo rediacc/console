@@ -49,15 +49,16 @@ def _world(monkeypatch, declared, asked):
     monkeypatch.setattr(reset_bench, "_rows", lambda _a, _s, _region="eu": [])
 
 
-def test_the_confirmation_phrase_names_a_non_default_region():
-    assert reset_bench.confirmation() == "wipe bench"
+def test_the_confirmation_phrase_names_every_region():
+    assert reset_bench.confirmation() == "wipe bench-eu"
+    assert reset_bench.confirmation("eu") == "wipe bench-eu"
     assert reset_bench.confirmation("us") == "wipe bench-us"
 
 
 def test_a_us_wipe_reads_the_us_config_and_asks_the_us_phrase(monkeypatch):
     asked: list[tuple] = []
     _world(monkeypatch, [], asked)
-    monkeypatch.setattr("builtins.input", lambda: "wipe bench")
+    monkeypatch.setattr("builtins.input", lambda: "wipe bench-eu")
     assert reset_bench.main(["--region", "us"]) == 1
     assert ("wipe_d1", "us") not in asked
     monkeypatch.setattr("builtins.input", lambda: "wipe bench-us")
@@ -66,10 +67,13 @@ def test_a_us_wipe_reads_the_us_config_and_asks_the_us_phrase(monkeypatch):
         assert step in asked
 
 
-def test_the_default_region_keeps_the_original_phrase(monkeypatch):
+def test_the_default_region_asks_its_own_suffixed_phrase(monkeypatch):
     asked: list[tuple] = []
     _world(monkeypatch, [], asked)
     monkeypatch.setattr("builtins.input", lambda: "wipe bench")
+    assert reset_bench.main([]) == 1
+    assert ("wipe_d1", "eu") not in asked
+    monkeypatch.setattr("builtins.input", lambda: "wipe bench-eu")
     assert reset_bench.main([]) == 0
     assert ("wipe_d1", "eu") in asked
 

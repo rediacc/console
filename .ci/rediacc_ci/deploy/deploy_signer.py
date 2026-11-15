@@ -3,7 +3,7 @@
 
     PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_signer --target eu|us|asia|bench-eu|bench-us|bench-asia [--record PATH] [--dry-run]
 
-THE TARGETS (agent/plans/PLAN-enterprise-isolation.md, Design "Signers" and "Scope data"). One signer per region of regions.json, `signer-<r>`, and one per bench region (every regions.json row with a `bench` object): `signer-bench-eu`, `signer-bench-us`, `signer-bench-asia`. Each binds two D1 databases: `CONTROL`, its own region's control database (`control-<r>`, `control-bench-<r>`), and `SHARED`, the shared account database the same region's account Worker binds as `DB`. The shared database's name and id, and the hosts a shared caller's renewalUrl may name, are read from that account Worker's own config (`workers/account/wrangler.<r>.toml`; bench: `wrangler.bench.toml` for the home region and `wrangler.bench-<r>.toml` for the others), so nothing here repeats a database id or a host. Each bench signer reads its own region's bench account Worker. A bench region whose regions.json `bench.deployable` is false has no objects yet, so its signer is refused by name until the bench is marked deployable (a `--dry-run` still renders it).
+THE TARGETS (agent/plans/PLAN-enterprise-isolation.md, Design "Signers" and "Scope data"). One signer per region of regions.json, `signer-<r>`, and one per bench region (every regions.json row with a `bench` object): `signer-bench-eu`, `signer-bench-us`, `signer-bench-asia`. Each binds two D1 databases: `CONTROL`, its own region's control database (`control-<r>`, `control-bench-<r>`), and `SHARED`, the shared account database the same region's account Worker binds as `DB`. The shared database's name and id, and the hosts a shared caller's renewalUrl may name, are read from that account Worker's own config (`workers/account/wrangler.<r>.toml`; bench: `wrangler.bench-eu.toml` for the home region and `wrangler.bench-<r>.toml` for the others), so nothing here repeats a database id or a host. Each bench signer reads its own region's bench account Worker. A bench region whose regions.json `bench.deployable` is false has no objects yet, so its signer is refused by name until the bench is marked deployable (a `--dry-run` still renders it).
 
 THE CONFIG. `workers/signer/wrangler.template.toml` is rendered into the gitignored `workers/signer/.generated/wrangler.<target>.toml`. A token left unrendered, a route, a workers.dev host or a preview URL, a Worker name other than the target's, or the private key's name anywhere in the rendered text refuses the run before any credential is read: the signer has no route, and the key arrives only as a secret. The control database's id is looked up with `wrangler d1 list --json`; a missing control database refuses the run and names it, because creating and migrating it belongs to `enterprise add` and the live boxes, not to a deploy.
 
@@ -54,7 +54,7 @@ SECRET_NAMES = (PRIVATE_KEY, PUBLIC_KEY)
 # The Bitwarden profile a local run binds the two keys and the Cloudflare token under (added by box S4).
 PROFILE = "deploy-signer"
 
-BENCH_ACCOUNT_CONFIG_FMT = "wrangler.bench%s.toml"
+BENCH_ACCOUNT_CONFIG_FMT = "wrangler.bench-%s.toml"
 # The control database each target binds as CONTROL, declared rather than derived from the target key: a database created under a jurisdiction takes a `-j` name (PLAN-d1-eu-jurisdiction Design 1) and no rename exists, so a repoint changes one entry here. A test pins each entry against `enterprise.registry.control_database`, the name `control_db ensure` creates.
 CONTROL_DATABASES: dict[str, str] = {
     "eu": "control-eu",
@@ -150,17 +150,9 @@ def bench_region_ids(repo_root: pathlib.Path, *, deployable_only: bool = False) 
     ]
 
 
-def bench_account_config(region: str, home_region: str) -> str:
-    """The account config of a region's bench Worker: `wrangler.bench.toml` for the home bench (regions.json `default`), `wrangler.bench-<r>.toml` for the others."""
-    return BENCH_ACCOUNT_CONFIG_FMT % ("" if region == home_region else "-" + region)
-
-
-def home_region_id(repo_root: pathlib.Path) -> str:
-    data = json.loads((repo_root / "regions.json").read_text(encoding="utf-8"))
-    homes = [str(r["id"]).lower() for r in data["regions"] if r.get("default")]
-    if len(homes) != 1:
-        raise RefusedError("%s: regions.json names %d default regions, not 1" % (SELF, len(homes)))
-    return homes[0]
+def bench_account_config(region: str) -> str:
+    """The account config of a region's bench Worker: `wrangler.bench-<r>.toml`."""
+    return BENCH_ACCOUNT_CONFIG_FMT % region
 
 
 def control_database(key: str) -> str:
@@ -177,7 +169,6 @@ def control_database(key: str) -> str:
 def targets(
     region_ids: typing.Iterable[str],
     bench_regions: typing.Iterable[str] = (),
-    home_region: str = "eu",
 ) -> dict[str, Target]:
     """Every signer target: one per region, and one per bench region, each rendering from its own region's account config."""
     out: dict[str, Target] = {}
@@ -185,15 +176,13 @@ def targets(
         out[r] = Target(r, "signer-%s" % r, r, control_database(r), "wrangler.%s.toml" % r)
     for r in bench_regions:
         key = "bench-%s" % r
-        config = bench_account_config(r, home_region)
+        config = bench_account_config(r)
         out[key] = Target(key, "signer-%s" % key, r, control_database(key), config)
     return out
 
 
 def repo_targets(repo_root: pathlib.Path) -> dict[str, Target]:
-    return targets(
-        load_region_ids(repo_root), bench_region_ids(repo_root), home_region_id(repo_root)
-    )
+    return targets(load_region_ids(repo_root), bench_region_ids(repo_root))
 
 
 def shared_binding(account_text: str, rel: str) -> tuple[str, str, list[str]]:

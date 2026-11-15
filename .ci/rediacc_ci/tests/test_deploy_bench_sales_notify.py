@@ -1,4 +1,4 @@
-"""The bench secret document carries SALES_NOTIFY_EMAIL, the optional sales digest recipient the deploy-bench profile binds: dropping the key from either side fails here. Only this one key is checked; other deploy-bench keys are not compared."""
+"""The bench secret document carries SALES_NOTIFY_EMAIL, the optional sales digest recipient the deploy-bench-eu profile binds: dropping the key from either side fails here. Only this one key is checked; other deploy-bench-eu keys are not compared."""
 
 import json
 
@@ -7,12 +7,14 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.ops import deploy_bench
 
+pytestmark = pytest.mark.usefixtures("regions_in_tmp")
+
 
 def _profile_names() -> set[str]:
     supply = json.loads(
         paths.repo_root().joinpath(".ci/config/secret-supply.json").read_text("utf-8")
     )
-    profile = supply["consumers"]["deploy-bench"]
+    profile = supply["consumers"]["deploy-bench-eu"]
     return set(profile["required"]) | set(profile["optional"])
 
 

@@ -9,7 +9,7 @@ WHAT IT CHECKS, in every `.github/workflows/cd-deploy-*.yml`: each step that run
 AND THE LOCAL DEPLOY PATHS, since stable eu/us/asia served a keyless portal on 2026-10-28 (deploy_bench had rebuilt workers/account/dist/account for bench, and the next production deploy uploaded it):
   3. every `rediacc_ci.release.local` step that runs `vite build` into a `workers/<name>/dist/account` binds `TURNSTILE_SITE_KEY > VITE_TURNSTILE_SITE_KEY` and never sets `VITE_TURNSTILE_SITE_KEY` itself;
   4. `rediacc_ci.deploy.deploy_account` main refuses a keyless dist before `wrangler deploy` (`portal_sitekey_refusal`) and smokes the served portal after it (`portal_smoke`), and its rebuild hint binds `VITE_TURNSTILE_SITE_KEY="$TURNSTILE_SITE_KEY"` into `workers/account/dist/account`;
-  5. `rediacc_ci.ops.deploy_bench` builds its keyless portal through `portal_out_dir`, which lies outside the production assets directory; wrangler.bench.toml's [assets] directory is that build root, and every production and edge account config uploads `./dist`, which holds no bench build root.
+  5. `rediacc_ci.ops.deploy_bench` builds its keyless portal through `portal_out_dir`, which lies outside the production assets directory; wrangler.bench-eu.toml's [assets] directory is that build root, and every production and edge account config uploads `./dist`, which holds no bench build root.
 
 AND THE MARKETING SITE, since every www form (contact, newsletter, lead magnet, partner application, ROI calculator, region lookup) refused every visitor in production on 2026-11-12: seven www components read `import.meta.env.PUBLIC_TURNSTILE_SITE_KEY`, no build path set it, so no widget rendered while the servers verified every token.
   6. every `.github/workflows/cd-deploy-*.yml` step that runs `npm run build -w @rediacc/www` sets `PUBLIC_TURNSTILE_SITE_KEY` from `env.BWS_TURNSTILE_SITE_KEY`, a later step in the same job fails when the key is empty or absent from the built `<packages|workers>/www/dist/assets`, and every production `rediacc_ci.deploy.deploy_www` step of that job passes `TURNSTILE_SITE_KEY` from the same env;
@@ -416,7 +416,7 @@ def bench_findings(
     bench_out: pathlib.PurePosixPath,
     configs: dict[str, str],
 ) -> list[str]:
-    """The keyless bench build lands only where wrangler.bench.toml serves from, and never in the directory a production or edge config uploads.
+    """The keyless bench build lands only where wrangler.bench-eu.toml serves from, and never in the directory a production or edge config uploads.
 
     `bench_out` is deploy_bench.portal_out_dir relative to workers/account; `configs` maps each account wrangler config name to its text.
     """
@@ -429,14 +429,16 @@ def bench_findings(
         )
     if "bench_assets_refusal(worker_dir, region)" not in bench_source:
         out.append(
-            "%s: the build no longer checks wrangler.bench.toml's [assets] first (bench_assets_refusal)"
+            "%s: the build no longer checks wrangler.bench-eu.toml's [assets] first (bench_assets_refusal)"
             % DEPLOY_BENCH_REL
         )
     bench_root = bench_out.parent
-    # The eu bench is wrangler.bench.toml, the other regions' are wrangler.bench-<r>.toml (PLAN-multi-region-bench.md); all serve the keyless build.
-    benches = [n for n in configs if n == "wrangler.bench.toml" or n.startswith("wrangler.bench-")]
+    # The eu bench is wrangler.bench-eu.toml, the other regions' are wrangler.bench-<r>.toml (PLAN-multi-region-bench.md); all serve the keyless build.
+    benches = [
+        n for n in configs if n == "wrangler.bench-eu.toml" or n.startswith("wrangler.bench-")
+    ]
     production = [n for n in configs if n not in benches]
-    if "wrangler.bench.toml" not in configs or not production:
+    if "wrangler.bench-eu.toml" not in configs or not production:
         return [
             *out,
             "workers/account: no bench or production config found; the check would pass vacuously",
@@ -550,7 +552,7 @@ _BENCH_OK = """
 """
 _BENCH_OUT = pathlib.PurePosixPath("bench/dist/account")
 _CONFIGS = {
-    "wrangler.bench.toml": '[assets]\ndirectory = "./bench/dist"\n',
+    "wrangler.bench-eu.toml": '[assets]\ndirectory = "./bench/dist"\n',
     "wrangler.eu.toml": '[assets]\ndirectory = "./dist"\n',
 }
 
@@ -712,7 +714,7 @@ def _local_selftest() -> bool:
         bench_findings(
             _BENCH_OK,
             _BENCH_OUT,
-            {**_CONFIGS, "wrangler.bench.toml": '[assets]\ndirectory = "./dist"\n'},
+            {**_CONFIGS, "wrangler.bench-eu.toml": '[assets]\ndirectory = "./dist"\n'},
         ),
         True,
     )
@@ -748,7 +750,7 @@ def _local_selftest() -> bool:
         bench_findings(
             _BENCH_OK,
             pathlib.PurePosixPath("dist/bench/account"),
-            {**_CONFIGS, "wrangler.bench.toml": '[assets]\ndirectory = "./dist/bench"\n'},
+            {**_CONFIGS, "wrangler.bench-eu.toml": '[assets]\ndirectory = "./dist/bench"\n'},
         ),
         True,
     )

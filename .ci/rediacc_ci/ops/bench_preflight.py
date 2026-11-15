@@ -1,6 +1,6 @@
 """Preflights for rediacc_ci.ops.deploy_bench, run BEFORE its first remote write.
 
-WHY THIS EXISTS. On 2026-09-24 a bench deploy applied 21 D1 migrations and THEN failed: wrangler.bench.toml binds R2 bucket rediacc-backups-bench, which nothing had created, so bench was left serving its old worker on a newer schema. The retry bundled from a drifted node_modules (packages/shared and workers/account resolving zod 3.25.76 against a lockfile pinning 4.x) and Cloudflare refused the worker at startup ("uuid is not a function"). Both are knowable before anything remote changes.
+WHY THIS EXISTS. On 2026-09-24 a bench deploy applied 21 D1 migrations and THEN failed: wrangler.bench-eu.toml (then wrangler.bench-eu.toml) binds R2 bucket rediacc-backups-bench, which nothing had created, so bench was left serving its old worker on a newer schema. The retry bundled from a drifted node_modules (packages/shared and workers/account resolving zod 3.25.76 against a lockfile pinning 4.x) and Cloudflare refused the worker at startup ("uuid is not a function"). Both are knowable before anything remote changes.
 
 Python rather than a sourced bash library: Ruling 7 (2026-09-06) bans new bash under scripts/ops.
 
@@ -19,29 +19,40 @@ import tomllib
 from rediacc_ci import paths
 from rediacc_ci.core import wrangler
 
-BENCH_CONFIG_REL = ("workers", "account", "wrangler.bench.toml")
-# The home region's bench keeps the unsuffixed names (`wrangler.bench.toml`, `bench.json`); every other region's carry its id.
+BENCH_CONFIG_DIR = ("workers", "account")
+# The region a bare invocation means. Every region, this one included, carries its id in its names (`wrangler.bench-eu.toml`, `bench-eu.json`, `deploy-bench-eu`).
 DEFAULT_REGION = "eu"
+
+# The profile role to its name pattern, one `%s` for the region id. A role is spelled here once, so no caller holds a region-less profile name that could be bound by mistake.
+PROFILE_PATTERNS = {
+    "deploy": "deploy-bench-%s",
+    "login": "bench-login-%s",
+    "backup-push": "backup-push-bench-%s",
+    "deploy-proxy": "deploy-proxy-bench-%s",
+    "reset": "reset-bench-%s",
+    "region-smoke": "region-smoke-bench-%s",
+}
 
 
 def config_name(region: str = DEFAULT_REGION) -> str:
-    """The account wrangler config of REGION's bench: `wrangler.bench.toml` for the home region, `wrangler.bench-<region>.toml` for the others."""
-    return "wrangler.bench.toml" if region == DEFAULT_REGION else "wrangler.bench-%s.toml" % region
+    """The account wrangler config of REGION's bench: `wrangler.bench-<region>.toml`."""
+    return "wrangler.bench-%s.toml" % region
 
 
-def profile_for(base: str, region: str = DEFAULT_REGION) -> str:
-    """The Bitwarden profile of REGION's bench: BASE (`deploy-bench`, `bench-login`) for the home region, `<base>-<region>` for the others, whose specs map that bench's own `_US`/`_ASIA` entries onto the names the tools read."""
-    return base if region == DEFAULT_REGION else "%s-%s" % (base, region)
+def profile_for(role: str, region: str = DEFAULT_REGION) -> str:
+    """The Bitwarden profile of REGION's bench for ROLE (a key of PROFILE_PATTERNS): `<role pattern>` with the region id, whose spec maps that bench's own `_<REGION>` store entries onto the names the tools read. An unknown role is a KeyError."""
+    return PROFILE_PATTERNS[role] % region
 
 
-def foreign_profiles(base: str, region: str, bound: list[str]) -> list[str]:
-    """The profiles in BOUND that belong to another bench region of BASE. `bws_env exec` never overwrites a name already set, so a run for REGION under one of them would keep the other bench's values silently; the caller refuses instead."""
-    mine = profile_for(base, region)
-    return [p for p in bound if p != mine and (p == base or p.startswith(base + "-"))]
+def foreign_profiles(role: str, region: str, bound: list[str]) -> list[str]:
+    """The profiles in BOUND that belong to another bench region of ROLE. `bws_env exec` never overwrites a name already set, so a run for REGION under one of them would keep the other bench's values silently; the caller refuses instead."""
+    mine = profile_for(role, region)
+    prefix = PROFILE_PATTERNS[role].removesuffix("%s")
+    return [p for p in bound if p != mine and p.startswith(prefix)]
 
 
 def config_rel(region: str = DEFAULT_REGION) -> tuple[str, str, str]:
-    return ("workers", "account", config_name(region))
+    return (*BENCH_CONFIG_DIR, config_name(region))
 
 
 def bench_object(region: str, root=None) -> dict:
@@ -89,7 +100,7 @@ LISTED_NAME = re.compile(r"^name:\s+(\S+)", re.MULTILINE)
 
 @dataclasses.dataclass(frozen=True)
 class BenchNames:
-    """The names and jurisdictions wrangler.bench.toml declares: where reset_bench and the preflights read them from, so a repoint (PLAN-d1-eu-jurisdiction) is a toml change; deploy_bench reads the BACKUP_BUCKET binding through push_backup_credentials._config_binding."""
+    """The names and jurisdictions a bench account wrangler config declares: where reset_bench and the preflights read them from, so a repoint (PLAN-d1-eu-jurisdiction) is a toml change; deploy_bench reads the BACKUP_BUCKET binding through push_backup_credentials._config_binding."""
 
     database_name: str
     database_id: str

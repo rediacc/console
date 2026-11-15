@@ -1053,7 +1053,7 @@ def test_reexec_reads_the_target_from_the_before_record(world, monkeypatch, tmp_
     monkeypatch.delenv("REDIACC_BWS_PROFILES", raising=False)
     seen = _recording_run(monkeypatch, 0)
     assert dr.main(["rollback", "--before", str(before)]) == 0
-    assert seen[0][5] == "deploy-proxy-bench"
+    assert seen[0][5] == "deploy-proxy-bench-eu"
     assert calls(world.log) == []
 
 
@@ -1132,10 +1132,10 @@ def test_a_bench_target_is_accepted_in_every_bench_region(region):
     root = dr.paths.repo_root()
     dr.check_target(root, "bench", region)
     assert dr.account_config("bench", region) == (
-        "wrangler.bench.toml" if region == "eu" else "wrangler.bench-%s.toml" % region
+        "wrangler.bench-eu.toml" if region == "eu" else "wrangler.bench-%s.toml" % region
     )
     assert dr.proxy_config("bench", region) == (
-        "wrangler.bench.toml" if region == "eu" else "wrangler.bench-%s.toml" % region
+        "wrangler.bench-eu.toml" if region == "eu" else "wrangler.bench-%s.toml" % region
     )
 
 

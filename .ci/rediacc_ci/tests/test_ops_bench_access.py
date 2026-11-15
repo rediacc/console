@@ -890,7 +890,7 @@ def test_hosts_include_every_regional_bench_toml(tmp_path):
     _bench_tree(
         tmp_path,
         {
-            "account/wrangler.bench.toml": "bench.example.test",
+            "account/wrangler.bench-eu.toml": "bench.example.test",
             "account/wrangler.bench-us.toml": "bench-us.example.test",
             "account/wrangler.bench-asia.toml": "bench-asia.example.test",
             "proxy/wrangler.bench-us.toml": "proxy.bench-us.example.test",

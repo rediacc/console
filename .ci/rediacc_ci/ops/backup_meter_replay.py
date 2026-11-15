@@ -1,9 +1,9 @@
 """Check the backup meter against an independent listing of the store: replay a killed snapshot run, or take a census of every lineage.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile backup-push-bench -- \\
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile backup-push-bench-eu -- \\
       env PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_meter_replay replay \\
         --config eu-bench --repo <repo> --machine hostinger [--bwlimit 2MB] [--kill-after 50]
-    PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile backup-push-bench -- \\
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile backup-push-bench-eu -- \\
       env PYTHONPATH=.ci python3 -m rediacc_ci.ops.backup_meter_replay census --config eu-bench [--apply]
 
 WHY IT EXISTS. agent/plans/PLAN-backup-meter-orphaned-chunks.md L1 and L2 compare `rdc backup usage` with what the store really holds. The earlier records listed the bucket with a throwaway script outside the repository; this module is that listing, kept, plus the sequence around it, so the equality is an oracle with a test rather than a hand count.

@@ -129,7 +129,7 @@ bucket_name = "backups-bench"
 
 
 def test_bench_names_reads_names_and_jurisdictions_from_the_toml(tmp_path):
-    cfg = tmp_path / "wrangler.bench.toml"
+    cfg = tmp_path / "wrangler.bench-eu.toml"
     cfg.write_text(BENCH_TOML, encoding="utf-8")
     names = bench_preflight.bench_names(cfg)
     assert names.database_name == "account-bench-j"
@@ -138,7 +138,7 @@ def test_bench_names_reads_names_and_jurisdictions_from_the_toml(tmp_path):
 
 
 def test_bench_names_refuses_a_toml_without_the_db_name(tmp_path):
-    cfg = tmp_path / "wrangler.bench.toml"
+    cfg = tmp_path / "wrangler.bench-eu.toml"
     cfg.write_text("[[d1_databases]]\nbinding = 'DB'\n", encoding="utf-8")
     with pytest.raises(ValueError, match="no DB database"):
         bench_preflight.bench_names(cfg)

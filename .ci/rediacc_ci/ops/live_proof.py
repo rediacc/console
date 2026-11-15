@@ -12,12 +12,12 @@ THE `_done/` DOOR (operator ruling #827dc647). A finished plan directly under `a
 Then, in order, each a refusal that stops the run:
   1. identity: `receipt.identity` of those surfaces (a renet-hash check rebuilds `bin/renet` once through its registry `rebuild` argv), judged by `receipt.identity_refusal` (dirty-tree, checkout-mismatch, modified-checkout, build-mismatch, modified-build);
   2. the ladder: a VM phase of `live_tier.ladder_phases` (a row surface's, or the renet phase of a renet-hash deploy, which provisions renet on a real machine even for a CLI-only plan) needs `vm_tier.admit` to admit the head tree (no live run before the ops VMs pass it); the row records the VM run id. `--vm-waived ASKED:<minute>Z` (operator ruling 2026-11-10: a full vm:check takes hours and restarts on any commit) lets a run the ladder refuses go on: the token must have the minute shape and match an AskUserQuestion answer in the lead transcript (`wl_checks._asked_in_transcript`, the proof `block_vm_unverified_push` and `release.local_gates --force-asked` use; the transcript is `--transcript` or `$REDIACC_TRANSCRIPT_PATH`, and none proves nothing), both checked before anything runs. The row then records `ladder: {"vm": null, "waived": "<token>", "head_tree": <tree>}`, a waived receipt forever, and `check:ci-plan-live-proof` names it owed until a VERIFIED vm:check receipt covers that tree or a descendant.
-  3. the deploy record (bench-cache: `.ci/cache/live-deploys/bench.json`, which deploy_bench writes; bench-proxy-cache: `.ci/cache/live-deploys/proxy-bench.json`, which `deploy_proxy --target bench` writes after its smoke passes) must exist, keep the identity rules itself over the surfaces its deploy script records, and be cut from the head;
+  3. the deploy record (bench-cache: `.ci/cache/live-deploys/bench-eu.json`, which deploy_bench writes; bench-proxy-cache: `.ci/cache/live-deploys/proxy-bench-eu.json`, which `deploy_proxy --target bench` writes after its smoke passes) must exist, keep the identity rules itself over the surfaces its deploy script records, and be cut from the head;
   4. the steps, in registry order; a non-zero exit is FAILED. `stale-binary-empty` needs `stale_binary == []` in the JSON answer, `renet-hash` needs the remote hash to equal the local sha256 (else `not-live`);
   5. live confirmation: bench-cache and bench-proxy-cache ask wrangler for the version serving 100% (account-bench through `workers/account`, proxy-bench through `workers/proxy`) and refuse `not-live` when it is not the recorded one or cannot be read; renet-hash is confirmed by step 4; a `tree` or `tooling` check runs from the clean head tree, so its version is that head (`cli:<head>`, `tooling:<head>`) and its passing steps are the confirmation; an `unrecorded` check can confirm nothing and is NOT_VERIFIED;
   6. secrets: the log is scrubbed of every secret-named environment value (`core.secrets.redact_env`), a secret shape in the row refuses, and `deploy_record.refuse_secret_values` runs over the row.
 
-A bench-cache or bench-proxy-cache check needs Cloudflare credentials for the wrangler read; without them the recorder re-executes itself under its deploy script's Bitwarden profile (`deploy-bench`, `deploy-proxy-bench`), as that script does. Bench is IP-restricted: run `PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access add-current` first, or the server-info step answers 403.
+A bench-cache or bench-proxy-cache check needs Cloudflare credentials for the wrangler read; without them the recorder re-executes itself under its deploy script's Bitwarden profile (`deploy-bench-eu`, `deploy-proxy-bench-eu`), as that script does. Bench is IP-restricted: run `PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access add-current` first, or the server-info step answers 403.
 
 THE eu-bench LOGIN IS THE RECORDER'S OWN STEP (operator order 2026-10-30). An eu-bench rdc step that fails because the login is tied to another network address, or is absent (`login_bench.login_needed`), runs `npm run login:bench` once and retries that step; the log keeps the failed answer, the login and the retry. The login runs on a DRY RUN too (no `--write`): a dry run executes the registry steps like a written one, so a needed eu-bench login, with its bench IP-allowlist refresh (`bench_access add-current`), happens on every `record` call; `verify` runs no step and never logs in. A login that fails leaves the step FAILED and the message names the remedy. Nobody is asked for an authenticator code.
 
@@ -124,9 +124,9 @@ BENCH_KINDS = (LT.BENCH_CACHE, LT.BENCH_PROXY_CACHE)
 
 
 def cache_for(kind: str, region: str | None) -> DeployCache | None:
-    """The deploy cache of `kind`. A bench kind aimed at us or asia reads that region's own record (`bench-<r>.json`, `proxy-bench-<r>.json`), Worker name (regions.json `bench`) and `wrangler.bench-<r>.toml`; eu and no region read the home bench's. Any other kind has one cache or none."""
+    """The deploy cache of `kind`. A bench kind aimed at a region reads that region's own record (`bench-<r>.json`, `proxy-bench-<r>.json`), Worker name (regions.json `bench`) and `wrangler.bench-<r>.toml`; no region reads the default region's. Any other kind has one cache or none."""
     cache = CACHES.get(kind)
-    if cache is None or region in (None, LT.HOME_REGION) or kind not in BENCH_KINDS:
+    if cache is None or region is None or kind not in BENCH_KINDS:
         return cache
     bench = LT.bench_object(region)
     proxy = kind == LT.BENCH_PROXY_CACHE
@@ -502,7 +502,7 @@ def _relogin_and_retry(
     """Run `npm run login:bench` once for the step's bench region (agent-allowed, idempotent; operator order 2026-10-30) and rerun the step; the failed answer stands when the login fails."""
     config = ", ".join(a for a in item.argv if a in login_bench.BENCH_CONFIGS) or "eu-bench"
     text, remedy_argv = login_bench.remedy_for(
-        login_bench.config_region(item.argv) or login_bench.HOME_REGION
+        login_bench.config_region(item.argv) or login_bench.DEFAULT_REGION
     )
     log_.add(
         f"# the {config} login is tied to another address or absent: running `{text}` once, then retrying {label}"
@@ -734,7 +734,7 @@ def record(
             code = CODE_FAILED if stop[0] == R.FAILED else R.NOT_LIVE
             message = stop[1]
             if _bench_login_needed(item.argv, result):
-                where = login_bench.config_region(item.argv) or login_bench.HOME_REGION
+                where = login_bench.config_region(item.argv) or login_bench.DEFAULT_REGION
                 text, _ = login_bench.remedy_for(where)
                 message += f"; the {where}-bench login still needs `{text}` (an agent's own step, never the operator's)"
             return _refuse(run, root, world, stop[0], code, message)

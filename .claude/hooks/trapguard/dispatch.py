@@ -503,7 +503,7 @@ def rule_bench_login_is_the_agents_step(cmd, out, _root, _resp):
         "network address, or absent. Logging %s-bench in is YOUR step, not the operator's "
         "(operator order 2026-10-30): run `%s` (headless, the operator's "
         % (region, region, login)
-        + "bench account through the bench-login bws profile; it refreshes the bench IP "
+        + "bench account through the bench-login-eu bws profile; it refreshes the bench IP "
         "allowlist too), then rerun the command. DO NOT ask the operator for an "
         "authenticator code and DO NOT run `rdc subscription login` interactively for "
         "a bench config. Two TOTP logins inside one 30 s window collide, so a second login right "

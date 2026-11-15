@@ -2,7 +2,7 @@
 
 THE FOUR TARGETS. `eu`, `us`, `asia` (one shared set per `regions.json` region, no stable and edge pairs) and `bench`. Each is an account Worker, a proxy Worker, a D1 database, two R2 buckets (CONFIG_BUCKET, BACKUP_BUCKET) and a bws profile that feeds its secret push. Operator ask 2026-10-29: "a CI job to check consistency between regions", now 3+1 since the product moved to rediacc.cloud (PLAN-product-domain-rename.md).
 
-WHY. Every per-target fact is written down more than once (regions.json, workers/account/wrangler.<t>.toml, workers/proxy/wrangler.<t>.toml, the `account-secrets-<r>` and `deploy-bench` profiles of .ci/config/secret-supply.json) and each family was grown one target at a time. Siblings that check one slice exist and are not repeated here: check:ci-backup-bucket-conformance (BACKUP_BUCKET name and jurisdiction against regions.json), check:ci-proxy-configs (every proxy toml against its template), check:ci-builder-env-contract (CD's env exports against the pusher), check:ci-backup-credential-isolation (the backup key pairs). None of them asks the cross-target question: is target X missing something the other three have, or naming something that belongs to another target.
+WHY. Every per-target fact is written down more than once (regions.json, workers/account/wrangler.<t>.toml, workers/proxy/wrangler.<t>.toml, the `account-secrets-<r>` and `deploy-bench-eu` profiles of .ci/config/secret-supply.json) and each family was grown one target at a time. Siblings that check one slice exist and are not repeated here: check:ci-backup-bucket-conformance (BACKUP_BUCKET name and jurisdiction against regions.json), check:ci-proxy-configs (every proxy toml against its template), check:ci-builder-env-contract (CD's env exports against the pusher), check:ci-backup-credential-isolation (the backup key pairs). None of them asks the cross-target question: is target X missing something the other three have, or naming something that belongs to another target.
 
 OFFLINE LAYER (this module, every CI run, no credential):
   regions    every regions.json name follows its pattern (`account-<r>` for the Worker and the D1, `{configs,backups}-<r>`, `proxy-<r>`, `<r>.rediacc.cloud`, suffix `<R>`), bench by the same pattern with `<r>` = bench for the home bench (`account-bench`) and `<name>-bench-<r>` for the others (`account-bench-us`, `proxy-bench-asia`, `configs-bench-us`);
@@ -31,7 +31,8 @@ from typing import TYPE_CHECKING
 from rediacc_ci.deploy import account_secrets_local as local_push
 from rediacc_ci.deploy import proxy_configs
 from rediacc_ci.deploy import set_account_worker_secrets as pusher
-from rediacc_ci.well_known import BENCH_ORIGIN, BENCH_RETIRING_ORIGIN, PRODUCT_DOMAIN
+from rediacc_ci.ops import bench_preflight
+from rediacc_ci.well_known import BENCH_RETIRING_ORIGIN, PRODUCT_DOMAIN
 
 if TYPE_CHECKING:
     import pathlib
@@ -42,11 +43,9 @@ REGIONS_REL = "regions.json"
 SUPPLY_REL = ".ci/config/secret-supply.json"
 BENCH_DEPLOY_REL = ".ci/rediacc_ci/ops/deploy_bench.py"
 BENCH = "bench"
-BENCH_DOMAIN = BENCH_ORIGIN.removeprefix("https://")
 SHARED = "shared"
-BENCH_PROFILE = "deploy-bench"
-# The region whose bench keeps today's unsuffixed names (`account-bench`, `proxy-bench`); every other region's bench carries `-<r>`.
-BENCH_HOME = proxy_configs.BENCH_HOME_REGION
+# The region whose live Cloudflare objects still carry the unsuffixed names (`account-bench`, `proxy-bench`, `configs-bench`) until PLAN-multi-region-bench M2 and PLAN-d1-eu-jurisdiction B1-B5 recreate them as `-eu`. Only the live-name pattern in bench_expected and the placement rule read it; files, profiles, store entries and record paths treat every region alike.
+LIVE_UNSUFFIXED_REGION = "eu"
 BENCH_KEYS = (
     "host",
     "proxyHost",
@@ -70,16 +69,22 @@ CLASSES = ("regions", "account", "proxy", "profile")
 
 # Names a regional profile binds that the pusher does not read: account_secrets_local's own preflight (wrangler token and account, and the Turnstile drift check that compares the site key with the secret).
 PREFLIGHT_NAMES = frozenset({"CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID", "TURNSTILE_SITE_KEY"})
-# The per-target secret families bench binds under its own `_BENCH` store name (deploy-bench profile `F_BENCH > F`).
+# The secret families every bench shares, bound under the bare `_BENCH` store name (profile `F_BENCH > F`).
 BENCH_FAMILIES = (
     "AWS_SES_ACCESS_KEY_ID",
     "AWS_SES_SECRET_ACCESS_KEY",
     "OBS_OTLP_CREDENTIALS",
-    "ACCOUNT_CONFIG_SERVER_KEY",
-    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
-    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
     "CLOUDFLARE_TURNSTILE_SECRET_KEY",
 )
+# The families one bench owns, bound under its own `_BENCH_<REGION>` store name (profile `F_BENCH_<R> > F`).
+BENCH_OWN_FAMILIES = (
+    "ACCOUNT_CONFIG_SERVER_KEY",
+    "ACCOUNT_BACKUP_STORE_KEK",
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY",
+)
+# The bench root login entries, bound under the bench's own `_<REGION>` store name by its login and deploy profiles (`F_<R> > F`).
+BENCH_ROOT_FAMILIES = ("BENCH_ROOT_PASSWORD", "BENCH_ROOT_TOTP_SEED", "BENCH_STORE_MASTER_PASSWORD")
 # The signing and session store names every regional profile binds and bench binds the same way, unaliased (production key, operator 2026-10-29). The licence private key is not among them since PLAN-enterprise-isolation S4: account Workers sign through LICENSE_SIGNER and the deploy-signer profile carries the key.
 BENCH_UNALIASED = (
     "ACCOUNT_ED25519_PUBLIC_KEY",
@@ -94,7 +99,7 @@ BENCH_FORBIDDEN = ("ACCOUNT_ED25519_PRIVATE_KEY",)
 CHANNEL_VARS: dict[str, dict[str, str | None]] = {
     # ENVIRONMENT=edge stays on the shared Workers: it picks the CLI's update channel (private/account/src/app.ts:234).
     SHARED: {"ENVIRONMENT": "edge"},
-    # Bench-only switches, each documented in wrangler.bench.toml as "never add to a production config".
+    # Bench-only switches, each documented in wrangler.bench-eu.toml as "never add to a production config".
     BENCH: {
         "ENVIRONMENT": "bench",
         "ALLOWED_EMAIL_DOMAINS": None,
@@ -109,7 +114,7 @@ PROXY_ENVIRONMENT = {SHARED: "edge", BENCH: "bench"}
 SHAPE_EXCEPTIONS: dict[tuple[str, str], str] = {
     (BENCH, "assets.directory"): (
         "bench builds its keyless portal into ./bench/dist so a bench build can never ship to "
-        "stable (wrangler.bench.toml, 2026-10-28 incident)"
+        "stable (wrangler.bench-eu.toml, 2026-10-28 incident)"
     ),
 }
 # Payload keys only bench pushes, with the reason: the regional Workers run live billing, so they get no sandbox pair.
@@ -155,7 +160,7 @@ class Target:
     @property
     def profile(self) -> str:
         if self.channel == BENCH:
-            return BENCH_PROFILE
+            return bench_preflight.profile_for("deploy", self.serves)
         return local_push.profile_name(self.region)
 
 
@@ -185,9 +190,13 @@ def pattern(
     d1_jurisdiction: str | None = None,
 ) -> Target:
     """The target every regions.json row and the bench constants must equal."""
-    domain = BENCH_DOMAIN if channel == BENCH else "%s.%s" % (rid, PRODUCT_DOMAIN)
+    domain = (
+        "%s-%s.%s" % (BENCH, rid, PRODUCT_DOMAIN)
+        if channel == BENCH
+        else "%s.%s" % (rid, PRODUCT_DOMAIN)
+    )
     return Target(
-        id=BENCH if channel == BENCH else rid,
+        id=bench_key(rid) if channel == BENCH else rid,
         channel=channel,
         region=rid,
         suffix=rid.upper(),
@@ -204,14 +213,14 @@ def pattern(
 
 
 def bench_key(rid: str) -> str:
-    return BENCH if rid == BENCH_HOME else "%s-%s" % (BENCH, rid)
+    return "%s-%s" % (BENCH, rid)
 
 
 def bench_expected(rid: str, d1_jurisdiction: str | None) -> dict[str, str]:
-    """The names region `rid`'s bench `bench` object must carry: today's unsuffixed ones for the home region, `-<r>` for the others."""
-    home = rid == BENCH_HOME
+    """The names region `rid`'s bench `bench` object must carry: the host is `bench-<r>.<domain>` for every region; the Worker, bucket, queue and dataset names are the live ones, unsuffixed for LIVE_UNSUFFIXED_REGION and `-<r>` for the others."""
+    home = rid == LIVE_UNSUFFIXED_REGION
     sfx = "" if home else "-" + rid
-    host = BENCH_DOMAIN if home else "bench-%s.%s" % (rid, PRODUCT_DOMAIN)
+    host = "bench-%s.%s" % (rid, PRODUCT_DOMAIN)
     return {
         "host": host,
         "proxyHost": "proxy." + host,
@@ -238,12 +247,11 @@ def bench_target(row: dict) -> Target:
     rid = str(row.get("id", ""))
     bench = row["bench"]
     d1 = bench.get("d1") if isinstance(bench.get("d1"), dict) else {}
-    home = rid == BENCH_HOME
     return Target(
         id=bench_key(rid),
         channel=BENCH,
-        region=BENCH if home else rid,
-        suffix=BENCH.upper() if home else rid.upper(),
+        region=rid,
+        suffix="%s_%s" % (BENCH.upper(), rid.upper()),
         account_worker=str(bench.get("workerName")),
         proxy_worker=str(bench.get("proxyWorkerName")),
         d1=str(d1.get("name")),
@@ -291,7 +299,7 @@ def bench_object_findings(rows: list[dict]) -> list[Finding]:
             found.append(
                 Finding(tid, "regions", "regions.json bench.deployable is not true or false")
             )
-        if rid != BENCH_HOME:
+        if rid != LIVE_UNSUFFIXED_REGION:
             row_d1 = row.get("d1")
             prod_d1: dict = row_d1 if isinstance(row_d1, dict) else {}
             placement = (
@@ -338,7 +346,7 @@ def extra_bench_targets(doc: dict) -> list[Target]:
     return [
         bench_target(r)
         for r in doc.get("regions", [])
-        if isinstance(r.get("bench"), dict) and r.get("id") != BENCH_HOME
+        if isinstance(r.get("bench"), dict) and r.get("id") != LIVE_UNSUFFIXED_REGION
     ]
 
 
@@ -403,11 +411,11 @@ def targets_from(doc: dict) -> tuple[list[Target], list[Finding]]:
                     "regions.json carries no r2Jurisdiction key (null is a value; absent is not)",
                 )
             )
-    home = next((r for r in rows if r.get("id") == BENCH_HOME), None)
+    home = next((r for r in rows if r.get("id") == LIVE_UNSUFFIXED_REGION), None)
     if not home or not isinstance(home.get("bench"), dict):
         raise NoVerdictError(
             "regions.json %s carries no bench object; a bench with no declaration is unchecked"
-            % BENCH_HOME
+            % LIVE_UNSUFFIXED_REGION
         )
     found += bench_object_findings(rows)
     out.append(bench_target(home))
@@ -455,10 +463,10 @@ def account_shape(doc: dict) -> dict[str, object]:
 
 def retiring_hosts(t: Target, proxy: bool = False) -> list[str]:
     """The pre-rename hosts a target's Workers still route beside its own: the home bench's, until PLAN-multi-region-bench M4 (`proxy_configs.RETIRING_BENCH_PROXY_HOSTS` for the proxy, `WK_BENCH_RETIRING_ORIGIN` for the account)."""
-    if t.id != bench_key(BENCH_HOME):
+    if t.id != bench_key(LIVE_UNSUFFIXED_REGION):
         return []
     if proxy:
-        return list(proxy_configs.RETIRING_BENCH_PROXY_HOSTS.get(BENCH_HOME, ()))
+        return list(proxy_configs.RETIRING_BENCH_PROXY_HOSTS.get(LIVE_UNSUFFIXED_REGION, ()))
     return [BENCH_RETIRING_ORIGIN.removeprefix("https://")]
 
 
@@ -744,7 +752,7 @@ def check_profiles(
         )
     f.extend(
         Finding(
-            BENCH,
+            bench_key(LIVE_UNSUFFIXED_REGION),
             "profile",
             "deploy_bench.secrets_payload() does not push %s, which every regional Worker gets" % n,
         )
@@ -752,7 +760,7 @@ def check_profiles(
     )
     f.extend(
         Finding(
-            BENCH,
+            bench_key(LIVE_UNSUFFIXED_REGION),
             "profile",
             "deploy_bench.secrets_payload() pushes %s, which no regional Worker gets" % n,
         )
@@ -765,10 +773,11 @@ def _check_bench_profile(t: Target, prof: dict, suffixes: set[str]) -> list[Find
     specs = [s.replace(" ", "") for s in [*prof.get("required", []), *prof.get("optional", [])]]
     f = [
         Finding(
-            t.id, "profile", "%s does not bind `%s_%s > %s`" % (t.profile, family, t.suffix, family)
+            t.id, "profile", "%s does not bind `%s_%s > %s`" % (t.profile, family, suffix, family)
         )
-        for family in BENCH_FAMILIES
-        if "%s_%s>%s" % (family, t.suffix, family) not in specs
+        for suffix, families in ((BENCH.upper(), BENCH_FAMILIES), (t.suffix, BENCH_OWN_FAMILIES))
+        for family in families
+        if "%s_%s>%s" % (family, suffix, family) not in specs
     ]
     f.extend(
         Finding(t.id, "profile", "%s does not bind %s unaliased" % (t.profile, n))
@@ -793,10 +802,13 @@ def _check_bench_profile(t: Target, prof: dict, suffixes: set[str]) -> list[Find
     )
     foreign = [*sorted(suffixes - {t.suffix}), pusher.CHANNEL_STABLE, pusher.CHANNEL_EDGE]
     stores = [s.split(">")[0] for s in specs]
+    own = {"%s_%s" % (n, t.suffix) for n in BENCH_OWN_FAMILIES} | {
+        "%s_%s" % (n, t.serves.upper()) for n in BENCH_ROOT_FAMILIES
+    }
     f.extend(
         Finding(t.id, "profile", "%s binds %s, another target's name" % (t.profile, store))
         for store in stores
-        if any(store.endswith("_" + x) for x in foreign)
+        if store not in own and any(store.endswith("_" + x) for x in foreign)
     )
     return f
 

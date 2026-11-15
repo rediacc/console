@@ -9,7 +9,7 @@ SELECTION (`SELECT_SQL`), exact: an org whose `customer_id` is its owner's user 
 
 DRY RUN BY DEFAULT: one line per org (org id, owner user id, old -> new customer id, subscription id and plan; no emails or names), then the count, exit 0. `--write` applies `UPDATE organizations SET customer_id = <new> WHERE id = <org> AND customer_id = <old>` per org (guarded on the old value, so a concurrent change is never overwritten), re-reads, prints the remaining count and exits 1 when any match remains. Before the first UPDATE of a `--write` on edge or stable it records the D1 time-travel bookmark (the restore handle) and prints it; a `--write` that matches no org writes nothing and records none. A stable `--write` also needs `--confirm-stable`, checked before any SQL runs.
 
-TARGETS. bench is `account-bench`; edge and stable name the same per-region databases (`wrangler.<region>.toml`), so the two targets differ only in the guard. The run re-executes itself under `bws_env exec` (bench: `deploy-proxy-bench`, else `deploy-proxy`), the profiles `console_executor` and `executor_orgs` use for the same D1 calls; no secret is printed.
+TARGETS. bench is `account-bench`; edge and stable name the same per-region databases (`wrangler.<region>.toml`), so the two targets differ only in the guard. The run re-executes itself under `bws_env exec` (bench: `deploy-proxy-bench-eu`, else `deploy-proxy`), the profiles `console_executor` and `executor_orgs` use for the same D1 calls; no secret is printed.
 """
 
 from __future__ import annotations

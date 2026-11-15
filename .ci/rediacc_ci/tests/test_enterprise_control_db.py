@@ -122,7 +122,7 @@ def _jurisdictional_root(tmp_path: pathlib.Path) -> pathlib.Path:
         {"id": "asia", "d1": {"name": "account-asia", "location": "apac", "jurisdiction": None}},
     ]
     (tmp_path / "regions.json").write_text(json.dumps({"regions": rows}), encoding="utf-8")
-    home = tmp_path.joinpath(*control_db.bench_preflight.BENCH_CONFIG_REL)
+    home = tmp_path.joinpath(*control_db.bench_preflight.config_rel("eu"))
     home.parent.mkdir(parents=True)
     home.write_text(
         '[[d1_databases]]\nbinding = "DB"\ndatabase_name = "account-bench-j"\n'
@@ -152,9 +152,9 @@ def test_jurisdiction_comes_from_the_region_row_and_the_regions_own_bench_toml(t
         control_db.jurisdiction("asia", bench=True, root=root)
 
 
-def test_bench_config_path_is_the_home_toml_or_the_regions_own(tmp_path):
+def test_bench_config_path_is_the_regions_own_toml(tmp_path):
     root = _jurisdictional_root(tmp_path)
-    assert control_db.bench_config_path("eu", root).name == "wrangler.bench.toml"
+    assert control_db.bench_config_path("eu", root).name == "wrangler.bench-eu.toml"
     assert control_db.bench_config_path("us", root).name == "wrangler.bench-us.toml"
 
 

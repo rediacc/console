@@ -900,10 +900,10 @@ def test_fetch_joins_the_probe_and_the_routed_worker():
 
 
 CONFIGS_ROUTING = {
-    "workers/account/wrangler.bench.toml": (
+    "workers/account/wrangler.bench-eu.toml": (
         'name = "account-bench"\nroutes = [{ pattern = "bench.%s", custom_domain = true }]\n'
     ),
-    "workers/proxy/wrangler.bench.toml": (
+    "workers/proxy/wrangler.bench-eu.toml": (
         'name = "proxy-bench"\nroutes = [{ pattern = "proxy.bench.%s", custom_domain = true }]\n'
     ),
     "workers/ops-health/wrangler.prod.toml": (
@@ -3665,7 +3665,7 @@ def test_the_account_configs_are_found():
         "wrangler.eu.toml",
         "wrangler.us.toml",
         "wrangler.asia.toml",
-        "wrangler.bench.toml",
+        "wrangler.bench-eu.toml",
     }
 
 

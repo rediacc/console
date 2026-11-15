@@ -61,12 +61,12 @@ LOCAL_SIDES = frozenset({"dev"})
 
 
 def side_region(rel: pathlib.PurePosixPath) -> tuple[str, str]:
-    """(side, region) from the wrangler file name: `wrangler.eu.toml` -> shared/eu."""
+    """(side, region) from the wrangler file name: `wrangler.eu.toml` -> shared/eu, `wrangler.bench-us.toml` -> bench/us."""
     stem = rel.name.removeprefix("wrangler.").removesuffix(".toml")
     if rel.name == "wrangler.toml":
         stem = ""
-    if stem == "bench":
-        return "bench", "-"
+    if stem == "bench" or stem.startswith("bench-"):
+        return "bench", stem.removeprefix("bench").removeprefix("-") or "-"
     if stem == "dev":
         return "dev", "-"
     return "shared", stem or "-"

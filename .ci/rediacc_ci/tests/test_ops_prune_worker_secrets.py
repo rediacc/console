@@ -81,7 +81,7 @@ def test_a_bench_row_is_loaded_only_on_request() -> None:
     assert [r.region for r in with_bench][-1] == "bench"
     row = with_bench[-1]
     assert row.target == "bench"
-    toml = paths.repo_root().joinpath("workers/account/wrangler.bench.toml").read_text("utf-8")
+    toml = paths.repo_root().joinpath("workers/account/wrangler.bench-eu.toml").read_text("utf-8")
     assert re.search(r'^name = "%s"$' % re.escape(row.worker), toml, re.MULTILINE)
 
 

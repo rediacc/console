@@ -18,7 +18,7 @@ from rediacc_ci.well_known import BENCH_ORIGIN, BENCH_RETIRING_ORIGIN, PROXY_BEN
 
 ROOT = paths.repo_root()
 GATE = paths.from_root(".ci", "scripts", "quality", "check_region_consistency.py")
-STEMS = ("eu", "us", "asia", "bench", "bench-us", "bench-asia")
+STEMS = ("eu", "us", "asia", "bench-eu", "bench-us", "bench-asia")
 COPIED = (
     "regions.json",
     ".ci/config/secret-supply.json",
@@ -26,7 +26,7 @@ COPIED = (
     *("workers/account/wrangler.%s.toml" % s for s in STEMS),
     *("workers/proxy/wrangler.%s.toml" % s for s in STEMS),
 )
-BENCH_TOML = "workers/account/wrangler.bench.toml"
+BENCH_TOML = "workers/account/wrangler.bench-eu.toml"
 
 
 def _plant(root: pathlib.Path, rel: str, old: str, new: str) -> None:
@@ -65,7 +65,7 @@ def test_the_real_tree_is_judged_over_all_four_targets():
     result = _gate()
     assert result.rc in (0, 1), result.combined
     assert "4 target(s), 4 account + 4 proxy toml(s), 4 profile(s)" in result.combined
-    for target in ("eu", "us", "asia", "bench"):
+    for target in ("eu", "us", "asia", "bench-eu"):
         assert "\n  %s " % target in result.out, result.out
 
 
@@ -134,28 +134,28 @@ PLANTS = [
         ".ci/config/secret-supply.json",
         '        "ACCOUNT_JWT_SECRET",\n        "ACCOUNT_CONFIG_SERVER_KEY_BENCH',
         '        "ACCOUNT_JWT_SECRET_DEV > ACCOUNT_JWT_SECRET",\n        "ACCOUNT_CONFIG_SERVER_KEY_BENCH',
-        "bench       profile",
+        "bench-eu    profile",
     ),
     (
         "bench-licence-key-bound",
         ".ci/config/secret-supply.json",
         '        "ACCOUNT_JWT_SECRET",\n        "ACCOUNT_CONFIG_SERVER_KEY_BENCH',
         '        "ACCOUNT_JWT_SECRET",\n        "ACCOUNT_ED25519_PRIVATE_KEY",\n        "ACCOUNT_CONFIG_SERVER_KEY_BENCH',
-        "bench       profile",
+        "bench-eu    profile",
     ),
     (
         "bench-licence-key-aliased",
         ".ci/config/secret-supply.json",
         '        "ACCOUNT_JWT_SECRET",\n        "ACCOUNT_CONFIG_SERVER_KEY_BENCH',
         '        "ACCOUNT_JWT_SECRET",\n        "ACCOUNT_ED25519_PRIVATE_KEY_DEV > ACCOUNT_ED25519_PRIVATE_KEY",\n        "ACCOUNT_CONFIG_SERVER_KEY_BENCH',
-        "bench       profile",
+        "bench-eu    profile",
     ),
     (
         "bench-payload",
         ".ci/rediacc_ci/ops/deploy_bench.py",
         '        "STRIPE_WEBHOOK_SECRET": "",\n',
         "",
-        "bench       profile",
+        "bench-eu    profile",
     ),
 ]
 
@@ -200,7 +200,7 @@ def test_the_bench_only_payload_keys_are_exempt_and_an_unknown_one_is_not():
 def test_load_reads_the_other_benches_as_extra_targets():
     """The us and asia benches are not among the four targets but load() reads their tomls, so a drift in them is judged; a dropped extras list would leave the selftest green."""
     inputs, targets, _found = rco.load(ROOT)
-    assert [t.id for t in targets] == ["eu", "us", "asia", "bench"]
+    assert [t.id for t in targets] == ["eu", "us", "asia", "bench-eu"]
     assert [t.id for t, _a, _p in inputs.bench_regions] == ["bench-us", "bench-asia"]
     for _t, account, proxy in inputs.bench_regions:
         assert "d1_databases" in account
@@ -282,7 +282,7 @@ def test_the_real_tree_is_clean() -> None:
 def test_the_home_bench_target_is_read_from_the_eu_bench_object() -> None:
     inputs, targets, _found = _loaded()
     bench = _row(inputs, "eu")["bench"]
-    t = next(t for t in targets if t.id == "bench")
+    t = next(t for t in targets if t.id == "bench-eu")
     assert (t.account_worker, t.proxy_worker, t.domain) == (
         bench["workerName"],
         bench["proxyWorkerName"],
@@ -368,13 +368,13 @@ def test_two_placeholders_are_not_a_shared_database_id() -> None:
     assert not [f for f in _judge(inputs, targets, found) if "also" in f.message]
 
     def shared(i, f):
-        eu_id = i.account["bench"]["d1_databases"][0]["database_id"]
+        eu_id = i.account["bench-eu"]["d1_databases"][0]["database_id"]
         _extra(i, "bench-us")[1]["d1_databases"][0]["database_id"] = eu_id
         _row(i, "us")["bench"]["deployable"] = True
         return f
 
     new = rco.offline(_mut(inputs, shared), targets, found)
-    assert any("also bench's" in f.message for f in new)
+    assert any("also bench-eu's" in f.message for f in new)
 
 
 def _mut(inputs: rco.Inputs, mutate) -> rco.Inputs:
@@ -452,8 +452,8 @@ def test_the_eu_bench_is_not_held_to_production_eu_placement() -> None:
 def test_only_the_home_bench_routes_a_retiring_host() -> None:
     _inputs, targets, _found = _loaded()
     by_id = {t.id: t for t in targets}
-    assert rco.retiring_hosts(by_id["bench"]) == [BENCH_RETIRING_ORIGIN.removeprefix("https://")]
-    assert rco.retiring_hosts(by_id["bench"], proxy=True) == [PROXY_BENCH_RETIRING_HOST]
+    assert rco.retiring_hosts(by_id["bench-eu"]) == [BENCH_RETIRING_ORIGIN.removeprefix("https://")]
+    assert rco.retiring_hosts(by_id["bench-eu"], proxy=True) == [PROXY_BENCH_RETIRING_HOST]
     assert rco.retiring_hosts(by_id["eu"]) == []
 
 

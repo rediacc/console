@@ -8,12 +8,37 @@ from rediacc_ci import paths
 from rediacc_ci.ops import bench_preflight
 
 
-def test_the_config_name_is_unsuffixed_for_the_home_region_only():
-    assert bench_preflight.config_name() == "wrangler.bench.toml"
-    assert bench_preflight.config_name("eu") == "wrangler.bench.toml"
+def test_every_region_config_name_carries_its_id():
+    assert bench_preflight.config_name() == "wrangler.bench-eu.toml"
+    assert bench_preflight.config_name("eu") == "wrangler.bench-eu.toml"
     assert bench_preflight.config_name("us") == "wrangler.bench-us.toml"
     assert bench_preflight.config_rel("asia")[-1] == "wrangler.bench-asia.toml"
-    assert bench_preflight.config_rel() == bench_preflight.BENCH_CONFIG_REL
+    assert bench_preflight.config_rel() == ("workers", "account", "wrangler.bench-eu.toml")
+
+
+@pytest.mark.parametrize("region", ["eu", "us", "asia"])
+def test_every_region_profile_carries_its_id(region):
+    assert bench_preflight.profile_for("deploy", region) == "deploy-bench-" + region
+    assert bench_preflight.profile_for("login", region) == "bench-login-" + region
+    assert bench_preflight.profile_for("backup-push", region) == "backup-push-bench-" + region
+
+
+def test_a_profile_role_nobody_declared_is_a_key_error():
+    with pytest.raises(KeyError):
+        bench_preflight.profile_for("deploy-everything", "eu")
+
+
+def test_foreign_profiles_are_the_other_regions_of_the_same_role_only():
+    bound = ["deploy-bench-eu", "deploy-bench-us", "bench-login-us", "deploy-signer"]
+    assert bench_preflight.foreign_profiles("deploy", "eu", bound) == ["deploy-bench-us"]
+    # control: the region's own profile and other roles are never foreign
+    assert bench_preflight.foreign_profiles("deploy", "us", ["deploy-bench-us"]) == []
+    assert bench_preflight.foreign_profiles("login", "eu", bound) == ["bench-login-us"]
+    # a run for every region at once (region "") refuses any bound profile of the role
+    assert bench_preflight.foreign_profiles("deploy", "", bound) == [
+        "deploy-bench-eu",
+        "deploy-bench-us",
+    ]
 
 
 def test_every_regions_json_bench_has_a_config_file():

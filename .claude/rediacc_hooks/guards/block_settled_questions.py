@@ -197,7 +197,7 @@ PUSH_HEADER_TIMING = r"(^|[^a-z])(now|yet|when|whether|wait|later|until|first)([
 # else. See the port note in the module docstring.
 # THE eu-bench LOGIN (operator order 2026-10-30): asking the operator for an eu-bench authenticator code, or to log eu-bench in, is settled the same way. `npm run login:bench` (.ci/rediacc_ci/ops/login_bench.py) logs eu-bench in headlessly with the operator's own bench account and is agent-allowed; on 2026-10-30 an agent read the CLI's "tied to another network address" text, written for a human at a terminal, and asked the operator to type the TOTP anyway.
 # Judged per QUESTION (text plus header), not per sentence, because "eu-bench" and the code often sit in different sentences. All three must hold: bench named, a login or code named, and the question addressed to the operator or asking leave. A question about the vault values (`PLACEHOLDER-operator-fills`, a seed, a bws token) is the operator's genuine door and passes.
-BENCH_NAMED = r"(^|[^a-z0-9_-])((?:eu|us|asia)-bench|bench\.rediacc\.com|bench)([^a-z0-9_-]|$)"
+BENCH_NAMED = r"(^|[^a-z0-9_-])((?:eu|us|asia)-bench|bench(?:-(?:eu|us|asia))?\.rediacc\.(?:com|cloud)|bench)([^a-z0-9_-]|$)"
 BENCH_LOGIN_ASK = (
     r"totp|authenticator|2fa|two-factor|one-time (pass)?code|verification code|"
     r"(6|six)-digit|(^|[^a-z])otp([^a-z]|$)|"
@@ -264,7 +264,7 @@ BENCH_LOGIN_MESSAGE = (
   Run:   npm run login:bench
   then rerun the command that failed. It logs the eu-bench config in to
   %s headlessly with the operator's bench account (the
-  bench-login bws profile derives the authenticator code), refreshes the bench
+  bench-login-eu bws profile derives the authenticator code), refreshes the bench
   IP allowlist, and is safe to repeat. Two TOTP logins inside one 30 s window
   collide, so a second one waits for the next window.
 
@@ -651,7 +651,7 @@ def run(ev):
     for text, header in _entries(ev.doc):
         bench = _bench_login(text + " " + header)
         if bench is not None:
-            _record(ev, question, "bench-login", bench)
+            _record(ev, question, "bench-login-eu", bench)
             ev.warn_raw(BENCH_LOGIN_MESSAGE)
             return hookio.DENY
         header_hit = re.search(HEADER_OBJECT, header)

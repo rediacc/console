@@ -1,10 +1,10 @@
-"""Port of `scripts/ops/deploy-bench.sh` (293 lines): deploy the account worker to a regional bench (`bench-eu.rediacc.cloud` for the default `--region eu`).
+"""Port of the retired bash deploy script (293 lines): deploy the account worker to a regional bench (`bench-eu.rediacc.cloud` for the default `--region eu`).
 
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench [--region <eu|us|asia|all>]
 
-ONE BENCH PER REGION (agent/plans/PLAN-multi-region-bench.md W3). `--region` picks the regions.json row whose `bench` object names the host, Worker, config (`wrangler.bench.toml` for eu, `wrangler.bench-<region>.toml` for the others), signer and control database; `--region all` deploys every row marked `deployable`, in file order, and names each one it skips. A region marked not deployable is refused before anything runs, because its config still carries the placeholder database id. The deploy record is `.ci/cache/live-deploys/bench.json` for eu and `bench-<region>.json` for the others; the signer step ensures and deploys THAT region's signer and control database only. `--region eu` is the default and behaves as it always did, with one exception: it no longer deploys `signer-bench-us` (that signer deploys with the us bench).
+ONE BENCH PER REGION (agent/plans/PLAN-multi-region-bench.md W3). `--region` picks the regions.json row whose `bench` object names the host, Worker, config (`wrangler.bench-eu.toml` for eu, `wrangler.bench-<region>.toml` for the others), signer and control database; `--region all` deploys every row marked `deployable`, in file order, and names each one it skips. A region marked not deployable is refused before anything runs, because its config still carries the placeholder database id. The deploy record is `.ci/cache/live-deploys/bench.json` for eu and `bench-<region>.json` for the others; the signer step ensures and deploys THAT region's signer and control database only. `--region eu` is the default and behaves as it always did, with one exception: it no longer deploys `signer-bench-us` (that signer deploys with the us bench).
 
-Bench is the internal "real Cloudflare D1" environment, deliberately NOT wired into CI or CD: a deploy is an operator running this by hand. The steps are the bash's, in order: re-exec under the `deploy-bench` Bitwarden profile (`rediacc_ci.core.bws_env exec`), resolve Cloudflare auth (`cf_auth`), preflight (`bench_preflight`: lockfile and R2 bucket), build the account portal SPA with the bench Turnstile sitekey, apply D1 migrations to the config's DB binding (`account-bench` for eu), `wrangler deploy --config wrangler.bench.toml`, run `./run.sh rotation check --for=bench`, then push the worker secrets with `wrangler secret bulk`.
+Bench is the internal "real Cloudflare D1" environment, deliberately NOT wired into CI or CD: a deploy is an operator running this by hand. The steps are the bash's, in order: re-exec under the `deploy-bench-<region>` Bitwarden profile (`rediacc_ci.core.bws_env exec`), resolve Cloudflare auth (`cf_auth`), preflight (`bench_preflight`: lockfile and R2 bucket), build the account portal SPA with the bench Turnstile sitekey, apply D1 migrations to the config's DB binding (`account-bench` for eu), `wrangler deploy --config wrangler.bench-eu.toml`, run `./run.sh rotation check --for=bench`, then push the worker secrets with `wrangler secret bulk`.
 
 THE ROTATION CHECK ALWAYS COMPARES, AND ANYTHING BUT "IN SYNC" REFUSES THE PUSH (operator ruling 2026-10-13). The check reads the observability host's OTLP basicauth user names over plain OpenSSH, through `private/account/scripts/rotation/lib/observability-reader.ts`, with the three `OBS_READER_SSH_*` values this profile binds: the base64 of the machine's existing private key, the pinned known_hosts lines and `user@host[:port]`. No `rdc` login is involved. Exit 1 is drift; exit 2 is a credential that could not be read, which is reported as such with its cause and refuses the push as well, because an unread value is an uncompared one.
 
@@ -12,19 +12,19 @@ Resources (eu): D1 `account-bench`, R2 `configs-bench`, worker `account-bench`, 
 
 RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in `tests/test_ops_deploy_bench.py` that fails on the bash behaviour).
 
-  1. ARGUMENTS ARE REJECTED. The script took no arguments and ignored every one it was given, so `deploy-bench.sh --dry-run` (the natural thing to type before a deploy to a shared environment) performed a real deploy. An argument now exits 2 before anything runs; `-h`/`--help` prints usage.
+  1. ARGUMENTS ARE REJECTED. The script took no arguments and ignored every one it was given, so the bash script run with `--dry-run` (the natural thing to type before a deploy to a shared environment) performed a real deploy. An argument now exits 2 before anything runs; `-h`/`--help` prints usage.
   2. THE TOKEN-PROPAGATION WAIT IS TAKEN ONLY FOR A TOKEN THIS RUN MINTED (`cf_auth.await_propagation`: GET probes until every slow service the token grants accepts it twice in a row, at most 60 s, then a named error and exit 1). The bash's unconditional `sleep 5` existed because a freshly created management token can race Cloudflare's propagation; an operator-supplied token cannot.
   3. NO `jq`. Every JSON read and the secrets payload are built in-process, so the `require_cmd jq` precondition is gone.
   4. THE SIX REQUIRED SIGNING KEYS REPORT THROUGH THE LOGGER with the same wording, instead of bash's `script: line N: NAME: message` text, which named a line number that no longer meant anything after any edit.
   5. THE SECRETS ARE VALIDATED BEFORE THE FIRST REMOTE WRITE. The six signing keys, the non-empty checks and the OTLP probe ran after the migrations and the deploy, so a missing value left bench on new code with the old secrets, the 2026-09-24 failure shape (state changed, then refused). Only the rotation drift check still runs after the deploy, as it did.
   6. A FAILED STEP NAMES ITSELF. Under `set -e` a failing `npm install`, `vite build`, migration or deploy ended the script silently with that command's status; each exits 1 with `<step> failed (exit N)`.
-  7. THE BACKUP CREDENTIAL HAS NO FALLBACK, AND THE BUCKET COMES FROM THE BINDING (`bench_bucket`: `wrangler.bench.toml`'s BACKUP_BUCKET, not an env override or a literal; a differing exported value or a missing binding is a DeployError). The bash filled each empty `ACCOUNT_BACKUP_S3_*` value from the account-wide R2 token, and the profile supplied only that token, so the public bench Worker held a key that reaches every bucket in the account. Only the three `ACCOUNT_BACKUP_S3_*` names are read now, bound from the bench-scoped store entries, and a missing one is a DeployError naming it before the first remote write (agent/plans/PLAN-backup-credential-isolation.md B2).
+  7. THE BACKUP CREDENTIAL HAS NO FALLBACK, AND THE BUCKET COMES FROM THE BINDING (`bench_bucket`: `wrangler.bench-eu.toml`'s BACKUP_BUCKET, not an env override or a literal; a differing exported value or a missing binding is a DeployError). The bash filled each empty `ACCOUNT_BACKUP_S3_*` value from the account-wide R2 token, and the profile supplied only that token, so the public bench Worker held a key that reaches every bucket in the account. Only the three `ACCOUNT_BACKUP_S3_*` names are read now, bound from the bench-scoped store entries, and a missing one is a DeployError naming it before the first remote write (agent/plans/PLAN-backup-credential-isolation.md B2).
 
-  8. THE ROOT PRINCIPAL IS SEEDED (`seed_root`, after the secrets push, or alone with `--seed-root`). `reset_bench` drops every table and the deploy sets ROOT_EMAIL as a Worker secret, but nothing created the user, so the console `ExecutorIssuer` refused with ISSUER_OWNER_UNKNOWN and the bench proxy readiness failed (found 2026-10-26, worked around by registering the user by hand). The seed calls the server's own `POST /account/api/v1/auth/register` (bench has no `/test/*` surface and the captcha is off): one atomic batch that creates the user, its org, the owner membership and a live `inactive` COMMUNITY subscription, which is everything `ExecutorIssuerService.issue` checks. The password is the stored secret `BENCH_ROOT_PASSWORD` (operator ruling 2026-10-26: "Store a bench root password"), bound by the deploy-bench profile and sent on curl's stdin, never on argv and never printed; an unset or too-short value is a named SeedError before anything is registered. An answer of 409 EMAIL_EXISTS is the idempotent no-op, since registration is atomic and the user can only exist with its org and subscription; any other answer is a named SeedError. A user registered earlier with another password keeps it: `--set-root-password` moves it to the stored one through the server's own password-reset flow (item 9).
+  8. THE ROOT PRINCIPAL IS SEEDED (`seed_root`, after the secrets push, or alone with `--seed-root`). `reset_bench` drops every table and the deploy sets ROOT_EMAIL as a Worker secret, but nothing created the user, so the console `ExecutorIssuer` refused with ISSUER_OWNER_UNKNOWN and the bench proxy readiness failed (found 2026-10-26, worked around by registering the user by hand). The seed calls the server's own `POST /account/api/v1/auth/register` (bench has no `/test/*` surface and the captcha is off): one atomic batch that creates the user, its org, the owner membership and a live `inactive` COMMUNITY subscription, which is everything `ExecutorIssuerService.issue` checks. The password is the stored secret `BENCH_ROOT_PASSWORD` (operator ruling 2026-10-26: "Store a bench root password"), bound by the deploy-bench-<region> profile and sent on curl's stdin, never on argv and never printed; an unset or too-short value is a named SeedError before anything is registered. An answer of 409 EMAIL_EXISTS is the idempotent no-op, since registration is atomic and the user can only exist with its org and subscription; any other answer is a named SeedError. A user registered earlier with another password keeps it: `--set-root-password` moves it to the stored one through the server's own password-reset flow (item 9).
 
   9. THE STORED PASSWORD IS SET ON AN EXISTING ROOT USER THROUGH THE RESET FLOW (`set_root_password`, `--set-root-password`). The account server has no root route that sets a password, but it has `POST /account/api/v1/auth/forgot` (mails a reset link, kind `password-reset`) and `POST /account/api/v1/auth/reset {token, password}` (sets it, clears the lockout, revokes every session). Bench copies each outgoing email into the D1 table `captured_emails` (EMAIL_CAPTURE_D1, bench only), so the run asks for the link, reads the newest `password-reset` row for ROOT_EMAIL through `wrangler d1 execute` and posts the token with the stored password. The token is extracted in process and never printed, logged or put on argv. Wrangler authenticates with the Global API Key pair, as the documented captured-email read does.
 
-  10. BENCH BINDS THE PRODUCTION KEY (operator rulings 2026-10-27 and 2026-10-29). The deploy-bench profile binds the unsuffixed session names and the ED25519 PUBLIC key (`ACCOUNT_ED25519_PUBLIC_KEY`, `ACCOUNT_X25519_*`, `ACCOUNT_SERVER_API_KEY`, `ACCOUNT_JWT_SECRET`) that the edge and stable account-secrets profiles bind (ED25519 fingerprint fb37f1ae16f8b7c0 through `renet_key_gate.key_fingerprint`), so a released renet verifies a bench licence. The ED25519 PRIVATE key is not in the account Worker's secret list: `signer-bench-eu` and `signer-bench-us` hold it (the deploy-signer profile) and `account-bench` signs through its LICENSE_SIGNER binding (agent/plans/PLAN-enterprise-isolation.md S4). The values are still read by name from the environment; only the profile binding changed, and `tests/test_ops_deploy_bench.py` pins it.
+  10. BENCH BINDS THE PRODUCTION KEY (operator rulings 2026-10-27 and 2026-10-29). The deploy-bench-<region> profile binds the unsuffixed session names and the ED25519 PUBLIC key (`ACCOUNT_ED25519_PUBLIC_KEY`, `ACCOUNT_X25519_*`, `ACCOUNT_SERVER_API_KEY`, `ACCOUNT_JWT_SECRET`) that the edge and stable account-secrets profiles bind (ED25519 fingerprint fb37f1ae16f8b7c0 through `renet_key_gate.key_fingerprint`), so a released renet verifies a bench licence. The ED25519 PRIVATE key is not in the account Worker's secret list: `signer-bench-eu` and `signer-bench-us` hold it (the deploy-signer profile) and `account-bench` signs through its LICENSE_SIGNER binding (agent/plans/PLAN-enterprise-isolation.md S4). The values are still read by name from the environment; only the profile binding changed, and `tests/test_ops_deploy_bench.py` pins it.
 
   11. A DEPLOY FROM A CLEAN BENCH REPEATS (finding 87f7acb9, `tests/test_deploy_bench_repeatability.py`). `_ensure_signers` creates the control databases (`control_db ensure --bench`) and deploys the region's own signer, `signer-bench-eu` for the default run and `signer-bench-<region>` otherwise (under the deploy-signer profile, which binds the private key) before the migrations, since Cloudflare refuses the account deploy with error 10143 while the `LICENSE_SIGNER` target Worker is missing. `_remove_retired_secrets` deletes a leftover `ACCOUNT_ED25519_PRIVATE_KEY` from `account-bench` (the listed names are read first, nothing else is deleted), because `requireSignerOnly` makes a Worker holding it answer 500. `smoke` then GETs `/account/api/v1/.well-known/server-info` and a last status other than 200 exits 1 naming it, so a Worker serving 500 is never a green deploy.
 
@@ -69,22 +69,24 @@ BENCH_HOST = BENCH_ORIGIN.removeprefix("https://")
 
 ACCOUNT_ID = cf_auth.DEFAULT_ACCOUNT_ID
 WORKER_NAME = "account-bench"
-CONFIG = "wrangler.bench.toml"
+CONFIG = bench_preflight.config_name(bench_preflight.DEFAULT_REGION)
 DOMAIN = BENCH_HOST
 # Bench is test-only (operator ruling 2026-10-13): the portal is built with NO site key, so the
-# widget never renders, and wrangler.bench.toml sets TURNSTILE_ENABLED=false for the API.
+# widget never renders, and wrangler.bench-eu.toml sets TURNSTILE_ENABLED=false for the API.
 TURNSTILE_SITEKEY = ""
-# The keyless bench portal is built OUTSIDE the production assets directory (`./dist` in every production and edge config), into the directory wrangler.bench.toml's [assets] names. On 2026-10-28 this tool rebuilt workers/account/dist/account for bench and the next production deploy uploaded that keyless portal to stable eu/us/asia, so no login could pass the captcha. `bench_assets_refusal` and `check:ci-portal-sitekey-guard` hold the separation.
+# The keyless bench portal is built OUTSIDE the production assets directory (`./dist` in every production and edge config), into the directory wrangler.bench-eu.toml's [assets] names. On 2026-10-28 this tool rebuilt workers/account/dist/account for bench and the next production deploy uploaded that keyless portal to stable eu/us/asia, so no login could pass the captcha. `bench_assets_refusal` and `check:ci-portal-sitekey-guard` hold the separation.
 BENCH_ASSETS_REL = ("bench", "dist")
 ALL_REGIONS = "all"
 PRODUCTION_ASSETS_REL = ("dist",)
-PROFILE = "deploy-bench"
 DEFAULT_REGION = bench_preflight.DEFAULT_REGION
+PROFILE_ROLE = "deploy"
+# The default region's deploy profile, for the callers that mean the default bench (live_proof, the drills); a deploy for another region names its own through bench_preflight.profile_for.
+PROFILE = bench_preflight.profile_for(PROFILE_ROLE, DEFAULT_REGION)
 
 
 @dataclasses.dataclass(frozen=True)
 class Target:
-    """One regional bench: the names a deploy of it uses. The default region's are the module constants above; the others' come from the `bench` object of their regions.json row."""
+    """One regional bench: the names a deploy of it uses, from the `bench` object of its regions.json row. The module constants above are the default region's names, pinned to that row by a test."""
 
     region: str
     config: str
@@ -98,15 +100,12 @@ class Target:
 
     @property
     def record_rel(self) -> tuple[str, ...]:
-        """`.ci/cache/live-deploys/bench.json` for the default region, `bench-<region>.json` for the others."""
-        name = "bench.json" if self.region == DEFAULT_REGION else "bench-%s.json" % self.region
-        return (*VERSION_RECORD[:-1], name)
+        """`.ci/cache/live-deploys/bench-<region>.json`."""
+        return (*VERSION_RECORD[:-1], "bench-%s.json" % self.region)
 
 
 def target(region: str = DEFAULT_REGION, root=None) -> Target:
-    """The bench of REGION. DeployError names an unknown region or a row without a bench object. The default region reads no file: its names are the constants, and a test pins them to regions.json."""
-    if region == DEFAULT_REGION:
-        return Target(region, CONFIG, WORKER_NAME, DOMAIN, True)
+    """The bench of REGION. DeployError names an unknown region or a row without a bench object."""
     try:
         bench = bench_preflight.bench_object(region, root)
     except (OSError, ValueError, LookupError) as exc:
@@ -133,7 +132,7 @@ def deployable_regions(root=None) -> list[str]:
         raise DeployError("cannot read regions.json: %s" % exc) from None
 
 
-MISSING = "%s missing from the deploy-bench profile"
+MISSING = "%s missing from the deploy-bench-<region> profile"
 HELP = (
     """Deploy the account worker to """
     + BENCH_HOST
@@ -151,7 +150,7 @@ deploys every region marked deployable in regions.json.
 bench is IP-restricted (rediacc_ci.ops.bench_access): a 403 from bench means
 run PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access add-current first.
 
-Credentials come from the deploy-bench Bitwarden profile; see
+Credentials come from the deploy-bench-<region> Bitwarden profile; see
 .ci/config/secret-supply.json. Cloudflare auth: CF_MANAGEMENT_TOKEN, or
 CF_GLOBAL_API_KEY + CF_EMAIL, or an interactive prompt.
 """
@@ -162,7 +161,7 @@ class DeployError(Exception):
     """A step failed; the message is printed and the run exits 1."""
 
 
-# The three backup-plane values, read by these names and no others. The deploy-bench profile binds the two credential names from the bench-only store entries (`ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH`, `ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH`), a token scoped to object read and write on the bench backup bucket. There is NO fallback: the account-wide R2 token once filled these three slots whenever they were empty, which put an account-wide key on the public bench Worker (agent/plans/PLAN-backup-credential-isolation.md). `check:ci-backup-credential-isolation` refuses that fallback's return.
+# The three backup-plane values, read by these names and no others. The deploy-bench-<region> profile binds the two credential names from the bench-only store entries (`ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_<REGION>`, `ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH_<REGION>`), a token scoped to object read and write on the bench backup bucket. There is NO fallback: the account-wide R2 token once filled these three slots whenever they were empty, which put an account-wide key on the public bench Worker (agent/plans/PLAN-backup-credential-isolation.md). `check:ci-backup-credential-isolation` refuses that fallback's return.
 BACKUP_NAMES: tuple[str, ...] = (
     "ACCOUNT_BACKUP_S3_ENDPOINT",
     "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
@@ -200,7 +199,7 @@ def _backup_values() -> tuple[str, str, str]:
     for name, value in zip(BACKUP_NAMES, (endpoint, key_id, secret), strict=True):
         if not value:
             raise DeployError(
-                "%s is EMPTY for bench. The deploy-bench profile binds it (the key pair from "
+                "%s is EMPTY for bench. The deploy-bench-<region> profile binds it (the key pair from "
                 "the bench-scoped store entries, .ci/config/secret-supply.json); the "
                 "account-wide R2 token is never a fallback for it" % name
             )
@@ -236,7 +235,7 @@ def require_nonempty(name: str, value: str) -> None:
     """A secret that reached the push empty would be pushed empty and validated happily by the worker."""
     if not value:
         raise DeployError(
-            "%s is EMPTY for bench. Check its entry in Bitwarden (deploy-bench profile, "
+            "%s is EMPTY for bench. Check its entry in Bitwarden (deploy-bench-<region> profile, "
             ".ci/config/secret-supply.json)" % name
         )
 
@@ -260,7 +259,7 @@ TEST_KEY_PREFIXES = ("sk_test_", "rk_test_")
 def stripe_pair() -> tuple[str, str]:
     """The (secret key, webhook secret) bound as the bench Worker's STRIPE_SANDBOX_* pair, or ("", "") when the pair is absent.
 
-    The deploy-bench profile binds STRIPE_SANDBOX_SECRET_KEY and STRIPE_SANDBOX_WEBHOOK_SECRET under their own names, the ones the account app reads as its sandbox pair, so bench never presents itself as live billing. A key without a test prefix is refused by name and no value is ever printed. One half without the other is refused too, since a key with no webhook secret (or the reverse) would boot a half-working billing path.
+    The deploy-bench-<region> profile binds STRIPE_SANDBOX_SECRET_KEY and STRIPE_SANDBOX_WEBHOOK_SECRET under their own names, the ones the account app reads as its sandbox pair, so bench never presents itself as live billing. A key without a test prefix is refused by name and no value is ever printed. One half without the other is refused too, since a key with no webhook secret (or the reverse) would boot a half-working billing path.
     """
     key = os.environ.get("STRIPE_SANDBOX_SECRET_KEY") or ""
     hook = os.environ.get("STRIPE_SANDBOX_WEBHOOK_SECRET") or ""
@@ -294,9 +293,9 @@ def secrets_payload(region: str = DEFAULT_REGION) -> dict[str, str]:
         "FREE_LICENSE_HMAC_KEY": os.environ.get("FREE_LICENSE_HMAC_KEY") or "",
         # The Analytics Engine read token the portal's telemetry reads use (agent/plans/PLAN-d1-scaling.md W2).
         "ACCOUNT_AE_READ_TOKEN": os.environ.get("ACCOUNT_AE_READ_TOKEN") or "",
-        # Layer 3 of the config store; the deploy-bench profile binds the bench-only vault entry under this name (agent/plans/PLAN-config-server-key.md K2).
+        # Layer 3 of the config store; the deploy-bench-<region> profile binds the bench-only vault entry under this name (agent/plans/PLAN-config-server-key.md K2).
         "ACCOUNT_CONFIG_SERVER_KEY": os.environ.get("ACCOUNT_CONFIG_SERVER_KEY") or "",
-        # Seals customer backup store credentials; the deploy-bench profile binds the bench-only vault entry under this name.
+        # Seals customer backup store credentials; the deploy-bench-<region> profile binds the bench-only vault entry under this name.
         "ACCOUNT_BACKUP_STORE_KEK": os.environ.get("ACCOUNT_BACKUP_STORE_KEK") or "",
     }
     for name, value in signing.items():
@@ -427,12 +426,12 @@ def _run(
 
 # The surfaces a bench deploy proves live, and where the recorder reads the deployed version.
 BENCH_SURFACES = ("account", "account-worker")
-VERSION_RECORD = (".ci", "cache", "live-deploys", "bench.json")
+VERSION_RECORD = (".ci", "cache", "live-deploys", "bench-%s.json" % DEFAULT_REGION)
 VERSION_PATTERN = re.compile(r"Current Version ID:\s*([0-9a-fA-F][0-9a-fA-F-]{7,})")
 
 
 def record_version(root, output: str, live_version: str, region: str = DEFAULT_REGION) -> dict:
-    """Write the region's deploy record (`.ci/cache/live-deploys/bench.json`, or `bench-<region>.json`) from `proof.receipt.identity` plus the version bench serves, and return it. DeployError, with nothing written, when the deploy `output` carries no `Current Version ID:` or `live_version` is empty.
+    """Write the region's deploy record (`.ci/cache/live-deploys/bench-<region>.json`) from `proof.receipt.identity` plus the version bench serves, and return it. DeployError, with nothing written, when the deploy `output` carries no `Current Version ID:` or `live_version` is empty.
 
     `version_id` is `live_version`, the 100% version read after the secrets push, because `wrangler secret bulk` creates a newer version than the one `wrangler deploy` printed (measured 2026-10-28: deploy printed 0b4e20ac, bench served bb3e1ba3); `deployed_version_id` keeps the printed one. `live_version` is required: a blank one is an error, never a silent fallback to the printed id."""
     record_rel = target(region).record_rel
@@ -510,10 +509,10 @@ class ForeignProfileError(DeployError):
 
 
 def _reexec_under_profile(argv: list[str], region: str = DEFAULT_REGION) -> int | None:
-    """Run the same entry point under REGION's deploy profile (`deploy-bench`, `deploy-bench-<region>`) and return its exit status; None when that profile is already bound. ForeignProfileError when another bench region's profile is bound, because `bws_env exec` keeps a name already set and the run would push that bench's keys to this one."""
+    """Run the same entry point under REGION's deploy profile (`deploy-bench-<region>`) and return its exit status; None when that profile is already bound. ForeignProfileError when another bench region's profile is bound, because `bws_env exec` keeps a name already set and the run would push that bench's keys to this one."""
     profiles = [p for p in (os.environ.get("REDIACC_BWS_PROFILES") or "").split(",") if p]
-    profile = bench_preflight.profile_for(PROFILE, region)
-    foreign = bench_preflight.foreign_profiles(PROFILE, region, profiles)
+    profile = bench_preflight.profile_for(PROFILE_ROLE, region)
+    foreign = bench_preflight.foreign_profiles(PROFILE_ROLE, region, profiles)
     if foreign:
         raise ForeignProfileError(
             "deploy_bench --region %s refuses to run under %s: that profile binds another bench's "
@@ -656,11 +655,11 @@ PASSWORD_MIN, PASSWORD_MAX = 8, 128
 
 
 def root_password() -> str:
-    """The stored bench root password, read by name from the environment (the deploy-bench profile binds it). SeedError naming the variable when it is unset or outside the server's length bounds; the value is never part of a message."""
+    """The stored bench root password, read by name from the environment (the deploy-bench-<region> profile binds it). SeedError naming the variable when it is unset or outside the server's length bounds; the value is never part of a message."""
     value = os.environ.get(ROOT_LOGIN_ENV) or ""
     if not value:
         raise SeedError(
-            "%s is not set: the deploy-bench profile binds it from the store entry of the same "
+            "%s is not set: the deploy-bench-<region> profile binds it from the store entry of the same "
             "name (.ci/config/secret-supply.json), written once with `bws_env store-from-env` "
             "(usage in rediacc_ci/core/bws_env.py)" % ROOT_LOGIN_ENV
         )
@@ -870,7 +869,7 @@ def bench_assets_refusal(worker_dir, region: str = DEFAULT_REGION) -> str | None
     return None
 
 
-# The account Worker binds LICENSE_SIGNER to `signer-bench-<region>` (workers/account/wrangler.bench.toml), and Cloudflare refuses the account deploy with error 10143 while that Worker does not exist. The control databases the signers bind are created first. A signer holds the private key, which only the deploy-signer profile binds, so each signer deploys in its own child under that profile.
+# The account Worker binds LICENSE_SIGNER to `signer-bench-<region>` (workers/account/wrangler.bench-eu.toml), and Cloudflare refuses the account deploy with error 10143 while that Worker does not exist. The control databases the signers bind are created first. A signer holds the private key, which only the deploy-signer profile binds, so each signer deploys in its own child under that profile.
 # Secrets the account Worker must never hold: `requireSignerOnly` (private/account/src/entry/cloudflare.ts) refuses to serve, HTTP 500 "Server misconfiguration", while the retired private key is present.
 RETIRED_SECRETS = (deploy_signer.PRIVATE_KEY,)
 SMOKE_PATH = "/account/api/v1/.well-known/server-info"
@@ -1128,10 +1127,7 @@ def _deploy(auth: cf_auth.Auth, root, region: str = DEFAULT_REGION) -> None:
     print("  Worker: %s" % worker_name)
     print()
     print("Test it:")
-    if region == DEFAULT_REGION:
-        print("  npm run login:bench")
-    else:
-        print("  npm run login:bench -- --region %s" % region)
+    print("  npm run login:bench -- --region %s" % region)
     print("  ./rdc.sh --config %s-bench repo create --name my-app -m my-server --size 2G" % region)
 
 
@@ -1184,7 +1180,7 @@ def main(argv: list[str]) -> int:
         if len(regions) > 1:
             # One child per region, each under that bench's own profile: one environment cannot hold two benches' keys.
             bound = [p for p in (os.environ.get("REDIACC_BWS_PROFILES") or "").split(",") if p]
-            held = bench_preflight.foreign_profiles(PROFILE, "", bound)
+            held = bench_preflight.foreign_profiles(PROFILE_ROLE, "", bound)
             if held:
                 raise ForeignProfileError(
                     "deploy_bench --region all starts one child per bench under its own profile and "

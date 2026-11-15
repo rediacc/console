@@ -37,7 +37,7 @@ PROXY_REL = ("workers", "proxy")
 ACCOUNT_REL = ("workers", "account")
 REGIONS_REL = "regions.json"
 TEMPLATE = "wrangler.template.toml"
-BENCH_CONFIG = "wrangler.bench.toml"
+BENCH_CONFIG = "wrangler.bench-eu.toml"
 DEV_CONFIG = "wrangler.dev.toml"
 CONFIG_GLOB = "wrangler*.toml"
 
@@ -63,7 +63,7 @@ ACCOUNT_BINDING = ("ACCOUNT", "CloudflareInternal")
 ISSUER_BINDING = ("ISSUER", "ExecutorIssuer")
 FORBIDDEN_TEXT = "EXECUTOR_TOKEN"
 # Per target, the two vars that bound the executor (PLAN-executor-durable-object-policy.md Design item 2): the caps are decimal strings the Worker parses.
-TARGET_KEYS = ("eu", "us", "asia", "bench", "bench-us", "bench-asia", "dev")
+TARGET_KEYS = ("eu", "us", "asia", "bench-eu", "bench-us", "bench-asia", "dev")
 CAP_BY_TARGET: dict[str, str] = dict.fromkeys(TARGET_KEYS, "25")
 HEAVY_CAP_BY_TARGET: dict[str, str] = dict.fromkeys(TARGET_KEYS, "5")
 EXECUTOR_VARS = ("EXECUTOR_CAP", "EXECUTOR_HEAVY_CAP")
@@ -80,7 +80,8 @@ DRILL_PROBE_RE = re.compile(r"^%s=%s$" % (DRILL_SIDE, DRILL_SIDE))
 PLACEHOLDER_RE = re.compile(r"@@[A-Z_]+@@")
 
 # The region whose bench keeps the unsuffixed target key `bench` (today's single bench, hand-written); the other regions' benches are `bench-<r>` and generated from the template.
-BENCH_HOME_REGION = "eu"
+# The one bench whose proxy config is hand-written, because it carries the reachability drill var (BENCH_OPTIONAL_VARS); every other bench is generated from the template.
+HAND_WRITTEN_BENCH_REGION = "eu"
 # The database id a bench account config carries until its objects exist (box L1 of PLAN-multi-region-bench.md); regions.json `bench.deployable` says whether that is still allowed.
 PLACEHOLDER_D1_ID = "TO-BE-CREATED"
 
@@ -170,8 +171,8 @@ def executor_vars(key: str) -> tuple[tuple[str, str], ...]:
 
 
 def bench_key(rid: str) -> str:
-    """The target key of region `rid`'s bench: `bench` for the home region, `bench-<r>` for the others."""
-    return "bench" if rid == BENCH_HOME_REGION else "bench-%s" % rid
+    """The target key of region `rid`'s bench: `bench-<r>`."""
+    return "bench-%s" % rid
 
 
 def bench_object(region: dict) -> dict | None:
@@ -181,7 +182,7 @@ def bench_object(region: dict) -> dict | None:
 
 
 def _bench_target(region: dict) -> Target:
-    """The bench proxy target of one region, every name read from its regions.json `bench` object. The home region's config is hand-written (it carries the reachability drill var); the others are generated from the template."""
+    """The bench proxy target of one region, every name read from its regions.json `bench` object. The eu bench's config is hand-written (it carries the reachability drill var); the others are generated from the template."""
     rid = str(region["id"])
     bench = bench_object(region)
     if bench is None:
@@ -193,7 +194,7 @@ def _bench_target(region: dict) -> Target:
     except KeyError as exc:
         raise ConfigError("%s region %s bench object lacks %s" % (REGIONS_REL, rid, exc)) from None
     key = bench_key(rid)
-    home = rid == BENCH_HOME_REGION
+    hand_written = rid == HAND_WRITTEN_BENCH_REGION
     account_url = "https://" + host
     return Target(
         key=key,
@@ -208,10 +209,10 @@ def _bench_target(region: dict) -> Target:
         ),
         destinations=("otlp-%s-logs" % otlp, "otlp-%s-traces" % otlp),
         version_metadata=True,
-        generated=not home,
+        generated=not hand_written,
         own_tokens=frozenset({"bench", rid}),
         executor_vars=executor_vars(key),
-        optional_variables=BENCH_OPTIONAL_VARS if home else frozenset(),
+        optional_variables=BENCH_OPTIONAL_VARS if hand_written else frozenset(),
     )
 
 
@@ -252,7 +253,7 @@ def targets(regions: list[dict]) -> dict[str, Target]:
         )
     for region in regions:
         rid = str(region["id"])
-        if rid == BENCH_HOME_REGION or bench_object(region) is not None:
+        if rid == HAND_WRITTEN_BENCH_REGION or bench_object(region) is not None:
             out[bench_key(rid)] = _bench_target(region)
     out["dev"] = Target(
         key="dev",
@@ -668,7 +669,7 @@ def deployable_refusals(config: dict, bench: dict) -> list[str]:
 
 
 def generate(root: pathlib.Path) -> dict[str, str]:
-    """`{config file name: text}` for the generated targets: the three regions and the non-home benches."""
+    """`{config file name: text}` for the generated targets: the three regions and the generated benches."""
     template = (root.joinpath(*PROXY_REL) / TEMPLATE).read_text(encoding="utf-8")
     return {
         t.config: render(template, t) for t in targets(load_regions(root)).values() if t.generated
@@ -698,7 +699,7 @@ def check(root: pathlib.Path) -> list[str]:
 
     for region in regions:
         bench = bench_object(region)
-        if bench is not None and region["id"] == BENCH_HOME_REGION:
+        if bench is not None and region["id"] == HAND_WRITTEN_BENCH_REGION:
             if bench.get("host") != BENCH_ORIGIN.removeprefix("https://"):
                 out.append(
                     ".ci/config/well-known.env: WK_BENCH_ORIGIN is %r, regions.json %s bench host is %r"

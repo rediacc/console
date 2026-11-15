@@ -205,7 +205,7 @@ NO_CHANNEL_REFUSAL = (
 NO_CHANNEL_MODULE_REFUSAL = "python3 -m %s names no --channel edge" % RELEASE_MODULE
 
 WRANGLER_PUBLISH = ("deploy", "rollback", "publish")
-# A bench or preview config, judged on the file NAME as a whole dot- or dash-separated word (`wrangler.bench.toml`, `wrangler.preview-12.toml`): the directories above it say nothing about the Worker, so `/srv/bench-tools/wrangler.eu.toml` is the shared eu config, not a refusal (review 22a275ab.2). Edge configs are gone with PLAN-product-domain-rename.
+# A bench or preview config, judged on the file NAME as a whole dot- or dash-separated word (`wrangler.bench-eu.toml`, `wrangler.preview-12.toml`): the directories above it say nothing about the Worker, so `/srv/bench-tools/wrangler.eu.toml` is the shared eu config, not a refusal (review 22a275ab.2). Edge configs are gone with PLAN-product-domain-rename.
 _MODULE_CONFIG = re.compile(r"(?:\A|[.\-_])(?:bench|preview)(?:[.\-_]|\Z)")
 # `wrangler pages deploy|publish` publishes a Pages site, which no release path runs (review 2e939f2a.6).
 WRANGLER_PAGES_PUBLISH = ("deploy", "publish")
@@ -357,7 +357,7 @@ EDGE_CASES = [
     ),
     ("the entry by module", "%s rediacc_ci.release.local --channel edge" % _PY),
     ("wrangler deploy on a shared region config", "npx wrangler deploy --config wrangler.eu.toml"),
-    ("wrangler deploy on the bench config", "npx wrangler deploy --config wrangler.bench.toml"),
+    ("wrangler deploy on the bench config", "npx wrangler deploy --config wrangler.bench-eu.toml"),
     ("wrangler deploy on a config outside the region set", "npx wrangler deploy"),
     ("wrangler deploy dry run", "npx wrangler deploy --dry-run --outdir /tmp/x"),
     ("wrangler tail reads", "npx wrangler tail www"),

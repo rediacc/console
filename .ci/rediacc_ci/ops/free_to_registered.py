@@ -2,7 +2,7 @@
 
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.free_to_registered [--dry-run]
 
-BENCH ONLY. The target is `BENCH_ORIGIN`; no other server is accepted. The run re-executes itself under the `deploy-bench` Bitwarden profile (it needs `CF_GLOBAL_API_KEY` and `CF_EMAIL` for the captured-email and cleanup queries) unless that profile is already bound.
+BENCH ONLY. The target is `BENCH_ORIGIN`; no other server is accepted. The run re-executes itself under the `deploy-bench-eu` Bitwarden profile (it needs `CF_GLOBAL_API_KEY` and `CF_EMAIL` for the captured-email and cleanup queries) unless that profile is already bound.
 
 THE STEPS, each printing one evidence line `STEP <n> <name> rc=<rc> <detail>`:
 
@@ -45,7 +45,7 @@ from rediacc_ci import paths
 from rediacc_ci.ops import deploy_bench, login_bench, totp
 from rediacc_ci.well_known import BENCH_ORIGIN, INFRA_DOMAIN
 
-PROFILE = "deploy-bench"
+PROFILE = "deploy-bench-eu"
 EMAIL_DOMAIN = INFRA_DOMAIN
 ADDRESS = re.compile(r"^ftr\+\d{14}@" + re.escape(EMAIL_DOMAIN) + "$")
 API = "/account/api/v1"
@@ -111,16 +111,16 @@ class DrillError(RuntimeError):
     """A step that cannot continue. The message never carries a secret."""
 
 
-TWO_FACTOR_PROFILE = "bench-login"
+TWO_FACTOR_PROFILE = "bench-login-eu"
 
 
 def root_seed_from_env() -> str:
-    """The bench root's TOTP seed from the environment; the `bench-login` profile binds it. Never printed."""
+    """The bench root's TOTP seed from the environment; the `bench-login-eu` profile binds it. Never printed."""
     seed = os.environ.get(login_bench.TOTP_SEED_ENV) or ""
     if not seed:
         raise DrillError(
             "the bench root has two-factor on and %s is not set; run under the %s profile "
-            "(bws_env exec --profile deploy-bench --profile %s)"
+            "(bws_env exec --profile deploy-bench-eu --profile %s)"
             % (login_bench.TOTP_SEED_ENV, TWO_FACTOR_PROFILE, TWO_FACTOR_PROFILE)
         )
     return seed

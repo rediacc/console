@@ -1,4 +1,4 @@
-"""reset_bench reads its bucket, jurisdiction and database id from wrangler.bench.toml (review finding 6826f345.1)."""
+"""reset_bench reads its bucket, jurisdiction and database id from wrangler.bench-eu.toml (review finding 6826f345.1)."""
 
 from typing import cast
 
@@ -44,7 +44,7 @@ def test_a_bucket_without_a_jurisdiction_keeps_the_default_host(monkeypatch):
 
 def test_a_missing_config_bucket_binding_is_named_as_missing(monkeypatch):
     creds = _creds(monkeypatch, _names(config_bucket=""))
-    assert creds.missing() == ["CONFIG_BUCKET in wrangler.bench.toml"]
+    assert creds.missing() == ["CONFIG_BUCKET in wrangler.bench-eu.toml"]
     assert _creds(monkeypatch, _names()).missing() == []
 
 

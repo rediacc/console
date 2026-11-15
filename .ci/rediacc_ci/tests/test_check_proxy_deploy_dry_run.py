@@ -26,7 +26,7 @@ import os, sys
 args = sys.argv[1:]
 target = args[args.index("--target") + 1]
 region = args[args.index("--region") + 1] if "--region" in args else "eu"
-key = "bench" if target == "bench" else region
+key = "bench-" + region if target == "bench" else region
 label = target + "/" + region
 mode = os.environ.get("FAKE_MODE", "")
 if os.environ.get("CLOUDFLARE_API_TOKEN") == os.environ.get("REAL_SENTINEL", "never"):
@@ -80,7 +80,7 @@ def test_the_unplanted_run_passes_over_four_targets(tmp_path: pathlib.Path) -> N
     proc = _run(root, entry)
     assert proc.returncode == 0, proc.stderr
     assert "4 target(s) compiled" in proc.stdout
-    for name in ("wrangler.asia.toml", "wrangler.bench.toml", "wrangler.eu.toml"):
+    for name in ("wrangler.asia.toml", "wrangler.bench-eu.toml", "wrangler.eu.toml"):
         assert name in proc.stdout
 
 

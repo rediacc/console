@@ -387,7 +387,7 @@ def test_pending_migrations_fail_verify(pair, tmp_path: Path) -> None:
 
 
 def test_config_for_finds_the_toml_and_its_migrations_dir(tmp_path: Path) -> None:
-    toml = tmp_path / "workers" / "account" / "wrangler.bench.toml"
+    toml = tmp_path / "workers" / "account" / "wrangler.bench-eu.toml"
     toml.parent.mkdir(parents=True)
     toml.write_text(
         'name = "account-bench"\n[[d1_databases]]\nbinding = "DB"\ndatabase_name = "account-bench"\n'

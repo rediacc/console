@@ -124,7 +124,7 @@ def test_a_deployable_region_deploys_its_own_config_worker_signer_and_record(mon
         assert step in events
     assert ["version", "wrangler.bench-us.toml", "account-bench-us"] in events
     # control: nothing of the eu bench was touched
-    assert not any("wrangler.bench.toml" in e or "bench-eu" in e for e in joined)
+    assert not any("wrangler.bench-eu.toml" in e or "bench-eu" in e for e in joined)
 
 
 def test_the_deploy_record_path_follows_the_region(monkeypatch, tmp_path):
@@ -134,7 +134,7 @@ def test_the_deploy_record_path_follows_the_region(monkeypatch, tmp_path):
     out = "Current Version ID: " + VID
     deploy_bench.record_version(tmp_path, out, "live")
     deploy_bench.record_version(tmp_path, out, "live", "us")
-    assert [p.name for p in seen] == ["bench.json", "bench-us.json"]
+    assert [p.name for p in seen] == ["bench-eu.json", "bench-us.json"]
 
 
 def test_seeding_a_region_posts_to_that_regions_host(monkeypatch):
@@ -203,7 +203,7 @@ def test_region_all_under_a_bound_bench_profile_is_refused(monkeypatch, tmp_path
     _regions_root(tmp_path, us_deployable=True)
     children: list[str] = []
     _main_world(monkeypatch, tmp_path, children)
-    monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-bench")
+    monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-bench-eu")
     assert deploy_bench.main(["--region", "all"]) == 2
     assert children == []
 
@@ -226,7 +226,7 @@ def _reexec_argv(monkeypatch, region, bound=""):
 
 
 def test_a_us_deploy_reexecutes_under_the_us_profile(monkeypatch):
-    """deploy-bench binds the eu bench's server key, KEK, S3 pair and root password; a us deploy under it pushed those to account-bench-us."""
+    """deploy-bench-eu binds the eu bench's server key, KEK, S3 pair and root password; a us deploy under it pushed those to account-bench-us."""
     rc, seen = _reexec_argv(monkeypatch, "us")
     assert rc == 0
     assert seen[0][seen[0].index("--profile") + 1] == "deploy-bench-us"
@@ -234,13 +234,13 @@ def test_a_us_deploy_reexecutes_under_the_us_profile(monkeypatch):
 
 def test_an_eu_deploy_keeps_the_unsuffixed_profile(monkeypatch):
     _rc, seen = _reexec_argv(monkeypatch, "eu")
-    assert seen[0][seen[0].index("--profile") + 1] == "deploy-bench"
+    assert seen[0][seen[0].index("--profile") + 1] == "deploy-bench-eu"
 
 
 def test_a_us_deploy_under_the_eu_profile_is_refused(monkeypatch):
-    """`bws_env exec` keeps a name already set, so nesting deploy-bench-us under deploy-bench would keep the eu keys."""
-    with pytest.raises(deploy_bench.ForeignProfileError, match="deploy-bench"):
-        _reexec_argv(monkeypatch, "us", bound="deploy-bench")
+    """`bws_env exec` keeps a name already set, so nesting deploy-bench-us under deploy-bench-eu would keep the eu keys."""
+    with pytest.raises(deploy_bench.ForeignProfileError, match="deploy-bench-eu"):
+        _reexec_argv(monkeypatch, "us", bound="deploy-bench-eu")
 
 
 def test_the_own_profile_bound_runs_in_place(monkeypatch):

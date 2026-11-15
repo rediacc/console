@@ -6,9 +6,9 @@ WHY IT EXISTS. Each environment's Workers presign backup grants with their own b
 
 THE STEPS, IN ORDER, AND EACH REFUSAL STOPS THE RUN BEFORE THE NEXT STEP:
 
-  1. Re-execute under the `backup-push-<target>` Bitwarden profile (.ci/config/secret-supply.json) unless it is already bound. That profile binds ONLY that environment's pair, renamed to the two names the Worker reads, the shared endpoint, and the Workers deploy token.
-  2. Resolve the Worker, its bucket and its host from regions.json (stable, the shared set of a region) or workers/account/wrangler.bench.toml (bench), and cross-check the Worker's own wrangler config: its `name` and its `BACKUP_BUCKET` binding must be the same Worker and bucket, or the push would hand a Worker a bucket it is not bound to.
-  3. Check that the three bound values are present (names only), and that no `ACCOUNT_BACKUP_S3_*_{STABLE,EDGE,BENCH}` name is in the environment: under the profile there is none, so one there means the run is holding a second environment's key.
+  1. Re-execute under the target's Bitwarden profile (`backup-push-stable`, `backup-push-bench-eu`) (.ci/config/secret-supply.json) unless it is already bound. That profile binds ONLY that environment's pair, renamed to the two names the Worker reads, the shared endpoint, and the Workers deploy token.
+  2. Resolve the Worker, its bucket and its host from regions.json (stable, the shared set of a region) or workers/account/wrangler.bench-eu.toml (bench), and cross-check the Worker's own wrangler config: its `name` and its `BACKUP_BUCKET` binding must be the same Worker and bucket, or the push would hand a Worker a bucket it is not bound to.
+  3. Check that the three bound values are present (names only), and that no `ACCOUNT_BACKUP_S3_*_{STABLE,EDGE,BENCH_EU,BENCH_US,BENCH_ASIA}` name is in the environment: under the profile there is none, so one there means the run is holding a second environment's key.
   4. `portal_health` for the Worker's host. Red refuses: a push onto a broken portal would leave nothing to compare the after-check with.
   5. `wrangler secret list` (names only). The four names must already be there, because this tool replaces values and never adds a secret; a Worker missing one needs a deploy.
   6. ONE `wrangler secret bulk --name <worker>` with exactly the four `ACCOUNT_BACKUP_S3_*` keys: ENDPOINT (through `set_account_worker_secrets.apply_jurisdiction`, so an EU bucket gets the `.eu.` host), BUCKET, ACCESS_KEY_ID and SECRET_ACCESS_KEY. The document goes on wrangler's STDIN, never on argv and never to a file; wrangler's own output is printed with the four values masked.
@@ -39,7 +39,8 @@ from rediacc_ci.deploy import set_account_worker_secrets
 from rediacc_ci.ops import portal_health
 
 TARGETS = ("stable", "bench")
-PROFILE_PREFIX = "backup-push-"
+# The profile of each target: bench is the eu bench's (`--target bench` has no `--region`).
+PROFILES = {"stable": "backup-push-stable", "bench": "backup-push-bench-eu"}
 # The four Worker secrets this tool writes, in the order the bulk document carries them.
 PUSHED = (
     "ACCOUNT_BACKUP_S3_ENDPOINT",
@@ -57,10 +58,10 @@ BOUND = (
 SUFFIXED = tuple(
     "%s_%s" % (name, env)
     for name in ("ACCOUNT_BACKUP_S3_ACCESS_KEY_ID", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY")
-    for env in ("STABLE", "EDGE", "BENCH")
+    for env in ("STABLE", "EDGE", "BENCH_EU", "BENCH_US", "BENCH_ASIA")
 )
 WORKER_DIR = ("workers", "account")
-BENCH_CONFIG = "wrangler.bench.toml"
+BENCH_CONFIG = "wrangler.bench-eu.toml"
 BUCKET_BINDING = "BACKUP_BUCKET"
 MASK = "<redacted>"
 
@@ -154,16 +155,16 @@ def payload(p: Plan, environ: dict[str, str] | None = None) -> dict[str, str]:
     stray = [name for name in SUFFIXED if environ.get(name)]
     if stray:
         raise PushError(
-            "refusing: %s %s in the environment. Under the backup-push-%s profile only the "
+            "refusing: %s %s in the environment. Under the %s profile only the "
             "unsuffixed pair is bound, so a suffixed name here is a second environment's key."
-            % (", ".join(stray), "is" if len(stray) == 1 else "are", p.target)
+            % (", ".join(stray), "is" if len(stray) == 1 else "are", PROFILES[p.target])
         )
     missing = [name for name in BOUND if not environ.get(name)]
     if missing:
         raise PushError(
-            "refusing: %s %s EMPTY. The backup-push-%s profile binds them "
+            "refusing: %s %s EMPTY. The %s profile binds them "
             "(.ci/config/secret-supply.json)."
-            % (", ".join(missing), "is" if len(missing) == 1 else "are", p.target)
+            % (", ".join(missing), "is" if len(missing) == 1 else "are", PROFILES[p.target])
         )
     return {
         "ACCOUNT_BACKUP_S3_ENDPOINT": set_account_worker_secrets.apply_jurisdiction(
@@ -320,8 +321,8 @@ def push(
 
 
 def _reexec_under_profile(target: str, argv: list[str]) -> int | None:
-    """Run the same entry point under `backup-push-<target>` and return its exit status; None when already bound."""
-    profile = PROFILE_PREFIX + target
+    """Run the same entry point under the target's profile (`backup-push-stable`, `backup-push-bench-eu`) and return its exit status; None when already bound."""
+    profile = PROFILES[target]
     if profile in (os.environ.get("REDIACC_BWS_PROFILES") or "").split(","):
         return None
     env = dict(os.environ)

@@ -154,14 +154,14 @@ def credentials(channel: str, environ: dict[str, str]) -> tuple[str, str, str]:
     stray = [name for name in pbc.SUFFIXED if environ.get(name)]
     if stray:
         raise ConfigError(
-            "refusing: %s in the environment; under backup-push-%s only the unsuffixed pair is bound"
-            % (", ".join(stray), channel)
+            "refusing: %s in the environment; under %s only the unsuffixed pair is bound"
+            % (", ".join(stray), pbc.PROFILES[channel])
         )
     missing = [name for name in pbc.BOUND if not environ.get(name)]
     if missing:
         raise ConfigError(
-            "%s unset; run under `bws_env exec --profile backup-push-%s`"
-            % (", ".join(missing), channel)
+            "%s unset; run under `bws_env exec --profile %s`"
+            % (", ".join(missing), pbc.PROFILES[channel])
         )
     return (
         environ["ACCOUNT_BACKUP_S3_ENDPOINT"],

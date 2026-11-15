@@ -68,45 +68,45 @@
       "kind": "no-github-twin",
       "reason": "The old stable Worker's value for this region, retired with the product-domain rename (agent/plans/PLAN-product-domain-rename.md W10): the shared Worker for this region seeds from the edge database and config bucket, so cd-deploy-account.yml and the account-secrets-<region> profile fetch the region's _EDGE store value under this name as the LOCAL variable, and nothing requests this store entry. It stays mapped until the vault entry is deleted (rename L11)."
     },
-    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH": {
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_EU": {
       "kind": "no-github-twin",
-      "reason": "The bench-scoped backup pair (agent/plans/PLAN-backup-credential-isolation.md, token cf-r2-backup-bench), bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench and `--profile backup-push-bench` for rediacc_ci.ops.push_backup_credentials. Bench is deliberately not deployed by any workflow, and check:ci-backup-credential-isolation refuses a workflow that requests this pair."
+      "reason": "The bench-scoped backup pair (agent/plans/PLAN-backup-credential-isolation.md, token cf-r2-backup-bench-eu), bound only by `bws_env exec --profile deploy-bench-eu` for the local rediacc_ci.ops.deploy_bench and `--profile backup-push-bench-eu` for rediacc_ci.ops.push_backup_credentials. Bench is deliberately not deployed by any workflow, and check:ci-backup-credential-isolation refuses a workflow that requests this pair."
     },
-    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH": {
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH_EU": {
       "kind": "no-github-twin",
-      "reason": "The bench-scoped backup pair (agent/plans/PLAN-backup-credential-isolation.md, token cf-r2-backup-bench), bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench and `--profile backup-push-bench` for rediacc_ci.ops.push_backup_credentials. Bench is deliberately not deployed by any workflow, and check:ci-backup-credential-isolation refuses a workflow that requests this pair."
+      "reason": "The bench-scoped backup pair (agent/plans/PLAN-backup-credential-isolation.md, token cf-r2-backup-bench-eu), bound only by `bws_env exec --profile deploy-bench-eu` for the local rediacc_ci.ops.deploy_bench and `--profile backup-push-bench-eu` for rediacc_ci.ops.push_backup_credentials. Bench is deliberately not deployed by any workflow, and check:ci-backup-credential-isolation refuses a workflow that requests this pair."
     },
-    "ACCOUNT_BACKUP_STORE_KEK_BENCH": {
+    "ACCOUNT_BACKUP_STORE_KEK_BENCH_EU": {
       "kind": "no-github-twin",
-      "reason": "The bench backup store KEK, bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench push; bench deploys never run in GitHub CI, so no workflow requests it."
+      "reason": "The bench backup store KEK, bound only by `bws_env exec --profile deploy-bench-eu` for the local rediacc_ci.ops.deploy_bench push; bench deploys never run in GitHub CI, so no workflow requests it."
     },
-    "ACCOUNT_CONFIG_SERVER_KEY_BENCH": {
+    "ACCOUNT_CONFIG_SERVER_KEY_BENCH_EU": {
       "kind": "no-github-twin",
-      "reason": "The bench config server key (agent/plans/PLAN-config-server-key.md K2/K3), bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench push; bench deploys never run in GitHub CI, so no workflow requests it."
+      "reason": "The bench config server key (agent/plans/PLAN-config-server-key.md K2/K3), bound only by `bws_env exec --profile deploy-bench-eu` for the local rediacc_ci.ops.deploy_bench push; bench deploys never run in GitHub CI, so no workflow requests it."
     },
     "ACCOUNT_ED25519_PRIVATE_KEY_DEV": {
       "kind": "no-github-twin",
-      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
+      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench-eu` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
     },
     "ACCOUNT_ED25519_PUBLIC_KEY_DEV": {
       "kind": "no-github-twin",
-      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
+      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench-eu` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
     },
     "ACCOUNT_JWT_SECRET_DEV": {
       "kind": "no-github-twin",
-      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
+      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench-eu` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
     },
     "ACCOUNT_SERVER_API_KEY_DEV": {
       "kind": "no-github-twin",
-      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
+      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench-eu` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
     },
     "ACCOUNT_X25519_PRIVATE_KEY_DEV": {
       "kind": "no-github-twin",
-      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
+      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench-eu` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
     },
     "ACCOUNT_X25519_PUBLIC_KEY_DEV": {
       "kind": "no-github-twin",
-      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
+      "reason": "The local DEV keypair and session secrets, seeded 2026-09-24 from the retired account env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T11, Q1). Bound by `bws_env exec --profile account-dev|backup-plane|deploy-bench-eu` (.ci/config/secret-supply.json consumers); no workflow requests it, because CI's drills leg mints throwaway keys instead."
     },
     "AWS_IAM_ADMIN_ACCESS_KEY_ID": {
       "kind": "no-github-twin",
@@ -118,7 +118,7 @@
     },
     "AWS_SES_ACCESS_KEY_ID_BENCH": {
       "kind": "no-github-twin",
-      "reason": "A bench-only credential, seeded 2026-09-24 from the retired bench env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench; bench is deliberately not deployed by any workflow."
+      "reason": "A bench-only credential, seeded 2026-09-24 from the retired bench env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench-eu` for the local rediacc_ci.ops.deploy_bench; bench is deliberately not deployed by any workflow."
     },
     "AWS_SES_SMTP_PASSWORD_EU": {
       "kind": "no-github-twin",
@@ -134,7 +134,7 @@
     },
     "AWS_SES_SECRET_ACCESS_KEY_BENCH": {
       "kind": "no-github-twin",
-      "reason": "A bench-only credential, seeded 2026-09-24 from the retired bench env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench; bench is deliberately not deployed by any workflow."
+      "reason": "A bench-only credential, seeded 2026-09-24 from the retired bench env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench-eu` for the local rediacc_ci.ops.deploy_bench; bench is deliberately not deployed by any workflow."
     },
     "CF_EMAIL": {
       "kind": "no-github-twin",
@@ -158,7 +158,7 @@
     },
     "CLOUDFLARE_TURNSTILE_SECRET_KEY_BENCH": {
       "kind": "no-github-twin",
-      "reason": "A bench-only credential, seeded 2026-09-24 from the retired bench env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench; bench is deliberately not deployed by any workflow."
+      "reason": "A bench-only credential, seeded 2026-09-24 from the retired bench env file with read-back MATCH (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench-eu` for the local rediacc_ci.ops.deploy_bench; bench is deliberately not deployed by any workflow."
     },
     "GITHUB_APP_CLIENT_SECRET": {
       "kind": "no-github-twin",
@@ -170,7 +170,7 @@
     },
     "OBS_OTLP_CREDENTIALS_BENCH": {
       "kind": "no-github-twin",
-      "reason": "The bench collector credential, JSON {user,pass}, seeded 2026-09-24 from the retired bench env file (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench, and written by `rotation rotate otlp-bench` through its bitwarden-sm consumer; no workflow deploys bench."
+      "reason": "The bench collector credential, JSON {user,pass}, seeded 2026-09-24 from the retired bench env file (agent/plans/PLAN-account-env-to-bws.md T13). Bound only by `bws_env exec --profile deploy-bench-eu` for the local rediacc_ci.ops.deploy_bench, and written by `rotation rotate otlp-bench` through its bitwarden-sm consumer; no workflow deploys bench."
     },
     "OBS_OTLP_PASSWORD": {
       "kind": "no-github-twin",
@@ -182,15 +182,15 @@
     },
     "OBS_READER_SSH_KEY_B64": {
       "kind": "no-github-twin",
-      "reason": "Observability reader, stored 2026-10-13 on the operator's ruling that `rotation check` always compares against the live host and that the machine's existing key is reused. The base64 of the OpenSSH private key file. Bound by `bws_env exec --profile rotation|deploy-bench` for the local `./run.sh rotation check` (private/account/scripts/rotation/lib/observability-reader.ts); no workflow runs that check."
+      "reason": "Observability reader, stored 2026-10-13 on the operator's ruling that `rotation check` always compares against the live host and that the machine's existing key is reused. The base64 of the OpenSSH private key file. Bound by `bws_env exec --profile rotation|deploy-bench-eu` for the local `./run.sh rotation check` (private/account/scripts/rotation/lib/observability-reader.ts); no workflow runs that check."
     },
     "OBS_READER_SSH_KNOWN_HOSTS": {
       "kind": "no-github-twin",
-      "reason": "Observability reader, stored 2026-10-13 on the operator's ruling that `rotation check` always compares against the live host and that the machine's existing key is reused. The pinned known_hosts line(s) for the observability host; a public value. Bound by `bws_env exec --profile rotation|deploy-bench` for the local `./run.sh rotation check` (private/account/scripts/rotation/lib/observability-reader.ts); no workflow runs that check."
+      "reason": "Observability reader, stored 2026-10-13 on the operator's ruling that `rotation check` always compares against the live host and that the machine's existing key is reused. The pinned known_hosts line(s) for the observability host; a public value. Bound by `bws_env exec --profile rotation|deploy-bench-eu` for the local `./run.sh rotation check` (private/account/scripts/rotation/lib/observability-reader.ts); no workflow runs that check."
     },
     "OBS_READER_SSH_TARGET": {
       "kind": "no-github-twin",
-      "reason": "Observability reader, stored 2026-10-13 on the operator's ruling that `rotation check` always compares against the live host and that the machine's existing key is reused. The `user@host[:port]` the reader connects to; not a credential. Bound by `bws_env exec --profile rotation|deploy-bench` for the local `./run.sh rotation check` (private/account/scripts/rotation/lib/observability-reader.ts); no workflow runs that check."
+      "reason": "Observability reader, stored 2026-10-13 on the operator's ruling that `rotation check` always compares against the live host and that the machine's existing key is reused. The `user@host[:port]` the reader connects to; not a credential. Bound by `bws_env exec --profile rotation|deploy-bench-eu` for the local `./run.sh rotation check` (private/account/scripts/rotation/lib/observability-reader.ts); no workflow runs that check."
     },
     "OPS_ALERT_EMAILS": {
       "kind": "no-github-twin",
@@ -264,9 +264,9 @@
       "kind": "no-github-twin",
       "reason": "The production root principal's 2FA seed, bound by `bws_env exec --profile root-login` for rediacc_ci.ops.root_login, which derives the session and bind codes from it in memory, locally; no workflow requests it, so no GitHub secret of that name exists to shadow."
     },
-    "BENCH_ROOT_PASSWORD": {
+    "BENCH_ROOT_PASSWORD_EU": {
       "kind": "no-github-twin",
-      "reason": "The bench root principal's login password (rediacc_ci.ops.deploy_bench ROOT_LOGIN_ENV), bound by `bws_env exec --profile deploy-bench` for the local seed-root and reset-root flows and by `--profile bench-login` for the root session the login and drills open. Bench is deliberately not deployed by any workflow, so no GitHub secret of that name exists to shadow."
+      "reason": "The bench root principal's login password (rediacc_ci.ops.deploy_bench ROOT_LOGIN_ENV), bound by `bws_env exec --profile deploy-bench-eu` for the local seed-root and reset-root flows and by `--profile bench-login-eu` for the root session the login and drills open. Bench is deliberately not deployed by any workflow, so no GitHub secret of that name exists to shadow."
     },
     "LIVE_CONSOLE_D1_DATABASE": {
       "kind": "no-github-twin",
@@ -404,13 +404,13 @@
       "kind": "no-github-twin",
       "reason": "The live console probes (private/account/e2e/tests/27-console/27-91-live-two-orgs.test.ts, 27-90-live-executor.test.ts) against edge-asia run only locally through `bws_env exec --profile live-console-edge-asia`; no workflow runs them yet, so no GitHub secret of that name exists to shadow."
     },
-    "BENCH_ROOT_TOTP_SEED": {
+    "BENCH_ROOT_TOTP_SEED_EU": {
       "kind": "no-github-twin",
-      "reason": "The base32 TOTP seed of the bench root account, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login`, which derives the six-digit code in memory (rediacc_ci.ops.totp). Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow."
+      "reason": "The base32 TOTP seed of the bench root account, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login-eu`, which derives the six-digit code in memory (rediacc_ci.ops.totp). Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow."
     },
-    "BENCH_STORE_MASTER_PASSWORD": {
+    "BENCH_STORE_MASTER_PASSWORD_EU": {
       "kind": "no-github-twin",
-      "reason": "The master password of the bench remote config store, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login` for `config remote enable --master-password`. Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow."
+      "reason": "The master password of the bench remote config store, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login-eu` for `config remote enable --master-password`. Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow."
     },
     "LIVE_CONSOLE_EDGE_US_ORG_C_EMAIL": {
       "kind": "no-github-twin",

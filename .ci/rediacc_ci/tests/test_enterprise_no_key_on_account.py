@@ -26,7 +26,7 @@ CONFIGS = {
     "eu": ("signer-eu", "eu"),
     "us": ("signer-us", "us"),
     "asia": ("signer-asia", "asia"),
-    "bench": ("signer-bench-eu", "eu"),
+    "bench-eu": ("signer-bench-eu", "eu"),
 }
 SUPPLY = json.loads((REPO / ".ci" / "config" / "secret-supply.json").read_text(encoding="utf-8"))[
     "consumers"
@@ -35,7 +35,7 @@ ACCOUNT_PROFILES = (
     "account-secrets-eu",
     "account-secrets-us",
     "account-secrets-asia",
-    "deploy-bench",
+    "deploy-bench-eu",
 )
 
 

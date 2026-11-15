@@ -415,7 +415,7 @@ def test_every_real_config_passes_the_gate_it_is_deployed_through() -> None:
         spec, _text = port.select(ROOT, target, region)
         assert spec.config == config
     spec, _text = port.select(ROOT, "bench", None)
-    assert spec.config == "wrangler.bench.toml"
+    assert spec.config == "wrangler.bench-eu.toml"
     assert spec.routes == (PROXY_BENCH_HOST, PROXY_BENCH_RETIRING_HOST)
 
 
@@ -551,7 +551,7 @@ def test_a_missing_token_refuses_before_the_fetch(tmp_path: pathlib.Path) -> Non
 # ---- dry runs ---------------------------------------------------------------
 
 
-DRY_TARGETS = (*((t, r, c) for t, r, c, _h in THREE), ("bench", "eu", "wrangler.bench.toml"))
+DRY_TARGETS = (*((t, r, c) for t, r, c, _h in THREE), ("bench", "eu", "wrangler.bench-eu.toml"))
 
 
 @pytest.mark.parametrize(
@@ -604,7 +604,7 @@ def test_a_failed_dry_run_propagates_wranglers_status(tmp_path: pathlib.Path) ->
 
 # ---- bench ------------------------------------------------------------------
 
-BENCH_PROFILE_ENV = {"REDIACC_BWS_PROFILES": "deploy-proxy-bench"}
+BENCH_PROFILE_ENV = {"REDIACC_BWS_PROFILES": "deploy-proxy-bench-eu"}
 
 
 def test_a_bench_deploy_builds_from_the_tree_and_stages_locally(tmp_path: pathlib.Path) -> None:
@@ -612,7 +612,7 @@ def test_a_bench_deploy_builds_from_the_tree_and_stages_locally(tmp_path: pathli
     proc, calls = run_golden(tmp_path, root, "--target", "bench", **BENCH_PROFILE_ENV)
     assert proc.returncode == 0, proc.stderr
     stage = root / "workers" / "proxy" / "stage"
-    config = "wrangler.bench.toml"
+    config = "wrangler.bench-eu.toml"
     assert calls == (
         "npm\trun\tbuild\t--workspace\t@rediacc/shared\n"
         "  cwd=root\n"
@@ -670,7 +670,7 @@ def test_a_stable_deploy_needs_no_licence_key(tmp_path: pathlib.Path) -> None:
 def test_a_bench_run_without_its_profile_reexecutes_under_it(
     tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Unbound, the run hands itself to `bws_env exec --profile deploy-proxy-bench` after the gate and returns that child's status."""
+    """Unbound, the run hands itself to `bws_env exec --profile deploy-proxy-bench-eu` after the gate and returns that child's status."""
     root = _fixture_root(tmp_path)
     monkeypatch.setenv("REDIACC_CI_ROOT", str(root))
     monkeypatch.delenv("REDIACC_BWS_PROFILES", raising=False)
@@ -691,7 +691,7 @@ def test_a_bench_run_without_its_profile_reexecutes_under_it(
         "rediacc_ci.core.bws_env",
         "exec",
         "--profile",
-        "deploy-proxy-bench",
+        "deploy-proxy-bench-eu",
         "--",
     ]
     assert env is not None
@@ -1182,7 +1182,7 @@ def test_no_closing_line_names_executor_token(tmp_path: pathlib.Path) -> None:
         assert proc.returncode == 0, proc.stderr
         assert "EXECUTOR_TOKEN" not in proc.stderr + proc.stdout
     proc, _calls = _run(
-        tmp_path, root, ("--target", "bench"), REDIACC_BWS_PROFILES="deploy-proxy-bench"
+        tmp_path, root, ("--target", "bench"), REDIACC_BWS_PROFILES="deploy-proxy-bench-eu"
     )
     assert proc.returncode == 0, proc.stderr
     assert "EXECUTOR_TOKEN" not in proc.stderr + proc.stdout
@@ -1414,21 +1414,21 @@ def test_a_bench_rollback_runs_wrangler_rollback_smokes_and_records(
         REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
     )
     assert proc.returncode == 0, proc.stderr
-    assert calls == _rollback_calls("wrangler.bench.toml", PROXY_BENCH_HOST, TO_ID)
+    assert calls == _rollback_calls("wrangler.bench-eu.toml", PROXY_BENCH_HOST, TO_ID)
     written = json.loads(record.read_text())
     assert isinstance(written.pop("cold_start_ms"), int)
     assert written == {
         "target": "bench",
         "region": "eu",
         "worker": "proxy-bench",
-        "config": "workers/proxy/wrangler.bench.toml",
+        "config": "workers/proxy/wrangler.bench-eu.toml",
         "rolled_back": True,
         "version_id": TO_ID,
         "requested_version_id": TO_ID,
         "previous_version_id": PREV_ID,
         "artifacts_version": None,
         "smoke_rc": 0,
-        "rollback": "cd workers/proxy && npx --no-install wrangler rollback %s --config wrangler.bench.toml"
+        "rollback": "cd workers/proxy && npx --no-install wrangler rollback %s --config wrangler.bench-eu.toml"
         % PREV_ID,
         "migration_tag": "v3",
         "var_overrides": {},
@@ -1581,7 +1581,7 @@ def test_a_stable_rollback_and_deploy_are_admitted_without_an_ask(prefix: str) -
 def test_the_raw_wrangler_rollback_on_bench_stays_refused() -> None:
     """The sanctioned path is this module: the guard keeps refusing the raw verb it replaces."""
     proc = _guard(
-        "cd workers/proxy && npx wrangler rollback %s --config wrangler.bench.toml" % TO_ID
+        "cd workers/proxy && npx wrangler rollback %s --config wrangler.bench-eu.toml" % TO_ID
     )
     assert proc.returncode == 2
     assert "a raw publish verb" in proc.stderr
@@ -1620,7 +1620,7 @@ def test_var_reaches_wrangler_deploy_as_its_own_var_flag_and_is_recorded(
 ) -> None:
     """`--var KEY=VALUE` becomes wrangler's `--var KEY:VALUE`, in order, the toml is not touched, and the record names the overrides."""
     root = _fixture_root(tmp_path)
-    config = root / "workers" / "proxy" / "wrangler.bench.toml"
+    config = root / "workers" / "proxy" / "wrangler.bench-eu.toml"
     before = config.read_bytes()
     record = tmp_path / "record.json"
     proc, calls = _run(
@@ -1641,7 +1641,7 @@ def test_var_reaches_wrangler_deploy_as_its_own_var_flag_and_is_recorded(
     assert proc.returncode == 0, proc.stderr
     assert (
         "npx\t--no-install\twrangler\tdeploy\t--var\tEXECUTOR_HEAVY_CAP:2\t"
-        "--var\tEXECUTOR_CAP:2\t--config\twrangler.bench.toml\n"
+        "--var\tEXECUTOR_CAP:2\t--config\twrangler.bench-eu.toml\n"
     ) in calls
     assert config.read_bytes() == before, "the toml must never be rewritten"
     data = json.loads(record.read_text())
@@ -1687,7 +1687,7 @@ def test_a_var_the_config_refusals_reject_is_refused_before_anything_runs(
 
 
 def test_the_rendered_override_parses_back_to_exactly_the_overridden_vars() -> None:
-    text = (PROXY_DIR / "wrangler.bench.toml").read_text(encoding="utf-8")
+    text = (PROXY_DIR / "wrangler.bench-eu.toml").read_text(encoding="utf-8")
     rendered = port.with_var_overrides(text, {"EXECUTOR_CAP": '2" # "x\\'})
     assert rendered is not None
     got = tomllib.loads(rendered)
@@ -1710,7 +1710,8 @@ def test_var_reaches_the_bench_dry_run_too(tmp_path: pathlib.Path) -> None:
     assert proc.returncode == 0, proc.stderr
     assert calls == (
         "npx\t--no-install\twrangler\tdeploy\t--dry-run\t--outdir\t%s\t--containers-rollout\tnone\t"
-        "--var\tEXECUTOR_CAP:3\t--config\twrangler.bench.toml\n  cwd=proxy\n" % port.DRY_RUN_OUTDIR
+        "--var\tEXECUTOR_CAP:3\t--config\twrangler.bench-eu.toml\n  cwd=proxy\n"
+        % port.DRY_RUN_OUTDIR
     )
 
 
@@ -1844,7 +1845,7 @@ def test_an_uppercase_rollback_id_is_lowercased_for_wrangler_the_smoke_and_the_r
         REDIACC_BWS_PROFILES=port.BENCH_PROFILE,
     )
     assert proc.returncode == 0, proc.stderr
-    assert calls == _rollback_calls("wrangler.bench.toml", PROXY_BENCH_HOST, low)
+    assert calls == _rollback_calls("wrangler.bench-eu.toml", PROXY_BENCH_HOST, low)
     assert UPPER_ID not in calls + proc.stderr
     assert json.loads(record.read_text())["version_id"] == low
 
@@ -2057,13 +2058,13 @@ def test_a_passing_bench_deploy_writes_the_live_proof_record(tmp_path: pathlib.P
     assert proc.returncode == 0, proc.stderr
     data = json.loads(_bench_record(root).read_text(encoding="utf-8"))
     assert data["worker"] == port.BENCH_WORKER
-    assert data["config"] == "workers/proxy/wrangler.bench.toml"
+    assert data["config"] == "workers/proxy/wrangler.bench-eu.toml"
     assert data["version_id"] == NEW_ID
     assert data["surfaces"] == sorted(port.BENCH_RECORD_SURFACES)
     for key in ("head", "tree", "dirty", "inputs", "submodules", "at"):
         assert key in data, key
     assert (
-        "Bench proxy version %s recorded in .ci/cache/live-deploys/proxy-bench.json" % NEW_ID
+        "Bench proxy version %s recorded in .ci/cache/live-deploys/proxy-bench-eu.json" % NEW_ID
         in (proc.stderr)
     )
 
@@ -2106,7 +2107,7 @@ def test_only_a_plain_bench_deploy_writes_the_live_proof_record(
 
 
 def test_the_bench_worker_constant_is_the_bench_configs_worker() -> None:
-    spec = proxy_configs.targets(proxy_configs.load_regions(ROOT))["bench"]
+    spec = proxy_configs.targets(proxy_configs.load_regions(ROOT))["bench-eu"]
     assert spec.name == port.BENCH_WORKER
     assert spec.config == proxy_configs.BENCH_CONFIG
 
@@ -2115,7 +2116,7 @@ def test_a_tree_that_moved_during_the_deploy_records_nothing(tmp_path: pathlib.P
     world = World(tmp_path / "console")
     built = port.bench_identity(world.root)
     record = port.record_bench_version(
-        world.root, port.BENCH_WORKER, "wrangler.bench.toml", NEW_ID.upper(), built
+        world.root, port.BENCH_WORKER, "wrangler.bench-eu.toml", NEW_ID.upper(), built
     )
     assert record["version_id"] == NEW_ID, "the id is stored lowercase, the shape live_tier accepts"
     assert record["head"] == built["head"]
@@ -2128,7 +2129,7 @@ def test_a_tree_that_moved_during_the_deploy_records_nothing(tmp_path: pathlib.P
     _commit(world.root, "moved")
     with pytest.raises(port.RefusedError, match="moved during the deploy"):
         port.record_bench_version(
-            world.root, port.BENCH_WORKER, "wrangler.bench.toml", NEW_ID, built
+            world.root, port.BENCH_WORKER, "wrangler.bench-eu.toml", NEW_ID, built
         )
     assert not _bench_record(world.root).exists()
 
@@ -2151,14 +2152,16 @@ def test_a_submodule_that_moved_during_the_deploy_records_nothing(tmp_path: path
     world = World(tmp_path / "console")
     built = port.bench_identity(world.root)
     # The control: nothing moved, so the record is written.
-    port.record_bench_version(world.root, port.BENCH_WORKER, "wrangler.bench.toml", NEW_ID, built)
+    port.record_bench_version(
+        world.root, port.BENCH_WORKER, "wrangler.bench-eu.toml", NEW_ID, built
+    )
     _bench_record(world.root).unlink()
     world.renet_commit({"cmd/renet/moved.go": "package main\n"})
     now = port.bench_identity(world.root)
     assert now["submodules"] != built["submodules"]
     with pytest.raises(port.RefusedError, match="submodules"):
         port.record_bench_version(
-            world.root, port.BENCH_WORKER, "wrangler.bench.toml", NEW_ID, built
+            world.root, port.BENCH_WORKER, "wrangler.bench-eu.toml", NEW_ID, built
         )
     assert not _bench_record(world.root).exists()
 
@@ -2170,7 +2173,9 @@ def test_record_bench_returns_1_and_logs_when_the_tree_moved(
     world = World(tmp_path / "console")
     built = port.bench_identity(world.root)
     assert (
-        port._record_bench(world.root, port.BENCH_WORKER, "wrangler.bench.toml", NEW_ID, built, {})
+        port._record_bench(
+            world.root, port.BENCH_WORKER, "wrangler.bench-eu.toml", NEW_ID, built, {}
+        )
         == 0
     )
     assert _bench_record(world.root).is_file()
@@ -2179,7 +2184,9 @@ def test_record_bench_returns_1_and_logs_when_the_tree_moved(
     _write(world.root, "workers/proxy/src/index.ts", "export {};\n")
     _commit(world.root, "moved")
     assert (
-        port._record_bench(world.root, port.BENCH_WORKER, "wrangler.bench.toml", NEW_ID, built, {})
+        port._record_bench(
+            world.root, port.BENCH_WORKER, "wrangler.bench-eu.toml", NEW_ID, built, {}
+        )
         == 1
     )
     assert "moved during the deploy" in capsys.readouterr().err

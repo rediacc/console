@@ -1684,7 +1684,7 @@ def e2e_envelope(
 # A REFUSAL IS A SIGNER CODE OR NOTHING. A 200 with `ok: false` is a refusal and carries the code (`SIGNER_*`, or `LICENCE_*` for `verify`); any other status, or a body without a verdict, is a `LabError`, so a probe that is down, unauthorised or unmounted never passes a refusal claim. An admitted `licence` was checked by the account server against its public key (payload, key id and Ed25519 signature) before it answered, and is kept per caller for `current_licence_works`, which sends it back as the `verify` kind: no signer is asked, so it answers while the signer is stopped.
 
 SIGNER_PROBE_PATH = "/account/api/v1/subscriptions/signer-probe"
-BENCH_CALLER = "account-bench"  # the home bench's account Worker; the other regions' are `account-bench-<r>` (`bench_origin`)
+BENCH_CALLER = "account-bench"  # the eu bench's live account Worker name, which PLAN-multi-region-bench M2 recreates as `account-bench-eu`; the other regions' are `account-bench-<r>` (`bench_origin`)
 SERVER_API_KEY_ENV = "ACCOUNT_SERVER_API_KEY"
 # The kinds `issue` asks for; the route's own list is private/account/src/services/signer-probe.service.ts SIGNER_PROBE_KINDS.
 ISSUE_KINDS: tuple[str, ...] = ("licence", "certificate", *proof.SCOPE_CASES)

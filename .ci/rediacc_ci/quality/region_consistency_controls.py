@@ -170,8 +170,8 @@ def offline_plants() -> list[
         ),
         (
             "account: a jurisdiction where regions.json has none",
-            ("bench", "account"),
-            acc("bench", lambda d: _set(d, "r2_buckets", "CONFIG_BUCKET", "jurisdiction", "eu")),
+            ("bench-eu", "account"),
+            acc("bench-eu", lambda d: _set(d, "r2_buckets", "CONFIG_BUCKET", "jurisdiction", "eu")),
         ),
         ("account: a shared D1 database_id", ("us", "account"), dup_id),
         (
@@ -209,8 +209,8 @@ def offline_plants() -> list[
         ),
         (
             "proxy: a bench proxy claiming ENVIRONMENT=edge",
-            ("bench", "proxy"),
-            prx("bench", lambda d: d["vars"].__setitem__("ENVIRONMENT", "edge")),
+            ("bench-eu", "proxy"),
+            prx("bench-eu", lambda d: d["vars"].__setitem__("ENVIRONMENT", "edge")),
         ),
         (
             "profile: a missing backup key id",
@@ -254,21 +254,21 @@ def offline_plants() -> list[
         ),
         (
             "profile: bench backup pair from the edge name",
-            ("bench", "profile"),
+            ("bench-eu", "profile"),
             prof(
-                "deploy-bench",
+                "deploy-bench-eu",
                 lambda p: swap(
                     p["required"],
-                    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
+                    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_EU > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
                     "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
                 ),
             ),
         ),
         (
             "profile: bench JWT secret from the DEV name",
-            ("bench", "profile"),
+            ("bench-eu", "profile"),
             prof(
-                "deploy-bench",
+                "deploy-bench-eu",
                 lambda p: swap(
                     p["required"],
                     "ACCOUNT_JWT_SECRET",
@@ -276,7 +276,7 @@ def offline_plants() -> list[
                 ),
             ),
         ),
-        ("profile: a key the bench payload stops pushing", ("bench", "profile"), bench_payload),
+        ("profile: a key the bench payload stops pushing", ("bench-eu", "profile"), bench_payload),
         ("profile: a deleted regional profile", ("asia", "profile"), drop_profile),
         ("benign: reordered R2 blocks", None, reorder),
         ("benign: an unrelated consumer profile", None, extra_consumer),
@@ -392,7 +392,7 @@ def live_plants(inputs: g.Inputs, targets: list[g.Target]):
         (
             "live: a legacy name on bench",
             secrets_with("account-bench", [*pushed, "JWT_SECRET"]),
-            {("bench", "secrets")},
+            {("bench-eu", "secrets")},
             set(),
         ),
         (
@@ -455,7 +455,7 @@ def run() -> int:
     ctl.check(
         "four targets",
         [t.id for t in targets],
-        ["eu", "us", "asia", "bench"],
+        ["eu", "us", "asia", "bench-eu"],
     )
     ctl.check(
         "DERIVED_NAMES is derive()'s key set",

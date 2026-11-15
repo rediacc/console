@@ -64,7 +64,7 @@ def fake_api(scripts, d1, routes, domains=(), calls=None, extra=None):
 
 
 CONFIGURED = "account-eu"  # workers/account/wrangler.eu.toml
-BOUND_DB = "account-bench"  # workers/account/wrangler.bench.toml
+BOUND_DB = "account-bench"  # workers/account/wrangler.bench-eu.toml
 
 
 def run(scripts, d1, routes, domains=()):

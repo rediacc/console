@@ -273,7 +273,7 @@ def test_signer_binding_plants_are_refused_by_name(old, new, needle):
     assert any(needle in r for r in reasons), reasons
 
 
-@pytest.mark.parametrize("name", ["eu", "us", "asia", "bench"])
+@pytest.mark.parametrize("name", ["eu", "us", "asia", "bench-eu"])
 def test_shared_account_configs_still_bind_a_shared_tier_signer(name):
     path = ROOT / "workers" / "account" / ("wrangler.%s.toml" % name)
     cfg = tomllib.loads(path.read_text(encoding="utf-8"))

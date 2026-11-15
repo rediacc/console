@@ -317,14 +317,14 @@ CASES = [
     ("wrangler versions deploy", "npx wrangler versions deploy", None, B, "versions deploy"),
     (
         "wrangler deploy on the bench config",
-        "npx wrangler deploy --config=wrangler.bench.toml",
+        "npx wrangler deploy --config=wrangler.bench-eu.toml",
         None,
         B,
         "deploys through its module",
     ),
     (
         "wrangler deploy on the bench config, proven ASKED",
-        "%s npx wrangler deploy -c wrangler.bench.toml" % ASK,
+        "%s npx wrangler deploy -c wrangler.bench-eu.toml" % ASK,
         TR,
         B,
         "deploys through its module",
@@ -401,7 +401,7 @@ CASES = [
     ),
     (
         "wrangler deploy on the bench config by full path",
-        "%s npx wrangler deploy -c /srv/x/workers/proxy/wrangler.bench.toml" % ASK,
+        "%s npx wrangler deploy -c /srv/x/workers/proxy/wrangler.bench-eu.toml" % ASK,
         TR,
         B,
         "deploys through its module",
@@ -819,7 +819,7 @@ CASES = [
     ),
     (
         "_bind wrapping a wrangler deploy of a bench config",
-        "%s rediacc_ci.release.local _bind --spec 'A > B' -- npx wrangler deploy -c wrangler.bench.toml"
+        "%s rediacc_ci.release.local _bind --spec 'A > B' -- npx wrangler deploy -c wrangler.bench-eu.toml"
         % PY,
         None,
         B,

@@ -136,7 +136,7 @@ def test_targets_are_one_per_region_plus_one_per_bench_region():
     assert t["bench-us"].account_config == "wrangler.bench-us.toml"
     assert t["bench-asia"].account_config == "wrangler.bench-asia.toml"
     assert t["bench-asia"].control_db == "control-bench-asia"
-    assert t["bench-eu"].account_config == "wrangler.bench.toml"
+    assert t["bench-eu"].account_config == "wrangler.bench-eu.toml"
 
 
 def test_the_declared_control_databases_equal_the_names_control_db_creates():

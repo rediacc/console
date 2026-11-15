@@ -19,7 +19,7 @@ The operator's door is narrower: a value still holding `PLACEHOLDER-operator-fil
 `rediacc_ci.ops.login_bench` runs these steps in order and stops at the first one that fails, naming it (exit 1):
 
 1. Refuses any server other than `https://bench-eu.rediacc.cloud` and any config other than `eu-bench` (a named error, exit 2), before any credential is read.
-2. Re-executes under the `bench-login` Bitwarden profile through `rediacc_ci.core.bws_env exec`.
+2. Re-executes under the `bench-login-eu` Bitwarden profile through `rediacc_ci.core.bws_env exec`.
 3. Refuses a value that is unset or still the placeholder `PLACEHOLDER-operator-fills`, naming the Bitwarden entry and its id (exit 2).
 4. Refreshes the bench IP allowlist with `rediacc_ci.ops.bench_access add-current`, which binds its own `bench-access` profile.
 5. Derives the six-digit TOTP code in memory (`rediacc_ci.ops.totp`, RFC 6238, HMAC-SHA1, 30 s, 6 digits) and runs `./rdc.sh --config eu-bench subscription login --server https://bench-eu.rediacc.cloud`.
@@ -28,37 +28,38 @@ The operator's door is narrower: a value still holding `PLACEHOLDER-operator-fil
 
 ## The secrets
 
-The `bench-login` consumer in `.ci/config/secret-supply.json` binds four Bitwarden entries, mapped by id in `.ci/config/bws-secret-map.json`:
+The `bench-login-eu` consumer in `.ci/config/secret-supply.json` binds four Bitwarden entries, mapped by id in `.ci/config/bws-secret-map.json`. The three bench entries carry the region in their store name (`BENCH_ROOT_PASSWORD_EU`, `BENCH_ROOT_TOTP_SEED_EU`, `BENCH_STORE_MASTER_PASSWORD_EU`) and the profile maps each onto the unsuffixed name the tool reads:
 
 | Name | Holds | Reaches the CLI as |
 |---|---|---|
 | `ROOT_EMAIL` | the root address, the same on every environment | `REDIACC_LOGIN_EMAIL` |
-| `BENCH_ROOT_PASSWORD` | the bench root password (its own, not the production one) | `REDIACC_LOGIN_PASSWORD` |
-| `BENCH_ROOT_TOTP_SEED` | the base32 TOTP seed of the bench root, server-generated and written back by the re-enrol path | `REDIACC_LOGIN_TOTP`, the derived code only |
-| `BENCH_STORE_MASTER_PASSWORD` | the master password of the eu-bench remote config store | `REDIACC_STORE_MASTER_PASSWORD` |
+| `BENCH_ROOT_PASSWORD_EU` | the eu bench root password (its own, not the production one) | `REDIACC_LOGIN_PASSWORD` |
+| `BENCH_ROOT_TOTP_SEED_EU` | the base32 TOTP seed of the eu bench root, server-generated and written back by the re-enrol path | `REDIACC_LOGIN_TOTP`, the derived code only |
+| `BENCH_STORE_MASTER_PASSWORD_EU` | the master password of the eu-bench remote config store | `REDIACC_STORE_MASTER_PASSWORD` |
 
 Every value travels by name in a child's environment. None is put on argv, printed or logged, and each `rdc` child receives only the values its own step needs. `RDC_DEV`, `REDIACC_CONFIG`, `REDIACC_TOKEN` and `REDIACC_ACCOUNT_SERVER` are dropped from every child, so an inherited dev selection cannot point the login at another server or config. The allowlist child receives none of the four.
 
 ## One bench per region
 
-The us and asia benches (`us-bench`, `asia-bench`, hosts from `regions.json` `bench`) log in with `npm run login:bench -- --region us|asia`. Each bench keeps its own root password, TOTP seed and store master password, named with the region suffix and bound by a region profile under the names `login_bench` reads:
+The us and asia benches (`us-bench`, `asia-bench`, hosts from `regions.json` `bench`) log in with `npm run login:bench -- --region us|asia`. Each bench, the eu one included, keeps its own root password, TOTP seed and store master password, named with the region suffix and bound by a region profile under the names `login_bench` reads:
 
 | Profile | Entries |
 |---|---|
+| `bench-login-eu` | `ROOT_EMAIL`, `BENCH_ROOT_PASSWORD_EU`, `BENCH_ROOT_TOTP_SEED_EU`, `BENCH_STORE_MASTER_PASSWORD_EU` |
 | `bench-login-us` | `ROOT_EMAIL`, `BENCH_ROOT_PASSWORD_US`, `BENCH_ROOT_TOTP_SEED_US`, `BENCH_STORE_MASTER_PASSWORD_US` |
 | `bench-login-asia` | `ROOT_EMAIL`, `BENCH_ROOT_PASSWORD_ASIA`, `BENCH_ROOT_TOTP_SEED_ASIA`, `BENCH_STORE_MASTER_PASSWORD_ASIA` |
 
-`deploy-bench-us|asia` and `backup-push-bench-us|asia` bind the region's `ACCOUNT_CONFIG_SERVER_KEY_BENCH_<R>`, `ACCOUNT_BACKUP_STORE_KEK_BENCH_<R>`, `ACCOUNT_BACKUP_S3_*_BENCH_<R>` and `BENCH_ROOT_PASSWORD_<R>`; the rest of each set is shared with the eu bench. The region entries are `optional` in those profiles until box L1 of `agent/plans/PLAN-multi-region-bench.md` writes them to the store. `WK_BENCH_ORIGIN` in `.ci/config/well-known.env` stays the eu bench's origin; the other benches' hosts come from `regions.json`.
+`deploy-bench-eu|us|asia` and `backup-push-bench-eu|us|asia` bind the region's `ACCOUNT_CONFIG_SERVER_KEY_BENCH_<R>`, `ACCOUNT_BACKUP_STORE_KEK_BENCH_<R>`, `ACCOUNT_BACKUP_S3_*_BENCH_<R>` and `BENCH_ROOT_PASSWORD_<R>`; the rest of each set is shared by every bench. The region entries are `optional` in those profiles until box L1 of `agent/plans/PLAN-multi-region-bench.md` writes them to the store. `WK_BENCH_ORIGIN` in `.ci/config/well-known.env` is the eu bench's origin; the other benches' hosts come from `regions.json`.
 
 `PYTHONPATH=.ci python3 -m rediacc_ci.ops.totp` runs the RFC 6238 Appendix B self-check and, with `BENCH_ROOT_TOTP_SEED` set, confirms the seed decodes. It prints only `ok` lines, never the seed or a code.
 
 ## Bench signs licences with the production key
 
-Bench signs licences with the PRODUCTION ED25519 pair (operator ruling 2026-10-27, "Bench signs with production key"). The `deploy-bench` profile binds `ACCOUNT_ED25519_PRIVATE_KEY` and `ACCOUNT_ED25519_PUBLIC_KEY` from the same unsuffixed entries the edge and stable `account-secrets-*` profiles bind, fingerprint `fb37f1ae16f8b7c0` through `rediacc_ci.release.renet_key_gate.key_fingerprint`. A released renet bakes the production public key, so it verifies a bench licence.
+Bench signs licences with the PRODUCTION ED25519 pair (operator ruling 2026-10-27, "Bench signs with production key"). The `deploy-bench-eu` profile binds `ACCOUNT_ED25519_PRIVATE_KEY` and `ACCOUNT_ED25519_PUBLIC_KEY` from the same unsuffixed entries the edge and stable `account-secrets-*` profiles bind, fingerprint `fb37f1ae16f8b7c0` through `rediacc_ci.release.renet_key_gate.key_fingerprint`. A released renet bakes the production public key, so it verifies a bench licence.
 
 The X25519 pair stays DEV. It is the E2E envelope key, not the licence signer, and every bench config already carries the DEV X25519 public key as its account `e2ePublicKey`; moving the pair would fail every bench response with "Decryption failed". The JWT secret and the server API key stay DEV as well.
 
-The `deploy-proxy-bench` profile binds the production ED25519 public key too, so the renet the bench proxy image builds verifies a production-signed bench licence; the bench proxy was redeployed with it on 2026-10-27 (version 5622d50c).
+The `deploy-proxy-bench-eu` profile binds the production ED25519 public key too, so the renet the bench proxy image builds verifies a production-signed bench licence; the bench proxy was redeployed with it on 2026-10-27 (version 5622d50c).
 
 A TOTP step is accepted once per user (account 8c656b6). Two runs that log in within the same 30 s step collide: the second is refused "Invalid verification code". Nothing waits automatically: a caller that runs a second TOTP-using command right after `npm run login:bench` (for example `rdc config remote master-password change`) must itself wait for the next 30 s step before computing the codes, or it is refused before anything is written.
 

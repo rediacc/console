@@ -36,7 +36,7 @@ MUST_NOT_MATCH = (
     "rediacc-account-eu",  # workers/account/wrangler.eu.toml:1
     "rediacc-account-us",  # workers/account/wrangler.us.toml:1
     "rediacc-account-asia",  # workers/account/wrangler.asia.toml:1
-    "rediacc-account-bench",  # workers/account/wrangler.bench.toml:13
+    "rediacc-account-bench",  # workers/account/wrangler.bench-eu.toml:13
     "edge-rediacc-account-eu",  # workers/account/wrangler.edge-eu.toml:1
     "edge-rediacc-account-us",  # workers/account/wrangler.edge-us.toml:1
     "edge-rediacc-account-asia",  # workers/account/wrangler.edge-asia.toml:1
@@ -48,7 +48,7 @@ MUST_NOT_MATCH = (
     "edge-rediacc-proxy-eu",  # workers/proxy/wrangler.edge-eu.toml
     "edge-rediacc-proxy-us",  # workers/proxy/wrangler.edge-us.toml
     "edge-rediacc-proxy-asia",  # workers/proxy/wrangler.edge-asia.toml
-    "rediacc-proxy-bench",  # workers/proxy/wrangler.bench.toml
+    "rediacc-proxy-bench",  # workers/proxy/wrangler.bench-eu.toml
     "mta-sts-policy",  # workers/mta-sts/wrangler.toml:1
     "ops-health",  # workers/ops-health/wrangler.toml:1
     "pr-main",  # pr- prefix, not a number

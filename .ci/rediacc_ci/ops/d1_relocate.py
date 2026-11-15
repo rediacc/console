@@ -27,7 +27,7 @@ THE STEPS.
 
 EXIT CODES. 0 done (or a dry run); 1 usage, or a call that failed (API, wrangler, a query); 2 refused by a pre-check, nothing changed; 3 verification found a difference.
 
-DATABASES are D1 names, reached through wrangler (export, import, create, delete, time travel) and the D1 REST query API (reads, the fence row), with CLOUDFLARE_API_TOKEN or the Global API Key pair and CLOUDFLARE_ACCOUNT_ID as the other ops modules read them; the bws profile is `deploy-workers` (production) or `deploy-bench` (bench). `--sqlite NAME=PATH` maps a name to a local SQLite file instead, which is how the tests drive every step offline. No secret reaches argv or output.
+DATABASES are D1 names, reached through wrangler (export, import, create, delete, time travel) and the D1 REST query API (reads, the fence row), with CLOUDFLARE_API_TOKEN or the Global API Key pair and CLOUDFLARE_ACCOUNT_ID as the other ops modules read them; the bws profile is `deploy-workers` (production) or `deploy-bench-eu` (bench). `--sqlite NAME=PATH` maps a name to a local SQLite file instead, which is how the tests drive every step offline. No secret reaches argv or output.
 """
 
 from __future__ import annotations

@@ -80,7 +80,7 @@ DST = mod.End(
     "bench",
     "bench",
     "eu",
-    "wrangler.bench.toml",
+    "wrangler.bench-eu.toml",
     "account-bench",
     "configs-bench",
     "",
@@ -1230,7 +1230,7 @@ def test_apply_takes_the_bookmark_first_then_r2_then_one_file(fake, capsys) -> N
         if _kind(c) == "r2-put":
             assert c[6].startswith("configs-bench/")
             assert "--jurisdiction" not in c
-            assert c[c.index("--config") + 1] == "wrangler.bench.toml"
+            assert c[c.index("--config") + 1] == "wrangler.bench-eu.toml"
             assert "--remote" in c
         if _kind(c) == "file":
             assert c[5] == "account-bench"
@@ -1246,7 +1246,7 @@ def test_apply_takes_the_bookmark_first_then_r2_then_one_file(fake, capsys) -> N
     assert sh.count("r2 object delete configs-bench/") == len(BLOBS)
     assert " configs-eu/" not in sh
     assert "--jurisdiction" not in sh
-    assert "--config wrangler.bench.toml" in sh
+    assert "--config wrangler.bench-eu.toml" in sh
     text = capsys.readouterr()
     shown = text.out + text.err
     assert (
@@ -1335,7 +1335,10 @@ def test_cf_auth_group_and_secret_supply_consumer_are_wired() -> None:
     consumer = spec["consumers"]["mirror-config-store"]
     assert consumer["required"] == ["CF_GLOBAL_API_KEY", "CF_EMAIL"]
     # Review 6247005b.2: a csk1 row makes check_server_key read the target's own key.
-    assert "ACCOUNT_CONFIG_SERVER_KEY_BENCH" in consumer["optional"]
+    assert (
+        "ACCOUNT_CONFIG_SERVER_KEY_BENCH_EU > ACCOUNT_CONFIG_SERVER_KEY_BENCH"
+        in consumer["optional"]
+    )
     assert mod.PURPOSE == mod.PROFILE == "mirror-config-store"
     assert "python3 -m rediacc_ci.ops.mirror_config_store --from eu --to bench" in (
         mod.__doc__ or ""
@@ -1525,7 +1528,7 @@ BENCH = mod.End(
     "bench",
     "bench",
     "eu",
-    "wrangler.bench.toml",
+    "wrangler.bench-eu.toml",
     "account-bench",
     "configs-bench",
     "",
@@ -1538,7 +1541,7 @@ SRC_RP = dataclasses.replace(SRC, rp_id=EU_HOST)
 
 
 def test_bench_resolves_from_its_own_wrangler_config() -> None:
-    """regions.json does not list bench: its database, bucket, Worker, REGION and RP ID come from wrangler.bench.toml."""
+    """regions.json does not list bench: its database, bucket, Worker, REGION and RP ID come from wrangler.bench-eu.toml."""
     assert mod.resolve_end(ROOT, "bench") == BENCH
     src = mod.resolve_end(ROOT, "eu")
     assert src == SRC_RP

@@ -22,7 +22,7 @@ def _tree(root: pathlib.Path) -> None:
     (acc / "wrangler.eu.toml").write_text(
         'name = "account-eu"\n[[services]]\nbinding = "EXECUTOR"\nservice = "proxy-eu"\n'
     )
-    (acc / "wrangler.bench.toml").write_text(
+    (acc / "wrangler.bench-eu.toml").write_text(
         'name = "account-bench"\n[[services]]\nbinding = "EXECUTOR"\nservice = "proxy-bench"\n'
     )
     pr = root / "workers" / "proxy"
@@ -50,7 +50,7 @@ def test_present_and_missing(tmp_path: pathlib.Path) -> None:
     assert [c["worker"] for c in rep["not_deployed"]] == ["proxy-eu"]
     sides = {r["service"]: (r["side"], r["region"]) for r in rep["bindings"]}
     assert sides["proxy-eu"] == ("shared", "eu")
-    assert sides["proxy-bench"] == ("bench", "-")
+    assert sides["proxy-bench"] == ("bench", "eu")
     assert "MISSING" in mod.render(rep)
 
 
@@ -148,6 +148,8 @@ def test_side_region_maps_every_file_name() -> None:
     assert sr(pure("workers/account/wrangler.toml")) == ("shared", "-")
     assert sr(pure("workers/account/wrangler.eu.toml")) == ("shared", "eu")
     assert sr(pure("workers/account/wrangler.asia.toml")) == ("shared", "asia")
+    assert sr(pure("workers/account/wrangler.bench-eu.toml")) == ("bench", "eu")
+    assert sr(pure("workers/account/wrangler.bench-us.toml")) == ("bench", "us")
     assert sr(pure("workers/account/wrangler.bench.toml")) == ("bench", "-")
 
 

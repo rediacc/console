@@ -19,6 +19,9 @@ from rediacc_ci.tests import ops_cf_harness as h
 if typing.TYPE_CHECKING:
     import pathlib
 
+pytestmark = pytest.mark.usefixtures("regions_in_tmp")
+
+
 TOKEN_ENV = {"CF_MANAGEMENT_TOKEN": "supplied-token"}
 GLOBAL_ENV = {"CF_GLOBAL_API_KEY": "gk", "CF_EMAIL": "ops@example.invalid"}
 
@@ -27,7 +30,7 @@ GLOBAL_ENV = {"CF_GLOBAL_API_KEY": "gk", "CF_EMAIL": "ops@example.invalid"}
 def world(tmp_path: pathlib.Path) -> h.World:
     scratch = h.World(tmp_path)
     # deploy_bench reads the bench bucket from the BACKUP_BUCKET binding (PLAN-backup-presign-bucket-require-and-wrangler-vars B4), which the harness's minimal bench config does not declare.
-    config = scratch.root / "workers/account/wrangler.bench.toml"
+    config = scratch.root / "workers/account/wrangler.bench-eu.toml"
     config.write_text(
         config.read_text()
         + '\n[[r2_buckets]]\nbinding = "BACKUP_BUCKET"\nbucket_name = "backups-bench"\n'
@@ -358,7 +361,7 @@ def test_backup_d1_names_follow_regions_json_and_the_bench_toml(
     (tmp_path / "regions.json").write_text(json.dumps({"regions": rows}), encoding="utf-8")
     toml_dir = tmp_path / "workers" / "account"
     toml_dir.mkdir(parents=True)
-    (toml_dir / "wrangler.bench.toml").write_text(
+    (toml_dir / "wrangler.bench-eu.toml").write_text(
         '[[d1_databases]]\nbinding = "DB"\ndatabase_name = "account-bench-j"\n'
         '[[r2_buckets]]\nbinding = "CONFIG_BUCKET"\nbucket_name = "configs-bench"\n'
         '[[r2_buckets]]\nbinding = "BACKUP_BUCKET"\nbucket_name = "backups-bench"\n',
@@ -421,7 +424,7 @@ def test_delta_all_filtered_output_is_not_a_failure(world: h.World) -> None:
 
 
 def _reset_env(env: dict[str, str]) -> dict[str, str]:
-    """The port's environment: already bound to its own `reset-bench` profile, so it does not re-execute under `bws_env`. The twin had no profile, so its environment, and every golden key, is unchanged."""
+    """The port's environment: already bound to its own `reset-bench-eu` profile, so it does not re-execute under `bws_env`. The twin had no profile, so its environment, and every golden key, is unchanged."""
     return {**env, "REDIACC_BWS_PROFILES": reset_bench.PROFILE}
 
 
@@ -481,7 +484,7 @@ def test_reset_bench_d1_half_matches_bash(world: h.World) -> None:
     # ONE DECLARED DELTA: the closing hint names the bench deploy the way it is run now. The bash script it named was retired (PLAN-retire-bash-oracles B3), so the golden's line is mapped before the comparison, and the golden is asserted to carry it so the mapping cannot go vacuous.
     redeploy_bash = "To redeploy fresh code: scripts/ops/deploy-bench.sh\n"
     redeploy_port = (
-        "To redeploy fresh code: PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench "
+        "To redeploy fresh code: PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench --region eu "
         "(it also seeds the ROOT_EMAIL user the reset removed)\n"
     )
     assert redeploy_bash in out_b, out_b
@@ -712,20 +715,20 @@ def test_delta_a_token_never_accepted_is_a_named_error_not_a_traceback(
 def test_delta_reset_bench_re_executes_under_its_own_profile(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """PLAN-backup-credential-isolation B2: the R2 trio left the deploy-bench profile, so reset_bench binds its own. Not yet under `reset-bench` (here: under deploy-bench), it re-executes through `bws_env exec --profile reset-bench` with its arguments, and returns that run's status."""
+    """PLAN-backup-credential-isolation B2: the R2 trio left the deploy-bench-eu profile, so reset_bench binds its own. Not yet under `reset-bench-eu` (here: under deploy-bench-eu), it re-executes through `bws_env exec --profile reset-bench-eu` with its arguments, and returns that run's status."""
     seen: list[list[str]] = []
 
     def fake_run(argv, **_kw):
         seen.append(list(argv))
         return subprocess.CompletedProcess(argv, 7)
 
-    monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-bench")
+    monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-bench-eu")
     monkeypatch.setattr(reset_bench.shutil, "which", lambda cmd: "/usr/bin/" + cmd)
     monkeypatch.setattr(reset_bench.subprocess, "run", fake_run)
     assert reset_bench.main(["--yes", "--r2-only"]) == 7
     assert len(seen) == 1
     argv = seen[0]
-    assert argv[1:6] == ["-m", "rediacc_ci.core.bws_env", "exec", "--profile", "reset-bench"]
+    assert argv[1:6] == ["-m", "rediacc_ci.core.bws_env", "exec", "--profile", "reset-bench-eu"]
     assert argv[-3:] == ["rediacc_ci.ops.reset_bench", "--yes", "--r2-only"]
 
 
@@ -763,7 +766,7 @@ def _port_deploy_env(env: dict[str, str]) -> dict[str, str]:
     """The twin's environment as the port's profile binds it: the R2 trio renamed to the three backup names, and the stored root password the port's seed reads (DECLARED DELTA: the retired bash seeded nothing)."""
     bound = {R2_TO_BACKUP.get(name, name): value for name, value in env.items()}
     bound["BENCH_ROOT_PASSWORD"] = "bench-root-password-1"
-    # PLAN-config-server-key K2: the port reads the bench-only key the deploy-bench profile binds; the retired bash never did, so its env (and every golden key) is unchanged. A fake value, never a real key.
+    # PLAN-config-server-key K2: the port reads the bench-only key the deploy-bench-eu profile binds; the retired bash never did, so its env (and every golden key) is unchanged. A fake value, never a real key.
     bound["ACCOUNT_CONFIG_SERVER_KEY"] = "fake-config-server-key-for-tests"
     # The port also pushes the bench backup store KEK; the retired bash never held it. A fake value, never a real key.
     bound["ACCOUNT_BACKUP_STORE_KEK"] = "fake-backup-store-kek-for-tests-0123456789"
@@ -873,7 +876,7 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
     assert out_p.count(version_line) == 1
     # DECLARED DELTA (dd0c34018): the closing hint names the eu-bench config and its agent-run login, where the bash named a `bench` config that does not exist. Each port line is asserted once, then mapped back to the bash's.
     hint_delta = {
-        "  npm run login:bench\n": "  ./rdc.sh --config bench subscription login\n",
+        "  npm run login:bench -- --region eu\n": "  ./rdc.sh --config bench subscription login\n",
         "  ./rdc.sh --config eu-bench repo create": "  ./rdc.sh --config bench repo create",
     }
     out_mapped = out_p.replace(version_line, "", 1)
@@ -930,12 +933,12 @@ def test_deploy_bench_matches_bash(world: h.World) -> None:
         if not ln.startswith("⚠ NO D1 BOOKMARK CAPTURED") and not ln.startswith(seed_lines)
     ]
     # DECLARED DELTA (b8601cfde): the port records the live bench version; asserted once, then dropped.
-    recorded = "✓ Bench version recorded in .ci/cache/live-deploys/bench.json"
+    recorded = "✓ Bench version recorded in .ci/cache/live-deploys/bench-eu.json"
     assert port_lines.count(recorded) == 1
     port_lines.remove(recorded)
-    # DECLARED DELTA (a304cb5a9c): the port checks that every queue bound in wrangler.bench.toml exists before the deploy, creating a missing one; asserted once, then dropped.
+    # DECLARED DELTA (a304cb5a9c): the port checks that every queue bound in wrangler.bench-eu.toml exists before the deploy, creating a missing one; asserted once, then dropped.
     queue_step = (
-        "→ Preflight: every queue bound in wrangler.bench.toml exists (missing ones are created)"
+        "→ Preflight: every queue bound in wrangler.bench-eu.toml exists (missing ones are created)"
     )
     assert port_lines.count(queue_step) == 1
     port_lines.remove(queue_step)
@@ -1091,7 +1094,7 @@ def test_deploy_bench_still_refuses_on_drift_and_never_pushes(world: h.World) ->
     )
 
 
-# PLAN-backup-presign-bucket-require-and-wrangler-vars B4: the bench bucket is the BACKUP_BUCKET binding in wrangler.bench.toml, not an env override or a literal.
+# PLAN-backup-presign-bucket-require-and-wrangler-vars B4: the bench bucket is the BACKUP_BUCKET binding in wrangler.bench-eu.toml, not an env override or a literal.
 def _bench_repo(monkeypatch: pytest.MonkeyPatch, tmp_path, toml_text: str) -> None:
     worker = tmp_path / "workers" / "account"
     worker.mkdir(parents=True)

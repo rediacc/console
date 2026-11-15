@@ -182,12 +182,12 @@ def test_unbound_it_reexecutes_under_the_bench_login_profile(monkeypatch):
     assert login_bench.main([], runner) == 0
     assert len(runner.calls) == 1
     argv = runner.calls[0][0]
-    assert argv[1:6] == ["-m", "rediacc_ci.core.bws_env", "exec", "--profile", "bench-login"]
+    assert argv[1:6] == ["-m", "rediacc_ci.core.bws_env", "exec", "--profile", "bench-login-eu"]
     assert argv[-2:] == ["-m", "rediacc_ci.ops.login_bench"]
 
 
 def test_unbound_a_us_run_reexecutes_under_the_us_login_profile(monkeypatch):
-    """`bench-login` binds the eu bench's password and seed; a us run under it signed in to bench-us with the eu credentials."""
+    """`bench-login-eu` binds the eu bench's password and seed; a us run under it signed in to bench-us with the eu credentials."""
     monkeypatch.delenv("REDIACC_BWS_PROFILES", raising=False)
     runner = FakeRunner()
     assert login_bench.main(["--region", "us"], runner) == 0
@@ -197,15 +197,17 @@ def test_unbound_a_us_run_reexecutes_under_the_us_login_profile(monkeypatch):
 
 
 def test_another_benchs_login_profile_bound_is_refused(monkeypatch):
-    """`bws_env exec` keeps a name already set, so nesting bench-login-us under bench-login would keep the eu values."""
-    monkeypatch.setenv("REDIACC_BWS_PROFILES", "bench-login")
-    with pytest.raises(login_bench.LoginError, match="refuses to run under bench-login") as caught:
+    """`bws_env exec` keeps a name already set, so nesting bench-login-us under bench-login-eu would keep the eu values."""
+    monkeypatch.setenv("REDIACC_BWS_PROFILES", "bench-login-eu")
+    with pytest.raises(
+        login_bench.LoginError, match="refuses to run under bench-login-eu"
+    ) as caught:
         login_bench._reexec_under_profile(["--region", "us"], FakeRunner(), "us")
     assert caught.value.rc == 2
 
 
 def test_the_home_profile_bound_runs_an_eu_login_in_place(monkeypatch):
-    monkeypatch.setenv("REDIACC_BWS_PROFILES", "bench-login")
+    monkeypatch.setenv("REDIACC_BWS_PROFILES", "bench-login-eu")
     assert login_bench._reexec_under_profile([], FakeRunner(), "eu") is None
 
 
@@ -223,10 +225,27 @@ def test_a_placeholder_value_is_refused_naming_its_bitwarden_entry(name):
     assert runner.calls == []
 
 
-def test_the_refusal_names_the_entry_uuid():
+def test_the_refusal_names_the_regions_own_entry_and_its_uuid():
+    with pytest.raises(login_bench.LoginError) as caught:
+        login_bench.read_values(_env(BENCH_ROOT_PASSWORD=login_bench.PLACEHOLDER), "us")
+    assert "BENCH_ROOT_PASSWORD_US (%s)" % "f3cd94c2-486a-4d0f-86ee-b503012389d1" in str(
+        caught.value
+    )
+
+
+def test_the_eu_refusal_names_the_eu_entry_not_the_unsuffixed_one():
     with pytest.raises(login_bench.LoginError) as caught:
         login_bench.read_values(_env(BENCH_ROOT_PASSWORD=login_bench.PLACEHOLDER))
-    assert "21c84f5c-b971-4c72-9b1d-b4ef01013db8" in str(caught.value)
+    assert "BENCH_ROOT_PASSWORD_EU" in str(caught.value)
+
+
+def test_the_unset_refusal_names_the_profile_of_its_region():
+    env = _env()
+    del env["BENCH_ROOT_PASSWORD"]
+    with pytest.raises(login_bench.LoginError) as caught:
+        login_bench.read_values(env, "asia")
+    assert "bws_env exec --profile bench-login-asia" in str(caught.value)
+    assert "BENCH_ROOT_PASSWORD_ASIA" in str(caught.value)
 
 
 @pytest.mark.parametrize("name", login_bench.SOURCE_NAMES)
@@ -600,9 +619,9 @@ def test_the_writer_argv_carries_names_never_the_seed(capsys):
         api=api,
     )
     write = next(a for a in captured if "store-from-env" in a)
-    assert write[-1] == "BENCH_ROOT_TOTP_SEED > BENCH_ROOT_TOTP_SEED_NEW"
+    assert write[-1] == "BENCH_ROOT_TOTP_SEED_EU > BENCH_ROOT_TOTP_SEED_NEW"
     mail = next(a for a in captured if login_bench.MAIL_MODE in a)
-    assert mail[mail.index("--profile") + 1] == "deploy-bench"
+    assert mail[mail.index("--profile") + 1] == "deploy-bench-eu"
     out, err = capsys.readouterr()
     for secret in (NEW_SEED, SEED, "bk-1111", "tok-reauth-1", VALUES[login_bench.PW_ENV]):
         assert secret not in out + err
@@ -899,7 +918,8 @@ def test_control_the_home_bench_is_unchanged():
         login_bench.CONFIG_ID,
     )
     assert target == login_bench.parse_target(["--region", "eu"])
-    assert (target.d1_name, target.d1_config) == (None, None)
+    bench = _regions_bench()["eu"]
+    assert (target.d1_name, target.d1_config) == (bench["d1"]["name"], "wrangler.bench-eu.toml")
 
 
 def test_a_config_name_selects_its_region():
@@ -941,7 +961,10 @@ def test_targets_config_reads_each_regional_selection(config, region):
 
 
 def test_the_remedy_names_the_region_it_logs_in():
-    assert login_bench.remedy_for("eu") == (login_bench.REMEDY, login_bench.REMEDY_ARGV)
+    assert login_bench.remedy_for("eu") == (
+        "npm run login:bench -- --region eu",
+        (*login_bench.REMEDY_ARGV, "--", "--region", "eu"),
+    )
     text, argv = login_bench.remedy_for("us")
     assert text == "npm run login:bench -- --region us"
     assert argv[-3:] == ("--", "--region", "us")
@@ -984,7 +1007,7 @@ def test_control_the_home_login_still_passes_its_config_id():
     assert enable[enable.index("--config-id") + 1] == login_bench.CONFIG_ID
 
 
-def test_the_mail_child_carries_the_region_only_when_it_is_not_home():
+def test_the_mail_child_carries_its_region_for_every_region():
     class Cap:
         def __init__(self):
             self.argv = []
@@ -993,7 +1016,7 @@ def test_the_mail_child_carries_the_region_only_when_it_is_not_home():
             self.argv.append(list(argv))
             return 0, "tok-1\n"
 
-    for region, tail in (("us", ["us"]), ("eu", [])):
+    for region, tail in (("us", ["us"]), ("eu", ["eu"])):
         cap = Cap()
         login_bench._mail_token("o@example.invalid", "2026-11-11T10:00:00", {}, cap, region)
         want = [login_bench.MAIL_MODE, "2026-11-11T10:00:00", *tail]
@@ -1052,7 +1075,7 @@ def test_a_us_reenrolment_writes_the_us_seed_entry_never_the_eu_one():
 @pytest.mark.parametrize(
     ("region", "entry"),
     [
-        ("eu", "BENCH_ROOT_TOTP_SEED"),
+        ("eu", "BENCH_ROOT_TOTP_SEED_EU"),
         ("us", "BENCH_ROOT_TOTP_SEED_US"),
         ("asia", "BENCH_ROOT_TOTP_SEED_ASIA"),
     ],

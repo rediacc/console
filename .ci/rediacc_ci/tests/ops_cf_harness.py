@@ -222,7 +222,7 @@ class World:
             dest.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(ROOT / rel, dest)
         (self.root / "workers/account/node_modules").mkdir(parents=True)
-        (self.root / "workers/account/wrangler.bench.toml").write_text(
+        (self.root / "workers/account/wrangler.bench-eu.toml").write_text(
             # The [assets] line deploy_bench.bench_assets_refusal requires: the keyless bench portal builds outside ./dist.
             '[assets]\ndirectory = "./bench/dist"\n\n'
             '[[d1_databases]]\nbinding = "DB"\ndatabase_name = "account-bench"\n'
@@ -257,7 +257,7 @@ class World:
             "FAKE_ROOT": str(self.root),
             "REDIACC_CI_ROOT": str(self.root),
             "PYTHONPATH": str(ROOT / ".ci"),
-            "REDIACC_BWS_PROFILES": "deploy-bench",
+            "REDIACC_BWS_PROFILES": "deploy-bench-eu",
         }
         env.update(extra)
         return env

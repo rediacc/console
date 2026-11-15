@@ -6,7 +6,7 @@ WHY (agent/plans/PLAN-d1-eu-jurisdiction.md, Design 7). A relocated D1 is only p
 
 THE STEPS, in order:
 
-  1. Re-execute under the `region-smoke-<region>` Bitwarden profile (`rediacc_ci.core.bws_env exec`), unless it is already bound. The profile binds REDIACC_SMOKE_EMAIL, REDIACC_SMOKE_PASSWORD, REDIACC_SMOKE_MASTER_PASSWORD and, when the probe account has TOTP on, REDIACC_SMOKE_TOTP_SEED. Only `region-smoke-bench` is declared (.ci/config/secret-supply.json; it aliases the bench-login entries, the bench probe being the bench account); a region whose profile is not declared is a rc-2 refusal naming the missing profile, because a production probe account is a vault entry that must exist first.
+  1. Re-execute under the `region-smoke-<region>` Bitwarden profile (`rediacc_ci.core.bws_env exec`), unless it is already bound. The profile binds REDIACC_SMOKE_EMAIL, REDIACC_SMOKE_PASSWORD, REDIACC_SMOKE_MASTER_PASSWORD and, when the probe account has TOTP on, REDIACC_SMOKE_TOTP_SEED. Only `region-smoke-bench-eu` is declared (.ci/config/secret-supply.json; it aliases the bench-login-eu entries, the bench probe being the bench account); a region whose profile is not declared is a rc-2 refusal naming the missing profile, because a production probe account is a vault entry that must exist first.
   2. Refuse a missing value or the placeholder `PLACEHOLDER-operator-fills`, naming the store entry, before anything runs.
   3. Create the probe config `region-smoke-<region>` (`config init`; "already exists" is fine), then `subscription login --server <origin>` with REDIACC_LOGIN_EMAIL, REDIACC_LOGIN_PASSWORD and, with a seed, REDIACC_LOGIN_TOTP in the child environment.
   4. `config remote enable --master-password --api-url <origin>` with REDIACC_STORE_MASTER_PASSWORD (the first enable seeds the store from the local config; a later one is "already linked and this device can open it"), then `config remote refresh`: the read of the store through the region's Worker and D1.
@@ -39,6 +39,7 @@ from rediacc_ci.well_known import BENCH_ORIGIN
 PROFILE_PREFIX = "region-smoke-"
 SUPPLY_REL = (".ci", "config", "secret-supply.json")
 BENCH = "bench"
+BENCH_PROFILE_NAME = "bench-eu"
 PLACEHOLDER = "PLACEHOLDER-operator-fills"
 MIN_WINDOW_LEFT = 5
 
@@ -85,7 +86,8 @@ class SmokeError(RuntimeError):
 
 
 def profile_for(region: str) -> str:
-    return PROFILE_PREFIX + region
+    """`region-smoke-<region>` for a production region, `region-smoke-bench-eu` for the bench (the one bench the smoke covers is the eu bench)."""
+    return PROFILE_PREFIX + (BENCH_PROFILE_NAME if region == BENCH else region)
 
 
 def declared_profiles(root: pathlib.Path | None = None) -> set[str]:

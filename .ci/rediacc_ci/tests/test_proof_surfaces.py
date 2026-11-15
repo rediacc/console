@@ -184,7 +184,7 @@ def test_renet_path_forms(path: str, hit: bool) -> None:
         ("package-lock.json", True),
         ("tsconfig.json", True),
         ("wrangler.toml", True),
-        ("wrangler.bench.toml", True),
+        ("wrangler.bench-eu.toml", True),
         ("dev.defaults.env", True),
         ("docker-compose.yml", True),
         ("Dockerfile", True),
@@ -215,7 +215,9 @@ def test_console_sides_map_each_path_to_its_sides() -> None:
 def test_glob_grammar_is_the_owns_grammar() -> None:
     """`**` spans segments, `*` stays inside one, and a literal is exact: the former `/` and `_` prefix forms are gone with the tables."""
     assert trig.matches("private/renet/cmd/renet/sandbox_a.go", ("private/renet/cmd/**",))
-    assert trig.matches("private/account/wrangler.bench.toml", ("private/account/wrangler*.toml",))
+    assert trig.matches(
+        "private/account/wrangler.bench-eu.toml", ("private/account/wrangler*.toml",)
+    )
     assert not trig.matches("private/account/x/wrangler.toml", ("private/account/wrangler*.toml",))
     assert not trig.matches("private/renet/build.sh.bak", ("private/renet/build.sh",))
     assert not trig.matches("private/renet/cmdx/a.go", ("private/renet/cmd/**",))
@@ -830,7 +832,7 @@ def test_a_test_file_or_a_document_hits_nothing(path: str) -> None:
         ("packages/cli/src/services/repo/repo-key-deployment.ts", {"cli", "cli-remote"}),
         ("workers/account/src/index.ts", {"account-worker"}),
         ("workers/proxy/src/index.ts", {"proxy"}),
-        ("workers/proxy/wrangler.bench.toml", {"proxy"}),
+        ("workers/proxy/wrangler.bench-eu.toml", {"proxy"}),
         ("workers/proxy/package.json", set()),
         ("packages/www/src/pages/index.astro", {"www"}),
         ("workers/www/src/index.ts", {"www"}),

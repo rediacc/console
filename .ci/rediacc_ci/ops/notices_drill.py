@@ -1,8 +1,8 @@
 """Bench drill: expired repository licences become ONE reminder mail, an unread notice and an `rdc` verb, driven from both sides.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-bench --profile bench-login -- env PYTHONPATH=.ci python3 -m rediacc_ci.ops.notices_drill [--dry-run] [--wait-cron]
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-bench-eu --profile bench-login-eu -- env PYTHONPATH=.ci python3 -m rediacc_ci.ops.notices_drill [--dry-run] [--wait-cron]
 
-BENCH ONLY. The target is `BENCH_ORIGIN`; no other server is accepted. The run re-executes itself under the `deploy-bench` and `bench-login` Bitwarden profiles (it needs `CF_GLOBAL_API_KEY` and `CF_EMAIL` for the D1 queries, and `ROOT_EMAIL` plus `BENCH_ROOT_PASSWORD` for the root session) unless both are already bound. The `bench-login` profile binds `BENCH_ROOT_TOTP_SEED`, which answers the bench root's two-factor challenge (`POST /auth/2fa/verify`, one retry with the next window's code); the seed is never printed. Plan: agent/plans/PLAN-account-notices.md, box D1 (Design 1 to 5, Context 6 and 7).
+BENCH ONLY. The target is `BENCH_ORIGIN`; no other server is accepted. The run re-executes itself under the `deploy-bench-eu` and `bench-login-eu` Bitwarden profiles (it needs `CF_GLOBAL_API_KEY` and `CF_EMAIL` for the D1 queries, and `ROOT_EMAIL` plus `BENCH_ROOT_PASSWORD` for the root session) unless both are already bound. The `bench-login-eu` profile binds `BENCH_ROOT_TOTP_SEED`, which answers the bench root's two-factor challenge (`POST /auth/2fa/verify`, one retry with the next window's code); the seed is never printed. Plan: agent/plans/PLAN-account-notices.md, box D1 (Design 1 to 5, Context 6 and 7).
 
 THE STEPS, each printing one evidence line `STEP <n> <name> rc=<rc> <detail>`:
 
@@ -56,7 +56,7 @@ from rediacc_ci.well_known import BENCH_ORIGIN, INFRA_DOMAIN
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
 
-PROFILE = "deploy-bench"
+PROFILE = "deploy-bench-eu"
 ADDRESS = re.compile(r"^ntc\+\d{14}@" + re.escape(INFRA_DOMAIN) + "$")
 REPO_NAME = "drill"
 MACHINE_NAME = "drillbox"
@@ -341,7 +341,7 @@ def _write(path: pathlib.Path, text: str) -> None:
 def _root_creds() -> tuple[str, str]:
     email = os.environ.get("ROOT_EMAIL") or ""
     if not email:
-        raise DrillError("ROOT_EMAIL is not set (the deploy-bench profile binds it)")
+        raise DrillError("ROOT_EMAIL is not set (the deploy-bench-eu profile binds it)")
     try:
         return email, deploy_bench.root_password()
     except deploy_bench.SeedError as exc:

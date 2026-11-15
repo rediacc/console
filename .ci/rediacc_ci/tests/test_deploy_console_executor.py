@@ -118,7 +118,7 @@ def fake(tmp_path, monkeypatch):
     [
         ("stable", "us", "wrangler.us.toml"),
         ("stable", "asia", "wrangler.asia.toml"),
-        ("bench", "eu", "wrangler.bench.toml"),
+        ("bench", "eu", "wrangler.bench-eu.toml"),
     ],
 )
 def test_each_target_names_its_own_account_config_and_it_exists(target, region, config):
@@ -129,7 +129,7 @@ def test_each_target_names_its_own_account_config_and_it_exists(target, region, 
 @pytest.mark.parametrize(
     ("region", "config"),
     [
-        ("eu", "wrangler.bench.toml"),
+        ("eu", "wrangler.bench-eu.toml"),
         ("us", "wrangler.bench-us.toml"),
         ("asia", "wrangler.bench-asia.toml"),
     ],
@@ -225,7 +225,7 @@ def test_missing_credentials_reexec_under_the_profile_when_unbound(fake, monkeyp
         "rediacc_ci.core.bws_env",
         "exec",
         "--profile",
-        "deploy-proxy-bench",
+        "deploy-proxy-bench-eu",
         "--",
         seen[0][7],
     ]
@@ -251,9 +251,9 @@ def test_reexec_carries_the_callers_own_region_argv(fake, monkeypatch):
 
 def test_a_profile_list_with_spaces_still_reports_the_profile_bound(fake, monkeypatch):
     monkeypatch.delenv("CLOUDFLARE_API_TOKEN")
-    monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-proxy, deploy-proxy-bench")
+    monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-proxy, deploy-proxy-bench-eu")
     monkeypatch.setattr(ce.subprocess, "run", lambda *_a, **_k: pytest.fail("re-exec"))
-    assert ce.profile_bound("deploy-proxy-bench")
+    assert ce.profile_bound("deploy-proxy-bench-eu")
     assert ce.main(["--enable", "--target", "bench"]) == 1
     assert calls(fake) == []
 
@@ -296,7 +296,7 @@ def test_bench_disable_names_the_bench_worker(fake):
         "--name",
         "account-bench",
         "--config",
-        "wrangler.bench.toml",
+        "wrangler.bench-eu.toml",
     ]
 
 

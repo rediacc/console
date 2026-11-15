@@ -17,6 +17,9 @@ from rediacc_ci import paths
 from rediacc_ci.ops import deploy_bench
 from rediacc_ci.well_known import BENCH_ORIGIN
 
+pytestmark = pytest.mark.usefixtures("regions_in_tmp")
+
+
 REGISTER_PATH = "/account/api/v1/auth/register"
 # The [assets] block deploy_bench requires before it builds the keyless portal (bench_assets_refusal).
 BENCH_ASSETS_TOML = (
@@ -337,7 +340,7 @@ def test_a_parsed_version_id_writes_bench_json(monkeypatch, tmp_path):
     monkeypatch.setattr(deploy_bench.receipt, "identity", _fake_identity)
     out = "Uploaded\nDeployed rediacc-account-bench\nCurrent Version ID: %s\n" % VID
     got = deploy_bench.record_version(tmp_path, out, VID)
-    written = json.loads((tmp_path / ".ci/cache/live-deploys/bench.json").read_text())
+    written = json.loads((tmp_path / ".ci/cache/live-deploys/bench-eu.json").read_text())
     assert written == got
     assert written["version_id"] == VID
     assert written["head"] == "h"
@@ -358,12 +361,12 @@ def test_output_without_a_version_id_is_a_named_error_and_writes_nothing(monkeyp
     monkeypatch.setattr(deploy_bench.receipt, "identity", _fake_identity)
     with pytest.raises(deploy_bench.DeployError, match="Current Version ID"):
         deploy_bench.record_version(tmp_path, "Deployed rediacc-account-bench\n", VID)
-    assert not (tmp_path / ".ci/cache/live-deploys/bench.json").exists()
+    assert not (tmp_path / ".ci/cache/live-deploys/bench-eu.json").exists()
 
 
 def test_an_existing_bench_json_is_overwritten(monkeypatch, tmp_path):
     monkeypatch.setattr(deploy_bench.receipt, "identity", _fake_identity)
-    path = tmp_path / ".ci/cache/live-deploys/bench.json"
+    path = tmp_path / ".ci/cache/live-deploys/bench-eu.json"
     path.parent.mkdir(parents=True)
     path.write_text('{"version_id": "old"}')
     deploy_bench.record_version(tmp_path, "Current Version ID: " + VID, VID)
@@ -376,7 +379,7 @@ def test_a_blank_live_version_is_refused_not_replaced_by_the_printed_id(monkeypa
     for blank in blanks:
         with pytest.raises(deploy_bench.DeployError, match="live bench version"):
             deploy_bench.record_version(tmp_path, "Current Version ID: " + VID, blank)
-    assert not (tmp_path / ".ci/cache/live-deploys/bench.json").exists()
+    assert not (tmp_path / ".ci/cache/live-deploys/bench-eu.json").exists()
 
 
 def test_a_missing_live_version_after_the_deploy_fails_the_deploy(monkeypatch, tmp_path):
@@ -531,7 +534,7 @@ def test_an_empty_config_server_key_refuses_the_bench_push(monkeypatch):
 
 def _deploy_bench_profile() -> dict:
     supply = json.loads(paths.from_root(".ci", "config", "secret-supply.json").read_text("utf-8"))
-    return supply["consumers"]["deploy-bench"]
+    return supply["consumers"]["deploy-bench-eu"]
 
 
 FIVE = (

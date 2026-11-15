@@ -136,7 +136,7 @@ def notes(cmd, out, src):
             )
     if any(m in out for m in src.markers) and src.remedy not in out:
         lines.append(
-            "bench-login: the eu-bench login is tied to the old IP address. Moving it is the "
+            "bench-login-eu: the eu-bench login is tied to the old IP address. Moving it is the "
             "agent's own step, never an authenticator-code request: run `%s` (headless), then "
             "rerun." % src.remedy
         )

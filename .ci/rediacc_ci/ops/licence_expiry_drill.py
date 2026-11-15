@@ -1,8 +1,8 @@
 """Bench drill: a delegation cert 7 days from its end becomes ONE owner mail, an unread notice and ONE sales digest line, then nothing more on a second run.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-bench --profile bench-login -- env PYTHONPATH=.ci python3 -m rediacc_ci.ops.licence_expiry_drill [--dry-run]
+    PYTHONPATH=.ci python3 -m rediacc_ci.core.bws_env exec --profile deploy-bench-eu --profile bench-login-eu -- env PYTHONPATH=.ci python3 -m rediacc_ci.ops.licence_expiry_drill [--dry-run]
 
-BENCH ONLY. The target is `BENCH_ORIGIN`; no other server is accepted. The run re-executes itself under the `deploy-bench` and `bench-login` Bitwarden profiles (it needs `CF_GLOBAL_API_KEY` and `CF_EMAIL` for the D1 queries, `ROOT_EMAIL` plus `BENCH_ROOT_PASSWORD` for the root session and `SALES_NOTIFY_EMAIL` for the sales inbox the digest goes to) unless both are already bound. The `bench-login` profile binds `BENCH_ROOT_TOTP_SEED`, which answers the bench root's two-factor challenge (`POST /auth/2fa/verify`, one retry with the next window's code); the seed is never printed. Plan: agent/plans/PLAN-licence-expiry-notices.md, box L1.
+BENCH ONLY. The target is `BENCH_ORIGIN`; no other server is accepted. The run re-executes itself under the `deploy-bench-eu` and `bench-login-eu` Bitwarden profiles (it needs `CF_GLOBAL_API_KEY` and `CF_EMAIL` for the D1 queries, `ROOT_EMAIL` plus `BENCH_ROOT_PASSWORD` for the root session and `SALES_NOTIFY_EMAIL` for the sales inbox the digest goes to) unless both are already bound. The `bench-login-eu` profile binds `BENCH_ROOT_TOTP_SEED`, which answers the bench root's two-factor challenge (`POST /auth/2fa/verify`, one retry with the next window's code); the seed is never printed. Plan: agent/plans/PLAN-licence-expiry-notices.md, box L1.
 
 THE STEPS, each printing one evidence line `STEP <n> <name> rc=<rc> <detail>`:
 
@@ -53,7 +53,7 @@ from rediacc_ci.well_known import INFRA_DOMAIN
 if TYPE_CHECKING:
     from collections.abc import Callable, Mapping, Sequence
 
-PROFILE = "deploy-bench"
+PROFILE = "deploy-bench-eu"
 ADDRESS = re.compile(r"^lexp\+\d{14}@" + re.escape(INFRA_DOMAIN) + "$")
 CLOCK_SKEW_S = 60
 CERT_LEAD = timedelta(days=7) - timedelta(hours=1)
@@ -263,7 +263,7 @@ def cleanup_licence(
 def _root_creds() -> tuple[str, str]:
     email = os.environ.get("ROOT_EMAIL") or ""
     if not email:
-        raise DrillError("ROOT_EMAIL is not set (the deploy-bench profile binds it)")
+        raise DrillError("ROOT_EMAIL is not set (the deploy-bench-eu profile binds it)")
     try:
         return email, deploy_bench.root_password()
     except deploy_bench.SeedError as exc:
@@ -273,7 +273,7 @@ def _root_creds() -> tuple[str, str]:
 def _sales_address(env: Mapping[str, str]) -> str:
     sales = env.get("SALES_NOTIFY_EMAIL") or ""
     if not sales:
-        raise DrillError("SALES_NOTIFY_EMAIL is not set (the deploy-bench profile binds it)")
+        raise DrillError("SALES_NOTIFY_EMAIL is not set (the deploy-bench-eu profile binds it)")
     return sales
 
 

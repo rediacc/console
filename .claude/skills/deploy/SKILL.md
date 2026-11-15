@@ -21,10 +21,10 @@ When the request is ambiguous about regions or components, settle it from the ta
 | Component | Worker | Host | Wrangler config | D1 |
 |---|---|---|---|---|
 | account | `account-<region>` | `<region>.rediacc.cloud` | `workers/account/wrangler.<region>.toml` | `account-<region>` |
-| account (bench) | `account-bench` | `bench-eu.rediacc.cloud` (and `bench.rediacc.cloud` until M4) | `workers/account/wrangler.bench.toml` | `account-bench` |
+| account (bench eu) | `account-bench` | `bench-eu.rediacc.cloud` (and `bench.rediacc.cloud` until M4) | `workers/account/wrangler.bench-eu.toml` | `account-bench` |
 | account (bench us, asia) | `account-bench-<region>` | `bench-<region>.rediacc.cloud` | `workers/account/wrangler.bench-<region>.toml` | `account-bench-<region>` |
 | proxy | `proxy-<region>` | `proxy.<region>.rediacc.cloud` | `workers/proxy/wrangler.<region>.toml` | none |
-| proxy (bench) | `proxy-bench` | `proxy.bench-eu.rediacc.cloud` (and `proxy.bench.rediacc.cloud` until M4) | `workers/proxy/wrangler.bench.toml` | none |
+| proxy (bench eu) | `proxy-bench` | `proxy.bench-eu.rediacc.cloud` (and `proxy.bench.rediacc.cloud` until M4) | `workers/proxy/wrangler.bench-eu.toml` | none |
 | proxy (bench us, asia) | `proxy-bench-<region>` | `proxy.bench-<region>.rediacc.cloud` | `workers/proxy/wrangler.bench-<region>.toml` | none |
 | www | `www` | `www.rediacc.com`, shipped with the edge release | `workers/www/wrangler.toml` | none |
 
@@ -53,7 +53,7 @@ Watch a run with the ci-watch skill (`.ci/scripts/ci/ci-trace.py --wait --run <i
 
 **eu.** Every eu deploy records the rollback handle and the D1 bookmark in its deploy record.
 
-**Bench.** `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench [--region eu|us|asia]` deploys one bench (the us and asia ones bind the `deploy-bench-us|asia` profiles and their `_BENCH_US|_BENCH_ASIA` store entries). The bench proxy takes the same `--region` (section 4a, `deploy_proxy --target bench --region <r>`). A raw `wrangler deploy` on a bench or preview config is refused: its module is the path.
+**Bench.** `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench [--region eu|us|asia]` deploys one bench (each region binds its own `deploy-bench-eu|us|asia` profile and their `_BENCH_EU|_BENCH_US|_BENCH_ASIA` store entries). The bench proxy takes the same `--region` (section 4a, `deploy_proxy --target bench --region <r>`). A raw `wrangler deploy` on a bench or preview config is refused: its module is the path.
 
 ## 3. Local path: the credentials (bws)
 

@@ -444,7 +444,7 @@ def test_an_ip_rebind_failure_runs_login_bench_once_and_retries_the_step(bed: Be
     out = bed.record(bed.request("renet-live", target="hostinger"))
     assert out.status == R.VERIFIED, out.message
     assert [bed.fake.key(c) for c in bed.fake.calls] == ["status", "login", "status", "hash"]
-    assert ("npm", "run", "--silent", "login:bench") in bed.fake.calls
+    assert ("npm", "run", "--silent", "login:bench", "--", "--region", "eu") in bed.fake.calls
     assert out.row is not None
     assert len(out.row["check"]["argv"]) == 2, "the retry is one step in the row, not two"
     assert out.log_path is not None
@@ -1415,5 +1415,9 @@ def test_a_regional_proxy_cache_names_its_worker_record_and_config() -> None:
     assert cache.worker == "proxy-bench-asia"
     assert cache.record[-1] == "proxy-bench-asia.json"
     assert cache.config == "wrangler.bench-asia.toml"
-    assert LP.cache_for(LT.BENCH_PROXY_CACHE, "eu") == LP.CACHES[LT.BENCH_PROXY_CACHE]
+    # The default region's cache and its explicit `--region eu` one name the same Worker, record and config.
+    eu, default = LP.cache_for(LT.BENCH_PROXY_CACHE, "eu"), LP.CACHES[LT.BENCH_PROXY_CACHE]
+    assert eu is not None
+    assert (eu.worker, eu.record, eu.config) == (default.worker, default.record, default.config)
+    assert LP.cache_for(LT.BENCH_PROXY_CACHE, None) == default
     assert LP.cache_for(LT.TREE, "us") is None

@@ -6,7 +6,7 @@
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.mirror_config_store --from eu --to bench --store <id> --apply --i-understand-bench-write
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.mirror_config_store --from eu --to bench --store <id> [--dry-run | --apply --i-understand-bench-write]
 
-THE TARGET. `bench` (bench.rediacc.cloud): its D1, CONFIG_BUCKET, Worker name, REGION and WebAuthn RP ID are read from workers/account/wrangler.bench.toml, since regions.json does not list it, and its REGION must be the source's. The output names the target by its channel, `bench`. `--i-understand-bench-write` acknowledges the write.
+THE TARGET. `bench` (bench.rediacc.cloud): its D1, CONFIG_BUCKET, Worker name, REGION and WebAuthn RP ID are read from workers/account/wrangler.bench-eu.toml, since regions.json does not list it, and its REGION must be the source's. The output names the target by its channel, `bench`. `--i-understand-bench-write` acknowledges the write.
 
 WHY IT WORKS. A key slot wraps the CEK under `deriveWrappingKey(slotSecret, serverSecret)` (packages/shared/src/config-crypto/cek.ts, slots.ts), and `serverSecret` is the store's own `config_stores.server_secret`. Copying the store row and the slot rows byte for byte therefore lets the same master password or recovery code unlock the bench copy. The blobs are copied by their recorded `r2_key`, and the envelope v3 AAD binds `(storeId, configId, teamId, version, sdkEpoch)`, so those ids are kept; the operator's user id may be remapped.
 
@@ -244,7 +244,7 @@ def _account_doc(path: pathlib.Path) -> tuple[dict, str, dict]:
 
 
 def resolve_end(root: pathlib.Path, name: str) -> End:
-    """One end: `<region>` (the shared set of that region, channel stable) from regions.json and the region's wrangler config, or `bench`, whose Worker name and region come from wrangler.bench.toml itself (regions.json does not list it)."""
+    """One end: `<region>` (the shared set of that region, channel stable) from regions.json and the region's wrangler config, or `bench`, whose Worker name and region come from wrangler.bench-eu.toml itself (regions.json does not list it)."""
     if name == BENCH_END:
         config = target_mod.account_config(target_mod.BENCH_TARGET, target_mod.BENCH_REGION)
         path = root.joinpath(*target_mod.ACCOUNT_SUBDIR, config)

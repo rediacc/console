@@ -43,7 +43,7 @@ def shared_databases() -> list[str]:
 
 
 def bench_database() -> str:
-    """The bench database, as wrangler.bench.toml's DB binding names it."""
+    """The bench database, as wrangler.bench-eu.toml's DB binding names it."""
     return bench_preflight.bench_names().database_name
 
 

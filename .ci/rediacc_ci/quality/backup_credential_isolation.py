@@ -1,6 +1,6 @@
 r"""check:ci-backup-credential-isolation -- each environment's account Workers hold only their own bucket-scoped backup key, and nothing account-wide stands in for it.
 
-WHY. Until 2026-10-15 `deploy_bench` filled every empty `ACCOUNT_BACKUP_S3_*` value from the account-wide R2 token, and the deploy-bench profile supplied only that token, so the public bench Worker held a key that reaches every bucket in the account; every other Worker shared one hand-minted pair. agent/plans/PLAN-backup-credential-isolation.md split the credential into bucket-scoped tokens, each limited to object read and write on its own environment's backup buckets. Since the product-domain rename (agent/plans/PLAN-product-domain-rename.md) one shared Worker set per region serves the product, so two tokens remain: stable (the shared set's `backups-<region>` buckets) and bench. The edge token and its `_EDGE` names are retired, and a reference to them is a finding. This gate pins the split in the tree, so a later edit cannot quietly re-widen it. It reads NAMES only: configuration files, workflow files and one Python module's string constants. No value is read from anywhere, and none could be printed.
+WHY. Until 2026-10-15 `deploy_bench` filled every empty `ACCOUNT_BACKUP_S3_*` value from the account-wide R2 token, and the deploy-bench-eu profile supplied only that token, so the public bench Worker held a key that reaches every bucket in the account; every other Worker shared one hand-minted pair. agent/plans/PLAN-backup-credential-isolation.md split the credential into bucket-scoped tokens, each limited to object read and write on its own environment's backup buckets. Since the product-domain rename (agent/plans/PLAN-product-domain-rename.md) one shared Worker set per region serves the product, so two tokens remain: stable (the shared set's `backups-<region>` buckets) and bench. The edge token and its `_EDGE` names are retired, and a reference to them is a finding. This gate pins the split in the tree, so a later edit cannot quietly re-widen it. It reads NAMES only: configuration files, workflow files and one Python module's string constants. No value is read from anywhere, and none could be printed.
 
 THE RULES, each with a plant in the controls that must turn it red:
 
@@ -14,7 +14,7 @@ THE RULES, each with a plant in the controls that must turn it red:
                       `..._SECRET_ACCESS_KEY` takes both halves from ONE environment
                       suffix (`_STABLE`, `_BENCH`), never the unsuffixed store
                       entry, never the retired `_EDGE` (or any other) suffix and
-                      never two environments. Census: deploy-bench binds bench,
+                      never two environments. Census: deploy-bench-eu binds bench,
                       backup-push-<env> binds <env>.
   workflow-pair       no workflow or action requests the unsuffixed pair, the `_BENCH`
                       pair or a retired `_EDGE` (or any other) pair; a `_STABLE` request
@@ -30,7 +30,7 @@ THE RULES, each with a plant in the controls that must turn it red:
                       slugs exist and no other `cf-r2-backup-*` slug does (the retired
                       `cf-r2-backup-edge` included), their BWS names are pairwise
                       disjoint and carry their own suffix, their bucket sets equal
-                      regions.json `backupR2` (stable) and wrangler.bench.toml's
+                      regions.json `backupR2` (stable) and wrangler.bench-eu.toml's
                       BACKUP_BUCKET (bench) with matching jurisdictions, and no entry
                       carries an account or zone permission.
 
@@ -58,20 +58,24 @@ from rediacc_ci.core import bws_env
 DEPLOY_BENCH_REL = ".ci/rediacc_ci/ops/deploy_bench.py"
 SUPPLY_REL = ".ci/config/secret-supply.json"
 REGIONS_REL = "regions.json"
-BENCH_TOML_REL = "workers/account/wrangler.bench.toml"
+BENCH_REGIONS = ("eu", "us", "asia")
+# Per bench region: the environment key, the rotation slug and the account wrangler config whose BACKUP_BUCKET binding the token must scope.
+BENCH_TOML_REL = "workers/account/wrangler.bench-%s.toml"
 SCOPES_REL = "private/account/scripts/rotation/r2-backup-tokens.json"
 SUBMODULE_REL = "private/account"
 
-ENVS = ("STABLE", "BENCH")
+ENVS = ("STABLE", *("BENCH_" + r.upper() for r in BENCH_REGIONS))
 SLUGS = {
     "STABLE": "cf-r2-backup-stable",
-    "BENCH": "cf-r2-backup-bench",
+    **{"BENCH_" + r.upper(): "cf-r2-backup-bench-" + r for r in BENCH_REGIONS},
 }
 SLUG_PREFIX = "cf-r2-backup-"
 PAIR = ("ACCOUNT_BACKUP_S3_ACCESS_KEY_ID", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY")
 SHARED = "ACCOUNT_BACKUP_S3_ENDPOINT"
 # Any suffix is captured, so a retired environment's name (`_EDGE`) is seen and refused rather than silently ignored.
-PAIR_RE = re.compile(r"^(ACCOUNT_BACKUP_S3_(?:ACCESS_KEY_ID|SECRET_ACCESS_KEY))(?:_([A-Z0-9]+))?$")
+PAIR_RE = re.compile(
+    r"^(ACCOUNT_BACKUP_S3_(?:ACCESS_KEY_ID|SECRET_ACCESS_KEY))(?:_([A-Z0-9]+(?:_[A-Z0-9]+)?))?$"
+)
 WIDE_STORE_RE = re.compile(r"^CLOUDFLARE_")
 # A value expression that reaches an account-wide Cloudflare credential, in any of the spellings a workflow uses.
 WIDE_REF_RE = re.compile(
@@ -84,9 +88,9 @@ BUCKET_PERMS = frozenset(
     {"Workers R2 Storage Bucket Item Read", "Workers R2 Storage Bucket Item Write"}
 )
 PROFILE_CENSUS = {
-    "deploy-bench": "BENCH",
     "backup-push-stable": "STABLE",
-    "backup-push-bench": "BENCH",
+    **{"deploy-bench-" + r: "BENCH_" + r.upper() for r in BENCH_REGIONS},
+    **{"backup-push-bench-" + r: "BENCH_" + r.upper() for r in BENCH_REGIONS},
 }
 RULES = (
     "bench-no-fallback",
@@ -143,7 +147,7 @@ def bench_fallback(source: str, where: str = DEPLOY_BENCH_REL) -> list[Finding]:
             "%s:%d" % (where, node.lineno),
             "a string naming CLOUDFLARE_R2_ is back in the bench deploy. The account-wide R2 "
             "token must never fill ACCOUNT_BACKUP_S3_*: bind the bench-scoped pair in the "
-            "deploy-bench profile and read only ACCOUNT_BACKUP_S3_*",
+            "deploy-bench-eu profile and read only ACCOUNT_BACKUP_S3_*",
         )
         for node in constants
         if "CLOUDFLARE_R2_" in str(node.value)
@@ -183,7 +187,7 @@ def profile_findings(consumers: dict) -> tuple[list[Finding], int]:
                         "profile-pair",
                         where,
                         "%s > %s binds the unsuffixed store entry, the shared pair the split "
-                        "retires; bind %s_<STABLE|BENCH> > %s" % (store, local, half, half),
+                        "retires; bind %s_<%s> > %s" % (store, local, half, "|".join(ENVS), half),
                     )
                 )
                 continue
@@ -330,12 +334,12 @@ def workflow_findings(rel: str, text: str) -> tuple[list[Finding], dict[str, int
                             "%s_STABLE in a step with no `if:`" % (store, store),
                         )
                     )
-                elif env == "BENCH":
+                elif env.startswith("BENCH_"):
                     out.append(
                         Finding(
                             "workflow-pair",
                             where,
-                            "requests %s; the bench pair is for the operator's deploy-bench profile "
+                            "requests %s; the bench pair is for the operator's deploy-bench-eu profile "
                             "only, and no workflow may hold it" % store,
                         )
                     )
@@ -390,22 +394,27 @@ def workflow_findings(rel: str, text: str) -> tuple[list[Finding], dict[str, int
 # --------------------------------------------------------------------------- rule: rotation-scopes
 
 
-def expected_buckets(regions: list[dict], bench_toml: str) -> dict[str, set[tuple[str, str]]]:
-    """{env: {(bucket, jurisdiction or "")}} from regions.json and wrangler.bench.toml."""
-    bench = tomllib.loads(bench_toml)
-    bench_set = {
-        (b.get("bucket_name") or "", b.get("jurisdiction") or "")
-        for b in bench.get("r2_buckets") or []
-        if b.get("binding") == "BACKUP_BUCKET"
+def expected_buckets(
+    regions: list[dict], bench_tomls: dict[str, str]
+) -> dict[str, set[tuple[str, str]]]:
+    """{env: {(bucket, jurisdiction or "")}} from regions.json and one account wrangler config per bench environment (`BENCH_<REGION>` to its toml text)."""
+    if not regions:
+        raise CannotRunError("regions.json lists no region")
+    out: dict[str, set[tuple[str, str]]] = {
+        "STABLE": {(r["backupR2"]["name"], r.get("r2Jurisdiction") or "") for r in regions}
     }
-    if not regions or not bench_set:
-        raise CannotRunError(
-            "regions.json lists no region or wrangler.bench.toml binds no BACKUP_BUCKET"
-        )
-    return {
-        "STABLE": {(r["backupR2"]["name"], r.get("r2Jurisdiction") or "") for r in regions},
-        "BENCH": bench_set,
-    }
+    for env in ENVS[1:]:
+        bench = tomllib.loads(bench_tomls.get(env) or "")
+        out[env] = {
+            (b.get("bucket_name") or "", b.get("jurisdiction") or "")
+            for b in bench.get("r2_buckets") or []
+            if b.get("binding") == "BACKUP_BUCKET"
+        }
+        if not out[env]:
+            raise CannotRunError(
+                "the %s account wrangler config binds no BACKUP_BUCKET (or is missing)" % env
+            )
+    return out
 
 
 def _walk(value, path: str):
@@ -485,7 +494,7 @@ def scope_findings(doc: object, expected: dict[str, set[tuple[str, str]]]) -> li
             out.append(Finding("rotation-scopes", where, "slug %s is missing" % slug))
             continue
         declared = entry.get("environment")
-        if declared is not None and str(declared).upper() != env:
+        if declared is not None and str(declared).upper().replace("-", "_") != env:
             out.append(
                 Finding(
                     "rotation-scopes",
@@ -519,7 +528,7 @@ def scope_findings(doc: object, expected: dict[str, set[tuple[str, str]]]) -> li
                 Finding(
                     "rotation-scopes",
                     here,
-                    "buckets %s, expected %s (regions.json / wrangler.bench.toml)"
+                    "buckets %s, expected %s (regions.json / wrangler.bench-<region>.toml)"
                     % (_fmt(got), _fmt(expected[env])),
                 )
             )
@@ -543,6 +552,14 @@ def _fmt(pairs: set[tuple[str, str]]) -> str:
 
 
 # --------------------------------------------------------------------------- the run
+
+
+def _read_text(path: pathlib.Path) -> str:
+    """The file's text; a missing or unreadable bench config is a CannotRunError naming it, never an empty string."""
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError as exc:
+        raise CannotRunError("%s cannot be read (%s)" % (path, exc.__class__.__name__)) from None
 
 
 def gather(root: pathlib.Path) -> Report:
@@ -582,7 +599,10 @@ def gather(root: pathlib.Path) -> Report:
     report.shape["stable fetches"] = census["STABLE"]
 
     regions = json.loads((root / REGIONS_REL).read_text(encoding="utf-8"))["regions"]
-    expected = expected_buckets(regions, (root / BENCH_TOML_REL).read_text(encoding="utf-8"))
+    expected = expected_buckets(
+        regions,
+        {"BENCH_" + r.upper(): _read_text(root / (BENCH_TOML_REL % r)) for r in BENCH_REGIONS},
+    )
     scopes = root / SCOPES_REL
     if not (root / SUBMODULE_REL / ".git").exists() and not any((root / SUBMODULE_REL).glob("*")):
         report.skips.append(
@@ -664,16 +684,28 @@ def values():
 """
 
 FIX_SUPPLY = """{
-  "deploy-bench": {"required": ["ROOT_EMAIL", "ACCOUNT_BACKUP_S3_ENDPOINT",
-    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
-    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH > ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"], "optional": []},
-  "reset-bench": {"required": ["CLOUDFLARE_R2_ACCESS_KEY_ID", "CLOUDFLARE_R2_SECRET_ACCESS_KEY"], "optional": []},
+  "deploy-bench-eu": {"required": ["ROOT_EMAIL", "ACCOUNT_BACKUP_S3_ENDPOINT",
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_EU > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH_EU > ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"], "optional": []},
+  "reset-bench-eu": {"required": ["CLOUDFLARE_R2_ACCESS_KEY_ID", "CLOUDFLARE_R2_SECRET_ACCESS_KEY"], "optional": []},
   "backup-push-stable": {"required": ["CLOUDFLARE_API_TOKEN", "ACCOUNT_BACKUP_S3_ENDPOINT",
     "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE > ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"], "optional": []},
-  "backup-push-bench": {"required": ["CLOUDFLARE_API_TOKEN", "ACCOUNT_BACKUP_S3_ENDPOINT",
-    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
-    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH > ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"], "optional": []}
+  "backup-push-bench-eu": {"required": ["CLOUDFLARE_API_TOKEN", "ACCOUNT_BACKUP_S3_ENDPOINT",
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_EU > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH_EU > ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"], "optional": []},
+  "deploy-bench-us": {"required": ["ROOT_EMAIL"], "optional": [
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_US > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH_US > ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"]},
+  "backup-push-bench-us": {"required": ["CLOUDFLARE_API_TOKEN"], "optional": [
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_US > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH_US > ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"]},
+  "deploy-bench-asia": {"required": ["ROOT_EMAIL"], "optional": [
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_ASIA > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH_ASIA > ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"]},
+  "backup-push-bench-asia": {"required": ["CLOUDFLARE_API_TOKEN"], "optional": [
+    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_ASIA > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID",
+    "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH_ASIA > ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"]}
 }"""
 
 FIX_WORKFLOW = """name: fixture
@@ -707,7 +739,11 @@ FIX_REGIONS: list[dict] = [
     {"id": "eu", "backupR2": {"name": "b-eu"}, "r2Jurisdiction": "eu"},
     {"id": "us", "backupR2": {"name": "b-us"}, "r2Jurisdiction": None},
 ]
-FIX_BENCH_TOML = '[[r2_buckets]]\nbinding = "CONFIG_BUCKET"\nbucket_name = "c-bench"\n[[r2_buckets]]\nbinding = "BACKUP_BUCKET"\nbucket_name = "b-bench"\n'
+FIX_BENCH_TOMLS = {
+    env: '[[r2_buckets]]\nbinding = "CONFIG_BUCKET"\nbucket_name = "c-%(r)s"\n[[r2_buckets]]\nbinding = "BACKUP_BUCKET"\nbucket_name = "b-%(r)s"\n'
+    % {"r": env.lower().replace("_", "-")}
+    for env in ENVS[1:]
+}
 PERMS = '["Workers R2 Storage Bucket Item Read", "Workers R2 Storage Bucket Item Write"]'
 FIX_SCOPES = """{
   "$comment": "fixture: the account-level resource com.cloudflare.api.account named in a comment is not a finding",
@@ -716,9 +752,15 @@ FIX_SCOPES = """{
     "cf-r2-backup-stable": {"environment": "stable",
       "buckets": [{"name": "b-eu", "jurisdiction": "eu"}, {"name": "b-us"}],
       "bitwardenSecretNames": ["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_STABLE", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE", "ACCOUNT_BACKUP_S3_ENDPOINT"]},
-    "cf-r2-backup-bench": {"environment": "bench", "account": [],
-      "buckets": [{"name": "b-bench"}],
-      "bitwardenSecretNames": ["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH", "ACCOUNT_BACKUP_S3_ENDPOINT"]}
+    "cf-r2-backup-bench-eu": {"environment": "bench-eu", "account": [],
+      "buckets": [{"name": "b-bench-eu"}],
+      "bitwardenSecretNames": ["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_EU", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH_EU", "ACCOUNT_BACKUP_S3_ENDPOINT"]},
+    "cf-r2-backup-bench-us": {"environment": "bench-us",
+      "buckets": [{"name": "b-bench-us"}],
+      "bitwardenSecretNames": ["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_US", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH_US"]},
+    "cf-r2-backup-bench-asia": {"environment": "bench-asia",
+      "buckets": [{"name": "b-bench-asia"}],
+      "bitwardenSecretNames": ["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_ASIA", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH_ASIA"]}
   }
 }""" % {"p": PERMS}
 
@@ -730,7 +772,7 @@ def _rules(findings: list[Finding]) -> set[str]:
 def selftest() -> bool:
     """True when a control failed, which is what `controls_first` expects."""
     check = Checker()
-    expected = expected_buckets(FIX_REGIONS, FIX_BENCH_TOML)
+    expected = expected_buckets(FIX_REGIONS, FIX_BENCH_TOMLS)
 
     # ---- the clean world is clean, rule by rule
     check(
@@ -739,7 +781,7 @@ def selftest() -> bool:
     )
     clean_profiles, binding = profile_findings(json.loads(FIX_SUPPLY))
     check("CONTROL: one environment's pair per profile is clean", clean_profiles == [])
-    check("CONTROL: and the census sees the three profiles binding a pair", binding == 3)
+    check("CONTROL: and the census sees the seven profiles binding a pair", binding == 7)
     clean_wf, census = workflow_findings("f.yml", FIX_WORKFLOW)
     check("CONTROL: an unconditional stable fetch is clean", clean_wf == [])
     check("CONTROL: and the stable fetch is counted", census == {"STABLE": 1})
@@ -779,8 +821,8 @@ def selftest() -> bool:
     # ---- profile-source
     planted = plant(
         FIX_SUPPLY,
-        '"ACCOUNT_BACKUP_S3_ENDPOINT",\n    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH',
-        '"CLOUDFLARE_R2_ENDPOINT > ACCOUNT_BACKUP_S3_ENDPOINT",\n    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH',
+        '"ACCOUNT_BACKUP_S3_ENDPOINT",\n    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_EU',
+        '"CLOUDFLARE_R2_ENDPOINT > ACCOUNT_BACKUP_S3_ENDPOINT",\n    "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_EU',
     )
     check(
         "PLANT profile-source: the R2 trio bound into a backup name is a finding",
@@ -799,8 +841,8 @@ def selftest() -> bool:
     # ---- profile-pair
     planted = plant(
         FIX_SUPPLY,
-        '"ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH > ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"], "optional": []},\n  "reset-bench"',
-        '"ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE > ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"], "optional": []},\n  "reset-bench"',
+        '"ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH_EU > ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"], "optional": []},\n  "reset-bench-eu"',
+        '"ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE > ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"], "optional": []},\n  "reset-bench-eu"',
     )
     found = profile_findings(json.loads(planted))[0]
     check(
@@ -816,11 +858,11 @@ def selftest() -> bool:
         "PLANT profile-pair: the unsuffixed shared pair bound by a profile is a finding",
         any("unsuffixed" in f.what for f in profile_findings(json.loads(planted))[0]),
     )
-    planted = plant(FIX_SUPPLY, '"backup-push-bench"', '"backup-push-other"')
+    planted = plant(FIX_SUPPLY, '"backup-push-bench-eu"', '"backup-push-other"')
     check(
         "PLANT profile-pair: a census profile gone missing is a finding",
         any(
-            "backup-push-bench is missing" in f.what
+            "backup-push-bench-eu is missing" in f.what
             for f in profile_findings(json.loads(planted))[0]
         ),
     )
@@ -840,9 +882,9 @@ def selftest() -> bool:
     )
     planted = plant(
         FIX_SUPPLY,
-        '"reset-bench"',
+        '"reset-bench-eu"',
         '"backup-push-edge": {"required": ["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE > ACCOUNT_BACKUP_S3_ACCESS_KEY_ID", '
-        '"ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE > ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"], "optional": []},\n  "reset-bench"',
+        '"ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_EDGE > ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY"], "optional": []},\n  "reset-bench-eu"',
     )
     check(
         "PLANT profile-pair: a revived backup-push-edge profile is a finding",
@@ -893,11 +935,11 @@ def selftest() -> bool:
     planted = plant(
         FIX_WORKFLOW,
         "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE > BWS_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE",
-        "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE > BWS_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE\n            ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH > BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH",
+        "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE > BWS_ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE\n            ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_EU > BWS_ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_EU",
     )
     check(
         "PLANT workflow-pair: a request for the bench pair is a finding",
-        any("_BENCH" in f.what for f in workflow_findings("f.yml", planted)[0]),
+        any("_BENCH_EU" in f.what for f in workflow_findings("f.yml", planted)[0]),
     )
 
     # ---- workflow-source
@@ -941,8 +983,8 @@ def selftest() -> bool:
     # ---- rotation-scopes
     planted = plant(
         FIX_SCOPES,
-        '"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH"',
-        '"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE"',
+        '"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_EU", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH_EU"',
+        '"ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_EU", "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_STABLE"',
     )
     found = scope_findings(json.loads(planted), expected)
     check(
@@ -970,18 +1012,18 @@ def selftest() -> bool:
     )
     planted = plant(
         FIX_SCOPES,
-        '"buckets": [{"name": "b-bench"}]',
-        '"buckets": [{"name": "b-bench"}, {"name": "b-eu", "jurisdiction": "eu"}]',
+        '"buckets": [{"name": "b-bench-eu"}]',
+        '"buckets": [{"name": "b-bench-eu"}, {"name": "b-eu", "jurisdiction": "eu"}]',
     )
     check(
         "PLANT rotation-scopes: the bench token reaching a stable bucket is a finding",
         "rotation-scopes" in _rules(scope_findings(json.loads(planted), expected)),
     )
-    planted = plant(FIX_SCOPES, '"cf-r2-backup-bench"', '"cf-r2-backup-benchy"')
+    planted = plant(FIX_SCOPES, '"cf-r2-backup-bench-eu"', '"cf-r2-backup-benchy"')
     found = scope_findings(json.loads(planted), expected)
     check(
         "PLANT rotation-scopes: a missing slug is a finding",
-        any("cf-r2-backup-bench is missing" in f.what for f in found),
+        any("cf-r2-backup-bench-eu is missing" in f.what for f in found),
     )
     check(
         "PLANT rotation-scopes: and the unknown slug beside it is a finding too",
@@ -989,10 +1031,10 @@ def selftest() -> bool:
     )
     planted = plant(
         FIX_SCOPES,
-        '    "cf-r2-backup-bench"',
+        '    "cf-r2-backup-bench-eu"',
         '    "cf-r2-backup-edge": {"environment": "edge", "buckets": [{"name": "edge-b-eu"}],\n'
         '      "bitwardenSecretNames": ["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_EDGE"]},\n'
-        '    "cf-r2-backup-bench"',
+        '    "cf-r2-backup-bench-eu"',
     )
     check(
         "PLANT rotation-scopes: the retired edge slug left in the file is a finding",
@@ -1016,8 +1058,8 @@ def selftest() -> bool:
     )
     planted = plant(
         FIX_SCOPES,
-        '"cf-r2-backup-bench": {"environment": "bench"',
-        '"cf-r2-backup-bench": {"environment": "stable"',
+        '"cf-r2-backup-bench-eu": {"environment": "bench-eu"',
+        '"cf-r2-backup-bench-eu": {"environment": "stable"',
     )
     check(
         "PLANT rotation-scopes: a token declaring another environment is a finding",
@@ -1027,8 +1069,8 @@ def selftest() -> bool:
     )
     planted = plant(
         FIX_SCOPES,
-        '"bitwardenSecretNames": ["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH"',
-        '"names": ["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH"',
+        '"bitwardenSecretNames": ["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_EU"',
+        '"names": ["ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_EU"',
     )
     check(
         "PLANT rotation-scopes: a token listing no Bitwarden name under the known key is a finding",

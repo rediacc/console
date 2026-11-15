@@ -12,7 +12,7 @@ NO FULL ID IS PRINTED. Every line names an org by the first 8 characters of its 
 
 THE WRITE. `block` and `unblock` do the writes of `POST /admin/orgs/<id>/console-executor/block` and `/unblock` through `wrangler d1 execute --remote`, the way the reads go, and then re-read the org to confirm its verdict changed. That route needs a root elevated session, which is minutes long and cannot be a stored secret, and the account Worker accepts no other credential for root routes, so this tool holds none. The SQL (`BLOCK_SQL`, `UNBLOCK_SQL`) is the route's `ConsoleEntitlementService.block` and `unblock` written out, and `root-console-block.test.ts` runs it against the same schema beside the route and compares: change one, change the other. An org's audit row is `console_executor.blocked` or `console_executor.unblocked`, source `ops-executor-orgs`, written in the same statement batch.
 
-THE TARGET AND THE ENVIRONMENT follow `rediacc_ci.deploy.console_executor`: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` come from CD's Bitwarden step, or a bare local run re-executes itself under `bws_env exec --profile deploy-proxy` (bench: `deploy-proxy-bench`).
+THE TARGET AND THE ENVIRONMENT follow `rediacc_ci.deploy.console_executor`: `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` come from CD's Bitwarden step, or a bare local run re-executes itself under `bws_env exec --profile deploy-proxy` (bench: `deploy-proxy-bench-eu`).
 """
 
 from __future__ import annotations

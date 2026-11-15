@@ -73,7 +73,7 @@ class Fake:
     # --- injected seams
     def _seed(self):
         if not self.seed:
-            raise led.DrillError("unset seed: run under the bench-login profile")
+            raise led.DrillError("unset seed: run under the bench-login-eu profile")
         return self.seed
 
     def allowlist(self):
@@ -337,7 +337,7 @@ def test_two_refused_verifies_fail_naming_the_seed(capsys):
 def test_an_unset_seed_fails_naming_the_bench_login_profile(capsys):
     fake, rc, out = drill(capsys, two_factor=True, seed="")
     assert rc == 1
-    assert "bench-login" in out.err
+    assert "bench-login-eu" in out.err
     assert fake.verified == []
 
 
@@ -436,7 +436,7 @@ def test_the_reexec_binds_both_profiles(monkeypatch):
     class Done:
         returncode = 7
 
-    monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-bench")
+    monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-bench-eu")
 
     def fake_run(argv, **_kw):
         seen.append(argv)
@@ -446,11 +446,11 @@ def test_the_reexec_binds_both_profiles(monkeypatch):
     assert led._reexec_under_profile([]) == 7
     argv = seen[0]
     profiles = [argv[i + 1] for i, a in enumerate(argv) if a == "--profile"]
-    assert profiles == ["deploy-bench", "bench-login"]
+    assert profiles == ["deploy-bench-eu", "bench-login-eu"]
 
 
 def test_the_reexec_is_skipped_when_both_profiles_are_bound(monkeypatch):
-    monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-bench,bench-login")
+    monkeypatch.setenv("REDIACC_BWS_PROFILES", "deploy-bench-eu,bench-login-eu")
     assert led._reexec_under_profile([]) is None
 
 

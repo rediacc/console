@@ -3,7 +3,7 @@
 
 WHY THIS EXISTS. The proxy has four CD targets (the one shared `stable` set in each region of regions.json) and bench, and each deploys through `deploy_proxy --target T --region R`. Nothing in CI ran that path: a renamed config, a refusal that fired on a real config, or a wrangler key the pinned wrangler rejects surfaced on the first real deploy. `--dry-run` runs the config refusals and `wrangler deploy --dry-run --containers-rollout none`, which compiles the Worker without building or updating a container and needs no credentials, no fetch and no staged artifacts. The image itself is built and booted by check:ci-proxy-image-smoke.
 
-THE TARGETS ARE DERIVED, NOT LISTED. `regions.json` gives the regions; each region contributes `stable`, and bench is the extra one. A region added there is dry-run here with no edit. The expected config per target (`wrangler.<region>.toml`, `wrangler.bench.toml`) is checked against the `(config: ...)` the run printed, so a target that compiled the wrong file is a finding, not a pass.
+THE TARGETS ARE DERIVED, NOT LISTED. `regions.json` gives the regions; each region contributes `stable`, and bench is the extra one. A region added there is dry-run here with no edit. The expected config per target (`wrangler.<region>.toml`, `wrangler.bench-eu.toml`) is checked against the `(config: ...)` the run printed, so a target that compiled the wrong file is a finding, not a pass.
 
 FAKE CREDENTIALS. Every `CLOUDFLARE_*` and `ACCOUNT_*` variable of the caller is dropped and `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are set to obvious fakes, so the run proves a dry run needs none, and a dry run that starts asking for a secret fails here instead of in a lane that holds one.
 
@@ -45,7 +45,7 @@ def targets_from_regions(regions: list[dict]) -> list[tuple[str, str | None]]:
 
 def expected_config(target: str, region: str | None) -> str:
     if target == "bench":
-        return "wrangler.bench.toml"
+        return "wrangler.bench-eu.toml"
     return "wrangler.%s.toml" % region
 
 
@@ -196,7 +196,8 @@ def selftest() -> bool:
         expected_config("stable", "asia") == "wrangler.asia.toml",
     )
     control(
-        "bench maps to wrangler.bench.toml", expected_config("bench", None) == "wrangler.bench.toml"
+        "bench maps to wrangler.bench-eu.toml",
+        expected_config("bench", None) == "wrangler.bench-eu.toml",
     )
     control("bench takes no --region", "--region" not in argv_for(None, "bench", None))
     control(

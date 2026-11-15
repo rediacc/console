@@ -246,17 +246,14 @@ def location(region: str, root: pathlib.Path | None = None) -> str:
 
 
 def bench_config_path(region: str, root: pathlib.Path | None = None) -> pathlib.Path:
-    """The account config of REGION's bench: `wrangler.bench.toml` for the home region (regions.json `default`), `wrangler.bench-<r>.toml` for the others. A region with no `bench` object is refused."""
+    """The account config of REGION's bench: `wrangler.bench-eu.toml` for the home region (regions.json `default`), `wrangler.bench-<r>.toml` for the others. A region with no `bench` object is refused."""
     base = root or paths.repo_root()
     data = json.loads((base / "regions.json").read_text(encoding="utf-8"))
     for entry in data["regions"]:
         if str(entry["id"]) == region:
             if not isinstance(entry.get("bench"), dict):
                 raise ControlDbError("region %r has no bench object in regions.json" % region)
-            name = (
-                "wrangler.bench.toml" if entry.get("default") else "wrangler.bench-%s.toml" % region
-            )
-            return base.joinpath(*bench_preflight.BENCH_CONFIG_REL[:-1], name)
+            return base.joinpath(*bench_preflight.config_rel(region))
     raise ControlDbError("no region %r in regions.json" % region)
 
 

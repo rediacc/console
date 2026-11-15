@@ -31,19 +31,19 @@ def _every_vars_table(path: Path) -> dict[str, dict]:
 
 
 def test_bench_disables_turnstile():
-    assert _vars(ROOT / "workers/account/wrangler.bench.toml")["TURNSTILE_ENABLED"] == "false"
+    assert _vars(ROOT / "workers/account/wrangler.bench-eu.toml")["TURNSTILE_ENABLED"] == "false"
     assert deploy_bench.TURNSTILE_SITEKEY == ""
 
 
 def test_bench_captures_outgoing_email_and_names_itself_bench():
-    bench = _vars(ROOT / "workers/account/wrangler.bench.toml")
+    bench = _vars(ROOT / "workers/account/wrangler.bench-eu.toml")
     assert bench["EMAIL_CAPTURE_D1"] == "true"
     # The account server admits the switch only when ENVIRONMENT is "bench".
     assert bench["ENVIRONMENT"] == "bench"
 
 
 def test_no_other_config_carries_a_captcha_or_test_switch():
-    # The regional benches (wrangler.bench-<r>.toml) carry the switches by design, like wrangler.bench.toml.
+    # The regional benches (wrangler.bench-<r>.toml) carry the switches by design, like wrangler.bench-eu.toml.
     others = [p for p in CONFIGS if not p.name.startswith("wrangler.bench")]
     # The floor keeps the sweep from reading nothing: one config per shared region (eu, us, asia) since the edge and stable pair retired with the product-domain rename.
     assert len(others) >= 3
@@ -73,7 +73,7 @@ def _switch_tables_outside_bench(path: Path) -> list[str]:
 
 def test_an_environment_table_with_a_switch_must_name_bench_itself(tmp_path: Path) -> None:
     """e4d3b408.2: a top-level ENVIRONMENT = "bench" is not inherited by [env.<name>.vars]; the table that names bench itself is the control."""
-    config = tmp_path / "wrangler.bench.toml"
+    config = tmp_path / "wrangler.bench-eu.toml"
     config.write_text(
         '[vars]\nENVIRONMENT = "bench"\nEMAIL_CAPTURE_D1 = "true"\n\n'
         '[env.a.vars]\nEMAIL_CAPTURE_D1 = "true"\n\n'
@@ -90,7 +90,7 @@ def test_every_bench_config_that_carries_a_switch_names_itself_bench():
     """
     benches = [p for p in CONFIGS if p.name.startswith("wrangler.bench")]
     assert {p.name for p in benches} >= {
-        "wrangler.bench.toml",
+        "wrangler.bench-eu.toml",
         "wrangler.bench-us.toml",
         "wrangler.bench-asia.toml",
     }
@@ -108,7 +108,9 @@ def test_the_sweep_reads_environment_tables_too(tmp_path: Path) -> None:
 
 
 def test_bench_does_not_enable_the_test_surface():
-    assert not {"TEST_MODE", "CI_MODE"} & set(_vars(ROOT / "workers/account/wrangler.bench.toml"))
+    assert not {"TEST_MODE", "CI_MODE"} & set(
+        _vars(ROOT / "workers/account/wrangler.bench-eu.toml")
+    )
 
 
 def test_deploy_secrets_never_push_the_switch(monkeypatch: pytest.MonkeyPatch) -> None:

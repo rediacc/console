@@ -87,7 +87,9 @@ def test_every_unplanted_config_carries_no_refusal(key: str) -> None:
 
 
 def test_seven_targets_and_five_generated() -> None:
-    assert sorted(TARGETS) == sorted(["eu", "us", "asia", "bench", "bench-us", "bench-asia", "dev"])
+    assert sorted(TARGETS) == sorted(
+        ["eu", "us", "asia", "bench-eu", "bench-us", "bench-asia", "dev"]
+    )
     assert sorted(t.key for t in TARGETS.values() if t.generated) == sorted(
         ["eu", "us", "asia", "bench-us", "bench-asia"]
     )
@@ -179,11 +181,11 @@ def test_max_instances_on_the_durable_entry_is_refused() -> None:
 
 def test_instance_type_on_the_durable_entry_is_refused() -> None:
     text = plant(
-        real("bench"),
+        real("bench-eu"),
         'scheduling_policy = "durable_object"\n',
         'scheduling_policy = "durable_object"\ninstance_type = "basic"\n',
     )
-    out = refusals(text, "bench")
+    out = refusals(text, "bench-eu")
     assert any("OrgExecutor sets instance_type" in r for r in out), out
 
 
@@ -217,9 +219,9 @@ def test_an_executor_backend_var_is_refused() -> None:
 
 
 def test_the_committed_bench_config_carries_the_drill_var_and_passes() -> None:
-    text = real("bench")
+    text = real("bench-eu")
     assert tomllib.loads(text)["vars"]["EGRESS_DRILL_PROBE"] == "192.0.2.10:22=72.61.137.225:22"
-    assert refusals(text, "bench") == []
+    assert refusals(text, "bench-eu") == []
 
 
 @pytest.mark.parametrize("key", ["us", "eu"])
@@ -240,11 +242,11 @@ def test_the_drill_var_in_a_rendered_non_bench_config_is_refused(key: str) -> No
 )
 def test_a_malformed_drill_var_on_bench_is_refused(value: str) -> None:
     text = plant(
-        real("bench"),
+        real("bench-eu"),
         'EGRESS_DRILL_PROBE = "192.0.2.10:22=72.61.137.225:22"',
         'EGRESS_DRILL_PROBE = "%s"' % value,
     )
-    out = refusals(text, "bench")
+    out = refusals(text, "bench-eu")
     assert any(
         "vars.EGRESS_DRILL_PROBE is" in line and "not <host:port>" in line for line in out
     ), out
@@ -252,11 +254,11 @@ def test_a_malformed_drill_var_on_bench_is_refused(value: str) -> None:
 
 def test_a_bracketed_ipv6_drill_var_on_bench_passes() -> None:
     text = plant(
-        real("bench"),
+        real("bench-eu"),
         'EGRESS_DRILL_PROBE = "192.0.2.10:22=72.61.137.225:22"',
         'EGRESS_DRILL_PROBE = "[2001:db8::1]:22=[2001:db8::2]:2222"',
     )
-    assert refusals(text, "bench") == []
+    assert refusals(text, "bench-eu") == []
 
 
 def test_the_drill_var_in_the_dev_config_is_refused() -> None:
@@ -316,24 +318,24 @@ def test_a_wrong_durable_image_is_refused() -> None:
 
 def test_a_legacy_entry_beside_the_durable_one_is_refused() -> None:
     text = plant(
-        real("bench"),
+        real("bench-eu"),
         '[[containers]]\nclass_name = "OrgExecutor"',
         '[[containers]]\nclass_name = "ExecutorContainer"\nimage = "./Dockerfile"\n'
         'image_build_context = "../.."\ninstance_type = "basic"\nmax_instances = 25\n\n'
         '[[containers]]\nclass_name = "OrgExecutor"',
     )
-    out = refusals(text, "bench")
+    out = refusals(text, "bench-eu")
     assert any("[[containers]] is ['ExecutorContainer', 'OrgExecutor']" in r for r in out), out
 
 
 def test_the_legacy_binding_is_refused() -> None:
     text = plant(
-        real("bench"),
+        real("bench-eu"),
         '[[durable_objects.bindings]]\nname = "ORG_EXECUTOR"',
         '[[durable_objects.bindings]]\nname = "EXECUTOR"\nclass_name = "ExecutorContainer"\n\n'
         '[[durable_objects.bindings]]\nname = "ORG_EXECUTOR"',
     )
-    out = refusals(text, "bench")
+    out = refusals(text, "bench-eu")
     assert any("[[durable_objects.bindings]] is" in r for r in out), out
 
 
@@ -352,16 +354,16 @@ def test_an_env_table_is_refused() -> None:
 
 
 def test_an_account_id_key_is_refused() -> None:
-    text = 'account_id = "0123456789abcdef"\n' + real("bench")
-    out = refusals(text, "bench")
+    text = 'account_id = "0123456789abcdef"\n' + real("bench-eu")
+    out = refusals(text, "bench-eu")
     assert "top-level key 'account_id' is not one a proxy config may carry" in out, out
 
 
 def test_executor_token_in_bench_is_refused() -> None:
-    text = plant(real("bench"), "[vars]\n", '[vars]\nEXECUTOR_TOKEN = "rdt_x"\n')
-    out = refusals(text, "bench")
+    text = plant(real("bench-eu"), "[vars]\n", '[vars]\nEXECUTOR_TOKEN = "rdt_x"\n')
+    out = refusals(text, "bench-eu")
     assert any("names EXECUTOR_TOKEN" in r for r in out), out
-    assert "vars.EXECUTOR_TOKEN is not one a bench config may carry" in out, out
+    assert "vars.EXECUTOR_TOKEN is not one a bench-eu config may carry" in out, out
 
 
 def test_a_missing_issuer_binding_is_refused() -> None:
@@ -381,8 +383,8 @@ def test_a_wrong_entrypoint_is_refused() -> None:
 
 
 def test_a_production_word_in_the_bench_name_is_refused() -> None:
-    text = plant(real("bench"), 'name = "proxy-bench"', 'name = "proxy-bench-prod"')
-    out = refusals(text, "bench")
+    text = plant(real("bench-eu"), 'name = "proxy-bench"', 'name = "proxy-bench-prod"')
+    out = refusals(text, "bench-eu")
     assert any("name 'proxy-bench-prod' names prod, which is not bench" in r for r in out), out
 
 
@@ -459,7 +461,7 @@ def test_the_bench_config_binds_only_the_bench_signer_of_its_own_region(
 ) -> None:
     """Review e882aaa3.1: `signer-bench-us` in the REGION eu bench config is refused, as is an unknown bench signer."""
     root = copy_tree(tmp_path)
-    path = root.joinpath(*pc.ACCOUNT_REL) / "wrangler.bench.toml"
+    path = root.joinpath(*pc.ACCOUNT_REL) / "wrangler.bench-eu.toml"
     text = path.read_text(encoding="utf-8")
     path.write_text(
         plant(text, 'service = "signer-bench-eu"', 'service = "signer-bench-us"'), encoding="utf-8"
@@ -514,8 +516,8 @@ def test_a_regional_bench_target_is_read_from_the_regions_bench_object(rid: str)
     }
     assert {s for _, s, _ in target.services} == {bench["workerName"]}
     # Control: the home bench stays the hand-written one, with the drill var allowed.
-    assert not TARGETS["bench"].generated
-    assert TARGETS["bench"].optional_variables == pc.BENCH_OPTIONAL_VARS
+    assert not TARGETS["bench-eu"].generated
+    assert TARGETS["bench-eu"].optional_variables == pc.BENCH_OPTIONAL_VARS
     assert target.optional_variables == frozenset()
 
 
@@ -611,7 +613,7 @@ def test_a_placeholder_database_id_is_allowed_only_while_the_bench_is_not_deploy
     (root / pc.REGIONS_REL).write_text(json.dumps(doc), encoding="utf-8")
     out = pc.check(root)
     assert any(
-        "wrangler.bench.toml: the bench is marked not deployable but its DB database_id" in r
+        "wrangler.bench-eu.toml: the bench is marked not deployable but its DB database_id" in r
         for r in out
     ), out
 
@@ -620,17 +622,17 @@ def test_a_placeholder_database_id_is_allowed_only_while_the_bench_is_not_deploy
 
 
 def test_the_eu_bench_routes_name_the_new_host_first_then_the_retiring_one() -> None:
-    assert TARGETS["bench"].routes == (PROXY_BENCH_HOST, PROXY_BENCH_RETIRING_HOST)
-    assert refusals(real("bench"), "bench") == []
+    assert TARGETS["bench-eu"].routes == (PROXY_BENCH_HOST, PROXY_BENCH_RETIRING_HOST)
+    assert refusals(real("bench-eu"), "bench-eu") == []
 
 
 def test_an_eu_bench_config_that_dropped_the_new_route_is_refused() -> None:
     text = plant(
-        real("bench"),
+        real("bench-eu"),
         '  { pattern = "%s", custom_domain = true },\n' % PROXY_BENCH_HOST,
         "",
     )
-    out = refusals(text, "bench")
+    out = refusals(text, "bench-eu")
     assert any(r.startswith("routes are [%r]" % PROXY_BENCH_RETIRING_HOST) for r in out), out
 
 
@@ -638,11 +640,11 @@ def test_an_eu_bench_config_that_dropped_the_retiring_route_is_refused_until_the
     None
 ):
     text = plant(
-        real("bench"),
+        real("bench-eu"),
         ',\n  { pattern = "%s", custom_domain = true }' % PROXY_BENCH_RETIRING_HOST,
         "",
     )
-    out = refusals(text, "bench")
+    out = refusals(text, "bench-eu")
     assert any(r.startswith("routes are [%r]" % PROXY_BENCH_HOST) for r in out), out
 
 

@@ -38,7 +38,7 @@ READ_CREDENTIAL_ENV = "OBS_GRAFANA_READ_TOKEN"
 HEALTH_PATH = portal_health.HEALTH_PATH
 PROXY_HEALTH_PATH = "/v1/health"
 # The proxy Worker configs whose routes are probed: bench is live, and eu joins this tuple when its Worker deploys the probe-aware code.
-PROXY_CONFIGS = ("workers/proxy/wrangler.bench.toml",)
+PROXY_CONFIGS = ("workers/proxy/wrangler.bench-eu.toml",)
 PROBE_HEADER = "X-Rediacc-Probe"
 SIGNALS = ("traces", "logs")
 TIMEOUT_S = 20.0

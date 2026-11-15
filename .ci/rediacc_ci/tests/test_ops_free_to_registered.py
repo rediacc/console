@@ -806,7 +806,7 @@ def test_a_silent_register_command_times_out_instead_of_hanging(tmp_path, monkey
 
 def test_root_seed_from_env_names_the_bench_login_profile_when_unset(monkeypatch):
     monkeypatch.delenv("BENCH_ROOT_TOTP_SEED", raising=False)
-    with pytest.raises(ftr.DrillError, match="bench-login"):
+    with pytest.raises(ftr.DrillError, match="bench-login-eu"):
         ftr.root_seed_from_env()
 
 
