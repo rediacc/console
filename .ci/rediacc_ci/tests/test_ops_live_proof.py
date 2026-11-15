@@ -1421,3 +1421,23 @@ def test_a_regional_proxy_cache_names_its_worker_record_and_config() -> None:
     assert (eu.worker, eu.record, eu.config) == (default.worker, default.record, default.config)
     assert LP.cache_for(LT.BENCH_PROXY_CACHE, None) == default
     assert LP.cache_for(LT.TREE, "us") is None
+
+
+@pytest.mark.parametrize("missing", ["workerName"])
+def test_a_regional_bench_row_without_its_worker_name_is_a_request_error(
+    bed: Bed, monkeypatch: pytest.MonkeyPatch, missing: str
+) -> None:
+    """Review 8eb5e2e1.1: the registry error of `cache_for` reaches the caller as a RequestError before anything runs, not as a RegistryError out of the run."""
+    real = LT.bench_object
+
+    def without(region: str) -> dict[str, Any]:
+        return {k: v for k, v in real(region).items() if k != missing}
+
+    monkeypatch.setattr(LT, "bench_object", without)
+    with pytest.raises(LP.RequestError, match=missing):
+        bed.record(bed.request("account-smoke", region="us"))
+
+
+def test_a_regional_bench_row_with_its_worker_name_is_not_refused_up_front(bed: Bed) -> None:
+    """Control: the committed row passes the request check."""
+    LP._validate_request(bed.request("account-smoke", region="us"), LT.registry())

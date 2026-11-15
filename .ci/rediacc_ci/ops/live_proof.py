@@ -634,6 +634,8 @@ def _validate_request(req: Request, checks: dict[str, LT.Check]) -> LT.Check:
         raise RequestError(f"--region {req.region!r} is not one of {', '.join(LT.REGIONS)}")
     try:
         LT.expand(check, req.target, req.machine, req.region)
+        # A regional bench row with no Worker name is refused here, with the rest of the request, never at the deploy-cache read after the plan is loaded.
+        cache_for(check.deploy, req.region)
     except LT.RegistryError as exc:
         raise RequestError(str(exc)) from exc
     return check
