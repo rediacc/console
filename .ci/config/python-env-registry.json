@@ -875,6 +875,10 @@
       "CLOUDFLARE_R2_SECRET_ACCESS_KEY",
       "REDIACC_BWS_PROFILES"
     ],
+    ".ci/rediacc_ci/ops/root_login.py": [
+      "REDIACC_BWS_PROFILES",
+      "ROOT_LOGIN_AUTOROTATE"
+    ],
     ".ci/rediacc_ci/ops/scrub_sentinel.py": [
       "CLOUDFLARE_R2_ACCESS_KEY_ID",
       "CLOUDFLARE_R2_ENDPOINT",

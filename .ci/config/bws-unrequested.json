@@ -228,6 +228,18 @@
       "kind": "no-github-twin",
       "reason": "an endpoint identifier, not a credential."
     },
+    "ROOT_API_TOKEN": {
+      "kind": "no-github-twin",
+      "reason": "The eu root API token (PLAN-root-api-token Design 6) the operator mints once in the portal; rediacc_ci.ops.root_login binds it through `bws_env exec --profile root-login` and `--rotate` writes the successor back with `bws_env store-from-env`. It runs only locally against the production account Worker, so no workflow requests it and no GitHub secret of that name exists to shadow."
+    },
+    "ROOT_PASSWORD": {
+      "kind": "no-github-twin",
+      "reason": "The production root principal's password, an optional value of the `root-login` profile that only `rediacc_ci.ops.root_login --password` reads, locally; no workflow requests it, so no GitHub secret of that name exists to shadow."
+    },
+    "ROOT_TOTP_SEED": {
+      "kind": "no-github-twin",
+      "reason": "The production root principal's 2FA seed, bound by `bws_env exec --profile root-login` for rediacc_ci.ops.root_login, which derives the session and bind codes from it in memory, locally; no workflow requests it, so no GitHub secret of that name exists to shadow."
+    },
     "BENCH_ROOT_PASSWORD": {
       "kind": "no-github-twin",
       "reason": "The bench root principal's login password (rediacc_ci.ops.deploy_bench ROOT_LOGIN_ENV), bound by `bws_env exec --profile deploy-bench` for the local seed-root and reset-root flows and by `--profile bench-login` for the root session the login and drills open. Bench is deliberately not deployed by any workflow, so no GitHub secret of that name exists to shadow."
