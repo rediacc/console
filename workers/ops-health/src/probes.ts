@@ -244,7 +244,7 @@ async function probeTls(target: ProbeTarget, deps: ProbeDeps): Promise<ProbeResu
     );
   }
   if (ct.source === 'crt.sh') {
-    // crt.sh lags behind new issuances: its newest date equals the served notAfter when it has logged the served certificate and is older when it has not, and nothing here tells the two apart, so it cannot judge an expiry.
+    // crt.sh's newest date can equal the served notAfter (it logged the served certificate), be older (it lags behind a new issuance) or be newer (a certificate issued but not yet deployed to the origin), and nothing here tells the three apart, so it cannot judge an expiry in either direction: every crt.sh answer is reported unknown, a newer date included.
     return result(
       target,
       'unknown',
