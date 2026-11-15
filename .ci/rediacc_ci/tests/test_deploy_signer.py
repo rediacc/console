@@ -581,8 +581,14 @@ def test_a_bench_region_not_marked_deployable_is_refused_by_name_before_any_call
     run(repo, FakeWrangler(), target="bench-eu")
 
 
+def _bench_host(region: str) -> str:
+    """The bench host regions.json names for `region`, read rather than spelled, so the owned literal lives in regions.json and the wrangler tomls only."""
+    rows = json.loads((paths.repo_root() / "regions.json").read_text(encoding="utf-8"))["regions"]
+    return next(r["bench"]["host"] for r in rows if r["id"] == region)
+
+
 @pytest.mark.parametrize(
-    ("region", "host"), [("us", "bench-us.rediacc.cloud"), ("asia", "bench-asia.rediacc.cloud")]
+    ("region", "host"), [("us", _bench_host("us")), ("asia", _bench_host("asia"))]
 )
 def test_a_deployable_bench_region_renders_its_own_database_host_and_control(repo, region, host):
     _make_deployable(repo, region)

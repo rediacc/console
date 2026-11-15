@@ -9,6 +9,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import pytest
 
 from rediacc_ci.ops import root_login, totp
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN
 
 SEED = "JBSWY3DPEHPK3PXP"
 EMAIL = "root@example.invalid"
@@ -216,7 +217,7 @@ def test_arguments_and_origins():
             root_login.parse_args(bad)
         assert caught.value.rc == 2
     assert root_login.origin_for("stable", "eu") == root_login.origin_for("edge", "eu")
-    assert root_login.origin_for("edge", "eu") == "https://eu.rediacc.cloud"
+    assert root_login.origin_for("edge", "eu") == ACCOUNT_DEFAULT_ORIGIN
 
 
 def test_main_prints_only_the_fact_never_a_secret(account_factory, monkeypatch, capsys):

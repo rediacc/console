@@ -104,7 +104,7 @@ def test_served_certificate_equal_to_the_ct_date_still_decides():
 def test_unknown_probe_with_no_ct_date_is_judged_by_the_served_certificate():
     """2026-11-15: certspotter 503 and crt.sh timing out left a dozen hosts unknown, and an unknown probe makes the verdict unknown."""
     unknown = probe(
-        "tls:gitlab.rediacc.io",
+        "tls:svc.example.test",
         state="unknown",
         detail='handshake ok; days to expiry unknown for issuer "Let\'s Encrypt" (certspotter answered 503; The operation was aborted due to timeout)',
     )
@@ -114,7 +114,7 @@ def test_unknown_probe_with_no_ct_date_is_judged_by_the_served_certificate():
 
 def test_control_a_failed_worker_handshake_is_never_overruled():
     failed = probe(
-        "tls:gitlab.rediacc.io", state="red", detail="handshake failed: connection refused"
+        "tls:svc.example.test", state="red", detail="handshake failed: connection refused"
     )
     hs = Served(JAN_2027)
     out = check(web([failed]), hs)

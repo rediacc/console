@@ -839,6 +839,14 @@ def _regions_bench() -> dict[str, dict]:
     return {row["id"]: row["bench"] for row in doc["regions"]}
 
 
+def _bench_host(region: str) -> str:
+    """The bench host regions.json names for `region`, read rather than spelled, so the owned literal lives in regions.json and the wrangler tomls only."""
+    rows = json.loads((login_bench.paths.repo_root() / "regions.json").read_text(encoding="utf-8"))[
+        "regions"
+    ]
+    return next(r["bench"]["host"] for r in rows if r["id"] == region)
+
+
 def test_the_config_table_is_regions_json():
     bench = _regions_bench()
     assert {r: b["config"] for r, b in bench.items()} == login_bench.REGION_CONFIGS
@@ -879,7 +887,7 @@ def test_a_config_name_selects_its_region():
     [
         ["--region", "us", "--config", "eu-bench"],
         ["--region", "asia", "--server", BENCH_ORIGIN],
-        ["--region", "us", "--server", "https://bench-asia.rediacc.cloud"],
+        ["--region", "us", "--server", "https://%s" % _bench_host("asia")],
         ["--region", "eu", "--config", "us-bench"],
     ],
 )
