@@ -427,6 +427,30 @@ function trackedAt(clone: string, commit: string): string[] {
   return out;
 }
 
+/** A source entry that vanished between `cp`'s directory read and its link: a concurrent tool's temp file (`node_modules/.vitest-cache/.tmp-*`), not a broken install. */
+const VANISHED_RE = /cannot stat|No such file or directory/;
+export const LINK_ATTEMPTS = 3;
+
+/**
+ * `cp -al source dest`, again from scratch when a source entry vanished mid-copy: a concurrent vitest writes and deletes temp files under `node_modules/.vitest-cache`, and one that disappears after `cp` listed it fails the whole copy (a writer lease was refused this way on 2026-11-15). The partial `dest` is removed before each retry; any other failure, and a vanish on the last attempt, is thrown as it is. Returns the attempt that succeeded.
+ */
+export function linkTreeRetrying(
+  source: string,
+  dest: string,
+  io: { copy: (source: string, dest: string) => void; remove: (dest: string) => void },
+  attempts = LINK_ATTEMPTS
+): number {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      io.copy(source, dest);
+      return attempt;
+    } catch (err) {
+      if (attempt >= attempts || !VANISHED_RE.test((err as Error).message)) throw err;
+      io.remove(dest);
+    }
+  }
+}
+
 /**
  * Dependencies for every lockfile directory the live tree has installed. The live install is hard-link copied when its hidden lockfile matches the lockfile at HEAD, and left alone when the clone already holds that exact install; a difference gets a real `npm ci` in the clone. Returns one line per group that changed.
  */
@@ -461,11 +485,10 @@ export function syncDependencies(
     for (const m of members) cloneFs.remove(path.join(clone, m, 'node_modules'));
     if (difference === undefined) {
       for (const m of members)
-        sh(
-          'cp',
-          ['-al', path.join(live, m, 'node_modules'), path.join(clone, m, 'node_modules')],
-          live
-        );
+        linkTreeRetrying(path.join(live, m, 'node_modules'), path.join(clone, m, 'node_modules'), {
+          copy: (source, dest) => void sh('cp', ['-al', source, dest], live),
+          remove: (dest) => cloneFs.remove(dest),
+        });
       notes.push(`${dir}: hard-linked ${members.length} node_modules from the live install`);
     } else {
       seams.install(path.join(clone, dir));
@@ -994,6 +1017,60 @@ export async function quickCloneSelftest(
     assertions++;
     if (!ok) failures.push(message);
   };
+  // linkTreeRetrying: a vanished source entry is retried after removing the partial copy; any other failure is not (2026-11-15 lease refusal).
+  {
+    const calls: string[] = [];
+    const vanish = new Error(
+      "cp -al a b exited 1: cp: cannot stat 'a/.vitest-cache/.tmp-1': No such file or directory"
+    );
+    let left = 1;
+    const won = linkTreeRetrying('a', 'b', {
+      copy: () => {
+        calls.push('copy');
+        if (left-- > 0) throw vanish;
+      },
+      remove: () => void calls.push('remove'),
+    });
+    check(
+      won === 2 && calls.join(',') === 'copy,remove,copy',
+      `a vanished entry must retry after removing the partial copy, got attempt ${won}, calls ${calls.join(',')}`
+    );
+    let other = '';
+    try {
+      linkTreeRetrying('a', 'b', {
+        copy: () => {
+          throw new Error('cp -al a b exited 1: cp: cannot create hard link: Permission denied');
+        },
+        remove: () => void calls.push('remove-other'),
+      });
+    } catch (err) {
+      other = (err as Error).message;
+    }
+    check(
+      other.includes('Permission denied') && !calls.includes('remove-other'),
+      `CONTROL: a failure that is not a vanished entry must throw at once, got ${other || 'no error'}`
+    );
+    let last = '';
+    try {
+      linkTreeRetrying(
+        'a',
+        'b',
+        {
+          copy: () => {
+            throw vanish;
+          },
+          remove: () => undefined,
+        },
+        2
+      );
+    } catch (err) {
+      last = (err as Error).message;
+    }
+    check(
+      last.includes('cannot stat'),
+      `a vanish on the last attempt must be thrown, got ${last || 'no error'}`
+    );
+  }
   // tree-write: safe the only caller passes os.tmpdir(), so every fixture repository lives outside the checkout
   const root = fs.mkdtempSync(path.join(tmpDir, 'quick-clone-'));
   const git = (cwd: string, ...args: string[]): string =>
