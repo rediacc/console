@@ -209,7 +209,7 @@ BENCH_PASS = [
     (
         "the operator's door: a placeholder value",
         (
-            "login:bench refused REDIACC_BENCH_TOTP_SEED as still PLACEHOLDER-operator-fills; "
+            "login:bench refused BENCH_ROOT_TOTP_SEED as still PLACEHOLDER-operator-fills; "
             "can you fill it in Bitwarden?"
         ),
         "",
