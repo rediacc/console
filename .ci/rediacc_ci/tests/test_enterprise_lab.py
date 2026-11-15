@@ -62,6 +62,8 @@ def no_network(monkeypatch):
 def _lab(**kw) -> lab.LiveLab:
     # Every company a test adds has its control scope row unless the test says otherwise.
     kw.setdefault("scoped", lambda _row: True)
+    # ...and the owner the lab adds it with, so no test reads a live company database.
+    kw.setdefault("owner_of", lambda row: proof.proof_owner(str(row["name"])))
     return lab.build(bench=True, **kw)
 
 
@@ -254,14 +256,16 @@ def test_add_refusal_carries_the_free_mail_error():
     assert "free-mail" in got.error
 
 
-def test_ensure_company_adds_once_then_reuses():
+def test_ensure_company_adds_then_resumes_the_same_company():
+    """Every call runs the add, so a finished company's drifted configs converge (onboarding.run); the id stays."""
     fake = FakeAdd()
     built = _bound(fake)
     first = built.ensure_company("proof-route-a", "eu")
     again = built.ensure_company("proof-route-a", "eu")
     assert first == again
-    assert len(fake.calls) == 1
-    assert fake.calls[0][0].unlisted is True
+    assert len(fake.calls) == 2
+    assert all(req.unlisted is True for req, _stop in fake.calls)
+    assert all(req.owner == proof.proof_owner("proof-route-a") for req, _stop in fake.calls)
 
 
 def test_ensure_company_recreates_a_proof_company_without_a_scope_row(monkeypatch):
@@ -297,11 +301,121 @@ def test_ensure_company_recreates_a_proof_company_without_a_scope_row(monkeypatc
         ("remove", "proof-loss-eu", {"delete_data": True, "confirm": "proof-loss-eu"}),
     ]
     assert len(adder.calls) == 1
-    # control: a company with its scope row is reused, nothing exported, removed or added
+    # control: a company with its scope row is reused (its add resumed under the same id), nothing exported or removed
     fake.calls.clear()
     assert built.ensure_company("proof-loss-eu", "eu") == cid
     assert fake.calls == []
+    assert len(adder.calls) == 2
+
+
+def _owned(monkeypatch, owner_of):
+    """A lab over FakeAdd and FakeLifecycle whose remove takes the company out, with `owner_of` as the owner reader."""
+    adder = FakeAdd()
+
+    class Removing(FakeLifecycle):
+        def remove(self, ctx, name, *, delete_data, confirm=None):
+            super().remove(ctx, name, delete_data=delete_data, confirm=confirm)
+            del adder.companies[name]
+
+    fake = Removing()
+    monkeypatch.setattr(
+        lab, "_import", lambda name: fake if name == lab.SEAMS["C2"].module else None
+    )
+    built = _lab(
+        adder=adder,
+        finder=adder.find,
+        resolver=adder.by_id,
+        lifecycle_ctx=lambda _lc, *, bench, env, bws_project="": types.SimpleNamespace(
+            bench=bench, env=env, bws_project=bws_project
+        ),
+        owner_of=owner_of,
+    )
+    return built, adder, fake
+
+
+def test_ensure_company_recreates_an_active_company_whose_owner_mail_is_never_captured(
+    monkeypatch,
+):
+    """2026-11-15 bench rerun: proof-proxy-a's owner was owner@proof-proxy-a.example, a reserved domain the Worker drops before the capture copy, so no magic link was ever captured."""
+    built, adder, fake = _owned(monkeypatch, lambda row: "owner@%s.example" % row["name"])
+    adder.companies["proof-proxy-a"] = {
+        "id": "c00000000000000aa", "name": "proof-proxy-a", "region": "eu", "state": "active",
+    }  # fmt: skip
+    cid = built.ensure_company("proof-proxy-a", "eu")
+    assert cid != "c00000000000000aa"
+    assert [v for v, _c, _n, _kw in fake.calls] == ["export", "remove"]
+    assert adder.calls[-1][0].owner == proof.proof_owner("proof-proxy-a")
+
+
+def test_ensure_company_keeps_a_company_whose_owner_is_the_proof_owner(monkeypatch):
+    built, adder, fake = _owned(monkeypatch, lambda row: proof.proof_owner(str(row["name"])))
+    adder.companies["proof-proxy-a"] = {
+        "id": "c00000000000000aa", "name": "proof-proxy-a", "region": "eu", "state": "active",
+    }  # fmt: skip
+    assert built.ensure_company("proof-proxy-a", "eu") == "c00000000000000aa"
+    assert fake.calls == []
     assert len(adder.calls) == 1
+
+
+def test_ensure_company_reads_no_owner_of_a_company_that_is_not_active(monkeypatch):
+    """An unfinished add has no bootstrapped org yet, so its owner is not read; the add resumes it."""
+
+    def no_owner(_row):
+        raise AssertionError("the owner of an unfinished company was read")
+
+    built, adder, fake = _owned(monkeypatch, no_owner)
+    adder.companies["proof-proxy-a"] = {
+        "id": "c00000000000000aa", "name": "proof-proxy-a", "region": "eu", "state": "onboarding",
+    }  # fmt: skip
+    assert built.ensure_company("proof-proxy-a", "eu") == "c00000000000000aa"
+    assert fake.calls == []
+
+
+def test_discard_company_takes_out_a_left_proof_company_and_nothing_else(monkeypatch):
+    built, adder, fake = _owned(monkeypatch, lambda row: proof.proof_owner(str(row["name"])))
+    built.discard_company("proof-remove")  # no company: nothing to take out
+    assert fake.calls == []
+    adder.companies["proof-remove"] = {
+        "id": "c00000000000000aa", "name": "proof-remove", "region": "eu", "state": "active",
+    }  # fmt: skip
+    built.discard_company("proof-remove")
+    assert [(v, n, kw) for v, _c, n, kw in fake.calls] == [
+        ("export", "proof-remove", {}),
+        ("remove", "proof-remove", {"delete_data": True, "confirm": "proof-remove"}),
+    ]
+    assert adder.find("proof-remove") is None
+    # control: a company the lab did not create is refused before any export or remove
+    fake.calls.clear()
+    adder.companies["acme"] = {"id": "c00000000000000bb", "name": "acme", "region": "eu", "state": "active"}  # fmt: skip
+    with pytest.raises(
+        proof.LabError, match="is left by an earlier proof run and is not a proof company"
+    ):
+        built.discard_company("acme")
+    assert fake.calls == []
+
+
+def test_the_live_owner_reader_reads_the_company_database_and_names_a_failure(monkeypatch):
+    seen: list[tuple[str, str, list]] = []
+
+    def query(database, sql, params):
+        seen.append((database, sql, list(params)))
+        return [{"email": "ent+proof-x@example.org"}]
+
+    monkeypatch.setattr(lab, "d1_query", query)
+    built = lab.build(bench=True)
+    row = {"id": "c00000000000000aa", "name": "proof-x"}
+    assert built._live_owner(row) == "ent+proof-x@example.org"
+    assert seen == [("account-proof-x", lab.OWNER_SQL, ["c00000000000000aa"])]
+
+    def down(_database, _sql, _params):
+        raise proof.LabError("d1 unreachable")
+
+    monkeypatch.setattr(lab, "d1_query", down)
+    with pytest.raises(
+        proof.LabError,
+        match="the owner of company c00000000000000aa cannot be read: d1 unreachable",
+    ):
+        built._live_owner(row)
 
 
 def _recreate_with_lost_bucket(monkeypatch, name):
@@ -503,6 +617,24 @@ def test_a_missing_bws_project_refusal_of_remove_names_the_variable(monkeypatch,
     monkeypatch.setenv(lab.BWS_PROJECT_ENV, "proj")
     assert built.remove("c00000000000000aa", delete_data=True, github_actions=False) == 1
     assert lab.BWS_PROJECT_ENV not in capsys.readouterr().err
+
+
+def test_an_export_or_remove_failure_names_the_company_by_its_id(monkeypatch, capsys):
+    """2026-11-15 bench rerun: the lab printed `enterprise remove: no company named proof-remove` to the proof's log."""
+
+    class NamesIt(FakeLifecycle):
+        def _maybe(self, verb, ctx, name, **kw):
+            del verb, ctx, kw
+            raise self.LifecycleError("no company named %s" % name)
+
+    built, adder = _with_lifecycle(monkeypatch, NamesIt())
+    adder.companies["proof-x"] = dict(_COMPANY_ROW)
+    monkeypatch.setenv(lab.BWS_PROJECT_ENV, "proj")
+    assert built.export("c00000000000000aa") == 1
+    assert built.remove("c00000000000000aa", delete_data=True, github_actions=False) == 1
+    err = capsys.readouterr().err
+    assert "proof-x" not in err
+    assert err.count("no company named c00000000000000aa") == 2
 
 
 def test_a_missing_bws_project_refusal_of_the_bucket_check_names_the_variable(monkeypatch):

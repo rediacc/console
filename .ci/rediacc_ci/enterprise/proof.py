@@ -30,6 +30,7 @@ import time
 from typing import TYPE_CHECKING, Protocol
 
 from rediacc_ci.core import toolchain
+from rediacc_ci.well_known import INFRA_DOMAIN
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterable, Sequence
@@ -115,6 +116,17 @@ BENCH_OTHER_REGION = "us"
 WORKFLOW_REMOVE = re.compile(r"enterprise\s+remove\b|enterprise\.lifecycle\b[^\n]*\bremove\b")
 MASK = "***"
 FREE_MAIL_DOMAIN = "gmail.com"
+# The local part of every proof company owner's address, plus-tagged with the company label (the `ftr+` and `ntc+` drills' form).
+PROOF_OWNER_LOCAL = "ent"
+# The step the `add` proof's killed run stops after; the claim holds only when it was the last step that run ran.
+KILL_AFTER = "d1"
+
+
+def proof_owner(label: str) -> str:
+    """The owner address of proof company `label`. It sits on the infra domain the bench drills mail: an account Worker drops mail to a reserved test domain (`.example`, RFC 2606) before it takes the bench capture copy (private/account email.service.ts `isReservedTestAddress`), so an owner there never has a captured mail."""
+    return "%s+%s@%s" % (PROOF_OWNER_LOCAL, label, INFRA_DOMAIN)
+
+
 # How long a judged state change may take to propagate, and how often `settle` asks again.
 SETTLE_S = 90
 SETTLE_INTERVAL_S = 5
@@ -197,6 +209,7 @@ class Lab(Protocol):
     def lookup(self, domain: str) -> str | None: ...
     def export(self, company: str) -> int: ...
     def remove(self, company: str, *, delete_data: bool, github_actions: bool) -> int: ...
+    def discard_company(self, label: str) -> None: ...
     def leftovers(self, company: str) -> list[str]: ...
 
     # The caller-side signer probe (box V1): what a caller's signer sees and signs, asked through the caller.
@@ -674,25 +687,25 @@ def verb_region_loss(lab: Lab, p: Proof, *, bench: bool) -> None:
 
 
 def verb_add(lab: Lab, p: Proof, *, bench: bool) -> None:
-    """V3: a killed add resumes, a rerun changes nothing, owner mail is captured, the lookup hits a listed company and misses an unlisted one, a free-mail domain is refused."""
+    """V3: a killed add resumes, a rerun changes nothing, owner mail is captured, the lookup hits a listed company and misses an unlisted one, a free-mail domain is refused. Each company is taken out first (`discard_company`), so the killed add is a fresh add that stops after `d1`: on a finished company there is nothing left to kill."""
     del bench
     cases = (
-        ("listed", "proof-listed", "owner@proof-listed.example", False, "proof-listed.example"),
-        (
-            "unlisted",
-            "proof-unlisted",
-            "owner@proof-unlisted.example",
-            True,
-            "proof-unlisted.example",
-        ),
+        ("listed", "proof-listed", False, "proof-listed.example"),
+        ("unlisted", "proof-unlisted", True, "proof-unlisted.example"),
     )
-    for role, label, owner, unlisted, domain in cases:
+    for role, label, unlisted, domain in cases:
+        owner = proof_owner(label)
         p.hide(label, owner, domain)
         who = f"{role} company"
+        lab.discard_company(label)
         killed = lab.add(
-            label, owner=owner, unlisted=unlisted, lookup_domain=domain, kill_after="d1"
+            label, owner=owner, unlisted=unlisted, lookup_domain=domain, kill_after=KILL_AFTER
         )
-        p.check(f"{who}: a killed add exits non-zero", ok=killed.rc != 0, detail="rc 0")
+        p.check(
+            f"{who}: a killed add exits non-zero",
+            ok=killed.rc != 0 and killed.changed[-1:] == (KILL_AFTER,),
+            detail=f"rc {killed.rc}, steps run {list(killed.changed)}: {killed.error}",
+        )
         resumed = lab.add(label, owner=owner, unlisted=unlisted, lookup_domain=domain)
         p.check(f"{who}: the add resumes", ok=resumed.rc == 0, detail=resumed.error)
         again = lab.add(label, owner=owner, unlisted=unlisted, lookup_domain=domain)
@@ -1039,8 +1052,9 @@ def _repo_root() -> pathlib.Path:
 
 
 def verb_remove(lab: Lab, p: Proof, *, bench: bool, root: pathlib.Path | None = None) -> None:
-    """V11: remove refuses before an export and under GitHub Actions, removes an exported company with its data, and no workflow calls it."""
+    """V11: remove refuses before an export and under GitHub Actions, removes an exported company with its data, and no workflow calls it. The company to remove is taken out first (`discard_company`) and added afresh, so it has no export: one left by an earlier run, whose remove stopped part way, holds that run's export, and its first remove would succeed."""
     del bench
+    lab.discard_company("proof-remove")
     gone = lab.ensure_company("proof-remove", "eu")
     kept = lab.ensure_company("proof-remove-ci", "eu")
     p.check(

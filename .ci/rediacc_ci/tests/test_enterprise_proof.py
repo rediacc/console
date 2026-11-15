@@ -70,6 +70,12 @@ class FakeLab:
     rerun_changes: tuple[str, ...] = ()
     unlisted_hits: bool = False
     free_mail_admitted: bool = False
+    # Labels a finished add of an earlier run left behind; a killed add of one stops nowhere until it is discarded.
+    finished: set[str] = dataclasses.field(default_factory=set)
+    # The labels discard_company was asked to take out, in order.
+    discarded: list[str] = dataclasses.field(default_factory=list)
+    # The owner address each add was given, by label.
+    owners: dict[str, str] = dataclasses.field(default_factory=dict)
     # routing
     wrong_worker: str = ""
     logged_host: str = ""
@@ -102,6 +108,8 @@ class FakeLab:
     removed: set[str] = dataclasses.field(default_factory=set)
     removes_under_gha: bool = False
     leaves_d1: bool = False
+    # Labels whose company an earlier run exported and left behind; ensure_company hands back that exported company until it is discarded.
+    left_exported: set[str] = dataclasses.field(default_factory=set)
 
     def _rec(self, name: str) -> None:
         self.calls.append(name)
@@ -252,7 +260,16 @@ class FakeLab:
         self.version.setdefault(cid, "0.9.0")
         self.version.setdefault("fast", "0.9.1")
         self.regions.append(region)
+        if label in self.left_exported:
+            self.exported.add(cid)
         return cid
+
+    def discard_company(self, label: str) -> None:
+        self._rec(f"discard:{label}")
+        self.discarded.append(label)
+        self.finished.discard(label)
+        self.left_exported.discard(label)
+        self.added.pop(label, None)
 
     def caller_of(self, company: str) -> str:
         return f"account-{company}-{'us' if 'us' in self.companies[company][0] else 'eu'}"
@@ -268,11 +285,15 @@ class FakeLab:
         self, label: str, *, owner: str, unlisted: bool, lookup_domain: str, kill_after: str = ""
     ) -> AddResult:
         self._rec(f"add:{kill_after or 'run'}")
-        del owner, unlisted
+        del unlisted
+        self.owners[label] = owner
         if lookup_domain == proof.FREE_MAIL_DOMAIN and not self.free_mail_admitted:
             return AddResult(rc=2, error="free-mail domain refused")
+        if kill_after and label in self.finished:
+            # onboarding.run refuses a stop after a step the company already finished.
+            return AddResult(rc=1, error=f"refused: already finished step {kill_after}")
         if kill_after:
-            return AddResult(rc=137, error="killed")
+            return AddResult(rc=1, changed=("control-row", kill_after), error="stopped")
         cid = self.ensure_company(label, "eu")
         changed = self.rerun_changes if label in self.added else ("control", "d1", "buckets")
         self.added[label] = cid
@@ -1415,6 +1436,81 @@ def test_add_prints_no_label_on_a_healthy_run() -> None:
     rc, lines = run("add", FakeLab())
     assert rc == 0
     assert "proof-" not in "\n".join(lines)
+
+
+@dataclasses.dataclass
+class KeepsEverything(FakeLab):
+    """A lab whose discard_company takes nothing out: what an earlier run left stays."""
+
+    def discard_company(self, label: str) -> None:
+        self._rec(f"discard:{label}")
+
+
+def test_add_takes_out_a_finished_company_before_its_killed_add() -> None:
+    """2026-11-15 bench rerun: proof-listed and proof-unlisted were finished by an earlier run, the kill after d1 had nothing to stop, and `a killed add exits non-zero` read rc 0."""
+    lab = FakeLab(finished={"proof-listed", "proof-unlisted"})
+    rc, lines = run("add", lab)
+    assert broken(lines) == []
+    assert rc == 0
+    assert lab.discarded == ["proof-listed", "proof-unlisted"]
+    for label in lab.discarded:
+        at = lab.calls.index(f"discard:{label}")
+        assert lab.calls[at + 1] == "add:d1", lab.calls
+    # control: with the company left in place the killed add stops nowhere, and the claim says so
+    rc, lines = run("add", KeepsEverything(finished={"proof-listed", "proof-unlisted"}))
+    assert rc == 1
+    killed = [line for line in broken(lines) if "a killed add exits non-zero" in line]
+    assert len(killed) == 2
+    assert all("steps run []" in line for line in killed), killed
+
+
+def test_a_killed_add_that_exits_non_zero_without_stopping_after_d1_is_broken() -> None:
+    """A refusal or a failure before d1 also exits non-zero; only a run whose last step was d1 is the kill claimed."""
+
+    @dataclasses.dataclass
+    class FailsFirst(FakeLab):
+        def add(
+            self,
+            label: str,
+            *,
+            owner: str,
+            unlisted: bool,
+            lookup_domain: str,
+            kill_after: str = "",
+        ) -> AddResult:
+            if kill_after:
+                return AddResult(rc=1, error="step control-row failed")
+            return super().add(label, owner=owner, unlisted=unlisted, lookup_domain=lookup_domain)
+
+    rc, lines = run("add", FailsFirst())
+    assert rc == 1
+    assert any("a killed add exits non-zero" in line for line in broken(lines))
+
+
+def test_add_gives_each_owner_an_address_the_bench_capture_keeps() -> None:
+    """An account Worker drops mail to a reserved test domain before the capture copy, so an `owner@<label>.example` owner never had a captured mail (2026-11-15 bench rerun)."""
+    lab = FakeLab()
+    run("add", lab)
+    for label in ("proof-listed", "proof-unlisted"):
+        owner = lab.owners[label]
+        assert owner == proof.proof_owner(label)
+        domain = owner.rpartition("@")[2]
+        assert domain.rsplit(".", 1)[-1] not in {"example", "test", "invalid", "localhost"}
+        assert domain not in {"example.com", "example.net", "example.org"}
+    assert proof.proof_owner("proof-a") != proof.proof_owner("proof-b")
+
+
+def test_remove_takes_out_a_company_an_earlier_run_left_exported() -> None:
+    """2026-11-15 bench rerun: proof-remove held the export of a remove that stopped part way, so the first remove succeeded and the claims after it had no company."""
+    lab = FakeLab(left_exported={"proof-remove"})
+    rc, lines = run("remove", lab)
+    assert broken(lines) == []
+    assert rc == 0
+    assert lab.calls.index("discard:proof-remove") < lab.calls.index("ensure_company")
+    # control: with the left company kept, the first remove succeeds and the refusal claim is broken
+    rc, lines = run("remove", KeepsEverything(left_exported={"proof-remove"}))
+    assert rc == 1
+    assert any("remove refuses before an export" in line for line in broken(lines))
 
 
 def test_main_exits_two_when_the_live_lab_fails_to_build(

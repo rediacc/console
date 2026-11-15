@@ -33,6 +33,7 @@ from typing import TYPE_CHECKING, Any
 
 from rediacc_ci import paths
 from rediacc_ci.core import gh_retry, https, wrangler
+from rediacc_ci.deploy import console_executor
 from rediacc_ci.enterprise import (
     cli,
     control_db,
@@ -100,7 +101,7 @@ _GROUPS: dict[str, tuple[str, ...]] = {
     "C1": ("ensure_company", "caller_of", "company_hosts", "company_words", "add"),
     "A1": ("captured_mail",),
     "V3": ("lookup",),
-    "C2": ("export", "remove"),
+    "C2": ("export", "remove", "discard_company"),
     "V11": ("leftovers",),
     "V4": (
         "fetch", "expected_worker", "region_hosts", "specific_hosts", "cert_log_names",
@@ -178,6 +179,7 @@ class LiveLab:
         resolver: Finder | None = None,
         lifecycle_ctx: Callable[..., Any] | None = None,
         scoped: Scoped | None = None,
+        owner_of: Callable[[dict], str] | None = None,
     ):
         self.bench = bench
         reset_sessions()
@@ -187,6 +189,7 @@ class LiveLab:
         self._resolver = resolver or self._live_resolve
         self._lifecycle_ctx = lifecycle_ctx or cli.lifecycle_context
         self._scoped = scoped or self._live_scoped
+        self._owner_of = owner_of or self._live_owner
 
     def __getattr__(self, attr: str) -> Callable[..., Any]:
         """Every protocol method this class does not define is a seam bound to its owner's module (OWNERS)."""
@@ -301,52 +304,69 @@ class LiveLab:
         except lifecycle.LifecycleError as exc:
             raise proof.LabError("company %s: %s" % (name, _with_project_hint(exc))) from None
 
-    def _recreate(self, row: dict) -> None:
-        """Take out a proof company whose control database has no `scope` row, so `ensure_company` adds it afresh: export it (remove needs a verified export), then remove it with its data. Such a company was onboarded before onboarding wrote the scope row; its control-row step is recorded done, so a resumed add never writes the row, and its signer answers SIGNER_UNKNOWN_COMPANY to every request. Only a `proof-*` company is taken out (its data is deleted, so a company the lab did not create is refused, as it never gets the accept flag either). A step that fails is a LabError naming the company, never a silent test of the broken one."""
+    def _discard(self, row: dict, why: str) -> None:
+        """Take out the proof company of `row` so the next add starts it afresh: export it (remove needs a verified export), then remove it with its data. `why` names the reason in every error. Only a `proof-*` company is taken out (its data is deleted, so a company the lab did not create is refused, as it never gets the accept flag either). A step that fails is a LabError naming the company, never a silent test of the broken one."""
         cid = str(row["id"])
         if not str(row.get("name", "")).startswith(PROOF_COMPANY_PREFIX):
             raise proof.LabError(
-                "company %s has no control scope row and is not a proof company (%s*), so the lab never removes its data; "
-                "take it out by hand" % (cid, PROOF_COMPANY_PREFIX)
+                "company %s %s and is not a proof company (%s*), so the lab never removes its data; "
+                "take it out by hand" % (cid, why, PROOF_COMPANY_PREFIX)
             )
         if self.export(cid, accept_missing=self._lost_buckets(row)) != 0:
             raise proof.LabError(
-                "company %s has no control scope row and its export failed, so it is not recreated; "
+                "company %s %s and its export failed, so it is not recreated; "
                 "take it out by hand (./run.sh enterprise export %s --bench, then ./run.sh enterprise remove %s --bench --delete-data --confirm %s)"
-                % (cid, row.get("name"), row.get("name"), row.get("name"))
+                % (cid, why, row.get("name"), row.get("name"), row.get("name"))
             )
         if self.remove(cid, delete_data=True, github_actions=False) != 0:
             raise proof.LabError(
-                "company %s has no control scope row and its remove failed, so it is not recreated"
-                % cid
+                "company %s %s and its remove failed, so it is not recreated" % (cid, why)
             )
 
+    def discard_company(self, label: str) -> None:
+        """Take out the live proof company `label`, if there is one (`_discard`), so the proof that follows starts from no company: a killed add then stops where it is told, and remove meets a company with no export."""
+        row = self._finder(label)
+        if row is not None:
+            self._discard(row, "is left by an earlier proof run")
+
+    def _live_owner(self, row: dict) -> str:
+        """The mail address of the owner the company Worker holds, read from the company's own database."""
+        database = "account-%s" % row["name"]
+        try:
+            rows = d1_query(database, OWNER_SQL, [str(row["id"])])
+        except proof.LabError as exc:
+            raise proof.LabError(
+                "the owner of company %s cannot be read: %s" % (row.get("id"), exc)
+            ) from None
+        return _one(rows, "email", "the owner of company %s" % row.get("id"))
+
     def ensure_company(self, label: str, region: str, *, ring: str | None = None) -> str:
-        """The id of the live proof company `label`, added (or its add resumed) when it is missing or not active, and recreated (`_recreate`) when its control database holds no `scope` row."""
+        """The id of the live proof company `label`. It is recreated (`_discard`, then added) when its control database holds no `scope` row, or when it is active with an owner other than `proof.proof_owner(label)`, whose mail the bench Worker cannot capture. The add always runs: it adds a missing company, resumes an unfinished one, and on a finished one runs `configs` and `deploy` again only when its configs drifted (`onboarding.run`), so the Workers carry what a fresh add would deploy."""
         lifecycle = self._lifecycle() if ring is not None else None
+        owner = proof.proof_owner(label)
         row = self._finder(label)
         if row is not None and not self._scoped(row):
-            self._recreate(row)
-            row = None
-        if row is None or row.get("state") != "active":
-            domain = "%s.example" % label
-            req = onboarding.Request(
-                name=label,
-                region=region,
-                owner="owner@%s" % domain,
-                storage_gb=PROOF_STORAGE_GB,
-                max_machines=PROOF_MAX_MACHINES,
-                max_storage_gb=PROOF_MAX_STORAGE_GB,
-                unlisted=True,
-                lookup_domain=domain,
-                bench=self.bench,
-            )
-            out = self._adder(req)
-            if out.rc != 0:
-                raise proof.LabError(out.error or "enterprise add exited %d" % out.rc)
-            cid = out.company_id
-        else:
-            cid = str(row["id"])
+            self._discard(row, "has no control scope row")
+        elif row is not None and row.get("state") == "active":
+            held = self._owner_of(row)
+            if held != owner:
+                self._discard(row, "has the owner %s, not %s" % (held, owner))
+        domain = "%s.example" % label
+        req = onboarding.Request(
+            name=label,
+            region=region,
+            owner=owner,
+            storage_gb=PROOF_STORAGE_GB,
+            max_machines=PROOF_MAX_MACHINES,
+            max_storage_gb=PROOF_MAX_STORAGE_GB,
+            unlisted=True,
+            lookup_domain=domain,
+            bench=self.bench,
+        )
+        out = self._adder(req)
+        if out.rc != 0:
+            raise proof.LabError(out.error or "enterprise add exited %d" % out.rc)
+        cid = out.company_id
         if lifecycle is not None:
             try:
                 lifecycle.update(
@@ -400,7 +420,9 @@ class LiveLab:
         try:
             lifecycle.export(self._context(lifecycle), name, **extra)
         except lifecycle.LifecycleError as exc:
-            print("enterprise export: %s" % _with_project_hint(exc), file=sys.stderr)
+            # The lifecycle names the company by the label it was handed; the proof's output carries the id only.
+            text = console_executor.mask_label(_with_project_hint(exc), name, company)
+            print("enterprise export: %s" % text, file=sys.stderr)
             return 1
         return 0
 
@@ -411,7 +433,8 @@ class LiveLab:
         try:
             lifecycle.remove(ctx, name, delete_data=delete_data, confirm=name)
         except lifecycle.LifecycleError as exc:
-            print("enterprise remove: %s" % _with_project_hint(exc), file=sys.stderr)
+            text = console_executor.mask_label(_with_project_hint(exc), name, company)
+            print("enterprise remove: %s" % text, file=sys.stderr)
             return 1
         return 0
 
