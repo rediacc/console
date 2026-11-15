@@ -12,6 +12,7 @@ import sys
 import pytest
 
 from rediacc_ci import paths
+from rediacc_ci.deploy import proxy_configs
 from rediacc_ci.quality import region_consistency_offline as rco
 from rediacc_ci.tests.gates import harness
 from rediacc_ci.well_known import BENCH_ORIGIN, BENCH_RETIRING_ORIGIN, PROXY_BENCH_RETIRING_HOST
@@ -346,20 +347,26 @@ def test_a_queue_dataset_or_rate_limit_that_differs_from_the_object_fires() -> N
 
 
 def test_a_placeholder_id_on_a_deployable_bench_and_a_real_id_on_an_undeployable_one_fire() -> None:
+    """Both directions are set by the mutation itself, so the test does not follow which benches regions.json has made deployable."""
     inputs, targets, found = _loaded()
+    real = "11111111-2222-3333-4444-555555555555"
+    placeholder = proxy_configs.PLACEHOLDER_D1_ID + "-L1"
 
-    def deployable(i, f):
-        _row(i, "us")["bench"]["deployable"] = True
-        return f
+    def set_state(deployable: bool, database_id: str):
+        def mutate(i, f):
+            _row(i, "us")["bench"]["deployable"] = deployable
+            _extra(i, "bench-us")[1]["d1_databases"][0]["database_id"] = database_id
+            return f
 
-    def real_id(i, f):
-        _extra(i, "bench-us")[1]["d1_databases"][0]["database_id"] = (
-            "11111111-2222-3333-4444-555555555555"
-        )
-        return f
+        return mutate
 
-    assert ("bench-us", "account") in _new(inputs, targets, found, deployable)
-    assert ("bench-us", "account") in _new(inputs, targets, found, real_id)
+    # Controls: a real id on a deployable bench and a placeholder on an undeployable one are the two allowed shapes.
+    assert ("bench-us", "account") not in _new(inputs, targets, found, set_state(True, real))
+    assert ("bench-us", "account") not in _new(
+        inputs, targets, found, set_state(False, placeholder)
+    )
+    assert ("bench-us", "account") in _new(inputs, targets, found, set_state(True, placeholder))
+    assert ("bench-us", "account") in _new(inputs, targets, found, set_state(False, real))
 
 
 def test_two_placeholders_are_not_a_shared_database_id() -> None:

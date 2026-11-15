@@ -7,12 +7,14 @@ from __future__ import annotations
 
 import dataclasses
 import datetime
+import json
 import pathlib
 import sqlite3
 from typing import cast
 
 import pytest
 
+from rediacc_ci import paths
 from rediacc_ci.deploy import console_executor
 from rediacc_ci.enterprise import proof, registry
 from rediacc_ci.release import rings, rings_run
@@ -617,10 +619,17 @@ def test_bench_reads_the_bench_control_databases(tmp_path: pathlib.Path) -> None
     r = rig(tmp_path, bench=True)
     r.plane.add("c00000001", 3)
     r.run("--bench", "--dry-run")
-    assert {db for db, _ in r.plane.sent if db.startswith("control")} <= {
-        "control-bench-eu",
-        "control-bench-us",
+    # regions.json names every bench's control database, and the bench run reads those and no production one.
+    bench_dbs = {
+        row["bench"]["controlD1"]
+        for row in json.loads((paths.repo_root() / "regions.json").read_text(encoding="utf-8"))[
+            "regions"
+        ]
+        if "bench" in row
     }
+    read = {db for db, _ in r.plane.sent if db.startswith("control")}
+    assert read
+    assert read <= bench_dbs
 
 
 def test_inactive_companies_are_not_released(tmp_path: pathlib.Path) -> None:

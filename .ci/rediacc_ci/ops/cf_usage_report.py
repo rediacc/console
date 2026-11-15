@@ -129,7 +129,7 @@ def bench_container_app_names(root: Path | None = None) -> frozenset[str]:
 def container_app_names(
     transport: ov.Transport, headers: Mapping[str, str], account: str
 ) -> dict[str, str]:
-    """application id to application name, from every page of `GET /accounts/<id>/containers/applications`; the GraphQL dataset carries only the id, so the name decides which ceiling an application is held to. A refusal or a malformed page is a ReportError."""
+    """application id to application name, from every page of `GET /accounts/<id>/containers/applications`; the GraphQL dataset carries only the id, so the name decides which ceiling an application is held to. A refusal, a malformed page or a row without an id or a name is a ReportError (a nameless bench application would otherwise be held to the production ceiling and never show as over)."""
     names: dict[str, str] = {}
     for page in range(1, CONTAINER_MAX_PAGES + 1):
         url = "%s/accounts/%s/containers/applications?per_page=%d&page=%d" % (
@@ -143,8 +143,12 @@ def container_app_names(
         if status != 200 or not isinstance(rows, list):
             raise ReportError("containers application listing: answered %s" % (status or "nothing"))
         for row in rows:
-            if isinstance(row, dict) and row.get("id") and row.get("name"):
-                names[str(row["id"])] = str(row["name"])
+            if not isinstance(row, dict) or not row.get("id") or not row.get("name"):
+                raise ReportError(
+                    "containers application listing: a row has no id or no name, so its ceiling cannot be chosen: %r"
+                    % (row,)
+                )
+            names[str(row["id"])] = str(row["name"])
         if len(rows) < CONTAINER_PAGE_SIZE:
             return names
     raise ReportError("containers application listing: more than %d pages" % CONTAINER_MAX_PAGES)

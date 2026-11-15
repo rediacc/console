@@ -257,10 +257,18 @@ def near_miss(candidate: str, known: str, limit: int) -> bool:
         a, b = a_labels[0], b_labels[0]
     a_parts, b_parts = a.split("-"), b.split("-")
     if len(a_parts) == len(b_parts) and len(a_parts) > 1:
-        # `bench-us` and `bench-eu` differ only inside a short region part: each part gets the slack its own length earns, so two real region ids are not typos of each other.
+        # `bench-us` and `bench-eu` differ only inside a short region part: each part gets the slack its own length earns, so two real region ids are not typos of each other. Two letters swapped (`ue` for `eu`) are a typo whatever the length: no two real ids spell the same letters.
         diffs = [(x, y) for x, y in zip(a_parts, b_parts, strict=True) if x != y]
-        return bool(diffs) and all(0 < levenshtein(x, y) <= _slack(x, y, limit) for x, y in diffs)
+        return bool(diffs) and all(
+            0 < levenshtein(x, y) <= _slack(x, y, limit) or _is_transposition(x, y)
+            for x, y in diffs
+        )
     return 0 < levenshtein(a, b) <= _slack(a, b, limit)
+
+
+def _is_transposition(a: str, b: str) -> bool:
+    """Unequal and spelled with the same letters: one adjacent pair swapped, or a longer shuffle that is no real name either."""
+    return a != b and len(a) == len(b) and sorted(a) == sorted(b)
 
 
 def _slack(a: str, b: str, limit: int) -> int:
@@ -2248,6 +2256,10 @@ def selftest() -> bool:
         check(
             "near miss: a typo inside a longer part of a hyphenated label still fires",
             near_miss("bench-asix.fixtureco.com", "bench-asia.fixtureco.com", 2),
+        )
+        check(
+            "near miss: two letters swapped in a short part of a hyphenated label still fire",
+            near_miss("bench-ue.fixtureco.com", "bench-eu.fixtureco.com", 2),
         )
         py = lex_python('x = "a"\n"""doc"""\n# c\nf(\n  "b"\n)\n')
         check("python lexer: docstring and comment are prose, an argument is not", len(py) == 2)

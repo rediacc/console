@@ -87,6 +87,7 @@ class Fake:
         self.gql_status = gql_status
         self.apps = APPLICATIONS
         self.apps_status = 200
+        self.pages: dict[int, list] | None = None
         self.calls: list = []
 
     def __call__(self, method, url, headers, body):
@@ -104,6 +105,8 @@ class Fake:
             page = int(urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)["page"][0])
             if self.apps_status != 200:
                 return self.apps_status, None
+            if self.pages is not None:
+                return 200, {"result": self.pages.get(page, [])}
             return 200, {"result": self.apps if page == 1 else []}
         if "/uid/loki/" in url:
             if self.loki_down:
@@ -391,6 +394,50 @@ def test_a_failed_application_listing_is_exit_2(capsys):
     rc, _ = go(fake)
     assert rc == 2
     assert "containers application listing: answered 403" in capsys.readouterr().err
+
+
+def _full_page(prefix: str) -> list[dict]:
+    return [
+        {"id": "%s%d" % (prefix, i), "name": "%s-app-%d" % (prefix, i)}
+        for i in range(ur.CONTAINER_PAGE_SIZE)
+    ]
+
+
+def test_the_application_listing_walks_every_full_page_and_stops_at_a_short_one():
+    fake = Fake()
+    fake.pages = {1: _full_page("a"), 2: _full_page("b"), 3: [{"id": "c0", "name": "tail"}]}
+    names = ur.container_app_names(fake, {}, "acct")
+    assert len(names) == 2 * ur.CONTAINER_PAGE_SIZE + 1
+    assert names["c0"] == "tail"
+    assert names["b99"] == "b-app-99"
+    pages = [int(u.rsplit("page=", 1)[1]) for _m, u, _h, _b in fake.calls]
+    assert pages == [1, 2, 3]
+    # control: a short first page is the whole listing, and no second page is asked for
+    one = Fake()
+    one.pages = {1: [{"id": "x", "name": "only"}], 2: _full_page("z")}
+    assert ur.container_app_names(one, {}, "acct") == {"x": "only"}
+    assert len(one.calls) == 1
+
+
+def test_a_listing_that_never_ends_is_a_report_error(monkeypatch):
+    monkeypatch.setattr(ur, "CONTAINER_MAX_PAGES", 2)
+    fake = Fake()
+    fake.pages = {1: _full_page("a"), 2: _full_page("b"), 3: _full_page("c")}
+    with pytest.raises(ur.ReportError, match="more than 2 pages"):
+        ur.container_app_names(fake, {}, "acct")
+
+
+@pytest.mark.parametrize(
+    "row", [{"id": "app9"}, {"name": "proxy-bench-orgexecutor"}, {"id": "", "name": "x"}, "app9"]
+)
+def test_a_listed_row_without_an_id_or_a_name_is_a_report_error(row, capsys):
+    fake = Fake()
+    fake.apps = [*APPLICATIONS, row]
+    rc, _ = go(fake)
+    assert rc == 2
+    assert "has no id or no name" in capsys.readouterr().err
+    # control: the listing without that row reports normally
+    assert go(Fake())[0] != 2
 
 
 def test_every_bench_proxy_worker_of_regions_json_is_a_bench_application():
