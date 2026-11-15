@@ -25,12 +25,21 @@ export interface ManifestImage {
   sha256: string;
 }
 
+/** One CLI binary shipped for installing on the machines that have none (`--with-cli`). */
+export interface ManifestCli {
+  platform: string;
+  file: string;
+  sha256: string;
+}
+
 export interface BundleManifest {
   schema: number;
   cliVersion: string;
   template: { name: string; version: number; sha256: string };
   renet: { version: string; arch: BundleArch; file: string; sha256: string };
   images: ManifestImage[];
+  /** Present only when the bundle was built with `--with-cli`. */
+  cli?: ManifestCli[];
   createdAt: string;
 }
 
@@ -101,6 +110,15 @@ function image(raw: unknown): ManifestImage {
   };
 }
 
+function cliEntry(raw: unknown): ManifestCli {
+  if (!isRecord(raw)) throw bad('cli[]');
+  return {
+    platform: str(raw.platform, 'cli[].platform'),
+    file: str(raw.file, 'cli[].file'),
+    sha256: str(raw.sha256, 'cli[].sha256'),
+  };
+}
+
 export function parseManifest(text: string): BundleManifest {
   let raw: unknown;
   try {
@@ -117,6 +135,7 @@ export function parseManifest(text: string): BundleManifest {
   const arch = raw.renet.arch;
   if (!BUNDLE_ARCHES.includes(arch as BundleArch)) throw bad('renet.arch');
   if (!Array.isArray(raw.images)) throw bad('images');
+  if (raw.cli !== undefined && !Array.isArray(raw.cli)) throw bad('cli');
   return {
     schema: BUNDLE_SCHEMA,
     cliVersion: str(raw.cliVersion, 'cliVersion'),
@@ -132,6 +151,7 @@ export function parseManifest(text: string): BundleManifest {
       sha256: str(raw.renet.sha256, 'renet.sha256'),
     },
     images: raw.images.map(image),
+    ...(raw.cli !== undefined && { cli: raw.cli.map(cliEntry) }),
     createdAt: str(raw.createdAt, 'createdAt'),
   };
 }

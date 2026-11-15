@@ -48,6 +48,7 @@ function checkRecords(manifest: BundleManifest, known: Map<string, string>): voi
   const claims = [
     ...manifest.images.map((i) => ({ file: i.file, sha256: i.sha256 })),
     { file: manifest.renet.file, sha256: manifest.renet.sha256 },
+    ...(manifest.cli ?? []).map((c) => ({ file: c.file, sha256: c.sha256 })),
   ];
   for (const { file, sha256 } of claims) {
     if (known.get(file) !== sha256) {

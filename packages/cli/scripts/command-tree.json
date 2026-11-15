@@ -7591,6 +7591,12 @@
               "descriptionKey": "commands.server.bundle.optionImage",
               "mandatory": false,
               "defaultValue": null
+            },
+            {
+              "flags": "--with-cli <platforms>",
+              "descriptionKey": "commands.server.bundle.optionWithCli",
+              "mandatory": false,
+              "defaultValue": null
             }
           ],
           "arguments": [],

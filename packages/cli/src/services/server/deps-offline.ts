@@ -5,9 +5,12 @@
 
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
-import { createReadStream } from 'node:fs';
+import { createReadStream, createWriteStream } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join } from 'node:path';
+import { Readable } from 'node:stream';
+import { pipeline } from 'node:stream/promises';
+import type { ReadableStream as WebReadableStream } from 'node:stream/web';
 import { t } from '../../i18n/index.js';
 import { configService } from '../config/config-resources.js';
 import {
@@ -17,12 +20,13 @@ import {
   isSEA,
 } from '../core/embedded-assets.js';
 import { machineConnections } from '../machine/machine-connection.js';
+import { getReleasesBaseUrl } from '../update/updater.js';
 import { ServerError } from './box.js';
-import type { ProcResult, ServerDeps } from './types.js';
+import type { ProcResult, ReleaseHost, ServerDeps } from './types.js';
 
 type OfflineDeps = Pick<
   ServerDeps,
-  'localOut' | 'sha256File' | 'makeDir' | 'renetAsset' | 'uploadFile'
+  'localOut' | 'sha256File' | 'makeDir' | 'renetAsset' | 'uploadFile' | 'release'
 >;
 
 function localOut(command: string, args: string[]): Promise<ProcResult> {
@@ -84,6 +88,44 @@ async function uploadFile(machine: string, local: string, remote: string): Promi
   }
 }
 
+const RELEASE_TIMEOUT_MS = 600_000;
+
+async function releaseGet(url: string): Promise<Response> {
+  let response: Response;
+  try {
+    response = await fetch(url, { signal: AbortSignal.timeout(RELEASE_TIMEOUT_MS) });
+  } catch (error) {
+    throw new ServerError(
+      t('commands.server.bundle.errors.cliDownloadFailed', {
+        url,
+        reason: error instanceof Error ? error.message : String(error),
+      })
+    );
+  }
+  if (!response.ok || !response.body) {
+    throw new ServerError(
+      t('commands.server.bundle.errors.cliDownloadFailed', {
+        url,
+        reason: `HTTP ${response.status}`,
+      })
+    );
+  }
+  return response;
+}
+
+const release: ReleaseHost = {
+  baseUrl: () => getReleasesBaseUrl(),
+  fetchText: async (url) => (await releaseGet(url)).text(),
+  download: async (url, dest) => {
+    const response = await releaseGet(url);
+    // `releaseGet` refuses a response without a body.
+    await pipeline(
+      Readable.fromWeb(response.body as WebReadableStream),
+      createWriteStream(dest, { mode: 0o755 })
+    );
+  },
+};
+
 export const offlineDeps: OfflineDeps = {
   localOut,
   sha256File,
@@ -92,4 +134,5 @@ export const offlineDeps: OfflineDeps = {
   },
   renetAsset,
   uploadFile,
+  release,
 };

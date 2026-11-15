@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2913,
-    "sourceCommit": "26840c8f7cd2b8b90f71b52ce6ef2764461880c9"
+    "keyCount": 2920,
+    "sourceCommit": "859f0f225965b50a0a434f79f52f661a64c366f9"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1968,7 +1968,13 @@
     "commands.server.backup.optionOut": "1c724b27",
     "commands.server.backup.written": "d1d2901f",
     "commands.server.bundle.description": "318006c3",
+    "commands.server.bundle.downloadingCli": "417e38dc",
+    "commands.server.bundle.errors.cliChecksumFile": "62cc8659",
+    "commands.server.bundle.errors.cliDevBuild": "a878d0be",
+    "commands.server.bundle.errors.cliDownloadFailed": "37e8791f",
     "commands.server.bundle.errors.cliMismatch": "d68f20f6",
+    "commands.server.bundle.errors.cliSha256Mismatch": "e9a7db1a",
+    "commands.server.bundle.errors.cliUnknownPlatform": "6baca3f6",
     "commands.server.bundle.errors.inspectFailed": "cd952c33",
     "commands.server.bundle.errors.manifestShape": "5b2f1128",
     "commands.server.bundle.errors.noRenetAsset": "b32ca63d",
@@ -1988,6 +1994,7 @@
     "commands.server.bundle.optionImage": "246d9253",
     "commands.server.bundle.optionOut": "22bd6a50",
     "commands.server.bundle.optionTag": "81670d12",
+    "commands.server.bundle.optionWithCli": "efa8a3b3",
     "commands.server.bundle.owner": "949b6abb",
     "commands.server.bundle.pulling": "9a835d8d",
     "commands.server.bundle.saving": "7a8e920b",

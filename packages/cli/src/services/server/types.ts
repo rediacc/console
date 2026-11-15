@@ -16,6 +16,16 @@ export const LICENCE_MODES: readonly LicenceMode[] = ['auto', 'free'] as const;
 export type BundleArch = 'amd64' | 'arm64';
 export const BUNDLE_ARCHES: readonly BundleArch[] = ['amd64', 'arm64'] as const;
 
+/** The release channel the CLI binaries of a bundle come from (`<baseUrl>/v<version>/rdc-<platform>`). */
+export interface ReleaseHost {
+  /** The channel's base URL without a trailing slash: the configured releases origin plus `/cli`. */
+  baseUrl(): string;
+  /** GET `url` as text; throws a `ServerError` naming the URL when the host does not answer 2xx. */
+  fetchText(url: string): Promise<string>;
+  /** GET `url` into the file `dest`; throws a `ServerError` naming the URL when the host does not answer 2xx. */
+  download(url: string, dest: string): Promise<void>;
+}
+
 export interface ProcResult {
   code: number;
   stdout: string;
@@ -112,6 +122,8 @@ export interface ServerDeps {
   makeDir(path: string): Promise<void>;
   /** Write this CLI's own renet binary for linux/`arch` to `dest` when given; always answers its sha256 and version. */
   renetAsset(arch: BundleArch, dest?: string): Promise<{ sha256: string; version: string }>;
+  /** The release channel `rdc server bundle --with-cli` downloads the CLI binaries from. */
+  release: ReleaseHost;
   /** Copy a local file to the machine (SFTP) at an absolute remote path. */
   uploadFile(machine: string, local: string, remote: string): Promise<void>;
   /** A fresh private temporary directory. */

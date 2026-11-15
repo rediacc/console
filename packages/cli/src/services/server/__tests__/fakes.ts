@@ -7,6 +7,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { delegationCertId } from '@rediacc/shared/subscription';
+import { ServerError } from '../box.js';
 import type {
   BoxReply,
   BwsRow,
@@ -41,7 +42,11 @@ export function certFor(
   );
 }
 
+export const FAKE_RELEASE_BASE = 'https://releases.test/cli';
+
 export interface FakeOptions {
+  /** What the release host serves, by full URL; any other URL answers like a 404. */
+  release?: Record<string, string>;
   tty?: boolean;
   preflight?: Partial<Record<string, string>>;
   secrets?: Record<string, string>;
@@ -358,6 +363,25 @@ export function makeFake(opts: FakeOptions = {}): Fake {
         sha256: opts.renetSha ?? sha(`renet-bytes-${arch}`),
         version: 'v-test',
       });
+    },
+    release: {
+      baseUrl: () => FAKE_RELEASE_BASE,
+      fetchText(url) {
+        calls.push(`release GET ${url}`);
+        const body = opts.release?.[url];
+        return body === undefined
+          ? Promise.reject(new ServerError(`cliDownloadFailed ${url} HTTP 404`))
+          : Promise.resolve(body);
+      },
+      download(url, dest) {
+        calls.push(`release GET ${url}`);
+        const body = opts.release?.[url];
+        if (body === undefined) {
+          return Promise.reject(new ServerError(`cliDownloadFailed ${url} HTTP 404`));
+        }
+        files[dest] = body;
+        return Promise.resolve();
+      },
     },
     uploadFile(machine, _local, remote) {
       calls.push(`upload ${machine} ${remote}`);

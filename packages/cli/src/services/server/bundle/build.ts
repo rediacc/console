@@ -4,6 +4,7 @@
  *   images/server.tar, rustfs.tar, traefik.tar   each `docker save --platform linux/<arch>`
  *   images/manifest.txt                          the `<tar> <ref>` lines the template loads
  *   renet/renet-linux-<arch>                     this CLI's own renet
+ *   cli/<platform>/rdc[.exe]                     with --with-cli: this CLI's release binaries
  *   manifest.json, SHA256SUMS
  */
 
@@ -13,6 +14,7 @@ import { VERSION } from '../../../version.js';
 import { outputService } from '../../core/output.js';
 import { ServerError } from '../box.js';
 import type { BundleArch, ServerDeps } from '../types.js';
+import { fetchCliBinaries, parseCliPlatforms } from './cli-binaries.js';
 import { bundleImages, serverRef } from './images.js';
 import {
   BUNDLE_SCHEMA,
@@ -33,6 +35,8 @@ export interface BundleOptions {
   tag?: string;
   /** A locally present image to ship instead of pulling the registry's. */
   image?: string;
+  /** `--with-cli`: comma-separated platform names whose CLI binaries ship in the bundle. */
+  withCli?: string;
 }
 
 async function must(
@@ -89,6 +93,8 @@ export async function serverBundle(deps: ServerDeps, opts: BundleOptions): Promi
   if (opts.tag && opts.image) {
     throw new ServerError(t('commands.server.bundle.errors.tagAndImage'));
   }
+  // Refused before docker runs: a dev build has no release to download, and a typo should not cost a pull.
+  const cliPlatforms = opts.withCli === undefined ? [] : parseCliPlatforms(opts.withCli);
   await deps.makeDir(join(opts.out, 'images'));
   await deps.makeDir(join(opts.out, 'renet'));
 
@@ -101,12 +107,14 @@ export async function serverBundle(deps: ServerDeps, opts: BundleOptions): Promi
 
   const renetFile = `renet/renet-linux-${arch}`;
   const renet = await deps.renetAsset(arch, join(opts.out, renetFile));
+  const cli = cliPlatforms.length > 0 ? await fetchCliBinaries(deps, opts.out, cliPlatforms) : [];
   const manifest: BundleManifest = {
     schema: BUNDLE_SCHEMA,
     cliVersion: VERSION,
     template: templateInfo(),
     renet: { version: renet.version, arch, file: renetFile, sha256: renet.sha256 },
     images,
+    ...(cli.length > 0 && { cli }),
     createdAt: new Date(deps.now()).toISOString(),
   };
 
@@ -117,6 +125,7 @@ export async function serverBundle(deps: ServerDeps, opts: BundleOptions): Promi
   const sums: SumEntry[] = [
     ...images.map((i) => ({ file: i.file, sha256: i.sha256 })),
     { file: renetFile, sha256: renet.sha256 },
+    ...cli.map((c) => ({ file: c.file, sha256: c.sha256 })),
     { file: MANIFEST_FILE, sha256: await deps.sha256File(join(opts.out, MANIFEST_FILE)) },
     { file: IMAGE_LIST_FILE, sha256: await deps.sha256File(join(opts.out, IMAGE_LIST_FILE)) },
   ];

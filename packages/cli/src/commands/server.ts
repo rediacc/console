@@ -280,14 +280,23 @@ function registerBundle(server: Command): void {
     )
     .option('--tag <tag>', t('commands.server.bundle.optionTag'))
     .option('--image <ref>', t('commands.server.bundle.optionImage'))
-    .action(async (flags: { out: string; arch: BundleArch; tag?: string; image?: string }) => {
-      try {
-        const manifest = await serverBundle(liveServerDeps(), flags);
-        if (isMachineReadable()) outputService.print(manifest, 'json');
-      } catch (error) {
-        handleError(error);
+    .option('--with-cli <platforms>', t('commands.server.bundle.optionWithCli'))
+    .action(
+      async (flags: {
+        out: string;
+        arch: BundleArch;
+        tag?: string;
+        image?: string;
+        withCli?: string;
+      }) => {
+        try {
+          const manifest = await serverBundle(liveServerDeps(), flags);
+          if (isMachineReadable()) outputService.print(manifest, 'json');
+        } catch (error) {
+          handleError(error);
+        }
       }
-    });
+    );
 }
 
 export function registerServerCommands(program: Command): void {

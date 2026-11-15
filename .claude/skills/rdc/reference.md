@@ -2525,5 +2525,6 @@ Build an offline bundle (images, renet, manifest, checksums) for an air-gapped i
 - `--arch <arch>`: Target architecture of the box (default: amd64)
 - `--tag <tag>`: Server image tag to bundle
 - `--image <ref>`: Bundle this local image instead of pulling a tag
+- `--with-cli <platforms>`: Also download this CLI version's binaries for these platforms, comma-separated: linux-x64, linux-arm64, mac-x64, mac-arm64, win-x64, win-arm64
 
 > MCP excluded: Pulls and saves several GB of images with the local Docker and writes them to disk; use the CLI.

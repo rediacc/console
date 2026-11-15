@@ -15197,6 +15197,17 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.server.bundle.optionImage",
           "label": "Bundle this local image instead of pulling a tag"
+        },
+        {
+          "flags": "--with-cli <platforms>",
+          "long": "with-cli",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.bundle.optionWithCli",
+          "label": "Also download this CLI version's binaries for these platforms, comma-separated: linux-x64, linux-arm64, mac-x64, mac-arm64, win-x64, win-arm64"
         }
       ],
       "positionals": [],

@@ -7,7 +7,7 @@ order: 2
 language: ko
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ko/cli.json
-sourceHash: "7f0cafe4c8dacfa6"
+sourceHash: "6cf0c8f5b76ec70a"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -3531,6 +3531,7 @@ rdc server bundle [options]
 | `--arch <arch>` | {{t:cli.commands.server.bundle.optionArch}} | {{t:cli.docs.optionLabels.no}} | `amd64` |
 | `--tag <tag>` | {{t:cli.commands.server.bundle.optionTag}} | {{t:cli.docs.optionLabels.no}} | - |
 | `--image <ref>` | {{t:cli.commands.server.bundle.optionImage}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--with-cli <platforms>` | {{t:cli.commands.server.bundle.optionWithCli}} | {{t:cli.docs.optionLabels.no}} | - |
 
 
 ---
