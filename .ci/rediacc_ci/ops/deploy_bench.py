@@ -1,4 +1,4 @@
-"""Port of `scripts/ops/deploy-bench.sh` (293 lines): deploy the account worker to a regional bench (`bench.rediacc.cloud` for the default `--region eu`).
+"""Port of `scripts/ops/deploy-bench.sh` (293 lines): deploy the account worker to a regional bench (`bench-eu.rediacc.cloud` for the default `--region eu`).
 
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench [--region <eu|us|asia|all>]
 
@@ -8,7 +8,7 @@ Bench is the internal "real Cloudflare D1" environment, deliberately NOT wired i
 
 THE ROTATION CHECK ALWAYS COMPARES, AND ANYTHING BUT "IN SYNC" REFUSES THE PUSH (operator ruling 2026-10-13). The check reads the observability host's OTLP basicauth user names over plain OpenSSH, through `private/account/scripts/rotation/lib/observability-reader.ts`, with the three `OBS_READER_SSH_*` values this profile binds: the base64 of the machine's existing private key, the pinned known_hosts lines and `user@host[:port]`. No `rdc` login is involved. Exit 1 is drift; exit 2 is a credential that could not be read, which is reported as such with its cause and refuses the push as well, because an unread value is an uncompared one.
 
-Resources (eu): D1 `account-bench`, R2 `configs-bench`, worker `account-bench`, domain `bench.rediacc.cloud`; the other regions' names are in their regions.json `bench` object. The cleanup of the Cloudflare token runs on every way out, a supplied `CF_MANAGEMENT_TOKEN` included, as in the bash.
+Resources (eu): D1 `account-bench`, R2 `configs-bench`, worker `account-bench`, domain `bench-eu.rediacc.cloud` (`bench.rediacc.cloud` is routed beside it until PLAN-multi-region-bench M4); the other regions' names are in their regions.json `bench` object. The cleanup of the Cloudflare token runs on every way out, a supplied `CF_MANAGEMENT_TOKEN` included, as in the bash.
 
 RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in `tests/test_ops_deploy_bench.py` that fails on the bash behaviour).
 

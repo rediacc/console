@@ -1,9 +1,9 @@
-# The proxy Worker for bench.rediacc.cloud, the internal-only environment (workers/account/wrangler.bench.toml).
+# The proxy Worker for bench-eu.rediacc.cloud, the internal-only environment (workers/account/wrangler.bench.toml).
 # Deployed only by `PYTHONPATH=.ci python3 -m rediacc_ci.deploy.deploy_proxy --target bench`, under
 # the deploy-proxy-bench Bitwarden profile. Hand-written, unlike the five generated from
 # wrangler.template.toml (the three regions and the us and asia benches), and held to the same shape by
-# `rediacc_ci.deploy.proxy_configs.config_refusals`: the name proxy-bench, the only route
-# proxy.bench.rediacc.cloud, ACCOUNT_URL https://bench.rediacc.cloud, ACCOUNT and ISSUER both bound to
+# `rediacc_ci.deploy.proxy_configs.config_refusals`: the name proxy-bench, the routes
+# proxy.bench-eu.rediacc.cloud and the retiring proxy.bench.rediacc.cloud, ACCOUNT_URL https://bench-eu.rediacc.cloud, ACCOUNT and ISSUER both bound to
 # account-bench, and nothing naming a region or production. check:ci-proxy-cost-guard reads
 # it too. Bench exists so PLAN-cloudflare-proxy Phase 2 runs end to end without production
 # (operator order 2026-10-24).
@@ -16,12 +16,14 @@ compatibility_date = "2026-01-20"
 compatibility_flags = ["nodejs_compat"]
 upload_source_maps = true
 
+# proxy.bench.rediacc.cloud is the pre-ruling host, served beside proxy.bench-eu until PLAN-multi-region-bench M4.
 routes = [
+  { pattern = "proxy.bench-eu.rediacc.cloud", custom_domain = true },
   { pattern = "proxy.bench.rediacc.cloud", custom_domain = true }
 ]
 
 [vars]
-ACCOUNT_URL = "https://bench.rediacc.cloud"
+ACCOUNT_URL = "https://bench-eu.rediacc.cloud"
 REGION = "eu"
 ENVIRONMENT = "bench"
 EXECUTOR_CAP = "25"

@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from rediacc_ci.ops import region_smoke as rs
-from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, BENCH_ORIGIN
 
 if TYPE_CHECKING:
     import pathlib
@@ -55,7 +55,7 @@ def _smoke(fake: FakeRdc, region: str = "eu", values=VALUES) -> str:
 
 def test_the_origin_is_the_regions_domain_or_the_bench_origin() -> None:
     assert rs.origin("eu") == ACCOUNT_DEFAULT_ORIGIN
-    assert rs.origin("bench").startswith("https://bench.")
+    assert rs.origin("bench") == BENCH_ORIGIN
     with pytest.raises(rs.SmokeError) as err:
         rs.origin("mars")
     assert err.value.rc == 2

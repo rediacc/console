@@ -21,10 +21,10 @@ When the request is ambiguous about regions or components, settle it from the ta
 | Component | Worker | Host | Wrangler config | D1 |
 |---|---|---|---|---|
 | account | `account-<region>` | `<region>.rediacc.cloud` | `workers/account/wrangler.<region>.toml` | `account-<region>` |
-| account (bench) | `account-bench` | `bench.rediacc.cloud` | `workers/account/wrangler.bench.toml` | `account-bench` |
+| account (bench) | `account-bench` | `bench-eu.rediacc.cloud` (and `bench.rediacc.cloud` until M4) | `workers/account/wrangler.bench.toml` | `account-bench` |
 | account (bench us, asia) | `account-bench-<region>` | `bench-<region>.rediacc.cloud` | `workers/account/wrangler.bench-<region>.toml` | `account-bench-<region>` |
 | proxy | `proxy-<region>` | `proxy.<region>.rediacc.cloud` | `workers/proxy/wrangler.<region>.toml` | none |
-| proxy (bench) | `proxy-bench` | `proxy.bench.rediacc.cloud` | `workers/proxy/wrangler.bench.toml` | none |
+| proxy (bench) | `proxy-bench` | `proxy.bench-eu.rediacc.cloud` (and `proxy.bench.rediacc.cloud` until M4) | `workers/proxy/wrangler.bench.toml` | none |
 | proxy (bench us, asia) | `proxy-bench-<region>` | `proxy.bench-<region>.rediacc.cloud` | `workers/proxy/wrangler.bench-<region>.toml` | none |
 | www | `www` | `www.rediacc.com`, shipped with the edge release | `workers/www/wrangler.toml` | none |
 

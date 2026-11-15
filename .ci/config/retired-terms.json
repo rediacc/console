@@ -194,7 +194,7 @@
       "pattern": "(?<![A-Za-z0-9-])(?:edge-(?:eu|us|asia)|eu|us|asia|bench)\\.rediacc\\.com(?![A-Za-z0-9-])",
       "case_sensitive": true,
       "retired": "2026-11-08",
-      "reason": "the account host is <r>.rediacc.cloud and bench is bench.rediacc.cloud; rediacc.com keeps the website, releases, media and mta-sts hosts (PLAN-product-domain-rename Names table).",
+      "reason": "the account host is <r>.rediacc.cloud and bench is bench-<r>.rediacc.cloud; rediacc.com keeps the website, releases, media and mta-sts hosts (PLAN-product-domain-rename Names table).",
       "retired_by": [
         "agent/plans/PLAN-product-domain-rename.md"
       ],
@@ -208,7 +208,7 @@
         "eu.rediacc.cloud",
         "www.rediacc.com",
         "releases.rediacc.com",
-        "bench.rediacc.cloud"
+        "bench-eu.rediacc.cloud"
       ]
     }
   ],

@@ -1015,7 +1015,7 @@ def test_turnstile_hosts_are_pinned_to_the_literal_domains():
             registry[key.strip()] = value.strip().strip('"')
     assert registry["WK_PRODUCT_DOMAIN"] == PRODUCT_DOMAIN
     assert registry["WK_BENCH_ORIGIN"] == BENCH_ORIGIN
-    assert BENCH_ORIGIN == "https://bench." + PRODUCT_DOMAIN
+    assert BENCH_ORIGIN == "https://bench-eu." + PRODUCT_DOMAIN
 
 
 def test_turnstile_refuses_a_missing_or_doubled_widget():

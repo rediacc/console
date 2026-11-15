@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 import pytest
 
 from rediacc_ci.ops import telemetry_delivery as td
-from rediacc_ci.well_known import PROXY_BENCH_HOST
+from rediacc_ci.well_known import PROXY_BENCH_HOST, PROXY_BENCH_RETIRING_HOST
 
 if TYPE_CHECKING:
     from collections.abc import Set as AbstractSet
@@ -302,7 +302,8 @@ def test_proxy_run_keeps_the_token_out_of_output(make_fake):
 
 
 def test_proxy_hosts_come_from_the_wrangler_routes():
-    assert td.proxy_hosts() == [PROXY_BENCH_HOST]
+    # The eu bench routes its retiring host beside the renamed one until PLAN-multi-region-bench M4.
+    assert td.proxy_hosts() == [PROXY_BENCH_HOST, PROXY_BENCH_RETIRING_HOST]
 
 
 def test_proxy_route_without_a_pattern_is_an_error(tmp_path):

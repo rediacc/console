@@ -14,7 +14,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.quality import region_consistency_offline as rco
 from rediacc_ci.tests.gates import harness
-from rediacc_ci.well_known import BENCH_ORIGIN
+from rediacc_ci.well_known import BENCH_ORIGIN, BENCH_RETIRING_ORIGIN, PROXY_BENCH_RETIRING_HOST
 
 ROOT = paths.repo_root()
 GATE = paths.from_root(".ci", "scripts", "quality", "check_region_consistency.py")
@@ -447,3 +447,26 @@ def test_the_eu_bench_is_not_held_to_production_eu_placement() -> None:
     inputs, targets, found = _loaded()
     assert _row(inputs, "eu")["bench"]["d1"]["location"] is None
     assert _judge(inputs, targets, found) == []
+
+
+def test_only_the_home_bench_routes_a_retiring_host() -> None:
+    _inputs, targets, _found = _loaded()
+    by_id = {t.id: t for t in targets}
+    assert rco.retiring_hosts(by_id["bench"]) == [BENCH_RETIRING_ORIGIN.removeprefix("https://")]
+    assert rco.retiring_hosts(by_id["bench"], proxy=True) == [PROXY_BENCH_RETIRING_HOST]
+    assert rco.retiring_hosts(by_id["eu"]) == []
+
+
+@pytest.mark.parametrize("proxy", [False, True])
+def test_a_regional_bench_routing_the_retiring_host_fires(proxy: bool) -> None:
+    """Control: the same extra route on the home bench is the migration state and stays silent (the real-tree test)."""
+    inputs, targets, found = _loaded()
+    extra = PROXY_BENCH_RETIRING_HOST if proxy else BENCH_RETIRING_ORIGIN.removeprefix("https://")
+
+    def mutate(i, f):
+        entry = _extra(i, "bench-us")
+        doc = entry[2] if proxy else entry[1]
+        doc["routes"].append({"pattern": extra, "custom_domain": True})
+        return f
+
+    assert ("bench-us", "proxy" if proxy else "account") in _new(inputs, targets, found, mutate)

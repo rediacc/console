@@ -240,7 +240,7 @@ def levenshtein(a: str, b: str) -> int:
 def near_miss(candidate: str, known: str, limit: int) -> bool:
     """Unequal, sharing everything after the first label boundary that differs, and within a distance that scales with length.
 
-    The scaling is what keeps `eu.` and `us.` (distance 2, both real) from being typos of each other: a label of three characters gets no slack, four to seven get one, longer ones get `limit`.
+    The scaling is what keeps `eu.` and `us.` (distance 2, both real) from being typos of each other: a label of three characters gets no slack, four to seven get one, longer ones get `limit`. A hyphenated label with the same number of parts is judged part by part, so `bench-us.` and `bench-eu.` are two real hosts while `bench-asix.` is still a typo of `bench-asia.`.
     """
     if candidate == known:
         return False
@@ -255,9 +255,17 @@ def near_miss(candidate: str, known: str, limit: int) -> bool:
         if len(a_labels) != len(b_labels) or a_labels[1:] != b_labels[1:]:
             return False
         a, b = a_labels[0], b_labels[0]
+    a_parts, b_parts = a.split("-"), b.split("-")
+    if len(a_parts) == len(b_parts) and len(a_parts) > 1:
+        # `bench-us` and `bench-eu` differ only inside a short region part: each part gets the slack its own length earns, so two real region ids are not typos of each other.
+        diffs = [(x, y) for x, y in zip(a_parts, b_parts, strict=True) if x != y]
+        return bool(diffs) and all(0 < levenshtein(x, y) <= _slack(x, y, limit) for x, y in diffs)
+    return 0 < levenshtein(a, b) <= _slack(a, b, limit)
+
+
+def _slack(a: str, b: str, limit: int) -> int:
     longest = max(len(a), len(b))
-    slack = 0 if longest < 4 else (1 if longest < 8 else limit)
-    return 0 < levenshtein(a, b) <= slack
+    return 0 if longest < 4 else (1 if longest < 8 else limit)
 
 
 # --------------------------------------------------------------------------- lexing ---------------------------------------------------------------------------
@@ -2232,6 +2240,14 @@ def selftest() -> bool:
         check(
             "near miss: eu and us are not typos of each other",
             not near_miss("us.fixtureco.com", "eu.fixtureco.com", 2),
+        )
+        check(
+            "near miss: bench-us and bench-eu are two real hosts, not typos",
+            not near_miss("bench-us.fixtureco.com", "bench-eu.fixtureco.com", 2),
+        )
+        check(
+            "near miss: a typo inside a longer part of a hyphenated label still fires",
+            near_miss("bench-asix.fixtureco.com", "bench-asia.fixtureco.com", 2),
         )
         py = lex_python('x = "a"\n"""doc"""\n# c\nf(\n  "b"\n)\n')
         check("python lexer: docstring and comment are prose, an argument is not", len(py) == 2)

@@ -31,7 +31,7 @@ from typing import TYPE_CHECKING
 from rediacc_ci.deploy import account_secrets_local as local_push
 from rediacc_ci.deploy import proxy_configs
 from rediacc_ci.deploy import set_account_worker_secrets as pusher
-from rediacc_ci.well_known import BENCH_ORIGIN, PRODUCT_DOMAIN
+from rediacc_ci.well_known import BENCH_ORIGIN, BENCH_RETIRING_ORIGIN, PRODUCT_DOMAIN
 
 if TYPE_CHECKING:
     import pathlib
@@ -453,6 +453,15 @@ def account_shape(doc: dict) -> dict[str, object]:
     }
 
 
+def retiring_hosts(t: Target, proxy: bool = False) -> list[str]:
+    """The pre-rename hosts a target's Workers still route beside its own: the home bench's, until PLAN-multi-region-bench M4 (`proxy_configs.RETIRING_BENCH_PROXY_HOSTS` for the proxy, `WK_BENCH_RETIRING_ORIGIN` for the account)."""
+    if t.id != bench_key(BENCH_HOME):
+        return []
+    if proxy:
+        return list(proxy_configs.RETIRING_BENCH_PROXY_HOSTS.get(BENCH_HOME, ()))
+    return [BENCH_RETIRING_ORIGIN.removeprefix("https://")]
+
+
 def _routes(doc: dict) -> list[tuple[object, object]]:
     return [
         (r.get("pattern"), r.get("custom_domain"))
@@ -474,8 +483,9 @@ def check_account(t: Target, doc: dict, ref: dict[str, object]) -> list[Finding]
 
     if doc.get("name") != t.account_worker:
         bad("name %r, expected %r" % (doc.get("name"), t.account_worker))
-    if _routes(doc) != [(t.domain, True)]:
-        bad("routes %r, expected one custom domain %r" % (_routes(doc), t.domain))
+    want_routes = [(t.domain, True)] + [(h, True) for h in retiring_hosts(t)]
+    if _routes(doc) != want_routes:
+        bad("routes %r, expected the custom domains %r" % (_routes(doc), want_routes))
     db = blocks(doc, "d1_databases").get("DB", {})
     if db.get("database_name") != t.d1:
         bad("DB database_name %r, expected %r" % (db.get("database_name"), t.d1))
@@ -526,8 +536,9 @@ def check_proxy(t: Target, doc: dict) -> list[Finding]:
 
     if doc.get("name") != t.proxy_worker:
         bad("name %r, expected %r" % (doc.get("name"), t.proxy_worker))
-    if _routes(doc) != [("proxy." + t.domain, True)]:
-        bad("routes %r, expected one custom domain %r" % (_routes(doc), "proxy." + t.domain))
+    want_routes = [("proxy." + t.domain, True)] + [(h, True) for h in retiring_hosts(t, proxy=True)]
+    if _routes(doc) != want_routes:
+        bad("routes %r, expected the custom domains %r" % (_routes(doc), want_routes))
     services = blocks(doc, "services")
     for binding in ("ACCOUNT", "ISSUER"):
         if services.get(binding, {}).get("service") != t.account_worker:

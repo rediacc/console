@@ -13,10 +13,11 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_signer as ds
 from rediacc_ci.enterprise import proof, registry
-from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, BENCH_ORIGIN
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, BENCH_ORIGIN, BENCH_RETIRING_ORIGIN
 
 ACCOUNT_HOST = ACCOUNT_DEFAULT_ORIGIN.removeprefix("https://")
 BENCH_HOST = BENCH_ORIGIN.removeprefix("https://")
+BENCH_RETIRING_HOST = BENCH_RETIRING_ORIGIN.removeprefix("https://")
 
 REPO = pathlib.Path(paths.repo_root())
 PRIVATE = "MC4CAQAwBQYDK2VwBCIEIPRIVATEKEYVALUEFORTHETESTONLY0000000000"
@@ -292,7 +293,10 @@ def test_deploy_order_record_and_rollback(repo, tmp_path):
     assert json.loads(record.read_text()) == result
     assert "control-bench-eu" in rendered(repo, "bench-eu")
     assert CONTROL_ID in rendered(repo, "bench-eu")
-    assert 'SHARED_HOSTS = "%s"' % BENCH_HOST in rendered(repo, "bench-eu")
+    # Both hosts of the eu bench's toml: renewals to either pass the signer's host check until M4 drops the old one.
+    assert 'SHARED_HOSTS = "%s,%s"' % (BENCH_HOST, BENCH_RETIRING_HOST) in rendered(
+        repo, "bench-eu"
+    )
     assert "Deployed signer-bench-eu version %s" % VERSION in out
 
 

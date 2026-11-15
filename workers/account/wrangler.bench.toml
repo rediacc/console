@@ -1,4 +1,4 @@
-# bench.rediacc.cloud — internal-only "real Cloudflare D1" environment for the
+# bench-eu.rediacc.cloud — internal-only "real Cloudflare D1" environment for the
 # dev team to validate changes against actual D1/R2 before the shared regions take a change. Not
 # wired into ci.yml or cd-release-edge.yml: deploys are local-only via `PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench` and
 # resets via `PYTHONPATH=.ci python3 -m rediacc_ci.ops.reset_bench`.
@@ -15,7 +15,10 @@ compatibility_date = "2026-01-20"
 compatibility_flags = ["nodejs_compat"]
 upload_source_maps = true
 
+# bench.rediacc.cloud is the host the eu bench had before the 2026-11-13 naming ruling; it is served beside
+# bench-eu until every licence names bench-eu (PLAN-multi-region-bench M3) and is dropped in M4.
 routes = [
+  { pattern = "bench-eu.rediacc.cloud", custom_domain = true },
   { pattern = "bench.rediacc.cloud", custom_domain = true }
 ]
 
@@ -23,8 +26,8 @@ routes = [
 REGION = "eu"
 ENVIRONMENT = "bench"
 ALLOWED_EMAIL_DOMAINS = "rediacc.com,rediacc.io"
-WEBAUTHN_RP_ID = "bench.rediacc.cloud"
-WEBAUTHN_ORIGIN = "https://bench.rediacc.cloud"
+WEBAUTHN_RP_ID = "bench-eu.rediacc.cloud"
+WEBAUTHN_ORIGIN = "https://bench-eu.rediacc.cloud"
 # Bench is test-only: no captcha for agents or humans (operator ruling 2026-10-13). Pairs with the
 # empty VITE_TURNSTILE_SITE_KEY in rediacc_ci/ops/deploy_bench.py. Never add to a production config.
 TURNSTILE_ENABLED = "false"

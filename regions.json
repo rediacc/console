@@ -14,8 +14,8 @@
       "secretSuffix": "EU",
       "default": true,
       "bench": {
-        "host": "bench.rediacc.cloud",
-        "proxyHost": "proxy.bench.rediacc.cloud",
+        "host": "bench-eu.rediacc.cloud",
+        "proxyHost": "proxy.bench-eu.rediacc.cloud",
         "workerName": "account-bench",
         "proxyWorkerName": "proxy-bench",
         "signerWorkerName": "signer-bench-eu",

@@ -17,7 +17,10 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.deploy import proxy_configs as pc
 from rediacc_ci.well_known import (
+    BENCH_RETIRING_ORIGIN,
     PROXY_ASIA_HOST,
+    PROXY_BENCH_HOST,
+    PROXY_BENCH_RETIRING_HOST,
     PROXY_EU_HOST,
     PROXY_US_HOST,
 )
@@ -561,7 +564,9 @@ def test_a_regional_bench_toml_with_no_bench_object_is_no_known_target(
 def test_the_home_bench_object_must_agree_with_well_known(tmp_path: pathlib.Path) -> None:
     root = copy_tree(tmp_path)
     doc = json.loads((root / pc.REGIONS_REL).read_text(encoding="utf-8"))
-    next(r for r in doc["regions"] if r["id"] == "eu")["bench"]["host"] = "bench-eu.rediacc.cloud"
+    next(r for r in doc["regions"] if r["id"] == "eu")["bench"]["host"] = (
+        BENCH_RETIRING_ORIGIN.removeprefix("https://")
+    )
     (root / pc.REGIONS_REL).write_text(json.dumps(doc), encoding="utf-8")
     out = pc.check(root)
     assert any("WK_BENCH_ORIGIN is" in r for r in out), out
@@ -609,3 +614,37 @@ def test_a_placeholder_database_id_is_allowed_only_while_the_bench_is_not_deploy
         "wrangler.bench.toml: the bench is marked not deployable but its DB database_id" in r
         for r in out
     ), out
+
+
+# --- the eu bench serves its renamed and its pre-ruling proxy host side by side (PLAN-multi-region-bench M1) ---
+
+
+def test_the_eu_bench_routes_name_the_new_host_first_then_the_retiring_one() -> None:
+    assert TARGETS["bench"].routes == (PROXY_BENCH_HOST, PROXY_BENCH_RETIRING_HOST)
+    assert refusals(real("bench"), "bench") == []
+
+
+def test_an_eu_bench_config_that_dropped_the_new_route_is_refused() -> None:
+    text = plant(
+        real("bench"),
+        '  { pattern = "%s", custom_domain = true },\n' % PROXY_BENCH_HOST,
+        "",
+    )
+    out = refusals(text, "bench")
+    assert any(r.startswith("routes are [%r]" % PROXY_BENCH_RETIRING_HOST) for r in out), out
+
+
+def test_an_eu_bench_config_that_dropped_the_retiring_route_is_refused_until_the_table_empties() -> (
+    None
+):
+    text = plant(
+        real("bench"),
+        ',\n  { pattern = "%s", custom_domain = true }' % PROXY_BENCH_RETIRING_HOST,
+        "",
+    )
+    out = refusals(text, "bench")
+    assert any(r.startswith("routes are [%r]" % PROXY_BENCH_HOST) for r in out), out
+
+
+def test_a_regional_bench_without_a_retiring_host_keeps_exactly_one_route() -> None:
+    assert TARGETS["bench-us"].routes == (_bench_row("us")["bench"]["proxyHost"],)

@@ -28,7 +28,12 @@ from rediacc_ci.deploy import deploy_proxy as port
 from rediacc_ci.deploy import proxy_configs
 from rediacc_ci.tests import differential as diff
 from rediacc_ci.tests.test_proof_surfaces import World, _commit, _write
-from rediacc_ci.well_known import BENCH_ORIGIN, PROXY_BENCH_HOST, PROXY_US_HOST
+from rediacc_ci.well_known import (
+    BENCH_ORIGIN,
+    PROXY_BENCH_HOST,
+    PROXY_BENCH_RETIRING_HOST,
+    PROXY_US_HOST,
+)
 
 if typing.TYPE_CHECKING:
     import pathlib
@@ -411,7 +416,7 @@ def test_every_real_config_passes_the_gate_it_is_deployed_through() -> None:
         assert spec.config == config
     spec, _text = port.select(ROOT, "bench", None)
     assert spec.config == "wrangler.bench.toml"
-    assert spec.routes == (PROXY_BENCH_HOST,)
+    assert spec.routes == (PROXY_BENCH_HOST, PROXY_BENCH_RETIRING_HOST)
 
 
 @pytest.mark.parametrize("region", ["us", "asia"])

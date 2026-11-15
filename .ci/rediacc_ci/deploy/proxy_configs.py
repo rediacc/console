@@ -26,6 +26,7 @@ from rediacc_ci.well_known import (
     BENCH_ORIGIN,
     PROXY_ASIA_HOST,
     PROXY_BENCH_HOST,
+    PROXY_BENCH_RETIRING_HOST,
     PROXY_EU_HOST,
     PROXY_US_HOST,
 )
@@ -68,6 +69,8 @@ HEAVY_CAP_BY_TARGET: dict[str, str] = dict.fromkeys(TARGET_KEYS, "5")
 EXECUTOR_VARS = ("EXECUTOR_CAP", "EXECUTOR_HEAVY_CAP")
 # The bench config alone may carry the reachability drill's probe redirect (PLAN-org-executor-connect-timeout-relocate box E15); any other target carrying it is refused as a var it may not carry.
 BENCH_OPTIONAL_VARS = frozenset({"EGRESS_DRILL_PROBE"})
+# The proxy hosts a bench served before its rename, still routed beside the new one while the licences move (PLAN-multi-region-bench M1 to M4). M4 empties this table.
+RETIRING_BENCH_PROXY_HOSTS: dict[str, tuple[str, ...]] = {"eu": (PROXY_BENCH_RETIRING_HOST,)}
 # A company config may carry the opt-in IP allowlist (workers/proxy/src/ip-allowlist.ts) and reports the stable channel (PLAN-enterprise-isolation.md ruling 12).
 COMPANY_OPTIONAL_VARS = frozenset({"ALLOW_IPS"})
 COMPANY_ENVIRONMENT = "stable"
@@ -196,7 +199,7 @@ def _bench_target(region: dict) -> Target:
         key=key,
         config="wrangler.%s.toml" % key,
         name=name,
-        routes=(proxy_host,),
+        routes=(proxy_host, *RETIRING_BENCH_PROXY_HOSTS.get(rid, ())),
         account_url=account_url,
         variables=(("ACCOUNT_URL", account_url), ("REGION", rid), ("ENVIRONMENT", "bench")),
         services=(
@@ -206,7 +209,7 @@ def _bench_target(region: dict) -> Target:
         destinations=("otlp-%s-logs" % otlp, "otlp-%s-traces" % otlp),
         version_metadata=True,
         generated=not home,
-        own_tokens=frozenset({"bench"} if home else {"bench", rid}),
+        own_tokens=frozenset({"bench", rid}),
         executor_vars=executor_vars(key),
         optional_variables=BENCH_OPTIONAL_VARS if home else frozenset(),
     )
