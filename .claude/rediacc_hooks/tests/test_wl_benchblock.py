@@ -99,9 +99,9 @@ def test_sources_are_the_owners_values():
     assert src.preflight == bench_access.PREFLIGHT_COMMAND
     assert src.remedy == login_bench.REMEDY == "npm run login:bench"
     assert src.markers == tuple(login_bench.LOGIN_NEEDED_MARKERS)
-    assert set(src.hosts) == {BENCH_HOST, PROXY_HOST}
-    # The WAF lists every `wrangler.bench*.toml` route (the eu, us and asia benches); the hint still names only the home pair until `.claude/hooks/stop/wl_benchblock.py` reads the regional hosts (reported by PLAN-multi-region-bench W5).
-    assert set(src.hosts) <= set(bench_access.bench_hosts())
+    # The hint covers every host the WAF rule lists (every `wrangler.bench*.toml` route: the eu, us and asia benches), the home pair included.
+    assert set(src.hosts) == set(bench_access.bench_hosts())
+    assert {BENCH_HOST, PROXY_HOST} <= set(src.hosts)
     assert src.configs == tuple(login_bench.BENCH_CONFIGS)
 
 

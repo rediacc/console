@@ -404,6 +404,22 @@ CASES = [
         "trapguard: the --config= spelling and a pipe after it still fire",
     ),
     inject(
+        ("check_inject fires", "npm run login:bench -- --region us"),
+        inject_json(
+            "./rdc.sh --config us-bench machine status hostinger",
+            "Your IP address changed, and this login only works from the old one.",
+        ),
+        "trapguard: a us-bench login failure names the us region's login (PLAN-multi-region-bench W5)",
+    ),
+    inject(
+        ("check_inject silent", ""),
+        inject_json(
+            "./rdc.sh --config eu-benchmark machine status hostinger",
+            "Your IP address changed, and this login only works from the old one.",
+        ),
+        "trapguard CONTROL: a config name that only starts with a bench name is not a bench run",
+    ),
+    inject(
         ("check_inject silent", ""),
         inject_json(
             "./rdc.sh --config eu-remote machine status hostinger",

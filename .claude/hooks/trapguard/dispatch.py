@@ -460,7 +460,7 @@ RDC_CMD = re.compile(
     r"(?:^|[;&|(]|\$\(|`)\s*((?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*)(?:\S*/)?(?:rdc\.sh|rdc)(?![\w.\-/])([^\n;&|]*)",
     re.MULTILINE,
 )
-BENCH_CONFIG_FLAG = re.compile(r"(?:^|\s)--config[= ]eu-bench(?![\w.-])")
+BENCH_CONFIG_FLAG = re.compile(r"(?:^|\s)--config[= ](eu|us|asia)-bench(?![\w.-])")
 # A COPY of `rediacc_ci.ops.login_bench.LOGIN_NEEDED_MARKERS`, for the reason the bws markers above are copied: a hook has no route onto `.ci/`. The CLI strings are `loginIpMismatch`, `errors.subscription.ipRebind.nonInteractive` / `reloginOnly` and `errors.subscription.notLoggedIn` in packages/cli/src/i18n/locales/en/cli.json.
 BENCH_LOGIN_MARKERS = (
     "tied to another network address",
@@ -471,13 +471,14 @@ BENCH_LOGIN_MARKERS = (
 
 
 def _bench_rdc_run(cmd):
-    """True when `cmd` runs rdc against the eu-bench config (flag, `--config=` form, or a `REDIACC_CONFIG=eu-bench` prefix)."""
+    """The bench region (`eu`, `us` or `asia`) when `cmd` runs rdc against a bench config (flag, `--config=` form, or a `REDIACC_CONFIG=<r>-bench` prefix), else None (PLAN-multi-region-bench W5)."""
     for m in RDC_CMD.finditer(_QUOTED.sub("''", cmd or "")):
-        if BENCH_CONFIG_FLAG.search(m.group(2)) or re.search(
-            r"(?:^|\s)REDIACC_CONFIG=eu-bench(?:\s|$)", m.group(1)
-        ):
-            return True
-    return False
+        found = BENCH_CONFIG_FLAG.search(m.group(2)) or re.search(
+            r"(?:^|\s)REDIACC_CONFIG=(eu|us|asia)-bench(?:\s|$)", m.group(1)
+        )
+        if found is not None:
+            return found.group(1)
+    return None
 
 
 def rule_bench_login_is_the_agents_step(cmd, out, _root, _resp):
@@ -491,16 +492,21 @@ def rule_bench_login_is_the_agents_step(cmd, out, _root, _resp):
     text = out or ""
     if not any(marker in text for marker in BENCH_LOGIN_MARKERS):
         return None
-    if not _bench_rdc_run(cmd):
+    region = _bench_rdc_run(cmd)
+    if region is None:
         return None
+    login = (
+        "npm run login:bench" if region == "eu" else "npm run login:bench -- --region %s" % region
+    )
     return (
-        "trapguard[bench-login-is-the-agents-step]: the eu-bench login is tied to another "
-        "network address, or absent. Logging eu-bench in is YOUR step, not the operator's "
-        "(operator order 2026-10-30): run `npm run login:bench` (headless, the operator's "
-        "bench account through the bench-login bws profile; it refreshes the bench IP "
+        "trapguard[bench-login-is-the-agents-step]: the %s-bench login is tied to another "
+        "network address, or absent. Logging %s-bench in is YOUR step, not the operator's "
+        "(operator order 2026-10-30): run `%s` (headless, the operator's "
+        % (region, region, login)
+        + "bench account through the bench-login bws profile; it refreshes the bench IP "
         "allowlist too), then rerun the command. DO NOT ask the operator for an "
         "authenticator code and DO NOT run `rdc subscription login` interactively for "
-        "eu-bench. Two TOTP logins inside one 30 s window collide, so a second login right "
+        "a bench config. Two TOTP logins inside one 30 s window collide, so a second login right "
         "after waits for the next window. docs/agent-reference/bench-login.md"
     )
 

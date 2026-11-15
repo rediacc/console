@@ -86,7 +86,8 @@ def sources():
 
     bench_access = syspath.import_from_ci("rediacc_ci.ops.bench_access")
     login_bench = syspath.import_from_ci("rediacc_ci.ops.login_bench")
-    hosts = (
+    # Every host the one WAF rule lists (the eu, us and asia account and proxy routes), read from its owner, so a regional bench command gets the same note as the home one.
+    hosts = tuple(bench_access.bench_hosts()) or (
         urllib.parse.urlsplit(wellknown.BENCH_ORIGIN).hostname or "",
         wellknown.PROXY_BENCH_HOST,
     )
