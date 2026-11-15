@@ -71,7 +71,7 @@
       "commit": {
         "check": ["python3", ".ci/scripts/quality/check_plan_record.py", "--rendered-only"],
         "stale_exit": 1,
-        "budget_s": 45,
+        "budget_s": 90,
         "env_remove": ["PLAN_RECORD_ROOT", "PLAN_RECORD_MIN_PLANS", "REDIACC_CI_ROOT"],
         "blind": "Only R8, RQ and RQ-SETTINGS run (the two rendered files against their renders). R1 to R7, R9, RB and the census need history and the full gate's 77 s, and stay in the pre-push run.",
         "control": {

@@ -577,7 +577,7 @@ Scans: .ci/config/generated-artifacts.json, one row per generated-and-committed 
 | Artifact | Outputs | Regenerate with | Checked |
 |---|---|---|---|
 | CLI contract (`cli-contract`) | `packages/shared/src/cli-contract/data/**` | `npm run generate:cli-contract -w @rediacc/cli` | at the commit, 90 s budget; then `check:ci-cli-contract` |
-| Plan queue and plan index (`plan-renders`) | `agent/plans/QUEUE.md`, `agent/INDEX.md` | `npm run check:ci-plan-record -- --rendered-only --update` | at the commit, 45 s budget; then `check:ci-plan-record` |
+| Plan queue and plan index (`plan-renders`) | `agent/plans/QUEUE.md`, `agent/INDEX.md` | `npm run check:ci-plan-record -- --rendered-only --update` | at the commit, 90 s budget; then `check:ci-plan-record` |
 | Gate registration lock (`gates-lock`) | `scripts/ci-runner/gates.lock.json` | `npm run gen:gates-lock` | at the commit, 45 s budget; then `check:ci-gates-lock` |
 | Generated doc regions (`doc-regions`) | `scripts/data/doc-registry.md`, `CLAUDE.md`, `docs/agent-reference/*.md` | `npx tsx scripts/gen/gen-docs.ts --write` | at the commit, by the gen-docs check; then `check:ci-doc-region-parity` |
 | CLI command tree (`command-tree`) | `packages/cli/scripts/command-tree.json` | `npm run export:command-tree -w @rediacc/cli` | before the push, by `check:ci-command-tree` |
