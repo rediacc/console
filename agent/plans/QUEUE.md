@@ -95,7 +95,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 25 of 75 plans done, 1157 of 1396 boxes done (82%).
+Promoted: 25 of 75 plans done, 1158 of 1396 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -172,7 +172,7 @@ Promoted: 25 of 75 plans done, 1157 of 1396 boxes done (82%).
 | 71 | PLAN-signer-bench-stop-binding-reattach.md | 3/3 | done |
 | 72 | PLAN-d1-eu-jurisdiction.md | 3/22 | 19 open |
 | 73 | PLAN-hostinger-to-bench.md | 5/22 | 17 open |
-| 74 | PLAN-multi-region-bench.md | 9/23 | 14 open |
+| 74 | PLAN-multi-region-bench.md | 10/23 | 13 open |
 | 75 | PLAN-root-api-token.md | 5/14 | 9 open |
 <!-- queue:progress:end -->
 
