@@ -2697,9 +2697,10 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 8,
+      "open": 9,
       "done": 6,
       "open_sigs": [
+        "09cffa70",
         "54dd021e",
         "59b48844",
         "5e3c88e6",
