@@ -868,6 +868,7 @@ def lab_release(
         base += ["--plant-failure", plant_failure]
     first = [*base, "--resume", v, "--company", resume] if resume else base
     argv = first
+    waited = ""
     for _ in range(PROOF_SETTLE_RUNS):
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
@@ -881,9 +882,15 @@ def lab_release(
         decided = [ln for ln in out.getvalue().splitlines() if ln and not ln.startswith("would ")]
         if not decided or not decided[-1].startswith("wait"):
             return proof.ReleaseResult(0)
+        waited = decided[-1]
         nap(pause_minutes * 60.0)
         argv = base
-    return proof.ReleaseResult(1, "", "the release did not settle in %d runs" % PROOF_SETTLE_RUNS)
+    return proof.ReleaseResult(
+        1,
+        "",
+        "the release did not settle in %d runs; the last decision: %s"
+        % (PROOF_SETTLE_RUNS, waited),
+    )
 
 
 def main(argv: list[str], world: World | None = None) -> int:

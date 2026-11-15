@@ -722,6 +722,18 @@ def test_a_release_waits_out_each_shortened_pause_and_finishes(tmp_path):
     assert all(n == rings_run.PROOF_PAUSE_MINUTES * 60 for n in naps)
 
 
+def test_a_release_that_never_settles_names_its_last_decision(tmp_path):
+    """With no edge release record, bench never counts as taken: the error quotes the runner's last wait line, not only the run count (the 2026-11-15 `proof release --bench`)."""
+    r = rig(tmp_path, bench=True, record=False)
+    r.plane.add(CANARY, 2, override="canary")
+    got, naps = release(r)
+    assert got.rc == 1
+    assert "did not settle in %d runs" % rings_run.PROOF_SETTLE_RUNS in got.error
+    assert "wait ring=bench -- bench has not taken %s" % V in got.error
+    assert len(naps) == rings_run.PROOF_SETTLE_RUNS
+    assert r.kids.deployed() == []
+
+
 def test_a_planted_failure_stops_names_the_company_and_leaves_large(tmp_path):
     r = four(tmp_path)
     got, _naps = release(r, plant_failure=MEDIUM)
