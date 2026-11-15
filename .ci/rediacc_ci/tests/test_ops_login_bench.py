@@ -6,8 +6,9 @@ from typing import ClassVar
 
 import pytest
 
+from rediacc_ci.enterprise import lab
 from rediacc_ci.ops import login_bench, totp
-from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, BENCH_ORIGIN, SITE_ORIGIN
+from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, BENCH_ORIGIN, PRODUCT_DOMAIN, SITE_ORIGIN
 
 SEED = base64.b32encode(b"bench-seed-0123456789").decode().rstrip("=")
 VALUES = {
@@ -21,7 +22,11 @@ FIXED_NOW = 1_800_000_010.0  # 20 s left in the window
 
 
 class FakeRunner:
-    def __init__(self, fail_at: int | None = None, enable: tuple[int, str] = (0, "")):
+    def __init__(
+        self,
+        fail_at: int | None = None,
+        enable: tuple[int, str] | list[tuple[int, str]] = (0, ""),
+    ):
         self.calls: list[tuple[list[str], dict[str, str]]] = []
         self.captured: list[tuple[list[str], dict[str, str]]] = []
         self.fail_at = fail_at
@@ -34,6 +39,8 @@ class FakeRunner:
     def capture(self, argv, env):
         self.calls.append((list(argv), dict(env)))
         self.captured.append((list(argv), dict(env)))
+        if isinstance(self.enable, list):
+            return self.enable[min(len(self.captured), len(self.enable)) - 1]
         return self.enable
 
 
@@ -50,6 +57,15 @@ def _env(**overrides):
     return env
 
 
+STORE_MADE = {"store": {"id": "store-1"}, "initialToken": "tok-initial"}
+
+
+def fake_crypto(request):
+    """The product helper's `setup` answer: a request body, and the CEK that never leaves the helper."""
+    assert request["op"] == "setup"
+    return {"body": {"slots": [{"kind": "password"}], "from": request["password"]}, "cek": "cek-1"}
+
+
 class FakeApi:
     """The account's /auth routes: a TOTP challenge by default, `challenge=False` for an account with TOTP off."""
 
@@ -63,6 +79,7 @@ class FakeApi:
         status_body: dict | None = None,
         reread_status: int = 0,
         reread_body: dict | None = None,
+        setup: tuple[int, dict] | None = None,
     ):
         self.calls: list[tuple[str, dict]] = []
         self.gets: list[str] = []
@@ -72,6 +89,7 @@ class FakeApi:
         self.reread_status = reread_status
         self.reread_body = reread_body
         self.challenge = challenge
+        self.setup = setup if setup is not None else (201, STORE_MADE)
         self.verify = list(verify) if isinstance(verify, list) else [verify]
         self.fail = fail or {}
 
@@ -106,6 +124,8 @@ class FakeApi:
         if route == "/account/api/v1/portal/terms/accept":
             self.satisfied = self.accept_records
             return 201, {}
+        if route == login_bench.STORE_SETUP_PATH:
+            return self.setup
         if route == "2fa/enable":
             return 200, {"enabled": True, "backupCodes": ["bk-1111"]}
         return 200, {}
@@ -120,6 +140,8 @@ def _login(runner, argv=(), env=None, api=None):
         sleep=lambda _s: None,
         capture=runner.capture,
         api=api or FakeApi(),
+        crypto=fake_crypto,
+        config_exists=lambda _c, _e: True,
     )
 
 
@@ -528,6 +550,8 @@ def _enrol_login(api, cap=None, env=None, runner=None):
         sleep=lambda _s: None,
         capture=cap,
         api=api,
+        crypto=fake_crypto,
+        config_exists=lambda _c, _e: True,
     )
     return runner, cap
 
@@ -1082,3 +1106,130 @@ def test_a_us_reenrolment_writes_the_us_seed_entry_never_the_eu_one():
 )
 def test_seed_entry_names_each_benchs_own_entry(region, entry):
     assert login_bench.seed_entry(region) == entry
+
+
+# ---- a first link: the store is set up on the elevated session, and the rdc config is created ----------
+
+NO_STORE = (
+    1,
+    json.dumps(
+        {
+            "success": False,
+            "errors": [
+                {
+                    "code": "VALIDATION_ERROR",
+                    "message": "Config storage is not configured for your organization. Set it up from the portal (Config Storage), then retry.",
+                }
+            ],
+        }
+    ),
+)
+
+
+def test_a_no_store_refusal_sets_the_store_up_on_an_elevated_session_and_enables_again():
+    runner = FakeRunner(enable=[NO_STORE, ENABLE_REENROLLED])
+    api = FakeApi()
+    _enrol_login(api, runner=runner)
+    routes = [r for r, _b in api.calls]
+    assert routes == [
+        "login",
+        "2fa/verify",
+        "reauth",
+        "reauth/verify",
+        login_bench.STORE_SETUP_PATH,
+    ]
+    assert api.calls[-1][1] == {
+        "slots": [{"kind": "password"}],
+        "from": VALUES[login_bench.MASTER_PW_ENV],
+    }
+    assert len(runner.captured) == 2
+    assert runner.captured[0][0] == runner.captured[1][0]
+    assert runner.calls[-1][0][-1] == "status"
+
+
+def test_an_enable_that_settles_never_touches_the_store_setup():
+    """Control: the same run without the refusal posts no setup and elevates nothing."""
+    api = FakeApi()
+    _enrol_login(api, runner=FakeRunner(enable=ENABLE_REENROLLED))
+    assert login_bench.STORE_SETUP_PATH not in [r for r, _b in api.calls]
+    assert "reauth" not in [r for r, _b in api.calls]
+
+
+def test_a_refusal_that_is_not_the_missing_store_is_not_repaired():
+    api = FakeApi()
+    refused = (1, NO_STORE[1].replace("Config storage is not configured", "Device refused"))
+    with pytest.raises(login_bench.LoginError) as caught:
+        _enrol_login(api, runner=FakeRunner(enable=refused))
+    assert caught.value.rc == 1
+    assert login_bench.STORE_SETUP_PATH not in [r for r, _b in api.calls]
+
+
+@pytest.mark.parametrize(
+    "setup",
+    [(200, STORE_MADE), (201, {"store": {"id": "s"}}), (201, {"initialToken": "t"}), (403, {})],
+)
+def test_a_store_setup_that_is_not_a_201_with_store_and_token_stops_the_run(setup):
+    runner = FakeRunner(enable=[NO_STORE, ENABLE_REENROLLED])
+    with pytest.raises(login_bench.LoginError, match="answered HTTP"):
+        _enrol_login(FakeApi(setup=setup), runner=runner)
+    assert len(runner.captured) == 1
+
+
+def test_a_second_no_store_refusal_after_the_setup_is_a_login_error():
+    runner = FakeRunner(enable=NO_STORE)
+    with pytest.raises(login_bench.LoginError, match="config remote enable"):
+        _enrol_login(FakeApi(), runner=runner)
+    assert len(runner.captured) == 2
+
+
+def test_a_setup_without_a_request_body_from_the_helper_is_refused():
+    with pytest.raises(login_bench.LoginError, match="no request body"):
+        login_bench.setup_store(FakeApi(), "pw", lambda _r: {})
+
+
+def test_the_setup_path_is_the_labs():
+    assert login_bench.STORE_SETUP_PATH == lab.SETUP_PATH
+
+
+def test_a_missing_regional_config_is_created_before_the_subscription_login():
+    runner = FakeRunner()
+    login_bench.login(
+        ["--region", "us"],
+        _env(),
+        runner,
+        now=lambda: FIXED_NOW,
+        sleep=lambda _s: None,
+        capture=runner.capture,
+        api=FakeApi(),
+        crypto=fake_crypto,
+        config_exists=lambda _c, _e: False,
+    )
+    argvs = [argv for argv, _e in runner.calls]
+    init = argvs[1]
+    assert init[0].endswith("/rdc.sh")
+    assert init[1:] == [
+        "config",
+        "init",
+        "us-bench",
+        "--server",
+        "https://bench-us." + PRODUCT_DOMAIN,
+    ]
+    assert argvs[2][1:4] == ["--config", "us-bench", "subscription"]
+
+
+def test_an_existing_config_is_not_initialised():
+    """Control: the default fake world has the config, so no init runs."""
+    runner = FakeRunner()
+    _login(runner)
+    assert all("init" not in argv for argv, _e in runner.calls)
+
+
+def test_the_config_file_is_looked_up_under_xdg_then_home(tmp_path):
+    (tmp_path / "rediacc").mkdir()
+    (tmp_path / "rediacc" / "us-bench.json").write_text("{}", encoding="utf-8")
+    assert login_bench.config_file_exists("us-bench", {"XDG_CONFIG_HOME": str(tmp_path)})
+    assert not login_bench.config_file_exists("asia-bench", {"XDG_CONFIG_HOME": str(tmp_path)})
+    home = tmp_path / "home"
+    (home / ".config" / "rediacc").mkdir(parents=True)
+    (home / ".config" / "rediacc" / "asia-bench.json").write_text("{}", encoding="utf-8")
+    assert login_bench.config_file_exists("asia-bench", {"HOME": str(home)})

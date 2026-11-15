@@ -19,6 +19,8 @@ THE STEPS, in order:
   3c. In the same session, accept the current Terms of Service when the account's acceptance does not satisfy them (`GET`/`POST /portal/terms[/accept]`, the version and digest the server reports; operator ruling ASKED:2026-11-11T17:38Z, bench only).
   4. Compute the six-digit TOTP code in memory (`rediacc_ci.ops.totp`), waiting for the next 30 s window when fewer than `MIN_WINDOW_LEFT` seconds remain, then run `./rdc.sh --config eu-bench subscription login --server <BENCH_ORIGIN>` with REDIACC_LOGIN_EMAIL, REDIACC_LOGIN_PASSWORD and REDIACC_LOGIN_TOTP in the child environment.
   5. Always run `./rdc.sh --config eu-bench config remote enable --master-password --config-id <CONFIG_ID> --api-url <BENCH_ORIGIN>` with REDIACC_STORE_MASTER_PASSWORD in the child environment; `config remote status` is not consulted, because it reports "connected" even when this device has lost its key for the store (the Linux kernel keyring is empty after a restart; measured 2026-11-10). Exit 0 is done: a first link, or this device enrolled again against the same store. Exit 2 is done only when the output says the config is linked and this device can already open it (the CLI's "this device can open it, so there is nothing to enable" refusal); any other failure exits 1 naming the step.
+  4b. Before the subscription login, run `./rdc.sh config init <config> --server <origin>` when the region's rdc config file does not exist yet.
+  5b. When `config remote enable` refuses with the no-storage message (`ENABLE_NO_STORE`) (a regional bench's first link), set the store up with the session this run elevates (`POST /auth/reauth` as `reenrol` does), the request body built by the product's own crypto helper (`lab.ts_crypto`, `op: setup`, the master password) and posted to `POST /configs/setup`, which answers 201 with the store and an initial token; then run `config remote enable` once more.
   6. Print `./rdc.sh --config eu-bench config remote status`.
 
 WHOSE STEP IT IS. Running this is an agent's own step, never an operator one: when an eu-bench command answers that its login is "tied to another network address", that the IP address changed, or "Not logged in", the remedy is `npm run login:bench` and a rerun, not a request for an authenticator code. `rediacc_ci.ops.live_proof` does that itself (`login_needed`, `targets_config`, `REMEDY_ARGV`).
@@ -30,6 +32,7 @@ from __future__ import annotations
 
 import dataclasses
 import http.client
+import importlib
 import json
 import os
 import re
@@ -76,6 +79,12 @@ LOGIN_TOTP_ENV = "REDIACC_LOGIN_TOTP"
 ENABLE_ALREADY_OPEN = re.compile(
     r'Config "[^"]+" is already linked to remote storage and this device can open it, so there is nothing to enable\.'
 )
+# The CLI's refusal when the organization has no config store yet (packages/cli/src/commands/config-remote-master-password.ts maps the server's "Config storage is not configured" to `commands.config.remote.masterPasswordNoStorage`); it carries no error code either.
+ENABLE_NO_STORE = "Config storage is not configured for your organization"
+# The account's store-setup route (the same path `rediacc_ci.enterprise.lab.SETUP_PATH` posts, and a test holds the two equal); lab imports this module, so the value is repeated here and lab is imported only when the setup runs.
+STORE_SETUP_PATH = "/account/api/v1/configs/setup"
+# The CLI reads configs from `$XDG_CONFIG_HOME/rediacc/<name>.json` (packages/cli/src/commands/config.ts).
+CONFIG_DIR_NAME = "rediacc"
 # The CLI refusal carries no error code, so its text is matched; the child's language is pinned to the English catalogue the template comes from (packages/cli/src/i18n/config.ts and config-base.ts `getLanguage` read this variable first).
 CLI_LANG_ENV = "REDIACC_LANG"
 CLI_LANG = "en"
@@ -473,6 +482,25 @@ def distinct_code(
     return totp.code(seed, at=started + left + 0.5)
 
 
+def elevate(
+    api: Poster,
+    email: str,
+    env: Mapping[str, str],
+    capture: Capture,
+    now: Callable[[], float] = time.time,
+    region: str = DEFAULT_REGION,
+) -> None:
+    """Elevate the session in `api` through the reauth mail, the one headless step-up: `POST /auth/reauth`, the token read from the bench's captured mail, `POST /auth/reauth/verify`."""
+    since = (datetime.fromtimestamp(now(), UTC) - CLOCK_SKEW).strftime("%Y-%m-%dT%H:%M:%S")
+    status, _ = api.post("reauth")
+    if status != 200:
+        raise LoginError("POST /auth/reauth answered HTTP %d" % status)
+    token = _mail_token(email, since, env, capture, region)
+    status, _ = api.post("reauth/verify", {"token": token})
+    if status != 200:
+        raise LoginError("POST /auth/reauth/verify answered HTTP %d" % status)
+
+
 def reenrol(
     api: Poster,
     email: str,
@@ -483,14 +511,7 @@ def reenrol(
     region: str = DEFAULT_REGION,
 ) -> tuple[str, str]:
     """Turn TOTP on for the bench account and store the new seed. Returns (seed, the code `enable` spent). The session in `api` is the one the probe login opened."""
-    since = (datetime.fromtimestamp(now(), UTC) - CLOCK_SKEW).strftime("%Y-%m-%dT%H:%M:%S")
-    status, _ = api.post("reauth")
-    if status != 200:
-        raise LoginError("POST /auth/reauth answered HTTP %d" % status)
-    token = _mail_token(email, since, env, capture, region)
-    status, _ = api.post("reauth/verify", {"token": token})
-    if status != 200:
-        raise LoginError("POST /auth/reauth/verify answered HTTP %d" % status)
+    elevate(api, email, env, capture, now, region)
     status, answer = api.post("2fa/setup")
     secret = answer.get("secret")
     if status != 200 or not isinstance(secret, str) or not secret:
@@ -574,6 +595,44 @@ def _error_messages(out: str) -> list[str]:
     return [
         e["message"] for e in errors if isinstance(e, dict) and isinstance(e.get("message"), str)
     ]
+
+
+def enable_needs_store(rc: int, out: str) -> bool:
+    """True when `config remote enable` failed because the organization has no config store: a nonzero exit whose JSON envelope carries the CLI's no-storage message."""
+    return rc != 0 and any(ENABLE_NO_STORE in m for m in _error_messages(out))
+
+
+def setup_store(
+    api: Poster,
+    password: str,
+    crypto: Callable[[dict], dict],
+) -> None:
+    """Create the organization's config store with one master-password slot, on the elevated session in `api`: the request body comes from the product's own crypto helper (`op: setup`), and the account answers 201 with the store and its initial token (neither is printed)."""
+    material = crypto({"op": "setup", "password": password})
+    body = material.get("body") if isinstance(material, dict) else None
+    if not isinstance(body, dict):
+        raise LoginError("the crypto helper's setup answered no request body")
+    status, answer = api.post(STORE_SETUP_PATH, body)
+    store = answer.get("store")
+    store_id = store.get("id") if isinstance(store, dict) else None
+    token = answer.get("initialToken")
+    if status != 201 or not store_id or not isinstance(token, str) or not token:
+        raise LoginError(
+            "POST %s answered HTTP %d with no store and initial token" % (STORE_SETUP_PATH, status)
+        )
+
+
+def config_file_exists(config: str, env: Mapping[str, str]) -> bool:
+    """True when the rdc config `config` has its file, `$XDG_CONFIG_HOME/rediacc/<config>.json` (`$HOME/.config` when unset)."""
+    base = env.get("XDG_CONFIG_HOME") or os.path.join(env.get("HOME", ""), ".config")
+    return os.path.isfile(os.path.join(base, CONFIG_DIR_NAME, config + ".json"))
+
+
+def _default_crypto(request: dict) -> dict:
+    # lab imports this module, so it is loaded when the setup runs, never at import.
+    lab = importlib.import_module("rediacc_ci.enterprise.lab")
+    answer: dict = lab.ts_crypto(request)
+    return answer
 
 
 def _rdc(config: str, *args: str) -> list[str]:
@@ -661,6 +720,8 @@ def login(
     sleep: Callable[[float], None] = time.sleep,
     capture: Capture = _subprocess_capture,
     api: Poster | None = None,
+    crypto: Callable[[dict], dict] = _default_crypto,
+    config_exists: Callable[[str, Mapping[str, str]], bool] = config_file_exists,
 ) -> None:
     """Steps 2-6 of the module docstring, with the profile already bound. Raises LoginError."""
     target = parse_target(argv)
@@ -728,6 +789,15 @@ def login(
 
     accept_terms(account)
 
+    if not config_exists(config, env):
+        # A regional bench's rdc config does not exist until something creates it.
+        _step(
+            run,
+            "Creating the rdc config %s (config init)" % config,
+            [str(paths.repo_root() / "rdc.sh"), "config", "init", config, "--server", server],
+            dict(clean),
+        )
+
     login_env = dict(clean)
     login_env[LOGIN_EMAIL_ENV] = values[EMAIL_ENV]
     login_env[LOGIN_PW_ENV] = values[PW_ENV]
@@ -742,24 +812,33 @@ def login(
     enable_env = dict(clean)
     enable_env[CLI_LANG_ENV] = CLI_LANG
     enable_env[CLI_STORE_MASTER_PW_ENV] = values[MASTER_PW_ENV]
-    log.step("Enabling the remote config store (config remote enable)")
-    enable_rc, enable_out = capture(
-        _rdc(
-            config,
-            "-o",
-            "json",
-            "config",
-            "remote",
-            "enable",
-            "--master-password",
-            *(["--config-id", target.config_id] if target.config_id else []),
-            "--api-url",
-            server,
-        ),
-        enable_env,
+    enable_argv = _rdc(
+        config,
+        "-o",
+        "json",
+        "config",
+        "remote",
+        "enable",
+        "--master-password",
+        *(["--config-id", target.config_id] if target.config_id else []),
+        "--api-url",
+        server,
     )
-    if enable_out:
-        print(enable_out, end="" if enable_out.endswith("\n") else "\n")
+
+    def enable() -> tuple[int, str]:
+        log.step("Enabling the remote config store (config remote enable)")
+        rc, out = capture(enable_argv, enable_env)
+        if out:
+            print(out, end="" if out.endswith("\n") else "\n")
+        return rc, out
+
+    enable_rc, enable_out = enable()
+    if enable_needs_store(enable_rc, enable_out):
+        # The organization has no config store yet (a regional bench's first link): set it up with the session this run elevates, then enable again.
+        log.step("The organization has no config store: setting it up (POST /configs/setup)")
+        elevate(account, values[EMAIL_ENV], clean, capture, now, target.region)
+        setup_store(account, values[MASTER_PW_ENV], crypto)
+        enable_rc, enable_out = enable()
     if not enable_settled(enable_rc, enable_out):
         detail = ""
         if enable_rc == 2 and not _is_json(enable_out):
