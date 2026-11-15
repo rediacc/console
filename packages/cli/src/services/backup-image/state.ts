@@ -428,7 +428,7 @@ const UNREADABLE_LOCK_GRACE_MS = 10_000;
 
 /** An unreadable lock is judged again after this long, for `UNREADABLE_LOCK_ATTEMPTS` attempts in all. */
 export const UNREADABLE_LOCK_RETRY_MS = 10_000;
-export const UNREADABLE_LOCK_ATTEMPTS = 3;
+const UNREADABLE_LOCK_ATTEMPTS = 3;
 
 function sleepSync(ms: number): void {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
