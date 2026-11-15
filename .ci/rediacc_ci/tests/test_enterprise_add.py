@@ -19,7 +19,7 @@ import pytest
 from rediacc_ci import __main__ as entry
 from rediacc_ci import paths
 from rediacc_ci.core import run_verbs, wrangler
-from rediacc_ci.enterprise import cli, dns, lab, onboarding, registry
+from rediacc_ci.enterprise import cli, configs, dns, lab, onboarding, registry
 
 _REAL_LIVE_CF_ROWS = onboarding.live_cf_rows
 
@@ -221,6 +221,111 @@ def test_a_stop_after_d1_resumes_from_the_next_step_with_the_same_id():
     assert rec.contexts[0].details["d1"] == "00000000-0000-4000-8000-000000000001"
 
 
+def test_a_stop_after_a_step_the_company_already_finished_is_refused():
+    """2026-11-15 bench rerun: the proof's kill after d1 met finished companies, the run stopped nowhere and exited 0."""
+    world = World()
+    first = _run(world, _req(), Recorder())
+    rec = Recorder()
+    killed = _run(world, _req(), rec, stop_after="d1")
+    assert killed.rc == 1
+    assert killed.changed == ()
+    assert "already finished step d1" in killed.error
+    assert killed.company_id == first.company_id
+    assert rec.calls == []
+    # control: a company not yet past d1 stops there
+    killed = _run(World(), _req(), Recorder(), stop_after="d1")
+    assert killed.rc == 1
+    assert killed.changed == ("control-row", "d1")
+
+
+def test_a_stop_after_that_names_no_step_is_refused_before_anything_runs():
+    rec = Recorder()
+    out = _run(World(), _req(), rec, stop_after="d2")
+    assert out.rc == 1
+    assert "stop_after 'd2' is not a step" in out.error
+    assert rec.calls == []
+
+
+class Digests(Recorder):
+    """A Recorder whose `configs` step records the digest `self.digest` holds, with the CONFIGS_DIGEST action reading it."""
+
+    def __init__(self, digest: str = "d-1", **kw):
+        super().__init__(**kw)
+        self.digest = digest
+
+    def actions(self) -> dict:
+        acts = super().actions()
+        plain = acts["configs"]
+
+        def configs(ctx):
+            plain(ctx)
+            return self.digest
+
+        acts["configs"] = configs
+        acts[onboarding.CONFIGS_DIGEST] = lambda _ctx: self.digest
+        return acts
+
+
+def test_a_drifted_config_runs_configs_and_deploy_again_then_converges():
+    """2026-11-15 bench rerun: EMAIL_CAPTURE_D1 joined the bench config, and the companies added before it never got it, because every resume skipped `configs` and `deploy`."""
+    world = World()
+    rec = Digests()
+    assert _run(world, _req(), rec).rc == 0
+    rec.calls.clear()
+    assert _run(world, _req(), rec).changed == ()
+    rec.digest = "d-2"
+    lines: list[str] = []
+    drifted = _run(world, _req(), rec, out=lines.append)
+    assert drifted.rc == 0, drifted.error
+    assert drifted.changed == onboarding.CONVERGE_STEPS
+    assert rec.calls == list(onboarding.CONVERGE_STEPS)
+    assert any("configs differ" in line for line in lines)
+    rec.calls.clear()
+    again = _run(world, _req(), rec)
+    assert again.changed == ()
+    assert rec.calls == []
+
+
+def test_a_company_added_before_the_digest_was_recorded_converges_once():
+    world = World()
+    assert _run(world, _req(), Recorder()).rc == 0  # its configs step recorded no digest
+    rec = Digests()
+    assert _run(world, _req(), rec).changed == onboarding.CONVERGE_STEPS
+    assert _run(world, _req(), rec).changed == ()
+    # control: without the digest action a resume never checks the configs
+    world = World()
+    _run(world, _req(), Recorder())
+    assert _run(world, _req(), Recorder()).changed == ()
+
+
+def test_a_drift_check_that_fails_stops_the_add_naming_it():
+    world = World()
+    _run(world, _req(), Digests())
+    rec = Digests()
+    acts = rec.actions()
+
+    def broken(_ctx):
+        raise configs.ConfigError("acme template unreadable")
+
+    acts[onboarding.CONFIGS_DIGEST] = broken
+    out = onboarding.run(_req(), query=world.query, actions=acts, now=lambda: T0)
+    assert out.rc == 1
+    assert "the configs drift check failed" in out.error
+    assert "acme" not in out.error
+    assert rec.calls == []
+
+
+def test_a_drifted_config_on_a_company_with_a_failed_deploy_reruns_from_configs():
+    world = World()
+    rec = Digests(fail={"deploy"})
+    assert _run(world, _req(), rec).rc == 1
+    rec.digest = "d-2"
+    rec.calls.clear()
+    out = _run(world, _req(), rec)
+    assert out.rc == 0, out.error
+    assert rec.calls[:2] == ["configs", "deploy"]
+
+
 def test_a_failed_step_is_recorded_and_retried_on_resume():
     world = World()
     out = _run(world, _req(), Recorder(fail={"buckets"}))
@@ -372,6 +477,22 @@ def test_live_configs_step_writes_both_files_and_bench_sets_the_environment(tmp_
         'ENVIRONMENT = "stable"' in (tmp_path / "workers/account/enterprise.acme.toml").read_text()
     )
     assert "EMAIL_CAPTURE_D1" not in (tmp_path / "workers/account/enterprise.acme.toml").read_text()
+
+
+def test_live_configs_step_records_the_digest_of_what_it_wrote_and_the_check_renders_the_same(
+    tmp_path,
+):
+    _tree(tmp_path)
+    actions = onboarding.live_actions(runner=None, out_root=tmp_path)
+    d1 = {"d1": "11111111-2222-4333-8444-555555555555"}
+    ctx = _ctx(World(bench=True), d1, bench=True)
+    recorded = actions["configs"](ctx)
+    proxy = (tmp_path / "workers/proxy/enterprise.acme.toml").read_text()
+    account = (tmp_path / "workers/account/enterprise.acme.toml").read_text()
+    assert recorded == onboarding.config_digest(proxy, account)
+    assert actions[onboarding.CONFIGS_DIGEST](ctx) == recorded
+    # control: a config that renders differently (here the production one) has another digest
+    assert actions[onboarding.CONFIGS_DIGEST](_ctx(World(), d1)) != recorded
 
 
 def test_live_configs_step_refuses_without_a_d1_id(tmp_path):
@@ -1399,8 +1520,11 @@ def test_live_account_call_with_no_answer_refuses():
         _account_actions(FakeAccount(0))["invite"](_ctx(World()))
 
 
-def test_live_actions_cover_every_step():
-    assert set(onboarding.live_actions(runner=None)) == set(onboarding.STEPS)
+def test_live_actions_cover_every_step_and_the_configs_digest():
+    assert set(onboarding.live_actions(runner=None)) == {
+        *onboarding.STEPS,
+        onboarding.CONFIGS_DIGEST,
+    }
 
 
 # --- the CLI ---------------------------------------------------------------------

@@ -4,7 +4,9 @@ THE STEPS, in order: `control-row` (the `companies` row in the company's own reg
 
 VALIDATION RUNS EVERY TIME, before any step: the name (`names.check`), the region of the environment, the owner address, the storage, the allowlist (`proxy_configs.allow_ips_refusal`) and, unless unlisted, the lookup domain against the free-mail list (`enterprise_lookup.refuse_free_mail`). Then every region's control database is read through the registry; an unreachable region refuses the add by name, and a name held in another region is refused.
 
-RESUMABLE. A company already registered under the name is resumed under its own opaque id: each step recorded `done` is skipped, a `failed` step runs again, and the details recorded by earlier steps (the D1 id) reach the later ones. A rerun of a finished add runs nothing and reports nothing changed. `stop_after` ends the run after the named step with rc 1, which is how the proof's killed run is made.
+RESUMABLE. A company already registered under the name is resumed under its own opaque id: each step recorded `done` is skipped, a `failed` step runs again, and the details recorded by earlier steps (the D1 id) reach the later ones. A rerun of a finished add runs nothing and reports nothing changed. `stop_after` ends the run after the named step with rc 1, which is how the proof's killed run is made; a `stop_after` that names no step, or a step the company already finished, is refused, since a run that skips the step does not stop there.
+
+CONFIGS CONVERGE. The `configs` step records a digest of the two config texts it wrote. When the actions carry `CONFIGS_DIGEST` (`live_actions` does), every resume of a company whose `configs` step is done renders both texts again and compares the digest. One that differs (a template, a config rule or this module changed since, or the company was added before the digest was recorded) runs `configs` and `deploy` again, so the deployed Workers carry what a fresh add would deploy; the rerun after that changes nothing.
 
 BENCH. `--bench` selects `control-bench-<region>` (each deployable bench region of regions.json), the signer `signer-bench-<region>` and `ENVIRONMENT = "bench"` in the account config, so the bench mail capture applies.
 
@@ -17,6 +19,7 @@ from __future__ import annotations
 
 import dataclasses
 import datetime
+import hashlib
 import http.client
 import importlib
 import json
@@ -55,6 +58,10 @@ STEPS: tuple[str, ...] = (
     "audit",
 )
 ACTOR = "enterprise add"
+# The key of `run`'s actions whose action returns the digest the `configs` step would record now (`live_actions` carries it); without it a resume never checks the configs for drift.
+CONFIGS_DIGEST = "configs-digest"
+# What a drifted config runs again, in step order: the files, then the Workers that carry them.
+CONVERGE_STEPS: tuple[str, ...] = ("configs", "deploy")
 BENCH_ENVIRONMENT = "bench"
 OWNER_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 HTTP_SERVER_ERROR = 500
@@ -317,7 +324,10 @@ def run(
     stop_after: str = "",
     out: Callable[[str], None] = print,
 ) -> Outcome:
-    """Validate, find or mint the company id, and run every step not yet done."""
+    """Validate, find or mint the company id, and run every step not yet done (with `configs` and `deploy` again when the configs drifted)."""
+    if stop_after and stop_after not in STEPS:
+        error = "refused: stop_after %r is not a step (%s)" % (stop_after, ", ".join(STEPS))
+        return Outcome(1, "", (), error)
     try:
         check_request(req)
         row = registry.Registry(query, bench=req.bench).find(req.name)
@@ -345,6 +355,25 @@ def run(
         return Outcome(1, cid, (), masked(error))
     done = {s for s, (status, _d) in recorded.items() if status == "done"}
     details = {s: d for s, (status, d) in recorded.items() if status == "done"}
+    digest = actions.get(CONFIGS_DIGEST)
+    if digest is not None and "configs" in done:
+        try:
+            want = digest(Context(plan=plan, query=query, details=details, now=now()))
+        except STEP_ERRORS as exc:
+            error = "company %s: the configs drift check failed: %s" % (cid, exc)
+            return Outcome(1, cid, (), masked(error))
+        if want != details.get("configs", ""):
+            done.difference_update(CONVERGE_STEPS)
+            out(
+                "company %s: its configs differ from the ones last written; %s run again"
+                % (cid, " and ".join(CONVERGE_STEPS))
+            )
+    if stop_after in done:
+        error = (
+            "refused: company %s already finished step %s, so a run told to stop after it would not stop"
+            % (cid, stop_after)
+        )
+        return Outcome(1, cid, (), error)
     changed: list[str] = []
     for step in STEPS:
         if step in done:
@@ -658,6 +687,11 @@ def _listed(listing: Any, name: str) -> bool:
     return re.search(r"(?<![\w-])%s(?![\w-])" % re.escape(name), listing.stdout or "") is not None
 
 
+def config_digest(proxy: str, account: str) -> str:
+    """The sha256 of both company config texts, the `configs` step's recorded detail."""
+    return hashlib.sha256(("%s\0%s" % (proxy, account)).encode("utf-8")).hexdigest()
+
+
 def _cause(done: Any, label: str) -> str:
     """`: <wrangler's stated cause>` for an error message, with the company label masked as a whole token (`control_db.mask_names`) because wrangler echoes the resource name."""
     tail = control_db.failure_tail(done.stdout or "", done.stderr or "")
@@ -757,24 +791,23 @@ def live_actions(
         )
         return uuid
 
-    def write_configs(ctx: Context) -> str:
+    def rendered(ctx: Context) -> tuple[str, str]:
+        """The proxy and account config texts the `configs` step writes, with the bench edit applied; nothing is written."""
         plan = ctx.plan
         uuid = ctx.details.get("d1", "")
         if not uuid:
             raise OnboardingError("company %s: the d1 step left no database id" % plan.company_id)
-        configs.write(
+        out = configs.generate(
             plan.name,
             plan.region,
             uuid,
             company_id=plan.company_id,
             bench=plan.request.bench,
             allow_ips=plan.request.allow_ips,
-            out_root=out_root,
         )
         if plan.environment == pc.COMPANY_ENVIRONMENT:
-            return ""
-        account = files(plan)[1]
-        text = account.read_text(encoding="utf-8")
+            return out.proxy, out.account
+        text = out.account
         line = 'ENVIRONMENT = "%s"' % pc.COMPANY_ENVIRONMENT
         if text.count(line) != 1:
             raise OnboardingError(
@@ -793,8 +826,17 @@ def live_actions(
         )
         if reasons:
             raise OnboardingError("company %s: %s" % (plan.company_id, "; ".join(reasons)))
-        account.write_text(text, encoding="utf-8")
-        return ""
+        return out.proxy, text
+
+    def configs_digest(ctx: Context) -> str:
+        """The digest the `configs` step records: both texts it would write now, so a resume tells a drifted config from the deployed one."""
+        return config_digest(*rendered(ctx))
+
+    def write_configs(ctx: Context) -> str:
+        texts = rendered(ctx)
+        for path, text in zip(files(ctx.plan), texts, strict=True):
+            path.write_text(text, encoding="utf-8")
+        return config_digest(*texts)
 
     def migrate(ctx: Context) -> str:
         plan = ctx.plan
@@ -959,6 +1001,7 @@ def live_actions(
         "control-row": write_control_row,
         "d1": d1,
         "configs": write_configs,
+        CONFIGS_DIGEST: configs_digest,
         "migrate": migrate,
         "buckets": buckets,
         "secrets": provision_secrets,
