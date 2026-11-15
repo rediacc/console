@@ -10,7 +10,7 @@ An eu-remote 403, a GitHub 403 and a bench command printing an unrelated 403 are
 
 ONCE PER OUTPUT, NOT ONCE PER SESSION. The IP rotates nightly, so one long session meets the block more than once, and a note shown only the first time is absent the second. `trapguard[bench-login-is-the-agents-step]` (`.claude/hooks/trapguard/dispatch.py`) says the login half once per session; this says it every time the refusal appears.
 
-THE FIX TEXTS ARE IMPORTED, NOT COPIED. `bench_access.COMMAND` and `PREFLIGHT_COMMAND`, `login_bench.REMEDY`, `login_bench.LOGIN_NEEDED_MARKERS` and `login_bench.BENCH_CONFIGS` come through `rediacc_hooks.syspath.import_from_ci`, and the hosts through `rediacc_hooks.wellknown`, so a renamed command cannot leave this hint naming the old one. The import runs only after the cheap prefilter (`_maybe`) passes, so the ordinary Bash call costs a substring test. A failed import is SAID in the context, never swallowed: a hint that silently stopped speaking is the failure this file exists for. Without the import the config list is unknown, so that note needs the COMMAND itself to name bench and the output to carry a signal fragment (`_loose_bench`), never the output alone (review dcd1a513.5).
+THE FIX TEXTS ARE IMPORTED, NOT COPIED. `bench_access.COMMAND` and `PREFLIGHT_COMMAND`, `login_bench.REMEDY`, `login_bench.LOGIN_NEEDED_MARKERS` and `login_bench.BENCH_CONFIGS` come through `rediacc_hooks.syspath.import_from_ci`, and the hosts from `bench_access.bench_hosts`, so a renamed command cannot leave this hint naming the old one. The import runs only after the cheap prefilter (`_maybe`) passes, so the ordinary Bash call costs a substring test. A failed import is SAID in the context, never swallowed: a hint that silently stopped speaking is the failure this file exists for. Without the import the config list is unknown, so that note needs the COMMAND itself to name bench and the output to carry a signal fragment (`_loose_bench`), never the output alone (review dcd1a513.5).
 
 Advisory: always exits 0 and never blocks the tool call that already ran.
 """
@@ -23,7 +23,6 @@ import pathlib
 import re
 import sys
 import typing
-import urllib.parse
 
 HERE = pathlib.Path(__file__).resolve().parent
 
@@ -74,7 +73,7 @@ class Sources(typing.NamedTuple):
     preflight: str  # bench_access.PREFLIGHT_COMMAND
     remedy: str  # login_bench.REMEDY
     markers: tuple  # login_bench.LOGIN_NEEDED_MARKERS
-    hosts: tuple  # the bench hosts from rediacc_hooks.wellknown
+    hosts: tuple  # bench_access.bench_hosts()
     configs: tuple  # login_bench.BENCH_CONFIGS
 
 
@@ -82,21 +81,16 @@ def sources():
     """Every text the notes read, each from its owner."""
     syspath = _load_syspath()
     syspath.on_sys_path(syspath.CLAUDE_DIR)
-    from rediacc_hooks import wellknown
-
     bench_access = syspath.import_from_ci("rediacc_ci.ops.bench_access")
     login_bench = syspath.import_from_ci("rediacc_ci.ops.login_bench")
-    # Every host the one WAF rule lists (the eu, us and asia account and proxy routes), read from its owner, so a regional bench command gets the same note as the home one.
-    hosts = tuple(bench_access.bench_hosts()) or (
-        urllib.parse.urlsplit(wellknown.BENCH_ORIGIN).hostname or "",
-        wellknown.PROXY_BENCH_HOST,
-    )
+    # Every host the one WAF rule lists (the eu, us and asia account and proxy routes), read from its owner, so a regional bench command gets the same note as the home one. `bench_hosts` raises when the tomls name none, and that error reaches the unloadable-source note: no list is never replaced by a guess.
+    hosts = tuple(bench_access.bench_hosts())
     return Sources(
         command=bench_access.COMMAND,
         preflight=bench_access.PREFLIGHT_COMMAND,
         remedy=login_bench.REMEDY,
         markers=tuple(login_bench.LOGIN_NEEDED_MARKERS),
-        hosts=tuple(h for h in hosts if h),
+        hosts=hosts,
         configs=tuple(login_bench.BENCH_CONFIGS),
     )
 

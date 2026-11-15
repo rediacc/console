@@ -420,6 +420,30 @@ CASES = [
         "trapguard: a us-bench login failure names the us region's login (PLAN-multi-region-bench W5)",
     ),
     inject(
+        ("check_inject fires", "npm run login:bench -- --region asia"),
+        inject_json(
+            "cd /x && REDIACC_CONFIG=asia-bench ./rdc.sh subscription status",
+            "Not logged in. Humans should run `rdc subscription login`.",
+        ),
+        "trapguard: a REDIACC_CONFIG=asia-bench prefix names the asia region's login (review f21aec00.1)",
+    ),
+    inject(
+        ("check_inject fires", "bench-login-asia bws profile"),
+        inject_json(
+            "./rdc.sh --config asia-bench machine status hostinger",
+            "Your IP address changed, and this login only works from the old one.",
+        ),
+        "trapguard: the message names the region's own login profile, not bench-login-eu (review f21aec00.2)",
+    ),
+    inject(
+        ("check_inject silent", ""),
+        inject_json(
+            "cd /x && REDIACC_CONFIG=asia-benchmark ./rdc.sh subscription status",
+            "Not logged in. Humans should run `rdc subscription login`.",
+        ),
+        "trapguard CONTROL: a REDIACC_CONFIG value that only starts with a bench name is not a bench run",
+    ),
+    inject(
         ("check_inject silent", ""),
         inject_json(
             "./rdc.sh --config eu-benchmark machine status hostinger",

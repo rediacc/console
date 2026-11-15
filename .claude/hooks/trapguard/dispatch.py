@@ -482,12 +482,12 @@ def _bench_rdc_run(cmd):
 
 
 def rule_bench_login_is_the_agents_step(cmd, out, _root, _resp):
-    """An eu-bench login that is tied to another IP address, or absent, is fixed by the agent itself with `npm run login:bench`.
+    """A bench login (eu-bench, us-bench or asia-bench) that is tied to another IP address, or absent, is fixed by the agent itself with `npm run login:bench` (`-- --region <r>` for us and asia).
 
     Operator order 2026-10-30. The CLI's message for a login bound to another network address tells a HUMAN to run a command in an interactive terminal and type an authenticator code. It is right for a person and wrong for an agent: on 2026-10-30 an agent read it on `./rdc.sh --config eu-bench machine status hostinger` and asked the operator for the TOTP code, though `npm run login:bench`
     (`.ci/rediacc_ci/ops/login_bench.py`, docs/agent-reference/bench-login.md) logs eu-bench in headlessly with the operator's bench account and is agent-allowed. The CLI is the shipped product and does not know this repository's tooling, so the pointer lives here, beside the output it qualifies.
 
-    BENCH ONLY. Another config (eu-remote, edge, stable) keeps human login, so the same message from it says nothing here.
+    BENCH ONLY: the three regional bench configs. Another config (eu-remote, edge, stable) keeps human login, so the same message from it says nothing here.
     """
     text = out or ""
     if not any(marker in text for marker in BENCH_LOGIN_MARKERS):
@@ -503,11 +503,13 @@ def rule_bench_login_is_the_agents_step(cmd, out, _root, _resp):
         "network address, or absent. Logging %s-bench in is YOUR step, not the operator's "
         "(operator order 2026-10-30): run `%s` (headless, the operator's "
         % (region, region, login)
-        + "bench account through the bench-login-eu bws profile; it refreshes the bench IP "
-        "allowlist too), then rerun the command. DO NOT ask the operator for an "
-        "authenticator code and DO NOT run `rdc subscription login` interactively for "
-        "a bench config. Two TOTP logins inside one 30 s window collide, so a second login right "
-        "after waits for the next window. docs/agent-reference/bench-login.md"
+        + (
+            "bench account through the bench-login-%s bws profile; it refreshes the bench IP "
+            "allowlist too), then rerun the command. DO NOT ask the operator for an "
+            "authenticator code and DO NOT run `rdc subscription login` interactively for "
+            "a bench config. Two TOTP logins inside one 30 s window collide, so a second login right "
+            "after waits for the next window. docs/agent-reference/bench-login.md" % region
+        )
     )
 
 

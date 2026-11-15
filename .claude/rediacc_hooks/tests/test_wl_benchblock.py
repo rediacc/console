@@ -340,6 +340,21 @@ def test_the_member_script_is_silent_and_exits_0_on_an_unrelated_call():
     assert (proc.returncode, proc.stdout, proc.stderr) == (0, "", "")
 
 
+def test_an_empty_owner_host_list_is_said_not_replaced_by_a_guess(monkeypatch):
+    """Review f21aec00.3: with no route pattern in the bench tomls the owner raises, and the hint says so; it never falls back to the two home hosts."""
+    bench_access = syspath.import_from_ci("rediacc_ci.ops.bench_access")
+
+    def none_found(*_args):
+        raise bench_access.AccessError("no route pattern found in planted")
+
+    monkeypatch.setattr(bench_access, "bench_hosts", none_found)
+    with pytest.raises(bench_access.AccessError, match="planted"):
+        B.sources()
+    text = context(payload("./rdc.sh --config eu-bench machine list", CLI_STDOUT))
+    assert "could not load" in text
+    assert "planted" in text
+
+
 def test_an_unloadable_source_is_said_not_swallowed(monkeypatch):
     def broken():
         raise ImportError("planted")
