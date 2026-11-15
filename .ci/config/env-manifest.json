@@ -447,6 +447,7 @@
       "MIRROR_URL",
       "MODE",
       "NAMES",
+      "NEEDS",
       "NEXT_VERSION",
       "NFPM_ARCH",
       "NIGHTLY_BUDGET_EXCLUDE_PATTERNS",

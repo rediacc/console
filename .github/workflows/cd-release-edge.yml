@@ -824,6 +824,10 @@ jobs:
           ref: ${{ needs.init.outputs.ci_sha }}
           persist-credentials: false
 
+      - uses: ./.github/actions/profiler
+        with:
+          runner-label: ubuntu-latest
+
       - name: Fetch secrets from Bitwarden
         uses: ./.github/actions/bws-secrets
         with:

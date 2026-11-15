@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-15T22:28:43.454Z",
+  "generatedAt": "2026-11-15T23:34:01.218Z",
   "legs": [
     {
       "index": 1,
@@ -698,6 +698,7 @@
         "pytest:.ci/rediacc_ci/tests/test_quality_shell_size.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_swallowed_failures.py",
         "pytest:.ci/rediacc_ci/tests/test_release_backfill_write_sentinel.py",
+        "pytest:.ci/rediacc_ci/tests/test_release_cd_edge_record.py",
         "pytest:.ci/rediacc_ci/tests/test_release_cleanup_channel_docker_tags.py",
         "pytest:.ci/rediacc_ci/tests/test_release_local_gates.py",
         "pytest:.ci/rediacc_ci/tests/test_release_nightly_tested_edge.py",
