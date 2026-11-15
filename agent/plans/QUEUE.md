@@ -82,13 +82,13 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 1089 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1091 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 172 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
-- Writers: 0 live of writer_cap 25 (session d778be9d).
-- Leased items: 3: #2722cfa5 (worker:queue, d778be9d), #4889018a (worker:bf552zxl4, d778be9d), #864b6bca (worker:b4taobtqc, d778be9d).
+- Writers: 4 live of writer_cap 25 (session d778be9d): worker:a71e03ef11c36c0c5, worker:a5d74d09d8c83ea3c, worker:aeaa1424c550830d3, worker:a8808588b7de2939a.
+- Leased items: 10: #08188030 (worker:aeaa1424c550830d3, d778be9d), #2349929d (worker:a8808588b7de2939a, d778be9d), #36ca5473 (worker:a5d74d09d8c83ea3c, d778be9d), #4889018a (worker:bf552zxl4, d778be9d), #6e962c3b (worker:a71e03ef11c36c0c5, d778be9d), #81d649f9 (worker:aeaa1424c550830d3, d778be9d), #864b6bca (worker:b4taobtqc, d778be9d), #95ac75ca (worker:aeaa1424c550830d3, d778be9d), #a94e7870 (worker:aeaa1424c550830d3, d778be9d), #f259ee4e (worker:aeaa1424c550830d3, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
