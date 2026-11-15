@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-14T14:39:39.724Z",
+  "generatedAt": "2026-11-15T17:55:16.714Z",
   "legs": [
     {
       "index": 1,
@@ -671,6 +671,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ops_login_bench.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_portal_health.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_r2_lifecycle.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_reset_bench_region.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_telemetry_delivery.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_totp.py",
         "pytest:.ci/rediacc_ci/tests/test_private_compose_healthcheck_smoke_test.py",
@@ -840,9 +841,12 @@
         "pytest:.ci/rediacc_ci/tests/test_onprem_template_parity.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_backup_bucket_scope_probe.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_backup_meter_replay.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_bench_preflight_region.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_bench_production.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_build_server.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_cf_family.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_deploy_bench_region.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_health_tls.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_linode_cluster_validation.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_mirror_config_store.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_notices_drill.py",
@@ -884,6 +888,7 @@
         "pytest:.ci/rediacc_ci/tests/test_review_claude_review_gate.py",
         "pytest:.ci/rediacc_ci/tests/test_review_clean_ledger.py",
         "pytest:.ci/rediacc_ci/tests/test_review_pr_labels.py",
+        "pytest:.ci/rediacc_ci/tests/test_root_login.py",
         "pytest:.ci/rediacc_ci/tests/test_security_check_commands.py",
         "pytest:.ci/rediacc_ci/tests/test_setup_install_cli_global.py",
         "pytest:.ci/rediacc_ci/tests/test_shacite.py",
