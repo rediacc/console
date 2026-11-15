@@ -6069,7 +6069,7 @@
   {
     "id": "search-12544",
     "content": "13.6 bundle",
-    "body": "エアギャップ環境へのインストール用に、オフラインバンドル (イメージ、renet、manifest、チェックサム) を作成します。インターネットに接続できるマシンで実行してください。 rdc server bundle [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --out <dir> | バンドルの書き出し先ディレクトリ | はい | - | | --arch <arch> | ボックスの対象アーキテクチャ | いいえ | amd64 | | --tag <tag> | バンドルに含めるサーバーイメージのタグ | いいえ | - | | --image <ref> | タグを pull せず、このローカルイメージをバンドルに含める | いいえ | - | --- <a id=\"cli-local-group-update\"></a>",
+    "body": "エアギャップ環境へのインストール用に、オフラインバンドル (イメージ、renet、manifest、チェックサム) を作成します。インターネットに接続できるマシンで実行してください。 rdc server bundle [options] | フラグ | 説明 | 必須 | デフォルト | |------|-------------|----------|---------| | --out <dir> | バンドルの書き出し先ディレクトリ | はい | - | | --arch <arch> | ボックスの対象アーキテクチャ | いいえ | amd64 | | --tag <tag> | バンドルに含めるサーバーイメージのタグ | いいえ | - | | --image <ref> | タグを pull せず、このローカルイメージをバンドルに含める | いいえ | - | | --with-cli <platforms> | このバージョンの CLI バイナリを、次のプラットフォーム向けにも取得します(カンマ区切り): linux-x64, linux-arm64, mac-x64, mac-arm64, win-x64, win-arm64 | いいえ | - | --- <a id=\"cli-local-group-update\"></a>",
     "excerpt": "エアギャップ環境へのインストール用に、オフラインバンドル (イメージ、renet、manifest、チェックサム) を作成します。インターネットに接続できるマシンで実行してください。 rdc server bundle [options] | フラグ | 説明 | 必須 | デフォルト | |---...",
     "category": "Documentation",
     "page": "/ja/docs/cli-application",

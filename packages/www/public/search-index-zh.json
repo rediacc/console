@@ -6069,7 +6069,7 @@
   {
     "id": "search-20244",
     "content": "13.6 bundle",
-    "body": "构建用于隔离网络安装的离线包（镜像、renet、清单、校验和）。请在可联网的机器上运行。 rdc server bundle [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --out <dir> | 写入安装包的目录 | 是 | - | | --arch <arch> | 机器的目标架构 | 否 | amd64 | | --tag <tag> | 要打包的服务器镜像标签 | 否 | - | | --image <ref> | 打包此本地镜像，而不是拉取标签 | 否 | - | --- <a id=\"cli-local-group-update\"></a>",
+    "body": "构建用于隔离网络安装的离线包（镜像、renet、清单、校验和）。请在可联网的机器上运行。 rdc server bundle [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --out <dir> | 写入安装包的目录 | 是 | - | | --arch <arch> | 机器的目标架构 | 否 | amd64 | | --tag <tag> | 要打包的服务器镜像标签 | 否 | - | | --image <ref> | 打包此本地镜像，而不是拉取标签 | 否 | - | | --with-cli <platforms> | 同时下载此 CLI 版本在这些平台上的可执行文件,用逗号分隔:linux-x64, linux-arm64, mac-x64, mac-arm64, win-x64, win-arm64 | 否 | - | --- <a id=\"cli-local-group-update\"></a>",
     "excerpt": "构建用于隔离网络安装的离线包（镜像、renet、清单、校验和）。请在可联网的机器上运行。 rdc server bundle [options] | 标志 | 描述 | 必填 | 默认值 | |------|-------------|----------|---------| | --out <d...",
     "category": "Documentation",
     "page": "/zh/docs/cli-application",

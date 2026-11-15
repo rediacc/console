@@ -46,7 +46,9 @@ describe('react-compiler-runtime alias', () => {
 
   it('is behaviour-preserving: the polyfill on this React already returns React’s own c', () => {
     const react = require('react') as { __COMPILER_RUNTIME?: { c?: unknown } };
-    const polyfill = require('react-compiler-runtime') as { c: unknown };
+    // Resolved the way Video.js loads it: from @videojs/react, the listed dependency that pulls the polyfill in.
+    const fromVideojs = createRequire(require.resolve('@videojs/react'));
+    const polyfill = fromVideojs('react-compiler-runtime') as { c: unknown };
     expect(typeof react.__COMPILER_RUNTIME?.c).toBe('function');
     expect(polyfill.c).toBe(react.__COMPILER_RUNTIME?.c);
   });

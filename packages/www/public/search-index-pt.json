@@ -6069,7 +6069,7 @@
   {
     "id": "search-15624",
     "content": "13.6 bundle",
-    "body": "Cria um pacote offline (imagens, renet, manifesto, checksums) para uma instalação isolada da rede. Execute em uma máquina com acesso à internet. rdc server bundle [options] | Flag | Descrição | Obrigatório | Predefinição | |------|-------------|----------|---------| | --out <dir> | Diretório onde gravar o pacote | Sim | - | | --arch <arch> | Arquitetura de destino da máquina | Não | amd64 | | --tag <tag> | Tag da imagem do servidor a incluir no pacote | Não | - | | --image <ref> | Incluir esta imagem local no pacote em vez de baixar uma tag | Não | - | --- <a id=\"cli-local-group-update\"></a>",
+    "body": "Cria um pacote offline (imagens, renet, manifesto, checksums) para uma instalação isolada da rede. Execute em uma máquina com acesso à internet. rdc server bundle [options] | Flag | Descrição | Obrigatório | Predefinição | |------|-------------|----------|---------| | --out <dir> | Diretório onde gravar o pacote | Sim | - | | --arch <arch> | Arquitetura de destino da máquina | Não | amd64 | | --tag <tag> | Tag da imagem do servidor a incluir no pacote | Não | - | | --image <ref> | Incluir esta imagem local no pacote em vez de baixar uma tag | Não | - | | --with-cli <platforms> | Baixa também os binários desta versão da CLI para estas plataformas, separadas por vírgulas: linux-x64, linux-arm64, mac-x64, mac-arm64, win-x64, win-arm64 | Não | - | --- <a id=\"cli-local-group-update\"></a>",
     "excerpt": "Cria um pacote offline (imagens, renet, manifesto, checksums) para uma instalação isolada da rede. Execute em uma máquina com acesso à internet. rdc s...",
     "category": "Documentation",
     "page": "/pt/docs/cli-application",

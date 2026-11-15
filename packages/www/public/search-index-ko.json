@@ -6069,7 +6069,7 @@
   {
     "id": "search-14084",
     "content": "13.6 bundle",
-    "body": "에어갭 설치용 오프라인 번들(이미지, renet, manifest, 체크섬)을 만듭니다. 인터넷에 연결된 머신에서 실행하세요. rdc server bundle [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --out <dir> | 번들을 쓸 디렉터리 | 예 | - | | --arch <arch> | 박스의 대상 아키텍처 | 아니오 | amd64 | | --tag <tag> | 번들에 포함할 서버 이미지 태그 | 아니오 | - | | --image <ref> | 태그를 pull하는 대신 이 로컬 이미지를 번들에 포함 | 아니오 | - | --- <a id=\"cli-local-group-update\"></a>",
+    "body": "에어갭 설치용 오프라인 번들(이미지, renet, manifest, 체크섬)을 만듭니다. 인터넷에 연결된 머신에서 실행하세요. rdc server bundle [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|----------|---------| | --out <dir> | 번들을 쓸 디렉터리 | 예 | - | | --arch <arch> | 박스의 대상 아키텍처 | 아니오 | amd64 | | --tag <tag> | 번들에 포함할 서버 이미지 태그 | 아니오 | - | | --image <ref> | 태그를 pull하는 대신 이 로컬 이미지를 번들에 포함 | 아니오 | - | | --with-cli <platforms> | 이 CLI 버전의 바이너리를 다음 플랫폼용으로도 내려받습니다(쉼표로 구분): linux-x64, linux-arm64, mac-x64, mac-arm64, win-x64, win-arm64 | 아니오 | - | --- <a id=\"cli-local-group-update\"></a>",
     "excerpt": "에어갭 설치용 오프라인 번들(이미지, renet, manifest, 체크섬)을 만듭니다. 인터넷에 연결된 머신에서 실행하세요. rdc server bundle [options] | 플래그 | 설명 | 필수 | 기본값 | |------|-------------|-----...",
     "category": "Documentation",
     "page": "/ko/docs/cli-application",

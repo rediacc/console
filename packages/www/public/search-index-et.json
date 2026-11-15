@@ -6069,7 +6069,7 @@
   {
     "id": "search-7924",
     "content": "13.6 bundle",
-    "body": "Koosta võrguta komplekt (kujutised, renet, manifest, kontrollsummad) võrgust eraldatud paigalduseks. Käivita see internetiühendusega masinas. rdc server bundle [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|----------|---------| | --out <dir> | Kaust, kuhu komplekt kirjutatakse | Jah | - | | --arch <arch> | Masina sihtarhitektuur | Ei | amd64 | | --tag <tag> | Komplekti lisatava serverikujutise silt | Ei | - | | --image <ref> | Lisa komplekti see kohalik kujutis sildi tõmbamise asemel | Ei | - | --- <a id=\"cli-local-group-update\"></a>",
+    "body": "Koosta võrguta komplekt (kujutised, renet, manifest, kontrollsummad) võrgust eraldatud paigalduseks. Käivita see internetiühendusega masinas. rdc server bundle [options] | Lipuke | Kirjeldus | Kohustuslik | Vaikimisi | |------|-------------|----------|---------| | --out <dir> | Kaust, kuhu komplekt kirjutatakse | Jah | - | | --arch <arch> | Masina sihtarhitektuur | Ei | amd64 | | --tag <tag> | Komplekti lisatava serverikujutise silt | Ei | - | | --image <ref> | Lisa komplekti see kohalik kujutis sildi tõmbamise asemel | Ei | - | | --with-cli <platforms> | Laadi lisaks alla selle CLI versiooni binaarfailid nendele platvormidele, komaga eraldatult: linux-x64, linux-arm64, mac-x64, mac-arm64, win-x64, win-arm64 | Ei | - | --- <a id=\"cli-local-group-update\"></a>",
     "excerpt": "Koosta võrguta komplekt (kujutised, renet, manifest, kontrollsummad) võrgust eraldatud paigalduseks. Käivita see internetiühendusega masinas. rdc serv...",
     "category": "Documentation",
     "page": "/et/docs/cli-application",

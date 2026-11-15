@@ -6224,7 +6224,7 @@
   {
     "id": "search-4831",
     "content": "13.6 bundle",
-    "body": "Build an offline bundle (images, renet, manifest, checksums) for an air-gapped install. Run it on a machine with internet access. rdc server bundle [options] | Flag | Description | Required | Default | |------|-------------|----------|---------| | --out <dir> | Directory to write the bundle into | Yes | - | | --arch <arch> | Target architecture of the box | No | amd64 | | --tag <tag> | Server image tag to bundle | No | - | | --image <ref> | Bundle this local image instead of pulling a tag | No | - | --- <a id=\"cli-local-group-update\"></a>",
+    "body": "Build an offline bundle (images, renet, manifest, checksums) for an air-gapped install. Run it on a machine with internet access. rdc server bundle [options] | Flag | Description | Required | Default | |------|-------------|----------|---------| | --out <dir> | Directory to write the bundle into | Yes | - | | --arch <arch> | Target architecture of the box | No | amd64 | | --tag <tag> | Server image tag to bundle | No | - | | --image <ref> | Bundle this local image instead of pulling a tag | No | - | | --with-cli <platforms> | Also download this CLI version's binaries for these platforms, comma-separated: linux-x64, linux-arm64, mac-x64, mac-arm64, win-x64, win-arm64 | No | - | --- <a id=\"cli-local-group-update\"></a>",
     "excerpt": "Build an offline bundle (images, renet, manifest, checksums) for an air-gapped install. Run it on a machine with internet access. rdc server bundle [o...",
     "category": "Documentation",
     "page": "/en/docs/cli-application",
