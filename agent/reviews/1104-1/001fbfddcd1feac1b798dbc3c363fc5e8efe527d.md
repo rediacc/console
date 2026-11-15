@@ -22,16 +22,16 @@ Body-Sig: 314b248d38f555a5
 Anchor: in-diff
 Claim: The commit message says QUEUE.md gets entry 75 and effort: smart, and that STATE.md carries a handover, but the STAT lists only agent/INDEX.md and agent/plans/PLAN-root-api-token.md, so those edits are not in this commit.
 Class: doc-contradicts-code
-Resolution: open
+Resolution: not-a-bug | git show --stat 001fbfddcd and git log -S"effort: smart" -- agent/plans/QUEUE.md name 001fbfddcd, and git log -- agent/d778be9d/STATE.md lists it too: the commit carries QUEUE.md entry 75, effort: smart and the STATE.md handover its message names | d778be9d 2026-11-15T19:02:31Z
 
 ### 001fbfdd.2 [low] agent/plans/PLAN-root-api-token.md:272
 Anchor: in-diff
 Claim: The S2 Accept grep runs `grep -c "sessionAuth()" private/account/src/routes/root*.ts` and expects 0 for every file, but the glob also matches routes/root-api-tokens.ts, which S1 creates and which must keep sessionAuth() for the three portal token routes (Design 3-4), so this gate cannot pass.
 Class: other
-Resolution: open
+Resolution: fixed b0c9e28bdd480263a0196bc46569f54c39441acb | d778be9d 2026-11-15T19:02:29Z
 
 ### 001fbfdd.3 [low] agent/plans/PLAN-root-api-token.md:4
 Anchor: in-diff
 Claim: The Priority line states as fact that stable eu login answers 400 captcha and that no agent can open a production root session today, while U1 lists that same 400 as unverified and says no live answer was read.
 Class: other
-Resolution: open
+Resolution: fixed d01786f9680d7cacc010cf5e02fa2f36a90c0297 | d778be9d 2026-11-15T19:02:30Z
