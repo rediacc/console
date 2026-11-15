@@ -2691,6 +2691,32 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-root-api-token.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 13,
+      "done": 1,
+      "open_sigs": [
+        "36907221",
+        "54dd021e",
+        "59b48844",
+        "5e3c88e6",
+        "651984b3",
+        "6e808e37",
+        "8313cd76",
+        "8acf0556",
+        "9d019186",
+        "c2f141b8",
+        "e605e494",
+        "ed5e9f73",
+        "f027e71e"
+      ],
+      "done_sigs": [
+        "d3d80178"
+      ]
+    },
     "agent/plans/PLAN-runtime-caller-identity.md": {
       "status": "compacted",
       "owner": "unowned",

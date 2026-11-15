@@ -216,7 +216,7 @@ Unchanged. login_bench keeps the password and TOTP path, and root_login has no b
 
 ## Not verified (load-bearing; each owner re-checks)
 
-- U1. The 400 on stable eu login is the Turnstile middleware. Taken from the operator's report. The code at private/account/src/routes/auth.ts:43, :153 is consistent, but I did not read a live answer.
+- U1. The 400 on stable eu login is the Turnstile middleware. Taken from the operator's report. The code at private/account/src/routes/auth.ts:43, :153 is consistent; the live answer was quoted by root_login on 2026-11-15 as `HTTP 400: Captcha verification required` (b2978e7c16).
 - U2. The agent's egress rotates nightly (operator statement). Whether it is dual-stack and which family Python's `http.client` picks is unmeasured. The per-family bind covers both cases.
 - U3. The production eu root user has TOTP enrolled with the seed in ROOT_TOTP_SEED. root_login was built on that premise, but no production session has ever opened.
 - U4. `GET /admin/activity` (`listAdminActivityAcrossShards`) returns events that carry no `orgId`. If it does not, the `--probe audit` leg reads nothing, and LP2 opens a fix-forward box on root.ts.
@@ -230,9 +230,10 @@ Unchanged. login_bench keeps the password and TOTP path, and root_login has no b
 
 ### Wave 0
 
-- [ ] L0 [lead] Create the vault entry `ROOT_API_TOKEN` in the ci-shared project with the value `PLACEHOLDER-operator-fills` (U7), and add its id to the map.
+- [x] L0 [lead] Create the vault entry `ROOT_API_TOKEN` in the ci-shared project with the value `PLACEHOLDER-operator-fills` (U7), and add its id to the map.
   - Owns: .ci/config/bws-secret-map.json.
   - Accept: `grep -c '"ROOT_API_TOKEN"' .ci/config/bws-secret-map.json` prints 1, and `npm run -s check:ci-secret-supply` rc 0.
+    (ticked) 2026-11-15T17:54:57Z by d778be9d: commit:600930fae3 store-from-env --create ROOT_API_TOKEN read back MATCH rc=0; bws-map-refresh rc=0 id 5e06ac8b
 
 ### Wave 1: three writers, file-disjoint, against the Design 3 contract
 
