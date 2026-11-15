@@ -1,20 +1,16 @@
-## SESSION d778be9d 2026-11-14T18:36:58Z
+## SESSION d778be9d 2026-11-15T17:09:52Z
 
 ## Next action
-Hibernated 2026-11-14 ~18:40Z after ci:quick byci5jg3v on HEAD 591ed92a70 went RED on 5 gates (log /tmp/ciquick-1104m.log; /tmp may not survive, so rerun the gate directly). Fix each, commit by path, rerun ci:quick alone, then `npm run vm:check -- --changed` (renet moved: a65806a2, c42dc048), then push renet, account, console with TURBO_PUSH_REASON='red-fix: PR #605 CI cluster fixes and review drain', then watch with `.ci/scripts/ci/ci-trace.py --wait --timeout 38m --worklist-item 4889018a` in the background (timeout 2400000).
-1. check:lint: biome reported 1 error; run `npm run check:lint` to see it (likely in the wave-3 CLI or www edits: subscription-status-view.ts, state.ts, RegionPickerModal.test.tsx).
-2. check:ci-i18n-www-translation-freshness: 24 errors. The English docs edits (01b56769 data-regions.md and on-premise.md) plus the locale delta 0598d98a87 need the www translation-freshness stamps; run `npm run check:ci-i18n-www-translation-freshness`, then read docs/i18n/CONVENTIONS.md for the stamp command.
-3. check:ci-budget-freshness: lane-durations drift (job quality-pytest, account-e2e stripe units); `npm run check:ci-budget-freshness` prints the refresh command (freshness --refresh --cadence pr).
-4. check:ci-prose-style: 3 NEW R19 violations, at least .ci/rediacc_ci/tests/test_ci_budget_report.py:4094 and test_ops_free_to_registered.py:874 (comments added in 4d07d37e8a); reflow per docs/agent-reference/prose-style.md R19.
-5. check:ci-pytest: test_githook_generated_artifacts.py::test_enrolled_artifact_against_the_real_hook[enrolled_refused-plan-renders] fails locally. Suspect the wave-3 hooks change e8f2d68ee3 (prefetch lock fallback) or 0ebbba453b; run `PYTHONPATH=.ci:.claude .ci/cache/toolchain/uv-tools/bin/pytest .claude/rediacc_hooks/tests/test_githook_generated_artifacts.py -k plan-renders -q`.
+1. ci:quick on HEAD (after 54cee9073c), alone; fix any red; then vm:check -- --changed if the push guard asks (last VERIFIED receipt is tree aa6729620936, renet c42dc048); then push renet, account, console with TURBO_PUSH_REASON='red-fix: PR #605 CI cluster fixes, review drain and multi-region bench code'; watch with .ci/scripts/ci/ci-trace.py --wait --timeout 38m --worklist-item 4889018a (background, timeout 2400000).
+2. PLAN-multi-region-bench L1 (bench-us bring-up, live, bench is free to run): create the us objects (D1 --location enam, R2 hint enam, queues), the 7 store entries per region W6 names, deploy signer-bench-us, account stub, proxy-bench-us, account-bench-us, seed root; flip regions.json us bench deployable. Then land W6 (lease agent-a7f5044e08c2820ec, 0e1f54aa60, item #10b49748) with the map refresh and bws-unrequested rows. Then rerun ./run.sh enterprise proof region-loss --bench for PLAN-enterprise-isolation V2 (#b6ad6de2).
+3. Root API token for stable/edge (operator ruling 2026-11-15T17:07Z, #9146d3f4): Plan agent writes agent/plans/PLAN-root-api-token.md, then writers; the operator mints the token once from the portal.
+4. Deploy the ops-health Worker with 091c4c29e8 (#cfdd8246).
 
 ## Big pieces
-- Review-finding drain #12a2797b: 330 -> 68 -> 28 -> 9 -> 2 open (fa39834c.1, aa64a33e.1, both low), three lease-writer waves plus lead fixes; highs 2a494086.1 and 109da352.1 fixed (109da352cd, 1a79db6a9a). No writers or leases are live.
-- Last PR CI run 43617661791 on 3cb024c0: red only on Quality / Pytest (2/5), plan-renders RF refusal in the CI fixture; prefetch serialized in 0ebbba453b and e8f2d68ee3, unproven until CI.
-- New open boxes from honest corrections: PLAN-detached-jobs J18b [live], PLAN-account-notices X2b [live].
+- Root credentials (operator rulings 15:20Z): ROOT_EMAIL; ROOT_PASSWORD + ROOT_TOTP_SEED for stable/edge (stored 2026-11-15, never printed); BENCH_ROOT_PASSWORD, BENCH_ROOT_TOTP_SEED, BENCH_STORE_MASTER_PASSWORD for bench; REDIACC_BENCH_* parked (580f260eaa). Stable eu /auth/login demands Turnstile (HTTP 400 "Captcha verification required"), hence the root API token ruling.
+- PLAN-multi-region-bench: V0, W1-W5 ticked; W6 waits on L1; L1-L5 and LP-bench open.
+- ops-health false red fixed locally (a0f45d3d12: served certificate decides every handshake-ok tls probe; certspotter free tier in outage, crt.sh lagging).
+- Review drain #12a2797b: open below-high findings remain on the newest commits; fix before merge.
 
 ## Owed ticks
-- #4889018a stays open until the PR run is green.
-- #12a2797b closes when wl_review.py --check shows no open finding.
-- #88ac738c (networking tutorial and Browse-At live check) after the push.
-- Check whether bench D1 applied account migration 0087 under its one-day name 0089 (e73058f -> 67f6709, 2026-11-13).
+- #4889018a open until the PR run is green; #12a2797b when wl_review --check is clean; #b6ad6de2 after V2 reruns green; #88ac738c live checks after the push.
