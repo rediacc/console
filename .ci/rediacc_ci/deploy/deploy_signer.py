@@ -163,12 +163,6 @@ def home_region_id(repo_root: pathlib.Path) -> str:
     return homes[0]
 
 
-# The bench regions a whole-bench run deploys signers for: the deployable ones, read from regions.json once at import. A region marked `deployable: false` has no objects and its signer is refused by `deploy`. Callers that need one region ask `bench_region_ids` with the repo root.
-BENCH_REGIONS: tuple[str, ...] = tuple(
-    bench_region_ids(pathlib.Path(paths.repo_root()), deployable_only=True)
-)
-
-
 def control_database(key: str) -> str:
     """The CONTROL database of target KEY (`eu`, `bench-us`). A key with no declared name is refused, never derived."""
     try:
