@@ -873,3 +873,51 @@ def test_verify_pinned_exits_1_without_a_rule_and_writes_nothing():
 
 def test_verify_pinned_is_a_known_verb_of_arity_zero():
     assert ba.VERBS["verify-pinned"] == 0
+
+
+REAL_BENCH_HOSTS = ba.bench_hosts
+
+
+def _bench_tree(root, files: dict[str, str]):
+    """A `workers/` tree under `root` holding one wrangler file per `workers/<dir>/<name>` key."""
+    for rel, host in files.items():
+        path = root / "workers" / rel
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text('routes = [{ pattern = "%s", custom_domain = true }]\n' % host)
+
+
+def test_hosts_include_every_regional_bench_toml(tmp_path):
+    _bench_tree(
+        tmp_path,
+        {
+            "account/wrangler.bench.toml": "bench.example.test",
+            "account/wrangler.bench-us.toml": "bench-us.example.test",
+            "account/wrangler.bench-asia.toml": "bench-asia.example.test",
+            "proxy/wrangler.bench-us.toml": "proxy.bench-us.example.test",
+        },
+    )
+    assert REAL_BENCH_HOSTS(tmp_path) == [
+        "bench-asia.example.test",
+        "bench-us.example.test",
+        "bench.example.test",
+        "proxy.bench-us.example.test",
+    ]
+
+
+def test_hosts_ignore_a_non_bench_wrangler_file(tmp_path):
+    _bench_tree(
+        tmp_path,
+        {
+            "account/wrangler.bench-us.toml": "bench-us.example.test",
+            "account/wrangler.eu.toml": "eu.example.test",
+            "account/wrangler.toml": "stable.example.test",
+        },
+    )
+    assert REAL_BENCH_HOSTS(tmp_path) == ["bench-us.example.test"]
+
+
+def test_the_committed_tree_lists_every_regional_account_and_proxy_host():
+    found = REAL_BENCH_HOSTS()
+    for region in ("us", "asia"):
+        assert f"bench-{region}.rediacc.cloud" in found
+        assert f"proxy.bench-{region}.rediacc.cloud" in found

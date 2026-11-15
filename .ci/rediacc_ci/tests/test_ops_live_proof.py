@@ -1349,3 +1349,71 @@ def test_the_old_map_refused_an_enterprise_only_plan_as_touching_no_surface(
     with pytest.raises(LP.RequestError, match="touches no surface; check account-smoke"):
         bed.record(smoke, checks=old)
     assert bed.fake.calls == []
+
+
+# ------------------------------------------------------------------ one bench per region (PLAN-multi-region-bench W5)
+
+
+def _bench_host(region: str) -> str:
+    return LT.bench_object(region)["host"]
+
+
+def _regional_record(bed: Bed, name: str, **over: Any) -> None:
+    record = {
+        "version_id": UUID,
+        **R.identity(bed.root, deploy_bench.BENCH_SURFACES),
+        "at": "2026-10-28T09:00:00Z",
+    }
+    record.update(over)
+    _write(bed.root, f".ci/cache/live-deploys/{name}", json.dumps(record))
+
+
+@pytest.mark.parametrize("region", ["us", "asia"])
+def test_a_regional_account_run_reads_its_own_record_host_worker_and_config(
+    bed: Bed, region: str
+) -> None:
+    _regional_record(bed, f"bench-{region}.json", worker=f"account-bench-{region}")
+    out = bed.record(bed.request("account-smoke", region=region))
+    assert out.status == R.VERIFIED, out.message
+    assert out.row is not None
+    assert out.row["region"] == region
+    assert out.row["deploy"]["worker"] == f"account-bench-{region}"
+    curls = [c for c in bed.fake.calls if bed.fake.key(c) == "curl"]
+    assert curls
+    assert all(c[-1].startswith(f"https://{_bench_host(region)}/") for c in curls)
+    wrangler = next(c for c in bed.fake.calls if bed.fake.key(c) == "wrangler")
+    assert f"wrangler.bench-{region}.toml" in wrangler
+    assert LT.validate_row(out.row, checks=LT.registry(), root=bed.root) == []
+
+
+def test_a_regional_run_does_not_read_the_home_benches_record(bed: Bed) -> None:
+    bed.bench_json()
+    out = bed.record(bed.request("account-smoke", region="us"))
+    assert out.status == R.NOT_VERIFIED
+    assert "bench-us.json" in out.message
+
+
+def test_a_regional_record_naming_another_regions_worker_is_refused(bed: Bed) -> None:
+    _regional_record(bed, "bench-us.json", worker="account-bench")
+    out = bed.record(bed.request("account-smoke", region="us"))
+    assert out.status == R.NOT_VERIFIED
+    assert "account-bench-us" in out.message
+
+
+def test_control_the_home_bench_keeps_its_record_and_host(bed: Bed) -> None:
+    bed.bench_json()
+    for region in (None, "eu"):
+        out = bed.record(bed.request("account-smoke", region=region))
+        assert out.status == R.VERIFIED, out.message
+    curls = [c for c in bed.fake.calls if bed.fake.key(c) == "curl"]
+    assert all(c[-1].startswith(BENCH_ORIGIN) for c in curls)
+
+
+def test_a_regional_proxy_cache_names_its_worker_record_and_config() -> None:
+    cache = LP.cache_for(LT.BENCH_PROXY_CACHE, "asia")
+    assert cache is not None
+    assert cache.worker == "proxy-bench-asia"
+    assert cache.record[-1] == "proxy-bench-asia.json"
+    assert cache.config == "wrangler.bench-asia.toml"
+    assert LP.cache_for(LT.BENCH_PROXY_CACHE, "eu") == LP.CACHES[LT.BENCH_PROXY_CACHE]
+    assert LP.cache_for(LT.TREE, "us") is None

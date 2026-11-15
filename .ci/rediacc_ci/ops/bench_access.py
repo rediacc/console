@@ -13,7 +13,7 @@ WHO RUNS IT. An operator or an AI session whose bench request answers Cloudflare
 
 THE MECHANISM: a zone WAF custom rule (Cloudflare Rulesets API, phase `http_request_firewall_custom`, action `block`). The bench hosts live in the rediacc.cloud product zone; the plan was read live on 2026-10-26 on the rediacc.com zone, where `plan.name` was `Free Website`, and a Free-plan zone is the assumption here, and Cloudflare's WAF custom rules page lists, for Free: "Number of rules 5 ... Supported actions All except Log" (https://developers.cloudflare.com/waf/custom-rules/), so a Free zone has a block action and room for the one rule this script owns. A custom block response is NOT available on Free: the first live write on 2026-10-26 was refused with `not entitled to use a custom response`, so a blocked request gets Cloudflare's own 403 page, and the fix is named by the tooling instead (this script's HINT, printed by deploy_bench on a 403, and the bench notes in .claude/agents/account-dev.md and docs/agent-reference/local-env.md). The rule is found by its description, so other custom rules on the zone are never touched. IP Access Rules were rejected: they match the whole account or zone, not two hostnames.
 
-WHAT THE RULE BLOCKS. Every request to a bench host (the route patterns of `workers/*/wrangler.bench.toml`: bench.rediacc.cloud and proxy.bench.rediacc.cloud) whose source IP is not in the list, EXCEPT `GET` of the two health paths (`/account/api/v1/health`, `/v1/health`). The exemption is what keeps the automated callers working: `ops-telemetry-probe.yml` (six-hourly, GitHub runner egress, a different IP every run) probes exactly those two paths, and a health answer discloses nothing but liveness. The proxy Worker's own calls to the account Worker are service bindings (`workers/proxy/wrangler.bench.toml` ACCOUNT and ISSUER), which never pass the zone's edge rules. Every other caller (deploy_bench, deploy_proxy's smoke past /v1/health, console_executor, the CLI against `--config bench`, the portal in a browser) is an operator or an AI session on its own machine and runs `add-current` first.
+WHAT THE RULE BLOCKS. Every request to a bench host (the route patterns of `workers/*/wrangler.bench*.toml`: the eu, us and asia account hosts and their proxy hosts) whose source IP is not in the list, EXCEPT `GET` of the two health paths (`/account/api/v1/health`, `/v1/health`). The exemption is what keeps the automated callers working: `ops-telemetry-probe.yml` (six-hourly, GitHub runner egress, a different IP every run) probes exactly those two paths, and a health answer discloses nothing but liveness. The proxy Worker's own calls to the account Worker are service bindings (`workers/proxy/wrangler.bench.toml` ACCOUNT and ISSUER), which never pass the zone's edge rules. Every other caller (deploy_bench, deploy_proxy's smoke past /v1/health, console_executor, the CLI against `--config bench`, the portal in a browser) is an operator or an AI session on its own machine and runs `add-current` first.
 
 EXPIRY. Every unpinned address is allowed for `TTL_DAYS` (7) days from the run that added it (a pinned address, below, never expires). The add time lives in the rule's own `description` (`RULE_DESCRIPTION | added ip=<UTC time> ...`), so the Cloudflare rule is the only store and no local state exists. Every mutating run first drops the addresses older than 7 days (the CLI's clock, UTC), then applies its verb; re-adding a live address refreshes its stamp; the 5-address cap counts what is left after the drop. A LEGACY address (in the expression but with no stamp, written before expiry existed or edited by hand) is treated as EXPIRED and dropped by the next mutating run, never stamped now, so an unknown age cannot become a permanent allowance. `list` is read-only and marks such entries. The expiry is enforced when the script runs, not by Cloudflare: an address stays in the rule past 7 days until the next run (the nightly `add-current` that the rotating IP already needs).
 
@@ -98,10 +98,10 @@ class Api(typing.Protocol):
 
 
 def bench_hosts(root=None) -> list[str]:
-    """Every custom-domain route pattern in `workers/*/wrangler.bench.toml`, sorted."""
+    """Every custom-domain route pattern in `workers/*/wrangler.bench*.toml`, sorted."""
     base = root or paths.repo_root()
     hosts: set[str] = set()
-    for config in sorted((base / "workers").glob("*/wrangler.bench.toml")):
+    for config in sorted((base / "workers").glob("*/wrangler.bench*.toml")):
         with open(config, "rb") as fh:
             conf = tomllib.load(fh)
         for route in conf.get("routes", []):
@@ -109,7 +109,7 @@ def bench_hosts(root=None) -> list[str]:
             if pattern:
                 hosts.add(pattern)
     if not hosts:
-        raise AccessError("no route pattern found in workers/*/wrangler.bench.toml")
+        raise AccessError("no route pattern found in workers/*/wrangler.bench*.toml")
     return sorted(hosts)
 
 

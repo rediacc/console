@@ -197,11 +197,11 @@ PUSH_HEADER_TIMING = r"(^|[^a-z])(now|yet|when|whether|wait|later|until|first)([
 # else. See the port note in the module docstring.
 # THE eu-bench LOGIN (operator order 2026-10-30): asking the operator for an eu-bench authenticator code, or to log eu-bench in, is settled the same way. `npm run login:bench` (.ci/rediacc_ci/ops/login_bench.py) logs eu-bench in headlessly with the operator's own bench account and is agent-allowed; on 2026-10-30 an agent read the CLI's "tied to another network address" text, written for a human at a terminal, and asked the operator to type the TOTP anyway.
 # Judged per QUESTION (text plus header), not per sentence, because "eu-bench" and the code often sit in different sentences. All three must hold: bench named, a login or code named, and the question addressed to the operator or asking leave. A question about the vault values (`PLACEHOLDER-operator-fills`, a seed, a bws token) is the operator's genuine door and passes.
-BENCH_NAMED = r"(^|[^a-z0-9_-])(eu-bench|bench\.rediacc\.com|bench)([^a-z0-9_-]|$)"
+BENCH_NAMED = r"(^|[^a-z0-9_-])((?:eu|us|asia)-bench|bench\.rediacc\.com|bench)([^a-z0-9_-]|$)"
 BENCH_LOGIN_ASK = (
     r"totp|authenticator|2fa|two-factor|one-time (pass)?code|verification code|"
     r"(6|six)-digit|(^|[^a-z])otp([^a-z]|$)|"
-    r"(log|sign)(ging|ged|ing|ed)? (it |eu-bench |bench )?(back )?in(to)?([^a-z]|$)|"
+    r"(log|sign)(ging|ged|ing|ed)? (it |(?:eu|us|asia)-bench |bench )?(back )?in(to)?([^a-z]|$)|"
     r"login(?![ _-]?(test|tests|flow|flows|script|scripts|module|tool|helper|logic|function|handler|bug|doc|docs|code path)([^a-z]|$))|re-?auth"
 )
 # Addressed to the operator, or asking leave: without it "Is the bench TOTP derivation RFC 6238?" is a fact question and "Should the bench login flow support us-bench?" a design one, and both pass.
@@ -213,10 +213,10 @@ BENCH_OPERATOR_DOOR = (
 EU_REMOTE_DOOR = r"(^|[^a-z0-9_-])eu-remote([^a-z0-9_-]|$)"
 # An eu-remote sentence that still aims the login or code at bench is the bench ask with eu-remote only as a comparison (a log-into-eu-bench ask ending "same as eu-remote", review bcee4974.1), so the eu-remote door does not open for it.
 BENCH_LOGIN_AIMED = (
-    r"(re-?)?(log|sign)(ging|ged|ing|ed)?[ -]?((it|me|us|back) +)*in(to| to)? (the )?(eu-bench|bench)([^a-z0-9_-]|$)"
-    r"|re-?auth[a-z]* (the )?(eu-bench|bench)([^a-z0-9_-]|$)"
-    r"|(^|[^a-z0-9_-])(eu-bench|bench)('s)? (login|totp|authenticator|2fa|otp|verification code|code)"
-    r"|(totp|authenticator|2fa|otp|code) (code )?(for|of|from) (the )?(eu-bench|bench)([^a-z0-9_-]|$)"
+    r"(re-?)?(log|sign)(ging|ged|ing|ed)?[ -]?((it|me|us|back) +)*in(to| to)? (the )?((?:eu|us|asia)-bench|bench)([^a-z0-9_-]|$)"
+    r"|re-?auth[a-z]* (the )?((?:eu|us|asia)-bench|bench)([^a-z0-9_-]|$)"
+    r"|(^|[^a-z0-9_-])((?:eu|us|asia)-bench|bench)('s)? (login|totp|authenticator|2fa|otp|verification code|code)"
+    r"|(totp|authenticator|2fa|otp|code) (code )?(for|of|from) (the )?((?:eu|us|asia)-bench|bench)([^a-z0-9_-]|$)"
 )
 
 _ASCII_LOWER = str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")

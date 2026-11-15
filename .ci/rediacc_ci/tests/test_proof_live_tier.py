@@ -717,3 +717,65 @@ def test_a_row_whose_surfaces_hold_a_non_string_is_reported_not_raised(bad) -> N
     assert any("surfaces is not a non-empty list of known surfaces" in p for p in problems), (
         problems
     )
+
+
+# ---- one bench per region (PLAN-multi-region-bench W5) ----------------------------
+
+
+def test_a_regional_bench_run_expands_to_that_benches_origin_and_config() -> None:
+    check = LT.registry()["account-smoke"]
+    for region in ("us", "asia"):
+        bench = LT.bench_object(region)
+        runs = LT.expand(check, "bench", region=region)
+        assert [r.argv[-1] for r in runs] == [
+            f"https://{bench['host']}/account/api/v1/health",
+            f"https://{bench['host']}/account/api/v1/.well-known/server-info",
+        ]
+        assert LT.target_entry("bench", region)["config"] == f"{region}-bench"
+
+
+def test_control_the_home_bench_expands_the_same_with_no_region_or_eu() -> None:
+    check = LT.registry()["account-smoke"]
+    plain = [r.argv for r in LT.expand(check, "bench")]
+    assert plain == [r.argv for r in LT.expand(check, "bench", region="eu")]
+    assert plain[0][-1] == BENCH_ORIGIN + "/account/api/v1/health"
+
+
+def test_a_region_does_not_move_hostinger() -> None:
+    assert LT.target_entry("hostinger", "us") == LT.target_entry("hostinger")
+
+
+def test_an_unknown_region_has_no_bench() -> None:
+    with pytest.raises(LT.RegistryError, match="no region 'mars'"):
+        LT.bench_object("mars")
+
+
+def test_a_regional_row_validates_only_against_its_own_regions_argv() -> None:
+    row = _cli_row()
+    row["check"]["id"] = "account-smoke"
+    row["surfaces"] = ["account"]
+    row["region"] = "us"
+    row["check"]["argv"] = [
+        list(r.argv) for r in LT.expand(LT.registry()["account-smoke"], "bench", region="us")
+    ]
+    row["deploy"] = {
+        "surface": "account",
+        "worker": "account-bench-us",
+        "version_id": UUID,
+        "source": LT.BENCH_CACHE,
+        "deployed_head": HEAD,
+        "confirmed_live": True,
+    }
+    _reid(row)
+    assert not any("argv" in p for p in LT.validate_row(row))
+    row["region"] = "asia"
+    _reid(row)
+    assert any("check.argv is not the registry's argv" in p for p in LT.validate_row(row))
+
+
+def test_cli_bench_runs_through_each_benchs_rdc_config() -> None:
+    check = LT.registry()["cli-bench"]
+    assert [r.argv[2] for r in LT.expand(check, "bench")] == ["eu-bench"]
+    assert [r.argv[2] for r in LT.expand(check, "bench", region="eu")] == ["eu-bench"]
+    assert [r.argv[2] for r in LT.expand(check, "bench", region="us")] == ["us-bench"]
+    assert [r.argv[2] for r in LT.expand(check, "bench", region="asia")] == ["asia-bench"]

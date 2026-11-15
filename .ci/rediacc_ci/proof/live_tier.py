@@ -18,6 +18,7 @@ import json
 import re
 from typing import TYPE_CHECKING, Any
 
+from rediacc_ci import paths
 from rediacc_ci import well_known as WK
 from rediacc_ci.proof import receipt as R
 from rediacc_ci.proof import surfaces as S
@@ -49,6 +50,9 @@ EXPECT_RENET_HASH = "renet-hash"
 EXPECTS = (EXPECT_RC, EXPECT_STALE_BINARY_EMPTY, EXPECT_RENET_HASH)
 LIVE_KEYS = ("id", "at", "by", "plan", "box", "target", "region", "deploy", "check", "ladder")
 REGIONS = ("eu", "us", "asia")
+HOME_REGION = "eu"
+BENCH_TARGET = "bench"
+BENCH_REGIONS_REL = "regions.json"
 MACHINE = "machine"
 # A shell or a no-op as a step's program is a free command or a check that cannot fail.
 REFUSED_PROGRAMS = frozenset({"sh", "bash", "zsh", "dash", "env", "eval", "exec", "true", ":"})
@@ -247,11 +251,45 @@ def registry() -> dict[str, Check]:
     return parse_checks(S.MAP.live)
 
 
-def target_entry(target: str) -> dict[str, Any]:
+def bench_object(region: str) -> dict[str, Any]:
+    """The `bench` object of `region` in regions.json, the one source of a regional bench's host, Worker names and rdc config. RegistryError when the region or its bench object is missing."""
+    try:
+        doc = json.loads(paths.from_root(BENCH_REGIONS_REL).read_text(encoding="utf-8"))
+        rows = doc["regions"]
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        raise RegistryError(
+            f"{BENCH_REGIONS_REL} is unreadable ({exc.__class__.__name__})"
+        ) from exc
+    for row in rows:
+        if isinstance(row, dict) and row.get("id") == region:
+            bench = row.get("bench")
+            if not (
+                isinstance(bench, dict)
+                and all(isinstance(bench.get(k), str) for k in ("host", "config"))
+            ):
+                raise RegistryError(
+                    f"{BENCH_REGIONS_REL} region {region!r} has no usable bench object"
+                )
+            return bench
+    raise RegistryError(f"{BENCH_REGIONS_REL} has no region {region!r}")
+
+
+def is_regional_bench(target: str, region: str | None) -> bool:
+    """True for a bench run aimed at a bench other than the home bench (eu, which is also `--region` absent)."""
+    return target == BENCH_TARGET and region not in (None, HOME_REGION)
+
+
+def target_entry(target: str, region: str | None = None) -> dict[str, Any]:
+    """The target's registry entry, resolved. A bench run with `region` us or asia takes that region's bench host as `origin` and its rdc config as `config` from regions.json; eu and no region keep the registry's own (`origin_wk`)."""
     entry = (S.MAP.live.get("targets") or {}).get(target)
     if not isinstance(entry, dict):
         raise RegistryError(f"{target!r} is not a live target")
-    return resolve_target(target, entry)
+    out = resolve_target(target, entry)
+    if is_regional_bench(target, region):
+        bench = bench_object(str(region))
+        out["origin"] = "https://" + bench["host"]
+        out["config"] = bench["config"]
+    return out
 
 
 def machines_for(check: Check, target: str, machine: str | None) -> tuple[str | None, ...]:
@@ -294,29 +332,31 @@ def _fill(arg: str, values: dict[str, str]) -> str:
     return _PLACEHOLDER.sub(lambda m: values[m.group(1)], arg)
 
 
-def _values(target: str, machine: str | None) -> dict[str, str]:
-    entry = target_entry(target)
+def _values(target: str, machine: str | None, region: str | None = None) -> dict[str, str]:
+    entry = target_entry(target, region)
     values = {k: entry[k] for k in _TARGET_KEYS if isinstance(entry.get(k), str)}
     if machine is not None:
         values[MACHINE] = machine
     return values
 
 
-def expand(check: Check, target: str, machine: str | None = None) -> list[Run]:
-    """Every step to run for `check` on `target`, in order (per machine: every step for the first alias, then the next). RegistryError for a target the check does not name, or a machine outside the registry."""
+def expand(
+    check: Check, target: str, machine: str | None = None, region: str | None = None
+) -> list[Run]:
+    """Every step to run for `check` on `target`, in order (per machine: every step for the first alias, then the next). `region` picks the bench (see `target_entry`). RegistryError for a target the check does not name, or a machine outside the registry."""
     if target not in check.targets:
         raise RegistryError(f"check {check.id} runs on {list(check.targets)}, not {target!r}")
     runs: list[Run] = []
     for alias in machines_for(check, target, machine):
-        values = _values(target, alias)
+        values = _values(target, alias, region)
         runs.extend(
             Run(step, alias, tuple(_fill(a, values) for a in step.argv)) for step in check.steps
         )
     return runs
 
 
-def rebuild_argv(check: Check, target: str) -> tuple[str, ...]:
-    values = _values(target, None)
+def rebuild_argv(check: Check, target: str, region: str | None = None) -> tuple[str, ...]:
+    values = _values(target, None, region)
     return tuple(_fill(a, values) for a in check.rebuild)
 
 
@@ -453,7 +493,9 @@ def _check_problems(
     try:
         if not (isinstance(args, list) and all(isinstance(a, str) for a in args)):
             raise RegistryError("check.args is not a list of strings")
-        runs = expand(check, str(row.get("target")), machine_of_args(args))
+        runs = expand(
+            check, str(row.get("target")), machine_of_args(args), region=row.get("region")
+        )
     except RegistryError as exc:
         out.append(str(exc))
     else:

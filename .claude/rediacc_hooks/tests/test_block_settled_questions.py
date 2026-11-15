@@ -228,6 +228,27 @@ BENCH_PASS = [
 ]
 
 
+BENCH_REFUSE += [
+    # PLAN-multi-region-bench W5: the us and asia benches are the same agent-owned login.
+    ("us-bench log into", "Can you log into us-bench again?", ""),
+    ("asia-bench code ask", "Could you send the TOTP code for asia-bench?", ""),
+    ("us-bench header", "Can you log in again from this IP?", "us-bench login"),
+    ("us-bench re-login beside eu-remote", "Please re-login to us-bench, same as eu-remote.", ""),
+    (
+        "asia-bench code ask beside eu-remote",
+        "Could you send the TOTP code for asia-bench, the one beside eu-remote's?",
+        "",
+    ),
+    ("signing in to asia-bench", "Could you try signing in to asia-bench?", ""),
+]
+
+BENCH_PASS += [
+    # Controls: a regional config that is not bench, and a design question about a regional bench.
+    ("a us config that is not bench", "Could you enter the authenticator code for us-remote?", ""),
+    ("a design question about asia-bench", "Should the bench login flow cover asia-bench?", ""),
+]
+
+
 @pytest.mark.parametrize(
     ("label", "question", "header"), BENCH_REFUSE, ids=[c[0] for c in BENCH_REFUSE]
 )

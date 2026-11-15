@@ -1,9 +1,12 @@
-"""Headless login of the eu-bench config into the bench origin (`BENCH_ORIGIN`) with the operator's own bench account.
+"""Headless login of a bench config (`eu-bench`, `us-bench` or `asia-bench`) into its bench origin with the operator's own bench account.
 
-    npm run login:bench
-    PYTHONPATH=.ci python3 -m rediacc_ci.ops.login_bench [--server URL] [--config NAME]
+    npm run login:bench                      # the eu bench (`BENCH_ORIGIN`, config eu-bench)
+    npm run login:bench -- --region us       # the us bench (host and D1 name from regions.json `bench`, config us-bench)
+    PYTHONPATH=.ci python3 -m rediacc_ci.ops.login_bench [--region eu|us|asia] [--server URL] [--config NAME]
 
-BENCH ONLY (operator order 2026-10-27). The run refuses, with a named error and exit 2, any server other than the bench origin (`BENCH_ORIGIN`) and any rdc config other than eu-bench, before it reads a credential. The one exception is the internal `--mail-token` child entry, which the re-enrolment starts under the `deploy-bench` profile: it reads the Cloudflare keys to query the hardcoded bench D1 and prints one reauth token. Edge and stable keep human login; no profile binds an account for them.
+`--region` picks the bench; `--server` and `--config` may only repeat that region's own values. A regional bench has no recorded store entry, so `config remote enable` runs without `--config-id` for it and its first link creates the entry.
+
+BENCH ONLY (operator order 2026-10-27). The run refuses, with a named error and exit 2, any server other than the selected region's bench origin and any rdc config other than that region's, before it reads a credential. The one exception is the internal `--mail-token` child entry, which the re-enrolment starts under the `deploy-bench` profile: it reads the Cloudflare keys to query the hardcoded bench D1 and prints one reauth token. Edge and stable keep human login; no profile binds an account for them.
 
 THE STEPS, in order:
 
@@ -25,6 +28,7 @@ SECRETS. Every value travels by name in a child's environment: never on argv, ne
 
 from __future__ import annotations
 
+import dataclasses
 import http.client
 import json
 import os
@@ -45,9 +49,15 @@ from rediacc_ci.well_known import BENCH_ORIGIN
 PROFILE = "bench-login"
 SERVER = BENCH_ORIGIN
 CONFIG = "eu-bench"
-# Every CLI config name that reaches bench, and the one place a consumer reads it from (ops_health's bench hint, the post-bash bench hint `.claude/hooks/stop/wl_benchblock.py`): this script's own config and rdc.sh's `./rdc.sh --config bench <cmd>`.
-BENCH_CONFIGS = (CONFIG, "bench")
-CONFIG_ID = "1880812c-2086-4daa-a620-8f84aa3b6e7c"
+HOME_REGION = "eu"
+REGIONS = ("eu", "us", "asia")
+# One rdc config per bench region; regions.json `bench.config` is the source and a test holds this table to it (hooks import this module and must not read regions.json at import).
+REGION_CONFIGS = {"eu": CONFIG, "us": "us-bench", "asia": "asia-bench"}
+# Every CLI config name that reaches bench, and the one place a consumer reads it from (ops_health's bench hint, the post-bash bench hint `.claude/hooks/stop/wl_benchblock.py`): the three regional configs and rdc.sh's `./rdc.sh --config bench <cmd>`.
+BENCH_CONFIGS = (*REGION_CONFIGS.values(), "bench")
+# The store entry the home bench's config attaches to. A regional bench has no recorded entry: its first `config remote enable` creates one, so no `--config-id` is passed for it.
+CONFIG_IDS = {HOME_REGION: "1880812c-2086-4daa-a620-8f84aa3b6e7c"}
+CONFIG_ID = CONFIG_IDS[HOME_REGION]
 PLACEHOLDER = "PLACEHOLDER-operator-fills"
 MIN_WINDOW_LEFT = 5
 
@@ -96,11 +106,20 @@ MAIL_QUERY = (
 )
 D1_PROFILE = "deploy-bench"
 
-USAGE = "usage: login_bench [--server %s] [--config %s]" % (SERVER, CONFIG)
+USAGE = "usage: login_bench [--region %s] [--server URL] [--config NAME]" % "|".join(REGIONS)
 
 # THE LOGIN IS THE AGENT'S OWN STEP (operator order 2026-10-30). When an eu-bench command fails because the login is tied to another network address, the CLI tells a human to type an authenticator code in a terminal; an agent read that as an operator step and asked for the code. This run is the remedy, so callers that drive eu-bench (`rediacc_ci.ops.live_proof`) run it once and retry.
 REMEDY = "npm run login:bench"
 REMEDY_ARGV = ("npm", "run", "--silent", "login:bench")
+
+
+def remedy_for(region: str) -> tuple[str, tuple[str, ...]]:
+    """(display text, argv) of the login for `region`: the plain script for the home bench, `-- --region <r>` for another."""
+    if region == HOME_REGION:
+        return REMEDY, REMEDY_ARGV
+    return f"{REMEDY} -- --region {region}", (*REMEDY_ARGV, "--", "--region", region)
+
+
 # What the CLI prints for a login bound to another IP (packages/cli/src/i18n/locales/en/cli.json `loginIpMismatch`, `errors.subscription.ipRebind.nonInteractive` and `reloginOnly`), and for no login at all (`errors.subscription.notLoggedIn`). `.claude/hooks/trapguard/dispatch.py` keeps a copy it cannot import.
 LOGIN_NEEDED_MARKERS = (
     "tied to another network address",
@@ -115,14 +134,21 @@ def login_needed(text: str) -> bool:
     return any(marker in text for marker in LOGIN_NEEDED_MARKERS)
 
 
-def targets_config(argv: Sequence[str]) -> bool:
-    """True when `argv` is an rdc run against the eu-bench config (`--config eu-bench` or `--config=eu-bench`)."""
+def config_region(argv: Sequence[str]) -> str | None:
+    """The bench region whose config `argv` selects (`--config <name>` or `--config=<name>`), or None when it selects none of the three regional configs."""
     args = list(argv)
-    return any(
-        (a == "--config" and i + 1 < len(args) and args[i + 1] == CONFIG)
-        or a == "--config=" + CONFIG
-        for i, a in enumerate(args)
-    )
+    by_config = {config: region for region, config in REGION_CONFIGS.items()}
+    for i, a in enumerate(args):
+        if a == "--config" and i + 1 < len(args) and args[i + 1] in by_config:
+            return by_config[args[i + 1]]
+        if a.startswith("--config=") and a[len("--config=") :] in by_config:
+            return by_config[a[len("--config=") :]]
+    return None
+
+
+def targets_config(argv: Sequence[str]) -> bool:
+    """True when `argv` is an rdc run against a regional bench config (`eu-bench`, `us-bench` or `asia-bench`, either `--config` spelling)."""
+    return config_region(argv) is not None
 
 
 Runner = Callable[[Sequence[str], Mapping[str, str]], int]
@@ -148,33 +174,87 @@ def _bws_entry(name: str) -> str:
         return name
 
 
-def parse_args(argv: Sequence[str]) -> tuple[str, str]:
-    """(server, config). Anything but bench and eu-bench is a LoginError with rc 2."""
-    server, config = SERVER, CONFIG
+@dataclasses.dataclass(frozen=True)
+class Target:
+    """One bench region's login target: its account origin, rdc config, the store entry to attach to (None: the first link creates it) and the D1 database and wrangler config the re-enrolment reads captured mail from (None, None: the deploy_bench defaults of the home bench)."""
+
+    region: str
+    server: str
+    config: str
+    config_id: str | None
+    d1_name: str | None
+    d1_config: str | None
+
+
+def target_for(region: str) -> Target:
+    """The target of `region`. The home bench is the module constants; another region reads its host and D1 name from regions.json `bench`, and its wrangler config is `wrangler.bench-<region>.toml`. LoginError (rc 2) for an unknown region or one with no bench object."""
+    if region not in REGIONS:
+        raise LoginError(
+            "login:bench refuses region %r: the benches are %s" % (region, ", ".join(REGIONS)),
+            rc=2,
+        )
+    if region == HOME_REGION:
+        return Target(region, SERVER, CONFIG, CONFIG_IDS[region], None, None)
+    try:
+        rows = json.loads(paths.from_root("regions.json").read_text(encoding="utf-8"))["regions"]
+        bench = next(r["bench"] for r in rows if r["id"] == region)
+        host, d1_name = bench["host"], bench["d1"]["name"]
+    except (OSError, ValueError, KeyError, TypeError, StopIteration) as exc:
+        raise LoginError(
+            "login:bench cannot read the %s bench from regions.json (%s)"
+            % (region, exc.__class__.__name__),
+            rc=2,
+        ) from exc
+    return Target(
+        region,
+        "https://" + host,
+        REGION_CONFIGS[region],
+        CONFIG_IDS.get(region),
+        d1_name,
+        "wrangler.bench-%s.toml" % region,
+    )
+
+
+def parse_target(argv: Sequence[str]) -> Target:
+    """The target the arguments select. `--region` picks the bench (default: the one `--config` names, else eu); `--server` and `--config` may only repeat that region's own values. Anything else is a LoginError with rc 2, before any credential is read."""
+    server = config = region = None
     rest = list(argv)
     while rest:
         arg = rest.pop(0)
-        if arg in ("--server", "--config") and rest:
+        if arg in ("--server", "--config", "--region") and rest:
             value = rest.pop(0)
-        elif arg.startswith(("--server=", "--config=")):
+        elif arg.startswith(("--server=", "--config=", "--region=")):
             arg, value = arg.split("=", 1)
         else:
             raise LoginError("%s (unexpected argument %r)" % (USAGE, arg), rc=2)
         if arg == "--server":
             server = value
-        else:
+        elif arg == "--config":
             config = value
-    if server.rstrip("/") != SERVER:
+        else:
+            region = value
+    if region is None and config is not None:
+        region = config_region(["--config", config])
+    target = target_for(region or HOME_REGION)
+    if server is not None and server.rstrip("/") != target.server:
         raise LoginError(
-            "login:bench refuses server %r: it logs in to %s only; edge and stable keep human login"
-            % (server, SERVER),
+            "login:bench refuses server %r: the %s bench logs in to %s only; edge and stable keep human login"
+            % (server, target.region, target.server),
             rc=2,
         )
-    if config != CONFIG:
+    if config is not None and config != target.config:
         raise LoginError(
-            "login:bench refuses config %r: it writes the %s config only" % (config, CONFIG), rc=2
+            "login:bench refuses config %r: the %s bench writes the %s config only"
+            % (config, target.region, target.config),
+            rc=2,
         )
-    return SERVER, CONFIG
+    return target
+
+
+def parse_args(argv: Sequence[str]) -> tuple[str, str]:
+    """(server, config) of the selected bench; see `parse_target`."""
+    target = parse_target(argv)
+    return target.server, target.config
 
 
 def read_values(env: Mapping[str, str]) -> dict[str, str]:
@@ -272,7 +352,7 @@ def _sql_literal(value: str) -> str:
     return "'" + value.replace("'", "''") + "'"
 
 
-def _d1_rows(sql: str) -> list[dict]:
+def _d1_rows(sql: str, target: Target | None = None) -> list[dict]:
     """`wrangler d1 execute` against the bench D1 with the Global API Key pair the deploy-bench profile binds; stdout is never printed (it holds live links)."""
     key, mail = os.environ.get("CF_GLOBAL_API_KEY"), os.environ.get("CF_EMAIL")
     if not (key and mail):
@@ -286,10 +366,10 @@ def _d1_rows(sql: str) -> list[dict]:
         *wrangler.ARGV,
         "d1",
         "execute",
-        deploy_bench.DB_NAME,
+        (target.d1_name if target and target.d1_name else deploy_bench.DB_NAME),
         "--remote",
         "--config",
-        deploy_bench.CONFIG,
+        (target.d1_config if target and target.d1_config else deploy_bench.CONFIG),
         "--json",
         "--command",
         sql,
@@ -311,13 +391,13 @@ def _d1_rows(sql: str) -> list[dict]:
     return [r for r in rows if isinstance(r, dict)]
 
 
-def mail_token_main(email: str, since: str) -> int:
+def mail_token_main(email: str, since: str, region: str = HOME_REGION) -> int:
     """`--mail-token`, run under the deploy-bench profile: print the newest reauth token mailed to `email` since `since` (and nothing else), or exit 1. The stdout is read by the parent process only."""
     sql = MAIL_QUERY % (_sql_literal(email), _sql_literal(since))
     for attempt in range(MAIL_ATTEMPTS):
         if attempt:
             time.sleep(MAIL_WAIT_S)
-        for row in _d1_rows(sql):
+        for row in _d1_rows(sql, target_for(region)):
             found = REAUTH_TOKEN.search(str(row.get("text_body") or ""))
             if found:
                 print(found.group(1))
@@ -332,7 +412,13 @@ def _with_ci_path(env: Mapping[str, str]) -> dict[str, str]:
     return child
 
 
-def _mail_token(email: str, since: str, env: Mapping[str, str], capture: Capture) -> str:
+def _mail_token(
+    email: str,
+    since: str,
+    env: Mapping[str, str],
+    capture: Capture,
+    region: str = HOME_REGION,
+) -> str:
     """The reauth token from bench's captured mail, through a child under the deploy-bench profile."""
     child = _with_ci_path(env)
     child[EMAIL_ENV] = email
@@ -350,6 +436,7 @@ def _mail_token(email: str, since: str, env: Mapping[str, str], capture: Capture
             "rediacc_ci.ops.login_bench",
             MAIL_MODE,
             since,
+            *([] if region == HOME_REGION else [region]),
         ],
         child,
     )
@@ -384,13 +471,14 @@ def reenrol(
     capture: Capture,
     now: Callable[[], float] = time.time,
     sleep: Callable[[float], None] = time.sleep,
+    region: str = HOME_REGION,
 ) -> tuple[str, str]:
     """Turn TOTP on for the bench account and store the new seed. Returns (seed, the code `enable` spent). The session in `api` is the one the probe login opened."""
     since = (datetime.fromtimestamp(now(), UTC) - CLOCK_SKEW).strftime("%Y-%m-%dT%H:%M:%S")
     status, _ = api.post("reauth")
     if status != 200:
         raise LoginError("POST /auth/reauth answered HTTP %d" % status)
-    token = _mail_token(email, since, env, capture)
+    token = _mail_token(email, since, env, capture, region)
     status, _ = api.post("reauth/verify", {"token": token})
     if status != 200:
         raise LoginError("POST /auth/reauth/verify answered HTTP %d" % status)
@@ -565,7 +653,8 @@ def login(
     api: Poster | None = None,
 ) -> None:
     """Steps 2-6 of the module docstring, with the profile already bound. Raises LoginError."""
-    server, config = parse_args(argv)
+    target = parse_target(argv)
+    server, config = target.server, target.config
     values = read_values(env)
     clean = base_env(env)
 
@@ -625,7 +714,7 @@ def login(
             )
     else:
         log.step("TOTP is off on the bench account: enrolling a new seed")
-        seed, spent = reenrol(account, values[EMAIL_ENV], clean, capture, now, sleep)
+        seed, spent = reenrol(account, values[EMAIL_ENV], clean, capture, now, sleep, target.region)
 
     accept_terms(account)
 
@@ -653,8 +742,7 @@ def login(
             "remote",
             "enable",
             "--master-password",
-            "--config-id",
-            CONFIG_ID,
+            *(["--config-id", target.config_id] if target.config_id else []),
             "--api-url",
             server,
         ),
@@ -708,15 +796,15 @@ def _reexec_under_profile(argv: Sequence[str], run: Runner) -> int | None:
 
 def main(argv: Sequence[str] | None = None, run: Runner = _subprocess_runner) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
-    if len(args) == 2 and args[0] == MAIL_MODE:
+    if len(args) in (2, 3) and args[0] == MAIL_MODE:
         email = os.environ.get(EMAIL_ENV) or ""
-        return mail_token_main(email, args[1]) if email else 2
+        return mail_token_main(email, *args[1:]) if email else 2
     if args and args[0] in ("-h", "--help"):
         print((__doc__ or "").strip())
         return 0
     try:
         # The bench-only refusal runs before the profile is entered, so a wrong target never reads a credential.
-        parse_args(args)
+        parse_target(args)
         rebound = _reexec_under_profile(args, run)
         if rebound is not None:
             return rebound

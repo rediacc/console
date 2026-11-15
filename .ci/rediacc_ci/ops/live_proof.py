@@ -120,6 +120,32 @@ CACHES = {
 }
 
 
+BENCH_KINDS = (LT.BENCH_CACHE, LT.BENCH_PROXY_CACHE)
+
+
+def cache_for(kind: str, region: str | None) -> DeployCache | None:
+    """The deploy cache of `kind`. A bench kind aimed at us or asia reads that region's own record (`bench-<r>.json`, `proxy-bench-<r>.json`), Worker name (regions.json `bench`) and `wrangler.bench-<r>.toml`; eu and no region read the home bench's. Any other kind has one cache or none."""
+    cache = CACHES.get(kind)
+    if cache is None or region in (None, LT.HOME_REGION) or kind not in BENCH_KINDS:
+        return cache
+    bench = LT.bench_object(region)
+    proxy = kind == LT.BENCH_PROXY_CACHE
+    worker = bench.get("proxyWorkerName" if proxy else "workerName")
+    if not isinstance(worker, str):
+        raise LT.RegistryError(
+            f"regions.json bench of {region!r} names no {'proxyWorkerName' if proxy else 'workerName'}"
+        )
+    stem = "proxy-bench" if proxy else "bench"
+    return dataclasses.replace(
+        cache,
+        label=f"{cache.label} {region}",
+        record=(*cache.record[:-1], f"{stem}-{region}.json"),
+        worker=worker,
+        config=f"wrangler.bench-{region}.toml",
+        remedy=cache.remedy + f" --region {region}",
+    )
+
+
 class RequestError(ValueError):
     """The request names something the registry or the plan refuses; nothing runs."""
 
@@ -462,7 +488,7 @@ def _cache_record(root: pathlib.Path, cache: DeployCache, run: _Run) -> str | No
 
 
 def _bench_login_needed(argv: Sequence[str], result: Result) -> bool:
-    """True when an eu-bench rdc step failed because its login is bound to another IP address, or absent."""
+    """True when a bench rdc step (any region's config) failed because its login is bound to another IP address, or absent."""
     return (
         result.rc != 0
         and login_bench.targets_config(argv)
@@ -473,15 +499,19 @@ def _bench_login_needed(argv: Sequence[str], result: Result) -> bool:
 def _relogin_and_retry(
     root: pathlib.Path, world: World, log_: _Log, label: str, item: LT.Run, failed: Result
 ) -> Result:
-    """Run `npm run login:bench` once (agent-allowed, idempotent; operator order 2026-10-30) and rerun the step; the failed answer stands when the login fails."""
-    log_.add(
-        f"# the eu-bench login is tied to another address or absent: running `{login_bench.REMEDY}` once, then retrying {label}"
+    """Run `npm run login:bench` once for the step's bench region (agent-allowed, idempotent; operator order 2026-10-30) and rerun the step; the failed answer stands when the login fails."""
+    config = ", ".join(a for a in item.argv if a in login_bench.BENCH_CONFIGS) or "eu-bench"
+    text, remedy_argv = login_bench.remedy_for(
+        login_bench.config_region(item.argv) or login_bench.HOME_REGION
     )
-    argv = list(login_bench.REMEDY_ARGV)
+    log_.add(
+        f"# the {config} login is tied to another address or absent: running `{text}` once, then retrying {label}"
+    )
+    argv = list(remedy_argv)
     login = world.run(argv, root, LOGIN_TIMEOUT_S, None)
     log_.run("login-bench", argv, login)
     if login.rc != 0:
-        log_.add(f"# `{login_bench.REMEDY}` exited {login.rc}; {label} is not retried")
+        log_.add(f"# `{text}` exited {login.rc}; {label} is not retried")
         return failed
     retried = world.run(item.argv, root, item.step.timeout_s, None)
     log_.run(label + " (retry after login:bench)", item.argv, retried)
@@ -579,7 +609,7 @@ def _identity(
     root: pathlib.Path, check: LT.Check, req: Request, names: list[str], world: World, log_: _Log
 ) -> dict[str, Any]:
     def rebuild() -> None:
-        argv = LT.rebuild_argv(check, req.target)
+        argv = LT.rebuild_argv(check, req.target, req.region)
         log_.run("rebuild", argv, world.run(argv, root, LT.DEFAULT_TIMEOUT_S, None))
 
     def renet(r: pathlib.Path) -> dict[str, Any]:
@@ -603,7 +633,7 @@ def _validate_request(req: Request, checks: dict[str, LT.Check]) -> LT.Check:
     if req.region is not None and req.region not in LT.REGIONS:
         raise RequestError(f"--region {req.region!r} is not one of {', '.join(LT.REGIONS)}")
     try:
-        LT.expand(check, req.target, req.machine)
+        LT.expand(check, req.target, req.machine, req.region)
     except LT.RegistryError as exc:
         raise RequestError(str(exc)) from exc
     return check
@@ -653,7 +683,7 @@ def record(
         f"# live-proof {req.plan} box {req.box} target {req.target} check {check.id} surfaces {','.join(names)}"
     )
     ident = _identity(root, check, req, names, world, log_)
-    cache = CACHES.get(check.deploy)
+    cache = cache_for(check.deploy, req.region)
     deploy = {
         "surface": LT.DEPLOY_SURFACE[check.deploy],
         "worker": cache.worker if cache is not None else None,
@@ -690,7 +720,7 @@ def record(
         if why is not None:
             return _refuse(run, root, world, R.NOT_VERIFIED, R.NOT_LIVE, why)
     relogged = False
-    for item in LT.expand(check, req.target, req.machine):
+    for item in LT.expand(check, req.target, req.machine, req.region):
         label = item.step.id + (f"@{item.machine}" if item.machine else "")
         result = world.run(item.argv, root, item.step.timeout_s, None)
         log_.run(label, item.argv, result)
@@ -704,7 +734,9 @@ def record(
             code = CODE_FAILED if stop[0] == R.FAILED else R.NOT_LIVE
             message = stop[1]
             if _bench_login_needed(item.argv, result):
-                message += f"; the eu-bench login still needs `{login_bench.REMEDY}` (an agent's own step, never the operator's)"
+                where = login_bench.config_region(item.argv) or login_bench.HOME_REGION
+                text, _ = login_bench.remedy_for(where)
+                message += f"; the {where}-bench login still needs `{text}` (an agent's own step, never the operator's)"
             return _refuse(run, root, world, stop[0], code, message)
     why = _confirm(root, run, world)
     if why is not None:
@@ -716,7 +748,7 @@ def _confirm(root: pathlib.Path, run: _Run, world: World) -> str | None:
     """Set deploy.confirmed_live from the live side; the refusal message, or None."""
     kind = run.check.deploy
     head = run.ident["head"]
-    cache = CACHES.get(kind)
+    cache = cache_for(kind, run.req.region)
     if cache is not None:
         live = _live_version(root, cache, world, run.log)
         if not live or live != run.deploy["version_id"]:
@@ -725,7 +757,7 @@ def _confirm(root: pathlib.Path, run: _Run, world: World) -> str | None:
         renet = run.ident.get("renet") or {}
         run.deploy.update(
             version_id=f"renet:{renet.get('built')}@sha256:{renet.get('sha256')}",
-            source=f"rdc:{LT.target_entry(run.req.target).get('config')}",
+            source=f"rdc:{LT.target_entry(run.req.target, run.req.region).get('config')}",
             deployed_head=head,
         )
     elif kind == LT.TREE:

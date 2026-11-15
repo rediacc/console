@@ -645,7 +645,7 @@ def test_the_mail_mode_reads_only_a_reauth_token(monkeypatch, capsys):
     rows = [{"text_body": "open https://bench/account/reauth/verify?token=abc_DEF-1 now"}]
     seen: list[str] = []
 
-    def fake_rows(sql):
+    def fake_rows(sql, _target=None):
         seen.append(sql)
         return rows
 
@@ -829,3 +829,162 @@ def test_the_d1_reader_needs_the_key_pair_and_parses_the_results(monkeypatch):
     Done.returncode = 1
     with pytest.raises(login_bench.LoginError, match="exit 1"):
         login_bench._d1_rows("SELECT 1")
+
+
+# ---- the three benches (PLAN-multi-region-bench W5) -----------------------------
+
+
+def _regions_bench() -> dict[str, dict]:
+    doc = json.loads((login_bench.paths.repo_root() / "regions.json").read_text(encoding="utf-8"))
+    return {row["id"]: row["bench"] for row in doc["regions"]}
+
+
+def test_the_config_table_is_regions_json():
+    bench = _regions_bench()
+    assert {r: b["config"] for r, b in bench.items()} == login_bench.REGION_CONFIGS
+    assert set(login_bench.REGION_CONFIGS.values()) <= set(login_bench.BENCH_CONFIGS)
+    assert "bench" in login_bench.BENCH_CONFIGS
+
+
+@pytest.mark.parametrize("region", ["us", "asia"])
+def test_a_regional_bench_targets_its_own_host_config_and_database(region):
+    bench = _regions_bench()[region]
+    target = login_bench.parse_target(["--region", region])
+    assert target.server == "https://" + bench["host"]
+    assert target.config == f"{region}-bench"
+    assert target.d1_name == bench["d1"]["name"]
+    assert target.d1_config == f"wrangler.bench-{region}.toml"
+    assert target.config_id is None
+    assert login_bench.parse_args([f"--region={region}"]) == (target.server, target.config)
+
+
+def test_control_the_home_bench_is_unchanged():
+    target = login_bench.parse_target([])
+    assert (target.server, target.config, target.config_id) == (
+        login_bench.SERVER,
+        login_bench.CONFIG,
+        login_bench.CONFIG_ID,
+    )
+    assert target == login_bench.parse_target(["--region", "eu"])
+    assert (target.d1_name, target.d1_config) == (None, None)
+
+
+def test_a_config_name_selects_its_region():
+    assert login_bench.parse_target(["--config", "us-bench"]).region == "us"
+    assert login_bench.parse_target(["--config=asia-bench"]).region == "asia"
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["--region", "us", "--config", "eu-bench"],
+        ["--region", "asia", "--server", BENCH_ORIGIN],
+        ["--region", "us", "--server", "https://bench-asia.rediacc.cloud"],
+        ["--region", "eu", "--config", "us-bench"],
+    ],
+)
+def test_a_region_refuses_another_regions_server_or_config(argv, capsys):
+    runner = FakeRunner()
+    assert login_bench.main(argv, runner) == 2
+    assert runner.calls == []
+    assert "refuses" in capsys.readouterr().err
+
+
+def test_an_unknown_region_is_refused_before_any_child(capsys):
+    runner = FakeRunner()
+    assert login_bench.main(["--region", "mars"], runner) == 2
+    assert runner.calls == []
+    assert "refuses region" in capsys.readouterr().err
+
+
+@pytest.mark.parametrize(
+    ("config", "region"), [("eu-bench", "eu"), ("us-bench", "us"), ("asia-bench", "asia")]
+)
+def test_targets_config_reads_each_regional_selection(config, region):
+    for argv in (["./rdc.sh", "--config", config, "x"], ["./rdc.sh", f"--config={config}"]):
+        assert login_bench.targets_config(argv) is True
+        assert login_bench.config_region(argv) == region
+    assert login_bench.config_region(["./rdc.sh", "--config", "eu-remote"]) is None
+
+
+def test_the_remedy_names_the_region_it_logs_in():
+    assert login_bench.remedy_for("eu") == (login_bench.REMEDY, login_bench.REMEDY_ARGV)
+    text, argv = login_bench.remedy_for("us")
+    assert text == "npm run login:bench -- --region us"
+    assert argv[-3:] == ("--", "--region", "us")
+
+
+def test_a_regional_login_runs_rdc_on_its_config_and_enables_without_a_config_id():
+    runner = FakeRunner()
+    login_bench.login(
+        ["--region", "us"],
+        _env(),
+        runner,
+        now=lambda: FIXED_NOW,
+        sleep=lambda _s: None,
+        capture=runner.capture,
+        api=FakeApi(),
+    )
+    us = _regions_bench()["us"]
+    rdc = [argv for argv, _ in runner.calls if "--config" in argv and "us-bench" in argv]
+    assert rdc, runner.calls
+    assert all("eu-bench" not in argv for argv, _ in runner.calls)
+    login_argv = next(a for a in rdc if "login" in a)
+    assert login_argv[-2:] == ["--server", "https://" + us["host"]]
+    enable = next(a for a in rdc if "enable" in a)
+    assert "--config-id" not in enable
+    assert enable[-2:] == ["--api-url", "https://" + us["host"]]
+
+
+def test_control_the_home_login_still_passes_its_config_id():
+    runner = FakeRunner()
+    login_bench.login(
+        [],
+        _env(),
+        runner,
+        now=lambda: FIXED_NOW,
+        sleep=lambda _s: None,
+        capture=runner.capture,
+        api=FakeApi(),
+    )
+    enable = next(a for a, _ in runner.calls if "enable" in a)
+    assert enable[enable.index("--config-id") + 1] == login_bench.CONFIG_ID
+
+
+def test_the_mail_child_carries_the_region_only_when_it_is_not_home():
+    class Cap:
+        def __init__(self):
+            self.argv = []
+
+        def __call__(self, argv, _env):
+            self.argv.append(list(argv))
+            return 0, "tok-1\n"
+
+    for region, tail in (("us", ["us"]), ("eu", [])):
+        cap = Cap()
+        login_bench._mail_token("o@example.invalid", "2026-11-11T10:00:00", {}, cap, region)
+        want = [login_bench.MAIL_MODE, "2026-11-11T10:00:00", *tail]
+        assert cap.argv[0][-len(want) :] == want
+        assert len(cap.argv[0][cap.argv[0].index(login_bench.MAIL_MODE) :]) == len(want)
+
+
+def test_the_mail_mode_reads_the_regional_database(monkeypatch, capsys):
+    seen = []
+
+    def fake_run(argv, **_k):
+        seen.append(argv)
+
+        class Done:
+            returncode = 0
+            stdout = '[{"results": [{"text_body": "go reauth/verify?token=abc_1 now"}]}]'
+
+        return Done()
+
+    monkeypatch.setenv("CF_GLOBAL_API_KEY", "k")
+    monkeypatch.setenv("CF_EMAIL", "e@example.invalid")
+    monkeypatch.setattr(login_bench.subprocess, "run", fake_run)
+    assert login_bench.mail_token_main("o@example.invalid", "2026-11-11T10:00:00", "asia") == 0
+    argv = seen[0]
+    assert argv[argv.index("execute") + 1] == _regions_bench()["asia"]["d1"]["name"]
+    assert argv[argv.index("--config") + 1] == "wrangler.bench-asia.toml"
+    assert capsys.readouterr().out == "abc_1\n"

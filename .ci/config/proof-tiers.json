@@ -438,7 +438,7 @@
         "ci-trace"
       ],
       "targets": {
-        "bench": {"origin_wk": "WK_BENCH_ORIGIN"},
+        "bench": {"origin_wk": "WK_BENCH_ORIGIN", "config": "eu-bench"},
         "hostinger": {"config": "eu-bench", "machines": ["hostinger"]}
       },
       "checks": {
@@ -465,9 +465,9 @@
           "targets": ["bench"],
           "surfaces": ["cli"],
           "deploy": "tree",
-          "what": "the CLI built from the clean head tree reads its subscription from the bench account server through the eu-bench config",
+          "what": "the CLI built from the clean head tree reads its subscription from the bench account server through the target's rdc config (eu-bench, or the us-bench or asia-bench config for a `--region` run)",
           "steps": [
-            {"id": "subscription", "argv": ["./rdc.sh", "--config", "eu-bench", "subscription", "status"]}
+            {"id": "subscription", "argv": ["./rdc.sh", "--config", "{config}", "subscription", "status"]}
           ]
         },
         "www-smoke": {
