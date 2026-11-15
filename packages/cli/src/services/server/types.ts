@@ -15,6 +15,8 @@ export const LICENCE_MODES: readonly LicenceMode[] = ['auto', 'free'] as const;
 /** The architectures a bundle's renet and images are built for. */
 export type BundleArch = 'amd64' | 'arm64';
 export const BUNDLE_ARCHES: readonly BundleArch[] = ['amd64', 'arm64'] as const;
+/** The architecture `rdc server bundle` packs when `--arch` is not given. */
+export const DEFAULT_BUNDLE_ARCH: BundleArch = 'amd64';
 
 /** The release channel the CLI binaries of a bundle come from (`<baseUrl>/v<version>/rdc-<platform>`). */
 export interface ReleaseHost {

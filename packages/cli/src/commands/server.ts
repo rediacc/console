@@ -18,6 +18,7 @@ import type { InstallOptions } from '../services/server/install-options.js';
 import {
   BUNDLE_ARCHES,
   type BundleArch,
+  DEFAULT_BUNDLE_ARCH,
   LICENCE_MODES,
   TLS_METHODS,
 } from '../services/server/types.js';
@@ -276,7 +277,7 @@ function registerBundle(server: Command): void {
     .addOption(
       new Option('--arch <arch>', t('commands.server.bundle.optionArch'))
         .choices([...BUNDLE_ARCHES])
-        .default('amd64')
+        .default(DEFAULT_BUNDLE_ARCH)
     )
     .option('--tag <tag>', t('commands.server.bundle.optionTag'))
     .option('--image <ref>', t('commands.server.bundle.optionImage'))

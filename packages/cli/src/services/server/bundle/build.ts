@@ -13,7 +13,7 @@ import { t } from '../../../i18n/index.js';
 import { VERSION } from '../../../version.js';
 import { outputService } from '../../core/output.js';
 import { ServerError } from '../box.js';
-import type { BundleArch, ServerDeps } from '../types.js';
+import { type BundleArch, DEFAULT_BUNDLE_ARCH, type ServerDeps } from '../types.js';
 import { fetchCliBinaries, parseCliPlatforms } from './cli-binaries.js';
 import { bundleImages, serverRef } from './images.js';
 import {
@@ -89,7 +89,7 @@ async function saveImage(
 }
 
 export async function serverBundle(deps: ServerDeps, opts: BundleOptions): Promise<BundleManifest> {
-  const arch = opts.arch ?? 'amd64';
+  const arch = opts.arch ?? DEFAULT_BUNDLE_ARCH;
   if (opts.tag && opts.image) {
     throw new ServerError(t('commands.server.bundle.errors.tagAndImage'));
   }
