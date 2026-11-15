@@ -105,7 +105,9 @@ def test_account_workers_production_lists_each_region():
 
 
 def test_signers_bench_and_production():
-    assert ds.signers(bench=True) == ["signer-bench-eu", "signer-bench-us"]
+    deployable = ds.bench_region_ids(ds._root(), deployable_only=True)
+    assert ds.signers(bench=True) == ["signer-bench-%s" % r for r in deployable]
+    assert "signer-bench-asia" not in ds.signers(bench=True)
     assert all(s.startswith("signer-") and "bench" not in s for s in ds.signers(bench=False))
 
 
@@ -150,7 +152,7 @@ def test_props_absent_on_the_binding_read_as_empty_and_a_missing_binding_is_an_e
 def test_expected_props_shared_and_company():
     assert ds.expected_props("account-bench", companies=companies) == {
         "tier": "shared",
-        "region": ds._account_region("wrangler.bench.toml"),
+        "region": "eu",
     }
     region = ds.load_region_ids(ds._root())[0]
     assert ds.expected_props("account-" + region, companies=companies) == {
@@ -301,7 +303,18 @@ def test_stop_signer_deletes_the_private_key_secret_not_the_worker():
     assert len(run.calls) == 2
 
 
-@pytest.mark.parametrize("signer", ["signer-bench-eu", "signer-bench-us"])
+def test_cut_and_restore_refuse_a_bench_region_that_is_not_deployable():
+    """signer-bench-us cannot be redeployed before its bench is deployable (deploy refuses it), so a cut would never be restored: cutting it is refused first."""
+    run = FakeRun()
+    for region in ("us", "asia"):
+        with pytest.raises(proof.LabError, match="deployable: false"):
+            ds.cut_region(region, run=run, env=KEYS, protected=list)
+        with pytest.raises(proof.LabError, match="deployable: false"):
+            ds.restore_region(region, run=run, env=KEYS)
+    assert run.calls == []
+
+
+@pytest.mark.parametrize("signer", ["signer-bench-eu"])
 def test_stop_and_cut_refuse_while_bench_carries_production_data(signer):
     run = FakeRun(json.dumps([{"name": "ACCOUNT_ED25519_PUBLIC_KEY"}]))
     with pytest.raises(proof.LabError, match=r"bench carries production data.*hostinger"):
@@ -454,4 +467,5 @@ def test_certificate_audited_queries_the_signer_regions_control_database(monkeyp
 
 def test_the_live_lab_binds_the_group_now():
     live = lab.build(bench=True)
-    assert live.signers(bench=True) == ["signer-bench-eu", "signer-bench-us"]
+    assert live.signers(bench=True) == ds.signers(bench=True)
+    assert "signer-bench-eu" in live.signers(bench=True)

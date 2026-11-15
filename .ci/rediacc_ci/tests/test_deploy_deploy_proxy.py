@@ -414,6 +414,19 @@ def test_every_real_config_passes_the_gate_it_is_deployed_through() -> None:
     assert spec.routes == (PROXY_BENCH_HOST,)
 
 
+@pytest.mark.parametrize("region", ["us", "asia"])
+def test_a_bench_proxy_is_selected_in_every_bench_region(region: str) -> None:
+    """The per-region acceptance that replaced the eu-only refusal: `--target bench --region us|asia` selects that region's own bench proxy, config and record."""
+    spec, _text = port.select(ROOT, "bench", region)
+    assert spec.config == "wrangler.bench-%s.toml" % region
+    assert spec.name == "proxy-bench-%s" % region
+    assert port.bench_version_record(region)[-1] == "proxy-bench-%s.json" % region
+    assert port.bench_version_record("eu") == port.BENCH_VERSION_RECORD
+    # control: an unknown region is still refused by name
+    with pytest.raises(port.RefusedError, match="--target bench refuses --region mars"):
+        port.select(ROOT, "bench", "mars")
+
+
 # ---- the config gate runs before any credential ------------------------------
 
 
@@ -480,14 +493,21 @@ def test_a_missing_config_refuses_before_any_fetch(tmp_path: pathlib.Path) -> No
             ("--target", "stable", "--region", "mars", "--version", VERSION),
             "--region mars is not supported",
         ),
-        (("--target", "bench", "--region", "us"), "--target bench refuses --region us"),
+        (("--target", "bench", "--region", "mars"), "--target bench refuses --region mars"),
         (("--target", "stable", "--region", "eu"), "--version is required for a stable deploy"),
         (
             ("--target", "stable", "--region", "eu", "--version", "next"),
             "--version 'next' is not a release version",
         ),
     ],
-    ids=["unknown-target", "no-region", "unknown-region", "bench-us", "no-version", "bad-version"],
+    ids=[
+        "unknown-target",
+        "no-region",
+        "unknown-region",
+        "bench-mars",
+        "no-version",
+        "bad-version",
+    ],
 )
 def test_argument_refusals_need_no_token_and_run_nothing(
     tmp_path: pathlib.Path, args: tuple[str, ...], fragment: str
@@ -2105,6 +2125,19 @@ def test_a_tree_that_moved_during_the_deploy_records_nothing(tmp_path: pathlib.P
         port.record_bench_version(
             world.root, port.BENCH_WORKER, "wrangler.bench.toml", NEW_ID, built
         )
+    assert not _bench_record(world.root).exists()
+
+
+def test_a_us_bench_deploy_records_beside_the_eu_record_not_over_it(tmp_path: pathlib.Path) -> None:
+    world = World(tmp_path / "console")
+    built = port.bench_identity(world.root)
+    record = port.record_bench_version(
+        world.root, "proxy-bench-us", "wrangler.bench-us.toml", NEW_ID, built, region="us"
+    )
+    us_path = world.root.joinpath(*port.bench_version_record("us"))
+    assert json.loads(us_path.read_text(encoding="utf-8")) == record
+    assert record["worker"] == "proxy-bench-us"
+    # control: the eu record path was not written
     assert not _bench_record(world.root).exists()
 
 

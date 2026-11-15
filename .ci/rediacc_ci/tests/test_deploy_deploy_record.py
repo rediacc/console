@@ -1124,3 +1124,23 @@ def test_two_branch_releases_neither_refuse_and_a_plain_second_write_does(monkey
     dr.sink_record(record, "r2", "edge", "www-edge", "global")
     with pytest.raises(dr.RecordError, match="written once"):
         dr.sink_record(record, "r2", "edge", "www-edge", "global")
+
+
+@pytest.mark.parametrize("region", ["eu", "us", "asia"])
+def test_a_bench_target_is_accepted_in_every_bench_region(region):
+    """Per-region bench (PLAN-multi-region-bench W4): the eu-only refusal is gone, and each region reads its own account and proxy configs."""
+    root = dr.paths.repo_root()
+    dr.check_target(root, "bench", region)
+    assert dr.account_config("bench", region) == (
+        "wrangler.bench.toml" if region == "eu" else "wrangler.bench-%s.toml" % region
+    )
+    assert dr.proxy_config("bench", region) == (
+        "wrangler.bench.toml" if region == "eu" else "wrangler.bench-%s.toml" % region
+    )
+
+
+def test_a_bench_target_is_refused_in_a_region_with_no_bench():
+    with pytest.raises(dr.RecordError, match="--target bench refuses --region mars"):
+        dr.check_target(dr.paths.repo_root(), "bench", "mars")
+    # control: a stable target in a real region is not refused
+    dr.check_target(dr.paths.repo_root(), "stable", "us")

@@ -1051,10 +1051,22 @@ def test_a_shared_before_without_a_pointer_has_no_previous_release(monkeypatch):
     assert "not;a version" not in json.dumps(record)
 
 
-@pytest.mark.parametrize("region", ["us", "asia"])
-def test_a_bench_company_is_refused_outside_the_bench_region(root, region):
-    with pytest.raises(ce.RefusedError, match="bench"):
-        target(root, region=region, bench=True)
+@pytest.mark.parametrize("region", ["eu", "us", "asia"])
+def test_a_bench_company_is_accepted_in_every_bench_region(root, region):
+    """Per-region bench (PLAN-multi-region-bench W4): the bench company of each region regions.json gives a bench to is accepted."""
+    assert target(root, region=region, bench=True).region == region
+
+
+def test_a_bench_company_is_refused_in_a_region_without_a_bench(root):
+    doc = json.loads((root / "regions.json").read_text(encoding="utf-8"))
+    for row in doc["regions"]:
+        if row["id"] == "asia":
+            del row["bench"]
+    (root / "regions.json").write_text(json.dumps(doc), encoding="utf-8")
+    with pytest.raises(ce.RefusedError, match="--company-bench refuses --region asia"):
+        target(root, region="asia", bench=True)
+    # control: the same region is accepted as a non-bench company
+    assert target(root, region="asia").bench is False
 
 
 def test_a_bench_company_is_accepted_in_the_bench_region(root):

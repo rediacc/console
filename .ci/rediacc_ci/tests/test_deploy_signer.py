@@ -124,20 +124,25 @@ def rendered(repo: pathlib.Path, target: str) -> str:
 # ---- targets ----------------------------------------------------------------
 
 
-def test_targets_are_one_per_region_plus_two_bench():
-    t = ds.targets(ds.load_region_ids(REPO))
-    assert sorted(t) == ["asia", "bench-eu", "bench-us", "eu", "us"]
+def test_targets_are_one_per_region_plus_one_per_bench_region():
+    t = ds.repo_targets(REPO)
+    assert sorted(t) == ["asia", "bench-asia", "bench-eu", "bench-us", "eu", "us"]
     assert t["eu"].worker == "signer-eu"
     assert t["eu"].control_db == "control-eu"
     assert t["bench-us"].worker == "signer-bench-us"
     assert t["bench-us"].region == "us"
     assert t["bench-us"].control_db == "control-bench-us"
-    assert t["bench-us"].account_config == "wrangler.bench.toml"
+    assert t["bench-us"].account_config == "wrangler.bench-us.toml"
+    assert t["bench-asia"].account_config == "wrangler.bench-asia.toml"
+    assert t["bench-asia"].control_db == "control-bench-asia"
+    assert t["bench-eu"].account_config == "wrangler.bench.toml"
 
 
 def test_the_declared_control_databases_equal_the_names_control_db_creates():
     expected = {r: registry.control_database(r) for r in registry.region_ids()}
-    expected.update({"bench-%s" % r: registry.control_database(r, True) for r in ds.BENCH_REGIONS})
+    expected.update(
+        {"bench-%s" % r: registry.control_database(r, True) for r in ds.bench_region_ids(REPO)}
+    )
     assert expected == ds.CONTROL_DATABASES
 
 
@@ -148,12 +153,12 @@ def test_a_target_without_a_declared_control_database_is_refused_not_derived():
 
 def test_a_repointed_control_name_reaches_the_target(monkeypatch):
     monkeypatch.setitem(ds.CONTROL_DATABASES, "bench-us", "control-bench-us-j")
-    assert ds.targets(["eu"])["bench-us"].control_db == "control-bench-us-j"
+    assert ds.targets(["eu"], ["us"])["bench-us"].control_db == "control-bench-us-j"
 
 
-@pytest.mark.parametrize("target", ["eu", "us", "asia", "bench-eu", "bench-us"])
+@pytest.mark.parametrize("target", ["eu", "us", "asia", "bench-eu", "bench-us", "bench-asia"])
 def test_every_target_renders_a_config_with_no_refusal(target):
-    spec = ds.targets(ds.load_region_ids(REPO))[target]
+    spec = ds.repo_targets(REPO)[target]
     account = (REPO / "workers/account" / spec.account_config).read_text()
     db, db_id, hosts = ds.shared_binding(account, spec.account_config)
     assert db_id
@@ -171,7 +176,7 @@ def test_every_target_renders_a_config_with_no_refusal(target):
         },
     )
     assert ds.config_refusals(text, spec) == []
-    assert db == ("account-bench" if target.startswith("bench") else "account-%s" % target)
+    assert db == ("account-bench" if target == "bench-eu" else "account-%s" % target)
 
 
 def test_shared_hosts_come_from_the_account_config():
@@ -538,3 +543,64 @@ def test_the_regional_bench_accounts_bind_a_shared_signer_of_their_own_region():
     assert ds.expected_props("account-bench") == {"tier": "shared", "region": "eu"}
     with pytest.raises(proof.LabError):
         ds.expected_props("account-bench-zz", companies=lambda _bench: [])
+
+
+# ---- per-region bench signers (agent/plans/PLAN-multi-region-bench.md box W4) ----------------------
+
+
+class RegionFake(FakeWrangler):
+    """A wrangler whose d1 list also names the control databases of the us and asia benches."""
+
+    def __call__(self, argv, cwd, stdin):
+        if argv[3:5] == ["d1", "list"]:
+            self.calls.append((argv, cwd, stdin))
+            names = ("control-bench-us", "control-bench-asia")
+            return ds.Result(0, json.dumps([{"name": n, "uuid": CONTROL_ID} for n in names]), "")
+        return super().__call__(argv, cwd, stdin)
+
+
+def _make_deployable(repo: pathlib.Path, region: str) -> None:
+    """Mark a bench deployable in the copied regions.json and give its account config a real database id."""
+    path = repo / "regions.json"
+    doc = json.loads(path.read_text())
+    for row in doc["regions"]:
+        if row["id"] == region:
+            row["bench"]["deployable"] = True
+    path.write_text(json.dumps(doc))
+    toml = repo / ("workers/account/wrangler.bench-%s.toml" % region)
+    toml.write_text(toml.read_text().replace("TO-BE-CREATED-L1", CONTROL_ID))
+
+
+def test_a_bench_region_not_marked_deployable_is_refused_by_name_before_any_call(repo):
+    fake = RegionFake()
+    with pytest.raises(ds.RefusedError, match=r"bench-us.*deployable: false"):
+        run(repo, fake, target="bench-us")
+    assert fake.calls == []
+    # control: a dry run still renders it, and the home bench is not refused
+    run(repo, RegionFake(), target="bench-us", dry_run=True)
+    run(repo, FakeWrangler(), target="bench-eu")
+
+
+@pytest.mark.parametrize(
+    ("region", "host"), [("us", "bench-us.rediacc.cloud"), ("asia", "bench-asia.rediacc.cloud")]
+)
+def test_a_deployable_bench_region_renders_its_own_database_host_and_control(repo, region, host):
+    _make_deployable(repo, region)
+    fake = RegionFake()
+    result, out = run(repo, fake, target="bench-%s" % region)
+    text = rendered(repo, "bench-%s" % region)
+    assert 'name = "signer-bench-%s"' % region in text
+    assert 'REGION = "%s"' % region in text
+    assert 'SHARED_HOSTS = "%s"' % host in text
+    assert 'database_name = "account-bench-%s"' % region in text
+    assert 'database_name = "control-bench-%s"' % region in text
+    assert 'database_name = "account-bench"' not in text
+    assert "Deployed signer-bench-%s version %s" % (region, VERSION) in out
+    assert result["version_id"] == VERSION
+
+
+def test_bench_region_ids_follow_regions_json_and_deployable_filters(repo):
+    assert ds.bench_region_ids(repo) == ["eu", "us", "asia"]
+    assert ds.bench_region_ids(repo, deployable_only=True) == ["eu"]
+    _make_deployable(repo, "us")
+    assert ds.bench_region_ids(repo, deployable_only=True) == ["eu", "us"]

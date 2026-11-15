@@ -126,9 +126,23 @@ def test_each_target_names_its_own_account_config_and_it_exists(target, region, 
     assert (ROOT / "workers" / "account" / config).is_file()
 
 
-def test_bench_refuses_another_region_and_an_unknown_target_is_refused():
-    with pytest.raises(ce.RefusedError, match="bench refuses --region us"):
-        ce.resolve_target(ROOT, "bench", "us")
+@pytest.mark.parametrize(
+    ("region", "config"),
+    [
+        ("eu", "wrangler.bench.toml"),
+        ("us", "wrangler.bench-us.toml"),
+        ("asia", "wrangler.bench-asia.toml"),
+    ],
+)
+def test_bench_resolves_each_regions_own_config(region, config):
+    assert ce.resolve_target(ROOT, "bench", region) == (region, config)
+    assert ce.resolve_target(ROOT, "bench", None)[0] == ce.BENCH_REGION
+    assert (ROOT / "workers" / "account" / config).is_file()
+
+
+def test_bench_refuses_a_region_with_no_bench_and_an_unknown_target_is_refused():
+    with pytest.raises(ce.RefusedError, match="bench refuses --region mars"):
+        ce.resolve_target(ROOT, "bench", "mars")
     with pytest.raises(ce.RefusedError, match="not one of"):
         ce.resolve_target(ROOT, "production", "eu")
     with pytest.raises(ce.RefusedError, match="--region mars"):

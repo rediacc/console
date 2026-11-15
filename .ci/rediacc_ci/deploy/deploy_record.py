@@ -84,13 +84,21 @@ class RecordError(Exception):
 # ---- naming -----------------------------------------------------------------
 
 
-def check_target(target: str, region: str) -> None:
+def check_target(repo_root: pathlib.Path, target: str, region: str) -> None:
     if target not in console_executor.TARGETS:
         raise RecordError(
             "--target %s is not one of %s" % (target, ", ".join(console_executor.TARGETS))
         )
-    if target == console_executor.BENCH_TARGET and region != console_executor.BENCH_REGION:
-        raise RecordError("--target bench refuses --region %s" % region)
+    if target == console_executor.BENCH_TARGET:
+        try:
+            benches = console_executor.bench_region_ids(repo_root)
+        except console_executor.RefusedError as exc:
+            raise RecordError(str(exc)) from None
+        if region not in benches:
+            raise RecordError(
+                "--target bench refuses --region %s: regions.json gives a bench to %s"
+                % (region, ", ".join(benches))
+            )
 
 
 COMPANY_TARGET = "company"
@@ -652,7 +660,7 @@ def take_account_before(
         target, region = COMPANY_TARGET, company.region
         account_dir, acfg = company.account_config.parent, company.account_config.name
     else:
-        check_target(target, region)
+        check_target(repo_root, target, region)
         account_dir = repo_root.joinpath(*ACCOUNT_SUBDIR)
         acfg = account_config(target, region)
     adoc = read_toml(account_dir / acfg)
@@ -724,7 +732,7 @@ def take_before(
         account_dir, acfg = company.account_config.parent, company.account_config.name
         proxy_dir, pcfg = company.proxy_config.parent, company.proxy_config.name
     else:
-        check_target(target, region)
+        check_target(repo_root, target, region)
         # `--previous-release` is company only: a shared target's previous release is its pointer's, read below.
         previous_release = None
         account_dir = repo_root.joinpath(*ACCOUNT_SUBDIR)
