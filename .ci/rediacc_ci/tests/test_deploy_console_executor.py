@@ -14,6 +14,7 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import console_executor as ce
+from rediacc_ci.deploy import deploy_proxy
 
 if TYPE_CHECKING:
     import pathlib
@@ -138,6 +139,34 @@ def test_bench_resolves_each_regions_own_config(region, config):
     assert ce.resolve_target(ROOT, "bench", region) == (region, config)
     assert ce.resolve_target(ROOT, "bench", None)[0] == ce.BENCH_REGION
     assert (ROOT / "workers" / "account" / config).is_file()
+
+
+def _regions_copy(tmp_path, deployable):
+    doc = json.loads((ROOT / "regions.json").read_text(encoding="utf-8"))
+    for row in doc["regions"]:
+        if row["id"] in deployable:
+            row["bench"]["deployable"] = deployable[row["id"]]
+    (tmp_path / "regions.json").write_text(json.dumps(doc), encoding="utf-8")
+    return tmp_path
+
+
+def test_bench_refuses_a_region_whose_bench_is_not_deployable_up_front(tmp_path):
+    """Review b7fd0615.3: a bench row with `deployable` false has no Worker yet, so the target is refused by name before wrangler is asked for it; the deployable regions still resolve."""
+    root = _regions_copy(tmp_path, {"eu": True, "us": False, "asia": True})
+    with pytest.raises(ce.RefusedError, match="--region us: its bench is not deployable yet"):
+        ce.resolve_target(root, "bench", "us")
+    assert ce.resolve_target(root, "bench", "asia") == ("asia", "wrangler.bench-asia.toml")
+    assert ce.resolve_target(root, "bench", None)[0] == ce.BENCH_REGION
+    assert ce.bench_region_ids(root) == ["asia", "eu", "us"]
+    assert ce.bench_region_ids(root, deployable_only=True) == ["asia", "eu"]
+
+
+def test_the_default_bench_region_is_the_regions_json_default_region():
+    """Review b7fd0615.5: `BENCH_REGION` (here and in deploy_proxy) is the home bench a bare `--target bench` means, and it must not drift from the region regions.json marks default."""
+    doc = json.loads((ROOT / "regions.json").read_text(encoding="utf-8"))
+    (home,) = [r["id"] for r in doc["regions"] if r.get("default") is True]
+    assert home == ce.BENCH_REGION
+    assert home == deploy_proxy.BENCH_REGION
 
 
 def test_bench_refuses_a_region_with_no_bench_and_an_unknown_target_is_refused():

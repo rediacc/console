@@ -876,7 +876,7 @@ def test_the_account_deploy_logs_no_label_when_a_check_refuses(lroot, monkeypatc
 class FakeFetcher:
     pin = None
 
-    def __init__(self, _host):
+    def __init__(self, _host, *, cert_wait=False):
         pass
 
     def code(self, url):

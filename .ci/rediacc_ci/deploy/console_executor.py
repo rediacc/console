@@ -304,12 +304,15 @@ def region_ids(repo_root: pathlib.Path) -> list[str]:
         raise RefusedError("%s: regions.json cannot be read: %s" % (SELF, exc)) from None
 
 
-def bench_region_ids(repo_root: pathlib.Path) -> list[str]:
-    """The region ids whose regions.json row carries a `bench` object."""
+def bench_region_ids(repo_root: pathlib.Path, *, deployable_only: bool = False) -> list[str]:
+    """The region ids whose regions.json row carries a `bench` object; with `deployable_only`, only those whose `bench.deployable` is true (the benches whose Workers exist)."""
     try:
         doc = json.loads((repo_root / "regions.json").read_text(encoding="utf-8"))
         return sorted(
-            str(r["id"]).lower() for r in doc["regions"] if isinstance(r.get("bench"), dict)
+            str(r["id"]).lower()
+            for r in doc["regions"]
+            if isinstance(r.get("bench"), dict)
+            and (r["bench"].get("deployable") is True or not deployable_only)
         )
     except (OSError, ValueError, KeyError, TypeError) as exc:
         raise RefusedError("%s: regions.json cannot be read: %s" % (SELF, exc)) from None
@@ -326,6 +329,11 @@ def resolve_target(repo_root: pathlib.Path, target: str, region: str | None) -> 
             raise RefusedError(
                 "--target bench refuses --region %s: regions.json gives a bench to %s"
                 % (region, ", ".join(benches))
+            )
+        if region not in bench_region_ids(repo_root, deployable_only=True):
+            raise RefusedError(
+                "--target bench refuses --region %s: its bench is not deployable yet "
+                "(regions.json bench.deployable is false), so its Worker does not exist" % region
             )
     else:
         known = region_ids(repo_root)
