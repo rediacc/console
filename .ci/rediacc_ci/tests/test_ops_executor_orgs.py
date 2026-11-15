@@ -276,7 +276,7 @@ def test_d1_cause_is_empty_without_a_json_error() -> None:
 
 
 def test_bad_target_is_refused_before_any_call(fake) -> None:
-    assert _run("list", "--target", "bench", "--region", "us") == 1
+    assert _run("list", "--target", "bench", "--region", "mars") == 1
     assert _calls(fake) == []
 
 

@@ -701,7 +701,9 @@ def _local_selftest() -> bool:
     expect(
         "a deploy_bench build that skips bench_assets_refusal was not reported",
         bench_findings(
-            _BENCH_OK.replace("bench_assets_refusal(worker_dir, region)", "None"), _BENCH_OUT, _CONFIGS
+            _BENCH_OK.replace("bench_assets_refusal(worker_dir, region)", "None"),
+            _BENCH_OUT,
+            _CONFIGS,
         ),
         True,
     )

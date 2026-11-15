@@ -780,8 +780,8 @@ def test_versions_reads_the_last_deployed_row_and_the_fast_tier(tmp_path):
 
 def test_versions_names_an_unreachable_region(tmp_path):
     r = four(tmp_path)
-    r.plane.down.add("control-bench-us")
-    with pytest.raises(proof.LabError, match="region us"):
+    r.plane.down.add("control-bench-eu")
+    with pytest.raises(proof.LabError, match="region eu"):
         rings_run.versions([SMALL], world=r.world)
 
 

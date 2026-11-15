@@ -246,7 +246,7 @@ def _account_doc(path: pathlib.Path) -> tuple[dict, str, dict]:
 def resolve_end(root: pathlib.Path, name: str) -> End:
     """One end: `<region>` (the shared set of that region, channel stable) from regions.json and the region's wrangler config, or `bench`, whose Worker name and region come from wrangler.bench.toml itself (regions.json does not list it)."""
     if name == BENCH_END:
-        config = target_mod.account_config(target_mod.BENCH_TARGET, "")
+        config = target_mod.account_config(target_mod.BENCH_TARGET, target_mod.BENCH_REGION)
         path = root.joinpath(*target_mod.ACCOUNT_SUBDIR, config)
         doc, database, bucket = _account_doc(path)
         raw_vars = doc.get("vars")
