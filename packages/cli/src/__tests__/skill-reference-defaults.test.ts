@@ -17,4 +17,13 @@ describe('generate-skill-reference option defaults', () => {
     expect(out).not.toContain('(default: )');
     expect(out).toContain('(default: ');
   }, 120_000);
+
+  it('the committed .claude/skills/rdc/reference.md is current', () => {
+    // --check exits 3 when the committed reference differs from the render, so execFileSync throws and the test fails.
+    execFileSync('npx', ['tsx', GENERATOR, '--check'], {
+      cwd: CLI_DIR,
+      encoding: 'utf8',
+      stdio: 'pipe',
+    });
+  }, 120_000);
 });
