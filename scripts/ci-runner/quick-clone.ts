@@ -1024,7 +1024,7 @@ export async function quickCloneSelftest(
       "cp -al a b exited 1: cp: cannot stat 'a/.vitest-cache/.tmp-1': No such file or directory"
     );
     let left = 1;
-    const won = linkTreeRetrying('a', 'b', {
+    const won = linkTreeRetrying(path.join(tmpDir, 'a'), path.join(tmpDir, 'b'), {
       copy: () => {
         calls.push('copy');
         if (left-- > 0) throw vanish;
@@ -1037,7 +1037,7 @@ export async function quickCloneSelftest(
     );
     let other = '';
     try {
-      linkTreeRetrying('a', 'b', {
+      linkTreeRetrying(path.join(tmpDir, 'a'), path.join(tmpDir, 'b'), {
         copy: () => {
           throw new Error('cp -al a b exited 1: cp: cannot create hard link: Permission denied');
         },
@@ -1053,8 +1053,8 @@ export async function quickCloneSelftest(
     let last = '';
     try {
       linkTreeRetrying(
-        'a',
-        'b',
+        path.join(tmpDir, 'a'),
+        path.join(tmpDir, 'b'),
         {
           copy: () => {
             throw vanish;
