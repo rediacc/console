@@ -600,9 +600,7 @@ def _handed_sequences(tree):
         if func.id == "print":
             return "file" in keys or None in keys
         if func.id == "type":
-            # `type(x)` reads a type; `type(name, bases, ns, **kw)` creates a class, which runs the bases'
-            # `__init_subclass__` (handed every keyword) and the metaclass: program code (review 2a494086.1). A `*args`
-            # expansion hides how many arguments arrive, so it counts too (review 109da352.1).
+            # `type(x)` reads a type; `type(name, bases, ns, **kw)` creates a class, which runs the bases' `__init_subclass__` (handed every keyword) and the metaclass: program code (review 2a494086.1). A `*args` expansion hides how many arguments arrive, so it counts too (review 109da352.1).
             return (
                 len(call.args) > 1
                 or bool(call.keywords)

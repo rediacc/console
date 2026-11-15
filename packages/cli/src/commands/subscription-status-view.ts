@@ -101,9 +101,9 @@ export function elsewhereItems(others: LicenceRow[]): string[] {
       if (a.row.presence !== b.row.presence) return a.row.presence === 'deleted' ? -1 : 1;
       const byUrgency = urgencyOf(a.row.freshness) - urgencyOf(b.row.freshness);
       // Values that share a rank (unknown freshness strings) order by name, so the line never depends on the server's row order (review 6af0546d.1).
-      return byUrgency !== 0
-        ? byUrgency
-        : compareCodeUnits(String(a.row.freshness), String(b.row.freshness));
+      return byUrgency === 0
+        ? compareCodeUnits(String(a.row.freshness), String(b.row.freshness))
+        : byUrgency;
     })
     .map(({ row, count }) =>
       t(

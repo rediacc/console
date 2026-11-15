@@ -871,9 +871,7 @@ def test_a_process_whose_grandchild_keeps_the_output_open_is_a_timeout(tmp_path)
         with pytest.raises(ftr.DrillError, match="output stayed open"):
             job.finish(1)
     finally:
-        # f2e5369d.1: end the grandchild and join the pump here, so its pipe closes inside this test and not in a later one.
-        # 0f926f33.1: a stub that failed before writing the pidfile must not replace the original failure with a FileNotFoundError.
-        # e4d3b408.3: the stub renames the pidfile into place, so an existing file holds a complete pid.
+        # f2e5369d.1: end the grandchild and join the pump here, so its pipe closes inside this test and not in a later one. 0f926f33.1: a stub that failed before writing the pidfile must not replace the original failure with a FileNotFoundError. e4d3b408.3: the stub renames the pidfile into place, so an existing file holds a complete pid.
         text = pidfile.read_text().strip() if pidfile.exists() else ""
         if text.isdigit():
             os.kill(int(text), signal.SIGKILL)

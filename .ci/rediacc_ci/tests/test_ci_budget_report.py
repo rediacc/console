@@ -4091,9 +4091,7 @@ def test_lanes_passing_also_keeps_a_flag_before_a_comment_and_a_quoted_hash(tmp_
             "glued": ("C", ["- run: r a#b --also x"]),
             # 2c7b1a1f.1: a quote right after a flow indicator opens a span, so its ` #` hides nothing.
             "flow": ("D", ['- run: ["r # x --also", "y"]']),
-            # Regression rows, not controls (reviews 4d768d72.2, .3): flow-map's quote follows a space, and flow-brace and flow-comma
-            # pass under the old unconditional rule too. The controls that fail without the flow-depth rule are the plain-scalar
-            # test below (`a,'x`) and the glued-colon test (`a:[`).
+            # Regression rows, not controls (reviews 4d768d72.2, .3): flow-map's quote follows a space, and flow-brace and flow-comma pass under the old unconditional rule too. The controls that fail without the flow-depth rule are the plain-scalar test below (`a,'x`) and the glued-colon test (`a:[`).
             "flow-map": ("E", ["- run: {a: 'r # --also'}"]),
             "flow-brace": ("F", ["- run: {'r # --also': 1}"]),
             "flow-comma": ("G", ["- run: [a,'r # --also']"]),

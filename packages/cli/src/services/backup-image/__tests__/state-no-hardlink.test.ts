@@ -14,7 +14,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // A filesystem without hard links (exFAT, FAT32) answers link() with EPERM; a WSL-mounted
 // exFAT drive refused every `rdc backup download` lock on 2026-11-13 this way.
 const linkCode = { value: 'EPERM' as string | null };
-const probeDenied = { value: false };
+const probeDenied: { value: boolean } = { value: false };
 vi.mock('node:fs', async (importOriginal) => {
   const actual = await importOriginal<typeof import('node:fs')>();
   return {
