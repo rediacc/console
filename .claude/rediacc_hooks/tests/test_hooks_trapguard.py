@@ -404,6 +404,14 @@ CASES = [
         "trapguard: the --config= spelling and a pipe after it still fire",
     ),
     inject(
+        ("check_inject silent", ""),
+        inject_json(
+            "./rdc.sh --config eu-bench machine status hostinger -o json",
+            '{"success":true,"data":{"machine":"hostinger"}}',
+        ),
+        "trapguard CONTROL: an eu-bench run that printed no login error is not told to log in",
+    ),
+    inject(
         ("check_inject fires", "npm run login:bench -- --region us"),
         inject_json(
             "./rdc.sh --config us-bench machine status hostinger",
