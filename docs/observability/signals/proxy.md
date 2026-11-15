@@ -19,7 +19,7 @@ Seven Workers send under this one service name:
 | `edge-rediacc-proxy-eu` | `wrangler.edge-eu.toml` | `eu` | `edge` |
 | `edge-rediacc-proxy-us` | `wrangler.edge-us.toml` | `us` | `edge` |
 | `edge-rediacc-proxy-asia` | `wrangler.edge-asia.toml` | `asia` | `edge` |
-| `rediacc-proxy-bench` | `wrangler.bench.toml` | `bench` | `bench` |
+| `rediacc-proxy-bench` | `wrangler.bench-eu.toml` | `bench` | `bench` |
 
 Each Worker exports through the destination pair of its own region (`otlp-eu`, `otlp-us`, `otlp-asia`, `otlp-bench`), declared with `persist = false` so the proxy's traffic does not fill Workers Observability storage. The path is in [architecture.md](../architecture.md).
 

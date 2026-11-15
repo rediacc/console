@@ -45,7 +45,7 @@
  * refuses a `?? ''` fallback for the bucket or the secret in createBackupPlane's Workers
  * branch: an empty Bucket makes every presign throw at request time while a non-null minter
  * keeps the cron warning silent, so the branch must build the minter only from all four
- * values. A bench row holds wrangler.bench.toml's BACKUP_BUCKET binding to a non-empty
+ * values. A bench row holds wrangler.bench-eu.toml's BACKUP_BUCKET binding to a non-empty
  * bucket and refuses a backup bucket literal (`backups-bench`, or a prefixed `rediacc-backups-…`)
  * in .ci/rediacc_ci/ops/deploy_bench.py, which derives the bucket from that binding.
  *
@@ -191,7 +191,7 @@ export function extractBinding(
 
 // ── Source-shape and bench rows: pure checks, controlled both ways ─────────
 const STORE_SRC = 'private/account/src/services/backup-chunk-store.ts';
-const BENCH_TOML = 'workers/account/wrangler.bench.toml';
+const BENCH_TOML = 'workers/account/wrangler.bench-eu.toml';
 const BENCH_DEPLOY = '.ci/rediacc_ci/ops/deploy_bench.py';
 
 /** The text of createBackupPlane's Workers branch plus presignCredentials, or null when a marker is gone. */

@@ -17,7 +17,7 @@ There is no global `server.json`, no mode env vars, no shared mutable state betw
 ```bash
 ./rdc.sh repo up app                  # default config 'rediacc' -> production
 ./rdc.sh --config dev repo up app     # 'dev' config -> local dev gateway
-./rdc.sh --config eu-bench repo list  # 'eu-bench' config -> bench.rediacc.cloud
+./rdc.sh --config eu-bench repo list  # 'eu-bench' config -> bench-eu.rediacc.cloud (bench.rediacc.cloud until M4)
 ```
 
 Consequences by construction:

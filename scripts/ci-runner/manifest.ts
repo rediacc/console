@@ -2600,7 +2600,7 @@ export const GATES: readonly GateSpec[] = [
     ci: {
       kind: 'local-only',
       blocker:
-        'BLOCKER: needs the bench-login Bitwarden profile and a reachable bench account server, neither of which a CI runner holds. Its flow is judged in CI by test_ops_login_bench through fakes.',
+        'BLOCKER: needs the bench-login-eu Bitwarden profile and a reachable bench account server, neither of which a CI runner holds. Its flow is judged in CI by test_ops_login_bench through fakes.',
     },
   },
   {

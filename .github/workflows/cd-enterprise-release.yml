@@ -73,7 +73,7 @@ jobs:
 
       - name: Fetch secrets from Bitwarden
         # LIVE: read by the release step below. Each company step runs under `bws_env exec --profile <p>`
-        # (deploy-workers, and deploy-proxy or deploy-proxy-bench), which has no token here and so proceeds
+        # (deploy-workers, and deploy-proxy or deploy-proxy-bench-eu), which has no token here and so proceeds
         # only when every required name of its profile is already in the step's environment: these are the
         # union of the three profiles' required names in .ci/config/secret-supply.json. Bench and production
         # share the one Cloudflare account, so the same token serves both.
