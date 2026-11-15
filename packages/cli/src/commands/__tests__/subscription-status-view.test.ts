@@ -65,6 +65,20 @@ describe('elsewhereItems ordering', () => {
     }
   });
 
+  it('orders equal-rank unknown values by code unit when the host localeCompare calls distinct strings equal', () => {
+    // Review aa64a33e.1: with localeCompare returning 0, the order must not fall back to the input order.
+    const spy = vi.spyOn(String.prototype, 'localeCompare').mockReturnValue(0);
+    try {
+      const rows = [row('absent', 'b-state'), row('absent', 'a-state'), row('absent', 'c-state')];
+      const names = (input: LicenceRow[]): string[] =>
+        elsewhereItems(input).map((i) => i.split(':')[2]);
+      expect(names(rows)).toEqual(['a-state', 'b-state', 'c-state']);
+      expect(names([...rows].reverse())).toEqual(['a-state', 'b-state', 'c-state']);
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
   it.each(['toString', 'constructor', '__proto__'])(
     'ranks the inherited name %s as unknown, not as a function',
     (name) => {

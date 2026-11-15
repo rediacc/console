@@ -325,6 +325,54 @@ describe('the CT cache', () => {
   });
 });
 
+describe('the CT cache and the crt.sh fallback', () => {
+  const tlsTargets = JSON.stringify({
+    version: 1,
+    probes: [{ id: 'imaps', kind: 'tls', host: 'mail.example.test', port: 993 }],
+  });
+  const crtshRow = [{ not_after: '2027-01-01T00:00:00', issuer_name: "Let's Encrypt" }];
+
+  it('asks certspotter again on every run while only crt.sh answers, never serving crt.sh from the cache', async () => {
+    const { env } = harness({ OPS_HEALTH_TARGETS: tlsTargets });
+    let certspotterCalls = 0;
+    const f = fakeFetch((url) => {
+      if (url.hostname === 'api.certspotter.com') {
+        certspotterCalls += 1;
+        return new Response('down', { status: 500 });
+      }
+      if (url.hostname === 'crt.sh') return Response.json(crtshRow);
+      return new Response('{}', { status: 200 });
+    });
+    const ok = () => fakeSocket({ handshake: 'ok' });
+    await runCron(env, runtime(f.fn, ok, T0));
+    await runCron(env, runtime(f.fn, ok, T0 + 10 * MIN));
+    expect(certspotterCalls).toBe(2);
+  });
+
+  it('control: a certspotter answer is cached over the same two runs', async () => {
+    const { env } = harness({ OPS_HEALTH_TARGETS: tlsTargets });
+    let certspotterCalls = 0;
+    const f = fakeFetch((url) => {
+      if (url.hostname === 'api.certspotter.com') {
+        certspotterCalls += 1;
+        return Response.json([
+          {
+            id: '1',
+            not_after: '2027-01-01T00:00:00Z',
+            dns_names: ['mail.example.test'],
+            issuer: { friendly_name: "Let's Encrypt" },
+          },
+        ]);
+      }
+      return new Response('{}', { status: 200 });
+    });
+    const ok = () => fakeSocket({ handshake: 'ok' });
+    await runCron(env, runtime(f.fn, ok, T0));
+    await runCron(env, runtime(f.fn, ok, T0 + 10 * MIN));
+    expect(certspotterCalls).toBe(1);
+  });
+});
+
 describe('the Monday digest', () => {
   it('is sent once on Monday at or after 06:00 UTC and logged as a digest', async () => {
     const { env } = harness({ OPS_HEALTH_TARGETS: TARGETS });

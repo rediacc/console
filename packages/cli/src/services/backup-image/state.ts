@@ -354,7 +354,7 @@ const UNREADABLE_LOCK_GRACE_MS = 10_000;
 export const UNREADABLE_LOCK_RETRY_MS = 10_000;
 const UNREADABLE_LOCK_ATTEMPTS = 3;
 
-function sleepSync(ms: number): void {
+export function sleepSync(ms: number): void {
   Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
 
@@ -497,7 +497,7 @@ export function acquireLocalLock(lockPath: string, deps: LockDeps = {}): LockInf
  * over: the filesystem's clock is unknown, and judging the lock by this host's clock instead would let
  * a mount whose clock runs behind make a live run's fresh lock look old (review ee0ca8b1.1). The
  * cost is that an abandoned lock in such a directory is never cleared automatically: the refusal
- * names the path and says to remove it by hand (review 5ea6a6f0.1). `clearDeadHolder` calls this up
+ * names the path and says to remove it by hand (review 5ea6a6f0.1). `readHolderRetrying` calls this up
  * to three times, 10 s apart, before that refusal (operator ruling 2026-11-15). A directory too read-only or
  * too full for a probe file usually cannot take a new lock either.
  */

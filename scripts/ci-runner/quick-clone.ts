@@ -427,12 +427,12 @@ function trackedAt(clone: string, commit: string): string[] {
   return out;
 }
 
-/** A source entry that vanished between `cp`'s directory read and its link: a concurrent tool's temp file (`node_modules/.vitest-cache/.tmp-*`), not a broken install. */
+/** What `cp` says when a source entry vanished between its directory read and its link: usually a concurrent tool's temp file (`node_modules/.vitest-cache/.tmp-*`). The text cannot tell that from an entry missing for another reason, so both are retried, and a persistent one is thrown after the last attempt. */
 const VANISHED_RE = /cannot stat|No such file or directory/;
 export const LINK_ATTEMPTS = 3;
 
 /**
- * `cp -al source dest`, again from scratch when a source entry vanished mid-copy: a concurrent vitest writes and deletes temp files under `node_modules/.vitest-cache`, and one that disappears after `cp` listed it fails the whole copy (a writer lease was refused this way on 2026-11-15). The partial `dest` is removed before each retry; any other failure, and a vanish on the last attempt, is thrown as it is. Returns the attempt that succeeded.
+ * `cp -al source dest`, again from scratch when a source entry vanished mid-copy: a concurrent vitest writes and deletes temp files under `node_modules/.vitest-cache`, and one that disappears after `cp` listed it fails the whole copy (a writer lease was refused this way on 2026-11-15). The partial `dest` is removed before each retry; any other failure, and a missing-entry error on the last attempt, is thrown as it is. Returns the attempt that succeeded.
  */
 export function linkTreeRetrying(
   source: string,
@@ -1049,6 +1049,28 @@ export async function quickCloneSelftest(
     check(
       other.includes('Permission denied') && !calls.includes('remove-other'),
       `CONTROL: a failure that is not a vanished entry must throw at once, got ${other || 'no error'}`
+    );
+    // A missing-entry error that is not a concurrent tool's temp file is retried too: the text cannot tell them apart (VANISHED_RE).
+    let missingCopies = 0;
+    try {
+      linkTreeRetrying(
+        path.join(tmpDir, 'a'),
+        path.join(tmpDir, 'b'),
+        {
+          copy: () => {
+            missingCopies++;
+            throw new Error('cp -al a b exited 1: cp: cannot stat a: No such file or directory');
+          },
+          remove: () => undefined,
+        },
+        3
+      );
+    } catch {
+      // Expected: thrown after the last attempt.
+    }
+    check(
+      missingCopies === 3,
+      `a missing source is retried up to the attempt limit, got ${missingCopies} copies`
     );
     let last = '';
     try {
