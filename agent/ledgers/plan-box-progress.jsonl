@@ -84,3 +84,4 @@
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-root-api-token.md","sig":"9d019186","clause":"all","state":"landed","ref":"91e012896c385bc0d7587bc4c23d442d915fae42","at":"2026-11-15T18:27:16Z"}
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-enterprise-tenants.md","sig":"91c28630","clause":"all","state":"live-owed","ref":"released #c9de1108","at":"2026-11-15T19:28:22Z"}
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-enterprise-tenants.md","sig":"91c28630","clause":"all","state":"live-owed","ref":"released #2722cfa5","at":"2026-11-15T21:01:13Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-enterprise-isolation.md","sig":"2878e08d","clause":"all","state":"live-owed","ref":"released #a94e7870","at":"2026-11-15T21:32:16Z"}
