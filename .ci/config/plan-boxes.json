@@ -1984,8 +1984,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 16,
-      "done": 6,
+      "open": 15,
+      "done": 7,
       "open_sigs": [
         "0e4aa275",
         "17c5e0bc",
@@ -2000,7 +2000,6 @@
         "dd455101",
         "de4dee89",
         "e6e27c9f",
-        "eb0471f9",
         "f1efbccd",
         "f8c4c1ae"
       ],
@@ -2010,7 +2009,8 @@
         "858df377",
         "b6213422",
         "b6b03377",
-        "b8971b7f"
+        "b8971b7f",
+        "eb0471f9"
       ]
     },
     "agent/plans/PLAN-nightly-retry-and-watchdog-noise.md": {

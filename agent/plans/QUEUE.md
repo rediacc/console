@@ -85,17 +85,17 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 79b7e92e, no plan, 1054 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
-  - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 137 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
+  - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 144 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
-- Writers: 3 live of writer_cap 25 (session d778be9d): worker:a0a7e1c5cd7d4ae84, worker:a7fe1f77eb7f23b10, worker:a795cb08b898ceb0d.
-- Leased items: 32: #000fcf57 (worker:a537aa63388e0aca9, d778be9d), #02389657 (worker:2854747, d778be9d), #0eecc43c (worker:a537aa63388e0aca9, d778be9d), #14adbaec (worker:a537aa63388e0aca9, d778be9d), #1f64af37 (worker:a537aa63388e0aca9, d778be9d), #22e2ca84 (worker:a537aa63388e0aca9, d778be9d), #2594f784 (worker:queue, d778be9d), #2c00ac36 (worker:a537aa63388e0aca9, d778be9d), #2c4b1eec (worker:a537aa63388e0aca9, d778be9d), #418319bf (worker:a537aa63388e0aca9, d778be9d), #4889018a (worker:bo85rxf2q, d778be9d), #4be994ad (worker:a537aa63388e0aca9, d778be9d), and 20 more.
+- Writers: 2 live of writer_cap 25 (session d778be9d): worker:ae6560101bae6872e, worker:a0e60bc6d56b79279.
+- Leased items: 30: #000fcf57 (worker:a537aa63388e0aca9, d778be9d), #02389657 (worker:2854747, d778be9d), #0eecc43c (worker:a537aa63388e0aca9, d778be9d), #14adbaec (worker:a537aa63388e0aca9, d778be9d), #1f64af37 (worker:a537aa63388e0aca9, d778be9d), #22e2ca84 (worker:a537aa63388e0aca9, d778be9d), #2594f784 (worker:ae6560101bae6872e, d778be9d), #2c00ac36 (worker:a537aa63388e0aca9, d778be9d), #2c4b1eec (worker:a537aa63388e0aca9, d778be9d), #418319bf (worker:a537aa63388e0aca9, d778be9d), #4889018a (worker:bo85rxf2q, d778be9d), #4be994ad (worker:a537aa63388e0aca9, d778be9d), and 18 more.
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 25 of 74 plans done, 1148 of 1381 boxes done (83%).
+Promoted: 25 of 74 plans done, 1149 of 1381 boxes done (83%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -172,7 +172,7 @@ Promoted: 25 of 74 plans done, 1148 of 1381 boxes done (83%).
 | 71 | PLAN-signer-bench-stop-binding-reattach.md | 3/3 | done |
 | 72 | PLAN-d1-eu-jurisdiction.md | 3/22 | 19 open |
 | 73 | PLAN-hostinger-to-bench.md | 5/22 | 17 open |
-| 74 | PLAN-multi-region-bench.md | 6/22 | 16 open |
+| 74 | PLAN-multi-region-bench.md | 7/22 | 15 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
