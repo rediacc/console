@@ -47,6 +47,10 @@ function ownerPath(domain: string): string {
   return join(serverStateDir(), `${domain}.owner.json`);
 }
 
+function requestPath(domain: string): string {
+  return join(serverStateDir(), `${domain}.delegation-request.json`);
+}
+
 function readJson<T>(path: string): T | undefined {
   try {
     return JSON.parse(readFileSync(path, 'utf-8')) as T;
@@ -73,4 +77,9 @@ export function recordFile(domain: string): string {
 
 export function ownerFile(domain: string): string {
   return ownerPath(domain);
+}
+
+/** Where an offline install writes the licence request it stops at. */
+export function requestFile(domain: string): string {
+  return requestPath(domain);
 }

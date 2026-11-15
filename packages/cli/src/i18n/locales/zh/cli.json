@@ -1632,7 +1632,8 @@
         "descriptionShort": "为仓库准备远程机器",
         "failed": "机器 \"{{machine}}\" 设置失败：{{error}}",
         "noConvergeOption": "不重启仍使用旧运行时布局的仓库守护进程（等同于 REDIACC_SKIP_RUNTIME_CONVERGE=1）",
-        "starting": "正在设置机器 \"{{machine}}\"..."
+        "starting": "正在设置机器 \"{{machine}}\"...",
+        "offlineOption": "隔离网络（air-gapped）设置：不调用包管理器；机器上必须已具备 docker、其 compose 插件和必要的基础工具"
       },
       "status": {
         "ambiguous": "已注册多台机器（{{machines}}）；请指明要显示的那一台。",
@@ -2591,12 +2592,17 @@
           "brought": "按地址注册现有服务器并在其上安装。",
           "configured": "在已配置的机器上无提示安装。",
           "lan": "使用现有证书，在 LAN 机器上以免费版安装。"
-        }
+        },
+        "optionBundle": "由 'rdc server bundle' 生成的离线安装包目录",
+        "optionOffline": "通过 --bundle 离线安装：不访问上游、镜像仓库或包管理器",
+        "helpOffline": "离线（气隙）环境：先在联网环境用 rdc server bundle --out <dir> 生成离线包。rdc server install --offline --bundle <dir> 会校验离线包、加载代理镜像、以离线方式配置机器，并且不访问任何外部服务。安装会在许可证步骤停下并写出一个请求文件：请在联网环境用 rdc server licence mint 签发证书，然后加上 --cert 重新运行。"
       },
       "status": {
         "description": "显示已安装服务器的健康状况、版本等级、证书和镜像",
         "certRefused": "已拒绝 ({{reason}})，时间 {{at}}",
-        "certRefusedRun": "请运行：rdc server licence {{domain}}"
+        "certRefusedRun": "请运行：rdc server licence {{domain}}",
+        "certExpired": "许可证书已过期：不再签发新的仓库许可，运行中的服务不受影响。请安装新证书（rdc server licence）。",
+        "certExpiring": "许可证书将在 {{days}} 天后到期；请续期（rdc server licence）"
       },
       "backup": {
         "description": "打印已安装服务器的恢复包（密钥），或将其写入文件",
@@ -2614,7 +2620,12 @@
         "template": "正在重新应用 elite 模板（版本 {{from}} 到 {{to}}）",
         "templateCurrent": "已部署的模板（版本 {{version}}）已是最新",
         "done": "{{domain}} 已升级。回滚点：{{rollback}}",
-        "migratingCert": "正在把证书从 secrets.env 移到证书收件目录；服务器启动时会应用它"
+        "migratingCert": "正在把证书从 secrets.env 移到证书收件目录；服务器启动时会应用它",
+        "bundleAndImage": "--bundle 与 --image、--image-file 和 --local-image 冲突",
+        "optionBundle": "从由 'rdc server bundle' 生成的离线安装包升级",
+        "optionForce": "即使已部署文件有本地修改，也应用较新的模板",
+        "templateEdited": "已部署的模板文件在本地被修改过：{{files}}。应用较新的模板会覆盖它们；请先检查，或使用 --force 重新运行。",
+        "templateNoBaseline": "该机器未记录模板校验和，因此无法检测本地修改；正在应用较新的模板"
       },
       "licence": {
         "description": "将免费版服务器切换为来自当前登录账户或 --cert 的委托证书",
@@ -2640,12 +2651,43 @@
         "bootRefused": "服务器在启动时拒绝了其证书 ({{reason}})：{{detail}}",
         "droppedCert": "证书 {{certId}} 已放入收件箱",
         "noUpstreamKey": "服务器没有 UPSTREAM_PUBLIC_KEY，无法校验任何证书，新证书也无济于事。请在 {{domain}} 的密钥中设置 UPSTREAM_PUBLIC_KEY，然后运行 `rdc server upgrade {{domain}}`。",
-        "bootRefusalStays": "证书已应用，但服务器仍报告启动时被拒绝 ({{reason}})；请检查服务器日志"
+        "bootRefusalStays": "证书已应用，但服务器仍报告启动时被拒绝 ({{reason}})；请检查服务器日志",
+        "mint": {
+          "description": "为离线机器的请求签发许可证书（需联网并已登录后运行）",
+          "done": "证书已写入 {{file}}（有效期至 {{until}}）；请将其带到该机器，并使用 --cert 安装",
+          "optionOut": "证书的写入文件",
+          "optionRequest": "离线安装生成的委托请求文件"
+        }
       },
       "bundle": {
         "header": "{{domain}} 的恢复包。请离线保存；它可恢复服务器的密钥。",
         "once": "此恢复包仅显示一次。请立即妥善保存：",
-        "owner": "所有者账户：{{email}}，初始密码：{{password}}"
+        "owner": "所有者账户：{{email}}，初始密码：{{password}}",
+        "summary": "构建离线安装包",
+        "description": "构建用于隔离网络安装的离线包（镜像、renet、清单、校验和）。请在可联网的机器上运行。",
+        "optionOut": "写入安装包的目录",
+        "optionArch": "机器的目标架构",
+        "optionTag": "要打包的服务器镜像标签",
+        "optionImage": "打包此本地镜像，而不是拉取标签",
+        "pulling": "正在拉取 {{image}}（{{platform}}）",
+        "saving": "正在将 {{image}} 保存到 {{file}}",
+        "written": "安装包已写入 {{dir}}（{{arch}}）",
+        "errors": {
+          "cliMismatch": "该安装包由 CLI {{bundle}} 构建，而当前是 CLI {{cli}}；请使用当前 CLI 重新构建（rdc server bundle）",
+          "inspectFailed": "{{image}} 的 docker image inspect 失败",
+          "manifestShape": "manifest.json 不是安装包清单（{{what}}）",
+          "noRenetAsset": "当前 CLI 未内置可打包的 linux/{{arch}} renet；请使用发布版构建，或在已配置的 renet 旁构建 linux/{{arch}} 的 renet",
+          "noRustfsRef": "内置的 elite 模板未指定按摘要固定的 RustFS 镜像",
+          "notSummed": "SHA256SUMS 未覆盖 {{file}}",
+          "pullFailed": "{{image}} 的 docker pull 失败",
+          "renetMismatch": "安装包中的 renet（linux/{{arch}}）与当前 CLI 内置的 renet 不一致；请使用当前 CLI 重新构建安装包",
+          "saveFailed": "{{image}} 的 docker save 失败",
+          "schema": "不支持的安装包架构版本：{{schema}}",
+          "sumsLine": "SHA256SUMS 中有一行不符合 '<sha256>  <file>' 格式：{{line}}",
+          "tagAndImage": "--tag 与 --image 不能同时使用",
+          "tampered": "{{file}} 与 SHA256SUMS 或清单不一致：安装包已被修改或损坏",
+          "unreadable": "无法从安装包 {{dir}} 中读取 {{file}}"
+        }
       },
       "bws": {
         "skipped": "未指定 --bws-project：密钥仅保留在机器上",
@@ -2729,6 +2771,23 @@
         "boxScriptFailed": "{{machine}} 上的命令退出码为 {{code}}：{{detail}}",
         "rdcFailed": "{{command}} 失败（退出码 {{code}}）",
         "certAndFree": "--cert 和 --licence free 不能同时使用"
+      },
+      "offline": {
+        "archMismatch": "该机器为 {{box}}，但安装包适用于 {{bundle}}",
+        "awaitingCert": "正在等待许可证书。请将 {{file}} 带到联网机器并运行：rdc server licence mint --request <file> --out cert.json。然后使用 --cert cert.json 重新运行此安装（域名 {{domain}}）。",
+        "bundleNeedsOffline": "--bundle 需要同时指定 --offline",
+        "imageFromBundle": "--image、--image-file 和 --local-image 与 --bundle 冲突：服务器镜像来自安装包",
+        "loadFailed": "将 {{image}} 加载到机器的 Docker 失败：{{detail}}",
+        "loadingProxy": "正在将代理镜像 {{image}} 加载到机器的 Docker",
+        "mintNoLogin": "签发证书需要已登录的配置（rdc subscription login）",
+        "missingEssentials": "机器上缺少以下内容（离线设置无法安装）：{{missing}}",
+        "needsBundle": "--offline 需要同时指定 --bundle <dir>",
+        "noBws": "--bws-project 需要联网，不能与 --offline 一起使用",
+        "noCfToken": "--cf-token 需要联网，不能与 --offline 一起使用",
+        "noFree": "--licence free 会调用账户服务器，不能与 --offline 一起使用；请改用请求加 --cert 的流程",
+        "noProxyImage": "安装包中不包含代理镜像 {{ref}}",
+        "requestInvalid": "{{file}} 不是离线安装生成的委托请求",
+        "tlsByoOnly": "--tls {{tls}} 需要联网；请使用 --tls byo 并配合 --tls-cert 和 --tls-key（私有 CA 再加 --tls-ca）"
       }
     },
     "shortcuts": {

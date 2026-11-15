@@ -16,7 +16,8 @@
  *   tls        letsencrypt (HTTP-01), cloudflare (DNS-01 via the infra token) or byo (per-host
  *              `renet proxy cert install`).
  *   repo       `repo create` when absent; a repo this install did not create is refused.
- *   template   `repo admin template apply --template elite`.
+ *   template   `repo admin template apply --template elite`, then the sha256 of the files it wrote
+ *              (the baseline `upgrade` compares to find local edits).
  *   keys       every secret generated on the box into the repo's secrets.env.
  *   bws        only with `--bws-project <id>` (Rediacc's own installs): the secrets copied to that
  *              Bitwarden Secrets Manager project under opaque names; otherwise nothing leaves the box.
@@ -30,6 +31,14 @@
  *              answer to the licence step's drop is read (a rejection fails the step).
  *   owner      the owner account, created in this run; with a cert, its subscription must be the
  *              cert's, and its `GET /onprem/cert-status` must report the cert's id.
+ *
+ * AIR-GAPPED (`--offline --bundle <dir>`, a bundle `rdc server bundle` built online): the bundle is
+ * verified before anything else and nothing reaches the network. preflight adds the bundle's
+ * architecture and the tools renet's offline setup assumes; setup loads the proxy image into the
+ * machine's Docker, then runs `machine setup --offline`; dns prints the LAN records and never waits;
+ * tls is `byo` only; licence stops after writing the box's request (AwaitingCert) and a rerun with
+ * `--cert` (minted online by `rdc server licence mint`) resumes; settings add ELITE_OFFLINE=1; image
+ * ships the bundle's tars through repo sync.
  *
  * On a terminal the one-time recovery bundle is printed at the end; it is never logged and never
  * part of `--output json`. Without a terminal the closing line names `rdc server backup`.
@@ -54,6 +63,16 @@ import {
   ServerError,
   setBoxEnv,
 } from './box.js';
+import { type BundleManifest, serverImageOf } from './bundle/manifest.js';
+import {
+  AwaitingCert,
+  assertOfflineOptions,
+  loadProxyImage,
+  offlinePreflight,
+  uploadBundleImages,
+  writeCertRequest,
+} from './bundle/offline.js';
+import { verifyBundle } from './bundle/verify.js';
 import { backupToBws } from './bws-backup.js';
 import {
   boxTarget,
@@ -92,6 +111,7 @@ import {
   recordFile,
   type ServerRecord,
 } from './state.js';
+import { writeTemplateSums } from './template-guard.js';
 import { applyTls } from './tls.js';
 import type { LicenceMode, ServerDeps, TlsMethod } from './types.js';
 
@@ -132,6 +152,8 @@ export class ServerInstall {
   private pendingDrop?: PendingDrop;
   /** Set by the preflight; the setup step runs `machine setup` only when it is true. */
   private renetMissing: boolean | undefined;
+  /** The verified `--bundle` of an offline install. */
+  private manifest?: BundleManifest;
 
   constructor(
     private readonly opts: InstallOptions,
@@ -142,6 +164,11 @@ export class ServerInstall {
   /** Prompts only on a terminal and only without --yes; otherwise a missing value is refused by its flag. */
   private get interactive(): boolean {
     return this.deps.isTTY() && this.opts.yes !== true && this.opts.machineReadable !== true;
+  }
+
+  /** An offline box has no resolver to wait on: the LAN records are printed and the run goes on. */
+  private get noDnsWait(): boolean {
+    return this.opts.dnsWait === false || this.opts.offline === true;
   }
 
   async run(): Promise<InstallResult> {
@@ -208,6 +235,10 @@ export class ServerInstall {
   // ── values, asked in order: machine, domain, store domain, TLS, owner ─────────────────────
 
   private async resolvePlan(): Promise<Plan> {
+    assertOfflineOptions(this.opts);
+    if (this.opts.offline && this.opts.bundle) {
+      this.manifest = await verifyBundle(this.deps, this.opts.bundle);
+    }
     const { name: machine, config: machineConfig } = await this.resolveMachine();
     const domain = await this.value('--domain', this.opts.domain, () =>
       this.prompts.text(t('commands.server.prompts.domain'))
@@ -233,7 +264,7 @@ export class ServerInstall {
       owner,
       tls,
       licence: this.opts.licence ?? DEFAULT_LICENCE,
-      image: this.opts.image ?? DEFAULT_IMAGE,
+      image: this.manifest ? serverImageOf(this.manifest).ref : (this.opts.image ?? DEFAULT_IMAGE),
     };
   }
 
@@ -248,7 +279,7 @@ export class ServerInstall {
   }
 
   private async resolveTls(): Promise<TlsMethod> {
-    let fallback: TlsMethod = 'letsencrypt';
+    let fallback: TlsMethod = this.opts.offline ? 'byo' : 'letsencrypt';
     if (this.opts.cfToken) fallback = 'cloudflare';
     if (this.opts.tlsCert) fallback = 'byo';
     const tls = this.opts.tls ?? (this.interactive ? await this.prompts.tls(fallback) : fallback);
@@ -350,16 +381,25 @@ export class ServerInstall {
         size: this.plan.size,
       });
       this.renetMissing = !facts.renet;
+      if (this.manifest) {
+        await offlinePreflight(this.deps, this.plan.machine, facts, this.manifest);
+      }
     },
     setup: async () => {
-      if (this.renetMissing) await rdcMust(this.deps, ['machine', 'setup', this.plan.machine]);
+      if (this.manifest && this.opts.bundle) {
+        await loadProxyImage(this.deps, this.plan.machine, this.opts.bundle, this.manifest);
+      }
+      if (this.renetMissing) {
+        const offline = this.opts.offline ? ['--offline'] : [];
+        await rdcMust(this.deps, ['machine', 'setup', this.plan.machine, ...offline]);
+      }
     },
     dns: async () => {
       const addresses = machineAddresses(this.plan.machineConfig);
       const records = dnsRecords([this.plan.domain, this.plan.storeDomain], addresses);
       printDnsRecords(records);
-      await writeOwnedRecords(this.deps, records);
-      if (this.opts.dnsWait === false || records.length === 0) {
+      if (!this.opts.offline) await writeOwnedRecords(this.deps, records);
+      if (this.noDnsWait || records.length === 0) {
         outputService.info(t('commands.server.dns.notWaiting'));
         return;
       }
@@ -414,6 +454,7 @@ export class ServerInstall {
         '--template',
         TEMPLATE_NAME,
       ]);
+      await writeTemplateSums(this.deps, await this.box());
     },
     keys: async () => {
       this.boxKey = await generateKeys(this.deps, await this.box());
@@ -430,6 +471,13 @@ export class ServerInstall {
       });
     },
     licence: async () => {
+      if (this.opts.offline && !this.opts.cert) {
+        // Two trips: the request goes out, a cert minted online comes back through `--cert`.
+        const file = await writeCertRequest(this.deps, this.plan.domain, this.boxKey);
+        throw new AwaitingCert(
+          t('commands.server.offline.awaitingCert', { file, domain: this.plan.domain })
+        );
+      }
       this.licenceResult = await obtainLicence(this.deps, {
         mode: this.plan.licence,
         certFile: this.opts.cert,
@@ -455,6 +503,7 @@ export class ServerInstall {
         ELITE_STORE_DOMAIN: this.plan.storeDomain,
         ELITE_IMAGE: this.plan.image,
         TAG: imageTag(this.plan.image),
+        ...(this.opts.offline ? { ELITE_OFFLINE: '1' } : {}),
         ROOT_EMAIL: this.plan.owner,
         // Every installed box is an on-premise server: terms gate off, on-prem licence route.
         ON_PREMISE_MODE: 'true',
@@ -463,6 +512,10 @@ export class ServerInstall {
       });
     },
     image: async () => {
+      if (this.manifest && this.opts.bundle) {
+        await uploadBundleImages(this.deps, await this.box(), this.opts.bundle);
+        return;
+      }
       await placeImage(
         this.deps,
         await this.box(),
@@ -507,8 +560,7 @@ export class ServerInstall {
   };
 
   private target() {
-    const address =
-      this.opts.dnsWait === false ? machineAddresses(this.plan.machineConfig)[0] : undefined;
+    const address = this.noDnsWait ? machineAddresses(this.plan.machineConfig)[0] : undefined;
     return boxTarget(this.deps, this.record, address);
   }
 

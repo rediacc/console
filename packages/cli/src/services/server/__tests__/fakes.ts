@@ -3,6 +3,7 @@
  * `ServerDeps` makes is recorded in `calls`, in order.
  */
 
+import { createHash } from 'node:crypto';
 import { existsSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { delegationCertId } from '@rediacc/shared/subscription';
@@ -70,6 +71,14 @@ export interface FakeOptions {
   bootRejected?: { reason: string; detail?: string; certId?: string | null; at?: string };
   /** The marker survives an applied drop (a server that did not clear it). */
   markerSticks?: boolean;
+  /** What the offline essentials probe reports missing (space-separated). */
+  essentialsMissing?: string;
+  /** Whether the machine's Docker already holds the proxy image. */
+  proxyImage?: 'present' | 'absent';
+  /** The sha256 this CLI's renet reports, to simulate a bundle built with another renet. */
+  renetSha?: string;
+  /** The template sums on the box: `baseline` false is a box that recorded none. */
+  templateEdits?: { baseline?: boolean; edited?: string[] };
 }
 
 export interface Fake {
@@ -85,6 +94,10 @@ export interface Fake {
   boxRequests: { method: string; path: string; body?: unknown; cookie?: string }[];
   /** Every body dropped into the inbox (`new.json`), parsed. */
   drops: { requestId: string; cert: { payload: string; signature: string; publicKeyId: string } }[];
+  /** Every local file the run read or wrote, by path. Mutable: a test edits one to tamper with it. */
+  files: Record<string, string>;
+  /** Every file copied to the machine, as `machine:remote`. */
+  uploads: string[];
   /** The box's live cert JSON after the run, or undefined. */
   live(): string | undefined;
 }
@@ -114,6 +127,9 @@ export function makeFake(opts: FakeOptions = {}): Fake {
   const dnsWrites: string[] = [];
   const boxRequests: Fake['boxRequests'] = [];
   const secrets: Record<string, string> = { ...DEFAULT_SECRETS, ...opts.secrets };
+  const files: Record<string, string> = { ...opts.files };
+  const uploads: string[] = [];
+  const sha = (text: string) => createHash('sha256').update(text).digest('hex');
   const resolves = [...(opts.resolveSequence ?? [['203.0.113.10']])];
   const drops: Fake['drops'] = [];
   let live: string | undefined = opts.liveCert
@@ -209,6 +225,19 @@ export function makeFake(opts: FakeOptions = {}): Fake {
     string,
     (command: string, stdin?: string) => string | Promise<string>,
   ][] = [
+    ['missing=$miss', 'essentials', () => `missing=${opts.essentialsMissing ?? ''}\n`],
+    ['traefik=present', 'proxy-probe', () => `traefik=${opts.proxyImage ?? 'absent'}\n`],
+    ['docker load -i', 'proxy-load', () => ''],
+    [
+      'baseline=none',
+      'template-edits',
+      () => {
+        const e = opts.templateEdits;
+        if (e?.baseline === false) return 'baseline=none\n';
+        return `baseline=sums\n${(e?.edited ?? []).map((f) => `edited=${f}\n`).join('')}`;
+      },
+    ],
+    ['.template-sums.tmp', 'template-sums', () => ''],
     ['inbox=dropped', 'inbox-drop', inboxDrop],
     ['result=none', 'inbox-result', inboxResult],
     ['migrate=$state', 'migrate-cert', migrate],
@@ -307,15 +336,42 @@ export function makeFake(opts: FakeOptions = {}): Fake {
     },
     local(command, args) {
       calls.push(`local ${command} ${args.join(' ')}`);
+      const out = args.indexOf('-o');
+      if (args[0] === 'save' && out >= 0) files[args[out + 1]] = `tar:${args.at(-1)}`;
       return Promise.resolve(0);
+    },
+    localOut(command, args) {
+      calls.push(`localOut ${command} ${args.join(' ')}`);
+      return Promise.resolve(ok(`sha256:id-of-${args.at(-1)}\n`));
+    },
+    sha256File(path) {
+      const text = files[path];
+      return text === undefined ? Promise.reject(new Error('ENOENT')) : Promise.resolve(sha(text));
+    },
+    makeDir(path) {
+      calls.push(`mkdir ${path}`);
+      return Promise.resolve();
+    },
+    renetAsset(arch, dest) {
+      if (dest) files[dest] = `renet-bytes-${arch}`;
+      return Promise.resolve({
+        sha256: opts.renetSha ?? sha(`renet-bytes-${arch}`),
+        version: 'v-test',
+      });
+    },
+    uploadFile(machine, _local, remote) {
+      calls.push(`upload ${machine} ${remote}`);
+      uploads.push(`${machine}:${remote}`);
+      return Promise.resolve();
     },
     tempDir: () => Promise.resolve('/tmp/fake-dir'),
     readFile(path) {
-      const text = opts.files?.[path];
+      const text = files[path];
       return text === undefined ? Promise.reject(new Error('ENOENT')) : Promise.resolve(text);
     },
     writePrivate(path, text) {
       written[path] = text;
+      files[path] = text;
       // The install record and the owner file are read back from disk by the next verb.
       if (existsSync(dirname(path))) writeFileSync(path, text, { mode: 0o600 });
       return Promise.resolve();
@@ -342,6 +398,8 @@ export function makeFake(opts: FakeOptions = {}): Fake {
     secrets,
     boxRequests,
     drops,
+    files,
+    uploads,
     live: () => live,
   };
 }

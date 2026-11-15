@@ -10,10 +10,17 @@ import { t } from '../i18n/index.js';
 import { outputService } from '../services/core/output.js';
 import { isMachineReadable } from '../services/core/output-format.js';
 import { setExitCode } from '../services/core/request-context.js';
+import { serverBundle } from '../services/server/bundle/build.js';
+import { licenceMint } from '../services/server/bundle/offline.js';
 import { liveServerDeps } from '../services/server/deps.js';
 import { ServerInstall } from '../services/server/install.js';
 import type { InstallOptions } from '../services/server/install-options.js';
-import { LICENCE_MODES, TLS_METHODS } from '../services/server/types.js';
+import {
+  BUNDLE_ARCHES,
+  type BundleArch,
+  LICENCE_MODES,
+  TLS_METHODS,
+} from '../services/server/types.js';
 import {
   type StatusResult,
   serverBackup,
@@ -23,6 +30,8 @@ import {
 } from '../services/server/verbs.js';
 import { handleError } from '../utils/errors.js';
 import { inquirerPrompts } from '../utils/server-prompts.js';
+
+const CERT_WARN_DAYS = 30;
 
 interface InstallFlags extends Omit<InstallOptions, 'machine' | 'machineReadable'> {
   dnsWait?: boolean;
@@ -66,10 +75,13 @@ function registerInstall(server: Command): void {
     .option('--image-file <tar>', t('commands.server.install.optionImageFile'))
     .option('--local-image', t('commands.server.install.optionLocalImage'))
     .option('--no-dns-wait', t('commands.server.install.optionNoDnsWait'))
+    .option('--offline', t('commands.server.install.optionOffline'))
+    .option('--bundle <dir>', t('commands.server.install.optionBundle'))
     .option('--bws-project <id>', t('commands.server.install.optionBwsProject'))
     .option('--rotate', t('commands.server.install.optionRotate'))
     .option('-y, --yes', t('commands.server.install.optionYes'))
     .addHelpText('after', `\n${t('commands.server.install.help')}\n`)
+    .addHelpText('after', `\n${t('commands.server.install.helpOffline')}\n`)
     .action(async (machine: string | undefined, flags: InstallFlags) => {
       try {
         const machineReadable = isMachineReadable();
@@ -99,11 +111,22 @@ function refusedAt(raw: string): string {
   return `${date.toISOString().slice(0, 16).replace('T', ' ')}Z`;
 }
 
+/** Within 30 days of the cert's end the box is told to renew; past it the server only serves what it already runs. */
+function warnCertExpiry(days: number | undefined): void {
+  if (days === undefined || Number.isNaN(days) || days > CERT_WARN_DAYS) return;
+  outputService.warn(
+    days < 0
+      ? t('commands.server.status.certExpired')
+      : t('commands.server.status.certExpiring', { days })
+  );
+}
+
 /** The status lines; a refused cert prints as one `cert` line plus the command that fixes it. */
 function reportStatus(result: StatusResult, domain: string): void {
   for (const [key, value] of Object.entries(result)) {
     if (key !== 'certRefused') outputService.report(`${key.padEnd(24)} ${String(value)}`);
   }
+  warnCertExpiry(result.certExpiresInDays);
   if (!result.certRefused) return;
   const { reason } = result.certRefused;
   const at = refusedAt(result.certRefused.at);
@@ -162,6 +185,8 @@ function registerUpgrade(server: Command): void {
       .option('--image <ref>', t('commands.server.install.optionImage'))
       .option('--image-file <tar>', t('commands.server.install.optionImageFile'))
       .option('--local-image', t('commands.server.install.optionLocalImage'))
+      .option('--bundle <dir>', t('commands.server.upgrade.optionBundle'))
+      .option('--force', t('commands.server.upgrade.optionForce'))
       .option('-y, --yes', t('commands.server.install.optionYes'))
   ).action(
     async (
@@ -170,6 +195,8 @@ function registerUpgrade(server: Command): void {
         image?: string;
         imageFile?: string;
         localImage?: boolean;
+        bundle?: string;
+        force?: boolean;
         yes?: boolean;
       }
     ) => {
@@ -198,7 +225,8 @@ function registerUpgrade(server: Command): void {
 }
 
 function registerLicence(server: Command): void {
-  locatorOptions(
+  // `rdc server licence <domain>` applies a cert; `mint` is the one word that is a subcommand instead.
+  const licence = locatorOptions(
     server
       .command('licence')
       .description(t('commands.server.licence.description'))
@@ -218,6 +246,48 @@ function registerLicence(server: Command): void {
       handleError(error);
     }
   });
+  licence
+    .command('mint')
+    .description(t('commands.server.licence.mint.description'))
+    .requiredOption('--request <file>', t('commands.server.licence.mint.optionRequest'))
+    .requiredOption('--out <file>', t('commands.server.licence.mint.optionOut'))
+    .action(async (flags: { request: string; out: string }) => {
+      try {
+        const result = await licenceMint(liveServerDeps(), flags.request, flags.out);
+        if (isMachineReadable()) {
+          outputService.print({ out: flags.out, ...result }, 'json');
+        } else {
+          outputService.success(
+            t('commands.server.licence.mint.done', { file: flags.out, until: result.validUntil })
+          );
+        }
+      } catch (error) {
+        handleError(error);
+      }
+    });
+}
+
+function registerBundle(server: Command): void {
+  server
+    .command('bundle')
+    .summary(t('commands.server.bundle.summary'))
+    .description(t('commands.server.bundle.description'))
+    .requiredOption('--out <dir>', t('commands.server.bundle.optionOut'))
+    .addOption(
+      new Option('--arch <arch>', t('commands.server.bundle.optionArch'))
+        .choices([...BUNDLE_ARCHES])
+        .default('amd64')
+    )
+    .option('--tag <tag>', t('commands.server.bundle.optionTag'))
+    .option('--image <ref>', t('commands.server.bundle.optionImage'))
+    .action(async (flags: { out: string; arch: BundleArch; tag?: string; image?: string }) => {
+      try {
+        const manifest = await serverBundle(liveServerDeps(), flags);
+        if (isMachineReadable()) outputService.print(manifest, 'json');
+      } catch (error) {
+        handleError(error);
+      }
+    });
 }
 
 export function registerServerCommands(program: Command): void {
@@ -229,5 +299,6 @@ export function registerServerCommands(program: Command): void {
   registerUpgrade(server);
   registerBackup(server);
   registerLicence(server);
+  registerBundle(server);
   program.addCommand(server);
 }

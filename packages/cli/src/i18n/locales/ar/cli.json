@@ -1632,7 +1632,8 @@
         "descriptionShort": "تجهيز جهاز بعيد للمستودعات",
         "failed": "فشل إعداد الجهاز \"{{machine}}\": {{error}}",
         "noConvergeOption": "عدم إعادة تشغيل خدمات المستودعات التي ما زالت على تخطيط قديم لبيئة التشغيل (مثل REDIACC_SKIP_RUNTIME_CONVERGE=1)",
-        "starting": "جارٍ إعداد الجهاز \"{{machine}}\"..."
+        "starting": "جارٍ إعداد الجهاز \"{{machine}}\"...",
+        "offlineOption": "إعداد معزول عن الشبكة: دون أي استدعاء لمدير الحزم؛ يجب أن يكون docker وملحق compose الخاص به والأدوات الأساسية مثبّتة على الجهاز مسبقًا"
       },
       "status": {
         "ambiguous": "هناك أكثر من جهاز مسجَّل ({{machines}})؛ حدِّد اسم الجهاز المطلوب عرضه.",
@@ -2591,12 +2592,17 @@
           "brought": "سجّل خادمًا قائمًا بعنوانه ثم ثبّت عليه.",
           "configured": "ثبّت على جهاز مُعدّ دون أي سؤال.",
           "lan": "ثبّت على جهاز LAN بشهادة موجودة وعلى الفئة المجانية."
-        }
+        },
+        "optionBundle": "مجلد الحزمة دون اتصال الذي كتبه 'rdc server bundle'",
+        "optionOffline": "ثبّت دون اتصال من --bundle: دون أي استدعاء للمصدر أو السجل أو مدير الحزم",
+        "helpOffline": "بيئة معزولة عن الشبكة: أنشئ الحزمة وأنت متصل بالإنترنت عبر rdc server bundle --out <dir>. يتحقق rdc server install --offline --bundle <dir> منها، ويحمّل صورة الوكيل، ويُعدّ الجهاز دون اتصال، ولا يتصل بأي جهة خارجية. يتوقف التثبيت عند خطوة الترخيص ويكتب ملف طلب: أصدر شهادة عبر الإنترنت باستخدام rdc server licence mint ثم أعد التشغيل مع --cert."
       },
       "status": {
         "description": "عرض سلامة الخادم المثبّت وفئته وشهادته وصورته",
         "certRefused": "مرفوضة ({{reason}}) في {{at}}",
-        "certRefusedRun": "شغّل: rdc server licence {{domain}}"
+        "certRefusedRun": "شغّل: rdc server licence {{domain}}",
+        "certExpired": "انتهت صلاحية شهادة الترخيص: لن تُصدر تراخيص مستودعات جديدة، وتواصل الخدمات العاملة عملها. ثبّت شهادة جديدة (rdc server licence).",
+        "certExpiring": "تنتهي صلاحية شهادة الترخيص بعد {{days}} يومًا؛ جدّدها (rdc server licence)"
       },
       "backup": {
         "description": "اطبع حزمة الاسترداد (المفاتيح) لخادم مثبّت، أو اكتبها في ملف",
@@ -2614,7 +2620,12 @@
         "template": "إعادة تطبيق قالب elite (الإصدار {{from}} إلى {{to}})",
         "templateCurrent": "القالب المنشور (الإصدار {{version}}) هو الأحدث",
         "done": "تمت ترقية {{domain}}. نقطة الاسترجاع: {{rollback}}",
-        "migratingCert": "تُنقل الشهادة من secrets.env إلى صندوق الشهادات الوارد، ويطبّقها الخادم عند بدء تشغيله"
+        "migratingCert": "تُنقل الشهادة من secrets.env إلى صندوق الشهادات الوارد، ويطبّقها الخادم عند بدء تشغيله",
+        "bundleAndImage": "--bundle يتعارض مع --image و --image-file و --local-image",
+        "optionBundle": "رقِّ من حزمة دون اتصال كتبها 'rdc server bundle'",
+        "optionForce": "طبّق قالبًا أحدث حتى فوق التعديلات المحلية على الملفات المنشورة",
+        "templateEdited": "عُدّلت ملفات القالب المنشورة محليًا: {{files}}. تطبيق القالب الأحدث سيستبدلها؛ راجعها أو أعد التشغيل مع --force.",
+        "templateNoBaseline": "لم يسجّل هذا الجهاز مجاميع اختبارية للقالب، لذا يتعذّر اكتشاف التعديلات المحلية؛ يجري تطبيق القالب الأحدث"
       },
       "licence": {
         "description": "نقل خادم الفئة المجانية إلى شهادة تفويض من الحساب المسجَّل دخوله، أو من --cert",
@@ -2640,12 +2651,43 @@
         "bootRefused": "رفض الخادم شهادته عند الإقلاع ({{reason}}): {{detail}}",
         "droppedCert": "تم إسقاط الشهادة {{certId}} في صندوق الوارد",
         "noUpstreamKey": "لا يملك الخادم المفتاح UPSTREAM_PUBLIC_KEY، فلا يستطيع التحقق من أي شهادة ولن تفيد شهادة جديدة. عيّن UPSTREAM_PUBLIC_KEY في أسرار {{domain}} ثم شغّل `rdc server upgrade {{domain}}`.",
-        "bootRefusalStays": "طُبّقت الشهادة، لكن الخادم ما زال يبلغ عن رفض عند الإقلاع ({{reason}})؛ راجع سجلات الخادم"
+        "bootRefusalStays": "طُبّقت الشهادة، لكن الخادم ما زال يبلغ عن رفض عند الإقلاع ({{reason}})؛ راجع سجلات الخادم",
+        "mint": {
+          "description": "أصدر شهادة ترخيص لطلب جهاز يعمل دون اتصال (نفّذه متصلًا وبعد تسجيل الدخول)",
+          "done": "كُتبت الشهادة في {{file}} (صالحة حتى {{until}})؛ انقلها إلى الجهاز وثبّتها باستخدام --cert",
+          "optionOut": "الملف الذي تُكتب فيه الشهادة",
+          "optionRequest": "ملف طلب التفويض الذي كتبه التثبيت دون اتصال"
+        }
       },
       "bundle": {
         "header": "حزمة الاسترداد لـ {{domain}}. احتفظ بها دون اتصال؛ فهي تستعيد مفاتيح الخادم.",
         "once": "تُعرض حزمة الاسترداد هذه مرة واحدة. احفظها الآن في مكان آمن:",
-        "owner": "حساب المالك: {{email}}، كلمة المرور الأولى: {{password}}"
+        "owner": "حساب المالك: {{email}}، كلمة المرور الأولى: {{password}}",
+        "summary": "أنشئ حزمة تثبيت دون اتصال",
+        "description": "أنشئ حزمة دون اتصال (الصور وrenet والبيان وملف المجاميع الاختبارية) لتثبيت في بيئة معزولة عن الشبكة. نفّذه على جهاز متصل بالإنترنت.",
+        "optionOut": "المجلد الذي تُكتب فيه الحزمة",
+        "optionArch": "البنية المستهدفة للجهاز",
+        "optionTag": "وسم صورة الخادم المراد تضمينها في الحزمة",
+        "optionImage": "ضمّن هذه الصورة المحلية في الحزمة بدل سحب وسم",
+        "pulling": "جارٍ سحب {{image}} ({{platform}})",
+        "saving": "جارٍ حفظ {{image}} في {{file}}",
+        "written": "كُتبت الحزمة في {{dir}} ({{arch}})",
+        "errors": {
+          "cliMismatch": "أُنشئت الحزمة بواسطة CLI {{bundle}}، وهذا هو CLI {{cli}}؛ أعد إنشاءها بهذا الإصدار (rdc server bundle)",
+          "inspectFailed": "فشل docker image inspect للصورة {{image}}",
+          "manifestShape": "manifest.json ليس بيان حزمة ({{what}})",
+          "noRenetAsset": "لا يتضمن هذا CLI نسخة renet لـ linux/{{arch}} لتضمينها؛ استخدم بناء الإصدار الرسمي، أو ابنِ renet لـ linux/{{arch}} بجوار renet المُعدّ",
+          "noRustfsRef": "قالب elite المدمج لا يسمّي أي صورة RustFS مثبّتة بالبصمة",
+          "notSummed": "{{file}} غير مشمول في SHA256SUMS",
+          "pullFailed": "فشل docker pull للصورة {{image}}",
+          "renetMismatch": "نسخة renet في الحزمة (linux/{{arch}}) ليست النسخة التي يحملها هذا CLI؛ أعد إنشاء الحزمة بهذا الإصدار",
+          "saveFailed": "فشل docker save للصورة {{image}}",
+          "schema": "مخطط الحزمة {{schema}} غير مدعوم",
+          "sumsLine": "يحتوي SHA256SUMS على سطر ليس بصيغة '<sha256>  <file>': {{line}}",
+          "tagAndImage": "لا يمكن الجمع بين --tag و --image",
+          "tampered": "{{file}} لا يطابق SHA256SUMS أو البيان: الحزمة عُدّلت أو تالفة",
+          "unreadable": "تعذّرت قراءة {{file}} من الحزمة {{dir}}"
+        }
       },
       "bws": {
         "skipped": "لا يوجد --bws-project: تبقى المفاتيح على الجهاز فقط",
@@ -2729,6 +2771,23 @@
         "boxScriptFailed": "انتهى الأمر على {{machine}} بالرمز {{code}}: {{detail}}",
         "rdcFailed": "فشل {{command}} (رمز الخروج {{code}})",
         "certAndFree": "لا يمكن الجمع بين --cert و --licence free"
+      },
+      "offline": {
+        "archMismatch": "الجهاز هو {{box}} لكن الحزمة مخصصة لـ {{bundle}}",
+        "awaitingCert": "بانتظار شهادة ترخيص. انقل {{file}} إلى جهاز متصل ونفّذ: rdc server licence mint --request <file> --out cert.json. ثم أعد هذا التثبيت باستخدام --cert cert.json (النطاق {{domain}}).",
+        "bundleNeedsOffline": "--bundle يتطلب --offline",
+        "imageFromBundle": "--image و --image-file و --local-image تتعارض مع --bundle: صورة الخادم تأتي من الحزمة",
+        "loadFailed": "فشل تحميل {{image}} في Docker على الجهاز: {{detail}}",
+        "loadingProxy": "جارٍ تحميل صورة الوكيل {{image}} في Docker على الجهاز",
+        "mintNoLogin": "الإصدار يتطلب إعدادًا مسجَّلًا دخوله (rdc subscription login)",
+        "missingEssentials": "مفقود على الجهاز (لا يستطيع الإعداد دون اتصال تثبيته): {{missing}}",
+        "needsBundle": "--offline يتطلب --bundle <dir>",
+        "noBws": "--bws-project يحتاج إلى الشبكة ولا يمكن استخدامه مع --offline",
+        "noCfToken": "--cf-token يحتاج إلى الشبكة ولا يمكن استخدامه مع --offline",
+        "noFree": "--licence free يتصل بخادم الحسابات ولا يمكن استخدامه مع --offline؛ استخدم مسار الطلب مع --cert",
+        "noProxyImage": "لا تحتوي الحزمة على صورة الوكيل {{ref}}",
+        "requestInvalid": "{{file}} ليس طلب تفويض كتبه تثبيت دون اتصال",
+        "tlsByoOnly": "--tls {{tls}} يحتاج إلى الإنترنت؛ استخدم --tls byo مع --tls-cert و --tls-key (و --tls-ca لجهة CA خاصة)"
       }
     },
     "shortcuts": {

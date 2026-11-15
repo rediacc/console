@@ -8744,6 +8744,17 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Skip restarting repository daemons still on an older runtime layout (same as REDIACC_SKIP_RUNTIME_CONVERGE=1)"
         },
         {
+          "flags": "--offline",
+          "long": "offline",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.machine.setup.offlineOption",
+          "label": "Air-gapped setup: no package-manager call; the machine must already hold docker, its compose plugin and the essential tools"
+        },
+        {
           "flags": "--debug",
           "long": "debug",
           "valueTaking": false,
@@ -15130,6 +15141,77 @@ export const CLI_CONTRACT: CliContract = {
     {
       "path": [
         "server",
+        "bundle"
+      ],
+      "pathKey": "server bundle",
+      "domain": "server",
+      "group": "TOOLS",
+      "plane": "machine",
+      "descriptionKey": "commands.server.bundle.description",
+      "label": "Build an offline bundle (images, renet, manifest, checksums) for an air-gapped install. Run it on a machine with internet access.",
+      "options": [
+        {
+          "flags": "--out <dir>",
+          "long": "out",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "tier": "common",
+          "descriptionKey": "commands.server.bundle.optionOut",
+          "label": "Directory to write the bundle into"
+        },
+        {
+          "flags": "--arch <arch>",
+          "long": "arch",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": "amd64",
+          "choices": [
+            "amd64",
+            "arm64"
+          ],
+          "tier": "common",
+          "descriptionKey": "commands.server.bundle.optionArch",
+          "label": "Target architecture of the box"
+        },
+        {
+          "flags": "--tag <tag>",
+          "long": "tag",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.bundle.optionTag",
+          "label": "Server image tag to bundle"
+        },
+        {
+          "flags": "--image <ref>",
+          "long": "image",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.bundle.optionImage",
+          "label": "Bundle this local image instead of pulling a tag"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "server",
         "install"
       ],
       "pathKey": "server install",
@@ -15385,6 +15467,28 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Print the DNS records without waiting for them to resolve"
         },
         {
+          "flags": "--offline",
+          "long": "offline",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionOffline",
+          "label": "Install air-gapped from --bundle: no upstream, registry or package call"
+        },
+        {
+          "flags": "--bundle <dir>",
+          "long": "bundle",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.install.optionBundle",
+          "label": "Offline bundle directory written by 'rdc server bundle'"
+        },
+        {
           "flags": "--bws-project <id>",
           "long": "bws-project",
           "valueTaking": true,
@@ -15548,7 +15652,7 @@ export const CLI_CONTRACT: CliContract = {
           "label": "Public domain of the installed server"
         }
       ],
-      "hasSubcommands": false,
+      "hasSubcommands": true,
       "mcpExcludeReason": "Mints a delegation certificate and restarts the account server; use the CLI.",
       "interactive": false,
       "proxyCapable": false,
@@ -15556,6 +15660,52 @@ export const CLI_CONTRACT: CliContract = {
       "detachable": false,
       "machineOption": "machine",
       "repoOption": "repo",
+      "machinePositional": null,
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "server",
+        "licence",
+        "mint"
+      ],
+      "pathKey": "server licence mint",
+      "domain": "server",
+      "group": "TOOLS",
+      "plane": "machine",
+      "descriptionKey": "commands.server.licence.mint.description",
+      "label": "Mint a licence certificate for an offline box's request (run online, logged in)",
+      "options": [
+        {
+          "flags": "--request <file>",
+          "long": "request",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "tier": "common",
+          "descriptionKey": "commands.server.licence.mint.optionRequest",
+          "label": "The delegation request file the offline install wrote"
+        },
+        {
+          "flags": "--out <file>",
+          "long": "out",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": true,
+          "defaultValue": null,
+          "tier": "common",
+          "descriptionKey": "commands.server.licence.mint.optionOut",
+          "label": "File to write the certificate to"
+        }
+      ],
+      "positionals": [],
+      "hasSubcommands": false,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
       "machinePositional": null,
       "repoPositional": null
     },
@@ -15669,6 +15819,28 @@ export const CLI_CONTRACT: CliContract = {
           "tier": "advanced",
           "descriptionKey": "commands.server.install.optionLocalImage",
           "label": "Save the --image from the local Docker and ship it instead of pulling"
+        },
+        {
+          "flags": "--bundle <dir>",
+          "long": "bundle",
+          "valueTaking": true,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.upgrade.optionBundle",
+          "label": "Upgrade from an offline bundle written by 'rdc server bundle'"
+        },
+        {
+          "flags": "--force",
+          "long": "force",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.server.upgrade.optionForce",
+          "label": "Apply a newer template even over local edits to the deployed files"
         },
         {
           "flags": "-y, --yes",

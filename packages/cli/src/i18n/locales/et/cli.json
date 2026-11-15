@@ -1632,7 +1632,8 @@
         "descriptionShort": "Provisioni kaugmasin hoidlate jaoks",
         "failed": "Masina '{{machine}}' seadistamine ebaõnnestus: {{error}}",
         "noConvergeOption": "Ära taaskäivita hoidla deemoneid, mis on veel vana runtime'i paigutusega (sama mis REDIACC_SKIP_RUNTIME_CONVERGE=1)",
-        "starting": "Masina '{{machine}}' seadistamine..."
+        "starting": "Masina '{{machine}}' seadistamine...",
+        "offlineOption": "Võrguta seadistus: paketihaldurit ei kutsuta; masinas peavad juba olema docker, selle compose'i plugin ja olulisemad tööriistad"
       },
       "status": {
         "ambiguous": "Registreeritud on rohkem kui üks masin ({{machines}}); nimeta see, mida näidata.",
@@ -2591,12 +2592,17 @@
           "brought": "Registreeri olemasolev server aadressi järgi ja paigalda sellele.",
           "configured": "Paigalda seadistatud masinale ilma ühegi küsimuseta.",
           "lan": "Paigalda LAN-masinale olemasoleva sertifikaadiga tasuta tasemel."
-        }
+        },
+        "optionBundle": "Võrguta komplekti kaust, mille kirjutas 'rdc server bundle'",
+        "optionOffline": "Paigalda võrguta valikust --bundle: ühtegi päringut ülesvoolu, registrisse ega paketihaldurisse ei tehta",
+        "helpOffline": "Võrguühenduseta keskkond: koosta pakett võrgus käsuga rdc server bundle --out <dir>. rdc server install --offline --bundle <dir> kontrollib paketti, laadib proxy kujutise, seadistab masina ilma võrguta ega pöördu millegi välise poole. Paigaldus peatub litsentsi sammu juures ja kirjutab päringu: väljasta sertifikaat võrgus käsuga rdc server licence mint ja käivita siis uuesti võtmega --cert."
       },
       "status": {
         "description": "Näita paigaldatud serveri tervist, taset, sertifikaati ja kujutist",
         "certRefused": "KEELATUD ({{reason}}) kell {{at}}",
-        "certRefusedRun": "käivita: rdc server licence {{domain}}"
+        "certRefusedRun": "käivita: rdc server licence {{domain}}",
+        "certExpired": "Litsentsisertifikaat on aegunud: uusi hoidlalitsentse ei anta välja, töötavad teenused jätkavad tööd. Paigalda uus sertifikaat (rdc server licence).",
+        "certExpiring": "Litsentsisertifikaat aegub {{days}} päeva pärast; uuenda seda (rdc server licence)"
       },
       "backup": {
         "description": "Prindi paigaldatud serveri taastepakett (võtmed) või kirjuta see faili",
@@ -2614,7 +2620,12 @@
         "template": "Elite malli rakendatakse uuesti (versioon {{from}} -> {{to}})",
         "templateCurrent": "Juurutatud mall (versioon {{version}}) on ajakohane",
         "done": "{{domain}} uuendatud. Tagasipöördepunkt: {{rollback}}",
-        "migratingCert": "Sertifikaat viiakse secrets.env-ist sertifikaatide sisendkausta; server rakendab selle käivitumisel"
+        "migratingCert": "Sertifikaat viiakse secrets.env-ist sertifikaatide sisendkausta; server rakendab selle käivitumisel",
+        "bundleAndImage": "--bundle on vastuolus valikutega --image, --image-file ja --local-image",
+        "optionBundle": "Uuenda võrguta komplektist, mille kirjutas 'rdc server bundle'",
+        "optionForce": "Rakenda uuem mall ka paigaldatud failide kohalike muudatuste peale",
+        "templateEdited": "Paigaldatud mallifaile on kohapeal muudetud: {{files}}. Uuema malli rakendamine kirjutaks need üle; vaata need üle või käivita uuesti valikuga --force.",
+        "templateNoBaseline": "Selles masinas ei ole malli kontrollsummasid salvestatud, seega ei saa kohalikke muudatusi tuvastada; rakendan uuema malli"
       },
       "licence": {
         "description": "Vii tasuta taseme server üle delegeerimissertifikaadile, mis pärineb sisse logitud kontolt või valikust --cert",
@@ -2640,12 +2651,43 @@
         "bootRefused": "Server keeldus käivitusel oma sertifikaadist ({{reason}}): {{detail}}",
         "droppedCert": "Sertifikaat {{certId}} paigutati sissekasti",
         "noUpstreamKey": "Serveril puudub UPSTREAM_PUBLIC_KEY, seega ta ei saa ühtegi sertifikaati kontrollida ja uus sertifikaat ei aita. Määra UPSTREAM_PUBLIC_KEY domeeni {{domain}} saladustes ning käivita `rdc server upgrade {{domain}}`.",
-        "bootRefusalStays": "Sertifikaat rakendati, kuid server teatab endiselt käivituse keeldumisest ({{reason}}); kontrolli serveri logisid"
+        "bootRefusalStays": "Sertifikaat rakendati, kuid server teatab endiselt käivituse keeldumisest ({{reason}}); kontrolli serveri logisid",
+        "mint": {
+          "description": "Anna välja litsentsisertifikaat võrguta masina päringu jaoks (käivita võrgus ja sisse logituna)",
+          "done": "Sertifikaat kirjutati faili {{file}} (kehtib kuni {{until}}); vii see masinasse ja paigalda valikuga --cert",
+          "optionOut": "Fail, kuhu sertifikaat kirjutatakse",
+          "optionRequest": "Delegeerimispäringu fail, mille võrguta paigaldus kirjutas"
+        }
       },
       "bundle": {
         "header": "Domeeni {{domain}} taastepakett. Hoia seda võrguühenduseta; see taastab serveri võtmed.",
         "once": "See taastepakett kuvatakse ainult üks kord. Salvesta see kohe turvalisse kohta:",
-        "owner": "Omaniku konto: {{email}}, esimene parool: {{password}}"
+        "owner": "Omaniku konto: {{email}}, esimene parool: {{password}}",
+        "summary": "Koosta võrguta paigalduse komplekt",
+        "description": "Koosta võrguta komplekt (kujutised, renet, manifest, kontrollsummad) võrgust eraldatud paigalduseks. Käivita see internetiühendusega masinas.",
+        "optionOut": "Kaust, kuhu komplekt kirjutatakse",
+        "optionArch": "Masina sihtarhitektuur",
+        "optionTag": "Komplekti lisatava serverikujutise silt",
+        "optionImage": "Lisa komplekti see kohalik kujutis sildi tõmbamise asemel",
+        "pulling": "Tõmban kujutist {{image}} ({{platform}})",
+        "saving": "Salvestan kujutise {{image}} faili {{file}}",
+        "written": "Komplekt kirjutati kausta {{dir}} ({{arch}})",
+        "errors": {
+          "cliMismatch": "Komplekti koostas CLI {{bundle}}, see on CLI {{cli}}; koosta see selle CLI-ga uuesti (rdc server bundle)",
+          "inspectFailed": "Käsk docker image inspect ebaõnnestus kujutisel {{image}}",
+          "manifestShape": "manifest.json ei ole komplekti manifest ({{what}})",
+          "noRenetAsset": "Selles CLI-s pole linux/{{arch}} renetit, mida komplekti lisada; kasuta väljalaskeversiooni või ehita linux/{{arch}} renet seadistatud renet'i kõrvale",
+          "noRustfsRef": "Sisseehitatud elite'i mall ei nimeta ühtegi digesti järgi fikseeritud RustFS-i kujutist",
+          "notSummed": "Faili {{file}} ei kata SHA256SUMS",
+          "pullFailed": "Käsk docker pull ebaõnnestus kujutisel {{image}}",
+          "renetMismatch": "Komplekti renet (linux/{{arch}}) ei ole selle CLI renet; koosta komplekt selle CLI-ga uuesti",
+          "saveFailed": "Käsk docker save ebaõnnestus kujutisel {{image}}",
+          "schema": "Toetamata komplekti skeem {{schema}}",
+          "sumsLine": "SHA256SUMS sisaldab rea, mis ei ole kujul '<sha256>  <file>': {{line}}",
+          "tagAndImage": "--tag ja --image ei saa koos kasutada",
+          "tampered": "{{file}} ei vasta failile SHA256SUMS ega manifestile: komplekti on muudetud või see on kahjustatud",
+          "unreadable": "Faili {{file}} ei saa komplektist {{dir}} lugeda"
+        }
       },
       "bws": {
         "skipped": "Valikut --bws-project pole: võtmed jäävad ainult masinasse",
@@ -2729,6 +2771,23 @@
         "boxScriptFailed": "Käsk masinas {{machine}} lõppes koodiga {{code}}: {{detail}}",
         "rdcFailed": "{{command}} nurjus (väljumiskood {{code}})",
         "certAndFree": "--cert ja --licence free ei saa koos kasutada"
+      },
+      "offline": {
+        "archMismatch": "Masin on {{box}}, aga komplekt on mõeldud arhitektuurile {{bundle}}",
+        "awaitingCert": "Ootan litsentsisertifikaati. Vii {{file}} võrgus olevasse masinasse ja käivita: rdc server licence mint --request <file> --out cert.json. Seejärel korda seda paigaldust valikuga --cert cert.json (domeen {{domain}}).",
+        "bundleNeedsOffline": "--bundle nõuab valikut --offline",
+        "imageFromBundle": "--image, --image-file ja --local-image on valikuga --bundle vastuolus: serveri kujutis tuleb komplektist",
+        "loadFailed": "Kujutise {{image}} laadimine masina Dockerisse ebaõnnestus: {{detail}}",
+        "loadingProxy": "Laadin puhverserveri kujutist {{image}} masina Dockerisse",
+        "mintNoLogin": "Väljaandmiseks on vaja sisse logitud konfiguratsiooni (rdc subscription login)",
+        "missingEssentials": "Masinas puudub (võrguta seadistus ei saa seda paigaldada): {{missing}}",
+        "needsBundle": "--offline nõuab valikut --bundle <dir>",
+        "noBws": "--bws-project vajab võrku ja seda ei saa koos valikuga --offline kasutada",
+        "noCfToken": "--cf-token vajab võrku ja seda ei saa koos valikuga --offline kasutada",
+        "noFree": "--licence free pöördub kontoserveri poole ja seda ei saa koos valikuga --offline kasutada; kasuta päringu ja --cert voogu",
+        "noProxyImage": "Komplektis puudub puhverserveri kujutis {{ref}}",
+        "requestInvalid": "{{file}} ei ole võrguta paigalduse kirjutatud delegeerimispäring",
+        "tlsByoOnly": "--tls {{tls}} vajab internetti; kasuta --tls byo koos valikutega --tls-cert ja --tls-key (privaatse CA jaoks --tls-ca)"
       }
     },
     "shortcuts": {

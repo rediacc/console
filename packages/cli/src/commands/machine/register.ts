@@ -335,6 +335,7 @@ function registerSetup(machine: Command): void {
     )
     .option('--datastore-size <size>', t('commands.machine.setup.datastoreSizeOption'), '95%')
     .option('--no-converge', t('commands.machine.setup.noConvergeOption'))
+    .option('--offline', t('commands.machine.setup.offlineOption'))
     .option('--debug', t('options.debug'))
     .action(async (name: string, options) => {
       try {
@@ -374,7 +375,11 @@ function registerSetup(machine: Command): void {
             machineName: name,
             commandKind: {
               name: 'setup',
-              args: { datastore: options.datastorePath, 'datastore-size': datastoreSize },
+              args: {
+                datastore: options.datastorePath,
+                'datastore-size': datastoreSize,
+                ...(options.offline === true ? { offline: true } : {}),
+              },
             },
             debug: options.debug,
           },

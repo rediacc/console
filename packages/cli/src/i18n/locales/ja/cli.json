@@ -1632,7 +1632,8 @@
         "descriptionShort": "リモートマシンをリポジトリ用にプロビジョニングする",
         "failed": "マシン \"{{machine}}\" のセットアップに失敗しました: {{error}}",
         "noConvergeOption": "古いランタイム構成のリポジトリデーモンを再起動しない（REDIACC_SKIP_RUNTIME_CONVERGE=1 と同じ）",
-        "starting": "マシン \"{{machine}}\" をセットアップ中..."
+        "starting": "マシン \"{{machine}}\" をセットアップ中...",
+        "offlineOption": "エアギャップ環境向けセットアップ: パッケージマネージャーを呼び出しません。マシンに docker、その compose プラグイン、必須ツールが揃っている必要があります"
       },
       "status": {
         "ambiguous": "複数のマシンが登録されています（{{machines}}）。表示するマシンを指定してください",
@@ -2591,12 +2592,17 @@
           "brought": "既存のサーバーをアドレスで登録し、そこにインストールします。",
           "configured": "設定済みのマシンにプロンプトなしでインストールします。",
           "lan": "既存の証明書を使い、無料プランで LAN マシンにインストールします。"
-        }
+        },
+        "optionBundle": "'rdc server bundle' が書き出したオフラインバンドルのディレクトリ",
+        "optionOffline": "--bundle からエアギャップ環境にインストールする: アップストリーム、レジストリ、パッケージの呼び出しは行わない",
+        "helpOffline": "エアギャップ環境: オンラインの環境で rdc server bundle --out <dir> を実行してバンドルを作成します。rdc server install --offline --bundle <dir> はバンドルを検証し、プロキシイメージを読み込み、オフラインでセットアップして、外部には一切接続しません。インストールはライセンスの手順で止まり、リクエストを書き出します。オンラインの環境で rdc server licence mint により証明書を発行し、--cert を付けて再実行してください。"
       },
       "status": {
         "description": "インストール済みサーバーのヘルス、プラン、証明書、イメージを表示する",
         "certRefused": "拒否 ({{reason}}) {{at}}",
-        "certRefusedRun": "実行: rdc server licence {{domain}}"
+        "certRefusedRun": "実行: rdc server licence {{domain}}",
+        "certExpired": "ライセンス証明書の有効期限が切れています: 新しいリポジトリのライセンスは発行されませんが、稼働中のサービスは動作し続けます。新しい証明書をインストールしてください (rdc server licence)。",
+        "certExpiring": "ライセンス証明書は {{days}} 日後に期限切れになります。更新してください (rdc server licence)"
       },
       "backup": {
         "description": "インストール済みサーバーのリカバリーバンドル (キー) を表示、またはファイルに書き出す",
@@ -2614,7 +2620,12 @@
         "template": "elite テンプレートを再適用しています (バージョン {{from}} から {{to}})",
         "templateCurrent": "デプロイ済みのテンプレート (バージョン {{version}}) は最新です",
         "done": "{{domain}} をアップグレードしました。ロールバックポイント: {{rollback}}",
-        "migratingCert": "証明書を secrets.env から証明書の受け取りフォルダーへ移しています。サーバーは起動時に適用します"
+        "migratingCert": "証明書を secrets.env から証明書の受け取りフォルダーへ移しています。サーバーは起動時に適用します",
+        "bundleAndImage": "--bundle は --image、--image-file、--local-image と併用できません",
+        "optionBundle": "'rdc server bundle' が書き出したオフラインバンドルからアップグレードする",
+        "optionForce": "デプロイ済みファイルにローカルの変更があっても、新しいテンプレートを適用する",
+        "templateEdited": "デプロイ済みのテンプレートファイルがローカルで編集されています: {{files}}。新しいテンプレートを適用すると上書きされます。内容を確認するか、--force を付けて再実行してください。",
+        "templateNoBaseline": "このボックスにはテンプレートのチェックサムが記録されていないため、ローカルの変更を検出できません。新しいテンプレートを適用します"
       },
       "licence": {
         "description": "無料プランのサーバーを、ログイン中のアカウントまたは --cert の委任証明書に切り替える",
@@ -2640,12 +2651,43 @@
         "bootRefused": "サーバーは起動時に証明書を拒否しました ({{reason}}): {{detail}}",
         "droppedCert": "証明書 {{certId}} をインボックスに置きました",
         "noUpstreamKey": "サーバーに UPSTREAM_PUBLIC_KEY がないため、証明書を検証できず、新しい証明書でも解決しません。{{domain}} のシークレットに UPSTREAM_PUBLIC_KEY を設定し、`rdc server upgrade {{domain}}` を実行してください。",
-        "bootRefusalStays": "証明書は適用されましたが、サーバーはまだ起動時の拒否 ({{reason}}) を報告しています。サーバーのログを確認してください"
+        "bootRefusalStays": "証明書は適用されましたが、サーバーはまだ起動時の拒否 ({{reason}}) を報告しています。サーバーのログを確認してください",
+        "mint": {
+          "description": "オフラインのボックスからのリクエストに対してライセンス証明書を発行する (オンラインでログインした状態で実行)",
+          "done": "証明書を {{file}} に書き出しました ({{until}} まで有効)。ボックスに持ち込み、--cert を指定してインストールしてください",
+          "optionOut": "証明書の書き出し先ファイル",
+          "optionRequest": "オフラインインストールが書き出した委任リクエストのファイル"
+        }
       },
       "bundle": {
         "header": "{{domain}} のリカバリーバンドル。サーバーのキーを復元できるため、オフラインで保管してください。",
         "once": "このリカバリーバンドルは一度だけ表示されます。今すぐ安全な場所に保管してください:",
-        "owner": "オーナーアカウント: {{email}}、初期パスワード: {{password}}"
+        "owner": "オーナーアカウント: {{email}}、初期パスワード: {{password}}",
+        "summary": "オフラインインストール用バンドルを作成する",
+        "description": "エアギャップ環境へのインストール用に、オフラインバンドル (イメージ、renet、manifest、チェックサム) を作成します。インターネットに接続できるマシンで実行してください。",
+        "optionOut": "バンドルの書き出し先ディレクトリ",
+        "optionArch": "ボックスの対象アーキテクチャ",
+        "optionTag": "バンドルに含めるサーバーイメージのタグ",
+        "optionImage": "タグを pull せず、このローカルイメージをバンドルに含める",
+        "pulling": "{{image}} ({{platform}}) を pull しています",
+        "saving": "{{image}} を {{file}} に保存しています",
+        "written": "バンドルを {{dir}} に書き出しました ({{arch}})",
+        "errors": {
+          "cliMismatch": "このバンドルは CLI {{bundle}} で作成されましたが、現在の CLI は {{cli}} です。この CLI で作り直してください (rdc server bundle)",
+          "inspectFailed": "{{image}} の docker image inspect に失敗しました",
+          "manifestShape": "manifest.json はバンドルのマニフェストではありません ({{what}})",
+          "noRenetAsset": "この CLI にはバンドルに含める linux/{{arch}} 用の renet がありません。リリースビルドを使うか、設定済みの renet と同じ場所に linux/{{arch}} 用の renet をビルドしてください",
+          "noRustfsRef": "組み込みの elite テンプレートに、ダイジェストで固定された RustFS イメージの指定がありません",
+          "notSummed": "{{file}} は SHA256SUMS に含まれていません",
+          "pullFailed": "{{image}} の docker pull に失敗しました",
+          "renetMismatch": "バンドルの renet (linux/{{arch}}) は、この CLI に同梱されている renet と一致しません。この CLI でバンドルを作り直してください",
+          "saveFailed": "{{image}} の docker save に失敗しました",
+          "schema": "サポートされていないバンドルスキーマです: {{schema}}",
+          "sumsLine": "SHA256SUMS に '<sha256>  <file>' の形式ではない行があります: {{line}}",
+          "tagAndImage": "--tag と --image は同時に指定できません",
+          "tampered": "{{file}} が SHA256SUMS またはマニフェストと一致しません。バンドルが変更されたか破損しています",
+          "unreadable": "バンドル {{dir}} から {{file}} を読み取れません"
+        }
       },
       "bws": {
         "skipped": "--bws-project なし: キーはマシン上にのみ保持されます",
@@ -2729,6 +2771,23 @@
         "boxScriptFailed": "{{machine}} 上のコマンドが {{code}} で終了しました: {{detail}}",
         "rdcFailed": "{{command}} に失敗しました (終了コード {{code}})",
         "certAndFree": "--cert と --licence free は併用できません"
+      },
+      "offline": {
+        "archMismatch": "マシンは {{box}} ですが、バンドルは {{bundle}} 用です",
+        "awaitingCert": "ライセンス証明書を待っています。{{file}} をオンラインのマシンに持ち込み、次を実行してください: rdc server licence mint --request <file> --out cert.json。その後、--cert cert.json を付けてこのインストールを再実行してください (ドメイン {{domain}})。",
+        "bundleNeedsOffline": "--bundle には --offline が必要です",
+        "imageFromBundle": "--image、--image-file、--local-image は --bundle と併用できません。サーバーイメージはバンドルから取得されます",
+        "loadFailed": "{{image}} をマシンの Docker に読み込めませんでした: {{detail}}",
+        "loadingProxy": "プロキシイメージ {{image}} をマシンの Docker に読み込んでいます",
+        "mintNoLogin": "発行にはログイン済みの設定が必要です (rdc subscription login)",
+        "missingEssentials": "マシンに不足しています (オフラインセットアップではインストールできません): {{missing}}",
+        "needsBundle": "--offline には --bundle <dir> が必要です",
+        "noBws": "--bws-project はネットワークが必要なため、--offline とは併用できません",
+        "noCfToken": "--cf-token はネットワークが必要なため、--offline とは併用できません",
+        "noFree": "--licence free はアカウントサーバーに接続するため、--offline とは併用できません。リクエストと --cert の手順を使ってください",
+        "noProxyImage": "バンドルにプロキシイメージ {{ref}} が含まれていません",
+        "requestInvalid": "{{file}} はオフラインインストールが書き出した委任リクエストではありません",
+        "tlsByoOnly": "--tls {{tls}} にはインターネット接続が必要です。--tls byo と --tls-cert、--tls-key を使ってください (プライベート CA の場合は --tls-ca)"
       }
     },
     "shortcuts": {

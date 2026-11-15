@@ -12,6 +12,10 @@ export type LicenceMode = 'auto' | 'free';
 export const TLS_METHODS: readonly TlsMethod[] = ['letsencrypt', 'cloudflare', 'byo'] as const;
 export const LICENCE_MODES: readonly LicenceMode[] = ['auto', 'free'] as const;
 
+/** The architectures a bundle's renet and images are built for. */
+export type BundleArch = 'amd64' | 'arm64';
+export const BUNDLE_ARCHES: readonly BundleArch[] = ['amd64', 'arm64'] as const;
+
 export interface ProcResult {
   code: number;
   stdout: string;
@@ -100,6 +104,16 @@ export interface ServerDeps {
   issueCert(delegatedPublicKey: string): Promise<IssueOutcome>;
   /** Run a local program (`docker save` for `--local-image`); resolves to its exit code. */
   local(command: string, args: string[]): Promise<number>;
+  /** Run a local program and capture its output (`docker image inspect`); code 127 when it cannot start. */
+  localOut(command: string, args: string[]): Promise<ProcResult>;
+  /** The sha256 (hex) of a local file, read as a stream: bundle tars are large. */
+  sha256File(path: string): Promise<string>;
+  /** Create a local directory and its parents. */
+  makeDir(path: string): Promise<void>;
+  /** Write this CLI's own renet binary for linux/`arch` to `dest` when given; always answers its sha256 and version. */
+  renetAsset(arch: BundleArch, dest?: string): Promise<{ sha256: string; version: string }>;
+  /** Copy a local file to the machine (SFTP) at an absolute remote path. */
+  uploadFile(machine: string, local: string, remote: string): Promise<void>;
   /** A fresh private temporary directory. */
   tempDir(): Promise<string>;
   /** Read a local file (a cert, a TLS pair, a CA). */

@@ -34,10 +34,15 @@ export function imageTag(ref: string): string {
   return colon < 0 ? 'latest' : name.slice(colon + 1);
 }
 
+/** The files of the built-in elite template; none while the build ships no such template. */
+export function templateFiles(): Record<string, string> {
+  const templates: Partial<Record<string, EmbeddedTemplate>> = TEMPLATES;
+  return templates[TEMPLATE_NAME]?.files ?? {};
+}
+
 /** The built-in template's `VERSION`; 0 while the template ships none. */
 export function builtinTemplateVersion(): number {
-  const templates: Partial<Record<string, EmbeddedTemplate>> = TEMPLATES;
-  const files: Partial<Record<string, string>> = templates[TEMPLATE_NAME]?.files ?? {};
+  const files: Partial<Record<string, string>> = templateFiles();
   const raw = files.VERSION ?? '';
   const n = Number.parseInt(raw.trim(), 10);
   return Number.isFinite(n) ? n : 0;

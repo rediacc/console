@@ -17,6 +17,7 @@ import { getEffectiveConfigName } from '../config/config-name.js';
 import { writeStdout } from '../core/request-context.js';
 import { machineConnections } from '../machine/machine-connection.js';
 import { certToBase64, parseSignedCert } from './cert.js';
+import { offlineDeps } from './deps-offline.js';
 import { bwsList, bwsWrite, ownedZoneToken, writeDns } from './ops-deps.js';
 import type { BoxReply, BoxTarget, IssueOutcome, ProcResult, ServerDeps } from './types.js';
 
@@ -209,6 +210,7 @@ export function liveServerDeps(): ServerDeps {
         child.on('error', () => resolve(127));
         child.on('close', (code) => resolve(code ?? 1));
       }),
+    ...offlineDeps,
     tempDir: () => mkdtemp(join(tmpdir(), 'rdc-server-')),
     readFile: (path) => readFile(path, 'utf-8'),
     writePrivate,

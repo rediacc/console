@@ -44,6 +44,10 @@ export interface InstallOptions {
   /** `docker save` the `--image` ref from the local Docker and ship it (a locally built image). */
   localImage?: boolean;
   dnsWait?: boolean;
+  /** Air-gapped: install from `--bundle`, call nothing upstream. */
+  offline?: boolean;
+  /** The directory `rdc server bundle` wrote. */
+  bundle?: string;
   /** Copy the generated secrets to this Bitwarden Secrets Manager project (Rediacc's own installs). */
   bwsProject?: string;
   /** Replace a differing value in that project instead of refusing. */

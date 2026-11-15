@@ -960,7 +960,8 @@
         "descriptionShort": "Provision a remote machine for repositories",
         "failed": "Machine '{{machine}}' setup failed: {{error}}",
         "noConvergeOption": "Skip restarting repository daemons still on an older runtime layout (same as REDIACC_SKIP_RUNTIME_CONVERGE=1)",
-        "starting": "Setting up machine '{{machine}}'..."
+        "starting": "Setting up machine '{{machine}}'...",
+        "offlineOption": "Air-gapped setup: no package-manager call; the machine must already hold docker, its compose plugin and the essential tools"
       },
       "status": {
         "ambiguous": "More than one machine is registered ({{machines}}); name the one to show.",
@@ -2888,12 +2889,17 @@
           "brought": "Register an existing server by its address and install on it.",
           "configured": "Install on a configured machine without any prompt.",
           "lan": "Install on a LAN machine with an existing certificate, on the free tier."
-        }
+        },
+        "optionBundle": "Offline bundle directory written by 'rdc server bundle'",
+        "optionOffline": "Install air-gapped from --bundle: no upstream, registry or package call",
+        "helpOffline": "Air-gapped: build the bundle online with rdc server bundle --out <dir>. rdc server install --offline --bundle <dir> verifies it, loads the proxy image, sets up offline and calls nothing upstream. It stops at the licence step and writes a request: mint a certificate online with rdc server licence mint, then rerun with --cert."
       },
       "status": {
         "description": "Show the health, tier, certificate and image of an installed server",
         "certRefused": "REFUSED ({{reason}}) at {{at}}",
-        "certRefusedRun": "run: rdc server licence {{domain}}"
+        "certRefusedRun": "run: rdc server licence {{domain}}",
+        "certExpired": "The licence certificate has expired: no new repo licences are issued, running services keep working. Install a new certificate (rdc server licence).",
+        "certExpiring": "The licence certificate expires in {{days}} days; renew it (rdc server licence)"
       },
       "backup": {
         "description": "Print the recovery bundle (the keys) of an installed server, or write it to a file",
@@ -2911,7 +2917,12 @@
         "template": "Applying the elite template again (version {{from}} to {{to}})",
         "templateCurrent": "The deployed template (version {{version}}) is current",
         "done": "{{domain}} upgraded. Rollback point: {{rollback}}",
-        "migratingCert": "Moving the certificate from secrets.env into the cert inbox; the server applies it as it starts"
+        "migratingCert": "Moving the certificate from secrets.env into the cert inbox; the server applies it as it starts",
+        "bundleAndImage": "--bundle conflicts with --image, --image-file and --local-image",
+        "optionBundle": "Upgrade from an offline bundle written by 'rdc server bundle'",
+        "optionForce": "Apply a newer template even over local edits to the deployed files",
+        "templateEdited": "The deployed template files were edited locally: {{files}}. Applying the newer template would overwrite them; review them or rerun with --force.",
+        "templateNoBaseline": "This box recorded no template checksums, so local edits cannot be detected; applying the newer template"
       },
       "licence": {
         "description": "Move a free-tier server to a delegation certificate from the logged-in account, or from --cert",
@@ -2937,12 +2948,43 @@
         "bootRefused": "The server refused its cert at boot ({{reason}}): {{detail}}",
         "droppedCert": "Dropped cert {{certId}} into the inbox",
         "noUpstreamKey": "The server has no UPSTREAM_PUBLIC_KEY, so it cannot check any cert and a new cert cannot help. Set UPSTREAM_PUBLIC_KEY in the secrets of {{domain}}, then run `rdc server upgrade {{domain}}`.",
-        "bootRefusalStays": "The cert was applied, but the server still reports a boot refusal ({{reason}}); check the server logs"
+        "bootRefusalStays": "The cert was applied, but the server still reports a boot refusal ({{reason}}); check the server logs",
+        "mint": {
+          "description": "Mint a licence certificate for an offline box's request (run online, logged in)",
+          "done": "Certificate written to {{file}} (valid until {{until}}); carry it to the box and install with --cert",
+          "optionOut": "File to write the certificate to",
+          "optionRequest": "The delegation request file the offline install wrote"
+        }
       },
       "bundle": {
         "header": "Recovery bundle for {{domain}}. Keep it offline; it restores the server's keys.",
         "once": "This recovery bundle is shown once. Store it somewhere safe now:",
-        "owner": "Owner account: {{email}}, first password: {{password}}"
+        "owner": "Owner account: {{email}}, first password: {{password}}",
+        "summary": "Build an offline install bundle",
+        "description": "Build an offline bundle (images, renet, manifest, checksums) for an air-gapped install. Run it on a machine with internet access.",
+        "optionOut": "Directory to write the bundle into",
+        "optionArch": "Target architecture of the box",
+        "optionTag": "Server image tag to bundle",
+        "optionImage": "Bundle this local image instead of pulling a tag",
+        "pulling": "Pulling {{image}} ({{platform}})",
+        "saving": "Saving {{image}} to {{file}}",
+        "written": "Bundle written to {{dir}} ({{arch}})",
+        "errors": {
+          "cliMismatch": "The bundle was built by CLI {{bundle}}, this is CLI {{cli}}; rebuild it with this CLI (rdc server bundle)",
+          "inspectFailed": "docker image inspect failed for {{image}}",
+          "manifestShape": "manifest.json is not a bundle manifest ({{what}})",
+          "noRenetAsset": "This CLI carries no linux/{{arch}} renet to bundle; use the release build, or build renet for linux/{{arch}} beside the configured renet",
+          "noRustfsRef": "The built-in elite template names no digest-pinned RustFS image",
+          "notSummed": "{{file}} is not covered by SHA256SUMS",
+          "pullFailed": "docker pull failed for {{image}}",
+          "renetMismatch": "The bundle's renet (linux/{{arch}}) is not the renet this CLI carries; rebuild the bundle with this CLI",
+          "saveFailed": "docker save failed for {{image}}",
+          "schema": "Unsupported bundle schema {{schema}}",
+          "sumsLine": "SHA256SUMS holds a line that is not '<sha256>  <file>': {{line}}",
+          "tagAndImage": "--tag and --image cannot be combined",
+          "tampered": "{{file}} does not match SHA256SUMS or the manifest: the bundle was changed or damaged",
+          "unreadable": "{{file}} cannot be read from the bundle {{dir}}"
+        }
       },
       "bws": {
         "skipped": "No --bws-project: the keys stay on the machine only",
@@ -3026,6 +3068,23 @@
         "boxScriptFailed": "The command on {{machine}} exited {{code}}: {{detail}}",
         "rdcFailed": "{{command}} failed (exit {{code}})",
         "certAndFree": "--cert and --licence free cannot be combined"
+      },
+      "offline": {
+        "archMismatch": "The machine is {{box}} but the bundle is for {{bundle}}",
+        "awaitingCert": "Waiting for a licence certificate. Carry {{file}} to an online machine and run: rdc server licence mint --request <file> --out cert.json. Then rerun this install with --cert cert.json (domain {{domain}}).",
+        "bundleNeedsOffline": "--bundle needs --offline",
+        "imageFromBundle": "--image, --image-file and --local-image conflict with --bundle: the server image comes from the bundle",
+        "loadFailed": "Loading {{image}} into the machine's Docker failed: {{detail}}",
+        "loadingProxy": "Loading the proxy image {{image}} into the machine's Docker",
+        "mintNoLogin": "Minting needs a logged-in config (rdc subscription login)",
+        "missingEssentials": "Missing on the machine (offline setup cannot install them): {{missing}}",
+        "needsBundle": "--offline needs --bundle <dir>",
+        "noBws": "--bws-project needs the network and cannot be used with --offline",
+        "noCfToken": "--cf-token needs the network and cannot be used with --offline",
+        "noFree": "--licence free calls the account server and cannot be used with --offline; use the request and --cert flow",
+        "noProxyImage": "The bundle does not hold the proxy image {{ref}}",
+        "requestInvalid": "{{file}} is not a delegation request written by an offline install",
+        "tlsByoOnly": "--tls {{tls}} needs the internet; use --tls byo with --tls-cert and --tls-key (--tls-ca for a private CA)"
       }
     },
     "job": {

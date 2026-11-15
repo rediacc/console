@@ -1632,7 +1632,8 @@
         "descriptionShort": "Aprovisionar uma máquina remota para repositórios",
         "failed": "Configuração da máquina '{{machine}}' falhou: {{error}}",
         "noConvergeOption": "Não reiniciar daemons de repositório que ainda usam um layout de runtime antigo (o mesmo que REDIACC_SKIP_RUNTIME_CONVERGE=1)",
-        "starting": "A configurar a máquina '{{machine}}'..."
+        "starting": "A configurar a máquina '{{machine}}'...",
+        "offlineOption": "Configuração isolada (air-gapped): sem chamadas ao gerenciador de pacotes; a máquina já deve ter docker, o plugin compose e as ferramentas essenciais"
       },
       "status": {
         "ambiguous": "Está registada mais do que uma máquina ({{machines}}); indique qual mostrar.",
@@ -2591,12 +2592,17 @@
           "brought": "Registrar um servidor existente pelo endereço e instalar nele.",
           "configured": "Instalar em uma máquina configurada, sem nenhuma pergunta.",
           "lan": "Instalar em uma máquina da LAN com um certificado existente, no plano gratuito."
-        }
+        },
+        "optionBundle": "Diretório do pacote offline gerado por 'rdc server bundle'",
+        "optionOffline": "Instalar sem rede a partir de --bundle: sem acesso a upstream, registry ou gerenciador de pacotes",
+        "helpOffline": "Ambiente isolado: crie o bundle com internet usando rdc server bundle --out <dir>. rdc server install --offline --bundle <dir> verifica o bundle, carrega a imagem do proxy, configura a máquina offline e não chama nada externo. A instalação para na etapa da licença e grava uma solicitação: emita um certificado online com rdc server licence mint e execute de novo com --cert."
       },
       "status": {
         "description": "Mostrar a saúde, o plano, o certificado e a imagem de um servidor instalado",
         "certRefused": "RECUSADO ({{reason}}) em {{at}}",
-        "certRefusedRun": "execute: rdc server licence {{domain}}"
+        "certRefusedRun": "execute: rdc server licence {{domain}}",
+        "certExpired": "O certificado de licença expirou: nenhuma nova licença de repositório será emitida, mas os serviços em execução continuam funcionando. Instale um novo certificado (rdc server licence).",
+        "certExpiring": "O certificado de licença expira em {{days}} dias; renove-o (rdc server licence)"
       },
       "backup": {
         "description": "Exibir o pacote de recuperação (as chaves) de um servidor instalado, ou gravá-lo em um arquivo",
@@ -2614,7 +2620,12 @@
         "template": "Reaplicando o template elite (versão {{from}} para {{to}})",
         "templateCurrent": "O template implantado (versão {{version}}) está atualizado",
         "done": "{{domain}} atualizado. Ponto de rollback: {{rollback}}",
-        "migratingCert": "Movendo o certificado do secrets.env para a caixa de certificados; o servidor o aplica ao iniciar"
+        "migratingCert": "Movendo o certificado do secrets.env para a caixa de certificados; o servidor o aplica ao iniciar",
+        "bundleAndImage": "--bundle entra em conflito com --image, --image-file e --local-image",
+        "optionBundle": "Atualizar a partir de um pacote offline gerado por 'rdc server bundle'",
+        "optionForce": "Aplicar um template mais novo mesmo sobre edições locais nos arquivos implantados",
+        "templateEdited": "Os arquivos do template implantado foram editados localmente: {{files}}. Aplicar o template mais novo os sobrescreveria; revise-os ou execute novamente com --force.",
+        "templateNoBaseline": "Esta máquina não registrou checksums do template, então edições locais não podem ser detectadas; aplicando o template mais novo"
       },
       "licence": {
         "description": "Migrar um servidor do plano gratuito para um certificado de delegação da conta conectada, ou de --cert",
@@ -2640,12 +2651,43 @@
         "bootRefused": "O servidor recusou o certificado na inicialização ({{reason}}): {{detail}}",
         "droppedCert": "Certificado {{certId}} depositado na caixa de entrada",
         "noUpstreamKey": "O servidor não tem UPSTREAM_PUBLIC_KEY, por isso não consegue verificar nenhum certificado e um novo não ajuda. Defina UPSTREAM_PUBLIC_KEY nos segredos de {{domain}} e execute `rdc server upgrade {{domain}}`.",
-        "bootRefusalStays": "O certificado foi aplicado, mas o servidor ainda relata uma recusa na inicialização ({{reason}}); verifique os logs do servidor"
+        "bootRefusalStays": "O certificado foi aplicado, mas o servidor ainda relata uma recusa na inicialização ({{reason}}); verifique os logs do servidor",
+        "mint": {
+          "description": "Emitir um certificado de licença para a solicitação de uma máquina offline (execute online, com login feito)",
+          "done": "Certificado gravado em {{file}} (válido até {{until}}); leve-o à máquina e instale com --cert",
+          "optionOut": "Arquivo onde gravar o certificado",
+          "optionRequest": "Arquivo de solicitação de delegação gerado pela instalação offline"
+        }
       },
       "bundle": {
         "header": "Pacote de recuperação de {{domain}}. Mantenha-o offline; ele restaura as chaves do servidor.",
         "once": "Este pacote de recuperação é exibido uma única vez. Guarde-o agora em local seguro:",
-        "owner": "Conta do proprietário: {{email}}, primeira senha: {{password}}"
+        "owner": "Conta do proprietário: {{email}}, primeira senha: {{password}}",
+        "summary": "Criar um pacote de instalação offline",
+        "description": "Cria um pacote offline (imagens, renet, manifesto, checksums) para uma instalação isolada da rede. Execute em uma máquina com acesso à internet.",
+        "optionOut": "Diretório onde gravar o pacote",
+        "optionArch": "Arquitetura de destino da máquina",
+        "optionTag": "Tag da imagem do servidor a incluir no pacote",
+        "optionImage": "Incluir esta imagem local no pacote em vez de baixar uma tag",
+        "pulling": "Baixando {{image}} ({{platform}})",
+        "saving": "Salvando {{image}} em {{file}}",
+        "written": "Pacote gravado em {{dir}} ({{arch}})",
+        "errors": {
+          "cliMismatch": "O pacote foi criado pela CLI {{bundle}}, mas esta é a CLI {{cli}}; recrie-o com esta CLI (rdc server bundle)",
+          "inspectFailed": "docker image inspect falhou para {{image}}",
+          "manifestShape": "manifest.json não é um manifesto de pacote ({{what}})",
+          "noRenetAsset": "Esta CLI não traz um renet linux/{{arch}} para incluir no pacote; use a build de release ou compile o renet para linux/{{arch}} ao lado do renet configurado",
+          "noRustfsRef": "O template elite integrado não indica nenhuma imagem RustFS fixada por digest",
+          "notSummed": "{{file}} não está coberto pelo SHA256SUMS",
+          "pullFailed": "docker pull falhou para {{image}}",
+          "renetMismatch": "O renet do pacote (linux/{{arch}}) não é o renet que esta CLI traz; recrie o pacote com esta CLI",
+          "saveFailed": "docker save falhou para {{image}}",
+          "schema": "Esquema de pacote não compatível: {{schema}}",
+          "sumsLine": "O SHA256SUMS contém uma linha que não segue '<sha256>  <file>': {{line}}",
+          "tagAndImage": "--tag e --image não podem ser usados juntos",
+          "tampered": "{{file}} não corresponde ao SHA256SUMS nem ao manifesto: o pacote foi alterado ou está danificado",
+          "unreadable": "Não foi possível ler {{file}} do pacote {{dir}}"
+        }
       },
       "bws": {
         "skipped": "Sem --bws-project: as chaves ficam somente na máquina",
@@ -2729,6 +2771,23 @@
         "boxScriptFailed": "O comando em {{machine}} terminou com código {{code}}: {{detail}}",
         "rdcFailed": "{{command}} falhou (código {{code}})",
         "certAndFree": "--cert e --licence free não podem ser combinados"
+      },
+      "offline": {
+        "archMismatch": "A máquina é {{box}}, mas o pacote é para {{bundle}}",
+        "awaitingCert": "Aguardando um certificado de licença. Leve {{file}} a uma máquina online e execute: rdc server licence mint --request <file> --out cert.json. Depois execute esta instalação novamente com --cert cert.json (domínio {{domain}}).",
+        "bundleNeedsOffline": "--bundle exige --offline",
+        "imageFromBundle": "--image, --image-file e --local-image entram em conflito com --bundle: a imagem do servidor vem do pacote",
+        "loadFailed": "Falha ao carregar {{image}} no Docker da máquina: {{detail}}",
+        "loadingProxy": "Carregando a imagem do proxy {{image}} no Docker da máquina",
+        "mintNoLogin": "Emitir o certificado exige uma configuração com login (rdc subscription login)",
+        "missingEssentials": "Faltam na máquina (a configuração offline não consegue instalá-los): {{missing}}",
+        "needsBundle": "--offline exige --bundle <dir>",
+        "noBws": "--bws-project exige rede e não pode ser usado com --offline",
+        "noCfToken": "--cf-token exige rede e não pode ser usado com --offline",
+        "noFree": "--licence free consulta o servidor de contas e não pode ser usado com --offline; use o fluxo de solicitação com --cert",
+        "noProxyImage": "O pacote não contém a imagem do proxy {{ref}}",
+        "requestInvalid": "{{file}} não é uma solicitação de delegação gerada por uma instalação offline",
+        "tlsByoOnly": "--tls {{tls}} exige internet; use --tls byo com --tls-cert e --tls-key (--tls-ca para uma CA privada)"
       }
     },
     "shortcuts": {

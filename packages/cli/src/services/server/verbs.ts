@@ -6,6 +6,9 @@ import { delegationCertId } from '@rediacc/shared/subscription';
 import { t } from '../../i18n/index.js';
 import { outputService } from '../core/output.js';
 import { locateRepo, rdcMust, readBundle, readPublicFacts, ServerError, setBoxEnv } from './box.js';
+import { serverImageOf } from './bundle/manifest.js';
+import { uploadBundleImages } from './bundle/offline.js';
+import { verifyBundle } from './bundle/verify.js';
 import { decodeCert } from './cert.js';
 import {
   boxTarget,
@@ -27,7 +30,8 @@ import {
   readBootRejected,
   readLiveCert,
 } from './licence.js';
-import { recordFile } from './state.js';
+import { recordFile, type ServerRecord } from './state.js';
+import { readTemplateEdits, writeTemplateSums } from './template-guard.js';
 import type { ServerDeps } from './types.js';
 
 const DEFAULT_TIER = 'licensed';
@@ -48,12 +52,21 @@ export interface StatusResult {
   planCode?: string;
   certIssuedAt?: string;
   certValidUntil?: string;
+  /** Whole days until the cert expires; negative once it has. */
+  certExpiresInDays?: number;
   freeTierRelay?: boolean;
   /** Set when the box refused its cert at boot: it runs on the free tier and holds no live cert. */
   certRefused?: { reason: string; detail: string; at: string };
   image?: string;
   templateVersion: number;
   builtinTemplateVersion: number;
+}
+
+const DAY_MS = 86_400_000;
+
+function daysUntil(iso: string, now: number): number | undefined {
+  const end = Date.parse(iso);
+  return Number.isNaN(end) ? undefined : Math.floor((end - now) / DAY_MS);
 }
 
 /** Reads only: the box's public facts, its live cert file, one health answer and the free-tier relay. */
@@ -82,6 +95,7 @@ export async function serverStatus(deps: ServerDeps, loc: Locator): Promise<Stat
           planCode: cert.planCode,
           certIssuedAt: cert.issuedAt,
           certValidUntil: cert.validUntil,
+          certExpiresInDays: daysUntil(cert.validUntil, deps.now()),
         }
       : {}),
     ...(refused
@@ -111,6 +125,10 @@ export interface UpgradeOptions {
   image?: string;
   imageFile?: string;
   localImage?: boolean;
+  /** The directory `rdc server bundle` wrote: its server image replaces a pull. */
+  bundle?: string;
+  /** Apply a newer template over local edits to the deployed one. */
+  force?: boolean;
 }
 
 export interface UpgradeResult {
@@ -130,8 +148,64 @@ function stamp(now: number): string {
 }
 
 /**
- * Fork first (the rollback point), then the new image, the template again only when the built-in
- * one is newer than the deployed `VERSION`, the image ref, and `repo up`.
+ * A newer built-in template overwrites the deployed files, so a file edited since the template was
+ * applied refuses the upgrade (before anything changes) unless `--force`. A box that recorded no
+ * sums cannot be compared: it is warned about and goes on.
+ */
+async function assertTemplateUnedited(
+  deps: ServerDeps,
+  where: Awaited<ReturnType<typeof locateRepo>>,
+  force: boolean | undefined
+): Promise<void> {
+  const edits = await readTemplateEdits(deps, where);
+  if (!edits.baseline) {
+    outputService.warn(t('commands.server.upgrade.templateNoBaseline'));
+    return;
+  }
+  if (edits.edited.length > 0 && !force) {
+    throw new ServerError(
+      t('commands.server.upgrade.templateEdited', { files: edits.edited.join(', ') })
+    );
+  }
+}
+
+/** `--image`, else the ref the box runs now, else the default. */
+function upgradeImage(opts: UpgradeOptions, current: string | undefined): string {
+  return opts.image ?? current ?? DEFAULT_IMAGE;
+}
+
+type Where = Awaited<ReturnType<typeof locateRepo>>;
+
+/** The image to run and how it reaches the box: the bundle's tars, or a pull / `--image-file`. */
+async function placeUpgradeImage(
+  deps: ServerDeps,
+  where: Where,
+  image: string,
+  opts: UpgradeOptions
+): Promise<void> {
+  if (opts.bundle) {
+    await uploadBundleImages(deps, where, opts.bundle);
+    return;
+  }
+  await placeImage(deps, where, image, opts.imageFile, opts.localImage);
+}
+
+/** Apply the built-in template again and record the sums of what it wrote (the next upgrade's baseline). */
+async function reapplyTemplate(
+  deps: ServerDeps,
+  where: Where,
+  repoRef: string,
+  versions: { from: number; to: number }
+): Promise<void> {
+  outputService.info(t('commands.server.upgrade.template', versions));
+  await rdcMust(deps, ['repo', 'admin', 'template', 'apply', repoRef, '--template', TEMPLATE_NAME]);
+  await writeTemplateSums(deps, where);
+}
+
+/**
+ * Fork first (the rollback point), then the new image (pulled, or from `--bundle`), the template
+ * again only when the built-in one is newer than the deployed `VERSION` (and the deployed files
+ * carry no local edit), the image ref, and `repo up`.
  */
 export async function serverUpgrade(
   deps: ServerDeps,
@@ -142,29 +216,25 @@ export async function serverUpgrade(
   const where = await locateRepo(record.repo, record.machine);
   const repoRef = `${record.repo}@${record.machine}`;
   const facts = await readPublicFacts(deps, where);
+  if (opts.bundle && (opts.image || opts.imageFile || opts.localImage)) {
+    throw new ServerError(t('commands.server.upgrade.bundleAndImage'));
+  }
+  const manifest = opts.bundle ? await verifyBundle(deps, opts.bundle) : undefined;
+  const builtin = builtinTemplateVersion();
+  const reapply = builtin > facts.templateVersion;
+  if (reapply) await assertTemplateUnedited(deps, where, opts.force);
 
   const tag = `pre-upgrade-${stamp(deps.now())}`;
   outputService.info(t('commands.server.upgrade.forking', { tag }));
   await rdcMust(deps, ['repo', 'fork', repoRef, '--tag', tag]);
 
-  const image = opts.image ?? facts.values.ELITE_IMAGE ?? record.image ?? DEFAULT_IMAGE;
-  await placeImage(deps, where, image, opts.imageFile, opts.localImage);
+  const image = manifest
+    ? serverImageOf(manifest).ref
+    : upgradeImage(opts, facts.values.ELITE_IMAGE ?? record.image);
+  await placeUpgradeImage(deps, where, image, opts);
 
-  const builtin = builtinTemplateVersion();
-  const reapply = builtin > facts.templateVersion;
   if (reapply) {
-    outputService.info(
-      t('commands.server.upgrade.template', { from: facts.templateVersion, to: builtin })
-    );
-    await rdcMust(deps, [
-      'repo',
-      'admin',
-      'template',
-      'apply',
-      repoRef,
-      '--template',
-      TEMPLATE_NAME,
-    ]);
+    await reapplyTemplate(deps, where, repoRef, { from: facts.templateVersion, to: builtin });
   } else {
     outputService.info(
       t('commands.server.upgrade.templateCurrent', { version: facts.templateVersion })
@@ -172,12 +242,7 @@ export async function serverUpgrade(
   }
 
   await setBoxEnv(deps, where, { ELITE_IMAGE: image, TAG: imageTag(image) });
-  // One-time move off DELEGATION_CERT_BASE64, which the server no longer reads: its cert goes into the inbox before the restart and the boot decides it. Delete this (and MIGRATE_ENV_CERT) once no deployed box predates template VERSION 4.
-  const migrated = await migrateEnvCert(deps, where);
-  if (migrated) outputService.info(t('commands.server.upgrade.migratingCert'));
-  await rdcMust(deps, ['repo', 'up', repoRef]);
-  await waitHealthy(deps, await boxTarget(deps, record));
-  if (migrated) await awaitInboxResult(deps, where, migrated.requestId);
+  await restart(deps, where, record, repoRef);
   return {
     domain: record.domain,
     rollback: `${record.repo}:${tag}`,
@@ -185,6 +250,21 @@ export async function serverUpgrade(
     templateReapplied: reapply,
     templateVersion: reapply ? builtin : facts.templateVersion,
   };
+}
+
+/** `repo up`, waiting for health; a cert still in `secrets.env` moves into the inbox first. */
+async function restart(
+  deps: ServerDeps,
+  where: Where,
+  record: ServerRecord,
+  repoRef: string
+): Promise<void> {
+  // One-time move off DELEGATION_CERT_BASE64, which the server no longer reads: its cert goes into the inbox before the restart and the boot decides it. Delete this (and MIGRATE_ENV_CERT) once no deployed box predates template VERSION 4.
+  const migrated = await migrateEnvCert(deps, where);
+  if (migrated) outputService.info(t('commands.server.upgrade.migratingCert'));
+  await rdcMust(deps, ['repo', 'up', repoRef]);
+  await waitHealthy(deps, await boxTarget(deps, record));
+  if (migrated) await awaitInboxResult(deps, where, migrated.requestId);
 }
 
 export interface LicenceUpgradeResult {

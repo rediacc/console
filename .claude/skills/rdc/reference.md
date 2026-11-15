@@ -148,6 +148,7 @@ Install renet and prepare a registered machine for repositories.
 - `--datastore-path <path>`: Datastore path on remote machine (default: /mnt/rediacc)
 - `--datastore-size <size>`: Datastore size (e.g., 95%, 100G) (default: 95%)
 - `--no-converge`: Skip restarting repository daemons still on an older runtime layout (same as REDIACC_SKIP_RUNTIME_CONVERGE=1)
+- `--offline`: Air-gapped setup: no package-manager call; the machine must already hold docker, its compose plugin and the essential tools
 - `--debug`: Enable debug output
 
 > MCP tool
@@ -2420,6 +2421,8 @@ Install the self-hosted account server on an existing machine: check the machine
 - `--image-file <tar>`: Saved image archive (docker save) to ship instead of pulling
 - `--local-image`: Save the --image from the local Docker and ship it instead of pulling
 - `--no-dns-wait`: Print the DNS records without waiting for them to resolve
+- `--offline`: Install air-gapped from --bundle: no upstream, registry or package call
+- `--bundle <dir>`: Offline bundle directory written by 'rdc server bundle'
 - `--bws-project <id>`: Also copy the generated keys to this Bitwarden Secrets Manager project; without it no key leaves the machine
 - `--rotate`: With --bws-project, replace a stored value that differs instead of refusing
 - `-y, --yes`: Ask nothing: take the defaults and refuse a missing value
@@ -2446,6 +2449,8 @@ Upgrade an installed server: fork its repository as a rollback point, place the 
 - `--image <ref>`: Server image to run (default: ghcr.io/rediacc/server:latest)
 - `--image-file <tar>`: Saved image archive (docker save) to ship instead of pulling
 - `--local-image`: Save the --image from the local Docker and ship it instead of pulling
+- `--bundle <dir>`: Upgrade from an offline bundle written by 'rdc server bundle'
+- `--force`: Apply a newer template even over local edits to the deployed files
 - `-y, --yes`: Ask nothing: take the defaults and refuse a missing value
 - `-m, --machine <name>`: Machine the server runs on, when this device holds no install record for the domain
 - `--repo <name>`: Repository the server runs in (default: elite)
@@ -2464,14 +2469,22 @@ Print the recovery bundle (the keys) of an installed server, or write it to a fi
 
 > MCP excluded: Prints the server's private keys; they must not land in an agent transcript.
 
-### rdc server licence <domain>
+### rdc server licence mint
 
-Move a free-tier server to a delegation certificate from the logged-in account, or from --cert
+Mint a licence certificate for an offline box's request (run online, logged in)
 
 **Options:**
 
-- `--cert <file>`: Delegation certificate file for an offline install; it must name the key generated on the machine
-- `-m, --machine <name>`: Machine the server runs on, when this device holds no install record for the domain
-- `--repo <name>`: Repository the server runs in (default: elite)
+- `--request <file>`: The delegation request file the offline install wrote
+- `--out <file>`: File to write the certificate to
 
-> MCP excluded: Mints a delegation certificate and restarts the account server; use the CLI.
+### rdc server bundle
+
+Build an offline bundle (images, renet, manifest, checksums) for an air-gapped install. Run it on a machine with internet access.
+
+**Options:**
+
+- `--out <dir>`: Directory to write the bundle into
+- `--arch <arch>`: Target architecture of the box (default: amd64)
+- `--tag <tag>`: Server image tag to bundle
+- `--image <ref>`: Bundle this local image instead of pulling a tag

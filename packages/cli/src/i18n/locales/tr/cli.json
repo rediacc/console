@@ -1632,7 +1632,8 @@
         "descriptionShort": "Uzak makineyi depolar için hazırla",
         "failed": "Makine \"{{machine}}\" kurulumu başarısız: {{error}}",
         "noConvergeOption": "Hâlâ eski runtime düzeninde çalışan depo daemon'larını yeniden başlatma (REDIACC_SKIP_RUNTIME_CONVERGE=1 ile aynı)",
-        "starting": "Makine \"{{machine}}\" ayarlanıyor..."
+        "starting": "Makine \"{{machine}}\" ayarlanıyor...",
+        "offlineOption": "İzole (air-gapped) kurulum: paket yöneticisine hiç başvurulmaz; makinede docker, compose eklentisi ve temel araçlar zaten bulunmalıdır"
       },
       "status": {
         "ambiguous": "Birden fazla makine kayıtlı ({{machines}}); gösterilecek olanı belirtin.",
@@ -2591,12 +2592,17 @@
           "brought": "Mevcut bir sunucuyu adresiyle kaydedip üzerine kurulum yap.",
           "configured": "Yapılandırılmış bir makineye hiçbir soru sormadan kurulum yap.",
           "lan": "Bir LAN makinesine mevcut sertifikayla, ücretsiz katmanda kurulum yap."
-        }
+        },
+        "optionBundle": "'rdc server bundle' ile oluşturulan çevrimdışı paket dizini",
+        "optionOffline": "--bundle ile ağsız kur: üst kaynak, kayıt defteri veya paket yöneticisi çağrısı yapılmaz",
+        "helpOffline": "İzole ağ: paketi internet erişimi olan bir makinede rdc server bundle --out <dir> ile oluşturun. rdc server install --offline --bundle <dir> paketi doğrular, proxy imajını yükler, makineyi çevrimdışı kurar ve dışarıya hiçbir çağrı yapmaz. Kurulum lisans adımında durup bir istek dosyası yazar: rdc server licence mint ile çevrimiçi bir sertifika üretin, ardından --cert ile yeniden çalıştırın."
       },
       "status": {
         "description": "Kurulu bir sunucunun sağlığını, katmanını, sertifikasını ve imajını göster",
         "certRefused": "REDDEDİLDİ ({{reason}}) {{at}}",
-        "certRefusedRun": "çalıştırın: rdc server licence {{domain}}"
+        "certRefusedRun": "çalıştırın: rdc server licence {{domain}}",
+        "certExpired": "Lisans sertifikasının süresi doldu: yeni depo lisansı verilmez, çalışan hizmetler çalışmaya devam eder. Yeni bir sertifika kurun (rdc server licence).",
+        "certExpiring": "Lisans sertifikasının süresi {{days}} gün içinde doluyor; yenileyin (rdc server licence)"
       },
       "backup": {
         "description": "Kurulu bir sunucunun kurtarma paketini (anahtarları) yazdır veya bir dosyaya yaz",
@@ -2614,7 +2620,12 @@
         "template": "elite şablonu yeniden uygulanıyor (sürüm {{from}} -> {{to}})",
         "templateCurrent": "Dağıtılmış şablon (sürüm {{version}}) güncel",
         "done": "{{domain}} yükseltildi. Geri alma noktası: {{rollback}}",
-        "migratingCert": "Sertifika secrets.env dosyasından sertifika gelen kutusuna taşınıyor; sunucu açılırken uygular"
+        "migratingCert": "Sertifika secrets.env dosyasından sertifika gelen kutusuna taşınıyor; sunucu açılırken uygular",
+        "bundleAndImage": "--bundle, --image, --image-file ve --local-image ile çakışır",
+        "optionBundle": "'rdc server bundle' ile oluşturulan çevrimdışı paketten yükselt",
+        "optionForce": "Dağıtılmış dosyalarda yerel düzenlemeler olsa bile daha yeni şablonu uygula",
+        "templateEdited": "Dağıtılmış şablon dosyaları yerelde düzenlenmiş: {{files}}. Daha yeni şablonu uygulamak bunların üzerine yazar; dosyaları inceleyin veya --force ile yeniden çalıştırın.",
+        "templateNoBaseline": "Bu makine şablon sağlama toplamlarını kaydetmemiş, bu yüzden yerel düzenlemeler algılanamıyor; daha yeni şablon uygulanıyor"
       },
       "licence": {
         "description": "Ücretsiz katmandaki bir sunucuyu, oturum açmış hesaptan veya --cert ile alınan yetki devri sertifikasına taşı",
@@ -2640,12 +2651,43 @@
         "bootRefused": "Sunucu açılışta sertifikasını reddetti ({{reason}}): {{detail}}",
         "droppedCert": "{{certId}} sertifikası gelen kutusuna bırakıldı",
         "noUpstreamKey": "Sunucuda UPSTREAM_PUBLIC_KEY yok; bu yüzden hiçbir sertifikayı doğrulayamaz ve yeni bir sertifika işe yaramaz. {{domain}} sırlarında UPSTREAM_PUBLIC_KEY değerini ayarlayın, ardından `rdc server upgrade {{domain}}` çalıştırın.",
-        "bootRefusalStays": "Sertifika uygulandı, ancak sunucu hâlâ açılışta bir ret bildiriyor ({{reason}}); sunucu günlüklerine bakın"
+        "bootRefusalStays": "Sertifika uygulandı, ancak sunucu hâlâ açılışta bir ret bildiriyor ({{reason}}); sunucu günlüklerine bakın",
+        "mint": {
+          "description": "Çevrimdışı bir makinenin isteği için lisans sertifikası üret (çevrimiçi ve oturum açık olarak çalıştırın)",
+          "done": "Sertifika {{file}} dosyasına yazıldı ({{until}} tarihine kadar geçerli); makineye taşıyın ve --cert ile kurun",
+          "optionOut": "Sertifikanın yazılacağı dosya",
+          "optionRequest": "Çevrimdışı kurulumun yazdığı yetki devri isteği dosyası"
+        }
       },
       "bundle": {
         "header": "{{domain}} için kurtarma paketi. Çevrimdışı saklayın; sunucunun anahtarlarını geri yükler.",
         "once": "Bu kurtarma paketi yalnızca bir kez gösterilir. Şimdi güvenli bir yerde saklayın:",
-        "owner": "Sahip hesabı: {{email}}, ilk parola: {{password}}"
+        "owner": "Sahip hesabı: {{email}}, ilk parola: {{password}}",
+        "summary": "Çevrimdışı kurulum paketi oluştur",
+        "description": "Ağdan yalıtılmış bir kurulum için çevrimdışı paket (imajlar, renet, manifest, sağlama toplamları) oluşturur. İnternet erişimi olan bir makinede çalıştırın.",
+        "optionOut": "Paketin yazılacağı dizin",
+        "optionArch": "Makinenin hedef mimarisi",
+        "optionTag": "Pakete eklenecek sunucu imajı etiketi",
+        "optionImage": "Etiket çekmek yerine bu yerel imajı pakete ekle",
+        "pulling": "{{image}} çekiliyor ({{platform}})",
+        "saving": "{{image}}, {{file}} dosyasına kaydediliyor",
+        "written": "Paket {{dir}} dizinine yazıldı ({{arch}})",
+        "errors": {
+          "cliMismatch": "Paket CLI {{bundle}} ile oluşturulmuş, bu ise CLI {{cli}}; paketi bu CLI ile yeniden oluşturun (rdc server bundle)",
+          "inspectFailed": "{{image}} için docker image inspect başarısız oldu",
+          "manifestShape": "manifest.json bir paket manifesti değil ({{what}})",
+          "noRenetAsset": "Bu CLI pakete eklenecek linux/{{arch}} renet içermiyor; sürüm derlemesini kullanın veya yapılandırılmış renet'in yanında linux/{{arch}} için renet derleyin",
+          "noRustfsRef": "Yerleşik elite şablonu, digest ile sabitlenmiş bir RustFS imajı belirtmiyor",
+          "notSummed": "{{file}} SHA256SUMS kapsamında değil",
+          "pullFailed": "{{image}} için docker pull başarısız oldu",
+          "renetMismatch": "Paketteki renet (linux/{{arch}}), bu CLI'nin içerdiği renet değil; paketi bu CLI ile yeniden oluşturun",
+          "saveFailed": "{{image}} için docker save başarısız oldu",
+          "schema": "Desteklenmeyen paket şeması: {{schema}}",
+          "sumsLine": "SHA256SUMS içinde '<sha256>  <file>' biçiminde olmayan bir satır var: {{line}}",
+          "tagAndImage": "--tag ile --image birlikte kullanılamaz",
+          "tampered": "{{file}}, SHA256SUMS veya manifest ile eşleşmiyor: paket değiştirilmiş ya da bozulmuş",
+          "unreadable": "{{file}}, {{dir}} paketinden okunamıyor"
+        }
       },
       "bws": {
         "skipped": "--bws-project yok: anahtarlar yalnızca makinede kalır",
@@ -2729,6 +2771,23 @@
         "boxScriptFailed": "{{machine}} üzerindeki komut {{code}} koduyla çıktı: {{detail}}",
         "rdcFailed": "{{command}} başarısız oldu (çıkış kodu {{code}})",
         "certAndFree": "--cert ve --licence free birlikte kullanılamaz"
+      },
+      "offline": {
+        "archMismatch": "Makine {{box}}, ancak paket {{bundle}} için",
+        "awaitingCert": "Lisans sertifikası bekleniyor. {{file}} dosyasını çevrimiçi bir makineye taşıyıp şunu çalıştırın: rdc server licence mint --request <file> --out cert.json. Ardından bu kurulumu --cert cert.json ile yeniden çalıştırın (alan adı {{domain}}).",
+        "bundleNeedsOffline": "--bundle için --offline gerekir",
+        "imageFromBundle": "--image, --image-file ve --local-image, --bundle ile çakışır: sunucu imajı paketten gelir",
+        "loadFailed": "{{image}} makinenin Docker'ına yüklenemedi: {{detail}}",
+        "loadingProxy": "{{image}} proxy imajı makinenin Docker'ına yükleniyor",
+        "mintNoLogin": "Sertifika üretmek için oturum açılmış bir yapılandırma gerekir (rdc subscription login)",
+        "missingEssentials": "Makinede eksik olanlar (çevrimdışı kurulum bunları yükleyemez): {{missing}}",
+        "needsBundle": "--offline için --bundle <dir> gerekir",
+        "noBws": "--bws-project ağ gerektirir ve --offline ile kullanılamaz",
+        "noCfToken": "--cf-token ağ gerektirir ve --offline ile kullanılamaz",
+        "noFree": "--licence free hesap sunucusuna bağlanır ve --offline ile kullanılamaz; istek ve --cert akışını kullanın",
+        "noProxyImage": "Paket {{ref}} proxy imajını içermiyor",
+        "requestInvalid": "{{file}}, çevrimdışı bir kurulumun yazdığı yetki devri isteği değil",
+        "tlsByoOnly": "--tls {{tls}} internet gerektirir; --tls-cert ve --tls-key ile --tls byo kullanın (özel CA için --tls-ca)"
       }
     },
     "shortcuts": {

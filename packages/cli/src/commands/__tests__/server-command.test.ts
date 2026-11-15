@@ -13,6 +13,8 @@ const m = vi.hoisted(() => ({
   backup: vi.fn(),
   upgrade: vi.fn(),
   licence: vi.fn(),
+  bundle: vi.fn(),
+  mint: vi.fn(),
   confirm: vi.fn(),
   print: vi.fn(),
   report: vi.fn(),
@@ -49,6 +51,8 @@ vi.mock('../../services/server/verbs.js', () => ({
   serverUpgrade: m.upgrade,
   serverLicence: m.licence,
 }));
+vi.mock('../../services/server/bundle/build.js', () => ({ serverBundle: m.bundle }));
+vi.mock('../../services/server/bundle/offline.js', () => ({ licenceMint: m.mint }));
 vi.mock('../../utils/prompt.js', () => ({ askConfirm: m.confirm }));
 vi.mock('../../utils/errors.js', () => ({
   handleError: (error: unknown) => {
@@ -85,6 +89,7 @@ describe('rdc server', () => {
       'upgrade',
       'backup',
       'licence',
+      'bundle',
     ]);
   });
 
@@ -236,6 +241,94 @@ describe('rdc server', () => {
     expect(loc).toMatchObject({ domain: 'acme.example.com' });
     expect(cert).toBe('c.json');
     expect(m.print).toHaveBeenCalledWith({ subscriptionId: 'sub-1' }, 'json');
+  });
+
+  it('licence mint is its own word and takes --request and --out', async () => {
+    m.mint.mockResolvedValue({ subscriptionId: 'sub-1', validUntil: '2027-11-12T00:00:00Z' });
+    await program().parseAsync(
+      ['server', 'licence', 'mint', '--request', 'r.json', '--out', 'c.json'],
+      { from: 'user' }
+    );
+    expect(m.mint).toHaveBeenCalledWith(expect.anything(), 'r.json', 'c.json');
+    expect(m.licence).not.toHaveBeenCalled();
+  });
+
+  it('declares --request and --out of licence mint, and --out of bundle, as required', () => {
+    const server = program().commands.find((c) => c.name() === 'server');
+    const mint = server?.commands
+      .find((c) => c.name() === 'licence')
+      ?.commands.find((c) => c.name() === 'mint');
+    const bundle = server?.commands.find((c) => c.name() === 'bundle');
+    const required = (cmd: Command | undefined) =>
+      cmd?.options.filter((o) => o.mandatory).map((o) => o.long);
+    expect(required(mint)).toEqual(['--request', '--out']);
+    expect(required(bundle)).toEqual(['--out']);
+    // Control: an optional flag is not marked required.
+    expect(required(server?.commands.find((c) => c.name() === 'status'))).toEqual([]);
+  });
+
+  it('bundle hands --out, --arch, --tag and --image to the engine, amd64 by default', async () => {
+    m.bundle.mockResolvedValue({ schema: 1 });
+    await program().parseAsync(['server', 'bundle', '--out', 'dir', '--tag', '1.2'], {
+      from: 'user',
+    });
+    expect(m.bundle.mock.calls[0][1]).toMatchObject({ out: 'dir', arch: 'amd64', tag: '1.2' });
+    await program().parseAsync(
+      ['server', 'bundle', '--out', 'dir', '--arch', 'arm64', '--image', 'local:dev'],
+      { from: 'user' }
+    );
+    expect(m.bundle.mock.calls[1][1]).toMatchObject({ arch: 'arm64', image: 'local:dev' });
+  });
+
+  it('bundle offers exactly amd64 and arm64', () => {
+    const server = program().commands.find((c) => c.name() === 'server');
+    const arch = server?.commands
+      .find((c) => c.name() === 'bundle')
+      ?.options.find((o) => o.long === '--arch');
+    expect(arch?.argChoices).toEqual(['amd64', 'arm64']);
+  });
+
+  it('install passes --offline and --bundle through', async () => {
+    await program().parseAsync(
+      ['server', 'install', 'm1', '--offline', '--bundle', 'dir', '--domain', 'a.example.com'],
+      { from: 'user' }
+    );
+    expect(m.installOpts).toMatchObject({ offline: true, bundle: 'dir', machine: 'm1' });
+  });
+
+  it('upgrade passes --bundle and --force through', async () => {
+    await program().parseAsync(
+      ['server', 'upgrade', 'acme.example.com', '--yes', '--bundle', 'dir', '--force'],
+      { from: 'user' }
+    );
+    expect(m.upgrade.mock.calls[0][2]).toMatchObject({ bundle: 'dir', force: true });
+  });
+
+  describe('cert expiry in status', () => {
+    const warns = async () => {
+      const { outputService } = await import('../../services/core/output.js');
+      return vi.mocked(outputService.warn).mock.calls.map((c) => String(c[0]));
+    };
+    const run = (days: number) => {
+      m.machine = false;
+      m.status.mockResolvedValue({ health: 200, certExpiresInDays: days });
+      return program().parseAsync(['server', 'status', 'acme.example.com'], { from: 'user' });
+    };
+
+    it('warns within 30 days', async () => {
+      await run(12);
+      expect(await warns()).toEqual(['commands.server.status.certExpiring {"days":12}']);
+    });
+
+    it('says expired once past it', async () => {
+      await run(-1);
+      expect(await warns()).toEqual(['commands.server.status.certExpired']);
+    });
+
+    it('stays silent with more than 30 days left (control)', async () => {
+      await run(31);
+      expect(await warns()).toEqual([]);
+    });
   });
 
   describe('status in the human-readable form', () => {

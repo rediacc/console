@@ -1632,7 +1632,8 @@
         "descriptionShort": "Remote-Maschine für Repositories bereitstellen",
         "failed": "Einrichtung von Maschine \"{{machine}}\" fehlgeschlagen: {{error}}",
         "noConvergeOption": "Repository-Daemons mit älterem Runtime-Layout nicht neu starten (wie REDIACC_SKIP_RUNTIME_CONVERGE=1)",
-        "starting": "Maschine \"{{machine}}\" wird eingerichtet..."
+        "starting": "Maschine \"{{machine}}\" wird eingerichtet...",
+        "offlineOption": "Setup ohne Internetzugang: kein Aufruf des Paketmanagers; auf der Maschine müssen docker, das Compose-Plugin und die grundlegenden Werkzeuge bereits vorhanden sein"
       },
       "status": {
         "ambiguous": "Mehr als eine Maschine ist registriert ({{machines}}); benennen Sie die anzuzeigende.",
@@ -2591,12 +2592,17 @@
           "brought": "Einen vorhandenen Server über seine Adresse registrieren und darauf installieren.",
           "configured": "Ohne Rückfragen auf einer konfigurierten Maschine installieren.",
           "lan": "Auf einer LAN-Maschine mit vorhandenem Zertifikat auf der kostenlosen Stufe installieren."
-        }
+        },
+        "optionBundle": "Offline-Bundle-Verzeichnis, das 'rdc server bundle' geschrieben hat",
+        "optionOffline": "Ohne Internetzugang aus --bundle installieren: kein Zugriff auf Upstream, Registry oder Paketquellen",
+        "helpOffline": "Air-Gap: Das Bundle online mit rdc server bundle --out <dir> erstellen. rdc server install --offline --bundle <dir> prüft es, lädt das Proxy-Image, richtet die Maschine offline ein und ruft nichts Externes auf. Die Installation hält beim Lizenzschritt an und schreibt eine Anfrage: online mit rdc server licence mint ein Zertifikat ausstellen, dann mit --cert erneut starten."
       },
       "status": {
         "description": "Zustand, Stufe, Zertifikat und Image eines installierten Servers anzeigen",
         "certRefused": "ABGELEHNT ({{reason}}) um {{at}}",
-        "certRefusedRun": "ausführen: rdc server licence {{domain}}"
+        "certRefusedRun": "ausführen: rdc server licence {{domain}}",
+        "certExpired": "Das Lizenzzertifikat ist abgelaufen: Es werden keine neuen Repository-Lizenzen ausgestellt, laufende Dienste arbeiten weiter. Ein neues Zertifikat installieren (rdc server licence).",
+        "certExpiring": "Das Lizenzzertifikat läuft in {{days}} Tagen ab; bitte erneuern (rdc server licence)"
       },
       "backup": {
         "description": "Das Recovery-Bundle (die Schlüssel) eines installierten Servers ausgeben oder in eine Datei schreiben",
@@ -2614,7 +2620,12 @@
         "template": "Das elite-Template wird erneut angewendet (Version {{from}} auf {{to}})",
         "templateCurrent": "Das bereitgestellte Template (Version {{version}}) ist aktuell",
         "done": "{{domain}} aktualisiert. Rollback-Punkt: {{rollback}}",
-        "migratingCert": "Das Zertifikat wandert aus secrets.env in den Zertifikatseingang; der Server übernimmt es beim Start"
+        "migratingCert": "Das Zertifikat wandert aus secrets.env in den Zertifikatseingang; der Server übernimmt es beim Start",
+        "bundleAndImage": "--bundle schließt sich mit --image, --image-file und --local-image aus",
+        "optionBundle": "Aus einem Offline-Bundle upgraden, das 'rdc server bundle' geschrieben hat",
+        "optionForce": "Eine neuere Vorlage auch über lokale Änderungen an den bereitgestellten Dateien hinweg anwenden",
+        "templateEdited": "Die bereitgestellten Vorlagendateien wurden lokal bearbeitet: {{files}}. Die neuere Vorlage würde sie überschreiben; die Änderungen prüfen oder mit --force erneut ausführen.",
+        "templateNoBaseline": "Für diese Maschine wurden keine Vorlagen-Prüfsummen erfasst, lokale Änderungen lassen sich daher nicht erkennen; die neuere Vorlage wird angewendet"
       },
       "licence": {
         "description": "Einen Server der kostenlosen Stufe auf ein Delegationszertifikat des angemeldeten Kontos oder aus --cert umstellen",
@@ -2640,12 +2651,43 @@
         "bootRefused": "Der Server hat sein Zertifikat beim Start abgelehnt ({{reason}}): {{detail}}",
         "droppedCert": "Zertifikat {{certId}} im Posteingang abgelegt",
         "noUpstreamKey": "Der Server hat keinen UPSTREAM_PUBLIC_KEY und kann kein Zertifikat prüfen; ein neues Zertifikat hilft nicht. UPSTREAM_PUBLIC_KEY in den Secrets von {{domain}} setzen und dann `rdc server upgrade {{domain}}` ausführen.",
-        "bootRefusalStays": "Das Zertifikat wurde angewendet, aber der Server meldet weiterhin eine Ablehnung beim Start ({{reason}}); Server-Logs prüfen"
+        "bootRefusalStays": "Das Zertifikat wurde angewendet, aber der Server meldet weiterhin eine Ablehnung beim Start ({{reason}}); Server-Logs prüfen",
+        "mint": {
+          "description": "Ein Lizenzzertifikat für die Anfrage einer Offline-Maschine ausstellen (online und angemeldet ausführen)",
+          "done": "Zertifikat nach {{file}} geschrieben (gültig bis {{until}}); auf die Maschine übertragen und mit --cert installieren",
+          "optionOut": "Datei, in die das Zertifikat geschrieben wird",
+          "optionRequest": "Die Delegationsanfrage-Datei, die die Offline-Installation geschrieben hat"
+        }
       },
       "bundle": {
         "header": "Recovery-Bundle für {{domain}}. Offline aufbewahren; es stellt die Schlüssel des Servers wieder her.",
         "once": "Dieses Recovery-Bundle wird nur einmal angezeigt. Jetzt an einem sicheren Ort speichern:",
-        "owner": "Owner-Konto: {{email}}, erstes Passwort: {{password}}"
+        "owner": "Owner-Konto: {{email}}, erstes Passwort: {{password}}",
+        "summary": "Ein Offline-Installationsbundle erstellen",
+        "description": "Ein Offline-Bundle (Images, renet, Manifest, Prüfsummen) für eine Installation ohne Internetzugang erstellen. Auf einer Maschine mit Internetzugang ausführen.",
+        "optionOut": "Verzeichnis, in das das Bundle geschrieben wird",
+        "optionArch": "Zielarchitektur der Maschine",
+        "optionTag": "Server-Image-Tag, der ins Bundle aufgenommen wird",
+        "optionImage": "Dieses lokale Image ins Bundle aufnehmen, statt einen Tag zu pullen",
+        "pulling": "{{image}} ({{platform}}) wird gepullt",
+        "saving": "{{image}} wird nach {{file}} gespeichert",
+        "written": "Bundle nach {{dir}} geschrieben ({{arch}})",
+        "errors": {
+          "cliMismatch": "Das Bundle wurde mit CLI {{bundle}} erstellt, dies ist CLI {{cli}}; mit dieser CLI neu erstellen (rdc server bundle)",
+          "inspectFailed": "docker image inspect ist für {{image}} fehlgeschlagen",
+          "manifestShape": "manifest.json ist kein Bundle-Manifest ({{what}})",
+          "noRenetAsset": "Diese CLI enthält kein renet für linux/{{arch}}, das sich bündeln ließe; den Release-Build verwenden oder renet für linux/{{arch}} neben dem konfigurierten renet bauen",
+          "noRustfsRef": "Die eingebaute Elite-Vorlage nennt kein per Digest festgelegtes RustFS-Image",
+          "notSummed": "{{file}} wird von SHA256SUMS nicht abgedeckt",
+          "pullFailed": "docker pull ist für {{image}} fehlgeschlagen",
+          "renetMismatch": "Das renet im Bundle (linux/{{arch}}) ist nicht das renet dieser CLI; das Bundle mit dieser CLI neu erstellen",
+          "saveFailed": "docker save ist für {{image}} fehlgeschlagen",
+          "schema": "Nicht unterstütztes Bundle-Schema {{schema}}",
+          "sumsLine": "SHA256SUMS enthält eine Zeile, die nicht dem Format '<sha256>  <file>' entspricht: {{line}}",
+          "tagAndImage": "--tag und --image lassen sich nicht kombinieren",
+          "tampered": "{{file}} stimmt nicht mit SHA256SUMS oder dem Manifest überein: Das Bundle wurde verändert oder beschädigt",
+          "unreadable": "{{file}} lässt sich aus dem Bundle {{dir}} nicht lesen"
+        }
       },
       "bws": {
         "skipped": "Kein --bws-project: Die Schlüssel bleiben nur auf der Maschine",
@@ -2729,6 +2771,23 @@
         "boxScriptFailed": "Der Befehl auf {{machine}} endete mit {{code}}: {{detail}}",
         "rdcFailed": "{{command}} fehlgeschlagen (Exit-Code {{code}})",
         "certAndFree": "--cert und --licence free lassen sich nicht kombinieren"
+      },
+      "offline": {
+        "archMismatch": "Die Maschine ist {{box}}, das Bundle aber für {{bundle}}",
+        "awaitingCert": "Warten auf ein Lizenzzertifikat. {{file}} auf eine Maschine mit Internetzugang übertragen und ausführen: rdc server licence mint --request <file> --out cert.json. Danach diese Installation mit --cert cert.json wiederholen (Domain {{domain}}).",
+        "bundleNeedsOffline": "--bundle erfordert --offline",
+        "imageFromBundle": "--image, --image-file und --local-image schließen sich mit --bundle aus: Das Server-Image stammt aus dem Bundle",
+        "loadFailed": "{{image}} konnte nicht in das Docker der Maschine geladen werden: {{detail}}",
+        "loadingProxy": "Proxy-Image {{image}} wird in das Docker der Maschine geladen",
+        "mintNoLogin": "Zum Ausstellen ist eine angemeldete Konfiguration nötig (rdc subscription login)",
+        "missingEssentials": "Auf der Maschine fehlt (das Offline-Setup kann es nicht installieren): {{missing}}",
+        "needsBundle": "--offline erfordert --bundle <dir>",
+        "noBws": "--bws-project benötigt das Netzwerk und lässt sich nicht mit --offline verwenden",
+        "noCfToken": "--cf-token benötigt das Netzwerk und lässt sich nicht mit --offline verwenden",
+        "noFree": "--licence free ruft den Account-Server auf und lässt sich nicht mit --offline verwenden; stattdessen Anfrage und --cert verwenden",
+        "noProxyImage": "Das Bundle enthält das Proxy-Image {{ref}} nicht",
+        "requestInvalid": "{{file}} ist keine Delegationsanfrage, die von einer Offline-Installation geschrieben wurde",
+        "tlsByoOnly": "--tls {{tls}} benötigt das Internet; --tls byo mit --tls-cert und --tls-key verwenden (--tls-ca für eine private CA)"
       }
     },
     "shortcuts": {
