@@ -26,7 +26,7 @@ RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in 
 
   10. BENCH BINDS THE PRODUCTION KEY (operator rulings 2026-10-27 and 2026-10-29). The deploy-bench profile binds the unsuffixed session names and the ED25519 PUBLIC key (`ACCOUNT_ED25519_PUBLIC_KEY`, `ACCOUNT_X25519_*`, `ACCOUNT_SERVER_API_KEY`, `ACCOUNT_JWT_SECRET`) that the edge and stable account-secrets profiles bind (ED25519 fingerprint fb37f1ae16f8b7c0 through `renet_key_gate.key_fingerprint`), so a released renet verifies a bench licence. The ED25519 PRIVATE key is not in the account Worker's secret list: `signer-bench-eu` and `signer-bench-us` hold it (the deploy-signer profile) and `account-bench` signs through its LICENSE_SIGNER binding (agent/plans/PLAN-enterprise-isolation.md S4). The values are still read by name from the environment; only the profile binding changed, and `tests/test_ops_deploy_bench.py` pins it.
 
-  11. A DEPLOY FROM A CLEAN BENCH REPEATS (finding 87f7acb9, `tests/test_deploy_bench_repeatability.py`). `_ensure_signers` creates the control databases (`control_db ensure --bench`) and deploys `signer-bench-eu` and `signer-bench-us` (each under the deploy-signer profile, which binds the private key) before the migrations, since Cloudflare refuses the account deploy with error 10143 while the `LICENSE_SIGNER` target Worker is missing. `_remove_retired_secrets` deletes a leftover `ACCOUNT_ED25519_PRIVATE_KEY` from `account-bench` (the listed names are read first, nothing else is deleted), because `requireSignerOnly` makes a Worker holding it answer 500. `smoke` then GETs `/account/api/v1/.well-known/server-info` and a last status other than 200 exits 1 naming it, so a Worker serving 500 is never a green deploy.
+  11. A DEPLOY FROM A CLEAN BENCH REPEATS (finding 87f7acb9, `tests/test_deploy_bench_repeatability.py`). `_ensure_signers` creates the control databases (`control_db ensure --bench`) and deploys the region's own signer, `signer-bench-eu` for the default run and `signer-bench-<region>` otherwise (under the deploy-signer profile, which binds the private key) before the migrations, since Cloudflare refuses the account deploy with error 10143 while the `LICENSE_SIGNER` target Worker is missing. `_remove_retired_secrets` deletes a leftover `ACCOUNT_ED25519_PRIVATE_KEY` from `account-bench` (the listed names are read first, nothing else is deleted), because `requireSignerOnly` makes a Worker holding it answer 500. `smoke` then GETs `/account/api/v1/.well-known/server-info` and a last status other than 200 exits 1 naming it, so a Worker serving 500 is never a green deploy.
 
 THE SECRET VALUES ARE READ BY NAME FROM THE ENVIRONMENT, as the bash read them, and are never logged; the `OBS_OTLP_CREDENTIALS` validity probe reports only that the value is not a JSON {user, pass} object, never the value.
 """
@@ -994,7 +994,8 @@ def smoke(
     )
 
 
-def _deploy(auth: cf_auth.Auth, root, region: str = DEFAULT_REGION) -> None:
+def _require_deployable(region: str, root) -> Target:
+    """The target of REGION, or a DeployError when regions.json marks it not deployable."""
     bench = target(region, root)
     if not bench.deployable:
         raise DeployError(
@@ -1002,6 +1003,11 @@ def _deploy(auth: cf_auth.Auth, root, region: str = DEFAULT_REGION) -> None:
             "database id): its objects are created first (agent/plans/PLAN-multi-region-bench.md L1/L2)"
             % (region, bench.config)
         )
+    return bench
+
+
+def _deploy(auth: cf_auth.Auth, root, region: str = DEFAULT_REGION) -> None:
+    bench = _require_deployable(region, root)
     config, worker_name, domain = bench.config, bench.worker_name, bench.domain
     worker_dir = root / "workers" / "account"
     if not (worker_dir / config).is_file():
@@ -1119,9 +1125,9 @@ def _deploy(auth: cf_auth.Auth, root, region: str = DEFAULT_REGION) -> None:
 
 
 def _regions_to_run(region: str, root) -> list[str]:
-    """The regions one run touches: REGION itself, or for `all` every deployable one (each skipped region is named). DeployError for an unknown region or an empty `all`."""
+    """The regions one run touches: REGION itself, or for `all` every deployable one (each skipped region is named). DeployError for an unknown or not deployable region, or an empty `all`; main() reads it before any credential or remote step, seeding and password setting included."""
     if region != ALL_REGIONS:
-        target(region, root)
+        _require_deployable(region, root)
         return [region]
     chosen = deployable_regions(root)
     for skipped in (r for r in bench_preflight.bench_regions(root) if r not in chosen):

@@ -66,3 +66,9 @@ def test_buckets_region_refuses_an_unknown_region(monkeypatch, capsys):
     monkeypatch.setattr(bench_preflight, "buckets", lambda _c: pytest.fail("ran"))
     assert bench_preflight.main(["buckets", "--region", "mars"]) == 2
     assert "no region 'mars'" in capsys.readouterr().err
+
+
+def test_buckets_region_without_a_value_names_the_missing_value(monkeypatch, capsys):
+    monkeypatch.setattr(bench_preflight, "buckets", lambda _c: pytest.fail("ran"))
+    assert bench_preflight.main(["buckets", "--region"]) == 2
+    assert "--region needs a value" in capsys.readouterr().err

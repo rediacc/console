@@ -2,10 +2,10 @@
 
 Bench signs with the production key, and once a production machine backs up through bench (hostinger), a bench wipe or a drill cleanup could remove the only off-site copy, and a stopped bench signer stops its licence renewals. Four refusals read this one declaration:
 
-  1. `reset_refusal` -- reset_bench refuses every mode (exit 2) while the file declares anything, before any credential is read.
-  2. `d1_refusal` -- reset_bench also refuses when the live bench D1 holds `backup_manifests` rows of a declared subscription; the read runs after the token is minted and before the confirmation, so it is the backstop behind `reset_refusal`: reached only if that static refusal is relaxed, since `reset_bench` exits 2 on any declaration first.
+  1. `reset_refusal` -- reset_bench refuses every mode (exit 2) while the file declares anything for the region being wiped, before any credential is read.
+  2. `d1_refusal` -- reset_bench also refuses when the live bench D1 holds `backup_manifests` rows of a declared subscription; the read runs after the token is minted and before the confirmation, so it is the backstop behind `reset_refusal`: reached only if that static refusal is relaxed, since `reset_bench` exits 2 on any declaration for its region first.
   3. `refuse_ids` -- the drills' cleanup refuses to delete rows of a declared subscription and deletes nothing.
-  4. `signer_stop_refusal` -- the enterprise proofs' signer stop and region cut (`rediacc_ci.deploy.deploy_signer.stop_signer`, reached by `enterprise proof signer --bench` and `region-loss --bench`) refuse every bench signer while the file declares anything, before any secret is deleted.
+  4. `signer_stop_refusal` -- the enterprise proofs' signer stop and region cut (`rediacc_ci.deploy.deploy_signer.stop_signer`, reached by `enterprise proof signer --bench` and `region-loss --bench`) refuse a bench signer while the file declares anything for its region (`signer-bench-<region>`), before any secret is deleted.
 
 Each entry names the `region` of the bench that holds it (`eu`, `us`, `asia`), and a refusal covers only that region: a us wipe is not stopped by an eu subscription. A refusal asked without a region (a drill's `refuse_ids`) covers every entry. There is no override flag. A file that cannot be read or parsed, or an entry without a UUID `subscription_id`, is a refusal too: the guard fails closed.
 """

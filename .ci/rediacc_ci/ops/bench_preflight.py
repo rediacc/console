@@ -249,6 +249,9 @@ def buckets(config):
 def main(argv):
     if len(argv) >= 2 and argv[0] == "lockfile":
         return lockfile(argv[1:])
+    if argv == ["buckets", "--region"]:
+        print("✗ --region needs a value", file=sys.stderr)
+        return 2
     if len(argv) == 2 and argv[0] == "buckets":
         return buckets(argv[1])
     if len(argv) == 3 and argv[0] == "buckets" and argv[1] == "--region":

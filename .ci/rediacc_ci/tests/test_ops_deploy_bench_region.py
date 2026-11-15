@@ -212,3 +212,46 @@ def test_the_help_names_the_region_flag():
 
 def test_the_module_docstring_names_no_retired_database():
     assert "account-db-bench" not in (deploy_bench.__doc__ or "")
+
+
+@pytest.mark.parametrize("extra", [[], ["--seed-root"], ["--set-root-password"]])
+def test_a_not_deployable_region_is_refused_before_any_credential_or_post(
+    monkeypatch, tmp_path, extra
+):
+    _regions_root(tmp_path, us_deployable=False)
+    ran = _main_world(monkeypatch, tmp_path)
+    calls: list[str] = []
+
+    def minted(_a):
+        calls.append("resolve")
+        pytest.fail("minted")
+
+    def posted(*_a):
+        calls.append("post")
+        return 201, {}
+
+    monkeypatch.setattr(deploy_bench.cf_auth, "resolve", minted)
+    monkeypatch.setattr(deploy_bench, "_post_json", posted)
+    monkeypatch.setattr(deploy_bench, "root_password", lambda: "p")
+    assert deploy_bench.main(["--region", "us", *extra]) == 2
+    assert calls == []
+    assert ran == []
+
+
+@pytest.mark.parametrize("extra", [[], ["--seed-root"], ["--set-root-password"]])
+def test_a_deployable_region_still_proceeds_past_the_refusal(monkeypatch, tmp_path, extra):
+    _regions_root(tmp_path, us_deployable=True)
+    ran = _main_world(monkeypatch, tmp_path)
+    seen: list[tuple[str, str]] = []
+    monkeypatch.setattr(deploy_bench, "_seed_and_report", lambda r="eu": seen.append(("seed", r)))
+    monkeypatch.setattr(
+        deploy_bench, "_set_password_and_report", lambda r="eu": seen.append(("pw", r))
+    )
+    assert deploy_bench.main(["--region", "us", *extra]) == 0
+    expected = {
+        (): [],
+        ("--seed-root",): [("seed", "us")],
+        ("--set-root-password",): [("pw", "us")],
+    }
+    assert seen == expected[tuple(extra)]
+    assert ran == ([] if extra else ["us"])
