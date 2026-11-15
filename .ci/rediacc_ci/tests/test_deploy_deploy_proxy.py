@@ -1352,6 +1352,40 @@ def test_persistent_resolution_failure_fails_with_a_clear_message(monkeypatch, c
     assert "answered 000, expected 200" in err
 
 
+def test_a_first_deploy_polls_a_tls_handshake_failure_until_the_certificate_exists(
+    monkeypatch,
+) -> None:
+    """curl exit 35 with status 000 is the certificate not being issued yet; the first-deploy smoke keeps asking, sleeping CERT_INTERVAL_S between asks."""
+    fake, sleeps = _smoke_fixture(monkeypatch, [("000", 35), ("000", 35), ("200", 0), ("401", 0)])
+    _clock(monkeypatch, [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0])
+    assert port.smoke(HOST, NEW_ID, first_deploy=True) == 0
+    assert len(fake.calls) == 4
+    assert sleeps == [port.CERT_INTERVAL_S, port.CERT_INTERVAL_S]
+
+
+def test_a_first_deploy_gives_up_after_the_certificate_window(monkeypatch, capsys) -> None:
+    fake, _ = _smoke_fixture(monkeypatch, [("000", 35)])
+    _clock(monkeypatch, [0.0, 1.0, 2.0, port.CERT_WINDOW_S + 10])
+    assert port.smoke(HOST, NEW_ID, first_deploy=True) == 1
+    assert len(fake.calls) == 2
+    assert "/v1/health answered 000, expected 200" in capsys.readouterr().err
+
+
+def test_a_later_deploy_fails_a_tls_handshake_failure_at_once(monkeypatch) -> None:
+    """Control: without first_deploy the same answer is one request and a failure."""
+    fake, sleeps = _smoke_fixture(monkeypatch, [("000", 35)])
+    assert port.smoke(HOST, NEW_ID) == 1
+    assert len(fake.calls) == 1
+    assert sleeps == []
+
+
+def test_a_first_deploy_does_not_retry_a_real_status(monkeypatch) -> None:
+    fake, sleeps = _smoke_fixture(monkeypatch, [("500", 0)])
+    assert port.smoke(HOST, NEW_ID, first_deploy=True) == 1
+    assert len(fake.calls) == 1
+    assert sleeps == []
+
+
 def test_the_doh_lookup_reads_the_first_a_record(monkeypatch) -> None:
     class Resp:
         def __enter__(self):
@@ -2271,9 +2305,15 @@ def test_run_tee_with_merge_copies_the_stderr_lines_to_this_stdout(capsys):
 # ---- review d39e851d.2 and 0c280db0.1: main's company path, in process ----
 
 
-def _company_main(monkeypatch, tmp_path, *flags, version_flag=("--version", "1.2.3")):
-    """Run `main` for a stubbed company down to the smoke; returns (status, calls) with every external step replaced."""
+SMOKE_KWARGS: list[dict[str, object]] = []
+
+
+def _company_main(
+    monkeypatch, tmp_path, *flags, version_flag=("--version", "1.2.3"), first_deploy=False
+):
+    """Run `main` for a stubbed company down to the smoke; returns (status, calls) with every external step replaced. `first_deploy` makes the Worker unlisted before the deploy; the keywords each smoke got land in SMOKE_KWARGS."""
     calls: list[str] = []
+    SMOKE_KWARGS.clear()
     version = "11111111-2222-3333-4444-555555555555"
     proxy_config = tmp_path / "wrangler.toml"
     proxy_config.write_text("", encoding="utf-8")
@@ -2290,7 +2330,8 @@ def _company_main(monkeypatch, tmp_path, *flags, version_flag=("--version", "1.2
     monkeypatch.setattr(port, "override_refusals", lambda *_a: [])
     monkeypatch.setattr(port, "stage_release", lambda *_a: 0)
     monkeypatch.setattr(port, "forward_only_state", lambda *_a, **_k: (False, None))
-    monkeypatch.setattr(port, "deployed_version", lambda _c: version)
+    listings = iter([None, version] if first_deploy else [version, version])
+    monkeypatch.setattr(port, "deployed_version", lambda _c: next(listings))
     monkeypatch.setattr(port, "revert_line", lambda *_a: "REVERT")
     monkeypatch.setattr(port.os, "chdir", lambda _p: None)
     monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "x")
@@ -2301,8 +2342,9 @@ def _company_main(monkeypatch, tmp_path, *flags, version_flag=("--version", "1.2
         calls.append("deploy")
         return 0, "Current Version ID: %s" % version
 
-    def fake_smoke(*_a):
+    def fake_smoke(*_a, **kw):
         calls.append("smoke")
+        SMOKE_KWARGS.append(kw)
         return 0
 
     monkeypatch.setattr(port, "_run_tee", fake_tee)
@@ -2328,6 +2370,14 @@ def test_main_deploys_through_the_settings_retry_and_smokes_without_defer(monkey
     status, calls = _company_main(monkeypatch, tmp_path)
     assert status == 0
     assert calls == ["deploy", "smoke"]
+
+
+def test_only_a_first_deploy_smokes_with_the_certificate_wait(monkeypatch, tmp_path):
+    assert _company_main(monkeypatch, tmp_path, first_deploy=True)[0] == 0
+    assert SMOKE_KWARGS == [{"first_deploy": True}]
+    # control: a Worker that was already listed is a later deploy
+    assert _company_main(monkeypatch, tmp_path)[0] == 0
+    assert SMOKE_KWARGS == [{"first_deploy": False}]
 
 
 def test_defer_smoke_deploys_and_skips_the_smoke_and_records_no_smoke_rc(monkeypatch, tmp_path):

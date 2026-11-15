@@ -13,7 +13,7 @@ THE IMAGE IS BUILT FROM FETCHED BYTES. A stable deploy runs `rediacc_ci.deploy.e
 
 THE VERSION ID. `wrangler deploy` output is teed to stdout and the `Current Version ID:` line is captured. `wrangler deployments list --json` must then name that id at 100% in its newest deployment, or the run fails: a deploy whose rollout is not the version it printed is not a deploy this module can vouch for. The newest deployment before the deploy gives the rollback target.
 
-THE SMOKE. `/v1/health` must answer 200, an unauthenticated `/v1/server-info` 401, and `/v1/ready` 200 with `workerVersion` equal to the captured id, polled for up to READY_TIMEOUT_S, because "deploy success means the rollout started" and an old instance may answer first. `--smoke-only` skips the deploy and smokes the version the record (`--record`) names, else the newest deployment's. A fresh custom domain is retried past a cached NXDOMAIN and then pinned through DNS-over-HTTPS. The smoke holds no caller credential, so it starts no executor container: every route that pins one needs a bearer of an entitled org, and a pass says nothing about container starts. `cold_start_ms` is the Worker's first ready answer, never a container's.
+THE SMOKE. `/v1/health` must answer 200, an unauthenticated `/v1/server-info` 401, and `/v1/ready` 200 with `workerVersion` equal to the captured id, polled for up to READY_TIMEOUT_S, because "deploy success means the rollout started" and an old instance may answer first. `--smoke-only` skips the deploy and smokes the version the record (`--record`) names, else the newest deployment's. A fresh custom domain is retried past a cached NXDOMAIN and then pinned through DNS-over-HTTPS, and a first deploy also polls a TLS handshake failure for CERT_WINDOW_S while the certificate is issued. The smoke holds no caller credential, so it starts no executor container: every route that pins one needs a bearer of an entitled org, and a pass says nothing about container starts. `cold_start_ms` is the Worker's first ready answer, never a container's.
 
 THE RECORD. `--record PATH` writes JSON: target, region, worker, config, version id, the previous version id, the artifacts version, the smoke rc, the rollback command, the last `migration_tag` and `cold_start_ms` (the wait for the first `/v1/ready` on the deployed version). A deploy whose `[[migrations]]` list differs from the previous release's (`git show <previous v* tag>:<config>`; bench: its last recorded `migration_tag`) is forward-only, and its rollback reads `forward-only: Durable Object class lifecycle change (v<n>); fix forward` in place of a command wrangler would refuse. The deploy record of Design item 9 reads the rollback field. The closing lines print the worker, the version id and the rollback command. No executor token is minted, put or named: the Worker obtains one over its ISSUER binding.
 
@@ -576,6 +576,10 @@ DOH_URL_ENV = "REDIACC_SMOKE_DOH_URL"
 DEFAULT_DOH_URL = "https://1.1.1.1/dns-query"
 DOH_A_RECORD = 1
 DOH_TIMEOUT_S = 10.0
+# A first deploy of a custom domain answers a TLS handshake failure (curl exit 35, status 000) until Cloudflare has issued the domain's certificate, which takes minutes. The first-deploy smoke polls a no-answer for CERT_WINDOW_S seconds, every CERT_INTERVAL_S, before it counts as a failure; a later deploy never waits, since its certificate exists.
+CERT_WINDOW_S = 300.0
+CERT_INTERVAL_S = 5.0
+NO_ANSWER_CODE = "000"
 
 
 def _resolve_window() -> float:
@@ -625,15 +629,29 @@ def _curl_body(url: str, pin: str | None = None) -> tuple[str, str]:
 class _Fetcher:
     """Issues the smoke's requests. A resolution failure is retried for the window, then answered by a DoH pin shared by every later request; any other outcome (a code, or another curl failure) returns at once."""
 
-    def __init__(self, host: str) -> None:
+    def __init__(self, host: str, *, cert_wait: bool = False) -> None:
         self.host = host
         self.pin: str | None = None
+        self.cert_wait = cert_wait
+
+    def _await_certificate(self, url: str, out: str, rc: int) -> str:
+        """Re-ask a request that got no answer (a TLS handshake failure or a refused connection) until CERT_WINDOW_S has passed; the last answer when it never comes."""
+        deadline = time.monotonic() + CERT_WINDOW_S
+        while rc != 0 and out in ("", NO_ANSWER_CODE) and time.monotonic() < deadline:
+            log.info(
+                "%s gave no answer (curl exit %d); waiting for its certificate" % (self.host, rc)
+            )
+            _sleep(CERT_INTERVAL_S)
+            out, rc = _curl(url, self.pin)
+        return out
 
     def code(self, url: str) -> str:
         deadline = time.monotonic() + _resolve_window()
         while True:
             out, rc = _curl(url, self.pin)
             if rc != CURL_RESOLVE_RC:
+                if self.cert_wait:
+                    return self._await_certificate(url, out, rc)
                 return out
             if self.pin is None and time.monotonic() >= deadline:
                 address = _doh_lookup(self.host)
@@ -702,11 +720,13 @@ def smoke(
     version_id: str,
     timing: dict[str, int] | None = None,
     shown: typing.Callable[[str], str] = str,
+    *,
+    first_deploy: bool = False,
 ) -> int:
-    """The post-deploy smoke: /v1/health 200, an unauthenticated /v1/server-info 401, then /v1/ready on the deployed version."""
+    """The post-deploy smoke: /v1/health 200, an unauthenticated /v1/server-info 401, then /v1/ready on the deployed version. `first_deploy` also waits up to CERT_WINDOW_S for the custom domain's certificate."""
     url = "https://" + host
     log.step("Smoke-testing %s..." % shown(url))
-    fetch = _Fetcher(host)
+    fetch = _Fetcher(host, cert_wait=first_deploy)
     health = fetch.code(url + "/v1/health")
     if health != "200":
         log.error("Smoke test failed: /v1/health answered %s, expected 200" % (health or "nothing"))
@@ -1326,7 +1346,11 @@ def main(argv: list[str]) -> int:
 
     timing: dict[str, int] = {}
     # `--defer-smoke` (the company onboarding passes it on every company deploy) skips this smoke: the proxy's ISSUER binding names the company account Worker, which carries no ExecutorIssuer until its own deploy ships, and that deploy needs this proxy (its EXECUTOR binding), so a smoke here could not pass on a first deploy. The caller smokes with --smoke-only once the account Worker is up.
-    smoke_rc = None if args.defer_smoke else smoke(host, version_id, timing, shown)
+    smoke_rc = (
+        None
+        if args.defer_smoke
+        else smoke(host, version_id, timing, shown, first_deploy=previous is None)
+    )
     rollback = revert_line(config, previous, forward_only, current_tag)
     if record_path is not None:
         # Read before the write replaces it: the earlier record knows the release of the version a later rollback may return to (`release_map`).
