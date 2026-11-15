@@ -63,7 +63,7 @@
         "rateLimits": { "audit": "1105", "config": "1205" },
         "otlp": "bench",
         "config": "us-bench",
-        "deployable": false
+        "deployable": true
       }
     },
     {

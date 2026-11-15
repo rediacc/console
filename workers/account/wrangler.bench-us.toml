@@ -3,9 +3,9 @@
 # us row of regions.json; `rediacc_ci.quality.region_consistency_offline` and `rediacc_ci.deploy.proxy_configs`
 # refuse a drift.
 #
-# NOT DEPLOYABLE YET: `database_id` is the placeholder TO-BE-CREATED-L1 and regions.json marks this bench
-# `deployable: false`. The objects are created by box L1 (D1 `account-bench-us` with location enam, R2, queues), which
-# replaces the placeholder and flips the flag in one commit; the consistency gate refuses either alone.
+# The objects were created by box L1 on 2026-11-15 (D1 `account-bench-us` with location enam, R2 `configs-bench-us` and
+# `backups-bench-us` with hint enam, queues `backup-replicate-bench-us` and its dlq); that commit set the database id and
+# regions.json `deployable: true` together, which the consistency gate requires.
 # Differences from account-us: ENVIRONMENT = "bench", no captcha, e-mail capture in D1, keyless portal in ./bench/dist.
 
 name = "account-bench-us"
@@ -74,7 +74,7 @@ run_worker_first = ["/*"]
 [[d1_databases]]
 binding = "DB"
 database_name = "account-bench-us"
-database_id = "TO-BE-CREATED-L1"
+database_id = "5de85a34-8524-4618-89d8-d8aafe17f4da"
 migrations_dir = "../../private/account/drizzle"
 
 # Production us placement: no jurisdiction, location hint enam at creation (regions.json bench.r2Location).
