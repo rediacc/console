@@ -460,7 +460,7 @@ class Proc:
 
 
 def _cause(done: Proc, *names: str) -> str:
-    """`: <wrangler's stated cause>` for an error message, empty when wrangler stated none; each of `names` (the Worker, key or domain the call was given) is masked as a whole token (`control_db.mask_names`), because wrangler echoes what it was asked about and a Worker name can carry a company name."""
+    """`: <the child's stated cause>` for an error message (wrangler's `--json` stdout error, then the last stderr lines, `control_db.failure_tail`), empty when the child stated none; each of `names` (the Worker, key, domain, machine, repo, image tag or credential the call was given) is masked as a whole token (`control_db.mask_names`), because a child echoes what it was asked about and a Worker or host name can carry a company name. Every `LabError` raised on a child's exit code quotes it, so a failed run names its cause rather than only its rc (the 2026-11-15 `proof cost --bench` said only `docker build ... exited 1`)."""
     tail = control_db.mask_names(control_db.failure_tail(done.stdout, done.stderr), names)
     return ": " + tail if tail else ""
 
@@ -567,6 +567,42 @@ def cf_list(path: str) -> list:
         return cf_leftovers.listing(path, token)
     except cf_leftovers.CfError as exc:
         raise proof.LabError(str(exc)) from None
+
+
+MANAGEMENT_ENV = "CF_MANAGEMENT_TOKEN"
+# The token listing is paged at 50 rows, as `secrets.CloudflareMinter` and `lifecycle_adapters` page it; `cf_leftovers.listing` would ask for 100.
+USER_TOKENS_PAGE = 50
+USER_TOKENS_MAX_PAGES = 100
+
+
+def cf_user_tokens(
+    *,
+    environ: Mapping[str, str] | None = None,
+    fetch: Callable[[str, str], dict] = cf_leftovers.fetch,
+) -> list:
+    """Every user-level API token `CF_MANAGEMENT_TOKEN` can see (`GET /user/tokens`). The company tokens are minted under that token (`secrets.CloudflareMinter`), and Cloudflare refuses the account-scoped `CLOUDFLARE_API_TOKEN` there (code 9109, "Valid user-level authentication not found"), so the listing never falls back to it: an unset management token is a `LabError` naming the profile that binds it."""
+    token = (os.environ if environ is None else environ).get(MANAGEMENT_ENV, "")
+    if not token:
+        raise proof.LabError(
+            "%s is not set (bws_env exec --profile %s): the company tokens are user-level, and only that token lists them"
+            % (MANAGEMENT_ENV, secrets.MINT_PROFILE)
+        )
+    rows: list = []
+    for page in range(1, USER_TOKENS_MAX_PAGES + 1):
+        path = "/user/tokens?page=%d&per_page=%d" % (page, USER_TOKENS_PAGE)
+        try:
+            body = fetch(path, token)
+        except cf_leftovers.CfError as exc:
+            raise proof.LabError(str(exc)) from None
+        chunk = body.get("result")
+        if not isinstance(chunk, list):
+            raise proof.LabError("GET %s: the token listing has no result list" % path)
+        rows.extend(chunk)
+        info = body.get("result_info")
+        total = info.get("total_pages") if isinstance(info, dict) else None
+        if (page >= total) if isinstance(total, int) else len(chunk) < USER_TOKENS_PAGE:
+            return rows
+    raise proof.LabError("the token listing did not end after %d pages" % USER_TOKENS_MAX_PAGES)
 
 
 def d1_query(database: str, sql: str, params: Sequence[object]) -> list[dict]:
@@ -2256,7 +2292,8 @@ LIMIT_ROWS: dict[str, str] = {
     "workers_scripts": "Number of Workers",
     "routes_per_zone": "Routes per zone",
 }
-EXECUTOR_REL = ("workers", "proxy")
+# The executor image's Dockerfile, built from the repository root: its `RUN --mount=type=bind,source=workers/proxy/stage` steps name paths relative to that context.
+EXECUTOR_DOCKERFILE = ("workers", "proxy", "Dockerfile")
 # A footnote mark beside a figure (`500[^1]`, `500<sup>1</sup>`) is not part of it.
 MD_LINK = re.compile(r"\[([^\]]+)\]\([^)]*\)")
 FOOTNOTE = re.compile(r"\[\^?[0-9]+\]|<sup>.*?</sup>")
@@ -2346,15 +2383,17 @@ def image_rebuild_seconds(
         "-t",
         tag,
         "-f",
-        "Dockerfile",
+        "/".join(EXECUTOR_DOCKERFILE),
         ".",
     )
     start = clock()
-    done = run(argv, root().joinpath(*EXECUTOR_REL), None)
+    done = run(argv, root(), None)
     took = clock() - start
     run(("docker", "image", "rm", "-f", tag), None, None)
     if done.rc != 0:
-        raise proof.LabError("docker build of the executor image exited %d" % done.rc)
+        raise proof.LabError(
+            "docker build of the executor image exited %d%s" % (done.rc, _cause(done, tag))
+        )
     return took
 
 
@@ -2445,7 +2484,9 @@ def fleet_machine(*, env: Env = _env) -> str:
 def renet_version(machine: str, *, run: Runner = run_process, env: Env = _env) -> str:
     done = _rdc(run, env, "term", "connect", machine, "-c", "renet version")
     if done.rc != 0:
-        raise proof.LabError("renet version on the fleet machine exited %d" % done.rc)
+        raise proof.LabError(
+            "renet version on the fleet machine exited %d%s" % (done.rc, _cause(done, machine))
+        )
     found = VERSION_RE.search(done.stdout)
     if not found:
         raise proof.LabError("renet version printed no version")
@@ -2477,9 +2518,8 @@ def live_executor_upload(
     companies: Companies = all_companies,
 ) -> proof.Answer:
     company = env(COMPANY_ENV)
-    proxy_host = names.hosts(
-        str(company_row(company, companies=companies)["name"]), PRODUCT_DOMAIN
-    )[1]
+    label = str(company_row(company, companies=companies)["name"])
+    proxy_host = names.hosts(label, PRODUCT_DOMAIN)[1]
     read = version or (lambda m: renet_version(m, run=run, env=env))
     minted = (token or (lambda c: mint(c, "proxy-token")))(company)
     before = read(machine)
@@ -2494,7 +2534,10 @@ def live_executor_upload(
         extra={PROXY_BEARER_ENV: minted},
     )
     if done.rc != 0:
-        raise proof.LabError("the proxied repo up exited %d; nothing was proven" % done.rc)
+        raise proof.LabError(
+            "the proxied repo up exited %d%s; nothing was proven"
+            % (done.rc, _cause(done, machine, company, label, proxy_host, env(REPO_ENV), minted))
+        )
     after = read(machine)
     if after == before:
         return proof.Answer(False, "the executor left renet at %s" % before)
@@ -2566,7 +2609,10 @@ def put_version(worker: str, version_id: str, *, run: Runner = run_process) -> N
 def renew_on(machine: str, *, run: Runner = run_process, env: Env = _env) -> proof.Answer:
     done = _rdc(run, env, "term", "connect", machine, "-c", RENEW_COMMAND)
     if done.rc != 0:
-        raise proof.LabError("renet license renew on the fleet machine exited %d" % done.rc)
+        raise proof.LabError(
+            "renet license renew on the fleet machine exited %d%s"
+            % (done.rc, _cause(done, machine))
+        )
     doc = _json_value(done.stdout, "{")
     if not isinstance(doc, dict):
         raise proof.LabError("renet license renew printed no JSON object")
@@ -2606,7 +2652,10 @@ def live_spread_renew(
     binary_env = PREVIOUS_RDC_ENV if renet == "previous" else RDC_ENV
     placed = _rdc(run, env, "repo", "up", env(REPO_ENV), binary_env=binary_env)
     if placed.rc != 0:
-        raise proof.LabError("repo up with the %s rdc exited %d" % (renet, placed.rc))
+        raise proof.LabError(
+            "repo up with the %s rdc exited %d%s"
+            % (renet, placed.rc, _cause(placed, machine, name, env(REPO_ENV)))
+        )
     runs = (version or (lambda m: renet_version(m, run=run, env=env)))(machine)
     current = released()
     if (runs == current) != (renet == "new"):
@@ -2693,7 +2742,7 @@ def _gh(run: Runner, *args: str) -> str:
     """A one-shot gh call, for a WRITE: `gh workflow run` is never retried, since a retry after a lost reply would dispatch twice."""
     done = run(("gh", *args), None, None)
     if done.rc != 0:
-        raise proof.LabError("gh %s exited %d" % (args[0] if args else "", done.rc))
+        raise proof.LabError("gh %s exited %d%s" % (args[0] if args else "", done.rc, _cause(done)))
     return done.stdout
 
 
@@ -2701,7 +2750,7 @@ def _gh_read(run: Runner, *args: str) -> str:
     """A gh READ, retried on a 5xx or a connection fault through `gh_retry.retry_transient`; any other failure is a `LabError` at once."""
     done = gh_retry.retry_transient(lambda: run(("gh", *args), None, None), _gh_failure)
     if done.rc != 0:
-        raise proof.LabError("gh %s exited %d" % (args[0] if args else "", done.rc))
+        raise proof.LabError("gh %s exited %d%s" % (args[0] if args else "", done.rc, _cause(done)))
     return done.stdout
 
 
@@ -2830,7 +2879,7 @@ def run_surfaces(run_id: str, *, run: Runner = run_process) -> dict[str, str]:
 #
 # The `enterprise proof remove` reader (agent/plans/PLAN-enterprise-isolation.md, box V11): what a company still holds on Cloudflare and in its control row. SEAMS binds it by name.
 #
-# `leftovers(company)` resolves the opaque id through the bench control databases (a removed row included) and lists, by KIND only, each piece `enterprise remove --delete-data` deletes that is still there: the account and proxy Workers (`account-<name>`, `proxy-<name>`), a Worker Route of the product zone whose script is one of those Workers (`zone route`), the D1 database `account-<name>`, the configs and backups buckets (listed under the region's R2 jurisdiction header, since a bucket in a jurisdiction is invisible to a plain listing), the bucket-scoped backup token (`enterprise-<id>-backups`, a user token), and a control row whose state is not `removed`. Kinds and never names, because the proof prints the list on a broken claim and a company's name is its Workers' and buckets' name. An empty list means nothing is left; a read that fails is a `LabError`, never an empty list.
+# `leftovers(company)` resolves the opaque id through the bench control databases (a removed row included) and lists, by KIND only, each piece `enterprise remove --delete-data` deletes that is still there: the account and proxy Workers (`account-<name>`, `proxy-<name>`), a Worker Route of the product zone whose script is one of those Workers (`zone route`), the D1 database `account-<name>`, the configs and backups buckets (listed under the region's R2 jurisdiction header, since a bucket in a jurisdiction is invisible to a plain listing), the bucket-scoped backup and configs tokens (`enterprise-<id>-backups`, `enterprise-<id>-configs`: user tokens, so they are listed under `CF_MANAGEMENT_TOKEN` through `cf_user_tokens`, never the account token), and a control row whose state is not `removed`. Kinds and never names, because the proof prints the list on a broken claim and a company's name is its Workers' and buckets' name. An empty list means nothing is left; a read that fails is a `LabError`, never an empty list.
 
 
 def _names(rows: object, key: str) -> set[str]:
@@ -2848,6 +2897,7 @@ def leftovers(
     listing: Listing = cf_list,
     api: Api = cf_get,
     buckets: Callable[[str | None], set[str]] = r2_bucket_names,
+    user_tokens: Callable[[], list] = cf_user_tokens,
 ) -> list[str]:
     row = company_row(company, companies=companies)
     name = str(row["name"])
@@ -2871,9 +2921,11 @@ def leftovers(
     held = buckets(region_jurisdiction(str(row.get("region", ""))))
     left.extend("%s bucket" % k for k in ("configs", "backups") if "%s-%s" % (k, name) in held)
     target = _target(row)
-    tokens = _names(listing("/user/tokens"), "name")
+    tokens = _names(user_tokens(), "name")
     if lifecycle_adapters.backup_token_name(target) in tokens:
         left.append("backup token")
+    if lifecycle_adapters.configs_token_name(target) in tokens:
+        left.append("configs token")
     return left
 
 

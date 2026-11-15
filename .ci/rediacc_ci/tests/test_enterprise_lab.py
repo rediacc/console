@@ -23,6 +23,7 @@ from rediacc_ci import paths
 from rediacc_ci.core import https
 from rediacc_ci.deploy import deploy_signer
 from rediacc_ci.enterprise import lab, onboarding, proof, registry
+from rediacc_ci.housekeeping import cf_leftovers
 from rediacc_ci.ops import enterprise_lookup
 from rediacc_ci.well_known import BENCH_ORIGIN, GH_API_BASE, PRODUCT_DOMAIN
 
@@ -2491,13 +2492,21 @@ def test_image_rebuild_is_timed_and_the_tag_removed():
     calls: list[list[str]] = []
     ticks = iter([100.0, 172.5])
 
+    cwds: list[object] = []
+
     def run(argv, cwd, env):
-        del cwd, env
+        del env
         calls.append(list(argv))
+        cwds.append(cwd)
         return lab.Proc(0)
 
     assert lab.image_rebuild_seconds(run=run, clock=lambda: next(ticks)) == 72.5
     assert calls[0][:3] == ["docker", "build", "--no-cache"]
+    # The Dockerfile bind-mounts workers/proxy/stage, a path relative to the repository root, so the root is the build context (the 2026-11-15 `proof cost --bench` built from workers/proxy and failed).
+    assert cwds[0] == lab.root()
+    assert calls[0][calls[0].index("-f") + 1] == "workers/proxy/Dockerfile"
+    assert calls[0][-1] == "."
+    assert (lab.root() / "workers" / "proxy" / "Dockerfile").is_file()
     assert calls[1][:3] == ["docker", "image", "rm"]
     assert calls[0][calls[0].index("-t") + 1] == calls[1][-1]
 
@@ -2507,8 +2516,32 @@ def test_a_failed_build_is_a_lab_error_not_a_time():
         del cwd, env
         return lab.Proc(1 if argv[1] == "build" else 0)
 
-    with pytest.raises(proof.LabError, match="exited 1"):
+    with pytest.raises(proof.LabError, match=r"exited 1$"):
         lab.image_rebuild_seconds(run=run, clock=lambda: 0.0)
+
+
+def test_a_failed_build_quotes_its_stderr_tail_with_the_tag_masked():
+    tags: list[str] = []
+
+    def run(argv, cwd, env):
+        del cwd, env
+        if argv[1] != "build":
+            return lab.Proc(0)
+        tag = argv[argv.index("-t") + 1]
+        tags.append(tag)
+        err = (
+            '#5 building %s\nERROR: failed to compute cache key: "/workers/proxy/stage": not found\n'
+            % tag
+        )
+        return lab.Proc(1, "", err)
+
+    with pytest.raises(proof.LabError) as caught:
+        lab.image_rebuild_seconds(run=run, clock=lambda: 0.0)
+    text = str(caught.value)
+    assert "exited 1: " in text
+    assert "failed to compute cache key" in text
+    assert tags
+    assert tags[0] not in text, "the tag is masked"
 
 
 PAGE_COST = """
@@ -2643,6 +2676,34 @@ def test_renet_version_parses_the_machine_answer():
 def test_renet_version_failures_are_lab_errors(out, rc):
     with pytest.raises(proof.LabError):
         lab.renet_version("vm-1", run=Rdc(out, rc), env=env_renet)
+
+
+class RdcFails:
+    """An rdc that exits 255 and says why on stderr, echoing the machine and repo it was given."""
+
+    def __call__(self, argv, cwd, extra):
+        del argv, cwd, extra
+        return lab.Proc(
+            255, "", "Welcome\nssh: connect to vm-1 failed for proofrepo@vm-1: refused\n"
+        )
+
+
+@pytest.mark.parametrize(
+    "call",
+    [
+        lambda run: lab.renet_version("vm-1", run=run, env=env_renet),
+        lambda run: lab.renew_on("vm-1", run=run, env=env_renet),
+    ],
+    ids=["renet-version", "renew"],
+)
+def test_a_failed_rdc_child_quotes_its_stderr_tail_with_the_names_masked(call):
+    """Every LabError raised on a child's exit code names the child's stated cause, not only its rc."""
+    with pytest.raises(proof.LabError) as caught:
+        call(RdcFails())
+    text = str(caught.value)
+    assert "exited 255: " in text
+    assert "connect to <name> failed" in text
+    assert "vm-1" not in text
 
 
 def test_released_renet_is_what_edge_runs():
@@ -3081,7 +3142,7 @@ def test_a_gh_read_retries_a_transient_5xx_then_answers(no_retry_sleep):
 
 def test_a_gh_read_gives_up_on_a_persistent_5xx_as_a_lab_error(no_retry_sleep):
     gh = _FlakyGh(lab.Proc(1, "", "gh: Server Error (HTTP 502)"))
-    with pytest.raises(proof.LabError, match="gh run exited 1"):
+    with pytest.raises(proof.LabError, match=r"gh run exited 1: gh: Server Error \(HTTP 502\)"):
         lab._gh_read(gh, "run", "view", "77")
     assert gh.calls == lab.gh_retry.ATTEMPTS
     assert len(no_retry_sleep) == lab.gh_retry.ATTEMPTS - 1
@@ -3154,9 +3215,16 @@ class Account:
             ]
         if path.startswith("/accounts/acct/d1/database?name="):
             return [{"name": "account-proof-remove-ci"}, {"name": "account-proof-remove"}]
-        if path == "/user/tokens":
-            return [{"name": "enterprise-c00000001-backups"}]
         raise AssertionError(path)
+
+    def user_tokens(self):
+        if not self.present:
+            return []
+        return [
+            {"name": "enterprise-c00000001-backups"},
+            {"name": "enterprise-c00000001-configs"},
+            {"name": "enterprise-c0000000f-backups"},
+        ]
 
     def buckets(self, jurisdiction):
         self.jurisdictions.append(jurisdiction)
@@ -3192,6 +3260,7 @@ def test_a_kept_company_lists_every_piece_by_kind():
         listing=acct.listing,
         api=acct.api,
         buckets=acct.buckets,
+        user_tokens=acct.user_tokens,
     )
     assert got == [
         "control row (state active)",
@@ -3202,6 +3271,7 @@ def test_a_kept_company_lists_every_piece_by_kind():
         "configs bucket",
         "backups bucket",
         "backup token",
+        "configs token",
     ]
     assert all("proof-remove" not in item for item in got), "kinds, never names"
     assert acct.jurisdictions == ["eu"], "eu buckets are listed under the eu jurisdiction header"
@@ -3216,6 +3286,7 @@ def test_a_removed_company_with_nothing_left_answers_an_empty_list():
         listing=acct.listing,
         api=acct.api,
         buckets=acct.buckets,
+        user_tokens=acct.user_tokens,
     )
     assert got == [], "another Worker's route is not this company's"
 
@@ -3229,6 +3300,7 @@ def test_a_route_left_alone_is_reported_by_kind():
         listing=lambda _p: [],
         api=acct.api,
         buckets=lambda _j: set(),
+        user_tokens=list,
     )
     assert got == ["zone route"]
 
@@ -3259,6 +3331,7 @@ def test_a_similar_database_name_is_not_this_companys():
         listing=listing,
         api=no_routes,
         buckets=lambda _j: set(),
+        user_tokens=list,
     )
     assert got == []
 
@@ -3274,6 +3347,70 @@ def test_a_failed_listing_is_a_lab_error_not_an_empty_list():
 
     with pytest.raises(proof.LabError, match="403"):
         lab.leftovers("c00000001", companies=rows_left("removed"), listing=down)
+
+
+def test_a_token_left_alone_is_reported_by_kind():
+    """Only the user-token listing still holds the configs token: it is reported, and another company's token is not."""
+    got = lab.leftovers(
+        "c00000001",
+        companies=rows_left("removed"),
+        listing=lambda _p: [],
+        api=no_routes,
+        buckets=lambda _j: set(),
+        user_tokens=lambda: [{"name": "enterprise-c00000001-configs"}, {"name": "other"}],
+    )
+    assert got == ["configs token"]
+
+
+MGMT_ENV = {"CF_MANAGEMENT_TOKEN": "mgmt-tok", "CLOUDFLARE_API_TOKEN": "acct-tok"}
+
+
+def test_the_user_token_listing_runs_under_the_management_token():
+    """Cloudflare refuses the account token on /user/tokens (code 9109, the 2026-11-15 `proof remove --bench`); the listing carries CF_MANAGEMENT_TOKEN and walks every page at 50 rows."""
+    seen: list[tuple[str, str]] = []
+
+    def fetch(path, token):
+        seen.append((path, token))
+        page = 1 if "page=1&" in path else 2
+        return {"result": [{"name": "t%d" % page}], "result_info": {"total_pages": 2}}
+
+    rows = lab.cf_user_tokens(environ=MGMT_ENV, fetch=fetch)
+    assert rows == [{"name": "t1"}, {"name": "t2"}]
+    assert seen == [
+        ("/user/tokens?page=1&per_page=50", "mgmt-tok"),
+        ("/user/tokens?page=2&per_page=50", "mgmt-tok"),
+    ]
+
+
+def test_the_user_token_listing_without_the_management_token_names_the_profile():
+    """Control: no fallback to the account token, which Cloudflare refuses there."""
+
+    def fetch(path, token):
+        raise AssertionError("fetched %s with %s" % (path, token))
+
+    with pytest.raises(proof.LabError, match=r"CF_MANAGEMENT_TOKEN is not set.*enterprise-mint"):
+        lab.cf_user_tokens(environ={"CLOUDFLARE_API_TOKEN": "acct-tok"}, fetch=fetch)
+
+
+def test_a_refused_user_token_listing_is_a_lab_error():
+    def fetch(path, token):
+        del token
+        raise cf_leftovers.CfError("GET %s: [{'code': 9109}]" % path)
+
+    with pytest.raises(proof.LabError, match="9109"):
+        lab.cf_user_tokens(environ=MGMT_ENV, fetch=fetch)
+
+
+def test_a_short_token_page_without_a_count_ends_the_listing():
+    calls: list[str] = []
+
+    def fetch(path, token):
+        del token
+        calls.append(path)
+        return {"result": [{"name": "only"}]}
+
+    assert lab.cf_user_tokens(environ=MGMT_ENV, fetch=fetch) == [{"name": "only"}]
+    assert len(calls) == 1
 
 
 class _OSErrorRollback(Fleet):
