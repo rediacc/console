@@ -298,37 +298,8 @@ export interface JobP90Seed {
   minutes: number;
   derivation: string;
 }
-export const JOB_P90_SEEDS: readonly JobP90Seed[] = [
-  {
-    label: 'Tests + Infra / E2E Full Integration (ubuntu-24.04, 1/2)',
-    minutes: 10.9,
-    derivation:
-      'ruling #12755b25 ("Split 23, no cap"): lane-durations.json variantCosts test-e2e-workers ubuntu-24.04 fixedMinutes 6.38 (an E2E Workers leg setup, which this job repeats) + suite 23a 3.40 (tests 1-9 with the beforeAll, the worst of runs 43317534585, 43360983417, 43585926477 attempt 2) + 12a 0.65 and 12b 0.18 (their spans in job 132425794764, first test to the next file\'s first test) + 0.30 for the afterAll 23a now pays itself (suite 23 paid one, 38.6 s, which also swept the 23b GUIDs 23a never creates) = 10.91',
-  },
-  {
-    label: 'Tests + Infra / E2E Full Integration (ubuntu-24.04, 2/2)',
-    minutes: 11.3,
-    derivation:
-      "ruling #12755b25 (\"Split 23, no cap\"): fixedMinutes 6.38 as leg 1/2 + suite 23b 3.20 (tests 10-12 with the afterAll, the worst of the same three runs) + 12d 0.32 and 13b 1.26 (their spans in job 132425794764, 13b's with its afterAll) = 11.16, + the beforeAll 23b now pays itself (under 0.1: suite 23's first test started 3.6 s after suite 14's last, job 132425794764), rounded up to 11.3",
-  },
-  {
-    label: 'Tests + Infra / E2E Full Integration (fedora-43, 1/1)',
-    minutes: 10.25,
-    derivation:
-      'ruling #12755b25: lane-durations.json variantCosts test-e2e-workers fedora-43 fixedMinutes 7.22 + legExtraMinutes "1" 3.03 (the --also span 12a/12b/12d/13b added to leg 1, refresh 2026-11-14T13:15Z), the extra removed from the lane with the move',
-  },
-  {
-    label: 'Tests + Infra / Unit (1/2)',
-    minutes: 7.2,
-    derivation:
-      'ruling #12755b25 ("Shard into 2"): the unsharded job p90 12.4 = 1.9 of steps outside the runner step (job 132425661241: 12m16s wall, runner step 10m24s) + 10.5 of vitest; every suite now runs with vitest --shard=<i>/2, so each leg pays 1.9 + 10.5 / 2',
-  },
-  {
-    label: 'Tests + Infra / Unit (2/2)',
-    minutes: 7.2,
-    derivation: 'ruling #12755b25 ("Shard into 2"): the same derivation as Unit (1/2)',
-  },
-];
+// Every seed so far is now measured in job_p90_minutes (the 2026-11-15 refresh); a new call site with no measured run adds one here with its derivation and ruling.
+export const JOB_P90_SEEDS: readonly JobP90Seed[] = [];
 
 /** The samples check 2 judges one call site by: its measured display names, or, when it has none, the seeds its pattern matches. */
 export function samplesWithSeeds(
