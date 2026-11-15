@@ -159,6 +159,13 @@ A local edge release ships a SHA256 manifest signed with the release GPG key (`R
 
 `deploy_record after --sink r2` writes `release-records/v<V>/<channel>/deploy-record-<target>-<region>.json` once, through a write-once guard: worker names, version ids before and after, the D1 bookmark, the smoke rc, artifact manifest sha256s and the rollback command. The www record carries the version id before and after, the `wrangler rollback` command and the smoke rc. The release record, one per version and channel under `release-records/`, lists every step with its outcome and timing, and holds the run id of the main CI run on the released SHA.
 
+`release-records/v<V>/edge.json` is the edge release record the stable soak (`local_gates`) and the ring release (`rings_run`, which counts bench and the fast tier as taken once it exists with no failed step) read. Every full edge release writes it once, with one schema (`local.record_document`) and one conditional put (`deploy_record.write_record_once`):
+
+- a full `release:local` writes it in its record step when no step failed (kind `release-local`), beside its per-run `edge/run-<id>.json`;
+- a CD edge release writes it in the `edge-record` job of `cd-release-edge.yml` through `rediacc_ci.release.cd_edge_record` (kind `release-cd`), only when init, publish, both edge deploys, the smoke test, the post-publish install validation and tag-and-release all succeeded. A rerun or retry that finds this version's record leaves it unchanged; a record of any other version at the key refuses.
+
+A workers-only deploy, local or CD, cuts no version and writes no `edge.json`: the version it redeploys keeps the record of its own release.
+
 ## Rollback
 
 The model is fix-forward: cut the corrected release through CD or the entry. For an immediate revert, the deploy record names the previous version id and the exact command, `wrangler rollback <version-id> --config <wrangler config> -y`, run under the `deploy-workers` bws profile. A D1 migration is not undone by a Worker rollback, so the record's D1 bookmark is the restore point. A failed local run after the seal and tag is repaired by running the entry again for the same version; the tag step is idempotent and refuses on an unknown `ls-remote` answer.

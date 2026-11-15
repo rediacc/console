@@ -794,6 +794,70 @@ jobs:
           VERSION: ${{ needs.init.outputs.next_version }}
         run: PYTHONPATH=.ci python3 -m rediacc_ci.release.create_github_release
 
+  # ============================================================================
+  # EDGE RELEASE RECORD - release-records/v<V>/edge.json, the record the stable
+  # soak (rediacc_ci.release.local_gates) and the ring release
+  # (rediacc_ci.release.rings_run: bench and the fast tier) read. A full
+  # release:local writes the same record through the same writer; before this
+  # job a CD-shipped version never had one, so the rings could never start it.
+  # Written only when every job of a full release succeeded, never for a
+  # workers-only deploy (it cuts no version), and once per version: a rerun or
+  # a retry dispatch finds this version's record and leaves it unchanged.
+  # ============================================================================
+  edge-record:
+    name: Edge Release Record
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # actions: read lists this run's jobs (every attempt) for the step timings.
+    permissions:
+      contents: read
+      actions: read
+    needs: [init, publish, deploy-marketing-edge, deploy-account-edge, smoke-test, validate-install-published, tag-and-release]
+    if: >-
+      github.ref == format('refs/heads/{0}', github.event.repository.default_branch) &&
+      success() &&
+      needs.init.outputs.workers_only != 'true'
+    steps:
+      # The released commit itself: the record names its tree and regions.json's regions.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.init.outputs.ci_sha }}
+          persist-credentials: false
+
+      - name: Fetch secrets from Bitwarden
+        uses: ./.github/actions/bws-secrets
+        with:
+          access-token: ${{ secrets.BWS_ACCESS_TOKEN }}
+          secrets: |
+            CLOUDFLARE_R2_ACCESS_KEY_ID > BWS_CLOUDFLARE_R2_ACCESS_KEY_ID
+            CLOUDFLARE_R2_ENDPOINT > BWS_CLOUDFLARE_R2_ENDPOINT
+            CLOUDFLARE_R2_SECRET_ACCESS_KEY > BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY
+
+      - name: Install the pinned aws CLI
+        uses: ./.github/actions/setup-aws
+
+      - name: List this run's jobs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >-
+          PYTHONPATH=.ci python3 -m rediacc_ci.core.gh_retry "jobs of run ${GITHUB_RUN_ID}" --
+          api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs?filter=all&per_page=100"
+          --paginate --jq '.jobs[] | tojson' > "$RUNNER_TEMP/jobs.jsonl"
+
+      - name: Write the edge release record
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+          VERSION: ${{ needs.init.outputs.next_version }}
+          SHA: ${{ needs.init.outputs.ci_sha }}
+          CLOUDFLARE_R2_ENDPOINT: ${{ env.BWS_CLOUDFLARE_R2_ENDPOINT }}
+          AWS_ACCESS_KEY_ID: ${{ env.BWS_CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.BWS_CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+        run: |
+          printf '%s' "$NEEDS" > "$RUNNER_TEMP/needs.json"
+          PYTHONPATH=.ci python3 -m rediacc_ci.release.cd_edge_record \
+            --version "$VERSION" --sha "$SHA" --run-id "$GITHUB_RUN_ID" \
+            --needs "$RUNNER_TEMP/needs.json" --jobs "$RUNNER_TEMP/jobs.jsonl"
+
   # No cleanup-on-failure job. Failure model:
   #   - R2 sentinel is the atomic commit point, written by ci.yml's
   #     finalize-release-sentinel BEFORE this workflow runs. The git tag is

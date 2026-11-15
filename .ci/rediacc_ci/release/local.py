@@ -28,7 +28,7 @@ NO SECRET IN THIS PROCESS. A credentialed step runs as a child `PYTHONPATH=.ci p
 
 `--dry-run` resolves the version and runs the gates read-only, then prints every step with its profiles and the key NAMES they bind. It reads no secret value and writes nothing: the gates' fetch becomes `git ls-remote`, the release lock reads the public sentinel URL and `git ls-remote --tags`, the release clone is not made (named as not judged), and no record is written. It exits 1 naming each refusal, else 0.
 
-A REAL RUN, after the gates admit: the release clone's `origin` is pointed at the real remote (it was cloned from this checkout) with gh as its credential helper, the release-run record is written through `release_run.write_release_run` and exported as REDIACC_RELEASE_RUN to every child, then the steps run in order, each timed. On a failure the run stops; the `on_failure` rows of an armed region (the deploy rollback) and the `always` rows (the deploy records, the release record) still run. The release record (every step's id, rc and wall seconds, for L1's timing comparison) is written to R2 once at `release-records/v<V>/edge/run-<id>.json`, and on a full release also at `release-records/v<V>/edge.json`, the key `local_gates` and the stable soak read.
+A REAL RUN, after the gates admit: the release clone's `origin` is pointed at the real remote (it was cloned from this checkout) with gh as its credential helper, the release-run record is written through `release_run.write_release_run` and exported as REDIACC_RELEASE_RUN to every child, then the steps run in order, each timed. On a failure the run stops; the `on_failure` rows of an armed region (the deploy rollback) and the `always` rows (the deploy records, the release record) still run. The release record (every step's id, rc and wall seconds, for L1's timing comparison) is written to R2 once at `release-records/v<V>/edge/run-<id>.json`, and on a full release also at `release-records/v<V>/edge.json` (`edge_record_key`), the key `local_gates` (the stable soak) and `rings_run` (bench and the fast tier) read. `record_document` is that record's one schema; a CD edge release writes the same document through `cd_edge_record`.
 """
 
 from __future__ import annotations
@@ -1720,31 +1720,74 @@ def gates_verdict(rc: int, lines: list[str], workers_only: bool) -> int:
     return 1
 
 
+def edge_record_key(version: str) -> str:
+    """The one record per edge version that `local_gates` (the stable soak) and `rings_run` (bench and the fast tier) read."""
+    return RECORD_PREFIX % version + ".json"
+
+
+def record_document(
+    *,
+    kind: str,
+    version: str,
+    sha: str,
+    tree: str,
+    run_id: str,
+    regions: Sequence[str],
+    smoke_rc: int,
+    failed_step: str | None,
+    steps: Sequence[StepResult],
+    workers_only: bool = False,
+    branch_release: bool = False,
+    branch: str | None = None,
+    asked: str | None = None,
+    build_meta: str = "",
+    assist_run: str | None = None,
+) -> dict[str, Any]:
+    """The edge release record, schema 1: one shape for every writer (`release-local` here, `release-cd` from `cd_edge_record`)."""
+    return {
+        "schema": 1,
+        "kind": kind,
+        "version": version,
+        "channel": CHANNEL,
+        "sha": sha,
+        "tree": tree,
+        "run_id": run_id,
+        "workers_only": workers_only,
+        "branch_release": branch_release,
+        "branch": branch,
+        "head_sha": sha,
+        "asked": asked,
+        "app_version": "%s%s" % (version, build_meta),
+        "regions": list(regions),
+        "assist_run": assist_run,
+        "recorded_at": _now(),
+        "smoke_rc": smoke_rc,
+        "failed_step": failed_step,
+        "total_seconds": round(sum(r.seconds for r in steps), 3),
+        "steps": [dataclasses.asdict(r) for r in steps],
+    }
+
+
 def release_record(run: Run) -> dict[str, Any]:
     ctx = run.ctx
     branch_release = bool(ctx.get("branch_release"))
-    return {
-        "schema": 1,
-        "kind": "release-local",
-        "version": ctx["version"],
-        "channel": CHANNEL,
-        "sha": ctx["sha"],
-        "tree": ctx["tree"],
-        "run_id": ctx["run_id"],
-        "workers_only": bool(ctx.get("workers_only")),
-        "branch_release": branch_release,
-        "branch": ctx.get("branch") if branch_release else None,
-        "head_sha": ctx["sha"],
-        "asked": ctx.get("asked") if branch_release else None,
-        "app_version": "%s%s" % (ctx["version"], ctx.get("build_meta", "")),
-        "regions": ctx["regions"],
-        "assist_run": ctx.get("assist_run"),
-        "recorded_at": _now(),
-        "smoke_rc": int(ctx["smoke_rc"]),
-        "failed_step": run.failed or None,
-        "total_seconds": round(sum(r.seconds for r in run.results), 3),
-        "steps": [dataclasses.asdict(r) for r in run.results],
-    }
+    return record_document(
+        kind="release-local",
+        version=ctx["version"],
+        sha=ctx["sha"],
+        tree=ctx["tree"],
+        run_id=ctx["run_id"],
+        regions=ctx["regions"],
+        smoke_rc=int(ctx["smoke_rc"]),
+        failed_step=run.failed or None,
+        steps=run.results,
+        workers_only=bool(ctx.get("workers_only")),
+        branch_release=branch_release,
+        branch=ctx.get("branch") if branch_release else None,
+        asked=ctx.get("asked") if branch_release else None,
+        build_meta=ctx.get("build_meta", ""),
+        assist_run=ctx.get("assist_run"),
+    )
 
 
 def internal_release_record(step: Step, run: Run) -> int:
@@ -1759,7 +1802,7 @@ def internal_release_record(step: Step, run: Run) -> int:
     prefix = RECORD_PREFIX % record["version"]
     keys = ["%s/run-%s.json" % (prefix, run.ctx["run_id"])]
     if not run.failed and not record["workers_only"]:
-        keys.append(prefix + ".json")
+        keys.append(edge_record_key(record["version"]))
     rc = 0
     for key in keys:
         writer = dataclasses.replace(
