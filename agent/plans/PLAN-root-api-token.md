@@ -237,7 +237,7 @@ Unchanged. login_bench keeps the password and TOTP path, and root_login has no b
 
 ### Wave 1: three writers, file-disjoint, against the Design 3 contract
 
-- [ ] S1 [writer] Account server core: the table, migration 0088, registry entries (USER_SCOPED; SHARD_CLASS `global`), `RootApiTokenService`, `rootAuth()`, the `requireElevated` branch, the routes in Design 3 mounted at `/admin`, DTOs through `responds()`, error codes, the retention sweep, and the revoke-on-2FA-disable hook. The vitest integration suite has these refusals and controls:
+- [x] S1 [writer] Account server core: the table, migration 0088, registry entries (USER_SCOPED; SHARD_CLASS `global`), `RootApiTokenService`, `rootAuth()`, the `requireElevated` branch, the routes in Design 3 mounted at `/admin`, DTOs through `responds()`, error codes, the retention sweep, and the revoke-on-2FA-disable hook. The vitest integration suite has these refusals and controls:
   - Mint: a customer session gets 403. Root without step-up gets 403 `reauthRequired`. Root without TOTP gets 403 `TWO_FACTOR_REQUIRED`. A third live token gets 409. Control: the value is returned once and the list carries no hash. Control: `createTokenSchema` refuses `root:admin`.
   - Session: a wrong code gets 400. A replayed code gets 409, including a step already spent by `/auth/2fa/verify`. Unbound gets 403 `ROOT_TOKEN_IP_MISMATCH`. Another IP gets 403. Expired and revoked tokens get 401. A demoted creator and a changed ROOT_EMAIL each get 403 `ROOT_TOKEN_NOT_ROOT`. Control: 200.
   - Calls: a bearer without a session gets 403 `ROOT_TOKEN_SESSION_REQUIRED`. A session used from a second IP gets 403. A session after 10 min (fake clock) gets 403. An `rdt_` token on /admin gets 401. An `rdr_` token on `/portal/*` and on `/admin/root-tokens` gets 401. Control: `GET /admin/stats` 200 and a `requireElevated` route passes under a token session, each writing `root_token.call` with `actorTokenId`. Control: the cookie path with an elevated session still passes, and without elevation still answers `reauthRequired`.
@@ -248,7 +248,8 @@ Unchanged. login_bench keeps the password and TOTP path, and root_login has no b
   - Sweep: deletes stale rows and keeps live ones.
   - Owns: private/account/src/db/schema.ts, private/account/drizzle/0088_root_api_tokens.sql (new), private/account/drizzle/meta/_journal.json, private/account/drizzle/meta/0088_snapshot.json (new, if drizzle-kit writes one), private/account/src/db/scope-registry.ts, private/account/src/db/shard-router.ts, private/account/src/types/root-api-token.ts (new), private/account/src/services/root-api-token.service.ts (new), private/account/src/middleware/root-auth.ts (new), private/account/src/middleware/elevated.ts, private/account/src/routes/root-api-tokens.ts (new), private/account/src/routes/index.ts, private/account/src/routes/auth.ts, private/account/src/container.ts, private/account/src/app.ts, private/account/src/dto/root-api-token.dto.ts (new), private/account/src/dto/index.ts, private/account/src/errors.ts, private/account/src/constants.ts, private/account/src/entry/cloudflare.ts, private/account/tests/integration/root-api-token*.test.ts (new).
   - Accept: `(cd private/account && npx vitest run tests/integration/root-api-token)` rc 0, `(cd private/account && npx vitest run tests/integration/api-token-ip-rebind.test.ts tests/integration/admin.test.ts tests/integration/root-console-block.test.ts)` rc 0, `npm run -s check:ci-account-scope-audit` rc 0, `npm run -s check:ci-account-layer-isolation` rc 0, `npm run -s check:ci-account-no-admin-role` rc 0, and `(cd private/account && npm run typecheck)` rc 0.
-- [ ] W1 [writer] The portal page in Design 7, with the route, sidebar entry and endpoints (`adminRootTokens.list|create|revoke`). The test covers:
+    (ticked) 2026-11-15T18:28:28Z by d778be9d: commit:494f280dc0 account 29fe9d9 via gitlink; 480 account tests rc=0, typecheck rc=0
+- [x] W1 [writer] The portal page in Design 7, with the route, sidebar entry and endpoints (`adminRootTokens.list|create|revoke`). The test covers:
   - a mint behind `ReauthStep` on a 403 `reauthRequired`, then retried;
   - the value shown once with the ROOT_API_TOKEN instruction and absent after closing;
   - the list rendering bound v4/v6, session and expiry;
@@ -256,13 +257,15 @@ Unchanged. login_bench keeps the password and TOTP path, and root_login has no b
   - the mint button hidden at 2 live tokens.
   - Owns: private/account/web/src/pages/admin/RootApiTokens.tsx (new), private/account/web/src/router.tsx, private/account/web/src/components/AppSidebar.tsx, private/account/web/src/api/endpoints.ts, private/account/web/src/pages/__tests__/admin-root-api-tokens.test.tsx (new).
   - Accept: `(cd private/account/web && npx vitest run src/pages/__tests__/admin-root-api-tokens)` rc 0, and `(cd private/account && npm run typecheck:web)` rc 0.
-- [ ] C1 [writer] `root_login` token mode as in Design 6:
+    (ticked) 2026-11-15T18:28:33Z by d778be9d: commit:494f280dc0 account a92a3c3 via gitlink; web vitest 5 passed, web tsc rc=0
+- [x] C1 [writer] `root_login` token mode as in Design 6:
   - token session, automatic bind on `ROOT_TOKEN_IP_MISMATCH`, `--check`, `--probe stats|audit`, `--control`, `--rotate`, and the Q1 region refusal;
   - the `root-login` profile (required `ROOT_API_TOKEN`, `ROOT_TOTP_SEED`; optional `ROOT_EMAIL`, `ROOT_PASSWORD`);
   - registry entries for `ROOT_API_TOKEN` in env-manifest, python-env-registry and bws-unrequested (`no-github-twin`);
   - pytest with a recording transport covering: a placeholder or non-`rdr_` value gives rc 2 with no request; a mismatch triggers one bind and one session in consecutive steps; a code refused twice gives rc 1 and no third try; 429/5xx is a fault, not a refusal; the probe allowlist is GET only; `--control` fails when the session-less call answers 200 (control); a rotation writes the vault entry through the imported helper; no secret appears in captured stdout or stderr. The password path tests are kept and adapted.
   - Owns: .ci/rediacc_ci/ops/root_login.py, .ci/rediacc_ci/tests/test_root_login.py, .ci/config/secret-supply.json, .ci/config/env-manifest.json, .ci/config/python-env-registry.json, .ci/config/bws-unrequested.json.
   - Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_root_login.py .ci/rediacc_ci/tests/test_ops_totp.py .ci/rediacc_ci/tests/test_ops_login_bench.py` rc 0, `npm run -s check:ci-secret-supply` rc 0, `npm run -s check:ci-env-manifest` rc 0, `npm run -s check:ci-python-types` rc 0, and `npm run -s check:ci-python-lint` rc 0.
+    (ticked) 2026-11-15T18:28:35Z by d778be9d: commit:91e012896c test_root_login.py 50 passed on the landed tree
 
 ### Wave 2: writers, after S1 lands
 

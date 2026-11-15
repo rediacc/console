@@ -78,3 +78,7 @@
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-licence-expiry-notices.md","sig":"9a772925","clause":"all","state":"landed","ref":"3ae80e6949c8f6a8e85d2410880b9426ec9b5e6f","at":"2026-11-12T13:57:53Z"}
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-enterprise-tenants.md","sig":"c3e44c99","clause":"all","state":"landed","ref":"6c48953db00a1ef4725d3ccdda87f0cad5a32787","at":"2026-11-12T14:29:12Z"}
 {"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-signer-bench-stop-binding-reattach.md","sig":"89d70106","clause":"all","state":"live-owed","ref":"released #f16700aa","at":"2026-11-14T08:05:00Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-multi-region-bench.md","sig":"b8971b7f","clause":"all","state":"landed","ref":"3be4c940f2db991def78a386d013be7dc02d23e6","at":"2026-11-15T16:00:43Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-root-api-token.md","sig":"c2f141b8","clause":"all","state":"landed","ref":"29fe9d9d7a9458cbec14211ca81b0e1af930e35e","at":"2026-11-15T18:27:15Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-root-api-token.md","sig":"f027e71e","clause":"all","state":"landed","ref":"a92a3c31e125c20962e12364458b3d8f874b2f3c","at":"2026-11-15T18:27:15Z"}
+{"kind":"progress","by":"d778be9d","plan":"agent/plans/PLAN-root-api-token.md","sig":"9d019186","clause":"all","state":"landed","ref":"91e012896c385bc0d7587bc4c23d442d915fae42","at":"2026-11-15T18:27:16Z"}

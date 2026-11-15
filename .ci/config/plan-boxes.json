@@ -2697,8 +2697,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 13,
-      "done": 1,
+      "open": 10,
+      "done": 4,
       "open_sigs": [
         "36907221",
         "54dd021e",
@@ -2708,14 +2708,14 @@
         "6e808e37",
         "8313cd76",
         "8acf0556",
-        "9d019186",
-        "c2f141b8",
         "e605e494",
-        "ed5e9f73",
-        "f027e71e"
+        "ed5e9f73"
       ],
       "done_sigs": [
-        "d3d80178"
+        "9d019186",
+        "c2f141b8",
+        "d3d80178",
+        "f027e71e"
       ]
     },
     "agent/plans/PLAN-runtime-caller-identity.md": {
