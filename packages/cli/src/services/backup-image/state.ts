@@ -419,10 +419,20 @@ export interface LockDeps {
   beforeTakeover?: () => void;
   /** An unreadable lock older than this is an abandoned half-written one; defaults to `UNREADABLE_LOCK_GRACE_MS`. */
   unreadableGraceMs?: number;
+  /** Test seam: blocks for the given milliseconds between attempts on an unreadable lock; defaults to a synchronous wait. */
+  sleep?: (ms: number) => void;
 }
 
 /** A live run finishes writing its lock in milliseconds, so an unreadable one this old is a crash's leftover. */
 const UNREADABLE_LOCK_GRACE_MS = 10_000;
+
+/** An unreadable lock is judged again after this long, for `UNREADABLE_LOCK_ATTEMPTS` attempts in all. */
+export const UNREADABLE_LOCK_RETRY_MS = 10_000;
+export const UNREADABLE_LOCK_ATTEMPTS = 3;
+
+function sleepSync(ms: number): void {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
 
 export class ImageLockError extends Error {
   constructor(
@@ -447,7 +457,11 @@ function readLock(lockPath: string): LockInfo | null {
   try {
     const parsed = JSON.parse(readFileSync(lockPath, 'utf8')) as Partial<LockInfo>;
     if (typeof parsed.pid === 'number' && typeof parsed.host === 'string') {
-      return { pid: parsed.pid, host: parsed.host, startedAt: parsed.startedAt ?? '' };
+      return {
+        pid: parsed.pid,
+        host: parsed.host,
+        startedAt: parsed.startedAt ?? '',
+      };
     }
   } catch {
     // Missing or unreadable: handled by the caller.
@@ -559,7 +573,8 @@ export function acquireLocalLock(lockPath: string, deps: LockDeps = {}): LockInf
  * over: the filesystem's clock is unknown, and judging the lock by this host's clock instead would let
  * a mount whose clock runs behind make a live run's fresh lock look old (review ee0ca8b1.1). The
  * cost is that an abandoned lock in such a directory is never cleared automatically: the refusal
- * names the path and says to remove it by hand (review 5ea6a6f0.1). A directory too read-only or
+ * names the path and says to remove it by hand (review 5ea6a6f0.1). `clearDeadHolder` calls this up
+ * to three times, 10 s apart, before that refusal (operator ruling 2026-11-15). A directory too read-only or
  * too full for a probe file usually cannot take a new lock either.
  */
 function isAbandonedUnreadable(lockPath: string, graceMs = UNREADABLE_LOCK_GRACE_MS): boolean {
@@ -586,6 +601,32 @@ function isAbandonedUnreadable(lockPath: string, graceMs = UNREADABLE_LOCK_GRACE
   }
 }
 
+function takeOverUnreadable(lockPath: string, deps: LockDeps): void {
+  deps.beforeTakeover?.();
+  if (!takeOver(lockPath, null)) throw lockRefusal(lockPath, readLock(lockPath));
+}
+
+/**
+ * Reads the holder of a lock, judging an unreadable one up to `UNREADABLE_LOCK_ATTEMPTS` times,
+ * `UNREADABLE_LOCK_RETRY_MS` apart. 'cleared' means the lock is gone or an abandoned unreadable one
+ * was moved aside; null means it stayed unreadable and unjudgeable through every attempt.
+ */
+function readHolderRetrying(lockPath: string, deps: LockDeps): LockInfo | null | 'cleared' {
+  const sleep = deps.sleep ?? sleepSync;
+  for (let attempt = 1; attempt <= UNREADABLE_LOCK_ATTEMPTS; attempt++) {
+    const holder = readLock(lockPath);
+    if (holder !== null) return holder;
+    if (!existsSync(lockPath)) return 'cleared';
+    if (isAbandonedUnreadable(lockPath, deps.unreadableGraceMs)) {
+      takeOverUnreadable(lockPath, deps);
+      return 'cleared';
+    }
+    // A live writer finishes its lock in milliseconds, so the next read may find it readable.
+    if (attempt < UNREADABLE_LOCK_ATTEMPTS) sleep(UNREADABLE_LOCK_RETRY_MS);
+  }
+  return null;
+}
+
 /**
  * After a create found the lock taken: returns once the lock is gone (it vanished, or its dead
  * holder was moved aside) so creation may retry; throws when a live or foreign holder keeps it.
@@ -596,13 +637,8 @@ function clearDeadHolder(
   alive: (pid: number) => boolean,
   deps: LockDeps
 ): void {
-  const holder = readLock(lockPath);
-  if (holder === null && !existsSync(lockPath)) return;
-  if (holder === null && isAbandonedUnreadable(lockPath, deps.unreadableGraceMs)) {
-    deps.beforeTakeover?.();
-    if (!takeOver(lockPath, null)) throw lockRefusal(lockPath, readLock(lockPath));
-    return;
-  }
+  const holder = readHolderRetrying(lockPath, deps);
+  if (holder === 'cleared') return;
   if (holder === null || !isTakeoverable(holder, host, alive)) {
     throw lockRefusal(lockPath, holder);
   }
