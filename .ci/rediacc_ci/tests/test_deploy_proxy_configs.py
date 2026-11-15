@@ -6,6 +6,7 @@ CONTROL FIRST. The real tree must pass `--check`, and every unplanted config mus
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -600,20 +601,35 @@ def test_a_regional_bench_account_serving_another_region_is_refused(
 def test_a_placeholder_database_id_is_allowed_only_while_the_bench_is_not_deployable(
     tmp_path: pathlib.Path,
 ) -> None:
-    """Control: the committed us bench (placeholder id, deployable false) passes. Flipping either side alone is refused."""
+    """Hermetic: every committed bench is deployable with a real id, so the placeholder state is planted on a copy of the us bench. Control: the committed tree passes. Flipping either side alone is refused."""
     assert pc.check(ROOT) == []
     root = copy_tree(tmp_path)
+    toml = root.joinpath(*pc.ACCOUNT_REL) / "wrangler.bench-us.toml"
+    real_toml = toml.read_text(encoding="utf-8")
+    placeholder = re.sub(
+        r'(binding = "DB"[^\n]*\n(?:[^\n]*\n)*?database_id = )"[^"]*"',
+        r'\1"%s"' % pc.PLACEHOLDER_D1_ID,
+        real_toml,
+        count=1,
+    )
+    assert placeholder != real_toml, "fixture drift: no DB database_id to plant"
     doc = json.loads((root / pc.REGIONS_REL).read_text(encoding="utf-8"))
-    next(r for r in doc["regions"] if r["id"] == "us")["bench"]["deployable"] = True
-    (root / pc.REGIONS_REL).write_text(json.dumps(doc), encoding="utf-8")
-    out = pc.check(root)
+    us = next(r for r in doc["regions"] if r["id"] == "us")["bench"]
+
+    def check(text: str, deployable: bool) -> list[str]:
+        toml.write_text(text, encoding="utf-8")
+        us["deployable"] = deployable
+        (root / pc.REGIONS_REL).write_text(json.dumps(doc), encoding="utf-8")
+        return pc.check(root)
+
+    out = check(placeholder, True)
     assert any("marked deployable but its DB database_id" in r for r in out), out
-    doc["regions"][0]["bench"]["deployable"] = False
-    next(r for r in doc["regions"] if r["id"] == "us")["bench"]["deployable"] = False
-    (root / pc.REGIONS_REL).write_text(json.dumps(doc), encoding="utf-8")
-    out = pc.check(root)
+    assert not any(
+        "deployable but" in r or "not deployable" in r for r in check(placeholder, False)
+    )
+    out = check(real_toml, False)
     assert any(
-        "wrangler.bench-eu.toml: the bench is marked not deployable but its DB database_id" in r
+        "wrangler.bench-us.toml: the bench is marked not deployable but its DB database_id" in r
         for r in out
     ), out
 
@@ -650,3 +666,19 @@ def test_an_eu_bench_config_that_dropped_the_retiring_route_is_refused_until_the
 
 def test_a_regional_bench_without_a_retiring_host_keeps_exactly_one_route() -> None:
     assert TARGETS["bench-us"].routes == (_bench_row("us")["bench"]["proxyHost"],)
+
+
+# --- review 03a46e1f.2: the ownership set of a bench target ---
+
+
+@pytest.mark.parametrize("key", [k for k in TARGETS if k.startswith("bench-")])
+def test_a_bench_target_owns_the_bench_token_and_its_own_region(key: str) -> None:
+    """A bench Worker is named for its region (`proxy-bench-us`), so that region's token is its own and the other regions' tokens are foreign."""
+    region = key.removeprefix("bench-")
+    assert TARGETS[key].own_tokens == frozenset({"bench", region})
+    assert refusals(real(key), key) == []
+    other = next(r for r in sorted(ALL_REGIONS) if r != region)
+    name = TARGETS[key].name
+    text = plant(real(key), 'name = "%s"' % name, 'name = "%s-%s"' % (name, other))
+    out = refusals(text, key)
+    assert any("names %s, which is not %s" % (other, key) in r for r in out), out

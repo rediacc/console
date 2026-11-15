@@ -7,7 +7,7 @@ from typing import ClassVar
 import pytest
 
 from rediacc_ci.enterprise import lab
-from rediacc_ci.ops import login_bench, totp
+from rediacc_ci.ops import bench_preflight, login_bench, totp
 from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, BENCH_ORIGIN, PRODUCT_DOMAIN, SITE_ORIGIN
 
 SEED = base64.b32encode(b"bench-seed-0123456789").decode().rstrip("=")
@@ -908,11 +908,8 @@ def _regions_bench() -> dict[str, dict]:
 
 
 def _bench_host(region: str) -> str:
-    """The bench host regions.json names for `region`, read rather than spelled, so the owned literal lives in regions.json and the wrangler tomls only."""
-    rows = json.loads((login_bench.paths.repo_root() / "regions.json").read_text(encoding="utf-8"))[
-        "regions"
-    ]
-    return next(r["bench"]["host"] for r in rows if r["id"] == region)
+    """The bench host regions.json names for `region`, through the registry reader every bench tool shares (`bench_preflight.bench_object`), so no test file carries its own copy of the parse."""
+    return str(bench_preflight.bench_object(region)["host"])
 
 
 def test_the_config_table_is_regions_json():

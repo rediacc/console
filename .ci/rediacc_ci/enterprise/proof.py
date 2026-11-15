@@ -606,7 +606,7 @@ def _region_loss_bench_placed(lab: Lab, p: Proof, regions: Sequence[str]) -> Non
         p.admitted(f"{region} company renews before the cut", lab.renew(caller))
     for cut in regions:
         survivors = [r for r in regions if r != cut]
-        # The cut sits inside a try whose finally restores it, so a non-LAB error from `cut_region` itself still puts the signer back.
+        # The cut sits inside a try whose finally restores it, so a non-LAB error from `cut_region` itself still puts the signer back. A failed cut (a lab error) may have half-applied, so it is restored too; restoring a signer that never stopped holds and adds no broken claim.
         try:
             if not p.attempt(f"{cut} signer is cut", functools.partial(lab.cut_region, cut)):
                 return

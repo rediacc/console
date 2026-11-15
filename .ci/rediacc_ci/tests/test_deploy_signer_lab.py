@@ -8,6 +8,7 @@ from typing import Any
 
 import pytest
 
+from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_signer as ds
 from rediacc_ci.enterprise import lab, proof
 from rediacc_ci.ops import bench_production
@@ -23,6 +24,30 @@ KEYS = {
 def _nothing_declared(monkeypatch):
     """The live `.ci/config/bench-production.json` decides nothing here; a test that needs a declaration passes one."""
     monkeypatch.setattr(bench_production, "load", lambda *_a: [])
+
+
+def _regions_with(deployable: dict[str, bool]) -> dict[str, Any]:
+    """The committed regions.json with each bench's `deployable` replaced, so Worker names and the rest stay the real ones."""
+    doc = json.loads((paths.repo_root() / "regions.json").read_text(encoding="utf-8"))
+    for row in doc["regions"]:
+        if isinstance(row.get("bench"), dict) and row["id"] in deployable:
+            row["bench"]["deployable"] = deployable[row["id"]]
+    return doc
+
+
+def _plant_regions(monkeypatch, root, deployable: dict[str, bool]) -> None:
+    (root / "regions.json").write_text(json.dumps(_regions_with(deployable)), encoding="utf-8")
+    monkeypatch.setattr(ds, "_root", lambda: root)
+
+
+@pytest.fixture(autouse=True)
+def _only_eu_bench_deployable(monkeypatch, tmp_path_factory):
+    """These tests were written while only the eu bench was deployable, and the committed regions.json now marks every bench deployable. They read a copy in that state (eu deployable, us and asia not), so a region flip never moves them; a test that needs another state plants its own."""
+    _plant_regions(
+        monkeypatch,
+        tmp_path_factory.mktemp("regions"),
+        {"eu": True, "us": False, "asia": False},
+    )
 
 
 DECLARED = [
@@ -314,8 +339,10 @@ def test_cut_and_restore_refuse_a_bench_region_that_is_not_deployable():
     assert run.calls == []
 
 
-@pytest.mark.parametrize("signer", ["signer-bench-eu"])
-def test_stop_and_cut_refuse_while_bench_carries_production_data(signer):
+@pytest.mark.parametrize("signer", ["signer-bench-eu", "signer-bench-us", "signer-bench-asia"])
+def test_stop_and_cut_refuse_while_bench_carries_production_data(signer, monkeypatch, tmp_path):
+    """Review b7fd0615.2: every bench region's signer is held to the production-data refusal, so the regions are marked deployable on a planted regions.json first (an undeployable region is refused for that reason instead, see the test above)."""
+    _plant_regions(monkeypatch, tmp_path, {"eu": True, "us": True, "asia": True})
     run = FakeRun(json.dumps([{"name": "ACCOUNT_ED25519_PUBLIC_KEY"}]))
     with pytest.raises(proof.LabError, match=r"bench carries production data.*hostinger"):
         ds.stop_signer(signer, run=run, env=KEYS, protected=lambda: DECLARED)
@@ -465,7 +492,9 @@ def test_certificate_audited_queries_the_signer_regions_control_database(monkeyp
         ds.certificate_audited("account-eu", "sub-1")
 
 
-def test_the_live_lab_binds_the_group_now():
+def test_the_live_lab_binds_the_group_now(tmp_path, monkeypatch):
+    """Review b7fd0615.1: the expected list is spelled from a planted regions.json (eu and asia deployable, us not), never taken from the function under test: a bench signer outside that list, or a deployable one missing, goes red."""
+    _plant_regions(monkeypatch, tmp_path, {"eu": True, "us": False, "asia": True})
     live = lab.build(bench=True)
-    assert live.signers(bench=True) == ds.signers(bench=True)
-    assert "signer-bench-eu" in live.signers(bench=True)
+    assert live.signers(bench=True) == ["signer-bench-eu", "signer-bench-asia"]
+    assert live.bench_company_regions() == ["eu", "asia"]

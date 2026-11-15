@@ -177,7 +177,7 @@ def test_region_all_runs_one_child_per_deployable_region(monkeypatch, tmp_path):
     children: list[str] = []
     ran = _main_world(monkeypatch, tmp_path, children)
     assert deploy_bench.main(["--region", "all"]) == 0
-    assert children == ["eu", "us"]
+    assert children == ["eu", "us", "asia"]
     assert ran == []
 
 
@@ -186,17 +186,24 @@ def test_region_all_skips_a_not_deployable_region_by_name(monkeypatch, tmp_path,
     children: list[str] = []
     _main_world(monkeypatch, tmp_path, children)
     assert deploy_bench.main(["--region", "all"]) == 0
-    assert children == ["eu"]
+    assert children == ["eu", "asia"]
     assert "skipping bench us" in capsys.readouterr().err
 
 
 def test_region_all_returns_the_first_failing_childs_status(monkeypatch, tmp_path):
+    """Two children fail with different codes (us 3, asia 5): the first failure's code is returned, and the later region still runs."""
     _regions_root(tmp_path, us_deployable=True)
     _main_world(monkeypatch, tmp_path)
-    monkeypatch.setattr(
-        deploy_bench, "_reexec_under_profile", lambda _a, r="eu": 0 if r == "eu" else 3
-    )
+    asked: list[str] = []
+    codes = {"eu": 0, "us": 3, "asia": 5}
+
+    def reexec(_argv, region="eu"):
+        asked.append(region)
+        return codes[region]
+
+    monkeypatch.setattr(deploy_bench, "_reexec_under_profile", reexec)
     assert deploy_bench.main(["--region", "all"]) == 3
+    assert asked == ["eu", "us", "asia"]
 
 
 def test_region_all_under_a_bound_bench_profile_is_refused(monkeypatch, tmp_path):

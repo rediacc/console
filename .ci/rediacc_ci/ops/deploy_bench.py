@@ -869,7 +869,6 @@ def bench_assets_refusal(worker_dir, region: str = DEFAULT_REGION) -> str | None
     return None
 
 
-# The account Worker binds LICENSE_SIGNER to `signer-bench-<region>` (workers/account/wrangler.bench-eu.toml), and Cloudflare refuses the account deploy with error 10143 while that Worker does not exist. The control databases the signers bind are created first. A signer holds the private key, which only the deploy-signer profile binds, so each signer deploys in its own child under that profile.
 # Secrets the account Worker must never hold: `requireSignerOnly` (private/account/src/entry/cloudflare.ts) refuses to serve, HTTP 500 "Server misconfiguration", while the retired private key is present.
 RETIRED_SECRETS = (deploy_signer.PRIVATE_KEY,)
 SMOKE_PATH = "/account/api/v1/.well-known/server-info"

@@ -13,6 +13,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_signer as ds
 from rediacc_ci.enterprise import proof, registry
+from rediacc_ci.ops import bench_preflight
 from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, BENCH_ORIGIN, BENCH_RETIRING_ORIGIN
 
 ACCOUNT_HOST = ACCOUNT_DEFAULT_ORIGIN.removeprefix("https://")
@@ -575,7 +576,18 @@ def _make_deployable(repo: pathlib.Path, region: str) -> None:
     toml.write_text(toml.read_text().replace("TO-BE-CREATED-L1", CONTROL_ID))
 
 
+def _make_undeployable(repo: pathlib.Path, *regions: str) -> None:
+    """Mark benches not deployable in the copied regions.json: every committed bench is deployable once the last region lands, so the refusal cases plant the state they test."""
+    path = repo / "regions.json"
+    doc = json.loads(path.read_text())
+    for row in doc["regions"]:
+        if row["id"] in regions:
+            row["bench"]["deployable"] = False
+    path.write_text(json.dumps(doc))
+
+
 def test_a_bench_region_not_marked_deployable_is_refused_by_name_before_any_call(repo):
+    _make_undeployable(repo, "us")
     fake = RegionFake()
     with pytest.raises(ds.RefusedError, match=r"bench-us.*deployable: false"):
         run(repo, fake, target="bench-us")
@@ -586,9 +598,8 @@ def test_a_bench_region_not_marked_deployable_is_refused_by_name_before_any_call
 
 
 def _bench_host(region: str) -> str:
-    """The bench host regions.json names for `region`, read rather than spelled, so the owned literal lives in regions.json and the wrangler tomls only."""
-    rows = json.loads((paths.repo_root() / "regions.json").read_text(encoding="utf-8"))["regions"]
-    return next(r["bench"]["host"] for r in rows if r["id"] == region)
+    """The bench host regions.json names for `region`, through the registry reader every bench tool shares (`bench_preflight.bench_object`), so no test file carries its own copy of the parse."""
+    return str(bench_preflight.bench_object(region)["host"])
 
 
 @pytest.mark.parametrize(
@@ -610,6 +621,7 @@ def test_a_deployable_bench_region_renders_its_own_database_host_and_control(rep
 
 
 def test_bench_region_ids_follow_regions_json_and_deployable_filters(repo):
+    _make_undeployable(repo, "us", "asia")
     assert ds.bench_region_ids(repo) == ["eu", "us", "asia"]
     assert ds.bench_region_ids(repo, deployable_only=True) == ["eu"]
     _make_deployable(repo, "us")

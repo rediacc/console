@@ -897,6 +897,28 @@ def test_two_region_bench_restores_the_signer_when_its_cut_raises_a_non_lab_erro
     assert "restore_region" in lab.calls
 
 
+def test_two_region_bench_restores_a_signer_whose_cut_failed_and_breaks_only_the_cut() -> None:
+    """Review 54face2b.2: a cut that answers a lab error may have half-applied, so its signer is restored all the same; the restore of a signer that was in fact running holds, so the only broken claim is the cut."""
+
+    class UsCutFails(FakeLab):
+        def cut_region(self, region: str) -> None:
+            if region == "us":
+                self._rec("cut_region:us")
+                raise LabError("us cut failed")
+            super().cut_region(region)
+
+    lab = UsCutFails(bench_regions=["eu", "us"])
+    rc, lines = run("region-loss", lab)
+    assert rc == 1
+    assert [line.split(":")[0] for line in broken(lines)] == ["BROKEN  us signer is cut"]
+    assert lab.calls.count("restore_region") == 2
+    assert lab.cut == set()
+    restored = [
+        line for line in lines if line.startswith("ok") and "bench signing is restored" in line
+    ]
+    assert len(restored) == 2, lines
+
+
 def test_two_region_bench_names_each_regions_deploy_when_a_restore_fails() -> None:
     lab = placed(restart_breaks=True)
     rc, lines = run("region-loss", lab)
