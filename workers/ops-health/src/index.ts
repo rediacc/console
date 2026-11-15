@@ -44,6 +44,7 @@ export async function runCron(env: Env, rt: Runtime): Promise<void> {
   const cache = await stub.ctCache();
   const fresh: Record<string, CtCacheEntry> = {};
 
+  // A crt.sh fallback answer is never served from the cache, so certspotter is asked again once it recovers.
   // CT answers are cached for ct_cache_hours: certspotter's unauthenticated quota is small, and an expiry date moves only on a new issuance.
   const ct = async (host: string, issuer?: string): Promise<CtAnswer> => {
     const key = issuer ? `${host}|${issuer}` : host;
@@ -51,6 +52,7 @@ export async function runCron(env: Env, rt: Runtime): Promise<void> {
     if (
       hit &&
       hit.not_after !== null &&
+      hit.source !== 'crt.sh' &&
       rt.now() - Date.parse(hit.at) < CONFIG.worker.ct_cache_hours * HOUR_MS
     ) {
       return { notAfter: hit.not_after, source: 'cache' };

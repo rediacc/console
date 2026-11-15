@@ -31,6 +31,8 @@ import json
 import os
 import pathlib
 import re
+import socket
+import ssl
 import subprocess
 import sys
 import time
@@ -75,6 +77,7 @@ DEFAULTS: dict = {
         "offbox_read": 15,
     },
     "stale": {"last_cron_minutes": 30},
+    "tls": {"warn_days": 21, "red_days": 7},
     "backup_max_age_days": 2,
     "auto_repair": {"classes": ["auto-safe"], "max_attempts_per_code_per_machine_per_day": 3},
 }
@@ -770,13 +773,89 @@ def targets_drift(served_sha: object, env: dict, runner: Runner) -> tuple[int, s
     return 0, ""
 
 
+# A served-certificate read: (host, port, timeout_s) -> notAfter, or None when the handshake failed.
+Handshake = Callable[[str, int, float], "datetime.datetime | None"]
+TLS_PROBE_ID = re.compile(r"^tls:([a-z0-9.-]+)(?::(\d+))?$")
+CT_EXPIRY = re.compile(r"(?:expires|newest) (\d{4}-\d\d-\d\dT[\d:.]+Z)")
+HANDSHAKE_TIMEOUT_S = 8.0
+
+
+def served_not_after(host: str, port: int, timeout: float) -> datetime.datetime | None:
+    """The `notAfter` of the certificate `host:port` serves, read with a verifying handshake; None when the handshake or the read fails."""
+    try:
+        with (
+            socket.create_connection((host, port), timeout=timeout) as raw,
+            ssl.create_default_context().wrap_socket(raw, server_hostname=host) as tls,
+        ):
+            cert = tls.getpeercert()
+        stamp = cert["notAfter"] if cert else None
+        if not isinstance(stamp, str):
+            return None
+        return datetime.datetime.fromtimestamp(ssl.cert_time_to_seconds(stamp), datetime.UTC)
+    except (OSError, ssl.SSLError, ValueError, KeyError):
+        return None
+
+
+def refresh_tls_probes(doc: dict, cfg: dict, now: datetime.datetime, handshake: Handshake) -> None:
+    """Let the served certificate decide a `tls:<host>[:<port>]` probe whose CT answer is older than it (the Worker cannot read a peer certificate). Edits `doc` in place, and recomputes the verdict when a probe changed."""
+    probes = doc.get("probes")
+    if not isinstance(probes, list):
+        return
+    limits = {**DEFAULTS["tls"], **(cfg.get("tls") or {})}
+    warn, crit = limits["warn_days"], limits["red_days"]
+    changed = False
+    for probe in probes:
+        if not isinstance(probe, dict):
+            continue
+        ident = TLS_PROBE_ID.match(str(probe.get("probe") or ""))
+        ct_hit = CT_EXPIRY.search(str(probe.get("detail") or ""))
+        if not ident or not ct_hit:
+            continue
+        ct_at = parse_iso(ct_hit.group(1))
+        served = handshake(ident.group(1), int(ident.group(2) or 443), HANDSHAKE_TIMEOUT_S)
+        if ct_at is None or served is None or served <= ct_at:
+            continue
+        days = int((served - now).total_seconds() // 86400)
+        verdict = (
+            "red: critical, under %d" % crit
+            if days < crit
+            else "red: warning, under %d" % warn
+            if days < warn
+            else "ok"
+        )
+        probe["state"] = GREEN if verdict == "ok" else RED
+        probe["detail"] = (
+            "served certificate expires %s, %d day(s) (local handshake, later than the CT answer %s): %s"
+            % (iso(served), days, iso(ct_at), verdict)
+        )
+        changed = True
+    if not changed:
+        return
+    ingest = [e for e in doc.get("ingest") or [] if isinstance(e, dict)]
+    states = [p.get("state") for p in probes if isinstance(p, dict)]
+    if RED in states or any(e.get("state") == RED for e in ingest):
+        doc["verdict"] = RED
+    elif UNKNOWN in states:
+        doc["verdict"] = UNKNOWN
+    else:
+        doc["verdict"] = GREEN
+
+
 def offbox_check(
-    cfg: dict, env: dict, fetch: Http, runner: Runner, now: datetime.datetime, with_targets: bool
+    cfg: dict,
+    env: dict,
+    fetch: Http,
+    runner: Runner,
+    now: datetime.datetime,
+    with_targets: bool,
+    handshake: Handshake = served_not_after,
 ) -> dict:
     """{rc, state, detail, last_cron_at, verdict, stale, read_at}."""
     doc, error = read_status(worker_url(cfg, env), env.get(READ_CREDENTIAL_ENV) or "", fetch)
     if error:
         return {"rc": 2, "state": UNKNOWN, "detail": error, "read_at": iso(now), "stale": False}
+    if isinstance(doc, dict):
+        refresh_tls_probes(doc, cfg, now, handshake)
     judged = judge_status(doc, now, stale_min(cfg))
     reasons = list(judged["reasons"])
     rc = judged["rc"]

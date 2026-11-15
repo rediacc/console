@@ -197,7 +197,11 @@ export async function lookupCt(
     certspotterError = error;
   }
   try {
-    return { notAfter: await crtshNewest(q), source: 'crt.sh' };
+    return {
+      notAfter: await crtshNewest(q),
+      source: 'crt.sh',
+      detail: message(certspotterError),
+    };
   } catch (crtshError) {
     return {
       notAfter: null,
@@ -237,6 +241,14 @@ async function probeTls(target: ProbeTarget, deps: ProbeDeps): Promise<ProbeResu
       target,
       'unknown',
       `handshake ok; days to expiry unknown for ${scope} (${ct.detail ?? NO_CT_ANSWER})`
+    );
+  }
+  if (ct.source === 'crt.sh') {
+    // crt.sh lags behind new issuances, so its date can only be older than the served certificate: it cannot judge an expiry.
+    return result(
+      target,
+      'unknown',
+      `handshake ok; expiry not judged for ${scope}: certspotter failed (${ct.detail ?? NO_CT_ANSWER}), crt.sh fallback newest ${ct.notAfter} may be stale`
     );
   }
   const days = Math.floor((Date.parse(ct.notAfter) - deps.now()) / DAY_MS);

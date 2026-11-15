@@ -48,15 +48,36 @@ describe('tls', () => {
     expect(r.detail).toContain('warning');
   });
 
-  it('CT at 6 days is red and critical', async () => {
+  it('CT at 6 days from certspotter is red and critical', async () => {
     const r = await runProbe(
       tls,
       deps({
-        ct: async () => ({ notAfter: new Date(T0 + 6 * DAY).toISOString(), source: 'crt.sh' }),
+        ct: async () => ({
+          notAfter: new Date(T0 + 6 * DAY).toISOString(),
+          source: 'certspotter',
+        }),
       })
     );
     expect(r.state).toBe('red');
     expect(r.detail).toContain('critical');
+  });
+
+  it('a stale crt.sh fallback date is unknown, never a warning or red', async () => {
+    for (const days of [6, 20]) {
+      const r = await runProbe(
+        tls,
+        deps({
+          ct: async () => ({
+            notAfter: new Date(T0 + days * DAY).toISOString(),
+            source: 'crt.sh',
+            detail: 'certspotter answered 503',
+          }),
+        })
+      );
+      expect(r.state).toBe('unknown');
+      expect(r.detail).toContain('certspotter failed (certspotter answered 503)');
+      expect(r.detail).toContain(new Date(T0 + days * DAY).toISOString());
+    }
   });
 
   it('CT at 60 days with a good handshake is green', async () => {
@@ -311,6 +332,7 @@ describe('lookupCt', () => {
     expect(await lookupCt('app.example.test', { fetch: f.fn })).toEqual({
       notAfter: '2026-12-01T00:00:00.000Z',
       source: 'crt.sh',
+      detail: 'certspotter answered 429',
     });
     const dead = fakeFetch(() => new Response('', { status: 503 }));
     const none = await lookupCt('app.example.test', { fetch: dead.fn });
