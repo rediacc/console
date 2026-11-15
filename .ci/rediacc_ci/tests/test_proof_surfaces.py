@@ -14,6 +14,8 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from rediacc_ci import paths, well_known
+from rediacc_ci.proof import live_tier
 from rediacc_ci.proof import surfaces as trig
 
 if TYPE_CHECKING:
@@ -29,6 +31,9 @@ ENV = {
     "PATH": "/usr/bin:/bin:/usr/local/bin",
     "HOME": "/nonexistent",
 }
+
+
+REGISTRY_RELS = (trig.MAP_REL, well_known.REGISTRY_REL, live_tier.BENCH_REGIONS_REL)
 
 
 def _git(cwd: pathlib.Path, *args: str) -> str:
@@ -57,6 +62,9 @@ class World:
         root.mkdir()
         _git(root, "init", "-q", "-b", "main")
         _write(root, "README.md", "x\n")
+        # The files a live receipt's argv is expanded from, as committed in this checkout: `live_tier.validate_row` reads them from a row's own tree, and every real console tree carries them.
+        for rel in REGISTRY_RELS:
+            _write(root, rel, paths.from_root(rel).read_text(encoding="utf-8"))
         self.sub = root / "private" / "renet"
         self.sub.mkdir(parents=True)
         _git(self.sub, "init", "-q", "-b", "main")

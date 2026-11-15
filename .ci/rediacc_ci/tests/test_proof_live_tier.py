@@ -12,11 +12,13 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from rediacc_ci import paths
+from rediacc_ci import well_known as WK
 from rediacc_ci.proof import live_tier as LT
 from rediacc_ci.proof import receipt as R
 from rediacc_ci.proof import surfaces as S
 from rediacc_ci.review import successor as SUCC
-from rediacc_ci.tests.test_proof_surfaces import World
+from rediacc_ci.tests.test_proof_surfaces import REGISTRY_RELS, World, _commit, _write
 from rediacc_ci.well_known import BENCH_ORIGIN
 
 if TYPE_CHECKING:
@@ -657,6 +659,172 @@ def test_a_successor_whose_surface_code_changed_fails_the_inputs_digest(world: W
     moved = _git_head(world)
     problems = LT.validate_row(row, root=world.root, successor_of=lambda _s: moved)
     assert any("inputs is not the digest of head successor" in p for p in problems), problems
+
+
+# ------------------------------------------------------------------ the argv at the row's own tree
+
+WK_LINE = "WK_BENCH_ORIGIN="
+
+
+def _today_argv(region: str | None = None) -> list[list[str]]:
+    return [list(r.argv) for r in LT.expand(LT.registry()["account-smoke"], "bench", region=region)]
+
+
+def _argv_with(old: str, new: str, region: str | None = None) -> list[list[str]]:
+    """Today's account-smoke argv with `old` replaced by `new` in every argument: the argv a registry that named `new` expanded."""
+    return [[a.replace(old, new) for a in argv] for argv in _today_argv(region)]
+
+
+def _set_origin(world: World, origin: str) -> None:
+    lines = (world.root / WK.REGISTRY_REL).read_text(encoding="utf-8").splitlines()
+    assert sum(ln.startswith(WK_LINE) for ln in lines) == 1, "the fixture copies one origin line"
+    text = "\n".join(WK_LINE + origin if ln.startswith(WK_LINE) else ln for ln in lines)
+    _write(world.root, WK.REGISTRY_REL, text + "\n")
+
+
+def _edit_map(world: World, edit: Callable[[dict[str, Any]], None]) -> None:
+    raw = json.loads((world.root / S.MAP_REL).read_text(encoding="utf-8"))
+    edit(raw)
+    _write(world.root, S.MAP_REL, json.dumps(raw, indent=1) + "\n")
+
+
+def _account_row_here(
+    world: World, argv: list[list[str]], region: str | None = None
+) -> dict[str, Any]:
+    """A VERIFIED account-smoke row recorded at the world's HEAD, carrying `argv`."""
+    ident = R.identity(world.root, ["account"])
+    return LT.build_row(
+        ident,
+        R.VERIFIED,
+        at="2026-11-10T13:40:00Z",
+        by="d778be9d",
+        plan="agent/plans/PLAN-demo.md",
+        box="114951f1",
+        target="bench",
+        region=region,
+        deploy={
+            "surface": "account",
+            "worker": "rediacc-account-bench",
+            "version_id": UUID,
+            "source": "bench-cache",
+            "deployed_head": ident["head"],
+            "confirmed_live": True,
+        },
+        check={
+            "id": "account-smoke",
+            "args": [],
+            "argv": argv,
+            "rc": 0,
+            "duration_s": 3.1,
+            "log_sha256": "b" * 64,
+            "tail": ['{"status":"ok"}'],
+        },
+        ladder={"vm": "vmc-11101338-5ddf37"},
+    )
+
+
+def _moved_on(world: World) -> None:
+    """A later commit puts back the checkout's own registry, the one today's HEAD expands."""
+    for rel in REGISTRY_RELS:
+        _write(world.root, rel, paths.from_root(rel).read_text(encoding="utf-8"))
+    _commit(world.root, "the registry moves on")
+
+
+def test_a_receipt_recorded_before_the_origin_moved_is_judged_at_its_own_tree(
+    world: World,
+) -> None:
+    """PLAN-multi-region-bench M1: a receipt recorded while WK_BENCH_ORIGIN named the retiring host stays valid after the origin moved, because its argv was the registry's argv at its own tree."""
+    assert WK.BENCH_RETIRING_ORIGIN != WK.BENCH_ORIGIN, "the fixture needs two origins"
+    _set_origin(world, WK.BENCH_RETIRING_ORIGIN)
+    _commit(world.root, "the registry names the retiring host")
+    row = _account_row_here(world, _argv_with(WK.BENCH_ORIGIN, WK.BENCH_RETIRING_ORIGIN))
+    _moved_on(world)
+    assert _git_head(world) != row["head"], "the judge runs at a later HEAD"
+    assert any("check.argv is not the registry's argv" in p for p in LT.validate_row(row)), (
+        "against today's registry the old argv differs, which is the case this test reproduces"
+    )
+    assert LT.validate_row(row, root=world.root) == []
+
+
+def test_a_receipt_whose_argv_was_not_its_own_trees_is_refused(world: World) -> None:
+    """Control: the same tree, the argv of a registry the tree did NOT hold (today's origin)."""
+    _set_origin(world, WK.BENCH_RETIRING_ORIGIN)
+    tree_commit = _commit(world.root, "the registry names the retiring host")
+    row = _account_row_here(world, _today_argv())
+    _moved_on(world)
+    assert not any("argv" in p for p in LT.validate_row(row)), "it matches today's registry"
+    tree = S.make_git(world.root)(["rev-parse", f"{tree_commit}^{{tree}}"]) or ""
+    problems = LT.validate_row(row, root=world.root)
+    assert (
+        f"check.argv is not the registry's argv for this check, target and arguments in tree {tree[:12]}"
+        in problems
+    ), problems
+
+
+def test_a_step_changed_since_the_receipt_is_judged_by_the_trees_steps(world: World) -> None:
+    def older_path(raw: dict[str, Any]) -> None:
+        argv = raw["tiers"]["live"]["checks"]["account-smoke"]["steps"][0]["argv"]
+        argv[-1] = argv[-1].replace("/health", "/healthz")
+
+    _edit_map(world, older_path)
+    _commit(world.root, "the health step had another path")
+    then = _account_row_here(world, _argv_with("/health", "/healthz"))
+    forged = _account_row_here(world, _today_argv())
+    _moved_on(world)
+    assert LT.validate_row(then, root=world.root) == []
+    assert any(
+        "check.argv is not the registry's argv" in p
+        for p in LT.validate_row(forged, root=world.root)
+    )
+
+
+def test_a_regional_receipt_reads_regions_json_at_its_own_tree(world: World) -> None:
+    regions = json.loads(paths.from_root(LT.BENCH_REGIONS_REL).read_text(encoding="utf-8"))
+    host = LT.bench_object("us")["host"]
+    for row in regions["regions"]:
+        if row["id"] == "us":
+            row["bench"]["host"] = "bench-then.example.invalid"
+    _write(world.root, LT.BENCH_REGIONS_REL, json.dumps(regions, indent=1) + "\n")
+    _commit(world.root, "the us bench had another host")
+    then = _account_row_here(
+        world, _argv_with(host, "bench-then.example.invalid", "us"), region="us"
+    )
+    forged = _account_row_here(world, _today_argv("us"), region="us")
+    _moved_on(world)
+    assert LT.validate_row(then, root=world.root) == []
+    assert any(
+        "check.argv is not the registry's argv" in p
+        for p in LT.validate_row(forged, root=world.root)
+    )
+
+
+@pytest.mark.parametrize(
+    ("plant", "named"),
+    [
+        ("no-map", f"check.argv cannot be judged: {S.MAP_REL} is not in tree"),
+        ("map-not-json", f"check.argv cannot be judged: {S.MAP_REL} in tree"),
+        ("no-check", "check account-smoke is not in the registry in tree"),
+        ("no-well-known", f"check.argv cannot be judged: {WK.REGISTRY_REL} is not in tree"),
+    ],
+)
+def test_a_tree_whose_registry_cannot_be_read_refuses_the_row(
+    world: World, plant: str, named: str
+) -> None:
+    """The registry at the row's tree is read or the row is refused naming the file: never a fallback to today's registry."""
+    if plant == "no-map":
+        (world.root / S.MAP_REL).unlink()
+    elif plant == "map-not-json":
+        _write(world.root, S.MAP_REL, "{not json\n")
+    elif plant == "no-check":
+        _edit_map(world, lambda raw: raw["tiers"]["live"]["checks"].pop("account-smoke"))
+    else:
+        (world.root / WK.REGISTRY_REL).unlink()
+    _commit(world.root, f"plant {plant}")
+    row = _account_row_here(world, _today_argv())
+    _moved_on(world)
+    assert not any("argv" in p for p in LT.validate_row(row)), "it matches today's registry"
+    problems = LT.validate_row(row, root=world.root)
+    assert any(p.startswith(named) for p in problems), problems
 
 
 # ------------------------------------------------------------------ the ledger and the match

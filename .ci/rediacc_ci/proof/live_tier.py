@@ -2,6 +2,8 @@
 
 THE REGISTRY. `tiers.live.checks` in `.ci/config/proof-tiers.json` maps a check id to its `targets`, the `surfaces` it covers, how its deploy is identified (`deploy`) and a list of `steps`, each a FIXED argv. The only parameters are values the map itself names: `{origin}` (the value of the target's `origin_wk`, a key of `.ci/config/well-known.env`, never a literal URL) and `{config}` from `tiers.live.targets.<target>`, and `{machine}`, one alias of `tiers.live.targets.<target>.machines`, for a check marked `per_machine`. There are no free arguments: `parse_checks` refuses an unknown placeholder, a shell or a no-op as a step's program, and a surface no target of the check admits. `expand` is the only way to an argv, and `validate_row` re-expands a row's check and refuses any argv that differs, so a hand-edited command cannot pass.
 
+THE ARGV IS JUDGED AT THE ROW'S OWN TREE. An argv is a function of three files: the map's `tiers.live` block, `.ci/config/well-known.env` (the `origin_wk` values) and `regions.json` (a regional bench). A later commit may legitimately move any of them (PLAN-multi-region-bench M1 moved WK_BENCH_ORIGIN to bench-eu), and a receipt is a fact about the run it recorded, so with a `root` `validate_row` reads those three files from the row's tree (`sources_at`; the head successor's tree when a rebase took the row's tree, as for the inputs digest), takes the check's steps, targets and machines from that registry (`check_at`) and expands against it. A row whose argv was not the registry's argv at its own tree is still refused, and a tree that lacks the registry, or holds one that does not parse, refuses the row naming the file. Everything else about the check (its id, surfaces, deploy kind, rc) is still judged against the registry of today. Without a `root` there is no tree to read, and the argv is judged against the checkout's registry.
+
 DEPLOY KINDS. `bench-cache`: the version `rediacc_ci.ops.deploy_bench` recorded in `.ci/cache/live-deploys/bench-eu.json`, confirmed serving 100% through wrangler at check time (a uuid). `bench-proxy-cache`: the same for the bench proxy, the version `rediacc_ci.deploy.deploy_proxy --target bench` recorded in `.ci/cache/live-deploys/proxy-bench-eu.json` after its smoke passed, confirmed serving 100% on proxy-bench through wrangler (a uuid). `renet-hash`: the renet binary built from the head's renet pointer, confirmed byte for byte on each machine (`renet:<vcs.revision>@sha256:<64 hex>`). `tree`: a CLI run from the clean head tree itself (`cli:<head>`). `tooling`: the Enterprise tooling of the clean head tree drives bench itself (the enterprise proofs stop or cut a bench signer, then start it again through `deploy_signer`'s own deploy), so the run is its own deploy and its rc its confirmation (`tooling:<head>`). `unrecorded`: nothing records which head the deployed version was cut from, so no run of that check can confirm a deploy and none is VERIFIED.
 
 THE ROW (schema 1). `receipt.envelope` with `tier` `live`, plus `id`, `at`, `by`, `plan`, `box`, `target`, `region`, `deploy` (`surface`, `worker`, `version_id`, `source`, `deployed_head`, `confirmed_live`), `check` (`id`, `args`, `argv` as one argv per step run, `rc`, `duration_s`, `log_sha256`, `tail`) and `ladder` (`vm`, the admitting VM run id, null only when `ladder_phases` is empty or when the row is WAIVED: `vm` null, `waived` the operator's `ASKED:<YYYY-MM-DDTHH:MM>Z` the recorder proved against the transcript, and `head_tree` the row's own tree, which `check:ci-plan-live-proof` reports as owed a VERIFIED `vm:check` until one covers that tree or a descendant). `id` is `receipt.row_id`. The full log stays in the gitignored `.ci/cache/live-proof/<id>.log`; `check.log_sha256` is its digest, and `validate_row` re-reads the log when it is present and refuses a mismatch (box V10).
@@ -116,6 +118,57 @@ class Run:
     argv: tuple[str, ...]
 
 
+@dataclasses.dataclass(frozen=True)
+class Sources:
+    """What an argv is expanded from: the map's `tiers.live` block, the well-known values its `origin_wk` keys name, and a reader of regions.json's text, called only for a regional bench. `where` names them in a finding."""
+
+    live: dict[str, Any]
+    well_known: dict[str, str]
+    regions: Callable[[], str]
+    where: str = "the checkout"
+
+
+def _checkout_regions() -> str:
+    try:
+        return paths.from_root(BENCH_REGIONS_REL).read_text(encoding="utf-8")
+    except OSError as exc:
+        raise RegistryError(
+            f"{BENCH_REGIONS_REL} is unreadable ({exc.__class__.__name__})"
+        ) from exc
+
+
+def checkout_sources() -> Sources:
+    """The checkout's own sources: the loaded map, `rediacc_ci.well_known` and regions.json under the repo root."""
+    return Sources(S.MAP.live, WK.VALUES, _checkout_regions)
+
+
+def sources_at(root: pathlib.Path, tree: str) -> Sources:
+    """The sources as they stood in `tree` of the repository at `root`, read with `git show`. RegistryError naming the file when the map or the well-known registry is absent from that tree or does not parse; regions.json is read (and refused the same way) only when a regional bench asks for it."""
+    git = S.make_git(root)
+    where = f"tree {tree[:12]}"
+
+    def show(rel: str) -> str:
+        text = git(["show", f"{tree}:{rel}"])
+        if text is None:
+            raise RegistryError(f"{rel} is not in {where}, so the registry there cannot be read")
+        return text
+
+    map_text = show(S.MAP_REL)
+    try:
+        raw = json.loads(map_text)
+    except ValueError as exc:
+        raise RegistryError(f"{S.MAP_REL} in {where} is not JSON ({exc})") from exc
+    tiers = raw.get("tiers") if isinstance(raw, dict) else None
+    live = tiers.get("live") if isinstance(tiers, dict) else None
+    if not isinstance(live, dict):
+        raise RegistryError(f"{S.MAP_REL} in {where} has no tiers.live object")
+    try:
+        well_known = WK.parse(show(WK.REGISTRY_REL), f"{WK.REGISTRY_REL} in {where}")
+    except WK.RegistryError as exc:
+        raise RegistryError(str(exc)) from exc
+    return Sources(live, well_known, lambda: show(BENCH_REGIONS_REL), where)
+
+
 def _argv(value: object, where: str) -> tuple[str, ...]:
     if not (isinstance(value, list) and value and all(isinstance(a, str) and a for a in value)):
         raise RegistryError(f"{where} is not a non-empty list of strings")
@@ -169,13 +222,40 @@ def _machines(entry: dict[str, Any]) -> tuple[str, ...]:
     return tuple(m for m in machines if isinstance(m, str) and m)
 
 
+@dataclasses.dataclass(frozen=True)
+class _Expansion:
+    """The half of a check that decides its argv."""
+
+    targets: tuple[str, ...]
+    steps: tuple[Step, ...]
+    per_machine: bool
+    rebuild: tuple[str, ...]
+
+
+def _parse_expansion(where: str, raw: dict[str, Any], targets: dict[str, Any]) -> _Expansion:
+    tlist = raw.get("targets")
+    if not (isinstance(tlist, list) and tlist and all(t in targets for t in tlist)):
+        raise RegistryError(f"{where}.targets is not a non-empty list of {sorted(targets)}")
+    steps = raw.get("steps")
+    if not (isinstance(steps, list) and steps):
+        raise RegistryError(f"{where}.steps is empty")
+    per_machine = raw.get("per_machine", False)
+    if not isinstance(per_machine, bool):
+        raise RegistryError(f"{where}.per_machine is not a boolean")
+    return _Expansion(
+        targets=tuple(tlist),
+        steps=tuple(_parse_step(s, f"{where}.steps[{n}]") for n, s in enumerate(steps)),
+        per_machine=per_machine,
+        rebuild=_argv(raw["rebuild"], f"{where}.rebuild") if "rebuild" in raw else (),
+    )
+
+
 def _parse_check(cid: str, raw: object, targets: dict[str, Any]) -> Check:
     where = f"tiers.live.checks.{cid}"
     if not isinstance(raw, dict):
         raise RegistryError(f"{where} is not an object")
-    tlist = raw.get("targets")
-    if not (isinstance(tlist, list) and tlist and all(t in targets for t in tlist)):
-        raise RegistryError(f"{where}.targets is not a non-empty list of {sorted(targets)}")
+    exp = _parse_expansion(where, raw, targets)
+    tlist = list(exp.targets)
     names = raw.get("surfaces")
     if not (isinstance(names, list) and names and all(_known_surface(n) for n in names)):
         raise RegistryError(f"{where}.surfaces is not a non-empty list of known surfaces")
@@ -185,21 +265,14 @@ def _parse_check(cid: str, raw: object, targets: dict[str, Any]) -> Check:
     deploy = raw.get("deploy")
     if deploy not in DEPLOY_KINDS:
         raise RegistryError(f"{where}.deploy {deploy!r} is not one of {', '.join(DEPLOY_KINDS)}")
-    steps = raw.get("steps")
-    if not (isinstance(steps, list) and steps):
-        raise RegistryError(f"{where}.steps is empty")
-    per_machine = raw.get("per_machine", False)
-    if not isinstance(per_machine, bool):
-        raise RegistryError(f"{where}.per_machine is not a boolean")
-    rebuild = _argv(raw["rebuild"], f"{where}.rebuild") if "rebuild" in raw else ()
     check = Check(
         id=cid,
-        targets=tuple(tlist),
+        targets=exp.targets,
         surfaces=frozenset(names),
         deploy=deploy,
-        steps=tuple(_parse_step(s, f"{where}.steps[{n}]") for n, s in enumerate(steps)),
-        per_machine=per_machine,
-        rebuild=rebuild,
+        steps=exp.steps,
+        per_machine=exp.per_machine,
+        rebuild=exp.rebuild,
         what=str(raw.get("what") or ""),
     )
     expects = {s.expect for s in check.steps}
@@ -213,32 +286,39 @@ def _parse_check(cid: str, raw: object, targets: dict[str, Any]) -> Check:
     return check
 
 
-def resolve_target(name: str, entry: dict[str, Any]) -> dict[str, Any]:
-    """`entry` with its `origin_wk` resolved through rediacc_ci.well_known into `origin`, the value `{origin}` fills. RegistryError for a literal `origin` (the URL belongs in .ci/config/well-known.env) or a key the registry does not declare."""
+def resolve_target(
+    name: str, entry: dict[str, Any], well_known: dict[str, str] | None = None
+) -> dict[str, Any]:
+    """`entry` with its `origin_wk` resolved into `origin`, the value `{origin}` fills, through `well_known` (rediacc_ci.well_known's values unless given). RegistryError for a literal `origin` (the URL belongs in .ci/config/well-known.env) or a key the registry does not declare."""
     where = f"tiers.live.targets.{name}"
     if "origin" in entry:
         raise RegistryError(
             f"{where}.origin is a literal; store {_ORIGIN_WK!r}, a key of {WK.REGISTRY_REL}"
         )
+    values = WK.VALUES if well_known is None else well_known
     out = {k: v for k, v in entry.items() if k != _ORIGIN_WK}
     if _ORIGIN_WK in entry:
         key = entry[_ORIGIN_WK]
-        if not (isinstance(key, str) and key in WK.VALUES):
+        if not (isinstance(key, str) and key in values):
             raise RegistryError(f"{where}.{_ORIGIN_WK} {key!r} is not a key of {WK.REGISTRY_REL}")
-        out["origin"] = WK.VALUES[key]
+        out["origin"] = values[key]
     return out
+
+
+def _live_targets(live: dict[str, Any], well_known: dict[str, str] | None) -> dict[str, Any]:
+    targets = live.get("targets")
+    if not (
+        isinstance(targets, dict) and targets and all(isinstance(v, dict) for v in targets.values())
+    ):
+        raise RegistryError("tiers.live.targets is empty")
+    return {name: resolve_target(name, entry, well_known) for name, entry in targets.items()}
 
 
 def parse_checks(live: object) -> dict[str, Check]:
     """The registry of `tiers.live` (the map's `live` block), or RegistryError naming the first defect. An empty registry is a defect: a blind registry is never a quiet one."""
     if not isinstance(live, dict):
         raise RegistryError("tiers.live is not an object")
-    targets = live.get("targets")
-    if not (
-        isinstance(targets, dict) and targets and all(isinstance(v, dict) for v in targets.values())
-    ):
-        raise RegistryError("tiers.live.targets is empty")
-    targets = {name: resolve_target(name, entry) for name, entry in targets.items()}
+    targets = _live_targets(live, None)
     raw = live.get("checks")
     if not (isinstance(raw, dict) and raw):
         raise RegistryError("tiers.live.checks is empty")
@@ -250,12 +330,41 @@ def registry() -> dict[str, Check]:
     return parse_checks(S.MAP.live)
 
 
-def bench_object(region: str) -> dict[str, Any]:
-    """The `bench` object of `region` in regions.json, the one source of a regional bench's host, Worker names and rdc config. RegistryError when the region or its bench object is missing."""
+def check_at(check: Check, sources: Sources) -> Check:
+    """`check` with the half that decides its argv (targets, steps, per machine, rebuild) as `sources` declare it, the rest kept. RegistryError when `sources` lack the check or declare it in a shape `parse_checks` refuses (a shell program, an unknown placeholder, a missing target parameter)."""
+    where = f"tiers.live.checks.{check.id} in {sources.where}"
     try:
-        doc = json.loads(paths.from_root(BENCH_REGIONS_REL).read_text(encoding="utf-8"))
+        targets = _live_targets(sources.live, sources.well_known)
+    except RegistryError as exc:
+        raise RegistryError(f"{exc} in {sources.where}") from exc
+    checks = sources.live.get("checks")
+    raw = checks.get(check.id) if isinstance(checks, dict) else None
+    if not isinstance(raw, dict):
+        raise RegistryError(f"check {check.id} is not in the registry in {sources.where}")
+    exp = _parse_expansion(where, raw, targets)
+    out = dataclasses.replace(
+        check,
+        targets=exp.targets,
+        steps=exp.steps,
+        per_machine=exp.per_machine,
+        rebuild=exp.rebuild,
+    )
+    _check_params(out, targets, where)
+    return out
+
+
+def bench_object(region: str) -> dict[str, Any]:
+    """The `bench` object of `region` in the checkout's regions.json, the one source of a regional bench's host, Worker names and rdc config. RegistryError when the file, the region or its bench object is missing."""
+    return _bench_in(region, checkout_sources())
+
+
+def _bench_in(region: str, sources: Sources) -> dict[str, Any]:
+    """`bench_object` over the regions.json `sources` read."""
+    text = sources.regions()
+    try:
+        doc = json.loads(text)
         rows = doc["regions"]
-    except (OSError, ValueError, KeyError, TypeError) as exc:
+    except (ValueError, KeyError, TypeError) as exc:
         raise RegistryError(
             f"{BENCH_REGIONS_REL} is unreadable ({exc.__class__.__name__})"
         ) from exc
@@ -278,20 +387,26 @@ def is_regional_bench(target: str, region: str | None) -> bool:
     return target == BENCH_TARGET and region is not None
 
 
-def target_entry(target: str, region: str | None = None) -> dict[str, Any]:
-    """The target's registry entry, resolved. A bench run with a `region` takes that region's bench host as `origin` and its rdc config as `config` from regions.json; no region keeps the registry's own (`origin_wk`)."""
-    entry = (S.MAP.live.get("targets") or {}).get(target)
+def target_entry(
+    target: str, region: str | None = None, sources: Sources | None = None
+) -> dict[str, Any]:
+    """The target's registry entry, resolved from the checkout's sources or from `sources`. A bench run with a `region` takes that region's bench host as `origin` and its rdc config as `config` from regions.json; no region keeps the registry's own (`origin_wk`)."""
+    src = sources or checkout_sources()
+    targets = src.live.get("targets")
+    entry = targets.get(target) if isinstance(targets, dict) else None
     if not isinstance(entry, dict):
         raise RegistryError(f"{target!r} is not a live target")
-    out = resolve_target(target, entry)
+    out = resolve_target(target, entry, src.well_known)
     if is_regional_bench(target, region):
-        bench = bench_object(str(region))
+        bench = bench_object(str(region)) if sources is None else _bench_in(str(region), sources)
         out["origin"] = "https://" + bench["host"]
         out["config"] = bench["config"]
     return out
 
 
-def machines_for(check: Check, target: str, machine: str | None) -> tuple[str | None, ...]:
+def machines_for(
+    check: Check, target: str, machine: str | None, sources: Sources | None = None
+) -> tuple[str | None, ...]:
     """The machine aliases a run covers: every alias of the target, or the one named. RegistryError for an alias outside the registry or a machine given to a check that does not run per machine."""
     if not check.per_machine:
         if machine is not None:
@@ -299,7 +414,7 @@ def machines_for(check: Check, target: str, machine: str | None) -> tuple[str | 
                 f"check {check.id} does not run per machine; --machine is not a parameter of it"
             )
         return (None,)
-    known = _machines(target_entry(target))
+    known = _machines(target_entry(target, sources=sources))
     if machine is None:
         return known
     if machine not in known:
@@ -331,8 +446,10 @@ def _fill(arg: str, values: dict[str, str]) -> str:
     return _PLACEHOLDER.sub(lambda m: values[m.group(1)], arg)
 
 
-def _values(target: str, machine: str | None, region: str | None = None) -> dict[str, str]:
-    entry = target_entry(target, region)
+def _values(
+    target: str, machine: str | None, region: str | None = None, sources: Sources | None = None
+) -> dict[str, str]:
+    entry = target_entry(target, region, sources)
     values = {k: entry[k] for k in _TARGET_KEYS if isinstance(entry.get(k), str)}
     if machine is not None:
         values[MACHINE] = machine
@@ -340,14 +457,18 @@ def _values(target: str, machine: str | None, region: str | None = None) -> dict
 
 
 def expand(
-    check: Check, target: str, machine: str | None = None, region: str | None = None
+    check: Check,
+    target: str,
+    machine: str | None = None,
+    region: str | None = None,
+    sources: Sources | None = None,
 ) -> list[Run]:
-    """Every step to run for `check` on `target`, in order (per machine: every step for the first alias, then the next). `region` picks the bench (see `target_entry`). RegistryError for a target the check does not name, or a machine outside the registry."""
+    """Every step to run for `check` on `target`, in order (per machine: every step for the first alias, then the next). `region` picks the bench (see `target_entry`). The target values come from the checkout's sources unless `sources` is given (`sources_at` reads a past tree's; pair it with `check_at` for that tree's steps). RegistryError for a target the check does not name, or a machine outside the registry."""
     if target not in check.targets:
         raise RegistryError(f"check {check.id} runs on {list(check.targets)}, not {target!r}")
     runs: list[Run] = []
-    for alias in machines_for(check, target, machine):
-        values = _values(target, alias, region)
+    for alias in machines_for(check, target, machine, sources):
+        values = _values(target, alias, region, sources)
         runs.extend(
             Run(step, alias, tuple(_fill(a, values) for a in step.argv)) for step in check.steps
         )
@@ -466,8 +587,9 @@ def _deploy_problems(row: dict[str, Any], check: Check | None) -> list[str]:
 
 
 def _check_problems(
-    row: dict[str, Any], checks: dict[str, Check]
+    row: dict[str, Any], checks: dict[str, Check], at: Sources | RegistryError | None = None
 ) -> tuple[list[str], Check | None]:
+    """The check body's problems, and the registry check it names. `at` is what the argv is judged against: the sources of the row's tree, the RegistryError reading them raised (a problem, never a skip), or None for the checkout's registry."""
     body = row.get("check")
     if not isinstance(body, dict):
         return ["check is not an object"], None
@@ -492,14 +614,23 @@ def _check_problems(
     try:
         if not (isinstance(args, list) and all(isinstance(a, str) for a in args)):
             raise RegistryError("check.args is not a list of strings")
+        if isinstance(at, RegistryError):
+            raise RegistryError(f"check.argv cannot be judged: {at}")
         runs = expand(
-            check, str(row.get("target")), machine_of_args(args), region=row.get("region")
+            check if at is None else check_at(check, at),
+            str(row.get("target")),
+            machine_of_args(args),
+            region=row.get("region"),
+            sources=at,
         )
     except RegistryError as exc:
         out.append(str(exc))
     else:
         if body.get("argv") != [list(r.argv) for r in runs]:
-            out.append("check.argv is not the registry's argv for this check, target and arguments")
+            whose = "" if at is None else f" in {at.where}"
+            out.append(
+                f"check.argv is not the registry's argv for this check, target and arguments{whose}"
+            )
     return out, check
 
 
@@ -546,15 +677,12 @@ def _ladder_problems(row: dict[str, Any], ladder: dict[str, Any], phased: bool) 
     return out
 
 
-def _git_problems(
+def _judged_tree(
     row: dict[str, Any],
     root: pathlib.Path,
-    successor_of: Callable[[str], str | None] | None = None,
-) -> list[str]:
-    """The row's `head` and `tree` resolve, and `inputs` is the digest of that tree for its surfaces.
-
-    A REWRITTEN HEAD IS RE-RESOLVED, NEVER EXCUSED. A rebase or a message scrub replaces the commit a receipt recorded, and in CI's fresh clone the old sha does not exist. `successor_of` (`rediacc_ci.review.successor`, the map the investigation gate uses) names the patch-equal commit that replaced it. A head that resolves no successor is still refused. When the row's tree is gone with it, the inputs digest is recomputed at the SUCCESSOR's tree, so surface code that changed in the rewrite still fails the row.
-    """
+    successor_of: Callable[[str], str | None] | None,
+) -> tuple[str, str, list[str]]:
+    """(head successor or "", the tree the row is judged at, problems): the row's own tree, or its head successor's tree when a rewrite took the row's tree too (see `_git_problems`). A head or tree that resolves to nothing is a problem, never a skip."""
     git = S.make_git(root)
 
     def present(sha: str) -> bool:
@@ -576,8 +704,37 @@ def _git_problems(
             judged_tree = at
         else:
             out.append(f"tree {tree[:12]} does not resolve")
+    return successor, judged_tree, out
+
+
+def _row_sources(
+    row: dict[str, Any],
+    root: pathlib.Path,
+    successor_of: Callable[[str], str | None] | None,
+) -> Sources | RegistryError:
+    """The registry sources at the tree the row is judged at (`_judged_tree`), or the RegistryError naming why they cannot be read."""
+    _successor, judged_tree, problems = _judged_tree(row, root, successor_of)
+    if problems:
+        return RegistryError("; ".join(problems))
+    try:
+        return sources_at(root, judged_tree)
+    except RegistryError as exc:
+        return exc
+
+
+def _git_problems(
+    row: dict[str, Any],
+    root: pathlib.Path,
+    successor_of: Callable[[str], str | None] | None = None,
+) -> list[str]:
+    """The row's `head` and `tree` resolve, and `inputs` is the digest of that tree for its surfaces.
+
+    A REWRITTEN HEAD IS RE-RESOLVED, NEVER EXCUSED. A rebase or a message scrub replaces the commit a receipt recorded, and in CI's fresh clone the old sha does not exist. `successor_of` (`rediacc_ci.review.successor`, the map the investigation gate uses) names the patch-equal commit that replaced it. A head that resolves no successor is still refused. When the row's tree is gone with it, the inputs digest is recomputed at the SUCCESSOR's tree, so surface code that changed in the rewrite still fails the row.
+    """
+    successor, judged_tree, out = _judged_tree(row, root, successor_of)
     if out:
         return out
+    tree = str(row.get("tree"))
     names = row.get("surfaces")
     known = isinstance(names, list) and names and all(_known_surface(n) for n in names)
     if known and S.inputs(root, judged_tree, names) != row.get("inputs"):
@@ -597,7 +754,7 @@ def validate_row(
 ) -> list[str]:
     """Every reason `row` is not a valid VERIFIED live receipt, empty when it is one.
 
-    Without `root` the judge is pure: the envelope, the live body, the id, the registry argv, the deploy identity, the identity rules, the ladder and the secret scan. With `root` it also resolves `head` and `tree`, recomputes the inputs digest at the row's tree, and re-reads `.ci/cache/live-proof/<id>.log` when it is present, refusing a digest that differs from `check.log_sha256`. `successor_of` re-resolves a head a rebase rewrote (see `_git_problems`).
+    Without `root` the judge is pure: the envelope, the live body, the id, the registry argv (against the checkout's registry), the deploy identity, the identity rules, the ladder and the secret scan. With `root` it judges the argv against the registry at the row's tree instead (`sources_at`, `check_at`; see the module docstring), and it also resolves `head` and `tree`, recomputes the inputs digest at the row's tree, and re-reads `.ci/cache/live-proof/<id>.log` when it is present, refusing a digest that differs from `check.log_sha256`. `successor_of` re-resolves a head a rebase rewrote (see `_git_problems`).
     """
     if not isinstance(row, dict):
         return ["the row is not an object"]
@@ -614,7 +771,8 @@ def validate_row(
         out.append("id does not hash to the row")
     if row.get("region") is not None and row.get("region") not in REGIONS:
         out.append(f"region {row.get('region')!r} is not null or one of {', '.join(REGIONS)}")
-    problems, check = _check_problems(row, checks)
+    at = None if root is None else _row_sources(row, root, successor_of)
+    problems, check = _check_problems(row, checks, at)
     out.extend(problems)
     out.extend(_deploy_problems(row, check))
     out.extend(_surface_problems(row, check))

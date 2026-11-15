@@ -27,7 +27,11 @@ THE RULES, EACH WITH A PLANTED CONTROL IN `--selftest`:
         strictly after `baseline_at` (the author date, which a rebase keeps), with no ledger row matching plan, box sig,
         target, VERIFIED, rc 0, clean tree and the Accept line's check and arguments.
     LP5 every matching row is invalid: `live_tier.validate_row` (envelope, id,
-        registry argv, deploy at head and confirmed live, version id, identity
+        registry argv AT THE ROW'S OWN TREE: the map's `tiers.live`, well-known.env
+        and regions.json read from that tree with `git show`, so a later move of an
+        origin or a step does not void a past receipt, while an argv that was not
+        that tree's registry argv, or a tree whose registry cannot be read, is still
+        LP5; deploy at head and confirmed live, version id, identity
         rules, secret shapes, head/tree resolve, inputs at the row's tree, the kept
         log), plus its head is not an ancestor of the ticking commit (through the
         rebase successor map), plus the inputs digest at the ticking commit differs
@@ -1734,6 +1738,43 @@ class _Suite:
             row, _C, **{**base_kw, "successor_of": lambda _s: "f" * 40, "ancestor_fn": record}
         )
         c.check("judge_row: a rewritten head is judged by its successor", seen, ["f" * 40])
+        self.argv_at_tree()
+
+    def argv_at_tree(self) -> None:
+        """LP5's argv clause reads the registry of the row's own tree (`LT.sources_at`), so a later origin move does not void a past receipt. Planted in memory: sources whose well-known origin differs from the checkout's."""
+        c = self.c
+        check = LT.registry()["account-smoke"]
+        today = LT.checkout_sources()
+        then = LT.Sources(
+            today.live,
+            {**today.well_known, "WK_BENCH_ORIGIN": "https://bench-then.example.invalid"},
+            today.regions,
+            "tree planted",
+        )
+        old = [r.argv for r in LT.expand(LT.check_at(check, then), "bench", sources=then)]
+        now = [r.argv for r in LT.expand(check, "bench")]
+        c.check(
+            "argv at a tree: the tree's origin fills {origin}",
+            all(a[-1].startswith("https://bench-then.example.invalid/") for a in old),
+            True,
+        )
+        c.check("argv at a tree: the checkout's origin does not", old == now, False)
+        c.check(
+            "argv at the checkout's own sources is the checkout's argv",
+            [r.argv for r in LT.expand(LT.check_at(check, today), "bench", sources=today)],
+            now,
+        )
+        gone = LT.Sources({**today.live, "checks": {}}, today.well_known, today.regions, "tree x")
+        try:
+            LT.check_at(check, gone)
+            refused = ""
+        except LT.RegistryError as exc:
+            refused = str(exc)
+        c.check(
+            "argv at a tree that lacks the check is refused, naming it",
+            refused,
+            "check account-smoke is not in the registry in tree x",
+        )
 
     def lp6(self) -> None:
         c = self.c
