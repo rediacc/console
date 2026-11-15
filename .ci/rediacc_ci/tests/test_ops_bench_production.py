@@ -52,11 +52,17 @@ def test_a_declared_entry_is_loaded(tmp_path):
         tmp_path,
         {
             "protected": [
-                {"subscription_id": SUB, "machine": "hostinger", "reason": "r", "plan": "p"}
+                {
+                    "subscription_id": SUB,
+                    "region": "eu",
+                    "machine": "hostinger",
+                    "reason": "r",
+                    "plan": "p",
+                }
             ]
         },
     )
-    assert bench_production.load(path) == [bench_production.Protected(SUB, "hostinger", "r")]
+    assert bench_production.load(path) == [bench_production.Protected(SUB, "hostinger", "r", "eu")]
 
 
 @pytest.mark.parametrize(
@@ -163,10 +169,10 @@ class _Auth:
 def test_reset_bench_runs_the_d1_check_before_the_wipe(monkeypatch, capsys):
     # The static refusal is lifted here so the second layer is reached: planted manifests stop the run at exit 2 before any wipe.
     monkeypatch.setattr(bench_production, "load", lambda *_a: DECLARED)
-    monkeypatch.setattr(bench_production, "reset_refusal", lambda _e: None)
+    monkeypatch.setattr(bench_production, "reset_refusal", lambda _e, *_a: None)
     monkeypatch.setattr(reset_bench.shutil, "which", lambda _c: "/usr/bin/true")
     monkeypatch.setattr(reset_bench, "_reexec_under_profile", lambda _a: None)
-    monkeypatch.setattr(reset_bench, "_names", object)
+    monkeypatch.setattr(reset_bench, "_names", lambda *_a: object())
     monkeypatch.setattr(reset_bench.cf_auth, "resolve", lambda _a: _Auth())
     monkeypatch.setattr(reset_bench.cf_auth, "wrangler_env", lambda *_a, **_k: {})
     monkeypatch.setattr(reset_bench.cf_auth, "await_propagation", lambda _a: None)
@@ -175,13 +181,16 @@ def test_reset_bench_runs_the_d1_check_before_the_wipe(monkeypatch, capsys):
     class Creds:
         bucket = "configs-bench"
 
+        def __init__(self, *_a):
+            pass
+
         def missing(self):
             return []
 
     monkeypatch.setattr(reset_bench, "R2Credentials", Creds)
     queries: list[str] = []
 
-    def query(_auth, sql):
+    def query(_auth, sql, *_a):
         queries.append(sql)
         return {
             "success": True,
@@ -222,3 +231,49 @@ def test_signer_stop_refusal_names_the_signer_and_the_declaration():
     assert bench_production.CONFIG_REL in refusal
     # control: nothing declared, nothing refused
     assert bench_production.signer_stop_refusal("signer-bench-eu", []) is None
+
+
+# --- regions: an entry stops only its own region (PLAN-multi-region-bench W3)
+
+US_ENTRY = bench_production.Protected(SUB, "hostinger", "production backups", "us")
+
+
+def test_an_entry_without_a_region_fails_closed(tmp_path):
+    path = _write(tmp_path, {"protected": [{"subscription_id": SUB, "machine": "m"}]})
+    with pytest.raises(bench_production.ProductionRefusalError, match="no `region`"):
+        bench_production.load(path)
+
+
+def test_an_entry_with_a_malformed_region_fails_closed(tmp_path):
+    path = _write(tmp_path, {"protected": [{"subscription_id": SUB, "region": "US east"}]})
+    with pytest.raises(bench_production.ProductionRefusalError, match="no `region`"):
+        bench_production.load(path)
+
+
+def test_reset_refusal_covers_only_the_declared_region():
+    assert bench_production.reset_refusal([US_ENTRY], "us")
+    assert bench_production.reset_refusal([US_ENTRY], "eu") is None
+    assert bench_production.reset_refusal([US_ENTRY], "asia") is None
+    # a refusal asked without a region covers every entry
+    assert bench_production.reset_refusal([US_ENTRY])
+
+
+def test_signer_stop_refusal_follows_the_signers_region():
+    assert bench_production.signer_stop_refusal("signer-bench-us", [US_ENTRY])
+    assert bench_production.signer_stop_refusal("signer-bench-eu", [US_ENTRY]) is None
+    # a name that carries no region is held against every entry
+    assert bench_production.signer_stop_refusal("signer-other", [US_ENTRY])
+
+
+def test_refuse_ids_can_be_scoped_to_a_region():
+    with pytest.raises(bench_production.ProductionRefusalError):
+        bench_production.refuse_ids([SUB], [US_ENTRY], "us")
+    bench_production.refuse_ids([SUB], [US_ENTRY], "eu")
+    with pytest.raises(bench_production.ProductionRefusalError):
+        bench_production.refuse_ids([SUB], [US_ENTRY])
+
+
+def test_the_refusal_text_names_the_region():
+    refusal = bench_production.reset_refusal([US_ENTRY], "us")
+    assert refusal is not None
+    assert "region us" in refusal

@@ -148,7 +148,7 @@ def test_main_rejects_other_arguments_but_takes_seed_root(monkeypatch):
     monkeypatch.setenv("REDIACC_BWS_PROFILES", deploy_bench.PROFILE)
     seen: list[int] = []
 
-    def fake() -> str:
+    def fake(*_a, **_k) -> str:
         seen.append(1)
         return "exists"
 
@@ -180,7 +180,7 @@ def test_seed_only_needs_curl_but_not_npx(monkeypatch):
     monkeypatch.setattr(
         deploy_bench.shutil, "which", lambda cmd: None if cmd == "npx" else "/bin/x"
     )
-    monkeypatch.setattr(deploy_bench, "seed_root", lambda: "exists")
+    monkeypatch.setattr(deploy_bench, "seed_root", lambda *_a, **_k: "exists")
     assert deploy_bench.main(["--seed-root"]) == 0
 
 
@@ -189,7 +189,7 @@ def test_seed_step_names_the_address(monkeypatch):
     steps: list[str] = []
     monkeypatch.setattr(deploy_bench.log, "step", steps.append)
     monkeypatch.setattr(deploy_bench.log, "info", lambda _m: None)
-    monkeypatch.setattr(deploy_bench, "seed_root", lambda: "created")
+    monkeypatch.setattr(deploy_bench, "seed_root", lambda *_a, **_k: "created")
     deploy_bench._seed_and_report()
     assert "root@example.test" in steps[0]
     assert "(ROOT_EMAIL)" not in steps[0]
@@ -220,7 +220,7 @@ def test_deploy_refuses_an_unset_password_before_the_first_remote_write(monkeypa
     (worker / deploy_bench.CONFIG).write_text(BENCH_ASSETS_TOML)
     monkeypatch.delenv(deploy_bench.ROOT_LOGIN_ENV)
     ran: list[str] = []
-    monkeypatch.setattr(deploy_bench, "secrets_payload", lambda: {"K": "v"})
+    monkeypatch.setattr(deploy_bench, "secrets_payload", lambda *_a, **_k: {"K": "v"})
     monkeypatch.setattr(deploy_bench, "_run", lambda argv, *_a, **_k: ran.append(argv[0]))
     with pytest.raises(deploy_bench.SeedError, match="BENCH_ROOT_PASSWORD"):
         deploy_bench._deploy(deploy_bench.cf_auth.Auth(token="t"), tmp_path)
@@ -265,7 +265,7 @@ def test_set_root_password_refuses_an_address_that_is_not_plain():
 def test_main_takes_set_root_password(monkeypatch):
     monkeypatch.setenv("REDIACC_BWS_PROFILES", deploy_bench.PROFILE)
     seen: list[int] = []
-    monkeypatch.setattr(deploy_bench, "set_root_password", lambda: seen.append(1))
+    monkeypatch.setattr(deploy_bench, "set_root_password", lambda **_k: seen.append(1))
     monkeypatch.setenv("ROOT_EMAIL", "root@example.test")
     assert deploy_bench.main(["--set-root-password"]) == 0
     assert seen == [1]
@@ -287,24 +287,24 @@ def test_deploy_seeds_the_root_after_the_secrets_push(monkeypatch, tmp_path):
     ):
         monkeypatch.setenv(name, "x")
     events: list[str] = []
-    monkeypatch.setattr(deploy_bench, "secrets_payload", lambda: {"K": "v"})
+    monkeypatch.setattr(deploy_bench, "secrets_payload", lambda *_a, **_k: {"K": "v"})
     monkeypatch.setattr(deploy_bench.cf_auth, "await_propagation", lambda _a: None)
     monkeypatch.setattr(deploy_bench.bench_preflight, "lockfile", lambda _p: 0)
     monkeypatch.setattr(deploy_bench.bench_preflight, "buckets", lambda _c: 0)
-    monkeypatch.setattr(deploy_bench, "capture_bookmark", lambda _d: None)
+    monkeypatch.setattr(deploy_bench, "capture_bookmark", lambda *_a, **_k: None)
     monkeypatch.setattr(deploy_bench, "_rotation_check", lambda _r: events.append("rotation"))
-    monkeypatch.setattr(deploy_bench, "_remove_retired_secrets", lambda _d: [])
-    monkeypatch.setattr(deploy_bench, "smoke", lambda: None)
+    monkeypatch.setattr(deploy_bench, "_remove_retired_secrets", lambda *_a, **_k: [])
+    monkeypatch.setattr(deploy_bench, "smoke", lambda *_a, **_k: None)
 
     def fake_run(argv, *_a, **_k):
         events.append(" ".join(argv[:5]))
         return "Current Version ID: " + VID
 
     monkeypatch.setattr(deploy_bench, "_run", fake_run)
-    monkeypatch.setattr(deploy_bench, "_seed_and_report", lambda: events.append("seed"))
+    monkeypatch.setattr(deploy_bench, "_seed_and_report", lambda *_a, **_k: events.append("seed"))
     recorded: list[tuple[str, str]] = []
 
-    def fake_record(_r, out, live):
+    def fake_record(_r, out, live, *_a):
         events.append("record")
         recorded.append((out, live))
 
@@ -393,18 +393,18 @@ def test_a_missing_live_version_after_the_deploy_fails_the_deploy(monkeypatch, t
         "CF_EMAIL",
     ):
         monkeypatch.setenv(name, "x")
-    monkeypatch.setattr(deploy_bench, "secrets_payload", lambda: {"K": "v"})
+    monkeypatch.setattr(deploy_bench, "secrets_payload", lambda *_a, **_k: {"K": "v"})
     monkeypatch.setattr(deploy_bench.cf_auth, "await_propagation", lambda _a: None)
     monkeypatch.setattr(deploy_bench.bench_preflight, "lockfile", lambda _p: 0)
     monkeypatch.setattr(deploy_bench.bench_preflight, "buckets", lambda _c: 0)
-    monkeypatch.setattr(deploy_bench, "capture_bookmark", lambda _d: None)
+    monkeypatch.setattr(deploy_bench, "capture_bookmark", lambda *_a, **_k: None)
     monkeypatch.setattr(deploy_bench, "_rotation_check", lambda _r: None)
-    monkeypatch.setattr(deploy_bench, "_remove_retired_secrets", lambda _d: [])
-    monkeypatch.setattr(deploy_bench, "smoke", lambda: None)
+    monkeypatch.setattr(deploy_bench, "_remove_retired_secrets", lambda *_a, **_k: [])
+    monkeypatch.setattr(deploy_bench, "smoke", lambda *_a, **_k: None)
     monkeypatch.setattr(deploy_bench, "_run", lambda *_a, **_k: "Current Version ID: " + VID)
-    monkeypatch.setattr(deploy_bench, "_seed_and_report", lambda: None)
+    monkeypatch.setattr(deploy_bench, "_seed_and_report", lambda *_a, **_k: None)
     wrote: list[str] = []
-    monkeypatch.setattr(deploy_bench, "record_version", lambda *_a: wrote.append("x"))
+    monkeypatch.setattr(deploy_bench, "record_version", lambda *_a, **_k: wrote.append("x"))
     for answer in ((False, None), (True, None)):
         monkeypatch.setattr(deploy_bench.deploy_record, "worker_version", lambda *_a, a=answer: a)
         with pytest.raises(deploy_bench.DeployError, match="no live version"):
@@ -476,7 +476,7 @@ def _bench_env(monkeypatch, **overrides):
     for name, value in values.items():
         monkeypatch.setenv(name, value)
     monkeypatch.setattr(deploy_bench, "_backup_values", lambda: ("https://e", "bk", "bs"))
-    monkeypatch.setattr(deploy_bench, "bench_bucket", lambda: "bucket")
+    monkeypatch.setattr(deploy_bench, "bench_bucket", lambda *_a, **_k: "bucket")
 
 
 def test_the_payload_carries_the_config_server_key(monkeypatch):
@@ -588,17 +588,17 @@ def _deploy_world(monkeypatch, tmp_path, toml, events):
     (tmp_path / "private/account/web/node_modules").mkdir(parents=True)
     for name in ("CLOUDFLARE_API_TOKEN", "CLOUDFLARE_ACCOUNT_ID"):
         monkeypatch.setenv(name, "x")
-    monkeypatch.setattr(deploy_bench, "secrets_payload", lambda: {"K": "v"})
+    monkeypatch.setattr(deploy_bench, "secrets_payload", lambda *_a, **_k: {"K": "v"})
     monkeypatch.setattr(deploy_bench, "root_password", lambda: "p")
     monkeypatch.setattr(deploy_bench.cf_auth, "await_propagation", lambda _a: None)
     monkeypatch.setattr(deploy_bench.bench_preflight, "lockfile", lambda _p: 0)
     monkeypatch.setattr(deploy_bench.bench_preflight, "buckets", lambda _c: 0)
-    monkeypatch.setattr(deploy_bench, "capture_bookmark", lambda _d: None)
+    monkeypatch.setattr(deploy_bench, "capture_bookmark", lambda *_a, **_k: None)
     monkeypatch.setattr(deploy_bench, "_rotation_check", lambda _r: None)
-    monkeypatch.setattr(deploy_bench, "_remove_retired_secrets", lambda _d: [])
-    monkeypatch.setattr(deploy_bench, "smoke", lambda: None)
-    monkeypatch.setattr(deploy_bench, "_seed_and_report", lambda: None)
-    monkeypatch.setattr(deploy_bench, "record_version", lambda *_a: None)
+    monkeypatch.setattr(deploy_bench, "_remove_retired_secrets", lambda *_a, **_k: [])
+    monkeypatch.setattr(deploy_bench, "smoke", lambda *_a, **_k: None)
+    monkeypatch.setattr(deploy_bench, "_seed_and_report", lambda *_a, **_k: None)
+    monkeypatch.setattr(deploy_bench, "record_version", lambda *_a, **_k: None)
     monkeypatch.setattr(deploy_bench.deploy_record, "worker_version", lambda *_a: (True, "live"))
     monkeypatch.setattr(
         deploy_bench,

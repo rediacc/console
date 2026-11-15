@@ -1,12 +1,14 @@
-"""Port of `scripts/ops/deploy-bench.sh` (293 lines): deploy the account worker to bench.rediacc.cloud.
+"""Port of `scripts/ops/deploy-bench.sh` (293 lines): deploy the account worker to a regional bench (`bench.rediacc.cloud` for the default `--region eu`).
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench
+    PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_bench [--region <eu|us|asia|all>]
 
-Bench is the internal "real Cloudflare D1" environment, deliberately NOT wired into CI or CD: a deploy is an operator running this by hand. The steps are the bash's, in order: re-exec under the `deploy-bench` Bitwarden profile (`rediacc_ci.core.bws_env exec`), resolve Cloudflare auth (`cf_auth`), preflight (`bench_preflight`: lockfile and R2 bucket), build the account portal SPA with the bench Turnstile sitekey, apply D1 migrations to `account-db-bench`, `wrangler deploy --config wrangler.bench.toml`, run `./run.sh rotation check --for=bench`, then push the worker secrets with `wrangler secret bulk`.
+ONE BENCH PER REGION (agent/plans/PLAN-multi-region-bench.md W3). `--region` picks the regions.json row whose `bench` object names the host, Worker, config (`wrangler.bench.toml` for eu, `wrangler.bench-<region>.toml` for the others), signer and control database; `--region all` deploys every row marked `deployable`, in file order, and names each one it skips. A region marked not deployable is refused before anything runs, because its config still carries the placeholder database id. The deploy record is `.ci/cache/live-deploys/bench.json` for eu and `bench-<region>.json` for the others; the signer step ensures and deploys THAT region's signer and control database only. `--region eu` is the default and behaves as it always did, with one exception: it no longer deploys `signer-bench-us` (that signer deploys with the us bench).
+
+Bench is the internal "real Cloudflare D1" environment, deliberately NOT wired into CI or CD: a deploy is an operator running this by hand. The steps are the bash's, in order: re-exec under the `deploy-bench` Bitwarden profile (`rediacc_ci.core.bws_env exec`), resolve Cloudflare auth (`cf_auth`), preflight (`bench_preflight`: lockfile and R2 bucket), build the account portal SPA with the bench Turnstile sitekey, apply D1 migrations to the config's DB binding (`account-bench` for eu), `wrangler deploy --config wrangler.bench.toml`, run `./run.sh rotation check --for=bench`, then push the worker secrets with `wrangler secret bulk`.
 
 THE ROTATION CHECK ALWAYS COMPARES, AND ANYTHING BUT "IN SYNC" REFUSES THE PUSH (operator ruling 2026-10-13). The check reads the observability host's OTLP basicauth user names over plain OpenSSH, through `private/account/scripts/rotation/lib/observability-reader.ts`, with the three `OBS_READER_SSH_*` values this profile binds: the base64 of the machine's existing private key, the pinned known_hosts lines and `user@host[:port]`. No `rdc` login is involved. Exit 1 is drift; exit 2 is a credential that could not be read, which is reported as such with its cause and refuses the push as well, because an unread value is an uncompared one.
 
-Resources: D1 `account-bench`, R2 `configs-bench`, worker `account-bench`, domain `bench.rediacc.cloud`. The cleanup of the Cloudflare token runs on every way out, a supplied `CF_MANAGEMENT_TOKEN` included, as in the bash.
+Resources (eu): D1 `account-bench`, R2 `configs-bench`, worker `account-bench`, domain `bench.rediacc.cloud`; the other regions' names are in their regions.json `bench` object. The cleanup of the Cloudflare token runs on every way out, a supplied `CF_MANAGEMENT_TOKEN` included, as in the bash.
 
 RULE T: WHERE THIS DELIBERATELY DIFFERS FROM THE BASH (each pinned by a test in `tests/test_ops_deploy_bench.py` that fails on the bash behaviour).
 
@@ -31,6 +33,8 @@ THE SECRET VALUES ARE READ BY NAME FROM THE ENVIRONMENT, as the bash read them, 
 
 from __future__ import annotations
 
+import dataclasses
+import functools
 import json
 import os
 import re
@@ -72,8 +76,63 @@ DOMAIN = BENCH_HOST
 TURNSTILE_SITEKEY = ""
 # The keyless bench portal is built OUTSIDE the production assets directory (`./dist` in every production and edge config), into the directory wrangler.bench.toml's [assets] names. On 2026-10-28 this tool rebuilt workers/account/dist/account for bench and the next production deploy uploaded that keyless portal to stable eu/us/asia, so no login could pass the captcha. `bench_assets_refusal` and `check:ci-portal-sitekey-guard` hold the separation.
 BENCH_ASSETS_REL = ("bench", "dist")
+ALL_REGIONS = "all"
 PRODUCTION_ASSETS_REL = ("dist",)
 PROFILE = "deploy-bench"
+DEFAULT_REGION = bench_preflight.DEFAULT_REGION
+
+
+@dataclasses.dataclass(frozen=True)
+class Target:
+    """One regional bench: the names a deploy of it uses. The default region's are the module constants above; the others' come from the `bench` object of their regions.json row."""
+
+    region: str
+    config: str
+    worker_name: str
+    domain: str
+    deployable: bool
+
+    @property
+    def signer_target(self) -> str:
+        return "bench-%s" % self.region
+
+    @property
+    def record_rel(self) -> tuple[str, ...]:
+        """`.ci/cache/live-deploys/bench.json` for the default region, `bench-<region>.json` for the others."""
+        name = "bench.json" if self.region == DEFAULT_REGION else "bench-%s.json" % self.region
+        return (*VERSION_RECORD[:-1], name)
+
+
+def target(region: str = DEFAULT_REGION, root=None) -> Target:
+    """The bench of REGION. DeployError names an unknown region or a row without a bench object. The default region reads no file: its names are the constants, and a test pins them to regions.json."""
+    if region == DEFAULT_REGION:
+        return Target(region, CONFIG, WORKER_NAME, DOMAIN, True)
+    try:
+        bench = bench_preflight.bench_object(region, root)
+    except (OSError, ValueError, LookupError) as exc:
+        raise DeployError(str(exc)) from None
+    try:
+        return Target(
+            region,
+            bench_preflight.config_name(region),
+            str(bench["workerName"]),
+            str(bench["host"]),
+            bench["deployable"] is True,
+        )
+    except KeyError as exc:
+        raise DeployError(
+            "the bench object of region %r in regions.json has no %s" % (region, exc)
+        ) from None
+
+
+def deployable_regions(root=None) -> list[str]:
+    """The regions `--region all` deploys: every bench row marked deployable, in regions.json order."""
+    try:
+        return [r for r in bench_preflight.bench_regions(root) if target(r, root).deployable]
+    except (OSError, ValueError) as exc:
+        raise DeployError("cannot read regions.json: %s" % exc) from None
+
+
 MISSING = "%s missing from the deploy-bench profile"
 HELP = (
     """Deploy the account worker to """
@@ -85,6 +144,9 @@ Usage:
   deploy_bench --seed-root  only seed the root user (idempotent)
   deploy_bench --set-root-password
                             set BENCH_ROOT_PASSWORD on the existing root user (reset flow)
+
+Every form takes --region <eu|us|asia> (default eu). --region all (deploy only)
+deploys every region marked deployable in regions.json.
 
 bench is IP-restricted (rediacc_ci.ops.bench_access): a 403 from bench means
 run PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access add-current first.
@@ -112,14 +174,15 @@ BACKUP_NAMES: tuple[str, ...] = (
 DEFAULT_SES_FROM = "noreply@notify.%s" % PRODUCT_DOMAIN
 
 
-def db_name() -> str:
-    """The bench D1 database, as the DB binding of wrangler.bench.toml names it (the one declaration a repoint changes). Raises DeployError when the binding is missing."""
+def db_name(region: str = DEFAULT_REGION) -> str:
+    """The bench D1 database, as the DB binding of the region's bench config names it (the one declaration a repoint changes). Raises DeployError when the binding is missing."""
+    config = target(region).config
     try:
         return bench_preflight.bench_names(
-            paths.repo_root().joinpath(*push_backup_credentials.WORKER_DIR, CONFIG)
+            paths.repo_root().joinpath(*push_backup_credentials.WORKER_DIR, config)
         ).database_name
     except (OSError, ValueError) as exc:
-        raise DeployError("cannot read the bench D1 name from %s: %s" % (CONFIG, exc)) from exc
+        raise DeployError("cannot read the bench D1 name from %s: %s" % (config, exc)) from exc
 
 
 def __getattr__(name: str) -> str:
@@ -144,26 +207,27 @@ def _backup_values() -> tuple[str, str, str]:
     return endpoint, key_id, secret
 
 
-def bench_bucket() -> str:
-    """The bench backup bucket, read from the BACKUP_BUCKET binding in wrangler.bench.toml, the bucket the Worker reads and sweeps. An exported ACCOUNT_BACKUP_S3_BUCKET that differs from it, or a config with no such binding, is a DeployError."""
-    return bench_backup_binding()[0]
+def bench_bucket(region: str = DEFAULT_REGION) -> str:
+    """The bench backup bucket, read from the BACKUP_BUCKET binding in the region's bench config, the bucket the Worker reads and sweeps. An exported ACCOUNT_BACKUP_S3_BUCKET that differs from it, or a config with no such binding, is a DeployError."""
+    return bench_backup_binding(region)[0]
 
 
-def bench_backup_binding() -> tuple[str, str]:
+def bench_backup_binding(region: str = DEFAULT_REGION) -> tuple[str, str]:
     """(bucket, jurisdiction) of the BACKUP_BUCKET binding; the jurisdiction is "" for a default-jurisdiction bucket. The checks of `bench_bucket` apply."""
-    config_path = paths.repo_root().joinpath(*push_backup_credentials.WORKER_DIR, CONFIG)
+    config = target(region).config
+    config_path = paths.repo_root().joinpath(*push_backup_credentials.WORKER_DIR, config)
     try:
         _, bucket, jurisdiction = push_backup_credentials._config_binding(config_path)
     except push_backup_credentials.PushError as exc:
         raise DeployError(str(exc)) from exc
     if not bucket:
-        raise DeployError("%s binds %s with no bucket_name" % (CONFIG, "BACKUP_BUCKET"))
+        raise DeployError("%s binds %s with no bucket_name" % (config, "BACKUP_BUCKET"))
     override = os.environ.get("ACCOUNT_BACKUP_S3_BUCKET") or ""
     if override and override != bucket:
         raise DeployError(
             "ACCOUNT_BACKUP_S3_BUCKET is %r but %s binds %r: the presign signer and the Worker's "
             "binding must name one bucket. Unset the variable; the bucket comes from the binding"
-            % (override, CONFIG, bucket)
+            % (override, config, bucket)
         )
     return bucket, jurisdiction
 
@@ -219,8 +283,8 @@ def stripe_pair() -> tuple[str, str]:
     return key, hook
 
 
-def secrets_payload() -> dict[str, str]:
-    """The `wrangler secret bulk` body, keys in the order the bash emitted them. Raises DeployError on a missing or empty required value."""
+def secrets_payload(region: str = DEFAULT_REGION) -> dict[str, str]:
+    """The `wrangler secret bulk` body, keys in the order the bash emitted them. Raises DeployError on a missing or empty required value. Only the backup bucket and its endpoint follow REGION; every other value is the profile's."""
     signing = {
         "ACCOUNT_ED25519_PUBLIC_KEY": os.environ.get("ACCOUNT_ED25519_PUBLIC_KEY") or "",
         "ACCOUNT_X25519_PRIVATE_KEY": os.environ.get("ACCOUNT_X25519_PRIVATE_KEY") or "",
@@ -245,6 +309,7 @@ def secrets_payload() -> dict[str, str]:
         "CLOUDFLARE_TURNSTILE_SECRET_KEY", os.environ.get("CLOUDFLARE_TURNSTILE_SECRET_KEY") or ""
     )
     endpoint, backup_key, backup_secret = _backup_values()
+    backup_bucket, backup_jurisdiction = bench_backup_binding(region)
     stripe_key, stripe_hook = stripe_pair()
     otlp = os.environ.get("OBS_OTLP_CREDENTIALS") or ""
     require_nonempty("OBS_OTLP_CREDENTIALS", otlp)
@@ -279,9 +344,9 @@ def secrets_payload() -> dict[str, str]:
         "CLOUDFLARE_TURNSTILE_SECRET_KEY": os.environ.get("CLOUDFLARE_TURNSTILE_SECRET_KEY") or "",
         # A jurisdictional bucket lives at `<account>.<jurisdiction>.r2.cloudflarestorage.com`; the raw endpoint cannot see it.
         "ACCOUNT_BACKUP_S3_ENDPOINT": set_account_worker_secrets.apply_jurisdiction(
-            endpoint, bench_backup_binding()[1]
+            endpoint, backup_jurisdiction
         ),
-        "ACCOUNT_BACKUP_S3_BUCKET": bench_bucket(),
+        "ACCOUNT_BACKUP_S3_BUCKET": backup_bucket,
         "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID": backup_key,
         "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY": backup_secret,
         "OBS_OTLP_CREDENTIALS": otlp,
@@ -366,10 +431,11 @@ VERSION_RECORD = (".ci", "cache", "live-deploys", "bench.json")
 VERSION_PATTERN = re.compile(r"Current Version ID:\s*([0-9a-fA-F][0-9a-fA-F-]{7,})")
 
 
-def record_version(root, output: str, live_version: str) -> dict:
-    """Write `.ci/cache/live-deploys/bench.json` from `proof.receipt.identity` plus the version bench serves, and return it. DeployError, with nothing written, when the deploy `output` carries no `Current Version ID:` or `live_version` is empty.
+def record_version(root, output: str, live_version: str, region: str = DEFAULT_REGION) -> dict:
+    """Write the region's deploy record (`.ci/cache/live-deploys/bench.json`, or `bench-<region>.json`) from `proof.receipt.identity` plus the version bench serves, and return it. DeployError, with nothing written, when the deploy `output` carries no `Current Version ID:` or `live_version` is empty.
 
     `version_id` is `live_version`, the 100% version read after the secrets push, because `wrangler secret bulk` creates a newer version than the one `wrangler deploy` printed (measured 2026-10-28: deploy printed 0b4e20ac, bench served bb3e1ba3); `deployed_version_id` keeps the printed one. `live_version` is required: a blank one is an error, never a silent fallback to the printed id."""
+    record_rel = target(region).record_rel
     if not (live_version or "").strip():
         raise DeployError("the live bench version is unknown, so no version is recorded")
     match = VERSION_PATTERN.search(output)
@@ -377,7 +443,7 @@ def record_version(root, output: str, live_version: str) -> dict:
         raise DeployError(
             "the wrangler deploy output carries no 'Current Version ID:' line, so the deployed "
             "version is not recorded in %s (the deploy itself is done and not rolled back)"
-            % "/".join(VERSION_RECORD)
+            % "/".join(record_rel)
         )
     record = {
         "version_id": live_version,
@@ -385,7 +451,7 @@ def record_version(root, output: str, live_version: str) -> dict:
         **receipt.identity(root, BENCH_SURFACES),
         "at": datetime.now(UTC).strftime("%Y-%m-%dT%H:%M:%SZ"),
     }
-    receipt.write_atomic(root.joinpath(*VERSION_RECORD), json.dumps(record, indent=2) + "\n")
+    receipt.write_atomic(root.joinpath(*record_rel), json.dumps(record, indent=2) + "\n")
     return record
 
 
@@ -393,23 +459,24 @@ def record_version(root, output: str, live_version: str) -> dict:
 BOOKMARK_PATTERN = re.compile(r"\b[0-9a-f]{8}-[0-9a-f]{8}-[0-9a-f]{8}-[0-9a-f]{16,}\b")
 
 
-def restore_command(bookmark: str) -> str:
+def restore_command(bookmark: str, region: str = DEFAULT_REGION) -> str:
     return (
         "cd %s && npx --no-install wrangler d1 time-travel restore %s --bookmark=%s --config %s"
         % (
             "workers/account",
-            db_name(),
+            db_name(region),
             bookmark,
-            CONFIG,
+            target(region).config,
         )
     )
 
 
-def capture_bookmark(worker_dir) -> str | None:
+def capture_bookmark(worker_dir, region: str = DEFAULT_REGION) -> str | None:
     """Print the D1 bookmark taken BEFORE the migrations, with the exact restore command: a Worker rollback does not undo a migration, so the bookmark is the rollback handle. A failed capture is reported loudly and returns None; the deploy goes on (the migrations are not blocked on a read-only query, and the bash had no bookmark at all)."""
+    database, config = db_name(region), target(region).config
     try:
         proc = subprocess.run(
-            [*wrangler.ARGV, "d1", "time-travel", "info", db_name(), "--config", CONFIG],
+            [*wrangler.ARGV, "d1", "time-travel", "info", database, "--config", config],
             cwd=str(worker_dir),
             capture_output=True,
             text=True,
@@ -429,12 +496,12 @@ def capture_bookmark(worker_dir) -> str | None:
         log.warn(
             "NO D1 BOOKMARK CAPTURED for %s (%s%s): the migrations below cannot be rolled back "
             "to a known point. Continuing."
-            % (db_name(), failure, "; " + detail.splitlines()[-1] if detail else "")
+            % (database, failure, "; " + detail.splitlines()[-1] if detail else "")
         )
         return None
     bookmark = found.group(0)
     log.info("D1 bookmark before migrations: %s" % bookmark)
-    print("  restore: %s" % restore_command(bookmark))
+    print("  restore: %s" % restore_command(bookmark, region))
     return bookmark
 
 
@@ -599,16 +666,18 @@ def _blocked_hint(status: int) -> str:
 
 
 def seed_root(
-    base_url: str = "https://" + DOMAIN,
+    base_url: str | None = None,
     email: str | None = None,
     attempts: int = 6,
     sleep: Callable[[float], None] = time.sleep,
+    region: str = DEFAULT_REGION,
 ) -> str:
     """Create the ROOT_EMAIL user with its org, membership and subscription through POST /account/api/v1/auth/register; return "created" or "exists". The password is `BENCH_ROOT_PASSWORD` (`root_password`). A 409 with code EMAIL_EXISTS is the no-op, and leaves an existing user's password alone (`set_root_password` changes that). A fresh deploy may still be warming up, so no HTTP answer or a 5xx is retried (`attempts`, 5 s apart); every other answer raises SeedError naming the status and the server's message, never the password."""
     root_email = email if email is not None else os.environ.get("ROOT_EMAIL") or ""
     if not root_email:
         raise SeedError("ROOT_EMAIL is not set, so there is no root user to seed on bench")
     password = root_password()
+    base_url = base_url or "https://" + target(region).domain
     # The Worker serves its API under /account/api/v1 (private/account/src/routes/index.ts mounts /auth there); a bare /auth/register is a 404.
     url = base_url.rstrip("/") + "/account/api/v1/auth/register"
     last = "no HTTP answer"
@@ -649,8 +718,8 @@ def _sql_literal(value: str) -> str:
     return "'" + value.replace("'", "''") + "'"
 
 
-def _d1_rows(sql: str) -> list[dict]:
-    """`wrangler d1 execute account-bench --remote --json --command SQL` from the worker dir, authenticated with the Global API Key pair, and the result rows. The stdout is never printed: it holds live links."""
+def _d1_rows(sql: str, region: str = DEFAULT_REGION) -> list[dict]:
+    """`wrangler d1 execute <the region's bench database> --remote --json --command SQL` from the worker dir, authenticated with the Global API Key pair, and the result rows. The stdout is never printed: it holds live links."""
     key, mail = os.environ.get("CF_GLOBAL_API_KEY"), os.environ.get("CF_EMAIL")
     if not (key and mail):
         raise SeedError("CF_GLOBAL_API_KEY and CF_EMAIL are required to read the captured email")
@@ -659,7 +728,15 @@ def _d1_rows(sql: str) -> list[dict]:
         env.pop(name, None)
     env["CLOUDFLARE_API_KEY"], env["CLOUDFLARE_EMAIL"] = key, mail
     env["CLOUDFLARE_ACCOUNT_ID"] = ACCOUNT_ID
-    argv = [*wrangler.ARGV, "d1", "execute", db_name(), "--remote", "--config", CONFIG]
+    argv = [
+        *wrangler.ARGV,
+        "d1",
+        "execute",
+        db_name(region),
+        "--remote",
+        "--config",
+        target(region).config,
+    ]
     argv.extend(["--json", "--command", sql])
     proc = subprocess.run(
         argv,
@@ -680,10 +757,11 @@ def _d1_rows(sql: str) -> list[dict]:
 
 
 def set_root_password(
-    base_url: str = "https://" + DOMAIN,
+    base_url: str | None = None,
     email: str | None = None,
     sleep: Callable[[float], None] = time.sleep,
-    rows: Callable[[str], list[dict]] = _d1_rows,
+    rows: Callable[[str], list[dict]] | None = None,
+    region: str = DEFAULT_REGION,
 ) -> None:
     """Set `BENCH_ROOT_PASSWORD` on the existing root user through the server's reset flow: POST /auth/forgot, read the `password-reset` mail bench copies into `captured_emails`, POST /auth/reset with the token and the stored password. SeedError names the failing step; neither the token nor the password is printed."""
     root_email = email if email is not None else os.environ.get("ROOT_EMAIL") or ""
@@ -692,6 +770,8 @@ def set_root_password(
     if not EMAIL_SHAPE.match(root_email):
         raise SeedError("ROOT_EMAIL is not a plain address, so it is not put into a query")
     password = root_password()
+    base_url = base_url or "https://" + target(region).domain
+    rows = rows or functools.partial(_d1_rows, region=region)
     api = base_url.rstrip("/") + "/account/api/v1/auth/"
     since = (datetime.now(UTC) - CLOCK_SKEW).strftime("%Y-%m-%dT%H:%M:%S")
     status, answer = _post_json(api + "forgot", {"email": root_email})
@@ -723,21 +803,21 @@ def set_root_password(
         )
 
 
-def _set_password_and_report() -> None:
+def _set_password_and_report(region: str = DEFAULT_REGION) -> None:
     log.step(
         "Setting the stored root password on %s at https://%s"
-        % (os.environ.get("ROOT_EMAIL") or "ROOT_EMAIL (unset)", DOMAIN)
+        % (os.environ.get("ROOT_EMAIL") or "ROOT_EMAIL (unset)", target(region).domain)
     )
-    set_root_password()
+    set_root_password(region=region)
     log.info("root password set to %s (every root session was revoked)" % ROOT_LOGIN_ENV)
 
 
-def _seed_and_report() -> None:
+def _seed_and_report(region: str = DEFAULT_REGION) -> None:
     log.step(
         "Seeding the root user (%s) on https://%s"
-        % (os.environ.get("ROOT_EMAIL") or "ROOT_EMAIL (unset)", DOMAIN)
+        % (os.environ.get("ROOT_EMAIL") or "ROOT_EMAIL (unset)", target(region).domain)
     )
-    outcome = seed_root()
+    outcome = seed_root(region=region)
     log.info(
         "root user created with its org and subscription"
         if outcome == "created"
@@ -750,13 +830,14 @@ def portal_out_dir(worker_dir) -> pathlib.Path:
     return worker_dir.joinpath(*BENCH_ASSETS_REL, "account")
 
 
-def bench_assets_refusal(worker_dir) -> str | None:
-    """None when wrangler.bench.toml's [assets] directory is the bench build root and lies outside the production assets directory, else the refusal. Checked before the build, so a config edit can never steer the keyless build back into the directory a production deploy uploads."""
+def bench_assets_refusal(worker_dir, region: str = DEFAULT_REGION) -> str | None:
+    """None when the region's bench config's [assets] directory is the bench build root and lies outside the production assets directory, else the refusal. Checked before the build, so a config edit can never steer the keyless build back into the directory a production deploy uploads."""
+    config = target(region).config
     try:
-        with open(worker_dir / CONFIG, "rb") as fh:
+        with open(worker_dir / config, "rb") as fh:
             directory = (tomllib.load(fh).get("assets") or {}).get("directory", "")
     except (OSError, tomllib.TOMLDecodeError) as exc:
-        return "%s cannot be read for its [assets] directory: %s" % (CONFIG, exc)
+        return "%s cannot be read for its [assets] directory: %s" % (config, exc)
     assets = (worker_dir / directory).resolve() if directory else None
     want = worker_dir.joinpath(*BENCH_ASSETS_REL).resolve()
     production = worker_dir.joinpath(*PRODUCTION_ASSETS_REL).resolve()
@@ -764,7 +845,7 @@ def bench_assets_refusal(worker_dir) -> str | None:
         return (
             "%s [assets] directory is %r, not ./%s: the bench portal is built there and nowhere else"
             % (
-                CONFIG,
+                config,
                 directory,
                 "/".join(BENCH_ASSETS_REL),
             )
@@ -793,19 +874,20 @@ def _child_env(root) -> dict[str, str]:
     return env
 
 
-def _ensure_signers(root, run=None) -> None:
-    """Create and migrate the bench control databases, then deploy both bench signers, before the account deploy."""
+def _ensure_signers(root, run=None, region: str = DEFAULT_REGION) -> None:
+    """Create and migrate the region's bench control database, then deploy the region's bench signer, before the account deploy."""
     run = run or _run
     env = _child_env(root)
-    log.step("Ensuring the bench control databases")
+    signer = target(region).signer_target
+    log.step("Ensuring the bench control database of region %s" % region)
     run(
-        [sys.executable, "-m", control_db.SELF, "ensure", "--bench"],
+        [sys.executable, "-m", control_db.SELF, "ensure", "--bench", "--region", region],
         root,
-        "control_db ensure --bench",
+        "control_db ensure --bench --region %s" % region,
         env=env,
     )
-    for target in SIGNER_TARGETS:
-        log.step("Deploying the signer Worker signer-%s (LICENSE_SIGNER binding)" % target)
+    for signer_target in (signer,):
+        log.step("Deploying the signer Worker signer-%s (LICENSE_SIGNER binding)" % signer_target)
         run(
             [
                 sys.executable,
@@ -819,19 +901,20 @@ def _ensure_signers(root, run=None) -> None:
                 "-m",
                 deploy_signer.SELF,
                 "--target",
-                target,
+                signer_target,
             ],
             root,
-            "deploy_signer --target %s" % target,
+            "deploy_signer --target %s" % signer_target,
             env=env,
         )
 
 
-def _remove_retired_secrets(worker_dir, run=None) -> list[str]:
-    """Delete each retired secret that `account-bench` still holds (names listed first; nothing else is touched). Returns the names removed."""
+def _remove_retired_secrets(worker_dir, run=None, region: str = DEFAULT_REGION) -> list[str]:
+    """Delete each retired secret that the region's account Worker still holds (names listed first; nothing else is touched). Returns the names removed."""
     run = run or _run
+    worker = target(region).worker_name
     listing = run(
-        [*wrangler.ARGV, "secret", "list", "--format", "json", "--name", WORKER_NAME],
+        [*wrangler.ARGV, "secret", "list", "--format", "json", "--name", worker],
         worker_dir,
         "wrangler secret list",
         capture=True,
@@ -846,12 +929,12 @@ def _remove_retired_secrets(worker_dir, run=None) -> list[str]:
     removed = [name for name in RETIRED_SECRETS if name in held]
     for name in removed:
         run(
-            [*wrangler.ARGV, "secret", "delete", name, "--name", WORKER_NAME],
+            [*wrangler.ARGV, "secret", "delete", name, "--name", worker],
             worker_dir,
             "wrangler secret delete %s" % name,
             stdin="y\n",
         )
-        log.info("Removed the retired secret %s from %s" % (name, WORKER_NAME))
+        log.info("Removed the retired secret %s from %s" % (name, worker))
     return removed
 
 
@@ -890,11 +973,13 @@ def _http_status(url: str) -> int:
 
 
 def smoke(
-    fetch: Callable[[str], int] | None = None, sleep: Callable[[float], None] = time.sleep
+    fetch: Callable[[str], int] | None = None,
+    sleep: Callable[[float], None] = time.sleep,
+    region: str = DEFAULT_REGION,
 ) -> None:
     """The deployed Worker must serve: GET server-info answers 200, retried while the new version propagates. A last status other than 200 is a DeployError naming it."""
     fetch = fetch or _http_status
-    url = "https://%s%s" % (DOMAIN, SMOKE_PATH)
+    url = "https://%s%s" % (target(region).domain, SMOKE_PATH)
     status = 0
     for attempt in range(SMOKE_ATTEMPTS):
         status = fetch(url)
@@ -909,13 +994,21 @@ def smoke(
     )
 
 
-def _deploy(auth: cf_auth.Auth, root) -> None:
+def _deploy(auth: cf_auth.Auth, root, region: str = DEFAULT_REGION) -> None:
+    bench = target(region, root)
+    if not bench.deployable:
+        raise DeployError(
+            "bench %s is marked not deployable in regions.json (%s still carries the placeholder "
+            "database id): its objects are created first (agent/plans/PLAN-multi-region-bench.md L1/L2)"
+            % (region, bench.config)
+        )
+    config, worker_name, domain = bench.config, bench.worker_name, bench.domain
     worker_dir = root / "workers" / "account"
-    if not (worker_dir / CONFIG).is_file():
-        raise DeployError("%s missing" % (worker_dir / CONFIG))
+    if not (worker_dir / config).is_file():
+        raise DeployError("%s missing" % (worker_dir / config))
 
     # Validate the secrets before the first remote write: a missing key found after the migrations and the deploy leaves bench on new code with old secrets.
-    body = json.dumps(secrets_payload())
+    body = json.dumps(secrets_payload(region))
     # The seed after the push needs it, and a refusal there would leave the deploy done and the root user unseeded.
     root_password()
 
@@ -929,24 +1022,24 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
     log.step("Preflight: installed dependencies match the lockfiles")
     if bench_preflight.lockfile([str(root), str(root / "private" / "account")]) != 0:
         raise DeployError("preflight failed")
-    log.step("Preflight: every R2 bucket bound in %s exists" % CONFIG)
+    log.step("Preflight: every R2 bucket bound in %s exists" % config)
     cwd = os.getcwd()
     os.chdir(worker_dir)
     try:
-        if bench_preflight.buckets(CONFIG) != 0:
+        if bench_preflight.buckets(config) != 0:
             raise DeployError("preflight failed")
     finally:
         os.chdir(cwd)
 
-    log.step("Preflight: every queue bound in %s exists (missing ones are created)" % CONFIG)
+    log.step("Preflight: every queue bound in %s exists (missing ones are created)" % config)
     try:
-        for name in deploy_account.check_queues(worker_dir / CONFIG, os.environ):
+        for name in deploy_account.check_queues(worker_dir / config, os.environ):
             log.info("Created queue %s" % name)
     except deploy_account.QueuePreflightError as exc:
         raise DeployError(str(exc)) from None
 
     log.step("Building account portal SPA (captcha disabled on bench: no Turnstile sitekey)")
-    refusal = bench_assets_refusal(worker_dir)
+    refusal = bench_assets_refusal(worker_dir, region)
     if refusal:
         raise DeployError(refusal)
     out_dir = portal_out_dir(worker_dir)
@@ -972,79 +1065,110 @@ def _deploy(auth: cf_auth.Auth, root) -> None:
 
     if not (worker_dir / "node_modules").is_dir():
         _run(["npm", "install"], worker_dir, "npm install")
-    _ensure_signers(root)
-    capture_bookmark(worker_dir)
-    log.step("Applying D1 migrations to %s (remote)" % db_name())
+    _ensure_signers(root, region=region)
+    capture_bookmark(worker_dir, region)
+    database = db_name(region)
+    log.step("Applying D1 migrations to %s (remote)" % database)
     _run(
-        [*wrangler.ARGV, "d1", "migrations", "apply", db_name(), "--remote", "--config", CONFIG],
+        [*wrangler.ARGV, "d1", "migrations", "apply", database, "--remote", "--config", config],
         worker_dir,
         "wrangler d1 migrations apply",
     )
     log.info("Migrations applied")
 
-    log.step("Deploying %s → https://%s" % (WORKER_NAME, DOMAIN))
+    log.step("Deploying %s → https://%s" % (worker_name, domain))
     deploy_output = _run(
-        [*wrangler.ARGV, "deploy", "--config", CONFIG], worker_dir, "wrangler deploy", capture=True
+        [*wrangler.ARGV, "deploy", "--config", config], worker_dir, "wrangler deploy", capture=True
     )
     log.info("Worker deployed")
 
     _rotation_check(root)
-    _remove_retired_secrets(worker_dir)
+    _remove_retired_secrets(worker_dir, region=region)
     _run(
-        [*wrangler.ARGV, "secret", "bulk", "--name", WORKER_NAME],
+        [*wrangler.ARGV, "secret", "bulk", "--name", worker_name],
         worker_dir,
         "wrangler secret bulk",
         stdin=body,
     )
     log.info("Worker secrets pushed")
-    smoke()
-    _seed_and_report()
+    smoke(region=region)
+    _seed_and_report(region)
     # After the whole deploy, so a missing id fails a finished deploy rather than leaving secrets unpushed.
-    exists, live_version = deploy_record.worker_version(worker_dir, CONFIG, WORKER_NAME)
+    exists, live_version = deploy_record.worker_version(worker_dir, config, worker_name)
     if not exists or not live_version:
         raise DeployError(
             "wrangler reports no live version of %s after the deploy, so none is recorded"
-            % WORKER_NAME
+            % worker_name
         )
-    record_version(root, deploy_output, live_version)
-    log.info("Bench version recorded in %s" % "/".join(VERSION_RECORD))
+    record_version(root, deploy_output, live_version, region)
+    log.info("Bench version recorded in %s" % "/".join(bench.record_rel))
 
     print()
-    log.info("bench is live: https://%s" % DOMAIN)
-    names = bench_preflight.bench_names(root.joinpath(*push_backup_credentials.WORKER_DIR, CONFIG))
+    log.info("bench is live: https://%s" % domain)
+    names = bench_preflight.bench_names(root.joinpath(*push_backup_credentials.WORKER_DIR, config))
     print("  D1:     %s (%s)" % (names.database_name, names.database_id))
     print("  R2:     %s" % names.config_bucket)
-    print("  Worker: %s" % WORKER_NAME)
+    print("  Worker: %s" % worker_name)
     print()
     print("Test it:")
-    print("  npm run login:bench")
-    print("  ./rdc.sh --config eu-bench repo create --name my-app -m my-server --size 2G")
+    if region == DEFAULT_REGION:
+        print("  npm run login:bench")
+    else:
+        print("  npm run login:bench -- --region %s" % region)
+    print("  ./rdc.sh --config %s-bench repo create --name my-app -m my-server --size 2G" % region)
+
+
+def _regions_to_run(region: str, root) -> list[str]:
+    """The regions one run touches: REGION itself, or for `all` every deployable one (each skipped region is named). DeployError for an unknown region or an empty `all`."""
+    if region != ALL_REGIONS:
+        target(region, root)
+        return [region]
+    chosen = deployable_regions(root)
+    for skipped in (r for r in bench_preflight.bench_regions(root) if r not in chosen):
+        log.warn("skipping bench %s: marked not deployable in regions.json" % skipped)
+    if not chosen:
+        raise DeployError("no bench region is marked deployable in regions.json")
+    return chosen
 
 
 def main(argv: list[str]) -> int:
     if argv and argv[0] in ("-h", "--help"):
         sys.stdout.write(HELP)
         return 0
+    original = list(argv)
+    try:
+        region, argv = bench_preflight.take_region(argv)
+    except ValueError as exc:
+        log.error(str(exc))
+        return 2
     seed_only = argv == ["--seed-root"]
     password_only = argv == ["--set-root-password"]
     if argv and not (seed_only or password_only):
         log.error("Unknown argument: %s" % argv[0])
         log.error(
-            "deploy_bench takes no arguments but --seed-root and --set-root-password; "
+            "deploy_bench takes no arguments but --region, --seed-root and --set-root-password; "
             "run with --help for usage."
         )
+        return 2
+    if region == ALL_REGIONS and (seed_only or password_only):
+        log.error("--region all deploys every deployable bench; seed or set a password per region")
+        return 2
+    try:
+        regions = _regions_to_run(region, paths.repo_root())
+    except DeployError as exc:
+        log.error(str(exc))
         return 2
     # The seed path only runs curl; npx is for the deploy and the captured-email read.
     for cmd in ("curl",) if seed_only else ("curl", "npx"):
         if shutil.which(cmd) is None:
             log.error("Required command '%s' is not available" % cmd)
             return 1
-    rebound = _reexec_under_profile(argv)
+    rebound = _reexec_under_profile(original)
     if rebound is not None:
         return rebound
     if seed_only or password_only:
         try:
-            _set_password_and_report() if password_only else _seed_and_report()
+            _set_password_and_report(region) if password_only else _seed_and_report(region)
         except DeployError as exc:
             log.error(str(exc))
             return 1
@@ -1056,7 +1180,10 @@ def main(argv: list[str]) -> int:
         log.error(str(exc))
         return 1
     try:
-        _deploy(auth, root)
+        for each in regions:
+            if len(regions) > 1:
+                log.step("Bench region %s" % each)
+            _deploy(auth, root, each)
     except (DeployError, cf_auth.CfAuthError) as exc:
         for line in str(exc).splitlines():
             log.error(line)

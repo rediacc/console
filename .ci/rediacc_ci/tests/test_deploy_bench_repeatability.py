@@ -26,19 +26,19 @@ def _world(monkeypatch, tmp_path, events):
     (worker / "node_modules").mkdir()
     (tmp_path / "private/account/web/node_modules").mkdir(parents=True)
     monkeypatch.setenv("CLOUDFLARE_API_TOKEN", "x")
-    monkeypatch.setattr(deploy_bench, "secrets_payload", lambda: {"K": "v"})
+    monkeypatch.setattr(deploy_bench, "secrets_payload", lambda *_a, **_k: {"K": "v"})
     monkeypatch.setattr(deploy_bench, "root_password", lambda: "p")
     monkeypatch.setattr(deploy_bench.cf_auth, "await_propagation", lambda _a: None)
     monkeypatch.setattr(deploy_bench.bench_preflight, "lockfile", lambda _p: 0)
     monkeypatch.setattr(deploy_bench.bench_preflight, "buckets", lambda _c: 0)
     monkeypatch.setattr(deploy_bench.deploy_account, "check_queues", lambda *_a: [])
-    monkeypatch.setattr(deploy_bench, "capture_bookmark", lambda _d: None)
+    monkeypatch.setattr(deploy_bench, "capture_bookmark", lambda *_a, **_k: None)
     monkeypatch.setattr(deploy_bench, "_rotation_check", lambda _r: None)
-    monkeypatch.setattr(deploy_bench, "_seed_and_report", lambda: None)
-    monkeypatch.setattr(deploy_bench, "record_version", lambda *_a: None)
+    monkeypatch.setattr(deploy_bench, "_seed_and_report", lambda *_a, **_k: None)
+    monkeypatch.setattr(deploy_bench, "record_version", lambda *_a, **_k: None)
     monkeypatch.setattr(deploy_bench.deploy_record, "worker_version", lambda *_a: (True, "live"))
-    monkeypatch.setattr(deploy_bench, "_remove_retired_secrets", lambda _d: [])
-    monkeypatch.setattr(deploy_bench, "smoke", lambda: None)
+    monkeypatch.setattr(deploy_bench, "_remove_retired_secrets", lambda *_a, **_k: [])
+    monkeypatch.setattr(deploy_bench, "smoke", lambda *_a, **_k: None)
     monkeypatch.setattr(
         deploy_bench,
         "_run",
@@ -58,8 +58,10 @@ def test_signers_and_control_databases_come_before_the_account_deploy(monkeypatc
     )
     migrate = next(i for i, e in enumerate(joined) if "migrations apply" in e)
     assert len(control) == 1
-    assert [joined[i].rsplit(" ", 1)[1] for i in signers] == ["bench-eu", "bench-us"]
-    assert control[0] < signers[0] < signers[1] < migrate < account
+    # one region per deploy: the eu run ensures eu's control database and deploys eu's signer only
+    assert [joined[i].rsplit(" ", 1)[1] for i in signers] == ["bench-eu"]
+    assert "--region eu" in joined[control[0]]
+    assert control[0] < signers[0] < migrate < account
     # the signer runs under its own profile, which binds the private key
     assert all("--profile deploy-signer" in joined[i] for i in signers)
 
@@ -147,11 +149,11 @@ def test_the_deploy_removes_retired_secrets_then_smokes(monkeypatch, tmp_path):
     _world(monkeypatch, tmp_path, events)
     seen: list[str] = []
 
-    def remove(_d):
+    def remove(_d, *_a, **_k):
         seen.append("rm")
         return []
 
-    def smoke():
+    def smoke(*_a, **_k):
         seen.append("smoke")
 
     monkeypatch.setattr(deploy_bench, "_remove_retired_secrets", remove)
@@ -169,7 +171,7 @@ def test_smoke_failing_on_500_makes_main_exit_nonzero(monkeypatch, capsys):
     monkeypatch.setattr(deploy_bench.cf_auth, "resolve", lambda _a: auth)
     monkeypatch.setattr(deploy_bench.cf_auth, "self_destruct", lambda _a: None)
 
-    def failing(_a, _r):
+    def failing(_a, _r, *_x):
         deploy_bench.smoke(lambda _u: 500, lambda _s: None)
 
     monkeypatch.setattr(deploy_bench, "_deploy", failing)

@@ -20,7 +20,7 @@ def _names(**over) -> bench_preflight.BenchNames:
 
 
 def _creds(monkeypatch, names, endpoint="https://abc123.r2.cloudflarestorage.com"):
-    monkeypatch.setattr(bench_preflight, "bench_names", lambda *_a: names)
+    monkeypatch.setattr(bench_preflight, "bench_names", lambda *_a, **_k: names)
     monkeypatch.setenv("CLOUDFLARE_R2_ENDPOINT", endpoint)
     monkeypatch.setenv("CLOUDFLARE_R2_ACCESS_KEY_ID", "k")
     monkeypatch.setenv("CLOUDFLARE_R2_SECRET_ACCESS_KEY", "s")
@@ -56,13 +56,13 @@ def test_the_query_targets_the_database_id_of_the_toml(monkeypatch):
         seen["flags"] = flags
         return {"success": True}
 
-    monkeypatch.setattr(bench_preflight, "bench_names", lambda *_a: _names())
+    monkeypatch.setattr(bench_preflight, "bench_names", lambda *_a, **_k: _names())
     monkeypatch.setattr(reset_bench.cf_auth, "curl_json", fake_curl)
     reset_bench._query(cast("cf_auth.Auth", _Auth()), "SELECT 1")
     assert seen["url"].endswith("/d1/database/db-id-1/query")
 
 
 def test_a_toml_without_a_database_id_refuses_the_query(monkeypatch):
-    monkeypatch.setattr(bench_preflight, "bench_names", lambda *_a: _names(database_id=""))
+    monkeypatch.setattr(bench_preflight, "bench_names", lambda *_a, **_k: _names(database_id=""))
     with pytest.raises(reset_bench.ResetError, match="database_id"):
         reset_bench._query(cast("cf_auth.Auth", _Auth()), "SELECT 1")

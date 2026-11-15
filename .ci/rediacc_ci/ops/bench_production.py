@@ -7,7 +7,7 @@ Bench signs with the production key, and once a production machine backs up thro
   3. `refuse_ids` -- the drills' cleanup refuses to delete rows of a declared subscription and deletes nothing.
   4. `signer_stop_refusal` -- the enterprise proofs' signer stop and region cut (`rediacc_ci.deploy.deploy_signer.stop_signer`, reached by `enterprise proof signer --bench` and `region-loss --bench`) refuse every bench signer while the file declares anything, before any secret is deleted.
 
-There is no override flag. A file that cannot be read or parsed, or an entry without a UUID `subscription_id`, is a refusal too: the guard fails closed.
+Each entry names the `region` of the bench that holds it (`eu`, `us`, `asia`), and a refusal covers only that region: a us wipe is not stopped by an eu subscription. A refusal asked without a region (a drill's `refuse_ids`) covers every entry. There is no override flag. A file that cannot be read or parsed, or an entry without a UUID `subscription_id`, is a refusal too: the guard fails closed.
 """
 
 from __future__ import annotations
@@ -27,6 +27,8 @@ if TYPE_CHECKING:
 CONFIG_REL = ".ci/config/bench-production.json"
 # `\Z`, not `$`: `$` also matches before a trailing newline, and a declared id carrying one would never equal the newline-free D1 id.
 UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\Z")
+REGION = re.compile(r"^[a-z][a-z0-9-]*\Z")
+SIGNER_PREFIX = "signer-bench-"
 # The exit code of a production refusal, distinct from a failed run (1).
 REFUSAL_EXIT = 2
 # `$ids` is filled only with validated UUID literals (`manifest_query`).
@@ -45,6 +47,8 @@ class Protected:
     subscription_id: str
     machine: str
     reason: str
+    # The bench that holds the subscription; "" (never produced by `load`, which requires one) stands for every region.
+    region: str = ""
 
 
 def config_path(root: pathlib.Path | None = None) -> pathlib.Path:
@@ -73,11 +77,18 @@ def load(path: pathlib.Path | None = None) -> list[Protected]:
                 "%s entry %d has no UUID subscription_id; the guard fails closed"
                 % (CONFIG_REL, index)
             )
+        region = entry.get("region")
+        if not isinstance(region, str) or not REGION.match(region):
+            raise ProductionRefusalError(
+                "%s entry %d has no `region` (a lowercase region id such as eu, us or asia); the guard fails closed"
+                % (CONFIG_REL, index)
+            )
         out.append(
             Protected(
                 subscription_id=sub,
                 machine=str(entry.get("machine") or ""),
                 reason=str(entry.get("reason") or ""),
+                region=region,
             )
         )
     return out
@@ -85,13 +96,20 @@ def load(path: pathlib.Path | None = None) -> list[Protected]:
 
 def _describe(entries: Iterable[Protected]) -> str:
     return "; ".join(
-        "subscription %s (machine %s: %s)" % (e.subscription_id, e.machine or "-", e.reason or "-")
+        "subscription %s (region %s, machine %s: %s)"
+        % (e.subscription_id, e.region or "all", e.machine or "-", e.reason or "-")
         for e in entries
     )
 
 
-def reset_refusal(entries: Sequence[Protected]) -> str | None:
-    """Why reset_bench must not run, or None when nothing is declared."""
+def for_region(entries: Sequence[Protected], region: str | None) -> list[Protected]:
+    """The entries held by REGION's bench; every entry when REGION is None."""
+    return [e for e in entries if region is None or e.region in ("", region)]
+
+
+def reset_refusal(entries: Sequence[Protected], region: str | None = None) -> str | None:
+    """Why reset_bench must not run on REGION's bench, or None when that region declares nothing."""
+    entries = for_region(entries, region)
     if not entries:
         return None
     return (
@@ -104,7 +122,9 @@ def reset_refusal(entries: Sequence[Protected]) -> str | None:
 
 
 def signer_stop_refusal(signer: str, entries: Sequence[Protected]) -> str | None:
-    """Why the bench signer `signer` must not be stopped or cut, or None when nothing is declared."""
+    """Why the bench signer `signer` must not be stopped or cut, or None when its region declares nothing. A `signer-bench-<region>` name scopes the refusal to that region; any other name is held against every entry."""
+    region = signer.removeprefix(SIGNER_PREFIX) if signer.startswith(SIGNER_PREFIX) else None
+    entries = for_region(entries, region)
     if not entries:
         return None
     return (
@@ -140,9 +160,13 @@ def d1_refusal(rows: Callable[[str], list[dict]], entries: Sequence[Protected]) 
     )
 
 
-def refuse_ids(sub_ids: Iterable[str], entries: Sequence[Protected] | None = None) -> None:
-    """ProductionRefusalError when any of `sub_ids` is declared; called before a drill deletes anything."""
-    declared = load() if entries is None else entries
+def refuse_ids(
+    sub_ids: Iterable[str],
+    entries: Sequence[Protected] | None = None,
+    region: str | None = None,
+) -> None:
+    """ProductionRefusalError when any of `sub_ids` is declared (in REGION, or in any region when None); called before a drill deletes anything."""
+    declared = for_region(load() if entries is None else entries, region)
     by_id = {e.subscription_id: e for e in declared}
     hit = [by_id[s] for s in sub_ids if s in by_id]
     if hit:

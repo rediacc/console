@@ -6,6 +6,7 @@ Python rather than a sourced bash library: Ruling 7 (2026-09-06) bans new bash u
 
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_preflight lockfile <dir>...
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_preflight buckets <wrangler-config>
+    PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_preflight buckets --region <eu|us|asia>
 """
 
 import dataclasses
@@ -19,6 +20,59 @@ from rediacc_ci import paths
 from rediacc_ci.core import wrangler
 
 BENCH_CONFIG_REL = ("workers", "account", "wrangler.bench.toml")
+# The home region's bench keeps the unsuffixed names (`wrangler.bench.toml`, `bench.json`); every other region's carry its id.
+DEFAULT_REGION = "eu"
+
+
+def config_name(region: str = DEFAULT_REGION) -> str:
+    """The account wrangler config of REGION's bench: `wrangler.bench.toml` for the home region, `wrangler.bench-<region>.toml` for the others."""
+    return "wrangler.bench.toml" if region == DEFAULT_REGION else "wrangler.bench-%s.toml" % region
+
+
+def config_rel(region: str = DEFAULT_REGION) -> tuple[str, str, str]:
+    return ("workers", "account", config_name(region))
+
+
+def bench_object(region: str, root=None) -> dict:
+    """The `bench` object of REGION's row in regions.json. A ValueError names an unknown region or a row without a bench."""
+    path = (root or paths.repo_root()) / "regions.json"
+    rows = json.loads(path.read_text(encoding="utf-8"))["regions"]
+    for row in rows:
+        if str(row.get("id")) == region:
+            bench = row.get("bench")
+            if not isinstance(bench, dict):
+                raise ValueError("region %r has no bench object in regions.json" % region)
+            return bench
+    raise ValueError(
+        "no region %r in regions.json (one of %s)" % (region, ", ".join(bench_regions(root)))
+    )
+
+
+def bench_regions(root=None) -> list[str]:
+    """The ids of the regions whose regions.json row carries a bench object, in file order."""
+    path = (root or paths.repo_root()) / "regions.json"
+    rows = json.loads(path.read_text(encoding="utf-8"))["regions"]
+    return [str(r["id"]) for r in rows if isinstance(r.get("bench"), dict)]
+
+
+def take_region(argv: list[str]) -> tuple[str, list[str]]:
+    """`(region, rest)`: REGION from a `--region <r>` or `--region=<r>` in ARGV (the home region when absent) and the other arguments. A flag with no value, or given twice, is a ValueError."""
+    region, rest, seen = DEFAULT_REGION, [], False
+    items = iter(argv)
+    for arg in items:
+        if arg == "--region" or arg.startswith("--region="):
+            if seen:
+                raise ValueError("--region given twice")
+            seen = True
+            value = arg.partition("=")[2] if "=" in arg else next(items, "")
+            if not value:
+                raise ValueError("--region needs a value")
+            region = value
+        else:
+            rest.append(arg)
+    return region, rest
+
+
 LISTED_NAME = re.compile(r"^name:\s+(\S+)", re.MULTILINE)
 
 
@@ -34,9 +88,9 @@ class BenchNames:
     backup_jurisdiction: str
 
 
-def bench_names(config=None) -> BenchNames:
-    """BenchNames from CONFIG (default workers/account/wrangler.bench.toml). A missing DB binding is a ValueError, never a silent default; a missing bucket binding reads as "" and each caller that needs the bucket refuses it by name."""
-    path = paths.repo_root().joinpath(*BENCH_CONFIG_REL) if config is None else config
+def bench_names(config=None, region: str = DEFAULT_REGION) -> BenchNames:
+    """BenchNames from CONFIG (default: REGION's `workers/account/wrangler.bench*.toml`). A missing DB binding is a ValueError, never a silent default; a missing bucket binding reads as "" and each caller that needs the bucket refuses it by name."""
+    path = paths.repo_root().joinpath(*config_rel(region)) if config is None else config
     with open(path, "rb") as fh:
         doc = tomllib.load(fh)
     dbs = {b.get("binding"): b for b in doc.get("d1_databases") or []}
@@ -197,6 +251,13 @@ def main(argv):
         return lockfile(argv[1:])
     if len(argv) == 2 and argv[0] == "buckets":
         return buckets(argv[1])
+    if len(argv) == 3 and argv[0] == "buckets" and argv[1] == "--region":
+        try:
+            bench_object(argv[2])
+        except ValueError as exc:
+            print("✗ %s" % exc, file=sys.stderr)
+            return 2
+        return buckets(str(paths.repo_root().joinpath(*config_rel(argv[2]))))
     print("\n".join(__doc__.strip().splitlines()[-2:]), file=sys.stderr)
     return 2
 
