@@ -208,8 +208,16 @@ def open_session(
     sleep = sleep or time.sleep
     status, answer = api.post("login", {"email": values[EMAIL_ENV], "password": values[PW_ENV]})
     if status != 200:
+        # The server's own code and message carry no secret and say why (a captcha requirement, a lockout, a refused password); guessing "password refused" for every non-200 hid that.
+        err = answer.get("error")
+        if isinstance(err, str):
+            code, message = "", err
+        else:
+            body = err if isinstance(err, dict) else answer
+            code, message = str(body.get("code") or ""), str(body.get("message") or "")
         raise RootLoginError(
-            "POST /auth/login answered HTTP %d: the root address or password was refused" % status
+            "POST /auth/login answered HTTP %d%s%s"
+            % (status, " %s" % code if code else "", ": %s" % message[:200] if message else "")
         )
     if answer.get("requiresTwoFactor"):
         challenge = answer.get("challengeToken")

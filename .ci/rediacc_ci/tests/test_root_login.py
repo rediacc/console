@@ -32,11 +32,13 @@ class _Account:
         accept: set[str],
         two_factor: bool = True,
         login_status: int = 200,
+        login_error: object = None,
         cookie: bool = True,
     ):
         self.accept = accept
         self.two_factor = two_factor
         self.login_status = login_status
+        self.login_error = login_error
         self.cookie = cookie
         self.bodies: list[tuple[str, dict]] = []
         outer = self
@@ -56,6 +58,8 @@ class _Account:
                         payload = {"requiresTwoFactor": True, "challengeToken": CHALLENGE}
                     elif status == 200:
                         cookie = outer.cookie
+                    elif outer.login_error is not None:
+                        payload = {"error": outer.login_error}
                 elif route == "2fa/verify":
                     ok = (
                         body.get("challengeToken") == CHALLENGE and body.get("code") in outer.accept
@@ -149,6 +153,27 @@ def test_password_refused_stops_before_any_code(account_factory):
     with pytest.raises(root_login.RootLoginError, match="HTTP 401"):
         root_login.open_session(account.origin, _values(), now, sleep)
     assert [r for r, _ in account.bodies] == ["login"]
+
+
+@pytest.mark.parametrize(
+    ("error", "quoted"),
+    [
+        ("Captcha verification required", "HTTP 400: Captcha verification required"),
+        (
+            {"code": "ACCOUNT_LOCKED", "message": "too many attempts"},
+            "HTTP 423 ACCOUNT_LOCKED: too many attempts",
+        ),
+    ],
+)
+def test_a_refused_login_quotes_the_server_error(account_factory, error, quoted):
+    """Stable eu answered 2026-11-15 `400 {"error": "Captcha verification required"}`; the refusal used to say "the root address or password was refused" for every non-200, hiding the captcha."""
+    status = 400 if isinstance(error, str) else 423
+    account = account_factory(set(), login_status=status, login_error=error)
+    now, sleep, _ = _now_sleep()
+    with pytest.raises(root_login.RootLoginError) as caught:
+        root_login.open_session(account.origin, _values(), now, sleep)
+    assert quoted in str(caught.value)
+    assert "password was refused" not in str(caught.value)
 
 
 def test_no_challenge_with_a_cookie_opens_a_session(account_factory):
