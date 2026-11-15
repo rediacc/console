@@ -603,6 +603,12 @@ Upload a chunk-store snapshot: full inventory first, changed cells after
 
 > MCP tool
 
+### rdc backup retention [repo-ref]
+
+Show the snapshot retention policy the server is enforcing.
+
+> MCP tool
+
 ### rdc backup retention preview <repo-ref>
 
 Show which snapshots the next sweep would delete and the space it would free.
@@ -1623,6 +1629,23 @@ Live-migrate a repository from one machine to another with minimal downtime. Two
 
 > MCP tool | agent: fork-only
 
+### rdc repo replicate <ref>
+
+Create N read replicas of a repository in seconds, regardless of database size. Takes ONE datastore snapshot, then makes N constant-time fork-attaches (copy-on-write, throwaway local writes) spread across the cluster's nodes, and applies a generated overlay: one pinned PersistentVolume per replica, a StatefulSet, and two Services ({repo}-rw to the primary, {repo}-ro across the replicas). Replicas are POINT-IN-TIME copies: no replication stream, no read-your-writes; each replica runs one crash-recovery pass before serving. Refresh them with 'repo replicate refresh'. Replica sets are managed state: see 'repo replicate status' and remove with 'repo replicate remove'.
+
+**Options:**
+
+- `--replicas <n>`: Number of read replicas to create
+- `--image <image>`: Engine image the replicas run (same engine as the primary)
+- `--port <port>`: Port the engine serves on
+- `--pvc <name>`: Volume name the engine mounts as its data dir (default: data)
+- `--primary-app <label>`: The primary pod's 'app' label value the -rw Service targets (default: the repo name)
+- `--headless`: Make the -ro Service headless: DNS returns every replica pod IP for driver-side balancing (long-lived DB connections skew a normal Service's per-connection balancing)
+- `--refresh <interval>`: Intended refresh interval recorded on the set (e.g. 1h); run 'repo replicate refresh' to roll it
+- `--debug`: Enable debug output
+
+> MCP tool | agent: fork-only
+
 ### rdc repo replicate status <ref>
 
 Show managed replica sets: replicas, hosting nodes, fork datastores, snapshot, and refresh timestamps.
@@ -2468,6 +2491,18 @@ Print the recovery bundle (the keys) of an installed server, or write it to a fi
 - `--repo <name>`: Repository the server runs in (default: elite)
 
 > MCP excluded: Prints the server's private keys; they must not land in an agent transcript.
+
+### rdc server licence <domain>
+
+Move a free-tier server to a delegation certificate from the logged-in account, or from --cert
+
+**Options:**
+
+- `--cert <file>`: Delegation certificate file for an offline install; it must name the key generated on the machine
+- `-m, --machine <name>`: Machine the server runs on, when this device holds no install record for the domain
+- `--repo <name>`: Repository the server runs in (default: elite)
+
+> MCP excluded: Mints a delegation certificate and restarts the account server; use the CLI.
 
 ### rdc server licence mint
 

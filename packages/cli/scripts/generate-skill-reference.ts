@@ -78,6 +78,11 @@ function walkCommands(cmd: Command, prefix = ''): CommandCapability[] {
     const name = prefix ? `${prefix} ${sub.name()}` : sub.name();
 
     if (sub.commands.length > 0) {
+      // A command that has subcommands AND its own action (`server licence <domain>` beside
+      // `server licence mint`) is still invocable, so it gets its own section too.
+      if ((sub as unknown as { _actionHandler?: unknown })._actionHandler) {
+        results.push(extractLeafCapability(sub, name, prefix));
+      }
       results.push(...walkCommands(sub, name));
     } else {
       results.push(extractLeafCapability(sub, name, prefix));
