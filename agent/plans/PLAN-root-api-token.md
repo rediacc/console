@@ -285,8 +285,9 @@ Unchanged. login_bench keeps the password and TOTP path, and root_login has no b
   - Accept: `grep -c "ROOT_API_TOKEN" docs/agent-reference/bench-login.md` prints at least 1, `grep -c "root_token.session_opened" private/account/CLAUDE.md` prints at least 1, and `npm run -s check:ci-prose-style` rc 0.
     (ticked) 2026-11-15T21:11:34Z by d778be9d: commit:cce6d17b73 grep ROOT_API_TOKEN 5, grep root_token.session_opened 1, check:ci-prose-style rc=0
 
-- [ ] LP-bench [live] Fresh bench receipt after S1, S2 and W1 reached the eu bench (deploy_bench --region eu, 2026-11-15).
+- [x] LP-bench [live] Fresh bench receipt after S1, S2 and W1 reached the eu bench (deploy_bench --region eu, 2026-11-15).
   Accept: live-proof bench account-smoke
+    (ticked) 2026-11-15T22:45:20Z by d778be9d: live-proof lp-5931d5e152ce bench account-smoke rc=0 v=214b5d0d-a0fb-4f0e-95f9-d508c53ceaa2
 
 ### Live queue: production eu, in order, after the PR merges and CD's edge deploy is green
 
