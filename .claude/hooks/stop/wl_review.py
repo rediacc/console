@@ -1314,11 +1314,14 @@ SKIP_AGENT_ROOT = "agent/"
 SKIP_AGENT_TAILS = (".jsonl", ".json")
 SKIP_AGENT_NAMES = ("STATE.md", "QUEUE.md")
 SKIP_CONFIG_LITERALS = (".ci/config/plan-boxes.json", ".ci/config/carried-reds.json")
+#: The one value of a record's `review` key in .ci/policy/record-paths.json (check:ci-record-paths refuses any other): the record stays in the per-commit review.
+REVIEW_KEEP = "keep"
 
 
 def admissible_skip_glob(glob):
     """True when every path `glob` can match is a record file (see SKIP_AGENT_* and SKIP_CONFIG_LITERALS)."""
-    if glob in SKIP_CONFIG_LITERALS:
+    # The review records themselves: skip_globs adds this glob whatever the lists hold, so the policy naming it is no widening. Refusing it printed a refusal on every run for the one glob that was then skipped anyway (found 2026-11-16 by running skip_globs on the real policy).
+    if glob in SKIP_CONFIG_LITERALS or glob == REVIEWS_REL + "/**":
         return True
     if not glob.startswith(SKIP_AGENT_ROOT):
         return False
@@ -1332,7 +1335,10 @@ def admissible_skip_glob(glob):
 
 
 def skip_globs(root, cfg=None):
-    """The reviewer's own skip list (PLAN-experience-feedback P5): `review_skip_globs` of commit-review.json plus every glob of `.ci/policy/record-paths.json`, read at runtime and never edited here. A path matching one is a record (a ledger, a worklist, a STATE.md, a review file), not code, so it leaves the reviewed diff and the stat. The record file's `except` globs are honoured. A glob that could match a non-record file is refused (admissible_skip_glob) and named on stderr, so the list cannot be widened to hide code."""
+    """The reviewer's own skip list (PLAN-experience-feedback P5): `review_skip_globs` of commit-review.json plus every glob of `.ci/policy/record-paths.json`, read at runtime and never edited here. A path matching one is a record (a ledger, a worklist, a review file, or a STATE.md the config list names), not code, so it leaves the reviewed diff and the stat. The record file's `except` globs are honoured. A glob that could match a non-record file is refused (admissible_skip_glob) and named on stderr, so the list cannot be widened to hide code.
+
+    A RECORD MARKED `"review": "keep"` IS NOT A SKIP. The plan files and agent/INDEX.md advance a pre-push receipt like any record (operator ruling 2026-11-16) and are still reviewed per commit, so the policy marks them and they are left out here in silence: they were never asked to be skipped, so there is nothing to refuse and nothing to print. The flag can only add to what is reviewed. A commit that deletes it leaves a glob admissible_skip_glob refuses, which is named on stderr and reviewed anyway.
+    """
     cfg = cfg if cfg is not None else load_config(root)
     globs: list[tuple[str, list[str]]] = [
         (g, []) for g in cfg.get("review_skip_globs") or [] if isinstance(g, str)
@@ -1344,6 +1350,8 @@ def skip_globs(root, cfg=None):
         doc = json.loads(policy_path("record-paths.json", root).read_text(encoding="utf-8"))
         for rec in doc.get("records", []):
             if isinstance(rec, dict) and isinstance(rec.get("glob"), str):
+                if rec.get("review") == REVIEW_KEEP:
+                    continue
                 excepts = [e for e in rec.get("except") or [] if isinstance(e, str)]
                 globs.append((rec["glob"], excepts))
     except ImportError as exc:

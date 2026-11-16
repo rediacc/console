@@ -364,3 +364,80 @@ def test_a_rename_lists_only_its_new_path(tmp_path):
     rows = R.numstat_rows(str(repo), sha)
     assert [r[0] for r in rows] == ["new.py"]
     assert R.render_stat(rows, ["new.py"]) == "new.py | +0 -0\n1 file(s) changed"
+
+
+PLAN_POLICY = (
+    '{"records": ['
+    '{"glob": "agent/plans/**/*.md", "review": "keep", "except": []},'
+    '{"glob": "agent/INDEX.md", "review": "keep", "except": []},'
+    '{"glob": "agent/worklist/*.jsonl", "except": []}'
+    "]}"
+)
+
+
+def _policy_root(tmp_path, text):
+    (tmp_path / ".ci" / "policy").mkdir(parents=True)
+    (tmp_path / ".ci" / "policy" / "record-paths.json").write_text(text)
+    return str(tmp_path)
+
+
+def test_a_record_marked_review_keep_stays_reviewed_in_silence(tmp_path, capsys):
+    """Operator ruling 2026-11-16: plan files advance a receipt and are still reviewed. The policy marks them `"review": "keep"`, so they are never asked to be skipped and nothing is printed."""
+    skips = R.skip_globs(_policy_root(tmp_path, PLAN_POLICY), {"review_skip_globs": []})
+    err = capsys.readouterr().err
+    assert not R.is_skipped_path("agent/plans/PLAN-y.md", skips)
+    assert not R.is_skipped_path("agent/plans/_done/PLAN-y.md", skips)
+    assert not R.is_skipped_path("agent/INDEX.md", skips)
+    assert "refused" not in err, err
+    # CONTROL: the unmarked record of the same policy is still skipped, so the policy was read.
+    assert R.is_skipped_path("agent/worklist/e.jsonl", skips)
+
+
+def test_control_without_the_flag_the_plan_glob_is_refused_aloud(tmp_path, capsys):
+    """The other half: the same glob with no flag is a skip request admissible_skip_glob refuses, named on stderr, and the plan is reviewed anyway. This is the noise the flag removes, and the proof that deleting the flag cannot take plans out of review."""
+    unmarked = PLAN_POLICY.replace('"review": "keep", ', "")
+    assert unmarked != PLAN_POLICY
+    skips = R.skip_globs(_policy_root(tmp_path, unmarked), {"review_skip_globs": []})
+    err = capsys.readouterr().err
+    assert "skip glob(s) refused" in err, err
+    assert "agent/plans/**/*.md" in err, err
+    assert not R.is_skipped_path("agent/plans/PLAN-y.md", skips)
+    assert not R.is_skipped_path("agent/INDEX.md", skips)
+
+
+def test_a_plan_commit_reaches_the_model(tmp_path):
+    """End to end: a commit that only writes a plan is a record for the receipt and code for the reviewer."""
+    repo, sha = _commit_files(
+        tmp_path,
+        "p",
+        {".ci/policy/record-paths.json": PLAN_POLICY + "\n", "agent/plans/PLAN-y.md": "# Plan\n"},
+    )
+    (repo / "agent" / "plans" / "PLAN-y.md").write_text("# Plan\n\n- [ ] a new box\n")
+    _git(repo, "add", "-A")
+    _git(repo, "commit", "-q", "-m", "docs(plan): a new box")
+    sha = _git(repo, "rev-parse", "HEAD")
+    seen = []
+
+    def model(prompt, *_a):
+        seen.append(prompt)
+        return {"verdict": "clean", "findings": [], "labels": None}, ""
+
+    R.run_review(repo, "console", sha, "1116-1", reviewer=model, cfg=_cfg(), log=lambda _m: None)
+    assert len(seen) == 1, "a plan-only commit must reach the reviewer"
+    assert "PLAN-y.md" in seen[0]
+
+
+def test_the_real_policy_and_config_refuse_nothing(capsys):
+    """The real tree: every glob the reviewer is asked to skip is admissible, so a stop prints no refusal, the plans stay reviewed, and the ledgers and the queue stay skipped."""
+    root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+    assert os.path.isfile(os.path.join(root, ".ci", "policy", "record-paths.json")), root
+    skips = R.skip_globs(root)
+    err = capsys.readouterr().err
+    assert "refused" not in err, err
+    assert "not loaded" not in err, err
+    assert len(skips) >= 8, len(skips)
+    assert not R.is_skipped_path("agent/plans/PLAN-anything.md", skips)
+    assert not R.is_skipped_path("agent/INDEX.md", skips)
+    assert R.is_skipped_path("agent/plans/QUEUE.md", skips)
+    assert R.is_skipped_path("agent/ledgers/plan-investigation.jsonl", skips)
+    assert R.is_skipped_path(".ci/config/plan-boxes.json", skips)
