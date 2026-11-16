@@ -82,13 +82,13 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 1147 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1152 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 179 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
-- Writers: 4 live of writer_cap 25 (session d778be9d): worker:ab91401b04ad96115, worker:ac42b94df1ec172f5, worker:a9b92417dada8481b, worker:a8be524e9e3b01d72.
-- Leased items: 9: #02389657 (worker:b7oxm4dsb, d778be9d), #31cc4e10 (worker:b7oxm4dsb, d778be9d), #36ffb824 (worker:ac42b94df1ec172f5, d778be9d), #400ae5ea (worker:ab91401b04ad96115, d778be9d), #4889018a (worker:b7oxm4dsb, d778be9d), #864b6bca (worker:ab91401b04ad96115, d778be9d), #966364da (worker:a9b92417dada8481b, d778be9d), #ade37fd4 (worker:a8be524e9e3b01d72, d778be9d), #cc9085b5 (worker:b7oxm4dsb, d778be9d).
+- Writers: 1 live of writer_cap 25 (session e0f36861): worker:a1369d7cc919de5b4.
+- Leased items: 9: #0200c06a (worker:bmefv2de0, d778be9d), #02389657 (worker:bmefv2de0, d778be9d), #19767a41 (worker:bmefv2de0, d778be9d), #36ffb824 (worker:ac42b94df1ec172f5, d778be9d), #400ae5ea (worker:bmefv2de0, d778be9d), #4889018a (worker:bmefv2de0, d778be9d), #864b6bca (worker:bmefv2de0, d778be9d), #966364da (worker:bmefv2de0, d778be9d), #c1f7db48 (worker:a497cf175b21ec186, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
@@ -261,9 +261,19 @@ Promoted: 25 of 75 plans done, 1167 of 1397 boxes done (83%).
 4. agent/plans/PLAN-ci-quick-cpu-scheduling.md -- P2, active, in progress (2 of 5 boxes ticked)
 5. agent/plans/PLAN-backup-toc-exact-opt-in.md -- P3, proposed, in progress (2 of 10 boxes ticked)
 6. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
-7. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
-8. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
-9. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+7. agent/plans/PLAN-backup-schedule-origin-guard.md -- P1, proposed, not started
+8. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
+9. agent/plans/PLAN-canary-on-clusters.md -- P2, proposed, not started
+10. agent/plans/PLAN-datastore-migrate-correctness.md -- P2, proposed, not started
+11. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
+12. agent/plans/PLAN-kubelet-cgroup-rediacc-slice.md -- P2, proposed, not started
+13. agent/plans/PLAN-portal-analytics.md -- P2, proposed, not started
+14. agent/plans/PLAN-reggate-debt-collection.md -- P2, proposed, not started
+15. agent/plans/PLAN-www-funnel-truthfulness.md -- P2, proposed, not started
+16. agent/plans/PLAN-partner-sales-track.md -- P3, proposed, not started
+17. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+18. agent/plans/PLAN-vscode-browser-exposure.md -- P3, proposed, not started
+19. agent/plans/PLAN-zot-manifest-list-commit.md -- P3, proposed, not started, dep-blocked
 
 ### Not queued
 
