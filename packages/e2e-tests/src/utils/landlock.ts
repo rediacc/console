@@ -30,9 +30,11 @@ export async function workerOsId(runner: RenetFunctionsTestRunner): Promise<stri
 }
 
 /**
- * Guards a `@landlock` suite's beforeAll: such a suite is never selected on an OS where Landlock is inactive by default
- * (the config's `grepInvert`), so reaching this call there means the selection broke and the run fails loudly instead of
- * skipping. Call it right after the runner exists and before any provisioning.
+ * Guards a `@landlock` suite's beforeAll. The config's `grepInvert` selects by the `VM_IMAGE` value, not by the worker's
+ * OS: with `VM_IMAGE` unset or naming an image outside `LANDLOCK_INACTIVE_VM_IMAGES` (a stale `.env`, an unmapped alias)
+ * a `@landlock` suite is selected even when the worker boots an OS in `LANDLOCK_INACTIVE_BY_DEFAULT`. This call is the
+ * backstop for that gap: it reads the worker's real OS and fails loudly instead of skipping. Call it right after the
+ * runner exists and before any provisioning.
  */
 export async function assertLandlockSelected(runner: RenetFunctionsTestRunner): Promise<void> {
   const os = await workerOsId(runner);

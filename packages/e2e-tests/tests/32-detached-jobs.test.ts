@@ -36,6 +36,9 @@ interface Handle {
   network_id?: number;
 }
 
+/** The fixed network ids of the job vaults: 2816 + 64n (renet accepts no other form), n in 110-116, i.e. 9856-10240, clear of the ids 9152, 9216 and 9280 other tests hold, test 30's n in 0-79 and the per-run draw below in 200-299. */
+const jobNetworkId = (slot: number): number => 2816 + 64 * (110 + slot);
+
 const vaultFor = (networkId: number | 'auto', guid: string = GUID): string =>
   JSON.stringify({
     $schema: 'queue-vault-v2',
@@ -168,7 +171,7 @@ test.describe
     };
 
     test('1. two concurrent starts with one request id give one job and one spool entry', async () => {
-      const vault = await stageVault('dedupe', vaultFor(2890));
+      const vault = await stageVault('dedupe', vaultFor(jobNetworkId(0)));
       const start = `sudo renet job start --executor local --json --request-id ${requestId} --vault @${vault}`;
       const [a, b] = await Promise.all([w.executeViaBridge(start), w.executeViaBridge(start)]);
       expect(a.code, a.stderr.slice(-400)).toBe(0);
@@ -190,7 +193,7 @@ test.describe
       const rm = await w.executeViaBridge(`sudo rm -f ${REQUESTS_DIR}/${requestId}`);
       expect(rm.code, `deleting the request index entry: ${rm.stderr.slice(-300)}`).toBe(0);
       // Another repository, so the repo-exclusive lock of a case-1 job still running cannot refuse it.
-      const vault = await stageVault('dedupe-plant', vaultFor(2898, randomUUID()));
+      const vault = await stageVault('dedupe-plant', vaultFor(jobNetworkId(6), randomUUID()));
       const r = await w.executeViaBridge(
         `sudo renet job start --executor local --json --request-id ${requestId} --vault @${vault}`
       );
@@ -205,7 +208,7 @@ test.describe
     });
 
     test('2. two concurrent claims of one step give it to exactly one claimant', async () => {
-      const vault = await stageVault('claim', vaultFor(2891));
+      const vault = await stageVault('claim', vaultFor(jobNetworkId(1)));
       // `job claim` only names steps the job's plan declares (steps.json, written by `job start --steps`).
       const start = await w.executeViaBridge(
         `sudo renet job start --executor local --json --vault @${vault} --steps '[{"name":"s","on":"success"}]'`
@@ -320,7 +323,7 @@ test.describe
 
     // Control of case 2: two claims of two different steps are both won, so "exactly one claimant" is not a count that is always one.
     test('2b. control: claims of two different steps are both won', async () => {
-      const vault = await stageVault('claim-ctl', vaultFor(2895));
+      const vault = await stageVault('claim-ctl', vaultFor(jobNetworkId(4)));
       const start = await w.executeViaBridge(
         `sudo renet job start --executor local --json --vault @${vault} --steps '[{"name":"s1","on":"success"},{"name":"s2","on":"success"}]'`
       );
@@ -350,7 +353,7 @@ test.describe
       expect(created.code, `repository_create: ${w.getCombinedOutput(created).slice(-400)}`).toBe(
         0
       );
-      const vault = await stageVault('holder', vaultFor(2892, REPO));
+      const vault = await stageVault('holder', vaultFor(jobNetworkId(2), REPO));
       // A script on the worker: the bridge's own shell would expand `$(...)`, `$out` and `$unit` in a one-line command before they reach the worker, running `renet job start` on the bridge and splicing its output into the command.
       const script = '/tmp/e2e-jobs-freeze.sh';
       const staged = await w.executeViaBridge(`umask 077 && cat > ${script}`, undefined, {
@@ -373,7 +376,7 @@ test.describe
         `the holder ${holder.job_id} ended before it could be frozen (lost race)`
       ).toContain(holder.job_id);
 
-      const second = await stageVault('second', vaultFor(2893, REPO));
+      const second = await stageVault('second', vaultFor(jobNetworkId(3), REPO));
       const refused = await w.executeViaBridge(
         `sudo renet job start --executor local --json --vault @${second}`
       );
@@ -384,7 +387,7 @@ test.describe
 
     // Control of case 5: a repository other than the held one is admitted, so exit 15 is the overlap and not a refusal of every start.
     test('5b. control: a start for another repository is admitted beside the holder', async () => {
-      const vault = await stageVault('other', vaultFor(2896, OTHER));
+      const vault = await stageVault('other', vaultFor(jobNetworkId(5), OTHER));
       const r = await w.executeViaBridge(
         `sudo renet job start --executor local --json --vault @${vault}`
       );

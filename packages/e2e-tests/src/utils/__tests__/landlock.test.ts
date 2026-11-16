@@ -56,7 +56,21 @@ describe('landlockGrepInvert', () => {
     expect(landlockGrepInvert(undefined)).toBeUndefined();
   });
 
-  it('pairs each inactive os id with a VM image so the two sets cannot drift apart', () => {
-    expect(LANDLOCK_INACTIVE_VM_IMAGES.size).toBe(LANDLOCK_INACTIVE_OS_IDS.size);
+  it('maps each inactive VM image to its os id and back, so a mismatched pair fails', () => {
+    // The CI matrix `os-image` names the image (`oracle-10`); /etc/os-release names the OS (`ol-10`).
+    const OS_ID_OF_IMAGE: Record<string, string> = { 'oracle-10': 'ol-10' };
+    expect([...LANDLOCK_INACTIVE_VM_IMAGES].sort()).toEqual(Object.keys(OS_ID_OF_IMAGE).sort());
+    expect([...LANDLOCK_INACTIVE_OS_IDS].sort()).toEqual(Object.values(OS_ID_OF_IMAGE).sort());
+    for (const [image, osId] of Object.entries(OS_ID_OF_IMAGE)) {
+      expect(landlockGrepInvert(image), `${image} must drop @landlock`).toBeInstanceOf(RegExp);
+      expect(LANDLOCK_INACTIVE_BY_DEFAULT.has(osId), `${osId} must be Landlock-inactive`).toBe(
+        true
+      );
+    }
+  });
+
+  it('selects @landlock suites when VM_IMAGE is unset or unmapped, the gap assertLandlockSelected backstops', () => {
+    expect(landlockGrepInvert(undefined)).toBeUndefined();
+    expect(landlockGrepInvert('ol-10')).toBeUndefined();
   });
 });

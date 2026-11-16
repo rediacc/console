@@ -58,9 +58,9 @@ describe('buildPasswordVault', () => {
 
   it('prefers an explicit network id and maps newSize', () => {
     const vault = JSON.parse(
-      buildPasswordVault({ ...opts, networkId: '3000', newSize: '2G' }, '2816')
+      buildPasswordVault({ ...opts, networkId: '2880', newSize: '2G' }, '2816')
     );
-    expect(vault.params.network_id).toBe(3000);
+    expect(vault.params.network_id).toBe(2880);
     expect(vault.params.new_size).toBe('2G');
   });
 

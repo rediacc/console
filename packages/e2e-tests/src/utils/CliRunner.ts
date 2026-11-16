@@ -104,7 +104,7 @@ export class CliRunner {
       // Non-interactive: never prompt for confirmation or the master password.
       REDIACC_YES: '1',
       REDIACC_MASTER_PASSWORD: process.env.REDIACC_MASTER_PASSWORD ?? 'e2e-cli-master',
-      // A development build (0.0.0-dev, which every e2e CLI is) holds the machine's renet unless REDIACC_NO_PROVISION=0 (renet-upload-decision.ts renetHold). The harness setup deploys this run's renet (a per-run licence key) to the fleet, and a CLI that kept an older machine renet failed LICENSE_REQUIRED against the rebuilt one; '0' lets the CLI converge the machine on the renet it was pinned to below.
+      // A development build (0.0.0-dev: the checkout's bundle, the usual e2e CLI) holds the machine's renet unless REDIACC_NO_PROVISION=0 (renet-upload-decision.ts renetHold). A release build (an `E2E_CLI_BIN` or PATH `rdc` that is not 0.0.0-dev) has no development hold, so '0' only overrides an inherited REDIACC_NO_PROVISION=1 for it. The harness setup deploys this run's renet (a per-run licence key) to the fleet, and a CLI that kept an older machine renet failed LICENSE_REQUIRED against the rebuilt one; '0' lets the CLI converge the machine on the renet it was pinned to below.
       REDIACC_NO_PROVISION: '0',
       ...options.env,
     };
