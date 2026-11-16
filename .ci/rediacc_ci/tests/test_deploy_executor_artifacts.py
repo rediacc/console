@@ -15,7 +15,6 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_proxy, deploy_record
 from rediacc_ci.deploy import executor_artifacts as ea
 from rediacc_ci.release import renet_key_gate
@@ -665,11 +664,32 @@ def test_stage_writes_a_correctly_keyed_renet_when_a_key_is_bound(r2, tmp_path, 
     assert (r2 / "executor").exists()
 
 
-def test_the_build_info_reader_finds_a_real_go_binary():
-    # A real binary when the tree has one. Its build info is what `go version -m` prints.
-    binary = paths.repo_root() / "private" / "bin" / ea.RENET
-    if not binary.is_file():
-        pytest.skip("no prebuilt renet in this tree")
+def _build_real_renet(tmp_path: pathlib.Path, version: str) -> pathlib.Path:
+    """A real Go binary at renet's package path, built inside a one-commit git repo so the linker stamps `vcs.revision`. Needs `go` and `git` on PATH: the quality-pytest legs get Go from their setup-go step, and a missing one fails here instead of skipping."""
+    src = tmp_path / "renet-src"
+    (src / "cmd" / "renet").mkdir(parents=True)
+    (src / "go.mod").write_text("module github.com/%s\n\ngo 1.21\n" % RENET_REPO)
+    (src / "cmd" / "renet" / "main.go").write_text(
+        'package main\n\nvar Version = "dev"\n\nfunc main() { println(Version) }\n'
+    )
+    git = ["git", "-C", str(src), "-c", "user.name=t", "-c", "user.email=t@example.invalid"]
+    for argv in (["init", "-q"], ["add", "."], ["commit", "-q", "-m", "one"]):
+        subprocess.run([*git, *argv], check=True, capture_output=True)
+    out = tmp_path / ea.RENET
+    env = {**os.environ, "GOTOOLCHAIN": "local", "GOFLAGS": "-buildvcs=true"}
+    subprocess.run(
+        ["go", "build", "-ldflags", "-X main.Version=" + version, "-o", str(out), "./cmd/renet"],
+        cwd=src,
+        env=env,
+        check=True,
+        capture_output=True,
+    )
+    return out
+
+
+def test_the_build_info_reader_finds_a_real_go_binary(tmp_path):
+    # A real binary built here, so the test needs no prebuilt tree. Its build info is what `go version -m` prints.
+    binary = _build_real_renet(tmp_path, "1.4.2")
     text = ea.renet_build_text(binary)
-    assert renet_key_gate.parse_build_info(text).version
+    assert renet_key_gate.parse_build_info(text).version == "1.4.2"
     assert re.search(r"vcs\.revision=[0-9a-f]{40}", text)
