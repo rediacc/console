@@ -298,14 +298,12 @@ def ci_quick_verdict(
     front, _chain = guard._receipt_front(str(root), tree, receipt)
     if front is not None:
         return today, None
-    reread = sorted(
-        {
-            g
-            for s in steps
-            for g in (s.get("gates") if isinstance(s.get("gates"), dict) else {})
-            if g in waiver.gates
-        }
-    )
+    listed: set[str] = set()
+    for s in steps:
+        step_gates = s.get("gates")
+        if isinstance(step_gates, dict):
+            listed.update(g for g in step_gates if isinstance(g, str))
+    reread = sorted(listed & set(waiver.gates))
     if reread:
         return refuse(
             "the receipt reached HEAD through a record-only advance that touched what %s read(s), so the red it judged at tree %s is not a verdict on HEAD; re-run `npm run ci:quick` at HEAD"
