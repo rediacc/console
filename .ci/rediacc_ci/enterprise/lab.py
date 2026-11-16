@@ -180,6 +180,7 @@ class LiveLab:
         lifecycle_ctx: Callable[..., Any] | None = None,
         scoped: Scoped | None = None,
         owner_of: Callable[[dict], str] | None = None,
+        bootstrapped: Scoped | None = None,
     ):
         self.bench = bench
         reset_sessions()
@@ -190,6 +191,7 @@ class LiveLab:
         self._lifecycle_ctx = lifecycle_ctx or cli.lifecycle_context
         self._scoped = scoped or self._live_scoped
         self._owner_of = owner_of or self._live_owner
+        self._bootstrapped = bootstrapped or self._live_bootstrapped
 
     def __getattr__(self, attr: str) -> Callable[..., Any]:
         """Every protocol method this class does not define is a seam bound to its owner's module (OWNERS)."""
@@ -255,6 +257,22 @@ class LiveLab:
             raise proof.LabError(
                 "the scope row of company %s cannot be read: %s" % (row.get("id"), exc)
             ) from None
+
+    def _live_bootstrapped(self, row: dict) -> bool:
+        """True when the control database records the company's `bootstrap` step as done, so its org and owner exist whatever its state."""
+        database = registry.databases(self.bench).get(str(row.get("region")), "")
+        if not database:
+            raise proof.LabError(
+                "company %s sits in region %r, which has no control database"
+                % (row.get("id"), row.get("region"))
+            )
+        try:
+            steps = onboarding.Ledger(control_db.transport(), database).steps(str(row["id"]))
+        except onboarding.STEP_ERRORS as exc:
+            raise proof.LabError(
+                "the onboarding steps of company %s cannot be read: %s" % (row.get("id"), exc)
+            ) from None
+        return steps.get("bootstrap", ("", ""))[0] == "done"
 
     def _row(self, company: str) -> dict:
         row = self._resolver(company)
@@ -341,13 +359,13 @@ class LiveLab:
         return _one(rows, "email", "the owner of company %s" % row.get("id"))
 
     def ensure_company(self, label: str, region: str, *, ring: str | None = None) -> str:
-        """The id of the live proof company `label`. It is recreated (`_discard`, then added) when its control database holds no `scope` row, or when it is active with an owner other than `proof.proof_owner(label)`, whose mail the bench Worker cannot capture. The add always runs: it adds a missing company, resumes an unfinished one, and on a finished one runs `configs` and `deploy` again only when its configs drifted (`onboarding.run`), so the Workers carry what a fresh add would deploy."""
+        """The id of the live proof company `label`. It is recreated (`_discard`, then added) when its control database holds no `scope` row, or when it is active, or has finished `bootstrap`, with an owner other than `proof.proof_owner(label)`, whose mail the bench Worker cannot capture. The add always runs: it adds a missing company, resumes an unfinished one, and on a finished one runs `configs` and `deploy` again only when its configs drifted (`onboarding.run`), so the Workers carry what a fresh add would deploy."""
         lifecycle = self._lifecycle() if ring is not None else None
         owner = proof.proof_owner(label)
         row = self._finder(label)
         if row is not None and not self._scoped(row):
             self._discard(row, "has no control scope row")
-        elif row is not None and row.get("state") == "active":
+        elif row is not None and (row.get("state") == "active" or self._bootstrapped(row)):
             held = self._owner_of(row)
             if held != owner:
                 self._discard(row, "has the owner %s, not %s" % (held, owner))

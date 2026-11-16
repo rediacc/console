@@ -64,6 +64,8 @@ def _lab(**kw) -> lab.LiveLab:
     kw.setdefault("scoped", lambda _row: True)
     # ...and the owner the lab adds it with, so no test reads a live company database.
     kw.setdefault("owner_of", lambda row: proof.proof_owner(str(row["name"])))
+    # ...and no company has finished `bootstrap` unless the test says so.
+    kw.setdefault("bootstrapped", lambda _row: False)
     return lab.build(bench=True, **kw)
 
 
@@ -369,6 +371,49 @@ def test_ensure_company_reads_no_owner_of_a_company_that_is_not_active(monkeypat
     }  # fmt: skip
     assert built.ensure_company("proof-proxy-a", "eu") == "c00000000000000aa"
     assert fake.calls == []
+
+
+def test_ensure_company_recreates_a_bootstrapped_unfinished_company_with_a_custom_owner(
+    monkeypatch,
+):
+    """Review e6a13b8f.1: bootstrap and invite finished under another owner, state never active; add would not rewrite the owner, so the company is recreated."""
+    built, adder, fake = _owned(monkeypatch, lambda _row: "custom@acme.example")
+    built._bootstrapped = lambda _row: True
+    adder.companies["proof-proxy-a"] = {
+        "id": "c00000000000000aa", "name": "proof-proxy-a", "region": "eu", "state": "onboarding",
+    }  # fmt: skip
+    cid = built.ensure_company("proof-proxy-a", "eu")
+    assert cid != "c00000000000000aa"
+    assert [v for v, _c, _n, _kw in fake.calls] == ["export", "remove"]
+    assert adder.calls[-1][0].owner == proof.proof_owner("proof-proxy-a")
+
+
+def test_ensure_company_keeps_a_bootstrapped_unfinished_company_with_the_proof_owner(monkeypatch):
+    """Control: same state, owner equal to proof_owner(label): no recreate."""
+    built, adder, fake = _owned(monkeypatch, lambda row: proof.proof_owner(str(row["name"])))
+    built._bootstrapped = lambda _row: True
+    adder.companies["proof-proxy-a"] = {
+        "id": "c00000000000000aa", "name": "proof-proxy-a", "region": "eu", "state": "onboarding",
+    }  # fmt: skip
+    assert built.ensure_company("proof-proxy-a", "eu") == "c00000000000000aa"
+    assert fake.calls == []
+
+
+@pytest.mark.parametrize(("status", "expected"), [("done", True), ("failed", False)])
+def test_live_bootstrapped_reads_the_bootstrap_row_of_the_ledger(monkeypatch, status, expected):
+    seen: list[tuple[str, list]] = []
+
+    def transport(database, _sql, params):
+        seen.append((database, params))
+        return [{"step": "bootstrap", "status": status, "detail": ""}]
+
+    monkeypatch.setattr(lab.control_db, "transport", lambda: transport)
+    built = lab.LiveLab(bench=True)
+    row = {"id": "c00000000000000aa", "region": "eu"}
+    assert built._live_bootstrapped(row) is expected
+    assert seen[0][1] == ["c00000000000000aa"]
+    with pytest.raises(proof.LabError, match="no control database"):
+        built._live_bootstrapped({"id": "c1", "region": "nowhere"})
 
 
 def test_discard_company_takes_out_a_left_proof_company_and_nothing_else(monkeypatch):
