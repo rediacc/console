@@ -1411,6 +1411,7 @@
   "commands.repo.admin.orphan.delete.completed": "Образ репозитория {{guid}} удалён с {{machine}}",
   "commands.repo.admin.orphan.delete.confirm": "Безвозвратно удалить образ репозитория {{guid}} ({{size}}) с {{machine}}?",
   "commands.repo.admin.orphan.delete.description": "Удаляет один бесхозный образ репозитория по GUID. GUID, упомянутый в любой конфигурации, отклоняется, как и смонтированный или запущенный образ, если не указан --force-delete-mounted.",
+  "commands.repo.admin.orphan.delete.descriptionShort": "Удаляет один бесхозный образ репозитория по GUID",
   "commands.repo.admin.orphan.delete.failed": "Не удалось удалить образ репозитория {{guid}}",
   "commands.repo.admin.orphan.delete.forceOption": "Удалить образ, даже если он смонтирован или в нём работают контейнеры Docker",
   "commands.repo.admin.orphan.delete.mounted": "{{guid}} смонтирован или запущен на {{machine}} (контейнеров: {{containers}}). С --force-delete-mounted он будет остановлен и удалён.",

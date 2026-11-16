@@ -1798,6 +1798,7 @@
           },
           "delete": {
             "description": "Exclui uma imagem de repositório órfã pelo GUID. Um GUID mencionado por qualquer configuração é recusado, assim como uma imagem montada ou em execução, a menos que --force-delete-mounted seja usado.",
+            "descriptionShort": "Exclui uma imagem de repositório órfã pelo GUID",
             "refArg": "Imagem órfã no formato <guid>@<machine>",
             "badRef": "\"{{ref}}\" não está no formato <guid>@<machine>",
             "notOnMachine": "Nenhuma imagem de repositório {{guid}} em {{machine}}",

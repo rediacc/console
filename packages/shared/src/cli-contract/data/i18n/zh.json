@@ -1411,6 +1411,7 @@
   "commands.repo.admin.orphan.delete.completed": "已从 {{machine}} 删除仓库镜像 {{guid}}",
   "commands.repo.admin.orphan.delete.confirm": "要从 {{machine}} 永久删除仓库镜像 {{guid}}（{{size}}）吗？",
   "commands.repo.admin.orphan.delete.description": "按 GUID 删除一个孤立的仓库镜像。任何配置引用的 GUID 都会被拒绝；已挂载或正在运行的镜像也会被拒绝，除非指定 --force-delete-mounted。",
+  "commands.repo.admin.orphan.delete.descriptionShort": "按 GUID 删除一个孤立的仓库镜像",
   "commands.repo.admin.orphan.delete.failed": "删除仓库镜像 {{guid}} 失败",
   "commands.repo.admin.orphan.delete.forceOption": "即使镜像已挂载或有正在运行的 Docker 容器也删除",
   "commands.repo.admin.orphan.delete.mounted": "{{guid}} 在 {{machine}} 上已挂载或正在运行（{{containers}} 个容器）。指定 --force-delete-mounted 会先停止再删除。",

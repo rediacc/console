@@ -1798,6 +1798,7 @@
           },
           "delete": {
             "description": "Löscht ein verwaistes Repository-Image anhand seiner GUID. Eine GUID, die irgendeine Konfiguration nennt, wird abgelehnt, ebenso ein eingehängtes oder laufendes Image, außer mit --force-delete-mounted.",
+            "descriptionShort": "Löscht ein verwaistes Repository-Image anhand seiner GUID",
             "refArg": "Verwaistes Image als <guid>@<machine>",
             "badRef": "\"{{ref}}\" hat nicht die Form <guid>@<machine>",
             "notOnMachine": "Kein Repository-Image {{guid}} auf {{machine}}",

@@ -33,9 +33,9 @@ vi.mock('../../services/executor/executor-factory.js', () => ({
   }),
 }));
 vi.mock('../../services/machine/machine-status.js', () => ({
-  fetchMachineStatus: async () => {
+  fetchMachineStatus: () => {
     mocks.calls.push({ functionName: 'list_all' });
-    return { repositories: mocks.repos };
+    return Promise.resolve({ repositories: mocks.repos });
   },
 }));
 vi.mock('../../services/config/config-resources.js', () => ({

@@ -1798,6 +1798,7 @@
           },
           "delete": {
             "description": "孤立したリポジトリイメージを GUID で 1 つ削除します。いずれかの設定に登録されている GUID は拒否されます。マウント中または実行中のイメージも、--force-delete-mounted を指定しない限り拒否されます。",
+            "descriptionShort": "孤立したリポジトリイメージを GUID で 1 つ削除します",
             "refArg": "<guid>@<machine> 形式の孤立イメージ",
             "badRef": "\"{{ref}}\" は <guid>@<machine> 形式ではありません",
             "notOnMachine": "{{machine}} にリポジトリイメージ {{guid}} はありません",

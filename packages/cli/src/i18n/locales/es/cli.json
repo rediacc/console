@@ -1798,6 +1798,7 @@
           },
           "delete": {
             "description": "Elimina una imagen de repositorio huérfana por su GUID. Se rechaza un GUID que nombre cualquier configuración, y también una imagen montada o en ejecución, salvo con --force-delete-mounted.",
+            "descriptionShort": "Elimina una imagen de repositorio huérfana por su GUID",
             "refArg": "Imagen huérfana en formato <guid>@<machine>",
             "badRef": "\"{{ref}}\" no tiene el formato <guid>@<machine>",
             "notOnMachine": "No existe la imagen de repositorio {{guid}} en {{machine}}",

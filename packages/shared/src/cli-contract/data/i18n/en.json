@@ -1411,6 +1411,7 @@
   "commands.repo.admin.orphan.delete.completed": "Deleted repository image {{guid}} from {{machine}}",
   "commands.repo.admin.orphan.delete.confirm": "Permanently delete repository image {{guid}} ({{size}}) from {{machine}}?",
   "commands.repo.admin.orphan.delete.description": "Delete one orphan repository image by GUID. A GUID that any config names is refused, and so is a mounted or running image unless --force-delete-mounted is passed.",
+  "commands.repo.admin.orphan.delete.descriptionShort": "Delete one orphan repository image by GUID",
   "commands.repo.admin.orphan.delete.failed": "Deleting repository image {{guid}} failed",
   "commands.repo.admin.orphan.delete.forceOption": "Delete the image even when it is mounted or has running Docker containers",
   "commands.repo.admin.orphan.delete.mounted": "{{guid}} is mounted or running on {{machine}} ({{containers}} container(s)). Pass --force-delete-mounted to stop and delete it.",

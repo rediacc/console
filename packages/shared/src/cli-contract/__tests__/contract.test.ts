@@ -195,6 +195,8 @@ describe('CLI contract', () => {
     excluded.push('backup check', 'backup churn', 'backup repair', 'backup toc-key sync');
     // `rdc server` finds the box through the caller's install record, drives child commands and prints the server's keys; `server install` is interactive (PLAN-enterprise-tenants C7).
     excluded.push('server status', 'server upgrade', 'server backup', 'server licence');
+    // Judged against every config the caller can read: an executor would judge against its own configs and could delete an image the caller's config names.
+    excluded.push('repo admin orphan list', 'repo admin orphan delete');
 
     for (const pathKey of excluded) {
       const cmd = getCommand(pathKey);

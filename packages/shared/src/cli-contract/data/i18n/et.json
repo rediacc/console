@@ -1411,6 +1411,7 @@
   "commands.repo.admin.orphan.delete.completed": "Hoidla kujutis {{guid}} on masinast {{machine}} kustutatud",
   "commands.repo.admin.orphan.delete.confirm": "Kas kustutada hoidla kujutis {{guid}} ({{size}}) masinast {{machine}} jäädavalt?",
   "commands.repo.admin.orphan.delete.description": "Kustutab ühe omanikuta hoidla kujutise GUID-i järgi. GUID, mida mõni konfiguratsioon nimetab, lükatakse tagasi, samuti ühendatud või töötav kujutis, kui --force-delete-mounted pole antud.",
+  "commands.repo.admin.orphan.delete.descriptionShort": "Kustutab ühe omanikuta hoidla kujutise GUID-i järgi",
   "commands.repo.admin.orphan.delete.failed": "Hoidla kujutise {{guid}} kustutamine ebaõnnestus",
   "commands.repo.admin.orphan.delete.forceOption": "Kustuta kujutis ka siis, kui see on ühendatud või selles töötavad Dockeri konteinerid",
   "commands.repo.admin.orphan.delete.mounted": "{{guid}} on masinas {{machine}} ühendatud või töötab (konteinereid: {{containers}}). Lipuga --force-delete-mounted see peatatakse ja kustutatakse.",

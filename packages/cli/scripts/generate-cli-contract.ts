@@ -126,6 +126,12 @@ const PROXY_EXCLUSIONS: Record<string, string> = {
   'server licence':
     "Mints the certificate with the caller's login and records it in the caller's local install record; a remote executor holds neither. Run it without --proxy.",
 
+  // ── The caller's config set ───────────────────────────────────────────
+  'repo admin orphan list':
+    "Judges each image against every config the CALLER can read; a remote executor would judge against its own configs and report the caller's repositories as orphans. Run it without --proxy.",
+  'repo admin orphan delete':
+    "Refuses a GUID any config the CALLER can read still names; a remote executor would check its own configs and could delete an image the caller's config names. Run it without --proxy.",
+
   // ── Caller-held secrets ───────────────────────────────────────────────
   'machine converge':
     "Restarts each repo daemon with the env secrets from the CALLER's config; a remote executor would restart them with its own copy, or with none. Run it without --proxy.",

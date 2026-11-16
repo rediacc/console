@@ -33,15 +33,10 @@ export interface MachineRepoVerdict {
 }
 
 /** The repository's Docker daemon answers, or it has containers: deleting it would stop live work. */
-export function isRepoRunning(repo: RepositoryInfo): boolean {
+function isRepoRunning(repo: RepositoryInfo): boolean {
   return (
     Boolean(repo.docker_running) || Boolean(repo.containers_running) || repo.container_count > 0
   );
-}
-
-/** The mount-safety predicate `machine prune` documents for both of its deletion paths. */
-export function isRepoMountedOrRunning(repo: RepositoryInfo): boolean {
-  return Boolean(repo.mounted) || isRepoRunning(repo);
 }
 
 /** Grand GUIDs the current config's forks descend from: such an image is a lineage the config still names. */

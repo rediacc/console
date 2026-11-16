@@ -1780,6 +1780,7 @@
           },
           "delete": {
             "description": "Delete one orphan repository image by GUID. A GUID that any config names is refused, and so is a mounted or running image unless --force-delete-mounted is passed.",
+            "descriptionShort": "Delete one orphan repository image by GUID",
             "refArg": "Orphan image as <guid>@<machine>",
             "badRef": "\"{{ref}}\" is not in the form <guid>@<machine>",
             "notOnMachine": "No repository image {{guid}} on {{machine}}",

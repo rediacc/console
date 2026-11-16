@@ -1798,6 +1798,7 @@
           },
           "delete": {
             "description": "يحذف صورة مستودع يتيمة واحدة بواسطة GUID. يُرفض أي GUID يذكره إعداد ما، وتُرفض كذلك الصورة المركّبة أو قيد التشغيل ما لم يُمرَّر --force-delete-mounted.",
+            "descriptionShort": "يحذف صورة مستودع يتيمة واحدة بواسطة GUID",
             "refArg": "الصورة اليتيمة بالصيغة <guid>@<machine>",
             "badRef": "\"{{ref}}\" ليس بالصيغة <guid>@<machine>",
             "notOnMachine": "لا توجد صورة مستودع {{guid}} على {{machine}}",

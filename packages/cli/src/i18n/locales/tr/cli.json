@@ -1798,6 +1798,7 @@
           },
           "delete": {
             "description": "Sahipsiz bir depo imajını GUID ile siler. Herhangi bir yapılandırmada geçen GUID reddedilir; bağlı ya da çalışan bir imaj da --force-delete-mounted verilmedikçe reddedilir.",
+            "descriptionShort": "Sahipsiz bir depo imajını GUID ile siler",
             "refArg": "<guid>@<machine> biçiminde sahipsiz imaj",
             "badRef": "\"{{ref}}\" değeri <guid>@<machine> biçiminde değil",
             "notOnMachine": "{{machine}} üzerinde {{guid}} depo imajı yok",

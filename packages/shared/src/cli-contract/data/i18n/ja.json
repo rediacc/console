@@ -1411,6 +1411,7 @@
   "commands.repo.admin.orphan.delete.completed": "リポジトリイメージ {{guid}} を {{machine}} から削除しました",
   "commands.repo.admin.orphan.delete.confirm": "リポジトリイメージ {{guid}} ({{size}}) を {{machine}} から完全に削除しますか？",
   "commands.repo.admin.orphan.delete.description": "孤立したリポジトリイメージを GUID で 1 つ削除します。いずれかの設定に登録されている GUID は拒否されます。マウント中または実行中のイメージも、--force-delete-mounted を指定しない限り拒否されます。",
+  "commands.repo.admin.orphan.delete.descriptionShort": "孤立したリポジトリイメージを GUID で 1 つ削除します",
   "commands.repo.admin.orphan.delete.failed": "リポジトリイメージ {{guid}} の削除に失敗しました",
   "commands.repo.admin.orphan.delete.forceOption": "マウント中や Docker コンテナが実行中でもイメージを削除する",
   "commands.repo.admin.orphan.delete.mounted": "{{guid}} は {{machine}} でマウント中または実行中です (コンテナ {{containers}} 個)。--force-delete-mounted を指定すると停止してから削除します。",

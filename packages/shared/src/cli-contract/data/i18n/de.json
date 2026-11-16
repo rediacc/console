@@ -1411,6 +1411,7 @@
   "commands.repo.admin.orphan.delete.completed": "Repository-Image {{guid}} von {{machine}} gelöscht",
   "commands.repo.admin.orphan.delete.confirm": "Repository-Image {{guid}} ({{size}}) endgültig von {{machine}} löschen?",
   "commands.repo.admin.orphan.delete.description": "Löscht ein verwaistes Repository-Image anhand seiner GUID. Eine GUID, die irgendeine Konfiguration nennt, wird abgelehnt, ebenso ein eingehängtes oder laufendes Image, außer mit --force-delete-mounted.",
+  "commands.repo.admin.orphan.delete.descriptionShort": "Löscht ein verwaistes Repository-Image anhand seiner GUID",
   "commands.repo.admin.orphan.delete.failed": "Löschen des Repository-Images {{guid}} fehlgeschlagen",
   "commands.repo.admin.orphan.delete.forceOption": "Das Image auch dann löschen, wenn es eingehängt ist oder laufende Docker-Container hat",
   "commands.repo.admin.orphan.delete.mounted": "{{guid}} ist auf {{machine}} eingehängt oder läuft ({{containers}} Container). Mit --force-delete-mounted wird es gestoppt und gelöscht.",

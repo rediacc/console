@@ -34,7 +34,7 @@ interface OrphanDeleteOptions {
 }
 
 /** Split `<guid>@<machine>`; the GUID is lowercased because renet and the vault name images in lowercase. */
-export function parseOrphanRef(ref: string): { guid: string; machine: string } {
+function parseOrphanRef(ref: string): { guid: string; machine: string } {
   const at = ref.lastIndexOf('@');
   const guid = at > 0 ? ref.slice(0, at) : '';
   const machine = at > 0 ? ref.slice(at + 1) : '';
@@ -55,7 +55,7 @@ async function handleOrphanList(machine: string, options: { debug?: boolean }): 
   outputService.print(rows, format);
 }
 
-export async function handleOrphanDelete(ref: string, options: OrphanDeleteOptions): Promise<void> {
+async function handleOrphanDelete(ref: string, options: OrphanDeleteOptions): Promise<void> {
   const { guid, machine } = parseOrphanRef(ref);
   await assertMachineExists(machine);
   const rows = await classifyMachineRepos(machine, { debug: options.debug });
@@ -134,6 +134,7 @@ export function registerRepoAdminOrphan(admin: Command): void {
 
   orphan
     .command('delete')
+    .summary(t('commands.repo.admin.orphan.delete.descriptionShort'))
     .description(t('commands.repo.admin.orphan.delete.description'))
     .argument('<ref>', t('commands.repo.admin.orphan.delete.refArg'))
     .option('--force-delete-mounted', t('commands.repo.admin.orphan.delete.forceOption'))

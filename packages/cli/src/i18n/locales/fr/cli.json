@@ -1798,6 +1798,7 @@
           },
           "delete": {
             "description": "Supprime une image de dépôt orpheline par son GUID. Un GUID référencé par une configuration est refusé, tout comme une image montée ou en cours d'exécution, sauf avec --force-delete-mounted.",
+            "descriptionShort": "Supprime une image de dépôt orpheline par son GUID",
             "refArg": "Image orpheline au format <guid>@<machine>",
             "badRef": "« {{ref}} » n'est pas au format <guid>@<machine>",
             "notOnMachine": "Aucune image de dépôt {{guid}} sur {{machine}}",

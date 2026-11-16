@@ -1411,6 +1411,7 @@
   "commands.repo.admin.orphan.delete.completed": "Imagem de repositório {{guid}} excluída de {{machine}}",
   "commands.repo.admin.orphan.delete.confirm": "Excluir permanentemente a imagem de repositório {{guid}} ({{size}}) de {{machine}}?",
   "commands.repo.admin.orphan.delete.description": "Exclui uma imagem de repositório órfã pelo GUID. Um GUID mencionado por qualquer configuração é recusado, assim como uma imagem montada ou em execução, a menos que --force-delete-mounted seja usado.",
+  "commands.repo.admin.orphan.delete.descriptionShort": "Exclui uma imagem de repositório órfã pelo GUID",
   "commands.repo.admin.orphan.delete.failed": "Falha ao excluir a imagem de repositório {{guid}}",
   "commands.repo.admin.orphan.delete.forceOption": "Excluir a imagem mesmo que esteja montada ou tenha contêineres Docker em execução",
   "commands.repo.admin.orphan.delete.mounted": "{{guid}} está montada ou em execução em {{machine}} ({{containers}} contêiner(es)). Com --force-delete-mounted, ela é parada e excluída.",

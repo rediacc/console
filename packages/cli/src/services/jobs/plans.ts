@@ -78,6 +78,11 @@ export const JOB_EXCEPTIONS: Readonly<Record<string, string>> = {
   'machine scan-keys':
     'local ssh-keyscan; the config write is the command (section 24 not-proxyable row)',
   'datastore list': 'reads config and state only, with no machine call',
+  // Not proxyable (PROXY_EXCLUSIONS): the verdict reads every config the caller can read, which a job unit on the machine cannot.
+  'repo admin orphan delete':
+    "judges the GUID against the caller's configs before its one delete call (not proxyable)",
+  'repo admin orphan list':
+    "one list-all probe judged against the caller's configs (not proxyable)",
   // The server verbs (PLAN-enterprise-tenants C7) orchestrate: each step is a child command (repo create, repo up, ...) that is its own job, or a short SSH read.
   'server install': INTERACTIVE,
   'server status': 'reads the box over SSH and HTTPS, with no renet call',

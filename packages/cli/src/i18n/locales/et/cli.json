@@ -1798,6 +1798,7 @@
           },
           "delete": {
             "description": "Kustutab ühe omanikuta hoidla kujutise GUID-i järgi. GUID, mida mõni konfiguratsioon nimetab, lükatakse tagasi, samuti ühendatud või töötav kujutis, kui --force-delete-mounted pole antud.",
+            "descriptionShort": "Kustutab ühe omanikuta hoidla kujutise GUID-i järgi",
             "refArg": "Omanikuta kujutis kujul <guid>@<machine>",
             "badRef": "\"{{ref}}\" pole kujul <guid>@<machine>",
             "notOnMachine": "Masinas {{machine}} pole hoidla kujutist {{guid}}",

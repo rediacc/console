@@ -1411,6 +1411,7 @@
   "commands.repo.admin.orphan.delete.completed": "{{guid}} depo imajı {{machine}} üzerinden silindi",
   "commands.repo.admin.orphan.delete.confirm": "{{guid}} depo imajı ({{size}}) {{machine}} üzerinden kalıcı olarak silinsin mi?",
   "commands.repo.admin.orphan.delete.description": "Sahipsiz bir depo imajını GUID ile siler. Herhangi bir yapılandırmada geçen GUID reddedilir; bağlı ya da çalışan bir imaj da --force-delete-mounted verilmedikçe reddedilir.",
+  "commands.repo.admin.orphan.delete.descriptionShort": "Sahipsiz bir depo imajını GUID ile siler",
   "commands.repo.admin.orphan.delete.failed": "{{guid}} depo imajı silinemedi",
   "commands.repo.admin.orphan.delete.forceOption": "İmaj bağlı olsa ya da çalışan Docker konteynerleri olsa bile sil",
   "commands.repo.admin.orphan.delete.mounted": "{{guid}}, {{machine}} üzerinde bağlı ya da çalışıyor ({{containers}} konteyner). --force-delete-mounted ile durdurulup silinir.",
