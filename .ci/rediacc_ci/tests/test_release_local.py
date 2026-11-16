@@ -672,6 +672,17 @@ def test_the_release_record_carries_the_branch_release_fields(tmp_path: pathlib.
     assert record["app_version"] == "9.9.9+unpushed.%s" % ctx["sha"][:8]
 
 
+def test_the_release_record_carries_the_admitted_red_waiver(tmp_path: pathlib.Path) -> None:
+    root = _tmp_root(tmp_path)
+    ctx = local.base_context(root, ["eu"], True)
+    ctx.update(version="9.9.9", run_id="t")
+    assert local.release_record(local.Run(root, ctx))["red_waiver"] is None
+    waiver = {"gates": ["check:ci-ops-health"], "asked": "ASKED:2026-11-16T05:02Z", "reason": "x"}
+    line = "%s%s" % (local.local_gates.WAIVER_LINE, json.dumps(waiver))
+    ctx["red_waiver"] = local.local_gates.waiver_from_lines(["other", line])
+    assert local.release_record(local.Run(root, ctx))["red_waiver"] == waiver
+
+
 def test_a_branch_release_dry_run_prints_the_branch_and_hands_the_flag_to_the_gates(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:

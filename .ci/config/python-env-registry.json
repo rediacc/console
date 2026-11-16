@@ -1333,7 +1333,8 @@
     ],
     ".ci/rediacc_ci/release/local_gates.py": [
       "GITHUB_REPOSITORY",
-      "REDIACC_TRANSCRIPT_PATH"
+      "REDIACC_TRANSCRIPT_PATH",
+      "RELEASE_RED_WAIVER"
     ],
     ".ci/rediacc_ci/release/mark_production.py": [
       "GITHUB_REPOSITORY",
@@ -1936,6 +1937,9 @@
     ],
     ".ci/rediacc_ci/tests/test_ops_derive_shadow_pass_list.py": [
       "HOME"
+    ],
+    ".ci/rediacc_ci/tests/test_ops_dmarc_reports.py": [
+      "PATH"
     ],
     ".ci/rediacc_ci/tests/test_ops_executor_orgs.py": [
       "PATH"

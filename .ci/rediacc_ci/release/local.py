@@ -1700,6 +1700,7 @@ def internal_gates(step: Step, run: Run) -> int:
     lines = [ln for ln in proc.stdout.splitlines() if ln.strip()]
     for line in lines:
         print(line)
+    run.ctx["red_waiver"] = local_gates.waiver_from_lines(lines)
     return gates_verdict(proc.returncode, lines, bool(run.ctx.get("workers_only")))
 
 
@@ -1742,6 +1743,7 @@ def record_document(
     asked: str | None = None,
     build_meta: str = "",
     assist_run: str | None = None,
+    red_waiver: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """The edge release record, schema 1: one shape for every writer (`release-local` here, `release-cd` from `cd_edge_record`)."""
     return {
@@ -1757,6 +1759,7 @@ def record_document(
         "branch": branch,
         "head_sha": sha,
         "asked": asked,
+        "red_waiver": red_waiver,
         "app_version": "%s%s" % (version, build_meta),
         "regions": list(regions),
         "assist_run": assist_run,
@@ -1787,6 +1790,7 @@ def release_record(run: Run) -> dict[str, Any]:
         asked=ctx.get("asked") if branch_release else None,
         build_meta=ctx.get("build_meta", ""),
         assist_run=ctx.get("assist_run"),
+        red_waiver=ctx.get("red_waiver"),
     )
 
 
