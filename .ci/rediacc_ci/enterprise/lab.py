@@ -1752,14 +1752,12 @@ def _drop_second_factor(world: Owner, seed: str, spent: str) -> None:
 
 
 def _under_second_factor[T](world: Owner, action: Callable[[], T]) -> T:
-    """Run `action` while the owner holds a TOTP factor, and drop the factor again whatever `action` did: `requireTwoFactor` gates the store setup and the store bootstrap (private/account/src/routes/configs.ts), and the owner's magic-link sign-in has no second factor to answer. The session is elevated first, since `/auth/2fa/setup`, `/enable` and `/disable` sit behind `requireElevated`."""
+    """Run `action` while the owner holds a TOTP factor, and drop the factor again whatever `action` did, an interrupt or exit included: `requireTwoFactor` gates the store setup and the store bootstrap (private/account/src/routes/configs.ts), and the owner's magic-link sign-in has no second factor to answer. The session is elevated first, since `/auth/2fa/setup`, `/enable` and `/disable` sit behind `requireElevated`. When `action` raised, a failing drop is named in a note on `action`'s error, which is the one re-raised."""
     elevate(world)
     seed, spent = _enrol_second_factor(world)
     try:
         result = action()
-    except (
-        Exception
-    ) as exc:  # disable the factor again, then re-raise; an interrupt or exit is never repaired
+    except BaseException as exc:  # KeyboardInterrupt and SystemExit too (review 4e605596.1)
         try:
             _restore(
                 lambda: _drop_second_factor(world, seed, spent),

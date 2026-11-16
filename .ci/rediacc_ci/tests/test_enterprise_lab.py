@@ -2083,8 +2083,8 @@ class StoreV6(AccountV6):
             return self._json(201, {"store": {"id": "st-a"}, "initialToken": "rct-init"})
         if path == lab.BOOTSTRAP_PATH:
             assert doc == {"storeId": "st-a", "method": "password"}
-            if not self.tfa:
-                # private/account/src/middleware/require-2fa.ts `requireTwoFactor`, on `POST /configs/bootstrap-session`.
+            if not self.tfa or self.bootstrap_status == 403:
+                # private/account/src/middleware/require-2fa.ts `requireTwoFactor`, on `POST /configs/bootstrap-session`; `bootstrap_status=403` is a Worker that refuses even with the factor on (V7 bench, proxy-1.log:1226).
                 return self._json(403, {"error": TFA_REQUIRED, "twoFactorRequired": True})
             if self.bootstrap_status != 200:
                 return self._json(self.bootstrap_status, {"error": "boom"})
@@ -2192,10 +2192,67 @@ def test_an_existing_store_is_opened_through_its_password_slot_under_a_second_fa
 
 
 def test_a_refused_bootstrap_still_drops_the_second_factor_and_names_the_refusal():
+    """Review 4e605596.2: the real refusal, `requireTwoFactor`'s 403 "no factor" body, not a 500."""
+    acct = StoreV6(configured=True, bootstrap_status=403)
+    with pytest.raises(proof.LabError, match="store bootstrap answered HTTP 403") as caught:
+        lab.mint("c0000000a", "config-token", minter=store_minter(acct, FakeCrypto()))
+    assert TFA_REQUIRED[:40] in str(caught.value)
+    assert acct.tfa is False
+
+
+def test_a_failing_bootstrap_still_drops_the_second_factor_and_names_the_status():
     acct = StoreV6(configured=True, bootstrap_status=500)
     with pytest.raises(proof.LabError, match="store bootstrap answered HTTP 500"):
         lab.mint("c0000000a", "config-token", minter=store_minter(acct, FakeCrypto()))
     assert acct.tfa is False
+
+
+class InterruptedCrypto(FakeCrypto):
+    """The crypto helper interrupted mid-setup, as Ctrl-C or a SystemExit would leave it."""
+
+    def __init__(self, interrupt: type[BaseException]):
+        super().__init__()
+        self.interrupt = interrupt
+
+    def __call__(self, request):
+        if request["op"] == "setup":
+            raise self.interrupt
+        return super().__call__(request)
+
+
+class StoreV6DisableFails(StoreV6):
+    """A Worker whose `/auth/2fa/disable` answers 500, so the factor cannot be dropped."""
+
+    def _owned(self, path, headers, doc):
+        if path == lab.TFA_DISABLE_PATH:
+            return self._json(500, {"error": "boom"})
+        return super()._owned(path, headers, doc)
+
+
+@pytest.mark.parametrize("interrupt", [KeyboardInterrupt, SystemExit])
+def test_an_interrupted_setup_still_drops_the_second_factor(interrupt):
+    """Review 4e605596.1: the factor is dropped on an interrupt or exit too, and the interrupt is what propagates."""
+    acct = StoreV6()
+    with pytest.raises(interrupt):
+        lab.mint(
+            "c0000000a", "config-token", minter=store_minter(acct, InterruptedCrypto(interrupt))
+        )
+    assert acct.tfa is False
+    assert acct.disabled_with
+
+
+def test_a_failing_drop_after_an_interrupt_is_a_note_on_the_interrupt():
+    """The drop's failure never replaces the action's error: the interrupt propagates and names the factor left on."""
+    acct = StoreV6DisableFails()
+    with pytest.raises(KeyboardInterrupt) as caught:
+        lab.mint(
+            "c0000000a",
+            "config-token",
+            minter=store_minter(acct, InterruptedCrypto(KeyboardInterrupt)),
+        )
+    notes = getattr(caught.value, "__notes__", [])
+    assert any("disabling the owner's second factor of company" in n for n in notes), notes
+    assert acct.tfa is True
 
 
 def test_an_owner_with_a_second_factor_already_is_refused_before_the_bootstrap():
