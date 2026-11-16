@@ -8,7 +8,13 @@ import pytest
 
 from rediacc_ci.enterprise import lab
 from rediacc_ci.ops import bench_preflight, login_bench, totp
-from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN, BENCH_ORIGIN, PRODUCT_DOMAIN, SITE_ORIGIN
+from rediacc_ci.well_known import (
+    ACCOUNT_DEFAULT_ORIGIN,
+    BENCH_ORIGIN,
+    BENCH_RETIRING_ORIGIN,
+    PRODUCT_DOMAIN,
+    SITE_ORIGIN,
+)
 
 SEED = base64.b32encode(b"bench-seed-0123456789").decode().rstrip("=")
 VALUES = {
@@ -423,7 +429,7 @@ def _argvs(runner):
 
 def test_a_config_linked_to_the_pre_rename_origin_is_unlinked_and_enabled_with_force():
     runner = FakeRunner(enable=ENABLE_REENROLLED)
-    _login(runner, linked="https://bench.rediacc.cloud")
+    _login(runner, linked=BENCH_RETIRING_ORIGIN)
     calls = _argvs(runner)
     disable = [i for i, c in enumerate(calls) if c.endswith("config remote disable --local -y")]
     enable = [i for i, c in enumerate(calls) if "config remote enable" in c]
@@ -437,7 +443,7 @@ def test_a_rerun_after_a_failed_enable_still_passes_force():
     """Run 1: linked elsewhere, `disable --local` ok, enable fails. Run 2: the config is now unlinked and enable still gets `--force`."""
     first = FakeRunner(enable=(1, "boom"))
     with pytest.raises(login_bench.LoginError):
-        _login(first, linked="https://bench.rediacc.cloud")
+        _login(first, linked=BENCH_RETIRING_ORIGIN)
     assert any(c.endswith("config remote disable --local -y") for c in _argvs(first))
     second = FakeRunner(enable=ENABLE_REENROLLED)
     _login(second, linked=None)
@@ -471,8 +477,8 @@ def test_linked_api_url_reads_the_remote_pointer_and_refuses_a_broken_file(tmp_p
     assert login_bench.linked_api_url("eu-bench", env) is None
     d = tmp_path / login_bench.CONFIG_DIR_NAME
     d.mkdir()
-    (d / "eu-bench.json").write_text('{"remote": {"apiUrl": "https://bench.rediacc.cloud"}}')
-    assert login_bench.linked_api_url("eu-bench", env) == "https://bench.rediacc.cloud"
+    (d / "eu-bench.json").write_text(json.dumps({"remote": {"apiUrl": BENCH_RETIRING_ORIGIN}}))
+    assert login_bench.linked_api_url("eu-bench", env) == BENCH_RETIRING_ORIGIN
     (d / "eu-bench.json").write_text('{"account": {}}')
     assert login_bench.linked_api_url("eu-bench", env) is None
     (d / "eu-bench.json").write_text("{not json")
