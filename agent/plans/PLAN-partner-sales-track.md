@@ -79,7 +79,7 @@ The www marketing copy that the 17 questions used to cite is PLAN-www-funnel-tru
 
 ## Risks
 
-- Moving `sourceUrl` off www is a schema exception; if the operator prefers a public partner handbook on www, H3 publishes it as a docs page with 13 locales and the schema stays. Open question for approval, DEFAULT: the portal handbook as designed.
+- Moving `sourceUrl` off www is a schema exception; if the operator prefers a public partner handbook on www, H3 publishes it as a docs page with 13 locales and the schema stays. Resolved by the operator ASKED:2026-11-16T08:59Z: "Portal enablement pages".
 - Pricing questions are the most likely to need new wording; a revision bump changes a question mid-certification for candidates with an attempt in progress. H4 lands outside an active exam window if the exam service binds attempts to revisions.
 - A sanitized battlecard can still overstate a competitor; every competitive claim in H3 carries a public source or is cut.
 - The account surface needs a VERIFIED `npm run vm:check -- --changed` on the head tree before the live recorder runs (docs/agent-reference/plan-records.md, "The ladder").

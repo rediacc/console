@@ -750,6 +750,35 @@
       ],
       "done_sigs": []
     },
+    "agent/plans/PLAN-ciquick-cpu.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 18,
+      "done": 0,
+      "open_sigs": [
+        "092a3f70",
+        "3ddf03d4",
+        "51ceeb4f",
+        "56e7d176",
+        "675a2e8e",
+        "6c7831aa",
+        "782a0661",
+        "786d5fb9",
+        "7b08f012",
+        "812f66ef",
+        "824b964d",
+        "8694aa86",
+        "8735fd82",
+        "8b0b595e",
+        "96e623c9",
+        "bcfd79af",
+        "cabc2dbe",
+        "d9ea085a"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-ciquick-green-then-batch.md": {
       "status": "approved",
       "owner": "d778be9d",
