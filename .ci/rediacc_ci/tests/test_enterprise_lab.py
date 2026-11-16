@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import functools
+import inspect
 import json
 import pathlib
 import re
@@ -22,7 +23,7 @@ import pytest
 from rediacc_ci import paths
 from rediacc_ci.core import https
 from rediacc_ci.deploy import deploy_signer
-from rediacc_ci.enterprise import lab, onboarding, proof, registry
+from rediacc_ci.enterprise import cli, lab, onboarding, proof, registry
 from rediacc_ci.housekeeping import cf_leftovers
 from rediacc_ci.ops import enterprise_lookup
 from rediacc_ci.well_known import BENCH_ORIGIN, GH_API_BASE, PRODUCT_DOMAIN
@@ -291,8 +292,10 @@ def test_ensure_company_recreates_a_proof_company_without_a_scope_row(monkeypatc
         adder=adder,
         finder=adder.find,
         resolver=adder.by_id,
-        lifecycle_ctx=lambda _lc, *, bench, env, bws_project="": types.SimpleNamespace(
-            bench=bench, env=env, bws_project=bws_project
+        lifecycle_ctx=lambda _lc, *, bench, env, bws_project="", lookup_domains=(): (
+            types.SimpleNamespace(
+                bench=bench, env=env, bws_project=bws_project, lookup_domains=lookup_domains
+            )
         ),
         scoped=lambda row: row["id"] != stale["id"],
     )
@@ -327,8 +330,10 @@ def _owned(monkeypatch, owner_of):
         adder=adder,
         finder=adder.find,
         resolver=adder.by_id,
-        lifecycle_ctx=lambda _lc, *, bench, env, bws_project="": types.SimpleNamespace(
-            bench=bench, env=env, bws_project=bws_project
+        lifecycle_ctx=lambda _lc, *, bench, env, bws_project="", lookup_domains=(): (
+            types.SimpleNamespace(
+                bench=bench, env=env, bws_project=bws_project, lookup_domains=lookup_domains
+            )
         ),
         owner_of=owner_of,
     )
@@ -630,8 +635,10 @@ def _with_lifecycle(monkeypatch, fake):
         adder=adder,
         finder=adder.find,
         resolver=adder.by_id,
-        lifecycle_ctx=lambda _lc, *, bench, env, bws_project="": types.SimpleNamespace(
-            bench=bench, env=env, bws_project=bws_project
+        lifecycle_ctx=lambda _lc, *, bench, env, bws_project="", lookup_domains=(): (
+            types.SimpleNamespace(
+                bench=bench, env=env, bws_project=bws_project, lookup_domains=lookup_domains
+            )
         ),
     )
     return built, adder
@@ -662,6 +669,29 @@ def test_a_missing_bws_project_refusal_of_remove_names_the_variable(monkeypatch,
     monkeypatch.setenv(lab.BWS_PROJECT_ENV, "proj")
     assert built.remove("c00000000000000aa", delete_data=True, github_actions=False) == 1
     assert lab.BWS_PROJECT_ENV not in capsys.readouterr().err
+
+
+def test_remove_names_the_lookup_domain_every_lab_add_writes(monkeypatch):
+    """2026-11-16 bench rerun of V3: `drop lookup failed for company c433568e88dc075be (the lookup domain of company c433568e88dc075be is unknown ...)`. The control row does not hold the lookup domain, and the lab's remove named none, so a listed proof company could never be removed; it now names the one its add wrote."""
+    fake = FakeLifecycle()
+    built, adder = _with_lifecycle(monkeypatch, fake)
+    adder.companies["proof-x"] = dict(_COMPANY_ROW)
+    assert built.remove("c00000000000000aa", delete_data=True, github_actions=False) == 0
+    ((verb, ctx, name, _kw),) = fake.calls
+    assert (verb, name) == ("remove", "proof-x")
+    assert ctx.lookup_domains == (proof.proof_lookup_domain("proof-x"),) == ("proof-x.example",)
+    # control: a company the lab did not create gets no guessed domain
+    fake.calls.clear()
+    adder.companies["acme"] = {**_COMPANY_ROW, "id": "c00000000000000bb", "name": "acme"}
+    assert built.remove("c00000000000000bb", delete_data=False, github_actions=False) == 0
+    assert fake.calls[0][1].lookup_domains == ()
+
+
+def test_the_live_lifecycle_context_takes_every_keyword_the_lab_passes():
+    """The lab's default context builder is `cli.lifecycle_context`; a keyword it does not take would fail only live."""
+    inspect.signature(cli.lifecycle_context).bind(
+        object(), bench=True, env=None, bws_project="", lookup_domains=("proof-x.example",)
+    )
 
 
 def test_an_export_or_remove_failure_names_the_company_by_its_id(monkeypatch, capsys):
@@ -1351,6 +1381,9 @@ def test_a_kind_with_no_probe_is_a_lab_error():
 HOST_A = "proof-a.%s" % PRODUCT_DOMAIN
 
 
+TERMS_CURRENT = {"version": "2026-11-01", "sha256": "a" * 64}
+
+
 class AccountV6:
     """Two bench company Workers and their D1s: owner-mail captures a magic link, verify signs in, api-tokens mints."""
 
@@ -1364,7 +1397,12 @@ class AccountV6:
         stale=False,
         rival=False,
         early_rival=False,
+        terms_accepted=False,
+        accept_status=201,
     ):
+        # A fresh owner has never accepted the Terms, and every gated route answers 403 until it does (private/account/src/middleware/terms.ts).
+        self.terms_accepted = terms_accepted
+        self.accept_status = accept_status
         self.early_rival = early_rival
         self.link = link
         self.rival = rival
@@ -1425,9 +1463,27 @@ class AccountV6:
             if self.cookie:
                 cookies.append(("Set-Cookie", "access_token=sess-a; Path=/; HttpOnly"))
             return lab.HttpAnswer(200, tuple(cookies), b'{"user": {}}')
+        if path == lab.TERMS_PATH:
+            if headers.get("Cookie") != "access_token=sess-a":
+                return lab.HttpAnswer(401)
+            status = {"satisfied": self.terms_accepted, "current": TERMS_CURRENT}
+            return lab.HttpAnswer(200, (), json.dumps(status).encode())
+        if path == lab.TERMS_ACCEPT_PATH:
+            if headers.get("Cookie") != "access_token=sess-a":
+                return lab.HttpAnswer(401)
+            if self.accept_status != 201:
+                refusal = {"error": "no", "code": "TERMS_VERSION_MISMATCH"}
+                return lab.HttpAnswer(self.accept_status, (), json.dumps(refusal).encode())
+            assert doc == {**TERMS_CURRENT, "locale": "en", "method": "web-checkbox"}, doc
+            self.terms_accepted = True
+            accepted = {"accepted": True, "version": TERMS_CURRENT["version"]}
+            return lab.HttpAnswer(201, (), json.dumps(accepted).encode())
         if path == lab.TOKENS_PATH:
             if headers.get("Cookie") != "access_token=sess-a":
                 return lab.HttpAnswer(401)
+            if not self.terms_accepted:
+                refusal = {"error": "Accept the Terms", "code": "TERMS_ACCEPTANCE_REQUIRED"}
+                return lab.HttpAnswer(403, (), json.dumps(refusal).encode())
             token = "rdt_%s" % doc["scopes"][0]
             self.minted[token] = url.split("/")[2]
             return lab.HttpAnswer(201, (), json.dumps({"token": token}).encode())
@@ -1483,6 +1539,53 @@ def test_the_owner_signs_in_through_the_owner_mail_and_its_captured_link():
         "https://%s%s" % (HOST_A, lab.VERIFY_PATH),
         {"token": "tok-123"},
     )
+
+
+def test_the_owner_sign_in_accepts_the_terms_so_a_token_can_be_minted():
+    """2026-11-16 bench rerun of V7: `creating a proxy-token answered HTTP 403`. The owner `ensureOwner` creates has never accepted the Terms, and `requireCurrentTerms` refuses `POST /api-tokens` with 403 TERMS_ACCEPTANCE_REQUIRED until it does."""
+    acct = AccountV6()
+    cookie = session_v6(acct)
+    token = lab._api_token(
+        "c0000000a",
+        "proxy-token",
+        cookie,
+        companies=companies_proxy,
+        query=acct.query,
+        call=acct.call,
+    )
+    assert token == "rdt_proxy:exec"
+    paths = [c[1].split(PRODUCT_DOMAIN, 1)[1] for c in acct.calls]
+    assert paths == [lab.VERIFY_PATH, lab.TERMS_PATH, lab.TERMS_ACCEPT_PATH, lab.TOKENS_PATH]
+
+
+def test_an_owner_who_accepted_the_terms_is_not_asked_again():
+    """Control: a satisfied owner reads the status and posts no acceptance."""
+    acct = AccountV6(terms_accepted=True)
+    assert session_v6(acct) == "sess-a"
+    paths = [c[1].split(PRODUCT_DOMAIN, 1)[1] for c in acct.calls]
+    assert paths == [lab.VERIFY_PATH, lab.TERMS_PATH]
+
+
+def test_a_refused_terms_acceptance_is_a_lab_error_naming_the_code():
+    acct = AccountV6(accept_status=400)
+    with pytest.raises(
+        proof.LabError, match=r"accepting the Terms answered HTTP 400 \(TERMS_VERSION_MISMATCH\)"
+    ):
+        session_v6(acct)
+
+
+def test_a_refused_token_names_the_account_error_code():
+    """The 403 of the V7 rerun named no reason; the account's error code now rides the LabError."""
+    acct = AccountV6()
+    with pytest.raises(proof.LabError, match=r"HTTP 403 \(TERMS_ACCEPTANCE_REQUIRED\)"):
+        lab._api_token(
+            "c0000000a",
+            "proxy-token",
+            "sess-a",
+            companies=companies_proxy,
+            query=acct.query,
+            call=acct.call,
+        )
 
 
 def test_no_captured_link_is_a_lab_error_after_every_try():
@@ -1626,7 +1729,7 @@ def test_a_token_probe_that_is_not_a_yes_or_a_no_is_a_lab_error(status):
 
 def test_two_token_kinds_of_one_company_share_one_owner_sign_in(monkeypatch):
     """Control: without the shared session each kind signs the owner in again."""
-    acct = AccountV6()
+    acct = AccountV6(terms_accepted=True)  # the stubbed sign-in skips the Terms step
     signed_in: list[str] = []
 
     def sign_in(company, **_kw):
@@ -1971,6 +2074,8 @@ def test_a_config_token_sets_the_store_up_under_a_second_factor_that_is_dropped_
     assert token == "rct-init"
     order = [c[1].split(PRODUCT_DOMAIN, 1)[1] for c in acct.calls if "magic-link" not in c[1]]
     assert order == [
+        lab.TERMS_PATH,
+        lab.TERMS_ACCEPT_PATH,
         lab.STORE_INFO_PATH,
         lab.REAUTH_PATH,
         lab.REAUTH_VERIFY_PATH,

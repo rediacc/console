@@ -127,6 +127,11 @@ def proof_owner(label: str) -> str:
     return "%s+%s@%s" % (PROOF_OWNER_LOCAL, label, INFRA_DOMAIN)
 
 
+def proof_lookup_domain(label: str) -> str:
+    """The lookup domain of proof company `label`, on the reserved `.example` domain (RFC 2606): the add writes its www lookup entry under it, and the lab's remove names it again so the entry is deleted, since the control row does not hold it."""
+    return "%s.example" % label
+
+
 # How long a judged state change may take to propagate, and how often `settle` asks again.
 SETTLE_S = 90
 SETTLE_INTERVAL_S = 5
@@ -690,8 +695,8 @@ def verb_add(lab: Lab, p: Proof, *, bench: bool) -> None:
     """V3: a killed add resumes, a rerun changes nothing, owner mail is captured, the lookup hits a listed company and misses an unlisted one, a free-mail domain is refused. Each company is taken out first (`discard_company`), so the killed add is a fresh add that stops after `d1`: on a finished company there is nothing left to kill."""
     del bench
     cases = (
-        ("listed", "proof-listed", False, "proof-listed.example"),
-        ("unlisted", "proof-unlisted", True, "proof-unlisted.example"),
+        ("listed", "proof-listed", False, proof_lookup_domain("proof-listed")),
+        ("unlisted", "proof-unlisted", True, proof_lookup_domain("proof-unlisted")),
     )
     for role, label, unlisted, domain in cases:
         owner = proof_owner(label)

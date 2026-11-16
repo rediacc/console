@@ -283,12 +283,24 @@ class LiveLab:
     def _lifecycle(self) -> types.ModuleType:
         return _seam_module("C2")
 
-    def _context(self, lifecycle: types.ModuleType, *, github_actions: bool = False) -> Any:
+    def _context(
+        self,
+        lifecycle: types.ModuleType,
+        *,
+        github_actions: bool = False,
+        lookup_domains: Sequence[str] = (),
+    ) -> Any:
         # None lets the context inherit os.environ, as the CLI path does; the CI simulation sets only its variable.
         env = {"GITHUB_ACTIONS": "true"} if github_actions else None
         # The enterprise bws project the proof lab's other steps read, so export, remove and update open the store `--bws-project` would.
         project = os.environ.get(BWS_PROJECT_ENV, "")
-        return self._lifecycle_ctx(lifecycle, bench=self.bench, env=env, bws_project=project)
+        return self._lifecycle_ctx(
+            lifecycle,
+            bench=self.bench,
+            env=env,
+            bws_project=project,
+            lookup_domains=tuple(lookup_domains),
+        )
 
     # -- companies (C1, C2) ------------------------------------------------------------
 
@@ -445,9 +457,13 @@ class LiveLab:
         return 0
 
     def remove(self, company: str, *, delete_data: bool, github_actions: bool) -> int:
+        """Remove `company` through the lifecycle. A `proof-*` company's lookup domain is named (`proof.proof_lookup_domain`, the domain every lab add writes), as `--lookup-domain` names it on the CLI: the control row does not hold it, and a listed company's remove refuses to drop an entry it cannot name. Any other company gets none."""
         lifecycle = self._lifecycle()
         name = str(self._row(company)["name"])
-        ctx = self._context(lifecycle, github_actions=github_actions)
+        domains = (
+            (proof.proof_lookup_domain(name),) if name.startswith(PROOF_COMPANY_PREFIX) else ()
+        )
+        ctx = self._context(lifecycle, github_actions=github_actions, lookup_domains=domains)
         try:
             lifecycle.remove(ctx, name, delete_data=delete_data, confirm=name)
         except lifecycle.LifecycleError as exc:
@@ -1038,6 +1054,8 @@ STATUS_PATH = "/account/api/v1/licenses/status"
 INTROSPECT_PATH = "/account/api/v1/proxy/introspect"
 VERIFY_PATH = "/account/api/v1/auth/magic-link/verify"
 TOKENS_PATH = "/account/api/v1/api-tokens"
+TERMS_PATH = "/account/api/v1/portal/terms"
+TERMS_ACCEPT_PATH = TERMS_PATH + "/accept"
 REFUSED = (401, 403)
 BWS_PROJECT_ENV = "ENTERPRISE_PROOF_BWS_PROJECT"
 API_KEY_ENTRY = "ACCOUNT_SERVER_API_KEY"
@@ -1390,8 +1408,49 @@ def owner_session(
     for cookie in answer.header_values("Set-Cookie"):
         got = ACCESS_COOKIE.search(cookie)
         if got:
+            accept_terms(company, host, got.group(1), call=call)
             return got.group(1)
     raise proof.LabError("company %s: the magic-link verify set no access_token" % company)
+
+
+def accept_terms(company: str, host: str, cookie: str, *, call: Call = http_call) -> bool:
+    """Accept the Terms in force for the signed-in owner, as the portal checkbox does; True when it accepted, False when the owner already satisfied them. The account answers every gated route, `POST /api-tokens` and `/configs` among them, with 403 TERMS_ACCEPTANCE_REQUIRED until then (private/account/src/middleware/terms.ts `requireCurrentTerms`), and the owner `ensureOwner` creates has never seen them. A status or acceptance that is not the documented shape is a `LabError` naming the status."""
+    jar = {"Cookie": "access_token=%s" % cookie}
+    read = call("GET", "https://%s%s" % (host, TERMS_PATH), jar, None)
+    status = read.json()
+    if read.status != 200 or not isinstance(status.get("satisfied"), bool):
+        raise proof.LabError(
+            "company %s: the Terms status read answered HTTP %d" % (company, read.status)
+        )
+    if status["satisfied"]:
+        return False
+    current = status.get("current")
+    if not isinstance(current, dict) or not current.get("version") or not current.get("sha256"):
+        raise proof.LabError("company %s: the Terms status names no current version" % company)
+    body = {
+        "version": current["version"],
+        "sha256": current["sha256"],
+        "locale": "en",
+        "method": "web-checkbox",
+    }
+    answer = call(
+        "POST",
+        "https://%s%s" % (host, TERMS_ACCEPT_PATH),
+        {**jar, "Content-Type": "application/json"},
+        json.dumps(body).encode(),
+    )
+    if answer.status != 201 or answer.json().get("accepted") is not True:
+        raise proof.LabError(
+            "company %s: accepting the Terms answered HTTP %d%s"
+            % (company, answer.status, _code(answer))
+        )
+    return True
+
+
+def _code(answer: HttpAnswer) -> str:
+    """` (<code>)` for an error answer that carries the account's error code, else empty; the code is a fixed identifier, never a value the request carried."""
+    code = answer.json().get("code")
+    return " (%s)" % code if isinstance(code, str) and code else ""
 
 
 def _subscription(company: str, *, companies: Companies, query: Query) -> str:
@@ -1478,7 +1537,8 @@ def _api_token(
     token = answer.json().get("token")
     if answer.status != 201 or not isinstance(token, str) or not token:
         raise proof.LabError(
-            "company %s: creating a %s answered HTTP %d" % (company, kind, answer.status)
+            "company %s: creating a %s answered HTTP %d%s"
+            % (company, kind, answer.status, _code(answer))
         )
     return token
 
