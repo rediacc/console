@@ -1003,6 +1003,7 @@ def specific_hosts(*, declared: Callable[[], dict[str, str]] = declared_hosts) -
 
 CRT_SH_ATTEMPTS = 4
 CRT_SH_BACKOFF_S = 5.0
+CRT_SH_EMPTY = "answered an empty list"
 
 
 def _cert_log_rows(fetch_url: Fetch, url: str) -> tuple[list[Any] | None, str]:
@@ -1022,7 +1023,7 @@ def _cert_log_rows(fetch_url: Fetch, url: str) -> tuple[list[Any] | None, str]:
     if not isinstance(rows, list):
         raise proof.LabError("crt.sh answered a JSON value that is not a list")
     if not rows:
-        return None, "answered an empty list"
+        return None, CRT_SH_EMPTY
     return rows, ""
 
 
@@ -1034,6 +1035,8 @@ def cert_log_names(
     backoff_s: float = CRT_SH_BACKOFF_S,
 ) -> list[str]:
     """crt.sh is flaky (200 [] then 502 in one minute), so a 5xx, a timeout or an empty list is retried with a growing pause; still failing after `attempts` tries, the error names each outcome."""
+    if attempts < 1:
+        raise ValueError("attempts must be at least 1, got %d" % attempts)
     url = CRT_SH % urllib.parse.quote("%." + PRODUCT_DOMAIN)
     outcomes: list[str] = []
     rows: list[Any] | None = None
@@ -1045,9 +1048,13 @@ def cert_log_names(
         if attempt < attempts:
             sleep(backoff_s * attempt)
     if rows is None:
-        raise proof.LabError(
-            "crt.sh logged no certificate for the product domain: %s" % "; ".join(outcomes)
+        answered = any(o.endswith(CRT_SH_EMPTY) for o in outcomes)
+        lead = (
+            "crt.sh logged no certificate for the product domain"
+            if answered
+            else "crt.sh gave no usable answer"
         )
+        raise proof.LabError("%s: %s" % (lead, "; ".join(outcomes)))
     found: set[str] = set()
     for row in rows:
         if isinstance(row, dict):

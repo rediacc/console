@@ -830,12 +830,12 @@ def login(
     enable_env = dict(clean)
     enable_env[CLI_LANG_ENV] = CLI_LANG
     enable_env[CLI_STORE_MASTER_PW_ENV] = values[MASTER_PW_ENV]
-    # A config linked to another origin (the pre-rename `https://bench.rediacc.cloud`) is refused by `enable` ("can only be enrolled again there"). Unlink it locally (`disable --local`, which touches no server data), then enable again with `--force`. `--force` only skips the confirmation before the local file is replaced by the store's copy (packages/cli/src/commands/config-remote-enable.ts, finalizeEnable): the server copy stays authoritative and is never overwritten, and the CLI keeps the replaced file as `<config>.json.bak`. A config already linked to the target, or not linked, gets neither.
+    # A config linked to another origin (the pre-rename `https://bench.rediacc.cloud`) is refused by `enable` ("can only be enrolled again there"). Unlink it locally (`disable --local`, which touches no server data), then enable again with `--force`. `--force` only skips the confirmation before the local file is replaced by the store's copy (packages/cli/src/commands/config-remote-enable.ts, finalizeEnable): the server copy stays authoritative and is never overwritten, and the CLI keeps the replaced file as `<config>.json.bak`. A config already linked to the target gets neither. A config not linked to the target (linked elsewhere, or unlinked by an earlier run whose enable then failed) gets `--force`, so a rerun after that failure does not hit the refusal again; only one linked elsewhere is unlinked first.
     relink = False
     if config_exists(config, env):
         linked = linked_url(config, env)
-        if linked is not None and linked.rstrip("/") != server.rstrip("/"):
-            relink = True
+        relink = linked is None or linked.rstrip("/") != server.rstrip("/")
+        if linked is not None and relink:
             _step(
                 run,
                 "%s is linked to %s, not %s: unlinking it locally (config remote disable --local)"

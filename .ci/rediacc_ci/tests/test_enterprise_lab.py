@@ -1337,6 +1337,24 @@ def test_cert_log_names_every_attempt_failing_raises_naming_each_attempt():
     assert pauses == [1.0, 2.0, 3.0]
 
 
+def test_cert_log_names_never_answered_does_not_claim_an_empty_log():
+    fetch, _calls = _scripted_crt((502, "x"), proof.LabError("GET u: TimeoutError"))
+    with pytest.raises(proof.LabError) as err:
+        lab.cert_log_names(fetch_url=fetch, sleep=lambda _s: None, attempts=2, backoff_s=1.0)
+    text = str(err.value)
+    assert "no usable answer" in text
+    assert "no certificate" not in text
+    assert "attempt 2 failed" in text
+
+
+@pytest.mark.parametrize("attempts", [0, -1])
+def test_cert_log_names_refuses_fewer_than_one_attempt(attempts):
+    fetch, calls = _scripted_crt()
+    with pytest.raises(ValueError, match="at least 1"):
+        lab.cert_log_names(fetch_url=fetch, sleep=lambda _s: None, attempts=attempts)
+    assert calls == []
+
+
 def test_turnstile_domains_read_the_one_shared_widget():
     bench_host = BENCH_ORIGIN.removeprefix("https://")
     widgets = [

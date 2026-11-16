@@ -66,7 +66,10 @@ def side_region(rel: pathlib.PurePosixPath) -> tuple[str, str]:
     if rel.name == "wrangler.toml":
         stem = ""
     if stem.startswith("bench-"):
-        return "bench", stem.removeprefix("bench-")
+        region = stem.removeprefix("bench-")
+        if not region:
+            raise AuditError("%s names the bench side but no region" % rel)
+        return "bench", region
     if stem == "dev":
         return "dev", "-"
     return "shared", stem or "-"

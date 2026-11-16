@@ -154,6 +154,12 @@ def test_side_region_maps_every_file_name() -> None:
     assert sr(pure("workers/account/wrangler.%s.toml" % "bench")) == ("shared", "bench")
 
 
+def test_side_region_refuses_a_bench_name_without_a_region() -> None:
+    pure = mod.pathlib.PurePosixPath
+    with pytest.raises(mod.AuditError, match="no region"):
+        mod.side_region(pure("workers/account/wrangler.bench-.toml"))
+
+
 def test_root_wrangler_toml_is_shared(tmp_path: pathlib.Path) -> None:
     acc = tmp_path / "workers" / "account"
     acc.mkdir(parents=True)

@@ -315,6 +315,7 @@ def test_the_steps_run_in_order_against_bench_and_eu_bench():
         "remote",
         "enable",
         "--master-password",
+        "--force",
         "--config-id",
         login_bench.CONFIG_ID,
         "--api-url",
@@ -432,8 +433,32 @@ def test_a_config_linked_to_the_pre_rename_origin_is_unlinked_and_enabled_with_f
     assert "--force" in calls[enable[0]].split()
 
 
-@pytest.mark.parametrize("linked", [None, BENCH_ORIGIN, BENCH_ORIGIN + "/"])
-def test_a_config_already_on_the_target_or_unlinked_gets_neither_disable_nor_force(linked):
+def test_a_rerun_after_a_failed_enable_still_passes_force():
+    """Run 1: linked elsewhere, `disable --local` ok, enable fails. Run 2: the config is now unlinked and enable still gets `--force`."""
+    first = FakeRunner(enable=(1, "boom"))
+    with pytest.raises(login_bench.LoginError):
+        _login(first, linked="https://bench.rediacc.cloud")
+    assert any(c.endswith("config remote disable --local -y") for c in _argvs(first))
+    second = FakeRunner(enable=ENABLE_REENROLLED)
+    _login(second, linked=None)
+    enable = [c for c in _argvs(second) if "config remote enable" in c]
+    assert len(enable) == 1
+    assert "--force" in enable[0].split()
+
+
+def test_an_unlinked_config_is_enabled_with_force_and_not_disabled():
+    """A rerun after a failed enable finds the config unlinked (the earlier `disable --local` stuck): it still gets `--force`."""
+    runner = FakeRunner(enable=ENABLE_REENROLLED)
+    _login(runner, linked=None)
+    calls = _argvs(runner)
+    assert not any("remote disable" in c for c in calls)
+    enable = [c for c in calls if "config remote enable" in c]
+    assert len(enable) == 1
+    assert "--force" in enable[0].split()
+
+
+@pytest.mark.parametrize("linked", [BENCH_ORIGIN, BENCH_ORIGIN + "/"])
+def test_a_config_already_on_the_target_gets_neither_disable_nor_force(linked):
     runner = FakeRunner(enable=ENABLE_REENROLLED)
     _login(runner, linked=linked)
     calls = _argvs(runner)
