@@ -77,7 +77,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 2e0e531f, plan agent/plans/PLAN-rediaccfile-unprivileged.md, outside the set, 19 commit(s) on the branch, 0 open item(s): Rediaccfile lifecycle runs unprivileged
   - epic fbb27b45, plan agent/plans/PLAN-product-domain-rename.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Product moves to rediacc.cloud and names drop their prefixes
   - epic 5eb69cff, plan agent/plans/PLAN-website-routing-and-mail.md, outside the set, 14 commit(s) on the branch, 0 open item(s): Website routing, company lookup and product mail on .cloud
-  - epic 783185d2, plan agent/plans/PLAN-enterprise-isolation.md, outside the set, 75 commit(s) on the branch, 0 open item(s): Enterprise per-company isolation, regional signers and release rings
+  - epic 783185d2, plan agent/plans/PLAN-enterprise-isolation.md, outside the set, 77 commit(s) on the branch, 0 open item(s): Enterprise per-company isolation, regional signers and release rings
   - epic 1d805023, plan agent/plans/PLAN-tick-tracking.md, outside the set, 26 commit(s) on the branch, 0 open item(s): tick tracking: plan-box trailer, landing prints the tick, box audit
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
@@ -85,11 +85,11 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 79b7e92e, no plan, 1152 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
-  - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 179 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
+  - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 182 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
   - epic 2255f2d2, no plan, 1 commit(s) on the branch, 0 open item(s): Convert stale GitHub issues (console, renet, account) into plan files
-- Writers: 0 live of writer_cap 25 (session e0f36861).
-- Leased items: 10: #0200c06a (worker:bmefv2de0, d778be9d), #02389657 (worker:bmefv2de0, d778be9d), #19767a41 (worker:bmefv2de0, d778be9d), #26922185 (worker:ac42b94df1ec172f5, d778be9d), #36ffb824 (worker:ac42b94df1ec172f5, d778be9d), #400ae5ea (worker:bmefv2de0, d778be9d), #4889018a (worker:bmefv2de0, d778be9d), #864b6bca (worker:bmefv2de0, d778be9d), #966364da (worker:bmefv2de0, d778be9d), #c1f7db48 (worker:bmefv2de0, d778be9d).
+- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a4edd8b86801d2455, worker:ac42b94df1ec172f5.
+- Leased items: 10: #0200c06a (worker:b4o55pui1, d778be9d), #02389657 (worker:b4o55pui1, d778be9d), #1daeb8f0 (worker:a4edd8b86801d2455, d778be9d), #26922185 (worker:ac42b94df1ec172f5, d778be9d), #36ffb824 (worker:ac42b94df1ec172f5, d778be9d), #400ae5ea (worker:b4o55pui1, d778be9d), #4889018a (worker:b4o55pui1, d778be9d), #74743214 (worker:a110b5b2f32a2b948, d778be9d), #864b6bca (worker:b4o55pui1, d778be9d), #966364da (worker:b4o55pui1, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 

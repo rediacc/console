@@ -604,6 +604,21 @@
       "open_sigs": [],
       "done_sigs": []
     },
+    "agent/plans/PLAN-backup-schedule-origin-guard.md": {
+      "status": "proposed",
+      "owner": "e0f36861",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 4,
+      "done": 0,
+      "open_sigs": [
+        "0c5a074e",
+        "5cb188b7",
+        "6839190b",
+        "b799ddf2"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-backup-toc-exact-opt-in.md": {
       "status": "proposed",
       "owner": "d778be9d",
@@ -634,6 +649,25 @@
       "open": 0,
       "done": 0,
       "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-canary-on-clusters.md": {
+      "status": "proposed",
+      "owner": "e0f36861",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 8,
+      "done": 0,
+      "open_sigs": [
+        "179cb8b9",
+        "223818bd",
+        "50221b3c",
+        "58edb754",
+        "7eaf854f",
+        "99198bab",
+        "d4d893b0",
+        "f4faea90"
+      ],
       "done_sigs": []
     },
     "agent/plans/PLAN-chunk-store-browse-DECISION.md": {
@@ -1078,6 +1112,30 @@
         "eefa1691",
         "f5bbdc26"
       ]
+    },
+    "agent/plans/PLAN-datastore-migrate-correctness.md": {
+      "status": "proposed",
+      "owner": "e0f36861",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 13,
+      "done": 0,
+      "open_sigs": [
+        "05ebb5c8",
+        "18ca2b9c",
+        "30858a7f",
+        "5eeb48f3",
+        "68791382",
+        "8a3c6a3c",
+        "9a2d68ae",
+        "b9a5b860",
+        "c044b85f",
+        "d2381701",
+        "f704803c",
+        "f9896a09",
+        "fe78bf12"
+      ],
+      "done_sigs": []
     },
     "agent/plans/PLAN-deletion-budget.md": {
       "status": "draft",
@@ -1878,6 +1936,25 @@
         "f06b6846"
       ]
     },
+    "agent/plans/PLAN-kubelet-cgroup-rediacc-slice.md": {
+      "status": "proposed",
+      "owner": "e0f36861",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 8,
+      "done": 0,
+      "open_sigs": [
+        "15b0b694",
+        "4e19915d",
+        "677924f9",
+        "a339836c",
+        "a7b4383a",
+        "d854595a",
+        "da87b91e",
+        "fe8d71ec"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-licence-expiry-notices.md": {
       "status": "approved",
       "owner": "d778be9d",
@@ -2087,6 +2164,30 @@
         "fcedcc15"
       ]
     },
+    "agent/plans/PLAN-partner-sales-track.md": {
+      "status": "proposed",
+      "owner": "e0f36861",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 13,
+      "done": 0,
+      "open_sigs": [
+        "0122390d",
+        "0611648b",
+        "18fa93a5",
+        "3e080f80",
+        "46fb59d5",
+        "5ec79212",
+        "7bc03981",
+        "a7cf8543",
+        "ad6117a7",
+        "de781457",
+        "e8fe0a59",
+        "ef369a60",
+        "fdbe965c"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-plan-compaction-bindings.md": {
       "status": "approved",
       "owner": "d778be9d",
@@ -2135,6 +2236,27 @@
         "050ca424",
         "7921044d",
         "d03d7256"
+      ],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-portal-analytics.md": {
+      "status": "proposed",
+      "owner": "e0f36861",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 10,
+      "done": 0,
+      "open_sigs": [
+        "0efb4ca0",
+        "22494ae6",
+        "3eca8eb5",
+        "5b60f5bb",
+        "5e3af855",
+        "96840448",
+        "ad74cf80",
+        "b2d1755e",
+        "d47cedfd",
+        "e69ab68f"
       ],
       "done_sigs": []
     },
@@ -2369,6 +2491,28 @@
         "d443ae4f",
         "d54ce9a0"
       ]
+    },
+    "agent/plans/PLAN-reggate-debt-collection.md": {
+      "status": "proposed",
+      "owner": "e0f36861",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 11,
+      "done": 0,
+      "open_sigs": [
+        "0e921467",
+        "523be101",
+        "5937f35c",
+        "5c71e916",
+        "63a0b415",
+        "7c17ef45",
+        "8c4d4828",
+        "9c439380",
+        "aad0dcdf",
+        "bed1cd9e",
+        "e7127c8b"
+      ],
+      "done_sigs": []
     },
     "agent/plans/PLAN-reggate-effort-cap.md": {
       "status": "compacted",
@@ -3315,6 +3459,26 @@
         "233a92c3"
       ]
     },
+    "agent/plans/PLAN-vscode-browser-exposure.md": {
+      "status": "proposed",
+      "owner": "e0f36861",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 9,
+      "done": 0,
+      "open_sigs": [
+        "03351481",
+        "0d88a9d8",
+        "2fad109f",
+        "39dca1f0",
+        "991eacb0",
+        "a8b52076",
+        "b62e2859",
+        "c6890454",
+        "de4e368a"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-w7p4w-docker-cutover.md": {
       "status": "compacted",
       "owner": "f4da5c2e",
@@ -3453,6 +3617,49 @@
       "open": 0,
       "done": 0,
       "open_sigs": [],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-www-funnel-truthfulness.md": {
+      "status": "proposed",
+      "owner": "e0f36861",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 12,
+      "done": 0,
+      "open_sigs": [
+        "0662edd7",
+        "2514b478",
+        "2f3e6a7c",
+        "3ea0402d",
+        "4210c426",
+        "5d955cc7",
+        "754a1014",
+        "796f7335",
+        "8e5d3bb7",
+        "a1bb123d",
+        "aeb2ab15",
+        "db545acb"
+      ],
+      "done_sigs": []
+    },
+    "agent/plans/PLAN-zot-manifest-list-commit.md": {
+      "status": "proposed",
+      "owner": "e0f36861",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 9,
+      "done": 0,
+      "open_sigs": [
+        "0b2d8d84",
+        "34b859aa",
+        "36ab58a4",
+        "644bb88b",
+        "677924f9",
+        "687e6853",
+        "a339836c",
+        "b70b92ec",
+        "f16f3214"
+      ],
       "done_sigs": []
     },
     "agent/plans/_done/PLAN-account-env-to-bws.md": {
