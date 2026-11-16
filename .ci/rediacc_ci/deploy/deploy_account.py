@@ -152,12 +152,13 @@ ALLOWLIST_REFUSAL = "This address is not on the allowlist."
 
 
 def allow_ips(config: pathlib.Path) -> str:
-    """The `vars.ALLOW_IPS` of the deployed wrangler config; "" when unset, empty, not a string, or the file is not TOML (which `wrangler deploy` would already have refused)."""
+    """The `vars.ALLOW_IPS` of the deployed wrangler config; "" when unset, empty, not a string, when `vars` is not a table, or when the file is not TOML (which `wrangler deploy` would already have refused)."""
     try:
         with open(config, "rb") as fh:
-            value = (tomllib.load(fh).get("vars") or {}).get("ALLOW_IPS")
+            variables = tomllib.load(fh).get("vars")
     except (OSError, tomllib.TOMLDecodeError):
         return ""
+    value = variables.get("ALLOW_IPS") if isinstance(variables, dict) else None
     return value.strip() if isinstance(value, str) else ""
 
 
@@ -172,6 +173,10 @@ def allowlist_refused(page: portal_captcha.Reply) -> bool:
     return isinstance(body, dict) and body.get("error") == ALLOWLIST_REFUSAL
 
 
+class _AllowlistRefusedError(Exception):
+    """Raised by `portal_smoke`'s fetch when the company's allowlist answers, to leave the retried check at once."""
+
+
 def portal_smoke(
     config: pathlib.Path,
     env: typing.Mapping[str, str],
@@ -181,22 +186,29 @@ def portal_smoke(
 ) -> str | None:
     """After the deploy: None when the served portal renders the captcha its Worker enforces, else the refusal line.
 
-    The pre-deploy `portal_sitekey_refusal` proves the dist on disk; this proves what the host SERVES, which also catches a Worker version or asset upload that did not take. A company whose `vars.ALLOW_IPS` is set and whose host answers 403 with the allowlist's own refusal body skips the served-portal read and logs why. A config with no route has no host to ask and is not checked (every production and edge config carries one; the twin differential's fixture configs do not). An unreachable host after the retries is a refusal too: an unverified deploy is not a verified one.
+    The pre-deploy `portal_sitekey_refusal` proves the dist on disk; this proves what the host SERVES, which also catches a Worker version or asset upload that did not take. A company whose `vars.ALLOW_IPS` is set and whose host answers 403 with the allowlist's own refusal body, on any request of any retried attempt, skips the served-portal read and logs why: right after a deploy that puts this machine off the list, an edge may still serve the previous version for the first attempts (the 2026-11-16 `proof proxy` rerun read UNKNOWN 403 from a single probe sent before the retries). A config with no route has no host to ask and is not checked (every production and edge config carries one; the twin differential's fixture configs do not). An unreachable host after the retries is a refusal too: an unverified deploy is not a verified one.
     """
     host = route_host(config)
     if host is None:
         return None
-    if allow_ips(config) and allowlist_refused(
-        fetch("GET", "https://%s%s" % (host, portal_captcha.LOGIN_PATH), None)
-    ):
+    key = (env.get("TURNSTILE_SITE_KEY") or "").strip() or None
+
+    def refusing(method: str, url: str, body: dict | None) -> portal_captcha.Reply:
+        reply = fetch(method, url, body)
+        if allowlist_refused(reply):
+            raise _AllowlistRefusedError
+        return reply
+
+    probe: portal_captcha.Http = refusing if allow_ips(config) else fetch
+    try:
+        verdict = portal_captcha.check_with_retry(host, probe, key, sleep=sleep)
+    except _AllowlistRefusedError:
         # The dist sitekey check (`portal_sitekey_refusal`) ran before the deploy; only the served-portal read is skipped.
         log.info(
             "Portal smoke skipped: %s answers 403 %r, so its ALLOW_IPS refuses this machine; the dist sitekey check ran before the deploy"
             % (shown(host), ALLOWLIST_REFUSAL)
         )
         return None
-    key = (env.get("TURNSTILE_SITE_KEY") or "").strip() or None
-    verdict = portal_captcha.check_with_retry(host, fetch, key, sleep=sleep)
     if verdict.state == portal_captcha.OK:
         log.info("Portal smoke: %s %s" % (shown(host), shown(verdict.why)))
         return None
