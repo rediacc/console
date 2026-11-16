@@ -409,7 +409,7 @@ SIG_CASES = {
     ),
     "go-fail": ("--- FAIL: TestPkgInstallRetry (0.50s)", "--- PASS: TestPkgInstallRetry (0.50s)"),
     "go-pkg-fail": (
-        "FAIL\tgithub.com/rediacc/renet/cmd/renet\t75.457s",
+        "FAIL\texample.com/mod/cmd/tool\t75.457s",
         "FAIL",
     ),
     "gate-finding": (
@@ -505,7 +505,7 @@ def test_a_go_job_with_passing_stall_simulations_reads_the_test_failure():
 
 
 def test_the_package_fail_line_alone_is_a_test_failure():
-    lines = ["2026-11-16T02:13:22.2243890Z FAIL\tgithub.com/rediacc/renet/cmd/renet\t75.457s"]
+    lines = ["2026-11-16T02:13:22.2243890Z FAIL\texample.com/mod/cmd/tool\t75.457s"]
     assert D.classify(lines) == ("code-likely", "go-pkg-fail")
 
 
@@ -537,8 +537,8 @@ def test_a_gate_fail_line_is_no_test_verdict():
 def test_real_runner_verdict_shapes_switch_the_infra_skip_off():
     """Control: a package `FAIL<TAB>pkg`, an `ok  <TAB>pkg`, a bare PASS and a pytest case line are verdicts."""
     shapes = [
-        "FAIL\tgithub.com/rediacc/renet/a\t0.1s",
-        "ok  \tgithub.com/rediacc/renet/a\t0.1s",
+        "FAIL\texample.com/mod/a\t0.1s",
+        "ok  \texample.com/mod/a\t0.1s",
         "PASS",
         "FAILED tests/test_x.py::test_y - assert 0",
         "=== 1 failed, 2 passed in 0.5s ===",
@@ -573,7 +573,7 @@ def test_an_error_line_does_not_pull_an_infra_window_next_to_a_test_failure():
     """A stall just before `##[error]` is not quoted when a Go FAIL line is the verdict."""
     lines = [
         "2026-11-16T02:13:20.0000000Z --- FAIL: TestX (0.1s)",
-        "2026-11-16T02:13:21.0000000Z ok  \tgithub.com/rediacc/renet/a\t0.1s",
+        "2026-11-16T02:13:21.0000000Z ok  \texample.com/mod/a\t0.1s",
         "2026-11-16T02:13:21.1000000Z x",
         "2026-11-16T02:13:21.2000000Z x",
         "2026-11-16T02:13:21.3000000Z x",

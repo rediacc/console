@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-15T23:34:01.218Z",
+  "generatedAt": "2026-11-16T04:33:35.101Z",
   "legs": [
     {
       "index": 1,
@@ -482,6 +482,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ops_scrub_sentinel.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_service_bindings_audit.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_units.py",
+        "pytest:.ci/rediacc_ci/tests/test_planrec_done_commit_cost.py",
         "pytest:.ci/rediacc_ci/tests/test_pr_sync_epic_block.py",
         "pytest:.ci/rediacc_ci/tests/test_private_renet_integration.py",
         "pytest:.ci/rediacc_ci/tests/test_private_run_renet.py",
@@ -815,6 +816,7 @@
         "pytest:.ci/rediacc_ci/tests/test_core_ports.py",
         "pytest:.ci/rediacc_ci/tests/test_core_service.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_account_queues.py",
+        "pytest:.ci/rediacc_ci/tests/test_deploy_account_smoke_allowlist.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_deploy_account.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_promote_r2_to_stable.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_proxy_configs.py",
