@@ -4,7 +4,7 @@ THE DEFECT. Go records `vcs.revision`/`vcs.modified` from the repository it find
 
 THE FIX UNDER TEST. Every `go build` in build.sh goes through `_go_build`, which cds to renet's root in a subshell and, when `.git` is a gitlink file, points `GIT_DIR` at the gitdir it names and `GIT_WORK_TREE` at renet's root.
 
-REAL GIT, REAL GO. The fixture is an outer repository holding an inner one as a real submodule, the inner carrying a copy of the real build.sh and a one-file `./cmd/renet`. A fake `go` would prove only that the env vars are set, not that Go then stamps the right commit, so the module skips where `go` is absent, as `test_proxies_go_unit.py` does. `test_the_fixture_reproduces_the_defect` is the control: a plain `go build` in the same submodule must stamp the OUTER commit, or the fixture cannot tell the fix from its absence.
+REAL GIT, REAL GO. The fixture is an outer repository holding an inner one as a real submodule, the inner carrying a copy of the real build.sh and a one-file `./cmd/renet`. A fake `go` would prove only that the env vars are set, not that Go then stamps the right commit, so the module skips where `go` is absent, as `test_proxies_go_unit.py` does. `test_the_fixture_reproduces_the_defect` is the control: a plain `go build` in the same submodule must stamp the OUTER commit, or the fixture cannot tell the fix from its absence. Go 1.27 no longer has the defect (a plain build there stamps the submodule's own commit, measured with go1.27.4), so the control skips on exactly that stamp, naming the Go version; the build.sh tests stay true on both toolchains.
 """
 
 from __future__ import annotations
@@ -146,10 +146,13 @@ def test_the_fixture_reproduces_the_defect(tmp_path: pathlib.Path) -> None:
     sub, sub_head, outer_head, env = _fixture(tmp_path)
     out = tmp_path / "plain.bin"
     _run(["go", "build", "-o", str(out), "./cmd/renet"], sub, {**env, "CGO_ENABLED": "0"})
-    assert _stamp(out, env) == (outer_head, "true"), (
-        "CONTROL: a plain go build stamps the outer repo"
-    )
     assert sub_head != outer_head
+    stamp = _stamp(out, env)
+    if stamp == (sub_head, "false"):
+        # Go 1.27 reads the submodule's own .git file, so the toolchain no longer has the defect; only this exact stamp skips, any other still fails below.
+        version = _run(["go", "version"], tmp_path, env).strip()
+        pytest.skip(f"{version} stamps the submodule's own commit from a plain go build")
+    assert stamp == (outer_head, "true"), "CONTROL: a plain go build stamps the outer repo"
 
 
 def test_build_sh_stamps_the_submodule_commit_clean(tmp_path: pathlib.Path) -> None:
