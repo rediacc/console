@@ -308,12 +308,12 @@ def fake_get(
     workers=None,
     refuse: frozenset = frozenset(),
 ):
-    pushed = sorted(k for k, _v, _s in pusher.KEYS)
     if workers is None:
         workers = [w for t in targets for w in (t.account_worker, t.proxy_worker)]
     if secrets is None:
         secrets = {
-            t.account_worker: [*pushed, "__ARCHIVE_API_KEY", "EXECUTOR_MODE"] for t in targets
+            t.account_worker: [*sorted(live.pushed_names(t)), "__ARCHIVE_API_KEY", "EXECUTOR_MODE"]
+            for t in targets
         }
         secrets.update({t.proxy_worker: [] for t in targets})
     if buckets is None:
@@ -361,7 +361,7 @@ def live_plants(inputs: g.Inputs, targets: list[g.Target]):
     base = fake_get(inputs, targets)
 
     def secrets_with(worker: str, names: list[str]):
-        s = {t.account_worker: list(pushed) for t in targets}
+        s = {t.account_worker: sorted(live.pushed_names(t)) for t in targets}
         s.update({t.proxy_worker: [] for t in targets})
         s[worker] = names
         return fake_get(inputs, targets, secrets=s)
@@ -391,8 +391,14 @@ def live_plants(inputs: g.Inputs, targets: list[g.Target]):
         ),
         (
             "live: a legacy name on bench",
-            secrets_with("account-bench", [*pushed, "JWT_SECRET"]),
+            secrets_with("account-bench", [*sorted(live.pushed_names(targets[-1])), "JWT_SECRET"]),
             {("bench-eu", "secrets")},
+            set(),
+        ),
+        (
+            "live: the bench-only sandbox keys on a production Worker",
+            secrets_with("account-eu", [*pushed, *sorted(g.BENCH_ONLY_PAYLOAD)]),
+            {("eu", "secrets")},
             set(),
         ),
         (

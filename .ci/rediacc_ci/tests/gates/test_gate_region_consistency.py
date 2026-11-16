@@ -13,6 +13,8 @@ import pytest
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import proxy_configs
+from rediacc_ci.quality import region_consistency_controls as ctl
+from rediacc_ci.quality import region_consistency_live as live
 from rediacc_ci.quality import region_consistency_offline as rco
 from rediacc_ci.tests.gates import harness
 from rediacc_ci.well_known import BENCH_ORIGIN, BENCH_RETIRING_ORIGIN, PROXY_BENCH_RETIRING_HOST
@@ -477,3 +479,28 @@ def test_a_regional_bench_routing_the_retiring_host_fires(proxy: bool) -> None:
         return f
 
     assert ("bench-us", "proxy" if proxy else "account") in _new(inputs, targets, found, mutate)
+
+
+# The live check shares the offline gate's bench-only set: bench pushes the Stripe sandbox pair, the production Workers never do.
+def _live_findings(worker: str, extra: list[str]):
+    inputs, targets, _found = _loaded()
+    target = next(t for t in targets if t.account_worker == worker)
+    names = sorted(live.pushed_names(target) - rco.BENCH_ONLY_PAYLOAD.keys()) + extra
+    secrets = {t.account_worker: sorted(live.pushed_names(t)) for t in targets}
+    secrets.update({t.proxy_worker: [] for t in targets})
+    secrets[worker] = names
+    get = ctl.fake_get(inputs, targets, secrets=secrets)
+    return [f.message for f in live.judge(targets, inputs, get, "acct")[0] if f.cls == "secrets"]
+
+
+def test_live_bench_worker_holding_the_sandbox_pair_is_consistent():
+    assert _live_findings("account-bench", sorted(rco.BENCH_ONLY_PAYLOAD)) == []
+
+
+def test_live_bench_worker_lacking_the_sandbox_pair_is_flagged():
+    assert [m for m in _live_findings("account-bench", []) if "lacks STRIPE_SANDBOX" in m]
+
+
+def test_live_production_worker_holding_the_sandbox_pair_is_flagged():
+    found = _live_findings("account-eu", sorted(rco.BENCH_ONLY_PAYLOAD))
+    assert len([m for m in found if "which no deploy pushes" in m]) == 2
