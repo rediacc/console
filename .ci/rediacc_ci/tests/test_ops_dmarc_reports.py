@@ -21,6 +21,7 @@ import pytest
 from rediacc_ci.ops import dmarc_parser as dp
 from rediacc_ci.ops import dmarc_reports as dr
 from rediacc_ci.ops import ops_health as oh
+from rediacc_ci.well_known import APEX_DOMAIN, INFRA_DOMAIN, OPERATOR_EMAIL
 
 REPO = pathlib.Path(__file__).resolve().parents[3]
 TODAY = datetime.date(2026, 11, 16)
@@ -79,7 +80,7 @@ def google_xml(records):
         )
         for ip, n, dk, sp, dom in records
     )
-    domain = records[0][4] if records else "rediacc.com"
+    domain = records[0][4] if records else APEX_DOMAIN
     return (
         """<?xml version="1.0" encoding="UTF-8" ?>
 <feedback>
@@ -197,7 +198,7 @@ def yahoo_xml(records, report_id="1794787199.574123"):
     ).encode()
 
 
-def tlsrpt_json(domain="rediacc.com", failed=0):
+def tlsrpt_json(domain=APEX_DOMAIN, failed=0):
     doc = {
         "organization-name": "Google Inc.",
         "date-range": {
@@ -211,7 +212,7 @@ def tlsrpt_json(domain="rediacc.com", failed=0):
                 "policy": {
                     "policy-type": "sts",
                     "policy-domain": domain,
-                    "mx-host": ["mail.rediacc.io"],
+                    "mx-host": [f"mail.{INFRA_DOMAIN}"],
                 },
                 "summary": {
                     "total-successful-session-count": 14,
@@ -222,7 +223,7 @@ def tlsrpt_json(domain="rediacc.com", failed=0):
                         {
                             "result-type": "certificate-expired",
                             "sending-mta-ip": "209.85.220.41",
-                            "receiving-mx-hostname": "mail.rediacc.io",
+                            "receiving-mx-hostname": f"mail.{INFRA_DOMAIN}",
                             "failed-session-count": failed,
                         }
                     ]
@@ -257,9 +258,9 @@ def mail(subject, attachment=None, body="This is an aggregate report."):
 
 def google_mail(records):
     return mail(
-        "Report domain: rediacc.com Submitter: google.com Report-ID: 4150712881276541092",
+        f"Report domain: {APEX_DOMAIN} Submitter: google.com Report-ID: 4150712881276541092",
         (
-            "google.com!rediacc.com!%d!%d.zip" % (BEGIN, END),
+            f"google.com!{APEX_DOMAIN}!%d!%d.zip" % (BEGIN, END),
             "application/zip",
             zipped("google.com!rediacc.com.xml", google_xml(records)),
         ),
@@ -291,9 +292,9 @@ def yahoo_mail(records, report_id="1794787199.574123"):
 
 def tls_mail(failed=0):
     return mail(
-        "Report Domain: rediacc.com Submitter: google.com Report-ID: <2026.11.15T00.00.00Z+rediacc.com@google.com>",
+        f"Report Domain: {APEX_DOMAIN} Submitter: google.com Report-ID: <2026.11.15T00.00.00Z+{APEX_DOMAIN}@google.com>",
         (
-            "google.com!rediacc.com!1794700800!1794787199!001.json.gz",
+            f"google.com!{APEX_DOMAIN}!1794700800!1794787199!001.json.gz",
             "application/tlsrpt+gzip",
             tlsrpt_json(failed=failed),
         ),
@@ -301,17 +302,17 @@ def tls_mail(failed=0):
 
 
 ALL_KNOWN = {
-    ("muhammed@rediacc.com", "DMARC"): [
+    (OPERATOR_EMAIL, "DMARC"): [
         {
             "uid": "11",
             "text": google_mail(
                 [
-                    (HOSTINGER, 10, "pass", "pass", "rediacc.com"),
-                    (M365_IP, 3, "fail", "fail", "rediacc.com"),
+                    (HOSTINGER, 10, "pass", "pass", APEX_DOMAIN),
+                    (M365_IP, 3, "fail", "fail", APEX_DOMAIN),
                 ]
             ),
         },
-        {"uid": "12", "text": yahoo_mail([(HOSTINGER, 2, "pass", "pass", "rediacc.com")])},
+        {"uid": "12", "text": yahoo_mail([(HOSTINGER, 2, "pass", "pass", APEX_DOMAIN)])},
         {"uid": "13", "text": tls_mail()},
         {"uid": "14", "text": mail("Welcome to the DMARC folder", body="not a report")},
     ],
@@ -320,8 +321,8 @@ ALL_KNOWN = {
             "uid": "7",
             "text": microsoft_mail(
                 [
-                    (SES_IP, 40, "pass", "pass", "rediacc.io"),
-                    (ZOHO_IP, 2, "fail", "fail", "rediacc.io"),
+                    (SES_IP, 40, "pass", "pass", INFRA_DOMAIN),
+                    (ZOHO_IP, 2, "fail", "fail", INFRA_DOMAIN),
                 ]
             ),
         },
@@ -374,7 +375,7 @@ class Container:
         if all(matches):
             if self.fail_mark:
                 return oh.Result(
-                    75, "", "doveadm(muhammed@rediacc.com): Error: Mailbox DMARC: lock timeout"
+                    75, "", f"doveadm({OPERATOR_EMAIL}): Error: Mailbox DMARC: lock timeout"
                 )
             for found in matches:
                 if found is not None:
@@ -427,10 +428,10 @@ def test_all_known_is_green_and_marks_only_the_report_messages(root):
     assert out["counts"] == {"aggregate": 3, "tlsrpt": 1, "other": 1, "records": 5, "failed": 5}
     # The non-report message (uid 14) is never marked.
     assert box.marked == {
-        ("muhammed@rediacc.com", "DMARC"): ["11", "12", "13"],
+        (OPERATOR_EMAIL, "DMARC"): ["11", "12", "13"],
         ("muhammed@rediacc.io", "DMARC"): ["7"],
     }
-    assert "old-provider Microsoft 365, the old rediacc.com provider (ruled 2026-11-16)" in text(
+    assert f"old-provider Microsoft 365, the old {APEX_DOMAIN} provider (ruled 2026-11-16)" in text(
         out
     )
     assert "Zoho EU" in text(out)
@@ -439,34 +440,36 @@ def test_all_known_is_green_and_marks_only_the_report_messages(root):
 
 def test_a_new_failing_source_is_red_naming_it_and_its_report_stays_unread(root):
     boxes = dict(ALL_KNOWN)
-    boxes[("muhammed@rediacc.com", "DMARC")] = [
-        *ALL_KNOWN[("muhammed@rediacc.com", "DMARC")],
-        {"uid": "15", "text": yahoo_mail([(STRANGER, 9, "fail", "fail", "rediacc.com")], "y-2")},
+    boxes[(OPERATOR_EMAIL, "DMARC")] = [
+        *ALL_KNOWN[(OPERATOR_EMAIL, "DMARC")],
+        {"uid": "15", "text": yahoo_mail([(STRANGER, 9, "fail", "fail", APEX_DOMAIN)], "y-2")},
     ]
     box = Container(boxes)
     out = run(root, box)
     assert out["rc"] == 1
     line = text(out).splitlines()[-1]
     assert line.startswith(
-        "dmarc.source.new: rediacc.com from %s (rdns mail.spoofer.example)" % STRANGER
+        f"dmarc.source.new: {APEX_DOMAIN} from %s (rdns mail.spoofer.example)" % STRANGER
     )
     assert "9 message(s)" in line
     assert "reported by Yahoo" in line
     assert dr.KNOWN_REL in line
-    assert box.marked[("muhammed@rediacc.com", "DMARC")] == ["11", "12", "13"]
+    assert box.marked[(OPERATOR_EMAIL, "DMARC")] == ["11", "12", "13"]
 
 
 def test_ours_failing_is_red(root):
     box = Container(
         {
-            ("muhammed@rediacc.com", "DMARC"): [
-                {"uid": "3", "text": google_mail([(HOSTINGER, 4, "fail", "fail", "rediacc.com")])},
+            (OPERATOR_EMAIL, "DMARC"): [
+                {"uid": "3", "text": google_mail([(HOSTINGER, 4, "fail", "fail", APEX_DOMAIN)])},
             ]
         }
     )
     out = run(root, box)
     assert out["rc"] == 1
-    assert "dmarc.ours.failing: rediacc.com from %s (hostinger mail server" % HOSTINGER in text(out)
+    assert f"dmarc.ours.failing: {APEX_DOMAIN} from %s (hostinger mail server" % HOSTINGER in text(
+        out
+    )
     assert "4 message(s) (dkim fail, spf fail)" in text(out)
     assert box.marked == {}
 
@@ -474,10 +477,10 @@ def test_ours_failing_is_red(root):
 def test_ours_matched_by_forward_confirmed_rdns_suffix(root):
     box = Container(
         {
-            ("muhammed@rediacc.com", "DMARC"): [
+            (OPERATOR_EMAIL, "DMARC"): [
                 {
                     "uid": "3",
-                    "text": google_mail([("198.51.100.7", 1, "fail", "fail", "rediacc.com")]),
+                    "text": google_mail([("198.51.100.7", 1, "fail", "fail", APEX_DOMAIN)]),
                 },
             ]
         }
@@ -489,13 +492,13 @@ def test_ours_matched_by_forward_confirmed_rdns_suffix(root):
 
 def test_acknowledged_through_silences_ours_failing_up_to_the_day(root):
     boxes = {
-        ("muhammed@rediacc.com", "DMARC"): [
-            {"uid": "3", "text": google_mail([(HOSTINGER, 4, "fail", "fail", "rediacc.com")])},
+        (OPERATOR_EMAIL, "DMARC"): [
+            {"uid": "3", "text": google_mail([(HOSTINGER, 4, "fail", "fail", APEX_DOMAIN)])},
         ]
     }
-    edit_known(root, acknowledged_through={"rediacc.com": "2026-11-15"})
+    edit_known(root, acknowledged_through={APEX_DOMAIN: "2026-11-15"})
     assert run(root, Container(boxes))["rc"] == 0
-    edit_known(root, acknowledged_through={"rediacc.com": "2026-11-14"})
+    edit_known(root, acknowledged_through={APEX_DOMAIN: "2026-11-14"})
     assert run(root, Container(boxes))["rc"] == 1
 
 
@@ -503,7 +506,7 @@ def test_old_provider_failing_is_silent(root):
     box = Container(
         {
             ("muhammed@rediacc.io", "DMARC"): [
-                {"uid": "7", "text": microsoft_mail([(ZOHO_IP, 3, "fail", "fail", "rediacc.io")])},
+                {"uid": "7", "text": microsoft_mail([(ZOHO_IP, 3, "fail", "fail", INFRA_DOMAIN)])},
             ]
         }
     )
@@ -515,15 +518,15 @@ def test_old_provider_failing_is_silent(root):
 def test_old_provider_passing_dmarc_is_red(root):
     box = Container(
         {
-            ("muhammed@rediacc.com", "DMARC"): [
-                {"uid": "3", "text": google_mail([(M365_IP, 2, "pass", "fail", "rediacc.com")])},
+            (OPERATOR_EMAIL, "DMARC"): [
+                {"uid": "3", "text": google_mail([(M365_IP, 2, "pass", "fail", APEX_DOMAIN)])},
             ]
         }
     )
     out = run(root, box)
     assert out["rc"] == 1
     assert (
-        "dmarc.ruled.passing: rediacc.com from %s (Microsoft 365, the old rediacc.com provider, old-provider"
+        f"dmarc.ruled.passing: {APEX_DOMAIN} from %s (Microsoft 365, the old {APEX_DOMAIN} provider, old-provider"
         % M365_IP
         in text(out)
     )
@@ -535,12 +538,12 @@ def test_old_provider_ruling_is_scoped_to_its_domain(root):
     # Zoho failing for rediacc.com is not the rediacc.io ruling: a new source.
     box = Container(
         {
-            ("muhammed@rediacc.com", "DMARC"): [
-                {"uid": "3", "text": google_mail([(ZOHO_IP, 1, "fail", "fail", "rediacc.com")])},
+            (OPERATOR_EMAIL, "DMARC"): [
+                {"uid": "3", "text": google_mail([(ZOHO_IP, 1, "fail", "fail", APEX_DOMAIN)])},
             ]
         }
     )
-    assert "dmarc.source.new: rediacc.com from %s" % ZOHO_IP in text(run(root, box))
+    assert f"dmarc.source.new: {APEX_DOMAIN} from %s" % ZOHO_IP in text(run(root, box))
 
 
 def test_old_provider_volume_over_the_daily_limit_is_red(root):
@@ -549,11 +552,11 @@ def test_old_provider_volume_over_the_daily_limit_is_red(root):
             ("muhammed@rediacc.io", "DMARC"): [
                 {
                     "uid": "7",
-                    "text": microsoft_mail([(ZOHO_IP, 12, "fail", "fail", "rediacc.io")], "r-1"),
+                    "text": microsoft_mail([(ZOHO_IP, 12, "fail", "fail", INFRA_DOMAIN)], "r-1"),
                 },
                 {
                     "uid": "8",
-                    "text": yahoo_mail([(ZOHO_IP, 9, "fail", "fail", "rediacc.io")], "r-2"),
+                    "text": yahoo_mail([(ZOHO_IP, 9, "fail", "fail", INFRA_DOMAIN)], "r-2"),
                 },
             ]
         }
@@ -561,7 +564,7 @@ def test_old_provider_volume_over_the_daily_limit_is_red(root):
     out = run(root, box)
     assert out["rc"] == 1
     assert (
-        "dmarc.ruled.volume: Zoho EU, the old rediacc.io provider (rediacc.io): 21 message(s) on 2026-11-15, over the 20 a day limit"
+        f"dmarc.ruled.volume: Zoho EU, the old {INFRA_DOMAIN} provider ({INFRA_DOMAIN}): 21 message(s) on 2026-11-15, over the 20 a day limit"
         in text(out)
     )
     assert box.marked == {}
@@ -573,7 +576,7 @@ def test_old_provider_at_the_daily_limit_is_green(root):
             ("muhammed@rediacc.io", "DMARC"): [
                 {
                     "uid": "7",
-                    "text": microsoft_mail([(ZOHO_IP, 20, "fail", "fail", "rediacc.io")], "r-1"),
+                    "text": microsoft_mail([(ZOHO_IP, 20, "fail", "fail", INFRA_DOMAIN)], "r-1"),
                 },
             ]
         }
@@ -585,7 +588,11 @@ def _history(root, first, per_day):
     path = dr.history_path(root)
     path.parent.mkdir(parents=True, exist_ok=True)
     reports = {
-        "old|%s" % day: {"ruling": "Zoho EU, the old rediacc.io provider", "day": day, "count": n}
+        "old|%s" % day: {
+            "ruling": f"Zoho EU, the old {INFRA_DOMAIN} provider",
+            "day": day,
+            "count": n,
+        }
         for day, n in per_day.items()
     }
     path.write_text(json.dumps({"first": first, "reports": reports}))
@@ -598,7 +605,7 @@ def _zoho(count):
                 {
                     "uid": "7",
                     "text": microsoft_mail(
-                        [(ZOHO_IP, count, "fail", "fail", "rediacc.io")], "r-new"
+                        [(ZOHO_IP, count, "fail", "fail", INFRA_DOMAIN)], "r-new"
                     ),
                 },
             ]
@@ -635,7 +642,7 @@ def test_history_counts_a_reread_report_once(root):
             ("muhammed@rediacc.io", "DMARC"): [
                 {
                     "uid": "7",
-                    "text": microsoft_mail([(ZOHO_IP, 15, "fail", "fail", "rediacc.io")], "r-1"),
+                    "text": microsoft_mail([(ZOHO_IP, 15, "fail", "fail", INFRA_DOMAIN)], "r-1"),
                 },
             ]
         }
@@ -648,34 +655,34 @@ def test_history_counts_a_reread_report_once(root):
 
 
 def test_tlsrpt_failure_is_red(root):
-    box = Container({("muhammed@rediacc.com", "DMARC"): [{"uid": "4", "text": tls_mail(failed=3)}]})
+    box = Container({(OPERATOR_EMAIL, "DMARC"): [{"uid": "4", "text": tls_mail(failed=3)}]})
     out = run(root, box)
     assert out["rc"] == 1
     assert (
-        "dmarc.tlsrpt.failure: rediacc.com, 3 failed TLS session(s) (certificate-expired), reported by Google Inc."
+        f"dmarc.tlsrpt.failure: {APEX_DOMAIN}, 3 failed TLS session(s) (certificate-expired), reported by Google Inc."
         in text(out)
     )
 
 
 def test_malformed_attachment_names_its_failure_and_stays_unread(root):
     bad = mail(
-        "Report Domain: rediacc.com Submitter: google.com",
-        ("google.com!rediacc.com!1!2.zip", "application/zip", b"PK\x03\x04garbage"),
+        f"Report Domain: {APEX_DOMAIN} Submitter: google.com",
+        (f"google.com!{APEX_DOMAIN}!1!2.zip", "application/zip", b"PK\x03\x04garbage"),
     )
     box = Container(
         {
-            ("muhammed@rediacc.com", "DMARC"): [
+            (OPERATOR_EMAIL, "DMARC"): [
                 {"uid": "5", "text": bad},
-                {"uid": "6", "text": yahoo_mail([(HOSTINGER, 1, "pass", "pass", "rediacc.com")])},
+                {"uid": "6", "text": yahoo_mail([(HOSTINGER, 1, "pass", "pass", APEX_DOMAIN)])},
             ]
         }
     )
     out = run(root, box)
     assert out["rc"] == 1
     line = text(out).splitlines()[-1]
-    assert line.startswith("dmarc.report.malformed: muhammed@rediacc.com DMARC uid 5")
-    assert "google.com!rediacc.com!1!2.zip (application/zip): zip does not open" in line
-    assert box.marked == {("muhammed@rediacc.com", "DMARC"): ["6"]}
+    assert line.startswith(f"dmarc.report.malformed: {OPERATOR_EMAIL} DMARC uid 5")
+    assert f"google.com!{APEX_DOMAIN}!1!2.zip (application/zip): zip does not open" in line
+    assert box.marked == {(OPERATOR_EMAIL, "DMARC"): ["6"]}
 
 
 @pytest.mark.parametrize(
@@ -722,9 +729,9 @@ def test_a_failed_mark_is_unknown_without_hiding_a_red(root):
     assert out["rc"] == 2
     assert "marking 4 report(s) Seen failed (rc 75)" in text(out)
     boxes = {
-        ("muhammed@rediacc.com", "DMARC"): [
-            {"uid": "3", "text": google_mail([(STRANGER, 1, "fail", "fail", "rediacc.com")])},
-            {"uid": "4", "text": yahoo_mail([(HOSTINGER, 1, "pass", "pass", "rediacc.com")])},
+        (OPERATOR_EMAIL, "DMARC"): [
+            {"uid": "3", "text": google_mail([(STRANGER, 1, "fail", "fail", APEX_DOMAIN)])},
+            {"uid": "4", "text": yahoo_mail([(HOSTINGER, 1, "pass", "pass", APEX_DOMAIN)])},
         ]
     }
     assert run(root, Container(boxes, fail_mark=True))["rc"] == 1
@@ -755,12 +762,25 @@ def test_a_ruling_without_a_date_or_with_an_unknown_verdict_is_refused(root):
         dr.load_known(path)
 
 
+def test_a_registry_reference_is_composed_and_an_unknown_one_is_refused(root):
+    path = root / dr.KNOWN_REL
+    known = dr.load_known(path)
+    assert known["mailboxes"][0]["user"] == OPERATOR_EMAIL
+    assert known["rulings"][0]["domains"] == [APEX_DOMAIN]
+    assert "${" not in json.dumps([r["name"] for r in known["rulings"]])
+    doc = json.loads(path.read_text())
+    doc["mailboxes"][0]["user"] = "${WK_NO_SUCH_KEY}"
+    path.write_text(json.dumps(doc))
+    with pytest.raises(dr.KnownError, match="WK_NO_SUCH_KEY is not in"):
+        dr.load_known(path)
+
+
 # --------------------------------------------------------------------------- the streamed script is self-contained
 
 
 def test_the_streamed_parser_runs_alone_under_python_isolated_mode(tmp_path):
     """The exact bytes streamed run under `python3 -I -` with no rediacc_ci on the path, reading a fake doveadm."""
-    rows = [{"uid": "21", "text": google_mail([(HOSTINGER, 1, "pass", "pass", "rediacc.com")])}]
+    rows = [{"uid": "21", "text": google_mail([(HOSTINGER, 1, "pass", "pass", APEX_DOMAIN)])}]
     (tmp_path / "rows.json").write_text(json.dumps(rows))
     doveadm = tmp_path / "bin" / "doveadm"
     doveadm.parent.mkdir()

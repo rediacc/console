@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-16T06:07:37.479Z",
+  "generatedAt": "2026-11-16T13:33:06.457Z",
   "legs": [
     {
       "index": 1,
@@ -106,6 +106,7 @@
         "pytest:.ci/rediacc_ci/tests/test_legal_entity.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_apply_cf_waf_rules.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_d1_relocate.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_dmarc_reports.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_enterprise_lookup.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_health_post.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_licence_expiry_drill.py",
@@ -471,6 +472,7 @@
         "pytest:.ci/rediacc_ci/tests/test_enterprise_proof.py",
         "pytest:.ci/rediacc_ci/tests/test_gate_ledger.py",
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_pr_environments.py",
+        "pytest:.ci/rediacc_ci/tests/test_local_gates_red_waiver.py",
         "pytest:.ci/rediacc_ci/tests/test_main.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_bench_access.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_cf_auth.py",

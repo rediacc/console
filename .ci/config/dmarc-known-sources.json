@@ -6,6 +6,7 @@
     "A source matches an entry by `cidrs` (the source IP inside one), or by `rdns_suffixes` (its forward-confirmed reverse name equal to or ending in `.<suffix>`). A ruling with `domains` matches only reports for those domains.",
     "volume: a ruled source sending more than max_per_day messages on one report day is red; once trailing_days of history exist, so is at least ratio_min_count messages at ratio times its trailing daily average.",
     "acknowledged_through: domain -> YYYY-MM-DD. Every red but a new source and a malformed report, in a report whose date range ended on or before that day, is acknowledged (fixed or accepted).",
+    "A string may name a key of .ci/config/well-known.env as ${KEY} (for example the operator mailbox); load_known composes it at read time.",
     "A NEW failing source turns the check red; ask the operator, then add a ruling here (docs/agent-reference/local-env.md, DMARC reports)."
   ],
   "version": 1,
@@ -15,7 +16,7 @@
     "container": "mail-server"
   },
   "mailboxes": [
-    { "user": "muhammed@rediacc.com", "mailbox": "DMARC" },
+    { "user": "${WK_OPERATOR_EMAIL}", "mailbox": "DMARC" },
     { "user": "muhammed@rediacc.io", "mailbox": "DMARC" }
   ],
   "ours": [
@@ -44,10 +45,10 @@
   ],
   "rulings": [
     {
-      "name": "Microsoft 365, the old rediacc.com provider",
+      "name": "Microsoft 365, the old ${WK_APEX_DOMAIN} provider",
       "verdict": "old-provider",
       "ruled": "2026-11-16",
-      "domains": ["rediacc.com"],
+      "domains": ["${WK_APEX_DOMAIN}"],
       "cidrs": [
         "40.92.0.0/15",
         "40.107.0.0/16",
@@ -59,10 +60,10 @@
       "rdns_suffixes": ["outlook.com"]
     },
     {
-      "name": "Zoho EU, the old rediacc.io provider",
+      "name": "Zoho EU, the old ${WK_INFRA_DOMAIN} provider",
       "verdict": "old-provider",
       "ruled": "2026-11-16",
-      "domains": ["rediacc.io"],
+      "domains": ["${WK_INFRA_DOMAIN}"],
       "cidrs": ["185.20.208.0/22", "89.36.170.0/24"],
       "rdns_suffixes": ["zoho.eu", "zohomail.eu"]
     }

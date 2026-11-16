@@ -27,11 +27,13 @@ import ipaddress
 import json
 import os
 import pathlib
+import re
 import shlex
 import socket
 import sys
 from collections.abc import Callable
 
+from rediacc_ci import well_known
 from rediacc_ci.core.common import repo_root
 from rediacc_ci.ops import dmarc_parser
 from rediacc_ci.ops.ops_health import (
@@ -81,12 +83,36 @@ def _entry(raw: object, where: str) -> dict:
     }
 
 
+_WK_REF = re.compile(r"\$\{(WK_[A-Z][A-Z0-9_]*)\}")
+
+
+def _compose(value: object, path: pathlib.Path) -> object:
+    """Every `${WK_NAME}` in a string of the rulings file replaced by its well-known value, so the file restates none."""
+    if isinstance(value, str):
+
+        def sub(match: re.Match[str]) -> str:
+            try:
+                return well_known.VALUES[match.group(1)]
+            except KeyError:
+                raise KnownError(
+                    "%s: %s is not in %s" % (path, match.group(1), well_known.REGISTRY_REL)
+                ) from None
+
+        return _WK_REF.sub(sub, value)
+    if isinstance(value, list):
+        return [_compose(v, path) for v in value]
+    if isinstance(value, dict):
+        return {k: _compose(v, path) for k, v in value.items()}
+    return value
+
+
 def load_known(path: pathlib.Path) -> dict:
-    """The parsed rulings file. Raises KnownError naming what is missing."""
+    """The parsed rulings file, its `${WK_NAME}` references composed. Raises KnownError naming what is missing."""
     try:
-        doc = json.loads(path.read_text(encoding="utf-8"))
+        raw = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
         raise KnownError("%s: %s" % (path, exc)) from None
+    doc = _compose(raw, path)
     if not isinstance(doc, dict):
         raise KnownError("%s is not a JSON object" % path)
     target = doc.get("target") or {}
