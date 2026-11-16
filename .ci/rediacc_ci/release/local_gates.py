@@ -23,6 +23,7 @@ import dataclasses
 import datetime
 import functools
 import importlib
+import itertools
 import json
 import os
 import pathlib
@@ -119,7 +120,7 @@ def ci_quick_refusal(root: pathlib.Path, tree: str) -> Refusal | None:
     return ci_quick_verdict(root, tree, waiver_text=None, asked_proof=transcript_proof(None))[0]
 
 
-# THE RED WAIVER (operator ruling 2026-11-16 "Narrow release escape"). A production break check:ci-ops-health reports stays red until its fix is deployed, and only this release deploys it; an upstream outage blocks the same way. The waiver is the one way past a red receipt, and it is narrow on purpose: the exact HEAD tree, every red gate named, each named red gate on WAIVABLE_BY_NAME or printing UPSTREAM_MARKER when re-run now, and an ASKED minute proven against the transcript.
+# THE RED WAIVER (operator ruling 2026-11-16 "Narrow release escape"). A production break check:ci-ops-health reports stays red until its fix is deployed, and only this release deploys it; an upstream outage blocks the same way. The waiver is the one way past a red receipt, and it is narrow on purpose: the HEAD tree (named by the receipt, or reached through record-only advances that touched nothing a waived gate reads), every red gate named, each named red gate on WAIVABLE_BY_NAME or printing UPSTREAM_MARKER when re-run now, and an ASKED minute proven against the transcript.
 WAIVER_ENV = "RELEASE_RED_WAIVER"
 WAIVABLE_BY_NAME = frozenset({"check:ci-ops-health"})
 # `core.upstream.report_unreachable`'s wording, which `ci_diagnose`'s upstream-unreachable signature also reads. The receipt records no gate output, so a red gate is re-run at release time and its own output is what is judged.
@@ -273,14 +274,43 @@ def ci_quick_verdict(
     waiver, malformed = parse_red_waiver(waiver_text)
     if waiver is None:
         return refuse(malformed)
-    # The receipt itself must be sound for this exact tree: a missing, corrupt, misfiled, narrowed, advanced or otherwise refused receipt is never waived, only its reds are.
+    # The receipt itself must be sound for this tree: a missing, corrupt, misfiled, narrowed or otherwise refused receipt is never waived, only its reds are.
     if not isinstance(receipt, dict) or guard.UNPARSEABLE in receipt or guard.MISFILED in receipt:
         return today, None
-    if receipt.get("headTree") != tree:
-        return refuse("the receipt judged tree %r, not HEAD's %s" % (receipt.get("headTree"), tree))
+    # THE TREE THE REDS WERE JUDGED AT (operator ruling 2026-11-16, plans as records). The receipt names HEAD's tree exactly, or it reaches HEAD through an advance chain the push guard verifies step by step (`advance_chain` recomputes each diff and requires every reader of the touched records in the step). `failed` still describes the receipt's own tree, so a waived red is a statement about HEAD only when no step on the chain touched a record that gate reads: a step lists every reader of what it touched, so a waived gate listed in one is refused.
+    judged = receipt.get("headTree")
+    steps: list[dict[str, Any]] = []
+    if judged != tree:
+        chain = None
+        if isinstance(judged, str) and judged:
+            chain, _why = guard.advance_chain(str(root), receipt, judged, tree)
+        if chain is None:
+            return refuse(
+                "the receipt judged tree %r, not HEAD's %s, and no verified advance chain carries it there"
+                % (judged, tree)
+            )
+        edges = set(itertools.pairwise(chain))
+        steps = [
+            s
+            for s in receipt.get("advances") or []
+            if isinstance(s, dict) and (s.get("from"), s.get("to")) in edges
+        ]
     front, _chain = guard._receipt_front(str(root), tree, receipt)
     if front is not None:
         return today, None
+    reread = sorted(
+        {
+            g
+            for s in steps
+            for g in (s.get("gates") if isinstance(s.get("gates"), dict) else {})
+            if g in waiver.gates
+        }
+    )
+    if reread:
+        return refuse(
+            "the receipt reached HEAD through a record-only advance that touched what %s read(s), so the red it judged at tree %s is not a verdict on HEAD; re-run `npm run ci:quick` at HEAD"
+            % (", ".join(reread), str(judged)[:12])
+        )
     if not asked_proof(waiver.asked):
         return refuse(
             "%s matches no AskUserQuestion answer in the transcript ($%s)"

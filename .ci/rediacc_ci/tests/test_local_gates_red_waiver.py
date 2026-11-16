@@ -227,8 +227,17 @@ def test_a_receipt_for_a_different_tree_refuses(tmp_path: pathlib.Path) -> None:
     assert "different tree" in refusal.message
 
 
-def advanced_world(tmp_path: pathlib.Path, failed: list[str]) -> pathlib.Path:
-    """A receipt for the parent tree, then a record-only commit its `advances` carry to HEAD: the push guard admits it, the waiver does not."""
+READER = "check:fixture-reader"
+
+
+def advanced_world(
+    tmp_path: pathlib.Path,
+    failed: list[str],
+    *,
+    readers: tuple[str, ...] = (READER,),
+    touch: str = "agent/reviews/main/clean.jsonl",
+) -> pathlib.Path:
+    """A receipt for the parent tree, then one commit its `advances` step carries to HEAD. `readers` are the gates the record policy names for agent/reviews/** and the step lists at exit 0; `touch` is the path the commit writes, a record by default."""
     root = tmp_path / "advanced"
     root.mkdir(parents=True)
 
@@ -240,12 +249,12 @@ def advanced_world(tmp_path: pathlib.Path, failed: list[str]) -> pathlib.Path:
     git("init", "--initial-branch=main", "-q")
     policy = root / GUARD.RECORD_POLICY_REL
     policy.parent.mkdir(parents=True)
-    reader = {"id": "check:fixture-reader", "evidence": "fixture:1"}
+    listed = [{"id": gate, "evidence": "fixture:1"} for gate in readers]
     policy.write_text(
         json.dumps(
             {
                 "version": GUARD.RECORD_POLICY_VERSION,
-                "records": [{"glob": "agent/reviews/**", "except": [], "readers": [reader]}],
+                "records": [{"glob": "agent/reviews/**", "except": [], "readers": listed}],
             }
         ),
         encoding="utf-8",
@@ -255,17 +264,18 @@ def advanced_world(tmp_path: pathlib.Path, failed: list[str]) -> pathlib.Path:
     git("add", "-A")
     git("commit", "-q", "-m", "seed")
     base = git("rev-parse", "HEAD^{tree}")
-    record = root / "agent" / "reviews" / "main" / "clean.jsonl"
-    record.parent.mkdir(parents=True)
+    record = root / touch
+    record.parent.mkdir(parents=True, exist_ok=True)
     record.write_text("{}\n", encoding="utf-8")
     git("add", "-A")
-    git("commit", "-q", "-m", "a record-only commit")
+    git("commit", "-q", "-m", "the commit the step claims is record-only")
     head = git("rev-parse", "HEAD^{tree}")
     advance = {
         "from": base,
         "to": head,
+        # What a runner would have written; the guard recomputes the diff and never reads this.
         "paths": ["agent/reviews/main/clean.jsonl"],
-        "gates": {"check:fixture-reader": 0},
+        "gates": dict.fromkeys(readers, 0),
         "finishedAt": "2026-11-16T00:00:00Z",
     }
     body = GUARD._v2_body(
@@ -284,15 +294,44 @@ def advanced_world(tmp_path: pathlib.Path, failed: list[str]) -> pathlib.Path:
     return root
 
 
-def test_a_receipt_advanced_to_head_is_not_the_exact_tree(tmp_path: pathlib.Path) -> None:
-    # CONTROL: the green twin is admitted through the advance, so the refusal below is the waiver's own exact-tree rule.
+def test_a_red_receipt_advanced_to_head_by_a_record_commit_is_waived(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Operator ruling 2026-11-16 (plans as records): a record-only commit after the red run no longer costs the waiver a whole lane. The chain is the push guard's own (`advance_chain`), and the admission names HEAD's tree, the one being released."""
+    # CONTROL: the green twin is admitted through the same advance with no waiver, so the chain itself is sound.
     green = advanced_world(tmp_path / "green", [])
     assert lg.ci_quick_refusal(green, tree_of(green)) is None
     root = advanced_world(tmp_path / "red", [OPS])
+    # CONTROL: with no waiver the red is refused as today, so the admission below is the waiver's.
+    assert lg.ci_quick_refusal(root, tree_of(root)) is not None
+    refusal, admission = verdict(root, "%s %s %s" % (OPS, ASK, REASON))
+    assert refusal is None, refusal
+    assert admission is not None
+    assert admission.gates == (OPS,)
+    assert admission.tree == tree_of(root)
+
+
+def test_an_advance_that_lists_a_waived_gate_as_a_reader_refuses(tmp_path: pathlib.Path) -> None:
+    """The step touched a record the waived gate reads, so the red judged at the receipt's tree says nothing about HEAD. The guard admits the step (the reader passed there); the waiver does not."""
+    root = advanced_world(tmp_path, [OPS], readers=(READER, OPS))
+    # CONTROL: the same world with the waived gate not a reader is admitted (the test above), and the guard's own chain reaches HEAD here, so the refusal is this rule and not a broken chain.
+    receipt = GUARD.read_receipt(str(root), tree_of(root))
+    chain, why = GUARD.advance_chain(str(root), receipt, receipt["headTree"], tree_of(root))
+    assert chain is not None, why
     refusal, admission = verdict(root, "%s %s %s" % (OPS, ASK, REASON))
     assert admission is None
     assert refusal is not None
-    assert "not HEAD's" in refusal.message
+    assert OPS in refusal.message
+    assert "record-only advance" in refusal.message
+
+
+def test_a_code_path_in_the_advanced_range_refuses(tmp_path: pathlib.Path) -> None:
+    """A step whose commit touched code is no advance, whatever its `paths` claim: the guard recomputes the diff, the chain does not reach HEAD, and the waiver has no tree to speak for."""
+    root = advanced_world(tmp_path, [OPS], touch="src/code.py")
+    refusal, admission = verdict(root, "%s %s %s" % (OPS, ASK, REASON))
+    assert admission is None
+    assert refusal is not None
+    assert "no verified advance chain" in refusal.message
 
 
 def test_no_receipt_refuses(tmp_path: pathlib.Path) -> None:
