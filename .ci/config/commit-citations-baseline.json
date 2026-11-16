@@ -89,17 +89,9 @@
       "path": ".ci/scripts/quality/check_plan_record.py",
       "sha": "0123456ab"
     },
-    "2ceab5625342428c": {
-      "path": "agent/plans/_done/PLAN-clean-review-ledger.md",
-      "sha": "63b96e658"
-    },
     "30df5e0c64f14bc8": {
       "path": "agent/plans/PLAN-sync-docker-latest-tag-with-releases.md",
       "sha": "6584a8795"
-    },
-    "342e297504b9ce24": {
-      "path": "agent/plans/_done/PLAN-clean-review-ledger.md",
-      "sha": "b213ae7da"
     },
     "3443f9ab48e0b897": {
       "path": ".ci/rediacc_ci/policy_paths.py",
@@ -168,10 +160,6 @@
     "5db592d3d372cc68": {
       "path": ".claude/rediacc_hooks/tests/test_githook_gen_docs.py",
       "sha": "7f2ece4c1"
-    },
-    "5e7fdd531fa307bc": {
-      "path": "agent/plans/_done/PLAN-clean-review-ledger.md",
-      "sha": "1fb9eefe7"
     },
     "5f3360b8cf643aaf": {
       "path": ".ci/rediacc_ci/tests/gates/test_gate_ci_workflow_invariants.py",
@@ -297,17 +285,9 @@
       "path": ".ci/scripts/ci/scope-engine.cjs",
       "sha": "2469e5d72"
     },
-    "a3386d080fe90d3c": {
-      "path": "agent/plans/_done/PLAN-clean-review-ledger.md",
-      "sha": "1a4a6971e"
-    },
     "a568600307b3497f": {
       "path": ".claude/rediacc_hooks/shellscan.py",
       "sha": "28801da09"
-    },
-    "a5a49063eec35228": {
-      "path": "agent/plans/_done/PLAN-clean-review-ledger.md",
-      "sha": "0a3719dc9"
     },
     "a6c403899b151f20": {
       "path": "agent/plans/_done/PLAN-account-vm-check.md",

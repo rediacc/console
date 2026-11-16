@@ -1986,7 +1986,7 @@ Trap-Id: ci-quick-drops-touched-slow-gate
 Enforced-By: guard:block_unverified_push
 Residue:
 Documented-In: text:docs/agent-reference/ci-gates.md A touched slow gate that ci:quick drops is recorded, and the push waits for it.
-Documented-In: box:PLAN-gate-drop-receipt-verify#G4@cb4c0152
+Documented-In: text:.claude/rediacc_hooks/guards/block_unverified_push.py A TOUCHED SLOW GATE THE LANE DROPPED IS REFUSED until it has passed
 
 `ci:quick` selects slow gates from the change set, and a slow gate it drops is not run. Before the receipt recorded the drop, a push could go out with a touched slow gate never having run, and the green receipt read as full coverage. The receipt now names the dropped gate and the push guard waits for it.
 
