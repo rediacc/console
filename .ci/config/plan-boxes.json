@@ -3685,58 +3685,6 @@
       "done_sigs": [],
       "ruling": "#c8071f18"
     },
-    "agent/plans/_done/PLAN-clean-review-ledger.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-10-06",
-      "open": 0,
-      "done": 18,
-      "open_sigs": [],
-      "done_sigs": [
-        "03a1b2f4",
-        "148b0d37",
-        "1742c481",
-        "38282a83",
-        "39103e83",
-        "3a53b303",
-        "48413ff5",
-        "5ddca5fb",
-        "5e367524",
-        "62222b6b",
-        "72ddf8eb",
-        "7b18e1e4",
-        "9937d1f8",
-        "a9b88415",
-        "b5b77957",
-        "bef13201",
-        "cbbeba99",
-        "eec0f539"
-      ]
-    },
-    "agent/plans/_done/PLAN-commit-as-you-go.md": {
-      "status": "superseded",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-10-06",
-      "open": 0,
-      "done": 12,
-      "open_sigs": [],
-      "done_sigs": [
-        "34d60b8a",
-        "605e3a20",
-        "6c92e542",
-        "83c2eaf9",
-        "9883d9ac",
-        "9a2c7936",
-        "9b63908f",
-        "9f0b0075",
-        "a273780b",
-        "a70f79c8",
-        "a8a74c4b",
-        "d2b71cf1"
-      ]
-    },
     "agent/plans/_done/PLAN-config-handoff-relay-only.md": {
       "status": "done",
       "owner": "d778be9d",
@@ -3979,25 +3927,6 @@
         "d3f328ad",
         "ef82dbf2",
         "f86f9978"
-      ]
-    },
-    "agent/plans/_done/PLAN-gate-drop-receipt-verify.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-10-06",
-      "open": 0,
-      "done": 8,
-      "open_sigs": [],
-      "done_sigs": [
-        "3054a1df",
-        "3124130f",
-        "49df9a96",
-        "8a268fb2",
-        "99f5e08e",
-        "bace249f",
-        "cb4c0152",
-        "fc15df5e"
       ]
     },
     "agent/plans/_done/PLAN-gate-scheduling-learned.md": {
@@ -5086,16 +5015,6 @@
       "owner": "e580532b",
       "folder": "agent/plans/_done",
       "moved_at": "",
-      "open": 0,
-      "done": 0,
-      "open_sigs": [],
-      "done_sigs": []
-    },
-    "agent/plans/_removed/PLAN-uncommitted-work-exposure-check.md": {
-      "status": "removed",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_removed",
-      "moved_at": "2026-10-06",
       "open": 0,
       "done": 0,
       "open_sigs": [],
