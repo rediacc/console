@@ -1,7 +1,7 @@
 /**
  * Drives the region popup in a real browser and exits non-zero on a failed step.
  *
- *   npx tsx packages/www/scripts/probe-region-picker.ts --url <site origin> [--mock] [--lookup-domain <d> --lookup-host <h>]
+ *   npx tsx packages/www/scripts/probe-region-picker.ts (--url <site origin> | <site origin>) [--mock] [--lookup-domain <d> --lookup-host <h>]
  *
  * Without --mock the page talks to its own /api/geo and /api/enterprise-lookup (a deployed
  * preview or www). With --mock both are answered from the probe, which is for a static
@@ -13,10 +13,11 @@
  * forwards at once; the enterprise form forwards on a hit and gives the neutral miss text
  * on a miss.
  */
+import { pathToFileURL } from 'node:url';
 import { WK_PRODUCT_DOMAIN } from '@rediacc/shared/config/well-known.generated';
 import type { Page } from 'playwright';
 
-interface Options {
+export interface Options {
   url: string;
   mock: boolean;
   lookupDomain: string;
@@ -25,21 +26,69 @@ interface Options {
 
 const DEFAULT_PROBE_URL = 'http://localhost:4321';
 
-function parseArgs(argv: string[]): Options {
+/** The label of the lookup field, as the popup renders it (en.json regionPicker.lookup.label). */
+export const LOOKUP_LABEL = 'Work email';
+
+/** The key the popup writes the chosen region under. */
+export const REGION_STORAGE_KEY = 'rediacc_region';
+
+export class UsageError extends Error {}
+
+const VALUE_FLAGS = ['--url', '--lookup-domain', '--lookup-host'] as const;
+
+/** A bare host (`pr-1.rediacc.workers.dev`) is an https origin; anything with a scheme is kept. */
+function originOf(raw: string): string {
+  const withScheme = /^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`;
+  return withScheme.replace(/\/+$/, '');
+}
+
+export function parseArgs(argv: string[], env: NodeJS.ProcessEnv = process.env): Options {
   const opts: Options = {
-    url: process.env.PROBE_URL ?? DEFAULT_PROBE_URL,
+    url: env.PROBE_URL ?? DEFAULT_PROBE_URL,
     mock: false,
     lookupDomain: 'acme.example',
     lookupHost: `acme.eu.${WK_PRODUCT_DOMAIN}`,
   };
+  let positional: string | undefined;
   for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === '--url') opts.url = argv[++i];
-    else if (argv[i] === '--mock') opts.mock = true;
-    else if (argv[i] === '--lookup-domain') opts.lookupDomain = argv[++i];
-    else if (argv[i] === '--lookup-host') opts.lookupHost = argv[++i];
+    const arg = argv[i];
+    if (arg === '--mock') {
+      opts.mock = true;
+    } else if ((VALUE_FLAGS as readonly string[]).includes(arg)) {
+      const value = argv[++i];
+      if (value === undefined || value.startsWith('--'))
+        throw new UsageError(`${arg} needs a value`);
+      if (arg === '--url') opts.url = originOf(value);
+      else if (arg === '--lookup-domain') opts.lookupDomain = value;
+      else opts.lookupHost = value;
+    } else if (arg.startsWith('--')) {
+      throw new UsageError(`unknown argument ${arg}`);
+    } else if (positional === undefined) {
+      positional = arg;
+    } else {
+      throw new UsageError(`unexpected extra argument ${arg}`);
+    }
+  }
+  if (positional !== undefined) {
+    if (argv.includes('--url')) throw new UsageError('give the origin once: --url or positional');
+    opts.url = originOf(positional);
   }
   return opts;
 }
+
+/**
+ * The in-page spy, as a plain string so no transpiler helper can leak into the page: it reports
+ * every localStorage write to the probe through `window.probeReportStored`. A card click
+ * forwards to the product host, so the page that comes next is another origin and its
+ * localStorage no longer holds the key: the write is read as it happens instead.
+ */
+export const STORAGE_SPY_SOURCE = `(() => {
+  const original = Storage.prototype.setItem;
+  Storage.prototype.setItem = function (key, value) {
+    window.probeReportStored(String(key), String(value));
+    return original.call(this, key, value);
+  };
+})();`;
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = ''): void {
@@ -56,7 +105,16 @@ async function openPicker(page: Page, opts: Options, path: string): Promise<void
   await page.getByRole('dialog').waitFor({ state: 'visible' });
 }
 
-async function installRoutes(page: Page, opts: Options, forwarded: string[]): Promise<void> {
+async function installRoutes(
+  page: Page,
+  opts: Options,
+  forwarded: string[],
+  stored: Map<string, string>
+): Promise<void> {
+  await page.exposeFunction('probeReportStored', (key: string, value: string) => {
+    stored.set(key, value);
+  });
+  await page.addInitScript(STORAGE_SPY_SOURCE);
   await page.route(`**://*.${WK_PRODUCT_DOMAIN}/**`, async (route) => {
     forwarded.push(route.request().url());
     await route.fulfill({ status: 200, contentType: 'text/html', body: '<html></html>' });
@@ -113,8 +171,14 @@ async function probeCancelAndChange(page: Page, opts: Options, forwarded: string
   );
 }
 
-async function probeSignup(page: Page, opts: Options, forwarded: string[]): Promise<void> {
+async function probeSignup(
+  page: Page,
+  opts: Options,
+  forwarded: string[],
+  stored: Map<string, string>
+): Promise<void> {
   forwarded.length = 0;
+  stored.clear();
   await openPicker(page, opts, '/account/?checkout=PROFESSIONAL&period=monthly');
   check(
     'signup: no countdown buttons',
@@ -129,8 +193,7 @@ async function probeSignup(page: Page, opts: Options, forwarded: string[]): Prom
     forwarded.length === 1 && forwarded[0].includes('checkout=PROFESSIONAL'),
     JSON.stringify(forwarded)
   );
-  const stored = await page.evaluate(() => window.localStorage.getItem('rediacc_region'));
-  check('signup: the chosen region is stored', stored !== null);
+  check('signup: the chosen region is stored', stored.has(REGION_STORAGE_KEY));
 }
 
 async function probeStoredRegionNeverSilent(
@@ -151,7 +214,7 @@ async function probeLookup(page: Page, opts: Options, forwarded: string[]): Prom
   forwarded.length = 0;
   await openPicker(page, opts, '/account/?checkout=TEAM&period=annual');
   await page.getByRole('button', { name: 'Enterprise customer?' }).click();
-  const input = page.getByLabel('Company email domain');
+  const input = page.getByLabel(LOOKUP_LABEL);
   await input.fill('nobody@no-such-company.example');
   await page.getByRole('button', { name: 'Continue' }).click();
   const miss = page.getByRole('alert');
@@ -179,10 +242,11 @@ async function main(): Promise<void> {
     const context = await browser.newContext({ timezoneId: 'Europe/Berlin' });
     const page = await context.newPage();
     const forwarded: string[] = [];
-    await installRoutes(page, opts, forwarded);
+    const stored = new Map<string, string>();
+    await installRoutes(page, opts, forwarded, stored);
     await probeLoginCountdown(page, opts, forwarded);
     await probeCancelAndChange(page, opts, forwarded);
-    await probeSignup(page, opts, forwarded);
+    await probeSignup(page, opts, forwarded, stored);
     await probeStoredRegionNeverSilent(page, opts, forwarded);
     await probeLookup(page, opts, forwarded);
   } finally {
@@ -196,7 +260,15 @@ async function main(): Promise<void> {
   process.exit(failures === 0 ? 0 : 1);
 }
 
-main().catch((err: unknown) => {
-  process.stderr.write(`probe-region-picker: ${err instanceof Error ? err.stack : String(err)}\n`);
-  process.exit(1);
-});
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((err: unknown) => {
+    if (err instanceof UsageError) {
+      process.stderr.write(`probe-region-picker: ${err.message}\n`);
+      process.exit(2);
+    }
+    process.stderr.write(
+      `probe-region-picker: ${err instanceof Error ? err.stack : String(err)}\n`
+    );
+    process.exit(1);
+  });
+}
