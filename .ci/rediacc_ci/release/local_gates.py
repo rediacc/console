@@ -5,7 +5,7 @@
 Exit 0 when every gate admits, 1 with one `local-gates: <code>: <why>` line per refusal otherwise, 2 on a usage error. Every gate runs, so one run names every refusal rather than the first.
 
 THE GATES, each a refusal unless it holds:
-  ci-quick     a whole, green ci:quick receipt judged `HEAD^{tree}`: the push guard's own `read_receipt` (the per-tree copy `.ci/cache/receipts/<tree>.json` first, then the latest file) and `receipt_refusal`, imported the way `rediacc_ci.ci.gate_model` imports that guard, never copied.
+  ci-quick     a whole, green ci:quick receipt judged `HEAD^{tree}`: the push guard's own `read_receipt` (the per-tree copy `.ci/cache/receipts/<tree>.json` first, then the latest file) and `receipt_refusal`, imported the way `rediacc_ci.ci.gate_model` imports that guard, never copied. A red receipt has one escape, `RELEASE_RED_WAIVER='<gate>[,<gate>] ASKED:<YYYY-MM-DDTHH:MM>Z <reason>'` (operator ruling 2026-11-16, `ci_quick_verdict`): a whole receipt whose `headTree` is HEAD's tree exactly is admitted when every red gate not in carried-reds.json is named and each is `check:ci-ops-health` or prints `UPSTREAM REACHABILITY FAILURE` when re-run now with `npm run --silent <gate>`, and the ASKED minute is proven against the transcript as `--force-asked` is. The admitted waiver is printed as one `local-gates: red-waiver admitted: <json>` line.
   vm-check     the vm:check trigger paths changed since the previous release tag (the highest-versioned `v*` tag reachable from HEAD, `git tag --merged HEAD --sort=-v:refname`) are admitted by a VERIFIED receipt, through `surfaces.changed_paths(root, <tag>, "push")` and `vm_tier.admit`. No hit is "not required", and admits.
   backup       when the backup paths moved since that tag, a VERIFIED backup receipt covers the tree: `backup_check_trigger.check(root, "HEAD", base=<tag>)`, the reader the backup push guard and the git-level pre-push hook run. Exit 1 and 2 (cannot judge) both refuse (decision 4).
   clone        a fresh clone of HEAD with its submodules at `.ci/cache/release/<tree>/` is clean, names the tree, and every submodule sits at its gitlink, unmodified (decision 1). The shared checkout always carries other sessions' ledgers, so cleanliness is judged on the clone, which is also where the release builds. Each submodule is cloned from this checkout's own copy of it (`<root>/<path>`, else `<root>/.git/modules/<name>`), never from the network; a pointer commit the local copy lacks is a refusal. HEAD equal to origin/main (below) is what makes those pointers the merged ones; under `--branch-release` they are the pushed branch head's.
@@ -23,6 +23,7 @@ import dataclasses
 import datetime
 import functools
 import importlib
+import json
 import os
 import pathlib
 import re
@@ -114,11 +115,210 @@ def _push_guard() -> Any:
 
 
 def ci_quick_refusal(root: pathlib.Path, tree: str) -> Refusal | None:
+    """The ci-quick verdict with no waiver: today's refusal, byte for byte."""
+    return ci_quick_verdict(root, tree, waiver_text=None, asked_proof=transcript_proof(None))[0]
+
+
+# THE RED WAIVER (operator ruling 2026-11-16 "Narrow release escape"). A production break check:ci-ops-health reports stays red until its fix is deployed, and only this release deploys it; an upstream outage blocks the same way. The waiver is the one way past a red receipt, and it is narrow on purpose: the exact HEAD tree, every red gate named, each named red gate on WAIVABLE_BY_NAME or printing UPSTREAM_MARKER when re-run now, and an ASKED minute proven against the transcript.
+WAIVER_ENV = "RELEASE_RED_WAIVER"
+WAIVABLE_BY_NAME = frozenset({"check:ci-ops-health"})
+# `core.upstream.report_unreachable`'s wording, which `ci_diagnose`'s upstream-unreachable signature also reads. The receipt records no gate output, so a red gate is re-run at release time and its own output is what is judged.
+UPSTREAM_MARKER = "UPSTREAM REACHABILITY FAILURE"
+WAIVER_LINE = "local-gates: red-waiver admitted: "
+RERUN_TIMEOUT_S = 900
+WAIVER_RE = re.compile(r"(?P<gates>\S+) (?P<asked>ASKED:\S+) (?P<reason>\S.*)", re.DOTALL)
+GATE_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9:._-]*")
+WAIVER_FORM = "%s='<gate>[,<gate>] ASKED:<YYYY-MM-DDTHH:MM>Z <reason>'" % WAIVER_ENV
+GateRerun = Callable[[pathlib.Path, str], "tuple[int | None, str]"]
+
+
+@dataclasses.dataclass(frozen=True)
+class RedWaiver:
+    gates: tuple[str, ...]
+    asked: str
+    reason: str
+
+
+@dataclasses.dataclass(frozen=True)
+class WaiverAdmission:
+    """A waiver that admitted a red receipt: the red gates it covered, why each was waivable, and the warnings."""
+
+    gates: tuple[str, ...]
+    asked: str
+    reason: str
+    tree: str
+    evidence: dict[str, str]
+    warnings: tuple[str, ...]
+
+    def record(self) -> dict[str, Any]:
+        """The deploy record's `red_waiver` field."""
+        return {
+            "gates": list(self.gates),
+            "asked": self.asked,
+            "reason": self.reason,
+            "tree": self.tree,
+            "evidence": dict(self.evidence),
+            "warnings": list(self.warnings),
+        }
+
+    def line(self) -> str:
+        """One stdout line. It carries "admitted", so the entry's `gates_verdict` never reads it as a refusal."""
+        return WAIVER_LINE + json.dumps(self.record(), sort_keys=True)
+
+
+def waiver_from_lines(lines: list[str]) -> dict[str, Any] | None:
+    """The `red_waiver` record field from the gates child's stdout lines, or None when no waiver admitted."""
+    for line in lines:
+        if line.startswith(WAIVER_LINE):
+            doc = json.loads(line[len(WAIVER_LINE) :])
+            return doc if isinstance(doc, dict) else None
+    return None
+
+
+def parse_red_waiver(text: str) -> tuple[RedWaiver | None, str]:
+    """(waiver, "") or (None, why `text` is not `<gate>[,<gate>] ASKED:<YYYY-MM-DDTHH:MM>Z <reason>`)."""
+    m = WAIVER_RE.fullmatch(text.strip())
+    if m is None:
+        return None, "%r is not %s" % (text, WAIVER_FORM)
+    if not ASKED_RE.fullmatch(m["asked"]):
+        return None, "%r is not ASKED:<YYYY-MM-DDTHH:MM>Z" % m["asked"]
+    gates = tuple(m["gates"].split(","))
+    bad = [g for g in gates if not GATE_ID_RE.fullmatch(g)]
+    if bad:
+        return None, "names no gate id in %s" % ", ".join(repr(g) for g in bad)
+    if len(set(gates)) != len(gates):
+        return None, "names a gate twice: %s" % m["gates"]
+    return RedWaiver(gates=gates, asked=m["asked"], reason=m["reason"].strip()), ""
+
+
+def live_rerun(root: pathlib.Path, gate: str) -> tuple[int | None, str]:
+    """(exit code, stdout and stderr) of `npm run --silent <gate>` in `root`, or (None, why it could not run). The script is looked up in package.json first: under `--silent` a missing script exits 1 with nothing printed, which reads like a real red."""
+    try:
+        scripts = json.loads((root / "package.json").read_text(encoding="utf-8")).get("scripts")
+    except (OSError, ValueError, AttributeError) as exc:
+        return None, "package.json in %s could not be read: %s" % (root, exc)
+    if not isinstance(scripts, dict) or gate not in scripts:
+        return None, "%s is not a script in %s/package.json" % (gate, root)
+    npm = shutil.which("npm")
+    if npm is None:
+        return None, "npm is not on PATH"
+    try:
+        proc = subprocess.run(
+            [npm, "run", "--silent", gate],
+            cwd=str(root),
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=RERUN_TIMEOUT_S,
+        )
+    except subprocess.TimeoutExpired:
+        return None, "`npm run %s` did not finish within %ds" % (gate, RERUN_TIMEOUT_S)
+    except OSError as exc:
+        return None, "`npm run %s` could not start: %s" % (gate, exc)
+    return proc.returncode, proc.stdout + proc.stderr
+
+
+def _waivable(root: pathlib.Path, gate: str, rerun: GateRerun) -> tuple[bool, str]:
+    """(waivable, evidence or why not) for one red gate the waiver names."""
+    if gate in WAIVABLE_BY_NAME:
+        return True, "allowlisted by name"
+    rc, out = rerun(root, gate)
+    if rc is None:
+        return False, "%s could not be re-run, so its outage is not proven: %s" % (gate, out)
+    if UPSTREAM_MARKER in out:
+        return True, "re-run exited %d printing %s" % (rc, UPSTREAM_MARKER)
+    if rc == 0:
+        return False, (
+            "%s passed on re-run, so the receipt's red is not an outage; re-run `npm run ci:quick`"
+            % gate
+        )
+    return False, (
+        "%s is neither allowlisted by name (%s) nor printed %s on re-run (exit %d), so its red is a defect to fix"
+        % (gate, ", ".join(sorted(WAIVABLE_BY_NAME)), UPSTREAM_MARKER, rc)
+    )
+
+
+def ci_quick_verdict(
+    root: pathlib.Path,
+    tree: str,
+    *,
+    waiver_text: str | None,
+    asked_proof: AskedProof,
+    rerun: GateRerun = live_rerun,
+) -> tuple[Refusal | None, WaiverAdmission | None]:
+    """(refusal, admitted waiver) for the ci:quick receipt of `tree`. With no waiver, or a green receipt, the push guard's verdict alone; a red receipt is admitted only through the waiver's rules (module docstring)."""
     guard = _push_guard()
-    why = guard.receipt_refusal(str(root), tree, guard.read_receipt(str(root), tree))
+    receipt = guard.read_receipt(str(root), tree)
+    why = guard.receipt_refusal(str(root), tree, receipt)
     if why is None:
-        return None
-    return Refusal("ci-quick", "%s (tree %s) Run `npm run ci:quick` on HEAD." % (why, tree[:12]))
+        if waiver_text:
+            print(
+                "local-gates: ci-quick: %s is set but the receipt is green, so it is not applied"
+                % WAIVER_ENV,
+                file=sys.stderr,
+            )
+        return None, None
+    today = Refusal("ci-quick", "%s (tree %s) Run `npm run ci:quick` on HEAD." % (why, tree[:12]))
+    if not waiver_text:
+        return today, None
+
+    def refuse(reason: str) -> tuple[Refusal, None]:
+        return (
+            Refusal(
+                "ci-quick", "%s; %s does not admit it: %s" % (today.message, WAIVER_ENV, reason)
+            ),
+            None,
+        )
+
+    waiver, malformed = parse_red_waiver(waiver_text)
+    if waiver is None:
+        return refuse(malformed)
+    # The receipt itself must be sound for this exact tree: a missing, corrupt, misfiled, narrowed, advanced or otherwise refused receipt is never waived, only its reds are.
+    if not isinstance(receipt, dict) or guard.UNPARSEABLE in receipt or guard.MISFILED in receipt:
+        return today, None
+    if receipt.get("headTree") != tree:
+        return refuse("the receipt judged tree %r, not HEAD's %s" % (receipt.get("headTree"), tree))
+    front, _chain = guard._receipt_front(str(root), tree, receipt)
+    if front is not None:
+        return today, None
+    if not asked_proof(waiver.asked):
+        return refuse(
+            "%s matches no AskUserQuestion answer in the transcript ($%s)"
+            % (waiver.asked, TRANSCRIPT_ENV)
+        )
+    failed = [g for g in receipt.get("failed") or [] if isinstance(g, str)]
+    carried, _schema = guard.parse_carried(guard._carried_at_head(str(root)))
+    carried_gates = set(carried or {})
+    evidence: dict[str, str] = {}
+    refusals: list[str] = []
+    for gate in waiver.gates:
+        if gate not in failed or gate in carried_gates:
+            continue
+        ok, said = _waivable(root, gate, rerun)
+        if ok:
+            evidence[gate] = said
+        else:
+            refusals.append(said)
+    if refusals:
+        return refuse("; ".join(refusals))
+    # What is left is judged by the push guard's own carried-reds verdict, so an unnamed red, or a carried entry gone stale, still refuses.
+    rest = dict(receipt)
+    rest["failed"] = [g for g in failed if g not in evidence]
+    findings = receipt.get("findings")
+    if isinstance(findings, dict):
+        rest["findings"] = {g: v for g, v in findings.items() if g not in evidence}
+    left, _notes = guard.carried_verdict(rest, guard._carried_at_head(str(root)))
+    if left is not None:
+        return refuse(left)
+    if not evidence:
+        return refuse("it names none of the red gates (%s)" % ", ".join(failed))
+    warnings = tuple(
+        "%s is named in %s but is not red in the receipt" % (g, WAIVER_ENV)
+        for g in waiver.gates
+        if g not in failed
+    )
+    covered = tuple(g for g in waiver.gates if g in evidence)
+    return None, WaiverAdmission(covered, waiver.asked, waiver.reason, tree, evidence, warnings)
 
 
 # --------------------------------------------------------------------------- (b) vm:check
@@ -559,8 +759,11 @@ def check(
     branch_release: bool = False,
     heads: Heads = live_heads,
     ancestor: Ancestor = live_ancestor,
+    waiver_text: str | None = None,
+    rerun: GateRerun = live_rerun,
+    admitted: list[WaiverAdmission] | None = None,
 ) -> list[Refusal]:
-    """Every refusal of releasing `root`'s HEAD to `channel`; empty admits. `branch_release` swaps the origin-main equality for the pushed-descendant rule (edge only)."""
+    """Every refusal of releasing `root`'s HEAD to `channel`; empty admits. `branch_release` swaps the origin-main equality for the pushed-descendant rule (edge only). `waiver_text` defaults to $RELEASE_RED_WAIVER; a waiver that admits a red receipt is appended to `admitted`, or printed to stderr when no collector is given, so it is never applied unseen."""
     if channel not in CHANNELS:
         return [Refusal("usage", "--channel %r is not one of %s" % (channel, ", ".join(CHANNELS)))]
     if branch_release and channel != "edge":
@@ -570,9 +773,23 @@ def check(
     if head is None or tree is None:
         return [Refusal("git", "git cannot name HEAD or its tree in %s" % root)]
     found: list[Refusal] = []
-    quick = ci_quick_refusal(root, tree)
+    proof = asked_proof or transcript_proof(os.environ.get(TRANSCRIPT_ENV))
+    quick, waived = ci_quick_verdict(
+        root,
+        tree,
+        waiver_text=os.environ.get(WAIVER_ENV) if waiver_text is None else waiver_text,
+        asked_proof=proof,
+        rerun=rerun,
+    )
     if quick:
         found.append(quick)
+    if waived:
+        if admitted is None:
+            print(waived.line(), file=sys.stderr)
+        else:
+            admitted.append(waived)
+        for warning in waived.warnings:
+            print("local-gates: ci-quick: warning: %s" % warning, file=sys.stderr)
     base = previous_tag(root)
     if base is None:
         found.append(
@@ -604,7 +821,7 @@ def check(
                 sentinel=sentinel,
                 record=record,
                 force_asked=force_asked,
-                asked_proof=asked_proof or transcript_proof(os.environ.get(TRANSCRIPT_ENV)),
+                asked_proof=proof,
                 now_epoch=int(time.time()) if now_epoch is None else now_epoch,
             )
         )
@@ -647,6 +864,7 @@ def main(argv: list[str]) -> int:
     if args.branch_release and args.channel != "edge":
         parser.error("--branch-release applies to --channel edge only")
     transcript = args.transcript or os.environ.get(TRANSCRIPT_ENV)
+    admitted: list[WaiverAdmission] = []
     refusals = check(
         paths.repo_root(),
         args.channel,
@@ -654,7 +872,11 @@ def main(argv: list[str]) -> int:
         force_asked=args.force_asked,
         asked_proof=transcript_proof(transcript),
         branch_release=args.branch_release,
+        admitted=admitted,
     )
+    # Printed even beside refusals: a waiver that admitted the receipt is a fact of this run whatever else refuses.
+    for waived in admitted:
+        print(waived.line())
     if refusals:
         for refusal in refusals:
             print(refusal.line())
