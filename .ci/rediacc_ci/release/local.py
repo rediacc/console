@@ -1700,8 +1700,10 @@ def internal_gates(step: Step, run: Run) -> int:
     lines = [ln for ln in proc.stdout.splitlines() if ln.strip()]
     for line in lines:
         print(line)
-    run.ctx["red_waiver"] = local_gates.waiver_from_lines(lines)
-    return gates_verdict(proc.returncode, lines, bool(run.ctx.get("workers_only")))
+    verdict = gates_verdict(proc.returncode, lines, bool(run.ctx.get("workers_only")))
+    # The waiver rides the record only when the verdict admits: a refused run records none.
+    run.ctx["red_waiver"] = local_gates.waiver_from_lines(lines) if verdict == 0 else None
+    return verdict
 
 
 def gates_verdict(rc: int, lines: list[str], workers_only: bool) -> int:

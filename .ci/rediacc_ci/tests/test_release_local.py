@@ -683,6 +683,53 @@ def test_the_release_record_carries_the_admitted_red_waiver(tmp_path: pathlib.Pa
     assert local.release_record(local.Run(root, ctx))["red_waiver"] == waiver
 
 
+def _drive_internal_gates(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path, rc: int, stdout: str
+) -> tuple[int, local.Run]:
+    root = _tmp_root(tmp_path)
+    ctx = local.base_context(root, ["eu"], True)
+    ctx.update(version="9.9.9", run_id="t")
+    monkeypatch.setattr(local, "child_env", lambda _s, _c, _r: {})
+    monkeypatch.setattr(local, "child_argv", lambda _s, _c: ["gates"])
+    monkeypatch.setattr(
+        local.subprocess,
+        "run",
+        lambda *_a, **_k: subprocess.CompletedProcess(["gates"], rc, stdout, ""),
+    )
+    run = local.Run(root, ctx)
+    run.ctx["red_waiver"] = "stale"
+    return local.internal_gates(local.Step("gates", "gates", ("x",)), run), run
+
+
+_WAIVER = {"gates": ["check:ci-ops-health"], "asked": "ASKED:2026-11-16T05:02Z", "reason": "x"}
+_WAIVER_LINE = "%s%s" % (local.local_gates.WAIVER_LINE, json.dumps(_WAIVER))
+
+
+def test_internal_gates_records_the_waiver_an_admitting_child_printed(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    rc, run = _drive_internal_gates(monkeypatch, tmp_path, 0, _WAIVER_LINE + "\n")
+    assert rc == 0
+    assert run.ctx["red_waiver"] == _WAIVER
+
+
+def test_internal_gates_records_no_waiver_when_the_child_refuses(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    out = "%s\nlocal-gates: ci-quick: no receipt\n" % _WAIVER_LINE
+    rc, run = _drive_internal_gates(monkeypatch, tmp_path, 1, out)
+    assert rc == 1
+    assert run.ctx["red_waiver"] is None
+
+
+def test_internal_gates_records_no_waiver_without_a_waiver_line(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    rc, run = _drive_internal_gates(monkeypatch, tmp_path, 0, "local-gates: admitted\n")
+    assert rc == 0
+    assert run.ctx["red_waiver"] is None
+
+
 def test_a_branch_release_dry_run_prints_the_branch_and_hands_the_flag_to_the_gates(
     monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
