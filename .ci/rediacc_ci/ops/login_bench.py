@@ -623,17 +623,24 @@ def setup_store(
         )
 
 
+def _config_path(config: str, env: Mapping[str, str]) -> str | None:
+    """`$XDG_CONFIG_HOME/rediacc/<config>.json` (`$HOME/.config` when unset); None when neither variable is set, since a relative base would read a stray file in the working directory."""
+    base = env.get("XDG_CONFIG_HOME") or (
+        os.path.join(env["HOME"], ".config") if env.get("HOME") else ""
+    )
+    return os.path.join(base, CONFIG_DIR_NAME, config + ".json") if base else None
+
+
 def config_file_exists(config: str, env: Mapping[str, str]) -> bool:
-    """True when the rdc config `config` has its file, `$XDG_CONFIG_HOME/rediacc/<config>.json` (`$HOME/.config` when unset)."""
-    base = env.get("XDG_CONFIG_HOME") or os.path.join(env.get("HOME", ""), ".config")
-    return os.path.isfile(os.path.join(base, CONFIG_DIR_NAME, config + ".json"))
+    """True when the rdc config `config` has its file (see `_config_path`)."""
+    path = _config_path(config, env)
+    return path is not None and os.path.isfile(path)
 
 
 def linked_api_url(config: str, env: Mapping[str, str]) -> str | None:
     """The `remote.apiUrl` the rdc config `config` is linked to, read from its file beside `config_file_exists`'s; None when the file is absent, unlinked, or carries no apiUrl. An unreadable or malformed file raises LoginError naming the path, never reads as unlinked."""
-    base = env.get("XDG_CONFIG_HOME") or os.path.join(env.get("HOME", ""), ".config")
-    path = os.path.join(base, CONFIG_DIR_NAME, config + ".json")
-    if not os.path.isfile(path):
+    path = _config_path(config, env)
+    if path is None or not os.path.isfile(path):
         return None
     try:
         with open(path, encoding="utf-8") as handle:
@@ -831,11 +838,11 @@ def login(
     enable_env[CLI_LANG_ENV] = CLI_LANG
     enable_env[CLI_STORE_MASTER_PW_ENV] = values[MASTER_PW_ENV]
     # A config linked to another origin (the pre-rename `https://bench.rediacc.cloud`) is refused by `enable` ("can only be enrolled again there"). Unlink it locally (`disable --local`, which touches no server data), then enable again with `--force`. `--force` only skips the confirmation before the local file is replaced by the store's copy (packages/cli/src/commands/config-remote-enable.ts, finalizeEnable): the server copy stays authoritative and is never overwritten, and the CLI keeps the replaced file as `<config>.json.bak`. A config already linked to the target gets neither. A config not linked to the target (linked elsewhere, or unlinked by an earlier run whose enable then failed) gets `--force`, so a rerun after that failure does not hit the refusal again; only one linked elsewhere is unlinked first.
-    relink = False
+    force = False
     if config_exists(config, env):
         linked = linked_url(config, env)
-        relink = linked is None or linked.rstrip("/") != server.rstrip("/")
-        if linked is not None and relink:
+        force = linked is None or linked.rstrip("/") != server.rstrip("/")
+        if linked is not None and force:
             _step(
                 run,
                 "%s is linked to %s, not %s: unlinking it locally (config remote disable --local)"
@@ -851,7 +858,7 @@ def login(
         "remote",
         "enable",
         "--master-password",
-        *(["--force"] if relink else []),
+        *(["--force"] if force else []),
         *(["--config-id", target.config_id] if target.config_id else []),
         "--api-url",
         server,

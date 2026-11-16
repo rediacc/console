@@ -1301,3 +1301,31 @@ def test_the_config_file_is_looked_up_under_xdg_then_home(tmp_path):
     (home / ".config" / "rediacc").mkdir(parents=True)
     (home / ".config" / "rediacc" / "asia-bench.json").write_text("{}", encoding="utf-8")
     assert login_bench.config_file_exists("asia-bench", {"HOME": str(home)})
+
+
+# --------------------------------------------------------------------------- review findings
+
+
+def test_the_real_crypto_helper_answers_the_shape_setup_store_reads():
+    """No fake: the product's own helper through tsx, so a renamed op or a changed return shape fails here and not in a live bench run."""
+    answer = login_bench._default_crypto({"op": "setup", "password": "pw-test-0123456789"})
+    assert isinstance(answer.get("body"), dict)
+    assert answer["body"].get("slots")
+
+
+def test_with_no_home_and_no_xdg_a_stray_relative_config_is_not_read(tmp_path, monkeypatch):
+    stray = tmp_path / ".config" / "rediacc"
+    stray.mkdir(parents=True)
+    (stray / "eu-bench.json").write_text(json.dumps({"remote": {"apiUrl": "https://x"}}))
+    monkeypatch.chdir(tmp_path)
+    assert login_bench.config_file_exists("eu-bench", {}) is False
+    assert login_bench.linked_api_url("eu-bench", {}) is None
+
+
+def test_control_a_set_home_still_finds_its_config(tmp_path):
+    cfg = tmp_path / ".config" / "rediacc"
+    cfg.mkdir(parents=True)
+    (cfg / "eu-bench.json").write_text(json.dumps({"remote": {"apiUrl": "https://x"}}))
+    env = {"HOME": str(tmp_path)}
+    assert login_bench.config_file_exists("eu-bench", env) is True
+    assert login_bench.linked_api_url("eu-bench", env) == "https://x"
