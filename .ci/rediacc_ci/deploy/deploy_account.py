@@ -53,6 +53,7 @@ K=5 LEDGER: `.ci/shadow/w7p6-deploy-account.observations.jsonl`.
 
 from __future__ import annotations
 
+import json
 import os
 import pathlib
 import re
@@ -146,6 +147,31 @@ def route_host(config: pathlib.Path) -> str | None:
     return None
 
 
+# workers/proxy/src/ip-allowlist.ts `allowlistRefusal`: `Response.json({ error: 'This address is not on the allowlist.' }, { status: 403 })`.
+ALLOWLIST_REFUSAL = "This address is not on the allowlist."
+
+
+def allow_ips(config: pathlib.Path) -> str:
+    """The `vars.ALLOW_IPS` of the deployed wrangler config; "" when unset, empty, not a string, or the file is not TOML (which `wrangler deploy` would already have refused)."""
+    try:
+        with open(config, "rb") as fh:
+            value = (tomllib.load(fh).get("vars") or {}).get("ALLOW_IPS")
+    except (OSError, tomllib.TOMLDecodeError):
+        return ""
+    return value.strip() if isinstance(value, str) else ""
+
+
+def allowlist_refused(page: portal_captcha.Reply) -> bool:
+    """True when `page` is a 403 whose JSON body is exactly the allowlist's refusal, not a WAF, token or other 403."""
+    if page.status != 403:
+        return False
+    try:
+        body = json.loads(page.body)
+    except ValueError:
+        return False
+    return isinstance(body, dict) and body.get("error") == ALLOWLIST_REFUSAL
+
+
 def portal_smoke(
     config: pathlib.Path,
     env: typing.Mapping[str, str],
@@ -155,10 +181,19 @@ def portal_smoke(
 ) -> str | None:
     """After the deploy: None when the served portal renders the captcha its Worker enforces, else the refusal line.
 
-    The pre-deploy `portal_sitekey_refusal` proves the dist on disk; this proves what the host SERVES, which also catches a Worker version or asset upload that did not take. A config with no route has no host to ask and is not checked (every production and edge config carries one; the twin differential's fixture configs do not). An unreachable host after the retries is a refusal too: an unverified deploy is not a verified one.
+    The pre-deploy `portal_sitekey_refusal` proves the dist on disk; this proves what the host SERVES, which also catches a Worker version or asset upload that did not take. A company whose `vars.ALLOW_IPS` is set and whose host answers 403 with the allowlist's own refusal body skips the served-portal read and logs why. A config with no route has no host to ask and is not checked (every production and edge config carries one; the twin differential's fixture configs do not). An unreachable host after the retries is a refusal too: an unverified deploy is not a verified one.
     """
     host = route_host(config)
     if host is None:
+        return None
+    if allow_ips(config) and allowlist_refused(
+        fetch("GET", "https://%s%s" % (host, portal_captcha.LOGIN_PATH), None)
+    ):
+        # The dist sitekey check (`portal_sitekey_refusal`) ran before the deploy; only the served-portal read is skipped.
+        log.info(
+            "Portal smoke skipped: %s answers 403 %r, so its ALLOW_IPS refuses this machine; the dist sitekey check ran before the deploy"
+            % (shown(host), ALLOWLIST_REFUSAL)
+        )
         return None
     key = (env.get("TURNSTILE_SITE_KEY") or "").strip() or None
     verdict = portal_captcha.check_with_retry(host, fetch, key, sleep=sleep)
