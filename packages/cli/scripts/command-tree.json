@@ -3544,6 +3544,74 @@
                   "subcommands": []
                 }
               ]
+            },
+            {
+              "name": "orphan",
+              "descriptionKey": "commands.repo.admin.orphan.description",
+              "options": [],
+              "arguments": [],
+              "subcommands": [
+                {
+                  "name": "list",
+                  "descriptionKey": "commands.repo.admin.orphan.list.description",
+                  "options": [
+                    {
+                      "flags": "--debug",
+                      "descriptionKey": "options.debug",
+                      "mandatory": false,
+                      "defaultValue": null
+                    }
+                  ],
+                  "arguments": [
+                    {
+                      "name": "machine",
+                      "required": true,
+                      "variadic": false,
+                      "defaultValue": null
+                    }
+                  ],
+                  "subcommands": []
+                },
+                {
+                  "name": "delete",
+                  "descriptionKey": "commands.repo.admin.orphan.delete.description",
+                  "options": [
+                    {
+                      "flags": "--force-delete-mounted",
+                      "descriptionKey": "commands.repo.admin.orphan.delete.forceOption",
+                      "mandatory": false,
+                      "defaultValue": null
+                    },
+                    {
+                      "flags": "-y, --yes",
+                      "descriptionKey": "options.yes",
+                      "mandatory": false,
+                      "defaultValue": null
+                    },
+                    {
+                      "flags": "--dry-run",
+                      "descriptionKey": "options.dryRun",
+                      "mandatory": false,
+                      "defaultValue": null
+                    },
+                    {
+                      "flags": "--debug",
+                      "descriptionKey": "options.debug",
+                      "mandatory": false,
+                      "defaultValue": null
+                    }
+                  ],
+                  "arguments": [
+                    {
+                      "name": "ref",
+                      "required": true,
+                      "variadic": false,
+                      "defaultValue": null
+                    }
+                  ],
+                  "subcommands": []
+                }
+              ]
             }
           ]
         },

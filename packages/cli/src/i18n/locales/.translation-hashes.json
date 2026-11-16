@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2920,
-    "sourceCommit": "859f0f225965b50a0a434f79f52f661a64c366f9"
+    "keyCount": 2934,
+    "sourceCommit": "69e9434abdca1e3faa94c8106b72e7657e8e7f2b"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -1415,6 +1415,20 @@
     "commands.repo.admin.fsck.noReport": "113e1aa1",
     "commands.repo.admin.fsck.orphanHeader": "def4954e",
     "commands.repo.admin.fsck.orphanHint": "2c6e2cfd",
+    "commands.repo.admin.orphan.delete.badRef": "de94a57e",
+    "commands.repo.admin.orphan.delete.completed": "00d54168",
+    "commands.repo.admin.orphan.delete.confirm": "7592d91e",
+    "commands.repo.admin.orphan.delete.description": "f97a88e1",
+    "commands.repo.admin.orphan.delete.failed": "6926cddf",
+    "commands.repo.admin.orphan.delete.forceOption": "1d6784b2",
+    "commands.repo.admin.orphan.delete.mounted": "668136f4",
+    "commands.repo.admin.orphan.delete.notOnMachine": "727cffcf",
+    "commands.repo.admin.orphan.delete.protected": "61218b76",
+    "commands.repo.admin.orphan.delete.refArg": "937d3ce6",
+    "commands.repo.admin.orphan.delete.starting": "bafc155b",
+    "commands.repo.admin.orphan.description": "e26258cf",
+    "commands.repo.admin.orphan.list.description": "515b9713",
+    "commands.repo.admin.orphan.list.none": "797c2426",
     "commands.repo.admin.ownership.completed": "cb3c7a24",
     "commands.repo.admin.ownership.description": "2165559b",
     "commands.repo.admin.ownership.descriptionShort": "8e6660f7",
