@@ -250,3 +250,74 @@ def test_a_stale_cron_stays_unknown_after_a_probe_changes():
     doc["last_cron_at"] = oh.iso(NOW - datetime.timedelta(hours=3))
     oh.refresh_tls_probes(doc, CFG, NOW, Served(JAN_2027))
     assert doc["verdict"] == "unknown"
+
+
+# --------------------------------------------------------------------------- review findings (cf503573)
+
+
+class _FakeTls:
+    def __init__(self, cert):
+        self.cert = cert
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_exc):
+        return False
+
+    def getpeercert(self):
+        return self.cert
+
+
+def _serve(monkeypatch, cert):
+    class Ctx:
+        def wrap_socket(self, _raw, **_kwargs):
+            return _FakeTls(cert)
+
+    monkeypatch.setattr(oh.socket, "create_connection", lambda *_a, **_k: _FakeTls(None))
+    monkeypatch.setattr(oh.ssl, "create_default_context", Ctx)
+
+
+def test_served_certificate_flattens_every_issuer_name_field(monkeypatch):
+    cert = {
+        "notAfter": "Jan 15 00:00:00 2027 GMT",
+        "issuer": (
+            (("countryName", "US"),),
+            (("organizationName", "Let's Encrypt"),),
+            (("commonName", "R11"),),
+        ),
+    }
+    _serve(monkeypatch, cert)
+    got = oh.served_certificate("h.example.test", 443, 1.0)
+    assert got is not None
+    assert got.issuer == "countryName=US organizationName=Let's Encrypt commonName=R11"
+    assert got.not_after == JAN_2027
+
+
+def test_served_certificate_without_a_notafter_is_none(monkeypatch):
+    _serve(monkeypatch, {"issuer": ((("commonName", "R11"),),)})
+    assert oh.served_certificate("h.example.test", 443, 1.0) is None
+
+
+def test_ingest_max_age_h_resolves_exact_then_longest_prefix_then_default():
+    cfg = {"ingest": {"max_age_h": {"a": 1, "loc*": 2, "local-m*": 3, "default": 9}}}
+    assert oh.ingest_max_age_h("a", cfg) == 1
+    assert oh.ingest_max_age_h("local-machine", cfg) == 3
+    assert oh.ingest_max_age_h("locx", cfg) == 2
+    assert oh.ingest_max_age_h("other", cfg) == 9
+    assert oh.ingest_max_age_h("other", {"ingest": {"max_age_h": {"a": 1}}}) is None
+    assert oh.ingest_max_age_h("other", {}) is None
+
+
+def test_a_red_ingest_entry_without_a_parseable_time_follows_the_workers_rule():
+    """state.ts ingestFresh treats an unparseable `at` as not fresh when a limit applies; with no limit the entry stays red."""
+    limited = {"ingest": {"max_age_h": {"default": 24}}}
+    doc = {
+        "last_cron_at": oh.iso(NOW),
+        "probes": [probe(state="green")],
+        "ingest": [{"source": "s", "state": "red", "at": "garbage"}],
+    }
+    assert oh.recompute_verdict(doc, limited, NOW) == oh.GREEN
+    assert oh.recompute_verdict(doc, {}, NOW) == oh.RED
+    doc["ingest"][0]["at"] = oh.iso(NOW)
+    assert oh.recompute_verdict(doc, limited, NOW) == oh.RED

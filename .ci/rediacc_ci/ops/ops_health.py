@@ -835,7 +835,7 @@ def ingest_max_age_h(source: str, cfg: dict) -> float | None:
 
 
 def recompute_verdict(doc: dict, cfg: dict, now: datetime.datetime) -> str:
-    """The Worker's verdict rule (workers/ops-health/src/state.ts `verdict`) over the probes as the refresh has edited them: red when a probe is red or a FRESH ingest entry is red (an entry older than its `max_age_h` is ignored, and an unknown entry never decides); unknown when no cron ran, the last one is stale, there are no probes or one is unknown; green otherwise. With no `ingest.max_age_h` table every red entry counts as fresh."""
+    """The Worker's verdict rule (workers/ops-health/src/state.ts `verdict`) over the probes as the refresh has edited them: red when a probe is red or a FRESH ingest entry is red (an entry older than its `max_age_h` is ignored, and an unknown entry never decides); unknown when no cron ran, the last one is stale, there are no probes or one is unknown; green otherwise. A red entry counts as fresh when no `ingest.max_age_h` limit applies to its source (no table, or the table names neither the source nor a default); one with a missing or unparseable `at` is not fresh, as in the Worker (state.ts `ingestFresh`) when a limit applies."""
     probes = [p for p in doc.get("probes") or [] if isinstance(p, dict)]
     if any(p.get("state") == RED for p in probes):
         return RED
@@ -1496,7 +1496,7 @@ def main(argv: list | None = None) -> int:
         )
         return 2
     try:
-        # A hand run re-measures a red check inside its TTL; the Stop hook's run (`--lock-held`) keeps the TTL.
+        # A hand run re-measures every non-green check (red or unknown) inside its TTL; the Stop hook's run (`--lock-held`) keeps the TTL.
         rc, doc = refresh(
             root,
             force=args.force,
