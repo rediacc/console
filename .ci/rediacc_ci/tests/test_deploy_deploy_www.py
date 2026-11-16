@@ -470,6 +470,7 @@ def test_preview_mints_a_database_and_the_generated_toml_is_byte_identical(tmp_p
             "--config wrangler.preview.toml"
         ),
         "npx --no-install wrangler deploy --config wrangler.preview.toml",
+        PREVIEW_TURNSTILE_PUT,
     ], calls
 
     # The generated config, byte for byte, is what the deploy was handed.
@@ -498,6 +499,9 @@ def test_the_generated_toml_carries_the_twins_em_dash_and_backticks(tmp_path) ->
     assert "\u2014" not in PORT_FILE.read_text(encoding="utf-8")
 
 
+PREVIEW_TURNSTILE_PUT = "npx --no-install wrangler secret put CLOUDFLARE_TURNSTILE_SECRET_KEY --config wrangler.preview.toml"
+
+
 def test_an_existing_database_is_deleted_first(tmp_path) -> None:
     """THE CLEAN-SLATE PATH. The delete only happens when the first `d1 info` answered with a uuid, so this is the case the first lookup exists for."""
     _root, old, new = run_both(
@@ -520,6 +524,7 @@ def test_an_existing_database_is_deleted_first(tmp_path) -> None:
             "--config wrangler.preview.toml"
         ),
         "npx --no-install wrangler deploy --config wrangler.preview.toml",
+        PREVIEW_TURNSTILE_PUT,
     ], calls
     assert "Deleting existing D1 database: account-db-pr-42 (clean slate)" in proc.stderr
     assert "Deleted account-db-pr-42" in proc.stderr
@@ -871,3 +876,46 @@ def test_diagnostics_are_prefixed_with_the_module_name() -> None:
     """The twin's `.sh` is deleted, so the prefix names the module a reader can run and find."""
     assert port.SELF == "rediacc_ci.deploy.deploy_www"
     assert port.__name__ == port.SELF
+
+
+# --- a preview answers /api/enterprise-lookup (found in the 2026-11-16 live run: 503 unavailable) ---
+
+
+def test_a_preview_binds_the_lookup_namespace_and_the_account_worker() -> None:
+    """The route answers 503 `unavailable` without the ENTERPRISE_LOOKUP namespace; the preview binds its own (no id, so wrangler provisions one) and never the production namespace id."""
+    body = port.preview_toml("pr-1", "db", "u")
+    assert '[[kv_namespaces]]\nbinding = "ENTERPRISE_LOOKUP"\n' in body
+    assert '[[services]]\nbinding = "ACCOUNT"\nservice = "account-bench"\n' in body
+    assert "7bbf3025c29349f5b4f833c1d47d8eb5" not in body
+
+
+def test_a_preview_pushes_the_turnstile_dummy_secret_after_the_deploy(tmp_path) -> None:
+    root = fixture(tmp_path)
+    proc, calls, _config = _run_live(root, "new", "--name", "pr-9")
+    assert proc.returncode == 0, proc.stderr
+    names = _calls(calls)
+    assert names[-2] == "npx --no-install wrangler deploy --config wrangler.preview.toml"
+    assert names[-1] == PREVIEW_TURNSTILE_PUT
+    assert "secret-put-stdin: 1x0000000000000000000000000000000AA\n" in calls
+    assert "ENTERPRISE_LOOKUP_PEPPER" not in calls, "control: no pepper in the run, none pushed"
+
+
+def test_a_preview_pushes_the_pepper_when_the_run_carries_one(tmp_path) -> None:
+    root = fixture(tmp_path)
+    proc, calls, _config = _run_live(
+        root, "new", "--name", "pr-9", ENTERPRISE_LOOKUP_PEPPER="pepper-fixture-value"
+    )
+    assert proc.returncode == 0, proc.stderr
+    assert "secret-put-stdin: pepper-fixture-value\n" in calls
+    puts = [c for c in _calls(calls) if "secret put" in c]
+    assert [c.split()[5] for c in puts] == [
+        "ENTERPRISE_LOOKUP_PEPPER",
+        "CLOUDFLARE_TURNSTILE_SECRET_KEY",
+    ]
+
+
+def test_a_failed_preview_deploy_pushes_no_secret(tmp_path) -> None:
+    root = fixture(tmp_path)
+    proc, calls, _config = _run_live(root, "new", "--name", "pr-9", FAKE_NPX_FAIL_ON_CALL="5")
+    assert proc.returncode != 0
+    assert not any("secret put" in c for c in _calls(calls)), calls

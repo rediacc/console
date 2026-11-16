@@ -195,6 +195,17 @@ database_name = "%s"
 database_id = "%s"
 migrations_dir = "../../private/account/drizzle"
 
+# The www Worker's contact and newsletter routes post through this binding, and the preview binds the bench account Worker so a preview form never reaches production data.
+[[services]]
+binding = "ACCOUNT"
+service = "account-bench"
+
+# The enterprise company lookup. No id: wrangler provisions an empty namespace for this preview on
+# deploy, so a preview never reads or writes the production lookup records. Without the binding,
+# the pepper and the Turnstile secret, /api/enterprise-lookup answers 503 unavailable.
+[[kv_namespaces]]
+binding = "ENTERPRISE_LOOKUP"
+
 # The account Worker refuses to serve with a licence private key set and requires this binding
 # (private/account src/entry/cloudflare.ts requireSignerOnly). The preview signs through the bench
 # signer and holds no key; signer-bench-eu is deployed first (rediacc_ci.deploy.deploy_signer).
@@ -330,6 +341,10 @@ def get_d1_uuid(db_name: str) -> str:
 
 
 PEPPER_ENV = "ENTERPRISE_LOOKUP_PEPPER"
+TURNSTILE_ENV = "CLOUDFLARE_TURNSTILE_SECRET_KEY"
+
+# Cloudflare's published Turnstile dummy value that siteverify answers success for on every token. A preview holds it instead of the production value, so the lookup route works on a preview and no production value leaves its Worker.
+TURNSTILE_ALWAYS_PASSES = "1x0000000000000000000000000000000AA"
 
 # The www pages' client bundles, relative to the worker directory: Astro writes them to `dist/assets` (packages/www astro.config build.assets) and the deploy copies `packages/www/dist` into `workers/www/dist`. The portal's own bundles sit under `dist/account/assets`, which a non-recursive glob here does not read.
 WWW_ASSETS = ("dist", "assets")
@@ -369,6 +384,29 @@ def www_sitekey_refusal(worker_dir: pathlib.Path, env: typing.Mapping[str, str])
 def pepper_put_argv() -> list[str]:
     """`npx wrangler secret put ENTERPRISE_LOOKUP_PEPPER`: the value arrives on stdin, never on argv."""
     return [*wrangler.ARGV, "secret", "put", PEPPER_ENV]
+
+
+def secret_put_argv(name: str) -> list[str]:
+    """`npx wrangler secret put <name> --config wrangler.preview.toml`: the value arrives on stdin, never on argv."""
+    return [*wrangler.ARGV, "secret", "put", name, "--config", PREVIEW_CONFIG]
+
+
+def _push_preview_secrets() -> int:
+    """The two secrets /api/enterprise-lookup needs on a preview, pushed to the preview Worker after its deploy: the pepper when the run carries one (the same value `rediacc_ci.ops.enterprise_lookup` seeds with) and the Turnstile dummy value."""
+    pushes = [(TURNSTILE_ENV, TURNSTILE_ALWAYS_PASSES)]
+    pepper = os.environ.get(PEPPER_ENV, "")
+    if pepper:
+        pushes.insert(0, (PEPPER_ENV, pepper))
+    for name, value in pushes:
+        log.step("Pushing the %s preview Worker secret" % name)
+        sys.stdout.flush()
+        sys.stderr.flush()
+        status = subprocess.run(
+            secret_put_argv(name), input=value.encode("utf-8"), check=False
+        ).returncode
+        if status != 0:
+            return status
+    return 0
 
 
 def _push_pepper() -> int:
@@ -443,6 +481,10 @@ def _preview(worker_name: str, worker_dir: pathlib.Path) -> int:
     status = _run(preview_deploy_argv())
     if status != 0:
         return status  # `set -e`, config left behind again
+
+    status = _push_preview_secrets()
+    if status != 0:
+        return status  # config left behind, as for a failed deploy
 
     # `rm -f wrangler.preview.toml` (twin :141). Only on the success path, which is why a failed deploy leaves a generated config in the worker directory.
     with contextlib.suppress(FileNotFoundError):  # `-f`
