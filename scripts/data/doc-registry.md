@@ -1287,7 +1287,7 @@ Scans: every tracked `.json`/`.jsonc` file in the four homes the driver contract
 | `.ci/config/free-mail-domains.json` | .ci/config | code: `.ci/rediacc_ci/ops/enterprise_lookup.py` | no -- hardcoded in `.ci/rediacc_ci/ops/enterprise_lookup.py` |
 | `.ci/config/freshness.json` | .ci/config | wiring: `.github/workflows/ops-housekeeping.yml` | yes -- repoint in `.github/workflows/ops-housekeeping.yml` |
 | `.ci/config/gate-costs.json` | .ci/config | wiring: `.github/workflows/ci-quality.yml` | yes -- repoint in `.github/workflows/ci-quality.yml` |
-| `.ci/config/generated-artifacts.json` | .ci/config | code: `.claude/rediacc_hooks/git/artifacts.py` | no -- hardcoded in `.claude/rediacc_hooks/git/artifacts.py` |
+| `.ci/config/generated-artifacts.json` | .ci/config | code: `.claude/hooks/stop/wl_roster.py` | no -- hardcoded in `.claude/hooks/stop/wl_roster.py` |
 | `.ci/config/gh-retry-reads-baseline.json` | .ci/config | code: `.ci/rediacc_ci/quality/gh_retry_reads.py` | no -- hardcoded in `.ci/rediacc_ci/quality/gh_retry_reads.py` |
 | `.ci/config/lane-durations.json` | .ci/config | wiring: `.github/workflows/ci-quality.yml` | yes -- repoint in `.github/workflows/ci-quality.yml` |
 | `.ci/config/legal-documents.json` | .ci/config | code: `scripts/gen/gen-legal.ts` | no -- hardcoded in `scripts/gen/gen-legal.ts` |

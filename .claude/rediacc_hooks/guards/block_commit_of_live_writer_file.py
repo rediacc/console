@@ -7,8 +7,9 @@ WHAT IS LIVE, AND WHERE EACH PIECE COMES FROM. A PreToolUse event carries no bac
   * the session's agents are `wl_roster.load_metas(wl_roster.session_subagents_dir(cwd, session_id))`;
   * an agent is LIVE when its transcript exists and `wl_roster.proven_finished` does NOT say it ended its turn
     (that test is one-directional: every ambiguous shape reads as working, which is the safe side here too);
-  * its paths are `wl_roster.edit_paths` over its own transcript and every descendant's
+  * its paths are `wl_roster.edit_paths(..., strict=True)` over its own transcript and every descendant's
     (`children_map` + `descendants`), since a writer's own sub-writers are part of its unfinished work.
+    STRICT, because a path counted here REFUSES a commit (#862b2aed): the judge's default reading counts every path literal of a Python program whose write target it cannot resolve, and on 2026-11-16 that made a read-only survey agent, whose /tmp script dumped JSON to `sys.argv[1]` and READ `agent/INDEX.md`, `agent/plans/QUEUE.md` and `.ci/config/plan-boxes.json`, the "writer" of all three. Strict counts Edit/Write calls, redirects, in-place edits, write verbs, resolved Python write targets and runs of a registered generator (`.ci/config/generated-artifacts.json`).
 
 A FINISHED writer's own files are never refused. They are exactly what the lead commits once the output is spot-checked, which is the normal flow (CLAUDE.md rule 1). The one exception is a finished sub-writer with a live ancestor anywhere up its spawn chain (parent, grandparent, ...; finished intermediate writers do not break the chain): its edits count as part of that ancestor's unfinished work, so they are refused until the ancestor ends.
 
@@ -76,16 +77,16 @@ def _tool(name, tool_input, n):
 def write_session(config_dir, root, session_id, agents):
     """Plant a session under `<config_dir>/projects/<munged root>/<session_id>/subagents`.
 
-    `agents` is `[(agent_id, description, [absolute edited paths], live, parent)]`. A live agent's transcript ends on a tool call still in flight; a finished one ends its turn and is back-dated an hour, well past `wl_roster.FINISHED_QUIET_S`. Shared by the differential fixture and `test-block_commit_of_live_writer_file.py`, so the two cannot drift apart on what a live transcript looks like.
+    `agents` is `[(agent_id, description, [calls], live, parent)]`, each call an absolute path planted as an Edit of it, or a `(tool name, tool input)` pair planted as written (a Bash command a writer or a reader ran). A live agent's transcript ends on a tool call still in flight; a finished one ends its turn and is back-dated an hour, well past `wl_roster.FINISHED_QUIET_S`. Shared by the differential fixture and `test-block_commit_of_live_writer_file.py`, so the two cannot drift apart on what a live transcript looks like.
     """
     munged = "".join(ch if ch.isalnum() else "-" for ch in str(root))
     sub = pathlib.Path(config_dir) / "projects" / munged / session_id / "subagents"
     sub.mkdir(parents=True, exist_ok=True)
     for aid, desc, paths, live, parent in agents:
-        lines = [
-            _record("tool_use", [_tool("Edit", {"file_path": p}, n)], str(root))
-            for n, p in enumerate(paths)
-        ]
+        lines = []
+        for n, p in enumerate(paths):
+            name, tool_input = p if isinstance(p, tuple) else ("Edit", {"file_path": p})
+            lines.append(_record("tool_use", [_tool(name, tool_input, n)], str(root)))
         if live:
             lines.append(
                 _record("tool_use", [_tool("Bash", {"command": "sleep 1"}, len(paths))], str(root))
@@ -220,7 +221,7 @@ def live_writers(cwd, session_id, now=None):
         for member in [aid, *roster.descendants(aid, kids)]:
             member_jsonl = (metas.get(member) or {}).get("jsonl")
             if member_jsonl is not None:
-                paths |= roster.edit_paths(member_jsonl, root)
+                paths |= roster.edit_paths(member_jsonl, root, strict=True)
         if paths:
             out.append((aid, meta, {os.path.normpath(os.path.join(root, p)) for p in paths}))
     return root, out
