@@ -404,6 +404,43 @@ def test_ensure_company_keeps_a_bootstrapped_unfinished_company_with_the_proof_o
     assert fake.calls == []
 
 
+def test_ensure_company_names_a_failed_ledger_read_and_an_active_company_reads_none(monkeypatch):
+    """Review ec9ebbd7.1: a company that is not active reads its onboarding ledger; a region without a control database, or an unreadable ledger, is a LabError naming the failure, never a silent fall-through to the add."""
+    adder = FakeAdd()
+    reads: list[str] = []
+
+    def transport(database, _sql, _params):
+        reads.append(database)
+        raise onboarding.STEP_ERRORS[0]("ledger offline")
+
+    monkeypatch.setattr(lab.control_db, "transport", lambda: transport)
+    built = lab.build(
+        bench=True,
+        adder=adder,
+        finder=adder.find,
+        resolver=adder.by_id,
+        scoped=lambda _row: True,
+        owner_of=lambda row: proof.proof_owner(str(row["name"])),
+    )
+    adder.companies["proof-x"] = {
+        "id": "c00000000000000aa", "name": "proof-x", "region": "eu", "state": "onboarding",
+    }  # fmt: skip
+    with pytest.raises(proof.LabError, match=r"steps of company c00000000000000aa.*ledger offline"):
+        built.ensure_company("proof-x", "eu")
+    assert len(reads) == 1
+    assert adder.calls == []
+    # a region without a control database is named too
+    adder.companies["proof-x"]["region"] = "nowhere"
+    with pytest.raises(proof.LabError, match="no control database"):
+        built.ensure_company("proof-x", "eu")
+    assert adder.calls == []
+    # control: an active company never reads the ledger
+    reads.clear()
+    adder.companies["proof-x"].update(region="eu", state="active")
+    assert built.ensure_company("proof-x", "eu") == "c00000000000000aa"
+    assert reads == []
+
+
 @pytest.mark.parametrize(("status", "expected"), [("done", True), ("failed", False)])
 def test_live_bootstrapped_reads_the_bootstrap_row_of_the_ledger(monkeypatch, status, expected):
     seen: list[tuple[str, list]] = []
@@ -687,11 +724,29 @@ def test_remove_names_the_lookup_domain_every_lab_add_writes(monkeypatch):
     assert fake.calls[0][1].lookup_domains == ()
 
 
-def test_the_live_lifecycle_context_takes_every_keyword_the_lab_passes():
-    """The lab's default context builder is `cli.lifecycle_context`; a keyword it does not take would fail only live."""
-    inspect.signature(cli.lifecycle_context).bind(
-        object(), bench=True, env=None, bws_project="", lookup_domains=("proof-x.example",)
+def test_the_live_lifecycle_context_takes_every_keyword_the_lab_passes(monkeypatch):
+    """Review 058fb5cc.1: the lab's default context builder is `cli.lifecycle_context`. A recording stand-in with that function's signature is driven through `LiveLab.remove`, so a keyword the lab stops passing, or one the builder does not take, is seen."""
+    seen: list[dict] = []
+    real = inspect.signature(cli.lifecycle_context)
+
+    def recording(*args, **kwargs):
+        real.bind(*args, **kwargs)
+        seen.append(kwargs)
+        return types.SimpleNamespace(env=kwargs.get("env"))
+
+    monkeypatch.setattr(cli, "lifecycle_context", recording)
+    monkeypatch.setattr(
+        lab, "_import", lambda name: FakeLifecycle() if name == lab.SEAMS["C2"].module else None
     )
+    adder = FakeAdd()
+    built = _lab(adder=adder, finder=adder.find, resolver=adder.by_id)
+    adder.companies["proof-x"] = dict(_COMPANY_ROW)
+    assert built.remove("c00000000000000aa", delete_data=True, github_actions=False) == 0
+    assert seen[0]["lookup_domains"] == (proof.proof_lookup_domain("proof-x"),)
+    # control: a company the lab did not create passes no domain
+    adder.companies["acme"] = {**_COMPANY_ROW, "id": "c00000000000000bb", "name": "acme"}
+    assert built.remove("c00000000000000bb", delete_data=False, github_actions=False) == 0
+    assert seen[1]["lookup_domains"] == ()
 
 
 def test_an_export_or_remove_failure_names_the_company_by_its_id(monkeypatch, capsys):
