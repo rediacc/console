@@ -917,11 +917,26 @@ def attested_by_identity(ledger, rel, sig):
         return False
     if isinstance((ledger.get("plans") or {}).get(rel), dict):
         return attested_at(ledger, rel, sig)
-    ident = plan_identity(rel)
-    return any(
-        plan_identity(r) == ident and isinstance(v, dict) and sig in (v.get("done_sigs") or [])
-        for r, v in (ledger.get("plans") or {}).items()
-    )
+    return any(sig in done for done in _identity_index(ledger).get(plan_identity(rel), ()))
+
+
+# One index per ledger document: plan identity -> the `done_sigs` values of its dict rows. `done_commit` asks about every judged box against every commit's ledger, and re-deriving each row's identity per ask made the plan-implementation gate quadratic in (boxes x commits x plans): 380 s for one test on 2026-11-16. The entry holds the document itself, so an id() is never reused for another document while its index lives.
+_IDENTITY_INDEX: dict[int, tuple[dict, dict[str, list]]] = {}
+_IDENTITY_INDEX_MAX = 4096
+
+
+def _identity_index(ledger):
+    cached = _IDENTITY_INDEX.get(id(ledger))
+    if cached is not None and cached[0] is ledger:
+        return cached[1]
+    index: dict[str, list] = {}
+    for r, v in (ledger.get("plans") or {}).items():
+        if isinstance(v, dict):
+            index.setdefault(plan_identity(r), []).append(v.get("done_sigs") or [])
+    if len(_IDENTITY_INDEX) >= _IDENTITY_INDEX_MAX:
+        _IDENTITY_INDEX.clear()
+    _IDENTITY_INDEX[id(ledger)] = (ledger, index)
+    return index
 
 
 def done_commit(history, rel, sig):
