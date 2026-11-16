@@ -1004,15 +1004,17 @@ def specific_hosts(*, declared: Callable[[], dict[str, str]] = declared_hosts) -
 CRT_SH_ATTEMPTS = 4
 CRT_SH_BACKOFF_S = 5.0
 CRT_SH_EMPTY = "answered an empty list"
+# crt.sh answered 404 for a query a plain request got 200 [] for minutes later, so a 404 is transient; any other 4xx is not.
+CRT_SH_NOT_FOUND = 404
 
 
 def _cert_log_rows(fetch_url: Fetch, url: str) -> tuple[list[Any] | None, str]:
-    """One crt.sh read: its rows, or None and the outcome that makes it worth another try (5xx, timeout, empty list)."""
+    """One crt.sh read: its rows, or None and the outcome that makes it worth another try (404, 5xx, timeout, empty list)."""
     try:
         status, body = fetch_url(url)
     except proof.LabError as exc:
         return None, "failed (%s)" % exc
-    if status >= 500:
+    if status >= 500 or status == CRT_SH_NOT_FOUND:
         return None, "answered %d" % status
     if status != 200:
         raise proof.LabError("crt.sh answered %d" % status)
@@ -1034,7 +1036,7 @@ def cert_log_names(
     attempts: int = CRT_SH_ATTEMPTS,
     backoff_s: float = CRT_SH_BACKOFF_S,
 ) -> list[str]:
-    """crt.sh is flaky (200 [] then 502 in one minute), so a 5xx, a timeout or an empty list is retried with a growing pause; still failing after `attempts` tries, the error names each outcome."""
+    """crt.sh is flaky (200 [] then 502 in one minute), so a 404, a 5xx, a timeout or an empty list is retried with a growing pause; still failing after `attempts` tries, the error names each outcome."""
     if attempts < 1:
         raise ValueError("attempts must be at least 1, got %d" % attempts)
     url = CRT_SH % urllib.parse.quote("%." + PRODUCT_DOMAIN)

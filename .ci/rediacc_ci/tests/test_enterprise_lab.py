@@ -1271,7 +1271,7 @@ def test_cert_log_names_split_and_lowercase_each_logged_name():
 
 @pytest.mark.parametrize(
     ("status", "body"),
-    [(404, "[]"), (200, "not json"), (200, '{"a": 1}')],
+    [(403, "[]"), (200, "not json"), (200, '{"a": 1}')],
     ids=["4xx", "html", "object"],
 )
 def test_cert_log_names_never_answer_an_empty_list_for_a_failed_read(status, body):
@@ -1307,8 +1307,13 @@ LOGGED = json.dumps([{"name_value": "eu.%s" % D_ROUTING}])
 
 @pytest.mark.parametrize(
     "first",
-    [(200, "[]"), (502, "bad gateway"), proof.LabError("GET crt.sh: TimeoutError")],
-    ids=["empty", "5xx", "timeout"],
+    [
+        (200, "[]"),
+        (502, "bad gateway"),
+        (404, "not found"),
+        proof.LabError("GET crt.sh: TimeoutError"),
+    ],
+    ids=["empty", "5xx", "404", "timeout"],
 )
 def test_cert_log_names_retry_a_transient_read_then_pass(first):
     fetch, calls = _scripted_crt(first, (200, LOGGED))
@@ -1345,6 +1350,19 @@ def test_cert_log_names_never_answered_does_not_claim_an_empty_log():
     assert "no usable answer" in text
     assert "no certificate" not in text
     assert "attempt 2 failed" in text
+
+
+def test_cert_log_names_a_404_every_time_fails_naming_the_404_and_the_attempts():
+    fetch, calls = _scripted_crt((404, "x"), (404, "x"), (404, "x"))
+    pauses: list[float] = []
+    with pytest.raises(proof.LabError) as err:
+        lab.cert_log_names(fetch_url=fetch, sleep=pauses.append, attempts=3, backoff_s=1.0)
+    text = str(err.value)
+    assert "attempt 1 answered 404" in text
+    assert "attempt 3 answered 404" in text
+    assert "no usable answer" in text
+    assert len(calls) == 3
+    assert pauses == [1.0, 2.0]
 
 
 @pytest.mark.parametrize("attempts", [0, -1])
