@@ -1302,7 +1302,9 @@ def _is_subprocess_call(node):
 
     f = node.func
     return (
-        isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name) and f.value.id == "subprocess"
+        isinstance(f, ast.Attribute)
+        and isinstance(f.value, ast.Name)
+        and f.value.id == "subprocess"
     )
 
 
