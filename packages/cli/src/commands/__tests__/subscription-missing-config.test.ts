@@ -97,7 +97,7 @@ describe('subscription login/register on a config that does not exist', () => {
     });
     h.authorize.mockResolvedValue({
       status: { subscriptionId: 's', planCode: 'p', teamName: 'team', machines: [] },
-      terms: { accepted: '1' },
+      terms: { accepted: true, acceptedVersion: '1', latest: '1', url: 'u' },
     });
   });
 

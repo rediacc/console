@@ -7,11 +7,12 @@ const h = vi.hoisted(() => ({
   update: vi.fn(),
   authorize: vi.fn(),
   info: vi.fn(),
+  t: vi.fn((key: string) => key),
   warn: vi.fn(),
   exists: vi.fn(),
 }));
 
-vi.mock('../../i18n/index.js', () => ({ t: (key: string) => key }));
+vi.mock('../../i18n/index.js', () => ({ t: h.t }));
 vi.mock('../../services/account/account-client.js', () => ({
   accountServerFetch: vi.fn(),
   fetchServerInfo: h.fetchServerInfo,
@@ -77,7 +78,7 @@ describe('subscription login: the update channel is written after the new token'
       h.events.push('device-flow');
       return Promise.resolve({
         status: { subscriptionId: 's', planCode: 'p', teamName: 'team', machines: [] },
-        terms: { accepted: '1' },
+        terms: { accepted: true, acceptedVersion: '1', latest: '1', url: 'u' },
       });
     });
   });
@@ -148,10 +149,27 @@ describe('subscription login: the update channel is written after the new token'
       return h.info.mock.calls.map((c) => String(c[0]));
     };
 
-    it('prints the accepted version', async () => {
-      expect(await summaryFor({ accepted: '2026-11-11', url: 'u' })).toContain(
-        'commands.subscription.login.termsAccepted'
-      );
+    it('prints the accepted version, not the accepted boolean', async () => {
+      const lines = await summaryFor({
+        accepted: true,
+        acceptedVersion: '2026-11-11',
+        latest: '2026-11-11',
+        url: 'u',
+      });
+      expect(lines).toContain('commands.subscription.login.termsAccepted');
+      expect(h.t).toHaveBeenCalledWith('commands.subscription.login.termsAccepted', {
+        version: '2026-11-11',
+      });
+    });
+
+    it('does not claim acceptance when only an older version was accepted', async () => {
+      const lines = await summaryFor({
+        accepted: false,
+        acceptedVersion: '2026-01-01',
+        latest: '2026-11-11',
+        url: 'u',
+      });
+      expect(lines).not.toContain('commands.subscription.login.termsAccepted');
     });
 
     it('prints the accept-at URL when acceptance is pending with one', async () => {

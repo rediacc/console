@@ -226,7 +226,9 @@ function setSubscriptionTelemetryContext(input: {
 /** The one terms line of the login summary: accepted, pending with an accept URL, or pending. */
 function termsSummaryLine(terms: ClaimTerms): string {
   if (terms.accepted) {
-    return t('commands.subscription.login.termsAccepted', { version: terms.accepted });
+    return t('commands.subscription.login.termsAccepted', {
+      version: terms.acceptedVersion ?? terms.latest,
+    });
   }
   if (terms.acceptUrl) {
     return t('commands.subscription.login.termsPendingAccept', {

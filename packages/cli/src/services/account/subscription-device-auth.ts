@@ -24,9 +24,11 @@ interface LicenseStatusResponse {
   teamName?: string;
 }
 
-/** The Terms standing the device-code claim reports: the accepted version (null when none), the latest version and where to read it. */
+/** The Terms standing the device-code claim reports: whether the newest version is accepted, the version the account accepted (null when none), the latest version and where to read it. */
 export interface ClaimTerms {
-  accepted: string | null;
+  /** The account satisfies the newest declared version (the server sends a boolean, not a version). */
+  accepted: boolean;
+  acceptedVersion: string | null;
   latest: string;
   url: string;
   /** The portal page where the account accepts; absent from an older server. */

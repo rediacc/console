@@ -5,7 +5,12 @@ import { getMsys2Environment, getRsyncPath, getSshPath } from '../msys2/paths.js
 import type { SyncProgress, SyncResult } from '../types/index.js';
 import { commandExists, getPlatform } from '../utils/platform.js';
 import { prepareRsyncPaths } from './pathConverter.js';
-import { newRsyncCountState, updateRsyncCount } from './rsync-count.js';
+import {
+  newRsyncBytesState,
+  newRsyncCountState,
+  updateRsyncBytes,
+  updateRsyncCount,
+} from './rsync-count.js';
 import { createSkipLineScan, parseSkippedEntries } from './rsync-skipped.js';
 
 /**
@@ -353,6 +358,7 @@ export async function executeRsync(
     // rsync prints "skipping non-regular file" as an info message, which the sender writes to stdout, so the skip scan reads both streams. Only the skip lines of stdout are kept.
     const stdoutSkips = createSkipLineScan();
     const countState = newRsyncCountState();
+    const bytesState = newRsyncBytesState();
 
     rsync.stdout.on('data', (data: Buffer) => {
       const output = data.toString();
@@ -372,8 +378,8 @@ export async function executeRsync(
           speed: progressMatch[3],
           eta: progressMatch[4],
         });
-        bytesTransferred = bytes;
       }
+      bytesTransferred = updateRsyncBytes(bytesState, output);
 
       // Count transferred files: the running maximum xfr# over the whole run, so a chunk that carries several xfr# counters is never counted by its first one alone
       filesTransferred = updateRsyncCount(countState, output);
