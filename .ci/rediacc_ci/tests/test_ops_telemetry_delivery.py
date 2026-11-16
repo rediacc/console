@@ -518,3 +518,12 @@ def test_main_wires_regions_and_environments_into_the_alert(monkeypatch):
     assert {"eu", "us", "asia"} <= set(alert.regions)
     assert alert.environments == ["production", "edge"]
     assert alert.service("asia") == "account-asia"
+
+
+def test_docstring_says_the_environment_list_is_not_checked_against_the_rule() -> None:
+    """The environment list is a hand-kept mirror of the Grafana rule, which lives in
+    the observability repo; the module says so rather than claiming a match it never
+    checks (review d64947d1.1)."""
+    doc = " ".join((td.__doc__ or "").split())
+    assert "a hand-kept mirror of the values the alert rule accepts" in doc
+    assert "nothing here reads it" in doc
