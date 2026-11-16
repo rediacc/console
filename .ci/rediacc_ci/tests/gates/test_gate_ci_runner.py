@@ -1036,40 +1036,88 @@ ADVANCE_POLICY = json.dumps(
 )
 
 
-def test_record_commit_over_a_red_receipt_runs_the_lane(gate):
-    """#ea5e31cd: an advance never touches `failed` or `exitCode`, so a record-only commit over a red receipt printed a green and exited 0 while the receipt it left stayed red. An advance that exits 1 instead can never clear a red from an outside cause, so a red receipt is not advanced: the lane judges the gate again, red when it is still red and green once it is not."""
+RED_ADVANCE_POLICY = json.dumps(
+    {
+        "records": [
+            {
+                "glob": "agent/reviews/**",
+                "readers": [{"id": "fast:reader", "evidence": "fixture"}],
+            },
+            {
+                "glob": "agent/redrec/**",
+                "readers": [{"id": "fast:red", "evidence": "fixture"}],
+            },
+        ]
+    }
+)
+
+
+def test_a_red_receipt_advances_only_past_records_its_reds_do_not_read(gate):
+    """A red receipt and a record-only commit (operator ruling 2026-11-16). #ea5e31cd stands: an advance never touches `failed` or `exitCode`, so it exits 1 over a red receipt and never reads as green. What changed is that the lane is no longer re-run for a record the red gate does not read: the readers of the touched record run, the step is appended, and the receipt stays red on the gate it was red on. A second run at the same HEAD is a whole run, which is how a red from an outside cause clears. CONTROL: a commit to a record the red gate DOES read is not advanced, and the lane judges that gate again."""
     gates = [spec("fast:red", '[ -z "$MAKE_RED" ]'), spec("fast:reader", "true")]
     with harness.temp_dir() as work:
         repo = _fixture_repo(
             gate,
             work,
             gates,
-            {".ci/policy/record-paths.json": ADVANCE_POLICY, "agent/reviews/a.md": "a\n"},
+            {
+                ".ci/policy/record-paths.json": RED_ADVANCE_POLICY,
+                "agent/reviews/a.md": "a\n",
+                "agent/redrec/a.md": "a\n",
+            },
         )
         receipt_path = work / "receipt.json"
         red = {"MAKE_RED": "1"}
-        r = _quick(
-            gate, repo, work, "--quick", "--receipt-out", os.fspath(receipt_path), extra_env=red
-        )
-        gate.assert_exit(1, r, "the whole run is red")
-        (repo / "agent" / "reviews" / "b.md").write_text("b\n", encoding="utf-8")
-        _git(gate, repo, "add", "-A")
-        _git(gate, repo, "commit", "-q", "-m", "chore(reviews): record")
-        r = _quick(
-            gate, repo, work, "--quick", "--receipt-out", os.fspath(receipt_path), extra_env=red
-        )
-        gate.assert_not_contains(r.out, "ADVANCE", "a red receipt is not advanced")
-        gate.assert_exit(1, r, "a gate still red keeps the run red")
+
+        def quick(env=None):
+            return _quick(
+                gate, repo, work, "--quick", "--receipt-out", os.fspath(receipt_path), extra_env=env
+            )
+
+        def commit(rel):
+            (repo / rel).write_text("b\n", encoding="utf-8")
+            _git(gate, repo, "add", "-A")
+            _git(gate, repo, "commit", "-q", "-m", "chore(records): record")
+
+        gate.assert_exit(1, quick(red), "the whole run is red")
+        whole_tree = _receipt(gate, receipt_path).get("headTree")
+
+        commit("agent/reviews/b.md")
+        r = quick(red)
+        gate.assert_contains(r.out, "ADVANCE", "a record the red gate does not read advances")
+        gate.assert_contains(r.out, "still RED", "and the run says the receipt stays red")
+        gate.assert_exit(1, r, "an advance over a red receipt exits non-zero")
+        rc = _receipt(gate, receipt_path)
+        gate.assert_eq(rc.get("failed"), ["fast:red"], "the failed list still names the red gate")
+        gate.assert_eq(rc.get("headTree"), whole_tree, "and still describes the tree it judged")
+        steps = rc.get("advances") or []
         gate.assert_eq(
-            _receipt(gate, receipt_path).get("failed"), ["fast:red"], "and the receipt names it"
+            [sorted(s.get("gates") or {}) for s in steps],
+            [["fast:reader"]],
+            "one step, which ran the touched record's reader and not the red gate",
         )
-        (repo / "agent" / "reviews" / "c.md").write_text("c\n", encoding="utf-8")
-        _git(gate, repo, "add", "-A")
-        _git(gate, repo, "commit", "-q", "-m", "chore(reviews): record")
-        r = _quick(gate, repo, work, "--quick", "--receipt-out", os.fspath(receipt_path))
-        gate.assert_exit(0, r, "the outside cause has gone, so the same red clears")
+
+        r = quick()
+        gate.assert_not_contains(r.out, "ADVANCE", "a second run at the same HEAD is a whole run")
+        gate.assert_exit(0, r, "the outside cause has gone, so the whole run clears the red")
         gate.assert_eq(_receipt(gate, receipt_path).get("failed"), [], "and the receipt is green")
-        gate.log_pass("a record-only commit over a red receipt judged the gate again")
+
+        # CONTROL: the red gate reads the record the commit touches, so the lane runs.
+        gate.assert_exit(1, quick(red), "the whole run is red again")
+        commit("agent/redrec/b.md")
+        r = quick(red)
+        gate.assert_not_contains(
+            r.out, "--quick ADVANCE", "a record the red gate reads is not advanced"
+        )
+        gate.assert_contains(r.out, "red on fast:red", "and the run names the red reader")
+        gate.assert_exit(1, r, "the lane judged it again and it is still red")
+        rc = _receipt(gate, receipt_path)
+        gate.assert_eq(rc.get("advances"), [], "the whole run starts an empty chain")
+        gate.assert_eq(rc.get("failed"), ["fast:red"], "and names the gate at the new tree")
+        gate.log_pass(
+            "a red receipt advanced past a record its red gate does not read, stayed red, "
+            "cleared on a whole re-run, and ran the lane for a record the red gate reads"
+        )
 
 
 QUICK_CLONE_REL = "scripts/ci-runner/quick-clone.ts"

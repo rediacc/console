@@ -2901,7 +2901,7 @@ async function selftest(): Promise<number> {
   const leaseCheck = await leaseClientSelftest(os.tmpdir());
   for (const f of leaseCheck.failures) require_(false, `lease-client: ${f}`);
 
-  // THE ADVANCE (PLAN-prepush-full-cpu part 5): every refusal and the chain. 11 assertions.
+  // THE ADVANCE (PLAN-prepush-full-cpu part 5): every refusal, the red rule and the chain. 17 assertions.
   {
     const policy = parseRecordPolicy(
       JSON.stringify({
@@ -2979,10 +2979,38 @@ async function selftest(): Promise<number> {
         plan(undefined, ['agent/reviews/x.md']).kind === 'full',
       'a narrowed receipt, a receipt naming no tree, and no receipt must each run the whole lane'
     );
+    // THE RED RULE (2026-11-16): a red receipt advances past records its reds do not read, and only those.
+    const red = { ...whole, exitCode: 1, failed: ['g:other'] };
+    const redOk = plan(red, ['agent/reviews/x.md']);
     require_(
-      plan({ ...whole, exitCode: 1, failed: ['g'] }, ['agent/reviews/x.md']).kind === 'full' &&
-        plan({ ...whole, failed: ['g'] }, ['agent/reviews/x.md']).kind === 'full',
-      'a red receipt must run the lane again, since an advance could only keep it red'
+      redOk.kind === 'advance' && redOk.readers.join() === 'g:plan',
+      `a red receipt whose failed gate reads no touched record must advance, got ${JSON.stringify(redOk)}`
+    );
+    const redReader = plan({ ...red, failed: ['g:other', 'g:plan'] }, ['agent/reviews/x.md']);
+    require_(
+      redReader.kind === 'full' && redReader.why.includes('g:plan'),
+      `a red receipt whose failed gate READS a touched record must run the lane and name it, got ${JSON.stringify(redReader)}`
+    );
+    require_(
+      plan({ ...red, failed: ['g:other', 'g:plan'] }, ['agent/worklist/d.jsonl']).kind ===
+        'advance',
+      'CONTROL: the same red reader does not block a step that touches only a record it does not read'
+    );
+    require_(
+      plan(red, ['agent/reviews/x.md', 'scripts/ci-runner/run.ts']).kind === 'full',
+      'a code path in the range must run the whole lane over a red receipt too'
+    );
+    require_(
+      plan({ ...whole, exitCode: 1 }, ['agent/reviews/x.md']).kind === 'full',
+      'a red receipt that lists no failed gate must run the lane: there is nothing to judge the records against'
+    );
+    require_(
+      plan({ ...whole, failed: ['g:plan'] }, ['agent/reviews/x.md']).kind === 'full',
+      'a failed list alone (exitCode 0) still counts as red for the gates it names'
+    );
+    require_(
+      advanceExit(0, red) === 1,
+      'an advance over a red receipt must still exit non-zero, so the red is never read as cleared'
     );
     require_(
       planAdvance({ receipt: whole, headTree: 'T0', policy, diff: at([]), known }).kind === 'full',
@@ -4381,7 +4409,7 @@ type AdvancePlan =
   | { kind: 'full'; why: string };
 
 /**
- * Whether a `--quick` run may ADVANCE the receipt instead of running the lane: the receipt on disk is whole, green and names a tree, HEAD has moved from the end of its chain, and every path that moved lies inside the record set. Pure, so the selftest drives every refusal; the caller supplies the diff and the policy.
+ * Whether a `--quick` run may ADVANCE the receipt instead of running the lane: the receipt on disk is whole and names a tree, HEAD has moved from the end of its chain, every path that moved lies inside the record set, and no gate the receipt lists as failed reads a record that moved. A red receipt stays red across the advance (`advanceExit`); the step only spares the lane. Pure, so the selftest drives every refusal; the caller supplies the diff and the policy.
  */
 function planAdvance(input: {
   receipt: unknown;
@@ -4397,8 +4425,13 @@ function planAdvance(input: {
     return { kind: 'full', why: `the receipt is not schema ${SCHEMA}; a whole run writes one` };
   if (typeof r.headTree !== 'string' || r.headTree === '')
     return { kind: 'full', why: 'the receipt vouches for no tree' };
-  if (r.exitCode !== 0 || (r.failed ?? []).length > 0)
-    return { kind: 'full', why: 'the receipt is red, and an advance could only keep it red' };
+  // A RED RECEIPT ADVANCES ONLY PAST RECORDS ITS REDS DO NOT READ (operator ruling 2026-11-16, judged below once the readers are known). A red with no `failed` list names nothing to compare the readers with, so it runs the lane.
+  const failed = Array.isArray(r.failed) ? r.failed.filter((g) => typeof g === 'string') : [];
+  if (r.exitCode !== 0 && failed.length === 0)
+    return {
+      kind: 'full',
+      why: 'the receipt is red and lists no failed gate to judge the records against',
+    };
   const chain = Array.isArray(r.advances) ? r.advances : [];
   const from = chain.length > 0 ? chain[chain.length - 1].to : r.headTree;
   if (input.headTree === '') return { kind: 'full', why: 'HEAD^{tree} is unreadable' };
@@ -4431,6 +4464,13 @@ function planAdvance(input: {
     return {
       kind: 'full',
       why: `record-paths.json names reader(s) that are not manifest gates: ${unknown.join(', ')}`,
+    };
+  // THE RED RULE. `failed`, `findings` and `exitCode` keep describing the receipt's own tree after an advance (block_unverified_push step_refusal reads them that way). That stays true only for a red gate whose inputs the step did not touch: a failed gate that reads a touched record would be re-run here and its old verdict left standing beside the new one, so the lane runs again and judges it whole.
+  const redReaders = readers.filter((id) => failed.includes(id));
+  if (redReaders.length > 0)
+    return {
+      kind: 'full',
+      why: `the receipt is red on ${redReaders.join(', ')}, which read(s) the changed record path(s); the lane must judge them again`,
     };
   return { kind: 'advance', from, to: input.headTree, paths, readers };
 }
@@ -4524,7 +4564,7 @@ async function runAdvance(
   const carriedRed = advanceExit(exitCode, receipt);
   if (carriedRed !== exitCode)
     humanOut(
-      `ci-runner: the readers passed, but the advanced receipt is still RED: exitCode ${receipt.exitCode}, failed: ${receipt.failed.join(', ') || '(none listed)'}\n`
+      `ci-runner: the readers passed, but the advanced receipt is still RED: exitCode ${receipt.exitCode}, failed: ${receipt.failed.join(', ') || '(none listed)'}. Those verdicts are of tree ${String(receipt.headTree).slice(0, 9)}; run this again at the same HEAD for a whole run that judges them afresh.\n`
     );
   return carriedRed;
 }
