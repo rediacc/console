@@ -5,10 +5,11 @@ WHY THIS EXISTS (agent/plans/PLAN-prepush-full-cpu.md part 5, PF23). `worklist.p
 were re-run at the new tree. That rule is exactly as safe as the reader lists are complete: a gate that reads agent/reviews/ but is missing from the list would be skipped by the advance, and its verdict on the pushed tree would be one nobody computed. So the lists are DERIVED here and compared with the policy, in both directions.
 
 HOW A READER IS DERIVED. For every `gate: true` entry of scripts/ci-runner/gates.lock.json, the files of its leaves and of their local imports (Python `rediacc_ci.*` and sibling modules, the stop-hook library, TypeScript relative imports) are read, and a gate reads a record when any of them:
-  cite   names the record's literal prefix (`agent/reviews`), as a path or as joined segments (`"agent", "reviews"`), other than a path the record excludes;
+  cite   names the record's literal prefix (`agent/reviews`) inside a string literal that holds no whitespace, or as joined segments (`"agent", "reviews"`), other than a path the record excludes;
   root   names an ancestor of it as a scan root, `"agent/"` or a glob under `agent/`;
-  config cites a JSON config file whose glob strings match one of the record's probe paths (prose-style reads `*.md` through .ci/config/prose-style-rules.json, and a review record is a `.md`).
-This OVER-counts on purpose. A false reader costs one extra gate at an advance; a missed reader lets an unjudged record change through the push. A gate the derivation flags that genuinely reads nothing goes in `notReaders` with its reason, by name, and is printed on every run.
+  config cites a JSON config file whose glob strings match one of the record's probe paths (prose-style reads `*.md` through .ci/config/prose-style-rules.json, and a review record is a `.md`), other than a glob under a key that names an exclusion (`literalExclude`).
+CODE, NOT PROSE (2026-11-16, when the plan files joined the record set). The cite, root and glob tiers read each file with its comments and docstrings blanked (`code_text`), and the cite tier counts a path only as a whole literal: a docstring that says why a gate exists names plan files by the dozen, and a message such as `"see agent/plans/x.md"` is about the file, not a read of it. Read as citations, those made 168 of 380 gates readers of agent/plans/ where 46 are. A shell script keeps the old reading, since a path there is an unquoted word.
+This still OVER-counts on purpose. A false reader costs one extra gate at an advance; a missed reader lets an unjudged record change through the push. A gate the derivation flags that genuinely reads nothing goes in `notReaders` with its reason, by name, and is printed on every run.
 
 THE SECOND MODE (PF9): FIXED WIDTHS. The 2026-10-05 ruling removed every static worker count: a parallel tool sizes itself from the cores granted at launch. What remains fixed is request concurrency against a remote API (`xargs -P 8` of R2 copies, eight `gh api` calls), which is not a core count. Each such width is listed in .ci/policy/fixed-widths.json with the remote limit it respects, and this mode refuses a literal width that is not listed, a
 listed width that is gone or changed, and any core cap (`min(8, os.cpu_count())`) at all: a core cap is never an I/O width, so it cannot be listed.
@@ -28,12 +29,14 @@ from __future__ import annotations
 
 import ast
 import functools
+import io
 import json
 import pathlib
 import re
 import subprocess
 import sys
 import tempfile
+import tokenize
 from typing import Any
 
 import _cipath
@@ -46,19 +49,26 @@ SELF_REL = ".ci/scripts/quality/check_record_paths.py"
 WIDTHS_REL = policy_rel("fixed-widths.json")
 LOCK_REL = "scripts/ci-runner/gates.lock.json"
 POLICY_VERSION = 1
-CONTROL_FLOOR = 40
+CONTROL_FLOOR = 60
 
 #: Files that are config for this gate or for the runner, never a scanner's scope: their glob strings say what a gate is SELECTED by, not what it reads.
 NOT_SCAN_CONFIG = frozenset({POLICY_REL, WIDTHS_REL, LOCK_REL})
+#: The runner's cache: what a run measured or left behind (a receipt, a duration table), never a scanner's scope. scripts/ci-runner/lease-seed.ts names `.ci/cache/prepush-receipt.json` to seed a lease with it, and a receipt quotes every changed path of its advances.
+NOT_SCAN_CONFIG_PREFIXES = (".ci/cache/",)
+#: A config key that says what a scanner does NOT read. `.ci/config/pins.json` lists `agent/**` under `literalExclude`, and read as a scope that one glob made eleven pin gates readers of every record under agent/ (measured 2026-11-16).
+EXCLUSION_KEY_RE = re.compile(r"exclude|skip|ignore", re.IGNORECASE)
 #: Package manifests and lockfiles: their `*` strings are version ranges and package-name patterns, never file globs.
 NOT_SCAN_CONFIG_NAMES = frozenset({"package.json", "package-lock.json", ".syncpackrc.json"})
 #: Where the import closure resolves a Python module name, in order.
 PY_IMPORT_BASES = (".ci", ".claude", ".claude/hooks/stop")
 TS_SUFFIXES = (".ts", ".mts", ".cts", ".js", ".mjs", ".cjs", ".tsx")
-TEXT_SUFFIXES = (".py", ".sh", *TS_SUFFIXES)
+SH_SUFFIXES = (".sh", ".bash")
+TEXT_SUFFIXES = (".py", *SH_SUFFIXES, *TS_SUFFIXES)
 EVIDENCE_RE = re.compile(r"^(?P<file>[^\s:]+):(?P<line>\d+)\b")
 JSON_CITE_RE = re.compile(r"""['"]((?:\.{0,2}/)?[\w./-]+\.json)['"]""")
 QUOTED_RE = re.compile(r"""(['"])((?:(?!\1)[^\\\n])*)\1""")
+#: A run with no whitespace and no quote in it, standing between two quote characters: the whole of a string literal (`"agent/plans/x.md"`, a template `${root}/agent/plans`), and never a word of a sentence. Read by its two neighbours rather than by pairing quotes along the line, so an apostrophe or a regex literal earlier on the line cannot shift the pairing and hide a literal.
+LITERAL_RUN_RE = re.compile(r"""(?<=['"`])[^\s'"`]+(?=['"`])""")
 JOINED_RE = re.compile(r"""(['"])([\w.<>*-]+)\1((?:\s*[,/]\s*(['"])[\w.<>*-]+\4)+)""")
 SEGMENT_RE = re.compile(r"""(['"])([\w.<>*-]+)\1""")
 PY_TS_IMPORT_RE = re.compile(
@@ -164,6 +174,12 @@ def parse_policy(doc: object) -> list[dict]:
         ):
             raise PolicyError(
                 "%s: `probes` must list at least one real-shaped path the glob covers" % glob
+            )
+        # `review` is read by the per-commit reviewer (.claude/hooks/stop/wl_review.py skip_globs): a record marked "keep" advances a receipt like any other and still enters the reviewed diff, because a plan is a record of intent whose text is worth a review. One spelling only, so a typo cannot quietly drop a record out of review.
+        if rec.get("review", "keep") != "keep":
+            raise PolicyError(
+                '%s: `review` is %r; the only value is "keep" (the record stays in the per-commit review), and a record that leaves the review omits the key'
+                % (glob, rec.get("review"))
             )
         tables = {}
         for name, field in (("readers", "evidence"), ("notReaders", "reason")):
@@ -312,10 +328,95 @@ def _rel(path: pathlib.Path, root: pathlib.Path) -> str:
         return str(path)
 
 
+def _blank(chars: list[str], start: int, end: int) -> None:
+    for k in range(max(start, 0), min(end, len(chars))):
+        if chars[k] != "\n":
+            chars[k] = " "
+
+
+def _py_code(text: str) -> str:
+    """Python source with every comment and every bare string statement (a docstring, or a string standing alone as a note) blanked, offsets kept. Read from the token stream alone: a statement made of nothing but string tokens does nothing when run, wherever it stands. A file that does not tokenise comes back WHOLE: prose left in over-counts, and a citation dropped by a half-read file would be a missed reader."""
+    try:
+        tokens = list(tokenize.generate_tokens(io.StringIO(text).readline))
+    except (SyntaxError, ValueError, tokenize.TokenError):
+        return text
+    starts = [0]
+    for line in text.split("\n"):
+        starts.append(starts[-1] + len(line) + 1)
+    chars = list(text)
+
+    def at(pos: tuple[int, int]) -> int:
+        return starts[min(pos[0], len(starts) - 1) - 1] + pos[1]
+
+    statement: list[tokenize.TokenInfo] = []
+    only_strings = True
+    for tok in tokens:
+        if tok.type == tokenize.COMMENT:
+            _blank(chars, at(tok.start), at(tok.end))
+        elif tok.type in (tokenize.NEWLINE, tokenize.ENDMARKER):
+            if only_strings:
+                for s in statement:
+                    _blank(chars, at(s.start), at(s.end))
+            statement, only_strings = [], True
+        elif tok.type == tokenize.STRING:
+            statement.append(tok)
+        elif tok.type not in (tokenize.NL, tokenize.INDENT, tokenize.DEDENT):
+            only_strings = False
+    return "".join(chars)
+
+
+def _ts_code(text: str) -> str:
+    """TypeScript or JavaScript with its WHOLE-LINE comments blanked: a line that starts `//`, and a block that starts a line with `/*` through its `*/`. A comment after code on the same line stays (it over-counts), and a block that never closes is left alone, because blanking to the end of the file would hide every citation below it. No tokeniser is attempted: a regex literal holding a quote derails one, and the cost of a derail is a reader nobody sees."""
+    lines = text.split("\n")
+    out = list(lines)
+    i = 0
+    while i < len(lines):
+        bare = lines[i].lstrip()
+        if bare.startswith("//"):
+            out[i] = " " * len(lines[i])
+        elif bare.startswith("/*"):
+            open_at = lines[i].index("/*")
+            j, close = i, lines[i].find("*/", open_at + 2)
+            while close == -1 and j + 1 < len(lines):
+                j += 1
+                close = lines[j].find("*/")
+            if close != -1:
+                for k in range(i, j):
+                    out[k] = " " * len(lines[k])
+                out[j] = " " * (close + 2) + lines[j][close + 2 :]
+                i = j
+        i += 1
+    return "\n".join(out)
+
+
+def _sh_code(text: str) -> str:
+    """A shell script with its whole-line `#` comments blanked."""
+    return "\n".join(
+        " " * len(line) if line.lstrip().startswith("#") else line for line in text.split("\n")
+    )
+
+
+@functools.lru_cache(maxsize=4096)
+def code_text(text: str, suffix: str) -> str:
+    """`text` as the interpreter reads it, for the tiers that look for a path: comments and docstrings blanked to spaces, every offset and line number unchanged. A docstring that says WHY a gate exists names plan files by the dozen (`agent/plans/PLAN-x.md`), and read as citations those made 168 of 380 gates readers of the plan set where 46 read it (measured 2026-11-16)."""
+    if suffix == ".py":
+        return _py_code(text)
+    if suffix in SH_SUFFIXES:
+        return _sh_code(text)
+    return _ts_code(text)
+
+
 @functools.lru_cache(maxsize=4096)
 def _quoted(text: str) -> tuple[tuple[int, str], ...]:
-    """(offset, string) of every quoted string in `text`, once per text: each record's tiers scan the same files, and re-tokenising them per record was most of this gate's remaining time."""
-    return tuple((m.start(), m.group(2)) for m in QUOTED_RE.finditer(text))
+    """(offset, string) of every quoted string in `text`, once per text: each record's tiers scan the same files, and re-tokenising them per record was most of this gate's remaining time. Both readings of a quote are kept, the paired one and the whitespace-free run between any two quotes (`_literal_runs`), so a template literal counts and a quote earlier on the line cannot hide a glob."""
+    paired = {(m.start(2), m.group(2)) for m in QUOTED_RE.finditer(text)}
+    return tuple(sorted(paired | set(_literal_runs(text))))
+
+
+@functools.lru_cache(maxsize=4096)
+def _literal_runs(text: str) -> tuple[tuple[int, str], ...]:
+    """(offset, run) of every whitespace-free run standing between two quote characters (LITERAL_RUN_RE), once per text."""
+    return tuple((m.start(), m.group(0)) for m in LITERAL_RUN_RE.finditer(text))
 
 
 @functools.lru_cache(maxsize=4096)
@@ -327,16 +428,29 @@ def _joined(text: str) -> tuple[tuple[int, str], ...]:
     )
 
 
-def cite_hits(text: str, record: dict) -> list[tuple[int, str]]:
-    """(offset, token) for every citation of the record's literal prefix that is not wholly an excluded path."""
+@functools.cache
+def _stem_re(stem: str) -> re.Pattern[str]:
+    return re.compile(r"(?<![\w-])%s(?![\w-])(?:/[^\s'\"`),;:\]}]*)?" % re.escape(stem))
+
+
+def cite_hits(code: str, record: dict, bare_words: bool = False) -> list[tuple[int, str]]:
+    """(offset, token) for every citation of the record's literal prefix that is not wholly an excluded path.
+
+    `code` is `code_text` of the file, so a comment or a docstring cites nothing. A citation is the prefix inside a string literal that holds no whitespace (`open("agent/plans/x.md")`, a template `${root}/agent/plans`), or a path joined from literal segments (`"agent" / "plans"`). A path named in a sentence (`"see agent/plans/x.md for the design"`) is a message about the file, not a read of it. `bare_words` is the shell reading, where a path is an unquoted word (`ls agent/plans`), so every occurrence counts there.
+    """
     stem = literal_prefix(record["glob"])
-    hits = [
-        (m.start(), m.group(0))
-        for m in re.finditer(
-            r"(?<![\w-])%s(?![\w-])(?:/[^\s'\"`),;:\]}]*)?" % re.escape(stem), text
-        )
-    ]
-    for off, token in _joined(text):
+    stem_re = _stem_re(stem)
+    hits: list[tuple[int, str]] = []
+    if stem not in code:
+        pass  # no literal can hold it, and the joined form below spells it in segments
+    elif bare_words:
+        hits = [(m.start(), m.group(0)) for m in stem_re.finditer(code)]
+    else:
+        for off, run in _literal_runs(code):
+            m = stem_re.search(run)
+            if m is not None:
+                hits.append((off + m.start(), m.group(0)))
+    for off, token in _joined(code):
         if token == stem or token.startswith(stem + "/"):
             hits.append((off, token))
     return [
@@ -373,13 +487,15 @@ def expand_braces(pattern: str) -> list[str]:
 
 
 def _json_globs(doc: object) -> list[str]:
+    """Every file glob a config holds as a scope. A value under a key that names an exclusion (EXCLUSION_KEY_RE: `literalExclude`, `review_skip_globs`, `ignore`) is what the scanner leaves out, so it is not read as something the scanner reads."""
     out: list[str] = []
     if isinstance(doc, str):
         if is_path_glob(doc):
             out.extend(expand_braces(doc))
     elif isinstance(doc, dict):
-        for v in doc.values():
-            out.extend(_json_globs(v))
+        for k, v in doc.items():
+            if not EXCLUSION_KEY_RE.search(k):
+                out.extend(_json_globs(v))
     elif isinstance(doc, list):
         for v in doc:
             out.extend(_json_globs(v))
@@ -388,24 +504,34 @@ def _json_globs(doc: object) -> list[str]:
 
 def glob_hits(text: str, record: dict) -> list[tuple[int, str]]:
     """(offset, glob) for every quoted file glob in code that reaches one of the record's probes: `git ls-files '*.md'` scans review records as surely as a config file does."""
-    hits = []
-    for off, s in _quoted(text):
-        if not is_path_glob(s) or s.endswith("/"):
-            continue
-        if any(
-            config_glob_matches(p, probe) for p in expand_braces(s) for probe in record["probes"]
-        ):
-            hits.append((off, s))
-    return hits
+    return [
+        (off, s)
+        for off, s, patterns in _code_globs(text)
+        if any(config_glob_matches(p, probe) for p in patterns for probe in record["probes"])
+    ]
+
+
+@functools.lru_cache(maxsize=4096)
+def _code_globs(text: str) -> tuple[tuple[int, str, tuple[str, ...]], ...]:
+    """(offset, glob, its brace expansions) of every quoted file glob in `text`, once per text: which strings are globs does not depend on the record asking."""
+    return tuple(
+        (off, s, tuple(expand_braces(s)))
+        for off, s in _quoted(text)
+        if is_path_glob(s) and not s.endswith("/")
+    )
 
 
 def config_hits(text: str, record: dict, root: pathlib.Path, cache: dict) -> list[tuple[int, str]]:
-    """(offset, "<config>: <glob>") for every cited JSON config holding a glob that reaches one of the record's probes."""
+    """(offset, "<config>: <glob>") for every cited JSON config holding a glob that reaches one of the record's probes.
+
+    `text` is the file WHOLE, docstring included, unlike the other tiers: a gate that builds its config path from segments often names the file only in its docstring, and a config cited there is still the config it loads.
+    """
     hits = []
     for m in JSON_CITE_RE.finditer(text):
         rel = m.group(1).lstrip("./") if m.group(1).startswith("./") else m.group(1)
         if (
             rel in NOT_SCAN_CONFIG
+            or rel.startswith(NOT_SCAN_CONFIG_PREFIXES)
             or rel.rsplit("/", 1)[-1] in NOT_SCAN_CONFIG_NAMES
             or rel.startswith(("/", ".."))
         ):
@@ -422,6 +548,25 @@ def config_hits(text: str, record: dict, root: pathlib.Path, cache: dict) -> lis
     return hits
 
 
+def file_evidence(
+    path: pathlib.Path, text: str, record: dict, root: pathlib.Path, configs: dict
+) -> str | None:
+    """`file:line (tier) token` for the first way one file reads one record, or None. The answer depends on the file and the record alone, never on the gate asking, so `derive_readers` takes it once per pair."""
+    code = code_text(text, path.suffix)
+    tiers = (
+        ("cite", lambda: cite_hits(code, record, bare_words=path.suffix in SH_SUFFIXES)),
+        ("root", lambda: root_hits(code, record)),
+        ("glob", lambda: glob_hits(code, record)),
+        ("config", lambda: config_hits(text, record, root, configs)),
+    )
+    for tier, find in tiers:
+        found = find()
+        if found:
+            off, token = found[0]
+            return "%s:%d (%s) %s" % (_rel(path, root), _line_of(text, off), tier, token)
+    return None
+
+
 def derive_readers(
     gates: list[dict], records: list[dict], root: pathlib.Path
 ) -> tuple[dict, int, int]:
@@ -429,6 +574,8 @@ def derive_readers(
     derived: dict[str, dict[str, str]] = {r["glob"]: {} for r in records}
     texts: dict[pathlib.Path, str] = {}
     configs: dict = {}
+    # ONE ANSWER PER (file, record). A shared module (rediacc_ci/log.py, the hook library) sits in hundreds of closures, and asking it the same question once per gate was this gate's whole cost once the record set grew.
+    answers: dict[tuple[pathlib.Path, str], str | None] = {}
     scanned = 0
     for gate in gates:
         if gate.get("gate") is not True:
@@ -451,23 +598,12 @@ def derive_readers(
                         texts[path] = path.read_text(encoding="utf-8", errors="replace")
                     except OSError:
                         texts[path] = ""
-                text = texts[path]
-                for tier, found in (
-                    ("cite", cite_hits(text, record)),
-                    ("root", root_hits(text, record)),
-                    ("glob", glob_hits(text, record)),
-                    ("config", config_hits(text, record, root, configs)),
-                ):
-                    if found:
-                        off, token = found[0]
-                        derived[record["glob"]][gate["id"]] = "%s:%d (%s) %s" % (
-                            _rel(path, root),
-                            _line_of(text, off),
-                            tier,
-                            token,
-                        )
-                        break
-                if gate["id"] in derived[record["glob"]]:
+                key = (path, record["glob"])
+                if key not in answers:
+                    answers[key] = file_evidence(path, texts[path], record, root, configs)
+                evidence = answers[key]
+                if evidence is not None:
+                    derived[record["glob"]][gate["id"]] = evidence
                     break
     return derived, scanned, len(texts)
 
@@ -1056,6 +1192,102 @@ def selftest() -> int:
                 "check:probe", ""
             ),
         )
+        # CODE, NOT PROSE: each silent case below is the firing case with the citation moved into prose, so the silence is the rule's and not a broken fixture's.
+        reviews = "agent/reviews/**"
+
+        def reads(rel: str, text: str) -> bool:
+            _write(root, rel, text)
+            return "check:probe" in _derive_one(root, [rel], SELFTEST_POLICY)[reviews]
+
+        tally.truthy(
+            "cite: a path that is a whole literal is read",
+            reads("gate_open.py", 'F = open("agent/reviews/x.md")\n'),
+        )
+        tally.falsy(
+            "cite MIRROR: the same path in a module docstring is not",
+            reads(
+                "gate_doc.py",
+                '"""Reads nothing; see agent/reviews/x.md and "agent/reviews/"."""\nX = 1\n',
+            ),
+        )
+        tally.falsy(
+            "cite MIRROR: nor in a function docstring or a # comment",
+            reads(
+                "gate_fn.py",
+                'def f():\n    """Like open("agent/reviews/x.md")."""\n    return 1  # "agent/reviews/"\n',
+            ),
+        )
+        tally.falsy(
+            "cite MIRROR: nor in a message string with spaces",
+            reads("gate_msg.py", 'MSG = "see agent/reviews/x.md for the record"\n'),
+        )
+        tally.truthy(
+            "cite: joined with `/` is read",
+            reads("gate_div.py", 'D = ROOT / "agent" / "reviews"\n'),
+        )
+        tally.truthy(
+            "cite: a file that does not tokenise is read WHOLE, docstring included",
+            reads("gate_broken.py", '"""agent/reviews/x.md is "agent/reviews/"."""\nX = (\n'),
+        )
+        tally.truthy(
+            "cite: a TypeScript template literal is read",
+            reads("gate_tpl.ts", "const p = `${root}/agent/reviews/${branch}`;\n"),
+        )
+        tally.falsy(
+            "cite MIRROR: a TypeScript block comment and a // line are not",
+            reads(
+                "gate_cmt.ts",
+                "/**\n * Reads 'agent/reviews/' never.\n */\n// 'agent/reviews/'\nexport const x = 1;\n",
+            ),
+        )
+        tally.truthy(
+            "cite: code after a block comment closes on its own line is still read",
+            reads("gate_after.ts", "/* why */ export const p = 'agent/reviews/';\n"),
+        )
+        tally.truthy(
+            "cite: a block comment that never closes blanks nothing",
+            reads("gate_open.ts", "/* unterminated\nexport const p = 'agent/reviews/';\n"),
+        )
+        tally.truthy(
+            "cite: an apostrophe earlier on the line does not hide a literal",
+            reads("gate_apos.ts", "const r = /'/.test(s) ? 'agent/reviews/x' : '';\n"),
+        )
+        tally.truthy(
+            "cite: a shell script reads an unquoted path",
+            reads("gate_ls.sh", "#!/bin/bash\nls agent/reviews/main\n"),
+        )
+        tally.falsy(
+            "cite MIRROR: a shell # comment does not",
+            reads("gate_cmt.sh", "#!/bin/bash\n# ls agent/reviews/main\ntrue\n"),
+        )
+        _write(root, ".cfg/excl.json", json.dumps({"literalExclude": [{"glob": "agent/**"}]}))
+        tally.falsy(
+            "config: a glob under an exclusion key is not a scope",
+            reads("gate_excl.py", 'PINS = ".cfg/excl.json"\n'),
+        )
+        _write(root, ".cfg/incl.json", json.dumps({"literalInclude": [{"glob": "agent/**"}]}))
+        tally.truthy(
+            "config MIRROR: the same glob under an inclusion key is",
+            reads("gate_incl.py", 'PINS = ".cfg/incl.json"\n'),
+        )
+        _write(root, ".ci/cache/seen.json", json.dumps({"paths": ["agent/**"]}))
+        tally.falsy(
+            "config: a file under .ci/cache/ is never a scanner's scope",
+            reads("gate_cache.ts", "const R = '.ci/cache/seen.json';\n"),
+        )
+        tally.raises(
+            'a `review` value other than "keep" is a policy error',
+            PolicyError,
+            parse_policy,
+            {"version": 1, "records": [dict(SELFTEST_POLICY["records"][0], review="skip")]},
+        )
+        tally.truthy(
+            'MIRROR: `"review": "keep"` parses',
+            parse_policy(
+                {"version": 1, "records": [dict(SELFTEST_POLICY["records"][0], review="keep")]}
+            ),
+        )
+
         _write(root, SELF_REL, 'P = "agent/reviews/"\n')
         self_gates = [{"id": "check:ci-record-paths", "gate": True, "leaves": [SELF_REL]}]
         tally.check(
