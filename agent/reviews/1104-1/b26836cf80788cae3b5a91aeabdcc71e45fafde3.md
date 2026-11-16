@@ -22,4 +22,4 @@ Body-Sig: bbcfd855aac5e1d6
 Anchor: in-diff
 Claim: For a file named `wrangler.bench-.toml` the stem is `bench-`, so side_region now returns ('bench', '') where the old code returned ('bench', '-'); the empty region is untested and changes the sentinel used for other files.
 Class: missing-control-test
-Resolution: open
+Resolution: fixed ef5a088b08ef1e80eb16176932e73ba89f721900 | d778be9d 2026-11-16T08:34:51Z
