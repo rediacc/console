@@ -10,6 +10,7 @@ import json
 import os
 import shutil
 import sqlite3
+import sys
 import types
 import urllib.error
 from typing import Any, NoReturn, cast
@@ -1187,7 +1188,7 @@ def test_run_module_echoes_each_stderr_line_while_the_child_runs_and_inherits_st
     seen: dict[str, Any] = {}
 
     def popen(argv, **kwargs):
-        seen.update(kwargs)
+        seen.update(kwargs, argv=argv)
         return real_popen([argv[0], "-c", script, str(flag)], **kwargs)
 
     class Echo(io.StringIO):
@@ -1198,9 +1199,34 @@ def test_run_module_echoes_each_stderr_line_while_the_child_runs_and_inherits_st
 
     monkeypatch.setattr(onboarding.subprocess, "Popen", popen)
     monkeypatch.setattr(onboarding.sys, "stderr", Echo())
-    assert onboarding.run_module("rediacc_ci.deploy.deploy_account", []) == onboarding.Ran(0, "")
+    assert onboarding.run_module("rediacc_ci.deploy.deploy_account", ["--region", "eu"]) == (
+        onboarding.Ran(0, "")
+    )
+    # Review 443fc3c7.1: the argv the fake replaces is the module launch itself, from the repo root with `.ci` first on the path.
+    assert seen["argv"] == [
+        sys.executable,
+        "-m",
+        "rediacc_ci.deploy.deploy_account",
+        "--region",
+        "eu",
+    ]
+    assert seen["cwd"] == str(paths.repo_root())
+    assert seen["env"]["PYTHONPATH"].split(os.pathsep)[0] == str(paths.repo_root() / ".ci")
+    assert seen["stderr"] is onboarding.subprocess.PIPE
     assert "stdin" not in seen
     assert "stdout" not in seen
+
+
+def test_run_module_launches_the_real_module_with_python_dash_m(capfd):
+    """Review 443fc3c7.1: no fake popen. `deploy_proxy`'s own argparse answers `--help` with rc 0 and an unknown flag with rc 2 and its error as the kept cause, before it reads any credential or network."""
+    assert onboarding.run_module("rediacc_ci.deploy.deploy_proxy", ["--help"]) == onboarding.Ran(
+        0, ""
+    )
+    assert "usage: rediacc_ci.deploy.deploy_proxy" in capfd.readouterr().out
+    failed = onboarding.run_module("rediacc_ci.deploy.deploy_proxy", ["--no-such-flag"])
+    assert failed.rc == 2
+    assert "unrecognized arguments: --no-such-flag" in failed.cause
+    assert "unrecognized arguments: --no-such-flag" in capfd.readouterr().err
 
 
 def test_live_deploy_step_names_the_failed_module(tmp_path):
