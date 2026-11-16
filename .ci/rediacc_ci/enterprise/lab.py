@@ -1040,7 +1040,7 @@ def turnstile_domains(*, listing: Listing = cf_list) -> list[str]:
 #
 # `mint(company, kind)`: a `session` is that cookie; an `api-token` (scope `license:read`) and a `proxy-token` (scope `proxy:exec`) are `POST /account/api/v1/api-tokens` under the session for the subscription the company's control row names (`scope.subscription_id`).
 #
-# A `config-token` is a rotating token of the company's config store (`X-Config-Token`, private/account/src/middleware/config-token.ts). `ensure_store` sets the store up the first time the way the portal does. Setup sits behind `requireTwoFactor` and `requireElevated` (`POST /configs/setup`), so the owner is elevated through the reauth mail (`POST /auth/reauth`, the link read back from `captured_emails` kind `reauth` by the same set difference as the magic link, then `POST /auth/reauth/verify`). A second factor is enrolled for the length of the setup only (`/auth/2fa/setup` and `/enable`, the code from `ops.totp`), the store is created with one master-password slot, and the second factor is disabled again with a later code, because the owner's magic-link sign-in has no second factor to answer. A store already there is opened through `POST /configs/bootstrap-session` with method `password`. Either answer carries a fresh config token, and that token is the artifact. The slot password is never stored: it is an HMAC of the company's `ACCOUNT_SERVER_API_KEY` under a fixed label (`store_password`), so a later run derives it again and a removed company leaves nothing behind for it.
+# A `config-token` is a rotating token of the company's config store (`X-Config-Token`, private/account/src/middleware/config-token.ts). `ensure_store` sets the store up the first time the way the portal does. Setup sits behind `requireTwoFactor` and `requireElevated` (`POST /configs/setup`), so the owner is elevated through the reauth mail (`POST /auth/reauth`, the link read back from `captured_emails` kind `reauth` by the same set difference as the magic link, then `POST /auth/reauth/verify`). A second factor is enrolled for the length of the setup only (`/auth/2fa/setup` and `/enable`, the code from `ops.totp`), the store is created with one master-password slot, and the second factor is disabled again with a later code, because the owner's magic-link sign-in has no second factor to answer. A store already there is opened through `POST /configs/bootstrap-session` with method `password`, which `requireTwoFactor` gates as well, so the bootstrap runs under the same elevated, short-lived second factor. Either answer carries a fresh config token, and that token is the artifact. The slot password is never stored: it is an HMAC of the company's `ACCOUNT_SERVER_API_KEY` under a fixed label (`store_password`), so a later run derives it again and a removed company leaves nothing behind for it.
 #
 # An `e2e-envelope` is a request sealed to the company's X25519 key, as the CLI's tunnel seals every request (packages/cli/src/services/account/account-client.ts). The key is the one `GET /account/api/v1/.well-known/server-info` publishes, and the sealed request is `GET /account/api/v1/licenses/status` under a fresh `license:read` token of the same company.
 #
@@ -1751,11 +1751,32 @@ def _drop_second_factor(world: Owner, seed: str, spent: str) -> None:
     )
 
 
-def _setup_store(world: Owner, password: str) -> StoreKeys:
-    """Create the store with one master-password slot, under a second factor that lives only as long as the setup."""
+def _under_second_factor[T](world: Owner, action: Callable[[], T]) -> T:
+    """Run `action` while the owner holds a TOTP factor, and drop the factor again whatever `action` did: `requireTwoFactor` gates the store setup and the store bootstrap (private/account/src/routes/configs.ts), and the owner's magic-link sign-in has no second factor to answer. The session is elevated first, since `/auth/2fa/setup`, `/enable` and `/disable` sit behind `requireElevated`."""
     elevate(world)
     seed, spent = _enrol_second_factor(world)
     try:
+        result = action()
+    except (
+        Exception
+    ) as exc:  # disable the factor again, then re-raise; an interrupt or exit is never repaired
+        try:
+            _restore(
+                lambda: _drop_second_factor(world, seed, spent),
+                "disabling the owner's second factor of company %s failed (its magic-link sign-in now asks "
+                "for one)" % world.company,
+            )
+        except _RestoreError as back:
+            exc.add_note(str(back))
+        raise
+    _drop_second_factor(world, seed, spent)
+    return result
+
+
+def _setup_store(world: Owner, password: str) -> StoreKeys:
+    """Create the store with one master-password slot, under a second factor that lives only as long as the setup."""
+
+    def setup() -> StoreKeys:
         material = world.crypto({"op": "setup", "password": password})
         made = _expect(
             world.send("POST", SETUP_PATH, material.get("body")),
@@ -1770,30 +1791,21 @@ def _setup_store(world: Owner, password: str) -> StoreKeys:
             raise proof.LabError(
                 "company %s: the store setup answered no store or token" % world.company
             )
-        keys = StoreKeys(store_id, str(material.get("cek") or ""), token, 0)
-    except (
-        Exception
-    ) as exc:  # disable the factor again, then re-raise; an interrupt or exit is never repaired
-        try:
-            _restore(
-                lambda: _drop_second_factor(world, seed, spent),
-                "disabling the owner's second factor of company %s failed (its magic-link sign-in now asks "
-                "for one)" % world.company,
-            )
-        except _RestoreError as back:
-            exc.add_note(str(back))
-        raise
-    _drop_second_factor(world, seed, spent)
-    return keys
+        return StoreKeys(store_id, str(material.get("cek") or ""), token, 0)
+
+    return _under_second_factor(world, setup)
 
 
 def _open_store(world: Owner, store_id: str, configs: int, password: str) -> StoreKeys:
-    """Open an existing store through its password slot: a fresh config token and the CEK."""
-    slot = _expect(
-        world.send("POST", BOOTSTRAP_PATH, {"storeId": store_id, "method": "password"}),
-        (200,),
-        world.company,
-        "the store bootstrap",
+    """Open an existing store through its password slot: a fresh config token and the CEK. The bootstrap runs under the same short-lived second factor as the setup, since `POST /configs/bootstrap-session` is `requireTwoFactor` gated too."""
+    slot = _under_second_factor(
+        world,
+        lambda: _expect(
+            world.send("POST", BOOTSTRAP_PATH, {"storeId": store_id, "method": "password"}),
+            (200,),
+            world.company,
+            "the store bootstrap",
+        ),
     )
     token = slot.get("token")
     if not isinstance(token, str) or not token:

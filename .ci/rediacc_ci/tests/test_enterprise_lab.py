@@ -1951,13 +1951,25 @@ class FakeCrypto:
         raise AssertionError(op)
 
 
+TFA_REQUIRED = "Two-factor authentication is required for config storage operations. Enable 2FA in your account settings first."
+
+
 class StoreV6(AccountV6):
     """AccountV6 plus each company's config store, second factor, tunnel and console."""
 
     def __init__(
-        self, *, configured=False, configs=0, tfa=False, setup_status=201, exec_lines=None, **kw
+        self,
+        *,
+        configured=False,
+        configs=0,
+        tfa=False,
+        setup_status=201,
+        bootstrap_status=200,
+        exec_lines=None,
+        **kw,
     ):
         super().__init__(**kw)
+        self.bootstrap_status = bootstrap_status
         self.configured = configured
         self.configs = configs
         self.tfa = tfa
@@ -2071,6 +2083,11 @@ class StoreV6(AccountV6):
             return self._json(201, {"store": {"id": "st-a"}, "initialToken": "rct-init"})
         if path == lab.BOOTSTRAP_PATH:
             assert doc == {"storeId": "st-a", "method": "password"}
+            if not self.tfa:
+                # private/account/src/middleware/require-2fa.ts `requireTwoFactor`, on `POST /configs/bootstrap-session`.
+                return self._json(403, {"error": TFA_REQUIRED, "twoFactorRequired": True})
+            if self.bootstrap_status != 200:
+                return self._json(self.bootstrap_status, {"error": "boom"})
             self.config_tokens[HOST_A].add("rct-boot")
             slot = {"token": "rct-boot", "serverSecret": "ss", "kdfParams": {"method": "password"}}
             return self._json(200, {**slot, "wrappedCek": "wrapped:%s" % self.password})
@@ -2149,15 +2166,44 @@ def test_a_config_token_sets_the_store_up_under_a_second_factor_that_is_dropped_
     assert ("account-proof-a", lab.REAUTH_SQL, ["owner@proof-a.example"]) in acct.queries
 
 
-def test_an_existing_store_is_opened_through_its_password_slot_with_no_second_factor():
+def test_an_existing_store_is_opened_through_its_password_slot_under_a_second_factor_dropped_again():
     acct, crypto = StoreV6(configured=True), FakeCrypto()
     acct.password = lab.store_password("c0000000a", api_key=lambda c: "key-%s" % c)
     token = lab.mint("c0000000a", "config-token", minter=store_minter(acct, crypto))
     assert token == "rct-boot"
-    paths = [c[1].split(PRODUCT_DOMAIN, 1)[1] for c in acct.calls]
-    assert lab.TFA_ENABLE_PATH not in paths
-    assert lab.SETUP_PATH not in paths
+    order = [c[1].split(PRODUCT_DOMAIN, 1)[1] for c in acct.calls if "magic-link" not in c[1]]
+    assert order == [
+        lab.TERMS_PATH,
+        lab.TERMS_ACCEPT_PATH,
+        lab.STORE_INFO_PATH,
+        lab.REAUTH_PATH,
+        lab.REAUTH_VERIFY_PATH,
+        lab.TFA_STATUS_PATH,
+        lab.TFA_SETUP_PATH,
+        lab.TFA_ENABLE_PATH,
+        lab.BOOTSTRAP_PATH,
+        lab.TFA_DISABLE_PATH,
+    ]
+    assert acct.tfa is False, (
+        "the owner's magic-link sign-in must not be left asking for a second factor"
+    )
+    assert lab.SETUP_PATH not in order
     assert [o["op"] for o in crypto.ops] == ["unwrap"]
+
+
+def test_a_refused_bootstrap_still_drops_the_second_factor_and_names_the_refusal():
+    acct = StoreV6(configured=True, bootstrap_status=500)
+    with pytest.raises(proof.LabError, match="store bootstrap answered HTTP 500"):
+        lab.mint("c0000000a", "config-token", minter=store_minter(acct, FakeCrypto()))
+    assert acct.tfa is False
+
+
+def test_an_owner_with_a_second_factor_already_is_refused_before_the_bootstrap():
+    acct = StoreV6(configured=True, tfa=True)
+    with pytest.raises(proof.LabError, match="already has a second factor"):
+        lab.mint("c0000000a", "config-token", minter=store_minter(acct, FakeCrypto()))
+    paths = [c[1].split(PRODUCT_DOMAIN, 1)[1] for c in acct.calls]
+    assert lab.BOOTSTRAP_PATH not in paths
 
 
 def test_a_store_whose_slot_the_proof_cannot_open_is_a_lab_error():
