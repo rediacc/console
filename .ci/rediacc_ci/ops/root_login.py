@@ -70,6 +70,8 @@ USAGE = (
 
 Runner = Callable[[Sequence[str], Mapping[str, str]], int]
 
+MIN_MASKED_LENGTH = 8
+
 
 class RootLoginError(RuntimeError):
     """A refusal or a failed step; `rc` is the exit status. Our own text names no secret value; text quoted from the server is masked by `masked` before `main` prints it."""
@@ -80,10 +82,10 @@ class RootLoginError(RuntimeError):
 
 
 def masked(text: str, env: Mapping[str, str]) -> str:
-    """`text` with the password, the seed, both token entries and any `rdr_` token replaced by a `<NAME>` mark, so a server answer that echoes one never reaches a log."""
+    """`text` with the password, the seed and both token entries replaced by a `<NAME>` mark, and any `rdr_` token by `<root token>`, so a server answer that echoes one never reaches a log. A value under MIN_MASKED_LENGTH characters is not masked (it would rewrite unrelated text); `read_values` refuses a password that short, and a seed is far longer."""
     for name in (PW_ENV, SEED_ENV, VAULT_ENTRY, VAULT_ENTRY_NEW):
         value = env.get(name) or ""
-        if value and value != PLACEHOLDER:
+        if len(value) >= MIN_MASKED_LENGTH and value != PLACEHOLDER:
             text = text.replace(value, "<%s>" % name)
     return re.sub(r"%s[0-9A-Za-z]+" % re.escape(VALUE_PREFIX), "<root token>", text)
 
@@ -185,6 +187,12 @@ def read_values(env: Mapping[str, str]) -> dict[str, str]:
                 rc=2,
             )
         values[name] = value
+    if len(values[PW_ENV]) < MIN_MASKED_LENGTH:
+        raise RootLoginError(
+            "%s is shorter than %d characters: fill the Bitwarden entry %s"
+            % (PW_ENV, MIN_MASKED_LENGTH, _bws_entry(PW_ENV)),
+            rc=2,
+        )
     try:
         totp.decode_seed(values[SEED_ENV])
     except totp.TotpError as exc:

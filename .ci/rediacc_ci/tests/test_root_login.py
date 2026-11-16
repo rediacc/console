@@ -215,6 +215,15 @@ def test_placeholder_refused():
         root_login.read_values(_values(ROOT_PASSWORD=root_login.PLACEHOLDER))
 
 
+def test_a_short_password_is_refused_and_a_short_value_is_not_masked():
+    with pytest.raises(root_login.RootLoginError, match="shorter than") as caught:
+        root_login.read_values(_values(ROOT_PASSWORD="abc"))
+    assert caught.value.rc == 2
+    assert root_login.masked("a cat sat", {"ROOT_PASSWORD": "a"}) == "a cat sat"
+    long_env = {"ROOT_PASSWORD": "abcdefgh"}
+    assert root_login.masked("x abcdefgh y", long_env) == "x <ROOT_PASSWORD> y"
+
+
 def test_values_control_passes():
     assert root_login.read_values(_values())["ROOT_EMAIL"] == EMAIL
 
