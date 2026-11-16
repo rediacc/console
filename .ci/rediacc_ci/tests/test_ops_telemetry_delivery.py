@@ -29,9 +29,13 @@ class Fake:
         self,
         silent: AbstractSet[tuple[str, str]] = frozenset(),
         down: AbstractSet[str] = frozenset(),
+        series: dict[str, str] | None = None,
     ):
         self.silent = silent  # (host, signal)
         self.down = down
+        # region -> the deployment_environment its spanmetrics series carries; a region absent here has no series.
+        self.series = {"eu": "production", "us": "production"} if series is None else series
+        self.prom_queries: list[str] = []
         self.probes: dict[str, str] = {}  # probe id -> host
         self.auth: list[str] = []
         self.request_lines: list[str] = []  # every request target as it hit the wire
@@ -66,6 +70,16 @@ class Fake:
                     if seen_host and (seen_host, "traces") not in fake.silent:
                         return self._send(200, b'{"traces":[{"traceID":"a"}]}')
                     return self._send(200, b'{"traces":[]}')
+                if "/uid/prometheus/" in parts.path:
+                    query = qs["query"][0]
+                    fake.prom_queries.append(query)
+                    region = re.search(r'rediacc_region="([^"]+)"', query)
+                    envs = re.search(r'deployment_environment=~"([^"]+)"', query)
+                    emitted = fake.series.get(region.group(1)) if region else None
+                    hit = envs is not None and emitted in envs.group(1).split("|")
+                    result = [{"metric": {}, "value": [1, "5"]}] if hit else []
+                    body = {"status": "success", "data": {"result": result}}
+                    return self._send(200, json.dumps(body).encode())
                 if "/uid/loki/" in parts.path:
                     pid = qs["query"][0].split('"')[-2]
                     seen_host = fake.probes.get(pid)
@@ -88,7 +102,7 @@ class Fake:
 HOSTS = ["eu.example", "bench.example"]
 
 
-def drive(fake: Fake, hosts=HOSTS, timeout_s=0.3, proxies=frozenset()):
+def drive(fake: Fake, hosts=HOSTS, timeout_s=0.3, proxies=frozenset(), alert=None):
     out = io.StringIO()
     rc = td.run(
         hosts,
@@ -100,6 +114,7 @@ def drive(fake: Fake, hosts=HOSTS, timeout_s=0.3, proxies=frozenset()):
         base_for=lambda h: "%s/host/%s" % (fake.origin, h),
         proxies=frozenset(proxies),
         out=out,
+        alert=alert,
     )
     return rc, out.getvalue()
 
@@ -327,3 +342,94 @@ def test_loki_selector_matches_every_deployed_worker_name():
             names.append(found.group(1))
     assert len(names) == 8
     assert all(pattern.fullmatch(n) for n in names), names
+
+
+ALERT_REGIONS = ["eu", "us"]
+
+
+def _alert(envs=("production", "edge")):
+    return td.AlertSeries(list(ALERT_REGIONS), list(envs))
+
+
+def test_alert_series_present_for_every_region_passes(make_fake):
+    fake = make_fake()
+    rc, text = drive(fake, alert=_alert())
+    assert rc == 0, text
+    assert "PASS eu (alert labels)" in text
+    assert "PASS us (alert labels)" in text
+    assert text.splitlines()[-1] == "2 hosts, 6 signals, 0 silent"
+    assert all(TOKEN not in q for q in fake.prom_queries)
+
+
+def test_alert_series_missing_for_eu_fails_naming_region_and_labels(make_fake):
+    rc, text = drive(make_fake(series={"us": "production"}), alert=_alert())
+    assert rc == 1
+    assert "PASS us (alert labels)" in text
+    line = next(ln for ln in text.splitlines() if ln.startswith("SILENT eu (alert labels)"))
+    assert 'service="rediacc-account-server"' in line
+    assert 'deployment_environment=~"production|edge"' in line
+    assert 'rediacc_region="eu"' in line
+    assert "PASS eu.example traces" in text
+
+
+def test_a_worker_emitting_an_unexpected_environment_starves_the_alert_labels(make_fake):
+    """The 2026-11-08 shape: the uuid is found, the series carries `edge`, the config accepts only `production`."""
+    fake = make_fake(series={"eu": "edge", "us": "edge"})
+    rc, text = drive(fake, alert=_alert(("production",)))
+    assert rc == 1
+    assert "PASS eu.example traces" in text
+    assert "SILENT eu (alert labels)" in text
+    rc, text = drive(fake, alert=_alert(("production", "edge")))
+    assert rc == 0, text
+
+
+def test_alert_query_answered_404_names_its_status():
+    def get(url, _headers):
+        if "/uid/prometheus/" in url:
+            return td.Reply(404)
+        return td.Reply(200, b'{"status":"ok"}')
+
+    out = io.StringIO()
+    rc = td.run(
+        ["a.example"], get, "https://g", "tok", timeout_s=0, interval_s=0, out=out, alert=_alert()
+    )
+    assert rc == 1
+    assert "SILENT eu (alert labels)" in out.getvalue()
+    assert "(grafana query answered 404)" in out.getvalue()
+
+
+def test_no_alert_means_no_alert_lines(make_fake):
+    rc, text = drive(make_fake(series={}))
+    assert rc == 0, text
+    assert "alert labels" not in text
+
+
+def test_alert_label_values_are_plain():
+    with pytest.raises(ValueError, match="plain label value"):
+        td.AlertSeries(["eu"], ['x"} or vector(1) #'])
+    with pytest.raises(ValueError, match="at least one"):
+        td.AlertSeries(["eu"], [])
+
+
+def test_account_environments_come_from_ops_health_config(tmp_path):
+    assert td.account_environments() == ["production", "edge"]
+    (tmp_path / ".ci" / "config").mkdir(parents=True)
+    (tmp_path / td.CONFIG_REL).write_text('{"telemetry": {}}')
+    with pytest.raises(ValueError, match="account_environments"):
+        td.account_environments(tmp_path)
+
+
+def test_main_wires_regions_and_environments_into_the_alert(monkeypatch):
+    monkeypatch.setenv(td.READ_CREDENTIAL_ENV, TOKEN)
+    seen: dict[str, object] = {}
+
+    def fake_run(*_a, **kw):
+        seen["alert"] = kw["alert"]
+        return 0
+
+    monkeypatch.setattr(td, "run", fake_run)
+    assert td.main([]) == 0
+    alert = seen["alert"]
+    assert isinstance(alert, td.AlertSeries)
+    assert {"eu", "us", "asia"} <= set(alert.regions)
+    assert alert.environments == ["production", "edge"]

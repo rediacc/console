@@ -25,6 +25,9 @@
     "cf_usage": 10080,
     "offbox_read": 15
   },
+  "telemetry": {
+    "account_environments": ["production", "edge"]
+  },
   "ingest": {
     "max_age_h": {
       "drift": 36,
