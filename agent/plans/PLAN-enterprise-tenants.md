@@ -195,12 +195,15 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
 
 ### Bench queue: one sequential runner, starting after Q0
 
-- [ ] V1 [live] (PLAN-enterprise-isolation V1) Signers. This needs no new writer.
+- [x] V1 [live] (PLAN-enterprise-isolation V1) Signers. This needs no new writer.
   - Accept: `./run.sh enterprise proof signer --bench` rc 0.
-- [ ] LD1 [live] After E3: create the wildcard and check Universal SSL.
+    (ticked) 2026-11-16T17:24:41Z by d778be9d: run: ./run.sh enterprise proof signer --bench rc=0, 96 claims 0 broken, 14 skipped log=/tmp/live-bench/ent-signer.log
+- [x] LD1 [live] After E3: create the wildcard and check Universal SSL.
   - Accept: `./run.sh enterprise dns ensure` rc 0, then `./run.sh enterprise dns ensure --check` rc 0.
-- [ ] V3 [live] Run the add proof.
+    (ticked) 2026-11-16T17:24:44Z by d778be9d: run: ./run.sh enterprise dns ensure rc=0, then dns ensure --check rc=0 (x2) log=/tmp/live-prod/ld1-ensure.out
+- [x] V3 [live] Run the add proof.
   - Accept: `./run.sh enterprise proof add --bench` rc 0.
+    (ticked) 2026-11-16T17:15:50Z by d778be9d: run: ./run.sh enterprise proof add --bench rc=0, 11 claims 0 broken log=/tmp/live-bench/ent-add-run2.log (06:45Z)
 - [ ] V4 [live] Run the routing proof. If the Turnstile claim fails, LT1 fixes it.
   - Accept: `./run.sh enterprise proof routing --bench` rc 0.
 - [ ] LT1 [live] Only if V4 names Turnstile: add `rediacc.cloud` to the `rediacc-console` widget domains through the API, then rerun V4.
@@ -209,18 +212,22 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - Run: `bws_env exec --profile deploy-bench -- ./run.sh enterprise add acme --region eu --owner muhammed@rediacc.com --storage-gb 10 --unlisted --bench --bws-project <Q0 id>`.
   - The owner invitation is captured on bench. Read the link with `login_bench mail_token`, then the operator signs in.
   - Accept: `./run.sh enterprise list --bench` rc 0 naming acme `active`, and `curl -s -o /dev/null -w '%{http_code}' https://acme.rediacc.cloud/` and `https://acme-proxy.rediacc.cloud/` each below 500 with a valid certificate (curl without `-k`).
-- [ ] V2 [live] Region loss. acme in eu is briefly unavailable during this, which ruling 1 accepts.
+- [x] V2 [live] Region loss. acme in eu is briefly unavailable during this, which ruling 1 accepts.
   - Accept: `./run.sh enterprise proof region-loss --bench` rc 0.
-- [ ] V6 [live] After E2.
+    (ticked) 2026-11-16T17:24:47Z by d778be9d: run: ./run.sh enterprise proof region-loss --bench rc=0, 33 claims 0 broken log=/tmp/live-bench/ent-region-loss.log
+- [x] V6 [live] After E2.
   - Accept: `./run.sh enterprise proof replay --bench` rc 0.
-- [ ] V7 [live] After E2.
+    (ticked) 2026-11-16T17:24:50Z by d778be9d: run: ./run.sh enterprise proof replay --bench rc=0, 8 claims 0 broken log=/tmp/live-bench/ent-replay.log
+- [x] V7 [live] After E2.
   - Accept: `./run.sh enterprise proof proxy --bench` rc 0.
+    (ticked) 2026-11-16T17:24:53Z by d778be9d: run: ./run.sh enterprise proof proxy --bench rc=0, 14 claims 0 broken log=/tmp/live-bench/ent-proxy.log
 - [ ] V5 [live] Rings.
   - Accept: `./run.sh enterprise proof release --bench` rc 0.
 - [ ] V8 [live] Cost.
   - Accept: `./run.sh enterprise proof cost --bench` rc 0.
-- [ ] V11 [live] Remove. Now also checks zone routes.
+- [x] V11 [live] Remove. Now also checks zone routes.
   - Accept: `./run.sh enterprise proof remove --bench` rc 0.
+    (ticked) 2026-11-16T17:25:19Z by d778be9d: run: ./run.sh enterprise proof remove --bench rc=0, 8 claims 0 broken log=/tmp/live-bench/ent-remove.log
 - [ ] V9 [live] Renet order on a local fleet VM (`npm run vm:check` first).
   - Accept: `./run.sh enterprise proof renet --bench` rc 0.
 - [ ] V10 [live] GitHub path. This is the only box that waits on GitHub: it runs after cd-enterprise-release.yml reaches origin/main through the normal merge.

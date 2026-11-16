@@ -29,7 +29,8 @@ Drop the column. The hash is needed only to count requests per address inside th
     (ticked) 2026-10-30T23:09:50Z by d778be9d: commit:6655e951 packages/www/src/i18n/translations/en.json:1; privacy text in 13 locales; check:i18n and check:ci-i18n-ledger-growth rc 0. DEPS-WAIVED: the box's code and acceptance do not depend on the open prerequisite plans
 - Deploy order (review 302bff18.1): the deploy applies D1 migrations before it publishes the new worker, so between the two the old worker's FREE issuance insert names the dropped column and fails. The window is the seconds between the migration and the publish, and there are no customers yet (operator order 2026-10-28), so the plan accepts it rather than splitting the change into two releases.
 
-- [ ] L1 [live] Bench: the account deploy applies 0072 (`deploy_bench`), and `wrangler d1 execute` (read-only `PRAGMA table_info(free_license_issuances)`) on the bench D1 shows no ip_prefix_hash. Accept: the PRAGMA output recorded here
+- [x] L1 [live] Bench: the account deploy applies 0072 (`deploy_bench`), and `wrangler d1 execute` (read-only `PRAGMA table_info(free_license_issuances)`) on the bench D1 shows no ip_prefix_hash. Accept: the PRAGMA output recorded here
+    (ticked) 2026-11-16T17:28:41Z by d778be9d: run: wrangler d1 execute account-bench --remote --config workers/account/wrangler.bench-eu.toml PRAGMA table_info(free_license_issuances) rc=0, no ip_prefix_hash log=/tmp/live-bench/pragma.log
 
 - [x] LP-bench [live] Fresh bench receipt through worklist.py --live-proof, after this plan's bench-deployable boxes land.
   Accept: live-proof bench account-smoke

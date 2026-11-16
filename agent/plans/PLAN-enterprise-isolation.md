@@ -162,24 +162,28 @@ This plan is public: no customer name appears in it or in any tracked file. `acm
 - [x] V2 [live] A lost region: a fake company on each bench signer, then the eu signer and its control database made unreachable. The us company issues and renews, the eu company gets the named error and its current licence works, and restoring eu renews it. Bench cannot prove a real partition, a D1 primary outage or a control-plane failure, and the box records that.
   Accept: `./run.sh enterprise proof region-loss --bench` rc 0.
     (ticked) 2026-11-15T19:05:11Z by d778be9d: commit:d2090d226e live 2026-11-15T19:00Z on bench (eu and the newly deployed bench-us, d2090d226e): ./run.sh enterprise proof region-loss --bench rc=0, 18 claims 0 broken: a fake company on signer-bench-eu and one on signer-bench-us both sign and renew; with eu cut the us company issues and renews, the eu company gets the named error and its current licence works; eu restored then renews; the mirror cut on us holds the same. Bench-only proof: bench cannot prove a real network partition, a D1 primary outage or a control-plane failure (the box names this).
-- [ ] V3 [live] `enterprise add` end to end for two fake companies: a killed run resumes, a rerun changes nothing, owner mail is captured, the lookup hits for one and misses for an unlisted one, a free-mail domain is refused.
+- [x] V3 [live] `enterprise add` end to end for two fake companies: a killed run resumes, a rerun changes nothing, owner mail is captured, the lookup hits for one and misses for an unlisted one, a free-mail domain is refused.
   Accept: `./run.sh enterprise proof add --bench` rc 0.
+    (ticked) 2026-11-16T17:16:03Z by d778be9d: run: ./run.sh enterprise proof add --bench rc=0, 11 claims 0 broken log=/tmp/live-bench/ent-add-run2.log
 - [ ] V4 [live] Routing: the wildcard record and routes reach each Worker, the Universal certificate serves `<company>` and `<company>-proxy`, `eu` and company hosts do not collide, specific records win over the wildcard, certificate logs lack the fake name, Turnstile covers the subdomains.
   Accept: `./run.sh enterprise proof routing --bench` rc 0.
 - [ ] V5 [live] Rings: 4 fake companies across canary, small, medium, large with shortened pauses. A planted failure stops and names one company, the others and the fast tier stay unchanged, and `--skip-pauses` without `--order` is refused.
   Accept: `./run.sh enterprise proof release --bench` rc 0.
-- [ ] V6 [live] Sessions, API tokens, config tokens and E2E envelopes from one fake company all fail on the other.
+- [x] V6 [live] Sessions, API tokens, config tokens and E2E envelopes from one fake company all fail on the other.
   Accept: `./run.sh enterprise proof replay --bench` rc 0.
-- [ ] V7 [live] Proxy and executor per company: separate container app and Durable Object, one company's token refused by the other's proxy, a console command runs, and the allowlist blocks a foreign IP while renewal still passes.
+    (ticked) 2026-11-16T17:16:05Z by d778be9d: run: ./run.sh enterprise proof replay --bench rc=0, 8 claims 0 broken log=/tmp/live-bench/ent-replay.log
+- [x] V7 [live] Proxy and executor per company: separate container app and Durable Object, one company's token refused by the other's proxy, a console command runs, and the allowlist blocks a foreign IP while renewal still passes.
   Accept: `./run.sh enterprise proof proxy --bench` rc 0.
+    (ticked) 2026-11-16T17:16:07Z by d778be9d: run: ./run.sh enterprise proof proxy --bench rc=0, 14 claims 0 broken log=/tmp/live-bench/ent-proxy.log
 - [ ] V8 [live] Cost and time per company and per release, from records and `cf_usage_report`, with the image rebuild measured and the Cloudflare limits re-read.
   Accept: `./run.sh enterprise proof cost --bench` rc 0.
 - [ ] V9 [live] Renet order on a fleet VM: a mutating verb moves renet and a read-only verb does not, an executor refuses to upload, the previous renet renews against the new Worker, and the new renet renews against the previous Worker.
   Accept: `./run.sh enterprise proof renet --bench` rc 0.
 - [ ] V10 [live] GitHub path, after this workflow reaches the default branch: dispatch a release for a fake company, then grep the logs, the jobs API, the run API and the step summary for the fake name and hosts. Any hit fails the box, and the design changes before a real company rides it. This settles the visibility claim.
   Accept: `./run.sh enterprise proof github --bench` rc 0.
-- [ ] V11 [live] Both paths of delete: the local script exports, then removes one fake company with data, and a second attempt under `GITHUB_ACTIONS=1` and a scan of the workflows both refuse. The GitHub path has no delete to run.
+- [x] V11 [live] Both paths of delete: the local script exports, then removes one fake company with data, and a second attempt under `GITHUB_ACTIONS=1` and a scan of the workflows both refuse. The GitHub path has no delete to run.
   Accept: `./run.sh enterprise proof remove --bench` rc 0.
+    (ticked) 2026-11-16T17:16:09Z by d778be9d: run: ./run.sh enterprise proof remove --bench rc=0, 8 claims 0 broken log=/tmp/live-bench/ent-remove.log
 - [x] LP-bench [live] Fresh bench receipts after V11.
   Accept: live-proof bench account-smoke
     (ticked) 2026-11-10T14:05:44Z by d778be9d: live-proof lp-fc4a9c18fc11 bench account-smoke rc=0 v=1f90c7e1-6458-486f-ac2e-c261d28a7f09

@@ -522,12 +522,12 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-docker-image-freshness-soak-filter.md` | compacted | 39 | 0 | 0 | 2715 |
 | `agent/plans/PLAN-docker-pin-digest.md` | executing | 119 | 0 | 9 | 19984 |
 | `agent/plans/PLAN-docker-sock-listener-preflight-detect.md` | executing | 61 | 0 | 5 | 5928 |
-| `agent/plans/PLAN-drop-free-license-ip-prefix-hash.md` | executing | 36 | 1 | 5 | 6053 |
+| `agent/plans/PLAN-drop-free-license-ip-prefix-hash.md` | executing | 37 | 0 | 6 | 6293 |
 | `agent/plans/PLAN-duplication-angle.md` | compacted | 37 | 0 | 0 | 2630 |
 | `agent/plans/PLAN-durable-reports-and-push-inbox.md` | compacted | 52 | 0 | 0 | 3692 |
 | `agent/plans/PLAN-elite-to-onprem-rename.md` | proposed | 92 | 19 | 0 | 28670 |
-| `agent/plans/PLAN-enterprise-isolation.md` | executing | 210 | 12 | 22 | 40065 |
-| `agent/plans/PLAN-enterprise-tenants.md` | approved | 467 | 30 | 17 | 64378 |
+| `agent/plans/PLAN-enterprise-isolation.md` | executing | 214 | 8 | 26 | 40672 |
+| `agent/plans/PLAN-enterprise-tenants.md` | approved | 474 | 23 | 24 | 65479 |
 | `agent/plans/PLAN-executor-durable-object-policy.md` | approved | 483 | 3 | 15 | 64699 |
 | `agent/plans/PLAN-experience-feedback.md` | approved | 87 | 4 | 12 | 18415 |
 | `agent/plans/PLAN-extension-shaped-matchers.md` | compacted | 37 | 0 | 0 | 3104 |
@@ -548,7 +548,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
 | `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30400 |
 | `agent/plans/PLAN-health-checks-local.md` | approved | 707 | 17 | 64 | 131836 |
-| `agent/plans/PLAN-hostinger-to-bench.md` | approved | 96 | 17 | 5 | 18072 |
+| `agent/plans/PLAN-hostinger-to-bench.md` | approved | 99 | 14 | 8 | 18692 |
 | `agent/plans/PLAN-idle-writer-capacity.md` | approved | 65 | 0 | 5 | 12586 |
 | `agent/plans/PLAN-jobs-backup-real-machine-tests.md` | approved | 55 | 1 | 10 | 12683 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
@@ -594,7 +594,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-renet-restart-cycle-defects.md` | approved | 40 | 1 | 6 | 6087 |
 | `agent/plans/PLAN-renet-run-docker-sock-isolation.md` | draft | 101 | 0 | 4 | 11627 |
 | `agent/plans/PLAN-renet-runtime-converge.md` | approved | 63 | 0 | 5 | 10310 |
-| `agent/plans/PLAN-repo-docker-storage-prune.md` | executing | 154 | 2 | 12 | 35955 |
+| `agent/plans/PLAN-repo-docker-storage-prune.md` | executing | 155 | 1 | 13 | 36276 |
 | `agent/plans/PLAN-repo-resource-limits.md` | approved | 189 | 3 | 10 | 28058 |
 | `agent/plans/PLAN-require-testid-sweep.md` | compacted | 39 | 0 | 0 | 2511 |
 | `agent/plans/PLAN-resprofile-wave2.md` | compacted | 39 | 0 | 0 | 3076 |
