@@ -1,4 +1,4 @@
-import { test } from '@playwright/test';
+import { LANDLOCK_INACTIVE_OS_IDS } from './landlockSelection';
 import type { RenetFunctionsTestRunner } from './renet-functions/RenetFunctionsTestRunner';
 
 /**
@@ -7,11 +7,12 @@ import type { RenetFunctionsTestRunner } from './renet-functions/RenetFunctionsT
  * Oracle Linux 10 UEK 6.12 boots with `lsm=lockdown,capability,yama,selinux,bpf,ima,evm` and logs
  * "landlock: Disabled but requested by user space"; Ubuntu 24.04, Debian 13, Fedora 43 and openSUSE 16.0 report ABI 4-7.
  *
- * The one source of truth: 01-system-checks pins `--detect` against it, and every test that needs a Rediaccfile `up()` or
- * `down()` to run (or a repository started by one) is skipped through `skipWithoutLandlock`, because renet refuses to run
+ * The one source of truth: 01-system-checks pins `--detect` against it, and every suite that needs a Rediaccfile `up()` or
+ * `down()` to run (or a repository started by one) is tagged `@landlock` and left out of the run on those images by the
+ * config (`landlockSelection.ts`), because renet refuses to run
  * those functions without Landlock: "the Rediaccfile functions were not run: up() and down() need Landlock to confine them".
  */
-export const LANDLOCK_INACTIVE_BY_DEFAULT: ReadonlySet<string> = new Set(['ol-10']);
+export const LANDLOCK_INACTIVE_BY_DEFAULT: ReadonlySet<string> = LANDLOCK_INACTIVE_OS_IDS;
 
 const REQUIREMENTS_DOCS = 'packages/www/src/content/docs/en/requirements.md';
 
@@ -29,13 +30,15 @@ export async function workerOsId(runner: RenetFunctionsTestRunner): Promise<stri
 }
 
 /**
- * Skips the calling beforeAll's tests (or the running test) on an OS where Landlock is inactive by default. Call it right
- * after the runner exists and before any provisioning. Other OSes pass through untouched.
+ * Guards a `@landlock` suite's beforeAll: such a suite is never selected on an OS where Landlock is inactive by default
+ * (the config's `grepInvert`), so reaching this call there means the selection broke and the run fails loudly instead of
+ * skipping. Call it right after the runner exists and before any provisioning.
  */
-export async function skipWithoutLandlock(runner: RenetFunctionsTestRunner): Promise<void> {
+export async function assertLandlockSelected(runner: RenetFunctionsTestRunner): Promise<void> {
   const os = await workerOsId(runner);
-  test.skip(
-    LANDLOCK_INACTIVE_BY_DEFAULT.has(os),
-    `${os} boots without Landlock in lsm=, so renet refuses to run Rediaccfile up()/down() there by design; see ${REQUIREMENTS_DOCS} (Landlock) for the grubby fix`
-  );
+  if (LANDLOCK_INACTIVE_BY_DEFAULT.has(os)) {
+    throw new Error(
+      `${os} boots without Landlock in lsm=, so renet refuses to run Rediaccfile up()/down() there by design, and a @landlock suite must not be selected on it (playwright.config.ts grepInvert); see ${REQUIREMENTS_DOCS} (Landlock) for the grubby fix`
+    );
+  }
 }

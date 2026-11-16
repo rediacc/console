@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { LANDLOCK_INACTIVE_BY_DEFAULT, workerOsId } from '../landlock';
+import {
+  LANDLOCK_INACTIVE_OS_IDS,
+  LANDLOCK_INACTIVE_VM_IMAGES,
+  landlockGrepInvert,
+} from '../landlockSelection';
 import type { RenetFunctionsTestRunner } from '../renet-functions/RenetFunctionsTestRunner';
 import { TestHelpers } from '../renet-functions/helpers/TestHelpers';
 
@@ -36,5 +41,22 @@ describe('workerOsId', () => {
     await expect(workerOsId(runnerReading('NAME="x"\n'))).rejects.toThrow(
       /could not read the worker's OS/
     );
+  });
+});
+
+describe('landlockGrepInvert', () => {
+  it('drops the @landlock suites on oracle-10, the image whose os id the Landlock set names', () => {
+    const pattern = landlockGrepInvert('oracle-10');
+    expect(pattern?.test('Rediaccfile Lifecycle @bridge @lifecycle @landlock')).toBe(true);
+    expect(pattern?.test('Rediaccfile Edge Cases @bridge')).toBe(false);
+  });
+
+  it('selects everything on a Landlock-active image or with no VM_IMAGE (control)', () => {
+    expect(landlockGrepInvert('ubuntu-24.04')).toBeUndefined();
+    expect(landlockGrepInvert(undefined)).toBeUndefined();
+  });
+
+  it('pairs each inactive os id with a VM image so the two sets cannot drift apart', () => {
+    expect(LANDLOCK_INACTIVE_VM_IMAGES.size).toBe(LANDLOCK_INACTIVE_OS_IDS.size);
   });
 });

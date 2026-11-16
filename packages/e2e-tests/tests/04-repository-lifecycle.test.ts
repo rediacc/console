@@ -306,16 +306,20 @@ test.describe
     test('2b. fsck: the repository object is listed under the datastore', async () => {
       const result = await runner.repositoryFsck(datastorePath);
       expect(runner.isSuccess(result)).toBe(true);
-      expect(result.stdout, 'repository_fsck did not list the created repository').toContain(
-        repositoryName
-      );
+      // --test-mode logs the child's stdout as a stderr line, so the output is read from both streams.
+      expect(
+        runner.getCombinedOutput(result),
+        'repository_fsck did not list the created repository'
+      ).toContain(repositoryName.toLowerCase());
     });
 
     test('2c. machine prune dry run: both phases report behind their markers', async () => {
       const result = await runner.machinePruneDryRun(datastorePath);
       expect(runner.isSuccess(result)).toBe(true);
-      expect(result.stdout).toContain('"prune_phase":"datastore"');
-      expect(result.stdout).toContain('"prune_phase":"units"');
+      // The log line escapes the child's quotes (\"prune_phase\"), so the quotes are stripped before matching.
+      const output = runner.getCombinedOutput(result).replaceAll('\\"', '"');
+      expect(output).toContain('"prune_phase":"datastore"');
+      expect(output).toContain('"prune_phase":"units"');
     });
 
     test('3. info: get repository details', async () => {

@@ -57,7 +57,7 @@ const goneFile = (guid: string): string => `/var/tmp/e2e-m1-gone-${guid}`;
 const UP_HOLD_S = 3;
 
 test.describe
-  .serial('rdc migrate ordering, failed target and gc race (CLI-driven) @cli @migrate', () => {
+  .serial('rdc migrate ordering, failed target and gc race (CLI-driven) @cli @migrate @landlock', () => {
     test.skip(!canRun, 'Requires two worker VMs (machine-11 / machine-12)');
     test.setTimeout(600_000);
 

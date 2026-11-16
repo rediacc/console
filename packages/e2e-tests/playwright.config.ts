@@ -1,6 +1,7 @@
 import path from 'node:path';
 import * as test from '@playwright/test';
 import dotenv from 'dotenv';
+import { landlockGrepInvert } from './src/utils/landlockSelection';
 
 dotenv.config({ path: path.resolve(__dirname, '.env'), quiet: true });
 
@@ -28,6 +29,9 @@ export default test.defineConfig({
    * ceph was excluded originally; kube/ and migrate/ were added later and the
    * ignore list was never updated. Keep this list in sync with the subdirs. */
   testIgnore: ['**/ceph/**', '**/kube/**', '**/migrate/**', '**/ops-lifecycle/**'],
+  /* Suites tagged @landlock need a Rediaccfile up()/down(), which renet refuses where Landlock is inactive by default
+   * (oracle-10). They are left out of that leg here, by topology, because the zero-skip gate rejects collect-then-skip. */
+  grepInvert: landlockGrepInvert(process.env.VM_IMAGE),
   /* Global setup ensures infrastructure is running */
   globalSetup: require.resolve('./src/base/bridge-global-setup'),
   globalTeardown: require.resolve('./src/base/bridge-global-teardown'),

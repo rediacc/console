@@ -5,7 +5,7 @@ import { expect } from '@playwright/test';
 import { getSSHPrivateKeyPath } from '@rediacc/provisioning';
 import { DS } from './backup/chunkCliHarness';
 import { CliRunner } from './CliRunner';
-import { skipWithoutLandlock } from './landlock';
+import { assertLandlockSelected } from './landlock';
 import { loginCliToAccount } from './licence';
 import { RenetFunctionsTestRunner } from './renet-functions/RenetFunctionsTestRunner';
 
@@ -130,7 +130,7 @@ export class CliMigrateSuite {
     this.cli = CliRunner.create();
     this.w1 = RenetFunctionsTestRunner.forWorker(1);
     this.w2 = RenetFunctionsTestRunner.forWorker(2);
-    await skipWithoutLandlock(this.w1);
+    await assertLandlockSelected(this.w1);
 
     // Isolated e2e-cli config (NEVER the default) + register both machines. Recreated from SCRATCH each run: the config records the fleet's host keys, and a config that outlives an ops down/up carries the PREVIOUS fleet's keys — every connection then fails host-key verification (found live: preflight red while the bridge probes were green).
     await CliRunner.resetConfig();

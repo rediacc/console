@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID } from '../src/constants';
-import { skipWithoutLandlock } from '../src/utils/landlock';
+import { assertLandlockSelected } from '../src/utils/landlock';
 import { e2eRepoGuid } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
@@ -33,7 +33,7 @@ const TEST_REPOSITORY_NAME = e2eRepoGuid();
 
 const TEST_PASSWORD = 'testpassword123';
 
-test.describe('Container Operations @bridge', () => {
+test.describe('Container Operations @bridge @landlock', () => {
   let runner: RenetFunctionsTestRunner;
   const testRepo = e2eRepoGuid();
   const testContainer = `nginx-ops-${Date.now()}`;
@@ -42,7 +42,7 @@ test.describe('Container Operations @bridge', () => {
 
   test.beforeAll(async () => {
     runner = RenetFunctionsTestRunner.forWorker();
-    await skipWithoutLandlock(runner);
+    await assertLandlockSelected(runner);
     await runner.resetWorkerState();
 
     // 1. Initialize datastore
@@ -273,7 +273,7 @@ test.describe('Container Operations @bridge', () => {
  * Tests container lifecycle in proper order with a real container.
  */
 test.describe
-  .serial('Container Lifecycle @bridge @lifecycle', () => {
+  .serial('Container Lifecycle @bridge @lifecycle @landlock', () => {
     let runner: RenetFunctionsTestRunner;
     const repositoryName = e2eRepoGuid();
     const containerName = `nginx-lifecycle-${Date.now()}`;
@@ -282,7 +282,7 @@ test.describe
 
     test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
-      await skipWithoutLandlock(runner);
+      await assertLandlockSelected(runner);
       await runner.resetWorkerState();
 
       // 1. Initialize datastore
@@ -543,7 +543,7 @@ test.describe('Container Error Handling @bridge', () => {
  *
  * Tests operations on multiple containers using a multi-service docker-compose.
  */
-test.describe('Multiple Container Operations @bridge', () => {
+test.describe('Multiple Container Operations @bridge @landlock', () => {
   let runner: RenetFunctionsTestRunner;
   const repositoryName = e2eRepoGuid();
   const container1 = `nginx-multi1-${Date.now()}`;
@@ -553,7 +553,7 @@ test.describe('Multiple Container Operations @bridge', () => {
 
   test.beforeAll(async () => {
     runner = RenetFunctionsTestRunner.forWorker();
-    await skipWithoutLandlock(runner);
+    await assertLandlockSelected(runner);
     await runner.resetWorkerState();
 
     // 1. Initialize datastore

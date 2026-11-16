@@ -6,7 +6,7 @@ import {
   FORK_NETWORK_ID_A,
   TEST_PASSWORD,
 } from '../src/constants';
-import { skipWithoutLandlock } from '../src/utils/landlock';
+import { assertLandlockSelected } from '../src/utils/landlock';
 import { e2eRepoGuid } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 import type { ExecResult } from '../src/utils/renet-functions/types';
@@ -74,7 +74,7 @@ interface Attack {
 }
 
 test.describe
-  .serial('Docker API privilege gate @bridge', () => {
+  .serial('Docker API privilege gate @bridge @landlock', () => {
     let runner: RenetFunctionsTestRunner;
     const datastorePath = DEFAULT_DATASTORE_PATH;
     const repoA = e2eRepoGuid();
@@ -156,7 +156,7 @@ test.describe
 
     test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
-      await skipWithoutLandlock(runner);
+      await assertLandlockSelected(runner);
       await runner.resetWorkerState();
       await runner.datastoreInitPool('5G', datastorePath, true);
       // B is a fork of A on its own network id: repository_create always takes the harness's default network id, so a second fresh repo would collide with A's claim. B is only mounted, which starts its daemon and socket: its services stay down, because the repo's compose runs on the host network and a second nginx would collide with A's on port 80. No daemon pre-start: mount and up claim each network id and start that daemon themselves (see suite 07's beforeAll).

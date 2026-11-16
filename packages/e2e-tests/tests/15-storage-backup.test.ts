@@ -9,7 +9,7 @@ import {
   TEST_USER,
   DEFAULT_NETWORK_ID,
 } from '../src/constants';
-import { skipWithoutLandlock } from '../src/utils/landlock';
+import { assertLandlockSelected } from '../src/utils/landlock';
 import { e2eRepoGuid } from '../src/utils/licence';
 import { peerKnownHostsArg } from '../src/utils/renet-functions/peerKnownHosts';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
@@ -151,7 +151,7 @@ test.describe('Machine Backup Operations @bridge @storage', () => {
  * The push bandwidth cap on a real transfer (PLAN-jobs-backup-real-machine-tests E4). renet's unit tests pin the argv (`rsync --bwlimit`); only a timed push shows the cap holds on the wire. 64 MiB of incompressible data at 2 MB/s needs about 33 s, so a push under 25 s means the cap was dropped. The unlimited push of the same image is the control: without it a slow fleet would pass the test on its own speed.
  */
 test.describe
-  .serial('Push bandwidth cap on a real transfer @bridge @storage', () => {
+  .serial('Push bandwidth cap on a real transfer @bridge @storage @landlock', () => {
     test.setTimeout(900_000);
     const FILL_MIB = 64;
     const CAP_FLOOR_S = 25;
@@ -188,7 +188,7 @@ test.describe
 
     test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
-      await skipWithoutLandlock(runner);
+      await assertLandlockSelected(runner);
       await runner.ensureDatastoreReady(DEFAULT_DATASTORE_PATH);
       const created = await runner.repositoryNew(guid, '256M', password, DEFAULT_DATASTORE_PATH);
       expect(

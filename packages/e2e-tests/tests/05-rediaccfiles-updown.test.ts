@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID, TEST_PASSWORD } from '../src/constants';
-import { skipWithoutLandlock } from '../src/utils/landlock';
+import { assertLandlockSelected } from '../src/utils/landlock';
 import { e2eRepoGuid } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
@@ -79,7 +79,7 @@ test.describe('Rediaccfile Up/Down Functions @bridge', () => {
  * Tests the complete up/down lifecycle in order.
  */
 test.describe
-  .serial('Rediaccfile Lifecycle @bridge @lifecycle', () => {
+  .serial('Rediaccfile Lifecycle @bridge @lifecycle @landlock', () => {
     let runner: RenetFunctionsTestRunner;
     // A GUID: renet licenses a repository by its name, and the account server signs UUIDs only.
     const repositoryName = e2eRepoGuid();
@@ -87,7 +87,7 @@ test.describe
 
     test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
-      await skipWithoutLandlock(runner);
+      await assertLandlockSelected(runner);
       await runner.resetWorkerState();
 
       // Initialize datastore (LEVEL 2 prerequisite for repository operations)
@@ -271,7 +271,7 @@ test.describe('Rediaccfile with Daemons @bridge', () => {
  * Verifies up() and down() functions work correctly.
  */
 test.describe
-  .serial('Rediaccfile Real Execution @bridge @integration', () => {
+  .serial('Rediaccfile Real Execution @bridge @integration @landlock', () => {
     let runner: RenetFunctionsTestRunner;
     // A GUID: renet licenses a repository by its name, and the account server signs UUIDs only.
     const repositoryName = e2eRepoGuid();
@@ -280,7 +280,7 @@ test.describe
 
     test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
-      await skipWithoutLandlock(runner);
+      await assertLandlockSelected(runner);
       await runner.resetWorkerState();
       await runner.datastoreInitPool('10G', datastorePath, true);
     });
@@ -367,7 +367,7 @@ test.describe
  * Rediaccfile privileges: up() runs as the universal user, so a file it creates belongs to that user and `sudo` in it is refused (PLAN-rediaccfile-unprivileged T2).
  */
 test.describe
-  .serial('Rediaccfile Privileges @bridge @integration', () => {
+  .serial('Rediaccfile Privileges @bridge @integration @landlock', () => {
     let runner: RenetFunctionsTestRunner;
     const repositoryName = e2eRepoGuid();
     const datastorePath = DEFAULT_DATASTORE_PATH;
@@ -402,7 +402,7 @@ test.describe
 
     test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
-      await skipWithoutLandlock(runner);
+      await assertLandlockSelected(runner);
       await runner.resetWorkerState();
       await runner.datastoreInitPool('10G', datastorePath, true);
     });

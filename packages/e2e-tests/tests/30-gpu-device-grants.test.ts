@@ -29,7 +29,8 @@ import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunc
  */
 
 const RUN_ID = Date.now();
-const NETWORK_ID = 3000 + (RUN_ID % 500);
+// 2816 + 64n, n in 0-79: below the fixed ids 9152, 9216 and 9280 and clear of suite 32's n in 200-299.
+const NETWORK_ID = 2816 + 64 * (RUN_ID % 80);
 const KIND = `${WK_INFRA_DOMAIN}/e2e`;
 const DEVICE = `${KIND}=one`;
 // Every output this suite reads is lowercased (getCombinedOutput), so needles are too.

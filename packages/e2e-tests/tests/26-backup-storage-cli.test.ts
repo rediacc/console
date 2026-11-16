@@ -55,7 +55,7 @@ import {
   type PrerequisiteVerdict,
   resolvePrerequisites,
 } from '../src/utils/declaredSkip';
-import { skipWithoutLandlock } from '../src/utils/landlock';
+import { assertLandlockSelected } from '../src/utils/landlock';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
 /** `rdc backup verify --store -o json`: the server re-hashed every chunk the lineage references. */
@@ -1138,8 +1138,8 @@ test.describe
         ).toBeGreaterThan(before);
       });
 
-      test('K6. a cold backup restores with no gap and no torn write', async () => {
-        await skipWithoutLandlock(w1);
+      test('K6. a cold backup restores with no gap and no torn write @landlock', async () => {
+        await assertLandlockSelected(w1);
         const cold = await provisionRepo(cli, w1, COLD_NAME, M1);
         const container = `e2ebk-writer-${tag}`;
         const compose = [

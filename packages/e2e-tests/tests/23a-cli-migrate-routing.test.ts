@@ -15,7 +15,7 @@ interface ReconcileJson {
 }
 
 test.describe
-  .serial('rdc migrate routing (CLI-driven) @cli @migrate', () => {
+  .serial('rdc migrate routing (CLI-driven) @cli @migrate @landlock', () => {
     test.skip(!canRun, 'Requires two worker VMs (machine-11 / machine-12)');
     test.setTimeout(600_000);
 

@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { DEFAULT_DATASTORE_PATH, DEFAULT_NETWORK_ID, TEST_PASSWORD } from '../src/constants';
-import { skipWithoutLandlock } from '../src/utils/landlock';
+import { assertLandlockSelected } from '../src/utils/landlock';
 import { e2eRepoGuid } from '../src/utils/licence';
 import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunctionsTestRunner';
 
@@ -12,14 +12,14 @@ import { RenetFunctionsTestRunner } from '../src/utils/renet-functions/RenetFunc
  * resize operations, and cleanup.
  */
 test.describe
-  .serial('Full Repository Workflow @bridge @integration', () => {
+  .serial('Full Repository Workflow @bridge @integration @landlock', () => {
     let runner: RenetFunctionsTestRunner;
     const repositoryName = e2eRepoGuid();
     const datastorePath = DEFAULT_DATASTORE_PATH;
 
     test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
-      await skipWithoutLandlock(runner);
+      await assertLandlockSelected(runner);
       // This suite does not call resetWorkerState itself, so it depends on whichever suite ran before it (project order is fixed by playwright.config.ts, not by shard/grep order -- console worklist ea76a8c5) not having wiped the shared worker's datastore. Cheap when already ready; re-runs `renet setup` only after a wipe.
       await runner.ensureDatastoreReady(datastorePath);
     });
@@ -141,7 +141,7 @@ test.describe
  * Tests containers within the repository context.
  */
 test.describe
-  .serial('Container Repository Integration @bridge @integration', () => {
+  .serial('Container Repository Integration @bridge @integration @landlock', () => {
     let runner: RenetFunctionsTestRunner;
     const repositoryName = e2eRepoGuid();
     const containerName = 'test-nginx';
@@ -150,7 +150,7 @@ test.describe
 
     test.beforeAll(async () => {
       runner = RenetFunctionsTestRunner.forWorker();
-      await skipWithoutLandlock(runner);
+      await assertLandlockSelected(runner);
     });
 
     test.afterAll(async () => {

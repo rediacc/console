@@ -341,8 +341,8 @@ test.describe
     // Cases 5 to 7 share one holder: a job for a real repository, frozen while still non-terminal.
     const REPO = e2eRepoGuid();
     const OTHER = e2eRepoGuid();
-    // Starts at a per-run id in 3500-3999 (the fixed fork ids 9216 and 9280 belong to other tests' repositories, and test 30 draws from 3000-3499). A random start can still land on an id an earlier run left mounted, so case 6b does not trust it: renet refuses to take a held id over (exit 17), and 6b walks to the next id in the range until repository_create succeeds, which makes the id it ends on free on this machine by renet's own check. The variable holds the id in use so both cleanups remove the repository from the right network.
-    let otherNetworkId = String(3500 + (Date.now() % 500));
+    // Starts at a per-run id of the form 2816 + 64n (renet refuses any other), n in 200-299, i.e. 15616-21952 (the fixed ids 9152, 9216 and 9280 belong to other tests' repositories, and test 30 draws n in 0-79). A random start can still land on an id an earlier run left mounted, so case 6b does not trust it: renet refuses to take a held id over (exit 17), and 6b walks to the next 64-step id in the range until repository_create succeeds, which makes the id it ends on free on this machine by renet's own check. The variable holds the id in use so both cleanups remove the repository from the right network.
+    let otherNetworkId = String(2816 + 64 * (200 + (Date.now() % 100)));
     let holder: Handle | undefined;
 
     test('5. a repo-exclusive start while a job holds the repository exits 15 naming the holder', async () => {
@@ -442,8 +442,9 @@ test.describe
           networkId: id,
         });
       let created = await tryCreate(otherNetworkId);
-      for (let step = 0; created.code === 17 && step < 500; step += 1) {
-        otherNetworkId = String(3500 + ((Number(otherNetworkId) - 3500 + 1) % 500));
+      for (let step = 0; created.code === 17 && step < 100; step += 1) {
+        const n = (Number(otherNetworkId) - 2816) / 64;
+        otherNetworkId = String(2816 + 64 * (200 + ((n - 200 + 1) % 100)));
         created = await tryCreate(otherNetworkId);
       }
       expect(created.code, `repository_create: ${w.getCombinedOutput(created).slice(-400)}`).toBe(
