@@ -11,6 +11,7 @@ import os
 import re
 import stat
 import subprocess
+import sys
 from typing import TYPE_CHECKING
 
 import pytest
@@ -664,6 +665,18 @@ def test_stage_writes_a_correctly_keyed_renet_when_a_key_is_bound(r2, tmp_path, 
     assert (r2 / "executor").exists()
 
 
+def _run_quiet_or_fail(
+    argv: list[str], *, cwd: pathlib.Path | None = None, env: dict[str, str] | None = None
+) -> None:
+    """Run `argv` capturing its output; a non-zero exit fails with the child's stderr, so a compiler or git error reaches the CI log."""
+    done = subprocess.run(argv, cwd=cwd, env=env, capture_output=True, text=True, check=False)
+    assert done.returncode == 0, "%s exited %d: %s" % (
+        argv[0],
+        done.returncode,
+        done.stderr.strip(),
+    )
+
+
 def _build_real_renet(tmp_path: pathlib.Path, version: str) -> pathlib.Path:
     """A real Go binary at renet's package path, built inside a one-commit git repo so the linker stamps `vcs.revision`. Needs `go` and `git` on PATH: the quality-pytest legs get Go from their setup-go step, and a missing one fails here instead of skipping."""
     src = tmp_path / "renet-src"
@@ -672,19 +685,56 @@ def _build_real_renet(tmp_path: pathlib.Path, version: str) -> pathlib.Path:
     (src / "cmd" / "renet" / "main.go").write_text(
         'package main\n\nvar Version = "dev"\n\nfunc main() { println(Version) }\n'
     )
-    git = ["git", "-C", str(src), "-c", "user.name=t", "-c", "user.email=t@example.invalid"]
+    git = [
+        "git",
+        "-C",
+        str(src),
+        "-c",
+        "user.name=t",
+        "-c",
+        "user.email=t@example.invalid",
+        "-c",
+        "commit.gpgsign=false",
+    ]
     for argv in (["init", "-q"], ["add", "."], ["commit", "-q", "-m", "one"]):
-        subprocess.run([*git, *argv], check=True, capture_output=True)
+        _run_quiet_or_fail([*git, *argv])
     out = tmp_path / ea.RENET
     env = {**os.environ, "GOTOOLCHAIN": "local", "GOFLAGS": "-buildvcs=true"}
-    subprocess.run(
+    _run_quiet_or_fail(
         ["go", "build", "-ldflags", "-X main.Version=" + version, "-o", str(out), "./cmd/renet"],
         cwd=src,
         env=env,
-        check=True,
-        capture_output=True,
     )
     return out
+
+
+def test_a_failing_fixture_step_surfaces_its_stderr_and_a_passing_one_is_quiet():
+    """Review 5caef228.2: a failed build or commit fails with the child's own stderr; control: a passing step returns nothing."""
+    code = "import sys; sys.stderr.write('compiler said no'); sys.exit(3)"
+    with pytest.raises(AssertionError, match="exited 3: compiler said no"):
+        _run_quiet_or_fail([sys.executable, "-c", code])
+    assert _run_quiet_or_fail([sys.executable, "-c", "pass"]) is None
+
+
+def test_the_fixture_commit_is_isolated_from_a_signing_global_config(tmp_path):
+    """Review 5caef228.1: with commit.gpgsign=true in the global config (a signer that cannot run) the fixture repo still commits, because the helper forces it off."""
+    home = tmp_path / "home"
+    home.mkdir()
+    (home / ".gitconfig").write_text(
+        "[commit]\n\tgpgsign = true\n[gpg]\n\tprogram = /nonexistent-signer\n"
+    )
+    saved = {k: os.environ.get(k) for k in ("HOME", "GIT_CONFIG_GLOBAL")}
+    os.environ["HOME"] = str(home)
+    os.environ["GIT_CONFIG_GLOBAL"] = str(home / ".gitconfig")
+    try:
+        binary = _build_real_renet(tmp_path, "1.0.0")
+    finally:
+        for key, value in saved.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+    assert binary.is_file()
 
 
 def test_the_build_info_reader_finds_a_real_go_binary(tmp_path):
