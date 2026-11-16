@@ -384,6 +384,35 @@ def test_a_marker_gate_without_the_marker_refuses(
     assert said in refusal.message
 
 
+def test_a_marker_gate_that_passes_on_re_run_refuses_even_printing_the_marker(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Review ee12d7ab.2: rc 0 means the red is stale whatever the output says; control: rc 1 with the marker admits (test above)."""
+    root = red_world(tmp_path, [EMBED])
+    refusal, admission = verdict(
+        root, "%s %s %s" % (EMBED, ASK, REASON), rerun=Rerun(0, UPSTREAM_OUT)
+    )
+    assert admission is None
+    assert refusal is not None
+    assert "passed on re-run" in refusal.message
+
+
+@pytest.mark.parametrize("failed", [[OPS, 7], [OPS, None], "ops-health"])
+def test_a_receipt_failed_list_with_a_non_string_entry_refuses(
+    tmp_path: pathlib.Path, failed: Any
+) -> None:
+    """Review ee12d7ab.3: an entry no gate name can answer is refused, not dropped before the verdict; control: the same receipt with only the named gate admits."""
+    root = red_world(tmp_path, failed)
+    refusal, admission = verdict(root, "%s %s %s" % (OPS, ASK, REASON))
+    assert admission is None
+    assert refusal is not None
+    assert "failed" in refusal.message
+    control = red_world(tmp_path / "control", [OPS])
+    refusal, admission = verdict(control, "%s %s %s" % (OPS, ASK, REASON))
+    assert refusal is None
+    assert admission is not None
+
+
 # --------------------------------------------------------------------------- the record
 
 

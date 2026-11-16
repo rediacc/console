@@ -226,13 +226,13 @@ def _waivable(root: pathlib.Path, gate: str, rerun: GateRerun) -> tuple[bool, st
     rc, out = rerun(root, gate)
     if rc is None:
         return False, "%s could not be re-run, so its outage is not proven: %s" % (gate, out)
-    if UPSTREAM_MARKER in out:
-        return True, "re-run exited %d printing %s" % (rc, UPSTREAM_MARKER)
     if rc == 0:
         return False, (
             "%s passed on re-run, so the receipt's red is not an outage; re-run `npm run ci:quick`"
             % gate
         )
+    if UPSTREAM_MARKER in out:
+        return True, "re-run exited %d printing %s" % (rc, UPSTREAM_MARKER)
     return False, (
         "%s is neither allowlisted by name (%s) nor printed %s on re-run (exit %d), so its red is a defect to fix"
         % (gate, ", ".join(sorted(WAIVABLE_BY_NAME)), UPSTREAM_MARKER, rc)
@@ -314,7 +314,16 @@ def ci_quick_verdict(
             "%s matches no AskUserQuestion answer in the transcript ($%s)"
             % (waiver.asked, TRANSCRIPT_ENV)
         )
-    failed = [g for g in receipt.get("failed") or [] if isinstance(g, str)]
+    listed_failed = receipt.get("failed") or []
+    if not isinstance(listed_failed, list):
+        return refuse("the receipt's failed field is not a list")
+    odd = [g for g in listed_failed if not isinstance(g, str)]
+    if odd:
+        return refuse(
+            "the receipt's failed list holds non-string entries (%s), which no gate name can answer"
+            % ", ".join(repr(g) for g in odd)
+        )
+    failed = list(listed_failed)
     carried, _schema = guard.parse_carried(guard._carried_at_head(str(root)))
     carried_gates = set(carried or {})
     evidence: dict[str, str] = {}
