@@ -1,6 +1,6 @@
 """The DMARC report reader that runs INSIDE the mail container (rediacc_ci.ops.dmarc_reports streams this file's source into `docker exec -i <container> python3 -I -`, so nothing is written on the machine).
 
-Self-contained on purpose: the standard library only, no import from rediacc_ci, and Python 3.11 syntax (the docker-mailserver image's interpreter). The local side imports it too, for the tests and for nothing else.
+Self-contained on purpose: the standard library only, no import from rediacc_ci, and Python 3.11 syntax (the docker-mailserver image's interpreter). The local side imports it too: the tests, and rediacc_ci.ops.dmarc_reports for MARKER and to read this file's source for the stream.
 
     python3 -I - <base64 of {"mailboxes": [{"user": ..., "mailbox": ...}]}>
 
@@ -121,9 +121,9 @@ def parse_xml(data: bytes) -> Node:
     return roots[0]
 
 
-def _int(text: str, what: str) -> int:
+def _int(text: object, what: str) -> int:
     try:
-        return int(text)
+        return int(str(text))
     except ValueError:
         raise ReportError("%s %r is not an integer" % (what, text)) from None
 
@@ -193,12 +193,15 @@ def parse_tlsrpt(data: bytes) -> dict:
             raise ReportError(msg)
         policy = entry.get("policy") or {}
         summary = entry.get("summary") or {}
+        if not isinstance(policy, dict) or not isinstance(summary, dict):
+            msg = "a TLS-RPT policy or summary is not an object"
+            raise ReportError(msg)
         failures = [
             {
                 "result": str(f.get("result-type") or ""),
                 "ip": str(f.get("sending-mta-ip") or ""),
                 "mx": str(f.get("receiving-mx-hostname") or ""),
-                "count": int(f.get("failed-session-count") or 0),
+                "count": _int(f.get("failed-session-count") or 0, "failed-session-count"),
             }
             for f in entry.get("failure-details") or []
             if isinstance(f, dict)
@@ -207,8 +210,12 @@ def parse_tlsrpt(data: bytes) -> dict:
             {
                 "domain": str(policy.get("policy-domain") or "").lower(),
                 "type": str(policy.get("policy-type") or ""),
-                "ok": int(summary.get("total-successful-session-count") or 0),
-                "failed": int(summary.get("total-failure-session-count") or 0),
+                "ok": _int(
+                    summary.get("total-successful-session-count") or 0, "total-successful-session-count"
+                ),
+                "failed": _int(
+                    summary.get("total-failure-session-count") or 0, "total-failure-session-count"
+                ),
                 "failures": failures,
             }
         )
@@ -270,7 +277,16 @@ def is_report_part(part: EmailMessage) -> bool:
     name = (part.get_filename() or "").lower()
     if ctype in REPORT_TYPES or name.endswith(REPORT_SUFFIXES):
         return True
-    return ctype == "application/octet-stream" and bool(name)
+    if ctype != "application/octet-stream" or not name:
+        return False
+    # A generic attachment is a report candidate only when its bytes look like one (zip or gzip magic, XML or JSON), so a PDF sent as octet-stream stays "other".
+    try:
+        head = part.get_payload(decode=True)
+    except (binascii.Error, ValueError):
+        return True
+    if not isinstance(head, bytes):
+        return False
+    return head[:4] == b"PK\x03\x04" or head[:2] == b"\x1f\x8b" or head.lstrip()[:1] in (b"<", b"{")
 
 
 def parse_message(raw: str | bytes) -> dict:

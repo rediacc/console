@@ -6,7 +6,7 @@
     "A source matches an entry by `cidrs` (the source IP inside one), or by `rdns_suffixes` (its forward-confirmed reverse name equal to or ending in `.<suffix>`). A ruling with `domains` matches only reports for those domains.",
     "volume: a ruled source sending more than max_per_day messages on one report day is red; once trailing_days of history exist, so is at least ratio_min_count messages at ratio times its trailing daily average.",
     "acknowledged_through: domain -> YYYY-MM-DD. Every red but a new source and a malformed report, in a report whose date range ended on or before that day, is acknowledged (fixed or accepted).",
-    "A string may name a key of .ci/config/well-known.env as ${KEY} (for example the operator mailbox); load_known composes it at read time.",
+    "A string may name a WK_-prefixed key of .ci/config/well-known.env wrapped in dollar and braces (the operator mailbox below is one); load_known composes it at read time, and a reference to any other key is refused.",
     "A NEW failing source turns the check red; ask the operator, then add a ruling here (docs/agent-reference/local-env.md, DMARC reports)."
   ],
   "version": 1,

@@ -98,7 +98,10 @@ def _compose(value: object, path: pathlib.Path) -> object:
                     "%s: %s is not in %s" % (path, match.group(1), well_known.REGISTRY_REL)
                 ) from None
 
-        return _WK_REF.sub(sub, value)
+        composed = _WK_REF.sub(sub, value)
+        if "${" in composed:
+            raise KnownError("%s: %r holds a ${...} that is not a ${WK_NAME} reference" % (path, value))
+        return composed
     if isinstance(value, list):
         return [_compose(v, path) for v in value]
     if isinstance(value, dict):
@@ -632,8 +635,10 @@ def run(
     history, history_error = load_history(hpath)
     verdict = judge(doc, known, resolve, history, today)
     save_error = save_history(hpath, history, today)
-    marked = sum(len(v) for v in verdict["marks"].values())
-    mark_error = mark_seen(known, verdict["marks"], runner, env) if mark else ""
+    # A history that could not be written leaves the reports unread, so the next run records their counts; a history that could not be read is unknown, not green.
+    marks = {} if save_error else verdict["marks"]
+    marked = sum(len(v) for v in marks.values())
+    mark_error = mark_seen(known, marks, runner, env) if mark else ""
     counts = verdict["counts"]
     lines = [
         "dmarc: %d unread aggregate report(s), %d TLS-RPT report(s), %d other message(s) left alone; "
@@ -652,6 +657,8 @@ def run(
     lines += ["history: %s" % e for e in (history_error, save_error) if e]
     lines += ["unreadable: %s" % u for u in verdict["unreadable"]]
     rc = verdict["rc"]
+    if history_error or save_error:
+        rc = worst_rc([rc, 2])
     if mark_error:
         lines.append("unreadable: %s" % mark_error)
         rc = worst_rc([rc, 2])

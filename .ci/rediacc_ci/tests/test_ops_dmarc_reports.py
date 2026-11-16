@@ -805,3 +805,74 @@ def test_the_streamed_parser_runs_alone_under_python_isolated_mode(tmp_path):
     msg = doc["mailboxes"][0]["messages"][0]
     assert (msg["uid"], msg["kind"]) == ("21", "report")
     assert msg["reports"][0]["records"][0]["ip"] == HOSTINGER
+
+
+# --------------------------------------------------------------------------- review findings
+
+
+def test_an_unwritable_history_is_unknown_and_marks_nothing(root):
+    (root / ".ci" / "cache").write_text("a file where the cache directory belongs")
+    box = Container(ALL_KNOWN)
+    out = run(root, box)
+    assert out["rc"] == 2, text(out)
+    assert "history:" in text(out)
+    assert box.marked == {}
+
+
+def test_a_writable_history_control_marks_and_is_green(root):
+    box = Container(ALL_KNOWN)
+    assert run(root, box)["rc"] == 0
+    assert box.marked
+
+
+def test_a_corrupt_history_file_is_unknown_once_then_repaired(root):
+    path = dr.history_path(root)
+    path.parent.mkdir(parents=True)
+    path.write_text("{not json")
+    out = run(root, Container(ALL_KNOWN))
+    assert out["rc"] == 2, text(out)
+    assert run(root, Container(ALL_KNOWN))["rc"] == 0
+
+
+@pytest.mark.parametrize(
+    "mutate",
+    [
+        lambda p: p["summary"].update({"total-successful-session-count": "many"}),
+        lambda p: p.update({"summary": ["not", "a", "dict"]}),
+        lambda p: p.update({"policy": "not a dict"}),
+    ],
+)
+def test_a_tlsrpt_with_a_bad_count_or_shape_is_a_malformed_message_not_a_raise(mutate):
+    doc = json.loads(gzip.decompress(tlsrpt_json()))
+    mutate(doc["policies"][0])
+    out = dp.parse_message(
+        mail("Report-ID", ("r.json", "application/tlsrpt+json", json.dumps(doc).encode()))
+    )
+    assert out["kind"] == "malformed"
+    assert out["reports"] == []
+
+
+def test_a_tlsrpt_with_good_counts_still_parses():
+    out = dp.parse_message(
+        mail("Report-ID", ("r.json.gz", "application/tlsrpt+gzip", tlsrpt_json(failed=2)))
+    )
+    assert out["kind"] == "report"
+    assert out["reports"][0]["policies"][0]["failed"] == 2
+
+
+def test_an_octet_stream_pdf_is_other_but_an_octet_stream_report_is_read():
+    pdf = dp.parse_message(mail("invoice", ("invoice.pdf", "application/octet-stream", b"%PDF-1.4 x")))
+    assert pdf["kind"] == "other"
+    named = dp.parse_message(
+        mail("Report-ID", ("report.dat", "application/octet-stream", tlsrpt_json()))
+    )
+    assert named["kind"] == "report"
+
+
+def test_a_non_wk_reference_in_the_rulings_is_refused_not_passed_through(root):
+    path = root / dr.KNOWN_REL
+    doc = json.loads(path.read_text())
+    doc["mailboxes"][0]["user"] = "${APEX_DOMAIN}"
+    path.write_text(json.dumps(doc))
+    with pytest.raises(dr.KnownError, match="not a"):
+        dr.load_known(path)
