@@ -1168,6 +1168,41 @@ def test_run_module_keeps_a_failed_childs_stderr_tail_and_passes_it_through(monk
     assert onboarding.run_module("rediacc_ci.deploy.deploy_account", []) == onboarding.Ran(0, "")
 
 
+def test_run_module_echoes_each_stderr_line_while_the_child_runs_and_inherits_stdin_and_stdout(
+    monkeypatch, tmp_path
+):
+    """Review 99089b73.1: the child's stderr is a pipe, so each line must reach this process's stderr before the child exits, not at the end; stdin and stdout stay the parent's, which is what wrangler reads to decide it is interactive."""
+    flag = tmp_path / "echoed"
+    # The child waits for the parent to have echoed its first line; a parent that echoes only after the exit never writes the flag, and the child exits 4.
+    script = (
+        "import pathlib, sys, time\n"
+        "print('first line', file=sys.stderr, flush=True)\n"
+        "flag = pathlib.Path(sys.argv[1])\n"
+        "deadline = time.monotonic() + 10\n"
+        "while not flag.exists() and time.monotonic() < deadline:\n"
+        "    time.sleep(0.05)\n"
+        "sys.exit(0 if flag.exists() else 4)\n"
+    )
+    real_popen = onboarding.subprocess.Popen
+    seen: dict[str, Any] = {}
+
+    def popen(argv, **kwargs):
+        seen.update(kwargs)
+        return real_popen([argv[0], "-c", script, str(flag)], **kwargs)
+
+    class Echo(io.StringIO):
+        def write(self, text):
+            if "first line" in text:
+                flag.write_text("1")
+            return super().write(text)
+
+    monkeypatch.setattr(onboarding.subprocess, "Popen", popen)
+    monkeypatch.setattr(onboarding.sys, "stderr", Echo())
+    assert onboarding.run_module("rediacc_ci.deploy.deploy_account", []) == onboarding.Ran(0, "")
+    assert "stdin" not in seen
+    assert "stdout" not in seen
+
+
 def test_live_deploy_step_names_the_failed_module(tmp_path):
     _tree(tmp_path)
     ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})

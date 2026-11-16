@@ -449,7 +449,9 @@ def ran(done: int | Ran) -> Ran:
 
 
 def run_module(module: str, argv: list[str]) -> Ran:
-    """A deploy module in a child, with this package on the path. Its stdout is inherited and its stderr is passed through line by line as it arrives (the deploy modules mask the label themselves), and the last lines are kept: a failed child's `Ran.cause` is that tail, so the refusal names why it exited (the 2026-11-16 `proof proxy` said only `deploy_account exited 1`)."""
+    """A deploy module in a child, with this package on the path. Its stdout is inherited and its stderr is passed through line by line as it arrives (the deploy modules mask the label themselves), and the last lines are kept: a failed child's `Ran.cause` is that tail, so the refusal names why it exited (the 2026-11-16 `proof proxy` said only `deploy_account exited 1`).
+
+    THE CHILD'S STDERR IS A PIPE, NOT A TERMINAL, and that is acceptable for every module this runs (`deploy_proxy`, `deploy_account`, the executor switch): stdin and stdout stay inherited, and wrangler beneath them decides it is interactive from those two alone (`isTtyInteractive`: `process.stdin.isTTY && process.stdout.isTTY`), so a prompt behaves as it did before the pipe. What a stderr-only terminal check loses is colour on the echoed lines, which the kept tail would otherwise carry as escape codes into the refusal. Each line is echoed as it arrives, never at the exit."""
     env = dict(os.environ)
     ci = str(paths.repo_root() / ".ci")
     env["PYTHONPATH"] = ci + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
