@@ -362,7 +362,7 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - Rides C8's renet release (add these commits to C8's bump).
     (ticked) 2026-11-12T13:16:42Z by d778be9d: commit:f2957093f2 renet setup --offline; go test cmd/renet Offline rc 0
 
-- [ ] C11 [writer] Offline bundle and install. Extends C7; runs after C7, C9 and C10.
+- [x] C11 [writer] Offline bundle and install. Extends C7; runs after C7, C9 and C10.
   - `rdc machine setup --offline` passes `offline:true` (packages/cli/src/commands/machine/register.ts:405).
   - `rdc server bundle --out <dir> [--arch amd64|arm64] [--tag <t> | --image <local ref>] [--with-cli <plat,...>]`, run online, writes:
     - images/server.tar, images/rustfs.tar and images/traefik.tar, each saved with `--platform linux/<arch>`;
@@ -385,6 +385,7 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
   - Owns: packages/cli/src/commands/server.ts, packages/cli/src/services/server/**, packages/cli/src/commands/machine/register.ts, packages/cli/src/commands/__tests__/server*.test.ts, packages/shared/src/cli-contract/data/i18n/*.json
   - Accept: `(cd packages/cli && npx vitest run src/commands/__tests__/server src/services/server)` rc 0 (cases: checksum tamper refused, CLI mismatch refused, offline + free refused, cert key mismatch refused, upgrade re-applies only on a newer VERSION, local-edit refusal), and `npm run check:ci-cli-contract` rc 0.
   (corrected 2026-11-12T13:15Z) (operator rulings ASKED:2026-11-12T13:00Z and 13:07Z) Offline licence = request/response with a long-lived certificate: the box writes a public-key request, any online machine or the portal mints the cert, it is carried back; offline certs last up to 365 days per plan, the box warns 30 days before expiry, and after expiry it soft-degrades (no new repo licences; running services keep working). Every plan may self-host (operator 2026-11-12; plan gates removed in c167e0ddc9). Offline packages are prerequisites only (C10). The lab subscription for CL4/CL5 is a dedicated bench subscription.
+    (ticked) 2026-11-16T06:35:08Z by d778be9d: code landed 859f0f2259 cee4dd0827 3e005ee948 5606634b1f; vitest src/commands/__tests__/server src/services/server rc=0 181 passed; npx tsc --noEmit --project packages/cli/tsconfig.json rc=0; npm run check:ci-cli-contract rc=0; with-cli settled by default #c9de1108; the live install is box CL4
 
 - [x] C12 [writer] Lab helpers: air-gap a VM and a throwaway CA.
   - `python -m rediacc_ci.onprem.airgap apply|remove|check --vm <ip>`, ops network only, refusing anything outside 192.168.111.0/24 (.ci/rediacc_ci/drills/vm_check.py:119):

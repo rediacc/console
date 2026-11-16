@@ -77,25 +77,25 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic 2e0e531f, plan agent/plans/PLAN-rediaccfile-unprivileged.md, outside the set, 19 commit(s) on the branch, 0 open item(s): Rediaccfile lifecycle runs unprivileged
   - epic fbb27b45, plan agent/plans/PLAN-product-domain-rename.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Product moves to rediacc.cloud and names drop their prefixes
   - epic 5eb69cff, plan agent/plans/PLAN-website-routing-and-mail.md, outside the set, 14 commit(s) on the branch, 0 open item(s): Website routing, company lookup and product mail on .cloud
-  - epic 783185d2, plan agent/plans/PLAN-enterprise-isolation.md, outside the set, 71 commit(s) on the branch, 0 open item(s): Enterprise per-company isolation, regional signers and release rings
+  - epic 783185d2, plan agent/plans/PLAN-enterprise-isolation.md, outside the set, 75 commit(s) on the branch, 0 open item(s): Enterprise per-company isolation, regional signers and release rings
   - epic 1d805023, plan agent/plans/PLAN-tick-tracking.md, outside the set, 26 commit(s) on the branch, 0 open item(s): tick tracking: plan-box trailer, landing prints the tick, box audit
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 1141 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1147 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 179 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
-- Writers: 1 live of writer_cap 25 (session d778be9d): worker:a8ab4a99de413e496.
-- Leased items: 4: #02389657 (worker:bh5uohlv5, d778be9d), #4889018a (worker:bh5uohlv5, d778be9d), #864b6bca (worker:bh5uohlv5, d778be9d), #fec5f05a (worker:a8ab4a99de413e496, d778be9d).
+- Writers: 4 live of writer_cap 25 (session d778be9d): worker:ab91401b04ad96115, worker:ac42b94df1ec172f5, worker:a9b92417dada8481b, worker:a8be524e9e3b01d72.
+- Leased items: 9: #02389657 (worker:b7oxm4dsb, d778be9d), #31cc4e10 (worker:b7oxm4dsb, d778be9d), #36ffb824 (worker:ac42b94df1ec172f5, d778be9d), #400ae5ea (worker:ab91401b04ad96115, d778be9d), #4889018a (worker:b7oxm4dsb, d778be9d), #864b6bca (worker:ab91401b04ad96115, d778be9d), #966364da (worker:a9b92417dada8481b, d778be9d), #ade37fd4 (worker:a8be524e9e3b01d72, d778be9d), #cc9085b5 (worker:b7oxm4dsb, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 25 of 75 plans done, 1162 of 1397 boxes done (83%).
+Promoted: 25 of 75 plans done, 1167 of 1397 boxes done (83%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -134,7 +134,7 @@ Promoted: 25 of 75 plans done, 1162 of 1397 boxes done (83%).
 | 33 | PLAN-cli-tofu-toolchain.md | 10/10 | done |
 | 34 | PLAN-backup-download-from-store.md | 8/9 | 1 open |
 | 35 | PLAN-settings-set-verb.md | 4/4 | done |
-| 36 | PLAN-free-license.md | 10/13 | 3 open |
+| 36 | PLAN-free-license.md | 11/13 | 2 open |
 | 37 | PLAN-backup-integrity.md | 48/56 | 8 open |
 | 38 | PLAN-backup-critical-tier.md | 48/51 | 3 open |
 | 39 | PLAN-rediaccfile-unprivileged.md | 18/23 | 5 open |
@@ -142,7 +142,7 @@ Promoted: 25 of 75 plans done, 1162 of 1397 boxes done (83%).
 | 41 | PLAN-tick-tracking.md | 13/15 | 2 open |
 | 42 | PLAN-renet-down-before-kill.md | 13/15 | 2 open |
 | 43 | PLAN-repo-resource-limits.md | 10/13 | 3 open |
-| 44 | PLAN-health-checks-local.md | 62/81 | 19 open |
+| 44 | PLAN-health-checks-local.md | 64/81 | 17 open |
 | 45 | PLAN-backup-multi-target.md | 18/21 | 3 open |
 | 46 | PLAN-ciquick-reds-1023-1.md | 11/12 | 1 open |
 | 47 | PLAN-docker-pin-digest.md | 9/9 | done |
@@ -166,13 +166,13 @@ Promoted: 25 of 75 plans done, 1162 of 1397 boxes done (83%).
 | 65 | PLAN-local-first-delivery.md | 14/15 | 1 open |
 | 66 | PLAN-terms-acceptance.md | 25/25 | done |
 | 67 | PLAN-account-notices.md | 14/17 | 3 open |
-| 68 | PLAN-enterprise-tenants.md | 16/47 | 31 open |
+| 68 | PLAN-enterprise-tenants.md | 17/47 | 30 open |
 | 69 | PLAN-licence-expiry-notices.md | 6/7 | 1 open |
 | 70 | PLAN-onprem-relicence-inbox.md | 10/13 | 3 open |
 | 71 | PLAN-signer-bench-stop-binding-reattach.md | 3/3 | done |
 | 72 | PLAN-d1-eu-jurisdiction.md | 3/22 | 19 open |
 | 73 | PLAN-hostinger-to-bench.md | 5/22 | 17 open |
-| 74 | PLAN-multi-region-bench.md | 12/23 | 11 open |
+| 74 | PLAN-multi-region-bench.md | 13/23 | 10 open |
 | 75 | PLAN-root-api-token.md | 7/15 | 8 open |
 <!-- queue:progress:end -->
 

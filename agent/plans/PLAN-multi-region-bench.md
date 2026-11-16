@@ -324,7 +324,8 @@ Cost per run: the heavy month's metered lines prorated to a one-day run, (112.08
 - [ ] R2 [live] Run the unblocked boxes on bench: 357547f9 (placement), V1 532e82c9, V2 cdf29e6f, LP-bench 89d70106, and the bench rehearsals of ML2 49a68721, L2 81675959, L3 223d8818 and six-targets L2 8ec6bd76. Accept: each box ticked in its own plan with this plan's receipt ids
 
 ### Phase 4: cost check and close
-- [ ] D2 [writer] cf-spend-guard.json `report` gains a per-bench-proxy-application ceiling of 10 USD a month. Accept: pytest `-k cf_usage_report` rc 0
+- [x] D2 [writer] cf-spend-guard.json `report` gains a per-bench-proxy-application ceiling of 10 USD a month. Accept: pytest `-k cf_usage_report` rc 0
+    (ticked) 2026-11-16T06:15:56Z by d778be9d: pytest -k cf_usage_report rc=0 (32 passed, PYTHONPATH=.ci pytest .ci/rediacc_ci/tests); .ci/config/cf-spend-guard.json:81 report.containers_bench_target_usd_month=10. DEPS-WAIVED: a config ceiling plus its unit test does not read the D1 jurisdiction plan output
 - [ ] C1 [live] One month after L2, compare the real bench-us and bench-asia usage with the typical scenario. Accept: `PYTHONPATH=.ci python3 -m rediacc_ci.ops.cf_usage_report` rc 0 and the measured figures recorded here beside the model
 
 ## Risks
