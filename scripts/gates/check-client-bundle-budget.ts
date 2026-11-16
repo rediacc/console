@@ -89,7 +89,7 @@ const DEFAULT_BUDGET = 500_000;
  * `localeAlternatives`. Deferred total as this gate reports it: 277,290 B. Ejecting the skin to shed weight was measured at 2,786 lines plus a
  * Tailwind 4.3 toolchain this site does not have.
  *
- * VIDEO.JS 10.4.0, 2026-11-15: the player chunk grew 278,082 -> 291,366 B plus two new lazy sub-chunks (`text-cues`, `parse-vtt`, 3,802 B), and the gate read 316,291 B. 15,886 B of that was never the player: the site's own catalog slice, a locale choice the EAGER React chunk makes at load, which phase 3 used to charge here. It is charged eager now (see phase 3), and astro.config.mjs aliases `react-compiler-runtime` to React 19's own, which drops the polyfill's unreachable fallback from the player chunk.
+ * VIDEO.JS 10.4.0, 2026-11-15: the player chunk grew 278,082 -> 291,366 B plus two new lazy sub-chunks (`text-cues`, `parse-vtt`, 3,802 B), and the gate read 316,291 B (the two figures sum to 295,168 B; the other 5,237 B of the 300,405 B left after the catalog slice was not itemised in that measurement). 15,886 B of that was never the player: the site's own catalog slice, a locale choice the EAGER React chunk makes at load, which phase 3 used to charge here. It is charged eager now (see phase 3), and astro.config.mjs aliases `react-compiler-runtime` to React 19's own, which drops the polyfill's unreachable fallback from the player chunk.
  */
 const DEFERRED_CEILING = 300_000;
 
