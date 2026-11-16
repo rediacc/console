@@ -14,7 +14,7 @@ export const LANDLOCK_INACTIVE_OS_IDS: ReadonlySet<string> = new Set(['ol-10']);
 export const LANDLOCK_INACTIVE_VM_IMAGES: ReadonlySet<string> = new Set(['oracle-10']);
 
 /** The title tag that marks a describe as needing Landlock. */
-export const LANDLOCK_TAG = '@landlock';
+const LANDLOCK_TAG = '@landlock';
 
 /** The config's `grepInvert` for a `VM_IMAGE`: the tag on a Landlock-inactive image, no pattern anywhere else. */
 export function landlockGrepInvert(vmImage: string | undefined): RegExp | undefined {
