@@ -78,6 +78,10 @@ class PromoteError(Exception):
         self.status = status
 
 
+class NoSuchBucketError(PromoteError):
+    """A listing the endpoint answered with `NoSuchBucket`: the bucket does not exist (any more)."""
+
+
 @dataclass(frozen=True)
 class Obj:
     """One listed object, keyed relative to its tree prefix."""
@@ -304,6 +308,7 @@ class Transfers:
     def list_tree(self, prefix: str) -> list[Obj]:
         """List one tree, retried like any transfer. Raises on a listing that failed."""
         out: list[bytes] = []
+        last_stderr: list[str] = []
 
         def run() -> tuple[int, str]:
             proc = awscli.run(list_argv(prefix, self.endpoint, self.bucket), capture_output=True)
@@ -311,24 +316,31 @@ class Transfers:
                 sys.stderr.buffer.write(proc.stderr)
                 sys.stderr.flush()
             out[:] = [proc.stdout]
-            return proc.returncode, proc.stderr.decode("utf-8", errors="replace")
+            last_stderr[:] = [proc.stderr.decode("utf-8", errors="replace")]
+            return proc.returncode, last_stderr[0]
 
         sys.stdout.flush()
         sys.stderr.flush()
-        status = transfer_retry.retried(run, "listing of %s" % prefix, self.self_name, self.delay_s)
+        status = transfer_retry.retried(
+            run, "listing of %s/%s" % (self.bucket, prefix), self.self_name, self.delay_s
+        )
         if status:
+            if transfer_retry.fatal_code("".join(last_stderr)) == "NoSuchBucket":
+                raise NoSuchBucketError(status)
             raise PromoteError(status)
         return parse_listing(out[0].decode("utf-8") if out else "", prefix)
 
     def get(self, key: str, target: str) -> None:
         status = self._retried(
-            get_argv(key, target, self.endpoint, self.bucket), "fetch of %s" % key
+            get_argv(key, target, self.endpoint, self.bucket), "fetch of %s/%s" % (self.bucket, key)
         )
         if status:
             raise PromoteError(status)
 
     def put(self, source: str, key: str) -> None:
-        status = self._retried(put_argv(source, key, self.endpoint, self.bucket), "put of %s" % key)
+        status = self._retried(
+            put_argv(source, key, self.endpoint, self.bucket), "put of %s/%s" % (self.bucket, key)
+        )
         if status:
             raise PromoteError(status)
 

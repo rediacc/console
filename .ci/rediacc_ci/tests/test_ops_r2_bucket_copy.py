@@ -582,3 +582,65 @@ def test_a_cors_delete_on_an_existing_bucket_succeeds():
     wanted: dict[str, list] = {"cors": [], "lifecycle": [], "notifications": []}
     bc.Settings(api, {}, "acct").write("real", "eu", wanted)
     assert [c[0] for c in api.calls if c[2].endswith("/cors")] == ["DELETE"]
+
+
+# --- inventory runner defects found in the 2026-11-16 live runs -------------------------------------
+
+
+class _Proc:
+    def __init__(self, returncode: int, stdout: bytes = b"", stderr: bytes = b"") -> None:
+        self.returncode = returncode
+        self.stdout = stdout
+        self.stderr = stderr
+
+
+NO_BUCKET = (
+    b"An error occurred (NoSuchBucket) when calling the ListObjectsV2 operation: "
+    b"The specified bucket does not exist\n"
+)
+
+
+def test_a_failed_listing_names_the_bucket(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(r2_promote.awscli, "run", lambda *_a, **_k: _Proc(254, b"", NO_BUCKET))
+    run = r2_promote.Transfers("t", BASE, 0.0, bucket="gone-proof")
+    with pytest.raises(r2_promote.NoSuchBucketError):
+        run.list_tree("")
+    assert "listing of gone-proof/ failed" in capsys.readouterr().err
+
+
+def test_a_listing_refused_for_another_reason_is_a_plain_promote_error(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    denied = b"An error occurred (AccessDenied) when calling the ListObjectsV2 operation\n"
+    monkeypatch.setattr(r2_promote.awscli, "run", lambda *_a, **_k: _Proc(254, b"", denied))
+    run = r2_promote.Transfers("t", BASE, 0.0, bucket="b")
+    with pytest.raises(r2_promote.PromoteError) as err:
+        run.list_tree("")
+    assert not isinstance(err.value, r2_promote.NoSuchBucketError)
+
+
+def _vanishing(monkeypatch: pytest.MonkeyPatch) -> None:
+    def list_tree(run: r2_promote.Transfers, _prefix: str) -> list[r2_promote.Obj]:
+        if run.bucket == "gone":
+            raise r2_promote.NoSuchBucketError(254)
+        return [obj("a", 3)]
+
+    monkeypatch.setattr(bc, "list_buckets", lambda _e: ["gone", "kept"])
+    monkeypatch.setattr(r2_promote.Transfers, "list_tree", list_tree)
+
+
+def test_inventory_reports_a_bucket_that_vanished_mid_run(monkeypatch: pytest.MonkeyPatch) -> None:
+    _vanishing(monkeypatch)
+    report = bc.inventory(BASE, None)
+    assert report[0] == {"bucket": "gone", "vanished": True}
+    assert report[1]["bytes"] == 3
+
+
+def test_inventory_still_fails_for_a_bucket_the_caller_named(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _vanishing(monkeypatch)
+    with pytest.raises(r2_promote.NoSuchBucketError):
+        bc.inventory(BASE, ["gone"])
