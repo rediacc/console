@@ -6,6 +6,7 @@ Each judge is shown failing on a planted defect beside a healthy control. The gi
 from __future__ import annotations
 
 import copy
+import dataclasses
 import hashlib
 import json
 from typing import TYPE_CHECKING, Any
@@ -825,6 +826,37 @@ def test_a_tree_whose_registry_cannot_be_read_refuses_the_row(
     assert not any("argv" in p for p in LT.validate_row(row)), "it matches today's registry"
     problems = LT.validate_row(row, root=world.root)
     assert any(p.startswith(named) for p in problems), problems
+
+
+def test_a_tree_without_regions_json_refuses_a_regional_row_naming_the_file(
+    world: World,
+) -> None:
+    """Review 70771fff.1: regions.json is read only for a regional bench, and a tree lacking it refuses that row naming the file."""
+    (world.root / LT.BENCH_REGIONS_REL).unlink()
+    _commit(world.root, "the tree lacks regions.json")
+    row = _account_row_here(world, _today_argv("us"), region="us")
+    _moved_on(world)
+    problems = LT.validate_row(row, root=world.root)
+    assert any(f"{LT.BENCH_REGIONS_REL} is not in tree" in p for p in problems), problems
+
+
+def test_a_tree_without_regions_json_still_passes_a_non_regional_row(world: World) -> None:
+    """Control for 70771fff.1: a row with no region never reads regions.json, so the same tree judges it clean."""
+    (world.root / LT.BENCH_REGIONS_REL).unlink()
+    _commit(world.root, "the tree lacks regions.json")
+    row = _account_row_here(world, _today_argv())
+    _moved_on(world)
+    assert LT.validate_row(row, root=world.root) == []
+
+
+def test_check_at_refuses_sources_whose_steps_lack_the_renet_hash_step() -> None:
+    """Review 70771fff.2: `check_at` applies parse_checks' renet-hash/deploy rules to the sources' steps."""
+    check = LT.registry()["renet-live"]
+    live = copy.deepcopy(S.MAP.live)
+    LT.check_at(check, dataclasses.replace(LT.checkout_sources(), live=live))  # control: whole
+    live["checks"]["renet-live"]["steps"].pop()
+    with pytest.raises(LT.RegistryError, match="no renet-hash step"):
+        LT.check_at(check, dataclasses.replace(LT.checkout_sources(), live=live))
 
 
 # ------------------------------------------------------------------ the ledger and the match

@@ -275,15 +275,20 @@ def _parse_check(cid: str, raw: object, targets: dict[str, Any]) -> Check:
         rebuild=exp.rebuild,
         what=str(raw.get("what") or ""),
     )
+    _check_expects(check, where)
+    _check_params(check, targets, where)
+    return check
+
+
+def _check_expects(check: Check, where: str) -> None:
+    """The renet-hash/deploy consistency of `check`'s steps, shared by `parse_checks` and `check_at`."""
     expects = {s.expect for s in check.steps}
-    if deploy == RENET_HASH and EXPECT_RENET_HASH not in expects:
+    if check.deploy == RENET_HASH and EXPECT_RENET_HASH not in expects:
         raise RegistryError(
             f"{where} identifies its deploy by the renet hash and has no renet-hash step"
         )
-    if EXPECT_RENET_HASH in expects and deploy != RENET_HASH:
-        raise RegistryError(f"{where} has a renet-hash step but deploy {deploy!r}")
-    _check_params(check, targets, where)
-    return check
+    if EXPECT_RENET_HASH in expects and check.deploy != RENET_HASH:
+        raise RegistryError(f"{where} has a renet-hash step but deploy {check.deploy!r}")
 
 
 def resolve_target(
@@ -349,6 +354,7 @@ def check_at(check: Check, sources: Sources) -> Check:
         per_machine=exp.per_machine,
         rebuild=exp.rebuild,
     )
+    _check_expects(out, where)
     _check_params(out, targets, where)
     return out
 

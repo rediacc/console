@@ -286,6 +286,38 @@ def test_a_drifted_config_runs_configs_and_deploy_again_then_converges():
     assert rec.calls == []
 
 
+def test_a_refused_stop_after_a_drifted_resume_prints_no_rerun_message():
+    """Review 0d0ae336.1: the refusal returns with nothing rerun, so the line "configs and deploy run again" must not print."""
+    world = World()
+    rec = Digests()
+    assert _run(world, _req(), rec).rc == 0
+    rec.calls.clear()
+    rec.digest = "d-2"
+    lines: list[str] = []
+    out = _run(world, _req(), rec, stop_after="d1", out=lines.append)
+    assert out.rc == 1
+    assert "already finished step d1" in out.error
+    assert rec.calls == []
+    assert not any("run again" in line for line in lines)
+    # control: a stop_after the drift reruns (configs) prints the line and runs
+    lines.clear()
+    again = _run(world, _req(), rec, stop_after="configs", out=lines.append)
+    assert again.changed == ("configs",)
+    assert any("run again" in line for line in lines)
+
+
+def test_a_resume_with_a_different_allow_ips_reruns_configs_and_deploy(tmp_path):
+    """Review 0d0ae336.2: the live digest covers the request's allowlist, so a resume with another `--allow-ips` is drift; the same list is not."""
+    _tree(tmp_path)
+    actions = onboarding.live_actions(runner=None, out_root=tmp_path)
+    d1 = {"d1": "11111111-2222-4333-8444-555555555555"}
+    listed = _ctx(World(), d1, allow_ips=("203.0.113.7",))
+    recorded = actions["configs"](listed)
+    same = _ctx(World(), d1, allow_ips=("203.0.113.7",))
+    assert actions[onboarding.CONFIGS_DIGEST](same) == recorded
+    assert actions[onboarding.CONFIGS_DIGEST](_ctx(World(), d1)) != recorded
+
+
 def test_a_company_added_before_the_digest_was_recorded_converges_once():
     world = World()
     assert _run(world, _req(), Recorder()).rc == 0  # its configs step recorded no digest

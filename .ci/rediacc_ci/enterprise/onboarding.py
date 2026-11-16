@@ -6,7 +6,7 @@ VALIDATION RUNS EVERY TIME, before any step: the name (`names.check`), the regio
 
 RESUMABLE. A company already registered under the name is resumed under its own opaque id: each step recorded `done` is skipped, a `failed` step runs again, and the details recorded by earlier steps (the D1 id) reach the later ones. A rerun of a finished add runs nothing and reports nothing changed. `stop_after` ends the run after the named step with rc 1, which is how the proof's killed run is made; a `stop_after` that names no step, or a step the company already finished, is refused, since a run that skips the step does not stop there.
 
-CONFIGS CONVERGE. The `configs` step records a digest of the two config texts it wrote. When the actions carry `CONFIGS_DIGEST` (`live_actions` does), every resume of a company whose `configs` step is done renders both texts again and compares the digest. One that differs (a template, a config rule or this module changed since, or the company was added before the digest was recorded) runs `configs` and `deploy` again, so the deployed Workers carry what a fresh add would deploy; the rerun after that changes nothing.
+CONFIGS CONVERGE. The `configs` step records a digest of the two config texts it wrote. When the actions carry `CONFIGS_DIGEST` (`live_actions` does), every resume of a company whose `configs` step is done renders both texts again and compares the digest. One that differs (a template, a config rule or this module changed since, the request's `--allow-ips` differs from the first add's, or the company was added before the digest was recorded) runs `configs` and `deploy` again, so the deployed Workers carry what a fresh add would deploy; the rerun after that changes nothing.
 
 BENCH. `--bench` selects `control-bench-<region>` (each deployable bench region of regions.json), the signer `signer-bench-<region>` and `ENVIRONMENT = "bench"` in the account config, so the bench mail capture applies.
 
@@ -356,6 +356,7 @@ def run(
     done = {s for s, (status, _d) in recorded.items() if status == "done"}
     details = {s: d for s, (status, d) in recorded.items() if status == "done"}
     digest = actions.get(CONFIGS_DIGEST)
+    drifted = False
     if digest is not None and "configs" in done:
         try:
             want = digest(Context(plan=plan, query=query, details=details, now=now()))
@@ -364,16 +365,18 @@ def run(
             return Outcome(1, cid, (), masked(error))
         if want != details.get("configs", ""):
             done.difference_update(CONVERGE_STEPS)
-            out(
-                "company %s: its configs differ from the ones last written; %s run again"
-                % (cid, " and ".join(CONVERGE_STEPS))
-            )
+            drifted = True
     if stop_after in done:
         error = (
             "refused: company %s already finished step %s, so a run told to stop after it would not stop"
             % (cid, stop_after)
         )
         return Outcome(1, cid, (), error)
+    if drifted:
+        out(
+            "company %s: its configs differ from the ones last written; %s run again"
+            % (cid, " and ".join(CONVERGE_STEPS))
+        )
     changed: list[str] = []
     for step in STEPS:
         if step in done:
