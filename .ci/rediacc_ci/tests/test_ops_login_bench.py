@@ -131,7 +131,7 @@ class FakeApi:
         return 200, {}
 
 
-def _login(runner, argv=(), env=None, api=None):
+def _login(runner, argv=(), env=None, api=None, linked=None):
     login_bench.login(
         list(argv),
         env or _env(),
@@ -142,6 +142,7 @@ def _login(runner, argv=(), env=None, api=None):
         api=api or FakeApi(),
         crypto=fake_crypto,
         config_exists=lambda _c, _e: True,
+        linked_url=lambda _c, _e: linked,
     )
 
 
@@ -413,6 +414,45 @@ def test_enable_always_runs_and_status_is_not_consulted():
     assert "enable" in runner.captured[0][0]
     assert [argv[-1] for argv, _e in runner.calls].count("status") == 1
     assert runner.calls[-1][0][1:] == ["--config", "eu-bench", "config", "remote", "status"]
+
+
+def _argvs(runner):
+    return [" ".join(argv) for argv, _e in runner.calls]
+
+
+def test_a_config_linked_to_the_pre_rename_origin_is_unlinked_and_enabled_with_force():
+    runner = FakeRunner(enable=ENABLE_REENROLLED)
+    _login(runner, linked="https://bench.rediacc.cloud")
+    calls = _argvs(runner)
+    disable = [i for i, c in enumerate(calls) if c.endswith("config remote disable --local -y")]
+    enable = [i for i, c in enumerate(calls) if "config remote enable" in c]
+    assert len(disable) == 1
+    assert len(enable) == 1
+    assert disable[0] < enable[0]
+    assert "--force" in calls[enable[0]].split()
+
+
+@pytest.mark.parametrize("linked", [None, BENCH_ORIGIN, BENCH_ORIGIN + "/"])
+def test_a_config_already_on_the_target_or_unlinked_gets_neither_disable_nor_force(linked):
+    runner = FakeRunner(enable=ENABLE_REENROLLED)
+    _login(runner, linked=linked)
+    calls = _argvs(runner)
+    assert not any("remote disable" in c for c in calls)
+    assert not any("--force" in c.split() for c in calls)
+
+
+def test_linked_api_url_reads_the_remote_pointer_and_refuses_a_broken_file(tmp_path):
+    env = {"XDG_CONFIG_HOME": str(tmp_path)}
+    assert login_bench.linked_api_url("eu-bench", env) is None
+    d = tmp_path / login_bench.CONFIG_DIR_NAME
+    d.mkdir()
+    (d / "eu-bench.json").write_text('{"remote": {"apiUrl": "https://bench.rediacc.cloud"}}')
+    assert login_bench.linked_api_url("eu-bench", env) == "https://bench.rediacc.cloud"
+    (d / "eu-bench.json").write_text('{"account": {}}')
+    assert login_bench.linked_api_url("eu-bench", env) is None
+    (d / "eu-bench.json").write_text("{not json")
+    with pytest.raises(login_bench.LoginError, match=r"eu-bench\.json"):
+        login_bench.linked_api_url("eu-bench", env)
 
 
 def test_enable_exit_0_reenroll_is_success():

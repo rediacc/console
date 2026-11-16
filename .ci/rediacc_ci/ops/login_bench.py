@@ -21,6 +21,7 @@ THE STEPS, in order:
   5. Always run `./rdc.sh --config eu-bench config remote enable --master-password --config-id <CONFIG_ID> --api-url <BENCH_ORIGIN>` with REDIACC_STORE_MASTER_PASSWORD in the child environment; `config remote status` is not consulted, because it reports "connected" even when this device has lost its key for the store (the Linux kernel keyring is empty after a restart; measured 2026-11-10). Exit 0 is done: a first link, or this device enrolled again against the same store. Exit 2 is done only when the output says the config is linked and this device can already open it (the CLI's "this device can open it, so there is nothing to enable" refusal); any other failure exits 1 naming the step.
   4b. Before the subscription login, run `./rdc.sh config init <config> --server <origin>` when the region's rdc config file does not exist yet.
   5b. When `config remote enable` refuses with the no-storage message (`ENABLE_NO_STORE`) (a regional bench's first link), set the store up with the session this run elevates (`POST /auth/reauth` as `reenrol` does), the request body built by the product's own crypto helper (`lab.ts_crypto`, `op: setup`, the master password) and posted to `POST /configs/setup`, which answers 201 with the store and an initial token; then run `config remote enable` once more.
+  5c. When the config's `remote.apiUrl` names another origin (the pre-rename `https://bench.rediacc.cloud`), run `config remote disable --local -y` before step 5 and add `--force` to it: the store's copy replaces the local file (kept as `.bak`), never the reverse.
   6. Print `./rdc.sh --config eu-bench config remote status`.
 
 WHOSE STEP IT IS. Running this is an agent's own step, never an operator one: when an eu-bench command answers that its login is "tied to another network address", that the IP address changed, or "Not logged in", the remedy is `npm run login:bench` and a rerun, not a request for an authenticator code. `rediacc_ci.ops.live_proof` does that itself (`login_needed`, `targets_config`, `REMEDY_ARGV`).
@@ -628,6 +629,22 @@ def config_file_exists(config: str, env: Mapping[str, str]) -> bool:
     return os.path.isfile(os.path.join(base, CONFIG_DIR_NAME, config + ".json"))
 
 
+def linked_api_url(config: str, env: Mapping[str, str]) -> str | None:
+    """The `remote.apiUrl` the rdc config `config` is linked to, read from its file beside `config_file_exists`'s; None when the file is absent, unlinked, or carries no apiUrl. An unreadable or malformed file raises LoginError naming the path, never reads as unlinked."""
+    base = env.get("XDG_CONFIG_HOME") or os.path.join(env.get("HOME", ""), ".config")
+    path = os.path.join(base, CONFIG_DIR_NAME, config + ".json")
+    if not os.path.isfile(path):
+        return None
+    try:
+        with open(path, encoding="utf-8") as handle:
+            data = json.load(handle)
+    except (OSError, ValueError) as exc:
+        raise LoginError("cannot read the remote link of %s: %s" % (path, exc), rc=1) from exc
+    remote = data.get("remote") if isinstance(data, dict) else None
+    url = remote.get("apiUrl") if isinstance(remote, dict) else None
+    return url if isinstance(url, str) and url else None
+
+
 def _default_crypto(request: dict) -> dict:
     # lab imports this module, so it is loaded when the setup runs, never at import.
     lab = importlib.import_module("rediacc_ci.enterprise.lab")
@@ -722,6 +739,7 @@ def login(
     api: Poster | None = None,
     crypto: Callable[[dict], dict] = _default_crypto,
     config_exists: Callable[[str, Mapping[str, str]], bool] = config_file_exists,
+    linked_url: Callable[[str, Mapping[str, str]], str | None] = linked_api_url,
 ) -> None:
     """Steps 2-6 of the module docstring, with the profile already bound. Raises LoginError."""
     target = parse_target(argv)
@@ -812,6 +830,19 @@ def login(
     enable_env = dict(clean)
     enable_env[CLI_LANG_ENV] = CLI_LANG
     enable_env[CLI_STORE_MASTER_PW_ENV] = values[MASTER_PW_ENV]
+    # A config linked to another origin (the pre-rename `https://bench.rediacc.cloud`) is refused by `enable` ("can only be enrolled again there"). Unlink it locally (`disable --local`, which touches no server data), then enable again with `--force`. `--force` only skips the confirmation before the local file is replaced by the store's copy (packages/cli/src/commands/config-remote-enable.ts, finalizeEnable): the server copy stays authoritative and is never overwritten, and the CLI keeps the replaced file as `<config>.json.bak`. A config already linked to the target, or not linked, gets neither.
+    relink = False
+    if config_exists(config, env):
+        linked = linked_url(config, env)
+        if linked is not None and linked.rstrip("/") != server.rstrip("/"):
+            relink = True
+            _step(
+                run,
+                "%s is linked to %s, not %s: unlinking it locally (config remote disable --local)"
+                % (config, linked, server),
+                _rdc(config, "config", "remote", "disable", "--local", "-y"),
+                dict(clean),
+            )
     enable_argv = _rdc(
         config,
         "-o",
@@ -820,6 +851,7 @@ def login(
         "remote",
         "enable",
         "--master-password",
+        *(["--force"] if relink else []),
         *(["--config-id", target.config_id] if target.config_id else []),
         "--api-url",
         server,
