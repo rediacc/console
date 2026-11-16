@@ -26,7 +26,8 @@
     "offbox_read": 15
   },
   "telemetry": {
-    "account_environments": ["production", "edge"]
+    "account_environments": ["production", "edge"],
+    "account_service_template": "account-{region}"
   },
   "ingest": {
     "max_age_h": {

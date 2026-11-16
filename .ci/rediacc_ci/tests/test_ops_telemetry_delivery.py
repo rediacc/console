@@ -29,12 +29,16 @@ class Fake:
         self,
         silent: AbstractSet[tuple[str, str]] = frozenset(),
         down: AbstractSet[str] = frozenset(),
-        series: dict[str, str] | None = None,
+        series: dict[str, tuple[str, str]] | None = None,
     ):
         self.silent = silent  # (host, signal)
         self.down = down
-        # region -> the deployment_environment its spanmetrics series carries; a region absent here has no series.
-        self.series = {"eu": "production", "us": "production"} if series is None else series
+        # region -> (service, deployment_environment) its spanmetrics series carries; a region absent here has no series.
+        self.series = (
+            {"eu": ("account-eu", "production"), "us": ("account-us", "production")}
+            if series is None
+            else series
+        )
         self.prom_queries: list[str] = []
         self.probes: dict[str, str] = {}  # probe id -> host
         self.auth: list[str] = []
@@ -75,8 +79,15 @@ class Fake:
                     fake.prom_queries.append(query)
                     region = re.search(r'rediacc_region="([^"]+)"', query)
                     envs = re.search(r'deployment_environment=~"([^"]+)"', query)
+                    svc = re.search(r'service="([^"]+)"', query)
                     emitted = fake.series.get(region.group(1)) if region else None
-                    hit = envs is not None and emitted in envs.group(1).split("|")
+                    hit = (
+                        envs is not None
+                        and svc is not None
+                        and emitted is not None
+                        and emitted[0] == svc.group(1)
+                        and emitted[1] in envs.group(1).split("|")
+                    )
                     result = [{"metric": {}, "value": [1, "5"]}] if hit else []
                     body = {"status": "success", "data": {"result": result}}
                     return self._send(200, json.dumps(body).encode())
@@ -348,7 +359,7 @@ ALERT_REGIONS = ["eu", "us"]
 
 
 def _alert(envs=("production", "edge")):
-    return td.AlertSeries(list(ALERT_REGIONS), list(envs))
+    return td.AlertSeries(list(ALERT_REGIONS), list(envs), "account-{region}")
 
 
 def test_alert_series_present_for_every_region_passes(make_fake):
@@ -362,11 +373,11 @@ def test_alert_series_present_for_every_region_passes(make_fake):
 
 
 def test_alert_series_missing_for_eu_fails_naming_region_and_labels(make_fake):
-    rc, text = drive(make_fake(series={"us": "production"}), alert=_alert())
+    rc, text = drive(make_fake(series={"us": ("account-us", "production")}), alert=_alert())
     assert rc == 1
     assert "PASS us (alert labels)" in text
     line = next(ln for ln in text.splitlines() if ln.startswith("SILENT eu (alert labels)"))
-    assert 'service="rediacc-account-server"' in line
+    assert 'service="account-eu"' in line
     assert 'deployment_environment=~"production|edge"' in line
     assert 'rediacc_region="eu"' in line
     assert "PASS eu.example traces" in text
@@ -374,13 +385,35 @@ def test_alert_series_missing_for_eu_fails_naming_region_and_labels(make_fake):
 
 def test_a_worker_emitting_an_unexpected_environment_starves_the_alert_labels(make_fake):
     """The 2026-11-08 shape: the uuid is found, the series carries `edge`, the config accepts only `production`."""
-    fake = make_fake(series={"eu": "edge", "us": "edge"})
+    fake = make_fake(series={"eu": ("account-eu", "edge"), "us": ("account-us", "edge")})
     rc, text = drive(fake, alert=_alert(("production",)))
     assert rc == 1
     assert "PASS eu.example traces" in text
     assert "SILENT eu (alert labels)" in text
     rc, text = drive(fake, alert=_alert(("production", "edge")))
     assert rc == 0, text
+
+
+def test_a_series_under_the_old_service_name_does_not_satisfy_the_check(make_fake):
+    """Control: the shared Workers report `account-<region>`, never `rediacc-account-server`."""
+    old = {
+        "eu": ("rediacc-account-server", "edge"),
+        "us": ("rediacc-account-server", "edge"),
+    }
+    rc, text = drive(make_fake(series=old), alert=_alert())
+    assert rc == 1
+    assert "SILENT eu (alert labels)" in text
+    assert 'service="account-eu"' in text
+    rc, text = drive(
+        make_fake(series={"eu": ("account-eu", "edge"), "us": ("account-us", "edge")}),
+        alert=_alert(),
+    )
+    assert rc == 0, text
+
+
+def test_alert_service_template_needs_a_region_placeholder():
+    with pytest.raises(ValueError, match=r"no \{region\}"):
+        td.AlertSeries(["eu"], ["edge"], "account-eu")
 
 
 def test_alert_query_answered_404_names_its_status():
@@ -406,17 +439,20 @@ def test_no_alert_means_no_alert_lines(make_fake):
 
 def test_alert_label_values_are_plain():
     with pytest.raises(ValueError, match="plain label value"):
-        td.AlertSeries(["eu"], ['x"} or vector(1) #'])
+        td.AlertSeries(["eu"], ['x"} or vector(1) #'], "account-{region}")
     with pytest.raises(ValueError, match="at least one"):
-        td.AlertSeries(["eu"], [])
+        td.AlertSeries(["eu"], [], "account-{region}")
 
 
 def test_account_environments_come_from_ops_health_config(tmp_path):
     assert td.account_environments() == ["production", "edge"]
+    assert td.account_service_template() == "account-{region}"
     (tmp_path / ".ci" / "config").mkdir(parents=True)
     (tmp_path / td.CONFIG_REL).write_text('{"telemetry": {}}')
     with pytest.raises(ValueError, match="account_environments"):
         td.account_environments(tmp_path)
+    with pytest.raises(ValueError, match="account_service_template"):
+        td.account_service_template(tmp_path)
 
 
 def test_main_wires_regions_and_environments_into_the_alert(monkeypatch):
@@ -433,3 +469,4 @@ def test_main_wires_regions_and_environments_into_the_alert(monkeypatch):
     assert isinstance(alert, td.AlertSeries)
     assert {"eu", "us", "asia"} <= set(alert.regions)
     assert alert.environments == ["production", "edge"]
+    assert alert.service("asia") == "account-asia"
