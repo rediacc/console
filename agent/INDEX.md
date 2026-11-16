@@ -714,7 +714,7 @@ A plan whose retention ran out. The FILE is gone and the full text is the blob b
 | `agent/plans/_done/PLAN-ci-verdict.md` | PLAN-ci-verdict: a tracer that cannot call a head green early, diagnosis verbs instead of raw gh, a guard for raw CI reads, CI-published verdicts every session reads, and a renet setup phase that cannot go silent | 2026-10-02 | 2026-11-12 | `23c92e993b90ee0bc970e18c455e54dbdf19b39f` |
 | `agent/plans/_done/PLAN-clean-review-ledger.md` | PLAN: a clean per-commit review appends one ledger line, not a file | 2026-10-04 | 2026-11-16 | `a238a66d7433c3eccc769da76aa02a04909cae75` |
 | `agent/plans/_done/PLAN-cleanup-context-state-files.md` | PLAN: Context state file cleanup — opportunistic TTL sweep on save | 2026-09-22 | 2026-11-03 | `1837de0891254cc1c1b8a6bb896a39c317537efc` |
-| `agent/plans/_done/PLAN-commit-as-you-go.md` | PLAN: commit as you go, one branch, one PR | 2026-09-25 | 2026-11-16 | `7ccef25a84e132b7c723006c57101b3a2712bf31` |
+| `agent/plans/_done/PLAN-commit-as-you-go.md` | PLAN: commit each verified unit, one branch, one PR | 2026-09-25 | 2026-11-16 | `7ccef25a84e132b7c723006c57101b3a2712bf31` |
 | `agent/plans/_done/PLAN-commit-author-identity.md` | PLAN: commits must be attributable to a GitHub account | 2026-09-17 | 2026-11-03 | `ec2825e9f8470585b3ea7bcc4328dfed43ea3c2a` |
 | `agent/plans/_done/PLAN-defer-settle-classifier.md` | PLAN: an automated accept/reject classifier for [?] deferrals | 2026-09-23 | 2026-11-04 | `5d327617d9d34afdaa1af27c6f94f2b697c372a2` |
 | `agent/plans/_done/PLAN-deflected-finding-check.md` | PLAN: a mechanical Stop-hook check for deflected findings | 2026-09-23 | 2026-11-03 | `5c928c00a7f6b33ee3fe20b79fd83b815394a68e` |
