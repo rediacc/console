@@ -921,21 +921,30 @@ def attested_by_identity(ledger, rel, sig):
 
 
 # One index per ledger document: plan identity -> the `done_sigs` values of its dict rows. `done_commit` asks about every judged box against every commit's ledger, and re-deriving each row's identity per ask made the plan-implementation gate quadratic in (boxes x commits x plans): 380 s for one test on 2026-11-16. The entry holds the document itself, so an id() is never reused for another document while its index lives.
-_IDENTITY_INDEX: dict[int, tuple[dict, dict[str, list]]] = {}
+_IDENTITY_INDEX: dict[int, tuple[dict, dict[str, list], tuple]] = {}
 _IDENTITY_INDEX_MAX = 4096
 
 
+def _fingerprint(plans):
+    """What the index was built from: each row's key, object and `done_sigs` list, so a row replaced, added or dropped, or its `done_sigs` reassigned, after indexing is seen (review 8cc0b5f9.1). The index holds the `done_sigs` lists themselves, so a list changed in place already shows through. Cheap ids only; the plan identity per row is what the index saves."""
+    return tuple(
+        (k, id(v), id(v.get("done_sigs")) if isinstance(v, dict) else 0) for k, v in plans.items()
+    )
+
+
 def _identity_index(ledger):
+    plans = ledger.get("plans") or {}
+    fp = _fingerprint(plans)
     cached = _IDENTITY_INDEX.get(id(ledger))
-    if cached is not None and cached[0] is ledger:
+    if cached is not None and cached[0] is ledger and cached[2] == fp:
         return cached[1]
     index: dict[str, list] = {}
-    for r, v in (ledger.get("plans") or {}).items():
+    for r, v in plans.items():
         if isinstance(v, dict):
             index.setdefault(plan_identity(r), []).append(v.get("done_sigs") or [])
     if len(_IDENTITY_INDEX) >= _IDENTITY_INDEX_MAX:
         _IDENTITY_INDEX.clear()
-    _IDENTITY_INDEX[id(ledger)] = (ledger, index)
+    _IDENTITY_INDEX[id(ledger)] = (ledger, index, fp)
     return index
 
 

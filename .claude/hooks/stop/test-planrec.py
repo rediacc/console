@@ -573,6 +573,32 @@ truthy(
     "...and attested_by_identity reads the moved row",
     R.attested_by_identity(_pre, _done_rel, R.box_sig(TASK_DONE)),
 )
+# Review 8cc0b5f9.1: the per-ledger identity index follows an in-place change to the ledger's rows. CONTROL first (an unchanged ledger still answers from its index), then the mutation.
+_mut = json.loads(json.dumps(_pre))
+_mut_sig = R.box_sig(TASK_DONE)
+truthy(
+    "CONTROL: an indexed ledger attests the box under the other folder",
+    R.attested_by_identity(_mut, _done_rel, _mut_sig),
+)
+truthy(
+    "...and a second ask of the unchanged ledger answers the same",
+    R.attested_by_identity(_mut, _done_rel, _mut_sig),
+)
+_mut["plans"][_live_rel]["done_sigs"] = []
+falsy(
+    "a row whose done_sigs was reassigned after indexing is no longer attested",
+    R.attested_by_identity(_mut, _done_rel, _mut_sig),
+)
+_mut["plans"][_live_rel] = {"done_sigs": [_mut_sig]}
+truthy(
+    "...and a replaced row is read again",
+    R.attested_by_identity(_mut, _done_rel, _mut_sig),
+)
+del _mut["plans"][_live_rel]
+falsy(
+    "...and a dropped row is no longer attested",
+    R.attested_by_identity(_mut, _done_rel, _mut_sig),
+)
 # Review f142ed91.1: a box ticked before the move and reopened after it, with the pre-move row still in the ledger, is not done.
 _reopened = {"plans": {_live_rel: _ticked["plans"][REL], _done_rel: _open["plans"][REL]}}
 falsy(
