@@ -53,6 +53,17 @@ The us and asia benches (`us-bench`, `asia-bench`, hosts from `regions.json` `be
 
 `PYTHONPATH=.ci python3 -m rediacc_ci.ops.totp` runs the RFC 6238 Appendix B self-check and, with `BENCH_ROOT_TOTP_SEED` set, confirms the seed decodes. It prints only `ok` lines, never the seed or a code.
 
+## Bench carries hostinger production data: reset guard, pins, escrow
+
+Hostinger, a production machine, backs up through the eu bench, so the bench holds the only off-site copy of its repositories once the first bench snapshot commits (`agent/plans/PLAN-hostinger-to-bench.md`). Four controls keep a bench wipe, an allowlist expiry or a lost config from costing that copy.
+
+- **Reset guard.** `.ci/config/bench-production.json` lists each protected `{subscription_id, region, machine, reason, plan}`. While an entry names a region, `rediacc_ci.ops.reset_bench` refuses every mode for it (`--yes`, `--d1-only`, `--r2-only`) with exit 2 before any credential is read, the drills' cleanup refuses to delete a listed subscription's rows, and a bench signer of that region is not stopped. There is no override flag: un-protecting is a reviewed commit that removes the entry (`.ci/rediacc_ci/ops/bench_production.py`).
+- **Pins.** `.ci/config/bench-access-pinned.json` lists hostinger's IPv4 and IPv6 /64 as entries that never expire, are never evicted and sit outside the five-address cap of the bench WAF rule. Every mutating `bench_access` run writes a missing pin back, `remove` and `clear` refuse them, and `PYTHONPATH=.ci python3 -m rediacc_ci.ops.bench_access verify-pinned` (read-only) exits 1 when one is absent from the live rule.
+- **Escrow.** The `hostinger-escrow` profile binds `HOSTINGER_REPO_CREDENTIALS_ESCROW` (repository name to its GUID and credential, per tag), a copy held outside bench. The value travels only through the environment of the step that writes it.
+- **Config import.** `rdc config import-machine <machine> --from <config> [--dry-run] [-o json]` copies a machine, its repositories and their bound strategies from another config into the active one, naming entries only; a second run reports no change.
+
+The data-loss rule behind them: the old eu buckets and the old config's token stay until the first scheduled bench run is verified after a store verify and a restore test of every repository.
+
 ## Bench signs licences with the production key
 
 Bench signs licences with the PRODUCTION ED25519 pair (operator ruling 2026-10-27, "Bench signs with production key"). The `deploy-bench-eu` profile binds `ACCOUNT_ED25519_PRIVATE_KEY` and `ACCOUNT_ED25519_PUBLIC_KEY` from the same unsuffixed entries the edge and stable `account-secrets-*` profiles bind, fingerprint `fb37f1ae16f8b7c0` through `rediacc_ci.release.renet_key_gate.key_fingerprint`. A released renet bakes the production public key, so it verifies a bench licence.
