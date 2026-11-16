@@ -150,6 +150,11 @@ class _AllowlistRefusedError(Exception):
     """Raised by `portal_smoke`'s fetch when the company's allowlist answers, to leave the retried check at once."""
 
 
+# The retried check's schedule, `portal_captcha.check_with_retry`'s defaults: `portal_smoke` runs the attempts itself so it can weigh an allowlist refusal against the verdicts before it.
+SMOKE_ATTEMPTS = 6
+SMOKE_DELAY_S = 10.0
+
+
 def portal_smoke(
     config: pathlib.Path,
     env: typing.Mapping[str, str],
@@ -159,7 +164,7 @@ def portal_smoke(
 ) -> str | None:
     """After the deploy: None when the served portal renders the captcha its Worker enforces, else the refusal line.
 
-    The pre-deploy `portal_sitekey_refusal` proves the dist on disk; this proves what the host SERVES, which also catches a Worker version or asset upload that did not take. A company whose `vars.ALLOW_IPS` is set and whose host answers 403 with the allowlist's own refusal body, on any request of any retried attempt, skips the served-portal read and logs why: right after a deploy that puts this machine off the list, an edge may still serve the previous version for the first attempts (the 2026-11-16 `proof proxy` rerun read UNKNOWN 403 from a single probe sent before the retries). A config with no route has no host to ask and is not checked (every production and edge config carries one; the twin differential's fixture configs do not). An unreachable host after the retries is a refusal too: an unverified deploy is not a verified one.
+    The pre-deploy `portal_sitekey_refusal` proves the dist on disk; this proves what the host SERVES, which also catches a Worker version or asset upload that did not take. A company whose `vars.ALLOW_IPS` is set and whose host answers 403 with the allowlist's own refusal body, on any request of any retried attempt, skips the served-portal read and logs why: right after a deploy that puts this machine off the list, an edge may still serve the previous version for the first attempts (the 2026-11-16 `proof proxy` rerun read UNKNOWN 403 from a single probe sent before the retries). A BROKEN verdict from an earlier attempt still fails the deploy when a later attempt is refused: the refusal proves nothing about the portal that attempt read. A config with no route has no host to ask and is not checked (every production and edge config carries one; the twin differential's fixture configs do not). An unreachable host after the retries is a refusal too: an unverified deploy is not a verified one.
     """
     host = route_host(config)
     if host is None:
@@ -173,15 +178,28 @@ def portal_smoke(
         return reply
 
     probe: portal_captcha.Http = refusing if deploy_proxy.allow_ips(config) else fetch
-    try:
-        verdict = portal_captcha.check_with_retry(host, probe, key, sleep=sleep)
-    except _AllowlistRefusedError:
-        # The dist sitekey check (`portal_sitekey_refusal`) ran before the deploy; only the served-portal read is skipped.
-        log.info(
-            "Portal smoke skipped: %s answers 403 %r, so its ALLOW_IPS refuses this machine; the dist sitekey check ran before the deploy"
-            % (shown(host), deploy_proxy.ALLOWLIST_REFUSAL)
-        )
-        return None
+    broken: portal_captcha.Verdict | None = None
+    verdict = portal_captcha.Verdict(host, portal_captcha.UNKNOWN, "no attempt ran")
+    for attempt in range(SMOKE_ATTEMPTS):
+        if attempt:
+            sleep(SMOKE_DELAY_S)
+        try:
+            verdict = portal_captcha.check(host, probe, key)
+        except _AllowlistRefusedError:
+            if broken is not None:
+                # An earlier attempt read the served portal and found it BROKEN; a later refusal says nothing about that portal, so the BROKEN verdict stands (review 454bc70e.1).
+                verdict = broken
+                break
+            # The dist sitekey check (`portal_sitekey_refusal`) ran before the deploy; only the served-portal read is skipped.
+            log.info(
+                "Portal smoke skipped: %s answers 403 %r, so its ALLOW_IPS refuses this machine; the dist sitekey check ran before the deploy"
+                % (shown(host), deploy_proxy.ALLOWLIST_REFUSAL)
+            )
+            return None
+        if verdict.state == portal_captcha.OK:
+            break
+        if verdict.state == portal_captcha.BROKEN:
+            broken = verdict
     if verdict.state == portal_captcha.OK:
         log.info("Portal smoke: %s %s" % (shown(host), shown(verdict.why)))
         return None

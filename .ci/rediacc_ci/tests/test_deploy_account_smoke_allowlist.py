@@ -141,3 +141,46 @@ def test_a_vars_that_is_not_a_table_reads_as_no_allowlist(tmp_path: pathlib.Path
         config.write_text(text)
         assert deploy_proxy.allow_ips(config) == ""
 
+
+def keyed_portal(bundle_body: str) -> list[pc.Reply]:
+    """One attempt's first two answers: the login page naming its bundle, then the bundle."""
+    page = '<script src="/account/assets/index-abc.js"></script>'
+    return [pc.Reply(200, page), pc.Reply(200, bundle_body)]
+
+
+OTHER_KEY_BUNDLE = "sitekey:0x4AAAAAACotherKey99999"
+CAPTCHA_ANSWER = pc.Reply(400, '{"error":"%s"}' % pc.CAPTCHA_REQUIRED)
+
+
+def test_an_earlier_broken_portal_still_fails_when_a_later_attempt_is_refused(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Review 454bc70e.1: a served portal carrying another sitekey on attempt 1 (BROKEN), then the allowlist's 403 on attempt 2, must not pass on the dist check alone."""
+    config = lab_config(tmp_path, ("192.0.2.10",))
+    answers = [*keyed_portal(OTHER_KEY_BUNDLE), CAPTCHA_ANSWER, pc.Reply(403, ALLOWLIST_BODY)]
+    refusal, calls, sleeps = smoke_answering(config, answers)
+    assert refusal is not None
+    assert refusal.startswith("Portal smoke BROKEN")
+    assert "different Turnstile site key" in refusal
+    assert len(calls) == 4
+    assert len(sleeps) == 1
+
+
+def test_an_earlier_unknown_answer_then_a_refusal_still_skips(tmp_path: pathlib.Path) -> None:
+    """Control: an attempt that read nothing (UNKNOWN) is not a verdict on the portal, so a later refusal still skips."""
+    config = lab_config(tmp_path, ("192.0.2.10",))
+    answers = [pc.Reply(502, "bad gateway"), pc.Reply(403, ALLOWLIST_BODY)]
+    refusal, _calls, _sleeps = smoke_answering(config, answers)
+    assert refusal is None
+
+
+def test_an_earlier_broken_portal_that_turns_ok_still_passes(tmp_path: pathlib.Path) -> None:
+    """Control: BROKEN on a propagating edge, then the deployed portal with its key, is OK as before."""
+    config = lab_config(tmp_path, ("192.0.2.10",))
+    answers = [
+        *keyed_portal(OTHER_KEY_BUNDLE),
+        CAPTCHA_ANSWER,
+        *keyed_portal("sitekey:" + SITEKEY),
+    ]
+    refusal, _calls, _sleeps = smoke_answering(config, answers)
+    assert refusal is None
