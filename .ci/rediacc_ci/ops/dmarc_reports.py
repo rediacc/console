@@ -100,7 +100,9 @@ def _compose(value: object, path: pathlib.Path) -> object:
 
         composed = _WK_REF.sub(sub, value)
         if "${" in composed:
-            raise KnownError("%s: %r holds a ${...} that is not a ${WK_NAME} reference" % (path, value))
+            raise KnownError(
+                "%s: %r holds a ${...} that is not a ${WK_NAME} reference" % (path, value)
+            )
         return composed
     if isinstance(value, list):
         return [_compose(v, path) for v in value]

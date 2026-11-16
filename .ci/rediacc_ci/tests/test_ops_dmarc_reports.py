@@ -861,7 +861,9 @@ def test_a_tlsrpt_with_good_counts_still_parses():
 
 
 def test_an_octet_stream_pdf_is_other_but_an_octet_stream_report_is_read():
-    pdf = dp.parse_message(mail("invoice", ("invoice.pdf", "application/octet-stream", b"%PDF-1.4 x")))
+    pdf = dp.parse_message(
+        mail("invoice", ("invoice.pdf", "application/octet-stream", b"%PDF-1.4 x"))
+    )
     assert pdf["kind"] == "other"
     named = dp.parse_message(
         mail("Report-ID", ("report.dat", "application/octet-stream", tlsrpt_json()))

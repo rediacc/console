@@ -211,7 +211,8 @@ def parse_tlsrpt(data: bytes) -> dict:
                 "domain": str(policy.get("policy-domain") or "").lower(),
                 "type": str(policy.get("policy-type") or ""),
                 "ok": _int(
-                    summary.get("total-successful-session-count") or 0, "total-successful-session-count"
+                    summary.get("total-successful-session-count") or 0,
+                    "total-successful-session-count",
                 ),
                 "failed": _int(
                     summary.get("total-failure-session-count") or 0, "total-failure-session-count"
