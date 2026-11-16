@@ -28,6 +28,8 @@ export interface PruneAnalysis {
 interface AnalyzeOptions {
   force?: boolean;
   graceDays?: number;
+  /** False for callers with no `--force` option (`repo admin orphan delete`): reasons then name real remedies only. */
+  forceAvailable?: boolean;
 }
 
 interface ConfigScanResult {
@@ -167,7 +169,8 @@ function classifyGuid(
   currentConfigName: string,
   cutoff: Date,
   graceDays: number,
-  force: boolean
+  force: boolean,
+  forceAvailable: boolean
 ): PruneCandidate & { isOrphaned: boolean } {
   const sources = allConfigGuids.get(guid);
 
@@ -180,7 +183,9 @@ function classifyGuid(
   if (sources && sources.length > 0 && !force) {
     return {
       guid,
-      reason: `exists in ${sources.join(', ')} (use --force to override)`,
+      reason: forceAvailable
+        ? `exists in ${sources.join(', ')} (use --force to override)`
+        : `exists in ${sources.join(', ')} (remove the entry from that config, then retry)`,
       isOrphaned: false,
     };
   }
@@ -191,7 +196,9 @@ function classifyGuid(
     const daysAgo = Math.floor((Date.now() - archivedAt.getTime()) / 86400000);
     return {
       guid,
-      reason: `archived ${daysAgo}d ago (grace period: ${graceDays}d, use --force to override)`,
+      reason: forceAvailable
+        ? `archived ${daysAgo}d ago (grace period: ${graceDays}d, use --force to override)`
+        : `archived ${daysAgo}d ago (grace period: ${graceDays}d, retry after it ends)`,
       isOrphaned: false,
     };
   }
@@ -253,7 +260,8 @@ export async function analyzePrune(
       currentConfigName,
       cutoff,
       graceDays,
-      options.force ?? false
+      options.force ?? false,
+      options.forceAvailable ?? true
     );
     const { isOrphaned, ...candidate } = result;
     if (isOrphaned) {

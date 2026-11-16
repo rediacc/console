@@ -71,7 +71,10 @@ export async function classifyMachineRepos(
   });
   const repos = getRepositories(status);
   if (repos.length === 0) return [];
-  const analysis = await analyzePrune(repos.map((r) => r.name));
+  const analysis = await analyzePrune(
+    repos.map((r) => r.name),
+    { forceAvailable: false }
+  );
   const orphaned = new Map(analysis.orphaned.map((c) => [c.guid, c.reason]));
   const protectedReasons = new Map(analysis.protected.map((c) => [c.guid, c.reason]));
   const grands = await configuredGrandGuids();

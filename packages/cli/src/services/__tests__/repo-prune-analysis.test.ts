@@ -68,6 +68,25 @@ describe('analyzePrune', () => {
     );
   });
 
+  it('names no --force in reasons when the caller has no such option', async () => {
+    mocks.others = {
+      'eu-bench': {
+        resources: { repositories: { app: { tags: { latest: { repositoryGuid: ORPHAN } } } } },
+      },
+    };
+    const withForce = (await analyzePrune([ORPHAN])).protected[0]?.reason;
+    expect(withForce).toContain('--force');
+    const without = (await analyzePrune([ORPHAN], { forceAvailable: false })).protected[0]?.reason;
+    expect(without).toContain('exists in eu-bench');
+    expect(without).not.toContain('--force');
+
+    mocks.others = {};
+    mocks.archived = [{ repositoryGuid: ORPHAN, deletedAt: new Date().toISOString() }];
+    const archived = (await analyzePrune([ORPHAN], { forceAvailable: false })).protected[0]?.reason;
+    expect(archived).toMatch(/^archived 0d ago/);
+    expect(archived).not.toContain('--force');
+  });
+
   it('refuses to judge anything while a config is unreadable', async () => {
     mocks.others = { locked: { encryption: { mode: 'master-password' } } };
     expect(await analyzePrune([ORPHAN])).toEqual({ orphaned: [], protected: [] });

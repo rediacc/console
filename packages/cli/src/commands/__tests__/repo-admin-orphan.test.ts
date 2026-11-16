@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   agent: false,
   confirm: true,
   deleteFails: false,
+  others: {} as Record<string, unknown>,
 }));
 
 vi.mock('../../utils/errors.js', async (importOriginal) => ({
@@ -49,7 +50,10 @@ vi.mock('../../services/config/config-resources.js', () => ({
   },
 }));
 vi.mock('../../adapters/config-file-storage.js', () => ({
-  configFileStorage: { list: async () => ['dev'], load: async () => ({}) },
+  configFileStorage: {
+    list: async () => ['dev', ...Object.keys(mocks.others)],
+    load: async (name: string) => mocks.others[name] ?? {},
+  },
 }));
 vi.mock('../../utils/agent-guard.js', () => ({ isAgentEnvironment: () => mocks.agent }));
 vi.mock('../../utils/ops-vm.js', () => ({
@@ -85,6 +89,7 @@ beforeEach(() => {
   mocks.agent = false;
   mocks.confirm = true;
   mocks.deleteFails = false;
+  mocks.others = {};
   process.exitCode = undefined;
   vi.spyOn(process.stdout, 'write').mockImplementation((chunk: string | Uint8Array) => {
     stdout += String(chunk);
@@ -137,6 +142,18 @@ describe('repo admin orphan delete', () => {
 
   it('refuses a GUID the config names, before any delete', async () => {
     await expect(run('delete', `${KNOWN}@hostinger`, '--yes')).rejects.toThrow(/active in dev/);
+    expect(deletes()).toEqual([]);
+  });
+
+  it('names no --force when another config holds the GUID, since delete has no such option', async () => {
+    mocks.others = {
+      'eu-bench': {
+        resources: { repositories: { spike: { tags: { latest: { repositoryGuid: ORPHAN } } } } },
+      },
+    };
+    const refusal = run('delete', `${ORPHAN}@hostinger`, '--yes');
+    await expect(refusal).rejects.toThrow(/exists in eu-bench/);
+    await expect(refusal).rejects.not.toThrow(/--force\b(?!-)/);
     expect(deletes()).toEqual([]);
   });
 
