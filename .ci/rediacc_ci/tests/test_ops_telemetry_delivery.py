@@ -521,7 +521,7 @@ def test_main_wires_regions_and_environments_into_the_alert(monkeypatch):
 
 
 def test_docstring_says_the_environment_list_is_not_checked_against_the_rule() -> None:
-    """The environment list mirrors a Grafana rule kept in the observability repo, and the module says so (review d64947d1.1)."""
+    """The environment list mirrors a Grafana rule kept in the observability repo, so the docstring must not claim the two are checked against each other."""
     doc = " ".join((td.__doc__ or "").split())
     assert "a hand-kept mirror of the values the alert rule accepts" in doc
     assert "nothing here reads it" in doc
