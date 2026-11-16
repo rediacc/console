@@ -330,3 +330,67 @@ def test_the_plan_text_records_stay_under_review():
     globs = {r["glob"] for r in doc["records"]}
     assert "agent/plans/**" not in globs
     assert not any(g.endswith("STATE.md") for g in globs), "STATE.md is not a record path"
+
+
+# ---------------------------------------------------------------- a carried verdict over a touched record
+
+CARRY_CHILD = """
+import json, pathlib, subprocess, sys
+from rediacc_hooks.guards import block_unverified_push as G
+
+def world(base, record_path, refresh):
+    root = G._repo_v2_carried(base, "ok")
+    def git(*args):
+        return subprocess.run(["git", *args], cwd=str(root), check=True, capture_output=True, env=G._env()).stdout.decode().strip()
+    receipt_path = root / ".ci" / "cache" / "prepush-receipt.json"
+    body = json.loads(receipt_path.read_text(encoding="utf-8"))
+    policy = root / G.RECORD_POLICY_REL
+    policy.parent.mkdir(parents=True, exist_ok=True)
+    reader = [{"id": G.V2_FX, "evidence": "fixture:1"}]
+    policy.write_text(json.dumps({"version": 1, "records": [
+        {"glob": "src/rec/**", "except": [], "readers": reader},
+        {"glob": "agent/reviews/**", "except": [], "readers": reader},
+    ]}), encoding="utf-8")
+    git("add", "-A", "--", G.RECORD_POLICY_REL)
+    git("commit", "-q", "-m", "the policy")
+    start = git("rev-parse", "HEAD^{tree}")
+    body["headTree"] = start
+    target = root / record_path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("{}\\n", encoding="utf-8")
+    git("add", "-A", "--", record_path)
+    git("commit", "-q", "-m", "a record-only commit")
+    end = git("rev-parse", "HEAD^{tree}")
+    body["advances"] = [{"from": start, "to": end, "paths": [record_path], "gates": {G.V2_FX: 0}, "finishedAt": "2026-11-16T00:00:00Z"}]
+    carried = body["gates"][G.V2_FX].get("carriedFrom") is not None
+    if refresh:
+        body["gates"][G.V2_FX] = dict(body["gates"][G.V2_FX], inputHash=None, verdict="ok", exitCode=0, findings=None, judgedTree=end, carriedFrom=None)
+    receipt_path.write_text(json.dumps(body), encoding="utf-8")
+    return {"carried": carried, "inputs": body["gates"][G.V2_FX]["inputs"]["globs"], "refusal": G.receipt_refusal(str(root), end, G.read_receipt(str(root), end))}
+
+base = pathlib.Path(sys.argv[1])
+print(json.dumps({
+    "outside": world(base / "outside", "agent/reviews/main/clean.jsonl", False),
+    "inside": world(base / "inside", "src/rec/x.jsonl", False),
+    "refreshed": world(base / "refreshed", "src/rec/x.jsonl", True),
+}))
+"""
+
+
+def test_the_guard_refuses_a_carried_verdict_over_a_touched_record_until_it_is_refreshed(tmp_path):
+    """Found 2026-11-16 while checking that the push guard admits a plan-only advance. block_unverified_push recomputes every CARRIED gate entry's filesHash at the pushed tree, so a receipt that carries a gate whose inputs cover the touched record is refused although the step re-ran that gate green. check:ci-plan-bindings is carried in 12 of the last 40 real receipts and its inputs cover agent/plans/**. The runner now rewrites such an entry as a verdict of the step's tree (scripts/ci-runner/run.ts refreshCarried, pinned by its selftest), and this pins the guard's side of that contract: refused as carried, admitted as refreshed."""
+    proc = subprocess.run(
+        [sys.executable, "-c", CARRY_CHILD, str(tmp_path)],
+        capture_output=True,
+        text=True,
+        check=False,
+        env=dict(os.environ, PYTHONPATH=str(HOOKS), GIT_CONFIG_GLOBAL=os.devnull),
+    )
+    assert proc.returncode == 0, proc.stderr
+    worlds = json.loads(proc.stdout)
+    assert all(w["carried"] for w in worlds.values()), worlds
+    assert all(w["inputs"] == ["src/**"] for w in worlds.values()), worlds
+    # CONTROL: the record lies outside the carried gate's inputs, so the same receipt and step are admitted. The refusal below is therefore about the carried inputs and not about the chain.
+    assert worlds["outside"]["refusal"] is None, worlds["outside"]
+    assert "filesHash differs" in (worlds["inside"]["refusal"] or ""), worlds["inside"]
+    assert worlds["refreshed"]["refusal"] is None, worlds["refreshed"]

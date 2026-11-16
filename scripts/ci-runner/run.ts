@@ -72,6 +72,7 @@ import {
   type GateHash,
   inputHashSelftest,
   type LockEntry,
+  matchGlob,
   type PriorGate,
   type PriorReceipt,
   planCarry,
@@ -2901,7 +2902,7 @@ async function selftest(): Promise<number> {
   const leaseCheck = await leaseClientSelftest(os.tmpdir());
   for (const f of leaseCheck.failures) require_(false, `lease-client: ${f}`);
 
-  // THE ADVANCE (PLAN-prepush-full-cpu part 5): every refusal, the red rule and the chain. 17 assertions.
+  // THE ADVANCE (PLAN-prepush-full-cpu part 5): every refusal, the red rule, the carried-input rule and the chain. 22 assertions.
   {
     const policy = parseRecordPolicy(
       JSON.stringify({
@@ -3011,6 +3012,54 @@ async function selftest(): Promise<number> {
     require_(
       advanceExit(0, red) === 1,
       'an advance over a red receipt must still exit non-zero, so the red is never read as cleared'
+    );
+    // A CARRIED VERDICT OVER A TOUCHED INPUT: the push guard recomputes it at the pushed tree, so the advance refreshes it or the lane runs.
+    const carriedEntry = (globs: string[]): ReceiptGate => ({
+      inputHash: 'h',
+      defHash: 'd',
+      filesHash: 'f',
+      inputs: { globs, files: [], scripts: [] },
+      verdict: 'ok',
+      exitCode: 0,
+      findings: null,
+      judgedTree: 'TA',
+      carriedFrom: { headTree: 'TA', head: 'c', finishedAt: '' },
+    });
+    const carryingReader = {
+      ...whole,
+      gates: { 'g:plan': carriedEntry(['agent/reviews/**']), 'g:tree': carriedEntry(['src/**']) },
+    };
+    const refreshPlan = plan(carryingReader, ['agent/reviews/x.md']);
+    require_(
+      refreshPlan.kind === 'advance' && refreshPlan.refresh.join() === 'g:plan',
+      `a carried reader whose inputs the step touched must be refreshed, and only it, got ${JSON.stringify(refreshPlan)}`
+    );
+    const okPlan = plan(whole, ['agent/reviews/x.md']);
+    require_(
+      okPlan.kind === 'advance' && okPlan.refresh.length === 0,
+      'CONTROL: with nothing carried there is nothing to refresh'
+    );
+    const carryingOther = {
+      ...whole,
+      gates: { 'g:tree': carriedEntry(['**']) },
+    };
+    const unreadPlan = plan(carryingOther, ['agent/reviews/x.md']);
+    require_(
+      unreadPlan.kind === 'full' && unreadPlan.why.includes('g:tree'),
+      `a carried verdict over a touched input that is no reader of it must run the lane and be named, got ${JSON.stringify(unreadPlan)}`
+    );
+    const refreshed = refreshCarried(carryingReader.gates, ['g:plan'], { 'g:plan': 0 }, 'T1');
+    require_(
+      refreshed['g:plan'].carriedFrom === null &&
+        refreshed['g:plan'].judgedTree === 'T1' &&
+        refreshed['g:plan'].inputHash === null &&
+        refreshed['g:tree'].carriedFrom !== null,
+      `a refreshed reader must be an uncarried verdict of the step's tree with no input hash, and nothing else may move, got ${JSON.stringify(refreshed)}`
+    );
+    require_(
+      refreshCarried(carryingReader.gates, ['g:plan'], { 'g:plan': 1 }, 'T1')['g:plan']
+        .carriedFrom !== null,
+      'a reader that failed at the step must keep its entry: the guard refuses that step on its exit code'
     );
     require_(
       planAdvance({ receipt: whole, headTree: 'T0', policy, diff: at([]), known }).kind === 'full',
@@ -4405,8 +4454,58 @@ interface Advance {
 }
 
 type AdvancePlan =
-  | { kind: 'advance'; from: string; to: string; paths: string[]; readers: string[] }
+  | {
+      kind: 'advance';
+      from: string;
+      to: string;
+      paths: string[];
+      readers: string[];
+      /** Readers whose receipt entry is CARRIED over inputs the step touched: `runAdvance` rewrites each as judged at `to` once it passes there (`refreshCarried`). */
+      refresh: string[];
+    }
   | { kind: 'full'; why: string };
+
+/**
+ * The carried receipt entries whose recorded inputs cover a changed path. block_unverified_push recomputes every carried entry's `filesHash` at the pushed tree (`_carried_refusal`), so each of these is refused there with "filesHash differs" unless the advance replaces it. Reproduced 2026-11-16: check:ci-plan-bindings is carried in 12 of the last 40 receipts and its `paths` cover agent/plans/**, so a plan-only advance over such a receipt was written by the runner and then refused at the push. Pure.
+ */
+function carriedOverPaths(gates: unknown, paths: readonly string[]): string[] {
+  if (gates === null || typeof gates !== 'object') return [];
+  const out: string[] = [];
+  for (const [id, raw] of Object.entries(gates as Record<string, unknown>)) {
+    const e = raw as Partial<ReceiptGate> | null;
+    if (e === null || typeof e !== 'object' || e.carriedFrom == null) continue;
+    const globs = Array.isArray(e.inputs?.globs) ? e.inputs.globs : [];
+    const files = Array.isArray(e.inputs?.files) ? e.inputs.files : [];
+    if (paths.some((p) => files.includes(p) || globs.some((g) => matchGlob(g, p)))) out.push(id);
+  }
+  return out.sort((a, b) => Number(a > b) - Number(a < b));
+}
+
+/**
+ * The receipt's `gates` after an advance: each `refresh` reader that passed at the step stops being a carry and becomes a verdict of the step's tree. `inputHash` is cleared because the entry's hashes describe the older inputs, so a later run can never carry from it; the reader ran here, which is what an uncarried entry says. A reader that did not pass is left as it was, and the push guard refuses that step on the reader's exit code. Pure.
+ */
+function refreshCarried(
+  gates: Record<string, ReceiptGate>,
+  refresh: readonly string[],
+  stepGates: Record<string, number>,
+  to: string
+): Record<string, ReceiptGate> {
+  const out = { ...gates };
+  for (const id of refresh) {
+    const entry = sparse(out)[id];
+    if (entry === undefined || stepGates[id] !== 0) continue;
+    out[id] = {
+      ...entry,
+      inputHash: null,
+      verdict: 'ok',
+      exitCode: 0,
+      findings: null,
+      judgedTree: to,
+      carriedFrom: null,
+    };
+  }
+  return out;
+}
 
 /**
  * Whether a `--quick` run may ADVANCE the receipt instead of running the lane: the receipt on disk is whole and names a tree, HEAD has moved from the end of its chain, every path that moved lies inside the record set, and no gate the receipt lists as failed reads a record that moved. A red receipt stays red across the advance (`advanceExit`); the step only spares the lane. Pure, so the selftest drives every refusal; the caller supplies the diff and the policy.
@@ -4472,7 +4571,15 @@ function planAdvance(input: {
       kind: 'full',
       why: `the receipt is red on ${redReaders.join(', ')}, which read(s) the changed record path(s); the lane must judge them again`,
     };
-  return { kind: 'advance', from, to: input.headTree, paths, readers };
+  // A CARRIED VERDICT OVER A TOUCHED INPUT (`carriedOverPaths`). When the step re-runs that gate, its entry is refreshed; when no touched record lists it as a reader, nothing here re-judges it and the guard would refuse the push, so the lane runs.
+  const stale = carriedOverPaths(r.gates, paths);
+  const unread = stale.filter((id) => !readers.includes(id));
+  if (unread.length > 0)
+    return {
+      kind: 'full',
+      why: `the receipt carries ${unread.length} verdict(s) whose inputs changed and that no touched record lists as a reader (${unread.slice(0, 3).join(', ')}${unread.length > 3 ? ', ...' : ''}); the push guard would refuse them at this tree`,
+    };
+  return { kind: 'advance', from, to: input.headTree, paths, readers, refresh: stale };
 }
 
 /** The record-set policy as HEAD carries it (the guard reads the same copy), parsed; undefined when HEAD has none. */
@@ -4550,10 +4657,17 @@ async function runAdvance(
   };
   try {
     const priorAdvances = receipt.advances as Advance[] | undefined;
-    fs.writeFileSync(
-      dest,
-      `${JSON.stringify({ ...receipt, advances: [...(priorAdvances ?? []), step] }, null, 2)}\n`
-    );
+    const advanced = {
+      ...receipt,
+      gates: refreshCarried(receipt.gates, plan.refresh, gates, plan.to),
+      advances: [...(priorAdvances ?? []), step],
+    };
+    fs.writeFileSync(dest, `${JSON.stringify(advanced, null, 2)}\n`);
+    const refreshed = plan.refresh.filter((id) => gates[id] === 0);
+    if (refreshed.length > 0)
+      humanOut(
+        `ci-runner: ${refreshed.length} carried verdict(s) whose inputs this step touched are now judged at ${plan.to.slice(0, 9)}: ${refreshed.join(', ')}\n`
+      );
     humanOut(
       `ci-runner: receipt at ${dest} advanced to tree ${plan.to.slice(0, 9)} (advances[${(priorAdvances ?? []).length}])\n`
     );
