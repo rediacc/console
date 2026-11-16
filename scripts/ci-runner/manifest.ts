@@ -2344,7 +2344,6 @@ export const GATES: readonly GateSpec[] = [
     id: 'check:ci-plan-bindings',
     run: 'npm run check:ci-plan-bindings',
     gate: true,
-    slow: true, // ~50 s on a dev host 2026-11-09: wl_planbind.bindings rebuilds the plan graph per call, 158 judged plans over 312 read and 3,312 items
     paths: [
       'agent/plans/**',
       'agent/INDEX.md',

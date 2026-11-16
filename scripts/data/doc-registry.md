@@ -240,7 +240,7 @@ Scans: scripts/ci-runner/gates.lock.json, the committed projection of the manife
 | check:ci-pin-freshness | quality-code / Pin upstream freshness | yes | yes |
 | check:ci-pin-registry | quality-code / Pin registry covers every pin | yes | no |
 | check:ci-pipefail-grep-q | quality-code / No racing pipefail/grep -q detectors | yes | no |
-| check:ci-plan-bindings | quality-static / Plan bindings | yes | yes |
+| check:ci-plan-bindings | quality-static / Plan bindings | yes | no |
 | check:ci-plan-boxes | quality-branch / Plan checkbox ledger | yes | no |
 | check:ci-plan-citations | quality-branch / Plan citations | yes | yes |
 | check:ci-plan-deps | quality-branch / Plan dependencies | yes | no |

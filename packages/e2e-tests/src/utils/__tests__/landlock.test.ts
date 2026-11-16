@@ -60,8 +60,12 @@ describe('landlockGrepInvert', () => {
     // The CI matrix `os-image` names the image (`oracle-10`); /etc/os-release names the OS (`ol-10`).
     const OS_ID_OF_IMAGE: Record<string, string> = { 'oracle-10': 'ol-10' };
     const byText = (a: string, b: string) => a.localeCompare(b);
-    expect([...LANDLOCK_INACTIVE_VM_IMAGES].sort(byText)).toEqual(Object.keys(OS_ID_OF_IMAGE).sort(byText));
-    expect([...LANDLOCK_INACTIVE_OS_IDS].sort(byText)).toEqual(Object.values(OS_ID_OF_IMAGE).sort(byText));
+    expect([...LANDLOCK_INACTIVE_VM_IMAGES].sort(byText)).toEqual(
+      Object.keys(OS_ID_OF_IMAGE).sort(byText)
+    );
+    expect([...LANDLOCK_INACTIVE_OS_IDS].sort(byText)).toEqual(
+      Object.values(OS_ID_OF_IMAGE).sort(byText)
+    );
     for (const [image, osId] of Object.entries(OS_ID_OF_IMAGE)) {
       expect(landlockGrepInvert(image), `${image} must drop @landlock`).toBeInstanceOf(RegExp);
       expect(LANDLOCK_INACTIVE_BY_DEFAULT.has(osId), `${osId} must be Landlock-inactive`).toBe(

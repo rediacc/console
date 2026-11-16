@@ -2434,7 +2434,6 @@
     "id": "check:ci-plan-bindings",
     "run": "npm run check:ci-plan-bindings",
     "gate": true,
-    "slow": true,
     "paths": [
       "agent/plans/**",
       "agent/INDEX.md",
