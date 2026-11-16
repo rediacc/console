@@ -16,6 +16,7 @@ from __future__ import annotations
 import inspect
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -322,6 +323,14 @@ def _golden(text: str) -> str:
     return text.replace("account-pr-", "account-db-pr-")
 
 
+PREVIEW_PEPPER_STDIN = re.compile(r"^secret-put-stdin: [0-9a-f]{64}$", re.MULTILINE)
+
+
+def _mask_preview_pepper(calls: str) -> str:
+    """A preview's pepper is random per deploy (`secrets.token_hex(32)`), so the call log carries it as `<preview-pepper>` before it is compared with the golden; the tests below pin its shape and that it is never the production value."""
+    return PREVIEW_PEPPER_STDIN.sub("secret-put-stdin: <preview-pepper>", calls)
+
+
 def _agree(old, new, label: str) -> None:
     """THE THREE STREAMS SEPARATELY, plus the call log and the generated config."""
     old_proc, old_calls, old_config = old
@@ -337,7 +346,7 @@ def _agree(old, new, label: str) -> None:
     new_proc = subprocess.CompletedProcess(
         new_proc.args, new_proc.returncode, _golden(new_proc.stdout), _golden(new_proc.stderr)
     )
-    new_calls, new_config = _golden(new_calls), _golden(new_config)
+    new_calls, new_config = _mask_preview_pepper(_golden(new_calls)), _golden(new_config)
     assert new_proc.returncode == old_proc.returncode, (
         f"{label}: exit diverged: {old_proc.returncode!r} vs {new_proc.returncode!r}\n"
         f"old stderr: {old_proc.stderr!r}\nnew stderr: {as_twin(new_proc.stderr)!r}"
@@ -470,6 +479,7 @@ def test_preview_mints_a_database_and_the_generated_toml_is_byte_identical(tmp_p
             "--config wrangler.preview.toml"
         ),
         "npx --no-install wrangler deploy --config wrangler.preview.toml",
+        PREVIEW_PEPPER_PUT,
         PREVIEW_TURNSTILE_PUT,
     ], calls
 
@@ -499,6 +509,9 @@ def test_the_generated_toml_carries_the_twins_em_dash_and_backticks(tmp_path) ->
     assert "\u2014" not in PORT_FILE.read_text(encoding="utf-8")
 
 
+PREVIEW_PEPPER_PUT = (
+    "npx --no-install wrangler secret put ENTERPRISE_LOOKUP_PEPPER --config wrangler.preview.toml"
+)
 PREVIEW_TURNSTILE_PUT = "npx --no-install wrangler secret put CLOUDFLARE_TURNSTILE_SECRET_KEY --config wrangler.preview.toml"
 
 
@@ -524,6 +537,7 @@ def test_an_existing_database_is_deleted_first(tmp_path) -> None:
             "--config wrangler.preview.toml"
         ),
         "npx --no-install wrangler deploy --config wrangler.preview.toml",
+        PREVIEW_PEPPER_PUT,
         PREVIEW_TURNSTILE_PUT,
     ], calls
     assert "Deleting existing D1 database: account-db-pr-42 (clean slate)" in proc.stderr
@@ -894,24 +908,43 @@ def test_a_preview_pushes_the_turnstile_dummy_secret_after_the_deploy(tmp_path) 
     proc, calls, _config = _run_live(root, "new", "--name", "pr-9")
     assert proc.returncode == 0, proc.stderr
     names = _calls(calls)
-    assert names[-2] == "npx --no-install wrangler deploy --config wrangler.preview.toml"
+    assert names[-3] == "npx --no-install wrangler deploy --config wrangler.preview.toml"
+    assert names[-2] == PREVIEW_PEPPER_PUT
     assert names[-1] == PREVIEW_TURNSTILE_PUT
     assert "secret-put-stdin: 1x0000000000000000000000000000000AA\n" in calls
-    assert "ENTERPRISE_LOOKUP_PEPPER" not in calls, "control: no pepper in the run, none pushed"
+    assert "secret put ENTERPRISE_LOOKUP_PEPPER" in calls, (
+        "a preview's own pepper is pushed with no production one in the run"
+    )
 
 
-def test_a_preview_pushes_the_pepper_when_the_run_carries_one(tmp_path) -> None:
+def test_a_preview_never_receives_the_production_pepper(tmp_path) -> None:
+    """Code from a PR branch served at the public pr-N URL must not hold the production pepper: the preview gets its own random pepper, which keys its own empty namespace."""
     root = fixture(tmp_path)
     proc, calls, _config = _run_live(
         root, "new", "--name", "pr-9", ENTERPRISE_LOOKUP_PEPPER="pepper-fixture-value"
     )
     assert proc.returncode == 0, proc.stderr
-    assert "secret-put-stdin: pepper-fixture-value\n" in calls
+    assert "pepper-fixture-value" not in calls, "the production pepper reached the preview"
     puts = [c for c in _calls(calls) if "secret put" in c]
     assert [c.split()[5] for c in puts] == [
         "ENTERPRISE_LOOKUP_PEPPER",
         "CLOUDFLARE_TURNSTILE_SECRET_KEY",
     ]
+    values = re.findall(r"^secret-put-stdin: (.*)$", calls, re.MULTILINE)
+    assert len(values) == 2
+    assert values[1] == port.TURNSTILE_ALWAYS_PASSES
+    assert re.fullmatch(r"[0-9a-f]{64}", values[0]), values[0]
+
+
+def test_each_preview_deploy_gets_a_fresh_pepper(tmp_path) -> None:
+    peppers = []
+    for n in ("a", "b"):
+        root = fixture(tmp_path / n)
+        proc, calls, _config = _run_live(root, "new", "--name", "pr-9")
+        assert proc.returncode == 0, proc.stderr
+        peppers.append(re.findall(r"^secret-put-stdin: (.*)$", calls, re.MULTILINE)[0])
+    assert peppers[0] != peppers[1]
+    assert all(re.fullmatch(r"[0-9a-f]{64}", p) for p in peppers), peppers
 
 
 def test_a_failed_preview_deploy_pushes_no_secret(tmp_path) -> None:

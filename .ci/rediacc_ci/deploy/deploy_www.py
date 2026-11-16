@@ -88,6 +88,7 @@ from __future__ import annotations
 import contextlib
 import os
 import re
+import secrets
 import subprocess
 import sys
 import typing
@@ -392,11 +393,14 @@ def secret_put_argv(name: str) -> list[str]:
 
 
 def _push_preview_secrets() -> int:
-    """The two secrets /api/enterprise-lookup needs on a preview, pushed to the preview Worker after its deploy: the pepper when the run carries one (the same value `rediacc_ci.ops.enterprise_lookup` seeds with) and the Turnstile dummy value."""
-    pushes = [(TURNSTILE_ENV, TURNSTILE_ALWAYS_PASSES)]
-    pepper = os.environ.get(PEPPER_ENV, "")
-    if pepper:
-        pushes.insert(0, (PEPPER_ENV, pepper))
+    """The two secrets /api/enterprise-lookup needs on a preview, pushed to the preview Worker after its deploy: a pepper and the Turnstile dummy value.
+
+    The pepper is a fresh random value per deploy, never the production `ENTERPRISE_LOOKUP_PEPPER` the run may carry: a preview serves PR-branch code at a public URL, so it must hold no production secret. The preview binds its own empty `ENTERPRISE_LOOKUP` namespace (`preview_toml`) that nothing seeds (`rediacc_ci.ops.enterprise_lookup` writes the production namespace with the production pepper), so any pepper answers its lookups correctly, as misses.
+    """
+    pushes = [
+        (PEPPER_ENV, secrets.token_hex(32)),
+        (TURNSTILE_ENV, TURNSTILE_ALWAYS_PASSES),
+    ]
     for name, value in pushes:
         log.step("Pushing the %s preview Worker secret" % name)
         sys.stdout.flush()
