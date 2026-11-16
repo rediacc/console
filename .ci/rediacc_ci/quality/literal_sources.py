@@ -257,7 +257,7 @@ def near_miss(candidate: str, known: str, limit: int) -> bool:
         a, b = a_labels[0], b_labels[0]
     a_parts, b_parts = a.split("-"), b.split("-")
     if len(a_parts) == len(b_parts) and len(a_parts) > 1:
-        # `bench-us` and `bench-eu` differ only inside a short region part: each part gets the slack its own length earns, so two real region ids are not typos of each other. Two letters swapped (`ue` for `eu`) are a typo whatever the length: no two real ids spell the same letters.
+        # `bench-us` and `bench-eu` differ only inside a short region part: each part gets the slack its own length earns, so two real region ids are not typos of each other. A swap of two letters (`ue` for `eu`), or any longer shuffle of the same letters, is a typo whatever the length: no two real ids spell the same letters.
         diffs = [(x, y) for x, y in zip(a_parts, b_parts, strict=True) if x != y]
         return bool(diffs) and all(
             0 < levenshtein(x, y) <= _slack(x, y, limit) or _is_transposition(x, y)

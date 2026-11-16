@@ -629,7 +629,7 @@ def test_bench_reads_the_bench_control_databases(tmp_path: pathlib.Path) -> None
     }
     read = {db for db, _ in r.plane.sent if db.startswith("control")}
     assert read
-    assert read <= bench_dbs
+    assert read == bench_dbs
 
 
 def test_inactive_companies_are_not_released(tmp_path: pathlib.Path) -> None:
