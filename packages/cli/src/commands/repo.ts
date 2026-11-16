@@ -14,6 +14,7 @@ import { executeRepoFunction } from '../utils/repo-executor.js';
 import { resolveRepoRef } from '../utils/repo-target.js';
 import { jobsOfStatusRecord, runningJobLines } from './machine/status.js';
 import { createRepoAdminCommand } from './repo-admin.js';
+import { registerRepoAdminOrphan } from './repo-admin-orphan.js';
 import { registerRepoBackupCommands } from './repo-backup.js';
 import { handleDownAll, handleRepoList, handleUpAll } from './repo-batch-utils.js';
 import { registerRepoBranchingCommands } from './repo-branching.js';
@@ -403,6 +404,8 @@ export function registerRepoCommands(program: Command): void {
   const admin = createRepoAdminCommand(repo, program);
   registerRepoMaintenanceCommands(repo, admin);
   registerExtendedRepoCommands(repo, admin);
+  // Kept out of repo-admin.ts, which stays config-only (plane-leaf-rule): the orphan verbs reach the machine.
+  registerRepoAdminOrphan(admin);
   registerRepoBackupCommands(repo);
   registerRepoMigrateCommand(repo);
   registerRepoReplicateCommands(repo);

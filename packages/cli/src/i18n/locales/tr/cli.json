@@ -1790,6 +1790,26 @@
             "success": "\"{{name}}\" ({{guid}}) geri yüklendi"
           }
         },
+        "orphan": {
+          "description": "Bir makinede hiçbir yapılandırmanın anmadığı depo imajları.",
+          "list": {
+            "description": "Bir makinedeki depo imajlarını listeler ve her birinin sahipsiz olup olmadığını, yani hiçbir yapılandırmada geçip geçmediğini gösterir.",
+            "none": "{{machine}} üzerinde depo imajı yok"
+          },
+          "delete": {
+            "description": "Sahipsiz bir depo imajını GUID ile siler. Herhangi bir yapılandırmada geçen GUID reddedilir; bağlı ya da çalışan bir imaj da --force-delete-mounted verilmedikçe reddedilir.",
+            "refArg": "<guid>@<machine> biçiminde sahipsiz imaj",
+            "badRef": "\"{{ref}}\" değeri <guid>@<machine> biçiminde değil",
+            "notOnMachine": "{{machine}} üzerinde {{guid}} depo imajı yok",
+            "protected": "{{guid}} sahipsiz değil: {{reason}}. Yapılandırılmış bir depo rdc repo delete ile silinir.",
+            "mounted": "{{guid}}, {{machine}} üzerinde bağlı ya da çalışıyor ({{containers}} konteyner). --force-delete-mounted ile durdurulup silinir.",
+            "forceOption": "İmaj bağlı olsa ya da çalışan Docker konteynerleri olsa bile sil",
+            "confirm": "{{guid}} depo imajı ({{size}}) {{machine}} üzerinden kalıcı olarak silinsin mi?",
+            "starting": "{{machine}} üzerindeki {{guid}} depo imajı siliniyor...",
+            "completed": "{{guid}} depo imajı {{machine}} üzerinden silindi",
+            "failed": "{{guid}} depo imajı silinemedi"
+          }
+        },
         "autostart": {
           "description": "Önyüklemede otomatik depo başlatmayı yönet",
           "disable": {

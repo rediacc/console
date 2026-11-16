@@ -1790,6 +1790,26 @@
             "success": "\"{{name}}\" ripristinato ({{guid}})"
           }
         },
+        "orphan": {
+          "description": "Immagini di repository su una macchina che nessuna configurazione nomina.",
+          "list": {
+            "description": "Mostra le immagini di repository di una macchina e indica per ciascuna se è orfana, cioè non nominata da alcuna configurazione.",
+            "none": "Nessuna immagine di repository su {{machine}}"
+          },
+          "delete": {
+            "description": "Elimina un'immagine di repository orfana tramite il suo GUID. Un GUID nominato da una configurazione viene rifiutato, così come un'immagine montata o in esecuzione, salvo con --force-delete-mounted.",
+            "refArg": "Immagine orfana nel formato <guid>@<machine>",
+            "badRef": "\"{{ref}}\" non è nel formato <guid>@<machine>",
+            "notOnMachine": "Nessuna immagine di repository {{guid}} su {{machine}}",
+            "protected": "{{guid}} non è orfana: {{reason}}. Un repository configurato si elimina con rdc repo delete.",
+            "mounted": "{{guid}} è montata o in esecuzione su {{machine}} ({{containers}} container). Con --force-delete-mounted viene fermata ed eliminata.",
+            "forceOption": "Elimina l'immagine anche se è montata o ha container Docker in esecuzione",
+            "confirm": "Eliminare definitivamente l'immagine di repository {{guid}} ({{size}}) da {{machine}}?",
+            "starting": "Eliminazione dell'immagine di repository {{guid}} su {{machine}}...",
+            "completed": "Immagine di repository {{guid}} eliminata da {{machine}}",
+            "failed": "Eliminazione dell'immagine di repository {{guid}} non riuscita"
+          }
+        },
         "autostart": {
           "description": "Gestisci l'avvio automatico del repository al boot",
           "disable": {

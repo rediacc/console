@@ -1790,6 +1790,26 @@
             "success": "Taastati \"{{name}}\" ({{guid}})"
           }
         },
+        "orphan": {
+          "description": "Masinas olevad hoidlate kujutised, mida ükski konfiguratsioon ei nimeta.",
+          "list": {
+            "description": "Näitab masina hoidlate kujutisi ja seda, kas iga kujutis on omanikuta ehk ükski konfiguratsioon seda ei nimeta.",
+            "none": "Masinas {{machine}} pole hoidlate kujutisi"
+          },
+          "delete": {
+            "description": "Kustutab ühe omanikuta hoidla kujutise GUID-i järgi. GUID, mida mõni konfiguratsioon nimetab, lükatakse tagasi, samuti ühendatud või töötav kujutis, kui --force-delete-mounted pole antud.",
+            "refArg": "Omanikuta kujutis kujul <guid>@<machine>",
+            "badRef": "\"{{ref}}\" pole kujul <guid>@<machine>",
+            "notOnMachine": "Masinas {{machine}} pole hoidla kujutist {{guid}}",
+            "protected": "{{guid}} pole omanikuta: {{reason}}. Konfigureeritud hoidla kustutatakse käsuga rdc repo delete.",
+            "mounted": "{{guid}} on masinas {{machine}} ühendatud või töötab (konteinereid: {{containers}}). Lipuga --force-delete-mounted see peatatakse ja kustutatakse.",
+            "forceOption": "Kustuta kujutis ka siis, kui see on ühendatud või selles töötavad Dockeri konteinerid",
+            "confirm": "Kas kustutada hoidla kujutis {{guid}} ({{size}}) masinast {{machine}} jäädavalt?",
+            "starting": "Hoidla kujutise {{guid}} kustutamine masinas {{machine}}...",
+            "completed": "Hoidla kujutis {{guid}} on masinast {{machine}} kustutatud",
+            "failed": "Hoidla kujutise {{guid}} kustutamine ebaõnnestus"
+          }
+        },
         "autostart": {
           "description": "Halda hoidla automaatset käivitamist buutimisel",
           "disable": {

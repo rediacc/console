@@ -1,0 +1,118 @@
+/**
+ * Repository images on a machine that no config entry names (worklist #48d790e1).
+ *
+ * `repo delete` takes only a config-resolved ref, so an image whose GUID left every config could not be removed by
+ * name. This module classifies a machine's images with the same analysis `machine prune --orphaned-repos` uses
+ * (analyzePrune: in the current config, in another config, or archived inside the grace window means protected), adds
+ * the one reference that analysis does not read (a configured fork whose grand lineage is the image's GUID), and
+ * owns the single delete call both `machine prune` and `repo admin orphan delete` make: renet `repository_delete`
+ * with the GUID, never a raw filesystem removal.
+ */
+
+import {
+  getRepositories,
+  type RepositoryInfo,
+} from '@rediacc/shared/renet-contract/data/list-types.generated';
+import { configService } from '../config/config-resources.js';
+import { getExecutor } from '../executor/executor-factory.js';
+import type { ExecuteResult } from '../executor/types.js';
+import { fetchMachineStatus } from '../machine/machine-status.js';
+import { analyzePrune } from './prune.js';
+
+/** One image on the machine, judged against every readable config. */
+export interface MachineRepoVerdict {
+  guid: string;
+  verdict: 'orphaned' | 'protected';
+  reason: string;
+  mounted: boolean;
+  running: boolean;
+  containers: number;
+  isFork: boolean;
+  size: string;
+  modified: string;
+}
+
+/** The repository's Docker daemon answers, or it has containers: deleting it would stop live work. */
+export function isRepoRunning(repo: RepositoryInfo): boolean {
+  return (
+    Boolean(repo.docker_running) || Boolean(repo.containers_running) || repo.container_count > 0
+  );
+}
+
+/** The mount-safety predicate `machine prune` documents for both of its deletion paths. */
+export function isRepoMountedOrRunning(repo: RepositoryInfo): boolean {
+  return Boolean(repo.mounted) || isRepoRunning(repo);
+}
+
+/** Grand GUIDs the current config's forks descend from: such an image is a lineage the config still names. */
+async function configuredGrandGuids(): Promise<Set<string>> {
+  const grands = new Set<string>();
+  for (const repo of await configService.listRepositories()) {
+    const { grandGuid, repositoryGuid } = repo.config;
+    if (grandGuid && grandGuid !== repositoryGuid) grands.add(grandGuid.toLowerCase());
+  }
+  return grands;
+}
+
+/** Why analyzePrune listed a GUID in neither bucket: it refused the whole scan (an unreadable config, warned). */
+const SCAN_REFUSED = 'config scan refused: a config could not be read (see the warning above)';
+const GRAND_OF_FORK = 'grand lineage of a configured fork';
+
+/**
+ * Read the machine's repository images and judge each one. Read-only: one `list all` probe, then config reads.
+ */
+export async function classifyMachineRepos(
+  machineName: string,
+  options: { debug?: boolean } = {}
+): Promise<MachineRepoVerdict[]> {
+  const status = await fetchMachineStatus(machineName, {
+    sections: ['repositories'],
+    debug: options.debug,
+  });
+  const repos = getRepositories(status);
+  if (repos.length === 0) return [];
+  const analysis = await analyzePrune(repos.map((r) => r.name));
+  const orphaned = new Map(analysis.orphaned.map((c) => [c.guid, c.reason]));
+  const protectedReasons = new Map(analysis.protected.map((c) => [c.guid, c.reason]));
+  const grands = await configuredGrandGuids();
+
+  return repos.map((repo) => {
+    const guid = repo.name;
+    const base = {
+      guid,
+      mounted: Boolean(repo.mounted),
+      running: isRepoRunning(repo),
+      containers: repo.container_count,
+      isFork: Boolean(repo.is_fork),
+      size: repo.size_human,
+      modified: repo.modified_human,
+    };
+    const protectedReason =
+      protectedReasons.get(guid) ??
+      (grands.has(guid.toLowerCase()) ? GRAND_OF_FORK : undefined) ??
+      (orphaned.has(guid) ? undefined : SCAN_REFUSED);
+    if (protectedReason !== undefined) {
+      return { ...base, verdict: 'protected' as const, reason: protectedReason };
+    }
+    return { ...base, verdict: 'orphaned' as const, reason: orphaned.get(guid) ?? '' };
+  });
+}
+
+/**
+ * Delete one repository image by GUID through renet `repository_delete` (it stops the repository's Docker daemon,
+ * unmounts, closes LUKS and removes the image, its grants, licence blobs and backup state). The one delete call of
+ * every GUID-addressed path, so `machine prune` and `repo admin orphan delete` cannot drift apart.
+ */
+export function deleteRepoImageByGuid(
+  machineName: string,
+  guid: string,
+  options: { debug?: boolean; quietSpinners?: boolean } = {}
+): Promise<ExecuteResult> {
+  return getExecutor().execute({
+    functionName: 'repository_delete',
+    machineName,
+    params: { repository: guid },
+    debug: options.debug,
+    ...(options.quietSpinners ? { quietSpinners: true } : {}),
+  });
+}

@@ -519,6 +519,13 @@ export const COMMAND_METADATA: Record<string, CommandMeta> = {
       'Config archive bookkeeping. Purge also permanently destroys the archived record that makes `repo delete` recoverable, and the safety net is not a thing an agent should be able to cut.',
   },
 
+  // Machine images no config names (worklist #48d790e1). Group-level exclusion: the delete removes data addressed only by a GUID, with no config record to archive or restore from.
+  'repo admin orphan': {
+    mcpExcludeReason:
+      'Deletes a machine image addressed only by its GUID, with no config record to archive or restore it from. Run it from the CLI.',
+  },
+  'repo admin orphan delete': { grandGuard: true },
+
   // Client-side transfer. Barred from the PROXY (a remote executor cannot see the caller's filesystem) AND from MCP.
   //
   // ★ SPEC-MANDATED [P0-DECIDED], and it corrects my reasoning rather than merely overruling it. spec/03 §5: "MCP: exclude (all three): `Requires local filesystem paths on the MCP host.`" I had made all three tools on the assumption that the MCP server runs where the operator's files are. It does not have to. The paths are the CALLER's, and the MCP host is not necessarily the

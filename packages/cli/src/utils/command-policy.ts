@@ -13,7 +13,7 @@ import { isAgentEnvironment } from './agent-guard.js';
 import { isClusterAllowedByEnv } from './cluster-env.js';
 import { ValidationError } from './errors.js';
 import { isRepoAllowedByGrandEnv } from './grand-env.js';
-import { isOpsVmPlacement } from './ops-vm.js';
+import { isOpsVmMachine, isOpsVmPlacement } from './ops-vm.js';
 import {
   isAncestryVerificationAvailable,
   isOverrideLegitimate,
@@ -42,6 +42,8 @@ export const CMD = {
   REPO_UP: 'repo up',
   REPO_DOWN: 'repo down',
   REPO_DELETE: 'repo delete',
+  // Deletes a machine image no config names, addressed by GUID; repo delete's grand guard, judged from the machine's fork marker.
+  REPO_ADMIN_ORPHAN_DELETE: 'repo admin orphan delete',
 
   REPO_SYNC_UPLOAD: 'repo sync upload',
   REPO_SYNC_DOWNLOAD: 'repo sync download',
@@ -263,6 +265,24 @@ export async function assertCommandPolicy(
   if (policy.forkBlocked && isFork) {
     throw new ValidationError(t('errors.agent.forkBlocked', { command: commandPath }));
   }
+}
+
+/**
+ * The grand guard for a repository the config does not name (`repo admin orphan delete`). assertCommandPolicy reads
+ * grand-or-fork from the config entry, and an orphan has none, so the machine's own fork marker decides: an image
+ * renet does not mark as a fork is treated as a grand, and the agent needs REDIACC_ALLOW_GRAND_REPO=<guid> (or `*`),
+ * set by the operator before the session. The ops VM fleet is exempt by the machine's address, as for repo delete.
+ */
+export async function assertOrphanDeletePolicy(
+  guid: string,
+  machineName: string,
+  isFork: boolean
+): Promise<void> {
+  if (!isAgentEnvironment()) return;
+  const policy = getPolicy(CMD.REPO_ADMIN_ORPHAN_DELETE);
+  if (!policy?.grandGuard || isFork) return;
+  if (await isOpsVmMachine(machineName)) return;
+  enforceGrandGuard(guid);
 }
 
 /**

@@ -8,10 +8,10 @@ import {
 import { configService } from '../../services/config/config-resources.js';
 import { outputService } from '../../services/core/output.js';
 import { setExitCode } from '../../services/core/request-context.js';
-import { getExecutor } from '../../services/executor/executor-factory.js';
 import { pendingExitCode, runCommandJob } from '../../services/jobs/command-job.js';
 import { requireStepOutput } from '../../services/jobs/step-output.js';
 import { bindStepHandler, planStep } from '../../services/jobs/steps.js';
+import { deleteRepoImageByGuid } from '../../services/repo/orphan-repos.js';
 import type { PruneReport } from '../../services/repo/prune.js';
 import { getOutputFormat, handleError } from '../../utils/errors.js';
 import { renderLocalExecutionFailure } from '../../utils/local-execution-failures.js';
@@ -133,16 +133,15 @@ async function deleteOrphanedItems(
   let firstCall = true;
   for (const item of orphaned) {
     outputService.info(`Deleting ${item.guid.slice(0, 8)}…`);
-    const deleteResult = await getExecutor().execute({
-      functionName: 'repository_delete',
-      machineName,
-      params: { repository: item.guid },
+    const deleteResult = await deleteRepoImageByGuid(machineName, item.guid, {
       debug,
       quietSpinners: !firstCall,
     });
     firstCall = false;
     if (!deleteResult.success) {
       outputService.error(`Failed to delete ${item.guid}: ${deleteResult.error}`);
+      // A failed delete leaves the image on the machine, so the run must not exit 0.
+      setExitCode(1);
     }
   }
 }
@@ -298,7 +297,8 @@ async function pruneOrphanedRepos(
     sections: ['repositories'],
     debug: options.debug,
   });
-  const deployedGuids = getRepositories(listResult).map((r) => r.name);
+  const deployed = getRepositories(listResult);
+  const deployedGuids = deployed.map((r) => r.name);
 
   if (deployedGuids.length === 0) {
     outputService.info(t('commands.machine.prune.noReposFound'));
@@ -313,13 +313,24 @@ async function pruneOrphanedRepos(
   printPruneAnalysis(analysis, Boolean(options.dryRun));
   outcome.report = buildPruneReport(analysis, Boolean(options.dryRun));
 
-  if (!options.dryRun && analysis.orphaned.length > 0) {
-    await deleteOrphanedItems(analysis.orphaned, machineName, options.debug);
+  // The mount-safety preflight the help text promises for both deletion paths: a mounted or running orphan is skipped unless --force-delete-mounted.
+  const orphanedGuids = new Set(analysis.orphaned.map((o) => o.guid));
+  const deletable = filterMountedReposForDeletion(
+    deployed.filter((r) => orphanedGuids.has(r.name)),
+    machineName,
+    options
+  );
+  if (!options.dryRun && deletable.length > 0) {
+    await deleteOrphanedItems(
+      deletable.map((r) => ({ guid: r.name })),
+      machineName,
+      options.debug
+    );
     await cleanupSshArtifacts(machineName);
 
     outputService.success(
       t('commands.machine.prune.orphanedReposCompleted', {
-        count: analysis.orphaned.length,
+        count: deletable.length,
       })
     );
   }

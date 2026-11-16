@@ -1790,6 +1790,26 @@
             "success": "\"{{name}}\" restaurado ({{guid}})"
           }
         },
+        "orphan": {
+          "description": "Imagens de repositório em uma máquina que nenhuma configuração menciona.",
+          "list": {
+            "description": "Mostra as imagens de repositório de uma máquina e indica se cada uma está órfã, ou seja, se nenhuma configuração a menciona.",
+            "none": "Nenhuma imagem de repositório em {{machine}}"
+          },
+          "delete": {
+            "description": "Exclui uma imagem de repositório órfã pelo GUID. Um GUID mencionado por qualquer configuração é recusado, assim como uma imagem montada ou em execução, a menos que --force-delete-mounted seja usado.",
+            "refArg": "Imagem órfã no formato <guid>@<machine>",
+            "badRef": "\"{{ref}}\" não está no formato <guid>@<machine>",
+            "notOnMachine": "Nenhuma imagem de repositório {{guid}} em {{machine}}",
+            "protected": "{{guid}} não está órfã: {{reason}}. Um repositório configurado é excluído com rdc repo delete.",
+            "mounted": "{{guid}} está montada ou em execução em {{machine}} ({{containers}} contêiner(es)). Com --force-delete-mounted, ela é parada e excluída.",
+            "forceOption": "Excluir a imagem mesmo que esteja montada ou tenha contêineres Docker em execução",
+            "confirm": "Excluir permanentemente a imagem de repositório {{guid}} ({{size}}) de {{machine}}?",
+            "starting": "Excluindo a imagem de repositório {{guid}} em {{machine}}...",
+            "completed": "Imagem de repositório {{guid}} excluída de {{machine}}",
+            "failed": "Falha ao excluir a imagem de repositório {{guid}}"
+          }
+        },
         "autostart": {
           "description": "Gerir o arranque automático do repositório no arranque do sistema",
           "disable": {

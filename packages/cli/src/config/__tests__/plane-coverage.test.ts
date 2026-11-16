@@ -156,8 +156,9 @@ describe('command plane coverage', () => {
     //
     // 220 -> 221, config 57 -> 58: `config import-machine` (PLAN-hostinger-to-bench Design 5) reads one config file and writes another on the workstation, never a machine, so it keeps the config domain's default plane.
     // 221 -> 223, other 42 -> 44: `server bundle` (local docker, local files) and `server licence mint` (account server under the caller's login) reach no machine (PLAN-enterprise-tenants C11).
-    expect(COMMANDS.length).toBe(223);
-    expect(counts).toEqual({ config: 58, machine: 121, other: 44 });
+    // 223 -> 225, machine 121 -> 123: `repo admin orphan list|delete` (worklist #48d790e1) read the machine's images and delete one through renet.
+    expect(COMMANDS.length).toBe(225);
+    expect(counts).toEqual({ config: 58, machine: 123, other: 44 });
   });
 
   it('records the interactive commands', () => {
@@ -216,7 +217,8 @@ describe('command plane coverage', () => {
     // 109 -> 111: `repo repair` and `machine repair` are machine-plane and non-interactive.
     // 111 -> 112: `job dismiss` is machine-plane and non-interactive (it confirms only without --yes).
     // 112 -> 116: `server status|upgrade|backup|licence` are machine-plane and non-interactive; PROXY_EXCLUSIONS keeps them local (the caller's install record and keys).
-    expect(machineNonInteractive.length).toBe(116);
+    // 116 -> 118: `repo admin orphan list|delete` are machine-plane and non-interactive (delete confirms only without --yes).
+    expect(machineNonInteractive.length).toBe(118);
   });
 
   it('plane and interactive entries all point at real commands', () => {

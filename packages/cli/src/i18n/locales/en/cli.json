@@ -1772,6 +1772,26 @@
             "success": "Restored \"{{name}}\" ({{guid}})"
           }
         },
+        "orphan": {
+          "description": "Repository images on a machine that no config names.",
+          "list": {
+            "description": "List the repository images on a machine and whether each one is an orphan that no config names.",
+            "none": "No repository images on {{machine}}"
+          },
+          "delete": {
+            "description": "Delete one orphan repository image by GUID. A GUID that any config names is refused, and so is a mounted or running image unless --force-delete-mounted is passed.",
+            "refArg": "Orphan image as <guid>@<machine>",
+            "badRef": "\"{{ref}}\" is not in the form <guid>@<machine>",
+            "notOnMachine": "No repository image {{guid}} on {{machine}}",
+            "protected": "{{guid}} is not an orphan: {{reason}}. A configured repository is deleted with rdc repo delete.",
+            "mounted": "{{guid}} is mounted or running on {{machine}} ({{containers}} container(s)). Pass --force-delete-mounted to stop and delete it.",
+            "forceOption": "Delete the image even when it is mounted or has running Docker containers",
+            "confirm": "Permanently delete repository image {{guid}} ({{size}}) from {{machine}}?",
+            "starting": "Deleting repository image {{guid}} on {{machine}}...",
+            "completed": "Deleted repository image {{guid}} from {{machine}}",
+            "failed": "Deleting repository image {{guid}} failed"
+          }
+        },
         "description": "Repository administration and maintenance verbs.",
         "validate": {
           "description": "Validate repository integrity (LUKS container, filesystem consistency, configuration). Use after unexpected shutdowns or to verify backup health",

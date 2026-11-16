@@ -1790,6 +1790,26 @@
             "success": "已恢复 \"{{name}}\"（{{guid}}）"
           }
         },
+        "orphan": {
+          "description": "机器上没有任何配置引用的仓库镜像。",
+          "list": {
+            "description": "列出机器上的仓库镜像，并标明每个镜像是否为孤立镜像，即没有任何配置引用它。",
+            "none": "{{machine}} 上没有仓库镜像"
+          },
+          "delete": {
+            "description": "按 GUID 删除一个孤立的仓库镜像。任何配置引用的 GUID 都会被拒绝；已挂载或正在运行的镜像也会被拒绝，除非指定 --force-delete-mounted。",
+            "refArg": "孤立镜像，格式为 <guid>@<machine>",
+            "badRef": "\"{{ref}}\" 不符合 <guid>@<machine> 格式",
+            "notOnMachine": "{{machine}} 上没有仓库镜像 {{guid}}",
+            "protected": "{{guid}} 不是孤立镜像：{{reason}}。已配置的仓库请用 rdc repo delete 删除。",
+            "mounted": "{{guid}} 在 {{machine}} 上已挂载或正在运行（{{containers}} 个容器）。指定 --force-delete-mounted 会先停止再删除。",
+            "forceOption": "即使镜像已挂载或有正在运行的 Docker 容器也删除",
+            "confirm": "要从 {{machine}} 永久删除仓库镜像 {{guid}}（{{size}}）吗？",
+            "starting": "正在删除 {{machine}} 上的仓库镜像 {{guid}}...",
+            "completed": "已从 {{machine}} 删除仓库镜像 {{guid}}",
+            "failed": "删除仓库镜像 {{guid}} 失败"
+          }
+        },
         "autostart": {
           "description": "管理开机时仓库的自动启动",
           "disable": {

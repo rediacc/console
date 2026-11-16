@@ -1790,6 +1790,26 @@
             "success": "\"{{name}}\" restauré ({{guid}})"
           }
         },
+        "orphan": {
+          "description": "Images de dépôt sur une machine qu'aucune configuration ne référence.",
+          "list": {
+            "description": "Affiche les images de dépôt d'une machine et indique pour chacune si elle est orpheline, c'est-à-dire qu'aucune configuration ne la référence.",
+            "none": "Aucune image de dépôt sur {{machine}}"
+          },
+          "delete": {
+            "description": "Supprime une image de dépôt orpheline par son GUID. Un GUID référencé par une configuration est refusé, tout comme une image montée ou en cours d'exécution, sauf avec --force-delete-mounted.",
+            "refArg": "Image orpheline au format <guid>@<machine>",
+            "badRef": "« {{ref}} » n'est pas au format <guid>@<machine>",
+            "notOnMachine": "Aucune image de dépôt {{guid}} sur {{machine}}",
+            "protected": "{{guid}} n'est pas orpheline : {{reason}}. Un dépôt configuré se supprime avec rdc repo delete.",
+            "mounted": "{{guid}} est montée ou en cours d'exécution sur {{machine}} ({{containers}} conteneur(s)). Avec --force-delete-mounted, elle est arrêtée puis supprimée.",
+            "forceOption": "Supprimer l'image même si elle est montée ou a des conteneurs Docker en cours d'exécution",
+            "confirm": "Supprimer définitivement l'image de dépôt {{guid}} ({{size}}) de {{machine}} ?",
+            "starting": "Suppression de l'image de dépôt {{guid}} sur {{machine}}...",
+            "completed": "Image de dépôt {{guid}} supprimée de {{machine}}",
+            "failed": "Échec de la suppression de l'image de dépôt {{guid}}"
+          }
+        },
         "autostart": {
           "description": "Gérer le démarrage automatique des dépôts au démarrage",
           "disable": {

@@ -9772,6 +9772,145 @@ export const CLI_CONTRACT: CliContract = {
       "path": [
         "repo",
         "admin",
+        "orphan",
+        "delete"
+      ],
+      "pathKey": "repo admin orphan delete",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "plane": "machine",
+      "descriptionKey": "commands.repo.admin.orphan.delete.description",
+      "label": "Delete one orphan repository image by GUID. A GUID that any config names is refused, and so is a mounted or running image unless --force-delete-mounted is passed.",
+      "options": [
+        {
+          "flags": "--force-delete-mounted",
+          "long": "force-delete-mounted",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "commands.repo.admin.orphan.delete.forceOption",
+          "label": "Delete the image even when it is mounted or has running Docker containers"
+        },
+        {
+          "flags": "-y, --yes",
+          "long": "yes",
+          "short": "y",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.yes",
+          "label": "Skip confirmation prompt"
+        },
+        {
+          "flags": "--dry-run",
+          "long": "dry-run",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.dryRun",
+          "label": "Show what would be done without making changes"
+        },
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "ref",
+          "kind": "repo-ref",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "commands.repo.admin.orphan.delete.refArg",
+          "label": "Orphan image as <guid>@<machine>"
+        }
+      ],
+      "hasSubcommands": false,
+      "grandGuard": true,
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": null,
+      "repoPositional": "ref"
+    },
+    {
+      "path": [
+        "repo",
+        "admin",
+        "orphan",
+        "list"
+      ],
+      "pathKey": "repo admin orphan list",
+      "domain": "repo",
+      "group": "REPOSITORIES",
+      "plane": "machine",
+      "descriptionKey": "commands.repo.admin.orphan.list.description",
+      "label": "List the repository images on a machine and whether each one is an orphan that no config names.",
+      "options": [
+        {
+          "flags": "--debug",
+          "long": "debug",
+          "valueTaking": false,
+          "variadic": false,
+          "mandatory": false,
+          "defaultValue": null,
+          "tier": "advanced",
+          "descriptionKey": "options.debug",
+          "label": "Enable debug output"
+        }
+      ],
+      "positionals": [
+        {
+          "name": "machine",
+          "kind": "machine",
+          "required": true,
+          "variadic": false,
+          "descriptionKey": "options.machine",
+          "label": "Machine name"
+        }
+      ],
+      "hasSubcommands": false,
+      "output": {
+        "primaryKey": "guid",
+        "columns": [
+          "guid",
+          "verdict",
+          "reason",
+          "mounted",
+          "running",
+          "containers",
+          "isFork",
+          "size",
+          "modified"
+        ]
+      },
+      "interactive": false,
+      "proxyCapable": true,
+      "detachable": true,
+      "machineOption": null,
+      "repoOption": null,
+      "machinePositional": "machine",
+      "repoPositional": null
+    },
+    {
+      "path": [
+        "repo",
+        "admin",
         "ownership"
       ],
       "pathKey": "repo admin ownership",

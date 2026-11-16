@@ -10,6 +10,9 @@ const mocks = vi.hoisted(() => ({
   repos: [] as Record<string, unknown>[],
   deletes: [] as string[],
   deployed: [] as string[],
+  /** Per-GUID machine state the `list all` probe reports for `--orphaned-repos` (mounted, docker_running). */
+  deployedState: {} as Record<string, Record<string, unknown>>,
+  deleteFails: false,
   events: [] as string[],
   sshEntries: [] as string[],
 }));
@@ -27,6 +30,7 @@ vi.mock('../../services/executor/executor-factory.js', () => ({
       if (req.functionName === 'repository_delete') {
         mocks.deletes.push(String(req.params?.repository));
         mocks.events.push(`delete:${String(req.params?.repository)}`);
+        if (mocks.deleteFails) return Promise.resolve({ success: false, error: 'renet refused' });
       }
       return Promise.resolve({ success: true });
     },
@@ -39,7 +43,8 @@ vi.mock('../../services/machine/machine-status.js', () => ({
   fetchMachineStatus: async () => ({ repositories: mocks.repos }),
 }));
 vi.mock('@rediacc/shared/renet-contract/data/list-types.generated', () => ({
-  getRepositories: () => mocks.deployed.map((name) => ({ name })),
+  getRepositories: () =>
+    mocks.deployed.map((name) => ({ name, ...(mocks.deployedState[name] ?? {}) })),
 }));
 vi.mock('../../services/config/config-resources.js', () => ({
   configService: {
@@ -98,6 +103,9 @@ beforeEach(() => {
   mocks.repos = [];
   mocks.deletes = [];
   mocks.deployed = [KNOWN, ORPHAN];
+  mocks.deployedState = {};
+  mocks.deleteFails = false;
+  process.exitCode = undefined;
   mocks.events = [];
   mocks.sshEntries = [];
   vi.spyOn(process.stdout, 'write').mockImplementation((chunk: string | Uint8Array) => {
@@ -107,6 +115,7 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => undefined);
 });
 afterEach(() => {
+  process.exitCode = undefined;
   restoreJobDeps();
   vi.restoreAllMocks();
 });
@@ -172,6 +181,47 @@ describe('machine prune output', () => {
     mocks.repos = [{ name: ORPHAN, mounted: false, docker_running: false, container_count: 0 }];
     await run('--prune-unknown');
     expect(mocks.deletes).toEqual([ORPHAN]);
+  });
+
+  // The help text promises the mount-safety preflight for BOTH deletion paths; --orphaned-repos skipped it and handed a mounted or running orphan to a forced renet delete.
+  it('skips a mounted orphan under --orphaned-repos', async () => {
+    mocks.format = 'json';
+    mocks.deployedState = {
+      [ORPHAN]: { mounted: true, docker_running: false, container_count: 0 },
+    };
+    await run('--orphaned-repos');
+    expect(mocks.deletes).toEqual([]);
+  });
+
+  it('skips an orphan whose daemon answers under --orphaned-repos', async () => {
+    mocks.format = 'json';
+    mocks.deployedState = {
+      [ORPHAN]: { mounted: false, docker_running: true, container_count: 0 },
+    };
+    await run('--orphaned-repos');
+    expect(mocks.deletes).toEqual([]);
+  });
+
+  it('deletes the mounted orphan under --orphaned-repos once --force-delete-mounted is passed', async () => {
+    mocks.format = 'json';
+    mocks.deployedState = { [ORPHAN]: { mounted: true, docker_running: true, container_count: 2 } };
+    await run('--orphaned-repos', '--force-delete-mounted');
+    expect(mocks.deletes).toEqual([ORPHAN]);
+  });
+
+  it('exits non-zero when renet refuses an orphan delete', async () => {
+    mocks.format = 'json';
+    mocks.deleteFails = true;
+    await run('--orphaned-repos');
+    expect(mocks.deletes).toEqual([ORPHAN]);
+    expect(process.exitCode).toBe(1);
+  });
+
+  it('exits zero when every orphan delete succeeds', async () => {
+    mocks.format = 'json';
+    await run('--orphaned-repos');
+    expect(mocks.deletes).toEqual([ORPHAN]);
+    expect(process.exitCode).toBeUndefined();
   });
 
   // The SSH-config cleanup runs client-side after a real orphan deletion, and only then.

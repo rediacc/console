@@ -1790,6 +1790,26 @@
             "success": "\"{{name}}\" 복원 완료 ({{guid}})"
           }
         },
+        "orphan": {
+          "description": "어떤 설정에도 등록되지 않은 머신의 저장소 이미지.",
+          "list": {
+            "description": "머신의 저장소 이미지를 나열하고, 각 이미지가 어떤 설정에도 없는 고아 이미지인지 표시합니다.",
+            "none": "{{machine}}에 저장소 이미지가 없습니다"
+          },
+          "delete": {
+            "description": "고아 저장소 이미지 하나를 GUID로 삭제합니다. 어느 설정에든 등록된 GUID는 거부되며, 마운트되었거나 실행 중인 이미지도 --force-delete-mounted 없이는 거부됩니다.",
+            "refArg": "<guid>@<machine> 형식의 고아 이미지",
+            "badRef": "\"{{ref}}\"은(는) <guid>@<machine> 형식이 아닙니다",
+            "notOnMachine": "{{machine}}에 저장소 이미지 {{guid}}이(가) 없습니다",
+            "protected": "{{guid}}은(는) 고아 이미지가 아닙니다: {{reason}}. 설정된 저장소는 rdc repo delete로 삭제합니다.",
+            "mounted": "{{guid}}이(가) {{machine}}에서 마운트되었거나 실행 중입니다 (컨테이너 {{containers}}개). --force-delete-mounted를 지정하면 중지한 뒤 삭제합니다.",
+            "forceOption": "마운트되었거나 Docker 컨테이너가 실행 중이어도 이미지를 삭제",
+            "confirm": "저장소 이미지 {{guid}} ({{size}})을(를) {{machine}}에서 영구 삭제할까요?",
+            "starting": "{{machine}}의 저장소 이미지 {{guid}} 삭제 중...",
+            "completed": "저장소 이미지 {{guid}}을(를) {{machine}}에서 삭제했습니다",
+            "failed": "저장소 이미지 {{guid}} 삭제에 실패했습니다"
+          }
+        },
         "autostart": {
           "description": "부팅 시 저장소 자동 시작을 관리합니다",
           "disable": {

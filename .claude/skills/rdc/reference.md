@@ -1464,6 +1464,27 @@ Add rediacc.service_port=<port> label for non-80 ports. Each fork gets a unique 
 
 > agent: fork-only | MCP excluded: Requires file upload; use CLI directly.
 
+### rdc repo admin orphan list <machine>
+
+List the repository images on a machine and whether each one is an orphan that no config names.
+
+**Options:**
+
+- `--debug`: Enable debug output
+
+### rdc repo admin orphan delete <ref>
+
+Delete one orphan repository image by GUID. A GUID that any config names is refused, and so is a mounted or running image unless --force-delete-mounted is passed.
+
+**Options:**
+
+- `--force-delete-mounted`: Delete the image even when it is mounted or has running Docker containers
+- `-y, --yes`: Skip confirmation prompt
+- `--dry-run`: Show what would be done without making changes
+- `--debug`: Enable debug output
+
+> agent: fork-only
+
 ### rdc repo gc
 
 Delete immutable commit objects on a machine that no branch or HEAD reaches (reachability GC). The machine is the object store; the CLI config is the ref store. Dry-run by default: pass --apply to delete. Never touches a mounted object or a working fork.

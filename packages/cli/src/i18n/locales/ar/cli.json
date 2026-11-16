@@ -1790,6 +1790,26 @@
             "success": "تمت استعادة \"{{name}}\" ({{guid}})"
           }
         },
+        "orphan": {
+          "description": "صور المستودعات على جهاز لا يذكرها أي إعداد.",
+          "list": {
+            "description": "يعرض صور المستودعات على جهاز ويبيّن لكل صورة هل هي يتيمة، أي لا يذكرها أي إعداد.",
+            "none": "لا توجد صور مستودعات على {{machine}}"
+          },
+          "delete": {
+            "description": "يحذف صورة مستودع يتيمة واحدة بواسطة GUID. يُرفض أي GUID يذكره إعداد ما، وتُرفض كذلك الصورة المركّبة أو قيد التشغيل ما لم يُمرَّر --force-delete-mounted.",
+            "refArg": "الصورة اليتيمة بالصيغة <guid>@<machine>",
+            "badRef": "\"{{ref}}\" ليس بالصيغة <guid>@<machine>",
+            "notOnMachine": "لا توجد صورة مستودع {{guid}} على {{machine}}",
+            "protected": "{{guid}} ليست يتيمة: {{reason}}. يُحذف المستودع المُعدّ باستخدام rdc repo delete.",
+            "mounted": "{{guid}} مركّبة أو قيد التشغيل على {{machine}} (عدد الحاويات: {{containers}}). مع --force-delete-mounted تُوقف ثم تُحذف.",
+            "forceOption": "احذف الصورة حتى لو كانت مركّبة أو فيها حاويات Docker قيد التشغيل",
+            "confirm": "هل تريد حذف صورة المستودع {{guid}} ({{size}}) من {{machine}} نهائيًا؟",
+            "starting": "جارٍ حذف صورة المستودع {{guid}} على {{machine}}...",
+            "completed": "حُذفت صورة المستودع {{guid}} من {{machine}}",
+            "failed": "تعذّر حذف صورة المستودع {{guid}}"
+          }
+        },
         "autostart": {
           "description": "إدارة التشغيل التلقائي للمستودعات عند الإقلاع",
           "disable": {

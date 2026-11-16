@@ -511,6 +511,20 @@ export const COMMAND_OUTPUT_HINTS: Record<string, CommandOutputHintDef> = {
     primaryKey: 'name',
     columns: ['name', 'tag', 'guid', 'credential', 'deletedAt'],
   },
+  'repo admin orphan list': {
+    primaryKey: 'guid',
+    columns: [
+      'guid',
+      'verdict',
+      'reason',
+      'mounted',
+      'running',
+      'containers',
+      'isFork',
+      'size',
+      'modified',
+    ],
+  },
   'repo admin autostart list': {
     primaryKey: 'repository',
     columns: ['repository', 'guid', 'enabled', 'onDisk'],

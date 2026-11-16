@@ -1790,6 +1790,26 @@
             "success": "\"{{name}}\"（{{guid}}）を復元しました"
           }
         },
+        "orphan": {
+          "description": "どの設定にも登録されていない、マシン上のリポジトリイメージ。",
+          "list": {
+            "description": "マシン上のリポジトリイメージを一覧表示し、それぞれがどの設定にも登録されていない孤立イメージかどうかを示します。",
+            "none": "{{machine}} にリポジトリイメージはありません"
+          },
+          "delete": {
+            "description": "孤立したリポジトリイメージを GUID で 1 つ削除します。いずれかの設定に登録されている GUID は拒否されます。マウント中または実行中のイメージも、--force-delete-mounted を指定しない限り拒否されます。",
+            "refArg": "<guid>@<machine> 形式の孤立イメージ",
+            "badRef": "\"{{ref}}\" は <guid>@<machine> 形式ではありません",
+            "notOnMachine": "{{machine}} にリポジトリイメージ {{guid}} はありません",
+            "protected": "{{guid}} は孤立イメージではありません: {{reason}}。設定済みのリポジトリは rdc repo delete で削除します。",
+            "mounted": "{{guid}} は {{machine}} でマウント中または実行中です (コンテナ {{containers}} 個)。--force-delete-mounted を指定すると停止してから削除します。",
+            "forceOption": "マウント中や Docker コンテナが実行中でもイメージを削除する",
+            "confirm": "リポジトリイメージ {{guid}} ({{size}}) を {{machine}} から完全に削除しますか？",
+            "starting": "{{machine}} のリポジトリイメージ {{guid}} を削除しています...",
+            "completed": "リポジトリイメージ {{guid}} を {{machine}} から削除しました",
+            "failed": "リポジトリイメージ {{guid}} の削除に失敗しました"
+          }
+        },
         "autostart": {
           "description": "起動時の自動リポジトリ開始を管理する",
           "disable": {

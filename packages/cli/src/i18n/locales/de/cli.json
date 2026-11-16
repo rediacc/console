@@ -1790,6 +1790,26 @@
             "success": "\"{{name}}\" wiederhergestellt ({{guid}})"
           }
         },
+        "orphan": {
+          "description": "Repository-Images auf einer Maschine, die keine Konfiguration nennt.",
+          "list": {
+            "description": "Zeigt die Repository-Images einer Maschine und ob jedes davon verwaist ist, also von keiner Konfiguration genannt wird.",
+            "none": "Keine Repository-Images auf {{machine}}"
+          },
+          "delete": {
+            "description": "Löscht ein verwaistes Repository-Image anhand seiner GUID. Eine GUID, die irgendeine Konfiguration nennt, wird abgelehnt, ebenso ein eingehängtes oder laufendes Image, außer mit --force-delete-mounted.",
+            "refArg": "Verwaistes Image als <guid>@<machine>",
+            "badRef": "\"{{ref}}\" hat nicht die Form <guid>@<machine>",
+            "notOnMachine": "Kein Repository-Image {{guid}} auf {{machine}}",
+            "protected": "{{guid}} ist nicht verwaist: {{reason}}. Ein konfiguriertes Repository wird mit rdc repo delete gelöscht.",
+            "mounted": "{{guid}} ist auf {{machine}} eingehängt oder läuft ({{containers}} Container). Mit --force-delete-mounted wird es gestoppt und gelöscht.",
+            "forceOption": "Das Image auch dann löschen, wenn es eingehängt ist oder laufende Docker-Container hat",
+            "confirm": "Repository-Image {{guid}} ({{size}}) endgültig von {{machine}} löschen?",
+            "starting": "Repository-Image {{guid}} auf {{machine}} wird gelöscht...",
+            "completed": "Repository-Image {{guid}} von {{machine}} gelöscht",
+            "failed": "Löschen des Repository-Images {{guid}} fehlgeschlagen"
+          }
+        },
         "autostart": {
           "description": "Automatischen Repository-Start beim Hochfahren verwalten",
           "disable": {
