@@ -802,8 +802,15 @@ SHORT_TS_RE = re.compile(r"^\d\d:\d\d:\d\d ")
 RETRY_NOTE_RE = re.compile(r"attempt \d+ of \d+ failed \(.*\), asking again in ")
 
 
-# A test runner's verdict line: `--- FAIL:` / `--- PASS:`, a package `FAIL<TAB>pkg` / `ok  <TAB>pkg` summary, or a bare `PASS`. A `t.Logf` line is read as test output only in a log that carries one: a run the runner cut off prints its `t.Fatalf` text with no verdict, and that text may be the real infra failure.
-TEST_VERDICT_RE = re.compile(r"^(?:\s*--- (?:PASS|FAIL)\b|FAIL\b|ok\s|PASS\b)")
+# A test runner's verdict line: Go `--- FAIL:` / `--- PASS:`, a package `FAIL<TAB>pkg` / `ok  <TAB>pkg` summary, a bare `PASS` / `FAIL` alone on a line, a pytest `PASSED|FAILED path::case` line or its `==== N passed ... ====` summary. A gate's own `FAIL: check:foo` line is no verdict. A `t.Logf` line is read as test output only in a log that carries a verdict: a run the runner cut off prints its `t.Fatalf` text with no verdict, and that text may be the real infra failure.
+TEST_VERDICT_RE = re.compile(
+    r"^(?:\s*--- (?:PASS|FAIL):"
+    r"|(?:FAIL|ok)\t\S"
+    r"|ok  \s*\S+\s"
+    r"|(?:PASS|FAIL)\s*$"
+    r"|(?:PASSED|FAILED) \S+::"
+    r"|=+ .*\b(?:passed|failed)\b.* =+\s*$)"
+)
 
 
 def _body(line):
@@ -1057,6 +1064,7 @@ def _focus(fetch, job, cache_dir=None, cause=None):
         "signature": "",
         "excerpt": [],
         "widened": False,
+        "test_verdict": False,
     }
     log, _err = job_log(fetch, jid, completed=job.get("status") == "completed", cache_dir=cache_dir)
     gaps = []
@@ -1065,6 +1073,8 @@ def _focus(fetch, job, cache_dir=None, cause=None):
         block["step"] = step or block["step"]
         block["category"], block["signature"] = classify(lines)
         block["excerpt"] = excerpt(lines)
+        # Stored so render() quotes the hit lines under the verdict classify() and excerpt() used, not one recomputed from the excerpt window.
+        block["test_verdict"] = _has_test_verdict(lines)
         block["widened"] = widened
         gaps = log_gaps(log)
     block["category"], block["signature"] = cancel_reclassify(
@@ -1279,7 +1289,7 @@ def render(d, budget_lines=12):
     room = max(0, budget_lines - len(fixed) - len(tail))
     # The HIT lines first: a window's context lines are for --errors, while the summary has room for only a handful.
     ex = ff.get("excerpt") or []
-    verdict = _has_test_verdict(ex)
+    verdict = bool(ff.get("test_verdict"))
     hits = [ln for ln in ex if _sig_hit(ln, verdict) or "##[error]" in ln]
     body = ["    " + ln for ln in (hits or ex)[:room]]
     lines = [_clip(ln, 180) for ln in fixed + body + tail][:budget_lines]

@@ -524,6 +524,51 @@ def test_a_cut_off_log_with_a_stall_in_a_test_log_line_stays_infra():
     assert D.classify(lines) == ("infra-likely", "pkg-install-stall")
 
 
+STALL_TEST_LINE = "2026-11-16T02:13:20.0000000Z     x_test.go:12: apt install of jq failed or stalled past 30s in all 3 attempts"
+
+
+def test_a_gate_fail_line_is_no_test_verdict():
+    """A non-Go gate line `FAIL: check:foo` plus a cut-off stall in a test log line still reads infra."""
+    lines = ["2026-11-16T02:13:19.0000000Z FAIL: check:foo", STALL_TEST_LINE]
+    assert not D._has_test_verdict(lines)
+    assert D.classify(lines) == ("infra-likely", "pkg-install-stall")
+
+
+def test_real_runner_verdict_shapes_switch_the_infra_skip_off():
+    """Control: a package `FAIL<TAB>pkg`, an `ok  <TAB>pkg`, a bare PASS and a pytest case line are verdicts."""
+    shapes = [
+        "FAIL\tgithub.com/rediacc/renet/a\t0.1s",
+        "ok  \tgithub.com/rediacc/renet/a\t0.1s",
+        "PASS",
+        "FAILED tests/test_x.py::test_y - assert 0",
+        "=== 1 failed, 2 passed in 0.5s ===",
+    ]
+    for shape in shapes:
+        lines = ["2026-11-16T02:13:19.0000000Z " + shape, STALL_TEST_LINE]
+        assert D._has_test_verdict(lines), shape
+        assert D.classify(lines)[0] != "infra-likely", shape
+
+
+def test_render_agrees_with_classify_when_the_verdict_is_outside_the_excerpt(tmp_path, monkeypatch):
+    """The verdict line sits far below the excerpt window: render must still treat the test log line as test output."""
+    log_lines = ["2026-11-16T02:13:%02d.0000000Z filler %d" % (i, i) for i in range(12)]
+    log_lines.append(STALL_TEST_LINE)
+    log_lines.append("2026-11-16T02:13:21.0000000Z ##[error]boom")
+    log_lines += ["2026-11-16T02:13:22.0000000Z filler %d" % i for i in range(30)]
+    log_lines.append("2026-11-16T02:13:59.0000000Z --- PASS: TestOther (0.00s)")
+    monkeypatch.setattr(D, "evidence", lambda log, _job: ("s", log.splitlines(), False))
+    fetch = FakeFetch({}, {"actions/jobs/1/logs": "\n".join(log_lines)})
+    job = {"id": 1, "name": "J", "status": "completed", "conclusion": "failure", "steps": []}
+    block, _gaps = D._focus(fetch, job, cache_dir=tmp_path)
+    assert (block["category"], block["signature"]) == ("code-likely", "step-error"), block
+    assert block["test_verdict"] is True
+    assert not D._has_test_verdict(block["excerpt"])
+    d = D._blank(1, 1, None)
+    d["first_failure"] = block
+    quoted = [ln for ln in D.render(d).splitlines() if "stalled past" in ln]
+    assert quoted == [], quoted
+
+
 def test_an_error_line_does_not_pull_an_infra_window_next_to_a_test_failure():
     """A stall just before `##[error]` is not quoted when a Go FAIL line is the verdict."""
     lines = [
