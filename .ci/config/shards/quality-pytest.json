@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-16T04:33:35.101Z",
+  "generatedAt": "2026-11-16T06:05:22.707Z",
   "legs": [
     {
       "index": 1,
@@ -820,6 +820,7 @@
         "pytest:.ci/rediacc_ci/tests/test_deploy_deploy_account.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_promote_r2_to_stable.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_proxy_configs.py",
+        "pytest:.ci/rediacc_ci/tests/test_deploy_proxy_smoke_allowlist.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_resolve_www_deploy_target.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_simulate_promotion.py",
         "pytest:.ci/rediacc_ci/tests/test_deploy_upload_repos_to_r2.py",
