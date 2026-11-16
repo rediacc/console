@@ -2183,3 +2183,48 @@ def test_report_control_the_old_dead_row_holds_no_report_id():
     assert rows == old
     for aid, _sig in CHILD_BOXES.values():
         assert report.short_id(aid) not in old
+
+
+# Reviews 7ee1b55d.1 and 7ee1b55d.2: the regenerate route joined a registered output to the run's own `cd` directory (`tools/.ci/config/plan-boxes.json`, a file nobody wrote), and strict mode never walked a `subprocess` command line without a write verb or redirect, so a generator run from Python proved no write.
+REGEN_STRICT_SNIPPET = r"""
+import json, sys
+sys.path.insert(0, sys.argv[1])
+import wl_roster as R
+print(json.dumps(sorted(R.bash_write_paths(sys.argv[2], sys.argv[3], sys.argv[3], strict=True))))
+"""
+BOXES = ".ci/config/plan-boxes.json"
+BOXES_RUN = "npm run check:ci-plan-boxes -- --update"
+SUBPROCESS_BOXES = "python3 - <<'EOF'\nimport subprocess\nsubprocess.run(%r)\nEOF" % (
+    ["npm", "run", "check:ci-plan-boxes", "--", "--update"],
+)
+SUBPROCESS_GIT = "python3 - <<'EOF'\nimport subprocess\nsubprocess.run(['git', 'status'])\nEOF"
+REGEN_STRICT_CASES = [
+    ("cd tools && " + BOXES_RUN, [BOXES]),
+    (BOXES_RUN, [BOXES]),
+    (SUBPROCESS_BOXES, [BOXES]),
+    ("cd tools && npm run check:ci-other -- --update", []),
+    (SUBPROCESS_GIT, []),
+]
+
+
+@pytest.mark.parametrize(("cmd", "want"), REGEN_STRICT_CASES)
+def test_a_registered_generator_run_writes_its_outputs_from_the_root(tmp_path, cmd, want):
+    (tmp_path / ".ci" / "config").mkdir(parents=True)
+    (tmp_path / "tools").mkdir()
+    (tmp_path / ".ci" / "config" / "generated-artifacts.json").write_text(
+        json.dumps(
+            {
+                "schema": 1,
+                "artifacts": [{"id": "plan-boxes", "outputs": [BOXES], "generator": BOXES_RUN}],
+            }
+        ),
+        encoding="utf-8",
+    )
+    proc = subprocess.run(
+        [sys.executable, "-c", REGEN_STRICT_SNIPPET, str(wlfix.STOP_DIR), cmd, str(tmp_path)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert proc.returncode == 0, proc.stderr[-600:]
+    assert json.loads(proc.stdout) == want, cmd

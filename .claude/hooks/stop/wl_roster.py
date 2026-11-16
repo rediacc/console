@@ -1238,7 +1238,10 @@ def bash_write_paths(cmd, cwd, root, strict=False, _depth=0):
                 add(value, run.cwd)
         run_base = base_cwd if run.cwd is None else posixpath.join(base_cwd, str(run.cwd))
         for output in _regen_outputs(run, run_base, root):
-            add(output, run.cwd)
+            # A registered output is repo-root-relative whatever directory the run `cd`ed to (an `npm run` finds the root package.json from a subdirectory), so it is joined to the root, never to the run's directory.
+            rel = _norm_under(str(output), str(root), root)
+            if rel:
+                out.add(rel)
         if posixpath.basename(str(run.name or "")).startswith("python"):
             py_bodies.append(
                 (_python_text(shellscan, run, cmd, base_cwd), run.cwd, _script_args(run, shellscan))
@@ -1291,6 +1294,16 @@ _WRITE_LIKE_ATTRS = frozenset(
 )
 # The same, imported by name (`from shutil import copy`).
 _WRITE_LIKE_NAMES = frozenset({"copy", "copy2", "copyfile", "copytree", "move", "rmtree"})
+
+
+def _is_subprocess_call(node):
+    """Whether the call is `subprocess.<anything>(...)`: strict reading walks its literal command line whether or not the line looks write-shaped, because a registered generator (`npm run check:ci-plan-boxes -- --update`) writes files no verb or redirect in its words shows."""
+    import ast
+
+    f = node.func
+    return (
+        isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name) and f.value.id == "subprocess"
+    )
 
 
 def _unlisted_write(node):
@@ -1487,7 +1500,7 @@ def _py_written_paths(text, strict=False, argv=None, subcommands=None):
                 take(args[1])
     if strict:
         for node in ast.walk(tree):
-            if isinstance(node, ast.Call) and _unlisted_write(node):
+            if isinstance(node, ast.Call) and (_unlisted_write(node) or _is_subprocess_call(node)):
                 _strict_unlisted(node, strs, found, subcommands, shlex)
         return [lit for lit in found if _is_path_lit(lit)]
     if unresolved or any(_unlisted_write(n) for n in ast.walk(tree) if isinstance(n, ast.Call)):
