@@ -444,6 +444,54 @@ def test_alert_label_values_are_plain():
         td.AlertSeries(["eu"], [], "account-{region}")
 
 
+def test_alert_service_name_must_be_a_plain_label_value():
+    """Review eff0e789.1: the rendered service name is checked too, so a template cannot inject a selector."""
+    with pytest.raises(ValueError, match=r"service name .* is not a plain label value"):
+        td.AlertSeries(["eu"], ["production"], 'account-{region}"} or vector(1) #')
+    assert td.AlertSeries(["eu"], ["production"], "account-{region}").service("eu") == "account-eu"
+
+
+def _split_run(tempo_loki_status: int, prom_status: int):
+    """`run` with an alert where Tempo and Loki answer `tempo_loki_status` and Prometheus answers `prom_status`."""
+
+    def get(url, _headers):
+        if "/uid/prometheus/" in url:
+            return td.Reply(prom_status, b"{}")
+        if "/api/datasources/proxy/" in url:
+            return td.Reply(tempo_loki_status, b"{}")
+        return td.Reply(200, b'{"status":"ok"}')
+
+    out = io.StringIO()
+    rc = td.run(
+        ["a.example"],
+        get,
+        "https://g",
+        "tok",
+        timeout_s=0,
+        interval_s=0,
+        sleep=lambda _s: None,
+        out=out,
+        alert=_alert(),
+    )
+    return rc, out.getvalue()
+
+
+def test_a_prometheus_rejection_joins_the_credential_verdict(capsys):
+    """Review e92ca2bd.1: Prometheus answering 403 beside Tempo and Loki answering 401 is one rejected credential, exit 2."""
+    rc, out = _split_run(401, 403)
+    assert rc == 2
+    assert "SILENT" not in out
+    assert "401/403" in capsys.readouterr().err
+
+
+def test_a_prometheus_error_beside_a_rejection_is_not_a_credential_verdict(capsys):
+    """Control: Prometheus answering 500 is an outage signal, so the 401s elsewhere do not make the run exit 2."""
+    rc, out = _split_run(401, 500)
+    assert rc == 1
+    assert "(grafana query answered 500)" in out
+    assert "rejected" not in capsys.readouterr().err
+
+
 def test_account_environments_come_from_ops_health_config(tmp_path):
     assert td.account_environments() == ["production", "edge"]
     assert td.account_service_template() == "account-{region}"
