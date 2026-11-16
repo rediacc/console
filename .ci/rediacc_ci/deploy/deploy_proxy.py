@@ -459,6 +459,19 @@ def read_record_field(path: pathlib.Path | None, key: str) -> str | None:
     return str(value) if value else None
 
 
+def _recorded_first_deploy(path: pathlib.Path | None) -> bool:
+    """True when the record a deferred-smoke deploy left says the Worker had no previous version (its `previous_version_id` key is present and null), so the later `--smoke-only` also waits for the certificate. No record, or no such key, is not a first deploy."""
+    if path is None or not path.is_file():
+        return False
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    return (
+        isinstance(data, dict) and "previous_version_id" in data and not data["previous_version_id"]
+    )
+
+
 def reexec_argv(argv: list[str], profile: str = BENCH_PROFILE) -> list[str]:
     """This same run under one bws profile (deploy-proxy-bench-eu unless named)."""
     return [
@@ -634,24 +647,28 @@ class _Fetcher:
         self.pin: str | None = None
         self.cert_wait = cert_wait
 
-    def _await_certificate(self, url: str, out: str, rc: int) -> str:
-        """Re-ask a request that got no answer (a TLS handshake failure or a refused connection) until CERT_WINDOW_S has passed; the last answer when it never comes."""
+    def _await_certificate(self, url: str, out: str, rc: int) -> tuple[str, int]:
+        """Re-ask a request that got no answer (curl failed with an empty or 000 code: a TLS handshake failure, a refused connection or a timeout) until CERT_WINDOW_S has passed; the last (code, curl exit) when it never comes. A resolution failure (CURL_RESOLVE_RC) ends the wait, so `code` answers it with the DoH pin."""
         deadline = time.monotonic() + CERT_WINDOW_S
-        while rc != 0 and out in ("", NO_ANSWER_CODE) and time.monotonic() < deadline:
+        while (
+            rc not in (0, CURL_RESOLVE_RC)
+            and out in ("", NO_ANSWER_CODE)
+            and time.monotonic() < deadline
+        ):
             log.info(
                 "%s gave no answer (curl exit %d); waiting for its certificate" % (self.host, rc)
             )
             _sleep(CERT_INTERVAL_S)
             out, rc = _curl(url, self.pin)
-        return out
+        return out, rc
 
     def code(self, url: str) -> str:
         deadline = time.monotonic() + _resolve_window()
         while True:
             out, rc = _curl(url, self.pin)
+            if self.cert_wait and rc != CURL_RESOLVE_RC:
+                out, rc = self._await_certificate(url, out, rc)
             if rc != CURL_RESOLVE_RC:
-                if self.cert_wait:
-                    return self._await_certificate(url, out, rc)
                 return out
             if self.pin is None and time.monotonic() >= deadline:
                 address = _doh_lookup(self.host)
@@ -694,14 +711,14 @@ def allow_ips(config: pathlib.Path) -> str:
 
 
 def allowlist_refused(status: int | str, body: str) -> bool:
-    """True when the answer is a 403 whose JSON body is exactly the allowlist's refusal, not a WAF, token or other 403. `status` is an int, or curl's `%{http_code}` text."""
+    """True when the answer is a 403 whose JSON body is exactly the allowlist's refusal (the one `error` key and nothing else), not a WAF, token or other 403. `status` is an int, or curl's `%{http_code}` text."""
     if str(status).strip() != "403":
         return False
     try:
         parsed = json.loads(body)
     except ValueError:
         return False
-    return isinstance(parsed, dict) and parsed.get("error") == ALLOWLIST_REFUSAL
+    return parsed == {"error": ALLOWLIST_REFUSAL}
 
 
 class _AllowlistRefusedError(Exception):
@@ -760,10 +777,11 @@ def smoke(
     *,
     first_deploy: bool = False,
     config: pathlib.Path | None = None,
+    outcome: dict[str, object] | None = None,
 ) -> int:
     """The post-deploy smoke: /v1/health 200, an unauthenticated /v1/server-info 401, then /v1/ready on the deployed version. `first_deploy` also waits up to CERT_WINDOW_S for the custom domain's certificate.
 
-    A company whose deployed `config` sets `vars.ALLOW_IPS` and whose proxy answers any smoke request (health, server-info, or any /v1/ready poll) with 403 and the allowlist's own refusal body skips the rest of the smoke, logs why, and passes: the Worker applies ALLOW_IPS to every route, /v1/health included (workers/proxy/src/ip-allowlist.ts), so a machine off the list cannot smoke it (the 2026-11-16 `proof proxy` bench run failed "/v1/health answered 403"). A health or server-info 403 is asked once more keeping the body, since those two requests read only the status. Every request is checked, not only the first, because right after a deploy an edge may still serve the previous version. With no ALLOW_IPS, or any other 403 body, a 403 fails as before.
+    A company whose deployed `config` sets `vars.ALLOW_IPS` and whose proxy answers any smoke request (health, server-info, or any /v1/ready poll) with 403 and the allowlist's own refusal body skips the rest of the smoke, logs why, and passes: the Worker applies ALLOW_IPS to every route, /v1/health included (workers/proxy/src/ip-allowlist.ts), so a machine off the list cannot smoke it (the 2026-11-16 `proof proxy` bench run failed "/v1/health answered 403"). A health or server-info 403 is asked once more keeping the body, since those two requests read only the status. Every request is checked, not only the first, because right after a deploy an edge may still serve the previous version. With no ALLOW_IPS, or any other 403 body, a 403 fails as before. That skip returns 0 like a pass, so a caller that passes `outcome` finds `smoke_skipped` set to "allowlist" in it and records it beside `smoke_rc`.
     """
     url = "https://" + host
     log.step("Smoke-testing %s..." % shown(url))
@@ -799,6 +817,8 @@ def smoke(
             "Smoke skipped: %s answers 403 %r, so its ALLOW_IPS refuses this machine; version %s is deployed but not smoked from here"
             % (shown(str(refused)), ALLOWLIST_REFUSAL, version_id)
         )
+        if outcome is not None:
+            outcome["smoke_skipped"] = "allowlist"
         return 0
     log.info(SMOKE_PASSED % version_id)
     return 0
@@ -1343,7 +1363,16 @@ def main(argv: list[str]) -> int:
                 % shown(spec.name)
             )
             return 1
-        status = smoke(host, version_id, None, shown, config=worker_dir / config)
+        outcome: dict[str, object] = {}
+        status = smoke(
+            host,
+            version_id,
+            None,
+            shown,
+            first_deploy=_recorded_first_deploy(record_path),
+            config=worker_dir / config,
+            outcome=outcome,
+        )
         if record_path is not None:
             record = {}
             if record_path.is_file():
@@ -1352,7 +1381,10 @@ def main(argv: list[str]) -> int:
                     record = loaded if isinstance(loaded, dict) else {}
                 except (OSError, ValueError):
                     record = {}
-            record.update({"worker": spec.name, "version_id": version_id, "smoke_rc": status})
+            record.pop("smoke_skipped", None)
+            record.update(
+                {"worker": spec.name, "version_id": version_id, "smoke_rc": status, **outcome}
+            )
             write_record(record_path, record)
         if status != 0:
             # A failing --smoke-only names the recorded revert as a failed deploy-time smoke does: the version may be one a deferred-smoke deploy left unsmoked, or one already smoked that a re-run found broken.
@@ -1406,6 +1438,7 @@ def main(argv: list[str]) -> int:
 
     timing: dict[str, int] = {}
     # `--defer-smoke` (the company onboarding passes it on every company deploy) skips this smoke: the proxy's ISSUER binding names the company account Worker, which carries no ExecutorIssuer until its own deploy ships, and that deploy needs this proxy (its EXECUTOR binding), so a smoke here could not pass on a first deploy. The caller smokes with --smoke-only once the account Worker is up.
+    deploy_outcome: dict[str, object] = {}
     smoke_rc = (
         None
         if args.defer_smoke
@@ -1416,6 +1449,7 @@ def main(argv: list[str]) -> int:
             shown,
             first_deploy=previous is None,
             config=worker_dir / config,
+            outcome=deploy_outcome,
         )
     )
     rollback = revert_line(config, previous, forward_only, current_tag)
@@ -1437,6 +1471,7 @@ def main(argv: list[str]) -> int:
                 "previous_version_id": previous,
                 "artifacts_version": None if bench else args.version,
                 "smoke_rc": smoke_rc,
+                **deploy_outcome,
                 "rollback": rollback,
                 "migration_tag": current_tag,
                 "cold_start_ms": timing.get("cold_start_ms"),

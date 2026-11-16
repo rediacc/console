@@ -1386,6 +1386,40 @@ def test_a_first_deploy_does_not_retry_a_real_status(monkeypatch) -> None:
     assert sleeps == []
 
 
+def test_a_first_deploy_hands_a_mid_wait_resolution_failure_to_the_resolve_retry(
+    monkeypatch, capsys
+) -> None:
+    """Review 8fc33ca1.3: curl exit 6 inside the certificate wait ends the wait, so the resolve retry answers it; the certificate wait is logged once (exit 35), not again for the exit-6 answer."""
+    fake, _ = _smoke_fixture(monkeypatch, [("000", 35), ("000", 6), ("200", 0), ("401", 0)])
+    _clock(monkeypatch, [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0])
+    assert port.smoke(HOST, NEW_ID, first_deploy=True) == 0
+    assert len(fake.calls) == 4
+    err = capsys.readouterr()
+    assert (err.out + err.err).count("waiting for its certificate") == 1
+
+
+@pytest.mark.parametrize(
+    ("record", "first"),
+    [
+        ({"previous_version_id": None, "smoke_rc": None}, True),
+        ({"previous_version_id": PREV_ID}, False),
+        ({"smoke_rc": None}, False),
+    ],
+    ids=["first", "later", "no-key"],
+)
+def test_a_smoke_only_waits_for_the_certificate_of_a_recorded_first_deploy(
+    tmp_path: pathlib.Path, record, first
+) -> None:
+    """Review 8fc33ca1.1: the deferred-smoke record decides, so --smoke-only of a first deploy also waits; a later deploy, a record without the key and no record do not."""
+    path = tmp_path / "record.json"
+    assert port._recorded_first_deploy(path) is False
+    path.write_text(json.dumps(record), encoding="utf-8")
+    assert port._recorded_first_deploy(path) is first
+    path.write_text("not json", encoding="utf-8")
+    assert port._recorded_first_deploy(path) is False
+    assert port._recorded_first_deploy(None) is False
+
+
 def test_the_doh_lookup_reads_the_first_a_record(monkeypatch) -> None:
     class Resp:
         def __enter__(self):
@@ -2375,10 +2409,10 @@ def test_main_deploys_through_the_settings_retry_and_smokes_without_defer(monkey
 def test_only_a_first_deploy_smokes_with_the_certificate_wait(monkeypatch, tmp_path):
     config = tmp_path / "wrangler.toml"
     assert _company_main(monkeypatch, tmp_path, first_deploy=True)[0] == 0
-    assert [{"first_deploy": True, "config": config}] == SMOKE_KWARGS
+    assert [{"first_deploy": True, "config": config, "outcome": {}}] == SMOKE_KWARGS
     # control: a Worker that was already listed is a later deploy
     assert _company_main(monkeypatch, tmp_path)[0] == 0
-    assert [{"first_deploy": False, "config": config}] == SMOKE_KWARGS
+    assert [{"first_deploy": False, "config": config, "outcome": {}}] == SMOKE_KWARGS
 
 
 def test_smoke_only_hands_the_smoke_the_company_config_its_allowlist_is_read_from(
@@ -2388,7 +2422,9 @@ def test_smoke_only_hands_the_smoke_the_company_config_its_allowlist_is_read_fro
     status, calls = _company_main(monkeypatch, tmp_path, "--smoke-only", version_flag=())
     assert status == 0
     assert calls == ["smoke"]
-    assert [{"config": tmp_path / "wrangler.toml"}] == SMOKE_KWARGS
+    assert [
+        {"first_deploy": False, "config": tmp_path / "wrangler.toml", "outcome": {}}
+    ] == SMOKE_KWARGS
 
 
 def test_defer_smoke_deploys_and_skips_the_smoke_and_records_no_smoke_rc(monkeypatch, tmp_path):

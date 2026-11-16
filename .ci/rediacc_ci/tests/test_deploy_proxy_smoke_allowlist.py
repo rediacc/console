@@ -190,3 +190,37 @@ def test_an_allowlisted_company_that_admits_this_machine_is_smoked_in_full(
         ("code", "/v1/server-info"),
         ("body", "/v1/ready"),
     ]
+
+
+def test_the_skip_is_reported_in_the_outcome_a_full_pass_leaves_empty(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    """Review 9acc621c.1: rc 0 alone cannot tell the skip from a verified pass, so `outcome` names it; the control pass leaves it unset."""
+    config = lab_config(tmp_path, ("192.0.2.10",))
+    refused = Host({"/v1/health": ["403"]}, {"/v1/health": [(ALLOWLIST_BODY, "403")]})
+    skipped: dict[str, object] = {}
+    monkeypatch.setattr(port, "_curl", refused.curl)
+    monkeypatch.setattr(port, "_curl_body", refused.curl_body)
+    monkeypatch.setattr(port, "_sleep", lambda _s: None)
+    assert port.smoke(HOST, VERSION, config=config, outcome=skipped) == 0
+    assert skipped == {"smoke_skipped": "allowlist"}
+    full = Host(
+        {"/v1/health": ["200"], "/v1/server-info": ["401"]}, {"/v1/ready": [ready(VERSION)]}
+    )
+    monkeypatch.setattr(port, "_curl", full.curl)
+    monkeypatch.setattr(port, "_curl_body", full.curl_body)
+    passed: dict[str, object] = {}
+    assert port.smoke(HOST, VERSION, config=config, outcome=passed) == 0
+    assert passed == {}
+
+
+def test_a_refusal_body_with_an_extra_key_is_not_the_allowlist(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: pathlib.Path
+) -> None:
+    """Review 9acc621c.2: the body must be exactly the one-key refusal; control: the exact body is recognised."""
+    extra = '{"error":"This address is not on the allowlist.","x":1}'
+    assert port.allowlist_refused(403, ALLOWLIST_BODY)
+    assert not port.allowlist_refused(403, extra)
+    config = lab_config(tmp_path, ("192.0.2.10",))
+    host = Host({"/v1/health": ["403"]}, {"/v1/health": [(extra, "403")]})
+    assert run_smoke(monkeypatch, host, config) == 1
