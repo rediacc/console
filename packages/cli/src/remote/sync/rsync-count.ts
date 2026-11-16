@@ -35,7 +35,8 @@ export function updateRsyncCount(state: RsyncCountState, chunk: string): number 
  * running, and the last line seen is only the last file's size, so neither is the total. Keyed by xfr#,
  * a line seen twice through the chunk carry counts once.
  */
-const FINAL_LINE_PATTERN = /(\d[\d,]*)\s+100%\s+\S+\s+\S+\s+\(xf(?:e)?r#(\d+)/g;
+// The digits end at `,` or `)`: a chunk that stops inside the number must not store a prefix of it as the file's key.
+const FINAL_LINE_PATTERN = /(\d[\d,]*)\s+100%\s+\S+\s+\S+\s+\(xf(?:e)?r#(\d+)[,)]/g;
 /** Longest final line worth carrying: bytes, percent, speed, eta and the xfr token. */
 const BYTES_CARRY_LENGTH = 96;
 

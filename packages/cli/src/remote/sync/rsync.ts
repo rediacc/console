@@ -354,6 +354,8 @@ export async function executeRsync(
 
     let filesTransferred = 0;
     let bytesTransferred = 0;
+    // The size on the last progress line: what a run that never finished a file (no 100% xfr# line) reports.
+    let lastProgressBytes = 0;
     let stderrText = '';
     // rsync prints "skipping non-regular file" as an info message, which the sender writes to stdout, so the skip scan reads both streams. Only the skip lines of stdout are kept.
     const stdoutSkips = createSkipLineScan();
@@ -368,9 +370,10 @@ export async function executeRsync(
       // Parse progress from rsync output
       // Format: "   123,456,789 100%   12.34MB/s    0:00:00 (xfr#123, to-chk=456/789)"
       const progressMatch = /(\d[\d,]*)\s+(\d+)%\s+([\d.]+\w+\/s)\s+([\d:]+)/.exec(output);
-      if (progressMatch && options.onProgress) {
+      if (progressMatch) {
         const bytes = Number.parseInt(progressMatch[1].replaceAll(',', ''), 10);
-        options.onProgress({
+        lastProgressBytes = bytes;
+        options.onProgress?.({
           currentFile: '',
           bytesTransferred: bytes,
           totalBytes: 0,
@@ -379,7 +382,7 @@ export async function executeRsync(
           eta: progressMatch[4],
         });
       }
-      bytesTransferred = updateRsyncBytes(bytesState, output);
+      bytesTransferred = updateRsyncBytes(bytesState, output) || lastProgressBytes;
 
       // Count transferred files: the running maximum xfr# over the whole run, so a chunk that carries several xfr# counters is never counted by its first one alone
       filesTransferred = updateRsyncCount(countState, output);

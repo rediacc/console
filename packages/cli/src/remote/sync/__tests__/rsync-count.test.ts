@@ -59,4 +59,16 @@ describe('updateRsyncBytes', () => {
     const state = newRsyncBytesState();
     expect(updateRsyncBytes(state, 'a.txt\n   900  40%  1.00MB/s  0:00:01 \n')).toBe(0);
   });
+
+  it('keys a final line split inside its xfr# digits by the whole number', () => {
+    const state = newRsyncBytesState();
+    // The filler pushes file 1's line out of the carry, so only a terminator keeps the split line off key 1.
+    updateRsyncBytes(
+      state,
+      `100 100%    1.00MB/s    0:00:00 (xfr#1, to-chk=11/12)\n${'x'.repeat(120)}\n`
+    );
+    updateRsyncBytes(state, '700 100%    1.00MB/s    0:00:00 (xfr#1');
+    // Without the terminator, the partial line stored 700 under key 1 and overwrote file 1.
+    expect(updateRsyncBytes(state, '2, to-chk=0/12)\n')).toBe(800);
+  });
 });
