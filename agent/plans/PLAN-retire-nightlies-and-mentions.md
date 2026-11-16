@@ -165,6 +165,8 @@ Plans that say "nightly" about something this plan keeps, checked and left alone
   - Accept: `npm run check:ci-label-inventory` rc 0 against the live repo.
 - [ ] L4 [live] Redeploy the ops-health Worker with N1's config (`PYTHONPATH=.ci python3 -m rediacc_ci.ops.deploy_ops_health ... --write`, the arguments as PLAN-health-checks-local W4 recorded them).
   - Accept: the deploy rc 0, `npm run check:ci-ops-health` rc 0, and `/v1/status` reports the code sha of the landed tree.
+- [ ] L5 [live] Stable also promotes locally (operator ruling 2026-11-16: "also allow release:local for stable"): `RELEASE_ASKED=ASKED:<minute>Z npm run release:local -- --channel stable --dry-run` from the landed tree reads every step, with no daily schedule involved; docs/agent-reference/release-process.md names the local stable path beside the manual workflow.
+  - Accept: the dry run rc 0 with its step list in the tick evidence, and `rg -n 'release:local -- --channel stable' docs/agent-reference/release-process.md` finds the documented path.
 
 ## Writer split and order
 - Wave 1, in parallel: S1, N1, N3, B1, G1, G2 (six groups; at most four at once under `writer_cap`, so G1 and G2 start as the first two slots free).
