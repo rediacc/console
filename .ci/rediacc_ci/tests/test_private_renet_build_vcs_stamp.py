@@ -173,6 +173,37 @@ def test_build_sh_stamps_a_dirty_submodule_as_modified(tmp_path: pathlib.Path) -
     assert _stamp(out, env) == (sub_head, "true")
 
 
+def test_the_helper_points_git_at_the_submodule_whatever_the_toolchain_stamps(
+    tmp_path: pathlib.Path,
+) -> None:
+    """Review fc7f0170.1: on a Go whose plain build already stamps the submodule (1.27) the stamp tests pass with or without the GIT_DIR fix, so this one reads what the helper hands `go` through a recording fake: GIT_DIR names the submodule's real gitdir, GIT_WORK_TREE its root, cwd its root. Control: a standalone clone (a `.git` directory) is handed neither."""
+    sub, _sub_head, _outer, env = _fixture(tmp_path)
+    bindir = tmp_path / "fakebin"
+    bindir.mkdir()
+    record = tmp_path / "seen.txt"
+    fake = bindir / "go"
+    fake.write_text(
+        '#!/bin/sh\nprintf "%s\\n%s\\n%s\\n" "${GIT_DIR-unset}" "${GIT_WORK_TREE-unset}" "$PWD" > "$SEEN"\n',
+        encoding="utf-8",
+    )
+    fake.chmod(0o755)
+    fake_env = {**env, "PATH": "%s%s%s" % (bindir, os.pathsep, env["PATH"]), "SEEN": str(record)}
+    _build_sh_go_build(sub, tmp_path / "x.bin", fake_env, cwd=tmp_path)
+    git_dir, work_tree, cwd = record.read_text(encoding="utf-8").splitlines()
+    link = (sub / ".git").read_text(encoding="utf-8").strip().removeprefix("gitdir: ")
+    assert git_dir == str((sub / link).resolve())
+    assert os.path.isdir(git_dir)
+    assert work_tree == str(sub)
+    assert os.path.realpath(cwd) == os.path.realpath(sub)
+    # Control: with a `.git` directory the helper leaves Go's own discovery alone.
+    standalone = tmp_path / "standalone"
+    standalone.mkdir()
+    shutil.copy2(BUILD_SH, standalone / "build.sh")
+    (standalone / ".git").mkdir()
+    _build_sh_go_build(standalone, tmp_path / "y.bin", fake_env, cwd=tmp_path)
+    assert record.read_text(encoding="utf-8").splitlines()[:2] == ["unset", "unset"]
+
+
 def test_a_broken_gitlink_fails_naming_the_missing_gitdir(tmp_path: pathlib.Path) -> None:
     """Failing on an unreadable gitlink is not a regression: a plain go build fails the same way."""
     sub, _sub_head, _outer, env = _fixture(tmp_path)
