@@ -6,7 +6,7 @@
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { createReadStream, createWriteStream } from 'node:fs';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { dirname, isAbsolute, join } from 'node:path';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -113,16 +113,28 @@ async function releaseGet(url: string): Promise<Response> {
   return response;
 }
 
-const release: ReleaseHost = {
+/** The live release host; exported so a test can drive its real fetch and stream path. */
+export const release: ReleaseHost = {
   baseUrl: () => getReleasesBaseUrl(),
   fetchText: async (url) => (await releaseGet(url)).text(),
   download: async (url, dest) => {
     const response = await releaseGet(url);
     // `releaseGet` refuses a response without a body.
-    await pipeline(
-      Readable.fromWeb(response.body as WebReadableStream),
-      createWriteStream(dest, { mode: 0o755 })
-    );
+    try {
+      await pipeline(
+        Readable.fromWeb(response.body as WebReadableStream),
+        createWriteStream(dest, { mode: 0o755 })
+      );
+    } catch (error) {
+      // A body that fails mid-stream leaves a partial file, which must not stay in the bundle directory.
+      await rm(dest, { force: true });
+      throw new ServerError(
+        t('commands.server.bundle.errors.cliDownloadFailed', {
+          url,
+          reason: error instanceof Error ? error.message : String(error),
+        })
+      );
+    }
   },
 };
 

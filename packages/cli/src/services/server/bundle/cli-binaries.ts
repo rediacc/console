@@ -23,13 +23,21 @@ const CLI_PLATFORMS: readonly PlatformKey[] = [
   'win-arm64',
 ] as const;
 
-/** Split `--with-cli`'s value; an unknown name or a dev build is refused before any download. */
+/** Split `--with-cli`'s value; an empty list, an unknown name or a dev build is refused before any download. */
 export function parseCliPlatforms(value: string): PlatformKey[] {
   if (isDevBuild()) throw new ServerError(t('commands.server.bundle.errors.cliDevBuild'));
   const names = value
     .split(',')
     .map((n) => n.trim())
     .filter(Boolean);
+  if (names.length === 0) {
+    throw new ServerError(
+      t('commands.server.bundle.errors.cliUnknownPlatform', {
+        platform: value,
+        known: CLI_PLATFORMS.join(', '),
+      })
+    );
+  }
   for (const name of names) {
     if (!CLI_PLATFORMS.includes(name as PlatformKey)) {
       throw new ServerError(
