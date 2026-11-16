@@ -150,7 +150,8 @@ def test_side_region_maps_every_file_name() -> None:
     assert sr(pure("workers/account/wrangler.asia.toml")) == ("shared", "asia")
     assert sr(pure("workers/account/wrangler.bench-eu.toml")) == ("bench", "eu")
     assert sr(pure("workers/account/wrangler.bench-us.toml")) == ("bench", "us")
-    assert sr(pure("workers/account/wrangler.bench.toml")) == ("bench", "-")
+    # Every bench carries its region; the unsuffixed name of the retired single bench is no bench file.
+    assert sr(pure("workers/account/wrangler.%s.toml" % "bench")) == ("shared", "bench")
 
 
 def test_root_wrangler_toml_is_shared(tmp_path: pathlib.Path) -> None:

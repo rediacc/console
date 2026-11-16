@@ -162,7 +162,7 @@ them. Its first draft did NOT fire on its own headline defect in any of the four
 
 ### 6.1 Tier B result (2026-11-06)
 
-Run 2026-11-06 against the bench bucket `rediacc-backups-bench` with its bench keys (decision O1, ASKED:2026-11-05T07:06Z): `./run.sh drill backup --legs a,s` with `DRILL_STORE_*` from the `backup-push-bench` bws profile exited 0 with 24 of 24 assertions passed. The proof line read `STORE-PROOF tier=B duplicate_put=412 wrong_checksum=400`. A duplicate PUT answered 412 and a wrong `x-amz-checksum-sha256` was refused with 400, as R2's documentation states, so nothing was retuned.
+Run 2026-11-06 against the bench bucket `rediacc-backups-bench` with its bench keys (decision O1, ASKED:2026-11-05T07:06Z): `./run.sh drill backup --legs a,s` with `DRILL_STORE_*` from the `backup-push-bench-eu` bws profile exited 0 with 24 of 24 assertions passed. The proof line read `STORE-PROOF tier=B duplicate_put=412 wrong_checksum=400`. A duplicate PUT answered 412 and a wrong `x-amz-checksum-sha256` was refused with 400, as R2's documentation states, so nothing was retuned.
 
 The same day, legs `a,n` on the same bucket exited 0 with 23 of 23 passed: a PUT one byte longer than the signed length was refused with 403, and the exact body through the same URL was accepted.
 
@@ -329,11 +329,11 @@ runs one barrier for the whole datastore (stop, freeze, restart, then upload), a
 secrets, the bucket-scoped `cf-r2-backup` rotation slug, the migration, and the cutover itself. Default is HOLD.
 - **Bench deploy is plumbed, not run.** The bench deploy is now
 `.ci/rediacc_ci/ops/deploy_bench.py` (the bash script is gone).
-It pushes four `ACCOUNT_BACKUP_S3_*` values in its `wrangler secret bulk` payload: endpoint, key id and secret, read by those names only and bound from bench-scoped store entries, and the bucket, derived from the `BACKUP_BUCKET` binding in `workers/account/wrangler.bench.toml` (an exported `ACCOUNT_BACKUP_S3_BUCKET` that differs from the binding is a DeployError); the earlier fallback to the account-wide `R2_*` token was removed because it put an account-wide key on the public bench Worker.
+It pushes four `ACCOUNT_BACKUP_S3_*` values in its `wrangler secret bulk` payload: endpoint, key id and secret, read by those names only and bound from bench-scoped store entries, and the bucket, derived from the `BACKUP_BUCKET` binding in `workers/account/wrangler.bench-eu.toml` (an exported `ACCOUNT_BACKUP_S3_BUCKET` that differs from the binding is a DeployError); the earlier fallback to the account-wide `R2_*` token was removed because it put an account-wide key on the public bench Worker.
 It cannot run from here because `cf_auth` needs `CF_MANAGEMENT_TOKEN` or `CF_GLOBAL_API_KEY` + `CF_EMAIL`, and `.env` appeared to carry only `CF_EMAIL`. The operator runs it. (Later finding: `.env` did carry the global key, under the name
 `CF_GLOBAL_API_KEY`, while every consumer read the name `CF_API_KEY`. That variable-name drift was repaired by renaming all consumers to `CF_GLOBAL_API_KEY`.)
-- One earlier claim in this program that `wrangler.bench.toml` was missing was
-**wrong**. It is at `workers/account/`, which the bench deploy reaches through its `CONFIG = "wrangler.bench.toml"` setting. The search that produced the claim only looked inside the submodule.
+- One earlier claim in this program that the eu bench toml was missing was
+**wrong**. It is at `workers/account/`, which the bench deploy reaches through its `CONFIG = "wrangler.bench-eu.toml"` setting (then named without the region). The search that produced the claim only looked inside the submodule.
 
 ### 9.8 The full `npm run ci` sweep: 223 gates, 14 red, 11 fixed
 

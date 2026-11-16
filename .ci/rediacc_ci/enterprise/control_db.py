@@ -246,7 +246,7 @@ def location(region: str, root: pathlib.Path | None = None) -> str:
 
 
 def bench_config_path(region: str, root: pathlib.Path | None = None) -> pathlib.Path:
-    """The account config of REGION's bench: `wrangler.bench-eu.toml` for the home region (regions.json `default`), `wrangler.bench-<r>.toml` for the others. A region with no `bench` object is refused."""
+    """The account config of REGION's bench, `wrangler.bench-<r>.toml`. A region with no `bench` object is refused."""
     base = root or paths.repo_root()
     data = json.loads((base / "regions.json").read_text(encoding="utf-8"))
     for entry in data["regions"]:

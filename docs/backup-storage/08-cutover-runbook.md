@@ -118,7 +118,7 @@ ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY="<secret>" \
 #    The old manual loop is kept below ONLY as the break-glass path for a
 #    target CD does not cover (e.g. a one-off bench worker). The worker configs
 #    live in workers/account, NOT in the private/account submodule, and each
-#    target is its OWN config file (wrangler.bench.toml, wrangler.eu.toml,
+#    target is its OWN config file (wrangler.bench-eu.toml, wrangler.eu.toml,
 #    wrangler.edge-eu.toml, ...), not an [env.*] section — so this is
 #    `--config <file>`, never `--env edge`.
 #

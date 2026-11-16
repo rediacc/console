@@ -438,59 +438,59 @@
     },
     "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_US": {
       "kind": "no-github-twin",
-      "reason": "The bench-scoped backup pair (agent/plans/PLAN-backup-credential-isolation.md, token cf-r2-backup-bench), bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench and `--profile backup-push-bench` for rediacc_ci.ops.push_backup_credentials. Bench is deliberately not deployed by any workflow, and check:ci-backup-credential-isolation refuses a workflow that requests this pair. This is the us region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+      "reason": "The bench-scoped backup pair (agent/plans/PLAN-backup-credential-isolation.md, token cf-r2-backup-bench-us), bound only by `bws_env exec --profile deploy-bench-us` for the local rediacc_ci.ops.deploy_bench and `--profile backup-push-bench-us` for rediacc_ci.ops.push_backup_credentials. Bench is deliberately not deployed by any workflow, and check:ci-backup-credential-isolation refuses a workflow that requests this pair. This is the us region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
     },
     "ACCOUNT_BACKUP_S3_ACCESS_KEY_ID_BENCH_ASIA": {
       "kind": "no-github-twin",
-      "reason": "The bench-scoped backup pair (agent/plans/PLAN-backup-credential-isolation.md, token cf-r2-backup-bench), bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench and `--profile backup-push-bench` for rediacc_ci.ops.push_backup_credentials. Bench is deliberately not deployed by any workflow, and check:ci-backup-credential-isolation refuses a workflow that requests this pair. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+      "reason": "The bench-scoped backup pair (agent/plans/PLAN-backup-credential-isolation.md, token cf-r2-backup-bench-asia), bound only by `bws_env exec --profile deploy-bench-asia` for the local rediacc_ci.ops.deploy_bench and `--profile backup-push-bench-asia` for rediacc_ci.ops.push_backup_credentials. Bench is deliberately not deployed by any workflow, and check:ci-backup-credential-isolation refuses a workflow that requests this pair. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
     },
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH_US": {
       "kind": "no-github-twin",
-      "reason": "The bench-scoped backup pair (agent/plans/PLAN-backup-credential-isolation.md, token cf-r2-backup-bench), bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench and `--profile backup-push-bench` for rediacc_ci.ops.push_backup_credentials. Bench is deliberately not deployed by any workflow, and check:ci-backup-credential-isolation refuses a workflow that requests this pair. This is the us region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+      "reason": "The bench-scoped backup pair (agent/plans/PLAN-backup-credential-isolation.md, token cf-r2-backup-bench-us), bound only by `bws_env exec --profile deploy-bench-us` for the local rediacc_ci.ops.deploy_bench and `--profile backup-push-bench-us` for rediacc_ci.ops.push_backup_credentials. Bench is deliberately not deployed by any workflow, and check:ci-backup-credential-isolation refuses a workflow that requests this pair. This is the us region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
     },
     "ACCOUNT_BACKUP_S3_SECRET_ACCESS_KEY_BENCH_ASIA": {
       "kind": "no-github-twin",
-      "reason": "The bench-scoped backup pair (agent/plans/PLAN-backup-credential-isolation.md, token cf-r2-backup-bench), bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench and `--profile backup-push-bench` for rediacc_ci.ops.push_backup_credentials. Bench is deliberately not deployed by any workflow, and check:ci-backup-credential-isolation refuses a workflow that requests this pair. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+      "reason": "The bench-scoped backup pair (agent/plans/PLAN-backup-credential-isolation.md, token cf-r2-backup-bench-asia), bound only by `bws_env exec --profile deploy-bench-asia` for the local rediacc_ci.ops.deploy_bench and `--profile backup-push-bench-asia` for rediacc_ci.ops.push_backup_credentials. Bench is deliberately not deployed by any workflow, and check:ci-backup-credential-isolation refuses a workflow that requests this pair. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
     },
     "ACCOUNT_BACKUP_STORE_KEK_BENCH_US": {
       "kind": "no-github-twin",
-      "reason": "The bench backup store KEK, bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench push; bench deploys never run in GitHub CI, so no workflow requests it. This is the us region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+      "reason": "The bench backup store KEK, bound only by `bws_env exec --profile deploy-bench-us` for the local rediacc_ci.ops.deploy_bench push; bench deploys never run in GitHub CI, so no workflow requests it. This is the us region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
     },
     "ACCOUNT_BACKUP_STORE_KEK_BENCH_ASIA": {
       "kind": "no-github-twin",
-      "reason": "The bench backup store KEK, bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench push; bench deploys never run in GitHub CI, so no workflow requests it. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+      "reason": "The bench backup store KEK, bound only by `bws_env exec --profile deploy-bench-asia` for the local rediacc_ci.ops.deploy_bench push; bench deploys never run in GitHub CI, so no workflow requests it. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
     },
     "ACCOUNT_CONFIG_SERVER_KEY_BENCH_US": {
       "kind": "no-github-twin",
-      "reason": "The bench config server key (agent/plans/PLAN-config-server-key.md K2/K3), bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench push; bench deploys never run in GitHub CI, so no workflow requests it. This is the us region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+      "reason": "The bench config server key (agent/plans/PLAN-config-server-key.md K2/K3), bound only by `bws_env exec --profile deploy-bench-us` for the local rediacc_ci.ops.deploy_bench push; bench deploys never run in GitHub CI, so no workflow requests it. This is the us region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
     },
     "ACCOUNT_CONFIG_SERVER_KEY_BENCH_ASIA": {
       "kind": "no-github-twin",
-      "reason": "The bench config server key (agent/plans/PLAN-config-server-key.md K2/K3), bound only by `bws_env exec --profile deploy-bench` for the local rediacc_ci.ops.deploy_bench push; bench deploys never run in GitHub CI, so no workflow requests it. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+      "reason": "The bench config server key (agent/plans/PLAN-config-server-key.md K2/K3), bound only by `bws_env exec --profile deploy-bench-asia` for the local rediacc_ci.ops.deploy_bench push; bench deploys never run in GitHub CI, so no workflow requests it. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
     },
     "BENCH_ROOT_PASSWORD_US": {
       "kind": "no-github-twin",
-      "reason": "The bench root principal's login password (rediacc_ci.ops.deploy_bench ROOT_LOGIN_ENV), bound by `bws_env exec --profile deploy-bench` for the local seed-root and reset-root flows and by `--profile bench-login` for the root session the login and drills open. Bench is deliberately not deployed by any workflow, so no GitHub secret of that name exists to shadow. This is the us region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+      "reason": "The bench root principal's login password (rediacc_ci.ops.deploy_bench ROOT_LOGIN_ENV), bound by `bws_env exec --profile deploy-bench-us` for the local seed-root and reset-root flows and by `--profile bench-login-us` for the root session the login and drills open. Bench is deliberately not deployed by any workflow, so no GitHub secret of that name exists to shadow. This is the us region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
     },
     "BENCH_ROOT_PASSWORD_ASIA": {
       "kind": "no-github-twin",
-      "reason": "The bench root principal's login password (rediacc_ci.ops.deploy_bench ROOT_LOGIN_ENV), bound by `bws_env exec --profile deploy-bench` for the local seed-root and reset-root flows and by `--profile bench-login` for the root session the login and drills open. Bench is deliberately not deployed by any workflow, so no GitHub secret of that name exists to shadow. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+      "reason": "The bench root principal's login password (rediacc_ci.ops.deploy_bench ROOT_LOGIN_ENV), bound by `bws_env exec --profile deploy-bench-asia` for the local seed-root and reset-root flows and by `--profile bench-login-asia` for the root session the login and drills open. Bench is deliberately not deployed by any workflow, so no GitHub secret of that name exists to shadow. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
     },
     "BENCH_ROOT_TOTP_SEED_US": {
       "kind": "no-github-twin",
-      "reason": "The base32 TOTP seed of the bench root account, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login`, which derives the six-digit code in memory (rediacc_ci.ops.totp). Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow. This is the us region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+      "reason": "The base32 TOTP seed of the bench root account, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login-us`, which derives the six-digit code in memory (rediacc_ci.ops.totp). Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow. This is the us region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
     },
     "BENCH_ROOT_TOTP_SEED_ASIA": {
       "kind": "no-github-twin",
-      "reason": "The base32 TOTP seed of the bench root account, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login`, which derives the six-digit code in memory (rediacc_ci.ops.totp). Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+      "reason": "The base32 TOTP seed of the bench root account, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login-asia`, which derives the six-digit code in memory (rediacc_ci.ops.totp). Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
     },
     "BENCH_STORE_MASTER_PASSWORD_US": {
       "kind": "no-github-twin",
-      "reason": "The master password of the bench remote config store, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login` for `config remote enable --master-password`. Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow. This is the us region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+      "reason": "The master password of the bench remote config store, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login-us` for `config remote enable --master-password`. Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow. This is the us region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
     },
     "BENCH_STORE_MASTER_PASSWORD_ASIA": {
       "kind": "no-github-twin",
-      "reason": "The master password of the bench remote config store, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login` for `config remote enable --master-password`. Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
+      "reason": "The master password of the bench remote config store, read only by rediacc_ci.ops.login_bench under `bws_env exec --profile bench-login-asia` for `config remote enable --master-password`. Bench is deliberately not driven by any workflow, so no GitHub secret of that name exists to shadow. This is the asia region's own copy (PLAN-multi-region-bench), bound by that region's bench profile."
     }
   },
   "no_fetch_jobs": {}

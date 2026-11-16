@@ -67,7 +67,7 @@
  *
  * NOT CHECKED, and said out loud rather than left to be discovered:
  *   - .ci/rediacc_ci/ops/deploy_bench.py also builds a secret payload, but it reads
- *     the `deploy-bench` Bitwarden profile rather than a workflow `env:` block. That
+ *     the `deploy-bench-<region>` Bitwarden profiles rather than a workflow `env:` block. That
  *     is a different contract with a different oracle; this gate does not look at
  *     it, and its names are covered by check:ci-worker-secret-names. (run.sh was named here
  *     too until commit dd5dfba3c deleted its `pr` verb and the payload with it.)
