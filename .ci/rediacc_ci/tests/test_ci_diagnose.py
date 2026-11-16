@@ -509,11 +509,39 @@ def test_the_package_fail_line_alone_is_a_test_failure():
     assert D.classify(lines) == ("code-likely", "go-pkg-fail")
 
 
-def test_a_stall_inside_a_test_log_line_is_no_infra_verdict():
-    """Only the `_test.go:<n>:` lines of the excerpt, no FAIL line: the simulated stall is not read."""
+def test_a_stall_inside_a_test_log_line_is_no_infra_verdict_when_the_log_has_a_verdict():
+    """Control: the `_test.go:<n>:` lines of a log that also holds a PASS verdict: the simulated stall is not read."""
     lines = [ln for ln in _go_fail_lines() if "_test.go:" in ln]
+    lines.append("2026-11-16T02:13:22.3000000Z --- PASS: TestOther (0.00s)")
     assert any("stalled past" in ln for ln in lines)
     assert D.classify(lines) == ("unknown", "")
+
+
+def test_a_cut_off_log_with_a_stall_in_a_test_log_line_stays_infra():
+    """A run cut off by the runner has no FAIL/ok/PASS line; a stall printed through `t.Fatalf` is the real failure."""
+    lines = [ln for ln in _go_fail_lines() if "_test.go:" in ln]
+    assert any("stalled past" in ln for ln in lines)
+    assert D.classify(lines) == ("infra-likely", "pkg-install-stall")
+
+
+def test_an_error_line_does_not_pull_an_infra_window_next_to_a_test_failure():
+    """A stall just before `##[error]` is not quoted when a Go FAIL line is the verdict."""
+    lines = [
+        "2026-11-16T02:13:20.0000000Z --- FAIL: TestX (0.1s)",
+        "2026-11-16T02:13:21.0000000Z ok  \tgithub.com/rediacc/renet/a\t0.1s",
+        "2026-11-16T02:13:21.1000000Z x",
+        "2026-11-16T02:13:21.2000000Z x",
+        "2026-11-16T02:13:21.3000000Z x",
+        "2026-11-16T02:13:21.4000000Z x",
+        "2026-11-16T02:13:21.5000000Z x",
+        "2026-11-16T02:13:21.6000000Z x",
+        "2026-11-16T02:13:21.7000000Z apt install of jq failed or stalled past 30s in all 3 attempts",
+        "2026-11-16T02:13:22.0000000Z ##[error]Process completed with exit code 1.",
+    ]
+    assert D.classify(lines) == ("code-likely", "go-fail")
+    quoted = "\n".join(D.excerpt(lines))
+    assert "TestX" in quoted
+    assert "stalled past" not in quoted
 
 
 def test_a_real_stall_without_a_test_failure_stays_infra():

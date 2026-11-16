@@ -802,8 +802,21 @@ SHORT_TS_RE = re.compile(r"^\d\d:\d\d:\d\d ")
 RETRY_NOTE_RE = re.compile(r"attempt \d+ of \d+ failed \(.*\), asking again in ")
 
 
-def _sig_hit(line):
-    body = SHORT_TS_RE.sub("", TS_RE.sub("", line, count=1), count=1)
+# A test runner's verdict line: `--- FAIL:` / `--- PASS:`, a package `FAIL<TAB>pkg` / `ok  <TAB>pkg` summary, or a bare `PASS`. A `t.Logf` line is read as test output only in a log that carries one: a run the runner cut off prints its `t.Fatalf` text with no verdict, and that text may be the real infra failure.
+TEST_VERDICT_RE = re.compile(r"^(?:\s*--- (?:PASS|FAIL)\b|FAIL\b|ok\s|PASS\b)")
+
+
+def _body(line):
+    return SHORT_TS_RE.sub("", TS_RE.sub("", line, count=1), count=1)
+
+
+def _has_test_verdict(lines):
+    return any(TEST_VERDICT_RE.match(_body(ln)) for ln in lines or [])
+
+
+def _sig_hit(line, test_verdict=False):
+    """`test_verdict`: the log holds a test runner verdict (`_has_test_verdict`), so its `_test.go:<n>:` lines are test output and no infra row reads them."""
+    body = _body(line)
     if RETRY_NOTE_RE.search(body):
         return None
     # A line a gate marks as a pass is no failure signature: `\u2713 bws map: ..., 520 env.BWS_* read(s)` matched the Bitwarden 5xx row on its COUNT.
@@ -812,7 +825,7 @@ def _sig_hit(line):
         if "\u2717" not in body:
             return None
         body = body[body.index("\u2717") :]
-    test_log = bool(TEST_LOG_LINE_RE.match(body))
+    test_log = test_verdict and bool(TEST_LOG_LINE_RE.match(body))
     for sid, cat, rx, label, min_s in SIGNATURES:
         if test_log and cat == "infra":
             continue
@@ -829,8 +842,9 @@ def classify(lines):
     """(category, signature id). A test runner's failure line wins over everything, any other infra hit over any other code hit; nothing at all is `unknown`."""
     code = None
     infra = None
+    verdict = _has_test_verdict(lines)
     for line in lines or []:
-        hit = _sig_hit(line)
+        hit = _sig_hit(line, verdict)
         if not hit:
             continue
         if hit[0] in TEST_FAILURE_SIGS:
@@ -854,11 +868,16 @@ def signature_label(sid):
 def excerpt(lines, max_hits=3, context=3, max_lines=8, clip=200):
     """Up to `max_hits` windows around signature hits (first) and `##[error]` lines, each <= `max_lines`."""
     lines = list(lines or [])
-    hits = [_sig_hit(ln) for ln in lines]
-    # Once a test runner's failure line exists, it alone is quoted: the verdict is that line, and an infra row's lines would pull the reader back to a rerun.
+    verdict = _has_test_verdict(lines)
+    hits = [_sig_hit(ln, verdict) for ln in lines]
+    # Once a test runner's failure line exists, only windows around failure lines are quoted: no other signature hit and no `##[error]` line (whose preceding window may carry a stall or 5xx text) opens one, since an infra row's lines would pull the reader back to a rerun.
     decisive = any(h and h[0] in TEST_FAILURE_SIGS for h in hits)
     sig_idx = [i for i, h in enumerate(hits) if h and (not decisive or h[0] in TEST_FAILURE_SIGS)]
-    err_idx = [i for i, ln in enumerate(lines) if "##[error]" in ln and i not in sig_idx]
+    err_idx = (
+        []
+        if decisive
+        else [i for i, ln in enumerate(lines) if "##[error]" in ln and i not in sig_idx]
+    )
     windows: list[tuple[int, int]] = []
     for i in sig_idx + err_idx:
         if any(a <= i <= b for a, b in windows):
@@ -1010,7 +1029,8 @@ def evidence(log, job):
     A step that only RE-RAISES an earlier step's outcome carries nothing but the runner's exit line: Housekeeping run 37294996911 failed in `Fail the job when the budget check failed` (0 s) while the check itself ran, and logged, under `continue-on-error` in an earlier step. Widening to the log before the step's end lets that earlier output be classified and excerpted, and `widened` says so.
     """
     step, lines = failing_step_slice(log, job)
-    if any(_sig_hit(ln) for ln in lines) or any(
+    verdict = _has_test_verdict(lines)
+    if any(_sig_hit(ln, verdict) for ln in lines) or any(
         "##[error]" in ln and "##[error]Process completed with exit code" not in ln for ln in lines
     ):
         return step, lines, False
@@ -1259,7 +1279,8 @@ def render(d, budget_lines=12):
     room = max(0, budget_lines - len(fixed) - len(tail))
     # The HIT lines first: a window's context lines are for --errors, while the summary has room for only a handful.
     ex = ff.get("excerpt") or []
-    hits = [ln for ln in ex if _sig_hit(ln) or "##[error]" in ln]
+    verdict = _has_test_verdict(ex)
+    hits = [ln for ln in ex if _sig_hit(ln, verdict) or "##[error]" in ln]
     body = ["    " + ln for ln in (hits or ex)[:room]]
     lines = [_clip(ln, 180) for ln in fixed + body + tail][:budget_lines]
     text = "\n".join(lines)
