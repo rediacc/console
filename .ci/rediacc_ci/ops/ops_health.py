@@ -988,6 +988,10 @@ def is_due(entry: object, ttl: int, now: datetime.datetime) -> bool:
     return at is None or (now - at).total_seconds() >= ttl
 
 
+def is_green(entry: object) -> bool:
+    return isinstance(entry, dict) and entry.get("state") == GREEN
+
+
 def postable_sources(sources: dict, env: dict) -> dict:
     """The sources the production alerter receives. A machine verdict is posted only when RDC_HEALTH_CONFIGS names the configs: unset, the machines come from whatever default config this checkout holds (a dev box's VMs), and on 2026-11-07 two of those turned the production verdict red. The local cache and ledger keep every source either way."""
     if (env.get(CONFIGS_ENV) or "").strip():
@@ -1314,13 +1318,14 @@ def refresh(
     *,
     force: bool = False,
     only: list | None = None,
+    remeasure_red: bool = False,
     runner: Runner = run_process,
     fetch: Http = http,
     hydrate: Callable[[list], dict] | None = bws_hydrate,
     env: dict | None = None,
     now: datetime.datetime | None = None,
 ) -> tuple[int, dict]:
-    """Run the due checks, write the cache, ledger the transitions, POST the fresh verdicts. (rc over every cached check, the cache)."""
+    """Run the due checks, write the cache, ledger the transitions, POST the fresh verdicts. (rc over every cached check, the cache). `remeasure_red` also runs every check whose cached verdict is not green: a hand run that follows a fix must see the machine as it is now, not the red the TTL still holds (2026-11-16: three reruns after a restart replayed the pre-restart stale-binary pids)."""
     now = now or utcnow()
     env = dict(os.environ if env is None else env)
     cfg = load_config(root)
@@ -1337,7 +1342,14 @@ def refresh(
         if isinstance(v, dict) and v.get("day") == today
     }
     wanted = [c for c in ALL_CHECKS if not only or c in only]
-    due = [c for c in wanted if force or only or is_due(checks.get(c), ttl_s(cfg, c), now)]
+    due = [
+        c
+        for c in wanted
+        if force
+        or only
+        or is_due(checks.get(c), ttl_s(cfg, c), now)
+        or (remeasure_red and not is_green(checks.get(c)))
+    ]
 
     tenv, token_error = token_env(env, hydrate) if due else (env, "")
     fresh: dict = {}
@@ -1388,8 +1400,20 @@ def refresh(
 # --------------------------------------------------------------------------- CLI
 
 
-def _print_entry(name: str, entry: dict, out) -> None:
-    print("%s: %s (rc %s)" % (name, entry.get("state"), entry.get("rc")), file=out)
+def _age_note(entry: dict, now: datetime.datetime) -> str:
+    """How long ago the verdict was measured, so a cached one never reads as live."""
+    at = parse_iso(entry.get("at"))
+    if at is None:
+        return ""
+    return ", measured %d min ago" % max(0, int((now - at).total_seconds() // 60))
+
+
+def _print_entry(name: str, entry: dict, out, now: datetime.datetime | None = None) -> None:
+    print(
+        "%s: %s (rc %s%s)"
+        % (name, entry.get("state"), entry.get("rc"), _age_note(entry, now) if now else ""),
+        file=out,
+    )
     for line in str(entry.get("detail") or "").splitlines():
         print("  %s" % line, file=out)
 
@@ -1467,13 +1491,19 @@ def main(argv: list | None = None) -> int:
         )
         return 2
     try:
-        rc, doc = refresh(root, force=args.force, only=args.check or None)
+        # A hand run re-measures a red check inside its TTL; the Stop hook's run (`--lock-held`) keeps the TTL.
+        rc, doc = refresh(
+            root,
+            force=args.force,
+            only=args.check or None,
+            remeasure_red=not args.lock_held,
+        )
     finally:
         release_lock(root)
     for name in ALL_CHECKS:
         cached = (doc.get("checks") or {}).get(name)
         if isinstance(cached, dict):
-            _print_entry(name, cached, sys.stdout)
+            _print_entry(name, cached, sys.stdout, utcnow())
     for err in (doc.get("ingest") or {}).get("errors") or []:
         print("ingest: %s" % err, file=sys.stderr)
     if (doc.get("ledger") or {}).get("error"):

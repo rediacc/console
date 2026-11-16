@@ -802,6 +802,34 @@ def test_a_timer_window_refuses_before_any_sample_or_snapshot(tmp_path):
     assert "backup-window: refused" in out
 
 
+def _rolling(repo):
+    """A machine whose only backup timer is `repo`'s own, last fired a minute before the machine's clock and next due four minutes after it."""
+    return (
+        "NEXT LEFT LAST PASSED UNIT ACTIVATES\n"
+        "Fri 2026-11-06 10:04:00 UTC 4min Fri 2026-11-06 09:59:00 UTC 1min ago "
+        "rediacc-backup-nightly-hot.repo.%s.latest.timer x\n"
+        "NOW=%d\nRUNNING-BEGIN\nRUNNING-END\n" % (repo, ROLLING_NOW)
+    )
+
+
+ROLLING_NOW = 1793959200  # 2026-11-06 10:00:00 UTC
+
+
+def test_another_repos_rolling_timer_does_not_refuse_the_start(tmp_path):
+    world = World(tmp_path, window=_rolling("mail"))
+    rc, out, _ = world.main()
+    assert "backup-window: clear" in out
+    assert rc != rcs.EXIT_WINDOW
+
+
+def test_the_seeded_repos_own_imminent_timer_still_refuses(tmp_path):
+    world = World(tmp_path, window=_rolling("demo-heartbeat"))
+    rc, out, _ = world.main()
+    assert rc == rcs.EXIT_WINDOW
+    assert world.spawned is None
+    assert "backup-window: refused" in out
+
+
 def test_a_running_seed_refuses_the_start(tmp_path):
     world = World(tmp_path, window=WINDOW_SEED)
     rc, _, _ = world.main()

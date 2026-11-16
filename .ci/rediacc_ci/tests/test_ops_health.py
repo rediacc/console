@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import datetime
 import hashlib
+import io
 import json
 import os
 import pathlib
@@ -387,6 +388,55 @@ def test_only_due_checks_run(tmp_path):
     joined = [" ".join(a) for a, _e in runner2.calls]
     assert any("machine health" in j for j in joined)
     assert not any("telemetry_delivery" in j for j in joined)
+
+
+STALE_HEALTH = {
+    "healthy": False,
+    "exitCode": 2,
+    "message": "stale",
+    "issues": ["1 renet process(es) run a replaced binary: rediacc-docker-1.service (pid 99)"],
+}
+
+
+def test_hand_refresh_remeasures_a_red_machine_inside_its_ttl(tmp_path):
+    web = Web(status_doc())
+    rc, _ = run_refresh(tmp_path, Combined(health=(2, STALE_HEALTH)), web)
+    assert rc != 0
+    fixed = Combined()
+    later = NOW + datetime.timedelta(minutes=10)
+    rc, doc = run_refresh(tmp_path, fixed, web, now=later, remeasure_red=True)
+    assert any("machine health" in " ".join(a) for a, _e in fixed.calls)
+    assert "replaced binary" not in doc["checks"]["machines"]["detail"]
+    assert rc == 0, json.dumps(doc, indent=1)
+
+
+def test_hand_refresh_keeps_a_green_check_inside_its_ttl(tmp_path):
+    web = Web(status_doc())
+    run_refresh(tmp_path, Combined(), web)
+    runner = Combined()
+    run_refresh(tmp_path, runner, web, now=NOW + datetime.timedelta(minutes=10), remeasure_red=True)
+    assert runner.calls == []
+
+
+def test_a_still_red_machine_stays_red_after_the_remeasure(tmp_path):
+    web = Web(status_doc())
+    run_refresh(tmp_path, Combined(health=(2, STALE_HEALTH)), web)
+    rc, doc = run_refresh(
+        tmp_path,
+        Combined(health=(2, STALE_HEALTH)),
+        web,
+        now=NOW + datetime.timedelta(minutes=10),
+        remeasure_red=True,
+    )
+    assert rc != 0
+    assert "pid 99" in doc["checks"]["machines"]["detail"]
+
+
+def test_printed_verdict_names_how_old_it_is():
+    out = io.StringIO()
+    entry = {"state": "red", "rc": 1, "detail": "x", "at": oh.iso(NOW)}
+    oh._print_entry("machines", entry, out, NOW + datetime.timedelta(minutes=17))
+    assert out.getvalue().splitlines()[0] == "machines: red (rc 1, measured 17 min ago)"
 
 
 def test_target_sha_mismatch_is_red_with_deploy_command():

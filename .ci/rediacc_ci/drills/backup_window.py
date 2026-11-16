@@ -25,12 +25,26 @@ LIST_FAILED = "LIST-UNITS-FAILED"
 
 _STAMP = re.compile(r"\w{3} (\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) (\w+)")
 _UNIT = re.compile(r"(%s\S*\.timer)" % re.escape(UNIT_PREFIX))
+# A per-repo unit (`<strategy>.repo.<name>.<tag>.timer` or `.service`), its repo part with the `:` of the ref spelled `.`.
+_REPO_UNIT = re.compile(r"\.repo\.(.+?)(?:\.(?:timer|service))?$")
 
 
 class Timer(NamedTuple):
     unit: str
     triggers: list[int]
     utc: bool
+
+
+def covers_repo(unit: str, repo: str | None) -> bool:
+    """Whether a backup unit can touch `repo`. A unit that is not per-repo (the nightly, a datastore's) covers every repo, and so does any unit when no repo is named. A per-repo unit covers the repo whose ref it carries: `mail` is covered by `.repo.mail.latest`, `mail:pre` only by `.repo.mail.pre`."""
+    if repo is None:
+        return True
+    found = _REPO_UNIT.search(unit)
+    if not found:
+        return True
+    want = repo.replace(":", ".")
+    part = found.group(1)
+    return part == want or part.startswith(want + ".")
 
 
 def timers_script() -> str:
@@ -101,8 +115,9 @@ def window_verdict(
     *,
     require_timer: bool = False,
     check_running: bool = True,
+    repo: str | None = None,
 ) -> tuple[bool, str]:
-    """(clear, why) from a `timers_script` read. `now` defaults to the read's own `NOW=` line. Refuses when a backup is running now (`check_running`), and inside [trigger - LEAD_S - run_s, trigger + TAIL_S] of any backup timer, naming the next clear time. `run_s` is the time the caller's own run needs; 0 re-checks a moment before one destructive step. `require_timer` refuses a machine that lists no backup timer at all."""
+    """(clear, why) from a `timers_script` read. `now` defaults to the read's own `NOW=` line. With `repo` (name or name:tag) a per-repo timer or service of ANOTHER repo is not judged: a repo on a 5-minute rolling timer would otherwise hold every other repo's run inside its 45-minute tail forever. A timer that covers no one repo (the nightly) and the target's own still count. Refuses when a backup is running now (`check_running`), and inside [trigger - LEAD_S - run_s, trigger + TAIL_S] of any backup timer, naming the next clear time. `run_s` is the time the caller's own run needs; 0 re-checks a moment before one destructive step. `require_timer` refuses a machine that lists no backup timer at all."""
     if now is None:
         now = parse_now(text)
     if now is None:
@@ -121,15 +136,17 @@ def window_verdict(
                 False,
                 "backup-window: the backup unit listing failed, so a running backup is unchecked",
             )
+        running = [row for row in running if covers_repo(row.split()[0], repo)]
         if running:
             return False, "backup-window: refused, a backup is running: %s" % "; ".join(running)
-    rows = parse_timers(text)
-    if any(not r.utc for r in rows):
+    listed = parse_timers(text)
+    rows = [r for r in listed if covers_repo(r.unit, repo)]
+    if any(not r.utc for r in listed):
         return (
             False,
             "backup-window: a backup timer stamp is not a readable UTC time, so the window is unchecked",
         )
-    if require_timer and not rows:
+    if require_timer and not listed:
         return (
             False,
             "backup-window: no %s*.timer is listed, so the window is unchecked" % UNIT_PREFIX,
@@ -168,6 +185,7 @@ def machine_verdict(
     *,
     require_timer: bool = True,
     check_running: bool = True,
+    repo: str | None = None,
 ) -> tuple[bool, str]:
     """Read the machine through `run(command) -> (rc, stdout)` and judge it. A failed read refuses."""
     rc, out = run(timers_script())
@@ -177,5 +195,5 @@ def machine_verdict(
             "backup-window: the timer read failed (rc=%d), so the window is unchecked" % rc,
         )
     return window_verdict(
-        out, run_s=run_s, require_timer=require_timer, check_running=check_running
+        out, run_s=run_s, require_timer=require_timer, check_running=check_running, repo=repo
     )

@@ -410,7 +410,7 @@ class ReplayArgs:
     snapshot_timeout: float = SNAPSHOT_TIMEOUT_S
 
 
-def window_guard(rdc: Rdc, machine: str, run_s: int, *, check_running: bool) -> None:
+def window_guard(rdc: Rdc, machine: str, run_s: int, *, check_running: bool, repo: str) -> None:
     """Refuse inside a backup timer's window (finding #5ec68285); `run_s=0` is the re-check a moment before the kill."""
 
     def on_machine(command: str) -> tuple[int, str]:
@@ -418,7 +418,7 @@ def window_guard(rdc: Rdc, machine: str, run_s: int, *, check_running: bool) -> 
         return rc, stdout
 
     clear, why = backup_window.machine_verdict(
-        on_machine, run_s, require_timer=True, check_running=check_running
+        on_machine, run_s, require_timer=True, check_running=check_running, repo=repo
     )
     if not clear:
         raise NoVerdictError(why)
@@ -442,7 +442,7 @@ def replay(rdc: Rdc, lister: Lister, a: ReplayArgs, report: Report) -> None:
         "target",
         "subscription %s, lineage %s, bucket %s" % (subscription, lineage, lister.bucket.name),
     )
-    window_guard(rdc, a.machine, backup_window.RUN_BUDGET_S, check_running=True)
+    window_guard(rdc, a.machine, backup_window.RUN_BUDGET_S, check_running=True, repo=a.repo)
     if "RUNNING" in rdc.on_machine(a.machine, RUNNING_COMMAND):
         raise NoVerdictError(
             "a renet backup snapshot already runs on %s; the kill would hit it" % a.machine
@@ -491,7 +491,7 @@ def replay(rdc: Rdc, lister: Lister, a: ReplayArgs, report: Report) -> None:
                 "no %d new chunks within %.0f s" % (a.kill_after, a.snapshot_timeout)
             )
     try:
-        window_guard(rdc, a.machine, 0, check_running=False)
+        window_guard(rdc, a.machine, 0, check_running=False, repo=a.repo)
     except NoVerdictError:
         proc.kill()
         print(
@@ -524,7 +524,7 @@ def replay(rdc: Rdc, lister: Lister, a: ReplayArgs, report: Report) -> None:
         )
 
     # The killed run is gone, so the timer window is judged again, running snapshot included, before the rerun.
-    window_guard(rdc, a.machine, backup_window.RUN_BUDGET_S, check_running=True)
+    window_guard(rdc, a.machine, backup_window.RUN_BUDGET_S, check_running=True, repo=a.repo)
     # The guard cleared RUN_BUDGET_S, so the rerun is held to it: a longer --snapshot-timeout would let the snapshot run into the timer window the guard just judged clear.
     rc, stdout, stderr = rdc.run(
         "-o",

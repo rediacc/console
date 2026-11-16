@@ -148,3 +148,60 @@ def test_an_impossible_date_in_a_stamp_refuses_without_raising() -> None:
     clear, why = bw.window_verdict(table, at(9, 0))
     assert not clear
     assert "unchecked" in why
+
+
+# A rolling per-repo timer: mail:latest fires every 5 minutes (hostinger, 2026-11-16).
+MAIL = (
+    "NEXT                        LEFT LAST                        PASSED UNIT                                            ACTIVATES\n"
+    "Mon 2026-11-16 07:30:43 UTC 4min Mon 2026-11-16 07:25:43 UTC 1min ago rediacc-backup-nightly-hot.repo.mail.latest.timer rediacc-backup-nightly-hot.repo.mail.latest.service\n"
+    "Tue 2026-11-17 02:00:00 UTC 18h  Mon 2026-11-16 02:00:00 UTC 5h ago   rediacc-backup-nightly-hot.timer                 rediacc-backup-nightly-hot.service\n"
+    "RUNNING-BEGIN\nRUNNING-END\n"
+)
+NOON = int(dt.datetime(2026, 11, 16, 7, 26, 41, tzinfo=dt.UTC).timestamp())
+
+
+def test_a_rolling_timer_on_repo_a_does_not_block_repo_b() -> None:
+    clear, why = bw.window_verdict(MAIL, NOON, repo="demo-heartbeat")
+    assert clear, why
+
+
+def test_the_target_repos_own_imminent_backup_still_refuses() -> None:
+    for repo in ("mail", "mail:latest"):
+        clear, why = bw.window_verdict(MAIL, NOON, repo=repo)
+        assert not clear
+        assert "repo.mail.latest.timer at 2026-11-16 07:30:43Z" in why
+
+
+def test_a_fork_tag_is_not_covered_by_another_tags_timer() -> None:
+    assert bw.window_verdict(MAIL, NOON, repo="mail:pre-dms17")[0]
+
+
+def test_the_machine_wide_nightly_still_blocks_every_repo() -> None:
+    at_nightly = int(dt.datetime(2026, 11, 17, 1, 58, tzinfo=dt.UTC).timestamp())
+    clear, why = bw.window_verdict(MAIL, at_nightly, repo="demo-heartbeat")
+    assert not clear
+    assert "rediacc-backup-nightly-hot.timer at 2026-11-17 02:00:00Z" in why
+
+
+def test_without_a_repo_the_rolling_timer_still_blocks() -> None:
+    assert not bw.window_verdict(MAIL, NOON)[0]
+
+
+def test_another_repos_running_service_does_not_block_but_the_targets_does() -> None:
+    other = MAIL.replace(
+        "RUNNING-BEGIN\n",
+        "RUNNING-BEGIN\nrediacc-backup-nightly-hot.repo.mail.latest.service loaded active running x\n",
+    )
+    assert bw.window_verdict(other, NOON, repo="demo-heartbeat")[0]
+    assert not bw.window_verdict(other, NOON, repo="mail")[0]
+
+
+def test_a_backup_process_with_no_unit_blocks_every_repo() -> None:
+    proc = MAIL.replace("RUNNING-BEGIN\n", "RUNNING-BEGIN\n4242 renet backup snapshot x\n")
+    assert not bw.window_verdict(proc, NOON, repo="demo-heartbeat")[0]
+
+
+def test_require_timer_counts_the_timers_of_other_repos() -> None:
+    only_mail = "\n".join([*MAIL.splitlines()[:2], "RUNNING-BEGIN", "RUNNING-END"]) + "\n"
+    clear, why = bw.window_verdict(only_mail, NOON, repo="demo-heartbeat", require_timer=True)
+    assert clear, why

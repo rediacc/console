@@ -411,7 +411,7 @@ def window_clear(deps: Deps, args: argparse.Namespace, out: TextIO) -> bool:
         rc, stdout, _ = deps.runner(argv, SAMPLE_TIMEOUT_S)
         return rc, stdout
 
-    clear, why = backup_window.machine_verdict(on_machine, require_timer=True)
+    clear, why = backup_window.machine_verdict(on_machine, require_timer=True, repo=args.repo)
     print(why, file=out, flush=True)
     return clear
 
