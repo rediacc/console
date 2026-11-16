@@ -2807,6 +2807,26 @@ def ci_quick_running(root, path=None, proc="/proc", now=None):
     return _same_checkout(pid, words, root, proc)
 
 
+def release_local_running(root, proc="/proc"):
+    """True when a live process of THIS checkout runs `release:local` (the `rediacc_ci.release.local` module). A branch release ships HEAD only while HEAD is the pushed tip and its receipts name HEAD^{tree}, so landing a lease mid-run would make it refuse or ship a tree nobody verified. A process of another checkout, or an unreadable /proc, reads False."""
+    try:
+        pids = [d.name for d in pathlib.Path(proc).iterdir() if d.name.isdigit()]
+    except OSError:
+        return False
+    for pid in pids:
+        try:
+            words = [
+                a.decode("utf-8", "replace")
+                for a in pathlib.Path(proc, pid, "cmdline").read_bytes().split(b"\0")
+                if a
+            ]
+        except OSError:
+            continue
+        if "rediacc_ci.release.local" in words and _same_checkout(int(pid), words, root, proc):
+            return True
+    return False
+
+
 def worktree_check(worklist, session_id, state_doc, fold, roster, event, vadd):
     """Follow this repo's lease trees (wl_worktrees). A survey that raises says so in the report and blocks nothing: a blind reading never accuses a lease."""
     root = C.project_root(C.project_start(event))
@@ -2845,6 +2865,16 @@ def worktree_check(worklist, session_id, state_doc, fold, roster, event, vadd):
             state_doc,
             "worktree-orphan",
             M.N_WORKTREE_CIQUICK % wl_worktrees.unlanded_lines(got),
+            3,
+        )
+    elif got["unlanded"] and release_local_running(root):
+        # A running release:local --branch-release ships HEAD only while it is the pushed tip with receipts on HEAD^{tree}: landing now makes the release refuse. The lease waits for it: reported, not blocked.
+        outq_add(
+            worklist,
+            session_id,
+            state_doc,
+            "worktree-orphan",
+            M.N_WORKTREE_RELEASE % wl_worktrees.unlanded_lines(got),
             3,
         )
     elif got["unlanded"] and green_receipt_on_unpushed_head(root):
