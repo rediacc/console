@@ -202,6 +202,8 @@ SIGNATURES = (
         0,
     ),
     ("go-fail", "code", re.compile(r"^--- FAIL: "), "a Go test failed", 0),
+    # `go test` closes a failing package with `FAIL<TAB><import path><TAB><seconds>s`; the bare `FAIL` line before it is not matched.
+    ("go-pkg-fail", "code", re.compile(r"^FAIL\t\S+"), "a Go package failed its tests", 0),
     # This repo's gates print `::finding::<key>` beside the finding they report (Quality / Branch on run 36974364712: `::finding::P-A1:...` under "P-A1 OPEN BOXES").
     ("gate-finding", "code", re.compile(r"^::finding::\S"), "a repo gate reported a finding", 0),
     ("pytest-failed", "code", re.compile(r"^FAILED \S+::"), "a pytest case failed", 0),
@@ -791,6 +793,10 @@ def failing_step_slice(log, job):
     return step.get("name") or "", out or lines
 
 
+# A test runner's own failure verdict outranks every infra row: a Go `--- FAIL:` / `FAIL<TAB>pkg` line or a pytest `FAILED path::case` line names a test that failed, and a stall or 5xx text elsewhere in the same log is, at best, the cause the test's own output states. Quality / Go job 133045740418 (run 43789577407) read `pkg-install-stall` because passing tests logged simulated stalls, while `--- FAIL: TestRunRepositoryLicenseStatusJSON` was the failure; an infra label invites a rerun instead of a fix. Playwright's mark is not here: a browser leg that failed on a dropped connection prints the same mark, and that stays an infra read.
+TEST_FAILURE_SIGS = frozenset({"go-fail", "go-pkg-fail", "pytest-failed"})
+# A `t.Logf` line from `go test -v` (`    ops_host_bounded_test.go:212: err=...`). Its text is what a test chose to print, often a simulated failure, so no infra row reads it.
+TEST_LOG_LINE_RE = re.compile(r"^\s*[\w.-]+_test\.go:\d+: ")
 SHORT_TS_RE = re.compile(r"^\d\d:\d\d:\d\d ")
 # An external gate's RETRY NOTE (`? <pin>: attempt 1 of 3 failed (HTTP 503), asking again in 2 s`) is no verdict: the next attempt may have succeeded, and an infra hit outranks every code hit, so reading it would turn a stale-pin red that followed a retry into an infrastructure one. Same rule as the per-attempt lines of the pkg-install-stall row. The verdict is the finding the gate prints when the budget is spent.
 RETRY_NOTE_RE = re.compile(r"attempt \d+ of \d+ failed \(.*\), asking again in ")
@@ -806,7 +812,10 @@ def _sig_hit(line):
         if "\u2717" not in body:
             return None
         body = body[body.index("\u2717") :]
+    test_log = bool(TEST_LOG_LINE_RE.match(body))
     for sid, cat, rx, label, min_s in SIGNATURES:
+        if test_log and cat == "infra":
+            continue
         m = rx.search(body)
         if not m:
             continue
@@ -817,15 +826,21 @@ def _sig_hit(line):
 
 
 def classify(lines):
-    """(category, signature id). Any infra hit wins over any code hit; nothing at all is `unknown`."""
+    """(category, signature id). A test runner's failure line wins over everything, any other infra hit over any other code hit; nothing at all is `unknown`."""
     code = None
+    infra = None
     for line in lines or []:
         hit = _sig_hit(line)
         if not hit:
             continue
+        if hit[0] in TEST_FAILURE_SIGS:
+            return "code-likely", hit[0]
         if hit[1] == "infra":
-            return "infra-likely", hit[0]
-        code = code or hit[0]
+            infra = infra or hit[0]
+        else:
+            code = code or hit[0]
+    if infra:
+        return "infra-likely", infra
     return ("code-likely", code) if code else ("unknown", "")
 
 
@@ -839,7 +854,10 @@ def signature_label(sid):
 def excerpt(lines, max_hits=3, context=3, max_lines=8, clip=200):
     """Up to `max_hits` windows around signature hits (first) and `##[error]` lines, each <= `max_lines`."""
     lines = list(lines or [])
-    sig_idx = [i for i, ln in enumerate(lines) if _sig_hit(ln)]
+    hits = [_sig_hit(ln) for ln in lines]
+    # Once a test runner's failure line exists, it alone is quoted: the verdict is that line, and an infra row's lines would pull the reader back to a rerun.
+    decisive = any(h and h[0] in TEST_FAILURE_SIGS for h in hits)
+    sig_idx = [i for i, h in enumerate(hits) if h and (not decisive or h[0] in TEST_FAILURE_SIGS)]
     err_idx = [i for i, ln in enumerate(lines) if "##[error]" in ln and i not in sig_idx]
     windows: list[tuple[int, int]] = []
     for i in sig_idx + err_idx:

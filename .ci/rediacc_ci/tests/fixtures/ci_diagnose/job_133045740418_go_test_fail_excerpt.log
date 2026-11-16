@@ -1,0 +1,17 @@
+2026-11-16T02:13:22.2099375Z     ops_host_bounded_test.go:169: err=<nil> elapsed=3.04285685s output:
+2026-11-16T02:13:22.2099884Z     aptretry_behavior_test.go:125: exit=0 elapsed=1.024230492s output:
+2026-11-16T02:13:22.2100393Z     ops_host_bounded_test.go:198: err=<nil> elapsed=3.04825945s output:
+2026-11-16T02:13:22.2100941Z     aptretry_behavior_test.go:139: exit=0 elapsed=1.020013012s output:
+2026-11-16T02:13:22.2102436Z     ops_host_bounded_test.go:212: err=apt install of --no-install-recommends --no-upgrade qemu-system-x86 jq failed or stalled past 1s in all 3 attempts (1: download stalled past 1s with no output or download progress; 2: download stalled past 1s with no output or download progress; 3: download stalled past 1s with no output or download progress) elapsed=3.217377313s output:
+2026-11-16T02:13:22.2103596Z     aptretry_behavior_test.go:153: exit=1 elapsed=3.028652423s output:
+2026-11-16T02:13:22.2104099Z     ops_host_bounded_test.go:222: err=<nil> elapsed=1.124653311s output:
+2026-11-16T02:13:22.2104616Z     pull_retry_behavior_test.go:100: label=zot failFor=99 exit=125 output:
+2026-11-16T02:13:22.2213561Z --- PASS: TestParseThinPoolStatus/exhausted_pool,_error-when-full (0.00s)
+2026-11-16T02:13:22.2214086Z     repository_license_status_test.go:58: unexpected status: unknown
+2026-11-16T02:13:22.2214521Z --- FAIL: TestRunRepositoryLicenseStatusJSON (0.00s)
+2026-11-16T02:13:22.2215140Z time="2026-11-16T02:13:09Z" level=info msg="shop: 0 root-owned entries would be handed to UID 7111 (0 errors); nothing changed"
+2026-11-16T02:13:22.2216043Z time="2026-11-16T02:13:09Z" level=error msg="reconcile: repo 11111111-2222-3333-4444-555555555555 failed 5 consecutive recovery attempts and needs attention: license untrusted"
+2026-11-16T02:13:22.2241680Z time="2026-11-16T02:13:20Z" level=error msg="setup phase \"essentials\" exceeded its 1.5s limit after 2s (set RENET_SETUP_PHASE_TIMEOUT_ESSENTIALS to change it); last package-manager line: \"Installing: slow-package\""
+2026-11-16T02:13:22.2242892Z time="2026-11-16T02:13:22Z" level=error msg="setup phase \"essentials\" exceeded its 1s limit after 1s (set RENET_SETUP_PHASE_TIMEOUT_ESSENTIALS to change it); last package-manager line: \"Installing: slow-package\""
+2026-11-16T02:13:22.2243561Z FAIL
+2026-11-16T02:13:22.2243890Z FAIL	github.com/rediacc/renet/cmd/renet	75.457s

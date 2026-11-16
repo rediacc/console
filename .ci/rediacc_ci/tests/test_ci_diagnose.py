@@ -408,6 +408,10 @@ SIG_CASES = {
         'level=info msg="[setup] essentials end 1790907838 (23s)" vm=rediacc1',
     ),
     "go-fail": ("--- FAIL: TestPkgInstallRetry (0.50s)", "--- PASS: TestPkgInstallRetry (0.50s)"),
+    "go-pkg-fail": (
+        "FAIL\tgithub.com/rediacc/renet/cmd/renet\t75.457s",
+        "FAIL",
+    ),
     "gate-finding": (
         "::finding::P-A1:b7ac548bf529",
         "findings: 0 (::finding:: lines would appear here)",
@@ -475,13 +479,51 @@ def test_the_same_error_wrapper_without_a_stall_stays_code():
     assert D.classify(lines) == ("code-likely", "error")
 
 
-def test_a_stall_outranks_a_code_failure_in_the_same_log():
-    """Precedence is the table's own: any infra hit wins over any code hit, so a real failure beside a stall reads infra and the excerpt still shows both."""
+def test_a_go_test_failure_outranks_a_stall_in_the_same_log():
+    """A test runner's own failure line wins over an infra row: a rerun would not fix a failed test."""
     lines = [
         "2026-10-07T18:20:00.0000000Z --- FAIL: TestX (0.1s)",
         "2026-10-07T18:22:20.0000000Z apt install of btrfs-progs failed or stalled past 30s in all 3 attempts",
     ]
+    assert D.classify(lines) == ("code-likely", "go-fail")
+
+
+GO_FAIL_EXCERPT = "job_133045740418_go_test_fail_excerpt.log"
+
+
+def _go_fail_lines():
+    return (FIX / GO_FAIL_EXCERPT).read_text(encoding="utf-8").splitlines()
+
+
+def test_a_go_job_with_passing_stall_simulations_reads_the_test_failure():
+    """Quality / Go job 133045740418 (run 43789577407): passing tests logged simulated apt stalls, `--- FAIL: TestRunRepositoryLicenseStatusJSON` was the failure."""
+    lines = _go_fail_lines()
+    assert D.classify(lines) == ("code-likely", "go-fail")
+    quoted = "\n".join(D.excerpt(lines))
+    assert "TestRunRepositoryLicenseStatusJSON" in quoted
+    assert "stalled past" not in quoted
+
+
+def test_the_package_fail_line_alone_is_a_test_failure():
+    lines = ["2026-11-16T02:13:22.2243890Z FAIL\tgithub.com/rediacc/renet/cmd/renet\t75.457s"]
+    assert D.classify(lines) == ("code-likely", "go-pkg-fail")
+
+
+def test_a_stall_inside_a_test_log_line_is_no_infra_verdict():
+    """Only the `_test.go:<n>:` lines of the excerpt, no FAIL line: the simulated stall is not read."""
+    lines = [ln for ln in _go_fail_lines() if "_test.go:" in ln]
+    assert any("stalled past" in ln for ln in lines)
+    assert D.classify(lines) == ("unknown", "")
+
+
+def test_a_real_stall_without_a_test_failure_stays_infra():
+    """Control: the same stall text outside a test log line, and no FAIL line, is still the package-manager stall."""
+    lines = [
+        "2026-11-16T02:13:22.0000000Z apt install of qemu-system-x86 jq failed or stalled past 30s in all 3 attempts",
+        "2026-11-16T02:13:22.1000000Z --- PASS: TestParseThinPoolStatus (0.00s)",
+    ]
     assert D.classify(lines) == ("infra-likely", "pkg-install-stall")
+    assert any("stalled past" in ln for ln in D.excerpt(lines))
 
 
 PIN_RETRY = "2026-10-14T03:10:01.0000000Z ? Bitwarden CLI: attempt %d of 3 failed (%s), asking again in %d s"
