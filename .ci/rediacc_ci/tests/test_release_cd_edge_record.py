@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime
 import json
 import pathlib
+import subprocess
 from typing import Any
 
 import pytest
@@ -279,3 +280,73 @@ def test_rings_read_a_cd_written_record_as_bench_done(tmp_path: pathlib.Path) ->
     # Control: the same version with nothing written has not been taken by bench.
     empty = rings_run.read_world(_world(lambda _v: None), V, bench=False, sample=False)
     assert empty.state.bench_done is False
+
+
+# ---- the production reader and the checkout tree (reviews 6b44893d.1, 6b44893d.2) ----
+
+
+def _get_object(monkeypatch: pytest.MonkeyPatch, *, found: bool, text: str | None = None) -> None:
+    """Replace the bucket download the production reader calls: absent, or a file holding `text`."""
+
+    def get(_key: str, dest: pathlib.Path) -> bool:
+        if found and text is not None:
+            dest.write_text(text, encoding="utf-8")
+        return found
+
+    monkeypatch.setattr(cd_edge_record.executor_artifacts, "get_object", get)
+
+
+def test_live_read_answers_absent_as_none_and_a_record_as_its_object(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _get_object(monkeypatch, found=False)
+    assert cd_edge_record.live_read("release-records/v1/edge.json") is None
+    _get_object(monkeypatch, found=True, text='{"version": "1.0.0"}')
+    assert cd_edge_record.live_read("release-records/v1/edge.json") == {"version": "1.0.0"}
+
+
+@pytest.mark.parametrize("text", ["not json", "[1, 2]", ""], ids=["not-json", "array", "empty"])
+def test_live_read_refuses_a_present_record_that_is_not_a_json_object(
+    monkeypatch: pytest.MonkeyPatch, text: str
+) -> None:
+    _get_object(monkeypatch, found=True, text=text)
+    with pytest.raises(cd_edge_record.RefusedError):
+        cd_edge_record.live_read("release-records/v1/edge.json")
+
+
+def test_live_read_refuses_when_the_bucket_cannot_be_read(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def broken(_key: str, _dest: pathlib.Path) -> bool:
+        raise cd_edge_record.executor_artifacts.ArtifactError("aws get-object failed (rc 1)")
+
+    monkeypatch.setattr(cd_edge_record.executor_artifacts, "get_object", broken)
+    with pytest.raises(cd_edge_record.RefusedError, match="cannot read"):
+        cd_edge_record.live_read("release-records/v1/edge.json")
+
+
+def _git(root: pathlib.Path, *args: str) -> str:
+    return subprocess.run(
+        ["git", "-c", "commit.gpgsign=false", "-c", "user.name=t", "-c", "user.email=t@e", *args],
+        cwd=root,
+        capture_output=True,
+        text=True,
+        check=True,
+    ).stdout.strip()
+
+
+def test_git_tree_answers_the_tree_only_for_the_checkout_head(tmp_path: pathlib.Path) -> None:
+    _git(tmp_path, "init", "-q")
+    (tmp_path / "f").write_text("x", encoding="utf-8")
+    _git(tmp_path, "add", "f")
+    _git(tmp_path, "commit", "-q", "-m", "one")
+    head = _git(tmp_path, "rev-parse", "HEAD")
+    assert cd_edge_record.git_tree(tmp_path, head) == _git(tmp_path, "rev-parse", "HEAD^{tree}")
+    # Control: a checkout whose HEAD is another commit refuses.
+    with pytest.raises(cd_edge_record.RefusedError, match="not the released sha"):
+        cd_edge_record.git_tree(tmp_path, "c" * 40)
+
+
+def test_git_tree_refuses_a_directory_that_is_not_a_checkout(tmp_path: pathlib.Path) -> None:
+    with pytest.raises(cd_edge_record.RefusedError, match="not the released sha"):
+        cd_edge_record.git_tree(tmp_path, SHA)
