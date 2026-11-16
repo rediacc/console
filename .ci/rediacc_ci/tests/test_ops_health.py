@@ -251,7 +251,12 @@ class Combined(Fleet):
 
     def __init__(self, sub_rc=None, **kw):
         super().__init__(**kw)
-        self.sub_rc = {"telemetry_delivery": 0, "portal_captcha": 0, "cf_usage_report": 0}
+        self.sub_rc = {
+            "telemetry_delivery": 0,
+            "portal_captcha": 0,
+            "cf_usage_report": 0,
+            "dmarc_reports": 0,
+        }
         self.sub_rc.update(sub_rc or {})
 
     def __call__(self, argv, env, timeout):
@@ -299,6 +304,28 @@ def test_refresh_writes_cache_posts_ingest_and_runs_under_profiles(tmp_path):
     assert "bws_env" not in " ".join(argv_by_mod["portal_captcha"])
 
 
+def test_dmarc_runs_as_a_local_only_check_its_red_never_posted(tmp_path):
+    # The DMARC verdict is cached and ledgered, but never POSTed: the alerter mails on a red and the operator ruled out notifications for it (2026-11-16).
+    runner, web = Combined(sub_rc={"dmarc_reports": 1}), Web(status_doc())
+    rc, doc = run_refresh(tmp_path, runner, web)
+    assert rc == 1
+    assert doc["checks"]["dmarc"]["state"] == "red"
+    assert (
+        oh.ttl_s(oh.load_config(pathlib.Path(__file__).resolve().parents[3]), "dmarc") == 1440 * 60
+    )
+    argv = next(a for a, _e in runner.calls if "rediacc_ci.ops.dmarc_reports" in " ".join(a))
+    assert "bws_env" not in " ".join(argv)
+    posted = sorted(b["source"] for m, u, h, b in web.calls if m == "POST")
+    assert "local-dmarc" not in posted
+    assert posted == [
+        "local-cf-usage",
+        "local-machine-m1",
+        "local-portal-captcha",
+        "local-telemetry",
+    ]
+    assert any(r["source"] == "local-dmarc" and r["to"] == "red" for r in ledger_rows(tmp_path))
+
+
 def test_refresh_without_named_configs_posts_no_machine_verdict(tmp_path):
     # RDC_HEALTH_CONFIGS unset: the default config's machines (a dev box's VMs) are checked and cached, never sent to the production alerter.
     web = Web(status_doc())
@@ -328,7 +355,7 @@ def test_unchanged_state_appends_no_ledger_row(tmp_path):
     web = Web(status_doc())
     run_refresh(tmp_path, Combined(), web, force=True)
     first = len(ledger_rows(tmp_path))
-    assert first == 4  # first sight of each source
+    assert first == 5  # first sight of each source
     run_refresh(tmp_path, Combined(), web, force=True, now=NOW + datetime.timedelta(minutes=1))
     assert len(ledger_rows(tmp_path)) == first
 

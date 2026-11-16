@@ -253,6 +253,23 @@ rdc run -f container_restart -m <machine> --param repository=<repo> --param cont
 | `python3 -m rediacc_ci.ops.bench_access add-current\|list\|add\|remove\|clear\|disable` (run with `PYTHONPATH=.ci`) | Bench IP allowlist: one zone WAF rule, 5 IPs at most, oldest evicted, each IP expires 7 days after it was added (stamp kept in the rule description, refreshed by re-adding); IPv6 is stored as the /64 prefix (a hand CIDR only /64 to /128), and under WSL `add-current` also asks the Windows host for its egress addresses; a 403 from a bench host means run `add-current` (the two health paths stay open for `ops-telemetry-probe.yml`). `npm run ci:quick` runs `preflight` first: it probes bench from here and from the Windows host and runs `add-current` only on a 403, skips under `CI=true`, and never fails the run |
 | `rediacc_ci.ops.cf_auth` | Shared Cloudflare auth helpers for the bench and backup operator scripts |
 
+### DMARC reports (the ops-health `dmarc` check)
+
+No human reads the DMARC aggregate and TLS-RPT reports that land in the DMARC folders of the hostinger `mail` repo. The ops-health refresh runs `PYTHONPATH=.ci python3 -m rediacc_ci.ops.dmarc_reports` once a day (`local_ttl_minutes.dmarc` in `.ci/config/ops-health.json`). One `rdc term connect` call through eu-bench streams `rediacc_ci/ops/dmarc_parser.py` into `docker exec -i mail-server python3 -I -`, so nothing is written on the machine, and the parser reads only the UNSEEN messages. Each failing source is then judged against `.ci/config/dmarc-known-sources.json`.
+
+| Finding | Red when |
+|---------|----------|
+| `dmarc.source.new` | a source matching no entry fails DMARC; the line names its IP, rDNS, domain, message count and reporters |
+| `dmarc.ours.failing` | an `ours` sender (hostinger, Amazon SES) fails DMARC |
+| `dmarc.ruled.passing` | a ruled source (the retired providers Microsoft 365 for rediacc.com and Zoho EU for rediacc.io) PASSES DMARC, so DNS still authorizes it |
+| `dmarc.ruled.volume` | a ruled source sends more than `volume.max_per_day` messages on one report day, or `volume.ratio` times its trailing daily average (history in `.ci/cache/ops-health/dmarc-history.json`) |
+| `dmarc.tlsrpt.failure` | a TLS-RPT policy reports failed sessions |
+| `dmarc.report.malformed` | a report attachment does not parse; the line names the attachment and the reason |
+
+A ruled source failing DMARC is expected and stays green. Reports whose every finding is green are marked `\Seen` with doveadm (never deleted or moved); a report holding a red, and every message that is not a report, stays unread, so the red stands until a ruling or an acknowledgement covers it. The verdict is local only: the refresh never posts `local-dmarc` to the alerter, and the check sends no mail and opens no issue (operator ruling 2026-11-16). The Stop hook's ops-health red is the signal.
+
+On a `dmarc.source.new` red, put the source to the operator. Once the operator rules, add an entry under `rulings` with `name`, `verdict` (`old-provider` for a retired provider, `spoof` for a ruled spoofer), `ruled` (the date of the ruling), `domains`, and the `cidrs` and/or `rdns_suffixes` that match the source. An rDNS suffix counts only when the reverse name resolves back to the IP. A fixed or accepted ours-failing, ruled-passing, volume or TLS-RPT red is cleared by setting `acknowledged_through.<domain>` to the last report day it covers. The next refresh marks the covered reports Seen and turns green.
+
 ## Secret Rotation (`./run.sh rotation`)
 
 Secret rotation lives in `private/account/scripts/rotation/` (private submodule). The CLI is dispatched via `./run.sh rotation <command>`. State is tracked in a committed manifest at `private/account/rotation-manifest.json` (no secrets — only IDs, timestamps, and states).

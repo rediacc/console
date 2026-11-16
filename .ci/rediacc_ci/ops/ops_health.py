@@ -12,7 +12,7 @@ MACHINES (D-verdict). The configs come from RDC_HEALTH_CONFIGS (a comma list in 
   4. `backup_coverage` present for every autostart repo, and each covered repo younger than `backup_max_age_days`. The repositories and the coverage are read from the health JSON when it carries them, else from one `machine status <m> -o json`.
 A repo whose `health()` is absent (`level: none`) is reported as "no check", never as green and never as red. Exit 0 green, 1 red, 2 setup or unreadable (an empty machine list, an rdc call that timed out or printed no JSON). A red row wins over an unreadable one in the aggregate, so an unreachable machine cannot hide a red one.
 
-REFRESH (D-local). Runs the checks that are past their TTL (`--force` runs all): `machines`, then telemetry_delivery under bws profile `telemetry-probe`, portal_captcha, and cf_usage_report under profile `cf-usage-report`, each unchanged as a subprocess keeping its 0/1/2 contract; then the off-box read. It writes `.ci/cache/ops-health/state.json`, appends one row per state transition to agent/ledgers/ops-health.jsonl (an unchanged state appends nothing), and POSTs each fresh local verdict to the Worker's `/v1/ingest` (sources `local-<check>`, and `local-machine-<name>` only when RDC_HEALTH_CONFIGS names the configs, so a default config's dev machines never reach the production alerter). A failed POST is recorded in the cache and never fails the refresh. The Stop hook (.claude/hooks/stop/wl_opshealth.py) spawns it detached, after taking `.ci/cache/ops-health/refresh.lock` with O_EXCL, and passes `--lock-held`; a hand run takes the same lock itself.
+REFRESH (D-local). Runs the checks that are past their TTL (`--force` runs all): `machines`, then telemetry_delivery under bws profile `telemetry-probe`, portal_captcha, cf_usage_report under profile `cf-usage-report`, and dmarc_reports (the unread DMARC reports on the mail repo, judged against .ci/config/dmarc-known-sources.json), each unchanged as a subprocess keeping its 0/1/2 contract; then the off-box read. It writes `.ci/cache/ops-health/state.json`, appends one row per state transition to agent/ledgers/ops-health.jsonl (an unchanged state appends nothing), and POSTs each fresh local verdict but `local-dmarc` to the Worker's `/v1/ingest` (sources `local-<check>`, and `local-machine-<name>` only when RDC_HEALTH_CONFIGS names the configs, so a default config's dev machines never reach the production alerter). A failed POST is recorded in the cache and never fails the refresh. The Stop hook (.claude/hooks/stop/wl_opshealth.py) spawns it detached, after taking `.ci/cache/ops-health/refresh.lock` with O_EXCL, and passes `--lock-held`; a hand run takes the same lock itself.
 
 OFFBOX AND GATE (D-record, D-gate). `GET <worker_url>/v1/status` with the bearer OPS_HEALTH_READ_TOKEN. Red when the verdict is red or `last_cron_at` is older than the stale limit; unreadable (exit 2) when the status cannot be read or its verdict is `unknown`. `offbox` also compares `targets_sha` with the sha256 of the `ops` repo's target file when OPS_HEALTH_TARGETS_REF is set (finding `ops.targets.drift`, red, naming the deploy command). `gate` is the CI gate's entry (.ci/scripts/quality/check_ops_health.py): the same judgement with no target comparison.
 
@@ -74,6 +74,7 @@ DEFAULTS: dict = {
         "telemetry": 360,
         "portal_captcha": 360,
         "cf_usage": 10080,
+        "dmarc": 1440,
         "offbox_read": 15,
     },
     "stale": {"last_cron_minutes": 30},
@@ -87,7 +88,10 @@ SUBPROCESS_CHECKS: dict[str, tuple[str | None, str]] = {
     "telemetry": ("telemetry-probe", "rediacc_ci.ops.telemetry_delivery"),
     "portal-captcha": (None, "rediacc_ci.ops.portal_captcha"),
     "cf-usage": ("cf-usage-report", "rediacc_ci.ops.cf_usage_report"),
+    "dmarc": (None, "rediacc_ci.ops.dmarc_reports"),
 }
+# Sources the cache and ledger keep but the production alerter never receives: the DMARC verdict is local only, since the alerter mails on a red and the operator ruled out every notification for it (2026-11-16).
+LOCAL_ONLY_SOURCES = frozenset({"local-dmarc"})
 LOCAL_CHECKS = ("machines", *SUBPROCESS_CHECKS)
 ALL_CHECKS = (*LOCAL_CHECKS, "offbox")
 
@@ -993,7 +997,8 @@ def is_green(entry: object) -> bool:
 
 
 def postable_sources(sources: dict, env: dict) -> dict:
-    """The sources the production alerter receives. A machine verdict is posted only when RDC_HEALTH_CONFIGS names the configs: unset, the machines come from whatever default config this checkout holds (a dev box's VMs), and on 2026-11-07 two of those turned the production verdict red. The local cache and ledger keep every source either way."""
+    """The sources the production alerter receives. A machine verdict is posted only when RDC_HEALTH_CONFIGS names the configs: unset, the machines come from whatever default config this checkout holds (a dev box's VMs), and on 2026-11-07 two of those turned the production verdict red. A LOCAL_ONLY_SOURCES source is never posted. The local cache and ledger keep every source either way."""
+    sources = {k: v for k, v in sources.items() if k not in LOCAL_ONLY_SOURCES}
     if (env.get(CONFIGS_ENV) or "").strip():
         return sources
     return {k: v for k, v in sources.items() if not k.startswith("local-machine-")}

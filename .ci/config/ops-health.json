@@ -23,6 +23,7 @@
     "telemetry": 360,
     "portal_captcha": 360,
     "cf_usage": 10080,
+    "dmarc": 1440,
     "offbox_read": 15
   },
   "telemetry": {
