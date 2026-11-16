@@ -14,6 +14,7 @@ import datetime
 import hashlib
 import hmac
 import importlib
+import itertools
 import json
 import os
 import pathlib
@@ -518,7 +519,9 @@ class Proc:
 
 def _cause(done: Proc, *names: str) -> str:
     """`: <the child's stated cause>` for an error message (wrangler's `--json` stdout error, then the last stderr lines, `control_db.failure_tail`), empty when the child stated none; each of `names` (the Worker, key, domain, machine, repo, image tag or credential the call was given) is masked as a whole token (`control_db.mask_names`), because a child echoes what it was asked about and a Worker or host name can carry a company name. Every `LabError` raised on a child's exit code quotes it, so a failed run names its cause rather than only its rc (the 2026-11-15 `proof cost --bench` said only `docker build ... exited 1`)."""
-    tail = control_db.mask_names(control_db.failure_tail(done.stdout, done.stderr), names)
+    # Longest first: a name that contains another (a `repo@machine` ref, a host with the company label) is masked whole before the shorter one rewrites part of it.
+    ordered = sorted(names, key=len, reverse=True)
+    tail = control_db.mask_names(control_db.failure_tail(done.stdout, done.stderr), ordered)
     return ": " + tail if tail else ""
 
 
@@ -1050,7 +1053,7 @@ def cert_log_names(
         if attempt < attempts:
             sleep(backoff_s * attempt)
     if rows is None:
-        answered = any(o.endswith(CRT_SH_EMPTY) for o in outcomes)
+        answered = all(o.endswith(CRT_SH_EMPTY) for o in outcomes)
         lead = (
             "crt.sh logged no certificate for the product domain"
             if answered
@@ -2922,8 +2925,20 @@ def _gh(run: Runner, *args: str) -> str:
     """A one-shot gh call, for a WRITE: `gh workflow run` is never retried, since a retry after a lost reply would dispatch twice."""
     done = run(("gh", *args), None, None)
     if done.rc != 0:
-        raise proof.LabError("gh %s exited %d%s" % (args[0] if args else "", done.rc, _cause(done)))
+        raise proof.LabError(
+            "gh %s exited %d%s" % (args[0] if args else "", done.rc, _cause(done, *_gh_names(args)))
+        )
     return done.stdout
+
+
+def _gh_names(args: Sequence[str]) -> list[str]:
+    """The values a gh call was given as `-f key=value` fields (the company id, the version), except the booleans, for `_cause` to mask: gh echoes a rejected input back."""
+    values = (
+        a.partition("=")[2]
+        for flag, a in itertools.pairwise(args)
+        if flag in ("-f", "-F", "--field", "--raw-field")
+    )
+    return [v for v in values if v not in ("", "true", "false")]
 
 
 def _gh_read(run: Runner, *args: str) -> str:

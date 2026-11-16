@@ -1325,7 +1325,7 @@ def test_cert_log_names_retry_a_transient_read_then_pass(first):
 
 
 def test_cert_log_names_every_attempt_failing_raises_naming_each_attempt():
-    """Control: the retries never turn an empty log into a pass."""
+    """Control: the retries never turn an empty log into a pass. A run that mixed an empty list with 502s and a timeout does not claim the log is empty (review ef5a088b.2)."""
     fetch, calls = _scripted_crt(
         (200, "[]"), (502, "x"), proof.LabError("GET u: TimeoutError"), (200, "[]")
     )
@@ -1333,13 +1333,22 @@ def test_cert_log_names_every_attempt_failing_raises_naming_each_attempt():
     with pytest.raises(proof.LabError) as err:
         lab.cert_log_names(fetch_url=fetch, sleep=pauses.append, attempts=4, backoff_s=1.0)
     text = str(err.value)
-    assert "no certificate" in text
+    assert "no usable answer" in text
+    assert "no certificate" not in text
     assert "attempt 1 answered an empty list" in text
     assert "attempt 2 answered 502" in text
     assert "attempt 3 failed (GET u: TimeoutError)" in text
     assert "attempt 4 answered an empty list" in text
     assert len(calls) == 4
     assert pauses == [1.0, 2.0, 3.0]
+
+
+def test_cert_log_names_an_empty_list_every_time_claims_an_empty_log():
+    """Review ef5a088b.2 control: only when every attempt answered an empty list is the log called empty."""
+    fetch, _calls = _scripted_crt((200, "[]"), (200, "[]"))
+    with pytest.raises(proof.LabError) as err:
+        lab.cert_log_names(fetch_url=fetch, sleep=lambda _s: None, attempts=2, backoff_s=1.0)
+    assert "crt.sh logged no certificate" in str(err.value)
 
 
 def test_cert_log_names_never_answered_does_not_claim_an_empty_log():
@@ -3348,6 +3357,9 @@ class Fleet:
         renet="0.9.0",
         proxy_uploads=False,
         proxy_rc=0,
+        proxy_err="",
+        up_rc=0,
+        up_err="",
         outcome=None,
         deployments=None,
         rollback_fails_to="",
@@ -3358,6 +3370,9 @@ class Fleet:
         self.renet = renet
         self.proxy_uploads = proxy_uploads
         self.proxy_rc = proxy_rc
+        self.proxy_err = proxy_err
+        self.up_rc = up_rc
+        self.up_err = up_err
         # (renet, worker version) -> renew JSON; default: every pairing renews.
         self.outcome = outcome or (lambda _r, _w: {"results": [{"outcome": "renewed"}]})
         self.deployments = DEPLOYMENTS_V9 if deployments is None else deployments
@@ -3387,7 +3402,9 @@ class Fleet:
             if "--proxy" in argv:
                 if self.proxy_uploads:
                     self.renet = "0.9.2"
-                return lab.Proc(self.proxy_rc)
+                return lab.Proc(self.proxy_rc, "", self.proxy_err)
+            if self.up_rc:
+                return lab.Proc(self.up_rc, "", self.up_err)
             self.renet = "0.9.1" if argv[0] == "/opt/rdc-prev/rdc" else "0.9.2"
             return lab.Proc(0)
         raise AssertionError(argv)
@@ -3416,6 +3433,34 @@ def test_an_executor_that_uploads_is_admitted_so_the_refusal_claim_breaks():
 def test_a_proxied_verb_that_failed_proves_nothing():
     with pytest.raises(proof.LabError, match="proxied repo up exited 1"):
         upload_v9(Fleet(proxy_rc=1))
+
+
+def test_a_failed_proxied_verb_quotes_its_cause_with_token_host_and_repo_masked():
+    """Review c467e89b.1: the cause is quoted, and the minted token, the proxy host and the repo the call was given never reach the message."""
+    host = "proof-a-proxy.%s" % PRODUCT_DOMAIN
+    err = "dial %s failed: bad bearer rdt_proxy_c0000000a for proofrepo@vm-1\n" % host
+    with pytest.raises(proof.LabError) as caught:
+        upload_v9(Fleet(proxy_rc=1, proxy_err=err))
+    text = str(caught.value)
+    assert "dial <name> failed: bad bearer <name> for <name>" in text
+    for secret in (host, "proof-a", "c0000000a", "proofrepo", "vm-1"):
+        assert secret not in text
+    # Control: a child that stated nothing leaves the bare message.
+    with pytest.raises(proof.LabError) as bare:
+        upload_v9(Fleet(proxy_rc=1))
+    assert str(bare.value).endswith("exited 1; nothing was proven")
+
+
+def test_a_failed_spread_repo_up_quotes_its_cause_with_machine_and_repo_masked():
+    """Review c467e89b.2: the previous-rdc repo up that fails names its cause, masked."""
+    with pytest.raises(proof.LabError) as caught:
+        spread_v9(
+            Fleet(up_rc=1, up_err="vm-1 refused proofrepo@vm-1: disk full\n"), "previous", "new"
+        )
+    text = str(caught.value)
+    assert "repo up with the previous rdc exited 1: <name> refused <name>: disk full" in text
+    assert "vm-1" not in text
+    assert "proofrepo" not in text
 
 
 def test_worker_versions_are_the_distinct_full_versions_newest_first():
@@ -3623,6 +3668,40 @@ def test_the_dispatch_sends_the_opaque_id_to_bench_and_waits_for_its_run():
     fields = [sent[i + 1] for i, a in enumerate(sent) if a == "-f"]
     assert fields == ["version=0.9.1", "company=%s" % CID_GH, "bench=true", "dry_run=false"]
     assert sum(1 for c in gh.calls if c[:2] == ["run", "view"]) == 2
+
+
+def test_a_failed_dispatch_masks_the_field_values_it_was_given():
+    """Review c467e89b.3: gh echoes a rejected input back, so the company id and version sent as -f fields are masked in the cause; the booleans and the workflow name stay readable."""
+
+    class Rejects(Gh):
+        def __call__(self, argv, cwd, env):
+            if list(argv[1:3]) == ["workflow", "run"]:
+                return lab.Proc(1, "", "HTTP 422: company %s, version 0.9.1, bench true\n" % CID_GH)
+            return super().__call__(argv, cwd, env)
+
+    with pytest.raises(proof.LabError) as caught:
+        dispatch_gh(Rejects())
+    text = str(caught.value)
+    assert "HTTP 422: company <name>, version <name>, bench true" in text
+    assert CID_GH not in text
+
+
+def test_gh_names_are_the_field_values_except_booleans():
+    args = (
+        "workflow",
+        "run",
+        "w.yml",
+        "--ref",
+        "main",
+        "-f",
+        "a=x1",
+        "-f",
+        "bench=true",
+        "-f",
+        "b=",
+    )
+    assert lab._gh_names(args) == ["x1"]
+    assert lab._gh_names(("repo", "view")) == []
 
 
 def test_a_run_older_than_the_dispatch_is_not_taken_for_it():
