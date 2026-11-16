@@ -355,6 +355,16 @@ def test_an_empty_owner_host_list_is_said_not_replaced_by_a_guess(monkeypatch):
     assert "planted" in text
 
 
+def test_an_empty_owner_host_list_gets_no_home_host_fallback(monkeypatch):
+    """Review 890d8943.1: the case the test above names but cannot reach, an owner that RETURNS no host. sources() carries exactly what the owner answered, so a re-added `or (home hosts)` guess flips this."""
+    bench_access = syspath.import_from_ci("rediacc_ci.ops.bench_access")
+    monkeypatch.setattr(bench_access, "bench_hosts", lambda *_a: [])
+    assert B.sources().hosts == ()
+    assert not B.is_bench_command("curl https://eu.bench.rediacc.cloud/", (), ())
+    monkeypatch.setattr(bench_access, "bench_hosts", lambda *_a: ["a.example.test"])
+    assert B.sources().hosts == ("a.example.test",)
+
+
 def test_an_unloadable_source_is_said_not_swallowed(monkeypatch):
     def broken():
         raise ImportError("planted")
