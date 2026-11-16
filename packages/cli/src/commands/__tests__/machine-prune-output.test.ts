@@ -69,6 +69,7 @@ vi.mock('../../remote/vscode/index.js', () => ({
   },
 }));
 
+import { outputService } from '../../services/core/output.js';
 import { registerPruneCommand, splitPrunePhases } from '../machine/prune.js';
 import { installJobDeps } from './job-deps.js';
 
@@ -215,6 +216,28 @@ describe('machine prune output', () => {
     await run('--orphaned-repos');
     expect(mocks.deletes).toEqual([ORPHAN]);
     expect(process.exitCode).toBe(1);
+  });
+
+  it('keeps the ssh entries and prints no completed line when renet refuses every delete', async () => {
+    mocks.format = 'json';
+    mocks.deleteFails = true;
+    mocks.sshEntries = ['rediacc--ops-worker-gone'];
+    const success = vi.spyOn(outputService, 'success');
+    await run('--orphaned-repos');
+    expect(mocks.events).toEqual([`delete:${ORPHAN}`]);
+    expect(success).not.toHaveBeenCalledWith(expect.stringContaining('orphaned repo'));
+  });
+
+  it('counts only the deleted repos in the completed line of --prune-unknown', async () => {
+    mocks.format = 'json';
+    mocks.repos = [{ name: ORPHAN, mounted: false, docker_running: false, container_count: 0 }];
+    mocks.deleteFails = true;
+    const success = vi.spyOn(outputService, 'success');
+    await run('--prune-unknown');
+    expect(success).not.toHaveBeenCalledWith(expect.stringContaining('unknown repo'));
+    mocks.deleteFails = false;
+    await run('--prune-unknown');
+    expect(success).toHaveBeenCalledWith(expect.stringContaining('1 unknown repo'));
   });
 
   it('exits zero when every orphan delete succeeds', async () => {

@@ -35,6 +35,7 @@ import type { RepositoryConfig } from '../../types/index.js';
 import { isAgentEnvironment } from '../agent-guard.js';
 import {
   assertCommandPolicy,
+  assertOrphanDeletePolicy,
   CMD,
   COMMAND_POLICIES,
   validateRemotePath,
@@ -439,6 +440,35 @@ describe('command-policy', () => {
           true
         );
       }
+    });
+  });
+  describe('assertOrphanDeletePolicy ops VM exemption', () => {
+    const GUID = '260f0a05-1111-4222-8333-444455556666';
+    const machines = (ip: string) =>
+      vi.mocked(configService.getCurrent).mockResolvedValue({
+        resources: { machines: { box: { ip } } },
+      } as never);
+
+    it('lets an agent delete a non-fork orphan on a machine inside the ops fleet network', async () => {
+      mockIsAgent.mockReturnValue(true);
+      machines('192.168.111.11');
+      await expect(assertOrphanDeletePolicy(GUID, 'box', false)).resolves.toBeUndefined();
+    });
+
+    it('blocks the same delete on a machine outside the ops fleet network', async () => {
+      mockIsAgent.mockReturnValue(true);
+      machines('203.0.113.7');
+      await expect(assertOrphanDeletePolicy(GUID, 'box', false)).rejects.toThrow(
+        'errors.agent.grandGuard'
+      );
+    });
+
+    it('does not exempt by machine name alone', async () => {
+      mockIsAgent.mockReturnValue(true);
+      vi.mocked(configService.getCurrent).mockResolvedValue(null as never);
+      await expect(assertOrphanDeletePolicy(GUID, 'ops-worker', false)).rejects.toThrow(
+        'errors.agent.grandGuard'
+      );
     });
   });
 });

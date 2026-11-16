@@ -115,7 +115,7 @@ function renderPruneOutcome(parsed: Record<string, unknown>, dryRun: boolean): v
 }
 
 /**
- * Delete a list of orphaned repo GUIDs from a machine.
+ * Delete a list of orphaned repo GUIDs from a machine, returning how many renet deleted.
  *
  * Each `repository_delete` is its own SSH session today, `localExecutorService`
  * has no sticky connection, but `quietSpinners: true` on calls 2..N hides
@@ -129,8 +129,9 @@ async function deleteOrphanedItems(
   orphaned: { guid: string }[],
   machineName: string,
   debug: boolean | undefined
-): Promise<void> {
+): Promise<number> {
   let firstCall = true;
+  let deleted = 0;
   for (const item of orphaned) {
     outputService.info(`Deleting ${item.guid.slice(0, 8)}…`);
     const deleteResult = await deleteRepoImageByGuid(machineName, item.guid, {
@@ -142,8 +143,11 @@ async function deleteOrphanedItems(
       outputService.error(`Failed to delete ${item.guid}: ${deleteResult.error}`);
       // A failed delete leaves the image on the machine, so the run must not exit 0.
       setExitCode(1);
+    } else {
+      deleted += 1;
     }
   }
+  return deleted;
 }
 
 /** Remove stale VS Code SSH config entries for repos no longer in config. */
@@ -269,12 +273,14 @@ async function pruneUnknownRepos(machineName: string, options: PruneOptions): Pr
     return;
   }
 
-  await deleteOrphanedItems(
+  const deleted = await deleteOrphanedItems(
     deletable.map((r) => ({ guid: r.name })),
     machineName,
     options.debug
   );
-  outputService.success(t('commands.machine.prune.unknownCompleted', { count: deletable.length }));
+  if (deleted > 0) {
+    outputService.success(t('commands.machine.prune.unknownCompleted', { count: deleted }));
+  }
 }
 
 /** Phase 2: Prune orphaned repos not in any config. */
@@ -321,18 +327,15 @@ async function pruneOrphanedRepos(
     options
   );
   if (!options.dryRun && deletable.length > 0) {
-    await deleteOrphanedItems(
+    const deleted = await deleteOrphanedItems(
       deletable.map((r) => ({ guid: r.name })),
       machineName,
       options.debug
     );
-    await cleanupSshArtifacts(machineName);
-
-    outputService.success(
-      t('commands.machine.prune.orphanedReposCompleted', {
-        count: deletable.length,
-      })
-    );
+    if (deleted > 0) {
+      await cleanupSshArtifacts(machineName);
+      outputService.success(t('commands.machine.prune.orphanedReposCompleted', { count: deleted }));
+    }
   }
 
   await purgeExpiredArchives(options.graceDays);
