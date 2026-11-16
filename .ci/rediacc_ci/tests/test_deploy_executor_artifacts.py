@@ -713,7 +713,7 @@ def test_a_failing_fixture_step_surfaces_its_stderr_and_a_passing_one_is_quiet()
     code = "import sys; sys.stderr.write('compiler said no'); sys.exit(3)"
     with pytest.raises(AssertionError, match="exited 3: compiler said no"):
         _run_quiet_or_fail([sys.executable, "-c", code])
-    assert _run_quiet_or_fail([sys.executable, "-c", "pass"]) is None
+    _run_quiet_or_fail([sys.executable, "-c", "pass"])
 
 
 def test_the_fixture_commit_is_isolated_from_a_signing_global_config(tmp_path):
