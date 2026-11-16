@@ -670,3 +670,37 @@ def test_a_pid_whose_cgroup_cannot_be_read_is_not_signalled(tmp_path):
     finally:
         child.kill()
         child.wait()
+
+
+# --------------------------------------------------------------------------- review findings (89135e69.1)
+
+
+def _rolling_timer_world(unit_repo: str) -> Any:
+    """A world whose timer read lists one per-repo rolling timer of `unit_repo` due two minutes after the machine's clock."""
+    w = seeded()
+    line = (
+        "Fri 2026-11-06 09:02:00 UTC 2min Fri 2026-11-06 08:57:00 UTC 3min ago "
+        "rediacc-backup-g1.repo.%s.latest.timer rediacc-backup-g1.repo.%s.latest.service\n"
+        % (unit_repo, unit_repo)
+    )
+    inner = w.runner
+
+    def runner(argv, timeout):
+        args = list(argv[3:])
+        if args[:2] == ["term", "connect"] and args[4] == bw.timers_script():
+            return 0, timers_text(AT_0900).replace(TIMER_LINE, line), ""
+        return inner(argv, timeout)
+
+    w.runner = runner
+    return w
+
+
+def test_another_repos_rolling_timer_does_not_block_the_replay(tmp_path):
+    rc, text = run(_rolling_timer_world("other"), tmp_path, *REPLAY)
+    assert rc == 0, text
+
+
+def test_the_targets_own_rolling_timer_still_blocks_the_replay(tmp_path):
+    rc, text = run(_rolling_timer_world("mautic"), tmp_path, *REPLAY)
+    assert rc == 2, text
+    assert "backup-window: refused" in text
