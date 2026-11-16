@@ -709,7 +709,9 @@ def napper(r):
 
 def release(r, **kw):
     sleep, naps = napper(r)
-    got = rings_run.lab_release(world=r.world, version=V, sleep=sleep, **kw)
+    got = rings_run.lab_release(
+        world=r.world, version=V, sleep=sleep, clock=lambda: sum(naps), **kw
+    )
     return got, naps
 
 
@@ -728,10 +730,52 @@ def test_a_release_that_never_settles_names_its_last_decision(tmp_path):
     r.plane.add(CANARY, 2, override="canary")
     got, naps = release(r)
     assert got.rc == 1
-    assert "did not settle in %d runs" % rings_run.PROOF_SETTLE_RUNS in got.error
+    assert "did not settle in %d s" % rings_run.PROOF_SETTLE_S in got.error
     assert "wait ring=bench -- bench has not taken %s" % V in got.error
-    assert len(naps) == rings_run.PROOF_SETTLE_RUNS
+    assert sum(naps) == rings_run.PROOF_SETTLE_S, "it waited the bound, not longer"
     assert r.kids.deployed() == []
+
+
+def test_the_settle_bound_is_wall_time_not_a_run_count(tmp_path, capsys):
+    """A fake that never becomes ready fails within the bound it is given and names the decision it waited for; each wait is announced on stderr (the 2026-11-16 `proof release --bench` slept 46 minutes silently)."""
+    r = rig(tmp_path, bench=True, record=False)
+    r.plane.add(CANARY, 2, override="canary")
+    sleep, naps = napper(r)
+    got = rings_run.lab_release(
+        world=r.world, version=V, sleep=sleep, clock=lambda: sum(naps), settle_s=300
+    )
+    assert got.rc == 1
+    assert "did not settle in 300 s" in got.error
+    assert "bench has not taken %s" % V in got.error
+    assert sum(naps) == 300
+    assert "waiting out a shortened pause" in capsys.readouterr().err
+
+
+def test_a_workers_only_record_counts_as_bench_taken(monkeypatch):
+    """`edge.json` absent (no full release), `edge-workers.json` present: the version is taken. Both absent: it is not."""
+    asked: list[str] = []
+    docs = {rings_run.WORKERS_RECORD % ("https://o", V): {"version": V, "failed_step": None}}
+
+    def fake(url):
+        asked.append(url)
+        return docs.get(url)
+
+    monkeypatch.setattr(rings_run, "_record_at", fake)
+    monkeypatch.setattr(
+        rings_run.local, "well_known", lambda _root: {"WK_RELEASES_ORIGIN": "https://o"}
+    )
+    assert rings_run.edge_record(V) == {"version": V, "failed_step": None}
+    assert asked == [
+        rings_run.EDGE_RECORD % ("https://o", V),
+        rings_run.WORKERS_RECORD % ("https://o", V),
+    ]
+    docs.clear()
+    assert rings_run.edge_record(V) is None
+    full = {"version": V, "failed_step": None, "kind": "release-local"}
+    docs[rings_run.EDGE_RECORD % ("https://o", V)] = full
+    asked.clear()
+    assert rings_run.edge_record(V) == full
+    assert len(asked) == 1, "the full record wins and the workers-only key is not read"
 
 
 def test_a_planted_failure_stops_names_the_company_and_leaves_large(tmp_path):

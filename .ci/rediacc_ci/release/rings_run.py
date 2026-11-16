@@ -60,6 +60,8 @@ ACCOUNT_PROFILE = "deploy-workers"
 RESMOKE_ACTION = "ring-resmoke"
 ACTOR = "rings_run"
 EDGE_RECORD = "%s/release-records/v%s/edge.json"
+# What a workers-only release leaves (`local.workers_record_key`): the account and proxy Workers a ring release rolls out, deployed from that version.
+WORKERS_RECORD = "%s/release-records/v%s/edge-workers.json"
 OUT_REL = ".ci/cache/rings"
 BENCH_PAUSE_ORDER = "bench-pause"
 MAX_ROUNDS = 64
@@ -734,18 +736,10 @@ def d1_query(database: str, sql: str, params: list) -> list[dict]:
     return d1_rows(proc.stdout)
 
 
-def edge_record(version: str) -> dict[str, Any] | None:
-    """`release-records/v<V>/edge.json` over the public releases origin, or None when absent or unreadable."""
-    origin = local.well_known(paths.repo_root()).get("WK_RELEASES_ORIGIN", "")
-    if not origin:
-        return None
+def _record_at(url: str) -> dict[str, Any] | None:
     try:
         proc = subprocess.run(
-            ["curl", "-sf", EDGE_RECORD % (origin, version)],
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=60,
+            ["curl", "-sf", url], capture_output=True, text=True, check=False, timeout=60
         )
     except (OSError, subprocess.TimeoutExpired):
         return None
@@ -756,6 +750,16 @@ def edge_record(version: str) -> dict[str, Any] | None:
     except ValueError:
         return None
     return doc if isinstance(doc, dict) else None
+
+
+def edge_record(version: str) -> dict[str, Any] | None:
+    """`release-records/v<V>/edge.json` over the public releases origin, else the workers-only record of that version (`edge-workers.json`), else None when both are absent or unreadable. The full record wins: a workers-only release cuts no version and never writes `edge.json`."""
+    origin = local.well_known(paths.repo_root()).get("WK_RELEASES_ORIGIN", "")
+    if not origin:
+        return None
+    return _record_at(EDGE_RECORD % (origin, version)) or _record_at(
+        WORKERS_RECORD % (origin, version)
+    )
 
 
 def live_target(row: CompanyRow) -> console_executor.CompanyTarget:
@@ -792,7 +796,7 @@ def live_world() -> World:
 # `enterprise proof release` (box V5) on bench: no soak, and pauses shortened to a minute that the driver waits out.
 PROOF_SOAK_DAYS = 0
 PROOF_PAUSE_MINUTES = 1
-PROOF_SETTLE_RUNS = 16
+PROOF_SETTLE_S = 20 * 60
 FAST = "fast"
 
 
@@ -850,14 +854,18 @@ def lab_release(
     world: World | None = None,
     version: str | None = None,
     sleep: Callable[[float], None] | None = None,
+    clock: Callable[[], float] | None = None,
+    settle_s: float = PROOF_SETTLE_S,
     pause_minutes: int = PROOF_PAUSE_MINUTES,
 ) -> proof.ReleaseResult:
     """One bench release as `enterprise proof release` asks for it, as a `proof.ReleaseResult`.
 
-    Each invocation of the runner ends at a `wait` while a shortened pause runs, so the driver sleeps the pause and invokes again until the run ends on anything else (at most `PROOF_SETTLE_RUNS`). `--resume` applies to the first invocation only. A non-zero exit names the company whose last rollout row of the version is `failed`. The runner's own lines are captured, not printed: the proof prints its claims."""
+    Each invocation of the runner ends at a `wait` while a shortened pause runs, so the driver sleeps the pause and invokes again until the run ends on anything else, for at most `settle_s` seconds of wall time (`PROOF_SETTLE_S`); a run still at a `wait` then fails naming that decision, and each wait is announced on stderr, since the runner's own lines are captured. `--resume` applies to the first invocation only. A non-zero exit names the company whose last rollout row of the version is `failed`. The runner's own lines are captured, not printed: the proof prints its claims."""
     w = world or live_world()
     v = version or target_version()
     nap = sleep or time.sleep
+    now = clock or time.monotonic
+    deadline = now() + settle_s
     base = ["--version", v, "--bench", "--soak-days", str(PROOF_SOAK_DAYS)]
     base += ["--pause-minutes", str(pause_minutes)]
     if order:
@@ -869,7 +877,9 @@ def lab_release(
     first = [*base, "--resume", v, "--company", resume] if resume else base
     argv = first
     waited = ""
-    for _ in range(PROOF_SETTLE_RUNS):
+    runs = 0
+    while now() < deadline or not runs:
+        runs += 1
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             rc = main(argv, world=w)
@@ -883,13 +893,14 @@ def lab_release(
         if not decided or not decided[-1].startswith("wait"):
             return proof.ReleaseResult(0)
         waited = decided[-1]
+        _say("waiting out a shortened pause (run %d): %s" % (runs, waited))
         nap(pause_minutes * 60.0)
         argv = base
     return proof.ReleaseResult(
         1,
         "",
-        "the release did not settle in %d runs; the last decision: %s"
-        % (PROOF_SETTLE_RUNS, waited),
+        "the release did not settle in %d s (%d runs); the last decision: %s"
+        % (settle_s, runs, waited),
     )
 
 

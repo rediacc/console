@@ -15,6 +15,7 @@ import shutil
 import subprocess
 import sys
 import textwrap
+import types
 import typing
 
 import pytest
@@ -670,6 +671,70 @@ def test_the_release_record_carries_the_branch_release_fields(tmp_path: pathlib.
     assert record["asked"] == "ASKED:2026-11-13T05:02Z"
     assert record["head_sha"] == ctx["sha"]
     assert record["app_version"] == "9.9.9+unpushed.%s" % ctx["sha"][:8]
+
+
+def _written_keys(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch, *, workers_only: bool, fail: bool
+) -> list[tuple[str, bool]]:
+    tmp_path = tmp_path / ("%s-%s" % (workers_only, fail))
+    tmp_path.mkdir()
+    root = _tmp_root(tmp_path)
+    ctx = local.base_context(root, ["eu"], workers_only)
+    ctx.update(version="9.9.9", run_id="t", out=str(tmp_path / "out"))
+    run = local.Run(root, ctx)
+    if fail:
+        run.failed = "account-deploy-eu"
+    calls: list[list[str]] = []
+
+    def fake_run(argv, **_kw):
+        calls.append(list(argv))
+        return types.SimpleNamespace(returncode=0)
+
+    with monkeypatch.context() as patch:
+        patch.setattr(local.subprocess, "run", fake_run)
+        patch.setattr(local, "child_argv", lambda step, _ctx: list(step.argv))
+        patch.setattr(local, "child_env", lambda *_a: {})
+        step = local.Step("release-record", "records", ("x",), cwd="root")
+        assert local.internal_release_record(step, run) == 0
+    return [(c[c.index("--key") + 1], "--keep" in c) for c in calls]
+
+
+def test_a_workers_only_release_leaves_its_own_record_never_edge_json(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    got = _written_keys(tmp_path, monkeypatch, workers_only=True, fail=False)
+    assert got == [
+        ("release-records/v9.9.9/edge/run-t.json", False),
+        (local.workers_record_key("9.9.9"), True),
+    ]
+    assert local.workers_record_key("9.9.9") != local.edge_record_key("9.9.9")
+
+
+def test_a_failed_workers_only_release_and_a_full_one_keep_their_records(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    failed = _written_keys(tmp_path, monkeypatch, workers_only=True, fail=True)
+    assert failed == [("release-records/v9.9.9/edge/run-t.json", False)]
+    full = _written_keys(tmp_path, monkeypatch, workers_only=False, fail=False)
+    assert full == [
+        ("release-records/v9.9.9/edge/run-t.json", False),
+        (local.edge_record_key("9.9.9"), False),
+    ]
+
+
+def test_write_record_keep_accepts_an_existing_record_and_plain_refuses_it(
+    tmp_path: pathlib.Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    body = tmp_path / "r.json"
+    body.write_text("{}", encoding="utf-8")
+
+    def exists(_record, _key):
+        raise local.deploy_record.RecordError("k already exists: a deploy record is written once")
+
+    monkeypatch.setattr(local.deploy_record, "write_record_once", exists)
+    args = ["--key", "k", "--file", str(body)]
+    assert local.write_record_main([*args, "--keep"]) == 0
+    assert local.write_record_main(args) == 1
 
 
 def test_the_release_record_carries_the_admitted_red_waiver(tmp_path: pathlib.Path) -> None:

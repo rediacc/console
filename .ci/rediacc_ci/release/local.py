@@ -1728,6 +1728,11 @@ def edge_record_key(version: str) -> str:
     return RECORD_PREFIX % version + ".json"
 
 
+def workers_record_key(version: str) -> str:
+    """The record a successful workers-only release leaves per version, at a key `rings_run` can read without listing `edge/run-<id>.json`. It is not `edge.json`: that key means the version was released in full, which the stable soak (`local_gates`) relies on."""
+    return RECORD_PREFIX % version + "-workers.json"
+
+
 def record_document(
     *,
     kind: str,
@@ -1807,12 +1812,20 @@ def internal_release_record(step: Step, run: Run) -> int:
     body.write_text(json.dumps(record, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     prefix = RECORD_PREFIX % record["version"]
     keys = ["%s/run-%s.json" % (prefix, run.ctx["run_id"])]
+    keep = ""
     if not run.failed and not record["workers_only"]:
         keys.append(edge_record_key(record["version"]))
+    elif not run.failed:
+        # The first successful workers-only release of a version is its record; a later one keeps it (the put is write-once).
+        keep = workers_record_key(record["version"])
+        keys.append(keep)
     rc = 0
     for key in keys:
+        extra = ("--keep",) if key == keep else ()
         writer = dataclasses.replace(
-            step, argv=(*PY, SELF, "_write-record", "--key", key, "--file", str(body)), kind="run"
+            step,
+            argv=(*PY, SELF, "_write-record", "--key", key, "--file", str(body), *extra),
+            kind="run",
         )
         rc |= subprocess.run(
             child_argv(writer, run.ctx),
@@ -1914,11 +1927,16 @@ def write_record_main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(prog="%s _write-record" % SELF)
     parser.add_argument("--key", required=True)
     parser.add_argument("--file", required=True)
+    parser.add_argument(
+        "--keep", action="store_true", help="an existing record at the key is kept, not an error"
+    )
     args = parser.parse_args(argv)
     record = json.loads(pathlib.Path(args.file).read_text(encoding="utf-8"))
     try:
         deploy_record.write_record_once(record, args.key)
     except deploy_record.RecordError as exc:
+        if args.keep and "already exists" in str(exc):
+            return 0
         print("%s _write-record: %s" % (SELF, exc), file=sys.stderr)
         return 1
     return 0
