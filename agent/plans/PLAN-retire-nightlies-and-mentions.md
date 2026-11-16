@@ -35,6 +35,7 @@ Kept by ruling 3 or untouched by any ruling: ci.yml weekly (.github/workflows/ci
 
 ### C3. `release:local --channel stable` is refused today
 `rediacc_ci.release.local` refuses `--channel stable` and names cd-release-stable.yml (.ci/rediacc_ci/release/local.py:7, :65-66). An invariant holds that refusal (.ci/rediacc_ci/security/ci_workflow_invariants.py:724-725), and so does guard rule 3 of `block_unasked_release` (.claude/rediacc_hooks/guards/block_unasked_release.py:7). The stable gate itself exists in `local_gates` (.ci/rediacc_ci/release/local_gates.py:14, :522-535). Ruling 1 names `release:local` as a promotion path; this plan does not lift the 2026-10-27 refusal on that reading alone (question Q1).
+Q1 is answered (operator 2026-11-16: "also allow release:local for stable"): box S7 lifts the refusal, and L1 stays the dispatch proof while S7 is open.
 
 ### C4. A stable dispatch is not guarded
 CLAUDE.md says a stable deploy always needs RELEASE_ASKED (CLAUDE.md:268), yet `block_unasked_release` has no `gh workflow run` arm (`grep -n '"workflow"' .claude/rediacc_hooks/guards/block_unasked_release.py` prints nothing). Today the schedule promotes without anyone asking; once promotion is dispatch-only, an agent `gh workflow run` of the stable workflow is the whole path, so box G2 adds the ask.
@@ -168,6 +169,9 @@ Plans that say "nightly" about something this plan keeps, checked and left alone
 - [ ] L5 [live] Stable also promotes locally (operator ruling 2026-11-16: "also allow release:local for stable"): `RELEASE_ASKED=ASKED:<minute>Z npm run release:local -- --channel stable --dry-run` from the landed tree reads every step, with no daily schedule involved; docs/agent-reference/release-process.md names the local stable path beside the manual workflow.
   - Accept: the dry run rc 0 with its step list in the tick evidence, and `rg -n 'release:local -- --channel stable' docs/agent-reference/release-process.md` finds the documented path.
 
+- [ ] S7 [writer] `release:local --channel stable` runs instead of refusing (Q1 answer): lift the refusal in .ci/rediacc_ci/release/local.py, the invariant at .ci/rediacc_ci/security/ci_workflow_invariants.py, and rule 3 of .claude/rediacc_hooks/guards/block_unasked_release.py, keeping RELEASE_ASKED required for every stable run and the stable soak gate in local_gates.
+  - Accept: tests show `--channel stable` without RELEASE_ASKED refused and with it admitted to the gates; the invariant test and the guard's tests pass; L5's dry run then reads every step.
+
 ## Writer split and order
 - Wave 1, in parallel: S1, N1, N3, B1, G1, G2 (six groups; at most four at once under `writer_cap`, so G1 and G2 start as the first two slots free).
 - Wave 2: N2 after N1 lands; R1 after S1 and N1 land.
@@ -176,6 +180,7 @@ Plans that say "nightly" about something this plan keeps, checked and left alone
 
 ## Open questions (each with its default)
 - Q1. Does ruling 1's "or `release:local`" lift the 2026-10-27 refusal of `release:local --channel stable` (C3)? DEFAULT: no; promotion is by dispatch only in this plan, and lifting the refusal (local.py, the invariant at .ci/rediacc_ci/security/ci_workflow_invariants.py:724-725, block_unasked_release rule 3) becomes its own plan if the operator confirms.
+  - ANSWERED 2026-11-16 by the operator: yes, "also allow release:local for stable". The lift is box S7 in this plan, not a separate plan.
 - Q2. ci-alerts.json and ops-health.json `github_mentions` have no reader once N1 lands. Empty them (the ruling's word) or delete the file and the key? DEFAULT: empty, as ruled.
 - Q3. PLAN-nightly-green F2's forecast pass loses its host with drift_job. DEFAULT: F2 retires; the forecast pass is not moved.
 - Q4. The weekly run's budget section in report-nightly-status.cjs goes with the file. DEFAULT: accept the loss; the housekeeping budget-check job still checks the same freshness registry daily and reds its run.
