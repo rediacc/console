@@ -1270,12 +1270,71 @@ def test_cert_log_names_split_and_lowercase_each_logged_name():
 
 
 @pytest.mark.parametrize(
-    ("status", "body"), [(502, "[]"), (200, "not json"), (200, "[]")], ids=["5xx", "html", "empty"]
+    ("status", "body"),
+    [(404, "[]"), (200, "not json"), (200, '{"a": 1}')],
+    ids=["4xx", "html", "object"],
 )
 def test_cert_log_names_never_answer_an_empty_list_for_a_failed_read(status, body):
-    """Control: an unreadable or empty log is a lab error, which would otherwise pass the absent-from-logs claim."""
+    """Control: an unreadable log is a lab error at once, which would otherwise pass the absent-from-logs claim."""
+    calls: list[str] = []
+
+    def fetch(url):
+        calls.append(url)
+        return status, body
+
     with pytest.raises(proof.LabError):
-        lab.cert_log_names(fetch_url=lambda _u: (status, body))
+        lab.cert_log_names(fetch_url=fetch, sleep=lambda _s: None)
+    assert len(calls) == 1
+
+
+def _scripted_crt(*answers):
+    """A fake fetch answering each call from `answers` (a (status, body) pair, or an exception to raise), plus the call log."""
+    queue = list(answers)
+    calls: list[str] = []
+
+    def fetch(url):
+        calls.append(url)
+        answer = queue.pop(0)
+        if isinstance(answer, Exception):
+            raise answer
+        return answer
+
+    return fetch, calls
+
+
+LOGGED = json.dumps([{"name_value": "eu.%s" % D_ROUTING}])
+
+
+@pytest.mark.parametrize(
+    "first",
+    [(200, "[]"), (502, "bad gateway"), proof.LabError("GET crt.sh: TimeoutError")],
+    ids=["empty", "5xx", "timeout"],
+)
+def test_cert_log_names_retry_a_transient_read_then_pass(first):
+    fetch, calls = _scripted_crt(first, (200, LOGGED))
+    pauses: list[float] = []
+    names = lab.cert_log_names(fetch_url=fetch, sleep=pauses.append, backoff_s=2.0)
+    assert names == ["eu.%s" % D_ROUTING]
+    assert len(calls) == 2
+    assert pauses == [2.0]
+
+
+def test_cert_log_names_every_attempt_failing_raises_naming_each_attempt():
+    """Control: the retries never turn an empty log into a pass."""
+    fetch, calls = _scripted_crt(
+        (200, "[]"), (502, "x"), proof.LabError("GET u: TimeoutError"), (200, "[]")
+    )
+    pauses: list[float] = []
+    with pytest.raises(proof.LabError) as err:
+        lab.cert_log_names(fetch_url=fetch, sleep=pauses.append, attempts=4, backoff_s=1.0)
+    text = str(err.value)
+    assert "no certificate" in text
+    assert "attempt 1 answered an empty list" in text
+    assert "attempt 2 answered 502" in text
+    assert "attempt 3 failed (GET u: TimeoutError)" in text
+    assert "attempt 4 answered an empty list" in text
+    assert len(calls) == 4
+    assert pauses == [1.0, 2.0, 3.0]
 
 
 def test_turnstile_domains_read_the_one_shared_widget():

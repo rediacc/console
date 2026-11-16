@@ -1001,17 +1001,53 @@ def specific_hosts(*, declared: Callable[[], dict[str, str]] = declared_hosts) -
     )
 
 
-def cert_log_names(*, fetch_url: Fetch = http_get) -> list[str]:
-    url = CRT_SH % urllib.parse.quote("%." + PRODUCT_DOMAIN)
-    status, body = fetch_url(url)
+CRT_SH_ATTEMPTS = 4
+CRT_SH_BACKOFF_S = 5.0
+
+
+def _cert_log_rows(fetch_url: Fetch, url: str) -> tuple[list[Any] | None, str]:
+    """One crt.sh read: its rows, or None and the outcome that makes it worth another try (5xx, timeout, empty list)."""
+    try:
+        status, body = fetch_url(url)
+    except proof.LabError as exc:
+        return None, "failed (%s)" % exc
+    if status >= 500:
+        return None, "answered %d" % status
     if status != 200:
         raise proof.LabError("crt.sh answered %d" % status)
     try:
         rows = json.loads(body)
     except ValueError:
         raise proof.LabError("crt.sh answered no JSON") from None
-    if not isinstance(rows, list) or not rows:
-        raise proof.LabError("crt.sh logged no certificate for the product domain")
+    if not isinstance(rows, list):
+        raise proof.LabError("crt.sh answered a JSON value that is not a list")
+    if not rows:
+        return None, "answered an empty list"
+    return rows, ""
+
+
+def cert_log_names(
+    *,
+    fetch_url: Fetch = http_get,
+    sleep: Callable[[float], None] = time.sleep,
+    attempts: int = CRT_SH_ATTEMPTS,
+    backoff_s: float = CRT_SH_BACKOFF_S,
+) -> list[str]:
+    """crt.sh is flaky (200 [] then 502 in one minute), so a 5xx, a timeout or an empty list is retried with a growing pause; still failing after `attempts` tries, the error names each outcome."""
+    url = CRT_SH % urllib.parse.quote("%." + PRODUCT_DOMAIN)
+    outcomes: list[str] = []
+    rows: list[Any] | None = None
+    for attempt in range(1, attempts + 1):
+        rows, outcome = _cert_log_rows(fetch_url, url)
+        if rows is not None:
+            break
+        outcomes.append("attempt %d %s" % (attempt, outcome))
+        if attempt < attempts:
+            sleep(backoff_s * attempt)
+    if rows is None:
+        raise proof.LabError(
+            "crt.sh logged no certificate for the product domain: %s" % "; ".join(outcomes)
+        )
     found: set[str] = set()
     for row in rows:
         if isinstance(row, dict):
