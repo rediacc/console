@@ -160,7 +160,8 @@ describe('CLI contract', () => {
     // 94 -> 96: `repo repair` and `machine repair` (PLAN-health-checks-local X2, X4) run renet functions on the machine that holds the repository, non-interactive, so proxy-capable and detachable.
     //
     // 96 -> 97: `rdc job dismiss` landed. It acknowledges a ticket in the machine's job spool over SSH like the other `job *` verbs, which are proxy-capable and never detachable.
-    expect(proxyCapableCommands().length).toBe(97);
+    // 97 -> 96: `machine prune` judges --orphaned-repos and --prune-unknown against the caller's configs, so it is excluded from proxying.
+    expect(proxyCapableCommands().length).toBe(96);
   });
 
   it('every refusal carries a reason, and every proxyable command carries none', () => {
@@ -197,6 +198,8 @@ describe('CLI contract', () => {
     excluded.push('server status', 'server upgrade', 'server backup', 'server licence');
     // Judged against every config the caller can read: an executor would judge against its own configs and could delete an image the caller's config names.
     excluded.push('repo admin orphan list', 'repo admin orphan delete');
+    // `machine prune --orphaned-repos` and `--prune-unknown` share that verdict, and the flags decide at runtime, so the whole verb is excluded.
+    excluded.push('machine prune');
 
     for (const pathKey of excluded) {
       const cmd = getCommand(pathKey);
@@ -373,7 +376,10 @@ describe('CLI contract', () => {
     const detachable = CLI_CONTRACT.commands.filter((c) => c.detachable).map((c) => c.pathKey);
     // 81 -> 82: `repo health` (one repository_health read job, its print a step).
     // 82 -> 84: `repo repair` and `machine repair` (PLAN-health-checks-local X2, X4).
-    expect(detachable).toHaveLength(84);
+    expect(detachable).toHaveLength(83);
+    // 84 -> 83: `machine prune` is not proxy-capable, so not detachable.
+    expect(getCommand('machine prune')?.proxyCapable).toBe(false);
+    expect(getCommand('machine prune')?.detachable).toBe(false);
     // The J0 covered verbs and the J0b converted rows a conversion box owns are all jobs; spot the four forms (single call, precondition fold, command-kind, multi-call).
     for (const pathKey of [
       'repo list',

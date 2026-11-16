@@ -132,6 +132,9 @@ const PROXY_EXCLUSIONS: Record<string, string> = {
   'repo admin orphan delete':
     "Refuses a GUID any config the CALLER can read still names; a remote executor would check its own configs and could delete an image the caller's config names. Run it without --proxy.",
 
+  'machine prune':
+    "With --orphaned-repos or --prune-unknown it judges each image against every config the CALLER can read; a remote executor would judge against its own configs and delete the caller's repositories. Run it without --proxy.",
+
   // ── Caller-held secrets ───────────────────────────────────────────────
   'machine converge':
     "Restarts each repo daemon with the env secrets from the CALLER's config; a remote executor would restart them with its own copy, or with none. Run it without --proxy.",
