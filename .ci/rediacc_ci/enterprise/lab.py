@@ -33,7 +33,7 @@ from typing import TYPE_CHECKING, Any
 
 from rediacc_ci import paths
 from rediacc_ci.core import gh_retry, https, wrangler
-from rediacc_ci.deploy import console_executor
+from rediacc_ci.deploy import console_executor, deploy_proxy
 from rediacc_ci.enterprise import (
     cli,
     control_db,
@@ -2061,8 +2061,8 @@ EXECUTOR_CLASS = "OrgExecutor"
 ALLOWLIST_STEPS = ("configs", "deploy")
 BODY_START = 80
 ALLOWLIST_SETTLE_S = 30.0
-# workers/proxy/src/ip-allowlist.ts `allowlistRefusal`, the body of its 403.
-ALLOWLIST_REFUSAL = "This address is not on the allowlist."
+# workers/proxy/src/ip-allowlist.ts `allowlistRefusal`, the body of its 403; one copy, which the deploy smokes read too.
+ALLOWLIST_REFUSAL = deploy_proxy.ALLOWLIST_REFUSAL
 
 
 def _proxy_worker(company: str, companies: Companies) -> str:

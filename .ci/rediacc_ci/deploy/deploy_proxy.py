@@ -13,7 +13,7 @@ THE IMAGE IS BUILT FROM FETCHED BYTES. A stable deploy runs `rediacc_ci.deploy.e
 
 THE VERSION ID. `wrangler deploy` output is teed to stdout and the `Current Version ID:` line is captured. `wrangler deployments list --json` must then name that id at 100% in its newest deployment, or the run fails: a deploy whose rollout is not the version it printed is not a deploy this module can vouch for. The newest deployment before the deploy gives the rollback target.
 
-THE SMOKE. `/v1/health` must answer 200, an unauthenticated `/v1/server-info` 401, and `/v1/ready` 200 with `workerVersion` equal to the captured id, polled for up to READY_TIMEOUT_S, because "deploy success means the rollout started" and an old instance may answer first. `--smoke-only` skips the deploy and smokes the version the record (`--record`) names, else the newest deployment's. A fresh custom domain is retried past a cached NXDOMAIN and then pinned through DNS-over-HTTPS, and a first deploy also polls a TLS handshake failure for CERT_WINDOW_S while the certificate is issued. The smoke holds no caller credential, so it starts no executor container: every route that pins one needs a bearer of an entitled org, and a pass says nothing about container starts. `cold_start_ms` is the Worker's first ready answer, never a container's.
+THE SMOKE. `/v1/health` must answer 200, an unauthenticated `/v1/server-info` 401, and `/v1/ready` 200 with `workerVersion` equal to the captured id, polled for up to READY_TIMEOUT_S, because "deploy success means the rollout started" and an old instance may answer first. `--smoke-only` skips the deploy and smokes the version the record (`--record`) names, else the newest deployment's. A fresh custom domain is retried past a cached NXDOMAIN and then pinned through DNS-over-HTTPS, and a first deploy also polls a TLS handshake failure for CERT_WINDOW_S while the certificate is issued. The smoke holds no caller credential, so it starts no executor container: every route that pins one needs a bearer of an entitled org, and a pass says nothing about container starts. `cold_start_ms` is the Worker's first ready answer, never a container's. A config whose `vars.ALLOW_IPS` refuses this machine passes the smoke with a logged skip as soon as any smoke request is answered by the allowlist's own 403 body (`smoke`).
 
 THE RECORD. `--record PATH` writes JSON: target, region, worker, config, version id, the previous version id, the artifacts version, the smoke rc, the rollback command, the last `migration_tag` and `cold_start_ms` (the wait for the first `/v1/ready` on the deployed version). A deploy whose `[[migrations]]` list differs from the previous release's (`git show <previous v* tag>:<config>`; bench: its last recorded `migration_tag`) is forward-only, and its rollback reads `forward-only: Durable Object class lifecycle change (v<n>); fix forward` in place of a command wrangler would refuse. The deploy record of Design item 9 reads the rollback field. The closing lines print the worker, the version id and the rollback command. No executor token is minted, put or named: the Worker obtains one over its ISSUER binding.
 
@@ -678,6 +678,36 @@ class _Fetcher:
             _sleep(RESOLVE_INTERVAL_S)
 
 
+# workers/proxy/src/ip-allowlist.ts `allowlistRefusal`: `Response.json({ error: 'This address is not on the allowlist.' }, { status: 403 })`. The account Worker reuses it (workers/account/src/index.ts), so `deploy_account`'s portal smoke reads the same body.
+ALLOWLIST_REFUSAL = "This address is not on the allowlist."
+
+
+def allow_ips(config: pathlib.Path) -> str:
+    """The `vars.ALLOW_IPS` of the deployed wrangler config; "" when unset, empty, not a string, when `vars` is not a table, or when the file is not TOML (which `wrangler deploy` would already have refused)."""
+    try:
+        with open(config, "rb") as fh:
+            variables = tomllib.load(fh).get("vars")
+    except (OSError, tomllib.TOMLDecodeError):
+        return ""
+    value = variables.get("ALLOW_IPS") if isinstance(variables, dict) else None
+    return value.strip() if isinstance(value, str) else ""
+
+
+def allowlist_refused(status: int | str, body: str) -> bool:
+    """True when the answer is a 403 whose JSON body is exactly the allowlist's refusal, not a WAF, token or other 403. `status` is an int, or curl's `%{http_code}` text."""
+    if str(status).strip() != "403":
+        return False
+    try:
+        parsed = json.loads(body)
+    except ValueError:
+        return False
+    return isinstance(parsed, dict) and parsed.get("error") == ALLOWLIST_REFUSAL
+
+
+class _AllowlistRefusedError(Exception):
+    """Raised inside `smoke` when a request is answered by the company's allowlist; its argument is the URL that answered."""
+
+
 def _ready_state(body: str, code: str) -> tuple[bool, str]:
     """(ready, what it said) for one /v1/ready answer."""
     try:
@@ -692,14 +722,21 @@ def _ready_state(body: str, code: str) -> tuple[bool, str]:
 
 
 def wait_ready(
-    fetch: _Fetcher, url: str, version_id: str, timing: dict[str, int] | None = None
+    fetch: _Fetcher,
+    url: str,
+    version_id: str,
+    timing: dict[str, int] | None = None,
+    *,
+    allowlisted: bool = False,
 ) -> int:
-    """Poll /v1/ready until it answers 200 with `workerVersion == version_id`, for up to READY_TIMEOUT_S. `timing["cold_start_ms"]` gets the wait until that first ready answer."""
+    """Poll /v1/ready until it answers 200 with `workerVersion == version_id`, for up to READY_TIMEOUT_S. `timing["cold_start_ms"]` gets the wait until that first ready answer. When `allowlisted`, a poll answered by the allowlist's own refusal raises `_AllowlistRefusedError`."""
     started = time.perf_counter()
     deadline = time.monotonic() + READY_TIMEOUT_S
     last = "no answer"
     while True:
         body, code = _curl_body(url + "/v1/ready", fetch.pin)
+        if allowlisted and allowlist_refused(code, body):
+            raise _AllowlistRefusedError(url + "/v1/ready")
         ready, said = _ready_state(body, code)
         if ready and said == version_id:
             if timing is not None:
@@ -722,24 +759,47 @@ def smoke(
     shown: typing.Callable[[str], str] = str,
     *,
     first_deploy: bool = False,
+    config: pathlib.Path | None = None,
 ) -> int:
-    """The post-deploy smoke: /v1/health 200, an unauthenticated /v1/server-info 401, then /v1/ready on the deployed version. `first_deploy` also waits up to CERT_WINDOW_S for the custom domain's certificate."""
+    """The post-deploy smoke: /v1/health 200, an unauthenticated /v1/server-info 401, then /v1/ready on the deployed version. `first_deploy` also waits up to CERT_WINDOW_S for the custom domain's certificate.
+
+    A company whose deployed `config` sets `vars.ALLOW_IPS` and whose proxy answers any smoke request (health, server-info, or any /v1/ready poll) with 403 and the allowlist's own refusal body skips the rest of the smoke, logs why, and passes: the Worker applies ALLOW_IPS to every route, /v1/health included (workers/proxy/src/ip-allowlist.ts), so a machine off the list cannot smoke it (the 2026-11-16 `proof proxy` bench run failed "/v1/health answered 403"). A health or server-info 403 is asked once more keeping the body, since those two requests read only the status. Every request is checked, not only the first, because right after a deploy an edge may still serve the previous version. With no ALLOW_IPS, or any other 403 body, a 403 fails as before.
+    """
     url = "https://" + host
     log.step("Smoke-testing %s..." % shown(url))
     fetch = _Fetcher(host, cert_wait=first_deploy)
-    health = fetch.code(url + "/v1/health")
-    if health != "200":
-        log.error("Smoke test failed: /v1/health answered %s, expected 200" % (health or "nothing"))
-        return 1
-    info = fetch.code(url + "/v1/server-info")
-    if info != "401":
-        log.error(
-            "Smoke test failed: an unauthenticated /v1/server-info answered %s, expected 401"
-            % (info or "nothing")
+    allowlisted = config is not None and bool(allow_ips(config))
+
+    def checked(path: str, code: str) -> str:
+        """`code`, after raising `_AllowlistRefusedError` when an allowlisted 403 carries the refusal body."""
+        if allowlisted and code == "403":
+            body, again = _curl_body(url + path, fetch.pin)
+            if allowlist_refused(again, body):
+                raise _AllowlistRefusedError(url + path)
+        return code
+
+    try:
+        health = checked("/v1/health", fetch.code(url + "/v1/health"))
+        if health != "200":
+            log.error(
+                "Smoke test failed: /v1/health answered %s, expected 200" % (health or "nothing")
+            )
+            return 1
+        info = checked("/v1/server-info", fetch.code(url + "/v1/server-info"))
+        if info != "401":
+            log.error(
+                "Smoke test failed: an unauthenticated /v1/server-info answered %s, expected 401"
+                % (info or "nothing")
+            )
+            return 1
+        if wait_ready(fetch, url, version_id, timing, allowlisted=allowlisted) != 0:
+            return 1
+    except _AllowlistRefusedError as refused:
+        log.info(
+            "Smoke skipped: %s answers 403 %r, so its ALLOW_IPS refuses this machine; version %s is deployed but not smoked from here"
+            % (shown(str(refused)), ALLOWLIST_REFUSAL, version_id)
         )
-        return 1
-    if wait_ready(fetch, url, version_id, timing) != 0:
-        return 1
+        return 0
     log.info(SMOKE_PASSED % version_id)
     return 0
 
@@ -1157,7 +1217,7 @@ def run_rollback(
         )
         return 1
     timing: dict[str, int] = {}
-    smoke_rc = smoke(spec.routes[0], version_id, timing, shown)
+    smoke_rc = smoke(spec.routes[0], version_id, timing, shown, config=worker_dir / config)
     record(smoke_rc=smoke_rc, cold_start_ms=timing.get("cold_start_ms"))
     if smoke_rc != 0:
         log.error("Rollback: %s" % shown(revert))
@@ -1283,7 +1343,7 @@ def main(argv: list[str]) -> int:
                 % shown(spec.name)
             )
             return 1
-        status = smoke(host, version_id, None, shown)
+        status = smoke(host, version_id, None, shown, config=worker_dir / config)
         if record_path is not None:
             record = {}
             if record_path.is_file():
@@ -1349,7 +1409,14 @@ def main(argv: list[str]) -> int:
     smoke_rc = (
         None
         if args.defer_smoke
-        else smoke(host, version_id, timing, shown, first_deploy=previous is None)
+        else smoke(
+            host,
+            version_id,
+            timing,
+            shown,
+            first_deploy=previous is None,
+            config=worker_dir / config,
+        )
     )
     rollback = revert_line(config, previous, forward_only, current_tag)
     if record_path is not None:

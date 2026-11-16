@@ -1284,7 +1284,7 @@ def _smoke_fixture(monkeypatch, answers, doh=None):
     monkeypatch.setattr(port, "_curl", fake)
     monkeypatch.setattr(port, "_sleep", sleeps.append)
     monkeypatch.setattr(port, "_doh_lookup", lambda _host: doh)
-    monkeypatch.setattr(port, "wait_ready", lambda _fetch, _url, _version, _timing=None: 0)
+    monkeypatch.setattr(port, "wait_ready", lambda _fetch, _url, _version, _timing=None, **_kw: 0)
     monkeypatch.setenv(port.RESOLVE_WINDOW_ENV, "1000")
     monkeypatch.setenv(port.DOH_URL_ENV, "https://doh.invalid/dns-query")
     return fake, sleeps
@@ -2373,11 +2373,22 @@ def test_main_deploys_through_the_settings_retry_and_smokes_without_defer(monkey
 
 
 def test_only_a_first_deploy_smokes_with_the_certificate_wait(monkeypatch, tmp_path):
+    config = tmp_path / "wrangler.toml"
     assert _company_main(monkeypatch, tmp_path, first_deploy=True)[0] == 0
-    assert SMOKE_KWARGS == [{"first_deploy": True}]
+    assert [{"first_deploy": True, "config": config}] == SMOKE_KWARGS
     # control: a Worker that was already listed is a later deploy
     assert _company_main(monkeypatch, tmp_path)[0] == 0
-    assert SMOKE_KWARGS == [{"first_deploy": False}]
+    assert [{"first_deploy": False, "config": config}] == SMOKE_KWARGS
+
+
+def test_smoke_only_hands_the_smoke_the_company_config_its_allowlist_is_read_from(
+    monkeypatch, tmp_path
+):
+    """V7 bench 2026-11-16: `--smoke-only` on a company must hand `smoke` the deployed config, or its ALLOW_IPS is never read."""
+    status, calls = _company_main(monkeypatch, tmp_path, "--smoke-only", version_flag=())
+    assert status == 0
+    assert calls == ["smoke"]
+    assert [{"config": tmp_path / "wrangler.toml"}] == SMOKE_KWARGS
 
 
 def test_defer_smoke_deploys_and_skips_the_smoke_and_records_no_smoke_rc(monkeypatch, tmp_path):

@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 
 from rediacc_ci import paths
 from rediacc_ci.deploy import deploy_account as port
+from rediacc_ci.deploy import deploy_proxy
 from rediacc_ci.enterprise import configs
 from rediacc_ci.ops import portal_captcha as pc
 from rediacc_ci.well_known import ACCOUNT_DEFAULT_ORIGIN
@@ -102,7 +103,7 @@ def test_the_allowlist_refusal_is_recognised_on_a_retried_attempt_after_propagat
     config = lab_config(tmp_path, ("192.0.2.10",))
     host = port.route_host(config)
     assert host
-    assert port.allow_ips(config) == "192.0.2.10"
+    assert deploy_proxy.allow_ips(config) == "192.0.2.10"
     refusal, calls, sleeps = smoke_answering(
         config, [pc.Reply(0, "", "URLError"), pc.Reply(403, ALLOWLIST_BODY)]
     )
@@ -127,7 +128,7 @@ def test_the_lab_config_without_an_allowlist_still_refuses_the_allowlist_body(
     tmp_path: pathlib.Path,
 ) -> None:
     config = lab_config(tmp_path, ())
-    assert port.allow_ips(config) == ""
+    assert deploy_proxy.allow_ips(config) == ""
     refusal, _calls, _sleeps = smoke_answering(config, [pc.Reply(403, ALLOWLIST_BODY)])
     assert refusal is not None
     assert "UNKNOWN" in refusal
@@ -138,4 +139,5 @@ def test_a_vars_that_is_not_a_table_reads_as_no_allowlist(tmp_path: pathlib.Path
     config = tmp_path / "wrangler.eu.toml"
     for text in (ROUTED + 'vars = "x"\n', ROUTED + "vars = [1]\n"):
         config.write_text(text)
-        assert port.allow_ips(config) == ""
+        assert deploy_proxy.allow_ips(config) == ""
+

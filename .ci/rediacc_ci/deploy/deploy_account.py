@@ -53,7 +53,6 @@ K=5 LEDGER: `.ci/shadow/w7p6-deploy-account.observations.jsonl`.
 
 from __future__ import annotations
 
-import json
 import os
 import pathlib
 import re
@@ -68,7 +67,7 @@ import typing
 from rediacc_ci import log
 from rediacc_ci.core import common
 from rediacc_ci.core import wrangler as wrangler_cmd
-from rediacc_ci.deploy import console_executor
+from rediacc_ci.deploy import console_executor, deploy_proxy
 from rediacc_ci.ops import portal_captcha, queues_audit, service_bindings_audit
 
 # This module's own dotted name, the prefix of every diagnostic it prints (the same name `python3 -m` runs it by). A literal, because `__name__` is `__main__` under `-m`.
@@ -147,32 +146,6 @@ def route_host(config: pathlib.Path) -> str | None:
     return None
 
 
-# workers/proxy/src/ip-allowlist.ts `allowlistRefusal`: `Response.json({ error: 'This address is not on the allowlist.' }, { status: 403 })`.
-ALLOWLIST_REFUSAL = "This address is not on the allowlist."
-
-
-def allow_ips(config: pathlib.Path) -> str:
-    """The `vars.ALLOW_IPS` of the deployed wrangler config; "" when unset, empty, not a string, when `vars` is not a table, or when the file is not TOML (which `wrangler deploy` would already have refused)."""
-    try:
-        with open(config, "rb") as fh:
-            variables = tomllib.load(fh).get("vars")
-    except (OSError, tomllib.TOMLDecodeError):
-        return ""
-    value = variables.get("ALLOW_IPS") if isinstance(variables, dict) else None
-    return value.strip() if isinstance(value, str) else ""
-
-
-def allowlist_refused(page: portal_captcha.Reply) -> bool:
-    """True when `page` is a 403 whose JSON body is exactly the allowlist's refusal, not a WAF, token or other 403."""
-    if page.status != 403:
-        return False
-    try:
-        body = json.loads(page.body)
-    except ValueError:
-        return False
-    return isinstance(body, dict) and body.get("error") == ALLOWLIST_REFUSAL
-
-
 class _AllowlistRefusedError(Exception):
     """Raised by `portal_smoke`'s fetch when the company's allowlist answers, to leave the retried check at once."""
 
@@ -195,18 +168,18 @@ def portal_smoke(
 
     def refusing(method: str, url: str, body: dict | None) -> portal_captcha.Reply:
         reply = fetch(method, url, body)
-        if allowlist_refused(reply):
+        if deploy_proxy.allowlist_refused(reply.status, reply.body):
             raise _AllowlistRefusedError
         return reply
 
-    probe: portal_captcha.Http = refusing if allow_ips(config) else fetch
+    probe: portal_captcha.Http = refusing if deploy_proxy.allow_ips(config) else fetch
     try:
         verdict = portal_captcha.check_with_retry(host, probe, key, sleep=sleep)
     except _AllowlistRefusedError:
         # The dist sitekey check (`portal_sitekey_refusal`) ran before the deploy; only the served-portal read is skipped.
         log.info(
             "Portal smoke skipped: %s answers 403 %r, so its ALLOW_IPS refuses this machine; the dist sitekey check ran before the deploy"
-            % (shown(host), ALLOWLIST_REFUSAL)
+            % (shown(host), deploy_proxy.ALLOWLIST_REFUSAL)
         )
         return None
     if verdict.state == portal_captcha.OK:
