@@ -64,7 +64,7 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - agent/plans/_done/PLAN-submodule-branch-coordination-guard.md -- 5 of 8 boxes ticked, the PR body's `Plan:` line
   - agent/plans/PLAN-proxy-cd-six-targets.md -- 27 of 31 boxes ticked, the PR body's `Plan:` line
   - agent/plans/PLAN-repo-docker-storage-prune.md -- 12 of 14 boxes ticked, the PR body's `Plan:` line
-- Work outside the PR's plans (22 epic(s)):
+- Work outside the PR's plans (23 epic(s)):
   - epic 9f92c43e, plan agent/plans/PLAN-stop-hook-rulings-campaign.md, outside the set, 30 commit(s) on the branch, 0 open item(s): agent tooling: ci-trace follows any workflow, /wisdom questions the session own conduct
   - epic c6b82e88, plan agent/plans/PLAN-settings-set-verb.md, outside the set, 2 commit(s) on the branch, 0 open item(s): settings set verb: one source for the ceilings
   - epic dbb7de07, plan agent/plans/PLAN-cloudflare-spend-guard.md, outside the set, 48 commit(s) on the branch, 0 open item(s): cloudflare spend guard closure
@@ -87,8 +87,9 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 179 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
-- Writers: 1 live of writer_cap 25 (session e0f36861): worker:a1369d7cc919de5b4.
-- Leased items: 9: #0200c06a (worker:bmefv2de0, d778be9d), #02389657 (worker:bmefv2de0, d778be9d), #19767a41 (worker:bmefv2de0, d778be9d), #36ffb824 (worker:ac42b94df1ec172f5, d778be9d), #400ae5ea (worker:bmefv2de0, d778be9d), #4889018a (worker:bmefv2de0, d778be9d), #864b6bca (worker:bmefv2de0, d778be9d), #966364da (worker:bmefv2de0, d778be9d), #c1f7db48 (worker:a497cf175b21ec186, d778be9d).
+  - epic 2255f2d2, no plan, 1 commit(s) on the branch, 0 open item(s): Convert stale GitHub issues (console, renet, account) into plan files
+- Writers: 0 live of writer_cap 25 (session e0f36861).
+- Leased items: 10: #0200c06a (worker:bmefv2de0, d778be9d), #02389657 (worker:bmefv2de0, d778be9d), #19767a41 (worker:bmefv2de0, d778be9d), #26922185 (worker:ac42b94df1ec172f5, d778be9d), #36ffb824 (worker:ac42b94df1ec172f5, d778be9d), #400ae5ea (worker:bmefv2de0, d778be9d), #4889018a (worker:bmefv2de0, d778be9d), #864b6bca (worker:bmefv2de0, d778be9d), #966364da (worker:bmefv2de0, d778be9d), #c1f7db48 (worker:bmefv2de0, d778be9d).
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
