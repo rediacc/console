@@ -912,7 +912,7 @@ def test_deploy_ignores_another_companys_orphan_application(tmp_path):
     }
     ctx, actions, ran = _deploy_with(tmp_path, _cf_rows([other], []))
     actions["deploy"](ctx)
-    assert len(ran) == 3
+    assert len(ran) == 4
 
 
 def test_deploy_accepts_the_companys_own_live_application(tmp_path):
@@ -924,7 +924,7 @@ def test_deploy_accepts_the_companys_own_live_application(tmp_path):
     namespaces = [{"id": "ns-own", "script": "proxy-acme", "class": "OrgExecutor"}]
     ctx, actions, ran = _deploy_with(tmp_path, _cf_rows([own], namespaces))
     actions["deploy"](ctx)
-    assert len(ran) == 3
+    assert len(ran) == 4
 
 
 def test_live_deploy_step_deploys_proxy_then_account_with_each_own_config(tmp_path):
@@ -952,6 +952,7 @@ def test_live_deploy_step_deploys_proxy_then_account_with_each_own_config(tmp_pa
         "rediacc_ci.deploy.deploy_proxy",
         "rediacc_ci.deploy.deploy_account",
         "rediacc_ci.deploy.deploy_proxy",
+        "rediacc_ci.deploy.console_executor",
     ]
     proxy_argv, account_argv = ran[0][1], ran[1][1]
     assert "--proxy-config" in proxy_argv
@@ -985,7 +986,7 @@ def test_live_deploy_step_claims_the_wildcard_before_the_proxy_smoke_runs(tmp_pa
         ensure_dns=ensure,
     )
     actions["deploy"](ctx)
-    assert order == ["dns", "deploy_proxy", "deploy_account", "deploy_proxy"]
+    assert order == ["dns", "deploy_proxy", "deploy_account", "deploy_proxy", "console_executor"]
 
 
 def test_live_deploy_step_smokes_the_proxy_only_after_the_account_worker_is_deployed(tmp_path):
@@ -1008,7 +1009,7 @@ def test_live_deploy_step_smokes_the_proxy_only_after_the_account_worker_is_depl
         ensure_dns=lambda _c: "ok",
     )
     actions["deploy"](ctx)
-    (_, first), (_, account), (_, last) = ran
+    (_, first), (_, account), (_, last), _switch = ran
     assert "--defer-smoke" in first
     assert "--smoke-only" not in first
     assert "--smoke-only" in last
@@ -1036,6 +1037,135 @@ def test_live_deploy_step_deploys_nothing_when_the_wildcard_claim_fails(tmp_path
     )
     with pytest.raises(onboarding.OnboardingError, match="Universal SSL is not enabled"):
         actions["deploy"](ctx)
+
+
+def test_live_deploy_step_switches_the_console_executor_on_after_the_proxy_smoke(tmp_path):
+    """2026-11-16 `proof proxy`: every console leg of an onboarded company answered 503 CONSOLE_EXECUTION_UNAVAILABLE, because nothing put the account Worker's EXECUTOR_MODE secret. The switch runs last, against the company's account config, once the proxy smoke has passed (the ring release's `executor-enable` order)."""
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    ran = []
+
+    def deploy(module, argv):
+        ran.append((module.rsplit(".", 1)[1], argv))
+        return 0
+
+    actions = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        portal=_portal_ok,
+        deploy=deploy,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+    )
+    actions["deploy"](ctx)
+    module, argv = ran[-1]
+    assert module == "console_executor"
+    assert "--smoke-only" in ran[-2][1]
+    assert "--enable" in argv
+    assert "--account-config" in argv
+    assert argv[argv.index("--company-id") + 1] == "c0123456789abcdef"
+
+
+@pytest.mark.parametrize("failing", ["deploy_account", "--smoke-only"])
+def test_a_failed_deploy_or_smoke_never_switches_the_console_executor_on(tmp_path, failing):
+    """Control: the switch never opens a console onto a proxy that was not smoked."""
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    ran = []
+
+    def deploy(module, argv):
+        ran.append(module.rsplit(".", 1)[1])
+        return 1 if module.endswith(failing) or failing in argv else 0
+
+    actions = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        portal=_portal_ok,
+        deploy=deploy,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+    )
+    with pytest.raises(onboarding.OnboardingError, match="exited 1"):
+        actions["deploy"](ctx)
+    assert "console_executor" not in ran
+
+
+def test_a_failed_executor_switch_is_named_and_rolls_nothing_back(tmp_path):
+    """The smoked proxy stays serving with the console closed: no proxy rollback runs, and the refusal names the switch and its stated cause."""
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+    ran = []
+
+    def deploy(module, argv):
+        ran.append(argv)
+        if module.endswith("console_executor"):
+            return onboarding.Ran(1, "UNKNOWN: secret list did not parse")
+        return 0
+
+    actions = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        portal=_portal_ok,
+        deploy=deploy,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+    )
+    with pytest.raises(
+        onboarding.OnboardingError,
+        match=r"console_executor exited 1: UNKNOWN: secret list did not parse",
+    ):
+        actions["deploy"](ctx)
+    assert not any("--rollback" in argv for argv in ran)
+
+
+def test_a_failed_deploy_names_the_childs_stated_cause_with_the_label_masked(tmp_path):
+    """2026-11-16 `proof proxy`: the allowlist claim said only `deploy_account exited 1`, while the child had printed why (its portal smoke got the allowlist's 403). The cause the child stated reaches the refusal, the company label masked to its id."""
+    _tree(tmp_path)
+    ctx = _ctx(World(), {"d1": "11111111-2222-4333-8444-555555555555"})
+    onboarding.live_actions(runner=None, out_root=tmp_path)["configs"](ctx)
+
+    def deploy(module, _argv):
+        if module.endswith("deploy_account"):
+            return onboarding.Ran(
+                1, "Portal smoke UNKNOWN on https://acme.rediacc.cloud: answered 403"
+            )
+        return 0
+
+    actions = onboarding.live_actions(
+        runner=None,
+        out_root=tmp_path,
+        portal=_portal_ok,
+        deploy=deploy,
+        root=tmp_path,
+        ensure_dns=lambda _c: "ok",
+    )
+    with pytest.raises(onboarding.OnboardingError) as caught:
+        actions["deploy"](ctx)
+    text = str(caught.value)
+    assert "deploy_account exited 1: Portal smoke UNKNOWN" in text
+    assert "answered 403" in text
+    assert "acme" not in text.replace("c0123456789abcdef", "")
+
+
+def test_run_module_keeps_a_failed_childs_stderr_tail_and_passes_it_through(monkeypatch, capsys):
+    """The production seam: the child's stderr is echoed as it arrives and a failed child's last lines become the cause; a child that exits 0 states none."""
+    script = "import sys; print('noise', file=sys.stderr); print('the real cause', file=sys.stderr); sys.exit(3)"
+    real_popen = onboarding.subprocess.Popen
+
+    def popen(argv, **kwargs):
+        return real_popen([argv[0], "-c", script], **kwargs)
+
+    monkeypatch.setattr(onboarding.subprocess, "Popen", popen)
+    failed = onboarding.run_module("rediacc_ci.deploy.deploy_account", [])
+    assert failed.rc == 3
+    assert failed.cause.endswith("the real cause")
+    assert "the real cause" in capsys.readouterr().err
+
+    script = "import sys; print('fine', file=sys.stderr)"
+    assert onboarding.run_module("rediacc_ci.deploy.deploy_account", []) == onboarding.Ran(0, "")
 
 
 def test_live_deploy_step_names_the_failed_module(tmp_path):

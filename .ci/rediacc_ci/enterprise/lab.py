@@ -1657,9 +1657,33 @@ def store_password(company: str, *, api_key: ApiKey = store_api_key) -> str:
     return hmac.new(key, STORE_PASSWORD_LABEL, hashlib.sha256).hexdigest()
 
 
+# The account's coded 503 for a console leg no executor can serve (private/account/src/routes/console.ts `consoleUnavailable`).
+CONSOLE_UNAVAILABLE = "CONSOLE_EXECUTION_UNAVAILABLE"
+REFUSAL_HINTS = {
+    CONSOLE_UNAVAILABLE: "the company's account Worker holds no EXECUTOR_MODE=proxy secret; the onboarding "
+    "`deploy` step switches it on after the proxy smoke (rediacc_ci.deploy.console_executor --enable)",
+}
+
+
+def _refusal(answer: HttpAnswer) -> str:
+    """`: <error> (<code>, reason <reason>)` for a refused answer: the account's error message, its code (a relayed executor code rides at the top level too) and its `reason`, plus what the code means when the lab knows it. Only those fields are quoted, never the raw body, because an error answer on a config route can carry a rotated config token. A body that names nothing says so, so a gateway page (a cold container's HTML) never reads as a coded refusal."""
+    doc = answer.json()
+    message = " ".join(str(doc.get("error") or "").split())[:BODY_START]
+    code, reason = doc.get("code"), doc.get("reason")
+    tags = [str(t) for t in (code, reason and "reason %s" % reason) if isinstance(t, str) and t]
+    if not message and not tags:
+        kind = (answer.header_values("content-type") or ["no content type"])[0]
+        return ": the body names no error (%s, %d bytes)" % (kind, len(answer.body))
+    out = ": " + (message or "no message") + (" (%s)" % ", ".join(tags) if tags else "")
+    hint = REFUSAL_HINTS.get(code) if isinstance(code, str) else None
+    return out + ("; " + hint if hint else "")
+
+
 def _expect(answer: HttpAnswer, statuses: tuple[int, ...], company: str, what: str) -> dict:
     if answer.status not in statuses:
-        raise proof.LabError("company %s: %s answered HTTP %d" % (company, what, answer.status))
+        raise proof.LabError(
+            "company %s: %s answered HTTP %d%s" % (company, what, answer.status, _refusal(answer))
+        )
     return answer.json()
 
 

@@ -2375,6 +2375,67 @@ def test_an_exec_refused_by_the_worker_is_refused_with_its_status(monkeypatch):
     assert console_v7(acct, FakeCrypto()) == proof.Answer(False, "HTTP 404")
 
 
+def _session_refused(monkeypatch, acct, answer):
+    def refused(path, headers, doc):
+        if path == lab.CONSOLE_PATH + "/session":
+            return answer
+        return StoreV6._console(acct, path, headers, doc)
+
+    monkeypatch.setattr(acct, "_console", refused)
+
+
+def test_a_console_session_refused_with_a_code_names_the_code_and_its_cause(monkeypatch):
+    """2026-11-16 `proof proxy` said only `the console session answered HTTP 503`: the account's coded refusal reaches the claim, with what the code means."""
+    acct = StoreV6()
+    body = {
+        "error": "console execution is not available in this region",
+        "code": "CONSOLE_EXECUTION_UNAVAILABLE",
+    }
+    _session_refused(monkeypatch, acct, acct._json(503, body))
+    with pytest.raises(proof.LabError) as caught:
+        console_v7(acct, FakeCrypto())
+    text = str(caught.value)
+    assert "the console session answered HTTP 503: console execution is not available" in text
+    assert "(CONSOLE_EXECUTION_UNAVAILABLE)" in text
+    assert "EXECUTOR_MODE=proxy" in text
+
+
+def test_a_relayed_capacity_refusal_names_its_code_without_the_executor_mode_hint(monkeypatch):
+    """Control: an executor's own 503 (the org beyond the container cap) is named as that code, never as a closed region."""
+    acct = StoreV6()
+    body = {"error": "executor at capacity", "code": "EXECUTOR_CAPACITY"}
+    _session_refused(monkeypatch, acct, acct._json(503, body))
+    with pytest.raises(
+        proof.LabError, match=r"HTTP 503: executor at capacity \(EXECUTOR_CAPACITY\)$"
+    ):
+        console_v7(acct, FakeCrypto())
+
+
+def test_a_refusal_carries_its_reason_and_never_the_raw_body(monkeypatch):
+    """A 403 names its `reason`; a config token riding in the error body never reaches the message."""
+    acct = StoreV6()
+    body = {
+        "error": "your organization cannot use the web console",
+        "code": "CONSOLE_NOT_ENTITLED",
+        "reason": "plan",
+        "newServerToken": "tok-secret",
+    }
+    _session_refused(monkeypatch, acct, acct._json(403, body))
+    with pytest.raises(proof.LabError) as caught:
+        console_v7(acct, FakeCrypto())
+    assert "(CONSOLE_NOT_ENTITLED, reason plan)" in str(caught.value)
+    assert "tok-secret" not in str(caught.value)
+
+
+def test_a_gateway_page_is_named_as_a_body_without_an_error():
+    """A cold container's HTML 503 says it names no error, so it never reads as a coded refusal."""
+    page = lab.HttpAnswer(503, (("Content-Type", "text/html"),), b"<html>busy</html>")
+    with pytest.raises(
+        proof.LabError, match=r"HTTP 503: the body names no error \(text/html, 17 bytes\)"
+    ):
+        lab._expect(page, (200,), "c0000000a", "the console session")
+
+
 def test_a_command_the_contract_does_not_proxy_is_never_sent():
     acct = StoreV6()
     with pytest.raises(proof.LabError, match="not a proxy-capable command"):

@@ -1,6 +1,6 @@
 """`enterprise add`, resumable from the control database's `onboarding` table (agent/plans/PLAN-enterprise-isolation.md box C1, *Company lifecycle*).
 
-THE STEPS, in order: `control-row` (the `companies` row in the company's own region), `d1` (create `account-<company>`), `configs` (the two gitignored tomls, which need the D1 id), `migrate` (the account schema through the company's own config), `buckets` (both buckets and the backup queue pair the template binds), `secrets` (box D2's provisioner), `deploy` (box D1's `--company` deploy of the proxy, then the account Worker), `route` (the shared wildcard record through `dns.ensure`, then both hosts routed to the company's Workers), `bootstrap` (the org and an active ENTERPRISE subscription with limits: one POST to the company Worker under ACCOUNT_SERVER_API_KEY, a 200 rerun counting as success), `smoke` (both hosts answer), `lookup` (the www lookup entry through `ops.enterprise_lookup`, skipped and recorded for an unlisted company), `invite` (the owner invitation, sent by the company Worker through box A1) and `audit` (state `active` and one audit row). The Design lists `configs` after `buckets` and `secrets`; it runs straight after `d1` here because `migrate` reads the generated account config.
+THE STEPS, in order: `control-row` (the `companies` row in the company's own region), `d1` (create `account-<company>`), `configs` (the two gitignored tomls, which need the D1 id), `migrate` (the account schema through the company's own config), `buckets` (both buckets and the backup queue pair the template binds), `secrets` (box D2's provisioner), `deploy` (box D1's `--company` deploy of the proxy, then the account Worker, the proxy smoke, and the console executor switched on for the company's account Worker), `route` (the shared wildcard record through `dns.ensure`, then both hosts routed to the company's Workers), `bootstrap` (the org and an active ENTERPRISE subscription with limits: one POST to the company Worker under ACCOUNT_SERVER_API_KEY, a 200 rerun counting as success), `smoke` (both hosts answer), `lookup` (the www lookup entry through `ops.enterprise_lookup`, skipped and recorded for an unlisted company), `invite` (the owner invitation, sent by the company Worker through box A1) and `audit` (state `active` and one audit row). The Design lists `configs` after `buckets` and `secrets`; it runs straight after `d1` here because `migrate` reads the generated account config.
 
 VALIDATION RUNS EVERY TIME, before any step: the name (`names.check`), the region of the environment, the owner address, the storage, the allowlist (`proxy_configs.allow_ips_refusal`) and, unless unlisted, the lookup domain against the free-mail list (`enterprise_lookup.refuse_free_mail`). Then every region's control database is read through the registry; an unreachable region refuses the add by name, and a name held in another region is refused.
 
@@ -31,6 +31,7 @@ import sys
 import tempfile
 import urllib.error
 import uuid
+from collections import deque
 from collections.abc import Callable, Mapping
 from typing import Any, NamedTuple
 
@@ -67,6 +68,8 @@ OWNER_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 HTTP_SERVER_ERROR = 500
 CF_ACCOUNT_ID = "fa51e4a18d553c30e1633288e9733d04"  # ops.cf_auth.DEFAULT_ACCOUNT_ID
 MAX_DETAIL = 500
+# The module that switches a target's console executor on (`--enable` puts EXECUTOR_MODE=proxy and reads it back).
+EXECUTOR_SWITCH = "rediacc_ci.deploy.console_executor"
 
 
 class OnboardingError(RuntimeError):
@@ -427,14 +430,45 @@ def run_captured(argv: list[str], *, cwd: pathlib.Path | str | None = None) -> P
     return Proc(proc.returncode, proc.stdout, proc.stderr)
 
 
-def run_module(module: str, argv: list[str]) -> int:
-    """A deploy module in a child, with this package on the path; its streams are inherited because the deploy modules mask the label themselves."""
+class Ran(NamedTuple):
+    """A deploy module's exit code and, when it failed, its stated cause: the last lines of its stderr (`control_db.failure_tail`)."""
+
+    rc: int
+    cause: str = ""
+
+
+# The deploy seam answers a bare exit code (the test fakes) or a `Ran` (`run_module`, which keeps the child's stderr tail).
+DeployRun = Callable[[str, list[str]], "int | Ran"]
+# The child's stderr lines `run_module` keeps for the cause; `failure_tail` quotes the last few that hold text.
+STDERR_KEEP = 40
+
+
+def ran(done: int | Ran) -> Ran:
+    """The seam's answer as a `Ran`; a bare exit code states no cause."""
+    return done if isinstance(done, Ran) else Ran(done)
+
+
+def run_module(module: str, argv: list[str]) -> Ran:
+    """A deploy module in a child, with this package on the path. Its stdout is inherited and its stderr is passed through line by line as it arrives (the deploy modules mask the label themselves), and the last lines are kept: a failed child's `Ran.cause` is that tail, so the refusal names why it exited (the 2026-11-16 `proof proxy` said only `deploy_account exited 1`)."""
     env = dict(os.environ)
     ci = str(paths.repo_root() / ".ci")
     env["PYTHONPATH"] = ci + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
-    return subprocess.call(
-        [sys.executable, "-m", module, *argv], cwd=str(paths.repo_root()), env=env
-    )
+    kept: deque[str] = deque(maxlen=STDERR_KEEP)
+    with subprocess.Popen(
+        [sys.executable, "-m", module, *argv],
+        cwd=str(paths.repo_root()),
+        env=env,
+        stderr=subprocess.PIPE,
+        text=True,
+        errors="replace",
+    ) as child:
+        if child.stderr is not None:
+            for line in child.stderr:
+                sys.stderr.write(line)
+                sys.stderr.flush()
+                kept.append(line)
+        rc = child.wait()
+    return Ran(rc, control_db.failure_tail("", "".join(kept)) if rc else "")
 
 
 PORTAL_STEP = "account-portal"
@@ -469,7 +503,7 @@ def roll_back_proxy(
     plan: Plan,
     proxy_target: console_executor.CompanyTarget,
     record: pathlib.Path,
-    deploy_run: Callable[[str, list[str]], int],
+    deploy_run: DeployRun,
 ) -> None:
     """Put the proxy back on the version recorded before its deferred deploy; a first deploy has none, and the run says so."""
     try:
@@ -490,22 +524,32 @@ def roll_back_proxy(
             flush=True,
         )
         return
-    rc = deploy_run(
-        "rediacc_ci.deploy.deploy_proxy",
-        [
-            *console_executor.company_argv(proxy_target),
-            "--rollback",
-            str(previous),
-            "--record",
-            str(record),
-        ],
+    done = ran(
+        deploy_run(
+            "rediacc_ci.deploy.deploy_proxy",
+            [
+                *console_executor.company_argv(proxy_target),
+                "--rollback",
+                str(previous),
+                "--record",
+                str(record),
+            ],
+        )
     )
-    if rc != 0:
+    if done.rc != 0:
         print(
-            "company %s: the proxy rollback to %s exited %d" % (plan.company_id, previous, rc),
+            "company %s: the proxy rollback to %s exited %d%s"
+            % (plan.company_id, previous, done.rc, _ran_cause(plan, done)),
             file=sys.stderr,
             flush=True,
         )
+
+
+def _ran_cause(plan: Plan, done: Ran) -> str:
+    """`: <the child's stderr tail>` with the label masked to the opaque id, empty when the child stated none."""
+    if not done.cause:
+        return ""
+    return ": " + console_executor.mask_label(done.cause, plan.name, plan.company_id)
 
 
 def http_status(url: str) -> int:
@@ -708,7 +752,7 @@ def live_actions(
     control_runner: control_db.Runner | None = None,
     out_root: pathlib.Path | None = None,
     root: pathlib.Path | None = None,
-    deploy: Callable[[str, list[str]], int] | None = None,
+    deploy: DeployRun | None = None,
     portal: Callable[[pathlib.Path, Mapping[str, str]], int] | None = None,
     fetch: Callable[[str], int] | None = None,
     ensure_dns: Callable[[bool], str] | None = None,
@@ -942,22 +986,32 @@ def live_actions(
         if rc != 0:
             raise OnboardingError("company %s: the portal build exited %d" % (plan.company_id, rc))
         # The proxy's /v1/ready asks the account Worker's ExecutorIssuer, which a first deploy has not shipped yet, and the account deploy needs the proxy (its EXECUTOR binding): deploy the proxy, then the account, then smoke the proxy.
+        # Then the console executor is switched on for the company's account Worker (its EXECUTOR_MODE secret), only once the proxy smoke has passed, as the ring release's `executor-enable` step does (release/rings_run.py): without it every console leg answers the coded 503 CONSOLE_EXECUTION_UNAVAILABLE (2026-11-16 `proof proxy`). The secret survives later deploys, and a put of the value it holds changes nothing.
+        account_target = target(account_config=account_path)
         with tempfile.TemporaryDirectory(prefix="enterprise-proxy-") as scratch:
             record = pathlib.Path(scratch) / "proxy-record.json"
             proxy_extra = ["--record", str(record)]
             steps: tuple[tuple[str, Any, list[str]], ...] = (
                 ("rediacc_ci.deploy.deploy_proxy", proxy_target, ["--defer-smoke", *proxy_extra]),
-                ("rediacc_ci.deploy.deploy_account", target(account_config=account_path), []),
+                ("rediacc_ci.deploy.deploy_account", account_target, []),
                 ("rediacc_ci.deploy.deploy_proxy", proxy_target, ["--smoke-only", *proxy_extra]),
+                (EXECUTOR_SWITCH, account_target, ["--enable"]),
             )
             for module, company, extra in steps:
-                rc = deploy_run(module, [*console_executor.company_argv(company), *extra])
-                if rc != 0:
+                done = ran(deploy_run(module, [*console_executor.company_argv(company), *extra]))
+                if done.rc != 0:
                     # The deferred proxy deploy left the new version at 100% unsmoked, so a later failure puts the previous one back.
+                    # A failed executor switch leaves the smoked proxy serving and the console closed, which is the safe side: nothing is rolled back.
                     if module.endswith("deploy_account") or "--smoke-only" in extra:
                         roll_back_proxy(plan, proxy_target, record, deploy_run)
                     raise OnboardingError(
-                        "company %s: %s exited %d" % (plan.company_id, module.rsplit(".", 1)[1], rc)
+                        "company %s: %s exited %d%s"
+                        % (
+                            plan.company_id,
+                            module.rsplit(".", 1)[1],
+                            done.rc,
+                            _ran_cause(plan, done),
+                        )
                     )
         return ""
 
