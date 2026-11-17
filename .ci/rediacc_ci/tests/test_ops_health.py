@@ -249,13 +249,15 @@ ENV = {
 class Combined(Fleet):
     """The fleet plus the three subprocess checks, each with a scripted exit code."""
 
-    def __init__(self, sub_rc=None, **kw):
+    def __init__(self, sub_rc=None, sub_out=None, **kw):
         super().__init__(**kw)
+        self.sub_out = dict(sub_out or {})
         self.sub_rc = {
             "telemetry_delivery": 0,
             "portal_captcha": 0,
             "cf_usage_report": 0,
             "dmarc_reports": 0,
+            "root_grants": 0,
         }
         self.sub_rc.update(sub_rc or {})
 
@@ -264,7 +266,7 @@ class Combined(Fleet):
         for mod, rc in self.sub_rc.items():
             if "rediacc_ci.ops." + mod in joined:
                 self.calls.append((list(argv), dict(env)))
-                return oh.Result(rc, "line %s" % mod)
+                return oh.Result(rc, self.sub_out.get(mod, "line %s" % mod))
         return super().__call__(argv, env, timeout)
 
 
@@ -292,6 +294,7 @@ def test_refresh_writes_cache_posts_ingest_and_runs_under_profiles(tmp_path):
         "local-cf-usage",
         "local-machine-m1",
         "local-portal-captcha",
+        "local-root-grants",
         "local-telemetry",
     ]
     assert all(h["Authorization"] == "Bearer i" for m, u, h, b in web.calls if m == "POST")
@@ -321,9 +324,71 @@ def test_dmarc_runs_as_a_local_only_check_its_red_never_posted(tmp_path):
         "local-cf-usage",
         "local-machine-m1",
         "local-portal-captcha",
+        "local-root-grants",
         "local-telemetry",
     ]
     assert any(r["source"] == "local-dmarc" and r["to"] == "red" for r in ledger_rows(tmp_path))
+
+
+AMBER_LINE = "  AMBER operator: config_store.missing edge-us (org 35eb74dc)"
+
+
+def _root_grants_check(tmp_path, rc, out="edge-us user=35eb74dc actions=0 skipped=0 operator=0"):
+    runner = Combined(sub_rc={"root_grants": rc}, sub_out={"root_grants": out})
+    _rc, doc = run_refresh(tmp_path, runner, Web(status_doc()))
+    return runner, doc["checks"]["root-grants"]
+
+
+def test_root_grants_is_registered_under_its_profile_with_a_ttl(tmp_path):
+    assert oh.SUBPROCESS_CHECKS["root-grants"] == ("root-grants", "rediacc_ci.ops.root_grants")
+    assert "root-grants" in oh.ALL_CHECKS
+    assert oh.ttl_s(oh.load_config(pathlib.Path(__file__).resolve().parents[3]), "root-grants") == (
+        360 * 60
+    )
+    runner, check = _root_grants_check(tmp_path, 0)
+    argv = " ".join(
+        next(a for a, _e in runner.calls if "rediacc_ci.ops.root_grants" in " ".join(a))
+    )
+    assert "--profile root-grants" in argv
+    # Control: a check registered with no profile runs bare.
+    bare = " ".join(
+        next(a for a, _e in runner.calls if "rediacc_ci.ops.dmarc_reports" in " ".join(a))
+    )
+    assert "bws_env" not in bare
+    assert check["state"] == "green"
+
+
+def test_root_grants_rc1_is_red_and_posts_as_local_root_grants(tmp_path):
+    _runner, check = _root_grants_check(
+        tmp_path, 1, "edge-eu user=1 actions=3 skipped=0 operator=0"
+    )
+    assert check["state"] == "red"
+    assert check["rc"] == 1
+    assert "actions=3" in check["detail"]
+    assert any(
+        r["source"] == "local-root-grants" and r["to"] == "red" for r in ledger_rows(tmp_path)
+    )
+
+
+def test_root_grants_rc0_with_amber_stays_green_and_keeps_the_amber_text(tmp_path):
+    _runner, check = _root_grants_check(
+        tmp_path, 0, "edge-us user=35eb74dc actions=0\n" + AMBER_LINE
+    )
+    assert check["state"] == "green"
+    assert check["rc"] == 0
+    assert "AMBER operator: config_store.missing edge-us" in check["detail"]
+    # Control: a clean run carries no AMBER text.
+    _runner2, clean = _root_grants_check(tmp_path / "clean", 0)
+    assert "AMBER" not in clean["detail"]
+
+
+def test_root_grants_rc2_is_unknown_not_red(tmp_path):
+    _runner, check = _root_grants_check(tmp_path, 2, "wrangler d1 execute exited 1")
+    assert check["state"] == "unknown"
+    assert check["rc"] == 2
+    assert not any(
+        r["source"] == "local-root-grants" and r["to"] == "red" for r in ledger_rows(tmp_path)
+    )
 
 
 def test_refresh_without_named_configs_posts_no_machine_verdict(tmp_path):
@@ -333,7 +398,12 @@ def test_refresh_without_named_configs_posts_no_machine_verdict(tmp_path):
     rc, doc = run_refresh(tmp_path, Combined(), web, env=env)
     assert rc == 0, json.dumps(doc, indent=1)
     posted = sorted(b["source"] for m, u, h, b in web.calls if m == "POST")
-    assert posted == ["local-cf-usage", "local-portal-captcha", "local-telemetry"]
+    assert posted == [
+        "local-cf-usage",
+        "local-portal-captcha",
+        "local-root-grants",
+        "local-telemetry",
+    ]
     cached = (tmp_path / oh.CACHE_DIR_REL / oh.STATE_NAME).read_text()
     assert "m1" in cached
 
@@ -355,7 +425,7 @@ def test_unchanged_state_appends_no_ledger_row(tmp_path):
     web = Web(status_doc())
     run_refresh(tmp_path, Combined(), web, force=True)
     first = len(ledger_rows(tmp_path))
-    assert first == 5  # first sight of each source
+    assert first == 6  # first sight of each source
     run_refresh(tmp_path, Combined(), web, force=True, now=NOW + datetime.timedelta(minutes=1))
     assert len(ledger_rows(tmp_path)) == first
 
@@ -378,7 +448,7 @@ def test_failed_ingest_is_recorded_and_does_not_fail_refresh(tmp_path):
     rc, doc = run_refresh(tmp_path, Combined(), web)
     assert rc == 0
     assert doc["ingest"]["posted"] == []
-    assert len(doc["ingest"]["errors"]) == 4
+    assert len(doc["ingest"]["errors"]) == 5
     assert "500" in doc["ingest"]["errors"][0]
 
 

@@ -24,6 +24,7 @@
     "portal_captcha": 360,
     "cf_usage": 10080,
     "dmarc": 1440,
+    "root_grants": 360,
     "offbox_read": 15
   },
   "telemetry": {
