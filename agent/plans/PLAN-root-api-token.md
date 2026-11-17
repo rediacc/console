@@ -180,7 +180,7 @@ S2 adds their titles and descriptions to the admin activity humanizers (private/
 
 ### 6. Ops: `root_login --target stable|edge` switches to the token
 
-- **Profile.** The `root-login` profile requires `ROOT_API_TOKEN` and `ROOT_TOTP_SEED`. ROOT_EMAIL and ROOT_PASSWORD move to `optional`, because nothing in token mode reads them. bench-login and login_bench are untouched.
+- **Profile.** The `root-login` profile requires `ROOT_API_TOKEN_EU` and `ROOT_TOTP_SEED`, with `ROOT_API_TOKEN_US` and `ROOT_API_TOKEN_ASIA` optional (Q1, answered 2026-11-17). ROOT_EMAIL and ROOT_PASSWORD move to `optional`, because nothing in token mode reads them. bench-login and login_bench are untouched.
 - **Flow.** Read the values and refuse an unset value, the placeholder or a value not starting `rdr_` (rc 2, naming the entry). Then:
   1. `POST /admin/root-token/session` with a code.
   2. On 403 `ROOT_TOKEN_IP_MISMATCH`: `POST /admin/root-token/bind` with a code, wait for the next 30 s step, then `session` again. This is the refresh path.
@@ -209,7 +209,7 @@ Unchanged. login_bench keeps the password and TOTP path, and root_login has no b
 
 ## Rulings needed (defaults run unless vetoed)
 
-- **Q1. Per-region names.** Tokens are per regional D1 (Context 9), so one value cannot serve eu, us and asia. Default: `ROOT_API_TOKEN` as ruled is the eu token. `ROOT_API_TOKEN_US` and `ROOT_API_TOKEN_ASIA` follow the regions.json `secretSuffix` pattern when they are needed; this plan does not mint them. Alternative: rename to `ROOT_API_TOKEN_EU` now. Answered 2026-11-17 by the operator: the alternative, "let's add _EU suffix to the name for consistency with others"; every region reads `ROOT_API_TOKEN_<secretSuffix>` (`_EU`, `_US`, `_ASIA`), with no unsuffixed name (landed 727d194e5b, account 992a562).
+- **Q1. Per-region names (answered 2026-11-17).** Tokens are per regional D1 (Context 9), so one value cannot serve eu, us and asia. The operator chose the suffixed form, "let's add _EU suffix to the name for consistency with others": every region reads `ROOT_API_TOKEN_<secretSuffix>` from regions.json (`ROOT_API_TOKEN_EU`, `ROOT_API_TOKEN_US`, `ROOT_API_TOKEN_ASIA`), with no unsuffixed name (landed 727d194e5b, account 992a562). The rejected default was an unsuffixed `ROOT_API_TOKEN` for eu.
 - **Q2. Self-rotation.** Default yes: the token rotates itself through `rotate`, capped at one year from the portal mint, so the operator mints once a year. Alternative: no rotate route, and the operator re-mints every 90 days.
 - **Q3. Email on bind.** Default no: binds are audited only, and the mint sends the existing token-created mail. Alternative: a new "root token moved" email (adds email templates and i18n).
 - **Q4. A read-only variant.** Default no: one scope `root:admin`, as ruled ("agents act as root"). The `scope` column leaves room for `root:read` (GET only) later.
