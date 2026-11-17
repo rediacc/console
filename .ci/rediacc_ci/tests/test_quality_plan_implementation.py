@@ -302,6 +302,15 @@ def _drive_main(gate, monkeypatch, capsys, argv):
     monkeypatch.setattr(gate, "load_plan_gate", lambda: (_plan_gate(HEAD), ""))
     monkeypatch.setattr(gate, "pr_body_for", lambda _o, _r=None: (None, ""))
     monkeypatch.setattr(gate, "clock_scope", lambda *_a, **_k: ({HEAD: "queue head"}, [], ""))
+    # NO MERGE-BASE, SO THE FORWARD-ONLY PROOF IS NOT RUN (PLAN-ciquick-cpu W9). With the real base every box this branch ticked is judged through `done_commit` over the whole ledger history: a quadratic walk that took 862 s for these two `main()` calls (CPU-bound, stack-sampled in `wl_planrec._fingerprint`). This test asserts the P-A1 context and findings only, and the scope that decides them is the stand-in above, so the proof's inputs were never read by an assertion here. The proof runs on the real tree in `check:ci-plan-implementation` itself and under its own cases (`test_a_ticked_box_whose_evidence_does_not_resolve_still_refuses_at_push`).
+    real_load_modules = gate.load_modules
+
+    def load_modules_without_a_base():
+        loaded = real_load_modules()
+        loaded[3].base_ref = lambda: ""
+        return loaded
+
+    monkeypatch.setattr(gate, "load_modules", load_modules_without_a_base)
     gate.main(argv)
     out = capsys.readouterr()
     return out.out + out.err
