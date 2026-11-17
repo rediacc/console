@@ -5,6 +5,6 @@
 # the audit gate (.ci/rediacc_ci/security/audit.py) enforces this strictly.
 
 
-# sprintf-js unbounded precision specifier denial of service (GHSA-hp3w-g68c-fv3c), via packages/www -> gray-matter@4.0.3 -> js-yaml@3.15.2 -> argparse@1.0.10 -> sprintf-js@1.0.3.
-# BLOCKER: every published sprintf-js (1.1.3, the newest, included) is inside the advisory range <=1.1.3, and npm's suggested "fix" is a downgrade to gray-matter 2.0.1 (4.0.3 is the latest). argparse is required only by js-yaml's bin/js-yaml.js CLI; the library entry (index.js) that gray-matter calls never loads argparse or sprintf-js, and the www scripts call only matter(raw) on repository markdown at build and validation time, so no format string reaches sprintf-js. Lift when argparse 1.x or js-yaml 3.x drops sprintf-js, or gray-matter moves off js-yaml 3 (measured 2026-10-06).
-1241202
+# picomatch ReDoS through single-branch repeated extglobs (GHSA-fc5q-39xc-vjpf), via packages/www -> astro@7.4.12, vite@8.3.8, tinyglobby/fdir, @astrojs/internal-helpers, unstorage -> anymatch@3.1.3 (picomatch 2.3.2), and packages/cli -> vitest@5.1.0 / @vitest/coverage-v8 (picomatch 4.0.7).
+# BLOCKER: the advisory range is <=4.0.7 and 4.0.7 is the latest published picomatch (npm dist-tag latest, read 2026-11-17T19:05Z), so no patched release exists to upgrade or override to. Every path compiles glob patterns that come from repository build and test configuration (Astro/Vite build of the static www site, tinyglobby file scans, vitest test discovery); no pattern from a request, a user or the network reaches picomatch at runtime, so the extglob ReDoS has no attacker-supplied input. Lift when picomatch publishes a fixed 4.x (and anymatch's 2.x line is fixed or dropped) and bump through npm run pins (measured 2026-11-17).
+1247710
