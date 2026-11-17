@@ -588,8 +588,10 @@ export function fold(attr: Attribution, view: RepoView, needs: readonly string[]
   for (const d of attr.listed) {
     if (!addDir(d)) return whole(`lists ${d}, whose only glob-safe ancestor is the root`);
   }
+  // A submodule read names the bare gitlink path: input-hash.ts `entryMatches` reaches the gitlink entry through it exactly as through `<gitlink>/**`, and it is the path `git ls-files` lists and a submodule bump changes, so the dead-glob checks (check:ci-gate-manifest, check:ci-paths-origin) and quick-select's rule 1 all see it.
   for (const g of attr.gitlinkReads) {
-    if (!addDir(g)) return whole(`reads inside submodule ${g}, which no glob can name`);
+    if (hasForbidden(g)) return whole(`reads inside submodule ${g}, whose path no glob can name`);
+    fileGlobs.add(g);
   }
   const covered = (p: string): boolean =>
     [...dirGlobs].some((d) => p === d || p.startsWith(`${d}/`));
@@ -626,7 +628,7 @@ export function fold(attr: Attribution, view: RepoView, needs: readonly string[]
   const entries = view.files.length + view.gitlinks.length;
   const reached =
     view.files.filter((f) => isUnderDir(f) || fileGlobs.has(f)).length +
-    view.gitlinks.filter((g) => finalDirs.has(g) || isUnderDir(g)).length;
+    view.gitlinks.filter((g) => fileGlobs.has(g) || isUnderDir(g)).length;
   const coveragePct = entries === 0 ? 0 : Math.round((1000 * reached) / entries) / 10;
   if (globs.length === 0)
     return whole(
@@ -842,7 +844,7 @@ function entrySpans(lines: readonly string[]): [number, number][] {
 }
 
 /**
- * The manifest text with traced `paths` on one entry. An entry carrying a hand-only field is never generated (gen-manifest.ts HAND_ONLY), so an entry inside a generated region is lifted out of it: the region splits around it and every region is renumbered, which is exactly what `gen-manifest.ts --write` would emit.
+ * The manifest text with traced `paths` on one entry. An entry carrying a hand-only field is never generated (gen-manifest.ts HAND_ONLY), so an entry inside a generated region leaves it, and every region is re-emitted (reemitRegions).
  */
 export function manifestWithPaths(text: string, id: string, paths: string[]): string {
   const lines = text.split('\n');
@@ -871,48 +873,45 @@ export function manifestWithPaths(text: string, id: string, paths: string[]): st
   const leavesAt = kept.findIndex((l) => l.startsWith('    leaves:'));
   const insertAt = leavesAt >= 0 ? leavesAt : kept.length - 1;
   kept.splice(insertAt, 0, ...pathsLines(paths), `    pathsOrigin: ${q(TRACED_ORIGIN)},`);
-  let out = [...lines.slice(0, a), ...kept, ...lines.slice(b + 1)];
-  // Lift the entry out of a generated region it sits in.
-  const newA = a;
-  const newB = a + kept.length - 1;
-  let beginAt = -1;
-  for (let i = newA - 1; i >= 0; i--) {
-    if (BEGIN_RE.test(out[i])) {
-      beginAt = i;
-      break;
+  const spliced = [...lines.slice(0, a), ...kept, ...lines.slice(b + 1)];
+  return reemitRegions(spliced, idLine);
+}
+
+/**
+ * Every gen-manifest region re-emitted the way `gen-manifest.ts --write` places them: membership is read off the existing markers (an entry is generated when its span sits inside a region), the edited entry leaves it, all markers are stripped, and one BEGIN goes directly before the first `  {` of each maximal run of generated spans and one END directly after its last `  },`. Prose lines between entries therefore stay outside the markers, as gen-manifest leaves them.
+ */
+export function reemitRegions(withMarkers: readonly string[], liftedIdLine: string): string {
+  const generated: boolean[] = [];
+  let inRegion = false;
+  let open: { gen: boolean; lifted: boolean } | undefined;
+  for (const l of withMarkers) {
+    if (BEGIN_RE.test(l)) inRegion = true;
+    else if (END_RE.test(l)) inRegion = false;
+    else if (l === '  {') open = { gen: inRegion, lifted: false };
+    else if (open !== undefined && l === liftedIdLine) open.lifted = true;
+    else if (open !== undefined && l === '  },') {
+      generated.push(open.gen && !open.lifted);
+      open = undefined;
     }
-    if (END_RE.test(out[i])) break;
   }
-  if (beginAt >= 0) {
-    let endAt = -1;
-    for (let i = newB + 1; i < out.length; i++) {
-      if (END_RE.test(out[i])) {
-        endAt = i;
-        break;
-      }
-    }
-    if (endAt < 0)
-      throw new Error(`${MANIFEST_REL}: region opened at line ${beginAt + 1} never closes`);
-    const firstInRegion = beginAt === newA - 1;
-    const lastInRegion = endAt === newB + 1;
-    const before = out.slice(0, beginAt);
-    const mid = out.slice(newA, newB + 1);
-    const regionHead = out.slice(beginAt, newA); // BEGIN plus the entries before this one
-    const regionTail = out.slice(newB + 1, endAt + 1); // the entries after this one plus END
-    const parts: string[] = [...before];
-    if (!firstInRegion) parts.push(...regionHead, '  // <<< gen-manifest: region 0');
-    parts.push(...mid);
-    if (!lastInRegion) parts.push('  // >>> gen-manifest: region 0', ...regionTail);
-    parts.push(...out.slice(endAt + 1));
-    out = parts;
-  }
-  // Renumber every region in file order.
+  const lines = withMarkers.filter((l) => !BEGIN_RE.test(l) && !END_RE.test(l));
+  const spans = entrySpans(lines);
+  if (spans.length !== generated.length)
+    throw new Error(
+      `${MANIFEST_REL}: ${spans.length} entry spans against ${generated.length} read through the markers; refusing to re-emit regions`
+    );
+  const out: string[] = [];
   let r = 0;
-  out = out.map((l) => {
-    if (BEGIN_RE.test(l)) return `  // >>> gen-manifest: region ${++r}`;
-    if (END_RE.test(l)) return `  // <<< gen-manifest: region ${r}`;
-    return l;
-  });
+  for (let i = 0, k = 0; i < lines.length; i++) {
+    if (k < spans.length && i === spans[k][0] && generated[k] && (k === 0 || !generated[k - 1]))
+      out.push(`  // >>> gen-manifest: region ${++r}`);
+    out.push(lines[i]);
+    if (k < spans.length && i === spans[k][1]) {
+      if (generated[k] && (k === spans.length - 1 || !generated[k + 1]))
+        out.push(`  // <<< gen-manifest: region ${r}`);
+      k++;
+    }
+  }
   return out.join('\n');
 }
 
@@ -1119,16 +1118,17 @@ function headTree(root: string): string {
   return r.status === 0 ? r.stdout.trim() : 'unknown';
 }
 
-function utcMinute(): string {
-  return `${new Date().toISOString().slice(0, 16)}Z`;
+/** The UTC minute of an instant (default now), the ledger's stamp. */
+function utcMinute(ms: number = Date.now()): string {
+  return `${new Date(ms).toISOString().slice(0, 16)}Z`;
 }
 
 /** Writes one result into the manifest, the lock and the ledger under `root`. */
-export function writeResult(root: string, r: GateResult, tree: string): void {
+export function writeResult(root: string, r: GateResult, tree: string, tracedMs?: number): void {
   const ledgerPath = path.join(root, LEDGER_REL);
   const rows = fs.existsSync(ledgerPath) ? parseLedger(fs.readFileSync(ledgerPath, 'utf8')) : {};
   const row: LedgerRow = {
-    tracedAt: utcMinute(),
+    tracedAt: utcMinute(tracedMs ?? r.raw?.startedMs),
     tree,
     verdict: r.verdict.kind,
     reads: r.verdict.reads,
@@ -1209,7 +1209,9 @@ export function applyResults(root: string, file: string): number {
       seconds: number;
       tree: string;
       verdict: Verdict;
+      raw?: RawAccess;
     };
+    // The ledger stamps when the trace RAN (the raw record's start), not when its result was applied.
     last.set(r.id, { ...r, ignored: new Map(), outputTail: '' });
   }
   if (last.size === 0) {
@@ -1594,7 +1596,9 @@ async function selftest(): Promise<number> {
   );
   const v10 = fold(attribute(mk(['private/sub/go.mod', 'a/one.txt']), view), view);
   check(
-    v10.kind === 'paths' && v10.paths.includes('private/sub/**'),
+    v10.kind === 'paths' &&
+      v10.paths.includes('private/sub') &&
+      !v10.paths.includes('private/sub/**'),
     'a read inside a submodule names the gitlink'
   );
   const v11 = fold(
@@ -1652,6 +1656,16 @@ async function selftest(): Promise<number> {
       m1l[m1l.indexOf("    id: 'g:b',") - 2] === '  // <<< gen-manifest: region 1' &&
       m1.includes('  // >>> gen-manifest: region 2'),
     'a middle entry splits its generated region in two, renumbered'
+  );
+  const withProse = manifest.replace(
+    "  {\n    id: 'g:c',",
+    "  // prose about g:c\n  {\n    id: 'g:c',"
+  );
+  const mp = manifestWithPaths(withProse, 'g:b', ['a/one.txt']).split('\n');
+  const proseAt = mp.indexOf('  // prose about g:c');
+  check(
+    mp[proseAt - 1] === '  },' && mp[proseAt + 1] === '  // >>> gen-manifest: region 2',
+    'a prose line above the next entry stays outside the re-emitted region, as gen-manifest places it'
   );
   const m2 = manifestWithPaths(manifest, 'g:a', ['a/one.txt']);
   check(
