@@ -16,7 +16,7 @@ WHY NOT `--file`. The plan named a 0600 temp `--file` for the read so the email 
 
 NEVER. No SQL write (every statement is a SELECT), no user, personal org or config store created, no plan or tier lowered, no `cus_` subscription written, no console unblocked, no stable target or enterprise config resolved, no apply before the bookmark is recorded, and no email, token, seed or full id printed. The writes are the account route's (`POST /admin/root-grants/apply`), which runs the account services.
 
-EXIT. 0 when no target has an action or a red skip (an absent user and an AMBER operator item are allowed); 1 on drift, a red skip, or actions left after an apply; 2 on a config refusal, a missing credential, a failed bookmark or an unreadable D1.
+EXIT. 0 when no target has an action or a red skip (an absent user and an AMBER operator item are allowed; a missing config store prints `AMBER operator: config_store.missing <target> (...)`); 1 on drift, a red skip, or actions left after an apply; 2 on a config refusal, a missing credential, a failed bookmark or an unreadable D1.
 """
 
 from __future__ import annotations
