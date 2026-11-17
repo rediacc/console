@@ -21,13 +21,14 @@ import typing
 
 from rediacc_ci import log, paths
 from rediacc_ci.core import xml_trusted
+from rediacc_ci.policy_paths import policy_path
 
 if typing.TYPE_CHECKING:
     from collections.abc import Iterable, Sequence
     from xml.etree import ElementTree
 
 THRESHOLD_S = 10.0
-ALLOW_RELPATH = ".ci/policy/pytest-slow-allow.json"
+ALLOW_NAME = "pytest-slow-allow.json"
 JUNIT_RELPATH = ".ci/cache/quality-pytest/junit.xml"
 _KEY_UNSAFE_RE = re.compile(r"[^A-Za-z0-9._:/@#-]")
 
@@ -110,14 +111,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--allow",
         type=pathlib.Path,
         default=None,
-        help="the allowlist (default: %s)" % ALLOW_RELPATH,
+        help="the allowlist (default: %s in the policy directory)" % ALLOW_NAME,
     )
     parser.add_argument("--threshold", type=float, default=THRESHOLD_S)
     parser.add_argument("--strict-stale", action="store_true")
     args = parser.parse_args(argv)
     root = paths.repo_root()
     junits = args.junit or [root / JUNIT_RELPATH]
-    allow_path = args.allow or root / ALLOW_RELPATH
+    allow_path = args.allow or policy_path(ALLOW_NAME, root)
 
     durations = read_durations(junits)
     if not durations:
@@ -134,14 +135,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     for node, seconds in slow:
         print(
             "pytest-slow-ratchet: %s took %.1f s (> %g s); make it fast, or list it in %s with a reason"
-            % (node, seconds, args.threshold, ALLOW_RELPATH),
+            % (node, seconds, args.threshold, ALLOW_NAME),
             file=sys.stderr,
         )
         log.emit_finding(finding_key("pytest-slow", node))
     for node in stale:
         print(
             "pytest-slow-ratchet: %s is listed in %s but now runs under %g s; drop the entry"
-            % (node, ALLOW_RELPATH, args.threshold),
+            % (node, ALLOW_NAME, args.threshold),
             file=sys.stderr,
         )
         if args.strict_stale:

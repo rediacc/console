@@ -1,6 +1,6 @@
 """Run one rdc command with the authenticator code that moves a first-use token to this host's new IP.
 
-    PYTHONPATH=.ci python3 -m rediacc_ci.ops.rebind_login -- <rdc argv...>
+    PYTHONPATH=.ci python3 -m rediacc_ci.ops.rebind_login -- <arguments for rdc.sh>
 
 WHY. The account server binds a first-use API token to its first caller's address and answers any other with 403 TOKEN_IP_MISMATCH. On a terminal the CLI asks for the token creator's authenticator code; without one it reads that code from REDIACC_IP_REBIND_CODE (`packages/cli/src/services/account/token-ip-rebind.ts`). The token creator of the production configs (eu-remote, eu-edge) is the root account, whose seed is ROOT_TOTP_SEED, so an agent derives the code from the vault instead of asking the operator for it (operator 2026-11-17).
 
@@ -30,7 +30,7 @@ SEED_ENV = "ROOT_TOTP_SEED"
 CODE_ENV = "REDIACC_IP_REBIND_CODE"
 PLACEHOLDER = "PLACEHOLDER-operator-fills"
 MIN_WINDOW_LEFT = 5
-USAGE = "usage: rebind_login -- <rdc argv...>"
+USAGE = "usage: rebind_login -- <arguments for rdc.sh>"
 
 Runner = Callable[[Sequence[str], Mapping[str, str]], int]
 

@@ -306,6 +306,10 @@ function loadCatalogs(dir: string): Map<string, Set<string>> {
   return catalogsFrom(raw);
 }
 
+// VACUITY FLOORS, measured 2026-11-17: 293 source files and 2819 key references. The floors sit far below that so a normal refactor never trips them, and far above trivial, so a glob or a catalog loader that goes blind cannot pass as a clean tree.
+const MIN_FILES = 100;
+const MIN_KEYS = 1000;
+
 function main(): void {
   console.log('account-i18n-key-usage controls');
   if (summarizeControls(controls()) !== 0) {
@@ -328,9 +332,9 @@ function main(): void {
   for (const f of files)
     scanFile(path.relative(webSrc, f), readFileSync(f, 'utf8'), catalogs, result);
 
-  if (result.checked === 0) {
+  if (files.length < MIN_FILES || result.checked < MIN_KEYS) {
     console.error(
-      `${RED}✗${NC} zero keys checked across ${files.length} files; the gate verified nothing.`
+      `${RED}✗${NC} VACUOUS: ${result.checked} key(s) checked across ${files.length} file(s), floors ${MIN_KEYS} and ${MIN_FILES}; the gate verified nothing.`
     );
     process.exit(1);
   }

@@ -8,6 +8,7 @@ import pathlib
 
 import pytest
 
+from rediacc_ci.policy_paths import policy_path
 from rediacc_ci.quality import pytest_slow_ratchet as ratchet
 
 
@@ -121,7 +122,7 @@ def test_no_readable_test_case_is_no_verdict_not_a_pass(tmp_path, capsys, conten
 
 
 def test_the_real_allowlist_is_well_formed_and_every_entry_has_a_reason():
-    allow = ratchet.paths.repo_root() / ratchet.ALLOW_RELPATH
+    allow = policy_path(ratchet.ALLOW_NAME)
     allowed, problems = ratchet.read_allow(allow)
     assert not problems, problems
     assert allowed, "an empty allowlist would make the baseline claim nothing"

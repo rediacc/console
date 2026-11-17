@@ -52,6 +52,8 @@ const ROOT = path.resolve(import.meta.dirname, '..', '..');
 // THE SEAM, driven by controls() below (distControls): RAW_KEYS_DIST points the scan at a
 // scratch dist so a planted leak never touches the real build output.
 const DIST = process.env.RAW_KEYS_DIST ?? path.join(ROOT, 'packages/www/dist');
+// VACUITY FLOOR. Every one of the 13 locales builds at least its own home page, so a dist holding fewer html pages than that is a build that lost locales, not a small site. A lower bound, not a measurement: the real dist holds far more.
+const MIN_PAGES = 13;
 const EN_JSON = path.join(ROOT, 'packages/www/src/i18n/translations/en.json');
 
 type Json = string | number | boolean | null | Json[] | { [k: string]: Json };
@@ -159,11 +161,14 @@ function controls(): ControlCase[] {
  */
 function distControls(): ControlCase[] {
   if (process.env.RAW_KEYS_DIST !== undefined) return [];
-  const run = (html: string) => {
+  const run = (html: string, pages: number = MIN_PAGES) => {
     const dir = mkdtempSync(path.join(os.tmpdir(), 'raw-keys-dist-'));
     try {
       mkdirSync(path.join(dir, 'en'), { recursive: true });
       writeFileSync(path.join(dir, 'en', 'index.html'), html);
+      // Filler pages bring the scratch dist up to `pages`, so the control exercises the leak verdict and not the vacuity floor.
+      for (let i = 1; i < pages; i++)
+        writeFileSync(path.join(dir, 'en', `filler-${i}.html`), '<p>Professional</p>');
       return spawnSync('npx', ['tsx', import.meta.filename], {
         encoding: 'utf8',
         env: { ...process.env, RAW_KEYS_DIST: dir },
@@ -175,6 +180,7 @@ function distControls(): ControlCase[] {
   const leak = 'pages.pricing.plans.zzzControl.name';
   const bad = run(`<h3>${leak}</h3>`);
   const good = run('<h3>Professional</h3>');
+  const thin = run('<h3>Professional</h3>', MIN_PAGES - 1);
   return [
     {
       name: 'CONTROL: the gate process exits 1 and names a leak planted in a scratch dist',
@@ -185,6 +191,11 @@ function distControls(): ControlCase[] {
       name: 'SILENT: the gate process exits 0 on a clean scratch dist',
       ok: good.status === 0,
       detail: `status ${good.status}`,
+    },
+    {
+      name: 'CONTROL: a scratch dist one page under the floor exits 1 and says VACUOUS',
+      ok: thin.status === 1 && `${thin.stdout}${thin.stderr}`.includes('VACUOUS'),
+      detail: `status ${thin.status}`,
     },
   ];
 }
@@ -207,15 +218,15 @@ function main(): void {
   }
   const en = JSON.parse(readFileSync(EN_JSON, 'utf8')) as Json;
   const pages = globSync('**/*.html', { cwd: DIST, absolute: true });
-  if (pages.length === 0) {
+  if (pages.length < MIN_PAGES) {
     console.error(
-      `${RED}✗${NC} no html under ${path.relative(ROOT, DIST)}; the gate verified nothing.`
+      `${RED}✗${NC} VACUOUS: ${pages.length} html page(s) under ${path.relative(ROOT, DIST)}, floor ${MIN_PAGES}; the gate verified nothing.`
     );
     process.exit(1);
   }
 
   const findings: string[] = [];
-  for (const page of pages.toSorted((a, b) => a.localeCompare(b))) {
+  for (const page of [...pages].sort((a, b) => a.localeCompare(b))) {
     for (const key of rawKeysIn(readFileSync(page, 'utf8'), en)) {
       findings.push(`${path.relative(DIST, page)}: ${key}`);
     }

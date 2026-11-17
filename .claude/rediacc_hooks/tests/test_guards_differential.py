@@ -346,8 +346,8 @@ def host_world(stem, work):
         module.__dict__["hookio"] = saved
 
 
-_FIXTURES = {}
-_BUILDER_TABLES = {}
+_FIXTURES: dict[tuple[str, str], str] = {}
+_BUILDER_TABLES: dict[tuple[str, ...], dict[str, typing.Any]] = {}
 
 
 def all_builders():

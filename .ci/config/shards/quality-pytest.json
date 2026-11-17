@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-16T13:33:06.457Z",
+  "generatedAt": "2026-11-17T11:46:50.833Z",
   "legs": [
     {
       "index": 1,
@@ -481,6 +481,7 @@
         "pytest:.ci/rediacc_ci/tests/test_ops_executor_orgs.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_health.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_queues_audit.py",
+        "pytest:.ci/rediacc_ci/tests/test_ops_rebind_login.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_region_smoke.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_remote_load_sampler.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_scrub_sentinel.py",
@@ -493,6 +494,7 @@
         "pytest:.ci/rediacc_ci/tests/test_proof_tiers_local.py",
         "pytest:.ci/rediacc_ci/tests/test_proxies_docker_prepull.py",
         "pytest:.ci/rediacc_ci/tests/test_proxies_ensure_nfpm.py",
+        "pytest:.ci/rediacc_ci/tests/test_pytest_slow_ratchet.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_browser_smoke.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_bws_step_scope.py",
         "pytest:.ci/rediacc_ci/tests/test_quality_dead_case_arms.py",
