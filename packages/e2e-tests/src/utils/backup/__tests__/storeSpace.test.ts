@@ -31,12 +31,13 @@ describe('storeSpaceVerdict', () => {
       freeBytes: undefined,
     });
     expect(v.kind).toBe('skipped');
+    if (v.kind === 'skipped') expect(v.reason).toContain('r2.cloudflarestorage.com');
   });
 
   it('skips with a reason when the local free space is unreadable', () => {
-    expect(
-      storeSpaceVerdict({ endpoint: LOCAL, neededBytes: GIB, freeBytes: undefined }).kind
-    ).toBe('skipped');
+    const v = storeSpaceVerdict({ endpoint: LOCAL, neededBytes: GIB, freeBytes: undefined });
+    expect(v.kind).toBe('skipped');
+    if (v.kind === 'skipped') expect(v.reason).toContain('could not be read');
   });
 });
 

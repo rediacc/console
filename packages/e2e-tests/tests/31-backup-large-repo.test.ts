@@ -243,12 +243,16 @@ test.describe
 
         // The backup store's own disk: a full one fails the seed's chunk PUTs only after minutes of retries.
         const endpoint = storeAccessFromEnv()?.endpoint ?? 'http://127.0.0.1:9100';
+        let dockerErr = '';
         const storeDf = await promisify(exec)(
           `docker exec ${LOCAL_STORE_CONTAINER} df -B1 --output=avail /data`,
           { timeout: 20_000 }
         ).then(
           (r) => parseDfAvailBytes(r.stdout),
-          () => undefined
+          (e: unknown) => {
+            dockerErr = e instanceof Error ? e.message : String(e);
+            return undefined;
+          }
         );
         const space = storeSpaceVerdict({
           endpoint,
@@ -256,8 +260,11 @@ test.describe
           freeBytes: storeDf,
         });
         if (space.kind === 'skipped') {
-          test.info().annotations.push({ type: 'store-space-skipped', description: space.reason });
-          process.stderr.write(`K10 store-space preflight skipped: ${space.reason}\n`);
+          const detail = dockerErr ? ` (docker exec: ${dockerErr.split('\n')[0]})` : '';
+          test
+            .info()
+            .annotations.push({ type: 'store-space-skipped', description: space.reason + detail });
+          process.stderr.write(`K10 store-space preflight skipped: ${space.reason}${detail}\n`);
         }
         expect(space.kind === 'full' ? space.message : '', 'backup store free space').toBe('');
       });
