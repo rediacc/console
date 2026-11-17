@@ -83,8 +83,13 @@ export interface Access {
   files: Set<string>;
   /** Absolute directories a getdents call listed. */
   listed: Set<string>;
-  /** argv of every successful execve. */
-  execs: string[][];
+  /** Every successful execve: its argv and the cwd it ran in, which says which repository a git command reads. */
+  execs: Exec[];
+}
+
+export interface Exec {
+  argv: string[];
+  cwd?: string;
 }
 
 export function emptyAccess(): Access {
@@ -152,6 +157,7 @@ export function straceParser(
 ): { line: (l: string) => void; end: () => Access } {
   let cwd: string | undefined;
   const pending: string[] = [];
+  const execsWithoutCwd: Exec[] = [];
   const add = (base: string | undefined, p: string): void => {
     if (p === '') return;
     if (path.posix.isAbsolute(p)) into.files.add(path.posix.normalize(p));
@@ -172,6 +178,7 @@ export function straceParser(
     if (cwd !== undefined && pending.length > 0) {
       for (const p of pending.splice(0)) into.files.add(path.posix.resolve(cwd, p));
     }
+    if (cwd !== undefined) for (const e of execsWithoutCwd.splice(0)) e.cwd = cwd;
     const retMatch = /\)\s+=\s+(-?\d+)(?:<((?:[^>\\]|\\.)*)>)?/.exec(rest);
     const ok = retMatch !== null && !retMatch[1].startsWith('-');
     if (name.startsWith('getdents')) {
@@ -210,12 +217,19 @@ export function straceParser(
     }
     if ((name === 'execve' || name === 'execveat') && ok) {
       const argv = /\[((?:"(?:[^"\\]|\\.)*"(?:, )?)*)\]/.exec(args);
-      if (argv !== null)
-        into.execs.push([...argv[1].matchAll(QUOTED)].map((q) => decodeCString(q[1])));
+      if (argv !== null) {
+        const ex: Exec = {
+          argv: [...argv[1].matchAll(QUOTED)].map((q) => decodeCString(q[1])),
+          cwd,
+        };
+        into.execs.push(ex);
+        if (cwd === undefined) execsWithoutCwd.push(ex);
+      }
     }
   };
   const end = (): Access => {
     for (const p of pending.splice(0)) into.files.add(path.posix.resolve(fallbackCwd, p));
+    for (const e of execsWithoutCwd.splice(0)) e.cwd = fallbackCwd;
     return into;
   };
   return { line, end };
@@ -303,6 +317,31 @@ const GIT_VALUE_OPTS = new Set([
 export type GitUse = 'history' | 'index' | 'discovery';
 
 /**
+ * Whether a git exec reads this repository: its working directory (the cwd, moved by every `-C`) lies inside the root or a git directory of it, and it is not `init` or `clone`, which make another repository. A cwd the trace never revealed counts as this repository: the inclusive direction.
+ */
+export function targetsRepo(ex: Exec, view: RepoView): boolean {
+  const argv = ex.argv;
+  if (path.posix.basename(argv[0] ?? '') !== 'git') return false;
+  let dir = ex.cwd;
+  let i = 1;
+  while (i < argv.length && argv[i].startsWith('-')) {
+    if (argv[i] === '-C' && argv[i + 1] !== undefined && dir !== undefined)
+      dir = path.posix.resolve(dir, argv[i + 1]);
+    if (
+      argv[i] === '-C' &&
+      argv[i + 1] !== undefined &&
+      dir === undefined &&
+      path.posix.isAbsolute(argv[i + 1])
+    )
+      dir = argv[i + 1];
+    i += GIT_VALUE_OPTS.has(argv[i]) ? 2 : 1;
+  }
+  if (argv[i] === 'init' || argv[i] === 'clone') return false;
+  if (dir === undefined) return true;
+  return under(dir, view.root) || view.gitDirs.some((g) => under(dir as string, g));
+}
+
+/**
  * What one git invocation depends on. Unknown subcommands count as history: the conservative direction, since a false "history" only keeps a gate whole-tree, while a false "discovery" would let a stale verdict carry.
  */
 export function classifyGitArgv(argv: readonly string[]): GitUse {
@@ -367,7 +406,10 @@ export function attribute(access: Access, view: RepoView): Attribution {
       if (res.gitIndex.length < 3) res.gitIndex.push(shown);
     } else res.ignored.set(GIT_DISCOVERY, (res.ignored.get(GIT_DISCOVERY) ?? 0) + 1);
   };
-  for (const argv of access.execs) {
+  for (const ex of access.execs) {
+    // Only a git command aimed at THIS repository says anything about its history: a selftest's `git init /tmp/x` or `git -C /tmp/x log` reads another one.
+    if (!targetsRepo(ex, view)) continue;
+    const argv = ex.argv;
     const use = classifyGitArgv(argv);
     const shown = argv.slice(0, 6).join(' ');
     if (use === 'history' && res.gitHistory.length < 3) res.gitHistory.push(shown);
@@ -539,6 +581,19 @@ export function traceRefusal(): string | undefined {
   return undefined;
 }
 
+/** Process groups of traces still running. Each runs detached (so a timeout can kill its whole tree), which also means a stopped path-trace would orphan them; the signal handler in main kills them first. */
+const LIVE_GROUPS = new Set<number>();
+
+function killLiveGroups(): void {
+  for (const pid of LIVE_GROUPS) {
+    try {
+      process.kill(-pid, 'SIGKILL');
+    } catch {
+      // already gone
+    }
+  }
+}
+
 export interface TraceRun {
   exit: number;
   access: Access;
@@ -578,6 +633,7 @@ export async function traceCommand(
       ],
       { cwd, env, stdio: ['ignore', outFd, outFd], detached: true }
     );
+    if (child.pid !== undefined) LIVE_GROUPS.add(child.pid);
     // A hung gate is killed with its whole process group and reported as exit 124, the timeout(1) convention.
     let timedOut = false;
     const timer =
@@ -592,6 +648,7 @@ export async function traceCommand(
             }
           }, opts.timeoutS * 1000);
     child.on('exit', (code, signal) => {
+      if (child.pid !== undefined) LIVE_GROUPS.delete(child.pid);
       if (timer !== undefined) clearTimeout(timer);
       resolve(timedOut ? 124 : (code ?? (signal ? 128 : 1)));
     });
@@ -864,6 +921,8 @@ interface Args {
   out?: string;
   /** Writes the results of an earlier `--out` file instead of tracing. */
   apply?: string;
+  /** Re-folds the raw traces of an `--out` file under today's fold, printing a fresh `--out` stream to stdout. */
+  refold?: string;
   timeoutS: number;
 }
 
@@ -898,6 +957,7 @@ function parseArgs(argv: string[]): Args {
     else if (t === '--selftest') a.selftest = true;
     else if (t === '--out') a.out = path.resolve(val());
     else if (t === '--apply') a.apply = path.resolve(val());
+    else if (t === '--refold') a.refold = path.resolve(val());
     else if (t === '--timeout-s') a.timeoutS = Number(val());
     else throw new Error(`unknown argument ${t}`);
   }
@@ -911,6 +971,37 @@ export interface GateResult {
   seconds: number;
   ignored: Map<string, number>;
   outputTail: string;
+  /** The part of the trace that bears on this repository, kept so a changed fold re-folds without re-tracing (`--refold`). */
+  raw?: RawAccess;
+}
+
+/** An Access cut down to this repository: paths under the root or a git directory, listings under the root, git execs. */
+export interface RawAccess {
+  files: string[];
+  listed: string[];
+  execs: Exec[];
+}
+
+export function rawOf(access: Access, view: RepoView): RawAccess {
+  const ours = (p: string): boolean => under(p, view.root) || view.gitDirs.some((g) => under(p, g));
+  return {
+    files: [...access.files].filter(ours).sort(byteOrder),
+    listed: [...access.listed].filter(ours).sort(byteOrder),
+    execs: access.execs.filter((e) => path.posix.basename(e.argv[0] ?? '') === 'git'),
+  };
+}
+
+/** The verdict a trace earns: the fold, unless the gate was red, which makes the read set untrustworthy. */
+export function verdictOf(attr: Attribution, view: RepoView, exit: number): Verdict {
+  const verdict = fold(attr, view);
+  if (exit === 0) return verdict;
+  return {
+    kind: 'whole-tree',
+    reason: `exited ${exit} under the trace, so the read set may be partial; fix the gate or its environment and re-trace`,
+    reads: attr.reads.size,
+    listed: attr.listed.size,
+    coveragePct: verdict.coveragePct,
+  };
 }
 
 /** Traces one lock entry in `root` and folds the result. A red run is a whole-tree verdict: it may have stopped before reading everything. */
@@ -925,23 +1016,14 @@ export async function traceGate(
     label: entry.id,
   });
   const attr = attribute(run.access, view);
-  let verdict = fold(attr, view);
-  if (run.exit !== 0) {
-    verdict = {
-      kind: 'whole-tree',
-      reason: `exited ${run.exit} under the trace, so the read set may be partial; fix the gate or its environment and re-trace`,
-      reads: attr.reads.size,
-      listed: attr.listed.size,
-      coveragePct: verdict.coveragePct,
-    };
-  }
   return {
     id: entry.id,
-    verdict,
+    verdict: verdictOf(attr, view, run.exit),
     exit: run.exit,
     seconds: run.seconds,
     ignored: attr.ignored,
     outputTail: run.outputTail,
+    raw: rawOf(run.access, view),
   };
 }
 
@@ -993,6 +1075,40 @@ export function untracedReason(e: LockEntry, exempt: Set<string>): string | unde
   return undefined;
 }
 
+/** Re-folds every raw trace in an `--out` file against the current tree, printing new result lines on stdout and the shape on stderr. */
+export function refold(root: string, file: string): number {
+  const view = repoView(root);
+  let n = 0;
+  let paths = 0;
+  for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
+    if (line.trim() === '') continue;
+    const r = JSON.parse(line) as {
+      id: string;
+      exit: number;
+      seconds: number;
+      tree: string;
+      raw?: RawAccess;
+    };
+    if (r.raw === undefined) {
+      console.error(`path-trace: ${r.id} has no raw trace in ${file}; re-trace it`);
+      return 1;
+    }
+    const access: Access = {
+      files: new Set(r.raw.files),
+      listed: new Set(r.raw.listed),
+      execs: r.raw.execs,
+    };
+    const verdict = verdictOf(attribute(access, view), view, r.exit);
+    if (verdict.kind === 'paths') paths++;
+    n++;
+    process.stdout.write(`${JSON.stringify({ ...r, verdict })}\n`);
+  }
+  console.error(
+    `path-trace: re-folded ${n} trace(s): ${paths} with paths, ${n - paths} whole-tree`
+  );
+  return n === 0 ? 1 : 0;
+}
+
 /** Writes every result line of an `--out` file; the last line per gate wins. */
 export function applyResults(root: string, file: string): number {
   const last = new Map<string, GateResult & { tree: string }>();
@@ -1040,6 +1156,7 @@ async function main(argv: string[]): Promise<number> {
   const args = parseArgs(argv);
   if (args.selftest) return selftest();
   if (args.apply !== undefined) return applyResults(args.root, args.apply);
+  if (args.refold !== undefined) return refold(args.root, args.refold);
   if (args.gates.length === 0 && !args.allWholeTree) {
     console.error(
       'path-trace: name --gate <id> (repeatable) or --all-whole-tree. Nothing to trace.'
@@ -1108,7 +1225,7 @@ async function main(argv: string[]): Promise<number> {
     if (args.out !== undefined)
       fs.appendFileSync(
         args.out,
-        `${JSON.stringify({ id: r.id, exit: r.exit, seconds: r.seconds, tree, verdict: r.verdict })}\n`
+        `${JSON.stringify({ id: r.id, exit: r.exit, seconds: r.seconds, tree, verdict: r.verdict, raw: r.raw })}\n`
       );
   };
   const held = new Set<string>();
@@ -1229,7 +1346,7 @@ async function selftest(): Promise<number> {
   check(acc.listed.has('/r/c/listed'), 'getdents64 on a decorated fd records a listing');
   check(acc.files.has('/r/missing.txt'), 'a failed lookup is still recorded (inclusive direction)');
   check(
-    acc.execs.some((a) => a.join(' ') === 'node x.js'),
+    acc.execs.some((a) => a.argv.join(' ') === 'node x.js' && a.cwd === '/r/b'),
     'execve argv is captured'
   );
   const rel = parseStraceLog(
@@ -1286,11 +1403,29 @@ async function selftest(): Promise<number> {
     'CONTROL: discovery reads (.git, HEAD, config, info/exclude) leave the gate with paths'
   );
   const withExec = mk(['a/one.txt', '.git/HEAD']);
-  withExec.execs.push(['git', 'rev-parse', 'HEAD']);
+  withExec.execs.push({ argv: ['git', 'rev-parse', 'HEAD'], cwd: '/r/b' });
   const v4d = fold(attribute(withExec, view), view);
   check(
     v4d.kind === 'whole-tree' && v4d.reason.includes('rev-parse HEAD'),
     'HEAD read as a revision by argv is history'
+  );
+  const foreign = mk(['a/one.txt']);
+  foreign.execs.push(
+    { argv: ['git', 'init', '-q', '/tmp/x'], cwd: '/r' },
+    { argv: ['git', '-C', '/tmp/x', 'log'], cwd: '/r' },
+    { argv: ['git', 'log'], cwd: '/tmp/y' }
+  );
+  const vf = fold(attribute(foreign, view), view);
+  check(
+    vf.kind === 'paths' && vf.paths.join(',') === 'a/one.txt',
+    'CONTROL: git init, git -C elsewhere and git run in another cwd read another repository, not this one'
+  );
+  const relC = mk(['a/one.txt']);
+  relC.execs.push({ argv: ['git', '-C', '..', 'log'], cwd: '/r/a' });
+  const vr = fold(attribute(relC, view), view);
+  check(
+    vr.kind === 'whole-tree' && vr.reason.includes('history'),
+    'a relative -C landing inside the root is this repository'
   );
   check(
     classifyGitArgv(['git', '-C', 'x', 'rev-parse', '--show-toplevel']) === 'discovery' &&
@@ -1476,6 +1611,12 @@ async function selftest(): Promise<number> {
 }
 
 if (isEntryPoint(import.meta.filename)) {
+  for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP'] as const) {
+    process.on(sig, () => {
+      killLiveGroups();
+      process.exit(130);
+    });
+  }
   main(process.argv.slice(2)).then(
     (code) => {
       process.exitCode = code;
