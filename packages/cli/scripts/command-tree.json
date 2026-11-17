@@ -1671,6 +1671,12 @@
               "defaultValue": null
             },
             {
+              "flags": "--restore-to <machine>",
+              "descriptionKey": "commands.backup.verify.optionRestoreTo",
+              "mandatory": false,
+              "defaultValue": null
+            },
+            {
               "flags": "--debug",
               "descriptionKey": "options.debug",
               "mandatory": false,
