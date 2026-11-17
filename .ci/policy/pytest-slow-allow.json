@@ -787,24 +787,8 @@
    "reason": "baseline 2026-11-17: 27.9 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
   },
   {
-   "test": ".claude.rediacc_hooks.tests.test_githook_generated_artifacts::test_enrolled_artifact_against_the_real_hook[enrolled_allowed-cli-contract]",
-   "reason": "baseline 2026-11-17: 67.6 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-  },
-  {
-   "test": ".claude.rediacc_hooks.tests.test_githook_generated_artifacts::test_enrolled_artifact_against_the_real_hook[enrolled_allowed-gates-lock]",
-   "reason": "baseline 2026-11-17: 47.2 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-  },
-  {
    "test": ".claude.rediacc_hooks.tests.test_githook_generated_artifacts::test_enrolled_artifact_against_the_real_hook[enrolled_allowed-plan-renders]",
    "reason": "baseline 2026-11-17: 72.0 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-  },
-  {
-   "test": ".claude.rediacc_hooks.tests.test_githook_generated_artifacts::test_enrolled_artifact_against_the_real_hook[enrolled_refused-cli-contract]",
-   "reason": "baseline 2026-11-17: 47.2 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
-  },
-  {
-   "test": ".claude.rediacc_hooks.tests.test_githook_generated_artifacts::test_enrolled_artifact_against_the_real_hook[enrolled_refused-gates-lock]",
-   "reason": "baseline 2026-11-17: 30.9 s in the 2026-11-14 full run under 18 workers; listed when the ratchet landed, drop the entry once the test runs under 10 s"
   },
   {
    "test": ".claude.rediacc_hooks.tests.test_githook_generated_artifacts::test_enrolled_artifact_against_the_real_hook[enrolled_refused-plan-renders]",
