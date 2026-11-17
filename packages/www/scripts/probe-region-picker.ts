@@ -13,7 +13,8 @@
  * forwards at once; the enterprise form forwards on a hit and gives the neutral miss text
  * on a miss.
  */
-import { pathToFileURL } from 'node:url';
+import { realpathSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { WK_PRODUCT_DOMAIN } from '@rediacc/shared/config/well-known.generated';
 import type { Page } from 'playwright';
 
@@ -33,6 +34,23 @@ export const LOOKUP_LABEL = 'Work email';
 export const REGION_STORAGE_KEY = 'rediacc_region';
 
 export class UsageError extends Error {}
+
+/** The usage line a refused argument prints under its reason. */
+export const USAGE_LINE =
+  'usage: probe-region-picker (--url <site origin> | <site origin>) [--mock] [--lookup-domain <d> --lookup-host <h>]';
+
+/**
+ * True when this module is the script being run. Both sides go through realpath, so a symlinked
+ * path to the script still runs `main()`: a string compare would exit 0 with no step executed.
+ */
+export function isEntryPoint(argv1: string | undefined, moduleUrl: string): boolean {
+  if (!argv1) return false;
+  try {
+    return realpathSync(argv1) === realpathSync(fileURLToPath(moduleUrl));
+  } catch {
+    return false;
+  }
+}
 
 const VALUE_FLAGS = ['--url', '--lookup-domain', '--lookup-host'] as const;
 
@@ -260,10 +278,10 @@ async function main(): Promise<void> {
   process.exit(failures === 0 ? 0 : 1);
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isEntryPoint(process.argv[1], import.meta.url)) {
   main().catch((err: unknown) => {
     if (err instanceof UsageError) {
-      process.stderr.write(`probe-region-picker: ${err.message}\n`);
+      process.stderr.write(`probe-region-picker: ${err.message}\n${USAGE_LINE}\n`);
       process.exit(2);
     }
     process.stderr.write(

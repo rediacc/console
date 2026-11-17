@@ -7,7 +7,7 @@ order: 2
 language: ko
 generated: true
 generatedFrom: packages/cli/src/i18n/locales/ko/cli.json
-sourceHash: "9d87a2922b074351"
+sourceHash: "bf848fc6e63e3451"
 ---
 
 <!-- THIS FILE IS AUTO-GENERATED. Do not edit manually. -->
@@ -1717,6 +1717,22 @@ rdc repo fork <ref> [options]
 
 {{t:cli.commands.repo.replicate.description}}
 
+```bash
+rdc repo replicate <ref> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--replicas <n>` | {{t:cli.commands.repo.replicate.replicasOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--image <image>` | {{t:cli.commands.repo.replicate.imageOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--port <port>` | {{t:cli.commands.repo.replicate.portOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--pvc <name>` | {{t:cli.commands.repo.replicate.pvcOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--primary-app <label>` | {{t:cli.commands.repo.replicate.primaryAppOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--headless` | {{t:cli.commands.repo.replicate.headlessOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--refresh <interval>` | {{t:cli.commands.repo.replicate.refreshOption}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--debug` | {{t:cli.options.debug}} | {{t:cli.docs.optionLabels.no}} | - |
+
+
 <a id="cli-local-repo-replicate-status"></a>
 #### status
 
@@ -2715,6 +2731,10 @@ rdc backup restore <artifact-ref> [options]
 
 {{t:cli.commands.backup.retention.description}}
 
+```bash
+rdc backup retention [repo-ref]
+```
+
 <a id="cli-local-backup-retention-clear"></a>
 #### clear
 
@@ -3535,6 +3555,17 @@ rdc server upgrade <domain> [options]
 ### 13.5 licence
 
 {{t:cli.commands.server.licence.description}}
+
+```bash
+rdc server licence <domain> [options]
+```
+
+| {{t:cli.docs.tableHeaders.flag}} | {{t:cli.docs.tableHeaders.description}} | {{t:cli.docs.tableHeaders.required}} | {{t:cli.docs.tableHeaders.default}} |
+|------|-------------|----------|---------|
+| `--cert <file>` | {{t:cli.commands.server.install.optionCert}} | {{t:cli.docs.optionLabels.no}} | - |
+| `-m, --machine <name>` | {{t:cli.commands.server.optionMachine}} | {{t:cli.docs.optionLabels.no}} | - |
+| `--repo <name>` | {{t:cli.commands.server.optionRepo}} | {{t:cli.docs.optionLabels.no}} | - |
+
 
 <a id="cli-local-server-licence-mint"></a>
 #### mint

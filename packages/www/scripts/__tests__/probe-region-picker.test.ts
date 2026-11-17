@@ -1,10 +1,17 @@
+import { spawnSync } from 'node:child_process';
+import { mkdtempSync, rmSync, symlinkSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import en from '../../src/i18n/translations/en.json' with { type: 'json' };
 import {
+  isEntryPoint,
   LOOKUP_LABEL,
   parseArgs,
   REGION_STORAGE_KEY,
   STORAGE_SPY_SOURCE,
+  USAGE_LINE,
   UsageError,
 } from '../probe-region-picker.js';
 
@@ -63,4 +70,41 @@ describe('probe-region-picker storage spy', () => {
     expect(reported).toEqual([[REGION_STORAGE_KEY, '{"region":"eu"}']]);
     expect(written).toEqual(reported);
   });
+});
+
+const SCRIPT = fileURLToPath(new URL('../probe-region-picker.ts', import.meta.url));
+
+describe('probe-region-picker entry point', () => {
+  it('is the entry point under its own path and through a symlink, and not for another script', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'probe-entry-'));
+    try {
+      const link = join(dir, 'link.ts');
+      symlinkSync(SCRIPT, link);
+      expect(isEntryPoint(SCRIPT, pathToFileURL(SCRIPT).href)).toBe(true);
+      expect(isEntryPoint(link, pathToFileURL(SCRIPT).href)).toBe(true);
+      // Control: a different script, a missing path and no argv[1] are not it.
+      expect(isEntryPoint(fileURLToPath(import.meta.url), pathToFileURL(SCRIPT).href)).toBe(false);
+      expect(isEntryPoint(join(dir, 'absent.ts'), pathToFileURL(SCRIPT).href)).toBe(false);
+      expect(isEntryPoint(undefined, pathToFileURL(SCRIPT).href)).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('a symlinked run refuses an unknown argument with exit 2 and the usage line, not a silent exit 0', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'probe-entry-'));
+    try {
+      const link = join(dir, 'link.ts');
+      symlinkSync(SCRIPT, link);
+      const run = spawnSync('npx', ['tsx', link, '--bogus'], {
+        cwd: fileURLToPath(new URL('..', import.meta.url)),
+        encoding: 'utf8',
+      });
+      expect(run.status).toBe(2);
+      expect(run.stderr).toContain('unknown argument --bogus');
+      expect(run.stderr).toContain(USAGE_LINE);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  }, 60_000);
 });
