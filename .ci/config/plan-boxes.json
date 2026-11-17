@@ -3229,6 +3229,36 @@
         "f027e71e"
       ]
     },
+    "agent/plans/PLAN-root-grants.md": {
+      "status": "approved",
+      "owner": "d778be9d",
+      "folder": "agent/plans",
+      "moved_at": "",
+      "open": 19,
+      "done": 0,
+      "open_sigs": [
+        "0134b972",
+        "034d49bb",
+        "0af1e51a",
+        "19f12699",
+        "2f1ee9f8",
+        "3cf9ef43",
+        "5f011fc7",
+        "657ec9be",
+        "866cf845",
+        "a40c2f96",
+        "ad2b28f2",
+        "b60cc939",
+        "bb5c2422",
+        "c0ccd0b5",
+        "cded8305",
+        "d7fa53c2",
+        "e2f0eb0f",
+        "e605e494",
+        "fe733d0b"
+      ],
+      "done_sigs": []
+    },
     "agent/plans/PLAN-runtime-caller-identity.md": {
       "status": "compacted",
       "owner": "unowned",
