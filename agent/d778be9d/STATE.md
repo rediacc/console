@@ -1,22 +1,23 @@
-## SESSION d778be9d 2026-11-17T13:18:41Z
+## SESSION d778be9d 2026-11-17T14:24:20Z
 
-# STATE d778be9d (1104-1, PR #605) -- 2026-11-17 ~13:20Z (context epoch 37 handover)
+# STATE d778be9d (1104-1, PR #605) -- 2026-11-17T14:15Z
 
-## Big pieces
-- PR #605 push chain (lead): waits on ciquick-cpu writer B. Then: commit the UNCOMMITTED policy fix in the main checkout (pytest-impact.json in POLICY_FILES of .ci/rediacc_ci/policy_paths.py and scripts/lib/policy-paths.ts; pytest_impact.py reads policy_rel; regenerated .ci/policy/README.md and scripts/data/doc-registry.md; message /tmp/m/pol.msg; first regenerate with `npx tsx scripts/gen/gen-docs.ts --write` after B lands) -> `npm run ci:quick` -> `./run.sh drill backup && ./run.sh drill backup-onprem && npm run vm:check -- --changed` -> `worklist.py --review-commit d778be9d` -> push private/account, private/renet, then console (`TURBO_PUSH_REASON='red-fix: PR #605 CI red on run 43896661244; fixes ride this push' git push origin 1104-1`) -> us/asia release: `REDIACC_TRANSCRIPT_PATH=/home/developer/.claude/projects/-home-developer-console/d778be9d-a8e6-4b88-a419-e8a03e7e9888.jsonl RELEASE_ASKED=ASKED:2026-11-17T03:32Z npm run release:local -- --channel edge --workers-only --branch-release --regions us,asia` (dry run first).
-- Landed this context: read-grant fix (4fad878ed9), restore --restore-to (a12e0c9bd6), certspotter fallback (8ebdcd5b56), pytest by impact (755fd65e0d..a3548fda62), receipt carry (182b846803, 859d10c020), slow tests, rebind from bws seed (409d37afb5), fork network-ID fix (47c9251ad3), plan corrections (92499c502b), PLAN-root-grants promoted (7d74db7631).
-
-## Owed ticks
-- ciquick-cpu: W1.1 675a2e8e, W1.2 56e7d176 done (182b846803); W5.1 824b964d partial; W6 812f66ef, W8 8694aa86, W9 6c7831aa done; W10 96e623c9 partial (wiring); W4.1 bcfd79af, W4.2 51ceeb4f partial; W4.3 7b08f012, W7 8735fd82 blocked.
-- hostinger: C6 partial (4/13; rerun after renet reaches hostinger), C1 correction written; 201f331a correction written.
-
-## Delegated
-- abb3779a0acb10c25 -- #f0169c99 -- ciquick-cpu W2.1 W2.2 W3.1 (scripts/ci-runner/path-trace.ts, manifest.ts, gates.lock.json) -- accept per box in agent/plans/PLAN-ciquick-cpu.md; land with `./run.sh worktree land agent-abb3779a0acb10c25`.
-- a16700422a164ab26 -- #502c3c9d -- PLAN-root-grants S1 (private/account root-grants route/service/tests) -- accept: vitest root-grants + typecheck + check:ci-account-layer-isolation; report gives NS UUID.
-- a0e4dc473451b2d6f -- #0fdb6707 -- PLAN-root-grants C1 (.ci/config/root-grants.json, .ci/rediacc_ci/ops/root_grants.py, tests) -- accept: pytest test_ops_root_grants.py, check:ci-secret-supply, check:ci-env-manifest; NS used 7c9e6679-7425-40de-944b-e07fc1f90ae7 (reconcile with S1's).
+## Pause
+PAUSED 2026-11-17T14:15Z by operator /pause. Resume effort: smart (`worklist.py --queue-set d778be9d effort=smart`). No crons; wake timer stopped; no sub-agent running. Lease agent-abb3779a0acb10c25 holds only bddc296634, skipped on purpose (W2.2 data is re-traced instead, #1abe21eb).
 
 ## Next action
-1. As each writer reports: spot-check, land (submodules first), gitlink commit, review-mark findings with landed shas, gc tree.
-2. After B: policy fix commit, then the push chain above.
-3. After S1+C1: reconcile NS, land, then P1/H1/D1 writers, then LB/LA live boxes.
-4. After the push: bench runner (edge-workers record now exists; l1vm key #95f6a242), hostinger C6 reruns (#3fb4edcc), PLAN-site-entry-points writers (#732fbea9).
+1. Restore effort=smart; check `docker version` and `./rdc.sh ops status`.
+2. Read the ci:quick receipt for HEAD (started 14:1xZ on 5d81789717, bg br5292a9k, log /tmp/m/ciquick-6.log, lost on restart). Missing or red: rerun `npm run ci:quick`, fix reds (check:ci-ops-health is the waived live red).
+3. `./run.sh drill backup && ./run.sh drill backup-onprem && npm run vm:check -- --changed` (never beside ci:quick).
+4. `worklist.py --review-commit d778be9d`; push private/account, private/renet, then console with TURBO_PUSH_REASON='red-fix: ...'.
+5. us/asia release #8bb65426: dry run first; REDIACC_TRANSCRIPT_PATH=/home/developer/.claude/projects/-home-developer-console/d778be9d-a8e6-4b88-a419-e8a03e7e9888.jsonl RELEASE_ASKED=ASKED:2026-11-17T03:32Z.
+6. W2.2 re-trace in a fresh lease (#1abe21eb): build packages/cli/www; path-trace --all-whole-tree --jobs 8 --out F; --apply F; gen-manifest --write; gen-gates-lock --write; check:ci-gate-manifest, paths-origin, parity; narrow ci; commit manifest.ts gates.lock.json trace-ledger.ts with Plan-Box 782a0661. Tick 3ddf03d4 (95ac738dae + e31c602e8c).
+7. Root-grants P1/H1/D1 writers, LB/LA live boxes; bench and hostinger runners; site-entry-points writers (#732fbea9).
+
+## Big pieces
+- Landed this context: writer B path-trace 988ca9561b..7a9a97bac4; root-grants C1 b8b776f325 (box 0134b972 ticked); root lockfiles in GLOBAL_INPUTS b69e89c640; traced origin + policy fix 51b854035f; sparse hardlink guard e31c602e8c; format 5d81789717; plan ticks 8cf591d88d. Review findings cd353e9c.1, 1b2c643e.1, ffa5756e.1, 95ac738d.1 fixed; no high finding open.
+- Root-grants: S1 (account e594012) and C1 landed; then the operator mints US/ASIA tokens and creates the us/asia config stores.
+- Open hints proposed: review gate on unreachable commits; plan-tick for un-investigated lease writers.
+
+## Owed ticks
+Live half owed after the push, run by the runners (step 7): PLAN-backup-program.md#07955f58 #0a237b2e #575e0098; PLAN-ciquick-cpu.md#51ceeb4f #824b964d; PLAN-enterprise-isolation.md#0a6e5712 #0fbd62dc #a8892e0c #cc583290 #f4b49503; PLAN-health-checks-local.md#85f55665; PLAN-production-key-only.md#6a1ca4a4; PLAN-proxy-cd-six-targets.md#abe9b4eb.
