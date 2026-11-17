@@ -854,6 +854,12 @@ def bench_workers(*, deployable_only: bool = False) -> set[str]:
 
 TURNSTILE_WIDGET = "rediacc-console"
 CRT_SH = "https://crt.sh/?q=%s&output=json"
+# crt.sh answers 200 [] for domains that do have certificates, so a second log reader backs it up; it needs no key at this volume.
+CERTSPOTTER = (
+    "https://api.certspotter.com/v1/issuances?domain=%s&include_subdomains=true&expand=dns_names"
+)
+CERTSPOTTER_PAGE = 100
+CERTSPOTTER_MAX_PAGES = 5
 TLS_TIMEOUT_S = 30
 
 # host -> (status, certificate DNS names).
@@ -1032,6 +1038,39 @@ def _cert_log_rows(fetch_url: Fetch, url: str) -> tuple[list[Any] | None, str]:
     return rows, ""
 
 
+def _certspotter_names(fetch_url: Fetch) -> tuple[list[str], str]:
+    """Every DNS name certspotter lists for the product domain, and the outcome when it gave none (a failure or an empty list)."""
+    found: set[str] = set()
+    after = ""
+    for _page in range(CERTSPOTTER_MAX_PAGES):
+        url = CERTSPOTTER % urllib.parse.quote(PRODUCT_DOMAIN)
+        if after:
+            url += "&after=" + urllib.parse.quote(after)
+        try:
+            status, body = fetch_url(url)
+        except proof.LabError as exc:
+            return [], "failed (%s)" % exc
+        if status != 200:
+            return [], "answered %d" % status
+        try:
+            rows = json.loads(body)
+        except ValueError:
+            return [], "answered no JSON"
+        if not isinstance(rows, list):
+            return [], "answered a JSON value that is not a list"
+        for row in rows:
+            if isinstance(row, dict):
+                names = row.get("dns_names")
+                if isinstance(names, list):
+                    found.update(str(n).strip().lower() for n in names)
+        last = rows[-1] if rows else None
+        if len(rows) < CERTSPOTTER_PAGE or not isinstance(last, dict) or not last.get("id"):
+            break
+        after = str(last["id"])
+    names_out = sorted(n for n in found if n)
+    return names_out, "" if names_out else "answered an empty list"
+
+
 def cert_log_names(
     *,
     fetch_url: Fetch = http_get,
@@ -1039,31 +1078,41 @@ def cert_log_names(
     attempts: int = CRT_SH_ATTEMPTS,
     backoff_s: float = CRT_SH_BACKOFF_S,
 ) -> list[str]:
-    """crt.sh is flaky (200 [] then 502 in one minute), so a 404, a 5xx, a timeout or an empty list is retried with a growing pause; still failing after `attempts` tries, the error names each outcome."""
+    """crt.sh is flaky (200 [] then 502 in one minute), so a 404, a 5xx, a timeout or an empty list is retried with a growing pause; once crt.sh has failed, certspotter is asked, and its names are the answer. Both sources empty or failing is still a LabError naming each outcome, never an empty list."""
     if attempts < 1:
         raise ValueError("attempts must be at least 1, got %d" % attempts)
     url = CRT_SH % urllib.parse.quote("%." + PRODUCT_DOMAIN)
     outcomes: list[str] = []
     rows: list[Any] | None = None
+    refusal = ""
     for attempt in range(1, attempts + 1):
-        rows, outcome = _cert_log_rows(fetch_url, url)
+        try:
+            rows, outcome = _cert_log_rows(fetch_url, url)
+        except proof.LabError as exc:
+            # A 4xx or unreadable body is final for crt.sh, but certspotter may still answer.
+            refusal = str(exc)
+            outcomes.append("attempt %d failed (%s)" % (attempt, refusal))
+            break
         if rows is not None:
             break
         outcomes.append("attempt %d %s" % (attempt, outcome))
         if attempt < attempts:
             sleep(backoff_s * attempt)
+    found: set[str] = set()
+    for row in rows or []:
+        if isinstance(row, dict):
+            found.update(n.strip().lower() for n in str(row.get("name_value", "")).splitlines())
     if rows is None:
-        answered = all(o.endswith(CRT_SH_EMPTY) for o in outcomes)
+        spotted, spot_outcome = _certspotter_names(fetch_url)
+        if spotted:
+            return spotted
+        answered = not refusal and all(o.endswith(CRT_SH_EMPTY) for o in outcomes)
         lead = (
             "crt.sh logged no certificate for the product domain"
             if answered
             else "crt.sh gave no usable answer"
         )
-        raise proof.LabError("%s: %s" % (lead, "; ".join(outcomes)))
-    found: set[str] = set()
-    for row in rows:
-        if isinstance(row, dict):
-            found.update(n.strip().lower() for n in str(row.get("name_value", "")).splitlines())
+        raise proof.LabError("%s: %s; certspotter %s" % (lead, "; ".join(outcomes), spot_outcome))
     return sorted(n for n in found if n)
 
 

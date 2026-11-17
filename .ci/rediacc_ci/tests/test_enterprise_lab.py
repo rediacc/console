@@ -1279,6 +1279,8 @@ def test_cert_log_names_never_answer_an_empty_list_for_a_failed_read(status, bod
     calls: list[str] = []
 
     def fetch(url):
+        if "certspotter" in url:
+            return 200, "[]"
         calls.append(url)
         return status, body
 
@@ -1293,6 +1295,9 @@ def _scripted_crt(*answers):
     calls: list[str] = []
 
     def fetch(url):
+        if "certspotter" in url:
+            # The fallback log is held empty here; its own tests script it separately.
+            return 200, "[]"
         calls.append(url)
         answer = queue.pop(0)
         if isinstance(answer, Exception):
@@ -4621,3 +4626,94 @@ def test_cert_log_names_zero_attempts_refuses_before_claiming_anything_about_the
     with pytest.raises(ValueError, match="attempts must be at least 1"):
         lab.cert_log_names(fetch_url=fetch, sleep=lambda _s: None, attempts=0, backoff_s=1.0)
     assert calls == []
+
+
+CERTSPOTTER_ROWS = json.dumps(
+    [
+        {"id": "1", "dns_names": ["*.%s" % D_ROUTING, "EU.%s" % D_ROUTING]},
+        {"id": "2", "dns_names": ["eu.%s" % D_ROUTING]},
+    ]
+)
+
+
+def _two_logs(crt_answers, spotter_answers):
+    """A fake fetch that answers crt.sh and certspotter calls from their own queues, plus each call log."""
+    crt, spotter = list(crt_answers), list(spotter_answers)
+    crt_calls: list[str] = []
+    spotter_calls: list[str] = []
+
+    def fetch(url):
+        if "certspotter" in url:
+            spotter_calls.append(url)
+            answer = spotter.pop(0)
+        else:
+            crt_calls.append(url)
+            answer = crt.pop(0)
+        if isinstance(answer, Exception):
+            raise answer
+        return answer
+
+    return fetch, crt_calls, spotter_calls
+
+
+@pytest.mark.parametrize(
+    "crt_answer",
+    [(200, "[]"), (502, "x"), (403, "no"), proof.LabError("GET crt.sh: TimeoutError")],
+    ids=["empty", "5xx", "4xx", "timeout"],
+)
+def test_cert_log_names_falls_back_to_certspotter_when_crt_sh_gives_nothing(crt_answer):
+    fetch, crt_calls, spotter_calls = _two_logs([crt_answer] * 2, [(200, CERTSPOTTER_ROWS)])
+    names = lab.cert_log_names(fetch_url=fetch, sleep=lambda _s: None, attempts=2, backoff_s=0.0)
+    assert names == sorted({"*.%s" % D_ROUTING, "eu.%s" % D_ROUTING})
+    assert len(spotter_calls) == 1
+    assert "domain=%s" % D_ROUTING in spotter_calls[0]
+    assert "include_subdomains=true" in spotter_calls[0]
+    assert "expand=dns_names" in spotter_calls[0]
+    assert crt_calls
+
+
+def test_cert_log_names_both_logs_empty_stays_a_refusal():
+    """Control: the fallback never turns two empty answers into an empty list that would pass an absent-from-logs claim."""
+    fetch, _crt, spotter_calls = _two_logs([(200, "[]")] * 2, [(200, "[]")])
+    with pytest.raises(proof.LabError) as err:
+        lab.cert_log_names(fetch_url=fetch, sleep=lambda _s: None, attempts=2, backoff_s=0.0)
+    assert "crt.sh logged no certificate" in str(err.value)
+    assert "certspotter answered an empty list" in str(err.value)
+    assert len(spotter_calls) == 1
+
+
+@pytest.mark.parametrize(
+    "spotter_answer",
+    [
+        (429, "slow down"),
+        (200, "not json"),
+        (200, '{"a": 1}'),
+        proof.LabError("GET c: TimeoutError"),
+    ],
+    ids=["429", "html", "object", "timeout"],
+)
+def test_cert_log_names_both_logs_failing_stays_a_refusal(spotter_answer):
+    fetch, _crt, _spotter = _two_logs([(200, "[]")] * 2, [spotter_answer])
+    with pytest.raises(proof.LabError) as err:
+        lab.cert_log_names(fetch_url=fetch, sleep=lambda _s: None, attempts=2, backoff_s=0.0)
+    assert "certspotter" in str(err.value)
+
+
+def test_cert_log_names_crt_sh_names_never_call_certspotter():
+    """Control: a crt.sh answer with names is final, and certspotter is not asked."""
+    fetch, crt_calls, spotter_calls = _two_logs([(200, LOGGED)], [])
+    assert lab.cert_log_names(fetch_url=fetch, sleep=lambda _s: None) == ["eu.%s" % D_ROUTING]
+    assert len(crt_calls) == 1
+    assert spotter_calls == []
+
+
+def test_cert_log_names_certspotter_follows_pages_by_last_id():
+    full = json.dumps(
+        [{"id": str(i), "dns_names": ["h%d.%s" % (i, D_ROUTING)]} for i in range(100)]
+    )
+    last = json.dumps([{"id": "100", "dns_names": ["tail.%s" % D_ROUTING]}])
+    fetch, _crt, spotter_calls = _two_logs([(200, "[]")], [(200, full), (200, last)])
+    names = lab.cert_log_names(fetch_url=fetch, sleep=lambda _s: None, attempts=1, backoff_s=0.0)
+    assert "tail.%s" % D_ROUTING in names
+    assert len(names) == 101
+    assert spotter_calls[1].endswith("&after=99")
