@@ -182,12 +182,22 @@ STRING_LICENSE = {
     "label_phrase.py": PROSE_GIT
     + 'subprocess.run("git worktree add /tmp/x", shell=True, check=False)\n',
 }
+# The built-string twins hold no `add` anywhere, so the cheap phrase arm (`_names_phrase`) cannot decide them: only the fill of `"git " + v` can, and only a literal that licenses it. label_built.py is the control the no-string plant below flips.
+PROSE_BUILT = "import os\nimport sys\n\n" + PROSE_LABEL
+STRING_LICENSE["label_built.py"] = PROSE_BUILT + 'W = "worktree"\nos.system("git " + sys.argv[1])\n'
 pathlib.Path(FIXTURE_DIR, "label.py").write_text(PROSE_GIT, encoding="utf-8")
+pathlib.Path(FIXTURE_DIR, "label_prose_built.py").write_text(
+    PROSE_BUILT + 'os.system("git " + sys.argv[1])\n', encoding="utf-8"
+)
 for license_name, license_text in STRING_LICENSE.items():
     pathlib.Path(FIXTURE_DIR, license_name).write_text(license_text, encoding="utf-8")
 PROSE_LABEL_ROW = (
     "a prose case label beside a git argv with a spread",
     "python3 %s/label.py" % FIXTURE_DIR,
+)
+PROSE_BUILT_ROW = (
+    "a prose case label beside a built git command",
+    "python3 %s/label_prose_built.py x" % FIXTURE_DIR,
 )
 STRING_LICENSE_ROWS = [
     ("a string licensing the fill: %s" % name, "python3 %s/%s" % (FIXTURE_DIR, name))
@@ -352,6 +362,7 @@ FALSE_POSITIVES = [
         "python3 %s/selftest.py --selftest" % FIXTURE_DIR,
     ),
     PROSE_LABEL_ROW,
+    PROSE_BUILT_ROW,
     (
         "gc beside a $-path worklist --add",
         (
@@ -856,6 +867,11 @@ REVERSE = [
         ("and not _prose_mention(tok)", ""),
         PROSE_LABEL_ROW,
     ),
+    (
+        "a prose string licenses the built-string fill",
+        ("and not _prose_mention(tok)", ""),
+        PROSE_BUILT_ROW,
+    ),
     # #3dc774ff: a `$CLAUDE_PROJECT_DIR` path now resolves to the literal one, so these plants drive the `$R` twins, which still reach the narrowed line.
     (
         "the unjudgeable arm reads two words anywhere",
@@ -1038,9 +1054,9 @@ if len(admitted) != len(NAME_PREFIX_ROWS):
 else:
     print("a lease-name prefix exempts the verb slot: all %d admitted" % len(NAME_PREFIX_ROWS))
 
-# #29754962: with every string dropped from `_code_mentions`, the bare-word control is admitted, so the string controls are refused BY a non-prose literal licensing the fill, not by another arm.
+# #29754962: with every string dropped from `_code_mentions`, the built-string control is admitted, so it is refused BY its bare `"worktree"` literal licensing the fill (it holds no `add`, so the phrase arm cannot decide it).
 STRING_PLANT = ("and not _prose_mention(tok)", "and tok.type not in PY_LITERAL_TOKENS")
-WORD_ROW = _row(STRING_LICENSE_ROWS, "a string licensing the fill: label_word.py")
+WORD_ROW = _row(STRING_LICENSE_ROWS, "a string licensing the fill: label_built.py")
 if run_guard(WORD_ROW[1], defect=STRING_PLANT)[0] != 0:
     failures.append("plant: no string licenses the argv fill")
     print("*** FAIL *** with no string licensing the fill, %r was still refused" % WORD_ROW[0])

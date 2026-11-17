@@ -1214,11 +1214,11 @@ def _mentions_worktree(text):
 def _prose_mention(tok):
     """Is `tok` a whole string literal that reads as a sentence (`_prose_literal`) with no placeholder a format could fill? Such a literal runs nothing, so it licenses no argv fill (#29754962).
 
-    An edited test-block_unverified_push.py was refused at rc 2 (measured 2026-11-17): its case labels ("an uncommitted worktree edit that DROPS an entry ...") were its only `worktree` outside a comment, and they licensed `_filled_sequences` to fill the unknown first argument of `g(work, "add", "-A")` with the verb. A literal that can be a piece of the command line still licenses it: a bare `"worktree"` argv word (one word), `"git worktree "` (git), one holding `add` or another judged verb, `=`, a shell mark, or a `%s`/`{}` hole. An f-string's text piece is not judged here: it sits beside a hole by construction.
+    An edited test-block_unverified_push.py was refused at rc 2 (measured 2026-11-17): its case labels ("an uncommitted worktree edit that DROPS an entry ...") were its only `worktree` outside a comment, and they licensed `_filled_sequences` to fill the unknown first argument of `g(work, "add", "-A")` with the verb. A literal that can be a piece of the command line still licenses it: a bare `"worktree"` argv word (one word), `"git worktree "` (git), one holding `add` or another judged verb, `=`, a shell mark, or a `%s`/`{}` hole. An f-string's text piece is not judged here: it sits beside a hole by construction. Nor is a literal of fewer than three whitespace-separated words: `_prose_literal` counts alphanumeric runs, so a path (`.claude/worktrees/agent-x/f`, `/srv/worktree/x`) would read as a sentence.
     """
     if tok.type != tokenize.STRING or PLACEHOLDER.search(tok.string):
         return False
-    return _prose_literal(tok.string)
+    return len(tok.string.split()) >= 3 and _prose_literal(tok.string)
 
 
 def _code_mentions(code):
