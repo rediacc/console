@@ -304,6 +304,7 @@ export function buildSparse(
 ): string {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'trace-honest-sparse-'));
   const globs = declaredGlobs(entry);
+  const hardLinked: string[] = [];
   const copyReal = (rel: string): void => {
     const dst = path.join(dir, rel);
     fs.mkdirSync(path.dirname(dst), { recursive: true });
@@ -314,8 +315,22 @@ export function buildSparse(
     const dst = path.join(dir, rel);
     if (fs.existsSync(dst)) return;
     fs.mkdirSync(path.dirname(dst), { recursive: true });
-    const r = spawnSync('cp', ['-al', path.join(view.root, rel), dst]);
+    const src = path.join(view.root, rel);
+    // A reflink copy is its own inode: a gate rewriting a file in place cannot reach the real one. Tried first, and only where the filesystem has reflinks.
+    if (reflinkWorks !== false) {
+      const r = spawnSync('cp', ['-a', '--reflink=always', src, dst]);
+      if (r.status === 0) {
+        reflinkWorks = true;
+        return;
+      }
+      fs.rmSync(dst, { recursive: true, force: true });
+      if (reflinkWorks === true) throw new Error(`cp --reflink ${rel} failed: ${r.stderr}`);
+      reflinkWorks = false;
+    }
+    // No reflinks (ext4): a hard link keeps the sparse tree fast, but shares the inode, so the run is guarded (see verifyLinked).
+    const r = spawnSync('cp', ['-al', src, dst]);
     if (r.status !== 0) throw new Error(`cp -al ${rel} failed: ${r.stderr}`);
+    hardLinked.push(rel);
   };
   let copied = 0;
   for (const f of view.files) {
@@ -365,7 +380,54 @@ export function buildSparse(
     throw new Error(
       `${entry.id}: the sparse directory holds ZERO declared files; its paths match nothing tracked`
     );
+  guards.set(dir, { root: view.root, rels: hardLinked, before: statLinked(view.root, hardLinked) });
   return dir;
+}
+
+/** Whether `cp --reflink=always` has worked on this filesystem: unknown until the first link, then settled for the process. */
+let reflinkWorks: boolean | undefined;
+
+/** The real files a sparse directory shares by hard link, as they stood when it was built. */
+const guards = new Map<string, { root: string; rels: string[]; before: Map<string, string> }>();
+
+/** `inode:size:mtime:mode` of every file under the given real directories. A rewrite in place keeps the inode but moves size or mtime; an unlink-and-recreate in the sparse tree leaves the real file untouched. */
+function statLinked(root: string, rels: readonly string[]): Map<string, string> {
+  const out = new Map<string, string>();
+  const walk = (rel: string): void => {
+    let ents: fs.Dirent[];
+    try {
+      ents = fs.readdirSync(path.join(root, rel), { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of ents) {
+      const child = `${rel}/${e.name}`;
+      if (e.isDirectory()) walk(child);
+      else if (e.isFile()) {
+        const st = fs.lstatSync(path.join(root, child), { bigint: true });
+        out.set(child, `${st.ino}:${st.size}:${st.mtimeNs}:${st.mode}`);
+      }
+    }
+  };
+  for (const rel of rels) {
+    const st = fs.lstatSync(path.join(root, rel));
+    if (st.isDirectory()) walk(rel);
+    else if (st.isFile()) {
+      const b = fs.lstatSync(path.join(root, rel), { bigint: true });
+      out.set(rel, `${b.ino}:${b.size}:${b.mtimeNs}:${b.mode}`);
+    }
+  }
+  return out;
+}
+
+/** The real files a gate changed through the hard links of its sparse directory; empty when none did (or none were linked). The tree cannot be restored, so a hit fails the trace loudly with the file named. */
+export function verifyLinked(dir: string): string[] {
+  const g = guards.get(dir);
+  if (g === undefined) return [];
+  const now = statLinked(g.root, g.rels);
+  const changed: string[] = [];
+  for (const [rel, was] of g.before) if (now.get(rel) !== was) changed.push(rel);
+  return changed;
 }
 
 /** Removes a sparse directory, retrying while a straggling child of the gate finishes writing; a directory that survives is named, never leaked silently. */
@@ -601,6 +663,15 @@ async function main(argv: string[]): Promise<number> {
         dir = buildSparse(view, e, leafFilesOf(e));
         const sparse = await runPlain(e.run, dir, args.timeoutS);
         sparsed++;
+        const mutated = verifyLinked(dir);
+        if (mutated.length > 0) {
+          findings.push({
+            id,
+            mode: 'sparse',
+            what: `rewrote ${mutated.length} REAL file(s) in place through its hard-linked sparse tree (first: ${mutated.slice(0, 5).join(', ')}); the real checkout is now changed`,
+            fix: 'make the gate write build output to a fresh file (write then rename), not over an installed or built one; restore the named files (npm ci, or rebuild)',
+          });
+        }
         const same = (real.exit === 0) === (sparse.exit === 0);
         if (real.exit !== 0) {
           findings.push({
@@ -685,10 +756,10 @@ async function selftest(): Promise<number> {
       .length === 0,
     'CONTROL: declared reads, a global input and nothing else pass'
   );
-  // input-hash.ts matches `**/package-lock.json` as `.*/package-lock.json`, so the ROOT lockfile is not a global input; the honesty check follows the hasher, not the glob's apparent intent.
+  // input-hash.ts lists the root `package-lock.json` beside `**/package-lock.json`, so the root lockfile is a global input too.
   check(
-    traceFindings(entry, attr(['package-lock.json']), 0, new Set()).length === 1,
-    'the root lockfile is outside GLOBAL_INPUTS as the hasher matches them, so it must be declared'
+    traceFindings(entry, attr(['package-lock.json']), 0, new Set()).length === 0,
+    'the root lockfile is a global input, so reading it needs no declaration'
   );
   const f1 = traceFindings(entry, attr(['a/x.ts', 'c.txt']), 0, new Set());
   check(

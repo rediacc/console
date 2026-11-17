@@ -123,3 +123,51 @@ def test_quick_with_nothing_touched_names_what_it_saw(fixture_repo: pathlib.Path
     res = _run(fixture_repo, "--mode", "sparse", "--quick", "--base", "HEAD")
     assert res.returncode == 0, res.stderr
     assert "0 of 2 candidates touched" in res.stdout
+
+
+def _with_node_modules(root: pathlib.Path) -> pathlib.Path:
+    (root / ".gitignore").write_text("node_modules\n")
+    pkg = root / "node_modules" / "pkg"
+    pkg.mkdir(parents=True)
+    (pkg / "f.js").write_text("ORIGINAL\n")
+    return pkg / "f.js"
+
+
+def _reflinks_work(root: pathlib.Path) -> bool:
+    src = root / "a.txt"
+    dst = root.parent / "reflink-probe"
+    ok = (
+        subprocess.run(
+            ["cp", "--reflink=always", str(src), str(dst)], capture_output=True, check=False
+        ).returncode
+        == 0
+    )
+    dst.unlink(missing_ok=True)
+    return ok
+
+
+# b.txt exists only in the real tree: the sparse tree holds a.txt alone, so the rewrite happens in the sparse run only.
+_REWRITE = "if [ ! -e b.txt ]; then printf 'CLOBBERED\\n' > node_modules/pkg/f.js; fi; cat a.txt >/dev/null"
+
+
+def test_sparse_run_cannot_rewrite_the_real_node_modules(tmp_path: pathlib.Path) -> None:
+    root = _repo(tmp_path / "repo", [_gate("g:writer", _REWRITE, ["a.txt"])])
+    real = _with_node_modules(root)
+    res = _run(root, "--mode", "sparse", "--gate", "g:writer")
+    if _reflinks_work(root):
+        assert real.read_text() == "ORIGINAL\n", "reflink copy must isolate the real file"
+        assert res.returncode == 0, res.stderr
+    else:
+        assert res.returncode == 1, res.stdout + res.stderr
+        assert "node_modules/pkg/f.js" in res.stderr
+        assert "REAL file" in res.stderr
+
+
+def test_sparse_run_that_only_reads_node_modules_passes(tmp_path: pathlib.Path) -> None:
+    root = _repo(
+        tmp_path / "repo", [_gate("g:reader", "cat node_modules/pkg/f.js >/dev/null", ["a.txt"])]
+    )
+    real = _with_node_modules(root)
+    res = _run(root, "--mode", "sparse", "--gate", "g:reader")
+    assert res.returncode == 0, res.stderr
+    assert real.read_text() == "ORIGINAL\n"
