@@ -134,12 +134,14 @@ Portal strings in `onboarding.json` for all 13 locales: tab labels (`installTabU
 
 ### Wave 2, after I1 lands
 
-- [ ] I2 [writer] Portal install tabs: Linux/macOS first and Windows, each with copy, no OS detection, plus "More install methods" to `${WK_SITE_ORIGIN}/${lang}/docs/installation`; the strings in all 13 `onboarding.json` locales; a vitest that renders the step and asserts both commands (from the shared constants), the default tab, switching, and the more-methods href.
+- [x] I2 [writer] Portal install tabs: Linux/macOS first and Windows, each with copy, no OS detection, plus "More install methods" to `${WK_SITE_ORIGIN}/${lang}/docs/installation`; the strings in all 13 `onboarding.json` locales; a vitest that renders the step and asserts both commands (from the shared constants), the default tab, switching, and the more-methods href.
   - Owns: private/account/web/src/pages/TutorialSplash.tsx, private/account/web/src/i18n/locales/*/onboarding.json, private/account/web/src/pages/__tests__/tutorial-splash-install-tabs.test.tsx.
   - Accept: `cd /home/developer/console/private/account/web && npx vitest run src/pages/__tests__/tutorial-splash-install-tabs.test.tsx` rc 0, and `for l in ar de en es et fr it ja ko pt ru tr zh; do grep -c installMoreMethods src/i18n/locales/$l/onboarding.json; done | sort -u` prints only 1.
-- [ ] I3 [writer] Remove the hard-coded one-liner from onboarding-content.json (the install step uses the tabs marker), keeping every other step's `command` working through `substituteCommand`.
+    (ticked) 2026-11-17T15:21:27Z by d778be9d: commit:956e037614 account 2803c3c; vitest install-tabs red 4/4 before, rc=0 after; installMoreMethods once in each of 13 locales; vitest src/pages rc=0 (169 passed on landed tree); tsc rc=0
+- [x] I3 [writer] Remove the hard-coded one-liner from onboarding-content.json (the install step uses the tabs marker), keeping every other step's `command` working through `substituteCommand`.
   - Owns: private/account/web/src/data/onboarding-content.json, private/account/web/src/pages/TutorialSplash.tsx.
   - Accept: `cd /home/developer/console && grep -c 'install.sh' private/account/web/src/data/onboarding-content.json` prints 0, and `cd private/account/web && npx vitest run src/pages/__tests__/tutorial-splash-links.test.tsx src/pages/__tests__/tutorial-splash-install-tabs.test.tsx` rc 0.
+    (ticked) 2026-11-17T15:21:36Z by d778be9d: commit:956e037614 account 04fd467; install step uses the install-tabs widget, grep -c install.sh = 0; substitution test red before, rc=0 after
 
 ### Live queue: bench first (Ruling 4), then production after the PR merges
 

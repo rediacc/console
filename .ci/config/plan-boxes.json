@@ -3397,21 +3397,21 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 6,
-      "done": 5,
+      "open": 4,
+      "done": 7,
       "open_sigs": [
         "81efafc3",
-        "98e32aae",
         "a8202309",
         "bc5f833c",
-        "c339198e",
-        "d4baea19"
+        "c339198e"
       ],
       "done_sigs": [
         "1fd6c760",
         "340ba2b8",
+        "98e32aae",
         "cb7475e9",
         "d066dafd",
+        "d4baea19",
         "f8b46a9c"
       ]
     },

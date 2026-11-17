@@ -82,21 +82,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 1319 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1328 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 182 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
   - epic 2255f2d2, no plan, 2 commit(s) on the branch, 0 open item(s): Convert stale GitHub issues (console, renet, account) into plan files
-- Writers: 3 live of writer_cap 25 (session d778be9d): worker:a78b5eee8fe083876, worker:a4ea441b03f28871e, worker:a03f736925d610ba8.
-- Leased items: 17: #02389657 (worker:a78b5eee8fe083876, d778be9d), #1abe21eb (worker:a03f736925d610ba8, d778be9d), #36ffb824 (worker:a78b5eee8fe083876, d778be9d), #3fb4edcc (worker:a78b5eee8fe083876, d778be9d), #400ae5ea (worker:a78b5eee8fe083876, d778be9d), #4889018a (worker:a78b5eee8fe083876, d778be9d), #6d5593e9 (worker:a78b5eee8fe083876, d778be9d), #719d19c6 (worker:a78b5eee8fe083876, d778be9d), #732fbea9 (worker:a78b5eee8fe083876, d778be9d), #864b6bca (worker:a78b5eee8fe083876, d778be9d), #8bb65426 (worker:a78b5eee8fe083876, d778be9d), #966364da (worker:a78b5eee8fe083876, d778be9d), and 5 more.
+- Writers: 4 live of writer_cap 25 (session d778be9d): worker:a78b5eee8fe083876, worker:a4ea441b03f28871e, worker:a03f736925d610ba8, worker:a6f2a6759eb9d4ee2.
+- Leased items: 17: #02389657 (worker:a78b5eee8fe083876, d778be9d), #1abe21eb (worker:a03f736925d610ba8, d778be9d), #36ffb824 (worker:a78b5eee8fe083876, d778be9d), #3fb4edcc (worker:a78b5eee8fe083876, d778be9d), #400ae5ea (worker:a78b5eee8fe083876, d778be9d), #4889018a (worker:a78b5eee8fe083876, d778be9d), #6d5593e9 (worker:a78b5eee8fe083876, d778be9d), #719d19c6 (worker:a78b5eee8fe083876, d778be9d), #732fbea9 (worker:a6f2a6759eb9d4ee2, d778be9d), #864b6bca (worker:a78b5eee8fe083876, d778be9d), #8bb65426 (worker:a78b5eee8fe083876, d778be9d), #966364da (worker:a78b5eee8fe083876, d778be9d), and 5 more.
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 26 of 78 plans done, 1198 of 1445 boxes done (82%).
+Promoted: 26 of 78 plans done, 1200 of 1445 boxes done (83%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -176,7 +176,7 @@ Promoted: 26 of 78 plans done, 1198 of 1445 boxes done (82%).
 | 74 | PLAN-hostinger-to-bench.md | 11/22 | 11 open |
 | 75 | PLAN-multi-region-bench.md | 13/23 | 10 open |
 | 76 | PLAN-root-api-token.md | 7/15 | 8 open |
-| 77 | PLAN-site-entry-points.md | 5/11 | 6 open |
+| 77 | PLAN-site-entry-points.md | 7/11 | 4 open |
 | 78 | PLAN-root-grants.md | 5/19 | 14 open |
 <!-- queue:progress:end -->
 
