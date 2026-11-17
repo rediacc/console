@@ -383,24 +383,42 @@ def test_the_stub_farm_really_shadows_docker(tmp_path) -> None:
     )
 
 
-# A producer that writes only after the consumer has exited, under pipefail, as env.sh's `echo "$KEYS" | node ...` does when the host is loaded. The delay makes the loss of the race certain rather than likely, and it is the real /usr/bin/sleep because the farm shadows `sleep` with a stub that returns at once.
-SLOW_PRODUCER = "set -o pipefail; (/usr/bin/sleep 0.3; echo keys) | node -e 'x.private)'"
+# Larger than any pipe buffer (64 KiB by default), so a write into an unread pipe cannot complete into the buffer and the stub's exit cannot be missed.
+PAYLOAD = b"keys\n" * 262144
 
 
-def _run_node_stub(tmp_path, rows: list[dict]) -> int:
+def _feed_node_stub(tmp_path, rows: list[dict], *, after_exit: bool) -> str:
+    """Pipe key JSON into the node stub as env.sh's `echo "$KEYS" | node ...` does. With `after_exit` the producer writes only once the stub has provably exited, so a stub that never reads loses the write with EPIPE (what SIGPIPE is under bash) with no timing involved; a stub that drains reads to EOF first, so it must be fed before the wait. Returns the stub's exit status, or "EPIPE"."""
     case = svc_driver.Case("pipe", "start", [], rows)
     farm = svc_driver.build_farm(tmp_path, case)
     env = svc_driver.side_env(tmp_path, farm, case)
-    return subprocess.run(["bash", "-c", SLOW_PRODUCER], env=env, check=False).returncode
+    with subprocess.Popen(
+        [str(farm.bin / "node"), "-e", "x.private)"],
+        stdin=subprocess.PIPE,
+        stdout=subprocess.DEVNULL,
+        bufsize=0,
+        env=env,
+    ) as proc:
+        assert proc.stdin is not None
+        if after_exit:
+            proc.wait()
+        try:
+            pending = memoryview(PAYLOAD)
+            while pending:  # an unbuffered write may take only what fits the pipe
+                pending = pending[proc.stdin.write(pending) :]
+            proc.stdin.close()
+        except BrokenPipeError:
+            return "EPIPE"
+        return str(proc.wait())
 
 
 def test_the_keygen_node_stub_drains_stdin_like_node(tmp_path) -> None:
-    """REGRESSION (2026-11-17, ci:quick under load): `start/preferred-busy` exited 141. `env.sh` pipes the key JSON into `node` under pipefail; the stub answered without reading, so `echo` hit a closed pipe and SIGPIPE ended env.sh. The control row (no drain) must reproduce 141 every time, the KEYGEN row must not."""
+    """REGRESSION (2026-11-17, ci:quick under load): `start/preferred-busy` exited 141. `env.sh` pipes the key JSON into `node` under pipefail; the stub answered without reading, so `echo` hit a closed pipe and SIGPIPE ended env.sh. The producer writes after the consumer has exited, so the control row (no drain) loses the write every time and the KEYGEN row, which reads to EOF and so cannot have exited, never does."""
     undrained = [svc_driver.row("node", "-e *.private)*", out="PRIVKEY")]
-    assert _run_node_stub(tmp_path / "control", undrained) == 141
+    assert _feed_node_stub(tmp_path / "control", undrained, after_exit=True) == "EPIPE"
     keygen = [r for r in svc_driver.KEYGEN if r["name"] == "node" and ".private)" in r["glob"]]
     assert len(keygen) == 1
-    assert _run_node_stub(tmp_path / "fixed", keygen) == 0
+    assert _feed_node_stub(tmp_path / "fixed", keygen, after_exit=False) == "0"
 
 
 def test_a_transcript_difference_is_a_divergence() -> None:
