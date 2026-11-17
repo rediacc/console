@@ -3,7 +3,9 @@
  *
  * The contract is frozen: the Python guard (block_unverified_push.py) and the parity test implement exactly the same bytes, so a change here is a change to three files. Pure functions over a git tree object: nothing reads the worktree, which is what makes a hash a statement about the judged tree rather than about whatever is on disk.
  *
- * A gate's `inputHash` is null (the gate always runs) when it cannot be carried: it carries an `env` entry, is listed in carry-exempt.json, has a leaf closure at its cap, has a `needs` node that is itself null, or has a glob this grammar does not define. `reason` names which.
+ * A gate's `inputHash` is null (the gate always runs) when it cannot be carried: it carries an `env` entry, is listed in carry-exempt.json, has a leaf closure at its cap, has a `needs` node whose hash is null, or has a glob this grammar does not define. `reason` names which. A `needs` node that is a producer (`gate: false`) contributes its `artifactHash`, which an `env` or exempt producer still has, so build:www's GITHUB_TOKEN no longer makes its 14 dependents uncarriable (PLAN-ciquick-cpu A4). The guard never recomputes `inputHash` (it recomputes `defHash` and `filesHash` and compares `inputHash` with the archived origin receipt), so the artifact edge has no Python twin to move.
+ *
+ * CARRY READS EVERY ARCHIVED RECEIPT (A1). `planCarry` takes the receipts under `.ci/cache/receipts/` newest first and, per gate, the newest one that judged that exact inputHash ok or fail decides: ok carries, fail re-runs. A red then a one-line fix keeps every gate the fix does not reach, from whichever receipt last judged it.
  *
  * A GATE THAT DECLARES NO `paths` READS THE WHOLE TREE, so its input glob is `**` and its hash moves on any tracked change: it carries only across an identical tree. That is what `paths` absent has always meant to `--changed` and to quick-select's rule 4 (any change may reach it). The guard needs no second rule, because it recomputes `filesHash` from the recorded `inputs` at the pushed tree, `**` included. 343 of 392 gates declare no paths, so before this a re-run at an unchanged HEAD carried 31 gates and re-ran the rest.
  *
@@ -142,6 +144,22 @@ export function inputHash(def: string, files: string, salt: string, needs: strin
   );
 }
 
+/** `artifact\n<def>\n<files>\n<sorted producer artifact hashes>`: what a producer's output is built from. No salt: the dependent's own inputHash carries it. */
+export function artifactHash(def: string, files: string, needs: string[]): string {
+  return sha(
+    `artifact\n${def}\n${files}\n${[...needs].sort((a, b) => Number(a > b) - Number(a < b)).join('\n')}`
+  );
+}
+
+/** The kind for an exempt id, null for an exempt row naming none, undefined when the id is not exempt. */
+function exemptKindOf(
+  exempt: Set<string> | ReadonlyMap<string, string | null>,
+  id: string
+): string | null | undefined {
+  if (exempt instanceof Set) return exempt.has(id) ? null : undefined;
+  return exempt.has(id) ? (exempt.get(id) ?? null) : undefined;
+}
+
 export interface GateHash {
   id: string;
   inputHash: string | null;
@@ -149,6 +167,12 @@ export interface GateHash {
   filesHash: string;
   inputs: { globs: string[]; files: string[]; scripts: string[] };
   reason: string | null;
+  /**
+   * What a DEPENDENT reads when its `needs` edge only orders an artifact (the producer is a `gate: false` build step): sha(def, files, the artifact hashes of the producer's own producers). Not nullable for `env`, `exempt` or `needs-null`, because none of them changes which inputs build the artifact; null only where the inputs themselves are unknown (no lock entry, a forbidden glob, a float, a capped leaf closure, a cycle) or a producer upstream has no artifact hash.
+   */
+  artifactHash: string | null;
+  /** The carry-exempt.json `kind` for an exempt gate (`clock|history|network|cache`), null when the gate is not exempt or the row names none. */
+  exemptKind: string | null;
 }
 
 export type LockEntry = {
@@ -160,7 +184,8 @@ export type LockEntry = {
 };
 
 export interface HashOpts {
-  exempt: Set<string>;
+  /** Exempt ids, or the id -> kind map `exemptRowsOf` reads (a kind of null when the row names none). */
+  exempt: Set<string> | ReadonlyMap<string, string | null>;
   scriptsOf: (id: string) => Record<string, string>;
   leafFilesOf: (id: string) => { files: string[]; capped: boolean };
 }
@@ -224,35 +249,59 @@ export function computeGateHashes(
         scripts: Object.keys(scripts).sort((a, b) => Number(a > b) - Number(a < b)),
       },
       reason: null,
+      artifactHash: null,
+      exemptKind: null,
     };
     result.set(id, gh);
     if (!entry) {
       gh.reason = 'no-lock-entry';
       return gh;
     }
-    if (paths.some((p) => FORBIDDEN_GLOB_CHARS.some((c) => p.includes(c)))) {
+    const exemptKind = exemptKindOf(opts.exempt, id);
+    const needs = [...(entry.needs ?? [])].sort((a, b) => Number(a > b) - Number(a < b));
+    /** THE ARTIFACT EDGE (PLAN-ciquick-cpu A4). A `needs` on a producer (`gate: false`, a build step) only orders the artifact it writes, so the dependent reads the producer's artifact hash, which an `env` or carry-exempt producer still has. A `needs` on a gate keeps that gate's nullable inputHash: its verdict, not an artifact, is what the edge orders. */
+    const needHash = (n: string): string | null => {
+      const nh = compute(n);
+      return lock[n]?.gate === false ? nh.artifactHash : nh.inputHash;
+    };
+    const forbidden = paths.some((p) => FORBIDDEN_GLOB_CHARS.some((c) => p.includes(c)));
+    const floats = hasFloat(entry);
+    const capped = !wholeTree && leaf.capped;
+    if (!forbidden && !floats && !capped) {
+      // The artifact hash first: it holds for an exempt or env producer too, so it is computed whatever reason is named below.
+      const artifactNeeds: string[] = [];
+      for (const n of needs) {
+        const ah = compute(n).artifactHash;
+        if (ah === null) break;
+        artifactNeeds.push(ah);
+      }
+      if (artifactNeeds.length === needs.length)
+        gh.artifactHash = artifactHash(def, fh, artifactNeeds);
+    }
+    if (forbidden) {
       gh.reason = 'forbidden-glob';
-    } else if (hasFloat(entry)) {
+    } else if (floats) {
       gh.reason = 'float-in-entry';
-    } else if (opts.exempt.has(id)) {
+    } else if (exemptKind !== undefined) {
       // Named in carry-exempt.json before the generic reasons: a gate that reads live state (and so declares no paths, or an env) is exempt BY NAME, and the report should say so.
       gh.reason = 'exempt';
+      gh.exemptKind = exemptKind;
     } else if (entry.env !== undefined && Object.keys(entry.env).length > 0) {
       gh.reason = 'env';
-    } else if (!wholeTree && leaf.capped) {
+    } else if (capped) {
       gh.reason = 'leaf-cap';
     } else if (inProgress.has(id)) {
       gh.reason = 'needs-cycle';
     } else {
       inProgress.add(id);
       const needHashes: string[] = [];
-      for (const n of [...(entry.needs ?? [])].sort((a, b) => Number(a > b) - Number(a < b))) {
-        const nh = compute(n);
-        if (nh.inputHash === null) {
+      for (const n of needs) {
+        const nh = needHash(n);
+        if (nh === null) {
           gh.reason = `needs-null:${n}`;
           break;
         }
-        needHashes.push(nh.inputHash);
+        needHashes.push(nh);
       }
       inProgress.delete(id);
       if (gh.reason === null) gh.inputHash = inputHash(def, fh, salt, needHashes);
@@ -283,9 +332,25 @@ export interface PriorReceipt {
   gates: Record<string, PriorGate>;
 }
 
-/** Which selected gates keep the prior verdict and which run. Only an `ok` carries: a prior `fail` at unchanged inputs re-runs and is named in `rejudged`, because an environment-caused red (a killed npm, a starved gate) must not outlive its cause, and a real red reproduces. */
+/** A prior receipt carries only when it is schema 2, whole, names its tree, and was judged under this salt. */
+function usablePrior(prior: PriorReceipt, salt: string): boolean {
+  return (
+    prior.schema === SCHEMA &&
+    prior.whole === true &&
+    prior.headTree !== '' &&
+    prior.saltHash === salt
+  );
+}
+
+/**
+ * Which selected gates keep a prior verdict and which run.
+ *
+ * `priors` is every receipt the destination still holds (the latest and the archive under `.ci/cache/receipts/`), NEWEST FIRST. Per gate, the newest usable receipt holding that gate at the current inputHash with a verdict of `ok` or `fail` DECIDES: `ok` carries, `fail` re-runs and is named in `rejudged`, because an environment-caused red (a killed npm, a starved gate) must not outlive its cause, and a real red reproduces. An older green never outvotes a newer red at the same inputs. A `blocked` or `deferred` entry judged nothing, so the search goes on past it.
+ *
+ * A carried entry names its ORIGIN (`carriedFrom`, kept from a receipt that itself carried it). The push guard re-reads that origin from the archive and refuses unless its inputHash, verdict and findings match, so a candidate whose origin is not among `priors` (pruned, or overwritten by a later run at that tree) is passed over here rather than refused there.
+ */
 export function planCarry(
-  prior: PriorReceipt | null,
+  priors: readonly PriorReceipt[],
   current: Map<string, GateHash>,
   selected: string[],
   salt: string
@@ -293,40 +358,46 @@ export function planCarry(
   const carry = new Map<string, PriorGate>();
   const run: string[] = [];
   const rejudged: string[] = [];
-  const usable =
-    prior !== null &&
-    prior.schema === SCHEMA &&
-    prior.whole === true &&
-    prior.headTree !== '' &&
-    prior.saltHash === salt;
+  const usable = priors.filter((p) => usablePrior(p, salt));
+  const byTree = new Map<string, PriorReceipt>();
+  for (const p of usable) if (!byTree.has(p.headTree)) byTree.set(p.headTree, p);
+  /** The guard's origin check (`_carried_refusal`), run before carrying: the receipt `carriedFrom` names must be held, and agree on inputHash, verdict and findings. */
+  const originHolds = (id: string, pg: PriorGate): boolean => {
+    if (pg.carriedFrom === null || pg.carriedFrom === undefined) return true;
+    const was = byTree.get(pg.carriedFrom.headTree)?.gates[id];
+    return (
+      was !== undefined &&
+      was.inputHash === pg.inputHash &&
+      was.verdict === pg.verdict &&
+      JSON.stringify(was.findings ?? null) === JSON.stringify(pg.findings ?? null)
+    );
+  };
   for (const id of selected) {
-    const pg = usable ? prior.gates[id] : undefined;
     const cur = current.get(id);
-    if (
-      usable &&
-      pg !== undefined &&
-      cur !== undefined &&
-      cur.inputHash !== null &&
-      pg.inputHash === cur.inputHash &&
-      pg.verdict === 'ok'
-    ) {
+    let decided: { pg: PriorGate; from: PriorReceipt } | undefined;
+    if (cur !== undefined && cur.inputHash !== null) {
+      for (const p of usable) {
+        const pg = p.gates[id];
+        if (pg === undefined || pg.inputHash !== cur.inputHash) continue;
+        if (pg.verdict !== 'ok' && pg.verdict !== 'fail') continue;
+        if (pg.verdict === 'ok' && !originHolds(id, pg)) continue;
+        decided = { pg, from: p };
+        break;
+      }
+    }
+    if (decided?.pg.verdict === 'ok') {
+      const { pg, from } = decided;
       carry.set(id, {
         ...pg,
         carriedFrom: pg.carriedFrom ?? {
-          headTree: prior.headTree,
-          head: prior.head,
-          finishedAt: prior.finishedAt,
+          headTree: from.headTree,
+          head: from.head,
+          finishedAt: from.finishedAt,
         },
       });
     } else {
       run.push(id);
-      if (
-        usable &&
-        pg?.verdict === 'fail' &&
-        cur?.inputHash != null &&
-        pg.inputHash === cur.inputHash
-      )
-        rejudged.push(id);
+      if (decided?.pg.verdict === 'fail') rejudged.push(id);
     }
   }
   return { carry, run, rejudged };
@@ -378,9 +449,19 @@ export function inputHashSelftest(tmpDir: string): void {
       'g:needsok': { id: 'g:needsok', run: 'x', paths: ['src/**'], needs: ['g:src'] },
       'g:gitlink': { id: 'g:gitlink', run: 'x', paths: ['private/x'] },
       'g:gitlink2': { id: 'g:gitlink2', run: 'x', paths: ['private/x/**'] },
+      // THE ARTIFACT EDGE: a producer (gate: false) with an env, and a dependent of it; a gate with an env stays a verdict edge.
+      'p:build': { id: 'p:build', run: 'x', gate: false, paths: ['src/**'], env: { T: 'v' } },
+      'g:onbuild': { id: 'g:onbuild', run: 'x', paths: ['other.txt'], needs: ['p:build'] },
+      'p:exbuild': { id: 'p:exbuild', run: 'x', gate: false, paths: ['src/**'] },
+      'g:onexbuild': { id: 'g:onexbuild', run: 'x', paths: ['other.txt'], needs: ['p:exbuild'] },
+      'p:forbid': { id: 'p:forbid', run: 'x', gate: false, paths: ['src/{a}.ts'] },
+      'g:onforbid': { id: 'g:onforbid', run: 'x', paths: ['other.txt'], needs: ['p:forbid'] },
     };
     const mk = (r: string, scripts: Record<string, string> = {}) => ({
-      exempt: new Set(['g:exempt']),
+      exempt: new Map<string, string | null>([
+        ['g:exempt', 'clock'],
+        ['p:exbuild', 'network'],
+      ]),
       scriptsOf: () => scripts,
       leafFilesOf: () => ({ files: [] as string[], capped: false }),
       root: r,
@@ -415,6 +496,46 @@ export function inputHashSelftest(tmpDir: string): void {
       get(h1, 'g:gitlink').filesHash === get(h1, 'g:gitlink2').filesHash &&
         get(h1, 'g:gitlink').filesHash !== get(h1, 'g:nopaths').filesHash,
       'a glob naming a gitlink, bare or /**, reaches the gitlink entry'
+    );
+    must(
+      get(h1, 'p:build').reason === 'env' &&
+        get(h1, 'p:build').artifactHash !== null &&
+        get(h1, 'g:onbuild').inputHash !== null,
+      `a needs on an env PRODUCER hashes through its artifact and stays carriable, got ${get(h1, 'g:onbuild').reason}`
+    );
+    must(
+      get(h1, 'g:onexbuild').inputHash !== null && get(h1, 'p:exbuild').exemptKind === 'network',
+      'a needs on a carry-exempt producer stays carriable, and the exempt kind is recorded'
+    );
+    must(
+      get(h1, 'g:exempt').exemptKind === 'clock' && get(h1, 'g:src').exemptKind === null,
+      'exemptKind names the row kind for an exempt gate and is null otherwise'
+    );
+    must(
+      get(h1, 'p:forbid').artifactHash === null &&
+        get(h1, 'g:onforbid').reason === 'needs-null:p:forbid',
+      'CONTROL: a producer whose inputs are unknown (a forbidden glob) has no artifact hash, so its dependent stays null'
+    );
+    must(
+      get(h1, 'g:needsnull').reason === 'needs-null:g:env',
+      'CONTROL: a needs on an env GATE (not a producer) still propagates null: that edge orders a verdict'
+    );
+    must(
+      exemptRowsOf(
+        '{"schema":1,"exempt":[{"id":"a","reason":"r","kind":"cache"},{"id":"b","reason":"r"}]}'
+      ).get('a') === 'cache' &&
+        exemptRowsOf('{"schema":1,"exempt":[{"id":"b","reason":"r"}]}').get('b') === null,
+      'exemptRowsOf reads a kind, and null for a row naming none'
+    );
+    let badKind = '';
+    try {
+      exemptRowsOf('{"schema":1,"exempt":[{"id":"a","reason":"r","kind":"weather"}]}');
+    } catch (err) {
+      badKind = (err as Error).message;
+    }
+    must(
+      badKind.includes('weather'),
+      'a kind outside EXEMPT_KINDS is refused, never read as no kind'
     );
 
     // filesHash reacts to an input file and not to a non-input file
@@ -454,6 +575,11 @@ export function inputHashSelftest(tmpDir: string): void {
     must(
       get(h3, 'g:needsok').inputHash !== get(h2, 'g:needsok').inputHash,
       'a needs input change must move the dependent'
+    );
+    must(
+      get(h3, 'g:onbuild').inputHash !== get(h2, 'g:onbuild').inputHash &&
+        get(h2, 'p:build').artifactHash === get(h1, 'p:build').artifactHash,
+      'a change to the PRODUCER inputs (src/, not a path of the dependent) must move the dependent through the artifact hash; CONTROL: a non-input change leaves the artifact hash alone'
     );
 
     // defHash reacts to the entry's run
@@ -496,7 +622,7 @@ export function inputHashSelftest(tmpDir: string): void {
       ...over,
     });
     const sel = ['g:src', 'g:needsok', 'g:nopaths'];
-    const okPlan = planCarry(mkPrior('ok'), h3, sel, salt);
+    const okPlan = planCarry([mkPrior('ok')], h3, sel, salt);
     must(
       okPlan.carry.has('g:src') && okPlan.carry.get('g:src')?.verdict === 'ok',
       'an equal-hash ok carries'
@@ -509,7 +635,7 @@ export function inputHashSelftest(tmpDir: string): void {
       okPlan.run.includes('g:needsok') && okPlan.run.includes('g:nopaths'),
       'a changed hash and a null hash re-run'
     );
-    const failPlan = planCarry(mkPrior('fail'), h3, sel, salt);
+    const failPlan = planCarry([mkPrior('fail')], h3, sel, salt);
     must(
       !failPlan.carry.has('g:src') && failPlan.run.includes('g:src'),
       'an equal-hash fail re-runs, never carries'
@@ -518,27 +644,69 @@ export function inputHashSelftest(tmpDir: string): void {
       failPlan.rejudged.join() === 'g:src' && okPlan.rejudged.length === 0,
       `rejudged names the equal-hash fail and nothing for an ok prior, got ${failPlan.rejudged.join()} / ${okPlan.rejudged.join()}`
     );
-    const blocked = planCarry(mkPrior('blocked'), h3, sel, salt);
+    const blocked = planCarry([mkPrior('blocked')], h3, sel, salt);
     must(!blocked.carry.has('g:src'), 'a blocked verdict never carries');
-    const saltPlan = planCarry(mkPrior('ok', { saltHash: 'different' }), h3, sel, salt);
+    const saltPlan = planCarry([mkPrior('ok', { saltHash: 'different' })], h3, sel, salt);
     must(
       saltPlan.carry.size === 0 && saltPlan.run.length === sel.length,
       'a salt mismatch re-runs everything'
     );
     must(
-      planCarry(mkPrior('ok', { whole: false }), h3, sel, salt).carry.size === 0,
+      planCarry([mkPrior('ok', { whole: false })], h3, sel, salt).carry.size === 0,
       'a partial prior never carries'
     );
     must(
-      planCarry(mkPrior('ok', { schema: 1 }), h3, sel, salt).carry.size === 0,
+      planCarry([mkPrior('ok', { schema: 1 })], h3, sel, salt).carry.size === 0,
       'a v1 prior never carries'
     );
-    must(planCarry(null, h3, sel, salt).run.length === sel.length, 'no prior runs everything');
+    must(planCarry([], h3, sel, salt).run.length === sel.length, 'no prior runs everything');
+    const origin = mkPrior('ok', { headTree: 'orig', head: 'o', finishedAt: 'f' });
     const prior2 = mkPrior('ok');
     prior2.gates['g:src'].carriedFrom = { headTree: 'orig', head: 'o', finishedAt: 'f' };
     must(
-      planCarry(prior2, h3, sel, salt).carry.get('g:src')?.carriedFrom?.headTree === 'orig',
+      planCarry([prior2, origin], h3, sel, salt).carry.get('g:src')?.carriedFrom?.headTree ===
+        'orig',
       'an existing carriedFrom is kept'
+    );
+    must(
+      !planCarry([prior2], h3, sel, salt).carry.has('g:src'),
+      'a carry whose origin receipt is not held is passed over: the push guard would refuse it'
+    );
+
+    // A1: CARRY ACROSS RECEIPTS. A gate judged ok two runs back carries through a newer receipt that never judged it at this hash.
+    const twoBack = mkPrior('ok', {
+      headTree: 'tOld',
+      head: 'hOld',
+      finishedAt: '2026-10-05T00:00:00Z',
+    });
+    const redSince = mkPrior('fail', { headTree: 'tMid', head: 'hMid' });
+    redSince.gates['g:src'] = { ...redSince.gates['g:src'], inputHash: 'other-hash' };
+    const across = planCarry([redSince, twoBack], h3, sel, salt);
+    must(
+      across.carry.get('g:src')?.carriedFrom?.headTree === 'tOld' && across.rejudged.length === 0,
+      `a gate judged ok at this inputHash two receipts back carries from that receipt, got ${JSON.stringify(across.carry.get('g:src')?.carriedFrom)}`
+    );
+    const movedHash = new Map(h3);
+    movedHash.set('g:src', { ...get(h3, 'g:src'), inputHash: 'changed' });
+    must(
+      planCarry([redSince, twoBack], movedHash, sel, salt).run.includes('g:src'),
+      'CONTROL: a changed inputHash carries from no receipt, however many are held'
+    );
+    const newerRed = mkPrior('fail', { headTree: 'tNew', head: 'hNew' });
+    const outvoted = planCarry([newerRed, twoBack], h3, sel, salt);
+    must(
+      !outvoted.carry.has('g:src') && outvoted.rejudged.join() === 'g:src',
+      'a NEWER red at the same inputHash outvotes an older green: it re-runs and is rejudged'
+    );
+    const newerBlocked = mkPrior('blocked', { headTree: 'tNew', head: 'hNew' });
+    must(
+      planCarry([newerBlocked, twoBack], h3, sel, salt).carry.get('g:src')?.carriedFrom
+        ?.headTree === 'tOld',
+      'a newer blocked entry judged nothing, so the older green at that hash still carries'
+    );
+    must(
+      planCarry([mkPrior('ok', { saltHash: 'x' }), twoBack], h3, sel, salt).carry.has('g:src'),
+      'a receipt under another salt is skipped, not fatal to the rest'
     );
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
@@ -556,22 +724,35 @@ function showAt(tree: string, file: string): string | null {
 /** The policy listing gates whose verdict moves without a tracked input moving (network, clock, history, cache). */
 export const CARRY_EXEMPT_REL = path.relative('.', policyPath('carry-exempt.json', '.'));
 
+/** Why a carry-exempt gate's verdict moves with no tracked input moving (PLAN-ciquick-cpu A4): the wall clock, git history, the network, or an untracked cache. */
+export const EXEMPT_KINDS = ['clock', 'history', 'network', 'cache'] as const;
+
 /**
- * The exempt gate ids from carry-exempt.json's text, `{"schema": 1, "exempt": [{"id", "reason"}]}`; an absent file is the empty set.
- * One shape, read one way by the corpus printer and the runner, so the two can never disagree about what is exempt. Any other shape throws.
+ * The exempt rows of carry-exempt.json's text, `{"schema": 1, "exempt": [{"id", "reason", "kind"?}]}`, as id -> kind (null where the row names none); an absent file is the empty map.
+ * One shape, read one way by the corpus printer and the runner, so the two can never disagree about what is exempt. Any other shape throws, and so does a `kind` outside EXEMPT_KINDS; the guard's `_exempt_ids` (block_unverified_push.py) refuses the same rows.
  */
-export function exemptIdsOf(text: string | null): Set<string> {
-  if (text === null) return new Set();
+export function exemptRowsOf(text: string | null): Map<string, string | null> {
+  const rows = new Map<string, string | null>();
+  if (text === null) return rows;
   const doc = JSON.parse(text) as { schema?: unknown; exempt?: unknown };
   if (doc.schema !== 1 || !Array.isArray(doc.exempt))
     throw new Error(`${CARRY_EXEMPT_REL}: expected {"schema": 1, "exempt": [...]}`);
-  const ids = new Set<string>();
-  for (const row of doc.exempt as Array<{ id?: unknown } | null>) {
+  for (const row of doc.exempt as Array<{ id?: unknown; kind?: unknown } | null>) {
     if (typeof row?.id !== 'string' || row.id === '')
       throw new Error(`${CARRY_EXEMPT_REL}: every exempt row needs a string "id"`);
-    ids.add(row.id);
+    const kind = row.kind;
+    if (kind !== undefined && !(EXEMPT_KINDS as readonly unknown[]).includes(kind))
+      throw new Error(
+        `${CARRY_EXEMPT_REL}: ${row.id} has kind ${JSON.stringify(kind)}; a kind is one of ${EXEMPT_KINDS.join('|')}`
+      );
+    rows.set(row.id, typeof kind === 'string' ? kind : null);
   }
-  return ids;
+  return rows;
+}
+
+/** The exempt gate ids alone: `exemptRowsOf`'s keys. */
+export function exemptIdsOf(text: string | null): Set<string> {
+  return new Set(exemptRowsOf(text).keys());
 }
 
 function printCorpus(tree: string): void {
@@ -585,7 +766,7 @@ function printCorpus(tree: string): void {
   const lock: Record<string, LockEntry> = {};
   for (const e of lockList) lock[e.id] = e;
   const hashes = computeGateHashes(root, tree, lock, {
-    exempt: exemptIdsOf(showAt(tree, CARRY_EXEMPT_REL)),
+    exempt: exemptRowsOf(showAt(tree, CARRY_EXEMPT_REL)),
     scriptsOf: (id) => scriptsMapOf(String(lock[id]?.run ?? ''), pkgScripts),
     leafFilesOf: () => ({ files: [], capped: false }),
   });
@@ -597,6 +778,8 @@ function printCorpus(tree: string): void {
       inputHash: h.inputHash,
       inputs: h.inputs,
       reason: h.reason,
+      artifactHash: h.artifactHash,
+      exemptKind: h.exemptKind,
     };
   }
   process.stdout.write(`${JSON.stringify(out)}\n`);
@@ -614,8 +797,19 @@ if (isEntryPoint(import.meta.filename)) {
     }
   } else if (args[0] === '--print-corpus' && args[1]) {
     printCorpus(args[1]);
+  } else if (args[0] === '--exempt-rows') {
+    // The parity test's door to exemptRowsOf: carry-exempt.json text on stdin, `{id: kind|null}` on stdout, or exit 1 with the refusal.
+    try {
+      const rows = exemptRowsOf(fs.readFileSync(0, 'utf8'));
+      process.stdout.write(`${JSON.stringify(Object.fromEntries(rows))}\n`);
+    } catch (err) {
+      process.stderr.write(`${(err as Error).message}\n`);
+      process.exit(1);
+    }
   } else {
-    process.stderr.write('usage: input-hash.ts --selftest | --print-corpus <tree>\n');
+    process.stderr.write(
+      'usage: input-hash.ts --selftest | --print-corpus <tree> | --exempt-rows\n'
+    );
     process.exit(2);
   }
 }

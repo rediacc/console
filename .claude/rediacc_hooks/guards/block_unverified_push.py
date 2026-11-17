@@ -1547,16 +1547,26 @@ def _show_at(root, tree, rel):
     return proc.stdout.decode("utf-8") if proc.returncode == 0 else None
 
 
+#: Why an exempt gate's verdict moves with no tracked input moving; the twin of EXEMPT_KINDS in scripts/ci-runner/input-hash.ts.
+EXEMPT_KINDS = ("clock", "history", "network", "cache")
+
+
 def _exempt_ids(doc):
-    """Ids named by .ci/policy/carry-exempt.json, `{"schema": 1, "exempt": [{"id", "reason"}]}`. Any other shape is an error (ValueError), never an empty set."""
+    """Ids named by .ci/policy/carry-exempt.json, `{"schema": 1, "exempt": [{"id", "reason", "kind"?}]}`. Any other shape is an error (ValueError), never an empty set, and so is a `kind` outside EXEMPT_KINDS: input-hash.ts `exemptRowsOf` refuses the same rows, so the runner and this guard never disagree about which file is well-formed."""
     items = doc.get("exempt") if isinstance(doc, dict) else None
     if (
         not isinstance(doc, dict)
         or doc.get("schema") != 1
         or not isinstance(items, list)
-        or not all(isinstance(i, dict) and isinstance(i.get("id"), str) for i in items)
+        or not all(isinstance(i, dict) and isinstance(i.get("id"), str) and i["id"] for i in items)
     ):
         raise ValueError("carry-exempt.json is not {schema: 1, exempt: [{id, reason}]}")
+    for i in items:
+        if "kind" in i and i["kind"] not in EXEMPT_KINDS:
+            raise ValueError(
+                "carry-exempt.json: %s has kind %r; a kind is one of %s"
+                % (i["id"], i["kind"], "|".join(EXEMPT_KINDS))
+            )
     return {i["id"] for i in items}
 
 

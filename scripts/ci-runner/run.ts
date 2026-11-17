@@ -3536,8 +3536,8 @@ function mergeDroppedVerified(existing: unknown, run: OnlyRun): { merged?: Recei
   };
 }
 
-/** How many archived receipts (`receipts/<headTree>.json`) a destination keeps. */
-const RECEIPT_ARCHIVE_KEEP = 50;
+/** How many archived receipts (`receipts/<headTree>.json`) a destination keeps. Carry reads all of them (PLAN-ciquick-cpu A1), so this is how far back a verdict can still be reused; at about 340 KB each, 200 is about 70 MB on disk. */
+const RECEIPT_ARCHIVE_KEEP = 200;
 
 /** Writes `receipt` to `<dirname(dest)>/receipts/<headTree>.json`, where the guard looks up a carried entry's origin, and drops all but the newest RECEIPT_ARCHIVE_KEEP by mtime. */
 function archiveReceipt(receipt: Receipt, dest: string): void {
@@ -3567,8 +3567,8 @@ interface IncrementalInput {
   scripts: Record<string, string>;
   /** carry-exempt.json's text at `tree`, or null. */
   exemptText: string | null;
-  /** The receipt at the destination before this run replaces it. */
-  prior: PriorReceipt | null;
+  /** Every receipt the destination holds before this run replaces it, newest first: the latest and the archive (`loadPriorReceipts`). */
+  priors: readonly PriorReceipt[];
   disposable: boolean;
   /** The gate ids the run selected. */
   selected: string[];
@@ -3579,13 +3579,13 @@ interface IncrementalInput {
  */
 function decideCarry(input: {
   disposable: boolean;
-  prior: PriorReceipt | null;
+  priors: readonly PriorReceipt[];
   hashes: Map<string, GateHash>;
   selected: string[];
   salt: string;
 }): { carry: Map<string, PriorGate>; run: string[]; rejudged: string[] } {
   if (!input.disposable) return { carry: new Map(), run: [...input.selected], rejudged: [] };
-  return planCarry(input.prior, input.hashes, input.selected, input.salt);
+  return planCarry(input.priors, input.hashes, input.selected, input.salt);
 }
 
 /** Hashes every gate at the judged tree, then decides which selected gates keep the prior verdict. */
@@ -3613,7 +3613,7 @@ function incrementalPlan(input: IncrementalInput): {
 /** The incremental inputs a real run reads from git at `tree`; undefined when the lock or package.json cannot be read. */
 function incrementalInputOf(
   tree: string,
-  prior: PriorReceipt | null,
+  priors: readonly PriorReceipt[],
   disposable: boolean,
   selected: string[]
 ): IncrementalInput | undefined {
@@ -3628,10 +3628,40 @@ function incrementalInputOf(
     lock,
     scripts: (JSON.parse(pkgText) as { scripts?: Record<string, string> }).scripts ?? {},
     exemptText: gitTry(['show', `${tree}:${CARRY_EXEMPT_REL}`]) ?? null,
-    prior,
+    priors,
     disposable,
     selected,
   };
+}
+
+/**
+ * Every receipt `dest` still holds, NEWEST FIRST by `finishedAt`: the latest file and each archived `receipts/<headTree>.json` beside it (PLAN-ciquick-cpu A1). Before this the carry read the latest file alone, so a red run followed by a one-line fix threw away every verdict the archive still held. A file that does not parse, or is not an object, is skipped: `planCarry` judges usability, and an unreadable receipt can only cost a re-run.
+ */
+export function loadPriorReceipts(dest: string): PriorReceipt[] {
+  const out: PriorReceipt[] = [];
+  const read = (file: string): void => {
+    try {
+      const doc = JSON.parse(fs.readFileSync(file, 'utf8')) as unknown;
+      if (doc !== null && typeof doc === 'object' && !Array.isArray(doc))
+        out.push(doc as PriorReceipt);
+    } catch {
+      // absent or unreadable: nothing to carry from it
+    }
+  };
+  read(dest);
+  const dir = path.join(path.dirname(dest), 'receipts');
+  let names: string[] = [];
+  try {
+    names = fs.readdirSync(dir).filter((n) => n.endsWith('.json'));
+  } catch {
+    names = [];
+  }
+  for (const n of names.sort()) read(path.join(dir, n));
+  // Stable: the latest file was read first, so on a tie with its own archive copy it stays first.
+  return out
+    .map((r, i) => ({ r, i, at: typeof r.finishedAt === 'string' ? r.finishedAt : '' }))
+    .sort((a, b) => (a.at === b.at ? a.i - b.i : a.at < b.at ? 1 : -1))
+    .map((x) => x.r);
 }
 
 /** `failed`, `findings` and `exitCode` over fresh AND carried verdicts. `decideCarry` carries only greens, so a carried entry is never `fail`; one that is still counts as failed rather than vanishing from `failed`. */
@@ -3775,7 +3805,7 @@ function incrementalSelftest(tmpDir: string): { failures: string[]; assertions: 
     const specs = ids.map((id) => syntheticSpec(id, 'true'));
     const plan = (
       tree: string,
-      prior: PriorReceipt | null,
+      prior: PriorReceipt | readonly PriorReceipt[] | null,
       opts: { lock?: Record<string, LockEntry>; disposable?: boolean } = {}
     ) =>
       incrementalPlan({
@@ -3784,7 +3814,7 @@ function incrementalSelftest(tmpDir: string): { failures: string[]; assertions: 
         lock: opts.lock ?? lockOf('true'),
         scripts: {},
         exemptText: null,
-        prior,
+        priors: prior === null ? [] : Array.isArray(prior) ? prior : [prior as PriorReceipt],
         disposable: opts.disposable ?? true,
         selected: ids,
       });
@@ -3967,6 +3997,51 @@ function incrementalSelftest(tmpDir: string): { failures: string[]; assertions: 
         sparse(mixed)['s:ran']?.verdict === 'blocked' &&
         mixed['s:ran'].inputHash === null,
       `receiptGates must name deferred, ciOnly and blocked (a skipped gate), got ${JSON.stringify(mixed)}`
+    );
+
+    // A1: CARRY FROM A RECEIPT TWO RUNS BACK. r1 judged b/y.txt at y1 green; a red run at a broken b/y.txt follows; restoring y1 must carry g:b from r1 even though the newest receipt never judged that hash.
+    write('b/y.txt', 'yBAD\n');
+    const tBad = commit('break b');
+    const badPlan = plan(tBad, r1);
+    const rBad = { ...receiptOf(tBad, badPlan, { 'g:b': 'fail' }), finishedAt: 'z-later' };
+    write('b/y.txt', 'y1\n');
+    const tFix = commit('fix b');
+    const fixed = plan(tFix, [rBad, r1]);
+    check(
+      fixed.carry.get('g:b')?.carriedFrom?.headTree === t1 && fixed.rejudged.length === 0,
+      `A1: the fix restores the inputs r1 judged green two runs back, so g:b carries from r1; carried ${[...fixed.carry.keys()].join()} ran ${fixed.run.join()}`
+    );
+    check(
+      plan(tFix, rBad).run.includes('g:b'),
+      'CONTROL: with only the latest (red) receipt, as before A1, the restored gate runs'
+    );
+    write('b/y.txt', 'y9\n');
+    const tOther = commit('other b');
+    check(
+      plan(tOther, [rBad, r1]).run.includes('g:b'),
+      'CONTROL: an inputHash no receipt judged carries from none of them'
+    );
+    // loadPriorReceipts: the latest file and the archive, newest first.
+    const ldest = path.join(root, 'load', 'receipt.json');
+    fs.mkdirSync(path.join(root, 'load', 'receipts'), { recursive: true });
+    fs.writeFileSync(ldest, JSON.stringify({ ...r1, finishedAt: '2026-01-03' }));
+    fs.writeFileSync(
+      path.join(root, 'load', 'receipts', 'a.json'),
+      JSON.stringify({ ...r1, headTree: 'a', finishedAt: '2026-01-01' })
+    );
+    fs.writeFileSync(
+      path.join(root, 'load', 'receipts', 'b.json'),
+      JSON.stringify({ ...r1, headTree: 'b', finishedAt: '2026-01-02' })
+    );
+    fs.writeFileSync(path.join(root, 'load', 'receipts', 'c.json'), 'not json');
+    const loaded = loadPriorReceipts(ldest).map((r) => r.finishedAt);
+    check(
+      loaded.join() === '2026-01-03,2026-01-02,2026-01-01',
+      `loadPriorReceipts reads the latest and the archive newest first and skips an unreadable file, got ${loaded.join()}`
+    );
+    check(
+      loadPriorReceipts(path.join(root, 'nowhere', 'receipt.json')).length === 0,
+      'CONTROL: no receipt at all loads none'
     );
 
     // The archive keeps the newest RECEIPT_ARCHIVE_KEEP, and the one just written.
@@ -5173,18 +5248,13 @@ async function main(): Promise<number> {
   let hashes = new Map<string, GateHash>();
   let salt = '';
   if (recording && headTreeAtStart !== '') {
-    let prior: PriorReceipt | null = null;
-    try {
-      prior = JSON.parse(fs.readFileSync(receiptPathFor(opts), 'utf8')) as PriorReceipt;
-    } catch {
-      prior = null;
-    }
+    const priors = loadPriorReceipts(receiptPathFor(opts));
     // NOTHING CARRIES when quick-clone.ts says so: a clone made this run holds no build output while a carried prerequisite leaves `needs` and is not rebuilt, and `--no-carry` asks for every gate to be judged again.
     const noCarry = process.env[NO_CARRY_ENV] === '1';
     if (noCarry) humanOut('incremental: carry is off for this run, every selected gate runs\n');
     const input = incrementalInputOf(
       headTreeAtStart,
-      narrowingFlags(opts).length === 0 && !noCarry ? prior : null,
+      narrowingFlags(opts).length === 0 && !noCarry ? priors : [],
       disposable,
       [...selection.ids]
     );
@@ -5198,7 +5268,7 @@ async function main(): Promise<number> {
       if (disposable) {
         const uncarriable = plan.run.filter((id) => hashes.get(id)?.inputHash === null).length;
         humanOut(
-          `incremental: ${carry.size} carried, ${plan.run.length} run (${uncarriable} that may never carry: an env entry, carry-exempt.json, or such a prerequisite; ${plan.rejudged.length} red at unchanged inputs, re-judged because a red never carries)\n`
+          `incremental: ${carry.size} carried from ${new Set([...carry.values()].map((pg) => pg.carriedFrom?.headTree)).size} of ${input.priors.length} held receipt(s), ${plan.run.length} run (${uncarriable} that may never carry: an env entry, carry-exempt.json, or such a prerequisite; ${plan.rejudged.length} red at unchanged inputs, re-judged because a red never carries)\n`
         );
         if (plan.rejudged.length > 0) humanOut(`  re-judged: ${plan.rejudged.join(', ')}\n`);
         const named = [...carry.keys()].slice(0, 10);
