@@ -3479,6 +3479,7 @@
         "mutuallyExclusive": "--current ve --rotate-secret karşılıklı dışlayıcıdır. Birini seçin: önceki değeri doğrulamak için --current veya doğrulama olmadan döndürmek için --rotate-secret."
       },
       "networkIdInUse": "\"{{repository}}\" deposunun {{networkId}} ağ kimliği, \"{{machine}}\" makinesinde zaten {{holder}} tarafından kullanılıyor. Makinenin kaydettiği kimlikleri almak için `rdc config reconcile` çalıştırın.",
+      "networkIdNotRecorded": "\"{{machine}}\" makinesi \"{{repository}}\" deposunu barındırıyor ancak onun için ağ kimliği kaydetmemiş, bu yüzden devralınacak bir kimlik yok. Depoyu makinede bir kez başlatın, ardından `rdc config reconcile` çalıştırın.",
       "networkIdUndiscoverable": "\"{{repository}}\" deposunun bu yapılandırmada ağ kimliği yok ve \"{{machine}}\" makinesine sorulamadı. Makineye erişilebildiğinde yeniden deneyin ya da `rdc config reconcile` çalıştırın.",
       "networkIdDiverged": "\"{{repository}}\" deposunun bu yapılandırmadaki ağ kimliği {{localId}} idi, ancak \"{{machine}}\" makinesi {{machineId}} kaydediyor. Artık makinenin kimliği geçerli."
     },

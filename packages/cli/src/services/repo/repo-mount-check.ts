@@ -112,6 +112,8 @@ export interface RepoNetworkProbe {
   present: boolean;
   /** The repo's network ID from renet's state mirror, when recorded. */
   networkId?: number;
+  /** renet lists the repo as a fork; a never-up fork records no network ID by design. */
+  isFork?: boolean;
   /** Every network ID the listed repos in this datastore record (the floor's fallback on a renet without `network_used`). */
   listedIds: number[];
 }
@@ -158,6 +160,7 @@ export async function probeRepoNetwork(
   return {
     present: entry !== undefined,
     ...(networkId !== undefined && { networkId }),
+    ...(entry?.is_fork === true && { isFork: true }),
     listedIds,
   };
 }

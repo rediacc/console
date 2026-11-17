@@ -3479,6 +3479,7 @@
         "mutuallyExclusive": "--current und --rotate-secret schließen sich gegenseitig aus. Wählen Sie eines: --current zum Verifizieren des vorherigen Werts oder --rotate-secret zum Rotieren ohne Verifizierung."
       },
       "networkIdInUse": "Die Netzwerk-ID {{networkId}} des Repositorys \"{{repository}}\" ist auf der Maschine \"{{machine}}\" bereits durch {{holder}} belegt. Mit `rdc config reconcile` werden die IDs übernommen, die die Maschine kennt.",
+      "networkIdNotRecorded": "Maschine \"{{machine}}\" enthält das Repository \"{{repository}}\", hat dafür aber keine Netzwerk-ID erfasst, daher lässt sich keine übernehmen. Starte das Repository einmal auf der Maschine und führe dann `rdc config reconcile` aus.",
       "networkIdUndiscoverable": "Für das Repository \"{{repository}}\" ist in dieser Konfiguration keine Netzwerk-ID hinterlegt, und die Maschine \"{{machine}}\" war nicht erreichbar, um sie abzufragen. Sobald die Maschine erreichbar ist, erneut versuchen oder `rdc config reconcile` ausführen.",
       "networkIdDiverged": "Das Repository \"{{repository}}\" hatte in dieser Konfiguration die Netzwerk-ID {{localId}}, die Maschine \"{{machine}}\" führt jedoch {{machineId}}. Die ID der Maschine wurde übernommen."
     },

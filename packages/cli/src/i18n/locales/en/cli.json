@@ -3476,6 +3476,7 @@
       "canaryNeedsCluster": "Repository \"{{ref}}\" is not in a cluster. A canary splits traffic between two deployments, so it needs a kubernetes-placed repository.",
       "listTargetExclusive": "Pass at most one of -m or --datastore. A datastore already knows which machine holds it.",
       "networkIdInUse": "Network ID {{networkId}} for repository \"{{repository}}\" is already held by {{holder}} on machine \"{{machine}}\". Run `rdc config reconcile` to adopt the IDs the machine records.",
+      "networkIdNotRecorded": "Machine \"{{machine}}\" holds repository \"{{repository}}\" but records no network ID for it, so none can be adopted. Bring the repository up once on the machine, then run `rdc config reconcile`.",
       "networkIdUndiscoverable": "Repository \"{{repository}}\" has no network ID in this config, and machine \"{{machine}}\" could not be asked for it. Retry once the machine is reachable, or run `rdc config reconcile`.",
       "networkIdDiverged": "Repository \"{{repository}}\" had network ID {{localId}} in this config, but machine \"{{machine}}\" records {{machineId}}. The machine's ID is now recorded."
     },

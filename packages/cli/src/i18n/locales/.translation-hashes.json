@@ -2,8 +2,8 @@
   "$meta": {
     "algorithm": "crc32",
     "sourceLanguage": "en",
-    "keyCount": 2940,
-    "sourceCommit": "409d37afb5602f6145a923bbaab8df253a434819"
+    "keyCount": 2941,
+    "sourceCommit": "a12e0c9bd6f51007946fb60e17f02c96b9ba7f18"
   },
   "hashes": {
     "cli.description": "201cb399",
@@ -2728,6 +2728,7 @@
     "errors.repo.listTargetExclusive": "683aee13",
     "errors.repo.networkIdDiverged": "7ff4c822",
     "errors.repo.networkIdInUse": "f3d110ee",
+    "errors.repo.networkIdNotRecorded": "329aba0f",
     "errors.repo.networkIdUndiscoverable": "4bb18767",
     "errors.repo.replicateNeedsCluster": "98bf213d",
     "errors.repo.secret.badMode": "a26faafa",

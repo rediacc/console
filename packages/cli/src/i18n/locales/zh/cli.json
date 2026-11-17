@@ -3479,6 +3479,7 @@
         "mutuallyExclusive": "--current 和 --rotate-secret 互斥。选择一个：--current 用于验证先前的值，或 --rotate-secret 用于不验证轮换。"
       },
       "networkIdInUse": "仓库“{{repository}}”的网络 ID {{networkId}} 在机器“{{machine}}”上已被 {{holder}} 占用。运行 `rdc config reconcile` 可采用机器上记录的 ID。",
+      "networkIdNotRecorded": "机器 \"{{machine}}\" 持有仓库 \"{{repository}}\"，但没有记录其网络 ID，因此无法采用。请先在该机器上启动一次该仓库，然后运行 `rdc config reconcile`。",
       "networkIdUndiscoverable": "仓库“{{repository}}”在此配置中没有网络 ID，且无法向机器“{{machine}}”查询。请在机器可访问后重试，或运行 `rdc config reconcile`。",
       "networkIdDiverged": "仓库“{{repository}}”在此配置中的网络 ID 为 {{localId}}，但机器“{{machine}}”记录的是 {{machineId}}。现已采用机器上的 ID。"
     },

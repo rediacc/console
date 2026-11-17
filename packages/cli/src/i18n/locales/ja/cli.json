@@ -3479,6 +3479,7 @@
         "mutuallyExclusive": "--current と --rotate-secret は相互排他的です。1 つ選んでください: --current は前の値を確認するため、--rotate-secret は確認なしでローテーションするため。"
       },
       "networkIdInUse": "リポジトリ「{{repository}}」のネットワーク ID {{networkId}} は、マシン「{{machine}}」上で既に {{holder}} が使用しています。`rdc config reconcile` を実行すると、マシンに記録された ID を取り込めます。",
+      "networkIdNotRecorded": "マシン \"{{machine}}\" はリポジトリ \"{{repository}}\" を保持していますが、そのネットワーク ID を記録していないため、取り込める ID がありません。マシン上でリポジトリを一度起動してから `rdc config reconcile` を実行してください。",
       "networkIdUndiscoverable": "リポジトリ「{{repository}}」にはこの設定でネットワーク ID がなく、マシン「{{machine}}」にも問い合わせできませんでした。マシンに接続できるようになってから再試行するか、`rdc config reconcile` を実行してください。",
       "networkIdDiverged": "リポジトリ「{{repository}}」のネットワーク ID はこの設定では {{localId}} でしたが、マシン「{{machine}}」には {{machineId}} が記録されています。マシン側の ID を採用しました。"
     },

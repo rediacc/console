@@ -3479,6 +3479,7 @@
         "mutuallyExclusive": "--current и --rotate-secret взаимоисключающие. Выберите одно: --current для проверки предыдущего значения, или --rotate-secret для ротации без проверки."
       },
       "networkIdInUse": "Сетевой ID {{networkId}} репозитория \"{{repository}}\" уже занят: {{holder}} на машине \"{{machine}}\". Выполните `rdc config reconcile`, чтобы принять ID, записанные на машине.",
+      "networkIdNotRecorded": "На машине \"{{machine}}\" есть репозиторий \"{{repository}}\", но сетевой ID для него не записан, поэтому взять нечего. Один раз запустите репозиторий на машине, затем выполните `rdc config reconcile`.",
       "networkIdUndiscoverable": "У репозитория \"{{repository}}\" нет сетевого ID в этой конфигурации, а машину \"{{machine}}\" не удалось опросить. Повторите попытку, когда машина станет доступна, или выполните `rdc config reconcile`.",
       "networkIdDiverged": "В этой конфигурации у репозитория \"{{repository}}\" был сетевой ID {{localId}}, но машина \"{{machine}}\" хранит {{machineId}}. Теперь записан ID с машины."
     },

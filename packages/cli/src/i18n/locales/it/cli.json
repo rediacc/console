@@ -3479,6 +3479,7 @@
         "mutuallyExclusive": "--current e --rotate-secret si escludono a vicenda. Scegline uno: --current per verificare il valore precedente, oppure --rotate-secret per ruotare senza verifica."
       },
       "networkIdInUse": "L'ID di rete {{networkId}} del repository \"{{repository}}\" è già occupato da {{holder}} sulla macchina \"{{machine}}\". Esegui `rdc config reconcile` per adottare gli ID registrati sulla macchina.",
+      "networkIdNotRecorded": "La macchina \"{{machine}}\" contiene il repository \"{{repository}}\" ma non registra alcun ID di rete per esso, quindi non se ne può adottare nessuno. Avvia il repository una volta sulla macchina, poi esegui `rdc config reconcile`.",
       "networkIdUndiscoverable": "Il repository \"{{repository}}\" non ha un ID di rete in questa configurazione e non è stato possibile interrogare la macchina \"{{machine}}\". Riprova quando la macchina è raggiungibile oppure esegui `rdc config reconcile`.",
       "networkIdDiverged": "Il repository \"{{repository}}\" aveva l'ID di rete {{localId}} in questa configurazione, ma la macchina \"{{machine}}\" registra {{machineId}}. Ora vale l'ID della macchina."
     },

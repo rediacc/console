@@ -3479,6 +3479,7 @@
         "mutuallyExclusive": "--current و --rotate-secret حصريان بشكل متبادل. اختر واحداً: --current للتحقق من القيمة السابقة، أو --rotate-secret للتدوير دون التحقق."
       },
       "networkIdInUse": "معرّف الشبكة {{networkId}} للمستودع \"{{repository}}\" محجوز بالفعل لدى {{holder}} على الجهاز \"{{machine}}\". شغّل `rdc config reconcile` لاعتماد المعرّفات المسجّلة على الجهاز.",
+      "networkIdNotRecorded": "الجهاز \"{{machine}}\" يحتوي على المستودع \"{{repository}}\" لكنه لا يسجل له معرّف شبكة، لذا لا يمكن اعتماد أي معرّف. شغّل المستودع مرة واحدة على الجهاز، ثم نفّذ `rdc config reconcile`.",
       "networkIdUndiscoverable": "لا يملك المستودع \"{{repository}}\" معرّف شبكة في هذا الإعداد، وتعذّر سؤال الجهاز \"{{machine}}\" عنه. أعد المحاولة حين يصبح الجهاز متاحًا، أو شغّل `rdc config reconcile`.",
       "networkIdDiverged": "كان معرّف الشبكة للمستودع \"{{repository}}\" في هذا الإعداد {{localId}}، لكن الجهاز \"{{machine}}\" يسجّل {{machineId}}. صار معرّف الجهاز هو المعتمد الآن."
     },

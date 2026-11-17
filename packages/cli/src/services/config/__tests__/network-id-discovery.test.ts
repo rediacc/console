@@ -100,9 +100,23 @@ describe('resolveMissingNetworkId', () => {
     ).rejects.toBeInstanceOf(NetworkIdUndiscoverableError);
   });
 
-  it('fails closed when the repo is present but its mirror records no ID', async () => {
+  it('hands a present never-up fork with no recorded ID to renet as network_id auto', async () => {
+    h.responses.repository_list = {
+      success: true,
+      stdout: JSON.stringify([{ name: GUID, is_fork: true, grand_guid: 'g' }]),
+    };
+    const { resolveMissingNetworkId, NETWORK_ID_AUTO } = await import('../network-id-discovery.js');
+    const id = await resolveMissingNetworkId({
+      repository: 'mail:pre',
+      repoGuid: GUID,
+      target: { machine: 'm' },
+    });
+    expect(id).toBe(NETWORK_ID_AUTO);
+  });
+
+  it('fails closed with a not-recorded message when a present non-fork records no ID', async () => {
     h.responses.repository_list = { success: true, stdout: listing([{ name: GUID }]) };
-    const { resolveMissingNetworkId, NetworkIdUndiscoverableError } = await import(
+    const { resolveMissingNetworkId, NetworkIdNotRecordedError } = await import(
       '../network-id-discovery.js'
     );
     await expect(
@@ -111,7 +125,7 @@ describe('resolveMissingNetworkId', () => {
         repoGuid: GUID,
         target: { machine: 'm' },
       })
-    ).rejects.toBeInstanceOf(NetworkIdUndiscoverableError);
+    ).rejects.toBeInstanceOf(NetworkIdNotRecordedError);
   });
 
   it('probes the named datastore the repo lives on', async () => {
