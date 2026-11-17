@@ -1211,6 +1211,9 @@ def _mentions_worktree(text):
     return "worktree" in LEASE_ROOT_TEXT.sub(" ", text)
 
 
+ESCAPED_SPACE = re.compile(r"\\[nrt]")
+
+
 def _prose_mention(tok):
     """Is `tok` a whole string literal that reads as a sentence (`_prose_literal`) with no placeholder a format could fill? Such a literal runs nothing, so it licenses no argv fill (#29754962).
 
@@ -1218,7 +1221,9 @@ def _prose_mention(tok):
     """
     if tok.type != tokenize.STRING or PLACEHOLDER.search(tok.string):
         return False
-    return len(tok.string.split()) >= 3 and _prose_literal(tok.string)
+    # An escaped whitespace (`\n`, `\t`) spells a word break in source, so it counts as one (review be545676.2).
+    text = ESCAPED_SPACE.sub(" ", tok.string)
+    return len(text.split()) >= 3 and _prose_literal(text)
 
 
 def _code_mentions(code):

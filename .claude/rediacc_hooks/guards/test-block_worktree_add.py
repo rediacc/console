@@ -199,6 +199,28 @@ PROSE_BUILT_ROW = (
     "a prose case label beside a built git command",
     "python3 %s/label_prose_built.py x" % FIXTURE_DIR,
 )
+# The three-word floor of `_prose_mention`, both sides (review be545676.1): a two-word literal naming the tree can be a command piece and still licenses the fill, and a sentence whose breaks are written as escapes (`\n`) still reads as one (review be545676.2).
+pathlib.Path(FIXTURE_DIR, "label_two_words.py").write_text(
+    PROSE_BUILT.replace(PROSE_LABEL, 'CASES = ["worktree lock"]\n')
+    + 'os.system("git " + sys.argv[1])\n',
+    encoding="utf-8",
+)
+pathlib.Path(FIXTURE_DIR, "label_escaped.py").write_text(
+    PROSE_BUILT.replace(
+        PROSE_LABEL, 'CASES = ["an edit to the worktree\\ndoes not change\\nthe verdict"]\n'
+    )
+    + 'os.system("git " + sys.argv[1])\n',
+    encoding="utf-8",
+)
+TWO_WORD_ROW = (
+    "a two-word literal naming the tree beside a built git command",
+    "python3 %s/label_two_words.py x" % FIXTURE_DIR,
+)
+ESCAPED_ROW = (
+    "a prose label with escaped line breaks beside a built git command",
+    "python3 %s/label_escaped.py x" % FIXTURE_DIR,
+)
+REFUSED.append(TWO_WORD_ROW)
 STRING_LICENSE_ROWS = [
     ("a string licensing the fill: %s" % name, "python3 %s/%s" % (FIXTURE_DIR, name))
     for name in STRING_LICENSE
@@ -363,6 +385,7 @@ FALSE_POSITIVES = [
     ),
     PROSE_LABEL_ROW,
     PROSE_BUILT_ROW,
+    ESCAPED_ROW,
     (
         "gc beside a $-path worklist --add",
         (
@@ -866,6 +889,11 @@ REVERSE = [
         "a prose string licenses the argv fill",
         ("and not _prose_mention(tok)", ""),
         PROSE_LABEL_ROW,
+    ),
+    (
+        "an escaped line break is not a word break",
+        ('text = ESCAPED_SPACE.sub(" ", tok.string)', "text = tok.string"),
+        ESCAPED_ROW,
     ),
     (
         "a prose string licenses the built-string fill",
