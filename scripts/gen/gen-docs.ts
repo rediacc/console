@@ -77,6 +77,7 @@ import {
   byCodePoint,
   GATES_LOCK,
   type InputChange,
+  isMechanismCandidate,
   PROVIDERS,
   type Provider,
   type ProviderRow,
@@ -1015,6 +1016,16 @@ function selftest(): number {
       console.log(`\t\t${JSON.stringify(detail)}`);
     }
   };
+
+  // #4960f2e8: a per-commit review record quoting BLOCKER: is prose, not a suppression mechanism; a real allowlist still is.
+  ck(
+    'suppressions census skips agent/reviews records',
+    !isMechanismCandidate('agent/reviews/1023-1/clean.jsonl')
+  );
+  ck(
+    'CONTROL: suppressions census keeps a real allowlist',
+    isMechanismCandidate('.ci/config/carried-reds.json')
+  );
 
   const P: Provider = {
     id: 'fixture',

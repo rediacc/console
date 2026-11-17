@@ -645,12 +645,14 @@ const commentForm = (rel: string, text: string): string => {
 };
 
 /** Whether a tracked path can be a suppression mechanism at all, decided before its content is read. */
-const isMechanismCandidate = (f: string): boolean => {
+export const isMechanismCandidate = (f: string): boolean => {
   // A FROZEN TEST CORPUS IS NOT A SUPPRESSION MECHANISM. Goldens under a tests directory are byte copies of real allow/block lists, recorded so a port can be proved to agree with the reader it replaces, and they carry BLOCKER: for the same reason the originals do. The predicate below is "carries BLOCKER: and is not source or prose", which cannot tell a recording from the thing
   // recorded: when W1 P3's allowlist goldens landed on 2026-09-06 this census went 24 rows to 39, and all 15 additions were copies of lists already counted once. A census that double-counts its own fixtures overstates the escape hatches in the tree, which is the one number this table exists to keep honest.
   if (/(^|\/)tests\/goldens\//.test(f)) return false;
   // THE WORKLIST EVENT LOGS ARE PROSE THAT GROWS ON EVERY VERB. `agent/worklist/*.jsonl` carries session notes, and a note that quotes `BLOCKER:` made this census list the log and then change its row on the next unrelated `--tick`, so the region could not be committed in a state a clean checkout reproduces.
   if (f.startsWith('agent/worklist/')) return false;
+  // PER-COMMIT REVIEW RECORDS ARE PROSE TOO. `agent/reviews/<branch>/clean.jsonl` quotes findings, and one that quoted `BLOCKER:` listed the record here (#4960f2e8); that row then made the archival check refuse to archive the branch's review directory once it aged out.
+  if (f.startsWith('agent/reviews/')) return false;
   return !NOT_A_MECHANISM.has(path.extname(f));
 };
 
