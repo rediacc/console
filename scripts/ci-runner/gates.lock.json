@@ -105,6 +105,7 @@
       "scripts/__tests__/check-docs-render-parity.control.ts",
       "scripts/__tests__/check-page-locale-imports.control.ts",
       "scripts/gates/check-cli-i18n-key-usage.ts",
+      "scripts/gates/check-account-i18n-key-usage.ts",
       "packages/cli/scripts/check-cli-i18n-help-render.ts",
       "scripts/gates/check-docs-inline-translations.ts",
       "scripts/gates/check-docs-untranslated-text.ts",
@@ -397,6 +398,20 @@
     "gate": true,
     "leaves": [
       "scripts/gates/check-cli-i18n-key-usage.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-i18n",
+      "step": "i18n"
+    }
+  },
+  {
+    "id": "check:ci-i18n-account-key-usage",
+    "run": "npm run check:ci-i18n-account-key-usage",
+    "gate": true,
+    "leaves": [
+      "scripts/gates/check-account-i18n-key-usage.ts"
     ],
     "ci": {
       "kind": "step",
@@ -4897,6 +4912,24 @@
       "workflow": ".github/workflows/ci-quality.yml",
       "job": "quality-www-build",
       "step": "SSR locale"
+    }
+  },
+  {
+    "id": "check:ci-dist-raw-translation-keys",
+    "run": "npm run check:ci-dist-raw-translation-keys",
+    "slow": true,
+    "gate": true,
+    "needs": [
+      "build:www"
+    ],
+    "leaves": [
+      "scripts/gates/check-dist-raw-translation-keys.ts"
+    ],
+    "ci": {
+      "kind": "step",
+      "workflow": ".github/workflows/ci-quality.yml",
+      "job": "quality-www-build",
+      "step": "Raw translation keys"
     }
   },
   {

@@ -8,8 +8,14 @@
  *
  * Handles:
  * - Direct string keys: t('foo.bar'), ta("foo.bar"), to('foo.bar')
- * - Template literals with `ns` / `PAGE_KEY` prefix: t(`${ns}.hero.title`)
- * - Skips dynamic interpolation: t(`${ns}.plans.${plan.id}.name`)
+ * - Template literals with a dotted-constant prefix: t(`${ns}.hero.title`)
+ * - Dynamic interpolation as a WILDCARD: t(`pages.pricing.plans.${plan.id}.name`) must
+ *   match at least one en.json path (`pages.pricing.plans.<any>.name`). This used to be
+ *   skipped outright. The wildcard proves the fixed parts are real; it cannot prove every
+ *   value of `plan.id` has an entry, which is what the production build's strict
+ *   translator (packages/www/src/i18n/translator.ts) and check:ci-dist-raw-translation-keys
+ *   are for. A template whose LEADING part is an unresolvable variable has no fixed prefix
+ *   to anchor on and stays unchecked.
  *
  * Usage:
  *   npx tsx scripts/gates/check-translation-key-usage.ts
@@ -34,6 +40,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { globSync } from 'glob';
 import { errorLines } from '../lib/console.js';
+import { isEntryPoint } from '../lib/entry-point.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // THE SEAM, for the control only: KEY_USAGE_WWW_SRC points the scan at a mirror of the www source (an `i18n/translations/en.json` plus the probe), so the control never plants a file in the real tree. check-docs-render-parity.ts's DOCS_RENDER_PARITY_ROOT is the same shape.
@@ -75,6 +82,39 @@ interface TranslationCall {
   key: string;
   line: number;
   file: string;
+  /** Set for a dynamic template key: `key` is then the display form, with `*` per `${...}`. */
+  pattern?: RegExp;
+}
+
+/**
+ * A dynamic template body (`pages.x.${a}.name`, prefix already substituted) as a regex over
+ * en.json paths. A `${...}` that fills a whole segment matches one segment; one glued to
+ * literal text (`unlockError_${code}`) matches the rest of that segment.
+ */
+export function templatePattern(body: string): { display: string; pattern: RegExp } {
+  const parts = body.split(/\$\{[^}]*\}/);
+  const escaped = parts.map((p) => p.replace(/[.*+?^$()|[\]\\{}]/g, '\\$&'));
+  let src = '';
+  for (let i = 0; i < escaped.length; i++) {
+    src += escaped[i];
+    if (i < escaped.length - 1) src += '[^.]+';
+  }
+  return { display: parts.join('*'), pattern: new RegExp(`^${src}$`) };
+}
+
+/** Every path in the catalog, branches and array indices included. */
+function allPaths(node: JsonValue, prefix = '', out: string[] = []): string[] {
+  if (node && typeof node === 'object') {
+    const entries = Array.isArray(node)
+      ? node.map((v, i) => [String(i), v] as const)
+      : Object.entries(node);
+    for (const [k, v] of entries) {
+      const p = prefix ? `${prefix}.${k}` : k;
+      out.push(p);
+      allPaths(v, p, out);
+    }
+  }
+  return out;
 }
 
 /**
@@ -264,13 +304,29 @@ function extractCalls(filePath: string, content: string): TranslationCall[] {
       const varName = m[2];
       const suffix = m[3];
 
-      // Skip if suffix has more interpolations (dynamic key)
-      if (hasDynamicParts(suffix)) continue;
-
       const prefix = nsVars.get(varName);
       if (!prefix) continue; // Not a dotted string constant in this file, skip
 
+      if (hasDynamicParts(suffix)) {
+        const { display, pattern } = templatePattern(`${prefix}.${suffix}`);
+        calls.push({ fn, key: display, pattern, line: i + 1, file: filePath });
+        continue;
+      }
       calls.push({ fn, key: `${prefix}.${suffix}`, line: i + 1, file: filePath });
+    }
+
+    // Pattern 3: a template with a LITERAL prefix and a dynamic part, checked as a
+    // wildcard: t(`pages.pricing.plans.${plan.id}.name`).
+    const dynRe = /\b(t[ao]?)\(\s*`([A-Za-z][^`$]*\$\{[^`]*)`\s*[,)]/g;
+    while ((m = dynRe.exec(line)) !== null) {
+      const { display, pattern } = templatePattern(m[2]);
+      calls.push({
+        fn: m[1] as 't' | 'ta' | 'to',
+        key: display,
+        pattern,
+        line: i + 1,
+        file: filePath,
+      });
     }
   }
 
@@ -290,8 +346,15 @@ function main(): void {
   // Load en.json
   const enJson = JSON.parse(fs.readFileSync(EN_JSON, 'utf-8')) as Record<string, JsonValue>;
 
-  // Scan all .astro and .tsx files
-  const files = globSync('**/*.{astro,tsx}', { cwd: WWW_SRC, absolute: true });
+  // Scan .astro, .tsx and .ts source. Plain .ts used to be outside the scan, so a helper
+  // such as components/pricing-plans.ts could ask for any key unchecked. Tests are not
+  // source: they plant deliberately missing keys to prove the translator refuses them.
+  const files = globSync('**/*.{astro,tsx,ts}', {
+    cwd: WWW_SRC,
+    absolute: true,
+    ignore: ['**/__tests__/**', '**/*.test.ts', '**/*.test.tsx', '**/*.d.ts'],
+  });
+  const paths = allPaths(enJson);
 
   // A leftover control fixture is NOT a missing key, and saying so is the whole point.
   // scripts/__tests__/check-translation-key-usage.control.ts used to write
@@ -329,6 +392,11 @@ function main(): void {
     for (const call of calls) {
       totalChecked++;
 
+      if (call.pattern) {
+        const re = call.pattern;
+        if (!paths.some((p) => re.test(p))) missing.push(call);
+        continue;
+      }
       // Use getNestedValue for all checks — it handles array index access (e.g., items.0)
       const val = getNestedValue(enJson, call.key);
       if (val === undefined) {
@@ -358,7 +426,11 @@ function main(): void {
   for (const [file, calls] of byFile) {
     console.log(`  ${file}`);
     for (const call of calls) {
-      console.log(`    L${call.line}: ${call.fn}('${call.key}') — key not found in en.json`);
+      console.log(
+        call.pattern
+          ? `    L${call.line}: ${call.fn}(\`${call.key}\`): no en.json path matches this dynamic key (* = any segment)`
+          : `    L${call.line}: ${call.fn}('${call.key}'): key not found in en.json`
+      );
     }
     console.log('');
   }
@@ -368,4 +440,4 @@ function main(): void {
   process.exit(1);
 }
 
-main();
+if (isEntryPoint(import.meta.filename)) main();

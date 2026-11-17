@@ -40,12 +40,13 @@ import type { GateSpec } from './gate-spec.js';
  *   - check:ci-chain-parity and check:ci-gate-reachability are gone entirely:
  *     scripts/gates/check-ci-parity.ts subsumes and replaces both (plan section 6.1).
  *
- * FOUR ENTRIES ARE ALSO REACHED THROUGH check:i18n: check:ci-i18n-cli-key-usage,
- * check:ci-i18n-cli-help-render, check:cli-docs and check:ci-i18n-locale-only.
+ * FIVE ENTRIES ARE ALSO REACHED THROUGH check:i18n: check:ci-i18n-cli-key-usage,
+ * check:ci-i18n-account-key-usage, check:ci-i18n-cli-help-render, check:cli-docs and
+ * check:ci-i18n-locale-only.
  * They are listed separately anyway, because R1 requires every check:ci-* key to
  * be a manifest id and because check:i18n chains 19 leaves with `&&` so the
- * first failure hides the rest (plan section 2). The cost is that those four run
- * twice in a full local run; all four are seconds-scale.
+ * first failure hides the rest (plan section 2). The cost is that those five run
+ * twice in a full local run; all five are seconds-scale.
  */
 export const GATES: readonly GateSpec[] = [
   {
@@ -147,6 +148,7 @@ export const GATES: readonly GateSpec[] = [
       'scripts/__tests__/check-docs-render-parity.control.ts',
       'scripts/__tests__/check-page-locale-imports.control.ts',
       'scripts/gates/check-cli-i18n-key-usage.ts',
+      'scripts/gates/check-account-i18n-key-usage.ts',
       'packages/cli/scripts/check-cli-i18n-help-render.ts',
       'scripts/gates/check-docs-inline-translations.ts',
       'scripts/gates/check-docs-untranslated-text.ts',
@@ -422,6 +424,20 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
+  // >>> gen-manifest: region 5
+  {
+    id: 'check:ci-i18n-account-key-usage',
+    run: 'npm run check:ci-i18n-account-key-usage',
+    gate: true,
+    leaves: ['scripts/gates/check-account-i18n-key-usage.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-i18n',
+      step: 'i18n',
+    },
+  },
+  // <<< gen-manifest: region 5
   {
     id: 'check:ci-i18n-cli-help-render',
     run: 'npm run check:ci-i18n-cli-help-render',
@@ -463,7 +479,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
-  // >>> gen-manifest: region 5
+  // >>> gen-manifest: region 6
   {
     id: 'check:ci-i18n-locale-only',
     run: 'npm run check:ci-i18n-locale-only',
@@ -476,7 +492,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
-  // <<< gen-manifest: region 5
+  // <<< gen-manifest: region 6
   {
     id: 'check:ci-i18n-ledger-growth',
     run: 'npm run check:ci-i18n-ledger-growth',
@@ -508,7 +524,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Tutorial media',
     },
   },
-  // >>> gen-manifest: region 6
+  // >>> gen-manifest: region 7
   {
     id: 'check:ci-rubric-calibration',
     run: 'npm run check:ci-rubric-calibration',
@@ -533,7 +549,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'www build token',
     },
   },
-  // <<< gen-manifest: region 6
+  // <<< gen-manifest: region 7
   {
     id: 'check:ci-shape-duplication',
     run: 'npm run check:ci-shape-duplication',
@@ -547,7 +563,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Shape duplication',
     },
   },
-  // >>> gen-manifest: region 7
+  // >>> gen-manifest: region 8
   {
     id: 'check:ci-fetch-retry',
     run: 'npm run check:ci-fetch-retry',
@@ -584,7 +600,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Git history depth',
     },
   },
-  // <<< gen-manifest: region 7
+  // <<< gen-manifest: region 8
   {
     id: 'check:ci-typecheck-scope-coverage',
     run: 'npm run check:ci-typecheck-scope-coverage',
@@ -633,7 +649,7 @@ export const GATES: readonly GateSpec[] = [
         "BLOCKER: a local cache-backed twin of check:types, which CI already runs over the same project set in the quality-code 'TypeScript' step from a cold cache, where an incremental mirror would only repeat that work",
     },
   },
-  // >>> gen-manifest: region 8
+  // >>> gen-manifest: region 9
   {
     id: 'check:ci-tutorial-healthcheck-headroom',
     run: 'npm run check:ci-tutorial-healthcheck-headroom',
@@ -646,7 +662,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Tutorial healthcheck headroom',
     },
   },
-  // <<< gen-manifest: region 8
+  // <<< gen-manifest: region 9
   {
     id: 'check:ci-guard-mutations',
     run: 'npm run check:ci-guard-mutations',
@@ -763,7 +779,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Worker unit tests (workers/www, workers/proxy)',
     },
   },
-  // >>> gen-manifest: region 9
+  // >>> gen-manifest: region 10
   {
     id: 'check:ci-install-sh-config',
     run: 'npm run check:ci-install-sh-config',
@@ -776,7 +792,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'install.sh config tests',
     },
   },
-  // <<< gen-manifest: region 9
+  // <<< gen-manifest: region 10
   {
     id: 'check:ci-rdc-sh-env',
     run: 'npm run check:ci-rdc-sh-env',
@@ -815,7 +831,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Swallowed failures',
     },
   },
-  // >>> gen-manifest: region 10
+  // >>> gen-manifest: region 11
   {
     id: 'check:ci-probe-parity',
     run: 'npm run check:ci-probe-parity',
@@ -852,7 +868,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Dev-stack liveness probes',
     },
   },
-  // <<< gen-manifest: region 10
+  // <<< gen-manifest: region 11
   {
     id: 'check:ci-npmrc',
     run: 'npm run check:ci-npmrc',
@@ -1369,7 +1385,7 @@ export const GATES: readonly GateSpec[] = [
       step: "CLI docs stay in sync with their scripts' real flags",
     },
   },
-  // >>> gen-manifest: region 11
+  // >>> gen-manifest: region 12
   {
     id: 'check:ci-pin-registry',
     run: 'npm run check:ci-pin-registry',
@@ -1382,7 +1398,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Pin registry covers every pin',
     },
   },
-  // <<< gen-manifest: region 11
+  // <<< gen-manifest: region 12
   {
     id: 'check:ci-standalone-selftests',
     run: 'npm run check:ci-standalone-selftests',
@@ -1396,7 +1412,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Standalone selftests',
     },
   },
-  // >>> gen-manifest: region 12
+  // >>> gen-manifest: region 13
   {
     id: 'check:ci-selftest-reachability',
     run: 'npm run check:ci-selftest-reachability',
@@ -1433,7 +1449,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Naturalization model policy',
     },
   },
-  // <<< gen-manifest: region 12
+  // <<< gen-manifest: region 13
   {
     id: 'check:ci-script-exec-bit',
     run: 'npm run check:ci-script-exec-bit',
@@ -1469,7 +1485,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Lockfile',
     },
   },
-  // >>> gen-manifest: region 13
+  // >>> gen-manifest: region 14
   {
     id: 'check:ci-peer-deps',
     run: 'npm run check:ci-peer-deps',
@@ -1482,7 +1498,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Verify no peer dependency conflicts',
     },
   },
-  // <<< gen-manifest: region 13
+  // <<< gen-manifest: region 14
   {
     // BOUND TO PR CI, 2026-10-04 (operator: "it should have been bound to CI!"). lane-durations.json drifted past the 25% limit for days while the only comparison ran in housekeeping's 03:00 budget-check, which went red four nights in a row and reached no session; gate-costs.json had never been written at all, so `gate_costs --check` exited NO_BASELINE (3) and housekeeping mapped that to a pass. Every PR now compares both committed files with the newest runs and captures, so drift fails the PR that is open when it appears and is refreshed there (`budget_report --refresh`, `gate_costs --refresh`). A missing gate-costs.json is a failure here, not a notice.
     id: 'check:ci-budget-freshness',
@@ -1529,7 +1545,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Audit',
     },
   },
-  // >>> gen-manifest: region 14
+  // >>> gen-manifest: region 15
   {
     id: 'check:ci-scope-scripts-reachability',
     run: 'npm run check:ci-scope-scripts-reachability',
@@ -1554,7 +1570,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Mutation runner self-test',
     },
   },
-  // <<< gen-manifest: region 14
+  // <<< gen-manifest: region 15
   {
     id: 'check:ci-shell-lint',
     run: 'npm run check:ci-shell-lint',
@@ -1571,7 +1587,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Shell lint',
     },
   },
-  // >>> gen-manifest: region 15
+  // >>> gen-manifest: region 16
   {
     id: 'check:ci-shell-format',
     run: 'npm run check:ci-shell-format',
@@ -1596,7 +1612,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Python lint + format (ruff)',
     },
   },
-  // <<< gen-manifest: region 15
+  // <<< gen-manifest: region 16
   {
     id: 'check:ci-python-types',
     run: 'npm run check:ci-python-types',
@@ -1627,7 +1643,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Python control plants',
     },
   },
-  // >>> gen-manifest: region 16
+  // >>> gen-manifest: region 17
   {
     id: 'check:ci-bws-map',
     run: 'npm run check:ci-bws-map',
@@ -1652,7 +1668,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'GitHub Actions variables',
     },
   },
-  // <<< gen-manifest: region 16
+  // <<< gen-manifest: region 17
   {
     id: 'check:ci-record-paths',
     // A receipt advances across a record-only commit only when every reader of those records is declared; a fixed parallel width must be a listed I/O fan-out (PLAN-prepush-full-cpu PF23, PF9).
@@ -1954,7 +1970,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Python env registry',
     },
   },
-  // >>> gen-manifest: region 17
+  // >>> gen-manifest: region 18
   {
     id: 'check:ci-secret-supply',
     run: 'npm run check:ci-secret-supply',
@@ -1967,7 +1983,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Secret supply',
     },
   },
-  // <<< gen-manifest: region 17
+  // <<< gen-manifest: region 18
   {
     // D2. 133 WORKLIST_* names read at 181 sites with no registry and no schema. A typo'd name reads as UNSET, and for the four flags defaulting to `on` that is fail-open. Set equality both ways. Derived from the AST rather than grep, which is why it is 133 and not the grep answer of 134: WORKLIST_EMAIL is prose-only history, read nowhere.
     id: 'check:ci-worklist-env-registry',
@@ -2622,7 +2638,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'syncpack source coverage',
     },
   },
-  // >>> gen-manifest: region 18
+  // >>> gen-manifest: region 19
   {
     id: 'check:ci-secret-reachability',
     run: 'npm run check:ci-secret-reachability',
@@ -2719,7 +2735,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Hooks resolvable',
     },
   },
-  // <<< gen-manifest: region 18
+  // <<< gen-manifest: region 19
   {
     // An apt source rewritten to ONE mirror must carry a fallback to another. Born 2026-08-19, when azure.archive.ubuntu.com refused connections for ninety minutes and took down four consecutive CI attempts: every apt source had been rewritten to that single host, so the surrounding five-attempt retry loop hammered the same dead mirror five times. Existing checks counted retry
     // ATTEMPTS and never asked whether the attempts could reach a different SOURCE, which is why nothing caught it.
@@ -2734,7 +2750,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Dockerfile mirror resilience',
     },
   },
-  // >>> gen-manifest: region 19
+  // >>> gen-manifest: region 20
   {
     id: 'check:ci-workflow-submodule-deps',
     run: 'npm run check:ci-workflow-submodule-deps',
@@ -2772,7 +2788,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Tutorial CLI validity',
     },
   },
-  // <<< gen-manifest: region 19
+  // <<< gen-manifest: region 20
   {
     // CLAUDE.md is the one written source of the PR-scope rules (push cadence, one branch and one PR, the merge condition, the plan set), and seven other files restate them by hand; agent/plans/PLAN-scope-mirrors.md measured eight live drifts before this existed. The canonical spans carry `<!-- scope: pr.* -->` anchors pinned by sha in .ci/config/scope-mirrors.json, and every registered mirror is located and judged. No `paths`, deliberately: an edit to CLAUDE.md, a mirror, a guard constant or the C9 corpus can each break agreement, and a half-populated path table would drop the gate from --changed exactly then.
     id: 'check:ci-scope-mirrors',
@@ -2786,7 +2802,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'PR scope rules agree with their CLAUDE.md source',
     },
   },
-  // >>> gen-manifest: region 20
+  // >>> gen-manifest: region 21
   {
     id: 'check:ci-e2e-case-blind',
     run: 'npm run check:ci-e2e-case-blind',
@@ -2931,7 +2947,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n value types match English',
     },
   },
-  // <<< gen-manifest: region 20
+  // <<< gen-manifest: region 21
   {
     id: 'check:ci-lint-rule-liveness',
     run: 'npm run check:ci-lint-rule-liveness',
@@ -2944,7 +2960,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Enabled lint rules can actually fire',
     },
   },
-  // >>> gen-manifest: region 21
+  // >>> gen-manifest: region 22
   {
     id: 'check:ci-agent-hint-liveness',
     run: 'npm run check:ci-agent-hint-liveness',
@@ -3074,7 +3090,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Agent model roster matches its documented reasons',
     },
   },
-  // <<< gen-manifest: region 21
+  // <<< gen-manifest: region 22
   // A ru page wrote its tags list with en dashes, YAML read `tags` as one string, every local gate passed, and only the Astro content loader refused it (10eae6293b). This validates every docs and blog entry with the REAL zod schema from content.config.ts, parsed by the parser Astro itself calls. Hand-written (two leaves), so it sits outside the generated regions.
   {
     id: 'check:ci-docs-frontmatter',
@@ -3187,7 +3203,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Workflow env provision',
     },
   },
-  // >>> gen-manifest: region 22
+  // >>> gen-manifest: region 23
   {
     id: 'check:ci-shell-commands',
     run: 'npm run check:ci-shell-commands',
@@ -3213,7 +3229,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Pool-registered tests do not write the real tree',
     },
   },
-  // <<< gen-manifest: region 22
+  // <<< gen-manifest: region 23
   {
     // The sibling of check:ci-pool-writer-safety: that gate holds GATE TESTS to "a real-tree writer holds an exclusive tree: claim"; this one holds the GATES themselves to it, through every Python/TS/JS/bash module their leaves reach (imports and cross-language spawns). agent/plans/PLAN-ci-gate-write-taint-scanners.md.
     id: 'check:ci-gate-tree-writes',
@@ -3244,7 +3260,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Gates that write the real tree declare it',
     },
   },
-  // >>> gen-manifest: region 23
+  // >>> gen-manifest: region 24
   {
     id: 'check:ci-gate-reachability-coverage',
     run: 'npm run check:ci-gate-reachability-coverage',
@@ -3257,7 +3273,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Gate-reachability probe agrees with registrations',
     },
   },
-  // <<< gen-manifest: region 23
+  // <<< gen-manifest: region 24
   {
     id: 'check:ci-gate-cwd-independence',
     run: 'npm run check:ci-gate-cwd-independence',
@@ -3322,7 +3338,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Workflow banned patterns',
     },
   },
-  // >>> gen-manifest: region 24
+  // >>> gen-manifest: region 25
   {
     id: 'check:ci-greenlight-closures',
     run: 'npm run check:ci-greenlight-closures',
@@ -3335,7 +3351,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Greenlight closure paths',
     },
   },
-  // <<< gen-manifest: region 24
+  // <<< gen-manifest: region 25
   {
     id: 'check:ci-workflow-gates',
     run: 'npm run check:ci-workflow-gates',
@@ -3348,7 +3364,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Workflow structural gates',
     },
   },
-  // >>> gen-manifest: region 25
+  // >>> gen-manifest: region 26
   {
     id: 'check:ci-actionlint',
     run: 'npm run check:ci-actionlint',
@@ -3361,7 +3377,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Workflow lint (actionlint)',
     },
   },
-  // <<< gen-manifest: region 25
+  // <<< gen-manifest: region 26
   {
     id: 'check:ci-breakpoint-drift',
     run: 'npm run check:ci-breakpoint-drift',
@@ -3374,7 +3390,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Breakpoint drift',
     },
   },
-  // >>> gen-manifest: region 26
+  // >>> gen-manifest: region 27
   {
     id: 'check:ci-app-admin-perm',
     run: 'npm run check:ci-app-admin-perm',
@@ -3399,7 +3415,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Tracked runtime sidecars',
     },
   },
-  // <<< gen-manifest: region 26
+  // <<< gen-manifest: region 27
   {
     id: 'check:ci-scans-tracked-paths',
     run: 'npm run check:ci-scans-tracked-paths',
@@ -3425,7 +3441,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'agent-browser exit status',
     },
   },
-  // >>> gen-manifest: region 27
+  // >>> gen-manifest: region 28
   {
     id: 'check:ci-silent-failures',
     run: 'npm run check:ci-silent-failures',
@@ -3486,7 +3502,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check audit logging coverage for CLI operations',
     },
   },
-  // <<< gen-manifest: region 27
+  // <<< gen-manifest: region 28
   {
     id: 'check:ci-cli-contract',
     run: 'npm run check:ci-cli-contract',
@@ -3528,7 +3544,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Command planes',
     },
   },
-  // >>> gen-manifest: region 28
+  // >>> gen-manifest: region 29
   {
     id: 'check:ci-design-tree',
     run: 'npm run check:ci-design-tree',
@@ -3565,7 +3581,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n untranslated',
     },
   },
-  // <<< gen-manifest: region 28
+  // <<< gen-manifest: region 29
   {
     id: 'check:ci-i18n-cross-locale',
     run: 'npm run check:ci-i18n-cross-locale',
@@ -3583,7 +3599,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n cross-locale',
     },
   },
-  // >>> gen-manifest: region 29
+  // >>> gen-manifest: region 30
   {
     id: 'check:ci-i18n-cross-locale-core',
     run: 'npm run check:ci-i18n-cross-locale-core',
@@ -3634,7 +3650,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Locale sources',
     },
   },
-  // <<< gen-manifest: region 29
+  // <<< gen-manifest: region 30
   {
     id: 'check:ci-i18n-command-parity',
     run: 'npm run check:ci-i18n-command-parity',
@@ -3648,7 +3664,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n command parity',
     },
   },
-  // >>> gen-manifest: region 30
+  // >>> gen-manifest: region 31
   {
     id: 'check:ci-config-migrations',
     run: 'npm run check:ci-config-migrations',
@@ -3685,7 +3701,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Shared constant duplication',
     },
   },
-  // <<< gen-manifest: region 30
+  // <<< gen-manifest: region 31
   {
     id: 'check:ci-shared-esm-resolvable',
     run: 'npm run check:ci-shared-esm-resolvable',
@@ -3699,7 +3715,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Shared ESM resolvable',
     },
   },
-  // >>> gen-manifest: region 31
+  // >>> gen-manifest: region 32
   {
     id: 'check:ci-runtime-imports-are-deps',
     run: 'npm run check:ci-runtime-imports-are-deps',
@@ -3848,7 +3864,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Test suites are CI-reachable',
     },
   },
-  // <<< gen-manifest: region 31
+  // <<< gen-manifest: region 32
   {
     id: 'check:ci-editorconfig',
     run: 'npm run check:ci-editorconfig',
@@ -3933,7 +3949,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check config token auth requires org membership',
     },
   },
-  // >>> gen-manifest: region 32
+  // >>> gen-manifest: region 33
   {
     id: 'check:ci-account-no-node-env-routes',
     run: 'npm run check:ci-account-no-node-env-routes',
@@ -3958,7 +3974,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check no admin user role (must be root)',
     },
   },
-  // <<< gen-manifest: region 32
+  // <<< gen-manifest: region 33
   {
     id: 'check:ci-account-scope-audit',
     run: 'VITEST_MAX_WORKERS="$CI_RUNNER_CORES" npm run check:ci-account-scope-audit',
@@ -4097,7 +4113,7 @@ export const GATES: readonly GateSpec[] = [
         'BLOCKER: no CI step invokes this script; the seven tier-map tests it drives already run in CI inside rediacc_ci.private.run_renet test (ct-tests.yml job test-renet, step "Run renet tests"), which resolves to that leaf and not this one, so a step pointer would claim CI runs a script it never invokes',
     },
   },
-  // >>> gen-manifest: region 33
+  // >>> gen-manifest: region 34
   {
     id: 'check:ci-embed-credits',
     run: 'npm run check:ci-embed-credits',
@@ -4122,7 +4138,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check embed arch parity',
     },
   },
-  // <<< gen-manifest: region 33
+  // <<< gen-manifest: region 34
   {
     id: 'check:ci-embed-asset-freshness',
     env: {
@@ -4141,7 +4157,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check embed-asset upstream freshness',
     },
   },
-  // >>> gen-manifest: region 34
+  // >>> gen-manifest: region 35
   {
     id: 'check:ci-unverified-downloads',
     run: 'npm run check:ci-unverified-downloads',
@@ -4184,7 +4200,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check real-provider pin upstream freshness',
     },
   },
-  // <<< gen-manifest: region 34
+  // <<< gen-manifest: region 35
   {
     id: 'check:ci-embed-asset-versions',
     run: 'npm run check:ci-embed-asset-versions',
@@ -4200,7 +4216,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check embedded asset versions match their pins',
     },
   },
-  // >>> gen-manifest: region 35
+  // >>> gen-manifest: region 36
   {
     id: 'check:ci-recovery-context',
     run: 'npm run check:ci-recovery-context',
@@ -4213,7 +4229,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check recovery functions get an uncancellable context',
     },
   },
-  // <<< gen-manifest: region 35
+  // <<< gen-manifest: region 36
   {
     id: 'check:ci-no-otlp-creds',
     run: 'npm run check:ci-no-otlp-creds',
@@ -4276,7 +4292,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Run account backup tests',
     },
   },
-  // >>> gen-manifest: region 36
+  // >>> gen-manifest: region 37
   {
     id: 'check:ci-subscription-schema',
     run: 'npm run check:ci-subscription-schema',
@@ -4301,7 +4317,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Pricing consistency',
     },
   },
-  // <<< gen-manifest: region 36
+  // <<< gen-manifest: region 37
   {
     id: 'check:ci-seo',
     run: 'npm run check:ci-seo',
@@ -4347,7 +4363,7 @@ export const GATES: readonly GateSpec[] = [
     },
   },
   // Its cheap source-level complement: no build, so it lives in the i18n lane. It is a proxy (an inline English string is invisible to it) and cannot replace the gate above.
-  // >>> gen-manifest: region 37
+  // >>> gen-manifest: region 38
   {
     id: 'check:ci-page-locale-imports',
     run: 'npm run check:ci-page-locale-imports',
@@ -4360,7 +4376,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Page locale imports',
     },
   },
-  // <<< gen-manifest: region 37
+  // <<< gen-manifest: region 38
   {
     id: 'check:ci-external-links',
     env: {
@@ -4389,7 +4405,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'DKIM notify DNS',
     },
   },
-  // >>> gen-manifest: region 38
+  // >>> gen-manifest: region 39
   {
     id: 'check:ci-css-dom-refs',
     run: 'npm run check:ci-css-dom-refs',
@@ -4450,7 +4466,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Dead CSS',
     },
   },
-  // <<< gen-manifest: region 38
+  // <<< gen-manifest: region 39
   {
     id: 'check:ci-illustration-contract',
     run: 'npm run check:ci-illustration-contract',
@@ -4510,7 +4526,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Browser smoke',
     },
   },
-  // >>> gen-manifest: region 39
+  // >>> gen-manifest: region 40
   {
     id: 'check:ci-captcha-recovery',
     run: 'npm run check:ci-captcha-recovery',
@@ -4523,7 +4539,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Captcha recovery',
     },
   },
-  // <<< gen-manifest: region 39
+  // <<< gen-manifest: region 40
   {
     id: 'check:ci-page-density',
     run: 'npm run check:ci-page-density',
@@ -4569,7 +4585,22 @@ export const GATES: readonly GateSpec[] = [
       step: 'SSR locale',
     },
   },
-  // >>> gen-manifest: region 40
+  {
+    id: 'check:ci-dist-raw-translation-keys',
+    run: 'npm run check:ci-dist-raw-translation-keys',
+    slow: true,
+    gate: true,
+    // Reads packages/www/dist; without it the gate refuses rather than passing over nothing.
+    needs: ['build:www'],
+    leaves: ['scripts/gates/check-dist-raw-translation-keys.ts'],
+    ci: {
+      kind: 'step',
+      workflow: '.github/workflows/ci-quality.yml',
+      job: 'quality-www-build',
+      step: 'Raw translation keys',
+    },
+  },
+  // >>> gen-manifest: region 41
   {
     id: 'check:ci-docker-image-freshness',
     env: {
@@ -4585,7 +4616,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Docker image freshness',
     },
   },
-  // <<< gen-manifest: region 40
+  // <<< gen-manifest: region 41
   {
     id: 'check:ci-baseline-key-semantics',
     run: 'npm run check:ci-baseline-key-semantics',
@@ -4691,7 +4722,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check prose style (the work, not the person)',
     },
   },
-  // >>> gen-manifest: region 41
+  // >>> gen-manifest: region 42
   {
     id: 'check:ci-nis2-quotes',
     run: 'npm run check:ci-nis2-quotes',
@@ -4704,7 +4735,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Verify NIS2 directive quotations match the official source',
     },
   },
-  // <<< gen-manifest: region 41
+  // <<< gen-manifest: region 42
   {
     id: 'check:cli-examples',
     run: 'npm run check:cli-examples',
@@ -4718,7 +4749,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'CLI examples',
     },
   },
-  // >>> gen-manifest: region 42
+  // >>> gen-manifest: region 43
   {
     id: 'check:ci-tutorial-commands',
     run: 'npm run check:ci-tutorial-commands',
@@ -4743,7 +4774,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Validate tutorial commands are non-interactive',
     },
   },
-  // <<< gen-manifest: region 42
+  // <<< gen-manifest: region 43
   {
     id: 'check:ci-tutorial-parity',
     run: 'npm run check:ci-tutorial-parity',
@@ -4843,7 +4874,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Validate published tutorial word-timing sync (real ASR alignment, not estimated)',
     },
   },
-  // >>> gen-manifest: region 43
+  // >>> gen-manifest: region 44
   {
     id: 'check:ci-account-onboarding',
     run: 'npm run check:ci-account-onboarding',
@@ -4892,7 +4923,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'BLOCKER validator — syncpack versionGroups',
     },
   },
-  // <<< gen-manifest: region 43
+  // <<< gen-manifest: region 44
   {
     id: 'check:ci-suppression-liveness',
     run: 'npm run check:ci-suppression-liveness',
@@ -4905,7 +4936,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Suppression liveness — are our allowlist entries still needed?',
     },
   },
-  // >>> gen-manifest: region 44
+  // >>> gen-manifest: region 45
   {
     id: 'check:ci-pr-condition-ledger',
     env: {
@@ -4921,7 +4952,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'PR-condition ledger is current',
     },
   },
-  // <<< gen-manifest: region 44
+  // <<< gen-manifest: region 45
   {
     id: 'check:ci-dead-bash',
     run: 'npm run check:ci-dead-bash',
@@ -4966,7 +4997,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Pin upstream freshness',
     },
   },
-  // >>> gen-manifest: region 45
+  // >>> gen-manifest: region 46
   {
     id: 'check:ci-jq-boolean-default',
     run: 'npm run check:ci-jq-boolean-default',
@@ -4979,7 +5010,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'jq boolean defaults',
     },
   },
-  // <<< gen-manifest: region 45
+  // <<< gen-manifest: region 46
   {
     id: 'check:ci-dead-case-arms',
     run: 'npm run check:ci-dead-case-arms',
@@ -5028,7 +5059,7 @@ export const GATES: readonly GateSpec[] = [
         'BLOCKER: test_gate_profiler_coverage.py:test_real_tree_seam_free runs the gate seam-free against the real tree under check:ci-pytest (ci-quality.yml quality-security) -- real workflows, real allowlist, real action.yml, real floors -- so the full job parse and both relations execute every CI run; the 22 fixture cases around it prove every fire direction',
     },
   },
-  // >>> gen-manifest: region 46
+  // >>> gen-manifest: region 47
   {
     id: 'check:ci-go-module-sync',
     run: 'npm run check:ci-go-module-sync',
@@ -5041,7 +5072,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Check Go module sync against the renet worktree',
     },
   },
-  // <<< gen-manifest: region 46
+  // <<< gen-manifest: region 47
   {
     // Structural, not semantic. "every declared env var must be referenced" was measured first and rejected: 290 of 849 step env vars have no textual reference, because gh and aws read theirs implicitly. This checks the one shape that is unambiguously a defect -- a step key after a step-boundary comment, left behind when the step itself was deleted.
     id: 'check:ci-workflow-orphan-step-keys',
@@ -5098,7 +5129,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
-  // >>> gen-manifest: region 47
+  // >>> gen-manifest: region 48
   {
     id: 'check:ci-em-dash-surfaces',
     run: 'npm run check:ci-em-dash-surfaces',
@@ -5135,7 +5166,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'i18n',
     },
   },
-  // <<< gen-manifest: region 47
+  // <<< gen-manifest: region 48
   {
     id: 'check:ci-anchor-integrity',
     run: 'npm run check:ci-anchor-integrity',
@@ -5316,7 +5347,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Setup port parity',
     },
   },
-  // >>> gen-manifest: region 48
+  // >>> gen-manifest: region 49
   {
     id: 'check:ci-parity',
     run: 'npm run check:ci-parity',
@@ -5329,7 +5360,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Validate parity between the local gate set and the CI quality surface',
     },
   },
-  // <<< gen-manifest: region 48
+  // <<< gen-manifest: region 49
 
   // F3: two Quality/Static steps that ran in CI and nowhere else. The forward gate could not see them because its BARE_GATE pattern only covered
   // .ci/scripts/{quality,security}/check-*.sh; these live in .ci/scripts/test/
@@ -5541,7 +5572,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Python package tests',
     },
   },
-  // >>> gen-manifest: region 49
+  // >>> gen-manifest: region 50
   {
     id: 'check:ci-pathspec-scope',
     run: 'npm run check:ci-pathspec-scope',
@@ -5554,7 +5585,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Pathspec scope',
     },
   },
-  // <<< gen-manifest: region 49
+  // <<< gen-manifest: region 50
   {
     id: 'check:ci-package-key-budget',
     run: 'npm run check:ci-package-key-budget',
@@ -5837,7 +5868,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Install table',
     },
   },
-  // >>> gen-manifest: region 50
+  // >>> gen-manifest: region 51
   {
     id: 'check:ci-gen-manifest',
     run: 'npm run check:ci-gen-manifest',
@@ -5874,7 +5905,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Container build context',
     },
   },
-  // <<< gen-manifest: region 50
+  // <<< gen-manifest: region 51
   // The executor image, built and booted: B1 (no token at boot) and B2 (no renet) shipped because nothing ever ran it. A full docker build of the CLI workspace, hence slow. CI runs it in ci-build-renet.yml after the renet build (full or cached), because the image must ship a renet-linux-amd64 and that job is where one exists; the gate stages the downloaded private/bin/ copy. Hand-registered: a gate header can only bind a step in ci-quality.yml.
   {
     id: 'check:ci-proxy-image-smoke',
@@ -5914,7 +5945,7 @@ export const GATES: readonly GateSpec[] = [
         'BLOCKER: needs docker and wrangler containers: the gate runs the proxy Worker under `wrangler dev`, whose Containers runtime builds workers/proxy/Dockerfile and starts the executor on a local docker daemon. No ci-quality.yml lane has a docker daemon for wrangler to drive, and the image half alone already runs in CI as check:ci-proxy-image-smoke (ci-build-renet.yml proxy-image-smoke). Exits 77 (blocked, never green) on a host without docker or wrangler.',
     },
   },
-  // >>> gen-manifest: region 51
+  // >>> gen-manifest: region 52
   {
     id: 'check:ci-cli-proxy-safe-output',
     run: 'npm run check:ci-cli-proxy-safe-output',
@@ -5951,7 +5982,7 @@ export const GATES: readonly GateSpec[] = [
       step: 'Turnstile widget drift',
     },
   },
-  // <<< gen-manifest: region 51
+  // <<< gen-manifest: region 52
 ];
 
 /** The root workflow every CI run enters through. */

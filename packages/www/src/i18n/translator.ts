@@ -55,13 +55,16 @@ function interpolate(text: string, params?: InterpolationParams): string {
 function getTranslation(
   catalog: TranslationCatalog,
   key: string,
-  paramsOrFallback?: InterpolationParams | string
+  paramsOrFallback: InterpolationParams | string | undefined,
+  miss: MissHandler
 ): string {
   const translation = getNestedValue(catalog, key);
 
   if (translation === undefined) {
+    // Under `strict` the fallback is refused too: it is English text shown in every
+    // locale, the same defect as the key itself.
+    miss(`Translation key not found: ${key}`);
     if (typeof paramsOrFallback === 'string') return paramsOrFallback;
-    console.warn(`Translation key not found: ${key}`);
     return key;
   }
 
@@ -70,22 +73,59 @@ function getTranslation(
     return interpolate(translation, params);
   }
 
-  console.warn(`Translation key "${key}" does not point to a string value`);
+  miss(`Translation key "${key}" does not point to a string value`);
   return key;
 }
 
 /**
  * Get an array of translations
  */
-function getTranslationArray(catalog: TranslationCatalog, key: string): string[] {
+function getTranslationArray(
+  catalog: TranslationCatalog,
+  key: string,
+  miss: MissHandler
+): string[] {
   const translation = getNestedValue(catalog, key);
 
   if (!Array.isArray(translation)) {
-    console.warn(`Translation key "${key}" does not point to an array`);
+    miss(`Translation key "${key}" does not point to an array`);
     return [];
   }
 
   return translation;
+}
+
+type MissHandler = (message: string) => void;
+
+/**
+ * Whether a miss FAILS instead of warning: true while Astro prerenders a production build.
+ *
+ * WHY. `t()` answers a miss by returning the key, so a missing key ships as visible text.
+ * https://www.rediacc.com/en/pricing showed `pages.pricing.plans.free.name` in all 13
+ * locales (2026-11-17): the card builds the key from `plan.id`, the shared PLAN_ORDER
+ * gained FREE, and no source-reading gate can follow a `${...}` key. The build printed
+ * "Translation key not found" 39 times and exited 0. A throw during prerender turns every
+ * such key, however it was built, into a failed build that names it.
+ *
+ * Dev (`astro dev`) and the browser keep the warning: a dev server should render a page
+ * mid-edit, and a hydrated island must never crash for a reader. Vite replaces
+ * `import.meta.env.SSR` with `false` in the client bundle, so the throw is not shipped.
+ * `import.meta.env` is absent when tsx runs this module outside Vite, which reads as
+ * not strict.
+ */
+function strictByDefault(): boolean {
+  const env = (import.meta as { env?: { PROD?: boolean; SSR?: boolean } }).env;
+  return Boolean(env?.PROD && env?.SSR);
+}
+
+function missHandler(lang: Language, strict: boolean): MissHandler {
+  return strict
+    ? (message) => {
+        throw new Error(
+          `[i18n] ${message} (lang '${lang}'). Add it to en.json and the 12 locales.`
+        );
+      }
+    : (message) => console.warn(message);
 }
 
 /**
@@ -98,13 +138,15 @@ function getTranslationArray(catalog: TranslationCatalog, key: string): string[]
  */
 export function createTranslatorFrom(
   catalogs: Readonly<Record<Language, TranslationCatalog>>,
-  lang: Language
+  lang: Language,
+  { strict = strictByDefault() }: { strict?: boolean } = {}
 ) {
   const catalog = catalogs[lang];
+  const miss = missHandler(lang, strict);
   return {
     t: (key: string, paramsOrFallback?: InterpolationParams | string) =>
-      getTranslation(catalog, key, paramsOrFallback),
-    ta: (key: string) => getTranslationArray(catalog, key),
+      getTranslation(catalog, key, paramsOrFallback, miss),
+    ta: (key: string) => getTranslationArray(catalog, key, miss),
     to: <P extends string>(key: P): PathValue<Translations, P> =>
       getNestedValue(catalog, key) as PathValue<Translations, P>,
   };

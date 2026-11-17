@@ -2218,6 +2218,9 @@ jobs:
       - name: Player CSS scope
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
         run: npm run check:ci-player-css-scope
+      - name: Raw translation keys
+        if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
+        run: npm run check:ci-dist-raw-translation-keys
       - name: SSR locale
         if: ${{ !cancelled() && steps.build-www.outcome == 'success' }}
         run: npm run check:ci-ssr-locale
