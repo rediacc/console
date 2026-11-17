@@ -460,7 +460,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 252 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 251 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -674,7 +674,6 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-env-to-bitwarden-v2.md` | done | 509 | 0 | 10 | 52656 |
 | `agent/plans/_done/PLAN-fast-loop.md` | done | 112 | 0 | 19 | 17517 |
 | `agent/plans/_done/PLAN-gate-scheduling-learned.md` | done | 292 | 0 | 12 | 22988 |
-| `agent/plans/_done/PLAN-gh-retry.md` | done | 52 | 0 | 14 | 8376 |
 | `agent/plans/_done/PLAN-github-pr-review-restore.md` | done | 129 | 0 | 13 | 36107 |
 | `agent/plans/_done/PLAN-hostinger-upgrade-followups.md` | done | 40 | 0 | 4 | 4697 |
 | `agent/plans/_done/PLAN-inline-suppressions.md` | done | 319 | 0 | 11 | 42100 |
@@ -717,7 +716,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-w7p5a-real-run-dispatch.md` | done | 818 | 0 | 10 | 107465 |
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 
-252 plan(s), 190 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+251 plan(s), 189 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
 
 ## Expired plans
 
@@ -756,6 +755,7 @@ A plan whose retention ran out. The FILE is gone and the full text is the blob b
 | `agent/plans/_done/PLAN-fix-stop-hook-completion-evidence-refire.md` | PLAN: stop-hook I7 evidence check scans the whole item history, not the closing tick's own note | 2026-09-22 | 2026-11-03 | `ef61e955cfa214f6e0700b33a9f6d9b96893cc46` |
 | `agent/plans/_done/PLAN-fixture-env-example-validation-entries.md` | PLAN: give test_gate_bws_map.py's clean-fixture test a synthetic .env.example | 2026-09-23 | 2026-11-03 | `9a738cf49706d10a73e065a33c1e2fd7deafa94a` |
 | `agent/plans/_done/PLAN-gate-drop-receipt-verify.md` | PLAN: ci:quick must not let a touched slow gate drop out of the push receipt unseen | 2026-10-04 | 2026-11-16 | `3b697a414eba12e0adaeb6155ce1b51a1706e9ad` |
+| `agent/plans/_done/PLAN-gh-retry.md` | PLAN: GitHub reads survive one 5xx: every CI, release and gate read goes through core/gh_retry | 2026-10-06 | 2026-11-17 | `73d22406eaf8ef68e8e764ff2e48a14202c53339` |
 | `agent/plans/_done/PLAN-github-actions-to-bitwarden.md` | PLAN: the GitHub Actions variable namespace moves to Bitwarden, and a gate holds it there | 2026-09-22 | 2026-11-04 | `fd194dddc41205ef70828a319b03483b3581f8ae` |
 | `agent/plans/_done/PLAN-hint-corpus-ci-assertions.md` | PLAN: check_hint_corpus.py, the control-first liveness gate for the behavioral-hint corpus | 2026-09-22 | 2026-11-03 | `63cef320cfdc127f3b134ae0cedb8e87be837c4e` |
 | `agent/plans/_done/PLAN-major-upgrade-age-clock.md` | PLAN: Held majors age out of the blocklist | 2026-10-01 | 2026-11-11 | `25fb22796c2da85ffa2f484a1d49ce812d7eaafe` |
@@ -792,4 +792,4 @@ A plan whose retention ran out. The FILE is gone and the full text is the blob b
 | `agent/plans/_done/PLAN-wl-wait-duplicate-listener.md` | PLAN: wl_wait duplicate listeners -- `--timeout 60` is SIXTY MINUTES and nothing refuses a second instance | 2026-09-23 | 2026-11-03 | `d95c15b4c60f39f75ab14f3e9e294745e280071a` |
 | `agent/plans/_removed/PLAN-uncommitted-work-exposure-check.md` | PLAN: a Stop-hook uncommitted-work exposure check (a push to commit, session-attributed) | 2026-10-04 | 2026-11-16 | `849e7060c1d52adf5602070c91b5096c723f41d7` |
 
-66 expired plan(s). The row is the receipt; the blob is the text.
+67 expired plan(s). The row is the receipt; the blob is the text.

@@ -4542,31 +4542,6 @@
         "f763f891"
       ]
     },
-    "agent/plans/_done/PLAN-gh-retry.md": {
-      "status": "done",
-      "owner": "d778be9d",
-      "folder": "agent/plans/_done",
-      "moved_at": "2026-10-07",
-      "open": 0,
-      "done": 14,
-      "open_sigs": [],
-      "done_sigs": [
-        "0d24bad2",
-        "3dcc69db",
-        "48cc8fe5",
-        "538d0373",
-        "632e39f6",
-        "681fb37a",
-        "690f1514",
-        "6dad6b22",
-        "914403c7",
-        "b539b124",
-        "cbdbcbc3",
-        "de81a64d",
-        "e674fa47",
-        "ecf56f81"
-      ]
-    },
     "agent/plans/_done/PLAN-github-pr-review-restore.md": {
       "status": "done",
       "owner": "d778be9d",
