@@ -63,3 +63,27 @@ export function parseDfAvailBytes(output: string): number | undefined {
     .pop();
   return line === undefined ? undefined : Number.parseInt(line, 10);
 }
+
+/**
+ * The first line of what a failed `docker exec` said. Node's promisified `exec` rejects with `Command failed: <cmd>` as the first line of `message` and the stderr after it, so stderr (when present) is the detail, and a `Command failed:` line is only the fallback when nothing else was said.
+ */
+export function dockerErrorDetail(err: unknown): string {
+  const firstLine = (t: string): string | undefined =>
+    t
+      .split('\n')
+      .map((l) => l.trim())
+      .find((l) => l !== '' && !l.startsWith('Command failed:'));
+  const stderr = (err as { stderr?: unknown } | null)?.stderr;
+  const message = err instanceof Error ? err.message : String(err);
+  return (
+    (typeof stderr === 'string' ? firstLine(stderr) : undefined) ??
+    firstLine(message) ??
+    message.split('\n')[0]
+  );
+}
+
+/** The ` (docker exec: ...)` suffix of a store-space skip reason: only for the local store, the one the docker probe reads; a remote endpoint's skip is about the endpoint, not docker. */
+export function dockerSkipDetail(endpoint: string, err: unknown): string {
+  if (err === undefined || !isLocalStoreEndpoint(endpoint)) return '';
+  return ` (docker exec: ${dockerErrorDetail(err)})`;
+}

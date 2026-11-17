@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { GIB } from '../largeRepoBudget';
-import { parseDfAvailBytes, storeSpaceVerdict } from '../storeSpace';
+import {
+  dockerErrorDetail,
+  dockerSkipDetail,
+  parseDfAvailBytes,
+  storeSpaceVerdict,
+} from '../storeSpace';
 
 const LOCAL = 'http://127.0.0.1:9100';
 
@@ -45,5 +50,38 @@ describe('parseDfAvailBytes', () => {
   it('reads the number under the header', () => {
     expect(parseDfAvailBytes('      Avail\n19935260672\n')).toBe(19935260672);
     expect(parseDfAvailBytes('Error: no such container')).toBeUndefined();
+  });
+});
+
+describe('docker exec skip detail', () => {
+  const execErr = Object.assign(
+    new Error(
+      'Command failed: docker exec account-config-rustfs df\nError: No such container: x\n'
+    ),
+    { stderr: 'Error: No such container: x\n' }
+  );
+
+  it('names the docker stderr line, not the echoed command', () => {
+    expect(dockerErrorDetail(execErr)).toBe('Error: No such container: x');
+  });
+
+  it('reads the message past the Command failed line when stderr is absent', () => {
+    expect(dockerErrorDetail(new Error('Command failed: docker exec c df\nboom\n'))).toBe('boom');
+  });
+
+  it('falls back to the Command failed line when nothing else was said, and to a string error', () => {
+    expect(dockerErrorDetail(new Error('Command failed: docker exec c df'))).toBe(
+      'Command failed: docker exec c df'
+    );
+    expect(dockerErrorDetail('plain')).toBe('plain');
+  });
+
+  it('suffixes the local store skip only when docker failed', () => {
+    expect(dockerSkipDetail(LOCAL, execErr)).toBe(' (docker exec: Error: No such container: x)');
+    expect(dockerSkipDetail(LOCAL, undefined)).toBe('');
+  });
+
+  it('leaves a remote endpoint skip without a docker suffix', () => {
+    expect(dockerSkipDetail('https://abc.r2.cloudflarestorage.com', execErr)).toBe('');
   });
 });

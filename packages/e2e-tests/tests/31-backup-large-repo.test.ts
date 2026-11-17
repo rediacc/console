@@ -31,6 +31,7 @@ import {
   seedFileViolation,
 } from '../src/utils/backup/largeRepoBudget';
 import {
+  dockerSkipDetail,
   LOCAL_STORE_CONTAINER,
   parseDfAvailBytes,
   storeSpaceVerdict,
@@ -243,14 +244,14 @@ test.describe
 
         // The backup store's own disk: a full one fails the seed's chunk PUTs only after minutes of retries.
         const endpoint = storeAccessFromEnv()?.endpoint ?? 'http://127.0.0.1:9100';
-        let dockerErr = '';
+        let dockerErr: unknown;
         const storeDf = await promisify(exec)(
           `docker exec ${LOCAL_STORE_CONTAINER} df -B1 --output=avail /data`,
           { timeout: 20_000 }
         ).then(
           (r) => parseDfAvailBytes(r.stdout),
           (e: unknown) => {
-            dockerErr = e instanceof Error ? e.message : String(e);
+            dockerErr = e;
             return undefined;
           }
         );
@@ -260,7 +261,7 @@ test.describe
           freeBytes: storeDf,
         });
         if (space.kind === 'skipped') {
-          const detail = dockerErr ? ` (docker exec: ${dockerErr.split('\n')[0]})` : '';
+          const detail = dockerSkipDetail(endpoint, dockerErr);
           test
             .info()
             .annotations.push({ type: 'store-space-skipped', description: space.reason + detail });
