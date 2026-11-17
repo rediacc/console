@@ -140,6 +140,17 @@
     "slow": true,
     "run": "npm run check:i18n:key-usage",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/src/**",
+      "scripts/__tests__/check-translation-key-usage.control.ts",
+      "scripts/gates/check-translation-key-usage.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/entry-point.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/__tests__/check-translation-key-usage.control.ts",
       "scripts/gates/check-translation-key-usage.ts"
@@ -155,6 +166,21 @@
     "id": "check:ci-i18n-hashes",
     "run": "npm run check:ci-i18n-hashes",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/src/i18n/locales/.translation-hashes.json",
+      "packages/cli/src/i18n/locales/en/**",
+      "packages/www/src/i18n/translations/.translation-hashes.json",
+      "packages/www/src/i18n/translations/en.json",
+      "private/account",
+      "scripts/gates/check-translation-hashes.ts",
+      "scripts/lib/crc32.ts",
+      "scripts/lib/findings-report.ts",
+      "scripts/lib/translation-diff.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-translation-hashes.ts"
     ],
@@ -169,6 +195,21 @@
     "id": "check:ci-i18n-completeness",
     "run": "npm run check:ci-i18n-completeness",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/src/i18n/**",
+      "packages/shared/src/i18n/**",
+      "packages/www/src/i18n/**",
+      "private/account",
+      "scripts/gates/check-translation-completeness.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/findings-report.ts",
+      "scripts/lib/repo-root.ts",
+      "scripts/lib/submodule-presence.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-translation-completeness.ts"
     ],
@@ -183,6 +224,24 @@
     "id": "check:ci-i18n-sync",
     "run": "npm run check:ci-i18n-sync",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "scripts/__tests__/generate-translation-hashes.control.ts",
+      "scripts/__tests__/i18n-stamp-keys.control.ts",
+      "scripts/__tests__/sync-translations.control.ts",
+      "scripts/gen/generate-translation-hashes.ts",
+      "scripts/gen/i18n-stamp-keys.ts",
+      "scripts/gen/sync-translations.ts",
+      "scripts/lib/crc32.ts",
+      "scripts/lib/entry-point.ts",
+      "scripts/lib/i18n/json-splice.ts",
+      "scripts/lib/translation-diff.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/__tests__/sync-translations.control.ts",
       "scripts/__tests__/generate-translation-hashes.control.ts",
@@ -199,6 +258,16 @@
     "id": "check:ci-i18n-docs-render-parity",
     "run": "npm run check:ci-i18n-docs-render-parity",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "scripts/__tests__/check-docs-render-parity.control.ts",
+      "scripts/gates/check-docs-render-parity.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/__tests__/check-docs-render-parity.control.ts"
     ],
@@ -214,6 +283,14 @@
     "slow": true,
     "run": "npm run check:ci-i18n-page-locale-imports",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "scripts/__tests__/check-page-locale-imports.control.ts",
+      "scripts/gates/check-page-locale-imports.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/__tests__/check-page-locale-imports.control.ts"
     ],
@@ -228,6 +305,18 @@
     "id": "check:ci-i18n-docs-inline",
     "run": "npm run check:ci-i18n-docs-inline",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/src/i18n/**",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/www/src/**",
+      "scripts/gates/check-docs-inline-translations.ts",
+      "scripts/lib/findings-report.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-docs-inline-translations.ts"
     ],
@@ -242,6 +331,18 @@
     "id": "check:ci-i18n-docs-untranslated",
     "run": "npm run check:ci-i18n-docs-untranslated",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/www/src/content/**",
+      "scripts/gates/check-docs-untranslated-text.ts",
+      "scripts/lib/findings-report.ts",
+      "scripts/lib/language-detect.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-docs-untranslated-text.ts"
     ],
@@ -256,6 +357,19 @@
     "id": "check:ci-i18n-account-email-templates",
     "run": "npm run check:ci-i18n-account-email-templates",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "private/account",
+      "scripts/gates/check-account-email-templates.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/repo-root.ts",
+      "scripts/lib/submodule-presence.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-account-email-templates.ts"
     ],
@@ -270,6 +384,15 @@
     "id": "check:ci-i18n-hardcoded-strings",
     "run": "npm run check:ci-i18n-hardcoded-strings",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/src/**",
+      "scripts/gates/check-component-hardcoded-strings.ts",
+      "scripts/lib/findings-report.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-component-hardcoded-strings.ts"
     ],
@@ -284,6 +407,16 @@
     "id": "check:ci-i18n-naturalization",
     "run": "npm run check:ci-i18n-naturalization",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/src/i18n/translations/**",
+      "scripts/gates/check-i18n-naturalization.ts",
+      "scripts/lib/crc32.ts",
+      "scripts/lib/findings-report.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-i18n-naturalization.ts"
     ],
@@ -298,6 +431,40 @@
     "id": "check:ci-i18n-www-cli-docs",
     "run": "npm run check:ci-i18n-www-cli-docs",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/package.json",
+      "packages/cli/scripts/command-tree.json",
+      "packages/cli/src/i18n/**",
+      "packages/e2e-tests/package.json",
+      "packages/json/package.json",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/provisioning/package.json",
+      "packages/shared/package.json",
+      "packages/shared/src/config/well-known.generated.ts",
+      "packages/www/package.json",
+      "packages/www/scripts/generate-cli-docs.js",
+      "packages/www/scripts/lib/cli-reference-catalog.js",
+      "packages/www/scripts/lib/translation-freshness-git.js",
+      "packages/www/scripts/validate-cli-docs.js",
+      "packages/www/scripts/validate-translation-freshness.js",
+      "packages/www/src/content/docs/ar/cli-application.md",
+      "packages/www/src/content/docs/de/cli-application.md",
+      "packages/www/src/content/docs/en/cli-application.md",
+      "packages/www/src/content/docs/es/cli-application.md",
+      "packages/www/src/content/docs/et/cli-application.md",
+      "packages/www/src/content/docs/fr/cli-application.md",
+      "packages/www/src/content/docs/it/cli-application.md",
+      "packages/www/src/content/docs/ja/cli-application.md",
+      "packages/www/src/content/docs/ko/cli-application.md",
+      "packages/www/src/content/docs/pt/cli-application.md",
+      "packages/www/src/content/docs/ru/cli-application.md",
+      "packages/www/src/content/docs/tr/cli-application.md",
+      "packages/www/src/content/docs/zh/cli-application.md"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "packages/www/scripts/validate-cli-docs.js"
     ],
@@ -312,6 +479,26 @@
     "id": "check:ci-i18n-www-docs-cli-usage",
     "run": "npm run check:ci-i18n-www-docs-cli-usage",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/package.json",
+      "packages/cli/scripts/command-tree.json",
+      "packages/cli/src/i18n/locales/en/cli.json",
+      "packages/e2e-tests/package.json",
+      "packages/json/package.json",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/provisioning/package.json",
+      "packages/shared/package.json",
+      "packages/www/package.json",
+      "packages/www/scripts/lib/cli-reference-catalog.js",
+      "packages/www/scripts/lib/p7-backlog.js",
+      "packages/www/scripts/validate-docs-cli-usage.js",
+      "packages/www/src/content/**",
+      "scripts/lib/shrink-only-baseline.ts"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "packages/www/scripts/validate-docs-cli-usage.js"
     ],
@@ -326,6 +513,27 @@
     "id": "check:ci-i18n-www-landing-cli-usage",
     "run": "npm run check:ci-i18n-www-landing-cli-usage",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/package.json",
+      "packages/cli/scripts/command-tree.json",
+      "packages/cli/src/i18n/locales/en/cli.json",
+      "packages/e2e-tests/package.json",
+      "packages/json/package.json",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/provisioning/package.json",
+      "packages/shared/package.json",
+      "packages/www/package.json",
+      "packages/www/scripts/data/landing-cli-capability-map.json",
+      "packages/www/scripts/lib/cli-reference-catalog.js",
+      "packages/www/scripts/lib/landing-terminal-catalog.js",
+      "packages/www/scripts/validate-landing-cli-usage.js",
+      "packages/www/src/i18n/translations/**",
+      "packages/www/src/pages/**"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "packages/www/scripts/validate-landing-cli-usage.js"
     ],
@@ -354,6 +562,21 @@
     "id": "check:ci-i18n-www-content",
     "run": "npm run check:ci-i18n-www-content",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/package.json",
+      "packages/e2e-tests/package.json",
+      "packages/json/package.json",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/provisioning/package.json",
+      "packages/shared/package.json",
+      "packages/www/package.json",
+      "packages/www/scripts/validate-content.js",
+      "packages/www/src/**"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "packages/www/scripts/validate-content.js"
     ],
@@ -368,6 +591,27 @@
     "id": "check:ci-i18n-www-content-accuracy",
     "run": "npm run check:ci-i18n-www-content-accuracy",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/package.json",
+      "packages/cli/scripts/command-tree.json",
+      "packages/cli/src/i18n/locales/en/cli.json",
+      "packages/e2e-tests/package.json",
+      "packages/json/package.json",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/provisioning/package.json",
+      "packages/shared/package.json",
+      "packages/shared/src/config/well-known.generated.ts",
+      "packages/www/package.json",
+      "packages/www/scripts/lib/cli-reference-catalog.js",
+      "packages/www/scripts/lib/p7-backlog.js",
+      "packages/www/scripts/validate-content-accuracy.js",
+      "packages/www/src/**",
+      "scripts/lib/shrink-only-baseline.ts"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "packages/www/scripts/validate-content-accuracy.js"
     ],
@@ -382,6 +626,20 @@
     "id": "check:ci-i18n-www-comparison-refs",
     "run": "npm run check:ci-i18n-www-comparison-refs",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/package.json",
+      "packages/e2e-tests/package.json",
+      "packages/json/package.json",
+      "packages/locales/package.json",
+      "packages/provisioning/package.json",
+      "packages/shared/package.json",
+      "packages/www/package.json",
+      "packages/www/scripts/validate-comparison-refs.js",
+      "packages/www/src/i18n/translations/en.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "packages/www/scripts/validate-comparison-refs.js"
     ],
@@ -410,6 +668,21 @@
     "id": "check:ci-i18n-account-key-usage",
     "run": "npm run check:ci-i18n-account-key-usage",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "private/account",
+      "scripts/gates/check-account-i18n-key-usage.ts",
+      "scripts/gates/check-translation-key-usage.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/controls.ts",
+      "scripts/lib/entry-point.ts",
+      "scripts/lib/findings-report.ts",
+      "scripts/lib/repo-root.ts",
+      "scripts/lib/submodule-presence.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-account-i18n-key-usage.ts"
     ],
@@ -427,6 +700,214 @@
     "needs": [
       "build:packages"
     ],
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/package.json",
+      "packages/cli/scripts/check-cli-i18n-help-render.ts",
+      "packages/cli/src/adapters/config-field-crypto.ts",
+      "packages/cli/src/adapters/config-file-storage.ts",
+      "packages/cli/src/adapters/crypto.ts",
+      "packages/cli/src/adapters/remote-config-adapter.ts",
+      "packages/cli/src/adapters/remote-config-errors.ts",
+      "packages/cli/src/cli.ts",
+      "packages/cli/src/commands/_validate.ts",
+      "packages/cli/src/commands/backup-check.ts",
+      "packages/cli/src/commands/backup-churn.ts",
+      "packages/cli/src/commands/backup-image-deps.ts",
+      "packages/cli/src/commands/backup-image.ts",
+      "packages/cli/src/commands/backup-immutability.ts",
+      "packages/cli/src/commands/backup-ops-unit-stage.ts",
+      "packages/cli/src/commands/backup-ops.ts",
+      "packages/cli/src/commands/backup-purge.ts",
+      "packages/cli/src/commands/backup-reconcile.ts",
+      "packages/cli/src/commands/backup-repair.ts",
+      "packages/cli/src/commands/backup-restore-chunk.ts",
+      "packages/cli/src/commands/backup-restore-license.ts",
+      "packages/cli/src/commands/backup-restore-path.ts",
+      "packages/cli/src/commands/backup-restore-route.ts",
+      "packages/cli/src/commands/backup-retention-commands.ts",
+      "packages/cli/src/commands/backup-storage-browse.ts",
+      "packages/cli/src/commands/backup-storage-parser.ts",
+      "packages/cli/src/commands/backup-storage-snapshot.ts",
+      "packages/cli/src/commands/backup-storage.ts",
+      "packages/cli/src/commands/backup-store-verify.ts",
+      "packages/cli/src/commands/backup-strategy-options.ts",
+      "packages/cli/src/commands/backup-strategy-replication.ts",
+      "packages/cli/src/commands/backup-strategy-rows.ts",
+      "packages/cli/src/commands/backup-strategy.ts",
+      "packages/cli/src/commands/backup-toc-key.ts",
+      "packages/cli/src/commands/backup-verification.ts",
+      "packages/cli/src/commands/backup.ts",
+      "packages/cli/src/commands/bwlimit-param.ts",
+      "packages/cli/src/commands/cluster/index.ts",
+      "packages/cli/src/commands/config-access.ts",
+      "packages/cli/src/commands/config-import-machine.ts",
+      "packages/cli/src/commands/config-prune-cmd.ts",
+      "packages/cli/src/commands/config-reconcile.ts",
+      "packages/cli/src/commands/config-remote-enable.ts",
+      "packages/cli/src/commands/config-remote-handoff.ts",
+      "packages/cli/src/commands/config-remote-relay.ts",
+      "packages/cli/src/commands/config-remote.ts",
+      "packages/cli/src/commands/config-ssh.ts",
+      "packages/cli/src/commands/config.ts",
+      "packages/cli/src/commands/config/**",
+      "packages/cli/src/commands/credits.ts",
+      "packages/cli/src/commands/datastore-prune-parser.ts",
+      "packages/cli/src/commands/datastore.ts",
+      "packages/cli/src/commands/doctor-subscription.ts",
+      "packages/cli/src/commands/doctor.ts",
+      "packages/cli/src/commands/executor-daemon.ts",
+      "packages/cli/src/commands/function-params.ts",
+      "packages/cli/src/commands/job.ts",
+      "packages/cli/src/commands/legal.ts",
+      "packages/cli/src/commands/machine/**",
+      "packages/cli/src/commands/mcp/index.ts",
+      "packages/cli/src/commands/ops/**",
+      "packages/cli/src/commands/repo-admin-orphan.ts",
+      "packages/cli/src/commands/repo-admin.ts",
+      "packages/cli/src/commands/repo-autostart-list.ts",
+      "packages/cli/src/commands/repo-backup-list.ts",
+      "packages/cli/src/commands/repo-backup.ts",
+      "packages/cli/src/commands/repo-batch-utils.ts",
+      "packages/cli/src/commands/repo-branching.ts",
+      "packages/cli/src/commands/repo-canary.ts",
+      "packages/cli/src/commands/repo-cat.ts",
+      "packages/cli/src/commands/repo-container.ts",
+      "packages/cli/src/commands/repo-create-delete-teardown.ts",
+      "packages/cli/src/commands/repo-create-delete.ts",
+      "packages/cli/src/commands/repo-delete-settle.ts",
+      "packages/cli/src/commands/repo-delta.ts",
+      "packages/cli/src/commands/repo-diff.ts",
+      "packages/cli/src/commands/repo-extended.ts",
+      "packages/cli/src/commands/repo-fork-timeline.ts",
+      "packages/cli/src/commands/repo-fork.ts",
+      "packages/cli/src/commands/repo-gpu.ts",
+      "packages/cli/src/commands/repo-health.ts",
+      "packages/cli/src/commands/repo-job-outcome.ts",
+      "packages/cli/src/commands/repo-list-parser.ts",
+      "packages/cli/src/commands/repo-maintenance.ts",
+      "packages/cli/src/commands/repo-migrate.ts",
+      "packages/cli/src/commands/repo-ownership-params.ts",
+      "packages/cli/src/commands/repo-permission.ts",
+      "packages/cli/src/commands/repo-policy.ts",
+      "packages/cli/src/commands/repo-promote.ts",
+      "packages/cli/src/commands/repo-prune.ts",
+      "packages/cli/src/commands/repo-repair.ts",
+      "packages/cli/src/commands/repo-replicate.ts",
+      "packages/cli/src/commands/repo-secret.ts",
+      "packages/cli/src/commands/repo-sync-helpers.ts",
+      "packages/cli/src/commands/repo-sync-parents.ts",
+      "packages/cli/src/commands/repo-sync.ts",
+      "packages/cli/src/commands/repo-trim.ts",
+      "packages/cli/src/commands/repo-tunnel.ts",
+      "packages/cli/src/commands/repo.ts",
+      "packages/cli/src/commands/serve.ts",
+      "packages/cli/src/commands/server.ts",
+      "packages/cli/src/commands/shortcuts.ts",
+      "packages/cli/src/commands/subscription-actions.ts",
+      "packages/cli/src/commands/subscription-notices.ts",
+      "packages/cli/src/commands/subscription-output.ts",
+      "packages/cli/src/commands/subscription-proxy-token.ts",
+      "packages/cli/src/commands/subscription-repo-refresh.ts",
+      "packages/cli/src/commands/subscription-repo-table.ts",
+      "packages/cli/src/commands/subscription-retire.ts",
+      "packages/cli/src/commands/subscription-status-view.ts",
+      "packages/cli/src/commands/subscription-token-free.ts",
+      "packages/cli/src/commands/subscription.ts",
+      "packages/cli/src/commands/term-ssh-exit.ts",
+      "packages/cli/src/commands/term.ts",
+      "packages/cli/src/commands/tools.ts",
+      "packages/cli/src/commands/update.ts",
+      "packages/cli/src/commands/version.ts",
+      "packages/cli/src/commands/vscode-browser.ts",
+      "packages/cli/src/commands/vscode-serve.ts",
+      "packages/cli/src/commands/vscode-utils.ts",
+      "packages/cli/src/commands/vscode.ts",
+      "packages/cli/src/config/command-docs.ts",
+      "packages/cli/src/config/command-metadata.ts",
+      "packages/cli/src/config/command-registry.ts",
+      "packages/cli/src/data/third-party-credits.json",
+      "packages/cli/src/i18n/**",
+      "packages/cli/src/remote/**",
+      "packages/cli/src/schema/fingerprint.ts",
+      "packages/cli/src/services/account/**",
+      "packages/cli/src/services/addressing/place-rules.ts",
+      "packages/cli/src/services/addressing/ref-parser.ts",
+      "packages/cli/src/services/addressing/resolve-machine.ts",
+      "packages/cli/src/services/backup-image/**",
+      "packages/cli/src/services/backup/**",
+      "packages/cli/src/services/cluster/**",
+      "packages/cli/src/services/config/**",
+      "packages/cli/src/services/core/**",
+      "packages/cli/src/services/executor/**",
+      "packages/cli/src/services/jobs/attach.ts",
+      "packages/cli/src/services/jobs/command-job.ts",
+      "packages/cli/src/services/jobs/duration.ts",
+      "packages/cli/src/services/jobs/executor-observation.ts",
+      "packages/cli/src/services/jobs/finished-notice.ts",
+      "packages/cli/src/services/jobs/job-group.ts",
+      "packages/cli/src/services/jobs/job-wait.ts",
+      "packages/cli/src/services/jobs/remote-deps.ts",
+      "packages/cli/src/services/jobs/run-job.ts",
+      "packages/cli/src/services/jobs/scratch-store.ts",
+      "packages/cli/src/services/jobs/step-output.ts",
+      "packages/cli/src/services/jobs/steps-conversions-machine.ts",
+      "packages/cli/src/services/jobs/steps-conversions-repo.ts",
+      "packages/cli/src/services/jobs/steps-support.ts",
+      "packages/cli/src/services/jobs/steps.ts",
+      "packages/cli/src/services/jobs/ticket-store.ts",
+      "packages/cli/src/services/machine/add-existing.ts",
+      "packages/cli/src/services/machine/machine-connection.ts",
+      "packages/cli/src/services/machine/machine-remove-guard.ts",
+      "packages/cli/src/services/machine/machine-status.ts",
+      "packages/cli/src/services/machine/ssh-connection.ts",
+      "packages/cli/src/services/machine/ssh-key.ts",
+      "packages/cli/src/services/provision/cloudflare-dns.ts",
+      "packages/cli/src/services/provision/infra-provision.ts",
+      "packages/cli/src/services/provision/region-discovery.ts",
+      "packages/cli/src/services/renet/**",
+      "packages/cli/src/services/repo-migrate-license.ts",
+      "packages/cli/src/services/repo/**",
+      "packages/cli/src/services/serve/account-fetch.ts",
+      "packages/cli/src/services/serve/audit.ts",
+      "packages/cli/src/services/serve/auth.ts",
+      "packages/cli/src/services/serve/command-dispatch.ts",
+      "packages/cli/src/services/serve/container-config.ts",
+      "packages/cli/src/services/serve/crypto.ts",
+      "packages/cli/src/services/serve/egress-report.ts",
+      "packages/cli/src/services/serve/handoff-schema.ts",
+      "packages/cli/src/services/serve/job-poll.ts",
+      "packages/cli/src/services/serve/job-routes.ts",
+      "packages/cli/src/services/serve/policy.ts",
+      "packages/cli/src/services/serve/route-span.ts",
+      "packages/cli/src/services/serve/server.ts",
+      "packages/cli/src/services/serve/sessions.ts",
+      "packages/cli/src/services/server/**",
+      "packages/cli/src/services/state.ts",
+      "packages/cli/src/services/telemetry/**",
+      "packages/cli/src/services/tofu/cluster-tf-generator.ts",
+      "packages/cli/src/services/tofu/executor.ts",
+      "packages/cli/src/services/tofu/index.ts",
+      "packages/cli/src/services/tofu/provider-pins.generated.ts",
+      "packages/cli/src/services/tofu/provider-registry.json",
+      "packages/cli/src/services/tofu/provider-resolver.ts",
+      "packages/cli/src/services/tofu/provision.ts",
+      "packages/cli/src/services/tofu/tf-generator.ts",
+      "packages/cli/src/services/tools/**",
+      "packages/cli/src/services/update/**",
+      "packages/cli/src/templates/embedded.generated.ts",
+      "packages/cli/src/types/errors.ts",
+      "packages/cli/src/types/index.ts",
+      "packages/cli/src/utils/**",
+      "packages/cli/src/version.ts",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/provisioning/package.json",
+      "packages/shared/**",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "packages/cli/scripts/check-cli-i18n-help-render.ts"
     ],
@@ -444,6 +925,224 @@
     "needs": [
       "build:packages"
     ],
+    "paths": [
+      ".ci/scripts/private/**",
+      ".ci/tutorials/**",
+      ".claude/skills/rdc/**",
+      ".npmrc",
+      "docs/**",
+      "package.json",
+      "packages/cli/package.json",
+      "packages/cli/scripts/command-tree.json",
+      "packages/cli/scripts/lib/command-tree-lib.ts",
+      "packages/cli/src/adapters/config-field-crypto.ts",
+      "packages/cli/src/adapters/config-file-storage.ts",
+      "packages/cli/src/adapters/crypto.ts",
+      "packages/cli/src/adapters/remote-config-adapter.ts",
+      "packages/cli/src/adapters/remote-config-errors.ts",
+      "packages/cli/src/cli.ts",
+      "packages/cli/src/commands/_validate.ts",
+      "packages/cli/src/commands/backup-check.ts",
+      "packages/cli/src/commands/backup-churn.ts",
+      "packages/cli/src/commands/backup-image-deps.ts",
+      "packages/cli/src/commands/backup-image.ts",
+      "packages/cli/src/commands/backup-immutability.ts",
+      "packages/cli/src/commands/backup-ops-unit-stage.ts",
+      "packages/cli/src/commands/backup-ops.ts",
+      "packages/cli/src/commands/backup-purge.ts",
+      "packages/cli/src/commands/backup-reconcile.ts",
+      "packages/cli/src/commands/backup-repair.ts",
+      "packages/cli/src/commands/backup-restore-chunk.ts",
+      "packages/cli/src/commands/backup-restore-license.ts",
+      "packages/cli/src/commands/backup-restore-path.ts",
+      "packages/cli/src/commands/backup-restore-route.ts",
+      "packages/cli/src/commands/backup-retention-commands.ts",
+      "packages/cli/src/commands/backup-storage-browse.ts",
+      "packages/cli/src/commands/backup-storage-parser.ts",
+      "packages/cli/src/commands/backup-storage-snapshot.ts",
+      "packages/cli/src/commands/backup-storage.ts",
+      "packages/cli/src/commands/backup-store-verify.ts",
+      "packages/cli/src/commands/backup-strategy-options.ts",
+      "packages/cli/src/commands/backup-strategy-replication.ts",
+      "packages/cli/src/commands/backup-strategy-rows.ts",
+      "packages/cli/src/commands/backup-strategy.ts",
+      "packages/cli/src/commands/backup-toc-key.ts",
+      "packages/cli/src/commands/backup-verification.ts",
+      "packages/cli/src/commands/backup.ts",
+      "packages/cli/src/commands/bwlimit-param.ts",
+      "packages/cli/src/commands/cluster/index.ts",
+      "packages/cli/src/commands/config-access.ts",
+      "packages/cli/src/commands/config-import-machine.ts",
+      "packages/cli/src/commands/config-prune-cmd.ts",
+      "packages/cli/src/commands/config-reconcile.ts",
+      "packages/cli/src/commands/config-remote-enable.ts",
+      "packages/cli/src/commands/config-remote-handoff.ts",
+      "packages/cli/src/commands/config-remote-relay.ts",
+      "packages/cli/src/commands/config-remote.ts",
+      "packages/cli/src/commands/config-ssh.ts",
+      "packages/cli/src/commands/config.ts",
+      "packages/cli/src/commands/config/**",
+      "packages/cli/src/commands/credits.ts",
+      "packages/cli/src/commands/datastore-prune-parser.ts",
+      "packages/cli/src/commands/datastore.ts",
+      "packages/cli/src/commands/doctor-subscription.ts",
+      "packages/cli/src/commands/doctor.ts",
+      "packages/cli/src/commands/executor-daemon.ts",
+      "packages/cli/src/commands/function-params.ts",
+      "packages/cli/src/commands/job.ts",
+      "packages/cli/src/commands/legal.ts",
+      "packages/cli/src/commands/machine/**",
+      "packages/cli/src/commands/mcp/index.ts",
+      "packages/cli/src/commands/ops/**",
+      "packages/cli/src/commands/repo-admin-orphan.ts",
+      "packages/cli/src/commands/repo-admin.ts",
+      "packages/cli/src/commands/repo-autostart-list.ts",
+      "packages/cli/src/commands/repo-backup-list.ts",
+      "packages/cli/src/commands/repo-backup.ts",
+      "packages/cli/src/commands/repo-batch-utils.ts",
+      "packages/cli/src/commands/repo-branching.ts",
+      "packages/cli/src/commands/repo-canary.ts",
+      "packages/cli/src/commands/repo-cat.ts",
+      "packages/cli/src/commands/repo-container.ts",
+      "packages/cli/src/commands/repo-create-delete-teardown.ts",
+      "packages/cli/src/commands/repo-create-delete.ts",
+      "packages/cli/src/commands/repo-delete-settle.ts",
+      "packages/cli/src/commands/repo-delta.ts",
+      "packages/cli/src/commands/repo-diff.ts",
+      "packages/cli/src/commands/repo-extended.ts",
+      "packages/cli/src/commands/repo-fork-timeline.ts",
+      "packages/cli/src/commands/repo-fork.ts",
+      "packages/cli/src/commands/repo-gpu.ts",
+      "packages/cli/src/commands/repo-health.ts",
+      "packages/cli/src/commands/repo-job-outcome.ts",
+      "packages/cli/src/commands/repo-list-parser.ts",
+      "packages/cli/src/commands/repo-maintenance.ts",
+      "packages/cli/src/commands/repo-migrate.ts",
+      "packages/cli/src/commands/repo-ownership-params.ts",
+      "packages/cli/src/commands/repo-permission.ts",
+      "packages/cli/src/commands/repo-policy.ts",
+      "packages/cli/src/commands/repo-promote.ts",
+      "packages/cli/src/commands/repo-prune.ts",
+      "packages/cli/src/commands/repo-repair.ts",
+      "packages/cli/src/commands/repo-replicate.ts",
+      "packages/cli/src/commands/repo-secret.ts",
+      "packages/cli/src/commands/repo-sync-helpers.ts",
+      "packages/cli/src/commands/repo-sync-parents.ts",
+      "packages/cli/src/commands/repo-sync.ts",
+      "packages/cli/src/commands/repo-trim.ts",
+      "packages/cli/src/commands/repo-tunnel.ts",
+      "packages/cli/src/commands/repo.ts",
+      "packages/cli/src/commands/serve.ts",
+      "packages/cli/src/commands/server.ts",
+      "packages/cli/src/commands/shortcuts.ts",
+      "packages/cli/src/commands/subscription-actions.ts",
+      "packages/cli/src/commands/subscription-notices.ts",
+      "packages/cli/src/commands/subscription-output.ts",
+      "packages/cli/src/commands/subscription-proxy-token.ts",
+      "packages/cli/src/commands/subscription-repo-refresh.ts",
+      "packages/cli/src/commands/subscription-repo-table.ts",
+      "packages/cli/src/commands/subscription-retire.ts",
+      "packages/cli/src/commands/subscription-status-view.ts",
+      "packages/cli/src/commands/subscription-token-free.ts",
+      "packages/cli/src/commands/subscription.ts",
+      "packages/cli/src/commands/term-ssh-exit.ts",
+      "packages/cli/src/commands/term.ts",
+      "packages/cli/src/commands/tools.ts",
+      "packages/cli/src/commands/update.ts",
+      "packages/cli/src/commands/version.ts",
+      "packages/cli/src/commands/vscode-browser.ts",
+      "packages/cli/src/commands/vscode-serve.ts",
+      "packages/cli/src/commands/vscode-utils.ts",
+      "packages/cli/src/commands/vscode.ts",
+      "packages/cli/src/config/command-docs.ts",
+      "packages/cli/src/config/command-metadata.ts",
+      "packages/cli/src/config/command-registry.ts",
+      "packages/cli/src/data/third-party-credits.json",
+      "packages/cli/src/i18n/**",
+      "packages/cli/src/remote/**",
+      "packages/cli/src/schema/fingerprint.ts",
+      "packages/cli/src/services/account/**",
+      "packages/cli/src/services/addressing/place-rules.ts",
+      "packages/cli/src/services/addressing/ref-parser.ts",
+      "packages/cli/src/services/addressing/resolve-machine.ts",
+      "packages/cli/src/services/backup-image/**",
+      "packages/cli/src/services/backup/**",
+      "packages/cli/src/services/cluster/**",
+      "packages/cli/src/services/config/**",
+      "packages/cli/src/services/core/**",
+      "packages/cli/src/services/executor/**",
+      "packages/cli/src/services/jobs/attach.ts",
+      "packages/cli/src/services/jobs/command-job.ts",
+      "packages/cli/src/services/jobs/duration.ts",
+      "packages/cli/src/services/jobs/executor-observation.ts",
+      "packages/cli/src/services/jobs/finished-notice.ts",
+      "packages/cli/src/services/jobs/job-group.ts",
+      "packages/cli/src/services/jobs/job-wait.ts",
+      "packages/cli/src/services/jobs/remote-deps.ts",
+      "packages/cli/src/services/jobs/run-job.ts",
+      "packages/cli/src/services/jobs/scratch-store.ts",
+      "packages/cli/src/services/jobs/step-output.ts",
+      "packages/cli/src/services/jobs/steps-conversions-machine.ts",
+      "packages/cli/src/services/jobs/steps-conversions-repo.ts",
+      "packages/cli/src/services/jobs/steps-support.ts",
+      "packages/cli/src/services/jobs/steps.ts",
+      "packages/cli/src/services/jobs/ticket-store.ts",
+      "packages/cli/src/services/machine/add-existing.ts",
+      "packages/cli/src/services/machine/machine-connection.ts",
+      "packages/cli/src/services/machine/machine-remove-guard.ts",
+      "packages/cli/src/services/machine/machine-status.ts",
+      "packages/cli/src/services/machine/ssh-connection.ts",
+      "packages/cli/src/services/machine/ssh-key.ts",
+      "packages/cli/src/services/provision/cloudflare-dns.ts",
+      "packages/cli/src/services/provision/infra-provision.ts",
+      "packages/cli/src/services/provision/region-discovery.ts",
+      "packages/cli/src/services/renet/**",
+      "packages/cli/src/services/repo-migrate-license.ts",
+      "packages/cli/src/services/repo/**",
+      "packages/cli/src/services/serve/account-fetch.ts",
+      "packages/cli/src/services/serve/audit.ts",
+      "packages/cli/src/services/serve/auth.ts",
+      "packages/cli/src/services/serve/command-dispatch.ts",
+      "packages/cli/src/services/serve/container-config.ts",
+      "packages/cli/src/services/serve/crypto.ts",
+      "packages/cli/src/services/serve/egress-report.ts",
+      "packages/cli/src/services/serve/handoff-schema.ts",
+      "packages/cli/src/services/serve/job-poll.ts",
+      "packages/cli/src/services/serve/job-routes.ts",
+      "packages/cli/src/services/serve/policy.ts",
+      "packages/cli/src/services/serve/route-span.ts",
+      "packages/cli/src/services/serve/server.ts",
+      "packages/cli/src/services/serve/sessions.ts",
+      "packages/cli/src/services/server/**",
+      "packages/cli/src/services/state.ts",
+      "packages/cli/src/services/telemetry/**",
+      "packages/cli/src/services/tofu/cluster-tf-generator.ts",
+      "packages/cli/src/services/tofu/executor.ts",
+      "packages/cli/src/services/tofu/index.ts",
+      "packages/cli/src/services/tofu/provider-pins.generated.ts",
+      "packages/cli/src/services/tofu/provider-registry.json",
+      "packages/cli/src/services/tofu/provider-resolver.ts",
+      "packages/cli/src/services/tofu/provision.ts",
+      "packages/cli/src/services/tofu/tf-generator.ts",
+      "packages/cli/src/services/tools/**",
+      "packages/cli/src/services/update/**",
+      "packages/cli/src/templates/embedded.generated.ts",
+      "packages/cli/src/types/errors.ts",
+      "packages/cli/src/types/index.ts",
+      "packages/cli/src/utils/**",
+      "packages/cli/src/version.ts",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/provisioning/package.json",
+      "packages/shared/**",
+      "packages/www/package.json",
+      "packages/www/scripts/lib/p7-backlog.js",
+      "packages/www/src/content/docs/en/**",
+      "scripts/gates/check-cli-docs.ts",
+      "scripts/lib/shrink-only-baseline.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-cli-docs.ts"
     ],
@@ -458,6 +1157,16 @@
     "id": "check:ci-locale-currency",
     "run": "npm run check:ci-locale-currency",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/src/i18n/translations/**",
+      "scripts/__tests__/check-locale-currency-integrity.control.ts",
+      "scripts/gates/check-locale-currency-integrity.ts",
+      "scripts/lib/entry-point.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-locale-currency-integrity.ts",
       "scripts/__tests__/check-locale-currency-integrity.control.ts"
@@ -501,6 +1210,30 @@
     "id": "check:ci-i18n-media",
     "run": "npm run check:ci-i18n-media",
     "gate": true,
+    "paths": [
+      ".ci/tutorials/**",
+      ".npmrc",
+      "package.json",
+      "packages/cli/package.json",
+      "packages/e2e-tests/package.json",
+      "packages/json/package.json",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/provisioning/package.json",
+      "packages/shared/package.json",
+      "packages/shared/src/config/well-known.generated.ts",
+      "packages/www/package.json",
+      "packages/www/public/assets/tutorials/**",
+      "packages/www/scripts/lib/cast-patterns.js",
+      "packages/www/scripts/lib/p7-backlog.js",
+      "packages/www/scripts/lib/terminal-cells.js",
+      "packages/www/scripts/validate-tutorial-audio.js",
+      "packages/www/scripts/validate-tutorial-cast-output.js",
+      "packages/www/scripts/validate-tutorial-transcripts.js",
+      "packages/www/src/data/**",
+      "scripts/lib/shrink-only-baseline.ts"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "packages/www/scripts/validate-tutorial-transcripts.js",
       "packages/www/scripts/validate-tutorial-audio.js",
@@ -517,6 +1250,17 @@
     "id": "check:ci-rubric-calibration",
     "run": "npm run check:ci-rubric-calibration",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".claude/hooks/stop/calibrate-judge-rules.py",
+      ".claude/hooks/stop/wl_bravedefault.py",
+      ".claude/hooks/stop/wl_classsweep.py",
+      ".claude/hooks/stop/wl_shapedup.py",
+      ".claude/hooks/stop/worklist_messages.py",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_rubric_calibration.py"
     ],
@@ -531,6 +1275,13 @@
     "id": "check:ci-www-build-token",
     "run": "npm run check:ci-www-build-token",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".github/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_www_build_token.py"
     ],
@@ -573,6 +1324,13 @@
     "id": "check:ci-judged-rule-wiring",
     "run": "npm run check:ci-judged-rule-wiring",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".claude/hooks/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_judged_rule_wiring.py"
     ],
@@ -660,6 +1418,14 @@
     "id": "check:ci-tutorial-healthcheck-headroom",
     "run": "npm run check:ci-tutorial-healthcheck-headroom",
     "gate": true,
+    "paths": [
+      ".ci/docker/ci/docker-compose.yml",
+      ".ci/scripts/quality/**",
+      ".ci/tutorials/apps/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_tutorial_healthcheck_headroom.py"
     ],
@@ -703,6 +1469,23 @@
       "max": "all"
     },
     "heavy": true,
+    "paths": [
+      ".claude/skills/rdc/reference.md",
+      ".npmrc",
+      "package.json",
+      "packages/cli/**",
+      "packages/e2e-tests/package.json",
+      "packages/json/package.json",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/provisioning/**",
+      "packages/shared/**",
+      "packages/www/package.json",
+      "private/renet",
+      "rdc.sh",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "vitest"
     ],
@@ -725,6 +1508,23 @@
       "max": "all"
     },
     "heavy": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/package.json",
+      "packages/cli/scripts/generate-cli-contract.ts",
+      "packages/cli/tsconfig.json",
+      "packages/e2e-tests/package.json",
+      "packages/json/package.json",
+      "packages/locales/package.json",
+      "packages/provisioning/package.json",
+      "packages/shared/**",
+      "packages/www/package.json",
+      "private/account",
+      "private/renet",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "vitest"
     ],
@@ -742,6 +1542,32 @@
     "needs": [
       "build:packages"
     ],
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/package.json",
+      "packages/cli/scripts/command-tree.json",
+      "packages/cli/src/i18n/**",
+      "packages/e2e-tests/package.json",
+      "packages/json/package.json",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/provisioning/package.json",
+      "packages/shared/package.json",
+      "packages/shared/src/config/defaults.ts",
+      "packages/shared/src/config/well-known.generated.ts",
+      "packages/shared/src/legal/**",
+      "packages/shared/src/regions/index.ts",
+      "packages/shared/src/subscription/constants.ts",
+      "packages/shared/src/subscription/crypto.ts",
+      "packages/shared/src/subscription/signing-keys.ts",
+      "packages/shared/src/subscription/validation.ts",
+      "packages/shared/tsconfig.json",
+      "packages/www/**",
+      "regions.json",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "vitest"
     ],
@@ -792,6 +1618,61 @@
     "needs": [
       "build:www"
     ],
+    "paths": [
+      ".ci/config/ops-health.json",
+      ".npmrc",
+      "package.json",
+      "packages/cli/package.json",
+      "packages/e2e-tests/package.json",
+      "packages/json/package.json",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/provisioning/package.json",
+      "packages/shared/package.json",
+      "packages/shared/src/audit/event-schema.ts",
+      "packages/shared/src/audit/index.ts",
+      "packages/shared/src/cli-contract/data/contract.generated.ts",
+      "packages/shared/src/cli-contract/discovery.ts",
+      "packages/shared/src/cli-contract/i18n.ts",
+      "packages/shared/src/cli-contract/index.ts",
+      "packages/shared/src/cli-contract/validation.ts",
+      "packages/shared/src/cli-contract/wire.ts",
+      "packages/shared/src/config-crypto/**",
+      "packages/shared/src/config/**",
+      "packages/shared/src/e2e/**",
+      "packages/shared/src/encryption/**",
+      "packages/shared/src/error-parser/index.ts",
+      "packages/shared/src/formatters/index.ts",
+      "packages/shared/src/i18n/types.ts",
+      "packages/shared/src/index.ts",
+      "packages/shared/src/legal/**",
+      "packages/shared/src/renet-contract/**",
+      "packages/shared/src/services/**",
+      "packages/shared/src/subscription/constants.ts",
+      "packages/shared/src/subscription/crypto.ts",
+      "packages/shared/src/subscription/delegation-cert-id.ts",
+      "packages/shared/src/subscription/delegation-cert-policy.ts",
+      "packages/shared/src/subscription/fingerprint.ts",
+      "packages/shared/src/subscription/index.ts",
+      "packages/shared/src/subscription/onprem-free-tier.ts",
+      "packages/shared/src/subscription/renewal-manifest.ts",
+      "packages/shared/src/subscription/signing-keys.ts",
+      "packages/shared/src/subscription/validation.ts",
+      "packages/shared/src/telemetry/**",
+      "packages/shared/src/types/api.ts",
+      "packages/shared/src/types/derived.ts",
+      "packages/shared/src/types/index.ts",
+      "packages/shared/src/utils/**",
+      "packages/shared/src/validation/cidr.ts",
+      "packages/shared/src/validation/index.ts",
+      "packages/shared/tsconfig.json",
+      "packages/www/package.json",
+      "private/account",
+      "regions.json",
+      "tsconfig.json",
+      "workers/**"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "vitest"
     ],
@@ -834,6 +1715,13 @@
     "id": "check:ci-job-aggregation",
     "run": "npm run check:ci-job-aggregation",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".github/workflows/ci.yml",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_ci_job_aggregation.py"
     ],
@@ -848,6 +1736,12 @@
     "id": "check:ci-swallowed-failures",
     "run": "npm run check:ci-swallowed-failures",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_swallowed_failures.py"
     ],
@@ -862,6 +1756,13 @@
     "id": "check:ci-probe-parity",
     "run": "npm run check:ci-probe-parity",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".npmrc",
+      "package.json",
+      "packages/cli/src/utils/secure-storage.ts"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_probe_parity.py"
     ],
@@ -904,6 +1805,17 @@
     "id": "check:ci-npmrc",
     "run": "npm run check:ci-npmrc",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".gitmodules",
+      ".npmrc",
+      "package.json",
+      "private/account",
+      "private/elite",
+      "private/homebrew-tap",
+      "private/renet"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_npmrc.py"
     ],
@@ -941,6 +1853,16 @@
     "id": "check:ci-native-rebuild",
     "run": "npm run check:ci-native-rebuild",
     "gate": true,
+    "paths": [
+      ".ci/rediacc_ci/core/local_common.py",
+      ".npmrc",
+      "package.json",
+      "run.sh",
+      "scripts/gates/check-native-rebuild.ts",
+      "scripts/lib/entry-point.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-native-rebuild.ts"
     ],
@@ -955,6 +1877,14 @@
     "id": "check:ci-git-tool-safety",
     "run": "npm run check:ci-git-tool-safety",
     "gate": true,
+    "paths": [
+      ".claude/hooks/stop/wl_git.py",
+      ".npmrc",
+      "package.json",
+      "scripts/gates/check-git-tool-safety.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-git-tool-safety.ts"
     ],
@@ -969,6 +1899,17 @@
     "id": "check:ci-bootstrap-idempotency",
     "run": "npm run check:ci-bootstrap-idempotency",
     "gate": true,
+    "paths": [
+      ".ci/rediacc_ci/core/local_common.py",
+      ".ci/rediacc_ci/setup/machine.py",
+      ".ci/rediacc_ci/setup/phases.py",
+      ".npmrc",
+      "package.json",
+      "run.sh",
+      "scripts/gates/check-bootstrap-idempotency.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-bootstrap-idempotency.ts"
     ],
@@ -1480,6 +2421,22 @@
     "id": "check:ci-ceph-image-pin",
     "run": "npm run check:ci-ceph-image-pin",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/shared/package.json",
+      "packages/shared/src/config/well-known.generated.ts",
+      "private/renet",
+      "scripts/gates/check-ceph-image-pin.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/controls.ts",
+      "scripts/lib/entry-point.ts",
+      "scripts/lib/pins/registry.ts",
+      "scripts/lib/pins/remedy.ts",
+      "scripts/lib/repo-root.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-ceph-image-pin.ts"
     ],
@@ -1494,6 +2451,14 @@
     "id": "check:ci-naturalization-model-policy",
     "run": "npm run check:ci-naturalization-model-policy",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/src/i18n/translations/.naturalized-hashes.json",
+      "scripts/gates/check-naturalization-model-policy.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-naturalization-model-policy.ts"
     ],
@@ -1544,6 +2509,19 @@
     "id": "check:ci-peer-deps",
     "run": "npm run check:ci-peer-deps",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".npmrc",
+      "package.json",
+      "packages/cli/package.json",
+      "packages/e2e-tests/package.json",
+      "packages/json/package.json",
+      "packages/locales/package.json",
+      "packages/provisioning/package.json",
+      "packages/shared/package.json",
+      "packages/www/package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_peer_deps.py"
     ],
@@ -1607,6 +2585,15 @@
     "id": "check:ci-scope-scripts-reachability",
     "run": "npm run check:ci-scope-scripts-reachability",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".github/**",
+      ".npmrc",
+      "package.json",
+      "run.sh",
+      "scripts/ci/write-shard-receipt.cjs"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_scope_scripts_reachability.py"
     ],
@@ -1732,6 +2719,13 @@
     "id": "check:ci-actions-vars",
     "run": "npm run check:ci-actions-vars",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".github/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_actions_vars.py"
     ],
@@ -1861,6 +2855,18 @@
     "id": "check:ci-backup-credential-isolation",
     "run": "npm run check:ci-backup-credential-isolation",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".github/**",
+      ".npmrc",
+      "package.json",
+      "private/account",
+      "regions.json",
+      "workers/account/wrangler.bench-asia.toml",
+      "workers/account/wrangler.bench-eu.toml",
+      "workers/account/wrangler.bench-us.toml"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_backup_credential_isolation.py"
     ],
@@ -1937,6 +2943,20 @@
     "id": "check:ci-step-env-parity",
     "run": "npm run check:ci-step-env-parity",
     "gate": true,
+    "paths": [
+      ".github/workflows/ci-build-renet.yml",
+      ".github/workflows/ci-quality.yml",
+      ".npmrc",
+      "package.json",
+      "packages/shared/package.json",
+      "packages/shared/src/config/well-known.generated.ts",
+      "scripts/gates/check-ci-step-env-parity.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/controls.ts",
+      "scripts/lib/repo-root.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-ci-step-env-parity.ts"
     ],
@@ -1980,6 +3000,13 @@
     "id": "check:ci-hook-exec-baseline",
     "run": "npm run check:ci-hook-exec-baseline",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".claude/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_hook_exec_baseline.py"
     ],
@@ -1994,6 +3021,13 @@
     "id": "check:ci-hook-cross-os",
     "run": "npm run check:ci-hook-cross-os",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".claude/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_hook_cross_os.py"
     ],
@@ -2008,6 +3042,12 @@
     "id": "check:ci-vendored-blocker-derivation",
     "run": "npm run check:ci-vendored-blocker-derivation",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_vendored_blocker_derivation.py"
     ],
@@ -2094,6 +3134,12 @@
     "id": "check:ci-tmpfs-health",
     "run": "npm run check:ci-tmpfs-health",
     "gate": true,
+    "paths": [
+      ".ci/scripts/quality/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_tmpfs_health.py"
     ],
@@ -2108,6 +3154,13 @@
     "id": "check:ci-rdc-native",
     "run": "npm run check:ci-rdc-native",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".npmrc",
+      "package.json",
+      "rdc.sh"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_rdc_native.py"
     ],
@@ -2223,6 +3276,13 @@
     "id": "check:ci-proxy-cost-guard",
     "run": "npm run check:ci-proxy-cost-guard",
     "gate": true,
+    "paths": [
+      ".ci/scripts/quality/**",
+      ".npmrc",
+      "package.json",
+      "workers/proxy/**"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_proxy_cost_guard.py"
     ],
@@ -2237,6 +3297,14 @@
     "id": "check:ci-worker-observability-budget",
     "run": "npm run check:ci-worker-observability-budget",
     "gate": true,
+    "paths": [
+      ".ci/config/cf-spend-guard.json",
+      ".ci/scripts/quality/**",
+      ".npmrc",
+      "package.json",
+      "workers/**"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_worker_observability_budget.py"
     ],
@@ -2251,6 +3319,12 @@
     "id": "check:ci-settings-registry",
     "run": "npm run check:ci-settings-registry",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_settings_registry.py"
     ],
@@ -2265,6 +3339,23 @@
     "id": "check:ci-de-orthography",
     "run": "npm run check:ci-de-orthography",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/src/i18n/locales/de/**",
+      "packages/www/src/i18n/translations/de.json",
+      "private/account",
+      "private/renet",
+      "scripts/gates/check-de-orthography.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/controls.ts",
+      "scripts/lib/entry-point.ts",
+      "scripts/lib/findings-report.ts",
+      "scripts/lib/repo-root.ts",
+      "scripts/lib/submodule-presence.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-de-orthography.ts"
     ],
@@ -2279,6 +3370,13 @@
     "id": "check:ci-bws-step-scope",
     "run": "npm run check:ci-bws-step-scope",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".github/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_bws_step_scope.py"
     ],
@@ -2293,6 +3391,25 @@
     "id": "check:ci-region-consistency",
     "run": "npm run check:ci-region-consistency",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".npmrc",
+      "package.json",
+      "regions.json",
+      "workers/account/wrangler.asia.toml",
+      "workers/account/wrangler.bench-asia.toml",
+      "workers/account/wrangler.bench-eu.toml",
+      "workers/account/wrangler.bench-us.toml",
+      "workers/account/wrangler.eu.toml",
+      "workers/account/wrangler.us.toml",
+      "workers/proxy/wrangler.asia.toml",
+      "workers/proxy/wrangler.bench-asia.toml",
+      "workers/proxy/wrangler.bench-eu.toml",
+      "workers/proxy/wrangler.bench-us.toml",
+      "workers/proxy/wrangler.eu.toml",
+      "workers/proxy/wrangler.us.toml"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_region_consistency.py"
     ],
@@ -2747,6 +3864,18 @@
     "id": "check:ci-secret-scope",
     "run": "npm run check:ci-secret-scope",
     "gate": true,
+    "paths": [
+      ".ci/config/secret-scope-baseline.json",
+      ".github/**",
+      ".npmrc",
+      "package.json",
+      "scripts/gates/check-secret-scope.ts",
+      "scripts/lib/findings-report.ts",
+      "scripts/lib/repo-root.ts",
+      "scripts/lib/shrink-only-baseline.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-secret-scope.ts"
     ],
@@ -2817,6 +3946,17 @@
     "id": "check:ci-scope-completeness",
     "run": "npm run check:ci-scope-completeness",
     "gate": true,
+    "paths": [
+      ".ci/scripts/quality/**",
+      ".gitmodules",
+      ".npmrc",
+      "package.json",
+      "private/account",
+      "private/elite",
+      "private/homebrew-tap",
+      "private/renet"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_scope_completeness.py"
     ],
@@ -2888,6 +4028,14 @@
     "id": "check:ci-tutorial-cli-validity",
     "run": "npm run check:ci-tutorial-cli-validity",
     "gate": true,
+    "paths": [
+      ".ci/scripts/quality/**",
+      ".ci/tutorials/**",
+      ".npmrc",
+      "package.json",
+      "packages/cli/scripts/command-tree.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_tutorial_cli_validity.py"
     ],
@@ -2902,6 +4050,21 @@
     "id": "check:ci-scope-mirrors",
     "run": "npm run check:ci-scope-mirrors",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".claude/agents/**",
+      ".claude/commands/**",
+      ".claude/hooks/stop/wl_planqueue.py",
+      ".claude/output-styles/**",
+      ".claude/rediacc_hooks/guards/block_settled_questions.py",
+      ".claude/rediacc_hooks/guards/block_turbo_early_push.py",
+      ".claude/skills/**",
+      ".npmrc",
+      "CLAUDE.md",
+      "agent/plans/QUEUE.md",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_scope_mirrors.py"
     ],
@@ -2916,6 +4079,14 @@
     "id": "check:ci-e2e-case-blind",
     "run": "npm run check:ci-e2e-case-blind",
     "gate": true,
+    "paths": [
+      ".ci/scripts/quality/**",
+      ".npmrc",
+      "package.json",
+      "packages/e2e-tests/src/utils/renet-functions/helpers/TestHelpers.ts",
+      "packages/e2e-tests/tests/**"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_e2e_case_blind_assertions.py"
     ],
@@ -2930,6 +4101,13 @@
     "id": "check:ci-tutorial-no-skips",
     "run": "npm run check:ci-tutorial-no-skips",
     "gate": true,
+    "paths": [
+      ".ci/scripts/quality/**",
+      ".ci/tutorials/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_tutorial_no_skips.py"
     ],
@@ -2972,6 +4150,41 @@
     "id": "check:ci-inner-timeout-reachable",
     "run": "npm run check:ci-inner-timeout-reachable",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".github/**",
+      ".npmrc",
+      "package.json",
+      "packages/cli/scripts/check-cli-i18n-help-render.ts",
+      "packages/cli/scripts/check-command-planes.ts",
+      "packages/www/scripts/check-client-i18n-freshness.ts",
+      "packages/www/scripts/check-cta-bolt-uniqueness.js",
+      "packages/www/scripts/check-locale-tutorial-assets.ts",
+      "packages/www/scripts/check-solution-video-engine.ts",
+      "packages/www/scripts/check-solution-videos.ts",
+      "packages/www/scripts/check-tutorial-caption-sync.ts",
+      "packages/www/scripts/check-tutorial-card-fonts.ts",
+      "packages/www/scripts/check-tutorial-parity.ts",
+      "packages/www/scripts/check-video-source.js",
+      "packages/www/scripts/test-tutorial-player-release-gate.js",
+      "packages/www/scripts/validate-cli-docs.js",
+      "packages/www/scripts/validate-comparison-refs.js",
+      "packages/www/scripts/validate-content-accuracy.js",
+      "packages/www/scripts/validate-content.js",
+      "packages/www/scripts/validate-docs-cli-usage.js",
+      "packages/www/scripts/validate-landing-cli-usage.js",
+      "packages/www/scripts/validate-translation-freshness.js",
+      "packages/www/scripts/validate-tutorial-audio.js",
+      "packages/www/scripts/validate-tutorial-cast-output.js",
+      "packages/www/scripts/validate-tutorial-transcripts.js",
+      "scripts/__tests__/**",
+      "scripts/gate-bind.ts",
+      "scripts/gates/**",
+      "scripts/gen/gen-gates-lock.ts",
+      "scripts/gen/gen-manifest.ts",
+      "scripts/gen/validate-cli-examples.ts"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_inner_timeout_reachable.py"
     ],
@@ -2986,6 +4199,13 @@
     "id": "check:ci-control-in-string",
     "run": "npm run check:ci-control-in-string",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "scripts/**",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-control-in-string.ts"
     ],
@@ -3014,6 +4234,13 @@
     "id": "check:ci-runner-advice",
     "run": "npm run check:ci-runner-advice",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".github/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_runner_advice.py"
     ],
@@ -3070,6 +4297,14 @@
     "id": "check:ci-i18n-value-types",
     "run": "npm run check:ci-i18n-value-types",
     "gate": true,
+    "paths": [
+      ".ci/scripts/quality/**",
+      ".npmrc",
+      "package.json",
+      "packages/cli/src/i18n/**",
+      "packages/www/src/i18n/translations/**"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_i18n_value_types.py"
     ],
@@ -3098,6 +4333,14 @@
     "id": "check:ci-agent-hint-liveness",
     "run": "npm run check:ci-agent-hint-liveness",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".claude/agents/**",
+      ".claude/hooks/stop/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_agent_hint_liveness.py"
     ],
@@ -3112,6 +4355,19 @@
     "id": "check:ci-hint-corpus",
     "run": "npm run check:ci-hint-corpus",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".claude/hooks/context/**",
+      ".claude/hooks/stop/**",
+      ".claude/rediacc_hooks/guards/**",
+      ".npmrc",
+      "CLAUDE.md",
+      "docs/agent-reference/HINTS.md",
+      "docs/agent-reference/TRAPS.md",
+      "docs/agent-reference/model-routing.md",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_hint_corpus.py"
     ],
@@ -3126,6 +4382,17 @@
     "id": "check:ci-video-player-invariants",
     "run": "npm run check:ci-video-player-invariants",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/src/components/TutorialVideoPlayer.tsx",
+      "packages/www/src/components/solution-pages/SPSolutionVideo.astro",
+      "packages/www/src/scripts/**",
+      "packages/www/src/styles/tutorial-video.css",
+      "scripts/gates/check-video-player-invariants.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-video-player-invariants.ts"
     ],
@@ -3140,6 +4407,14 @@
     "id": "check:ci-skill-size",
     "run": "npm run check:ci-skill-size",
     "gate": true,
+    "paths": [
+      ".claude/skills/**",
+      ".npmrc",
+      "package.json",
+      "scripts/gates/check-skill-size.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-skill-size.ts"
     ],
@@ -3154,6 +4429,15 @@
     "id": "check:ci-docs-browse-invariants",
     "run": "npm run check:ci-docs-browse-invariants",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/src/pages/**",
+      "packages/www/src/styles/docs-browse.css",
+      "scripts/gates/check-docs-browse-invariants.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-docs-browse-invariants.ts"
     ],
@@ -3168,6 +4452,16 @@
     "id": "check:ci-docs-copy-units",
     "run": "npm run check:ci-docs-copy-units",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/src/content/docs/en/**",
+      "packages/www/src/layouts/DocsLayout.astro",
+      "scripts/gates/check-docs-copy-units.ts",
+      "scripts/lib/findings-report.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-docs-copy-units.ts"
     ],
@@ -3182,6 +4476,15 @@
     "id": "check:ci-docs-thumb-coverage",
     "run": "npm run check:ci-docs-thumb-coverage",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/public/img/docs-thumbs/**",
+      "packages/www/src/content/docs/en/**",
+      "scripts/gates/check-docs-thumb-coverage.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-docs-thumb-coverage.ts"
     ],
@@ -3196,6 +4499,16 @@
     "id": "check:ci-sentence-wrapping",
     "run": "npm run check:ci-sentence-wrapping",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/src/**",
+      "scripts/data/sentence-wrapping-baseline.json",
+      "scripts/gates/check-sentence-wrapping.ts",
+      "scripts/lib/shrink-only-baseline.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-sentence-wrapping.ts"
     ],
@@ -3224,6 +4537,15 @@
     "id": "check:ci-agent-model-roster",
     "run": "npm run check:ci-agent-model-roster",
     "gate": true,
+    "paths": [
+      ".ci/rediacc_ci/__init__.py",
+      ".ci/scripts/quality/**",
+      ".claude/agents/**",
+      ".npmrc",
+      "docs/agent-reference/model-routing.md",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_agent_model_roster.py"
     ],
@@ -3238,6 +4560,17 @@
     "id": "check:ci-docs-frontmatter",
     "run": "npm run check:ci-docs-frontmatter",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/package.json",
+      "packages/www/src/**",
+      "scripts/__tests__/check-docs-frontmatter.control.ts",
+      "scripts/gates/check-docs-frontmatter.ts",
+      "scripts/lib/entry-point.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-docs-frontmatter.ts",
       "scripts/__tests__/check-docs-frontmatter.control.ts"
@@ -3296,6 +4629,107 @@
     "id": "check:ci-checkout-cone",
     "run": "npm run check:ci-checkout-cone",
     "gate": true,
+    "paths": [
+      ".ci/bootstrap.sh",
+      ".ci/breakpoint/scripts/hold-breakpoint.sh",
+      ".ci/breakpoint/scripts/install-extra-packages.sh",
+      ".ci/breakpoint/scripts/install-vnc-desktop.sh",
+      ".ci/breakpoint/scripts/preflight-breakpoint.sh",
+      ".ci/breakpoint/scripts/publish-endpoints.sh",
+      ".ci/breakpoint/scripts/pull-service-images.sh",
+      ".ci/breakpoint/scripts/reap-breakpoint-orphans.sh",
+      ".ci/breakpoint/scripts/start-shell.sh",
+      ".ci/breakpoint/scripts/stop-breakpoint.sh",
+      ".ci/breakpoint/scripts/test-breakpoint-lifecycle.sh",
+      ".ci/config/proof-tiers.json",
+      ".ci/config/well-known.env",
+      ".ci/rediacc_ci/__init__.py",
+      ".ci/rediacc_ci/build/**",
+      ".ci/rediacc_ci/ci/**",
+      ".ci/rediacc_ci/ci_signal/__init__.py",
+      ".ci/rediacc_ci/ci_signal/create_complete.py",
+      ".ci/rediacc_ci/controls.py",
+      ".ci/rediacc_ci/core/**",
+      ".ci/rediacc_ci/core_lease.py",
+      ".ci/rediacc_ci/deploy/**",
+      ".ci/rediacc_ci/diagnostics/__init__.py",
+      ".ci/rediacc_ci/diagnostics/collect_drill_diagnostics.py",
+      ".ci/rediacc_ci/diagnostics/collect_vm_diagnostics.py",
+      ".ci/rediacc_ci/docker/__init__.py",
+      ".ci/rediacc_ci/docker/create_manifest.py",
+      ".ci/rediacc_ci/docker/retag_image.py",
+      ".ci/rediacc_ci/drills/__init__.py",
+      ".ci/rediacc_ci/drills/backup_check_trigger.py",
+      ".ci/rediacc_ci/drills/backup_local_plane.py",
+      ".ci/rediacc_ci/drills/lib.py",
+      ".ci/rediacc_ci/drills/vm_ssh.py",
+      ".ci/rediacc_ci/drills/wire.py",
+      ".ci/rediacc_ci/enterprise/**",
+      ".ci/rediacc_ci/env/__init__.py",
+      ".ci/rediacc_ci/env/create_e2e_env.py",
+      ".ci/rediacc_ci/gitx.py",
+      ".ci/rediacc_ci/housekeeping/**",
+      ".ci/rediacc_ci/infra/**",
+      ".ci/rediacc_ci/legal/__init__.py",
+      ".ci/rediacc_ci/legal/entity.py",
+      ".ci/rediacc_ci/log.py",
+      ".ci/rediacc_ci/ops/__init__.py",
+      ".ci/rediacc_ci/ops/apply_cf_redirect_rules.py",
+      ".ci/rediacc_ci/ops/bench_access.py",
+      ".ci/rediacc_ci/ops/bench_preflight.py",
+      ".ci/rediacc_ci/ops/bench_production.py",
+      ".ci/rediacc_ci/ops/cf_auth.py",
+      ".ci/rediacc_ci/ops/cf_dns.py",
+      ".ci/rediacc_ci/ops/cf_usage_report.py",
+      ".ci/rediacc_ci/ops/d1_size_report.py",
+      ".ci/rediacc_ci/ops/deploy_bench.py",
+      ".ci/rediacc_ci/ops/enterprise_lookup.py",
+      ".ci/rediacc_ci/ops/login_bench.py",
+      ".ci/rediacc_ci/ops/observability_volume.py",
+      ".ci/rediacc_ci/ops/portal_captcha.py",
+      ".ci/rediacc_ci/ops/portal_health.py",
+      ".ci/rediacc_ci/ops/prune_worker_secrets.py",
+      ".ci/rediacc_ci/ops/push_backup_credentials.py",
+      ".ci/rediacc_ci/ops/queues_audit.py",
+      ".ci/rediacc_ci/ops/service_bindings_audit.py",
+      ".ci/rediacc_ci/ops/telemetry_delivery.py",
+      ".ci/rediacc_ci/ops/totp.py",
+      ".ci/rediacc_ci/paths.py",
+      ".ci/rediacc_ci/policy_paths.py",
+      ".ci/rediacc_ci/private/**",
+      ".ci/rediacc_ci/proc.py",
+      ".ci/rediacc_ci/proof/**",
+      ".ci/rediacc_ci/quality/**",
+      ".ci/rediacc_ci/release/**",
+      ".ci/rediacc_ci/review/**",
+      ".ci/rediacc_ci/runtmp.py",
+      ".ci/rediacc_ci/security/**",
+      ".ci/rediacc_ci/setup/__init__.py",
+      ".ci/rediacc_ci/setup/install_cli_global.py",
+      ".ci/rediacc_ci/setup/phases.py",
+      ".ci/rediacc_ci/setup/port_parity.py",
+      ".ci/rediacc_ci/setup/tools.py",
+      ".ci/rediacc_ci/shacite.py",
+      ".ci/rediacc_ci/testrun/**",
+      ".ci/rediacc_ci/tests/__init__.py",
+      ".ci/rediacc_ci/tests/differential.py",
+      ".ci/rediacc_ci/tests/gates/__init__.py",
+      ".ci/rediacc_ci/tests/gates/harness.py",
+      ".ci/rediacc_ci/tests/gates/run_bare.py",
+      ".ci/rediacc_ci/version/**",
+      ".ci/rediacc_ci/well_known.py",
+      ".ci/rediacc_ci/workflows.py",
+      ".ci/scripts/**",
+      ".ci/tutorials/run-sequence.sh",
+      ".github/**",
+      ".npmrc",
+      "package.json",
+      "private/account",
+      "private/renet",
+      "scripts/ci/write-shard-receipt.cjs",
+      "scripts/gates/check-ceph-image-pin.ts"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_checkout_cone.py"
     ],
@@ -3343,6 +4777,14 @@
     "id": "check:ci-workflow-env-provision",
     "run": "npm run check:ci-workflow-env-provision",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".github/**",
+      ".npmrc",
+      "package.json",
+      "scripts/ci/write-shard-receipt.cjs"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_workflow_env_provision.py"
     ],
@@ -3371,6 +4813,13 @@
     "id": "check:ci-pool-writer-safety",
     "run": "npm run check:ci-pool-writer-safety",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".claude/rediacc_hooks/tests/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_pool_writer_safety.py"
     ],
@@ -3416,6 +4865,13 @@
     "id": "check:ci-gate-reachability-coverage",
     "run": "npm run check:ci-gate-reachability-coverage",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".claude/hooks/stop/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_gate_reachability_coverage.py"
     ],
@@ -3430,6 +4886,14 @@
     "id": "check:ci-gate-cwd-independence",
     "run": "npm run check:ci-gate-cwd-independence",
     "gate": true,
+    "paths": [
+      ".ci/scripts/**",
+      ".npmrc",
+      "package.json",
+      "scripts/**",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-gate-cwd-independence.ts"
     ],
@@ -3444,6 +4908,14 @@
     "id": "check:ci-fixture-event-timestamps",
     "run": "npm run check:ci-fixture-event-timestamps",
     "gate": true,
+    "paths": [
+      ".claude/rediacc_hooks/tests/**",
+      ".npmrc",
+      "package.json",
+      "scripts/gates/check-fixture-event-timestamps.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-fixture-event-timestamps.ts"
     ],
@@ -3458,6 +4930,14 @@
     "id": "check:ci-worklist-path-resolution",
     "run": "npm run check:ci-worklist-path-resolution",
     "gate": true,
+    "paths": [
+      ".claude/hooks/**",
+      ".npmrc",
+      "package.json",
+      "scripts/gates/check-worklist-path-resolution.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-worklist-path-resolution.ts"
     ],
@@ -3472,6 +4952,14 @@
     "id": "check:ci-worklist-event-builders",
     "run": "npm run check:ci-worklist-event-builders",
     "gate": true,
+    "paths": [
+      ".claude/hooks/**",
+      ".npmrc",
+      "package.json",
+      "scripts/gates/check-worklist-event-builders.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-worklist-event-builders.ts"
     ],
@@ -3486,6 +4974,13 @@
     "id": "check:ci-workflows",
     "run": "npm run check:ci-workflows",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".github/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_workflows.py"
     ],
@@ -3514,6 +5009,14 @@
     "id": "check:ci-workflow-gates",
     "run": "npm run check:ci-workflow-gates",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".github/**",
+      ".npmrc",
+      "package.json",
+      "private/**"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/security/check_workflow_gates.py"
     ],
@@ -3556,6 +5059,13 @@
     "id": "check:ci-app-admin-perm",
     "run": "npm run check:ci-app-admin-perm",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".github/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_no_app_admin_perm.py"
     ],
@@ -3612,6 +5122,14 @@
     "id": "check:ci-silent-failures",
     "run": "npm run check:ci-silent-failures",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".npmrc",
+      "package.json",
+      "scripts/dev/**",
+      "scripts/ops/**"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_silent_failure_patterns.py"
     ],
@@ -3626,6 +5144,12 @@
     "id": "check:ci-compose-env",
     "run": "npm run check:ci-compose-env",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_compose_env.py"
     ],
@@ -3654,6 +5178,15 @@
     "id": "check:ci-e2e-skip-hygiene",
     "run": "npm run check:ci-e2e-skip-hygiene",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/e2e-tests/**",
+      "scripts/gates/check-e2e-skip-hygiene.ts",
+      "scripts/lib/repo-root.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-e2e-skip-hygiene.ts"
     ],
@@ -3725,6 +5258,221 @@
     "needs": [
       "build:packages"
     ],
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/package.json",
+      "packages/cli/scripts/check-command-planes.ts",
+      "packages/cli/scripts/lib/command-tree-lib.ts",
+      "packages/cli/scripts/lib/plane-rules.ts",
+      "packages/cli/src/adapters/config-field-crypto.ts",
+      "packages/cli/src/adapters/config-file-storage.ts",
+      "packages/cli/src/adapters/crypto.ts",
+      "packages/cli/src/adapters/remote-config-adapter.ts",
+      "packages/cli/src/adapters/remote-config-errors.ts",
+      "packages/cli/src/adapters/remote-config-types.ts",
+      "packages/cli/src/adapters/remote-token-storage.ts",
+      "packages/cli/src/cli.ts",
+      "packages/cli/src/commands/_validate.ts",
+      "packages/cli/src/commands/backup-check.ts",
+      "packages/cli/src/commands/backup-churn.ts",
+      "packages/cli/src/commands/backup-image-deps.ts",
+      "packages/cli/src/commands/backup-image.ts",
+      "packages/cli/src/commands/backup-immutability.ts",
+      "packages/cli/src/commands/backup-ops-unit-stage.ts",
+      "packages/cli/src/commands/backup-ops.ts",
+      "packages/cli/src/commands/backup-purge.ts",
+      "packages/cli/src/commands/backup-reconcile.ts",
+      "packages/cli/src/commands/backup-repair.ts",
+      "packages/cli/src/commands/backup-restore-chunk.ts",
+      "packages/cli/src/commands/backup-restore-license.ts",
+      "packages/cli/src/commands/backup-restore-path.ts",
+      "packages/cli/src/commands/backup-restore-route.ts",
+      "packages/cli/src/commands/backup-restore-test.ts",
+      "packages/cli/src/commands/backup-retention-commands.ts",
+      "packages/cli/src/commands/backup-storage-browse.ts",
+      "packages/cli/src/commands/backup-storage-parser.ts",
+      "packages/cli/src/commands/backup-storage-snapshot.ts",
+      "packages/cli/src/commands/backup-storage.ts",
+      "packages/cli/src/commands/backup-store-verify.ts",
+      "packages/cli/src/commands/backup-strategy-options.ts",
+      "packages/cli/src/commands/backup-strategy-replication.ts",
+      "packages/cli/src/commands/backup-strategy-rows.ts",
+      "packages/cli/src/commands/backup-strategy.ts",
+      "packages/cli/src/commands/backup-toc-key.ts",
+      "packages/cli/src/commands/backup-verification.ts",
+      "packages/cli/src/commands/backup.ts",
+      "packages/cli/src/commands/bwlimit-param.ts",
+      "packages/cli/src/commands/cluster/declare.ts",
+      "packages/cli/src/commands/cluster/index.ts",
+      "packages/cli/src/commands/config-access.ts",
+      "packages/cli/src/commands/config-import-machine.ts",
+      "packages/cli/src/commands/config-prune-cmd.ts",
+      "packages/cli/src/commands/config-reconcile.ts",
+      "packages/cli/src/commands/config-remote-enable.ts",
+      "packages/cli/src/commands/config-remote-handoff.ts",
+      "packages/cli/src/commands/config-remote-master-password-change.ts",
+      "packages/cli/src/commands/config-remote-master-password.ts",
+      "packages/cli/src/commands/config-remote-reenroll.ts",
+      "packages/cli/src/commands/config-remote-relay.ts",
+      "packages/cli/src/commands/config-remote-unlink.ts",
+      "packages/cli/src/commands/config-remote.ts",
+      "packages/cli/src/commands/config-ssh.ts",
+      "packages/cli/src/commands/config.ts",
+      "packages/cli/src/commands/config/**",
+      "packages/cli/src/commands/credits.ts",
+      "packages/cli/src/commands/datastore-prune-parser.ts",
+      "packages/cli/src/commands/datastore.ts",
+      "packages/cli/src/commands/doctor-subscription.ts",
+      "packages/cli/src/commands/doctor.ts",
+      "packages/cli/src/commands/executor-daemon.ts",
+      "packages/cli/src/commands/function-params.ts",
+      "packages/cli/src/commands/job.ts",
+      "packages/cli/src/commands/legal.ts",
+      "packages/cli/src/commands/machine/**",
+      "packages/cli/src/commands/mcp/custom-tools.ts",
+      "packages/cli/src/commands/mcp/executor.ts",
+      "packages/cli/src/commands/mcp/index.ts",
+      "packages/cli/src/commands/mcp/server.ts",
+      "packages/cli/src/commands/mcp/tool-factory.ts",
+      "packages/cli/src/commands/mcp/tools.ts",
+      "packages/cli/src/commands/ops/**",
+      "packages/cli/src/commands/repo-admin-orphan.ts",
+      "packages/cli/src/commands/repo-admin.ts",
+      "packages/cli/src/commands/repo-autostart-list.ts",
+      "packages/cli/src/commands/repo-backup-list.ts",
+      "packages/cli/src/commands/repo-backup.ts",
+      "packages/cli/src/commands/repo-batch-utils.ts",
+      "packages/cli/src/commands/repo-branching.ts",
+      "packages/cli/src/commands/repo-canary.ts",
+      "packages/cli/src/commands/repo-cat.ts",
+      "packages/cli/src/commands/repo-container.ts",
+      "packages/cli/src/commands/repo-create-delete-teardown.ts",
+      "packages/cli/src/commands/repo-create-delete.ts",
+      "packages/cli/src/commands/repo-delete-machine-gone.ts",
+      "packages/cli/src/commands/repo-delete-settle.ts",
+      "packages/cli/src/commands/repo-delta.ts",
+      "packages/cli/src/commands/repo-diff.ts",
+      "packages/cli/src/commands/repo-extended.ts",
+      "packages/cli/src/commands/repo-fork-timeline.ts",
+      "packages/cli/src/commands/repo-fork.ts",
+      "packages/cli/src/commands/repo-gpu.ts",
+      "packages/cli/src/commands/repo-health.ts",
+      "packages/cli/src/commands/repo-job-outcome.ts",
+      "packages/cli/src/commands/repo-list-parser.ts",
+      "packages/cli/src/commands/repo-maintenance.ts",
+      "packages/cli/src/commands/repo-migrate.ts",
+      "packages/cli/src/commands/repo-ownership-params.ts",
+      "packages/cli/src/commands/repo-permission.ts",
+      "packages/cli/src/commands/repo-policy.ts",
+      "packages/cli/src/commands/repo-promote.ts",
+      "packages/cli/src/commands/repo-prune.ts",
+      "packages/cli/src/commands/repo-push-stats.ts",
+      "packages/cli/src/commands/repo-repair.ts",
+      "packages/cli/src/commands/repo-replicate.ts",
+      "packages/cli/src/commands/repo-secret.ts",
+      "packages/cli/src/commands/repo-sync-helpers.ts",
+      "packages/cli/src/commands/repo-sync-parents.ts",
+      "packages/cli/src/commands/repo-sync.ts",
+      "packages/cli/src/commands/repo-trim.ts",
+      "packages/cli/src/commands/repo-tunnel.ts",
+      "packages/cli/src/commands/repo.ts",
+      "packages/cli/src/commands/serve.ts",
+      "packages/cli/src/commands/server.ts",
+      "packages/cli/src/commands/shortcuts.ts",
+      "packages/cli/src/commands/subscription-actions.ts",
+      "packages/cli/src/commands/subscription-notices.ts",
+      "packages/cli/src/commands/subscription-output.ts",
+      "packages/cli/src/commands/subscription-proxy-token.ts",
+      "packages/cli/src/commands/subscription-repo-refresh.ts",
+      "packages/cli/src/commands/subscription-repo-table.ts",
+      "packages/cli/src/commands/subscription-retire.ts",
+      "packages/cli/src/commands/subscription-status-view.ts",
+      "packages/cli/src/commands/subscription-token-free.ts",
+      "packages/cli/src/commands/subscription.ts",
+      "packages/cli/src/commands/term-ssh-exit.ts",
+      "packages/cli/src/commands/term.ts",
+      "packages/cli/src/commands/tools.ts",
+      "packages/cli/src/commands/update.ts",
+      "packages/cli/src/commands/version.ts",
+      "packages/cli/src/commands/vscode-browser.ts",
+      "packages/cli/src/commands/vscode-serve.ts",
+      "packages/cli/src/commands/vscode-utils.ts",
+      "packages/cli/src/commands/vscode.ts",
+      "packages/cli/src/config/command-docs.ts",
+      "packages/cli/src/config/command-metadata.ts",
+      "packages/cli/src/config/command-planes.ts",
+      "packages/cli/src/config/command-registry.ts",
+      "packages/cli/src/data/third-party-credits.json",
+      "packages/cli/src/i18n/**",
+      "packages/cli/src/remote/**",
+      "packages/cli/src/schema/fingerprint.ts",
+      "packages/cli/src/services/account/**",
+      "packages/cli/src/services/addressing/place-rules.ts",
+      "packages/cli/src/services/addressing/ref-parser.ts",
+      "packages/cli/src/services/addressing/resolve-machine.ts",
+      "packages/cli/src/services/backup-image/**",
+      "packages/cli/src/services/backup/**",
+      "packages/cli/src/services/cluster/**",
+      "packages/cli/src/services/config/**",
+      "packages/cli/src/services/core/**",
+      "packages/cli/src/services/executor/**",
+      "packages/cli/src/services/jobs/attach.ts",
+      "packages/cli/src/services/jobs/command-job.ts",
+      "packages/cli/src/services/jobs/duration.ts",
+      "packages/cli/src/services/jobs/executor-observation.ts",
+      "packages/cli/src/services/jobs/finished-notice.ts",
+      "packages/cli/src/services/jobs/job-group.ts",
+      "packages/cli/src/services/jobs/job-wait.ts",
+      "packages/cli/src/services/jobs/remote-deps.ts",
+      "packages/cli/src/services/jobs/run-job.ts",
+      "packages/cli/src/services/jobs/scratch-store.ts",
+      "packages/cli/src/services/jobs/step-output.ts",
+      "packages/cli/src/services/jobs/steps-conversions-machine.ts",
+      "packages/cli/src/services/jobs/steps-conversions-repo.ts",
+      "packages/cli/src/services/jobs/steps-support.ts",
+      "packages/cli/src/services/jobs/steps.ts",
+      "packages/cli/src/services/jobs/ticket-store.ts",
+      "packages/cli/src/services/machine/**",
+      "packages/cli/src/services/provision/cloudflare-dns.ts",
+      "packages/cli/src/services/provision/infra-provision.ts",
+      "packages/cli/src/services/provision/region-discovery.ts",
+      "packages/cli/src/services/renet/**",
+      "packages/cli/src/services/repo-migrate-license.ts",
+      "packages/cli/src/services/repo/**",
+      "packages/cli/src/services/serve/account-fetch.ts",
+      "packages/cli/src/services/serve/audit.ts",
+      "packages/cli/src/services/serve/auth.ts",
+      "packages/cli/src/services/serve/command-dispatch.ts",
+      "packages/cli/src/services/serve/container-config.ts",
+      "packages/cli/src/services/serve/crypto.ts",
+      "packages/cli/src/services/serve/deps.ts",
+      "packages/cli/src/services/serve/egress-report.ts",
+      "packages/cli/src/services/serve/handoff-schema.ts",
+      "packages/cli/src/services/serve/job-poll.ts",
+      "packages/cli/src/services/serve/job-routes.ts",
+      "packages/cli/src/services/serve/policy.ts",
+      "packages/cli/src/services/serve/route-span.ts",
+      "packages/cli/src/services/serve/server.ts",
+      "packages/cli/src/services/serve/sessions.ts",
+      "packages/cli/src/services/server/**",
+      "packages/cli/src/services/state.ts",
+      "packages/cli/src/services/telemetry/**",
+      "packages/cli/src/services/tofu/**",
+      "packages/cli/src/services/tools/**",
+      "packages/cli/src/services/update/**",
+      "packages/cli/src/templates/embedded.generated.ts",
+      "packages/cli/src/types/errors.ts",
+      "packages/cli/src/types/index.ts",
+      "packages/cli/src/utils/**",
+      "packages/cli/src/version.ts",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/provisioning/package.json",
+      "packages/shared/**",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "packages/cli/scripts/check-command-planes.ts"
     ],
@@ -3739,6 +5487,15 @@
     "id": "check:ci-design-tree",
     "run": "npm run check:ci-design-tree",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "docs/design/06-cli-reshape.md",
+      "package.json",
+      "packages/cli/scripts/command-tree.json",
+      "scripts/gates/check-design-tree.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-design-tree.ts"
     ],
@@ -3753,6 +5510,20 @@
     "id": "check:ci-i18n-placeholders",
     "run": "npm run check:ci-i18n-placeholders",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/src/i18n/**",
+      "packages/www/src/i18n/translations/**",
+      "private/account",
+      "scripts/gates/check-i18n-placeholders.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/entry-point.ts",
+      "scripts/lib/repo-root.ts",
+      "scripts/lib/submodule-presence.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-i18n-placeholders.ts"
     ],
@@ -3767,6 +5538,15 @@
     "id": "check:ci-i18n-untranslated",
     "run": "npm run check:ci-i18n-untranslated",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/scripts/command-tree.json",
+      "packages/cli/src/i18n/**",
+      "scripts/gates/check-i18n-untranslated.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-i18n-untranslated.ts"
     ],
@@ -3797,6 +5577,20 @@
     "id": "check:ci-i18n-cross-locale-core",
     "run": "npm run check:ci-i18n-cross-locale-core",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/src/i18n/**",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/www/src/i18n/translations/**",
+      "private/account",
+      "scripts/gates/check-i18n-cross-locale.ts",
+      "scripts/lib/findings-report.ts",
+      "scripts/lib/language-detect.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-i18n-cross-locale.ts"
     ],
@@ -3811,6 +5605,14 @@
     "id": "check:ci-docs-structure-parity",
     "run": "npm run check:ci-docs-structure-parity",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/src/**",
+      "scripts/gates/check-docs-structure-parity.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-docs-structure-parity.ts"
     ],
@@ -3825,6 +5627,21 @@
     "id": "check:ci-locale-de-contamination",
     "run": "npm run check:ci-locale-de-contamination",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/src/i18n/**",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/www/src/i18n/translations/**",
+      "private/account",
+      "scripts/data/locale-de-contamination-baseline.json",
+      "scripts/gates/check-locale-de-contamination.ts",
+      "scripts/lib/findings-report.ts",
+      "scripts/lib/shrink-only-baseline.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-locale-de-contamination.ts"
     ],
@@ -3856,6 +5673,219 @@
     "needs": [
       "build:packages"
     ],
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/package.json",
+      "packages/cli/scripts/command-tree.json",
+      "packages/cli/scripts/lib/command-tree-lib.ts",
+      "packages/cli/src/adapters/config-field-crypto.ts",
+      "packages/cli/src/adapters/config-file-storage.ts",
+      "packages/cli/src/adapters/crypto.ts",
+      "packages/cli/src/adapters/remote-config-adapter.ts",
+      "packages/cli/src/adapters/remote-config-errors.ts",
+      "packages/cli/src/cli.ts",
+      "packages/cli/src/commands/_validate.ts",
+      "packages/cli/src/commands/backup-check.ts",
+      "packages/cli/src/commands/backup-churn.ts",
+      "packages/cli/src/commands/backup-image-deps.ts",
+      "packages/cli/src/commands/backup-image.ts",
+      "packages/cli/src/commands/backup-immutability.ts",
+      "packages/cli/src/commands/backup-ops-unit-stage.ts",
+      "packages/cli/src/commands/backup-ops.ts",
+      "packages/cli/src/commands/backup-purge.ts",
+      "packages/cli/src/commands/backup-reconcile.ts",
+      "packages/cli/src/commands/backup-repair.ts",
+      "packages/cli/src/commands/backup-restore-chunk.ts",
+      "packages/cli/src/commands/backup-restore-license.ts",
+      "packages/cli/src/commands/backup-restore-path.ts",
+      "packages/cli/src/commands/backup-restore-route.ts",
+      "packages/cli/src/commands/backup-retention-commands.ts",
+      "packages/cli/src/commands/backup-storage-browse.ts",
+      "packages/cli/src/commands/backup-storage-parser.ts",
+      "packages/cli/src/commands/backup-storage-snapshot.ts",
+      "packages/cli/src/commands/backup-storage.ts",
+      "packages/cli/src/commands/backup-store-verify.ts",
+      "packages/cli/src/commands/backup-strategy-options.ts",
+      "packages/cli/src/commands/backup-strategy-replication.ts",
+      "packages/cli/src/commands/backup-strategy-rows.ts",
+      "packages/cli/src/commands/backup-strategy.ts",
+      "packages/cli/src/commands/backup-toc-key.ts",
+      "packages/cli/src/commands/backup-verification.ts",
+      "packages/cli/src/commands/backup.ts",
+      "packages/cli/src/commands/bwlimit-param.ts",
+      "packages/cli/src/commands/cluster/index.ts",
+      "packages/cli/src/commands/config-access.ts",
+      "packages/cli/src/commands/config-import-machine.ts",
+      "packages/cli/src/commands/config-prune-cmd.ts",
+      "packages/cli/src/commands/config-reconcile.ts",
+      "packages/cli/src/commands/config-remote-enable.ts",
+      "packages/cli/src/commands/config-remote-handoff.ts",
+      "packages/cli/src/commands/config-remote-relay.ts",
+      "packages/cli/src/commands/config-remote.ts",
+      "packages/cli/src/commands/config-ssh.ts",
+      "packages/cli/src/commands/config.ts",
+      "packages/cli/src/commands/config/**",
+      "packages/cli/src/commands/credits.ts",
+      "packages/cli/src/commands/datastore-prune-parser.ts",
+      "packages/cli/src/commands/datastore.ts",
+      "packages/cli/src/commands/doctor-subscription.ts",
+      "packages/cli/src/commands/doctor.ts",
+      "packages/cli/src/commands/executor-daemon.ts",
+      "packages/cli/src/commands/function-params.ts",
+      "packages/cli/src/commands/job.ts",
+      "packages/cli/src/commands/legal.ts",
+      "packages/cli/src/commands/machine/**",
+      "packages/cli/src/commands/mcp/index.ts",
+      "packages/cli/src/commands/ops/**",
+      "packages/cli/src/commands/repo-admin-orphan.ts",
+      "packages/cli/src/commands/repo-admin.ts",
+      "packages/cli/src/commands/repo-autostart-list.ts",
+      "packages/cli/src/commands/repo-backup-list.ts",
+      "packages/cli/src/commands/repo-backup.ts",
+      "packages/cli/src/commands/repo-batch-utils.ts",
+      "packages/cli/src/commands/repo-branching.ts",
+      "packages/cli/src/commands/repo-canary.ts",
+      "packages/cli/src/commands/repo-cat.ts",
+      "packages/cli/src/commands/repo-container.ts",
+      "packages/cli/src/commands/repo-create-delete-teardown.ts",
+      "packages/cli/src/commands/repo-create-delete.ts",
+      "packages/cli/src/commands/repo-delete-settle.ts",
+      "packages/cli/src/commands/repo-delta.ts",
+      "packages/cli/src/commands/repo-diff.ts",
+      "packages/cli/src/commands/repo-extended.ts",
+      "packages/cli/src/commands/repo-fork-timeline.ts",
+      "packages/cli/src/commands/repo-fork.ts",
+      "packages/cli/src/commands/repo-gpu.ts",
+      "packages/cli/src/commands/repo-health.ts",
+      "packages/cli/src/commands/repo-job-outcome.ts",
+      "packages/cli/src/commands/repo-list-parser.ts",
+      "packages/cli/src/commands/repo-maintenance.ts",
+      "packages/cli/src/commands/repo-migrate.ts",
+      "packages/cli/src/commands/repo-ownership-params.ts",
+      "packages/cli/src/commands/repo-permission.ts",
+      "packages/cli/src/commands/repo-policy.ts",
+      "packages/cli/src/commands/repo-promote.ts",
+      "packages/cli/src/commands/repo-prune.ts",
+      "packages/cli/src/commands/repo-repair.ts",
+      "packages/cli/src/commands/repo-replicate.ts",
+      "packages/cli/src/commands/repo-secret.ts",
+      "packages/cli/src/commands/repo-sync-helpers.ts",
+      "packages/cli/src/commands/repo-sync-parents.ts",
+      "packages/cli/src/commands/repo-sync.ts",
+      "packages/cli/src/commands/repo-trim.ts",
+      "packages/cli/src/commands/repo-tunnel.ts",
+      "packages/cli/src/commands/repo.ts",
+      "packages/cli/src/commands/serve.ts",
+      "packages/cli/src/commands/server.ts",
+      "packages/cli/src/commands/shortcuts.ts",
+      "packages/cli/src/commands/subscription-actions.ts",
+      "packages/cli/src/commands/subscription-notices.ts",
+      "packages/cli/src/commands/subscription-output.ts",
+      "packages/cli/src/commands/subscription-proxy-token.ts",
+      "packages/cli/src/commands/subscription-repo-refresh.ts",
+      "packages/cli/src/commands/subscription-repo-table.ts",
+      "packages/cli/src/commands/subscription-retire.ts",
+      "packages/cli/src/commands/subscription-status-view.ts",
+      "packages/cli/src/commands/subscription-token-free.ts",
+      "packages/cli/src/commands/subscription.ts",
+      "packages/cli/src/commands/term-ssh-exit.ts",
+      "packages/cli/src/commands/term.ts",
+      "packages/cli/src/commands/tools.ts",
+      "packages/cli/src/commands/update.ts",
+      "packages/cli/src/commands/version.ts",
+      "packages/cli/src/commands/vscode-browser.ts",
+      "packages/cli/src/commands/vscode-serve.ts",
+      "packages/cli/src/commands/vscode-utils.ts",
+      "packages/cli/src/commands/vscode.ts",
+      "packages/cli/src/config/command-docs.ts",
+      "packages/cli/src/config/command-metadata.ts",
+      "packages/cli/src/config/command-registry.ts",
+      "packages/cli/src/data/third-party-credits.json",
+      "packages/cli/src/i18n/**",
+      "packages/cli/src/remote/**",
+      "packages/cli/src/schema/fingerprint.ts",
+      "packages/cli/src/services/account/**",
+      "packages/cli/src/services/addressing/place-rules.ts",
+      "packages/cli/src/services/addressing/ref-parser.ts",
+      "packages/cli/src/services/addressing/resolve-machine.ts",
+      "packages/cli/src/services/backup-image/**",
+      "packages/cli/src/services/backup/**",
+      "packages/cli/src/services/cluster/**",
+      "packages/cli/src/services/config/**",
+      "packages/cli/src/services/core/**",
+      "packages/cli/src/services/executor/**",
+      "packages/cli/src/services/jobs/attach.ts",
+      "packages/cli/src/services/jobs/command-job.ts",
+      "packages/cli/src/services/jobs/duration.ts",
+      "packages/cli/src/services/jobs/executor-observation.ts",
+      "packages/cli/src/services/jobs/finished-notice.ts",
+      "packages/cli/src/services/jobs/job-group.ts",
+      "packages/cli/src/services/jobs/job-wait.ts",
+      "packages/cli/src/services/jobs/remote-deps.ts",
+      "packages/cli/src/services/jobs/run-job.ts",
+      "packages/cli/src/services/jobs/scratch-store.ts",
+      "packages/cli/src/services/jobs/step-output.ts",
+      "packages/cli/src/services/jobs/steps-conversions-machine.ts",
+      "packages/cli/src/services/jobs/steps-conversions-repo.ts",
+      "packages/cli/src/services/jobs/steps-support.ts",
+      "packages/cli/src/services/jobs/steps.ts",
+      "packages/cli/src/services/jobs/ticket-store.ts",
+      "packages/cli/src/services/machine/add-existing.ts",
+      "packages/cli/src/services/machine/machine-connection.ts",
+      "packages/cli/src/services/machine/machine-remove-guard.ts",
+      "packages/cli/src/services/machine/machine-status.ts",
+      "packages/cli/src/services/machine/ssh-connection.ts",
+      "packages/cli/src/services/machine/ssh-key.ts",
+      "packages/cli/src/services/provision/cloudflare-dns.ts",
+      "packages/cli/src/services/provision/infra-provision.ts",
+      "packages/cli/src/services/provision/region-discovery.ts",
+      "packages/cli/src/services/renet/**",
+      "packages/cli/src/services/repo-migrate-license.ts",
+      "packages/cli/src/services/repo/**",
+      "packages/cli/src/services/serve/account-fetch.ts",
+      "packages/cli/src/services/serve/audit.ts",
+      "packages/cli/src/services/serve/auth.ts",
+      "packages/cli/src/services/serve/command-dispatch.ts",
+      "packages/cli/src/services/serve/container-config.ts",
+      "packages/cli/src/services/serve/crypto.ts",
+      "packages/cli/src/services/serve/egress-report.ts",
+      "packages/cli/src/services/serve/handoff-schema.ts",
+      "packages/cli/src/services/serve/job-poll.ts",
+      "packages/cli/src/services/serve/job-routes.ts",
+      "packages/cli/src/services/serve/policy.ts",
+      "packages/cli/src/services/serve/route-span.ts",
+      "packages/cli/src/services/serve/server.ts",
+      "packages/cli/src/services/serve/sessions.ts",
+      "packages/cli/src/services/server/**",
+      "packages/cli/src/services/state.ts",
+      "packages/cli/src/services/telemetry/**",
+      "packages/cli/src/services/tofu/cluster-tf-generator.ts",
+      "packages/cli/src/services/tofu/executor.ts",
+      "packages/cli/src/services/tofu/index.ts",
+      "packages/cli/src/services/tofu/provider-pins.generated.ts",
+      "packages/cli/src/services/tofu/provider-registry.json",
+      "packages/cli/src/services/tofu/provider-resolver.ts",
+      "packages/cli/src/services/tofu/provision.ts",
+      "packages/cli/src/services/tofu/tf-generator.ts",
+      "packages/cli/src/services/tools/**",
+      "packages/cli/src/services/update/**",
+      "packages/cli/src/templates/embedded.generated.ts",
+      "packages/cli/src/types/errors.ts",
+      "packages/cli/src/types/index.ts",
+      "packages/cli/src/utils/**",
+      "packages/cli/src/version.ts",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/provisioning/package.json",
+      "packages/shared/**",
+      "packages/www/package.json",
+      "packages/www/scripts/lib/p7-backlog.js",
+      "scripts/gates/check-cli-docs.ts",
+      "scripts/lib/shrink-only-baseline.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-cli-docs.ts"
     ],
@@ -3870,6 +5900,45 @@
     "id": "check:ci-config-migrations",
     "run": "npm run check:ci-config-migrations",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".npmrc",
+      "package.json",
+      "packages/cli/package.json",
+      "packages/cli/src/__tests__/fixtures/**",
+      "packages/cli/tsconfig.json",
+      "packages/e2e-tests/package.json",
+      "packages/json/package.json",
+      "packages/locales/package.json",
+      "packages/provisioning/package.json",
+      "packages/shared/package.json",
+      "packages/shared/src/backup/duration.ts",
+      "packages/shared/src/config-crypto/**",
+      "packages/shared/src/config-schema/access.ts",
+      "packages/shared/src/config-schema/cluster-schema.ts",
+      "packages/shared/src/config-schema/coverage.ts",
+      "packages/shared/src/config-schema/index.ts",
+      "packages/shared/src/config-schema/migrations/index.ts",
+      "packages/shared/src/config-schema/migrations/v1-to-v2.ts",
+      "packages/shared/src/config-schema/migrations/v2-to-v3.ts",
+      "packages/shared/src/config-schema/normalize.ts",
+      "packages/shared/src/config-schema/payload.ts",
+      "packages/shared/src/config-schema/primitives.ts",
+      "packages/shared/src/config-schema/repo-names.ts",
+      "packages/shared/src/config-schema/schemas.ts",
+      "packages/shared/src/config-schema/sensitivity.ts",
+      "packages/shared/src/config-schema/state-schema.ts",
+      "packages/shared/src/config-schema/walker.ts",
+      "packages/shared/src/encryption/constants.ts",
+      "packages/shared/src/errors/ValidationError.ts",
+      "packages/shared/src/errors/index.ts",
+      "packages/shared/src/policy/schema.ts",
+      "packages/shared/src/ref/index.ts",
+      "packages/shared/src/validation/cidr.ts",
+      "packages/www/package.json",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_config_migrations.py"
     ],
@@ -3884,6 +5953,27 @@
     "id": "check:ci-schema-coverage",
     "run": "npm run check:ci-schema-coverage",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/shared/package.json",
+      "packages/shared/src/backup/duration.ts",
+      "packages/shared/src/config-schema/access.ts",
+      "packages/shared/src/config-schema/cluster-schema.ts",
+      "packages/shared/src/config-schema/coverage.ts",
+      "packages/shared/src/config-schema/primitives.ts",
+      "packages/shared/src/config-schema/schemas.ts",
+      "packages/shared/src/config-schema/sensitivity.ts",
+      "packages/shared/src/config-schema/state-schema.ts",
+      "packages/shared/src/config-schema/walker.ts",
+      "packages/shared/src/errors/ValidationError.ts",
+      "packages/shared/src/errors/index.ts",
+      "packages/shared/src/policy/schema.ts",
+      "packages/shared/src/validation/cidr.ts",
+      "scripts/gates/check-schema-coverage.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-schema-coverage.ts"
     ],
@@ -3898,6 +5988,15 @@
     "id": "check:ci-shared-constant-duplication",
     "run": "npm run check:ci-shared-constant-duplication",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/shared/**",
+      "private/account",
+      "scripts/gates/check-shared-constant-duplication.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-shared-constant-duplication.ts"
     ],
@@ -3915,6 +6014,14 @@
     "needs": [
       "build:packages"
     ],
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/shared/package.json",
+      "scripts/gates/check-shared-esm-resolvable.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-shared-esm-resolvable.ts"
     ],
@@ -3929,6 +6036,14 @@
     "id": "check:ci-runtime-imports-are-deps",
     "run": "npm run check:ci-runtime-imports-are-deps",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "private/account",
+      "scripts/gates/check-runtime-imports-are-deps.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-runtime-imports-are-deps.ts"
     ],
@@ -3943,6 +6058,15 @@
     "id": "check:ci-backup-manifest-shape-parity",
     "run": "npm run check:ci-backup-manifest-shape-parity",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "private/account",
+      "private/renet",
+      "scripts/gates/check-backup-manifest-shape-parity.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-backup-manifest-shape-parity.ts"
     ],
@@ -3999,6 +6123,20 @@
     "id": "check:ci-builder-env-contract",
     "run": "npm run check:ci-builder-env-contract",
     "gate": true,
+    "paths": [
+      ".ci/rediacc_ci/deploy/set_account_worker_secrets.py",
+      ".ci/rediacc_ci/deploy/set_preview_worker_secrets.py",
+      ".ci/rediacc_ci/deploy/set_www_worker_secrets.py",
+      ".github/workflows/cd-deploy-account.yml",
+      ".github/workflows/cd-deploy-worker.yml",
+      ".github/workflows/ci.yml",
+      ".npmrc",
+      "package.json",
+      "scripts/gates/check-builder-env-contract.ts",
+      "scripts/gates/lib/gate-problems.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-builder-env-contract.ts"
     ],
@@ -4013,6 +6151,22 @@
     "id": "check:ci-backup-bucket-conformance",
     "run": "npm run check:ci-backup-bucket-conformance",
     "gate": true,
+    "paths": [
+      ".ci/rediacc_ci/ops/deploy_bench.py",
+      ".npmrc",
+      "package.json",
+      "private/account",
+      "regions.json",
+      "scripts/gates/check-backup-bucket-conformance.ts",
+      "scripts/gates/lib/gate-problems.ts",
+      "scripts/lib/console.ts",
+      "tsconfig.json",
+      "workers/account/wrangler.asia.toml",
+      "workers/account/wrangler.bench-eu.toml",
+      "workers/account/wrangler.eu.toml",
+      "workers/account/wrangler.us.toml"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-backup-bucket-conformance.ts"
     ],
@@ -4027,6 +6181,19 @@
     "id": "check:ci-backup-protocol-conformance",
     "run": "npm run check:ci-backup-protocol-conformance",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/src/commands/backup-image-deps.ts",
+      "packages/cli/src/commands/backup-restore-chunk.ts",
+      "packages/cli/src/commands/backup-restore-test.ts",
+      "packages/cli/src/services/executor/repo-license-context.ts",
+      "private/account",
+      "private/renet",
+      "scripts/gates/check-backup-protocol-conformance.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-backup-protocol-conformance.ts"
     ],
@@ -4041,6 +6208,14 @@
     "id": "check:ci-no-client-key-composition",
     "run": "npm run check:ci-no-client-key-composition",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "private/renet",
+      "scripts/gates/check-no-client-key-composition.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-no-client-key-composition.ts"
     ],
@@ -4055,6 +6230,16 @@
     "id": "check:ci-retention-knob-parity",
     "run": "npm run check:ci-retention-knob-parity",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/src/commands/backup-retention-commands.ts",
+      "packages/shared/src/config-schema/schemas.ts",
+      "private/account",
+      "scripts/gates/check-retention-knob-parity.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-retention-knob-parity.ts"
     ],
@@ -4069,6 +6254,29 @@
     "id": "check:ci-gate-mutations",
     "run": "npm run check:ci-gate-mutations",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/src/commands/backup-image-deps.ts",
+      "packages/cli/src/commands/backup-restore-chunk.ts",
+      "packages/cli/src/commands/backup-restore-test.ts",
+      "packages/cli/src/commands/backup-retention-commands.ts",
+      "packages/cli/src/services/executor/repo-license-context.ts",
+      "packages/shared/src/config-schema/schemas.ts",
+      "private/account",
+      "private/renet",
+      "scripts/gates/check-backup-manifest-shape-parity.ts",
+      "scripts/gates/check-backup-protocol-conformance.ts",
+      "scripts/gates/check-gate-mutations.ts",
+      "scripts/gates/check-no-client-key-composition.ts",
+      "scripts/gates/check-retention-knob-parity.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/controls.ts",
+      "scripts/lib/entry-point.ts",
+      "scripts/lib/repo-root.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-gate-mutations.ts"
     ],
@@ -4177,6 +6385,12 @@
     "id": "check:ci-account-config-auth",
     "run": "npm run check:ci-account-config-auth",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "private/account"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "node"
     ],
@@ -4191,6 +6405,17 @@
     "id": "check:ci-account-no-node-env-routes",
     "run": "npm run check:ci-account-no-node-env-routes",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "private/account",
+      "scripts/gates/check-account-no-node-env-routes.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/controls.ts",
+      "scripts/lib/entry-point.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-account-no-node-env-routes.ts"
     ],
@@ -4205,6 +6430,17 @@
     "id": "check:ci-account-no-admin-role",
     "run": "npm run check:ci-account-no-admin-role",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "private/account",
+      "scripts/gates/check-account-no-admin-role.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/controls.ts",
+      "scripts/lib/entry-point.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-account-no-admin-role.ts"
     ],
@@ -4230,6 +6466,19 @@
       "max": "all"
     },
     "heavy": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/package.json",
+      "packages/e2e-tests/package.json",
+      "packages/json/package.json",
+      "packages/locales/package.json",
+      "packages/provisioning/package.json",
+      "packages/shared/package.json",
+      "packages/www/package.json",
+      "private/account"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "vitest"
     ],
@@ -4256,6 +6505,64 @@
       "max": "all"
     },
     "heavy": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/package.json",
+      "packages/cli/tsconfig.json",
+      "packages/e2e-tests/package.json",
+      "packages/json/package.json",
+      "packages/locales/package.json",
+      "packages/provisioning/package.json",
+      "packages/shared/package.json",
+      "packages/shared/src/backup/duration.ts",
+      "packages/shared/src/cli-contract/data/contract.generated.ts",
+      "packages/shared/src/cli-contract/discovery.ts",
+      "packages/shared/src/cli-contract/i18n.ts",
+      "packages/shared/src/cli-contract/index.ts",
+      "packages/shared/src/cli-contract/ndjson.ts",
+      "packages/shared/src/cli-contract/validation.ts",
+      "packages/shared/src/cli-contract/wire.ts",
+      "packages/shared/src/config-crypto/**",
+      "packages/shared/src/config-schema/access.ts",
+      "packages/shared/src/config-schema/cluster-schema.ts",
+      "packages/shared/src/config-schema/coverage.ts",
+      "packages/shared/src/config-schema/index.ts",
+      "packages/shared/src/config-schema/migrations/index.ts",
+      "packages/shared/src/config-schema/migrations/v1-to-v2.ts",
+      "packages/shared/src/config-schema/migrations/v2-to-v3.ts",
+      "packages/shared/src/config-schema/normalize.ts",
+      "packages/shared/src/config-schema/payload.ts",
+      "packages/shared/src/config-schema/primitives.ts",
+      "packages/shared/src/config-schema/repo-names.ts",
+      "packages/shared/src/config-schema/schemas.ts",
+      "packages/shared/src/config-schema/sensitivity.ts",
+      "packages/shared/src/config-schema/state-schema.ts",
+      "packages/shared/src/config-schema/walker.ts",
+      "packages/shared/src/config/**",
+      "packages/shared/src/encryption/constants.ts",
+      "packages/shared/src/errors/ValidationError.ts",
+      "packages/shared/src/errors/index.ts",
+      "packages/shared/src/job-poll/backoff.ts",
+      "packages/shared/src/legal/**",
+      "packages/shared/src/policy/**",
+      "packages/shared/src/ref/index.ts",
+      "packages/shared/src/subscription/constants.ts",
+      "packages/shared/src/subscription/crypto.ts",
+      "packages/shared/src/subscription/delegation-cert-id.ts",
+      "packages/shared/src/subscription/delegation-cert-policy.ts",
+      "packages/shared/src/subscription/fingerprint.ts",
+      "packages/shared/src/subscription/index.ts",
+      "packages/shared/src/subscription/renewal-manifest.ts",
+      "packages/shared/src/subscription/signing-keys.ts",
+      "packages/shared/src/subscription/validation.ts",
+      "packages/shared/src/validation/cidr.ts",
+      "packages/shared/tsconfig.json",
+      "packages/www/package.json",
+      "private/account",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "vitest"
     ],
@@ -4364,6 +6671,13 @@
     "id": "check:ci-renet-tiers",
     "run": "npm run check:ci-renet-tiers",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".npmrc",
+      "package.json",
+      "private/renet"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_renet_tier_map.py"
     ],
@@ -4376,6 +6690,21 @@
     "id": "check:ci-embed-credits",
     "run": "npm run check:ci-embed-credits",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/src/data/third-party-credits.json",
+      "private/renet",
+      "scripts/gates/check-embed-credits.ts",
+      "scripts/gen/generate-embed-credits.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/dockerfile-versions.ts",
+      "scripts/lib/entry-point.ts",
+      "scripts/lib/repo-root.ts",
+      "scripts/lib/submodule-presence.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-embed-credits.ts"
     ],
@@ -4390,6 +6719,17 @@
     "id": "check:ci-embed-arch-parity",
     "run": "npm run check:ci-embed-arch-parity",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "private/renet",
+      "scripts/gates/check-embed-arch-parity.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/repo-root.ts",
+      "scripts/lib/submodule-presence.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-embed-arch-parity.ts"
     ],
@@ -4456,6 +6796,26 @@
     },
     "run": "npm run check:ci-real-provider-pins",
     "gate": true,
+    "paths": [
+      ".ci/config/release-age.json",
+      ".npmrc",
+      "package.json",
+      "packages/shared/package.json",
+      "packages/shared/src/config/well-known.generated.ts",
+      "private/account",
+      "scripts/gates/check-real-provider-pin-freshness.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/controls.ts",
+      "scripts/lib/entry-point.ts",
+      "scripts/lib/github-token.ts",
+      "scripts/lib/pins/registry.ts",
+      "scripts/lib/pins/remedy.ts",
+      "scripts/lib/release-age.ts",
+      "scripts/lib/repo-root.ts",
+      "scripts/lib/upstream.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-real-provider-pin-freshness.ts"
     ],
@@ -4474,6 +6834,17 @@
       "max": "all"
     },
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "private/renet",
+      "scripts/gates/check-embed-asset-versions.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/repo-root.ts",
+      "scripts/lib/submodule-presence.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-embed-asset-versions.ts"
     ],
@@ -4488,6 +6859,17 @@
     "id": "check:ci-recovery-context",
     "run": "npm run check:ci-recovery-context",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "private/renet",
+      "scripts/gates/check-recovery-context.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/repo-root.ts",
+      "scripts/lib/submodule-presence.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-recovery-context.ts"
     ],
@@ -4568,6 +6950,61 @@
       "max": "all"
     },
     "heavy": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/package.json",
+      "packages/cli/tsconfig.json",
+      "packages/e2e-tests/package.json",
+      "packages/json/package.json",
+      "packages/locales/package.json",
+      "packages/provisioning/package.json",
+      "packages/shared/package.json",
+      "packages/shared/src/audit/event-schema.ts",
+      "packages/shared/src/audit/index.ts",
+      "packages/shared/src/backup/rpo-cost.ts",
+      "packages/shared/src/cli-contract/data/contract.generated.ts",
+      "packages/shared/src/cli-contract/discovery.ts",
+      "packages/shared/src/cli-contract/i18n.ts",
+      "packages/shared/src/cli-contract/index.ts",
+      "packages/shared/src/cli-contract/validation.ts",
+      "packages/shared/src/cli-contract/wire.ts",
+      "packages/shared/src/config-crypto/**",
+      "packages/shared/src/config/**",
+      "packages/shared/src/e2e/**",
+      "packages/shared/src/encryption/**",
+      "packages/shared/src/error-parser/index.ts",
+      "packages/shared/src/formatters/index.ts",
+      "packages/shared/src/i18n/types.ts",
+      "packages/shared/src/index.ts",
+      "packages/shared/src/legal/**",
+      "packages/shared/src/renet-contract/**",
+      "packages/shared/src/services/**",
+      "packages/shared/src/subscription/constants.ts",
+      "packages/shared/src/subscription/crypto.ts",
+      "packages/shared/src/subscription/delegation-cert-id.ts",
+      "packages/shared/src/subscription/delegation-cert-policy.ts",
+      "packages/shared/src/subscription/fingerprint.ts",
+      "packages/shared/src/subscription/index.ts",
+      "packages/shared/src/subscription/onprem-free-tier.ts",
+      "packages/shared/src/subscription/renewal-manifest.ts",
+      "packages/shared/src/subscription/signing-keys.ts",
+      "packages/shared/src/subscription/validation.ts",
+      "packages/shared/src/telemetry/**",
+      "packages/shared/src/types/api.ts",
+      "packages/shared/src/types/derived.ts",
+      "packages/shared/src/types/index.ts",
+      "packages/shared/src/utils/**",
+      "packages/shared/src/validation/cidr.ts",
+      "packages/shared/src/validation/index.ts",
+      "packages/shared/tsconfig.json",
+      "packages/www/package.json",
+      "private/account",
+      "private/renet",
+      "tsconfig.json",
+      "workers/account/**"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "vitest"
     ],
@@ -4596,6 +7033,26 @@
     "id": "check:ci-pricing-consistency",
     "run": "npm run check:ci-pricing-consistency",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/shared/package.json",
+      "packages/shared/src/subscription/constants.ts",
+      "packages/shared/src/subscription/crypto.ts",
+      "packages/shared/src/subscription/delegation-cert-id.ts",
+      "packages/shared/src/subscription/delegation-cert-policy.ts",
+      "packages/shared/src/subscription/fingerprint.ts",
+      "packages/shared/src/subscription/index.ts",
+      "packages/shared/src/subscription/renewal-manifest.ts",
+      "packages/shared/src/subscription/signing-keys.ts",
+      "packages/shared/src/subscription/validation.ts",
+      "packages/www/src/content/docs/en/account-management.md",
+      "packages/www/src/content/docs/en/subscription-licensing.md",
+      "packages/www/src/i18n/translations/en.json",
+      "scripts/gates/check-pricing-consistency.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-pricing-consistency.ts"
     ],
@@ -4633,6 +7090,16 @@
     "needs": [
       "build:www"
     ],
+    "paths": [
+      ".npmrc",
+      "eslint-rules/seo-no-trailing-slash-internal-link.js",
+      "package.json",
+      "packages/www/astro.config.mjs",
+      "packages/www/src/**",
+      "scripts/gates/check-seo.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-seo.ts"
     ],
@@ -4651,6 +7118,16 @@
     "needs": [
       "build:www"
     ],
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/www/src/content/**",
+      "scripts/gates/check-docs-render-parity.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-docs-render-parity.ts"
     ],
@@ -4665,6 +7142,15 @@
     "id": "check:ci-page-locale-imports",
     "run": "npm run check:ci-page-locale-imports",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/src/layouts/**",
+      "packages/www/src/pages/**",
+      "scripts/gates/check-page-locale-imports.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-page-locale-imports.ts"
     ],
@@ -4683,6 +7169,23 @@
     "run": "npm run check:ci-external-links",
     "slow": true,
     "gate": true,
+    "paths": [
+      ".ci/docs/**",
+      ".github/**",
+      ".npmrc",
+      "docs/**",
+      "package.json",
+      "packages/cli/**",
+      "packages/shared/package.json",
+      "packages/shared/src/config/well-known.generated.ts",
+      "packages/www/src/content/**",
+      "scripts/gates/check-external-links.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/github-token.ts",
+      "scripts/lib/upstream.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-external-links.ts"
     ],
@@ -4697,6 +7200,19 @@
     "id": "check:ci-dkim-notify",
     "run": "npm run check:ci-dkim-notify",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/shared/package.json",
+      "packages/shared/src/config/well-known.generated.ts",
+      "private/account",
+      "scripts/gates/check-dkim-notify.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/github-token.ts",
+      "scripts/lib/upstream.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-dkim-notify.ts"
     ],
@@ -4711,6 +7227,17 @@
     "id": "check:ci-css-dom-refs",
     "run": "npm run check:ci-css-dom-refs",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/public/**",
+      "packages/www/src/**",
+      "scripts/data/css-dom-refs-baseline.json",
+      "scripts/gates/check-css-dom-refs.ts",
+      "scripts/lib/shrink-only-baseline.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-css-dom-refs.ts"
     ],
@@ -4725,6 +7252,16 @@
     "id": "check:ci-svg-theme-reach",
     "run": "npm run check:ci-svg-theme-reach",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/public/assets/images/icon-rediacc.svg",
+      "packages/www/src/**",
+      "scripts/gates/check-svg-theme-reach.ts",
+      "scripts/lib/console.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-svg-theme-reach.ts"
     ],
@@ -4739,6 +7276,26 @@
     "id": "check:ci-terms-version",
     "run": "npm run check:ci-terms-version",
     "gate": true,
+    "paths": [
+      ".ci/config/legal-documents.json",
+      ".npmrc",
+      "package.json",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/shared/package.json",
+      "packages/shared/src/config/well-known.generated.ts",
+      "packages/shared/src/legal/**",
+      "packages/www/package.json",
+      "packages/www/public/legal/**",
+      "packages/www/src/i18n/translations/**",
+      "packages/www/src/pages/**",
+      "packages/www/src/utils/legal-order.ts",
+      "scripts/gates/check-terms-version.ts",
+      "scripts/gen/gen-legal.ts",
+      "scripts/lib/entry-point.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-terms-version.ts"
     ],
@@ -4753,6 +7310,18 @@
     "id": "check:ci-dead-css",
     "run": "npm run check:ci-dead-css",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/**",
+      "scripts/data/dead-css-baseline.json",
+      "scripts/gates/check-dead-css.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/findings-report.ts",
+      "scripts/lib/shrink-only-baseline.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-dead-css.ts"
     ],
@@ -4767,6 +7336,15 @@
     "id": "check:ci-viewport-unit-mixing",
     "run": "npm run check:ci-viewport-unit-mixing",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/public/styles/**",
+      "packages/www/src/styles/**",
+      "scripts/gates/check-viewport-unit-mixing.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-viewport-unit-mixing.ts"
     ],
@@ -4781,6 +7359,16 @@
     "id": "check:ci-illustration-contract",
     "run": "npm run check:ci-illustration-contract",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/src/assets/**",
+      "scripts/gates/check-illustration-contract.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/controls.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-illustration-contract.ts"
     ],
@@ -4818,6 +7406,14 @@
     "needs": [
       "build:www"
     ],
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "scripts/gates/check-redirect-integrity.ts",
+      "tsconfig.json",
+      "workers/www/src/redirects.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-redirect-integrity.ts"
     ],
@@ -4850,6 +7446,14 @@
     "id": "check:ci-captcha-recovery",
     "run": "npm run check:ci-captcha-recovery",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/**",
+      "scripts/gates/check-captcha-recovery.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-captcha-recovery.ts"
     ],
@@ -4886,6 +7490,15 @@
     "needs": [
       "build:www"
     ],
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "scripts/gates/check-landmarks.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/findings-report.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-landmarks.ts"
     ],
@@ -4904,6 +7517,17 @@
     "needs": [
       "build:www"
     ],
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/locales/site-locales.json",
+      "packages/www/src/i18n/translations/**",
+      "scripts/gates/check-ssr-locale.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/findings-report.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-ssr-locale.ts"
     ],
@@ -4922,6 +7546,18 @@
     "needs": [
       "build:www"
     ],
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/src/i18n/translations/en.json",
+      "scripts/gates/check-dist-raw-translation-keys.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/controls.ts",
+      "scripts/lib/entry-point.ts",
+      "scripts/lib/findings-report.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-dist-raw-translation-keys.ts"
     ],
@@ -5004,6 +7640,19 @@
     "id": "check:ci-search-index",
     "run": "npm run check:ci-search-index",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/src/i18n/**",
+      "packages/www/package.json",
+      "packages/www/public/**",
+      "packages/www/scripts/generate-search-index.js",
+      "packages/www/scripts/lib/same-directory.js",
+      "packages/www/src/**",
+      "scripts/gates/check-search-index-freshness.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-search-index-freshness.ts"
     ],
@@ -5022,6 +7671,20 @@
     "needs": [
       "build:www"
     ],
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/package.json",
+      "packages/e2e-tests/package.json",
+      "packages/json/package.json",
+      "packages/locales/package.json",
+      "packages/provisioning/package.json",
+      "packages/shared/package.json",
+      "packages/www/package.json",
+      "packages/www/scripts/check-cta-bolt-uniqueness.js",
+      "packages/www/src/i18n/translations/en.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "packages/www/scripts/check-cta-bolt-uniqueness.js"
     ],
@@ -5094,6 +7757,18 @@
     "id": "check:ci-tutorial-commands",
     "run": "npm run check:ci-tutorial-commands",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/scripts/command-tree.json",
+      "packages/cli/src/i18n/locales/en/cli.json",
+      "packages/www/package.json",
+      "packages/www/scripts/lib/cli-reference-catalog.js",
+      "packages/www/src/data/tutorial-storyboard/**",
+      "scripts/gates/check-tutorial-commands.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-tutorial-commands.ts"
     ],
@@ -5108,6 +7783,16 @@
     "id": "check:ci-tutorial-noninteractive",
     "run": "npm run check:ci-tutorial-noninteractive",
     "gate": true,
+    "paths": [
+      ".ci/tutorials/**",
+      ".npmrc",
+      "package.json",
+      "packages/cli/scripts/command-tree.json",
+      "packages/cli/src/i18n/locales/en/cli.json",
+      "scripts/gates/check-tutorial-noninteractive.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-tutorial-noninteractive.ts"
     ],
@@ -5122,6 +7807,40 @@
     "id": "check:ci-tutorial-parity",
     "run": "npm run check:ci-tutorial-parity",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/scripts/command-tree.json",
+      "packages/www/package.json",
+      "packages/www/public/assets/tutorials/**",
+      "packages/www/scripts/check-tutorial-parity.ts",
+      "packages/www/scripts/lib/cast-splitter.ts",
+      "packages/www/scripts/lib/cli-reference-catalog.js",
+      "packages/www/scripts/lib/storyboard.ts",
+      "packages/www/src/content/docs/en/tutorial-add-server.mdx",
+      "packages/www/src/content/docs/en/tutorial-backup-restore.mdx",
+      "packages/www/src/content/docs/en/tutorial-branching.mdx",
+      "packages/www/src/content/docs/en/tutorial-create-repo.mdx",
+      "packages/www/src/content/docs/en/tutorial-delta-transfer.mdx",
+      "packages/www/src/content/docs/en/tutorial-deploy-app.mdx",
+      "packages/www/src/content/docs/en/tutorial-fork-isolation.mdx",
+      "packages/www/src/content/docs/en/tutorial-forking.mdx",
+      "packages/www/src/content/docs/en/tutorial-installation.mdx",
+      "packages/www/src/content/docs/en/tutorial-live-migration.mdx",
+      "packages/www/src/content/docs/en/tutorial-managing-secrets.mdx",
+      "packages/www/src/content/docs/en/tutorial-monitoring.mdx",
+      "packages/www/src/content/docs/en/tutorial-networking.mdx",
+      "packages/www/src/content/docs/en/tutorial-production-mode.mdx",
+      "packages/www/src/content/docs/en/tutorial-ssh-keys.mdx",
+      "packages/www/src/content/docs/en/tutorial-storage-management.mdx",
+      "packages/www/src/content/docs/en/tutorial-vscode-browser.mdx",
+      "packages/www/src/content/docs/en/tutorial-work-with-repo.mdx",
+      "packages/www/src/data/tutorial-storyboard/**",
+      "packages/www/src/data/tutorial-transcripts/en/**",
+      "scripts/lib/shrink-only-baseline.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "packages/www/scripts/check-tutorial-parity.ts"
     ],
@@ -5136,6 +7855,21 @@
     "id": "check:ci-tutorial-casts",
     "run": "npm run check:ci-tutorial-casts",
     "gate": true,
+    "paths": [
+      ".ci/tutorials/**",
+      ".npmrc",
+      "package.json",
+      "packages/shared/package.json",
+      "packages/shared/src/config/well-known.generated.ts",
+      "packages/www/package.json",
+      "packages/www/public/assets/tutorials/**",
+      "packages/www/scripts/lib/cast-patterns.js",
+      "packages/www/scripts/lib/p7-backlog.js",
+      "packages/www/scripts/lib/terminal-cells.js",
+      "packages/www/scripts/validate-tutorial-cast-output.js",
+      "scripts/lib/shrink-only-baseline.ts"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "packages/www/scripts/validate-tutorial-cast-output.js"
     ],
@@ -5150,6 +7884,13 @@
     "id": "check:ci-tutorial-render-queue",
     "run": "npm run check:ci-tutorial-render-queue",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/package.json",
+      "packages/www/scripts/list-tutorial-render-pairs.js"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "packages/www/scripts/list-tutorial-render-pairs.js"
     ],
@@ -5163,6 +7904,15 @@
     "id": "check:ci-locale-tutorial-assets",
     "run": "npm run check:ci-locale-tutorial-assets",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/package.json",
+      "packages/www/scripts/check-locale-tutorial-assets.ts",
+      "packages/www/src/**",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "packages/www/scripts/check-locale-tutorial-assets.ts"
     ],
@@ -5178,6 +7928,17 @@
     "run": "npm run check:ci-tutorial-card-fonts",
     "slow": true,
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/package.json",
+      "packages/www/scripts/assets/fonts/DejaVuSans.ttf",
+      "packages/www/scripts/check-tutorial-card-fonts.ts",
+      "packages/www/scripts/lib/scenes/card-fonts.ts",
+      "packages/www/src/data/tutorial-transcripts/**",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "packages/www/scripts/check-tutorial-card-fonts.ts"
     ],
@@ -5192,6 +7953,24 @@
     "id": "check:ci-solution-videos",
     "run": "npm run check:ci-solution-videos",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/shared/package.json",
+      "packages/shared/src/config/well-known.generated.ts",
+      "packages/www/package.json",
+      "packages/www/scripts/check-solution-videos.ts",
+      "packages/www/scripts/lib/update-video-manifest.ts",
+      "packages/www/src/config/solution-pages.ts",
+      "packages/www/src/data/video-manifest.json",
+      "packages/www/src/pages/**",
+      "packages/www/src/utils/media-url.ts",
+      "packages/www/src/utils/solution-video.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "packages/www/scripts/check-solution-videos.ts"
     ],
@@ -5206,6 +7985,25 @@
     "id": "check:ci-solution-video-engine",
     "run": "npm run check:ci-solution-video-engine",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/shared/package.json",
+      "packages/shared/src/config/well-known.generated.ts",
+      "packages/www/package.json",
+      "packages/www/scripts/check-solution-video-engine.ts",
+      "packages/www/scripts/check-solution-videos.ts",
+      "packages/www/scripts/lib/update-video-manifest.ts",
+      "packages/www/src/config/solution-pages.ts",
+      "packages/www/src/data/video-manifest.json",
+      "packages/www/src/pages/**",
+      "packages/www/src/utils/media-url.ts",
+      "packages/www/src/utils/solution-video.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "packages/www/scripts/check-solution-video-engine.ts"
     ],
@@ -5220,6 +8018,17 @@
     "id": "check:ci-tutorial-caption-sync",
     "run": "npm run check:ci-tutorial-caption-sync",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/www/package.json",
+      "packages/www/scripts/check-tutorial-caption-sync.ts",
+      "packages/www/src/data/video-manifest.json",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "packages/www/scripts/check-tutorial-caption-sync.ts"
     ],
@@ -5234,6 +8043,92 @@
     "id": "check:ci-account-onboarding",
     "run": "npm run check:ci-account-onboarding",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/scripts/command-tree.json",
+      "packages/cli/src/i18n/locales/en/cli.json",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/www/package.json",
+      "packages/www/scripts/build-account-onboarding.ts",
+      "packages/www/scripts/lib/cli-reference-catalog.js",
+      "packages/www/src/data/account-onboarding.json",
+      "packages/www/src/data/tutorial-storyboard/tutorial-add-server.json",
+      "packages/www/src/data/tutorial-storyboard/tutorial-create-repo.json",
+      "packages/www/src/data/tutorial-storyboard/tutorial-installation.json",
+      "packages/www/src/data/tutorial-storyboard/tutorial-ssh-keys.json",
+      "packages/www/src/data/tutorial-storyboard/tutorial-vscode-browser.json",
+      "packages/www/src/data/tutorial-transcripts/ar/tutorial-add-server.json",
+      "packages/www/src/data/tutorial-transcripts/ar/tutorial-create-repo.json",
+      "packages/www/src/data/tutorial-transcripts/ar/tutorial-installation.json",
+      "packages/www/src/data/tutorial-transcripts/ar/tutorial-ssh-keys.json",
+      "packages/www/src/data/tutorial-transcripts/ar/tutorial-vscode-browser.json",
+      "packages/www/src/data/tutorial-transcripts/de/tutorial-add-server.json",
+      "packages/www/src/data/tutorial-transcripts/de/tutorial-create-repo.json",
+      "packages/www/src/data/tutorial-transcripts/de/tutorial-installation.json",
+      "packages/www/src/data/tutorial-transcripts/de/tutorial-ssh-keys.json",
+      "packages/www/src/data/tutorial-transcripts/de/tutorial-vscode-browser.json",
+      "packages/www/src/data/tutorial-transcripts/en/tutorial-add-server.json",
+      "packages/www/src/data/tutorial-transcripts/en/tutorial-create-repo.json",
+      "packages/www/src/data/tutorial-transcripts/en/tutorial-installation.json",
+      "packages/www/src/data/tutorial-transcripts/en/tutorial-ssh-keys.json",
+      "packages/www/src/data/tutorial-transcripts/en/tutorial-vscode-browser.json",
+      "packages/www/src/data/tutorial-transcripts/es/tutorial-add-server.json",
+      "packages/www/src/data/tutorial-transcripts/es/tutorial-create-repo.json",
+      "packages/www/src/data/tutorial-transcripts/es/tutorial-installation.json",
+      "packages/www/src/data/tutorial-transcripts/es/tutorial-ssh-keys.json",
+      "packages/www/src/data/tutorial-transcripts/es/tutorial-vscode-browser.json",
+      "packages/www/src/data/tutorial-transcripts/et/tutorial-add-server.json",
+      "packages/www/src/data/tutorial-transcripts/et/tutorial-create-repo.json",
+      "packages/www/src/data/tutorial-transcripts/et/tutorial-installation.json",
+      "packages/www/src/data/tutorial-transcripts/et/tutorial-ssh-keys.json",
+      "packages/www/src/data/tutorial-transcripts/et/tutorial-vscode-browser.json",
+      "packages/www/src/data/tutorial-transcripts/fr/tutorial-add-server.json",
+      "packages/www/src/data/tutorial-transcripts/fr/tutorial-create-repo.json",
+      "packages/www/src/data/tutorial-transcripts/fr/tutorial-installation.json",
+      "packages/www/src/data/tutorial-transcripts/fr/tutorial-ssh-keys.json",
+      "packages/www/src/data/tutorial-transcripts/fr/tutorial-vscode-browser.json",
+      "packages/www/src/data/tutorial-transcripts/it/tutorial-add-server.json",
+      "packages/www/src/data/tutorial-transcripts/it/tutorial-create-repo.json",
+      "packages/www/src/data/tutorial-transcripts/it/tutorial-installation.json",
+      "packages/www/src/data/tutorial-transcripts/it/tutorial-ssh-keys.json",
+      "packages/www/src/data/tutorial-transcripts/it/tutorial-vscode-browser.json",
+      "packages/www/src/data/tutorial-transcripts/ja/tutorial-add-server.json",
+      "packages/www/src/data/tutorial-transcripts/ja/tutorial-create-repo.json",
+      "packages/www/src/data/tutorial-transcripts/ja/tutorial-installation.json",
+      "packages/www/src/data/tutorial-transcripts/ja/tutorial-ssh-keys.json",
+      "packages/www/src/data/tutorial-transcripts/ja/tutorial-vscode-browser.json",
+      "packages/www/src/data/tutorial-transcripts/ko/tutorial-add-server.json",
+      "packages/www/src/data/tutorial-transcripts/ko/tutorial-create-repo.json",
+      "packages/www/src/data/tutorial-transcripts/ko/tutorial-installation.json",
+      "packages/www/src/data/tutorial-transcripts/ko/tutorial-ssh-keys.json",
+      "packages/www/src/data/tutorial-transcripts/ko/tutorial-vscode-browser.json",
+      "packages/www/src/data/tutorial-transcripts/pt/tutorial-add-server.json",
+      "packages/www/src/data/tutorial-transcripts/pt/tutorial-create-repo.json",
+      "packages/www/src/data/tutorial-transcripts/pt/tutorial-installation.json",
+      "packages/www/src/data/tutorial-transcripts/pt/tutorial-ssh-keys.json",
+      "packages/www/src/data/tutorial-transcripts/pt/tutorial-vscode-browser.json",
+      "packages/www/src/data/tutorial-transcripts/ru/tutorial-add-server.json",
+      "packages/www/src/data/tutorial-transcripts/ru/tutorial-create-repo.json",
+      "packages/www/src/data/tutorial-transcripts/ru/tutorial-installation.json",
+      "packages/www/src/data/tutorial-transcripts/ru/tutorial-ssh-keys.json",
+      "packages/www/src/data/tutorial-transcripts/ru/tutorial-vscode-browser.json",
+      "packages/www/src/data/tutorial-transcripts/tr/tutorial-add-server.json",
+      "packages/www/src/data/tutorial-transcripts/tr/tutorial-create-repo.json",
+      "packages/www/src/data/tutorial-transcripts/tr/tutorial-installation.json",
+      "packages/www/src/data/tutorial-transcripts/tr/tutorial-ssh-keys.json",
+      "packages/www/src/data/tutorial-transcripts/tr/tutorial-vscode-browser.json",
+      "packages/www/src/data/tutorial-transcripts/zh/tutorial-add-server.json",
+      "packages/www/src/data/tutorial-transcripts/zh/tutorial-create-repo.json",
+      "packages/www/src/data/tutorial-transcripts/zh/tutorial-installation.json",
+      "packages/www/src/data/tutorial-transcripts/zh/tutorial-ssh-keys.json",
+      "packages/www/src/data/tutorial-transcripts/zh/tutorial-vscode-browser.json",
+      "private/account",
+      "scripts/gates/check-account-onboarding.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-account-onboarding.ts"
     ],
@@ -5262,6 +8157,22 @@
     "id": "check:ci-override-ranges",
     "run": "npm run check:ci-override-ranges",
     "gate": true,
+    "paths": [
+      ".ci/config/pins.json",
+      ".npmrc",
+      "package.json",
+      "private/account",
+      "scripts/gates/check-override-ranges.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/controls.ts",
+      "scripts/lib/deps/shared.ts",
+      "scripts/lib/entry-point.ts",
+      "scripts/lib/pins/registry.ts",
+      "scripts/lib/repo-root.ts",
+      "tsconfig.json",
+      "workers/**"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-override-ranges.ts"
     ],
@@ -5357,6 +8268,43 @@
     "run": "npm run check:ci-pin-freshness",
     "slow": true,
     "gate": true,
+    "paths": [
+      ".ci/config/constants.sh",
+      ".ci/config/pin-major-grace.json",
+      ".ci/config/pins.json",
+      ".ci/config/release-age.json",
+      ".ci/docker/render/Dockerfile",
+      ".ci/media/tts/Dockerfile",
+      ".ci/policy/.devcontainer-upgrade-blocklist",
+      ".ci/policy/.pins-upgrade-blocklist",
+      ".devcontainer/Dockerfile",
+      ".npmrc",
+      "Dockerfile",
+      "package.json",
+      "packages/cli/Dockerfile.native",
+      "packages/cli/src/services/tools/opentofu-pin.generated.ts",
+      "packages/json/templates/networking/cloud-switch/web/Dockerfile",
+      "packages/shared/package.json",
+      "packages/shared/src/config/well-known.generated.ts",
+      "private/renet",
+      "scripts/gates/check-pin-freshness.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/controls.ts",
+      "scripts/lib/deps/**",
+      "scripts/lib/docker-hub.ts",
+      "scripts/lib/embed-pin-upgrade.ts",
+      "scripts/lib/entry-point.ts",
+      "scripts/lib/github-token.ts",
+      "scripts/lib/pins/**",
+      "scripts/lib/policy-paths.ts",
+      "scripts/lib/release-age.ts",
+      "scripts/lib/repo-root.ts",
+      "scripts/lib/upstream.ts",
+      "scripts/pins/signed-release.ts",
+      "tsconfig.json",
+      "workers/proxy/Dockerfile"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-pin-freshness.ts"
     ],
@@ -5385,6 +8333,14 @@
     "id": "check:ci-dead-case-arms",
     "run": "npm run check:ci-dead-case-arms",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".npmrc",
+      "package.json",
+      "packages/www/scripts/**",
+      "scripts/**"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_dead_case_arms.py"
     ],
@@ -5398,6 +8354,13 @@
     "id": "check:ci-label-refs",
     "run": "npm run check:ci-label-refs",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".github/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_label_references.py"
     ],
@@ -5424,6 +8387,13 @@
     "id": "check:ci-profiler-coverage",
     "run": "npm run check:ci-profiler-coverage",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".github/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_profiler_coverage.py"
     ],
@@ -5451,6 +8421,14 @@
     "id": "check:ci-workflow-orphan-step-keys",
     "run": "npm run check:ci-workflow-orphan-step-keys",
     "gate": true,
+    "paths": [
+      ".github/**",
+      ".npmrc",
+      "package.json",
+      "scripts/gates/check-workflow-orphan-step-keys.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-workflow-orphan-step-keys.ts"
     ],
@@ -5465,6 +8443,14 @@
     "id": "check:ci-workflow-invariants",
     "run": "npm run check:ci-workflow-invariants",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".claude/hooks/stop/**",
+      ".github/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/security/ci_workflow_invariants.py"
     ],
@@ -5478,6 +8464,18 @@
     "id": "check:ci-client-i18n",
     "run": "npm run check:ci-client-i18n",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/www/package.json",
+      "packages/www/scripts/check-client-i18n-freshness.ts",
+      "packages/www/scripts/generate-client-i18n.ts",
+      "packages/www/src/i18n/**",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "packages/www/scripts/check-client-i18n-freshness.ts"
     ],
@@ -5506,6 +8504,19 @@
     "id": "check:ci-locale-config-divergence",
     "run": "npm run check:ci-locale-config-divergence",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/cli/src/i18n/locales/**",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "packages/www/src/i18n/translations/**",
+      "private/account",
+      "scripts/gates/check-locale-config-divergence.ts",
+      "scripts/lib/findings-report.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-locale-config-divergence.ts"
     ],
@@ -5520,6 +8531,18 @@
     "id": "check:ci-dead-translation-keys",
     "run": "npm run check:ci-dead-translation-keys",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/**",
+      "scripts/data/dead-translation-keys-baseline.json",
+      "scripts/gates/check-dead-translation-keys.ts",
+      "scripts/gen/gen-legal.ts",
+      "scripts/lib/findings-report.ts",
+      "scripts/lib/shrink-only-baseline.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-dead-translation-keys.ts"
     ],
@@ -5556,6 +8579,15 @@
     "needs": [
       "build:www"
     ],
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "scripts/gates/check-player-css-scope.ts",
+      "scripts/lib/findings-report.ts",
+      "scripts/lib/repo-root.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-player-css-scope.ts"
     ],
@@ -5574,6 +8606,16 @@
     "needs": [
       "build:www"
     ],
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/locales/index.js",
+      "packages/locales/package.json",
+      "scripts/gates/check-client-bundle-budget.ts",
+      "scripts/lib/findings-report.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-client-bundle-budget.ts"
     ],
@@ -5609,6 +8651,17 @@
     "id": "check:ci-layout-overflow",
     "run": "npm run check:ci-layout-overflow",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/public/styles/**",
+      "packages/www/src/**",
+      "scripts/data/static-nowrap-baseline.json",
+      "scripts/gates/check-layout-overflow.ts",
+      "scripts/lib/shrink-only-baseline.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-layout-overflow.ts"
     ],
@@ -5622,6 +8675,14 @@
     "id": "check:ci-hydration-clean",
     "run": "npm run check:ci-hydration-clean",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/src/**",
+      "scripts/gates/check-hydration-clean.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-hydration-clean.ts"
     ],
@@ -5635,6 +8696,14 @@
     "id": "check:ci-form-validation",
     "run": "npm run check:ci-form-validation",
     "gate": true,
+    "paths": [
+      ".npmrc",
+      "package.json",
+      "packages/www/src/**",
+      "scripts/gates/check-form-validation.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-form-validation.ts"
     ],
@@ -5712,6 +8781,12 @@
     "id": "check:ci-setup-port-parity",
     "run": "npm run check:ci-setup-port-parity",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/setup/port_parity.py"
     ],
@@ -5756,6 +8831,11 @@
     "id": "test:install-script",
     "run": "PYTHONPATH=.ci python3 .ci/rediacc_ci/release/install_script_check.py",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      "packages/www/public/install.sh"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/release/install_script_check.py"
     ],
@@ -5828,6 +8908,22 @@
     "id": "check:ci-quality-complete",
     "run": "npm run check:ci-quality-complete",
     "gate": true,
+    "paths": [
+      ".ci/config/lane-durations.json",
+      ".ci/config/shards/quality-code.json",
+      ".github/workflows/ci-quality.yml",
+      ".npmrc",
+      "package.json",
+      "scripts/gate-bind.ts",
+      "scripts/gates/check-quality-complete.ts",
+      "scripts/gates/lib/gate-problems.ts",
+      "scripts/lib/console.ts",
+      "scripts/lib/controls.ts",
+      "scripts/lib/gate-header.ts",
+      "scripts/lib/repo-root.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gates/check-quality-complete.ts"
     ],
@@ -5887,6 +8983,14 @@
     "id": "check:ci-regions-sync",
     "run": "npm run check:ci-regions-sync",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".npmrc",
+      "package.json",
+      "packages/shared/src/regions/data.json",
+      "regions.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_regions_sync.py"
     ],
@@ -6020,6 +9124,13 @@
     "id": "check:ci-environment-names",
     "run": "npm run check:ci-environment-names",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".github/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_environment_names.py"
     ],
@@ -6222,6 +9333,12 @@
     "id": "check:ci-install-table",
     "run": "npm run check:ci-install-table",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/rediacc_ci/setup/tools.py"
     ],
@@ -6236,6 +9353,67 @@
     "id": "check:ci-gen-manifest",
     "run": "npm run check:ci-gen-manifest",
     "gate": true,
+    "paths": [
+      ".ci/breakpoint/scripts/check-breakpoint-drift.sh",
+      ".ci/rediacc_ci/deploy/proxy_configs.py",
+      ".ci/rediacc_ci/drills/vm_check.py",
+      ".ci/rediacc_ci/ops/login_bench.py",
+      ".ci/rediacc_ci/proxies/cli_manifest.py",
+      ".ci/rediacc_ci/proxies/docker_prepull.py",
+      ".ci/rediacc_ci/proxies/ensure_nfpm.py",
+      ".ci/rediacc_ci/proxies/linux_packages.py",
+      ".ci/rediacc_ci/proxies/rdc_update.py",
+      ".ci/rediacc_ci/quality/browser_smoke.py",
+      ".ci/rediacc_ci/quality/env_register.py",
+      ".ci/rediacc_ci/quality/page_density.py",
+      ".ci/rediacc_ci/quality/staging_tag_guard.py",
+      ".ci/rediacc_ci/release/install_script_check.py",
+      ".ci/rediacc_ci/release/install_sh_config_check.py",
+      ".ci/rediacc_ci/release/local.py",
+      ".ci/rediacc_ci/security/actionlint.py",
+      ".ci/rediacc_ci/security/check_commands.py",
+      ".ci/rediacc_ci/security/ci_workflow_invariants.py",
+      ".ci/rediacc_ci/security/rdc_sh_env_check.py",
+      ".ci/rediacc_ci/security/shfmt.py",
+      ".ci/rediacc_ci/setup/port_parity.py",
+      ".ci/rediacc_ci/setup/tools.py",
+      ".ci/scripts/**",
+      ".github/workflows/ci-quality.yml",
+      ".npmrc",
+      "package.json",
+      "packages/cli/scripts/check-cli-i18n-help-render.ts",
+      "packages/cli/scripts/check-command-planes.ts",
+      "packages/www/scripts/check-client-i18n-freshness.ts",
+      "packages/www/scripts/check-cta-bolt-uniqueness.js",
+      "packages/www/scripts/check-locale-tutorial-assets.ts",
+      "packages/www/scripts/check-solution-video-engine.ts",
+      "packages/www/scripts/check-solution-videos.ts",
+      "packages/www/scripts/check-tutorial-caption-sync.ts",
+      "packages/www/scripts/check-tutorial-card-fonts.ts",
+      "packages/www/scripts/check-tutorial-parity.ts",
+      "packages/www/scripts/list-tutorial-render-pairs.js",
+      "packages/www/scripts/validate-cli-docs.js",
+      "packages/www/scripts/validate-comparison-refs.js",
+      "packages/www/scripts/validate-content-accuracy.js",
+      "packages/www/scripts/validate-content.js",
+      "packages/www/scripts/validate-docs-cli-usage.js",
+      "packages/www/scripts/validate-landing-cli-usage.js",
+      "packages/www/scripts/validate-translation-freshness.js",
+      "packages/www/scripts/validate-tutorial-cast-output.js",
+      "scripts/__tests__/check-docs-render-parity.control.ts",
+      "scripts/__tests__/check-page-locale-imports.control.ts",
+      "scripts/gate-bind.ts",
+      "scripts/gates/**",
+      "scripts/gen/gen-docs.ts",
+      "scripts/gen/gen-gates-lock.ts",
+      "scripts/gen/gen-manifest.ts",
+      "scripts/gen/validate-cli-examples.ts",
+      "scripts/lib/gate-header.ts",
+      "scripts/pins/pins.ts",
+      "scripts/settings/settings.ts",
+      "tsconfig.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       "scripts/gen/gen-manifest.ts"
     ],
@@ -6250,6 +9428,12 @@
     "id": "check:ci-bash-lib-ported",
     "run": "npm run check:ci-bash-lib-ported",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_bash_lib_ported.py"
     ],
@@ -6330,6 +9514,15 @@
     "id": "check:ci-portal-sitekey-guard",
     "run": "npm run check:ci-portal-sitekey-guard",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".claude/hooks/stop/**",
+      ".github/workflows/**",
+      ".npmrc",
+      "package.json",
+      "workers/account/**"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_portal_sitekey_guard.py"
     ],
@@ -6344,6 +9537,12 @@
     "id": "check:ci-turnstile-drift",
     "run": "npm run check:ci-turnstile-drift",
     "gate": true,
+    "paths": [
+      ".ci/**",
+      ".npmrc",
+      "package.json"
+    ],
+    "pathsOrigin": "traced",
     "leaves": [
       ".ci/scripts/quality/check_turnstile_drift.py"
     ],
