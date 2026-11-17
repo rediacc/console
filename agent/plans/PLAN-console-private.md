@@ -5,14 +5,14 @@ Owner: d778be9d
 Depends-On: no-dep -- builds on what has already landed: R2 release delivery, `release-records/v<V>/` (cd_edge_record.py), the app-token action, the git-hook layer (.claude/rediacc_hooks/git/) and the backup trigger (spawn_backup, backup_ref.py). No box waits on another plan.
 Priority: P1 -- the source of console (and through CI logs, part of private/*) is public today. The operator's goal is "Hide code, logs can leak".
 Concurrency: exclusive -- every workflow, every `.github/actions` composite, about 44 `.ci` modules that read GITHUB_*, the release path, the git hooks and the merge hooks all change. A parallel CI plan would collide on ci.yml, cd-release-edge.yml, githooks.py and the parity gates. Waves 1-3 run as file-disjoint writers inside this plan. Wave 4 (cutover) is serial and live.
-Owns: agent/plans/PLAN-console-private.md, .github/workflows/*.yml, .github/actions/**, .github/ISSUE_TEMPLATE/config.yml, .ci/rediacc_ci/wrapper/** (render.py, ping.py, sweep.py, check_runs.py, merge_gate.py), .ci/rediacc_ci/core/console_ctx.py, .ci/rediacc_ci/release/{create_github_release,release_notes,check_existing_release,assert_edge_tag_exists,verify_release_assets,mark_production,local,verify_artifact_attestation}.py, .ci/rediacc_ci/build/generate_cli_manifest.py, .ci/rediacc_ci/housekeeping/cleanup_versions.py, .ci/rediacc_ci/{ci,review,quality,version}/*.py (GITHUB_* sweep only), .ci/scripts/quality/check_console_context.py, .ci/scripts/quality/check_artifact_allowlist.py, .ci/config/well-known.env, .ci/config/wrapper.json, .ci/rediacc_ci/tests/test_wrapper_*.py, .ci/rediacc_ci/tests/test_console_ctx.py, .ci/rediacc_ci/tests/test_release_notes.py, .claude/rediacc_hooks/git/githooks.py, .ci/rediacc_ci/setup/githooks.py, .claude/hooks/post-bash/arm_ci_watch.py, .claude/hooks/stop/wl_prreview.py (the --answer ping only), .claude/rediacc_hooks/guards/block_wrapper_direct_push.py, .claude/rediacc_hooks/guards/block_unverified_console_merge.py, .claude/rediacc_hooks/tests/test_githook_wrapper_*.py, .claude/rediacc_hooks/tests/test_block_wrapper_direct_push.py, .claude/rediacc_hooks/tests/test_block_unverified_console_merge.py, .claude/rediacc_hooks/tests/test_arm_ci_watch_ping.py, packages/www/src/pages/[lang]/downloads.astro, packages/www/src/utils/latest-release.ts, packages/www/src/utils/release-parser.ts, packages/www/src/config/constants.ts, packages/www/src/content/docs/*/{siem-integration,rules-of-rediacc,experimental-vms}.md, scripts/gates/check-external-links.ts, README.md, CONTRIBUTING.md, private/homebrew-tap/README.md (gitlink bump), the pr-merge and ci-watch skill files, docs/agent-reference/ci-wrapper.md
+Owns: agent/plans/PLAN-console-private.md, .github/workflows/*.yml, .github/actions/**, .github/ISSUE_TEMPLATE/config.yml, .ci/rediacc_ci/wrapper/** (render.py, ping.py, sweep.py, check_runs.py, merge_gate.py), .ci/rediacc_ci/core/console_ctx.py, .ci/rediacc_ci/release/{create_github_release,release_notes,check_existing_release,assert_edge_tag_exists,verify_release_assets,mark_production,local,verify_artifact_attestation}.py, .ci/rediacc_ci/build/generate_cli_manifest.py, .ci/rediacc_ci/housekeeping/cleanup_versions.py, .ci/rediacc_ci/{ci,review,quality,version}/*.py (GITHUB_* sweep only), .ci/scripts/quality/check_console_context.py, .ci/scripts/quality/check_artifact_allowlist.py, .ci/config/well-known.env, .ci/config/wrapper.json, .ci/rediacc_ci/tests/test_wrapper_*.py, .ci/rediacc_ci/tests/test_console_ctx.py, .ci/rediacc_ci/tests/test_release_notes.py, .claude/rediacc_hooks/git/githooks.py, .ci/rediacc_ci/setup/githooks.py, .claude/hooks/post-bash/arm_ci_watch.py, .claude/hooks/stop/wl_prreview.py (the --answer ping only), .claude/rediacc_hooks/guards/block_wrapper_direct_push.py, .claude/rediacc_hooks/guards/block_unverified_console_merge.py, .claude/rediacc_hooks/tests/test_githook_wrapper_*.py, .claude/rediacc_hooks/tests/test_block_wrapper_direct_push.py, .claude/rediacc_hooks/tests/test_block_unverified_console_merge.py, .claude/rediacc_hooks/tests/test_arm_ci_watch_ping.py, packages/www/src/pages/[lang]/downloads.astro, packages/www/src/utils/latest-release.ts, packages/www/src/utils/release-parser.ts, packages/www/src/config/constants.ts, packages/www/src/content/docs/*/{siem-integration,rules-of-rediacc,experimental-vms}.md, scripts/gates/check-external-links.ts, README.md, CONTRIBUTING.md, private/homebrew-tap/README.md (gitlink bump), .claude/commands/pr-merge.md, .claude/skills/ci-watch/**, docs/agent-reference/ci-wrapper.md
 Live-Proof: bench -- the www downloads page moves from the GitHub API to the R2 manifest (surface `www`, packages/www/src/**), proved by a fresh www-smoke receipt on bench. The CI and repo flips are not registry surfaces; the C-boxes prove them.
 
 ## Context (checked 2026-11-17 by the planning agent; a writer re-reads each citation before relying on it)
 
 1. **Repos.** The submodules are private/renet, private/elite and private/account (private) and private/homebrew-tap (public) (.gitmodules:1-16). `gh api repos/rediacc/console` answers `visibility: public, has_discussions: true`. The org plan is `free`.
 2. **The CI estate.** There are 38 workflows (19,217 lines) and 10 composites in .github/actions (1,279 lines). The workflows triggered by a console repo event are:
-   - ci.yml (push main, pull_request opened/synchronize, schedule, workflow_dispatch; ci.yml:3-42);
+   - ci.yml (push main, pull_request opened/synchronize, schedule, workflow_dispatch; .github/workflows/ci.yml:3-42);
    - ci-obs-mirror.yml (push main and pull_request, both with `paths:` filters) and ci-vm-bake.yml (push main with `paths:`);
    - ops-claude-review.yml (workflow_run on "Console CI", pull_request ready_for_review, workflow_dispatch);
    - ops-cleanup-preview.yml (pull_request_target closed);
@@ -22,45 +22,45 @@ Live-Proof: bench -- the www downloads page moves from the GitHub API to the R2 
    Every other workflow is schedule, workflow_dispatch, workflow_run or workflow_call, and those keep working unchanged inside one repo.
 3. **Context reads in .github:**
    - `github.event_name` 110, `github.sha` 72, `github.event.pull_request` 53, `github.ref` 44, `github.repository` 24, `github.head_ref` 7, `github.run_id` 13;
-   - `concurrency:` 25, `upload-artifact` 60, `environment:` 10 lines (live blocks at cd-release-edge.yml:321, cd-deploy-worker.yml:46, cd-deploy-account.yml:257).
+   - `concurrency:` 25, `upload-artifact` 60, `environment:` 10 lines (live blocks at .github/workflows/cd-release-edge.yml:321, .github/workflows/cd-deploy-worker.yml:46, .github/workflows/cd-deploy-account.yml:257).
 
    In non-test `.ci` Python (excluding .ci/cache): 83 GITHUB_REPOSITORY lines and 17 GITHUB_SHA lines across 44 files that read GITHUB_REPOSITORY, GITHUB_SHA, GITHUB_REF or GITHUB_EVENT_PATH. The largest readers are ci/initialize.py (8), ci/dispatch_release.py (8), version/detect_bump_type.py (5) and ci/cancel_older_runs.py (5). The brief's 262 and 63 counted the cache and tests. 159 non-test `.ci` files mention `.github/` paths (parity and reachability gates).
 4. **Required checks today.** Ruleset 12344707 "Branch Protection" requires `CI Complete` and `Review Complete` with integration_id 15368 (GitHub Actions), strict, rebase-only merges. Its bypass actors are RepositoryRole 5 and Integration 2772000 (the App). Ruleset 24351140 holds deletion, linear history and non-fast-forward only. (Both read with `gh api repos/rediacc/console/rulesets/<id>`. The brief put the required checks on 24351140; they are on 12344707.)
-   - `CI Complete` is the ci.yml job at ci.yml:2076.
-   - The App token has no checks scope today (ci.yml:161-163 comment; .github/actions/app-token/action.yml presets readonly, pr-read, cd and housekeeping).
+   - `CI Complete` is the ci.yml job at .github/workflows/ci.yml:2076.
+   - The App token has no checks scope today (.github/workflows/ci.yml:161-163 comment; .github/actions/app-token/action.yml presets readonly, pr-read, cd and housekeeping).
 5. **Release reads of GitHub:**
-   - cd-release-edge.yml:681-692 (`gh release view` decides what a retry owes) and cd-release-edge.yml:795 (create_github_release);
-   - check_existing_release.py:54, assert_edge_tag_exists.py:158-161 (`probe_gh_release`), verify_release_assets.py:35-37;
-   - mark_production.py:4, :138 and :227 (`--latest` on the GitHub Release);
-   - cleanup_versions.py:4 and :480 (Phase 1 `gh release delete`).
-   - local.py:25: SHA256SUMS and SHA256SUMS.asc "ride the GitHub Release" only.
+   - .github/workflows/cd-release-edge.yml:681-692 (`gh release view` decides what a retry owes) and .github/workflows/cd-release-edge.yml:795 (create_github_release);
+   - .ci/rediacc_ci/release/check_existing_release.py:54, .ci/rediacc_ci/release/assert_edge_tag_exists.py:158-161 (`probe_gh_release`), .ci/rediacc_ci/release/verify_release_assets.py:35-37;
+   - .ci/rediacc_ci/release/mark_production.py:4, :138 and :227 (`--latest` on the GitHub Release);
+   - .ci/rediacc_ci/housekeeping/cleanup_versions.py:4 and :480 (Phase 1 `gh release delete`).
+   - .ci/rediacc_ci/release/local.py:25: SHA256SUMS and SHA256SUMS.asc "ride the GitHub Release" only.
 6. **Customer delivery is already on R2:**
-   - install.sh:20, :351 and :374-376 (`releases.rediacc.com`);
-   - updater.ts:33 and :53-56 (`${WK_RELEASES_ORIGIN}/cli/<ch>/manifest.json`);
+   - packages/www/public/install.sh:20, :351 and :374-376 (`releases.rediacc.com`);
+   - packages/cli/src/services/update/updater.ts:33 and :53-56 (`${WK_RELEASES_ORIGIN}/cli/<ch>/manifest.json`);
    - rediacc-cli.rb:9-34.
 
-   The live `cli/stable/manifest.json` carries `"releaseNotesUrl": "https://github.com/rediacc/console/releases/tag/v3.0.1"`, built at generate_cli_manifest.py:325. `WK_RELEASES_ORIGIN` is at well-known.env:28 and `WK_GH_REPO=rediacc/console` at well-known.env:63.
+   The live `cli/stable/manifest.json` carries `"releaseNotesUrl": "https://github.com/rediacc/console/releases/tag/v3.0.1"`, built at .ci/rediacc_ci/build/generate_cli_manifest.py:325. `WK_RELEASES_ORIGIN` is at .ci/config/well-known.env:28 and `WK_GH_REPO=rediacc/console` at .ci/config/well-known.env:63.
 7. **The downloads page reads GitHub.**
-   - downloads.astro:29-37 calls `fetchLatestRelease()` and throws in a production build when it gets null.
-   - latest-release.ts:36 reads `${WK_GH_API_BASE}/repos/${GITHUB_REPO}/releases/latest`.
-   - release-parser.ts:42-47 uses `browser_download_url` and `size`.
+   - packages/www/src/pages/[lang]/downloads.astro:29-37 calls `fetchLatestRelease()` and throws in a production build when it gets null.
+   - packages/www/src/utils/latest-release.ts:36 reads `${WK_GH_API_BASE}/repos/${GITHUB_REPO}/releases/latest`.
+   - packages/www/src/utils/release-parser.ts:42-47 uses `browser_download_url` and `size`.
    - Once console is private, this request answers 404 and **every www build fails**. So R-boxes must land before the flip.
 8. **Public links to console:**
    - experimental-vms.md (13 locales) links issue #380;
-   - rules-of-rediacc.md:125 (13 locales) links the heartbeat template tree;
-   - siem-integration.md:24, :35 and :57 (en only) link compose/otel-collector and event-schema.ts and run `git clone`;
+   - packages/www/src/content/docs/en/rules-of-rediacc.md:125 (13 locales) links the heartbeat template tree;
+   - packages/www/src/content/docs/en/siem-integration.md:24, :35 and :57 (en only) link compose/otel-collector and event-schema.ts and run `git clone`;
    - README.md:10, CONTRIBUTING.md:6, .github/ISSUE_TEMPLATE/config.yml:7 (discussions) and private/homebrew-tap/README.md:42.
    - scripts/gates/check-external-links.ts:846-857 builds API URLs from WK_GH_REPO.
-9. **Source-bearing artifacts.** ops-local-release-assist.yml:153-160 uploads `private/bin/` (renet binaries) as an artifact, even though the same set is already staged on R2 at `staging/local-release/v<V>/private-bin/` (local.py:23).
+9. **Source-bearing artifacts.** .github/workflows/ops-local-release-assist.yml:153-160 uploads `private/bin/` (renet binaries) as an artifact, even though the same set is already staged on R2 at `staging/local-release/v<V>/private-bin/` (.ci/rediacc_ci/release/local.py:23).
 10. **The live-proof map.** Surface `www` covers `packages/www/src/**` with live target bench. Check `www-smoke` exists (.ci/config/proof-tiers.json `tiers.live.checks`).
 11. **The git-hook layer (the new trigger's carrier; re-verified 2026-11-17).**
     - Git runs `.claude/rediacc_hooks/git/` hooks for agent, operator and `!` pushes and for subprocesses (githooks.py docstring :3). The installer `.ci/rediacc_ci/setup/githooks.py` wires `reference-transaction` in HOOK_NAMES at :24, in console and every checked-out submodule, as local config only.
-    - `reference_transaction` (githooks.py:281-283) acts only on the `prepared` state today and returns 0 for every other state.
-    - `main` (githooks.py:1347-1353) runs post-commit, post-rewrite and post-merge before the `COMMIT_POLICY_OK` check at :1353. `reference-transaction` and `pre-push` are routed after it (:1361-1364), so today the override would skip them.
+    - `reference_transaction` (.claude/rediacc_hooks/git/githooks.py:281-283) acts only on the `prepared` state today and returns 0 for every other state.
+    - `main` (.claude/rediacc_hooks/git/githooks.py:1347-1353) runs post-commit, post-rewrite and post-merge before the `COMMIT_POLICY_OK` check at :1353. `reference-transaction` and `pre-push` are routed after it (:1361-1364), so today the override would skip them.
     - A successful push updates `refs/remotes/origin/<b>`, which fires reference-transaction in its `committed` state (verified on git 2.53.0). A `git fetch` also moves `refs/remotes/origin/*` in the same state, so the trigger has to deduplicate (Design 2).
-    - The detached-worker template: `spawn_backup` (githooks.py:1284-1316) starts a worker in its own session with stdin closed and output going to `<git-dir>/rediacc-backup/log`, and never raises. `.ci/rediacc_ci/dev/backup_ref.py` runs under one flock (`<git-dir>/rediacc-backup/lock`, :154-169, :211) with `GIT_TERMINAL_PROMPT=0` (:106). It refuses any forced argv before running it (:83-112), and the next trigger retries a failed push (docstring :11).
+    - The detached-worker template: `spawn_backup` (.claude/rediacc_hooks/git/githooks.py:1284-1316) starts a worker in its own session with stdin closed and output going to `<git-dir>/rediacc-backup/log`, and never raises. `.ci/rediacc_ci/dev/backup_ref.py` runs under one flock (`<git-dir>/rediacc-backup/lock`, :154-169, :211) with `GIT_TERMINAL_PROMPT=0` (:106). It refuses any forced argv before running it (:83-112), and the next trigger retries a failed push (docstring :11).
     - `.claude/hooks/post-bash/arm_ci_watch.py` already reacts to `git push` and `gh pr create`, and arms a detached `ci-trace --wait` per head (docstring :2-10, :229).
-    - Pre-bash guards are auto-discovered modules in `.claude/rediacc_hooks/guards/` (dispatch.py:41). The older plan text named `.claude/hooks/pre-bash/**`, which does not exist. The hook tests run with `python3 .claude/rediacc_hooks/run_tests.py -k <expr>`, and no `check:hooks-selftest` npm script exists.
+    - Pre-bash guards are auto-discovered modules in `.claude/rediacc_hooks/guards/` (.claude/rediacc_hooks/dispatch.py:41). The older plan text named `.claude/hooks/pre-bash/**`, which does not exist. The hook tests run with `python3 .claude/rediacc_hooks/run_tests.py -k <expr>`, and no `hooks-selftest` npm script exists.
 
 ## GitHub product facts this plan relies on (fetched 2026-11-17)
 
@@ -76,7 +76,7 @@ Live-Proof: bench -- the www downloads page moves from the GitHub API to the R2 
 
 The workflows-page and GITHUB_TOKEN-page wording is as the 2026-11-17 investigation quoted it. A writer re-reads both pages before W1 and W5 rely on them.
 
-## Rulings (verbatim)
+## Rulings (quoted where the operator's words are the ruling; the 07:07Z rename is paraphrased, its words are in worklist item #12e2fd33)
 
 - ASKED:2026-11-17T05:43Z:
   - images: "Keep ghcr, public (Recommended)";
@@ -137,8 +137,8 @@ The workflows-page and GITHUB_TOKEN-page wording is as the 2026-11-17 investigat
 ### 2. Trigger, context shim and status bridge
 
 - **Trigger: the git hook (`reference-transaction committed`).**
-  - `main` in githooks.py routes `reference-transaction` with `argv[:1] == ["committed"]` **before** the `COMMIT_POLICY_OK` check, next to the post-* hooks (githooks.py:1348-1353). A ping refuses nothing, and a push made under the override needs CI just as much. The `prepared` branch keeps its place after the override.
-  - The committed handler reads stdin (`old new ref`) and keeps lines where `ref` is `refs/remotes/origin/<b>`, `new` is not the zero oid, and the repository's `origin` push URL is console's (submodules start nothing). For each line it calls `spawn_wrapper_ping(tree, branch, new)`. That function is modelled on `spawn_backup` (githooks.py:1284-1316): detached with `start_new_session=True`, stdin closed, output appended to `<git-dir>/rediacc-wrapper/log`, the PYTHONPATH built the same way, and it never raises. Its argv is the seam `WRAPPER_PING_WORKER = ("-m", "rediacc_ci.wrapper.ping", "--ref", <b>, "--sha", <new>, "--quiet")`, which tests replace with a sleeper.
+  - `main` in githooks.py routes `reference-transaction` with `argv[:1] == ["committed"]` **before** the `COMMIT_POLICY_OK` check, next to the post-* hooks (.claude/rediacc_hooks/git/githooks.py:1348-1353). A ping refuses nothing, and a push made under the override needs CI just as much. The `prepared` branch keeps its place after the override.
+  - The committed handler reads stdin (`old new ref`) and keeps lines where `ref` is `refs/remotes/origin/<b>`, `new` is not the zero oid, and the repository's `origin` push URL is console's (submodules start nothing). For each line it calls `spawn_wrapper_ping(tree, branch, new)`. That function is modelled on `spawn_backup` (.claude/rediacc_hooks/git/githooks.py:1284-1316): detached with `start_new_session=True`, stdin closed, output appended to `<git-dir>/rediacc-wrapper/log`, the PYTHONPATH built the same way, and it never raises. Its argv is the seam `WRAPPER_PING_WORKER = ("-m", "rediacc_ci.wrapper.ping", "--ref", <b>, "--sha", <new>, "--quiet")`, which tests replace with a sleeper.
   - A lease tree starts nothing, because a lease never pushes.
   - The same state fires on a `git fetch` that moves `origin/<b>`. The worker's sha dedupe makes that a no-op whenever the wrapper already holds the sha. When it does not (a push made from another machine), the fetch-triggered ping is a useful catch-up.
 - **The worker `.ci/rediacc_ci/wrapper/ping.py`** follows the backup_ref.py template. It takes one flock `<git-dir>/rediacc-wrapper/lock`; it waits up to 120 s and then exits 0 with `lock busy; sweeper covers <sha>` logged. It sets `GIT_TERMINAL_PROMPT=0` and refuses any forced argv before running it. Steps:
@@ -169,7 +169,7 @@ The workflows-page and GITHUB_TOKEN-page wording is as the 2026-11-17 investigat
   - CI tests the PR head (`CONSOLE_SHA`), not a synthetic merge commit. merge_gate's strict "up to date with main" check makes the two the same at merge time.
   - Python reads context only through `rediacc_ci.core.console_ctx`. Local runs derive the same values from git, with no GITHUB_* fallback.
   - Run, artifact, cache, workflow and deployment API calls target `WK_GH_CI_REPO=rediacc/rediacc`, a new well-known. PR, issue, commit, check-run and tag calls target `WK_GH_REPO=rediacc/console`.
-  - The gate `check:ci-console-context` refuses `github.sha|ref|head_ref|event_name|event.pull_request` and the GITHUB_SHA/REF/HEAD_REF/EVENT_PATH/REPOSITORY reads outside checkout-console and the accessor. It allowlists `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}` (wrapper run URLs) and `github.ref_name` in `concurrency.group` (Design 3).
+  - The gate the new `ci-console-context` gate (npm script `check:` prefix added when written) refuses `github.sha|ref|head_ref|event_name|event.pull_request` and the GITHUB_SHA/REF/HEAD_REF/EVENT_PATH/REPOSITORY reads outside checkout-console and the accessor. It allowlists `${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}` (wrapper run URLs) and `github.ref_name` in `concurrency.group` (Design 3).
 - **Status.**
   - The `console-context` job creates the App check-run `CI Complete` (in_progress) on `CONSOLE_SHA`, so ci-watch and the sweeper see the run at once. A user-token ping cannot do this, because only Apps create check-runs.
   - The jobs that are `CI Complete` and `Review Complete` today end with a step that PATCHes or POSTs the check-run through the App, with a `details_url` pointing at the wrapper run. This needs the App permission `checks: write` (an operator grant, A2) and a new app-token preset `checks` (checks:write only, console only).
@@ -186,9 +186,9 @@ The workflows-page and GITHUB_TOKEN-page wording is as the 2026-11-17 investigat
 
 Every group keys on a ref that maps one-to-one to a console ref:
 - `ci-${{ github.ref_name }}`. On the wrapper that is `main`, `run/pr-<N>` or `review/pr-<N>`, a one-to-one image of console main and PR N. On native console (shadow, rollback) it is `main` or `<N>/merge`, also unique per PR;
-- stage, release and deploy groups keep their current version or channel keys (ci.yml:1203-1205 is already ref-free).
+- stage, release and deploy groups keep their current version or channel keys (.github/workflows/ci.yml:1203-1205 is already ref-free).
 
-`check:ci-console-context` refuses a `concurrency.group` that reads `github.ref` (full), `github.head_ref` or `github.event.pull_request`, which are empty or wrong on a wrapper push.
+the new `ci-console-context` gate (npm script `check:` prefix added when written) refuses a `concurrency.group` that reads `github.ref` (full), `github.head_ref` or `github.event.pull_request`, which are empty or wrong on a wrapper push.
 
 ### 4. Merge gate, rulesets and environments on Free
 
@@ -200,22 +200,22 @@ Every group keys on a ref that maps one-to-one to a console ref:
 - **Guard.** A pre-bash guard `block_unverified_console_merge` refuses any `gh pr merge` against rediacc/console, and any `--auto`, unless the command came from the merge verb `.ci/rediacc_ci/wrapper/merge_gate.py`. That verb re-reads both check-runs (filtered by App id), the strict "branch up to date with main" condition (compare API) and rebase-only, and refuses otherwise.
   - Honest limit: this binds agents only. With one seat, the operator is the only other actor.
 - **`block_*` guards and `wl_prreview`** that read the `CI Complete` check today switch to the App-filtered reader. ci-trace and ci-watch look up runs in rediacc/rediacc on `run/pr-<N>` and `main`.
-- **Environments.** The blocks at cd-release-edge.yml:321, cd-deploy-worker.yml:46 and cd-deploy-account.yml:257 stay. The environments are created in the public wrapper, where Free allows them; they protect the wrapper's runs.
+- **Environments.** The blocks at .github/workflows/cd-release-edge.yml:321, .github/workflows/cd-deploy-worker.yml:46 and .github/workflows/cd-deploy-account.yml:257 stay. The environments are created in the public wrapper, where Free allows them; they protect the wrapper's runs.
   - Housekeeping's deployment-record and environment phases target WK_GH_CI_REPO.
-  - The attest-build-provenance steps (cd-stage.yml:412, :420) now sign as `rediacc/rediacc/.github/workflows/cd-stage.yml`, so verify_artifact_attestation.py expects that signer identity.
+  - The attest-build-provenance steps (.github/workflows/cd-stage.yml:412, :420) now sign as `rediacc/rediacc/.github/workflows/cd-stage.yml`, so verify_artifact_attestation.py expects that signer identity.
 - **ghcr.** server and rdc stay public; renet and devcontainer stay internal (ruling). The wrapper's GITHUB_TOKEN must be granted write under each package's "Manage Actions access" (A3), or pushes from the wrapper are refused.
 
 ### 5. Release path without GitHub Releases
 
 - **`release_notes.py`** (new) renders `RELEASE_NOTES.md` from conventional commits between the previous `v*` tag and `v<V>`. Sections are feat, fix, perf, and other with breaking changes first. Trailers and PR-TASK lines are stripped and no internal paths appear. The notes are uploaded to `cli/v<V>/RELEASE_NOTES.md`.
 - **SHA256SUMS.** `SHA256SUMS` and `SHA256SUMS.asc` go to `cli/v<V>/`, uploaded by the step that made them (local.py provenance, CD stage).
-- **Manifest.** generate_cli_manifest.py:325 sets `releaseNotesUrl = ${RELEASES_BASE_URL}/cli/v<V>/RELEASE_NOTES.md`. Each `binaries.<platform>` gains `size` (bytes), which the downloads page needs.
+- **Manifest.** .ci/rediacc_ci/build/generate_cli_manifest.py:325 sets `releaseNotesUrl = ${RELEASES_BASE_URL}/cli/v<V>/RELEASE_NOTES.md`. Each `binaries.<platform>` gains `size` (bytes), which the downloads page needs.
 - **Downloads page.** downloads.astro and latest-release.ts read `${WK_RELEASES_ORIGIN}/cli/stable/manifest.json` once per build, still throwing on null in production. release-parser.ts becomes `parseManifest`. `GITHUB_REPO` leaves packages/www/src/config/constants.ts.
 - **Pipeline reads move to R2:**
-  - cd-release-edge.yml:681-692 owed-decision, check_existing_release.py:54 and assert_edge_tag_exists.py:158-161 read `release-records/v<V>/edge.json` and `cli/v<V>/.released`. A 404 is "absent"; any other failure is UNKNOWN and refused, as today.
+  - .github/workflows/cd-release-edge.yml:681-692 owed-decision, .ci/rediacc_ci/release/check_existing_release.py:54 and .ci/rediacc_ci/release/assert_edge_tag_exists.py:158-161 read `release-records/v<V>/edge.json` and `cli/v<V>/.released`. A 404 is "absent"; any other failure is UNKNOWN and refused, as today.
   - verify_release_assets.py checks the R2 objects (binaries, SHA256SUMS, .asc, RELEASE_NOTES.md) against the manifest.
   - mark_production.py keeps the moving `production` tag and drops the `gh release edit --latest` leg.
-  - create_github_release.py is deleted, along with cd-release-edge.yml:795 and the Release leg in local.py.
+  - create_github_release.py is deleted, along with .github/workflows/cd-release-edge.yml:795 and the Release leg in local.py.
   - cleanup_versions.py drops Phase 1 (release delete) and keeps tag retention.
 
 ### 6. Cutover order (rollback = make console public again; every step before C4 is invisible to customers)
@@ -249,8 +249,8 @@ Rollback after the flip is `--visibility public` plus re-enabling console Action
 
 ### 8. Exposure trims (cheap ones only; the logs leak is accepted)
 
-- ops-local-release-assist.yml:153-160 stops uploading `private/bin/`. Consumers fetch from the R2 staging prefix that local.py already stages.
-- `check:ci-artifact-allowlist` lists every upload-artifact name with a class (report, json, log). It refuses `private/**`, `dist/**` binaries and `*.go` or `*.ts` source paths.
+- .github/workflows/ops-local-release-assist.yml:153-160 stops uploading `private/bin/`. Consumers fetch from the R2 staging prefix that local.py already stages.
+- the new `ci-artifact-allowlist` gate (npm script `check:` prefix added when written) lists every upload-artifact name with a class (report, json, log). It refuses `private/**`, `dist/**` binaries and `*.go` or `*.ts` source paths.
 - `git diff` on failure becomes `git diff --stat`.
 - renet `go test -v` becomes non-verbose with `-json` reduced to failures in CI.
 - Artifact retention stays 1-3 days.
@@ -281,10 +281,10 @@ Rollback after the flip is `--visibility public` plus re-enabling console Action
 
 ### Wave 2: the sweep (after W2 and W3)
 
-- [ ] S1 [writer] The gate `check:ci-console-context` (Design 2 and 3 rules, with a control fixture per rule, including `github.ref_name` admitted in a concurrency group and `github.head_ref` refused). Accept: `npm run -s check:ci-console-context -- --selftest` rc 0
+- [ ] S1 [writer] The gate the new `ci-console-context` gate (npm script `check:` prefix added when written) (Design 2 and 3 rules, with a control fixture per rule, including `github.ref_name` admitted in a concurrency group and `github.head_ref` refused). Accept: `npm run -s check:ci-console-context -- --selftest` rc 0
 - [ ] S2 [writer] Sweep .github: every `actions/checkout` of console becomes `checkout-console`; each entry workflow gains the `console-context` job; `github.sha|ref|head_ref|event_name|event.pull_request` become `needs.console-context.outputs.*` (job `if:`), `env.CONSOLE_*` (steps) or workflow_call inputs (children); `paths`-filtered workflows gate on `paths_match`; concurrency groups move to `github.ref_name`. Accept: `npm run -s check:ci-console-context` rc 0, and `npm run -s check:ci-actionlint` rc 0, and `npm run -s check:ci-workflows` rc 0
-- [ ] S3 [writer] Sweep the 44 `.ci` modules onto `console_ctx`. Run, artifact and workflow calls move to `WK_GH_CI_REPO`. The CD steps that push to console main call `ping.py --ref main`. Accept: `npm run -s check:ci-console-context` rc 0, `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests` rc 0, and `grep -rnE 'GITHUB_(SHA|REF|HEAD_REF|REPOSITORY|EVENT_PATH)' .ci --include=*.py --exclude-dir=cache --exclude-dir=tests | grep -v console_ctx.py | wc -l` prints 0
-- [ ] S4 [writer] ci-watch, ci-trace (runs on rediacc/rediacc `run/pr-<N>`), the pr-merge skill and the merge guard (Design 4): `merge_gate.py` (which pings `--ref main` after the merge) and `block_unverified_console_merge`. Tests: `gh pr merge --auto` is refused; a red or absent App check-run refuses; another app's green check-run refuses (control); a matching head merges with `--match-head-commit` and calls the ping seam with the merged sha. Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_wrapper_merge_gate.py` rc 0, and `python3 .claude/rediacc_hooks/run_tests.py -k "unverified_console_merge"` rc 0
+- [ ] S3 [writer] Sweep the 44 `.ci` modules onto `console_ctx`. Run, artifact and workflow calls move to `WK_GH_CI_REPO`. The release-publish steps that push to console main call `ping.py --ref main`. Accept: `npm run -s check:ci-console-context` rc 0, `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests` rc 0, and `grep -rnE 'GITHUB_(SHA|REF|HEAD_REF|REPOSITORY|EVENT_PATH)' .ci --include=*.py --exclude-dir=cache --exclude-dir=tests | grep -v console_ctx.py | wc -l` prints 0
+- [ ] S4 [writer] ci-watch, the run-trace tool (runs on rediacc/rediacc `run/pr-<N>`), the pr-merge skill and the merge guard (Design 4): `merge_gate.py` (which pings `--ref main` once merged) and `block_unverified_console_merge`. Tests: `gh pr merge --auto` is refused; a red or absent App check-run refuses; another app's green check-run refuses (control); a matching head merges with `--match-head-commit` and calls the ping seam with the merged sha. Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_wrapper_merge_gate.py` rc 0, and `python3 .claude/rediacc_hooks/run_tests.py -k "unverified_console_merge"` rc 0
 - [ ] S5 [writer] verify_artifact_attestation.py expects the signer `rediacc/rediacc/.github/workflows/cd-stage.yml`. Housekeeping's deployment, environment, run, artifact and cache phases target `WK_GH_CI_REPO`. Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests -k "attestation or cleanup_versions"` rc 0
 
 ### Wave 3: release path, hygiene and trims (parallel with Wave 2)
@@ -295,7 +295,7 @@ Rollback after the flip is `--visibility public` plus re-enabling console Action
 - [ ] R4 [writer] Downloads page reads the R2 manifest (Design 5) and `GITHUB_REPO` leaves www. Accept: `cd packages/www && npx vitest run src/utils` rc 0, `npm run -s build -w packages/www` rc 0 with GITHUB_TOKEN unset, and `grep -rn 'GITHUB_REPO\|browser_download_url' packages/www/src | wc -l` prints 0
 - [ ] H1 [writer] Docs links (13 locales x 2 pages plus siem-integration, per Q5) and the check-external-links refusal rule with a control fixture. Accept: `npx tsx scripts/gates/check-external-links.ts --selftest` rc 0, and `grep -rln 'github.com/rediacc/console' packages/www/src packages/www/public | wc -l` prints 0
 - [ ] H2 [writer] README.md, CONTRIBUTING.md, ISSUE_TEMPLATE config (Q4) and the homebrew-tap README (tap PR first, then the gitlink bump). Accept: `grep -rn 'github.com/rediacc/console' CONTRIBUTING.md .github/ISSUE_TEMPLATE private/homebrew-tap/README.md | wc -l` prints 0
-- [ ] X1 [writer] Exposure trims (Design 8) and `check:ci-artifact-allowlist`. Accept: `npm run -s check:ci-artifact-allowlist` rc 0, and `grep -n 'private/bin/' .github/workflows/ops-local-release-assist.yml | grep -c upload` prints 0
+- [ ] X1 [writer] Exposure trims (Design 8) and the new `ci-artifact-allowlist` gate (npm script `check:` prefix added when written). Accept: `npm run -s check:ci-artifact-allowlist` rc 0, and `grep -n 'private/bin/' .github/workflows/ops-local-release-assist.yml | grep -c upload` prints 0
 - [ ] D1 [writer] docs/agent-reference/ci-wrapper.md covers the topology, the hook trigger and ping worker, the leak guards, the shim names, the sweeper, the merge path and rollback; CLAUDE.md and the ci-watch skill point at it. Accept: `npm run -s check:ci-doc-region-parity` rc 0
 
 ### Wave 4: shadow, proof and cutover (serial, live)
@@ -305,7 +305,7 @@ Rollback after the flip is `--visibility public` plus re-enabling console Action
   GitHub-only: CI parity -- the proof is that a hook-driven wrapper push starts a GitHub Actions run, which no local runner reproduces
 - [ ] C2 [live] A PR that edits a workflow goes green through `run/pr-<N>` with its own YAML. Then, with the ping worker killed for one push (hold its lock with `flock -n "$(git rev-parse --absolute-git-dir)/rediacc-wrapper/lock" sleep 600 &` before pushing, so the worker logs `lock busy` and exits), the sweeper re-pushes within 10 minutes.
   Accept: `python3 .ci/scripts/ci/ci-trace.py --repo rediacc/rediacc --pr <N>` reports CI Complete success; `grep 'lock busy' "$(git rev-parse --absolute-git-dir)/rediacc-wrapper/log"` names the held sha S; within 10 minutes of the push `gh api repos/rediacc/console/commits/S/check-runs --jq '[.check_runs[] | select(.app.id==2772000 and (.name|startswith("CI Complete")))] | length'` is at least 1; and the latest `wrapper-sweep.yml` run log (`gh run view -R rediacc/rediacc --log $(gh run list -R rediacc/rediacc --workflow wrapper-sweep.yml --limit 1 --json databaseId --jq '.[0].databaseId')`) names S
-  GitHub-only: CI parity -- the wrapper run and the scheduled sweeper exist only on GitHub Actions
+  (corrected 2026-11-17) GitHub-only: CI parity -- the wrapper run and the scheduled sweeper exist only on GitHub Actions
 - [ ] C3 [live] A main push releases edge through the wrapper: stage, attestation, deploy and R2 notes. Accept: `curl -fsS https://releases.rediacc.com/cli/edge/manifest.json | jq -r .releaseNotesUrl` prints an R2 URL that answers 200, `curl -fsSI https://releases.rediacc.com/cli/v<V>/SHA256SUMS.asc` gives 200, and `gh release view v<V> -R rediacc/console` answers not found
   GitHub-only: CD -- only the release pipeline in the wrapper publishes edge
 - [ ] C4 [live] Cutover: drop the shadow suffix (re-render and ping main), disable console Actions, delete rulesets 12344707 and 24351140, turn off Discussions, then `gh repo edit rediacc/console --visibility private --accept-visibility-change-consequences`. Accept: `gh api repos/rediacc/console --jq .visibility` prints `private`, and `curl -s -o /dev/null -w '%{http_code}' https://github.com/rediacc/console` prints 404, and `gh api repos/rediacc/console/actions/permissions --jq .enabled` prints `false`

@@ -2,11 +2,11 @@
 
 Status: approved -- operator /ask ASKED:2026-11-17T09:06Z ("Site fixes now, private later"); rulings in the Rulings section
 Owner: d778be9d
-Depends-On: none
+Depends-On: no-dep -- no prerequisite plan; the work is portal and www copy plus a gitlink bump
 Priority: P1 -- customer-facing broken links: every "Read tutorial" link on the portal's "Getting started with Rediacc" page answers 404 (the portal host has no /en/docs), and the home page has no way to reach /downloads
 Concurrency: parallel -- Wave 1 runs three file-disjoint writers: the portal links (L1-L3), the www home link (D1), and the shared install commands (I1). Wave 2 (I2, I3) starts after I1 lands and both edit private/account/web/src/pages/TutorialSplash.tsx, so they run in sequence with L1, which also edits that file. This plan does not edit packages/www/src/pages/*/downloads.astro or packages/www/src/utils/latest-release.ts, so there is no overlap with PLAN-console-private R4. D1 and I1 both touch packages/www i18n and install.ts respectively, which are disjoint files. Before writing, check block_plan_concurrency for a live holder of the www en.json and the portal onboarding locale files.
 Owns: agent/plans/PLAN-site-entry-points.md, private/account (gitlink bump only), private/account/web/src/pages/TutorialSplash.tsx, private/account/web/src/data/onboarding-content.json, private/account/web/src/data/study-content/ms6-compliance.ts, private/account/web/src/data/study-content/mt3-cli.ts, private/account/web/src/i18n/locales/*/onboarding.json, private/account/web/src/pages/__tests__/tutorial-splash-links.test.tsx, private/account/web/src/__tests__/no-relative-site-links.test.ts, packages/shared/src/config/install-commands.ts, packages/shared/src/config/__tests__/install-commands.test.ts, packages/www/src/config/install.ts, packages/www/src/components/solution-pages/SPHomeVideo.astro, packages/www/src/i18n/translations/*.json, packages/www/src/i18n/client-route/*.json, packages/www/src/i18n/.translation-hashes.json
-Live-Proof: bench -- the www surface (D1) is proven on the bench www with www-smoke and the account portal surface (L1, I2) with the portal smoke; production is proven after release, edge eu first, then stable, per the release flow (LP-prod boxes)
+Live-Proof: bench -- the www surface (D1) is proven on the bench www with www-smoke and the account portal surface (L1, I2) with the portal smoke; production is proven after release, edge eu first, then stable, per the release flow (PROD boxes)
 
 ## Ask
 
@@ -31,7 +31,7 @@ Three outcomes:
    - Precedent: `documentUrl(page, lang)` returns `${WK_SITE_ORIGIN}/${lang}/${page}` (packages/shared/src/legal/index.ts:30-36).
    - packages/shared exports `./config/*` (packages/shared/package.json:204-206), so a new file in packages/shared/src/config is importable as `@rediacc/shared/config/<name>`.
 3. **Other relative docs links in the portal.** The sweep found these:
-   - Study content mostly uses absolute `https://www.rediacc.com/en/...` URLs (for example ms1-what-rediacc-is.ts:102, mc4-fork-migrate.ts:317).
+   - Study content mostly uses absolute `https://www.rediacc.com/en/...` URLs (for example private/account/web/src/data/study-content/ms1-what-rediacc-is.ts:102, private/account/web/src/data/study-content/mc4-fork-migrate.ts:317).
    - Two have a bare relative path inside the text: private/account/web/src/data/study-content/ms6-compliance.ts:127 (`/en/docs/legal-nis2-dora`) and private/account/web/src/data/study-content/mt3-cli.ts:71 (`/en/docs/rdc-cheat-sheet`).
    - A grep for relative `/en/docs` or `"/docs/"` also lists private/account/web/src/data/enablement-content/competitive-positioning.ts, study-content/mc7-networking-safety.ts, study-content/ms7-competitive.ts and the `partner.json` locales (es, fr, ko, tr, zh, it, ...). Those hits were not read. The matches may be absolute URLs that contain `/en/docs`, so L2 and L3 must classify each hit before editing.
    - Not verified: whether the study renderer turns bare paths in `text` into anchors. If it renders plain text, the relative path is dead text rather than a broken link, and the fix is still to make it absolute so a reader can paste it.
@@ -39,14 +39,14 @@ Three outcomes:
 5. **The existing Downloads link pattern.**
    - packages/www/src/pages/*/install.astro:31-34 renders `<a href={`/${lang}/downloads`} class="hero-downloads-link">{t('pages.install.hero.downloadsLink')} &rarr;</a>`.
    - The string `pages.install.hero.downloadsLink` is "Visit the Downloads page" (packages/www/src/i18n/translations/en.json:962; packages/www/src/i18n/client-route/en.json:69).
-   - The hero ruling n6 (no CTA buttons in any hero, SPHomeHero.astro:20-23) is respected because the link sits under the video, outside the hero.
+   - The hero ruling n6 (no CTA buttons in any hero, packages/www/src/components/solution-pages/SPHomeHero.astro:20-23) is respected because the link sits under the video, outside the hero.
 6. **Install commands today.**
    - The portal onboarding step 1 stores `curl -fsSL https://www.rediacc.com/install.sh | bash` as `command` at private/account/web/src/data/onboarding-content.json:23.
    - TutorialSplash renders that command with a `CopyButton` (private/account/web/src/pages/TutorialSplash.tsx:219) after `substituteCommand` (:90-96).
    - www builds the same one-liners as `QUICK_INSTALL_UNIX` and `QUICK_INSTALL_WIN` from `SITE_URL` (packages/www/src/config/install.ts:42-43). `SITE_URL` comes from packages/www/src/config/constants.ts.
    - www already defines the platform tabs `linux`, `macos`, `windows` (packages/www/src/config/install.ts:25-31).
 7. **The page that lists the other install methods.** `packages/www/src/content/docs/en/installation.md` ("Install the Rediacc CLI on Linux, macOS, or Windows") mentions brew, apt and pacman (6 matches on a grep for those words). Docs render at `/<lang>/docs/<slug>` through packages/www/src/pages/*/docs/[slug].astro. The writer opens installation.md to confirm it lists brew, apt, dnf, apk, pacman and Docker, and links to it if so.
-8. **Portal strings.** Onboarding strings live in private/account/web/src/i18n/locales/<lang>/onboarding.json (for example `stepDocsLink` at en/onboarding.json:16). The locale folders are ar, de, en, es, et, fr, it, ja, ko, pt, ru, tr, zh (13).
+8. **Portal strings.** Onboarding strings live in private/account/web/src/i18n/locales/<lang>/onboarding.json (for example `stepDocsLink` at private/account/web/src/i18n/locales/en/onboarding.json:16). The locale folders are ar, de, en, es, et, fr, it, ja, ko, pt, ru, tr, zh (13).
 9. **The downloads page itself** builds from the GitHub API (packages/www/src/utils/latest-release.ts). That is out of scope here: PLAN-console-private R4 moves it to the R2 manifest. This plan only links to the page.
 10. **Test home.** Portal page tests sit in private/account/web/src/pages/__tests__/ (for example admin-root-api-tokens.test.tsx). The `testing` skill decides placement and what counts as proof the test runs in CI.
 
@@ -73,7 +73,7 @@ The helper imports `WK_SITE_ORIGIN` from `@rediacc/shared/config/well-known.gene
 
 ### 3. Study-content sweep
 
-For each relative hit classified in Context 3, rewrite to `https://www.rediacc.com/en/docs/<slug>` (ms6-compliance.ts:127, mt3-cli.ts:71 first). Locale prose that holds an absolute URL is left alone. Wording is unchanged apart from the URL, so no study-content hash or translation churn is expected; the writer confirms no content-hash gate covers these files.
+For each relative hit classified in Context 3, rewrite to `https://www.rediacc.com/en/docs/<slug>` (private/account/web/src/data/study-content/ms6-compliance.ts:127, private/account/web/src/data/study-content/mt3-cli.ts:71 first). Locale prose that holds an absolute URL is left alone. Wording is unchanged apart from the URL, so no study-content hash or translation churn is expected; the writer confirms no content-hash gate covers these files.
 
 ### 4. Home page Downloads link
 
@@ -114,7 +114,7 @@ Portal strings in `onboarding.json` for all 13 locales: tab labels (`installTabU
 - [ ] L1 [writer] Onboarding docs links open www: add the `siteUrl` helper, use it in TutorialSplash, and add the vitest that renders TutorialSplash in `en` and one other language and asserts every docs anchor starts with `WK_SITE_ORIGIN`.
   - Owns: private/account/web/src/pages/TutorialSplash.tsx, private/account/web/src/pages/__tests__/tutorial-splash-links.test.tsx.
   - Accept: `cd /home/developer/console/private/account/web && npx vitest run src/pages/__tests__/tutorial-splash-links.test.tsx` rc 0, and `grep -n 'href={docsPath}' src/pages/TutorialSplash.tsx` prints nothing.
-- [ ] L2 [writer] Study-content sweep: classify every relative `/en/docs` or `/docs/` hit from Context 3, and make the ones that are links or paste targets absolute (ms6-compliance.ts:127 and mt3-cli.ts:71 at minimum).
+- [ ] L2 [writer] Study-content sweep: classify every relative `/en/docs` or `/docs/` hit from Context 3, and make the ones that are links or paste targets absolute (private/account/web/src/data/study-content/ms6-compliance.ts:127 and private/account/web/src/data/study-content/mt3-cli.ts:71 at minimum).
   - Owns: private/account/web/src/data/study-content/ms6-compliance.ts, private/account/web/src/data/study-content/mt3-cli.ts.
   - Accept: `cd /home/developer/console && grep -rnE "(^|[^/a-z.])/(en|[a-z]{2})/docs/" private/account/web/src/data/study-content | grep -v "rediacc.com/" | wc -l` prints 0.
 - [ ] L3 [writer] Relative-link refusal: a test that fails on any relative `/en/docs`, `/<lang>/docs` or `/docs/` href in private/account/web/src, with `onboarding-content.json` `docsPath` allowlisted and TutorialSplash pinned as its only consumer. Run it once against the pre-fix tree (or a stash of L1) to show it fails there.
@@ -138,11 +138,12 @@ Portal strings in `onboarding.json` for all 13 locales: tab labels (`installTabU
 
 ### Live queue: bench first (Ruling 4), then production after the PR merges
 
-- [ ] LP-bench-www [live] The home page on the bench www links to /downloads, and that page answers.
-  - Accept: the www-smoke runner against the bench passes (the writer records the exact invocation from docs/agent-reference), and `curl -s https://<bench www host>/en/ | grep -c 'href="/en/downloads"'` prints at least 1.
-- [ ] LP-bench-portal [live] On the bench portal, the Getting started page shows the install tabs, and every "Read tutorial" link points at the www origin.
+- [ ] LP-bench [live] The home page on the bench www links to /downloads, and that page answers.
+  - Accept: live-proof bench www-smoke
+  - Also: `curl -s https://<bench www host>/en/ | grep -c 'href="/en/downloads"'` prints at least 1.
+- [ ] BP-portal [live] On the bench portal, the Getting started page shows the install tabs, and every "Read tutorial" link points at the www origin.
   - Accept: the portal smoke against the bench passes (exact invocation recorded by the writer), with a recorded check that each docs anchor on the Getting started page has an `href` starting `https://www.rediacc.com/`, and a `curl -s -o /dev/null -w '%{http_code}' https://www.rediacc.com/en/docs/tutorial-installation` that prints 200.
-- [ ] LP-prod-edge [live] After the release flow's edge deploy of eu is green: repeat both bench checks against production edge eu.
+- [ ] PROD-edge [live] After the release flow's edge deploy of eu is green: repeat both bench checks against production edge eu.
   - Accept: `curl -s https://www.rediacc.com/en/ | grep -c 'href="/en/downloads"'` prints at least 1, and the portal smoke against edge eu passes.
-- [ ] LP-prod-stable [live] After the stable promotion per the release flow: repeat on stable eu, and confirm the originally reported link no longer 404s from the portal page.
+- [ ] PROD-stable [live] After the stable promotion per the release flow: repeat on stable eu, and confirm the originally reported link no longer 404s from the portal page.
   - Accept: the portal smoke against stable eu passes, and the Getting started "Read tutorial" anchors on https://eu.rediacc.cloud/account/ all resolve to a 200 on www.rediacc.com.
