@@ -1,6 +1,6 @@
 # PLAN: Certified Kubernetes conformance for the Rediacc-wrapped k3s -- a reproducible local run and captured artifacts (submission parked)
 
-Status: proposed -- converted from console#606 (operator picked this item 2026-11-16); awaiting operator approval
+Status: approved -- converted from console#606 (operator picked this item 2026-11-16); operator ruling ASKED:2026-11-16T08:59Z under Ruling: run conformance locally only
 Owner: e0f36861
 First-Seen: 2026-11-16
 Depends-On: no-dep -- the run uses `rdc cluster create --provider kvm` as it is today; PLAN-kubelet-cgroup-rediacc-slice.md changes kubelet args, and a later change there re-runs C3 rather than blocking this plan

@@ -187,7 +187,7 @@ S2 adds their titles and descriptions to the admin activity humanizers (private/
   3. A refused code is retried once in the next window, as `_answer_challenge` does today (.ci/rediacc_ci/ops/root_login.py:160-196).
   4. On success it prints `root session opened (<target> <region>, token, session until HH:MMZ, token expires in N days)`. It also prints `ip rebound (<family>)` when a bind happened.
   5. With fewer than 14 days left, `--rotate` (or an automatic rotation when `ROOT_LOGIN_AUTOROTATE=1`) calls `rotate` and writes the new value back to bws, reusing login_bench's bws write helper (import it, do not copy it).
-- **Region.** `--region eu` reads `ROOT_API_TOKEN`. `--region us|asia` refuses with "no root token for region <r>: mint one on <r>.rediacc.cloud and store it as ROOT_API_TOKEN_<SUFFIX>" (Q1).
+- **Region.** `--region <r>` reads `ROOT_API_TOKEN_<secretSuffix>` from regions.json (`ROOT_API_TOKEN_EU`, `_US`, `_ASIA`) and refuses an unset or placeholder value, naming the mint page <r>.rediacc.cloud/account/admin/root-tokens (Q1, answered 2026-11-17).
 - **New flags:**
   - `--check`: no request; validates the bws value and the seed.
   - `--probe stats|audit`: one read-only call. `stats` is `GET /admin/stats` and prints the status and the key count. `audit` is `GET /admin/activity?type=root_token.session_opened,root_token.call,root_token.ip_bound&pageSize=5` and prints types and times only.
@@ -209,7 +209,7 @@ Unchanged. login_bench keeps the password and TOTP path, and root_login has no b
 
 ## Rulings needed (defaults run unless vetoed)
 
-- **Q1. Per-region names.** Tokens are per regional D1 (Context 9), so one value cannot serve eu, us and asia. Default: `ROOT_API_TOKEN` as ruled is the eu token. `ROOT_API_TOKEN_US` and `ROOT_API_TOKEN_ASIA` follow the regions.json `secretSuffix` pattern when they are needed; this plan does not mint them. Alternative: rename to `ROOT_API_TOKEN_EU` now.
+- **Q1. Per-region names.** Tokens are per regional D1 (Context 9), so one value cannot serve eu, us and asia. Default: `ROOT_API_TOKEN` as ruled is the eu token. `ROOT_API_TOKEN_US` and `ROOT_API_TOKEN_ASIA` follow the regions.json `secretSuffix` pattern when they are needed; this plan does not mint them. Alternative: rename to `ROOT_API_TOKEN_EU` now. Answered 2026-11-17 by the operator: the alternative, "let's add _EU suffix to the name for consistency with others"; every region reads `ROOT_API_TOKEN_<secretSuffix>` (`_EU`, `_US`, `_ASIA`), with no unsuffixed name (landed 727d194e5b, account 992a562).
 - **Q2. Self-rotation.** Default yes: the token rotates itself through `rotate`, capped at one year from the portal mint, so the operator mints once a year. Alternative: no rotate route, and the operator re-mints every 90 days.
 - **Q3. Email on bind.** Default no: binds are audited only, and the mint sends the existing token-created mail. Alternative: a new "root token moved" email (adds email templates and i18n).
 - **Q4. A read-only variant.** Default no: one scope `root:admin`, as ruled ("agents act as root"). The `scope` column leaves room for `root:read` (GET only) later.

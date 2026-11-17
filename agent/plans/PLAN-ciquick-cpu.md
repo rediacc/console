@@ -1,5 +1,5 @@
 # PLAN: ci:quick CPU -- sound gate reuse, pytest by impact locally, faster slow tests
-Status: approved -- operator ruling ASKED:2026-11-16T11:4xZ chose fixes A+B+C in one plan; rejected: a pre-commit instant tier
+Status: approved -- operator ruling ASKED:2026-11-16T11:35Z chose fixes A+B+C in one plan; rejected: a pre-commit instant tier
 Owner: d778be9d
 First-Seen: 2026-11-16
 Depends-On: no-dep -- the schema 2 receipt, the carry logic, quick-select and the pytest gate are all in the tree now

@@ -198,12 +198,14 @@ In private/elite/BACKUP.md, add a pointer to the renet-repo install.
 - [x] V1 [live] (PLAN-enterprise-isolation V1) Signers. This needs no new writer.
   - Accept: `./run.sh enterprise proof signer --bench` rc 0.
     (ticked) 2026-11-16T17:24:41Z by d778be9d: run: ./run.sh enterprise proof signer --bench rc=0, 96 claims 0 broken, 14 skipped log=/tmp/live-bench/ent-signer.log
+    (corrected 2026-11-17, d778be9d) 96 claims, 14 skipped is this run's own count (2026-11-16T07:12Z, log tail `proof signer: 96 claim(s), 0 broken, 14 skipped`); PLAN-enterprise-isolation V1's 28 claims came from the 2026-11-09 run, before the signer proof grew its later claims.
 - [x] LD1 [live] After E3: create the wildcard and check Universal SSL.
   - Accept: `./run.sh enterprise dns ensure` rc 0, then `./run.sh enterprise dns ensure --check` rc 0.
     (ticked) 2026-11-16T17:24:44Z by d778be9d: run: ./run.sh enterprise dns ensure rc=0, then dns ensure --check rc=0 (x2) log=/tmp/live-prod/ld1-ensure.out
 - [x] V3 [live] Run the add proof.
   - Accept: `./run.sh enterprise proof add --bench` rc 0.
     (ticked) 2026-11-16T17:15:50Z by d778be9d: run: ./run.sh enterprise proof add --bench rc=0, 11 claims 0 broken log=/tmp/live-bench/ent-add-run2.log (06:45Z)
+    (corrected 2026-11-17, d778be9d) The run ended 2026-11-16T06:45:01Z (its log's last line); 17:15:50Z is when the tick was written, not when the proof ran.
 - [ ] V4 [live] Run the routing proof. If the Turnstile claim fails, LT1 fixes it.
   - Accept: `./run.sh enterprise proof routing --bench` rc 0.
 - [ ] LT1 [live] Only if V4 names Turnstile: add `rediacc.cloud` to the `rediacc-console` widget domains through the API, then rerun V4.
