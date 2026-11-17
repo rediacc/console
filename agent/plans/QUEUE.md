@@ -39,7 +39,7 @@ The overrides (each level's bundle value in brackets for `high`):
 A ` -- solo` note on a Promoted entry keeps that plan alone in its PR under turbo.
 
 ```stop-hook
-effort: quiet
+effort: smart
 turbo: on
 batch_size: 3 -- operator 2026-10-04: go in parallel as much as possible
 plan_concurrency: 5 -- operator 2026-10-04: plan limit 5
@@ -54,7 +54,7 @@ backup_push_h: 4 -- operator 2026-10-08: backup push valve, no PR
 What the loop is working on now, rendered between the markers by `.claude/hooks/stop/wl_planqueue.py` (`refresh_inflight`) on every stop and on every `worklist.py --queue-set` or `--phase`. It is runtime state: rewritten only when it changes, never compared by `npm run check:ci-plan-record`, and a committed copy is a snapshot from its commit.
 
 <!-- queue:inflight:begin -->
-- Mode: effort quiet; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge off; cadence on; agent_hint off; agent_pushback off.
+- Mode: effort smart; turbo on; turbo_push batch-end; batch_size 3; plan_concurrency 5; writer_cap 25; commit_remind_min 15; backup_push_h 4; judge core; cadence on; agent_hint on; agent_pushback on.
 - Phase: merge on PR #602 (branch 1023-1, session 45048a90, since 2026-11-03T09:46:12Z, past its 24-hour limit).
 - Branch: 1104-1, PR #605 open.
 - Plans on the PR (6):
@@ -82,21 +82,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 1315 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1319 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 182 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
   - epic 2255f2d2, no plan, 2 commit(s) on the branch, 0 open item(s): Convert stale GitHub issues (console, renet, account) into plan files
-- Writers: 0 live of writer_cap 25 (session d778be9d).
-- Leased items: 17: #02389657 (worker:br5292a9k, d778be9d), #1abe21eb (worker:br5292a9k, d778be9d), #36ffb824 (worker:br5292a9k, d778be9d), #3fb4edcc (worker:br5292a9k, d778be9d), #400ae5ea (worker:br5292a9k, d778be9d), #4889018a (worker:br5292a9k, d778be9d), #6d5593e9 (worker:br5292a9k, d778be9d), #719d19c6 (worker:br5292a9k, d778be9d), #732fbea9 (worker:br5292a9k, d778be9d), #864b6bca (worker:br5292a9k, d778be9d), #8bb65426 (worker:br5292a9k, d778be9d), #966364da (worker:br5292a9k, d778be9d), and 5 more.
+- Writers: 3 live of writer_cap 25 (session d778be9d): worker:a78b5eee8fe083876, worker:a4ea441b03f28871e, worker:a03f736925d610ba8.
+- Leased items: 17: #02389657 (worker:a78b5eee8fe083876, d778be9d), #1abe21eb (worker:a03f736925d610ba8, d778be9d), #36ffb824 (worker:a78b5eee8fe083876, d778be9d), #3fb4edcc (worker:a78b5eee8fe083876, d778be9d), #400ae5ea (worker:a78b5eee8fe083876, d778be9d), #4889018a (worker:a78b5eee8fe083876, d778be9d), #6d5593e9 (worker:a78b5eee8fe083876, d778be9d), #719d19c6 (worker:a78b5eee8fe083876, d778be9d), #732fbea9 (worker:a78b5eee8fe083876, d778be9d), #864b6bca (worker:a78b5eee8fe083876, d778be9d), #8bb65426 (worker:a78b5eee8fe083876, d778be9d), #966364da (worker:a78b5eee8fe083876, d778be9d), and 5 more.
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 26 of 78 plans done, 1189 of 1445 boxes done (82%).
+Promoted: 26 of 78 plans done, 1198 of 1445 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -176,8 +176,8 @@ Promoted: 26 of 78 plans done, 1189 of 1445 boxes done (82%).
 | 74 | PLAN-hostinger-to-bench.md | 11/22 | 11 open |
 | 75 | PLAN-multi-region-bench.md | 13/23 | 10 open |
 | 76 | PLAN-root-api-token.md | 7/15 | 8 open |
-| 77 | PLAN-site-entry-points.md | 0/11 | 11 open |
-| 78 | PLAN-root-grants.md | 1/19 | 18 open |
+| 77 | PLAN-site-entry-points.md | 5/11 | 6 open |
+| 78 | PLAN-root-grants.md | 5/19 | 14 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue

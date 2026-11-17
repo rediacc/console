@@ -250,12 +250,13 @@ Order:
 
 ### Wave 1: two writers, file-disjoint, against Design 4
 
-- [ ] S1 [writer] Account server. Scope:
+- [x] S1 [writer] Account server. Scope:
   - the route file `root-grants.ts`, mounted at `/admin` in index.ts, with both handlers on `rootAuth()` and apply also on `requireElevated()`;
   - the service `RootGrantsService` with `planGrants`, wired in container.ts;
   - the types and DTOs through `responds()`;
   - `orgService.createOwnedOrg(..., ids?: {orgId})` and `orgService.setDataRegion`;
   - the `root_grants.applied` humanizer in root.ts.
+    (ticked) 2026-11-17T15:07:37Z by d778be9d: commit:4499e26ca7 account e594012; vitest tests/integration/root-grants.test.ts rc=0 (15 passed); parity test 111bc06c32 rc=0 (6 passed)
 
   Integration tests in `root-grants.test.ts` cover:
   - absent root email: apply writes nothing (full table snapshot equal);
@@ -290,9 +291,12 @@ Order:
 
 ### Wave 2: after S1 and C1 land
 
-- [ ] P1 [writer] Parity test `root-grants-parity.test.ts`. For four fixtures (absent, partial, complete, near-miss) it runs `READ_SQL` from Python on the test sqlite, feeds the rows to Python `plan()`, and requires the same action list as `POST /admin/root-grants/plan`. It also requires Python `uuid5` and the TS derivation to give the same partner id for a sample user id. A control mutates one action code and must fail. Accept: `(cd private/account && npx vitest run tests/integration/root-grants-parity.test.ts)` rc 0.
-- [ ] H1 [writer] Ops-health check as in Design 7. test_ops_health.py adds: the check registered under its profile, rc 1 mapped to red, rc 0 with AMBER lines kept green and the AMBER text in the cached detail, and rc 2 mapped to unknown. Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_ops_health.py` rc 0, and `PYTHONPATH=.ci python3 -c "from rediacc_ci.ops import ops_health as o; assert 'root-grants' in o.SUBPROCESS_CHECKS"` rc 0.
-- [ ] D1 [writer] Docs: one private/account/CLAUDE.md paragraph on `/admin/root-grants/*` and the never list, and the tool's module docstring with usage, phases, profiles and exit codes. Accept: `grep -c "root-grants" private/account/CLAUDE.md` prints at least 1, and `npm run -s check:ci-prose-style` rc 0.
+- [x] P1 [writer] Parity test `root-grants-parity.test.ts`. For four fixtures (absent, partial, complete, near-miss) it runs `READ_SQL` from Python on the test sqlite, feeds the rows to Python `plan()`, and requires the same action list as `POST /admin/root-grants/plan`. It also requires Python `uuid5` and the TS derivation to give the same partner id for a sample user id. A control mutates one action code and must fail. Accept: `(cd private/account && npx vitest run tests/integration/root-grants-parity.test.ts)` rc 0.
+    (ticked) 2026-11-17T15:05:31Z by d778be9d: commit:111bc06c32 account 8c35f8c; vitest root-grants-parity rc=0 (6 passed); control mutating partner.member_add failed 3 of 6, reverted
+- [x] H1 [writer] Ops-health check as in Design 7. test_ops_health.py adds: the check registered under its profile, rc 1 mapped to red, rc 0 with AMBER lines kept green and the AMBER text in the cached detail, and rc 2 mapped to unknown. Accept: `PYTHONPATH=.ci python3 -m pytest -q .ci/rediacc_ci/tests/test_ops_health.py` rc 0, and `PYTHONPATH=.ci python3 -c "from rediacc_ci.ops import ops_health as o; assert 'root-grants' in o.SUBPROCESS_CHECKS"` rc 0.
+    (ticked) 2026-11-17T15:07:12Z by d778be9d: commit:682128735b pytest test_ops_health.py rc=0 (116 passed on the landed tree); SUBPROCESS_CHECKS assert rc=0; check:ci-python-types rc=0; red-before shown for registration, rc1, rc2
+- [x] D1 [writer] Docs: one private/account/CLAUDE.md paragraph on `/admin/root-grants/*` and the never list, and the tool's module docstring with usage, phases, profiles and exit codes. Accept: `grep -c "root-grants" private/account/CLAUDE.md` prints at least 1, and `npm run -s check:ci-prose-style` rc 0.
+    (ticked) 2026-11-17T15:07:14Z by d778be9d: commit:a2b8c9498e account d0d4c94 CLAUDE.md section + 43bc258fd6 docstring; grep -c root-grants private/account/CLAUDE.md = 1; check:ci-prose-style rc=0
 
 ### Live: bench first
 

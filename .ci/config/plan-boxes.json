@@ -3235,21 +3235,17 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 18,
-      "done": 1,
+      "open": 14,
+      "done": 5,
       "open_sigs": [
         "034d49bb",
-        "0af1e51a",
         "19f12699",
         "2f1ee9f8",
-        "3cf9ef43",
         "5f011fc7",
-        "657ec9be",
         "866cf845",
         "a40c2f96",
         "ad2b28f2",
         "b60cc939",
-        "bb5c2422",
         "c0ccd0b5",
         "cded8305",
         "d7fa53c2",
@@ -3258,7 +3254,11 @@
         "fe733d0b"
       ],
       "done_sigs": [
-        "0134b972"
+        "0134b972",
+        "0af1e51a",
+        "3cf9ef43",
+        "657ec9be",
+        "bb5c2422"
       ]
     },
     "agent/plans/PLAN-runtime-caller-identity.md": {
@@ -3397,22 +3397,23 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 11,
-      "done": 0,
+      "open": 6,
+      "done": 5,
       "open_sigs": [
-        "1fd6c760",
-        "340ba2b8",
         "81efafc3",
         "98e32aae",
         "a8202309",
         "bc5f833c",
         "c339198e",
+        "d4baea19"
+      ],
+      "done_sigs": [
+        "1fd6c760",
+        "340ba2b8",
         "cb7475e9",
         "d066dafd",
-        "d4baea19",
         "f8b46a9c"
-      ],
-      "done_sigs": []
+      ]
     },
     "agent/plans/PLAN-skip-release-gates-r2-manifest.md": {
       "status": "compacted",

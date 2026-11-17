@@ -604,7 +604,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-retire-nightlies-and-mentions.md` | proposed | 189 | 16 | 0 | 36372 |
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
 | `agent/plans/PLAN-root-api-token.md` | approved | 316 | 8 | 7 | 42806 |
-| `agent/plans/PLAN-root-grants.md` | approved | 316 | 18 | 1 | 33035 |
+| `agent/plans/PLAN-root-grants.md` | approved | 320 | 14 | 5 | 33836 |
 | `agent/plans/PLAN-runtime-caller-identity.md` | compacted | 39 | 0 | 0 | 2546 |
 | `agent/plans/PLAN-sandbox-tenant-separation.md` | approved | 123 | 1 | 7 | 25158 |
 | `agent/plans/PLAN-scope-bws-signing-key-to-consuming-step.md` | executing | 129 | 2 | 8 | 11346 |
@@ -615,7 +615,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-shell-command-gate-regex-fix.md` | compacted | 39 | 0 | 0 | 3165 |
 | `agent/plans/PLAN-shell-resource-profiling.md` | compacted | 38 | 0 | 0 | 3311 |
 | `agent/plans/PLAN-signer-bench-stop-binding-reattach.md` | executing | 37 | 0 | 3 | 6287 |
-| `agent/plans/PLAN-site-entry-points.md` | approved | 149 | 11 | 0 | 20740 |
+| `agent/plans/PLAN-site-entry-points.md` | approved | 154 | 6 | 5 | 21643 |
 | `agent/plans/PLAN-skip-release-gates-r2-manifest.md` | compacted | 39 | 0 | 0 | 3156 |
 | `agent/plans/PLAN-snapshot-read-io-cap.md` | approved | 262 | 1 | 15 | 38148 |
 | `agent/plans/PLAN-split-cli-files-over-512-line-budget.md` | executing | 38 | 0 | 7 | 5640 |

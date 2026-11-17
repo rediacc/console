@@ -111,21 +111,26 @@ Portal strings in `onboarding.json` for all 13 locales: tab labels (`installTabU
 
 ### Wave 1
 
-- [ ] L1 [writer] Onboarding docs links open www: add the `siteUrl` helper, use it in TutorialSplash, and add the vitest that renders TutorialSplash in `en` and one other language and asserts every docs anchor starts with `WK_SITE_ORIGIN`.
+- [x] L1 [writer] Onboarding docs links open www: add the `siteUrl` helper, use it in TutorialSplash, and add the vitest that renders TutorialSplash in `en` and one other language and asserts every docs anchor starts with `WK_SITE_ORIGIN`.
   - Owns: private/account/web/src/pages/TutorialSplash.tsx, private/account/web/src/pages/__tests__/tutorial-splash-links.test.tsx.
   - Accept: `cd /home/developer/console/private/account/web && npx vitest run src/pages/__tests__/tutorial-splash-links.test.tsx` rc 0, and `grep -n 'href={docsPath}' src/pages/TutorialSplash.tsx` prints nothing.
-- [ ] L2 [writer] Study-content sweep: classify every relative `/en/docs` or `/docs/` hit from Context 3, and make the ones that are links or paste targets absolute (private/account/web/src/data/study-content/ms6-compliance.ts:127 and private/account/web/src/data/study-content/mt3-cli.ts:71 at minimum).
+    (ticked) 2026-11-17T15:07:16Z by d778be9d: commit:21433b52d8 account 859bbc1; vitest tutorial-splash-links rc=0; grep href={docsPath} empty; tsc rc=0
+- [x] L2 [writer] Study-content sweep: classify every relative `/en/docs` or `/docs/` hit from Context 3, and make the ones that are links or paste targets absolute (private/account/web/src/data/study-content/ms6-compliance.ts:127 and private/account/web/src/data/study-content/mt3-cli.ts:71 at minimum).
   - Owns: private/account/web/src/data/study-content/ms6-compliance.ts, private/account/web/src/data/study-content/mt3-cli.ts.
   - Accept: `cd /home/developer/console && grep -rnE "(^|[^/a-z.])/(en|[a-z]{2})/docs/" private/account/web/src/data/study-content | grep -v "rediacc.com/" | wc -l` prints 0.
-- [ ] L3 [writer] Relative-link refusal: a test that fails on any relative `/en/docs`, `/<lang>/docs` or `/docs/` href in private/account/web/src, with `onboarding-content.json` `docsPath` allowlisted and TutorialSplash pinned as its only consumer. Run it once against the pre-fix tree (or a stash of L1) to show it fails there.
+    (ticked) 2026-11-17T15:07:18Z by d778be9d: commit:21433b52d8 account 859bbc1; ms6:127 and mt3:71 absolute; no-relative-site-links rc=0 (the box's own grep is vacuous, the test is the check)
+- [x] L3 [writer] Relative-link refusal: a test that fails on any relative `/en/docs`, `/<lang>/docs` or `/docs/` href in private/account/web/src, with `onboarding-content.json` `docsPath` allowlisted and TutorialSplash pinned as its only consumer. Run it once against the pre-fix tree (or a stash of L1) to show it fails there.
   - Owns: private/account/web/src/__tests__/no-relative-site-links.test.ts.
   - Accept: `cd /home/developer/console/private/account/web && npx vitest run src/__tests__/no-relative-site-links.test.ts` rc 0.
-- [ ] D1 [writer] Home Downloads link under the video, styled locally with a 44px tap target, with the i18n decision from Design 4 (reuse by default; a new key only if recorded with the reason, then hashes regenerated and 12 locales naturalized).
+    (ticked) 2026-11-17T15:07:20Z by d778be9d: commit:21433b52d8 account 859bbc1; test red on the pre-fix tree (ms6:127, mt3:71, href={docsPath}), rc=0 after
+- [x] D1 [writer] Home Downloads link under the video, styled locally with a 44px tap target, with the i18n decision from Design 4 (reuse by default; a new key only if recorded with the reason, then hashes regenerated and 12 locales naturalized).
   - Owns: packages/www/src/components/solution-pages/SPHomeVideo.astro, and, only if a new key is chosen, packages/www/src/i18n/translations/*.json, packages/www/src/i18n/client-route/*.json, packages/www/src/i18n/.translation-hashes.json.
   - Accept: `cd /home/developer/console && grep -c 'downloads' packages/www/src/components/solution-pages/SPHomeVideo.astro` prints at least 1, `grep -c 'sp-home-video-' packages/www/src/components/solution-pages/SPHomeVideo.astro` prints at least 3, and the www build for the home page contains `href="/en/downloads"` (the writer fills in the build command and the dist path they used).
-- [ ] I1 [writer] Shared install commands: add packages/shared/src/config/install-commands.ts, a unit test pinning both strings, and make www's `QUICK_INSTALL_UNIX` and `QUICK_INSTALL_WIN` build on them with unchanged rendered output.
+    (ticked) 2026-11-17T15:07:21Z by d778be9d: commit:11e5072ec2 grep downloads=3, sp-home-video-=8; astro build rc=0, dist/en/index.html has href="/en/downloads"; reused pages.install.hero.downloadsLink, no new key
+- [x] I1 [writer] Shared install commands: add packages/shared/src/config/install-commands.ts, a unit test pinning both strings, and make www's `QUICK_INSTALL_UNIX` and `QUICK_INSTALL_WIN` build on them with unchanged rendered output.
   - Owns: packages/shared/src/config/install-commands.ts, packages/shared/src/config/__tests__/install-commands.test.ts, packages/www/src/config/install.ts.
   - Accept: `cd /home/developer/console && npx vitest run packages/shared/src/config/__tests__/install-commands.test.ts` rc 0, and `grep -c 'install-commands' packages/www/src/config/install.ts` prints at least 1.
+    (ticked) 2026-11-17T15:07:23Z by d778be9d: commit:959216f248 shared vitest install-commands rc=0 (3 passed, rerun on landed tree), shared build rc=0, www strings byte-identical
 
 ### Wave 2, after I1 lands
 
