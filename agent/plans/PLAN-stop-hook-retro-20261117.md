@@ -23,7 +23,7 @@ Counts for the window:
   - Leading keys: judge 103, roster-dead 24, worktree-unlanded 22, bg-orphan 14, wake-timer 9, open-items 5, plan-unimplemented 5, commit-review 4, wisdom-due 4, ladder-gone 2, unread-reports 2.
   - 1 each: idle-capacity, bg-report, giveup-claim:does-not-reproduce, giveup-claim:impossible.
 - **Judge verdicts:** 175 rows (103 continue, 72 stop), with 0 sweep demands and 0 proof demands.
-- **What the 103 judge blocks were about.** I classified each by its reason and next action. A block can fall in more than one class.
+- **What the 103 judge blocks were about.** Each block is classified by its reason and next action. A block can fall in more than one class.
   - **Missing ids:** 49. 22 replies were full tables naming 15 or more ids, 17 replies made no work call, and the replies came to 144,613 characters.
   - **W2.x orders on PLAN-ciquick-cpu:** 14. 12 full tables, 5 replies with no work call, 38,214 characters.
   - **"WAKE TIMER: none armed":** 13. 5 replies with no work call, 30,518 characters.
