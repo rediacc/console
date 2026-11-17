@@ -732,24 +732,16 @@ def test_a_failing_fixture_step_fails_under_optimized_python():
     assert "exited 3" in done.stderr
 
 
-def test_the_fixture_commit_is_isolated_from_a_signing_global_config(tmp_path):
+def test_the_fixture_commit_is_isolated_from_a_signing_global_config(tmp_path, monkeypatch):
     """Review 5caef228.1: with commit.gpgsign=true in the global config (a signer that cannot run) the fixture repo still commits, because the helper forces it off."""
     home = tmp_path / "home"
     home.mkdir()
     (home / ".gitconfig").write_text(
         "[commit]\n\tgpgsign = true\n[gpg]\n\tprogram = /nonexistent-signer\n"
     )
-    saved = {k: os.environ.get(k) for k in ("HOME", "GIT_CONFIG_GLOBAL")}
-    os.environ["HOME"] = str(home)
-    os.environ["GIT_CONFIG_GLOBAL"] = str(home / ".gitconfig")
-    try:
-        binary = _build_real_renet(tmp_path, "1.0.0")
-    finally:
-        for key, value in saved.items():
-            if value is None:
-                os.environ.pop(key, None)
-            else:
-                os.environ[key] = value
+    monkeypatch.setenv("HOME", str(home))
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(home / ".gitconfig"))
+    binary = _build_real_renet(tmp_path, "1.0.0")
     assert binary.is_file()
 
 
