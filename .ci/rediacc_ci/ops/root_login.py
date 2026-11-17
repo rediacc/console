@@ -7,7 +7,7 @@ WHY. Stable and edge share ONE production root (operator ruling 2026-11-15) and 
 
 THE STEPS of the default mode, in order:
 
-  1. Re-execute under the `root-login` Bitwarden profile (`rediacc_ci.core.bws_env exec`), unless it is already bound. The profile binds ROOT_API_TOKEN and ROOT_TOTP_SEED.
+  1. Re-execute under the `root-login` Bitwarden profile (`rediacc_ci.core.bws_env exec`), unless it is already bound. The profile binds ROOT_API_TOKEN_<SUFFIX> (the entry of the region) and ROOT_TOTP_SEED.
   2. Refuse a value that is unset, still the placeholder `PLACEHOLDER-operator-fills`, or (for the token) not starting `rdr_`, naming its Bitwarden entry, before any request.
   3. `POST /admin/root-token/session` with the bearer token and a six-digit code derived in memory from the seed (`rediacc_ci.ops.totp`).
   4. On 403 `ROOT_TOKEN_IP_MISMATCH` (the nightly address change): `POST /admin/root-token/bind` with a code, wait for the next 30 s step (the account spends a code once), then `session` again; `ip rebound (<family>)` is printed.
@@ -16,7 +16,7 @@ THE STEPS of the default mode, in order:
 
 FLAGS. `--check` makes no request: it validates the vault values and the seed. `--probe stats|audit` makes one read-only GET from a fixed allowlist. `--control` proves two refusals live: the session-less call answers 403 `ROOT_TOKEN_SESSION_REQUIRED`, and `/auth/login` without a captcha token still answers 400 "Captcha verification required". `--rotate` (or `ROOT_LOGIN_AUTOROTATE=1` with fewer than 14 days left) calls `rotate` and writes the successor to the same Bitwarden entry. `--password` is the older sign-in with ROOT_EMAIL, ROOT_PASSWORD and the seed, kept for an origin that does not demand a captcha.
 
-REGIONS. Tokens live in one regional database, so `ROOT_API_TOKEN` is the eu token; `us` and `asia` are refused until `ROOT_API_TOKEN_<SUFFIX>` exists (Q1).
+REGIONS. Tokens live in one regional database, so each region has its own entry, `ROOT_API_TOKEN_<secretSuffix>` from regions.json (`ROOT_API_TOKEN_EU`, `ROOT_API_TOKEN_US`, `ROOT_API_TOKEN_ASIA`); a region regions.json does not list is refused. `--rotate` stages the successor as `<entry>_NEW`.
 
 Nothing here is a Turnstile workaround: where `/auth/login` demands a captcha token the answer is the named refusal, never a bypass.
 
@@ -46,8 +46,9 @@ REGIONS = ("eu", "us", "asia")
 EMAIL_ENV = "ROOT_EMAIL"
 PW_ENV = "ROOT_PASSWORD"
 SEED_ENV = "ROOT_TOTP_SEED"
-VAULT_ENTRY = "ROOT_API_TOKEN"
-VAULT_ENTRY_NEW = "ROOT_API_TOKEN_NEW"
+VAULT_PREFIX = "ROOT_API_TOKEN_"
+NEW_SUFFIX = "_NEW"
+BEARER_KEY = "bearer"
 AUTOROTATE_ENV = "ROOT_LOGIN_AUTOROTATE"
 SOURCE_NAMES = (EMAIL_ENV, PW_ENV, SEED_ENV)
 VALUE_PREFIX = "rdr_"
@@ -82,8 +83,8 @@ class RootLoginError(RuntimeError):
 
 
 def masked(text: str, env: Mapping[str, str]) -> str:
-    """`text` with the password, the seed and both token entries replaced by a `<NAME>` mark, and any `rdr_` token by `<root token>`, so a server answer that echoes one never reaches a log. A value under MIN_MASKED_LENGTH characters is not masked (it would rewrite unrelated text); `read_values` refuses a password that short, and a seed is far longer."""
-    for name in (PW_ENV, SEED_ENV, VAULT_ENTRY, VAULT_ENTRY_NEW):
+    """`text` with the password, the seed and every region's token entry and its staged successor replaced by a `<NAME>` mark, and any `rdr_` token by `<root token>`, so a server answer that echoes one never reaches a log. A value under MIN_MASKED_LENGTH characters is not masked (it would rewrite unrelated text); `read_values` refuses a password that short, and a seed is far longer."""
+    for name in (PW_ENV, SEED_ENV, *_token_names()):
         value = env.get(name) or ""
         if len(value) >= MIN_MASKED_LENGTH and value != PLACEHOLDER:
             text = text.replace(value, "<%s>" % name)
@@ -151,17 +152,25 @@ def parse_args(argv: Sequence[str]) -> Options:
     )
 
 
+def _region_rows() -> list[dict]:
+    return json.loads(paths.from_root("regions.json").read_text(encoding="utf-8"))["regions"]
+
+
+def _token_names() -> list[str]:
+    """Every vault name a token or its staged successor can take, one pair per region of regions.json."""
+    names: list[str] = []
+    for row in _region_rows():
+        entry = VAULT_PREFIX + str(row["secretSuffix"])
+        names += [entry, entry + NEW_SUFFIX]
+    return names
+
+
 def token_entry(region: str) -> str:
-    """The vault name holding the token of `region`: `ROOT_API_TOKEN` for eu (Q1); another region is refused with the name its token would take."""
-    if region == "eu":
-        return VAULT_ENTRY
-    rows = json.loads(paths.from_root("regions.json").read_text(encoding="utf-8"))["regions"]
-    suffix = next((str(r["secretSuffix"]) for r in rows if str(r["id"]) == region), region.upper())
-    raise RootLoginError(
-        "no root token for region %s: mint one on %s.rediacc.cloud and store it as %s_%s"
-        % (region, region, VAULT_ENTRY, suffix),
-        rc=2,
-    )
+    """The vault name holding the token of `region`: `ROOT_API_TOKEN_<secretSuffix>` from regions.json; a region it does not list is refused."""
+    for row in _region_rows():
+        if str(row["id"]) == region:
+            return VAULT_PREFIX + str(row["secretSuffix"])
+    raise RootLoginError("no region %r in regions.json: no root token entry" % region, rc=2)
 
 
 def origin_for(target: str, region: str) -> str:
@@ -307,10 +316,11 @@ def _subprocess_runner(argv: Sequence[str], env: Mapping[str, str]) -> int:
     return subprocess.run(list(argv), env=dict(env), check=False).returncode
 
 
-def read_token_values(env: Mapping[str, str]) -> dict[str, str]:
-    """The token and the seed, each refused when unset or still the placeholder, the token also when it is not an `rdr_` value; no request has been made."""
+def read_token_values(env: Mapping[str, str], region: str) -> dict[str, str]:
+    """The token of `region` (under `BEARER_KEY`) and the seed, each refused when unset or still the placeholder, the token also when it is not an `rdr_` value; no request has been made."""
+    entry = token_entry(region)
     values: dict[str, str] = {}
-    for name in (VAULT_ENTRY, SEED_ENV):
+    for key, name in ((BEARER_KEY, entry), (SEED_ENV, SEED_ENV)):
         value = env.get(name) or ""
         if not value or value == PLACEHOLDER:
             raise RootLoginError(
@@ -318,12 +328,11 @@ def read_token_values(env: Mapping[str, str]) -> dict[str, str]:
                 "the %s profile" % (name, _bws_entry(name), PROFILE),
                 rc=2,
             )
-        values[name] = value
-    if not values[VAULT_ENTRY].startswith(VALUE_PREFIX):
+        values[key] = value
+    if not values[BEARER_KEY].startswith(VALUE_PREFIX):
         raise RootLoginError(
             "%s is not a root API token (it must start with %s): mint one in the portal and "
-            "store it in the Bitwarden entry %s"
-            % (VAULT_ENTRY, VALUE_PREFIX, _bws_entry(VAULT_ENTRY)),
+            "store it in the Bitwarden entry %s" % (entry, VALUE_PREFIX, _bws_entry(entry)),
             rc=2,
         )
     try:
@@ -469,7 +478,7 @@ def _open_token(
     sleep: Callable[[float], None],
 ) -> AdminClient:
     """Open a token session; on ROOT_TOKEN_IP_MISMATCH bind this address once (a fresh code), wait for the next step and open again."""
-    client = AdminClient(origin, values[VAULT_ENTRY])
+    client = AdminClient(origin, values[BEARER_KEY])
     seed = values[SEED_ENV]
     session = "POST /admin/root-token/session"
     bind = "POST /admin/root-token/bind"
@@ -512,8 +521,7 @@ def open_token_session(
     target: str, region: str, env: Mapping[str, str] | None = None
 ) -> AdminClient:
     """Open a root token session on a production region for another tool; `get(path)` is GET only. The values come from `env` (default the process environment, bound by the root-login profile)."""
-    token_entry(region)
-    values = read_token_values(os.environ if env is None else env)
+    values = read_token_values(os.environ if env is None else env, region)
     return _open_token(origin_for(target, region), values, time.time, time.sleep)
 
 
@@ -573,6 +581,7 @@ def rotate(
     client: AdminClient,
     env: Mapping[str, str],
     capture: Callable[[Sequence[str], Mapping[str, str]], tuple[int, str]],
+    region: str,
 ) -> None:
     """Mint the successor, then write it to the same Bitwarden entry through the vault writer's child environment (never argv). The old token lives an hour more, so a failed write is recoverable by a rerun."""
     status, answer = client.post("/admin/root-token/rotate", {})
@@ -581,27 +590,29 @@ def rotate(
         raise RootLoginError(
             "POST /admin/root-token/rotate answered %s" % _describe(status, answer)
         )
+    entry = token_entry(region)
+    staged = entry + NEW_SUFFIX
     child = login_bench._with_ci_path(env)
-    child[VAULT_ENTRY_NEW] = token
-    log.step("Storing the rotated token as %s (bws_env store-from-env)" % VAULT_ENTRY)
+    child[staged] = token
+    log.step("Storing the rotated token as %s (bws_env store-from-env)" % entry)
     rc, out = capture(
         [
             sys.executable,
             "-m",
             "rediacc_ci.core.bws_env",
             "store-from-env",
-            "%s > %s" % (VAULT_ENTRY, VAULT_ENTRY_NEW),
+            "%s > %s" % (entry, staged),
         ],
         child,
     )
     if rc != 0:
         raise RootLoginError(
             "the successor token was minted but writing %s to Bitwarden failed (exit %d); the old "
-            "token stays valid for about an hour: rerun --rotate" % (_bws_entry(VAULT_ENTRY), rc)
+            "token stays valid for about an hour: rerun --rotate" % (_bws_entry(entry), rc)
         )
     if out:
         print(out, end="" if out.endswith("\n") else "\n")
-    print("token rotated and stored as %s" % VAULT_ENTRY)
+    print("token rotated and stored as %s" % entry)
 
 
 def _reexec_under_profile(argv: Sequence[str], run: Runner) -> int | None:
@@ -657,7 +668,7 @@ def main(
             open_session(origin, read_values(os.environ))
             print("root session opened (%s %s)" % (opts.target, opts.region))
             return 0
-        values = read_token_values(os.environ)
+        values = read_token_values(os.environ, opts.region)
         if opts.check:
             print("root login values ok (%s %s)" % (opts.target, opts.region))
             return 0
@@ -675,7 +686,7 @@ def main(
         if opts.control:
             control(origin, client)
         if opts.rotate or auto:
-            rotate(client, os.environ, capture)
+            rotate(client, os.environ, capture, opts.region)
     except RootLoginError as exc:
         log.error(masked(str(exc), os.environ))
         return exc.rc

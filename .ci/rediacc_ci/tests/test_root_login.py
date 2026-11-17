@@ -295,7 +295,7 @@ DAY_MS = 86_400_000
 
 
 def _token_env(**over: str) -> dict[str, str]:
-    base = {"ROOT_API_TOKEN": TOKEN, "ROOT_TOTP_SEED": SEED}
+    base = {"ROOT_API_TOKEN_EU": TOKEN, "ROOT_TOTP_SEED": SEED}
     base.update(over)
     return base
 
@@ -459,19 +459,58 @@ def _token_main(monkeypatch, admin, env=None, capture=None):
 )
 def test_unusable_token_refused_rc2_before_any_request(admin_factory, monkeypatch, bad, capsys):
     admin = admin_factory(_steps(0))
-    call, _ = _token_main(monkeypatch, admin, _token_env(ROOT_API_TOKEN=bad))
+    call, _ = _token_main(monkeypatch, admin, _token_env(ROOT_API_TOKEN_EU=bad))
     assert call("--target", "stable", "--region", "eu") == 2
     assert admin.requests == []
-    assert "ROOT_API_TOKEN" in capsys.readouterr().err
+    assert "ROOT_API_TOKEN_EU" in capsys.readouterr().err
 
 
 def test_valid_token_control_passes_values():
-    assert root_login.read_token_values(_token_env())["ROOT_API_TOKEN"] == TOKEN
+    assert root_login.read_token_values(_token_env(), "eu")[root_login.BEARER_KEY] == TOKEN
+
+
+@pytest.mark.parametrize(
+    ("region", "entry"),
+    [("eu", "ROOT_API_TOKEN_EU"), ("us", "ROOT_API_TOKEN_US"), ("asia", "ROOT_API_TOKEN_ASIA")],
+)
+def test_token_entry_is_the_region_suffixed_name(region, entry):
+    assert root_login.token_entry(region) == entry
+
+
+def test_unsuffixed_name_is_not_read_for_any_region():
+    with pytest.raises(root_login.RootLoginError, match="ROOT_API_TOKEN_EU") as caught:
+        root_login.read_token_values({"ROOT_API_TOKEN": TOKEN, "ROOT_TOTP_SEED": SEED}, "eu")
+    assert caught.value.rc == 2
+
+
+def test_unknown_region_is_refused():
+    with pytest.raises(root_login.RootLoginError, match="no region 'mars'") as caught:
+        root_login.token_entry("mars")
+    assert caught.value.rc == 2
+
+
+@pytest.mark.parametrize("region", ["eu", "us", "asia"])
+def test_placeholder_is_refused_per_region_naming_its_entry(region):
+    entry = root_login.token_entry(region)
+    env = {entry: root_login.PLACEHOLDER, "ROOT_TOTP_SEED": SEED}
+    with pytest.raises(root_login.RootLoginError, match=entry) as caught:
+        root_login.read_token_values(env, region)
+    assert caught.value.rc == 2
+
+
+@pytest.mark.parametrize("region", ["us", "asia"])
+def test_other_region_reads_its_own_entry_and_not_the_eu_one(region):
+    entry = root_login.token_entry(region)
+    other = "rdr_" + "ef56" * 16
+    values = root_login.read_token_values(_token_env(**{entry: other}), region)
+    assert values[root_login.BEARER_KEY] == other
+    with pytest.raises(root_login.RootLoginError, match=entry):
+        root_login.read_token_values(_token_env(), region)
 
 
 def test_missing_seed_refused_naming_the_entry():
     with pytest.raises(root_login.RootLoginError, match="ROOT_TOTP_SEED") as caught:
-        root_login.read_token_values({"ROOT_API_TOKEN": TOKEN})
+        root_login.read_token_values({"ROOT_API_TOKEN_EU": TOKEN}, "eu")
     assert caught.value.rc == 2
 
 
@@ -509,7 +548,9 @@ def test_mismatch_that_persists_after_a_bind_is_a_failure_not_a_loop(admin_facto
     admin = admin_factory(_steps(0, 30, 60), mismatch=True, sticky=True)
     now, sleep, _ = _now_sleep()
     with pytest.raises(root_login.RootLoginError, match="ROOT_TOKEN_IP_MISMATCH"):
-        root_login._open_token(admin.origin, _token_env(), now, sleep)
+        root_login._open_token(
+            admin.origin, root_login.read_token_values(_token_env(), "eu"), now, sleep
+        )
     assert admin.routes().count("POST /admin/root-token/bind") == 1
 
 
@@ -548,14 +589,14 @@ def test_rate_limit_and_server_fault_are_a_fault_not_a_refusal(
 
 def test_other_refusal_is_named_and_not_retried(admin_factory, monkeypatch, capsys):
     admin = admin_factory(_steps(0))
-    call, _ = _token_main(monkeypatch, admin, _token_env(ROOT_API_TOKEN="rdr_" + "00" * 32))
+    call, _ = _token_main(monkeypatch, admin, _token_env(ROOT_API_TOKEN_EU="rdr_" + "00" * 32))
     assert call("--target", "stable", "--region", "eu") == 1
     assert admin.routes() == ["POST /admin/root-token/session"]
     assert "HTTP 401 UNAUTHORIZED" in capsys.readouterr().err
 
 
 @pytest.mark.parametrize("region", ["us", "asia"])
-def test_other_regions_refused_with_the_name_their_token_would_take(
+def test_other_region_without_its_token_is_refused_naming_its_entry(
     admin_factory, monkeypatch, capsys, region
 ):
     admin = admin_factory(_steps(0))
@@ -563,6 +604,15 @@ def test_other_regions_refused_with_the_name_their_token_would_take(
     assert call("--target", "stable", "--region", region) == 2
     assert admin.requests == []
     assert "ROOT_API_TOKEN_%s" % region.upper() in capsys.readouterr().err
+
+
+@pytest.mark.parametrize("region", ["us", "asia"])
+def test_other_region_opens_a_session_with_its_own_token(admin_factory, monkeypatch, region):
+    admin = admin_factory(_steps(0))
+    entry = root_login.token_entry(region)
+    call, _ = _token_main(monkeypatch, admin, _token_env(**{entry: TOKEN}))
+    monkeypatch.delenv("ROOT_API_TOKEN_EU", raising=False)
+    assert call("--target", "stable", "--region", region, "--check") == 0
 
 
 def test_check_makes_no_request(admin_factory, monkeypatch, capsys):
@@ -575,7 +625,7 @@ def test_check_makes_no_request(admin_factory, monkeypatch, capsys):
 
 def test_check_still_refuses_a_bad_value(admin_factory, monkeypatch):
     admin = admin_factory(_steps(0))
-    call, _ = _token_main(monkeypatch, admin, _token_env(ROOT_API_TOKEN=root_login.PLACEHOLDER))
+    call, _ = _token_main(monkeypatch, admin, _token_env(ROOT_API_TOKEN_EU=root_login.PLACEHOLDER))
     assert call("--target", "stable", "--region", "eu", "--check") == 2
 
 
@@ -602,7 +652,8 @@ def test_probe_allowlist_is_get_only_admin_paths():
 def test_admin_client_get_sends_no_body(admin_factory):
     admin = admin_factory(_steps(0))
     now, sleep, _ = _now_sleep()
-    client = root_login._open_token(admin.origin, _token_env(), now, sleep)
+    values = root_login.read_token_values(_token_env(), "eu")
+    client = root_login._open_token(admin.origin, values, now, sleep)
     assert client.get("/admin/stats")[0] == 200
     assert admin.requests[-1][0] == "GET"
     assert admin.requests[-1][3] == {}
@@ -641,7 +692,7 @@ def _capture_recorder(rc: int = 0):
 
     def capture(argv, env):
         seen.append((list(argv), dict(env)))
-        return rc, "ROOT_API_TOKEN MATCH\n"
+        return rc, "ROOT_API_TOKEN_EU MATCH\n"
 
     return capture, seen
 
@@ -654,14 +705,32 @@ def test_rotate_writes_the_vault_entry_through_the_child_environment(
     call, _ = _token_main(monkeypatch, admin, capture=capture)
     assert call("--target", "stable", "--region", "eu", "--rotate") == 0
     argv, env = seen[0]
-    assert argv[-2:] == ["store-from-env", "ROOT_API_TOKEN > ROOT_API_TOKEN_NEW"]
-    assert env["ROOT_API_TOKEN_NEW"] == NEW_TOKEN
+    assert argv[-2:] == ["store-from-env", "ROOT_API_TOKEN_EU > ROOT_API_TOKEN_EU_NEW"]
+    assert env["ROOT_API_TOKEN_EU_NEW"] == NEW_TOKEN
     assert NEW_TOKEN not in " ".join(argv)
     assert TOKEN not in " ".join(argv)
     out, err = capsys.readouterr()
-    assert "token rotated and stored as ROOT_API_TOKEN" in out
+    assert "token rotated and stored as ROOT_API_TOKEN_EU" in out
     assert NEW_TOKEN not in out + err
     assert TOKEN not in out + err
+
+
+def test_rotate_in_another_region_writes_that_regions_entry(admin_factory, monkeypatch, capsys):
+    admin = admin_factory(_steps(0))
+    capture, seen = _capture_recorder()
+    call, _ = _token_main(monkeypatch, admin, _token_env(ROOT_API_TOKEN_US=TOKEN), capture=capture)
+    assert call("--target", "stable", "--region", "us", "--rotate") == 0
+    argv, env = seen[0]
+    assert argv[-2:] == ["store-from-env", "ROOT_API_TOKEN_US > ROOT_API_TOKEN_US_NEW"]
+    assert env["ROOT_API_TOKEN_US_NEW"] == NEW_TOKEN
+    assert "ROOT_API_TOKEN_EU_NEW" not in env
+    assert "token rotated and stored as ROOT_API_TOKEN_US" in capsys.readouterr().out
+
+
+def test_masked_hides_every_regions_token_entry_and_staged_successor():
+    for name in ("ROOT_API_TOKEN_EU", "ROOT_API_TOKEN_ASIA_NEW"):
+        value = "tok-" + "z" * 20
+        assert root_login.masked("echo " + value, {name: value}) == "echo <%s>" % name
 
 
 def test_failed_vault_write_after_rotation_is_named(admin_factory, monkeypatch, capsys):
@@ -670,7 +739,7 @@ def test_failed_vault_write_after_rotation_is_named(admin_factory, monkeypatch, 
     call, _ = _token_main(monkeypatch, admin, capture=capture)
     assert call("--target", "stable", "--region", "eu", "--rotate") == 1
     err = capsys.readouterr().err
-    assert "writing ROOT_API_TOKEN" in err
+    assert "writing ROOT_API_TOKEN_EU" in err
     assert NEW_TOKEN not in err
 
 
@@ -804,7 +873,7 @@ def test_a_server_message_that_echoes_a_secret_is_masked_before_it_is_printed(
 
 
 def test_masked_hides_a_secret_the_200_character_cut_would_split_and_any_root_token():
-    env = {"ROOT_PASSWORD": "p" * 190 + "SECRETTAIL", "ROOT_API_TOKEN": "rdr_" + "ab" * 32}
+    env = {"ROOT_PASSWORD": "p" * 190 + "SECRETTAIL", "ROOT_API_TOKEN_US": "rdr_" + "ab" * 32}
     described = root_login._describe(
         401, {"error": {"code": "X", "message": "m" + env["ROOT_PASSWORD"]}}, env
     )

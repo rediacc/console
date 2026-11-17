@@ -252,9 +252,17 @@
       "kind": "no-github-twin",
       "reason": "an endpoint identifier, not a credential."
     },
-    "ROOT_API_TOKEN": {
+    "ROOT_API_TOKEN_EU": {
       "kind": "no-github-twin",
       "reason": "The eu root API token (PLAN-root-api-token Design 6) the operator mints once in the portal; rediacc_ci.ops.root_login binds it through `bws_env exec --profile root-login` and `--rotate` writes the successor back with `bws_env store-from-env`. It runs only locally against the production account Worker, so no workflow requests it and no GitHub secret of that name exists to shadow."
+    },
+    "ROOT_API_TOKEN_US": {
+      "kind": "no-github-twin",
+      "reason": "The us root API token (PLAN-root-api-token Design 6) the operator mints once in the portal; rediacc_ci.ops.root_login binds it through `bws_env exec --profile root-login` and `--rotate` writes the successor back with `bws_env store-from-env`. It runs only locally against the production account Worker, so no workflow requests it and no GitHub secret of that name exists to shadow."
+    },
+    "ROOT_API_TOKEN_ASIA": {
+      "kind": "no-github-twin",
+      "reason": "The asia root API token (PLAN-root-api-token Design 6) the operator mints once in the portal; rediacc_ci.ops.root_login binds it through `bws_env exec --profile root-login` and `--rotate` writes the successor back with `bws_env store-from-env`. It runs only locally against the production account Worker, so no workflow requests it and no GitHub secret of that name exists to shadow."
     },
     "ROOT_PASSWORD": {
       "kind": "no-github-twin",
