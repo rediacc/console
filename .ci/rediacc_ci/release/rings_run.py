@@ -860,7 +860,8 @@ def lab_release(
 ) -> proof.ReleaseResult:
     """One bench release as `enterprise proof release` asks for it, as a `proof.ReleaseResult`.
 
-    Each invocation of the runner ends at a `wait` while a shortened pause runs, so the driver sleeps the pause and invokes again until the run ends on anything else, for at most `settle_s` seconds of wall time (`PROOF_SETTLE_S`); a run still at a `wait` then fails naming that decision, and each wait is announced on stderr, since the runner's own lines are captured. `--resume` applies to the first invocation only. A non-zero exit names the company whose last rollout row of the version is `failed`. The runner's own lines are captured, not printed: the proof prints its claims."""
+    Each invocation of the runner ends at a `wait` while a shortened pause runs, so the driver sleeps the pause and invokes again until the run ends on anything else, while `settle_s` seconds of wall time (`PROOF_SETTLE_S`) have not passed when a run would start, so the deadline is checked before each run only and the pause after the last run is always slept in full: the call returns at most one pause past `settle_s`;
+    a run still at a `wait` then fails naming that decision, and each wait is announced on stderr, since the runner's own lines are captured. `--resume` applies to the first invocation only. A non-zero exit names the company whose last rollout row of the version is `failed`. The runner's own lines are captured, not printed: the proof prints its claims."""
     w = world or live_world()
     v = version or target_version()
     nap = sleep or time.sleep

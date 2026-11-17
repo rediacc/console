@@ -4613,3 +4613,11 @@ def test_lookup_get_fault_after_a_listed_key_is_a_lab_error():
 
     with pytest.raises(proof.LabError, match="kv key get exited 1: Authentication error"):
         lab.lookup("acme.example", run=flaky, pepper="pep")
+
+
+def test_cert_log_names_zero_attempts_refuses_before_claiming_anything_about_the_log():
+    """Review 36f6437d.1: with no attempt there is no outcome, so the empty-log claim (all() of nothing) is never reached; the guard refuses first."""
+    fetch, calls = _scripted_crt()
+    with pytest.raises(ValueError, match="attempts must be at least 1"):
+        lab.cert_log_names(fetch_url=fetch, sleep=lambda _s: None, attempts=0, backoff_s=1.0)
+    assert calls == []

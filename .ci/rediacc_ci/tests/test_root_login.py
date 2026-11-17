@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import pathlib
+import re
 import threading
 from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -607,12 +609,29 @@ def test_other_region_without_its_token_is_refused_naming_its_entry(
 
 
 @pytest.mark.parametrize("region", ["us", "asia"])
-def test_other_region_opens_a_session_with_its_own_token(admin_factory, monkeypatch, region):
+def test_other_region_values_check_with_its_own_token_alone(admin_factory, monkeypatch, region):
     admin = admin_factory(_steps(0))
     entry = root_login.token_entry(region)
     call, _ = _token_main(monkeypatch, admin, _token_env(**{entry: TOKEN}))
     monkeypatch.delenv("ROOT_API_TOKEN_EU", raising=False)
     assert call("--target", "stable", "--region", region, "--check") == 0
+    assert admin.requests == []
+
+
+@pytest.mark.parametrize("region", ["us", "asia"])
+def test_other_region_opens_a_session_with_its_own_token(admin_factory, monkeypatch, region):
+    admin = admin_factory(_steps(0))
+    entry = root_login.token_entry(region)
+    call, _ = _token_main(monkeypatch, admin, _token_env(**{entry: TOKEN}))
+    monkeypatch.delenv("ROOT_API_TOKEN_EU", raising=False)
+    assert call("--target", "stable", "--region", region) == 0
+    assert admin.routes() == ["POST /admin/root-token/session"]
+
+
+def test_the_module_text_names_no_unsuffixed_token_entry():
+    """Review 727d194e.1: the code reads only ROOT_API_TOKEN_<secretSuffix>, so the module text never tells an operator to fill the bare `ROOT_API_TOKEN`."""
+    text = pathlib.Path(root_login.__file__).read_text(encoding="utf-8")
+    assert not re.search(r"ROOT_API_TOKEN(?![_A-Za-z0-9])", text)
 
 
 def test_check_makes_no_request(admin_factory, monkeypatch, capsys):

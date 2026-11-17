@@ -667,14 +667,12 @@ def test_stage_writes_a_correctly_keyed_renet_when_a_key_is_bound(r2, tmp_path, 
 
 def _run_quiet_or_fail(
     argv: list[str], *, cwd: pathlib.Path | None = None, env: dict[str, str] | None = None
-) -> None:
-    """Run `argv` capturing its output; a non-zero exit fails with the child's stderr, so a compiler or git error reaches the CI log."""
+) -> subprocess.CompletedProcess[str]:
+    """Run `argv` capturing its output; a non-zero exit fails with the child's stderr, so a compiler or git error reaches the CI log. The failure is a raise, not an `assert`, so `python -O` keeps it; a passing step returns its finished process."""
     done = subprocess.run(argv, cwd=cwd, env=env, capture_output=True, text=True, check=False)
-    assert done.returncode == 0, "%s exited %d: %s" % (
-        argv[0],
-        done.returncode,
-        done.stderr.strip(),
-    )
+    if done.returncode != 0:
+        raise AssertionError("%s exited %d: %s" % (argv[0], done.returncode, done.stderr.strip()))
+    return done
 
 
 def _build_real_renet(tmp_path: pathlib.Path, version: str) -> pathlib.Path:
@@ -709,11 +707,29 @@ def _build_real_renet(tmp_path: pathlib.Path, version: str) -> pathlib.Path:
 
 
 def test_a_failing_fixture_step_surfaces_its_stderr_and_a_passing_one_is_quiet():
-    """Review 5caef228.2: a failed build or commit fails with the child's own stderr; control: a passing step returns nothing."""
+    """Review 5caef228.2: a failed build or commit fails with the child's own stderr; control: a passing step returns its finished process, rc 0 and silent."""
     code = "import sys; sys.stderr.write('compiler said no'); sys.exit(3)"
     with pytest.raises(AssertionError, match="exited 3: compiler said no"):
         _run_quiet_or_fail([sys.executable, "-c", code])
-    _run_quiet_or_fail([sys.executable, "-c", "pass"])
+    done = _run_quiet_or_fail([sys.executable, "-c", "pass"])
+    assert (done.returncode, done.stdout, done.stderr) == (0, "", "")
+
+
+def test_a_failing_fixture_step_fails_under_optimized_python():
+    """Review ab211635.1: the failure is an explicit raise, so `python -O` (which strips `assert`) still fails a failing step."""
+    code = (
+        "import sys; sys.path.insert(0, %r); import test_deploy_executor_artifacts as t; "
+        "t._run_quiet_or_fail([sys.executable, '-c', 'import sys; sys.exit(3)'])"
+    ) % os.path.dirname(__file__)
+    done = subprocess.run(
+        [sys.executable, "-O", "-c", code],
+        capture_output=True,
+        text=True,
+        check=False,
+        env={**os.environ, "PYTHONPATH": os.pathsep.join(sys.path)},
+    )
+    assert done.returncode != 0
+    assert "exited 3" in done.stderr
 
 
 def test_the_fixture_commit_is_isolated_from_a_signing_global_config(tmp_path):

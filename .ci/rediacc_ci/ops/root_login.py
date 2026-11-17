@@ -3,7 +3,7 @@
     PYTHONPATH=.ci python3 -m rediacc_ci.ops.root_login --target stable|edge --region eu \
         [--check | --probe stats|audit | --control | --rotate | --password]
 
-WHY. Stable and edge share ONE production root (operator ruling 2026-11-15) and there is no separate stable Worker set (`docs/agent-reference/release-process.md`), so both targets resolve to the same origin, `https://<regions.json domain>`; the target stays in the command so a caller says which channel it means. The password sign-in `/auth/login` answers 400 "Captcha verification required" there, so the default is the root API token kind (`PLAN-root-api-token.md` Design 1-3): the operator mints `ROOT_API_TOKEN` once in the portal, and every use proves TOTP through a short token session. The bench root has its own credentials and tool (`rediacc_ci.ops.login_bench`).
+WHY. Stable and edge share ONE production root (operator ruling 2026-11-15) and there is no separate stable Worker set (`docs/agent-reference/release-process.md`), so both targets resolve to the same origin, `https://<regions.json domain>`; the target stays in the command so a caller says which channel it means. The password sign-in `/auth/login` answers 400 "Captcha verification required" there, so the default is the root API token kind (`PLAN-root-api-token.md` Design 1-3): the operator mints the region's `ROOT_API_TOKEN_<secretSuffix>` entry once in the portal (see REGIONS), and every use proves TOTP through a short token session. The bench root has its own credentials and tool (`rediacc_ci.ops.login_bench`).
 
 THE STEPS of the default mode, in order:
 

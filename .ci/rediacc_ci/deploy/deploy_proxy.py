@@ -468,7 +468,9 @@ def _recorded_first_deploy(path: pathlib.Path | None) -> bool:
     except (OSError, ValueError):
         return False
     return (
-        isinstance(data, dict) and "previous_version_id" in data and not data["previous_version_id"]
+        isinstance(data, dict)
+        and "previous_version_id" in data
+        and data["previous_version_id"] is None
     )
 
 
@@ -663,13 +665,16 @@ class _Fetcher:
         return out, rc
 
     def code(self, url: str) -> str:
-        deadline = time.monotonic() + _resolve_window()
+        deadline: float | None = None
         while True:
             out, rc = _curl(url, self.pin)
             if self.cert_wait and rc != CURL_RESOLVE_RC:
                 out, rc = self._await_certificate(url, out, rc)
             if rc != CURL_RESOLVE_RC:
                 return out
+            # The resolve window starts at the first resolution failure, after any certificate wait, so a wait that used the certificate window does not spend the resolve retries.
+            if deadline is None:
+                deadline = time.monotonic() + _resolve_window()
             if self.pin is None and time.monotonic() >= deadline:
                 address = _doh_lookup(self.host)
                 if not address:

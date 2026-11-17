@@ -530,8 +530,12 @@ def test_replay_window_guard_ignores_another_repos_rolling_timer(tmp_path, monke
     monkeypatch.setattr(sys.modules[__name__], "TIMER_LINE", _rolling_timer("someone-else"))
     w = seeded()
     w.refuse_window_on = 1
-    _rc, text = run(w, tmp_path, *REPLAY)
+    rc, text = run(w, tmp_path, *REPLAY)
     assert "backup-window: refused" not in text
+    # Review eb40cad3.1: absence of the refusal alone would also hold for a replay that stopped early, so the run must have gone on to the kill and the rerun.
+    assert rc == 0, text
+    assert ["term", "connect", "hostinger", "-c", mod.KILL_COMMAND] in w.calls
+    assert ["backup", "reconcile", "mautic@hostinger", "--check"] in w.calls
     monkeypatch.setattr(sys.modules[__name__], "TIMER_LINE", _rolling_timer("mautic"))
     w = seeded()
     w.refuse_window_on = 1

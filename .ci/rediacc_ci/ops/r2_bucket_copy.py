@@ -136,7 +136,7 @@ def summarize(bucket: str, objs: list[r2_promote.Obj]) -> dict[str, object]:
 
 
 def inventory(endpoint: str, buckets: Sequence[str] | None) -> list[dict[str, object]]:
-    """Read-only: one summary per bucket (every bucket of the endpoint's jurisdiction when none is named; one that vanishes between the bucket list and its own listing is reported `vanished`, a bucket named by the caller that does not exist still fails)."""
+    """Read-only: one summary per bucket (every bucket of the endpoint's jurisdiction when none is named; one that vanishes between the bucket list and its own listing, and is absent from a fresh list, is reported `vanished`, a bucket named by the caller that does not exist still fails)."""
     names = list(buckets) if buckets else list_buckets(endpoint)
     out: list[dict[str, object]] = []
     for name in names:
@@ -146,7 +146,9 @@ def inventory(endpoint: str, buckets: Sequence[str] | None) -> list[dict[str, ob
         except r2_promote.NoSuchBucketError:
             if buckets:
                 raise
-            # Discovered by list-buckets and gone before its own listing (a proof bucket deleted mid-run): reported, not fatal.
+            # Gone before its own listing (a proof bucket deleted mid-run) is reported, not fatal; but only when a fresh list-buckets no longer holds it, so an endpoint answering NoSuchBucket for a bucket that still exists fails.
+            if name in list_buckets(endpoint):
+                raise
             out.append({"bucket": name, "vanished": True})
     return out
 

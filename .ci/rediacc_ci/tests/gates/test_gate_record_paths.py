@@ -10,6 +10,7 @@ WHAT THIS ADDS TO THE GATE'S OWN `--selftest`. Those controls plant into scratch
 import importlib.util
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -364,7 +365,7 @@ def world(base, record_path, refresh):
     body["advances"] = [{"from": start, "to": end, "paths": [record_path], "gates": {G.V2_FX: 0}, "finishedAt": "2026-11-16T00:00:00Z"}]
     carried = body["gates"][G.V2_FX].get("carriedFrom") is not None
     if refresh:
-        body["gates"][G.V2_FX] = dict(body["gates"][G.V2_FX], inputHash=None, verdict="ok", exitCode=0, findings=None, judgedTree=end, carriedFrom=None)
+        body["gates"][G.V2_FX] = dict(body["gates"][G.V2_FX], **{k: (end if v == "$to" else v) for k, v in json.loads(sys.argv[2]).items()})
     receipt_path.write_text(json.dumps(body), encoding="utf-8")
     return {"carried": carried, "inputs": body["gates"][G.V2_FX]["inputs"]["globs"], "refusal": G.receipt_refusal(str(root), end, G.read_receipt(str(root), end))}
 
@@ -377,10 +378,43 @@ print(json.dumps({
 """
 
 
+RUNNER = paths.from_root("scripts", "ci-runner", "run.ts")
+TS_VALUES = {"null": None, "'ok'": "ok", "0": 0, "to": "$to"}
+
+
+def runner_refresh_fields() -> dict[str, object]:
+    """The fields scripts/ci-runner/run.ts `refreshCarried` writes over a refreshed entry, read from its source (`$to` is the step's end tree), so the world below is the runner's own output shape and not a copy of it."""
+    text = RUNNER.read_text(encoding="utf-8")
+    start = text.index("function refreshCarried(")
+    block = re.search(r"out\[id\] = \{\s*\.\.\.entry,(.*?)\};", text[start:], re.DOTALL)
+    assert block, "refreshCarried no longer writes `out[id] = { ...entry, ... }`"
+    fields: dict[str, object] = {}
+    for line in block.group(1).split(","):
+        if line.strip():
+            key, _, value = line.partition(":")
+            assert value.strip() in TS_VALUES, (
+                "refreshCarried field %r has an unmapped value" % line
+            )
+            fields[key.strip()] = TS_VALUES[value.strip()]
+    return fields
+
+
+def test_the_runner_refresh_fields_are_read_from_its_source():
+    """Review ba4dba67.2: the guard test below uses what refreshCarried writes; this pins that read, so a runner change that adds or drops a field reaches the world."""
+    assert runner_refresh_fields() == {
+        "inputHash": None,
+        "verdict": "ok",
+        "exitCode": 0,
+        "findings": None,
+        "judgedTree": "$to",
+        "carriedFrom": None,
+    }
+
+
 def test_the_guard_refuses_a_carried_verdict_over_a_touched_record_until_it_is_refreshed(tmp_path):
     """Found 2026-11-16 while checking that the push guard admits a plan-only advance. block_unverified_push recomputes every CARRIED gate entry's filesHash at the pushed tree, so a receipt that carries a gate whose inputs cover the touched record is refused although the step re-ran that gate green. check:ci-plan-bindings is carried in 12 of the last 40 real receipts and its inputs cover agent/plans/**. The runner now rewrites such an entry as a verdict of the step's tree (scripts/ci-runner/run.ts refreshCarried, pinned by its selftest), and this pins the guard's side of that contract: refused as carried, admitted as refreshed."""
     proc = subprocess.run(
-        [sys.executable, "-c", CARRY_CHILD, str(tmp_path)],
+        [sys.executable, "-c", CARRY_CHILD, str(tmp_path), json.dumps(runner_refresh_fields())],
         capture_output=True,
         text=True,
         check=False,

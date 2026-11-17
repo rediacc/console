@@ -627,7 +627,9 @@ def _vanishing(monkeypatch: pytest.MonkeyPatch) -> None:
             raise r2_promote.NoSuchBucketError(254)
         return [obj("a", 3)]
 
-    monkeypatch.setattr(bc, "list_buckets", lambda _e: ["gone", "kept"])
+    lists = iter([["gone", "kept"]])
+    # The first read finds both; every later read (the confirmation) no longer holds "gone".
+    monkeypatch.setattr(bc, "list_buckets", lambda _e: next(lists, ["kept"]))
     monkeypatch.setattr(r2_promote.Transfers, "list_tree", list_tree)
 
 
@@ -644,3 +646,36 @@ def test_inventory_still_fails_for_a_bucket_the_caller_named(
     _vanishing(monkeypatch)
     with pytest.raises(r2_promote.NoSuchBucketError):
         bc.inventory(BASE, ["gone"])
+
+
+def test_inventory_fails_for_a_bucket_still_listed_that_answers_no_such_bucket(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Review 749969c5.1: NoSuchBucket for a bucket a fresh list-buckets still returns is a fault, never `vanished`."""
+    _vanishing(monkeypatch)
+    monkeypatch.setattr(bc, "list_buckets", lambda _e: ["gone", "kept"])
+    with pytest.raises(r2_promote.NoSuchBucketError):
+        bc.inventory(BASE, None)
+
+
+def test_inventory_reports_vanished_only_when_a_fresh_list_no_longer_holds_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _vanishing(monkeypatch)
+    report = bc.inventory(BASE, None)
+    assert report[0] == {"bucket": "gone", "vanished": True}
+
+
+def test_fetch_and_put_failures_are_labelled_bucket_slash_key(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Review 749969c5.2: the retry label reads `<bucket>/<key>`."""
+    monkeypatch.setattr(r2_promote, "_run_quiet", lambda _argv: (1, "boom"))
+    run = r2_promote.Transfers("t", BASE, 0.0, bucket="b1")
+    with pytest.raises(r2_promote.PromoteError):
+        run.get("k/one", "/tmp/x")
+    with pytest.raises(r2_promote.PromoteError):
+        run.put("/tmp/x", "k/two")
+    err = capsys.readouterr().err
+    assert "fetch of b1/k/one" in err
+    assert "put of b1/k/two" in err

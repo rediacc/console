@@ -751,6 +751,24 @@ def test_the_settle_bound_is_wall_time_not_a_run_count(tmp_path, capsys):
     assert "waiting out a shortened pause" in capsys.readouterr().err
 
 
+def test_the_settle_bound_is_checked_before_each_run_so_the_last_pause_may_pass_it(tmp_path):
+    """Review 9f66fcd7.1: the deadline gates a run's start, not the pause after it, so a bound that is no multiple of the pause is passed by less than one pause."""
+    r = rig(tmp_path, bench=True, record=False)
+    r.plane.add(CANARY, 2, override="canary")
+    sleep, naps = napper(r)
+    got = rings_run.lab_release(
+        world=r.world,
+        version=V,
+        sleep=sleep,
+        clock=lambda: sum(naps),
+        settle_s=100,
+        pause_minutes=1,
+    )
+    assert got.rc == 1
+    assert naps == [60.0, 60.0]
+    assert 100 < sum(naps) < 100 + 60
+
+
 def test_a_workers_only_record_counts_as_bench_taken(monkeypatch):
     """`edge.json` absent (no full release), `edge-workers.json` present: the version is taken. Both absent: it is not."""
     asked: list[str] = []

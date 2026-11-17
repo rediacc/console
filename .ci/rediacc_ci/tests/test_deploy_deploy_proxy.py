@@ -1365,7 +1365,7 @@ def test_a_first_deploy_polls_a_tls_handshake_failure_until_the_certificate_exis
 
 def test_a_first_deploy_gives_up_after_the_certificate_window(monkeypatch, capsys) -> None:
     fake, _ = _smoke_fixture(monkeypatch, [("000", 35)])
-    _clock(monkeypatch, [0.0, 1.0, 2.0, port.CERT_WINDOW_S + 10])
+    _clock(monkeypatch, [1.0, 2.0, port.CERT_WINDOW_S + 10])
     assert port.smoke(HOST, NEW_ID, first_deploy=True) == 1
     assert len(fake.calls) == 2
     assert "/v1/health answered 000, expected 200" in capsys.readouterr().err
@@ -1404,8 +1404,11 @@ def test_a_first_deploy_hands_a_mid_wait_resolution_failure_to_the_resolve_retry
         ({"previous_version_id": None, "smoke_rc": None}, True),
         ({"previous_version_id": PREV_ID}, False),
         ({"smoke_rc": None}, False),
+        ({"previous_version_id": ""}, False),
+        ({"previous_version_id": 0}, False),
+        ({"previous_version_id": False}, False),
     ],
-    ids=["first", "later", "no-key"],
+    ids=["first", "later", "no-key", "empty-string", "zero", "false"],
 )
 def test_a_smoke_only_waits_for_the_certificate_of_a_recorded_first_deploy(
     tmp_path: pathlib.Path, record, first
@@ -1418,6 +1421,37 @@ def test_a_smoke_only_waits_for_the_certificate_of_a_recorded_first_deploy(
     path.write_text("not json", encoding="utf-8")
     assert port._recorded_first_deploy(path) is False
     assert port._recorded_first_deploy(None) is False
+
+
+def test_the_resolve_window_starts_after_a_certificate_wait_that_used_most_of_its_window(
+    monkeypatch,
+) -> None:
+    """Review f8792635.1: a first deploy whose certificate wait ran 280 s and then got curl exit 6 still has its whole resolve window; the DoH pin is not taken at once."""
+    lookups: list[str] = []
+    fake, _ = _smoke_fixture(
+        monkeypatch, [("000", 35), ("000", 6), ("200", 0), ("401", 0)], doh="198.51.100.9"
+    )
+
+    def doh(host: str) -> str:
+        lookups.append(host)
+        return "198.51.100.9"
+
+    monkeypatch.setattr(port, "_doh_lookup", doh)
+    now = [0.0]
+    napped: list[float] = []
+
+    def sleep(seconds: float) -> None:
+        napped.append(seconds)
+        now[0] += 280.0 if len(napped) == 1 else seconds
+
+    monkeypatch.setenv(port.RESOLVE_WINDOW_ENV, "50")
+    monkeypatch.setattr(port, "_sleep", sleep)
+    monkeypatch.setattr(port, "time", types.SimpleNamespace(monotonic=lambda: now[0]))
+    assert port.smoke(HOST, NEW_ID, first_deploy=True) == 0
+    assert lookups == []
+    assert all(pin is None for _url, pin in fake.calls)
+    assert napped[0] == port.CERT_INTERVAL_S
+    assert port.RESOLVE_INTERVAL_S in napped[1:]
 
 
 def test_the_doh_lookup_reads_the_first_a_record(monkeypatch) -> None:
