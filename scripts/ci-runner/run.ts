@@ -583,12 +583,6 @@ function expandGitlinks(named: readonly string[], warn: (text: string) => void):
 }
 
 /**
- * The change set, WITH its provenance. It used to return a bare `string[]` and
- * swallow a git failure into `[]` under a warning that said "selecting every gate"
- * -- which was false, because `select()` then dropped every path-declaring gate for
- * want of a match. See scripts/ci-runner/select.ts for the measurement.
- */
-/**
  * The two listings a `lists`/`names` gate is scoped by under `--changed` (select.ts): the tracked entries at the merge base, and the judged state, which is the diff's own other side, the working tree: the index entries minus the tracked files deleted on disk (`git diff <base>` lists those as changed too). Untracked files are on neither side, as in the diff. Lazy, so a run with no such gate never lists anything; undefined when git cannot answer.
  */
 function changeSetListings(mergeBase: string): NonNullable<ChangeSet['listings']> {
@@ -616,6 +610,12 @@ function changeSetListings(mergeBase: string): NonNullable<ChangeSet['listings']
   return { before, after };
 }
 
+/**
+ * The change set, WITH its provenance. It used to return a bare `string[]` and
+ * swallow a git failure into `[]` under a warning that said "selecting every gate"
+ * -- which was false, because `select()` then dropped every path-declaring gate for
+ * want of a match. See scripts/ci-runner/select.ts for the measurement.
+ */
 function changedFiles(): ChangeSet {
   const base = process.env.CI_RUNNER_BASE ?? 'origin/main';
   try {
@@ -1744,6 +1744,11 @@ function syntheticSpec(id: string, run: string, needs?: string[]): GateSpec {
   };
 }
 
+/** The most the hand-kept selftest sum ever printed before every require_ counted; the real count must stay above it. */
+const SELFTEST_ASSERTION_FLOOR = 413;
+/** Floor for selftest()'s own require_ calls alone, well under the 188 counted when it was set, so a legitimate removal does not trip it. */
+const SELFTEST_REQUIRE_FLOOR = 150;
+
 /**
  * The runner's anti-vacuity control, wired into the `ci` npm key itself so it
  * cannot sit behind a flag nothing invokes -- the exact failure
@@ -1755,11 +1760,6 @@ function syntheticSpec(id: string, run: string, needs?: string[]): GateSpec {
  * rather than passed. If any leg does not fire, the runner's green means
  * nothing, so this refuses to proceed.
  */
-/** The most the hand-kept selftest sum ever printed before every require_ counted; the real count must stay above it. */
-const SELFTEST_ASSERTION_FLOOR = 413;
-/** Floor for selftest()'s own require_ calls alone, well under the 188 counted when it was set, so a legitimate removal does not trip it. */
-const SELFTEST_REQUIRE_FLOOR = 150;
-
 async function selftest(): Promise<number> {
   // Started first and awaited last: two real runner processes whose seconds of startup and kill grace overlap everything below.
   const processCheck = runnerProcessSelftest();

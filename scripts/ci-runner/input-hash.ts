@@ -7,7 +7,7 @@
  *
  * CARRY READS EVERY ARCHIVED RECEIPT (A1). `planCarry` takes the receipts under `.ci/cache/receipts/` newest first and, per gate, the newest one that judged that exact inputHash ok or fail decides: ok carries, fail re-runs. A red then a one-line fix keeps every gate the fix does not reach, from whichever receipt last judged it.
  *
- * A GATE THAT DECLARES NO `paths` READS THE WHOLE TREE, so its input glob is `**` and its hash moves on any tracked change: it carries only across an identical tree. That is what `paths` absent has always meant to `--changed` and to quick-select's rule 4 (any change may reach it). The guard needs no second rule, because it recomputes `filesHash` from the recorded `inputs` at the pushed tree, `**` included. 343 of 392 gates declare no paths, so before this a re-run at an unchanged HEAD carried 31 gates and re-ran the rest.
+ * A GATE THAT DECLARES NO `paths`, `lists` OR `names` READS THE WHOLE TREE (`paths: []` counts as none), so its input glob is `**` and its hash moves on any tracked change: it carries only across an identical tree. That is what no scoping input has always meant to `--changed` and to quick-select's rule 4 (any change may reach it). The guard needs no second rule, because it recomputes `filesHash` from the recorded `inputs` at the pushed tree, `**` included. 343 of 392 gates declare no paths, so before this a re-run at an unchanged HEAD carried 31 gates and re-ran the rest.
  *
  * `ls-tree` is read with `-z` so a path is never quoted; for every path git does not quote the bytes are the same as the plain form.
  *

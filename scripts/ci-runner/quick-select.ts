@@ -188,9 +188,11 @@ function nameTouch(
   return undefined;
 }
 
-/** No `paths`, `lists` or `names`: the gate reads the whole tree (input-hash.ts `isWholeTree`). */
+/** No `paths` (an empty list counts as none), `lists` or `names`: the gate reads the whole tree, the same test as input-hash.ts `isWholeTree`, so a gate the hash reads whole is selected by any change. */
 function readsWholeTree(c: SlowCandidate): boolean {
-  return c.paths === undefined && (c.lists ?? []).length === 0 && (c.names ?? []).length === 0;
+  return (
+    (c.paths ?? []).length === 0 && (c.lists ?? []).length === 0 && (c.names ?? []).length === 0
+  );
 }
 
 /** Which candidates the change set touches, each with the reason. Order follows `candidates`. */
@@ -446,6 +448,19 @@ export function quickSelectSelftest(
     check(
       withCorpus(['docs/deleted.md']).join() === 'slow:corpus',
       'a slow gate that declares no paths must be selected by any change (the --changed fail-open rule)'
+    );
+    check(
+      touchedSlow(
+        [{ id: 'slow:emptypaths', run: 'npm run slow:emptypaths', paths: [], leaves: [] }],
+        {
+          root,
+          changed: ['docs/deleted.md'],
+          matches,
+          scriptsNow: scripts,
+          scriptsBase: scripts,
+        }
+      ).length === 1,
+      'a gate declaring `paths: []` reads the whole tree in input-hash.ts, so any change must select it here too'
     );
     check(
       withCorpus([]).length === 0,

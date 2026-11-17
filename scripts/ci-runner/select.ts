@@ -199,7 +199,8 @@ export function selectChanged<T extends PathScopedSpec>(
   const byPaths = (s: PathScopedSpec): boolean =>
     s.paths !== undefined && changeSet.files.some((f) => matches(f, s.paths ?? []));
   // A ref may move with any change; it never scopes a gate, so it only widens one that paths or names already scope.
-  const byRefs = (s: PathScopedSpec): boolean => arr(s.refs).length > 0;
+  const byRefs = (s: PathScopedSpec): boolean =>
+    changeSet.files.length > 0 && arr(s.refs).length > 0;
   const matched = scoped.filter((s) => byPaths(s) || nameMoved(s) || byRefs(s));
   const nameMatched = named.filter(nameMoved).length;
   // Order is preserved from `specs` rather than concatenating the two buckets: the pool uses array index as a scheduling tiebreaker, so reordering here would change the run without changing the set.
