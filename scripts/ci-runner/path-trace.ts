@@ -4,7 +4,7 @@
  *
  * WHY. A gate with no `paths` hashes the whole tree (input-hash.ts `WHOLE_TREE_GLOB`), so any commit changes its input hash and it carries only across a byte-identical tree. On 2026-11-16, 349 of 397 lock entries declared none, and a receipt carried 23 gates while it ran 290. Hand-typed globs are the other failure: a glob that misses one file the gate reads makes carry UNSOUND, a stale green carried over a changed input.
  *
- * HOW. The gate's own `run` command executes once under `strace -ff -y --seccomp-bpf -e trace=%file,getdents,getdents64,fchdir,clone,clone3,fork,vfork` (the fork family only so each child's starting cwd is known). Every path a process opened, stat'ed, exec'ed or resolved, and every directory it listed, is mapped onto the tracked tree:
+ * HOW. The gate's own `run` command executes once under `strace -ff -y --seccomp-bpf -e trace=%file,getdents,getdents64,fchdir,connect,clone,clone3,fork,vfork` (the fork family only so each child's starting cwd is known; `connect` so a gate that talks to the network is seen doing it). strace's own stderr lines are kept in their own file, apart from the gate's output, which reaches strace's stdout only (the traced shell runs `exec 2>&1` first). Every path a process opened, stat'ed, exec'ed or resolved, and every directory it listed, is mapped onto the tracked tree:
  *   - a tracked file read is kept as itself;
  *   - a listed tracked directory becomes `dir/**` (a listing sees every name in it, so a new file there is a new input);
  *   - a directory with at least FOLD_MIN_FILES tracked files of which more than half were read becomes `dir/**`;
@@ -12,19 +12,19 @@
  *   - a path holding a glob metacharacter the hasher refuses (`?`, `[`, `{`, or `*`) folds to its nearest clean ancestor directory;
  *   - reads already inside GLOBAL_INPUTS are dropped, since every gate with `paths` hashes those anyway.
  *
- * WHEN THE ANSWER IS "WHOLE TREE", and it is written down with its reason rather than guessed: a gate that touches git metadata (its verdict depends on history or the index, not on file bytes), lists the repository root, reads more than WHOLE_TREE_FRACTION of the tracked entries, reads no tracked file at all, or exits non-zero under the trace (a red run may have stopped before reading everything). Carry-exempt gates and non-gate entries are not traced: their hash is null or never judged, so a trace would buy nothing.
+ * WHEN THE ANSWER IS "WHOLE TREE", and it is written down with its reason rather than guessed: a gate that connects to an address that is neither loopback nor a unix socket (reason `network`: its verdict can move with nothing in the tree moving), a gate that touches git metadata (its verdict depends on history or the index, not on file bytes), lists the repository root, reads more than WHOLE_TREE_FRACTION of the tracked entries, reads no tracked file at all, or exits non-zero under the trace (a red run may have stopped before reading everything). Carry-exempt gates and non-gate entries are not traced: their hash is null or never judged, so a trace would buy nothing.
  *
- * WHAT IT WRITES with `--write`, and nothing else: the entry in scripts/ci-runner/manifest.ts (`paths` plus `pathsOrigin: 'traced'`, placed before `leaves`, gen-manifest region markers repaired around it), the same two keys in scripts/ci-runner/gates.lock.json, and one row per traced gate in scripts/ci-runner/trace-ledger.ts, which also records every whole-tree verdict with its reason. An entry whose `paths` a human declared (`pathsOrigin: 'declared'`) is refused, never overwritten: the honesty gate (trace-honest.ts) judges a declared set, this tool does not replace one.
+ * WHAT IT WRITES with `--write`, and nothing else: the entry in scripts/ci-runner/manifest.ts (`paths` plus `pathsOrigin: 'traced'`, placed before `leaves`, gen-manifest region markers repaired around it), the same two keys in scripts/ci-runner/gates.lock.json, and one row per traced gate in scripts/ci-runner/trace-ledger.ts, which also records every whole-tree verdict with its reason. An entry whose `paths` a human declared (`pathsOrigin: 'declared'`) is refused, never overwritten, unless `--replace-declared` names that intent: the honesty gate (trace-honest.ts) judges a declared set, and this tool replaces one only when asked, with the traced set or, for a whole-tree verdict, with none.
  *
- * WHAT A TRACE CANNOT SEE, stated so a clean trace is not read as more than it is: a read by a process that is not a descendant (a daemon the gate talks to over a socket), a read through io_uring (UV_USE_IO_URING=0 is set for the traced tree to keep libuv on plain syscalls), and a path the gate would read only on another branch of its logic. trace-honest.ts re-traces on every change to a gate's entry and on a rotation, and its sparse-clone mode is the independent check.
+ * WHAT A TRACE CANNOT SEE, stated so a clean trace is not read as more than it is: a read by a process that is not a descendant (a daemon the gate talks to over a socket), a datagram sent with `sendto` to an address on a socket never connected, a read through io_uring (UV_USE_IO_URING=0 is set for the traced tree to keep libuv on plain syscalls), and a path the gate would read only on another branch of its logic. trace-honest.ts re-traces on every change to a gate's entry and on a rotation, and its sparse-clone mode is the independent check.
  *
  * Linux only, and strace is a hard requirement: a missing strace, or a kernel that refuses ptrace, is a loud failure with the fix in the message.
  *
  * Usage:
- *   tsx scripts/ci-runner/path-trace.ts --gate <id> [--gate <id> ...] [--write]
+ *   tsx scripts/ci-runner/path-trace.ts --gate <id> [--gate <id> ...] [--write] [--replace-declared]
  *   tsx scripts/ci-runner/path-trace.ts --all-whole-tree [--jobs N] [--write] [--skip <id> ...]
  *   tsx scripts/ci-runner/path-trace.ts --selftest
- *   options: --root <dir> (default the repo), --keep-logs, --json
+ *   options: --root <dir> (default the repo), --keep-logs, --json, --no-seccomp (retry a trace without strace's seccomp-bpf filter, when strace's own lines name a seccomp problem)
  */
 import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
@@ -46,8 +46,8 @@ export const LOCK_REL = 'scripts/ci-runner/gates.lock.json';
 export const LEDGER_REL = 'scripts/ci-runner/trace-ledger.ts';
 export const TRACED_ORIGIN = 'traced';
 
-/** strace's %file class is every syscall taking a path; the getdents pair are listings, fchdir moves the cwd by fd. */
-export const TRACE_SYSCALLS = '%file,getdents,getdents64,fchdir,clone,clone3,fork,vfork';
+/** strace's %file class is every syscall taking a path; the getdents pair are listings, fchdir moves the cwd by fd, connect names a peer address. */
+export const TRACE_SYSCALLS = '%file,getdents,getdents64,fchdir,connect,clone,clone3,fork,vfork';
 /** A directory folds to `dir/**` when more than this share of its tracked files was read... */
 export const FOLD_DIR_FRACTION = 0.5;
 /** ...and it holds at least this many tracked files, so a lone file stays exact. */
@@ -85,6 +85,8 @@ export interface Access {
   listed: Set<string>;
   /** Every successful execve: its argv and the cwd it ran in, which says which repository a git command reads. */
   execs: Exec[];
+  /** Every network peer a `connect` named that is neither loopback nor a unix socket, as `ip:port` or `[ip6]:port`. Optional so an Access built before `connect` was traced still reads as none. */
+  network?: Set<string>;
   /** When the traced run started (epoch ms): an untracked file modified after it was written by the run itself. */
   startedMs?: number;
 }
@@ -95,7 +97,29 @@ export interface Exec {
 }
 
 export function emptyAccess(): Access {
-  return { files: new Set(), listed: new Set(), execs: [] };
+  return { files: new Set(), listed: new Set(), execs: [], network: new Set() };
+}
+
+/** Whether an IPv4 or IPv6 address (a v4-mapped one included) is this host: 127/8, ::1, or the unspecified address, which Linux routes to the host. */
+export function isLoopback(ip: string): boolean {
+  const v4 = ip.toLowerCase().replace(/^::ffff:/, '');
+  if (/^\d+\.\d+\.\d+\.\d+$/.test(v4)) return v4.startsWith('127.') || v4 === '0.0.0.0';
+  return /^(0*:){2,7}0*1$|^::1$|^::$/.test(ip.toLowerCase());
+}
+
+/**
+ * The network peer of one `connect` line's arguments, or undefined for a peer on this host: loopback, a unix socket, netlink, AF_UNSPEC (a UDP disconnect). Any attempt counts, whatever the result: a refused or unreachable peer still made the verdict depend on the network.
+ */
+export function networkPeer(args: string): string | undefined {
+  const v4 = /sa_family=AF_INET,.*?sin_port=htons\((\d+)\).*?sin_addr=inet_addr\("([^"]+)"\)/.exec(
+    args
+  );
+  if (v4 !== null) return isLoopback(v4[2]) ? undefined : `${v4[2]}:${v4[1]}`;
+  const v6 = /sa_family=AF_INET6,.*?sin6_port=htons\((\d+)\).*?inet_pton\(AF_INET6, "([^"]+)"/.exec(
+    args
+  );
+  if (v6 !== null) return isLoopback(v6[2]) ? undefined : `[${v6[2]}]:${v6[1]}`;
+  return undefined;
 }
 
 /** strace's C-style escapes (`\"`, `\\`, `\n`, `\xHH`, `\ooo`) back to the UTF-8 string they encode. */
@@ -200,6 +224,15 @@ export function straceParser(
     if (m === null) return;
     const name = m[1];
     const rest = m[2];
+    if (name === 'connect') {
+      // A socket address, not a path: its quoted sun_path must not reach the path arguments below.
+      const peer = networkPeer(rest);
+      if (peer !== undefined) {
+        into.network ??= new Set();
+        into.network.add(peer);
+      }
+      return;
+    }
     const decorations = [...rest.matchAll(DECORATED)].map((d) => ({
       fd: d[1],
       path: decodeCString(d[2]),
@@ -320,6 +353,10 @@ export interface Attribution {
   gitHistory: string[];
   /** Evidence that the gate enumerates the tracked file list through the index (`git ls-files` and kin). */
   gitIndex: string[];
+  /** Evidence that the gate reads what tracked files hold through the index (`git ls-files -s` and kin). Each entry is in gitIndex too. Optional so an Attribution built by hand (trace-honest.ts selftest) needs no change. */
+  gitContent?: string[];
+  /** Network peers the gate connected to (neither loopback nor a unix socket), sorted. Optional for the same reason. */
+  network?: string[];
   ignored: Map<string, number>;
   /** Existing untracked files or directories read outside the dependency and toolchain trees: build output, a few examples. */
   buildOutput: string[];
@@ -367,21 +404,43 @@ export function classifyUntracked(
   return 'build';
 }
 
+/** A submodule's git directory sits at `modules/<name>/` under its superproject's, and `<name>` may hold slashes; every git-file rule below applies inside one exactly as at the top. */
+const SUBMODULE_GITDIR = '(?:modules/.+/)?';
 /** Git files whose content is history: any read of one makes the verdict move with commits, not with file bytes. */
-const GIT_HISTORY_FILE =
-  /^(objects|refs|logs)(\/|$)|^(packed-refs|FETCH_HEAD|ORIG_HEAD|MERGE_HEAD|CHERRY_PICK_HEAD|shallow)$/;
+export const GIT_HISTORY_FILE = new RegExp(
+  `^${SUBMODULE_GITDIR}(?:(objects|refs|logs)(/|$)|(packed-refs|FETCH_HEAD|ORIG_HEAD|MERGE_HEAD|CHERRY_PICK_HEAD|shallow)$)`
+);
+/**
+ * Git paths that look like history but are discovery: git's own repository check (`setup.c` is_git_directory) is an `access(X_OK)` on the bare `objects` and `refs` directories, and opening `objects/info/alternates` says where more objects live, not what any of them hold. A LISTING of `objects` or `refs` enumerates history, so the exemption is for a path read, never a listing.
+ */
+export const GIT_DISCOVERY_FILE = new RegExp(
+  `^${SUBMODULE_GITDIR}(objects|refs|objects/info/alternates)$`
+);
 /** The index: the tracked name set. */
-const GIT_INDEX_FILE = /^(index|sharedindex\..*)$/;
-/** Subcommands that read only the index and the worktree. */
+export const GIT_INDEX_FILE = new RegExp(`^${SUBMODULE_GITDIR}(index|sharedindex\\..*)$`);
+/** Subcommands that read only the index and the worktree. `status` is not one: it compares the index with HEAD, which is history. */
 const GIT_INDEX_CMDS = new Set([
   'ls-files',
   'check-ignore',
   'check-attr',
-  'status',
   'grep',
   'diff-files',
   'submodule',
 ]);
+/** `git ls-files` flags that print what a tracked file HOLDS (its staged blob, its line endings, whether it differs from the worktree), not only its name. `-u` forces `--stage`. */
+const LS_FILES_CONTENT = new Set([
+  '-s',
+  '--stage',
+  '--eol',
+  '-m',
+  '--modified',
+  '-d',
+  '--deleted',
+  '-u',
+  '--unmerged',
+]);
+/** `git diff` flags that bring a revision in: the comparison is against HEAD or a merge base, which is history. */
+const DIFF_REVISION_FLAGS = new Set(['--cached', '--staged', '--merge-base']);
 /** Subcommands that locate the repository or read its config and nothing else. */
 const GIT_DISCOVERY_CMDS = new Set(['config', 'var', 'hash-object', 'version', 'help']);
 /** `git rev-parse` flags that only locate the repository. */
@@ -397,7 +456,8 @@ const GIT_VALUE_OPTS = new Set([
   '--exec-path',
 ]);
 
-export type GitUse = 'history' | 'index' | 'discovery';
+/** `content` reads what tracked files hold through the index; it also enumerates the index's name set, so every content use is an index use as well. */
+export type GitUse = 'history' | 'content' | 'index' | 'discovery';
 
 /**
  * Whether a git exec reads this repository: its working directory (the cwd, moved by every `-C`) lies inside the root or a git directory of it, and it is not `init` or `clone`, which make another repository. A cwd the trace never revealed counts as this repository: the inclusive direction.
@@ -440,8 +500,40 @@ export function classifyGitArgv(argv: readonly string[]): GitUse {
   if (sub === 'rev-parse')
     return rest.every((a) => REV_PARSE_LOCATE.test(a)) ? 'discovery' : 'history';
   if (GIT_DISCOVERY_CMDS.has(sub)) return 'discovery';
+  // `remote -v` and `remote get-url` read the config; `remote show` or `update` talk to the remote, so only these two shapes are discovery.
+  if (sub === 'remote')
+    return rest.every((a) => a === '-v' || a === '--verbose') || rest[0] === 'get-url'
+      ? 'discovery'
+      : 'history';
+  // The root commit names the repository and no commit on top of it moves it.
+  if (sub === 'rev-list')
+    return rest.length === 2 && rest.includes('--max-parents=0') && rest.includes('HEAD')
+      ? 'discovery'
+      : 'history';
+  if (sub === 'diff') return diffUse(rest);
+  if (sub === 'ls-files')
+    return rest.some(
+      (a) =>
+        LS_FILES_CONTENT.has(a) ||
+        a.startsWith('--format') ||
+        (/^-[a-zA-Z]{2,}$/.test(a) && /[smdu]/.test(a.slice(1)))
+    )
+      ? 'content'
+      : 'index';
   if (GIT_INDEX_CMDS.has(sub)) return 'index';
   return 'history';
+}
+
+/**
+ * `git diff` with no revision compares the worktree with the index, for the paths it names: the index plus those files. A positional argument before `--` may be a revision (git disambiguates against the tree at run time, this classifier cannot), so it counts as history, the conservative direction; so do the flags that compare against HEAD.
+ */
+function diffUse(rest: readonly string[]): GitUse {
+  for (const a of rest) {
+    if (a === '--') return 'index';
+    if (DIFF_REVISION_FLAGS.has(a)) return 'history';
+    if (!a.startsWith('-')) return 'history';
+  }
+  return 'index';
 }
 
 function under(abs: string, dir: string): boolean {
@@ -472,6 +564,8 @@ export function attribute(access: Access, view: RepoView): Attribution {
     listed: new Set(),
     gitHistory: [],
     gitIndex: [],
+    gitContent: [],
+    network: [...(access.network ?? [])].sort(byteOrder),
     ignored: new Map(),
     buildOutput: [],
     cacheState: [],
@@ -504,8 +598,10 @@ export function attribute(access: Access, view: RepoView): Attribution {
     if (rel?.startsWith('.git/')) return rel.slice('.git/'.length);
     return undefined;
   };
-  const noteGit = (gitRel: string, shown: string): void => {
-    if (GIT_HISTORY_FILE.test(gitRel)) {
+  const noteGit = (gitRel: string, shown: string, listing: boolean): void => {
+    if (!listing && GIT_DISCOVERY_FILE.test(gitRel))
+      res.ignored.set(GIT_DISCOVERY, (res.ignored.get(GIT_DISCOVERY) ?? 0) + 1);
+    else if (GIT_HISTORY_FILE.test(gitRel)) {
       if (res.gitHistory.length < 3) res.gitHistory.push(shown);
     } else if (GIT_INDEX_FILE.test(gitRel)) {
       if (res.gitIndex.length < 3) res.gitIndex.push(shown);
@@ -522,7 +618,8 @@ export function attribute(access: Access, view: RepoView): Attribution {
       .map((a) => (/^[a-z][a-z0-9+.-]*:\/\//i.test(a) ? '<url>' : a))
       .join(' ');
     if (use === 'history' && res.gitHistory.length < 3) res.gitHistory.push(shown);
-    if (use === 'index' && res.gitIndex.length < 3) res.gitIndex.push(shown);
+    if (use === 'content' && (res.gitContent ?? []).length < 3) res.gitContent?.push(shown);
+    if ((use === 'index' || use === 'content') && res.gitIndex.length < 3) res.gitIndex.push(shown);
   }
   const relOf = (abs: string): string | undefined =>
     under(abs, view.root) ? path.posix.relative(view.root, abs) : undefined;
@@ -532,7 +629,7 @@ export function attribute(access: Access, view: RepoView): Attribution {
     const rel = relOf(abs);
     const gitRel = gitRelOf(abs, rel);
     if (gitRel !== undefined) {
-      noteGit(gitRel, rel ?? abs);
+      noteGit(gitRel, rel ?? abs, false);
       continue;
     }
     if (rel === undefined || rel === '') continue;
@@ -552,7 +649,7 @@ export function attribute(access: Access, view: RepoView): Attribution {
     const rel = relOf(abs);
     const gitRel = gitRelOf(abs, rel);
     if (gitRel !== undefined) {
-      noteGit(gitRel, `list ${rel ?? abs}`);
+      noteGit(gitRel, `list ${rel ?? abs}`, true);
       continue;
     }
     if (rel === undefined) continue;
@@ -646,7 +743,17 @@ export function fold(attr: Attribution, view: RepoView, needs: Iterable<string> 
     ...counts,
     coveragePct,
   });
+  // The network first: no tracked input, history included, can stand for what a remote answers.
+  const net = attr.network ?? [];
+  if (net.length > 0)
+    return whole(
+      `network: connects to ${net.slice(0, 3).join(', ')}${net.length > 3 ? `, and ${net.length - 3} more` : ''}, so its verdict can move with nothing in the tree moving; a carry-exempt.json candidate`
+    );
   if (attr.gitHistory.length > 0) return whole(`reads git history (${attr.gitHistory.join('; ')})`);
+  if ((attr.gitContent ?? []).length > 0)
+    return whole(
+      `reads what every tracked file holds through the git index (${(attr.gitContent ?? []).join('; ')}), so a change to any tracked file can change its verdict`
+    );
   if (attr.gitIndex.length > 0)
     return whole(
       `enumerates the tracked file list through the git index (${attr.gitIndex.join('; ')}), so a new file anywhere can change its verdict`
@@ -734,15 +841,17 @@ export function fold(attr: Attribution, view: RepoView, needs: Iterable<string> 
 // ---------------------------------------------------------------------------
 
 /** Refuses loudly, with the fix, when this host cannot trace. Returns undefined when it can. */
-export function traceRefusal(): string | undefined {
+export function traceRefusal(opts: { noSeccomp?: boolean } = {}): string | undefined {
   if (process.platform !== 'linux')
     return `path-trace runs on Linux only (strace); this host is ${process.platform}. Trace on a Linux host or in the devcontainer.`;
   const v = spawnSync('strace', ['-V'], { encoding: 'utf8' });
   if (v.error !== undefined || v.status !== 0)
     return 'strace is not installed, so no gate can be traced. Install it: `sudo apt-get install -y strace` (the devcontainer image should carry it).';
-  const probe = spawnSync('strace', ['-f', '-qq', '--seccomp-bpf', '-o', '/dev/null', 'true'], {
-    encoding: 'utf8',
-  });
+  const probe = spawnSync(
+    'strace',
+    ['-f', '-qq', ...(opts.noSeccomp ? [] : ['--seccomp-bpf']), '-o', '/dev/null', 'true'],
+    { encoding: 'utf8' }
+  );
   if (probe.status !== 0)
     return `strace is installed but cannot trace here (${(probe.stderr || '').trim().split('\n')[0]}). Grant ptrace: run with CAP_SYS_PTRACE (\`--cap-add=SYS_PTRACE\` on the container) or set kernel.yama.ptrace_scope to 0 or 1.`;
   return undefined;
@@ -767,38 +876,56 @@ export interface TraceRun {
   seconds: number;
   logFiles: number;
   outputTail: string;
+  /** strace's OWN stderr lines (warnings, refusals), never mixed into the gate's output. */
+  straceNotes: string[];
 }
 
-/** Runs `cmd` under bash in `cwd`, traced, and parses every per-process log. */
+/**
+ * The strace argv for one traced command. The traced shell runs `exec 2>&1` before the command, so the gate's stderr joins its stdout, and strace's own stderr, which the tracee would otherwise inherit, carries only strace's lines. `noSeccomp` drops `--seccomp-bpf`: slower, and the retry for a host or a tracee where the filter misbehaves.
+ */
+export function straceArgv(logPrefix: string, cmd: string, noSeccomp = false): string[] {
+  return [
+    '-ff',
+    '-qq',
+    '-y',
+    '-s',
+    '4096',
+    ...(noSeccomp ? [] : ['--seccomp-bpf']),
+    '-e',
+    `trace=${TRACE_SYSCALLS}`,
+    '-o',
+    logPrefix,
+    'bash',
+    '-c',
+    `exec 2>&1\n${cmd}`,
+  ];
+}
+
+/** Runs `cmd` under bash in `cwd`, traced, and parses every per-process log. `straceBin` replaces the strace executable (a selftest wrapper). */
 export async function traceCommand(
   cmd: string,
   cwd: string,
-  opts: { env?: NodeJS.ProcessEnv; keepLogs?: boolean; label?: string; timeoutS?: number } = {}
+  opts: {
+    env?: NodeJS.ProcessEnv;
+    keepLogs?: boolean;
+    label?: string;
+    timeoutS?: number;
+    noSeccomp?: boolean;
+    straceBin?: string;
+  } = {}
 ): Promise<TraceRun> {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'path-trace-'));
   const started = Date.now();
   const outFile = path.join(dir, 'output.txt');
   const outFd = fs.openSync(outFile, 'w');
+  const straceErrFile = path.join(dir, 'strace-stderr.txt');
+  const straceErrFd = fs.openSync(straceErrFile, 'w');
   const env = { ...(opts.env ?? process.env), UV_USE_IO_URING: '0' };
   const exit = await new Promise<number>((resolve) => {
     const child = spawn(
-      'strace',
-      [
-        '-ff',
-        '-qq',
-        '-y',
-        '-s',
-        '4096',
-        '--seccomp-bpf',
-        '-e',
-        `trace=${TRACE_SYSCALLS}`,
-        '-o',
-        path.join(dir, 't'),
-        'bash',
-        '-c',
-        cmd,
-      ],
-      { cwd, env, stdio: ['ignore', outFd, outFd], detached: true }
+      opts.straceBin ?? 'strace',
+      straceArgv(path.join(dir, 't'), cmd, opts.noSeccomp),
+      { cwd, env, stdio: ['ignore', outFd, straceErrFd], detached: true }
     );
     if (child.pid !== undefined) LIVE_GROUPS.add(child.pid);
     // A hung gate is killed with its whole process group and reported as exit 124, the timeout(1) convention.
@@ -822,6 +949,7 @@ export async function traceCommand(
     child.on('error', () => resolve(127));
   });
   fs.closeSync(outFd);
+  fs.closeSync(straceErrFd);
   const access = emptyAccess();
   access.startedMs = started;
   // Ascending pid order, so a parent's fork is parsed before its child's lines (straceParser).
@@ -850,7 +978,14 @@ export async function traceCommand(
     fs.closeSync(fd);
   }
   parser.end();
-  const output = fs.readFileSync(outFile, 'utf8');
+  // strace's stderr file holds strace's own `strace:` lines, plus anything the shell printed before its `exec 2>&1` (a BASH_ENV hook), which is the gate's side and goes back with its output.
+  const errLines = fs
+    .readFileSync(straceErrFile, 'utf8')
+    .split('\n')
+    .filter((l) => l.trim() !== '');
+  const straceNotes = errLines.filter((l) => l.startsWith('strace: '));
+  const preamble = errLines.filter((l) => !l.startsWith('strace: '));
+  const output = [...preamble, fs.readFileSync(outFile, 'utf8')].join('\n');
   if (!opts.keepLogs) fs.rmSync(dir, { recursive: true, force: true });
   else process.stderr.write(`path-trace: kept ${opts.label ?? cmd} logs in ${dir}\n`);
   return {
@@ -859,6 +994,7 @@ export async function traceCommand(
     seconds: Math.round((Date.now() - started) / 100) / 10,
     logFiles: logs.length,
     outputTail: output.split('\n').slice(-15).join('\n'),
+    straceNotes,
   };
 }
 
@@ -917,25 +1053,36 @@ export function pathsLines(paths: string[]): string[] {
   return ['    paths: [', ...paths.map((p) => `      ${q(p)},`), '    ],'];
 }
 
-/** The lock text with a TRACED `paths` and `pathsOrigin` removed from one entry; a declared set, or none, leaves the text as it was. */
-export function lockWithoutTracedPaths(lockText: string, id: string): string {
+/** The lock text with a TRACED `paths` and `pathsOrigin` removed from one entry; a declared set, or none, leaves the text as it was, unless `replaceDeclared` removes a declared set too. */
+export function lockWithoutTracedPaths(
+  lockText: string,
+  id: string,
+  opts: { replaceDeclared?: boolean } = {}
+): string {
   const entries = JSON.parse(lockText) as LockEntry[];
   const e = entries.find((x) => x.id === id);
-  if (e === undefined || e.pathsOrigin !== TRACED_ORIGIN) return lockText;
+  if (e === undefined || e.pathsOrigin === undefined) return lockText;
+  if (e.pathsOrigin !== TRACED_ORIGIN && !opts.replaceDeclared) return lockText;
   delete e.paths;
   delete e.pathsOrigin;
   return `${JSON.stringify(entries, null, 2)}\n`;
 }
 
-/** The manifest text with a TRACED `paths` block and `pathsOrigin` line removed from one entry; a declared set, or none, leaves the text as it was. */
-export function manifestWithoutTracedPaths(text: string, id: string): string {
+/** The manifest text with a TRACED `paths` block and `pathsOrigin` line removed from one entry; a declared set, or none, leaves the text as it was, unless `replaceDeclared` removes a declared set too. */
+export function manifestWithoutTracedPaths(
+  text: string,
+  id: string,
+  opts: { replaceDeclared?: boolean } = {}
+): string {
   const lines = text.split('\n');
   const idLine = `    id: ${q(id)},`;
   const span = entrySpans(lines).find(([a, b]) => lines.slice(a, b + 1).includes(idLine));
   if (span === undefined) return text;
   const [a, b] = span;
   const body = lines.slice(a, b + 1);
-  if (!body.includes(`    pathsOrigin: ${q(TRACED_ORIGIN)},`)) return text;
+  const origin = body.find((l) => l.startsWith('    pathsOrigin:'));
+  if (origin === undefined) return text;
+  if (origin !== `    pathsOrigin: ${q(TRACED_ORIGIN)},` && !opts.replaceDeclared) return text;
   const kept: string[] = [];
   for (let i = 0; i < body.length; i++) {
     const l = body[i];
@@ -969,7 +1116,12 @@ function entrySpans(lines: readonly string[]): [number, number][] {
 /**
  * The manifest text with traced `paths` on one entry. An entry carrying a hand-only field is never generated (gen-manifest.ts HAND_ONLY), so an entry inside a generated region leaves it, and every region is re-emitted (reemitRegions).
  */
-export function manifestWithPaths(text: string, id: string, paths: string[]): string {
+export function manifestWithPaths(
+  text: string,
+  id: string,
+  paths: string[],
+  opts: { replaceDeclared?: boolean } = {}
+): string {
   const lines = text.split('\n');
   const spans = entrySpans(lines);
   const idLine = `    id: ${q(id)},`;
@@ -978,9 +1130,9 @@ export function manifestWithPaths(text: string, id: string, paths: string[]): st
   const [a, b] = span;
   const body = lines.slice(a, b + 1);
   const originAt = body.findIndex((l) => l.startsWith('    pathsOrigin:'));
-  if (originAt >= 0 && !body[originAt].includes(`'${TRACED_ORIGIN}'`))
+  if (originAt >= 0 && !body[originAt].includes(`'${TRACED_ORIGIN}'`) && !opts.replaceDeclared)
     throw new Error(
-      `${id}: its paths carry ${body[originAt].trim()}; a hand-declared set is judged by trace-honest.ts, never overwritten by a trace`
+      `${id}: its paths carry ${body[originAt].trim()}; a hand-declared set is judged by trace-honest.ts, never overwritten by a trace unless --replace-declared asks for it`
     );
   // Drop an earlier traced paths block.
   const kept: string[] = [];
@@ -1126,6 +1278,10 @@ interface Args {
   /** Re-folds the raw traces of an `--out` file under today's fold, printing a fresh `--out` stream to stdout. */
   refold?: string;
   timeoutS: number;
+  /** Traces without `--seccomp-bpf` (straceArgv). */
+  noSeccomp: boolean;
+  /** Lets `--write` and `--apply` replace a hand-declared `paths` set. */
+  replaceDeclared: boolean;
 }
 
 function parseArgs(argv: string[]): Args {
@@ -1140,6 +1296,8 @@ function parseArgs(argv: string[]): Args {
     skip: new Set(),
     selftest: false,
     timeoutS: 1800,
+    noSeccomp: false,
+    replaceDeclared: false,
   };
   for (let i = 0; i < argv.length; i++) {
     const t = argv[i];
@@ -1161,6 +1319,8 @@ function parseArgs(argv: string[]): Args {
     else if (t === '--apply') a.apply = path.resolve(val());
     else if (t === '--refold') a.refold = path.resolve(val());
     else if (t === '--timeout-s') a.timeoutS = Number(val());
+    else if (t === '--no-seccomp') a.noSeccomp = true;
+    else if (t === '--replace-declared') a.replaceDeclared = true;
     else throw new Error(`unknown argument ${t}`);
   }
   return a;
@@ -1173,6 +1333,8 @@ export interface GateResult {
   seconds: number;
   ignored: Map<string, number>;
   outputTail: string;
+  /** strace's own stderr lines for this trace (TraceRun.straceNotes). */
+  straceNotes?: string[];
   /** The part of the trace that bears on this repository, kept so a changed fold re-folds without re-tracing (`--refold`). */
   raw?: RawAccess;
 }
@@ -1182,6 +1344,8 @@ export interface RawAccess {
   files: string[];
   listed: string[];
   execs: Exec[];
+  /** Network peers (Access.network); absent in an `--out` file written before `connect` was traced. */
+  network?: string[];
   startedMs?: number;
 }
 
@@ -1191,6 +1355,7 @@ export function rawOf(access: Access, view: RepoView): RawAccess {
     files: [...access.files].filter(ours).sort(byteOrder),
     listed: [...access.listed].filter(ours).sort(byteOrder),
     execs: access.execs.filter((e) => path.posix.basename(e.argv[0] ?? '') === 'git'),
+    network: [...(access.network ?? [])].sort(byteOrder),
     startedMs: access.startedMs,
   };
 }
@@ -1217,12 +1382,18 @@ export function verdictOf(
 export async function traceGate(
   entry: LockEntry,
   view: RepoView,
-  opts: { keepLogs?: boolean; timeoutS?: number; closure?: ReadonlySet<string> } = {}
+  opts: {
+    keepLogs?: boolean;
+    timeoutS?: number;
+    closure?: ReadonlySet<string>;
+    noSeccomp?: boolean;
+  } = {}
 ): Promise<GateResult> {
   const run = await traceCommand(entry.run, view.root, {
     timeoutS: opts.timeoutS,
     keepLogs: opts.keepLogs,
     label: entry.id,
+    noSeccomp: opts.noSeccomp,
   });
   const attr = attribute(run.access, view);
   return {
@@ -1232,6 +1403,7 @@ export async function traceGate(
     seconds: run.seconds,
     ignored: attr.ignored,
     outputTail: run.outputTail,
+    straceNotes: run.straceNotes,
     raw: rawOf(run.access, view),
   };
 }
@@ -1246,8 +1418,14 @@ function utcMinute(ms: number = Date.now()): string {
   return `${new Date(ms).toISOString().slice(0, 16)}Z`;
 }
 
-/** Writes one result into the manifest, the lock and the ledger under `root`. */
-export function writeResult(root: string, r: GateResult, tree: string, tracedMs?: number): void {
+/** Writes one result into the manifest, the lock and the ledger under `root`. `replaceDeclared` lets the result replace a hand-declared set (`--replace-declared`); without it a declared set is refused or left alone. */
+export function writeResult(
+  root: string,
+  r: GateResult,
+  tree: string,
+  tracedMs?: number,
+  opts: { replaceDeclared?: boolean } = {}
+): void {
   const ledgerPath = path.join(root, LEDGER_REL);
   const rows = fs.existsSync(ledgerPath) ? parseLedger(fs.readFileSync(ledgerPath, 'utf8')) : {};
   const row: LedgerRow = {
@@ -1265,10 +1443,10 @@ export function writeResult(root: string, r: GateResult, tree: string, tracedMs?
     row.reason = r.verdict.reason;
     // A whole-tree re-trace must not leave the earlier traced globs behind: the gate would keep carrying on a read set the new trace no longer vouches for. A declared set is never touched.
     const m = fs.readFileSync(mPath, 'utf8');
-    const stripped = manifestWithoutTracedPaths(m, r.id);
+    const stripped = manifestWithoutTracedPaths(m, r.id, opts);
     if (stripped !== m) {
       fs.writeFileSync(mPath, stripped);
-      fs.writeFileSync(lPath, lockWithoutTracedPaths(fs.readFileSync(lPath, 'utf8'), r.id));
+      fs.writeFileSync(lPath, lockWithoutTracedPaths(fs.readFileSync(lPath, 'utf8'), r.id, opts));
       console.error(
         `path-trace: ${r.id} is whole-tree now; its traced paths are removed. It may be generable again: run npx tsx scripts/gen/gen-manifest.ts --write`
       );
@@ -1276,7 +1454,7 @@ export function writeResult(root: string, r: GateResult, tree: string, tracedMs?
   } else {
     fs.writeFileSync(
       mPath,
-      manifestWithPaths(fs.readFileSync(mPath, 'utf8'), r.id, r.verdict.paths)
+      manifestWithPaths(fs.readFileSync(mPath, 'utf8'), r.id, r.verdict.paths, opts)
     );
     fs.writeFileSync(lPath, lockWithPaths(fs.readFileSync(lPath, 'utf8'), r.id, r.verdict.paths));
   }
@@ -1320,6 +1498,7 @@ export function refold(root: string, file: string): number {
       files: new Set(r.raw.files),
       listed: new Set(r.raw.listed),
       execs: r.raw.execs,
+      network: new Set(r.raw.network ?? []),
       startedMs: r.raw.startedMs,
     };
     const verdict = verdictOf(attribute(access, view), view, r.exit, needsClosure(r.id, byId));
@@ -1334,7 +1513,11 @@ export function refold(root: string, file: string): number {
 }
 
 /** Writes every result line of an `--out` file; the last line per gate wins. */
-export function applyResults(root: string, file: string): number {
+export function applyResults(
+  root: string,
+  file: string,
+  opts: { replaceDeclared?: boolean } = {}
+): number {
   const last = new Map<string, GateResult & { tree: string }>();
   for (const line of fs.readFileSync(file, 'utf8').split('\n')) {
     if (line.trim() === '') continue;
@@ -1362,13 +1545,13 @@ export function applyResults(root: string, file: string): number {
       console.error(`path-trace: ${r.id} is no longer in ${LOCK_REL}; skipped`);
       continue;
     }
-    if (e.pathsOrigin !== undefined && e.pathsOrigin !== TRACED_ORIGIN) {
+    if (e.pathsOrigin !== undefined && e.pathsOrigin !== TRACED_ORIGIN && !opts.replaceDeclared) {
       console.error(
-        `path-trace: ${r.id} declares its paths by hand (${e.pathsOrigin}); not overwritten`
+        `path-trace: ${r.id} declares its paths by hand (${e.pathsOrigin}); not overwritten (--replace-declared replaces it)`
       );
       continue;
     }
-    writeResult(root, r, r.tree);
+    writeResult(root, r, r.tree, undefined, opts);
     if (r.verdict.kind === 'paths') paths++;
     else whole++;
   }
@@ -1381,7 +1564,8 @@ export function applyResults(root: string, file: string): number {
 async function main(argv: string[]): Promise<number> {
   const args = parseArgs(argv);
   if (args.selftest) return selftest();
-  if (args.apply !== undefined) return applyResults(args.root, args.apply);
+  if (args.apply !== undefined)
+    return applyResults(args.root, args.apply, { replaceDeclared: args.replaceDeclared });
   if (args.refold !== undefined) return refold(args.root, args.refold);
   if (args.gates.length === 0 && !args.allWholeTree) {
     console.error(
@@ -1389,7 +1573,7 @@ async function main(argv: string[]): Promise<number> {
     );
     return 2;
   }
-  const refusal = traceRefusal();
+  const refusal = traceRefusal({ noSeccomp: args.noSeccomp });
   if (refusal !== undefined) {
     console.error(`path-trace: REFUSED. ${refusal}`);
     return 1;
@@ -1406,6 +1590,18 @@ async function main(argv: string[]): Promise<number> {
     const e = byId.get(id);
     if (e === undefined) {
       console.error(`path-trace: no lock entry ${id} in ${LOCK_REL}`);
+      return 2;
+    }
+    // Refused before the trace, not after it: a declared set is a human's claim, replaced only on request.
+    if (
+      args.write &&
+      !args.replaceDeclared &&
+      e.pathsOrigin !== undefined &&
+      e.pathsOrigin !== TRACED_ORIGIN
+    ) {
+      console.error(
+        `path-trace: ${id} carries pathsOrigin '${e.pathsOrigin}': a declared set is judged by trace-honest.ts, never overwritten by a trace. Add --replace-declared to replace it with the traced set (or with none, on a whole-tree verdict).`
+      );
       return 2;
     }
     todo.push(e);
@@ -1447,7 +1643,13 @@ async function main(argv: string[]): Promise<number> {
       `  [${results.length}/${todo.length}] ${r.id} (${r.seconds}s, exit ${r.exit}, ${v.reads} reads, ${v.listed} listings): ${shape}`
     );
     if (r.exit !== 0) console.error(r.outputTail.replace(/^/gm, '      | '));
-    if (args.write) writeResult(args.root, r, tree);
+    for (const note of r.straceNotes ?? []) console.error(`      strace| ${note}`);
+    if (!args.noSeccomp && (r.straceNotes ?? []).some((l) => /seccomp/i.test(l)))
+      console.error(
+        `      strace named seccomp; retry this gate without the filter: npx tsx scripts/ci-runner/path-trace.ts --gate ${r.id} --no-seccomp`
+      );
+    if (args.write)
+      writeResult(args.root, r, tree, undefined, { replaceDeclared: args.replaceDeclared });
     if (args.out !== undefined)
       fs.appendFileSync(
         args.out,
@@ -1477,6 +1679,7 @@ async function main(argv: string[]): Promise<number> {
             keepLogs: args.keepLogs,
             timeoutS: args.timeoutS,
             closure: needsClosure(e.id, byId),
+            noSeccomp: args.noSeccomp,
           })
         );
       } finally {
@@ -1819,6 +2022,169 @@ async function selftest(): Promise<number> {
     'profiler hook and out-of-repo reads are not inputs'
   );
 
+  // W2.3: discovery is not history, history is still history, the network is its own verdict.
+  const lsAcc = parseStraceLog(
+    [
+      'access("/r/.git/objects", X_OK) = 0',
+      'access("/r/.git/refs", X_OK) = 0',
+      'openat(AT_FDCWD</r>, "/r/.git/objects/info/alternates", O_RDONLY) = -1 ENOENT (No such file or directory)',
+      'openat(AT_FDCWD</r>, "/r/.git/index", O_RDONLY) = 3</r/.git/index>',
+      'execve("/usr/bin/git", ["git", "ls-files", "-z"], 0x7ff /* 3 vars */) = 0',
+      'openat(AT_FDCWD</r>, "a/one.txt", O_RDONLY) = 4</r/a/one.txt>',
+    ].join('\n'),
+    root
+  );
+  const vls = fold(attribute(lsAcc, view), view);
+  check(
+    vls.kind === 'whole-tree' &&
+      vls.reason.includes('git index') &&
+      !vls.reason.includes('history') &&
+      !vls.reason.includes('.git/objects'),
+    `CONTROL: git ls-files plus access(.git/objects), .git/refs and objects/info/alternates is the index, not history (got ${vls.kind === 'whole-tree' ? vls.reason : vls.kind})`
+  );
+  const logAcc = mk(['a/one.txt', '.git/objects', '.git/objects/pack/p.idx']);
+  logAcc.execs.push({ argv: ['git', 'log', '-1'], cwd: '/r' });
+  const vlog = fold(attribute(logAcc, view), view);
+  check(
+    vlog.kind === 'whole-tree' &&
+      vlog.reason.includes('history') &&
+      vlog.reason.includes('git log -1') &&
+      vlog.reason.includes('.git/objects/pack/p.idx'),
+    'git log still reads history, by argv and by its pack read'
+  );
+  const vlist = fold(attribute(mk(['a/one.txt'], ['.git/refs']), view), view);
+  check(
+    vlist.kind === 'whole-tree' && vlist.reason.includes('list .git/refs'),
+    'a LISTING of .git/refs is history: the existence exemption is for a path read only'
+  );
+  const vsub = fold(
+    attribute(mk(['a/one.txt', '.git/modules/private/sub/refs/heads/main']), view),
+    view
+  );
+  check(
+    vsub.kind === 'whole-tree' && vsub.reason.includes('modules/private/sub/refs/heads/main'),
+    'a submodule refs read (.git/modules/<name>/refs) is history'
+  );
+  const vsubp = fold(
+    attribute(mk(['a/one.txt', '.git/modules/private/sub/packed-refs']), view),
+    view
+  );
+  const vsubl = fold(
+    attribute(mk(['a/one.txt', '.git/modules/private/sub/logs/HEAD']), view),
+    view
+  );
+  check(
+    vsubp.kind === 'whole-tree' && vsubl.kind === 'whole-tree',
+    'a submodule packed-refs or logs read is history'
+  );
+  const vsubd = fold(
+    attribute(
+      mk(['a/one.txt', '.git/modules/private/sub/objects', '.git/modules/private/sub/HEAD']),
+      view
+    ),
+    view
+  );
+  check(
+    vsubd.kind === 'paths' && vsubd.paths.join(',') === 'a/one.txt',
+    "CONTROL: a submodule's bare objects existence check and its HEAD are discovery"
+  );
+  check(
+    classifyGitArgv(['git', 'status', '--porcelain']) === 'history' &&
+      classifyGitArgv(['git', 'remote', '-v']) === 'discovery' &&
+      classifyGitArgv(['git', 'remote', 'get-url', 'origin']) === 'discovery' &&
+      classifyGitArgv(['git', 'remote', 'show', 'origin']) === 'history' &&
+      classifyGitArgv(['git', 'rev-list', '--max-parents=0', 'HEAD']) === 'discovery' &&
+      classifyGitArgv(['git', 'rev-list', 'HEAD']) === 'history' &&
+      classifyGitArgv(['git', 'rev-list', '--max-parents=0', 'main']) === 'history',
+    'status is history; remote -v|get-url and the root commit are discovery; remote show and other rev-lists are history'
+  );
+  check(
+    classifyGitArgv(['git', 'diff']) === 'index' &&
+      classifyGitArgv(['git', 'diff', '--exit-code', '--', 'a/one.txt']) === 'index' &&
+      classifyGitArgv(['git', 'diff', '--name-only', 'HEAD']) === 'history' &&
+      classifyGitArgv(['git', 'diff', 'a/one.txt']) === 'history' &&
+      classifyGitArgv(['git', 'diff', '--cached', '--', 'a/one.txt']) === 'history',
+    'diff with no revision and only paths after -- is the index; a positional before -- or --cached is history'
+  );
+  check(
+    classifyGitArgv(['git', 'ls-files', '-s']) === 'content' &&
+      classifyGitArgv(['git', 'ls-files', '--stage', '-z']) === 'content' &&
+      classifyGitArgv(['git', 'ls-files', '--eol']) === 'content' &&
+      classifyGitArgv(['git', 'ls-files', '--format=%(objectname) %(path)']) === 'content' &&
+      classifyGitArgv(['git', 'ls-files', '-m']) === 'content' &&
+      classifyGitArgv(['git', 'ls-files', '-d']) === 'content' &&
+      classifyGitArgv(['git', 'ls-files', '-sz']) === 'content' &&
+      classifyGitArgv(['git', 'ls-files', '-z', '--cached', '--others']) === 'index' &&
+      classifyGitArgv(['git', 'ls-files', '-co']) === 'index',
+    'ls-files with -s|--stage|--eol|--format|-m|-d (bundled too) is content; name-only flags stay index'
+  );
+  const lsS = mk(['a/one.txt']);
+  lsS.execs.push({ argv: ['git', 'ls-files', '-s'], cwd: '/r' });
+  const aS = attribute(lsS, view);
+  const vS = fold(aS, view);
+  check(
+    vS.kind === 'whole-tree' &&
+      vS.reason.includes('holds') &&
+      aS.gitIndex.includes('git ls-files -s'),
+    'a content use is whole-tree naming the content, and is in gitIndex too (trace-honest still flags it)'
+  );
+  const netAcc = parseStraceLog(
+    [
+      'connect(3<socket:[1]>, {sa_family=AF_INET, sin_port=htons(443), sin_addr=inet_addr("1.1.1.1")}, 16) = -1 EINPROGRESS (Operation now in progress)',
+      'openat(AT_FDCWD</r>, "a/one.txt", O_RDONLY) = 4</r/a/one.txt>',
+    ].join('\n'),
+    root
+  );
+  const vnet = fold(attribute(netAcc, view), view);
+  check(
+    vnet.kind === 'whole-tree' &&
+      vnet.reason.startsWith('network') &&
+      vnet.reason.includes('1.1.1.1:443'),
+    `a fixture connect to 1.1.1.1 is a whole-tree "network" verdict (got ${vnet.kind === 'whole-tree' ? vnet.reason : vnet.kind})`
+  );
+  const loAcc = parseStraceLog(
+    [
+      'connect(3<socket:[1]>, {sa_family=AF_INET, sin_port=htons(9), sin_addr=inet_addr("127.0.0.1")}, 16) = -1 ECONNREFUSED (Connection refused)',
+      'connect(3<socket:[2]>, {sa_family=AF_INET6, sin6_port=htons(9), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "::1", &sin6_addr), sin6_scope_id=0}, 28) = -1 ECONNREFUSED (Connection refused)',
+      'connect(3<socket:[3]>, {sa_family=AF_INET6, sin6_port=htons(9), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "::ffff:127.0.0.53", &sin6_addr), sin6_scope_id=0}, 28) = 0',
+      'connect(3<socket:[4]>, {sa_family=AF_UNIX, sun_path="/r/a/two.txt"}, 12) = -1 ENOENT (No such file or directory)',
+      'openat(AT_FDCWD</r>, "a/one.txt", O_RDONLY) = 4</r/a/one.txt>',
+    ].join('\n'),
+    root
+  );
+  const vlo = fold(attribute(loAcc, view), view);
+  check(
+    vlo.kind === 'paths' &&
+      vlo.paths.join(',') === 'a/one.txt' &&
+      (loAcc.network?.size ?? -1) === 0,
+    'CONTROL: loopback (127/8, ::1, v4-mapped) and a unix socket are not network, and a sun_path is no file read'
+  );
+  check(
+    networkPeer(
+      '3<socket:[1]>, {sa_family=AF_INET6, sin6_port=htons(443), sin6_flowinfo=htonl(0), inet_pton(AF_INET6, "2606:4700::1111", &sin6_addr), sin6_scope_id=0}, 28) = 0'
+    ) === '[2606:4700::1111]:443',
+    'a non-loopback IPv6 peer is network'
+  );
+  const fromRaw: Access = {
+    files: new Set(['/r/a/one.txt']),
+    listed: new Set(),
+    execs: [],
+    network: new Set(rawOf(netAcc, view).network),
+  };
+  const vraw = fold(attribute(fromRaw, view), view);
+  check(
+    vraw.kind === 'whole-tree' && vraw.reason.startsWith('network'),
+    'the raw record keeps the network peers, so --refold re-derives the network verdict'
+  );
+  check(
+    straceArgv('/x/t', 'true').includes(`trace=${TRACE_SYSCALLS}`) &&
+      TRACE_SYSCALLS.split(',').includes('connect') &&
+      straceArgv('/x/t', 'true').includes('--seccomp-bpf') &&
+      !straceArgv('/x/t', 'true', true).includes('--seccomp-bpf') &&
+      straceArgv('/x/t', 'true').at(-1) === 'exec 2>&1\ntrue',
+    'strace traces connect; --no-seccomp drops --seccomp-bpf; the traced shell sends its stderr to its stdout'
+  );
+
   // Text edits.
   const manifest = [
     'export const GATES = [',
@@ -1925,6 +2291,34 @@ async function selftest(): Promise<number> {
     refused = (e as Error).message.includes('declared');
   }
   check(refused, 'CONTROL: a declared paths set is refused, never overwritten');
+  let replaced = '';
+  try {
+    replaced = manifestWithPaths(manifest, 'g:d', ['x/**'], { replaceDeclared: true });
+  } catch {
+    // Left empty: the check below reports the refusal as a FAIL rather than a crash.
+  }
+  const dBody = replaced.split("    id: 'g:d',")[1]?.split('  },')[0] ?? '';
+  check(
+    dBody.includes("    paths: ['x/**'],\n    pathsOrigin: 'traced',") &&
+      !dBody.includes("'declared'"),
+    '--replace-declared replaces a declared set with the traced one'
+  );
+  const dropped = manifestWithoutTracedPaths(manifest, 'g:d', { replaceDeclared: true });
+  const dl = JSON.parse(
+    lockWithoutTracedPaths(
+      JSON.stringify([
+        { id: 'g:d', run: 'r', gate: true, paths: ['k'], pathsOrigin: 'declared', leaves: [] },
+      ]),
+      'g:d',
+      { replaceDeclared: true }
+    )
+  ) as LockEntry[];
+  check(
+    !dropped.split("    id: 'g:d',")[1].split('  },')[0].includes('paths') &&
+      dl[0].paths === undefined &&
+      dl[0].pathsOrigin === undefined,
+    '--replace-declared with a whole-tree verdict removes the declared set from the manifest and the lock'
+  );
   const long = pathsLines(Array.from({ length: 8 }, (_, i) => `packages/www/src/thing-${i}.ts`));
   check(
     long[0] === '    paths: [' && long.at(-1) === '    ],',
@@ -1988,6 +2382,42 @@ async function selftest(): Promise<number> {
     );
     const rr = await traceCommand('exit 3', dir);
     check(rr.exit === 3, 'CONTROL: the traced command exit code survives strace');
+    const ns = await traceCommand('cat in/a.txt >/dev/null', dir, { noSeccomp: true });
+    check(
+      ns.exit === 0 && ns.access.files.has(`${real}/in/a.txt`),
+      '--no-seccomp traces the same read without the filter'
+    );
+    // A wrapper standing in for strace prints a strace-style line on ITS stderr, the stream the tracee would inherit without the fix.
+    const wrap = path.join(dir, 'strace-wrap.sh');
+    fs.writeFileSync(wrap, '#!/bin/sh\necho "strace: wrapper note" >&2\nexec strace "$@"\n', {
+      mode: 0o755,
+    });
+    // The gate's own stderr line that happens to start with `strace: ` is still gate output.
+    const sep = await traceCommand(
+      'echo gate-out; echo gate-err >&2; echo "strace: said by the gate" >&2',
+      dir,
+      { straceBin: wrap }
+    );
+    check(
+      sep.exit === 0 &&
+        sep.outputTail.includes('gate-out') &&
+        sep.outputTail.includes('gate-err') &&
+        sep.outputTail.includes('strace: said by the gate') &&
+        !sep.outputTail.includes('wrapper note') &&
+        sep.straceNotes.join('|') === 'strace: wrapper note',
+      `strace's own lines are kept apart from the gate's stdout and stderr (output ${JSON.stringify(sep.outputTail)}, notes ${JSON.stringify(sep.straceNotes)})`
+    );
+    // A real connect: loopback is refused at once, a TEST-NET-1 peer (RFC 5737, documentation only) is cut by the timeout.
+    const net = await traceCommand(
+      ': </dev/tcp/127.0.0.1/9 2>/dev/null; timeout 1 bash -c ": </dev/tcp/192.0.2.1/9" 2>/dev/null; true',
+      dir
+    );
+    check(
+      net.exit === 0 &&
+        net.access.network?.has('192.0.2.1:9') === true &&
+        ![...(net.access.network ?? [])].some((x) => x.startsWith('127.')),
+      `a real strace connect to a routable peer is network and loopback is not (got ${JSON.stringify([...(net.access.network ?? [])])})`
+    );
     fs.rmSync(dir, { recursive: true, force: true });
   } else {
     console.log(`  NOTE  no real trace on this host: ${refusal}`);

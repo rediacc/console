@@ -1,6 +1,8 @@
 """scripts/ci-runner/path-trace.ts against a fixture repository, through the real CLI and a real strace.
 
 PLAN-ciquick-cpu W2.1's acceptance: a fixture gate reading two files gets exactly those two plus the directory it listed, written into the manifest literal, the lock and the trace ledger. The controls run the other way: an untouched sibling stays out, a declared set is refused rather than overwritten, a red gate writes no paths, and a host without strace is refused loudly with the fix.
+
+W2.3 adds: a gate connecting to a routable peer is a whole-tree "network" verdict while a loopback connect is not, `--replace-declared` replaces a declared set the plain `--write` refuses, and `--no-seccomp` traces the same reads.
 """
 
 from __future__ import annotations
@@ -22,6 +24,10 @@ TOOL = paths.from_root("scripts", "ci-runner", "path-trace.ts")
 TSX = paths.from_root("node_modules", ".bin", "tsx")
 HAS_STRACE = shutil.which("strace") is not None
 NO_STRACE = "strace is not installed; path-trace refuses such a host (tested below)"
+
+# TEST-NET-1 (RFC 5737) is documentation-only address space: the connect is attempted and goes nowhere.
+NET_RUN = 'cat in/a.txt >/dev/null; timeout 1 bash -c ": </dev/tcp/192.0.2.1/9" 2>/dev/null; true'
+LOOP_RUN = "cat in/a.txt >/dev/null; : </dev/tcp/127.0.0.1/9 2>/dev/null; true"
 
 MANIFEST = """export const GATES = [
   {
@@ -50,6 +56,18 @@ MANIFEST = """export const GATES = [
     gate: true,
     leaves: ['tool.sh'],
   },
+  {
+    id: 'g:net',
+    run: 'cat in/a.txt >/dev/null; timeout 1 bash -c ": </dev/tcp/192.0.2.1/9" 2>/dev/null; true',
+    gate: true,
+    leaves: ['tool.sh'],
+  },
+  {
+    id: 'g:loop',
+    run: 'cat in/a.txt >/dev/null; : </dev/tcp/127.0.0.1/9 2>/dev/null; true',
+    gate: true,
+    leaves: ['tool.sh'],
+  },
 ];
 """
 
@@ -68,6 +86,8 @@ def _lock() -> list[dict[str, object]]:
             "g:declared", "cat in/a.txt >/dev/null", {"paths": ["in/**"], "pathsOrigin": "declared"}
         ),
         entry("g:flip", "if [ -e flip ]; then ls . >/dev/null; fi; cat in/a.txt >/dev/null"),
+        entry("g:net", NET_RUN),
+        entry("g:loop", LOOP_RUN),
     ]
 
 
@@ -213,3 +233,50 @@ def test_a_host_without_strace_is_refused_with_the_fix(
     assert res.returncode == 1
     assert "strace is not installed" in res.stderr
     assert "apt-get install -y strace" in res.stderr
+
+
+@pytest.mark.skipif(not HAS_STRACE, reason=NO_STRACE)
+def test_a_routable_connect_is_a_network_verdict(fixture_repo: pathlib.Path) -> None:
+    res = _run(fixture_repo, "--gate", "g:net", "--write")
+    assert res.returncode == 0, res.stderr
+    assert "WHOLE-TREE: network: connects to 192.0.2.1:9" in res.stderr, res.stderr
+    assert "paths" not in _lock_of(fixture_repo)["g:net"]
+    ledger = (fixture_repo / "scripts/ci-runner/trace-ledger.ts").read_text()
+    assert "network: connects to 192.0.2.1:9" in ledger
+
+
+@pytest.mark.skipif(not HAS_STRACE, reason=NO_STRACE)
+def test_a_loopback_connect_keeps_its_paths(fixture_repo: pathlib.Path) -> None:
+    res = _run(fixture_repo, "--gate", "g:loop")
+    assert res.returncode == 0, res.stderr
+    assert res.stdout.strip() == "g:loop\tin/a.txt", res.stderr
+    assert "network" not in res.stderr
+
+
+@pytest.mark.skipif(not HAS_STRACE, reason=NO_STRACE)
+def test_the_declared_refusal_names_the_flag_that_replaces_it(fixture_repo: pathlib.Path) -> None:
+    res = _run(fixture_repo, "--gate", "g:declared", "--write")
+    assert res.returncode == 2
+    assert "--replace-declared" in res.stderr
+    # Refused before tracing: no ledger row was written.
+    assert not (fixture_repo / "scripts/ci-runner/trace-ledger.ts").exists()
+
+
+@pytest.mark.skipif(not HAS_STRACE, reason=NO_STRACE)
+def test_replace_declared_writes_the_traced_set(fixture_repo: pathlib.Path) -> None:
+    res = _run(fixture_repo, "--gate", "g:declared", "--write", "--replace-declared")
+    assert res.returncode == 0, res.stderr
+    entry = _lock_of(fixture_repo)["g:declared"]
+    assert entry["paths"] == ["in/a.txt"]
+    assert entry["pathsOrigin"] == "traced"
+    text = (fixture_repo / "scripts/ci-runner/manifest.ts").read_text()
+    body = text.split("id: 'g:declared',")[1].split("  },")[0]
+    assert "pathsOrigin: 'traced'" in body
+    assert "'declared'" not in body
+
+
+@pytest.mark.skipif(not HAS_STRACE, reason=NO_STRACE)
+def test_no_seccomp_traces_the_same_reads(fixture_repo: pathlib.Path) -> None:
+    res = _run(fixture_repo, "--gate", "g:fix", "--no-seccomp")
+    assert res.returncode == 0, res.stderr
+    assert res.stdout.strip() == "g:fix\tin/a.txt in/b.txt listed/**", res.stderr
