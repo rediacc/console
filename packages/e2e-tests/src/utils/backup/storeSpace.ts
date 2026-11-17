@@ -82,8 +82,9 @@ export function dockerErrorDetail(err: unknown): string {
   );
 }
 
-/** The ` (docker exec: ...)` suffix of a store-space skip reason: only for the local store, the one the docker probe reads; a remote endpoint's skip is about the endpoint, not docker. */
+/** The ` (docker exec: ...)` suffix of a store-space skip reason: only for the local store, the one the docker probe reads; a remote endpoint's skip is about the endpoint, not docker. An error that said nothing adds no suffix. */
 export function dockerSkipDetail(endpoint: string, err: unknown): string {
   if (err === undefined || !isLocalStoreEndpoint(endpoint)) return '';
-  return ` (docker exec: ${dockerErrorDetail(err)})`;
+  const detail = dockerErrorDetail(err).trim();
+  return detail === '' ? '' : ` (docker exec: ${detail})`;
 }

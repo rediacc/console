@@ -81,6 +81,11 @@ describe('docker exec skip detail', () => {
     expect(dockerSkipDetail(LOCAL, undefined)).toBe('');
   });
 
+  it('adds no hollow suffix when the docker error said nothing', () => {
+    expect(dockerSkipDetail(LOCAL, new Error(''))).toBe('');
+    expect(dockerSkipDetail(LOCAL, new Error('boom'))).toBe(' (docker exec: boom)');
+  });
+
   it('leaves a remote endpoint skip without a docker suffix', () => {
     expect(dockerSkipDetail('https://abc.r2.cloudflarestorage.com', execErr)).toBe('');
   });
