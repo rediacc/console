@@ -1755,6 +1755,11 @@ function syntheticSpec(id: string, run: string, needs?: string[]): GateSpec {
  * rather than passed. If any leg does not fire, the runner's green means
  * nothing, so this refuses to proceed.
  */
+/** The most the hand-kept selftest sum ever printed before every require_ counted; the real count must stay above it. */
+const SELFTEST_ASSERTION_FLOOR = 413;
+/** Floor for selftest()'s own require_ calls alone, well under the 188 counted when it was set, so a legitimate removal does not trip it. */
+const SELFTEST_REQUIRE_FLOOR = 150;
+
 async function selftest(): Promise<number> {
   // Started first and awaited last: two real runner processes whose seconds of startup and kill grace overlap everything below.
   const processCheck = runnerProcessSelftest();
@@ -1782,7 +1787,10 @@ async function selftest(): Promise<number> {
   const text = captured.join('');
 
   const failures: string[] = [];
+  // EVERY require_ COUNTS. The printed total used to be a hand-kept sum of literals ("9 + 1 + ... + 4 + 11"), which nothing kept in step with the calls: it read 413 while the W2.4 advance and select controls ran uncounted, and it left out two sub-selftests (local-warn, quick-clone) entirely.
+  let requireCount = 0;
   const require_ = (cond: boolean, message: string): void => {
+    requireCount += 1;
     if (!cond) failures.push(message);
   };
   require_(exitCode === 1, `a failing gate must make the run exit 1, got ${exitCode}`);
@@ -3352,6 +3360,35 @@ async function selftest(): Promise<number> {
   const proc = await processCheck;
   failures.push(...proc.failures);
 
+  // The total: every require_ above, plus the assertions each sub-selftest counted itself (their failures reach `failures` through require_ or a push, their passes only through `.assertions`).
+  const subAssertions = [
+    keyed,
+    sim,
+    qs,
+    sel,
+    lw,
+    leaseCheck,
+    inc,
+    cloneCheck,
+    proc,
+    rankCheck,
+    ledgerCheck,
+    streamCheck,
+    learned,
+  ].reduce((n, r) => n + r.assertions, timeoutAssertions);
+  const total = requireCount + subAssertions;
+  const ownCount = requireCount;
+  // Sub-selftests alone count above the total floor, so require_ has its own: 188 calls counted when this was written.
+  require_(
+    ownCount > SELFTEST_REQUIRE_FLOOR,
+    `only ${ownCount} require_ call(s) counted, not above the floor of ${SELFTEST_REQUIRE_FLOOR}: require_ stopped counting`
+  );
+  // ANTI-VACUITY FLOOR: 413 is what the hand-kept sum printed before the count was real. A count at or below it means require_ stopped counting or a sub-selftest stopped reporting, not that the suite is smaller.
+  require_(
+    total > SELFTEST_ASSERTION_FLOOR,
+    `the selftest counted ${total} assertion(s) (${requireCount} require_ + ${subAssertions} from sub-selftests), not above the floor of ${SELFTEST_ASSERTION_FLOOR}: the count collapsed`
+  );
+
   if (failures.length > 0) {
     process.stderr.write('CONTROL FAILED: ci-runner --selftest did not fire\n');
     for (const f of failures) process.stderr.write(`  - ${f}\n`);
@@ -3360,7 +3397,7 @@ async function selftest(): Promise<number> {
     return 1;
   }
   process.stdout.write(
-    `ci-runner: selftest ok (${9 + 1 + keyed.assertions + 3 + 7 + 3 + 2 + 3 + 4 + 12 + (process.platform !== 'win32' ? 4 : 0) + 6 + sim.assertions + 2 + qs.assertions + 10 + 5 + 9 + 10 + 4 + leaseCheck.assertions + 12 + inc.assertions + (process.platform !== 'win32' ? 2 : 0) + timeoutAssertions + proc.assertions + 4 + 11 + rankCheck.assertions + ledgerCheck.assertions + streamCheck.assertions + learned.assertions} assertions)\n`
+    `ci-runner: selftest ok (${requireCount + subAssertions} assertions: ${requireCount} require_, the floor check included, + ${subAssertions} from sub-selftests)\n`
   );
   return 0;
 }

@@ -148,8 +148,15 @@ function arr(v: readonly string[] | undefined): readonly string[] {
 }
 
 /** Does the spec declare `lists` or `names`, the reads that scope it without `paths`? */
-function namesScoped(s: PathScopedSpec): boolean {
+export function namesScoped(s: PathScopedSpec): boolean {
   return arr(s.lists).length > 0 || arr(s.names).length > 0;
+}
+
+/**
+ * THE SCOPED RULE, the one place it is written: a gate is scoped when it declares `paths` (even `[]`, a statement that nothing selects it), `lists` or `names`. `refs` alone does not scope a gate, since a ref is not a tree read. Every other gate is selected by any non-empty change set. check-changed-selection.ts imports this predicate rather than restating it.
+ */
+export function isScoped(s: PathScopedSpec): boolean {
+  return s.paths !== undefined || namesScoped(s);
 }
 
 /** The spec's `list` and `name` lines over one listing, sorted and joined: equal strings mean the name-shaped input did not move. */
@@ -176,8 +183,8 @@ export function selectChanged<T extends PathScopedSpec>(
   matches: (file: string, globs: readonly string[]) => boolean
 ): ChangedSelection<T> {
   refuseUnusableChangeSet(specs, changeSet);
-  const unscoped = specs.filter((s) => s.paths === undefined && !namesScoped(s));
-  const scoped = specs.filter((s) => s.paths !== undefined || namesScoped(s));
+  const unscoped = specs.filter((s) => !isScoped(s));
+  const scoped = specs.filter(isScoped);
   // THE LISTING DELTA, read only when some gate declares lists or names. A side git cannot list leaves `listed` false, and every name-scoped gate is then selected.
   const named = scoped.filter(namesScoped);
   let before: readonly NameEntry[] | undefined;
