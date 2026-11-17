@@ -84,7 +84,9 @@
       "project": ["scripts/**/*.ts"],
       "ignoreBinaries": [
         // BLOCKER: .github/workflows/ops-cleanup-preview.yml runs `npx --no-install wrangler` against a global install it makes itself at the toolchain pin (WRANGLER_VERSION, --before the release-age window); the root workspace deliberately carries no wrangler dependency, since the Worker directories are not root workspaces
-        "wrangler"
+        "wrangler",
+        // BLOCKER: scripts/ci-runner/path-trace.ts runs each traced gate under the host's strace(1) and refuses loudly when it is missing; a Linux host tool, not an npm dependency
+        "strace"
       ]
     },
     "packages/locales": {
