@@ -165,6 +165,36 @@ REFUSED += [
     ),
 ]
 
+# #29754962: a sentence in a STRING runs nothing either, so it licenses no argv fill. An edited test-block_unverified_push.py was refused at rc 2: its case labels ("an uncommitted worktree edit that DROPS an entry ...") let `["git", "-C", d, *a]` fill to the verb. The controls keep a literal that can be a piece of the command line (a bare argv word, the phrase itself), and each is still refused.
+PROSE_LABEL = 'CASES = [(0, "an uncommitted worktree edit that DROPS an entry does not change the verdict")]\n'
+PROSE_GIT = (
+    "import subprocess\nimport sys\n\n\n"
+    "def git(d, *a):\n"
+    '    return subprocess.run(["git", "-C", d, *a], check=False)\n\n\n'
+    + PROSE_LABEL
+    + 'git(sys.argv[1], "status")\n'
+)
+STRING_LICENSE = {
+    "label_verb.py": PROSE_GIT
+    + 'for verb in sys.argv[2:]:\n    subprocess.run(["git", "worktree", verb], check=False)\n',
+    "label_word.py": PROSE_GIT
+    + 'W = "worktree"\nsubprocess.run(["git", W, *sys.argv[2:]], check=False)\n',
+    "label_phrase.py": PROSE_GIT
+    + 'subprocess.run("git worktree add /tmp/x", shell=True, check=False)\n',
+}
+pathlib.Path(FIXTURE_DIR, "label.py").write_text(PROSE_GIT, encoding="utf-8")
+for license_name, license_text in STRING_LICENSE.items():
+    pathlib.Path(FIXTURE_DIR, license_name).write_text(license_text, encoding="utf-8")
+PROSE_LABEL_ROW = (
+    "a prose case label beside a git argv with a spread",
+    "python3 %s/label.py" % FIXTURE_DIR,
+)
+STRING_LICENSE_ROWS = [
+    ("a string licensing the fill: %s" % name, "python3 %s/%s" % (FIXTURE_DIR, name))
+    for name in STRING_LICENSE
+]
+REFUSED += STRING_LICENSE_ROWS
+
 # The design review of dd6898eb0: adjacency alone let a script keep the two words apart and still run the verb. Each of these names the phrase in CODE (not a comment), so it is refused.
 APART = {
     "helper.js": (
@@ -321,6 +351,7 @@ FALSE_POSITIVES = [
         "a comment naming the tree beside git add",
         "python3 %s/selftest.py --selftest" % FIXTURE_DIR,
     ),
+    PROSE_LABEL_ROW,
     (
         "gc beside a $-path worklist --add",
         (
@@ -819,6 +850,12 @@ REVERSE = [
         ("mentions = _code_mentions(code)", 'mentions = "worktree" in code'),
         _row(FALSE_POSITIVES, "a comment naming the tree beside git add"),
     ),
+    # #29754962: with a prose string licensing the fill again, the case-label row is refused again, so it is allowed BY the prose drop in `_code_mentions`.
+    (
+        "a prose string licenses the argv fill",
+        ("and not _prose_mention(tok)", ""),
+        PROSE_LABEL_ROW,
+    ),
     # #3dc774ff: a `$CLAUDE_PROJECT_DIR` path now resolves to the literal one, so these plants drive the `$R` twins, which still reach the narrowed line.
     (
         "the unjudgeable arm reads two words anywhere",
@@ -1000,6 +1037,15 @@ if len(admitted) != len(NAME_PREFIX_ROWS):
     )
 else:
     print("a lease-name prefix exempts the verb slot: all %d admitted" % len(NAME_PREFIX_ROWS))
+
+# #29754962: with every string dropped from `_code_mentions`, the bare-word control is admitted, so the string controls are refused BY a non-prose literal licensing the fill, not by another arm.
+STRING_PLANT = ("and not _prose_mention(tok)", "and tok.type not in PY_LITERAL_TOKENS")
+WORD_ROW = _row(STRING_LICENSE_ROWS, "a string licensing the fill: label_word.py")
+if run_guard(WORD_ROW[1], defect=STRING_PLANT)[0] != 0:
+    failures.append("plant: no string licenses the argv fill")
+    print("*** FAIL *** with no string licensing the fill, %r was still refused" % WORD_ROW[0])
+else:
+    print("no string licenses the argv fill: %r admitted" % WORD_ROW[0])
 
 # THE SCOPE (#a8ae93bd): a scratch repository with a git common dir of its own is admitted, and this checkout, a submodule and every target the guard cannot resolve stay refused. The scratch repository is a bare `git init`, made here in a subprocess no hook sees; the guard only asks git where its common dir is, so it needs no commit. Each row carries the event `cwd` it is judged from.
 SCRATCH = tempfile.mkdtemp(prefix="wt-scope-")
