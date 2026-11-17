@@ -494,7 +494,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ci-quick-cpu-scheduling.md` | active | 78 | 3 | 2 | 10605 |
 | `agent/plans/PLAN-ci-trace-no-pr-branch.md` | compacted | 38 | 0 | 0 | 2480 |
 | `agent/plans/PLAN-ci-vm-image-followups.md` | approved | 23 | 2 | 0 | 3041 |
-| `agent/plans/PLAN-ciquick-cpu.md` | approved | 116 | 18 | 0 | 13372 |
+| `agent/plans/PLAN-ciquick-cpu.md` | approved | 117 | 17 | 1 | 13649 |
 | `agent/plans/PLAN-ciquick-green-then-batch.md` | approved | 33 | 1 | 6 | 7384 |
 | `agent/plans/PLAN-ciquick-reds-1023-1.md` | executing | 48 | 1 | 11 | 11076 |
 | `agent/plans/PLAN-citation-fragility.md` | compacted | 49 | 0 | 6 | 5254 |
@@ -604,7 +604,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-retire-nightlies-and-mentions.md` | proposed | 189 | 16 | 0 | 36372 |
 | `agent/plans/PLAN-review-red-stop-hook-check.md` | compacted | 39 | 0 | 0 | 2909 |
 | `agent/plans/PLAN-root-api-token.md` | approved | 316 | 8 | 7 | 42806 |
-| `agent/plans/PLAN-root-grants.md` | approved | 315 | 19 | 0 | 32795 |
+| `agent/plans/PLAN-root-grants.md` | approved | 316 | 18 | 1 | 33035 |
 | `agent/plans/PLAN-runtime-caller-identity.md` | compacted | 39 | 0 | 0 | 2546 |
 | `agent/plans/PLAN-sandbox-tenant-separation.md` | approved | 123 | 1 | 7 | 25158 |
 | `agent/plans/PLAN-scope-bws-signing-key-to-consuming-step.md` | executing | 129 | 2 | 8 | 11346 |

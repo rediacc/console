@@ -269,10 +269,11 @@ Order:
   - 401 with no session, 403 for a customer, 403 `reauthRequired` on an unelevated apply while plan answers 200.
 
   Accept: `(cd private/account && npx vitest run tests/integration/root-grants.test.ts tests/integration/admin-root-token-coverage.test.ts tests/integration/partner-application.test.ts tests/integration/root-console-block.test.ts)` rc 0, `(cd private/account && npm run typecheck)` rc 0, and `npm run -s check:ci-account-layer-isolation` rc 0.
-- [ ] C1 [writer] Ops tool and config. Scope:
+- [x] C1 [writer] Ops tool and config. Scope:
   - .ci/config/root-grants.json as in Design 2;
   - root_grants.py with the loader refusals, READ_SQL through a 0600 `--file`, `plan()`, the phases in Design 6 and the formatter;
   - the `root-grants` consumer in secret-supply.json, plus env-manifest and python-env-registry entries if their gates ask.
+    (ticked) 2026-11-17T14:07:38Z by d778be9d: commit:b8b776f325 pytest test_ops_root_grants.py rc=0 (30 passed); check:ci-secret-supply rc=0; check:ci-env-manifest rc=0; check:ci-python-types rc=0; check:ci-python-lint rc=0; NS matches S1
 
   test_ops_root_grants.py runs on sqlite built from the drizzle migrations behind a fake `wrangler` on PATH and a fake POST. It covers:
   - every loader refusal, including `stable` and an enterprise config;

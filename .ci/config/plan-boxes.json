@@ -755,8 +755,8 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 18,
-      "done": 0,
+      "open": 17,
+      "done": 1,
       "open_sigs": [
         "092a3f70",
         "3ddf03d4",
@@ -774,10 +774,11 @@
         "8b0b595e",
         "96e623c9",
         "bcfd79af",
-        "cabc2dbe",
         "d9ea085a"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "cabc2dbe"
+      ]
     },
     "agent/plans/PLAN-ciquick-green-then-batch.md": {
       "status": "approved",
@@ -3234,10 +3235,9 @@
       "owner": "d778be9d",
       "folder": "agent/plans",
       "moved_at": "",
-      "open": 19,
-      "done": 0,
+      "open": 18,
+      "done": 1,
       "open_sigs": [
-        "0134b972",
         "034d49bb",
         "0af1e51a",
         "19f12699",
@@ -3257,7 +3257,9 @@
         "e605e494",
         "fe733d0b"
       ],
-      "done_sigs": []
+      "done_sigs": [
+        "0134b972"
+      ]
     },
     "agent/plans/PLAN-runtime-caller-identity.md": {
       "status": "compacted",

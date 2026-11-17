@@ -82,25 +82,25 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 1298 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1302 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 182 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
   - epic 2255f2d2, no plan, 2 commit(s) on the branch, 0 open item(s): Convert stale GitHub issues (console, renet, account) into plan files
-- Writers: 3 live of writer_cap 25 (session d778be9d): worker:abb3779a0acb10c25, worker:a16700422a164ab26, worker:a0e4dc473451b2d6f.
-- Leased items: 20: #02389657 (worker:abb3779a0acb10c25, d778be9d), #0fdb6707 (worker:a0e4dc473451b2d6f, d778be9d), #1abe21eb (worker:abb3779a0acb10c25, d778be9d), #36ffb824 (worker:abb3779a0acb10c25, d778be9d), #400ae5ea (worker:abb3779a0acb10c25, d778be9d), #4889018a (worker:abb3779a0acb10c25, d778be9d), #502c3c9d (worker:a16700422a164ab26, d778be9d), #6d5593e9 (worker:abb3779a0acb10c25, d778be9d), #719d19c6 (worker:abb3779a0acb10c25, d778be9d), #732fbea9 (worker:abb3779a0acb10c25, d778be9d), #864b6bca (worker:abb3779a0acb10c25, d778be9d), #8bb65426 (worker:abb3779a0acb10c25, d778be9d), and 8 more.
+- Writers: 0 live of writer_cap 25 (session d778be9d).
+- Leased items: 21: #02389657 (worker:a5da5b937635bbeab, d778be9d), #0fdb6707 (worker:a0e4dc473451b2d6f, d778be9d), #1abe21eb (worker:a5da5b937635bbeab, d778be9d), #36ffb824 (worker:a5da5b937635bbeab, d778be9d), #3fb4edcc (worker:a5da5b937635bbeab, d778be9d), #400ae5ea (worker:a5da5b937635bbeab, d778be9d), #4889018a (worker:a5da5b937635bbeab, d778be9d), #502c3c9d (worker:a0e4dc473451b2d6f, d778be9d), #6d5593e9 (worker:a5da5b937635bbeab, d778be9d), #719d19c6 (worker:a5da5b937635bbeab, d778be9d), #732fbea9 (worker:a5da5b937635bbeab, d778be9d), #864b6bca (worker:a5da5b937635bbeab, d778be9d), and 9 more.
 - Next plan: agent/plans/PLAN-ciquick-cpu.md, Promoted entry 1; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 26 of 78 plans done, 1187 of 1445 boxes done (82%).
+Promoted: 26 of 78 plans done, 1189 of 1445 boxes done (82%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
-| 1 | PLAN-ciquick-cpu.md | 0/18 | 18 open |
+| 1 | PLAN-ciquick-cpu.md | 1/18 | 17 open |
 | 2 | PLAN-backup-program.md | 186/192 | 6 open |
 | 3 | PLAN-cloudflare-proxy.md | 28/29 | 1 open |
 | 4 | PLAN-sync-remote-file-ownership.md | 7/7 | done |
@@ -177,7 +177,7 @@ Promoted: 26 of 78 plans done, 1187 of 1445 boxes done (82%).
 | 75 | PLAN-multi-region-bench.md | 13/23 | 10 open |
 | 76 | PLAN-root-api-token.md | 7/15 | 8 open |
 | 77 | PLAN-site-entry-points.md | 0/11 | 11 open |
-| 78 | PLAN-root-grants.md | 0/19 | 19 open |
+| 78 | PLAN-root-grants.md | 1/19 | 18 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-ciquick-cpu.md -- operator ruling ASKED:2026-11-16T11:35Z (fixes A+B+C) and operator 2026-11-17 ("we should prioritze the plan we haven't started to make the ci quick faster"): sound gate reuse, pytest by impact locally, faster slow tests; first in the queue

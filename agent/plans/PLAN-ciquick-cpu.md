@@ -82,7 +82,8 @@ Core-s is the sum of per-gate `cpuMs` in the receipt plus the runner's own CPU (
 - [ ] W1.2 [writer] Artifact `needs` hash through the producer's `filesHash`, plus the exempt-reason field (A4), TS hasher and Python twin together. Accept: hash parity test passes; the `needs-null` count in `--quick --list --json` falls.
 
 ### W2 path declarations -- scripts/ci-runner/path-trace.ts, scripts/ci-runner/manifest.ts, scripts/ci-runner/gates.lock.json
-- [ ] W2.1 [writer] path-trace.ts with `--gate`, `--write` and directory-listing folding (A2). Accept: a fixture gate reading two files gets exactly those two plus its listed directory.
+- [x] W2.1 [writer] path-trace.ts with `--gate`, `--write` and directory-listing folding (A2). Accept: a fixture gate reading two files gets exactly those two plus its listed directory.
+    (ticked) 2026-11-17T14:08:18Z by d778be9d: commit:988ca9561b c64047e813 52e05ba9f2 fe5b4c2b5b 4936a0f350 7a9a97bac4; path-trace selftest 48/48 rc=0, trace-honest selftest 24/24 rc=0, pytest 13 passed, tsc rc=0 (writer report); check:ci-paths-origin rc=0 on the landed tree
 - [ ] W2.2 [writer] Trace the 349 whole-tree gates in the clone and write their `paths`; gates over 30% of the tree or reading `.git` stay whole-tree with a named reason. Accept: whole-tree count ≤ 80 in gates.lock.json, and `npm run ci` green on an unchanged tree.
 
 ### W3 honesty gate -- .ci/scripts/quality/check_gate_paths_honest.py, its manifest row through W2's lock regeneration, .ci/rediacc_ci/tests/test_gate_paths_honest.py
