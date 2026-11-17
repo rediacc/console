@@ -161,3 +161,100 @@ def test_the_confirm_candidates_are_the_unlisted_slow_tests_with_a_file(tmp_path
     assert ratchet.confirm_candidates(junit, root, allow) == ["pkg/test_mod.py::test_slow"]
     (root / "pkg" / "test_mod.py").unlink()
     assert ratchet.confirm_candidates(junit, root, allow) == []
+
+
+# A module-scoped fixture's setup lands on the first test of its module in junit; the phase file beside the junit separates it.
+HEAVY_FIRST = {"setup": 14.0, "call": 2.9, "teardown": 0.0, "shared_setup": 13.0}
+
+
+def _phases(junit: pathlib.Path, tests: dict[str, dict]) -> pathlib.Path:
+    path = ratchet.phases_path(junit)
+    doc = {"version": 1, "tests": {"pkg.test_mod::%s" % n: dict(p) for n, p in tests.items()}}
+    path.write_text(json.dumps(doc), encoding="utf-8")
+    return path
+
+
+def test_the_phase_file_sits_beside_its_junit(tmp_path):
+    assert ratchet.phases_path(tmp_path / "junit.xml") == tmp_path / "junit.phases.json"
+
+
+def test_a_fixture_heavy_first_test_with_a_fast_call_passes(tmp_path, capsys):
+    """THE BEHAVIOUR: junit reads 16.9 s, 13 s of it the module fixture's setup; the test's own time is 1 + 2.9 s. Judged on junit time alone it failed."""
+    junit = _junit(tmp_path / "j.xml", {"test_first": 16.9, "test_second": 0.2})
+    _phases(junit, {"test_first": HEAVY_FIRST})
+    rc, out = _run(tmp_path, capsys, [junit], [])
+    assert rc == 0, out.err
+    assert "1 test(s) in" in out.out, "test_second has no phase entry and is named as such"
+    assert (
+        "info: pkg.test_mod spent 13.0 s in shared (module, class or session) fixture setup"
+        in out.out
+    )
+
+
+def test_control_a_genuinely_slow_call_still_fails(tmp_path, capsys):
+    junit = _junit(tmp_path / "j.xml", {"test_slow_call": 11.2})
+    _phases(
+        junit,
+        {"test_slow_call": {"setup": 0.1, "call": 11.0, "teardown": 0.1, "shared_setup": 0.0}},
+    )
+    rc, out = _run(tmp_path, capsys, [junit], [])
+    assert rc == 1
+    assert "pkg.test_mod::test_slow_call took 11.1 s" in out.err
+
+
+def test_control_a_slow_function_scoped_setup_stays_the_tests_own(tmp_path, capsys):
+    junit = _junit(tmp_path / "j.xml", {"test_own_fixture": 11.5})
+    _phases(
+        junit,
+        {"test_own_fixture": {"setup": 11.0, "call": 0.5, "teardown": 0.0, "shared_setup": 0.0}},
+    )
+    rc, out = _run(tmp_path, capsys, [junit], [])
+    assert rc == 1
+    assert "test_own_fixture took 11.5 s" in out.err
+
+
+def test_an_unmeasured_shared_setup_is_charged_to_the_test(tmp_path, capsys):
+    junit = _junit(tmp_path / "j.xml", {"test_first": 16.9})
+    _phases(junit, {"test_first": {**HEAVY_FIRST, "shared_setup": None}})
+    rc, out = _run(tmp_path, capsys, [junit], [])
+    assert rc == 1
+    assert "test_first took 16.9 s" in out.err
+
+
+@pytest.mark.parametrize("content", [None, "{not json", '{"version": 1}'])
+def test_no_usable_phase_file_falls_back_to_junit_time_and_says_so(tmp_path, capsys, content):
+    junit = _junit(tmp_path / "j.xml", {"test_first": 16.9})
+    if content is not None:
+        ratchet.phases_path(junit).write_text(content, encoding="utf-8")
+    rc, out = _run(tmp_path, capsys, [junit], [])
+    assert rc == 1, "a missing measurement must not pass the test"
+    assert "test_first took 16.9 s" in out.err
+    assert "note:" in out.out
+    assert "judged on their junit time" in out.out
+
+
+def test_a_case_missing_from_its_phase_file_is_judged_on_junit_time_and_counted(tmp_path, capsys):
+    junit = _junit(tmp_path / "j.xml", {"test_first": 16.9, "test_unphased": 12.0})
+    _phases(junit, {"test_first": HEAVY_FIRST})
+    rc, out = _run(tmp_path, capsys, [junit], [])
+    assert rc == 1
+    assert "test_unphased took 12.0 s" in out.err
+    assert "1 test(s) in %s have no entry" % junit in out.out
+
+
+def test_the_median_is_taken_over_own_times_across_runs(tmp_path, capsys):
+    """Each run's own time joins the median: the parallel run's junit-only 16.9 s is outvoted by two phased re-times."""
+    runs = [_junit(tmp_path / ("r%d.xml" % i), {"test_first": 16.9}) for i in range(3)]
+    for run in runs[1:]:
+        _phases(run, {"test_first": HEAVY_FIRST})
+    rc, out = _run(tmp_path, capsys, runs, [])
+    assert rc == 0, out.err
+    assert "no phase file at %s" % ratchet.phases_path(runs[0]) in out.out
+
+
+def test_the_confirm_candidates_skip_a_test_whose_own_time_is_fast(tmp_path):
+    root = _tree(tmp_path)
+    junit = _junit(tmp_path / "j.xml", {"test_first": 16.9, "test_slow": 11.0})
+    _phases(junit, {"test_first": HEAVY_FIRST, "test_slow": {"setup": 0.0, "call": 11.0}})
+    allow = _allow(tmp_path / "allow.json", [])
+    assert ratchet.confirm_candidates(junit, root, allow) == ["pkg/test_mod.py::test_slow"]

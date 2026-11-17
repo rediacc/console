@@ -361,6 +361,15 @@ def emit_junit_findings(junit: pathlib.Path) -> None:
         log.emit_finding(key)
 
 
+# The plugin that writes each test's phase durations beside the junit, so the slow ratchet judges a test on its own time rather than on the module fixture it was first to request (`pytest_phase_timing`'s docstring).
+PHASE_PLUGIN = "rediacc_ci.quality.pytest_phase_timing"
+
+
+def phase_args(junit: pathlib.Path) -> list[str]:
+    """The pytest arguments that load the phase plugin and point it at `junit`'s phase file."""
+    return ["-p", PHASE_PLUGIN, "--phase-timing", str(pytest_slow_ratchet.phases_path(junit))]
+
+
 # Serial re-runs of the tests the parallel run judged slow; the ratchet takes the median of the parallel run and these, so a candidate needs two of three runs over the threshold to fail (`pytest_slow_ratchet.confirm_candidates` states the measurement).
 SLOW_CONFIRM_RUNS = 2
 
@@ -379,7 +388,11 @@ def slow_ratchet(junit: pathlib.Path, pytest_bin: str, root: pathlib.Path) -> in
             )
         for run in range(1, SLOW_CONFIRM_RUNS + 1 if nodeids else 1):
             confirm = pathlib.Path(scratch) / ("slow-confirm-%d.xml" % run)
-            run_pytest(pytest_bin, root, ["-n", "0", "--junitxml", str(confirm), *nodeids])
+            run_pytest(
+                pytest_bin,
+                root,
+                ["-n", "0", "--junitxml", str(confirm), *phase_args(confirm), *nodeids],
+            )
             junits.append(confirm)
         return pytest_slow_ratchet.main([arg for j in junits for arg in ("--junit", str(j))])
 
@@ -1417,10 +1430,26 @@ def main(argv: list[str]) -> int:
         (root / ".ci" / "cache" / "quality-pytest").mkdir(parents=True, exist_ok=True)
         # A run that dies before pytest writes its junit (the timeout, a crash) must emit no finding: a previous run's file left here would name its failures as this run's.
         (root / ".ci" / "cache" / "quality-pytest" / junit_path.name).unlink(missing_ok=True)
+        (
+            root
+            / ".ci"
+            / "cache"
+            / "quality-pytest"
+            / pytest_slow_ratchet.phases_path(junit_path).name
+        ).unlink(missing_ok=True)
         returncode, out = run_pytest(
             pytest_bin,
             root,
-            ["-n", str(jobs()), "--dist", "loadgroup", "--junitxml", str(junit_path), *relpaths],
+            [
+                "-n",
+                str(jobs()),
+                "--dist",
+                "loadgroup",
+                "--junitxml",
+                str(junit_path),
+                *phase_args(junit_path),
+                *relpaths,
+            ],
         )
         collected, passed = parse_counts(out)
         contract_skips = parse_contract_skips(out)
@@ -1500,10 +1529,21 @@ def main(argv: list[str]) -> int:
     (root / ".ci" / "cache" / "quality-pytest").mkdir(parents=True, exist_ok=True)
     # A run that writes no junit (a timeout, a crash) emits no finding: a junit left by an earlier run would name its failures as this run's, so the file is removed first.
     (root / ".ci" / "cache" / "quality-pytest" / junit_path.name).unlink(missing_ok=True)
+    (
+        root / ".ci" / "cache" / "quality-pytest" / pytest_slow_ratchet.phases_path(junit_path).name
+    ).unlink(missing_ok=True)
     returncode, out = run_pytest(
         pytest_bin,
         root,
-        ["-n", str(jobs()), "--dist", "loadgroup", "--junitxml", str(junit_path)],
+        [
+            "-n",
+            str(jobs()),
+            "--dist",
+            "loadgroup",
+            "--junitxml",
+            str(junit_path),
+            *phase_args(junit_path),
+        ],
         timeout_s=whole_corpus_timeout_s(),
     )
     collected, passed = parse_counts(out)
@@ -1567,10 +1607,22 @@ def run_impact(pytest_bin: str, root: pathlib.Path, selection) -> int:
     (root / ".ci" / "cache" / "quality-pytest").mkdir(parents=True, exist_ok=True)
     # The same stale-junit rule as the full run: a run that writes no junit emits no finding.
     (root / ".ci" / "cache" / "quality-pytest" / junit_path.name).unlink(missing_ok=True)
+    (
+        root / ".ci" / "cache" / "quality-pytest" / pytest_slow_ratchet.phases_path(junit_path).name
+    ).unlink(missing_ok=True)
     returncode, out = run_pytest(
         pytest_bin,
         root,
-        ["-n", str(jobs()), "--dist", "loadgroup", "--junitxml", str(junit_path), *relpaths],
+        [
+            "-n",
+            str(jobs()),
+            "--dist",
+            "loadgroup",
+            "--junitxml",
+            str(junit_path),
+            *phase_args(junit_path),
+            *relpaths,
+        ],
         timeout_s=whole_corpus_timeout_s(),
     )
     collected, passed = parse_counts(out)

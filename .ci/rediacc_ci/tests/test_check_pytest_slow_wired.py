@@ -161,6 +161,71 @@ def test_control_a_test_slow_in_its_serial_re_times_too_still_fails(gate) -> Non
     assert len(calls) == 1 + check_pytest.SLOW_CONFIRM_RUNS
 
 
+def _run_phased(gate, shared: float) -> tuple[int, list[list[str]]]:
+    """Every run writes 11 s for ON_DISK to its junit and, where the run was handed `--phase-timing`, a phase file whose setup holds `shared` s of module-fixture setup."""
+    _root, monkeypatch, _emitted, _allow = gate
+    calls: list[list[str]] = []
+
+    def writes(_bin, _cwd, args=None, **_k):
+        args = list(args or [])
+        calls.append(args)
+        junit = pathlib.Path(args[args.index("--junitxml") + 1])
+        junit.write_text(
+            '<?xml version="1.0"?><testsuites><testsuite name="pytest">'
+            '<testcase classname="t.test_one" name="test_one" time="11.0"/></testsuite></testsuites>',
+            encoding="utf-8",
+        )
+        if "--phase-timing" in args:
+            phases = {"setup": shared + 0.5, "call": 10.5 - shared, "shared_setup": shared}
+            pathlib.Path(args[args.index("--phase-timing") + 1]).write_text(
+                json.dumps({"version": 1, "tests": {ON_DISK: phases}}), encoding="utf-8"
+            )
+        return 0, "1 passed\n"
+
+    monkeypatch.setattr(check_pytest, "run_pytest", writes)
+    return check_pytest.main([]), calls
+
+
+def test_every_run_loads_the_phase_plugin_beside_its_own_junit(gate) -> None:
+    _rc, calls = _run_phased(gate, 0.0)
+    assert len(calls) == 1 + check_pytest.SLOW_CONFIRM_RUNS
+    for args in calls:
+        assert args[args.index("-p") + 1] == check_pytest.PHASE_PLUGIN
+        junit = pathlib.Path(args[args.index("--junitxml") + 1])
+        assert args[args.index("--phase-timing") + 1] == str(
+            check_pytest.pytest_slow_ratchet.phases_path(junit)
+        )
+
+
+def test_a_test_slow_only_by_its_module_fixture_passes_without_a_re_time(gate) -> None:
+    """THE BEHAVIOUR: junit reads 11 s, 9 s of it module-fixture setup; the test's own 2 s is not a candidate."""
+    rc, calls = _run_phased(gate, 9.0)
+    assert rc == check_pytest.EXIT_OK
+    assert gate[2] == []
+    assert len(calls) == 1
+
+
+def test_control_a_test_slow_in_its_own_call_still_fails(gate) -> None:
+    rc, _calls = _run_phased(gate, 0.0)
+    assert rc == check_pytest.EXIT_FAIL
+    assert gate[2] == ["pytest-slow:%s" % ON_DISK]
+
+
+def test_a_stale_phase_file_from_an_earlier_run_is_removed_before_the_run(gate) -> None:
+    """A run that writes no phase file must not be judged on the last run's: the gate removes it first, so the 11 s junit time is judged and fails. No serial re-time runs here, so the parallel run alone decides; left in place, the stale file would read the test as 2 s and pass it."""
+    root, monkeypatch, _emitted, _allow = gate
+    monkeypatch.setattr(check_pytest, "SLOW_CONFIRM_RUNS", 0)
+    junit = check_pytest.junit_xml_path(root)
+    junit.parent.mkdir(parents=True, exist_ok=True)
+    stale = {"setup": 9.5, "call": 1.5, "shared_setup": 9.0}
+    check_pytest.pytest_slow_ratchet.phases_path(junit).write_text(
+        json.dumps({"version": 1, "tests": {ON_DISK: stale}}), encoding="utf-8"
+    )
+    rc, _calls = _run_retimed(gate, 11.0, 11.0)
+    assert rc == check_pytest.EXIT_FAIL
+    assert not check_pytest.pytest_slow_ratchet.phases_path(junit).exists()
+
+
 def test_control_a_fast_parallel_run_re_times_nothing(gate) -> None:
     rc, calls = _run_retimed(gate, 2.0, 11.0)
     assert rc == check_pytest.EXIT_OK

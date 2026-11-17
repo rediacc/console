@@ -6,12 +6,15 @@ THE TIME IS THE MEDIAN OF THE RUNS GIVEN. One junit run on a loaded machine read
 
 THE ALLOWLIST ONLY SHRINKS. A listed test that no longer runs over the threshold is reported as stale (`pytest-slow-stale`) and fails only under `--strict-stale`, because a run over a subset of the suite cannot tell "faster" from "not collected". Dropping the entry is how the baseline shrinks; adding one needs a reason that names why the test cannot be made fast.
 
+A TEST IS JUDGED ON ITS OWN TIME: its call, plus the setup that is not shared-fixture setup. junit's `time` is setup + call + teardown, so a module fixture's setup lands on the first test of its module (`test_githook_generated_artifacts` charged its 13 s `world` fixture to a test whose call took 2-4 s). The `pytest_phase_timing` plugin writes each run's phases to `<junit stem>.phases.json` beside the junit, and a test found there is judged on `setup - shared_setup + call`: function-scoped and autouse fixture setup stays the test's, any wider-scoped fixture's setup does not, and teardown is left out because a module fixture's teardown lands on the module's last test the same way. The shared setup is printed per file as information, the share no test is judged on. A junit with no phase file beside it, or a case its phase file lacks, is judged on the junit time, and the ratchet says so: a missing measurement never passes a test silently.
+
 EXIT CODES: 0 clean, 1 a finding, 2 no verdict (no junit readable, or none with a test case in it): a ratchet that read nothing proves nothing.
 """
 
 from __future__ import annotations
 
 import argparse
+import dataclasses
 import json
 import pathlib
 import re
@@ -30,6 +33,9 @@ if typing.TYPE_CHECKING:
 THRESHOLD_S = 10.0
 ALLOW_NAME = "pytest-slow-allow.json"
 JUNIT_RELPATH = ".ci/cache/quality-pytest/junit.xml"
+# A file whose shared fixture setup totals more than this is named in the information lines; below it the line is noise.
+SHARED_REPORT_FLOOR_S = 1.0
+SHARED_REPORT_LIMIT = 10
 _KEY_UNSAFE_RE = re.compile(r"[^A-Za-z0-9._:/@#-]")
 
 
@@ -39,23 +45,113 @@ def node_of(case: ElementTree.Element) -> str:
     return "%s::%s" % (case.get("classname") or "", name)
 
 
-def read_durations(junits: Iterable[pathlib.Path]) -> dict[str, float]:
-    """Each test's median seconds across `junits`; an unreadable file counts as absent, and a skipped test as no run."""
+def phases_path(junit: pathlib.Path) -> pathlib.Path:
+    """The phase file `pytest_phase_timing` writes for the run whose junit is `junit`: `<stem>.phases.json` beside it."""
+    return junit.with_suffix(".phases.json")
+
+
+def read_phases(path: pathlib.Path) -> tuple[dict[str, dict], str | None]:
+    """`(junit node -> phases, why it could not be read)`; the reason is None when the file was read."""
+    try:
+        doc = json.loads(path.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {}, "no phase file at %s" % path
+    except (OSError, ValueError) as exc:
+        return {}, "the phase file %s cannot be read (%s)" % (path, exc)
+    tests = doc.get("tests") if isinstance(doc, dict) else None
+    if not isinstance(tests, dict):
+        return {}, "the phase file %s holds no `tests` table" % path
+    return {k: v for k, v in tests.items() if isinstance(v, dict)}, None
+
+
+def own_seconds(phases: dict) -> tuple[float, float] | None:
+    """`(the test's own seconds, its shared-fixture setup seconds)` from one phase entry, or None when the entry carries no usable numbers.
+
+    Own is `setup - shared_setup + call`. An unmeasured `shared_setup` (null) counts as zero, so the whole setup stays charged to the test.
+    """
+    try:
+        setup = float(phases.get("setup") or 0.0)
+        call = float(phases.get("call") or 0.0)
+        shared = float(phases.get("shared_setup") or 0.0)
+    except (TypeError, ValueError):
+        return None
+    shared = min(max(shared, 0.0), setup)
+    return setup - shared + call, shared
+
+
+@dataclasses.dataclass
+class Timing:
+    """What the runs say: each test's median own seconds, the median shared-fixture setup charged to it, and the notes on any run judged on junit time."""
+
+    durations: dict[str, float]
+    shared: dict[str, float]
+    notes: list[str]
+
+
+def read_timing(junits: Iterable[pathlib.Path]) -> Timing:
+    """Each test's median seconds across `junits`, judged on its phases where a run's phase file holds it and on the junit time otherwise.
+
+    An unreadable junit counts as absent, and a skipped test as no run.
+    """
     samples: dict[str, list[float]] = {}
+    shared_samples: dict[str, list[float]] = {}
+    notes: list[str] = []
     for junit in junits:
         try:
             root = xml_trusted.parse(junit)
         except (OSError, SyntaxError):  # ElementTree.ParseError is a SyntaxError
             continue
+        phases, unreadable = read_phases(phases_path(junit))
+        if unreadable:
+            notes.append(
+                "%s; the tests of %s are judged on their junit time, which includes shared fixture setup"
+                % (unreadable, junit)
+            )
+        unphased = 0
         for case in root.iter("testcase"):
             if case.find("skipped") is not None:
+                continue
+            node = node_of(case)
+            measured = own_seconds(phases[node]) if node in phases else None
+            if measured is not None:
+                samples.setdefault(node, []).append(measured[0])
+                shared_samples.setdefault(node, []).append(measured[1])
                 continue
             try:
                 seconds = float(case.get("time") or 0.0)
             except ValueError:
                 continue
-            samples.setdefault(node_of(case), []).append(seconds)
-    return {node: statistics.median(times) for node, times in samples.items()}
+            if not unreadable:
+                unphased += 1
+            samples.setdefault(node, []).append(seconds)
+        if unphased:
+            notes.append(
+                "%d test(s) in %s have no entry in %s and are judged on their junit time"
+                % (unphased, junit, phases_path(junit))
+            )
+    return Timing(
+        durations={node: statistics.median(times) for node, times in samples.items()},
+        shared={node: statistics.median(times) for node, times in shared_samples.items()},
+        notes=notes,
+    )
+
+
+def read_durations(junits: Iterable[pathlib.Path]) -> dict[str, float]:
+    """Each test's median own seconds across `junits` (`read_timing` states the measurement)."""
+    return read_timing(junits).durations
+
+
+def shared_by_file(
+    shared: dict[str, float], floor: float = SHARED_REPORT_FLOOR_S
+) -> list[tuple[str, float]]:
+    """`(junit classname, shared-fixture setup seconds)` per test file over `floor`, costliest first: the setup no test is judged on."""
+    totals: dict[str, float] = {}
+    for node, seconds in shared.items():
+        classname = node.partition("::")[0]
+        totals[classname] = totals.get(classname, 0.0) + seconds
+    return sorted(
+        ((c, s) for c, s in totals.items() if s > floor), key=lambda item: (-item[1], item[0])
+    )
 
 
 def read_allow(path: pathlib.Path) -> tuple[dict[str, str], list[str]]:
@@ -151,7 +247,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     junits = args.junit or [root / JUNIT_RELPATH]
     allow_path = args.allow or policy_path(ALLOW_NAME, root)
 
-    durations = read_durations(junits)
+    timing = read_timing(junits)
+    durations = timing.durations
+    for note in timing.notes:
+        print("pytest-slow-ratchet: note: %s" % note)
     if not durations:
         print(
             "pytest-slow-ratchet: no test case in %s, so there is no verdict to render"
@@ -178,6 +277,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         if args.strict_stale:
             log.emit_finding(finding_key("pytest-slow-stale", node))
+    for classname, seconds in shared_by_file(timing.shared)[:SHARED_REPORT_LIMIT]:
+        print(
+            "pytest-slow-ratchet: info: %s spent %.1f s in shared (module, class or session) fixture setup, which is not charged to any test"
+            % (classname, seconds)
+        )
     failed = bool(slow or problems or (stale and args.strict_stale))
     print(
         "pytest-slow-ratchet: %d test(s) judged over %d run(s); %d unlisted over %g s, %d stale entries"
