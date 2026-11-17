@@ -36,7 +36,9 @@ def gate(tmp_path: pathlib.Path, monkeypatch):
     return tmp_path, monkeypatch, emitted, allow
 
 
-def _run_writing(gate, node: str, seconds: float, *, shard: bool = False, impact: bool = False) -> int:
+def _run_writing(
+    gate, node: str, seconds: float, *, shard: bool = False, impact: bool = False
+) -> int:
     root, monkeypatch, _emitted, _allow = gate
     classname, name = node.split("::")
     junit = check_pytest.junit_xml_path(root, shard_index=1 if shard else None)

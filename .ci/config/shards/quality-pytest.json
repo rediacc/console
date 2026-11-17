@@ -1,7 +1,7 @@
 {
   "lane": "quality-pytest",
   "of": 5,
-  "generatedAt": "2026-11-17T14:51:38.260Z",
+  "generatedAt": "2026-11-17T22:09:44.591Z",
   "legs": [
     {
       "index": 1,
@@ -426,6 +426,7 @@
         "pytest:.ci/rediacc_ci/tests/test_build_pack_cli_npm.py",
         "pytest:.ci/rediacc_ci/tests/test_catalog_generate.py",
         "pytest:.ci/rediacc_ci/tests/test_check_pytest_impact.py",
+        "pytest:.ci/rediacc_ci/tests/test_check_pytest_slow_wired.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_assert_install_methods_complete.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_detect_pointer_bump.py",
         "pytest:.ci/rediacc_ci/tests/test_ci_initialize.py",
@@ -475,6 +476,7 @@
         "pytest:.ci/rediacc_ci/tests/test_housekeeping_cleanup_pr_environments.py",
         "pytest:.ci/rediacc_ci/tests/test_input_hash_exempt_parity.py",
         "pytest:.ci/rediacc_ci/tests/test_input_hash_global_inputs.py",
+        "pytest:.ci/rediacc_ci/tests/test_input_hash_names_parity.py",
         "pytest:.ci/rediacc_ci/tests/test_local_gates_red_waiver.py",
         "pytest:.ci/rediacc_ci/tests/test_main.py",
         "pytest:.ci/rediacc_ci/tests/test_ops_bench_access.py",

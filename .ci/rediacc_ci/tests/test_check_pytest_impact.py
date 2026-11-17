@@ -11,6 +11,7 @@ import pathlib
 import pytest
 
 from rediacc_ci import check_pytest, log, pytest_impact
+from rediacc_ci.policy_paths import policy_path
 
 SELECTED = "t/test_one.py"
 OTHER = "t/test_two.py"
@@ -28,6 +29,9 @@ def gate(tmp_path: pathlib.Path, monkeypatch):
     # The full corpus must clear MIN_TESTS, or a full run fails floor 1 before the switch is judged.
     body = "".join("def test_n%d():\n    pass\n" % i for i in range(check_pytest.MIN_TESTS))
     (tmp_path / OTHER).write_text(body, encoding="utf-8")
+    allow = policy_path("pytest-slow-allow.json", tmp_path)
+    allow.parent.mkdir(parents=True, exist_ok=True)
+    allow.write_text('{"entries": []}', encoding="utf-8")
     monkeypatch.setattr(check_pytest.paths, "repo_root", lambda: tmp_path)
     monkeypatch.setattr(check_pytest, "resolve_pytest", lambda _root: "pytest")
     monkeypatch.setattr(check_pytest, "selftest", lambda *_a, **_k: True)
@@ -37,6 +41,14 @@ def gate(tmp_path: pathlib.Path, monkeypatch):
 
     def fake_run(_bin, _root, args=None, **_kw):
         calls.append(list(args or []))
+        if "--junitxml" in (args or []):
+            junit = pathlib.Path(args[args.index("--junitxml") + 1])
+            junit.parent.mkdir(parents=True, exist_ok=True)
+            junit.write_text(
+                '<?xml version="1.0"?><testsuites><testsuite name="pytest">'
+                '<testcase classname="t.fast" name="test_fast" time="0.1"/></testsuite></testsuites>',
+                encoding="utf-8",
+            )
         files = [a for a in (args or []) if a.endswith(".py")]
         n = 2 if files == [SELECTED] else 2 + check_pytest.MIN_TESTS
         return 0, "collected %d items\n%d passed in 0.1s\n" % (n, n)

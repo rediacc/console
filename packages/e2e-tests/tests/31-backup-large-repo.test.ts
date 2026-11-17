@@ -73,6 +73,23 @@ const REPO_SIZE = `${SEED_GB + 10}G`;
 const DATASTORE_SIZE = `${SEED_GB + 30}G`;
 /** Quota the account must admit: the seed plus the change and the control, with margin. */
 const QUOTA_NEEDED = SEED_BYTES + 5 * GIB;
+
+/** Reads the local backup store's free disk through docker and judges it against the quota the seed needs. */
+async function probeStoreSpace(endpoint: string) {
+  let dockerErr: unknown;
+  const storeDf = await promisify(exec)(
+    `docker exec ${LOCAL_STORE_CONTAINER} df -B1 --output=avail /data`,
+    { timeout: 20_000 }
+  ).then(
+    (r) => parseDfAvailBytes(r.stdout),
+    (e: unknown) => {
+      dockerErr = e;
+      return undefined;
+    }
+  );
+  const space = storeSpaceVerdict({ endpoint, neededBytes: QUOTA_NEEDED, freeBytes: storeDf });
+  return { space, dockerErr };
+}
 /** A seed that takes longer than this is a hang, not a slow runner. */
 const SEED_HANG_MS = 3_600_000;
 /** Free GiB the worker's datastore filesystem must show before anything is written. */
@@ -244,22 +261,7 @@ test.describe
 
         // The backup store's own disk: a full one fails the seed's chunk PUTs only after minutes of retries.
         const endpoint = storeAccessFromEnv()?.endpoint ?? 'http://127.0.0.1:9100';
-        let dockerErr: unknown;
-        const storeDf = await promisify(exec)(
-          `docker exec ${LOCAL_STORE_CONTAINER} df -B1 --output=avail /data`,
-          { timeout: 20_000 }
-        ).then(
-          (r) => parseDfAvailBytes(r.stdout),
-          (e: unknown) => {
-            dockerErr = e;
-            return undefined;
-          }
-        );
-        const space = storeSpaceVerdict({
-          endpoint,
-          neededBytes: QUOTA_NEEDED,
-          freeBytes: storeDf,
-        });
+        const { space, dockerErr } = await probeStoreSpace(endpoint);
         if (space.kind === 'skipped') {
           const detail = dockerSkipDetail(endpoint, dockerErr);
           test

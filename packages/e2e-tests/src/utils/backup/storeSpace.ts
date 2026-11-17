@@ -8,7 +8,7 @@
 export const LOCAL_STORE_CONTAINER = 'account-config-rustfs';
 
 /** True when the endpoint is the dev store on this host, whose container disk can be read. */
-export function isLocalStoreEndpoint(endpoint: string): boolean {
+function isLocalStoreEndpoint(endpoint: string): boolean {
   try {
     const host = new URL(endpoint).hostname;
     return host === '127.0.0.1' || host === 'localhost' || host === '[::1]' || host === '::1';
