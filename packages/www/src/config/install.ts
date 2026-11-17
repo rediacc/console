@@ -1,5 +1,9 @@
 import { UPDATE_DEFAULTS } from '@rediacc/shared/config/defaults';
 import {
+  quickInstallUnixCommand,
+  quickInstallWinCommand,
+} from '@rediacc/shared/config/install-commands';
+import {
   WK_HOMEBREW_TAP,
   WK_IMAGE_REGISTRY,
   WK_RELEASES_ORIGIN,
@@ -32,8 +36,8 @@ export const PLATFORMS: {
   { key: 'windows', iconId: 'windows', labelKey: 'hero.install.tabs.windows' },
 ];
 
-export const QUICK_INSTALL_UNIX = `# Linux / macOS\ncurl -fsSL ${SITE_URL}/install.sh | bash`;
-export const QUICK_INSTALL_WIN = `# Windows (PowerShell)\nirm ${SITE_URL}/install.ps1 | iex`;
+export const QUICK_INSTALL_UNIX = `# Linux / macOS\n${quickInstallUnixCommand(SITE_URL)}`;
+export const QUICK_INSTALL_WIN = `# Windows (PowerShell)\n${quickInstallWinCommand(SITE_URL)}`;
 
 export const BINARY_COMMANDS: Record<Platform, string> = {
   linux: `# Linux x64
