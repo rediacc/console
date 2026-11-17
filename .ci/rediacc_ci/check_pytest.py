@@ -67,6 +67,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1]))
 from rediacc_ci import core_lease, log, paths, proc, pytest_impact
 from rediacc_ci.controls import Controls
 from rediacc_ci.core import xml_trusted
+from rediacc_ci.quality import pytest_slow_ratchet
 
 # See the module docstring for why this is a constant and floor 2 is not.
 MIN_TESTS = 150
@@ -358,6 +359,11 @@ def junit_finding_keys(junit: pathlib.Path) -> list[str]:
 def emit_junit_findings(junit: pathlib.Path) -> None:
     for key in junit_finding_keys(junit):
         log.emit_finding(key)
+
+
+def slow_ratchet(junit: pathlib.Path) -> int:
+    """Run the slow-test ratchet over the junit this run just wrote: 0 clean, 1 a test over 10 s that `pytest-slow-allow.json` does not list, 2 no verdict (no test case in the junit). Anything but 0 fails the gate, so a passing run that wrote no readable junit cannot go green past it."""
+    return pytest_slow_ratchet.main(["--junit", str(junit)])
 
 
 def verdict(
@@ -1418,6 +1424,8 @@ def main(argv: list[str]) -> int:
             print("\n%s✗%s %s" % (RED, NC, problem), file=sys.stderr)
             emit_junit_findings(junit_path)
             return EXIT_FAIL
+        if slow_ratchet(junit_path) != 0:
+            return EXIT_FAIL
         write_scope(
             root,
             {
@@ -1501,6 +1509,8 @@ def main(argv: list[str]) -> int:
         emit_junit_findings(junit_path)
         return EXIT_FAIL
 
+    if slow_ratchet(junit_path) != 0:
+        return EXIT_FAIL
     write_scope(
         root,
         {
@@ -1564,6 +1574,8 @@ def run_impact(pytest_bin: str, root: pathlib.Path, selection) -> int:
         print(out, file=sys.stderr)
         print("\n%s✗%s %s" % (RED, NC, problem), file=sys.stderr)
         emit_junit_findings(junit_path)
+        return EXIT_FAIL
+    if slow_ratchet(junit_path) != 0:
         return EXIT_FAIL
     write_scope(
         root,
