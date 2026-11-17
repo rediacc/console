@@ -2,7 +2,7 @@
 
 WHY (PLAN-ciquick-cpu.md Fix C). The 594 tests over 5 s took 68% of pytest time, and nothing stopped the next slow test from joining them. The allowlist is the baseline of the tests already that slow, each with a reason; a test not listed that runs over the threshold is a finding.
 
-THE TIME IS THE MEDIAN OF THE RUNS GIVEN. One junit run on a loaded machine reads a 4 s test as 12 s, so the caller passes up to three `--junit` files (one per run) and each test is judged on its median across the runs that contain it. One file is judged as it stands.
+THE TIME IS THE MEDIAN OF THE RUNS GIVEN. One junit run on a loaded machine reads a 4 s test as 12 s, so the caller passes up to three `--junit` files (one per run) and each test is judged on its median across the runs that contain it. One file is judged as it stands. `check_pytest.slow_ratchet` passes three: the parallel run plus two serial re-runs of the `confirm_candidates` it named.
 
 THE ALLOWLIST ONLY SHRINKS. A listed test that no longer runs over the threshold is reported as stale (`pytest-slow-stale`) and fails only under `--strict-stale`, because a run over a subset of the suite cannot tell "faster" from "not collected". Dropping the entry is how the baseline shrinks; adding one needs a reason that names why the test cannot be made fast.
 
@@ -90,6 +90,37 @@ def over_threshold(
     )
     stale = sorted(n for n in allowed if n in durations and durations[n] <= threshold)
     return slow, stale
+
+
+def nodeid_of(node: str, root: pathlib.Path) -> str | None:
+    """The pytest node id of a junit `<classname>::<name>` under `root`, or None when no file under `root` holds the classname's dotted path.
+
+    A leading dot is a hidden directory (`.ci.rediacc_ci.tests.test_x` is `.ci/rediacc_ci/tests/test_x.py`), and the dotted parts past the file are test classes.
+    """
+    classname, _, name = node.partition("::")
+    parts = classname.split(".")
+    if len(parts) > 1 and parts[0] == "":
+        parts = ["." + parts[1], *parts[2:]]
+    for k in range(len(parts), 0, -1):
+        rel = "/".join(parts[:k]) + ".py"
+        if (root / rel).is_file():
+            return "::".join([rel, *parts[k:], name])
+    return None
+
+
+def confirm_candidates(
+    junit: pathlib.Path,
+    root: pathlib.Path,
+    allow_path: pathlib.Path | None = None,
+    threshold: float = THRESHOLD_S,
+) -> list[str]:
+    """The pytest node ids of the unlisted tests over `threshold` in `junit`, for the caller to re-time in serial runs.
+
+    WHY (2026-11-17). The full run is parallel, so its times carry the suite's own contention and a shared fixture's setup lands on whichever test reaches a worker first: 38 of the 40 tests that full run judged over 10 s ran between 0.0 and 9.1 s when re-run alone (`test_d1_shard_move` cases read 28 s against 0.2 s). Re-timing only the candidates in serial runs and judging the median across all runs keeps the threshold about the test rather than the machine. A candidate whose file cannot be found is not re-timed and is judged on the full run alone.
+    """
+    allowed, _problems = read_allow(allow_path or policy_path(ALLOW_NAME, root))
+    slow, _stale = over_threshold(read_durations([junit]), allowed, threshold)
+    return [nodeid for node, _s in slow if (nodeid := nodeid_of(node, root)) is not None]
 
 
 def finding_key(rule: str, node: str) -> str:

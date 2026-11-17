@@ -127,3 +127,37 @@ def test_the_real_allowlist_is_well_formed_and_every_entry_has_a_reason():
     assert not problems, problems
     assert allowed, "an empty allowlist would make the baseline claim nothing"
     assert all(reason.strip() for reason in allowed.values())
+
+
+def _tree(tmp_path: pathlib.Path) -> pathlib.Path:
+    for rel in (".ci/pkg/tests/test_hidden.py", "pkg/test_mod.py"):
+        (tmp_path / rel).parent.mkdir(parents=True, exist_ok=True)
+        (tmp_path / rel).write_text("", encoding="utf-8")
+    return tmp_path
+
+
+@pytest.mark.parametrize(
+    ("node", "nodeid"),
+    [
+        (".ci.pkg.tests.test_hidden::test_a[x/y z]", ".ci/pkg/tests/test_hidden.py::test_a[x/y z]"),
+        ("pkg.test_mod.TestCls::test_b", "pkg/test_mod.py::TestCls::test_b"),
+        ("pkg.test_mod::test_c", "pkg/test_mod.py::test_c"),
+    ],
+)
+def test_a_junit_node_maps_to_the_pytest_node_id_of_its_file(tmp_path, node, nodeid):
+    assert ratchet.nodeid_of(node, _tree(tmp_path)) == nodeid
+
+
+def test_control_a_node_with_no_file_under_the_root_maps_to_nothing(tmp_path):
+    assert ratchet.nodeid_of("pkg.test_gone::test_c", _tree(tmp_path)) is None
+
+
+def test_the_confirm_candidates_are_the_unlisted_slow_tests_with_a_file(tmp_path):
+    root = _tree(tmp_path)
+    junit = _junit(tmp_path / "j.xml", {"test_slow": 11.0, "test_listed": 12.0, "test_fast": 2.0})
+    allow = _allow(
+        tmp_path / "allow.json", [{"test": "pkg.test_mod::test_listed", "reason": "real build"}]
+    )
+    assert ratchet.confirm_candidates(junit, root, allow) == ["pkg/test_mod.py::test_slow"]
+    (root / "pkg" / "test_mod.py").unlink()
+    assert ratchet.confirm_candidates(junit, root, allow) == []
