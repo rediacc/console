@@ -207,7 +207,7 @@ private/account/web/src/pages/admin/RootApiTokens.tsx at `/account/admin/root-to
 
 Unchanged. login_bench keeps the password and TOTP path, and root_login has no bench target (.ci/rediacc_ci/ops/root_login.py:35). The server code also deploys to bench, but nothing there mints a root token.
 
-## Rulings needed (defaults run unless vetoed)
+## Rulings (defaults run unless vetoed; answered ones say so)
 
 - **Q1. Per-region names (answered 2026-11-17).** Tokens are per regional D1 (Context 9), so one value cannot serve eu, us and asia. The operator chose the suffixed form, "let's add _EU suffix to the name for consistency with others": every region reads `ROOT_API_TOKEN_<secretSuffix>` from regions.json (`ROOT_API_TOKEN_EU`, `ROOT_API_TOKEN_US`, `ROOT_API_TOKEN_ASIA`), with no unsuffixed name (landed 727d194e5b, account 992a562). The rejected default was an unsuffixed `ROOT_API_TOKEN` for eu.
 - **Q2. Self-rotation.** Default yes: the token rotates itself through `rotate`, capped at one year from the portal mint, so the operator mints once a year. Alternative: no rotate route, and the operator re-mints every 90 days.

@@ -145,7 +145,8 @@ def _build_sh_go_build(
 def _expected_control_stamp(version: str, sub_head: str, outer_head: str) -> tuple[str, str]:
     """The stamp a plain `go build` in the submodule gives: the outer commit, dirty, below Go 1.27; the submodule's own commit, clean, from 1.27."""
     found = re.search(r"go(\d+)\.(\d+)", version)
-    assert found, f"CONTROL: cannot read a Go version from {version!r}"
+    if found is None:
+        raise RuntimeError(f"CONTROL: cannot read a Go version from {version!r}")
     if (int(found.group(1)), int(found.group(2))) < (1, 27):
         return (outer_head, "true")
     return (sub_head, "false")
@@ -164,7 +165,7 @@ def test_the_control_binds_each_stamp_shape_to_its_go_version() -> None:
         "sub",
         "false",
     )
-    with pytest.raises(AssertionError, match="cannot read a Go version"):
+    with pytest.raises(RuntimeError, match="cannot read a Go version"):
         _expected_control_stamp("go version devel", "sub", "outer")
 
 

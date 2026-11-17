@@ -90,7 +90,11 @@ def worktree_check_cases():
     notes, blocks = drive(False, True, True, False)
     check("ci:quick outranks release:local", notes, [M.N_WORKTREE_CIQUICK % "lease1"])
     notes, blocks = drive(True, True, True, True)
-    check("vm:check outranks ci:quick, release:local and the receipt", notes, [M.N_WORKTREE_VMCHECK % "lease1"])
+    check(
+        "vm:check outranks ci:quick, release:local and the receipt",
+        notes,
+        [M.N_WORKTREE_VMCHECK % "lease1"],
+    )
     check("...and blocks nothing", blocks, [])
     notes, blocks = drive(False, False, False, False)
     check("control: with no hold the unlanded lease blocks", blocks, ["worktree-unlanded"])

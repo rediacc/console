@@ -417,12 +417,13 @@ def test_a_receipt_failed_list_with_a_non_string_entry_refuses(
 def test_a_falsy_non_list_failed_field_refuses_not_an_empty_list(
     tmp_path: pathlib.Path, failed: Any
 ) -> None:
-    """Review 950cf891.1/.2: a falsy value that is not a list ("", 0, {}, false, null) is refused as 'not a list', never read as an empty failed list (the receipt consistency check, block_unverified_push.py `failed` list test, refuses it before the waiver)."""
+    """Review 950cf891.1/.2: a falsy value that is not a list ("", 0, {}, false, null) is refused by the receipt consistency check ("the receipt's `failed` list ... is not the set of gates with verdict fail"), never read as an empty failed list (the receipt consistency check, block_unverified_push.py `failed` list test, refuses it before the waiver)."""
     root = red_world(tmp_path, failed)
     refusal, admission = verdict(root, "%s %s %s" % (OPS, ASK, REASON))
     assert admission is None
     assert refusal is not None
-    assert "`failed` list" in refusal.message or "failed field is not a list" in refusal.message
+    assert "the receipt's `failed` list" in refusal.message
+    assert "is not the set of gates with verdict fail" in refusal.message
 
 
 # --------------------------------------------------------------------------- the record
