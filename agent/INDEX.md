@@ -460,7 +460,7 @@ What `--plan-why <path>` answers from. Each row is a path a compacted plan cited
 
 ## Plan census
 
-Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 251 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
+Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans block can be printed from THIS file instead of opening all 253 of them. The hook checks freshness with `stat` alone (path set plus byte size) and falls back to reading the plans, loudly, when the two disagree.
 
 | Plan | Status | lines | open | ticked | bytes |
 |---|---|---|---|---|---|
@@ -473,7 +473,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-ask-flow-preemptive-settled-check.md` | compacted | 38 | 0 | 0 | 2358 |
 | `agent/plans/PLAN-backup-critical-tier.md` | approved | 799 | 3 | 48 | 116026 |
 | `agent/plans/PLAN-backup-download-from-store.md` | approved | 58 | 1 | 8 | 12672 |
-| `agent/plans/PLAN-backup-integrity.md` | approved | 506 | 8 | 48 | 80112 |
+| `agent/plans/PLAN-backup-integrity.md` | approved | 507 | 7 | 49 | 80351 |
 | `agent/plans/PLAN-backup-list-executor-fix.md` | compacted | 55 | 0 | 0 | 5498 |
 | `agent/plans/PLAN-backup-local-image.md` | approved | 458 | 3 | 11 | 58086 |
 | `agent/plans/PLAN-backup-meter-orphaned-chunks.md` | approved | 274 | 0 | 8 | 36927 |
@@ -510,6 +510,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-config-mirror-reseal.md` | proposed | 24 | 0 | 2 | 3299 |
 | `agent/plans/PLAN-config-networkid-discovery.md` | approved | 190 | 0 | 8 | 26833 |
 | `agent/plans/PLAN-console-executor-multi-org.md` | approved | 377 | 1 | 17 | 67459 |
+| `agent/plans/PLAN-console-private.md` | proposed | 329 | 32 | 0 | 55607 |
 | `agent/plans/PLAN-consolidation-pressure.md` | compacted | 60 | 0 | 10 | 5277 |
 | `agent/plans/PLAN-converge-preflight-and-repo-recovery.md` | executing | 94 | 0 | 19 | 34124 |
 | `agent/plans/PLAN-csi-staging-redesign.md` | proposed | 71 | 12 | 0 | 13631 |
@@ -548,7 +549,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-greenlight-verify-at-read.md` | compacted | 44 | 0 | 0 | 3606 |
 | `agent/plans/PLAN-haiku-model-routing.md` | executing | 249 | 9 | 11 | 30400 |
 | `agent/plans/PLAN-health-checks-local.md` | approved | 707 | 17 | 64 | 131836 |
-| `agent/plans/PLAN-hostinger-to-bench.md` | approved | 100 | 14 | 8 | 19271 |
+| `agent/plans/PLAN-hostinger-to-bench.md` | approved | 101 | 13 | 9 | 19524 |
 | `agent/plans/PLAN-idle-writer-capacity.md` | approved | 65 | 0 | 5 | 12586 |
 | `agent/plans/PLAN-jobs-backup-real-machine-tests.md` | approved | 55 | 1 | 10 | 12683 |
 | `agent/plans/PLAN-judge-gate-worthiness-and-surface-scope.md` | compacted | 39 | 0 | 0 | 3232 |
@@ -613,6 +614,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/PLAN-shell-command-gate-regex-fix.md` | compacted | 39 | 0 | 0 | 3165 |
 | `agent/plans/PLAN-shell-resource-profiling.md` | compacted | 38 | 0 | 0 | 3311 |
 | `agent/plans/PLAN-signer-bench-stop-binding-reattach.md` | executing | 37 | 0 | 3 | 6287 |
+| `agent/plans/PLAN-site-entry-points.md` | approved | 148 | 11 | 0 | 20425 |
 | `agent/plans/PLAN-skip-release-gates-r2-manifest.md` | compacted | 39 | 0 | 0 | 3156 |
 | `agent/plans/PLAN-snapshot-read-io-cap.md` | approved | 262 | 1 | 15 | 38148 |
 | `agent/plans/PLAN-split-cli-files-over-512-line-budget.md` | executing | 38 | 0 | 7 | 5640 |
@@ -716,7 +718,7 @@ Every `agent/PLAN-*.md`, one row, so the SessionStart and PostCompact plans bloc
 | `agent/plans/_done/PLAN-w7p5a-real-run-dispatch.md` | done | 818 | 0 | 10 | 107465 |
 | `agent/plans/_done/PLAN-www-solution-video-gaps.md` | done | 65 | 0 | 0 | 6663 |
 
-251 plan(s), 189 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
+253 plan(s), 191 carrying boxes. Regenerate with `npm run check:ci-plan-record -- --update`.
 
 ## Expired plans
 

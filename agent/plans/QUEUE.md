@@ -82,21 +82,21 @@ What the loop is working on now, rendered between the markers by `.claude/hooks/
   - epic f65726d5, plan agent/plans/PLAN-renet-down-before-kill.md, outside the set, 19 commit(s) on the branch, 0 open item(s): renet runs Rediaccfile down() before repo containers stop
   - epic 53c31db2, plan agent/plans/PLAN-repo-resource-limits.md, outside the set, 20 commit(s) on the branch, 0 open item(s): per-repo resource limits and a renet-managed RAM volume
   - epic a86f5622, plan agent/plans/PLAN-production-key-only.md, outside the set, 4 commit(s) on the branch, 0 open item(s): Production key only: every leg licensed from its own plane
-  - epic 79b7e92e, no plan, 1257 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
+  - epic 79b7e92e, no plan, 1267 commit(s) on the branch, 0 open item(s): D1 scaling review fixes: sweep limits, nightly token sweeps, telemetry retention
   - epic 562ef6c3, plan agent/plans/PLAN-experience-feedback.md, outside the set, 127 commit(s) on the branch, 0 open item(s): experience feedback: ledgers reach writers, the reviewer and guards; enforced lessons retire
   - epic f32615b6, plan agent/plans/PLAN-account-notices.md, outside the set, 23 commit(s) on the branch, 0 open item(s): account notices: notices store, bell, history page, rdc subscription notices/retire/status names, reminder redesign
   - epic c01fbf97, plan agent/plans/PLAN-enterprise-tenants.md, outside the set, 182 commit(s) on the branch, 0 open item(s): enterprise tenants: acme.rediacc.cloud and acme.rediacc.io
   - epic 697364c9, plan agent/plans/PLAN-licence-expiry-notices.md, outside the set, 30 commit(s) on the branch, 0 open item(s): licence expiry notices: delegation-cert countdown mails, sales digest, on-box countdown
   - epic 2255f2d2, no plan, 2 commit(s) on the branch, 0 open item(s): Convert stale GitHub issues (console, renet, account) into plan files
-- Writers: 2 live of writer_cap 25 (session d778be9d): worker:a667ae7f390bb1d17, worker:a08c5454a66097da0.
-- Leased items: 12: #02389657 (worker:bnh4sgdl7, d778be9d), #36ffb824 (worker:b3xi1bua3, d778be9d), #400ae5ea (worker:bnh4sgdl7, d778be9d), #4889018a (worker:bnh4sgdl7, d778be9d), #6d5593e9 (worker:b3xi1bua3, d778be9d), #719d19c6 (worker:bnh4sgdl7, d778be9d), #864b6bca (worker:bnh4sgdl7, d778be9d), #8bb65426 (worker:bnh4sgdl7, d778be9d), #966364da (worker:bnh4sgdl7, d778be9d), #be81bb6b (worker:bnh4sgdl7, d778be9d), #c241bbbe (worker:a08c5454a66097da0, d778be9d), #edac9b6d (worker:bnh4sgdl7, d778be9d).
+- Writers: 5 live of writer_cap 25 (session d778be9d): worker:a358d413dd9312119, worker:a0c3837cc4330f494, worker:a7dd98a0d3c3eb97b, worker:afcaaf2ec5f5845aa, worker:aeb9d0fd3e89c7eef.
+- Leased items: 16: #02389657 (worker:blbwyp93p, d778be9d), #12e2fd33 (worker:afcaaf2ec5f5845aa, d778be9d), #36ffb824 (worker:b3xi1bua3, d778be9d), #400ae5ea (worker:a358d413dd9312119, d778be9d), #4889018a (worker:blbwyp93p, d778be9d), #4bf8713d (worker:a7dd98a0d3c3eb97b, d778be9d), #6d5593e9 (worker:b3xi1bua3, d778be9d), #719d19c6 (worker:a358d413dd9312119, d778be9d), #732fbea9 (worker:aeb9d0fd3e89c7eef, d778be9d), #864b6bca (worker:a358d413dd9312119, d778be9d), #8bb65426 (worker:blbwyp93p, d778be9d), #966364da (worker:blbwyp93p, d778be9d), and 4 more.
 - Next plan: agent/plans/PLAN-cloudflare-proxy.md, Promoted entry 2; a turbo pick joins this PR when a writer slot frees under plan_concurrency 5.
 <!-- queue:inflight:end -->
 
 ## Promoted
 
 <!-- queue:progress:begin -->
-Promoted: 26 of 75 plans done, 1183 of 1397 boxes done (84%).
+Promoted: 26 of 76 plans done, 1185 of 1408 boxes done (84%).
 
 | # | Plan | Boxes done | State |
 |---|---|---|---|
@@ -136,7 +136,7 @@ Promoted: 26 of 75 plans done, 1183 of 1397 boxes done (84%).
 | 34 | PLAN-backup-download-from-store.md | 8/9 | 1 open |
 | 35 | PLAN-settings-set-verb.md | 4/4 | done |
 | 36 | PLAN-free-license.md | 11/13 | 2 open |
-| 37 | PLAN-backup-integrity.md | 48/56 | 8 open |
+| 37 | PLAN-backup-integrity.md | 49/56 | 7 open |
 | 38 | PLAN-backup-critical-tier.md | 48/51 | 3 open |
 | 39 | PLAN-rediaccfile-unprivileged.md | 18/23 | 5 open |
 | 40 | PLAN-worktree-lease.md | 15/16 | 1 open |
@@ -172,9 +172,10 @@ Promoted: 26 of 75 plans done, 1183 of 1397 boxes done (84%).
 | 70 | PLAN-onprem-relicence-inbox.md | 10/13 | 3 open |
 | 71 | PLAN-signer-bench-stop-binding-reattach.md | 3/3 | done |
 | 72 | PLAN-d1-eu-jurisdiction.md | 3/22 | 19 open |
-| 73 | PLAN-hostinger-to-bench.md | 8/22 | 14 open |
+| 73 | PLAN-hostinger-to-bench.md | 9/22 | 13 open |
 | 74 | PLAN-multi-region-bench.md | 13/23 | 10 open |
 | 75 | PLAN-root-api-token.md | 7/15 | 8 open |
+| 76 | PLAN-site-entry-points.md | 0/11 | 11 open |
 <!-- queue:progress:end -->
 
 1. agent/plans/PLAN-backup-program.md -- operator 2026-10-20 ("move agent/plans/PLAN-backup-program.md to the promoted"): one backup program across renet, account, CLI and shared, ending in a live hostinger to eu R2 backup; P1; Depends-On PLAN-shell-sandbox-readonly-view.md and PLAN-account-vm-check.md (done 2026-10-20); released to writers by operator /ask ASKED:2026-10-20T15:14Z ("edit writers to go NOW")
@@ -252,6 +253,7 @@ Promoted: 26 of 75 plans done, 1183 of 1397 boxes done (84%).
 73. agent/plans/PLAN-hostinger-to-bench.md -- operator ruling 2026-11-13 (move hostinger to bench on a path that needs no operator present): eu-remote stops agents at the operator authenticator on every IP change; hostinger re-homes to eu-bench with a reset guard, pinned allowlist entries and a credential escrow; rediacc-backups-eu deletion waits on C7; P0
 74. agent/plans/PLAN-multi-region-bench.md -- operator ruling ASKED:2026-11-13T13:55Z (always-on us and asia benches, us/asia objects copy production placement, all three hosts named bench-<region>.rediacc.cloud with the eu bench migrated off bench.rediacc.cloud): one bench per production region for region proofs and Cloudflare regional-incident rehearsal; cost $0.00 idle, $0.18 typical, $2.44 heavy per month
 75. agent/plans/PLAN-root-api-token.md -- operator ruling ASKED:2026-11-15T17:07Z ("Root API token (Recommended)": agents act as root on stable/edge through a root-scoped, IP-bound, expiring token with a TOTP session; no captcha bypass; one portal mint by the operator)
+76. agent/plans/PLAN-site-entry-points.md -- operator /ask ASKED:2026-11-17T09:06Z ("Site fixes now, private later"): portal onboarding docs links on www (they 404 on the portal host), a Downloads link under the home video ("Link under the video", ASKED:2026-11-17T08:46Z), and Linux/macOS + Windows install tabs in the portal ("Tabs, no detection")
 
 ## Generated
 
@@ -264,34 +266,35 @@ Promoted: 26 of 75 plans done, 1183 of 1397 boxes done (84%).
 6. agent/plans/PLAN-deletion-budget.md -- P3 (operator), draft, not started
 7. agent/plans/PLAN-backup-schedule-origin-guard.md -- P1, proposed, not started
 8. agent/plans/PLAN-ciquick-cpu.md -- P1, approved, not started
-9. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
-10. agent/plans/PLAN-nightly-green.md -- P1, proposed, not started
-11. agent/plans/PLAN-release-credits-compliance.md -- P1, proposed, not started
-12. agent/plans/PLAN-terms-region-notice.md -- P1, proposed, not started
-13. agent/plans/PLAN-canary-on-clusters.md -- P2, proposed, not started
-14. agent/plans/PLAN-cluster-crosssite-transport.md -- P2, proposed, not started
-15. agent/plans/PLAN-cluster-live-proofs.md -- P2, proposed, not started
-16. agent/plans/PLAN-csi-staging-redesign.md -- P2, proposed, not started
-17. agent/plans/PLAN-datastore-migrate-correctness.md -- P2, proposed, not started
-18. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
-19. agent/plans/PLAN-ghcr-registry-cleanup.md -- P2, proposed, not started
-20. agent/plans/PLAN-kubelet-cgroup-rediacc-slice.md -- P2, proposed, not started
-21. agent/plans/PLAN-multicluster-local-suite.md -- P2, proposed, not started, dep-blocked
-22. agent/plans/PLAN-portal-analytics.md -- P2, proposed, not started
-23. agent/plans/PLAN-pr-path-ephemeral-credentials.md -- P2, proposed, not started
-24. agent/plans/PLAN-reggate-debt-collection.md -- P2, proposed, not started
-25. agent/plans/PLAN-retire-nightlies-and-mentions.md -- P2, proposed, not started
-26. agent/plans/PLAN-tutorial-recorder-licence.md -- P2, proposed, not started
-27. agent/plans/PLAN-www-funnel-truthfulness.md -- P2, proposed, not started
-28. agent/plans/PLAN-cncf-conformance.md -- P3, approved, not started
-29. agent/plans/PLAN-elite-to-onprem-rename.md -- P3, proposed, not started, dep-blocked
-30. agent/plans/PLAN-family-loop-migrate.md -- P3, proposed, not started, dep-blocked
-31. agent/plans/PLAN-partner-sales-track.md -- P3, proposed, not started
-32. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
-33. agent/plans/PLAN-renet-i18n-baseline-drain.md -- P3, proposed, not started
-34. agent/plans/PLAN-tutorial-rerecord.md -- P3, proposed, not started, dep-blocked
-35. agent/plans/PLAN-vscode-browser-exposure.md -- P3, proposed, not started
-36. agent/plans/PLAN-zot-manifest-list-commit.md -- P3, proposed, not started, dep-blocked
+9. agent/plans/PLAN-console-private.md -- P1, proposed, not started
+10. agent/plans/PLAN-fix-upgrade-drills-flat-daemon-bringup.md -- P1, executing, not started
+11. agent/plans/PLAN-nightly-green.md -- P1, proposed, not started
+12. agent/plans/PLAN-release-credits-compliance.md -- P1, proposed, not started
+13. agent/plans/PLAN-terms-region-notice.md -- P1, proposed, not started
+14. agent/plans/PLAN-canary-on-clusters.md -- P2, proposed, not started
+15. agent/plans/PLAN-cluster-crosssite-transport.md -- P2, proposed, not started
+16. agent/plans/PLAN-cluster-live-proofs.md -- P2, proposed, not started
+17. agent/plans/PLAN-csi-staging-redesign.md -- P2, proposed, not started
+18. agent/plans/PLAN-datastore-migrate-correctness.md -- P2, proposed, not started
+19. agent/plans/PLAN-first-release-checks.md -- P2, approved, not started
+20. agent/plans/PLAN-ghcr-registry-cleanup.md -- P2, proposed, not started
+21. agent/plans/PLAN-kubelet-cgroup-rediacc-slice.md -- P2, proposed, not started
+22. agent/plans/PLAN-multicluster-local-suite.md -- P2, proposed, not started, dep-blocked
+23. agent/plans/PLAN-portal-analytics.md -- P2, proposed, not started
+24. agent/plans/PLAN-pr-path-ephemeral-credentials.md -- P2, proposed, not started
+25. agent/plans/PLAN-reggate-debt-collection.md -- P2, proposed, not started
+26. agent/plans/PLAN-retire-nightlies-and-mentions.md -- P2, proposed, not started
+27. agent/plans/PLAN-tutorial-recorder-licence.md -- P2, proposed, not started
+28. agent/plans/PLAN-www-funnel-truthfulness.md -- P2, proposed, not started
+29. agent/plans/PLAN-cncf-conformance.md -- P3, approved, not started
+30. agent/plans/PLAN-elite-to-onprem-rename.md -- P3, proposed, not started, dep-blocked
+31. agent/plans/PLAN-family-loop-migrate.md -- P3, proposed, not started, dep-blocked
+32. agent/plans/PLAN-partner-sales-track.md -- P3, proposed, not started
+33. agent/plans/PLAN-plan-verbs.md -- P3, draft, not started
+34. agent/plans/PLAN-renet-i18n-baseline-drain.md -- P3, proposed, not started
+35. agent/plans/PLAN-tutorial-rerecord.md -- P3, proposed, not started, dep-blocked
+36. agent/plans/PLAN-vscode-browser-exposure.md -- P3, proposed, not started
+37. agent/plans/PLAN-zot-manifest-list-commit.md -- P3, proposed, not started, dep-blocked
 
 ### Not queued
 

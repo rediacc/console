@@ -397,9 +397,10 @@ V1 to V6 share `backup.go`, `backup_snapshot.go` and `backup_restore.go`, and on
   - Accept: the command rc 0, the status codes recorded here.
     (ticked) 2026-11-06T16:36:46Z by d778be9d: commit:5357e04f8 drill backup --legs a,s on backups-bench rc=0 24/24, duplicate_put=412 wrong_checksum=400; comment and record corrected in the same unit (f51aa5e + 5357e04f8); bench-only proof
   (note 2026-11-06) "The same commit" holds at the console level: grants.go lives in the renet submodule, so its fix is renet f51aa5e, and console 5357e04f8 carries the record and the pointer move to it as one commit.
-- [ ] P4: The D1 clone check covers migration 0073.
+- [x] P4: The D1 clone check covers migration 0073.
   - Accept: the CD or local `rediacc_ci.deploy.test_d1_migrations` run rc 0 for eu, recorded with its run id.
   (corrected 2026-11-11, R2) Local-route: d1-migrations -- run test_d1_migrations on the branch's D1 clones for eu; the CD run is not needed.
+    (ticked) 2026-11-17T08:48:04Z by d778be9d: run: test_d1_migrations rc=0 on the eu/us/asia branch D1 clones (migrations through 0088; 0073/0074 already present, so this proves the check, not a fresh apply) log=/tmp/live-bench/d1mig.log
 
 ### B: bench, after the merge and edge deploy (lead)
 
