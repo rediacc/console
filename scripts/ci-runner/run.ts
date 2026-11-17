@@ -3090,7 +3090,8 @@ async function selftest(): Promise<number> {
     require_(
       written.gates['g:plan']?.judgedTree === 'T1' &&
         written.gates['g:plan'].carriedFrom === null &&
-        written.gates['g:tree']?.carriedFrom !== null &&
+        written.gates['g:tree'] !== undefined &&
+        written.gates['g:tree'].carriedFrom !== null &&
         written.advances.length === 1 &&
         written.advances[0] === writtenStep &&
         written.headTree === carryingReader.headTree,

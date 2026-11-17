@@ -92,11 +92,14 @@ describe('release host', () => {
           : Promise.resolve(new Response('late'))
       )
     );
-    await expect(release.fetchText(URL)).rejects.toThrow(
-      /cliDownloadFailed.*timed out after 600000 ms/
-    );
-    expect(timeout).toHaveBeenCalledWith(600_000);
-    timeout.mockRestore();
+    try {
+      await expect(release.fetchText(URL)).rejects.toThrow(
+        /cliDownloadFailed.*timed out after 600000 ms/
+      );
+      expect(timeout).toHaveBeenCalledWith(600_000);
+    } finally {
+      timeout.mockRestore();
+    }
     // Control: without the abort the same stub answers.
     await expect(release.fetchText(URL)).resolves.toBe('late');
   });

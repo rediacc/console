@@ -86,6 +86,8 @@ describe('probe-region-picker entry point', () => {
       expect(isEntryPoint(fileURLToPath(import.meta.url), pathToFileURL(SCRIPT).href)).toBe(false);
       expect(isEntryPoint(join(dir, 'absent.ts'), pathToFileURL(SCRIPT).href)).toBe(false);
       expect(isEntryPoint(undefined, pathToFileURL(SCRIPT).href)).toBe(false);
+      // An unresolvable module path is an error, never a silent false.
+      expect(() => isEntryPoint(SCRIPT, pathToFileURL(join(dir, 'gone.ts')).href)).toThrow();
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }

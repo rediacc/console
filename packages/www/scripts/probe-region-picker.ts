@@ -45,8 +45,10 @@ export const USAGE_LINE =
  */
 export function isEntryPoint(argv1: string | undefined, moduleUrl: string): boolean {
   if (!argv1) return false;
+  // The script's own path must resolve: if it cannot, main() would never run and the process would exit 0 with no step executed.
+  const self = realpathSync(fileURLToPath(moduleUrl));
   try {
-    return realpathSync(argv1) === realpathSync(fileURLToPath(moduleUrl));
+    return realpathSync(argv1) === self;
   } catch {
     return false;
   }
