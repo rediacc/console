@@ -340,6 +340,16 @@ export function selectSelftest(matches: (file: string, globs: readonly string[])
     pick(cs(['src/x.ts'], base)).includes('g:refs'),
     'a path-scoped gate declaring refs is selected by any non-empty change set'
   );
+  let emptyRefused = false;
+  try {
+    pick(cs([], base));
+  } catch (err) {
+    emptyRefused = err instanceof ChangeSetRefusal;
+  }
+  check(
+    emptyRefused,
+    'an empty change set is refused before any gate (refs-declaring ones included) is judged, so no refs gate is selected on empty input (65ac06bf.1)'
+  );
   const shape = selectChanged(specs, cs(['cfg/b.json'], [...base, ent('cfg/b.json')]), matches);
   check(
     shape.unscoped === 2 && shape.nameScoped === 2 && shape.nameMatched === 1,

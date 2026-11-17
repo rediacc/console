@@ -195,6 +195,8 @@ const FORKS = /^(clone|clone3|fork|vfork)$/;
 /**
  * The stateful line parser, so a large log streams in chunks with each process's cwd intact. The cwd is PER PID: a `chdir` or `fchdir` moves only the process that made it, and a successful clone, clone3, fork or vfork gives the new pid the cwd its parent had at that moment. `line(l, pid)` takes the pid from the argument (a `-ff` log, whose file name holds it) or from the line's own prefix (a `-f` log). For `-ff`, feed the logs in ascending pid order so a parent's fork is seen before its child's lines; a child seen first starts from the root cwd, and its start is corrected when the fork arrives, for every relative path it had not yet resolved.
  */
+const INDEX_PATH = /(^|\/)\.git\/(.*\/)?(index|sharedindex\.[^/]*)$/;
+
 export function straceParser(
   rootCwd: string,
   into: Access = emptyAccess()
@@ -211,7 +213,7 @@ export function straceParser(
   /** A path a process named, and the pid when it is an index file: `attribute` judges whether a name-only `git ls-files` is the process that read it. */
   const addFile = (st: ProcState, p: string): void => {
     into.files.add(p);
-    if (path.posix.basename(p) === 'index') {
+    if (INDEX_PATH.test(p)) {
       into.indexPids ??= new Set();
       into.indexPids.add(st.pid);
     }
@@ -2270,6 +2272,24 @@ async function selftest(): Promise<number> {
   check(
     foreignRead.kind === 'whole-tree' && foreignRead.reason.includes('.git/index'),
     'a non-git process reading .git/index beside a name-only ls-files is the whole-tree index'
+  );
+  const nonGitIndex = fold(
+    attribute(
+      parseStraceLog(
+        [
+          `7 execve("/usr/bin/git", ["git", "ls-files", "-z"], 0x7ff /* 3 vars */) = 0`,
+          `7 openat(AT_FDCWD</r>, "/r/.git/index", O_RDONLY) = 3</r/.git/index>`,
+          `9 openat(AT_FDCWD</r>, "/r/a/index", O_RDONLY) = 4</r/a/index>`,
+        ].join('\n'),
+        '/r'
+      ),
+      view
+    ),
+    view
+  );
+  check(
+    nonGitIndex.kind === 'paths' && JSON.stringify(nonGitIndex.names) === '["**"]',
+    'a non-git process reading an unrelated file named index (a/index) is no foreign index reader: the name-only ls-files still explains .git/index'
   );
   check(
     classifyGitArgv(['git', 'ls-files', '-z', '--recurse-submodules']) === 'index',
