@@ -1,4 +1,4 @@
-## SESSION d778be9d 2026-11-17T14:24:20Z
+## SESSION d778be9d 2026-11-17T14:39:25Z
 
 # STATE d778be9d (1104-1, PR #605) -- 2026-11-17T14:15Z
 
@@ -21,3 +21,6 @@ PAUSED 2026-11-17T14:15Z by operator /pause. Resume effort: smart (`worklist.py 
 
 ## Owed ticks
 Live half owed after the push, run by the runners (step 7): PLAN-backup-program.md#07955f58 #0a237b2e #575e0098; PLAN-ciquick-cpu.md#51ceeb4f #824b964d; PLAN-enterprise-isolation.md#0a6e5712 #0fbd62dc #a8892e0c #cc583290 #f4b49503; PLAN-health-checks-local.md#85f55665; PLAN-production-key-only.md#6a1ca4a4; PLAN-proxy-cd-six-targets.md#abe9b4eb.
+
+## ci:quick result (paused)
+ci:quick on 5d81789717 finished rc=1 (log saved at .ci/cache/pause/d778be9d/ciquick-6.log). RED: lint:unused, check:ci-python-lint, check:ci-record-paths, check:ci-literal-sources, check:ci-python-env-registry, check:ci-command-tree, check:ci-renet, check:ci-ops-health (waived), check:ci-embed-asset-freshness, check:ci-source-rules, check:ci-lane-budget, check:ci-shard-manifest-coverage, check:ci-pytest. On resume: fix these with `npm run ci -- --narrow` before step 3.
