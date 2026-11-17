@@ -451,3 +451,43 @@ def test_a_broad_glob_literal_does_not_hide_an_uncovered_change():
         tree[".ci/pad/f%d.txt" % i] = ""
     sel = run([".ci/zz_data.txt"], tree=tree)
     assert sel.scope == "full", sel.line()
+
+
+def test_the_facts_cache_reparses_only_an_edited_module(monkeypatch):
+    cache: dict = {}
+    first = pi.build_map(
+        pathlib.Path("/nonexistent"),
+        sorted(p for p in TREE if p.endswith(".py")),
+        ROOTS,
+        TEST_ROOTS,
+        read=TREE.__getitem__,
+        facts_cache=cache,
+    )
+    assert cache, "the first build left the cache empty"
+    real = pi.module_facts
+    parsed: list[str] = []
+
+    def counting(rel, *a, **k):
+        parsed.append(rel)
+        return real(rel, *a, **k)
+
+    monkeypatch.setattr(pi, "module_facts", counting)
+    edited = dict(TREE)
+    edited[".ci/rediacc_ci/mid.py"] = "from rediacc_ci import leaf, other\n"
+    second = pi.build_map(
+        pathlib.Path("/nonexistent"),
+        sorted(p for p in edited if p.endswith(".py")),
+        ROOTS,
+        TEST_ROOTS,
+        read=edited.__getitem__,
+        facts_cache=cache,
+    )
+    assert parsed == [".ci/rediacc_ci/mid.py"], parsed
+    # The edit is seen, not served stale: test_mid now reaches other.py.
+    assert (
+        ".ci/rediacc_ci/other.py" in second["tests"][".ci/rediacc_ci/tests/test_mid.py"]["closure"]
+    )
+    assert (
+        ".ci/rediacc_ci/other.py"
+        not in first["tests"][".ci/rediacc_ci/tests/test_mid.py"]["closure"]
+    )

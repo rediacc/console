@@ -236,15 +236,13 @@ def module_facts(
             return found
         return None
 
-    # Docstrings are prose about the code, not names the code reads.
+    # Docstrings are prose about the code, not names the code reads. One walk: ast.walk is breadth-first, so a module, class or function is visited before its docstring constant and has recorded it by then.
     docstrings = set()
     for node in ast.walk(tree):
         if isinstance(node, (ast.Module, ast.ClassDef, ast.FunctionDef, ast.AsyncFunctionDef)):
             body = node.body
             if body and isinstance(body[0], ast.Expr) and isinstance(body[0].value, ast.Constant):
                 docstrings.add(id(body[0].value))
-
-    for node in ast.walk(tree):
         if isinstance(node, ast.Import):
             for alias in node.names:
                 got = resolve_abs(alias.name)
@@ -336,8 +334,11 @@ def build_map(
     roots: list[str],
     test_roots: list[str],
     read=None,
+    facts_cache: dict | None = None,
 ) -> dict:
-    """The whole map from file contents. `read(rel) -> str` is injectable so a test can build a map from a dict."""
+    """The whole map from file contents. `read(rel) -> str` is injectable so a test can build a map from a dict.
+
+    `facts_cache` (`{rel: {sha, want, imports, unresolved, literals, error}}`) is read and updated in place: a module whose content hash and literal mode match its entry is not parsed again. Its caller keys the whole cache by the SET of Python files, because resolution depends on which modules exist; an edit keeps every other file's entry, an added or deleted module discards them all."""
     if read is None:
 
         def read(rel: str) -> str:
@@ -354,15 +355,35 @@ def build_map(
         got = facts.get(rel)
         if got is None:
             in_tests = any(rel.startswith(r + "/") for r in test_roots)
-            got = module_facts(
-                rel,
-                read(rel),
-                index,
-                all_py,
-                want_literals=in_tests,
-                local_tops=local_tops,
-                dir_indexes=dir_indexes,
-            )
+            text = read(rel)
+            sha = hashlib.sha256(text.encode("utf-8", "surrogatepass")).hexdigest()
+            hit = facts_cache.get(rel) if facts_cache is not None else None
+            if hit and hit.get("sha") == sha and hit.get("want") == in_tests:
+                got = ModuleFacts(
+                    imports=list(hit["imports"]),
+                    unresolved=list(hit["unresolved"]),
+                    literals=list(hit["literals"]),
+                    syntax_error=hit["error"],
+                )
+            else:
+                got = module_facts(
+                    rel,
+                    text,
+                    index,
+                    all_py,
+                    want_literals=in_tests,
+                    local_tops=local_tops,
+                    dir_indexes=dir_indexes,
+                )
+                if facts_cache is not None:
+                    facts_cache[rel] = {
+                        "sha": sha,
+                        "want": in_tests,
+                        "imports": got.imports,
+                        "unresolved": got.unresolved,
+                        "literals": got.literals,
+                        "error": got.syntax_error,
+                    }
             if got.syntax_error:
                 errors.append(got.syntax_error)
             facts[rel] = got
@@ -849,12 +870,32 @@ def load_or_build_map(root: pathlib.Path, present: list[str]) -> tuple[dict, str
             return data, digest
     except (OSError, ValueError):
         pass
-    data = build_map(root, py_files, roots, test_roots)
+    # The per-module facts survive an edit; the file SET (and the pythonpath that resolves it) keys them all.
+    fileset = hashlib.sha256(
+        ("%d\n%s\n%s" % (MAP_SCHEMA, "\n".join(roots), "\n".join(py_files))).encode()
+    ).hexdigest()
+    facts_path = cache_dir / "facts.json"
+    try:
+        stored = json.loads(facts_path.read_text(encoding="utf-8"))
+        facts_cache = stored["entries"] if stored.get("fileset") == fileset else {}
+    except (OSError, ValueError, KeyError, TypeError):
+        facts_cache = {}
+    data = build_map(root, py_files, roots, test_roots, facts_cache=facts_cache)
     data["digest"] = digest
     cache_dir.mkdir(parents=True, exist_ok=True)
     tmp = cached.with_suffix(".tmp%d" % os.getpid())
     tmp.write_text(json.dumps(data, separators=(",", ":")), encoding="utf-8")
     tmp.replace(cached)
+    live = set(py_files)
+    tmp = facts_path.with_suffix(".tmp%d" % os.getpid())
+    tmp.write_text(
+        json.dumps(
+            {"fileset": fileset, "entries": {k: v for k, v in facts_cache.items() if k in live}},
+            separators=(",", ":"),
+        ),
+        encoding="utf-8",
+    )
+    tmp.replace(facts_path)
     olds = sorted(cache_dir.glob("map-*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
     for old in olds[KEEP_MAPS:]:
         old.unlink(missing_ok=True)
